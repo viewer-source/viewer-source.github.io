@@ -34,6 +34,7 @@ kept in that browser.
     --m2-error: #c62828;         /* image error */
     --m2-radius: 4px;            /* corners of the list items, map window, search, panel */
     --m2-radius-button: 5px;     /* corners of the download buttons and menu */
+    --m2-split: 32px;            /* the gap between the list and the map: its separator can be dragged */
     --m2-below-view: 56px;       /* from the map window's lower edge to the bottom of the browser window: the download row and the room under it */
   }
   /* as on the Colours page: the list on the left, the map and its text in
@@ -43,16 +44,28 @@ kept in that browser.
      smaller and the map larger. The layout spans the window (16 px from each
      edge, at most 2000 px); on narrower windows the map shrinks to 600 px,
      then the empty right column gives way, then the list goes above the map. */
-  .m2 { display: grid; grid-template-columns: 240px minmax(600px, 1fr) minmax(0, 240px); column-gap: 32px; align-items: start;
+  .m2 { display: grid; grid-template-columns: var(--m2-list-w, 240px) minmax(600px, 1fr) minmax(0, 240px); column-gap: 32px; align-items: start;
         width: min(100vw / var(--zoom, 1) - 32px, 2000px); position: relative; left: 50%; transform: translateX(-50%); }
-  .m2-nav { grid-column: 1; }
-  .m2-main { grid-column: 2; min-width: 0; }
+  .m2-nav { grid-column: 1; min-width: 0; }
+  .m2-main { grid-column: 2; min-width: 0; position: relative; }
+  /* the separator between the list and the map (user, 2026-11-09, as in Reactome's pathway browser): the gap between
+     them can be dragged sideways, the list to any width or out of sight; a double click gives the usual width back.
+     The width is kept in the reader's browser. A grip of three dots in the middle, a line on hover. */
+  #m2-split { position: absolute; top: 0; left: calc(-1 * var(--m2-split)); width: var(--m2-split); height: 100%; cursor: col-resize; touch-action: none; z-index: 1; }
+  #m2-split::before { content: ''; position: absolute; top: 0; bottom: 0; left: 50%; width: 2px; margin-left: -1px; background: var(--m2-accent); opacity: 0; transition: opacity .15s; }
+  #m2-split:hover::before, #m2-split.m2-moving-split::before { opacity: .5; }
+  #m2-split::after { content: ''; position: absolute; top: 50%; left: 50%; width: 4px; height: 20px; margin: -10px 0 0 -2px;
+    background: radial-gradient(circle, var(--m2-faint) 1.5px, transparent 2px) center / 4px 8px repeat-y; }
+  .m2-list-shut .m2-nav { display: none; }
+  body.m2-splitting, body.m2-splitting * { cursor: col-resize !important; user-select: none; }
   #m2-list { max-height: calc(100vh / var(--zoom, 1) - 180px); overflow-y: auto; }
   @media (max-width: 940px) {
     .m2 { display: block; width: auto; left: 0; transform: none; }
     .m2-nav { margin-bottom: 12px; }
     #m2-search { margin-bottom: 8px; }
     #m2-list { max-height: 127px; border-bottom: 1px solid #eee; }
+    #m2-split { display: none; }
+    .m2-list-shut .m2-nav { display: block; }
   }
 
   #m2-search { width: 100%; box-sizing: border-box; font-size: 14px; padding: 4px 6px; border: 1px solid var(--m2-line); border-radius: var(--m2-radius); margin-bottom: 16px; }
@@ -540,7 +553,52 @@ kept in that browser.
     var dl = document.getElementById('m2-downloads').getBoundingClientRect(), vb = view.getBoundingClientRect();
     var bottom = Math.max(dl.bottom, vb.bottom);
     listBox.style.maxHeight = Math.max(120, Math.floor((bottom - listBox.getBoundingClientRect().top) / pz())) + 'px';
+    split.style.height = Math.max(0, Math.floor((bottom - split.parentNode.getBoundingClientRect().top) / pz())) + 'px';
   }
+  // the separator between the list and the map: dragged sideways it sets the list's width (under 60 px the list is
+  // out of sight, the separator stays at the page's edge), a click on it then brings the list back, a double click
+  // gives the usual width; kept in this browser
+  var grid = document.querySelector('.m2'), split = document.createElement('div');
+  split.id = 'm2-split';
+  split.title = 'Drag to change the width of the list; double-click for the usual width';
+  document.querySelector('.m2-main').insertBefore(split, document.querySelector('.m2-main').firstChild);
+  var widthKey = 'atlas-list-width:' + location.pathname, LIST_W = 240, listW = LIST_W, lastW = LIST_W;
+  try { var savedW = parseFloat(localStorage.getItem(widthKey)); if (savedW >= 0) listW = savedW; } catch (e) {}
+  function setListWidth(w, save) {
+    w = Math.max(0, Math.min(600, Math.round(w)));
+    var shut = w < 60;
+    listW = shut ? 0 : w; if (!shut) lastW = w;
+    grid.classList.toggle('m2-list-shut', shut);
+    if (listW === LIST_W) grid.style.removeProperty('--m2-list-w'); else grid.style.setProperty('--m2-list-w', listW + 'px');
+    if (save) { try { if (listW === LIST_W) localStorage.removeItem(widthKey); else localStorage.setItem(widthKey, listW); } catch (e) {} }
+    listHeight();
+  }
+  setListWidth(listW, false);
+  (function () {
+    var drag = null;
+    split.addEventListener('pointerdown', function (e) {
+      if (e.button !== 0) return;
+      e.preventDefault();
+      split.setPointerCapture(e.pointerId);
+      drag = { x: e.clientX, w: listW, moved: false };
+    });
+    split.addEventListener('pointermove', function (e) {
+      if (!drag) return;
+      var dx = (e.clientX - drag.x) / pz();
+      if (!drag.moved && Math.abs(dx) < 3) return;
+      if (!drag.moved) { drag.moved = true; split.classList.add('m2-moving-split'); document.body.classList.add('m2-splitting'); }
+      setListWidth(drag.w + dx, false);
+    });
+    function end() {
+      if (!drag) return;
+      if (drag.moved) setListWidth(listW, true);
+      else if (listW === 0) setListWidth(lastW, true); // a click on the separator of a list out of sight
+      drag = null; split.classList.remove('m2-moving-split'); document.body.classList.remove('m2-splitting');
+    }
+    split.addEventListener('pointerup', end);
+    split.addEventListener('pointercancel', end);
+    split.addEventListener('dblclick', function () { setListWidth(LIST_W, true); });
+  })();
   window.addEventListener('resize', listHeight);
   if (window.ResizeObserver) {
     new ResizeObserver(listHeight).observe(view);

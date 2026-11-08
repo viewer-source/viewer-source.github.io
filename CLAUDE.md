@@ -17,6 +17,9 @@ says "the workbench", "the converter's repository", "a private repository".
   touch. The demo runs in development mode.
 - The sites take a new version of the viewer only when the user asks (user, 2026-11-08: when it is time to make it
   available), and then in presentation mode; each is checked live after its copy is updated.
+- The separator between the list and the map (user, 2026-11-09, as in Reactome): dragged sideways it sets the list's
+  width, down to out of sight (a click brings it back, a double click gives the usual 240 px), kept in the reader's
+  browser; `--m2-split` is the gap it sits in. Not on narrow screens, where the list is above the map.
 - The renderers: `renderers/yrender/` (yEd GraphML, drawn as yEd draws it) and `renderers/converter/cdrender.py`
   (CellDesigner, drawn as CellDesigner draws it, with the converter's `mapconv/`). Where each was copied from:
   `VERSION`.
