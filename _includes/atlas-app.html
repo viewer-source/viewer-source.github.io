@@ -678,7 +678,7 @@ kept in that browser.
       var b = n.box;
       if (x >= b[0] && x <= b[0] + b[2] && y >= b[1] && y <= b[1] + b[3] && (!best || b[2] * b[3] < best.box[2] * best.box[3])) best = n;
     });
-    sel = best;
+    sel = best === sel ? null : best; // a second click on the selected node unselects it and closes the panel (user, 2026-11-09)
     member = -1;
     renderInfo();
     drawPin();
