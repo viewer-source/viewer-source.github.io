@@ -78,7 +78,9 @@ kept in that browser.
      where it goes */
   .m2-moving { opacity: 0.4; }
   /* a row that can be dragged: no text selection or page scroll by touch while it moves */
-  .m2-grab { touch-action: none; user-select: none; -webkit-user-select: none; }
+  .m2-grab { user-select: none; -webkit-user-select: none; }
+  /* Shift held: the rows show they can be dragged (and the page does not scroll by touch while one moves) */
+  body.m2-shift .m2-grab { cursor: grab; touch-action: none; }
   body.m2-dragging, body.m2-dragging * { cursor: grabbing !important; user-select: none; }
   /* development mode: a group with no map yet */
   .m2-empty { font-size: 14px; color: var(--m2-faint); padding: 2px 4px; margin-left: 14px; }
@@ -871,9 +873,11 @@ kept in that browser.
     }).sort(function (a, b) { return a[0] - b[0] || a[1] - b[1]; }).map(function (r) { return r[2]; });
   }
   var moving = null; // {group: name} or {map: id, group: name} while dragging
-  // only in the development mode (include ... mode="development"): a site's viewer is a fixed list for reading the
-  // maps, the arranging is for a copy where maps are being developed (user, 2026-11-08)
-  var ARRANGE = DEV;
+  // in the development mode (include ... mode="development"), or with drag=true (a page that wants it in the
+  // presentation mode, the styles page): a published site's viewer stays a fixed list for reading the maps (user, 2026-11-08)
+  // groups and maps reordered by dragging: in development mode, and in presentation mode with drag=true on the include
+  // (the styles page). Only with Shift held (user, 2026-11-09: so a click or a scroll never moves a row by accident)
+  var ARRANGE = DEV || {% if include.drag %}true{% else %}false{% endif %};
   if (!ARRANGE) order = {};
   // Dragging with the pointer (mouse, pen or finger), not the browser's drag and drop: a list row is a button, and
   // some browsers (Firefox) never start a native drag on a button (user, 2026-11-08: "the items in the list are still
@@ -881,12 +885,17 @@ kept in that browser.
   // A map moves only among the maps of its own group, a group among the groups (user, 2026-11-08). The order is the
   // reader's, kept in this browser; the site's order never changes.
   var press = null, swallow = false;
+  if (ARRANGE) {
+    var shiftOn = function (e) { document.body.classList.toggle('m2-shift', e.shiftKey); };
+    document.addEventListener('keydown', shiftOn); document.addEventListener('keyup', shiftOn);
+    window.addEventListener('blur', function () { document.body.classList.remove('m2-shift'); });
+  }
   function movable(b, what) {
     if (!ARRANGE || document.getElementById('m2-search').value.trim()) return;
     b.classList.add('m2-grab');
-    if (what.group && !what.map) b.title = 'Click to open or close, drag to move the group';
+    b.title = what.map ? 'Shift and drag to move the map in its group' : 'Click to open or close, Shift and drag to move the group';
     b.addEventListener('pointerdown', function (e) {
-      if (e.button !== 0) return;
+      if (e.button !== 0 || !e.shiftKey) return;
       press = { what: what, row: b, y: e.clientY, id: e.pointerId, on: false };
     });
   }
