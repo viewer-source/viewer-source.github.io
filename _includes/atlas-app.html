@@ -34,6 +34,7 @@ kept in that browser.
     --m2-error: #c62828;         /* image error */
     --m2-radius: 4px;            /* corners of the list items, map window, search, panel */
     --m2-radius-button: 5px;     /* corners of the download buttons and menu */
+    --m2-below-view: 56px;       /* from the map window's lower edge to the bottom of the browser window: the download row and the room under it */
   }
   /* as on the Colours page: the list on the left, the map and its text in
      the middle, and an empty column of the list's width on the right, so the
@@ -523,9 +524,10 @@ kept in that browser.
   // the view's height: from its top to the bottom of the window, less the download row, so the map
   // takes all the room the page leaves and the download row stays in sight under it whatever the
   // header above (2026-11-06), until the reader drags its lower edge (the browser then sets its own height)
-  var autoH = null, ROW = 56; // the download row and a margin under it
+  var autoH = null; // the room under it: the setting --m2-below-view (56 px), read each time so a style can change it
   function viewHeight() {
     if (autoH !== null && view.style.height !== autoH) return; // resized by the reader
+    var ROW = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--m2-below-view')) || 56;
     var top = (view.getBoundingClientRect().top + window.scrollY) / pz();
     autoH = Math.round(Math.max(300, window.innerHeight / pz() - top - ROW)) + 'px';
     view.style.height = autoH;
