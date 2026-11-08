@@ -78,6 +78,9 @@ kept in that browser.
   /* a group or a map dragged into another place (as on the expo atlas, 2026-10-28): faint while it moves, a line
      where it goes */
   .m2-moving { opacity: 0.4; }
+  /* a row that can be dragged: no text selection or page scroll by touch while it moves */
+  .m2-grab { touch-action: none; user-select: none; -webkit-user-select: none; }
+  body.m2-dragging, body.m2-dragging * { cursor: grabbing !important; user-select: none; }
   /* development mode: a group with no map yet */
   .m2-empty { font-size: 14px; color: var(--m2-faint); padding: 2px 4px; margin-left: 14px; }
   .m2-drop { box-shadow: 0 -2px 0 var(--m2-accent); }
@@ -872,16 +875,20 @@ kept in that browser.
   // maps, the arranging is for a copy where maps are being developed (user, 2026-11-08)
   var ARRANGE = DEV;
   if (!ARRANGE) order = {};
+  // Dragging with the pointer (mouse, pen or finger), not the browser's drag and drop: a list row is a button, and
+  // some browsers (Firefox) never start a native drag on a button (user, 2026-11-08: "the items in the list are still
+  // not draggable"). A press that moves more than 5 px drags the row; a press that does not is a click as before.
+  // A map moves only among the maps of its own group, a group among the groups (user, 2026-11-08). The order is the
+  // reader's, kept in this browser; the site's order never changes.
+  var press = null, swallow = false;
   function movable(b, what) {
     if (!ARRANGE || document.getElementById('m2-search').value.trim()) return;
-    b.draggable = true;
+    b.classList.add('m2-grab');
     if (what.group && !what.map) b.title = 'Click to open or close, drag to move the group';
-    b.addEventListener('dragstart', function (e) {
-      moving = what; b.classList.add('m2-moving');
-      e.dataTransfer.effectAllowed = 'move';
-      try { e.dataTransfer.setData('text/plain', what.map || what.group); } catch (x) {}
+    b.addEventListener('pointerdown', function (e) {
+      if (e.button !== 0) return;
+      press = { what: what, row: b, y: e.clientY, id: e.pointerId, on: false };
     });
-    b.addEventListener('dragend', function () { moving = null; buildList(''); });
   }
   // where the dragged row goes: before the first row of its kind whose middle is below the pointer (a map only
   // among the maps of its own group), or after the last
@@ -896,24 +903,22 @@ kept in that browser.
     function clear() {
       Array.prototype.forEach.call(box.querySelectorAll('.m2-drop, .m2-drop-after'), function (h) { h.classList.remove('m2-drop', 'm2-drop-after'); });
     }
-    box.addEventListener('dragover', function (e) {
-      if (!moving) return;
-      e.preventDefault(); e.dataTransfer.dropEffect = 'move';
+    function mark(y) {
       clear();
-      var d = dropPlace(e.clientY);
+      var d = dropPlace(y);
       if (d.row) d.row.classList.add('m2-drop');
       else if (d.rows.length) {
-        // after the last group: under its last row; after the last map of a group: under it
+        // after the last group: under the list's last row; after the last map of a group: under it
         var last = d.rows[d.rows.length - 1];
-        if (!moving.map) { var all = box.querySelectorAll('.m2-group, .m2-map'); last = all[all.length - 1]; }
+        if (!moving.map) { var all = box.querySelectorAll('.m2-group, .m2-map, .m2-empty'); last = all[all.length - 1]; }
         last.classList.add('m2-drop-after');
       }
-    });
-    box.addEventListener('dragleave', function (e) { if (!box.contains(e.relatedTarget)) clear(); });
-    box.addEventListener('drop', function (e) {
-      if (!moving) return;
-      e.preventDefault(); clear();
-      var d = dropPlace(e.clientY);
+      // near the top or bottom edge the list scrolls along
+      var r = box.getBoundingClientRect();
+      if (y < r.top + 24) box.scrollTop -= 12; else if (y > r.bottom - 24) box.scrollTop += 12;
+    }
+    function drop(y) {
+      var d = dropPlace(y);
       if (moving.map) {
         var ids = maps.filter(function (m) { return (m.group || '') === moving.group; }).map(function (m) { return m.id; });
         var before = d.row && d.row.getAttribute('data-id');
@@ -931,7 +936,31 @@ kept in that browser.
       }
       saveOrder();
       maps = arrange(maps);
+    }
+    document.addEventListener('pointermove', function (e) {
+      if (!press || e.pointerId !== press.id) return;
+      if (!press.on) {
+        if (Math.abs(e.clientY - press.y) < 5) return;
+        press.on = true; moving = press.what;
+        press.row.classList.add('m2-moving'); document.body.classList.add('m2-dragging');
+      }
+      e.preventDefault();
+      mark(e.clientY);
     });
+    function end(e) {
+      if (!press || e.pointerId !== press.id) return;
+      var was = press; press = null;
+      if (!was.on) return;  // a click
+      swallow = true; setTimeout(function () { swallow = false; }, 0); // the click that follows the release
+      clear(); document.body.classList.remove('m2-dragging');
+      if (e.type === 'pointerup') drop(e.clientY);
+      moving = null;
+      buildList(document.getElementById('m2-search').value);
+    }
+    document.addEventListener('pointerup', end);
+    document.addEventListener('pointercancel', end);
+    // the release of a drag is not a click on the row
+    box.addEventListener('click', function (e) { if (swallow) { e.stopPropagation(); e.preventDefault(); swallow = false; } }, true);
   })();
 
   // ---------- search ----------
