@@ -3,6 +3,9 @@ The map atlas page: a list of maps on the left, the map window, its downloads an
 the click panel on the right. Shared by /atlas/ and /pattern-atlas/ (user, 2026-10-30), and copied by the Eicosanoid Atlas site (eicosanoids.github.io,
 its VERSION names the commit): each gives its own
 map index (index), search index (search) and name for the browser tab (name).
+Two modes (user, 2026-11-08): by default a fixed list for reading the maps, as on a published site; arrange=true (a copy
+where maps are being developed) lets the reader put groups and the maps in a group in another order by dragging,
+kept in that browser.
 {% endcomment %}
 
 <style>
@@ -65,6 +68,11 @@ map index (index), search index (search) and name for the browser tab (name).
   /* a group name opens or closes its maps; all groups start open, then as the reader left them */
   .m2-group { display: block; width: 100%; text-align: left; font: inherit; font-size: 14px; font-weight: 400; color: var(--m2-text); background: none; border: 0; padding: 2px 5px 2px 0; margin-top: 6px; cursor: pointer; }
   .m2-group:first-child { margin-top: 0; }
+  /* a group or a map dragged into another place (as on the expo atlas, 2026-10-28): faint while it moves, a line
+     where it goes */
+  .m2-moving { opacity: 0.4; }
+  .m2-drop { box-shadow: 0 -2px 0 var(--m2-accent); }
+  .m2-drop-after { box-shadow: 0 2px 0 var(--m2-accent); }
   .m2-group:focus { outline: none; }
   /* open / closed sign at the right end of a group name: chevrons. For filled
      triangles use instead: open url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M1.5 3.5h9L6 9z' fill='%23888'/%3E%3C/svg%3E"),
@@ -249,7 +257,9 @@ map index (index), search index (search) and name for the browser tab (name).
   // button and remembered by the browser where it can
   var mode = 'fit';
   try { if (localStorage.getItem('atlas-view') === 'read') mode = 'read'; } catch (e) {}
-  var maps = [], byId = {}, topics = [], current = null;
+  // current: the map on screen; chosen: the map last asked for (the list, the arrow keys, the address), which
+  // becomes current once its files are loaded. The list marks chosen, so a click or an arrow key shows at once
+  var maps = [], byId = {}, topics = [], current = null, chosen = null;
   // a map's files carry its content version v (build.py), so a browser fetches a map again only when it changed
   function ver(m) { return m.v ? '?v=' + m.v : BUILD; }
 
@@ -799,6 +809,91 @@ map index (index), search index (search) and name for the browser tab (name).
   try { closed = JSON.parse(localStorage.getItem(closedKey) || '{}') || {}; } catch (e) { closed = {}; }
   function saveClosed() { try { localStorage.setItem(closedKey, JSON.stringify(closed)); } catch (e) {} }
 
+  // ---------- the reader's order ----------
+  // Groups and the maps inside a group are put in another order by dragging them in the list (as the expo atlas's
+  // groups, 2026-10-28), kept in this browser, one order per atlas page: {groups: [names], maps: {group: [ids]}}.
+  // A map keeps its group; a group or a map the order does not know yet comes after the known ones, in the site's
+  // order. Not while searching, which hides groups.
+  var orderKey = 'atlas-order:' + location.pathname, order = {};
+  try { order = JSON.parse(localStorage.getItem(orderKey) || '{}') || {}; } catch (e) { order = {}; }
+  function saveOrder() { try { localStorage.setItem(orderKey, JSON.stringify(order)); } catch (e) {} }
+  function arrange(list) {  // the site's list in the reader's order
+    var site = list.slice(), groups = [];
+    site.forEach(function (m) { if (groups.indexOf(m.group || '') < 0) groups.push(m.group || ''); });
+    var rank = function (known, x, i) { var k = (known || []).indexOf(x); return k < 0 ? 1e6 + i : k; };
+    return site.map(function (m, i) {
+      var g = m.group || '';
+      return [rank(order.groups, g, groups.indexOf(g)), rank((order.maps || {})[g], m.id, i), m];
+    }).sort(function (a, b) { return a[0] - b[0] || a[1] - b[1]; }).map(function (r) { return r[2]; });
+  }
+  var moving = null; // {group: name} or {map: id, group: name} while dragging
+  // only where the page asks for it (include ... arrange=true): a site's viewer is a fixed list for reading the maps,
+  // the arranging is for a copy where maps are being developed (user, 2026-11-08)
+  var ARRANGE = {{ include.arrange | default: false | jsonify }};
+  if (!ARRANGE) order = {};
+  function movable(b, what) {
+    if (!ARRANGE || document.getElementById('m2-search').value.trim()) return;
+    b.draggable = true;
+    if (what.group && !what.map) b.title = 'Click to open or close, drag to move the group';
+    b.addEventListener('dragstart', function (e) {
+      moving = what; b.classList.add('m2-moving');
+      e.dataTransfer.effectAllowed = 'move';
+      try { e.dataTransfer.setData('text/plain', what.map || what.group); } catch (x) {}
+    });
+    b.addEventListener('dragend', function () { moving = null; buildList(''); });
+  }
+  // where the dragged row goes: before the first row of its kind whose middle is below the pointer (a map only
+  // among the maps of its own group), or after the last
+  function dropPlace(y) {
+    var sel = moving.map ? '#m2-list .m2-map[data-group="' + CSS.escape(moving.group) + '"]' : '#m2-list .m2-group';
+    var rows = Array.prototype.slice.call(document.querySelectorAll(sel));
+    for (var i = 0; i < rows.length; i++) { var r = rows[i].getBoundingClientRect(); if (y < r.top + r.height / 2) return { row: rows[i], rows: rows }; }
+    return { row: null, rows: rows };
+  }
+  (function () {
+    var box = document.getElementById('m2-list');
+    function clear() {
+      Array.prototype.forEach.call(box.querySelectorAll('.m2-drop, .m2-drop-after'), function (h) { h.classList.remove('m2-drop', 'm2-drop-after'); });
+    }
+    box.addEventListener('dragover', function (e) {
+      if (!moving) return;
+      e.preventDefault(); e.dataTransfer.dropEffect = 'move';
+      clear();
+      var d = dropPlace(e.clientY);
+      if (d.row) d.row.classList.add('m2-drop');
+      else if (d.rows.length) {
+        // after the last group: under its last row; after the last map of a group: under it
+        var last = d.rows[d.rows.length - 1];
+        if (!moving.map) { var all = box.querySelectorAll('.m2-group, .m2-map'); last = all[all.length - 1]; }
+        last.classList.add('m2-drop-after');
+      }
+    });
+    box.addEventListener('dragleave', function (e) { if (!box.contains(e.relatedTarget)) clear(); });
+    box.addEventListener('drop', function (e) {
+      if (!moving) return;
+      e.preventDefault(); clear();
+      var d = dropPlace(e.clientY);
+      if (moving.map) {
+        var ids = maps.filter(function (m) { return (m.group || '') === moving.group; }).map(function (m) { return m.id; });
+        var before = d.row && d.row.getAttribute('data-id');
+        if (before === moving.map) return;
+        ids.splice(ids.indexOf(moving.map), 1);
+        ids.splice(before ? ids.indexOf(before) : ids.length, 0, moving.map);
+        order.maps = order.maps || {}; order.maps[moving.group] = ids;
+      } else {
+        var names = [];
+        maps.forEach(function (m) { if (names.indexOf(m.group || '') < 0) names.push(m.group || ''); });
+        var at = d.row && d.row.getAttribute('data-group');
+        if (at === moving.group) return;
+        names.splice(names.indexOf(moving.group), 1);
+        names.splice(at !== null && at !== undefined ? names.indexOf(at) : names.length, 0, moving.group);
+        order.groups = names;
+      }
+      saveOrder();
+      maps = arrange(maps);
+    });
+  })();
+
   // ---------- search ----------
   // atlas-data/search.json (scripts/make_maps.py): every molecule on every
   // map, with its label and symbols (a), other names (b) and database IDs (i).
@@ -885,6 +980,8 @@ map index (index), search index (search) and name for the browser tab (name).
         group = m.group;
         var g = el('button', 'm2-group' + (shut ? ' m2-shut' : ''), group);
         g.type = 'button';
+        g.setAttribute('data-group', group);
+        movable(g, { group: group });
         g.addEventListener('click', (function (name) { return function () {
           closed[name] = !closed[name];
           saveClosed();
@@ -893,10 +990,12 @@ map index (index), search index (search) and name for the browser tab (name).
         box.appendChild(g);
       }
       if (shut) return;
-      var b = el('button', 'm2-item m2-map' + (m.group ? ' m2-sub' : '') + (m.tag === 'draft-ext' ? ' m2-ext' : '') + (m === current ? ' m2-on' : ''));
+      var b = el('button', 'm2-item m2-map' + (m.group ? ' m2-sub' : '') + (m.tag === 'draft-ext' ? ' m2-ext' : '') + (m === (chosen || current) ? ' m2-on' : ''));
       b.appendChild(el('span', 'm2-name', label(m)));
       b.type = 'button';
       b.setAttribute('data-id', m.id);
+      b.setAttribute('data-group', m.group || '');
+      movable(b, { map: m.id, group: m.group || '' });
       var tips = [label(m)];
       if (m.kind === 'drug') { b.insertAdjacentHTML('beforeend', DRUG_ICON); tips.push('Drug action mechanism map'); }
       var tag = TAG_ICONS[m.tag];
@@ -911,7 +1010,7 @@ map index (index), search index (search) and name for the browser tab (name).
       if (g.name !== g.label) t.appendChild(el('span', 'm2-why', ' ' + g.name));
       box.appendChild(t);
       g.hits.forEach(function (e) {
-        var on = lastHit === e.k + '|' + e.m && current && current.id === e.m;
+        var on = lastHit === e.k + '|' + e.m && chosen && chosen.id === e.m;
         var b = el('button', 'm2-item m2-hit m2-sub' + (on ? ' m2-on' : ''), label(byId[e.m]));
         b.type = 'button';
         if (e.n.length > 1) {
@@ -943,16 +1042,16 @@ map index (index), search index (search) and name for the browser tab (name).
     var i = items.findIndex(function (b) { return b.classList.contains('m2-on'); });
     var n = items.length;
     var next = i < 0 ? (dir > 0 ? 0 : n - 1) : (i + dir + n) % n;
-    if (i < 0 && current) {
+    if (i < 0 && chosen) {
       // the chosen map is in a closed group: go on from its place in the list
       var at = function (b) { return maps.indexOf(byId[b.getAttribute('data-id')]); };
-      var here = maps.indexOf(current);
+      var here = maps.indexOf(chosen);
       var after = items.filter(function (b) { return dir > 0 ? at(b) > here : at(b) < here; });
       if (after.length) next = items.indexOf(dir > 0 ? after[0] : after[after.length - 1]);
     }
     var id = items[next].getAttribute('data-id');
     // replace, so stepping through the list does not fill the browser history
-    if (id !== location.hash.slice(1)) location.replace('#' + id);
+    if (id !== location.hash.slice(1)) { location.replace('#' + id); route(); }
   });
 
   // ---------- one map ----------
@@ -1025,22 +1124,26 @@ map index (index), search index (search) and name for the browser tab (name).
     if (source) get(source.data + ver(source)).then(function (d) { if (current === m && d) box.innerHTML = d.html; });
     prefetch();
   }
+  // the list and the arrow keys route at once, not on the browser's hashchange, which comes a moment later: so a
+  // second click or key press always starts from the map just chosen
   function go(id) {
     if (location.hash.slice(1) !== id) location.hash = id;
-    else route();
+    route();
   }
-  function route() {
+  function route(e) {
     var m = byId[location.hash.slice(1)] || maps[0];
     if (!m) return;
+    if (e && e.type === 'hashchange' && m === chosen) return; // already routed by go() or an arrow key
     if (!pending) lastHit = null; // chosen from the map list, not a search result
     if (closed[m.group]) { closed[m.group] = false; saveClosed(); } // the chosen map's group is always open
+    chosen = m;
     show(m);
     buildList(document.getElementById('m2-search').value);
   }
   window.addEventListener('hashchange', route);
 
   function setMaps(list) {
-    maps = list; byId = {}; topics = [];
+    maps = arrange(list); byId = {}; topics = [];
     maps.forEach(function (m) {
       byId[m.id] = m;
       var t = topics.filter(function (x) { return x.name === m.topic; })[0];
@@ -1066,13 +1169,14 @@ map index (index), search index (search) and name for the browser tab (name).
         if (!text || text === listText) return;
         var first = !listText;
         listText = text;
-        var old = current;
+        var old = current, was = chosen;
         setMaps(JSON.parse(text));
         if (first) { placeInfo(); return route(); }
         if (index) { index = null; loadIndex(); }
         var m = old && byId[old.id];
         if (m && ver(m) !== ver(old)) show(m, true);
         else if (m) current = m;
+        if (was) chosen = byId[was.id] || m || chosen;
         buildList(document.getElementById('m2-search').value);
         prefetch();
       }).catch(function () {});
