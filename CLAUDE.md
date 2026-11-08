@@ -6,10 +6,11 @@ says "the workbench", "the converter's repository", "a private repository".
 
 - The viewer: `_includes/atlas-app.html` (list on the left, the map, its panel, search, downloads row). It never
   knows a map's source format.
-- Two modes (user, 2026-11-08): by default the viewer is a fixed list for reading and reviewing maps, as a published
-  site shows them (the next Metabolism Regulation version, for one). `arrange=true` on the include is the mode for a copy
-  where maps are being developed: groups and the maps in a group are put in another order by dragging, kept in the
-  reader's browser. The demo runs with it on. A site never gets it unless the user says.
+- Two modes (user, 2026-11-08). Presentation, the default: a fixed list for reading and reviewing maps, as a published
+  site shows them (the next Metabolism Regulation version, for one). Development, `mode="development"` on the include,
+  for a copy where maps are being developed: the whole page for the map with no site header (as the osteoarthritis
+  working site), and groups and the maps in a group put in another order by dragging, kept in the reader's browser.
+  The demo runs in development mode. A site gets it only when the user says.
 - The renderers: `renderers/yrender/` (yEd GraphML, drawn as yEd draws it) and `renderers/converter/cdrender.py`
   (CellDesigner, drawn as CellDesigner draws it, with the converter's `mapconv/`). Where each was copied from:
   `VERSION`.

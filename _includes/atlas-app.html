@@ -3,11 +3,18 @@ The map atlas page: a list of maps on the left, the map window, its downloads an
 the click panel on the right. Shared by /atlas/ and /pattern-atlas/ (user, 2026-10-30), and copied by the Eicosanoid Atlas site (eicosanoids.github.io,
 its VERSION names the commit): each gives its own
 map index (index), search index (search) and name for the browser tab (name).
-Two modes (user, 2026-11-08): by default a fixed list for reading the maps, as on a published site; arrange=true (a copy
-where maps are being developed) lets the reader put groups and the maps in a group in another order by dragging,
+Two modes (user, 2026-11-08): by default the presentation mode, a fixed list for reading the maps, as on a published
+site. mode="development" (a copy where maps are being developed): the whole page for the map, no site header (as the
+osteoarthritis working site, user 2026-11-05), and groups and the maps in a group put in another order by dragging,
 kept in that browser.
 {% endcomment %}
 
+{% if include.mode == "development" %}<style>
+  /* development mode: no site header (the layouts' .wrapper-masthead), the map window from 16 px under the top of the
+     page down to the download row */
+  .wrapper-masthead, header.masthead { display: none; }
+  #main { padding-top: 16px; }
+</style>{% endif %}
 <style>
   /* The look in one place: colours and corners the rules below use. A site or a style changes
      them by redefining them on :root (this :where() has no weight, so any later :root wins). */
@@ -842,9 +849,9 @@ kept in that browser.
     }).sort(function (a, b) { return a[0] - b[0] || a[1] - b[1]; }).map(function (r) { return r[2]; });
   }
   var moving = null; // {group: name} or {map: id, group: name} while dragging
-  // only where the page asks for it (include ... arrange=true): a site's viewer is a fixed list for reading the maps,
-  // the arranging is for a copy where maps are being developed (user, 2026-11-08)
-  var ARRANGE = {{ include.arrange | default: false | jsonify }};
+  // only in the development mode (include ... mode="development"): a site's viewer is a fixed list for reading the
+  // maps, the arranging is for a copy where maps are being developed (user, 2026-11-08)
+  var ARRANGE = {% if include.mode == "development" %}true{% else %}false{% endif %};
   if (!ARRANGE) order = {};
   function movable(b, what) {
     if (!ARRANGE || document.getElementById('m2-search').value.trim()) return;
