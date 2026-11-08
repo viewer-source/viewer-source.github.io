@@ -1,7 +1,7 @@
-# Atlas skeleton
+# Viewer source
 
 Public repository: the one source of the atlas viewer every map site uses, and its demo at
-https://atlas-skeleton.github.io. Names no private repository in files, pages, code comments or commit messages: it
+https://viewer-source.github.io. Names no private repository in files, pages, code comments or commit messages: it
 says "the workbench", "the converter's repository", "a private repository".
 
 - The viewer: `_includes/atlas-app.html` (list on the left, the map, its panel, search, downloads row). It never

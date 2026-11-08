@@ -1,10 +1,10 @@
-# The atlas skeleton: the atlas viewer every map site starts from, with a demo of its maps.
-name: Atlas skeleton
+# The viewer source: the atlas viewer every map site starts from, with a demo of its maps.
+name: Viewer source
 description: "One viewer, maps from yEd and CellDesigner"
 footer-links:
-  github: atlas-skeleton
+  github: viewer-source
 google_analytics:
-url: https://atlas-skeleton.github.io
+url: https://viewer-source.github.io
 baseurl: ""
 
 collections:

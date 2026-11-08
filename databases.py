@@ -30,7 +30,7 @@ PREFIX = {'P': 'phospho', 'Ac': 'acetyl', 'Me': 'methyl', 'Su': 'succinyl', 'Glu
 
 
 def fetch(url):
-    req = urllib.request.Request(url, headers={'Accept': 'application/json', 'User-Agent': 'atlas-skeleton.github.io'})
+    req = urllib.request.Request(url, headers={'Accept': 'application/json', 'User-Agent': 'viewer-source.github.io'})
     with urllib.request.urlopen(req, timeout=60) as r:
         return json.load(r)
 
