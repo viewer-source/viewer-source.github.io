@@ -6,6 +6,26 @@ map index (index), search index (search) and name for the browser tab (name).
 {% endcomment %}
 
 <style>
+  /* The look in one place: colours and corners the rules below use. A site or a style changes
+     them by redefining them on :root (this :where() has no weight, so any later :root wins). */
+  :where(:root) {
+    --m2-accent: #4183c4;        /* the chosen map, chips, hover edges, new tags, the map pin */
+    --m2-on-accent: #fff;        /* text and tag edges on the accent */
+    --m2-link: #1c47a9;          /* links in the text and the panel (MINERVA's link blue) */
+    --m2-text: #000;             /* map list and group names */
+    --m2-text-soft: #222;        /* panel text, zoom and member buttons */
+    --m2-muted: #666;            /* labels in the panel, zoom value, notes */
+    --m2-faint: #888;            /* counts, the name a molecule was found by, copy tags */
+    --m2-button: #777;           /* download buttons: text and edge */
+    --m2-line: #ccc;             /* edges of search, panel, cards, menus */
+    --m2-frame: #ddd;            /* the edge of the map window */
+    --m2-bg: #fff;               /* map window, panel, cards, buttons */
+    --m2-control-bg: #fffffff0;  /* the zoom buttons over the map */
+    --m2-hover: #f3f3f3;         /* a map in the list under the pointer */
+    --m2-error: #c62828;         /* image error */
+    --m2-radius: 4px;            /* corners of the list items, map window, search, panel */
+    --m2-radius-button: 5px;     /* corners of the download buttons and menu */
+  }
   /* as on the Colours page: the list on the left, the map and its text in
      the middle, and an empty column of the list's width on the right, so the
      middle stays centred under the header. The middle takes all the room
@@ -25,7 +45,7 @@ map index (index), search index (search) and name for the browser tab (name).
     #m2-list { max-height: 127px; border-bottom: 1px solid #eee; }
   }
 
-  #m2-search { width: 100%; box-sizing: border-box; font-size: 14px; padding: 4px 6px; border: 1px solid #ccc; border-radius: 4px; margin-bottom: 16px; }
+  #m2-search { width: 100%; box-sizing: border-box; font-size: 14px; padding: 4px 6px; border: 1px solid var(--m2-line); border-radius: var(--m2-radius); margin-bottom: 16px; }
   /* no blue focus ring: while typing, the edge only gets darker, as buttons on hover */
   #m2-search:focus { outline: none; border-color: #999; }
   #m2-search::placeholder { color: #a8a8a8; } /* between #999 and the soft grey of the chevrons (#b4b4b4) */
@@ -33,17 +53,17 @@ map index (index), search index (search) and name for the browser tab (name).
   #m2-search::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; width: 12px; height: 12px; cursor: pointer;
     background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'%3E%3Cpath d='M2 2l10 10M12 2L2 12' fill='none' stroke='%23b4b4b4' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat center / 12px; }
   #m2-list { display: flex; flex-direction: column; gap: 2px; }
-  .m2-item { display: block; width: 100%; text-align: left; font-size: 14px; line-height: 18px; padding: 2px 4px; border: 1px solid transparent; border-radius: 4px; background: none; cursor: pointer; color: #000; }
+  .m2-item { display: block; width: 100%; text-align: left; font-size: 14px; line-height: 18px; padding: 2px 4px; border: 1px solid transparent; border-radius: var(--m2-radius); background: none; cursor: pointer; color: var(--m2-text); }
   /* the chosen map: a filled box in the site's link blue, white text */
   /* on hover a very light grey background (lighter than the earlier #f0f0f0) */
-  .m2-item:hover { background: #f3f3f3; }
-  .m2-item.m2-on { background: #4183c4; color: #fff; }
+  .m2-item:hover { background: var(--m2-hover); }
+  .m2-item.m2-on { background: var(--m2-accent); color: var(--m2-on-accent); }
   .m2-item:focus { outline: none; }
-  .m2-none { font-size: 12px; color: #666; padding: 2px 4px; }
+  .m2-none { font-size: 12px; color: var(--m2-muted); padding: 2px 4px; }
   /* groups as a list with sublists: the group name at the size of the
      items, normal weight, and its maps indented under it */
   /* a group name opens or closes its maps; all groups start open, then as the reader left them */
-  .m2-group { display: block; width: 100%; text-align: left; font: inherit; font-size: 14px; font-weight: 400; color: #000; background: none; border: 0; padding: 2px 5px 2px 0; margin-top: 6px; cursor: pointer; }
+  .m2-group { display: block; width: 100%; text-align: left; font: inherit; font-size: 14px; font-weight: 400; color: var(--m2-text); background: none; border: 0; padding: 2px 5px 2px 0; margin-top: 6px; cursor: pointer; }
   .m2-group:first-child { margin-top: 0; }
   .m2-group:focus { outline: none; }
   /* open / closed sign at the right end of a group name: chevrons. For filled
@@ -63,15 +83,15 @@ map index (index), search index (search) and name for the browser tab (name).
      is on; the name it was found by, when not the label, in grey */
   .m2-mol { font-size: 14px; padding: 2px 4px 0; margin-top: 6px; overflow-wrap: anywhere; }
   .m2-mol:first-child { margin-top: 0; }
-  .m2-mol .m2-why { color: #888; }
-  .m2-n { float: right; color: #888; font-size: 12px; margin-left: 6px; }
-  .m2-on .m2-n { color: #fff; }
+  .m2-mol .m2-why { color: var(--m2-faint); }
+  .m2-n { float: right; color: var(--m2-faint); font-size: 12px; margin-left: 6px; }
+  .m2-on .m2-n { color: var(--m2-on-accent); }
 
   #m2-title { font-size: 22px; margin: 20px 0 0; }
   /* the view spans the middle column. Its height reaches down to the download row, which stays in sight
      (set in the script), and its lower edge
      can be dragged down to the whole window without the header (user, 2026-10-16) */
-  #m2-view { position: relative; width: 100%; height: 504px; min-height: 300px; max-height: calc(100vh / var(--zoom, 1) - 70px); resize: vertical; overflow: hidden; box-sizing: border-box; border: 1px solid #ddd; border-radius: 4px; background: #fff; cursor: grab; touch-action: none; user-select: none; }
+  #m2-view { position: relative; width: 100%; height: 504px; min-height: 300px; max-height: calc(100vh / var(--zoom, 1) - 70px); resize: vertical; overflow: hidden; box-sizing: border-box; border: 1px solid var(--m2-frame); border-radius: var(--m2-radius); background: var(--m2-bg); cursor: grab; touch-action: none; user-select: none; }
   #m2-view.m2-drag { cursor: grabbing; }
   /* full screen: the map alone, the annotation over its right side */
   #m2-view:fullscreen { width: 100vw; height: 100vh !important; max-height: none; border: 0; border-radius: 0; resize: none; }
@@ -84,12 +104,12 @@ map index (index), search index (search) and name for the browser tab (name).
   #m2-view:focus, .m2-ctrl button:focus { outline: none; }
   #m2-img { position: absolute; left: 0; top: 0; max-width: none; pointer-events: none; }
   .m2-ctrl { position: absolute; top: 8px; right: 8px; display: flex; gap: 4px; align-items: center; }
-  .m2-ctrl button { font-size: 13px; min-width: 28px; padding: 2px 8px; color: #222; background: #fffffff0; border: 1px solid #bbb; border-radius: 4px; cursor: pointer; }
-  .m2-ctrl button:hover { border-color: #4183c4; color: #4183c4; } /* as all buttons: blue on hover */
+  .m2-ctrl button { font-size: 13px; min-width: 28px; padding: 2px 8px; color: var(--m2-text-soft); background: var(--m2-control-bg); border: 1px solid #bbb; border-radius: var(--m2-radius); cursor: pointer; }
+  .m2-ctrl button:hover { border-color: var(--m2-accent); color: var(--m2-accent); } /* as all buttons: blue on hover */
   #m2-out, #m2-in { box-sizing: border-box; width: 21px; height: 21px; min-width: 0; padding: 0; } /* square */
   /* one button for both modes: it shows the current one */
   #m2-mode { box-sizing: border-box; width: 44px; height: 21px; padding: 0; }
-  #m2-zoom { font-size: 12px; color: #666; min-width: 40px; text-align: right; margin-right: 4px; }
+  #m2-zoom { font-size: 12px; color: var(--m2-muted); min-width: 40px; text-align: right; margin-right: 4px; }
 
   #m2-downloads { margin: 10px 0 0; display: flex; flex-wrap: wrap; align-items: flex-start; }
   /* the buttons of the site: one colour for all, in the style of the Converter's grey button
@@ -97,41 +117,41 @@ map index (index), search index (search) and name for the browser tab (name).
      map in the list on hover, white text. Order by use:
      GraphML, CellDesigner, SBGN-ML, SBML, Images (PNG, SVG in a menu), Data (the annotation
      table), then Newt and MINERVA, all at the same spacing */
-  #m2-downloads > a, #m2-downloads summary { display: inline-block; font-size: 14px; line-height: 20px; padding: 4px 10px; margin: 4px 4px 0 0; color: #777; background: #fff; border: 1px solid #777; border-radius: 5px; text-decoration: none; cursor: pointer; }
-  #m2-downloads > a:hover, #m2-downloads summary:hover, #m2-downloads details[open] summary { background: #4183c4; border-color: #4183c4; color: #fff; }
+  #m2-downloads > a, #m2-downloads summary { display: inline-block; font-size: 14px; line-height: 20px; padding: 4px 10px; margin: 4px 4px 0 0; color: var(--m2-button); background: var(--m2-bg); border: 1px solid var(--m2-button); border-radius: var(--m2-radius-button); text-decoration: none; cursor: pointer; }
+  #m2-downloads > a:hover, #m2-downloads summary:hover, #m2-downloads details[open] summary { background: var(--m2-accent); border-color: var(--m2-accent); color: var(--m2-on-accent); }
   #m2-downloads details { display: inline-block; position: relative; }
   #m2-downloads summary { list-style: none; }
   #m2-downloads summary::-webkit-details-marker { display: none; }
   #m2-downloads .m2-caret { margin-left: 4px; font-size: 11px; }
-  #m2-downloads .m2-list { position: absolute; z-index: 5; left: 0; top: 34px; min-width: 110px; background: #fff; border: 1px solid #ccc; border-radius: 5px; box-shadow: 0 2px 8px rgba(0, 0, 0, .12); padding: 4px 0; }
+  #m2-downloads .m2-list { position: absolute; z-index: 5; left: 0; top: 34px; min-width: 110px; background: var(--m2-bg); border: 1px solid var(--m2-line); border-radius: var(--m2-radius-button); box-shadow: 0 2px 8px rgba(0, 0, 0, .12); padding: 4px 0; }
   #m2-downloads .m2-up .m2-list { top: auto; bottom: 30px; }
   /* the menu items in the font of the button (Images) */
-  #m2-downloads .m2-list a { display: block; font-size: 14px; line-height: 20px; padding: 4px 12px; color: #777; text-decoration: none; }
-  #m2-downloads .m2-list a:hover { background: #4183c4; color: #fff; }
+  #m2-downloads .m2-list a { display: block; font-size: 14px; line-height: 20px; padding: 4px 12px; color: var(--m2-button); text-decoration: none; }
+  #m2-downloads .m2-list a:hover { background: var(--m2-accent); color: var(--m2-on-accent); }
   /* the online viewers open another site: the usual external-link icon */
   #m2-downloads a.m2-ext svg { width: 13px; height: 13px; margin-left: 5px; vertical-align: -1px; }
   /* a file: the download icon (tray and arrow) after its name, as on the Converter page */
   #m2-downloads .m2-dl svg { width: 14px; height: 14px; margin-left: 5px; vertical-align: -2px; }
   /* images the current GraphML could not be drawn into (scripts/make_images.py): the Images
      button in red, no download; a click shows the reason under the row, as hovering does */
-  #m2-downloads > a.m2-bad { color: #c62828; border-color: #c62828; }
-  #m2-downloads > a.m2-bad:hover { background: #c62828; border-color: #c62828; color: #fff; }
-  #m2-imgnote { flex-basis: 100%; margin: 6px 0 0; font-size: 13px; color: #c62828; }
+  #m2-downloads > a.m2-bad { color: var(--m2-error); border-color: var(--m2-error); }
+  #m2-downloads > a.m2-bad:hover { background: var(--m2-error); border-color: var(--m2-error); color: var(--m2-on-accent); }
+  #m2-imgnote { flex-basis: 100%; margin: 6px 0 0; font-size: 13px; color: var(--m2-error); }
   #m2-text h2 { font-size: 18px; }
   #m2-text img { max-width: 100%; height: auto; }
   /* links on this page (text and annotation) in MINERVA's link blue, darker
      than the site's #4183c4 */
-  .m2 a { color: #1c47a9; }
+  .m2 a { color: var(--m2-link); }
   /* on hover buttons and cards get a darker edge, the map list a very light
      grey; links keep their colour */
-  .m2 a:hover, .m2 a:active { color: #1c47a9; }
+  .m2 a:hover, .m2 a:active { color: var(--m2-link); }
 
   /* annotation of the clicked protein or metabolite: in the right column, or
      on narrower windows over the right side of the map */
   /* a map pin, as in MINERVA, with its tip on the clicked node; it keeps its size at every zoom */
   #m2-pin { position: absolute; left: 0; top: 0; width: 24px; height: 32px; margin: -32px 0 0 -12px; pointer-events: none; display: none; filter: drop-shadow(0 1px 1px #0005); }
-  .m2-info { grid-column: 3; font-size: 14px; line-height: 1.45; color: #222; max-height: calc(100vh / var(--zoom, 1) - 140px); overflow-y: auto; overflow-wrap: anywhere; }
-  .m2-info.m2-over { position: absolute; z-index: 2; top: 36px; right: 8px; bottom: 8px; width: min(260px, 70%); max-height: none; padding: 10px 12px; background: #fff; border: 1px solid #ccc; border-radius: 4px; box-shadow: 0 2px 8px #0002; cursor: auto; user-select: text; }
+  .m2-info { grid-column: 3; font-size: 14px; line-height: 1.45; color: var(--m2-text-soft); max-height: calc(100vh / var(--zoom, 1) - 140px); overflow-y: auto; overflow-wrap: anywhere; }
+  .m2-info.m2-over { position: absolute; z-index: 2; top: 36px; right: 8px; bottom: 8px; width: min(260px, 70%); max-height: none; padding: 10px 12px; background: var(--m2-bg); border: 1px solid var(--m2-line); border-radius: var(--m2-radius); box-shadow: 0 2px 8px #0002; cursor: auto; user-select: text; }
   .m2-info:empty { display: none; }
   .m2-info-head { display: flex; align-items: baseline; gap: 6px; margin-bottom: 8px; }
   .m2-info-head h3 { font-size: 16px; font-weight: 400; margin: 0; flex: 1; }
@@ -139,18 +159,18 @@ map index (index), search index (search) and name for the browser tab (name).
   .m2-info-close { align-self: center; display: flex; border: 0; background: none; padding: 0 2px; cursor: pointer; }
   .m2-info-close svg { width: 12px; height: 12px; stroke: #b4b4b4; stroke-width: 1.5; stroke-linecap: round; fill: none; }
   .m2-info p { margin: 0 0 8px; }
-  .m2-info .m2-k { color: #666; }
+  .m2-info .m2-k { color: var(--m2-muted); }
   .m2-info h4 { font-size: 14px; font-weight: 400; margin: 12px 0 4px; }
   .m2-info ul { list-style: none; margin: 0; padding: 0; }
   /* each text of a record (full name, other names, location, formula, function, definition):
      its name in the grey of the other labels, no colon, and a square + / − right after it that
      opens or closes it; closed at first (user, 2026-10-17: variant 3 of the former test page
      /atlas/folds/, in git history, with the square of variant 7) */
-  .m2-fold { display: flex; align-items: center; gap: 6px; width: fit-content; text-align: left; font: inherit; color: #666; background: none; border: 0; padding: 0; margin: 0 0 8px; cursor: pointer; }
+  .m2-fold { display: flex; align-items: center; gap: 6px; width: fit-content; text-align: left; font: inherit; color: var(--m2-muted); background: none; border: 0; padding: 0; margin: 0 0 8px; cursor: pointer; }
   .m2-fold:not(.m2-shut) { margin-bottom: 2px; }
   .m2-fold:focus { outline: none; }
-  .m2-sq { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 3px; background: #fff; }
-  .m2-sq svg { width: 10px; height: 10px; stroke: #666; stroke-width: 1.5; stroke-linecap: round; }
+  .m2-sq { flex: none; display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; box-sizing: border-box; border: 1px solid var(--m2-line); border-radius: 3px; background: var(--m2-bg); }
+  .m2-sq svg { width: 10px; height: 10px; stroke: var(--m2-muted); stroke-width: 1.5; stroke-linecap: round; }
   .m2-sq .m2-bar { display: none; }
   .m2-fold.m2-shut .m2-bar { display: inline; }
   .m2-fold.m2-shut + p { display: none; }
@@ -159,19 +179,19 @@ map index (index), search index (search) and name for the browser tab (name).
   .m2-info .m2-role { display: inline-block; font-size: 11px; line-height: 15px; padding: 0 4px; border: 1px solid; border-radius: 3px; margin-right: 4px; }
   .m2-info .m2-role-context { color: #b03a2e; }
   .m2-info .m2-role-step { color: #2e6db0; }
-  .m2-info .m2-note { color: #666; font-size: 0.9em; }
+  .m2-info .m2-note { color: var(--m2-muted); font-size: 0.9em; }
   .m2-info .m2-refs li { margin: 0 0 8px; }
   /* a protein family: one card per member, or one member's record under a
      row of member buttons (the undo button returns to the cards) */
-  .m2-card { display: block; box-sizing: border-box; width: 100%; text-align: left; font: inherit; color: inherit; background: #fff; border: 1px solid #ccc; border-radius: 6px; padding: 6px 8px; margin: 0 0 6px; cursor: pointer; }
+  .m2-card { display: block; box-sizing: border-box; width: 100%; text-align: left; font: inherit; color: inherit; background: var(--m2-bg); border: 1px solid var(--m2-line); border-radius: 6px; padding: 6px 8px; margin: 0 0 6px; cursor: pointer; }
   .m2-card:hover { border-color: #999; }
   .m2-chips { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 10px; }
-  .m2-chip { font: inherit; font-size: 14px; line-height: 20px; padding: 3px 7px 1px; color: #222; background: #fff; border: 1px solid #ccc; border-radius: 4px; cursor: pointer; }
-  .m2-chip:hover { border-color: #4183c4; color: #4183c4; } /* as the download buttons */
+  .m2-chip { font: inherit; font-size: 14px; line-height: 20px; padding: 3px 7px 1px; color: var(--m2-text-soft); background: var(--m2-bg); border: 1px solid var(--m2-line); border-radius: var(--m2-radius); cursor: pointer; }
+  .m2-chip:hover { border-color: var(--m2-accent); color: var(--m2-accent); } /* as the download buttons */
   /* back to the cards: a square button with an undo sign, in thin lines as the close cross */
   .m2-chip.m2-all { box-sizing: border-box; width: 26px; height: 26px; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
   .m2-all svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
-  .m2-chip.m2-on { background: #4183c4; border-color: #4183c4; color: #fff; } /* as the chosen map in the list */
+  .m2-chip.m2-on { background: var(--m2-accent); border-color: var(--m2-accent); color: var(--m2-on-accent); } /* as the chosen map in the list */
   .m2-chip:focus, .m2-card:focus { outline: none; }
 </style>
 
@@ -183,7 +203,7 @@ map index (index), search index (search) and name for the browser tab (name).
 <div class="m2-main">
 <div id="m2-view" tabindex="0">
 <img id="m2-img" alt="">
-<svg id="m2-pin" viewBox="0 0 24 32" aria-hidden="true"><path d="M12 31C12 31 2 18.5 2 11.5a10 10 0 0 1 20 0C22 18.5 12 31 12 31z" fill="#4183c4"/><circle cx="12" cy="11.5" r="3.6" fill="#fff"/></svg>
+<svg id="m2-pin" viewBox="0 0 24 32" aria-hidden="true"><path d="M12 31C12 31 2 18.5 2 11.5a10 10 0 0 1 20 0C22 18.5 12 31 12 31z" style="fill: var(--m2-accent)"/><circle cx="12" cy="11.5" r="3.6" fill="#fff"/></svg>
 <div class="m2-ctrl">
 <span id="m2-zoom"></span>
 <button type="button" id="m2-out" title="Zoom out">&minus;</button>
