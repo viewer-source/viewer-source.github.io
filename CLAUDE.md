@@ -10,7 +10,11 @@ says "the workbench", "the converter's repository", "a private repository".
   site shows them (the next Metabolism Regulation version, for one). Development, `mode="development"` on the include,
   for a copy where maps are being developed: the whole page for the map with no site header (as the osteoarthritis
   working site), and groups and the maps in a group put in another order by dragging, kept in the reader's browser.
-  The demo runs in development mode. A site gets it only when the user says.
+  With `groups=site.data.groups` (a list of `name` and `closed: true`) development mode also shows a listed group
+  with no map yet as an empty group, and starts a group marked closed as closed (as the expo atlas). The presentation
+  mode has none of this. The demo runs in development mode.
+- The sites take a new version of the viewer only when the user asks (user, 2026-11-08: when it is time to make it
+  available), and then in presentation mode; each is checked live after its copy is updated.
 - The renderers: `renderers/yrender/` (yEd GraphML, drawn as yEd draws it) and `renderers/converter/cdrender.py`
   (CellDesigner, drawn as CellDesigner draws it, with the converter's `mapconv/`). Where each was copied from:
   `VERSION`.

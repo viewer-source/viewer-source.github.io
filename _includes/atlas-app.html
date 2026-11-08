@@ -78,6 +78,8 @@ kept in that browser.
   /* a group or a map dragged into another place (as on the expo atlas, 2026-10-28): faint while it moves, a line
      where it goes */
   .m2-moving { opacity: 0.4; }
+  /* development mode: a group with no map yet */
+  .m2-empty { font-size: 14px; color: var(--m2-faint); padding: 2px 4px; margin-left: 14px; }
   .m2-drop { box-shadow: 0 -2px 0 var(--m2-accent); }
   .m2-drop-after { box-shadow: 0 2px 0 var(--m2-accent); }
   .m2-group:focus { outline: none; }
@@ -830,6 +832,24 @@ kept in that browser.
   var closedKey = 'atlas-closed:' + location.pathname;
   try { closed = JSON.parse(localStorage.getItem(closedKey) || '{}') || {}; } catch (e) { closed = {}; }
   function saveClosed() { try { localStorage.setItem(closedKey, JSON.stringify(closed)); } catch (e) {} }
+  // development mode (include ... mode="development", user 2026-11-08): what the presentation mode never has
+  var DEV = {% if include.mode == "development" %}true{% else %}false{% endif %};
+  // The site's groups, in development mode only (include ... groups=site.data.groups): a list of {name, closed} in
+  // the site's order, as the expo atlas's (2026-10-28). A group listed with no map yet shows as an empty group, so it
+  // is there to be filled; closed: true starts it closed until the reader opens it. Groups not listed follow, in the
+  // order of the maps.
+  var GROUPS = DEV ? ({{ include.groups | jsonify }} || []) : [];
+  GROUPS.forEach(function (g) { if (g.closed && !(g.name in closed)) closed[g.name] = true; });
+  function siteGroups(list) {
+    var names = GROUPS.map(function (g) { return g.name; });
+    list.forEach(function (m) { if (names.indexOf(m.group || '') < 0) names.push(m.group || ''); });
+    return names;
+  }
+  function groupNames() {  // every group in the reader's order, empty ones included
+    var site = siteGroups(maps), known = order.groups || [];
+    var rank = function (g) { var k = known.indexOf(g); return k < 0 ? 1e6 + site.indexOf(g) : k; };
+    return site.slice().sort(function (a, b) { return rank(a) - rank(b); });
+  }
 
   // ---------- the reader's order ----------
   // Groups and the maps inside a group are put in another order by dragging them in the list (as the expo atlas's
@@ -840,8 +860,7 @@ kept in that browser.
   try { order = JSON.parse(localStorage.getItem(orderKey) || '{}') || {}; } catch (e) { order = {}; }
   function saveOrder() { try { localStorage.setItem(orderKey, JSON.stringify(order)); } catch (e) {} }
   function arrange(list) {  // the site's list in the reader's order
-    var site = list.slice(), groups = [];
-    site.forEach(function (m) { if (groups.indexOf(m.group || '') < 0) groups.push(m.group || ''); });
+    var site = list.slice(), groups = siteGroups(list);
     var rank = function (known, x, i) { var k = (known || []).indexOf(x); return k < 0 ? 1e6 + i : k; };
     return site.map(function (m, i) {
       var g = m.group || '';
@@ -851,7 +870,7 @@ kept in that browser.
   var moving = null; // {group: name} or {map: id, group: name} while dragging
   // only in the development mode (include ... mode="development"): a site's viewer is a fixed list for reading the
   // maps, the arranging is for a copy where maps are being developed (user, 2026-11-08)
-  var ARRANGE = {% if include.mode == "development" %}true{% else %}false{% endif %};
+  var ARRANGE = DEV;
   if (!ARRANGE) order = {};
   function movable(b, what) {
     if (!ARRANGE || document.getElementById('m2-search').value.trim()) return;
@@ -903,8 +922,7 @@ kept in that browser.
         ids.splice(before ? ids.indexOf(before) : ids.length, 0, moving.map);
         order.maps = order.maps || {}; order.maps[moving.group] = ids;
       } else {
-        var names = [];
-        maps.forEach(function (m) { if (names.indexOf(m.group || '') < 0) names.push(m.group || ''); });
+        var names = groupNames();
         var at = d.row && d.row.getAttribute('data-group');
         if (at === moving.group) return;
         names.splice(names.indexOf(moving.group), 1);
@@ -995,21 +1013,36 @@ kept in that browser.
     var shown = maps.filter(function (m) { return !q || matchMap(q, m); });
     var mols = q ? findMols(q) : [];
     var group = null;
+    function heading(name, shut) {
+      var g = el('button', 'm2-group' + (shut ? ' m2-shut' : ''), name);
+      g.type = 'button';
+      g.setAttribute('data-group', name);
+      movable(g, { group: name });
+      g.addEventListener('click', function () {
+        closed[name] = !closed[name];
+        saveClosed();
+        buildList(document.getElementById('m2-search').value);
+      });
+      box.appendChild(g);
+    }
+    // development mode: the site's groups with no map yet, in their places (not while searching)
+    var names = DEV && !q ? groupNames() : [], ni = 0;
+    function emptyGroups(upTo) {  // the empty groups before upTo (undefined: all left)
+      for (; ni < names.length && names[ni] !== upTo; ni++) {
+        var name = names[ni];
+        if (!name || maps.some(function (m) { return (m.group || '') === name; })) continue;
+        heading(name, closed[name]);
+        if (!closed[name]) box.appendChild(el('div', 'm2-empty', 'No maps yet'));
+      }
+      ni++;
+    }
     shown.forEach(function (m) {
       // while searching every group with a match is shown open
       var shut = !q && closed[m.group];
       if (m.group && m.group !== group) {
+        emptyGroups(m.group);
         group = m.group;
-        var g = el('button', 'm2-group' + (shut ? ' m2-shut' : ''), group);
-        g.type = 'button';
-        g.setAttribute('data-group', group);
-        movable(g, { group: group });
-        g.addEventListener('click', (function (name) { return function () {
-          closed[name] = !closed[name];
-          saveClosed();
-          buildList(document.getElementById('m2-search').value);
-        }; })(group));
-        box.appendChild(g);
+        heading(group, shut);
       }
       if (shut) return;
       var b = el('button', 'm2-item m2-map' + (m.group ? ' m2-sub' : '') + (m.tag === 'draft-ext' ? ' m2-ext' : '') + (m === (chosen || current) ? ' m2-on' : ''));
@@ -1027,6 +1060,7 @@ kept in that browser.
       b.addEventListener('click', function () { go(m.id); });
       box.appendChild(b);
     });
+    emptyGroups();
     mols.forEach(function (g) {
       var t = el('div', 'm2-mol', g.label);
       if (g.name !== g.label) t.appendChild(el('span', 'm2-why', ' ' + g.name));
@@ -1153,7 +1187,9 @@ kept in that browser.
     route();
   }
   function route(e) {
-    var m = byId[location.hash.slice(1)] || maps[0];
+    // no map named: the first map; in development mode the first map of an open group, so a group closed at first
+    // stays closed
+    var m = byId[location.hash.slice(1)] || (DEV && maps.filter(function (x) { return !closed[x.group]; })[0]) || maps[0];
     if (!m) return;
     if (e && e.type === 'hashchange' && m === chosen) return; // already routed by go() or an arrow key
     if (!pending) lastHit = null; // chosen from the map list, not a search result
