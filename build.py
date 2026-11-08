@@ -6,14 +6,15 @@
 #   atlas-data/<id>.json: {"nodes": [...]}, each clickable node's box in SVG pixels, label, class and properties
 #     ([name, value] pairs), a process with references also its reaction (in, out, by) and references;
 #   atlas-data/search.json: the search index of all maps;
-#   _maps/<id>.md: the map's entry (front matter for the list and the downloads row, then its text).
+#   _maps/<id>.md: the map's entry (front matter for the list and the downloads row, then its text); its v is a hash of
+#     the picture, the click data and the text, so an open page fetches a map again only when it changed.
 # maps/<id>.md gives the entry: front matter title, group, order (and topic), its body the text under the map.
 # A node is clickable when it has annotation, a process when it has references (as on the Metabolism Regulation
 # Atlas). The panel's names, function, location and cross-references come from UniProt, HGNC and ChEBI, and the
 # citations from PubMed, fetched once per identifier and cached (databases.py); a node whose identifier field holds
 # several IDs (a family drawn as one node in a CellDesigner file) shows only what the file holds.
 # python3 build.py --refresh fetches every cached entry again. Needs lxml.
-import collections, glob, json, os, re, shutil, sys
+import collections, glob, hashlib, json, os, re, shutil, sys
 from urllib.parse import unquote
 from lxml import etree
 
@@ -231,15 +232,16 @@ def main():
         svg = os.path.join(ROOT, 'downloads', mid + '.svg')
         nodes = (graphml if ext == '.graphml' else celldesigner)(src, svg)
         shutil.copy(src, os.path.join(ROOT, 'downloads', mid + ext))
-        json.dump({'nodes': nodes}, open(os.path.join(ROOT, 'atlas-data', mid + '.json'), 'w', encoding='utf-8'),
-                  ensure_ascii=False, separators=(',', ':'))
+        ann = os.path.join(ROOT, 'atlas-data', mid + '.json')
+        json.dump({'nodes': nodes}, open(ann, 'w', encoding='utf-8'), ensure_ascii=False, separators=(',', ':'))
         search += search_entries(mid, nodes)
         w, h = (int(float(v)) for v in re.search(r'<svg[^>]* width="([\d.]+)" height="([\d.]+)"', open(svg).read()).groups())
         meta, body = entry(mid)
+        v = hashlib.sha1(open(svg, 'rb').read() + open(ann, 'rb').read() + body.encode()).hexdigest()[:10]
         fm = {'title': meta.get('title', mid), 'topic': meta.get('topic', meta.get('title', mid)), 'tab': '', 'page': '',
               'group': meta.get('group', ''), 'order': int(meta.get('order', 0)), 'kind': 'map', 'draft': False, 'tag': '',
               'image': '/downloads/%s.svg' % mid, 'width': w, 'height': h, 'scale': 1,
-              'annotation': '/atlas-data/%s.json' % mid, 'image_error': '',
+              'annotation': '/atlas-data/%s.json' % mid, 'image_error': '', 'v': v,
               'downloads': [{'label': 'GraphML' if ext == '.graphml' else 'CellDesigner', 'url': '/downloads/%s%s' % (mid, ext)},
                             {'label': 'SVG', 'url': '/downloads/%s.svg' % mid}]}
         with open(os.path.join(ROOT, '_maps', mid + '.md'), 'w', encoding='utf-8') as f:

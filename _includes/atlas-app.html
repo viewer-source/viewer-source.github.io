@@ -229,7 +229,63 @@ map index (index), search index (search) and name for the browser tab (name).
   // button and remembered by the browser where it can
   var mode = 'fit';
   try { if (localStorage.getItem('atlas-view') === 'read') mode = 'read'; } catch (e) {}
-  var maps = [], byId = {}, topics = [], current = null, textCache = {};
+  var maps = [], byId = {}, topics = [], current = null;
+  // a map's files carry its content version v (build.py), so a browser fetches a map again only when it changed
+  function ver(m) { return m.v ? '?v=' + m.v : BUILD; }
+
+  // ---------- loading (as on the logo board) ----------
+  // Every file goes through one queue, three at a time: what the reader opens goes to the front, the rest of the
+  // maps load quietly behind it, nearest in the list first. A picture is decoded before it is shown.
+  var got = {}, queue = [], busy = 0;
+  function picture(url) {
+    return new Promise(function (res, rej) {
+      var i = new Image();
+      i.onload = function () { (i.decode ? i.decode() : Promise.resolve()).catch(function () {}).then(function () { res(i); }); };
+      i.onerror = rej;
+      i.src = url;
+    });
+  }
+  function get(url, low) {  // a promise of the decoded image (.svg, .png) or the parsed JSON, null if it failed
+    var g = got[url];
+    if (g) {
+      var at = queue.indexOf(g);
+      if (!low && at > 0) { queue.splice(at, 1); queue.unshift(g); }  // wanted now: out of the background to the front
+      return g.p;
+    }
+    g = got[url] = {};
+    g.p = new Promise(function (res) {
+      g.run = function () {
+        (/\.(svg|png)\?/.test(url) ? picture(url) : fetch(url).then(function (r) { if (!r.ok) throw r.status; return r.json(); }))
+          .then(res, function () { delete got[url]; res(null); });
+      };
+    });
+    if (low) queue.push(g); else queue.unshift(g);
+    pump();
+    return g.p;
+  }
+  function pump() {
+    while (busy < 3 && queue.length) {
+      var g = queue.shift();
+      busy++;
+      g.run();
+      g.p.then(function () { busy--; pump(); });
+    }
+  }
+  function textOf(m) {  // the map whose text shows under m: its own, or the first map of its topic that has one
+    if (m.hasText) return m;
+    var t = topics.filter(function (x) { return x.name === m.topic; })[0];
+    return t && t.maps.filter(function (o) { return o.hasText; })[0];
+  }
+  function files(m, low) {
+    var src = textOf(m);
+    return Promise.all([get(m.image + ver(m), low), m.annotation ? get(m.annotation + ver(m), low) : null,
+      src ? get(src.data + ver(src), low) : null]);
+  }
+  function prefetch() {
+    var here = Math.max(0, maps.indexOf(current));
+    maps.slice().sort(function (a, b) { return Math.abs(maps.indexOf(a) - here) - Math.abs(maps.indexOf(b) - here); })
+      .forEach(function (m) { files(m, true); });
+  }
   var view = document.getElementById('m2-view'), img = document.getElementById('m2-img');
   var z = STANDARD, tx = 0, ty = 0;
   var moved = false; // zoomed or panned away from the mode's view
@@ -471,7 +527,7 @@ map index (index), search index (search) and name for the browser tab (name).
   // in image pixels and its properties. A click on the map shows the
   // smallest box under the pointer (a protein rather than its complex).
   var info = document.getElementById('m2-info'), pin = document.getElementById('m2-pin');
-  var annCache = {}, nodes = null, sel = null, member = -1; // member: the family member shown, -1 for the cards
+  var nodes = null, sel = null, member = -1; // member: the family member shown, -1 for the cards
   var KIND = { Macromolecule: 'Protein', SimpleChemical: 'Simple molecule', NucleicAcidFeature: 'Gene', Complex: 'Complex',
     Process: 'Process', OmittedProcess: 'Omitted process', UncertainProcess: 'Uncertain process', Association: 'Association', Dissociation: 'Dissociation' };
   var LINK = {
@@ -501,8 +557,7 @@ map index (index), search index (search) and name for the browser tab (name).
     nodes = null; sel = null; renderInfo(); drawPin();
     if (!m.annotation) return;
     var done = function (list) { if (current === m) { nodes = list; renderInfo(); focusNode(); } };
-    if (annCache[m.id]) return done(annCache[m.id]);
-    fetch(m.annotation + BUILD).then(function (r) { return r.json(); }).then(function (d) { annCache[m.id] = d.nodes; done(d.nodes); });
+    get(m.annotation + ver(m)).then(function (d) { if (d) done(d.nodes); });
   }
   function pick(vx, vy) {
     if (!nodes) return;
@@ -734,7 +789,7 @@ map index (index), search index (search) and name for the browser tab (name).
   function loadIndex() {
     if (index) return;
     index = [];
-    fetch('{{ include.search | relative_url }}' + BUILD).then(function (r) { return r.json(); }).then(function (d) {
+    fetch('{{ include.search | relative_url }}' + listVer()).then(function (r) { return r.json(); }).then(function (d) {
       index = d;
       buildList(document.getElementById('m2-search').value);
     });
@@ -881,17 +936,28 @@ map index (index), search index (search) and name for the browser tab (name).
   });
 
   // ---------- one map ----------
-  function show(m) {
+  // The map on screen stays until the next one's picture, click data and text are loaded, then all of it is swapped
+  // in at once (at most 1.5 s, then it shows what it has), so a map is never seen loading.
+  // keep: the same map in a new version, at the reader's zoom and place
+  var ticket = 0;
+  function show(m, keep) {
+    var t = ++ticket;
+    Promise.race([files(m), new Promise(function (r) { setTimeout(r, 1500); })]).then(function () {
+      if (t === ticket) put(m, keep);
+    });
+  }
+  function put(m, keep) {
     current = m;
     document.getElementById('m2-title').textContent = m.title;
     document.title = m.title + ' – {{ include.name }}';
-    var topic = topics.filter(function (t) { return t.name === m.topic; })[0];
-    img.removeAttribute('src');
-    img.alt = m.title;
-    img.src = m.image + BUILD; // a new build fetches the image again, not the cached one
-    img.width = m.width;
-    img.height = m.height;
-    if (mode === 'fit') fit(); else standard();
+    img.style.visibility = 'hidden';  // only if the new picture is not there yet
+    get(m.image + ver(m)).then(function (pic) {
+      if (current !== m || !pic) return;
+      if (pic !== img) { img.removeAttribute('id'); pic.id = 'm2-img'; pic.alt = m.title; img.replaceWith(pic); img = pic; }
+      img.style.visibility = '';
+      draw();
+    });
+    if (keep) draw(); else if (mode === 'fit') fit(); else standard();
     loadNodes(m); // after the view, so that a search result can centre its node
     var dl = document.getElementById('m2-downloads');
     dl.innerHTML = '';
@@ -934,17 +1000,10 @@ map index (index), search index (search) and name for the browser tab (name).
       a.insertAdjacentHTML('beforeend', EXT_ICON);
       dl.appendChild(a);
     });
-    // the text: this map's own, or the first map of its topic that has one
-    var source = m.hasText ? m : topic.maps.filter(function (o) { return o.hasText; })[0];
-    var box = document.getElementById('m2-text');
+    var source = textOf(m), box = document.getElementById('m2-text');
     box.innerHTML = '';
-    if (!source) return;
-    var put = function (html) { if (current === m) box.innerHTML = html; };
-    if (textCache[source.id]) return put(textCache[source.id]);
-    fetch(source.data + BUILD).then(function (r) { return r.json(); }).then(function (d) {
-      textCache[source.id] = d.html;
-      put(d.html);
-    });
+    if (source) get(source.data + ver(source)).then(function (d) { if (current === m && d) box.innerHTML = d.html; });
+    prefetch();
   }
   function go(id) {
     if (location.hash.slice(1) !== id) location.hash = id;
@@ -960,16 +1019,46 @@ map index (index), search index (search) and name for the browser tab (name).
   }
   window.addEventListener('hashchange', route);
 
-  fetch('{{ include.index | relative_url }}' + BUILD).then(function (r) { return r.json(); }).then(function (list) {
-    maps = list;
-    placeInfo();
+  function setMaps(list) {
+    maps = list; byId = {}; topics = [];
     maps.forEach(function (m) {
       byId[m.id] = m;
       var t = topics.filter(function (x) { return x.name === m.topic; })[0];
       if (!t) topics.push(t = { name: m.topic, maps: [] });
       t.maps.push(m);
     });
-    route();
-  });
+  }
+
+  // ---------- new maps without a reload ----------
+  // The list is asked for again every 30 s while the page is in view and whenever it comes back into view
+  // ("no-cache": the browser checks with the server, a short "not modified" when nothing changed). A map added since
+  // the page opened appears in the list and loads in the background; the map on screen, if it changed, is swapped
+  // for its new version in place (user, 2026-11-08: "when new map/module is added i do not see it until renew the page")
+  var listText = '';
+  function listVer() {  // the search index's version: a hash of the list, which holds every map's v
+    for (var h = 0, i = 0; i < listText.length; i++) h = (h * 31 + listText.charCodeAt(i)) | 0;
+    return '?v=' + (h >>> 0).toString(36);
+  }
+  function check() {
+    if (document.visibilityState !== 'visible') return;
+    fetch('{{ include.index | relative_url }}', { cache: 'no-cache' }).then(function (r) { return r.ok ? r.text() : null; })
+      .then(function (text) {
+        if (!text || text === listText) return;
+        var first = !listText;
+        listText = text;
+        var old = current;
+        setMaps(JSON.parse(text));
+        if (first) { placeInfo(); return route(); }
+        if (index) { index = null; loadIndex(); }
+        var m = old && byId[old.id];
+        if (m && ver(m) !== ver(old)) show(m, true);
+        else if (m) current = m;
+        buildList(document.getElementById('m2-search').value);
+        prefetch();
+      }).catch(function () {});
+  }
+  check();
+  setInterval(check, 30000);
+  document.addEventListener('visibilitychange', check);
 })();
 </script>
