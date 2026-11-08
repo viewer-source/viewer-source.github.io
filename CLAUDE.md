@@ -19,7 +19,9 @@ says "the workbench", "the converter's repository", "a private repository".
   available), and then in presentation mode; each is checked live after its copy is updated.
 - The separator between the list and the map (user, 2026-11-09, as in Reactome): dragged sideways it sets the list's
   width, down to out of sight (a click brings it back, a double click gives the usual 240 px), kept in the reader's
-  browser; `--m2-split` is the gap it sits in. Not on narrow screens, where the list is above the map.
+  browser; `--m2-split` is the gap it sits in. Not on narrow screens, where the list is above the map. The separator under the
+  map window (in place of the corner grip, user 2026-11-09) sets its height the same way, `--m2-split-h` its gap. Both
+  show three dots in the accent colour, no line.
 - The renderers: `renderers/yrender/` (yEd GraphML, drawn as yEd draws it) and `renderers/converter/cdrender.py`
   (CellDesigner, drawn as CellDesigner draws it, with the converter's `mapconv/`). Where each was copied from:
   `VERSION`.

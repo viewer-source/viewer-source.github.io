@@ -35,6 +35,7 @@ kept in that browser.
     --m2-radius: 4px;            /* corners of the list items, map window, search, panel */
     --m2-radius-button: 5px;     /* corners of the download buttons and menu */
     --m2-split: 32px;            /* the gap between the list and the map: its separator can be dragged */
+    --m2-split-h: 14px;          /* the gap under the map window, down to the download buttons: its separator too */
     --m2-below-view: 56px;       /* from the map window's lower edge to the bottom of the browser window: the download row and the room under it */
   }
   /* as on the Colours page: the list on the left, the map and its text in
@@ -52,10 +53,16 @@ kept in that browser.
      them can be dragged sideways, the list to any width or out of sight; a double click gives the usual width back.
      The width is kept in the reader's browser. A grip of three dots in the middle, a line on hover. */
   #m2-split { position: absolute; top: 0; left: calc(-1 * var(--m2-split)); width: var(--m2-split); height: 100%; cursor: col-resize; touch-action: none; z-index: 1; }
-  #m2-split::before { content: ''; position: absolute; top: 0; bottom: 0; left: 50%; width: 2px; margin-left: -1px; background: var(--m2-accent); opacity: 0; transition: opacity .15s; }
-  #m2-split:hover::before, #m2-split.m2-moving-split::before { opacity: .5; }
   #m2-split::after { content: ''; position: absolute; top: 50%; left: 50%; width: 4px; height: 20px; margin: -10px 0 0 -2px;
-    background: radial-gradient(circle, var(--m2-faint) 1.5px, transparent 2px) center / 4px 8px repeat-y; }
+    background: radial-gradient(circle, var(--m2-accent) 1.5px, transparent 2px) center / 4px 8px repeat-y; }
+  /* the separator under the map window: dragged up or down it sets the map window's height, a double click gives the
+     height the page gives it; kept in the reader's browser. Three dots across the middle of the gap */
+  #m2-split-h { position: relative; height: 0; z-index: 1; }
+  #m2-split-h > div { position: absolute; left: 0; right: 0; top: 0; height: var(--m2-split-h); cursor: row-resize; touch-action: none; }
+  #m2-split-h > div::after { content: ''; position: absolute; top: 50%; left: 50%; width: 20px; height: 4px; margin: -2px 0 0 -10px;
+    background: radial-gradient(circle, var(--m2-accent) 1.5px, transparent 2px) center / 8px 4px repeat-x; }
+  #m2-view:fullscreen + #m2-split-h, #m2-view:-webkit-full-screen + #m2-split-h { display: none; }
+  body.m2-splitting-h, body.m2-splitting-h * { cursor: row-resize !important; user-select: none; }
   .m2-list-shut .m2-nav { display: none; }
   body.m2-splitting, body.m2-splitting * { cursor: col-resize !important; user-select: none; }
   #m2-list { max-height: calc(100vh / var(--zoom, 1) - 180px); overflow-y: auto; }
@@ -534,9 +541,13 @@ kept in that browser.
   window.addEventListener('resize', draw);
   // the view's height: from its top to the bottom of the window, less the download row, so the map
   // takes all the room the page leaves and the download row stays in sight under it whatever the
-  // header above (2026-11-06). No grip to change it (user, 2026-11-09: never used, and no accidental changes)
+  // header above (2026-11-06). The separator under it (user, 2026-11-09, in place of the grip in its corner) sets
+  // another height, kept in this browser; a double click on it gives the page's height back
   var autoH = null; // the room under it: the setting --m2-below-view (56 px), read each time so a style can change it
+  var heightKey = 'atlas-view-height:' + location.pathname, userH = null;
+  try { userH = parseFloat(localStorage.getItem(heightKey)) || null; } catch (e) {}
   function viewHeight() {
+    if (userH) { view.style.height = Math.round(Math.max(300, Math.min(userH, window.innerHeight / pz() - 70))) + 'px'; return; }
     var ROW = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--m2-below-view')) || 56;
     var top = (view.getBoundingClientRect().top + window.scrollY) / pz();
     autoH = Math.round(Math.max(300, window.innerHeight / pz() - top - ROW)) + 'px';
@@ -544,6 +555,31 @@ kept in that browser.
   }
   viewHeight();
   window.addEventListener('resize', viewHeight);
+  (function () {
+    var hs = document.createElement('div'), grip = document.createElement('div'), drag = null;
+    hs.id = 'm2-split-h'; hs.appendChild(grip);
+    grip.title = 'Drag to change the height of the map window; double-click for the usual height';
+    view.parentNode.insertBefore(hs, view.nextSibling);
+    grip.addEventListener('pointerdown', function (e) {
+      if (e.button !== 0) return;
+      e.preventDefault(); grip.setPointerCapture(e.pointerId);
+      drag = { y: e.clientY, h: view.getBoundingClientRect().height / pz(), moved: false };
+    });
+    grip.addEventListener('pointermove', function (e) {
+      if (!drag) return;
+      var dy = (e.clientY - drag.y) / pz();
+      if (!drag.moved && Math.abs(dy) < 3) return;
+      if (!drag.moved) { drag.moved = true; document.body.classList.add('m2-splitting-h'); }
+      userH = drag.h + dy; viewHeight();
+    });
+    function end() {
+      if (!drag) return;
+      if (drag.moved) { userH = view.getBoundingClientRect().height / pz(); try { localStorage.setItem(heightKey, Math.round(userH)); } catch (e) {} }
+      drag = null; document.body.classList.remove('m2-splitting-h');
+    }
+    grip.addEventListener('pointerup', end); grip.addEventListener('pointercancel', end);
+    grip.addEventListener('dblclick', function () { userH = null; try { localStorage.removeItem(heightKey); } catch (e) {} viewHeight(); });
+  })();
   // the list ends where the download row ends, whatever the map window's height (set by the page)
   // and however many rows the buttons take (2026-11-08: it kept a fixed height when the map window was made
   // to reach the download row, and stopped short of the buttons). Above the map on narrow screens the CSS decides.
