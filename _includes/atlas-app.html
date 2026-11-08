@@ -110,13 +110,12 @@ kept in that browser.
 
   #m2-title { font-size: 22px; margin: 20px 0 0; }
   /* the view spans the middle column. Its height reaches down to the download row, which stays in sight
-     (set in the script), and its lower edge
-     can be dragged down to the whole window without the header (user, 2026-10-16) */
-  #m2-view { position: relative; width: 100%; height: 504px; min-height: 300px; max-height: calc(100vh / var(--zoom, 1) - 70px); resize: vertical; overflow: hidden; box-sizing: border-box; border: 1px solid var(--m2-frame); border-radius: var(--m2-radius); background: var(--m2-bg); cursor: grab; touch-action: none; user-select: none; }
+     (set in the script); no grip in its corner (user, 2026-11-09) */
+  #m2-view { position: relative; width: 100%; height: 504px; min-height: 300px; max-height: calc(100vh / var(--zoom, 1) - 70px); overflow: hidden; box-sizing: border-box; border: 1px solid var(--m2-frame); border-radius: var(--m2-radius); background: var(--m2-bg); cursor: grab; touch-action: none; user-select: none; }
   #m2-view.m2-drag { cursor: grabbing; }
   /* full screen: the map alone, the annotation over its right side */
-  #m2-view:fullscreen { width: 100vw; height: 100vh !important; max-height: none; border: 0; border-radius: 0; resize: none; }
-  #m2-view:-webkit-full-screen { width: 100vw; height: 100vh !important; max-height: none; border: 0; border-radius: 0; resize: none; }
+  #m2-view:fullscreen { width: 100vw; height: 100vh !important; max-height: none; border: 0; border-radius: 0; }
+  #m2-view:-webkit-full-screen { width: 100vw; height: 100vh !important; max-height: none; border: 0; border-radius: 0; }
   #m2-full { box-sizing: border-box; width: 21px; height: 21px; min-width: 0; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
   #m2-full svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
   /* no focus ring on the map and its zoom buttons: they keep focus after a
@@ -474,9 +473,6 @@ kept in that browser.
   var pts = {}, last = null, press = null;
   view.addEventListener('pointerdown', function (e) {
     if (e.target.closest('.m2-ctrl')) return;
-    // leave the lower right corner to the browser's resize handle
-    var r = view.getBoundingClientRect();
-    if (e.clientX > r.right - 18 && e.clientY > r.bottom - 18) return;
     if (e.target.closest('.m2-info')) return;
     view.setPointerCapture(e.pointerId);
     pts[e.pointerId] = [e.clientX, e.clientY];
@@ -525,10 +521,9 @@ kept in that browser.
   window.addEventListener('resize', draw);
   // the view's height: from its top to the bottom of the window, less the download row, so the map
   // takes all the room the page leaves and the download row stays in sight under it whatever the
-  // header above (2026-11-06), until the reader drags its lower edge (the browser then sets its own height)
+  // header above (2026-11-06). No grip to change it (user, 2026-11-09: never used, and no accidental changes)
   var autoH = null; // the room under it: the setting --m2-below-view (56 px), read each time so a style can change it
   function viewHeight() {
-    if (autoH !== null && view.style.height !== autoH) return; // resized by the reader
     var ROW = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--m2-below-view')) || 56;
     var top = (view.getBoundingClientRect().top + window.scrollY) / pz();
     autoH = Math.round(Math.max(300, window.innerHeight / pz() - top - ROW)) + 'px';
@@ -536,8 +531,8 @@ kept in that browser.
   }
   viewHeight();
   window.addEventListener('resize', viewHeight);
-  // the list ends where the download row ends, whatever the map window's height (set by the page or dragged by the
-  // reader) and however many rows the buttons take (2026-11-08: it kept a fixed height when the map window was made
+  // the list ends where the download row ends, whatever the map window's height (set by the page)
+  // and however many rows the buttons take (2026-11-08: it kept a fixed height when the map window was made
   // to reach the download row, and stopped short of the buttons). Above the map on narrow screens the CSS decides.
   var listBox = document.getElementById('m2-list'), sideBySide = window.matchMedia('(min-width: 941px)');
   function listHeight() {
