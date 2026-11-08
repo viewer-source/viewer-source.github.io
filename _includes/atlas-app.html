@@ -522,6 +522,21 @@ kept in that browser.
   }
   viewHeight();
   window.addEventListener('resize', viewHeight);
+  // the list ends where the download row ends, whatever the map window's height (set by the page or dragged by the
+  // reader) and however many rows the buttons take (2026-11-08: it kept a fixed height when the map window was made
+  // to reach the download row, and stopped short of the buttons). Above the map on narrow screens the CSS decides.
+  var listBox = document.getElementById('m2-list'), sideBySide = window.matchMedia('(min-width: 941px)');
+  function listHeight() {
+    if (!sideBySide.matches) { listBox.style.maxHeight = ''; return; }
+    var dl = document.getElementById('m2-downloads').getBoundingClientRect(), vb = view.getBoundingClientRect();
+    var bottom = Math.max(dl.bottom, vb.bottom);
+    listBox.style.maxHeight = Math.max(120, Math.floor((bottom - listBox.getBoundingClientRect().top) / pz())) + 'px';
+  }
+  window.addEventListener('resize', listHeight);
+  if (window.ResizeObserver) {
+    new ResizeObserver(listHeight).observe(view);
+    new ResizeObserver(listHeight).observe(document.getElementById('m2-downloads'));
+  }
   if (window.ResizeObserver) new ResizeObserver(draw).observe(view);
 
   // full screen: the map alone; Esc or the button returns to the page
