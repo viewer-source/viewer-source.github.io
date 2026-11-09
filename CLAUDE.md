@@ -32,8 +32,8 @@ says "the workbench", "the converter's repository", "a private repository".
   the page from its top; a click brings the header back (not in development mode, which has no header).
 - The look (user, 2026-11-09): Default Next of the styles experiment is the viewer's default look, in its own block
   after the main rules of `atlas-app.html` (frame and 8 px gaps, no dots on the separators, the separator under the map
-  on, the page, the list and the panel scrolling as one (as Compact Dark; the pinned version is Default Pinned on the styles page), the list and the panel scrolling inside, items fading under the
-  search). `look="version1"` on the include leaves the block out: the look before (the styles page uses it, so its
+  on, the page, the list and the panel scrolling as one (as Compact Dark; the pinned version is Default Pinned on the styles page), the list and the panel scrolling inside; no fade under the search since
+  2026-11-09, user). The chosen map stays in sight in the list with about one and a half items above and below it. `look="version1"` on the include leaves the block out: the look before (the styles page uses it, so its
   styles keep the base they were made on).
 - Narrow windows (user, 2026-11-09, 940 px and under): the map first, then its download buttons, its name, the search
   and the list (about three maps tall, scrolling inside), then the text and references.
