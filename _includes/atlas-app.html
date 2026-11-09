@@ -75,6 +75,7 @@ kept in that browser.
   #m2-view:fullscreen + #m2-split-h, #m2-view:-webkit-full-screen + #m2-split-h { display: none; }
   body.m2-splitting-h, body.m2-splitting-h * { cursor: row-resize !important; user-select: none; }
   .m2-list-shut .m2-nav { display: none; }
+  .m2-below-shut #m2-downloads, .m2-below-shut #m2-title, .m2-below-shut #m2-text { display: none; }   /* the map to the bottom edge */
   /* the separators only with --m2-separators: 1 (the class m2-seps); then no grip in the map window's corner */
   .m2:not(.m2-seps) #m2-split, .m2:not(.m2-seps) #m2-split-h, .m2:not(.m2-below) #m2-split-h { display: none; }
   .m2-seps #m2-view { resize: none; }
@@ -586,9 +587,16 @@ kept in that browser.
   function viewHeight() {
     if (!setting('separators')) {
       if (autoH !== null && view.style.height !== autoH) return; // resized by the reader with the grip in the corner
-    } else if (userH && setting('separator-below')) { autoH = view.style.height = Math.round(Math.max(300, Math.min(userH, window.innerHeight / pz() - 70))) + 'px'; return; }
+    }
     var ROW = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--m2-below-view')) || 56;
-    var top = (view.getBoundingClientRect().top + window.scrollY) / pz();
+    var top = (view.getBoundingClientRect().top + window.scrollY) / pz(), room = window.innerHeight / pz() - top;
+    // dragged down past the middle of the download row, the map goes to the screen's bottom edge with only the
+    // separator under it, the row out of sight; a click on the separator brings it back (user, 2026-11-09: as the
+    // list and the panel go to their edges)
+    var gap = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--m2-split-h')) || 14;
+    var shut = !!(userH && setting('separators') && setting('separator-below') && userH > room - (ROW + gap) / 2);
+    view.closest('.m2').classList.toggle('m2-below-shut', shut);
+    if (userH && setting('separators') && setting('separator-below')) { autoH = view.style.height = Math.round(shut ? room - gap : Math.max(300, Math.min(userH, room - ROW))) + 'px'; return; }
     autoH = Math.round(Math.max(300, window.innerHeight / pz() - top - ROW)) + 'px';
     view.style.height = autoH;
   }
@@ -597,7 +605,7 @@ kept in that browser.
   (function () {
     var hs = document.createElement('div'), grip = document.createElement('div'), drag = null;
     hs.id = 'm2-split-h'; hs.appendChild(grip);
-    grip.title = 'Drag to change the height of the map window; double-click for the usual height';
+    grip.title = 'Drag to change the height of the map window, down to the bottom edge; a click brings the buttons back, a double click the usual height';
     view.parentNode.insertBefore(hs, view.nextSibling);
     grip.addEventListener('pointerdown', function (e) {
       if (e.button !== 0) return;
@@ -613,7 +621,9 @@ kept in that browser.
     });
     function end() {
       if (!drag) return;
-      if (drag.moved) { userH = view.getBoundingClientRect().height / pz(); try { localStorage.setItem(heightKey, Math.round(userH)); } catch (e) {} }
+      var shut = view.closest('.m2').classList.contains('m2-below-shut');
+      if (drag.moved) { userH = shut ? 1e6 : view.getBoundingClientRect().height / pz(); try { localStorage.setItem(heightKey, Math.round(userH)); } catch (e) {} }
+      else if (shut) { userH = null; try { localStorage.removeItem(heightKey); } catch (e) {} viewHeight(); }
       drag = null; document.body.classList.remove('m2-splitting-h');
     }
     grip.addEventListener('pointerup', end); grip.addEventListener('pointercancel', end);

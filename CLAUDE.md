@@ -19,7 +19,8 @@ says "the workbench", "the converter's repository", "a private repository".
 - Behaviours (user, 2026-11-09, from the styles experiment), in the viewer itself: a separator between the list and the
   map (dragged sideways for the list's width, down to out of sight; a click brings it back, a double click gives 240 px)
   and one under the map window (its height; off for now, `--m2-separator-below: 1` turns it on: user 2026-11-09, to
-  think about) in place of the corner grip, both kept in the reader's browser, in the gaps
+  think about; dragged down past the middle of the download row the map goes to the screen's bottom edge, the row out
+  of sight, a click brings it back) in place of the corner grip, both kept in the reader's browser, in the gaps
   `--m2-split` and `--m2-split-h`; a second click on a molecule closes its panel; dragging in the list only with Shift
   held (also in a page with `drag=true` in presentation mode); no highlight under the pointer in the list. Each is a
   setting (`--m2-separators`, `--m2-click-closes`, `--m2-drag-shift`: 1 on, 0 off; `--m2-hover`). The viewer's look
