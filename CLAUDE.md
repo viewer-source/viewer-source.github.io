@@ -32,7 +32,7 @@ says "the workbench", "the converter's repository", "a private repository".
   the page from its top; a click brings the header back (not in development mode, which has no header).
 - The look (user, 2026-11-09): Default Next of the styles experiment is the viewer's default look, in its own block
   after the main rules of `atlas-app.html` (frame and 8 px gaps, no dots on the separators, the separator under the map
-  on, the page, the list and the panel scrolling as one (as Compact Dark; the pinned version is Default Pinned on the styles page), the list and the panel scrolling inside; items fading over 10 px under the search and at the list's bottom edge: removed and
+  on, the page, the list and the panel scrolling as one (as Compact Dark; the pinned behaviour is on the styles page in Reactome Scroll, Default List and Default Lines), the list and the panel scrolling inside; items fading over 10 px under the search and at the list's bottom edge: removed and
   brought back on 2026-11-09, user, once the item above the chosen map stayed in sight). The chosen map stays in sight in the list with about one and a half items above and below it. `look="version1"` on the include leaves the block out: the look before (the styles page uses it, so its
   styles keep the base they were made on).
 - Narrow windows (user, 2026-11-09, 940 px and under): the map first, then its download buttons, its name, the search
