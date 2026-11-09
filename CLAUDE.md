@@ -13,15 +13,17 @@ says "the workbench", "the converter's repository", "a private repository".
   With `groups=site.data.groups` (a list of `name` and `closed: true`) development mode also shows a listed group
   with no map yet as an empty group, and starts a group marked closed as closed (as the expo atlas). The presentation
   mode has none of this, unless `drag=true` is on the include (the styles page): then it has the dragging alone.
-  Dragging needs Shift held (user, 2026-11-09: no accidental moves), so it works with a mouse or trackpad, not by
-  touch. The demo runs in development mode.
+  The demo runs in development mode.
 - The sites take a new version of the viewer only when the user asks (user, 2026-11-08: when it is time to make it
   available), and then in presentation mode; each is checked live after its copy is updated.
-- The separator between the list and the map (user, 2026-11-09, as in Reactome): dragged sideways it sets the list's
-  width, down to out of sight (a click brings it back, a double click gives the usual 240 px), kept in the reader's
-  browser; `--m2-split` is the gap it sits in. Not on narrow screens, where the list is above the map. The separator under the
-  map window (in place of the corner grip, user 2026-11-09) sets its height the same way, `--m2-split-h` its gap. Both
-  show three dots in the accent colour, no line.
+- Behaviours (user, 2026-11-09, from the styles experiment), in the viewer itself: a separator between the list and the
+  map (dragged sideways for the list's width, down to out of sight; a click brings it back, a double click gives 240 px)
+  and one under the map window (its height) in place of the corner grip, both kept in the reader's browser, in the gaps
+  `--m2-split` and `--m2-split-h`; a second click on a molecule closes its panel; dragging in the list only with Shift
+  held (also in a page with `drag=true` in presentation mode); no highlight under the pointer in the list. Each is a
+  setting (`--m2-separators`, `--m2-click-closes`, `--m2-drag-shift`: 1 on, 0 off; `--m2-hover`). The viewer's look
+  does not change with them (user: "visuals should not change but useful functionalities stay"): the separators show
+  no dots here, `--m2-grip` gives a style its dots.
 - The renderers: `renderers/yrender/` (yEd GraphML, drawn as yEd draws it) and `renderers/converter/cdrender.py`
   (CellDesigner, drawn as CellDesigner draws it, with the converter's `mapconv/`). Where each was copied from:
   `VERSION`.
