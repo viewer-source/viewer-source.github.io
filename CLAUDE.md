@@ -23,7 +23,7 @@ says "the workbench", "the converter's repository", "a private repository".
   held (also in a page with `drag=true` in presentation mode); no highlight under the pointer in the list. Each is a
   setting (`--m2-separators`, `--m2-click-closes`, `--m2-drag-shift`: 1 on, 0 off; `--m2-hover`). The viewer's look
   does not change with them (user: "visuals should not change but useful functionalities stay"): the separators show
-  no dots here, `--m2-grip` gives a style its dots.
+  no dots here, `--m2-grip` (beside the list) and `--m2-grip-h` (under the map) give a style its dots.
 - The renderers: `renderers/yrender/` (yEd GraphML, drawn as yEd draws it) and `renderers/converter/cdrender.py`
   (CellDesigner, drawn as CellDesigner draws it, with the converter's `mapconv/`). Where each was copied from:
   `VERSION`.

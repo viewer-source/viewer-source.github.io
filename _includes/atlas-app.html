@@ -35,7 +35,8 @@ kept in that browser.
     --m2-radius: 4px;            /* corners of the list items, map window, search, panel */
     --m2-radius-button: 5px;     /* corners of the download buttons and menu */
     --m2-hover: transparent;     /* a map in the list under the pointer: no highlight (user, 2026-11-09, as on phones) */
-    --m2-grip: transparent;      /* the three dots on the separators: none in the viewer's own look, a style may show them */
+    --m2-grip: transparent;      /* the three dots on the separator beside the list: none in the viewer's own look */
+    --m2-grip-h: transparent;    /* the dots on the one under the map window (user, 2026-11-09: none for now) */
     /* behaviours (user, 2026-11-09), on: the separators in place of the corner grip, a second click on a molecule
        closing its panel, dragging in the list only with Shift held; 0 turns one off */
     --m2-separators: 1;
@@ -67,7 +68,7 @@ kept in that browser.
   #m2-split-h { position: relative; height: 0; z-index: 1; }
   #m2-split-h > div { position: absolute; left: 0; right: 0; top: 0; height: var(--m2-split-h); cursor: row-resize; touch-action: none; }
   #m2-split-h > div::after { content: ''; position: absolute; top: 50%; left: 50%; width: 20px; height: 4px; margin: -2px 0 0 -10px;
-    background: radial-gradient(circle, var(--m2-grip) 1.5px, transparent 2px) center / 8px 4px repeat-x; }
+    background: radial-gradient(circle, var(--m2-grip-h) 1.5px, transparent 2px) center / 8px 4px repeat-x; }
   #m2-view:fullscreen + #m2-split-h, #m2-view:-webkit-full-screen + #m2-split-h { display: none; }
   body.m2-splitting-h, body.m2-splitting-h * { cursor: row-resize !important; user-select: none; }
   .m2-list-shut .m2-nav { display: none; }
