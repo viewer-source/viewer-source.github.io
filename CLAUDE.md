@@ -25,7 +25,9 @@ says "the workbench", "the converter's repository", "a private repository".
   does not change with them (user: "visuals should not change but useful functionalities stay"): the separators show
   no dots here, `--m2-grip` (beside the list and beside the panel) and `--m2-grip-h` (under the map) give a
   style its dots. A third separator, between the map and the panel while it is open beside the map, sets the panel's
-  width (`--m2-info-w`, 160 to 600 px), kept the same way.
+  width (`--m2-info-w`, 160 to 600 px; under 60 out of sight, a click brings it back), kept the same way. A fourth,
+  above the map window (`--m2-split-t`, dots `--m2-grip-t`), hides the site's header when dragged up so the map takes
+  the page from its top; a click brings the header back (not in development mode, which has no header).
 - The renderers: `renderers/yrender/` (yEd GraphML, drawn as yEd draws it) and `renderers/converter/cdrender.py`
   (CellDesigner, drawn as CellDesigner draws it, with the converter's `mapconv/`). Where each was copied from:
   `VERSION`.

@@ -37,6 +37,8 @@ kept in that browser.
     --m2-hover: transparent;     /* a map in the list under the pointer: no highlight (user, 2026-11-09, as on phones) */
     --m2-grip: transparent;      /* the three dots on the separator beside the list: none in the viewer's own look */
     --m2-grip-h: transparent;    /* the dots on the one under the map window (user, 2026-11-09: none for now) */
+    --m2-grip-t: transparent;    /* the dots on the one above it, under the site's header */
+    --m2-split-t: 16px;          /* the gap above the map window: its separator hides or shows the site's header */
     /* behaviours (user, 2026-11-09), on: the separators in place of the corner grip, a second click on a molecule
        closing its panel, dragging in the list only with Shift held; 0 turns one off */
     --m2-separators: 1;
@@ -79,6 +81,15 @@ kept in that browser.
   /* the separator between the map and the panel, while the panel is open beside the map: placed by the script in the
      gap (or on the line where there is none), dragged sideways for the panel's width (user, 2026-11-09) */
   #m2-split-r { position: absolute; display: none; cursor: col-resize; touch-action: none; z-index: 1; }
+  .m2-info-shut .m2-info:not(.m2-over) { display: none; }
+  .m2.m2-info-shut { grid-template-columns: var(--m2-list-w, 240px) minmax(600px, 1fr) 0; }
+  /* the separator above the map window, under the site's header: dragged up it hides the header (the map takes the
+     page from its top), a click or a drag down brings it back; kept in the reader's browser (user, 2026-11-09) */
+  #m2-split-t { position: absolute; left: 0; right: 0; top: calc(-1 * var(--m2-split-t)); height: var(--m2-split-t); cursor: row-resize; touch-action: none; z-index: 1; }
+  #m2-split-t::after { content: ''; position: absolute; top: 50%; left: 50%; width: 20px; height: 4px; margin: -2px 0 0 -10px;
+    background: radial-gradient(circle, var(--m2-grip-t) 1.5px, transparent 2px) center / 8px 4px repeat-x; }
+  .m2:not(.m2-seps) #m2-split-t { display: none; }
+  body.m2-head-shut .wrapper-masthead { display: none; }
   #m2-split-r::after { content: ''; position: absolute; top: 50%; left: 50%; width: 4px; height: 20px; margin: -10px 0 0 -2px;
     background: radial-gradient(circle, var(--m2-grip) 1.5px, transparent 2px) center / 4px 8px repeat-y; }
   #m2-list { max-height: calc(100vh / var(--zoom, 1) - 180px); overflow-y: auto; }
@@ -741,29 +752,39 @@ kept in that browser.
     var rs = document.createElement('div'), key = 'atlas-info-width:' + location.pathname, drag = null;
     rs.id = 'm2-split-r'; rs.title = 'Drag to change the width of the panel; double-click for the usual width';
     grid.appendChild(rs);
+    // under 60 px the panel is out of sight (user, 2026-11-09: "should be able to close up to the right edge"), the
+    // separator stays at the map's right edge while a molecule is chosen; a click brings the panel back
+    var shut = false, lastW = null;
     function setW(w, save) {
-      if (w === null) grid.style.removeProperty('--m2-info-w');
-      else grid.style.setProperty('--m2-info-w', Math.max(160, Math.min(600, Math.round(w))) + 'px');
-      if (save) { try { if (w === null) localStorage.removeItem(key); else localStorage.setItem(key, Math.round(w)); } catch (e) {} }
+      shut = w !== null && w < 60;
+      grid.classList.toggle('m2-info-shut', shut);
+      if (!shut) {
+        lastW = w;
+        if (w === null) grid.style.removeProperty('--m2-info-w');
+        else grid.style.setProperty('--m2-info-w', Math.max(160, Math.min(600, Math.round(w))) + 'px');
+      }
+      if (save) { try { if (w === null) localStorage.removeItem(key); else localStorage.setItem(key, shut ? 0 : Math.round(w)); } catch (e) {} }
       place();
     }
     function place() {
-      var on = setting('separators') && info.parentNode === grid && !info.classList.contains('m2-over') && info.offsetHeight > 0;
+      // shown while the panel is open, out of sight, or its column is kept empty beside the map (Default, Compact)
+      var g = grid.getBoundingClientRect(), v = view.getBoundingClientRect(), z = pz(), has = info.childNodes.length > 0;
+      var on = setting('separators') && info.parentNode === grid && !info.classList.contains('m2-over') && (has || shut || v.right < g.right - 2);
       rs.style.display = on ? 'block' : 'none';
       if (!on) return;
-      var g = grid.getBoundingClientRect(), v = view.getBoundingClientRect(), i = info.getBoundingClientRect(), z = pz();
+      var aside = shut || !has, i = aside ? { left: v.right, top: v.top, bottom: v.bottom } : info.getBoundingClientRect();
       var dl = document.getElementById('m2-downloads').getBoundingClientRect();
       var w = Math.max(parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--m2-split')) || 8, (i.left - v.right) / z);
       rs.style.width = w + 'px';
-      rs.style.left = ((v.right + i.left) / 2 - g.left) / z - w / 2 + 'px';
+      rs.style.left = aside ? (Math.min(v.right, g.right - w * z) - g.left) / z + 'px' : ((v.right + i.left) / 2 - g.left) / z - w / 2 + 'px';
       rs.style.top = (i.top - g.top) / z + 'px';
       rs.style.height = Math.max(i.bottom, dl.bottom, v.bottom) / z - i.top / z + 'px';
     }
-    try { var saved = parseFloat(localStorage.getItem(key)); if (saved > 0) setW(saved, false); } catch (e) {}
+    try { var saved = localStorage.getItem(key); if (saved !== null && parseFloat(saved) >= 0) setW(parseFloat(saved), false); } catch (e) {}
     rs.addEventListener('pointerdown', function (e) {
       if (e.button !== 0) return;
       e.preventDefault(); rs.setPointerCapture(e.pointerId);
-      drag = { x: e.clientX, w: info.getBoundingClientRect().width / pz(), moved: false };
+      drag = { x: e.clientX, w: shut ? 0 : info.getBoundingClientRect().width / pz(), moved: false };
     });
     rs.addEventListener('pointermove', function (e) {
       if (!drag) return;
@@ -774,13 +795,47 @@ kept in that browser.
     });
     function end() {
       if (!drag) return;
-      if (drag.moved) setW(info.getBoundingClientRect().width / pz(), true);
+      if (drag.moved) { var was = drag.w; setW(shut ? 0 : info.getBoundingClientRect().width / pz(), true); if (shut && was >= 60) lastW = was; }
+      else if (shut) setW(lastW, true); // a click on the separator of a panel out of sight
       drag = null; document.body.classList.remove('m2-splitting');
     }
     rs.addEventListener('pointerup', end); rs.addEventListener('pointercancel', end);
     rs.addEventListener('dblclick', function () { setW(null, true); });
     window.addEventListener('resize', place);
     if (window.ResizeObserver) { new ResizeObserver(place).observe(info); new ResizeObserver(place).observe(view); }
+    if (window.MutationObserver) new MutationObserver(place).observe(info, { childList: true });
+  })();
+  // the separator above the map window: hides or shows the site's header (none in development mode, which has none)
+  (function () {
+    var head = document.querySelector('.wrapper-masthead');
+    if (!head || {% if include.mode == "development" %}true{% else %}false{% endif %}) return;
+    var ts = document.createElement('div'), key = 'atlas-header-shut:' + location.pathname, drag = null;
+    ts.id = 'm2-split-t'; ts.title = 'Drag up to hide the header, click to bring it back';
+    document.querySelector('.m2-main').insertBefore(ts, view);
+    function setShut(on, save) {
+      document.body.classList.toggle('m2-head-shut', on);
+      if (save) { try { if (on) localStorage.setItem(key, '1'); else localStorage.removeItem(key); } catch (e) {} }
+      window.dispatchEvent(new Event('resize')); // the map window's height, the list and the other separators follow
+    }
+    try { if (localStorage.getItem(key)) setShut(true, false); } catch (e) {}
+    ts.addEventListener('pointerdown', function (e) {
+      if (e.button !== 0) return;
+      e.preventDefault(); ts.setPointerCapture(e.pointerId);
+      drag = { y: e.clientY, moved: false };
+    });
+    ts.addEventListener('pointermove', function (e) {
+      if (!drag) return;
+      var dy = e.clientY - drag.y, shut = document.body.classList.contains('m2-head-shut');
+      if (dy < -12 && !shut) { drag.moved = true; setShut(true, false); drag.y = e.clientY; }
+      else if (dy > 12 && shut) { drag.moved = true; setShut(false, false); drag.y = e.clientY; }
+    });
+    function end() {
+      if (!drag) return;
+      var shut = document.body.classList.contains('m2-head-shut');
+      if (drag.moved) setShut(shut, true); else if (shut) setShut(false, true);
+      drag = null;
+    }
+    ts.addEventListener('pointerup', end); ts.addEventListener('pointercancel', end);
   })();
   function loadNodes(m) {
     nodes = null; sel = null; renderInfo(); drawPin();
