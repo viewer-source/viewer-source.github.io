@@ -35,6 +35,8 @@ says "the workbench", "the converter's repository", "a private repository".
   on, the page, the list and the panel scrolling as one (as Compact Dark; the pinned version is Default Pinned on the styles page), the list and the panel scrolling inside, items fading under the
   search). `look="version1"` on the include leaves the block out: the look before (the styles page uses it, so its
   styles keep the base they were made on).
+- Narrow windows (user, 2026-11-09, 940 px and under): the map first, then its download buttons, its name, the search
+  and the list (about three maps tall, scrolling inside), then the text and references.
 - The renderers: `renderers/yrender/` (yEd GraphML, drawn as yEd draws it) and `renderers/converter/cdrender.py`
   (CellDesigner, drawn as CellDesigner draws it, with the converter's `mapconv/`). Where each was copied from:
   `VERSION`.

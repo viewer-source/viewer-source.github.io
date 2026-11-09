@@ -98,11 +98,17 @@ leaves it out and gives the look before that day (the styles page, so its styles
   #m2-split-r::after { content: ''; position: absolute; top: 50%; left: 50%; width: 4px; height: 20px; margin: -10px 0 0 -2px;
     background: radial-gradient(circle, var(--m2-grip) 1.5px, transparent 2px) center / 4px 8px repeat-y; }
   #m2-list { max-height: calc(100vh / var(--zoom, 1) - 180px); overflow-y: auto; }
+  /* narrow windows (phones): the map first, as the page is about it, then its download buttons, its name, the search
+     and the list (about three maps tall, scrolling inside), then the text and references (user, 2026-11-09); the map
+     column's boxes take their places in one column beside the list (display: contents) */
   @media (max-width: 940px) {
-    .m2 { display: block; width: auto; left: 0; transform: none; }
-    .m2-nav { margin-bottom: 12px; }
+    .m2 { display: flex; flex-direction: column; width: auto; left: 0; transform: none; }
+    .m2-main { display: contents; }
+    .m2 > *, .m2-main > * { order: 9; }
+    #m2-split-t { order: 1; } #m2-view { order: 2; } #m2-split-h { order: 3; } #m2-downloads { order: 4; }
+    #m2-title { order: 5; margin-top: 12px; } .m2-nav { order: 6; margin: 10px 0 0; } #m2-text { order: 7; }
     #m2-search { margin-bottom: 8px; }
-    #m2-list { max-height: 127px; border-bottom: 1px solid #eee; }
+    #m2-list { max-height: 92px; border-bottom: 1px solid #eee; }
     #m2-split { display: none; }
     .m2-list-shut .m2-nav { display: block; }
   }
