@@ -315,16 +315,9 @@ html #m2-split-h > div::after { background: radial-gradient(circle, var(--m2-gri
 html .m2-ctrl button:hover { background: var(--m2-accent); border-color: var(--m2-accent); color: var(--m2-on-accent, #fff); }
 
 
-/* the page's length is set by the map column alone: the map, its name, description and references (user, 2026-11-09).
-   The list on the left and the panel on the right never make the page longer (a list of thousands of maps, a long
-   annotation): they scroll inside and stay in sight while the page scrolls, as in Reactome Scroll, the search above
-   the list with them; at the page's end they stop 8 px before it, the room left under them as before (user) */
-@media (min-width: 941px) {
-  html .m2-nav { align-self: stretch; contain: size; }
-  html #m2-search { position: sticky; top: 8px; z-index: 2; }
-  html #m2-list { position: sticky; top: 38px; margin-bottom: 8px; }   /* its height the viewer's: down to the download buttons */
-  html .m2-info:not(.m2-over) { align-self: start; position: sticky; top: 8px; contain: size; height: calc(100vh / var(--zoom, 1) - 52px); max-height: none; margin-bottom: 8px; overflow-y: auto; }
-}
+/* scrolling as in Compact Dark of the styles experiment (user, 2026-11-09): the list with its search, the map and the
+   panel move together with the page; the list and the panel scroll inside. The pinned version (list and panel staying
+   in sight) is Default Pinned on the styles page. */
 
 /* the list's top edge under the search: items scrolled up fade out over 10 px, so the edge reads as the window's edge,
    not as an item cut off (user, 2026-11-09); 6 px of room above the first item, so nothing fades before scrolling */
