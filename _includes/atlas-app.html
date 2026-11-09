@@ -660,7 +660,7 @@ kept in that browser.
     });
     function end() {
       if (!drag) return;
-      if (drag.moved) setListWidth(listW, true);
+      if (drag.moved) { if (listW === 0 && drag.w >= 60) lastW = drag.w; setListWidth(listW, true); } // shut: the width it had before comes back
       else if (listW === 0) setListWidth(lastW, true); // a click on the separator of a list out of sight
       drag = null; split.classList.remove('m2-moving-split'); document.body.classList.remove('m2-splitting');
     }
