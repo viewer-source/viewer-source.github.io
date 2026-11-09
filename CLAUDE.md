@@ -30,6 +30,11 @@ says "the workbench", "the converter's repository", "a private repository".
   width (`--m2-info-w`, 160 to 600 px; under 60 out of sight, a click brings it back), kept the same way. A fourth,
   above the map window (`--m2-split-t`, dots `--m2-grip-t`), hides the site's header when dragged up so the map takes
   the page from its top; a click brings the header back (not in development mode, which has no header).
+- The look (user, 2026-11-09): Default Next of the styles experiment is the viewer's default look, in its own block
+  after the main rules of `atlas-app.html` (frame and 8 px gaps, no dots on the separators, the separator under the map
+  on, the list and the panel staying in sight while the page scrolls and scrolling inside, items fading under the
+  search). `look="version1"` on the include leaves the block out: the look before (the styles page uses it, so its
+  styles keep the base they were made on).
 - The renderers: `renderers/yrender/` (yEd GraphML, drawn as yEd draws it) and `renderers/converter/cdrender.py`
   (CellDesigner, drawn as CellDesigner draws it, with the converter's `mapconv/`). Where each was copied from:
   `VERSION`.

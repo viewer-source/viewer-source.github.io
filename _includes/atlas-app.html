@@ -7,6 +7,8 @@ Two modes (user, 2026-11-08): by default the presentation mode, a fixed list for
 site. mode="development" (a copy where maps are being developed): the whole page for the map, no site header (as the
 osteoarthritis working site, user 2026-11-05), and groups and the maps in a group put in another order by dragging,
 kept in that browser.
+The look (user, 2026-11-09): Default Next of the styles experiment, the block after the main rules; look="version1"
+leaves it out and gives the look before that day (the styles page, so its styles keep the base they were made on).
 {% endcomment %}
 
 {% if include.mode == "development" %}<style>
@@ -268,6 +270,69 @@ kept in that browser.
   .m2-chip.m2-on { background: var(--m2-accent); border-color: var(--m2-accent); color: var(--m2-on-accent); } /* as the chosen map in the list */
   .m2-chip:focus, .m2-card:focus { outline: none; }
 </style>
+{% unless include.look == "version1" %}<style>
+/* The viewer's look since 2026-11-09 (user): Default Next of the styles experiment, made the default. Until then the
+   viewer's look was the rules above alone (Default Version 1 on the styles page, which passes look="version1").
+   No dots on any separator since (user, 2026-11-09: knowing the areas can be dragged is enough, the dots are noisy);
+   the pointer turning into resize arrows over them shows where. */
+:root {
+  --m2-grip: transparent;   /* no dots on the separators beside the list and the panel (user, 2026-11-09) */
+  --m2-grip-t: transparent;   /* no dots above the map (user, 2026-11-09), the separator still works */
+  --m2-grip-h: transparent; /* nor under the map window (user, 2026-11-09) */
+  --m2-separator-below: 1; /* that separator on: dragged up the map gets smaller, dragged down past the buttons the map goes to the bottom edge */
+  --m2-split-t: 8px;
+  --m2-split: 8px;
+  --m2-split-h: 8px;
+  --m2-below-view: 46px;   /* the download buttons 8 px under the map and 8 px above the window's bottom (user) */
+}
+html .wrapper-masthead .container { width: calc(100vw / var(--zoom, 1) - 16px); }
+html .masthead { padding: 6px 0 7px 4px; }   /* the name where the list's text starts (user) */
+html #main { padding-top: 8px; }
+html .m2 { width: calc(100vw / var(--zoom, 1) - 16px); column-gap: 0; grid-template-columns: var(--m2-list-w, 240px) minmax(600px, 1fr) calc(var(--m2-info-w, 240px) + 10px); }
+/* the right column kept for the panel as in Default, empty until a molecule is chosen (user); dragged shut, it goes */
+html .m2.m2-info-shut { grid-template-columns: var(--m2-list-w, 240px) minmax(600px, 1fr) 0; }
+html .m2-main { margin-left: 8px; }
+/* the list out of sight: the map 8 px from the window's edge, as on the other sides, the separator in that strip */
+html .m2-list-shut .m2-main { margin-left: 0; }
+/* the panel 10 px from the map window, as the search field and the list on the left (user, 2026-11-09: 8 px too little, 16 px too much); the separator in the middle of that room */
+html .m2-info:not(.m2-over) { margin-left: 10px; width: var(--m2-info-w, 240px); }
+html #m2-search { margin-bottom: 8px; }   /* above the list (user, 2026-11-09: back for now, after a try in the top bar) */
+/* the list's content 12 px from the window's edge, as in MINERVA (user) */
+html .m2-nav { padding: 0 4px; box-sizing: border-box; }
+html #m2-downloads { margin-top: 4px; }
+@media (max-width: 940px) {
+  html .m2 { width: auto; }
+  html .m2-main { margin-left: 0; }
+  html .m2-info:not(.m2-over) { margin-left: 0; width: auto; }
+}
+
+/* the separators' dots between the viewer's (1.5 px) and Reactome's (1 px) (user, 2026-11-09), 8 px apart as both */
+html #m2-split::after, html #m2-split-r::after { background: radial-gradient(circle, var(--m2-grip) 1.25px, transparent 1.6px) center / 4px 8px repeat-y; }
+html #m2-split-t::after { background: radial-gradient(circle, var(--m2-grip-t) 1.25px, transparent 1.6px) center / 8px 4px repeat-x; }
+html #m2-split-h > div::after { background: radial-gradient(circle, var(--m2-grip-h) 1.25px, transparent 1.6px) center / 8px 4px repeat-x; }
+
+/* the zoom buttons over the map filled in the accent under the pointer, white sign, as in the Reactome styles (user, 2026-11-09) */
+html .m2-ctrl button:hover { background: var(--m2-accent); border-color: var(--m2-accent); color: var(--m2-on-accent, #fff); }
+
+
+/* the page's length is set by the map column alone: the map, its name, description and references (user, 2026-11-09).
+   The list on the left and the panel on the right never make the page longer (a list of thousands of maps, a long
+   annotation): they scroll inside and stay in sight while the page scrolls, as in Reactome Scroll, the search above
+   the list with them; at the page's end they stop 8 px before it, the room left under them as before (user) */
+@media (min-width: 941px) {
+  html .m2-nav { align-self: stretch; contain: size; }
+  html #m2-search { position: sticky; top: 8px; z-index: 2; }
+  html #m2-list { position: sticky; top: 38px; margin-bottom: 8px; }   /* its height the viewer's: down to the download buttons */
+  html .m2-info:not(.m2-over) { align-self: start; position: sticky; top: 8px; contain: size; height: calc(100vh / var(--zoom, 1) - 52px); max-height: none; margin-bottom: 8px; overflow-y: auto; }
+}
+
+/* the list's top edge under the search: items scrolled up fade out over 10 px, so the edge reads as the window's edge,
+   not as an item cut off (user, 2026-11-09); 6 px of room above the first item, so nothing fades before scrolling */
+@media (min-width: 941px) {
+  html #m2-list { padding-top: 6px; box-sizing: border-box;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 10px); mask-image: linear-gradient(to bottom, transparent 0, #000 10px); }
+}
+</style>{% endunless %}
 
 <div class="m2">
 <div class="m2-nav">
