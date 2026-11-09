@@ -638,7 +638,12 @@ kept in that browser.
     if (!sideBySide.matches) { listBox.style.maxHeight = ''; return; }
     var dl = document.getElementById('m2-downloads').getBoundingClientRect(), vb = view.getBoundingClientRect();
     var bottom = Math.max(dl.bottom, vb.bottom);
-    listBox.style.maxHeight = Math.max(120, Math.floor((bottom - listBox.getBoundingClientRect().top) / pz())) + 'px';
+    // a style that keeps the list in sight while the page scrolls (position sticky): the list reaches 8 px above the
+    // window's bottom wherever the page is, so scrolling the page shows more of it, never a gap under it, and never
+    // past the end of its column (2026-11-09)
+    var listBottom = getComputedStyle(listBox).position === 'sticky'
+      ? Math.min(window.innerHeight, listBox.parentNode.getBoundingClientRect().bottom) - 8 * pz() : bottom;
+    listBox.style.maxHeight = Math.max(120, Math.floor((listBottom - listBox.getBoundingClientRect().top) / pz())) + 'px';
     split.style.height = Math.max(0, Math.floor((bottom - split.parentNode.getBoundingClientRect().top) / pz())) + 'px';
   }
   // the separator between the list and the map: dragged sideways it sets the list's width (under 60 px the list is
@@ -693,6 +698,7 @@ kept in that browser.
     split.addEventListener('dblclick', function () { setListWidth(LIST_W, true); });
   })();
   window.addEventListener('resize', listHeight);
+  window.addEventListener('scroll', function () { if (getComputedStyle(listBox).position === 'sticky') listHeight(); }, { passive: true });
   if (window.ResizeObserver) {
     new ResizeObserver(listHeight).observe(view);
     new ResizeObserver(listHeight).observe(document.getElementById('m2-downloads'));
