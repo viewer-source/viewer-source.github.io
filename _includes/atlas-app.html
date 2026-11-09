@@ -173,7 +173,7 @@ leaves it out and gives the look before that day (the styles page, so its styles
      (set in the script), and its lower edge
      can be dragged down to the whole window without the header (user, 2026-10-16); with --m2-separators by the
      separator under it instead of the grip in its corner */
-  #m2-view { position: relative; width: 100%; height: 504px; min-height: 300px; max-height: calc(100vh / var(--zoom, 1) - 70px); resize: vertical; overflow: hidden; box-sizing: border-box; border: 1px solid var(--m2-frame); border-radius: var(--m2-radius); background: var(--m2-bg); cursor: grab; touch-action: none; user-select: none; }
+  #m2-view { position: relative; width: 100%; height: 504px; min-height: 300px; max-height: calc(100vh / var(--zoom, 1) - var(--m2-below-view, 56px)); resize: vertical; overflow: hidden; box-sizing: border-box; border: 1px solid var(--m2-frame); border-radius: var(--m2-radius); background: var(--m2-bg); cursor: grab; touch-action: none; user-select: none; }
   #m2-view.m2-drag { cursor: grabbing; }
   /* full screen: the map alone, the annotation over its right side */
   #m2-view:fullscreen { width: 100vw; height: 100vh !important; max-height: none; border: 0; border-radius: 0; resize: none; }
