@@ -325,6 +325,13 @@ html .m2-ctrl button:hover { background: var(--m2-accent); border-color: var(--m
 /* scrolling as in Compact Dark of the styles experiment (user, 2026-11-09): the list with its search, the map and the
    panel move together with the page; the list and the panel scroll inside. The pinned version (list and panel staying
    in sight) is Default Pinned on the styles page. */
+
+/* the list's top edge under the search: items scrolled up fade out over 10 px, so the edge reads as the window's edge,
+   not as an item cut off (user, 2026-11-09); 6 px of room above the first item, so nothing fades before scrolling */
+@media (min-width: 941px) {
+  html #m2-list { padding-top: 6px; box-sizing: border-box;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 10px); mask-image: linear-gradient(to bottom, transparent 0, #000 10px); }
+}
 </style>{% endunless %}
 
 <div class="m2">
