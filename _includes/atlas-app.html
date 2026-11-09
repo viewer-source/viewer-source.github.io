@@ -102,7 +102,7 @@ leaves it out and gives the look before that day (the styles page, so its styles
      and the list (about three maps tall, scrolling inside), then the text and references (user, 2026-11-09); the map
      column's boxes take their places in one column beside the list (display: contents) */
   @media (max-width: 940px) {
-    .m2 { display: flex; flex-direction: column; width: auto; left: 0; transform: none; }
+    .m2 { display: flex; flex-direction: column; align-items: stretch; width: auto; left: 0; transform: none; }
     .m2-main { display: contents; }
     .m2 > *, .m2-main > * { order: 9; }
     #m2-split-t { order: 1; } #m2-view { order: 2; } #m2-split-h { order: 3; } #m2-downloads { order: 4; }
@@ -309,6 +309,7 @@ html #m2-downloads { margin-top: 4px; }
 @media (max-width: 940px) {
   html .m2 { width: auto; }
   html .m2-main { margin-left: 0; }
+  html .m2-nav { padding: 0; }   /* the search and the list as wide as the map, their edges in line with it */
   html .m2-info:not(.m2-over) { margin-left: 0; width: auto; }
 }
 
