@@ -1421,10 +1421,15 @@ html .m2-ctrl button:hover { background: var(--m2-accent); border-color: var(--m
       });
     });
     if (!shown.length && !mols.length) box.appendChild(el('div', 'm2-none', index && index.length || !q ? 'No match' : 'Searching…'));
-    // keep the chosen map visible when the list scrolls (narrow screens)
+    // keep the chosen map visible when the list scrolls, with about one and a half items in sight above and below it,
+    // so moving up or down the list shows where it goes next (user, 2026-11-09)
     box.scrollTop = keep;
     var on = box.querySelector('.m2-on');
-    if (on && box.scrollHeight > box.clientHeight) box.scrollTop = Math.max(0, Math.min(box.scrollTop, on.offsetTop - box.offsetTop), on.offsetTop - box.offsetTop + on.offsetHeight - box.clientHeight);
+    if (on && box.scrollHeight > box.clientHeight) {
+      var top = on.getBoundingClientRect().top - box.getBoundingClientRect().top + box.scrollTop,
+          room = Math.min(Math.round(on.offsetHeight * 1.5), Math.max(0, (box.clientHeight - on.offsetHeight) / 2));
+      box.scrollTop = Math.max(0, Math.min(box.scrollTop, top - room), top + on.offsetHeight + room - box.clientHeight);
+    }
   }
   document.getElementById('m2-search').addEventListener('input', function () { buildList(this.value); });
   // arrow keys step through the listed maps, as on the Colours page; wraps around.
