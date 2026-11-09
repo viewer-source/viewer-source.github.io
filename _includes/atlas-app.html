@@ -327,10 +327,12 @@ html .m2-ctrl button:hover { background: var(--m2-accent); border-color: var(--m
    in sight) is Default Pinned on the styles page. */
 
 /* the list's top edge under the search: items scrolled up fade out over 10 px, so the edge reads as the window's edge,
-   not as an item cut off (user, 2026-11-09); 6 px of room above the first item, so nothing fades before scrolling */
+   not as an item cut off (user, 2026-11-09); 6 px of room above the first item, so nothing fades before scrolling;
+   the bottom edge fades the same way, 6 px of room under the last item (user, 2026-11-09) */
 @media (min-width: 941px) {
-  html #m2-list { padding-top: 6px; box-sizing: border-box;
-    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 10px); mask-image: linear-gradient(to bottom, transparent 0, #000 10px); }
+  html #m2-list { padding-top: 6px; padding-bottom: 6px; box-sizing: border-box;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 10px, #000 calc(100% - 10px), transparent 100%);
+    mask-image: linear-gradient(to bottom, transparent 0, #000 10px, #000 calc(100% - 10px), transparent 100%); }
 }
 </style>{% endunless %}
 
