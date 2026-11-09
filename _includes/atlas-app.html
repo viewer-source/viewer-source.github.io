@@ -44,6 +44,7 @@ kept in that browser.
     --m2-separators: 1;
     --m2-click-closes: 1;
     --m2-drag-shift: 1;
+    --m2-separator-below: 0;     /* the separator under the map window (its height): off for now (user, 2026-11-09: to think about) */
     --m2-split: 32px;            /* the gap between the list and the map: its separator can be dragged */
     --m2-split-h: 14px;          /* the gap under the map window, down to the download buttons: its separator too */
     --m2-below-view: 56px;       /* from the map window's lower edge to the bottom of the browser window: the download row and the room under it */
@@ -75,7 +76,7 @@ kept in that browser.
   body.m2-splitting-h, body.m2-splitting-h * { cursor: row-resize !important; user-select: none; }
   .m2-list-shut .m2-nav { display: none; }
   /* the separators only with --m2-separators: 1 (the class m2-seps); then no grip in the map window's corner */
-  .m2:not(.m2-seps) #m2-split, .m2:not(.m2-seps) #m2-split-h { display: none; }
+  .m2:not(.m2-seps) #m2-split, .m2:not(.m2-seps) #m2-split-h, .m2:not(.m2-below) #m2-split-h { display: none; }
   .m2-seps #m2-view { resize: none; }
   body.m2-splitting, body.m2-splitting * { cursor: col-resize !important; user-select: none; }
   /* the separator between the map and the panel, while the panel is open beside the map: placed by the script in the
@@ -585,7 +586,7 @@ kept in that browser.
   function viewHeight() {
     if (!setting('separators')) {
       if (autoH !== null && view.style.height !== autoH) return; // resized by the reader with the grip in the corner
-    } else if (userH) { autoH = view.style.height = Math.round(Math.max(300, Math.min(userH, window.innerHeight / pz() - 70))) + 'px'; return; }
+    } else if (userH && setting('separator-below')) { autoH = view.style.height = Math.round(Math.max(300, Math.min(userH, window.innerHeight / pz() - 70))) + 'px'; return; }
     var ROW = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--m2-below-view')) || 56;
     var top = (view.getBoundingClientRect().top + window.scrollY) / pz();
     autoH = Math.round(Math.max(300, window.innerHeight / pz() - top - ROW)) + 'px';
@@ -644,6 +645,7 @@ kept in that browser.
     listW = shut ? 0 : w; if (!shut) lastW = w;
     var on = setting('separators');
     grid.classList.toggle('m2-seps', on);
+    grid.classList.toggle('m2-below', on && setting('separator-below'));
     grid.classList.toggle('m2-list-shut', on && shut);
     if (!on || listW === LIST_W) grid.style.removeProperty('--m2-list-w'); else grid.style.setProperty('--m2-list-w', listW + 'px');
     if (save) { try { if (listW === LIST_W) localStorage.removeItem(widthKey); else localStorage.setItem(widthKey, listW); } catch (e) {} }
