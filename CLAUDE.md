@@ -47,5 +47,7 @@ says "the workbench", "the converter's repository", "a private repository".
   maps, each from its CellDesigner file and its GraphML, in the groups CellDesigner and GraphML), never a collaborator's
   unpublished map.
 - Every change goes to `main` and is checked on the live demo before a site takes the new version. A site gets the
-  viewer as a copy with a VERSION file naming this repository and its commit.
+  viewer as a copy with a VERSION file naming this repository and its commit: `sh copy-to-site.sh <clone of the site>`
+  copies only `atlas-app.html` and `atlas-tags.css` and writes the site's `_includes/VERSION`; the site's header, styles
+  and pages stay its own. First site: the next Metabolism Regulation version (2026-11-09).
 - Hidden from search engines for now (`noindex` in `_config.yml`).
