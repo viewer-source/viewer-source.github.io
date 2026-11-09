@@ -53,7 +53,7 @@ kept in that browser.
      smaller and the map larger. The layout spans the window (16 px from each
      edge, at most 2000 px); on narrower windows the map shrinks to 600 px,
      then the empty right column gives way, then the list goes above the map. */
-  .m2 { display: grid; grid-template-columns: var(--m2-list-w, 240px) minmax(600px, 1fr) minmax(0, 240px); column-gap: 32px; align-items: start;
+  .m2 { display: grid; grid-template-columns: var(--m2-list-w, 240px) minmax(600px, 1fr) minmax(0, var(--m2-info-w, 240px)); column-gap: 32px; align-items: start;
         width: min(100vw / var(--zoom, 1) - 32px, 2000px); position: relative; left: 50%; transform: translateX(-50%); }
   .m2-nav { grid-column: 1; min-width: 0; }
   .m2-main { grid-column: 2; min-width: 0; position: relative; }
@@ -76,6 +76,11 @@ kept in that browser.
   .m2:not(.m2-seps) #m2-split, .m2:not(.m2-seps) #m2-split-h { display: none; }
   .m2-seps #m2-view { resize: none; }
   body.m2-splitting, body.m2-splitting * { cursor: col-resize !important; user-select: none; }
+  /* the separator between the map and the panel, while the panel is open beside the map: placed by the script in the
+     gap (or on the line where there is none), dragged sideways for the panel's width (user, 2026-11-09) */
+  #m2-split-r { position: absolute; display: none; cursor: col-resize; touch-action: none; z-index: 1; }
+  #m2-split-r::after { content: ''; position: absolute; top: 50%; left: 50%; width: 4px; height: 20px; margin: -10px 0 0 -2px;
+    background: radial-gradient(circle, var(--m2-grip) 1.5px, transparent 2px) center / 4px 8px repeat-y; }
   #m2-list { max-height: calc(100vh / var(--zoom, 1) - 180px); overflow-y: auto; }
   @media (max-width: 940px) {
     .m2 { display: block; width: auto; left: 0; transform: none; }
@@ -729,6 +734,54 @@ kept in that browser.
     renderInfo();
   }
   wide.addEventListener ? wide.addEventListener('change', placeInfo) : wide.addListener(placeInfo);
+  // the separator between the map and the panel beside it: in the gap between them (centred on the line where they
+  // touch), from the panel's top to the bottom of the download row; dragged sideways it sets the panel's width
+  // (--m2-info-w, 160 to 600 px), a double click gives the usual width; kept in this browser
+  (function () {
+    var rs = document.createElement('div'), key = 'atlas-info-width:' + location.pathname, drag = null;
+    rs.id = 'm2-split-r'; rs.title = 'Drag to change the width of the panel; double-click for the usual width';
+    grid.appendChild(rs);
+    function setW(w, save) {
+      if (w === null) grid.style.removeProperty('--m2-info-w');
+      else grid.style.setProperty('--m2-info-w', Math.max(160, Math.min(600, Math.round(w))) + 'px');
+      if (save) { try { if (w === null) localStorage.removeItem(key); else localStorage.setItem(key, Math.round(w)); } catch (e) {} }
+      place();
+    }
+    function place() {
+      var on = setting('separators') && info.parentNode === grid && !info.classList.contains('m2-over') && info.offsetHeight > 0;
+      rs.style.display = on ? 'block' : 'none';
+      if (!on) return;
+      var g = grid.getBoundingClientRect(), v = view.getBoundingClientRect(), i = info.getBoundingClientRect(), z = pz();
+      var dl = document.getElementById('m2-downloads').getBoundingClientRect();
+      var w = Math.max(parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--m2-split')) || 8, (i.left - v.right) / z);
+      rs.style.width = w + 'px';
+      rs.style.left = ((v.right + i.left) / 2 - g.left) / z - w / 2 + 'px';
+      rs.style.top = (i.top - g.top) / z + 'px';
+      rs.style.height = Math.max(i.bottom, dl.bottom, v.bottom) / z - i.top / z + 'px';
+    }
+    try { var saved = parseFloat(localStorage.getItem(key)); if (saved > 0) setW(saved, false); } catch (e) {}
+    rs.addEventListener('pointerdown', function (e) {
+      if (e.button !== 0) return;
+      e.preventDefault(); rs.setPointerCapture(e.pointerId);
+      drag = { x: e.clientX, w: info.getBoundingClientRect().width / pz(), moved: false };
+    });
+    rs.addEventListener('pointermove', function (e) {
+      if (!drag) return;
+      var dx = (e.clientX - drag.x) / pz();
+      if (!drag.moved && Math.abs(dx) < 3) return;
+      if (!drag.moved) { drag.moved = true; document.body.classList.add('m2-splitting'); }
+      setW(drag.w - dx, false);
+    });
+    function end() {
+      if (!drag) return;
+      if (drag.moved) setW(info.getBoundingClientRect().width / pz(), true);
+      drag = null; document.body.classList.remove('m2-splitting');
+    }
+    rs.addEventListener('pointerup', end); rs.addEventListener('pointercancel', end);
+    rs.addEventListener('dblclick', function () { setW(null, true); });
+    window.addEventListener('resize', place);
+    if (window.ResizeObserver) { new ResizeObserver(place).observe(info); new ResizeObserver(place).observe(view); }
+  })();
   function loadNodes(m) {
     nodes = null; sel = null; renderInfo(); drawPin();
     if (!m.annotation) return;
