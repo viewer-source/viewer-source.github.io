@@ -132,6 +132,11 @@ look="panel" (user, 2026-11-10): Default Panel of the styles experiment, its own
   .m2-menu-on #m2-menu { display: block; }
   .m2-menu-on #m2-downloads { display: none; }
   .m2-menu-on .m2-nav:not(.m2-search-open) #m2-search { display: none; }
+  /* Search opens in its own place (user, 2026-11-10: "right in place of search, not below"): the row gives way to the
+     field, which keeps the magnifying glass at the row's place; emptied and left, it turns back into the row */
+  .m2-search-open #m2-menu-search { display: none; }
+  .m2-menu-on #m2-search { margin: 0 0 2px; padding-left: 30px; background-repeat: no-repeat; background-position: 6px center; background-size: 16px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='1.8' stroke-linecap='round'%3E%3Ccircle cx='10.5' cy='10.5' r='6.5'/%3E%3Cpath d='M15.5 15.5L21 21'/%3E%3C/svg%3E"); }
   .m2-mi { display: flex; align-items: center; gap: 9px; width: 100%; box-sizing: border-box; font: inherit; font-size: 14px; line-height: 20px; padding: 3px 4px; margin: 0 0 2px; border: 0; border-radius: var(--m2-radius); background: none; color: var(--m2-text); cursor: pointer; text-align: left; }
   .m2-mi svg { width: 17px; height: 17px; flex: none; }
   .m2-mi:hover, .m2-mi.m2-open { background: var(--m2-accent); color: var(--m2-on-accent); }
@@ -585,22 +590,27 @@ html .m2-list-shut #m2-split { left: 0; }
   var menuNav = document.querySelector('.m2-nav'), menuSearch = document.getElementById('m2-search'),
       menuDl = document.getElementById('m2-menu-dl'), menuDlButton = document.getElementById('m2-menu-dl-button'),
       menuList = document.getElementById('m2-menu-list');
-  function menuOn() { document.querySelector('.m2').classList.toggle('m2-menu-on', setting('menu')); }
+  // with the menu the field sits between the two rows, where the Search row was; without it, above the list
+  function menuOn() {
+    var on = setting('menu');
+    document.querySelector('.m2').classList.toggle('m2-menu-on', on);
+    if (on && menuSearch.nextElementSibling !== menuDl) menuDl.parentNode.insertBefore(menuSearch, menuDl);
+    if (!on && menuSearch.parentNode !== menuNav) menuNav.insertBefore(menuSearch, document.getElementById('m2-list'));
+  }
   menuOn();
   window.addEventListener('resize', menuOn);
   function menuDlOpen(on) { menuDl.classList.toggle('m2-open', on); menuDlButton.classList.toggle('m2-open', on); }
   document.getElementById('m2-menu-search').addEventListener('click', function () {
-    var open = !menuNav.classList.contains('m2-search-open');
-    menuNav.classList.toggle('m2-search-open', open);
-    if (open) menuSearch.focus();
-    else if (menuSearch.value) { menuSearch.value = ''; buildList(''); }
-    window.dispatchEvent(new Event('resize'));  // the list's height under the field
+    menuNav.classList.add('m2-search-open');
+    menuSearch.focus();
+    window.dispatchEvent(new Event('resize'));  // the list's height
   });
+  function searchClose() { menuNav.classList.remove('m2-search-open'); window.dispatchEvent(new Event('resize')); }
   menuSearch.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape' && setting('menu') && !menuSearch.value) {
-      menuNav.classList.remove('m2-search-open'); menuSearch.blur(); window.dispatchEvent(new Event('resize'));
-    }
+    if (e.key === 'Escape' && setting('menu')) { if (menuSearch.value) { menuSearch.value = ''; buildList(''); } menuSearch.blur(); searchClose(); }
   });
+  // left empty, the field turns back into the Search row
+  menuSearch.addEventListener('blur', function () { if (setting('menu') && !menuSearch.value.trim()) searchClose(); });
   menuDlButton.addEventListener('click', function () { menuDlOpen(!menuDl.classList.contains('m2-open')); });
   document.addEventListener('click', function (e) {
     if (!menuDl.contains(e.target) || e.target.closest('#m2-menu-list a:not(.m2-bad)')) menuDlOpen(false);
@@ -825,9 +835,12 @@ html .m2-list-shut #m2-split { left: 0; }
   // header above (2026-11-06). The separator under it (user, 2026-11-09, in place of the grip in its corner) sets
   // another height, kept in this browser; a double click on it gives the page's height back
   var autoH = null; // the room under it: the setting --m2-below-view (56 px), read each time so a style can change it
-  var heightKey = 'atlas-view-height:' + location.pathname, userH = null;
-  try { userH = parseFloat(localStorage.getItem(heightKey)) || null; } catch (e) {}
+  // with the menu (--m2-menu) a height of its own, so a height dragged without it never keeps the room under the map the
+  // menu frees (user, 2026-11-10: "use the space at the bottom")
+  var heightKey = null, userH = null;
   function viewHeight() {
+    var k = 'atlas-view-height:' + (setting('menu') ? 'menu:' : '') + location.pathname;
+    if (k !== heightKey) { heightKey = k; userH = null; try { userH = parseFloat(localStorage.getItem(k)) || null; } catch (e) {} }
     if (!setting('separators')) {
       if (autoH !== null && view.style.height !== autoH) return; // resized by the reader with the grip in the corner
     }

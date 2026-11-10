@@ -42,8 +42,8 @@ says "the workbench", "the converter's repository", "a private repository".
   change to Default Panel in the styles is copied here by hand. The demo keeps Default Next; first site: mreg-atlas.
 - Menu (user, 2026-11-10, as in Claude's app; `--m2-menu: 1`, off in the viewer's own look): two rows at the top of
   the list, Search with a magnifying glass and Downloads with the download sign, in place of the search field and the
-  download buttons, so the room under the map goes to the map. Search shows the field under the rows (a click again, or
-  Esc on an empty field, hides it); Downloads opens a menu built from the download row. First in the styles' Default
+  download buttons, so the room under the map goes to the map. Search turns into the search field in its own place, the
+  magnifying glass kept (user, 2026-11-10: in place, not below); Esc, or leaving it empty, turns it back into the row; Downloads opens a menu built from the download row. The map window's height dragged by the reader is kept apart for the menu, so the room it frees is the map's. First in the styles' Default
   Code Compact.
 - Narrow windows (user, 2026-11-09, 940 px and under): the map first, then its download buttons, its name, the search
   and the list (about three maps tall, scrolling inside), then the text and references.
