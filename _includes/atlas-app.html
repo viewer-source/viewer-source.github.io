@@ -907,6 +907,9 @@ html .m2-list-shut #m2-split { left: 0; }
   // smallest box under the pointer (a protein rather than its complex).
   var info = document.getElementById('m2-info'), pin = document.getElementById('m2-pin');
   var nodes = null, sel = null, member = -1; // member: the family member shown, -1 for the cards
+  // set by the separator beside the panel: brings a panel the reader dragged out of sight back, so a click on an
+  // item of the map shows its annotation even then (user, 2026-11-10)
+  var reopenInfo = function () {};
   var KIND = { Macromolecule: 'Protein', SimpleChemical: 'Simple molecule', NucleicAcidFeature: 'Gene', Complex: 'Complex',
     Process: 'Process', OmittedProcess: 'Omitted process', UncertainProcess: 'Uncertain process', Association: 'Association', Dissociation: 'Dissociation' };
   var LINK = {
@@ -974,6 +977,7 @@ html .m2-list-shut #m2-split { left: 0; }
       return parseFloat(getComputedStyle(grid).getPropertyValue('--m2-info-w')) || parseFloat(getComputedStyle(info).width) || 240;
     }
     try { var saved = localStorage.getItem(key); if (saved !== null && parseFloat(saved) >= 0) setW(parseFloat(saved), false); } catch (e) {}
+    reopenInfo = function () { if (shut && info.childNodes.length) setW(lastW, true); };
     rs.addEventListener('pointerdown', function (e) {
       if (e.button !== 0) return;
       e.preventDefault(); rs.setPointerCapture(e.pointerId);
@@ -1046,6 +1050,7 @@ html .m2-list-shut #m2-split { left: 0; }
     sel = setting('click-closes') && best === sel ? null : best; // with --m2-click-closes a second click unselects (user, 2026-11-09)
     member = -1;
     renderInfo();
+    if (sel) reopenInfo();
     drawPin();
   }
   function closeInfo() { sel = null; renderInfo(); drawPin(); }
@@ -1063,6 +1068,7 @@ html .m2-list-shut #m2-split { left: 0; }
     ty = view.clientHeight / 2 - (b[1] + b[3] / 2) / k * z;
     moved = true;
     renderInfo();
+    reopenInfo();
     draw();
   }
   // Esc closes the annotation too; in a family member's record it first returns to the cards
