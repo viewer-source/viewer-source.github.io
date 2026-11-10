@@ -47,6 +47,8 @@ look="panel" (user, 2026-11-10): Default Panel of the styles experiment, its own
     --m2-separators: 1;
     --m2-click-closes: 1;
     --m2-drag-shift: 1;
+    --m2-menu: 0;                /* Search and Downloads as two rows at the top of the list in place of the search field and
+                                    the download buttons (user, 2026-11-10, as in Claude's app): off, a style turns it on */
     --m2-separator-below: 0;     /* the separator under the map window (its height): off for now (user, 2026-11-09: to think about) */
     --m2-split: 32px;            /* the gap between the list and the map: its separator can be dragged */
     --m2-split-h: 14px;          /* the gap under the map window, down to the download buttons: its separator too */
@@ -122,6 +124,26 @@ look="panel" (user, 2026-11-10): Default Panel of the styles experiment, its own
   #m2-search::-webkit-search-cancel-button { -webkit-appearance: none; appearance: none; width: 12px; height: 12px; cursor: pointer;
     background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'%3E%3Cpath d='M2 2l10 10M12 2L2 12' fill='none' stroke='%23b4b4b4' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat center / 12px; }
   #m2-list { display: flex; flex-direction: column; gap: 2px; }
+  /* --m2-menu: 1 (user, 2026-11-10, as in Claude's app): at the top of the list two rows, Search with a magnifying glass
+     and Downloads with the download sign, in place of the search field and the download buttons, so the room under the
+     map goes to the map. Search shows the search field under the rows (a click again empties and hides it), Downloads
+     opens a menu of what the map offers. Rows filled in the accent under the pointer and while open, as the buttons. */
+  #m2-menu { display: none; margin-bottom: 8px; }
+  .m2-menu-on #m2-menu { display: block; }
+  .m2-menu-on #m2-downloads { display: none; }
+  .m2-menu-on .m2-nav:not(.m2-search-open) #m2-search { display: none; }
+  .m2-mi { display: flex; align-items: center; gap: 9px; width: 100%; box-sizing: border-box; font: inherit; font-size: 14px; line-height: 20px; padding: 3px 4px; margin: 0 0 2px; border: 0; border-radius: var(--m2-radius); background: none; color: var(--m2-text); cursor: pointer; text-align: left; }
+  .m2-mi svg { width: 17px; height: 17px; flex: none; }
+  .m2-mi:hover, .m2-mi.m2-open { background: var(--m2-accent); color: var(--m2-on-accent); }
+  .m2-mi:focus { outline: none; }
+  #m2-menu-dl { position: relative; }
+  #m2-menu-list { display: none; position: absolute; z-index: 6; left: 0; right: 0; top: 28px; background: var(--m2-bg); border: 1px solid var(--m2-line); border-radius: var(--m2-radius-button); box-shadow: 0 2px 8px rgba(0, 0, 0, .12); padding: 4px 0; }
+  #m2-menu-dl.m2-open #m2-menu-list { display: block; }
+  #m2-menu-list a { display: flex; align-items: center; justify-content: space-between; font-size: 14px; line-height: 20px; padding: 4px 12px; color: var(--m2-text); text-decoration: none; }
+  #m2-menu-list a:hover { background: var(--m2-accent); color: var(--m2-on-accent); }
+  #m2-menu-list a svg { width: 13px; height: 13px; margin-left: 8px; flex: none; }
+  #m2-menu-list a.m2-bad { color: var(--m2-error); cursor: help; }
+  #m2-menu-list .m2-sep { border-top: 1px solid var(--m2-line); margin: 4px 0; }
   .m2-item { display: block; width: 100%; text-align: left; font-size: 14px; line-height: 18px; padding: 2px 4px; border: 1px solid transparent; border-radius: var(--m2-radius); background: none; cursor: pointer; color: var(--m2-text); }
   /* the chosen map: a filled box in the site's link blue, white text */
   /* under the pointer: --m2-hover (none since 2026-11-09; was a very light grey) */
@@ -439,6 +461,10 @@ html .m2-list-shut #m2-split { left: 0; }
 
 <div class="m2">
 <div class="m2-nav">
+<div id="m2-menu">
+<button type="button" class="m2-mi" id="m2-menu-search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></svg>Search</button>
+<div id="m2-menu-dl"><button type="button" class="m2-mi" id="m2-menu-dl-button" aria-haspopup="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5"/><path d="M4 15v5h16v-5"/></svg>Downloads</button><div id="m2-menu-list"></div></div>
+</div>
 <input type="search" id="m2-search" placeholder="Search" autocomplete="off">
 <div id="m2-list"></div>
 </div>
@@ -553,6 +579,54 @@ html .m2-list-shut #m2-split { left: 0; }
   var view = document.getElementById('m2-view'), img = document.getElementById('m2-img');
   var z = STANDARD, tx = 0, ty = 0;
   var moved = false; // zoomed or panned away from the mode's view
+
+  // --m2-menu: 1 (user, 2026-11-10): the Search and Downloads rows at the top of the list; the class m2-menu-on on the
+  // grid, set again on every resize (the styles page sends one after a style is chosen)
+  var menuNav = document.querySelector('.m2-nav'), menuSearch = document.getElementById('m2-search'),
+      menuDl = document.getElementById('m2-menu-dl'), menuDlButton = document.getElementById('m2-menu-dl-button'),
+      menuList = document.getElementById('m2-menu-list');
+  function menuOn() { document.querySelector('.m2').classList.toggle('m2-menu-on', setting('menu')); }
+  menuOn();
+  window.addEventListener('resize', menuOn);
+  function menuDlOpen(on) { menuDl.classList.toggle('m2-open', on); menuDlButton.classList.toggle('m2-open', on); }
+  document.getElementById('m2-menu-search').addEventListener('click', function () {
+    var open = !menuNav.classList.contains('m2-search-open');
+    menuNav.classList.toggle('m2-search-open', open);
+    if (open) menuSearch.focus();
+    else if (menuSearch.value) { menuSearch.value = ''; buildList(''); }
+    window.dispatchEvent(new Event('resize'));  // the list's height under the field
+  });
+  menuSearch.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && setting('menu') && !menuSearch.value) {
+      menuNav.classList.remove('m2-search-open'); menuSearch.blur(); window.dispatchEvent(new Event('resize'));
+    }
+  });
+  menuDlButton.addEventListener('click', function () { menuDlOpen(!menuDl.classList.contains('m2-open')); });
+  document.addEventListener('click', function (e) {
+    if (!menuDl.contains(e.target) || e.target.closest('#m2-menu-list a:not(.m2-bad)')) menuDlOpen(false);
+  });
+  // the menu holds what the download row holds, built from it: files, the images one by one, then the outside viewers
+  function fillMenu(dl) {
+    menuList.innerHTML = '';
+    var ext = false;
+    Array.prototype.forEach.call(dl.children, function (c) {
+      if (c.tagName === 'DETAILS') {
+        c.querySelectorAll('.m2-list a').forEach(function (a) {
+          var b = el('a', null, 'Image ' + a.textContent);
+          b.href = a.href; b.setAttribute('download', ''); b.insertAdjacentHTML('beforeend', DL_ICON);
+          menuList.appendChild(b);
+        });
+        return;
+      }
+      if (c.tagName !== 'A') return;
+      if (c.classList.contains('m2-ext') && !ext) { ext = true; if (menuList.children.length) menuList.appendChild(el('div', 'm2-sep')); }
+      var b = c.cloneNode(true);
+      b.className = c.classList.contains('m2-bad') ? 'm2-bad' : '';
+      if (b.className) b.addEventListener('click', function (e) { e.preventDefault(); });
+      menuList.appendChild(b);
+    });
+    menuDl.style.display = menuList.children.length ? '' : 'none';
+  }
 
   document.addEventListener('click', function (e) {
     document.querySelectorAll('#m2-downloads details[open]').forEach(function (d) {
@@ -1645,6 +1719,7 @@ html .m2-list-shut #m2-split { left: 0; }
       a.insertAdjacentHTML('beforeend', EXT_ICON);
       dl.appendChild(a);
     });
+    fillMenu(dl);
     var source = textOf(m), box = document.getElementById('m2-text');
     box.innerHTML = '';
     if (source) get(source.data + ver(source)).then(function (d) { if (current === m && d) box.innerHTML = d.html; });

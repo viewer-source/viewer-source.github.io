@@ -40,6 +40,11 @@ says "the workbench", "the converter's repository", "a private repository".
   in its picker; MINERVA's thin lines, no frame, the panel's column always there), in a block of its own in place of
   Default Next's, copied from the styles' `default-lines-base.css` and `default-panel-base.css` (picker rules left out). A
   change to Default Panel in the styles is copied here by hand. The demo keeps Default Next; first site: mreg-atlas.
+- Menu (user, 2026-11-10, as in Claude's app; `--m2-menu: 1`, off in the viewer's own look): two rows at the top of
+  the list, Search with a magnifying glass and Downloads with the download sign, in place of the search field and the
+  download buttons, so the room under the map goes to the map. Search shows the field under the rows (a click again, or
+  Esc on an empty field, hides it); Downloads opens a menu built from the download row. First in the styles' Default
+  Code Compact.
 - Narrow windows (user, 2026-11-09, 940 px and under): the map first, then its download buttons, its name, the search
   and the list (about three maps tall, scrolling inside), then the text and references.
 - The renderers: `renderers/yrender/` (yEd GraphML, drawn as yEd draws it) and `renderers/converter/cdrender.py`
