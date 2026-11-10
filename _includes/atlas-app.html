@@ -866,11 +866,17 @@ html .m2-ctrl button:hover { background: var(--m2-accent); border-color: var(--m
       rs.style.top = (i.top - g.top) / z + 'px';
       rs.style.height = Math.max(i.bottom, dl.bottom, v.bottom) / z - i.top / z + 'px';
     }
+    // the panel's width as it stands: the open panel measured, its column read while it is kept empty (an empty panel
+    // measures 0, which read as shut: dragged shut and pulled back, it snapped shut again, user 2026-11-10)
+    function width() {
+      if (info.childNodes.length) return info.getBoundingClientRect().width / pz();
+      return parseFloat(getComputedStyle(grid).getPropertyValue('--m2-info-w')) || parseFloat(getComputedStyle(info).width) || 240;
+    }
     try { var saved = localStorage.getItem(key); if (saved !== null && parseFloat(saved) >= 0) setW(parseFloat(saved), false); } catch (e) {}
     rs.addEventListener('pointerdown', function (e) {
       if (e.button !== 0) return;
       e.preventDefault(); rs.setPointerCapture(e.pointerId);
-      drag = { x: e.clientX, w: shut ? 0 : info.getBoundingClientRect().width / pz(), moved: false };
+      drag = { x: e.clientX, w: shut ? 0 : width(), moved: false };
     });
     rs.addEventListener('pointermove', function (e) {
       if (!drag) return;
@@ -881,7 +887,7 @@ html .m2-ctrl button:hover { background: var(--m2-accent); border-color: var(--m
     });
     function end() {
       if (!drag) return;
-      if (drag.moved) { var was = drag.w; setW(shut ? 0 : info.getBoundingClientRect().width / pz(), true); if (shut && was >= 60) lastW = was; }
+      if (drag.moved) { var was = drag.w; setW(shut ? 0 : width(), true); if (shut && was >= 60) lastW = was; }
       else if (shut) setW(lastW, true); // a click on the separator of a panel out of sight
       drag = null; document.body.classList.remove('m2-splitting');
     }
