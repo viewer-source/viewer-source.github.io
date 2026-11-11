@@ -937,6 +937,10 @@ html .m2-list-shut #m2-split { left: 0; }
     // (sent as the wheel with Ctrl) and the zoom buttons still zoom
     if (!e.ctrlKey && !e.metaKey && r.height > window.innerHeight + 1) return;
     e.preventDefault();
+    // Shift with the wheel scrolls the page from anywhere over the map (user, 2026-11-11: the map takes most of the
+    // screen, so the text under it was reached only from the edges); browsers send Shift with the wheel as a sideways
+    // scroll, so either direction is taken as the page's
+    if (e.shiftKey && !e.ctrlKey && !e.metaKey) { var d = e.deltaY || e.deltaX; window.scrollBy(0, e.deltaMode === 1 ? d * 16 : e.deltaMode === 2 ? d * window.innerHeight : d); return; }
     zoomAt(z * Math.exp(-e.deltaY * (e.deltaMode ? 0.05 : 0.0015)), (e.clientX - r.left) / pz(), (e.clientY - r.top) / pz());
   }, { passive: false });
   view.addEventListener('dblclick', function (e) {
