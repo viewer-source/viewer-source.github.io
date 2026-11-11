@@ -57,8 +57,8 @@ says "the workbench", "the converter's repository", "a private repository".
   the include or the site's description, how many maps; not the map, whose name and text stay under it: user, 2026-11-11),
   Search (the field with the cursor in it, the results under it and nothing else, no Maps list repeated), Maps (the
   list; going back to it empties the search), Downloads (the map's files as links, the download row under the map
-  gone), Open in (Newt, MINERVA: the outside viewers, not repeated in Downloads); in both plain links, no buttons and no
-  sign on each (user). Every icon stays whatever the map (user: the Open in
+  gone), Open in (Newt, MINERVA: the outside viewers, not repeated in Downloads); in both full-width buttons, 36 px tall with a light grey
+  edge, easy to click (user, 2026-11-11; plain links before), no sign on each (user). Every icon stays whatever the map (user: the Open in
   icon looked missing on maps with no outside viewer); its window says when it has nothing. Symbols (the SBGN glyphs and arcs) was tried the same day and taken out until a legend is ready
   (user: "when ready, not now"); its code is in commit 6b3ba4b. A click on the open window's icon or its cross closes
   it and the map takes the room; the window's width is the list's (its separator). Wide windows only. First in the
