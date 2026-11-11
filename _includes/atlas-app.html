@@ -1058,12 +1058,12 @@ html .m2-list-shut #m2-split { left: 0; }
       window.dispatchEvent(new Event('resize'));
     });
   });
-  // a window with nothing for this map (no outside viewers, no files) keeps its icon out of the column
+  // every icon stays in the column whatever the map (user, 2026-11-11: the Open in icon looked missing on maps with no
+  // outside viewer); its window then says so
   function railFill() {
     ['dl', 'ext'].forEach(function (k) {
-      var box = document.getElementById('m2-' + k + 'win'), b = document.querySelector('.m2-ri[data-win="' + k + '"]');
-      b.style.display = box.children.length ? '' : 'none';
-      if (!box.children.length) box.innerHTML = '<div class="m2-none">Nothing for this map.</div>';
+      var box = document.getElementById('m2-' + k + 'win');
+      if (!box.children.length) box.innerHTML = '<div class="m2-none">' + (k === 'ext' ? 'Not in an outside viewer yet.' : 'No files for this map.') + '</div>';
     });
   }
   document.getElementById('m2-winclose').addEventListener('click', function () { setListWidth(0, true); window.dispatchEvent(new Event('resize')); });
