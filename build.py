@@ -282,6 +282,7 @@ def main():
     # the CellDesigner legend's picture for the Legend window, from the full legend map (user, 2026-11-11)
     full = os.path.join(ROOT, 'downloads', 'legend-cd-full.svg')
     if os.path.exists(full):
+        os.makedirs(os.path.join(ROOT, 'images', 'legend'), exist_ok=True)
         shutil.copy(full, os.path.join(ROOT, 'images', 'legend', 'celldesigner-legend.svg'))
     db.save()
     json.dump(search, open(os.path.join(ROOT, 'atlas-data', 'search.json'), 'w', encoding='utf-8'),
