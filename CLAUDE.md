@@ -64,7 +64,12 @@ says "the workbench", "the converter's repository", "a private repository".
   it and the map takes the room; the window's width is the list's (its separator). Wide windows only. First in the
   styles' Default Icon Column. The icons 40 px with 23 px signs in a soft grey at rest (user, 2026-11-11: "a bit larger,
   more comfortable, also grey-ish"), the accent fill with a white sign under the pointer and while open (user: the grey
-  not meant for the selection); the column 52 px.
+  not meant for the selection); the column 52 px. Window titles regular, no bold (user, 2026-11-11: none anywhere). The buttons in Downloads and Open
+  in are the page's download buttons (4 px 10 px, `--m2-radius-button`, `--m2-button` edge and text) at full width, the
+  accent fill under the pointer, never a light tint (user). The column itself collapses: dragging the list's separator
+  out of sight takes the icon column with it (also dragging it 20 px further left once the list is closed), a click on
+  the separator brings both back; the icons and the cross close only the window (user, 2026-11-11: "do not frozen left
+  column, it should be removable, collapsible too"); kept in the reader's browser.
 - Floating panel (user, 2026-11-11: the map should not move when the panel appears; `--m2-info-float: 1`, off in the
   viewer's own look): the molecule's panel as a card over the map's right side on wide windows too, sliding in; the
   drawing shifts left only when the card would cover the chosen item. First in the styles' Default Icon Column.
