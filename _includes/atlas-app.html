@@ -131,6 +131,7 @@ look="panel" (user, 2026-11-10): Default Panel of the styles experiment, its own
   #m2-menu { display: none; margin-bottom: 8px; }
   .m2-menu-on #m2-menu { display: block; }
   .m2-menu-on #m2-downloads { display: none; }
+  .m2-menu-on #m2-view { max-height: calc(200vh / var(--zoom, 1)); }   /* dragged taller than the window, up to twice its height */
   .m2-menu-on .m2-nav:not(.m2-search-open) #m2-search { display: none; }
   /* Search opens in its own place (user, 2026-11-10: "right in place of search, not below"): the row gives way to the
      field, which keeps the magnifying glass at the row's place; emptied and left, it turns back into the row */
@@ -850,9 +851,13 @@ html .m2-list-shut #m2-split { left: 0; }
     // separator under it, the row out of sight; a click on the separator brings it back (user, 2026-11-09: as the
     // list and the panel go to their edges)
     var gap = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--m2-split-h')) || 14;
-    var shut = !!(userH && setting('separators') && setting('separator-below') && userH > room - (ROW + gap) / 2);
+    // with the menu (--m2-menu) there is no download row to put out of sight: the map already takes the window's height
+    // and is dragged taller, the page scrolling, up to twice the window's height (user, 2026-11-10: it was stuck at
+    // the window's bottom, and past it the row's switch hid the title and the text)
+    var menu = setting('menu'), most = menu ? 2 * window.innerHeight / pz() : room - ROW;
+    var shut = !!(!menu && userH && setting('separators') && setting('separator-below') && userH > room - (ROW + gap) / 2);
     view.closest('.m2').classList.toggle('m2-below-shut', shut);
-    if (userH && setting('separators') && setting('separator-below')) { autoH = view.style.height = Math.round(shut ? room - gap : Math.max(300, Math.min(userH, room - ROW))) + 'px'; return; }
+    if (userH && setting('separators') && setting('separator-below')) { autoH = view.style.height = Math.round(shut ? room - gap : Math.max(300, Math.min(userH, most))) + 'px'; return; }
     autoH = Math.round(Math.max(300, window.innerHeight / pz() - top - ROW)) + 'px';
     view.style.height = autoH;
   }
@@ -866,21 +871,37 @@ html .m2-list-shut #m2-split { left: 0; }
     grip.addEventListener('pointerdown', function (e) {
       if (e.button !== 0) return;
       e.preventDefault(); grip.setPointerCapture(e.pointerId);
-      drag = { y: e.clientY, h: view.getBoundingClientRect().height / pz(), moved: false };
+      drag = { y: e.clientY + window.scrollY, h: view.getBoundingClientRect().height / pz(), moved: false, cy: e.clientY };
     });
+    // the height follows the pointer's place on the page (not in the window), so the page can scroll under the drag
+    function follow() {
+      userH = drag.h + (drag.cy + window.scrollY - drag.y) / pz(); viewHeight();
+    }
+    // with the menu the map can grow past the window: held near the window's bottom edge, the page scrolls on
+    var edgeTimer = null;
+    function edgeScroll() {
+      if (!drag || !drag.moved || !setting('menu') || drag.cy < window.innerHeight - 24) { clearInterval(edgeTimer); edgeTimer = null; return; }
+      var before = window.scrollY;
+      window.scrollBy(0, 12);
+      if (window.scrollY === before && view.getBoundingClientRect().height / pz() < 2 * window.innerHeight / pz() - 1) {
+        userH = (userH || 0) + 12 / pz(); viewHeight(); window.scrollBy(0, 12);   // the page's end: the map first makes room
+      } else follow();
+    }
     grip.addEventListener('pointermove', function (e) {
       if (!drag) return;
-      var dy = (e.clientY - drag.y) / pz();
+      drag.cy = e.clientY;
+      var dy = (e.clientY + window.scrollY - drag.y) / pz();
       if (!drag.moved && Math.abs(dy) < 3) return;
       if (!drag.moved) { drag.moved = true; document.body.classList.add('m2-splitting-h'); }
-      userH = drag.h + dy; viewHeight();
+      follow();
+      if (!edgeTimer && setting('menu') && e.clientY >= window.innerHeight - 24) edgeTimer = setInterval(edgeScroll, 16);
     });
     function end() {
       if (!drag) return;
       var shut = view.closest('.m2').classList.contains('m2-below-shut');
       if (drag.moved) { userH = shut ? 1e6 : view.getBoundingClientRect().height / pz(); try { localStorage.setItem(heightKey, Math.round(userH)); } catch (e) {} }
       else if (shut) { userH = null; try { localStorage.removeItem(heightKey); } catch (e) {} viewHeight(); }
-      drag = null; document.body.classList.remove('m2-splitting-h');
+      drag = null; document.body.classList.remove('m2-splitting-h'); clearInterval(edgeTimer); edgeTimer = null;
     }
     grip.addEventListener('pointerup', end); grip.addEventListener('pointercancel', end);
     grip.addEventListener('dblclick', function () { userH = null; try { localStorage.removeItem(heightKey); } catch (e) {} viewHeight(); });
