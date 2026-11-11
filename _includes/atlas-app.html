@@ -53,6 +53,8 @@ look="panel" (user, 2026-11-10): Default Panel of the styles experiment, its own
                                     2026-11-11, from MINERVA's): off, a style turns it on */
     --m2-icon-row: 0;            /* with --m2-icons: the icons as a row at the top of the list's panel, tabs over the windows they
                                     open, the panel fixed beside the map (user, 2026-11-11): off, a style turns it on */
+    --m2-dl-ext: 0;              /* with --m2-icons: the Open in links in the Downloads window, under a line, and no Open in
+                                    icon (user, 2026-11-11): off, a style turns it on */
     --m2-info-float: 0;          /* the molecule's panel floating over the map's right side on wide windows too, so the map
                                     never moves or shrinks when it opens; it slides in (user, 2026-11-11): off, a style turns it on */
     --m2-nav-float: 0;           /* with the icon column: its windows (Maps, Search, ...) float over the map's left side as a
@@ -196,17 +198,22 @@ look="panel" (user, 2026-11-10): Default Panel of the styles experiment, its own
     .m2-info-left-open .m2-ri.m2-open { background: none; color: #80868b; }
     @media (prefers-reduced-motion: reduce) { .m2-nav-float .m2-nav { animation: none; } }
     /* --m2-icon-row: 1 (user, 2026-11-11: "the place for icons is on the top of left panel"): the icons as a row of tabs
-       at the top of the list's panel, the panel fixed beside the map as in Default; the search field stays over the
-       list (no Search tab), one Legend sign; a click on the open tab keeps it (the separator closes the panel); with
+       at the top of the list's panel, the panel fixed beside the map as in Default; Maps shows the list alone, Search
+       the field with the whole list under it, filtered as one types (user, 2026-11-11: "search bar appear with the
+       list (not just empty long panel)"), one Legend sign; a click on the open tab keeps it (the separator closes the panel); with
        annotations on the left (Settings) a chosen molecule opens as one more tab, its cross goes back to the tab before */
     .m2.m2-icons-on.m2-icon-row { padding-left: 0; }
     .m2-icon-row #m2-rail { position: static; flex-direction: row; justify-content: space-between; width: auto; gap: 2px;
       padding: 0 0 6px; margin-bottom: 8px; border-right: 0; border-bottom: 1px solid var(--m2-frame); }
     .m2-icon-row .m2-ri { flex: 0 1 36px; width: auto; min-width: 0; height: 36px; }
     .m2-icon-row .m2-ri svg { width: 21px; height: 21px; }
-    .m2-icon-row .m2-ri[data-win="search"], .m2-icon-row .m2-ri[data-win="leg"]:not([data-opt="c2"]) { display: none; }
+    .m2-icon-row .m2-ri[data-win="leg"]:not([data-opt="c2"]) { display: none; }
+    .m2-icon-row.m2-win-search #m2-list { display: block; }
+    .m2-dl-ext .m2-ri[data-win="ext"] { display: none; }
+    #m2-dlwin .m2-x { display: none; }
+    .m2-dl-ext #m2-dlwin .m2-x { display: block; }
+    .m2-dl-ext #m2-dlwin .m2-nofiles + .m2-x { display: none; }
     .m2-icons-on.m2-icon-row .m2-winhead { display: none; }
-    .m2-icon-row.m2-win-list #m2-search { display: block; }
     .m2-icon-row.m2-info-tab .m2-nav > :not(#m2-rail):not(#m2-info) { display: none !important; }
     .m2-icon-row .m2-nav > .m2-info { width: auto !important; margin: 0 !important; padding: 0 4px !important; border: 0 !important; }
     html .m2-icon-row.m2-info-tab .m2-main { border-right-color: transparent !important; }
@@ -790,9 +797,10 @@ html .m2-list-shut #m2-split { left: 0; }
       }
       if (c.tagName !== 'A') return;
       if (part && (part === 'ext') !== c.classList.contains('m2-ext')) return;
-      if (c.classList.contains('m2-ext') && !ext) { ext = true; if (menuList.children.length) menuList.appendChild(el('div', 'm2-sep')); }
+      if (c.classList.contains('m2-ext') && !ext) { ext = true; if (menuList.children.length) menuList.appendChild(el('div', into ? 'm2-sep m2-x' : 'm2-sep')); }
       var b = c.cloneNode(true);
       b.className = c.classList.contains('m2-bad') ? 'm2-bad' : '';
+      if (into && c.classList.contains('m2-ext')) b.classList.add('m2-x');   // the Downloads window: Open in links, --m2-dl-ext
       if (b.className) b.addEventListener('click', function (e) { e.preventDefault(); });
       menuList.appendChild(b);
     });
@@ -1210,6 +1218,8 @@ html .m2-list-shut #m2-split { left: 0; }
     // the icon row: the icons at the top of the list's panel (moved back when a style without it is chosen)
     var row = on && setting('icon-row'), rail = document.getElementById('m2-rail'), nav = g.querySelector('.m2-nav');
     g.classList.toggle('m2-icon-row', row);
+    g.classList.toggle('m2-dl-ext', on && setting('dl-ext'));   // set again on resize: a style loaded later turns it on
+    if (on && setting('dl-ext') && w === 'ext') w = win = 'dl';
     if (row && rail.parentNode !== nav) nav.insertBefore(rail, nav.firstChild);
     else if (!row && rail.parentNode === nav) g.insertBefore(rail, g.firstChild);
     g.classList.toggle('m2-win-dl', on && w === 'dl');
@@ -1246,7 +1256,8 @@ html .m2-list-shut #m2-split { left: 0; }
   function railFill() {
     ['dl', 'ext'].forEach(function (k) {
       var box = document.getElementById('m2-' + k + 'win');
-      if (!box.children.length) box.innerHTML = '<div class="m2-none">' + (k === 'ext' ? 'Not in an outside viewer yet.' : 'No files for this map.') + '</div>';
+      if (k === 'dl' && !box.querySelector(':scope > :not(.m2-x)')) box.insertAdjacentHTML('afterbegin', '<div class="m2-none m2-nofiles">No files for this map.</div>');
+      else if (!box.children.length) box.innerHTML = '<div class="m2-none">' + (k === 'ext' ? 'Not in an outside viewer yet.' : 'No files for this map.') + '</div>';
     });
   }
   document.getElementById('m2-winclose').addEventListener('click', function () { setListWidth(0, true); window.dispatchEvent(new Event('resize')); });
@@ -2084,7 +2095,7 @@ html .m2-list-shut #m2-split { left: 0; }
       dl.appendChild(a);
     });
     fillMenu(dl);
-    fillMenu(dl, document.getElementById('m2-dlwin'), 'files');
+    fillMenu(dl, document.getElementById('m2-dlwin'));   // Open in too, shown only with --m2-dl-ext (class m2-x)
     fillMenu(dl, document.getElementById('m2-extwin'), 'ext');
     railFill();
     var source = textOf(m), box = document.getElementById('m2-text');

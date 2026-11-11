@@ -90,10 +90,15 @@ says "the workbench", "the converter's repository", "a private repository".
 - Icon row (user, 2026-11-11: "the place for icons is on the top of left panel"; `--m2-icon-row: 1`, with `--m2-icons: 1`,
   off in the viewer's own look): the icon column's icons as a row of tabs at the top of the list's panel (36 px, 21 px
   signs), the panel fixed beside the map as in the viewer's own look (user: "lets try as in default"), the top bar left
-  to the site's name and navigation; the same windows as the icon column. The search field stays over the list (no
-  Search tab), one Legend sign (C2), no window title (the tab shows it); a click on the open tab keeps it, the separator
+  to the site's name and navigation; the same windows as the icon column. Maps shows the list alone; Search shows
+  the field with the whole list under it, filtered as one types (user, 2026-11-11: "search bar appear with the list (not
+  just empty long panel)"; until then the field stayed over the list with no Search tab), one Legend sign (C2), no window title (the tab shows it); a click on the open tab keeps it, the separator
   closes the panel. Annotations on the left (Settings) open as one more tab of the panel (the panel opened if closed),
   no tab highlighted; its cross or any tab goes back. First in the styles' Default Icon Row.
+- Open in within Downloads (user, 2026-11-11: "remove external (add them to downloads)"; `--m2-dl-ext: 1`, with the
+  icons, off in the viewer's own look): the Newt and MINERVA links under a line at the end of the Downloads window, and no
+  Open in icon. The window always holds them (class `m2-x`), shown only with the setting, so a style loaded after the map
+  turns it on. First in the styles' Default Icon Row.
 - Floating list (user, 2026-11-11: "when list appears it should not modify the usable window, a temporary panel that
   eventually will go away"; `--m2-nav-float: 1`, with the icon column only, off in the viewer's own look): the icon
   column's windows (Maps, Search, ...) slide in over the map's left side, as tall as the map window, with their
