@@ -59,8 +59,8 @@ says "the workbench", "the converter's repository", "a private repository".
   Search (the field with the cursor in it, the results under it and nothing else, no Maps list repeated), Maps (the
   list; going back to it empties the search), Downloads (the map's files as links, the download row under the map
   gone), Open in (Newt, MINERVA: the outside viewers, not repeated in Downloads); in both full-width buttons, 28 px tall (36 too long, user) with a light
-  grey edge, easy to click (user, 2026-11-11; plain links before), no sign on each (user). Legend (user, 2026-11-11), after Open in, for now five signs side by side (2026-11-11, from five: 6 filled
-  squares, MINERVA's with 6 in place of 8, and 6 dots, each over a line; 8 dots, 4 and 6 empty squares dropped; then 4 empty squares back, user: "C is nice", further apart than first, tried at gaps 4.6 to 2.4 of 24; three kept: C2 with squares of 6 at gap 2.8 and its line 1.5 wider than the squares on each side, as the first C (user: "looks nice"), C3 at gap 3.0, C3.5 at 2.7), each opening SBGN's PD learner's reference card
+  grey edge, easy to click (user, 2026-11-11; plain links before), no sign on each (user). Legend (user, 2026-11-11), after Open in, for now three signs side by side (2026-11-11, from five: 6 filled
+  squares, MINERVA's with 6 in place of 8, and 6 dots, each over a line; 8 dots, 4 and 6 empty squares dropped; then 4 empty squares back, user: "C is nice", further apart than first, tried at gaps 4.6 to 2.4 of 24; kept: C2, squares of 6 at gap 2.8, its line 1.5 wider than the squares on each side, as the first C (user: "looks nice"); C3 and C3.5 dropped; more versions in the icon board's collection Legend), each opening SBGN's PD learner's reference card
   (https://sbgn.github.io/learnerscards, CC0; `images/legend/`, the SVG from its PDF of 2020 by pdftocairo) in a window over
   the page as Claude's pop-ups (too wide for the left window), loaded quietly with the maps after the nearest five (only
   where the icon column shows), so it opens at once (user, 2026-11-11), or at the first opening if that comes sooner; closed by its icon, the cross,
