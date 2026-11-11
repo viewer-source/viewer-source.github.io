@@ -20,9 +20,11 @@ says "the workbench", "the converter's repository", "a private repository".
   map (dragged sideways for the list's width, down to out of sight; a click brings it back, a double click gives 240 px)
   and one under the map window (its height; off for now, `--m2-separator-below: 1` turns it on: user 2026-11-09, to
   think about; dragged down it simply makes the map window taller, nothing under it hidden (the download row, the
-  title and the text follow it), following only the reader's own moves (user, 2026-11-11: "only when you move, it moves"; the stop at the window's
-  bottom edge, the growing on by itself past it and the drag started by a press held at the edge, all of the same day,
-  removed): to go past the window the reader scrolls the page while dragging, up to twice the window's height; a map window taller than the browser window lets the wheel
+  title and the text follow it), following only the reader's own moves (user, 2026-11-11: "only when you move, it moves"; the growing on by itself
+  past the window's bottom edge and the drag started by a press held at the edge, both of the same day, removed), with a
+  snap: a map ending above the window's bottom edge stops on it (from 16 px before) for that drag; to go further the
+  reader scrolls the page a little and drags again, a map already on the edge following the pointer freely, up to
+  twice the window's height; a map window taller than the browser window lets the wheel
   scroll the page, Ctrl or Cmd with the wheel and a pinch zoom it: user, 2026-11-11, replacing the row put out of sight
   at the bottom edge of 2026-11-09, which hid the title and text too, so the page ended at the map and froze) in place of the corner grip, both kept in the reader's browser, in the gaps
   `--m2-split` and `--m2-split-h`; a second click on a molecule closes its panel; dragging in the list only with Shift

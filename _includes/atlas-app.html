@@ -862,19 +862,26 @@ html .m2-list-shut #m2-split { left: 0; }
   (function () {
     var hs = document.createElement('div'), grip = document.createElement('div'), drag = null;
     hs.id = 'm2-split-h'; hs.appendChild(grip);
-    grip.title = 'Drag to change the height of the map window; the wheel scrolls the page while dragging, for a map taller than the window; a double click gives the usual height';
+    grip.title = 'Drag to change the height of the map window; it stops at the bottom of the window: scroll the page a little and drag again to go further; a double click gives the usual height';
     view.parentNode.insertBefore(hs, view.nextSibling);
-    // only the reader's own moves change the height (user, 2026-11-11: "only when you move, it moves"; the stop at the
-    // window's bottom edge and the growing on by itself past it, of the same day, removed): the lower edge follows the
-    // pointer's place on the page, so to go past the window the reader scrolls the page while dragging, up to twice
-    // the window's height
+    // only the reader's own moves change the height (user, 2026-11-11: "only when you move, it moves"; the growing on by
+    // itself past the window's bottom edge, of the same day, removed): the lower edge follows the pointer's place on the
+    // page, up to twice the window's height
     grip.addEventListener('pointerdown', function (e) {
       if (e.button !== 0) return;
       e.preventDefault(); grip.setPointerCapture(e.pointerId);
-      drag = { y: e.clientY + window.scrollY, h: view.getBoundingClientRect().height / pz(), moved: false, cy: e.clientY };
+      var r = view.getBoundingClientRect();
+      // the window's bottom edge on the page, kept for this drag when the map ends above it (the snap, below)
+      drag = { y: e.clientY + window.scrollY, h: r.height / pz(), moved: false, cy: e.clientY,
+        edge: r.bottom < window.innerHeight - 1 ? (window.innerHeight + window.scrollY - r.top - window.scrollY) / pz() : null };
     });
+    // the snap (user, 2026-11-11: "snap at the end of the screen, and then you can still move down"): a map that ends
+    // above the window's bottom edge, dragged down, stops on that edge (taken from 16 px before it) for this drag; the
+    // download row, title and text stay under it, a scroll away. To go further the reader scrolls the page a little and
+    // drags again: a map that already reaches the edge follows the pointer freely
     function follow() {
       userH = drag.h + (drag.cy + window.scrollY - drag.y) / pz();
+      if (drag.edge !== null && userH > drag.edge - 16 / pz()) userH = drag.edge;
       viewHeight();
     }
     grip.addEventListener('pointermove', function (e) {
