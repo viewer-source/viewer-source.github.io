@@ -1251,7 +1251,9 @@ html .m2-list-shut #m2-split { left: 0; }
       // annotations on the left cover the window: an icon closes them and shows its window
       if (grid.classList.contains('m2-info-left-open') || grid.classList.contains('m2-info-tab')) { closeInfo(); if (!grid.classList.contains('m2-list-shut')) { win = b.dataset.win; railMark(); window.dispatchEvent(new Event('resize')); return; } }
       var open = !grid.classList.contains('m2-list-shut');
-      if (open && win === b.dataset.win) { if (!grid.classList.contains('m2-icon-row')) setListWidth(0, true); }
+      // in the icon row a second click on Search takes the field away and shows the list alone, as Maps (user, 2026-11-12)
+      if (open && win === 'search' && b.dataset.win === 'search' && grid.classList.contains('m2-icon-row')) { win = 'list'; railMark(); }
+      else if (open && win === b.dataset.win) { if (!grid.classList.contains('m2-icon-row')) setListWidth(0, true); }
       else { win = b.dataset.win; if (open) railMark(); else setListWidth(lastW >= 160 ? lastW : LIST_W, true); }
       var field = document.getElementById('m2-search');
       // Maps shows the whole list: a search left in the field is emptied; Search puts the cursor in the field
