@@ -528,6 +528,10 @@ html .m2-ctrl button:hover { background: var(--m2-accent); border-color: var(--m
 html .wrapper-masthead { border-bottom: 1px solid var(--m2-frame); margin-bottom: 0; }   /* the lines down the page meet this one (a site's own margin under the header left a gap, user 2026-11-10) */
 html #main { padding-top: 0; }
 html body.m2-head-shut #main { padding-top: 6px; }
+/* the same at the bottom: the lines down the page meet the footer's line (a site's own margin over its footer left a gap
+   under them, user 2026-11-11, on mreg-atlas); the room under the page's text kept inside the columns */
+html .wrapper-footer { margin-top: 0; border-top: 1px solid var(--m2-frame); }
+html #m2-text { padding-bottom: 40px; }
 html { --m2-split-t: 6px; }
 html .m2 { width: calc(100vw / var(--zoom, 1)); column-gap: 0; grid-template-columns: var(--m2-list-w, 240px) minmax(600px, 1fr) auto; }
 html .m2.m2-info-shut { grid-template-columns: var(--m2-list-w, 240px) minmax(600px, 1fr) 0; }
