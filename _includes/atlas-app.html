@@ -212,6 +212,9 @@ look="panel" (user, 2026-11-10): Default Panel of the styles experiment, its own
     .m2-dl-ext .m2-ri[data-win="ext"] { display: none; }
     #m2-dlwin .m2-x { display: none; }
     .m2-dl-ext #m2-dlwin .m2-x { display: block; }
+    /* Newt and MINERVA with the outside sign, so they read as leaving the site (user, 2026-11-11) */
+    .m2-dl-ext #m2-dlwin a.m2-x { display: flex; align-items: center; justify-content: space-between; }
+    .m2-dl-ext #m2-dlwin a.m2-x svg { display: block; width: 13px; height: 13px; margin-left: 8px; flex: none; }
     .m2-dl-ext #m2-dlwin .m2-nofiles + .m2-x { display: none; }
     .m2-icons-on.m2-icon-row .m2-winhead { display: none; }
     .m2-icon-row.m2-info-tab .m2-nav > :not(#m2-rail):not(#m2-info) { display: none !important; }

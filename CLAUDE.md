@@ -97,7 +97,7 @@ says "the workbench", "the converter's repository", "a private repository".
   no tab highlighted; its cross or any tab goes back. First in the styles' Default Icon Row.
 - Open in within Downloads (user, 2026-11-11: "remove external (add them to downloads)"; `--m2-dl-ext: 1`, with the
   icons, off in the viewer's own look): the Newt and MINERVA links under a line at the end of the Downloads window, and no
-  Open in icon. The window always holds them (class `m2-x`), shown only with the setting, so a style loaded after the map
+  Open in icon; each with the outside sign on its right (user, 2026-11-11: "newt minerva buttons with external link symbol"). The window always holds them (class `m2-x`), shown only with the setting, so a style loaded after the map
   turns it on. First in the styles' Default Icon Row.
 - Floating list (user, 2026-11-11: "when list appears it should not modify the usable window, a temporary panel that
   eventually will go away"; `--m2-nav-float: 1`, with the icon column only, off in the viewer's own look): the icon
