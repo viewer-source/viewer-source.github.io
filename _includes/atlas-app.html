@@ -936,17 +936,22 @@ html .m2-list-shut #m2-split { left: 0; }
     // bottom edge, the page scrolls on
     var edgeTimer = null;
     function edgeScroll() {
-      if (!drag || drag.cy < window.innerHeight - 24) { if (drag) drag.edge = 0; clearInterval(edgeTimer); edgeTimer = null; return; }
+      if (!drag || drag.cy < window.innerHeight - 24) { if (drag) drag.edge = drag.go = 0; clearInterval(edgeTimer); edgeTimer = null; return; }
       if (!drag.edge) drag.edge = Date.now();
-      if (!drag.past && Date.now() - drag.edge < 400) return;   // the stop: a map that came from above waits at the edge
+      // the stop: a map that came from above waits at the edge a second and a half; only a pointer still held there
+      // goes on (user, 2026-11-11: "stops at the edge of the window and stays there for a second or two")
+      if (!drag.past && Date.now() - drag.edge < 1500) return;
       if (!drag.moved && Date.now() - drag.t < 100) return;     // a press held at the edge, not a double click
+      if (!drag.past || !drag.go) drag.go = Date.now();         // when the growing past the edge began
       drag.past = true;
       if (!drag.moved) { drag.moved = true; document.body.classList.add('m2-splitting-h'); }
-      // each step the map grows 12 px and the page scrolls with it, so the map's lower edge stays under the pointer;
+      // each step the map grows and the page scrolls with it, so the map's lower edge stays under the pointer; slowly:
+      // 1 px a step at first, up to 4 px after about a second (about 240 px a second; 12 px a step flew, user 2026-11-11);
       // growing only by what the page had scrolled crept on by a pixel or two at the page's end (user, 2026-11-11)
+      var step = Math.min(4, 1 + (Date.now() - drag.go) / 300);
       var vh = view.getBoundingClientRect().height / pz();
-      if (vh < 2 * window.innerHeight / pz() - 1) { userH = Math.max(userH || 0, vh) + 12 / pz(); viewHeight(); }
-      window.scrollBy(0, 12);
+      if (vh < 2 * window.innerHeight / pz() - 1) { userH = Math.max(userH || 0, vh) + step / pz(); viewHeight(); }
+      window.scrollBy(0, step);
       drag.h = view.getBoundingClientRect().height / pz(); drag.y = drag.cy + window.scrollY;   // the pointer's moves count from here
     }
     grip.addEventListener('pointermove', function (e) {

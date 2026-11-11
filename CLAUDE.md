@@ -20,7 +20,7 @@ says "the workbench", "the converter's repository", "a private repository".
   map (dragged sideways for the list's width, down to out of sight; a click brings it back, a double click gives 240 px)
   and one under the map window (its height; off for now, `--m2-separator-below: 1` turns it on: user 2026-11-09, to
   think about; dragged down it simply makes the map window taller, nothing under it hidden (the download row, the
-  title and the text follow it), stopping once at the window's bottom edge when it comes from above (a download row under it; a map already on the edge, as with the menu, goes straight on: user, 2026-11-11) and, held there, going on past it with the
+  title and the text follow it), stopping once at the window's bottom edge when it comes from above (a download row under it; a map already on the edge, as with the menu, goes straight on: user, 2026-11-11) for a second and a half and, held there, going on past it slowly (1 px a step, up to 4, about 240 px a second: user, 2026-11-11, it flew at 12 px a step after a 0.4 s stop) with the
   page scrolling, up to twice the window's height; a press held at the bottom edge starts the drag by itself, as the
   separator can sit on that edge with no room to move down; a map window taller than the browser window lets the wheel
   scroll the page, Ctrl or Cmd with the wheel and a pinch zoom it: user, 2026-11-11, replacing the row put out of sight
