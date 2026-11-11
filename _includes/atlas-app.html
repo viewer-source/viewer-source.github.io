@@ -705,6 +705,7 @@ html .m2-list-shut #m2-split { left: 0; }
     if (i && document.querySelector('#m2-rail .m2-ri[data-win="leg"]') && getComputedStyle(document.getElementById('m2-rail')).display !== 'none')
       get(i.dataset.src + BUILD, true).then(function () { if (!i.src) i.src = i.dataset.src + BUILD; });
   }
+  window.addEventListener('resize', function () { if (current) legendCard(); });   // a style turning the icon column on later
   var view = document.getElementById('m2-view'), img = document.getElementById('m2-img');
   var z = STANDARD, tx = 0, ty = 0;
   var moved = false; // zoomed or panned away from the mode's view
