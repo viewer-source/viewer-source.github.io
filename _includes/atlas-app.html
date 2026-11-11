@@ -876,12 +876,12 @@ html .m2-list-shut #m2-split { left: 0; }
         edge: r.bottom < window.innerHeight - 1 ? (window.innerHeight + window.scrollY - r.top - window.scrollY) / pz() : null };
     });
     // the snap (user, 2026-11-11: "snap at the end of the screen, and then you can still move down"): a map that ends
-    // above the window's bottom edge, dragged down, stops on that edge (taken from 16 px before it) for this drag; the
+    // above the window's bottom edge, dragged down, stops on that edge (taken from 20 px before it, user 2026-11-11; was 16) for this drag; the
     // download row, title and text stay under it, a scroll away. To go further the reader scrolls the page a little and
     // drags again: a map that already reaches the edge follows the pointer freely
     function follow() {
       userH = drag.h + (drag.cy + window.scrollY - drag.y) / pz();
-      if (drag.edge !== null && userH > drag.edge - 16 / pz()) userH = drag.edge;
+      if (drag.edge !== null && userH > drag.edge - 20 / pz()) userH = drag.edge;
       viewHeight();
     }
     grip.addEventListener('pointermove', function (e) {

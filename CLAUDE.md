@@ -22,7 +22,7 @@ says "the workbench", "the converter's repository", "a private repository".
   think about; dragged down it simply makes the map window taller, nothing under it hidden (the download row, the
   title and the text follow it), following only the reader's own moves (user, 2026-11-11: "only when you move, it moves"; the growing on by itself
   past the window's bottom edge and the drag started by a press held at the edge, both of the same day, removed), with a
-  snap: a map ending above the window's bottom edge stops on it (from 16 px before) for that drag; to go further the
+  snap: a map ending above the window's bottom edge stops on it (from 20 px before, user 2026-11-11; was 16) for that drag; to go further the
   reader scrolls the page a little and drags again, a map already on the edge following the pointer freely, up to
   twice the window's height; a map window taller than the browser window lets the wheel
   scroll the page, Ctrl or Cmd with the wheel and a pinch zoom it: user, 2026-11-11, replacing the row put out of sight
