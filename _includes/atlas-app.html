@@ -51,6 +51,8 @@ look="panel" (user, 2026-11-10): Default Panel of the styles experiment, its own
                                     the download buttons (user, 2026-11-10, as in Claude's app): off, a style turns it on */
     --m2-icons: 0;               /* a narrow column of icons on the left, each opening its window in the list's place (user,
                                     2026-11-11, from MINERVA's): off, a style turns it on */
+    --m2-info-float: 0;          /* the molecule's panel floating over the map's right side on wide windows too, so the map
+                                    never moves or shrinks when it opens; it slides in (user, 2026-11-11): off, a style turns it on */
     --m2-separator-below: 0;     /* the separator under the map window (its height): off for now (user, 2026-11-09: to think about) */
     --m2-split: 32px;            /* the gap between the list and the map: its separator can be dragged */
     --m2-split-h: 14px;          /* the gap under the map window, down to the download buttons: its separator too */
@@ -299,6 +301,12 @@ look="panel" (user, 2026-11-10): Default Panel of the styles experiment, its own
   .m2-info { grid-column: 3; font-size: 14px; line-height: 1.45; color: var(--m2-text-soft); max-height: calc(100vh / var(--zoom, 1) - 140px); overflow-y: auto; overflow-wrap: anywhere; }
   .m2-info.m2-over { position: absolute; z-index: 2; top: 36px; right: 8px; bottom: 8px; width: min(260px, 70%); max-height: none; padding: 10px 12px; background: var(--m2-bg); border: 1px solid var(--m2-line); border-radius: var(--m2-radius); box-shadow: 0 2px 8px #0002; cursor: auto; user-select: text; }
   .m2-info:empty { display: none; }
+  /* --m2-info-float: 1 (user, 2026-11-11): the panel as a card over the map, the list's width (its own --m2-info-w),
+     sliding in from the right when it opens; switching molecules keeps it still */
+  .m2-info-float .m2-info.m2-over { top: 8px; right: 8px; bottom: auto; max-height: calc(100% - 16px); width: var(--m2-info-w, 240px); max-width: 70%;
+    box-sizing: border-box; padding: 12px 16px; border-color: var(--m2-frame, var(--m2-line)); box-shadow: 0 4px 16px #0000001f; animation: m2-slide .16s ease-out; }
+  @keyframes m2-slide { from { opacity: 0; transform: translateX(16px); } }
+  @media (prefers-reduced-motion: reduce) { .m2-info-float .m2-info.m2-over { animation: none; } }
   .m2-info-head { display: flex; align-items: baseline; gap: 6px; margin-bottom: 8px; }
   .m2-info-head h3 { font-size: 16px; font-weight: 400; margin: 0; flex: 1; }
   /* close: a thin cross in the soft grey of the group chevrons */
@@ -1131,7 +1139,8 @@ html .m2-list-shut #m2-split { left: 0; }
   // wide windows: the right column; narrower: over the right side of the map
   var wide = window.matchMedia('(min-width: 1030px)');
   function placeInfo() {
-    var over = !wide.matches || isFull();
+    var float = setting('info-float'), over = !wide.matches || isFull() || float;
+    document.querySelector('.m2').classList.toggle('m2-info-float', float);
     info.classList.toggle('m2-over', over);
     var home = over ? view : document.querySelector('.m2');
     if (info.parentNode !== home) home.appendChild(info);
@@ -1254,7 +1263,16 @@ html .m2-list-shut #m2-split { left: 0; }
     member = -1;
     renderInfo();
     if (sel) reopenInfo();
+    clearOfCard();
     drawPin();
+  }
+  // a molecule under the floating card (--m2-info-float): the drawing shifts left just enough to show it beside the
+  // card (MINERVA's rule as the user noted it, 2026-11-11); otherwise nothing moves
+  function clearOfCard() {
+    if (!sel || !info.classList.contains('m2-over') || !info.childNodes.length) return;
+    var k = scaleOf(current), b = sel.box, z0 = pz();
+    var right = tx + (b[0] + b[2]) / k * z, edge = (info.getBoundingClientRect().left - view.getBoundingClientRect().left) / z0 - 16;
+    if (right > edge) { tx -= right - edge; draw(); }
   }
   function closeInfo() { sel = null; renderInfo(); drawPin(); }
   // a search result chosen: its node is selected and centred at reading size
