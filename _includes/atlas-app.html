@@ -229,7 +229,7 @@ look="panel" (user, 2026-11-10): Default Panel of the styles experiment, its own
   @keyframes m2-pop { from { opacity: 0; transform: scale(.98); } }
   #m2-legend .m2-info-head { padding: 12px 16px 0; margin: 0; }
   #m2-legend .m2-leg-src { font-size: 12px; color: var(--m2-muted); }
-  #m2-legend .m2-leg-body { overflow: auto; padding: 8px 16px 16px; }
+  #m2-legend .m2-leg-body { overflow: auto; min-height: 0; padding: 8px 16px 16px; }
   #m2-legend .m2-leg-body img { display: block; width: 100%; height: auto; }
   #m2-setwin { padding: 0 4px; font-size: 14px; line-height: 1.45; color: var(--m2-text-soft); }
   #m2-setwin .m2-set-k { margin: 4px 0 6px; }
@@ -1432,6 +1432,8 @@ html .m2-list-shut #m2-split { left: 0; }
     box.classList.toggle('m2-open', open);
     var b = document.querySelector('#m2-rail .m2-ri[data-win="leg"]'); if (b) b.classList.toggle('m2-leg-on', open);
   }
+  // under the page's body: the viewer's grid is centred with a transform, which would place a fixed window from the grid
+  document.body.appendChild(document.getElementById('m2-legend'));
   document.getElementById('m2-leg-close').addEventListener('click', function () { legend(false); });
   document.getElementById('m2-legend').addEventListener('click', function (e) { if (e.target === this) legend(false); });
   document.addEventListener('keydown', function (e) {
