@@ -161,7 +161,7 @@ look="panel" (user, 2026-11-10): Default Panel of the styles experiment, its own
      the downloads (user, 2026-11-11; the symbols window tried the same day, for later: in the history). A click on
      the icon of the open window, or its cross, closes it and the map takes the room; the window's width is the list's
      (its separator). The download row under the map goes, its files are in the Downloads window. Wide windows only. */
-  #m2-rail, .m2 .m2-winhead, #m2-dlwin, #m2-extwin, #m2-infowin, #m2-setwin { display: none; }
+  #m2-rail, .m2 .m2-winhead, #m2-dlwin, #m2-extwin, #m2-infowin, #m2-setwin, #m2-legwin { display: none; }
   @media (min-width: 941px) {
     .m2.m2-icons-on { box-sizing: border-box; padding-left: 52px; }
     .m2-icons-on #m2-rail { display: flex; flex-direction: column; align-items: center; gap: 4px; position: absolute; left: 0; top: 0; bottom: 0; width: 52px;
@@ -175,8 +175,8 @@ look="panel" (user, 2026-11-10): Default Panel of the styles experiment, its own
     .m2-icons-on .m2-winhead { display: flex; }
     .m2-icons-on .m2-winhead h3 { font-size: 14px; font-weight: 400;   /* no bold anywhere (user, 2026-11-11) */ }
     .m2-win-list #m2-search, .m2-win-dl #m2-search, .m2-win-dl #m2-list, .m2-win-ext #m2-search, .m2-win-ext #m2-list,
-    .m2-win-info #m2-search, .m2-win-info #m2-list, .m2-win-set #m2-search, .m2-win-set #m2-list { display: none; }
-    .m2-win-dl #m2-dlwin, .m2-win-ext #m2-extwin, .m2-win-info #m2-infowin, .m2-win-set #m2-setwin { display: block; }
+    .m2-win-info #m2-search, .m2-win-info #m2-list, .m2-win-set #m2-search, .m2-win-set #m2-list, .m2-win-leg #m2-search, .m2-win-leg #m2-list { display: none; }
+    .m2-win-dl #m2-dlwin, .m2-win-ext #m2-extwin, .m2-win-info #m2-infowin, .m2-win-set #m2-setwin, .m2-win-leg #m2-legwin { display: block; }
     .m2-win-search:not(.m2-q) #m2-list { display: none; }   /* Search shows results only, not the Maps list again (user, 2026-11-11) */
     /* --m2-nav-float: 1 (user, 2026-11-11: "it should not modify the usable window, a temporary panel"): the list's
        column 0 wide, the window over the map from the icon column, as tall as the map window, sliding in; its width
@@ -219,6 +219,8 @@ look="panel" (user, 2026-11-10): Default Panel of the styles experiment, its own
   #m2-dlwin .m2-sep { border-top: 1px solid var(--m2-line); margin: 6px 0; }
   /* Settings (user, 2026-11-11): the reader's map size, what 100% is, and how a map opens; kept in the reader's browser.
      Choices as the page's download buttons in a row, the chosen one in the accent fill */
+  /* Legend (user, 2026-11-11): a placeholder until the legend of symbols is ready */
+  #m2-legwin { padding: 0 4px; font-size: 14px; line-height: 1.45; color: var(--m2-muted); }
   #m2-setwin { padding: 0 4px; font-size: 14px; line-height: 1.45; color: var(--m2-text-soft); }
   #m2-setwin .m2-set-k { margin: 4px 0 6px; }
   #m2-setwin .m2-set-note { font-size: 12px; color: var(--m2-muted); margin: 6px 0 14px; }
@@ -554,6 +556,7 @@ html .m2-list-shut #m2-split { left: 0; }
 <button type="button" class="m2-ri" data-win="list" title="Maps" aria-label="Maps"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r=".6" fill="currentColor"/><circle cx="4.5" cy="12" r=".6" fill="currentColor"/><circle cx="4.5" cy="18" r=".6" fill="currentColor"/></svg></button>
 <button type="button" class="m2-ri" data-win="dl" title="Downloads" aria-label="Downloads"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5"/><path d="M4 15v5h16v-5"/></svg></button>
 <button type="button" class="m2-ri" data-win="ext" title="Open in" aria-label="Open in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></button>
+<button type="button" class="m2-ri" data-win="leg" title="Legend" aria-label="Legend"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><g fill="currentColor" stroke="none"><rect x="4.5" y="6" width="3.6" height="3.6" rx=".6"/><rect x="10.2" y="6" width="3.6" height="3.6" rx=".6"/><rect x="15.9" y="6" width="3.6" height="3.6" rx=".6"/><rect x="4.5" y="11.4" width="3.6" height="3.6" rx=".6"/><rect x="10.2" y="11.4" width="3.6" height="3.6" rx=".6"/><rect x="15.9" y="11.4" width="3.6" height="3.6" rx=".6"/></g><path d="M4 19h16"/></svg></button>
 <button type="button" class="m2-ri" data-win="set" title="Settings" aria-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
 <button type="button" class="m2-ri" data-win="info" title="Info" aria-label="Info"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5"/><circle cx="12" cy="7.8" r=".7" fill="currentColor"/></svg></button>
 </div>
@@ -568,6 +571,7 @@ html .m2-list-shut #m2-split { left: 0; }
 <div id="m2-dlwin"></div>
 <div id="m2-extwin"></div>
 <div id="m2-infowin"><p class="m2-pi-name">{{ include.name | default: site.name | default: site.title }}</p>{% assign about = include.about | default: site.description %}{% if about %}<p>{{ about }}</p>{% endif %}<p class="m2-k" id="m2-info-count"></p></div>
+<div id="m2-legwin"><p>The legend of the map's symbols will be here.</p></div>
 <div id="m2-setwin"><p class="m2-set-k">Map size</p><div class="m2-set-row" id="m2-set-size"></div><p class="m2-set-note">What 100% is for every map: closer or further.</p><p class="m2-set-k">Maps open</p><div class="m2-set-row" id="m2-set-open"><button type="button" data-open="fit">Whole map</button><button type="button" data-open="read">At map size</button></div><div class="m2-set-side"><p class="m2-set-k" style="margin-top:14px">Annotations</p><div class="m2-set-row" id="m2-set-side"><button type="button" data-side="left">Left</button><button type="button" data-side="right">Right</button></div></div></div>
 </div>
 <div class="m2-main">
@@ -1139,7 +1143,7 @@ html .m2-list-shut #m2-split { left: 0; }
   // still undefined then: the page stopped with "Cannot read properties of undefined", 2026-11-11)
   var win = 'list';
   function railMark() {
-    var WIN_NAMES = { list: 'Maps', search: 'Search', info: 'Info', dl: 'Downloads', ext: 'Open in', set: 'Settings' };
+    var WIN_NAMES = { list: 'Maps', search: 'Search', info: 'Info', dl: 'Downloads', ext: 'Open in', leg: 'Legend', set: 'Settings' };
     var g = document.querySelector('.m2'), on = setting('icons'), open = !g.classList.contains('m2-list-shut');
     var w = win || 'list';
     g.classList.toggle('m2-icons-on', on);
@@ -1150,6 +1154,7 @@ html .m2-list-shut #m2-split { left: 0; }
     g.classList.toggle('m2-win-ext', on && w === 'ext');
     g.classList.toggle('m2-win-info', on && w === 'info');
     g.classList.toggle('m2-win-set', on && w === 'set');
+    g.classList.toggle('m2-win-leg', on && w === 'leg');
     // Info is about the whole project, briefly, as MINERVA's (user, 2026-11-11: "brief info only on the whole project,
     // not map"): its name, its description, how many maps; the map's name and text stay under the map
     var pc = document.getElementById('m2-info-count');
