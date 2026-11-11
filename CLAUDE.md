@@ -51,6 +51,11 @@ says "the workbench", "the converter's repository", "a private repository".
   download buttons, so the room under the map goes to the map. Search turns into the search field in its own place, the
   magnifying glass kept (user, 2026-11-10: in place, not below); Esc, or leaving it empty, turns it back into the row; Downloads opens a menu built from the download row. The map window's height dragged by the reader is kept apart for the menu, so the room it frees is the map's. With the menu the separator under the map has no row to put out of sight: the map is dragged taller than the window, up to twice its height, the page scrolling while the pointer is held at the window's bottom edge (user, 2026-11-10: it was stuck there). First in the styles' Default
   Code Downloads and Default Downloads.
+- Icon column (user, 2026-11-11, from MINERVA's, narrower; `--m2-icons: 1`, off in the viewer's own look): a 44 px
+  column of small icons at the page's left edge, each opening its window in the list's place, one at a time: Maps (the
+  search and the list), Downloads (the map's files as links, the download row under the map gone), Symbols (the SBGN
+  glyphs and arcs). A click on the open window's icon or its cross closes it and the map takes the room; the window's
+  width is the list's (its separator). Wide windows only. First in the styles' Default Icon Column.
 - Downloads in the panel's column while no molecule is open (`--m2-dl-panel`, 2026-11-11): tried and removed the same day
   (user: it does not work); its code is in the history.
 - Narrow windows (user, 2026-11-09, 940 px and under): the map first, then its download buttons, its name, the search
