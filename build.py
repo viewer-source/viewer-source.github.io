@@ -8,7 +8,11 @@
 #   atlas-data/search.json: the search index of all maps;
 #   _maps/<id>.md: the map's entry (front matter for the list and the downloads row, then its text); its v is a hash of
 #     the picture, the click data and the text, so an open page fetches a map again only when it changed.
-# maps/<id>.md gives the entry: front matter title, group, order (and topic), its body the text under the map.
+# maps/<id>.md gives the entry: front matter title, group, order (and topic), its body the text under the map; with
+#   newt: true a Newt link opens the map's SBGN-ML on the demo, minerva: <address> a MINERVA link.
+# maps/extra/<id>/ (optional): more files for a map's download row, copied to downloads/ under their own names and
+#   labelled by ending (.graphml GraphML, .sbgn SBGN-ML, -sbml.xml SBML, .png PNG, .csv Annotation): the full set of
+#   the official site, for one map only (user, 2026-11-11: glycolysis, for comparison).
 # A node is clickable when it has annotation, a process when it has references (as on the Metabolism Regulation
 # Atlas). The panel's names, function, location and cross-references come from UniProt, HGNC and ChEBI, and the
 # citations from PubMed, fetched once per identifier and cached (databases.py); a node whose identifier field holds
@@ -220,6 +224,28 @@ def entry(mid):
     return meta, body.strip()
 
 
+SITE = 'https://viewer-source.github.io'
+ENDINGS = (('-sbml.xml', 'SBML'), ('.graphml', 'GraphML'), ('.sbgn', 'SBGN-ML'), ('.png', 'PNG'), ('.csv', 'Annotation'))
+
+
+def extra(mid, meta):
+    # maps/extra/<id>/: more downloads for one map, and its Newt and MINERVA links
+    out = []
+    for f in sorted(glob.glob(os.path.join(ROOT, 'maps', 'extra', mid, '*'))):
+        name = os.path.basename(f)
+        label = next((l for e, l in ENDINGS if name.lower().endswith(e)), None)
+        if not label:
+            continue
+        shutil.copy(f, os.path.join(ROOT, 'downloads', name))
+        out.append({'label': label, 'url': '/downloads/' + name})
+    sbgn = [d['url'] for d in out if d['label'] == 'SBGN-ML']
+    if meta.get('newt') == 'true' and sbgn:
+        out.append({'label': 'Newt', 'url': 'http://web.newteditor.org/?URL=' + SITE + sbgn[0]})
+    if meta.get('minerva'):
+        out.append({'label': 'MINERVA', 'url': meta['minerva']})
+    return out
+
+
 def main():
     for d in ('downloads', 'atlas-data', '_maps'):
         shutil.rmtree(os.path.join(ROOT, d), ignore_errors=True)
@@ -244,6 +270,7 @@ def main():
               'annotation': '/atlas-data/%s.json' % mid, 'image_error': '', 'v': v,
               'downloads': [{'label': 'GraphML' if ext == '.graphml' else 'CellDesigner', 'url': '/downloads/%s%s' % (mid, ext)},
                             {'label': 'SVG', 'url': '/downloads/%s.svg' % mid}]}
+        fm['downloads'] += extra(mid, meta)
         with open(os.path.join(ROOT, '_maps', mid + '.md'), 'w', encoding='utf-8') as f:
             f.write('---\n' + ''.join('%s: %s\n' % (k, json.dumps(v, ensure_ascii=False)) for k, v in fm.items()) + '---\n' + body + '\n')
         print('%s: %s, %d clickable' % (mid, 'yEd' if ext == '.graphml' else 'CellDesigner', len(nodes)))

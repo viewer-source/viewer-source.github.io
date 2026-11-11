@@ -49,6 +49,10 @@ says "the workbench", "the converter's repository", "a private repository".
   download buttons, so the room under the map goes to the map. Search turns into the search field in its own place, the
   magnifying glass kept (user, 2026-11-10: in place, not below); Esc, or leaving it empty, turns it back into the row; Downloads opens a menu built from the download row. The map window's height dragged by the reader is kept apart for the menu, so the room it frees is the map's. With the menu the separator under the map has no row to put out of sight: the map is dragged taller than the window, up to twice its height, the page scrolling while the pointer is held at the window's bottom edge (user, 2026-11-10: it was stuck there). First in the styles' Default
   Code Downloads and Default Downloads.
+- Downloads in the panel (user, 2026-11-11; `--m2-dl-panel: 1`, off in the viewer's own look): the map's downloads as
+  plain links in the panel's column while no molecule is open, as the map's own details, in place of the download row;
+  an annotation covers them, closing it shows them again. Wide windows only (1030 px and up, the panel beside the map);
+  narrower ones and full screen keep the row. First in the styles' Default Downloads Panel.
 - Narrow windows (user, 2026-11-09, 940 px and under): the map first, then its download buttons, its name, the search
   and the list (about three maps tall, scrolling inside), then the text and references.
 - The renderers: `renderers/yrender/` (yEd GraphML, drawn as yEd draws it) and `renderers/converter/cdrender.py`
@@ -62,7 +66,9 @@ says "the workbench", "the converter's repository", "a private repository".
 - Demo maps are maps already public (the Metabolism Regulation website's official files: since 2026-11-08 the 21 maps of
   its Maps list, each from its CellDesigner file and its GraphML, in the groups CellDesigner and GraphML; glycolysis in
   cardiac muscle, an unlisted page, taken out 2026-11-11, user), never a collaborator's
-  unpublished map.
+  unpublished map. One map, glycolysis drawn from CellDesigner, has the official site's full download set for comparison
+  (user, 2026-11-11): `maps/extra/<id>/` (GraphML, SBGN-ML, SBML and the annotation table copied from the official
+  site, the PNG made from the demo's own SVG at twice its size) and `newt: true`, `minerva:` in its `maps/<id>.md`.
 - Every change goes to `main` and is checked on the live demo before a site takes the new version. A site gets the
   viewer as a copy with a VERSION file naming this repository and its commit: `sh copy-to-site.sh <clone of the site>`
   copies only `atlas-app.html` and `atlas-tags.css` and writes the site's `_includes/VERSION`; the site's header, styles

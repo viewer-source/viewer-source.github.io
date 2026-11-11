@@ -3,6 +3,8 @@ title: "Regulation of glycolysis"
 topic: "Glycolysis"
 group: "CellDesigner"
 order: 1
+newt: true
+minerva: https://mreg.elixir-luxembourg.org/minerva/index.html?id=F001-glycolysis
 ---
 ## References
 
