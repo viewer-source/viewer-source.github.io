@@ -188,8 +188,9 @@ look="panel" (user, 2026-11-10): Default Panel of the styles experiment, its own
   /* easy to click (user, 2026-11-11: "make download buttons so easy to click"): each a full-width button, 28 px tall
      (36 made the list too long, user, the same day), a light grey edge, the accent fill with white text under the pointer, as the icons */
   #m2-dlwin, #m2-extwin { padding: 0 4px; }
-  #m2-dlwin a, #m2-extwin a { display: block; box-sizing: border-box; font-size: 14px; line-height: 20px; padding: 3px 10px; margin: 0 0 3px;
-    border: 1px solid var(--m2-line, #dadce0); border-radius: 8px; color: var(--m2-text); text-decoration: none; }
+  /* the download buttons of the page under the map, full width (user, 2026-11-11: "use buttons from the default page") */
+  #m2-dlwin a, #m2-extwin a { display: block; box-sizing: border-box; font-size: 14px; line-height: 20px; padding: 4px 10px; margin: 0 0 4px;
+    background: var(--m2-bg); border: 1px solid var(--m2-button); border-radius: var(--m2-radius-button); color: var(--m2-button); text-decoration: none; }
   #m2-dlwin a:hover, #m2-extwin a:hover { background: var(--m2-accent); border-color: var(--m2-accent); color: var(--m2-on-accent); }   /* a strong fill, never a light tint (user) */
   #m2-dlwin a svg, #m2-extwin a svg { display: none; }
   #m2-dlwin a.m2-bad { color: var(--m2-error); cursor: help; }
