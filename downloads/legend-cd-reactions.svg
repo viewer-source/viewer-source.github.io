@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="840" height="450" viewBox="0 0 840 450">
+<rect width="100%" height="100%" fill="#fff"/>
+<path d="M40 20 H800 A20 20 0 0 1 820 40 V410 A20 20 0 0 1 800 430 H40 A20 20 0 0 1 20 410 V40 A20 20 0 0 1 40 20 Z M40 26 H800 A14 14 0 0 1 814 40 V410 A14 14 0 0 1 800 424 H40 A14 14 0 0 1 26 410 V40 A14 14 0 0 1 40 26 Z" fill="#e3e3e3" fill-opacity="0.25" fill-rule="evenodd"/>
+<rect x="20" y="20" width="800" height="410" rx="20" fill="none" stroke="#e3e3e3" stroke-width="2"/>
+<rect x="26" y="26" width="788" height="398" rx="14" fill="none" stroke="#e3e3e3" stroke-width="1"/>
+<text x="34" y="41.5" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="start">Reactions</text>
+<polygon points="729,174 775,174 780,179 780,237 775,242 729,242 724,237 724,179" fill="#ffffff" stroke="#000"/>
+<text x="752" y="235.58" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="11" text-anchor="middle"></text>
+<polygon points="605,270 651,270 656,275 656,333 651,338 605,338 600,333 600,275" fill="#ffffff" stroke="#000"/>
+<text x="628" y="331.58" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="11" text-anchor="middle"></text>
+<rect x="220" y="70" width="30" height="24" rx="5" fill="#c8d8eb" stroke="#000"/>
+<text x="235" y="85.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="11" text-anchor="middle">A</text>
+<rect x="344" y="70" width="30" height="24" rx="5" fill="#c8d8eb" stroke="#000"/>
+<text x="359" y="85.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="11" text-anchor="middle">B</text>
+<rect x="220" y="118" width="30" height="24" rx="5" fill="#c8d8eb" stroke="#000"/>
+<text x="235" y="133.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="11" text-anchor="middle">A</text>
+<rect x="344" y="118" width="30" height="24" rx="5" fill="#c8d8eb" stroke="#000"/>
+<text x="359" y="133.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="11" text-anchor="middle">B</text>
+<rect x="220" y="166" width="30" height="24" rx="5" fill="#c8d8eb" stroke="#000"/>
+<text x="235" y="181.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="11" text-anchor="middle">A</text>
+<rect x="344" y="166" width="30" height="24" rx="5" fill="#c8d8eb" stroke="#000"/>
+<text x="359" y="181.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="11" text-anchor="middle">B</text>
+<rect x="220" y="214" width="30" height="24" rx="5" fill="#c8d8eb" stroke="#000"/>
+<text x="235" y="229.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="11" text-anchor="middle">A</text>
+<rect x="344" y="214" width="30" height="24" rx="5" fill="#c8d8eb" stroke="#000"/>
+<text x="359" y="229.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="11" text-anchor="middle">B</text>
+<rect x="220" y="262" width="30" height="24" rx="5" fill="#c8d8eb" stroke="#000"/>
+<text x="235" y="277.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="11" text-anchor="middle">A</text>
+<circle cx="359" cy="274" r="11.25" fill="#ffffff" stroke="#000"/>
+<line x1="365" y1="259" x2="353" y2="289" stroke="#000"/>
+<rect x="220" y="310" width="30" height="24" rx="5" fill="#c8d8eb" stroke="#000"/>
+<text x="235" y="325.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="11" text-anchor="middle">A</text>
+<rect x="350" y="313" width="30" height="24" rx="5" fill="#c8d8eb" stroke="#000"/>
+<rect x="344" y="307" width="30" height="24" rx="5" fill="#c8d8eb" stroke="#000"/>
+<text x="359" y="322.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="11" text-anchor="middle">A</text>
+<rect x="220" y="358" width="30" height="24" rx="5" fill="#c8d8eb" stroke="#000"/>
+<text x="235" y="373.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="11" text-anchor="middle">A</text>
+<rect x="344" y="358" width="30" height="24" rx="5" fill="#c8d8eb" stroke="#000"/>
+<text x="359" y="373.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="11" text-anchor="middle">B</text>
+<rect x="600" y="94" width="30" height="24" rx="5" fill="#c8d8eb" stroke="#000"/>
+<text x="615" y="109.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="11" text-anchor="middle">A</text>
+<rect x="750" y="94" width="30" height="24" rx="5" fill="#c8d8eb" stroke="#000"/>
+<text x="765" y="109.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="11" text-anchor="middle">B</text>
+<ellipse cx="644" cy="65" rx="22" ry="11" fill="#dbebdb" stroke="#000"/>
+<text x="644" y="68.33" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="10" text-anchor="middle">ATP</text>
+<ellipse cx="728" cy="65" rx="22" ry="11" fill="#dbebdb" stroke="#000"/>
+<text x="728" y="68.33" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="10" text-anchor="middle">ADP</text>
+<rect x="600" y="170" width="30" height="24" rx="5" fill="#c8d8eb" stroke="#000"/>
+<text x="615" y="185.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="11" text-anchor="middle">A</text>
+<rect x="600" y="222" width="30" height="24" rx="5" fill="#c8d8eb" stroke="#000"/>
+<text x="615" y="237.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="11" text-anchor="middle">B</text>
+<rect x="750" y="266" width="30" height="24" rx="5" fill="#c8d8eb" stroke="#000"/>
+<text x="765" y="281.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="11" text-anchor="middle">A</text>
+<rect x="750" y="318" width="30" height="24" rx="5" fill="#c8d8eb" stroke="#000"/>
+<text x="765" y="333.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="11" text-anchor="middle">B</text>
+<rect x="600" y="376" width="30" height="24" rx="5" fill="#c8d8eb" stroke="#000"/>
+<text x="615" y="391.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="11" text-anchor="middle">A</text>
+<path d="M755 350 H784 V364.4 L776 359.6 V374 H755 A5 5 0 0 1 750 369 V355 A5 5 0 0 1 755 350 Z" fill="#c8d8eb" stroke="#000"/>
+<text x="767" y="365.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="11" text-anchor="middle">B</text>
+<path d="M755 402 H784 V416.4 L776 411.6 V426 H755 A5 5 0 0 1 750 421 V407 A5 5 0 0 1 755 402 Z" fill="#c8d8eb" stroke="#000"/>
+<text x="767" y="417.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="11" text-anchor="middle">C</text>
+<rect x="737" y="180" width="30" height="24" rx="5" fill="#c8d8eb" stroke="#000"/>
+<text x="752" y="195.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="11" text-anchor="middle">A</text>
+<rect x="737" y="210" width="30" height="24" rx="5" fill="#c8d8eb" stroke="#000"/>
+<text x="752" y="225.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="11" text-anchor="middle">B</text>
+<rect x="613" y="276" width="30" height="24" rx="5" fill="#c8d8eb" stroke="#000"/>
+<text x="628" y="291.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="11" text-anchor="middle">A</text>
+<rect x="613" y="306" width="30" height="24" rx="5" fill="#c8d8eb" stroke="#000"/>
+<text x="628" y="321.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="11" text-anchor="middle">B</text>
+<text x="44" y="85.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="11" text-anchor="start">state transition</text>
+<text x="44" y="133.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="11" text-anchor="start">known transition omitted</text>
+<text x="44" y="181.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="11" text-anchor="start">unknown transition</text>
+<text x="44" y="229.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="11" text-anchor="start">transport</text>
+<text x="44" y="277.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="11" text-anchor="start">degradation</text>
+<text x="44" y="325.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="11" text-anchor="start">homodimer formation</text>
+<text x="44" y="373.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="11" text-anchor="start">bidirectional reaction</text>
+<text x="440" y="109.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="11" text-anchor="start">ATP dependent</text>
+<text x="440" y="207.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="11" text-anchor="start">heterodimer association</text>
+<text x="440" y="303.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="11" text-anchor="start">dissociation</text>
+<text x="440" y="387.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="11" text-anchor="start">truncation</text>
+<g fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+<polyline points="258,82 322,82"/>
+<polyline points="258,130 322,130"/>
+<polyline points="258,178 322,178"/>
+<polyline points="258,226 322,226"/>
+<polyline points="258,274 325.75,274"/>
+<polyline points="258,322 322,322"/>
+<polyline points="272,370 322,370"/>
+<polyline points="638,106 728,106"/>
+<polyline points="656.59,81.65 675,106"/>
+<polyline points="705,106 711.3,94.77"/>
+<polyline points="637,194.17 662,208"/>
+<polyline points="637,221.83 662,208"/>
+<polyline points="662,208 702,208"/>
+<polyline points="664,304 708,304"/>
+<polyline points="708,304 729.98,293.97"/>
+<polyline points="708,304 729.98,314.03"/>
+<polyline points="638,388 702,388"/>
+<polyline points="702,388 729.57,376.97"/>
+<polyline points="702,388 729.57,399.03"/>
+</g>
+<polygon points="344,82 329,87 329,77" fill="#000"/>
+<polyline points="250,82 330,82" fill="none" stroke="#000000" stroke-width="1"/>
+<rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(297,82) rotate(0)"/>
+<polygon points="344,130 329,135 329,125" fill="#000"/>
+<polyline points="250,130 330,130" fill="none" stroke="#000000" stroke-width="1"/>
+<rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(297,130) rotate(0)"/><text x="297" y="133" font-family="'Times New Roman', serif" font-weight="bold" font-size="10" text-anchor="middle">//</text>
+<polygon points="344,178 329,183 329,173" fill="#000"/>
+<polyline points="250,178 330,178" fill="none" stroke="#000000" stroke-width="1"/>
+<rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(297,178) rotate(0)"/><text x="297" y="181" font-family="'Times New Roman', serif" font-weight="bold" font-size="10" text-anchor="middle">?</text>
+<polygon points="344,226 329,231 329,221" fill="#000"/>
+<polyline points="250,226 330,226" fill="none" stroke="#000000" stroke-width="1"/>
+<rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(297,226) rotate(0)"/>
+<polygon points="347.75,274 332.75,279 332.75,269" fill="#000"/>
+<polyline points="250,274 333.75,274" fill="none" stroke="#000000" stroke-width="1"/>
+<rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(298.88,274) rotate(0)"/>
+<polygon points="344,322 329,327 329,317" fill="#000"/>
+<polyline points="250,322 330,322" fill="none" stroke="#000000" stroke-width="1"/>
+<rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(297,322) rotate(0)"/>
+<polygon points="344,370 329,375 329,365" fill="#000"/>
+<polygon points="250,370 265,365 265,375" fill="#000"/>
+<polyline points="264,370 330,370" fill="none" stroke="#000000" stroke-width="1"/>
+<rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(297,370) rotate(0)"/>
+<polygon points="750,106 735,111 735,101" fill="#000"/>
+<polyline points="630,106 736,106" fill="none" stroke="#000000" stroke-width="1"/>
+<polyline points="651.77,75.27 675,106" fill="none" stroke="#000000" stroke-width="1"/>
+<polygon points="722.06,75.58 719.08,91.11 710.36,86.22" fill="#000"/>
+<polyline points="705,106 715.21,87.79" fill="none" stroke="#000000" stroke-width="1"/>
+<rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(690,106) rotate(0)"/>
+<polyline points="630,190.3 662,208" fill="none" stroke="#000000" stroke-width="1"/>
+<polyline points="630,225.7 662,208" fill="none" stroke="#000000" stroke-width="1"/>
+<polygon points="724,208 709,213 709,203" fill="#000"/>
+<polyline points="662,208 710,208" fill="none" stroke="#000000" stroke-width="1"/>
+<circle cx="662" cy="208" r="3.5" fill="#000"/>
+<rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(693,208) rotate(0)"/>
+<polyline points="656,304 708,304" fill="none" stroke="#000000" stroke-width="1"/>
+<polygon points="750,284.84 738.43,295.62 734.28,286.52" fill="#000"/>
+<polyline points="708,304 737.26,290.65" fill="none" stroke="#000000" stroke-width="1"/>
+<polygon points="750,323.16 734.28,321.48 738.43,312.38" fill="#000"/>
+<polyline points="708,304 737.26,317.35" fill="none" stroke="#000000" stroke-width="1"/>
+<circle cx="708" cy="304" r="5.5" fill="#fff" stroke="#000"/>
+<circle cx="708" cy="304" r="3" fill="#fff" stroke="#000"/>
+<rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(682,304) rotate(0)"/>
+<polyline points="630,388 702,388" fill="none" stroke="#000000" stroke-width="1"/>
+<polygon points="750,368.8 737.93,379.01 734.22,369.73" fill="#000"/>
+<polyline points="702,388 737,374" fill="none" stroke="#000000" stroke-width="1"/>
+<polygon points="750,407.2 734.22,406.27 737.93,396.99" fill="#000"/>
+<polyline points="702,388 737,402" fill="none" stroke="#000000" stroke-width="1"/>
+<circle cx="702" cy="388" r="5.5" fill="#fff" stroke="#000"/>
+<circle cx="702" cy="388" r="3" fill="#fff" stroke="#000"/>
+<rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(666,388) rotate(0)"/>
+</svg>

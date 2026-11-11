@@ -15,6 +15,7 @@ scale: 1
 annotation: "/atlas-data/nnos-celldesigner.json"
 image_error: ""
 v: "f4210e1eff"
+legend: "celldesigner"
 downloads: [{"label": "CellDesigner", "url": "/downloads/nnos-celldesigner.xml"}, {"label": "SVG", "url": "/downloads/nnos-celldesigner.svg"}, {"label": "SBML", "url": "/downloads/nnos-celldesigner-sbml.xml"}, {"label": "Annotation", "url": "/downloads/nnos-celldesigner.csv"}, {"label": "GraphML", "url": "/downloads/nnos-celldesigner.graphml"}, {"label": "PNG", "url": "/downloads/nnos-celldesigner.png"}, {"label": "SBGN-ML", "url": "/downloads/nnos-celldesigner.sbgn"}, {"label": "Newt", "url": "http://web.newteditor.org/?URL=https://viewer-source.github.io/downloads/nnos-celldesigner.sbgn"}, {"label": "MINERVA", "url": "https://mreg.elixir-luxembourg.org/minerva/index.html?id=F025-nnos"}]
 ---
 ## Reactome-Recon connection

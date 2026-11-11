@@ -67,7 +67,7 @@ says "the workbench", "the converter's repository", "a private repository".
   Esc or a click outside; `copy-to-site.sh` copies the card. The user will arrange its groups for the screen (user, 2026-11-11). Later (user, 2026-11-11: "let's have it as a map
   where we could actually modify the view"): the legend as a map of its own, a GraphML or CellDesigner file drawn by the
   renderers and shown with the map window's zoom and pan, so it is edited in yEd or CellDesigner like any map; the card's
-  GraphML is on the same SBGN page (pdlearnerscard.graphml). First tried on https://mreg-atlas.github.io/atlas/ (user, 2026-11-11): the card split by its sections into six maps, the list's group Legend; the Legend window here still shows the card's picture. Every icon stays whatever the map (user: the Open in
+  GraphML is on the same SBGN page (pdlearnerscard.graphml). First tried on https://mreg-atlas.github.io/atlas/ (user, 2026-11-11): the card split by its sections into six maps, the list's group Legend; the Legend window here still shows the card's picture. Two legends, one switch (user, 2026-11-11): the window has SBGN and CellDesigner tabs and opens on the one that suits the map (each map's entry has `legend`, sbgn for a GraphML map and celldesigner for a CellDesigner one; a site whose index.json lacks it opens on SBGN), the reader switching inside. The CellDesigner legend is MINERVA's legend (the AsthmaMap's) drawn again in CellDesigner in our colours, in the demo's group Legend CD (`maps/legend-cd-*.xml`, built in the workbench's `legend-cd/`): one map per block and the full legend first, whose drawing build.py copies to `images/legend/celldesigner-legend.svg` for the window. Every icon stays whatever the map (user: the Open in
   icon looked missing on maps with no outside viewer); its window says when it has nothing. Symbols (the SBGN glyphs and arcs) was tried the same day and taken out until a legend is ready
   (user: "when ready, not now"); its code is in commit 6b3ba4b. A click on the open window's icon or its cross closes
   it and the map takes the room; the window's width is the list's (its separator). Wide windows only. First in the
@@ -101,7 +101,7 @@ says "the workbench", "the converter's repository", "a private repository".
 - Narrow windows (user, 2026-11-09, 940 px and under): the map first, then its download buttons, its name, the search
   and the list (about three maps tall, scrolling inside), then the text and references.
 - The renderers: `renderers/yrender/` (yEd GraphML, drawn as yEd draws it) and `renderers/converter/cdrender.py`
-  (CellDesigner, drawn as CellDesigner draws it, with the converter's `mapconv/`). Where each was copied from:
+  (CellDesigner, drawn as CellDesigner draws it, with the converter's `mapconv/`). cdrender also draws the free texts of a visible layer, the receptor, truncated protein, drug and ion channel (open when active) shapes, the unknown logic gate and a truncation into two (2026-11-11, for the CellDesigner legend). Where each was copied from:
   `VERSION`.
 - The build: `python3 build.py` turns every file in `maps/` (`.graphml` or `.xml`) into the same output
   (`downloads/`, `atlas-data/`, `_maps/`); its header says what it writes. `maps/<id>.md` gives a map's title, group,

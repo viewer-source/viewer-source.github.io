@@ -231,6 +231,13 @@ look="panel" (user, 2026-11-10): Default Panel of the styles experiment, its own
   #m2-legend .m2-leg-src { font-size: 12px; color: var(--m2-muted); }
   #m2-legend .m2-leg-body { overflow: auto; min-height: 0; padding: 8px 16px 16px; }
   #m2-legend .m2-leg-body img { display: block; width: 100%; height: auto; }
+  /* the switch between the two legends (user, 2026-11-11): it opens on the legend that suits the map (SBGN for a
+     GraphML map, CellDesigner for a CellDesigner one), the reader switches inside */
+  #m2-legend .m2-leg-tabs { display: inline-flex; margin: 0 10px; vertical-align: 2px; border: 1px solid var(--m2-button, var(--m2-line)); border-radius: var(--m2-radius-button, 6px); overflow: hidden; }
+  #m2-legend .m2-leg-tabs button { font: inherit; font-size: 12px; padding: 2px 10px; border: 0; background: none; color: var(--m2-text); cursor: pointer; }
+  #m2-legend .m2-leg-tabs button + button { border-left: 1px solid var(--m2-button, var(--m2-line)); }
+  #m2-legend .m2-leg-tabs button.m2-on { background: var(--m2-accent); color: var(--m2-on-accent, #fff); }
+  #m2-legend [data-leg]:not(button):not(.m2-on) { display: none; }
   #m2-setwin { padding: 0 4px; font-size: 14px; line-height: 1.45; color: var(--m2-text-soft); }
   #m2-setwin .m2-set-k { margin: 4px 0 6px; }
   #m2-setwin .m2-set-note { font-size: 12px; color: var(--m2-muted); margin: 6px 0 14px; }
@@ -603,7 +610,7 @@ html .m2-list-shut #m2-split { left: 0; }
 <div id="m2-text"></div>
 </div>
 <aside class="m2-info" id="m2-info"></aside>
-<div id="m2-legend" role="dialog" aria-label="Legend"><div class="m2-leg-box"><div class="m2-info-head"><h3>Legend <span class="m2-leg-src">SBGN Process Description, <a href="https://sbgn.github.io/learnerscards" target="_blank" rel="noopener">learner's reference card</a></span></h3><button type="button" class="m2-info-close" id="m2-leg-close" title="Close" aria-label="Close"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M2 2l10 10M12 2L2 12"/></svg></button></div><div class="m2-leg-body"><img alt="SBGN Process Description symbols" data-src="{{ '/images/legend/sbgn-pd-learners-card.svg' | relative_url }}"></div></div></div>
+<div id="m2-legend" role="dialog" aria-label="Legend"><div class="m2-leg-box"><div class="m2-info-head"><h3>Legend<span class="m2-leg-tabs"><button type="button" data-leg="sbgn">SBGN</button><button type="button" data-leg="celldesigner">CellDesigner</button></span><span class="m2-leg-src" data-leg="sbgn">SBGN Process Description, <a href="https://sbgn.github.io/learnerscards" target="_blank" rel="noopener">learner's reference card</a></span><span class="m2-leg-src" data-leg="celldesigner">CellDesigner's symbols, after MINERVA's legend</span></h3><button type="button" class="m2-info-close" id="m2-leg-close" title="Close" aria-label="Close"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M2 2l10 10M12 2L2 12"/></svg></button></div><div class="m2-leg-body"><img data-leg="sbgn" alt="SBGN Process Description symbols" data-src="{{ '/images/legend/sbgn-pd-learners-card.svg' | relative_url }}"><img data-leg="celldesigner" alt="CellDesigner symbols" data-src="{{ '/images/legend/celldesigner-legend.svg' | relative_url }}"></div></div></div>
 </div>
 
 <script>
@@ -701,10 +708,12 @@ html .m2-list-shut #m2-split { left: 0; }
   }
   // the legend's card loads quietly with the maps, after the nearest ones, so it shows at once when opened (user,
   // 2026-11-11: "immediately seeing what they expect to see, even on the first load")
-  function legendCard() {
-    var i = document.querySelector('#m2-legend img');
-    if (i && document.querySelector('#m2-rail .m2-ri[data-win="leg"]') && getComputedStyle(document.getElementById('m2-rail')).display !== 'none')
+  function legendCard() {   // both legends, the one that suits the map first
+    if (!document.querySelector('#m2-rail .m2-ri[data-win="leg"]') || getComputedStyle(document.getElementById('m2-rail')).display === 'none') return;
+    var imgs = [].slice.call(document.querySelectorAll('#m2-legend img'));
+    imgs.sort(function (a, b) { return (b.dataset.leg === suitedLegend()) - (a.dataset.leg === suitedLegend()); }).forEach(function (i) {
       get(i.dataset.src + BUILD, true).then(function () { if (!i.src) i.src = i.dataset.src + BUILD; });
+    });
   }
   window.addEventListener('resize', function () { if (current) legendCard(); });   // a style turning the icon column on later
   var view = document.getElementById('m2-view'), img = document.getElementById('m2-img');
@@ -1440,11 +1449,21 @@ html .m2-list-shut #m2-split { left: 0; }
     reopenInfo();
     draw();
   }
-  // the legend's window: the card loaded the first time it opens
+  // the legend window: SBGN or CellDesigner, each picture loaded the first time it shows
   var legBtn = null;   // the Legend icon clicked (three candidate signs side by side for now: 6 squares, 4 empty squares (C2), 6 dots, user 2026-11-11)
+  function suitedLegend() { return current && current.legend === 'celldesigner' ? 'celldesigner' : 'sbgn'; }
+  function showLegend(which) {   // SBGN or CellDesigner: its tab lit, its picture and source line shown
+    var box = document.getElementById('m2-legend');
+    box.querySelectorAll('[data-leg]').forEach(function (e) { e.classList.toggle('m2-on', e.dataset.leg === which); });
+    var img = box.querySelector('img[data-leg="' + which + '"]');
+    if (!img.src) img.src = img.dataset.src + BUILD;
+  }
+  document.querySelectorAll('#m2-legend .m2-leg-tabs button').forEach(function (b) {
+    b.addEventListener('click', function () { showLegend(b.dataset.leg); });
+  });
   function legend(open) {
-    var box = document.getElementById('m2-legend'), img = box.querySelector('img');
-    if (open && !img.src) img.src = img.dataset.src + BUILD;
+    var box = document.getElementById('m2-legend');
+    if (open) showLegend(suitedLegend());   // each opening starts on the legend that suits the map
     box.classList.toggle('m2-open', open);
     document.querySelectorAll('#m2-rail .m2-ri[data-win="leg"]').forEach(function (b) { b.classList.toggle('m2-leg-on', open && b === legBtn); });
   }

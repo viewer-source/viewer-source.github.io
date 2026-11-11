@@ -15,6 +15,7 @@ scale: 1
 annotation: "/atlas-data/glycogen-liver-graphml.json"
 image_error: ""
 v: "85c39dbcd6"
+legend: "sbgn"
 downloads: [{"label": "GraphML", "url": "/downloads/glycogen-liver-graphml.graphml"}, {"label": "SVG", "url": "/downloads/glycogen-liver-graphml.svg"}, {"label": "SBML", "url": "/downloads/glycogen-liver-graphml-sbml.xml"}, {"label": "Annotation", "url": "/downloads/glycogen-liver-graphml.csv"}, {"label": "PNG", "url": "/downloads/glycogen-liver-graphml.png"}, {"label": "SBGN-ML", "url": "/downloads/glycogen-liver-graphml.sbgn"}, {"label": "CellDesigner", "url": "/downloads/glycogen-liver-graphml.xml"}, {"label": "Newt", "url": "http://web.newteditor.org/?URL=https://viewer-source.github.io/downloads/glycogen-liver-graphml.sbgn"}, {"label": "MINERVA", "url": "https://mreg.elixir-luxembourg.org/minerva/index.html?id=F004-glycogen-liver"}]
 ---
 ## Description

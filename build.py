@@ -8,6 +8,8 @@
 #   atlas-data/search.json: the search index of all maps;
 #   _maps/<id>.md: the map's entry (front matter for the list and the downloads row, then its text); its v is a hash of
 #     the picture, the click data and the text, so an open page fetches a map again only when it changed.
+# images/legend/celldesigner-legend.svg: the picture of maps/legend-cd-full.xml, for the Legend window (each map's
+#   entry says which legend suits it: legend sbgn for a GraphML map, celldesigner for a CellDesigner one).
 # maps/<id>.md gives the entry: front matter title, group, order (and topic), its body the text under the map; with
 #   newt: true a Newt link opens the map's SBGN-ML on the demo, minerva: <address> a MINERVA link.
 # maps/extra/<id>/ (optional): more files for a map's download row, copied to downloads/ under their own names and
@@ -270,12 +272,17 @@ def main():
               'group': meta.get('group', ''), 'order': int(meta.get('order', 0)), 'kind': 'map', 'draft': False, 'tag': '',
               'image': '/downloads/%s.svg' % mid, 'width': w, 'height': h, 'scale': 1,
               'annotation': '/atlas-data/%s.json' % mid, 'image_error': '', 'v': v,
+              'legend': 'sbgn' if ext == '.graphml' else 'celldesigner',  # the legend the Legend window opens on
               'downloads': [{'label': 'GraphML' if ext == '.graphml' else 'CellDesigner', 'url': '/downloads/%s%s' % (mid, ext)},
                             {'label': 'SVG', 'url': '/downloads/%s.svg' % mid}]}
         fm['downloads'] += extra(mid, meta)
         with open(os.path.join(ROOT, '_maps', mid + '.md'), 'w', encoding='utf-8') as f:
             f.write('---\n' + ''.join('%s: %s\n' % (k, json.dumps(v, ensure_ascii=False)) for k, v in fm.items()) + '---\n' + body + '\n')
         print('%s: %s, %d clickable' % (mid, 'yEd' if ext == '.graphml' else 'CellDesigner', len(nodes)))
+    # the CellDesigner legend's picture for the Legend window, from the full legend map (user, 2026-11-11)
+    full = os.path.join(ROOT, 'downloads', 'legend-cd-full.svg')
+    if os.path.exists(full):
+        shutil.copy(full, os.path.join(ROOT, 'images', 'legend', 'celldesigner-legend.svg'))
     db.save()
     json.dump(search, open(os.path.join(ROOT, 'atlas-data', 'search.json'), 'w', encoding='utf-8'),
               ensure_ascii=False, separators=(',', ':'))

@@ -15,6 +15,7 @@ scale: 1
 annotation: "/atlas-data/ureacycle-celldesigner.json"
 image_error: ""
 v: "ceefd47152"
+legend: "celldesigner"
 downloads: [{"label": "CellDesigner", "url": "/downloads/ureacycle-celldesigner.xml"}, {"label": "SVG", "url": "/downloads/ureacycle-celldesigner.svg"}, {"label": "SBML", "url": "/downloads/ureacycle-celldesigner-sbml.xml"}, {"label": "Annotation", "url": "/downloads/ureacycle-celldesigner.csv"}, {"label": "GraphML", "url": "/downloads/ureacycle-celldesigner.graphml"}, {"label": "PNG", "url": "/downloads/ureacycle-celldesigner.png"}, {"label": "SBGN-ML", "url": "/downloads/ureacycle-celldesigner.sbgn"}, {"label": "Newt", "url": "http://web.newteditor.org/?URL=https://viewer-source.github.io/downloads/ureacycle-celldesigner.sbgn"}, {"label": "MINERVA", "url": "https://mreg.elixir-luxembourg.org/minerva/index.html?id=F021-ureacycle"}]
 ---
 ## Reactome-Recon connection
