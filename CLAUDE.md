@@ -72,7 +72,12 @@ says "the workbench", "the converter's repository", "a private repository".
   column, it should be removable, collapsible too"); kept in the reader's browser. Settings (user, 2026-11-11), a gear after Open in with Info under it, evenly spaced with the others (user, 2026-11-11: a 12 px gap
   before Settings removed; at the column's foot the two fell below the window on a tall page): Map size, what 100% is for every map (75, 90, 100, 110, 125, 150%; the reading size and the cap of the
   whole-map view follow it, the % shown is against it), and Maps open (whole map or at map size, the same choice as the
-  Fit/Read button over the map); both kept in the reader's browser (`atlas-map-size`, `atlas-view`). With the icon column the list is never narrower than 160 px: under it, it closes (user: "two narrow things, not nice"); the buttons 8 px apart.
+  Fit/Read button over the map); both kept in the reader's browser (`atlas-map-size`, `atlas-view`). Annotations,
+  Left or Right (user, 2026-11-11; Right the default; only with `--m2-nav-float`, `atlas-info-side`): on the left, as in
+  MINERVA, the panel takes the floating window's place at its width, the window under it out of sight until the panel
+  closes, an icon closes the panel and shows its window, the right side stays free; the drawing shifts right only if the
+  chosen item would be under it. The one case that needs both, stepping through search results, goes back by the Search
+  icon (the results are kept). With the icon column the list is never narrower than 160 px: under it, it closes (user: "two narrow things, not nice"); the buttons 8 px apart.
 - Floating list (user, 2026-11-11: "when list appears it should not modify the usable window, a temporary panel that
   eventually will go away"; `--m2-nav-float: 1`, with the icon column only, off in the viewer's own look): the icon
   column's windows (Maps, Search, ...) slide in over the map's left side, as tall as the map window, with their
