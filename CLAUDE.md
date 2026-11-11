@@ -89,7 +89,7 @@ says "the workbench", "the converter's repository", "a private repository".
   icon (the results are kept). With the icon column the list is never narrower than 160 px: under it, it closes (user: "two narrow things, not nice"); the buttons 8 px apart.
 - Icon row (user, 2026-11-11: "the place for icons is on the top of left panel"; `--m2-icon-row: 1`, with `--m2-icons: 1`,
   off in the viewer's own look): the icon column's icons as a row of tabs at the top of the list's panel (36 px, 21 px
-  signs, from the left 6 px apart; a narrower panel drops whole tabs from the right, one by one, user 2026-11-12), the panel fixed beside the map as in the viewer's own look (user: "lets try as in default"), the top bar left
+  signs, from the left 6 px apart; a narrower panel drops whole tabs from the right, one by one, user 2026-11-12; so the panel closes only under 90 px, where one tab is left, not at the icon column's 160), the panel fixed beside the map as in the viewer's own look (user: "lets try as in default"), the top bar left
   to the site's name and navigation; the same windows as the icon column. Maps shows the list alone; Search shows
   the field with the whole list under it, filtered as one types (user, 2026-11-11: "search bar appear with the list (not
   just empty long panel)"; until then the field stayed over the list with no Search tab), one Legend sign (C2), no window title (the tab shows it); a click on the open tab keeps it, the separator

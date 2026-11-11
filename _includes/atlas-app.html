@@ -1163,7 +1163,9 @@ html .m2-list-shut #m2-split { left: 0; }
     w = Math.max(0, Math.min(600, Math.round(w)));
     // with the icon column the list is never a narrow strip: under 160 px it closes (user, 2026-11-11: "two narrow
     // things, not nice"), as the panel's 160 px
-    var minW = setting('icons') ? 160 : 60;
+    // With the icon row the panel narrows on down to one tab, the tabs dropping one by one (user, 2026-11-12: it closed
+    // at 150), and closes under 90 px, where the first tab would be cut
+    var minW = setting('icons') ? (setting('icon-row') ? 90 : 160) : 60;
     if (w >= minW && railShut) setRailShut(false);
     var shut = w < minW;
     listW = shut ? 0 : w; if (!shut) lastW = w;
