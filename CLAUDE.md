@@ -53,7 +53,7 @@ says "the workbench", "the converter's repository", "a private repository".
   Code Downloads and Default Downloads.
 - Icon column (user, 2026-11-11, from MINERVA's, narrower; `--m2-icons: 1`, off in the viewer's own look): a 44 px
   column of small icons at the page's left edge, each opening its window in the list's place, one at a time, in this
-  order (user, 2026-11-11), Maps open at the start: Info (the whole project briefly, as MINERVA's: its name, `about=` on
+  order (user, 2026-11-11; Info moved last, under Settings, as About at the bottom of a website, user the same day), Maps open at the start: Info (the whole project briefly, as MINERVA's: its name, `about=` on
   the include or the site's description, how many maps; not the map, whose name and text stay under it: user, 2026-11-11),
   Search (the field with the cursor in it, the results under it and nothing else, no Maps list repeated), Maps (the
   list; going back to it empties the search), Downloads (the map's files as links, the download row under the map
@@ -69,7 +69,7 @@ says "the workbench", "the converter's repository", "a private repository".
   accent fill under the pointer, never a light tint (user). The column itself collapses: dragging the list's separator
   out of sight takes the icon column with it (also dragging it 20 px further left once the list is closed), a click on
   the separator brings both back; the icons and the cross close only the window (user, 2026-11-11: "do not frozen left
-  column, it should be removable, collapsible too"); kept in the reader's browser. Settings (user, 2026-11-11), a gear after Open in, 12 px apart (at the column's foot it fell below the window on a
+  column, it should be removable, collapsible too"); kept in the reader's browser. Settings (user, 2026-11-11), a gear after Open in, 12 px apart with Info under it (at the column's foot it fell below the window on a
   tall page): Map size, what 100% is for every map (75, 90, 100, 110, 125, 150%; the reading size and the cap of the
   whole-map view follow it, the % shown is against it), and Maps open (whole map or at map size, the same choice as the
   Fit/Read button over the map); both kept in the reader's browser (`atlas-map-size`, `atlas-view`). With the icon column the list is never narrower than 160 px: under it, it closes (user: "two narrow things, not nice"); the buttons 8 px apart.
