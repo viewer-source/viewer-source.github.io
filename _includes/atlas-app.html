@@ -163,6 +163,10 @@ look="panel" (user, 2026-11-10): Default Panel of the styles experiment, its own
     .m2.m2-icons-on { box-sizing: border-box; padding-left: 52px; }
     .m2-icons-on #m2-rail { display: flex; flex-direction: column; align-items: center; gap: 4px; position: absolute; left: 0; top: 0; bottom: 0; width: 52px;
       box-sizing: border-box; padding-top: 8px; border-right: 1px solid var(--m2-frame); }
+    /* the icon column goes too when the list's separator is dragged out of sight (user, 2026-11-11: "do not frozen left
+       column, it should be removable, collapsible too, as the overall style"); a click on the separator brings both back */
+    .m2.m2-icons-on.m2-rail-shut { padding-left: 0; }
+    .m2-icons-on.m2-rail-shut #m2-rail { display: none; }
     .m2-icons-on #m2-downloads, .m2-icons-on #m2-menu { display: none; }
     .m2-icons-on #m2-view { max-height: calc(200vh / var(--zoom, 1)); }
     .m2-icons-on .m2-winhead { display: flex; }
@@ -993,8 +997,16 @@ html .m2-list-shut #m2-split { left: 0; }
   document.querySelector('.m2-main').insertBefore(split, document.querySelector('.m2-main').firstChild);
   var widthKey = 'atlas-list-width:' + location.pathname, LIST_W = 240, listW = LIST_W, lastW = LIST_W;
   try { var savedW = parseFloat(localStorage.getItem(widthKey)); if (savedW >= 0) listW = savedW; } catch (e) {}
+  // with the icon column: the column itself out of sight too, by the separator alone (the icons and the cross keep it)
+  var railKey = 'atlas-rail-shut:' + location.pathname, railShut = false;
+  try { railShut = localStorage.getItem(railKey) === '1' && listW === 0; } catch (e) {}
+  function setRailShut(v) {
+    railShut = v; grid.classList.toggle('m2-rail-shut', v);
+    try { if (v) localStorage.setItem(railKey, '1'); else localStorage.removeItem(railKey); } catch (e) {}
+  }
   function setListWidth(w, save) {
     w = Math.max(0, Math.min(600, Math.round(w)));
+    if (w >= 60 && railShut) setRailShut(false);
     var shut = w < 60;
     listW = shut ? 0 : w; if (!shut) lastW = w;
     var on = setting('separators');
@@ -1006,6 +1018,7 @@ html .m2-list-shut #m2-split { left: 0; }
     if (save) { try { if (listW === LIST_W) localStorage.removeItem(widthKey); else localStorage.setItem(widthKey, listW); } catch (e) {} }
     listHeight();
   }
+  grid.classList.toggle('m2-rail-shut', railShut);
   setListWidth(listW, false);
   // a style chosen later (the styles page) turns the separators on or off: the page measures again on resize
   window.addEventListener('resize', function () { setListWidth(listW, false); grid.classList.toggle('m2-shift-drag', setting('drag-shift')); });
@@ -1017,7 +1030,7 @@ html .m2-list-shut #m2-split { left: 0; }
       if (e.button !== 0) return;
       e.preventDefault();
       split.setPointerCapture(e.pointerId);
-      drag = { x: e.clientX, w: listW, moved: false };
+      drag = { x: e.clientX, w: listW, moved: false, rail: railShut };
     });
     split.addEventListener('pointermove', function (e) {
       if (!drag) return;
@@ -1025,11 +1038,14 @@ html .m2-list-shut #m2-split { left: 0; }
       if (!drag.moved && Math.abs(dx) < 3) return;
       if (!drag.moved) { drag.moved = true; split.classList.add('m2-moving-split'); document.body.classList.add('m2-splitting'); }
       setListWidth(drag.w + dx, false);
+      // the icon column goes with the list when the drag ends out of sight, or when the list was already closed and the
+      // separator is dragged further left
+      if (setting('icons')) { if (listW === 0 && (drag.w >= 60 || dx < -20)) setRailShut(true); else if (listW === 0 && dx > 20 && !drag.rail) setRailShut(false); }
     });
     function end() {
       if (!drag) return;
       if (drag.moved) { if (listW === 0 && drag.w >= 60) lastW = drag.w; setListWidth(listW, true); } // shut: the width it had before comes back
-      else if (listW === 0) setListWidth(lastW, true); // a click on the separator of a list out of sight
+      else if (listW === 0) { setRailShut(false); setListWidth(lastW, true); } // a click on the separator of a list out of sight (and of the icon column)
       drag = null; split.classList.remove('m2-moving-split'); document.body.classList.remove('m2-splitting');
     }
     split.addEventListener('pointerup', end);
