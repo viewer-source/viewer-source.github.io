@@ -53,6 +53,9 @@ look="panel" (user, 2026-11-10): Default Panel of the styles experiment, its own
                                     2026-11-11, from MINERVA's): off, a style turns it on */
     --m2-info-float: 0;          /* the molecule's panel floating over the map's right side on wide windows too, so the map
                                     never moves or shrinks when it opens; it slides in (user, 2026-11-11): off, a style turns it on */
+    --m2-nav-float: 0;           /* with the icon column: its windows (Maps, Search, ...) float over the map's left side as a
+                                    temporary panel, so the map window keeps its whole width and never moves when one opens or
+                                    closes (user, 2026-11-11): off, a style turns it on */
     --m2-separator-below: 0;     /* the separator under the map window (its height): off for now (user, 2026-11-09: to think about) */
     --m2-split: 32px;            /* the gap between the list and the map: its separator can be dragged */
     --m2-split-h: 14px;          /* the gap under the map window, down to the download buttons: its separator too */
@@ -175,6 +178,16 @@ look="panel" (user, 2026-11-10): Default Panel of the styles experiment, its own
     .m2-win-info #m2-search, .m2-win-info #m2-list, .m2-win-set #m2-search, .m2-win-set #m2-list { display: none; }
     .m2-win-dl #m2-dlwin, .m2-win-ext #m2-extwin, .m2-win-info #m2-infowin, .m2-win-set #m2-setwin { display: block; }
     .m2-win-search:not(.m2-q) #m2-list { display: none; }   /* Search shows results only, not the Maps list again (user, 2026-11-11) */
+    /* --m2-nav-float: 1 (user, 2026-11-11: "it should not modify the usable window, a temporary panel"): the list's
+       column 0 wide, the window over the map from the icon column, as tall as the map window, sliding in; its width
+       (--m2-float-w) and height (--m2-float-h) set by the page; its separator on its right edge */
+    .m2.m2-nav-float { --m2-list-w: 0px !important; }
+    .m2-nav-float .m2-nav { position: absolute; grid-column: auto; left: 52px; top: 0; z-index: 3; width: var(--m2-float-w, 240px);
+      height: var(--m2-float-h, auto); overflow: hidden; background: var(--m2-bg); box-sizing: border-box; animation: m2-slide-l .16s ease-out; }
+    .m2-nav-float #m2-split { left: calc(var(--m2-float-w, 240px) - 4px) !important; z-index: 4; }
+    .m2-nav-float.m2-list-shut #m2-split { left: 0 !important; }
+    @keyframes m2-slide-l { from { opacity: 0; transform: translateX(-16px); } }
+    @media (prefers-reduced-motion: reduce) { .m2-nav-float .m2-nav { animation: none; } }
     #m2-infowin { overflow-y: auto; max-height: calc(100vh / var(--zoom, 1) - 110px); font-size: 14px; line-height: 1.45; color: var(--m2-text-soft); overflow-wrap: anywhere; }
     #m2-infowin p { margin: 0 0 8px; padding: 0 4px; }
     #m2-infowin .m2-pi-name { font-size: 16px; font-weight: 400; color: var(--m2-text); }
@@ -1023,6 +1036,8 @@ html .m2-list-shut #m2-split { left: 0; }
       ? Math.min(window.innerHeight, listBox.parentNode.getBoundingClientRect().bottom) - 8 * pz() : bottom;
     listBox.style.maxHeight = Math.max(120, Math.floor((listBottom - listBox.getBoundingClientRect().top) / pz())) + 'px';
     split.style.height = Math.max(0, Math.floor((bottom - split.parentNode.getBoundingClientRect().top) / pz())) + 'px';
+    // a floating list window (--m2-nav-float) as tall as the map window
+    if (grid && grid.classList.contains('m2-nav-float')) grid.style.setProperty('--m2-float-h', Math.max(0, Math.floor((vb.bottom - grid.getBoundingClientRect().top) / pz())) + 'px');
   }
   // the separator between the list and the map: dragged sideways it sets the list's width (under 60 px the list is
   // out of sight, the separator stays at the page's edge), a click on it then brings the list back, a double click
@@ -1052,6 +1067,8 @@ html .m2-list-shut #m2-split { left: 0; }
     grid.classList.toggle('m2-seps', on);
     grid.classList.toggle('m2-below', on && setting('separator-below'));
     grid.classList.toggle('m2-list-shut', on && shut);
+    grid.classList.toggle('m2-nav-float', setting('icons') && setting('nav-float'));
+    if (!shut) grid.style.setProperty('--m2-float-w', listW + 'px');
     railMark();
     if (!on || listW === LIST_W) grid.style.removeProperty('--m2-list-w'); else grid.style.setProperty('--m2-list-w', listW + 'px');
     if (save) { try { if (listW === LIST_W) localStorage.removeItem(widthKey); else localStorage.setItem(widthKey, listW); } catch (e) {} }
