@@ -187,6 +187,11 @@ look="panel" (user, 2026-11-10): Default Panel of the styles experiment, its own
     .m2-nav-float #m2-split { left: calc(var(--m2-float-w, 240px) - 4px) !important; z-index: 4; }
     .m2-nav-float.m2-list-shut #m2-split { left: 0 !important; }
     @keyframes m2-slide-l { from { opacity: 0; transform: translateX(-16px); } }
+    /* annotations on the left (Settings, user 2026-11-11, as MINERVA): the panel in the left window's place, its width,
+       the window under it out of sight until the panel closes; the right side stays free */
+    .m2-info-left.m2-info-float .m2-info.m2-over { left: 0; right: auto; width: var(--m2-float-w, 240px); border-left: 0; border-right: 1px solid var(--m2-frame); animation: m2-slide-l .16s ease-out; }
+    .m2-info-left-open .m2-nav, .m2-info-left-open #m2-split { visibility: hidden; }
+    .m2-info-left-open .m2-ri.m2-open { background: none; color: #80868b; }
     @media (prefers-reduced-motion: reduce) { .m2-nav-float .m2-nav { animation: none; } }
     #m2-infowin { overflow-y: auto; max-height: calc(100vh / var(--zoom, 1) - 110px); font-size: 14px; line-height: 1.45; color: var(--m2-text-soft); overflow-wrap: anywhere; }
     #m2-infowin p { margin: 0 0 8px; padding: 0 4px; }
@@ -563,7 +568,7 @@ html .m2-list-shut #m2-split { left: 0; }
 <div id="m2-dlwin"></div>
 <div id="m2-extwin"></div>
 <div id="m2-infowin"><p class="m2-pi-name">{{ include.name | default: site.name | default: site.title }}</p>{% assign about = include.about | default: site.description %}{% if about %}<p>{{ about }}</p>{% endif %}<p class="m2-k" id="m2-info-count"></p></div>
-<div id="m2-setwin"><p class="m2-set-k">Map size</p><div class="m2-set-row" id="m2-set-size"></div><p class="m2-set-note">What 100% is for every map: closer or further.</p><p class="m2-set-k">Maps open</p><div class="m2-set-row" id="m2-set-open"><button type="button" data-open="fit">Whole map</button><button type="button" data-open="read">At map size</button></div></div>
+<div id="m2-setwin"><p class="m2-set-k">Map size</p><div class="m2-set-row" id="m2-set-size"></div><p class="m2-set-note">What 100% is for every map: closer or further.</p><p class="m2-set-k">Maps open</p><div class="m2-set-row" id="m2-set-open"><button type="button" data-open="fit">Whole map</button><button type="button" data-open="read">At map size</button></div><div class="m2-set-side"><p class="m2-set-k" style="margin-top:14px">Annotations</p><div class="m2-set-row" id="m2-set-side"><button type="button" data-side="left">Left</button><button type="button" data-side="right">Right</button></div></div></div>
 </div>
 <div class="m2-main">
 <div id="m2-view" tabindex="0">
@@ -847,7 +852,27 @@ html .m2-list-shut #m2-split { left: 0; }
     if (m === 'fit') fit(); else standard();
   }
   // Settings: the map size and how a map opens; a choice shows the map at once in the mode's view
+  // where the annotations open (Settings, user 2026-11-11): right, the default, or left in the list window's place as in
+  // MINERVA, keeping the right side free; only with the floating windows (--m2-nav-float), kept in the browser
+  var SIDE = 'right';
+  try { if (localStorage.getItem('atlas-info-side') === 'left') SIDE = 'left'; } catch (e) {}
+  function sideMark() {
+    var g = document.querySelector('.m2'), i = document.getElementById('m2-info'), on = SIDE === 'left' && g.classList.contains('m2-nav-float');
+    g.classList.toggle('m2-info-left', on);
+    g.classList.toggle('m2-info-left-open', on && i.classList.contains('m2-over') && i.childNodes.length > 0);
+    var box = document.querySelector('.m2-set-side'); if (box) box.style.display = g.classList.contains('m2-nav-float') ? '' : 'none';
+  }
+  document.querySelectorAll('#m2-set-side button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      SIDE = b.dataset.side;
+      try { if (SIDE === 'right') localStorage.removeItem('atlas-info-side'); else localStorage.setItem('atlas-info-side', SIDE); } catch (e) {}
+      showSettings(); sideMark();
+    });
+  });
+  if (window.MutationObserver) new MutationObserver(sideMark).observe(document.getElementById('m2-info'), { childList: true, attributes: true, attributeFilter: ['class'] });
+  window.addEventListener('resize', function () { setTimeout(sideMark, 0); });
   function showSettings() {
+    document.querySelectorAll('#m2-set-side button').forEach(function (b) { b.classList.toggle('m2-on', b.dataset.side === SIDE); });
     document.querySelectorAll('#m2-set-size button').forEach(function (b) { b.classList.toggle('m2-on', parseFloat(b.dataset.size) === SIZE); });
     document.querySelectorAll('#m2-set-open button').forEach(function (b) { b.classList.toggle('m2-on', b.dataset.open === mode); });
   }
@@ -1134,6 +1159,8 @@ html .m2-list-shut #m2-split { left: 0; }
   }
   document.querySelectorAll('#m2-rail .m2-ri').forEach(function (b) {
     b.addEventListener('click', function () {
+      // annotations on the left cover the window: an icon closes them and shows its window
+      if (grid.classList.contains('m2-info-left-open')) { closeInfo(); if (!grid.classList.contains('m2-list-shut')) { win = b.dataset.win; railMark(); window.dispatchEvent(new Event('resize')); return; } }
       var open = !grid.classList.contains('m2-list-shut');
       if (open && win === b.dataset.win) setListWidth(0, true);
       else { win = b.dataset.win; if (open) railMark(); else setListWidth(lastW >= 160 ? lastW : LIST_W, true); }
@@ -1356,7 +1383,13 @@ html .m2-list-shut #m2-split { left: 0; }
   function clearOfCard() {
     if (!sel || !info.classList.contains('m2-over') || !info.childNodes.length) return;
     var k = scaleOf(current), b = sel.box, z0 = pz();
-    var right = tx + (b[0] + b[2]) / k * z, edge = (info.getBoundingClientRect().left - view.getBoundingClientRect().left) / z0 - 16;
+    var r = info.getBoundingClientRect(), v = view.getBoundingClientRect();
+    if (grid.classList.contains('m2-info-left')) {   // annotations on the left: the drawing shifts right just enough
+      var left = tx + b[0] / k * z, edgeL = (r.right - v.left) / z0 + 16;
+      if (left < edgeL) { tx += edgeL - left; draw(); }
+      return;
+    }
+    var right = tx + (b[0] + b[2]) / k * z, edge = (r.left - v.left) / z0 - 16;
     if (right > edge) { tx -= right - edge; draw(); }
   }
   function closeInfo() { sel = null; renderInfo(); drawPin(); }
