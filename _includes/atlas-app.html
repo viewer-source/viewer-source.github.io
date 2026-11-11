@@ -1160,7 +1160,14 @@ html .m2-list-shut #m2-split { left: 0; }
     new ResizeObserver(listHeight).observe(view);
     new ResizeObserver(listHeight).observe(document.getElementById('m2-downloads'));
   }
-  if (window.ResizeObserver) new ResizeObserver(draw).observe(view);
+  // with the floating list (--m2-nav-float) a map not yet zoomed or panned is fitted again when the map window's width
+  // changes (the style's file arriving, the icon column closed), so a small map stays centred in the whole width
+  var viewW = 0;
+  if (window.ResizeObserver) new ResizeObserver(function () {
+    var w = view.clientWidth, again = w !== viewW && viewW && current && !moved && grid.classList.contains('m2-nav-float');
+    viewW = w;
+    if (again) { if (mode === 'fit') fit(); else standard(); } else draw();
+  }).observe(view);
 
   // full screen: the map alone; Esc or the button returns to the page
   var full = document.getElementById('m2-full');
