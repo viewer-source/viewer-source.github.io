@@ -55,8 +55,9 @@ says "the workbench", "the converter's repository", "a private repository".
   order and text. The workflow `build.yml` runs it on every push that touches `maps/`, `renderers/` or `build.py`.
 - The panel's names, function, location and cross-references come from UniProt, HGNC and ChEBI, citations from
   PubMed, fetched once per identifier into `cache/` (`databases.py`, its header); a map file keeps identifiers only.
-- Demo maps are maps already public (the Metabolism Regulation website's official files: since 2026-11-08 all 22 official
-  maps, each from its CellDesigner file and its GraphML, in the groups CellDesigner and GraphML), never a collaborator's
+- Demo maps are maps already public (the Metabolism Regulation website's official files: since 2026-11-08 the 21 maps of
+  its Maps list, each from its CellDesigner file and its GraphML, in the groups CellDesigner and GraphML; glycolysis in
+  cardiac muscle, an unlisted page, taken out 2026-11-11, user), never a collaborator's
   unpublished map.
 - Every change goes to `main` and is checked on the live demo before a site takes the new version. A site gets the
   viewer as a copy with a VERSION file naming this repository and its commit: `sh copy-to-site.sh <clone of the site>`
