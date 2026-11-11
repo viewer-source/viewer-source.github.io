@@ -46,7 +46,7 @@ says "the workbench", "the converter's repository", "a private repository".
   `look="panel"` (user, 2026-11-10: "apply newest default to mreg-atlas"): Default Panel of the styles experiment (Default
   in its picker; MINERVA's thin lines, no frame, the panel's column always there), in a block of its own in place of
   Default Next's, copied from the styles' `default-lines-base.css` and `default-panel-base.css` (picker rules left out). A
-  change to Default Panel in the styles is copied here by hand. The demo keeps Default Next; first site: mreg-atlas.
+  change to Default Panel in the styles is copied here by hand. The demo keeps Default Next; first site: mreg-atlas. With a site's footer, the lines down the page meet the footer's line as they meet the header's (user, 2026-11-11: the site's margin over the footer left a gap; the styles page has no footer).
 - Menu (user, 2026-11-10, as in Claude's app; `--m2-menu: 1`, off in the viewer's own look): two rows at the top of
   the list, Search with a magnifying glass and Downloads with the download sign, in place of the search field and the
   download buttons, so the room under the map goes to the map. Search turns into the search field in its own place, the
