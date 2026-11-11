@@ -53,7 +53,8 @@ says "the workbench", "the converter's repository", "a private repository".
   Code Downloads and Default Downloads.
 - Icon column (user, 2026-11-11, from MINERVA's, narrower; `--m2-icons: 1`, off in the viewer's own look): a 44 px
   column of small icons at the page's left edge, each opening its window in the list's place, one at a time: Maps (the
-  list), Search (its own icon, user 2026-11-11: the field over the list, the cursor in it; back to Maps empties it),
+  list), Search (its own icon, user 2026-11-11: the field with the cursor in it, the results under it and nothing else, no
+  Maps list repeated; back to Maps empties it),
   Info (the map's name and its text, moved there from under the map), Downloads (the map's files as links, the
   download row under the map gone), Open in (Newt, MINERVA: the outside viewers, not repeated in Downloads; user,
   2026-11-11). An icon whose window has nothing for the map is left out. Symbols (the SBGN glyphs and arcs) was

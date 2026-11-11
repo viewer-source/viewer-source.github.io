@@ -168,6 +168,7 @@ look="panel" (user, 2026-11-10): Default Panel of the styles experiment, its own
     .m2-win-list #m2-search, .m2-win-dl #m2-search, .m2-win-dl #m2-list, .m2-win-ext #m2-search, .m2-win-ext #m2-list,
     .m2-win-info #m2-search, .m2-win-info #m2-list { display: none; }
     .m2-win-dl #m2-dlwin, .m2-win-ext #m2-extwin, .m2-win-info #m2-infowin { display: block; }
+    .m2-win-search:not(.m2-q) #m2-list { display: none; }   /* Search shows results only, not the Maps list again (user, 2026-11-11) */
     #m2-infowin { overflow-y: auto; max-height: calc(100vh / var(--zoom, 1) - 110px); font-size: 14px; line-height: 1.45; color: var(--m2-text-soft); overflow-wrap: anywhere; }
     .m2 #m2-infowin #m2-title { font-size: 16px; font-weight: 600; margin: 0 0 8px; padding: 0 4px; }
     .m2 #m2-infowin #m2-text { padding: 0 4px; }
@@ -1029,6 +1030,8 @@ html .m2-list-shut #m2-split { left: 0; }
     g.classList.toggle('m2-icons-on', on);
     g.classList.toggle('m2-win-dl', on && w === 'dl');
     g.classList.toggle('m2-win-list', on && w === 'list');
+    g.classList.toggle('m2-win-search', on && w === 'search');
+    var q = document.getElementById('m2-search'); g.classList.toggle('m2-q', !!(q && q.value.trim()));
     g.classList.toggle('m2-win-ext', on && w === 'ext');
     g.classList.toggle('m2-win-info', on && w === 'info');
     // the map's name and text live in the Info window while the icon column is on, under the map otherwise
@@ -1751,7 +1754,7 @@ html .m2-list-shut #m2-split { left: 0; }
       box.scrollTop = Math.max(0, Math.min(box.scrollTop, top - room), top + on.offsetHeight + room - box.clientHeight);
     }
   }
-  document.getElementById('m2-search').addEventListener('input', function () { buildList(this.value); });
+  document.getElementById('m2-search').addEventListener('input', function () { buildList(this.value); grid.classList.toggle('m2-q', !!this.value.trim()); });
   // arrow keys step through the listed maps, as on the Colours page; wraps around.
   // In the search box only up and down, so left and right still move the cursor
   document.addEventListener('keydown', function (e) {
