@@ -69,7 +69,7 @@ says "the workbench", "the converter's repository", "a private repository".
   accent fill under the pointer, never a light tint (user). The column itself collapses: dragging the list's separator
   out of sight takes the icon column with it (also dragging it 20 px further left once the list is closed), a click on
   the separator brings both back; the icons and the cross close only the window (user, 2026-11-11: "do not frozen left
-  column, it should be removable, collapsible too"); kept in the reader's browser.
+  column, it should be removable, collapsible too"); kept in the reader's browser. With the icon column the list is never narrower than 160 px: under it, it closes (user: "two narrow things, not nice"); the buttons 8 px apart.
 - Floating panel (user, 2026-11-11: the map should not move when the panel appears; `--m2-info-float: 1`, off in the
   viewer's own look): the molecule's panel as a card over the map's right side on wide windows too, sliding in; the
   drawing shifts left only when the card would cover the chosen item. First in the styles' Default Icon Column.

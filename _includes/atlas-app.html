@@ -193,7 +193,7 @@ look="panel" (user, 2026-11-10): Default Panel of the styles experiment, its own
      (36 made the list too long, user, the same day), a light grey edge, the accent fill with white text under the pointer, as the icons */
   #m2-dlwin, #m2-extwin { padding: 0 4px; }
   /* the download buttons of the page under the map, full width (user, 2026-11-11: "use buttons from the default page") */
-  #m2-dlwin a, #m2-extwin a { display: block; box-sizing: border-box; font-size: 14px; line-height: 20px; padding: 4px 10px; margin: 0 0 4px;
+  #m2-dlwin a, #m2-extwin a { display: block; box-sizing: border-box; font-size: 14px; line-height: 20px; padding: 4px 10px; margin: 0 0 8px;   /* 8 px apart (user, 2026-11-11: "a bit more space") */
     background: var(--m2-bg); border: 1px solid var(--m2-button); border-radius: var(--m2-radius-button); color: var(--m2-button); text-decoration: none; }
   #m2-dlwin a:hover, #m2-extwin a:hover { background: var(--m2-accent); border-color: var(--m2-accent); color: var(--m2-on-accent); }   /* a strong fill, never a light tint (user) */
   #m2-dlwin a svg, #m2-extwin a svg { display: none; }
@@ -1006,8 +1006,11 @@ html .m2-list-shut #m2-split { left: 0; }
   }
   function setListWidth(w, save) {
     w = Math.max(0, Math.min(600, Math.round(w)));
-    if (w >= 60 && railShut) setRailShut(false);
-    var shut = w < 60;
+    // with the icon column the list is never a narrow strip: under 160 px it closes (user, 2026-11-11: "two narrow
+    // things, not nice"), as the panel's 160 px
+    var minW = setting('icons') ? 160 : 60;
+    if (w >= minW && railShut) setRailShut(false);
+    var shut = w < minW;
     listW = shut ? 0 : w; if (!shut) lastW = w;
     var on = setting('separators');
     grid.classList.toggle('m2-seps', on);
@@ -1045,7 +1048,7 @@ html .m2-list-shut #m2-split { left: 0; }
     function end() {
       if (!drag) return;
       if (drag.moved) { if (listW === 0 && drag.w >= 60) lastW = drag.w; setListWidth(listW, true); } // shut: the width it had before comes back
-      else if (listW === 0) { setRailShut(false); setListWidth(lastW, true); } // a click on the separator of a list out of sight (and of the icon column)
+      else if (listW === 0) { setRailShut(false); setListWidth(Math.max(lastW, setting('icons') ? LIST_W : 0), true); } // a click on the separator of a list out of sight (and of the icon column)
       drag = null; split.classList.remove('m2-moving-split'); document.body.classList.remove('m2-splitting');
     }
     split.addEventListener('pointerup', end);
@@ -1079,7 +1082,7 @@ html .m2-list-shut #m2-split { left: 0; }
     b.addEventListener('click', function () {
       var open = !grid.classList.contains('m2-list-shut');
       if (open && win === b.dataset.win) setListWidth(0, true);
-      else { win = b.dataset.win; if (open) railMark(); else setListWidth(lastW >= 60 ? lastW : LIST_W, true); }
+      else { win = b.dataset.win; if (open) railMark(); else setListWidth(lastW >= 160 ? lastW : LIST_W, true); }
       var field = document.getElementById('m2-search');
       // Maps shows the whole list: a search left in the field is emptied; Search puts the cursor in the field
       if (win === 'list' && field.value) { field.value = ''; buildList(''); }
