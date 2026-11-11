@@ -80,7 +80,7 @@ look="panel" (user, 2026-11-10): Default Panel of the styles experiment, its own
   #m2-view:fullscreen + #m2-split-h, #m2-view:-webkit-full-screen + #m2-split-h { display: none; }
   body.m2-splitting-h, body.m2-splitting-h * { cursor: row-resize !important; user-select: none; }
   .m2-list-shut .m2-nav { display: none; }
-  .m2-below-shut #m2-downloads, .m2-below-shut #m2-title, .m2-below-shut #m2-text { display: none; }   /* the map to the bottom edge */
+  .m2-below-shut #m2-downloads { display: none; }   /* the map to the bottom edge; its title and text stay under it, reached by scrolling (user, 2026-11-11: hidden, the page ended at the map) */
   .m2-below-shut #m2-view { max-height: none; }
   /* the separators only with --m2-separators: 1 (the class m2-seps); then no grip in the map window's corner */
   .m2:not(.m2-seps) #m2-split, .m2:not(.m2-seps) #m2-split-h, .m2:not(.m2-below) #m2-split-h { display: none; }
@@ -769,8 +769,12 @@ html .m2-list-shut #m2-split { left: 0; }
   function setting(name) { return getComputedStyle(document.documentElement).getPropertyValue('--m2-' + name).trim() === '1'; }
   view.addEventListener('wheel', function (e) {
     if (e.target.closest('.m2-info')) return; // the panel over the map scrolls
-    e.preventDefault();
     var r = view.getBoundingClientRect();
+    // a map window taller than the browser window (dragged past the bottom edge): the wheel scrolls the page, as the
+    // map covers most of it and the page froze (user, 2026-11-11); Ctrl or Cmd with the wheel, a pinch on a trackpad
+    // (sent as the wheel with Ctrl) and the zoom buttons still zoom
+    if (!e.ctrlKey && !e.metaKey && r.height > window.innerHeight + 1) return;
+    e.preventDefault();
     zoomAt(z * Math.exp(-e.deltaY * (e.deltaMode ? 0.05 : 0.0015)), (e.clientX - r.left) / pz(), (e.clientY - r.top) / pz());
   }, { passive: false });
   view.addEventListener('dblclick', function (e) {
