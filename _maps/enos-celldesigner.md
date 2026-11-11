@@ -15,7 +15,7 @@ scale: 1
 annotation: "/atlas-data/enos-celldesigner.json"
 image_error: ""
 v: "4fc5756a15"
-downloads: [{"label": "CellDesigner", "url": "/downloads/enos-celldesigner.xml"}, {"label": "SVG", "url": "/downloads/enos-celldesigner.svg"}]
+downloads: [{"label": "CellDesigner", "url": "/downloads/enos-celldesigner.xml"}, {"label": "SVG", "url": "/downloads/enos-celldesigner.svg"}, {"label": "SBML", "url": "/downloads/enos-celldesigner-sbml.xml"}, {"label": "Annotation", "url": "/downloads/enos-celldesigner.csv"}, {"label": "GraphML", "url": "/downloads/enos-celldesigner.graphml"}, {"label": "PNG", "url": "/downloads/enos-celldesigner.png"}, {"label": "SBGN-ML", "url": "/downloads/enos-celldesigner.sbgn"}, {"label": "Newt", "url": "http://web.newteditor.org/?URL=https://viewer-source.github.io/downloads/enos-celldesigner.sbgn"}, {"label": "MINERVA", "url": "https://mreg.elixir-luxembourg.org/minerva/index.html?id=F008-enos"}]
 ---
 ## References
 

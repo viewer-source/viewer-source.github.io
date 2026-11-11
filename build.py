@@ -11,8 +11,9 @@
 # maps/<id>.md gives the entry: front matter title, group, order (and topic), its body the text under the map; with
 #   newt: true a Newt link opens the map's SBGN-ML on the demo, minerva: <address> a MINERVA link.
 # maps/extra/<id>/ (optional): more files for a map's download row, copied to downloads/ under their own names and
-#   labelled by ending (.graphml GraphML, .sbgn SBGN-ML, -sbml.xml SBML, .png PNG, .csv Annotation): the full set of
-#   the official site, for one map only (user, 2026-11-11: glycolysis, for comparison).
+#   labelled by ending (.graphml GraphML, .xml CellDesigner, .sbgn SBGN-ML, -sbml.xml SBML, .png PNG, .csv Annotation):
+#   the full set of the official site, for every map (user, 2026-11-11: glycolysis first, then all, "why only two
+#   downloads"); a CellDesigner map gets the official GraphML, a GraphML map the official CellDesigner file.
 # A node is clickable when it has annotation, a process when it has references (as on the Metabolism Regulation
 # Atlas). The panel's names, function, location and cross-references come from UniProt, HGNC and ChEBI, and the
 # citations from PubMed, fetched once per identifier and cached (databases.py); a node whose identifier field holds
@@ -225,7 +226,8 @@ def entry(mid):
 
 
 SITE = 'https://viewer-source.github.io'
-ENDINGS = (('-sbml.xml', 'SBML'), ('.graphml', 'GraphML'), ('.sbgn', 'SBGN-ML'), ('.png', 'PNG'), ('.csv', 'Annotation'))
+ENDINGS = (('-sbml.xml', 'SBML'), ('.xml', 'CellDesigner'), ('.graphml', 'GraphML'), ('.sbgn', 'SBGN-ML'), ('.png', 'PNG'),
+           ('.csv', 'Annotation'))
 
 
 def extra(mid, meta):

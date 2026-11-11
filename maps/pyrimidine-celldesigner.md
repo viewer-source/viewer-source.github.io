@@ -3,6 +3,8 @@ title: "Regulation of pyrimidine biosynthesis via MAPK signalling"
 topic: "Pyrimidine biosynthesis"
 group: "CellDesigner"
 order: 18
+newt: true
+minerva: https://mreg.elixir-luxembourg.org/minerva/index.html?id=F020-pyrimidine
 ---
 ## Description
 

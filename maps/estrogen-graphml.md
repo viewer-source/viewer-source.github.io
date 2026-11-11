@@ -3,6 +3,8 @@ title: "Regulation of estradiol biosynthesis via prostaglandin-cAMP signalling"
 topic: "Estradiol biosynthesis"
 group: "GraphML"
 order: 112
+newt: true
+minerva: https://mreg.elixir-luxembourg.org/minerva/index.html?id=F018-estrogen
 ---
 ## Description
 

@@ -3,6 +3,8 @@ title: "Regulation of glutaminolysis via the NF-kB-PKCe axis in lung cancer cell
 topic: "Glutaminolysis"
 group: "CellDesigner"
 order: 15
+newt: true
+minerva: https://mreg.elixir-luxembourg.org/minerva/index.html?id=F019-glutaminase
 ---
 ## Description
 

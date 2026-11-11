@@ -3,6 +3,8 @@ title: "Regulation of pyruvate dehydrogenase via PDK and PDP"
 topic: "Pyruvate dehydrogenase"
 group: "CellDesigner"
 order: 3
+newt: true
+minerva: https://mreg.elixir-luxembourg.org/minerva/index.html?id=F023-pdh
 ---
 ## Reactome-Recon connection
 

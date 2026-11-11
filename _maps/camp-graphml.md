@@ -15,7 +15,7 @@ scale: 1
 annotation: "/atlas-data/camp-graphml.json"
 image_error: ""
 v: "4605663fd1"
-downloads: [{"label": "GraphML", "url": "/downloads/camp-graphml.graphml"}, {"label": "SVG", "url": "/downloads/camp-graphml.svg"}]
+downloads: [{"label": "GraphML", "url": "/downloads/camp-graphml.graphml"}, {"label": "SVG", "url": "/downloads/camp-graphml.svg"}, {"label": "SBML", "url": "/downloads/camp-graphml-sbml.xml"}, {"label": "Annotation", "url": "/downloads/camp-graphml.csv"}, {"label": "PNG", "url": "/downloads/camp-graphml.png"}, {"label": "SBGN-ML", "url": "/downloads/camp-graphml.sbgn"}, {"label": "CellDesigner", "url": "/downloads/camp-graphml.xml"}, {"label": "Newt", "url": "http://web.newteditor.org/?URL=https://viewer-source.github.io/downloads/camp-graphml.sbgn"}, {"label": "MINERVA", "url": "https://mreg.elixir-luxembourg.org/minerva/index.html?id=F012-camp"}]
 ---
 ## Description
 

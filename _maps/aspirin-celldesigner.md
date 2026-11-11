@@ -15,7 +15,7 @@ scale: 1
 annotation: "/atlas-data/aspirin-celldesigner.json"
 image_error: ""
 v: "246184e6bf"
-downloads: [{"label": "CellDesigner", "url": "/downloads/aspirin-celldesigner.xml"}, {"label": "SVG", "url": "/downloads/aspirin-celldesigner.svg"}]
+downloads: [{"label": "CellDesigner", "url": "/downloads/aspirin-celldesigner.xml"}, {"label": "SVG", "url": "/downloads/aspirin-celldesigner.svg"}, {"label": "SBML", "url": "/downloads/aspirin-celldesigner-sbml.xml"}, {"label": "Annotation", "url": "/downloads/aspirin-celldesigner.csv"}, {"label": "GraphML", "url": "/downloads/aspirin-celldesigner.graphml"}, {"label": "PNG", "url": "/downloads/aspirin-celldesigner.png"}, {"label": "SBGN-ML", "url": "/downloads/aspirin-celldesigner.sbgn"}, {"label": "Newt", "url": "http://web.newteditor.org/?URL=https://viewer-source.github.io/downloads/aspirin-celldesigner.sbgn"}, {"label": "MINERVA", "url": "https://mreg.elixir-luxembourg.org/minerva/index.html?id=F100-aspirin"}]
 ---
 ## References
 

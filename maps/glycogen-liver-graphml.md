@@ -3,6 +3,8 @@ title: "Regulation of glycogen metabolism, liver"
 topic: "Glycogen metabolism (liver)"
 group: "GraphML"
 order: 105
+newt: true
+minerva: https://mreg.elixir-luxembourg.org/minerva/index.html?id=F004-glycogen-liver
 ---
 ## Description
 

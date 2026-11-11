@@ -3,6 +3,8 @@ title: "Regulation of acetyl-CoA synthesis"
 topic: "Acetyl-CoA synthesis"
 group: "CellDesigner"
 order: 6
+newt: true
+minerva: https://mreg.elixir-luxembourg.org/minerva/index.html?id=F006-acly
 ---
 ## Description
 

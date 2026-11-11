@@ -3,6 +3,8 @@ title: "Regulation of nitric oxide production - iNOS pathway"
 topic: "iNOS pathway"
 group: "GraphML"
 order: 120
+newt: true
+minerva: https://mreg.elixir-luxembourg.org/minerva/index.html?id=F007-inos
 ---
 ## References
 

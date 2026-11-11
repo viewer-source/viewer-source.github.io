@@ -15,7 +15,7 @@ scale: 1
 annotation: "/atlas-data/pyrimidine-graphml.json"
 image_error: ""
 v: "673781802d"
-downloads: [{"label": "GraphML", "url": "/downloads/pyrimidine-graphml.graphml"}, {"label": "SVG", "url": "/downloads/pyrimidine-graphml.svg"}]
+downloads: [{"label": "GraphML", "url": "/downloads/pyrimidine-graphml.graphml"}, {"label": "SVG", "url": "/downloads/pyrimidine-graphml.svg"}, {"label": "SBML", "url": "/downloads/pyrimidine-graphml-sbml.xml"}, {"label": "Annotation", "url": "/downloads/pyrimidine-graphml.csv"}, {"label": "PNG", "url": "/downloads/pyrimidine-graphml.png"}, {"label": "SBGN-ML", "url": "/downloads/pyrimidine-graphml.sbgn"}, {"label": "CellDesigner", "url": "/downloads/pyrimidine-graphml.xml"}, {"label": "Newt", "url": "http://web.newteditor.org/?URL=https://viewer-source.github.io/downloads/pyrimidine-graphml.sbgn"}, {"label": "MINERVA", "url": "https://mreg.elixir-luxembourg.org/minerva/index.html?id=F020-pyrimidine"}]
 ---
 ## Description
 

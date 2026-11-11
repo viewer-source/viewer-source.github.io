@@ -15,7 +15,7 @@ scale: 1
 annotation: "/atlas-data/pdh-graphml.json"
 image_error: ""
 v: "3209aca2c7"
-downloads: [{"label": "GraphML", "url": "/downloads/pdh-graphml.graphml"}, {"label": "SVG", "url": "/downloads/pdh-graphml.svg"}]
+downloads: [{"label": "GraphML", "url": "/downloads/pdh-graphml.graphml"}, {"label": "SVG", "url": "/downloads/pdh-graphml.svg"}, {"label": "SBML", "url": "/downloads/pdh-graphml-sbml.xml"}, {"label": "Annotation", "url": "/downloads/pdh-graphml.csv"}, {"label": "PNG", "url": "/downloads/pdh-graphml.png"}, {"label": "SBGN-ML", "url": "/downloads/pdh-graphml.sbgn"}, {"label": "CellDesigner", "url": "/downloads/pdh-graphml.xml"}, {"label": "Newt", "url": "http://web.newteditor.org/?URL=https://viewer-source.github.io/downloads/pdh-graphml.sbgn"}, {"label": "MINERVA", "url": "https://mreg.elixir-luxembourg.org/minerva/index.html?id=F023-pdh"}]
 ---
 ## Reactome-Recon connection
 

@@ -3,6 +3,8 @@ title: "Regulation of the urea cycle via CPS1"
 topic: "Urea cycle"
 group: "CellDesigner"
 order: 17
+newt: true
+minerva: https://mreg.elixir-luxembourg.org/minerva/index.html?id=F021-ureacycle
 ---
 ## Reactome-Recon connection
 

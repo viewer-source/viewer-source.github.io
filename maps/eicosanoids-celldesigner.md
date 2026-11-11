@@ -3,6 +3,8 @@ title: "Regulation of eicosanoid production"
 topic: "Eicosanoids"
 group: "CellDesigner"
 order: 7
+newt: true
+minerva: https://mreg.elixir-luxembourg.org/minerva/index.html?id=F002-eicosanoids
 ---
 ## Reactome-Recon connection
 

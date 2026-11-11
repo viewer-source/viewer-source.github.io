@@ -3,6 +3,8 @@ title: "Regulation of glycogen metabolism, muscle"
 topic: "Glycogen metabolism (muscle)"
 group: "GraphML"
 order: 104
+newt: true
+minerva: https://mreg.elixir-luxembourg.org/minerva/index.html?id=F004-glycogen-muscle
 ---
 ## Description
 

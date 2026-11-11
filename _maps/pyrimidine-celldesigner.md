@@ -15,7 +15,7 @@ scale: 1
 annotation: "/atlas-data/pyrimidine-celldesigner.json"
 image_error: ""
 v: "c806767a79"
-downloads: [{"label": "CellDesigner", "url": "/downloads/pyrimidine-celldesigner.xml"}, {"label": "SVG", "url": "/downloads/pyrimidine-celldesigner.svg"}]
+downloads: [{"label": "CellDesigner", "url": "/downloads/pyrimidine-celldesigner.xml"}, {"label": "SVG", "url": "/downloads/pyrimidine-celldesigner.svg"}, {"label": "SBML", "url": "/downloads/pyrimidine-celldesigner-sbml.xml"}, {"label": "Annotation", "url": "/downloads/pyrimidine-celldesigner.csv"}, {"label": "GraphML", "url": "/downloads/pyrimidine-celldesigner.graphml"}, {"label": "PNG", "url": "/downloads/pyrimidine-celldesigner.png"}, {"label": "SBGN-ML", "url": "/downloads/pyrimidine-celldesigner.sbgn"}, {"label": "Newt", "url": "http://web.newteditor.org/?URL=https://viewer-source.github.io/downloads/pyrimidine-celldesigner.sbgn"}, {"label": "MINERVA", "url": "https://mreg.elixir-luxembourg.org/minerva/index.html?id=F020-pyrimidine"}]
 ---
 ## Description
 

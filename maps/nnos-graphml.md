@@ -3,6 +3,8 @@ title: "Regulation of nitric oxide production via nNOS"
 topic: "nNOS pathway"
 group: "GraphML"
 order: 122
+newt: true
+minerva: https://mreg.elixir-luxembourg.org/minerva/index.html?id=F025-nnos
 ---
 ## Reactome-Recon connection
 

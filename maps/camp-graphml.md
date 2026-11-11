@@ -3,6 +3,8 @@ title: "Regulation of cAMP hydrolysis"
 topic: "cAMP hydrolysis"
 group: "GraphML"
 order: 119
+newt: true
+minerva: https://mreg.elixir-luxembourg.org/minerva/index.html?id=F012-camp
 ---
 ## Description
 

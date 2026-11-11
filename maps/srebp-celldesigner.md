@@ -3,6 +3,8 @@ title: "Regulation of cholesterol metabolism via SREBP"
 topic: "SREBP signalling"
 group: "CellDesigner"
 order: 10
+newt: true
+minerva: https://mreg.elixir-luxembourg.org/minerva/index.html?id=F005-srebp
 ---
 ## Description
 

@@ -15,7 +15,7 @@ scale: 1
 annotation: "/atlas-data/carnitine-graphml.json"
 image_error: ""
 v: "5365959f14"
-downloads: [{"label": "GraphML", "url": "/downloads/carnitine-graphml.graphml"}, {"label": "SVG", "url": "/downloads/carnitine-graphml.svg"}]
+downloads: [{"label": "GraphML", "url": "/downloads/carnitine-graphml.graphml"}, {"label": "SVG", "url": "/downloads/carnitine-graphml.svg"}, {"label": "SBML", "url": "/downloads/carnitine-graphml-sbml.xml"}, {"label": "Annotation", "url": "/downloads/carnitine-graphml.csv"}, {"label": "PNG", "url": "/downloads/carnitine-graphml.png"}, {"label": "SBGN-ML", "url": "/downloads/carnitine-graphml.sbgn"}, {"label": "CellDesigner", "url": "/downloads/carnitine-graphml.xml"}, {"label": "Newt", "url": "http://web.newteditor.org/?URL=https://viewer-source.github.io/downloads/carnitine-graphml.sbgn"}, {"label": "MINERVA", "url": "https://mreg.elixir-luxembourg.org/minerva/index.html?id=F014-carnitine"}]
 ---
 ## Description
 

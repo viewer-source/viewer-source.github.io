@@ -3,6 +3,8 @@ title: "Regulation of nitric oxide production - eNOS pathway"
 topic: "eNOS pathway"
 group: "CellDesigner"
 order: 21
+newt: true
+minerva: https://mreg.elixir-luxembourg.org/minerva/index.html?id=F008-enos
 ---
 ## References
 

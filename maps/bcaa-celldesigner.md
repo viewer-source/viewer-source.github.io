@@ -3,6 +3,8 @@ title: "Regulation of branched-chain amino acid catabolism via BCKDK and PPM1K"
 topic: "BCAA catabolism"
 group: "CellDesigner"
 order: 16
+newt: true
+minerva: https://mreg.elixir-luxembourg.org/minerva/index.html?id=F022-bcaa
 ---
 ## Reactome-Recon connection
 

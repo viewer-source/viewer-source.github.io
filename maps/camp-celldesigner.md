@@ -3,6 +3,8 @@ title: "Regulation of cAMP hydrolysis"
 topic: "cAMP hydrolysis"
 group: "CellDesigner"
 order: 19
+newt: true
+minerva: https://mreg.elixir-luxembourg.org/minerva/index.html?id=F012-camp
 ---
 ## Description
 

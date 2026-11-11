@@ -3,6 +3,8 @@ title: "Regulation of pyrimidine biosynthesis via MAPK signalling"
 topic: "Pyrimidine biosynthesis"
 group: "GraphML"
 order: 118
+newt: true
+minerva: https://mreg.elixir-luxembourg.org/minerva/index.html?id=F020-pyrimidine
 ---
 ## Description
 

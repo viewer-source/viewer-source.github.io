@@ -3,6 +3,8 @@ title: "Regulation of phosphoinositide metabolism"
 topic: "Phosphoinositide metabolism"
 group: "GraphML"
 order: 113
+newt: true
+minerva: https://mreg.elixir-luxembourg.org/minerva/index.html?id=F009-phosphoinositides
 ---
 ## References
 

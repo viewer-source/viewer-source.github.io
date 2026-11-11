@@ -3,6 +3,8 @@ title: "Regulation of acyl-carnitine synthesis"
 topic: "Acyl-carnitine synthesis"
 group: "GraphML"
 order: 109
+newt: true
+minerva: https://mreg.elixir-luxembourg.org/minerva/index.html?id=F014-carnitine
 ---
 ## Description
 

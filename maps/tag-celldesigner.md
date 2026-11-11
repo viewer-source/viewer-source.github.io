@@ -3,6 +3,8 @@ title: "Regulation of triacylglycerol hydrolysis"
 topic: "Triacylglycerol hydrolysis"
 group: "CellDesigner"
 order: 11
+newt: true
+minerva: https://mreg.elixir-luxembourg.org/minerva/index.html?id=F015-tag
 ---
 ## Description
 

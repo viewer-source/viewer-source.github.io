@@ -77,9 +77,11 @@ says "the workbench", "the converter's repository", "a private repository".
 - Demo maps are maps already public (the Metabolism Regulation website's official files: since 2026-11-08 the 21 maps of
   its Maps list, each from its CellDesigner file and its GraphML, in the groups CellDesigner and GraphML; glycolysis in
   cardiac muscle, an unlisted page, taken out 2026-11-11, user), never a collaborator's
-  unpublished map. One map, glycolysis drawn from CellDesigner, has the official site's full download set for comparison
-  (user, 2026-11-11): `maps/extra/<id>/` (GraphML, SBGN-ML, SBML and the annotation table copied from the official
-  site, the PNG made from the demo's own SVG at twice its size) and `newt: true`, `minerva:` in its `maps/<id>.md`.
+  unpublished map. Every map has the official site's full download set (user, 2026-11-11: glycolysis first, for comparison,
+  then all: "why only two downloads"): `maps/extra/<id>/` (the other source file, GraphML for a CellDesigner map and
+  CellDesigner for a GraphML map, SBGN-ML, SBML and the annotation table copied from the official site's `downloads/`,
+  the PNG made from the demo's own SVG at twice its size, white background, with headless Chromium) and `newt: true`,
+  `minerva:` (the official map's MINERVA project) in its `maps/<id>.md`.
 - Every change goes to `main` and is checked on the live demo before a site takes the new version. A site gets the
   viewer as a copy with a VERSION file naming this repository and its commit: `sh copy-to-site.sh <clone of the site>`
   copies only `atlas-app.html` and `atlas-tags.css` and writes the site's `_includes/VERSION`; the site's header, styles

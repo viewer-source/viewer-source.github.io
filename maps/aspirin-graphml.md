@@ -3,6 +3,8 @@ title: "Regulation of eicosanoid metabolism by aspirin"
 topic: "Aspirin"
 group: "GraphML"
 order: 114
+newt: true
+minerva: https://mreg.elixir-luxembourg.org/minerva/index.html?id=F100-aspirin
 ---
 ## References
 
