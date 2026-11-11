@@ -62,8 +62,9 @@ says "the workbench", "the converter's repository", "a private repository".
   icon looked missing on maps with no outside viewer); its window says when it has nothing. Symbols (the SBGN glyphs and arcs) was tried the same day and taken out until a legend is ready
   (user: "when ready, not now"); its code is in commit 6b3ba4b. A click on the open window's icon or its cross closes
   it and the map takes the room; the window's width is the list's (its separator). Wide windows only. First in the
-  styles' Default Icon Column. The icons 40 px with 23 px signs in a soft grey, a light grey fill under the pointer and
-  while open, no blue (user, 2026-11-11: "a bit larger, more comfortable, also grey-ish"); the column 52 px.
+  styles' Default Icon Column. The icons 40 px with 23 px signs in a soft grey at rest (user, 2026-11-11: "a bit larger,
+  more comfortable, also grey-ish"), the accent fill with a white sign under the pointer and while open (user: the grey
+  not meant for the selection); the column 52 px.
 - Floating panel (user, 2026-11-11: the map should not move when the panel appears; `--m2-info-float: 1`, off in the
   viewer's own look): the molecule's panel as a card over the map's right side on wide windows too, sliding in; the
   drawing shifts left only when the card would cover the chosen item. First in the styles' Default Icon Column.
