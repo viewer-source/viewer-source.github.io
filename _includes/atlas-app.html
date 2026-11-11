@@ -1270,8 +1270,9 @@ html .m2-list-shut #m2-split { left: 0; }
       // annotations on the left cover the window: an icon closes them and shows its window
       if (grid.classList.contains('m2-info-left-open') || grid.classList.contains('m2-info-tab')) { closeInfo(); if (!grid.classList.contains('m2-list-shut')) { win = b.dataset.win; railMark(); window.dispatchEvent(new Event('resize')); return; } }
       var open = !grid.classList.contains('m2-list-shut');
-      // in the icon row a second click on Search takes the field away and shows the list alone, as Maps (user, 2026-11-12)
-      if (open && win === 'search' && b.dataset.win === 'search' && grid.classList.contains('m2-bar-tabs')) { win = 'list'; railMark(); }
+      // in the icon row a second click on any tab but Maps goes back to the list (user, 2026-11-12; Search first: its
+      // field goes, emptied)
+      if (open && win === b.dataset.win && win !== 'list' && grid.classList.contains('m2-bar-tabs')) { win = 'list'; railMark(); }
       else if (open && win === b.dataset.win) { if (!grid.classList.contains('m2-bar-tabs')) setListWidth(0, true); }
       else { win = b.dataset.win; if (open) railMark(); else setListWidth(lastW >= 160 ? lastW : LIST_W, true); }
       var field = document.getElementById('m2-search');
