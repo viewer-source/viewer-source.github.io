@@ -186,11 +186,11 @@ look="panel" (user, 2026-11-10): Default Panel of the styles experiment, its own
   /* plain links in the Downloads and Open in windows, no button look and no download or outside sign on each, the
      window's icon says it already (user, 2026-11-11) */
   /* easy to click (user, 2026-11-11: "make download buttons so easy to click"): each a full-width button, 28 px tall
-     (36 made the list too long, user, the same day), a light grey edge, a light grey fill under the pointer, as the icons */
+     (36 made the list too long, user, the same day), a light grey edge, the accent fill with white text under the pointer, as the icons */
   #m2-dlwin, #m2-extwin { padding: 0 4px; }
   #m2-dlwin a, #m2-extwin a { display: block; box-sizing: border-box; font-size: 14px; line-height: 20px; padding: 3px 10px; margin: 0 0 3px;
     border: 1px solid var(--m2-line, #dadce0); border-radius: 8px; color: var(--m2-text); text-decoration: none; }
-  #m2-dlwin a:hover, #m2-extwin a:hover { background: #f1f3f4; border-color: #c4c7c9; }
+  #m2-dlwin a:hover, #m2-extwin a:hover { background: var(--m2-accent); border-color: var(--m2-accent); color: var(--m2-on-accent); }   /* a strong fill, never a light tint (user) */
   #m2-dlwin a svg, #m2-extwin a svg { display: none; }
   #m2-dlwin a.m2-bad { color: var(--m2-error); cursor: help; }
   #m2-dlwin .m2-sep { border-top: 1px solid var(--m2-line); margin: 6px 0; }
