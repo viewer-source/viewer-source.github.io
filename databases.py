@@ -4,7 +4,10 @@
 # the old one when a fetch fails. An identifier that no longer resolves keeps its old entry, marked stale with the
 # reason, and every build warns, naming the maps. cache/overrides.json, by hand, beats a fetched value and survives a
 # refresh: {"uniprot": {"P47712": {"Location": "Cytoplasm"}}}, the same for "hgnc" (by HGNC ID) and "chebi"
-# (CHEBI:...); "" hides a field. Copied from the Metabolism Regulation website's scripts/make_maps.py (VERSION).
+# (CHEBI:...); "" hides a field. Copied from the Metabolism Regulation website's scripts/make_maps.py (VERSION); the
+# master since 2026-11-11, for this build and a site's own (a copy in the workbench, imported by the Metabolism
+# Regulation Atlas's build). At the end, what both builds share: a yEd node's realizer and first label, and the search
+# index entries of a map.
 import collections, json, os, re, sys, time, urllib.request, urllib.parse
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -207,3 +210,59 @@ def save():
         json.dump(cache[n], open(f, 'w', encoding='utf-8'), ensure_ascii=False, indent=0, sort_keys=True)
     for (src, key, why), maps in sorted(stale.items()):
         print('warning: %s %s %s (%s)' % (src, key, why, ', '.join(sorted(maps))))
+
+
+# ---------- shared by the builds (this one and a site's own) ----------
+GN, YN = '{http://graphml.graphdrawing.org/xmlns}', '{http://www.yworks.com/xml/graphml}'
+
+
+def realizer(n):
+    gn = n.find(GN + 'data/' + YN + 'GenericNode')
+    return gn if gn is not None else n.find(GN + 'data/' + YN + 'ProxyAutoBoundsNode/' + YN + 'Realizers/*')
+
+
+def first_label(gn):
+    labels = [] if gn is None else [l.text.strip() for l in gn.findall(YN + 'NodeLabel')
+                                    if l.text and l.text.strip() and not l.get('iconData')]
+    return ' '.join(labels[0].split()) if labels else ''
+
+
+def search_entries(mid, nodes):
+    """The search index of one map: one entry per molecule (copies of a node
+    are joined), with its node indices in atlas-data/<base>.json.
+    a: label and symbols, b: other names, i: database IDs (exact match only)."""
+    out = collections.OrderedDict()
+    for idx, n in enumerate(nodes):
+        if 'reaction' in n:  # processes are not searched
+            continue
+        p = dict(n['props'])
+        members = n.get('members') or []
+        if members:
+            key = 'fam:' + ','.join(sorted(m['symbol'] for m in members))
+        else:
+            key = (p.get('UniProt') or p.get('ChEBI') or p.get('HGNC symbol') or '').strip()
+            key = key or 'lab:%s:%s' % (n['class'], n['label'].lower())
+        a, b, i = [n['label']], [], []
+        for rec in [p] + [dict(m['props'], _sym=m['symbol']) for m in members]:
+            for f in ('_sym', 'HGNC symbol'):
+                if rec.get(f):
+                    a.append(rec[f])
+            for f in ('Full name', 'Family'):
+                if rec.get(f):
+                    b.append(rec[f])
+            for f in ('Alternative names', 'Synonyms', 'Previous symbols', 'Alias symbols'):
+                if rec.get(f):
+                    # HGNC symbols are separated by commas, the names by semicolons
+                    b += [x.strip() for x in rec[f].split(';' if f in ('Alternative names', 'Synonyms') else ',') if x.strip()]
+            for f in ('UniProt', 'ChEBI', 'HGNC', 'KEGG', 'HMDB', 'Entrez'):
+                if rec.get(f):
+                    i += [x.strip() for x in rec[f].split(',') if x.strip()]
+        e = out.get(key)
+        if not e:
+            e = out[key] = {'k': key, 'l': n['label'], 'c': n['class'], 'm': mid, 'n': [], 'a': [], 'b': [], 'i': []}
+        e['n'].append(idx)
+        for f, v in (('a', a), ('b', b), ('i', i)):
+            for x in v:
+                if x not in e[f]:
+                    e[f].append(x)
+    return list(out.values())
