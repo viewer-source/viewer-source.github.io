@@ -56,7 +56,8 @@ says "the workbench", "the converter's repository", "a private repository".
   order (user, 2026-11-11), Maps open at the start: Info (the map's name and its text, moved there from under the map),
   Search (the field with the cursor in it, the results under it and nothing else, no Maps list repeated), Maps (the
   list; going back to it empties the search), Downloads (the map's files as links, the download row under the map
-  gone), Open in (Newt, MINERVA: the outside viewers, not repeated in Downloads). An icon whose window has nothing for
+  gone), Open in (Newt, MINERVA: the outside viewers, not repeated in Downloads); in both plain links, no buttons and no
+  sign on each (user). An icon whose window has nothing for
   the map is left out. Symbols (the SBGN glyphs and arcs) was tried the same day and taken out until a legend is ready
   (user: "when ready, not now"); its code is in commit 6b3ba4b. A click on the open window's icon or its cross closes
   it and the map takes the room; the window's width is the list's (its separator). Wide windows only. First in the

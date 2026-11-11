@@ -178,9 +178,11 @@ look="panel" (user, 2026-11-10): Default Panel of the styles experiment, its own
   .m2-ri svg { width: 19px; height: 19px; }
   .m2-ri:hover, .m2-ri.m2-open { background: var(--m2-accent); color: var(--m2-on-accent); }
   .m2-ri:focus { outline: none; }
-  #m2-dlwin a, #m2-extwin a { display: flex; align-items: center; justify-content: space-between; font-size: 14px; line-height: 20px; padding: 3px 4px; border-radius: var(--m2-radius); color: var(--m2-text); text-decoration: none; }
-  #m2-dlwin a:hover, #m2-extwin a:hover { background: var(--m2-accent); color: var(--m2-on-accent); }
-  #m2-dlwin a svg, #m2-extwin a svg { width: 13px; height: 13px; margin-left: 8px; flex: none; }
+  /* plain links in the Downloads and Open in windows, no button look and no download or outside sign on each, the
+     window's icon says it already (user, 2026-11-11) */
+  #m2-dlwin a, #m2-extwin a { display: block; font-size: 14px; line-height: 20px; padding: 3px 4px; color: var(--m2-link); text-decoration: none; }
+  #m2-dlwin a:hover, #m2-extwin a:hover { text-decoration: underline; }
+  #m2-dlwin a svg, #m2-extwin a svg { display: none; }
   #m2-dlwin a.m2-bad { color: var(--m2-error); cursor: help; }
   #m2-dlwin .m2-sep { border-top: 1px solid var(--m2-line); margin: 4px 0; }
   .m2-item { display: block; width: 100%; text-align: left; font-size: 14px; line-height: 18px; padding: 2px 4px; border: 1px solid transparent; border-radius: var(--m2-radius); background: none; cursor: pointer; color: var(--m2-text); }
