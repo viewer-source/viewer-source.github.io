@@ -97,7 +97,7 @@ says "the workbench", "the converter's repository", "a private repository".
   closes the panel. Annotations on the left (Settings) open as one more tab of the panel (the panel opened if closed),
   no tab highlighted; its cross or any tab goes back. First in the styles' Default Icon Row.
 - Icons on top or on the left (user, 2026-11-12: "vertical bar vs horizontal is simply a choice in settings";
-  `--m2-bar-choice: 1`, with the icon row, off in the viewer's own look): Settings gets Icons, Top or Left (kept in the
+  `--m2-bar-choice: 1`, with the icon row, off in the viewer's own look): Settings gets Icons, Left or Top (in this order, user 2026-11-12; kept in the
   browser, `atlas-icon-bar`); Left puts the same tabs in the icon column at the page's left edge, with the row's
   behaviour (Search with the list, a second click on Search back to Maps, the open tab kept, annotations on the left as
   a tab, no window title: class `m2-bar-tabs`) and the column's 160 px minimum. First in the styles' Default Icon Row.
