@@ -53,7 +53,8 @@ says "the workbench", "the converter's repository", "a private repository".
   Code Downloads and Default Downloads.
 - Icon column (user, 2026-11-11, from MINERVA's, narrower; `--m2-icons: 1`, off in the viewer's own look): a 44 px
   column of small icons at the page's left edge, each opening its window in the list's place, one at a time, in this
-  order (user, 2026-11-11), Maps open at the start: Info (the map's name and its text, moved there from under the map),
+  order (user, 2026-11-11), Maps open at the start: Info (the whole project briefly, as MINERVA's: its name, `about=` on
+  the include or the site's description, how many maps; not the map, whose name and text stay under it: user, 2026-11-11),
   Search (the field with the cursor in it, the results under it and nothing else, no Maps list repeated), Maps (the
   list; going back to it empties the search), Downloads (the map's files as links, the download row under the map
   gone), Open in (Newt, MINERVA: the outside viewers, not repeated in Downloads); in both plain links, no buttons and no
@@ -61,7 +62,11 @@ says "the workbench", "the converter's repository", "a private repository".
   icon looked missing on maps with no outside viewer); its window says when it has nothing. Symbols (the SBGN glyphs and arcs) was tried the same day and taken out until a legend is ready
   (user: "when ready, not now"); its code is in commit 6b3ba4b. A click on the open window's icon or its cross closes
   it and the map takes the room; the window's width is the list's (its separator). Wide windows only. First in the
-  styles' Default Icon Column.
+  styles' Default Icon Column. The icons 40 px with 23 px signs in a soft grey, a light grey fill under the pointer and
+  while open, no blue (user, 2026-11-11: "a bit larger, more comfortable, also grey-ish"); the column 52 px.
+- Floating panel (user, 2026-11-11: the map should not move when the panel appears; `--m2-info-float: 1`, off in the
+  viewer's own look): the molecule's panel as a card over the map's right side on wide windows too, sliding in; the
+  drawing shifts left only when the card would cover the chosen item. First in the styles' Default Icon Column.
 - Downloads in the panel's column while no molecule is open (`--m2-dl-panel`, 2026-11-11): tried and removed the same day
   (user: it does not work); its code is in the history.
 - Narrow windows (user, 2026-11-09, 940 px and under): the map first, then its download buttons, its name, the search
