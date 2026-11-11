@@ -20,10 +20,13 @@ SOURCE = {'uniprot': 'https://rest.uniprot.org/uniprotkb/%s.json?fields=protein_
           'hgnc-symbol': 'https://rest.genenames.org/fetch/symbol/%s',
           'chebi': 'https://www.ebi.ac.uk/chebi/backend/api/public/compound/%s/',
           'pubmed': 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi?db=pubmed&retmode=json&id=%s'}
-CACHE = {n: os.path.join(ROOT, 'cache', n + '.json') for n in ('uniprot', 'hgnc', 'chebi', 'pubmed')}
+# the cache folder: cache/ here; a site that builds with its own script and keeps its caches elsewhere sets
+# VIEWER_CACHE to that folder before importing this module (the Metabolism Regulation Atlas: its atlas-data/)
+CACHE_DIR = os.environ.get('VIEWER_CACHE') or os.path.join(ROOT, 'cache')
+CACHE = {n: os.path.join(CACHE_DIR, n + '.json') for n in ('uniprot', 'hgnc', 'chebi', 'pubmed')}
 cache = {n: json.load(open(f, encoding='utf-8')) if os.path.exists(f) else {} for n, f in CACHE.items()}
 fetched = set()  # what this run has fetched (with --refresh, each entry once)
-OVERRIDES = json.load(open(os.path.join(ROOT, 'cache', 'overrides.json'), encoding='utf-8')) if os.path.exists(os.path.join(ROOT, 'cache', 'overrides.json')) else {}
+OVERRIDES = json.load(open(os.path.join(CACHE_DIR, 'overrides.json'), encoding='utf-8')) if os.path.exists(os.path.join(CACHE_DIR, 'overrides.json')) else {}
 stale = collections.defaultdict(set)  # (source, identifier, reason) -> the maps that have it
 current = ''  # the map being read, for the warnings
 PREFIX = {'P': 'phospho', 'Ac': 'acetyl', 'Me': 'methyl', 'Su': 'succinyl', 'Glut': 'glutaryl'}
@@ -199,7 +202,7 @@ def record(data):
 
 
 def save():
-    os.makedirs(os.path.join(ROOT, 'cache'), exist_ok=True)
+    os.makedirs(CACHE_DIR, exist_ok=True)
     for n, f in CACHE.items():
         json.dump(cache[n], open(f, 'w', encoding='utf-8'), ensure_ascii=False, indent=0, sort_keys=True)
     for (src, key, why), maps in sorted(stale.items()):
