@@ -58,7 +58,10 @@ says "the workbench", "the converter's repository", "a private repository".
   Search (the field with the cursor in it, the results under it and nothing else, no Maps list repeated), Maps (the
   list; going back to it empties the search), Downloads (the map's files as links, the download row under the map
   gone), Open in (Newt, MINERVA: the outside viewers, not repeated in Downloads); in both full-width buttons, 28 px tall (36 too long, user) with a light
-  grey edge, easy to click (user, 2026-11-11; plain links before), no sign on each (user). Legend (user, 2026-11-11), after Open in, MINERVA's sign with 6 squares in place of 8: a placeholder window for now. Every icon stays whatever the map (user: the Open in
+  grey edge, easy to click (user, 2026-11-11; plain links before), no sign on each (user). Legend (user, 2026-11-11), after Open in, MINERVA's sign with 6 squares in place of 8: SBGN's PD learner's reference card
+  (https://sbgn.github.io/learnerscards, CC0; `images/legend/`, the SVG from its PDF of 2020 by pdftocairo) in a window over
+  the page as Claude's pop-ups (too wide for the left window), loaded the first time it opens, closed by its icon, the cross,
+  Esc or a click outside; `copy-to-site.sh` copies the card. The user will arrange its groups for the screen (user, 2026-11-11). Every icon stays whatever the map (user: the Open in
   icon looked missing on maps with no outside viewer); its window says when it has nothing. Symbols (the SBGN glyphs and arcs) was tried the same day and taken out until a legend is ready
   (user: "when ready, not now"); its code is in commit 6b3ba4b. A click on the open window's icon or its cross closes
   it and the map takes the room; the window's width is the list's (its separator). Wide windows only. First in the

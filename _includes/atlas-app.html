@@ -161,7 +161,7 @@ look="panel" (user, 2026-11-10): Default Panel of the styles experiment, its own
      the downloads (user, 2026-11-11; the symbols window tried the same day, for later: in the history). A click on
      the icon of the open window, or its cross, closes it and the map takes the room; the window's width is the list's
      (its separator). The download row under the map goes, its files are in the Downloads window. Wide windows only. */
-  #m2-rail, .m2 .m2-winhead, #m2-dlwin, #m2-extwin, #m2-infowin, #m2-setwin, #m2-legwin { display: none; }
+  #m2-rail, .m2 .m2-winhead, #m2-dlwin, #m2-extwin, #m2-infowin, #m2-setwin { display: none; }
   @media (min-width: 941px) {
     .m2.m2-icons-on { box-sizing: border-box; padding-left: 52px; }
     .m2-icons-on #m2-rail { display: flex; flex-direction: column; align-items: center; gap: 4px; position: absolute; left: 0; top: 0; bottom: 0; width: 52px;
@@ -175,8 +175,8 @@ look="panel" (user, 2026-11-10): Default Panel of the styles experiment, its own
     .m2-icons-on .m2-winhead { display: flex; }
     .m2-icons-on .m2-winhead h3 { font-size: 14px; font-weight: 400;   /* no bold anywhere (user, 2026-11-11) */ }
     .m2-win-list #m2-search, .m2-win-dl #m2-search, .m2-win-dl #m2-list, .m2-win-ext #m2-search, .m2-win-ext #m2-list,
-    .m2-win-info #m2-search, .m2-win-info #m2-list, .m2-win-set #m2-search, .m2-win-set #m2-list, .m2-win-leg #m2-search, .m2-win-leg #m2-list { display: none; }
-    .m2-win-dl #m2-dlwin, .m2-win-ext #m2-extwin, .m2-win-info #m2-infowin, .m2-win-set #m2-setwin, .m2-win-leg #m2-legwin { display: block; }
+    .m2-win-info #m2-search, .m2-win-info #m2-list, .m2-win-set #m2-search, .m2-win-set #m2-list { display: none; }
+    .m2-win-dl #m2-dlwin, .m2-win-ext #m2-extwin, .m2-win-info #m2-infowin, .m2-win-set #m2-setwin { display: block; }
     .m2-win-search:not(.m2-q) #m2-list { display: none; }   /* Search shows results only, not the Maps list again (user, 2026-11-11) */
     /* --m2-nav-float: 1 (user, 2026-11-11: "it should not modify the usable window, a temporary panel"): the list's
        column 0 wide, the window over the map from the icon column, as tall as the map window, sliding in; its width
@@ -203,7 +203,7 @@ look="panel" (user, 2026-11-10): Default Panel of the styles experiment, its own
      the grey was not meant for the selection) */
   .m2-ri { display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; padding: 0; border: 0; border-radius: 8px; background: none; color: #80868b; cursor: pointer; }
   .m2-ri svg { width: 23px; height: 23px; stroke-width: 1.6; }
-  .m2-ri:hover, .m2-ri.m2-open { background: var(--m2-accent); color: var(--m2-on-accent); }
+  .m2-ri:hover, .m2-ri.m2-open, .m2-ri.m2-leg-on { background: var(--m2-accent); color: var(--m2-on-accent); }
   .m2-ri:focus { outline: none; }
   /* plain links in the Downloads and Open in windows, no button look and no download or outside sign on each, the
      window's icon says it already (user, 2026-11-11) */
@@ -219,8 +219,18 @@ look="panel" (user, 2026-11-10): Default Panel of the styles experiment, its own
   #m2-dlwin .m2-sep { border-top: 1px solid var(--m2-line); margin: 6px 0; }
   /* Settings (user, 2026-11-11): the reader's map size, what 100% is, and how a map opens; kept in the reader's browser.
      Choices as the page's download buttons in a row, the chosen one in the accent fill */
-  /* Legend (user, 2026-11-11): a placeholder until the legend of symbols is ready */
-  #m2-legwin { padding: 0 4px; font-size: 14px; line-height: 1.45; color: var(--m2-muted); }
+  /* Legend (user, 2026-11-11): SBGN's PD learner's reference card (sbgn.github.io, CC0) in a window over the page, as
+     the pop-up windows in Claude's app: too wide for the left window; loaded only when opened; closed by its icon, the
+     cross, Esc or a click outside */
+  #m2-legend { position: fixed; inset: 0; z-index: 50; display: none; align-items: center; justify-content: center; background: #00000033; }
+  #m2-legend.m2-open { display: flex; }
+  #m2-legend .m2-leg-box { display: flex; flex-direction: column; width: min(1600px, 94vw); max-height: 92vh; box-sizing: border-box;
+    background: var(--m2-bg); border: 1px solid var(--m2-frame, var(--m2-line)); border-radius: 10px; box-shadow: 0 8px 32px #0000002e; animation: m2-pop .14s ease-out; }
+  @keyframes m2-pop { from { opacity: 0; transform: scale(.98); } }
+  #m2-legend .m2-info-head { padding: 12px 16px 0; margin: 0; }
+  #m2-legend .m2-leg-src { font-size: 12px; color: var(--m2-muted); }
+  #m2-legend .m2-leg-body { overflow: auto; padding: 8px 16px 16px; }
+  #m2-legend .m2-leg-body img { display: block; width: 100%; height: auto; }
   #m2-setwin { padding: 0 4px; font-size: 14px; line-height: 1.45; color: var(--m2-text-soft); }
   #m2-setwin .m2-set-k { margin: 4px 0 6px; }
   #m2-setwin .m2-set-note { font-size: 12px; color: var(--m2-muted); margin: 6px 0 14px; }
@@ -571,7 +581,6 @@ html .m2-list-shut #m2-split { left: 0; }
 <div id="m2-dlwin"></div>
 <div id="m2-extwin"></div>
 <div id="m2-infowin"><p class="m2-pi-name">{{ include.name | default: site.name | default: site.title }}</p>{% assign about = include.about | default: site.description %}{% if about %}<p>{{ about }}</p>{% endif %}<p class="m2-k" id="m2-info-count"></p></div>
-<div id="m2-legwin"><p>The legend of the map's symbols will be here.</p></div>
 <div id="m2-setwin"><p class="m2-set-k">Map size</p><div class="m2-set-row" id="m2-set-size"></div><p class="m2-set-note">What 100% is for every map: closer or further.</p><p class="m2-set-k">Maps open</p><div class="m2-set-row" id="m2-set-open"><button type="button" data-open="fit">Whole map</button><button type="button" data-open="read">At map size</button></div><div class="m2-set-side"><p class="m2-set-k" style="margin-top:14px">Annotations</p><div class="m2-set-row" id="m2-set-side"><button type="button" data-side="left">Left</button><button type="button" data-side="right">Right</button></div></div></div>
 </div>
 <div class="m2-main">
@@ -592,6 +601,7 @@ html .m2-list-shut #m2-split { left: 0; }
 <div id="m2-text"></div>
 </div>
 <aside class="m2-info" id="m2-info"></aside>
+<div id="m2-legend" role="dialog" aria-label="Legend"><div class="m2-leg-box"><div class="m2-info-head"><h3>Legend <span class="m2-leg-src">SBGN Process Description, <a href="https://sbgn.github.io/learnerscards" target="_blank" rel="noopener">learner's reference card</a></span></h3><button type="button" class="m2-info-close" id="m2-leg-close" title="Close" aria-label="Close"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M2 2l10 10M12 2L2 12"/></svg></button></div><div class="m2-leg-body"><img alt="SBGN Process Description symbols" data-src="{{ '/images/legend/sbgn-pd-learners-card.svg' | relative_url }}"></div></div></div>
 </div>
 
 <script>
@@ -1143,7 +1153,7 @@ html .m2-list-shut #m2-split { left: 0; }
   // still undefined then: the page stopped with "Cannot read properties of undefined", 2026-11-11)
   var win = 'list';
   function railMark() {
-    var WIN_NAMES = { list: 'Maps', search: 'Search', info: 'Info', dl: 'Downloads', ext: 'Open in', leg: 'Legend', set: 'Settings' };
+    var WIN_NAMES = { list: 'Maps', search: 'Search', info: 'Info', dl: 'Downloads', ext: 'Open in', set: 'Settings' };
     var g = document.querySelector('.m2'), on = setting('icons'), open = !g.classList.contains('m2-list-shut');
     var w = win || 'list';
     g.classList.toggle('m2-icons-on', on);
@@ -1154,7 +1164,6 @@ html .m2-list-shut #m2-split { left: 0; }
     g.classList.toggle('m2-win-ext', on && w === 'ext');
     g.classList.toggle('m2-win-info', on && w === 'info');
     g.classList.toggle('m2-win-set', on && w === 'set');
-    g.classList.toggle('m2-win-leg', on && w === 'leg');
     // Info is about the whole project, briefly, as MINERVA's (user, 2026-11-11: "brief info only on the whole project,
     // not map"): its name, its description, how many maps; the map's name and text stay under the map
     var pc = document.getElementById('m2-info-count');
@@ -1164,6 +1173,7 @@ html .m2-list-shut #m2-split { left: 0; }
   }
   document.querySelectorAll('#m2-rail .m2-ri').forEach(function (b) {
     b.addEventListener('click', function () {
+      if (b.dataset.win === 'leg') { legend(!document.getElementById('m2-legend').classList.contains('m2-open')); return; }
       // annotations on the left cover the window: an icon closes them and shows its window
       if (grid.classList.contains('m2-info-left-open')) { closeInfo(); if (!grid.classList.contains('m2-list-shut')) { win = b.dataset.win; railMark(); window.dispatchEvent(new Event('resize')); return; } }
       var open = !grid.classList.contains('m2-list-shut');
@@ -1415,6 +1425,18 @@ html .m2-list-shut #m2-split { left: 0; }
     reopenInfo();
     draw();
   }
+  // the legend's window: the card loaded the first time it opens
+  function legend(open) {
+    var box = document.getElementById('m2-legend'), img = box.querySelector('img');
+    if (open && !img.src) img.src = img.dataset.src;
+    box.classList.toggle('m2-open', open);
+    var b = document.querySelector('#m2-rail .m2-ri[data-win="leg"]'); if (b) b.classList.toggle('m2-leg-on', open);
+  }
+  document.getElementById('m2-leg-close').addEventListener('click', function () { legend(false); });
+  document.getElementById('m2-legend').addEventListener('click', function (e) { if (e.target === this) legend(false); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && document.getElementById('m2-legend').classList.contains('m2-open')) { legend(false); e.stopImmediatePropagation(); }
+  }, true);
   // Esc closes the annotation too; in a family member's record it first returns to the cards
   document.addEventListener('keydown', function (e) {
     if (e.key !== 'Escape' || !sel) return;
