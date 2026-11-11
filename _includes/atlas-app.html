@@ -1308,6 +1308,8 @@ html .m2-list-shut #m2-split { left: 0; }
     pin.style.transform = 'translate(' + (tx + (b[0] + b[2] / 2) / k * z) + 'px,' + (ty + (b[1] + b[3] / 2) / k * z) + 'px)';
   }
   function renderInfo() {
+    // --m2-info-float read again here: a style's file can arrive after the panel was first placed (the styles page)
+    if (wide.matches && !isFull() && setting('info-float') !== info.classList.contains('m2-over')) { placeInfo(); return; }
     info.innerHTML = '';
     if (!nodes || !sel) return;
     var p = props(sel.props);
