@@ -1011,8 +1011,11 @@ html .m2-list-shut #m2-split { left: 0; }
   })();
   // --m2-icons: 1 (user, 2026-11-11): the icon column; one window at a time in the list's place, a click on the icon of
   // the open window or its cross closes it (the list's width 0, as its separator does), another icon opens its window
-  var win = 'list', WIN_NAMES = { list: 'Maps', dl: 'Downloads', legend: 'Symbols' };
+  // railMark runs from setListWidth before this point is reached at load, so its names live inside it (a var here is
+  // still undefined then: the page stopped with "Cannot read properties of undefined", 2026-11-11)
+  var win = 'list';
   function railMark() {
+    var WIN_NAMES = { list: 'Maps', dl: 'Downloads', legend: 'Symbols' };
     var g = document.querySelector('.m2'), on = setting('icons'), open = !g.classList.contains('m2-list-shut');
     var w = win || 'list';
     g.classList.toggle('m2-icons-on', on);
