@@ -862,46 +862,20 @@ html .m2-list-shut #m2-split { left: 0; }
   (function () {
     var hs = document.createElement('div'), grip = document.createElement('div'), drag = null;
     hs.id = 'm2-split-h'; hs.appendChild(grip);
-    grip.title = 'Drag to change the height of the map window, to the bottom edge and, held there, on past it, the page scrolling; a double click gives the usual height';
+    grip.title = 'Drag to change the height of the map window; the wheel scrolls the page while dragging, for a map taller than the window; a double click gives the usual height';
     view.parentNode.insertBefore(hs, view.nextSibling);
+    // only the reader's own moves change the height (user, 2026-11-11: "only when you move, it moves"; the stop at the
+    // window's bottom edge and the growing on by itself past it, of the same day, removed): the lower edge follows the
+    // pointer's place on the page, so to go past the window the reader scrolls the page while dragging, up to twice
+    // the window's height
     grip.addEventListener('pointerdown', function (e) {
       if (e.button !== 0) return;
       e.preventDefault(); grip.setPointerCapture(e.pointerId);
-      drag = { y: e.clientY + window.scrollY, h: view.getBoundingClientRect().height / pz(), moved: false, cy: e.clientY, t: Date.now(), edge: 0, past: view.getBoundingClientRect().bottom > window.innerHeight - 16 };   // past: already at the edge (as with the menu) or below it, no stop
-      // pressed at the window's bottom edge (the map already reaching it, as with the menu) the pointer has no room to
-      // move down: held there, the drag starts by itself (user, 2026-11-11: it was stuck)
-      if (!edgeTimer && e.clientY >= window.innerHeight - 24) edgeTimer = setInterval(edgeScroll, 16);
+      drag = { y: e.clientY + window.scrollY, h: view.getBoundingClientRect().height / pz(), moved: false, cy: e.clientY };
     });
-    // the height follows the pointer's place on the page (not in the window), so the page can scroll under the drag
-    // the map's lower edge stops once at the window's bottom edge (a step, user 2026-11-11: "increase until the end of
-    // the screen, then you can continue"); held there, it goes on
     function follow() {
       userH = drag.h + (drag.cy + window.scrollY - drag.y) / pz();
-      var edgeH = window.innerHeight / pz() - view.getBoundingClientRect().top / pz();
-      if (!drag.past && userH > edgeH - 16) userH = edgeH;
       viewHeight();
-    }
-    // the map can grow past the window (with the menu, or without it once at the bottom edge): held near the window's
-    // bottom edge, the page scrolls on
-    var edgeTimer = null;
-    function edgeScroll() {
-      if (!drag || drag.cy < window.innerHeight - 24) { if (drag) drag.edge = drag.go = 0; clearInterval(edgeTimer); edgeTimer = null; return; }
-      if (!drag.edge) drag.edge = Date.now();
-      // the stop: a map that came from above waits at the edge a second and a half; only a pointer still held there
-      // goes on (user, 2026-11-11: "stops at the edge of the window and stays there for a second or two")
-      if (!drag.past && Date.now() - drag.edge < 1500) return;
-      if (!drag.moved && Date.now() - drag.t < 100) return;     // a press held at the edge, not a double click
-      if (!drag.past || !drag.go) drag.go = Date.now();         // when the growing past the edge began
-      drag.past = true;
-      if (!drag.moved) { drag.moved = true; document.body.classList.add('m2-splitting-h'); }
-      // each step the map grows and the page scrolls with it, so the map's lower edge stays under the pointer; slowly:
-      // 1 px a step at first, up to 4 px after about a second (about 240 px a second; 12 px a step flew, user 2026-11-11);
-      // growing only by what the page had scrolled crept on by a pixel or two at the page's end (user, 2026-11-11)
-      var step = Math.min(4, 1 + (Date.now() - drag.go) / 300);
-      var vh = view.getBoundingClientRect().height / pz();
-      if (vh < 2 * window.innerHeight / pz() - 1) { userH = Math.max(userH || 0, vh) + step / pz(); viewHeight(); }
-      window.scrollBy(0, step);
-      drag.h = view.getBoundingClientRect().height / pz(); drag.y = drag.cy + window.scrollY;   // the pointer's moves count from here
     }
     grip.addEventListener('pointermove', function (e) {
       if (!drag) return;
@@ -910,12 +884,12 @@ html .m2-list-shut #m2-split { left: 0; }
       if (!drag.moved && Math.abs(dy) < 3) return;
       if (!drag.moved) { drag.moved = true; document.body.classList.add('m2-splitting-h'); }
       follow();
-      if (!edgeTimer && e.clientY >= window.innerHeight - 24) edgeTimer = setInterval(edgeScroll, 16);
     });
+    window.addEventListener('scroll', function () { if (drag && drag.moved) follow(); }, { passive: true });
     function end() {
       if (!drag) return;
       if (drag.moved) { userH = view.getBoundingClientRect().height / pz(); try { localStorage.setItem(heightKey, Math.round(userH)); } catch (e) {} }
-      drag = null; document.body.classList.remove('m2-splitting-h'); clearInterval(edgeTimer); edgeTimer = null;
+      drag = null; document.body.classList.remove('m2-splitting-h');
     }
     grip.addEventListener('pointerup', end); grip.addEventListener('pointercancel', end);
     grip.addEventListener('dblclick', function () { userH = null; try { localStorage.removeItem(heightKey); } catch (e) {} viewHeight(); });
