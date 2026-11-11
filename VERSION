@@ -5,3 +5,4 @@ renderers/converter/mapconv/, and the database lookups of scripts/make_maps.py a
 _includes/meta.html (tab icon links removed), _includes/analytics.html, style.scss, _sass/, index.json.
 From here on this repository is the source of the viewer: it is changed here and copied to the sites.
 Since 2026-11-11 renderers/yrender/yrender.py is the master here (brought up to the workbench's newest version first).
+Since 2026-11-11 renderers/converter/cdrender.py is the master here too (the website's converter/cdrender.py is its copy).
