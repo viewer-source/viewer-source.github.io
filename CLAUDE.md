@@ -62,7 +62,8 @@ says "the workbench", "the converter's repository", "a private repository".
   grey edge, easy to click (user, 2026-11-11; plain links before), no sign on each (user). Legend (user, 2026-11-11), after Open in, for now two signs side by side, both kept by the user (2026-11-11, from five: 6 filled
   squares, MINERVA's with 6 in place of 8, and 6 dots, each over a line; 8 dots, 4 and 6 empty squares dropped), each opening SBGN's PD learner's reference card
   (https://sbgn.github.io/learnerscards, CC0; `images/legend/`, the SVG from its PDF of 2020 by pdftocairo) in a window over
-  the page as Claude's pop-ups (too wide for the left window), loaded the first time it opens, closed by its icon, the cross,
+  the page as Claude's pop-ups (too wide for the left window), loaded quietly with the maps after the nearest five (only
+  where the icon column shows), so it opens at once (user, 2026-11-11), or at the first opening if that comes sooner; closed by its icon, the cross,
   Esc or a click outside; `copy-to-site.sh` copies the card. The user will arrange its groups for the screen (user, 2026-11-11). Later (user, 2026-11-11: "let's have it as a map
   where we could actually modify the view"): the legend as a map of its own, a GraphML or CellDesigner file drawn by the
   renderers and shown with the map window's zoom and pan, so it is edited in yEd or CellDesigner like any map; the card's

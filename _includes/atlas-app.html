@@ -695,7 +695,15 @@ html .m2-list-shut #m2-split { left: 0; }
   function prefetch() {
     var here = Math.max(0, maps.indexOf(current));
     maps.slice().sort(function (a, b) { return Math.abs(maps.indexOf(a) - here) - Math.abs(maps.indexOf(b) - here); })
-      .forEach(function (m) { files(m, true); });
+      .forEach(function (m, i) { files(m, true); if (i === 4) legendCard(); });
+    legendCard();   // fewer than five maps
+  }
+  // the legend's card loads quietly with the maps, after the nearest ones, so it shows at once when opened (user,
+  // 2026-11-11: "immediately seeing what they expect to see, even on the first load")
+  function legendCard() {
+    var i = document.querySelector('#m2-legend img');
+    if (i && document.querySelector('#m2-rail .m2-ri[data-win="leg"]') && getComputedStyle(document.getElementById('m2-rail')).display !== 'none')
+      get(i.dataset.src + BUILD, true).then(function () { if (!i.src) i.src = i.dataset.src + BUILD; });
   }
   var view = document.getElementById('m2-view'), img = document.getElementById('m2-img');
   var z = STANDARD, tx = 0, ty = 0;
@@ -1434,7 +1442,7 @@ html .m2-list-shut #m2-split { left: 0; }
   var legBtn = null;   // the Legend icon clicked (two candidate signs side by side for now, user 2026-11-11)
   function legend(open) {
     var box = document.getElementById('m2-legend'), img = box.querySelector('img');
-    if (open && !img.src) img.src = img.dataset.src;
+    if (open && !img.src) img.src = img.dataset.src + BUILD;
     box.classList.toggle('m2-open', open);
     document.querySelectorAll('#m2-rail .m2-ri[data-win="leg"]').forEach(function (b) { b.classList.toggle('m2-leg-on', open && b === legBtn); });
   }
