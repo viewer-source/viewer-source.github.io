@@ -102,8 +102,10 @@ says "the workbench", "the converter's repository", "a private repository".
   and the list (about three maps tall, scrolling inside), then the text and references.
 - The renderers: `renderers/yrender/` (yEd GraphML, drawn as yEd draws it) and `renderers/converter/cdrender.py`
   (CellDesigner, drawn as CellDesigner draws it, with the converter's `mapconv/`). cdrender also draws the free texts of a visible layer, the receptor, truncated protein, drug and ion channel (open when active) shapes, the unknown logic gate and a truncation into two (2026-11-11, for the CellDesigner legend). yrender's master is
-  here since 2026-11-11 (user): every change to it is made here and checked on the live demo, and the workbench's copy is
-  then refreshed (it carries a line naming the commit; its own script fetches it); cdrender was copied from the
+  here since 2026-11-11 (user): every change to it is made here and checked on the live demo, and its two copies are
+  then refreshed, each starting with a line naming the commit: the workbench's (its own script fetches it) and the
+  Metabolism Regulation website's `yrender/` (the Colours page, and the images of the eicosanoid, osteoarthritis, ERK and
+  expo atlases), the latter after drawing those atlases' maps with both versions (2026-11-11: 938 maps, byte-identical); cdrender was copied from the
   Metabolism Regulation website (`VERSION`) and is not yet the master.
 - The build: `python3 build.py` turns every file in `maps/` (`.graphml` or `.xml`) into the same output
   (`downloads/`, `atlas-data/`, `_maps/`); its header says what it writes. `maps/<id>.md` gives a map's title, group,
