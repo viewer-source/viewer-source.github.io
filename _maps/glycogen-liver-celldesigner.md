@@ -14,7 +14,7 @@ height: 1736
 scale: 1
 annotation: "/atlas-data/glycogen-liver-celldesigner.json"
 image_error: ""
-v: "36b1f526a0"
+v: "ca113a4b3a"
 downloads: [{"label": "CellDesigner", "url": "/downloads/glycogen-liver-celldesigner.xml"}, {"label": "SVG", "url": "/downloads/glycogen-liver-celldesigner.svg"}, {"label": "SBML", "url": "/downloads/glycogen-liver-celldesigner-sbml.xml"}, {"label": "Annotation", "url": "/downloads/glycogen-liver-celldesigner.csv"}, {"label": "GraphML", "url": "/downloads/glycogen-liver-celldesigner.graphml"}, {"label": "PNG", "url": "/downloads/glycogen-liver-celldesigner.png"}, {"label": "SBGN-ML", "url": "/downloads/glycogen-liver-celldesigner.sbgn"}, {"label": "Newt", "url": "http://web.newteditor.org/?URL=https://viewer-source.github.io/downloads/glycogen-liver-celldesigner.sbgn"}, {"label": "MINERVA", "url": "https://mreg.elixir-luxembourg.org/minerva/index.html?id=F004-glycogen-liver"}]
 ---
 ## Description

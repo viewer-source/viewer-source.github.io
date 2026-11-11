@@ -10,11 +10,11 @@ draft: false
 tag: ""
 image: "/downloads/srebp-celldesigner.svg"
 width: 816
-height: 1198
+height: 1224
 scale: 1
 annotation: "/atlas-data/srebp-celldesigner.json"
 image_error: ""
-v: "c70568a325"
+v: "26486c220d"
 downloads: [{"label": "CellDesigner", "url": "/downloads/srebp-celldesigner.xml"}, {"label": "SVG", "url": "/downloads/srebp-celldesigner.svg"}, {"label": "SBML", "url": "/downloads/srebp-celldesigner-sbml.xml"}, {"label": "Annotation", "url": "/downloads/srebp-celldesigner.csv"}, {"label": "GraphML", "url": "/downloads/srebp-celldesigner.graphml"}, {"label": "PNG", "url": "/downloads/srebp-celldesigner.png"}, {"label": "SBGN-ML", "url": "/downloads/srebp-celldesigner.sbgn"}, {"label": "Newt", "url": "http://web.newteditor.org/?URL=https://viewer-source.github.io/downloads/srebp-celldesigner.sbgn"}, {"label": "MINERVA", "url": "https://mreg.elixir-luxembourg.org/minerva/index.html?id=F005-srebp"}]
 ---
 ## Description

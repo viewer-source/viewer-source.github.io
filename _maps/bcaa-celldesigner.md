@@ -14,7 +14,7 @@ height: 1032
 scale: 1
 annotation: "/atlas-data/bcaa-celldesigner.json"
 image_error: ""
-v: "60f167eb29"
+v: "bca3f8af3f"
 downloads: [{"label": "CellDesigner", "url": "/downloads/bcaa-celldesigner.xml"}, {"label": "SVG", "url": "/downloads/bcaa-celldesigner.svg"}, {"label": "SBML", "url": "/downloads/bcaa-celldesigner-sbml.xml"}, {"label": "Annotation", "url": "/downloads/bcaa-celldesigner.csv"}, {"label": "GraphML", "url": "/downloads/bcaa-celldesigner.graphml"}, {"label": "PNG", "url": "/downloads/bcaa-celldesigner.png"}, {"label": "SBGN-ML", "url": "/downloads/bcaa-celldesigner.sbgn"}, {"label": "Newt", "url": "http://web.newteditor.org/?URL=https://viewer-source.github.io/downloads/bcaa-celldesigner.sbgn"}, {"label": "MINERVA", "url": "https://mreg.elixir-luxembourg.org/minerva/index.html?id=F022-bcaa"}]
 ---
 ## Reactome-Recon connection

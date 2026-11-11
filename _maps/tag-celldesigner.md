@@ -14,7 +14,7 @@ height: 785
 scale: 1
 annotation: "/atlas-data/tag-celldesigner.json"
 image_error: ""
-v: "411c23e9f4"
+v: "fa53f65b86"
 downloads: [{"label": "CellDesigner", "url": "/downloads/tag-celldesigner.xml"}, {"label": "SVG", "url": "/downloads/tag-celldesigner.svg"}, {"label": "SBML", "url": "/downloads/tag-celldesigner-sbml.xml"}, {"label": "Annotation", "url": "/downloads/tag-celldesigner.csv"}, {"label": "GraphML", "url": "/downloads/tag-celldesigner.graphml"}, {"label": "PNG", "url": "/downloads/tag-celldesigner.png"}, {"label": "SBGN-ML", "url": "/downloads/tag-celldesigner.sbgn"}, {"label": "Newt", "url": "http://web.newteditor.org/?URL=https://viewer-source.github.io/downloads/tag-celldesigner.sbgn"}, {"label": "MINERVA", "url": "https://mreg.elixir-luxembourg.org/minerva/index.html?id=F015-tag"}]
 ---
 ## Description
