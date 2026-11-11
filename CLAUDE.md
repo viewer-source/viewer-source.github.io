@@ -19,9 +19,12 @@ says "the workbench", "the converter's repository", "a private repository".
 - Behaviours (user, 2026-11-09, from the styles experiment), in the viewer itself: a separator between the list and the
   map (dragged sideways for the list's width, down to out of sight; a click brings it back, a double click gives 240 px)
   and one under the map window (its height; off for now, `--m2-separator-below: 1` turns it on: user 2026-11-09, to
-  think about; dragged down past the middle of the download row the map goes to the screen's bottom edge, the row out
-  of sight, a click brings it back; held at the bottom edge the page scrolls and the map grows on, up to twice the window's
-  height, as with the menu: user, 2026-11-11; a press held at the window's bottom edge starts the drag by itself after a quarter second, as the separator can sit on that edge with no room to move down, and each step grows the map 12 px with the page scrolling along: user, 2026-11-11, it was stuck and the page crept; a map window taller than the browser window lets the wheel scroll the page, Ctrl or Cmd with the wheel and a pinch zoom it: user, 2026-11-11, the page froze; the map's title and text stay under it, only the download row goes out of sight: they were hidden too, so the page ended at the map) in place of the corner grip, both kept in the reader's browser, in the gaps
+  think about; dragged down it simply makes the map window taller, nothing under it hidden (the download row, the
+  title and the text follow it), stopping once at the window's bottom edge and, held there, going on past it with the
+  page scrolling, up to twice the window's height; a press held at the bottom edge starts the drag by itself, as the
+  separator can sit on that edge with no room to move down; a map window taller than the browser window lets the wheel
+  scroll the page, Ctrl or Cmd with the wheel and a pinch zoom it: user, 2026-11-11, replacing the row put out of sight
+  at the bottom edge of 2026-11-09, which hid the title and text too, so the page ended at the map and froze) in place of the corner grip, both kept in the reader's browser, in the gaps
   `--m2-split` and `--m2-split-h`; a second click on a molecule closes its panel; dragging in the list only with Shift
   held (also in a page with `drag=true` in presentation mode); no highlight under the pointer in the list. Each is a
   setting (`--m2-separators`, `--m2-click-closes`, `--m2-drag-shift`: 1 on, 0 off; `--m2-hover`). The viewer's look

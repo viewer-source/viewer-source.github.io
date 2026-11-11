@@ -80,8 +80,7 @@ look="panel" (user, 2026-11-10): Default Panel of the styles experiment, its own
   #m2-view:fullscreen + #m2-split-h, #m2-view:-webkit-full-screen + #m2-split-h { display: none; }
   body.m2-splitting-h, body.m2-splitting-h * { cursor: row-resize !important; user-select: none; }
   .m2-list-shut .m2-nav { display: none; }
-  .m2-below-shut #m2-downloads { display: none; }   /* the map to the bottom edge; its title and text stay under it, reached by scrolling (user, 2026-11-11: hidden, the page ended at the map) */
-  .m2-below-shut #m2-view { max-height: none; }
+  .m2-below #m2-view { max-height: calc(200vh / var(--zoom, 1)); }   /* dragged taller than the window, up to twice its height; nothing under it is hidden (user, 2026-11-11) */
   /* the separators only with --m2-separators: 1 (the class m2-seps); then no grip in the map window's corner */
   .m2:not(.m2-seps) #m2-split, .m2:not(.m2-seps) #m2-split-h, .m2:not(.m2-below) #m2-split-h { display: none; }
   .m2-seps #m2-view { resize: none; }
@@ -850,20 +849,11 @@ html .m2-list-shut #m2-split { left: 0; }
       if (autoH !== null && view.style.height !== autoH) return; // resized by the reader with the grip in the corner
     }
     var ROW = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--m2-below-view')) || 56;
-    var top = (view.getBoundingClientRect().top + window.scrollY) / pz(), room = window.innerHeight / pz() - top;
-    // dragged down past the middle of the download row, the map goes to the screen's bottom edge with only the
-    // separator under it, the row out of sight; a click on the separator brings it back (user, 2026-11-09: as the
-    // list and the panel go to their edges)
-    var gap = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--m2-split-h')) || 14;
-    // with the menu (--m2-menu) there is no download row to put out of sight: the map already takes the window's height
-    // and is dragged taller, the page scrolling, up to twice the window's height (user, 2026-11-10: it was stuck at
-    // the window's bottom, and past it the row's switch hid the title and the text). Without the menu the same past
-    // the bottom edge, the row staying out of sight (user, 2026-11-11: not only with the menu); a height saved as 1e6
-    // is the bottom edge itself, whatever the window's height
-    var menu = setting('menu'), most = 2 * window.innerHeight / pz();
-    var shut = !!(!menu && userH && setting('separators') && setting('separator-below') && userH > room - (ROW + gap) / 2);
-    view.closest('.m2').classList.toggle('m2-below-shut', shut);
-    if (userH && setting('separators') && setting('separator-below')) { autoH = view.style.height = Math.round(shut ? (userH >= 1e6 ? room - gap : Math.max(room - gap, Math.min(userH, most))) : Math.max(300, Math.min(userH, menu ? most : room - ROW))) + 'px'; return; }
+    var top = (view.getBoundingClientRect().top + window.scrollY) / pz();
+    // the height dragged by the reader, from 300 px up to twice the window's height, the page scrolling; nothing under
+    // the map is hidden, the download row, the title and the text follow it (user, 2026-11-11: "it simply increases
+    // the size of the window"; until then the row, title and text went out of sight at the bottom edge, 2026-11-09)
+    if (userH && setting('separators') && setting('separator-below')) { autoH = view.style.height = Math.round(Math.max(300, Math.min(userH, 2 * window.innerHeight / pz()))) + 'px'; return; }
     autoH = Math.round(Math.max(300, window.innerHeight / pz() - top - ROW)) + 'px';
     view.style.height = autoH;
   }
@@ -872,29 +862,34 @@ html .m2-list-shut #m2-split { left: 0; }
   (function () {
     var hs = document.createElement('div'), grip = document.createElement('div'), drag = null;
     hs.id = 'm2-split-h'; hs.appendChild(grip);
-    grip.title = 'Drag to change the height of the map window, down to the bottom edge and on past it, the page scrolling; a click brings the buttons back, a double click the usual height';
+    grip.title = 'Drag to change the height of the map window, to the bottom edge and, held there, on past it, the page scrolling; a double click gives the usual height';
     view.parentNode.insertBefore(hs, view.nextSibling);
     grip.addEventListener('pointerdown', function (e) {
       if (e.button !== 0) return;
       e.preventDefault(); grip.setPointerCapture(e.pointerId);
-      drag = { y: e.clientY + window.scrollY, h: view.getBoundingClientRect().height / pz(), moved: false, cy: e.clientY, t: Date.now() };
+      drag = { y: e.clientY + window.scrollY, h: view.getBoundingClientRect().height / pz(), moved: false, cy: e.clientY, t: Date.now(), edge: 0, past: view.getBoundingClientRect().bottom > window.innerHeight + 1 };   // past: already below the edge, no step
       // pressed at the window's bottom edge (the map already reaching it, as with the menu) the pointer has no room to
       // move down: held there, the drag starts by itself (user, 2026-11-11: it was stuck)
       if (!edgeTimer && e.clientY >= window.innerHeight - 24) edgeTimer = setInterval(edgeScroll, 16);
     });
     // the height follows the pointer's place on the page (not in the window), so the page can scroll under the drag
+    // the map's lower edge stops once at the window's bottom edge (a step, user 2026-11-11: "increase until the end of
+    // the screen, then you can continue"); held there, it goes on
     function follow() {
-      userH = drag.h + (drag.cy + window.scrollY - drag.y) / pz(); viewHeight();
+      userH = drag.h + (drag.cy + window.scrollY - drag.y) / pz();
+      var edgeH = window.innerHeight / pz() - view.getBoundingClientRect().top / pz();
+      if (!drag.past && userH > edgeH - 16) userH = edgeH;
+      viewHeight();
     }
     // the map can grow past the window (with the menu, or without it once at the bottom edge): held near the window's
     // bottom edge, the page scrolls on
     var edgeTimer = null;
     function edgeScroll() {
-      if (!drag || drag.cy < window.innerHeight - 24) { clearInterval(edgeTimer); edgeTimer = null; return; }
-      if (!drag.moved) {   // a press held at the edge, not a click
-        if (Date.now() - drag.t < 250) return;
-        drag.moved = true; document.body.classList.add('m2-splitting-h');
-      }
+      if (!drag || drag.cy < window.innerHeight - 24) { if (drag) drag.edge = 0; clearInterval(edgeTimer); edgeTimer = null; return; }
+      if (!drag.edge) drag.edge = Date.now();
+      if (Date.now() - drag.edge < 400) return;   // the step: the map waits at the edge before going on
+      drag.past = true;
+      if (!drag.moved) { drag.moved = true; document.body.classList.add('m2-splitting-h'); }   // a press held at the edge, not a click
       // each step the map grows 12 px and the page scrolls with it, so the map's lower edge stays under the pointer;
       // growing only by what the page had scrolled crept on by a pixel or two at the page's end (user, 2026-11-11)
       var vh = view.getBoundingClientRect().height / pz();
@@ -913,9 +908,7 @@ html .m2-list-shut #m2-split { left: 0; }
     });
     function end() {
       if (!drag) return;
-      var shut = view.closest('.m2').classList.contains('m2-below-shut');
-      if (drag.moved) { var vh = view.getBoundingClientRect().height / pz(), room = window.innerHeight / pz() - (view.getBoundingClientRect().top + window.scrollY) / pz(); userH = shut && vh <= room - (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--m2-split-h')) || 14) + 1 ? 1e6 : vh; try { localStorage.setItem(heightKey, Math.round(userH)); } catch (e) {} }
-      else if (shut) { userH = null; try { localStorage.removeItem(heightKey); } catch (e) {} viewHeight(); }
+      if (drag.moved) { userH = view.getBoundingClientRect().height / pz(); try { localStorage.setItem(heightKey, Math.round(userH)); } catch (e) {} }
       drag = null; document.body.classList.remove('m2-splitting-h'); clearInterval(edgeTimer); edgeTimer = null;
     }
     grip.addEventListener('pointerup', end); grip.addEventListener('pointercancel', end);
