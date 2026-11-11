@@ -73,6 +73,12 @@ says "the workbench", "the converter's repository", "a private repository".
   before Settings removed; at the column's foot the two fell below the window on a tall page): Map size, what 100% is for every map (75, 90, 100, 110, 125, 150%; the reading size and the cap of the
   whole-map view follow it, the % shown is against it), and Maps open (whole map or at map size, the same choice as the
   Fit/Read button over the map); both kept in the reader's browser (`atlas-map-size`, `atlas-view`). With the icon column the list is never narrower than 160 px: under it, it closes (user: "two narrow things, not nice"); the buttons 8 px apart.
+- Floating list (user, 2026-11-11: "when list appears it should not modify the usable window, a temporary panel that
+  eventually will go away"; `--m2-nav-float: 1`, with the icon column only, off in the viewer's own look): the icon
+  column's windows (Maps, Search, ...) slide in over the map's left side, as tall as the map window, with their
+  separator on their right edge; the map window keeps the whole width from the icon column to the page's edge, so nothing
+  moves when a window opens or closes, and a map not yet zoomed or panned is fitted again when that width changes (a
+  small map stays centred in the whole width). First in the styles' Default Icon Column, with the floating panel below.
 - Floating panel (user, 2026-11-11: the map should not move when the panel appears; `--m2-info-float: 1`, off in the
   viewer's own look): the molecule's panel as a card over the map's right side on wide windows too, sliding in; the
   drawing shifts left only when the card would cover the chosen item. First in the styles' Default Icon Column.
