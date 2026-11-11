@@ -873,7 +873,10 @@ html .m2-list-shut #m2-split { left: 0; }
     grip.addEventListener('pointerdown', function (e) {
       if (e.button !== 0) return;
       e.preventDefault(); grip.setPointerCapture(e.pointerId);
-      drag = { y: e.clientY + window.scrollY, h: view.getBoundingClientRect().height / pz(), moved: false, cy: e.clientY };
+      drag = { y: e.clientY + window.scrollY, h: view.getBoundingClientRect().height / pz(), moved: false, cy: e.clientY, t: Date.now() };
+      // pressed at the window's bottom edge (the map already reaching it, as with the menu) the pointer has no room to
+      // move down: held there, the drag starts by itself (user, 2026-11-11: it was stuck)
+      if (!edgeTimer && e.clientY >= window.innerHeight - 24) edgeTimer = setInterval(edgeScroll, 16);
     });
     // the height follows the pointer's place on the page (not in the window), so the page can scroll under the drag
     function follow() {
@@ -883,12 +886,17 @@ html .m2-list-shut #m2-split { left: 0; }
     // bottom edge, the page scrolls on
     var edgeTimer = null;
     function edgeScroll() {
-      if (!drag || !drag.moved || drag.cy < window.innerHeight - 24) { clearInterval(edgeTimer); edgeTimer = null; return; }
-      var before = window.scrollY;
+      if (!drag || drag.cy < window.innerHeight - 24) { clearInterval(edgeTimer); edgeTimer = null; return; }
+      if (!drag.moved) {   // a press held at the edge, not a click
+        if (Date.now() - drag.t < 250) return;
+        drag.moved = true; document.body.classList.add('m2-splitting-h');
+      }
+      // each step the map grows 12 px and the page scrolls with it, so the map's lower edge stays under the pointer;
+      // growing only by what the page had scrolled crept on by a pixel or two at the page's end (user, 2026-11-11)
+      var vh = view.getBoundingClientRect().height / pz();
+      if (vh < 2 * window.innerHeight / pz() - 1) { userH = Math.max(userH || 0, vh) + 12 / pz(); viewHeight(); }
       window.scrollBy(0, 12);
-      if (window.scrollY === before && view.getBoundingClientRect().height / pz() < 2 * window.innerHeight / pz() - 1) {
-        userH = (userH || 0) + 12 / pz(); viewHeight(); window.scrollBy(0, 12);   // the page's end: the map first makes room
-      } else follow();
+      drag.h = view.getBoundingClientRect().height / pz(); drag.y = drag.cy + window.scrollY;   // the pointer's moves count from here
     }
     grip.addEventListener('pointermove', function (e) {
       if (!drag) return;

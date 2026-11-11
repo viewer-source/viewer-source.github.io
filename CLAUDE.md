@@ -21,7 +21,7 @@ says "the workbench", "the converter's repository", "a private repository".
   and one under the map window (its height; off for now, `--m2-separator-below: 1` turns it on: user 2026-11-09, to
   think about; dragged down past the middle of the download row the map goes to the screen's bottom edge, the row out
   of sight, a click brings it back; held at the bottom edge the page scrolls and the map grows on, up to twice the window's
-  height, as with the menu: user, 2026-11-11) in place of the corner grip, both kept in the reader's browser, in the gaps
+  height, as with the menu: user, 2026-11-11; a press held at the window's bottom edge starts the drag by itself after a quarter second, as the separator can sit on that edge with no room to move down, and each step grows the map 12 px with the page scrolling along: user, 2026-11-11, it was stuck and the page crept) in place of the corner grip, both kept in the reader's browser, in the gaps
   `--m2-split` and `--m2-split-h`; a second click on a molecule closes its panel; dragging in the list only with Shift
   held (also in a page with `drag=true` in presentation mode); no highlight under the pointer in the list. Each is a
   setting (`--m2-separators`, `--m2-click-closes`, `--m2-drag-shift`: 1 on, 0 off; `--m2-hover`). The viewer's look
