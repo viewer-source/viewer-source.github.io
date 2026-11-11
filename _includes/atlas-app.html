@@ -156,7 +156,7 @@ look="panel" (user, 2026-11-10): Default Panel of the styles experiment, its own
      the downloads (user, 2026-11-11; the symbols window tried the same day, for later: in the history). A click on
      the icon of the open window, or its cross, closes it and the map takes the room; the window's width is the list's
      (its separator). The download row under the map goes, its files are in the Downloads window. Wide windows only. */
-  #m2-rail, .m2 .m2-winhead, #m2-dlwin { display: none; }
+  #m2-rail, .m2 .m2-winhead, #m2-dlwin, #m2-extwin, #m2-infowin { display: none; }
   @media (min-width: 941px) {
     .m2.m2-icons-on { box-sizing: border-box; padding-left: 44px; }
     .m2-icons-on #m2-rail { display: flex; flex-direction: column; align-items: center; gap: 4px; position: absolute; left: 0; top: 0; bottom: 0; width: 44px;
@@ -165,16 +165,21 @@ look="panel" (user, 2026-11-10): Default Panel of the styles experiment, its own
     .m2-icons-on #m2-view { max-height: calc(200vh / var(--zoom, 1)); }
     .m2-icons-on .m2-winhead { display: flex; }
     .m2-icons-on .m2-winhead h3 { font-size: 14px; font-weight: 600; }
-    .m2-win-list #m2-search, .m2-win-dl #m2-search, .m2-win-dl #m2-list { display: none; }
-    .m2-win-dl #m2-dlwin { display: block; }
+    .m2-win-list #m2-search, .m2-win-dl #m2-search, .m2-win-dl #m2-list, .m2-win-ext #m2-search, .m2-win-ext #m2-list,
+    .m2-win-info #m2-search, .m2-win-info #m2-list { display: none; }
+    .m2-win-dl #m2-dlwin, .m2-win-ext #m2-extwin, .m2-win-info #m2-infowin { display: block; }
+    #m2-infowin { overflow-y: auto; max-height: calc(100vh / var(--zoom, 1) - 110px); font-size: 14px; line-height: 1.45; color: var(--m2-text-soft); overflow-wrap: anywhere; }
+    .m2 #m2-infowin #m2-title { font-size: 16px; font-weight: 600; margin: 0 0 8px; padding: 0 4px; }
+    .m2 #m2-infowin #m2-text { padding: 0 4px; }
+    .m2 #m2-infowin #m2-text h2 { font-size: 15px; }
   }
   .m2-ri { display: flex; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 0; border: 0; border-radius: var(--m2-radius); background: none; color: var(--m2-muted); cursor: pointer; }
   .m2-ri svg { width: 19px; height: 19px; }
   .m2-ri:hover, .m2-ri.m2-open { background: var(--m2-accent); color: var(--m2-on-accent); }
   .m2-ri:focus { outline: none; }
-  #m2-dlwin a { display: flex; align-items: center; justify-content: space-between; font-size: 14px; line-height: 20px; padding: 3px 4px; border-radius: var(--m2-radius); color: var(--m2-text); text-decoration: none; }
-  #m2-dlwin a:hover { background: var(--m2-accent); color: var(--m2-on-accent); }
-  #m2-dlwin a svg { width: 13px; height: 13px; margin-left: 8px; flex: none; }
+  #m2-dlwin a, #m2-extwin a { display: flex; align-items: center; justify-content: space-between; font-size: 14px; line-height: 20px; padding: 3px 4px; border-radius: var(--m2-radius); color: var(--m2-text); text-decoration: none; }
+  #m2-dlwin a:hover, #m2-extwin a:hover { background: var(--m2-accent); color: var(--m2-on-accent); }
+  #m2-dlwin a svg, #m2-extwin a svg { width: 13px; height: 13px; margin-left: 8px; flex: none; }
   #m2-dlwin a.m2-bad { color: var(--m2-error); cursor: help; }
   #m2-dlwin .m2-sep { border-top: 1px solid var(--m2-line); margin: 4px 0; }
   .m2-item { display: block; width: 100%; text-align: left; font-size: 14px; line-height: 18px; padding: 2px 4px; border: 1px solid transparent; border-radius: var(--m2-radius); background: none; cursor: pointer; color: var(--m2-text); }
@@ -496,7 +501,9 @@ html .m2-list-shut #m2-split { left: 0; }
 <div id="m2-rail">
 <button type="button" class="m2-ri" data-win="list" title="Maps" aria-label="Maps"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r=".6" fill="currentColor"/><circle cx="4.5" cy="12" r=".6" fill="currentColor"/><circle cx="4.5" cy="18" r=".6" fill="currentColor"/></svg></button>
 <button type="button" class="m2-ri" data-win="search" title="Search" aria-label="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></svg></button>
+<button type="button" class="m2-ri" data-win="info" title="Info" aria-label="Info"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5"/><circle cx="12" cy="7.8" r=".7" fill="currentColor"/></svg></button>
 <button type="button" class="m2-ri" data-win="dl" title="Downloads" aria-label="Downloads"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5"/><path d="M4 15v5h16v-5"/></svg></button>
+<button type="button" class="m2-ri" data-win="ext" title="Open in" aria-label="Open in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></button>
 </div>
 <div class="m2-nav">
 <div class="m2-winhead m2-info-head"><h3 id="m2-wintitle">Maps</h3><button type="button" class="m2-info-close" id="m2-winclose" title="Close" aria-label="Close"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M2 2l10 10M12 2L2 12"/></svg></button></div>
@@ -507,6 +514,8 @@ html .m2-list-shut #m2-split { left: 0; }
 <input type="search" id="m2-search" placeholder="Search" autocomplete="off">
 <div id="m2-list"></div>
 <div id="m2-dlwin"></div>
+<div id="m2-extwin"></div>
+<div id="m2-infowin"></div>
 </div>
 <div class="m2-main">
 <div id="m2-view" tabindex="0">
@@ -651,12 +660,14 @@ html .m2-list-shut #m2-split { left: 0; }
     if (!menuDl.contains(e.target) || e.target.closest('#m2-menu-list a:not(.m2-bad)')) menuDlOpen(false);
   });
   // the menu holds what the download row holds, built from it: files, the images one by one, then the outside viewers
-  function fillMenu(dl, into) {
+  // part (the icon column's windows): 'files' leaves out the outside viewers, 'ext' takes only them, so no link shows twice
+  function fillMenu(dl, into, part) {
     var menuList = into || document.getElementById('m2-menu-list');
     menuList.innerHTML = '';
     var ext = false;
     Array.prototype.forEach.call(dl.children, function (c) {
       if (c.tagName === 'DETAILS') {
+        if (part === 'ext') return;
         c.querySelectorAll('.m2-list a').forEach(function (a) {
           var b = el('a', null, 'Image ' + a.textContent);
           b.href = a.href; b.setAttribute('download', ''); b.insertAdjacentHTML('beforeend', DL_ICON);
@@ -665,6 +676,7 @@ html .m2-list-shut #m2-split { left: 0; }
         return;
       }
       if (c.tagName !== 'A') return;
+      if (part && (part === 'ext') !== c.classList.contains('m2-ext')) return;
       if (c.classList.contains('m2-ext') && !ext) { ext = true; if (menuList.children.length) menuList.appendChild(el('div', 'm2-sep')); }
       var b = c.cloneNode(true);
       b.className = c.classList.contains('m2-bad') ? 'm2-bad' : '';
@@ -1011,12 +1023,21 @@ html .m2-list-shut #m2-split { left: 0; }
   // still undefined then: the page stopped with "Cannot read properties of undefined", 2026-11-11)
   var win = 'list';
   function railMark() {
-    var WIN_NAMES = { list: 'Maps', search: 'Search', dl: 'Downloads' };
+    var WIN_NAMES = { list: 'Maps', search: 'Search', info: 'Info', dl: 'Downloads', ext: 'Open in' };
     var g = document.querySelector('.m2'), on = setting('icons'), open = !g.classList.contains('m2-list-shut');
     var w = win || 'list';
     g.classList.toggle('m2-icons-on', on);
     g.classList.toggle('m2-win-dl', on && w === 'dl');
     g.classList.toggle('m2-win-list', on && w === 'list');
+    g.classList.toggle('m2-win-ext', on && w === 'ext');
+    g.classList.toggle('m2-win-info', on && w === 'info');
+    // the map's name and text live in the Info window while the icon column is on, under the map otherwise
+    var iw = document.getElementById('m2-infowin'), tt = document.getElementById('m2-title'), tx = document.getElementById('m2-text');
+    if (iw && tt && tx) {
+      var side = on && window.matchMedia('(min-width: 941px)').matches;
+      if (side && tt.parentNode !== iw) { iw.appendChild(tt); iw.appendChild(tx); }
+      if (!side && tt.parentNode === iw) { var mm = document.querySelector('.m2-main'); mm.appendChild(tt); mm.appendChild(tx); }
+    }
     var t = document.getElementById('m2-wintitle'); if (t) t.textContent = WIN_NAMES[w];
     document.querySelectorAll('#m2-rail .m2-ri').forEach(function (b) { b.classList.toggle('m2-open', on && open && b.dataset.win === w); });
   }
@@ -1032,6 +1053,14 @@ html .m2-list-shut #m2-split { left: 0; }
       window.dispatchEvent(new Event('resize'));
     });
   });
+  // a window with nothing for this map (no outside viewers, no files) keeps its icon out of the column
+  function railFill() {
+    ['dl', 'ext'].forEach(function (k) {
+      var box = document.getElementById('m2-' + k + 'win'), b = document.querySelector('.m2-ri[data-win="' + k + '"]');
+      b.style.display = box.children.length ? '' : 'none';
+      if (!box.children.length) box.innerHTML = '<div class="m2-none">Nothing for this map.</div>';
+    });
+  }
   document.getElementById('m2-winclose').addEventListener('click', function () { setListWidth(0, true); window.dispatchEvent(new Event('resize')); });
   railMark();
   window.addEventListener('resize', listHeight);
@@ -1815,7 +1844,9 @@ html .m2-list-shut #m2-split { left: 0; }
       dl.appendChild(a);
     });
     fillMenu(dl);
-    fillMenu(dl, document.getElementById('m2-dlwin'));
+    fillMenu(dl, document.getElementById('m2-dlwin'), 'files');
+    fillMenu(dl, document.getElementById('m2-extwin'), 'ext');
+    railFill();
     var source = textOf(m), box = document.getElementById('m2-text');
     box.innerHTML = '';
     if (source) get(source.data + ver(source)).then(function (d) { if (current === m && d) box.innerHTML = d.html; });
