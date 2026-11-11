@@ -203,9 +203,13 @@ look="panel" (user, 2026-11-10): Default Panel of the styles experiment, its own
        list (not just empty long panel)"), one Legend sign; a click on the open tab keeps it (the separator closes the panel); with
        annotations on the left (Settings) a chosen molecule opens as one more tab, its cross goes back to the tab before */
     .m2.m2-icons-on.m2-icon-row { padding-left: 0; }
-    .m2-icon-row #m2-rail { position: static; flex-direction: row; justify-content: space-between; width: auto; gap: 2px;
-      padding: 0 0 6px; margin-bottom: 8px; border-right: 0; border-bottom: 1px solid var(--m2-frame); }
-    .m2-icon-row .m2-ri { flex: 0 1 36px; width: auto; min-width: 0; height: 36px; }
+    /* the tabs from the left, 6 px apart; a panel too narrow for them all drops whole tabs from the right, one by one
+       (user, 2026-11-12: "justified to the left ... disappearing one by one when panel is made narrower"): they wrap
+       onto a second line, 10 px down so it starts below the 6 px under the row, where the row's overflow hides it */
+    .m2-icon-row #m2-rail { position: static; flex-direction: row; flex-wrap: wrap; justify-content: flex-start; width: auto; gap: 10px 6px;
+      box-sizing: border-box; height: 43px; overflow: hidden; padding: 0 0 6px; margin-bottom: 8px; border-right: 0;
+      border-bottom: 1px solid var(--m2-frame); }
+    .m2-icon-row .m2-ri { flex: none; width: 36px; min-width: 0; height: 36px; }
     .m2-icon-row .m2-ri svg { width: 21px; height: 21px; }
     .m2-icon-row .m2-ri[data-win="leg"]:not([data-opt="c2"]) { display: none; }
     .m2-icon-row.m2-win-search #m2-list { display: block; }
