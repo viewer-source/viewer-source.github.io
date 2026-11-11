@@ -158,7 +158,7 @@ look="panel" (user, 2026-11-10): Default Panel of the styles experiment, its own
      the downloads (user, 2026-11-11; the symbols window tried the same day, for later: in the history). A click on
      the icon of the open window, or its cross, closes it and the map takes the room; the window's width is the list's
      (its separator). The download row under the map goes, its files are in the Downloads window. Wide windows only. */
-  #m2-rail, .m2 .m2-winhead, #m2-dlwin, #m2-extwin, #m2-infowin { display: none; }
+  #m2-rail, .m2 .m2-winhead, #m2-dlwin, #m2-extwin, #m2-infowin, #m2-setwin { display: none; }
   @media (min-width: 941px) {
     .m2.m2-icons-on { box-sizing: border-box; padding-left: 52px; }
     .m2-icons-on #m2-rail { display: flex; flex-direction: column; align-items: center; gap: 4px; position: absolute; left: 0; top: 0; bottom: 0; width: 52px;
@@ -172,8 +172,10 @@ look="panel" (user, 2026-11-10): Default Panel of the styles experiment, its own
     .m2-icons-on .m2-winhead { display: flex; }
     .m2-icons-on .m2-winhead h3 { font-size: 14px; font-weight: 400;   /* no bold anywhere (user, 2026-11-11) */ }
     .m2-win-list #m2-search, .m2-win-dl #m2-search, .m2-win-dl #m2-list, .m2-win-ext #m2-search, .m2-win-ext #m2-list,
-    .m2-win-info #m2-search, .m2-win-info #m2-list { display: none; }
-    .m2-win-dl #m2-dlwin, .m2-win-ext #m2-extwin, .m2-win-info #m2-infowin { display: block; }
+    .m2-win-info #m2-search, .m2-win-info #m2-list, .m2-win-set #m2-search, .m2-win-set #m2-list { display: none; }
+    .m2-win-dl #m2-dlwin, .m2-win-ext #m2-extwin, .m2-win-info #m2-infowin, .m2-win-set #m2-setwin { display: block; }
+    /* Settings at the column's foot, as MINERVA's and most apps' gear (2026-11-11) */
+    #m2-rail .m2-ri[data-win="set"] { margin-top: auto; margin-bottom: 8px; }
     .m2-win-search:not(.m2-q) #m2-list { display: none; }   /* Search shows results only, not the Maps list again (user, 2026-11-11) */
     #m2-infowin { overflow-y: auto; max-height: calc(100vh / var(--zoom, 1) - 110px); font-size: 14px; line-height: 1.45; color: var(--m2-text-soft); overflow-wrap: anywhere; }
     #m2-infowin p { margin: 0 0 8px; padding: 0 4px; }
@@ -199,6 +201,16 @@ look="panel" (user, 2026-11-10): Default Panel of the styles experiment, its own
   #m2-dlwin a svg, #m2-extwin a svg { display: none; }
   #m2-dlwin a.m2-bad { color: var(--m2-error); cursor: help; }
   #m2-dlwin .m2-sep { border-top: 1px solid var(--m2-line); margin: 6px 0; }
+  /* Settings (user, 2026-11-11): the reader's map size, what 100% is, and how a map opens; kept in the reader's browser.
+     Choices as the page's download buttons in a row, the chosen one in the accent fill */
+  #m2-setwin { padding: 0 4px; font-size: 14px; line-height: 1.45; color: var(--m2-text-soft); }
+  #m2-setwin .m2-set-k { margin: 4px 0 6px; }
+  #m2-setwin .m2-set-note { font-size: 12px; color: var(--m2-muted); margin: 6px 0 14px; }
+  #m2-setwin .m2-set-row { display: flex; flex-wrap: wrap; gap: 6px; }
+  #m2-setwin .m2-set-row button { font: inherit; font-size: 13px; line-height: 18px; padding: 4px 8px; min-width: 46px; cursor: pointer;
+    background: var(--m2-bg); border: 1px solid var(--m2-button); border-radius: var(--m2-radius-button); color: var(--m2-button); }
+  #m2-setwin .m2-set-row button:hover, #m2-setwin .m2-set-row button.m2-on { background: var(--m2-accent); border-color: var(--m2-accent); color: var(--m2-on-accent); }
+  #m2-setwin .m2-set-row button:focus { outline: none; }
   .m2-item { display: block; width: 100%; text-align: left; font-size: 14px; line-height: 18px; padding: 2px 4px; border: 1px solid transparent; border-radius: var(--m2-radius); background: none; cursor: pointer; color: var(--m2-text); }
   /* the chosen map: a filled box in the site's link blue, white text */
   /* under the pointer: --m2-hover (none since 2026-11-09; was a very light grey) */
@@ -527,6 +539,7 @@ html .m2-list-shut #m2-split { left: 0; }
 <button type="button" class="m2-ri" data-win="list" title="Maps" aria-label="Maps"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r=".6" fill="currentColor"/><circle cx="4.5" cy="12" r=".6" fill="currentColor"/><circle cx="4.5" cy="18" r=".6" fill="currentColor"/></svg></button>
 <button type="button" class="m2-ri" data-win="dl" title="Downloads" aria-label="Downloads"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5"/><path d="M4 15v5h16v-5"/></svg></button>
 <button type="button" class="m2-ri" data-win="ext" title="Open in" aria-label="Open in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></button>
+<button type="button" class="m2-ri" data-win="set" title="Settings" aria-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
 </div>
 <div class="m2-nav">
 <div class="m2-winhead m2-info-head"><h3 id="m2-wintitle">Maps</h3><button type="button" class="m2-info-close" id="m2-winclose" title="Close" aria-label="Close"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M2 2l10 10M12 2L2 12"/></svg></button></div>
@@ -539,6 +552,7 @@ html .m2-list-shut #m2-split { left: 0; }
 <div id="m2-dlwin"></div>
 <div id="m2-extwin"></div>
 <div id="m2-infowin"><p class="m2-pi-name">{{ include.name | default: site.name | default: site.title }}</p>{% assign about = include.about | default: site.description %}{% if about %}<p>{{ about }}</p>{% endif %}<p class="m2-k" id="m2-info-count"></p></div>
+<div id="m2-setwin"><p class="m2-set-k">Map size</p><div class="m2-set-row" id="m2-set-size"></div><p class="m2-set-note">What 100% is for every map: closer or further.</p><p class="m2-set-k">Maps open</p><div class="m2-set-row" id="m2-set-open"><button type="button" data-open="fit">Whole map</button><button type="button" data-open="read">At map size</button></div></div>
 </div>
 <div class="m2-main">
 <div id="m2-view" tabindex="0">
@@ -589,6 +603,10 @@ html .m2-list-shut #m2-split { left: 0; }
   // button and remembered by the browser where it can
   var mode = 'fit';
   try { if (localStorage.getItem('atlas-view') === 'read') mode = 'read'; } catch (e) {}
+  // the reader's map size (Settings, user 2026-11-11): what 100% is, a factor on the standard zoom, kept in the browser;
+  // the reading size and the cap of the whole-map view follow it, the % shown is against it
+  var SIZES = [0.75, 0.9, 1, 1.1, 1.25, 1.5], SIZE = 1;
+  try { var sv = parseFloat(localStorage.getItem('atlas-map-size')); if (SIZES.indexOf(sv) >= 0) SIZE = sv; } catch (e) {}
   // current: the map on screen; chosen: the map last asked for (the list, the arrow keys, the address), which
   // becomes current once its files are loaded. The list marks chosen, so a click or an arrow key shows at once
   var maps = [], byId = {}, topics = [], current = null, chosen = null;
@@ -749,7 +767,7 @@ html .m2-list-shut #m2-split { left: 0; }
     img.style.height = s.h * z + 'px';
     img.style.transform = 'translate(' + tx + 'px,' + ty + 'px)';
     drawPin();
-    document.getElementById('m2-zoom').textContent = Math.round(z / STANDARD * 100) + '%';
+    document.getElementById('m2-zoom').textContent = Math.round(z / (STANDARD * SIZE) * 100) + '%';
   }
   function zoomAt(nz, cx, cy) {
     nz = Math.max(MIN, Math.min(MAX, nz));
@@ -791,7 +809,7 @@ html .m2-list-shut #m2-split { left: 0; }
   var TOP = 36;
   function standard() {
     var s = size(current);
-    z = STANDARD / bz;
+    z = STANDARD * SIZE / bz;
     tx = (view.clientWidth - s.w * z) / 2;
     ty = TOP;
     moved = false;
@@ -802,7 +820,7 @@ html .m2-list-shut #m2-split { left: 0; }
   var FIT_MAX = 1;
   function fit() {
     var s = size(current);
-    z = Math.min(fitZoom(), STANDARD * FIT_MAX / bz);
+    z = Math.min(fitZoom(), STANDARD * SIZE * FIT_MAX / bz);
     tx = (view.clientWidth - s.w * z) / 2;
     ty = (view.clientHeight - s.h * z) / 2; // centred
     moved = false;
@@ -817,12 +835,32 @@ html .m2-list-shut #m2-split { left: 0; }
     showMode();
     if (m === 'fit') fit(); else standard();
   }
+  // Settings: the map size and how a map opens; a choice shows the map at once in the mode's view
+  function showSettings() {
+    document.querySelectorAll('#m2-set-size button').forEach(function (b) { b.classList.toggle('m2-on', parseFloat(b.dataset.size) === SIZE); });
+    document.querySelectorAll('#m2-set-open button').forEach(function (b) { b.classList.toggle('m2-on', b.dataset.open === mode); });
+  }
+  SIZES.forEach(function (v) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.dataset.size = v; b.textContent = Math.round(v * 100) + '%';
+    b.addEventListener('click', function () {
+      SIZE = v;
+      try { if (v === 1) localStorage.removeItem('atlas-map-size'); else localStorage.setItem('atlas-map-size', v); } catch (e) {}
+      showSettings();
+      if (current) { if (mode === 'fit') fit(); else standard(); }
+    });
+    document.getElementById('m2-set-size').appendChild(b);
+  });
+  document.querySelectorAll('#m2-set-open button').forEach(function (b) {
+    b.addEventListener('click', function () { setMode(b.dataset.open); });
+  });
   function showMode() {
     var b = document.getElementById('m2-mode');
     b.textContent = mode === 'fit' ? 'Fit' : 'Read';
     b.title = mode === 'fit'
       ? 'Whole map. Click for reading size, the same for every map'
       : 'Reading size, the same for every map. Click for the whole map';
+    showSettings();
   }
   showMode();
   // after zooming or panning, a click returns to the mode's view;
@@ -1061,7 +1099,7 @@ html .m2-list-shut #m2-split { left: 0; }
   // still undefined then: the page stopped with "Cannot read properties of undefined", 2026-11-11)
   var win = 'list';
   function railMark() {
-    var WIN_NAMES = { list: 'Maps', search: 'Search', info: 'Info', dl: 'Downloads', ext: 'Open in' };
+    var WIN_NAMES = { list: 'Maps', search: 'Search', info: 'Info', dl: 'Downloads', ext: 'Open in', set: 'Settings' };
     var g = document.querySelector('.m2'), on = setting('icons'), open = !g.classList.contains('m2-list-shut');
     var w = win || 'list';
     g.classList.toggle('m2-icons-on', on);
@@ -1071,6 +1109,7 @@ html .m2-list-shut #m2-split { left: 0; }
     var q = document.getElementById('m2-search'); g.classList.toggle('m2-q', !!(q && q.value.trim()));
     g.classList.toggle('m2-win-ext', on && w === 'ext');
     g.classList.toggle('m2-win-info', on && w === 'info');
+    g.classList.toggle('m2-win-set', on && w === 'set');
     // Info is about the whole project, briefly, as MINERVA's (user, 2026-11-11: "brief info only on the whole project,
     // not map"): its name, its description, how many maps; the map's name and text stay under the map
     var pc = document.getElementById('m2-info-count');
@@ -1308,7 +1347,7 @@ html .m2-list-shut #m2-split { left: 0; }
     if (!n) return;
     sel = n; member = -1;
     var k = scaleOf(current), b = n.box;
-    z = STANDARD / bz;
+    z = STANDARD * SIZE / bz;
     tx = view.clientWidth / 2 - (b[0] + b[2] / 2) / k * z;
     ty = view.clientHeight / 2 - (b[1] + b[3] / 2) / k * z;
     moved = true;
