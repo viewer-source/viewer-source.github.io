@@ -59,8 +59,8 @@ says "the workbench", "the converter's repository", "a private repository".
   Search (the field with the cursor in it, the results under it and nothing else, no Maps list repeated), Maps (the
   list; going back to it empties the search), Downloads (the map's files as links, the download row under the map
   gone), Open in (Newt, MINERVA: the outside viewers, not repeated in Downloads); in both full-width buttons, 28 px tall (36 too long, user) with a light
-  grey edge, easy to click (user, 2026-11-11; plain links before), no sign on each (user). Legend (user, 2026-11-11), after Open in, for now two signs side by side, both kept by the user (2026-11-11, from five: 6 filled
-  squares, MINERVA's with 6 in place of 8, and 6 dots, each over a line; 8 dots, 4 and 6 empty squares dropped), each opening SBGN's PD learner's reference card
+  grey edge, easy to click (user, 2026-11-11; plain links before), no sign on each (user). Legend (user, 2026-11-11), after Open in, for now four signs side by side (2026-11-11, from five: 6 filled
+  squares, MINERVA's with 6 in place of 8, and 6 dots, each over a line; 8 dots, 4 and 6 empty squares dropped; then 4 empty squares back, user: "C is nice", further apart than first, kept at two distances, gaps 3.8 and 3.0 of 24), each opening SBGN's PD learner's reference card
   (https://sbgn.github.io/learnerscards, CC0; `images/legend/`, the SVG from its PDF of 2020 by pdftocairo) in a window over
   the page as Claude's pop-ups (too wide for the left window), loaded quietly with the maps after the nearest five (only
   where the icon column shows), so it opens at once (user, 2026-11-11), or at the first opening if that comes sooner; closed by its icon, the cross,
