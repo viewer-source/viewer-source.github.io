@@ -95,6 +95,11 @@ says "the workbench", "the converter's repository", "a private repository".
   just empty long panel)"; a second click on Search takes the field away, emptied, back to Maps, user 2026-11-12; until then the field stayed over the list with no Search tab), one Legend sign (C2), no window title (the tab shows it); a click on the open tab keeps it, the separator
   closes the panel. Annotations on the left (Settings) open as one more tab of the panel (the panel opened if closed),
   no tab highlighted; its cross or any tab goes back. First in the styles' Default Icon Row.
+- Icons on top or on the left (user, 2026-11-12: "vertical bar vs horizontal is simply a choice in settings";
+  `--m2-bar-choice: 1`, with the icon row, off in the viewer's own look): Settings gets Icons, Top or Left (kept in the
+  browser, `atlas-icon-bar`); Left puts the same tabs in the icon column at the page's left edge, with the row's
+  behaviour (Search with the list, a second click on Search back to Maps, the open tab kept, annotations on the left as
+  a tab, no window title: class `m2-bar-tabs`) and the column's 160 px minimum. First in the styles' Default Icon Row.
 - Open in within Downloads (user, 2026-11-11: "remove external (add them to downloads)"; `--m2-dl-ext: 1`, with the
   icons, off in the viewer's own look): the Newt and MINERVA links under a line at the end of the Downloads window, and no
   Open in icon; each with the outside sign on its right (user, 2026-11-11: "newt minerva buttons with external link symbol"). The window always holds them (class `m2-x`), shown only with the setting, so a style loaded after the map

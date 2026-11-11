@@ -53,6 +53,8 @@ look="panel" (user, 2026-11-10): Default Panel of the styles experiment, its own
                                     2026-11-11, from MINERVA's): off, a style turns it on */
     --m2-icon-row: 0;            /* with --m2-icons: the icons as a row at the top of the list's panel, tabs over the windows they
                                     open, the panel fixed beside the map (user, 2026-11-11): off, a style turns it on */
+    --m2-bar-choice: 0;          /* with --m2-icon-row: Settings lets the reader put the icons in the row on top or in the column
+                                    on the left, with the same tabs and behaviour (user, 2026-11-12): off, a style turns it on */
     --m2-dl-ext: 0;              /* with --m2-icons: the Open in links in the Downloads window, under a line, and no Open in
                                     icon (user, 2026-11-11): off, a style turns it on */
     --m2-info-float: 0;          /* the molecule's panel floating over the map's right side on wide windows too, so the map
@@ -211,8 +213,8 @@ look="panel" (user, 2026-11-10): Default Panel of the styles experiment, its own
       border-bottom: 1px solid var(--m2-frame); }
     .m2-icon-row .m2-ri { flex: none; width: 36px; min-width: 0; height: 36px; }
     .m2-icon-row .m2-ri svg { width: 21px; height: 21px; }
-    .m2-icon-row .m2-ri[data-win="leg"]:not([data-opt="c2"]) { display: none; }
-    .m2-icon-row.m2-win-search #m2-list { display: block; }
+    .m2-bar-tabs .m2-ri[data-win="leg"]:not([data-opt="c2"]) { display: none; }
+    .m2-bar-tabs.m2-win-search #m2-list { display: block; }
     .m2-dl-ext .m2-ri[data-win="ext"] { display: none; }
     #m2-dlwin .m2-x { display: none; }
     .m2-dl-ext #m2-dlwin .m2-x { display: block; }
@@ -220,11 +222,11 @@ look="panel" (user, 2026-11-10): Default Panel of the styles experiment, its own
     .m2-dl-ext #m2-dlwin a.m2-x { display: flex; align-items: center; justify-content: space-between; }
     .m2-dl-ext #m2-dlwin a.m2-x svg { display: block; width: 13px; height: 13px; margin-left: 8px; flex: none; }
     .m2-dl-ext #m2-dlwin .m2-nofiles + .m2-x { display: none; }
-    .m2-icons-on.m2-icon-row .m2-winhead { display: none; }
-    .m2-icon-row.m2-info-tab .m2-nav > :not(#m2-rail):not(#m2-info) { display: none !important; }
-    .m2-icon-row .m2-nav > .m2-info { width: auto !important; margin: 0 !important; padding: 0 4px !important; border: 0 !important; }
-    html .m2-icon-row.m2-info-tab .m2-main { border-right-color: transparent !important; }
-    .m2-icon-row.m2-info-tab .m2-ri.m2-open { background: none; color: #80868b; }
+    .m2-icons-on.m2-bar-tabs .m2-winhead { display: none; }
+    .m2-bar-tabs.m2-info-tab .m2-nav > :not(#m2-rail):not(#m2-info) { display: none !important; }
+    .m2-bar-tabs .m2-nav > .m2-info { width: auto !important; margin: 0 !important; padding: 0 4px !important; border: 0 !important; }
+    html .m2-bar-tabs.m2-info-tab .m2-main { border-right-color: transparent !important; }
+    .m2-bar-tabs.m2-info-tab .m2-ri.m2-open { background: none; color: #80868b; }
     #m2-infowin { overflow-y: auto; max-height: calc(100vh / var(--zoom, 1) - 110px); font-size: 14px; line-height: 1.45; color: var(--m2-text-soft); overflow-wrap: anywhere; }
     #m2-infowin p { margin: 0 0 8px; padding: 0 4px; }
     #m2-infowin .m2-pi-name { font-size: 16px; font-weight: 400; color: var(--m2-text); }
@@ -626,7 +628,7 @@ html .m2-list-shut #m2-split { left: 0; }
 <div id="m2-dlwin"></div>
 <div id="m2-extwin"></div>
 <div id="m2-infowin"><p class="m2-pi-name">{{ include.name | default: site.name | default: site.title }}</p>{% assign about = include.about | default: site.description %}{% if about %}<p>{{ about }}</p>{% endif %}<p class="m2-k" id="m2-info-count"></p></div>
-<div id="m2-setwin"><p class="m2-set-k">Map size</p><div class="m2-set-row" id="m2-set-size"></div><p class="m2-set-note">What 100% is for every map: closer or further.</p><p class="m2-set-k">Maps open</p><div class="m2-set-row" id="m2-set-open"><button type="button" data-open="fit">Whole map</button><button type="button" data-open="read">At map size</button></div><div class="m2-set-side"><p class="m2-set-k" style="margin-top:14px">Annotations</p><div class="m2-set-row" id="m2-set-side"><button type="button" data-side="left">Left</button><button type="button" data-side="right">Right</button></div></div></div>
+<div id="m2-setwin"><p class="m2-set-k">Map size</p><div class="m2-set-row" id="m2-set-size"></div><p class="m2-set-note">What 100% is for every map: closer or further.</p><p class="m2-set-k">Maps open</p><div class="m2-set-row" id="m2-set-open"><button type="button" data-open="fit">Whole map</button><button type="button" data-open="read">At map size</button></div><div class="m2-set-bar"><p class="m2-set-k" style="margin-top:14px">Icons</p><div class="m2-set-row" id="m2-set-bar"><button type="button" data-bar="top">Top</button><button type="button" data-bar="left">Left</button></div></div><div class="m2-set-side"><p class="m2-set-k" style="margin-top:14px">Annotations</p><div class="m2-set-row" id="m2-set-side"><button type="button" data-side="left">Left</button><button type="button" data-side="right">Right</button></div></div></div>
 </div>
 <div class="m2-main">
 <div id="m2-view" tabindex="0">
@@ -935,7 +937,8 @@ html .m2-list-shut #m2-split { left: 0; }
     var tab = i.parentNode === g.querySelector('.m2-nav') && i.childNodes.length > 0;
     g.classList.toggle('m2-info-tab', tab);
     if (tab && g.classList.contains('m2-list-shut')) setListWidth(Math.max(lastW, LIST_W), false);
-    var box = document.querySelector('.m2-set-side'); if (box) box.style.display = g.classList.contains('m2-nav-float') || g.classList.contains('m2-icon-row') ? '' : 'none';
+    var box = document.querySelector('.m2-set-side'); if (box) box.style.display = g.classList.contains('m2-nav-float') || g.classList.contains('m2-bar-tabs') ? '' : 'none';
+    var bar = document.querySelector('.m2-set-bar'); if (bar) bar.style.display = setting('icons') && setting('icon-row') && setting('bar-choice') ? '' : 'none';
   }
   document.querySelectorAll('#m2-set-side button').forEach(function (b) {
     b.addEventListener('click', function () {
@@ -944,9 +947,18 @@ html .m2-list-shut #m2-split { left: 0; }
       showSettings(); placeInfo(); sideMark();
     });
   });
+  // the icons on top or on the left (Settings, user 2026-11-12: "vertical bar vs horizontal simply a choice in settings"),
+  // kept in the browser; the same tabs and behaviour either way
+  document.querySelectorAll('#m2-set-bar button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      try { if (b.dataset.bar === 'top') localStorage.removeItem('atlas-icon-bar'); else localStorage.setItem('atlas-icon-bar', 'left'); } catch (e) {}
+      railMark(); placeInfo(); sideMark(); showSettings(); window.dispatchEvent(new Event('resize'));
+    });
+  });
   if (window.MutationObserver) new MutationObserver(sideMark).observe(document.getElementById('m2-info'), { childList: true, attributes: true, attributeFilter: ['class'] });
   window.addEventListener('resize', function () { setTimeout(sideMark, 0); });
   function showSettings() {
+    document.querySelectorAll('#m2-set-bar button').forEach(function (b) { b.classList.toggle('m2-on', b.dataset.bar === (barLeft() ? 'left' : 'top')); });
     document.querySelectorAll('#m2-set-side button').forEach(function (b) { b.classList.toggle('m2-on', b.dataset.side === SIDE); });
     document.querySelectorAll('#m2-set-size button').forEach(function (b) { b.classList.toggle('m2-on', parseFloat(b.dataset.size) === SIZE); });
     document.querySelectorAll('#m2-set-open button').forEach(function (b) { b.classList.toggle('m2-on', b.dataset.open === mode); });
@@ -1165,7 +1177,7 @@ html .m2-list-shut #m2-split { left: 0; }
     // things, not nice"), as the panel's 160 px
     // With the icon row the panel narrows on down to one tab, the tabs dropping one by one (user, 2026-11-12: it closed
     // at 150), and closes under 90 px, where the first tab would be cut
-    var minW = setting('icons') ? (setting('icon-row') ? 90 : 160) : 60;
+    var minW = setting('icons') ? (rowOn() ? 90 : 160) : 60;
     if (w >= minW && railShut) setRailShut(false);
     var shut = w < minW;
     listW = shut ? 0 : w; if (!shut) lastW = w;
@@ -1219,14 +1231,21 @@ html .m2-list-shut #m2-split { left: 0; }
   // railMark runs from setListWidth before this point is reached at load, so its names live inside it (a var here is
   // still undefined then: the page stopped with "Cannot read properties of undefined", 2026-11-11)
   var win = 'list';
+  // the icons' place: the row on top (--m2-icon-row), unless the reader chose the left column in Settings
+  // (--m2-bar-choice); either way the row's tabs and behaviour (class m2-bar-tabs). Functions, not vars: railMark runs
+  // before this point at load
+  function barLeft() { try { return setting('bar-choice') && localStorage.getItem('atlas-icon-bar') === 'left'; } catch (e) { return false; } }
+  function rowOn() { return setting('icons') && setting('icon-row') && !barLeft(); }
+  function tabsOn() { return setting('icons') && setting('icon-row'); }
   function railMark() {
     var WIN_NAMES = { list: 'Maps', search: 'Search', info: 'Info', dl: 'Downloads', ext: 'Open in', set: 'Settings' };
     var g = document.querySelector('.m2'), on = setting('icons'), open = !g.classList.contains('m2-list-shut');
     var w = win || 'list';
     g.classList.toggle('m2-icons-on', on);
     // the icon row: the icons at the top of the list's panel (moved back when a style without it is chosen)
-    var row = on && setting('icon-row'), rail = document.getElementById('m2-rail'), nav = g.querySelector('.m2-nav');
+    var row = rowOn(), rail = document.getElementById('m2-rail'), nav = g.querySelector('.m2-nav');
     g.classList.toggle('m2-icon-row', row);
+    g.classList.toggle('m2-bar-tabs', tabsOn());
     g.classList.toggle('m2-dl-ext', on && setting('dl-ext'));   // set again on resize: a style loaded later turns it on
     if (on && setting('dl-ext') && w === 'ext') w = win = 'dl';
     if (row && rail.parentNode !== nav) nav.insertBefore(rail, nav.firstChild);
@@ -1252,8 +1271,8 @@ html .m2-list-shut #m2-split { left: 0; }
       if (grid.classList.contains('m2-info-left-open') || grid.classList.contains('m2-info-tab')) { closeInfo(); if (!grid.classList.contains('m2-list-shut')) { win = b.dataset.win; railMark(); window.dispatchEvent(new Event('resize')); return; } }
       var open = !grid.classList.contains('m2-list-shut');
       // in the icon row a second click on Search takes the field away and shows the list alone, as Maps (user, 2026-11-12)
-      if (open && win === 'search' && b.dataset.win === 'search' && grid.classList.contains('m2-icon-row')) { win = 'list'; railMark(); }
-      else if (open && win === b.dataset.win) { if (!grid.classList.contains('m2-icon-row')) setListWidth(0, true); }
+      if (open && win === 'search' && b.dataset.win === 'search' && grid.classList.contains('m2-bar-tabs')) { win = 'list'; railMark(); }
+      else if (open && win === b.dataset.win) { if (!grid.classList.contains('m2-bar-tabs')) setListWidth(0, true); }
       else { win = b.dataset.win; if (open) railMark(); else setListWidth(lastW >= 160 ? lastW : LIST_W, true); }
       var field = document.getElementById('m2-search');
       // Maps shows the whole list: a search left in the field is emptied; Search puts the cursor in the field
@@ -1351,7 +1370,7 @@ html .m2-list-shut #m2-split { left: 0; }
     renderInfo();
   }
   // annotations on the left with the icon row: a tab in the list's panel
-  function infoTab() { return SIDE === 'left' && setting('icons') && setting('icon-row') && wide.matches && !isFull(); }
+  function infoTab() { return SIDE === 'left' && tabsOn() && wide.matches && !isFull(); }
   wide.addEventListener ? wide.addEventListener('change', placeInfo) : wide.addListener(placeInfo);
   // the separator between the map and the panel beside it: in the gap between them (centred on the line where they
   // touch), from the panel's top to the bottom of the download row; dragged sideways it sets the panel's width
