@@ -51,8 +51,6 @@ look="panel" (user, 2026-11-10): Default Panel of the styles experiment, its own
                                     the download buttons (user, 2026-11-10, as in Claude's app): off, a style turns it on */
     --m2-separator-below: 0;     /* the separator under the map window (its height): off for now (user, 2026-11-09: to think about) */
     --m2-split: 32px;            /* the gap between the list and the map: its separator can be dragged */
-    --m2-dl-panel: 0;            /* the downloads in the panel's column while no molecule is open, in place of the download
-                                    row (user, 2026-11-11): off, a style turns it on */
     --m2-split-h: 14px;          /* the gap under the map window, down to the download buttons: its separator too */
     --m2-below-view: 56px;       /* from the map window's lower edge to the bottom of the browser window: the download row and the room under it */
   }
@@ -129,19 +127,6 @@ look="panel" (user, 2026-11-10): Default Panel of the styles experiment, its own
      and Downloads with the download sign, in place of the search field and the download buttons, so the room under the
      map goes to the map. Search shows the search field under the rows (a click again empties and hides it), Downloads
      opens a menu of what the map offers. Rows filled in the accent under the pointer and while open, as the buttons. */
-  /* --m2-dl-panel: 1 (user, 2026-11-11): the map's downloads in the panel's column while no molecule is open, as the
-     map's own details, plain links; an annotation covers them, closing it shows them again. Wide windows only (the
-     panel beside the map); narrower ones keep the download row */
-  #m2-mapinfo { display: none; grid-column: 3; grid-row: 1; font-size: 14px; line-height: 1.45; color: var(--m2-text-soft); }
-  .m2-dlpanel-on #m2-downloads { display: none; }
-  .m2-dlpanel-on:not(.m2-info-shut) #m2-mapinfo.m2-show { display: block; }
-  #m2-mapinfo h4 { font-size: 14px; font-weight: 400; color: var(--m2-muted); margin: 0 0 4px; }
-  #m2-mapinfo a { display: flex; align-items: center; gap: 6px; padding: 2px 0; color: var(--m2-text); text-decoration: none; }
-  #m2-mapinfo a:hover { color: var(--m2-accent); }
-  #m2-mapinfo a svg { width: 13px; height: 13px; flex: none; color: var(--m2-faint); }
-  #m2-mapinfo a:hover svg { color: var(--m2-accent); }
-  #m2-mapinfo a.m2-bad { color: var(--m2-error); cursor: help; }
-  #m2-mapinfo .m2-sep { height: 8px; }
   #m2-menu { display: none; margin-bottom: 8px; }
   .m2-menu-on #m2-menu { display: block; }
   .m2-menu-on #m2-downloads { display: none; }
@@ -506,7 +491,6 @@ html .m2-list-shut #m2-split { left: 0; }
 <div id="m2-text"></div>
 </div>
 <aside class="m2-info" id="m2-info"></aside>
-<div id="m2-mapinfo"></div>
 </div>
 
 <script>
@@ -653,41 +637,6 @@ html .m2-list-shut #m2-split { left: 0; }
     });
     menuDl.style.display = menuList.children.length ? '' : 'none';
   }
-
-  // --m2-dl-panel: 1 (user, 2026-11-11): the downloads in the panel's column while no molecule is open, built from the
-  // download row as the menu is; the row itself hidden. Only while the panel sits beside the map (wide windows)
-  var mapInfo = document.getElementById('m2-mapinfo');
-  function fillPanel(dl) {
-    mapInfo.innerHTML = '';
-    var list = document.createElement('div'), ext = false;
-    Array.prototype.forEach.call(dl.children, function (c) {
-      if (c.tagName === 'DETAILS') {
-        c.querySelectorAll('.m2-list a').forEach(function (a) {
-          var b = el('a', null, a.textContent);
-          b.href = a.href; b.setAttribute('download', ''); b.insertAdjacentHTML('beforeend', DL_ICON);
-          list.appendChild(b);
-        });
-        return;
-      }
-      if (c.tagName !== 'A') return;
-      if (c.classList.contains('m2-ext') && !ext) { ext = true; if (list.children.length) list.appendChild(el('div', 'm2-sep')); }
-      var b = c.cloneNode(true);
-      b.className = c.classList.contains('m2-bad') ? 'm2-bad' : '';
-      if (b.className) b.addEventListener('click', function (e) { e.preventDefault(); });
-      list.appendChild(b);
-    });
-    if (list.children.length) { mapInfo.appendChild(el('h4', null, 'Downloads')); mapInfo.appendChild(list); }
-    dlPanel();
-  }
-  function dlPanel() {
-    var info = document.getElementById('m2-info');
-    var on = setting('dl-panel') && window.matchMedia('(min-width: 1030px)').matches
-      && !(document.fullscreenElement || document.webkitFullscreenElement);
-    document.querySelector('.m2').classList.toggle('m2-dlpanel-on', on);
-    mapInfo.classList.toggle('m2-show', on && !info.childNodes.length && mapInfo.childNodes.length > 0);
-  }
-  window.addEventListener('resize', dlPanel);
-  if (window.MutationObserver) new MutationObserver(dlPanel).observe(document.getElementById('m2-info'), { childList: true });
 
   document.addEventListener('click', function (e) {
     document.querySelectorAll('#m2-downloads details[open]').forEach(function (d) {
@@ -894,7 +843,7 @@ html .m2-list-shut #m2-split { left: 0; }
   // menu frees (user, 2026-11-10: "use the space at the bottom")
   var heightKey = null, userH = null;
   function viewHeight() {
-    var k = 'atlas-view-height:' + (setting('menu') || setting('dl-panel') ? 'menu:' : '') + location.pathname;
+    var k = 'atlas-view-height:' + (setting('menu') ? 'menu:' : '') + location.pathname;
     if (k !== heightKey) { heightKey = k; userH = null; try { userH = parseFloat(localStorage.getItem(k)) || null; } catch (e) {} }
     if (!setting('separators')) {
       if (autoH !== null && view.style.height !== autoH) return; // resized by the reader with the grip in the corner
@@ -1819,7 +1768,6 @@ html .m2-list-shut #m2-split { left: 0; }
       dl.appendChild(a);
     });
     fillMenu(dl);
-    fillPanel(dl);
     var source = textOf(m), box = document.getElementById('m2-text');
     box.innerHTML = '';
     if (source) get(source.data + ver(source)).then(function (d) { if (current === m && d) box.innerHTML = d.html; });

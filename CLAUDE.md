@@ -49,10 +49,8 @@ says "the workbench", "the converter's repository", "a private repository".
   download buttons, so the room under the map goes to the map. Search turns into the search field in its own place, the
   magnifying glass kept (user, 2026-11-10: in place, not below); Esc, or leaving it empty, turns it back into the row; Downloads opens a menu built from the download row. The map window's height dragged by the reader is kept apart for the menu, so the room it frees is the map's. With the menu the separator under the map has no row to put out of sight: the map is dragged taller than the window, up to twice its height, the page scrolling while the pointer is held at the window's bottom edge (user, 2026-11-10: it was stuck there). First in the styles' Default
   Code Downloads and Default Downloads.
-- Downloads in the panel (user, 2026-11-11; `--m2-dl-panel: 1`, off in the viewer's own look): the map's downloads as
-  plain links in the panel's column while no molecule is open, as the map's own details, in place of the download row;
-  an annotation covers them, closing it shows them again. Wide windows only (1030 px and up, the panel beside the map);
-  narrower ones and full screen keep the row. First in the styles' Default Downloads Panel.
+- Downloads in the panel's column while no molecule is open (`--m2-dl-panel`, 2026-11-11): tried and removed the same day
+  (user: it does not work); its code is in the history.
 - Narrow windows (user, 2026-11-09, 940 px and under): the map first, then its download buttons, its name, the search
   and the list (about three maps tall, scrolling inside), then the text and references.
 - The renderers: `renderers/yrender/` (yEd GraphML, drawn as yEd draws it) and `renderers/converter/cdrender.py`
