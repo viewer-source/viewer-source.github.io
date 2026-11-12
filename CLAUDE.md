@@ -132,7 +132,7 @@ says "the workbench", "the converter's repository", "a private repository".
   line, Grid and Snap to grid (a magnet), the plain grey signs of the tabs, a switch that is on on a light grey square as
   yEd's; below, Open file (a yEd GraphML from the computer), Save, Stop editing; the tab starts editing the map shown at once and follows the map chosen, and shows only on a map drawn from its GraphML (or while a file is edited or has moves not saved; user, 2026-11-12). Moves only: a node or a bend point
   dragged (a group with what it holds, and the bends of arcs inside it; a bend alone stays put when its nodes move, as
-  in yEd), Shift with a drag moves the whole map from anywhere, over a node or a compartment too (user, 2026-11-12), Shift with a click adds to the selection, Alt (Option) with a drag selects an area (Shift on empty space until then), arrow keys move by 1 (Shift 10), Ctrl or Cmd
+  in yEd), Shift adds to the selection or selects an area on empty space, arrow keys move by 1 (Shift 10), Ctrl or Cmd
   with Z undoes, with S saves; a drag on empty space pans as before. Only the x and y of what moved change in the
   file's text, the rest byte for byte; the yEd renderer runs in the browser by Pyodide (the converter page's version,
   `renderers/yrender/yrender.py` published for it) and draws the map again, so the editor draws nothing of its own.
