@@ -49,11 +49,11 @@
 <circle cx="178.31" cy="123.83" r="8" fill="#fff" stroke="#000"/>
 <circle cx="218.31" cy="123.83" r="8" fill="#fff" stroke="#000"/>
 <text x="218.31" y="108.5" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">EGFR</text>
-<rect x="148.08" y="280.97" width="80" height="40" rx="5" fill="#c2d4ed" stroke="#000" class="c-protein"/>
-<circle cx="188.08" cy="320.97" r="8" fill="#fff" stroke="#000"/>
-<text x="188.08" y="305.64" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">GAB1</text>
-<rect x="279.53" y="183.54" width="80" height="40" rx="5" fill="#c2d4ed" stroke="#000" class="c-protein"/>
-<text x="319.53" y="208.21" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">EGF</text>
+<rect x="131" y="300.97" width="80" height="40" rx="5" fill="#c2d4ed" stroke="#000" class="c-protein"/>
+<circle cx="171" cy="340.97" r="8" fill="#fff" stroke="#000"/>
+<text x="171" y="325.64" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">GAB1</text>
+<rect x="289.53" y="183.54" width="80" height="40" rx="5" fill="#c2d4ed" stroke="#000" class="c-protein"/>
+<text x="329.53" y="208.21" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">EGF</text>
 <rect x="289.53" y="233.54" width="80" height="40" rx="5" fill="#c2d4ed" stroke="#000" class="c-protein"/>
 <circle cx="289.53" cy="273.54" r="8" fill="#fff" stroke="#000"/>
 <circle cx="329.53" cy="273.54" r="8" fill="#fff" stroke="#000"/>
@@ -64,9 +64,9 @@
 <circle cx="329.53" cy="632.99" r="8" fill="#fff" stroke="#000"/>
 <text x="329.53" y="636.49" font-family="sans-serif" font-size="9" text-anchor="middle">P</text>
 <text x="329.53" y="617.65" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">GAB1</text>
-<rect x="531.98" y="189.54" width="74" height="34" rx="5" fill="#c2d4ed" stroke="#000" class="c-protein"/>
-<rect x="525.98" y="183.54" width="74" height="34" rx="5" fill="#c2d4ed" stroke="#000" class="c-protein"/>
-<text x="562.98" y="205.21" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">EGF</text>
+<rect x="492.98" y="189.54" width="74" height="34" rx="5" fill="#c2d4ed" stroke="#000" class="c-protein"/>
+<rect x="486.98" y="183.54" width="74" height="34" rx="5" fill="#c2d4ed" stroke="#000" class="c-protein"/>
+<text x="523.98" y="205.21" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">EGF</text>
 <rect x="531.98" y="239.54" width="74" height="34" rx="5" fill="#c2d4ed" stroke="#000" class="c-protein"/>
 <circle cx="531.98" cy="273.54" r="8" fill="#fff" stroke="#000"/>
 <circle cx="568.98" cy="273.54" r="8" fill="#fff" stroke="#000"/>
@@ -114,7 +114,7 @@
 <polyline points="329.53,463.04 329.53,560.99"/>
 <polyline points="499.98,517.98 342.03,518.97"/>
 <polyline points="139,391.04 257.53,391.04"/>
-<polyline points="187.65,328.97 186.7,391.04"/>
+<polyline points="177.23,348.78 186.7,391.04"/>
 <polyline points="561.98,309.54 561.98,431.59"/>
 <polyline points="623.98,237.57 655.97,237.58 655.91,377.68 574.48,377.57"/>
 </g>
@@ -168,7 +168,7 @@
 <rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(329.53,519.01) rotate(90)"/>
 <polygon points="279.53,391.04 264.53,396.04 264.53,386.04" fill="#000"/>
 <polyline points="131,391.04 265.53,391.04" fill="none" stroke="#000000" stroke-width="1"/>
-<polyline points="187.77,320.97 186.7,391.04" fill="none" stroke="#000000" stroke-width="1"/>
+<polyline points="175.48,340.97 186.7,391.04" fill="none" stroke="#000000" stroke-width="1"/>
 <rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(205.26,391.04) rotate(0)"/>
 <polygon points="561.98,453.59 556.98,438.59 566.98,438.59" fill="#000"/>
 <polyline points="561.98,301.54 561.98,439.59" fill="none" stroke="#000000" stroke-width="1"/>
