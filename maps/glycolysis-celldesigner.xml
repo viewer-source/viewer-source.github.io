@@ -362,7 +362,7 @@
 <celldesigner:listOfSpeciesAliases>
 <celldesigner:speciesAlias id="sa_n0" species="s_n0">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="639.731889" y="144.58551" w="40.0" h="40.0"/>
+<celldesigner:bounds x="652.732" y="156.0" w="40.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -666,7 +666,7 @@
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n20" species="s_n20">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="473.530954" y="144.58551" w="40.0" h="40.0"/>
+<celldesigner:bounds x="486.531" y="156.0" w="40.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -685,7 +685,7 @@
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n22" species="s_n22">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="536.631421" y="60.05054199999999" w="80.0" h="40.0"/>
+<celldesigner:bounds x="549.631" y="71.465" w="80.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -742,7 +742,7 @@
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n25" species="s_n25">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="587.681655" y="199.58551" w="40.0" h="40.0"/>
+<celldesigner:bounds x="600.682" y="211.0" w="40.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
