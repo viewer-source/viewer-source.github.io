@@ -218,6 +218,13 @@ says "the workbench", "the converter's repository", "a private repository".
   as they are (none on the demo). Checked 2026-11-12: all 21 demo maps written back byte for byte with no move, every
   process glyph where cdrender draws it, 259 moves leaving every bend point in place, live on SREBP (a molecule, a glyph,
   the save simulated: only the moved numbers changed).
+  No negative places, both formats (user, 2026-11-12: "negative coordinates in cd are bad", "lets have it universally
+  corrected"): a map with something drawn left of or above 0 is shifted right or down, each axis on its own, by whole
+  blocks of the grid (16, so a map on the grid stays on it) to start at 40 or a little more; the picture stays still on
+  screen. GraphML: in the editor before each drawing (what is drawn counts, a closed group's kept size does not; all
+  moves); 15 of the 21 demo GraphML maps start with negative places, so their first save shifts every place once.
+  CellDesigner: `cd_edit.place`, the canvas growing with it, free texts and logic gates shifted too. Checked live on
+  SREBP in both formats (save simulated).
 - Full screen with tools (user, 2026-11-12: "use more space available on the screen, but with tools"): beside the map's
   own full screen (the map alone), the whole page goes full screen with its list, tools and panel: Shift with the
   full-screen button, or Full screen with tools in the right-click menu (Exit full screen there while on). The
