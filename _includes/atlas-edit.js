@@ -753,8 +753,8 @@
         if (pi == null) return;
         X = num(points[pi], 'x'); Y2 = num(points[pi], 'y'); st = BEND_STEP;
       }
-      if (!d.gx) d.dx = Math.round((d.dx + toGrid(X + d.dx, st)) * 1000) / 1000;
-      if (!d.gy) d.dy = Math.round((d.dy + toGrid(Y2 + d.dy, st)) * 1000) / 1000;
+      if (!d.gx) d.dx += toGrid(X + d.dx, st);
+      if (!d.gy) d.dy += toGrid(Y2 + d.dy, st);
     }
     view.addEventListener('pointermove', function (e) {
       if ((drag || band) && e.pointerType === 'mouse' && !e.buttons) return release(e);   // its release never came
