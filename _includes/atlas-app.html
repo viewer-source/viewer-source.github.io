@@ -1190,6 +1190,16 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
   function pz() { return view.currentCSSZoom || 1; }
   // a behaviour a style turns on: --m2-<name>: 1 (read each time, so a style chosen later counts)
   function setting(name) { return getComputedStyle(document.documentElement).getPropertyValue('--m2-' + name).trim() === '1'; }
+  // the same over the list's column and the icons (user, 2026-11-12: "as soon as I hold Shift, I can move the whole
+  // page"): Shift with the wheel scrolls the page, not the list inside
+  document.querySelectorAll('.m2-nav, #m2-rail').forEach(function (el) {
+    el.addEventListener('wheel', function (e) {
+      if (!e.shiftKey || e.ctrlKey || e.metaKey) return;
+      e.preventDefault();
+      var d = e.deltaY || e.deltaX;
+      window.scrollBy(0, e.deltaMode === 1 ? d * 16 : e.deltaMode === 2 ? d * window.innerHeight : d);
+    }, { passive: false });
+  });
   view.addEventListener('wheel', function (e) {
     if (e.target.closest('.m2-info')) return; // the panel over the map scrolls
     var r = view.getBoundingClientRect();
