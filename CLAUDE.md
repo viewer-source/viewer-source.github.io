@@ -173,7 +173,13 @@ says "the workbench", "the converter's repository", "a private repository".
   pointer (user, 2026-11-12: "sticky hand"): the viewer pans with the left button only and ends a drag once no button is
   held; a press that moves nothing leaves the arcs as the renderer drew them (a smooth bend had turned sharp). A save GitHub refuses because
   the branch moved (the site's build commits after each save) goes again when the file there is still the one last saved.
-  Later (user): snap to a grid and alignment guides as in PowerPoint. The code is
+  Guides for nodes (user, 2026-11-12: "use as in yEd, then I correct"), yEd's snap lines: the node pressed snaps when one
+  of its own arcs' end segments turns level or upright (thick grey, as a bend's), its centre lines up with another node's,
+  a side with the same side of another (opposite sides only within 40 units), midway between the nearest nodes on each
+  side (marks on the two gaps), or the drag is nearly straight across or down; each axis on its own, 6 px on screen, the
+  smallest correction wins (near ties: that order), thin grey lines for centres and sides reaching 20 units past the
+  nodes; only nodes in sight, not its own compartments; Ctrl or Alt held, no snapping. Not yet: the set node to node and
+  node to arc distances (yEd's manual gives no default), bends snapping to node centres. The code is
   `_includes/atlas-edit.js`, included by the viewer's script (copied to the sites with it, off there). Checked
   2026-11-12 on eNOS: first drawing about 4 s, a redraw after a move under a second, the saved file differing from the
   original only in x and y values. Not yet: CellDesigner files, a group growing round a member moved out of it.
