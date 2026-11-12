@@ -204,6 +204,10 @@ says "the workbench", "the converter's repository", "a private repository".
   `_includes/atlas-edit.js`, included by the viewer's script (copied to the sites with it, off there). Checked
   2026-11-12 on eNOS: first drawing about 4 s, a redraw after a move under a second, the saved file differing from the
   original only in x and y values. Not yet: CellDesigner files, a group growing round a member moved out of it.
+- Full screen with tools (user, 2026-11-12: "use more space available on the screen, but with tools"): beside the map's
+  own full screen (the map alone), the whole page goes full screen with its list, tools and panel: Shift with the
+  full-screen button, or Full screen with tools in the right-click menu (Exit full screen there while on). The
+  browser's bars go and the map window grows with the screen, as on a resize; Esc returns.
 - Right-click menu over the map (user, 2026-11-12; `--m2-context: 1`, off in the viewer's own look): shortcuts to what
   the tabs and buttons already do, never the only way to it (phones have no right click). One layer, no submenus (user,
   2026-11-12: the shortcut is for what is aimed for on the page, as downloads and edit; the view, colours, link and the

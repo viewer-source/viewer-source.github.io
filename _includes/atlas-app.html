@@ -1506,16 +1506,25 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
   var FULL_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5"/></svg>';
   var EXIT_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5"/></svg>';
   function isFull() { return (document.fullscreenElement || document.webkitFullscreenElement) === view; }
+  // the whole page full screen, with the list, tools and panel (user, 2026-11-12): Shift with the button, or the
+  // right-click menu; the browser's own bars go, the map window grows with the screen; Esc returns
+  function isPageFull() { return (document.fullscreenElement || document.webkitFullscreenElement) === document.documentElement; }
+  function pageFull() {
+    var de = document.documentElement;
+    if (isPageFull()) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+    else if (de.requestFullscreen || de.webkitRequestFullscreen) (de.requestFullscreen || de.webkitRequestFullscreen).call(de);
+  }
   function showFull() {
     var on = isFull();
     full.innerHTML = on ? EXIT_ICON : FULL_ICON;
-    full.title = on ? 'Exit full screen (Esc)' : 'Full screen';
+    full.title = on ? 'Exit full screen (Esc)' : isPageFull() ? 'Full screen: the map alone' : 'Full screen (Shift: the whole page with its tools)';
     full.setAttribute('aria-label', full.title);
   }
   if (view.requestFullscreen || view.webkitRequestFullscreen) {
     showFull();
-    full.addEventListener('click', function () {
+    full.addEventListener('click', function (e) {
       if (isFull()) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+      else if (e.shiftKey) pageFull();
       else (view.requestFullscreen || view.webkitRequestFullscreen).call(view);
     });
     var onFull = function () {
@@ -2480,6 +2489,8 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
       var eb = document.querySelector('#m2-rail .m2-ri[data-win="edit"]');
       if (ed) item(box, 'View mode', function () { tab('list'); });   // leaving the Edit window ends editing
       else if (eb && eb.offsetParent) item(box, 'Edit mode', function () { tab('edit'); });
+      if (document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen)
+        item(box, isPageFull() ? 'Exit full screen' : 'Full screen with tools', pageFull);
       var src = (m.legend === 'celldesigner' ? ['CellDesigner', 'GraphML'] : ['GraphML', 'CellDesigner']).filter(function (l) { return url[l]; })[0];   // the format the map is drawn from
       if (src) link(box, src === 'GraphML' ? 'Download GraphML' : 'Download CellDesigner file', url[src], true);
       ['MINERVA', 'Newt'].forEach(function (l) { if (url[l]) link(box, 'Open in ' + l, url[l]); });
