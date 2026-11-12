@@ -221,7 +221,7 @@
     box.querySelector('#m2-ed-save').addEventListener('click', save);
     box.querySelector('#m2-ed-undo').addEventListener('click', function () { if (on) back(undo, redo); });
     box.querySelector('#m2-ed-redo').addEventListener('click', function () { if (on) back(redo, undo); });
-    box.querySelector('#m2-ed-stop').addEventListener('click', function () { if (chosen) put(chosen); else stop(); });
+    box.querySelector('#m2-ed-stop').addEventListener('click', function () { win = 'list'; railMark(); if (chosen) put(chosen); else stop(); });
     box.querySelector('#m2-ed-back').addEventListener('click', function () {
       current = map; on = true; grid.classList.add('m2-editing'); buttons();
       document.getElementById('m2-title').textContent = map.title;
