@@ -1060,7 +1060,10 @@
           // a CellDesigner drawing is in the file's places, which a shift out of negative places (cd_edit.place) puts
           // -x0, -y0 from the editor's (the frame's two translates cancel inside the picture): the fill follows them
           // (user, 2026-11-12: after a node moved past the canvas edge the fill showed at another place)
-          if (cd && (x0 || y0)) el.setAttribute('transform', 'translate(' + f1(-x0) + ',' + f1(-y0) + ')');
+          // and a node moved by the keys has its new place in the file and its group still shifted by the keys' sum
+          var kx = keyed && keyed.n.has(i) ? keyed.dx : 0, ky = keyed && keyed.n.has(i) ? keyed.dy : 0;
+          var ox = (cd ? x0 : 0) + kx, oy = (cd ? y0 : 0) + ky;
+          if (ox || oy) el.setAttribute('transform', 'translate(' + f1(-ox) + ',' + f1(-oy) + ')');
           var first = g.firstElementChild && g.firstElementChild.localName === 'a' ? g.firstElementChild : g;
           var shapes = first.querySelectorAll(cd ? ':scope > path, :scope > rect, :scope > ellipse, :scope > polygon' : ':scope > path'), last = shapes.length ? shapes[shapes.length - 1] : null;
           if (last) last.after(el); else first.prepend(el);
