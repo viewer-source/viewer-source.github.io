@@ -52,8 +52,8 @@
 <rect x="131" y="300.97" width="80" height="40" rx="5" fill="#c2d4ed" stroke="#000" class="c-protein"/>
 <circle cx="171" cy="340.97" r="8" fill="#fff" stroke="#000"/>
 <text x="171" y="325.64" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">GAB1</text>
-<rect x="289.53" y="183.54" width="80" height="40" rx="5" fill="#c2d4ed" stroke="#000" class="c-protein"/>
-<text x="329.53" y="208.21" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">EGF</text>
+<rect x="279.53" y="183.54" width="80" height="40" rx="5" fill="#c2d4ed" stroke="#000" class="c-protein"/>
+<text x="319.53" y="208.21" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">EGF</text>
 <rect x="289.53" y="233.54" width="80" height="40" rx="5" fill="#c2d4ed" stroke="#000" class="c-protein"/>
 <circle cx="289.53" cy="273.54" r="8" fill="#fff" stroke="#000"/>
 <circle cx="329.53" cy="273.54" r="8" fill="#fff" stroke="#000"/>
@@ -74,9 +74,9 @@
 <circle cx="525.98" cy="267.54" r="8" fill="#fff" stroke="#000"/>
 <circle cx="562.98" cy="267.54" r="8" fill="#fff" stroke="#000"/>
 <text x="562.98" y="255.21" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">EGFR</text>
-<rect x="531.98" y="469.59" width="74" height="34" rx="5" fill="#c2d4ed" stroke="#000" class="c-protein"/>
-<rect x="525.98" y="463.59" width="74" height="34" rx="5" fill="#c2d4ed" stroke="#000" class="c-protein"/>
-<text x="562.98" y="485.26" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">EGF</text>
+<rect x="531.98" y="457.59" width="74" height="34" rx="5" fill="#c2d4ed" stroke="#000" class="c-protein"/>
+<rect x="525.98" y="451.59" width="74" height="34" rx="5" fill="#c2d4ed" stroke="#000" class="c-protein"/>
+<text x="562.98" y="473.26" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">EGF</text>
 <rect x="531.98" y="519.59" width="74" height="34" rx="5" fill="#c2d4ed" stroke="#000" class="c-protein"/>
 <circle cx="568.98" cy="553.59" r="8" fill="#fff" stroke="#000"/>
 <circle cx="531.98" cy="553.59" r="8" fill="#fff" stroke="#000"/>
@@ -88,9 +88,9 @@
 <text x="562.98" y="535.26" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">EGFR</text>
 <rect x="289.53" y="395.04" width="80" height="40" rx="5" fill="#c2d4ed" stroke="#000" class="c-protein"/>
 <text x="329.53" y="419.71" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">GRB2</text>
-<rect x="289.53" y="342.56" width="80" height="40" rx="5" fill="#c2d4ed" stroke="#000" class="c-protein"/>
-<circle cx="329.53" cy="382.56" r="8" fill="#fff" stroke="#000"/>
-<text x="329.53" y="367.23" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">GAB1</text>
+<rect x="289.53" y="334.56" width="80" height="40" rx="5" fill="#c2d4ed" stroke="#000" class="c-protein"/>
+<circle cx="329.53" cy="374.56" r="8" fill="#fff" stroke="#000"/>
+<text x="329.53" y="359.23" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">GAB1</text>
 <g fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
 <polyline points="617.18,743.98 616.79,696.75"/>
 <polyline points="738.35,796.85 628.02,717.69"/>

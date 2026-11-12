@@ -14,8 +14,8 @@ height: 1037
 scale: 1
 annotation: "/atlas-data/phosphoinositides-celldesigner.json"
 image_error: ""
-v: "831b014a50"
-src: "3169c37e486b062b44b92787b03e42b6fdd83b98"
+v: "45c83788c3"
+src: "af8c340f87e72ac090b42b6888593f4034bffa68"
 colours: true
 legend: "celldesigner"
 downloads: [{"label": "CellDesigner", "url": "/downloads/phosphoinositides-celldesigner.xml"}, {"label": "SVG", "url": "/downloads/phosphoinositides-celldesigner.svg"}, {"label": "SBML", "url": "/downloads/phosphoinositides-celldesigner-sbml.xml"}, {"label": "Annotation", "url": "/downloads/phosphoinositides-celldesigner.csv"}, {"label": "GraphML", "url": "/downloads/phosphoinositides-celldesigner.graphml"}, {"label": "PNG", "url": "/downloads/phosphoinositides-celldesigner.png"}, {"label": "SBGN-ML", "url": "/downloads/phosphoinositides-celldesigner.sbgn"}, {"label": "Newt", "url": "http://web.newteditor.org/?URL=https://viewer-source.github.io/downloads/phosphoinositides-celldesigner.sbgn"}, {"label": "MINERVA", "url": "https://mreg.elixir-luxembourg.org/minerva/index.html?id=F009-phosphoinositides"}]
