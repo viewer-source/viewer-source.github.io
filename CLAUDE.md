@@ -102,7 +102,8 @@ says "the workbench", "the converter's repository", "a private repository".
   closes the panel. Annotations on the left (Settings) open as one more tab of the panel (the panel opened if closed),
   no tab highlighted; its cross or any tab goes back. First in the styles' Default Icon Row.
 - Map colours (user, 2026-11-12, in Settings after Map size): File (the colours in the map's file, the default), then
-  Default, Paper and Moss (user, 2026-11-12: the colourful ones for testing; Steel and Grey removed the same day; a
+  Default, Paper, Moss, Slate and Lilac (user, 2026-11-12: the colourful ones for testing; Steel and Grey removed the same
+  day; Slate asked for as a mono slate, Lilac the session's choice, both new, not on the /colours/ page; a
   few to be chosen with more care later; no red highlight in any scheme, highlighted proteins in the protein colour, only
   File keeps the file's red); shown in one row where the panel is wide enough, each its name over small squares of its protein and metabolite colours (File also its red), the chosen one filled
   as the other buttons (user, 2026-11-12: compact; tiles with a tiny map took too much room; names shortened: Paper for
