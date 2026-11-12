@@ -1003,7 +1003,9 @@ acetylation<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><
     <edge id="e24" source="n7" target="n25">
       <data key="d18">
         <y:PolyLineEdge>
-          <y:Path sx="0.0" sy="0.0" tx="0.0" ty="0.0"/>
+          <y:Path sx="0.0" sy="0.0" tx="0.0" ty="0.0">
+            <y:Point x="-660" y="52"/>
+          </y:Path>
           <y:LineStyle color="#000000" type="line" width="1.0"/>
           <y:Arrows source="none" target="white_delta"/>
           <y:BendStyle smoothed="false"/>
