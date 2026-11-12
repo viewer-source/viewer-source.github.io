@@ -169,7 +169,7 @@ look="panel" (user, 2026-11-10): Default Panel of the styles experiment, its own
      the icon of the open window, or its cross, closes it and the map takes the room; the window's width is the list's
      (its separator). The download row under the map goes, its files are in the Downloads window. Wide windows only. */
   #m2-rail, .m2 .m2-winhead, #m2-dlwin, #m2-extwin, #m2-infowin, #m2-setwin, #m2-editwin { display: none; }
-  .m2:not(.m2-edit-on) .m2-ri[data-win="edit"] { display: none; }
+  .m2:not(.m2-edit-on) .m2-ri[data-win="edit"], .m2-edit-off .m2-ri[data-win="edit"] { display: none; }
   @media (min-width: 941px) {
     .m2.m2-icons-on { box-sizing: border-box; padding-left: 52px; }
     .m2-icons-on #m2-rail { display: flex; flex-direction: column; align-items: center; gap: 4px; position: absolute; left: 0; top: 0; bottom: 0; width: 52px;

@@ -160,6 +160,11 @@
       box.querySelector('#m2-ed-stop').hidden = !on;
       var g = graphmlOf(current);
       box.querySelector('#m2-ed-this').hidden = on || !g;
+      // the Edit tab only on a map that can be edited, or while a file is being edited (user, 2026-11-12: "do not show
+      // edit icon for maps that can not be edited"); its window gives way to the Maps list when the tab goes
+      var off = !on && !dirty && !g;
+      grid.classList.toggle('m2-edit-off', off);
+      if (off && win === 'edit') { win = 'list'; railMark(); }
     }
     function graphmlOf(m) {   // a map drawn from its GraphML: that file is first in its downloads
       var d = m && m.downloads && m.downloads[0];
@@ -213,9 +218,7 @@
       if (!grid.classList.contains('m2-win-edit') || on) return;
       if (graphmlOf(current) && !dirty) return editShown();
       buttons();
-      if (!dirty) say(current && current.legend === 'celldesigner'
-        ? current.title + ' is drawn from its CellDesigner file, which cannot be edited here yet. Choose a map of the GraphML group, or open a GraphML file.'
-        : 'Open a yEd GraphML file, or choose a map drawn from one.');
+
     }
     document.querySelectorAll('#m2-rail .m2-ri[data-win="edit"]').forEach(function (b) { b.addEventListener('click', shown); });
     box.querySelector('#m2-ed-save').addEventListener('click', save);
