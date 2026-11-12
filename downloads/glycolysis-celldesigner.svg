@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="1032" height="732" viewBox="0 0 1032 732">
+<svg xmlns="http://www.w3.org/2000/svg" width="1083" height="732" viewBox="0 0 1083 732">
 <rect width="100%" height="100%" fill="#fff"/>
-<polygon points="882,477.87 1022,477.87 1027,482.87 1027,542.87 1022,547.87 882,547.87 877,542.87 877,482.87" fill="#ffffff" stroke="#000" class="c-complex"/>
-<text x="952" y="540.87" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-complex">PKA-R:cAMP</text>
+<polygon points="898,470.24 1038,470.24 1043,475.24 1043,535.24 1038,540.24 898,540.24 893,535.24 893,475.24" fill="#ffffff" stroke="#000" class="c-complex"/>
+<text x="968" y="533.24" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-complex">PKA-R:cAMP</text>
 <polygon points="735.05,51 825.05,51 830.05,56 830.05,166 825.05,171 735.05,171 730.05,166 730.05,56" fill="#ffffff" stroke="#000" class="c-complex"/>
 <text x="780.05" y="164" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-complex">PKA-R:PKA-C</text>
 <polygon points="700.05,277.15 860.05,277.15 865.05,282.15 865.05,422.15 860.05,427.15 700.05,427.15 695.05,422.15 695.05,282.15" fill="#ffffff" stroke="#000" class="c-complex"/>
@@ -45,11 +45,11 @@
 <text x="654.73" y="614.53" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">PFKFB2</text>
 <ellipse cx="620.68" cy="246" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
 <text x="620.68" y="250.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">PPi</text>
-<rect x="893" y="493.87" width="74" height="34" rx="5" fill="#c2d4ed" stroke="#000" class="c-protein"/>
-<rect x="887" y="487.87" width="74" height="34" rx="5" fill="#c2d4ed" stroke="#000" class="c-protein"/>
-<text x="924" y="509.53" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">PKA-R</text>
-<ellipse cx="997" cy="507.87" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
-<text x="997" y="512.53" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">cAMP</text>
+<rect x="909" y="486.24" width="74" height="34" rx="5" fill="#c2d4ed" stroke="#000" class="c-protein"/>
+<rect x="903" y="480.24" width="74" height="34" rx="5" fill="#c2d4ed" stroke="#000" class="c-protein"/>
+<text x="940" y="501.91" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">PKA-R</text>
+<ellipse cx="1013" cy="500.24" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="1013" y="504.91" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">cAMP</text>
 <rect x="746.05" y="67" width="74" height="34" rx="5" fill="#c2d4ed" stroke="#000" class="c-protein"/>
 <rect x="740.05" y="61" width="74" height="34" rx="5" fill="#c2d4ed" stroke="#000" class="c-protein"/>
 <text x="777.05" y="82.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">PKA-R</text>
@@ -68,7 +68,7 @@
 <polyline points="780.05,179 780.05,255.15"/>
 <polyline points="700.23,196.07 780.05,210.81"/>
 <polyline points="780.05,435.15 780.05,501.33"/>
-<polyline points="780.05,487.26 855.24,498.46"/>
+<polyline points="780.05,487.26 871.1,495.97"/>
 <polyline points="182,459.87 182,505.87"/>
 <polyline points="125,482.87 169.5,482.87"/>
 <polyline points="189.65,574.35 189.65,637.39"/>
@@ -91,8 +91,8 @@
 <rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(780.05,224.08) rotate(90)"/>
 <polygon points="780.05,523.33 775.05,508.33 785.05,508.33" fill="#000"/>
 <polyline points="780.05,427.15 780.05,509.33" fill="none" stroke="#000000" stroke-width="1"/>
-<polygon points="877,501.7 861.43,504.44 862.9,494.54" fill="#000"/>
-<polyline points="780.05,487.26 863.15,499.64" fill="none" stroke="#000000" stroke-width="1"/>
+<polygon points="893,498.07 877.59,501.62 878.54,491.66" fill="#000"/>
+<polyline points="780.05,487.26 879.06,496.73" fill="none" stroke="#000000" stroke-width="1"/>
 <rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(780.05,475.24) rotate(90)"/>
 <polygon points="182,527.87 177,512.87 187,512.87" fill="#000"/>
 <polygon points="182,437.87 187,452.87 177,452.87" fill="#000"/>
