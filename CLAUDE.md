@@ -133,7 +133,7 @@ says "the workbench", "the converter's repository", "a private repository".
   viewer's own look): a pencil tab right after Maps (user, 2026-11-12: "after list and only then everything else"; was before Settings) opens the Edit window: at its top the tools as a row of signs (user,
   2026-11-12, after yEd's toolbar: "not as words but as normal symbols", a few now and more as needed): Undo, Redo, a thin
   line, Grid and Snap to grid (a magnet), the plain grey signs of the tabs, a switch that is on on a light grey square (the sign #70757a, between the first #5f6368, too dark, and the usual #80868b, too pale; user 2026-11-12) as
-  yEd's, wrapping onto more lines in a narrow panel (user, 2026-11-12: they were cut off on the right); below, Save and Stop editing (Open file, a yEd GraphML from the computer, removed: user, 2026-11-12, not needed outside the Atlas; in the history); the tab starts editing the map shown at once and follows the map chosen, and shows only on a map drawn from its GraphML (or while a file is edited or has moves not saved; user, 2026-11-12). Moves only: a node or a bend point
+  yEd's, wrapping onto more lines in a narrow panel (user, 2026-11-12: they were cut off on the right); below, Save and Stop editing (Open file, a yEd GraphML from the computer, removed: user, 2026-11-12, not needed outside the Atlas; in the history); the tab starts editing the map shown at once and follows the map chosen, and shows only on a map drawn from its own GraphML or CellDesigner file (or while a file is edited or has moves not saved; user, 2026-11-12). Moves only: a node or a bend point
   dragged (a group with what it holds, and the bends of arcs inside it; a bend alone stays put when its nodes move, as
   in yEd), the first click selects and a drag moves only what is selected already (user, 2026-11-12, as yEd: "first click selects an item, and second click drags it"; the plan: mimic yEd's behaviour in general), Shift with a drag moves the whole map from anywhere, over a node or a compartment too (user, 2026-11-12: not in yEd, wanted), Shift with a click adds to the selection, a plain drag on empty space selects an area and the map moves with two-finger scrolling (the right drag taken out, user 2026-11-12: a right click opens the viewer's menu as everywhere), a pinch or Ctrl/Cmd with the wheel zooming, as in yEd's Edit mode (user, 2026-11-12: "yed way"; until then a drag on empty space moved the map and Shift selected an area), arrow keys move by 1 (Shift 10), Ctrl or Cmd
   with Z undoes, with S saves; a drag on empty space pans as before. Only the x and y of what moved change in the
@@ -203,7 +203,21 @@ says "the workbench", "the converter's repository", "a private repository".
   is selected. The code is
   `_includes/atlas-edit.js`, included by the viewer's script (copied to the sites with it, off there). Checked
   2026-11-12 on eNOS: first drawing about 4 s, a redraw after a move under a second, the saved file differing from the
-  original only in x and y values. Not yet: CellDesigner files, a group growing round a member moved out of it.
+  original only in x and y values. Not yet: a group growing round a member moved out of it.
+  CellDesigner maps (user, 2026-11-12: "basically yEd experience with CD", for fixing by hand what a conversion from
+  GraphML leaves): the same editor, the same tools and look; `renderers/converter/cd_edit.py` (its header says how) gives
+  the editor the file as GraphML (compartments, complexes and aliases as groups and nodes, each process glyph a 10 by 10
+  node, each line an arc, edit points absolute) and writes what changed back into the CellDesigner text, only the
+  numbers that change (bounds, the place inside the parent, a compartment's name, edit points, rectangleIndex and the
+  line directions, the canvas grown past its right or bottom edge), so it opens in CellDesigner as before; cdrender
+  draws it in the browser with `GROUPS` on. Bend points stay where they are when a node moves (user, 2026-11-12: yEd's
+  way, not CellDesigner's stretching); the process glyph moved takes its segment with it, as in CellDesigner, an end at
+  a node becoming a new bend point (user, 2026-11-12); not moved, it stays midway on its segment. Saved to
+  `maps/<file>.xml`. Not on CellDesigner maps: Pack and Snap map to grid (the layout skill's GraphML scripts), the live
+  outline of a compartment resized (it is redrawn after the drag); logic gates, associations and dissociations are left
+  as they are (none on the demo). Checked 2026-11-12: all 21 demo maps written back byte for byte with no move, every
+  process glyph where cdrender draws it, 259 moves leaving every bend point in place, live on SREBP (a molecule, a glyph,
+  the save simulated: only the moved numbers changed).
 - Full screen with tools (user, 2026-11-12: "use more space available on the screen, but with tools"): beside the map's
   own full screen (the map alone), the whole page goes full screen with its list, tools and panel: Shift with the
   full-screen button, or Full screen with tools in the right-click menu (Exit full screen there while on). The
@@ -228,7 +242,7 @@ says "the workbench", "the converter's repository", "a private repository".
 - Narrow windows (user, 2026-11-09, 940 px and under): the map first, then its download buttons, its name, the search
   and the list (about three maps tall, scrolling inside), then the text and references.
 - The renderers: `renderers/yrender/` (yEd GraphML, drawn as yEd draws it) and `renderers/converter/cdrender.py`
-  (CellDesigner, drawn as CellDesigner draws it, with the converter's `mapconv/`). cdrender also draws the free texts of a visible layer, the receptor, truncated protein, drug and ion channel (open when active) shapes, the unknown logic gate and a truncation into two (2026-11-11, for the CellDesigner legend). yrender's master is
+  (CellDesigner, drawn as CellDesigner draws it, with the converter's `mapconv/`; `GROUPS` for the editor, off by default, and `cd_edit.py` beside it; the folder is published for the editor, 2026-11-12, user). cdrender also draws the free texts of a visible layer, the receptor, truncated protein, drug and ion channel (open when active) shapes, the unknown logic gate and a truncation into two (2026-11-11, for the CellDesigner legend). yrender's master is
   here since 2026-11-11 (user): every change to it is made here and checked on the live demo, and its two copies are
   then refreshed, each starting with a line naming the commit: the workbench's (its own script fetches it) and the
   Metabolism Regulation website's `yrender/` (the Colours page, and the images of the eicosanoid, osteoarthritis, ERK and

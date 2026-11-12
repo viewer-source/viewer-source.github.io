@@ -363,6 +363,12 @@ def apply(text, gtext):
             if npt and (abs(n[0] - b[0]) >= 1e-3 or abs(n[1] - b[1]) >= 1e-3):
                 m = dict(re.findall(r'\s([xy])="([^"]*)"', T.t[npt[0]:npt[1]]))
                 T.attrs(npt[0], {'x': num(float(m['x']) + n[0] - b[0]), 'y': num(float(m['y']) + n[1] - b[1])})
+    # the canvas grows to hold what was moved past its right or bottom edge, as in CellDesigner (40 to spare, the
+    # converter's margin); the site draws the canvas only
+    far = [max(n[0] + n[2] for n in new.values()), max(n[1] + n[3] for n in new.values())]
+    md = T.span(r'<celldesigner:modelDisplay ')
+    if md and (far[0] > d.W or far[1] > d.H):
+        T.attrs(md[0], {k: str(int(math.ceil(v + 40))) for k, v, have in (('sizeX', far[0], d.W), ('sizeY', far[1], d.H)) if v > have})
     # the reactions, with the nodes where they are now
     olds = {rx.get('id'): lines(d, rx) for rx in d.model.iterfind('s:listOfReactions/s:reaction', NS)}
     for i, a in d.alias.items():
