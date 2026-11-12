@@ -308,6 +308,7 @@ look="panel" (user, 2026-11-10): Default Panel of the styles experiment, its own
   #m2-set-size-v { float: right; color: var(--m2-muted); }
   #m2-set-size { display: block; width: 100%; margin: 0; accent-color: var(--m2-accent); cursor: pointer; }
   #m2-setwin .m2-set-ticks { display: flex; justify-content: space-between; padding: 0 7px; margin-top: 1px; }
+  #m2-setwin .m2-set-bar:not([style*="none"]) + .m2-set-side .m2-set-k { margin-top: 14px; }
   #m2-setwin .m2-set-ticks i { width: 1px; height: 4px; background: var(--m2-muted); }
   .m2-item { display: block; width: 100%; text-align: left; font-size: 14px; line-height: 18px; padding: 2px 4px; border: 1px solid transparent; border-radius: var(--m2-radius); background: none; cursor: pointer; color: var(--m2-text); }
   /* the chosen map: a filled box in the site's link blue, white text */
@@ -685,7 +686,7 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
 <div id="m2-extwin"></div>
 <div id="m2-infowin"><p class="m2-pi-name">{{ include.name | default: site.name | default: site.title }}</p>{% assign about = include.about | default: site.description %}{% if about %}<p>{{ about }}</p>{% endif %}<p class="m2-k" id="m2-info-count"></p></div>
 <div id="m2-editwin"><p id="m2-ed-status">Edit the map shown, or open a yEd GraphML file.</p><div id="m2-ed-gh" hidden><p class="m2-set-note">To save moves to the site, paste a GitHub token that can write to this site's repository. It stays in this browser only.</p><input type="password" id="m2-ed-gh-token" placeholder="GitHub token" autocomplete="off"><button type="button" id="m2-ed-gh-go">Connect</button></div><button type="button" id="m2-ed-open">Open file…</button><button type="button" id="m2-ed-this">Edit this map</button><button type="button" id="m2-ed-back" hidden>Back</button><button type="button" id="m2-ed-save" disabled>Save</button><div class="m2-ed-row"><button type="button" id="m2-ed-undo">Undo</button><button type="button" id="m2-ed-redo">Redo</button></div><button type="button" id="m2-ed-stop" hidden>Stop editing</button><button type="button" id="m2-ed-gh-off" hidden>Disconnect from GitHub</button><p class="m2-set-note">Moves are saved by themselves; the site shows them about two minutes later. Drag a node or a bend point to move it. Shift with a click adds to the selection, Shift with a drag on empty space selects an area. Arrow keys move by 1, with Shift by 10. Ctrl or Cmd with Z undoes, with S saves at once.</p></div>
-<div id="m2-setwin"><div class="m2-set-groups" style="margin-bottom:14px"><p class="m2-set-k">Groups in the list</p><div class="m2-set-row" id="m2-set-groups"><button type="button" data-groups="open">Open all</button><button type="button" data-groups="close">Close all</button></div></div><p class="m2-set-k">Map size <span id="m2-set-size-v"></span></p><input type="range" id="m2-set-size" min="0" max="4" step="1" aria-label="Map size"><div class="m2-set-ticks"><i></i><i></i><i></i><i></i><i></i></div><p class="m2-set-note">What 100% is for every map: closer or further.</p><p class="m2-set-k">Maps open</p><div class="m2-set-row" id="m2-set-open"><button type="button" data-open="fit">Whole map</button><button type="button" data-open="read">At map size</button></div><div class="m2-set-bar"><p class="m2-set-k" style="margin-top:14px">Icons</p><div class="m2-set-row" id="m2-set-bar"><button type="button" data-bar="left">Left</button><button type="button" data-bar="top">Top</button></div></div><div class="m2-set-side"><p class="m2-set-k" style="margin-top:14px">Annotations</p><div class="m2-set-row" id="m2-set-side"><button type="button" data-side="left">Left</button><button type="button" data-side="right">Right</button></div></div></div>
+<div id="m2-setwin"><div class="m2-set-groups" style="margin-bottom:14px"><p class="m2-set-k">Groups in the list</p><div class="m2-set-row" id="m2-set-groups"><button type="button" data-groups="open">Open all</button><button type="button" data-groups="close">Close all</button></div></div><p class="m2-set-k">Map size <span id="m2-set-size-v"></span></p><input type="range" id="m2-set-size" min="0" max="4" step="1" aria-label="Map size"><div class="m2-set-ticks"><i></i><i></i><i></i><i></i><i></i></div><p class="m2-set-note">What 100% is for every map: closer or further.</p><div class="m2-set-bar"><p class="m2-set-k">Icons</p><div class="m2-set-row" id="m2-set-bar"><button type="button" data-bar="left">Left</button><button type="button" data-bar="top">Top</button></div></div><div class="m2-set-side"><p class="m2-set-k">Annotations</p><div class="m2-set-row" id="m2-set-side"><button type="button" data-side="left">Left</button><button type="button" data-side="right">Right</button></div></div></div>
 </div>
 <div class="m2-main">
 <div id="m2-view" tabindex="0">
@@ -983,7 +984,7 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
     showMode();
     if (m === 'fit') fit(); else standard();
   }
-  // Settings: the map size and how a map opens; a choice shows the map at once in the mode's view
+  // Settings: the map size (how a map opens is the Fit/Read button over the map); a choice shows the map at once
   // where the annotations open (Settings, user 2026-11-11): right, the default, or left in the list window's place as in
   // MINERVA, keeping the right side free; only with the floating windows (--m2-nav-float), kept in the browser
   var SIDE = 'right';
@@ -1021,7 +1022,6 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
     document.querySelectorAll('#m2-set-side button').forEach(function (b) { b.classList.toggle('m2-on', b.dataset.side === SIDE); });
     document.getElementById('m2-set-size').value = SIZES.indexOf(SIZE);
     document.getElementById('m2-set-size-v').textContent = Math.round(SIZE * 100) + '%';
-    document.querySelectorAll('#m2-set-open button').forEach(function (b) { b.classList.toggle('m2-on', b.dataset.open === mode); });
     groupsMark();
   }
   // Groups in the list, Open all or Close all (user, 2026-11-12), shown only when the list has groups; the button
@@ -1050,9 +1050,6 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
     try { if (v === 1) localStorage.removeItem('atlas-map-size'); else localStorage.setItem('atlas-map-size', v); } catch (e) {}
     showSettings();
     if (current) { if (mode === 'fit') fit(); else standard(); }
-  });
-  document.querySelectorAll('#m2-set-open button').forEach(function (b) {
-    b.addEventListener('click', function () { setMode(b.dataset.open); });
   });
   function showMode() {
     var b = document.getElementById('m2-mode');
