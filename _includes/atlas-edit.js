@@ -680,13 +680,15 @@
     }
     function hit(P) {   // a bend point first, then a node, then an arc, then a group (its contents and arcs come first)
       var R = 6 / z, best = null, group = null;
-      // among bend points close together the one selected wins, else the nearest (user, 2026-11-12: a nearby bend was
+      // among bend points close together the one selected wins, then one of the arc selected (user, 2026-11-12: select
+      // the arc, see its bends, then click the bend wanted: the arc is the hint), else the nearest (a nearby bend was
       // taken and the wrong arc dragged)
-      var dB = Infinity;
+      var dB = Infinity, ofArc = new Set();
+      selE.forEach(function (k) { edges2[k].pts.forEach(function (q) { ofArc.add(q); }); });
       points.forEach(function (p, i) {
         var dx = Math.abs(num(p, 'x') - P[0]), dy = Math.abs(num(p, 'y') - P[1]);
         if (dx > R || dy > R) return;
-        var d = Math.hypot(dx, dy) - (selP.indexOf(i) >= 0 ? 2 * R : 0);
+        var d = Math.hypot(dx, dy) - (selP.indexOf(i) >= 0 ? 4 * R : ofArc.has(i) ? 2 * R : 0);
         if (d < dB) { dB = d; best = { p: i }; }
       });
       if (best) return best;
