@@ -154,7 +154,7 @@
       say(dirty ? name + ' has moves not saved: Back to it, or Save.' : 'Open a yEd GraphML file, or edit the map shown.');
     }
     function buttons() {
-      box.querySelector('#m2-ed-save').disabled = !text;
+      ['#m2-ed-save', '#m2-ed-undo', '#m2-ed-redo'].forEach(function (k) { box.querySelector(k).disabled = !on; });
       box.querySelector('#m2-ed-back').hidden = on || !text;
       box.querySelector('#m2-ed-back').textContent = 'Back to ' + name;
       box.querySelector('#m2-ed-stop').hidden = !on;
@@ -198,12 +198,26 @@
       if (dirty && !confirm(name + ' has moves not saved. Open another file?')) return;
       open();
     });
-    box.querySelector('#m2-ed-this').addEventListener('click', function () {
+    function editShown() {   // the map on screen, if it is drawn from a GraphML
       var url = graphmlOf(current), m = current;
       if (!url) return;
       if (dirty && !confirm(name + ' has moves not saved. Edit this map instead?')) return;
+      say('Opening ' + m.title + '...');
       fetch(url, { cache: 'no-cache' }).then(function (r) { return r.text(); })
         .then(function (t) { start(t, url.split('/').pop(), null); map.title = m.title; document.getElementById('m2-title').textContent = m.title; });
+    }
+    box.querySelector('#m2-ed-this').addEventListener('click', editShown);
+    // the Edit tab starts editing the map shown at once (user, 2026-11-12: "does not look i can edit yet"); a map drawn
+    // from a CellDesigner file says why it cannot be edited yet
+    document.querySelectorAll('#m2-rail .m2-ri[data-win="edit"]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        if (!grid.classList.contains('m2-win-edit') || on) return;
+        if (graphmlOf(current) && !dirty) return editShown();
+        buttons();
+        if (!dirty) say(current && current.legend === 'celldesigner'
+          ? current.title + ' is drawn from its CellDesigner file, which cannot be edited here yet. Choose a map of the GraphML group, or open a GraphML file.'
+          : 'Open a yEd GraphML file, or choose a map drawn from one.');
+      });
     });
     box.querySelector('#m2-ed-save').addEventListener('click', save);
     box.querySelector('#m2-ed-undo').addEventListener('click', function () { if (on) back(undo, redo); });
