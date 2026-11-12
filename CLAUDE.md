@@ -26,7 +26,7 @@ says "the workbench", "the converter's repository", "a private repository".
   reader scrolls the page a little and drags again, a map already on the edge following the pointer freely, up to
   twice the window's height; a map window taller than the browser window lets the wheel
   scroll the page, Ctrl or Cmd with the wheel and a pinch zoom it (a pinch at about seven times the wheel's rate, each step capped, and Safari's own pinch events taken: user, 2026-11-12, "too incremental"); Shift with the wheel scrolls the page from anywhere over
-  the map in every style (user, 2026-11-11: the text under the map was reached only from the edges): user, 2026-11-11, replacing the row put out of sight
+  the map in every style (user, 2026-11-11: the text under the map was reached only from the edges), and over the list's column and the icons too, not the list inside (user, 2026-11-12: "as soon as I hold Shift, I can move the whole page"): user, 2026-11-11, replacing the row put out of sight
   at the bottom edge of 2026-11-09, which hid the title and text too, so the page ended at the map and froze) in place of the corner grip, both kept in the reader's browser, in the gaps
   `--m2-split` and `--m2-split-h`; a second click on a molecule closes its panel; dragging in the list only with Shift
   held (also in a page with `drag=true` in presentation mode); no highlight under the pointer in the list. Each is a
