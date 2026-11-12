@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="853" height="1037" viewBox="0 0 853 1037">
 <rect width="100%" height="100%" fill="#fff"/>
-<polygon points="279.31,173.54 377.31,173.54 382.31,178.54 382.31,296.54 377.31,301.54 279.31,301.54 274.31,296.54 274.31,178.54" fill="#ffffff" stroke="#000" class="c-complex"/>
-<text x="328.31" y="294.54" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-complex">EGF:EGFR</text>
+<polygon points="276.53,173.54 374.53,173.54 379.53,178.54 379.53,296.54 374.53,301.54 276.53,301.54 271.53,296.54 271.53,178.54" fill="#ffffff" stroke="#000" class="c-complex"/>
+<text x="325.53" y="294.54" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-complex">EGF:EGFR</text>
 <polygon points="284.53,582.99 374.53,582.99 379.53,587.99 379.53,705.99 374.53,710.99 284.53,710.99 279.53,705.99 279.53,587.99" fill="#ffffff" stroke="#000" class="c-complex"/>
 <text x="329.53" y="703.99" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-complex">GRB2:GAB1</text>
 <polygon points="512.98,173.54 610.98,173.54 615.98,178.54 615.98,296.54 610.98,301.54 512.98,301.54 507.98,296.54 507.98,178.54" fill="#ffffff" stroke="#000" class="c-complex"/>
@@ -52,12 +52,12 @@
 <rect x="148.08" y="280.97" width="80" height="40" rx="5" fill="#c2d4ed" stroke="#000" class="c-protein"/>
 <circle cx="188.08" cy="320.97" r="8" fill="#fff" stroke="#000"/>
 <text x="188.08" y="305.64" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">GAB1</text>
-<rect x="292.31" y="183.54" width="80" height="40" rx="5" fill="#c2d4ed" stroke="#000" class="c-protein"/>
-<text x="332.31" y="208.21" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">EGF</text>
-<rect x="292.31" y="233.54" width="80" height="40" rx="5" fill="#c2d4ed" stroke="#000" class="c-protein"/>
-<circle cx="292.31" cy="273.54" r="8" fill="#fff" stroke="#000"/>
-<circle cx="332.31" cy="273.54" r="8" fill="#fff" stroke="#000"/>
-<text x="332.31" y="258.21" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">EGFR</text>
+<rect x="279.53" y="183.54" width="80" height="40" rx="5" fill="#c2d4ed" stroke="#000" class="c-protein"/>
+<text x="319.53" y="208.21" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">EGF</text>
+<rect x="289.53" y="233.54" width="80" height="40" rx="5" fill="#c2d4ed" stroke="#000" class="c-protein"/>
+<circle cx="289.53" cy="273.54" r="8" fill="#fff" stroke="#000"/>
+<circle cx="329.53" cy="273.54" r="8" fill="#fff" stroke="#000"/>
+<text x="329.53" y="258.21" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">EGFR</text>
 <rect x="289.53" y="650.99" width="80" height="40" rx="5" fill="#c2d4ed" stroke="#000" class="c-protein"/>
 <text x="329.53" y="675.65" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">GRB2</text>
 <rect x="289.53" y="592.99" width="80" height="40" rx="5" fill="#c2d4ed" stroke="#000" class="c-protein"/>
@@ -88,9 +88,9 @@
 <text x="562.98" y="535.26" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">EGFR</text>
 <rect x="289.53" y="395.04" width="80" height="40" rx="5" fill="#c2d4ed" stroke="#000" class="c-protein"/>
 <text x="329.53" y="419.71" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">GRB2</text>
-<rect x="289.53" y="337.04" width="80" height="40" rx="5" fill="#c2d4ed" stroke="#000" class="c-protein"/>
-<circle cx="329.53" cy="377.04" r="8" fill="#fff" stroke="#000"/>
-<text x="329.53" y="361.71" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">GAB1</text>
+<rect x="289.53" y="364.04" width="80" height="40" rx="5" fill="#c2d4ed" stroke="#000" class="c-protein"/>
+<circle cx="329.53" cy="404.04" r="8" fill="#fff" stroke="#000"/>
+<text x="329.53" y="388.71" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">GAB1</text>
 <g fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
 <polyline points="617.18,743.98 616.79,696.75"/>
 <polyline points="738.35,796.85 628.02,717.69"/>
@@ -108,9 +108,9 @@
 <polyline points="387.53,646.86 444.33,646.73"/>
 <polyline points="583.11,882.62 543.59,882.08 543.59,937.71"/>
 <polyline points="487.31,924.25 531.1,921.38"/>
-<polyline points="328.31,88 328.31,151.54"/>
-<polyline points="266.27,108.73 328.31,115.08"/>
-<polyline points="390.31,237.54 485.98,237.54"/>
+<polyline points="327.87,88 326.88,151.54"/>
+<polyline points="266.27,108.77 327.45,115.08"/>
+<polyline points="387.53,237.54 485.98,237.54"/>
 <polyline points="329.53,463.04 329.53,560.99"/>
 <polyline points="499.98,517.98 342.03,518.97"/>
 <polyline points="139,391.04 257.53,391.04"/>
@@ -154,13 +154,13 @@
 <circle cx="534.1" cy="921.19" r="3" fill="#fff" stroke="#000"/>
 <polyline points="479.33,924.77 531.1,921.38" fill="none" stroke="#000000" stroke-width="1"/>
 <rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(543.59,920.89) rotate(90)"/>
-<polygon points="328.31,173.54 323.31,158.54 333.31,158.54" fill="#000"/>
-<polyline points="328.31,80 328.31,159.54" fill="none" stroke="#000000" stroke-width="1"/>
-<polyline points="258.31,107.92 328.31,115.08" fill="none" stroke="#000000" stroke-width="1"/>
-<rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(328.31,126.77) rotate(90)"/>
+<polygon points="326.53,173.54 321.77,158.46 331.77,158.62" fill="#000"/>
+<polyline points="328,80 326.75,159.54" fill="none" stroke="#000000" stroke-width="1"/>
+<polyline points="258.31,107.95 327.45,115.08" fill="none" stroke="#000000" stroke-width="1"/>
+<rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(327.27,126.77) rotate(90.9)"/>
 <polygon points="507.98,237.54 492.98,242.54 492.98,232.54" fill="#000"/>
-<polyline points="382.31,237.54 493.98,237.54" fill="none" stroke="#000000" stroke-width="1"/>
-<rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(445.15,237.54) rotate(0)"/>
+<polyline points="379.53,237.54 493.98,237.54" fill="none" stroke="#000000" stroke-width="1"/>
+<rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(443.75,237.54) rotate(0)"/>
 <polygon points="329.53,582.99 324.53,567.99 334.53,567.99" fill="#000"/>
 <polyline points="329.53,455.04 329.53,568.99" fill="none" stroke="#000000" stroke-width="1"/>
 <circle cx="339.03" cy="518.99" r="3" fill="#fff" stroke="#000"/>
