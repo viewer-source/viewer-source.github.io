@@ -144,8 +144,8 @@ says "the workbench", "the converter's repository", "a private repository".
   from the address) through GitHub's contents API, with a fine-grained token the user pastes once in the Edit window
   (kept in that browser's localStorage, `atlas-edit-token`; Disconnect from GitHub removes it: a quiet grey line at the
   window's end, no button look or hover, user 2026-11-12); the build redraws it and the page swaps
-  the new version in by itself (index.json checked every 30 s). Above the grey how-to, two sentences in the accent colour say what the editor is for (user, 2026-11-12):
-  improving a map's layout (moving, aligning, packing what is drawn), not building maps (nothing added, removed or connected). The message after a save gives no clock time (user, 2026-11-12:
+  the new version in by itself (index.json checked every 30 s). The grey how-to starts with what the editor is for (user, 2026-11-12;
+  blue and a sentence on what it does not do tried and taken out): "This tool is designed for improving the layout of a map." The message after a save gives no clock time (user, 2026-11-12:
   "why would I need that"): "Saved. In about 2 minutes it is on the site, and this page updates by itself." Editing starts from the repository's version and its sha,
   so a file changed on GitHub meanwhile is never overwritten: saving stops and says so. A map not in the site's repository
   is saved to a place chosen once (Chrome, Edge), else as a download. Editing starts on the picture as it
