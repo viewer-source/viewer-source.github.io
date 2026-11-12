@@ -508,7 +508,10 @@
             selN = ids.map(function (id) { return nodes2.findIndex(function (n) { return n.id === id; }); }).filter(function (i) { return i >= 0; });
             if (points.length !== np) { selP = []; selE = []; }
           }
-        } else r = JSON.parse(p.globals.get('draw')(text));
+        } else {
+          if (!drag && noNegative()) parse();
+          r = JSON.parse(p.globals.get('draw')(text));
+        }
         if (t !== ticket) return;
         drawing = false;
         if (r[1].length) say('Drawn with warnings: ' + r[1].join('; '));
@@ -531,6 +534,23 @@
           else if (!r[1].length && site && !saveTimer && !saving && !dirty) say(site.pending ? 'Editing ' + map.title + '. Connect to GitHub below so the moves are saved to the site.' : 'Editing ' + map.title + '. Every move is saved to the site by itself.');
         })();
       }).catch(function (e) { if (t === ticket) { drawing = false; say('Not drawn: ' + (e && e.message ? e.message.split('\n').slice(-2).join(' ') : e)); } });
+    }
+    // no negative places (user, 2026-11-12: "negative coordinates in cd are bad", "lets have it universally corrected"):
+    // a map moved past the left or the top edge is shifted right or down, each on its own, by whole blocks of the grid
+    // (16, so a map on the grid stays on it) to start at 40 or a little more; the drawing stays where it is on screen
+    // (the renderer's frame follows). A GraphML here; a CellDesigner file in cd_edit.place
+    function noNegative() {
+      // what is drawn counts (a closed group's other size, kept by yEd, does not), all of it moves
+      var mx = Infinity, my = Infinity, re = /<y:(?:Geometry|Point)\s[^>]*>/g;
+      nodes2.forEach(function (n, i) { var b = boxOf(i); mx = Math.min(mx, b[0]); my = Math.min(my, b[1]); });
+      points.forEach(function (p) { mx = Math.min(mx, num(p, 'x')); my = Math.min(my, num(p, 'y')); });
+      var block = function (m) { return m < 0 ? Math.ceil((40 - m) / 16) * 16 : 0; }, sx = block(mx), sy = block(my);
+      if (!sx && !sy) return false;
+      text = text.replace(re, function (tag) {
+        return tag.replace(/(\sx=")([^"]*)"/, function (a, k, v) { return k + fmt(parseFloat(v) + sx) + '"'; })
+                  .replace(/(\sy=")([^"]*)"/, function (a, k, v) { return k + fmt(parseFloat(v) + sy) + '"'; });
+      });
+      return true;
     }
     function start(t, n, h, s, same) {   // a CellDesigner file is first made into the GraphML the editor edits
       if (!isCd(t)) { cd = null; return begin(t, t, n, h, s, same); }

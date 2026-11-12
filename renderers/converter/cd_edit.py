@@ -129,7 +129,8 @@ def target(m, sq, fl):
 
 # the GraphML -----------------------------------------------------------------------------------------------------
 
-def graphml(text):
+def graphml(text, off=(0.0, 0.0)):
+    # off: subtracted from every place, so the editor keeps its own frame when the file's map was shifted (place())
     d = drawing(text)
     comps = compartments(d)
     up = tree(d, comps)
@@ -154,14 +155,14 @@ def graphml(text):
            '<graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:y="http://www.yworks.com/xml/graphml">',
            '  <key for="node" id="d6" yfiles.type="nodegraphics"/>', '  <key for="edge" id="d10" yfiles.type="edgegraphics"/>',
            '  <graph edgedefault="directed" id="G">']
-    geo = lambda b: '<y:Geometry x="%r" y="%r" width="%r" height="%r"/>' % tuple(float(v) for v in b)
+    geo = lambda b: '<y:Geometry x="%r" y="%r" width="%r" height="%r"/>' % (b[0] - off[0], b[1] - off[1], float(b[2]), float(b[3]))
 
     def node(i, ind):
         s = ' ' * ind
         if i in procs:
             r = procs[i]; c = r['sq']
             out.append('%s<node id="%s" base="%r,%r"><data key="d6"><y:GenericNode configuration="com.yworks.sbgn.Process">%s</y:GenericNode></data></node>'
-                       % (s, escape(i), c[0], c[1], geo((c[0] - PROC / 2, c[1] - PROC / 2, PROC, PROC))))
+                       % (s, escape(i), c[0] - off[0], c[1] - off[1], geo((c[0] - PROC / 2, c[1] - PROC / 2, PROC, PROC))))
             return
         b, ch = box(i), kids.get(i, [])
         if i in comps:
@@ -197,7 +198,7 @@ def graphml(text):
         return (p[0] - b[0] - b[2] / 2, p[1] - b[1] - b[3] / 2)
 
     def edge(eid, s, t, sp, tp, pts, tie=()):
-        ps = ''.join('<y:Point x="%r" y="%r"%s/>' % (p[0], p[1], ' with="%s"' % escape(t_) if t_ else '')
+        ps = ''.join('<y:Point x="%r" y="%r"%s/>' % (p[0] - off[0], p[1] - off[1], ' with="%s"' % escape(t_) if t_ else '')
                      for p, t_ in zip(pts, list(tie) + [None] * len(pts)))
         out.append('    <edge id="%s" source="%s" target="%s"><data key="d10"><y:PolyLineEdge><y:Path sx="%r" sy="%r" tx="%r" ty="%r">%s</y:Path><y:BendStyle smoothed="false"/></y:PolyLineEdge></data></edge>'
                    % (escape(eid), escape(s), escape(t), sp[0], sp[1], tp[0], tp[1], ps))
@@ -332,11 +333,29 @@ def directions(T, span, n):
     T.put(s[0], s[1], '<celldesigner:listOfLineDirection>%s%s</celldesigner:listOfLineDirection>' % (new, sep))
 
 
+MARGIN = 40.0   # the converter's margin round a CellDesigner map
+
+
 def apply(text, gtext):
+    return place(text, gtext)[0]
+
+
+def place(text, gtext):
+    # the CellDesigner text with the moves, and the shift (x, y) of the whole map: CellDesigner has no negative places
+    # (user, 2026-11-12), so a map moved past the left or the top edge is shifted right or down, each on its own, by whole
+    # blocks of the grid (16) to start at the margin (40) or a little more; the canvas grows with it
     d = drawing(text)
     comps = compartments(d)
     up = tree(d, comps)
     boxes, base, bends = read(gtext)
+    xs = [b[0] for b in boxes.values()] + [p[0] for ps in bends.values() for p in ps]
+    ys = [b[1] for b in boxes.values()] + [p[1] for ps in bends.values() for p in ps]
+    block = lambda m: math.ceil((MARGIN - m) / 16) * 16.0 if m < 0 else 0.0   # whole blocks of the grid: a map on it stays on it
+    sh = (block(min(xs)) if xs else 0.0, block(min(ys)) if ys else 0.0)
+    if sh != (0.0, 0.0):
+        boxes = {i: (b[0] + sh[0], b[1] + sh[1], b[2], b[3]) for i, b in boxes.items()}
+        base = {i: (b[0] + sh[0], b[1] + sh[1]) for i, b in base.items()}
+        bends = {i: [(p[0] + sh[0], p[1] + sh[1]) for p in ps] for i, ps in bends.items()}
     old = {i: a[1] for i, a in d.alias.items()}
     old.update({c: v[0] for c, v in comps.items()})
     T = Text(text)
@@ -489,12 +508,28 @@ def apply(text, gtext):
             c2 = T.span(r'<celldesigner:connectScheme', ls[0], ls[1])
             if c2:
                 directions(T, c2, len(nb) + 1)
-    return T.done()
+    if sh != (0.0, 0.0):   # what the editor does not hold but is placed absolutely: free texts and logic gates
+        ly = T.span(r'<celldesigner:listOfLayers>')
+        for m in re.finditer(r'<celldesigner:bounds ', T.t[ly[0]:ly[1]] if ly else ''):
+            tag = T.t[ly[0] + m.start():T.t.index('>', ly[0] + m.start())]
+            v = dict(re.findall(r'\s([xy])="([^"]*)"', tag))
+            T.attrs(ly[0] + m.start(), {'x': num(float(v['x']) + sh[0]), 'y': num(float(v['y']) + sh[1])})
+        for m in re.finditer(r'<celldesigner:(?:GateMember|modification) [^>]*type="BOOLEAN_LOGIC_GATE[^>]*>', T.t):
+            e = re.search(r'\seditPoints="([^"]*)"', m.group(0))
+            if e:
+                pts = e.group(1).split()
+                gx, gy = (float(v) for v in pts[-1].split(','))
+                pts[-1] = '%s,%s' % (num(gx + sh[0]), num(gy + sh[1]))
+                T.attrs(m.start(), {'editPoints': ' '.join(pts)})
+    return T.done(), sh
 
 
 def draw(text, gtext):
     # the editor's call: the CellDesigner text with the moves, its drawing (in groups) and the GraphML made from it again
-    cd = apply(text, gtext)
+    cd, sh = place(text, gtext)
     cdrender.GROUPS = cdrender.CLASSES = True
     svg = cdrender.render(io.BytesIO(cd.encode('utf-8')))
-    return svg, cd, graphml(cd)
+    if sh != (0.0, 0.0):   # the editor's frame: the drawing is in the file's places, the editor's are sh less
+        svg = svg.replace('<g transform="translate(0,0)">', '<g transform="translate(%r,%r)"><g transform="translate(%r,%r)">' % (sh[0], sh[1], -sh[0], -sh[1]), 1)
+        svg = svg[:svg.rindex('</svg>')] + '</g>\n</svg>\n'
+    return svg, cd, graphml(cd, sh)
