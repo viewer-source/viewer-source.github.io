@@ -1491,6 +1491,8 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
   // annotations on the left with the icon row: a tab in the list's panel
   function infoTab() { return SIDE === 'left' && tabsOn() && wide.matches && !isFull(); }
   wide.addEventListener ? wide.addEventListener('change', placeInfo) : wide.addListener(placeInfo);
+  // a style chosen later (the styles page) turns the floating panel on or off: placed again only when that changes
+  window.addEventListener('resize', function () { if (document.querySelector('.m2').classList.contains('m2-info-float') !== setting('info-float')) placeInfo(); });
   // the separator between the map and the panel beside it: in the gap between them (centred on the line where they
   // touch), from the panel's top to the bottom of the download row; dragged sideways it sets the panel's width
   // (--m2-info-w, 160 to 600 px), a double click gives the usual width; kept in this browser
