@@ -209,16 +209,15 @@
     box.querySelector('#m2-ed-this').addEventListener('click', editShown);
     // the Edit tab starts editing the map shown at once (user, 2026-11-12: "does not look i can edit yet"); a map drawn
     // from a CellDesigner file says why it cannot be edited yet
-    document.querySelectorAll('#m2-rail .m2-ri[data-win="edit"]').forEach(function (b) {
-      b.addEventListener('click', function () {
-        if (!grid.classList.contains('m2-win-edit') || on) return;
-        if (graphmlOf(current) && !dirty) return editShown();
-        buttons();
-        if (!dirty) say(current && current.legend === 'celldesigner'
-          ? current.title + ' is drawn from its CellDesigner file, which cannot be edited here yet. Choose a map of the GraphML group, or open a GraphML file.'
-          : 'Open a yEd GraphML file, or choose a map drawn from one.');
-      });
-    });
+    function shown() {   // the Edit window open on a map: edit it, or say why not (also when another map is chosen)
+      if (!grid.classList.contains('m2-win-edit') || on) return;
+      if (graphmlOf(current) && !dirty) return editShown();
+      buttons();
+      if (!dirty) say(current && current.legend === 'celldesigner'
+        ? current.title + ' is drawn from its CellDesigner file, which cannot be edited here yet. Choose a map of the GraphML group, or open a GraphML file.'
+        : 'Open a yEd GraphML file, or choose a map drawn from one.');
+    }
+    document.querySelectorAll('#m2-rail .m2-ri[data-win="edit"]').forEach(function (b) { b.addEventListener('click', shown); });
     box.querySelector('#m2-ed-save').addEventListener('click', save);
     box.querySelector('#m2-ed-undo').addEventListener('click', function () { if (on) back(undo, redo); });
     box.querySelector('#m2-ed-redo').addEventListener('click', function () { if (on) back(redo, undo); });
@@ -339,5 +338,5 @@
     }, true);
 
     buttons();
-    return { paint: paint, left: function (m) { if (on && m !== map) stop(); buttons(); } };
+    return { paint: paint, left: function (m) { if (on && m !== map) stop(); buttons(); setTimeout(shown, 0); } };
   })();
