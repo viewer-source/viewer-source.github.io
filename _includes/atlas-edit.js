@@ -51,6 +51,9 @@
     // drag shifts the groups at once; an arc with only one end or some bends moving is hidden and drawn as plain lines
     // following the pointer (live) until the renderer has drawn the map again
     var gN = null, gE = null, mv = null, live = null;
+    // a move by the arrow keys shown on the drawing at once, as a drag (user, 2026-11-12: a key held showed the result
+    // only when let go, the drawing waiting for the keys to stop): what the keys moved since the map was last drawn
+    var keyed = null, keyGuides = null;
     // compartments are containers (user, 2026-11-12): resized by dragging an edge or a handle, and grown by themselves
     // when what they hold is moved past their margin; liveC: their boxes while a drag runs (index in nodes2 -> box),
     // drawn on the picture at once, until the renderer has drawn the map again
@@ -482,6 +485,32 @@
       if (gE) Object.keys(gE).forEach(function (k) { gE[k].forEach(function (g) { g.removeAttribute('transform'); g.style.display = ''; }); });
       live = null; liveOff();
     }
+    function keyShift(ks, dx, dy) {   // the keys' move on the drawing: groups moved by the sum since the last drawing, arcs touched drawn live
+      if (!gN) return;
+      keyed = keyed || { n: new Set(), dx: 0, dy: 0 };
+      keyed.dx += dx; keyed.dy += dy; ks.n.forEach(function (i) { keyed.n.add(i); });
+      var tr = 'translate(' + keyed.dx + ' ' + keyed.dy + ')';
+      keyed.n.forEach(function (i) { var g = gN[nodes2[i].id]; if (g) g.setAttribute('transform', tr); });
+      live = live || new Set();
+      edges2.forEach(function (e, k) {
+        var a = ks.n.has(e.s), b = ks.n.has(e.t), some = e.pts.some(function (p) { return ks.p.has(p); });
+        var gs = gE[e.id];
+        if (!gs || !(a || b || some)) return;
+        gs.forEach(function (g) { g.style.display = 'none'; }); live.add(k);   // the file has the new places: drawn from them
+      });
+    }
+    // the grey guides of a bend point moved by the keys (user, 2026-11-12: as in a drag, to see when a segment is level or
+    // upright): one bend point selected alone, a segment drawn while it is exactly level or upright; no snapping, the
+    // keys move by whole steps
+    function bendGuides() {
+      if (selP.length !== 1 || selN.length || selE.length) return null;
+      var k = -1, j = -1, out = [];
+      edges2.forEach(function (e, i) { var at2 = e.pts.indexOf(selP[0]); if (at2 >= 0) { k = i; j = at2 + 1; } });
+      if (k < 0 || edges2[k].s == null || edges2[k].t == null) return null;
+      var all = ports(k), B = all[j];
+      [all[j - 1], all[j + 1]].forEach(function (q) { if (Math.abs(q[0] - B[0]) < 0.01 || Math.abs(q[1] - B[1]) < 0.01) out.push([B, q]); });
+      return out.length ? out : null;
+    }
     function move(dx, dy) {
       if (!dx && !dy) return;
       var sets = moving(), all = sets.n, ps = sets.p;
@@ -546,7 +575,7 @@
           var old = img.src || '';
           img.removeAttribute('id'); pic.id = 'm2-img'; pic.setAttribute('aria-label', map.title); img.replaceWith(pic); img = pic;
           if (old.indexOf('blob:') === 0) URL.revokeObjectURL(old);
-          gN = {}; gE = {}; live = null; liveC = null; liveOrig = null;
+          gN = {}; gE = {}; live = null; liveC = null; liveOrig = null; keyed = null;
           pic.querySelectorAll('[data-n]').forEach(function (g) { gN[g.getAttribute('data-n')] = g; });
           pic.querySelectorAll('[data-e]').forEach(function (g) { var k = g.getAttribute('data-e'); (gE[k] = gE[k] || []).push(g); });
           if (first) fit(); else draw();
@@ -1008,6 +1037,9 @@
         var ph = Math.max(2, HANDLE * z);
         over.push('<rect class="m2-ed-handle" x="' + f1(sx(C[0]) - ph / 2) + '" y="' + f1(sy(C[1]) - ph / 2) + '" width="' + f1(ph) + '" height="' + f1(ph) + '"/>');
       }
+      if (!drag && keyGuides) keyGuides.forEach(function (g) {
+        out.push('<path class="m2-ed-guide"' + sw(3) + ' d="M' + f1(sx(g[0][0])) + ' ' + f1(sy(g[0][1])) + 'L' + f1(sx(g[1][0])) + ' ' + f1(sy(g[1][1])) + '"/>');
+      });
       if (drag && drag.guides) drag.guides.forEach(function (g) {
         out.push('<path class="m2-ed-guide"' + sw(3) + ' d="M' + f1(sx(g[0][0])) + ' ' + f1(sy(g[0][1])) + 'L' + f1(sx(g[1][0])) + ' ' + f1(sy(g[1][1])) + '"/>');
       });
@@ -1114,6 +1146,7 @@
     // selection; Shift with a click adds or takes out); a drag on what is selected moves it; Shift with a drag on empty
     // space selects an area; a right click opens the viewer's menu, as outside edit mode
     view.addEventListener('pointerdown', function (e) {
+      keyGuides = null;
       tap = null;
       if (!editing(e)) return;
       if (e.button === 2 || (e.button === 0 && e.ctrlKey && /Mac/.test(navigator.platform))) {   // a right click: the viewer's menu
@@ -1436,12 +1469,12 @@
       if (!on || current !== map || /input|textarea|select/i.test(document.activeElement.tagName)) return;
       if (mod && k === 'z') { e.preventDefault(); if (e.shiftKey) back(redo, undo); else back(undo, redo); return; }
       if (mod && k === 'y') { e.preventDefault(); back(redo, undo); return; }
-      if (e.key === 'Escape') { selN = []; selP = []; selE = []; paint(); return; }
+      if (e.key === 'Escape') { selN = []; selP = []; selE = []; keyGuides = null; paint(); return; }
       var step = e.shiftKey ? 10 : 1, d = { arrowleft: [-step, 0], arrowright: [step, 0], arrowup: [0, -step], arrowdown: [0, step] }[k];
       if (!d) return;
       e.preventDefault(); e.stopPropagation();   // while editing the arrows never step to another map
       if (!selN.length && !selP.length && !selE.length) return;
-      remember(true); var ks = moving(); move(d[0], d[1]); paint();
+      remember(true); var ks = moving(); move(d[0], d[1]); keyShift(ks, d[0], d[1]); keyGuides = bendGuides(); paint();
       clearTimeout(timer); timer = setTimeout(function () { fitThen({ moved: movedIds(ks) }, function () { render(); paint(); }); }, 150); changed();
     }, true);
 
