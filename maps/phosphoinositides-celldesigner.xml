@@ -2094,7 +2094,7 @@
 <celldesigner:lineDirection index="2" value="unknown"/>
 </celldesigner:listOfLineDirection>
 </celldesigner:connectScheme>
-<celldesigner:editPoints>0.056480246106,0.33767829186 0.67916661365,0.33767829186</celldesigner:editPoints>
+<celldesigner:editPoints>0.090019315779,0.205245082874 0.712705683323,0.205245082874</celldesigner:editPoints>
 <celldesigner:line width="1.0" color="ff000000"/>
 </celldesigner:extension>
 </annotation>
