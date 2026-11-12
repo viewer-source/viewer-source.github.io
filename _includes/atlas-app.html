@@ -1172,8 +1172,26 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
     // screen, so the text under it was reached only from the edges); browsers send Shift with the wheel as a sideways
     // scroll, so either direction is taken as the page's
     if (e.shiftKey && !e.ctrlKey && !e.metaKey) { var d = e.deltaY || e.deltaX; window.scrollBy(0, e.deltaMode === 1 ? d * 16 : e.deltaMode === 2 ? d * window.innerHeight : d); return; }
-    zoomAt(z * Math.exp(-e.deltaY * (e.deltaMode ? 0.05 : 0.0015)), (e.clientX - r.left) / pz(), (e.clientY - r.top) / pz());
+    // a pinch on a trackpad comes as the wheel with Ctrl and small steps (about 1 to 10 px each): with the wheel's rate it
+    // zoomed far too little (user, 2026-11-12: "too incremental"), so it takes a rate about seven times the wheel's, each
+    // step capped so that Ctrl with a mouse wheel's notch (about 100 px) does not jump
+    var dy = e.deltaY;
+    if (e.ctrlKey && !e.deltaMode) dy = Math.max(-25, Math.min(25, dy)) * 7;
+    if (gest != null) return;   // Safari's own pinch (below) zooms
+    zoomAt(z * Math.exp(-dy * (e.deltaMode ? 0.05 : 0.0015)), (e.clientX - r.left) / pz(), (e.clientY - r.top) / pz());
   }, { passive: false });
+  // Safari on a Mac sends a pinch as gesture events with a scale, not as the wheel: the map zooms by that scale, and the
+  // browser does not zoom the whole page
+  var gest = null;
+  view.addEventListener('gesturestart', function (e) { if (e.target.closest && e.target.closest('.m2-info')) return; e.preventDefault(); gest = e.scale || 1; });
+  view.addEventListener('gesturechange', function (e) {
+    if (gest == null) return;
+    e.preventDefault();
+    var r = view.getBoundingClientRect(), s = e.scale || 1;
+    zoomAt(z * s / gest, ((e.clientX || r.left + r.width / 2) - r.left) / pz(), ((e.clientY || r.top + r.height / 2) - r.top) / pz());
+    gest = s;
+  });
+  view.addEventListener('gestureend', function (e) { if (gest != null) e.preventDefault(); gest = null; });
   view.addEventListener('dblclick', function (e) {
     if (e.target.closest('.m2-ctrl, .m2-info')) return;
     var r = view.getBoundingClientRect();
