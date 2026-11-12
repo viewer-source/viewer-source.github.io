@@ -193,6 +193,35 @@
       return py;
     }
 
+    // the layout skill's tools (user, 2026-11-12): its own code, copied into renderers/layout/ and run here as it is, on the
+    // map's text; only the numbers it changes are written back (tidy.py), so the rest stays byte for byte. One undo step.
+    var lay = null;
+    function layout() {
+      if (lay) return lay;
+      lay = python().then(function (p) {
+        return Promise.all(['complex_pack', 'snap_grid', 'tidy'].map(function (f) {
+          return fetch('/renderers/layout/' + f + '.py').then(function (r) { if (!r.ok) throw f + ' not found'; return r.text(); })
+            .then(function (t) { p.FS.writeFile('/home/pyodide/' + f + '.py', t); });
+        })).then(function () { p.runPython('import tidy'); return p; });
+      });
+      lay.catch(function (e) { lay = null; say('The layout tools did not load: ' + e); });
+      return lay;
+    }
+    function tool(what, ids, done) {
+      if (!on || current !== map || !text) return;
+      say('Working...');
+      layout().then(function (p) {
+        p.globals.set('_t', text); p.globals.set('_ids', JSON.stringify(ids || []));
+        var r = JSON.parse(p.runPython("import json\njson.dumps(tidy.tidy(_t, " + JSON.stringify(what) + ", json.loads(_ids)))"));
+        if (!r[1]) { say(done[0]); return; }
+        remember(false); text = r[0]; parse(); selN = []; selP = []; selE = []; dirty = true;
+        render(); paint(); changed(); say(done[1]);
+      }).catch(function (e) { say('Not done: ' + (e && e.message ? e.message.split('\n').slice(-2).join(' ') : e)); });
+    }
+    box.querySelector('#m2-ed-tidy-grid').addEventListener('click', function () {
+      tool('grid', [], ['The map is on the grid already.', 'The map is on the grid. Ctrl or Cmd with Z takes it back.']);
+    });
+
     // the file read: every y:Geometry and y:Point in document order, which is also their order in the text
     function parse() {
       doc = new DOMParser().parseFromString(text, 'application/xml');
@@ -373,7 +402,7 @@
       say(dirty && !site ? name + ' has moves not saved: Back to it, or Save.' : 'Edit the map shown.');
     }
     function buttons() {
-      ['#m2-ed-save', '#m2-ed-undo', '#m2-ed-redo'].forEach(function (k) { box.querySelector(k).disabled = !on; });
+      ['#m2-ed-save', '#m2-ed-undo', '#m2-ed-redo', '#m2-ed-tidy-grid'].forEach(function (k) { box.querySelector(k).disabled = !on; });
       box.querySelector('#m2-ed-save').hidden = !!site;   // a map of the site saves by itself
       ghForm(!!(on && site && !token()));
       box.querySelector('#m2-ed-back').hidden = on || !text;
