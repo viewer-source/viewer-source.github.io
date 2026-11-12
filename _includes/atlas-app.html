@@ -263,15 +263,15 @@ look="panel" (user, 2026-11-10): Default Panel of the styles experiment, its own
   #m2-editwin .m2-set-k { margin: 4px 0 6px; color: var(--m2-text); }
   /* the tools as a row of signs at the top of the Edit window (user, 2026-11-12, after yEd's toolbar: "not as words but
      as normal symbols"; a few now, more as they are needed): plain grey signs as the tabs; a switch that is on gets a
-     the accent fill with a white sign, as the chosen buttons elsewhere (user, 2026-11-12: "the blue button version"; a
-     light grey square with a black sign before, which "destroys nice soft grey view"); Undo and Redo, not switches,
+     a very light grey square with a soft grey sign (user, 2026-11-12: a black sign "destroys nice soft grey view"; the
+     accent fill tried and taken back the same round; the square made lighter so the soft sign reads); Undo and Redo, not switches,
      never change under the pointer (user: "no need to select it at all or highlight it at all"); a thin line between
      groups */
   #m2-editwin .m2-ed-tools { display: flex; align-items: center; gap: 2px; margin: 0 0 10px; padding: 0 0 8px; border-bottom: 1px solid var(--m2-frame); }
   #m2-editwin .m2-ed-tools button { display: flex; align-items: center; justify-content: center; flex: none; width: 32px; height: 32px; padding: 0; margin: 0;
     border: 0; border-radius: 6px; background: none; color: #80868b; }
   #m2-editwin .m2-ed-tools button:hover:not(:disabled) { background: none; border: 0; color: var(--m2-text-soft); }
-  #m2-editwin .m2-ed-tools button[aria-pressed="true"], #m2-editwin .m2-ed-tools button[aria-pressed="true"]:hover { background: var(--m2-accent); color: var(--m2-on-accent, #fff); }
+  #m2-editwin .m2-ed-tools button[aria-pressed="true"], #m2-editwin .m2-ed-tools button[aria-pressed="true"]:hover { background: #f1f3f4; color: #5f6368; }
   #m2-editwin .m2-ed-tools button:not([aria-pressed]):hover { color: #80868b; }
   #m2-editwin .m2-ed-tools svg { width: 20px; height: 20px; }
   #m2-editwin .m2-ed-sep { flex: none; width: 1px; height: 20px; margin: 0 6px; background: var(--m2-frame); }
