@@ -146,7 +146,7 @@ says "the workbench", "the converter's repository", "a private repository".
   window's end, no button look or hover, user 2026-11-12); the build redraws it and the page swaps
   the new version in by itself (index.json checked every 30 s). Above the grey how-to, two sentences in the accent colour say what the editor is for (user, 2026-11-12):
   improving a map's layout (moving, aligning, packing what is drawn), not building maps (nothing added, removed or connected). The message after a save gives no clock time (user, 2026-11-12:
-  "why would I need that"): "Saved. The site shows it in about two minutes; this page swaps it in by itself." Editing starts from the repository's version and its sha,
+  "why would I need that"): "Saved. In about 2 minutes it is on the site, and this page updates by itself." Editing starts from the repository's version and its sha,
   so a file changed on GitHub meanwhile is never overwritten: saving stops and says so. A map not in the site's repository
   is saved to a place chosen once (Chrome, Edge), else as a download. Editing starts on the picture as it
   is, with no redraw and the map not moved (user, 2026-11-12: "exactly as I see it and immediately start editing"): the
@@ -198,7 +198,7 @@ says "the workbench", "the converter's repository", "a private repository".
   `sh renderers/layout/get_layout.sh <clone of the skill>`, never edited here), run in the browser by Pyodide through
   `renderers/layout/tidy.py`, which writes back only the attributes they change, the rest byte for byte; one undo step.
   Snap the whole map to the grid (the dotted square after the magnet): `snap_grid.snap`, complexes packed first, rows
-  and columns kept, compartments fitted. Pack (after it; its sign a complex with cut corners holding two proteins stacked, the same size and line as the other signs (the tools now at the tabs' 21 px and line 1.6: before, 20 px with 1.8, about 10% heavier), a little larger inside its square: user, 2026-11-12): the complex selected, or the one round
+  and columns kept, compartments fitted. Pack (after it; its sign a complex with cut corners holding two proteins stacked, the proteins 2:1 as the default 80 by 40 and the complex in the packing rules' proportions (gap a little wider to stay clear at this size), the same size and line as the other signs (the tools now at the tabs' 21 px and line 1.6: before, 20 px with 1.8, about 10% heavier), a little larger inside its square: user, 2026-11-12): the complex selected, or the one round
   a member selected, packed by `complex_pack` (its arcs' ends and the groups round it fitted), every complex when nothing
   is selected. The code is
   `_includes/atlas-edit.js`, included by the viewer's script (copied to the sites with it, off there). Checked

@@ -146,7 +146,7 @@
                 store(all);
               }
               if (site === target && text === body) dirty = false;
-              say('Saved. The site shows it in about two minutes; this page swaps it in by itself.');   // no clock time (user, 2026-11-12)
+              say('Saved. In about 2 minutes it is on the site, and this page updates by itself.');   // no clock time (user, 2026-11-12)
             } else if (r.status === 409 || r.status === 422) {
               // GitHub also refuses a save when its branch moved meanwhile (the site's build commits after each save,
               // user, 2026-11-12: "Not saved" at the second move): the file as it is there now is read, and if it is
@@ -542,7 +542,7 @@
       if (!text) return;
       if (site) { if (token()) push(); return; }
       var blob = new Blob([text], { type: 'application/xml' });
-      var done = function () { dirty = false; say('Saved ' + name + ' ' + new Date().toTimeString().slice(0, 5)); };
+      var done = function () { dirty = false; say('Saved ' + name + '.'); };
       var into = function (h) { return h.createWritable().then(function (w) { return w.write(blob).then(function () { return w.close(); }); }).then(done); };
       if (handle) return into(handle).catch(function (e) { say('Not saved: ' + e.message); });
       if (window.showSaveFilePicker) {
