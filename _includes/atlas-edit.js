@@ -25,7 +25,7 @@
     var text = '', name = '', handle = null, dirty = false;
     var doc = null, geos = [], points = [], nodes2 = [], edges2 = [];
     var x0 = 0, y0 = 0;            // where the drawing's top left is in yEd units
-    var selN = [], selP = [];      // selected nodes (indices in nodes2) and bend points (indices in points)
+    var selN = [], selP = [], selE = [];   // selected nodes (indices in nodes2), bend points (in points), arcs (in edges2)
     var undo = [], redo = [], drag = null, band = null, ticket = 0, nudgeAt = 0, timer = null;
     // saving to the site: the repository is the site's own (<owner>.github.io), the map's source maps/<file>.graphml
     var TOKEN_KEY = 'atlas-edit-token', AUTOSAVE = 3000;
@@ -46,7 +46,7 @@
         return [a('x'), a('y'), a('width'), a('height')];
       });
       if (all.length !== geos.length) return null;   // not the same file with moves only
-      return { boxes: nodes2.map(function (n) { return all[n.geo[0]]; }), x0: fr.x0, y0: fr.y0 };
+      return { boxes: nodes2.map(function (n) { return all[n.ag]; }), x0: fr.x0, y0: fr.y0 };
     }
     function nowRef() { return { boxes: nodes2.map(function (n, i) { return boxOf(i); }), x0: x0, y0: y0 }; }
     function boxes(k, list) {   // the site's click data with each node's box where the edited drawing has it
@@ -160,16 +160,45 @@
       byEl = new Map(); nodes2.forEach(function (n, i) { byEl.set(n.el, i); });
       nodes2.forEach(function (n) {   // a group moves with what it holds, as in yEd
         n.inside = Array.prototype.slice.call(n.el.getElementsByTagNameNS(G, 'node')).map(function (c) { return byEl.get(c); }).filter(function (c) { return c != null; });
+        n.kids = n.inside.filter(function (c) { return owner(nodes2[c].el, 'node') === n.el; });
+        var r = realizerOf(n.el), g = r && r.getElementsByTagNameNS(Y, 'Geometry')[0];
+        n.ag = g && gi.has(g) ? gi.get(g) : n.geo[0];   // the geometry of the realizer shown (a group open or closed)
+        n.shape = r ? shapeOf(r) : { kind: 'rectangle', props: {} };
       });
       var byId = {}; nodes2.forEach(function (n, i) { byId[n.id] = i; });
       var pi = new Map(); points.forEach(function (p, i) { pi.set(p, i); });
       edges2 = Array.prototype.slice.call(doc.getElementsByTagNameNS(G, 'edge')).map(function (e) {
-        return { s: byId[e.getAttribute('source')], t: byId[e.getAttribute('target')],
+        return { s: byId[e.getAttribute('source')], t: byId[e.getAttribute('target')], path: e.getElementsByTagNameNS(Y, 'Path')[0] || null,
                  pts: Array.prototype.slice.call(e.getElementsByTagNameNS(Y, 'Point')).map(function (p) { return pi.get(p); }) };
       });
     }
+    function realizerOf(el) {   // the node's own yEd realizer (of a group: the one shown)
+      for (var i = 0; i < el.children.length; i++) {
+        var dd = el.children[i];
+        if (dd.localName !== 'data') continue;
+        for (var j = 0; j < dd.children.length; j++) {
+          var r = dd.children[j];
+          if (r.namespaceURI !== Y) continue;
+          if (r.localName === 'ProxyAutoBoundsNode') {
+            var rs = r.getElementsByTagNameNS(Y, 'Realizers')[0];
+            return rs ? rs.children[parseInt(rs.getAttribute('active') || '0', 10)] || null : null;
+          }
+          return r;
+        }
+      }
+      return null;
+    }
+    function shapeOf(r) {   // as the yEd renderer reads it: the SBGN style or the plain shape, and the style's numbers
+      var props = {}, kind;
+      Array.prototype.forEach.call(r.getElementsByTagNameNS(Y, 'Property'), function (p) {
+        props[(p.getAttribute('name') || '').replace('com.yworks.sbgn.style.', '')] = p.getAttribute('value');
+      });
+      if (/^Generic/.test(r.localName)) kind = (r.getAttribute('configuration') || '').replace('com.yworks.sbgn.', '');
+      else { var sh = r.getElementsByTagNameNS(Y, 'Shape')[0]; kind = sh ? sh.getAttribute('type') : 'rectangle'; }
+      return { kind: kind, props: props };
+    }
     function num(el, a) { return parseFloat(el.getAttribute(a)); }
-    function boxOf(i) { var g = geos[nodes2[i].geo[0]]; return [num(g, 'x'), num(g, 'y'), num(g, 'width'), num(g, 'height')]; }
+    function boxOf(i) { var g = geos[nodes2[i].ag]; return [num(g, 'x'), num(g, 'y'), num(g, 'width'), num(g, 'height')]; }
     function fmt(v) { return String(Math.round(v * 1000) / 1000); }
 
     // the move: new x and y for some y:Geometry and y:Point, written into the text in one pass, the rest untouched
@@ -186,6 +215,7 @@
       var all = new Set();
       selN.forEach(function (i) { all.add(i); nodes2[i].inside.forEach(function (c) { all.add(c); }); });
       var ps = new Set(selP);
+      selE.forEach(function (k) { edges2[k].pts.forEach(function (p) { ps.add(p); }); });
       edges2.forEach(function (e) { if (all.has(e.s) && all.has(e.t)) e.pts.forEach(function (p) { ps.add(p); }); });
       var g = {}, p = {};
       all.forEach(function (i) {
@@ -208,7 +238,7 @@
     }
     function back(from, to) {
       if (!from.length) return;
-      to.push(text); text = from.pop(); parse(); selN = []; selP = []; dirty = true; render(); paint(); changed();
+      to.push(text); text = from.pop(); parse(); selN = []; selP = []; selE = []; dirty = true; render(); paint(); changed();
     }
 
     // the drawing: the renderer in the browser; the map keeps its place on screen when the drawing's edges change
@@ -238,7 +268,7 @@
     }
     function start(t, n, h, s, same) {   // same: { width, height, x0, y0, scale } of the picture on screen, drawn from this very text
       try { text = t; parse(); } catch (e) { say('Cannot edit ' + n + ': ' + e); return; }
-      siteRef = null; name = n; handle = h; site = s || null; if (site) site.base = t; stuck = false; dirty = false; undo = []; redo = []; selN = []; selP = [];
+      siteRef = null; name = n; handle = h; site = s || null; if (site) site.base = t; stuck = false; dirty = false; undo = []; redo = []; selN = []; selP = []; selE = [];
       map = { id: 'edit', title: n, width: 0, height: 0, scale: 1, downloads: [] };
       if (same) {   // editing starts on the picture as it is: no redraw, the map stays where it is (user, 2026-11-12)
         map.width = same.width; map.height = same.height; map.scale = same.scale; x0 = same.x0; y0 = same.y0;
@@ -415,49 +445,156 @@
     }
     window.addEventListener('beforeunload', function (e) { if (dirty) { if (saveTimer) push(); e.preventDefault(); e.returnValue = ''; } });
 
-    // on screen: the selection's outlines and every bend point, over the drawing
+    // on screen: the selection as yEd shows it (user, 2026-11-12: "see how it is in yEd"), over the drawing: a node
+    // selected is darkened and gets eight small black handles; an arc selected is highlighted in blue under its line
+    // (yEd's yellow, user: blue) with its bend points as blue squares (yEd's green dots, user: blue squares); nothing
+    // else is drawn, so the map at rest with nothing selected looks as the original diagram
     function sx(X) { return tx + (X - x0) * z; }
     function sy(Y2) { return ty + (Y2 - y0) * z; }
+    function f1(v) { return Math.round(v * 100) / 100; }
+    function rr(x, y, w, h, r, quad) {   // a round rectangle as the renderer draws it (yEd's quadratic corners, or arcs)
+      r = Math.min(r, w / 2, h / 2);
+      if (r <= 0) return 'M' + x + ' ' + y + 'h' + w + 'v' + h + 'h' + (-w) + 'Z';
+      if (quad) return 'M' + x + ' ' + (y + r) + 'Q' + x + ' ' + y + ' ' + (x + r) + ' ' + y + 'L' + (x + w - r) + ' ' + y +
+        'Q' + (x + w) + ' ' + y + ' ' + (x + w) + ' ' + (y + r) + 'L' + (x + w) + ' ' + (y + h - r) +
+        'Q' + (x + w) + ' ' + (y + h) + ' ' + (x + w - r) + ' ' + (y + h) + 'L' + (x + r) + ' ' + (y + h) +
+        'Q' + x + ' ' + (y + h) + ' ' + x + ' ' + (y + h - r) + 'Z';
+      var A = 'A' + r + ' ' + r + ' 0 0 1 ';
+      return 'M' + x + ' ' + (y + r) + A + (x + r) + ' ' + y + 'L' + (x + w - r) + ' ' + y + A + (x + w) + ' ' + (y + r) +
+        'L' + (x + w) + ' ' + (y + h - r) + A + (x + w - r) + ' ' + (y + h) + 'L' + (x + r) + ' ' + (y + h) + A + x + ' ' + (y + h - r) + 'Z';
+    }
+    function poly(pts) { return 'M' + pts.map(function (q) { return q[0] + ' ' + q[1]; }).join('L') + 'Z'; }
+    function outlineD(sh, x, y, w, h) {   // the node's outline, as the yEd renderer's outline()
+      var k = sh.kind, pr = sh.props, i = h / 4;
+      if (k === 'Macromolecule') return rr(x, y, w, h, parseFloat(pr.radius || 12), true);
+      if (k === 'SimpleChemical' || k === 'StateVariable') return rr(x, y, w, h, Math.min(w, h) / 2, false);
+      if (k === 'Complex') {
+        var rx = Math.min(parseFloat(pr.radiusX || 15), w / 2), ry = Math.min(parseFloat(pr.radiusY || 15), h / 2);
+        return poly([[x + rx, y], [x + w - rx, y], [x + w, y + ry], [x + w, y + h - ry], [x + w - rx, y + h], [x + rx, y + h], [x, y + h - ry], [x, y + ry]]);
+      }
+      if (k === 'NucleicAcidFeature') {
+        var r = Math.min(parseFloat(pr.radius || 12), w / 2, h);
+        return 'M' + x + ' ' + y + 'L' + (x + w) + ' ' + y + 'L' + (x + w) + ' ' + (y + h - r) + 'Q' + (x + w) + ' ' + (y + h) + ' ' + (x + w - r) + ' ' + (y + h) +
+          'L' + (x + r) + ' ' + (y + h) + 'Q' + x + ' ' + (y + h) + ' ' + x + ' ' + (y + h - r) + 'Z';
+      }
+      if (k === 'EmptySet' || k === 'Operator' || k === 'UnspecifiedEntity' || k === 'ellipse')
+        return 'M' + x + ' ' + (y + h / 2) + 'A' + w / 2 + ' ' + h / 2 + ' 0 1 1 ' + (x + w) + ' ' + (y + h / 2) + 'A' + w / 2 + ' ' + h / 2 + ' 0 1 1 ' + x + ' ' + (y + h / 2) + 'Z';
+      if (k === 'Phenotype') return poly([[x + i, y], [x + w - i, y], [x + w, y + h / 2], [x + w - i, y + h], [x + i, y + h], [x, y + h / 2]]);
+      if (k === 'PerturbingAgent') return poly([[x, y], [x + w, y], [x + w - i, y + h / 2], [x + w, y + h], [x, y + h], [x + i, y + h / 2]]);
+      if (k === 'roundrectangle') return rr(x, y, w, h, 4, false);
+      return rr(x, y, w, h, 0);
+    }
+    function shapeD(i) {   // the outline of node i, a multimer's second outline with it
+      var b = boxOf(i), n = nodes2[i], d = outlineD(n.shape, b[0], b[1], b[2], b[3]);
+      if (n.shape.props.mcount === '2') d = outlineD(n.shape, b[0] + 6, b[1] + 6, b[2], b[3]) + d;
+      return d;
+    }
+    function cut(port, outer, b) {   // where the arc from outer to its port inside the box b meets the box's edge
+      if (!(port[0] > b[0] && port[0] < b[0] + b[2] && port[1] > b[1] && port[1] < b[1] + b[3])) return port;
+      var dx = port[0] - outer[0], dy = port[1] - outer[1], best = 1;
+      [[b[0], 0], [b[0] + b[2], 0], [b[1], 1], [b[1] + b[3], 1]].forEach(function (e) {
+        var den = e[1] ? dy : dx;
+        if (!den) return;
+        var t = (e[0] - (e[1] ? outer[1] : outer[0])) / den;
+        if (t >= 0 && t < best) {
+          var o = e[1] ? outer[0] + dx * t : outer[1] + dy * t, lo = e[1] ? b[0] : b[1], hi = e[1] ? b[0] + b[2] : b[1] + b[3];
+          if (o >= lo - 0.01 && o <= hi + 0.01) best = t;
+        }
+      });
+      return [outer[0] + dx * best, outer[1] + dy * best];
+    }
+    function line(k) {   // the arc's points in yEd units: its ends at the borders of its nodes, its bends between
+      var e = edges2[k];
+      if (e.s == null || e.t == null) return null;
+      var S = boxOf(e.s), T = boxOf(e.t), pa = e.path, o = function (a) { return pa ? parseFloat(pa.getAttribute(a)) || 0 : 0; };
+      var pts = [[S[0] + S[2] / 2 + o('sx'), S[1] + S[3] / 2 + o('sy')]];
+      e.pts.forEach(function (pi) { pts.push([num(points[pi], 'x'), num(points[pi], 'y')]); });
+      pts.push([T[0] + T[2] / 2 + o('tx'), T[1] + T[3] / 2 + o('ty')]);
+      pts[0] = cut(pts[0], pts[1], S);
+      pts[pts.length - 1] = cut(pts[pts.length - 1], pts[pts.length - 2], T);
+      return pts;
+    }
     function paint() {
-      // nothing over the drawing at rest (user, 2026-11-12: "it should look exactly as the original diagram"): no
-      // selection outlines, no bend handles; only while a drag runs, a thin grey outline of what moves (or the area
-      // being selected), gone on release
-      if (!on || current !== map || (!drag && !band)) { overlay.innerHTML = ''; return; }
-      var out = [];
+      if (!on || current !== map) { overlay.innerHTML = ''; return; }
+      var out = [], over = [], frame = '<g transform="translate(' + f1(tx - x0 * z) + ',' + f1(ty - y0 * z) + ') scale(' + z + ')">';
+      // arcs selected, or holding a bend point selected: the blue highlight, then their bends as squares on top
+      var arcs = selE.slice();
+      selP.forEach(function (p) { edges2.forEach(function (e, k) { if (e.pts.indexOf(p) >= 0 && arcs.indexOf(k) < 0) arcs.push(k); }); });
+      arcs.forEach(function (k) {
+        var pts = line(k);
+        if (!pts) return;
+        out.push('<path class="m2-ed-hl" d="M' + pts.map(function (q) { return f1(sx(q[0])) + ' ' + f1(sy(q[1])); }).join('L') + '"/>');
+        var whole = selE.indexOf(k) >= 0;
+        edges2[k].pts.forEach(function (pi) {
+          var X = sx(num(points[pi], 'x')), Y2 = sy(num(points[pi], 'y'));
+          over.push('<rect class="m2-ed-bend' + (whole || selP.indexOf(pi) >= 0 ? ' m2-on' : '') + '" x="' + f1(X - 3.5) + '" y="' + f1(Y2 - 3.5) + '" width="7" height="7"/>');
+        });
+      });
+      // nodes selected: darkened (a group without what it holds, as yEd), and the eight handles round the box
+      selN.forEach(function (i, j) {
+        var n = nodes2[i], b = boxOf(i);
+        if (n.kids.length) {
+          var id = 'm2-ed-m' + j;
+          out.push('<mask id="' + id + '" maskUnits="userSpaceOnUse" x="-1e6" y="-1e6" width="2e6" height="2e6">' + frame +
+            '<path fill="#fff" d="' + shapeD(i) + '"/>' + n.kids.map(function (c) { return '<path fill="#000" d="' + shapeD(c) + '"/>'; }).join('') +
+            '</g></mask>');
+          out.push('<g mask="url(#' + id + ')">' + frame + '<path class="m2-ed-dark" d="' + shapeD(i) + '"/></g></g>');
+        } else out.push(frame + '<path class="m2-ed-dark" d="' + shapeD(i) + '"/></g>');
+        var L = sx(b[0]) - 3, T = sy(b[1]) - 3, R = sx(b[0] + b[2]) + 3, B = sy(b[1] + b[3]) + 3;
+        [[L, T], [(L + R) / 2, T], [R, T], [L, (T + B) / 2], [R, (T + B) / 2], [L, B], [(L + R) / 2, B], [R, B]].forEach(function (q) {
+          over.push('<rect class="m2-ed-handle" x="' + f1(q[0] - 3) + '" y="' + f1(q[1] - 3) + '" width="6" height="6"/>');
+        });
+      });
+      // while a drag runs: a thin grey outline of where it goes (or the area being selected), gone on release
       if (drag && (drag.dx || drag.dy)) {
-        var dx = drag.dx, dy = drag.dy, moving = new Set();
+        var dx = drag.dx, dy = drag.dy, moving = new Set(), ps = new Set(selP);
         selN.forEach(function (i) { moving.add(i); nodes2[i].inside.forEach(function (c) { moving.add(c); }); });
+        selE.forEach(function (k) { edges2[k].pts.forEach(function (p) { ps.add(p); }); });
         moving.forEach(function (i) {
           var b = boxOf(i);
-          out.push('<rect class="m2-ed-ghost" x="' + sx(b[0] + dx) + '" y="' + sy(b[1] + dy) + '" width="' + b[2] * z + '" height="' + b[3] * z + '"/>');
+          over.push('<rect class="m2-ed-ghost" x="' + sx(b[0] + dx) + '" y="' + sy(b[1] + dy) + '" width="' + b[2] * z + '" height="' + b[3] * z + '"/>');
         });
-        selP.forEach(function (i) {
+        ps.forEach(function (i) {
           var p = points[i];
-          out.push('<circle class="m2-ed-ghost" cx="' + sx(num(p, 'x') + dx) + '" cy="' + sy(num(p, 'y') + dy) + '" r="3"/>');
+          over.push('<rect class="m2-ed-ghost" x="' + f1(sx(num(p, 'x') + dx) - 3.5) + '" y="' + f1(sy(num(p, 'y') + dy) - 3.5) + '" width="7" height="7"/>');
         });
       }
       if (band) {
         var a = [Math.min(band.x, band.x2), Math.min(band.y, band.y2)], c = [Math.max(band.x, band.x2), Math.max(band.y, band.y2)];
-        out.push('<rect class="m2-ed-band" x="' + sx(a[0]) + '" y="' + sy(a[1]) + '" width="' + (c[0] - a[0]) * z + '" height="' + (c[1] - a[1]) * z + '"/>');
+        over.push('<rect class="m2-ed-band" x="' + sx(a[0]) + '" y="' + sy(a[1]) + '" width="' + (c[0] - a[0]) * z + '" height="' + (c[1] - a[1]) * z + '"/>');
       }
-      overlay.innerHTML = out.join('');
+      overlay.innerHTML = out.concat(over).join('');
     }
 
-    // the pointer: a press on a node or a bend point moves it, Shift adds to the selection, Shift on empty space selects
-    // an area; a press on empty space pans the map, as in the viewer
+    // the pointer: a press on a node, an arc or a bend point selects it and moves it (an arc: its bends), Shift adds to
+    // the selection, Shift on empty space selects an area; a press on empty space pans the map, as in the viewer
     function at(e) {
       var r = view.getBoundingClientRect(), vx = (e.clientX - r.left) / pz(), vy = (e.clientY - r.top) / pz();
       return [(vx - tx) / z + x0, (vy - ty) / z + y0];
     }
-    function hit(P) {
-      var R = 6 / z, best = null;
+    function near(P, a, b) {   // the distance from P to the segment a-b
+      var dx = b[0] - a[0], dy = b[1] - a[1], L = dx * dx + dy * dy, t = L ? Math.max(0, Math.min(1, ((P[0] - a[0]) * dx + (P[1] - a[1]) * dy) / L)) : 0;
+      return Math.hypot(P[0] - a[0] - dx * t, P[1] - a[1] - dy * t);
+    }
+    function hit(P) {   // a bend point first, then a node, then an arc, then a group (its contents and arcs come first)
+      var R = 6 / z, best = null, group = null;
       points.forEach(function (p, i) { if (Math.abs(num(p, 'x') - P[0]) <= R && Math.abs(num(p, 'y') - P[1]) <= R) best = { p: i }; });
       if (best) return best;
       nodes2.forEach(function (n, i) {
         var b = boxOf(i);
-        if (P[0] >= b[0] && P[0] <= b[0] + b[2] && P[1] >= b[1] && P[1] <= b[1] + b[3] && (!best || b[2] * b[3] < best.area)) best = { n: i, area: b[2] * b[3] };
+        if (!(P[0] >= b[0] && P[0] <= b[0] + b[2] && P[1] >= b[1] && P[1] <= b[1] + b[3])) return;
+        var h = { n: i, area: b[2] * b[3] };
+        if (n.kids.length) { if (!group || h.area < group.area) group = h; }
+        else if (!best || h.area < best.area) best = h;
       });
-      return best;
+      if (best) return best;
+      var E = 5 / z, d0 = E;
+      edges2.forEach(function (e, k) {
+        var pts = line(k);
+        if (!pts) return;
+        for (var j = 1; j < pts.length; j++) { var d = near(P, pts[j - 1], pts[j]); if (d <= d0) { d0 = d; best = { e: k }; } }
+      });
+      return best || group;
     }
     function editing(e) { return on && current === map && !e.target.closest('.m2-ctrl, .m2-info'); }
     var empty = null;
@@ -469,9 +606,9 @@
       e.stopImmediatePropagation(); e.preventDefault();
       view.setPointerCapture(e.pointerId); view.focus({ preventScroll: true });
       if (!h) { band = { x: P[0], y: P[1], x2: P[0], y2: P[1], add: true }; return; }
-      var list = h.p != null ? selP : selN, k = h.p != null ? h.p : h.n, there = list.indexOf(k) >= 0;
+      var list = h.p != null ? selP : h.e != null ? selE : selN, k = h.p != null ? h.p : h.e != null ? h.e : h.n, there = list.indexOf(k) >= 0;
       if (e.shiftKey) { if (there) list.splice(list.indexOf(k), 1); else list.push(k); }
-      else if (!there) { selN = h.n != null ? [k] : []; selP = h.p != null ? [k] : []; }
+      else if (!there) { selN = h.n != null ? [k] : []; selP = h.p != null ? [k] : []; selE = h.e != null ? [k] : []; }
       drag = { x: P[0], y: P[1], dx: 0, dy: 0 };
       paint();
     }, true);
@@ -484,10 +621,10 @@
         paint();
         return;
       }
-      if (on && current === map && !e.buttons) view.style.cursor = hit(at(e)) ? 'move' : '';
+      if (on && current === map && !e.buttons) { var hh = hit(at(e)); view.style.cursor = !hh ? '' : hh.e != null ? 'pointer' : 'move'; }
     }, true);
     function release(e) {
-      if (empty && e.type === 'pointerup' && Math.hypot(e.clientX - empty[0], e.clientY - empty[1]) < 5) { selN = []; selP = []; paint(); }
+      if (empty && e.type === 'pointerup' && Math.hypot(e.clientX - empty[0], e.clientY - empty[1]) < 5) { selN = []; selP = []; selE = []; paint(); }
       empty = null;
       if (!drag && !band) return;
       e.stopImmediatePropagation();
@@ -512,11 +649,11 @@
       if (!on || current !== map || /input|textarea|select/i.test(document.activeElement.tagName)) return;
       if (mod && k === 'z') { e.preventDefault(); if (e.shiftKey) back(redo, undo); else back(undo, redo); return; }
       if (mod && k === 'y') { e.preventDefault(); back(redo, undo); return; }
-      if (e.key === 'Escape') { selN = []; selP = []; paint(); return; }
+      if (e.key === 'Escape') { selN = []; selP = []; selE = []; paint(); return; }
       var step = e.shiftKey ? 10 : 1, d = { arrowleft: [-step, 0], arrowright: [step, 0], arrowup: [0, -step], arrowdown: [0, step] }[k];
       if (!d) return;
       e.preventDefault(); e.stopPropagation();   // while editing the arrows never step to another map
-      if (!selN.length && !selP.length) return;
+      if (!selN.length && !selP.length && !selE.length) return;
       remember(true); move(d[0], d[1]); paint();
       clearTimeout(timer); timer = setTimeout(render, 150); changed();
     }, true);

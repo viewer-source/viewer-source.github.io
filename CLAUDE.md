@@ -148,8 +148,13 @@ says "the workbench", "the converter's repository", "a private repository".
   across a reload too (user, 2026-11-12): the last saved drawing per map in that browser (`atlas-edit-kept`), dropped once
   the site's version of the map changes, or after an hour. The click data follows (user, 2026-11-12): the site's boxes
   are matched to the nodes of its own version and moved to where the edited drawing has them, so a click and the
-  search find a moved molecule where it is drawn. Nothing drawn over the map at rest (user, 2026-11-12: "exactly as the original
-  diagram"): no selection outlines or bend handles; a thin grey dashed outline only while a drag or an area selection runs.
+  search find a moved molecule where it is drawn. The selection as yEd shows it (user, 2026-11-12: "i was wrong about silent
+  selection - see how it is in yEd", replacing nothing drawn at rest): a node selected darkened (multiplied into the drawing,
+  a group without what it holds) with eight small black handles round its box; an arc clickable and selected as in yEd,
+  highlighted in blue under its line (yEd's yellow, user: blue) with its bend points as blue squares (yEd's green dots,
+  user: blue squares), filled when they move with it, white when only another bend of the arc is selected; dragging an
+  arc moves its bends. With nothing selected the map looks as the original diagram; a thin grey dashed outline shows
+  where a drag goes, or the area being selected.
   Later (user): snap to a grid and alignment guides as in PowerPoint. The code is
   `_includes/atlas-edit.js`, included by the viewer's script (copied to the sites with it, off there). Checked
   2026-11-12 on eNOS: first drawing about 4 s, a redraw after a move under a second, the saved file differing from the
