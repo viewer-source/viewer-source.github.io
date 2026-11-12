@@ -19,6 +19,13 @@ SYMBOL = {'phosphorylated': 'P', 'acetylated': 'Ac', 'ubiquitinated': 'Ub', 'met
           'prenylated': 'Pr', 'sulfated': 'S', 'protonated': 'H', "don't care": '*', 'unknown': '?', 'empty': ''}
 GATE = {'AND': '&amp;', 'OR': '|', 'NOT': '!', 'UNKNOWN': '?'}
 ROUND = ('SIMPLE_MOLECULE', 'ION', 'DRUG', 'UNKNOWN', 'DEGRADED')
+# CLASSES (set by the viewer's build): each species' fill and name get the class c-<role> and t-<role> of yrender's
+# --roles beside their colours, so a colour scheme (the viewer's Settings, Map colours) can recolour them; off, the
+# output is unchanged. Compartments keep their colours (their lines are drawn in it too).
+CLASSES = False
+ROLE = {'PROTEIN': 'protein', 'RECEPTOR': 'protein', 'ION_CHANNEL': 'protein', 'TRUNCATED': 'protein',
+        'COMPLEX': 'complex', 'SIMPLE_MOLECULE': 'metabolite', 'ION': 'metabolite', 'DRUG': 'metabolite',
+        'GENE': 'gene', 'RNA': 'gene', 'ANTISENSE_RNA': 'gene'}
 
 
 # Helvetica's widths (Arial's metrics), per 1000 of the font size, for characters 32 to 126
@@ -221,14 +228,16 @@ class Drawing:
             cy = y + fh / 2 - z * 7 / 12 * (len(lines) - 1)
             mid = x + (fw - 20) / 2 if cls == 'ION_CHANNEL' else x + fw / 2  # an ion channel's name on its body, not its gate
             for k, line in enumerate(lines):
-                self.text(line, mid, cy + z / 3 + z * 7 / 6 * k, size=z)
+                self.text(line, mid, cy + z / 3 + z * 7 / 6 * k, size=z, extra=' class="t-%s"' % ROLE.get(cls, 'white') if CLASSES else '')
         else:
-            self.text(' '.join(self.name_lines(name)), x + fw / 2, y + fh - z * 7 / 12, size=z)
+            self.text(' '.join(self.name_lines(name)), x + fw / 2, y + fh - z * 7 / 12, size=z, extra=' class="t-complex"' if CLASSES else '')
 
     def shape(self, cls, b, fill, alpha, dash):
         x, y, w, h = b
         # an unknown entity has no outline in CellDesigner (the group labels of the neuroinflammation map, 2026-11-03)
         style = 'fill="%s"%s stroke="%s"%s' % (fill, ' fill-opacity="%s"' % fmt(alpha) if alpha < 1 else '', 'none' if cls == 'UNKNOWN' else '#000', dash)
+        if CLASSES and fill != 'none':
+            style += ' class="c-%s"' % ROLE.get(cls, 'white')
         if cls == 'ION_CHANNEL' and fill != 'none':  # a channel and its 20 wide gate: touching when closed, apart when open
             gap = 6 if self.open_ else 0
             for bx, bw in ((x, w - 20 - gap), (x + w - 20, 20)):

@@ -53,6 +53,8 @@ FONT_STYLES = {'plain': '', 'bold': ' font-weight="bold"', 'italic': ' font-styl
 
 errors = []
 ROLES = False  # set by render(roles=True)
+CLASSES = False  # set by the caller (the viewer's build and editor): the classes of --roles beside the colours, so a
+# colour scheme (the viewer's Settings, Map colours) can recolour the fills by role; off, the output is unchanged
 
 
 def role(tag, kind, fill):
@@ -99,14 +101,14 @@ def ink(attr, c):
 def area(c, rl, opaque=True):
     # a fill's colour; with roles its class (and its transparency unless opaque)
     if not ROLES:
-        return paint('fill', c)
+        return paint('fill', c) + (f' class="c-{rl}"' if CLASSES else '')
     a = color(c)[1]
     return f' class="c-{rl}"' + (f' fill-opacity="{num(a)}"' if a < 1 and not opaque else '')
 
 
 def white():
     # a white arrow head's fill
-    return area('#FFFFFF', 'white') if ROLES else ' fill="white"'
+    return area('#FFFFFF', 'white') if ROLES else ' fill="white"' + (' class="c-white"' if CLASSES else '')
 
 
 # Outlines: lists of ('M'|'L', x, y), ('Q', cx, cy, x, y), ('C', c1x, c1y, c2x, c2y, x, y), ('Z',)
@@ -313,7 +315,8 @@ def text_lines(lab, x, y, w, h, where, rl='page', align=None):
     y0 = y + top + (h - top - bottom - len(lines) * lh) / 2  # text block centred in the box
     tx, anchor = {'center': (x + w / 2, 'middle'), 'left': (x + left, 'start'), 'right': (x + w - right, 'end')}[align]
     rgb, a = color(lab.get('textColor') or '#000000')
-    paint_text = f' class="t-{rl}"' if ROLES else f' fill="{rgb}"' + (f' fill-opacity="{num(a)}"' if a < 1 else '')
+    paint_text = f' class="t-{rl}"' if ROLES else f' fill="{rgb}"' + (f' fill-opacity="{num(a)}"' if a < 1 else '') + \
+        (f' class="t-{rl}"' if CLASSES else '')
     out = []
     for i, line in enumerate(lines):
         out.append(f'<text x="{num(tx)}" y="{num(y0 + asc + i * lh)}" text-anchor="{anchor}"'

@@ -31,6 +31,9 @@ sys.path.insert(0, os.path.join(ROOT, 'renderers', 'yrender'))
 sys.path.insert(0, os.path.join(ROOT, 'renderers', 'converter'))
 import yrender  # noqa: E402
 import cdrender  # noqa: E402
+# every fill and name with its role's class beside its colour, for the viewer's Map colours (Settings); 'colours' in a
+# map's entry says its picture has them
+yrender.CLASSES = cdrender.CLASSES = True
 from mapconv.celldesigner import plain_name  # noqa: E402
 import databases as db  # noqa: E402
 from databases import realizer, first_label, search_entries  # noqa: E402
@@ -223,6 +226,7 @@ def main():
               'group': meta.get('group', ''), 'order': int(meta.get('order', 0)), 'kind': 'map', 'draft': False, 'tag': '',
               'image': '/downloads/%s.svg' % mid, 'width': w, 'height': h, 'scale': 1,
               'annotation': '/atlas-data/%s.json' % mid, 'image_error': '', 'v': v,
+              'colours': True,  # the picture has the role classes (yrender.CLASSES, cdrender.CLASSES)
               'legend': 'sbgn' if ext == '.graphml' else 'celldesigner',  # the legend the Legend window opens on
               'downloads': [{'label': 'GraphML' if ext == '.graphml' else 'CellDesigner', 'url': '/downloads/%s%s' % (mid, ext)},
                             {'label': 'SVG', 'url': '/downloads/%s.svg' % mid}]}

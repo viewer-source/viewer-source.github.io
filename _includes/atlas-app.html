@@ -310,6 +310,10 @@ look="panel" (user, 2026-11-10): Default Panel of the styles experiment, its own
   #m2-setwin .m2-set-ticks { display: flex; justify-content: space-between; padding: 0 7px; margin: 1px 0 14px; }
   #m2-setwin .m2-set-bar:not([style*="none"]) + .m2-set-side .m2-set-k { margin-top: 14px; }
   #m2-setwin .m2-set-ticks i { width: 1px; height: 4px; background: var(--m2-muted); }
+  /* Map colours (user, 2026-11-12): each scheme's button with three squares of its protein, metabolite and highlight */
+  #m2-setwin .m2-set-colours { margin-bottom: 14px; }
+  #m2-setwin .m2-sw { display: inline-flex; gap: 2px; margin-left: 6px; vertical-align: -1px; }
+  #m2-setwin .m2-sw i { width: 9px; height: 9px; border: 1px solid #0003; box-sizing: border-box; }
   .m2-item { display: block; width: 100%; text-align: left; font-size: 14px; line-height: 18px; padding: 2px 4px; border: 1px solid transparent; border-radius: var(--m2-radius); background: none; cursor: pointer; color: var(--m2-text); }
   /* the chosen map: a filled box in the site's link blue, white text */
   /* under the pointer: --m2-hover (none since 2026-11-09; was a very light grey) */
@@ -686,7 +690,7 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
 <div id="m2-extwin"></div>
 <div id="m2-infowin"><p class="m2-pi-name">{{ include.name | default: site.name | default: site.title }}</p>{% assign about = include.about | default: site.description %}{% if about %}<p>{{ about }}</p>{% endif %}<p class="m2-k" id="m2-info-count"></p></div>
 <div id="m2-editwin"><p id="m2-ed-status">Edit the map shown, or open a yEd GraphML file.</p><div id="m2-ed-gh" hidden><p class="m2-set-note">To save moves to the site, paste a GitHub token that can write to this site's repository. It stays in this browser only.</p><input type="password" id="m2-ed-gh-token" placeholder="GitHub token" autocomplete="off"><button type="button" id="m2-ed-gh-go">Connect</button></div><button type="button" id="m2-ed-open">Open file…</button><button type="button" id="m2-ed-this">Edit this map</button><button type="button" id="m2-ed-back" hidden>Back</button><button type="button" id="m2-ed-save" disabled>Save</button><div class="m2-ed-row"><button type="button" id="m2-ed-undo">Undo</button><button type="button" id="m2-ed-redo">Redo</button></div><button type="button" id="m2-ed-stop" hidden>Stop editing</button><button type="button" id="m2-ed-gh-off" hidden>Disconnect from GitHub</button><p class="m2-set-note">Moves are saved by themselves; the site shows them about two minutes later. Drag a node or a bend point to move it. Shift with a click adds to the selection, Shift with a drag on empty space selects an area. Arrow keys move by 1, with Shift by 10. Ctrl or Cmd with Z undoes, with S saves at once.</p></div>
-<div id="m2-setwin"><div class="m2-set-groups" style="margin-bottom:14px"><p class="m2-set-k">Groups in the list</p><div class="m2-set-row" id="m2-set-groups"><button type="button" data-groups="open">Open all</button><button type="button" data-groups="close">Close all</button></div></div><p class="m2-set-k">Map size <span id="m2-set-size-v"></span></p><input type="range" id="m2-set-size" min="0" max="4" step="1" aria-label="Map size"><div class="m2-set-ticks"><i></i><i></i><i></i><i></i><i></i></div><div class="m2-set-bar"><p class="m2-set-k">Icons</p><div class="m2-set-row" id="m2-set-bar"><button type="button" data-bar="left">Left</button><button type="button" data-bar="top">Top</button></div></div><div class="m2-set-side"><p class="m2-set-k">Annotations</p><div class="m2-set-row" id="m2-set-side"><button type="button" data-side="left">Left</button><button type="button" data-side="right">Right</button></div></div></div>
+<div id="m2-setwin"><div class="m2-set-groups" style="margin-bottom:14px"><p class="m2-set-k">Groups in the list</p><div class="m2-set-row" id="m2-set-groups"><button type="button" data-groups="open">Open all</button><button type="button" data-groups="close">Close all</button></div></div><p class="m2-set-k">Map size <span id="m2-set-size-v"></span></p><input type="range" id="m2-set-size" min="0" max="4" step="1" aria-label="Map size"><div class="m2-set-ticks"><i></i><i></i><i></i><i></i><i></i></div><div class="m2-set-colours"><p class="m2-set-k">Map colours</p><div class="m2-set-row" id="m2-set-colours"><button type="button" data-colours="file">File</button><button type="button" data-colours="grey">Grey<span class="m2-sw"><i style="background:#E4E4E4"></i><i style="background:#EEEEEE"></i><i style="background:#D2D2D2"></i></span></button><button type="button" data-colours="steel">Steel<span class="m2-sw"><i style="background:#B7CFDE"></i><i style="background:#D9EAF0"></i><i style="background:#E2ACA3"></i></span></button></div></div><div class="m2-set-bar"><p class="m2-set-k">Icons</p><div class="m2-set-row" id="m2-set-bar"><button type="button" data-bar="left">Left</button><button type="button" data-bar="top">Top</button></div></div><div class="m2-set-side"><p class="m2-set-k">Annotations</p><div class="m2-set-row" id="m2-set-side"><button type="button" data-side="left">Left</button><button type="button" data-side="right">Right</button></div></div></div>
 </div>
 <div class="m2-main">
 <div id="m2-view" tabindex="0">
@@ -743,6 +747,23 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
   // the reading size and the cap of the whole-map view follow it, the % shown is against it
   var SIZES = [0.75, 0.9, 1, 1.25, 1.5], SIZE = 1;
   try { var sv = parseFloat(localStorage.getItem('atlas-map-size')); if (SIZES.indexOf(sv) >= 0) SIZE = sv; } catch (e) {}
+  // the map's colours (Settings, Map colours; user, 2026-11-12): 'file', the colours the map has in its file (the default),
+  // or a scheme that recolours the fills and names by role. The renderers write each fill's role as a class beside its
+  // colour (c-<role>, t-<role>: build.py, a map's entry 'colours'); a scheme is a <style> put into the picture's text, so
+  // there is no second picture per map. Kept in the browser. A scheme's code is the official site's /colours/ code
+  // (compartment complex protein metabolite hlProtein white ink; genes as white): Steel is its preset Mono steel
+  var SCHEMES = { grey: 'F5F5F5 FFFFFF E4E4E4 EEEEEE D2D2D2 FFFFFF 000000', steel: 'F8F8F8 FFFFFF B7CFDE D9EAF0 E2ACA3 FFFFFF 000000' };
+  var SCHEME = 'file';
+  try { var sc = localStorage.getItem('atlas-map-colours'); if (SCHEMES[sc]) SCHEME = sc; } catch (e) {}
+  function schemeCss(code) {
+    var h = code.split(' ').map(function (c) { return '#' + c; }), roles = ['compartment', 'complex', 'protein', 'metabolite', 'hlProtein', 'white'];
+    var css = roles.map(function (r, i) { return '.c-' + r + '{fill:' + h[i] + '}'; }).join('') + '.c-gene{fill:' + h[5] + '}';
+    return css + roles.concat('gene').map(function (r) { return '.t-' + r; }).join(',') + '{fill:' + h[6] + '}';
+  }
+  function recolour(svg) {
+    return SCHEME === 'file' ? svg : svg.replace(/<svg\b[^>]*>/, function (t) { return t + '<style>' + schemeCss(SCHEMES[SCHEME]) + '</style>'; });
+  }
+  function isMapPicture(url) { return /\.svg\?/.test(url) && url.indexOf('/images/') < 0; }
   // current: the map on screen; chosen: the map last asked for (the list, the arrow keys, the address), which
   // becomes current once its files are loaded. The list marks chosen, so a click or an arrow key shows at once
   var maps = [], byId = {}, topics = [], current = null, chosen = null;
@@ -754,11 +775,16 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
   // maps load quietly behind it, nearest in the list first. A picture is decoded before it is shown.
   var got = {}, queue = [], busy = 0;
   function picture(url) {
-    return new Promise(function (res, rej) {
-      var i = new Image();
-      i.onload = function () { (i.decode ? i.decode() : Promise.resolve()).catch(function () {}).then(function () { res(i); }); };
-      i.onerror = rej;
-      i.src = url;
+    // a map's picture in a colour scheme: its text with the scheme's style, shown from a blob
+    var src = SCHEME !== 'file' && isMapPicture(url) ? fetch(url).then(function (r) { if (!r.ok) throw r.status; return r.text(); })
+      .then(function (t) { return URL.createObjectURL(new Blob([recolour(t)], { type: 'image/svg+xml' })); }) : Promise.resolve(url);
+    return src.then(function (s) {
+      return new Promise(function (res, rej) {
+        var i = new Image();
+        i.onload = function () { (i.decode ? i.decode() : Promise.resolve()).catch(function () {}).then(function () { res(i); }); };
+        i.onerror = rej;
+        i.src = s;
+      });
     });
   }
   function get(url, low) {  // a promise of the decoded image (.svg, .png) or the parsed JSON, null if it failed
@@ -1015,12 +1041,25 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
       railMark(); placeInfo(); sideMark(); showSettings(); window.dispatchEvent(new Event('resize'));
     });
   });
+  // Map colours: the pictures loaded in the other colours are dropped and the map on screen drawn again where it is
+  document.querySelectorAll('#m2-set-colours button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      if (b.dataset.colours === SCHEME) return;
+      SCHEME = b.dataset.colours;
+      try { if (SCHEME === 'file') localStorage.removeItem('atlas-map-colours'); else localStorage.setItem('atlas-map-colours', SCHEME); } catch (e) {}
+      Object.keys(got).forEach(function (u) { if (isMapPicture(u) && got[u].p) delete got[u]; });
+      showSettings();
+      if (current) show(current, true);
+    });
+  });
   if (window.MutationObserver) new MutationObserver(sideMark).observe(document.getElementById('m2-info'), { childList: true, attributes: true, attributeFilter: ['class'] });
   window.addEventListener('resize', function () { setTimeout(sideMark, 0); });
   function showSettings() {
     document.querySelectorAll('#m2-set-bar button').forEach(function (b) { b.classList.toggle('m2-on', b.dataset.bar === (barLeft() ? 'left' : 'top')); });
     document.querySelectorAll('#m2-set-side button').forEach(function (b) { b.classList.toggle('m2-on', b.dataset.side === SIDE); });
     document.getElementById('m2-set-size').value = SIZES.indexOf(SIZE);
+    document.querySelectorAll('#m2-set-colours button').forEach(function (b) { b.classList.toggle('m2-on', b.dataset.colours === SCHEME); });
+    var cb = document.querySelector('.m2-set-colours'); if (cb) cb.style.display = current && current.colours ? '' : 'none';
     document.getElementById('m2-set-size-v').textContent = Math.round(SIZE * 100) + '%';
     groupsMark();
   }
@@ -2155,6 +2194,7 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
     var kp = ed ? ed.keep(m) : null;   // a map just edited: its edited drawing until the site's build catches up
     if (kp) m = Object.assign({}, m, { width: kp.width, height: kp.height });
     current = m;
+    var cb = document.querySelector('.m2-set-colours'); if (cb) cb.style.display = m.colours ? '' : 'none';
     if (ed) ed.left(m);
     document.getElementById('m2-title').textContent = m.title;
     document.title = m.title + ' – {{ include.name }}';

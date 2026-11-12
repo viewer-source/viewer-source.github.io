@@ -12,6 +12,7 @@
       'import sys, json',
       "sys.path.insert(0, '/home/pyodide')",
       'import yrender',
+      'yrender.CLASSES = True',
       'def draw(text):',
       "    open('/tmp/edit.graphml', 'w', encoding='utf-8').write(text)",
       '    yrender.errors.clear()',
@@ -222,7 +223,7 @@
         var nx = -parseFloat(m[1]), ny = -parseFloat(m[2]), first = !map.width;
         if (!first) { tx += (nx - x0) * z; ty += (ny - y0) * z; }
         x0 = nx; y0 = ny; map.width = parseFloat(w[1]); map.height = parseFloat(w[2]);
-        var pic = new Image(), url = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
+        var pic = new Image(), url = URL.createObjectURL(new Blob([recolour(svg)], { type: 'image/svg+xml' }));
         pic.onload = function () {
           if (t !== ticket || current !== map) return URL.revokeObjectURL(url);
           var old = img.src;
@@ -530,7 +531,7 @@
       if (!k) return null;
       if (ver(m) !== k.v || Date.now() - k.at > 3600000) { delete all[m.id]; store(all); return null; }
       // after a reload: the saved drawing again, decoded before it is shown
-      var url = URL.createObjectURL(new Blob([k.svg], { type: 'image/svg+xml' }));
+      var url = URL.createObjectURL(new Blob([recolour(k.svg)], { type: 'image/svg+xml' }));
       var pic = new Promise(function (res) {
         var i = new Image();
         i.onload = function () { (i.decode ? i.decode() : Promise.resolve()).catch(function () {}).then(function () { res(i); }); };
