@@ -175,8 +175,12 @@ says "the workbench", "the converter's repository", "a private repository".
   when dragged back to where it started; a click on an arc still only selects it. With nothing selected the map looks as the original diagram. A drag moves the item
   itself (user, 2026-11-12: "in an editor, it's already there when you move it"): the editor's drawing is put in the page
   as SVG with each node and arc in a group of its own (the renderer's methods wrapped in the editor's Python, the
-  renderer itself unchanged), shifted while the drag runs; an arc with one end or some bends moving is drawn as plain
-  lines following the pointer until the renderer has drawn the map again (under a second). Until that drawing is in the
+  renderer itself unchanged), shifted while the drag runs; an arc with one end or some bends moving is drawn in full as
+  it goes (user, 2026-11-13: "the line should be drawn in full during drag ... it should feel quite natural"; plain grey
+  lines before): a copy of the renderer's own group of that arc, so its colour, width and dashes stay, its line through
+  the new places and what is drawn at each end (arrowhead, circle, bar) carried to that end and turned as its end segment
+  turned; the original hidden, the copy kept after the release until the renderer has drawn the map again (under a
+  second), so nothing jumps. The same for the arrow keys. Plain lines only before the editor's drawing is in the page. Until that drawing is in the
   page (just after editing starts) a dashed outline shows where a drag goes. Guides for a bend point (user, 2026-11-12,
   as yEd's for an L-shaped bend): the bend pressed snaps (6 px on screen) when one of its two segments is nearly level or
   upright, and each segment so lined up is drawn as a thick grey line while the drag runs. A press whose release never comes (a right
@@ -270,8 +274,9 @@ says "the workbench", "the converter's repository", "a private repository".
   one shift away from the node).
   Ports (user, 2026-11-12: "snap to center, bottom center, top center, left center, right center ... These 5 positions are
   quite certain"; other places later): an end square of a lit line, dragged (4 px at least; a click selects the node
-  there), snaps to the nearest of the node's centre and the middles of its four sides, shown by a square and the
-  line's first segment while the drag runs; one undo step. GraphML: the port's offset from the centre (yEd's sx, sy or
+  there), snaps to the nearest of the node's centre and the middles of its four sides, shown by a square while the drag
+  runs, the line itself drawn in full to it (the original hidden, user 2026-11-13: a second line beside the old one was
+  "weird"), with its highlight, and on a CellDesigner map the glyph following its segment's new end; one undo step. GraphML: the port's offset from the centre (yEd's sx, sy or
   tx, ty). CellDesigner: `cd_edit` writes the connection point (the centre: no linkAnchor; N, S, W, E), on the base
   reactant or product, an added one, or a modifier's linkTarget (made after its connectScheme when missing, as
   CellDesigner orders it); bend points stay. A process glyph's ends are not moved. Checked live on SREBP in both

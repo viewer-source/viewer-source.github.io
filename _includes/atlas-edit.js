@@ -495,8 +495,11 @@
       glyphFollow(mv.n, mv.p, null);
       return true;
     }
-    function glyphMid(q, B, P) {   // where cd_edit puts the glyph: midway on its segment, an end at a node cut at its box
-      var ea = edges2[q.a], eb = edges2[q.b], o = function (e, a) { return e.path ? parseFloat(e.path.getAttribute(a)) || 0 : 0; };
+    function glyphMid(q, B, P, pp) {   // where cd_edit puts the glyph: midway on its segment, an end at a node cut at its box
+      var ea = edges2[q.a], eb = edges2[q.b], o = function (e, a) {
+        if (pp && pp.to && edges2[pp.k] === e && (pp.end ? 't' : 's') === a[0]) return pp.to[a[1] === 'x' ? 0 : 1];
+        return e.path ? parseFloat(e.path.getAttribute(a)) || 0 : 0;
+      };
       var S = B(ea.s), T = B(eb.t);
       var all = [[S[0] + S[2] / 2 + o(ea, 'sx'), S[1] + S[3] / 2 + o(ea, 'sy')]].concat(ea.pts.map(P), eb.pts.map(P),
         [[T[0] + T[2] / 2 + o(eb, 'tx'), T[1] + T[3] / 2 + o(eb, 'ty')]]);
@@ -508,7 +511,7 @@
     // the glyphs whose segment moves: shifted by how far their middle moved (the same reckoning before and now, so a
     // glyph does not jump at the start), their lines drawn live. ns, ps: the nodes and bend points moving; back: how far
     // the keys moved them already in the file (null in a drag, where the file has them still where they were)
-    function glyphFollow(ns, ps, back) {
+    function glyphFollow(ns, ps, back, pp) {   // pp: a port being dragged
       if (!procs.length || !gN) return;
       var old = liveG; liveG = null;
       var rest = function (i) { var b = boxOf(i); return back && ns.has(i) ? [b[0] - back[0], b[1] - back[1], b[2], b[3]] : b; };
@@ -517,8 +520,9 @@
       procs.forEach(function (q) {
         var ea = edges2[q.a], eb = edges2[q.b];
         if (ns.has(q.g) || ea.s == null || eb.t == null) return;
-        if (!(ns.has(ea.s) || ns.has(eb.t) || ea.pts.concat(eb.pts).some(function (p) { return ps.has(p); }))) return;
-        var a = glyphMid(q, bx, pt), b = glyphMid(q, rest, restP);
+        var port = pp && pp.to && (pp.k === q.a || pp.k === q.b);
+        if (!(port || ns.has(ea.s) || ns.has(eb.t) || ea.pts.concat(eb.pts).some(function (p) { return ps.has(p); }))) return;
+        var a = glyphMid(q, bx, pt, pp), b = glyphMid(q, rest, restP);
         out[q.g] = [a[0] - b[0], a[1] - b[1]]; any = true;
       });
       if (old) Object.keys(old).forEach(function (i) { if (!out[i]) { var g = gN[nodes2[i].id]; if (g) g.removeAttribute('transform'); } });
@@ -536,12 +540,12 @@
     function unshift() {   // the drawing as it was: a press that moved nothing leaves nothing hidden or shifted
       if (gN) Object.keys(gN).forEach(function (k) { gN[k].removeAttribute('transform'); });
       if (gE) Object.keys(gE).forEach(function (k) { gE[k].forEach(function (g) { g.removeAttribute('transform'); g.style.display = ''; }); });
-      live = null; liveG = null; liveOff();
+      live = null; liveG = null; liveOff(); dropCopies(); frozen = false;
     }
     function keyShift(ks, dx, dy) {   // the keys' move on the drawing: groups moved by the sum since the last drawing, arcs touched drawn live
       if (!gN) return;
       keyed = keyed || { n: new Set(), p: new Set(), dx: 0, dy: 0 };
-      keyed.dx += dx; keyed.dy += dy; ks.n.forEach(function (i) { keyed.n.add(i); }); ks.p.forEach(function (i) { keyed.p.add(i); });
+      frozen = false; keyed.dx += dx; keyed.dy += dy; ks.n.forEach(function (i) { keyed.n.add(i); }); ks.p.forEach(function (i) { keyed.p.add(i); });
       var tr = 'translate(' + keyed.dx + ' ' + keyed.dy + ')';
       keyed.n.forEach(function (i) { var g = gN[nodes2[i].id]; if (g) g.setAttribute('transform', tr); });
       live = live || new Set();
@@ -629,7 +633,7 @@
           var old = img.src || '';
           img.removeAttribute('id'); pic.id = 'm2-img'; pic.setAttribute('aria-label', map.title); img.replaceWith(pic); img = pic;
           if (old.indexOf('blob:') === 0) URL.revokeObjectURL(old);
-          gN = {}; gE = {}; live = null; liveC = null; liveOrig = null; keyed = null; liveG = null;
+          gN = {}; gE = {}; live = null; liveC = null; liveOrig = null; keyed = null; liveG = null; copies = []; frozen = false;
           pic.querySelectorAll('[data-n]').forEach(function (g) { gN[g.getAttribute('data-n')] = g; });
           pic.querySelectorAll('[data-e]').forEach(function (g) { var k = g.getAttribute('data-e'); (gE[k] = gE[k] || []).push(g); });
           if (first) fit(); else draw();
@@ -674,7 +678,7 @@
       document.getElementById('m2-title').textContent = n;
       grid.classList.add('m2-editing');
       buttons();
-      gN = gE = null; mv = live = null; liveG = null;
+      gN = gE = null; mv = live = null; liveG = null; copies = []; frozen = false;
       if (same && same.text === t) { python().then(function () { if (on && current === map && !undo.length && !gN) render(); }); paint(); say((site && site.pending) ? 'Connect to GitHub below so the moves are saved to the site.' : site ? 'Every move is saved to the site by itself.' : 'Editing ' + n + '.'); return; }
       say('Drawing ' + n + '...');
       render();
@@ -910,19 +914,27 @@
       });
       return [outer[0] + dx * best, outer[1] + dy * best];
     }
-    function line(k) {   // the arc's points in yEd units: its ends at the borders of its nodes, its bends between
+    function line(k, B, P, pp) {   // the arc's points in yEd units: its ends at the borders of its nodes, its bends between
+      // (B, P: the boxes and bend points to take, the live ones by default; pp: a port being dragged to another place)
       var e = edges2[k];
       if (e.s == null || e.t == null) return null;
-      var S = bx(e.s), T = bx(e.t), pa = e.path, o = function (a) { return pa ? parseFloat(pa.getAttribute(a)) || 0 : 0; };
+      B = B || bx; P = P || pt;
+      var S = B(e.s), T = B(e.t), pa = e.path, o = function (a) {
+        if (pp && pp.to && pp.k === k && (pp.end ? 't' : 's') === a[0]) return pp.to[a[1] === 'x' ? 0 : 1];
+        return pa ? parseFloat(pa.getAttribute(a)) || 0 : 0;
+      };
       var pts = [[S[0] + S[2] / 2 + o('sx'), S[1] + S[3] / 2 + o('sy')]];
-      e.pts.forEach(function (pi) { pts.push(pt(pi)); });
+      e.pts.forEach(function (pi) { pts.push(P(pi)); });
       pts.push([T[0] + T[2] / 2 + o('tx'), T[1] + T[3] / 2 + o('ty')]);
       pts[0] = cut(pts[0], pts[1], S);
       pts[pts.length - 1] = cut(pts[pts.length - 1], pts[pts.length - 2], T);
       return pts;
     }
     function livePath(pts, smooth) {   // the arc while dragged, its bends rounded as the renderer rounds them (10 units each side), so the line does not turn sharp during a drag (user, 2026-11-12)
-      var P = function (q) { return f1(sx(q[0])) + ' ' + f1(sy(q[1])); }, d = 'M' + P(pts[0]);
+      return roundPath(pts, smooth, function (q) { return f1(sx(q[0])) + ' ' + f1(sy(q[1])); });
+    }
+    function roundPath(pts, smooth, P) {
+      var d = 'M' + P(pts[0]);
       for (var i = 1; i < pts.length - 1; i++) {
         var a = pts[i - 1], b = pts[i], c = pts[i + 1], la = Math.hypot(a[0] - b[0], a[1] - b[1]), lc = Math.hypot(c[0] - b[0], c[1] - b[1]);
         if (smooth && la > 0 && lc > 0) {
@@ -931,6 +943,58 @@
         } else d += 'L' + P(b);
       }
       return d + 'L' + P(pts[pts.length - 1]);
+    }
+    // the arcs following a move drawn in full (user, 2026-11-13: "the line should be drawn in full during drag ... it
+    // should feel quite natural"): each a copy of the renderer's own group of that arc, so it keeps its colour, width and
+    // dashes; its line goes through the new places, and what is drawn at an end (arrowhead, circle, bar) is carried to
+    // that end, turned as the end's segment turned. The originals are hidden; the copies go when the map is drawn again
+    var copies = [], frozen = false;
+    function restBox(i) { var b = boxOf(i), k = keyed && keyed.n.has(i); return k ? [b[0] - keyed.dx, b[1] - keyed.dy, b[2], b[3]] : b; }
+    function restPt(pi) { var p = points[pi], k = keyed && keyed.p && keyed.p.has(pi); return [num(p, 'x') - (k ? keyed.dx : 0), num(p, 'y') - (k ? keyed.dy : 0)]; }
+    function rigid(a0, b0, a1, b1) {   // the move taking point a0 with direction a0 -> b0 to a1 with a1 -> b1
+      var t = Math.atan2(b1[1] - a1[1], b1[0] - a1[0]) - Math.atan2(b0[1] - a0[1], b0[0] - a0[0]);
+      if (!isFinite(t) || (b0[0] === a0[0] && b0[1] === a0[1]) || (b1[0] === a1[0] && b1[1] === a1[1])) t = 0;
+      var c = Math.cos(t), s2 = Math.sin(t);
+      return { at: function (q) { var x = q[0] - a0[0], y = q[1] - a0[1]; return [a1[0] + c * x - s2 * y, a1[1] + s2 * x + c * y]; },
+               tr: 'translate(' + f1(a1[0]) + ' ' + f1(a1[1]) + ') rotate(' + f1(t * 180 / Math.PI) + ') translate(' + f1(-a0[0]) + ' ' + f1(-a0[1]) + ')' };
+    }
+    function verts(el) {   // the first and the last point of a drawn line
+      var v = (el.getAttribute(el.localName === 'polyline' ? 'points' : 'd') || '').match(/-?[\d.]+(?:e-?\d+)?/g) || [];
+      return v.length < 4 ? null : [[+v[0], +v[1]], [+v[v.length - 2], +v[v.length - 1]]];
+    }
+    function dropCopies() {   // the copies taken away, an original shown again unless its arc still follows a move
+      copies.forEach(function (c) { c[0].remove(); if (!(live && live.has(c[2]))) c[1].style.display = ''; });
+      copies = [];
+    }
+    function fullLines(ks, pp) {   // ks: the arcs to draw (indices in edges2), pp: a port being dragged
+      dropCopies();
+      ks.forEach(function (k) {
+        var e = edges2[k], gs = gE && gE[e.id];
+        if (!gs) return;
+        var o = line(k, restBox, restPt), n = line(k, null, null, pp);
+        if (!o || !n) return;
+        var L = o.length - 1, A = rigid(o[0], o[1], n[0], n[1]), Z = rigid(o[L], o[L - 1], n[L], n[L - 1]);
+        gs.forEach(function (g) {
+          g.style.display = 'none';
+          var c = g.cloneNode(true), main = null;
+          c.removeAttribute('data-e'); c.style.display = ''; c.classList.add('m2-ed-copy');
+          c.querySelectorAll('.m2-ed-hl').forEach(function (x) { x.remove(); });
+          g.parentNode.insertBefore(c, g.nextSibling); copies.push([c, g, k]);
+          Array.prototype.forEach.call(c.children, function (el) {
+            var line0 = el.localName === 'polyline' || (el.localName === 'path' && el.getAttribute('fill') === 'none');
+            if (line0 && !main) {
+              main = el; var v = verts(el); if (!v) return;
+              var q = [A.at(v[0])].concat(n.slice(1, L), [Z.at(v[1])]);
+              if (el.localName === 'polyline') el.setAttribute('points', q.map(function (p) { return f1(p[0]) + ',' + f1(p[1]); }).join(' '));
+              else el.setAttribute('d', roundPath(q, e.smooth, function (p) { return f1(p[0]) + ' ' + f1(p[1]); }));
+              return;
+            }
+            var b; try { b = el.getBBox(); } catch (x) { return; }
+            var m = [b.x + b.width / 2, b.y + b.height / 2], R = Math.hypot(m[0] - o[0][0], m[1] - o[0][1]) < Math.hypot(m[0] - o[L][0], m[1] - o[L][1]) ? A : Z;
+            el.setAttribute('transform', R.tr + (el.getAttribute('transform') ? ' ' + el.getAttribute('transform') : ''));
+          });
+        });
+      });
     }
     // the lines lit by the selection (the arcs selected; on a CellDesigner map the whole reaction of a main line or glyph
     // selected) and the glyphs lit with them
@@ -974,7 +1038,7 @@
     }
     function setPort(pp) {
       var e = edges2[pp.k], a = pp.end ? ['tx', 'ty'] : ['sx', 'sy'];
-      if (Math.abs(num(e.path, a[0]) - pp.to[0]) < 0.01 && Math.abs(num(e.path, a[1]) - pp.to[1]) < 0.01) { paint(); return; }
+      if (Math.abs(num(e.path, a[0]) - pp.to[0]) < 0.01 && Math.abs(num(e.path, a[1]) - pp.to[1]) < 0.01) { unshift(); paint(); return; }
       remember(false);
       var nth = Array.prototype.indexOf.call(doc.getElementsByTagNameNS(Y, 'Path'), e.path), c = -1;
       text = text.replace(/<y:Path\b[^>]*>/g, function (tag) {
@@ -995,8 +1059,13 @@
       gridPaint();
       if (!on || current !== map) { overlay.innerHTML = ''; return; }
       var out = [], over = [], frame = '<g transform="translate(' + f1(tx - x0 * z) + ',' + f1(ty - y0 * z) + ') scale(' + z + ')">';
-      if (live) live.forEach(function (k) {   // arcs following the drag, as plain lines until the map is drawn again
-        var pts = line(k);
+      // arcs following a move: drawn in full in the picture (after a release they stay as they are until the map is
+      // drawn again); before the editor's own drawing is in the page, as plain lines
+      var pk0 = drag && drag.port && drag.port.to ? drag.port : null, lk = new Set(live || []);
+      if (pk0) { glyphFollow(new Set(), new Set(), null, pk0); (live || []).forEach(function (k) { lk.add(k); }); lk.add(pk0.k); }
+      if (gE) { if (!frozen) { if (lk.size) fullLines(lk, pk0); else dropCopies(); } }
+      else lk.forEach(function (k) {
+        var pts = line(k, null, null, pk0);
         if (pts) out.push('<path class="m2-ed-live" stroke-width="' + f1(z) + '" d="' + livePath(pts, edges2[k].smooth) + '"/>');
       });
       // arcs selected, or holding a bend point selected: the blue highlight, then their bends as squares on top
@@ -1055,7 +1124,7 @@
         L2.appendChild(el);
       };
       hlE.forEach(function (k) {
-        var gs = gE && gE[edges2[k].id], still = !(live && live.has(k));
+        var gs = gE && gE[edges2[k].id], still = !(live && live.has(k)) && !(pk0 && pk0.k === k);
         if (gs && still && !mv) {
           var q0 = line(k);
           if (!q0) return;
@@ -1063,13 +1132,13 @@
           el.setAttribute('d', 'M' + q0.map(function (q) { return f1(q[0]) + ' ' + f1(q[1]); }).join('L'));
           return pic(gs[gs.length - 1], el);   // a CellDesigner line's own group, not its white halo's
         }
-        var pts = line(k);
+        var pts = line(k, null, null, pk0);
         if (pts) under.push('<path class="' + hl + '"' + sw(6) + ' d="M' + pts.map(function (q) { return f1(sx(q[0])) + ' ' + f1(sy(q[1])); }).join('L') + '"/>');
       });
       glyphs.forEach(function (i) {
         var g = gN && gN[nodes2[i].id];
         if (g && !mv) {
-          var b0 = boxOf(i), el = document.createElementNS(NS, 'rect');
+          var b0 = liveG && liveG[i] ? bx(i) : boxOf(i), el = document.createElementNS(NS, 'rect');   // a glyph following a port dragged: where it is now
           [['x', b0[0]], ['y', b0[1]], ['width', b0[2]], ['height', b0[3]]].forEach(function (a) { el.setAttribute(a[0], f1(a[1])); });
           return pic(g, el);
         }
@@ -1079,15 +1148,14 @@
       hlE.forEach(function (k) {
         var e = edges2[k];
         if (e.s == null || e.t == null) return;
-        var all = ports(k), grouped = cd && main.test(e.id);   // a reaction's own lines: no squares in its glyph
+        var all = ports(k, pk0), grouped = cd && main.test(e.id);   // a reaction's own lines: no squares in its glyph
         all.forEach(function (q, j) {
           if (grouped && ((j === 0 && glyphs.has(e.s)) || (j === all.length - 1 && glyphs.has(e.t)))) return;
           over.push('<rect class="m2-ed-bend"' + sw(0.5) + ' x="' + f1(sx(q[0]) - sq() / 2) + '" y="' + f1(sy(q[1]) - sq() / 2) + '" width="' + f1(sq()) + '" height="' + f1(sq()) + '"/>');
         });
       });
       if (drag && drag.port && drag.port.to) {
-        var pk = drag.port, b0 = bx(pk.n), C = [b0[0] + b0[2] / 2 + pk.to[0], b0[1] + b0[3] / 2 + pk.to[1]], al = ports(pk.k), nb = al[pk.end ? al.length - 2 : 1];
-        out.push('<path class="m2-ed-live" stroke-width="' + f1(z) + '" d="M' + f1(sx(C[0])) + ' ' + f1(sy(C[1])) + 'L' + f1(sx(nb[0])) + ' ' + f1(sy(nb[1])) + '"/>');
+        var pk = drag.port, b0 = bx(pk.n), C = [b0[0] + b0[2] / 2 + pk.to[0], b0[1] + b0[3] / 2 + pk.to[1]];
         var ph = Math.max(2, HANDLE * z);
         over.push('<rect class="m2-ed-handle" x="' + f1(sx(C[0]) - ph / 2) + '" y="' + f1(sy(C[1]) - ph / 2) + '" width="' + f1(ph) + '" height="' + f1(ph) + '"/>');
       }
@@ -1115,7 +1183,9 @@
           // -x0, -y0 from the editor's (the frame's two translates cancel inside the picture): the fill follows them
           // (user, 2026-11-12: after a node moved past the canvas edge the fill showed at another place)
           // and a node moved by the keys has its new place in the file and its group still shifted by the keys' sum
-          var kx = keyed && keyed.n.has(i) ? keyed.dx : 0, ky = keyed && keyed.n.has(i) ? keyed.dy : 0;
+          // (and so has a node dragged, from its release until the map is drawn again): the group's shift taken off
+          var tm = !mv && (g.getAttribute('transform') || '').match(/translate\(([-\d.e]+)[ ,]+([-\d.e]+)\)/);
+          var kx = tm ? +tm[1] : 0, ky = tm ? +tm[2] : 0;
           var ox = (cd ? x0 : 0) + kx, oy = (cd ? y0 : 0) + ky;
           if (ox || oy) el.setAttribute('transform', 'translate(' + f1(-ox) + ',' + f1(-oy) + ')');
           var first = g.firstElementChild && g.firstElementChild.localName === 'a' ? g.firstElementChild : g;
@@ -1270,8 +1340,11 @@
     // guides for a bend point (user, 2026-11-12, as yEd: "see how guides look when you move for L shape bend"): the
     // bend pressed snaps when one of its two segments is nearly level or upright, and a segment so lined up is drawn
     // as a thick grey line while the drag runs (both for an L)
-    function ports(k) {   // the arc's points with its ends at the ports (node centre and offset), as yEd lines them up
-      var e = edges2[k], S = bx(e.s), T = bx(e.t), pa = e.path, o = function (a) { return pa ? parseFloat(pa.getAttribute(a)) || 0 : 0; };
+    function ports(k, pp) {   // the arc's points with its ends at the ports (node centre and offset), as yEd lines them up
+      var e = edges2[k], S = bx(e.s), T = bx(e.t), pa = e.path, o = function (a) {
+        if (pp && pp.to && pp.k === k && (pp.end ? 't' : 's') === a[0]) return pp.to[a[1] === 'x' ? 0 : 1];
+        return pa ? parseFloat(pa.getAttribute(a)) || 0 : 0;
+      };
       return [[S[0] + S[2] / 2 + o('sx'), S[1] + S[3] / 2 + o('sy')]].concat(e.pts.map(pt), [[T[0] + T[2] / 2 + o('tx'), T[1] + T[3] / 2 + o('ty')]]);
     }
     function snap(d) {
@@ -1482,6 +1555,7 @@
         band = null; paint(); return;
       }
       var d = drag; drag = null; var sets = mv; mv = null;   // the moved groups and live arcs stay until the map is drawn again
+      if (!d.port && !d.rs) frozen = true;   // the copies too: the file now has the new places, the picture not yet
       if (d.port) {   // dragged: the port set; a click: the node there selected, as without a line lit
         if (d.port.to) setPort(d.port); else { selN = [d.port.n]; selP = []; selE = []; paint(); }
         return;
