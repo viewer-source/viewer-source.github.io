@@ -140,7 +140,9 @@ says "the workbench", "the converter's repository", "a private repository".
   across a reload too (user, 2026-11-12): the last saved drawing per map in that browser (`atlas-edit-kept`), dropped once
   the site's version of the map changes, or after an hour. The click data follows (user, 2026-11-12): the site's boxes
   are matched to the nodes of its own version and moved to where the edited drawing has them, so a click and the
-  search find a moved molecule where it is drawn. The code is
+  search find a moved molecule where it is drawn. Nothing drawn over the map at rest (user, 2026-11-12: "exactly as the original
+  diagram"): no selection outlines or bend handles; a thin grey dashed outline only while a drag or an area selection runs.
+  Later (user): snap to a grid and alignment guides as in PowerPoint. The code is
   `_includes/atlas-edit.js`, included by the viewer's script (copied to the sites with it, off there). Checked
   2026-11-12 on eNOS: first drawing about 4 s, a redraw after a move under a second, the saved file differing from the
   original only in x and y values. Not yet: CellDesigner files, a group growing round a member moved out of it.

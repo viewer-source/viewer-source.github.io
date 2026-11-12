@@ -418,25 +418,23 @@
     function sx(X) { return tx + (X - x0) * z; }
     function sy(Y2) { return ty + (Y2 - y0) * z; }
     function paint() {
-      if (!on || current !== map) { overlay.innerHTML = ''; return; }
-      var dx = drag ? drag.dx : 0, dy = drag ? drag.dy : 0, out = [];
-      var moving = new Set();
-      if (drag) selN.forEach(function (i) { moving.add(i); nodes2[i].inside.forEach(function (c) { moving.add(c); }); });
-      var movingP = new Set(selP);
-      if (drag) edges2.forEach(function (e) { if (moving.has(e.s) && moving.has(e.t)) e.pts.forEach(function (p) { movingP.add(p); }); });
-      selN.forEach(function (i) {
-        var b = boxOf(i);
-        out.push('<rect class="m2-ed-sel" x="' + (sx(b[0] + dx) - 2) + '" y="' + (sy(b[1] + dy) - 2) + '" width="' + (b[2] * z + 4) + '" height="' + (b[3] * z + 4) + '"/>');
-      });
-      if (drag) moving.forEach(function (i) {
-        if (selN.indexOf(i) >= 0) return;
-        var b = boxOf(i);
-        out.push('<rect class="m2-ed-ghost" x="' + sx(b[0] + dx) + '" y="' + sy(b[1] + dy) + '" width="' + b[2] * z + '" height="' + b[3] * z + '"/>');
-      });
-      points.forEach(function (p, i) {
-        var m = movingP.has(i), X = num(p, 'x') + (m ? dx : 0), Y2 = num(p, 'y') + (m ? dy : 0);
-        out.push('<rect class="m2-ed-pt' + (selP.indexOf(i) >= 0 ? ' m2-on' : '') + '" x="' + (sx(X) - 3.5) + '" y="' + (sy(Y2) - 3.5) + '" width="7" height="7"/>');
-      });
+      // nothing over the drawing at rest (user, 2026-11-12: "it should look exactly as the original diagram"): no
+      // selection outlines, no bend handles; only while a drag runs, a thin grey outline of what moves (or the area
+      // being selected), gone on release
+      if (!on || current !== map || (!drag && !band)) { overlay.innerHTML = ''; return; }
+      var out = [];
+      if (drag && (drag.dx || drag.dy)) {
+        var dx = drag.dx, dy = drag.dy, moving = new Set();
+        selN.forEach(function (i) { moving.add(i); nodes2[i].inside.forEach(function (c) { moving.add(c); }); });
+        moving.forEach(function (i) {
+          var b = boxOf(i);
+          out.push('<rect class="m2-ed-ghost" x="' + sx(b[0] + dx) + '" y="' + sy(b[1] + dy) + '" width="' + b[2] * z + '" height="' + b[3] * z + '"/>');
+        });
+        selP.forEach(function (i) {
+          var p = points[i];
+          out.push('<circle class="m2-ed-ghost" cx="' + sx(num(p, 'x') + dx) + '" cy="' + sy(num(p, 'y') + dy) + '" r="3"/>');
+        });
+      }
       if (band) {
         var a = [Math.min(band.x, band.x2), Math.min(band.y, band.y2)], c = [Math.max(band.x, band.x2), Math.max(band.y, band.y2)];
         out.push('<rect class="m2-ed-band" x="' + sx(a[0]) + '" y="' + sy(a[1]) + '" width="' + (c[0] - a[0]) * z + '" height="' + (c[1] - a[1]) * z + '"/>');
