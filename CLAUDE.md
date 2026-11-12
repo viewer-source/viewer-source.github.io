@@ -104,7 +104,9 @@ says "the workbench", "the converter's repository", "a private repository".
 - Map colours (user, 2026-11-12, in Settings after Map size): File (the colours in the map's file, the default), then
   Default, Paper and frost, Mono moss, Steel and Grey (user, 2026-11-12: the colourful ones for testing, Grey not very useful; a
   few to be chosen with more care later; no red highlight in any scheme, highlighted proteins in the protein colour, only
-  File keeps the file's red), kept in the reader's browser (`atlas-map-colours`), for every map; shown only for a map whose entry has
+  File keeps the file's red); shown as tiles two by row, each a tiny map in its colours (compartment, protein,
+  metabolite) over its name, the chosen one with an accent edge (user, 2026-11-12: the buttons squeezed in one line looked
+  bad; picked from three layouts), kept in the reader's browser (`atlas-map-colours`), for every map; shown only for a map whose entry has
   `colours` (its picture drawn with the role classes). The renderers write each fill's role beside its colour (yrender
   and cdrender `CLASSES`, set by build.py and the editor; off by default, so their copies elsewhere draw byte-identical);
   a scheme is a `<style>` put into the picture's text in the browser, no second picture per map. Downloads keep the
@@ -112,7 +114,7 @@ says "the workbench", "the converter's repository", "a private repository".
   gene, white); a scheme's code is that page's (Default, Paper and frost, Mono moss and Steel are its presets, Steel being Mono steel). CellDesigner compartments keep their
   colours (their lines are drawn in it). Grey is meant as the quiet base for the Overlays tab to come.
 - Icons on top or on the left (user, 2026-11-12: "vertical bar vs horizontal is simply a choice in settings";
-  `--m2-bar-choice: 1`, with the icon row, off in the viewer's own look): Settings gets Icons, Left or Top (in this order, user 2026-11-12; kept in the
+  `--m2-bar-choice: 1`, with the icon row, off in the viewer's own look): Settings gets Icons, Left or Top, last in Settings (user, 2026-11-12: easy to find there, rarely changed once chosen) (in this order, user 2026-11-12; kept in the
   browser, `atlas-icon-bar`); Left puts the same tabs in the icon column at the page's left edge, with the row's
   behaviour (Search with the list, a second click on Search back to Maps, the open tab kept, annotations on the left as
   a tab, no window title: class `m2-bar-tabs`) and the column's 160 px minimum. First in the styles' Default Icon Row.
