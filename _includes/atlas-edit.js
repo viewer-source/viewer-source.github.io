@@ -506,6 +506,8 @@
     // on screen: the selection as yEd shows it (user, 2026-11-12: "see how it is in yEd"), over the drawing: a node
     // selected in a light grey with eight small black handles; an arc selected with black squares on its bend points and
     // its two ports; nothing else is drawn, so the map at rest with nothing selected looks as the original diagram
+    var HANDLE = 5, BEND = 4;   // sizes of the handles and of the squares on an arc, in the map's units
+    function sq() { return Math.max(2, BEND * z); }
     function sx(X) { return tx + (X - x0) * z; }
     function sy(Y2) { return ty + (Y2 - y0) * z; }
     function f1(v) { return Math.round(v * 100) / 100; }
@@ -584,7 +586,7 @@
       selP.forEach(function (pi) {
         if (selE.some(function (k) { return edges2[k].pts.indexOf(pi) >= 0; })) return;
         var q = pt(pi);
-        over.push('<rect class="m2-ed-bend" x="' + f1(sx(q[0]) - 3) + '" y="' + f1(sy(q[1]) - 3) + '" width="6" height="6"/>');
+        over.push('<rect class="m2-ed-bend" x="' + f1(sx(q[0]) - sq() / 2) + '" y="' + f1(sy(q[1]) - sq() / 2) + '" width="' + f1(sq()) + '" height="' + f1(sq()) + '"/>');
       });
       // an arc selected (user, 2026-11-12, as yEd, replacing the blue highlight): black squares on its bend points and on
       // its two ports, where it starts and ends (often in the middle of a node)
@@ -592,7 +594,7 @@
         var e = edges2[k];
         if (e.s == null || e.t == null) return;
         ports(k).forEach(function (q) {
-          over.push('<rect class="m2-ed-bend" x="' + f1(sx(q[0]) - 3) + '" y="' + f1(sy(q[1]) - 3) + '" width="6" height="6"/>');
+          over.push('<rect class="m2-ed-bend" x="' + f1(sx(q[0]) - sq() / 2) + '" y="' + f1(sy(q[1]) - sq() / 2) + '" width="' + f1(sq()) + '" height="' + f1(sq()) + '"/>');
         });
       });
       if (drag && drag.guides) drag.guides.forEach(function (g) {
@@ -610,9 +612,12 @@
           if (last) last.after(el); else first.prepend(el);
         } else if (n.kids.length) {   // no drawing of the editor's yet: handles only for a group
         } else out.push(frame + '<path class="m2-ed-dark" d="' + shapeD(i) + '"/></g>');
-        var L = sx(b[0]) - 3, T = sy(b[1]) - 3, R = sx(b[0] + b[2]) + 3, B = sy(b[1] + b[3]) + 3;
+        // the handles in the map's units, so they grow and shrink with the zoom as yEd's (user, 2026-11-12): 5 units
+        // wide, their centres 3.3 units outside the box (as measured on yEd)
+        var hs = Math.max(2, HANDLE * z), off = 3.3 * z;
+        var L = sx(b[0]) - off, T = sy(b[1]) - off, R = sx(b[0] + b[2]) + off, B = sy(b[1] + b[3]) + off;
         [[L, T], [(L + R) / 2, T], [R, T], [L, (T + B) / 2], [R, (T + B) / 2], [L, B], [(L + R) / 2, B], [R, B]].forEach(function (q) {
-          over.push('<rect class="m2-ed-handle" x="' + f1(q[0] - 3) + '" y="' + f1(q[1] - 3) + '" width="6" height="6"/>');
+          over.push('<rect class="m2-ed-handle" x="' + f1(q[0] - hs / 2) + '" y="' + f1(q[1] - hs / 2) + '" width="' + f1(hs) + '" height="' + f1(hs) + '"/>');
         });
       });
       // while a drag runs: a thin grey outline of where it goes (or the area being selected), gone on release
