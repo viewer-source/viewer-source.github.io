@@ -224,7 +224,24 @@ says "the workbench", "the converter's repository", "a private repository".
   screen. GraphML: in the editor before each drawing (what is drawn counts, a closed group's kept size does not; all
   moves); 15 of the 21 demo GraphML maps start with negative places, so their first save shifts every place once.
   CellDesigner: `cd_edit.place`, the canvas growing with it, free texts and logic gates shifted too. Checked live on
-  SREBP in both formats (save simulated).
+  SREBP in both formats (save simulated). The shift moves the editor's own frame with it, so nothing moves on screen
+  when Edit is pressed (2026-11-12: it was taken for a new frame of the drawing, and maps with negative places jumped
+  right and down, carnitine out of sight; no file had been shifted by it).
+  A selected line highlighted under its squares (user, 2026-11-12: "I was wrong about removing highlights"): light blue
+  (#8ab4f8, 6 px, multiplied) on GraphML maps, CellDesigner's purple (#ff00ff at 45%) on CellDesigner maps. On a
+  CellDesigner map a reaction is one item, as in CellDesigner: a click on its main line (reactant to glyph to product),
+  its glyph or an added reactant or product lights them all, no squares in the glyph; a modifier is its own item (user:
+  not with the reaction, though CellDesigner lights it). A node selected on a CellDesigner map in purple: the same light
+  fill and eight handles, in #ffbfff and #ff00ff (user, 2026-11-12: "use what we already have, but maybe color it in
+  purple"; CellDesigner's own outline of handles not wanted).
+  Ports (user, 2026-11-12: "snap to center, bottom center, top center, left center, right center ... These 5 positions are
+  quite certain"; other places later): an end square of a lit line, dragged (4 px at least; a click selects the node
+  there), snaps to the nearest of the node's centre and the middles of its four sides, shown by a square and the
+  line's first segment while the drag runs; one undo step. GraphML: the port's offset from the centre (yEd's sx, sy or
+  tx, ty). CellDesigner: `cd_edit` writes the connection point (the centre: no linkAnchor; N, S, W, E), on the base
+  reactant or product, an added one, or a modifier's linkTarget (made after its connectScheme when missing, as
+  CellDesigner orders it); bend points stay. A process glyph's ends are not moved. Checked live on SREBP in both
+  formats (save simulated).
 - Full screen with tools (user, 2026-11-12: "use more space available on the screen, but with tools"): beside the map's
   own full screen (the map alone), the whole page goes full screen with its list, tools and panel: Shift with the
   full-screen button, or Full screen with tools in the right-click menu (Exit full screen there while on). The
