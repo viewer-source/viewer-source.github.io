@@ -179,7 +179,7 @@ says "the workbench", "the converter's repository", "a private repository".
   side (marks on the two gaps), or the drag is nearly straight across or down; each axis on its own, 6 px on screen, the
   smallest correction wins (near ties: that order), thin grey lines for centres and sides reaching 20 units past the
   nodes; only nodes in sight, not its own compartments; Ctrl or Alt held, no snapping. Not yet: the set node to node and
-  node to arc distances (yEd's manual gives no default), bends snapping to node centres. The code is
+  node to arc distances (yEd's manual gives no default), bends snapping to node centres.
   The layout skill's tools in the editor (user, 2026-11-12: reuse its code, no AI): a copy of its `complex_pack.py` and
   `snap_grid.py` in `renderers/layout/` (each starting with a line naming the skill's commit; refreshed with
   `sh renderers/layout/get_layout.sh <clone of the skill>`, never edited here), run in the browser by Pyodide through
