@@ -1652,7 +1652,7 @@
 </celldesigner:connectScheme>
 <celldesigner:line width="1.0" color="ff000000"/>
 <celldesigner:listOfModification>
-<celldesigner:modification type="BOOLEAN_LOGIC_GATE_OR" modifiers="s_n12,s_n11,s_n10,s_n2" aliases="sa_n12,sa_n11,sa_n10,sa_n2" modificationType="CATALYSIS" targetLineIndex="-1,3" editPoints="457.327287,821.514616">
+<celldesigner:modification type="BOOLEAN_LOGIC_GATE_OR" modifiers="s_n12,s_n11,s_n10,s_n2" aliases="sa_n12,sa_n11,sa_n10,sa_n2" modificationType="CATALYSIS" targetLineIndex="-1,3" editPoints="492.063395,821.514271">
 <celldesigner:connectScheme connectPolicy="direct">
 <celldesigner:listOfLineDirection>
 <celldesigner:lineDirection index="0" value="unknown"/>
@@ -2087,11 +2087,14 @@
 <celldesigner:line width="1.0" color="ff000000" type="Straight"/>
 </celldesigner:reactantLink>
 </celldesigner:listOfReactantLinks>
-<celldesigner:connectScheme connectPolicy="direct" rectangleIndex="0">
+<celldesigner:connectScheme connectPolicy="direct" rectangleIndex="1">
 <celldesigner:listOfLineDirection>
 <celldesigner:lineDirection index="0" value="unknown"/>
+<celldesigner:lineDirection index="1" value="unknown"/>
+<celldesigner:lineDirection index="2" value="unknown"/>
 </celldesigner:listOfLineDirection>
 </celldesigner:connectScheme>
+<celldesigner:editPoints>0.313322439564,-1.446372e-06 0.936007905746,-1.446372e-06</celldesigner:editPoints>
 <celldesigner:line width="1.0" color="ff000000"/>
 </celldesigner:extension>
 </annotation>
