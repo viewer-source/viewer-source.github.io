@@ -862,17 +862,15 @@
       return best || group;
     }
     function editing(e) { return on && current === map && !e.target.closest('.m2-ctrl, .m2-info'); }
-    var empty = null, rpan = null, rpan0 = null, shiftAt = null;
+    var empty = null, rpan = null, shiftAt = null;
     // as yEd's Edit mode (user, 2026-11-12: "yed way"): a plain drag on empty space selects an area (a click there clears
-    // the selection, Shift adds to it); the map moves with a right drag (its context menu kept away) or two-finger
-    // scrolling; a pinch, or Ctrl or Cmd with the wheel, zooms
-    view.addEventListener('contextmenu', function (e) { if (editing(e)) e.preventDefault(); });
+    // the selection, Shift adds to it); the map moves with two-finger scrolling or Shift with a drag (no right drag: a
+    // right click opens the viewer's menu, as outside edit mode, user 2026-11-12); a pinch, or Ctrl or Cmd with the wheel, zooms
     view.addEventListener('pointerdown', function (e) {
       empty = null;
       if (!editing(e)) return;
-      if (e.button === 2 || (e.button === 0 && e.ctrlKey && /Mac/.test(navigator.platform))) {   // right drag: the map moves
-        e.stopImmediatePropagation(); e.preventDefault();
-        view.setPointerCapture(e.pointerId); rpan = [e.clientX, e.clientY]; rpan0 = rpan; view.classList.add('m2-drag');
+      if (e.button === 2 || (e.button === 0 && e.ctrlKey && /Mac/.test(navigator.platform))) {   // a right click: the viewer's menu
+        e.stopImmediatePropagation();   // (user, 2026-11-12: no right drag for the map, two fingers move it)
         return;
       }
       if (e.button !== 0) return;
@@ -1107,12 +1105,7 @@
       }
     }, true);
     function release(e) {
-      if (rpan) {
-        rpan = null; view.classList.remove('m2-drag'); e.stopImmediatePropagation();
-        // a right click that did not drag: the viewer's right-click menu (user, 2026-11-12)
-        if (e.type === 'pointerup' && rpan0 && Math.hypot(e.clientX - rpan0[0], e.clientY - rpan0[1]) < 5 && typeof m2Context === 'function') m2Context(e.clientX, e.clientY);
-        rpan0 = null; return;
-      }
+      if (rpan) { rpan = null; view.classList.remove('m2-drag'); e.stopImmediatePropagation(); return; }
       var sa = shiftAt; shiftAt = null;
       if (sa && sa.h && e.type === 'pointerup' && Math.hypot(e.clientX - sa.x, e.clientY - sa.y) < 5) {   // Shift with a click
         var hs = sa.h, li = hs.p != null ? selP : hs.e != null ? selE : selN, ki = hs.p != null ? hs.p : hs.e != null ? hs.e : hs.n;

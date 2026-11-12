@@ -135,7 +135,7 @@ says "the workbench", "the converter's repository", "a private repository".
   line, Grid and Snap to grid (a magnet), the plain grey signs of the tabs, a switch that is on on a light grey square as
   yEd's, wrapping onto more lines in a narrow panel (user, 2026-11-12: they were cut off on the right); below, Save and Stop editing (Open file, a yEd GraphML from the computer, removed: user, 2026-11-12, not needed outside the Atlas; in the history); the tab starts editing the map shown at once and follows the map chosen, and shows only on a map drawn from its GraphML (or while a file is edited or has moves not saved; user, 2026-11-12). Moves only: a node or a bend point
   dragged (a group with what it holds, and the bends of arcs inside it; a bend alone stays put when its nodes move, as
-  in yEd), the first click selects and a drag moves only what is selected already (user, 2026-11-12, as yEd: "first click selects an item, and second click drags it"; the plan: mimic yEd's behaviour in general), Shift with a drag moves the whole map from anywhere, over a node or a compartment too (user, 2026-11-12: not in yEd, wanted), Shift with a click adds to the selection, a plain drag on empty space selects an area and the map moves with a right drag (Ctrl with a click on a Mac) or two-finger scrolling, a pinch or Ctrl/Cmd with the wheel zooming, as in yEd's Edit mode (user, 2026-11-12: "yed way"; until then a drag on empty space moved the map and Shift selected an area), arrow keys move by 1 (Shift 10), Ctrl or Cmd
+  in yEd), the first click selects and a drag moves only what is selected already (user, 2026-11-12, as yEd: "first click selects an item, and second click drags it"; the plan: mimic yEd's behaviour in general), Shift with a drag moves the whole map from anywhere, over a node or a compartment too (user, 2026-11-12: not in yEd, wanted), Shift with a click adds to the selection, a plain drag on empty space selects an area and the map moves with two-finger scrolling (the right drag taken out, user 2026-11-12: a right click opens the viewer's menu as everywhere), a pinch or Ctrl/Cmd with the wheel zooming, as in yEd's Edit mode (user, 2026-11-12: "yed way"; until then a drag on empty space moved the map and Shift selected an area), arrow keys move by 1 (Shift 10), Ctrl or Cmd
   with Z undoes, with S saves; a drag on empty space pans as before. Only the x and y of what moved change in the
   file's text, the rest byte for byte; the yEd renderer runs in the browser by Pyodide (the converter page's version,
   `renderers/yrender/yrender.py` published for it) and draws the map again, so the editor draws nothing of its own.
@@ -208,8 +208,8 @@ says "the workbench", "the converter's repository", "a private repository".
   the tabs and buttons already do, never the only way to it (phones have no right click). One layer, no submenus (user,
   2026-11-12: the shortcut is for what is aimed for on the page, as downloads and edit; the view, colours, link and the
   other files stay in the viewer's own buttons, the address bar and Downloads): Edit mode (where the Edit tab shows;
-  in edit mode View mode in its place, and no molecule rows: a right click that does not drag opens the menu there, a
-  right drag still moves the map; user, 2026-11-12),
+  in edit mode View mode in its place, and no molecule rows: right click works everywhere the same way, the right drag
+  that moved the map in edit mode taken out, two fingers or Shift with a drag move it; user, 2026-11-12),
   Download GraphML or Download CellDesigner file (the map's source only), Open in MINERVA, Open in Newt (where the map
   has them, to respect the tools already there), Copy image as PNG last (its PNG, else its picture at twice its size, to
   the clipboard: for pasting into a paper or slides); words only, no download or outside-link signs (user, 2026-11-12). Whole map, Reading size, Copy link, Map colours, the other downloads and
@@ -217,7 +217,7 @@ says "the workbench", "the converter's repository", "a private repository".
   annotation, Copy name, Find in all maps (the name in the search), a line, then the same rows. The look of the
   Downloads menu, the accent fill under the pointer; Esc, a click elsewhere,
   the wheel or a resize close it; arrow keys move through it. Shift with the right click gives the browser's own menu;
-  in edit mode it opens on the release of a right click that did not move the map. The page's text, the panel and the list keep the browser's
+  the same in edit mode. The page's text, the panel and the list keep the browser's
   menu. First in the styles' Default Icons. Later, when the editor goes on: Align and Distribute on a selection.
 - Downloads in the panel's column while no molecule is open (`--m2-dl-panel`, 2026-11-11): tried and removed the same day
   (user: it does not work); its code is in the history.
