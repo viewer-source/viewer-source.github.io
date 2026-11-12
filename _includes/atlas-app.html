@@ -55,8 +55,8 @@ look="panel" (user, 2026-11-10): Default Panel of the styles experiment, its own
                                     open, the panel fixed beside the map (user, 2026-11-11): off, a style turns it on */
     --m2-bar-choice: 0;          /* with --m2-icon-row: Settings lets the reader put the icons in the row on top or in the column
                                     on the left, with the same tabs and behaviour (user, 2026-11-12): off, a style turns it on */
-    --m2-context: 0;             /* a menu on a right click over the map (user, 2026-11-12): fit, downloads, copy picture,
-                                    open in, link, colours, edit; over a molecule its annotation, name, search, databases.
+    --m2-context: 0;             /* a menu on a right click over the map (user, 2026-11-12), one layer: edit, the source
+                                    file, copy as PNG, open in MINERVA and Newt; over a molecule first its annotation, name, search.
                                     Shift with the right click gives the browser's own menu. Off, a style turns it on */
     --m2-edit: 0;                /* with --m2-icons: an Edit tab, moving nodes and bend points of a yEd GraphML in the map window (user, 2026-11-12; _includes/atlas-edit.js) */
     --m2-dl-ext: 0;              /* with --m2-icons: the Open in links in the Downloads window, under a line, and no Open in
@@ -2414,24 +2414,6 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
       box.appendChild(a); return a;
     }
     function sep(box) { box.appendChild(el('div', 'm2-sep')); }
-    function sub(box, text) {   // a row with ▸ and its own menu beside it, opened by the pointer, a click or →
-      var w = el('div', 'm2-cx-sub'), b = el('button', null, text), m = el('div', 'm2-cx');
-      b.type = 'button'; b.setAttribute('aria-haspopup', 'true');
-      b.appendChild(el('span', 'm2-cx-arrow', '▸'));
-      w.appendChild(b); w.appendChild(m); box.appendChild(w);
-      var open = function () {
-        Array.prototype.forEach.call(box.querySelectorAll(':scope > .m2-cx-sub'), function (o) { if (o !== w) o.classList.remove('m2-cx-open'); });
-        w.classList.add('m2-cx-open');
-        w.classList.toggle('m2-cx-left', b.getBoundingClientRect().right + m.offsetWidth > window.innerWidth - 4);
-        var r = m.getBoundingClientRect();   // kept inside the window's bottom edge
-        if (r.bottom > window.innerHeight - 4) m.style.top = (parseFloat(getComputedStyle(m).top) - (r.bottom - window.innerHeight + 4)) + 'px';
-      };
-      w.addEventListener('pointerenter', open);
-      b.addEventListener('click', function (e) { e.stopPropagation(); open(); });
-      b.addEventListener('keydown', function (e) { if (e.key === 'ArrowRight' || e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); var f = m.querySelector('button, a'); if (f) f.focus(); } });
-      m.addEventListener('keydown', function (e) { if (e.key === 'ArrowLeft') { e.preventDefault(); e.stopPropagation(); w.classList.remove('m2-cx-open'); b.focus(); } });
-      return m;
-    }
     function copyText(t, r) {
       (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { say('Copied', r.left, r.top); }, function () { say('Not copied', r.left, r.top); });
     }
@@ -2471,34 +2453,17 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
             f.value = name; f.dispatchEvent(new Event('input')); f.focus();
           });
         }
-        var p = props(n.props || []), ids = IDS.filter(function (k) { return LINK[k] && p[k] && !(k === 'HGNC' && p['HGNC symbol']); });
-        if (ids.length) {
-          var dbs = sub(box, 'Open in database');
-          ids.forEach(function (k) { String(p[k]).split(/,\s*/).forEach(function (v) { link(dbs, k + ': ' + v, LINK[k] + encodeURIComponent(v).replace(/%3A/g, ':')); }); });
-        }
         sep(box);
       }
-      item(box, 'Whole map', function () { setMode('fit'); });
-      item(box, 'Reading size', function () { setMode('read'); });
-      sep(box);
-      var files = ['GraphML', 'CellDesigner', 'SBGN-ML', 'SBML', 'PNG', 'SVG'].filter(function (l) { return url[l]; });
-      if (url.Annotation) files.push('Annotation');
-      if (url.References) files.push('References');
-      if (files.length) {
-        var dl = sub(box, 'Download');
-        files.forEach(function (l) { link(dl, l === 'Annotation' ? 'Data (CSV)' : l === 'References' ? 'References (CSV)' : l, url[l], true); });
-      }
-      if (!m.imageError) item(box, 'Copy picture', function (r) { copyPicture(m, url, r); });
-      var ext = ['Newt', 'MINERVA'].filter(function (l) { return url[l]; });
-      if (ext.length) { var oi = sub(box, 'Open in'); ext.forEach(function (l) { link(oi, l, url[l]); }); }
-      item(box, 'Copy link to this map', function (r) { copyText(location.href.split('#')[0] + '#' + m.id, r); });
-      var cb = document.querySelectorAll('#m2-set-colours button');
-      if (m.colours && cb.length) {
-        var col = sub(box, 'Map colours');
-        cb.forEach(function (c) { item(col, (c.dataset.colours === SCHEME ? '✓ ' : '') + c.firstChild.textContent, function () { c.click(); }); });
-      }
+      // one layer, no submenus (user, 2026-11-12): the shortcuts aimed for on the page; the map's view, colours, link and
+      // the other files stay in the viewer's own buttons and tabs
       var eb = document.querySelector('#m2-rail .m2-ri[data-win="edit"]');
-      if (eb && eb.offsetParent) { sep(box); item(box, 'Edit this map', function () { tab('edit'); }); }
+      if (eb && eb.offsetParent) item(box, 'Edit this map', function () { tab('edit'); });
+      var src = ['GraphML', 'CellDesigner'].filter(function (l) { return url[l]; })[0];
+      if (src) link(box, src === 'GraphML' ? 'Download GraphML' : 'Download CellDesigner file', url[src], true);
+      if (!m.imageError) item(box, 'Copy as PNG', function (r) { copyPicture(m, url, r); });
+      ['MINERVA', 'Newt'].forEach(function (l) { if (url[l]) link(box, 'Open in ' + l, url[l]); });
+      while (box.lastChild && box.lastChild.classList.contains('m2-sep')) box.removeChild(box.lastChild);
       return box;
     }
     view.addEventListener('contextmenu', function (e) {
