@@ -15,6 +15,7 @@ scale: 1
 annotation: "/atlas-data/eicosanoids-celldesigner.json"
 image_error: ""
 v: "daa51d62cb"
+src: "e7510b4d946e261ba5ca81228cf340fba8418f51"
 colours: true
 legend: "celldesigner"
 downloads: [{"label": "CellDesigner", "url": "/downloads/eicosanoids-celldesigner.xml"}, {"label": "SVG", "url": "/downloads/eicosanoids-celldesigner.svg"}, {"label": "SBML", "url": "/downloads/eicosanoids-celldesigner-sbml.xml"}, {"label": "Annotation", "url": "/downloads/eicosanoids-celldesigner.csv"}, {"label": "GraphML", "url": "/downloads/eicosanoids-celldesigner.graphml"}, {"label": "PNG", "url": "/downloads/eicosanoids-celldesigner.png"}, {"label": "SBGN-ML", "url": "/downloads/eicosanoids-celldesigner.sbgn"}, {"label": "Newt", "url": "http://web.newteditor.org/?URL=https://viewer-source.github.io/downloads/eicosanoids-celldesigner.sbgn"}, {"label": "MINERVA", "url": "https://mreg.elixir-luxembourg.org/minerva/index.html?id=F002-eicosanoids"}]

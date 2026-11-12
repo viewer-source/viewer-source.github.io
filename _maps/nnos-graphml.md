@@ -15,6 +15,7 @@ scale: 1
 annotation: "/atlas-data/nnos-graphml.json"
 image_error: ""
 v: "482e883d46"
+src: "972a940c1dae5d2bf29f3f345e1cf1b473b3fd6f"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "GraphML", "url": "/downloads/nnos-graphml.graphml"}, {"label": "SVG", "url": "/downloads/nnos-graphml.svg"}, {"label": "SBML", "url": "/downloads/nnos-graphml-sbml.xml"}, {"label": "Annotation", "url": "/downloads/nnos-graphml.csv"}, {"label": "PNG", "url": "/downloads/nnos-graphml.png"}, {"label": "SBGN-ML", "url": "/downloads/nnos-graphml.sbgn"}, {"label": "CellDesigner", "url": "/downloads/nnos-graphml.xml"}, {"label": "Newt", "url": "http://web.newteditor.org/?URL=https://viewer-source.github.io/downloads/nnos-graphml.sbgn"}, {"label": "MINERVA", "url": "https://mreg.elixir-luxembourg.org/minerva/index.html?id=F025-nnos"}]

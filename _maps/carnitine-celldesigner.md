@@ -15,6 +15,7 @@ scale: 1
 annotation: "/atlas-data/carnitine-celldesigner.json"
 image_error: ""
 v: "1f1133d671"
+src: "9f1cb4e632927569397d0c475395fbed5651dca9"
 colours: true
 legend: "celldesigner"
 downloads: [{"label": "CellDesigner", "url": "/downloads/carnitine-celldesigner.xml"}, {"label": "SVG", "url": "/downloads/carnitine-celldesigner.svg"}, {"label": "SBML", "url": "/downloads/carnitine-celldesigner-sbml.xml"}, {"label": "Annotation", "url": "/downloads/carnitine-celldesigner.csv"}, {"label": "GraphML", "url": "/downloads/carnitine-celldesigner.graphml"}, {"label": "PNG", "url": "/downloads/carnitine-celldesigner.png"}, {"label": "SBGN-ML", "url": "/downloads/carnitine-celldesigner.sbgn"}, {"label": "Newt", "url": "http://web.newteditor.org/?URL=https://viewer-source.github.io/downloads/carnitine-celldesigner.sbgn"}, {"label": "MINERVA", "url": "https://mreg.elixir-luxembourg.org/minerva/index.html?id=F014-carnitine"}]

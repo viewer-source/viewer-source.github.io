@@ -15,6 +15,7 @@ scale: 1
 annotation: "/atlas-data/eicosanoids-graphml.json"
 image_error: ""
 v: "93decddf49"
+src: "458d8735b2b8f27f2361f53b228227fad334a167"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "GraphML", "url": "/downloads/eicosanoids-graphml.graphml"}, {"label": "SVG", "url": "/downloads/eicosanoids-graphml.svg"}, {"label": "SBML", "url": "/downloads/eicosanoids-graphml-sbml.xml"}, {"label": "Annotation", "url": "/downloads/eicosanoids-graphml.csv"}, {"label": "PNG", "url": "/downloads/eicosanoids-graphml.png"}, {"label": "SBGN-ML", "url": "/downloads/eicosanoids-graphml.sbgn"}, {"label": "CellDesigner", "url": "/downloads/eicosanoids-graphml.xml"}, {"label": "Newt", "url": "http://web.newteditor.org/?URL=https://viewer-source.github.io/downloads/eicosanoids-graphml.sbgn"}, {"label": "MINERVA", "url": "https://mreg.elixir-luxembourg.org/minerva/index.html?id=F002-eicosanoids"}]

@@ -15,6 +15,7 @@ scale: 1
 annotation: "/atlas-data/mevalonate-graphml.json"
 image_error: ""
 v: "272adfc47e"
+src: "e61bbb1173cb29e9310c539eabde8b279b49569b"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "GraphML", "url": "/downloads/mevalonate-graphml.graphml"}, {"label": "SVG", "url": "/downloads/mevalonate-graphml.svg"}, {"label": "SBML", "url": "/downloads/mevalonate-graphml-sbml.xml"}, {"label": "Annotation", "url": "/downloads/mevalonate-graphml.csv"}, {"label": "PNG", "url": "/downloads/mevalonate-graphml.png"}, {"label": "SBGN-ML", "url": "/downloads/mevalonate-graphml.sbgn"}, {"label": "CellDesigner", "url": "/downloads/mevalonate-graphml.xml"}, {"label": "Newt", "url": "http://web.newteditor.org/?URL=https://viewer-source.github.io/downloads/mevalonate-graphml.sbgn"}, {"label": "MINERVA", "url": "https://mreg.elixir-luxembourg.org/minerva/index.html?id=F003-mevalonate"}]
