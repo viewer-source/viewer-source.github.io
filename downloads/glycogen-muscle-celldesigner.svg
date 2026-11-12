@@ -375,8 +375,8 @@
 <polyline points="1591.92,512.53 1582.41,540.77"/>
 <polyline points="1411.86,329.08 1354.93,329.51"/>
 <polyline points="1387.3,753.53 1387.26,329.26"/>
-<polyline points="1271.61,438.64 1272.05,709 1272.05,983.46 1352.85,983.46"/>
-<polyline points="1271.88,604.61 1209.93,604.99"/>
+<polyline points="1271.56,438.64 1272.06,836 1272.05,983.46 1352.85,983.46"/>
+<polyline points="1271.87,683.99 1206.91,645.88"/>
 <polyline points="920.79,457.21 920.79,328.21 1119.67,329.21 1119.67,443.21"/>
 <polyline points="1045.09,328.83 1047.92,338.08"/>
 <polyline points="1020.24,290.21 1020.25,316.21"/>
@@ -514,10 +514,10 @@
 <polyline points="1387.3,761.53 1387.26,329.26" fill="none" stroke="#000000" stroke-width="1"/>
 <rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(1376.4,329.35) rotate(179.57)"/>
 <polygon points="1374.85,983.46 1359.85,988.46 1359.85,978.46" fill="#000"/>
-<polyline points="1271.6,430.64 1272.05,709 1272.05,983.46 1360.85,983.46" fill="none" stroke="#000000" stroke-width="1"/>
-<polygon points="1187.93,605.12 1202.9,600.03 1202.96,610.03" fill="#000"/>
-<polyline points="1271.88,604.61 1201.93,605.04" fill="none" stroke="#000000" stroke-width="1"/>
-<rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(1271.83,569.82) rotate(89.91)"/>
+<polyline points="1271.55,430.64 1272.06,836 1272.05,983.46 1360.85,983.46" fill="none" stroke="#000000" stroke-width="1"/>
+<polygon points="1187.93,634.75 1203.4,638.03 1198.34,646.66" fill="#000"/>
+<polyline points="1271.87,683.99 1200.01,641.84" fill="none" stroke="#000000" stroke-width="1"/>
+<rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(1271.8,633.32) rotate(89.93)"/>
 <polygon points="1119.67,465.21 1114.67,450.21 1124.67,450.21" fill="#000"/>
 <polyline points="920.79,465.21 920.79,328.21 1119.67,329.21 1119.67,451.21" fill="none" stroke="#000000" stroke-width="1"/>
 <polygon points="1054.37,359.12 1045.19,346.24 1054.76,343.31" fill="#000"/>
