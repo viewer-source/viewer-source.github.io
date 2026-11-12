@@ -810,6 +810,61 @@
       }
       return d + 'L' + P(pts[pts.length - 1]);
     }
+    // the lines lit by the selection (the arcs selected; on a CellDesigner map the whole reaction of a main line or glyph
+    // selected) and the glyphs lit with them
+    var MAIN = /^(.*)\|(a|b|r\d+|p\d+)$/;
+    function lit() {
+      var hlE = new Set(selE), glyphs = new Set();
+      if (cd) {
+        var rx = new Set();
+        selE.forEach(function (k) { var m = edges2[k].id.match(MAIN); if (m) rx.add(m[1]); });
+        selN.forEach(function (i) { var m = nodes2[i].id.match(/^(.*)\|proc$/); if (m) rx.add(m[1]); });
+        if (rx.size) {
+          edges2.forEach(function (e, k) { var m = e.id.match(MAIN); if (m && rx.has(m[1])) hlE.add(k); });
+          nodes2.forEach(function (n, i) { var m = n.id.match(/^(.*)\|proc$/); if (m && rx.has(m[1])) glyphs.add(i); });
+        }
+      }
+      return { e: hlE, g: glyphs };
+    }
+    // a line's end moved on its node (user, 2026-11-12: "snap to center, bottom center, top center, left center, right
+    // center"): an end square of a lit line dragged; it snaps to the nearest of the five, written as the port's offset
+    // from the node's centre (yEd's sx, sy or tx, ty); on a CellDesigner map cd_edit makes it the connection point
+    // (none for the centre, N, S, W, E). A process glyph's ends are not moved this way
+    function portAt(P) {
+      var R = 6 / z, L = lit(), best = null, dB = R;
+      L.e.forEach(function (k) {
+        var e = edges2[k];
+        if (e.s == null || e.t == null || !e.path) return;
+        var all = ports(k);
+        [[0, e.s], [all.length - 1, e.t]].forEach(function (q, end) {
+          if (cd && /\|proc$/.test(nodes2[q[1]].id)) return;
+          var d = Math.hypot(all[q[0]][0] - P[0], all[q[0]][1] - P[1]);
+          if (d <= dB) { dB = d; best = { k: k, end: end, n: q[1], to: null }; }
+        });
+      });
+      return best;
+    }
+    function spot(pp, P) {   // the nearest of the five places of the node, as an offset from its centre
+      var b = bx(pp.n), c = [b[0] + b[2] / 2, b[1] + b[3] / 2];
+      return [[0, 0], [0, -b[3] / 2], [0, b[3] / 2], [-b[2] / 2, 0], [b[2] / 2, 0]].reduce(function (m, o) {
+        return Math.hypot(c[0] + o[0] - P[0], c[1] + o[1] - P[1]) < Math.hypot(c[0] + m[0] - P[0], c[1] + m[1] - P[1]) ? o : m;
+      });
+    }
+    function setPort(pp) {
+      var e = edges2[pp.k], a = pp.end ? ['tx', 'ty'] : ['sx', 'sy'];
+      if (Math.abs(num(e.path, a[0]) - pp.to[0]) < 0.01 && Math.abs(num(e.path, a[1]) - pp.to[1]) < 0.01) { paint(); return; }
+      remember(false);
+      var nth = Array.prototype.indexOf.call(doc.getElementsByTagNameNS(Y, 'Path'), e.path), c = -1;
+      text = text.replace(/<y:Path\b[^>]*>/g, function (tag) {
+        if (++c !== nth) return tag;
+        a.forEach(function (k, j) {
+          var v = fmt(pp.to[j]), re = new RegExp('(\\s' + k + '=")[^"]*"');
+          tag = re.test(tag) ? tag.replace(re, '$1' + v + '"') : tag.replace(/(\/?>)$/, ' ' + k + '="' + v + '"$1');
+        });
+        return tag;
+      });
+      parse(); dirty = true; render(); paint(); changed();
+    }
     function paint() {
       if (img && img.querySelectorAll) img.querySelectorAll('.m2-ed-dark').forEach(function (x) { x.remove(); });
       gridPaint();
@@ -834,16 +889,7 @@
       // highlights"), in blue on a GraphML map, in CellDesigner's purple on a CellDesigner one. On a CellDesigner map a
       // reaction is one item, as in CellDesigner (user, 2026-11-12): a click on its main line (reactant to glyph to
       // product), its glyph or an added reactant or product lights them all up; a modifier stays on its own
-      var hlE = new Set(selE), glyphs = new Set(), main = /^(.*)\|(a|b|r\d+|p\d+)$/;
-      if (cd) {
-        var rx = new Set();
-        selE.forEach(function (k) { var m = edges2[k].id.match(main); if (m) rx.add(m[1]); });
-        selN.forEach(function (i) { var m = nodes2[i].id.match(/^(.*)\|proc$/); if (m) rx.add(m[1]); });
-        if (rx.size) {
-          edges2.forEach(function (e, k) { var m = e.id.match(main); if (m && rx.has(m[1])) hlE.add(k); });
-          nodes2.forEach(function (n, i) { var m = n.id.match(/^(.*)\|proc$/); if (m && rx.has(m[1])) glyphs.add(i); });
-        }
-      }
+      var L = lit(), hlE = L.e, glyphs = L.g, main = MAIN;
       var hl = 'm2-ed-hl' + (cd ? ' m2-cd' : '');
       hlE.forEach(function (k) {
         var pts = line(k);
@@ -862,6 +908,11 @@
           over.push('<rect class="m2-ed-bend" x="' + f1(sx(q[0]) - sq() / 2) + '" y="' + f1(sy(q[1]) - sq() / 2) + '" width="' + f1(sq()) + '" height="' + f1(sq()) + '"/>');
         });
       });
+      if (drag && drag.port && drag.port.to) {
+        var pk = drag.port, b0 = bx(pk.n), C = [b0[0] + b0[2] / 2 + pk.to[0], b0[1] + b0[3] / 2 + pk.to[1]], al = ports(pk.k), nb = al[pk.end ? al.length - 2 : 1];
+        out.push('<path class="m2-ed-live" stroke-width="' + f1(Math.max(1, z)) + '" d="M' + f1(sx(C[0])) + ' ' + f1(sy(C[1])) + 'L' + f1(sx(nb[0])) + ' ' + f1(sy(nb[1])) + '"/>');
+        over.push('<rect class="m2-ed-handle' + (cd ? ' m2-cd' : '') + '" x="' + f1(sx(C[0]) - 4) + '" y="' + f1(sy(C[1]) - 4) + '" width="8" height="8"/>');
+      }
       if (drag && drag.guides) drag.guides.forEach(function (g) {
         out.push('<path class="m2-ed-guide" d="M' + f1(sx(g[0][0])) + ' ' + f1(sy(g[0][1])) + 'L' + f1(sx(g[1][0])) + ' ' + f1(sy(g[1][1])) + '"/>');
       });
@@ -967,6 +1018,12 @@
       }
       if (e.button !== 0) return;
       var P = at(e), h = hit(P);
+      var pp = !e.shiftKey && portAt(P);
+      if (pp) {   // a lit line's end square: its port moved among the node's five places
+        e.stopImmediatePropagation(); e.preventDefault();
+        view.setPointerCapture(e.pointerId); view.focus({ preventScroll: true });
+        drag = { port: pp, x: P[0], y: P[1], dx: 0, dy: 0, cx: e.clientX, cy: e.clientY }; mv = null; paint(); return;
+      }
       // an edge of a compartment, or a handle of one selected: a drag resizes it (user, 2026-11-12: compartments are
       // containers, "resizable manually ... when I simply drag the edge of it"); a bend point or a node there comes first
       var rz = !e.shiftKey && edgeAt(P);
@@ -1168,6 +1225,7 @@
         e.stopImmediatePropagation();
         var P = at(e);
         if (band) { band.x2 = P[0]; band.y2 = P[1]; }
+        else if (drag.port) { if (drag.port.to || Math.hypot(e.clientX - drag.cx, e.clientY - drag.cy) >= 4) drag.port.to = spot(drag.port, P); }
         else if (drag.rs) {
           var seed = {}; seed[drag.rs.c] = resized(drag, P, gridSet.snap && !e.altKey && !e.ctrlKey);
           liveFit(seed);
@@ -1215,6 +1273,10 @@
         band = null; paint(); return;
       }
       var d = drag; drag = null; var sets = mv; mv = null;   // the moved groups and live arcs stay until the map is drawn again
+      if (d.port) {   // dragged: the port set; a click: the node there selected, as without a line lit
+        if (d.port.to) setPort(d.port); else { selN = [d.port.n]; selP = []; selE = []; paint(); }
+        return;
+      }
       if (d.rs) {   // a compartment resized: its box set, never smaller than what it holds, the ones round it grown
         var nb = liveC && liveC[d.rs.c];
         if (!nb || nb.every(function (v, j) { return Math.abs(v - d.rs.b0[j]) < 0.01; })) { liveOff(); paint(); return; }

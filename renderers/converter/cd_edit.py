@@ -233,7 +233,7 @@ def graphml(text, off=(0.0, 0.0)):
 
 def read(gtext):
     root = etree.fromstring(gtext.encode('utf-8'))
-    boxes, base, bends = {}, {}, {}
+    boxes, base, bends, paths = {}, {}, {}, {}
     for n in root.iter(G + 'node'):
         g = n.find('.//' + Y + 'Geometry')
         boxes[n.get('id')] = tuple(float(g.get(k)) for k in ('x', 'y', 'width', 'height'))
@@ -241,7 +241,99 @@ def read(gtext):
             base[n.get('id')] = tuple(float(v) for v in n.get('base').split(','))
     for e in root.iter(G + 'edge'):
         bends[e.get('id')] = [(float(p.get('x')), float(p.get('y'))) for p in e.iter(Y + 'Point')]
-    return boxes, base, bends
+        pa = e.find('.//' + Y + 'Path')
+        if pa is not None:
+            paths[e.get('id')] = tuple(float(pa.get(k, 0)) for k in ('sx', 'sy', 'tx', 'ty'))
+    return boxes, base, bends, paths
+
+
+# where a line meets a node, as the editor sets it (user, 2026-11-12: "snap to center, bottom center, top center, left
+# center, right center"): the centre (no connection point: the line starts from the centre, cut at the shape) or the
+# middle of a side (CellDesigner's N, S, W, E); a port the editor did not touch keeps its connection point
+SIDES = {'': (0.0, 0.0), 'N': (0.0, -0.5), 'S': (0.0, 0.5), 'W': (-0.5, 0.0), 'E': (0.5, 0.0)}
+
+
+def side(port, b):
+    return min(SIDES, key=lambda k: math.hypot(port[0] - SIDES[k][0] * b[2], port[1] - SIDES[k][1] * b[3]))
+
+
+def anchor(T, el, span, pos, tag, target=None):
+    # the connection point pos ('' the centre) of el (its linkAnchor child; a modifier's in its linkTarget, made when
+    # missing from target: (species, alias)), in the tree and in the text
+    cd = '{%s}' % NS['cd']
+    if target:
+        lt = el.find('cd:linkTarget', NS)
+        if lt is None:
+            if not pos:
+                return
+            lt = etree.Element(cd + 'linkTarget', species=target[0], alias=target[1]); el.insert(0, lt)
+            cs = T.span(r'<celldesigner:connectScheme', span[0], span[1])   # CellDesigner's order: after it, before line
+            at = cs[1] if cs else T.t.index('>', span[0]) + 1
+            T.put(at, at, '\n<celldesigner:linkTarget species="%s" alias="%s">\n<celldesigner:linkAnchor position="%s"/>\n</celldesigner:linkTarget>' % (target[0], target[1], pos))
+            etree.SubElement(lt, cd + 'linkAnchor', position=pos)
+            return
+        el, span, tag = lt, T.span(r'<celldesigner:linkTarget[\s>/]', span[0], span[1]), 'linkTarget'
+    la = el.find('cd:linkAnchor', NS)
+    if la is not None:
+        if pos:
+            la.set('position', pos)
+        else:
+            el.remove(la)
+    elif pos:
+        etree.SubElement(el, cd + 'linkAnchor', position=pos)
+    if T.t[span[1] - 2:span[1]] == '/>':   # an empty element: given its child
+        if pos:
+            T.put(span[0], span[1], T.t[span[0]:span[1] - 2].rstrip() + '>\n<celldesigner:linkAnchor position="%s"/>\n</celldesigner:%s>' % (pos, tag))
+        return
+    ls = T.span(r'<celldesigner:linkAnchor ', span[0], span[1])
+    if ls and pos:
+        T.attrs(ls[0], {'position': pos})
+    elif ls:
+        T.put(ls[0], ls[1] + (1 if T.t[ls[1]:ls[1] + 1] == '\n' else 0), '')
+    elif pos:
+        at = T.t.index('>', span[0]) + 1
+        T.put(at, at, '\n<celldesigner:linkAnchor position="%s"/>' % pos)
+
+
+def ports(d, T, s, o, paths, new):
+    # the ends the editor moved (their port in the GraphML no longer the file's): set to the centre or a side's middle
+    rid, cen = o['id'], lambda b: (b[0] + b[2] / 2, b[1] + b[3] / 2)
+    def moved(eid, which, alias, P, anc, old):
+        q = paths.get(eid)
+        if not q:
+            return None
+        port = q[:2] if which == 's' else q[2:]
+        c = cen(old[alias])
+        was = (P[0] - c[0], P[1] - c[1]) if anc else (0.0, 0.0)
+        if math.hypot(port[0] - was[0], port[1] - was[1]) < 0.5:
+            return None
+        return side(port, new[alias])
+    x = o['x']
+    for k, (tag, eid, which, alias, P, anc) in enumerate((('baseReactant', rid + '|a', 's', o['ra'], o['A'], o['ancA']),
+                                                         ('baseProduct', rid + ('|b' if o['glyph'] else '|a'), 't', o['pa'], o['B'], o['ancB']))):
+        pos = moved(eid, which, alias, P, anc, o['old'])
+        if pos is not None:
+            el = x.find('cd:%ss/cd:%s' % (tag, tag), NS)
+            anchor(T, el, T.span(r'<celldesigner:%s [^>]*alias="%s"' % (tag, re.escape(alias)), s[0], s[1]), pos, tag)
+    lists = {}
+    for name, tag in (('listOfModification', 'modification'), ('listOfReactantLinks', 'reactantLink'), ('listOfProductLinks', 'productLink')):
+        ls, found = T.span(r'<celldesigner:%s>' % name, s[0], s[1]), []
+        i0 = ls[0] if ls else None
+        while ls:
+            m_ = T.span(r'<celldesigner:%s ' % tag, i0, ls[1])
+            if not m_:
+                break
+            found.append(m_); i0 = m_[1]
+        lists[tag] = found
+    for m in o['mods']:
+        pos = moved('%s|m%d' % (rid, m['n']), 's', m['alias'], m['M'], m['anc'], o['old'])
+        if pos is not None:
+            anchor(T, m['el'], lists['modification'][m['n']], pos, 'modification', (m['el'].get('modifiers'), m['alias']))
+    for l in o['links']:
+        pos = moved('%s|%s%d' % (rid, 'r' if l['into'] else 'p', l['n']), 's' if l['into'] else 't', l['alias'], l['O'], l['anc'], o['old'])
+        if pos is not None:
+            tag = 'reactantLink' if l['into'] else 'productLink'
+            anchor(T, l['el'], lists[tag][l['n']], pos, tag)
 
 
 def near(p, q, tol=1e-3):
@@ -347,7 +439,7 @@ def place(text, gtext):
     d = drawing(text)
     comps = compartments(d)
     up = tree(d, comps)
-    boxes, base, bends = read(gtext)
+    boxes, base, bends, paths = read(gtext)
     xs = [b[0] for b in boxes.values()] + [p[0] for ps in bends.values() for p in ps]
     ys = [b[1] for b in boxes.values()] + [p[1] for ps in bends.values() for p in ps]
     block = lambda m: math.ceil((MARGIN - m) / 16) * 16.0 if m < 0 else 0.0   # whole blocks of the grid: a map on it stays on it
@@ -397,9 +489,11 @@ def place(text, gtext):
         if not o:
             continue
         rid = o['id']
-        r = lines(d, rx)   # the ends as the nodes are now (the bends still in the old frames: not used)
-        A, B = r['A'], r['B']
         s = T.span(r'<reaction [^>]*\bid="%s"' % re.escape(rid))
+        o['old'] = old
+        ports(d, T, s, o, paths, new)
+        r = lines(d, rx)   # the ends as the nodes and connection points are now (the bends still in the old frames: not used)
+        A, B = r['A'], r['B']
         main = list(bends.get(rid + '|a', [])) + list(bends.get(rid + '|b', []))
         k = len(bends.get(rid + '|a', []))
         if o['glyph']:
