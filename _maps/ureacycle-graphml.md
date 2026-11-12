@@ -14,8 +14,8 @@ height: 1067
 scale: 1
 annotation: "/atlas-data/ureacycle-graphml.json"
 image_error: ""
-v: "f374991ab0"
-src: "acb6b5b335dd705b6c9689c1c043b2bed5980ad6"
+v: "36ee6474c4"
+src: "dd172c6958f9b21b938a3079bf9cf48a93796473"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "GraphML", "url": "/downloads/ureacycle-graphml.graphml"}, {"label": "SVG", "url": "/downloads/ureacycle-graphml.svg"}, {"label": "SBML", "url": "/downloads/ureacycle-graphml-sbml.xml"}, {"label": "Annotation", "url": "/downloads/ureacycle-graphml.csv"}, {"label": "PNG", "url": "/downloads/ureacycle-graphml.png"}, {"label": "SBGN-ML", "url": "/downloads/ureacycle-graphml.sbgn"}, {"label": "CellDesigner", "url": "/downloads/ureacycle-graphml.xml"}, {"label": "Newt", "url": "http://web.newteditor.org/?URL=https://viewer-source.github.io/downloads/ureacycle-graphml.sbgn"}, {"label": "MINERVA", "url": "https://mreg.elixir-luxembourg.org/minerva/index.html?id=F021-ureacycle"}]
