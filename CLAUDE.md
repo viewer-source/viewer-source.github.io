@@ -49,7 +49,8 @@ says "the workbench", "the converter's repository", "a private repository".
   change to Default Panel in the styles is copied here by hand. The demo keeps Default Next; first site: mreg-atlas. With a site's footer, the lines down the page meet the footer's line as they meet the header's (user, 2026-11-11: the site's margin over the footer left a gap; the styles page has no footer).
   `look="icon-row"` (user, 2026-11-12: "apply this to MREG website"): Default Icon Row of the styles experiment, the same
   Default Lines rules as `look="panel"` (shared block) with the styles' `default-icon-row-base.css` in a block of its own
-  (icon row, Icons Top or Left in Settings, Open in within Downloads, no Info or Legend tab). A change to Default Icon Row
+  (icon row, Icons Top or Left in Settings, Open in within Downloads, no Info or Legend tab; the right-click menu,
+  `--m2-context: 1`, since 2026-11-12, user: "update mreg with current default"). A change to Default Icon Row
   in the styles is copied here by hand. First site: mreg-atlas (in place of `look="panel"`).
 - Menu (user, 2026-11-10, as in Claude's app; `--m2-menu: 1`, off in the viewer's own look): two rows at the top of
   the list, Search with a magnifying glass and Downloads with the download sign, in place of the search field and the
