@@ -509,7 +509,10 @@
             if (points.length !== np) { selP = []; selE = []; }
           }
         } else {
-          if (!drag && noNegative()) parse();
+          // shifted: the editor's places moved, so its frame moves with them and nothing moves on screen (2026-11-12: the
+          // shift was taken for a new frame of the drawing and the map jumped right and down, out of sight on some maps)
+          var sh = !drag && noNegative();
+          if (sh) { parse(); x0 += sh[0]; y0 += sh[1]; }
           r = JSON.parse(p.globals.get('draw')(text));
         }
         if (t !== ticket) return;
@@ -545,12 +548,12 @@
       nodes2.forEach(function (n, i) { var b = boxOf(i); mx = Math.min(mx, b[0]); my = Math.min(my, b[1]); });
       points.forEach(function (p) { mx = Math.min(mx, num(p, 'x')); my = Math.min(my, num(p, 'y')); });
       var block = function (m) { return m < 0 ? Math.ceil((40 - m) / 16) * 16 : 0; }, sx = block(mx), sy = block(my);
-      if (!sx && !sy) return false;
+      if (!sx && !sy) return null;
       text = text.replace(re, function (tag) {
         return tag.replace(/(\sx=")([^"]*)"/, function (a, k, v) { return k + fmt(parseFloat(v) + sx) + '"'; })
                   .replace(/(\sy=")([^"]*)"/, function (a, k, v) { return k + fmt(parseFloat(v) + sy) + '"'; });
       });
-      return true;
+      return [sx, sy];
     }
     function start(t, n, h, s, same) {   // a CellDesigner file is first made into the GraphML the editor edits
       if (!isCd(t)) { cd = null; return begin(t, t, n, h, s, same); }
