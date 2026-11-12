@@ -152,9 +152,16 @@ says "the workbench", "the converter's repository", "a private repository".
   selection - see how it is in yEd", replacing nothing drawn at rest): a node selected darkened (multiplied into the drawing,
   a group without what it holds) with eight small black handles round its box; an arc clickable and selected as in yEd,
   highlighted in blue under its line (yEd's yellow, user: blue) with its bend points as blue squares (yEd's green dots,
-  user: blue squares), filled when they move with it, white when only another bend of the arc is selected; dragging an
-  arc moves its bends. With nothing selected the map looks as the original diagram; a thin grey dashed outline shows
-  where a drag goes, or the area being selected.
+  user: blue squares); a bend point selected alone shows only its own square, the arc not highlighted (user, as yEd);
+  dragging an arc moves its bends. With nothing selected the map looks as the original diagram. A drag moves the item
+  itself (user, 2026-11-12: "in an editor, it's already there when you move it"): the editor's drawing is put in the page
+  as SVG with each node and arc in a group of its own (the renderer's methods wrapped in the editor's Python, the
+  renderer itself unchanged), shifted while the drag runs; an arc with one end or some bends moving is drawn as plain
+  lines following the pointer until the renderer has drawn the map again (under a second). Until that drawing is in the
+  page (just after editing starts) a dashed outline shows where a drag goes. Guides for a bend point (user, 2026-11-12,
+  as yEd's for an L-shaped bend): the bend pressed snaps (6 px on screen) when one of its two segments is nearly level or
+  upright, and each segment so lined up is drawn as a thick grey line while the drag runs. A save GitHub refuses because
+  the branch moved (the site's build commits after each save) goes again when the file there is still the one last saved.
   Later (user): snap to a grid and alignment guides as in PowerPoint. The code is
   `_includes/atlas-edit.js`, included by the viewer's script (copied to the sites with it, off there). Checked
   2026-11-12 on eNOS: first drawing about 4 s, a redraw after a move under a second, the saved file differing from the

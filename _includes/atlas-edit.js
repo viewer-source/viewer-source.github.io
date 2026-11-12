@@ -13,6 +13,16 @@
       "sys.path.insert(0, '/home/pyodide')",
       'import yrender',
       'yrender.CLASSES = True',
+      'import html as _h',
+      '_node, _edge = yrender.Map.read_node, yrender.Map.edge_svg',
+      'def read_node(self, node, parent):',
+      '    _node(self, node, parent)',
+      "    n = self.nodes.get(node.get('id'))",
+      "    if n and not n.get('wrapped'): n['svg'] = '<g data-n=\"' + _h.escape(node.get('id')) + '\">' + n['svg'] + '</g>'; n['wrapped'] = True",
+      'def edge_svg(self, e, parent):',
+      '    s = _edge(self, e, parent)',
+      "    return '<g data-e=\"' + _h.escape(e.get('id') or '') + '\">' + s + '</g>' if s else s",
+      'yrender.Map.read_node, yrender.Map.edge_svg = read_node, edge_svg',
       'def draw(text):',
       "    open('/tmp/edit.graphml', 'w', encoding='utf-8').write(text)",
       '    yrender.errors.clear()',
@@ -27,6 +37,11 @@
     var x0 = 0, y0 = 0;            // where the drawing's top left is in yEd units
     var selN = [], selP = [], selE = [];   // selected nodes (indices in nodes2), bend points (in points), arcs (in edges2)
     var undo = [], redo = [], drag = null, band = null, ticket = 0, nudgeAt = 0, timer = null;
+    // moving the item itself while it is dragged (user, 2026-11-12: "in an editor, it's already there when you move it"):
+    // the editor's drawing is put in the page as SVG with each node and arc in a group of its own (gN, gE: by id), so a
+    // drag shifts the groups at once; an arc with only one end or some bends moving is hidden and drawn as plain lines
+    // following the pointer (live) until the renderer has drawn the map again
+    var gN = null, gE = null, mv = null, live = null;
     // saving to the site: the repository is the site's own (<owner>.github.io), the map's source maps/<file>.graphml
     var TOKEN_KEY = 'atlas-edit-token', AUTOSAVE = 3000;
     var site = null;               // { path, sha } of the map being edited, when it is a map of this site
@@ -84,7 +99,7 @@
       say('Saving in a moment...');
       clearTimeout(saveTimer); saveTimer = setTimeout(push, AUTOSAVE);
     }
-    function push() {
+    function push(again) {
       clearTimeout(saveTimer); saveTimer = null;
       if (!site || !dirty || stuck) return Promise.resolve();
       if (saving) { saveAgain = true; return saving; }
@@ -95,7 +110,7 @@
         .then(function (r) {
           return r.json().then(function (d) {
             if (r.ok) {
-              target.sha = d.content.sha;
+              target.sha = d.content.sha; target.saved = body;
               var sm = byId[target.id];
               if (sm) target.v = ver(sm);   // the site's version still without this move
               if (lastSvg && site === target && text === body) {
@@ -106,8 +121,17 @@
               if (site === target && text === body) dirty = false;
               say('Saved to the site ' + hm() + '. The site shows it in about two minutes; this page swaps it in by itself.');
             } else if (r.status === 409 || r.status === 422) {
-              stuck = true;
-              say('Not saved: the map was changed on GitHub since it was opened, and it is not overwritten. Stop editing and open the map again to go on from that version.');
+              // GitHub also refuses a save when its branch moved meanwhile (the site's build commits after each save,
+              // user, 2026-11-12: "Not saved" at the second move): the file as it is there now is read, and if it is
+              // still what this page last saved, the save goes again on its new sha; only a file changed by someone
+              // else stops saving
+              return again ? conflict() : Promise.all([api('/contents/' + target.path + '?ref=main').then(function (q) { return q.json(); }),
+                api('/contents/' + target.path + '?ref=main', { headers: { Accept: 'application/vnd.github.raw' } }).then(function (q) { return q.text(); })])
+                .then(function (f) {
+                  if (f[1] !== (target.saved || target.base)) return conflict();
+                  target.sha = f[0].sha; saving = null; saveAgain = false;
+                  return push(true);
+                }).catch(conflict);
             } else if (r.status === 401 || r.status === 403 || r.status === 404) {
               say('Not saved: the token was refused (' + r.status + '). Connect again with a token that can write to ' + repo() + '.');
               ghForm(true);
@@ -115,8 +139,13 @@
           });
         })
         .catch(function (e) { say('Not saved: no connection (' + e.message + '). The next move tries again.'); })
-        .then(function () { saving = null; if (saveAgain) { saveAgain = false; if (dirty) return push(); } });
+        .then(function () { if (saving !== mine) return; saving = null; if (saveAgain) { saveAgain = false; if (dirty) return push(); } });
+      var mine = saving;
       return saving;
+    }
+    function conflict() {
+      stuck = true;
+      say('Not saved: the map was changed on GitHub since it was opened, and it is not overwritten. Stop editing and open the map again to go on from that version.');
     }
     function ghForm(show) {   // the token field: shown while editing a map of this site with no token
       var f = box.querySelector('#m2-ed-gh');
@@ -168,7 +197,7 @@
       var byId = {}; nodes2.forEach(function (n, i) { byId[n.id] = i; });
       var pi = new Map(); points.forEach(function (p, i) { pi.set(p, i); });
       edges2 = Array.prototype.slice.call(doc.getElementsByTagNameNS(G, 'edge')).map(function (e) {
-        return { s: byId[e.getAttribute('source')], t: byId[e.getAttribute('target')], path: e.getElementsByTagNameNS(Y, 'Path')[0] || null,
+        return { id: e.getAttribute('id'), s: byId[e.getAttribute('source')], t: byId[e.getAttribute('target')], path: e.getElementsByTagNameNS(Y, 'Path')[0] || null,
                  pts: Array.prototype.slice.call(e.getElementsByTagNameNS(Y, 'Point')).map(function (p) { return pi.get(p); }) };
       });
     }
@@ -210,13 +239,33 @@
         return tag.replace(/(\sx=")[^"]*"/, '$1' + v[0] + '"').replace(/(\sy=")[^"]*"/, '$1' + v[1] + '"');
       });
     }
-    function move(dx, dy) {
-      if (!dx && !dy) return;
+    function moving() {   // what a move of the selection moves: nodes (a group with what it holds) and bend points
       var all = new Set();
       selN.forEach(function (i) { all.add(i); nodes2[i].inside.forEach(function (c) { all.add(c); }); });
       var ps = new Set(selP);
       selE.forEach(function (k) { edges2[k].pts.forEach(function (p) { ps.add(p); }); });
       edges2.forEach(function (e) { if (all.has(e.s) && all.has(e.t)) e.pts.forEach(function (p) { ps.add(p); }); });
+      return { n: all, p: ps, dx: 0, dy: 0 };
+    }
+    function bx(i) { var b = boxOf(i); return mv && mv.n.has(i) ? [b[0] + mv.dx, b[1] + mv.dy, b[2], b[3]] : b; }
+    function pt(pi) { var p = points[pi], o = mv && mv.p.has(pi); return [num(p, 'x') + (o ? mv.dx : 0), num(p, 'y') + (o ? mv.dy : 0)]; }
+    function shift() {   // the drag shown on the drawing itself: groups moved, arcs touched hidden (drawn live)
+      if (!gN || !mv) return false;
+      var tr = 'translate(' + mv.dx + ' ' + mv.dy + ')';
+      mv.n.forEach(function (i) { var g = gN[nodes2[i].id]; if (g) g.setAttribute('transform', tr); });
+      live = live || new Set();
+      edges2.forEach(function (e, k) {
+        var a = mv.n.has(e.s), b = mv.n.has(e.t), some = e.pts.some(function (p) { return mv.p.has(p); });
+        var g = gE[e.id];
+        if (!g || !(a || b || some)) return;
+        if (a && b) g.setAttribute('transform', tr);
+        else { g.style.display = 'none'; live.add(k); }
+      });
+      return true;
+    }
+    function move(dx, dy) {
+      if (!dx && !dy) return;
+      var sets = moving(), all = sets.n, ps = sets.p;
       var g = {}, p = {};
       all.forEach(function (i) {
         nodes2[i].geo.forEach(function (gi) {
@@ -253,17 +302,19 @@
         var nx = -parseFloat(m[1]), ny = -parseFloat(m[2]), first = !map.width;
         if (!first) { tx += (nx - x0) * z; ty += (ny - y0) * z; }
         x0 = nx; y0 = ny; map.width = parseFloat(w[1]); map.height = parseFloat(w[2]);
-        var pic = new Image(), url = URL.createObjectURL(new Blob([recolour(svg)], { type: 'image/svg+xml' }));
-        pic.onload = function () {
-          if (t !== ticket || current !== map) return URL.revokeObjectURL(url);
-          var old = img.src;
-          img.removeAttribute('id'); pic.id = 'm2-img'; pic.alt = map.title; img.replaceWith(pic); img = pic;
+        (function () {
+          if (current !== map) return;
+          var pic = document.importNode(new DOMParser().parseFromString(recolour(svg), 'image/svg+xml').documentElement, true);
+          var old = img.src || '';
+          img.removeAttribute('id'); pic.id = 'm2-img'; pic.setAttribute('aria-label', map.title); img.replaceWith(pic); img = pic;
           if (old.indexOf('blob:') === 0) URL.revokeObjectURL(old);
+          gN = {}; gE = {}; live = null;
+          pic.querySelectorAll('[data-n]').forEach(function (g) { gN[g.getAttribute('data-n')] = g; });
+          pic.querySelectorAll('[data-e]').forEach(function (g) { gE[g.getAttribute('data-e')] = g; });
           if (first) fit(); else draw();
           if (!r[1].length && !site) say(name + (dirty ? ' (not saved)' : ''));
           else if (!r[1].length && site && !saveTimer && !saving && !dirty) say(site.pending ? 'Editing ' + map.title + '. Connect to GitHub below so the moves are saved to the site.' : 'Editing ' + map.title + '. Every move is saved to the site by itself.');
-        };
-        pic.src = url;
+        })();
       }).catch(function (e) { if (t === ticket) say('Not drawn: ' + (e && e.message ? e.message.split('\n').slice(-2).join(' ') : e)); });
     }
     function start(t, n, h, s, same) {   // same: { width, height, x0, y0, scale } of the picture on screen, drawn from this very text
@@ -278,7 +329,8 @@
       document.getElementById('m2-title').textContent = n;
       grid.classList.add('m2-editing');
       buttons();
-      if (same && same.text === t) { python(); paint(); say((site && site.pending) ? 'Connect to GitHub below so the moves are saved to the site.' : site ? 'Every move is saved to the site by itself.' : 'Editing ' + n + '.'); return; }
+      gN = gE = null; mv = live = null;
+      if (same && same.text === t) { python().then(function () { if (on && current === map && !undo.length && !gN) render(); }); paint(); say((site && site.pending) ? 'Connect to GitHub below so the moves are saved to the site.' : site ? 'Every move is saved to the site by itself.' : 'Editing ' + n + '.'); return; }
       say('Drawing ' + n + '...');
       render();
     }
@@ -485,7 +537,7 @@
       return rr(x, y, w, h, 0);
     }
     function shapeD(i) {   // the outline of node i, a multimer's second outline with it
-      var b = boxOf(i), n = nodes2[i], d = outlineD(n.shape, b[0], b[1], b[2], b[3]);
+      var b = bx(i), n = nodes2[i], d = outlineD(n.shape, b[0], b[1], b[2], b[3]);
       if (n.shape.props.mcount === '2') d = outlineD(n.shape, b[0] + 6, b[1] + 6, b[2], b[3]) + d;
       return d;
     }
@@ -506,9 +558,9 @@
     function line(k) {   // the arc's points in yEd units: its ends at the borders of its nodes, its bends between
       var e = edges2[k];
       if (e.s == null || e.t == null) return null;
-      var S = boxOf(e.s), T = boxOf(e.t), pa = e.path, o = function (a) { return pa ? parseFloat(pa.getAttribute(a)) || 0 : 0; };
+      var S = bx(e.s), T = bx(e.t), pa = e.path, o = function (a) { return pa ? parseFloat(pa.getAttribute(a)) || 0 : 0; };
       var pts = [[S[0] + S[2] / 2 + o('sx'), S[1] + S[3] / 2 + o('sy')]];
-      e.pts.forEach(function (pi) { pts.push([num(points[pi], 'x'), num(points[pi], 'y')]); });
+      e.pts.forEach(function (pi) { pts.push(pt(pi)); });
       pts.push([T[0] + T[2] / 2 + o('tx'), T[1] + T[3] / 2 + o('ty')]);
       pts[0] = cut(pts[0], pts[1], S);
       pts[pts.length - 1] = cut(pts[pts.length - 1], pts[pts.length - 2], T);
@@ -517,22 +569,33 @@
     function paint() {
       if (!on || current !== map) { overlay.innerHTML = ''; return; }
       var out = [], over = [], frame = '<g transform="translate(' + f1(tx - x0 * z) + ',' + f1(ty - y0 * z) + ') scale(' + z + ')">';
+      if (live) live.forEach(function (k) {   // arcs following the drag, as plain lines until the map is drawn again
+        var pts = line(k);
+        if (pts) out.push('<path class="m2-ed-live" stroke-width="' + f1(Math.max(1, z)) + '" d="M' + pts.map(function (q) { return f1(sx(q[0])) + ' ' + f1(sy(q[1])); }).join('L') + '"/>');
+      });
       // arcs selected, or holding a bend point selected: the blue highlight, then their bends as squares on top
-      var arcs = selE.slice();
-      selP.forEach(function (p) { edges2.forEach(function (e, k) { if (e.pts.indexOf(p) >= 0 && arcs.indexOf(k) < 0) arcs.push(k); }); });
-      arcs.forEach(function (k) {
+      // a bend point selected alone shows only its own square, the arc not highlighted (user, 2026-11-12: as yEd)
+      selP.forEach(function (pi) {
+        if (selE.some(function (k) { return edges2[k].pts.indexOf(pi) >= 0; })) return;
+        var q = pt(pi);
+        over.push('<rect class="m2-ed-bend m2-on" x="' + f1(sx(q[0]) - 3.5) + '" y="' + f1(sy(q[1]) - 3.5) + '" width="7" height="7"/>');
+      });
+      selE.forEach(function (k) {
         var pts = line(k);
         if (!pts) return;
         out.push('<path class="m2-ed-hl" d="M' + pts.map(function (q) { return f1(sx(q[0])) + ' ' + f1(sy(q[1])); }).join('L') + '"/>');
         var whole = selE.indexOf(k) >= 0;
         edges2[k].pts.forEach(function (pi) {
-          var X = sx(num(points[pi], 'x')), Y2 = sy(num(points[pi], 'y'));
+          var q = pt(pi), X = sx(q[0]), Y2 = sy(q[1]);
           over.push('<rect class="m2-ed-bend' + (whole || selP.indexOf(pi) >= 0 ? ' m2-on' : '') + '" x="' + f1(X - 3.5) + '" y="' + f1(Y2 - 3.5) + '" width="7" height="7"/>');
         });
       });
+      if (drag && drag.guides) drag.guides.forEach(function (g) {
+        out.push('<path class="m2-ed-guide" d="M' + f1(sx(g[0][0])) + ' ' + f1(sy(g[0][1])) + 'L' + f1(sx(g[1][0])) + ' ' + f1(sy(g[1][1])) + '"/>');
+      });
       // nodes selected: darkened (a group without what it holds, as yEd), and the eight handles round the box
       selN.forEach(function (i, j) {
-        var n = nodes2[i], b = boxOf(i);
+        var n = nodes2[i], b = bx(i);
         if (n.kids.length) {
           var id = 'm2-ed-m' + j;
           out.push('<mask id="' + id + '" maskUnits="userSpaceOnUse" x="-1e6" y="-1e6" width="2e6" height="2e6">' + frame +
@@ -546,7 +609,7 @@
         });
       });
       // while a drag runs: a thin grey outline of where it goes (or the area being selected), gone on release
-      if (drag && (drag.dx || drag.dy)) {
+      if (drag && (drag.dx || drag.dy) && !gN) {   // no drawing to move yet: where it goes, as an outline
         var dx = drag.dx, dy = drag.dy, moving = new Set(), ps = new Set(selP);
         selN.forEach(function (i) { moving.add(i); nodes2[i].inside.forEach(function (c) { moving.add(c); }); });
         selE.forEach(function (k) { edges2[k].pts.forEach(function (p) { ps.add(p); }); });
@@ -609,15 +672,47 @@
       var list = h.p != null ? selP : h.e != null ? selE : selN, k = h.p != null ? h.p : h.e != null ? h.e : h.n, there = list.indexOf(k) >= 0;
       if (e.shiftKey) { if (there) list.splice(list.indexOf(k), 1); else list.push(k); }
       else if (!there) { selN = h.n != null ? [k] : []; selP = h.p != null ? [k] : []; selE = h.e != null ? [k] : []; }
-      drag = { x: P[0], y: P[1], dx: 0, dy: 0 };
+      drag = { x: P[0], y: P[1], dx: 0, dy: 0, p: h.p != null && selP.indexOf(h.p) >= 0 ? h.p : null, guides: [] };
+      mv = moving();
       paint();
     }, true);
+    // guides for a bend point (user, 2026-11-12, as yEd: "see how guides look when you move for L shape bend"): the
+    // bend pressed snaps when one of its two segments is nearly level or upright, and a segment so lined up is drawn
+    // as a thick grey line while the drag runs (both for an L)
+    function ports(k) {   // the arc's points with its ends at the ports (node centre and offset), as yEd lines them up
+      var e = edges2[k], S = bx(e.s), T = bx(e.t), pa = e.path, o = function (a) { return pa ? parseFloat(pa.getAttribute(a)) || 0 : 0; };
+      return [[S[0] + S[2] / 2 + o('sx'), S[1] + S[3] / 2 + o('sy')]].concat(e.pts.map(pt), [[T[0] + T[2] / 2 + o('tx'), T[1] + T[3] / 2 + o('ty')]]);
+    }
+    function snap(d) {
+      d.guides = [];
+      var k = -1, j = -1;
+      edges2.forEach(function (e, i) { var at2 = e.pts.indexOf(d.p); if (at2 >= 0) { k = i; j = at2 + 1; } });
+      if (k < 0 || edges2[k].s == null || edges2[k].t == null) return;
+      mv.dx = d.dx; mv.dy = d.dy;
+      var all = ports(k), B = all[j], nb = [all[j - 1], all[j + 1]].filter(function (q, i) {
+        var pi = edges2[k].pts[j - 2 + i * 2];   // a neighbouring bend moving with it is no guide
+        return !(pi != null && i === 0 && j - 2 >= 0 && mv.p.has(pi)) && !(i === 1 && j < edges2[k].pts.length && mv.p.has(edges2[k].pts[j]));
+      });
+      var T = 6 / z, ax = null, ay = null;
+      nb.forEach(function (q) {
+        if (Math.abs(q[0] - B[0]) <= T && (ax == null || Math.abs(q[0] - B[0]) < Math.abs(ax - B[0]))) ax = q[0];
+        if (Math.abs(q[1] - B[1]) <= T && (ay == null || Math.abs(q[1] - B[1]) < Math.abs(ay - B[1]))) ay = q[1];
+      });
+      if (ax != null) d.dx += ax - B[0];
+      if (ay != null) d.dy += ay - B[1];
+      var C = [B[0] + (ax != null ? ax - B[0] : 0), B[1] + (ay != null ? ay - B[1] : 0)];
+      nb.forEach(function (q) { if (Math.abs(q[0] - C[0]) < 0.01 || Math.abs(q[1] - C[1]) < 0.01) d.guides.push([C, q]); });
+    }
     view.addEventListener('pointermove', function (e) {
       if (drag || band) {
         e.stopImmediatePropagation();
         var P = at(e);
         if (band) { band.x2 = P[0]; band.y2 = P[1]; }
-        else { drag.dx = Math.round(P[0] - drag.x); drag.dy = Math.round(P[1] - drag.y); }
+        else {
+          drag.dx = Math.round(P[0] - drag.x); drag.dy = Math.round(P[1] - drag.y);
+          if (drag.p != null) snap(drag);
+          mv.dx = drag.dx; mv.dy = drag.dy; shift();
+        }
         paint();
         return;
       }
@@ -634,7 +729,7 @@
         points.forEach(function (p, i) { var X = num(p, 'x'), Y2 = num(p, 'y'); if (X >= a[0] && Y2 >= a[1] && X <= c[0] && Y2 <= c[1] && selP.indexOf(i) < 0) selP.push(i); });
         band = null; paint(); return;
       }
-      var d = drag; drag = null;
+      var d = drag; drag = null; mv = null;   // the moved groups and live arcs stay until the map is drawn again
       if (d.dx || d.dy) { remember(false); move(d.dx, d.dy); render(); changed(); }
       paint();
     }
