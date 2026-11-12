@@ -1060,6 +1060,9 @@
         var a = [Math.min(band.x, band.x2), Math.min(band.y, band.y2)], c = [Math.max(band.x, band.x2), Math.max(band.y, band.y2)];
         over.push('<rect class="m2-ed-band" x="' + sx(a[0]) + '" y="' + sy(a[1]) + '" width="' + (c[0] - a[0]) * z + '" height="' + (c[1] - a[1]) * z + '"/>');
       }
+      // the square marks magenta on a CellDesigner map, as in CellDesigner (user, 2026-11-12: "this way I will know while
+      // editing that it's CD"); black on a GraphML map, as in yEd
+      overlay.classList.toggle('m2-ed-cd', !!cd);
       overlay.innerHTML = under.concat(out, over).join('');
     }
 
