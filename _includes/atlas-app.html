@@ -263,12 +263,10 @@ look="panel" (user, 2026-11-10): Default Panel of the styles experiment, its own
   #m2-editwin .m2-set-note { font-size: 12px; color: var(--m2-muted); margin: 6px 0 14px; }
   #m2-edit-layer { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
   /* the selection as yEd shows it (user, 2026-11-12), multiplied into the drawing so the lines and text stay dark:
-     a node darkened with black handles; an arc highlighted in blue under its line, its bends blue squares */
+     a node in light grey with black handles; an arc with black squares on its bends and its two ports */
   #m2-edit-layer .m2-ed-dark, #m2-img .m2-ed-dark { fill: #d2d2d2; stroke: none; mix-blend-mode: multiply; }
-  #m2-edit-layer .m2-ed-hl { fill: none; stroke: #8ab4f8; stroke-width: 6; stroke-linejoin: round; stroke-linecap: round; mix-blend-mode: multiply; }
   #m2-edit-layer .m2-ed-handle { fill: #000; stroke: none; }
-  #m2-edit-layer .m2-ed-bend { fill: #fff; stroke: #1a73e8; stroke-width: 1.5; }
-  #m2-edit-layer .m2-ed-bend.m2-on { fill: #1a73e8; }
+  #m2-edit-layer .m2-ed-bend { fill: #000; stroke: #fff; stroke-width: 0.5; }
   #m2-edit-layer .m2-ed-live { fill: none; stroke: #000; stroke-linejoin: round; }
   #m2-edit-layer .m2-ed-guide { fill: none; stroke: #b4b4b4; stroke-width: 3; }
   #m2-edit-layer .m2-ed-ghost { fill: none; stroke: #9aa0a6; stroke-width: 1; stroke-dasharray: 3 2; }
@@ -1142,6 +1140,9 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
   var pts = {}, last = null, press = null;
   view.addEventListener('pointerdown', function (e) {
     if (e.target.closest('.m2-ctrl')) return;
+    // the left button only: a right press (a two-finger click or Ctrl with a click on a Mac) opens the context menu,
+    // which swallows the release, and the map then followed the pointer everywhere (user, 2026-11-12: "sticky hand")
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
     // leave the lower right corner to the browser's resize handle (not there with the separators)
     var r = view.getBoundingClientRect();
     if (!setting('separators') && e.clientX > r.right - 18 && e.clientY > r.bottom - 18) return;
@@ -1152,8 +1153,15 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
     last = null;
     view.classList.add('m2-drag');
   });
+  function drop(e) {   // a pointer whose release never came: it no longer drags the map
+    if (!pts[e.pointerId]) return;
+    delete pts[e.pointerId]; press = null; last = null;
+    if (!Object.keys(pts).length) view.classList.remove('m2-drag');
+  }
+  view.addEventListener('lostpointercapture', drop);
   view.addEventListener('pointermove', function (e) {
     if (!pts[e.pointerId]) return;
+    if (e.pointerType === 'mouse' && !e.buttons) return drop(e);   // no button held: the drag is over
     var prev = pts[e.pointerId];
     pts[e.pointerId] = [e.clientX, e.clientY];
     var ids = Object.keys(pts);

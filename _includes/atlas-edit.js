@@ -251,6 +251,7 @@
     function pt(pi) { var p = points[pi], o = mv && mv.p.has(pi); return [num(p, 'x') + (o ? mv.dx : 0), num(p, 'y') + (o ? mv.dy : 0)]; }
     function shift() {   // the drag shown on the drawing itself: groups moved, arcs touched hidden (drawn live)
       if (!gN || !mv) return false;
+      if (!mv.dx && !mv.dy) { unshift(); return true; }   // back where it started: the arcs drawn as the renderer drew them
       var tr = 'translate(' + mv.dx + ' ' + mv.dy + ')';
       mv.n.forEach(function (i) { var g = gN[nodes2[i].id]; if (g) g.setAttribute('transform', tr); });
       live = live || new Set();
@@ -262,6 +263,11 @@
         else { g.style.display = 'none'; live.add(k); }
       });
       return true;
+    }
+    function unshift() {   // the drawing as it was: a press that moved nothing leaves nothing hidden or shifted
+      if (gN) Object.keys(gN).forEach(function (k) { gN[k].removeAttribute('transform'); });
+      if (gE) Object.keys(gE).forEach(function (k) { gE[k].removeAttribute('transform'); gE[k].style.display = ''; });
+      live = null;
     }
     function move(dx, dy) {
       if (!dx && !dy) return;
@@ -498,9 +504,8 @@
     window.addEventListener('beforeunload', function (e) { if (dirty) { if (saveTimer) push(); e.preventDefault(); e.returnValue = ''; } });
 
     // on screen: the selection as yEd shows it (user, 2026-11-12: "see how it is in yEd"), over the drawing: a node
-    // selected is darkened and gets eight small black handles; an arc selected is highlighted in blue under its line
-    // (yEd's yellow, user: blue) with its bend points as blue squares (yEd's green dots, user: blue squares); nothing
-    // else is drawn, so the map at rest with nothing selected looks as the original diagram
+    // selected in a light grey with eight small black handles; an arc selected with black squares on its bend points and
+    // its two ports; nothing else is drawn, so the map at rest with nothing selected looks as the original diagram
     function sx(X) { return tx + (X - x0) * z; }
     function sy(Y2) { return ty + (Y2 - y0) * z; }
     function f1(v) { return Math.round(v * 100) / 100; }
@@ -579,16 +584,15 @@
       selP.forEach(function (pi) {
         if (selE.some(function (k) { return edges2[k].pts.indexOf(pi) >= 0; })) return;
         var q = pt(pi);
-        over.push('<rect class="m2-ed-bend m2-on" x="' + f1(sx(q[0]) - 3.5) + '" y="' + f1(sy(q[1]) - 3.5) + '" width="7" height="7"/>');
+        over.push('<rect class="m2-ed-bend" x="' + f1(sx(q[0]) - 3) + '" y="' + f1(sy(q[1]) - 3) + '" width="6" height="6"/>');
       });
+      // an arc selected (user, 2026-11-12, as yEd, replacing the blue highlight): black squares on its bend points and on
+      // its two ports, where it starts and ends (often in the middle of a node)
       selE.forEach(function (k) {
-        var pts = line(k);
-        if (!pts) return;
-        out.push('<path class="m2-ed-hl" d="M' + pts.map(function (q) { return f1(sx(q[0])) + ' ' + f1(sy(q[1])); }).join('L') + '"/>');
-        var whole = selE.indexOf(k) >= 0;
-        edges2[k].pts.forEach(function (pi) {
-          var q = pt(pi), X = sx(q[0]), Y2 = sy(q[1]);
-          over.push('<rect class="m2-ed-bend' + (whole || selP.indexOf(pi) >= 0 ? ' m2-on' : '') + '" x="' + f1(X - 3.5) + '" y="' + f1(Y2 - 3.5) + '" width="7" height="7"/>');
+        var e = edges2[k];
+        if (e.s == null || e.t == null) return;
+        ports(k).forEach(function (q) {
+          over.push('<rect class="m2-ed-bend" x="' + f1(sx(q[0]) - 3) + '" y="' + f1(sy(q[1]) - 3) + '" width="6" height="6"/>');
         });
       });
       if (drag && drag.guides) drag.guides.forEach(function (g) {
@@ -707,6 +711,7 @@
       nb.forEach(function (q) { if (Math.abs(q[0] - C[0]) < 0.01 || Math.abs(q[1] - C[1]) < 0.01) d.guides.push([C, q]); });
     }
     view.addEventListener('pointermove', function (e) {
+      if ((drag || band) && e.pointerType === 'mouse' && !e.buttons) return release(e);   // its release never came
       if (drag || band) {
         e.stopImmediatePropagation();
         var P = at(e);
@@ -734,6 +739,8 @@
       }
       var d = drag; drag = null; mv = null;   // the moved groups and live arcs stay until the map is drawn again
       if (d.dx || d.dy) { remember(false); move(d.dx, d.dy); render(); changed(); }
+      else unshift();   // a click with a slight jitter: nothing moved, nothing stays hidden (user, 2026-11-12: a smooth bend
+      // turned sharp: the arcs were drawn as plain lines while waiting for a redraw that a move of zero never asked for)
       paint();
     }
     view.addEventListener('pointerup', release, true);

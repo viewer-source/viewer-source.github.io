@@ -152,8 +152,8 @@ says "the workbench", "the converter's repository", "a private repository".
   selection - see how it is in yEd", replacing nothing drawn at rest): a node selected in a light grey (#d2d2d2 multiplied,
   user: lighter, as yEd's) put into the drawing right over the node's own shape, so its contents, arcs and labels stay on
   top (a compartment as yEd shows it), with eight small black handles round its box; an arc clickable and selected as in yEd,
-  highlighted in blue under its line (yEd's yellow, user: blue) with its bend points as blue squares (yEd's green dots,
-  user: blue squares); a bend point selected alone shows only its own square, the arc not highlighted (user, as yEd);
+  shown by black squares on its bend points and on its two ports, where it starts and ends (user, 2026-11-12, replacing a
+  blue highlight under the line); a bend point selected alone shows only its own black square;
   dragging an arc moves its bends. With nothing selected the map looks as the original diagram. A drag moves the item
   itself (user, 2026-11-12: "in an editor, it's already there when you move it"): the editor's drawing is put in the page
   as SVG with each node and arc in a group of its own (the renderer's methods wrapped in the editor's Python, the
@@ -161,7 +161,10 @@ says "the workbench", "the converter's repository", "a private repository".
   lines following the pointer until the renderer has drawn the map again (under a second). Until that drawing is in the
   page (just after editing starts) a dashed outline shows where a drag goes. Guides for a bend point (user, 2026-11-12,
   as yEd's for an L-shaped bend): the bend pressed snaps (6 px on screen) when one of its two segments is nearly level or
-  upright, and each segment so lined up is drawn as a thick grey line while the drag runs. A save GitHub refuses because
+  upright, and each segment so lined up is drawn as a thick grey line while the drag runs. A press whose release never comes (a right
+  press: a two-finger click or Ctrl with a click on a Mac opens the context menu) no longer leaves the map following the
+  pointer (user, 2026-11-12: "sticky hand"): the viewer pans with the left button only and ends a drag once no button is
+  held; a press that moves nothing leaves the arcs as the renderer drew them (a smooth bend had turned sharp). A save GitHub refuses because
   the branch moved (the site's build commits after each save) goes again when the file there is still the one last saved.
   Later (user): snap to a grid and alignment guides as in PowerPoint. The code is
   `_includes/atlas-edit.js`, included by the viewer's script (copied to the sites with it, off there). Checked
