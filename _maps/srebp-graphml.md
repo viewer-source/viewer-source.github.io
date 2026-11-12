@@ -9,12 +9,12 @@ kind: "map"
 draft: false
 tag: ""
 image: "/downloads/srebp-graphml.svg"
-width: 858
-height: 1195
+width: 962
+height: 1155
 scale: 1
 annotation: "/atlas-data/srebp-graphml.json"
 image_error: ""
-v: "c506deebc8"
+v: "89c6b54960"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "GraphML", "url": "/downloads/srebp-graphml.graphml"}, {"label": "SVG", "url": "/downloads/srebp-graphml.svg"}, {"label": "SBML", "url": "/downloads/srebp-graphml-sbml.xml"}, {"label": "Annotation", "url": "/downloads/srebp-graphml.csv"}, {"label": "PNG", "url": "/downloads/srebp-graphml.png"}, {"label": "SBGN-ML", "url": "/downloads/srebp-graphml.sbgn"}, {"label": "CellDesigner", "url": "/downloads/srebp-graphml.xml"}, {"label": "Newt", "url": "http://web.newteditor.org/?URL=https://viewer-source.github.io/downloads/srebp-graphml.sbgn"}, {"label": "MINERVA", "url": "https://mreg.elixir-luxembourg.org/minerva/index.html?id=F005-srebp"}]
