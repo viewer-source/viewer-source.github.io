@@ -99,6 +99,11 @@
       if (all.length !== geos.length) return null;   // not the same file with moves only
       return { boxes: nodes2.map(function (n) { return all[n.ag]; }), x0: fr.x0, y0: fr.y0 };
     }
+    // the frame of the picture against the file saved (kept with the edited drawing, the start of the next editing): a
+    // CellDesigner drawing is in the file's places, which already hold a shift out of negative places, so 0, 0; the
+    // editor's own frame (x0, y0) is that shift less (2026-11-12, user: back in edit mode the map jumped by the shift)
+    function picX0() { return cd ? 0 : x0; }
+    function picY0() { return cd ? 0 : y0; }
     function nowRef() { return { boxes: nodes2.map(function (n, i) { return boxOf(i); }), x0: x0, y0: y0 }; }
     function boxes(k, list) {   // the site's click data with each node's box where the edited drawing has it
       if (!k || !k.ref || !k.cur || !list) return list;
@@ -152,7 +157,7 @@
               if (sm) target.v = ver(sm);   // the site's version still without this move
               if (lastSvg && site === target && src() === body) {
                 var all = stored();
-                all[target.id] = { v: target.v, sha: target.sha, svg: lastSvg, width: map.width, height: map.height, x0: x0, y0: y0, at: Date.now(), ref: siteRef, cur: nowRef() };
+                all[target.id] = { v: target.v, sha: target.sha, svg: lastSvg, width: map.width, height: map.height, x0: picX0(), y0: picY0(), at: Date.now(), ref: siteRef, cur: nowRef() };
                 store(all);
               }
               if (site === target && src() === body) dirty = false;
@@ -569,6 +574,7 @@
         map.width = same.width; map.height = same.height; map.scale = same.scale; x0 = same.x0; y0 = same.y0;
       }
       current = map; on = true;
+      if (cd) plainCanvas();
       nodes = null; sel = null; renderInfo(); drawPin();
       document.getElementById('m2-title').textContent = n;
       grid.classList.add('m2-editing');
@@ -578,10 +584,28 @@
       say('Drawing ' + n + '...');
       render();
     }
+    // a CellDesigner drawing's white canvas left out while editing (user, 2026-11-12: "like an endless space", as a
+    // GraphML map; white hides the grid): the site's picture shown at the start is the same picture without it (an
+    // editor's drawing is in the page, where a rule of the viewer hides it)
+    function plainCanvas() {
+      var el = img;
+      if (!el || el.tagName !== 'IMG' || !el.src) return;
+      fetch(el.src).then(function (r) { return r.text(); }).then(function (t) {
+        var u = t.replace(/<rect width="100%" height="100%" fill="#fff"\/>\n?/, '');
+        if (u === t || !on || img !== el) return;
+        var url = URL.createObjectURL(new Blob([u], { type: 'image/svg+xml' })), i = new Image();
+        i.onload = function () {   // decoded first, so the picture never flickers
+          if (!on || img !== el) { URL.revokeObjectURL(url); return; }
+          var old = el.src; el.src = url;
+          if (old.indexOf('blob:') === 0) setTimeout(function () { URL.revokeObjectURL(old); }, 1000);
+        };
+        i.src = url;
+      }).catch(function () {});
+    }
     function stop() {
       if (!on) return;
       if (saveTimer) push();   // a move still waiting is saved now
-      if (site && site.id && undo.length) kept = { id: site.id, v: site.v, sha: site.sha, pic: img, width: map.width, height: map.height, x0: x0, y0: y0, text: src(), ref: siteRef, cur: nowRef() };
+      if (site && site.id && undo.length) kept = { id: site.id, v: site.v, sha: site.sha, pic: img, width: map.width, height: map.height, x0: picX0(), y0: picY0(), text: src(), ref: siteRef, cur: nowRef() };
       on = false; drag = null; band = null; grid.classList.remove('m2-editing'); paint(); buttons();
       say(dirty && !site ? name + ' has moves not saved: Back to it, or Save.' : 'Edit the map shown.');
     }

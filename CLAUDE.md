@@ -226,7 +226,11 @@ says "the workbench", "the converter's repository", "a private repository".
   CellDesigner: `cd_edit.place`, the canvas growing with it, free texts and logic gates shifted too. Checked live on
   SREBP in both formats (save simulated). The shift moves the editor's own frame with it, so nothing moves on screen
   when Edit is pressed (2026-11-12: it was taken for a new frame of the drawing, and maps with negative places jumped
-  right and down, carnitine out of sight; no file had been shifted by it).
+  right and down, carnitine out of sight; no file had been shifted by it). The edited drawing kept after editing, and the start of
+  the next editing, take the picture's frame against the file saved: 0, 0 for a CellDesigner map, whose file already
+  holds the shift (2026-11-12, user: back in edit mode after a node moved past the edge, the map jumped by the shift).
+  The white canvas of a CellDesigner drawing is left out while editing, so the grid runs on as on a GraphML map (user,
+  2026-11-12: "like an endless space"); the file keeps its canvas size, the view mode is unchanged.
   A selected line highlighted under its squares (user, 2026-11-12: "I was wrong about removing highlights"): light blue
   (#8ab4f8, 6 px, multiplied), on CellDesigner maps too (user, 2026-11-12: "use blue and as in GraphML the same color
   code"; CellDesigner's purple taken back). Every mark is in the map's units, so zooming keeps their relative size and
