@@ -9,13 +9,13 @@ kind: "map"
 draft: false
 tag: ""
 image: "/downloads/mevalonate-celldesigner.svg"
-width: 1827
-height: 827
+width: 2067
+height: 958
 scale: 1
 annotation: "/atlas-data/mevalonate-celldesigner.json"
 image_error: ""
-v: "c60c035863"
-src: "a8ed13d0a2745da9e12e9d2f4f9a64f37e139ae8"
+v: "178eeaa22a"
+src: "aa2291e154c6de5008535d7943dcfd9382a72ea6"
 colours: true
 legend: "celldesigner"
 downloads: [{"label": "CellDesigner", "url": "/downloads/mevalonate-celldesigner.xml"}, {"label": "SVG", "url": "/downloads/mevalonate-celldesigner.svg"}, {"label": "SBML", "url": "/downloads/mevalonate-celldesigner-sbml.xml"}, {"label": "Annotation", "url": "/downloads/mevalonate-celldesigner.csv"}, {"label": "GraphML", "url": "/downloads/mevalonate-celldesigner.graphml"}, {"label": "PNG", "url": "/downloads/mevalonate-celldesigner.png"}, {"label": "SBGN-ML", "url": "/downloads/mevalonate-celldesigner.sbgn"}, {"label": "Newt", "url": "http://web.newteditor.org/?URL=https://viewer-source.github.io/downloads/mevalonate-celldesigner.sbgn"}, {"label": "MINERVA", "url": "https://mreg.elixir-luxembourg.org/minerva/index.html?id=F003-mevalonate"}]
