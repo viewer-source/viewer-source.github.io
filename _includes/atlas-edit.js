@@ -945,7 +945,7 @@
         if (layer) return layer;
         var e0 = img.querySelector('[data-e]');
         if (!e0) return null;
-        // the item beside the molecules that holds the first line (a group of white halos on CellDesigner maps)
+        // the item beside the molecules that holds the first line (on CellDesigner maps the group of white halos)
         var n0 = img.querySelector('[data-n]'), P = n0 ? n0.parentNode : e0.parentNode, host = e0;
         while (host.parentNode && host.parentNode !== P) host = host.parentNode;
         if (!host.parentNode) host = e0;
@@ -960,7 +960,8 @@
         layer.setAttribute('class', 'm2-ed-hlg'); layer.setAttribute('mask', 'url(#m2-ed-hlmask)');
         if (cd && (x0 || y0)) layer.setAttribute('transform', 'translate(' + f1(-x0) + ',' + f1(-y0) + ')');
         layer.appendChild(mask);
-        host.parentNode.insertBefore(layer, host);
+        // over the white halos CellDesigner maps draw under their lines (they hid the middle of the blue), under the lines
+        if (!host.hasAttribute('data-e') && host.querySelector('[data-e]')) host.after(layer); else host.parentNode.insertBefore(layer, host);
         return layer;
       };
       var pic = function (g, el) {   // a CellDesigner drawing is in the file's places: -x0, -y0 from the editor's (on the layer)
