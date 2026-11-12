@@ -9,8 +9,8 @@
 <text x="780.05" y="420.15" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-complex">PKA-R:cAMP:PKA-C</text>
 <polygon points="710.05,287.15 850.05,287.15 855.05,292.15 855.05,352.15 850.05,357.15 710.05,357.15 705.05,352.15 705.05,292.15" fill="#ffffff" stroke="#000" class="c-complex"/>
 <text x="780.05" y="350.15" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-complex">PKA-R:cAMP</text>
-<ellipse cx="672.73" cy="210.81" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
-<text x="672.73" y="215.47" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">cAMP</text>
+<ellipse cx="672.73" cy="191" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="672.73" y="195.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">cAMP</text>
 <rect x="740.05" y="523.33" width="80" height="40" rx="5" fill="#c2d4ed" stroke="#000" class="c-protein"/>
 <text x="780.05" y="547.99" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">PKA-C</text>
 <ellipse cx="182" cy="417.87" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
@@ -27,10 +27,10 @@
 <text x="287" y="617.53" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">PFK1</text>
 <ellipse cx="540.5" cy="547.87" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
 <text x="540.5" y="552.53" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">β-D-fructose-2,6P2</text>
-<ellipse cx="506.53" cy="210.81" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
-<text x="506.53" y="215.47" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">ATP</text>
-<rect x="549.63" y="106.27" width="80" height="40" rx="5" fill="#c2d4ed" stroke="#000" class="c-protein"/>
-<text x="589.63" y="130.94" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">ADCY</text>
+<ellipse cx="506.53" cy="191" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="506.53" y="195.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">ATP</text>
+<rect x="549.63" y="86.47" width="80" height="40" rx="5" fill="#c2d4ed" stroke="#000" class="c-protein"/>
+<text x="589.63" y="111.13" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">ADCY</text>
 <rect x="623.73" y="459.79" width="74" height="34" rx="5" fill="#e2aca3" stroke="#000" class="c-protein"/>
 <circle cx="691.94" cy="493.79" r="8" fill="#fff" stroke="#000"/>
 <text x="691.94" y="497.29" font-family="sans-serif" font-size="9" text-anchor="middle">P</text>
@@ -43,8 +43,8 @@
 <rect x="617.73" y="592.87" width="74" height="34" rx="5" fill="#e2aca3" stroke="#000" class="c-protein"/>
 <circle cx="685.94" cy="626.87" r="8" fill="#fff" stroke="#000"/>
 <text x="654.73" y="614.53" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">PFKFB2</text>
-<ellipse cx="620.68" cy="265.81" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
-<text x="620.68" y="270.47" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">PPi</text>
+<ellipse cx="620.68" cy="246" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="620.68" y="250.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">PPi</text>
 <rect x="874.79" y="489.3" width="74" height="34" rx="5" fill="#c2d4ed" stroke="#000" class="c-protein"/>
 <rect x="868.79" y="483.3" width="74" height="34" rx="5" fill="#c2d4ed" stroke="#000" class="c-protein"/>
 <text x="905.79" y="504.97" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">PKA-R</text>
@@ -66,7 +66,7 @@
 <text x="825.05" y="321.82" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">cAMP</text>
 <g fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
 <polyline points="780.05,179 780.05,255.15"/>
-<polyline points="700.73,210.81 780.05,210.81"/>
+<polyline points="700.23,196.07 780.05,210.81"/>
 <polyline points="780.05,435.15 780.05,501.33"/>
 <polyline points="780.05,487.26 836.99,495.06"/>
 <polyline points="182,459.87 182,505.87"/>
@@ -81,13 +81,13 @@
 <polyline points="609.73,612.88 362.17,612.92 361.4,574.51"/>
 <polyline points="657.73,584.87 657.73,515.79"/>
 <polyline points="732.05,543.33 670.23,543.33"/>
-<polyline points="534.53,210.81 630.73,210.81"/>
-<polyline points="605.41,210.81 609.45,225.35"/>
-<polyline points="589.63,154.27 589.63,198.31"/>
+<polyline points="534.53,191 630.73,191"/>
+<polyline points="605.41,191 609.45,205.54"/>
+<polyline points="589.63,134.46 589.63,178.5"/>
 </g>
 <polygon points="780.05,277.15 775.05,262.15 785.05,262.15" fill="#000"/>
 <polyline points="780.05,171 780.05,263.15" fill="none" stroke="#000000" stroke-width="1"/>
-<polyline points="692.73,210.81 780.05,210.81" fill="none" stroke="#000000" stroke-width="1"/>
+<polyline points="692.36,194.62 780.05,210.81" fill="none" stroke="#000000" stroke-width="1"/>
 <rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(780.05,224.08) rotate(90)"/>
 <polygon points="780.05,523.33 775.05,508.33 785.05,508.33" fill="#000"/>
 <polyline points="780.05,427.15 780.05,509.33" fill="none" stroke="#000000" stroke-width="1"/>
@@ -125,11 +125,11 @@
 <circle cx="667.23" cy="543.33" r="3" fill="#fff" stroke="#000"/>
 <polyline points="740.05,543.33 670.23,543.33" fill="none" stroke="#000000" stroke-width="1"/>
 <rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(657.73,543.33) rotate(-90)"/>
-<polygon points="652.73,210.81 637.73,215.81 637.73,205.81" fill="#000"/>
-<polyline points="526.53,210.81 638.73,210.81" fill="none" stroke="#000000" stroke-width="1"/>
-<polygon points="615.33,246.55 606.5,233.43 616.14,230.76" fill="#000"/>
-<polyline points="605.41,210.81 611.59,233.06" fill="none" stroke="#000000" stroke-width="1"/>
-<circle cx="589.63" cy="201.31" r="3" fill="#fff" stroke="#000"/>
-<polyline points="589.63,146.27 589.63,198.31" fill="none" stroke="#000000" stroke-width="1"/>
-<rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(589.63,210.81) rotate(0)"/>
+<polygon points="652.73,191 637.73,196 637.73,186" fill="#000"/>
+<polyline points="526.53,191 638.73,191" fill="none" stroke="#000000" stroke-width="1"/>
+<polygon points="615.33,226.74 606.5,213.63 616.14,210.95" fill="#000"/>
+<polyline points="605.41,191 611.59,213.25" fill="none" stroke="#000000" stroke-width="1"/>
+<circle cx="589.63" cy="181.5" r="3" fill="#fff" stroke="#000"/>
+<polyline points="589.63,126.47 589.63,178.5" fill="none" stroke="#000000" stroke-width="1"/>
+<rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(589.63,191) rotate(0)"/>
 </svg>
