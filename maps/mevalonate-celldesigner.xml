@@ -3087,9 +3087,7 @@ PRKAA2: P@T172
 <celldesigner:extension>
 <celldesigner:reactionType>STATE_TRANSITION</celldesigner:reactionType>
 <celldesigner:baseReactants>
-<celldesigner:baseReactant species="s_n17" alias="sa_n17">
-<celldesigner:linkAnchor position="E"/>
-</celldesigner:baseReactant>
+<celldesigner:baseReactant species="s_n17" alias="sa_n17"/>
 </celldesigner:baseReactants>
 <celldesigner:baseProducts>
 <celldesigner:baseProduct species="s_n0" alias="sa_n0"/>
