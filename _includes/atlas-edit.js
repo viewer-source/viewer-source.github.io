@@ -63,8 +63,8 @@
     var gridSet = (function () { try { var g = JSON.parse(localStorage.getItem(GRID_KEY) || '{}'); return { shown: g.shown !== false, snap: g.snap === true }; } catch (e) { return { shown: true, snap: false }; } })();
     function gridKeep() { try { localStorage.setItem(GRID_KEY, JSON.stringify(gridSet)); } catch (e) {} }
     function gridButtons() {
-      box.querySelectorAll('#m2-ed-grid button').forEach(function (b) { b.classList.toggle('m2-on', (b.getAttribute('data-grid') === 'shown') === gridSet.shown); });
-      box.querySelectorAll('#m2-ed-snap button').forEach(function (b) { b.classList.toggle('m2-on', (b.getAttribute('data-snap') === 'on') === gridSet.snap); });
+      box.querySelector('#m2-ed-grid').setAttribute('aria-pressed', String(gridSet.shown));   // the switches in the tools row
+      box.querySelector('#m2-ed-snap').setAttribute('aria-pressed', String(gridSet.snap));
     }
     function gridPaint() {   // behind the drawing, as the map window's background: lines at multiples of the step in yEd units
       if (!on || current !== map || !gridSet.shown) { view.style.backgroundImage = view.style.backgroundSize = view.style.backgroundPosition = ''; return; }
@@ -497,8 +497,8 @@
       buttons(); say('Disconnected: the token is removed from this browser.');
     });
     box.querySelector('#m2-ed-this').addEventListener('click', editShown);
-    box.querySelectorAll('#m2-ed-grid button').forEach(function (b) { b.addEventListener('click', function () { gridSet.shown = b.getAttribute('data-grid') === 'shown'; gridKeep(); gridButtons(); paint(); }); });
-    box.querySelectorAll('#m2-ed-snap button').forEach(function (b) { b.addEventListener('click', function () { gridSet.snap = b.getAttribute('data-snap') === 'on'; gridKeep(); gridButtons(); }); });
+    box.querySelector('#m2-ed-grid').addEventListener('click', function () { gridSet.shown = !gridSet.shown; gridKeep(); gridButtons(); paint(); });
+    box.querySelector('#m2-ed-snap').addEventListener('click', function () { gridSet.snap = !gridSet.snap; gridKeep(); gridButtons(); });
     gridButtons();
     // the Edit tab starts editing the map shown at once (user, 2026-11-12: "does not look i can edit yet"); a map drawn
     // from a CellDesigner file says why it cannot be edited yet
