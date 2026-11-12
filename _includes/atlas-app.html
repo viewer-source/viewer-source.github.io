@@ -312,8 +312,10 @@ look="panel" (user, 2026-11-10): Default Panel of the styles experiment, its own
   #m2-setwin .m2-set-ticks i { width: 1px; height: 4px; background: var(--m2-muted); }
   /* Map colours (user, 2026-11-12): each scheme's button with three squares of its protein, metabolite and highlight */
   #m2-setwin .m2-set-colours { margin-bottom: 14px; }
-  #m2-setwin .m2-sw { display: inline-flex; gap: 2px; margin-left: 6px; vertical-align: -1px; }
-  #m2-setwin .m2-sw i { width: 9px; height: 9px; border: 1px solid #0003; box-sizing: border-box; }
+  #m2-setwin #m2-set-colours { flex-wrap: nowrap; }
+  #m2-setwin #m2-set-colours button { min-width: 0; padding: 4px 6px; white-space: nowrap; }
+  #m2-setwin .m2-sw { display: inline-flex; gap: 1px; margin-left: 4px; vertical-align: 0; }
+  #m2-setwin .m2-sw i { width: 7px; height: 7px; border: 1px solid #0003; box-sizing: border-box; }
   .m2-item { display: block; width: 100%; text-align: left; font-size: 14px; line-height: 18px; padding: 2px 4px; border: 1px solid transparent; border-radius: var(--m2-radius); background: none; cursor: pointer; color: var(--m2-text); }
   /* the chosen map: a filled box in the site's link blue, white text */
   /* under the pointer: --m2-hover (none since 2026-11-09; was a very light grey) */
