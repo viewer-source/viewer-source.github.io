@@ -157,7 +157,7 @@ says "the workbench", "the converter's repository", "a private repository".
   5 units, centres 3.3 units outside the box; the squares on an arc the same 5 units; user, 2026-11-12); an arc clickable and selected as in yEd,
   shown by black squares on its bend points and on its two ports, where it starts and ends (user, 2026-11-12, replacing a
   blue highlight under the line); a bend point selected alone shows four small black squares round it, the lines seen in the gap between them (user, 2026-11-12, as yEd: squares 4 units, gap 2 units); among bend points close together a press takes the one selected, else the nearest (user: a nearby bend was dragged);
-  an arc grabbed anywhere and dragged makes a new bend point there and drags it (user, 2026-11-12, as yEd; was: moved its
+  arcs following a drag keep their rounded bends, drawn as the renderer rounds a smoothed arc (user, 2026-11-12: no sharp corners while dragging); an arc grabbed anywhere and dragged makes a new bend point there and drags it (user, 2026-11-12, as yEd; was: moved its
   bends), written into the file as yEd writes a y:Point (a y:Path closed in itself opened), one undo step, nothing made
   when dragged back to where it started; a click on an arc still only selects it. With nothing selected the map looks as the original diagram. A drag moves the item
   itself (user, 2026-11-12: "in an editor, it's already there when you move it"): the editor's drawing is put in the page
