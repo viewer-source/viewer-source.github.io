@@ -55,6 +55,7 @@ look="panel" (user, 2026-11-10): Default Panel of the styles experiment, its own
                                     open, the panel fixed beside the map (user, 2026-11-11): off, a style turns it on */
     --m2-bar-choice: 0;          /* with --m2-icon-row: Settings lets the reader put the icons in the row on top or in the column
                                     on the left, with the same tabs and behaviour (user, 2026-11-12): off, a style turns it on */
+    --m2-edit: 0;                /* with --m2-icons: an Edit tab, moving nodes and bend points of a yEd GraphML in the map window (user, 2026-11-12; _includes/atlas-edit.js) */
     --m2-dl-ext: 0;              /* with --m2-icons: the Open in links in the Downloads window, under a line, and no Open in
                                     icon (user, 2026-11-11): off, a style turns it on */
     --m2-info-float: 0;          /* the molecule's panel floating over the map's right side on wide windows too, so the map
@@ -167,7 +168,8 @@ look="panel" (user, 2026-11-10): Default Panel of the styles experiment, its own
      the downloads (user, 2026-11-11; the symbols window tried the same day, for later: in the history). A click on
      the icon of the open window, or its cross, closes it and the map takes the room; the window's width is the list's
      (its separator). The download row under the map goes, its files are in the Downloads window. Wide windows only. */
-  #m2-rail, .m2 .m2-winhead, #m2-dlwin, #m2-extwin, #m2-infowin, #m2-setwin { display: none; }
+  #m2-rail, .m2 .m2-winhead, #m2-dlwin, #m2-extwin, #m2-infowin, #m2-setwin, #m2-editwin { display: none; }
+  .m2:not(.m2-edit-on) .m2-ri[data-win="edit"] { display: none; }
   @media (min-width: 941px) {
     .m2.m2-icons-on { box-sizing: border-box; padding-left: 52px; }
     .m2-icons-on #m2-rail { display: flex; flex-direction: column; align-items: center; gap: 4px; position: absolute; left: 0; top: 0; bottom: 0; width: 52px;
@@ -181,8 +183,8 @@ look="panel" (user, 2026-11-10): Default Panel of the styles experiment, its own
     .m2-icons-on .m2-winhead { display: flex; }
     .m2-icons-on .m2-winhead h3 { font-size: 14px; font-weight: 400;   /* no bold anywhere (user, 2026-11-11) */ }
     .m2-win-list #m2-search, .m2-win-dl #m2-search, .m2-win-dl #m2-list, .m2-win-ext #m2-search, .m2-win-ext #m2-list,
-    .m2-win-info #m2-search, .m2-win-info #m2-list, .m2-win-set #m2-search, .m2-win-set #m2-list { display: none; }
-    .m2-win-dl #m2-dlwin, .m2-win-ext #m2-extwin, .m2-win-info #m2-infowin, .m2-win-set #m2-setwin { display: block; }
+    .m2-win-info #m2-search, .m2-win-info #m2-list, .m2-win-set #m2-search, .m2-win-set #m2-list, .m2-win-edit #m2-search, .m2-win-edit #m2-list { display: none; }
+    .m2-win-dl #m2-dlwin, .m2-win-ext #m2-extwin, .m2-win-info #m2-infowin, .m2-win-set #m2-setwin, .m2-win-edit #m2-editwin { display: block; }
     .m2-win-search:not(.m2-q) #m2-list { display: none; }   /* Search shows results only, not the Maps list again (user, 2026-11-11) */
     /* --m2-nav-float: 1 (user, 2026-11-11: "it should not modify the usable window, a temporary panel"): the list's
        column 0 wide, the window over the map from the icon column, as tall as the map window, sliding in; its width
@@ -244,6 +246,25 @@ look="panel" (user, 2026-11-10): Default Panel of the styles experiment, its own
   /* easy to click (user, 2026-11-11: "make download buttons so easy to click"): each a full-width button, 28 px tall
      (36 made the list too long, user, the same day), a light grey edge, the accent fill with white text under the pointer, as the icons */
   #m2-dlwin, #m2-extwin { padding: 0 4px; }
+  /* Edit (--m2-edit: 1, user 2026-11-12): moving nodes and bend points of a yEd GraphML in the map window
+     (_includes/atlas-edit.js); its buttons are the Downloads window's, the selection drawn over the map */
+  #m2-editwin { padding: 0 4px; font-size: 14px; line-height: 1.45; color: var(--m2-text-soft); }
+  #m2-editwin button { display: block; width: 100%; box-sizing: border-box; font: inherit; font-size: 14px; line-height: 20px; padding: 4px 10px; margin: 0 0 8px; text-align: left;
+    background: var(--m2-bg); border: 1px solid var(--m2-button); border-radius: var(--m2-radius-button); color: var(--m2-button); cursor: pointer; }
+  #m2-editwin button:hover:not(:disabled) { background: var(--m2-accent); border-color: var(--m2-accent); color: var(--m2-on-accent); }
+  #m2-editwin button:disabled { opacity: .4; cursor: default; }
+  #m2-editwin button[hidden] { display: none; }
+  #m2-editwin .m2-ed-row { display: flex; gap: 8px; }
+  #m2-editwin .m2-ed-row button { text-align: center; }
+  #m2-ed-status { margin: 0 0 10px; overflow-wrap: anywhere; }
+  #m2-editwin .m2-set-note { font-size: 12px; color: var(--m2-muted); margin: 6px 0 14px; }
+  #m2-edit-layer { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; overflow: visible; }
+  #m2-edit-layer .m2-ed-sel { fill: none; stroke: var(--m2-accent); stroke-width: 1.5; }
+  #m2-edit-layer .m2-ed-ghost { fill: none; stroke: var(--m2-accent); stroke-width: 1; stroke-dasharray: 3 2; }
+  #m2-edit-layer .m2-ed-pt { fill: #fff; stroke: #80868b; stroke-width: 1; }
+  #m2-edit-layer .m2-ed-pt.m2-on { fill: var(--m2-accent); stroke: var(--m2-accent); }
+  #m2-edit-layer .m2-ed-band { fill: none; stroke: var(--m2-accent); stroke-width: 1; stroke-dasharray: 4 3; }
+  .m2-editing #m2-view { cursor: default; }
   /* the download buttons of the page under the map, full width (user, 2026-11-11: "use buttons from the default page") */
   #m2-dlwin a, #m2-extwin a { display: block; box-sizing: border-box; font-size: 14px; line-height: 20px; padding: 4px 10px; margin: 0 0 8px;   /* 8 px apart (user, 2026-11-11: "a bit more space") */
     background: var(--m2-bg); border: 1px solid var(--m2-button); border-radius: var(--m2-radius-button); color: var(--m2-button); text-decoration: none; }
@@ -614,6 +635,7 @@ html .m2-list-shut #m2-split { left: 0; }
 <button type="button" class="m2-ri" data-win="leg" data-opt="a" title="Legend (A: 6 squares)" aria-label="Legend"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><rect x="3.5" y="5" width="4.6" height="4.6" rx="1" fill="currentColor" stroke="none"/><rect x="10" y="5" width="4.6" height="4.6" rx="1" fill="currentColor" stroke="none"/><rect x="16.5" y="5" width="4.6" height="4.6" rx="1" fill="currentColor" stroke="none"/><rect x="3.5" y="11.5" width="4.6" height="4.6" rx="1" fill="currentColor" stroke="none"/><rect x="10" y="11.5" width="4.6" height="4.6" rx="1" fill="currentColor" stroke="none"/><rect x="16.5" y="11.5" width="4.6" height="4.6" rx="1" fill="currentColor" stroke="none"/><path d="M3 20.5h18"/></svg></button>
 <button type="button" class="m2-ri" data-win="leg" data-opt="c2" title="Legend (C2: 4 empty squares, gap 2.8)" aria-label="Legend"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><g stroke-width="1.4"><rect x="4.6" y="3.0" width="6.0" height="6.0" rx="1.5"/><rect x="13.4" y="3.0" width="6.0" height="6.0" rx="1.5"/><rect x="4.6" y="11.8" width="6.0" height="6.0" rx="1.5"/><rect x="13.4" y="11.8" width="6.0" height="6.0" rx="1.5"/><path d="M3.1 21.4H20.9"/></g></svg></button>
 <button type="button" class="m2-ri" data-win="leg" data-opt="e" title="Legend (E: 6 dots)" aria-label="Legend"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="5.5" cy="7.5" r="2.1" fill="currentColor" stroke="none"/><circle cx="12" cy="7.5" r="2.1" fill="currentColor" stroke="none"/><circle cx="18.5" cy="7.5" r="2.1" fill="currentColor" stroke="none"/><circle cx="5.5" cy="14" r="2.1" fill="currentColor" stroke="none"/><circle cx="12" cy="14" r="2.1" fill="currentColor" stroke="none"/><circle cx="18.5" cy="14" r="2.1" fill="currentColor" stroke="none"/><path d="M3 20.5h18"/></svg></button>
+<button type="button" class="m2-ri" data-win="edit" title="Edit" aria-label="Edit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13.5 6.5l4 4"/></svg></button>
 <button type="button" class="m2-ri" data-win="set" title="Settings" aria-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
 <button type="button" class="m2-ri" data-win="info" title="Info" aria-label="Info"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5"/><circle cx="12" cy="7.8" r=".7" fill="currentColor"/></svg></button>
 </div>
@@ -628,11 +650,13 @@ html .m2-list-shut #m2-split { left: 0; }
 <div id="m2-dlwin"></div>
 <div id="m2-extwin"></div>
 <div id="m2-infowin"><p class="m2-pi-name">{{ include.name | default: site.name | default: site.title }}</p>{% assign about = include.about | default: site.description %}{% if about %}<p>{{ about }}</p>{% endif %}<p class="m2-k" id="m2-info-count"></p></div>
+<div id="m2-editwin"><p id="m2-ed-status">Open a yEd GraphML file, or edit the map shown.</p><button type="button" id="m2-ed-open">Open file…</button><button type="button" id="m2-ed-this">Edit this map</button><button type="button" id="m2-ed-back" hidden>Back</button><button type="button" id="m2-ed-save" disabled>Save</button><div class="m2-ed-row"><button type="button" id="m2-ed-undo">Undo</button><button type="button" id="m2-ed-redo">Redo</button></div><button type="button" id="m2-ed-stop" hidden>Stop editing</button><p class="m2-set-note">Drag a node or a bend point to move it. Shift with a click adds to the selection, Shift with a drag on empty space selects an area. Arrow keys move by 1, with Shift by 10. Ctrl or Cmd with Z undoes, with S saves into the file opened.</p></div>
 <div id="m2-setwin"><p class="m2-set-k">Map size</p><div class="m2-set-row" id="m2-set-size"></div><p class="m2-set-note">What 100% is for every map: closer or further.</p><p class="m2-set-k">Maps open</p><div class="m2-set-row" id="m2-set-open"><button type="button" data-open="fit">Whole map</button><button type="button" data-open="read">At map size</button></div><div class="m2-set-bar"><p class="m2-set-k" style="margin-top:14px">Icons</p><div class="m2-set-row" id="m2-set-bar"><button type="button" data-bar="left">Left</button><button type="button" data-bar="top">Top</button></div></div><div class="m2-set-side"><p class="m2-set-k" style="margin-top:14px">Annotations</p><div class="m2-set-row" id="m2-set-side"><button type="button" data-side="left">Left</button><button type="button" data-side="right">Right</button></div></div></div>
 </div>
 <div class="m2-main">
 <div id="m2-view" tabindex="0">
 <img id="m2-img" alt="">
+<svg id="m2-edit-layer" aria-hidden="true"></svg>
 <svg id="m2-pin" viewBox="0 0 24 32" aria-hidden="true"><path d="M12 31C12 31 2 18.5 2 11.5a10 10 0 0 1 20 0C22 18.5 12 31 12 31z" style="fill: var(--m2-accent)"/><circle cx="12" cy="11.5" r="3.6" fill="#fff"/></svg>
 <div class="m2-ctrl">
 <span id="m2-zoom"></span>
@@ -856,6 +880,7 @@ html .m2-list-shut #m2-split { left: 0; }
     img.style.height = s.h * z + 'px';
     img.style.transform = 'translate(' + tx + 'px,' + ty + 'px)';
     drawPin();
+    if (ed) ed.paint();
     document.getElementById('m2-zoom').textContent = Math.round(z / (STANDARD * SIZE) * 100) + '%';
   }
   function zoomAt(nz, cx, cy) {
@@ -1238,7 +1263,7 @@ html .m2-list-shut #m2-split { left: 0; }
   function rowOn() { return setting('icons') && setting('icon-row') && !barLeft(); }
   function tabsOn() { return setting('icons') && setting('icon-row'); }
   function railMark() {
-    var WIN_NAMES = { list: 'Maps', search: 'Search', info: 'Info', dl: 'Downloads', ext: 'Open in', set: 'Settings' };
+    var WIN_NAMES = { list: 'Maps', search: 'Search', info: 'Info', dl: 'Downloads', ext: 'Open in', set: 'Settings', edit: 'Edit' };
     var g = document.querySelector('.m2'), on = setting('icons'), open = !g.classList.contains('m2-list-shut');
     var w = win || 'list';
     g.classList.toggle('m2-icons-on', on);
@@ -1257,6 +1282,8 @@ html .m2-list-shut #m2-split { left: 0; }
     g.classList.toggle('m2-win-ext', on && w === 'ext');
     g.classList.toggle('m2-win-info', on && w === 'info');
     g.classList.toggle('m2-win-set', on && w === 'set');
+    g.classList.toggle('m2-edit-on', on && setting('edit'));
+    g.classList.toggle('m2-win-edit', on && w === 'edit');
     // Info is about the whole project, briefly, as MINERVA's (user, 2026-11-11: "brief info only on the whole project,
     // not map"): its name, its description, how many maps; the map's name and text stay under the map
     var pc = document.getElementById('m2-info-count');
@@ -2073,6 +2100,7 @@ html .m2-list-shut #m2-split { left: 0; }
   }
   function put(m, keep) {
     current = m;
+    if (ed) ed.left(m);
     document.getElementById('m2-title').textContent = m.title;
     document.title = m.title + ' – {{ include.name }}';
     img.style.visibility = 'hidden';  // only if the new picture is not there yet
@@ -2197,5 +2225,6 @@ html .m2-list-shut #m2-split { left: 0; }
   check();
   setInterval(check, 30000);
   document.addEventListener('visibilitychange', check);
+{% include atlas-edit.js %}
 })();
 </script>
