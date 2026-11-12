@@ -4,7 +4,7 @@
 <annotation>
 <celldesigner:extension>
 <celldesigner:modelVersion>4.0</celldesigner:modelVersion>
-<celldesigner:modelDisplay sizeX="1827" sizeY="827"/>
+<celldesigner:modelDisplay sizeX="1731" sizeY="827"/>
 <celldesigner:listOfIncludedSpecies>
 <celldesigner:species id="s_n0_n0" name="CaMKK_beta_">
 <celldesigner:notes>
@@ -660,7 +660,7 @@ PRKAA2: P@T172
 <celldesigner:listOfComplexSpeciesAliases>
 <celldesigner:complexSpeciesAlias id="sa_n0" species="s_n0">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="742.359672" y="84.0" w="210.0" h="150.0"/>
+<celldesigner:bounds x="646.359672" y="84.0" w="210.0" h="150.0"/>
 <celldesigner:font size="12"/>
 <celldesigner:view state="usual"/>
 <celldesigner:backupSize w="0.0" h="0.0"/>
@@ -681,7 +681,7 @@ PRKAA2: P@T172
 </celldesigner:complexSpeciesAlias>
 <celldesigner:complexSpeciesAlias id="sa_n0_n1" species="s_n0_n1" complexSpeciesAlias="sa_n0">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="842.359672" y="94.0" w="100.0" h="120.0"/>
+<celldesigner:bounds x="746.359672" y="94.0" w="100.0" h="120.0"/>
 <celldesigner:font size="12"/>
 <celldesigner:view state="usual"/>
 <celldesigner:backupSize w="0.0" h="0.0"/>
@@ -702,7 +702,7 @@ PRKAA2: P@T172
 </celldesigner:complexSpeciesAlias>
 <celldesigner:complexSpeciesAlias id="sa_n2" species="s_n2">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="1233.953061" y="353.799539" w="190.0" h="128.0"/>
+<celldesigner:bounds x="1137.953061" y="353.799539" w="190.0" h="128.0"/>
 <celldesigner:font size="12"/>
 <celldesigner:view state="usual"/>
 <celldesigner:backupSize w="0.0" h="0.0"/>
@@ -723,7 +723,7 @@ PRKAA2: P@T172
 </celldesigner:complexSpeciesAlias>
 <celldesigner:complexSpeciesAlias id="sa_n17" species="s_n17">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="481.886076" y="99.0" w="100.0" h="120.0"/>
+<celldesigner:bounds x="385.886076" y="99.0" w="100.0" h="120.0"/>
 <celldesigner:font size="12"/>
 <celldesigner:view state="usual"/>
 <celldesigner:backupSize w="0.0" h="0.0"/>
@@ -744,7 +744,7 @@ PRKAA2: P@T172
 </celldesigner:complexSpeciesAlias>
 <celldesigner:complexSpeciesAlias id="sa_n19" species="s_n19">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="998.148856" y="96.015366" w="178.330183" h="120.0"/>
+<celldesigner:bounds x="902.148856" y="96.015366" w="178.330183" h="120.0"/>
 <celldesigner:font size="12"/>
 <celldesigner:view state="usual"/>
 <celldesigner:backupSize w="0.0" h="0.0"/>
@@ -765,7 +765,7 @@ PRKAA2: P@T172
 </celldesigner:complexSpeciesAlias>
 <celldesigner:complexSpeciesAlias id="sa_n21" species="s_n21">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="751.936091" y="353.799539" w="190.0" h="128.0"/>
+<celldesigner:bounds x="655.936091" y="353.799539" w="190.0" h="128.0"/>
 <celldesigner:font size="12"/>
 <celldesigner:view state="usual"/>
 <celldesigner:backupSize w="0.0" h="0.0"/>
@@ -786,7 +786,7 @@ PRKAA2: P@T172
 </celldesigner:complexSpeciesAlias>
 <celldesigner:complexSpeciesAlias id="sa_n25" species="s_n25">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="729.328688" y="589.871986" w="152.724" h="200.0"/>
+<celldesigner:bounds x="633.328688" y="589.871986" w="152.724" h="200.0"/>
 <celldesigner:font size="12"/>
 <celldesigner:view state="usual"/>
 <celldesigner:backupSize w="0.0" h="0.0"/>
@@ -807,7 +807,7 @@ PRKAA2: P@T172
 </celldesigner:complexSpeciesAlias>
 <celldesigner:complexSpeciesAlias id="sa_n25_n0" species="s_n25_n0" complexSpeciesAlias="sa_n25">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="754.672688" y="649.871986" w="102.036" h="120.0"/>
+<celldesigner:bounds x="658.672688" y="649.871986" w="102.036" h="120.0"/>
 <celldesigner:font size="12"/>
 <celldesigner:view state="usual"/>
 <celldesigner:backupSize w="0.0" h="0.0"/>
@@ -828,7 +828,7 @@ PRKAA2: P@T172
 </celldesigner:complexSpeciesAlias>
 <celldesigner:complexSpeciesAlias id="sa_n30" species="s_n30">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="474.950085" y="629.871986" w="102.036" h="120.0"/>
+<celldesigner:bounds x="378.950085" y="629.871986" w="102.036" h="120.0"/>
 <celldesigner:font size="12"/>
 <celldesigner:view state="usual"/>
 <celldesigner:backupSize w="0.0" h="0.0"/>
@@ -851,7 +851,7 @@ PRKAA2: P@T172
 <celldesigner:listOfSpeciesAliases>
 <celldesigner:speciesAlias id="sa_n0_n0" species="s_n0_n0" complexSpeciesAlias="sa_n0">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="752.359672" y="134.0" w="80.0" h="40.0"/>
+<celldesigner:bounds x="656.359672" y="134.0" w="80.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -870,7 +870,7 @@ PRKAA2: P@T172
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n0_n1_n0" species="s_n0_n1_n0" complexSpeciesAlias="sa_n0_n1">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="852.359672" y="154.0" w="80.0" h="40.0"/>
+<celldesigner:bounds x="756.359672" y="154.0" w="80.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -889,7 +889,7 @@ PRKAA2: P@T172
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n0_n1_n1" species="s_n0_n1_n1" complexSpeciesAlias="sa_n0_n1">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="872.359672" y="104.0" w="40.0" h="40.0"/>
+<celldesigner:bounds x="776.359672" y="104.0" w="40.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -908,7 +908,7 @@ PRKAA2: P@T172
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n1" species="s_n1">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="1188.820779" y="648.781164" w="80.0" h="40.0"/>
+<celldesigner:bounds x="1092.820779" y="648.781164" w="80.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -927,7 +927,7 @@ PRKAA2: P@T172
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n2_n0" species="s_n2_n0" complexSpeciesAlias="sa_n2">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="1243.953061" y="363.799539" w="80.0" h="40.0"/>
+<celldesigner:bounds x="1147.953061" y="363.799539" w="80.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -946,7 +946,7 @@ PRKAA2: P@T172
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n2_n1" species="s_n2_n1" complexSpeciesAlias="sa_n2">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="1243.953061" y="421.799539" w="80.0" h="40.0"/>
+<celldesigner:bounds x="1147.953061" y="421.799539" w="80.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -965,7 +965,7 @@ PRKAA2: P@T172
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n2_n2" species="s_n2_n2" complexSpeciesAlias="sa_n2">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="1333.953061" y="363.799539" w="80.0" h="40.0"/>
+<celldesigner:bounds x="1237.953061" y="363.799539" w="80.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -984,7 +984,7 @@ PRKAA2: P@T172
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n4" species="s_n4">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="1607.298508" y="343.593779" w="80.0" h="40.0"/>
+<celldesigner:bounds x="1511.298508" y="343.593779" w="80.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -1003,7 +1003,7 @@ PRKAA2: P@T172
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n5" species="s_n5">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="1395.085342" y="648.781164" w="80.0" h="40.0"/>
+<celldesigner:bounds x="1299.085342" y="648.781164" w="80.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -1022,7 +1022,7 @@ PRKAA2: P@T172
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n8" species="s_n8">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="1508.571017" y="429.299539" w="40.0" h="40.0"/>
+<celldesigner:bounds x="1412.571017" y="429.299539" w="40.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -1041,7 +1041,7 @@ PRKAA2: P@T172
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n9" species="s_n9">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="1746.026" y="429.299539" w="40.0" h="40.0"/>
+<celldesigner:bounds x="1650.026" y="429.299539" w="40.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -1060,7 +1060,7 @@ PRKAA2: P@T172
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n11" species="s_n11">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="1627.298508" y="591.160845" w="40.0" h="40.0"/>
+<celldesigner:bounds x="1531.298508" y="591.160845" w="40.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -1079,7 +1079,7 @@ PRKAA2: P@T172
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n12" species="s_n12">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="1627.298508" y="706.401482" w="40.0" h="40.0"/>
+<celldesigner:bounds x="1531.298508" y="706.401482" w="40.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -1098,7 +1098,7 @@ PRKAA2: P@T172
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n15" species="s_n15">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="1488.298508" y="537.850686" w="80.0" h="40.0"/>
+<celldesigner:bounds x="1392.298508" y="537.850686" w="80.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -1117,7 +1117,7 @@ PRKAA2: P@T172
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n17_n0" species="s_n17_n0" complexSpeciesAlias="sa_n17">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="491.886076" y="159.0" w="80.0" h="40.0"/>
+<celldesigner:bounds x="395.886076" y="159.0" w="80.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -1136,7 +1136,7 @@ PRKAA2: P@T172
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n17_n1" species="s_n17_n1" complexSpeciesAlias="sa_n17">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="511.886076" y="109.0" w="40.0" h="40.0"/>
+<celldesigner:bounds x="415.886076" y="109.0" w="40.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -1155,7 +1155,7 @@ PRKAA2: P@T172
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n18" species="s_n18">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="597.313947" y="40.0" w="80.0" h="40.0"/>
+<celldesigner:bounds x="501.313947" y="40.0" w="80.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -1174,7 +1174,7 @@ PRKAA2: P@T172
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n19_n0" species="s_n19_n0" complexSpeciesAlias="sa_n19">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="1086.479039" y="156.015366" w="80.0" h="40.0"/>
+<celldesigner:bounds x="990.479039" y="156.015366" w="80.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -1193,7 +1193,7 @@ PRKAA2: P@T172
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n19_n1" species="s_n19_n1" complexSpeciesAlias="sa_n19">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="1047.313947" y="106.015366" w="80.0" h="40.0"/>
+<celldesigner:bounds x="951.313947" y="106.015366" w="80.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -1212,7 +1212,7 @@ PRKAA2: P@T172
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n19_n2" species="s_n19_n2" complexSpeciesAlias="sa_n19">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="1008.148856" y="156.015366" w="68.330183" h="40.0"/>
+<celldesigner:bounds x="912.148856" y="156.015366" w="68.330183" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -1231,7 +1231,7 @@ PRKAA2: P@T172
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n21_n0" species="s_n21_n0" complexSpeciesAlias="sa_n21">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="761.936091" y="363.799539" w="80.0" h="40.0"/>
+<celldesigner:bounds x="665.936091" y="363.799539" w="80.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -1250,7 +1250,7 @@ PRKAA2: P@T172
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n21_n1" species="s_n21_n1" complexSpeciesAlias="sa_n21">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="851.936091" y="363.799539" w="80.0" h="40.0"/>
+<celldesigner:bounds x="755.936091" y="363.799539" w="80.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -1269,7 +1269,7 @@ PRKAA2: P@T172
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n21_n2" species="s_n21_n2" complexSpeciesAlias="sa_n21">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="761.936091" y="421.799539" w="80.0" h="40.0"/>
+<celldesigner:bounds x="665.936091" y="421.799539" w="80.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -1288,7 +1288,7 @@ PRKAA2: P@T172
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n24" species="s_n24">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="1047.313947" y="597.781164" w="80.0" h="40.0"/>
+<celldesigner:bounds x="951.313947" y="597.781164" w="80.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -1307,7 +1307,7 @@ PRKAA2: P@T172
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n25_n0_n0" species="s_n25_n0_n0" complexSpeciesAlias="sa_n25_n0">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="765.690688" y="659.871986" w="80.0" h="40.0"/>
+<celldesigner:bounds x="669.690688" y="659.871986" w="80.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -1326,7 +1326,7 @@ PRKAA2: P@T172
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n25_n0_n1" species="s_n25_n0_n1" complexSpeciesAlias="sa_n25_n0">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="765.690688" y="709.871986" w="80.0" h="40.0"/>
+<celldesigner:bounds x="669.690688" y="709.871986" w="80.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -1345,7 +1345,7 @@ PRKAA2: P@T172
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n25_n1" species="s_n25_n1" complexSpeciesAlias="sa_n25">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="765.690688" y="599.871986" w="80.0" h="40.0"/>
+<celldesigner:bounds x="669.690688" y="599.871986" w="80.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -1364,7 +1364,7 @@ PRKAA2: P@T172
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n26" species="s_n26">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="556.936091" y="397.799539" w="80.0" h="40.0"/>
+<celldesigner:bounds x="460.936091" y="397.799539" w="80.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -1383,7 +1383,7 @@ PRKAA2: P@T172
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n27" species="s_n27">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="618.603098" y="482.198452" w="80.0" h="40.0"/>
+<celldesigner:bounds x="522.603098" y="482.198452" w="80.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -1402,7 +1402,7 @@ PRKAA2: P@T172
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n28" species="s_n28">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="343.943" y="532.0" w="68.330183" h="40.0"/>
+<celldesigner:bounds x="247.943" y="532.0" w="68.330183" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -1421,7 +1421,7 @@ PRKAA2: P@T172
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n29" species="s_n29">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="296.0" y="665.871986" w="68.330183" h="40.0"/>
+<celldesigner:bounds x="200.0" y="665.871986" w="68.330183" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -1440,7 +1440,7 @@ PRKAA2: P@T172
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n30_n0" species="s_n30_n0" complexSpeciesAlias="sa_n30">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="491.802993" y="639.871986" w="68.330183" h="40.0"/>
+<celldesigner:bounds x="395.802993" y="639.871986" w="68.330183" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -1459,7 +1459,7 @@ PRKAA2: P@T172
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n30_n1" species="s_n30_n1" complexSpeciesAlias="sa_n30">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="491.802993" y="689.871986" w="68.330183" h="40.0"/>
+<celldesigner:bounds x="395.802993" y="689.871986" w="68.330183" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -1478,7 +1478,7 @@ PRKAA2: P@T172
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n32" species="s_n32">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="589.329386" y="556.952996" w="80.0" h="40.0"/>
+<celldesigner:bounds x="493.329386" y="556.952996" w="80.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -1497,7 +1497,7 @@ PRKAA2: P@T172
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n34" species="s_n34">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="1236.65838" y="66.015366" w="80.0" h="40.0"/>
+<celldesigner:bounds x="1140.65838" y="66.015366" w="80.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -1516,7 +1516,7 @@ PRKAA2: P@T172
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n35" species="s_n35">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="1303.595678" y="136.015366" w="84.881836" h="40.0"/>
+<celldesigner:bounds x="1207.595678" y="136.015366" w="84.881836" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -1535,7 +1535,7 @@ PRKAA2: P@T172
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n36" species="s_n36">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="1236.65838" y="206.015366" w="80.0" h="40.0"/>
+<celldesigner:bounds x="1140.65838" y="206.015366" w="80.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -1573,7 +1573,7 @@ PRKAA2: P@T172
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n41" species="s_n41">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="613.603098" y="313.198452" w="80.0" h="40.0"/>
+<celldesigner:bounds x="517.603098" y="313.198452" w="80.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -1592,7 +1592,7 @@ PRKAA2: P@T172
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n42" species="s_n42">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="379.711015" y="69.0" w="40.0" h="40.0"/>
+<celldesigner:bounds x="283.711015" y="69.0" w="40.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -1611,7 +1611,7 @@ PRKAA2: P@T172
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n43" species="s_n43">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="980.890366" y="397.799539" w="40.0" h="40.0"/>
+<celldesigner:bounds x="884.890366" y="397.799539" w="40.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -2361,7 +2361,7 @@ PRKAA2: P@T172
 </celldesigner:linkTarget>
 <celldesigner:line width="1.0" color="ff000000"/>
 </celldesigner:modification>
-<celldesigner:modification type="BOOLEAN_LOGIC_GATE_OR" modifiers="s_n0,s_n19" aliases="sa_n0,sa_n19" modificationType="CATALYSIS" targetLineIndex="-1,2" editPoints="1087.313947,305.350996">
+<celldesigner:modification type="BOOLEAN_LOGIC_GATE_OR" modifiers="s_n0,s_n19" aliases="sa_n0,sa_n19" modificationType="CATALYSIS" targetLineIndex="-1,2" editPoints="991.313947,305.350996">
 <celldesigner:connectScheme connectPolicy="direct">
 <celldesigner:listOfLineDirection>
 <celldesigner:lineDirection index="0" value="unknown"/>
@@ -2836,7 +2836,7 @@ PRKAA2: P@T172
 </celldesigner:linkTarget>
 <celldesigner:line width="1.0" color="ff000000"/>
 </celldesigner:modification>
-<celldesigner:modification type="BOOLEAN_LOGIC_GATE_OR" modifiers="s_n25,s_n24" aliases="sa_n25,sa_n24" modificationType="CATALYSIS" targetLineIndex="-1,2" editPoints="1087.313947,534.941625">
+<celldesigner:modification type="BOOLEAN_LOGIC_GATE_OR" modifiers="s_n25,s_n24" aliases="sa_n25,sa_n24" modificationType="CATALYSIS" targetLineIndex="-1,2" editPoints="991.313947,534.941625">
 <celldesigner:connectScheme connectPolicy="direct">
 <celldesigner:listOfLineDirection>
 <celldesigner:lineDirection index="0" value="unknown"/>
