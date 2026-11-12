@@ -532,7 +532,7 @@
     // on screen: the selection as yEd shows it (user, 2026-11-12: "see how it is in yEd"), over the drawing: a node
     // selected in a light grey with eight small black handles; an arc selected with black squares on its bend points and
     // its two ports; nothing else is drawn, so the map at rest with nothing selected looks as the original diagram
-    var HANDLE = 5, BEND = 4;   // sizes of the handles and of the squares on an arc, in the map's units
+    var HANDLE = 5, BEND = 5;   // sizes of the handles and of the squares on an arc, in the map's units (the same, user, 2026-11-12)
     function sq() { return Math.max(2, BEND * z); }
     function sx(X) { return tx + (X - x0) * z; }
     function sy(Y2) { return ty + (Y2 - y0) * z; }

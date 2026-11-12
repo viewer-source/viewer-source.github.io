@@ -154,7 +154,7 @@ says "the workbench", "the converter's repository", "a private repository".
   selection - see how it is in yEd", replacing nothing drawn at rest): a node selected in a light grey (#d2d2d2 multiplied,
   user: lighter, as yEd's) put into the drawing right over the node's own shape, so its contents, arcs and labels stay on
   top (a compartment as yEd shows it), with eight small black handles round its box (in the map's units, so they grow and shrink with the zoom as yEd's:
-  5 units, centres 3.3 units outside the box; the squares on an arc 4 units; user, 2026-11-12); an arc clickable and selected as in yEd,
+  5 units, centres 3.3 units outside the box; the squares on an arc the same 5 units; user, 2026-11-12); an arc clickable and selected as in yEd,
   shown by black squares on its bend points and on its two ports, where it starts and ends (user, 2026-11-12, replacing a
   blue highlight under the line); a bend point selected alone shows only its own black square;
   dragging an arc moves its bends. With nothing selected the map looks as the original diagram. A drag moves the item
