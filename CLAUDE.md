@@ -114,6 +114,18 @@ says "the workbench", "the converter's repository", "a private repository".
 - Floating panel (user, 2026-11-11: the map should not move when the panel appears; `--m2-info-float: 1`, off in the
   viewer's own look): the molecule's panel as a card over the map's right side on wide windows too, sliding in; the
   drawing shifts left only when the card would cover the chosen item. First in the styles' Default Icon Column.
+- Edit (user, 2026-11-12: moving things a little here and there, as in yEd; `--m2-edit: 1`, with the icons, off in the
+  viewer's own look): a pencil tab before Settings opens the Edit window: Open file (a yEd GraphML from the computer),
+  Edit this map (a map drawn from its GraphML), Save, Undo, Redo, Stop editing. Moves only: a node or a bend point
+  dragged (a group with what it holds, and the bends of arcs inside it; a bend alone stays put when its nodes move, as
+  in yEd), Shift adds to the selection or selects an area on empty space, arrow keys move by 1 (Shift 10), Ctrl or Cmd
+  with Z undoes, with S saves; a drag on empty space pans as before. Only the x and y of what moved change in the
+  file's text, the rest byte for byte; the yEd renderer runs in the browser by Pyodide (the converter page's version,
+  `renderers/yrender/yrender.py` published for it) and draws the map again, so the editor draws nothing of its own.
+  Saved into the file opened (Chrome, Edge), else to a place chosen once, else as a download. The code is
+  `_includes/atlas-edit.js`, included by the viewer's script (copied to the sites with it, off there). Checked
+  2026-11-12 on eNOS: first drawing about 4 s, a redraw after a move under a second, the saved file differing from the
+  original only in x and y values. Not yet: CellDesigner files, a group growing round a member moved out of it.
 - Downloads in the panel's column while no molecule is open (`--m2-dl-panel`, 2026-11-11): tried and removed the same day
   (user: it does not work); its code is in the history.
 - Narrow windows (user, 2026-11-09, 940 px and under): the map first, then its download buttons, its name, the search
