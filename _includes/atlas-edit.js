@@ -143,7 +143,7 @@
                 store(all);
               }
               if (site === target && text === body) dirty = false;
-              say('Saved to the site ' + hm() + '. The site shows it in about two minutes; this page swaps it in by itself.');
+              say('Saved to the site ' + hm() + '. This page swaps it in by itself.');
             } else if (r.status === 409 || r.status === 422) {
               // GitHub also refuses a save when its branch moved meanwhile (the site's build commits after each save,
               // user, 2026-11-12: "Not saved" at the second move): the file as it is there now is read, and if it is
