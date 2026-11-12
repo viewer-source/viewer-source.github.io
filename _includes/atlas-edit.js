@@ -826,12 +826,36 @@
           over.push('<rect class="m2-ed-bend" x="' + f1(c[0] < 0 ? X - g - a : X + g) + '" y="' + f1(c[1] < 0 ? Y3 - g - a : Y3 + g) + '" width="' + f1(a) + '" height="' + f1(a) + '"/>');
         });
       });
-      // an arc selected (user, 2026-11-12, as yEd, replacing the blue highlight): black squares on its bend points and on
-      // its two ports, where it starts and ends (often in the middle of a node)
-      selE.forEach(function (k) {
+      // an arc selected (user, 2026-11-12, as yEd): black squares on its bend points and on its two ports, where it starts
+      // and ends (often in the middle of a node); and highlighted under them (user, 2026-11-12: "I was wrong about removing
+      // highlights"), in blue on a GraphML map, in CellDesigner's purple on a CellDesigner one. On a CellDesigner map a
+      // reaction is one item, as in CellDesigner (user, 2026-11-12): a click on its main line (reactant to glyph to
+      // product), its glyph or an added reactant or product lights them all up; a modifier stays on its own
+      var hlE = new Set(selE), glyphs = new Set(), main = /^(.*)\|(a|b|r\d+|p\d+)$/;
+      if (cd) {
+        var rx = new Set();
+        selE.forEach(function (k) { var m = edges2[k].id.match(main); if (m) rx.add(m[1]); });
+        selN.forEach(function (i) { var m = nodes2[i].id.match(/^(.*)\|proc$/); if (m) rx.add(m[1]); });
+        if (rx.size) {
+          edges2.forEach(function (e, k) { var m = e.id.match(main); if (m && rx.has(m[1])) hlE.add(k); });
+          nodes2.forEach(function (n, i) { var m = n.id.match(/^(.*)\|proc$/); if (m && rx.has(m[1])) glyphs.add(i); });
+        }
+      }
+      var hl = 'm2-ed-hl' + (cd ? ' m2-cd' : '');
+      hlE.forEach(function (k) {
+        var pts = line(k);
+        if (pts) out.push('<path class="' + hl + '" d="M' + pts.map(function (q) { return f1(sx(q[0])) + ' ' + f1(sy(q[1])); }).join('L') + '"/>');
+      });
+      glyphs.forEach(function (i) {
+        var b = bx(i);
+        out.push('<rect class="' + hl + '" x="' + f1(sx(b[0])) + '" y="' + f1(sy(b[1])) + '" width="' + f1(b[2] * z) + '" height="' + f1(b[3] * z) + '"/>');
+      });
+      hlE.forEach(function (k) {
         var e = edges2[k];
         if (e.s == null || e.t == null) return;
-        ports(k).forEach(function (q) {
+        var all = ports(k), grouped = cd && main.test(e.id);   // a reaction's own lines: no squares in its glyph
+        all.forEach(function (q, j) {
+          if (grouped && ((j === 0 && glyphs.has(e.s)) || (j === all.length - 1 && glyphs.has(e.t)))) return;
           over.push('<rect class="m2-ed-bend" x="' + f1(sx(q[0]) - sq() / 2) + '" y="' + f1(sy(q[1]) - sq() / 2) + '" width="' + f1(sq()) + '" height="' + f1(sq()) + '"/>');
         });
       });
