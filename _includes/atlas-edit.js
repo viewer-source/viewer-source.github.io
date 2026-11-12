@@ -734,6 +734,9 @@
     // its two ports; nothing else is drawn, so the map at rest with nothing selected looks as the original diagram
     var HANDLE = 5, BEND = 5;   // sizes of the handles and of the squares on an arc, in the map's units (the same, user, 2026-11-12)
     function sq() { return Math.max(2, BEND * z); }
+    // line widths in the map's units too (user, 2026-11-12: zooming in or out keeps the relative size and thickness of
+    // every mark, as the handles): as inline style, which wins over the stylesheet's width
+    function sw(units) { return ' style="stroke-width:' + f1(units * z) + 'px"'; }
     function sx(X) { return tx + (X - x0) * z; }
     function sy(Y2) { return ty + (Y2 - y0) * z; }
     function f1(v) { return Math.round(v * 100) / 100; }
@@ -872,7 +875,7 @@
       var out = [], over = [], frame = '<g transform="translate(' + f1(tx - x0 * z) + ',' + f1(ty - y0 * z) + ') scale(' + z + ')">';
       if (live) live.forEach(function (k) {   // arcs following the drag, as plain lines until the map is drawn again
         var pts = line(k);
-        if (pts) out.push('<path class="m2-ed-live" stroke-width="' + f1(Math.max(1, z)) + '" d="' + livePath(pts, edges2[k].smooth) + '"/>');
+        if (pts) out.push('<path class="m2-ed-live" stroke-width="' + f1(z) + '" d="' + livePath(pts, edges2[k].smooth) + '"/>');
       });
       // arcs selected, or holding a bend point selected: the blue highlight, then their bends as squares on top
       // a bend point selected alone, the arc not highlighted (user, 2026-11-12: as yEd): four small black squares round
@@ -881,7 +884,7 @@
         if (selE.some(function (k) { return edges2[k].pts.indexOf(pi) >= 0; })) return;
         var q = pt(pi), a = Math.max(1.5, 4 * z), g = Math.max(1, 2 * z) / 2, X = sx(q[0]), Y3 = sy(q[1]);
         [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(function (c) {
-          over.push('<rect class="m2-ed-bend" x="' + f1(c[0] < 0 ? X - g - a : X + g) + '" y="' + f1(c[1] < 0 ? Y3 - g - a : Y3 + g) + '" width="' + f1(a) + '" height="' + f1(a) + '"/>');
+          over.push('<rect class="m2-ed-bend"' + sw(0.5) + ' x="' + f1(c[0] < 0 ? X - g - a : X + g) + '" y="' + f1(c[1] < 0 ? Y3 - g - a : Y3 + g) + '" width="' + f1(a) + '" height="' + f1(a) + '"/>');
         });
       });
       // an arc selected (user, 2026-11-12, as yEd): black squares on its bend points and on its two ports, where it starts
@@ -893,11 +896,11 @@
       var hl = 'm2-ed-hl';
       hlE.forEach(function (k) {
         var pts = line(k);
-        if (pts) out.push('<path class="' + hl + '" d="M' + pts.map(function (q) { return f1(sx(q[0])) + ' ' + f1(sy(q[1])); }).join('L') + '"/>');
+        if (pts) out.push('<path class="' + hl + '"' + sw(6) + ' d="M' + pts.map(function (q) { return f1(sx(q[0])) + ' ' + f1(sy(q[1])); }).join('L') + '"/>');
       });
       glyphs.forEach(function (i) {
         var b = bx(i);
-        out.push('<rect class="' + hl + '" x="' + f1(sx(b[0])) + '" y="' + f1(sy(b[1])) + '" width="' + f1(b[2] * z) + '" height="' + f1(b[3] * z) + '"/>');
+        out.push('<rect class="' + hl + '"' + sw(6) + ' x="' + f1(sx(b[0])) + '" y="' + f1(sy(b[1])) + '" width="' + f1(b[2] * z) + '" height="' + f1(b[3] * z) + '"/>');
       });
       hlE.forEach(function (k) {
         var e = edges2[k];
@@ -905,23 +908,24 @@
         var all = ports(k), grouped = cd && main.test(e.id);   // a reaction's own lines: no squares in its glyph
         all.forEach(function (q, j) {
           if (grouped && ((j === 0 && glyphs.has(e.s)) || (j === all.length - 1 && glyphs.has(e.t)))) return;
-          over.push('<rect class="m2-ed-bend" x="' + f1(sx(q[0]) - sq() / 2) + '" y="' + f1(sy(q[1]) - sq() / 2) + '" width="' + f1(sq()) + '" height="' + f1(sq()) + '"/>');
+          over.push('<rect class="m2-ed-bend"' + sw(0.5) + ' x="' + f1(sx(q[0]) - sq() / 2) + '" y="' + f1(sy(q[1]) - sq() / 2) + '" width="' + f1(sq()) + '" height="' + f1(sq()) + '"/>');
         });
       });
       if (drag && drag.port && drag.port.to) {
         var pk = drag.port, b0 = bx(pk.n), C = [b0[0] + b0[2] / 2 + pk.to[0], b0[1] + b0[3] / 2 + pk.to[1]], al = ports(pk.k), nb = al[pk.end ? al.length - 2 : 1];
-        out.push('<path class="m2-ed-live" stroke-width="' + f1(Math.max(1, z)) + '" d="M' + f1(sx(C[0])) + ' ' + f1(sy(C[1])) + 'L' + f1(sx(nb[0])) + ' ' + f1(sy(nb[1])) + '"/>');
-        over.push('<rect class="m2-ed-handle" x="' + f1(sx(C[0]) - 4) + '" y="' + f1(sy(C[1]) - 4) + '" width="8" height="8"/>');
+        out.push('<path class="m2-ed-live" stroke-width="' + f1(z) + '" d="M' + f1(sx(C[0])) + ' ' + f1(sy(C[1])) + 'L' + f1(sx(nb[0])) + ' ' + f1(sy(nb[1])) + '"/>');
+        var ph = Math.max(2, HANDLE * z);
+        over.push('<rect class="m2-ed-handle" x="' + f1(sx(C[0]) - ph / 2) + '" y="' + f1(sy(C[1]) - ph / 2) + '" width="' + f1(ph) + '" height="' + f1(ph) + '"/>');
       }
       if (drag && drag.guides) drag.guides.forEach(function (g) {
-        out.push('<path class="m2-ed-guide" d="M' + f1(sx(g[0][0])) + ' ' + f1(sy(g[0][1])) + 'L' + f1(sx(g[1][0])) + ' ' + f1(sy(g[1][1])) + '"/>');
+        out.push('<path class="m2-ed-guide"' + sw(3) + ' d="M' + f1(sx(g[0][0])) + ' ' + f1(sy(g[0][1])) + 'L' + f1(sx(g[1][0])) + ' ' + f1(sy(g[1][1])) + '"/>');
       });
       var seg = function (g) { return 'M' + f1(sx(g[0][0])) + ' ' + f1(sy(g[0][1])) + 'L' + f1(sx(g[1][0])) + ' ' + f1(sy(g[1][1])); };
-      if (drag && drag.lines) drag.lines.forEach(function (g) { out.push('<path class="m2-ed-snapline" d="' + seg(g) + '"/>'); });
+      if (drag && drag.lines) drag.lines.forEach(function (g) { out.push('<path class="m2-ed-snapline"' + sw(1) + ' d="' + seg(g) + '"/>'); });
       if (drag && drag.marks) drag.marks.forEach(function (g) {   // an equal gap: a line with a short bar at each end
-        var X0 = sx(g[0][0]), Y0 = sy(g[0][1]), X1 = sx(g[1][0]), Y1 = sy(g[1][1]), up = Y0 === Y1, t = 4;
+        var X0 = sx(g[0][0]), Y0 = sy(g[0][1]), X1 = sx(g[1][0]), Y1 = sy(g[1][1]), up = Y0 === Y1, t = 4 * z;
         var bar = function (X, Y) { return up ? 'M' + f1(X) + ' ' + f1(Y - t) + 'L' + f1(X) + ' ' + f1(Y + t) : 'M' + f1(X - t) + ' ' + f1(Y) + 'L' + f1(X + t) + ' ' + f1(Y); };
-        out.push('<path class="m2-ed-mark" d="' + seg(g) + bar(X0, Y0) + bar(X1, Y1) + '"/>');
+        out.push('<path class="m2-ed-mark"' + sw(1) + ' d="' + seg(g) + bar(X0, Y0) + bar(X1, Y1) + '"/>');
       });
       // nodes selected: darkened (a group without what it holds, as yEd), and the eight handles round the box
       selN.forEach(function (i, j) {

@@ -229,7 +229,9 @@ says "the workbench", "the converter's repository", "a private repository".
   right and down, carnitine out of sight; no file had been shifted by it).
   A selected line highlighted under its squares (user, 2026-11-12: "I was wrong about removing highlights"): light blue
   (#8ab4f8, 6 px, multiplied), on CellDesigner maps too (user, 2026-11-12: "use blue and as in GraphML the same color
-  code"; CellDesigner's purple taken back). On a
+  code"; CellDesigner's purple taken back). Every mark is in the map's units, so zooming keeps their relative size and
+  thickness (user, 2026-11-12): the highlight 6 units wide, the guides 3, the snap lines and gap marks 1, the squares'
+  white edge 0.5, the line drawn while an arc follows a drag 1 (only the area being selected stays in screen pixels). On a
   CellDesigner map a reaction is one item, as in CellDesigner: a click on its main line (reactant to glyph to product),
   its glyph or an added reactant or product lights them all, no squares in the glyph; a modifier is its own item (user:
   not with the reaction, though CellDesigner lights it). A node selected on a CellDesigner map as on a GraphML one, the
