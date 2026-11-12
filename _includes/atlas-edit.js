@@ -875,18 +875,18 @@
         if (g) {   // in the drawing itself, right over the node's own shape: what is drawn after it (its contents, the
           // arcs, the labels) stays on top, as yEd shows a group selected (user, 2026-11-12)
           var el = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-          el.setAttribute('class', 'm2-ed-dark'); el.setAttribute('d', shapeD(i, true));
+          el.setAttribute('class', cd ? 'm2-ed-dark m2-cd' : 'm2-ed-dark'); el.setAttribute('d', shapeD(i, true));
           var first = g.firstElementChild && g.firstElementChild.localName === 'a' ? g.firstElementChild : g;
           var shapes = first.querySelectorAll(cd ? ':scope > path, :scope > rect, :scope > ellipse, :scope > polygon' : ':scope > path'), last = shapes.length ? shapes[shapes.length - 1] : null;
           if (last) last.after(el); else first.prepend(el);
         } else if (n.kids.length) {   // no drawing of the editor's yet: handles only for a group
-        } else out.push(frame + '<path class="m2-ed-dark" d="' + shapeD(i) + '"/></g>');
+        } else out.push(frame + '<path class="m2-ed-dark' + (cd ? ' m2-cd' : '') + '" d="' + shapeD(i) + '"/></g>');
         // the handles in the map's units, so they grow and shrink with the zoom as yEd's (user, 2026-11-12): 5 units
         // wide, their centres 3.3 units outside the box (as measured on yEd)
         var hs = Math.max(2, HANDLE * z), off = 3.3 * z;
         var L = sx(b[0]) - off, T = sy(b[1]) - off, R = sx(b[0] + b[2]) + off, B = sy(b[1] + b[3]) + off;
         [[L, T], [(L + R) / 2, T], [R, T], [L, (T + B) / 2], [R, (T + B) / 2], [L, B], [(L + R) / 2, B], [R, B]].forEach(function (q) {
-          over.push('<rect class="m2-ed-handle" x="' + f1(q[0] - hs / 2) + '" y="' + f1(q[1] - hs / 2) + '" width="' + f1(hs) + '" height="' + f1(hs) + '"/>');
+          over.push('<rect class="m2-ed-handle' + (cd ? ' m2-cd' : '') + '" x="' + f1(q[0] - hs / 2) + '" y="' + f1(q[1] - hs / 2) + '" width="' + f1(hs) + '" height="' + f1(hs) + '"/>');
         });
       });
       // while a drag runs: a thin grey outline of where it goes (or the area being selected), gone on release
