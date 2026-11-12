@@ -349,7 +349,8 @@
     // from a CellDesigner file says why it cannot be edited yet
     function shown() {   // the Edit window open on a map: edit it, or say why not (also when another map is chosen)
       if (!grid.classList.contains('m2-win-edit') || on) return;
-      if (graphmlOf(current) && !dirty) return editShown();
+      if (text && dirty && !site) return resume();
+      if (graphmlOf(current)) return editShown();
       buttons();
 
     }
@@ -358,11 +359,19 @@
     box.querySelector('#m2-ed-undo').addEventListener('click', function () { if (on) back(undo, redo); });
     box.querySelector('#m2-ed-redo').addEventListener('click', function () { if (on) back(redo, undo); });
     box.querySelector('#m2-ed-stop').addEventListener('click', function () { win = 'list'; railMark(); if (chosen) put(chosen); else stop(); });
-    box.querySelector('#m2-ed-back').addEventListener('click', function () {
+    function resume() {   // back to a file from the computer with moves not saved
       current = map; on = true; grid.classList.add('m2-editing'); buttons();
       document.getElementById('m2-title').textContent = map.title;
       x0 = y0 = 0; map.width = 0; render();
-    });
+    }
+    box.querySelector('#m2-ed-back').addEventListener('click', resume);
+    // silent editing (user, 2026-11-12: "as soon as I click edit icon ... I am in editing mode. And when I switch to list
+    // or something else, I am out"): no Edit this map or Stop editing; leaving the Edit window, or closing the panel,
+    // ends editing and shows the map of the site again (the edited drawing until the site catches up)
+    function away() {
+      if (!on) return;
+      if (chosen) put(chosen); else stop();
+    }
     window.addEventListener('beforeunload', function (e) { if (dirty) { if (saveTimer) push(); e.preventDefault(); e.returnValue = ''; } });
 
     // on screen: the selection's outlines and every bend point, over the drawing
@@ -479,5 +488,5 @@
       if (ver(m) !== kept.v) { kept = null; return null; }
       return kept;
     }
-    return { paint: paint, keep: keep, left: function (m) { if (on && m !== map) stop(); buttons(); setTimeout(shown, 0); } };
+    return { paint: paint, keep: keep, away: away, leaving: function (m) { if (on && m !== map) stop(); }, left: function (m) { if (on && m !== map) stop(); buttons(); setTimeout(shown, 0); } };
   })();

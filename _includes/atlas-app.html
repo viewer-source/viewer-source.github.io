@@ -254,6 +254,7 @@ look="panel" (user, 2026-11-10): Default Panel of the styles experiment, its own
   #m2-editwin button:hover:not(:disabled) { background: var(--m2-accent); border-color: var(--m2-accent); color: var(--m2-on-accent); }
   #m2-editwin button:disabled { opacity: .4; cursor: default; }
   #m2-editwin button[hidden] { display: none; }
+  #m2-ed-this, #m2-ed-back, #m2-ed-stop { display: none !important; }   /* silent editing: the tab is the switch */
   #m2-editwin .m2-ed-row { display: flex; gap: 8px; }
   #m2-editwin input[type="password"] { display: block; width: 100%; box-sizing: border-box; font: inherit; font-size: 14px; padding: 4px 8px; margin: 0 0 8px; border: 1px solid var(--m2-button, #777); border-radius: var(--m2-radius-button, 4px); }
   #m2-ed-gh[hidden] { display: none; }
@@ -678,7 +679,7 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
 <div id="m2-dlwin"></div>
 <div id="m2-extwin"></div>
 <div id="m2-infowin"><p class="m2-pi-name">{{ include.name | default: site.name | default: site.title }}</p>{% assign about = include.about | default: site.description %}{% if about %}<p>{{ about }}</p>{% endif %}<p class="m2-k" id="m2-info-count"></p></div>
-<div id="m2-editwin"><p id="m2-ed-status">Edit the map shown, or open a yEd GraphML file.</p><div id="m2-ed-gh" hidden><p class="m2-set-note">To save moves to the site, paste a GitHub token that can write to this site's repository. It stays in this browser only.</p><input type="password" id="m2-ed-gh-token" placeholder="GitHub token" autocomplete="off"><button type="button" id="m2-ed-gh-go">Connect</button></div><button type="button" id="m2-ed-open">Open file…</button><button type="button" id="m2-ed-this">Edit this map</button><button type="button" id="m2-ed-back" hidden>Back</button><button type="button" id="m2-ed-save" disabled>Save</button><div class="m2-ed-row"><button type="button" id="m2-ed-undo">Undo</button><button type="button" id="m2-ed-redo">Redo</button></div><button type="button" id="m2-ed-stop" hidden>Stop editing</button><button type="button" id="m2-ed-gh-off" hidden>Disconnect from GitHub</button><p class="m2-set-note">A map of the site is saved by itself a few seconds after the last move, and the site shows it about two minutes later. Drag a node or a bend point to move it. Shift with a click adds to the selection, Shift with a drag on empty space selects an area. Arrow keys move by 1, with Shift by 10. Ctrl or Cmd with Z undoes, with S saves at once.</p></div>
+<div id="m2-editwin"><p id="m2-ed-status">Edit the map shown, or open a yEd GraphML file.</p><div id="m2-ed-gh" hidden><p class="m2-set-note">To save moves to the site, paste a GitHub token that can write to this site's repository. It stays in this browser only.</p><input type="password" id="m2-ed-gh-token" placeholder="GitHub token" autocomplete="off"><button type="button" id="m2-ed-gh-go">Connect</button></div><button type="button" id="m2-ed-open">Open file…</button><button type="button" id="m2-ed-this">Edit this map</button><button type="button" id="m2-ed-back" hidden>Back</button><button type="button" id="m2-ed-save" disabled>Save</button><div class="m2-ed-row"><button type="button" id="m2-ed-undo">Undo</button><button type="button" id="m2-ed-redo">Redo</button></div><button type="button" id="m2-ed-stop" hidden>Stop editing</button><button type="button" id="m2-ed-gh-off" hidden>Disconnect from GitHub</button><p class="m2-set-note">Moves are saved by themselves; the site shows them about two minutes later. Drag a node or a bend point to move it. Shift with a click adds to the selection, Shift with a drag on empty space selects an area. Arrow keys move by 1, with Shift by 10. Ctrl or Cmd with Z undoes, with S saves at once.</p></div>
 <div id="m2-setwin"><p class="m2-set-k">Map size</p><div class="m2-set-row" id="m2-set-size"></div><p class="m2-set-note">What 100% is for every map: closer or further.</p><p class="m2-set-k">Maps open</p><div class="m2-set-row" id="m2-set-open"><button type="button" data-open="fit">Whole map</button><button type="button" data-open="read">At map size</button></div><div class="m2-set-bar"><p class="m2-set-k" style="margin-top:14px">Icons</p><div class="m2-set-row" id="m2-set-bar"><button type="button" data-bar="left">Left</button><button type="button" data-bar="top">Top</button></div></div><div class="m2-set-side"><p class="m2-set-k" style="margin-top:14px">Annotations</p><div class="m2-set-row" id="m2-set-side"><button type="button" data-side="left">Left</button><button type="button" data-side="right">Right</button></div></div></div>
 </div>
 <div class="m2-main">
@@ -1312,6 +1313,7 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
     g.classList.toggle('m2-win-set', on && w === 'set');
     g.classList.toggle('m2-edit-on', on && setting('edit'));
     g.classList.toggle('m2-win-edit', on && w === 'edit');
+    if (typeof ed !== 'undefined' && ed && (w !== 'edit' || !open)) ed.away();   // editing only while its window shows
     // Info is about the whole project, briefly, as MINERVA's (user, 2026-11-11: "brief info only on the whole project,
     // not map"): its name, its description, how many maps; the map's name and text stay under the map
     var pc = document.getElementById('m2-info-count');
@@ -2127,6 +2129,7 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
     });
   }
   function put(m, keep) {
+    if (ed) ed.leaving(m);   // editing ends first, so the edited drawing is kept for this map
     var kp = ed ? ed.keep(m) : null;   // a map just edited: its edited drawing until the site's build catches up
     if (kp) m = Object.assign({}, m, { width: kp.width, height: kp.height });
     current = m;
