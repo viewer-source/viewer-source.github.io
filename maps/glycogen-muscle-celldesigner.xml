@@ -3770,11 +3770,11 @@
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n1_n33" species="s_n1_n33" compartmentAlias="ca_n1">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="965.286046" y="413.205686" w="40.0" h="40.0"/>
+<celldesigner:bounds x="955.286" y="413.205686" w="40.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
-<celldesigner:innerPosition x="925.286046" y="217.20568600000001"/>
+<celldesigner:innerPosition x="915.286" y="217.20568600000001"/>
 <celldesigner:boxSize width="40.0" height="40.0"/>
 <celldesigner:singleLine width="1.0"/>
 <celldesigner:paint color="ffdbebdb" scheme="Color"/>
