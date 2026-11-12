@@ -195,7 +195,7 @@ says "the workbench", "the converter's repository", "a private repository".
   `sh renderers/layout/get_layout.sh <clone of the skill>`, never edited here), run in the browser by Pyodide through
   `renderers/layout/tidy.py`, which writes back only the attributes they change, the rest byte for byte; one undo step.
   Snap the whole map to the grid (the dotted square after the magnet): `snap_grid.snap`, complexes packed first, rows
-  and columns kept, compartments fitted. Pack (after it; its sign a box with a circle over a protein, 24 px, larger than the others: user, 2026-11-12): the complex selected, or the one round
+  and columns kept, compartments fitted. Pack (after it; its sign a complex with cut corners holding two proteins stacked, the same size and line as the other signs (the tools now at the tabs' 21 px and line 1.6: before, 20 px with 1.8, about 10% heavier), a little larger inside its square: user, 2026-11-12): the complex selected, or the one round
   a member selected, packed by `complex_pack` (its arcs' ends and the groups round it fitted), every complex when nothing
   is selected. The code is
   `_includes/atlas-edit.js`, included by the viewer's script (copied to the sites with it, off there). Checked
