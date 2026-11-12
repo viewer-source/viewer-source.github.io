@@ -180,6 +180,12 @@ says "the workbench", "the converter's repository", "a private repository".
   smallest correction wins (near ties: that order), thin grey lines for centres and sides reaching 20 units past the
   nodes; only nodes in sight, not its own compartments; Ctrl or Alt held, no snapping. Not yet: the set node to node and
   node to arc distances (yEd's manual gives no default), bends snapping to node centres. The code is
+  The layout skill's tools in the editor (user, 2026-11-12: reuse its code, no AI): a copy of its `complex_pack.py` and
+  `snap_grid.py` in `renderers/layout/` (each starting with a line naming the skill's commit; refreshed with
+  `sh renderers/layout/get_layout.sh <clone of the skill>`, never edited here), run in the browser by Pyodide through
+  `renderers/layout/tidy.py`, which writes back only the attributes they change, the rest byte for byte; one undo step.
+  Snap the whole map to the grid (the dotted square after the magnet): `snap_grid.snap`, complexes packed first, rows
+  and columns kept, compartments fitted. The code is
   `_includes/atlas-edit.js`, included by the viewer's script (copied to the sites with it, off there). Checked
   2026-11-12 on eNOS: first drawing about 4 s, a redraw after a move under a second, the saved file differing from the
   original only in x and y values. Not yet: CellDesigner files, a group growing round a member moved out of it.
