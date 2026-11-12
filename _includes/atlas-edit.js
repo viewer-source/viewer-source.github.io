@@ -134,11 +134,12 @@
           return r.json().then(function (d) {
             if (r.ok) {
               target.sha = d.content.sha; target.saved = body;
+              if (kept && kept.id === target.id) kept.sha = target.sha;
               var sm = byId[target.id];
               if (sm) target.v = ver(sm);   // the site's version still without this move
               if (lastSvg && site === target && text === body) {
                 var all = stored();
-                all[target.id] = { v: target.v, svg: lastSvg, width: map.width, height: map.height, x0: x0, y0: y0, at: Date.now(), ref: siteRef, cur: nowRef() };
+                all[target.id] = { v: target.v, sha: target.sha, svg: lastSvg, width: map.width, height: map.height, x0: x0, y0: y0, at: Date.now(), ref: siteRef, cur: nowRef() };
                 store(all);
               }
               if (site === target && text === body) dirty = false;
@@ -366,7 +367,7 @@
     function stop() {
       if (!on) return;
       if (saveTimer) push();   // a move still waiting is saved now
-      if (site && site.id && undo.length) kept = { id: site.id, v: site.v, pic: img, width: map.width, height: map.height, x0: x0, y0: y0, text: text, ref: siteRef, cur: nowRef() };
+      if (site && site.id && undo.length) kept = { id: site.id, v: site.v, sha: site.sha, pic: img, width: map.width, height: map.height, x0: x0, y0: y0, text: text, ref: siteRef, cur: nowRef() };
       on = false; drag = null; band = null; grid.classList.remove('m2-editing'); paint(); buttons();
       say(dirty && !site ? name + ' has moves not saved: Back to it, or Save.' : 'Edit the map shown, or open a yEd GraphML file.');
     }
@@ -812,14 +813,17 @@
     }, true);
 
     buttons();
+    // the site still behind the last save: its build is not yet of the file saved last (the source's sha in index.json),
+    // so a build of an earlier save does not replace the edited drawing (2026-11-12); without the sha, any new build
+    function behind(m, k) { return m.src && k.sha ? m.src !== k.sha : ver(m) === k.v; }
     function keep(m) {   // the edited picture, while the site still shows the version before the last save
       if (kept && kept.id === m.id) {
-        if (ver(m) === kept.v) return kept;
+        if (behind(m, kept)) return kept;
         kept = null;
       }
       var all = stored(), k = all[m.id];
       if (!k) return null;
-      if (ver(m) !== k.v || Date.now() - k.at > 3600000) { delete all[m.id]; store(all); return null; }
+      if (!behind(m, k) || Date.now() - k.at > 3600000) { delete all[m.id]; store(all); return null; }
       // after a reload: the saved drawing again, decoded before it is shown
       var url = URL.createObjectURL(new Blob([recolour(k.svg)], { type: 'image/svg+xml' }));
       var pic = new Promise(function (res) {
@@ -828,7 +832,7 @@
         i.onerror = function () { res(null); };
         i.src = url;
       });
-      kept = { id: m.id, v: k.v, pic: pic, width: k.width, height: k.height, x0: k.x0, y0: k.y0, text: null, ref: k.ref, cur: k.cur };
+      kept = { id: m.id, v: k.v, sha: k.sha, pic: pic, width: k.width, height: k.height, x0: k.x0, y0: k.y0, text: null, ref: k.ref, cur: k.cur };
       return kept;
     }
     return { paint: paint, keep: keep, boxes: boxes, away: away, leaving: function (m) { if (on && m !== map) stop(); }, left: function (m) { if (on && m !== map) stop(); buttons(); setTimeout(shown, 0); } };

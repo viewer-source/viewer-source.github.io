@@ -222,10 +222,14 @@ def main():
         w, h = (int(float(v)) for v in re.search(r'<svg[^>]* width="([\d.]+)" height="([\d.]+)"', open(svg).read()).groups())
         meta, body = entry(mid)
         v = hashlib.sha1(open(svg, 'rb').read() + open(ann, 'rb').read() + body.encode()).hexdigest()[:10]
+        # the source's git blob sha, as GitHub gives it on a save: the editor keeps its own drawing until the site's
+        # build is of the very file it saved last, not of an earlier save (2026-11-12: builds of two saves overlapped)
+        data = open(src, 'rb').read()
+        sha = hashlib.sha1(b'blob %d\0' % len(data) + data).hexdigest()
         fm = {'title': meta.get('title', mid), 'topic': meta.get('topic', meta.get('title', mid)), 'tab': '', 'page': '',
               'group': meta.get('group', ''), 'order': int(meta.get('order', 0)), 'kind': 'map', 'draft': False, 'tag': '',
               'image': '/downloads/%s.svg' % mid, 'width': w, 'height': h, 'scale': 1,
-              'annotation': '/atlas-data/%s.json' % mid, 'image_error': '', 'v': v,
+              'annotation': '/atlas-data/%s.json' % mid, 'image_error': '', 'v': v, 'src': sha,
               'colours': True,  # the picture has the role classes (yrender.CLASSES, cdrender.CLASSES)
               'legend': 'sbgn' if ext == '.graphml' else 'celldesigner',  # the legend the Legend window opens on
               'downloads': [{'label': 'GraphML' if ext == '.graphml' else 'CellDesigner', 'url': '/downloads/%s%s' % (mid, ext)},

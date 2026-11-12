@@ -25,10 +25,17 @@ jobs:
         with: {python-version: '3.12'}
       - run: pip install lxml
       - run: python3 build.py ${{ inputs.refresh && '--refresh' || '' }}
+      # a save that came in while building (the viewer's editor saves every few seconds) is not rebased over, which
+      # conflicted on the built files and left the last save unbuilt (2026-11-12): the build starts again from it
       - run: |
-          git add -A downloads atlas-data _maps cache images/legend
-          git diff --cached --quiet && exit 0
           git config user.name 'github-actions[bot]'
           git config user.email '41898283+github-actions[bot]@users.noreply.github.com'
-          git commit -m 'Atlas built'
-          git pull --rebase origin main && git push origin HEAD:main
+          for i in 1 2 3 4 5; do
+            git add -A downloads atlas-data _maps cache images/legend
+            git diff --cached --quiet && exit 0
+            git commit -q -m 'Atlas built'
+            git push origin HEAD:main && exit 0
+            git fetch -q origin main && git reset -q --hard origin/main
+            python3 build.py ${{ inputs.refresh && '--refresh' || '' }}
+          done
+          exit 1

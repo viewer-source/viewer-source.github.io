@@ -286,6 +286,9 @@ look="panel" (user, 2026-11-10): Default Panel of the styles experiment, its own
   #m2-edit-layer .m2-ed-ghost { fill: none; stroke: #9aa0a6; stroke-width: 1; stroke-dasharray: 3 2; }
   #m2-edit-layer .m2-ed-band { fill: none; stroke: #9aa0a6; stroke-width: 1; stroke-dasharray: 4 3; }
   .m2-editing #m2-view { cursor: default; }
+  /* while editing, a node moved past the picture's edge stays in sight until the map is drawn again (user, 2026-11-12:
+     the compartment cut off at the old right edge) */
+  .m2-editing svg#m2-img { overflow: visible; }
   /* the download buttons of the page under the map, full width (user, 2026-11-11: "use buttons from the default page") */
   #m2-dlwin a, #m2-extwin a { display: block; box-sizing: border-box; font-size: 14px; line-height: 20px; padding: 4px 10px; margin: 0 0 8px;   /* 8 px apart (user, 2026-11-11: "a bit more space") */
     background: var(--m2-bg); border: 1px solid var(--m2-button); border-radius: var(--m2-radius-button); color: var(--m2-button); text-decoration: none; }
