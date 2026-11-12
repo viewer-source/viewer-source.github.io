@@ -2127,12 +2127,14 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
     });
   }
   function put(m, keep) {
+    var kp = ed ? ed.keep(m) : null;   // a map just edited: its edited drawing until the site's build catches up
+    if (kp) m = Object.assign({}, m, { width: kp.width, height: kp.height });
     current = m;
     if (ed) ed.left(m);
     document.getElementById('m2-title').textContent = m.title;
     document.title = m.title + ' – {{ include.name }}';
     img.style.visibility = 'hidden';  // only if the new picture is not there yet
-    get(m.image + ver(m)).then(function (pic) {
+    (kp ? Promise.resolve(kp.pic) : get(m.image + ver(m))).then(function (pic) {
       if (current !== m || !pic) return;
       if (pic !== img) { img.removeAttribute('id'); pic.id = 'm2-img'; pic.alt = m.title; img.replaceWith(pic); img = pic; }
       img.style.visibility = '';
@@ -2244,7 +2246,7 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
         if (index) { index = null; loadIndex(); }
         var m = old && byId[old.id];
         if (m && ver(m) !== ver(old)) show(m, true);
-        else if (m) current = m;
+        else if (m && !(ed && ed.keep(m))) current = m;
         if (was) chosen = byId[was.id] || m || chosen;
         buildList(document.getElementById('m2-search').value);
         prefetch();

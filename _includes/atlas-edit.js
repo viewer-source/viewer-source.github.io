@@ -30,6 +30,9 @@
     var TOKEN_KEY = 'atlas-edit-token', AUTOSAVE = 3000;
     var site = null;               // { path, sha } of the map being edited, when it is a map of this site
     var saveTimer = null, saving = null, saveAgain = false, stuck = false;
+    // the edited drawing, kept on screen after editing stops until the site's own build of the map has caught up
+    // (user, 2026-11-12: "after I exit this mode I don't see changes"): { id, v (the site's version when last saved), pic, width, height }
+    var kept = null;
     function repo() { var h = location.hostname; return /\.github\.io$/.test(h) ? h.split('.')[0] + '/' + h : null; }
     function token() { try { return localStorage.getItem(TOKEN_KEY) || ''; } catch (e) { return ''; } }
     function api(path, opt) {
@@ -61,6 +64,8 @@
           return r.json().then(function (d) {
             if (r.ok) {
               target.sha = d.content.sha;
+              var sm = byId[target.id];
+              if (sm) target.v = ver(sm);   // the site's version still without this move
               if (site === target && text === body) dirty = false;
               say('Saved to the site ' + hm() + '. The site shows it in about two minutes; this page swaps it in by itself.');
             } else if (r.status === 409 || r.status === 422) {
@@ -194,21 +199,26 @@
         pic.src = url;
       }).catch(function (e) { if (t === ticket) say('Not drawn: ' + (e && e.message ? e.message.split('\n').slice(-2).join(' ') : e)); });
     }
-    function start(t, n, h, s) {
+    function start(t, n, h, s, same) {   // same: { width, height, x0, y0, scale } of the picture on screen, drawn from this very text
       try { text = t; parse(); } catch (e) { say('Cannot edit ' + n + ': ' + e); return; }
       name = n; handle = h; site = s || null; if (site) site.base = t; stuck = false; dirty = false; undo = []; redo = []; selN = []; selP = [];
       map = { id: 'edit', title: n, width: 0, height: 0, scale: 1, downloads: [] };
+      if (same) {   // editing starts on the picture as it is: no redraw, the map stays where it is (user, 2026-11-12)
+        map.width = same.width; map.height = same.height; map.scale = same.scale; x0 = same.x0; y0 = same.y0;
+      }
       current = map; on = true;
       nodes = null; sel = null; renderInfo(); drawPin();
       document.getElementById('m2-title').textContent = n;
       grid.classList.add('m2-editing');
       buttons();
+      if (same && same.text === t) { python(); paint(); say((site && site.pending) ? 'Editing ' + n + '. Connect to GitHub below so the moves are saved to the site.' : 'Editing ' + n + (site ? '. Every move is saved to the site by itself.' : '.')); return; }
       say('Drawing ' + n + '...');
       render();
     }
     function stop() {
       if (!on) return;
       if (saveTimer) push();   // a move still waiting is saved now
+      if (site && site.id && undo.length) kept = { id: site.id, v: site.v, pic: img, width: map.width, height: map.height, x0: x0, y0: y0, text: text };
       on = false; drag = null; band = null; grid.classList.remove('m2-editing'); paint(); buttons();
       say(dirty && !site ? name + ' has moves not saved: Back to it, or Save.' : 'Edit the map shown, or open a yEd GraphML file.');
     }
@@ -271,10 +281,23 @@
       if (dirty && !site && !confirm(name + ' has moves not saved. Edit this map instead?')) return;
       if (saveTimer) push();
       var file = url.split('?')[0].split('/').pop(), path = 'maps/' + file;
-      var go = function (t, s) { start(t, file, null, s); map.title = m.title; map.siteId = m.id; document.getElementById('m2-title').textContent = m.title; };
-      var fromSite = function (s) {   // the published copy: what the site shows now
-        return fetch(url, { cache: 'no-cache' }).then(function (r) { return r.text(); }).then(function (t) { go(t, s); });
+      // the picture on screen is the site's drawing of its published GraphML: its frame (size and the offset of yEd's
+      // coordinates) is read from that SVG, so editing starts on it without a redraw; the moved map is drawn again
+      var k = keep(m), shownPic = img;
+      var published = k ? Promise.resolve(k.text) : fetch(url, { cache: 'no-cache' }).then(function (r) { return r.text(); });
+      var frame = k ? Promise.resolve({ width: k.width, height: k.height, x0: k.x0, y0: k.y0, scale: 1 }) : fetch(m.image + ver(m)).then(function (r) { return r.text(); }).then(function (svg) {
+        var t = svg.match(/<g transform="translate\(([-\d.]+),([-\d.]+)\)">/), w = svg.match(/ width="([\d.]+)" height="([\d.]+)"/);
+        return t && w ? { width: parseFloat(w[1]), height: parseFloat(w[2]), x0: -parseFloat(t[1]), y0: -parseFloat(t[2]), scale: 1 } : null;
+      }).catch(function () { return null; });
+      var go = function (t, s) {
+        return Promise.all([published, frame]).then(function (r) {
+          var same = r[1] && img === shownPic && current === m ? Object.assign(r[1], { text: r[0] }) : null;
+          if (s) { s.id = m.id; s.v = ver(m); }
+          start(t, file, null, s, same);
+          map.title = m.title; document.getElementById('m2-title').textContent = m.title;
+        });
       };
+      var fromSite = function (s) { return published.then(function (t) { return go(t, s); }); };
       say('Opening ' + m.title + '...');
       if (!repo()) return fromSite(null);
       if (!token()) return fromSite({ path: path, sha: null, pending: true });
@@ -302,7 +325,7 @@
         var moved = dirty;
         if (on && site) {   // connected while editing: go on from the repository's version, keeping the moves made
           var keep = text;
-          var s0 = site;
+          var s0 = site;   // (s0.base: the text editing started from)
           Promise.all([api('/contents/' + s0.path + '?ref=main').then(function (r) { return r.json(); }),
             api('/contents/' + s0.path + '?ref=main', { headers: { Accept: 'application/vnd.github.raw' } }).then(function (r) { return r.text(); })])
             .then(function (f) {
@@ -451,5 +474,10 @@
     }, true);
 
     buttons();
-    return { paint: paint, left: function (m) { if (on && m !== map) stop(); buttons(); setTimeout(shown, 0); } };
+    function keep(m) {   // the edited picture, while the site still shows the version before the last save
+      if (!kept || kept.id !== m.id) return null;
+      if (ver(m) !== kept.v) { kept = null; return null; }
+      return kept;
+    }
+    return { paint: paint, keep: keep, left: function (m) { if (on && m !== map) stop(); buttons(); setTimeout(shown, 0); } };
   })();
