@@ -222,7 +222,8 @@
       var pi = new Map(); points.forEach(function (p, i) { pi.set(p, i); });
       edges2 = Array.prototype.slice.call(doc.getElementsByTagNameNS(G, 'edge')).map(function (e) {
         return { id: e.getAttribute('id'), s: byId[e.getAttribute('source')], t: byId[e.getAttribute('target')], path: e.getElementsByTagNameNS(Y, 'Path')[0] || null,
-                 pts: Array.prototype.slice.call(e.getElementsByTagNameNS(Y, 'Point')).map(function (p) { return pi.get(p); }) };
+                 pts: Array.prototype.slice.call(e.getElementsByTagNameNS(Y, 'Point')).map(function (p) { return pi.get(p); }),
+                 smooth: e.getElementsByTagNameNS(Y, 'QuadCurveEdge').length > 0 || Array.prototype.some.call(e.getElementsByTagNameNS(Y, 'BendStyle'), function (b) { return b.getAttribute('smoothed') === 'true'; }) };
       });
     }
     function realizerOf(el) {   // the node's own yEd realizer (of a group: the one shown)
@@ -600,6 +601,17 @@
       pts[pts.length - 1] = cut(pts[pts.length - 1], pts[pts.length - 2], T);
       return pts;
     }
+    function livePath(pts, smooth) {   // the arc while dragged, its bends rounded as the renderer rounds them (10 units each side), so the line does not turn sharp during a drag (user, 2026-11-12)
+      var P = function (q) { return f1(sx(q[0])) + ' ' + f1(sy(q[1])); }, d = 'M' + P(pts[0]);
+      for (var i = 1; i < pts.length - 1; i++) {
+        var a = pts[i - 1], b = pts[i], c = pts[i + 1], la = Math.hypot(a[0] - b[0], a[1] - b[1]), lc = Math.hypot(c[0] - b[0], c[1] - b[1]);
+        if (smooth && la > 0 && lc > 0) {
+          var da = Math.min(10, la / 2), dc = Math.min(10, lc / 2);
+          d += 'L' + P([b[0] + (a[0] - b[0]) * da / la, b[1] + (a[1] - b[1]) * da / la]) + 'Q' + P(b) + ' ' + P([b[0] + (c[0] - b[0]) * dc / lc, b[1] + (c[1] - b[1]) * dc / lc]);
+        } else d += 'L' + P(b);
+      }
+      return d + 'L' + P(pts[pts.length - 1]);
+    }
     function paint() {
       if (img && img.querySelectorAll) img.querySelectorAll('.m2-ed-dark').forEach(function (x) { x.remove(); });
       gridPaint();
@@ -607,7 +619,7 @@
       var out = [], over = [], frame = '<g transform="translate(' + f1(tx - x0 * z) + ',' + f1(ty - y0 * z) + ') scale(' + z + ')">';
       if (live) live.forEach(function (k) {   // arcs following the drag, as plain lines until the map is drawn again
         var pts = line(k);
-        if (pts) out.push('<path class="m2-ed-live" stroke-width="' + f1(Math.max(1, z)) + '" d="M' + pts.map(function (q) { return f1(sx(q[0])) + ' ' + f1(sy(q[1])); }).join('L') + '"/>');
+        if (pts) out.push('<path class="m2-ed-live" stroke-width="' + f1(Math.max(1, z)) + '" d="' + livePath(pts, edges2[k].smooth) + '"/>');
       });
       // arcs selected, or holding a bend point selected: the blue highlight, then their bends as squares on top
       // a bend point selected alone, the arc not highlighted (user, 2026-11-12: as yEd): four small black squares round
