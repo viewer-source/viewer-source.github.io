@@ -314,6 +314,10 @@ look="panel" (user, 2026-11-10): Default Panel of the styles experiment, its own
   /* a CellDesigner drawing's white canvas left out while editing (user, 2026-11-12: "the canvas itself is not visible,
      like an endless space", as a GraphML map; white hides the grid): the file keeps its canvas size */
   .m2-editing svg#m2-img > rect[width="100%"][height="100%"] { display: none; }
+  /* and its white halos under the lines (user, 2026-11-12: round-ended white strips through the grid and the
+     compartments, seen once the canvas went; white on white before): hidden while editing, the group kept (the
+     selected line's highlight layer is put beside it) */
+  .m2-editing svg#m2-img g[stroke="#fff"][stroke-width="5"] > * { display: none; }
   /* the download buttons of the page under the map, full width (user, 2026-11-11: "use buttons from the default page") */
   #m2-dlwin a, #m2-extwin a { display: block; box-sizing: border-box; font-size: 14px; line-height: 20px; padding: 4px 10px; margin: 0 0 8px;   /* 8 px apart (user, 2026-11-11: "a bit more space") */
     background: var(--m2-bg); border: 1px solid var(--m2-button); border-radius: var(--m2-radius-button); color: var(--m2-button); text-decoration: none; }
