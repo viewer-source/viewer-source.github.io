@@ -58,6 +58,10 @@
     // when what they hold is moved past their margin; liveC: their boxes while a drag runs (index in nodes2 -> box),
     // drawn on the picture at once, until the renderer has drawn the map again
     var liveC = null, liveOrig = null;
+    // a process glyph not moved itself stays midway on its segment of the main line wherever that goes (cd_edit), so
+    // while a drag or the keys move a segment's end it follows at once (user, 2026-11-12: it jumped there only on
+    // release): procs, each glyph with its two main arcs; liveG, the glyphs' shifts until the map is drawn again
+    var procs = [], liveG = null;
     // saving to the site: the repository is the site's own (<owner>.github.io), the map's source maps/<file>.graphml
     var TOKEN_KEY = 'atlas-edit-token', AUTOSAVE = 3000;
     var site = null;               // { path, sha } of the map being edited, when it is a map of this site
@@ -320,6 +324,12 @@
       });
       ties = {};
       points.forEach(function (p, i) { var w = p.getAttribute('with'); if (w) (ties[w] = ties[w] || []).push(i); });
+      var byE = {}; edges2.forEach(function (e, k) { byE[e.id] = k; });
+      procs = [];
+      nodes2.forEach(function (n, i) {
+        var m = n.id.match(/^(.*)\|proc$/);
+        if (m && byE[m[1] + '|a'] != null && byE[m[1] + '|b'] != null) procs.push({ g: i, a: byE[m[1] + '|a'], b: byE[m[1] + '|b'] });
+      });
     }
     function realizerOf(el) {   // the node's own yEd realizer (of a group: the one shown)
       for (var i = 0; i < el.children.length; i++) {
@@ -368,7 +378,8 @@
       all.forEach(function (i) { (ties[nodes2[i].id] || []).forEach(function (p) { ps.add(p); }); });
       return { n: all, p: ps, dx: 0, dy: 0 };
     }
-    function bx(i) { if (liveC && liveC[i]) return liveC[i]; var b = boxOf(i); return mv && mv.n.has(i) ? [b[0] + mv.dx, b[1] + mv.dy, b[2], b[3]] : b; }
+    function bx(i) { if (liveC && liveC[i]) return liveC[i]; var b = boxOf(i);
+      if (liveG && liveG[i]) return [b[0] + liveG[i][0], b[1] + liveG[i][1], b[2], b[3]]; return mv && mv.n.has(i) ? [b[0] + mv.dx, b[1] + mv.dy, b[2], b[3]] : b; }
     // the compartments round what moves (and round the one resized), grown to hold it as the fit after the drag will:
     // what they hold, plus their Insets and their own labels at the top or bottom; innermost first, never smaller
     function liveFit(seed) {
@@ -478,17 +489,56 @@
         if (a && b) gs.forEach(function (g) { g.setAttribute('transform', tr); });
         else { gs.forEach(function (g) { g.style.display = 'none'; }); live.add(k); }
       });
+      glyphFollow(mv.n, mv.p, null);
       return true;
+    }
+    function glyphMid(q, B, P) {   // where cd_edit puts the glyph: midway on its segment, an end at a node cut at its box
+      var ea = edges2[q.a], eb = edges2[q.b], o = function (e, a) { return e.path ? parseFloat(e.path.getAttribute(a)) || 0 : 0; };
+      var S = B(ea.s), T = B(eb.t);
+      var all = [[S[0] + S[2] / 2 + o(ea, 'sx'), S[1] + S[3] / 2 + o(ea, 'sy')]].concat(ea.pts.map(P), eb.pts.map(P),
+        [[T[0] + T[2] / 2 + o(eb, 'tx'), T[1] + T[3] / 2 + o(eb, 'ty')]]);
+      var k = ea.pts.length, n = all.length - 1, a = all[k], b = all[k + 1];
+      if (k === 0) a = cut(all[0], all[1], S);
+      if (k + 1 === n) b = cut(all[n], all[n - 1], T);
+      return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+    }
+    // the glyphs whose segment moves: shifted by how far their middle moved (the same reckoning before and now, so a
+    // glyph does not jump at the start), their lines drawn live. ns, ps: the nodes and bend points moving; back: how far
+    // the keys moved them already in the file (null in a drag, where the file has them still where they were)
+    function glyphFollow(ns, ps, back) {
+      if (!procs.length || !gN) return;
+      var old = liveG; liveG = null;
+      var rest = function (i) { var b = boxOf(i); return back && ns.has(i) ? [b[0] - back[0], b[1] - back[1], b[2], b[3]] : b; };
+      var restP = function (pi) { var p = points[pi], o = back && ps.has(pi); return [num(p, 'x') - (o ? back[0] : 0), num(p, 'y') - (o ? back[1] : 0)]; };
+      var out = {}, any = false;
+      procs.forEach(function (q) {
+        var ea = edges2[q.a], eb = edges2[q.b];
+        if (ns.has(q.g) || ea.s == null || eb.t == null) return;
+        if (!(ns.has(ea.s) || ns.has(eb.t) || ea.pts.concat(eb.pts).some(function (p) { return ps.has(p); }))) return;
+        var a = glyphMid(q, bx, pt), b = glyphMid(q, rest, restP);
+        out[q.g] = [a[0] - b[0], a[1] - b[1]]; any = true;
+      });
+      if (old) Object.keys(old).forEach(function (i) { if (!out[i]) { var g = gN[nodes2[i].id]; if (g) g.removeAttribute('transform'); } });
+      if (!any) return;
+      liveG = out; live = live || new Set();
+      Object.keys(out).forEach(function (i) {
+        var g = gN[nodes2[i].id]; if (g) g.setAttribute('transform', 'translate(' + out[i][0] + ' ' + out[i][1] + ')');
+        edges2.forEach(function (e, k) {
+          if (e.s !== +i && e.t !== +i) return;
+          var gs = gE[e.id]; if (gs) gs.forEach(function (x) { x.style.display = 'none'; });
+          live.add(k);
+        });
+      });
     }
     function unshift() {   // the drawing as it was: a press that moved nothing leaves nothing hidden or shifted
       if (gN) Object.keys(gN).forEach(function (k) { gN[k].removeAttribute('transform'); });
       if (gE) Object.keys(gE).forEach(function (k) { gE[k].forEach(function (g) { g.removeAttribute('transform'); g.style.display = ''; }); });
-      live = null; liveOff();
+      live = null; liveG = null; liveOff();
     }
     function keyShift(ks, dx, dy) {   // the keys' move on the drawing: groups moved by the sum since the last drawing, arcs touched drawn live
       if (!gN) return;
-      keyed = keyed || { n: new Set(), dx: 0, dy: 0 };
-      keyed.dx += dx; keyed.dy += dy; ks.n.forEach(function (i) { keyed.n.add(i); });
+      keyed = keyed || { n: new Set(), p: new Set(), dx: 0, dy: 0 };
+      keyed.dx += dx; keyed.dy += dy; ks.n.forEach(function (i) { keyed.n.add(i); }); ks.p.forEach(function (i) { keyed.p.add(i); });
       var tr = 'translate(' + keyed.dx + ' ' + keyed.dy + ')';
       keyed.n.forEach(function (i) { var g = gN[nodes2[i].id]; if (g) g.setAttribute('transform', tr); });
       live = live || new Set();
@@ -498,6 +548,7 @@
         if (!gs || !(a || b || some)) return;
         gs.forEach(function (g) { g.style.display = 'none'; }); live.add(k);   // the file has the new places: drawn from them
       });
+      glyphFollow(keyed.n, keyed.p, [keyed.dx, keyed.dy]);
     }
     // the grey guides of a bend point moved by the keys (user, 2026-11-12: as in a drag, to see when a segment is level or
     // upright): one bend point selected alone, a segment drawn while it is exactly level or upright; no snapping, the
@@ -575,7 +626,7 @@
           var old = img.src || '';
           img.removeAttribute('id'); pic.id = 'm2-img'; pic.setAttribute('aria-label', map.title); img.replaceWith(pic); img = pic;
           if (old.indexOf('blob:') === 0) URL.revokeObjectURL(old);
-          gN = {}; gE = {}; live = null; liveC = null; liveOrig = null; keyed = null;
+          gN = {}; gE = {}; live = null; liveC = null; liveOrig = null; keyed = null; liveG = null;
           pic.querySelectorAll('[data-n]').forEach(function (g) { gN[g.getAttribute('data-n')] = g; });
           pic.querySelectorAll('[data-e]').forEach(function (g) { var k = g.getAttribute('data-e'); (gE[k] = gE[k] || []).push(g); });
           if (first) fit(); else draw();
@@ -620,7 +671,7 @@
       document.getElementById('m2-title').textContent = n;
       grid.classList.add('m2-editing');
       buttons();
-      gN = gE = null; mv = live = null;
+      gN = gE = null; mv = live = null; liveG = null;
       if (same && same.text === t) { python().then(function () { if (on && current === map && !undo.length && !gN) render(); }); paint(); say((site && site.pending) ? 'Connect to GitHub below so the moves are saved to the site.' : site ? 'Every move is saved to the site by itself.' : 'Editing ' + n + '.'); return; }
       say('Drawing ' + n + '...');
       render();

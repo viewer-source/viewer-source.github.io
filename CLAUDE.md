@@ -219,7 +219,9 @@ says "the workbench", "the converter's repository", "a private repository".
   line directions, the canvas grown past its right or bottom edge), so it opens in CellDesigner as before; cdrender
   draws it in the browser with `GROUPS` on. Bend points stay where they are when a node moves (user, 2026-11-12: yEd's
   way, not CellDesigner's stretching); the process glyph moved takes its segment with it, as in CellDesigner, an end at
-  a node becoming a new bend point (user, 2026-11-12); not moved, it stays midway on its segment. Saved to
+  a node becoming a new bend point (user, 2026-11-12); not moved, it stays midway on its segment, and follows
+  it during a drag or a held arrow key, its lines drawn live (user, 2026-11-12: it jumped there only on release; the
+  editor reckons the middle as cd_edit does, so the glyph does not jump when the map is drawn again). Saved to
   `maps/<file>.xml`. Not on CellDesigner maps: Pack and Snap map to grid (the layout skill's GraphML scripts), the live
   outline of a compartment resized (it is redrawn after the drag); logic gates, associations and dissociations are left
   as they are (none on the demo). Checked 2026-11-12: all 21 demo maps written back byte for byte with no move, every
