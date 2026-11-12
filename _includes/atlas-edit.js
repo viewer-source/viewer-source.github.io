@@ -699,18 +699,21 @@
       return best || group;
     }
     function editing(e) { return on && current === map && !e.target.closest('.m2-ctrl, .m2-info'); }
-    var empty = null;
+    var empty = null, shiftAt = null;
     view.addEventListener('pointerdown', function (e) {
       empty = null;
       if (!editing(e) || e.button !== 0) return;
       var P = at(e), h = hit(P);
-      if (!h && !e.shiftKey) { empty = [e.clientX, e.clientY]; return; }   // the viewer pans; a click clears the selection
+      // Shift with a drag moves the whole map from anywhere, over a node or a compartment too (user, 2026-11-12: "with
+      // shift i can grab and move whole map"); Shift with a click still adds to the selection (on release)
+      if (e.shiftKey && !e.altKey) { shiftAt = { h: h, x: e.clientX, y: e.clientY }; return; }   // the viewer pans
+      if (!h && !e.altKey) { empty = [e.clientX, e.clientY]; return; }   // the viewer pans; a click clears the selection
       e.stopImmediatePropagation(); e.preventDefault();
       view.setPointerCapture(e.pointerId); view.focus({ preventScroll: true });
-      if (!h) { band = { x: P[0], y: P[1], x2: P[0], y2: P[1], add: true }; return; }
+      // Alt (Option) with a drag selects an area, from anywhere (it was Shift on empty space)
+      if (e.altKey) { band = { x: P[0], y: P[1], x2: P[0], y2: P[1], add: true }; return; }
       var list = h.p != null ? selP : h.e != null ? selE : selN, k = h.p != null ? h.p : h.e != null ? h.e : h.n, there = list.indexOf(k) >= 0;
-      if (e.shiftKey) { if (there) list.splice(list.indexOf(k), 1); else list.push(k); }
-      else if (!there) { selN = h.n != null ? [k] : []; selP = h.p != null ? [k] : []; selE = h.e != null ? [k] : []; }
+      if (!there) { selN = h.n != null ? [k] : []; selP = h.p != null ? [k] : []; selE = h.e != null ? [k] : []; }
       drag = { x: P[0], y: P[1], dx: 0, dy: 0, p: h.p != null && selP.indexOf(h.p) >= 0 ? h.p : null, guides: [],
                n: h.n != null && selN.indexOf(h.n) >= 0 ? h.n : null, e: h.e != null && selE.indexOf(h.e) >= 0 ? h.e : null };
       mv = moving();
@@ -772,11 +775,17 @@
         paint();
         return;
       }
-      if (on && current === map && !e.buttons) { var hh = hit(at(e)); view.style.cursor = !hh ? '' : hh.e != null ? 'pointer' : 'move'; }
+      if (on && current === map && !e.buttons) { var hh = e.shiftKey ? null : hit(at(e)); view.style.cursor = !hh ? '' : hh.e != null ? 'pointer' : 'move'; }
     }, true);
     function release(e) {
       if (empty && e.type === 'pointerup' && Math.hypot(e.clientX - empty[0], e.clientY - empty[1]) < 5) { selN = []; selP = []; selE = []; paint(); }
       empty = null;
+      var sa = shiftAt; shiftAt = null;
+      if (sa && sa.h && e.type === 'pointerup' && Math.hypot(e.clientX - sa.x, e.clientY - sa.y) < 5) {   // Shift with a click
+        var h = sa.h, list = h.p != null ? selP : h.e != null ? selE : selN, k = h.p != null ? h.p : h.e != null ? h.e : h.n;
+        if (list.indexOf(k) >= 0) list.splice(list.indexOf(k), 1); else list.push(k);
+        paint(); return;
+      }
       if (!drag && !band) return;
       e.stopImmediatePropagation();
       if (band) {
