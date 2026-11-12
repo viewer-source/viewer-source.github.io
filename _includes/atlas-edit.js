@@ -211,7 +211,7 @@
       document.getElementById('m2-title').textContent = n;
       grid.classList.add('m2-editing');
       buttons();
-      if (same && same.text === t) { python(); paint(); say((site && site.pending) ? 'Editing ' + n + '. Connect to GitHub below so the moves are saved to the site.' : 'Editing ' + n + (site ? '. Every move is saved to the site by itself.' : '.')); return; }
+      if (same && same.text === t) { python(); paint(); say((site && site.pending) ? 'Connect to GitHub below so the moves are saved to the site.' : site ? 'Every move is saved to the site by itself.' : 'Editing ' + n + '.'); return; }
       say('Drawing ' + n + '...');
       render();
     }
@@ -370,7 +370,7 @@
     // ends editing and shows the map of the site again (the edited drawing until the site catches up)
     function away() {
       if (!on) return;
-      if (chosen) put(chosen); else stop();
+      if (chosen) put(chosen, true); else stop();   // at the same place and zoom: nothing jumps
     }
     window.addEventListener('beforeunload', function (e) { if (dirty) { if (saveTimer) push(); e.preventDefault(); e.returnValue = ''; } });
 
