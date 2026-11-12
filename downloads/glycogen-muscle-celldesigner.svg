@@ -360,8 +360,8 @@
 <polyline points="506.89,504.76 371.34,404.76"/>
 <polyline points="863.76,823.82 864.03,492.48 772.37,492.66"/>
 <polyline points="894.31,492.83 821.41,492.57"/>
-<polyline points="920.5,764.53 918.81,600.98 840.36,600.97"/>
-<polyline points="920.35,513.18 918.99,601.55 881.14,600.97"/>
+<polyline points="920.79,764.53 920.79,600.97 840.36,600.97"/>
+<polyline points="920.79,513.21 920.79,600.97 882.38,600.97"/>
 <polyline points="704.32,600.96 708.86,600.96 640.88,600.96 637.02,600.96"/>
 <polyline points="675.19,518.21 674.9,588.46"/>
 <polyline points="1910.99,294.9 1865.48,294.9"/>
@@ -482,10 +482,10 @@
 <polyline points="863.76,831.82 864.03,492.48 764.37,492.68" fill="none" stroke="#000000" stroke-width="1"/>
 <polyline points="902.31,492.86 821.41,492.57" fill="none" stroke="#000000" stroke-width="1"/>
 <rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(807.2,492.59) rotate(179.89)"/>
-<polygon points="818.36,600.97 833.36,595.97 833.36,605.97" fill="#000"/>
-<polyline points="920.58,772.53 918.81,600.98 832.36,600.97" fill="none" stroke="#000000" stroke-width="1"/>
-<polyline points="920.48,505.19 918.99,601.55 881.14,600.97" fill="none" stroke="#000000" stroke-width="1"/>
-<rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(868.59,600.97) rotate(-179.99)"/>
+<polygon points="818.36,600.96 833.36,595.96 833.36,605.96" fill="#000"/>
+<polyline points="920.79,772.53 920.79,600.97 832.36,600.96" fill="none" stroke="#000000" stroke-width="1"/>
+<polyline points="920.79,505.21 920.79,600.97 882.38,600.97" fill="none" stroke="#000000" stroke-width="1"/>
+<rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(869.57,600.97) rotate(-180)"/>
 <polygon points="631.02,600.96 646.02,595.96 646.02,605.96" fill="#000"/>
 <polyline points="712.32,600.96 708.86,600.96 640.88,600.96 645.02,600.96" fill="none" stroke="#000000" stroke-width="1"/>
 <circle cx="674.89" cy="591.46" r="3" fill="#fff" stroke="#000"/>
