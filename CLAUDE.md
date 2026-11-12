@@ -106,7 +106,7 @@ says "the workbench", "the converter's repository", "a private repository".
   day; Slate asked for as a mono slate, Shore the session's choice
   (teal and sand; Lilac before it, user: no purple on maps), both new, not on the /colours/ page; a
   few to be chosen with more care later; no red highlight in any scheme, highlighted proteins in the protein colour, only
-  File keeps the file's red); shown in one row where the panel is wide enough, each its name over small squares of its protein and metabolite colours (File also its red), the chosen one filled
+  File keeps the file's red); shown in one row where the panel is wide enough, each its name with small squares of its protein and metabolite colours on its right (under it first, user 2026-11-12) (File also its red), the chosen one filled
   as the other buttons, the others with no frame (user, 2026-11-12: the grey frames looked strange) (user, 2026-11-12: compact; tiles with a tiny map took too much room; names shortened: Paper for
   Paper and frost, Moss for Mono moss), kept in the reader's browser (`atlas-map-colours`), for every map; shown only for a map whose entry has
   `colours` (its picture drawn with the role classes). The renderers write each fill's role beside its colour (yrender

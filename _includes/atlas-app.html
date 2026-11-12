@@ -357,12 +357,12 @@ look="panel" (user, 2026-11-10): Default Panel of the styles experiment, its own
   #m2-setwin .m2-set-ticks { display: flex; justify-content: space-between; padding: 0 7px; margin: 1px 0 14px; }
   #m2-setwin .m2-set-side { margin-bottom: 14px; }  /* Icons comes last (user, 2026-11-12: rarely changed once chosen) */
   #m2-setwin .m2-set-ticks i { width: 1px; height: 4px; background: var(--m2-muted); }
-  /* Map colours (user, 2026-11-12: compact, the name on top and the colours as squares under it; tiles with a tiny map
+  /* Map colours (user, 2026-11-12: compact, the name and its colours as squares on its right (user, 2026-11-12; first under it); tiles with a tiny map
      took too much room): in one row where the panel is wide enough, each the scheme's protein and metabolite (File also its red highlight); the chosen
      one filled as the other buttons */
   #m2-setwin .m2-set-colours { margin-bottom: 14px; }
-  #m2-setwin #m2-set-colours { display: grid; grid-template-columns: repeat(auto-fit, minmax(62px, 1fr)); gap: 6px; }
-  #m2-setwin #m2-set-colours button { display: flex; flex-direction: column; align-items: flex-start; gap: 3px; min-width: 0; padding: 4px 7px 6px; text-align: left; white-space: nowrap; overflow: hidden; }
+  #m2-setwin #m2-set-colours { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 4px 6px; }
+  #m2-setwin #m2-set-colours button { display: flex; flex-direction: row; align-items: center; gap: 7px; min-width: 0; padding: 4px 7px; text-align: left; white-space: nowrap; overflow: hidden; }
   #m2-setwin #m2-set-colours button:not(.m2-on):not(:hover) { border-color: transparent; }  /* no frame but on the chosen one (user, 2026-11-12) */
   #m2-setwin .m2-sw { display: flex; gap: 2px; }
   #m2-setwin .m2-sw i { width: 12px; height: 12px; border-radius: 2px; border: 1px solid #0002; box-sizing: border-box; }
