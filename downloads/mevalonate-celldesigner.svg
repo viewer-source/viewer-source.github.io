@@ -1,234 +1,234 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="2067" height="1006" viewBox="0 0 2067 1006">
+<svg xmlns="http://www.w3.org/2000/svg" width="2371" height="1006" viewBox="0 0 2371 1006">
 <rect width="100%" height="100%" fill="#fff"/>
-<polygon points="987.36,260 1187.36,260 1192.36,265 1192.36,405 1187.36,410 987.36,410 982.36,405 982.36,265" fill="#ffffff" stroke="#000" class="c-complex"/>
-<text x="1087.36" y="403" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-complex">CaMKKβ:CaM:Ca2+</text>
-<polygon points="1478.95,529.8 1658.95,529.8 1663.95,534.8 1663.95,652.8 1658.95,657.8 1478.95,657.8 1473.95,652.8 1473.95,534.8" fill="#ffffff" stroke="#000" class="c-complex"/>
-<text x="1568.95" y="650.8" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-complex">AMPKα:AMPKβ:AMPKγ</text>
-<polygon points="726.89,275 816.89,275 821.89,280 821.89,390 816.89,395 726.89,395 721.89,390 721.89,280" fill="#ffffff" stroke="#000" class="c-complex"/>
-<text x="771.89" y="388" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-complex">CaM:Ca2+</text>
-<polygon points="1243.15,272.02 1411.48,272.02 1416.48,277.02 1416.48,387.02 1411.48,392.02 1243.15,392.02 1238.15,387.02 1238.15,277.02" fill="#ffffff" stroke="#000" class="c-complex"/>
-<text x="1327.31" y="385.02" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-complex">STRAD:LKB1:MO25</text>
-<polygon points="996.94,529.8 1176.94,529.8 1181.94,534.8 1181.94,652.8 1176.94,657.8 996.94,657.8 991.94,652.8 991.94,534.8" fill="#ffffff" stroke="#000" class="c-complex"/>
-<text x="1086.94" y="650.8" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-complex">AMPKα:AMPKγ:AMPKβ</text>
-<polygon points="974.33,765.87 1117.05,765.87 1122.05,770.87 1122.05,960.87 1117.05,965.87 974.33,965.87 969.33,960.87 969.33,770.87" fill="#ffffff" stroke="#000" class="c-complex"/>
-<text x="1045.69" y="958.87" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-complex">PP2AC:PP2ARA:PP2ARB</text>
-<polygon points="719.95,805.87 811.99,805.87 816.99,810.87 816.99,920.87 811.99,925.87 719.95,925.87 714.95,920.87 714.95,810.87" fill="#ffffff" stroke="#000" class="c-complex"/>
-<text x="765.97" y="918.87" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-complex">PP2AC:PP2ARA</text>
-<polygon points="1087.36,270 1177.36,270 1182.36,275 1182.36,385 1177.36,390 1087.36,390 1082.36,385 1082.36,275" fill="#ffffff" stroke="#000" class="c-complex"/>
-<text x="1132.36" y="383" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-complex">CaM:Ca2+</text>
-<polygon points="999.67,825.87 1091.71,825.87 1096.71,830.87 1096.71,940.87 1091.71,945.87 999.67,945.87 994.67,940.87 994.67,830.87" fill="#ffffff" stroke="#000" class="c-complex"/>
-<text x="1045.69" y="938.87" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-complex">PP2AC:PP2ARA</text>
-<rect x="1434.82" y="830.78" width="74" height="34" rx="5" fill="#e2aca3" stroke="#000" class="c-protein"/>
-<circle cx="1472.13" cy="864.78" r="8" fill="#fff" stroke="#000"/>
-<text x="1472.13" y="868.28" font-family="sans-serif" font-size="9" text-anchor="middle">P</text>
-<rect x="1428.82" y="824.78" width="74" height="34" rx="5" fill="#e2aca3" stroke="#000" class="c-protein"/>
-<circle cx="1466.13" cy="858.78" r="8" fill="#fff" stroke="#000"/>
-<text x="1466.13" y="862.28" font-family="sans-serif" font-size="9" text-anchor="middle">P</text>
-<rect x="1430.82" y="816.78" width="70" height="16" fill="#fff" stroke="#000"/>
-<text x="1435.82" y="828.78" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="start" xml:space="preserve"> N:4 </text>
-<text x="1465.82" y="846.45" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">HMGCR</text>
-<rect x="1853.3" y="525.59" width="74" height="34" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
-<rect x="1847.3" y="519.59" width="74" height="34" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
-<rect x="1849.3" y="511.59" width="70" height="16" fill="#fff" stroke="#000"/>
-<text x="1854.3" y="523.59" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="start" xml:space="preserve"> N:4 </text>
-<text x="1884.3" y="541.26" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">ACAT2</text>
-<rect x="1641.09" y="830.78" width="74" height="34" rx="5" fill="#e2aca3" stroke="#000" class="c-protein"/>
-<circle cx="1678.39" cy="864.78" r="8" fill="#fff" stroke="#000"/>
-<rect x="1635.09" y="824.78" width="74" height="34" rx="5" fill="#e2aca3" stroke="#000" class="c-protein"/>
-<circle cx="1672.39" cy="858.78" r="8" fill="#fff" stroke="#000"/>
-<rect x="1637.09" y="816.78" width="70" height="16" fill="#fff" stroke="#000"/>
-<text x="1642.09" y="828.78" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="start" xml:space="preserve"> N:4 </text>
-<text x="1672.09" y="846.45" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">HMGCR</text>
-<ellipse cx="1768.57" cy="625.3" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
-<text x="1768.57" y="629.97" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">acetyl-CoA</text>
-<ellipse cx="2006.03" cy="625.3" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
-<text x="2006.03" y="629.97" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">acetoacetyl-CoA</text>
-<ellipse cx="1887.3" cy="787.16" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
-<text x="1887.3" y="791.83" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">HMG-CoA</text>
-<ellipse cx="1887.3" cy="902.4" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
-<text x="1887.3" y="907.07" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">mevalonate</text>
-<rect x="1728.3" y="713.85" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
-<text x="1768.3" y="738.52" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">HMGCS1</text>
-<rect x="827.12" y="44" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
-<text x="867.12" y="68.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">CaMKKβ</text>
-<rect x="1287.31" y="773.78" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
-<text x="1327.31" y="798.45" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">PP2C</text>
-<rect x="796.94" y="573.8" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
-<text x="836.94" y="598.47" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">AMPKβ</text>
-<rect x="858.6" y="658.2" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
-<text x="898.6" y="682.87" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">AMPKγ</text>
-<rect x="165.84" y="700" width="68.33" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
-<text x="200" y="724.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">PP2AC</text>
-<rect x="536" y="841.87" width="68.33" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
-<text x="570.17" y="866.54" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">PP2ARA</text>
-<rect x="829.33" y="732.95" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
-<text x="869.33" y="757.62" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">PP2ARB</text>
-<rect x="1476.66" y="242.02" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
-<text x="1516.66" y="266.68" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">LKB1</text>
-<rect x="1543.6" y="312.02" width="84.88" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
-<text x="1586.04" y="336.68" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">STRAD</text>
-<rect x="1476.66" y="382.02" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
-<text x="1516.66" y="406.68" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">MO25</text>
-<rect x="48" y="332.01" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
-<text x="88" y="356.68" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">CaM</text>
-<rect x="853.6" y="489.2" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
-<circle cx="893.6" cy="529.2" r="8" fill="#fff" stroke="#000"/>
-<text x="893.6" y="513.87" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">AMPKα</text>
-<ellipse cx="600" cy="168" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
-<text x="600" y="172.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">Ca2+</text>
-<ellipse cx="1240.89" cy="593.8" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
-<text x="1240.89" y="598.47" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">AMP</text>
-<rect x="992.36" y="310" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
-<text x="1032.36" y="334.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">CaMKKβ</text>
-<rect x="1483.95" y="539.8" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
-<circle cx="1523.95" cy="579.8" r="8" fill="#fff" stroke="#000"/>
-<text x="1523.95" y="583.3" font-family="sans-serif" font-size="9" text-anchor="middle">P</text>
-<text x="1523.95" y="564.47" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">AMPKα</text>
-<rect x="1483.95" y="597.8" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
-<text x="1523.95" y="622.47" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">AMPKβ</text>
-<rect x="1573.95" y="539.8" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
-<text x="1613.95" y="564.47" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">AMPKγ</text>
-<rect x="731.89" y="335" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
-<text x="771.89" y="359.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">CaM</text>
-<ellipse cx="771.89" cy="305" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
-<text x="771.89" y="309.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">Ca2+</text>
-<rect x="1326.48" y="332.02" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
-<text x="1366.48" y="356.68" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">STRAD</text>
-<rect x="1287.31" y="282.02" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
-<text x="1327.31" y="306.68" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">LKB1</text>
-<rect x="1248.15" y="332.02" width="68.33" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
-<text x="1282.31" y="356.68" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">MO25</text>
-<rect x="1001.94" y="539.8" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
-<circle cx="1041.94" cy="579.8" r="8" fill="#fff" stroke="#000"/>
-<text x="1041.94" y="564.47" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">AMPKα</text>
-<rect x="1091.94" y="539.8" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
-<text x="1131.94" y="564.47" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">AMPKγ</text>
-<rect x="1001.94" y="597.8" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
-<text x="1041.94" y="622.47" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">AMPKβ</text>
-<rect x="1005.69" y="775.87" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
-<text x="1045.69" y="800.54" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">PP2ARB</text>
-<rect x="731.8" y="815.87" width="68.33" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
-<text x="765.97" y="840.54" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">PP2AC</text>
-<rect x="731.8" y="865.87" width="68.33" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
-<text x="765.97" y="890.54" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">PP2ARA</text>
-<rect x="1092.36" y="330" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
-<text x="1132.36" y="354.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">CaM</text>
-<ellipse cx="1132.36" cy="300" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
-<text x="1132.36" y="304.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">Ca2+</text>
-<rect x="1005.69" y="835.87" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
-<text x="1045.69" y="860.54" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">PP2AC</text>
-<rect x="1005.69" y="885.87" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
-<text x="1045.69" y="910.54" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">PP2ARA</text>
+<polygon points="1291.36,260 1491.36,260 1496.36,265 1496.36,405 1491.36,410 1291.36,410 1286.36,405 1286.36,265" fill="#ffffff" stroke="#000" class="c-complex"/>
+<text x="1391.36" y="403" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-complex">CaMKKβ:CaM:Ca2+</text>
+<polygon points="1782.95,529.8 1962.95,529.8 1967.95,534.8 1967.95,652.8 1962.95,657.8 1782.95,657.8 1777.95,652.8 1777.95,534.8" fill="#ffffff" stroke="#000" class="c-complex"/>
+<text x="1872.95" y="650.8" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-complex">AMPKα:AMPKβ:AMPKγ</text>
+<polygon points="1030.89,275 1120.89,275 1125.89,280 1125.89,390 1120.89,395 1030.89,395 1025.89,390 1025.89,280" fill="#ffffff" stroke="#000" class="c-complex"/>
+<text x="1075.89" y="388" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-complex">CaM:Ca2+</text>
+<polygon points="1547.15,272.02 1715.48,272.02 1720.48,277.02 1720.48,387.02 1715.48,392.02 1547.15,392.02 1542.15,387.02 1542.15,277.02" fill="#ffffff" stroke="#000" class="c-complex"/>
+<text x="1631.31" y="385.02" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-complex">STRAD:LKB1:MO25</text>
+<polygon points="1300.94,529.8 1480.94,529.8 1485.94,534.8 1485.94,652.8 1480.94,657.8 1300.94,657.8 1295.94,652.8 1295.94,534.8" fill="#ffffff" stroke="#000" class="c-complex"/>
+<text x="1390.94" y="650.8" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-complex">AMPKα:AMPKγ:AMPKβ</text>
+<polygon points="1278.33,765.87 1421.05,765.87 1426.05,770.87 1426.05,960.87 1421.05,965.87 1278.33,965.87 1273.33,960.87 1273.33,770.87" fill="#ffffff" stroke="#000" class="c-complex"/>
+<text x="1349.69" y="958.87" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-complex">PP2AC:PP2ARA:PP2ARB</text>
+<polygon points="1023.95,805.87 1115.99,805.87 1120.99,810.87 1120.99,920.87 1115.99,925.87 1023.95,925.87 1018.95,920.87 1018.95,810.87" fill="#ffffff" stroke="#000" class="c-complex"/>
+<text x="1069.97" y="918.87" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-complex">PP2AC:PP2ARA</text>
+<polygon points="1391.36,270 1481.36,270 1486.36,275 1486.36,385 1481.36,390 1391.36,390 1386.36,385 1386.36,275" fill="#ffffff" stroke="#000" class="c-complex"/>
+<text x="1436.36" y="383" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-complex">CaM:Ca2+</text>
+<polygon points="1303.67,825.87 1395.71,825.87 1400.71,830.87 1400.71,940.87 1395.71,945.87 1303.67,945.87 1298.67,940.87 1298.67,830.87" fill="#ffffff" stroke="#000" class="c-complex"/>
+<text x="1349.69" y="938.87" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-complex">PP2AC:PP2ARA</text>
+<rect x="1738.82" y="830.78" width="74" height="34" rx="5" fill="#e2aca3" stroke="#000" class="c-protein"/>
+<circle cx="1776.13" cy="864.78" r="8" fill="#fff" stroke="#000"/>
+<text x="1776.13" y="868.28" font-family="sans-serif" font-size="9" text-anchor="middle">P</text>
+<rect x="1732.82" y="824.78" width="74" height="34" rx="5" fill="#e2aca3" stroke="#000" class="c-protein"/>
+<circle cx="1770.13" cy="858.78" r="8" fill="#fff" stroke="#000"/>
+<text x="1770.13" y="862.28" font-family="sans-serif" font-size="9" text-anchor="middle">P</text>
+<rect x="1734.82" y="816.78" width="70" height="16" fill="#fff" stroke="#000"/>
+<text x="1739.82" y="828.78" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="start" xml:space="preserve"> N:4 </text>
+<text x="1769.82" y="846.45" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">HMGCR</text>
+<rect x="2157.3" y="525.59" width="74" height="34" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<rect x="2151.3" y="519.59" width="74" height="34" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<rect x="2153.3" y="511.59" width="70" height="16" fill="#fff" stroke="#000"/>
+<text x="2158.3" y="523.59" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="start" xml:space="preserve"> N:4 </text>
+<text x="2188.3" y="541.26" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">ACAT2</text>
+<rect x="1945.09" y="830.78" width="74" height="34" rx="5" fill="#e2aca3" stroke="#000" class="c-protein"/>
+<circle cx="1982.39" cy="864.78" r="8" fill="#fff" stroke="#000"/>
+<rect x="1939.09" y="824.78" width="74" height="34" rx="5" fill="#e2aca3" stroke="#000" class="c-protein"/>
+<circle cx="1976.39" cy="858.78" r="8" fill="#fff" stroke="#000"/>
+<rect x="1941.09" y="816.78" width="70" height="16" fill="#fff" stroke="#000"/>
+<text x="1946.09" y="828.78" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="start" xml:space="preserve"> N:4 </text>
+<text x="1976.09" y="846.45" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">HMGCR</text>
+<ellipse cx="2072.57" cy="625.3" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="2072.57" y="629.97" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">acetyl-CoA</text>
+<ellipse cx="2310.03" cy="625.3" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="2310.03" y="629.97" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">acetoacetyl-CoA</text>
+<ellipse cx="2191.3" cy="787.16" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="2191.3" y="791.83" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">HMG-CoA</text>
+<ellipse cx="2191.3" cy="902.4" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="2191.3" y="907.07" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">mevalonate</text>
+<rect x="2032.3" y="713.85" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<text x="2072.3" y="738.52" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">HMGCS1</text>
+<rect x="1131.12" y="44" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<text x="1171.12" y="68.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">CaMKKβ</text>
+<rect x="1591.31" y="773.78" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<text x="1631.31" y="798.45" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">PP2C</text>
+<rect x="1100.94" y="573.8" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<text x="1140.94" y="598.47" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">AMPKβ</text>
+<rect x="1162.6" y="658.2" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<text x="1202.6" y="682.87" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">AMPKγ</text>
+<rect x="469.83" y="700" width="68.33" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<text x="504" y="724.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">PP2AC</text>
+<rect x="840" y="841.87" width="68.33" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<text x="874.17" y="866.54" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">PP2ARA</text>
+<rect x="1133.33" y="732.95" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<text x="1173.33" y="757.62" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">PP2ARB</text>
+<rect x="1780.66" y="242.02" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<text x="1820.66" y="266.68" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">LKB1</text>
+<rect x="1847.6" y="312.02" width="84.88" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<text x="1890.04" y="336.68" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">STRAD</text>
+<rect x="1780.66" y="382.02" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<text x="1820.66" y="406.68" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">MO25</text>
+<rect x="40" y="330" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<text x="80" y="354.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">CaM</text>
+<rect x="1157.6" y="489.2" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<circle cx="1197.6" cy="529.2" r="8" fill="#fff" stroke="#000"/>
+<text x="1197.6" y="513.87" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">AMPKα</text>
+<ellipse cx="904" cy="168" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="904" y="172.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">Ca2+</text>
+<ellipse cx="1544.89" cy="593.8" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="1544.89" y="598.47" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">AMP</text>
+<rect x="1296.36" y="310" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<text x="1336.36" y="334.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">CaMKKβ</text>
+<rect x="1787.95" y="539.8" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<circle cx="1827.95" cy="579.8" r="8" fill="#fff" stroke="#000"/>
+<text x="1827.95" y="583.3" font-family="sans-serif" font-size="9" text-anchor="middle">P</text>
+<text x="1827.95" y="564.47" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">AMPKα</text>
+<rect x="1787.95" y="597.8" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<text x="1827.95" y="622.47" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">AMPKβ</text>
+<rect x="1877.95" y="539.8" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<text x="1917.95" y="564.47" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">AMPKγ</text>
+<rect x="1035.89" y="335" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<text x="1075.89" y="359.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">CaM</text>
+<ellipse cx="1075.89" cy="305" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="1075.89" y="309.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">Ca2+</text>
+<rect x="1630.48" y="332.02" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<text x="1670.48" y="356.68" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">STRAD</text>
+<rect x="1591.31" y="282.02" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<text x="1631.31" y="306.68" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">LKB1</text>
+<rect x="1552.15" y="332.02" width="68.33" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<text x="1586.31" y="356.68" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">MO25</text>
+<rect x="1305.94" y="539.8" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<circle cx="1345.94" cy="579.8" r="8" fill="#fff" stroke="#000"/>
+<text x="1345.94" y="564.47" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">AMPKα</text>
+<rect x="1395.94" y="539.8" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<text x="1435.94" y="564.47" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">AMPKγ</text>
+<rect x="1305.94" y="597.8" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<text x="1345.94" y="622.47" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">AMPKβ</text>
+<rect x="1309.69" y="775.87" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<text x="1349.69" y="800.54" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">PP2ARB</text>
+<rect x="1035.8" y="815.87" width="68.33" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<text x="1069.97" y="840.54" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">PP2AC</text>
+<rect x="1035.8" y="865.87" width="68.33" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<text x="1069.97" y="890.54" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">PP2ARA</text>
+<rect x="1396.36" y="330" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<text x="1436.36" y="354.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">CaM</text>
+<ellipse cx="1436.36" cy="300" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="1436.36" y="304.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">Ca2+</text>
+<rect x="1309.69" y="835.87" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<text x="1349.69" y="860.54" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">PP2AC</text>
+<rect x="1309.69" y="885.87" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<text x="1349.69" y="910.54" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">PP2ARA</text>
 <g fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
-<polyline points="1189.94,561.8 1451.95,561.8"/>
-<polyline points="1266.51,597.85 1320.8,570.41"/>
-<polyline points="1199.19,403.21 1321.76,477.97"/>
-<polyline points="1327.31,400.02 1327.31,474.85"/>
-<polyline points="1327.31,481.35 1327.88,549.3"/>
-<polyline points="1627.09,833.28 1524.82,833.28"/>
-<polyline points="1568.95,665.8 1568.95,820.78"/>
-<polyline points="1510.82,850.28 1613.09,850.28"/>
-<polyline points="1130.05,915.87 1569.07,915.82 1568.97,862.78"/>
-<polyline points="1887.3,815.16 1887.3,860.4"/>
-<polyline points="1723.09,844.78 1874.8,844.78"/>
-<polyline points="1789.62,643.48 1887.3,700.54 1887.3,745.16"/>
-<polyline points="1984.96,643.46 1887.95,699.74 1887.3,725.52"/>
-<polyline points="1816.3,733.85 1874.8,733.85"/>
-<polyline points="1795.05,632.95 1965.55,632.95"/>
-<polyline points="1887.3,567.59 1887.3,620.45"/>
-<polyline points="136,350.82 699.89,336.79"/>
-<polyline points="577.22,184.22 350.71,345.48"/>
-<polyline points="1465.95,625.8 1203.94,625.8"/>
-<polyline points="1267.07,603.63 1325.06,619.98"/>
-<polyline points="1129.06,820.01 1321.62,714.07"/>
-<polyline points="1327.31,765.78 1327.31,717.44"/>
-<polyline points="1327.31,710.94 1327.89,638.3"/>
-<polyline points="612.33,862.73 692.95,864.38"/>
-<polyline points="241.78,733.44 645.81,863.42"/>
-<polyline points="824.99,865.87 947.33,865.87"/>
-<polyline points="870.52,780.95 874.11,865.87"/>
-<polyline points="1535.6,332.02 1438.48,332.02"/>
-<polyline points="1508.46,374.34 1495.93,332.02"/>
-<polyline points="1478.78,269.73 1495.93,332.02"/>
-<polyline points="829.89,335 960.36,335"/>
-<polyline points="868.67,91.99 882.06,335"/>
-<polyline points="884.94,593.8 969.94,593.8"/>
-<polyline points="905.66,650.45 920.06,593.8"/>
-<polyline points="902.25,536.83 920.06,593.8"/>
+<polyline points="1493.94,561.8 1755.95,561.8"/>
+<polyline points="1570.51,597.85 1624.8,570.41"/>
+<polyline points="1503.19,403.21 1625.76,477.97"/>
+<polyline points="1631.31,400.02 1631.31,474.85"/>
+<polyline points="1631.31,481.35 1631.88,549.3"/>
+<polyline points="1931.09,833.28 1828.82,833.28"/>
+<polyline points="1872.95,665.8 1872.95,820.78"/>
+<polyline points="1814.82,850.28 1917.09,850.28"/>
+<polyline points="1434.05,915.87 1873.07,915.82 1872.97,862.78"/>
+<polyline points="2191.3,815.16 2191.3,860.4"/>
+<polyline points="2027.09,844.78 2178.8,844.78"/>
+<polyline points="2093.62,643.48 2191.3,700.54 2191.3,745.16"/>
+<polyline points="2288.96,643.46 2191.95,699.74 2191.3,725.52"/>
+<polyline points="2120.3,733.85 2178.8,733.85"/>
+<polyline points="2099.05,632.95 2269.55,632.95"/>
+<polyline points="2191.3,567.59 2191.3,620.45"/>
+<polyline points="128,349.28 1003.89,336.08"/>
+<polyline points="877.99,178.32 459.71,344.28"/>
+<polyline points="1769.95,625.8 1507.94,625.8"/>
+<polyline points="1571.07,603.63 1629.06,619.98"/>
+<polyline points="1433.06,820.01 1625.62,714.07"/>
+<polyline points="1631.31,765.78 1631.31,717.44"/>
+<polyline points="1631.31,710.94 1631.89,638.3"/>
+<polyline points="916.33,862.73 996.95,864.38"/>
+<polyline points="545.78,733.44 949.81,863.42"/>
+<polyline points="1128.99,865.87 1251.33,865.87"/>
+<polyline points="1174.52,780.95 1178.11,865.87"/>
+<polyline points="1839.6,332.02 1742.48,332.02"/>
+<polyline points="1812.46,374.34 1799.93,332.02"/>
+<polyline points="1782.78,269.73 1799.93,332.02"/>
+<polyline points="1133.89,335 1264.36,335"/>
+<polyline points="1172.67,91.99 1186.06,335"/>
+<polyline points="1188.94,593.8 1273.94,593.8"/>
+<polyline points="1209.66,650.45 1224.06,593.8"/>
+<polyline points="1206.25,536.83 1224.06,593.8"/>
 </g>
-<polygon points="1473.95,561.8 1458.95,566.8 1458.95,556.8" fill="#000"/>
-<polyline points="1181.94,561.8 1459.95,561.8" fill="none" stroke="#000000" stroke-width="1"/>
-<polygon points="1327.94,566.8 1322.61,573.98 1319,566.84" fill="#fff" stroke="#000"/>
-<polyline points="1259.37,601.45 1320.8,570.41" fill="none" stroke="#000000" stroke-width="1"/>
-<polyline points="1192.36,399.04 1321.76,477.97" fill="none" stroke="#000000" stroke-width="1"/>
-<polyline points="1327.31,392.02 1327.31,474.85" fill="none" stroke="#000000" stroke-width="1"/>
-<circle cx="1327.91" cy="552.3" r="3" fill="#fff" stroke="#000"/>
-<polyline points="1327.31,481.35 1327.88,549.3" fill="none" stroke="#000000" stroke-width="1"/>
-<rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(1327.94,561.8) rotate(0)"/>
-<circle cx="1327.31" cy="481.35" r="6" fill="#fff" stroke="#000"/>
-<text x="1327.31" y="485.35" font-family="sans-serif" font-size="11" text-anchor="middle">|</text>
-<polygon points="1502.82,833.28 1517.82,828.28 1517.82,838.28" fill="#000"/>
-<polyline points="1635.09,833.28 1516.82,833.28" fill="none" stroke="#000000" stroke-width="1"/>
-<circle cx="1568.95" cy="823.78" r="3" fill="#fff" stroke="#000"/>
-<polyline points="1568.95,657.8 1568.95,820.78" fill="none" stroke="#000000" stroke-width="1"/>
-<rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(1568.95,833.28) rotate(180)"/>
-<polygon points="1635.09,850.28 1620.09,855.28 1620.09,845.28" fill="#000"/>
-<polyline points="1502.82,850.28 1621.09,850.28" fill="none" stroke="#000000" stroke-width="1"/>
-<circle cx="1568.96" cy="859.78" r="3" fill="#fff" stroke="#000"/>
-<polyline points="1122.05,915.87 1569.07,915.82 1568.97,862.78" fill="none" stroke="#000000" stroke-width="1"/>
-<rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(1568.95,850.28) rotate(0)"/>
-<polygon points="1887.3,882.4 1882.3,867.4 1892.3,867.4" fill="#000"/>
-<polyline points="1887.3,807.16 1887.3,868.4" fill="none" stroke="#000000" stroke-width="1"/>
-<circle cx="1877.8" cy="844.78" r="3" fill="#fff" stroke="#000"/>
-<polyline points="1715.09,844.78 1874.8,844.78" fill="none" stroke="#000000" stroke-width="1"/>
-<rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(1887.3,844.78) rotate(90)"/>
-<polygon points="1887.3,767.16 1882.3,752.16 1892.3,752.16" fill="#000"/>
-<polyline points="1782.71,639.44 1887.3,700.54 1887.3,753.16" fill="none" stroke="#000000" stroke-width="1"/>
-<polyline points="1991.88,639.44 1887.95,699.74 1887.3,725.52" fill="none" stroke="#000000" stroke-width="1"/>
-<circle cx="1877.8" cy="733.85" r="3" fill="#fff" stroke="#000"/>
-<polyline points="1808.3,733.85 1874.8,733.85" fill="none" stroke="#000000" stroke-width="1"/>
-<rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(1887.3,733.85) rotate(90)"/>
-<polygon points="1987.55,632.95 1972.55,637.95 1972.55,627.95" fill="#000"/>
-<polyline points="1787.05,632.95 1973.55,632.95" fill="none" stroke="#000000" stroke-width="1"/>
-<circle cx="1887.3" cy="623.45" r="3" fill="#fff" stroke="#000"/>
-<polyline points="1887.3,559.59 1887.3,620.45" fill="none" stroke="#000000" stroke-width="1"/>
-<rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(1887.3,632.95) rotate(0)"/>
-<polygon points="721.89,336.24 707.02,341.62 706.77,331.62" fill="#000"/>
-<polyline points="128,351.02 707.89,336.59" fill="none" stroke="#000000" stroke-width="1"/>
-<polyline points="583.73,179.58 350.71,345.48" fill="none" stroke="#000000" stroke-width="1"/>
-<rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(424.94,343.63) rotate(-1.43)"/>
-<polygon points="1181.94,625.8 1196.94,620.8 1196.94,630.8" fill="#000"/>
-<polyline points="1473.95,625.8 1195.94,625.8" fill="none" stroke="#000000" stroke-width="1"/>
-<line x1="1323.43" y1="625.76" x2="1326.69" y2="614.21" stroke="#000"/>
-<polyline points="1259.37,601.45 1325.06,619.98" fill="none" stroke="#000000" stroke-width="1"/>
-<polyline points="1122.05,823.86 1321.62,714.07" fill="none" stroke="#000000" stroke-width="1"/>
-<polyline points="1327.31,773.78 1327.31,717.44" fill="none" stroke="#000000" stroke-width="1"/>
-<circle cx="1327.91" cy="635.3" r="3" fill="#fff" stroke="#000"/>
-<polyline points="1327.31,710.94 1327.89,638.3" fill="none" stroke="#000000" stroke-width="1"/>
-<rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(1327.94,625.8) rotate(180)"/>
-<circle cx="1327.31" cy="710.94" r="6" fill="#fff" stroke="#000"/>
-<text x="1327.31" y="714.94" font-family="sans-serif" font-size="11" text-anchor="middle">|</text>
-<polygon points="714.95,864.83 699.85,869.52 700.06,859.52" fill="#000"/>
-<polyline points="604.33,862.57 700.95,864.54" fill="none" stroke="#000000" stroke-width="1"/>
-<polyline points="234.17,730.99 645.81,863.42" fill="none" stroke="#000000" stroke-width="1"/>
-<rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(659.64,863.7) rotate(1.17)"/>
-<polygon points="969.33,865.87 954.33,870.87 954.33,860.87" fill="#000"/>
-<polyline points="816.99,865.87 955.33,865.87" fill="none" stroke="#000000" stroke-width="1"/>
-<polyline points="870.18,772.95 874.11,865.87" fill="none" stroke="#000000" stroke-width="1"/>
-<rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(893.16,865.87) rotate(0)"/>
-<polygon points="1416.48,332.02 1431.48,327.02 1431.48,337.02" fill="#000"/>
-<polyline points="1543.6,332.02 1430.48,332.02" fill="none" stroke="#000000" stroke-width="1"/>
-<polyline points="1510.74,382.02 1495.93,332.02" fill="none" stroke="#000000" stroke-width="1"/>
-<polyline points="1476.66,262.02 1495.93,332.02" fill="none" stroke="#000000" stroke-width="1"/>
-<rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(1480.04,332.02) rotate(180)"/>
-<polygon points="982.36,335 967.36,340 967.36,330" fill="#000"/>
-<polyline points="821.89,335 968.36,335" fill="none" stroke="#000000" stroke-width="1"/>
-<polyline points="868.23,84 882.06,335" fill="none" stroke="#000000" stroke-width="1"/>
-<rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(902.12,335) rotate(0)"/>
-<polygon points="991.94,593.8 976.94,598.8 976.94,588.8" fill="#000"/>
-<polyline points="876.94,593.8 977.94,593.8" fill="none" stroke="#000000" stroke-width="1"/>
-<polyline points="903.69,658.2 920.06,593.8" fill="none" stroke="#000000" stroke-width="1"/>
-<polyline points="899.86,529.2 920.06,593.8" fill="none" stroke="#000000" stroke-width="1"/>
-<rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(934.44,593.8) rotate(0)"/>
+<polygon points="1777.95,561.8 1762.95,566.8 1762.95,556.8" fill="#000"/>
+<polyline points="1485.94,561.8 1763.95,561.8" fill="none" stroke="#000000" stroke-width="1"/>
+<polygon points="1631.94,566.8 1626.61,573.98 1623,566.84" fill="#fff" stroke="#000"/>
+<polyline points="1563.37,601.45 1624.8,570.41" fill="none" stroke="#000000" stroke-width="1"/>
+<polyline points="1496.36,399.04 1625.76,477.97" fill="none" stroke="#000000" stroke-width="1"/>
+<polyline points="1631.31,392.02 1631.31,474.85" fill="none" stroke="#000000" stroke-width="1"/>
+<circle cx="1631.91" cy="552.3" r="3" fill="#fff" stroke="#000"/>
+<polyline points="1631.31,481.35 1631.88,549.3" fill="none" stroke="#000000" stroke-width="1"/>
+<rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(1631.94,561.8) rotate(0)"/>
+<circle cx="1631.31" cy="481.35" r="6" fill="#fff" stroke="#000"/>
+<text x="1631.31" y="485.35" font-family="sans-serif" font-size="11" text-anchor="middle">|</text>
+<polygon points="1806.82,833.28 1821.82,828.28 1821.82,838.28" fill="#000"/>
+<polyline points="1939.09,833.28 1820.82,833.28" fill="none" stroke="#000000" stroke-width="1"/>
+<circle cx="1872.95" cy="823.78" r="3" fill="#fff" stroke="#000"/>
+<polyline points="1872.95,657.8 1872.95,820.78" fill="none" stroke="#000000" stroke-width="1"/>
+<rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(1872.95,833.28) rotate(180)"/>
+<polygon points="1939.09,850.28 1924.09,855.28 1924.09,845.28" fill="#000"/>
+<polyline points="1806.82,850.28 1925.09,850.28" fill="none" stroke="#000000" stroke-width="1"/>
+<circle cx="1872.96" cy="859.78" r="3" fill="#fff" stroke="#000"/>
+<polyline points="1426.05,915.87 1873.07,915.82 1872.97,862.78" fill="none" stroke="#000000" stroke-width="1"/>
+<rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(1872.95,850.28) rotate(0)"/>
+<polygon points="2191.3,882.4 2186.3,867.4 2196.3,867.4" fill="#000"/>
+<polyline points="2191.3,807.16 2191.3,868.4" fill="none" stroke="#000000" stroke-width="1"/>
+<circle cx="2181.8" cy="844.78" r="3" fill="#fff" stroke="#000"/>
+<polyline points="2019.09,844.78 2178.8,844.78" fill="none" stroke="#000000" stroke-width="1"/>
+<rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(2191.3,844.78) rotate(90)"/>
+<polygon points="2191.3,767.16 2186.3,752.16 2196.3,752.16" fill="#000"/>
+<polyline points="2086.71,639.44 2191.3,700.54 2191.3,753.16" fill="none" stroke="#000000" stroke-width="1"/>
+<polyline points="2295.88,639.44 2191.95,699.74 2191.3,725.52" fill="none" stroke="#000000" stroke-width="1"/>
+<circle cx="2181.8" cy="733.85" r="3" fill="#fff" stroke="#000"/>
+<polyline points="2112.3,733.85 2178.8,733.85" fill="none" stroke="#000000" stroke-width="1"/>
+<rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(2191.3,733.85) rotate(90)"/>
+<polygon points="2291.55,632.95 2276.55,637.95 2276.55,627.95" fill="#000"/>
+<polyline points="2091.05,632.95 2277.55,632.95" fill="none" stroke="#000000" stroke-width="1"/>
+<circle cx="2191.3" cy="623.45" r="3" fill="#fff" stroke="#000"/>
+<polyline points="2191.3,559.59 2191.3,620.45" fill="none" stroke="#000000" stroke-width="1"/>
+<rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(2191.3,632.95) rotate(0)"/>
+<polygon points="1025.89,335.75 1010.96,340.98 1010.81,330.98" fill="#000"/>
+<polyline points="120,349.4 1011.89,335.96" fill="none" stroke="#000000" stroke-width="1"/>
+<polyline points="885.43,175.37 459.71,344.28" fill="none" stroke="#000000" stroke-width="1"/>
+<rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(572.94,342.58) rotate(-0.86)"/>
+<polygon points="1485.94,625.8 1500.94,620.8 1500.94,630.8" fill="#000"/>
+<polyline points="1777.95,625.8 1499.94,625.8" fill="none" stroke="#000000" stroke-width="1"/>
+<line x1="1627.43" y1="625.76" x2="1630.69" y2="614.21" stroke="#000"/>
+<polyline points="1563.37,601.45 1629.06,619.98" fill="none" stroke="#000000" stroke-width="1"/>
+<polyline points="1426.05,823.86 1625.62,714.07" fill="none" stroke="#000000" stroke-width="1"/>
+<polyline points="1631.31,773.78 1631.31,717.44" fill="none" stroke="#000000" stroke-width="1"/>
+<circle cx="1631.91" cy="635.3" r="3" fill="#fff" stroke="#000"/>
+<polyline points="1631.31,710.94 1631.89,638.3" fill="none" stroke="#000000" stroke-width="1"/>
+<rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(1631.94,625.8) rotate(180)"/>
+<circle cx="1631.31" cy="710.94" r="6" fill="#fff" stroke="#000"/>
+<text x="1631.31" y="714.94" font-family="sans-serif" font-size="11" text-anchor="middle">|</text>
+<polygon points="1018.95,864.83 1003.85,869.52 1004.06,859.52" fill="#000"/>
+<polyline points="908.33,862.57 1004.95,864.54" fill="none" stroke="#000000" stroke-width="1"/>
+<polyline points="538.17,730.99 949.81,863.42" fill="none" stroke="#000000" stroke-width="1"/>
+<rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(963.64,863.7) rotate(1.17)"/>
+<polygon points="1273.33,865.87 1258.33,870.87 1258.33,860.87" fill="#000"/>
+<polyline points="1120.99,865.87 1259.33,865.87" fill="none" stroke="#000000" stroke-width="1"/>
+<polyline points="1174.18,772.95 1178.11,865.87" fill="none" stroke="#000000" stroke-width="1"/>
+<rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(1197.16,865.87) rotate(0)"/>
+<polygon points="1720.48,332.02 1735.48,327.02 1735.48,337.02" fill="#000"/>
+<polyline points="1847.6,332.02 1734.48,332.02" fill="none" stroke="#000000" stroke-width="1"/>
+<polyline points="1814.74,382.02 1799.93,332.02" fill="none" stroke="#000000" stroke-width="1"/>
+<polyline points="1780.66,262.02 1799.93,332.02" fill="none" stroke="#000000" stroke-width="1"/>
+<rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(1784.04,332.02) rotate(180)"/>
+<polygon points="1286.36,335 1271.36,340 1271.36,330" fill="#000"/>
+<polyline points="1125.89,335 1272.36,335" fill="none" stroke="#000000" stroke-width="1"/>
+<polyline points="1172.23,84 1186.06,335" fill="none" stroke="#000000" stroke-width="1"/>
+<rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(1206.12,335) rotate(0)"/>
+<polygon points="1295.94,593.8 1280.94,598.8 1280.94,588.8" fill="#000"/>
+<polyline points="1180.94,593.8 1281.94,593.8" fill="none" stroke="#000000" stroke-width="1"/>
+<polyline points="1207.69,658.2 1224.06,593.8" fill="none" stroke="#000000" stroke-width="1"/>
+<polyline points="1203.86,529.2 1224.06,593.8" fill="none" stroke="#000000" stroke-width="1"/>
+<rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(1238.44,593.8) rotate(0)"/>
 </svg>
