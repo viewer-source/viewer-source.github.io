@@ -102,17 +102,17 @@ says "the workbench", "the converter's repository", "a private repository".
   closes the panel. Annotations on the left (Settings) open as one more tab of the panel (the panel opened if closed),
   no tab highlighted; its cross or any tab goes back. First in the styles' Default Icon Row.
 - Map colours (user, 2026-11-12, in Settings after Map size): File (the colours in the map's file, the default), then
-  Default, Paper, Moss, Steel and Grey (user, 2026-11-12: the colourful ones for testing, Grey not very useful; a
+  Default, Paper and Moss (user, 2026-11-12: the colourful ones for testing; Steel and Grey removed the same day; a
   few to be chosen with more care later; no red highlight in any scheme, highlighted proteins in the protein colour, only
-  File keeps the file's red); shown three by row, each its name over small squares of its protein and metabolite colours (File also its red), the chosen one filled
+  File keeps the file's red); shown in one row where the panel is wide enough, each its name over small squares of its protein and metabolite colours (File also its red), the chosen one filled
   as the other buttons (user, 2026-11-12: compact; tiles with a tiny map took too much room; names shortened: Paper for
   Paper and frost, Moss for Mono moss), kept in the reader's browser (`atlas-map-colours`), for every map; shown only for a map whose entry has
   `colours` (its picture drawn with the role classes). The renderers write each fill's role beside its colour (yrender
   and cdrender `CLASSES`, set by build.py and the editor; off by default, so their copies elsewhere draw byte-identical);
   a scheme is a `<style>` put into the picture's text in the browser, no second picture per map. Downloads keep the
   file's colours. Roles as the official site's /colours/ page (compartment, complex, protein, hlProtein, metabolite,
-  gene, white); a scheme's code is that page's (Default, Paper and frost, Mono moss and Steel are its presets, Steel being Mono steel). CellDesigner compartments keep their
-  colours (their lines are drawn in it). Grey is meant as the quiet base for the Overlays tab to come.
+  gene, white); a scheme's code is that page's (Default, Paper and Moss are its presets Default, Paper and frost, Mono moss). CellDesigner compartments keep their
+  colours (their lines are drawn in it).
 - Icons on top or on the left (user, 2026-11-12: "vertical bar vs horizontal is simply a choice in settings";
   `--m2-bar-choice: 1`, with the icon row, off in the viewer's own look): Settings gets Icons, Left or Top, last in Settings (user, 2026-11-12: easy to find there, rarely changed once chosen) (in this order, user 2026-11-12; kept in the
   browser, `atlas-icon-bar`); Left puts the same tabs in the icon column at the page's left edge, with the row's
