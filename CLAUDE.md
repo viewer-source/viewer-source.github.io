@@ -228,12 +228,14 @@ says "the workbench", "the converter's repository", "a private repository".
   when Edit is pressed (2026-11-12: it was taken for a new frame of the drawing, and maps with negative places jumped
   right and down, carnitine out of sight; no file had been shifted by it).
   A selected line highlighted under its squares (user, 2026-11-12: "I was wrong about removing highlights"): light blue
-  (#8ab4f8, 6 px, multiplied) on GraphML maps, CellDesigner's purple (#ff00ff at 45%) on CellDesigner maps. On a
+  (#8ab4f8, 6 px, multiplied), on CellDesigner maps too (user, 2026-11-12: "use blue and as in GraphML the same color
+  code"; CellDesigner's purple taken back). On a
   CellDesigner map a reaction is one item, as in CellDesigner: a click on its main line (reactant to glyph to product),
   its glyph or an added reactant or product lights them all, no squares in the glyph; a modifier is its own item (user:
-  not with the reaction, though CellDesigner lights it). A node selected on a CellDesigner map in purple: the same light
-  fill and eight handles, in #ffbfff and #ff00ff (user, 2026-11-12: "use what we already have, but maybe color it in
-  purple"; CellDesigner's own outline of handles not wanted).
+  not with the reaction, though CellDesigner lights it). A node selected on a CellDesigner map as on a GraphML one, the
+  light grey fill and eight black handles (purple tried and taken back the same day, user; CellDesigner's own outline of
+  handles not wanted). The fill follows the drawing's frame after a shift out of negative places (2026-11-12: it showed
+  one shift away from the node).
   Ports (user, 2026-11-12: "snap to center, bottom center, top center, left center, right center ... These 5 positions are
   quite certain"; other places later): an end square of a lit line, dragged (4 px at least; a click selects the node
   there), snaps to the nearest of the node's centre and the middles of its four sides, shown by a square and the

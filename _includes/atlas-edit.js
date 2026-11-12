@@ -886,11 +886,11 @@
       });
       // an arc selected (user, 2026-11-12, as yEd): black squares on its bend points and on its two ports, where it starts
       // and ends (often in the middle of a node); and highlighted under them (user, 2026-11-12: "I was wrong about removing
-      // highlights"), in blue on a GraphML map, in CellDesigner's purple on a CellDesigner one. On a CellDesigner map a
+      // highlights"), in blue, on CellDesigner maps too (user, 2026-11-12: no purple). On a CellDesigner map a
       // reaction is one item, as in CellDesigner (user, 2026-11-12): a click on its main line (reactant to glyph to
       // product), its glyph or an added reactant or product lights them all up; a modifier stays on its own
       var L = lit(), hlE = L.e, glyphs = L.g, main = MAIN;
-      var hl = 'm2-ed-hl' + (cd ? ' m2-cd' : '');
+      var hl = 'm2-ed-hl';
       hlE.forEach(function (k) {
         var pts = line(k);
         if (pts) out.push('<path class="' + hl + '" d="M' + pts.map(function (q) { return f1(sx(q[0])) + ' ' + f1(sy(q[1])); }).join('L') + '"/>');
@@ -911,7 +911,7 @@
       if (drag && drag.port && drag.port.to) {
         var pk = drag.port, b0 = bx(pk.n), C = [b0[0] + b0[2] / 2 + pk.to[0], b0[1] + b0[3] / 2 + pk.to[1]], al = ports(pk.k), nb = al[pk.end ? al.length - 2 : 1];
         out.push('<path class="m2-ed-live" stroke-width="' + f1(Math.max(1, z)) + '" d="M' + f1(sx(C[0])) + ' ' + f1(sy(C[1])) + 'L' + f1(sx(nb[0])) + ' ' + f1(sy(nb[1])) + '"/>');
-        over.push('<rect class="m2-ed-handle' + (cd ? ' m2-cd' : '') + '" x="' + f1(sx(C[0]) - 4) + '" y="' + f1(sy(C[1]) - 4) + '" width="8" height="8"/>');
+        over.push('<rect class="m2-ed-handle" x="' + f1(sx(C[0]) - 4) + '" y="' + f1(sy(C[1]) - 4) + '" width="8" height="8"/>');
       }
       if (drag && drag.guides) drag.guides.forEach(function (g) {
         out.push('<path class="m2-ed-guide" d="M' + f1(sx(g[0][0])) + ' ' + f1(sy(g[0][1])) + 'L' + f1(sx(g[1][0])) + ' ' + f1(sy(g[1][1])) + '"/>');
@@ -929,18 +929,22 @@
         if (g) {   // in the drawing itself, right over the node's own shape: what is drawn after it (its contents, the
           // arcs, the labels) stays on top, as yEd shows a group selected (user, 2026-11-12)
           var el = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-          el.setAttribute('class', cd ? 'm2-ed-dark m2-cd' : 'm2-ed-dark'); el.setAttribute('d', shapeD(i, true));
+          el.setAttribute('class', 'm2-ed-dark'); el.setAttribute('d', shapeD(i, true));
+          // a CellDesigner drawing is in the file's places, which a shift out of negative places (cd_edit.place) puts
+          // -x0, -y0 from the editor's (the frame's two translates cancel inside the picture): the fill follows them
+          // (user, 2026-11-12: after a node moved past the canvas edge the fill showed at another place)
+          if (cd && (x0 || y0)) el.setAttribute('transform', 'translate(' + f1(-x0) + ',' + f1(-y0) + ')');
           var first = g.firstElementChild && g.firstElementChild.localName === 'a' ? g.firstElementChild : g;
           var shapes = first.querySelectorAll(cd ? ':scope > path, :scope > rect, :scope > ellipse, :scope > polygon' : ':scope > path'), last = shapes.length ? shapes[shapes.length - 1] : null;
           if (last) last.after(el); else first.prepend(el);
         } else if (n.kids.length) {   // no drawing of the editor's yet: handles only for a group
-        } else out.push(frame + '<path class="m2-ed-dark' + (cd ? ' m2-cd' : '') + '" d="' + shapeD(i) + '"/></g>');
+        } else out.push(frame + '<path class="m2-ed-dark" d="' + shapeD(i) + '"/></g>');
         // the handles in the map's units, so they grow and shrink with the zoom as yEd's (user, 2026-11-12): 5 units
         // wide, their centres 3.3 units outside the box (as measured on yEd)
         var hs = Math.max(2, HANDLE * z), off = 3.3 * z;
         var L = sx(b[0]) - off, T = sy(b[1]) - off, R = sx(b[0] + b[2]) + off, B = sy(b[1] + b[3]) + off;
         [[L, T], [(L + R) / 2, T], [R, T], [L, (T + B) / 2], [R, (T + B) / 2], [L, B], [(L + R) / 2, B], [R, B]].forEach(function (q) {
-          over.push('<rect class="m2-ed-handle' + (cd ? ' m2-cd' : '') + '" x="' + f1(q[0] - hs / 2) + '" y="' + f1(q[1] - hs / 2) + '" width="' + f1(hs) + '" height="' + f1(hs) + '"/>');
+          over.push('<rect class="m2-ed-handle" x="' + f1(q[0] - hs / 2) + '" y="' + f1(q[1] - hs / 2) + '" width="' + f1(hs) + '" height="' + f1(hs) + '"/>');
         });
       });
       // while a drag runs: a thin grey outline of where it goes (or the area being selected), gone on release
