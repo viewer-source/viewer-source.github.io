@@ -1482,6 +1482,18 @@
     }, true);
 
     buttons();
+    // the renderer started in the background where the Edit tab is (user, 2026-11-12: a CellDesigner map took about 4 s to
+    // open for editing, Python and the converter loading first): a few seconds after the page has shown its map, when the
+    // browser is idle; a site without the Edit tab loads nothing
+    setTimeout(function () {
+      var eb = document.querySelector('#m2-rail .m2-ri[data-win="edit"]');
+      if (!eb || !eb.offsetParent) return;
+      (window.requestIdleCallback || function (f) { setTimeout(f, 0); })(function () {
+        var s0 = status.textContent;   // quietly: its "Loading the renderer" message not shown
+        cdpy().then(function () { if (!on) status.textContent = s0; }, function () {});
+        if (!on) status.textContent = s0;
+      });
+    }, 2500);
     // the site still behind the last save: its build is not yet of the file saved last (the source's sha in index.json),
     // so a build of an earlier save does not replace the edited drawing (2026-11-12); without the sha, any new build
     function behind(m, k) { return m.src && k.sha ? m.src !== k.sha : ver(m) === k.v; }
