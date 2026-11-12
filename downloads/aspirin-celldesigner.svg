@@ -1,46 +1,46 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="991" height="339" viewBox="0 0 991 339">
 <rect width="100%" height="100%" fill="#fff"/>
-<rect x="524.36" y="155.77" width="74" height="34" rx="5" fill="#e2aca3" stroke="#000"/>
+<rect x="524.36" y="155.77" width="74" height="34" rx="5" fill="#e2aca3" stroke="#000" class="c-protein"/>
 <circle cx="561.36" cy="189.77" r="8" fill="#fff" stroke="#000"/>
-<rect x="518.36" y="149.77" width="74" height="34" rx="5" fill="#e2aca3" stroke="#000"/>
+<rect x="518.36" y="149.77" width="74" height="34" rx="5" fill="#e2aca3" stroke="#000" class="c-protein"/>
 <circle cx="555.36" cy="183.77" r="8" fill="#fff" stroke="#000"/>
-<text x="555.36" y="170.77" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">COX-2</text>
-<ellipse cx="417.19" cy="60" rx="18" ry="18" fill="#dbebdb" stroke="#000"/>
-<text x="417.19" y="64" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">arachidonate</text>
-<rect x="713.42" y="155.77" width="74" height="34" rx="5" fill="#e2aca3" stroke="#000"/>
+<text x="555.36" y="170.77" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-protein">COX-2</text>
+<ellipse cx="417.19" cy="60" rx="18" ry="18" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="417.19" y="64" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-metabolite">arachidonate</text>
+<rect x="713.42" y="155.77" width="74" height="34" rx="5" fill="#e2aca3" stroke="#000" class="c-protein"/>
 <circle cx="750.42" cy="189.77" r="8" fill="#fff" stroke="#000"/>
 <text x="750.42" y="193.27" font-family="sans-serif" font-size="9" text-anchor="middle">Ac</text>
-<rect x="707.42" y="149.77" width="74" height="34" rx="5" fill="#e2aca3" stroke="#000"/>
+<rect x="707.42" y="149.77" width="74" height="34" rx="5" fill="#e2aca3" stroke="#000" class="c-protein"/>
 <circle cx="744.42" cy="183.77" r="8" fill="#fff" stroke="#000"/>
 <text x="744.42" y="187.27" font-family="sans-serif" font-size="9" text-anchor="middle">Ac</text>
-<text x="744.42" y="170.77" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">COX-2</text>
-<ellipse cx="417.19" cy="169.77" rx="18" ry="18" fill="#dbebdb" stroke="#000"/>
-<text x="417.19" y="173.77" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">PGG2</text>
-<ellipse cx="417.19" cy="279.54" rx="18" ry="18" fill="#dbebdb" stroke="#000"/>
-<text x="417.19" y="283.54" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">PGH2</text>
-<ellipse cx="583.27" cy="251.89" rx="18" ry="18" fill="#ffffff" stroke="#000"/>
-<text x="583.27" y="255.89" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">aspirin</text>
-<ellipse cx="731.78" cy="251.89" rx="18" ry="18" fill="#ffffff" stroke="#000"/>
-<text x="731.78" y="255.89" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">salicylate</text>
-<ellipse cx="896.34" cy="169.77" rx="18" ry="18" fill="#dbebdb" stroke="#000"/>
-<text x="896.34" y="173.77" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">15R-HETE</text>
-<rect x="242.01" y="155.77" width="74" height="34" rx="5" fill="#e2aca3" stroke="#000"/>
+<text x="744.42" y="170.77" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-protein">COX-2</text>
+<ellipse cx="417.19" cy="169.77" rx="18" ry="18" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="417.19" y="173.77" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-metabolite">PGG2</text>
+<ellipse cx="417.19" cy="279.54" rx="18" ry="18" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="417.19" y="283.54" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-metabolite">PGH2</text>
+<ellipse cx="583.27" cy="251.89" rx="18" ry="18" fill="#ffffff" stroke="#000" class="c-metabolite"/>
+<text x="583.27" y="255.89" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-metabolite">aspirin</text>
+<ellipse cx="731.78" cy="251.89" rx="18" ry="18" fill="#ffffff" stroke="#000" class="c-metabolite"/>
+<text x="731.78" y="255.89" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-metabolite">salicylate</text>
+<ellipse cx="896.34" cy="169.77" rx="18" ry="18" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="896.34" y="173.77" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-metabolite">15R-HETE</text>
+<rect x="242.01" y="155.77" width="74" height="34" rx="5" fill="#e2aca3" stroke="#000" class="c-protein"/>
 <circle cx="278.92" cy="189.77" r="8" fill="#fff" stroke="#000"/>
-<rect x="236.01" y="149.77" width="74" height="34" rx="5" fill="#e2aca3" stroke="#000"/>
+<rect x="236.01" y="149.77" width="74" height="34" rx="5" fill="#e2aca3" stroke="#000" class="c-protein"/>
 <circle cx="272.92" cy="183.77" r="8" fill="#fff" stroke="#000"/>
-<text x="273.01" y="170.77" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">COX-1</text>
-<rect x="46" y="155.77" width="74" height="34" rx="5" fill="#e2aca3" stroke="#000"/>
+<text x="273.01" y="170.77" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-protein">COX-1</text>
+<rect x="46" y="155.77" width="74" height="34" rx="5" fill="#e2aca3" stroke="#000" class="c-protein"/>
 <circle cx="82.9" cy="189.77" r="8" fill="#fff" stroke="#000"/>
 <text x="82.9" y="193.27" font-family="sans-serif" font-size="9" text-anchor="middle">Ac</text>
-<rect x="40" y="149.77" width="74" height="34" rx="5" fill="#e2aca3" stroke="#000"/>
+<rect x="40" y="149.77" width="74" height="34" rx="5" fill="#e2aca3" stroke="#000" class="c-protein"/>
 <circle cx="76.9" cy="183.77" r="8" fill="#fff" stroke="#000"/>
 <text x="76.9" y="187.27" font-family="sans-serif" font-size="9" text-anchor="middle">Ac</text>
-<text x="77" y="170.77" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">COX-1</text>
-<ellipse cx="260.37" cy="251.89" rx="18" ry="18" fill="#ffffff" stroke="#000"/>
-<text x="260.37" y="255.89" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">aspirin</text>
-<ellipse cx="103.55" cy="251.89" rx="18" ry="18" fill="#ffffff" stroke="#000"/>
-<text x="103.55" y="255.89" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">salicylate</text>
+<text x="77" y="170.77" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-protein">COX-1</text>
+<ellipse cx="260.37" cy="251.89" rx="18" ry="18" fill="#ffffff" stroke="#000" class="c-metabolite"/>
+<text x="260.37" y="255.89" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-metabolite">aspirin</text>
+<ellipse cx="103.55" cy="251.89" rx="18" ry="18" fill="#ffffff" stroke="#000" class="c-metabolite"/>
+<text x="103.55" y="255.89" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-metabolite">salicylate</text>
 <g fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
 <polyline points="606.36,169.77 685.42,169.77"/>
 <polyline points="597.9,230.44 639.26,169.77"/>

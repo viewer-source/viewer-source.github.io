@@ -9,114 +9,114 @@
 <rect x="116" y="40" width="276" height="234.28" rx="20" fill="none" stroke="#dfdbce" stroke-width="2"/>
 <rect x="128" y="52" width="252" height="210.28" rx="14" fill="none" stroke="#dfdbce" stroke-width="1"/>
 <text x="225.42" y="68" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="start">NUCLEUS</text>
-<polygon points="635.29,1015.22 739.97,1015.22 744.97,1020.22 744.97,1130.22 739.97,1135.22 635.29,1135.22 630.29,1130.22 630.29,1020.22" fill="#ffffff" stroke="#000"/>
-<text x="687.63" y="1128.22" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">CPT1:malonyl-CoA</text>
-<polygon points="414.5,650.38 594.5,650.38 599.5,655.38 599.5,773.38 594.5,778.38 414.5,778.38 409.5,773.38 409.5,655.38" fill="#ffffff" stroke="#000"/>
-<text x="504.5" y="771.38" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">AMPKβ:AMPKα:AMPKγ</text>
-<polygon points="414.5,416 594.5,416 599.5,421 599.5,539 594.5,544 414.5,544 409.5,539 409.5,421" fill="#ffffff" stroke="#000"/>
-<text x="504.5" y="537" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">AMPKβ:AMPKα:AMPKγ</text>
-<polygon points="106.98,533.19 286.98,533.19 291.98,538.19 291.98,656.19 286.98,661.19 106.98,661.19 101.98,656.19 101.98,538.19" fill="#ffffff" stroke="#000"/>
-<text x="196.98" y="654.19" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">MO25:STRAD:LKB1</text>
-<polygon points="984.12,107.22 1074.12,107.22 1079.12,112.22 1079.12,222.22 1074.12,227.22 984.12,227.22 979.12,222.22 979.12,112.22" fill="#ffffff" stroke="#000"/>
-<text x="1029.12" y="220.22" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">PKA-R:PKA-C</text>
-<polygon points="665.93,92.22 865.93,92.22 870.93,97.22 870.93,237.22 865.93,242.22 665.93,242.22 660.93,237.22 660.93,97.22" fill="#ffffff" stroke="#000"/>
-<text x="765.93" y="235.22" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">PKA-R:cAMP:PKA-C</text>
-<polygon points="536.19,245.28 626.19,245.28 631.19,250.28 631.19,360.28 626.19,365.28 536.19,365.28 531.19,360.28 531.19,250.28" fill="#ffffff" stroke="#000"/>
-<text x="581.19" y="358.28" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">PKA-R:cAMP</text>
-<polygon points="765.93,102.22 855.93,102.22 860.93,107.22 860.93,217.22 855.93,222.22 765.93,222.22 760.93,217.22 760.93,107.22" fill="#ffffff" stroke="#000"/>
-<text x="810.93" y="215.22" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">PKA-R:cAMP</text>
-<rect x="156.12" y="83.48" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000"/>
+<polygon points="635.29,1015.22 739.97,1015.22 744.97,1020.22 744.97,1130.22 739.97,1135.22 635.29,1135.22 630.29,1130.22 630.29,1020.22" fill="#ffffff" stroke="#000" class="c-complex"/>
+<text x="687.63" y="1128.22" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-complex">CPT1:malonyl-CoA</text>
+<polygon points="414.5,650.38 594.5,650.38 599.5,655.38 599.5,773.38 594.5,778.38 414.5,778.38 409.5,773.38 409.5,655.38" fill="#ffffff" stroke="#000" class="c-complex"/>
+<text x="504.5" y="771.38" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-complex">AMPKβ:AMPKα:AMPKγ</text>
+<polygon points="414.5,416 594.5,416 599.5,421 599.5,539 594.5,544 414.5,544 409.5,539 409.5,421" fill="#ffffff" stroke="#000" class="c-complex"/>
+<text x="504.5" y="537" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-complex">AMPKβ:AMPKα:AMPKγ</text>
+<polygon points="106.98,533.19 286.98,533.19 291.98,538.19 291.98,656.19 286.98,661.19 106.98,661.19 101.98,656.19 101.98,538.19" fill="#ffffff" stroke="#000" class="c-complex"/>
+<text x="196.98" y="654.19" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-complex">MO25:STRAD:LKB1</text>
+<polygon points="984.12,107.22 1074.12,107.22 1079.12,112.22 1079.12,222.22 1074.12,227.22 984.12,227.22 979.12,222.22 979.12,112.22" fill="#ffffff" stroke="#000" class="c-complex"/>
+<text x="1029.12" y="220.22" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-complex">PKA-R:PKA-C</text>
+<polygon points="665.93,92.22 865.93,92.22 870.93,97.22 870.93,237.22 865.93,242.22 665.93,242.22 660.93,237.22 660.93,97.22" fill="#ffffff" stroke="#000" class="c-complex"/>
+<text x="765.93" y="235.22" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-complex">PKA-R:cAMP:PKA-C</text>
+<polygon points="536.19,245.28 626.19,245.28 631.19,250.28 631.19,360.28 626.19,365.28 536.19,365.28 531.19,360.28 531.19,250.28" fill="#ffffff" stroke="#000" class="c-complex"/>
+<text x="581.19" y="358.28" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-complex">PKA-R:cAMP</text>
+<polygon points="765.93,102.22 855.93,102.22 860.93,107.22 860.93,217.22 855.93,222.22 765.93,222.22 760.93,217.22 760.93,107.22" fill="#ffffff" stroke="#000" class="c-complex"/>
+<text x="810.93" y="215.22" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-complex">PKA-R:cAMP</text>
+<rect x="156.12" y="83.48" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
 <circle cx="195.98" cy="123.48" r="8" fill="#fff" stroke="#000"/>
-<text x="196.12" y="108.15" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">LKB1</text>
-<rect x="156.12" y="210.96" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000"/>
+<text x="196.12" y="108.15" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">LKB1</text>
+<rect x="156.12" y="210.96" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
 <circle cx="195.98" cy="250.96" r="8" fill="#fff" stroke="#000"/>
 <text x="195.98" y="254.46" font-family="sans-serif" font-size="9" text-anchor="middle">P</text>
-<text x="196.12" y="235.63" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">LKB1</text>
-<rect x="276.12" y="147.22" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000"/>
-<text x="316.12" y="171.89" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">PKA-C</text>
-<rect x="366.35" y="836.07" width="80" height="40" rx="5" fill="#e2aca3" stroke="#000"/>
+<text x="196.12" y="235.63" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">LKB1</text>
+<rect x="276.12" y="147.22" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<text x="316.12" y="171.89" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">PKA-C</text>
+<rect x="366.35" y="836.07" width="80" height="40" rx="5" fill="#e2aca3" stroke="#000" class="c-protein"/>
 <circle cx="407.72" cy="876.07" r="8" fill="#fff" stroke="#000"/>
-<text x="406.35" y="860.74" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">ACACB</text>
-<rect x="567.17" y="836.07" width="80" height="40" rx="5" fill="#e2aca3" stroke="#000"/>
+<text x="406.35" y="860.74" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">ACACB</text>
+<rect x="567.17" y="836.07" width="80" height="40" rx="5" fill="#e2aca3" stroke="#000" class="c-protein"/>
 <circle cx="608.54" cy="876.07" r="8" fill="#fff" stroke="#000"/>
 <text x="608.54" y="879.57" font-family="sans-serif" font-size="9" text-anchor="middle">P</text>
-<text x="607.17" y="860.74" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">ACACB</text>
-<ellipse cx="291.82" cy="977.61" rx="20" ry="20" fill="#dbebdb" stroke="#000"/>
-<text x="291.82" y="982.27" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">acetyl-CoA</text>
-<ellipse cx="520.88" cy="977.61" rx="20" ry="20" fill="#dbebdb" stroke="#000"/>
-<text x="520.88" y="982.27" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">malonyl-CoA</text>
-<ellipse cx="603.54" cy="589.19" rx="20" ry="20" fill="#dbebdb" stroke="#000"/>
-<text x="603.54" y="593.86" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">AMP</text>
-<rect x="66.12" y="441.56" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000"/>
-<text x="106.12" y="466.23" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">STRAD</text>
-<rect x="246.12" y="441.56" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000"/>
-<text x="286.12" y="466.23" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">MO25</text>
-<ellipse cx="169.38" cy="1214.93" rx="20" ry="20" fill="#dbebdb" stroke="#000"/>
-<text x="169.38" y="1219.6" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">L-carnitine</text>
-<ellipse cx="317.78" cy="1159.32" rx="20" ry="20" fill="#dbebdb" stroke="#000"/>
-<text x="317.78" y="1163.99" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">acyl-L-carnitine</text>
-<ellipse cx="127.38" cy="1159.2" rx="20" ry="20" fill="#dbebdb" stroke="#000"/>
-<text x="127.38" y="1163.86" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">acyl-CoA</text>
-<rect x="182.58" y="1055.22" width="80" height="40" rx="5" fill="#e2aca3" stroke="#000"/>
-<text x="222.58" y="1079.89" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">CPT1</text>
-<rect x="156.98" y="371.56" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000"/>
+<text x="607.17" y="860.74" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">ACACB</text>
+<ellipse cx="291.82" cy="977.61" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="291.82" y="982.27" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">acetyl-CoA</text>
+<ellipse cx="520.88" cy="977.61" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="520.88" y="982.27" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">malonyl-CoA</text>
+<ellipse cx="603.54" cy="589.19" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="603.54" y="593.86" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">AMP</text>
+<rect x="66.12" y="441.56" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<text x="106.12" y="466.23" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">STRAD</text>
+<rect x="246.12" y="441.56" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<text x="286.12" y="466.23" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">MO25</text>
+<ellipse cx="169.38" cy="1214.93" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="169.38" y="1219.6" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">L-carnitine</text>
+<ellipse cx="317.78" cy="1159.32" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="317.78" y="1163.99" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">acyl-L-carnitine</text>
+<ellipse cx="127.38" cy="1159.2" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="127.38" y="1163.86" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">acyl-CoA</text>
+<rect x="182.58" y="1055.22" width="80" height="40" rx="5" fill="#e2aca3" stroke="#000" class="c-protein"/>
+<text x="222.58" y="1079.89" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">CPT1</text>
+<rect x="156.98" y="371.56" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
 <circle cx="196.84" cy="411.56" r="8" fill="#fff" stroke="#000"/>
 <text x="196.84" y="415.06" font-family="sans-serif" font-size="9" text-anchor="middle">P</text>
-<text x="196.98" y="396.23" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">LKB1</text>
-<rect x="420.53" y="1055.22" width="80" height="40" rx="5" fill="#e2aca3" stroke="#000"/>
-<text x="460.53" y="1079.89" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">CPT1</text>
-<ellipse cx="954.29" cy="66.35" rx="20" ry="20" fill="#dbebdb" stroke="#000"/>
-<text x="954.29" y="71.02" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">cAMP</text>
-<rect x="486.12" y="147.22" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000"/>
-<text x="526.12" y="171.89" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">PKA-C</text>
-<ellipse cx="506.36" cy="922.34" rx="20" ry="20" fill="#dbebdb" stroke="#000"/>
-<text x="506.36" y="927" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">AMP</text>
-<rect x="647.63" y="1075.22" width="80" height="40" rx="5" fill="#e2aca3" stroke="#000"/>
-<text x="687.63" y="1099.89" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">CPT1</text>
-<ellipse cx="687.63" cy="1045.22" rx="20" ry="20" fill="#dbebdb" stroke="#000"/>
-<text x="687.63" y="1049.89" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">malonyl-CoA</text>
-<rect x="419.5" y="718.38" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000"/>
-<text x="459.5" y="743.05" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">AMPKβ</text>
-<rect x="419.5" y="660.38" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000"/>
+<text x="196.98" y="396.23" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">LKB1</text>
+<rect x="420.53" y="1055.22" width="80" height="40" rx="5" fill="#e2aca3" stroke="#000" class="c-protein"/>
+<text x="460.53" y="1079.89" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">CPT1</text>
+<ellipse cx="954.29" cy="66.35" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="954.29" y="71.02" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">cAMP</text>
+<rect x="486.12" y="147.22" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<text x="526.12" y="171.89" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">PKA-C</text>
+<ellipse cx="506.36" cy="922.34" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="506.36" y="927" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">AMP</text>
+<rect x="647.63" y="1075.22" width="80" height="40" rx="5" fill="#e2aca3" stroke="#000" class="c-protein"/>
+<text x="687.63" y="1099.89" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">CPT1</text>
+<ellipse cx="687.63" cy="1045.22" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="687.63" y="1049.89" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">malonyl-CoA</text>
+<rect x="419.5" y="718.38" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<text x="459.5" y="743.05" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">AMPKβ</text>
+<rect x="419.5" y="660.38" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
 <circle cx="459.5" cy="700.38" r="8" fill="#fff" stroke="#000"/>
 <text x="459.5" y="703.88" font-family="sans-serif" font-size="9" text-anchor="middle">P</text>
-<text x="459.5" y="685.05" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">AMPKα</text>
-<rect x="509.5" y="660.38" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000"/>
-<text x="549.5" y="685.05" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">AMPKγ</text>
-<rect x="419.5" y="484" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000"/>
-<text x="459.5" y="508.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">AMPKβ</text>
-<rect x="419.5" y="426" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000"/>
+<text x="459.5" y="685.05" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">AMPKα</text>
+<rect x="509.5" y="660.38" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<text x="549.5" y="685.05" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">AMPKγ</text>
+<rect x="419.5" y="484" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<text x="459.5" y="508.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">AMPKβ</text>
+<rect x="419.5" y="426" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
 <circle cx="459.5" cy="466" r="8" fill="#fff" stroke="#000"/>
-<text x="459.5" y="450.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">AMPKα</text>
-<rect x="509.5" y="426" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000"/>
-<text x="549.5" y="450.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">AMPKγ</text>
-<rect x="111.98" y="601.19" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000"/>
-<text x="151.98" y="625.86" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">MO25</text>
-<rect x="111.98" y="543.19" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000"/>
-<text x="151.98" y="567.86" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">STRAD</text>
-<rect x="201.98" y="543.19" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000"/>
+<text x="459.5" y="450.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">AMPKα</text>
+<rect x="509.5" y="426" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<text x="549.5" y="450.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">AMPKγ</text>
+<rect x="111.98" y="601.19" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<text x="151.98" y="625.86" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">MO25</text>
+<rect x="111.98" y="543.19" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<text x="151.98" y="567.86" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">STRAD</text>
+<rect x="201.98" y="543.19" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
 <circle cx="241.84" cy="583.19" r="8" fill="#fff" stroke="#000"/>
 <text x="241.84" y="586.69" font-family="sans-serif" font-size="9" text-anchor="middle">P</text>
-<text x="241.98" y="567.86" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">LKB1</text>
-<rect x="995.12" y="123.22" width="74" height="34" rx="5" fill="#c2d4ed" stroke="#000"/>
-<rect x="989.12" y="117.22" width="74" height="34" rx="5" fill="#c2d4ed" stroke="#000"/>
-<text x="1026.12" y="138.89" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">PKA-R</text>
-<rect x="995.12" y="173.22" width="74" height="34" rx="5" fill="#c2d4ed" stroke="#000"/>
-<rect x="989.12" y="167.22" width="74" height="34" rx="5" fill="#c2d4ed" stroke="#000"/>
-<text x="1026.12" y="188.89" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">PKA-C</text>
-<rect x="676.93" y="148.22" width="74" height="34" rx="5" fill="#c2d4ed" stroke="#000"/>
-<rect x="670.93" y="142.22" width="74" height="34" rx="5" fill="#c2d4ed" stroke="#000"/>
-<text x="707.93" y="163.89" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">PKA-C</text>
-<rect x="547.19" y="311.28" width="74" height="34" rx="5" fill="#c2d4ed" stroke="#000"/>
-<rect x="541.19" y="305.28" width="74" height="34" rx="5" fill="#c2d4ed" stroke="#000"/>
-<text x="578.19" y="326.94" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">PKA-R</text>
-<ellipse cx="581.19" cy="275.28" rx="20" ry="20" fill="#dbebdb" stroke="#000"/>
-<text x="581.19" y="279.94" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">cAMP</text>
-<rect x="776.93" y="168.22" width="74" height="34" rx="5" fill="#c2d4ed" stroke="#000"/>
-<rect x="770.93" y="162.22" width="74" height="34" rx="5" fill="#c2d4ed" stroke="#000"/>
-<text x="807.93" y="183.89" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">PKA-R</text>
-<ellipse cx="810.93" cy="132.22" rx="20" ry="20" fill="#dbebdb" stroke="#000"/>
-<text x="810.93" y="136.89" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">cAMP</text>
+<text x="241.98" y="567.86" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">LKB1</text>
+<rect x="995.12" y="123.22" width="74" height="34" rx="5" fill="#c2d4ed" stroke="#000" class="c-protein"/>
+<rect x="989.12" y="117.22" width="74" height="34" rx="5" fill="#c2d4ed" stroke="#000" class="c-protein"/>
+<text x="1026.12" y="138.89" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">PKA-R</text>
+<rect x="995.12" y="173.22" width="74" height="34" rx="5" fill="#c2d4ed" stroke="#000" class="c-protein"/>
+<rect x="989.12" y="167.22" width="74" height="34" rx="5" fill="#c2d4ed" stroke="#000" class="c-protein"/>
+<text x="1026.12" y="188.89" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">PKA-C</text>
+<rect x="676.93" y="148.22" width="74" height="34" rx="5" fill="#c2d4ed" stroke="#000" class="c-protein"/>
+<rect x="670.93" y="142.22" width="74" height="34" rx="5" fill="#c2d4ed" stroke="#000" class="c-protein"/>
+<text x="707.93" y="163.89" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">PKA-C</text>
+<rect x="547.19" y="311.28" width="74" height="34" rx="5" fill="#c2d4ed" stroke="#000" class="c-protein"/>
+<rect x="541.19" y="305.28" width="74" height="34" rx="5" fill="#c2d4ed" stroke="#000" class="c-protein"/>
+<text x="578.19" y="326.94" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">PKA-R</text>
+<ellipse cx="581.19" cy="275.28" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="581.19" y="279.94" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">cAMP</text>
+<rect x="776.93" y="168.22" width="74" height="34" rx="5" fill="#c2d4ed" stroke="#000" class="c-protein"/>
+<rect x="770.93" y="162.22" width="74" height="34" rx="5" fill="#c2d4ed" stroke="#000" class="c-protein"/>
+<text x="807.93" y="183.89" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">PKA-R</text>
+<ellipse cx="810.93" cy="132.22" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="810.93" y="136.89" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">cAMP</text>
 <g fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
 <polyline points="196.12,131.48 196.12,188.96"/>
 <polyline points="268.12,167.22 208.62,167.22"/>

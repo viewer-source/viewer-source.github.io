@@ -14,7 +14,8 @@ height: 1338
 scale: 1
 annotation: "/atlas-data/estrogen-graphml.json"
 image_error: ""
-v: "b0a7bdbbd0"
+v: "37753f93dd"
+colours: true
 legend: "sbgn"
 downloads: [{"label": "GraphML", "url": "/downloads/estrogen-graphml.graphml"}, {"label": "SVG", "url": "/downloads/estrogen-graphml.svg"}, {"label": "SBML", "url": "/downloads/estrogen-graphml-sbml.xml"}, {"label": "Annotation", "url": "/downloads/estrogen-graphml.csv"}, {"label": "PNG", "url": "/downloads/estrogen-graphml.png"}, {"label": "SBGN-ML", "url": "/downloads/estrogen-graphml.sbgn"}, {"label": "CellDesigner", "url": "/downloads/estrogen-graphml.xml"}, {"label": "Newt", "url": "http://web.newteditor.org/?URL=https://viewer-source.github.io/downloads/estrogen-graphml.sbgn"}, {"label": "MINERVA", "url": "https://mreg.elixir-luxembourg.org/minerva/index.html?id=F018-estrogen"}]
 ---

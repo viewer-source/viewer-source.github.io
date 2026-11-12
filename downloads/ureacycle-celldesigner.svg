@@ -5,84 +5,84 @@
 <rect x="40" y="40" width="956" height="728" rx="20" fill="none" stroke="#dfdbce" stroke-width="2"/>
 <rect x="52" y="52" width="932" height="704" rx="14" fill="none" stroke="#dfdbce" stroke-width="1"/>
 <text x="455.2" y="68" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="start">MITOCHONDRION</text>
-<polygon points="383.31,411.5 516.69,411.5 521.69,416.5 521.69,526.5 516.69,531.5 383.31,531.5 378.31,526.5 378.31,416.5" fill="#ffffff" stroke="#000"/>
-<text x="450" y="524.5" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">N-acetylglutamate:CPS1</text>
-<ellipse cx="245.64" cy="97.36" rx="20" ry="20" fill="#dbebdb" stroke="#000"/>
-<text x="245.64" y="102.02" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">glutamate</text>
-<ellipse cx="145.64" cy="139.37" rx="20" ry="20" fill="#dbebdb" stroke="#000"/>
-<text x="145.64" y="144.04" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">acetyl-CoA</text>
-<rect x="74.57" y="174.35" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000"/>
-<text x="114.57" y="199.02" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">NAGS</text>
-<ellipse cx="145.64" cy="245.5" rx="20" ry="20" fill="#dbebdb" stroke="#000"/>
-<text x="145.64" y="250.17" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">CoA</text>
-<ellipse cx="245.64" cy="291" rx="20" ry="20" fill="#dbebdb" stroke="#000"/>
-<text x="245.64" y="295.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">N-acetylglutamate</text>
-<ellipse cx="630.16" cy="360" rx="20" ry="20" fill="#dbebdb" stroke="#000"/>
-<text x="630.16" y="364.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">NH4+</text>
-<ellipse cx="714.16" cy="391" rx="20" ry="20" fill="#dbebdb" stroke="#000"/>
-<text x="714.16" y="395.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">ATP</text>
-<ellipse cx="714.66" cy="431" rx="20" ry="20" fill="#dbebdb" stroke="#000"/>
-<text x="714.66" y="435.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">HCO3-</text>
-<rect x="410" y="222.37" width="80" height="40" rx="5" fill="#e2aca3" stroke="#000"/>
-<text x="450" y="247.04" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">CPS1</text>
-<rect x="630" y="222.37" width="80" height="40" rx="5" fill="#e2aca3" stroke="#000"/>
+<polygon points="383.31,411.5 516.69,411.5 521.69,416.5 521.69,526.5 516.69,531.5 383.31,531.5 378.31,526.5 378.31,416.5" fill="#ffffff" stroke="#000" class="c-complex"/>
+<text x="450" y="524.5" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-complex">N-acetylglutamate:CPS1</text>
+<ellipse cx="245.64" cy="97.36" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="245.64" y="102.02" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">glutamate</text>
+<ellipse cx="145.64" cy="139.37" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="145.64" y="144.04" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">acetyl-CoA</text>
+<rect x="74.57" y="174.35" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<text x="114.57" y="199.02" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">NAGS</text>
+<ellipse cx="145.64" cy="245.5" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="145.64" y="250.17" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">CoA</text>
+<ellipse cx="245.64" cy="291" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="245.64" y="295.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">N-acetylglutamate</text>
+<ellipse cx="630.16" cy="360" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="630.16" y="364.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">NH4+</text>
+<ellipse cx="714.16" cy="391" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="714.16" y="395.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">ATP</text>
+<ellipse cx="714.66" cy="431" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="714.66" y="435.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">HCO3-</text>
+<rect x="410" y="222.37" width="80" height="40" rx="5" fill="#e2aca3" stroke="#000" class="c-protein"/>
+<text x="450" y="247.04" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">CPS1</text>
+<rect x="630" y="222.37" width="80" height="40" rx="5" fill="#e2aca3" stroke="#000" class="c-protein"/>
 <ellipse cx="690" cy="262.37" rx="18" ry="8" fill="#fff" stroke="#000"/>
 <text x="690" y="265.37" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="10" text-anchor="middle">Su</text>
-<text x="670" y="247.04" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">CPS1</text>
-<rect x="520" y="151.37" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000"/>
-<text x="560" y="176.04" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">SIRT5</text>
-<ellipse cx="715.16" cy="552" rx="20" ry="20" fill="#dbebdb" stroke="#000"/>
-<text x="715.16" y="556.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">ADP</text>
-<ellipse cx="715.66" cy="512" rx="20" ry="20" fill="#dbebdb" stroke="#000"/>
-<text x="715.66" y="516.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">Pi</text>
-<ellipse cx="630.16" cy="583" rx="20" ry="20" fill="#dbebdb" stroke="#000"/>
-<text x="630.16" y="587.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">carbamoyl-P</text>
-<ellipse cx="570.16" cy="649" rx="20" ry="20" fill="#dbebdb" stroke="#000"/>
-<text x="570.16" y="653.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">ornithine</text>
-<rect x="770" y="531" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000"/>
-<text x="810" y="555.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">OTC</text>
-<ellipse cx="850" cy="719" rx="20" ry="20" fill="#dbebdb" stroke="#000"/>
-<text x="850" y="723.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">Pi</text>
-<ellipse cx="920" cy="649" rx="20" ry="20" fill="#dbebdb" stroke="#000"/>
-<text x="920" y="653.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">citrulline</text>
-<rect x="410" y="80.37" width="80" height="40" rx="5" fill="#e2aca3" stroke="#000"/>
+<text x="670" y="247.04" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">CPS1</text>
+<rect x="520" y="151.37" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<text x="560" y="176.04" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">SIRT5</text>
+<ellipse cx="715.16" cy="552" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="715.16" y="556.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">ADP</text>
+<ellipse cx="715.66" cy="512" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="715.66" y="516.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">Pi</text>
+<ellipse cx="630.16" cy="583" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="630.16" y="587.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">carbamoyl-P</text>
+<ellipse cx="570.16" cy="649" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="570.16" y="653.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">ornithine</text>
+<rect x="770" y="531" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<text x="810" y="555.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">OTC</text>
+<ellipse cx="850" cy="719" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="850" y="723.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">Pi</text>
+<ellipse cx="920" cy="649" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="920" y="653.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">citrulline</text>
+<rect x="410" y="80.37" width="80" height="40" rx="5" fill="#e2aca3" stroke="#000" class="c-protein"/>
 <ellipse cx="430" cy="120.37" rx="21" ry="8" fill="#fff" stroke="#000"/>
 <text x="430" y="123.37" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="10" text-anchor="middle">Glut</text>
-<text x="450" y="105.04" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">CPS1</text>
-<ellipse cx="335" cy="159.35" rx="20" ry="20" fill="#dbebdb" stroke="#000"/>
-<text x="335" y="164.02" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">arginine</text>
-<rect x="693" y="754" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000"/>
-<text x="733" y="778.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">SLC25A15</text>
-<ellipse cx="920" cy="840.41" rx="20" ry="20" fill="#dbebdb" stroke="#000"/>
-<text x="920" y="845.08" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">citrulline</text>
-<ellipse cx="848" cy="898.5" rx="20" ry="20" fill="#dbebdb" stroke="#000"/>
-<text x="848" y="903.17" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">aspartate</text>
-<ellipse cx="986" cy="896.5" rx="20" ry="20" fill="#dbebdb" stroke="#000"/>
-<text x="986" y="901.17" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">ATP</text>
-<ellipse cx="988" cy="998.59" rx="20" ry="20" fill="#dbebdb" stroke="#000"/>
-<text x="988" y="1003.26" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">AMP</text>
-<ellipse cx="850" cy="998.59" rx="20" ry="20" fill="#dbebdb" stroke="#000"/>
-<text x="850" y="1003.26" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">PPi</text>
-<ellipse cx="919" cy="1060.59" rx="20" ry="20" fill="#dbebdb" stroke="#000"/>
-<text x="919" y="1065.26" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">argininosuccinate</text>
-<rect x="704.58" y="951.41" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000"/>
-<text x="744.58" y="976.08" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">ASL</text>
-<ellipse cx="645.66" cy="1007" rx="20" ry="20" fill="#dbebdb" stroke="#000"/>
-<text x="645.66" y="1011.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">fumarate</text>
-<ellipse cx="570.16" cy="1060.59" rx="20" ry="20" fill="#dbebdb" stroke="#000"/>
-<text x="570.16" y="1065.26" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">arginine</text>
-<rect x="394.12" y="930.5" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000"/>
-<text x="434.12" y="955.17" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">ARG1</text>
-<ellipse cx="655.2" cy="898.5" rx="20" ry="20" fill="#dbebdb" stroke="#000"/>
-<text x="655.2" y="903.17" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">urea</text>
-<ellipse cx="570.16" cy="840.41" rx="20" ry="20" fill="#dbebdb" stroke="#000"/>
-<text x="570.16" y="845.08" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">ornithine</text>
-<rect x="1028.04" y="930.52" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000"/>
-<text x="1068.04" y="955.19" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">ASS1</text>
-<ellipse cx="450" cy="441.5" rx="20" ry="20" fill="#dbebdb" stroke="#000"/>
-<text x="450" y="446.17" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">N-acetylglutamate</text>
-<rect x="410" y="471.5" width="80" height="40" rx="5" fill="#e2aca3" stroke="#000"/>
-<text x="450" y="496.17" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">CPS1</text>
+<text x="450" y="105.04" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">CPS1</text>
+<ellipse cx="335" cy="159.35" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="335" y="164.02" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">arginine</text>
+<rect x="693" y="754" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<text x="733" y="778.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">SLC25A15</text>
+<ellipse cx="920" cy="840.41" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="920" y="845.08" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">citrulline</text>
+<ellipse cx="848" cy="898.5" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="848" y="903.17" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">aspartate</text>
+<ellipse cx="986" cy="896.5" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="986" y="901.17" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">ATP</text>
+<ellipse cx="988" cy="998.59" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="988" y="1003.26" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">AMP</text>
+<ellipse cx="850" cy="998.59" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="850" y="1003.26" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">PPi</text>
+<ellipse cx="919" cy="1060.59" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="919" y="1065.26" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">argininosuccinate</text>
+<rect x="704.58" y="951.41" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<text x="744.58" y="976.08" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">ASL</text>
+<ellipse cx="645.66" cy="1007" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="645.66" y="1011.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">fumarate</text>
+<ellipse cx="570.16" cy="1060.59" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="570.16" y="1065.26" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">arginine</text>
+<rect x="394.12" y="930.5" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<text x="434.12" y="955.17" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">ARG1</text>
+<ellipse cx="655.2" cy="898.5" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="655.2" y="903.17" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">urea</text>
+<ellipse cx="570.16" cy="840.41" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="570.16" y="845.08" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">ornithine</text>
+<rect x="1028.04" y="930.52" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<text x="1068.04" y="955.19" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">ASS1</text>
+<ellipse cx="450" cy="441.5" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="450" y="446.17" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">N-acetylglutamate</text>
+<rect x="410" y="471.5" width="80" height="40" rx="5" fill="#e2aca3" stroke="#000" class="c-protein"/>
+<text x="450" y="496.17" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">CPS1</text>
 <g fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
 <polyline points="245.64,125.36 245.64,249"/>
 <polyline points="171.98,148.75 245.64,174.97"/>

@@ -14,7 +14,8 @@ height: 982
 scale: 1
 annotation: "/atlas-data/bcaa-graphml.json"
 image_error: ""
-v: "8a96aa33af"
+v: "1643058f37"
+colours: true
 legend: "sbgn"
 downloads: [{"label": "GraphML", "url": "/downloads/bcaa-graphml.graphml"}, {"label": "SVG", "url": "/downloads/bcaa-graphml.svg"}, {"label": "SBML", "url": "/downloads/bcaa-graphml-sbml.xml"}, {"label": "Annotation", "url": "/downloads/bcaa-graphml.csv"}, {"label": "PNG", "url": "/downloads/bcaa-graphml.png"}, {"label": "SBGN-ML", "url": "/downloads/bcaa-graphml.sbgn"}, {"label": "CellDesigner", "url": "/downloads/bcaa-graphml.xml"}, {"label": "Newt", "url": "http://web.newteditor.org/?URL=https://viewer-source.github.io/downloads/bcaa-graphml.sbgn"}, {"label": "MINERVA", "url": "https://mreg.elixir-luxembourg.org/minerva/index.html?id=F022-bcaa"}]
 ---

@@ -14,7 +14,8 @@ height: 806
 scale: 1
 annotation: "/atlas-data/camp-celldesigner.json"
 image_error: ""
-v: "3dfb7b1583"
+v: "41126429f0"
+colours: true
 legend: "celldesigner"
 downloads: [{"label": "CellDesigner", "url": "/downloads/camp-celldesigner.xml"}, {"label": "SVG", "url": "/downloads/camp-celldesigner.svg"}, {"label": "SBML", "url": "/downloads/camp-celldesigner-sbml.xml"}, {"label": "Annotation", "url": "/downloads/camp-celldesigner.csv"}, {"label": "GraphML", "url": "/downloads/camp-celldesigner.graphml"}, {"label": "PNG", "url": "/downloads/camp-celldesigner.png"}, {"label": "SBGN-ML", "url": "/downloads/camp-celldesigner.sbgn"}, {"label": "Newt", "url": "http://web.newteditor.org/?URL=https://viewer-source.github.io/downloads/camp-celldesigner.sbgn"}, {"label": "MINERVA", "url": "https://mreg.elixir-luxembourg.org/minerva/index.html?id=F012-camp"}]
 ---

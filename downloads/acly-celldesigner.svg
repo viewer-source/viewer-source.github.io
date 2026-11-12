@@ -1,71 +1,71 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="941" height="739" viewBox="0 0 941 739">
 <rect width="100%" height="100%" fill="#fff"/>
-<ellipse cx="764.01" cy="282.49" rx="18" ry="18" fill="#dbebdb" stroke="#000"/>
-<text x="764.01" y="286.49" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">citrate</text>
-<ellipse cx="764.01" cy="546.09" rx="18" ry="18" fill="#dbebdb" stroke="#000"/>
-<text x="764.01" y="550.09" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">acetyl-CoA</text>
-<ellipse cx="678.13" cy="484.09" rx="18" ry="18" fill="#dbebdb" stroke="#000"/>
-<text x="678.13" y="488.09" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">oxaloacetate</text>
-<rect x="560.58" y="394.01" width="80" height="40" rx="5" fill="#e2aca3" stroke="#000"/>
+<ellipse cx="764.01" cy="282.49" rx="18" ry="18" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="764.01" y="286.49" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-metabolite">citrate</text>
+<ellipse cx="764.01" cy="546.09" rx="18" ry="18" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="764.01" y="550.09" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-metabolite">acetyl-CoA</text>
+<ellipse cx="678.13" cy="484.09" rx="18" ry="18" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="678.13" y="488.09" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-metabolite">oxaloacetate</text>
+<rect x="560.58" y="394.01" width="80" height="40" rx="5" fill="#e2aca3" stroke="#000" class="c-protein"/>
 <circle cx="628.11" cy="434.01" r="8" fill="#fff" stroke="#000"/>
 <text x="628.11" y="437.51" font-family="sans-serif" font-size="9" text-anchor="middle">P</text>
-<text x="600.58" y="418.01" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">ACLY</text>
-<rect x="366.68" y="394.01" width="80" height="40" rx="5" fill="#e2aca3" stroke="#000"/>
+<text x="600.58" y="418.01" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-protein">ACLY</text>
+<rect x="366.68" y="394.01" width="80" height="40" rx="5" fill="#e2aca3" stroke="#000" class="c-protein"/>
 <circle cx="434.21" cy="434.01" r="8" fill="#fff" stroke="#000"/>
-<text x="406.68" y="418.01" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">ACLY</text>
-<rect x="463.63" y="258.49" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000"/>
+<text x="406.68" y="418.01" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-protein">ACLY</text>
+<rect x="463.63" y="258.49" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
 <circle cx="483.63" cy="298.49" r="8" fill="#fff" stroke="#000"/>
 <text x="483.63" y="301.99" font-family="sans-serif" font-size="9" text-anchor="middle">P</text>
 <circle cx="523.63" cy="298.49" r="8" fill="#fff" stroke="#000"/>
 <text x="523.63" y="301.99" font-family="sans-serif" font-size="9" text-anchor="middle">P</text>
-<text x="503.63" y="282.49" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">AKT</text>
-<rect x="463.63" y="111.98" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000"/>
+<text x="503.63" y="282.49" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-protein">AKT</text>
+<rect x="463.63" y="111.98" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
 <circle cx="483.63" cy="151.98" r="8" fill="#fff" stroke="#000"/>
 <circle cx="523.63" cy="151.98" r="8" fill="#fff" stroke="#000"/>
-<text x="503.63" y="135.98" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">AKT</text>
-<ellipse cx="851.07" cy="340.52" rx="18" ry="18" fill="#dbebdb" stroke="#000"/>
-<text x="851.07" y="344.52" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">ATP</text>
-<ellipse cx="851.07" cy="484.09" rx="18" ry="18" fill="#dbebdb" stroke="#000"/>
-<text x="851.07" y="488.09" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">ADP</text>
-<ellipse cx="851.07" cy="438.77" rx="18" ry="18" fill="#dbebdb" stroke="#000"/>
-<text x="851.07" y="442.77" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">Pi</text>
-<polygon points="724.62,646.69 803.39,646.69 829.8,673.1 803.39,699.5 724.62,699.5 698.22,673.1" fill="#ffffff" stroke="#000"/>
-<text x="764.01" y="677.1" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">Histone acetylation</text>
-<rect x="344.33" y="185.23" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000"/>
+<text x="503.63" y="135.98" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-protein">AKT</text>
+<ellipse cx="851.07" cy="340.52" rx="18" ry="18" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="851.07" y="344.52" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-metabolite">ATP</text>
+<ellipse cx="851.07" cy="484.09" rx="18" ry="18" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="851.07" y="488.09" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-metabolite">ADP</text>
+<ellipse cx="851.07" cy="438.77" rx="18" ry="18" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="851.07" y="442.77" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-metabolite">Pi</text>
+<polygon points="724.62,646.69 803.39,646.69 829.8,673.1 803.39,699.5 724.62,699.5 698.22,673.1" fill="#ffffff" stroke="#000" class="c-white"/>
+<text x="764.01" y="677.1" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-white">Histone acetylation</text>
+<rect x="344.33" y="185.23" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
 <ellipse cx="384.33" cy="225.23" rx="25" ry="8" fill="#fff" stroke="#000"/>
 <text x="384.33" y="228.23" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="10" text-anchor="middle">active</text>
-<text x="384.33" y="209.23" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">PI3K</text>
-<circle cx="406.68" cy="567.64" r="13.5" fill="#ffffff" stroke="#000"/>
+<text x="384.33" y="209.23" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-protein">PI3K</text>
+<circle cx="406.68" cy="567.64" r="13.5" fill="#ffffff" stroke="#000" class="c-white"/>
 <line x1="413.88" y1="549.64" x2="399.48" y2="585.64" stroke="#000"/>
-<polygon points="190,470.82 230,470.82 190,510.82 150,510.82" fill="#ffffff" stroke="#000"/>
+<polygon points="190,470.82 230,470.82 190,510.82 150,510.82" fill="#ffffff" stroke="#000" class="c-gene"/>
 <rect x="155" y="462.82" width="70" height="16" fill="#fff" stroke="#000"/>
 <text x="160" y="474.82" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="start" xml:space="preserve"> ct:mRNA </text>
-<text x="190" y="494.82" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">ACLY</text>
-<circle cx="190" cy="648.69" r="13.5" fill="#ffffff" stroke="#000"/>
+<text x="190" y="494.82" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-gene">ACLY</text>
+<circle cx="190" cy="648.69" r="13.5" fill="#ffffff" stroke="#000" class="c-white"/>
 <line x1="197.2" y1="630.69" x2="182.8" y2="666.69" stroke="#000"/>
-<rect x="260" y="552.88" width="80" height="40" fill="#ffffff" stroke="#000"/>
+<rect x="260" y="552.88" width="80" height="40" fill="#ffffff" stroke="#000" class="c-gene"/>
 <rect x="265" y="544.88" width="70" height="16" fill="#fff" stroke="#000"/>
 <text x="270" y="556.88" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="start" xml:space="preserve"> ct:gene </text>
-<text x="300" y="576.88" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">ACLY</text>
-<rect x="40.21" y="552.88" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000"/>
+<text x="300" y="576.88" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-gene">ACLY</text>
+<rect x="40.21" y="552.88" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
 <ellipse cx="77.5" cy="592.88" rx="25" ry="8" fill="#fff" stroke="#000"/>
 <text x="77.5" y="595.88" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="10" text-anchor="middle">active</text>
-<text x="80.21" y="576.88" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">SREBP-1</text>
-<rect x="216.41" y="111.98" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000"/>
+<text x="80.21" y="576.88" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-protein">SREBP-1</text>
+<rect x="216.41" y="111.98" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
 <ellipse cx="256.41" cy="151.98" rx="25" ry="8" fill="#fff" stroke="#000"/>
 <text x="256.41" y="154.98" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="10" text-anchor="middle">active</text>
-<text x="256.41" y="135.98" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">RTK</text>
-<rect x="344.33" y="40" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000"/>
+<text x="256.41" y="135.98" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-protein">RTK</text>
+<rect x="344.33" y="40" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
 <ellipse cx="384.33" cy="80" rx="28" ry="8" fill="#fff" stroke="#000"/>
 <text x="384.33" y="83" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="10" text-anchor="middle">inactive</text>
-<text x="384.33" y="64" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">PI3K</text>
-<rect x="40.21" y="184.08" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000"/>
+<text x="384.33" y="64" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-protein">PI3K</text>
+<rect x="40.21" y="184.08" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
 <ellipse cx="80.21" cy="224.08" rx="28" ry="8" fill="#fff" stroke="#000"/>
 <text x="80.21" y="227.08" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="10" text-anchor="middle">inactive</text>
-<text x="80.21" y="208.08" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">SREBP-1</text>
-<ellipse cx="678.13" cy="340.52" rx="18" ry="18" fill="#dbebdb" stroke="#000"/>
-<text x="678.13" y="344.52" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">CoA</text>
+<text x="80.21" y="208.08" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-protein">SREBP-1</text>
+<ellipse cx="678.13" cy="340.52" rx="18" ry="18" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="678.13" y="344.52" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-metabolite">CoA</text>
 <g fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
 <polyline points="764.01,308.49 764.01,506.09"/>
 <polyline points="828.04,352.51 764.01,385.84"/>

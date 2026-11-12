@@ -14,7 +14,8 @@ height: 690
 scale: 1
 annotation: "/atlas-data/acly-graphml.json"
 image_error: ""
-v: "8218c3d16f"
+v: "88ff2ce086"
+colours: true
 legend: "sbgn"
 downloads: [{"label": "GraphML", "url": "/downloads/acly-graphml.graphml"}, {"label": "SVG", "url": "/downloads/acly-graphml.svg"}, {"label": "SBML", "url": "/downloads/acly-graphml-sbml.xml"}, {"label": "Annotation", "url": "/downloads/acly-graphml.csv"}, {"label": "PNG", "url": "/downloads/acly-graphml.png"}, {"label": "SBGN-ML", "url": "/downloads/acly-graphml.sbgn"}, {"label": "CellDesigner", "url": "/downloads/acly-graphml.xml"}, {"label": "Newt", "url": "http://web.newteditor.org/?URL=https://viewer-source.github.io/downloads/acly-graphml.sbgn"}, {"label": "MINERVA", "url": "https://mreg.elixir-luxembourg.org/minerva/index.html?id=F006-acly"}]
 ---

@@ -9,65 +9,65 @@
 <rect x="40" y="104.37" width="868" height="48.13" rx="20" fill="none" stroke="#dfdbce" stroke-width="2"/>
 <rect x="52" y="116.37" width="844" height="24.13" rx="14" fill="none" stroke="#dfdbce" stroke-width="1"/>
 <text x="414.25" y="132.37" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="start">PLASMA MEMBRANE</text>
-<polygon points="320,546.76 520,546.76 525,551.76 525,691.76 520,696.76 320,696.76 315,691.76 315,551.76" fill="#ffffff" stroke="#000"/>
-<text x="420" y="689.76" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">nNOS:CaM:Ca2+</text>
-<polygon points="495,388.38 585,388.38 590,393.38 590,503.38 585,508.38 495,508.38 490,503.38 490,393.38" fill="#ffffff" stroke="#000"/>
-<text x="540" y="501.38" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">CaM:Ca2+</text>
-<polygon points="610,276.63 790,276.63 795,281.63 795,349.63 790,354.63 610,354.63 605,349.63 605,281.63" fill="#ffffff" stroke="#000"/>
-<text x="700" y="347.63" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">nNOS:ATP2B4</text>
-<polygon points="420,556.76 510,556.76 515,561.76 515,671.76 510,676.76 420,676.76 415,671.76 415,561.76" fill="#ffffff" stroke="#000"/>
-<text x="465" y="669.76" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">CaM:Ca2+</text>
-<ellipse cx="768" cy="528.88" rx="20" ry="20" fill="#dbebdb" stroke="#000"/>
-<text x="768" y="533.55" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">arginine</text>
-<ellipse cx="768" cy="714.63" rx="20" ry="20" fill="#dbebdb" stroke="#000"/>
-<text x="768" y="719.3" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">citrulline</text>
-<ellipse cx="695" cy="577.13" rx="20" ry="20" fill="#dbebdb" stroke="#000"/>
-<text x="695" y="581.8" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">NADPH</text>
-<ellipse cx="846" cy="577.13" rx="20" ry="20" fill="#dbebdb" stroke="#000"/>
-<text x="846" y="581.8" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">O2</text>
-<ellipse cx="695" cy="663.13" rx="20" ry="20" fill="#dbebdb" stroke="#000"/>
-<text x="695" y="667.8" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">NADP+</text>
-<ellipse cx="846" cy="663.13" rx="20" ry="20" fill="#dbebdb" stroke="#000"/>
-<text x="846" y="667.8" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">NO</text>
-<rect x="380" y="295.63" width="80" height="40" rx="5" fill="#e2aca3" stroke="#000"/>
+<polygon points="320,546.76 520,546.76 525,551.76 525,691.76 520,696.76 320,696.76 315,691.76 315,551.76" fill="#ffffff" stroke="#000" class="c-complex"/>
+<text x="420" y="689.76" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-complex">nNOS:CaM:Ca2+</text>
+<polygon points="495,388.38 585,388.38 590,393.38 590,503.38 585,508.38 495,508.38 490,503.38 490,393.38" fill="#ffffff" stroke="#000" class="c-complex"/>
+<text x="540" y="501.38" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-complex">CaM:Ca2+</text>
+<polygon points="610,276.63 790,276.63 795,281.63 795,349.63 790,354.63 610,354.63 605,349.63 605,281.63" fill="#ffffff" stroke="#000" class="c-complex"/>
+<text x="700" y="347.63" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-complex">nNOS:ATP2B4</text>
+<polygon points="420,556.76 510,556.76 515,561.76 515,671.76 510,676.76 420,676.76 415,671.76 415,561.76" fill="#ffffff" stroke="#000" class="c-complex"/>
+<text x="465" y="669.76" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-complex">CaM:Ca2+</text>
+<ellipse cx="768" cy="528.88" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="768" y="533.55" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">arginine</text>
+<ellipse cx="768" cy="714.63" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="768" y="719.3" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">citrulline</text>
+<ellipse cx="695" cy="577.13" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="695" y="581.8" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">NADPH</text>
+<ellipse cx="846" cy="577.13" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="846" y="581.8" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">O2</text>
+<ellipse cx="695" cy="663.13" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="695" y="667.8" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">NADP+</text>
+<ellipse cx="846" cy="663.13" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="846" y="667.8" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">NO</text>
+<rect x="380" y="295.63" width="80" height="40" rx="5" fill="#e2aca3" stroke="#000" class="c-protein"/>
 <circle cx="440" cy="335.63" r="8" fill="#fff" stroke="#000"/>
-<text x="420" y="320.3" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">nNOS</text>
-<rect x="469" y="185.63" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000"/>
-<text x="509" y="210.3" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">ATP2B4</text>
-<rect x="80" y="295.63" width="80" height="40" rx="5" fill="#e2aca3" stroke="#000"/>
+<text x="420" y="320.3" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">nNOS</text>
+<rect x="469" y="185.63" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<text x="509" y="210.3" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">ATP2B4</text>
+<rect x="80" y="295.63" width="80" height="40" rx="5" fill="#e2aca3" stroke="#000" class="c-protein"/>
 <circle cx="140" cy="335.63" r="8" fill="#fff" stroke="#000"/>
 <text x="140" y="339.13" font-family="sans-serif" font-size="9" text-anchor="middle">P</text>
-<text x="120" y="320.3" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">nNOS</text>
-<rect x="230" y="185.63" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000"/>
-<text x="270" y="210.3" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">CAMK2A</text>
-<rect x="175" y="435.13" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000"/>
-<text x="215" y="459.8" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">PP1C</text>
-<rect x="285" y="435.13" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000"/>
-<text x="325" y="459.8" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">PP2AC</text>
-<rect x="700" y="428.38" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000"/>
-<text x="740" y="453.05" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">CaM</text>
-<ellipse cx="680" cy="402.63" rx="20" ry="20" fill="#dbebdb" stroke="#000"/>
-<text x="680" y="407.3" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">Ca2+</text>
-<ellipse cx="846" cy="211.13" rx="20" ry="20" fill="#dbebdb" stroke="#000"/>
-<text x="846" y="215.8" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">Ca2+</text>
-<ellipse cx="846" cy="56" rx="20" ry="20" fill="#dbebdb" stroke="#000"/>
-<text x="846" y="60.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">Ca2+</text>
-<rect x="325" y="596.76" width="80" height="40" rx="5" fill="#e2aca3" stroke="#000"/>
+<text x="120" y="320.3" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">nNOS</text>
+<rect x="230" y="185.63" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<text x="270" y="210.3" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">CAMK2A</text>
+<rect x="175" y="435.13" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<text x="215" y="459.8" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">PP1C</text>
+<rect x="285" y="435.13" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<text x="325" y="459.8" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">PP2AC</text>
+<rect x="700" y="428.38" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<text x="740" y="453.05" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">CaM</text>
+<ellipse cx="680" cy="402.63" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="680" y="407.3" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">Ca2+</text>
+<ellipse cx="846" cy="211.13" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="846" y="215.8" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">Ca2+</text>
+<ellipse cx="846" cy="56" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="846" y="60.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">Ca2+</text>
+<rect x="325" y="596.76" width="80" height="40" rx="5" fill="#e2aca3" stroke="#000" class="c-protein"/>
 <circle cx="385" cy="636.76" r="8" fill="#fff" stroke="#000"/>
-<text x="365" y="621.42" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">nNOS</text>
-<rect x="500" y="448.38" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000"/>
-<text x="540" y="473.05" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">CaM</text>
-<ellipse cx="540" cy="418.38" rx="20" ry="20" fill="#dbebdb" stroke="#000"/>
-<text x="540" y="423.05" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">Ca2+</text>
-<rect x="615" y="286.63" width="80" height="40" rx="5" fill="#e2aca3" stroke="#000"/>
+<text x="365" y="621.42" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">nNOS</text>
+<rect x="500" y="448.38" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<text x="540" y="473.05" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">CaM</text>
+<ellipse cx="540" cy="418.38" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="540" y="423.05" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">Ca2+</text>
+<rect x="615" y="286.63" width="80" height="40" rx="5" fill="#e2aca3" stroke="#000" class="c-protein"/>
 <circle cx="675" cy="326.63" r="8" fill="#fff" stroke="#000"/>
-<text x="655" y="311.3" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">nNOS</text>
-<rect x="705" y="286.63" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000"/>
-<text x="745" y="311.3" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">ATP2B4</text>
-<rect x="425" y="616.76" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000"/>
-<text x="465" y="641.42" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">CaM</text>
-<ellipse cx="465" cy="586.76" rx="20" ry="20" fill="#dbebdb" stroke="#000"/>
-<text x="465" y="591.42" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">Ca2+</text>
+<text x="655" y="311.3" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">nNOS</text>
+<rect x="705" y="286.63" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<text x="745" y="311.3" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">ATP2B4</text>
+<rect x="425" y="616.76" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<text x="465" y="641.42" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">CaM</text>
+<ellipse cx="465" cy="586.76" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="465" y="591.42" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">Ca2+</text>
 <g fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
 <polyline points="768,556.88 768,672.63"/>
 <polyline points="721.29,586.64 768,603.54"/>

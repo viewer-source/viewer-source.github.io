@@ -14,7 +14,8 @@ height: 737
 scale: 1
 annotation: "/atlas-data/tag-graphml.json"
 image_error: ""
-v: "184888cdd4"
+v: "e6632f34ca"
+colours: true
 legend: "sbgn"
 downloads: [{"label": "GraphML", "url": "/downloads/tag-graphml.graphml"}, {"label": "SVG", "url": "/downloads/tag-graphml.svg"}, {"label": "SBML", "url": "/downloads/tag-graphml-sbml.xml"}, {"label": "Annotation", "url": "/downloads/tag-graphml.csv"}, {"label": "PNG", "url": "/downloads/tag-graphml.png"}, {"label": "SBGN-ML", "url": "/downloads/tag-graphml.sbgn"}, {"label": "CellDesigner", "url": "/downloads/tag-graphml.xml"}, {"label": "Newt", "url": "http://web.newteditor.org/?URL=https://viewer-source.github.io/downloads/tag-graphml.sbgn"}, {"label": "MINERVA", "url": "https://mreg.elixir-luxembourg.org/minerva/index.html?id=F015-tag"}]
 ---

@@ -1,49 +1,49 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="713" height="601" viewBox="0 0 713 601">
 <rect width="100%" height="100%" fill="#fff"/>
-<ellipse cx="603.17" cy="330" rx="18" ry="18" fill="#dbebdb" stroke="#000"/>
-<text x="603.17" y="334" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">phosphatidylcholine</text>
-<rect x="453.17" y="364" width="80" height="40" rx="5" fill="#e2aca3" stroke="#000"/>
+<ellipse cx="603.17" cy="330" rx="18" ry="18" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="603.17" y="334" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-metabolite">phosphatidylcholine</text>
+<rect x="453.17" y="364" width="80" height="40" rx="5" fill="#e2aca3" stroke="#000" class="c-protein"/>
 <circle cx="468.02" cy="404" r="8" fill="#fff" stroke="#000"/>
 <text x="468.02" y="407.5" font-family="sans-serif" font-size="9" text-anchor="middle">P</text>
 <circle cx="522.02" cy="404" r="8" fill="#fff" stroke="#000"/>
 <text x="522.02" y="407.5" font-family="sans-serif" font-size="9" text-anchor="middle">P</text>
-<text x="493.17" y="388" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">cPLA2</text>
-<ellipse cx="603.17" cy="438" rx="18" ry="18" fill="#dbebdb" stroke="#000"/>
-<text x="603.17" y="442" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">arachidonate</text>
-<ellipse cx="603.17" cy="546" rx="18" ry="18" fill="#dbebdb" stroke="#000"/>
-<text x="603.17" y="550" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">PGG2</text>
-<rect x="458.17" y="472" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000"/>
-<text x="498.17" y="496" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">COX-1/2</text>
-<rect x="287.9" y="364" width="80" height="40" rx="5" fill="#e2aca3" stroke="#000"/>
+<text x="493.17" y="388" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-protein">cPLA2</text>
+<ellipse cx="603.17" cy="438" rx="18" ry="18" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="603.17" y="442" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-metabolite">arachidonate</text>
+<ellipse cx="603.17" cy="546" rx="18" ry="18" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="603.17" y="550" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-metabolite">PGG2</text>
+<rect x="458.17" y="472" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<text x="498.17" y="496" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-protein">COX-1/2</text>
+<rect x="287.9" y="364" width="80" height="40" rx="5" fill="#e2aca3" stroke="#000" class="c-protein"/>
 <circle cx="302.75" cy="404" r="8" fill="#fff" stroke="#000"/>
 <circle cx="356.75" cy="404" r="8" fill="#fff" stroke="#000"/>
 <text x="356.75" y="407.5" font-family="sans-serif" font-size="9" text-anchor="middle">P</text>
-<text x="327.9" y="388" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">cPLA2</text>
-<rect x="205.27" y="256" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000"/>
+<text x="327.9" y="388" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-protein">cPLA2</text>
+<rect x="205.27" y="256" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
 <circle cx="220.12" cy="296" r="8" fill="#fff" stroke="#000"/>
 <circle cx="274.12" cy="296" r="8" fill="#fff" stroke="#000"/>
-<text x="245.27" y="280" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">ERK1/2</text>
-<rect x="287.9" y="148" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000"/>
+<text x="245.27" y="280" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-protein">ERK1/2</text>
+<rect x="287.9" y="148" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
 <circle cx="356.75" cy="188" r="8" fill="#fff" stroke="#000"/>
 <text x="356.75" y="191.5" font-family="sans-serif" font-size="9" text-anchor="middle">P</text>
-<text x="327.9" y="172" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">MEK1/2</text>
-<rect x="122.63" y="148" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000"/>
+<text x="327.9" y="172" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-protein">MEK1/2</text>
+<rect x="122.63" y="148" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
 <circle cx="191.48" cy="188" r="8" fill="#fff" stroke="#000"/>
-<text x="162.63" y="172" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">MEK1/2</text>
-<rect x="370.54" y="256" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000"/>
+<text x="162.63" y="172" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-protein">MEK1/2</text>
+<rect x="370.54" y="256" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
 <circle cx="385.39" cy="296" r="8" fill="#fff" stroke="#000"/>
 <text x="385.39" y="299.5" font-family="sans-serif" font-size="9" text-anchor="middle">P</text>
 <circle cx="439.39" cy="296" r="8" fill="#fff" stroke="#000"/>
 <text x="439.39" y="299.5" font-family="sans-serif" font-size="9" text-anchor="middle">P</text>
-<text x="410.54" y="280" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">ERK1/2</text>
-<rect x="205.27" y="40" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000"/>
+<text x="410.54" y="280" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-protein">ERK1/2</text>
+<rect x="205.27" y="40" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
 <circle cx="274.12" cy="80" r="8" fill="#fff" stroke="#000"/>
 <text x="274.12" y="83.5" font-family="sans-serif" font-size="9" text-anchor="middle">P</text>
-<text x="245.27" y="64" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">RAF1</text>
-<rect x="40" y="40" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000"/>
+<text x="245.27" y="64" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-protein">RAF1</text>
+<rect x="40" y="40" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
 <circle cx="108.85" cy="80" r="8" fill="#fff" stroke="#000"/>
-<text x="80" y="64" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">RAF1</text>
+<text x="80" y="64" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-protein">RAF1</text>
 <g fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
 <polyline points="603.17,356 603.17,398"/>
 <polyline points="541.17,384 590.67,384"/>

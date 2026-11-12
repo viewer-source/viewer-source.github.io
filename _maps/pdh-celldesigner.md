@@ -14,7 +14,8 @@ height: 620
 scale: 1
 annotation: "/atlas-data/pdh-celldesigner.json"
 image_error: ""
-v: "f3eed0cea6"
+v: "c9119e0c23"
+colours: true
 legend: "celldesigner"
 downloads: [{"label": "CellDesigner", "url": "/downloads/pdh-celldesigner.xml"}, {"label": "SVG", "url": "/downloads/pdh-celldesigner.svg"}, {"label": "SBML", "url": "/downloads/pdh-celldesigner-sbml.xml"}, {"label": "Annotation", "url": "/downloads/pdh-celldesigner.csv"}, {"label": "GraphML", "url": "/downloads/pdh-celldesigner.graphml"}, {"label": "PNG", "url": "/downloads/pdh-celldesigner.png"}, {"label": "SBGN-ML", "url": "/downloads/pdh-celldesigner.sbgn"}, {"label": "Newt", "url": "http://web.newteditor.org/?URL=https://viewer-source.github.io/downloads/pdh-celldesigner.sbgn"}, {"label": "MINERVA", "url": "https://mreg.elixir-luxembourg.org/minerva/index.html?id=F023-pdh"}]
 ---

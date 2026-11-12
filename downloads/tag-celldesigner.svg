@@ -1,91 +1,91 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="873" height="785" viewBox="0 0 873 785">
 <rect width="100%" height="100%" fill="#fff"/>
-<polygon points="250.51,467.48 340.51,467.48 345.51,472.48 345.51,582.48 340.51,587.48 250.51,587.48 245.51,582.48 245.51,472.48" fill="#ffffff" stroke="#000"/>
-<text x="295.51" y="580.48" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">PKG1:cGMP</text>
-<polygon points="721.23,103.38 811.23,103.38 816.23,108.38 816.23,218.38 811.23,223.38 721.23,223.38 716.23,218.38 716.23,108.38" fill="#ffffff" stroke="#000"/>
-<text x="766.23" y="216.38" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">PKA-C:PKA-R</text>
-<polygon points="480.12,63.38 594.14,63.38 599.14,68.38 599.14,258.38 594.14,263.38 480.12,263.38 475.12,258.38 475.12,68.38" fill="#ffffff" stroke="#000"/>
-<text x="537.13" y="256.38" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">PKA-C:PKA-R:cAMP</text>
-<polygon points="248.51,103.38 338.51,103.38 343.51,108.38 343.51,218.38 338.51,223.38 248.51,223.38 243.51,218.38 243.51,108.38" fill="#ffffff" stroke="#000"/>
-<text x="293.51" y="216.38" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">cAMP:PKA-R</text>
-<polygon points="44.11,419.91 150.11,419.91 155.11,424.91 155.11,558.91 150.11,563.91 44.11,563.91 39.11,558.91 39.11,424.91" fill="#ffffff" stroke="#000"/>
-<text x="97.11" y="556.91" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">PLIN1:HSL</text>
-<polygon points="44.11,103.38 150.11,103.38 155.11,108.38 155.11,242.38 150.11,247.38 44.11,247.38 39.11,242.38 39.11,108.38" fill="#ffffff" stroke="#000"/>
-<text x="97.11" y="240.38" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">PLIN1:HSL</text>
-<polygon points="492.13,73.38 582.13,73.38 587.13,78.38 587.13,188.38 582.13,193.38 492.13,193.38 487.13,188.38 487.13,78.38" fill="#ffffff" stroke="#000"/>
-<text x="537.13" y="186.38" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">PKA-R:cAMP</text>
-<rect x="449.13" y="640.28" width="80" height="40" rx="5" fill="#e2aca3" stroke="#000"/>
+<polygon points="250.51,467.48 340.51,467.48 345.51,472.48 345.51,582.48 340.51,587.48 250.51,587.48 245.51,582.48 245.51,472.48" fill="#ffffff" stroke="#000" class="c-complex"/>
+<text x="295.51" y="580.48" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-complex">PKG1:cGMP</text>
+<polygon points="721.23,103.38 811.23,103.38 816.23,108.38 816.23,218.38 811.23,223.38 721.23,223.38 716.23,218.38 716.23,108.38" fill="#ffffff" stroke="#000" class="c-complex"/>
+<text x="766.23" y="216.38" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-complex">PKA-C:PKA-R</text>
+<polygon points="480.12,63.38 594.14,63.38 599.14,68.38 599.14,258.38 594.14,263.38 480.12,263.38 475.12,258.38 475.12,68.38" fill="#ffffff" stroke="#000" class="c-complex"/>
+<text x="537.13" y="256.38" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-complex">PKA-C:PKA-R:cAMP</text>
+<polygon points="248.51,103.38 338.51,103.38 343.51,108.38 343.51,218.38 338.51,223.38 248.51,223.38 243.51,218.38 243.51,108.38" fill="#ffffff" stroke="#000" class="c-complex"/>
+<text x="293.51" y="216.38" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-complex">cAMP:PKA-R</text>
+<polygon points="44.11,419.91 150.11,419.91 155.11,424.91 155.11,558.91 150.11,563.91 44.11,563.91 39.11,558.91 39.11,424.91" fill="#ffffff" stroke="#000" class="c-complex"/>
+<text x="97.11" y="556.91" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-complex">PLIN1:HSL</text>
+<polygon points="44.11,103.38 150.11,103.38 155.11,108.38 155.11,242.38 150.11,247.38 44.11,247.38 39.11,242.38 39.11,108.38" fill="#ffffff" stroke="#000" class="c-complex"/>
+<text x="97.11" y="240.38" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-complex">PLIN1:HSL</text>
+<polygon points="492.13,73.38 582.13,73.38 587.13,78.38 587.13,188.38 582.13,193.38 492.13,193.38 487.13,188.38 487.13,78.38" fill="#ffffff" stroke="#000" class="c-complex"/>
+<text x="537.13" y="186.38" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-complex">PKA-R:cAMP</text>
+<rect x="449.13" y="640.28" width="80" height="40" rx="5" fill="#e2aca3" stroke="#000" class="c-protein"/>
 <circle cx="489.13" cy="640.28" r="8" fill="#fff" stroke="#000"/>
 <text x="489.13" y="643.78" font-family="sans-serif" font-size="9" text-anchor="middle">P</text>
 <circle cx="449.13" cy="680.28" r="8" fill="#fff" stroke="#000"/>
 <text x="449.13" y="683.78" font-family="sans-serif" font-size="9" text-anchor="middle">P</text>
 <circle cx="529.13" cy="680.28" r="8" fill="#fff" stroke="#000"/>
 <text x="529.13" y="683.78" font-family="sans-serif" font-size="9" text-anchor="middle">P</text>
-<text x="489.13" y="664.95" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">HSL</text>
-<ellipse cx="664.58" cy="590.26" rx="20" ry="20" fill="#dbebdb" stroke="#000"/>
-<text x="664.58" y="594.93" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">triacylglycerol</text>
-<ellipse cx="776.23" cy="684.93" rx="20" ry="20" fill="#dbebdb" stroke="#000"/>
-<text x="776.23" y="689.6" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">glycerol</text>
-<ellipse cx="664.58" cy="730.3" rx="20" ry="20" fill="#dbebdb" stroke="#000"/>
-<text x="664.58" y="734.97" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">fatty acids</text>
-<rect x="255.51" y="332.82" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000"/>
-<text x="295.51" y="357.49" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">PKG1</text>
-<ellipse cx="345.51" cy="398.31" rx="20" ry="20" fill="#dbebdb" stroke="#000"/>
-<text x="345.51" y="402.98" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">cGMP</text>
-<ellipse cx="683.23" cy="55" rx="20" ry="20" fill="#dbebdb" stroke="#000"/>
-<text x="683.23" y="59.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">cAMP</text>
-<rect x="352.08" y="274.63" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000"/>
-<text x="392.08" y="299.3" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">PKA-C</text>
-<rect x="255.04" y="640.28" width="80" height="40" rx="5" fill="#e2aca3" stroke="#000"/>
+<text x="489.13" y="664.95" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">HSL</text>
+<ellipse cx="664.58" cy="590.26" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="664.58" y="594.93" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">triacylglycerol</text>
+<ellipse cx="776.23" cy="684.93" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="776.23" y="689.6" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">glycerol</text>
+<ellipse cx="664.58" cy="730.3" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="664.58" y="734.97" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">fatty acids</text>
+<rect x="255.51" y="332.82" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<text x="295.51" y="357.49" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">PKG1</text>
+<ellipse cx="345.51" cy="398.31" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="345.51" y="402.98" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">cGMP</text>
+<ellipse cx="683.23" cy="55" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="683.23" y="59.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">cAMP</text>
+<rect x="352.08" y="274.63" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<text x="392.08" y="299.3" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">PKA-C</text>
+<rect x="255.04" y="640.28" width="80" height="40" rx="5" fill="#e2aca3" stroke="#000" class="c-protein"/>
 <circle cx="255.04" cy="680.28" r="8" fill="#fff" stroke="#000"/>
 <circle cx="335.04" cy="680.28" r="8" fill="#fff" stroke="#000"/>
 <circle cx="295.04" cy="640.28" r="8" fill="#fff" stroke="#000"/>
-<text x="295.04" y="664.95" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">HSL</text>
-<rect x="57.11" y="718.55" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000"/>
+<text x="295.04" y="664.95" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">HSL</text>
+<rect x="57.11" y="718.55" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
 <circle cx="97.11" cy="758.55" r="8" fill="#fff" stroke="#000"/>
 <text x="97.11" y="762.05" font-family="sans-serif" font-size="9" text-anchor="middle">P</text>
-<text x="97.11" y="743.22" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">PLIN1</text>
-<rect x="255.51" y="527.48" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000"/>
-<text x="295.51" y="552.15" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">PKG1</text>
-<ellipse cx="295.51" cy="497.48" rx="20" ry="20" fill="#dbebdb" stroke="#000"/>
-<text x="295.51" y="502.15" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">cGMP</text>
-<rect x="732.23" y="169.38" width="74" height="34" rx="5" fill="#c8d8eb" stroke="#000"/>
-<rect x="726.23" y="163.38" width="74" height="34" rx="5" fill="#c8d8eb" stroke="#000"/>
-<text x="763.23" y="185.05" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">PKA-C</text>
-<rect x="732.23" y="119.38" width="74" height="34" rx="5" fill="#c8d8eb" stroke="#000"/>
-<rect x="726.23" y="113.38" width="74" height="34" rx="5" fill="#c8d8eb" stroke="#000"/>
-<text x="763.23" y="135.05" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">PKA-R</text>
-<rect x="503.13" y="209.38" width="74" height="34" rx="5" fill="#c8d8eb" stroke="#000"/>
-<rect x="497.13" y="203.38" width="74" height="34" rx="5" fill="#c8d8eb" stroke="#000"/>
-<text x="534.13" y="225.05" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">PKA-C</text>
-<ellipse cx="293.51" cy="133.38" rx="20" ry="20" fill="#dbebdb" stroke="#000"/>
-<text x="293.51" y="138.05" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">cAMP</text>
-<rect x="259.51" y="169.38" width="74" height="34" rx="5" fill="#c8d8eb" stroke="#000"/>
-<rect x="253.51" y="163.38" width="74" height="34" rx="5" fill="#c8d8eb" stroke="#000"/>
-<text x="290.51" y="185.05" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">PKA-R</text>
-<rect x="57.11" y="429.91" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000"/>
+<text x="97.11" y="743.22" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">PLIN1</text>
+<rect x="255.51" y="527.48" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<text x="295.51" y="552.15" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">PKG1</text>
+<ellipse cx="295.51" cy="497.48" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="295.51" y="502.15" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">cGMP</text>
+<rect x="732.23" y="169.38" width="74" height="34" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<rect x="726.23" y="163.38" width="74" height="34" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<text x="763.23" y="185.05" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">PKA-C</text>
+<rect x="732.23" y="119.38" width="74" height="34" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<rect x="726.23" y="113.38" width="74" height="34" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<text x="763.23" y="135.05" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">PKA-R</text>
+<rect x="503.13" y="209.38" width="74" height="34" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<rect x="497.13" y="203.38" width="74" height="34" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<text x="534.13" y="225.05" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">PKA-C</text>
+<ellipse cx="293.51" cy="133.38" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="293.51" y="138.05" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">cAMP</text>
+<rect x="259.51" y="169.38" width="74" height="34" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<rect x="253.51" y="163.38" width="74" height="34" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<text x="290.51" y="185.05" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">PKA-R</text>
+<rect x="57.11" y="429.91" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
 <circle cx="97.11" cy="469.91" r="8" fill="#fff" stroke="#000"/>
 <text x="97.11" y="473.41" font-family="sans-serif" font-size="9" text-anchor="middle">P</text>
-<text x="97.11" y="454.57" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">PLIN1</text>
-<rect x="57.11" y="495.91" width="80" height="40" rx="5" fill="#e2aca3" stroke="#000"/>
+<text x="97.11" y="454.57" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">PLIN1</text>
+<rect x="57.11" y="495.91" width="80" height="40" rx="5" fill="#e2aca3" stroke="#000" class="c-protein"/>
 <circle cx="137.11" cy="535.91" r="8" fill="#fff" stroke="#000"/>
 <circle cx="57.11" cy="535.91" r="8" fill="#fff" stroke="#000"/>
 <circle cx="97.11" cy="495.91" r="8" fill="#fff" stroke="#000"/>
-<text x="97.11" y="520.57" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">HSL</text>
-<rect x="57.11" y="113.38" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000"/>
+<text x="97.11" y="520.57" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">HSL</text>
+<rect x="57.11" y="113.38" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
 <circle cx="97.11" cy="153.38" r="8" fill="#fff" stroke="#000"/>
-<text x="97.11" y="138.05" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">PLIN1</text>
-<rect x="57.11" y="179.38" width="80" height="40" rx="5" fill="#e2aca3" stroke="#000"/>
+<text x="97.11" y="138.05" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">PLIN1</text>
+<rect x="57.11" y="179.38" width="80" height="40" rx="5" fill="#e2aca3" stroke="#000" class="c-protein"/>
 <circle cx="137.11" cy="219.38" r="8" fill="#fff" stroke="#000"/>
 <circle cx="57.11" cy="219.38" r="8" fill="#fff" stroke="#000"/>
 <circle cx="97.11" cy="179.38" r="8" fill="#fff" stroke="#000"/>
-<text x="97.11" y="204.05" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">HSL</text>
-<rect x="503.13" y="139.38" width="74" height="34" rx="5" fill="#c8d8eb" stroke="#000"/>
-<rect x="497.13" y="133.38" width="74" height="34" rx="5" fill="#c8d8eb" stroke="#000"/>
-<text x="534.13" y="155.05" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">PKA-R</text>
-<ellipse cx="537.13" cy="103.38" rx="20" ry="20" fill="#dbebdb" stroke="#000"/>
-<text x="537.13" y="108.05" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle">cAMP</text>
+<text x="97.11" y="204.05" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">HSL</text>
+<rect x="503.13" y="139.38" width="74" height="34" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<rect x="497.13" y="133.38" width="74" height="34" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<text x="534.13" y="155.05" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">PKA-R</text>
+<ellipse cx="537.13" cy="103.38" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="537.13" y="108.05" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">cAMP</text>
 <g fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
 <polyline points="343.04,660.28 427.13,660.28"/>
 <polyline points="343.16,593.99 382.43,648.78"/>
