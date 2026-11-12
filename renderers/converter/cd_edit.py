@@ -87,7 +87,7 @@ def lines(d, rx):
          'glyph': typ in FULL, 'mods': [], 'links': []}
     if not r['glyph']:
         return r
-    line = [A] + bends + [B]
+    line = cut(d, r, bends)
     cs = x.find('cd:connectScheme', NS)
     k = min(int(cs.get('rectangleIndex', 0)) if cs is not None else 0, len(line) - 2)
     P, Q = line[k], line[k + 1]
@@ -112,6 +112,14 @@ def lines(d, rx):
             r['links'].append({'n': n, 'el': l, 'into': into, 'alias': l.get('alias'), 'O': O, 'anc': anc, 'J': J,
                                'bends': [from_frame(O, J, p) if into else from_frame(J, O, p) for p in stored]})
     return r
+
+
+def cut(d, r, bends):
+    # the main line as cdrender places the glyph on it: an end at a node's centre cut where the line leaves its shape
+    line = [r['A']] + list(bends) + [r['B']]
+    line[0] = d.clip(r['ra'], r['A'], r['ancA'], line[1])
+    line[-1] = d.clip(r['pa'], r['B'], r['ancB'], line[-2])
+    return line
 
 
 def target(m, sq, fl):
@@ -372,7 +380,7 @@ def apply(text, gtext):
         if o['glyph']:
             g = rid + '|proc'
             C = (boxes[g][0] + boxes[g][2] / 2, boxes[g][1] + boxes[g][3] / 2) if g in boxes else o['sq']
-            line = [A] + main + [B]
+            line = cut(d, r, main)
             P, Q = line[k], line[k + 1]
             if g in base and not near(C, base[g], 1e-2):   # the glyph moved: its segment comes with it
                 mid = ((P[0] + Q[0]) / 2, (P[1] + Q[1]) / 2)
@@ -415,7 +423,7 @@ def apply(text, gtext):
                     T.attrs(cs[0], {'rectangleIndex': str(k)})
         if not o['glyph']:
             continue
-        line = [A] + main + [B]
+        line = cut(d, r, main)
         P, Q = line[k], line[k + 1]
         sq, fl = ((P[0] + Q[0]) / 2, (P[1] + Q[1]) / 2), unit(Q[0] - P[0], Q[1] - P[1])
         mod_spans = []
