@@ -899,7 +899,7 @@
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n32" species="s_n32">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="82.079" y="287.972415" w="80.0" h="40.0"/>
+<celldesigner:bounds x="79.079" y="287.972415" w="80.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
