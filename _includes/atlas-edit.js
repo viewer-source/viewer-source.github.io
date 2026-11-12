@@ -1278,6 +1278,10 @@
         var b = boxOf(i);
         if (!(P[0] >= b[0] && P[0] <= b[0] + b[2] && P[1] >= b[1] && P[1] <= b[1] + b[3])) return;
         var h = { n: i, area: b[2] * b[3] };
+        // a process glyph is not an item of its own (user, 2026-11-12: in CellDesigner "it's not selectable ... it's part of
+        // the link"): a click on it is a click on its reaction's main line, no node handles; a drag on it moves the map
+        var gm = cd && n.id.match(/^(.*)\|proc$/);
+        if (gm) { var ga = edges2.findIndex(function (q) { return q.id === gm[1] + '|a'; }); if (ga >= 0 && !best) best = { e: ga, glyph: true, area: 0 }; return; }
         if (n.kids.length) { if (!group || h.area < group.area) group = h; }
         else if (!best || h.area < best.area) best = h;
       });
@@ -1333,7 +1337,7 @@
       // release (selects, clears, or with Shift adds or takes out)
       var tapped = function () { tap = { h: h, shift: e.shiftKey, x: e.clientX, y: e.clientY }; view.focus({ preventScroll: true }); };
       if (!h || e.shiftKey) return tapped();
-      if (cd && h.n != null && /\|proc$/.test(nodes2[h.n].id)) return tapped();   // a glyph is not dragged: a drag moves the map
+      if (h.glyph) return tapped();   // a glyph is not dragged: a drag on it moves the map, a click selects its reaction
       var list = h.p != null ? selP : h.e != null ? selE : selN, k = h.p != null ? h.p : h.e != null ? h.e : h.n, there = list.indexOf(k) >= 0;
       // a bend point of an arc selected is a part of that connector: dragged at once, as its ends, the arc staying
       // selected after (user, 2026-11-12, from yEd: "for connectors, it's different": the whole connector selected, its
@@ -1575,7 +1579,7 @@
       e.stopImmediatePropagation();
       if (band) {
         var a = [Math.min(band.x, band.x2), Math.min(band.y, band.y2)], c = [Math.max(band.x, band.x2), Math.max(band.y, band.y2)];
-        nodes2.forEach(function (n, i) { var b = boxOf(i); if (b[0] >= a[0] && b[1] >= a[1] && b[0] + b[2] <= c[0] && b[1] + b[3] <= c[1] && selN.indexOf(i) < 0) selN.push(i); });
+        nodes2.forEach(function (n, i) { var b = boxOf(i); if (cd && /\|proc$/.test(n.id)) return; if (b[0] >= a[0] && b[1] >= a[1] && b[0] + b[2] <= c[0] && b[1] + b[3] <= c[1] && selN.indexOf(i) < 0) selN.push(i); });
         points.forEach(function (p, i) { var X = num(p, 'x'), Y2 = num(p, 'y'); if (X >= a[0] && Y2 >= a[1] && X <= c[0] && Y2 <= c[1] && selP.indexOf(i) < 0) selP.push(i); });
         band = null; paint(); return;
       }

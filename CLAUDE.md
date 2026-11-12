@@ -226,7 +226,7 @@ says "the workbench", "the converter's repository", "a private repository".
   numbers that change (bounds, the place inside the parent, a compartment's name, edit points, rectangleIndex and the
   line directions, the canvas grown past its right or bottom edge), so it opens in CellDesigner as before; cdrender
   draws it in the browser with `GROUPS` on. Bend points stay where they are when a node moves (user, 2026-11-12: yEd's
-  way, not CellDesigner's stretching); the process glyph is never moved by itself, as in CellDesigner (user,
+  way, not CellDesigner's stretching); the process glyph is not an item of its own, as in CellDesigner (user, 2026-11-12: "it's not selectable ... it's part of the link"): a click on it selects its reaction as a click on its main line does, no node handles, an area never takes it; it is never moved by itself (user,
   2026-11-12: "in Cell Designer, it's not possible to move process itself"; a drag on it moves the map, the arrow keys
   leave it, it goes only with a group holding its whole reaction), and no bend point is ever added to make up for a move
   (user: "no bend points automatically appearing"; before, a glyph moved took its segment and its ends at nodes became
