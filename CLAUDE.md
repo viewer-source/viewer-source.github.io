@@ -127,7 +127,8 @@ says "the workbench", "the converter's repository", "a private repository".
   viewer's own look): the molecule's panel as a card over the map's right side on wide windows too, sliding in; the
   drawing shifts left only when the card would cover the chosen item. First in the styles' Default Icon Column.
 - Edit (user, 2026-11-12: moving things a little here and there, as in yEd; its purpose is layout only, moving by hand
-  where needed: no resizing, no new items or links, user 2026-11-12; GraphML first, then the same rules for CellDesigner
+  where needed: no resizing of nodes (their sizes are standard), no new items or links, user 2026-11-12; compartments are
+  containers and the exception, resizable (user, 2026-11-12); GraphML first, then the same rules for CellDesigner
   maps within CellDesigner's constraints; `--m2-edit: 1`, with the icons, off in the
   viewer's own look): a pencil tab before Settings opens the Edit window: at its top the tools as a row of signs (user,
   2026-11-12, after yEd's toolbar: "not as words but as normal symbols", a few now and more as needed): Undo, Redo, a thin
@@ -180,6 +181,15 @@ says "the workbench", "the converter's repository", "a private repository".
   smallest correction wins (near ties: that order), thin grey lines for centres and sides reaching 20 units past the
   nodes; only nodes in sight, not its own compartments; Ctrl or Alt held, no snapping. Not yet: the set node to node and
   node to arc distances (yEd's manual gives no default), bends snapping to node centres.
+  Compartments (user, 2026-11-12: "compartments I consider like container nodes, so they should be flexible and
+  resizable"; complexes not, Pack keeps them): a drag on a compartment's edge (5 px on screen; a corner takes two sides)
+  or on a handle of one selected resizes it, the cursor a resize arrow over it; a bend point or a node there comes first.
+  It never gets smaller than what it holds (its members, Insets and own top or bottom label, the layout skill's room()),
+  20 units at least, its edge on 8 units with Snap to grid. A compartment also grows by itself when something it holds
+  is moved past its margin (a drag or the arrow keys), never shrinks by itself; the compartments round it grow in turn,
+  innermost first. Both are drawn at once while the drag runs (the outline and the label follow), and after it
+  `tidy.py` 'fit' writes the exact boxes and the BorderInsets of the compartments touched (and of complexes round a
+  node moved), so yEd keeps the boxes; one undo step with the move.
   The layout skill's tools in the editor (user, 2026-11-12: reuse its code, no AI): a copy of its `complex_pack.py` and
   `snap_grid.py` in `renderers/layout/` (each starting with a line naming the skill's commit; refreshed with
   `sh renderers/layout/get_layout.sh <clone of the skill>`, never edited here), run in the browser by Pyodide through

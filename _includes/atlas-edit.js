@@ -42,6 +42,10 @@
     // drag shifts the groups at once; an arc with only one end or some bends moving is hidden and drawn as plain lines
     // following the pointer (live) until the renderer has drawn the map again
     var gN = null, gE = null, mv = null, live = null;
+    // compartments are containers (user, 2026-11-12): resized by dragging an edge or a handle, and grown by themselves
+    // when what they hold is moved past their margin; liveC: their boxes while a drag runs (index in nodes2 -> box),
+    // drawn on the picture at once, until the renderer has drawn the map again
+    var liveC = null, liveOrig = null;
     // saving to the site: the repository is the site's own (<owner>.github.io), the map's source maps/<file>.graphml
     var TOKEN_KEY = 'atlas-edit-token', AUTOSAVE = 3000;
     var site = null;               // { path, sha } of the map being edited, when it is a map of this site
@@ -253,7 +257,19 @@
         var r = realizerOf(n.el), g = r && r.getElementsByTagNameNS(Y, 'Geometry')[0];
         n.ag = g && gi.has(g) ? gi.get(g) : n.geo[0];   // the geometry of the realizer shown (a group open or closed)
         n.shape = r ? shapeOf(r) : { kind: 'rectangle', props: {} };
+        n.up = null;
+        n.comp = n.el.getAttribute('yfiles.foldertype') === 'group' && !/omplex/.test(r ? r.getAttribute('configuration') || '' : '');
+        var ins = r && r.getElementsByTagNameNS(Y, 'Insets')[0], iv = function (k) { return ins ? parseFloat(ins.getAttribute(k + 'F') || ins.getAttribute(k)) || 0 : 0; };
+        n.ins = [iv('left'), iv('top'), iv('right'), iv('bottom')];
+        n.lab = { t: 0, b: 0 };   // its own labels inside, at the top or the bottom (as the layout skill's room())
+        if (r) Array.prototype.forEach.call(r.children, function (l) {
+          if (l.localName !== 'NodeLabel' || l.getAttribute('modelName') !== 'internal' || l.getAttribute('visible') === 'false') return;
+          var side = (l.getAttribute('modelPosition') || '').charAt(0);
+          if (side === 't' || side === 'b') n.lab[side] = Math.max(n.lab[side], parseFloat(l.getAttribute('height')) || 0);
+          if (!n.labPos) n.labPos = l.getAttribute('modelPosition') || 'c';
+        });
       });
+      nodes2.forEach(function (n, i) { n.kids.forEach(function (c) { nodes2[c].up = i; }); });
       var byId = {}; nodes2.forEach(function (n, i) { byId[n.id] = i; });
       var pi = new Map(); points.forEach(function (p, i) { pi.set(p, i); });
       edges2 = Array.prototype.slice.call(doc.getElementsByTagNameNS(G, 'edge')).map(function (e) {
@@ -308,7 +324,102 @@
       edges2.forEach(function (e) { if (all.has(e.s) && all.has(e.t)) e.pts.forEach(function (p) { ps.add(p); }); });
       return { n: all, p: ps, dx: 0, dy: 0 };
     }
-    function bx(i) { var b = boxOf(i); return mv && mv.n.has(i) ? [b[0] + mv.dx, b[1] + mv.dy, b[2], b[3]] : b; }
+    function bx(i) { if (liveC && liveC[i]) return liveC[i]; var b = boxOf(i); return mv && mv.n.has(i) ? [b[0] + mv.dx, b[1] + mv.dy, b[2], b[3]] : b; }
+    // the compartments round what moves (and round the one resized), grown to hold it as the fit after the drag will:
+    // what they hold, plus their Insets and their own labels at the top or bottom; innermost first, never smaller
+    function liveFit(seed) {
+      var out = seed || {}, set = new Set(), depth = function (i) { var k = 0; for (var u = nodes2[i].up; u != null; u = nodes2[u].up) k++; return k; };
+      var up = function (i) { for (var u = nodes2[i].up; u != null; u = nodes2[u].up) if (nodes2[u].comp && !(mv && mv.n.has(u))) set.add(u); };
+      if (mv) mv.n.forEach(up);
+      Object.keys(out).forEach(function (i) { up(+i); });
+      liveC = out;
+      Array.from(set).sort(function (a, b) { return depth(b) - depth(a); }).forEach(function (u) {
+        var n = nodes2[u], b = bx(u), x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+        n.kids.forEach(function (k) { var q = bx(k); x0 = Math.min(x0, q[0]); y0 = Math.min(y0, q[1]); x1 = Math.max(x1, q[0] + q[2]); y1 = Math.max(y1, q[1] + q[3]); });
+        if (x0 === Infinity) return;
+        x0 -= n.ins[0]; y0 -= n.ins[1] + n.lab.t; x1 += n.ins[2]; y1 += n.ins[3] + n.lab.b;
+        var nb = [Math.min(b[0], x0), Math.min(b[1], y0)];
+        nb.push(Math.max(b[0] + b[2], x1) - nb[0], Math.max(b[1] + b[3], y1) - nb[1]);
+        if (nb.some(function (v, j) { return Math.abs(v - b[j]) > 0.01; }) || out[u]) out[u] = nb;
+      });
+      if (!Object.keys(out).length) liveC = null;
+      liveDraw();
+    }
+    function liveDraw() {   // the compartments' outlines and labels on the picture follow their live boxes
+      if (!gN) return;
+      if (liveOrig) Object.keys(liveOrig).forEach(function (i) { if (!liveC || !liveC[i]) undraw(+i); });
+      if (!liveC) return;
+      liveOrig = liveOrig || {};
+      Object.keys(liveC).forEach(function (k) {
+        var i = +k, n = nodes2[i], g = gN[n.id], b = liveC[i], o = boxOf(i);
+        if (!g) return;
+        var first = g.firstElementChild && g.firstElementChild.localName === 'a' ? g.firstElementChild : g;
+        var paths = Array.prototype.filter.call(first.querySelectorAll(':scope > path'), function (x) { return !x.classList.contains('m2-ed-dark'); });
+        if (!liveOrig[i]) liveOrig[i] = paths.map(function (x) { return [x, x.getAttribute('d')]; });
+        var d = outlineD(n.shape, b[0], b[1], b[2], b[3]);
+        paths.forEach(function (x) { x.setAttribute('d', d); });
+        var pos = n.labPos || 'c', h = pos.charAt(pos.length - 1), v = pos.charAt(0);
+        var ddx = /l$/.test(pos) ? b[0] - o[0] : /r$/.test(pos) ? b[0] + b[2] - o[0] - o[2] : b[0] + b[2] / 2 - o[0] - o[2] / 2;
+        var ddy = v === 't' ? b[1] - o[1] : v === 'b' ? b[1] + b[3] - o[1] - o[3] : b[1] + b[3] / 2 - o[1] - o[3] / 2;
+        first.querySelectorAll(':scope > text').forEach(function (t) { t.setAttribute('transform', 'translate(' + f1(ddx) + ' ' + f1(ddy) + ')'); });
+      });
+    }
+    function undraw(i) {   // a compartment drawn as the renderer drew it again
+      var g = gN && gN[nodes2[i] && nodes2[i].id];
+      if (liveOrig && liveOrig[i]) liveOrig[i].forEach(function (q) { q[0].setAttribute('d', q[1]); });
+      if (g) g.querySelectorAll('text').forEach(function (t) { t.removeAttribute('transform'); });
+      if (liveOrig) delete liveOrig[i];
+    }
+    function liveOff() { liveC = null; if (liveOrig) Object.keys(liveOrig).forEach(function (i) { undraw(+i); }); liveOrig = null; }
+    // the fit after a move or a resize: the layout skill's room() in the browser (tidy.py, 'fit'), the compartments
+    // grown or set, their BorderInsets fitted, only those numbers written; the same undo step as the move
+    function fitThen(arg, then) {
+      if (!arg.resize && !(arg.moved && arg.moved.length)) return then(0);
+      layout().then(function (p) {
+        p.globals.set('_t', text); p.globals.set('_ids', JSON.stringify(arg));
+        var r = JSON.parse(p.runPython("import json\njson.dumps(tidy.tidy(_t, 'fit', json.loads(_ids)))"));
+        if (r[1] > 0) { text = r[0]; parse(); dirty = true; }
+        then(r[1]);
+      }).catch(function (e) { say('Compartments not fitted: ' + (e && e.message ? e.message.split('\n').slice(-2).join(' ') : e)); then(0); });
+    }
+    function movedIds(sets) { var a = []; sets.n.forEach(function (i) { a.push(nodes2[i].id); }); return a; }
+    // an edge of a compartment under the pointer (5 px on screen), or a handle of one selected: which sides it moves
+    function edgeAt(P) {
+      var T = 5 / z, hs = Math.max(HANDLE / 2, 4 / z), best = null;
+      selN.forEach(function (i) {
+        if (!nodes2[i].comp || best) return;
+        var b = bx(i), off = 3.3, L = b[0] - off, Tp = b[1] - off, R = b[0] + b[2] + off, B = b[1] + b[3] + off;
+        [[L, Tp, 'lt'], [(L + R) / 2, Tp, 't'], [R, Tp, 'rt'], [L, (Tp + B) / 2, 'l'], [R, (Tp + B) / 2, 'r'], [L, B, 'lb'], [(L + R) / 2, B, 'b'], [R, B, 'rb']].forEach(function (q) {
+          if (!best && Math.abs(P[0] - q[0]) <= hs && Math.abs(P[1] - q[1]) <= hs) best = { c: i, s: q[2] };
+        });
+      });
+      if (best) return best;
+      nodes2.forEach(function (n, i) {
+        if (!n.comp) return;
+        var b = bx(i);
+        if (P[0] < b[0] - T || P[0] > b[0] + b[2] + T || P[1] < b[1] - T || P[1] > b[1] + b[3] + T) return;
+        var s = (Math.abs(P[0] - b[0]) <= T ? 'l' : Math.abs(P[0] - b[0] - b[2]) <= T ? 'r' : '') + (Math.abs(P[1] - b[1]) <= T ? 't' : Math.abs(P[1] - b[1] - b[3]) <= T ? 'b' : '');
+        if (s && (!best || b[2] * b[3] < best.area)) best = { c: i, s: s, area: b[2] * b[3] };
+      });
+      return best;
+    }
+    function resizeCursor(s) { return s === 'l' || s === 'r' ? 'ew-resize' : s === 't' || s === 'b' ? 'ns-resize' : s === 'lt' || s === 'rb' ? 'nwse-resize' : 'nesw-resize'; }
+    function resized(d, P, snapOn) {   // the box of the compartment resized, its sides moved by the drag
+      var b = d.rs.b0, s = d.rs.s, x0 = b[0], y0 = b[1], x1 = b[0] + b[2], y1 = b[1] + b[3], dx = P[0] - d.x, dy = P[1] - d.y;
+      var g = function (v) { return snapOn ? Math.round(v / NODE_STEP) * NODE_STEP : Math.round(v); };
+      if (/l/.test(s)) x0 = g(x0 + dx); if (/r/.test(s)) x1 = g(x1 + dx);
+      if (/t/.test(s)) y0 = g(y0 + dy); if (/b/.test(s)) y1 = g(y1 + dy);
+      // never smaller than what it holds (the fit after it is exact, this is close)
+      var n = nodes2[d.rs.c], cx0 = Infinity, cy0 = Infinity, cx1 = -Infinity, cy1 = -Infinity;
+      n.kids.forEach(function (k) { var q = boxOf(k); cx0 = Math.min(cx0, q[0]); cy0 = Math.min(cy0, q[1]); cx1 = Math.max(cx1, q[0] + q[2]); cy1 = Math.max(cy1, q[1] + q[3]); });
+      if (cx0 !== Infinity) {
+        x0 = Math.min(x0, cx0 - n.ins[0]); y0 = Math.min(y0, cy0 - n.ins[1] - n.lab.t);
+        x1 = Math.max(x1, cx1 + n.ins[2]); y1 = Math.max(y1, cy1 + n.ins[3] + n.lab.b);
+      }
+      if (x1 - x0 < 20) { if (/l/.test(s)) x0 = x1 - 20; else x1 = x0 + 20; }
+      if (y1 - y0 < 20) { if (/t/.test(s)) y0 = y1 - 20; else y1 = y0 + 20; }
+      return [x0, y0, x1 - x0, y1 - y0];
+    }
     function pt(pi) { var p = points[pi], o = mv && mv.p.has(pi); return [num(p, 'x') + (o ? mv.dx : 0), num(p, 'y') + (o ? mv.dy : 0)]; }
     function shift() {   // the drag shown on the drawing itself: groups moved, arcs touched hidden (drawn live)
       if (!gN || !mv) return false;
@@ -328,7 +439,7 @@
     function unshift() {   // the drawing as it was: a press that moved nothing leaves nothing hidden or shifted
       if (gN) Object.keys(gN).forEach(function (k) { gN[k].removeAttribute('transform'); });
       if (gE) Object.keys(gE).forEach(function (k) { gE[k].removeAttribute('transform'); gE[k].style.display = ''; });
-      live = null;
+      live = null; liveOff();
     }
     function move(dx, dy) {
       if (!dx && !dy) return;
@@ -375,7 +486,7 @@
           var old = img.src || '';
           img.removeAttribute('id'); pic.id = 'm2-img'; pic.setAttribute('aria-label', map.title); img.replaceWith(pic); img = pic;
           if (old.indexOf('blob:') === 0) URL.revokeObjectURL(old);
-          gN = {}; gE = {}; live = null;
+          gN = {}; gE = {}; live = null; liveC = null; liveOrig = null;
           pic.querySelectorAll('[data-n]').forEach(function (g) { gN[g.getAttribute('data-n')] = g; });
           pic.querySelectorAll('[data-e]').forEach(function (g) { gE[g.getAttribute('data-e')] = g; });
           if (first) fit(); else draw();
@@ -592,7 +703,7 @@
       return rr(x, y, w, h, 0);
     }
     function shapeD(i, still) {   // the outline of node i, a multimer's second outline with it (still: without the drag)
-      var b = still ? boxOf(i) : bx(i), n = nodes2[i], d = outlineD(n.shape, b[0], b[1], b[2], b[3]);
+      var b = liveC && liveC[i] ? liveC[i] : still ? boxOf(i) : bx(i), n = nodes2[i], d = outlineD(n.shape, b[0], b[1], b[2], b[3]);
       if (n.shape.props.mcount === '2') d = outlineD(n.shape, b[0] + 6, b[1] + 6, b[2], b[3]) + d;
       return d;
     }
@@ -767,6 +878,17 @@
       }
       if (e.button !== 0) return;
       var P = at(e), h = hit(P);
+      // an edge of a compartment, or a handle of one selected: a drag resizes it (user, 2026-11-12: compartments are
+      // containers, "resizable manually ... when I simply drag the edge of it"); a bend point or a node there comes first
+      var rz = !e.shiftKey && edgeAt(P);
+      if (rz && h && (h.p != null || (h.n != null && !nodes2[h.n].comp && selN.indexOf(rz.c) < 0))) rz = null;
+      if (rz) {
+        e.stopImmediatePropagation(); e.preventDefault();
+        view.setPointerCapture(e.pointerId); view.focus({ preventScroll: true });
+        selN = [rz.c]; selP = []; selE = [];
+        drag = { x: P[0], y: P[1], dx: 0, dy: 0, rs: { c: rz.c, s: rz.s, b0: boxOf(rz.c) } };
+        mv = null; paint(); return;
+      }
       // Shift with a drag moves the whole map from anywhere, over a node or a compartment too (user, 2026-11-12: not in
       // yEd, "but i was needing that"); Shift with a click adds to the selection or takes out of it (on release)
       if (e.shiftKey) { shiftAt = { h: h, x: e.clientX, y: e.clientY }; return; }   // the viewer pans
@@ -957,6 +1079,10 @@
         e.stopImmediatePropagation();
         var P = at(e);
         if (band) { band.x2 = P[0]; band.y2 = P[1]; }
+        else if (drag.rs) {
+          var seed = {}; seed[drag.rs.c] = resized(drag, P, gridSet.snap && !e.altKey && !e.ctrlKey);
+          liveFit(seed);
+        }
         else if (drag.grab && Math.hypot(e.clientX - drag.grab.sx, e.clientY - drag.grab.sy) < 4) return;   // not a drag yet
         else {
           if (drag.grab) { var nb = bend(drag.grab.k, drag.grab.P); drag.grab = null;
@@ -968,12 +1094,16 @@
           else if (drag.n != null && !e.altKey && !e.ctrlKey) snapNode(drag);
           if (gridSet.snap && !e.altKey && !e.ctrlKey) onGrid(drag);
           mv.dx = drag.dx; mv.dy = drag.dy; shift();
+          if (mv.n.size) liveFit();   // the compartments round it grow with it (user, 2026-11-12)
         }
         paint();
         return;
       }
       if (on && current === map && !e.buttons) {   // the move sign only over what a drag would move
-        var hh = e.shiftKey ? null : hit(at(e)), sel = hh && (hh.p != null ? selP.indexOf(hh.p) : hh.e != null ? selE.indexOf(hh.e) : selN.indexOf(hh.n)) >= 0;
+        var PP = at(e), hh = e.shiftKey ? null : hit(PP), ez = !e.shiftKey && edgeAt(PP);
+        if (ez && hh && (hh.p != null || (hh.n != null && !nodes2[hh.n].comp && selN.indexOf(ez.c) < 0))) ez = null;
+        if (ez) { view.style.cursor = resizeCursor(ez.s); return; }
+        var sel = hh && (hh.p != null ? selP.indexOf(hh.p) : hh.e != null ? selE.indexOf(hh.e) : selN.indexOf(hh.n)) >= 0;
         view.style.cursor = !hh ? '' : sel ? 'move' : 'pointer';
       }
     }, true);
@@ -995,12 +1125,25 @@
         points.forEach(function (p, i) { var X = num(p, 'x'), Y2 = num(p, 'y'); if (X >= a[0] && Y2 >= a[1] && X <= c[0] && Y2 <= c[1] && selP.indexOf(i) < 0) selP.push(i); });
         band = null; paint(); return;
       }
-      var d = drag; drag = null; mv = null;   // the moved groups and live arcs stay until the map is drawn again
+      var d = drag; drag = null; var sets = mv; mv = null;   // the moved groups and live arcs stay until the map is drawn again
+      if (d.rs) {   // a compartment resized: its box set, never smaller than what it holds, the ones round it grown
+        var nb = liveC && liveC[d.rs.c];
+        if (!nb || nb.every(function (v, j) { return Math.abs(v - d.rs.b0[j]) < 0.01; })) { liveOff(); paint(); return; }
+        remember(false);
+        fitThen({ resize: [nodes2[d.rs.c].id].concat(nb), moved: [] }, function (k) {
+          if (!k) { undo.pop(); liveOff(); paint(); return; }
+          render(); paint(); changed();
+        });
+        return;
+      }
+      var fitAfter = function () {   // the compartments round what moved grow to hold it, in the same undo step
+        fitThen({ moved: movedIds(sets) }, function () { render(); changed(); });
+      };
       if (d.made != null && Math.abs(d.dx) < 0.01 && Math.abs(d.dy) < 0.01) {   // a new bend dragged back to where it was made (a snap may leave a hair): none made
         text = undo.pop(); parse(); selP = []; selE = [d.made - 1]; unshift(); paint(); return;
       }
-      if (d.made != null) { move(d.dx, d.dy); render(); changed(); }   // one step for undo: made and moved
-      else if (d.dx || d.dy) { remember(false); move(d.dx, d.dy); render(); changed(); }
+      if (d.made != null) { move(d.dx, d.dy); fitAfter(); }   // one step for undo: made and moved
+      else if (d.dx || d.dy) { remember(false); move(d.dx, d.dy); fitAfter(); }
       else unshift();   // a click with a slight jitter: nothing moved, nothing stays hidden (user, 2026-11-12: a smooth bend
       // turned sharp: the arcs were drawn as plain lines while waiting for a redraw that a move of zero never asked for)
       paint();
@@ -1021,8 +1164,8 @@
       if (!d) return;
       e.preventDefault(); e.stopPropagation();   // while editing the arrows never step to another map
       if (!selN.length && !selP.length && !selE.length) return;
-      remember(true); move(d[0], d[1]); paint();
-      clearTimeout(timer); timer = setTimeout(render, 150); changed();
+      remember(true); var ks = moving(); move(d[0], d[1]); paint();
+      clearTimeout(timer); timer = setTimeout(function () { fitThen({ moved: movedIds(ks) }, function () { render(); paint(); }); }, 150); changed();
     }, true);
 
     buttons();

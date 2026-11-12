@@ -3,6 +3,11 @@
 #   tidy(text, 'grid')            the whole map onto the grid (snap_grid.snap: complexes packed first, compartments fitted)
 #   tidy(text, 'pack', ids)       the complexes with these node ids, or round them, packed (all when ids is empty), the groups fitted;
 #                                 -1 changes when none of them is or sits in a complex
+#   tidy(text, 'fit', {'resize': [id, x, y, w, h], 'moved': [ids]})
+#                                 compartments are containers (user, 2026-11-12): the one resized gets its new box, never
+#                                 smaller than what it holds; the compartments round it and round the nodes moved grow to
+#                                 hold them, never shrink; their BorderInsets fitted (and those of the complexes round the
+#                                 nodes moved), so yEd keeps the boxes. Nodes keep their sizes.
 # Returns [new text, how many attributes changed]. The tools change attributes only, never add or remove elements, so the
 # n-th start tag of the text is the n-th element lxml reads.
 import re
@@ -20,12 +25,61 @@ def num(v):  # as the editor writes a number: at most three decimals, no trailin
     return str(int(f)) if f == int(f) else repr(f)
 
 
+def is_compartment(n):
+    return n.get('yfiles.foldertype') == 'group' and not complex_pack.is_complex(n)
+
+
+def fit(root, resize=None, moved=()):
+    G, NS, cp = complex_pack.G, complex_pack.NS, complex_pack
+    byid = {n.get('id'): n for n in root.iter(G + 'node')}
+    gone = {byid[i] for i in moved if i in byid}
+    gone = {d for n in gone for d in n.iter(G + 'node')}   # a group moves with what it holds
+    grow, insets, sized = [], [], None
+    if resize and resize[0] in byid and is_compartment(byid[resize[0]]):
+        sized = byid[resize[0]]
+        w, h = max(float(resize[3]), 20.0), max(float(resize[4]), 20.0)
+        cp.set_box(sized, [float(resize[1]), float(resize[2]), w, h])
+        grow.append(sized)
+        grow += [a for a in sized.iterancestors(G + 'node') if is_compartment(a)]
+    for n in gone:
+        for a in n.iterancestors(G + 'node'):
+            if a in gone:
+                continue
+            (grow if is_compartment(a) else insets).append(a)
+    grow = sorted(set(grow), key=lambda g: -len(list(g.iterancestors())))   # innermost first
+    for g in grow:
+        if not cp.members(g):
+            continue
+        x, y, w, h = cp.box(g)
+        now = {k: min(v, 0.0) for k, v in cp.room(g, cp.realizer(g))[1].items()}
+        if any(now.values()):
+            x0, y0 = x + now['left'], y + now['top']
+            x1, y1 = x + w - now['right'], y + h - now['bottom']
+            cp.set_box(g, [x0, y0, x1 - x0, y1 - y0])
+    for g in set(grow) | set(insets):   # as complex_pack.fit_insets, for these groups only
+        if not cp.members(g):
+            continue
+        for r in g.find('g:data/y:ProxyAutoBoundsNode/y:Realizers', NS):
+            i, need = cp.room(g, r)
+            if need['top'] < 0 and r is cp.realizer(g):
+                ins = r.find('y:Insets', NS); t = max(i['top'] + need['top'], 0.0)
+                ins.set('top', str(int(round(t)))); ins.set('topF', repr(t))
+            bi = r.find('y:BorderInsets', NS)
+            if bi is None:
+                continue
+            for k, v in need.items():
+                v = max(v, 0.0)
+                bi.set(k, str(int(round(v)))); bi.set(k + 'F', repr(v))
+
+
 def tidy(text, what, ids=()):
     root = etree.fromstring(text.encode('utf-8'))
     els = list(root.iter(etree.Element))
     before = [dict(e.attrib) for e in els]
     if what == 'grid':
         snap_grid.snap(root)
+    elif what == 'fit':
+        fit(root, ids.get('resize'), ids.get('moved') or ())
     else:
         complex_pack.pack(root)
     after = [dict(e.attrib) for e in els]
