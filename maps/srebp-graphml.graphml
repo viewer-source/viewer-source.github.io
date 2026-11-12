@@ -1360,7 +1360,7 @@ biosynthesis<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel>
       <data key="d10">
         <y:PolyLineEdge>
           <y:Path sx="-52.0" sy="5.900000000000006" tx="0.0" ty="0.0">
-            <y:Point x="424" y="88"/>
+            <y:Point x="424" y="100"/>
           </y:Path>
           <y:LineStyle color="#000000" type="line" width="1.0"/>
           <y:Arrows source="none" target="none"/>
