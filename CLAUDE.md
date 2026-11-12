@@ -157,7 +157,9 @@ says "the workbench", "the converter's repository", "a private repository".
   5 units, centres 3.3 units outside the box; the squares on an arc the same 5 units; user, 2026-11-12); an arc clickable and selected as in yEd,
   shown by black squares on its bend points and on its two ports, where it starts and ends (user, 2026-11-12, replacing a
   blue highlight under the line); a bend point selected alone shows only its own black square;
-  dragging an arc moves its bends. With nothing selected the map looks as the original diagram. A drag moves the item
+  an arc grabbed anywhere and dragged makes a new bend point there and drags it (user, 2026-11-12, as yEd; was: moved its
+  bends), written into the file as yEd writes a y:Point (a y:Path closed in itself opened), one undo step, nothing made
+  when dragged back to where it started; a click on an arc still only selects it. With nothing selected the map looks as the original diagram. A drag moves the item
   itself (user, 2026-11-12: "in an editor, it's already there when you move it"): the editor's drawing is put in the page
   as SVG with each node and arc in a group of its own (the renderer's methods wrapped in the editor's Python, the
   renderer itself unchanged), shifted while the drag runs; an arc with one end or some bends moving is drawn as plain

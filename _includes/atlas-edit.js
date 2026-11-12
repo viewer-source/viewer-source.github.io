@@ -714,6 +714,8 @@
       else if (!there) { selN = h.n != null ? [k] : []; selP = h.p != null ? [k] : []; selE = h.e != null ? [k] : []; }
       drag = { x: P[0], y: P[1], dx: 0, dy: 0, p: h.p != null && selP.indexOf(h.p) >= 0 ? h.p : null, guides: [],
                n: h.n != null && selN.indexOf(h.n) >= 0 ? h.n : null, e: h.e != null && selE.indexOf(h.e) >= 0 ? h.e : null };
+      // an arc grabbed anywhere and dragged makes a new bend point there (user, 2026-11-12, as yEd); a click selects it
+      if (h.e != null && !e.shiftKey) drag.grab = { k: h.e, P: P, sx: e.clientX, sy: e.clientY };
       mv = moving();
       paint();
     }, true);
@@ -745,6 +747,41 @@
       var C = [B[0] + (ax != null ? ax - B[0] : 0), B[1] + (ay != null ? ay - B[1] : 0)];
       nb.forEach(function (q) { if (Math.abs(q[0] - C[0]) < 0.01 || Math.abs(q[1] - C[1]) < 0.01) d.guides.push([C, q]); });
     }
+    // a new bend point (user, 2026-11-12, as yEd: "grab a line at any point and drag where you want"): put on the arc's
+    // segment nearest the press, written into the text as yEd writes a y:Point (a y:Path closed in itself opened), the
+    // rest byte for byte; undo takes it away. Returns { p (its index in points), at (where it is), k (the arc, + 1) }
+    function bend(k, P) {
+      var e = edges2[k], pts = line(k);
+      if (!pts || !e.path) return null;
+      var j = 1, dmin = Infinity;
+      for (var i = 1; i < pts.length; i++) { var d0 = near(P, pts[i - 1], pts[i]); if (d0 < dmin) { dmin = d0; j = i; } }
+      var a = pts[j - 1], b = pts[j], dx = b[0] - a[0], dy = b[1] - a[1], L = dx * dx + dy * dy;
+      var t = L ? Math.max(0, Math.min(1, ((P[0] - a[0]) * dx + (P[1] - a[1]) * dy) / L)) : 0;
+      var Q = [Math.round((a[0] + dx * t) * 1000) / 1000, Math.round((a[1] + dy * t) * 1000) / 1000];
+      var tag = '<y:Point x="' + fmt(Q[0]) + '" y="' + fmt(Q[1]) + '"/>', at = j - 1;
+      var nth = function (re, n) { var m, c = -1; re.lastIndex = 0; while ((m = re.exec(text))) if (++c === n) return m; return null; };
+      var indent = function (pos) { var s0 = text.lastIndexOf('\n', pos - 1) + 1, w = text.slice(s0, pos).match(/^[ \t]*/)[0]; return w; };
+      var m, before = text;
+      if (at < e.pts.length) {   // before a bend the arc has: on a line of its own, as that one
+        m = nth(/<y:Point\s[^>]*>/g, e.pts[at]);
+        text = text.slice(0, m.index) + tag + '\n' + indent(m.index) + text.slice(m.index);
+      } else if (e.pts.length) {   // after its last bend
+        m = nth(/<y:Point\s[^>]*>/g, e.pts[e.pts.length - 1]);
+        var end = m.index + m[0].length;
+        text = text.slice(0, end) + '\n' + indent(m.index) + tag + text.slice(end);
+      } else {   // its first bend: inside the y:Path, opened if it closes in itself
+        var paths = Array.prototype.slice.call(doc.getElementsByTagNameNS(Y, 'Path'));
+        m = nth(/<y:Path[\s>\/][^>]*>/g, paths.indexOf(e.path));
+        if (!m) return null;
+        var w = indent(m.index), end2 = m.index + m[0].length;
+        text = /\/>$/.test(m[0])
+          ? text.slice(0, m.index) + m[0].replace(/\s*\/>$/, '>') + '\n' + w + '  ' + tag + '\n' + w + '</y:Path>' + text.slice(end2)
+          : text.slice(0, end2) + '\n' + w + '  ' + tag + text.slice(end2);
+      }
+      var keep = text; text = before; remember(false); text = keep;
+      parse();
+      return { p: edges2[k].pts[at], at: Q, k: k + 1 };
+    }
     function onGrid(d) {   // snap to the grid, an axis a guide has not taken: the node pressed by its centre on 8 px, a
       // bend point (alone, or the first of an arc dragged) on 4 px; Alt or Ctrl held, no snapping
       var X, Y2, st;
@@ -763,7 +800,10 @@
         e.stopImmediatePropagation();
         var P = at(e);
         if (band) { band.x2 = P[0]; band.y2 = P[1]; }
+        else if (drag.grab && Math.hypot(e.clientX - drag.grab.sx, e.clientY - drag.grab.sy) < 4) return;   // not a drag yet
         else {
+          if (drag.grab) { var nb = bend(drag.grab.k, drag.grab.P); drag.grab = null;
+            if (nb) { drag.x = nb.at[0]; drag.y = nb.at[1]; drag.p = nb.p; drag.e = null; drag.made = drag.made || nb.k; selN = []; selE = []; selP = [nb.p]; mv = moving(); } }
           drag.dx = Math.round(P[0] - drag.x); drag.dy = Math.round(P[1] - drag.y);
           drag.gx = drag.gy = false;
           if (drag.p != null) snap(drag);
@@ -787,7 +827,11 @@
         band = null; paint(); return;
       }
       var d = drag; drag = null; mv = null;   // the moved groups and live arcs stay until the map is drawn again
-      if (d.dx || d.dy) { remember(false); move(d.dx, d.dy); render(); changed(); }
+      if (d.made != null && Math.abs(d.dx) < 0.01 && Math.abs(d.dy) < 0.01) {   // a new bend dragged back to where it was made (a snap may leave a hair): none made
+        text = undo.pop(); parse(); selP = []; selE = [d.made - 1]; unshift(); paint(); return;
+      }
+      if (d.made != null) { move(d.dx, d.dy); render(); changed(); }   // one step for undo: made and moved
+      else if (d.dx || d.dy) { remember(false); move(d.dx, d.dy); render(); changed(); }
       else unshift();   // a click with a slight jitter: nothing moved, nothing stays hidden (user, 2026-11-12: a smooth bend
       // turned sharp: the arcs were drawn as plain lines while waiting for a redraw that a move of zero never asked for)
       paint();
