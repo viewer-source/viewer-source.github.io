@@ -1,4 +1,4 @@
-# Copy of the layout skill's snap_grid.py at 5dec20f 2026-11-11; its master is in the skill, never edited here.
+# Copy of the layout skill's snap_grid.py at 7fc1773 2026-11-12; its master is in the skill, never edited here.
 # Snap to grid (user's idea, 2026-10-18; SKILL.md section 3, notes/handover.md "Snap to grid").
 #   python3 snap_grid.py <in.graphml> <out.graphml> [--node 8] [--route 4] [--tol 4] [--link 12]
 #   from snap_grid import snap                         snap(root) -> largest move
@@ -17,7 +17,7 @@
 # its margin (complex_pack.room), and fit_insets ends it, so yEd keeps the boxes.
 import sys
 from lxml import etree
-from complex_pack import NS, G, realizer, box, shift, members, is_complex, fit_insets, pack, room
+from complex_pack import NS, G, Y, realizer, box, shift, members, is_complex, fit_insets, pack, room
 
 
 def is_group(n):
@@ -151,6 +151,24 @@ def compartments(root):  # innermost first, with something inside
 
 
 def snap(root, node=8.0, route=4.0, tol=4.0, link=12.0):
+    # passes until nothing moves (2026-11-12: one pass was not stable, a second run still moved points by up to 4 px:
+    # bend lines on the route grid 4 px from a node line chained into it, and lines following a border port landed off
+    # the grid; on the 21 official maps and the examples two passes always settle)
+    most = 0.0
+    for _ in range(4):
+        before = numbers(root)
+        most = max(most, one_pass(root, node, route, tol, link))
+        if numbers(root) == before:
+            break
+    return most
+
+
+def numbers(root):  # every position and size, to a hundredth of a pixel
+    return [round(float(v), 2) for e in root.iter(Y + 'Geometry', Y + 'Point', Y + 'Path', Y + 'Insets', Y + 'BorderInsets')
+            for k, v in sorted(e.attrib.items()) if k not in ('id',)]
+
+
+def one_pass(root, node, route, tol, link):
     pack(root)
     us, unit_of = units(root)
     centre = {u: (x + w / 2, y + h / 2, w, h) for u, (x, y, w, h) in ((u, box(n)) for u, n in us.items())}
