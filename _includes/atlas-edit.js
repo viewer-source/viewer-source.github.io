@@ -370,7 +370,7 @@
       if (saveTimer) push();   // a move still waiting is saved now
       if (site && site.id && undo.length) kept = { id: site.id, v: site.v, sha: site.sha, pic: img, width: map.width, height: map.height, x0: x0, y0: y0, text: text, ref: siteRef, cur: nowRef() };
       on = false; drag = null; band = null; grid.classList.remove('m2-editing'); paint(); buttons();
-      say(dirty && !site ? name + ' has moves not saved: Back to it, or Save.' : 'Edit the map shown, or open a yEd GraphML file.');
+      say(dirty && !site ? name + ' has moves not saved: Back to it, or Save.' : 'Edit the map shown.');
     }
     function buttons() {
       ['#m2-ed-save', '#m2-ed-undo', '#m2-ed-redo'].forEach(function (k) { box.querySelector(k).disabled = !on; });
@@ -409,22 +409,6 @@
       setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
       done();
     }
-    function open() {
-      if (window.showOpenFilePicker) {
-        window.showOpenFilePicker({ types: [{ description: 'yEd GraphML', accept: { 'application/xml': ['.graphml'] } }] })
-          .then(function (hs) { return hs[0].getFile().then(function (f) { return f.text().then(function (t) { start(t, f.name, hs[0]); }); }); })
-          .catch(function (e) { if (e.name !== 'AbortError') say('Not opened: ' + e.message); });
-        return;
-      }
-      var input = document.createElement('input');
-      input.type = 'file'; input.accept = '.graphml';
-      input.onchange = function () { var f = input.files[0]; if (f) f.text().then(function (t) { start(t, f.name, null); }); };
-      input.click();
-    }
-    box.querySelector('#m2-ed-open').addEventListener('click', function () {
-      if (dirty && !confirm(name + ' has moves not saved. Open another file?')) return;
-      open();
-    });
     function editShown() {   // the map on screen, if it is drawn from a GraphML
       var url = graphmlOf(current), m = current;
       if (!url) return;

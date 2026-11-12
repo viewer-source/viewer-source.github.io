@@ -130,7 +130,7 @@ says "the workbench", "the converter's repository", "a private repository".
   viewer's own look): a pencil tab before Settings opens the Edit window: at its top the tools as a row of signs (user,
   2026-11-12, after yEd's toolbar: "not as words but as normal symbols", a few now and more as needed): Undo, Redo, a thin
   line, Grid and Snap to grid (a magnet), the plain grey signs of the tabs, a switch that is on on a light grey square as
-  yEd's; below, Open file (a yEd GraphML from the computer), Save, Stop editing; the tab starts editing the map shown at once and follows the map chosen, and shows only on a map drawn from its GraphML (or while a file is edited or has moves not saved; user, 2026-11-12). Moves only: a node or a bend point
+  yEd's; below, Save and Stop editing (Open file, a yEd GraphML from the computer, removed: user, 2026-11-12, not needed outside the Atlas; in the history); the tab starts editing the map shown at once and follows the map chosen, and shows only on a map drawn from its GraphML (or while a file is edited or has moves not saved; user, 2026-11-12). Moves only: a node or a bend point
   dragged (a group with what it holds, and the bends of arcs inside it; a bend alone stays put when its nodes move, as
   in yEd), the first click selects and a drag moves only what is selected already (user, 2026-11-12, as yEd: "first click selects an item, and second click drags it"; the plan: mimic yEd's behaviour in general), Shift with a drag moves the whole map from anywhere, over a node or a compartment too (user, 2026-11-12: not in yEd, wanted), Shift with a click adds to the selection, a plain drag on empty space selects an area and the map moves with a right drag (Ctrl with a click on a Mac) or two-finger scrolling, a pinch or Ctrl/Cmd with the wheel zooming, as in yEd's Edit mode (user, 2026-11-12: "yed way"; until then a drag on empty space moved the map and Shift selected an area), arrow keys move by 1 (Shift 10), Ctrl or Cmd
   with Z undoes, with S saves; a drag on empty space pans as before. Only the x and y of what moved change in the
@@ -141,8 +141,8 @@ says "the workbench", "the converter's repository", "a private repository".
   from the address) through GitHub's contents API, with a fine-grained token the user pastes once in the Edit window
   (kept in that browser's localStorage, `atlas-edit-token`; Disconnect removes it); the build redraws it and the page swaps
   the new version in by itself (index.json checked every 30 s). Editing starts from the repository's version and its sha,
-  so a file changed on GitHub meanwhile is never overwritten: saving stops and says so. A file opened from the computer
-  is saved into it (Chrome, Edge), else to a place chosen once, else as a download. Editing starts on the picture as it
+  so a file changed on GitHub meanwhile is never overwritten: saving stops and says so. A map not in the site's repository
+  is saved to a place chosen once (Chrome, Edge), else as a download. Editing starts on the picture as it
   is, with no redraw and the map not moved (user, 2026-11-12: "exactly as I see it and immediately start editing"): the
   frame of yEd's coordinates is read from the site's SVG; the renderer loads quietly meanwhile and draws only after a
   move. Silent (user, 2026-11-12): the Edit tab is the switch, no Edit this map or Stop editing; any other tab, or the
