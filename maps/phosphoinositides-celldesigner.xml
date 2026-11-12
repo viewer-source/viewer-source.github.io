@@ -804,11 +804,11 @@
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n28_n0" species="s_n28_n0" complexSpeciesAlias="sa_n28">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="525.980967" y="183.541138" w="80.0" h="40.0"/>
+<celldesigner:bounds x="515.981" y="183.541138" w="80.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
-<celldesigner:innerPosition x="18.0" y="10.0"/>
+<celldesigner:innerPosition x="8.000033" y="10.0"/>
 <celldesigner:boxSize width="80.0" height="40.0"/>
 <celldesigner:singleLine width="1.0"/>
 <celldesigner:paint color="ffc2d4ed" scheme="Color"/>
