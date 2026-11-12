@@ -700,7 +700,7 @@
       return best || group;
     }
     function editing(e) { return on && current === map && !e.target.closest('.m2-ctrl, .m2-info'); }
-    var empty = null, rpan = null;
+    var empty = null, rpan = null, shiftAt = null;
     // as yEd's Edit mode (user, 2026-11-12: "yed way"): a plain drag on empty space selects an area (a click there clears
     // the selection, Shift adds to it); the map moves with a right drag (its context menu kept away) or two-finger
     // scrolling; a pinch, or Ctrl or Cmd with the wheel, zooms
@@ -715,15 +715,19 @@
       }
       if (e.button !== 0) return;
       var P = at(e), h = hit(P);
+      // Shift with a drag moves the whole map from anywhere, over a node or a compartment too (user, 2026-11-12: not in
+      // yEd, "but i was needing that"); Shift with a click adds to the selection or takes out of it (on release)
+      if (e.shiftKey) { shiftAt = { h: h, x: e.clientX, y: e.clientY }; return; }   // the viewer pans
       e.stopImmediatePropagation(); e.preventDefault();
       view.setPointerCapture(e.pointerId); view.focus({ preventScroll: true });
       if (!h) {
-        if (!e.shiftKey) { selN = []; selP = []; selE = []; }
+        selN = []; selP = []; selE = [];
         band = { x: P[0], y: P[1], x2: P[0], y2: P[1], add: true }; paint(); return;
       }
       var list = h.p != null ? selP : h.e != null ? selE : selN, k = h.p != null ? h.p : h.e != null ? h.e : h.n, there = list.indexOf(k) >= 0;
-      if (e.shiftKey) { if (there) list.splice(list.indexOf(k), 1); else list.push(k); }
-      else if (!there) { selN = h.n != null ? [k] : []; selP = h.p != null ? [k] : []; selE = h.e != null ? [k] : []; }
+      // the first click selects, a drag moves only what is selected already (user, 2026-11-12: as yEd, "first click
+      // selects an item, and second click drags it")
+      if (!there) { selN = h.n != null ? [k] : []; selP = h.p != null ? [k] : []; selE = h.e != null ? [k] : []; paint(); return; }
       drag = { x: P[0], y: P[1], dx: 0, dy: 0, p: h.p != null && selP.indexOf(h.p) >= 0 ? h.p : null, guides: [],
                n: h.n != null && selN.indexOf(h.n) >= 0 ? h.n : null, e: h.e != null && selE.indexOf(h.e) >= 0 ? h.e : null };
       // an arc grabbed anywhere and dragged makes a new bend point there (user, 2026-11-12, as yEd); a click selects it
@@ -837,10 +841,19 @@
         paint();
         return;
       }
-      if (on && current === map && !e.buttons) { var hh = hit(at(e)); view.style.cursor = !hh ? '' : hh.e != null ? 'pointer' : 'move'; }
+      if (on && current === map && !e.buttons) {   // the move sign only over what a drag would move
+        var hh = e.shiftKey ? null : hit(at(e)), sel = hh && (hh.p != null ? selP.indexOf(hh.p) : hh.e != null ? selE.indexOf(hh.e) : selN.indexOf(hh.n)) >= 0;
+        view.style.cursor = !hh ? '' : sel ? 'move' : 'pointer';
+      }
     }, true);
     function release(e) {
       if (rpan) { rpan = null; view.classList.remove('m2-drag'); e.stopImmediatePropagation(); return; }
+      var sa = shiftAt; shiftAt = null;
+      if (sa && sa.h && e.type === 'pointerup' && Math.hypot(e.clientX - sa.x, e.clientY - sa.y) < 5) {   // Shift with a click
+        var hs = sa.h, li = hs.p != null ? selP : hs.e != null ? selE : selN, ki = hs.p != null ? hs.p : hs.e != null ? hs.e : hs.n;
+        if (li.indexOf(ki) >= 0) li.splice(li.indexOf(ki), 1); else li.push(ki);
+        paint(); return;
+      }
       if (empty && e.type === 'pointerup' && Math.hypot(e.clientX - empty[0], e.clientY - empty[1]) < 5) { selN = []; selP = []; selE = []; paint(); }
       empty = null;
       if (!drag && !band) return;
