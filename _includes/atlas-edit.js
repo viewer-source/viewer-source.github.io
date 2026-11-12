@@ -1,8 +1,10 @@
   // ---------- editing (--m2-edit: 1; user, 2026-11-12) ----------
   // Moves only: nodes and bend points of a yEd GraphML, nudged in the map window. Nothing is drawn twice: a move changes
   // only the numbers of that position in the file's text (everything else stays byte for byte, so yEd opens it as
-  // before), and the viewer's own yEd renderer, run in the browser by Pyodide, draws the map again. Saved back into the
-  // file opened (Chrome, Edge), else as a download. Included inside the viewer's script, so it shares its view.
+  // before), and the viewer's own yEd renderer, run in the browser by Pyodide, draws the map again. A map of the site is
+  // saved by itself, as in Google Docs (user, 2026-11-12): a few seconds after the last move its source file is committed
+  // to the site's repository with a GitHub token kept in this browser only, and the site's build redraws it; a file opened
+  // from the computer is saved back into it (Chrome, Edge), else as a download. Included inside the viewer's script.
   var ed = (function () {
     var PYODIDE = 'https://cdn.jsdelivr.net/pyodide/v0.26.4/full/';   // as the converter's page
     var Y = 'http://www.yworks.com/xml/graphml', G = 'http://graphml.graphdrawing.org/xmlns';
@@ -24,6 +26,61 @@
     var x0 = 0, y0 = 0;            // where the drawing's top left is in yEd units
     var selN = [], selP = [];      // selected nodes (indices in nodes2) and bend points (indices in points)
     var undo = [], redo = [], drag = null, band = null, ticket = 0, nudgeAt = 0, timer = null;
+    // saving to the site: the repository is the site's own (<owner>.github.io), the map's source maps/<file>.graphml
+    var TOKEN_KEY = 'atlas-edit-token', AUTOSAVE = 3000;
+    var site = null;               // { path, sha } of the map being edited, when it is a map of this site
+    var saveTimer = null, saving = null, saveAgain = false, stuck = false;
+    function repo() { var h = location.hostname; return /\.github\.io$/.test(h) ? h.split('.')[0] + '/' + h : null; }
+    function token() { try { return localStorage.getItem(TOKEN_KEY) || ''; } catch (e) { return ''; } }
+    function api(path, opt) {
+      opt = opt || {};
+      opt.headers = Object.assign({ Authorization: 'Bearer ' + token(), Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' }, opt.headers || {});
+      opt.cache = 'no-store';
+      return fetch('https://api.github.com/repos/' + repo() + path, opt);
+    }
+    function b64(t) {   // UTF-8 text to base64, in pieces (a map is a few hundred KB)
+      var u = new TextEncoder().encode(t), s = '';
+      for (var i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000));
+      return btoa(s);
+    }
+    function hm() { return new Date().toTimeString().slice(0, 5); }
+    function changed() {   // after every move, undo or redo: the site's map is saved a few seconds after the last one
+      if (!site || !token() || stuck) return;
+      say('Saving in a moment...');
+      clearTimeout(saveTimer); saveTimer = setTimeout(push, AUTOSAVE);
+    }
+    function push() {
+      clearTimeout(saveTimer); saveTimer = null;
+      if (!site || !dirty || stuck) return Promise.resolve();
+      if (saving) { saveAgain = true; return saving; }
+      var target = site, body = text;
+      say('Saving...');
+      saving = api('/contents/' + target.path, { method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: 'Moved in the viewer: ' + target.path.split('/').pop(), content: b64(body), sha: target.sha, branch: 'main' }) })
+        .then(function (r) {
+          return r.json().then(function (d) {
+            if (r.ok) {
+              target.sha = d.content.sha;
+              if (site === target && text === body) dirty = false;
+              say('Saved to the site ' + hm() + '. The site shows it in about two minutes; this page swaps it in by itself.');
+            } else if (r.status === 409 || r.status === 422) {
+              stuck = true;
+              say('Not saved: the map was changed on GitHub since it was opened, and it is not overwritten. Stop editing and open the map again to go on from that version.');
+            } else if (r.status === 401 || r.status === 403 || r.status === 404) {
+              say('Not saved: the token was refused (' + r.status + '). Connect again with a token that can write to ' + repo() + '.');
+              ghForm(true);
+            } else say('Not saved (' + r.status + '): ' + (d.message || '') + '. The next move tries again.');
+          });
+        })
+        .catch(function (e) { say('Not saved: no connection (' + e.message + '). The next move tries again.'); })
+        .then(function () { saving = null; if (saveAgain) { saveAgain = false; if (dirty) return push(); } });
+      return saving;
+    }
+    function ghForm(show) {   // the token field: shown while editing a map of this site with no token
+      var f = box.querySelector('#m2-ed-gh');
+      f.hidden = !show;
+      box.querySelector('#m2-ed-gh-off').hidden = show || !token() || !repo();
+    }
 
     function say(t) { status.textContent = t; }
     function python() {
@@ -109,7 +166,7 @@
     }
     function back(from, to) {
       if (!from.length) return;
-      to.push(text); text = from.pop(); parse(); selN = []; selP = []; dirty = true; render(); paint();
+      to.push(text); text = from.pop(); parse(); selN = []; selP = []; dirty = true; render(); paint(); changed();
     }
 
     // the drawing: the renderer in the browser; the map keeps its place on screen when the drawing's edges change
@@ -131,14 +188,15 @@
           img.removeAttribute('id'); pic.id = 'm2-img'; pic.alt = map.title; img.replaceWith(pic); img = pic;
           if (old.indexOf('blob:') === 0) URL.revokeObjectURL(old);
           if (first) fit(); else draw();
-          if (!r[1].length) say(name + (dirty ? ' (not saved)' : ''));
+          if (!r[1].length && !site) say(name + (dirty ? ' (not saved)' : ''));
+          else if (!r[1].length && site && !saveTimer && !saving && !dirty) say(site.pending ? 'Editing ' + map.title + '. Connect to GitHub below so the moves are saved to the site.' : 'Editing ' + map.title + '. Every move is saved to the site by itself.');
         };
         pic.src = url;
       }).catch(function (e) { if (t === ticket) say('Not drawn: ' + (e && e.message ? e.message.split('\n').slice(-2).join(' ') : e)); });
     }
-    function start(t, n, h) {
+    function start(t, n, h, s) {
       try { text = t; parse(); } catch (e) { say('Cannot edit ' + n + ': ' + e); return; }
-      name = n; handle = h; dirty = false; undo = []; redo = []; selN = []; selP = [];
+      name = n; handle = h; site = s || null; if (site) site.base = t; stuck = false; dirty = false; undo = []; redo = []; selN = []; selP = [];
       map = { id: 'edit', title: n, width: 0, height: 0, scale: 1, downloads: [] };
       current = map; on = true;
       nodes = null; sel = null; renderInfo(); drawPin();
@@ -150,11 +208,14 @@
     }
     function stop() {
       if (!on) return;
+      if (saveTimer) push();   // a move still waiting is saved now
       on = false; drag = null; band = null; grid.classList.remove('m2-editing'); paint(); buttons();
-      say(dirty ? name + ' has moves not saved: Back to it, or Save.' : 'Open a yEd GraphML file, or edit the map shown.');
+      say(dirty && !site ? name + ' has moves not saved: Back to it, or Save.' : 'Edit the map shown, or open a yEd GraphML file.');
     }
     function buttons() {
       ['#m2-ed-save', '#m2-ed-undo', '#m2-ed-redo'].forEach(function (k) { box.querySelector(k).disabled = !on; });
+      box.querySelector('#m2-ed-save').hidden = !!site;   // a map of the site saves by itself
+      ghForm(!!(on && site && !token()));
       box.querySelector('#m2-ed-back').hidden = on || !text;
       box.querySelector('#m2-ed-back').textContent = 'Back to ' + name;
       box.querySelector('#m2-ed-stop').hidden = !on;
@@ -162,7 +223,7 @@
       box.querySelector('#m2-ed-this').hidden = on || !g;
       // the Edit tab only on a map that can be edited, or while a file is being edited (user, 2026-11-12: "do not show
       // edit icon for maps that can not be edited"); its window gives way to the Maps list when the tab goes
-      var off = !on && !dirty && !g;
+      var off = !on && !(dirty && !site) && !g;
       grid.classList.toggle('m2-edit-off', off);
       if (off && win === 'edit') { win = 'list'; railMark(); }
     }
@@ -173,6 +234,7 @@
 
     function save() {
       if (!text) return;
+      if (site) { if (token()) push(); return; }
       var blob = new Blob([text], { type: 'application/xml' });
       var done = function () { dirty = false; say('Saved ' + name + ' ' + new Date().toTimeString().slice(0, 5)); };
       var into = function (h) { return h.createWritable().then(function (w) { return w.write(blob).then(function () { return w.close(); }); }).then(done); };
@@ -206,11 +268,59 @@
     function editShown() {   // the map on screen, if it is drawn from a GraphML
       var url = graphmlOf(current), m = current;
       if (!url) return;
-      if (dirty && !confirm(name + ' has moves not saved. Edit this map instead?')) return;
+      if (dirty && !site && !confirm(name + ' has moves not saved. Edit this map instead?')) return;
+      if (saveTimer) push();
+      var file = url.split('?')[0].split('/').pop(), path = 'maps/' + file;
+      var go = function (t, s) { start(t, file, null, s); map.title = m.title; map.siteId = m.id; document.getElementById('m2-title').textContent = m.title; };
+      var fromSite = function (s) {   // the published copy: what the site shows now
+        return fetch(url, { cache: 'no-cache' }).then(function (r) { return r.text(); }).then(function (t) { go(t, s); });
+      };
       say('Opening ' + m.title + '...');
-      fetch(url, { cache: 'no-cache' }).then(function (r) { return r.text(); })
-        .then(function (t) { start(t, url.split('/').pop(), null); map.title = m.title; document.getElementById('m2-title').textContent = m.title; });
+      if (!repo()) return fromSite(null);
+      if (!token()) return fromSite({ path: path, sha: null, pending: true });
+      // with a token: the source as it is in the repository now (newer than the site while a build runs), and its sha,
+      // which makes GitHub refuse a save over a version changed meanwhile
+      api('/contents/' + path + '?ref=main').then(function (r) {
+        if (r.status === 404) return fromSite(null);   // not a map of this repository: saved as a file
+        if (!r.ok) throw r.status;
+        return r.json().then(function (d) {
+          return api('/contents/' + path + '?ref=main', { headers: { Accept: 'application/vnd.github.raw' } })
+            .then(function (r2) { if (!r2.ok) throw r2.status; return r2.text(); })
+            .then(function (t) { go(t, { path: path, sha: d.sha }); });
+        });
+      }).catch(function (e) { say('Could not read the map from GitHub (' + e + '); the token may be refused.'); ghForm(true); });
     }
+    // the token: pasted once, checked against the repository, kept in this browser only (localStorage)
+    box.querySelector('#m2-ed-gh-go').addEventListener('click', function () {
+      var v = box.querySelector('#m2-ed-gh-token').value.trim();
+      if (!v) return;
+      try { localStorage.setItem(TOKEN_KEY, v); } catch (e) { say('This browser does not keep the token.'); return; }
+      say('Checking the token...');
+      api('').then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); }).then(function (d) {
+        if (!d.permissions || !d.permissions.push) throw 'it cannot write to ' + repo();
+        box.querySelector('#m2-ed-gh-token').value = '';
+        var moved = dirty;
+        if (on && site) {   // connected while editing: go on from the repository's version, keeping the moves made
+          var keep = text;
+          var s0 = site;
+          Promise.all([api('/contents/' + s0.path + '?ref=main').then(function (r) { return r.json(); }),
+            api('/contents/' + s0.path + '?ref=main', { headers: { Accept: 'application/vnd.github.raw' } }).then(function (r) { return r.text(); })])
+            .then(function (f) {
+              s0.sha = f[0].sha; s0.pending = false; buttons();
+              if (f[1] !== s0.base) { stuck = true; say('Connected, but the map in the repository is newer than the copy opened: moves not saved, nothing overwritten. Stop editing and open the map again.'); return; }
+              if (moved) { text = keep; dirty = true; push(); } else say('Connected. Every move is now saved to the site by itself.');
+            });
+        } else { buttons(); say('Connected. Every move on a map of this site is saved by itself.'); }
+      }).catch(function (e) {
+        try { localStorage.removeItem(TOKEN_KEY); } catch (x) {}
+        say('The token was not accepted (' + e + ').'); ghForm(true);
+      });
+    });
+    box.querySelector('#m2-ed-gh-off').addEventListener('click', function () {
+      if (saveTimer) push();
+      try { localStorage.removeItem(TOKEN_KEY); } catch (e) {}
+      buttons(); say('Disconnected: the token is removed from this browser.');
+    });
     box.querySelector('#m2-ed-this').addEventListener('click', editShown);
     // the Edit tab starts editing the map shown at once (user, 2026-11-12: "does not look i can edit yet"); a map drawn
     // from a CellDesigner file says why it cannot be edited yet
@@ -230,7 +340,7 @@
       document.getElementById('m2-title').textContent = map.title;
       x0 = y0 = 0; map.width = 0; render();
     });
-    window.addEventListener('beforeunload', function (e) { if (dirty) { e.preventDefault(); e.returnValue = ''; } });
+    window.addEventListener('beforeunload', function (e) { if (dirty) { if (saveTimer) push(); e.preventDefault(); e.returnValue = ''; } });
 
     // on screen: the selection's outlines and every bend point, over the drawing
     function sx(X) { return tx + (X - x0) * z; }
@@ -317,7 +427,7 @@
         band = null; paint(); return;
       }
       var d = drag; drag = null;
-      if (d.dx || d.dy) { remember(false); move(d.dx, d.dy); render(); }
+      if (d.dx || d.dy) { remember(false); move(d.dx, d.dy); render(); changed(); }
       paint();
     }
     view.addEventListener('pointerup', release, true);
@@ -337,7 +447,7 @@
       e.preventDefault(); e.stopPropagation();   // while editing the arrows never step to another map
       if (!selN.length && !selP.length) return;
       remember(true); move(d[0], d[1]); paint();
-      clearTimeout(timer); timer = setTimeout(render, 150);
+      clearTimeout(timer); timer = setTimeout(render, 150); changed();
     }, true);
 
     buttons();

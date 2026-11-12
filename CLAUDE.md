@@ -122,7 +122,13 @@ says "the workbench", "the converter's repository", "a private repository".
   with Z undoes, with S saves; a drag on empty space pans as before. Only the x and y of what moved change in the
   file's text, the rest byte for byte; the yEd renderer runs in the browser by Pyodide (the converter page's version,
   `renderers/yrender/yrender.py` published for it) and draws the map again, so the editor draws nothing of its own.
-  Saved into the file opened (Chrome, Edge), else to a place chosen once, else as a download. The code is
+  A map of the site saves by itself (user, 2026-11-12: "as in Google Docs"): no Save button; 3 s after the last move,
+  undo or redo, the map's source `maps/<file>.graphml` is committed to the site's own repository (`<owner>/<owner>.github.io`,
+  from the address) through GitHub's contents API, with a fine-grained token the user pastes once in the Edit window
+  (kept in that browser's localStorage, `atlas-edit-token`; Disconnect removes it); the build redraws it and the page swaps
+  the new version in by itself (index.json checked every 30 s). Editing starts from the repository's version and its sha,
+  so a file changed on GitHub meanwhile is never overwritten: saving stops and says so. A file opened from the computer
+  is saved into it (Chrome, Edge), else to a place chosen once, else as a download. The code is
   `_includes/atlas-edit.js`, included by the viewer's script (copied to the sites with it, off there). Checked
   2026-11-12 on eNOS: first drawing about 4 s, a redraw after a move under a second, the saved file differing from the
   original only in x and y values. Not yet: CellDesigner files, a group growing round a member moved out of it.
