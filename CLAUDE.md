@@ -237,7 +237,17 @@ says "the workbench", "the converter's repository", "a private repository".
   the next editing, take the picture's frame against the file saved: 0, 0 for a CellDesigner map, whose file already
   holds the shift (2026-11-12, user: back in edit mode after a node moved past the edge, the map jumped by the shift).
   The white canvas of a CellDesigner drawing is left out while editing, so the grid runs on as on a GraphML map (user,
-  2026-11-12: "like an endless space"); the file keeps its canvas size, the view mode is unchanged.
+  2026-11-12: "like an endless space"); the file keeps its canvas size, the view mode is unchanged. Its white halos
+  under the lines (CellDesigner's, so crossings read) are hidden while editing too (user, 2026-11-12: without the canvas
+  they cut round-ended white strips through the grid and the compartments). On a CellDesigner map the square marks
+  (bend points, ports, node handles) are magenta, as CellDesigner's, black on a GraphML map (user, 2026-11-12: "this way
+  I will know while editing that it's CD"); Blue line in Settings uses CellDesigner's selection blue #1437ff (user: the
+  first blue looked pale on a thin line). A selected compartment keeps its grey fill over all of it (user, 2026-11-12).
+  Arrow keys: a held key shows the move on the drawing as it goes, as a drag (user, 2026-11-12: it showed only on
+  release), and a bend point selected alone gets the grey guides while one of its segments is exactly level or upright,
+  no snapping (user: as in a drag); they go at the next click or Esc. The renderer (Pyodide, lxml and the converter,
+  about 6.8 MB) starts quietly 2.5 s after the page shows its map where the Edit tab is, so a CellDesigner map opens
+  for editing in about 0.5 s (4.5 s before; user, 2026-11-12); a site without the Edit tab loads nothing.
   A selected line highlighted under its squares (user, 2026-11-12: "I was wrong about removing highlights"): light blue
   (#8ab4f8), solid, no blending, so overlaps show no darker parts, and under the lines (user, 2026-11-12: "not a
   semi-transparent cover", "under the lines ... careful with compartments"): put into the drawing as the first thing of
@@ -271,9 +281,11 @@ says "the workbench", "the converter's repository", "a private repository".
   other files stay in the viewer's own buttons, the address bar and Downloads): Edit mode (where the Edit tab shows;
   in edit mode View mode in its place, and no molecule rows: right click works everywhere the same way, the right drag
   that moved the map in edit mode taken out, a drag on empty space moves it as in view mode; user, 2026-11-12),
-  Download GraphML or Download CellDesigner file (the map's source only), Open in MINERVA, Open in Newt (where the map
-  has them, to respect the tools already there), Copy image as PNG last (its PNG, else its picture at twice its size, to
-  the clipboard: for pasting into a paper or slides); words only, no download or outside-link signs (user, 2026-11-12). Whole map, Reading size, Copy link, Map colours, the other downloads and
+  Download GraphML or Download CellDesigner XML (the map's source only; user, 2026-11-12: was "CellDesigner file"),
+  Open in Newt, Open in MINERVA (in this order, user 2026-11-12; where the map has them, to respect the tools already
+  there), Copy image as PNG (its PNG, at twice the map's size as yEd's export at 2.0, else its picture at twice its size,
+  to the clipboard: for pasting into a paper or slides), Copy image as SVG last (user, 2026-11-12: the map's SVG as
+  image/svg+xml where the browser can, with its text, so an app taking no SVG image pastes the markup); words only, no download or outside-link signs (user, 2026-11-12). Whole map, Reading size, Copy link, Map colours, the other downloads and
   Open in database taken out the same day. Over a molecule, a complex or a reaction, first its kind and name, Show
   annotation, Copy name, Find in all maps (the name in the search), a line, then the same rows. The look of the
   Downloads menu, the accent fill under the pointer; Esc, a click elsewhere,
