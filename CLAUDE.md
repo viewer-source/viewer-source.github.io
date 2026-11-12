@@ -232,7 +232,11 @@ says "the workbench", "the converter's repository", "a private repository".
   The white canvas of a CellDesigner drawing is left out while editing, so the grid runs on as on a GraphML map (user,
   2026-11-12: "like an endless space"); the file keeps its canvas size, the view mode is unchanged.
   A selected line highlighted under its squares (user, 2026-11-12: "I was wrong about removing highlights"): light blue
-  (#8ab4f8, 6 px, multiplied), on CellDesigner maps too (user, 2026-11-12: "use blue and as in GraphML the same color
+  (#8ab4f8), solid, no blending, so overlaps show no darker parts, and under the lines (user, 2026-11-12: "not a
+  semi-transparent cover", "under the lines ... careful with compartments"): put into the drawing as the first thing of
+  the line's own group (a CellDesigner line's, not its white halo's; a reaction's glyph in its group), so it lies under
+  that line and over everything drawn before it, compartments included; over the map only until the editor's drawing is
+  in the page and while a drag runs; on CellDesigner maps too (user, 2026-11-12: "use blue and as in GraphML the same color
   code"; CellDesigner's purple taken back). Every mark is in the map's units, so zooming keeps their relative size and
   thickness (user, 2026-11-12): the highlight 6 units wide, the guides 3, the snap lines and gap marks 1, the squares'
   white edge 0.5, the line drawn while an arc follows a drag 1 (only the area being selected stays in screen pixels). On a

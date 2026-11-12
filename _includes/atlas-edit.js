@@ -893,7 +893,7 @@
       parse(); dirty = true; render(); paint(); changed();
     }
     function paint() {
-      if (img && img.querySelectorAll) img.querySelectorAll('.m2-ed-dark').forEach(function (x) { x.remove(); });
+      if (img && img.querySelectorAll) img.querySelectorAll('.m2-ed-dark, .m2-ed-hl').forEach(function (x) { x.remove(); });
       gridPaint();
       if (!on || current !== map) { overlay.innerHTML = ''; return; }
       var out = [], over = [], frame = '<g transform="translate(' + f1(tx - x0 * z) + ',' + f1(ty - y0 * z) + ') scale(' + z + ')">';
@@ -917,14 +917,39 @@
       // reaction is one item, as in CellDesigner (user, 2026-11-12): a click on its main line (reactant to glyph to
       // product), its glyph or an added reactant or product lights them all up; a modifier stays on its own
       var L = lit(), hlE = L.e, glyphs = L.g, main = MAIN;
-      var hl = 'm2-ed-hl';
+      // the highlight in one solid blue, under the lines (user, 2026-11-12: "not a semi-transparent cover", "under the
+      // lines ... careful with compartments"): put into the drawing as the first thing of the line's own group (of a
+      // reaction's glyph, its group), so it lies under that line and over all drawn before it, compartments included,
+      // and moves or hides with the group during a drag; over the map, under the lines following a drag, until the
+      // editor's drawing is in the page
+      var hl = 'm2-ed-hl', under = [];
+      var pic = function (g, el) {   // a CellDesigner drawing is in the file's places: -x0, -y0 from the editor's
+        el.setAttribute('class', hl); el.setAttribute('style', 'stroke-width:6px');
+        if (cd && (x0 || y0)) el.setAttribute('transform', 'translate(' + f1(-x0) + ',' + f1(-y0) + ')');
+        g.prepend(el);
+      };
+      var NS = 'http://www.w3.org/2000/svg';
       hlE.forEach(function (k) {
+        var gs = gE && gE[edges2[k].id], still = !(live && live.has(k));
+        if (gs && still && !mv) {
+          var q0 = line(k);
+          if (!q0) return;
+          var el = document.createElementNS(NS, 'path');
+          el.setAttribute('d', 'M' + q0.map(function (q) { return f1(q[0]) + ' ' + f1(q[1]); }).join('L'));
+          return pic(gs[gs.length - 1], el);   // a CellDesigner line's own group, not its white halo's
+        }
         var pts = line(k);
-        if (pts) out.push('<path class="' + hl + '"' + sw(6) + ' d="M' + pts.map(function (q) { return f1(sx(q[0])) + ' ' + f1(sy(q[1])); }).join('L') + '"/>');
+        if (pts) under.push('<path class="' + hl + '"' + sw(6) + ' d="M' + pts.map(function (q) { return f1(sx(q[0])) + ' ' + f1(sy(q[1])); }).join('L') + '"/>');
       });
       glyphs.forEach(function (i) {
+        var g = gN && gN[nodes2[i].id];
+        if (g && !mv) {
+          var b0 = boxOf(i), el = document.createElementNS(NS, 'rect');
+          [['x', b0[0]], ['y', b0[1]], ['width', b0[2]], ['height', b0[3]]].forEach(function (a) { el.setAttribute(a[0], f1(a[1])); });
+          return pic(g, el);
+        }
         var b = bx(i);
-        out.push('<rect class="' + hl + '"' + sw(6) + ' x="' + f1(sx(b[0])) + '" y="' + f1(sy(b[1])) + '" width="' + f1(b[2] * z) + '" height="' + f1(b[3] * z) + '"/>');
+        under.push('<rect class="' + hl + '"' + sw(6) + ' x="' + f1(sx(b[0])) + '" y="' + f1(sy(b[1])) + '" width="' + f1(b[2] * z) + '" height="' + f1(b[3] * z) + '"/>');
       });
       hlE.forEach(function (k) {
         var e = edges2[k];
@@ -993,7 +1018,7 @@
         var a = [Math.min(band.x, band.x2), Math.min(band.y, band.y2)], c = [Math.max(band.x, band.x2), Math.max(band.y, band.y2)];
         over.push('<rect class="m2-ed-band" x="' + sx(a[0]) + '" y="' + sy(a[1]) + '" width="' + (c[0] - a[0]) * z + '" height="' + (c[1] - a[1]) * z + '"/>');
       }
-      overlay.innerHTML = out.concat(over).join('');
+      overlay.innerHTML = under.concat(out, over).join('');
     }
 
     // the pointer: a press on a node, an arc or a bend point selects it and moves it (an arc: its bends), Shift adds to
