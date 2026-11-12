@@ -5,9 +5,9 @@
 <rect x="44.67" y="716.89" width="2128" height="979.11" rx="20" fill="none" stroke="#dfdbce" stroke-width="2"/>
 <rect x="56.67" y="728.89" width="2104" height="955.11" rx="14" fill="none" stroke="#dfdbce" stroke-width="1"/>
 <text x="1065.37" y="744.89" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="start">CYTOPLASM</text>
-<path d="M64.67 196 H2152.67 A20 20 0 0 1 2172.67 216 V696.89 A20 20 0 0 1 2152.67 716.89 H64.67 A20 20 0 0 1 44.67 696.89 V216 A20 20 0 0 1 64.67 196 Z M70.67 208 H2146.67 A14 14 0 0 1 2160.67 222 V690.89 A14 14 0 0 1 2146.67 704.89 H70.67 A14 14 0 0 1 56.67 690.89 V222 A14 14 0 0 1 70.67 208 Z" fill="#dfdbce" fill-opacity="0.25" fill-rule="evenodd"/>
-<rect x="44.67" y="196" width="2128" height="520.89" rx="20" fill="none" stroke="#dfdbce" stroke-width="2"/>
-<rect x="56.67" y="208" width="2104" height="496.89" rx="14" fill="none" stroke="#dfdbce" stroke-width="1"/>
+<path d="M64.67 196 H2152.67 A20 20 0 0 1 2172.67 216 V848.53 A20 20 0 0 1 2152.67 868.53 H64.67 A20 20 0 0 1 44.67 848.53 V216 A20 20 0 0 1 64.67 196 Z M70.67 208 H2146.67 A14 14 0 0 1 2160.67 222 V842.53 A14 14 0 0 1 2146.67 856.53 H70.67 A14 14 0 0 1 56.67 842.53 V222 A14 14 0 0 1 70.67 208 Z" fill="#dfdbce" fill-opacity="0.25" fill-rule="evenodd"/>
+<rect x="44.67" y="196" width="2128" height="672.53" rx="20" fill="none" stroke="#dfdbce" stroke-width="2"/>
+<rect x="56.67" y="208" width="2104" height="648.53" rx="14" fill="none" stroke="#dfdbce" stroke-width="1"/>
 <text x="1039.29" y="224" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="start">PLASMA MEMBRANE</text>
 <path d="M64.67 40 H2152.67 A20 20 0 0 1 2172.67 60 V176 A20 20 0 0 1 2152.67 196 H64.67 A20 20 0 0 1 44.67 176 V60 A20 20 0 0 1 64.67 40 Z M70.67 52 H2146.67 A14 14 0 0 1 2160.67 66 V170 A14 14 0 0 1 2146.67 184 H70.67 A14 14 0 0 1 56.67 170 V66 A14 14 0 0 1 70.67 52 Z" fill="#dfdbce" fill-opacity="0.25" fill-rule="evenodd"/>
 <rect x="44.67" y="40" width="2128" height="156" rx="20" fill="none" stroke="#dfdbce" stroke-width="2"/>
@@ -27,8 +27,8 @@
 <text x="510.64" y="440.81" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-complex">IRS1:INSR:INS</text>
 <polygon points="610.04,440.21 750.04,440.21 755.04,445.21 755.04,505.21 750.04,510.21 610.04,510.21 605.04,505.21 605.04,445.21" fill="#ffffff" stroke="#000" class="c-complex"/>
 <text x="680.04" y="503.21" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-complex">PI(3,4,5)P3:PDPK1</text>
-<polygon points="721.99,536.96 818.03,536.96 823.03,541.96 823.03,659.96 818.03,664.96 721.99,664.96 716.99,659.96 716.99,541.96" fill="#ffffff" stroke="#000" class="c-complex"/>
-<text x="770.01" y="657.96" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-complex">PI(3,4,5)P3:AKT2</text>
+<polygon points="719.98,648 816.02,648 821.02,653 821.02,771 816.02,776 719.98,776 714.98,771 714.98,653" fill="#ffffff" stroke="#000" class="c-complex"/>
+<text x="768" y="769" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-complex">PI(3,4,5)P3:AKT2</text>
 <polygon points="534.64,536.96 630.69,536.96 635.69,541.96 635.69,659.96 630.69,664.96 534.64,664.96 529.64,659.96 529.64,541.96" fill="#ffffff" stroke="#000" class="c-complex"/>
 <text x="582.66" y="657.96" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-complex">PI(3,4,5)P3:AKT2</text>
 <polygon points="1735.1,234.9 1843.14,234.9 1848.14,239.9 1848.14,349.9 1843.14,354.9 1735.1,354.9 1730.1,349.9 1730.1,239.9" fill="#ffffff" stroke="#000" class="c-complex"/>
@@ -250,11 +250,11 @@
 <text x="635.04" y="474.87" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">PI(3,4,5)P3</text>
 <rect x="665.04" y="450.21" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
 <text x="705.04" y="474.87" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">PDPK1</text>
-<ellipse cx="770.01" cy="566.96" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
-<text x="770.01" y="571.63" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">PI(3,4,5)P3</text>
-<rect x="730.01" y="596.96" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
-<circle cx="770.01" cy="636.96" r="8" fill="#fff" stroke="#000"/>
-<text x="770.01" y="621.63" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">AKT2</text>
+<ellipse cx="768" cy="678" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="768" y="682.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">PI(3,4,5)P3</text>
+<rect x="728" y="708" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<circle cx="768" cy="748" r="8" fill="#fff" stroke="#000"/>
+<text x="768" y="732.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">AKT2</text>
 <ellipse cx="582.66" cy="566.96" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
 <text x="582.66" y="571.63" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">PI(3,4,5)P3</text>
 <rect x="542.66" y="596.96" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
@@ -360,9 +360,9 @@
 <polyline points="511.56,504.76 376.01,404.76"/>
 <polyline points="868.43,823.82 868.7,492.48 777.04,492.66"/>
 <polyline points="898.98,492.83 826.08,492.57"/>
-<polyline points="925.45,764.53 925.45,600.97 845.03,600.97"/>
-<polyline points="925.45,513.21 925.45,600.97 887.05,600.97"/>
-<polyline points="708.99,600.96 713.52,600.96 645.55,600.96 641.69,600.96"/>
+<polyline points="925.45,764.53 925.45,600.97 839,661.93"/>
+<polyline points="925.45,513.21 925.45,600.97 886.29,628.59"/>
+<polyline points="733.08,640.82 713.52,600.96 645.55,600.96 641.69,600.96"/>
 <polyline points="679.86,518.21 679.57,588.46"/>
 <polyline points="1915.66,294.9 1870.14,294.9"/>
 <polyline points="1902.5,122.39 1895.34,294.9"/>
@@ -482,15 +482,15 @@
 <polyline points="868.43,831.82 868.7,492.48 769.04,492.68" fill="none" stroke="#000000" stroke-width="1"/>
 <polyline points="906.98,492.86 826.08,492.57" fill="none" stroke="#000000" stroke-width="1"/>
 <rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(811.87,492.59) rotate(179.89)"/>
-<polygon points="823.03,600.96 838.03,595.96 838.03,605.96" fill="#000"/>
-<polyline points="925.45,772.53 925.45,600.97 837.03,600.96" fill="none" stroke="#000000" stroke-width="1"/>
-<polyline points="925.45,505.21 925.45,600.97 887.05,600.97" fill="none" stroke="#000000" stroke-width="1"/>
-<rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(874.24,600.97) rotate(-180)"/>
+<polygon points="821.02,674.61 830.4,661.88 836.16,670.05" fill="#000"/>
+<polyline points="925.45,772.53 925.45,600.97 832.46,666.54" fill="none" stroke="#000000" stroke-width="1"/>
+<polyline points="925.45,505.21 925.45,600.97 886.29,628.59" fill="none" stroke="#000000" stroke-width="1"/>
+<rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(873.24,637.79) rotate(144.81)"/>
 <polygon points="635.69,600.96 650.69,595.96 650.69,605.96" fill="#000"/>
-<polyline points="716.99,600.96 713.52,600.96 645.55,600.96 649.69,600.96" fill="none" stroke="#000000" stroke-width="1"/>
+<polyline points="736.6,648 713.52,600.96 645.55,600.96 649.69,600.96" fill="none" stroke="#000000" stroke-width="1"/>
 <circle cx="679.56" cy="591.46" r="3" fill="#fff" stroke="#000"/>
 <polyline points="679.89,510.21 679.57,588.46" fill="none" stroke="#000000" stroke-width="1"/>
-<rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(679.54,600.96) rotate(180)"/>
+<rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(679.54,600.96) rotate(-180)"/>
 <polygon points="1848.14,294.9 1863.14,289.9 1863.14,299.9" fill="#000"/>
 <polyline points="1923.66,294.9 1862.14,294.9" fill="none" stroke="#000000" stroke-width="1"/>
 <polyline points="1902.83,114.4 1895.34,294.9" fill="none" stroke="#000000" stroke-width="1"/>
