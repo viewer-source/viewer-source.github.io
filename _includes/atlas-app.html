@@ -1131,8 +1131,8 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
     document.getElementById('m2-set-size-v').textContent = Math.round(SIZE * 100) + '%';
     groupsMark();
   }
-  // Groups in the list, Open all or Close all (user, 2026-11-12), shown only when the list has groups; the button
-  // matching the list's state is marked (none while some are open and some closed)
+  // Groups in the list, Open all or Close all (user, 2026-11-12), shown only when the list has groups, then the Maps
+  // window shows the list; the button matching the list's state is marked (none while some are open and some closed)
   function listGroups() { return GROUPS && maps ? groupNames().filter(function (n) { return n; }) : []; }
   function groupsMark() {
     var box = document.querySelector('.m2-set-groups'); if (!box) return;
@@ -1149,6 +1149,9 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
       saveClosed();
       buildList(document.getElementById('m2-search').value);
       groupsMark();
+      // then the list itself, to see the result (user, 2026-11-12); where the list shows beside Settings, nothing moves
+      var lb = document.querySelector('#m2-rail .m2-ri[data-win="list"]');
+      if (lb && lb.offsetParent && win !== 'list') lb.click();
     });
   });
   document.getElementById('m2-set-size').addEventListener('input', function () {
