@@ -36,6 +36,32 @@
     // and across a reload (user, 2026-11-12): the last saved drawing of each map is kept in this browser
     // (localStorage atlas-edit-kept: { id: { v, svg, width, height, x0, y0, at } }) until the site's version changes, an hour at most
     var KEPT_KEY = 'atlas-edit-kept', lastSvg = null;
+    // the click data (user, 2026-11-12): the site's boxes of the nodes are those of its own version; the boxes of the
+    // nodes moved since follow them, so a click and the search find a molecule where it is drawn now
+    var siteRef = null;   // { boxes (per node, yEd units, as in the site's version), x0, y0 (its drawing's frame) }
+    function baseOf(pub, fr) {
+      var all = (pub.match(/<y:Geometry\s[^>]*>/g) || []).map(function (tag) {
+        var a = function (n) { var m = tag.match(new RegExp('\\s' + n + '="([^"]*)"')); return m ? parseFloat(m[1]) : NaN; };
+        return [a('x'), a('y'), a('width'), a('height')];
+      });
+      if (all.length !== geos.length) return null;   // not the same file with moves only
+      return { boxes: nodes2.map(function (n) { return all[n.geo[0]]; }), x0: fr.x0, y0: fr.y0 };
+    }
+    function nowRef() { return { boxes: nodes2.map(function (n, i) { return boxOf(i); }), x0: x0, y0: y0 }; }
+    function boxes(k, list) {   // the site's click data with each node's box where the edited drawing has it
+      if (!k || !k.ref || !k.cur || !list) return list;
+      var ref = k.ref, cur = k.cur, near = function (a, b) { return Math.abs(a - b) < 0.6; };
+      return list.map(function (n) {
+        var b = n.box, i = -1;
+        for (var j = 0; j < ref.boxes.length; j++) {
+          var r = ref.boxes[j];
+          if (r && near(b[0], r[0] - ref.x0) && near(b[1], r[1] - ref.y0) && near(b[2], r[2]) && near(b[3], r[3])) { i = j; break; }
+        }
+        var c = i >= 0 ? cur.boxes[i] : null;
+        var nb = c ? [c[0] - cur.x0, c[1] - cur.y0, b[2], b[3]] : [b[0] + ref.x0 - cur.x0, b[1] + ref.y0 - cur.y0, b[2], b[3]];
+        return Object.assign({}, n, { box: nb });
+      });
+    }
     function stored() { try { return JSON.parse(localStorage.getItem(KEPT_KEY) || '{}'); } catch (e) { return {}; } }
     function store(all) { try { if (Object.keys(all).length) localStorage.setItem(KEPT_KEY, JSON.stringify(all)); else localStorage.removeItem(KEPT_KEY); } catch (e) {} }
     function repo() { var h = location.hostname; return /\.github\.io$/.test(h) ? h.split('.')[0] + '/' + h : null; }
@@ -73,7 +99,7 @@
               if (sm) target.v = ver(sm);   // the site's version still without this move
               if (lastSvg && site === target && text === body) {
                 var all = stored();
-                all[target.id] = { v: target.v, svg: lastSvg, width: map.width, height: map.height, x0: x0, y0: y0, at: Date.now() };
+                all[target.id] = { v: target.v, svg: lastSvg, width: map.width, height: map.height, x0: x0, y0: y0, at: Date.now(), ref: siteRef, cur: nowRef() };
                 store(all);
               }
               if (site === target && text === body) dirty = false;
@@ -211,7 +237,7 @@
     }
     function start(t, n, h, s, same) {   // same: { width, height, x0, y0, scale } of the picture on screen, drawn from this very text
       try { text = t; parse(); } catch (e) { say('Cannot edit ' + n + ': ' + e); return; }
-      name = n; handle = h; site = s || null; if (site) site.base = t; stuck = false; dirty = false; undo = []; redo = []; selN = []; selP = [];
+      siteRef = null; name = n; handle = h; site = s || null; if (site) site.base = t; stuck = false; dirty = false; undo = []; redo = []; selN = []; selP = [];
       map = { id: 'edit', title: n, width: 0, height: 0, scale: 1, downloads: [] };
       if (same) {   // editing starts on the picture as it is: no redraw, the map stays where it is (user, 2026-11-12)
         map.width = same.width; map.height = same.height; map.scale = same.scale; x0 = same.x0; y0 = same.y0;
@@ -228,7 +254,7 @@
     function stop() {
       if (!on) return;
       if (saveTimer) push();   // a move still waiting is saved now
-      if (site && site.id && undo.length) kept = { id: site.id, v: site.v, pic: img, width: map.width, height: map.height, x0: x0, y0: y0, text: text };
+      if (site && site.id && undo.length) kept = { id: site.id, v: site.v, pic: img, width: map.width, height: map.height, x0: x0, y0: y0, text: text, ref: siteRef, cur: nowRef() };
       on = false; drag = null; band = null; grid.classList.remove('m2-editing'); paint(); buttons();
       say(dirty && !site ? name + ' has moves not saved: Back to it, or Save.' : 'Edit the map shown, or open a yEd GraphML file.');
     }
@@ -294,16 +320,20 @@
       // the picture on screen is the site's drawing of its published GraphML: its frame (size and the offset of yEd's
       // coordinates) is read from that SVG, so editing starts on it without a redraw; the moved map is drawn again
       var k = keep(m), shownPic = img;
-      var published = k && k.text ? Promise.resolve(k.text) : fetch(url, { cache: 'no-cache' }).then(function (r) { return r.text(); });
-      var frame = k ? Promise.resolve({ width: k.width, height: k.height, x0: k.x0, y0: k.y0, scale: 1 }) : fetch(m.image + ver(m)).then(function (r) { return r.text(); }).then(function (svg) {
+      // the site's own version (its GraphML and the frame of its drawing): what its click data was made from
+      var sitePub = fetch(url, { cache: 'no-cache' }).then(function (r) { return r.text(); });
+      var siteFrame = fetch(m.image + ver(m)).then(function (r) { return r.text(); }).then(function (svg) {
         var t = svg.match(/<g transform="translate\(([-\d.]+),([-\d.]+)\)">/), w = svg.match(/ width="([\d.]+)" height="([\d.]+)"/);
         return t && w ? { width: parseFloat(w[1]), height: parseFloat(w[2]), x0: -parseFloat(t[1]), y0: -parseFloat(t[2]), scale: 1 } : null;
       }).catch(function () { return null; });
+      var published = k && k.text ? Promise.resolve(k.text) : sitePub;
+      var frame = k ? Promise.resolve({ width: k.width, height: k.height, x0: k.x0, y0: k.y0, scale: 1 }) : siteFrame;
       var go = function (t, s) {
-        return Promise.all([published, frame]).then(function (r) {
-          var same = r[1] && img === shownPic && current === m ? Object.assign(r[1], { text: r[0] }) : null;
+        return Promise.all([published, frame, sitePub, siteFrame]).then(function (r) {
+          var same = r[1] && img === shownPic && current === m ? Object.assign({}, r[1], { text: r[0] }) : null;
           if (s) { s.id = m.id; s.v = ver(m); }
           start(t, file, null, s, same);
+          siteRef = r[3] ? baseOf(r[2], r[3]) : null;
           map.title = m.title; document.getElementById('m2-title').textContent = m.title;
         });
       };
@@ -509,8 +539,8 @@
         i.onerror = function () { res(null); };
         i.src = url;
       });
-      kept = { id: m.id, v: k.v, pic: pic, width: k.width, height: k.height, x0: k.x0, y0: k.y0, text: null };
+      kept = { id: m.id, v: k.v, pic: pic, width: k.width, height: k.height, x0: k.x0, y0: k.y0, text: null, ref: k.ref, cur: k.cur };
       return kept;
     }
-    return { paint: paint, keep: keep, away: away, leaving: function (m) { if (on && m !== map) stop(); }, left: function (m) { if (on && m !== map) stop(); buttons(); setTimeout(shown, 0); } };
+    return { paint: paint, keep: keep, boxes: boxes, away: away, leaving: function (m) { if (on && m !== map) stop(); }, left: function (m) { if (on && m !== map) stop(); buttons(); setTimeout(shown, 0); } };
   })();

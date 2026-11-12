@@ -138,7 +138,9 @@ says "the workbench", "the converter's repository", "a private repository".
   move. Silent (user, 2026-11-12): the Edit tab is the switch, no Edit this map or Stop editing; any other tab, or the
   panel closed, ends editing. After it the edited drawing stays on screen until the site's build of the map catches up,
   across a reload too (user, 2026-11-12): the last saved drawing per map in that browser (`atlas-edit-kept`), dropped once
-  the site's version of the map changes, or after an hour. The code is
+  the site's version of the map changes, or after an hour. The click data follows (user, 2026-11-12): the site's boxes
+  are matched to the nodes of its own version and moved to where the edited drawing has them, so a click and the
+  search find a moved molecule where it is drawn. The code is
   `_includes/atlas-edit.js`, included by the viewer's script (copied to the sites with it, off there). Checked
   2026-11-12 on eNOS: first drawing about 4 s, a redraw after a move under a second, the saved file differing from the
   original only in x and y values. Not yet: CellDesigner files, a group growing round a member moved out of it.

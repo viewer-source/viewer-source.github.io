@@ -1533,7 +1533,8 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
     nodes = null; sel = null; renderInfo(); drawPin();
     if (!m.annotation) return;
     var done = function (list) { if (current === m) { nodes = list; renderInfo(); focusNode(); } };
-    get(m.annotation + ver(m)).then(function (d) { if (d) done(d.nodes); });
+    var kp = ed ? ed.keep(m) : null;   // a map just edited: the boxes of the moved nodes where they are drawn now
+    get(m.annotation + ver(m)).then(function (d) { if (d) done(kp ? ed.boxes(kp, d.nodes) : d.nodes); });
   }
   function pick(vx, vy) {
     if (!nodes) return;
