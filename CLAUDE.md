@@ -126,7 +126,9 @@ says "the workbench", "the converter's repository", "a private repository".
 - Floating panel (user, 2026-11-11: the map should not move when the panel appears; `--m2-info-float: 1`, off in the
   viewer's own look): the molecule's panel as a card over the map's right side on wide windows too, sliding in; the
   drawing shifts left only when the card would cover the chosen item. First in the styles' Default Icon Column.
-- Edit (user, 2026-11-12: moving things a little here and there, as in yEd; `--m2-edit: 1`, with the icons, off in the
+- Edit (user, 2026-11-12: moving things a little here and there, as in yEd; its purpose is layout only, moving by hand
+  where needed: no resizing, no new items or links, user 2026-11-12; GraphML first, then the same rules for CellDesigner
+  maps within CellDesigner's constraints; `--m2-edit: 1`, with the icons, off in the
   viewer's own look): a pencil tab before Settings opens the Edit window: at its top the tools as a row of signs (user,
   2026-11-12, after yEd's toolbar: "not as words but as normal symbols", a few now and more as needed): Undo, Redo, a thin
   line, Grid and Snap to grid (a magnet), the plain grey signs of the tabs, a switch that is on on a light grey square as
