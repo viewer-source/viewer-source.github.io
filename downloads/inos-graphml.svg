@@ -128,7 +128,7 @@
 <path d="M880 684 L880 538 Q880 528 890 528 L908 528" fill="none" stroke="#000000"/><g transform="matrix(0,-1,1,0,859.8672,619.4168)"><rect x="0" y="0" width="11.5879" height="18.1328" fill="#FFFFFF" fill-opacity="0.498" class="c-white" stroke="none"/><rect x="0" y="0" width="11.5879" height="18.1328" fill="none" stroke="#000000"/><text x="5.7939" y="13.6018" text-anchor="middle" font-family="'Dialog', Arial, Helvetica, sans-serif" font-size="12" fill="#000000" class="t-white" stroke="none" xml:space="preserve">2</text></g>
 <path d="M732 304 L699 304" fill="none" stroke="#000000"/><path d="M688 304 L700 298 L700 310 Z" fill="#000000" stroke="none"/>
 <path d="M808 304 L756 304" fill="none" stroke="#000000"/>
-<path d="M777.0833 122 L783.5837 278.0087 Q784 288 774.7152 291.7139 L756 299.2" fill="none" stroke="#000000"/>
+<path d="M776 122 L776 294 Q776 304 766 304 L756 304" fill="none" stroke="#000000"/>
 <path d="M1086 784 L1129 784" fill="none" stroke="#000000"/><circle cx="1133" cy="784" r="4" fill="white" class="c-white" stroke="#000000"/>
 <path d="M584 210 L584 186 Q584 176 574 176 L418 176 Q408 176 408 186 L408 277" fill="none" stroke="#000000"/><path d="M408 292 L402 276 L414 276 Z" fill="white" class="c-white" stroke="#000000"/>
 <path d="M228 536 L155 536" fill="none" stroke="#000000"/><path d="M144 536 L156 530 L156 542 Z" fill="#000000" stroke="none"/>
