@@ -191,6 +191,16 @@ says "the workbench", "the converter's repository", "a private repository".
   `_includes/atlas-edit.js`, included by the viewer's script (copied to the sites with it, off there). Checked
   2026-11-12 on eNOS: first drawing about 4 s, a redraw after a move under a second, the saved file differing from the
   original only in x and y values. Not yet: CellDesigner files, a group growing round a member moved out of it.
+- Right-click menu over the map (user, 2026-11-12; `--m2-context: 1`, off in the viewer's own look): shortcuts to what
+  the tabs and buttons already do, never the only way to it (phones have no right click). On empty space: Whole map,
+  Reading size, Download (the map's files), Copy picture (its PNG, else its picture at twice its size, to the clipboard),
+  Open in (Newt, MINERVA), Copy link to this map, Map colours (for a map with `colours`), Edit this map (where the Edit
+  tab shows). Over a molecule, a complex or a reaction, first its kind and name, then Show annotation, Copy name, Find in
+  all maps (the name in the search) and Open in database (its identifiers' links). The look of the Downloads menu, a
+  submenu beside its row (left of it at the window's edge), the accent fill under the pointer; Esc, a click elsewhere,
+  the wheel or a resize close it; arrow keys move through it. Shift with the right click gives the browser's own menu;
+  not while editing (the editor's right drag moves the map). The page's text, the panel and the list keep the browser's
+  menu. First in the styles' Default Icons. Later, when the editor goes on: Align and Distribute on a selection.
 - Downloads in the panel's column while no molecule is open (`--m2-dl-panel`, 2026-11-11): tried and removed the same day
   (user: it does not work); its code is in the history.
 - Narrow windows (user, 2026-11-09, 940 px and under): the map first, then its download buttons, its name, the search
