@@ -263,12 +263,13 @@ look="panel" (user, 2026-11-10): Default Panel of the styles experiment, its own
   #m2-editwin .m2-set-k { margin: 4px 0 6px; color: var(--m2-text); }
   /* the tools as a row of signs at the top of the Edit window (user, 2026-11-12, after yEd's toolbar: "not as words but
      as normal symbols"; a few now, more as they are needed): plain grey signs as the tabs; a switch that is on gets a
-     light grey square, as yEd's pressed buttons; a thin line between groups */
+     light grey square, as yEd's pressed buttons, its sign a soft grey, not black (user, 2026-11-12: black "destroys
+     nice soft grey view"); a thin line between groups */
   #m2-editwin .m2-ed-tools { display: flex; align-items: center; gap: 2px; margin: 0 0 10px; padding: 0 0 8px; border-bottom: 1px solid var(--m2-frame); }
   #m2-editwin .m2-ed-tools button { display: flex; align-items: center; justify-content: center; flex: none; width: 32px; height: 32px; padding: 0; margin: 0;
     border: 0; border-radius: 6px; background: none; color: #80868b; }
   #m2-editwin .m2-ed-tools button:hover:not(:disabled) { background: none; border: 0; color: var(--m2-text-soft); }
-  #m2-editwin .m2-ed-tools button[aria-pressed="true"], #m2-editwin .m2-ed-tools button[aria-pressed="true"]:hover { background: #e3e5e8; color: var(--m2-text-soft); }
+  #m2-editwin .m2-ed-tools button[aria-pressed="true"], #m2-editwin .m2-ed-tools button[aria-pressed="true"]:hover { background: #eceef1; color: #5f6368; }
   #m2-editwin .m2-ed-tools svg { width: 20px; height: 20px; }
   #m2-editwin .m2-ed-sep { flex: none; width: 1px; height: 20px; margin: 0 6px; background: var(--m2-frame); }
   #m2-editwin .m2-set-row { display: flex; gap: 6px; margin: 0 0 12px; }
