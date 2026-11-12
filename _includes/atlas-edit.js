@@ -33,6 +33,11 @@
     // the edited drawing, kept on screen after editing stops until the site's own build of the map has caught up
     // (user, 2026-11-12: "after I exit this mode I don't see changes"): { id, v (the site's version when last saved), pic, width, height }
     var kept = null;
+    // and across a reload (user, 2026-11-12): the last saved drawing of each map is kept in this browser
+    // (localStorage atlas-edit-kept: { id: { v, svg, width, height, x0, y0, at } }) until the site's version changes, an hour at most
+    var KEPT_KEY = 'atlas-edit-kept', lastSvg = null;
+    function stored() { try { return JSON.parse(localStorage.getItem(KEPT_KEY) || '{}'); } catch (e) { return {}; } }
+    function store(all) { try { if (Object.keys(all).length) localStorage.setItem(KEPT_KEY, JSON.stringify(all)); else localStorage.removeItem(KEPT_KEY); } catch (e) {} }
     function repo() { var h = location.hostname; return /\.github\.io$/.test(h) ? h.split('.')[0] + '/' + h : null; }
     function token() { try { return localStorage.getItem(TOKEN_KEY) || ''; } catch (e) { return ''; } }
     function api(path, opt) {
@@ -66,6 +71,11 @@
               target.sha = d.content.sha;
               var sm = byId[target.id];
               if (sm) target.v = ver(sm);   // the site's version still without this move
+              if (lastSvg && site === target && text === body) {
+                var all = stored();
+                all[target.id] = { v: target.v, svg: lastSvg, width: map.width, height: map.height, x0: x0, y0: y0, at: Date.now() };
+                store(all);
+              }
               if (site === target && text === body) dirty = false;
               say('Saved to the site ' + hm() + '. The site shows it in about two minutes; this page swaps it in by itself.');
             } else if (r.status === 409 || r.status === 422) {
@@ -181,7 +191,7 @@
         var r = JSON.parse(p.globals.get('draw')(text));
         if (t !== ticket) return;
         if (r[1].length) say('Drawn with warnings: ' + r[1].join('; '));
-        var svg = r[0], m = svg.match(/<g transform="translate\(([-\d.]+),([-\d.]+)\)">/);
+        var svg = r[0]; lastSvg = svg; var m = svg.match(/<g transform="translate\(([-\d.]+),([-\d.]+)\)">/);
         var w = svg.match(/ width="([\d.]+)" height="([\d.]+)"/);
         var nx = -parseFloat(m[1]), ny = -parseFloat(m[2]), first = !map.width;
         if (!first) { tx += (nx - x0) * z; ty += (ny - y0) * z; }
@@ -284,7 +294,7 @@
       // the picture on screen is the site's drawing of its published GraphML: its frame (size and the offset of yEd's
       // coordinates) is read from that SVG, so editing starts on it without a redraw; the moved map is drawn again
       var k = keep(m), shownPic = img;
-      var published = k ? Promise.resolve(k.text) : fetch(url, { cache: 'no-cache' }).then(function (r) { return r.text(); });
+      var published = k && k.text ? Promise.resolve(k.text) : fetch(url, { cache: 'no-cache' }).then(function (r) { return r.text(); });
       var frame = k ? Promise.resolve({ width: k.width, height: k.height, x0: k.x0, y0: k.y0, scale: 1 }) : fetch(m.image + ver(m)).then(function (r) { return r.text(); }).then(function (svg) {
         var t = svg.match(/<g transform="translate\(([-\d.]+),([-\d.]+)\)">/), w = svg.match(/ width="([\d.]+)" height="([\d.]+)"/);
         return t && w ? { width: parseFloat(w[1]), height: parseFloat(w[2]), x0: -parseFloat(t[1]), y0: -parseFloat(t[2]), scale: 1 } : null;
@@ -484,8 +494,22 @@
 
     buttons();
     function keep(m) {   // the edited picture, while the site still shows the version before the last save
-      if (!kept || kept.id !== m.id) return null;
-      if (ver(m) !== kept.v) { kept = null; return null; }
+      if (kept && kept.id === m.id) {
+        if (ver(m) === kept.v) return kept;
+        kept = null;
+      }
+      var all = stored(), k = all[m.id];
+      if (!k) return null;
+      if (ver(m) !== k.v || Date.now() - k.at > 3600000) { delete all[m.id]; store(all); return null; }
+      // after a reload: the saved drawing again, decoded before it is shown
+      var url = URL.createObjectURL(new Blob([k.svg], { type: 'image/svg+xml' }));
+      var pic = new Promise(function (res) {
+        var i = new Image();
+        i.onload = function () { (i.decode ? i.decode() : Promise.resolve()).catch(function () {}).then(function () { res(i); }); };
+        i.onerror = function () { res(null); };
+        i.src = url;
+      });
+      kept = { id: m.id, v: k.v, pic: pic, width: k.width, height: k.height, x0: k.x0, y0: k.y0, text: null };
       return kept;
     }
     return { paint: paint, keep: keep, away: away, leaving: function (m) { if (on && m !== map) stop(); }, left: function (m) { if (on && m !== map) stop(); buttons(); setTimeout(shown, 0); } };
