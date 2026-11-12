@@ -2414,7 +2414,6 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
     function link(box, text, href, download) {
       var a = el('a', null, text); a.href = href;
       if (download) a.setAttribute('download', ''); else { a.target = '_blank'; a.rel = 'noopener'; }
-      a.insertAdjacentHTML('beforeend', download ? DL_ICON : EXT_ICON);
       a.addEventListener('click', function () { setTimeout(close, 0); });
       box.appendChild(a); return a;
     }
@@ -2432,9 +2431,9 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
       });
     }
     function copyPicture(m, url, r) {
-      if (!navigator.clipboard || !window.ClipboardItem) return say('This browser cannot copy pictures', r.left, r.top);
+      if (!navigator.clipboard || !window.ClipboardItem) return say('This browser cannot copy images', r.left, r.top);
       navigator.clipboard.write([new ClipboardItem({ 'image/png': pngOf(m, url) })])
-        .then(function () { say('Picture copied', r.left, r.top); }, function () { say('Not copied', r.left, r.top); });
+        .then(function () { say('Image copied', r.left, r.top); }, function () { say('Not copied', r.left, r.top); });
     }
     function tab(name) {   // a tab of the icons, unless its window shows already (a second click would close it)
       var b = document.querySelector('#m2-rail .m2-ri[data-win="' + name + '"]');
@@ -2466,8 +2465,8 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
       if (eb && eb.offsetParent) item(box, 'Edit this map', function () { tab('edit'); });
       var src = (m.legend === 'celldesigner' ? ['CellDesigner', 'GraphML'] : ['GraphML', 'CellDesigner']).filter(function (l) { return url[l]; })[0];   // the format the map is drawn from
       if (src) link(box, src === 'GraphML' ? 'Download GraphML' : 'Download CellDesigner file', url[src], true);
-      if (!m.imageError) item(box, 'Copy as PNG', function (r) { copyPicture(m, url, r); });
       ['MINERVA', 'Newt'].forEach(function (l) { if (url[l]) link(box, 'Open in ' + l, url[l]); });
+      if (!m.imageError) item(box, 'Copy image as PNG', function (r) { copyPicture(m, url, r); });
       while (box.lastChild && box.lastChild.classList.contains('m2-sep')) box.removeChild(box.lastChild);
       return box;
     }
