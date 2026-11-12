@@ -937,11 +937,11 @@
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n33_n1" species="s_n33_n1" complexSpeciesAlias="sa_n33">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="289.528" y="364.043" w="80.0" h="40.0"/>
+<celldesigner:bounds x="289.528" y="342.565" w="80.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
-<celldesigner:innerPosition x="10.0" y="36.999655"/>
+<celldesigner:innerPosition x="10.0" y="15.521655"/>
 <celldesigner:boxSize width="80.0" height="40.0"/>
 <celldesigner:singleLine width="1.0"/>
 <celldesigner:paint color="ffc2d4ed" scheme="Color"/>
