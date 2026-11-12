@@ -3306,7 +3306,7 @@ P@S727</data>
       <data key="d25" xml:space="preserve"/>
       <data key="d28">
         <y:PolyLineEdge>
-          <y:Path sx="0.0" sy="-94.0" tx="0.0" ty="0.0">
+          <y:Path sx="0" sy="0" tx="0.0" ty="0.0">
             <y:Point x="584.0" y="176.0"/>
             <y:Point x="408.0" y="176.0"/>
           </y:Path>
