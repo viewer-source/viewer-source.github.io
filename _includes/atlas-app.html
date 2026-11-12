@@ -1039,7 +1039,7 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
   // kept in the browser; the same tabs and behaviour either way
   document.querySelectorAll('#m2-set-bar button').forEach(function (b) {
     b.addEventListener('click', function () {
-      try { if (b.dataset.bar === 'top') sessionStorage.removeItem('atlas-icon-bar'); else sessionStorage.setItem('atlas-icon-bar', 'left'); } catch (e) {}
+      try { if (b.dataset.bar === 'top') localStorage.removeItem('atlas-icon-bar'); else localStorage.setItem('atlas-icon-bar', 'left'); } catch (e) {}
       railMark(); placeInfo(); sideMark(); showSettings(); window.dispatchEvent(new Event('resize'));
     });
   });
@@ -1349,10 +1349,7 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
   // the icons' place: the row on top (--m2-icon-row), unless the reader chose the left column in Settings
   // (--m2-bar-choice); either way the row's tabs and behaviour (class m2-bar-tabs). Functions, not vars: railMark runs
   // before this point at load
-  // the row on top at every first open (user, 2026-11-12): Left lasts for the visit only (sessionStorage), the choice
-  // once kept across visits dropped
-  try { localStorage.removeItem('atlas-icon-bar'); } catch (e) {}
-  function barLeft() { try { return setting('bar-choice') && sessionStorage.getItem('atlas-icon-bar') === 'left'; } catch (e) { return false; } }
+  function barLeft() { try { return setting('bar-choice') && localStorage.getItem('atlas-icon-bar') === 'left'; } catch (e) { return false; } }
   function rowOn() { return setting('icons') && setting('icon-row') && !barLeft(); }
   function tabsOn() { return setting('icons') && setting('icon-row'); }
   function railMark() {

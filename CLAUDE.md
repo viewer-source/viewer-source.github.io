@@ -109,8 +109,8 @@ says "the workbench", "the converter's repository", "a private repository".
   gene, white); a scheme's code is that page's (Steel is its preset Mono steel). CellDesigner compartments keep their
   colours (their lines are drawn in it). Grey is meant as the quiet base for the Overlays tab to come.
 - Icons on top or on the left (user, 2026-11-12: "vertical bar vs horizontal is simply a choice in settings";
-  `--m2-bar-choice: 1`, with the icon row, off in the viewer's own look): Settings gets Icons, Left or Top (in this order, user 2026-11-12; Left kept for the
-  visit only, `atlas-icon-bar` in sessionStorage, so every first open shows the row on top: user, 2026-11-12); Left puts the same tabs in the icon column at the page's left edge, with the row's
+  `--m2-bar-choice: 1`, with the icon row, off in the viewer's own look): Settings gets Icons, Left or Top (in this order, user 2026-11-12; kept in the
+  browser, `atlas-icon-bar`); Left puts the same tabs in the icon column at the page's left edge, with the row's
   behaviour (Search with the list, a second click on Search back to Maps, the open tab kept, annotations on the left as
   a tab, no window title: class `m2-bar-tabs`) and the column's 160 px minimum. First in the styles' Default Icon Row.
 - Open in within Downloads (user, 2026-11-11: "remove external (add them to downloads)"; `--m2-dl-ext: 1`, with the
