@@ -1916,13 +1916,13 @@
 </celldesigner:complexSpeciesAlias>
 <celldesigner:complexSpeciesAlias id="sa_n1_n11" species="s_n1_n11" compartmentAlias="ca_n1">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="710.826" y="728.532" w="106.044" h="128.0"/>
+<celldesigner:bounds x="714.978" y="648.0" w="106.044" h="128.0"/>
 <celldesigner:font size="12"/>
 <celldesigner:view state="usual"/>
 <celldesigner:backupSize w="0.0" h="0.0"/>
 <celldesigner:backupView state="none"/>
 <celldesigner:usualView>
-<celldesigner:innerPosition x="666.157156" y="532.532"/>
+<celldesigner:innerPosition x="670.309156" y="452.0"/>
 <celldesigner:boxSize width="106.044" height="128.0"/>
 <celldesigner:singleLine width="1.0"/>
 <celldesigner:paint color="ffffffff" scheme="Color"/>
@@ -3219,7 +3219,7 @@
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n1_n11_n0" species="s_n1_n11_n0" complexSpeciesAlias="sa_n1_n11">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="743.848" y="738.532" w="40.0" h="40.0"/>
+<celldesigner:bounds x="748.0" y="658.0" w="40.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -3238,7 +3238,7 @@
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n1_n11_n1" species="s_n1_n11_n1" complexSpeciesAlias="sa_n1_n11">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="723.848" y="788.532" w="80.0" h="40.0"/>
+<celldesigner:bounds x="728.0" y="708.0" w="80.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -6444,7 +6444,7 @@
 <celldesigner:lineDirection index="1" value="unknown"/>
 </celldesigner:listOfLineDirection>
 </celldesigner:connectScheme>
-<celldesigner:editPoints>0.660731007493,-0.165887920231</celldesigner:editPoints>
+<celldesigner:editPoints>0.75132990695,-0.205213704292</celldesigner:editPoints>
 <celldesigner:line width="1.0" color="ff000000" type="Straight"/>
 </celldesigner:reactantLink>
 </celldesigner:listOfReactantLinks>
@@ -6454,7 +6454,7 @@
 <celldesigner:lineDirection index="1" value="unknown"/>
 </celldesigner:listOfLineDirection>
 </celldesigner:connectScheme>
-<celldesigner:editPoints>2.91975e-07,1.185345507237</celldesigner:editPoints>
+<celldesigner:editPoints>0.493221781826,0.964338827284</celldesigner:editPoints>
 <celldesigner:line width="1.0" color="ff000000"/>
 </celldesigner:extension>
 </annotation>
@@ -6501,7 +6501,7 @@
 <celldesigner:lineDirection index="2" value="unknown"/>
 </celldesigner:listOfLineDirection>
 </celldesigner:connectScheme>
-<celldesigner:editPoints>0.658985205511,0.360566040982 0.836115526593,0.173280387567</celldesigner:editPoints>
+<celldesigner:editPoints>0.480429880383,0.31128958989 0.750305626537,0.14959917089</celldesigner:editPoints>
 <celldesigner:line width="1.0" color="ff000000"/>
 <celldesigner:listOfModification>
 <celldesigner:modification type="CATALYSIS" modifiers="s_n1_n9" aliases="sa_n1_n9" targetLineIndex="-1,3">
