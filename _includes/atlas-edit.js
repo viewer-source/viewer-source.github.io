@@ -700,15 +700,27 @@
       return best || group;
     }
     function editing(e) { return on && current === map && !e.target.closest('.m2-ctrl, .m2-info'); }
-    var empty = null;
+    var empty = null, rpan = null;
+    // as yEd's Edit mode (user, 2026-11-12: "yed way"): a plain drag on empty space selects an area (a click there clears
+    // the selection, Shift adds to it); the map moves with a right drag (its context menu kept away) or two-finger
+    // scrolling; a pinch, or Ctrl or Cmd with the wheel, zooms
+    view.addEventListener('contextmenu', function (e) { if (editing(e)) e.preventDefault(); });
     view.addEventListener('pointerdown', function (e) {
       empty = null;
-      if (!editing(e) || e.button !== 0) return;
+      if (!editing(e)) return;
+      if (e.button === 2 || (e.button === 0 && e.ctrlKey && /Mac/.test(navigator.platform))) {   // right drag: the map moves
+        e.stopImmediatePropagation(); e.preventDefault();
+        view.setPointerCapture(e.pointerId); rpan = [e.clientX, e.clientY]; view.classList.add('m2-drag');
+        return;
+      }
+      if (e.button !== 0) return;
       var P = at(e), h = hit(P);
-      if (!h && !e.shiftKey) { empty = [e.clientX, e.clientY]; return; }   // the viewer pans; a click clears the selection
       e.stopImmediatePropagation(); e.preventDefault();
       view.setPointerCapture(e.pointerId); view.focus({ preventScroll: true });
-      if (!h) { band = { x: P[0], y: P[1], x2: P[0], y2: P[1], add: true }; return; }
+      if (!h) {
+        if (!e.shiftKey) { selN = []; selP = []; selE = []; }
+        band = { x: P[0], y: P[1], x2: P[0], y2: P[1], add: true }; paint(); return;
+      }
       var list = h.p != null ? selP : h.e != null ? selE : selN, k = h.p != null ? h.p : h.e != null ? h.e : h.n, there = list.indexOf(k) >= 0;
       if (e.shiftKey) { if (there) list.splice(list.indexOf(k), 1); else list.push(k); }
       else if (!there) { selN = h.n != null ? [k] : []; selP = h.p != null ? [k] : []; selE = h.e != null ? [k] : []; }
@@ -794,7 +806,19 @@
       if (!d.gx) d.dx += toGrid(X + d.dx, st);
       if (!d.gy) d.dy += toGrid(Y2 + d.dy, st);
     }
+    view.addEventListener('wheel', function (e) {   // two fingers on a trackpad, or the wheel: the map moves
+      if (!editing(e) || e.ctrlKey || e.metaKey || e.shiftKey) return;   // zoom and the page's scroll as in the viewer
+      e.preventDefault(); e.stopImmediatePropagation();
+      var k = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? view.clientHeight : 1;
+      tx -= e.deltaX * k / pz(); ty -= e.deltaY * k / pz(); moved = true; draw();
+    }, { capture: true, passive: false });
     view.addEventListener('pointermove', function (e) {
+      if (rpan) {
+        e.stopImmediatePropagation();
+        if (e.pointerType === 'mouse' && !e.buttons) { rpan = null; view.classList.remove('m2-drag'); return; }
+        tx += (e.clientX - rpan[0]) / pz(); ty += (e.clientY - rpan[1]) / pz(); rpan = [e.clientX, e.clientY]; moved = true; draw();
+        return;
+      }
       if ((drag || band) && e.pointerType === 'mouse' && !e.buttons) return release(e);   // its release never came
       if (drag || band) {
         e.stopImmediatePropagation();
@@ -816,6 +840,7 @@
       if (on && current === map && !e.buttons) { var hh = hit(at(e)); view.style.cursor = !hh ? '' : hh.e != null ? 'pointer' : 'move'; }
     }, true);
     function release(e) {
+      if (rpan) { rpan = null; view.classList.remove('m2-drag'); e.stopImmediatePropagation(); return; }
       if (empty && e.type === 'pointerup' && Math.hypot(e.clientX - empty[0], e.clientY - empty[1]) < 5) { selN = []; selP = []; selE = []; paint(); }
       empty = null;
       if (!drag && !band) return;
