@@ -127,8 +127,10 @@ says "the workbench", "the converter's repository", "a private repository".
   viewer's own look): the molecule's panel as a card over the map's right side on wide windows too, sliding in; the
   drawing shifts left only when the card would cover the chosen item. First in the styles' Default Icon Column.
 - Edit (user, 2026-11-12: moving things a little here and there, as in yEd; `--m2-edit: 1`, with the icons, off in the
-  viewer's own look): a pencil tab before Settings opens the Edit window: Open file (a yEd GraphML from the computer),
-  Save, Undo, Redo, Stop editing; the tab starts editing the map shown at once and follows the map chosen, and shows only on a map drawn from its GraphML (or while a file is edited or has moves not saved; user, 2026-11-12). Moves only: a node or a bend point
+  viewer's own look): a pencil tab before Settings opens the Edit window: at its top the tools as a row of signs (user,
+  2026-11-12, after yEd's toolbar: "not as words but as normal symbols", a few now and more as needed): Undo, Redo, a thin
+  line, Grid and Snap to grid (a magnet), the plain grey signs of the tabs, a switch that is on on a light grey square as
+  yEd's; below, Open file (a yEd GraphML from the computer), Save, Stop editing; the tab starts editing the map shown at once and follows the map chosen, and shows only on a map drawn from its GraphML (or while a file is edited or has moves not saved; user, 2026-11-12). Moves only: a node or a bend point
   dragged (a group with what it holds, and the bends of arcs inside it; a bend alone stays put when its nodes move, as
   in yEd), Shift adds to the selection or selects an area on empty space, arrow keys move by 1 (Shift 10), Ctrl or Cmd
   with Z undoes, with S saves; a drag on empty space pans as before. Only the x and y of what moved change in the
