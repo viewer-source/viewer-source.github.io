@@ -130,7 +130,7 @@ says "the workbench", "the converter's repository", "a private repository".
   where needed: no resizing of nodes (their sizes are standard), no new items or links, user 2026-11-12; compartments are
   containers and the exception, resizable (user, 2026-11-12); GraphML first, then the same rules for CellDesigner
   maps within CellDesigner's constraints; `--m2-edit: 1`, with the icons, off in the
-  viewer's own look): a pencil tab before Settings opens the Edit window: at its top the tools as a row of signs (user,
+  viewer's own look): a pencil tab right after Maps (user, 2026-11-12: "after list and only then everything else"; was before Settings) opens the Edit window: at its top the tools as a row of signs (user,
   2026-11-12, after yEd's toolbar: "not as words but as normal symbols", a few now and more as needed): Undo, Redo, a thin
   line, Grid and Snap to grid (a magnet), the plain grey signs of the tabs, a switch that is on on a light grey square as
   yEd's, wrapping onto more lines in a narrow panel (user, 2026-11-12: they were cut off on the right); below, Save and Stop editing (Open file, a yEd GraphML from the computer, removed: user, 2026-11-12, not needed outside the Atlas; in the history); the tab starts editing the map shown at once and follows the map chosen, and shows only on a map drawn from its GraphML (or while a file is edited or has moves not saved; user, 2026-11-12). Moves only: a node or a bend point
@@ -195,7 +195,7 @@ says "the workbench", "the converter's repository", "a private repository".
   `sh renderers/layout/get_layout.sh <clone of the skill>`, never edited here), run in the browser by Pyodide through
   `renderers/layout/tidy.py`, which writes back only the attributes they change, the rest byte for byte; one undo step.
   Snap the whole map to the grid (the dotted square after the magnet): `snap_grid.snap`, complexes packed first, rows
-  and columns kept, compartments fitted. Pack (the box with two inside, after it): the complex selected, or the one round
+  and columns kept, compartments fitted. Pack (after it; its sign a box with a circle over a protein, 24 px, larger than the others: user, 2026-11-12): the complex selected, or the one round
   a member selected, packed by `complex_pack` (its arcs' ends and the groups round it fitted), every complex when nothing
   is selected. The code is
   `_includes/atlas-edit.js`, included by the viewer's script (copied to the sites with it, off there). Checked
