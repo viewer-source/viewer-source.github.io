@@ -9,10 +9,10 @@
 #   and products. Ports are where the lines meet the nodes (connection points), bends the edit points, absolute.
 #   Bend points stay where they are when a node moves (user, 2026-11-12: yEd's way, not CellDesigner's, where they
 #   live in the frame of the line's ends and stretch): they are written again in the frame of the new ends.
-#   The glyph sits midway on the segment of the main line it is on (rectangleIndex). Moved, it moves its segment, as in
-#   CellDesigner (user, 2026-11-12): the segment's bend points go with it (tied to it in the GraphML: with="<glyph>"),
-#   an end of the segment at a node becomes a new bend point. Not moved, it stays midway on its segment wherever that
-#   goes. Whether it was moved: its place against the one written in the GraphML (base="x,y").
+#   The glyph sits midway on the segment of the main line it is on (rectangleIndex), wherever that goes. It is never
+#   moved by itself (user, 2026-11-12: "in CellDesigner, it's not possible to move process itself"; the editor does not
+#   let it), and no bend point is ever added to make up for a move: the line changes only by the anchor (bend) points the
+#   user puts and moves. (Before, a glyph moved took its segment and an end at a node became a new bend point.)
 #   Left as they are, drawn but not editable: logic gates, associations and dissociations (their geometry stays in
 #   CellDesigner's frames, so it stretches with the nodes).
 #     graphml(cd_text) -> GraphML text;  apply(cd_text, graphml_text) -> CellDesigner text
@@ -496,23 +496,6 @@ def place(text, gtext):
         A, B = r['A'], r['B']
         main = list(bends.get(rid + '|a', [])) + list(bends.get(rid + '|b', []))
         k = len(bends.get(rid + '|a', []))
-        if o['glyph']:
-            g = rid + '|proc'
-            C = (boxes[g][0] + boxes[g][2] / 2, boxes[g][1] + boxes[g][3] / 2) if g in boxes else o['sq']
-            line = cut(d, r, main)
-            P, Q = line[k], line[k + 1]
-            if g in base and not near(C, base[g], 1e-2):   # the glyph moved: its segment comes with it
-                mid = ((P[0] + Q[0]) / 2, (P[1] + Q[1]) / 2)
-                sh = (C[0] - mid[0], C[1] - mid[1])
-                if not near(sh, (0, 0), 1e-2):
-                    ends = [e for e, at_node in (('P', k == 0), ('Q', k + 1 == len(line) - 1)) if at_node]
-                    f = 2.0 if len(ends) == 1 else 1.0
-                    if not ends:   # both ends bend points, not moved with it: moved now
-                        main[k - 1] = (P[0] + sh[0], P[1] + sh[1]); main[k] = (Q[0] + sh[0], Q[1] + sh[1])
-                    if 'Q' in ends:
-                        main.insert(k, (Q[0] + f * sh[0], Q[1] + f * sh[1]))
-                    if 'P' in ends:
-                        main.insert(k, (P[0] + f * sh[0], P[1] + f * sh[1])); k += 1
         frame_same = near(A, o['A'], 1e-6) and near(B, o['B'], 1e-6)
         x0 = [m_ for m_ in re.finditer(r'<celldesigner:(listOfReactantLinks|listOfProductLinks|listOfModification)>', T.t[s[0]:s[1]])]
         subs = [T.span(r'<celldesigner:%s>' % m_.group(1), s[0] + m_.start(), s[1]) for m_ in x0]

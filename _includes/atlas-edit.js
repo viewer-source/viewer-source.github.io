@@ -371,7 +371,10 @@
     }
     function moving() {   // what a move of the selection moves: nodes (a group with what it holds) and bend points
       var all = new Set();
-      selN.forEach(function (i) { all.add(i); nodes2[i].inside.forEach(function (c) { all.add(c); }); });
+      // a process glyph never moves by itself (user, 2026-11-12: "in CellDesigner, it's not possible to move process
+      // itself"): it stays midway on its segment, which moves by its anchor (bend) points and its ends; it goes only with
+      // a group that holds its whole reaction
+      selN.forEach(function (i) { if (!(cd && /\|proc$/.test(nodes2[i].id))) all.add(i); nodes2[i].inside.forEach(function (c) { all.add(c); }); });
       var ps = new Set(selP);
       selE.forEach(function (k) { edges2[k].pts.forEach(function (p) { ps.add(p); }); });
       edges2.forEach(function (e) { if (all.has(e.s) && all.has(e.t)) e.pts.forEach(function (p) { ps.add(p); }); });
@@ -1235,6 +1238,7 @@
       // release (selects, clears, or with Shift adds or takes out)
       var tapped = function () { tap = { h: h, shift: e.shiftKey, x: e.clientX, y: e.clientY }; view.focus({ preventScroll: true }); };
       if (!h || e.shiftKey) return tapped();
+      if (cd && h.n != null && /\|proc$/.test(nodes2[h.n].id)) return tapped();   // a glyph is not dragged: a drag moves the map
       var list = h.p != null ? selP : h.e != null ? selE : selN, k = h.p != null ? h.p : h.e != null ? h.e : h.n, there = list.indexOf(k) >= 0;
       // a bend point of an arc selected is a part of that connector: dragged at once, as its ends, the arc staying
       // selected after (user, 2026-11-12, from yEd: "for connectors, it's different": the whole connector selected, its
