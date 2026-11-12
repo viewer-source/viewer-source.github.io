@@ -1045,11 +1045,18 @@
         band = { x: P[0], y: P[1], x2: P[0], y2: P[1], add: true }; paint(); return;
       }
       var list = h.p != null ? selP : h.e != null ? selE : selN, k = h.p != null ? h.p : h.e != null ? h.e : h.n, there = list.indexOf(k) >= 0;
+      // a bend point of an arc selected is a part of that connector: dragged at once, as its ends, the arc staying
+      // selected after (user, 2026-11-12, from yEd: "for connectors, it's different": the whole connector selected, its
+      // parts move with the next press); a molecule still needs its first click
+      var keepE = null;
+      if (!there && h.p != null && selE.some(function (q) { return edges2[q].pts.indexOf(h.p) >= 0; })) {
+        keepE = selE.slice(); selN = []; selE = []; selP = [h.p]; list = selP; there = true;
+      }
       // the first click selects, a drag moves only what is selected already (user, 2026-11-12: as yEd, "first click
       // selects an item, and second click drags it")
       if (!there) { selN = h.n != null ? [k] : []; selP = h.p != null ? [k] : []; selE = h.e != null ? [k] : []; paint(); return; }
       drag = { x: P[0], y: P[1], dx: 0, dy: 0, p: h.p != null && selP.indexOf(h.p) >= 0 ? h.p : null, guides: [],
-               n: h.n != null && selN.indexOf(h.n) >= 0 ? h.n : null, e: h.e != null && selE.indexOf(h.e) >= 0 ? h.e : null };
+               n: h.n != null && selN.indexOf(h.n) >= 0 ? h.n : null, e: h.e != null && selE.indexOf(h.e) >= 0 ? h.e : null, keepE: keepE };
       // an arc grabbed anywhere and dragged makes a new bend point there (user, 2026-11-12, as yEd); a click selects it
       if (h.e != null && !e.shiftKey) drag.grab = { k: h.e, P: P, sx: e.clientX, sy: e.clientY };
       mv = moving();
@@ -1250,7 +1257,8 @@
         var PP = at(e), hh = e.shiftKey ? null : hit(PP), ez = !e.shiftKey && edgeAt(PP);
         if (ez && hh && (hh.p != null || (hh.n != null && !nodes2[hh.n].comp && selN.indexOf(ez.c) < 0))) ez = null;
         if (ez) { view.style.cursor = resizeCursor(ez.s); return; }
-        var sel = hh && (hh.p != null ? selP.indexOf(hh.p) : hh.e != null ? selE.indexOf(hh.e) : selN.indexOf(hh.n)) >= 0;
+        var sel = hh && ((hh.p != null ? selP.indexOf(hh.p) : hh.e != null ? selE.indexOf(hh.e) : selN.indexOf(hh.n)) >= 0 ||
+          (hh.p != null && selE.some(function (q) { return edges2[q].pts.indexOf(hh.p) >= 0; })));
         view.style.cursor = !hh ? '' : sel ? 'move' : 'pointer';
       }
     }, true);
@@ -1294,8 +1302,8 @@
         text = undo.pop(); parse(); selP = []; selE = [d.made - 1]; unshift(); paint(); return;
       }
       if (d.made != null) { move(d.dx, d.dy); fitAfter(); }   // one step for undo: made and moved
-      else if (d.dx || d.dy) { remember(false); move(d.dx, d.dy); fitAfter(); }
-      else unshift();   // a click with a slight jitter: nothing moved, nothing stays hidden (user, 2026-11-12: a smooth bend
+      else if (d.dx || d.dy) { remember(false); move(d.dx, d.dy); if (d.keepE) { selE = d.keepE; selP = []; } fitAfter(); }
+      else { unshift(); if (d.keepE) { selE = d.keepE; selP = []; } }   // a click with a slight jitter: nothing moved, nothing stays hidden (user, 2026-11-12: a smooth bend
       // turned sharp: the arcs were drawn as plain lines while waiting for a redraw that a move of zero never asked for)
       paint();
     }
