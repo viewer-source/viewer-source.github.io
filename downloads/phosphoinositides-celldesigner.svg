@@ -49,9 +49,9 @@
 <circle cx="114.31" cy="123.83" r="8" fill="#fff" stroke="#000"/>
 <circle cx="154.31" cy="123.83" r="8" fill="#fff" stroke="#000"/>
 <text x="154.31" y="108.5" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">EGFR</text>
-<rect x="79.08" y="287.97" width="80" height="40" rx="5" fill="#c2d4ed" stroke="#000" class="c-protein"/>
-<circle cx="119.08" cy="327.97" r="8" fill="#fff" stroke="#000"/>
-<text x="119.08" y="312.64" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">GAB1</text>
+<rect x="84.08" y="280.97" width="80" height="40" rx="5" fill="#c2d4ed" stroke="#000" class="c-protein"/>
+<circle cx="124.08" cy="320.97" r="8" fill="#fff" stroke="#000"/>
+<text x="124.08" y="305.64" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">GAB1</text>
 <rect x="228.31" y="183.54" width="80" height="40" rx="5" fill="#c2d4ed" stroke="#000" class="c-protein"/>
 <text x="268.31" y="208.21" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">EGF</text>
 <rect x="228.31" y="233.54" width="80" height="40" rx="5" fill="#c2d4ed" stroke="#000" class="c-protein"/>
@@ -114,7 +114,7 @@
 <polyline points="265.53,463.04 265.53,560.99"/>
 <polyline points="435.98,517.98 278.03,518.97"/>
 <polyline points="128,391.04 193.53,391.04"/>
-<polyline points="131.16,335.29 155.82,391.04"/>
+<polyline points="133.79,328.52 155.82,391.04"/>
 <polyline points="497.98,309.54 497.98,431.59"/>
 <polyline points="559.98,237.57 591.97,237.58 591.91,377.68 510.48,377.57"/>
 </g>
@@ -168,7 +168,7 @@
 <rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(265.53,519.01) rotate(90)"/>
 <polygon points="215.53,391.04 200.53,396.04 200.53,386.04" fill="#000"/>
 <polyline points="120,391.04 201.53,391.04" fill="none" stroke="#000000" stroke-width="1"/>
-<polyline points="127.93,327.97 155.82,391.04" fill="none" stroke="#000000" stroke-width="1"/>
+<polyline points="131.13,320.97 155.82,391.04" fill="none" stroke="#000000" stroke-width="1"/>
 <rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(167.76,391.04) rotate(0)"/>
 <polygon points="497.98,453.59 492.98,438.59 502.98,438.59" fill="#000"/>
 <polyline points="497.98,301.54 497.98,439.59" fill="none" stroke="#000000" stroke-width="1"/>
