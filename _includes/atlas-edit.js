@@ -1166,7 +1166,8 @@
       e.stopImmediatePropagation(); e.preventDefault();
       view.setPointerCapture(e.pointerId); view.focus({ preventScroll: true });
       drag = { x: P[0], y: P[1], dx: 0, dy: 0, p: h.p != null && selP.indexOf(h.p) >= 0 ? h.p : null, guides: [],
-               n: h.n != null && selN.indexOf(h.n) >= 0 ? h.n : null, e: h.e != null && selE.indexOf(h.e) >= 0 ? h.e : null, keepE: keepE };
+               n: h.n != null && selN.indexOf(h.n) >= 0 ? h.n : null, e: h.e != null && selE.indexOf(h.e) >= 0 ? h.e : null, keepE: keepE,
+               sx0: e.clientX, sy0: e.clientY };
       // an arc grabbed anywhere and dragged makes a new bend point there (user, 2026-11-12, as yEd); a click selects it
       if (h.e != null && !e.shiftKey) drag.grab = { k: h.e, P: P, sx: e.clientX, sy: e.clientY };
       mv = moving();
@@ -1406,6 +1407,14 @@
       };
       if (d.made != null && Math.abs(d.dx) < 0.01 && Math.abs(d.dy) < 0.01) {   // a new bend dragged back to where it was made (a snap may leave a hair): none made
         text = undo.pop(); parse(); selP = []; selE = [d.made - 1]; unshift(); paint(); return;
+      }
+      // a second click on what is selected, with no drag (under 4 px on screen): it is deselected (user, 2026-11-12: "if
+      // you click second time and do not move it, then it deselects it"); a bend point of an arc selected keeps its arc
+      if (d.made == null && !d.keepE && d.sx0 != null && e.type === 'pointerup' && Math.hypot(e.clientX - d.sx0, e.clientY - d.sy0) < 4) {
+        unshift();
+        var out1 = function (list, k) { var j = list.indexOf(k); if (k != null && j >= 0) list.splice(j, 1); };
+        if (d.p != null) out1(selP, d.p); else if (d.e != null) out1(selE, d.e); else out1(selN, d.n);
+        paint(); return;
       }
       if (d.made != null) { move(d.dx, d.dy); fitAfter(); }   // one step for undo: made and moved
       else if (d.dx || d.dy) { remember(false); move(d.dx, d.dy); if (d.keepE) { selE = d.keepE; selP = []; } fitAfter(); }
