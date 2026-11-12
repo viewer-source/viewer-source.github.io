@@ -3033,6 +3033,7 @@ PRKAA2: P@T172
 <celldesigner:line width="1.0" color="ff000000" type="Straight"/>
 </celldesigner:reactantLink>
 <celldesigner:reactantLink reactant="s_n34" alias="sa_n34" targetLineIndex="-1,0">
+<celldesigner:linkAnchor position="W"/>
 <celldesigner:connectScheme connectPolicy="direct">
 <celldesigner:listOfLineDirection>
 <celldesigner:lineDirection index="0" value="unknown"/>
