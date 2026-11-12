@@ -143,7 +143,8 @@ says "the workbench", "the converter's repository", "a private repository".
   undo or redo, the map's source `maps/<file>.graphml` is committed to the site's own repository (`<owner>/<owner>.github.io`,
   from the address) through GitHub's contents API, with a fine-grained token the user pastes once in the Edit window
   (kept in that browser's localStorage, `atlas-edit-token`; Disconnect removes it); the build redraws it and the page swaps
-  the new version in by itself (index.json checked every 30 s). Editing starts from the repository's version and its sha,
+  the new version in by itself (index.json checked every 30 s). The message after a save gives no clock time (user, 2026-11-12:
+  "why would I need that"): "Saved. The site shows it in about two minutes; this page swaps it in by itself." Editing starts from the repository's version and its sha,
   so a file changed on GitHub meanwhile is never overwritten: saving stops and says so. A map not in the site's repository
   is saved to a place chosen once (Chrome, Edge), else as a download. Editing starts on the picture as it
   is, with no redraw and the map not moved (user, 2026-11-12: "exactly as I see it and immediately start editing"): the

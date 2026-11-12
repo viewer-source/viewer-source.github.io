@@ -120,7 +120,6 @@
       for (var i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000));
       return btoa(s);
     }
-    function hm() { return new Date().toTimeString().slice(0, 5); }
     function changed() {   // after every move, undo or redo: the site's map is saved a few seconds after the last one
       if (!site || !token() || stuck) return;
       say('Saving in a moment...');
@@ -147,7 +146,7 @@
                 store(all);
               }
               if (site === target && text === body) dirty = false;
-              say('Saved to the site ' + hm() + '. This page swaps it in by itself.');
+              say('Saved. The site shows it in about two minutes; this page swaps it in by itself.');   // no clock time (user, 2026-11-12)
             } else if (r.status === 409 || r.status === 422) {
               // GitHub also refuses a save when its branch moved meanwhile (the site's build commits after each save,
               // user, 2026-11-12: "Not saved" at the second move): the file as it is there now is read, and if it is
