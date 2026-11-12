@@ -1402,7 +1402,7 @@ PRKAA2: P@T172
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n28" species="s_n28">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="272.736405" y="556.952996" w="68.330183" h="40.0"/>
+<celldesigner:bounds x="247.943" y="532.0" w="68.330183" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
