@@ -156,7 +156,7 @@ says "the workbench", "the converter's repository", "a private repository".
   top (a compartment as yEd shows it), with eight small black handles round its box (in the map's units, so they grow and shrink with the zoom as yEd's:
   5 units, centres 3.3 units outside the box; the squares on an arc the same 5 units; user, 2026-11-12); an arc clickable and selected as in yEd,
   shown by black squares on its bend points and on its two ports, where it starts and ends (user, 2026-11-12, replacing a
-  blue highlight under the line); a bend point selected alone shows only its own black square;
+  blue highlight under the line); a bend point selected alone shows four small black squares round it, the lines seen in the gap between them (user, 2026-11-12, as yEd: squares 4 units, gap 2 units); among bend points close together a press takes the one selected, else the nearest (user: a nearby bend was dragged);
   an arc grabbed anywhere and dragged makes a new bend point there and drags it (user, 2026-11-12, as yEd; was: moved its
   bends), written into the file as yEd writes a y:Point (a y:Path closed in itself opened), one undo step, nothing made
   when dragged back to where it started; a click on an arc still only selects it. With nothing selected the map looks as the original diagram. A drag moves the item

@@ -610,11 +610,14 @@
         if (pts) out.push('<path class="m2-ed-live" stroke-width="' + f1(Math.max(1, z)) + '" d="M' + pts.map(function (q) { return f1(sx(q[0])) + ' ' + f1(sy(q[1])); }).join('L') + '"/>');
       });
       // arcs selected, or holding a bend point selected: the blue highlight, then their bends as squares on top
-      // a bend point selected alone shows only its own square, the arc not highlighted (user, 2026-11-12: as yEd)
+      // a bend point selected alone, the arc not highlighted (user, 2026-11-12: as yEd): four small black squares round
+      // the point, the lines through it seen in the gap between them (measured on yEd: squares 4 units, gap 2 units)
       selP.forEach(function (pi) {
         if (selE.some(function (k) { return edges2[k].pts.indexOf(pi) >= 0; })) return;
-        var q = pt(pi);
-        over.push('<rect class="m2-ed-bend" x="' + f1(sx(q[0]) - sq() / 2) + '" y="' + f1(sy(q[1]) - sq() / 2) + '" width="' + f1(sq()) + '" height="' + f1(sq()) + '"/>');
+        var q = pt(pi), a = Math.max(1.5, 4 * z), g = Math.max(1, 2 * z) / 2, X = sx(q[0]), Y3 = sy(q[1]);
+        [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(function (c) {
+          over.push('<rect class="m2-ed-bend" x="' + f1(c[0] < 0 ? X - g - a : X + g) + '" y="' + f1(c[1] < 0 ? Y3 - g - a : Y3 + g) + '" width="' + f1(a) + '" height="' + f1(a) + '"/>');
+        });
       });
       // an arc selected (user, 2026-11-12, as yEd, replacing the blue highlight): black squares on its bend points and on
       // its two ports, where it starts and ends (often in the middle of a node)
@@ -681,7 +684,15 @@
     }
     function hit(P) {   // a bend point first, then a node, then an arc, then a group (its contents and arcs come first)
       var R = 6 / z, best = null, group = null;
-      points.forEach(function (p, i) { if (Math.abs(num(p, 'x') - P[0]) <= R && Math.abs(num(p, 'y') - P[1]) <= R) best = { p: i }; });
+      // among bend points close together the one selected wins, else the nearest (user, 2026-11-12: a nearby bend was
+      // taken and the wrong arc dragged)
+      var dB = Infinity;
+      points.forEach(function (p, i) {
+        var dx = Math.abs(num(p, 'x') - P[0]), dy = Math.abs(num(p, 'y') - P[1]);
+        if (dx > R || dy > R) return;
+        var d = Math.hypot(dx, dy) - (selP.indexOf(i) >= 0 ? 2 * R : 0);
+        if (d < dB) { dB = d; best = { p: i }; }
+      });
       if (best) return best;
       nodes2.forEach(function (n, i) {
         var b = boxOf(i);
