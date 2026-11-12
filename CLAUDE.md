@@ -207,7 +207,9 @@ says "the workbench", "the converter's repository", "a private repository".
 - Right-click menu over the map (user, 2026-11-12; `--m2-context: 1`, off in the viewer's own look): shortcuts to what
   the tabs and buttons already do, never the only way to it (phones have no right click). One layer, no submenus (user,
   2026-11-12: the shortcut is for what is aimed for on the page, as downloads and edit; the view, colours, link and the
-  other files stay in the viewer's own buttons, the address bar and Downloads): Edit this map (where the Edit tab shows),
+  other files stay in the viewer's own buttons, the address bar and Downloads): Edit mode (where the Edit tab shows;
+  in edit mode View mode in its place, and no molecule rows: a right click that does not drag opens the menu there, a
+  right drag still moves the map; user, 2026-11-12),
   Download GraphML or Download CellDesigner file (the map's source only), Open in MINERVA, Open in Newt (where the map
   has them, to respect the tools already there), Copy image as PNG last (its PNG, else its picture at twice its size, to
   the clipboard: for pasting into a paper or slides); words only, no download or outside-link signs (user, 2026-11-12). Whole map, Reading size, Copy link, Map colours, the other downloads and
@@ -215,7 +217,7 @@ says "the workbench", "the converter's repository", "a private repository".
   annotation, Copy name, Find in all maps (the name in the search), a line, then the same rows. The look of the
   Downloads menu, the accent fill under the pointer; Esc, a click elsewhere,
   the wheel or a resize close it; arrow keys move through it. Shift with the right click gives the browser's own menu;
-  not while editing (the editor's right drag moves the map). The page's text, the panel and the list keep the browser's
+  in edit mode it opens on the release of a right click that did not move the map. The page's text, the panel and the list keep the browser's
   menu. First in the styles' Default Icons. Later, when the editor goes on: Align and Distribute on a selection.
 - Downloads in the panel's column while no molecule is open (`--m2-dl-panel`, 2026-11-11): tried and removed the same day
   (user: it does not work); its code is in the history.

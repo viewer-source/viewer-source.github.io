@@ -2385,6 +2385,7 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
   setInterval(check, 30000);
   document.addEventListener('visibilitychange', check);
   // ---------- the right-click menu over the map (--m2-context: 1; user, 2026-11-12) ----------
+  var m2Context = null;   // opens the menu at a point of the window; the editor calls it after a right click that did not drag
   // shortcuts to what the tabs and buttons already do, never the only way to it (phones have no right click);
   // Shift with the right click gives the browser's own menu; not while editing (the editor's right drag moves the map)
   (function () {
@@ -2441,8 +2442,8 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
       if (!(win === name && !grid.classList.contains('m2-list-shut'))) b.click();
       return true;
     }
-    function build(vx, vy) {
-      var m = current, box = el('div', 'm2-cx'), n = nodeAt(vx, vy), url = {};
+    function build(vx, vy, ed) {   // ed: in edit mode (no molecule rows; View mode in place of Edit mode)
+      var m = current, box = el('div', 'm2-cx'), n = ed ? null : nodeAt(vx, vy), url = {};
       box.setAttribute('role', 'menu');
       (m.downloads || []).forEach(function (d) { url[d.label] = d.url; });
       if (n) {   // a molecule, a complex or a reaction: its name first
@@ -2462,7 +2463,8 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
       // one layer, no submenus (user, 2026-11-12): the shortcuts aimed for on the page; the map's view, colours, link and
       // the other files stay in the viewer's own buttons and tabs
       var eb = document.querySelector('#m2-rail .m2-ri[data-win="edit"]');
-      if (eb && eb.offsetParent) item(box, 'Edit this map', function () { tab('edit'); });
+      if (ed) item(box, 'View mode', function () { tab('list'); });   // leaving the Edit window ends editing
+      else if (eb && eb.offsetParent) item(box, 'Edit mode', function () { tab('edit'); });
       var src = (m.legend === 'celldesigner' ? ['CellDesigner', 'GraphML'] : ['GraphML', 'CellDesigner']).filter(function (l) { return url[l]; })[0];   // the format the map is drawn from
       if (src) link(box, src === 'GraphML' ? 'Download GraphML' : 'Download CellDesigner file', url[src], true);
       ['MINERVA', 'Newt'].forEach(function (l) { if (url[l]) link(box, 'Open in ' + l, url[l]); });
@@ -2470,17 +2472,23 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
       while (box.lastChild && box.lastChild.classList.contains('m2-sep')) box.removeChild(box.lastChild);
       return box;
     }
+    function show(cx, cy, ed) {
+      close();
+      var r = view.getBoundingClientRect();
+      menu = build((cx - r.left) / pz(), (cy - r.top) / pz(), ed);
+      menu.style.left = cx + 'px'; menu.style.top = cy + 'px';
+      document.body.appendChild(menu);
+      var b = menu.getBoundingClientRect();   // inside the window: moved left or up when it would run over an edge
+      if (b.right > window.innerWidth - 4) menu.style.left = Math.max(4, cx - b.width) + 'px';
+      if (b.bottom > window.innerHeight - 4) menu.style.top = Math.max(4, window.innerHeight - 4 - b.height) + 'px';
+    }
+    // in edit mode the menu opens from the editor, on the release of a right press that did not move the map (user,
+    // 2026-11-12: the same menu there, View mode first)
+    m2Context = function (cx, cy) { if (setting('context') && current) show(cx, cy, true); };
     view.addEventListener('contextmenu', function (e) {
       if (!setting('context') || e.shiftKey || !current || grid.classList.contains('m2-editing') || e.target.closest('.m2-ctrl, .m2-info')) return;
       e.preventDefault();
-      close();
-      var r = view.getBoundingClientRect();
-      menu = build((e.clientX - r.left) / pz(), (e.clientY - r.top) / pz());
-      menu.style.left = e.clientX + 'px'; menu.style.top = e.clientY + 'px';
-      document.body.appendChild(menu);
-      var b = menu.getBoundingClientRect();   // inside the window: moved left or up when it would run over an edge
-      if (b.right > window.innerWidth - 4) menu.style.left = Math.max(4, e.clientX - b.width) + 'px';
-      if (b.bottom > window.innerHeight - 4) menu.style.top = Math.max(4, window.innerHeight - 4 - b.height) + 'px';
+      show(e.clientX, e.clientY, false);
     });
     document.addEventListener('pointerdown', function (e) { if (menu && !menu.contains(e.target)) close(); }, true);
     document.addEventListener('keydown', function (e) {
