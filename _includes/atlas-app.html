@@ -2459,7 +2459,7 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
       // the other files stay in the viewer's own buttons and tabs
       var eb = document.querySelector('#m2-rail .m2-ri[data-win="edit"]');
       if (eb && eb.offsetParent) item(box, 'Edit this map', function () { tab('edit'); });
-      var src = ['GraphML', 'CellDesigner'].filter(function (l) { return url[l]; })[0];
+      var src = (m.legend === 'celldesigner' ? ['CellDesigner', 'GraphML'] : ['GraphML', 'CellDesigner']).filter(function (l) { return url[l]; })[0];   // the format the map is drawn from
       if (src) link(box, src === 'GraphML' ? 'Download GraphML' : 'Download CellDesigner file', url[src], true);
       if (!m.imageError) item(box, 'Copy as PNG', function (r) { copyPicture(m, url, r); });
       ['MINERVA', 'Newt'].forEach(function (l) { if (url[l]) link(box, 'Open in ' + l, url[l]); });
