@@ -17,8 +17,8 @@
 <text x="182" y="422.53" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">α-D-glucose-6P</text>
 <ellipse cx="182" cy="547.87" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
 <text x="182" y="552.53" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">β-D-fructose-6P</text>
-<rect x="37" y="462.87" width="80" height="40" rx="5" fill="#c2d4ed" stroke="#000" class="c-protein"/>
-<text x="77" y="487.53" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">GPI</text>
+<rect x="40" y="462.87" width="80" height="40" rx="5" fill="#c2d4ed" stroke="#000" class="c-protein"/>
+<text x="80" y="487.53" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">GPI</text>
 <ellipse cx="182" cy="677.87" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
 <text x="182" y="682.53" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">β-D-fructose-1,6P2</text>
 <rect x="37" y="592.87" width="80" height="40" rx="5" fill="#c2d4ed" stroke="#000" class="c-protein"/>
@@ -70,7 +70,7 @@
 <polyline points="780.05,435.15 780.05,501.33"/>
 <polyline points="780.05,487.26 855.12,495.11"/>
 <polyline points="182,459.87 182,505.87"/>
-<polyline points="125,482.87 169.5,482.87"/>
+<polyline points="128,482.87 169.5,482.87"/>
 <polyline points="189.65,574.35 189.65,637.39"/>
 <polyline points="248,612.87 202.15,612.87"/>
 <polyline points="174.35,651.39 174.35,588.35"/>
@@ -98,7 +98,7 @@
 <polygon points="182,437.87 187,452.87 177,452.87" fill="#000"/>
 <polyline points="182,451.87 182,513.87" fill="none" stroke="#000000" stroke-width="1"/>
 <circle cx="172.5" cy="482.87" r="3" fill="#fff" stroke="#000"/>
-<polyline points="117,482.87 169.5,482.87" fill="none" stroke="#000000" stroke-width="1"/>
+<polyline points="120,482.87 169.5,482.87" fill="none" stroke="#000000" stroke-width="1"/>
 <rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(182,482.87) rotate(90)"/>
 <polygon points="189.65,659.39 184.65,644.39 194.65,644.39" fill="#000"/>
 <polyline points="189.65,566.35 189.65,645.39" fill="none" stroke="#000000" stroke-width="1"/>
