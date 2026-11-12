@@ -213,6 +213,7 @@
       layout().then(function (p) {
         p.globals.set('_t', text); p.globals.set('_ids', JSON.stringify(ids || []));
         var r = JSON.parse(p.runPython("import json\njson.dumps(tidy.tidy(_t, " + JSON.stringify(what) + ", json.loads(_ids)))"));
+        if (r[1] < 0) { say(done[2]); return; }
         if (!r[1]) { say(done[0]); return; }
         remember(false); text = r[0]; parse(); selN = []; selP = []; selE = []; dirty = true;
         render(); paint(); changed(); say(done[1]);
@@ -220,6 +221,12 @@
     }
     box.querySelector('#m2-ed-tidy-grid').addEventListener('click', function () {
       tool('grid', [], ['The map is on the grid already.', 'The map is on the grid. Ctrl or Cmd with Z takes it back.']);
+    });
+
+    box.querySelector('#m2-ed-tidy-pack').addEventListener('click', function () {
+      var ids = selN.map(function (i) { return nodes2[i].id; });
+      tool('pack', ids, [ids.length ? 'Packed already.' : 'Every complex is packed already.',
+        (ids.length ? 'Packed.' : 'Every complex packed.') + ' Ctrl or Cmd with Z takes it back.', 'Select a complex, or nothing for every complex.']);
     });
 
     // the file read: every y:Geometry and y:Point in document order, which is also their order in the text
@@ -402,7 +409,7 @@
       say(dirty && !site ? name + ' has moves not saved: Back to it, or Save.' : 'Edit the map shown.');
     }
     function buttons() {
-      ['#m2-ed-save', '#m2-ed-undo', '#m2-ed-redo', '#m2-ed-tidy-grid'].forEach(function (k) { box.querySelector(k).disabled = !on; });
+      ['#m2-ed-save', '#m2-ed-undo', '#m2-ed-redo', '#m2-ed-tidy-grid', '#m2-ed-tidy-pack'].forEach(function (k) { box.querySelector(k).disabled = !on; });
       box.querySelector('#m2-ed-save').hidden = !!site;   // a map of the site saves by itself
       ghForm(!!(on && site && !token()));
       box.querySelector('#m2-ed-back').hidden = on || !text;

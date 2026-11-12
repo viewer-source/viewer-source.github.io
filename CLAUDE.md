@@ -185,7 +185,9 @@ says "the workbench", "the converter's repository", "a private repository".
   `sh renderers/layout/get_layout.sh <clone of the skill>`, never edited here), run in the browser by Pyodide through
   `renderers/layout/tidy.py`, which writes back only the attributes they change, the rest byte for byte; one undo step.
   Snap the whole map to the grid (the dotted square after the magnet): `snap_grid.snap`, complexes packed first, rows
-  and columns kept, compartments fitted. The code is
+  and columns kept, compartments fitted. Pack (the box with two inside, after it): the complex selected, or the one round
+  a member selected, packed by `complex_pack` (its arcs' ends and the groups round it fitted), every complex when nothing
+  is selected. The code is
   `_includes/atlas-edit.js`, included by the viewer's script (copied to the sites with it, off there). Checked
   2026-11-12 on eNOS: first drawing about 4 s, a redraw after a move under a second, the saved file differing from the
   original only in x and y values. Not yet: CellDesigner files, a group growing round a member moved out of it.
