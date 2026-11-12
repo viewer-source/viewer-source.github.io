@@ -149,8 +149,9 @@ says "the workbench", "the converter's repository", "a private repository".
   the site's version of the map changes, or after an hour. The click data follows (user, 2026-11-12): the site's boxes
   are matched to the nodes of its own version and moved to where the edited drawing has them, so a click and the
   search find a moved molecule where it is drawn. The selection as yEd shows it (user, 2026-11-12: "i was wrong about silent
-  selection - see how it is in yEd", replacing nothing drawn at rest): a node selected darkened (multiplied into the drawing,
-  a group without what it holds) with eight small black handles round its box; an arc clickable and selected as in yEd,
+  selection - see how it is in yEd", replacing nothing drawn at rest): a node selected in a light grey (#d2d2d2 multiplied,
+  user: lighter, as yEd's) put into the drawing right over the node's own shape, so its contents, arcs and labels stay on
+  top (a compartment as yEd shows it), with eight small black handles round its box; an arc clickable and selected as in yEd,
   highlighted in blue under its line (yEd's yellow, user: blue) with its bend points as blue squares (yEd's green dots,
   user: blue squares); a bend point selected alone shows only its own square, the arc not highlighted (user, as yEd);
   dragging an arc moves its bends. With nothing selected the map looks as the original diagram. A drag moves the item

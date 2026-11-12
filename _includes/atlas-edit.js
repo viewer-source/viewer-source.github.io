@@ -536,8 +536,8 @@
       if (k === 'roundrectangle') return rr(x, y, w, h, 4, false);
       return rr(x, y, w, h, 0);
     }
-    function shapeD(i) {   // the outline of node i, a multimer's second outline with it
-      var b = bx(i), n = nodes2[i], d = outlineD(n.shape, b[0], b[1], b[2], b[3]);
+    function shapeD(i, still) {   // the outline of node i, a multimer's second outline with it (still: without the drag)
+      var b = still ? boxOf(i) : bx(i), n = nodes2[i], d = outlineD(n.shape, b[0], b[1], b[2], b[3]);
       if (n.shape.props.mcount === '2') d = outlineD(n.shape, b[0] + 6, b[1] + 6, b[2], b[3]) + d;
       return d;
     }
@@ -567,6 +567,7 @@
       return pts;
     }
     function paint() {
+      if (img && img.querySelectorAll) img.querySelectorAll('.m2-ed-dark').forEach(function (x) { x.remove(); });
       if (!on || current !== map) { overlay.innerHTML = ''; return; }
       var out = [], over = [], frame = '<g transform="translate(' + f1(tx - x0 * z) + ',' + f1(ty - y0 * z) + ') scale(' + z + ')">';
       if (live) live.forEach(function (k) {   // arcs following the drag, as plain lines until the map is drawn again
@@ -595,13 +596,15 @@
       });
       // nodes selected: darkened (a group without what it holds, as yEd), and the eight handles round the box
       selN.forEach(function (i, j) {
-        var n = nodes2[i], b = bx(i);
-        if (n.kids.length) {
-          var id = 'm2-ed-m' + j;
-          out.push('<mask id="' + id + '" maskUnits="userSpaceOnUse" x="-1e6" y="-1e6" width="2e6" height="2e6">' + frame +
-            '<path fill="#fff" d="' + shapeD(i) + '"/>' + n.kids.map(function (c) { return '<path fill="#000" d="' + shapeD(c) + '"/>'; }).join('') +
-            '</g></mask>');
-          out.push('<g mask="url(#' + id + ')">' + frame + '<path class="m2-ed-dark" d="' + shapeD(i) + '"/></g></g>');
+        var n = nodes2[i], b = bx(i), g = gN && gN[n.id];
+        if (g) {   // in the drawing itself, right over the node's own shape: what is drawn after it (its contents, the
+          // arcs, the labels) stays on top, as yEd shows a group selected (user, 2026-11-12)
+          var el = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+          el.setAttribute('class', 'm2-ed-dark'); el.setAttribute('d', shapeD(i, true));
+          var first = g.firstElementChild && g.firstElementChild.localName === 'a' ? g.firstElementChild : g;
+          var shapes = first.querySelectorAll(':scope > path'), last = shapes.length ? shapes[shapes.length - 1] : null;
+          if (last) last.after(el); else first.prepend(el);
+        } else if (n.kids.length) {   // no drawing of the editor's yet: handles only for a group
         } else out.push(frame + '<path class="m2-ed-dark" d="' + shapeD(i) + '"/></g>');
         var L = sx(b[0]) - 3, T = sy(b[1]) - 3, R = sx(b[0] + b[2]) + 3, B = sy(b[1] + b[3]) + 3;
         [[L, T], [(L + R) / 2, T], [R, T], [L, (T + B) / 2], [R, (T + B) / 2], [L, B], [(L + R) / 2, B], [R, B]].forEach(function (q) {
