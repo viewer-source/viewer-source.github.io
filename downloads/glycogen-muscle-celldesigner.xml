@@ -3884,11 +3884,11 @@
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n2_n0" species="s_n2_n0" compartmentAlias="ca_n2">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="137.205043" y="79.451171" w="80.0" h="40.0"/>
+<celldesigner:bounds x="156.217" y="79.451171" w="80.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
-<celldesigner:innerPosition x="97.20504299999999" y="39.451171"/>
+<celldesigner:innerPosition x="116.217" y="39.451171"/>
 <celldesigner:boxSize width="80.0" height="40.0"/>
 <celldesigner:singleLine width="1.0"/>
 <celldesigner:paint color="ffc8d8eb" scheme="Color"/>
