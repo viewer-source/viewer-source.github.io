@@ -14,8 +14,8 @@ height: 739
 scale: 1
 annotation: "/atlas-data/acly-celldesigner.json"
 image_error: ""
-v: "a0c1dd1f4b"
-src: "98e9f976a80354fede07867191ce4b653c58ba42"
+v: "2159a37094"
+src: "219976bee4c3eeb17da0bec3d4696a24d46f2525"
 colours: true
 legend: "celldesigner"
 downloads: [{"label": "CellDesigner", "url": "/downloads/acly-celldesigner.xml"}, {"label": "SVG", "url": "/downloads/acly-celldesigner.svg"}, {"label": "SBML", "url": "/downloads/acly-celldesigner-sbml.xml"}, {"label": "Annotation", "url": "/downloads/acly-celldesigner.csv"}, {"label": "GraphML", "url": "/downloads/acly-celldesigner.graphml"}, {"label": "PNG", "url": "/downloads/acly-celldesigner.png"}, {"label": "SBGN-ML", "url": "/downloads/acly-celldesigner.sbgn"}, {"label": "Newt", "url": "http://web.newteditor.org/?URL=https://viewer-source.github.io/downloads/acly-celldesigner.sbgn"}, {"label": "MINERVA", "url": "https://mreg.elixir-luxembourg.org/minerva/index.html?id=F006-acly"}]
