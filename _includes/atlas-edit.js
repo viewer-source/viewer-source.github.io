@@ -55,6 +55,29 @@
     // the click data (user, 2026-11-12): the site's boxes of the nodes are those of its own version; the boxes of the
     // nodes moved since follow them, so a click and the search find a molecule where it is drawn now
     var siteRef = null;   // { boxes (per node, yEd units, as in the site's version), x0, y0 (its drawing's frame) }
+    // the grid (user, 2026-11-12): two settings, kept in this browser: the grid shown or hidden (shown by default, it
+    // also says the map is being edited), snapping to it on or off (off by default; guides come first). The steps are the
+    // layout rules' (the layout skill, Grid): node centres on 8 px, bend points on 4 px, blocks on 16 (every second
+    // line drawn stronger). The demo's maps are mostly not on any grid: a snapped drag moves a node onto it.
+    var GRID_KEY = 'atlas-edit-grid', NODE_STEP = 8, BEND_STEP = 4;
+    var gridSet = (function () { try { var g = JSON.parse(localStorage.getItem(GRID_KEY) || '{}'); return { shown: g.shown !== false, snap: g.snap === true }; } catch (e) { return { shown: true, snap: false }; } })();
+    function gridKeep() { try { localStorage.setItem(GRID_KEY, JSON.stringify(gridSet)); } catch (e) {} }
+    function gridButtons() {
+      box.querySelectorAll('#m2-ed-grid button').forEach(function (b) { b.classList.toggle('m2-on', (b.getAttribute('data-grid') === 'shown') === gridSet.shown); });
+      box.querySelectorAll('#m2-ed-snap button').forEach(function (b) { b.classList.toggle('m2-on', (b.getAttribute('data-snap') === 'on') === gridSet.snap); });
+    }
+    function gridPaint() {   // behind the drawing, as the map window's background: lines at multiples of the step in yEd units
+      if (!on || current !== map || !gridSet.shown) { view.style.backgroundImage = view.style.backgroundSize = view.style.backgroundPosition = ''; return; }
+      var s = NODE_STEP; while (s * z < 6) s *= 2;   // never denser than 6 px on screen
+      var a = s * z, b = 2 * a, ox = tx - x0 * z, oy = ty - y0 * z, px = function (v, m) { return ((v % m) + m) % m; };
+      var minor = 'rgba(0,0,0,.07)', major = 'rgba(0,0,0,.13)';
+      view.style.backgroundImage = ['linear-gradient(to right,' + major + ' 1px,transparent 1px)', 'linear-gradient(to bottom,' + major + ' 1px,transparent 1px)',
+        'linear-gradient(to right,' + minor + ' 1px,transparent 1px)', 'linear-gradient(to bottom,' + minor + ' 1px,transparent 1px)'].join(',');
+      view.style.backgroundSize = [b + 'px ' + b + 'px', b + 'px ' + b + 'px', a + 'px ' + a + 'px', a + 'px ' + a + 'px'].join(',');
+      var P = function (m) { return f1(px(ox, m)) + 'px ' + f1(px(oy, m)) + 'px'; };
+      view.style.backgroundPosition = [P(b), P(b), P(a), P(a)].join(',');
+    }
+    function toGrid(v, st) { return Math.round(v / st) * st - v; }   // the correction that puts v on the grid
     function baseOf(pub, fr) {
       var all = (pub.match(/<y:Geometry\s[^>]*>/g) || []).map(function (tag) {
         var a = function (n) { var m = tag.match(new RegExp('\\s' + n + '="([^"]*)"')); return m ? parseFloat(m[1]) : NaN; };
@@ -474,6 +497,9 @@
       buttons(); say('Disconnected: the token is removed from this browser.');
     });
     box.querySelector('#m2-ed-this').addEventListener('click', editShown);
+    box.querySelectorAll('#m2-ed-grid button').forEach(function (b) { b.addEventListener('click', function () { gridSet.shown = b.getAttribute('data-grid') === 'shown'; gridKeep(); gridButtons(); paint(); }); });
+    box.querySelectorAll('#m2-ed-snap button').forEach(function (b) { b.addEventListener('click', function () { gridSet.snap = b.getAttribute('data-snap') === 'on'; gridKeep(); gridButtons(); }); });
+    gridButtons();
     // the Edit tab starts editing the map shown at once (user, 2026-11-12: "does not look i can edit yet"); a map drawn
     // from a CellDesigner file says why it cannot be edited yet
     function shown() {   // the Edit window open on a map: edit it, or say why not (also when another map is chosen)
@@ -575,6 +601,7 @@
     }
     function paint() {
       if (img && img.querySelectorAll) img.querySelectorAll('.m2-ed-dark').forEach(function (x) { x.remove(); });
+      gridPaint();
       if (!on || current !== map) { overlay.innerHTML = ''; return; }
       var out = [], over = [], frame = '<g transform="translate(' + f1(tx - x0 * z) + ',' + f1(ty - y0 * z) + ') scale(' + z + ')">';
       if (live) live.forEach(function (k) {   // arcs following the drag, as plain lines until the map is drawn again
@@ -684,7 +711,8 @@
       var list = h.p != null ? selP : h.e != null ? selE : selN, k = h.p != null ? h.p : h.e != null ? h.e : h.n, there = list.indexOf(k) >= 0;
       if (e.shiftKey) { if (there) list.splice(list.indexOf(k), 1); else list.push(k); }
       else if (!there) { selN = h.n != null ? [k] : []; selP = h.p != null ? [k] : []; selE = h.e != null ? [k] : []; }
-      drag = { x: P[0], y: P[1], dx: 0, dy: 0, p: h.p != null && selP.indexOf(h.p) >= 0 ? h.p : null, guides: [] };
+      drag = { x: P[0], y: P[1], dx: 0, dy: 0, p: h.p != null && selP.indexOf(h.p) >= 0 ? h.p : null, guides: [],
+               n: h.n != null && selN.indexOf(h.n) >= 0 ? h.n : null, e: h.e != null && selE.indexOf(h.e) >= 0 ? h.e : null };
       mv = moving();
       paint();
     }, true);
@@ -712,8 +740,21 @@
       });
       if (ax != null) d.dx += ax - B[0];
       if (ay != null) d.dy += ay - B[1];
+      d.gx = ax != null; d.gy = ay != null;
       var C = [B[0] + (ax != null ? ax - B[0] : 0), B[1] + (ay != null ? ay - B[1] : 0)];
       nb.forEach(function (q) { if (Math.abs(q[0] - C[0]) < 0.01 || Math.abs(q[1] - C[1]) < 0.01) d.guides.push([C, q]); });
+    }
+    function onGrid(d) {   // snap to the grid, an axis a guide has not taken: the node pressed by its centre on 8 px, a
+      // bend point (alone, or the first of an arc dragged) on 4 px; Alt or Ctrl held, no snapping
+      var X, Y2, st;
+      if (d.n != null) { var b = boxOf(d.n); X = b[0] + b[2] / 2; Y2 = b[1] + b[3] / 2; st = NODE_STEP; }
+      else {
+        var pi = d.p != null ? d.p : d.e != null && edges2[d.e].pts.length ? edges2[d.e].pts[0] : null;
+        if (pi == null) return;
+        X = num(points[pi], 'x'); Y2 = num(points[pi], 'y'); st = BEND_STEP;
+      }
+      if (!d.gx) d.dx = Math.round((d.dx + toGrid(X + d.dx, st)) * 1000) / 1000;
+      if (!d.gy) d.dy = Math.round((d.dy + toGrid(Y2 + d.dy, st)) * 1000) / 1000;
     }
     view.addEventListener('pointermove', function (e) {
       if ((drag || band) && e.pointerType === 'mouse' && !e.buttons) return release(e);   // its release never came
@@ -723,7 +764,9 @@
         if (band) { band.x2 = P[0]; band.y2 = P[1]; }
         else {
           drag.dx = Math.round(P[0] - drag.x); drag.dy = Math.round(P[1] - drag.y);
+          drag.gx = drag.gy = false;
           if (drag.p != null) snap(drag);
+          if (gridSet.snap && !e.altKey && !e.ctrlKey) onGrid(drag);
           mv.dx = drag.dx; mv.dy = drag.dy; shift();
         }
         paint();
