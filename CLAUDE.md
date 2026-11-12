@@ -101,13 +101,14 @@ says "the workbench", "the converter's repository", "a private repository".
   tab but Maps goes back to Maps too, user the same day; until then the field stayed over the list with no Search tab), one Legend sign (C2), no window title (the tab shows it); a click on the open tab keeps it, the separator
   closes the panel. Annotations on the left (Settings) open as one more tab of the panel (the panel opened if closed),
   no tab highlighted; its cross or any tab goes back. First in the styles' Default Icon Row.
-- Map colours (user, 2026-11-12, in Settings after Map size): File (the colours in the map's file, the default), Grey or
-  Steel, kept in the reader's browser (`atlas-map-colours`), for every map; shown only for a map whose entry has
+- Map colours (user, 2026-11-12, in Settings after Map size): File (the colours in the map's file, the default), then
+  Default, Paper and frost, Mono moss, Steel and Grey (user, 2026-11-12: the colourful ones for testing, Grey not very useful; a
+  few to be chosen with more care later), kept in the reader's browser (`atlas-map-colours`), for every map; shown only for a map whose entry has
   `colours` (its picture drawn with the role classes). The renderers write each fill's role beside its colour (yrender
   and cdrender `CLASSES`, set by build.py and the editor; off by default, so their copies elsewhere draw byte-identical);
   a scheme is a `<style>` put into the picture's text in the browser, no second picture per map. Downloads keep the
   file's colours. Roles as the official site's /colours/ page (compartment, complex, protein, hlProtein, metabolite,
-  gene, white); a scheme's code is that page's (Steel is its preset Mono steel). CellDesigner compartments keep their
+  gene, white); a scheme's code is that page's (Default, Paper and frost, Mono moss and Steel are its presets, Steel being Mono steel). CellDesigner compartments keep their
   colours (their lines are drawn in it). Grey is meant as the quiet base for the Overlays tab to come.
 - Icons on top or on the left (user, 2026-11-12: "vertical bar vs horizontal is simply a choice in settings";
   `--m2-bar-choice: 1`, with the icon row, off in the viewer's own look): Settings gets Icons, Left or Top (in this order, user 2026-11-12; kept in the
