@@ -2490,6 +2490,19 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
       navigator.clipboard.write([new ClipboardItem({ 'image/png': pngOf(m, url) })])
         .then(function () { say('Image copied', r.left, r.top); }, function () { say('Not copied', r.left, r.top); });
     }
+    // the map's SVG as the file on the site (its SVG download, else the picture shown): image/svg+xml where the browser
+    // can (Chrome), with the text as well, so an app that takes no SVG image pastes the markup (user, 2026-11-12)
+    function copySvg(m, url, r) {
+      var src = url.SVG || m.image;
+      var text = fetch(src).then(function (x) { if (!x.ok) throw x.status; return x.text(); });
+      var plain = function () { return text.then(function (t) { return navigator.clipboard.writeText(t); }); };
+      var go = window.ClipboardItem && ClipboardItem.supports && ClipboardItem.supports('image/svg+xml')
+        ? navigator.clipboard.write([new ClipboardItem({
+            'image/svg+xml': text.then(function (t) { return new Blob([t], { type: 'image/svg+xml' }); }),
+            'text/plain': text.then(function (t) { return new Blob([t], { type: 'text/plain' }); }) })]).catch(plain)
+        : navigator.clipboard ? plain() : Promise.reject();
+      go.then(function () { say('Image copied', r.left, r.top); }, function () { say('Not copied', r.left, r.top); });
+    }
     function tab(name) {   // a tab of the icons, unless its window shows already (a second click would close it)
       var b = document.querySelector('#m2-rail .m2-ri[data-win="' + name + '"]');
       if (!b || !b.offsetParent) return false;
@@ -2525,6 +2538,7 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
       if (src) link(box, src === 'GraphML' ? 'Download GraphML' : 'Download CellDesigner file', url[src], true);
       ['MINERVA', 'Newt'].forEach(function (l) { if (url[l]) link(box, 'Open in ' + l, url[l]); });
       if (!m.imageError) item(box, 'Copy image as PNG', function (r) { copyPicture(m, url, r); });
+      if (!m.imageError && (url.SVG || m.image)) item(box, 'Copy image as SVG', function (r) { copySvg(m, url, r); });
       while (box.lastChild && box.lastChild.classList.contains('m2-sep')) box.removeChild(box.lastChild);
       return box;
     }
