@@ -147,7 +147,7 @@ says "the workbench", "the converter's repository", "a private repository".
   frame of yEd's coordinates is read from the site's SVG; the renderer loads quietly meanwhile and draws only after a
   move. Silent (user, 2026-11-12): the Edit tab is the switch, no Edit this map or Stop editing; any other tab, or the
   panel closed, ends editing. After it the edited drawing stays on screen until the site's build of the map catches up,
-  across a reload too (user, 2026-11-12): the last saved drawing per map in that browser (`atlas-edit-kept`), dropped once
+  across a reload too (user, 2026-11-12): the last saved drawing per map in that browser (`atlas-edit-kept`), dropped once The kept drawing waits for the build of the file saved last: index.json carries each map's `src`, its source's git blob sha, compared with the sha GitHub gave the save (a build of an earlier save no longer replaces it). While editing the picture draws past its frame (`overflow: visible`), so a node moved beyond the old edge is not cut off before the redraw. The build workflow starts again from the newest main when a save came in meanwhile, never rebasing built files.
   the site's version of the map changes, or after an hour. The click data follows (user, 2026-11-12): the site's boxes
   are matched to the nodes of its own version and moved to where the edited drawing has them, so a click and the
   search find a moved molecule where it is drawn. The selection as yEd shows it (user, 2026-11-12: "i was wrong about silent
