@@ -28,6 +28,15 @@
       '    yrender.errors.clear()',
       "    svg = yrender.Map('/tmp/edit.graphml').svg()",
       '    return json.dumps([svg, list(yrender.errors)])'].join('\n');
+    // a CellDesigner map (2026-11-12, user: "basically yEd experience with CD"): edited as the GraphML that
+    // renderers/converter/cd_edit.py makes of it (its header says how), the moves written back into the CellDesigner file
+    // by it and the map drawn by cdrender, each part in a group of its own; text is that GraphML, cd.now the file
+    var CD_FILES = ['cdrender', 'cd_edit'], MAPCONV = ['annotation', 'cd_layout', 'cd_tidy', 'celldesigner', 'graphml', 'layout', 'model', 'report', 'style'];
+    var CD_DRIVER = ['import cd_edit', 'def cd_graphml(t):', '    return cd_edit.graphml(t)', 'def cd_draw(t, g):', '    return json.dumps(cd_edit.draw(t, g))'].join('\n');
+    var cdp = null, pyCd = null, cd = null, drawing = false;
+    function isCd(t) { return /<sbml[\s>]/.test(t.slice(0, 3000)) && t.indexOf('celldesigner') >= 0; }
+    function src() { return cd ? cd.now : text; }   // the map's own file as it is now
+    var ties = {};   // a process glyph's id -> the bend points that go with it (its segment's ends, CellDesigner)
     var box = document.getElementById('m2-editwin'), status = document.getElementById('m2-ed-status');
     var overlay = document.getElementById('m2-edit-layer');
     var py = null;                 // a promise of Python with the renderer, from the first edit
@@ -129,7 +138,8 @@
       clearTimeout(saveTimer); saveTimer = null;
       if (!site || !dirty || stuck) return Promise.resolve();
       if (saving) { saveAgain = true; return saving; }
-      var target = site, body = text;
+      if (drawing) { saveTimer = setTimeout(push, 300); return Promise.resolve(); }   // the last move not yet in the file
+      var target = site, body = src();
       say('Saving...');
       saving = api('/contents/' + target.path, { method: 'PUT', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: 'Moved in the viewer: ' + target.path.split('/').pop(), content: b64(body), sha: target.sha, branch: 'main' }) })
@@ -140,12 +150,12 @@
               if (kept && kept.id === target.id) kept.sha = target.sha;
               var sm = byId[target.id];
               if (sm) target.v = ver(sm);   // the site's version still without this move
-              if (lastSvg && site === target && text === body) {
+              if (lastSvg && site === target && src() === body) {
                 var all = stored();
                 all[target.id] = { v: target.v, sha: target.sha, svg: lastSvg, width: map.width, height: map.height, x0: x0, y0: y0, at: Date.now(), ref: siteRef, cur: nowRef() };
                 store(all);
               }
-              if (site === target && text === body) dirty = false;
+              if (site === target && src() === body) dirty = false;
               say('Saved. In about 2 minutes it is on the site, and this page updates by itself.');   // no clock time (user, 2026-11-12)
             } else if (r.status === 409 || r.status === 422) {
               // GitHub also refuses a save when its branch moved meanwhile (the site's build commits after each save,
@@ -194,6 +204,18 @@
       });
       py.catch(function (e) { py = null; say('The renderer did not load: ' + e); });
       return py;
+    }
+    function cdpy() {   // the CellDesigner side: cdrender, cd_edit and the converter's modules they import
+      if (cdp) return cdp;
+      cdp = python().then(function (p) {
+        var get = function (u, to) { return fetch(u).then(function (r) { if (!r.ok) throw u + ' not found'; return r.text(); }).then(function (t) { p.FS.writeFile(to, t); }); };
+        p.FS.mkdirTree('/home/pyodide/mapconv');
+        return Promise.all(CD_FILES.map(function (f) { return get('/renderers/converter/' + f + '.py', '/home/pyodide/' + f + '.py'); })
+          .concat(MAPCONV.map(function (f) { return get('/renderers/converter/mapconv/' + f + '.py', '/home/pyodide/mapconv/' + f + '.py'); })))
+          .then(function () { p.runPython(CD_DRIVER); pyCd = p; return p; });
+      });
+      cdp.catch(function (e) { cdp = null; say('The CellDesigner renderer did not load: ' + e); });
+      return cdp;
     }
 
     // the layout skill's tools (user, 2026-11-12): its own code, copied into renderers/layout/ and run here as it is, on the
@@ -276,6 +298,8 @@
                  pts: Array.prototype.slice.call(e.getElementsByTagNameNS(Y, 'Point')).map(function (p) { return pi.get(p); }),
                  smooth: e.getElementsByTagNameNS(Y, 'QuadCurveEdge').length > 0 || Array.prototype.some.call(e.getElementsByTagNameNS(Y, 'BendStyle'), function (b) { return b.getAttribute('smoothed') === 'true'; }) };
       });
+      ties = {};
+      points.forEach(function (p, i) { var w = p.getAttribute('with'); if (w) (ties[w] = ties[w] || []).push(i); });
     }
     function realizerOf(el) {   // the node's own yEd realizer (of a group: the one shown)
       for (var i = 0; i < el.children.length; i++) {
@@ -321,6 +345,7 @@
       var ps = new Set(selP);
       selE.forEach(function (k) { edges2[k].pts.forEach(function (p) { ps.add(p); }); });
       edges2.forEach(function (e) { if (all.has(e.s) && all.has(e.t)) e.pts.forEach(function (p) { ps.add(p); }); });
+      all.forEach(function (i) { (ties[nodes2[i].id] || []).forEach(function (p) { ps.add(p); }); });
       return { n: all, p: ps, dx: 0, dy: 0 };
     }
     function bx(i) { if (liveC && liveC[i]) return liveC[i]; var b = boxOf(i); return mv && mv.n.has(i) ? [b[0] + mv.dx, b[1] + mv.dy, b[2], b[3]] : b; }
@@ -344,8 +369,8 @@
       if (!Object.keys(out).length) liveC = null;
       liveDraw();
     }
-    function liveDraw() {   // the compartments' outlines and labels on the picture follow their live boxes
-      if (!gN) return;
+    function liveDraw() {   // the compartments' outlines and labels on the picture follow their live boxes (GraphML)
+      if (!gN || cd) return;
       if (liveOrig) Object.keys(liveOrig).forEach(function (i) { if (!liveC || !liveC[i]) undraw(+i); });
       if (!liveC) return;
       liveOrig = liveOrig || {};
@@ -428,16 +453,16 @@
       live = live || new Set();
       edges2.forEach(function (e, k) {
         var a = mv.n.has(e.s), b = mv.n.has(e.t), some = e.pts.some(function (p) { return mv.p.has(p); });
-        var g = gE[e.id];
-        if (!g || !(a || b || some)) return;
-        if (a && b) g.setAttribute('transform', tr);
-        else { g.style.display = 'none'; live.add(k); }
+        var gs = gE[e.id];   // a CellDesigner line has two groups, its halo's and its own
+        if (!gs || !(a || b || some)) return;
+        if (a && b) gs.forEach(function (g) { g.setAttribute('transform', tr); });
+        else { gs.forEach(function (g) { g.style.display = 'none'; }); live.add(k); }
       });
       return true;
     }
     function unshift() {   // the drawing as it was: a press that moved nothing leaves nothing hidden or shifted
       if (gN) Object.keys(gN).forEach(function (k) { gN[k].removeAttribute('transform'); });
-      if (gE) Object.keys(gE).forEach(function (k) { gE[k].removeAttribute('transform'); gE[k].style.display = ''; });
+      if (gE) Object.keys(gE).forEach(function (k) { gE[k].forEach(function (g) { g.removeAttribute('transform'); g.style.display = ''; }); });
       live = null; liveOff();
     }
     function move(dx, dy) {
@@ -470,9 +495,22 @@
     // the drawing: the renderer in the browser; the map keeps its place on screen when the drawing's edges change
     function render() {
       var t = ++ticket;
-      return python().then(function (p) {
-        var r = JSON.parse(p.globals.get('draw')(text));
+      drawing = true;
+      return (cd ? cdpy() : python()).then(function (p) {
+        var r;
+        if (cd) {   // the moves written into the CellDesigner file, drawn, and the GraphML made of it again
+          var q = JSON.parse(p.globals.get('cd_draw')(cd.base, text));
+          if (t !== ticket) return;
+          cd.now = q[1]; r = [q[0], []];
+          if (q[2] !== text && !drag) {   // the same map, its new bend points (a glyph moved) now its own
+            var ids = selN.map(function (i) { return nodes2[i].id; }), np = points.length;
+            text = q[2]; parse();
+            selN = ids.map(function (id) { return nodes2.findIndex(function (n) { return n.id === id; }); }).filter(function (i) { return i >= 0; });
+            if (points.length !== np) { selP = []; selE = []; }
+          }
+        } else r = JSON.parse(p.globals.get('draw')(text));
         if (t !== ticket) return;
+        drawing = false;
         if (r[1].length) say('Drawn with warnings: ' + r[1].join('; '));
         var svg = r[0]; lastSvg = svg; var m = svg.match(/<g transform="translate\(([-\d.]+),([-\d.]+)\)">/);
         var w = svg.match(/ width="([\d.]+)" height="([\d.]+)"/);
@@ -487,15 +525,21 @@
           if (old.indexOf('blob:') === 0) URL.revokeObjectURL(old);
           gN = {}; gE = {}; live = null; liveC = null; liveOrig = null;
           pic.querySelectorAll('[data-n]').forEach(function (g) { gN[g.getAttribute('data-n')] = g; });
-          pic.querySelectorAll('[data-e]').forEach(function (g) { gE[g.getAttribute('data-e')] = g; });
+          pic.querySelectorAll('[data-e]').forEach(function (g) { var k = g.getAttribute('data-e'); (gE[k] = gE[k] || []).push(g); });
           if (first) fit(); else draw();
           if (!r[1].length && !site) say(name + (dirty ? ' (not saved)' : ''));
           else if (!r[1].length && site && !saveTimer && !saving && !dirty) say(site.pending ? 'Editing ' + map.title + '. Connect to GitHub below so the moves are saved to the site.' : 'Editing ' + map.title + '. Every move is saved to the site by itself.');
         })();
-      }).catch(function (e) { if (t === ticket) say('Not drawn: ' + (e && e.message ? e.message.split('\n').slice(-2).join(' ') : e)); });
+      }).catch(function (e) { if (t === ticket) { drawing = false; say('Not drawn: ' + (e && e.message ? e.message.split('\n').slice(-2).join(' ') : e)); } });
     }
-    function start(t, n, h, s, same) {   // same: { width, height, x0, y0, scale } of the picture on screen, drawn from this very text
-      try { text = t; parse(); } catch (e) { say('Cannot edit ' + n + ': ' + e); return; }
+    function start(t, n, h, s, same) {   // a CellDesigner file is first made into the GraphML the editor edits
+      if (!isCd(t)) { cd = null; return begin(t, t, n, h, s, same); }
+      say('Opening ' + n + '...');
+      return cdpy().then(function (p) { cd = { base: t, now: t }; begin(p.globals.get('cd_graphml')(t), t, n, h, s, same); })
+        .catch(function (e) { say('Cannot edit ' + n + ': ' + e); });
+    }
+    function begin(g, t, n, h, s, same) {   // same: { width, height, x0, y0, scale } of the picture on screen, drawn from this very file
+      try { text = g; parse(); } catch (e) { say('Cannot edit ' + n + ': ' + e); return; }
       siteRef = null; name = n; handle = h; site = s || null; if (site) site.base = t; stuck = false; dirty = false; undo = []; redo = []; selN = []; selP = []; selE = [];
       map = { id: 'edit', title: n, width: 0, height: 0, scale: 1, downloads: [] };
       if (same) {   // editing starts on the picture as it is: no redraw, the map stays where it is (user, 2026-11-12)
@@ -514,12 +558,12 @@
     function stop() {
       if (!on) return;
       if (saveTimer) push();   // a move still waiting is saved now
-      if (site && site.id && undo.length) kept = { id: site.id, v: site.v, sha: site.sha, pic: img, width: map.width, height: map.height, x0: x0, y0: y0, text: text, ref: siteRef, cur: nowRef() };
+      if (site && site.id && undo.length) kept = { id: site.id, v: site.v, sha: site.sha, pic: img, width: map.width, height: map.height, x0: x0, y0: y0, text: src(), ref: siteRef, cur: nowRef() };
       on = false; drag = null; band = null; grid.classList.remove('m2-editing'); paint(); buttons();
       say(dirty && !site ? name + ' has moves not saved: Back to it, or Save.' : 'Edit the map shown.');
     }
     function buttons() {
-      ['#m2-ed-save', '#m2-ed-undo', '#m2-ed-redo', '#m2-ed-tidy-grid', '#m2-ed-tidy-pack'].forEach(function (k) { box.querySelector(k).disabled = !on; });
+      ['#m2-ed-save', '#m2-ed-undo', '#m2-ed-redo', '#m2-ed-tidy-grid', '#m2-ed-tidy-pack'].forEach(function (k) { box.querySelector(k).disabled = !on || !!(cd && /tidy/.test(k)); });   // the layout skill's tools: GraphML only
       box.querySelector('#m2-ed-save').hidden = !!site;   // a map of the site saves by itself
       ghForm(!!(on && site && !token()));
       box.querySelector('#m2-ed-back').hidden = on || !text;
@@ -533,20 +577,20 @@
       grid.classList.toggle('m2-edit-off', off);
       if (off && win === 'edit') { win = 'list'; railMark(); }
     }
-    function graphmlOf(m) {   // a map drawn from its GraphML: that file is first in its downloads
+    function graphmlOf(m) {   // a map drawn from its own file, GraphML or CellDesigner (2026-11-12): that file is first in its downloads
       var d = m && m.downloads && m.downloads[0];
-      return d && d.label === 'GraphML' ? d.url : null;
+      return d && (d.label === 'GraphML' || d.label === 'CellDesigner') ? d.url : null;
     }
 
     function save() {
       if (!text) return;
       if (site) { if (token()) push(); return; }
-      var blob = new Blob([text], { type: 'application/xml' });
+      var blob = new Blob([src()], { type: 'application/xml' });
       var done = function () { dirty = false; say('Saved ' + name + '.'); };
       var into = function (h) { return h.createWritable().then(function (w) { return w.write(blob).then(function () { return w.close(); }); }).then(done); };
       if (handle) return into(handle).catch(function (e) { say('Not saved: ' + e.message); });
       if (window.showSaveFilePicker) {
-        return window.showSaveFilePicker({ suggestedName: name, types: [{ description: 'yEd GraphML', accept: { 'application/xml': ['.graphml'] } }] })
+        return window.showSaveFilePicker({ suggestedName: name, types: [cd ? { description: 'CellDesigner', accept: { 'application/xml': ['.xml'] } } : { description: 'yEd GraphML', accept: { 'application/xml': ['.graphml'] } }] })
           .then(function (h) { handle = h; name = h.name; return into(h); })
           .catch(function (e) { if (e.name !== 'AbortError') say('Not saved: ' + e.message); });
       }
@@ -568,7 +612,7 @@
       var sitePub = fetch(url, { cache: 'no-cache' }).then(function (r) { return r.text(); });
       var siteFrame = fetch(m.image + ver(m)).then(function (r) { return r.text(); }).then(function (svg) {
         var t = svg.match(/<g transform="translate\(([-\d.]+),([-\d.]+)\)">/), w = svg.match(/ width="([\d.]+)" height="([\d.]+)"/);
-        return t && w ? { width: parseFloat(w[1]), height: parseFloat(w[2]), x0: -parseFloat(t[1]), y0: -parseFloat(t[2]), scale: 1 } : null;
+        return w ? { width: parseFloat(w[1]), height: parseFloat(w[2]), x0: t ? -parseFloat(t[1]) : 0, y0: t ? -parseFloat(t[2]) : 0, scale: 1 } : null;   // a CellDesigner drawing: no offset
       }).catch(function () { return null; });
       var published = k && k.text ? Promise.resolve(k.text) : sitePub;
       var frame = k ? Promise.resolve({ width: k.width, height: k.height, x0: k.x0, y0: k.y0, scale: 1 }) : siteFrame;
@@ -576,9 +620,10 @@
         return Promise.all([published, frame, sitePub, siteFrame]).then(function (r) {
           var same = r[1] && img === shownPic && current === m ? Object.assign({}, r[1], { text: r[0] }) : null;
           if (s) { s.id = m.id; s.v = ver(m); }
-          start(t, file, null, s, same);
-          siteRef = r[3] ? baseOf(r[2], r[3]) : null;
-          map.title = m.title; document.getElementById('m2-title').textContent = m.title;
+          return Promise.resolve(start(t, file, null, s, same)).then(function () {
+            siteRef = r[3] ? baseOf(isCd(r[2]) && pyCd ? pyCd.globals.get('cd_graphml')(r[2]) : r[2], r[3]) : null;
+            map.title = m.title; document.getElementById('m2-title').textContent = m.title;
+          });
         });
       };
       var fromSite = function (s) { return published.then(function (t) { return go(t, s); }); };
@@ -788,7 +833,7 @@
           var el = document.createElementNS('http://www.w3.org/2000/svg', 'path');
           el.setAttribute('class', 'm2-ed-dark'); el.setAttribute('d', shapeD(i, true));
           var first = g.firstElementChild && g.firstElementChild.localName === 'a' ? g.firstElementChild : g;
-          var shapes = first.querySelectorAll(':scope > path'), last = shapes.length ? shapes[shapes.length - 1] : null;
+          var shapes = first.querySelectorAll(cd ? ':scope > path, :scope > rect, :scope > ellipse, :scope > polygon' : ':scope > path'), last = shapes.length ? shapes[shapes.length - 1] : null;
           if (last) last.after(el); else first.prepend(el);
         } else if (n.kids.length) {   // no drawing of the editor's yet: handles only for a group
         } else out.push(frame + '<path class="m2-ed-dark" d="' + shapeD(i) + '"/></g>');

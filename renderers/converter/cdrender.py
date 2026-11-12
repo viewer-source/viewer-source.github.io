@@ -23,6 +23,12 @@ ROUND = ('SIMPLE_MOLECULE', 'ION', 'DRUG', 'UNKNOWN', 'DEGRADED')
 # --roles beside their colours, so a colour scheme (the viewer's Settings, Map colours) can recolour them; off, the
 # output is unchanged. Compartments keep their colours (their lines are drawn in it too).
 CLASSES = False
+# GROUPS (set by the viewer's editor): each compartment and alias in a group of its own (data-n, its id), each line of a
+# reaction with its heads in one (data-e: <reaction>|a reactant to process glyph, |b process glyph to product, |m<i> a
+# modifier, |r<i> and |p<i> an added reactant or product; its white halo in a group of the same name), the process glyph
+# in one (data-n <reaction>|proc), the main line split at the glyph, the whole in <g transform="translate(0,0)">: so the
+# editor moves each part while a drag runs. Off, the output is unchanged.
+GROUPS = False
 ROLE = {'PROTEIN': 'protein', 'RECEPTOR': 'protein', 'ION_CHANNEL': 'protein', 'TRUNCATED': 'protein',
         'COMPLEX': 'complex', 'SIMPLE_MOLECULE': 'metabolite', 'ION': 'metabolite', 'DRUG': 'metabolite',
         'GENE': 'gene', 'RNA': 'gene', 'ANTISENSE_RNA': 'gene'}
@@ -150,6 +156,8 @@ class Drawing:
             b = self.f(a, 'cd:bounds')
             if b is None:
                 continue
+            if GROUPS:
+                self.out.append('<g data-n="%s">' % escape(a.get('id')))
             x, y, w, h = (float(b.get(k)) for k in 'xywh')
             dl = self.f(a, 'cd:doubleLine')
             t = float(dl.get('thickness', 12)) if dl is not None else 12
@@ -177,6 +185,8 @@ class Drawing:
             if np_ is not None:
                 for k, line in enumerate(self.name_lines(self.cnames.get(a.get('compartment'), ''))):
                     self.text(line, float(np_.get('x')), float(np_.get('y')) + 15.5 + 14 * k, anchor='start')
+            if GROUPS:
+                self.out.append('</g>')
 
     def NS(self):
         return NS
@@ -198,7 +208,11 @@ class Drawing:
             return depth[i]
         order = sorted(self.alias, key=lambda i: (self.alias[i][0] != 'COMPLEX', d(i)))
         for i in order:
+            if GROUPS:
+                self.out.append('<g data-n="%s">' % escape(i))
             self.node(i)
+            if GROUPS:
+                self.out.append('</g>')
 
     def node(self, i):
         cls, (x, y, w, h), a, name, si = self.alias[i]
@@ -345,6 +359,14 @@ class Drawing:
         cls = self.alias[i][0]
         return leave(outline(cls, self.box(i)), P, Q)
 
+    def open(self, e):  # a group of the editor's (GROUPS) for one line, in the lines and in their halo
+        if GROUPS:
+            self.lines.append('<g data-e="%s">' % escape(e)); self.halo.append('<g data-e="%s">' % escape(e))
+
+    def close(self):
+        if GROUPS:
+            self.lines.append('</g>'); self.halo.append('</g>')
+
     def path(self, p, colour_='#000', width=1.0, dash=False, start_node=True, end_node=True):
         # dash: False, True (6,4) or a pattern: transcription dash-dot-dot, translation dash-dot (CellDesigner's PDF)
         # a line: a white halo under it (CellDesigner's, so crossings read), shortened at nodes
@@ -432,8 +454,10 @@ class Drawing:
                     'NEGATIVE_INFLUENCE': 'inhibition', 'REDUCED_MODULATION': 'modulation', 'REDUCED_TRIGGER': 'trigger',
                     'POSITIVE_INFLUENCE': 'production', 'CATALYSIS': 'catalysis', 'INHIBITION': 'inhibition'}.get(typ.replace('UNKNOWN_', ''), 'production')
             u = unit(line[-1][0] - line[-2][0], line[-1][1] - line[-2][1])
+            self.open(self.cur + '|a')
             stop = self.head(kind, line[-1], u)
             self.path(line[:-1] + [stop], col, width, dash)
+            self.close()
             return
         cs = f(x, 'cd:connectScheme')
         k = int(cs.get('rectangleIndex', 0)) if cs is not None else 0
@@ -444,6 +468,20 @@ class Drawing:
         reversible = rx.get('reversible') != 'false'
         # the main line: reactant to product, the head at the product (and the reactant if reversible)
         u = unit(line[-1][0] - line[-2][0], line[-1][1] - line[-2][1])
+        if GROUPS:  # split at the process glyph, each half with its own head
+            self.open(self.cur + '|a')
+            half = line[:k + 1] + [sq]
+            if reversible:
+                half[0] = self.head('production', line[0], unit(line[0][0] - line[1][0], line[0][1] - line[1][1]))
+            self.path(half, col, width, dash, end_node=False)
+            self.close()
+            self.open(self.cur + '|b')
+            half = [sq] + line[k + 1:]
+            half[-1] = self.head('production', line[-1], u)
+            self.path(half, col, width, dash, start_node=False)
+            self.close()
+            self.links_and_modifiers(x, P, Q, sq, fl, col, width, dash, typ)
+            return
         main = list(line)
         main[-1] = self.head('production', line[-1], u)
         if reversible:
@@ -543,10 +581,11 @@ class Drawing:
         # added reactants and products join the square's segment at 3/8 and 5/8 of its ends' anchors
         joins = [(P[0] + t * (Q[0] - P[0]), P[1] + t * (Q[1] - P[1])) for t in (0.375, 0.625)]
         for tag, into in (('cd:listOfReactantLinks/cd:reactantLink', True), ('cd:listOfProductLinks/cd:productLink', False)):
-            for l in x.iterfind(tag, NS):
+            for n_, l in enumerate(x.iterfind(tag, NS)):
                 i = l.get('alias')
                 if i not in self.alias:
                     continue
+                self.open('%s|%s%d' % (self.cur, 'r' if into else 'p', n_))
                 O, anc = self.end(l, i)
                 J = joins[0 if into else 1]
                 bends = [from_frame(O, J, p) if into else from_frame(J, O, p) for p in edit_points(l.get('editPoints') or l.findtext('cd:editPoints', '', NS))]
@@ -561,6 +600,7 @@ class Drawing:
                     w_ = unit(seq[-1][0] - seq[-2][0], seq[-1][1] - seq[-2][1])
                     stop = self.head('production', seq[-1], w_)
                     self.path(seq[:-1] + [stop], lcol, width, dash, start_node=False)
+                self.close()
         # modifiers end at the point of the square targetLineIndex names
         gate_inputs = set()
         mods = list(x.iterfind('cd:listOfModification/cd:modification', NS))
@@ -573,7 +613,7 @@ class Drawing:
                  'TRANSCRIPTIONAL_INHIBITION': 'inhibition', 'TRANSLATIONAL_ACTIVATION': 'stimulation',
                  'TRANSLATIONAL_INHIBITION': 'inhibition'}
         squares = []
-        for m in mods:
+        for n_, m in enumerate(mods):
             t = m.get('type')
             a_ = m.get('aliases')
             spot = SQUARE.get(int(m.get('targetLineIndex', '-1,2').split(',')[1]), SQUARE[3])
@@ -605,6 +645,7 @@ class Drawing:
                 continue
             lt = f(m, 'cd:linkTarget')
             M, anc = self.end(lt, a_)
+            self.open('%s|m%d' % (self.cur, n_))
             bends = [from_frame(M, T, p) for p in edit_points(m.get('editPoints'))]
             seq = [M] + bends + [T]
             seq[0] = self.clip(a_, M, anc, seq[1])
@@ -612,6 +653,7 @@ class Drawing:
             stop = self.head(HEADS.get(t, 'stimulation'), T, u)
             mc = f(m, 'cd:line')
             self.path(seq[:-1] + [stop], colour(mc.get('color'))[0] if mc is not None else col, width, t.startswith('UNKNOWN'), end_node=False)
+            self.close()
         # the process glyph: a 10 px square along the line, over the lines
         ang = math.degrees(math.atan2(fl[1], fl[0]))
         glyph = '<rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(%s,%s) rotate(%s)"/>' % (
@@ -619,7 +661,7 @@ class Drawing:
         mark = {'UNKNOWN_TRANSITION': '?', 'KNOWN_TRANSITION_OMITTED': '//'}.get(typ)
         if mark:  # Times bold 10, upright
             glyph += '<text x="%s" y="%s" font-family="\'Times New Roman\', serif" font-weight="bold" font-size="10" text-anchor="middle">%s</text>' % (fmt(sq[0]), fmt(sq[1] + 3), mark)
-        self.lines.append(glyph)
+        self.lines.append('<g data-n="%s|proc">%s</g>' % (escape(self.cur), glyph) if GROUPS else glyph)
         if self.cur:
             self.hit_reactions.setdefault(self.cur, {'lines': [], 'at': None})['at'] = [round(sq[0], 1), round(sq[1], 1)]
         self.lines.extend(squares)
@@ -646,9 +688,10 @@ class Drawing:
         self.reactions()
         return ('<?xml version="1.0" encoding="UTF-8"?>\n'
                 '<svg xmlns="http://www.w3.org/2000/svg" width="%s" height="%s" viewBox="0 0 %s %s">\n'
-                '<rect width="100%%" height="100%%" fill="#fff"/>\n%s\n'
-                '<g fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">\n%s\n</g>\n%s\n</svg>\n'
-                % (fmt(self.W), fmt(self.H), fmt(self.W), fmt(self.H), '\n'.join(self.out), '\n'.join(self.halo), '\n'.join(self.lines)))
+                '<rect width="100%%" height="100%%" fill="#fff"/>\n%s%s\n'
+                '<g fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">\n%s\n</g>\n%s\n%s</svg>\n'
+                % (fmt(self.W), fmt(self.H), fmt(self.W), fmt(self.H), '<g transform="translate(0,0)">\n' if GROUPS else '',
+                   '\n'.join(self.out), '\n'.join(self.halo), '\n'.join(self.lines), '</g>\n' if GROUPS else ''))
 
 
 def rrect(x, y, w, h, r):

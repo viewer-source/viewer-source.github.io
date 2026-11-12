@@ -35,6 +35,6 @@ exclude:
   - VERSION
   - build.py
   - maps
-  - renderers/converter   # renderers/yrender/yrender.py is published: the editor runs it in the browser
+  # renderers/ is published: the editor runs yrender, cdrender, cd_edit and the converter modules in the browser
   - databases.py
   - cache
