@@ -180,7 +180,11 @@ says "the workbench", "the converter's repository", "a private repository".
   lines before): a copy of the renderer's own group of that arc, so its colour, width and dashes stay, its line through
   the new places and what is drawn at each end (arrowhead, circle, bar) carried to that end and turned as its end segment
   turned; the original hidden, the copy kept after the release until the renderer has drawn the map again (under a
-  second), so nothing jumps. The same for the arrow keys. Plain lines only before the editor's drawing is in the page. Until that drawing is in the
+  second), so nothing jumps. Every point of the copy goes with the segment it lies nearest to (within 15 units of a
+  segment's end it keeps its distance from that end, else its share of the segment), so a line drawn in two pieces or a
+  mark midway stays on the line (user, 2026-11-13: a short second line showed beside a CellDesigner reaction). A
+  CellDesigner glyph following its segment also turns with it, and the lines meeting it turn with it: an added reactant
+  or product at its share of the segment, a modifier at its spot round the glyph, as cd_edit places them. The same for the arrow keys. Plain lines only before the editor's drawing is in the page. Until that drawing is in the
   page (just after editing starts) a dashed outline shows where a drag goes. Guides for a bend point (user, 2026-11-12,
   as yEd's for an L-shaped bend): the bend pressed snaps (6 px on screen) when one of its two segments is nearly level or
   upright, and each segment so lined up is drawn as a thick grey line while the drag runs. A press whose release never comes (a right

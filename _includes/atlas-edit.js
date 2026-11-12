@@ -506,7 +506,15 @@
       var k = ea.pts.length, n = all.length - 1, a = all[k], b = all[k + 1];
       if (k === 0) a = cut(all[0], all[1], S);
       if (k + 1 === n) b = cut(all[n], all[n - 1], T);
-      return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+      return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, Math.atan2(b[1] - a[1], b[0] - a[0]), Math.hypot(b[0] - a[0], b[1] - a[1])];
+    }
+    // where a line meets a glyph that follows its segment: CellDesigner ties the meeting points to the segment, an added
+    // reactant or product at a share of it (turned and stretched with it), a modifier at a spot round the glyph (turned)
+    function glyphPort(i, off, eid) {
+      var L = liveG && liveG[i];
+      if (!L || (!L[2] && L[3] === 1)) return off;
+      var c = Math.cos(L[2]), s2 = Math.sin(L[2]), f = /\|[rp]\d+$/.test(eid) ? L[3] : 1;
+      return [f * (c * off[0] - s2 * off[1]), f * (s2 * off[0] + c * off[1])];
     }
     // the glyphs whose segment moves: shifted by how far their middle moved (the same reckoning before and now, so a
     // glyph does not jump at the start), their lines drawn live. ns, ps: the nodes and bend points moving; back: how far
@@ -523,13 +531,14 @@
         var port = pp && pp.to && (pp.k === q.a || pp.k === q.b);
         if (!(port || ns.has(ea.s) || ns.has(eb.t) || ea.pts.concat(eb.pts).some(function (p) { return ps.has(p); }))) return;
         var a = glyphMid(q, bx, pt, pp), b = glyphMid(q, rest, restP);
-        out[q.g] = [a[0] - b[0], a[1] - b[1]]; any = true;
+        out[q.g] = [a[0] - b[0], a[1] - b[1], isFinite(a[2] - b[2]) && b[3] ? a[2] - b[2] : 0, b[3] ? a[3] / b[3] : 1, b]; any = true;
       });
       if (old) Object.keys(old).forEach(function (i) { if (!out[i]) { var g = gN[nodes2[i].id]; if (g) g.removeAttribute('transform'); } });
       if (!any) return;
       liveG = out; live = live || new Set();
       Object.keys(out).forEach(function (i) {
-        var g = gN[nodes2[i].id]; if (g) g.setAttribute('transform', 'translate(' + out[i][0] + ' ' + out[i][1] + ')');
+        var o2 = out[i], c0 = o2[4], g = gN[nodes2[i].id];   // moved with its middle and turned with its segment
+        if (g) g.setAttribute('transform', 'translate(' + f1(c0[0] + o2[0]) + ' ' + f1(c0[1] + o2[1]) + ') rotate(' + f1(o2[2] * 180 / Math.PI) + ') translate(' + f1(-c0[0]) + ' ' + f1(-c0[1]) + ')');
         edges2.forEach(function (e, k) {
           if (e.s !== +i && e.t !== +i) return;
           var gs = gE[e.id]; if (gs) gs.forEach(function (x) { x.style.display = 'none'; });
@@ -923,9 +932,11 @@
         if (pp && pp.to && pp.k === k && (pp.end ? 't' : 's') === a[0]) return pp.to[a[1] === 'x' ? 0 : 1];
         return pa ? parseFloat(pa.getAttribute(a)) || 0 : 0;
       };
-      var pts = [[S[0] + S[2] / 2 + o('sx'), S[1] + S[3] / 2 + o('sy')]];
+      var so = [o('sx'), o('sy')], to = [o('tx'), o('ty')];
+      if (B === bx) { so = glyphPort(e.s, so, e.id); to = glyphPort(e.t, to, e.id); }
+      var pts = [[S[0] + S[2] / 2 + so[0], S[1] + S[3] / 2 + so[1]]];
       e.pts.forEach(function (pi) { pts.push(P(pi)); });
-      pts.push([T[0] + T[2] / 2 + o('tx'), T[1] + T[3] / 2 + o('ty')]);
+      pts.push([T[0] + T[2] / 2 + to[0], T[1] + T[3] / 2 + to[1]]);
       pts[0] = cut(pts[0], pts[1], S);
       pts[pts.length - 1] = cut(pts[pts.length - 1], pts[pts.length - 2], T);
       return pts;
@@ -951,20 +962,30 @@
     var copies = [], frozen = false;
     function restBox(i) { var b = boxOf(i), k = keyed && keyed.n.has(i); return k ? [b[0] - keyed.dx, b[1] - keyed.dy, b[2], b[3]] : b; }
     function restPt(pi) { var p = points[pi], k = keyed && keyed.p && keyed.p.has(pi); return [num(p, 'x') - (k ? keyed.dx : 0), num(p, 'y') - (k ? keyed.dy : 0)]; }
-    function rigid(a0, b0, a1, b1) {   // the move taking point a0 with direction a0 -> b0 to a1 with a1 -> b1
-      var t = Math.atan2(b1[1] - a1[1], b1[0] - a1[0]) - Math.atan2(b0[1] - a0[1], b0[0] - a0[0]);
-      if (!isFinite(t) || (b0[0] === a0[0] && b0[1] === a0[1]) || (b1[0] === a1[0] && b1[1] === a1[1])) t = 0;
-      var c = Math.cos(t), s2 = Math.sin(t);
-      return { at: function (q) { var x = q[0] - a0[0], y = q[1] - a0[1]; return [a1[0] + c * x - s2 * y, a1[1] + s2 * x + c * y]; },
-               tr: 'translate(' + f1(a1[0]) + ' ' + f1(a1[1]) + ') rotate(' + f1(t * 180 / Math.PI) + ') translate(' + f1(-a0[0]) + ' ' + f1(-a0[1]) + ')' };
-    }
-    function verts(el) {   // the first and the last point of a drawn line
-      var v = (el.getAttribute(el.localName === 'polyline' ? 'points' : 'd') || '').match(/-?[\d.]+(?:e-?\d+)?/g) || [];
-      return v.length < 4 ? null : [[+v[0], +v[1]], [+v[v.length - 2], +v[v.length - 1]]];
-    }
     function dropCopies() {   // the copies taken away, an original shown again unless its arc still follows a move
       copies.forEach(function (c) { c[0].remove(); if (!(live && live.has(c[2]))) c[1].style.display = ''; });
       copies = [];
+    }
+    // a point of the old drawing of an arc taken to the new one: it goes with the segment it lies nearest to, at the
+    // same side distance; along it, within 15 units of a segment's end it keeps its distance from that end (arrowheads,
+    // rounded bends, a line's cut end), else its share of the segment (a mark midway, a line drawn in two pieces)
+    function follow(o, n) {
+      var seg = [];
+      for (var i = 1; i < o.length; i++) {
+        var a = o[i - 1], b = o[i], L = Math.hypot(b[0] - a[0], b[1] - a[1]), a1 = n[i - 1], b1 = n[i], L1 = Math.hypot(b1[0] - a1[0], b1[1] - a1[1]);
+        seg.push({ a: a, L: L, u: L ? [(b[0] - a[0]) / L, (b[1] - a[1]) / L] : [1, 0], a1: a1, L1: L1, u1: L1 ? [(b1[0] - a1[0]) / L1, (b1[1] - a1[1]) / L1] : (L ? [(b[0] - a[0]) / L, (b[1] - a[1]) / L] : [1, 0]) });
+      }
+      return function (p) {
+        var best = null, bd = Infinity;
+        seg.forEach(function (S, k) {
+          var x = p[0] - S.a[0], y = p[1] - S.a[1], t = x * S.u[0] + y * S.u[1], c = Math.max(0, Math.min(S.L, t));
+          var d = Math.hypot(x - c * S.u[0], y - c * S.u[1]) + (t < 0 && k > 0 ? 1e-6 : 0);
+          if (d < bd) { bd = d; best = [S, t, -x * S.u[1] + y * S.u[0]]; }
+        });
+        var S = best[0], t = best[1], w = best[2];
+        var t1 = t <= 15 || S.L <= 0 ? t : S.L - t <= 15 ? S.L1 - (S.L - t) : t * S.L1 / S.L;
+        return [S.a1[0] + t1 * S.u1[0] - w * S.u1[1], S.a1[1] + t1 * S.u1[1] + w * S.u1[0]];
+      };
     }
     function fullLines(ks, pp) {   // ks: the arcs to draw (indices in edges2), pp: a port being dragged
       dropCopies();
@@ -973,25 +994,29 @@
         if (!gs) return;
         var o = line(k, restBox, restPt), n = line(k, null, null, pp);
         if (!o || !n) return;
-        var L = o.length - 1, A = rigid(o[0], o[1], n[0], n[1]), Z = rigid(o[L], o[L - 1], n[L], n[L - 1]);
+        var F = follow(o, n), pair = function (str) {   // every x y of an attribute taken along
+          var v = str.match(/-?[\d.]+(?:e-?\d+)?/g) || [], k2 = 0;
+          return str.replace(/-?[\d.]+(?:e-?\d+)?/g, function (m) {
+            var j = k2++; if (j % 2) return f1(F([+v[j - 1], +v[j]])[1]); return f1(F([+v[j], +v[j + 1]])[0]);
+          });
+        };
         gs.forEach(function (g) {
           g.style.display = 'none';
-          var c = g.cloneNode(true), main = null;
+          var c = g.cloneNode(true);
           c.removeAttribute('data-e'); c.style.display = ''; c.classList.add('m2-ed-copy');
           c.querySelectorAll('.m2-ed-hl').forEach(function (x) { x.remove(); });
           g.parentNode.insertBefore(c, g.nextSibling); copies.push([c, g, k]);
-          Array.prototype.forEach.call(c.children, function (el) {
-            var line0 = el.localName === 'polyline' || (el.localName === 'path' && el.getAttribute('fill') === 'none');
-            if (line0 && !main) {
-              main = el; var v = verts(el); if (!v) return;
-              var q = [A.at(v[0])].concat(n.slice(1, L), [Z.at(v[1])]);
-              if (el.localName === 'polyline') el.setAttribute('points', q.map(function (p) { return f1(p[0]) + ',' + f1(p[1]); }).join(' '));
-              else el.setAttribute('d', roundPath(q, e.smooth, function (p) { return f1(p[0]) + ' ' + f1(p[1]); }));
-              return;
+          c.querySelectorAll('*').forEach(function (el) {
+            var nm = el.localName;
+            if ((nm === 'polyline' || nm === 'polygon') && !el.getAttribute('transform')) el.setAttribute('points', pair(el.getAttribute('points') || ''));
+            else if (nm === 'path' && !el.getAttribute('transform') && /^[MLQCZ\s\d.,e-]*$/.test(el.getAttribute('d') || '')) el.setAttribute('d', pair(el.getAttribute('d')));
+            else if (nm === 'line') { var q1 = F([+el.getAttribute('x1'), +el.getAttribute('y1')]), q2 = F([+el.getAttribute('x2'), +el.getAttribute('y2')]);
+              el.setAttribute('x1', f1(q1[0])); el.setAttribute('y1', f1(q1[1])); el.setAttribute('x2', f1(q2[0])); el.setAttribute('y2', f1(q2[1])); }
+            else if (nm !== 'g' && nm !== 'title' && nm !== 'tspan') {   // anything else (a circle, a rect, a text) moved by its centre
+              var b; try { b = el.getBBox(); } catch (x) { return; }
+              var m = [b.x + b.width / 2, b.y + b.height / 2], q = F(m);
+              el.setAttribute('transform', 'translate(' + f1(q[0] - m[0]) + ' ' + f1(q[1] - m[1]) + ')' + (el.getAttribute('transform') ? ' ' + el.getAttribute('transform') : ''));
             }
-            var b; try { b = el.getBBox(); } catch (x) { return; }
-            var m = [b.x + b.width / 2, b.y + b.height / 2], R = Math.hypot(m[0] - o[0][0], m[1] - o[0][1]) < Math.hypot(m[0] - o[L][0], m[1] - o[L][1]) ? A : Z;
-            el.setAttribute('transform', R.tr + (el.getAttribute('transform') ? ' ' + el.getAttribute('transform') : ''));
           });
         });
       });
