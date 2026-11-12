@@ -103,7 +103,8 @@ says "the workbench", "the converter's repository", "a private repository".
   no tab highlighted; its cross or any tab goes back. First in the styles' Default Icon Row.
 - Map colours (user, 2026-11-12, in Settings after Map size): File (the colours in the map's file, the default), then
   Default, Paper and frost, Mono moss, Steel and Grey (user, 2026-11-12: the colourful ones for testing, Grey not very useful; a
-  few to be chosen with more care later), kept in the reader's browser (`atlas-map-colours`), for every map; shown only for a map whose entry has
+  few to be chosen with more care later; no red highlight in any scheme, highlighted proteins in the protein colour, only
+  File keeps the file's red), kept in the reader's browser (`atlas-map-colours`), for every map; shown only for a map whose entry has
   `colours` (its picture drawn with the role classes). The renderers write each fill's role beside its colour (yrender
   and cdrender `CLASSES`, set by build.py and the editor; off by default, so their copies elsewhere draw byte-identical);
   a scheme is a `<style>` put into the picture's text in the browser, no second picture per map. Downloads keep the
