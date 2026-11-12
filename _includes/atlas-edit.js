@@ -1109,6 +1109,13 @@
       if (!there && h.p != null && selE.some(function (q) { return edges2[q].pts.indexOf(h.p) >= 0; })) {
         keepE = selE.slice(); selN = []; selE = []; selP = [h.p]; list = selP; there = true;
       }
+      // a first click on a bend point of a line not selected selects the whole line, as a click anywhere on it (user,
+      // 2026-11-12: "let's make it consistent": a line selected first, its bend points then moved with the next press);
+      // a bend point alone is selected only by an area or Shift with a click
+      if (!there && h.p != null && !keepE) {
+        var ak = edges2.findIndex(function (q) { return q.pts.indexOf(h.p) >= 0; });
+        if (ak >= 0) { selN = []; selP = []; selE = [ak]; paint(); return; }
+      }
       // the first click selects, a drag moves only what is selected already (user, 2026-11-12: as yEd, "first click
       // selects an item, and second click drags it")
       if (!there) { selN = h.n != null ? [k] : []; selP = h.p != null ? [k] : []; selE = h.e != null ? [k] : []; paint(); return; }
