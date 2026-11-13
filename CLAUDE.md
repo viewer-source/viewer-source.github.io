@@ -537,9 +537,10 @@ says "the workbench", "the converter's repository", "a private repository".
   Atlas site's copy, was lost when that copy was replaced): a map's `source` in the site's index gives its list item the
   class `m2-src-<source>`; curation blue (the accent), omnipath green (`--m2-src-omnipath`), reactome-recon purple
   (`--m2-src-reactome-recon`), the name and a draft tag, white on the chosen map (`atlas-tags.css`).
-- Format tags in the list (user, 2026-11-14, option G of the previews; E, xml yed sbgn at 8 px #c8c8c8, live first,
-  looked thick and blurred): one letter, C (CellDesigner), Y (GraphML), S (SBGN-ML), 10 px in a thin weight (300) and a
-  stronger grey (#a0a0a0), no container, left of a map's name; a colour code is in the user's mind as the nicest way, in the group's indent, read
-  from the map's first download's label (the viewer still reads no file format itself); the list's box reaches 10 px
-  into the panel's margin so the tag fits and nothing in the list moves (`atlas-tags.css`). None on a map in no group or
-  on narrow windows (no room).
+- Format tags in the list (user, 2026-11-14): a small letter in a thin grey circle, as an info icon, left of a map's
+  name in the group's indent: c (CellDesigner), y (GraphML), s (SBGN-ML), read from the map's first download's label (the
+  viewer still reads no file format itself). Tried before the same day: E, xml yed sbgn at 8 px (thick and blurred), G,
+  one capital letter. A colour code is the user's idea for later: a grey circle for GraphML, the base, blue for SBGN,
+  green for CellDesigner (a normal green, not CellDesigner's bright default). The list's box reaches 10 px into the
+  panel's margin so the tag fits and nothing in the list moves (`atlas-tags.css`). None on a map in no group or on
+  narrow windows (no room).
