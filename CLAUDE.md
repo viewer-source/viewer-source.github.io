@@ -159,7 +159,7 @@ says "the workbench", "the converter's repository", "a private repository".
   in yEd), the first click selects and a drag moves only what is selected already (user, 2026-11-12, as yEd: "first click selects an item, and second click drags it"; the plan: mimic yEd's behaviour in general); a connector is different (user, 2026-11-12, checked in yEd): once an arc is selected, its parts (its two ends, its bend points) are dragged with the next press, no click of their own, the arc staying selected. Gestures as in view mode, editing only adds (user, 2026-11-12: two-finger scrolling zoomed in view mode but moved the map in edit mode, "I don't like it"; replacing yEd's way of the same day, where a drag on empty space selected an area, two fingers moved the map and Shift with a drag moved it from anywhere): two-finger scrolling, the wheel and a pinch zoom; a drag on empty space or on an item not selected moves the map; a click selects (on empty space clears the selection); Shift with a drag on empty space selects an area, Shift with a click adds to the selection or takes out; a right click opens the viewer's menu as everywhere; arrow keys move by 1 (Shift 10), as a drag would (user, 2026-11-13: "with hand or with keys should be the same
   way"; the keys moved every anchor point of a CellDesigner reaction at once): with a line selected they move only its
   part last pressed, a bend point, or an end stepped among the node's five places (from the centre to the side the
-  arrow points to, from a side the opposite arrow back to the centre), marked by four small squares round it; a line
+  arrow points to, from a side the opposite arrow back to the centre), marked by four small squares round it, the line's own square there left out (user, 2026-11-13: as a bend point selected alone); a line
   with no part pressed is not moved by the keys; a bend point moved by the keys stops where a segment turns level or
   upright when a step would carry it past, so the grey guides show (whole steps never met a neighbour at x.5), Ctrl or Cmd
   with Z undoes, with S saves. Only the x and y of what moved change in the
@@ -206,7 +206,11 @@ says "the workbench", "the converter's repository", "a private repository".
   or product at its share of the segment, a modifier at its spot round the glyph, as cd_edit places them. The same for the arrow keys. Plain lines only before the editor's drawing is in the page. Until that drawing is in the
   page (just after editing starts) a dashed outline shows where a drag goes. Guides for a bend point (user, 2026-11-12,
   as yEd's for an L-shaped bend): the bend pressed snaps (6 px on screen) when one of its two segments is nearly level or
-  upright, and each segment so lined up is drawn as a thick grey line while the drag runs. A press whose release never comes (a right
+  upright, and each segment so lined up is drawn as a thick grey line while the drag runs. On a CellDesigner map (user, 2026-11-13) a
+  reaction is one line through its glyph ("in cell designer concept, it's a single line"): a segment ending at the glyph
+  is lined up with the next anchor point or port past it, the guide running through the glyph to it; and a line meeting
+  the glyph (an added reactant or product, a modifier) gets its guide too, the bend snapping (by hand) or stopping (by
+  the keys) where that line turns level or upright as the glyph follows its segment. A press whose release never comes (a right
   press: a two-finger click or Ctrl with a click on a Mac opens the context menu) no longer leaves the map following the
   pointer (user, 2026-11-12: "sticky hand"): the viewer pans with the left button only and ends a drag once no button is
   held; a press that moves nothing leaves the arcs as the renderer drew them (a smooth bend had turned sharp). A save GitHub refuses because
