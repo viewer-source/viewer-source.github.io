@@ -244,8 +244,8 @@ says "the workbench", "the converter's repository", "a private repository".
   on 1,006 maps of the demo, the workbench and the official site, 5,158 runs: Snap, Pack all and chosen, the fit after a
   move and after a resize, CellDesigner maps with their ports kept; `tests/layout-compare.js`, run by the workflow Compare
   renderers). A new copy of the skill's scripts or a change to tidy.py is made in layout.js too and the comparison run;
-  the Python stays the master until the user says. Python (Pyodide) is now loaded only for CellDesigner maps, started in
-  the background only when one is shown. Measured 2026-11-13 (headless, page frozen, glycogen muscle and eNOS GraphML):
+  tidy's master is layout.js since 2026-11-13 (user), complex_pack and snap_grid keep theirs in the skill (Python, used by
+  its other scripts). No Python in the editor since 2026-11-13. Measured 2026-11-13 (headless, page frozen, glycogen muscle and eNOS GraphML):
   page open 2.3-2.7 s from Python's start before, none now; a move 357-362 ms, now 113-130 ms; Snap map to grid 463-604
   ms in Python, 135-217 ms now.
   Snap the whole map to the grid (the dotted square after the magnet): `snap_grid.snap`, complexes packed first, rows
@@ -372,8 +372,14 @@ says "the workbench", "the converter's repository", "a private repository".
   since 2026-11-11 (it had only gained shapes since its copy): the Metabolism Regulation website's `converter/cdrender.py`
   is a copy (its first line and `converter/VERSION`), run by its CD viewer; refreshed after the official CellDesigner
   maps draw the same with both versions (2026-11-11: 21 maps, byte-identical).
-  yrender.js beside it (2026-11-13) is its JavaScript twin for the editor, changed with it in the same commit; the
-  workflow Compare renderers checks the two draw every demo map alike (Python stays the master until the user says).
+  JavaScript the master (user, 2026-11-13: "Make JavaScript the master for the viewer's own build and the editor"):
+  yrender.js, cdrender.js and cd_edit.js beside the Python are the masters; the build draws with them through Node
+  (`renderers/render.js`, started once by build.py; `npm ci` gives its XML parser, `package.json`) and the editor with them
+  in the browser. The Python files stay as their twins for the Python tools that use the renderers (the workbench's and
+  the official site's copies are taken from yrender.py and cdrender.py, the neuroinflammation scripts import cdrender's
+  geometry); a change is made in both in the same commit, and the workflow Compare renderers checks every demo map
+  alike. Switch checked 2026-11-13: the build through Node and the Python build gave the same 389 files (downloads,
+  atlas-data, _maps, cache, images), byte for byte.
   cdrender.js and cd_edit.js beside the Python (2026-11-13) are their JavaScript twins for the editor, with the converter's
   four helpers they use (the frame maths, anchor points, name decoding) and Python's number writing (repr, round, '%.2f',
   and CPython's exact hypot, which Math.hypot misses in the last bit on a third of pairs; yrender.js uses it too):
@@ -383,7 +389,7 @@ says "the workbench", "the converter's repository", "a private repository".
   workflow Compare renderers. Measured 2026-11-13 (headless, page frozen): a CellDesigner page open 2.3-2.4 s before,
   none now; switching to edit 361 ms on glycogen muscle, 258 now (SREBP 131, now 85); a move about the same (212 ms on
   glycogen muscle: one move still reads and writes the whole file three times).
-- The build: `python3 build.py` turns every file in `maps/` (`.graphml` or `.xml`) into the same output
+- The build: `python3 build.py` (Python, its drawings by the JavaScript renderers through Node) turns every file in `maps/` (`.graphml` or `.xml`) into the same output
   (`downloads/`, `atlas-data/`, `_maps/`); its header says what it writes. `maps/<id>.md` gives a map's title, group,
   order and text. The workflow `build.yml` runs it on every push that touches `maps/`, `renderers/` or `build.py`.
 - The panel's names, function, location and cross-references come from UniProt, HGNC and ChEBI, citations from

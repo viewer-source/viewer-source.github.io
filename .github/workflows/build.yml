@@ -6,7 +6,7 @@ name: Build atlas
 on:
   push:
     branches: [main]
-    paths: ['maps/**', 'renderers/**', 'build.py', 'databases.py', 'cache/overrides.json']
+    paths: ['maps/**', 'renderers/**', 'build.py', 'databases.py', 'cache/overrides.json', 'package.json']
   workflow_dispatch:
     inputs:
       refresh:
@@ -23,7 +23,9 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: {python-version: '3.12'}
-      - run: pip install lxml
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: pip install lxml && npm ci   # the drawings by the JavaScript renderers (renderers/render.js), the rest Python
       - run: python3 build.py ${{ inputs.refresh && '--refresh' || '' }}
       # a save that came in while building (the viewer's editor saves every few seconds) is not rebased over, which
       # conflicted on the built files and left the last save unbuilt (2026-11-12): the build starts again from it

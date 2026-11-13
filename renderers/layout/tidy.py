@@ -12,7 +12,7 @@
 #                                 its ports, as CellDesigner keeps a line's connection point on the node (one of its 16)
 #                                 and moves it with the node, so a tool moving or resizing nodes never changes where a
 #                                 line meets them (snap_grid's straightened ports had turned ENE into E)
-# The editor runs it as layout.js (JavaScript, 2026-11-13): a change here is made there too (tests/layout-compare.js).
+# Twin of layout.js (JavaScript), tidy's master since 2026-11-13 (user); a change is made in both (tests/layout-compare.js).
 # Returns [new text, how many attributes changed]. The tools change attributes only, never add or remove elements, so the
 # n-th start tag of the text is the n-th element lxml reads.
 import re

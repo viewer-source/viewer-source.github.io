@@ -1,6 +1,6 @@
 // cdrender in JavaScript (2026-11-13): the same drawing as cdrender.py byte for byte (tests/cd-compare.js), for the
-// editor in the browser (no Python) and for Node. cdrender.py stays the master until the switch (user's yes); a change is
-// made there first and here the same. With it the four helpers it takes from the converter (cd_layout's ANCHOR, ANGLE,
+// editor in the browser and the viewer's build (renderers/render.js), the master since 2026-11-13 (user: JavaScript the master for the viewer's own build and the editor).
+// cdrender.py beside it is its twin for the Python tools elsewhere; a change is made in both in the same commit. With it the four helpers it takes from the converter (cd_layout's ANCHOR, ANGLE,
 // SQUARE, anchor_point, from_frame, to_frame and celldesigner's plain_name), and Python's number writing (py below),
 // shared with cd_edit.js. The rules and their reasons are in cdrender.py under the same names; comments here are short.
 //   browser: cdrender.render(text, { classes, groups }) -> svg;  cdrender.renderHits(text, opt) -> [svg, hits]

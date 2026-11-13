@@ -1,6 +1,6 @@
 // cd_edit in JavaScript (2026-11-13): the same text as cd_edit.py byte for byte (tests/cd-compare.js), so the editor
-// works on a CellDesigner map with no Python. cd_edit.py stays the master until the switch (user's yes); a change is made
-// there first and here the same. The rules and their reasons are in cd_edit.py under the same names.
+// works on a CellDesigner map with no Python; the master since 2026-11-13 (user: JavaScript the master for the viewer's own build and the editor). cd_edit.py beside it is its
+// twin; a change is made in both in the same commit. The rules and their reasons are in cd_edit.py under the same names.
 //   graphml(cdText, off, opt) -> GraphML text;  place(cdText, graphmlText, opt) -> [CellDesigner text, shift];
 //   draw(cdText, graphmlText, opt) -> [svg, CellDesigner text, GraphML text]   (opt: { DOMParser } in Node)
 (function (root) {

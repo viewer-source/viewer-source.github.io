@@ -19,7 +19,7 @@ jobs:
         with: {python-version: '3.12'}
       - uses: actions/setup-node@v4
         with: {node-version: '22'}
-      - run: pip install lxml && npm install --no-save @xmldom/xmldom
+      - run: pip install lxml && npm ci
       - run: node tests/yrender-compare.js python3
       - run: node tests/layout-compare.js python3
       - run: node tests/cd-compare.js python3

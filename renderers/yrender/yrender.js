@@ -1,6 +1,7 @@
-// yrender in JavaScript (2026-11-13): the same drawing as yrender.py, byte for byte, for the editor's redraw in the
-// browser (no Python to load) and for Node. yrender.py stays the master until the switch (user's yes); a change is made
-// there first and here the same, and tests/yrender-compare.js checks both give the same SVG on every map.
+// yrender in JavaScript (2026-11-13), the master since 2026-11-13 (user: JavaScript the master for the viewer's own build and the editor): the viewer's build (through
+// renderers/render.js) and the editor draw with it. yrender.py beside it is its twin for the Python tools elsewhere (its
+// copies in the workbench and the official site are taken from it): a change is made here and in yrender.py in the same
+// commit, and tests/yrender-compare.js (the workflow Compare renderers) checks both give the same SVG on every map.
 // Comments here are short: the rules and their reasons are in yrender.py, function by function, under the same names.
 //   browser: yrender.render(text or XML document, { classes, roles, groups }) -> { svg, errors }
 //   node:    node renderers/yrender/yrender.js map.graphml map.svg [--roles] [--classes]   (needs @xmldom/xmldom)

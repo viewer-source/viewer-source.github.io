@@ -1,6 +1,7 @@
 # Builds the atlas from maps/: every map file drawn as its own editor draws it, with the data a click shows.
 #   python3 build.py
-# maps/<id>.graphml (yEd) is drawn by renderers/yrender, maps/<id>.xml (CellDesigner) by renderers/converter/cdrender.py.
+# maps/<id>.graphml (yEd) is drawn by renderers/yrender/yrender.js, maps/<id>.xml (CellDesigner) by
+# renderers/converter/cdrender.js, through Node (renderers/render.js).
 # Both give the same output, so the viewer (_includes/atlas-app.html) never knows the source:
 #   downloads/<id>.svg and a copy of the map file;
 #   atlas-data/<id>.json: {"nodes": [...]}, each clickable node's box in SVG pixels, label, class and properties
@@ -21,19 +22,34 @@
 # Atlas). The panel's names, function, location and cross-references come from UniProt, HGNC and ChEBI, and the
 # citations from PubMed, fetched once per identifier and cached (databases.py); a node whose identifier field holds
 # several IDs (a family drawn as one node in a CellDesigner file) shows only what the file holds.
-# python3 build.py --refresh fetches every cached entry again. Needs lxml.
+# python3 build.py --refresh fetches every cached entry again. Needs lxml, Node and @xmldom/xmldom (npm install).
 import collections, glob, hashlib, json, os, re, shutil, sys
 from urllib.parse import unquote
 from lxml import etree
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.join(ROOT, 'renderers', 'yrender'))
-sys.path.insert(0, os.path.join(ROOT, 'renderers', 'converter'))
-import yrender  # noqa: E402
-import cdrender  # noqa: E402
-# every fill and name with its role's class beside its colour, for the viewer's Map colours (Settings); 'colours' in a
-# map's entry says its picture has them
-yrender.CLASSES = cdrender.CLASSES = True
+sys.path.insert(0, os.path.join(ROOT, 'renderers', 'converter'))   # the converter's plain_name
+# The drawings come from the JavaScript renderers (yrender.js, cdrender.js: the masters since 2026-11-13, user), run by
+# Node through renderers/render.js, started once for the whole build; every fill and name gets its role's class beside
+# its colour, for the viewer's Map colours (Settings), and 'colours' in a map's entry says its picture has them.
+import subprocess  # noqa: E402
+_node = None
+
+
+def render(kind, src):
+    global _node
+    if _node is None:
+        _node = subprocess.Popen(['node', os.path.join(ROOT, 'renderers', 'render.js')], stdin=subprocess.PIPE,
+                                 stdout=subprocess.PIPE, text=True, encoding='utf-8', bufsize=1)
+    _node.stdin.write(json.dumps({'kind': kind, 'src': src}) + '\n'); _node.stdin.flush()
+    r = json.loads(_node.stdout.readline())
+    if 'error' in r:
+        raise SystemExit('%s: %s' % (src, r['error']))
+    return r
+
+
+def floats(v):   # the click data's numbers as the Python renderer gave them (12.0, not 12, in the JSON written)
+    return [floats(x) for x in v] if isinstance(v, list) else float(v) if isinstance(v, (int, float)) else v
 from mapconv.celldesigner import plain_name  # noqa: E402
 import databases as db  # noqa: E402
 from databases import realizer, first_label, search_entries  # noqa: E402
@@ -47,7 +63,10 @@ GN, YN = '{http://graphml.graphdrawing.org/xmlns}', '{http://www.yworks.com/xml/
 
 
 def graphml(src, out_svg):
-    yrender.render(src, out_svg)
+    r = render('yed', src)
+    if r['errors']:   # as yrender: a map it cannot draw stops the build, nothing written
+        raise SystemExit(f'{src}: cannot draw, nothing written\n  ' + '\n  '.join(r['errors']))
+    open(out_svg, 'w', encoding='utf-8').write(r['svg'])
     tx, ty = (float(v) for v in re.search(r'translate\((-?[\d.]+),(-?[\d.]+)\)', open(out_svg).read()).groups())
     root = etree.parse(src).getroot()
     keys = {k.get('id'): k.get('attr.name') for k in root.findall(GN + 'key') if k.get('for') == 'node'}
@@ -130,7 +149,14 @@ def name(n):
 
 
 def celldesigner(src, out_svg):
-    svg, hits = cdrender.render_hits(src)
+    r = render('cd', src)
+    svg, hits = r['svg'], r['hits']
+    for a in hits['aliases']:
+        a['box'] = floats(a['box'])
+    for h in hits['reactions'].values():
+        h['lines'] = floats(h['lines'])
+        if h['at'] is not None:
+            h['at'] = floats(h['at'])
     open(out_svg, 'w', encoding='utf-8').write(svg)
     model = etree.parse(src).getroot().find(S + 'model')
     species = {}
@@ -230,7 +256,7 @@ def main():
               'group': meta.get('group', ''), 'order': int(meta.get('order', 0)), 'kind': 'map', 'draft': False, 'tag': '',
               'image': '/downloads/%s.svg' % mid, 'width': w, 'height': h, 'scale': 1,
               'annotation': '/atlas-data/%s.json' % mid, 'image_error': '', 'v': v, 'src': sha,
-              'colours': True,  # the picture has the role classes (yrender.CLASSES, cdrender.CLASSES)
+              'colours': True,  # the picture has the role classes (yrender.js and cdrender.js with classes on)
               'legend': 'sbgn' if ext == '.graphml' else 'celldesigner',  # the legend the Legend window opens on
               'downloads': [{'label': 'GraphML' if ext == '.graphml' else 'CellDesigner', 'url': '/downloads/%s%s' % (mid, ext)},
                             {'label': 'SVG', 'url': '/downloads/%s.svg' % mid}]}

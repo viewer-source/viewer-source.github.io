@@ -1,7 +1,8 @@
 // The layout tools of the editor in JavaScript (2026-11-13): complex_pack.py and snap_grid.py (copies of the layout
 // skill's at 7fc1773 2026-11-12) and tidy.py, as one file, giving the same text as the Python byte for byte
-// (tests/layout-compare.js). The Python stays the master until the switch (user's yes): a new copy of the skill's scripts
-// (get_layout.sh) or a change to tidy.py is made here too, and the comparison run. The rules and their reasons are in
+// (tests/layout-compare.js). tidy's master is here since 2026-11-13 (user: JavaScript the master for the viewer's build and
+// the editor; tidy.py is its twin); complex_pack and snap_grid keep their master in the layout skill (Python, used by its
+// other scripts): a new copy of them (get_layout.sh) is made here too, and the comparison run. The rules and their reasons are in
 // the Python files, function by function, under the same names; comments here are short.
 //   browser: layout.tidy(text, what, ids, keepPorts) -> [new text, how many attributes changed]   (as tidy.tidy)
 //   node:    require('./layout.js').tidy(text, ..., { DOMParser })
