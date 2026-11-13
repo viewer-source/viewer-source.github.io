@@ -1554,11 +1554,12 @@
 </celldesigner:connectScheme>
 <celldesigner:line width="1.0" color="ff000000"/>
 <celldesigner:listOfModification>
-<celldesigner:modification type="CATALYSIS" modifiers="s_n23" aliases="sa_n23" targetLineIndex="-1,2" editPoints="0.958370504089,0.199741034795">
+<celldesigner:modification type="CATALYSIS" modifiers="s_n23" aliases="sa_n23" targetLineIndex="-1,2" editPoints="0.958370504089,0.199741034795 1.002149361031,-0.010312774321">
 <celldesigner:connectScheme connectPolicy="direct">
 <celldesigner:listOfLineDirection>
 <celldesigner:lineDirection index="0" value="unknown"/>
 <celldesigner:lineDirection index="1" value="unknown"/>
+<celldesigner:lineDirection index="2" value="unknown"/>
 </celldesigner:listOfLineDirection>
 </celldesigner:connectScheme>
 <celldesigner:line width="1.0" color="ff000000"/>
