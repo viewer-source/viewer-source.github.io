@@ -409,10 +409,12 @@ says "the workbench", "the converter's repository", "a private repository".
   CellDesigner for a GraphML map, SBGN-ML, SBML and the annotation table copied from the official site's `downloads/`,
   the PNG made from the demo's own SVG at twice its size, white background, with headless Chromium) and `newt: true`,
   `minerva:` (the official map's MINERVA project) in its `maps/<id>.md`.
-  One more group (user, 2026-11-13: "for testing ... this large map"), AsthmaMap: its mast cell (submap PD01, the user's
-  upload, the MINERVA project's source file) and macrophage (AF11, the MINERVA project's current copy with its
-  annotation) maps, each from its CellDesigner file and from a GraphML the converter made of it (`maps/asthmamap-*`, each
-  with the other format in `maps/extra/`); public maps, kept as large maps for testing the viewer and the editor.
+  One more group (user, 2026-11-13: "for testing ... this large map"), AsthmaMap: its mast cell map (submap PD01, the
+  user's upload, the MINERVA project's source file) from its CellDesigner file and from a GraphML the converter made of
+  it (`maps/asthmamap-*`, each with the other format in `maps/extra/`); a public map, kept as a large map for testing the
+  viewer and the editor. Its CellDesigner file moved to the top left with its canvas cut to the map, 50 px round it
+  (user, 2026-11-13: the canvas was mostly empty; the shift moves bounds, name points and logic gates, which keep their
+  place in absolute coordinates). The macrophage map (AF11) was taken out the same day (user: not asked for).
   A new map is pushed with its build (`python3 build.py` locally, then downloads, atlas-data, _maps and cache committed),
   not as its source alone (2026-11-13): the workflow fetches every new identifier first (585 new nodes, about four minutes
   on GitHub's slow runners that day), and while the user's editor saves came in every few seconds each build was
