@@ -189,6 +189,13 @@
       if (!drawn && !force) { localTimer = setTimeout(local, 300); return; }
       localFor = null;
       var t = src();
+      if (s.mine) {   // a reader's own map: the map itself changed, in this browser and its folder (no draft)
+        var r = Object.assign({}, V.mine[s.id], { text: t, svg: lastSvg, width: map.width, height: map.height, at: Date.now() });
+        toFolder(s.id, name, t);
+        V.minePut(r).then(function () { if (site === s && src() === t) dirty = false; if (!on || site !== s) V.refreshMine(); })
+          .catch(function (e) { if (site === s) warn('Not kept in this browser: ' + String(e && e.message ? e.message : e).replace(/\.$/, '') + '. Download the map to keep your changes.'); });
+        return;
+      }
       if (atSite()) { V.draftDrop(s.id); dirty = false; localBox(); toFolder(s.id, name, t, true); return; }   // a file in the folder back to the site's map too
       if (!lastSvg) return;
       toFolder(s.id, name, t);   // layer 2: the same file into the reader's folder, when there is one
@@ -256,22 +263,72 @@
         var m = V.byId[id], f = d[id].file || (graphmlOf(m) || '').split('?')[0].split('/').pop();
         toFolder(id, f, d[id].text);
       });
+      Object.keys(V.mine).forEach(function (id) { var r = V.mine[id]; if (!r.hidden) toFolder(id, r.file, r.text); });
       return fq;
     }
     function chooseFolder() {
       if (!canFolder) return Promise.resolve();
       return window.showDirectoryPicker({ id: 'atlas-maps', mode: 'readwrite' })
         .then(function (dir) { return V.folderSet(dir); })
-        .then(function () { folderOk = true; localBox(); return allToFolder(); })
+        .then(function () { folderOk = true; localBox(); return allToFolder(); }).then(syncFolder)
         .catch(function (e) { if (e && e.name === 'AbortError') return; warn('No folder chosen: ' + String(e && e.message ? e.message : e).replace(/\.$/, '') + '.'); throw e; });
     }
     function allowFolder() {
       return V.folder().then(function (f) { return f ? f.dir.requestPermission({ mode: 'readwrite' }) : 'denied'; })
         .then(function (p) {
-          if (p === 'granted') { folderOk = true; localBox(); return allToFolder(); }
+          if (p === 'granted') { folderOk = true; localBox(); return allToFolder().then(syncFolder); }
           lost('the browser did not allow it');   // refused for good (or its record lost): Choose a folder again
         })
         .catch(lost);
+    }
+    // the folder as the list (My maps): the GraphML and CellDesigner files a reader put there are added, one changed
+    // since by another program (yEd, CellDesigner) is read again; the files written here for the site's maps are left
+    // out, a map taken off the list stays off
+    function syncFolder() {
+      if (!canFolder || !V.folderName()) return Promise.resolve();
+      var all = function (dir) {
+        var it = dir.values(), out = [];
+        return (function next() { return it.next().then(function (x) { if (x.done) return out; out.push(x.value); return next(); }); })();
+      };
+      return V.mineIn.then(V.folder).then(function (f) {   // the reader's maps read first, else one would be added twice
+        if (!f) return;
+        return f.dir.queryPermission({ mode: 'readwrite' }).then(function (p) {
+          if (p !== 'granted') return;
+          var ours = {}, byFile = {};
+          Object.keys(f.files).forEach(function (id) { ours[f.files[id].name] = id; });
+          Object.keys(V.mine).forEach(function (id) { byFile[V.mine[id].file] = V.mine[id]; });
+          return all(f.dir).then(function (hs) {
+            return hs.filter(function (h) { return h.kind === 'file' && /\.(graphml|xml)$/i.test(h.name); }).reduce(function (q, h) {
+              return q.then(function () {
+                var id = ours[h.name];
+                if (id && !V.mine[id]) return;   // a site's map kept here
+                var r = id ? V.mine[id] : byFile[h.name], w = r && f.files[r.id];
+                if (r && r.hidden) return;
+                return h.getFile().then(function (fl) {
+                  if (r && w && fl.lastModified === w.mod && fl.size === w.size) return;
+                  return fl.text().then(function (t) {
+                    return drawText(t).then(function (d) {
+                      var n = Object.assign({}, r || { id: 'mine-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), title: h.name.replace(/\.(graphml|xml)$/i, ''), file: h.name },
+                        { text: t, svg: d.svg, width: d.width, height: d.height, at: Date.now(), hidden: false });
+                      return V.minePut(n).then(function () { return V.folderFile(n.id, { name: h.name, mod: fl.lastModified, size: fl.size }); });
+                    });
+                  });
+                }).catch(function () {});   // not a map this viewer can draw: left out
+              });
+            }, Promise.resolve());
+          });
+        });
+      }).then(function () { V.refreshMine(); }, function () {});
+    }
+    // a reader's own map drawn for the list (My maps): as the build draws, with the role classes
+    function drawText(t) {
+      var c = isCd(t);
+      return (c ? cdpy() : yr()).then(function () {
+        var svg = c ? window.cdrender.render(t, { classes: true }) : window.yrender.render(t, { classes: true }).svg;
+        var w = svg.match(/ width="([\d.]+)" height="([\d.]+)"/);
+        if (!w) throw new Error('not a map this viewer can draw');
+        return { svg: svg, width: parseFloat(w[1]), height: parseFloat(w[2]) };
+      });
     }
     box.querySelector('#m2-ed-l-folder').addEventListener('click', function () { chooseFolder().catch(function () {}); });
     box.querySelector('#m2-ed-l-allow').addEventListener('click', allowFolder);
@@ -775,7 +832,7 @@
       if (!on) return;
       if (saveTimer) push();   // a move still waiting is saved now
       if (site && site.id && undo.length)   // not atSite(): a CellDesigner map's text follows a move only once drawn
-        V.kept = { id: site.id, v: site.v, sha: site.sha, pic: V.img, width: map.width, height: map.height, x0: picX0(), y0: picY0(), text: src(), svg: nowSvg(), file: name, ref: siteRef, cur: nowRef(), draft: !!site.pending };
+        V.kept = { id: site.id, v: site.v, sha: site.sha, pic: V.img, width: map.width, height: map.height, x0: picX0(), y0: picY0(), text: src(), svg: nowSvg(), file: name, ref: siteRef, cur: nowRef(), draft: !!site.pending && !site.mine, mine: !!site.mine };
       if (helpBox) help(false);
       on = false; drag = null; band = null; V.grid.classList.remove('m2-editing'); paint(); buttons();
       if (dirty && !site) warn(name + ' has moves not saved: Back to it, or Save.'); else quiet();
@@ -827,7 +884,7 @@
     function buttons() {
       ['#m2-ed-save', '#m2-ed-undo', '#m2-ed-redo', '#m2-ed-grid', '#m2-ed-snap', '#m2-ed-tidy-grid', '#m2-ed-tidy-pack', '#m2-ed-help'].forEach(function (k) { box.querySelector(k).disabled = !on; });   // Grid and Snap too (user, 2026-11-13: on while the rest waited, two stories in one row)   // the layout skill's tools on both formats (a CellDesigner map through cd_edit's GraphML, its ports kept)
       box.querySelector('#m2-ed-save').hidden = !!site;   // a map of the site saves by itself
-      ghForm(!!(on && site && !token()));
+      ghForm(!!(on && site && !site.mine && !token()));
       localBox();
       box.querySelector('#m2-ed-back').hidden = on || !text;
       box.querySelector('#m2-ed-back').textContent = 'Back to ' + name;
@@ -953,7 +1010,7 @@
       p.sitePub = fetch(url, { cache: 'no-cache', priority: low ? 'low' : 'auto' }).then(function (r) { if (!r.ok) throw r.status; return r.text(); });
       // the repository's version (newer than the site while a build runs) and its sha, which makes GitHub refuse a save
       // over a version changed meanwhile; null: not a map of this repository (saved as a file)
-      p.gh = ghFor(path, p.sitePub);
+      p.gh = m.mine ? Promise.resolve(null) : ghFor(path, p.sitePub);
       // a file or GitHub that failed: the sweep leaves the map for 5 minutes (a refused token, a rate limit, no
       // connection: else every map switch asked again for every map); opening the map asks afresh
       var drop = function () { p.bad = p.bad || Date.now(); };
@@ -1053,7 +1110,7 @@
       if (dirty && !site && !confirm(name + ' has moves not saved. Edit this map instead?')) return;
       if (saveTimer) push();
       var tk = ++opening;
-      var p = ahead(m), file = p.file, path = p.path;
+      var p = ahead(m), file = m.mine ? m.file : p.file, path = p.path;
       editPre = p;   // kept on leaving (keepAhead)
       // the picture on screen is the site's drawing of its published file: its frame (size and the offset of yEd's
       // coordinates) is read from that SVG, so editing starts on it without a redraw; the moved map is drawn again
@@ -1082,6 +1139,7 @@
       var notLoaded = function (e) { if (tk === opening) warn('Cannot edit ' + m.title + ': its file did not load (' + e + ').'); };
       var fromSite = function (s) { return published.then(function (t) { return go(t, s); }).catch(notLoaded); };
       quiet();
+      if (m.mine) return fromSite({ path: null, sha: null, pending: true, mine: true });   // a reader's own map: kept in this browser and its folder
       if (!repo()) return fromSite(null);
       if (!token()) return fromSite({ path: path, sha: null, pending: true });
       p.gh.then(function (g) {

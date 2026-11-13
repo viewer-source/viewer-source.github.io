@@ -410,6 +410,8 @@ page, so its styles keep the base they were made on). The looks before (Default 
   /* under the pointer: --m2-hover (none since 2026-11-09; was a very light grey) */
   .m2-item:hover { background: var(--m2-hover); }
   .m2-item.m2-on { background: var(--m2-accent); color: var(--m2-on-accent); }
+  .m2-item.m2-add { margin-top: 6px; color: var(--m2-muted); }   /* Add a map, at the list's end (My maps) */
+  .m2-item.m2-add { margin-top: 6px; color: var(--m2-muted); }   /* Add a map, at the list's end (My maps) */
   .m2-item:focus { outline: none; }
   .m2-none { font-size: 12px; color: var(--m2-muted); padding: 2px 4px; }
   /* groups as a list with sublists: the group name at the size of the
@@ -620,7 +622,7 @@ page, so its styles keep the base they were made on). The looks before (Default 
 <div id="m2-extwin"></div>
 <div id="m2-infowin"><p class="m2-pi-name">{{ include.name | default: site.name | default: site.title }}</p>{% assign about = include.about | default: site.description %}{% if about %}<p>{{ about }}</p>{% endif %}<p class="m2-k" id="m2-info-count"></p></div>
 <div id="m2-editwin"><div class="m2-ed-tools" role="toolbar" aria-label="Edit tools"><button type="button" id="m2-ed-undo" title="Undo (Ctrl or Cmd with Z)" aria-label="Undo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button><button type="button" id="m2-ed-redo" title="Redo (Ctrl or Cmd with Y)" aria-label="Redo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 14l5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button><span class="m2-ed-sep"></span><button type="button" id="m2-ed-grid" title="Grid" aria-label="Grid" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z"/><path d="M9.3 4v16M14.7 4v16M4 9.3h16M4 14.7h16"/></svg></button><button type="button" id="m2-ed-snap" title="Snap to grid (Alt held: no snapping)" aria-label="Snap to grid" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5h4v7a3 3 0 0 0 6 0V5h4v7a7 7 0 0 1-14 0z"/><path d="M5 9h4M15 9h4"/></svg></button><span class="m2-ed-sep"></span><button type="button" id="m2-ed-tidy-grid" title="Snap the whole map to the grid (the layout rules: complexes packed, lines kept)" aria-label="Snap the whole map to the grid"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h.01M12 4h.01M20 4h.01M4 12h.01M20 12h.01M4 20h.01M12 20h.01M20 20h.01" stroke-width="2.6"/><path d="M8.5 8.5h7v7h-7z"/></svg></button><button type="button" id="m2-ed-tidy-pack" title="Pack the complex selected, or every complex when nothing is selected (the layout rules)" aria-label="Pack complexes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 3h11l3 3v12l-3 3h-11l-3-3V6z"/><rect x="7.5" y="6.3" width="9" height="4.5" rx="1.2"/><rect x="7.5" y="13.2" width="9" height="4.5" rx="1.2"/></svg></button><button type="button" id="m2-ed-help" title="How to edit (?)" aria-label="How to edit" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 0 1 4.9.8c0 1.7-2.5 2.1-2.5 3.8"/><path d="M12 17.3h.01" stroke-width="2.6"/></svg></button></div><p id="m2-ed-status"></p><div id="m2-ed-local" hidden><p class="m2-set-note" id="m2-ed-l1">Your changes are kept in this browser only. They are lost if the browser's site data is cleared or the window is private, and in Safari after a week without a visit. To keep them, choose a folder on your computer: each change is then saved there by itself.</p><p class="m2-set-note" id="m2-ed-l4">Allow the folder <span></span> again to go on saving there.</p><button type="button" id="m2-ed-l-folder">Choose a folder</button><button type="button" id="m2-ed-l-allow">Allow</button><button type="button" id="m2-ed-local-dl">Download the map</button><p class="m2-set-note" id="m2-ed-l2">This browser cannot save into a folder by itself. Download the map to keep your changes. In Chrome or Edge, changes are saved to a folder automatically.</p><p class="m2-set-note" id="m2-ed-l3">Saving to the folder <span></span> on your computer.</p></div><div id="m2-ed-gh" hidden><p class="m2-set-note">To save moves to the site, paste a GitHub token that can write to this site's repository. It stays in this browser only.</p><input type="password" id="m2-ed-gh-token" placeholder="GitHub token" autocomplete="off"><button type="button" id="m2-ed-gh-go">Connect</button></div><button type="button" id="m2-ed-this">Edit this map</button><button type="button" id="m2-ed-back" hidden>Back</button><button type="button" id="m2-ed-save" disabled>Save</button><button type="button" id="m2-ed-stop" hidden>Stop editing</button><button type="button" id="m2-ed-gh-off" hidden>Disconnect from GitHub</button></div>
-<div id="m2-setwin"><div class="m2-set-groups" style="margin-bottom:14px"><p class="m2-set-k">Groups in the list</p><div class="m2-set-row" id="m2-set-groups"><button type="button" data-groups="open">Open all</button><button type="button" data-groups="close">Close all</button></div></div><p class="m2-set-k">Map size <span id="m2-set-size-v"></span></p><input type="range" id="m2-set-size" min="0" max="15" step="1" aria-label="Map size"><div class="m2-set-ticks"><i></i><i></i><i></i><i></i></div><div class="m2-set-colours"><p class="m2-set-k">Map colours</p><div class="m2-set-row" id="m2-set-colours"><button type="button" data-colours="file"><span>File</span><span class="m2-sw"><i style="background:#C8D8EB"></i><i style="background:#DBEBDB"></i><i style="background:#E2ACA3"></i></span></button><button type="button" data-colours="default"><span>Default</span><span class="m2-sw"><i style="background:#C8D8EB"></i><i style="background:#DBEBDB"></i></span></button></div></div><div class="m2-set-side"><p class="m2-set-k">Annotations</p><div class="m2-set-row" id="m2-set-side"><button type="button" data-side="left">Left</button><button type="button" data-side="right">Right</button></div></div><div class="m2-set-bar"><p class="m2-set-k">Icons</p><div class="m2-set-row" id="m2-set-bar"><button type="button" data-bar="left">Left</button><button type="button" data-bar="top">Top</button></div></div></div>
+<div id="m2-setwin"><div class="m2-set-examples" style="margin-bottom:14px;display:none"><p class="m2-set-k">Example maps</p><div class="m2-set-row" id="m2-set-examples"><button type="button" data-examples="shown">Shown</button><button type="button" data-examples="hidden">Hidden</button></div></div><div class="m2-set-groups" style="margin-bottom:14px"><p class="m2-set-k">Groups in the list</p><div class="m2-set-row" id="m2-set-groups"><button type="button" data-groups="open">Open all</button><button type="button" data-groups="close">Close all</button></div></div><p class="m2-set-k">Map size <span id="m2-set-size-v"></span></p><input type="range" id="m2-set-size" min="0" max="15" step="1" aria-label="Map size"><div class="m2-set-ticks"><i></i><i></i><i></i><i></i></div><div class="m2-set-colours"><p class="m2-set-k">Map colours</p><div class="m2-set-row" id="m2-set-colours"><button type="button" data-colours="file"><span>File</span><span class="m2-sw"><i style="background:#C8D8EB"></i><i style="background:#DBEBDB"></i><i style="background:#E2ACA3"></i></span></button><button type="button" data-colours="default"><span>Default</span><span class="m2-sw"><i style="background:#C8D8EB"></i><i style="background:#DBEBDB"></i></span></button></div></div><div class="m2-set-side"><p class="m2-set-k">Annotations</p><div class="m2-set-row" id="m2-set-side"><button type="button" data-side="left">Left</button><button type="button" data-side="right">Right</button></div></div><div class="m2-set-bar"><p class="m2-set-k">Icons</p><div class="m2-set-row" id="m2-set-bar"><button type="button" data-bar="left">Left</button><button type="button" data-bar="top">Top</button></div></div></div>
 </div>
 <div class="m2-main">
 <div id="m2-view" tabindex="0">
@@ -699,12 +701,12 @@ page, so its styles keep the base they were made on). The looks before (Default 
   function recolour(svg) {
     return SCHEME === 'file' ? svg : svg.replace(/<svg\b[^>]*>/, function (t) { return t + '<style>' + schemeCss(SCHEMES[SCHEME]) + '</style>'; });
   }
-  function isMapPicture(url) { return /\.svg\?/.test(url) && url.indexOf('/images/') < 0; }
+  function isMapPicture(url) { return (/\.svg\?/.test(url) && url.indexOf('/images/') < 0) || /^blob:/.test(url); }
   // current: the map on screen; chosen: the map last asked for (the list, the arrow keys, the address), which
   // becomes current once its files are loaded. The list marks chosen, so a click or an arrow key shows at once
   var maps = [], byId = {}, topics = [], current = null, chosen = null;
   // a map's files carry its content version v (build.py), so a browser fetches a map again only when it changed
-  function ver(m) { return m.v ? '?v=' + m.v : BUILD; }
+  function ver(m) { return m.mine ? '#' + m.v : m.v ? '?v=' + m.v : BUILD; }   // a reader's own map: its blob address takes no query
 
   // ---------- loading (as on the logo board) ----------
   // Every file goes through one queue, three at a time: what the reader opens goes to the front, the rest of the
@@ -734,7 +736,7 @@ page, so its styles keep the base they were made on). The looks before (Default 
     g = got[url] = {};
     g.p = new Promise(function (res) {
       g.run = function () {
-        (/\.(svg|png)\?/.test(url) ? picture(url) : fetch(url).then(function (r) { if (!r.ok) throw r.status; return r.json(); }))
+        (/\.(svg|png)\?/.test(url) || /^blob:/.test(url) ? picture(url) : fetch(url).then(function (r) { if (!r.ok) throw r.status; return r.json(); }))
           .then(res, function () { delete got[url]; res(null); });
       };
     });
@@ -2134,6 +2136,7 @@ page, so its styles keep the base they were made on). The looks before (Default 
     if (!shown.length && !mols.length) box.appendChild(el('div', 'm2-none', index && index.length || !q ? 'No match' : 'Searching…'));
     // keep the chosen map visible when the list scrolls, with about one and a half items in sight above and below it,
     // so moving up or down the list shows where it goes next (user, 2026-11-09)
+    if (editorAsked && !q) addRow(box);
     box.scrollTop = keep;
     var on = box.querySelector('.m2-on');
     if (on && box.scrollHeight > box.clientHeight) {
@@ -2270,8 +2273,10 @@ page, so its styles keep the base they were made on). The looks before (Default 
   }
   window.addEventListener('hashchange', route);
 
+  var siteList = null;
   function setMaps(list) {
-    maps = arrange(list); byId = {}; topics = [];
+    siteList = list;
+    maps = arrange(withMine(list)); byId = {}; topics = [];
     railMark(); // the map count in the Info window
     maps.forEach(function (m) {
       byId[m.id] = m;
@@ -2403,6 +2408,7 @@ page, so its styles keep the base they were made on). The looks before (Default 
       var e = window.m2EditNow && window.m2EditNow(), k = kept && kept.id === m.id ? kept : null;
       if (e && e.id === m.id) return { text: e.text, file: e.file, svg: e.svg || (k && k.text === e.text ? k.svg : null) };
       if (k && current && current.id === m.id && (k.text || k.svg)) return { text: k.text, file: k.file, svg: k.svg };
+      if (m.mine && mine[m.id]) return { text: mine[m.id].text, file: mine[m.id].file, svg: mine[m.id].svg };   // a reader's own map, under its own name
       return null;
     }
     function fileName(href) { return href ? href.split('/').pop().split(/[?#]/)[0] : ''; }
@@ -2470,6 +2476,7 @@ page, so its styles keep the base they were made on). The looks before (Default 
       var key = '<span class="m2-cx-key">' + (/Mac|iPhone|iPad|iPod/.test((navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || navigator.userAgent) ? '\u2318E' : 'Ctrl+E') + '</span>';
       if (ed) item(box, 'Switch to viewer', function () { tab('list'); }, key);   // leaving the Edit window ends editing
       else if (eb && eb.offsetParent) item(box, 'Switch to edit', function () { tab('edit'); }, key);
+      if (m.mine && !ed) item(box, 'Remove from My maps', function () { mineHide(m.id); });
       if (document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen)
         item(box, isPageFull() ? 'Exit full screen' : 'Full screen with tools', pageFull);
       var src = (m.legend === 'celldesigner' ? ['CellDesigner', 'GraphML'] : ['GraphML', 'CellDesigner']).filter(function (l) { return url[l]; })[0];   // the format the map is drawn from
@@ -2573,6 +2580,7 @@ page, so its styles keep the base they were made on). The looks before (Default 
     }
     function keep(m) {   // the edited picture, while the site still shows the version before the last save; or a draft
       var mine = editorAsked && !hasToken() && drafts[m.id];   // only where the Edit tab is (user, 2026-11-13: the demo shows the site's maps)
+      if (kept && kept.id === m.id && kept.mine) return kept;   // an own map just edited, until its new version is in the list
       if (kept && kept.id === m.id) {
         if (kept.draft ? editorAsked && !hasToken() : behind(m, kept)) return kept;
         dropKept();
@@ -2601,8 +2609,8 @@ page, so its styles keep the base they were made on). The looks before (Default 
     }
     function draftDo(mode, f, store) {
       if (!draftDb) draftDb = new Promise(function (res, rej) {
-        var r = indexedDB.open('atlas-edit-drafts', 2);
-        r.onupgradeneeded = function () { ['maps', 'folder'].forEach(function (n) { if (!r.result.objectStoreNames.contains(n)) r.result.createObjectStore(n); }); };
+        var r = indexedDB.open('atlas-edit-drafts', 3);
+        r.onupgradeneeded = function () { ['maps', 'folder', 'mine'].forEach(function (n) { if (!r.result.objectStoreNames.contains(n)) r.result.createObjectStore(n); }); };
         r.onsuccess = function () { var d = r.result; d.onversionchange = function () { d.close(); draftDb = null; }; res(d); };   // a newer page's upgrade not held up by this one
         r.onerror = function () { rej(r.error); };
         r.onblocked = function () { draftDb = null; rej(new Error('another tab of this site holds the stored edits; close it and reload')); };
@@ -2682,6 +2690,93 @@ page, so its styles keep the base they were made on). The looks before (Default 
       if (!editor) { editorLoad(); return; }   // the editor not loaded yet (a page just opened): a moment, then the link works
       editor.chooseFolder().then(function () { if (folderName()) k.hidden = true; }, function (er) { k.textContent = 'No folder chosen: ' + (er && er.message ? er.message : er) + '.'; });
     });
+    // My maps (user, 2026-11-13, the third layer: "they would care about their own maps"): maps a reader adds (a file
+    // chosen with Add a map or dropped on the page, or one in their folder), drawn in this browser by the editor's
+    // renderers and edited as any map, only where the Edit tab is. Kept in IndexedDB (store mine: { id, title, file, text,
+    // svg, width, height, at, hidden }) and, with a folder, as their files in it. Taken off the list = hidden only (user:
+    // "hide only"): the record and the file stay, the same file added again brings it back. Example maps (the site's)
+    // hidden by a setting while the reader has maps of their own
+    var MINE_KEY = 'atlas-mine', mine = {}, mineURLs = {};
+    function mineFlag() { try { if (Object.keys(mine).length) localStorage.setItem(MINE_KEY, '1'); else localStorage.removeItem(MINE_KEY); } catch (e) {} }
+    var mineIn = (function () {
+      var has; try { has = localStorage.getItem(MINE_KEY); } catch (e) {}
+      if (!has || !window.indexedDB) return Promise.resolve();
+      return draftDo('readonly', function (st) { return st.getAll(); }, 'mine').then(function (all) {
+        (all || []).forEach(function (r) { if (r && r.id && !mine[r.id]) mine[r.id] = r; });
+      }).catch(function () {});
+    })();
+    function minePut(r) {
+      mine[r.id] = r; mineFlag();
+      return draftDo('readwrite', function (st) { return st.put(r, r.id); }, 'mine');
+    }
+    function mineShown() { return editorAsked ? Object.keys(mine).map(function (k) { return mine[k]; }).filter(function (r) { return !r.hidden; }) : []; }
+    function examplesHidden() { try { return localStorage.getItem('atlas-examples') === 'hidden'; } catch (e) { return false; } }
+    function mineEntry(r) {
+      var u = mineURLs[r.id];
+      if (!u || u.at !== r.at) {   // new addresses for a new version, the old ones let go
+        if (u) setTimeout(function () { URL.revokeObjectURL(u.svg); URL.revokeObjectURL(u.text); }, 10000);
+        u = mineURLs[r.id] = { at: r.at, svg: URL.createObjectURL(new Blob([r.svg], { type: 'image/svg+xml' })), text: URL.createObjectURL(new Blob([r.text], { type: 'application/xml' })) };
+      }
+      var cdm = /<sbml[\s>]/.test(r.text.slice(0, 3000)) && r.text.indexOf('celldesigner') >= 0;
+      return { id: r.id, title: r.title, group: 'My maps', topic: r.id, mine: true, file: r.file, width: r.width, height: r.height, v: String(r.at),
+        image: u.svg, legend: cdm ? 'celldesigner' : 'sbgn', downloads: [{ label: cdm ? 'CellDesigner' : 'GraphML', url: u.text }] };
+    }
+    function withMine(list) {
+      var own = mineShown().sort(function (a, b) { return a.title.localeCompare(b.title); }).map(mineEntry);
+      return own.concat(own.length && examplesHidden() ? [] : list);
+    }
+    function refreshMine() {   // the list again with the reader's maps as they are now; the map shown kept, else the first
+      if (!siteList) return;
+      var was = current && current.id;
+      setMaps(siteList);
+      var box = document.querySelector('.m2-set-examples'), own = mineShown().length;
+      if (box) box.style.display = own ? '' : 'none';
+      document.querySelectorAll('#m2-set-examples button').forEach(function (b) { b.classList.toggle('m2-on', (b.dataset.examples === 'hidden') === examplesHidden()); });
+      if (was && !byId[was] && maps[0]) go(maps[0].id);
+      else buildList(document.getElementById('m2-search').value);
+    }
+    document.querySelectorAll('#m2-set-examples button').forEach(function (b) {
+      b.addEventListener('click', function () {
+        try { if (b.dataset.examples === 'hidden') localStorage.setItem('atlas-examples', 'hidden'); else localStorage.removeItem('atlas-examples'); } catch (e) {}
+        refreshMine();
+      });
+    });
+    function mineHide(id) {   // off the list, kept
+      var r = mine[id]; if (!r) return;
+      r.hidden = true; minePut(r).catch(function () {});
+      refreshMine();
+    }
+    function addFiles(list) {   // a reader's files, drawn and kept; the same file again (by its name) brings its map back up to date
+      if (!editor) return;
+      var picked = Array.prototype.filter.call(list, function (f) { return /\.(graphml|xml)$/i.test(f.name); });
+      var last = null;
+      return picked.reduce(function (p, f) {
+        return p.then(function () { return f.text(); }).then(function (t) {
+          return editor.drawText(t).then(function (d) {
+            var old = Object.keys(mine).map(function (k) { return mine[k]; }).filter(function (r) { return r.file === f.name; })[0];
+            var r = { id: old ? old.id : 'mine-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), title: f.name.replace(/\.(graphml|xml)$/i, ''),
+              file: f.name, text: t, svg: d.svg, width: d.width, height: d.height, at: Date.now(), hidden: false };
+            last = r.id;
+            return minePut(r).then(function () { return editor.toFolder(r.id, r.file, t); });
+          });
+        }).catch(function (e) { alert(f.name + ' was not added: ' + (e && e.message ? e.message : e)); });
+      }, Promise.resolve()).then(function () { refreshMine(); if (last) go(last); });
+    }
+    var picker = document.createElement('input');
+    picker.type = 'file'; picker.multiple = true; picker.accept = '.graphml,.xml'; picker.hidden = true;
+    picker.addEventListener('change', function () { addFiles(picker.files); picker.value = ''; });
+    document.body.appendChild(picker);
+    function addRow(box) {
+      var b = el('button', 'm2-item m2-add', 'Add a map');
+      b.type = 'button'; b.title = 'A GraphML or CellDesigner file from your computer (or drop it on the page)';
+      b.addEventListener('click', function () { picker.click(); });
+      box.appendChild(b);
+    }
+    document.addEventListener('dragover', function (e) { if (editorAsked && e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types, 'Files') >= 0) e.preventDefault(); });
+    document.addEventListener('drop', function (e) {
+      if (!editorAsked || !e.dataTransfer || !e.dataTransfer.files.length) return;
+      e.preventDefault(); addFiles(e.dataTransfer.files);
+    });
     function draftsShown() {   // the map shown taken again when its draft can be shown now (the drafts read, the editor here)
       var m = current && byId[current.id];
       if (m && drafts[m.id] && editorAsked && !hasToken() && !grid.classList.contains('m2-editing')) put(m, true);
@@ -2724,6 +2819,10 @@ page, so its styles keep the base they were made on). The looks before (Default 
     draftDrop: { get: function () { return draftDrop; } },
     draftsIn: { get: function () { return draftsIn; } },
     draftsDone: { get: function () { return function () { return draftsDone; }; } },
+    mine: { get: function () { return mine; } },
+    mineIn: { get: function () { return mineIn; } },
+    minePut: { get: function () { return minePut; } },
+    refreshMine: { get: function () { return refreshMine; } },
     tokenKey: { get: function () { return TOKEN_KEY; } },
     drafts: { get: function () { return drafts; } },
     folder: { get: function () { return folder; } },
@@ -2741,7 +2840,7 @@ page, so its styles keep the base they were made on). The looks before (Default 
     setTimeout(function () {   // after the viewer's script has run to its end
       var s = document.createElement('script');
       s.src = EDITOR + 'editor.js' + BUILD;
-      s.onload = function () { editor = window.m2Editor(V); draftsShown(); };
+      s.onload = function () { editor = window.m2Editor(V); draftsShown(); mineIn.then(refreshMine); };
       s.onerror = function () { editorAsked = false; };
       document.head.appendChild(s);
     }, 0);
