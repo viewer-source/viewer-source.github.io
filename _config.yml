@@ -38,3 +38,4 @@ exclude:
   # renderers/ is published: the editor runs yrender, cdrender, cd_edit and the converter modules in the browser
   - databases.py
   - cache
+  - tests

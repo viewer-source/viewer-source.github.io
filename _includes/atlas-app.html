@@ -2673,7 +2673,7 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
       return kept;
     }
   // the viewer's names the editor reads and writes
-  var V = Object.defineProperties({ level: EDIT_LEVEL }, {
+  var V = Object.defineProperties({ level: EDIT_LEVEL, build: BUILD }, {
     current: { get: function () { return current; }, set: function (v) { current = v; } },
     view: { get: function () { return view; } },
     z: { get: function () { return z; } },

@@ -2,7 +2,8 @@
 # PNG at 2:1 with an 8 px margin.
 #   python3 tools/yrender.py map.graphml map.svg [map.png] [--roles]
 # Master (since 2026-11-11): this file, in viewer-source/viewer-source.github.io. Copies elsewhere start with a line
-# naming the commit they were taken from and are never edited; a change is made here and checked on the demo.
+# naming the commit they were taken from and are never edited; a change is made here and checked on the demo, and the
+# same change in yrender.js beside it (the editor's redraw, 2026-11-13): tests/yrender-compare.js checks both draw alike.
 # The vocabulary is closed: a node type, style, shape, arrow or option not listed below stops
 # the script with a list of what it cannot draw, and nothing is written.
 # Rules read from yEd's own exports of the website maps (2026-10-17):

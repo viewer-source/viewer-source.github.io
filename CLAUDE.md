@@ -163,8 +163,13 @@ says "the workbench", "the converter's repository", "a private repository".
   with no part pressed is not moved by the keys; a bend point moved by the keys stops where a segment turns level or
   upright when a step would carry it past, so the grey guides show (whole steps never met a neighbour at x.5), Ctrl or Cmd
   with Z undoes, with S saves. Only the x and y of what moved change in the
-  file's text, the rest byte for byte; the yEd renderer runs in the browser by Pyodide (the converter page's version,
-  `renderers/yrender/yrender.py` published for it) and draws the map again, so the editor draws nothing of its own.
+  file's text, the rest byte for byte; the yEd renderer draws the map again in the browser, so the editor draws nothing
+  of its own: since 2026-11-13 `renderers/yrender/yrender.js`, the same SVG as yrender.py byte for byte (checked on 607
+  maps in the build's, the editor's and the colours page's ways; `tests/yrender-compare.js`, run by the workflow Compare
+  renderers on every change), reusing the document the editor read when it is still the text drawn (the reading took
+  most of the time); Python (Pyodide, the converter page's version) only for the CellDesigner side and the layout tools.
+  Measured 2026-11-13 (headless, glycogen muscle and eNOS GraphML, page frozen): switching to edit 293 ms with Python,
+  0-102 ms now; a move 305-343 ms, now 254-256 ms (tidy's fit still in Python).
   A map of the site saves by itself (user, 2026-11-12: "as in Google Docs"): no Save button; 3 s after the last move,
   undo or redo, the map's source `maps/<file>.graphml` is committed to the site's own repository (`<owner>/<owner>.github.io`,
   from the address) through GitHub's contents API, with a fine-grained token the user pastes once in the Edit window
@@ -359,6 +364,8 @@ says "the workbench", "the converter's repository", "a private repository".
   since 2026-11-11 (it had only gained shapes since its copy): the Metabolism Regulation website's `converter/cdrender.py`
   is a copy (its first line and `converter/VERSION`), run by its CD viewer; refreshed after the official CellDesigner
   maps draw the same with both versions (2026-11-11: 21 maps, byte-identical).
+  yrender.js beside it (2026-11-13) is its JavaScript twin for the editor, changed with it in the same commit; the
+  workflow Compare renderers checks the two draw every demo map alike (Python stays the master until the user says).
 - The build: `python3 build.py` turns every file in `maps/` (`.graphml` or `.xml`) into the same output
   (`downloads/`, `atlas-data/`, `_maps/`); its header says what it writes. `maps/<id>.md` gives a map's title, group,
   order and text. The workflow `build.yml` runs it on every push that touches `maps/`, `renderers/` or `build.py`.

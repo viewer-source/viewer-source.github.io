@@ -1,40 +1,25 @@
     // ---------- the GraphML part (editor/src/graphml.js) ----------
-    // A yEd GraphML drawn again by the viewer's yEd renderer (renderers/yrender/yrender.py, run by Pyodide), each node and
+    // A yEd GraphML drawn again by the viewer's yEd renderer in JavaScript (renderers/yrender/yrender.js), each node and
     // arc in a group of its own; the shift out of negative places; the compartments' outlines following a drag.
 
-    var DRIVER = [
-      'import sys, json',
-      "sys.path.insert(0, '/home/pyodide')",
-      'import yrender',
-      'yrender.CLASSES = True',
-      'import html as _h',
-      '_node, _edge = yrender.Map.read_node, yrender.Map.edge_svg',
-      'def read_node(self, node, parent):',
-      '    _node(self, node, parent)',
-      "    n = self.nodes.get(node.get('id'))",
-      "    if n and not n.get('wrapped'): n['svg'] = '<g data-n=\"' + _h.escape(node.get('id')) + '\">' + n['svg'] + '</g>'; n['wrapped'] = True",
-      'def edge_svg(self, e, parent):',
-      '    s = _edge(self, e, parent)',
-      "    return '<g data-e=\"' + _h.escape(e.get('id') or '') + '\">' + s + '</g>' if s else s",
-      'yrender.Map.read_node, yrender.Map.edge_svg = read_node, edge_svg',
-      'def draw(text):',
-      "    open('/tmp/edit.graphml', 'w', encoding='utf-8').write(text)",
-      '    yrender.errors.clear()',
-      "    svg = yrender.Map('/tmp/edit.graphml').svg()",
-      '    return json.dumps([svg, list(yrender.errors)])'].join('\n');
-    function python() {
-      if (py) return py;
-      say('Loading the renderer (a few seconds the first time)...');
-      py = new Promise(function (res, rej) {
+    // the yEd renderer in JavaScript (renderers/yrender/yrender.js, 2026-11-13): the same SVG as yrender.py byte for byte
+    // (tests/yrender-compare.js), so a GraphML map is drawn again with no Python; the editor's way: classes beside the
+    // colours and each node and arc in a group of its own (data-n, data-e)
+    var yrp = null;
+    function yr() {
+      if (yrp) return yrp;
+      yrp = new Promise(function (res, rej) {
+        if (window.yrender) return res(window.yrender);
         var s = document.createElement('script');
-        s.src = PYODIDE + 'pyodide.js'; s.onload = res; s.onerror = rej;
+        s.src = '/renderers/yrender/yrender.js' + V.build; s.onload = function () { res(window.yrender); }; s.onerror = function () { rej('renderer not found'); };
         document.head.appendChild(s);
-      }).then(function () { return loadPyodide({ indexURL: PYODIDE }); }).then(function (p) {
-        return Promise.all([p.loadPackage('lxml'), fetch('/renderers/yrender/yrender.py').then(function (r) { if (!r.ok) throw 'renderer not found'; return r.text(); })])
-          .then(function (r) { p.FS.mkdirTree('/home/pyodide'); p.FS.writeFile('/home/pyodide/yrender.py', r[1]); p.runPython(DRIVER); return p; });
       });
-      py.catch(function (e) { py = null; say('The renderer did not load: ' + e); });
-      return py;
+      yrp.catch(function (e) { yrp = null; say('The renderer did not load: ' + e); });
+      return yrp;
+    }
+    function drawGraphml(t) {   // the document the editor read is drawn when it is still this text (no second reading)
+      var r = window.yrender.render(t === docText && doc ? doc : t, { classes: true, groups: true });
+      return [r.svg, r.errors];
     }
     function liveDraw() {   // the compartments' outlines and labels on the picture follow their live boxes (GraphML)
       if (!gN || cd) return;

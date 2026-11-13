@@ -16,10 +16,24 @@
     function src() { return cd ? cd.now : text; }   // the map's own file as it is now
     var box = document.getElementById('m2-editwin'), status = document.getElementById('m2-ed-status');
     var overlay = document.getElementById('m2-edit-layer');
-    var py = null;                 // a promise of Python with the renderer, from the first edit
+    var py = null;                 // a promise of Python with lxml (Pyodide): for the CellDesigner side and the layout tools
+    function python() {
+      if (py) return py;
+      say('Loading Python (a few seconds the first time)...');
+      py = new Promise(function (res, rej) {
+        var s = document.createElement('script');
+        s.src = PYODIDE + 'pyodide.js'; s.onload = res; s.onerror = rej;
+        document.head.appendChild(s);
+      }).then(function () { return loadPyodide({ indexURL: PYODIDE }); }).then(function (p) {
+        return p.loadPackage('lxml').then(function () { p.FS.mkdirTree('/home/pyodide'); p.runPython("import sys, json\nsys.path.insert(0, '/home/pyodide')"); return p; });
+      });
+      py.catch(function (e) { py = null; say('Python did not load: ' + e); });
+      return py;
+    }
     var on = false, map = null;    // editing, and the map object shown while editing
     var text = '', name = '', handle = null, dirty = false;
     var doc = null, geos = [], points = [], nodes2 = [], edges2 = [];
+    var docText = null;            // the text doc was read from (kept by a move, which changes both alike): the renderer reuses doc then
     var x0 = 0, y0 = 0;            // where the drawing's top left is in yEd units
     var selN = [], selP = [], selE = [];   // selected nodes (indices in nodes2), bend points (in points), arcs (in edges2)
     var undo = [], redo = [], drag = null, band = null, ticket = 0, nudgeAt = 0, timer = null;
@@ -199,6 +213,7 @@
     // the file read: every y:Geometry and y:Point in document order, which is also their order in the text
     function parse() {
       doc = new DOMParser().parseFromString(text, 'application/xml');
+      docText = text;
       if (doc.getElementsByTagName('parsererror').length) throw 'not a readable XML file';
       geos = Array.prototype.slice.call(doc.getElementsByTagNameNS(Y, 'Geometry'));
       points = Array.prototype.slice.call(doc.getElementsByTagNameNS(Y, 'Point'));
@@ -278,12 +293,13 @@
 
     // the move: new x and y for some y:Geometry and y:Point, written into the text in one pass, the rest untouched
     function write(g, p) {
-      var k = { 'Geometry': -1, 'Point': -1 };
+      var k = { 'Geometry': -1, 'Point': -1 }, same = docText === text;   // the elements of doc got these numbers already (move)
       text = text.replace(/<y:(Geometry|Point)\s[^>]*>/g, function (tag, kind) {
         var i = ++k[kind], v = (kind === 'Geometry' ? g : p)[i];
         if (!v) return tag;
         return tag.replace(/(\sx=")[^"]*"/, '$1' + v[0] + '"').replace(/(\sy=")[^"]*"/, '$1' + v[1] + '"');
       });
+      if (same) docText = text;
     }
     function moving() {   // what a move of the selection moves: nodes (a group with what it holds) and bend points
       var all = new Set();
@@ -486,7 +502,7 @@
     function render() {
       var t = ++ticket;
       drawing = true;
-      return (cd ? cdpy() : python()).then(function (p) {
+      return (cd ? cdpy() : yr()).then(function (p) {
         var r;
         if (cd) {   // the moves written into the CellDesigner file, drawn, and the GraphML made of it again
           var q = JSON.parse(p.globals.get('cd_draw')(cd.base, text));
@@ -503,7 +519,7 @@
           // shift was taken for a new frame of the drawing and the map jumped right and down, out of sight on some maps)
           var sh = !drag && noNegative();
           if (sh) { parse(); x0 += sh[0]; y0 += sh[1]; }
-          r = JSON.parse(p.globals.get('draw')(text));
+          r = drawGraphml(text);
         }
         if (t !== ticket) return;
         drawing = false;
@@ -548,7 +564,7 @@
       V.grid.classList.add('m2-editing');
       buttons();
       gN = gE = null; mv = live = null; liveG = null; copies = []; frozen = false;
-      if (same && same.text === t) { python().then(function () { if (on && V.current === map && !undo.length && !gN) render(); }); paint(); say((site && site.pending) ? 'Connect to GitHub below so the moves are saved to the site.' : site ? 'Every move is saved to the site by itself.' : 'Editing ' + n + '.'); return; }
+      if (same && same.text === t) { (cd ? cdpy() : yr()).then(function () { if (on && V.current === map && !undo.length && !gN) render(); }); paint(); say((site && site.pending) ? 'Connect to GitHub below so the moves are saved to the site.' : site ? 'Every move is saved to the site by itself.' : 'Editing ' + n + '.'); return; }
       say('Drawing ' + n + '...');
       render();
     }
