@@ -1,0 +1,23 @@
+/* The viewer's look, part 2 of 2 (Default View, user 2026-11-13; first as look="icon-row", Default Icon Row, 2026-11-12):
+   on the Lines rules of look-lines.css. Icons as tabs at the top of the list's panel (Maps; Search, the field with the
+   whole list; Downloads, Open in's links at its end; Settings), the panel fixed beside the map; annotations on the
+   right while a molecule is open, or on the left as a tab (Settings); icons on top or on the left (Settings); the
+   right-click menu. The download row under the map goes (its files in Downloads), the map window 8 px above the
+   window's bottom, a line under it. The master, as look-lines.css. */
+:root { --m2-icons: 1; --m2-icon-row: 1; --m2-bar-choice: 1; --m2-dl-ext: 1; --m2-context: 1; --m2-below-view: 8px; }   /* --m2-context: the right-click menu, as Default Icons (user, 2026-11-12) */
+html #m2-view { border-bottom: 1px solid var(--m2-frame); }
+/* the windows' text soft grey as the icons at rest */
+html #m2-infowin, html #m2-infowin .m2-pi-name { color: #5f6368; }
+/* no Info tab, no Legend for now (user, 2026-11-11) */
+html .m2-icons-on .m2-ri[data-win="info"], html .m2-icons-on .m2-ri[data-win="leg"] { display: none; }
+/* plain signs, not buttons (user, 2026-11-12): no fill and no change of colour when open or under the pointer; 24 px
+   tabs 12 px apart, the bar 24 px tall with 6 px under the signs */
+html .m2-icons-on .m2-ri, html .m2-icons-on .m2-ri.m2-open, html .m2-icons-on .m2-ri:hover { background: none; color: #80868b; }
+/* the map list and its group names dark grey, stronger than the icons (user, 2026-11-12); the chosen map keeps its colours */
+html .m2-item:not(.m2-on), html .m2-group { color: #1e2022; }
+html .m2-icons-on .m2-ri { width: 24px; height: 24px; border-radius: 0; }
+html .m2-icons-on .m2-ri svg { width: 21px; height: 21px; }
+html .m2-icon-row #m2-rail { height: 31px; column-gap: 12px; }
+/* Icons Left (Settings): the same signs down a column 52 px wide, 14 px apart, the first 12 px down */
+html .m2-icons-on:not(.m2-icon-row) { padding-left: 52px; }
+html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-top: 12px; }

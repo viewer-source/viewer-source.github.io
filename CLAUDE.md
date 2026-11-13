@@ -38,27 +38,24 @@ says "the workbench", "the converter's repository", "a private repository".
   chosen in the search (user, 2026-11-10: closing it by hand should not hide the annotation asked for). A fourth,
   above the map window (`--m2-split-t`, dots `--m2-grip-t`), hides the site's header when dragged up so the map takes
   the page from its top; a click brings the header back (not in development mode, which has no header).
-- The look (user, 2026-11-09): Default Next of the styles experiment is the viewer's default look, in its own block
-  after the main rules of `atlas-app.html` (frame and 8 px gaps, no dots on the separators, the separator under the map
-  on, the page, the list and the panel scrolling as one (as Compact Dark; the pinned behaviour is on the styles page in Reactome Scroll, Default List and Default Lines), the list and the panel scrolling inside; items fading over 10 px under the search and at the list's bottom edge: removed and
-  brought back on 2026-11-09, user, once the item above the chosen map stayed in sight). The chosen map stays in sight in the list with about one and a half items above and below it. `look="version1"` on the include leaves the block out: the look before (the styles page uses it, so its
-  styles keep the base they were made on).
-  `look="panel"` (user, 2026-11-10: "apply newest default to mreg-atlas"): Default Panel of the styles experiment (Default
-  in its picker; MINERVA's thin lines, no frame, the panel's column always there), in a block of its own in place of
-  Default Next's, copied from the styles' `default-lines-base.css` and `default-panel-base.css` (picker rules left out). A
-  change to Default Panel in the styles is copied here by hand. The demo keeps Default Next; first site: mreg-atlas. With a site's footer, the lines down the page meet the footer's line as they meet the header's (user, 2026-11-11: the site's margin over the footer left a gap; the styles page has no footer).
-  `look="icon-row"` (user, 2026-11-12: "apply this to MREG website"): Default View of the styles experiment since 2026-11-13
-  (user: the default for projects; was Default Icon Row; Default Edit is the same look with the editor), the same
-  Default Lines rules as `look="panel"` (shared block) with the styles' `default-icon-row-base.css` in a block of its own
-  (icon row, Icons Top or Left in Settings, Open in within Downloads, no Info or Legend tab; the right-click menu,
-  `--m2-context: 1`, since 2026-11-12, user: "update mreg with current default"). A change to Default View's base
-  in the styles (`default-icon-row-base.css`) is copied here by hand (the list's dark grey added 2026-11-13). First site: mreg-atlas (in place of `look="panel"`).
+- The look (user, 2026-11-13: "Making Default View the viewer's own look - okay"): Default View of the styles experiment,
+  the default for projects, is the viewer's own look, with no `look=` on the include (Default Edit is the same look with
+  `--m2-edit` on). Its rules are written once, in `_includes/look-lines.css` (the Lines rules: MINERVA's thin lines, no
+  frame round the map, the separators, the line under the header and over a site's footer) and `_includes/look-view.css`
+  (the icon row: Maps, Search, Downloads, Settings; Icons Top or Left in Settings; Open in within Downloads; no Info or
+  Legend tab; the right-click menu, `--m2-context`; the map list dark grey): `atlas-app.html` includes both,
+  `copy-to-site.sh` copies them to a site, and the styles take them with their `update.sh` (their
+  `default-icon-row-base.css`, the base of Default View and Default Edit, includes them), so nothing is copied by hand.
+  `look="version1"` leaves both out, the base rules alone (the styles page, so its styles keep the base they were made
+  on). The looks before, Default Next (2026-11-09, the frame and 8 px gaps) and `look="panel"` (Default Panel,
+  2026-11-10), are in the history (before this change); `look="icon-row"` (2026-11-12) now gives the default, as any
+  other value but version1. The demo shows this look since 2026-11-13 (it showed Default Next).
 - Menu (user, 2026-11-10, as in Claude's app; `--m2-menu: 1`, off in the viewer's own look): two rows at the top of
   the list, Search with a magnifying glass and Downloads with the download sign, in place of the search field and the
   download buttons, so the room under the map goes to the map. Search turns into the search field in its own place, the
   magnifying glass kept (user, 2026-11-10: in place, not below); Esc, or leaving it empty, turns it back into the row; Downloads opens a menu built from the download row. The map window's height dragged by the reader is kept apart for the menu, so the room it frees is the map's. With the menu the separator under the map has no row to put out of sight: the map is dragged taller than the window, up to twice its height, the page scrolling while the pointer is held at the window's bottom edge (user, 2026-11-10: it was stuck there). First in the styles' Default
   Code Downloads and Default Downloads.
-- Icon column (user, 2026-11-11, from MINERVA's, narrower; `--m2-icons: 1`, off in the viewer's own look): a 44 px
+- Icon column (user, 2026-11-11, from MINERVA's, narrower; `--m2-icons: 1`, on in the viewer's own look since 2026-11-13 (look-view.css)): a 44 px
   column of small icons at the page's left edge, each opening its window in the list's place, one at a time, in this
   order (user, 2026-11-11; Info moved last, under Settings, as About at the bottom of a website, user the same day), Maps open at the start: Info (the whole project briefly, as MINERVA's: its name, `about=` on
   the include or the site's description, how many maps; not the map, whose name and text stay under it: user, 2026-11-11),
@@ -108,7 +105,7 @@ says "the workbench", "the converter's repository", "a private repository".
   dataset's colour); O9 the same four parts joined in one rounded box, as the split molecule itself; O4 (three values) and O5 (a network with values) removed (user, 2026-11-13); O6 preferred for now, O8 nice (user, the same day); O1 and O2 (stacked
   layers) are MINERVA's sign for Layers, kept in case the viewer gets layers later (user: "for later anyway if needed").
 - Icon row (user, 2026-11-11: "the place for icons is on the top of left panel"; `--m2-icon-row: 1`, with `--m2-icons: 1`,
-  off in the viewer's own look): the icon column's icons as a row of tabs at the top of the list's panel (36 px, 21 px
+  on in the viewer's own look since 2026-11-13 (look-view.css)): the icon column's icons as a row of tabs at the top of the list's panel (36 px, 21 px
   signs, from the left 6 px apart; a narrower panel drops whole tabs from the right, one by one, user 2026-11-12; so the panel closes only under 90 px, where one tab is left, not at the icon column's 160), the panel fixed beside the map as in the viewer's own look (user: "lets try as in default"), the top bar left
   to the site's name and navigation; the same windows as the icon column. Maps shows the list alone; Search shows
   the field with the whole list under it, filtered as one types (user, 2026-11-11: "search bar appear with the list (not
@@ -131,12 +128,12 @@ says "the workbench", "the converter's repository", "a private repository".
   gene, white); a scheme's code is that page's (Default, Paper and Haze are its presets Default, Paper and frost, Haze and silver). CellDesigner compartments keep their
   colours (their lines are drawn in it).
 - Icons on top or on the left (user, 2026-11-12: "vertical bar vs horizontal is simply a choice in settings";
-  `--m2-bar-choice: 1`, with the icon row, off in the viewer's own look): Settings gets Icons, Left or Top, last in Settings (user, 2026-11-12: easy to find there, rarely changed once chosen) (in this order, user 2026-11-12; kept in the
+  `--m2-bar-choice: 1`, with the icon row, on in the viewer's own look since 2026-11-13 (look-view.css)): Settings gets Icons, Left or Top, last in Settings (user, 2026-11-12: easy to find there, rarely changed once chosen) (in this order, user 2026-11-12; kept in the
   browser, `atlas-icon-bar`); Left puts the same tabs in the icon column at the page's left edge, with the row's
   behaviour (Search with the list, a second click on Search back to Maps, the open tab kept, annotations on the left as
   a tab, no window title: class `m2-bar-tabs`) and the column's 160 px minimum. First in the styles' Default Icon Row.
 - Open in within Downloads (user, 2026-11-11: "remove external (add them to downloads)"; `--m2-dl-ext: 1`, with the
-  icons, off in the viewer's own look): the Newt and MINERVA links under a line at the end of the Downloads window, and no
+  icons, on in the viewer's own look since 2026-11-13 (look-view.css)): the Newt and MINERVA links under a line at the end of the Downloads window, and no
   Open in icon; each with the outside sign on its right (user, 2026-11-11: "newt minerva buttons with external link symbol"). The window always holds them (class `m2-x`), shown only with the setting, so a style loaded after the map
   turns it on. First in the styles' Default Icon Row.
 - Floating list (user, 2026-11-11: "when list appears it should not modify the usable window, a temporary panel that
@@ -352,7 +349,7 @@ says "the workbench", "the converter's repository", "a private repository".
   own full screen (the map alone), the whole page goes full screen with its list, tools and panel: Shift with the
   full-screen button, or Full screen with tools in the right-click menu (Exit full screen there while on). The
   browser's bars go and the map window grows with the screen, as on a resize; Esc returns.
-- Right-click menu over the map (user, 2026-11-12; `--m2-context: 1`, off in the viewer's own look): shortcuts to what
+- Right-click menu over the map (user, 2026-11-12; `--m2-context: 1`, on in the viewer's own look since 2026-11-13 (look-view.css)): shortcuts to what
   the tabs and buttons already do, never the only way to it (phones have no right click). One layer, no submenus (user,
   2026-11-12: the shortcut is for what is aimed for on the page, as downloads and edit; the view, colours, link and the
   other files stay in the viewer's own buttons, the address bar and Downloads): Switch to edit (where the Edit tab shows;

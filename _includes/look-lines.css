@@ -1,0 +1,93 @@
+/* The viewer's look, part 1 of 2 (user, 2026-11-13: Default View made the viewer's own look): the Lines rules.
+   With look-view.css after it, this is Default View of the styles experiment, the default for projects (Default Edit
+   is the same look with the editor on). The master: atlas-app.html includes it, and the styles take it with their
+   update.sh (their default-icon-row-base.css includes it), so it is written once. look="version1" on the include
+   leaves both out (the base rules alone, as the styles page uses). */
+/* Default Lines (user, 2026-11-09): Default Next with MINERVA's separators. The map has no frame and no gaps around
+   it, so it no longer floats in the middle of nowhere: it runs from the list to the panel (or to the window's right
+   edge while no panel is open), and one thin line joins each pair of neighbours, under the top bar, between the list
+   and the map, between the map and the panel. Colours, fonts and the list and panel staying in sight as in Default
+   Next, as it was copied on 2026-11-09. */
+:root {
+  --m2-grip: #b4b4b4;   /* the three dots on the separators: the soft grey of the group chevrons (user) */
+  --m2-grip-t: transparent;   /* no dots above the map (user, 2026-11-09), the separator still works */
+  --m2-grip-h: #b4b4b4; /* and under the map window (user, 2026-11-09) */
+  --m2-separator-below: 1; /* that separator on: dragged up the map gets smaller, dragged down past the buttons the map goes to the bottom edge */
+  --m2-split-t: 8px;
+  --m2-split: 8px;
+  --m2-split-h: 8px;
+  --m2-below-view: 46px;   /* the download buttons 8 px under the map and 8 px above the window's bottom (user) */
+}
+html .wrapper-masthead .container { width: calc(100vw / var(--zoom, 1) - 16px); }
+html .masthead { padding: 6px 0 7px 4px; }   /* the name where the list's text starts (user) */
+html #main { padding-top: 8px; }
+html .m2 { width: calc(100vw / var(--zoom, 1) - 16px); column-gap: 0; grid-template-columns: var(--m2-list-w, 240px) minmax(600px, 1fr) calc(var(--m2-info-w, 240px) + 10px); }
+/* the right column kept for the panel as in Default, empty until a molecule is chosen (user); dragged shut, it goes */
+html .m2.m2-info-shut { grid-template-columns: var(--m2-list-w, 240px) minmax(600px, 1fr) 0; }
+html .m2-main { margin-left: 8px; }
+/* the list out of sight: the map 8 px from the window's edge, as on the other sides, the separator in that strip */
+html .m2-list-shut .m2-main { margin-left: 0; }
+/* the panel 10 px from the map window, as the search field and the list on the left (user, 2026-11-09: 8 px too little, 16 px too much); the separator in the middle of that room */
+html .m2-info:not(.m2-over) { margin-left: 10px; width: var(--m2-info-w, 240px); }
+html #m2-search { margin-bottom: 8px; }   /* above the list (user, 2026-11-09: back for now, after a try in the top bar) */
+/* the list's content 12 px from the window's edge, as in MINERVA (user) */
+html .m2-nav { padding: 0 4px; box-sizing: border-box; }
+@media (max-width: 940px) { html .m2-nav { padding: 0; } }   /* narrow windows: the search and the list in line with the map (user, 2026-11-09) */
+html #m2-downloads { margin-top: 4px; }
+@media (max-width: 940px) {
+  html .m2 { width: auto; }
+  html .m2-main { margin-left: 0; }
+  html .m2-info:not(.m2-over) { margin-left: 0; width: auto; }
+}
+
+/* the separators' dots between the viewer's (1.5 px) and Reactome's (1 px) (user, 2026-11-09), 8 px apart as both */
+html #m2-split::after, html #m2-split-r::after { background: radial-gradient(circle, var(--m2-grip) 1.25px, transparent 1.6px) center / 4px 8px repeat-y; }
+html #m2-split-t::after { background: radial-gradient(circle, var(--m2-grip-t) 1.25px, transparent 1.6px) center / 8px 4px repeat-x; }
+html #m2-split-h > div::after { background: radial-gradient(circle, var(--m2-grip-h) 1.25px, transparent 1.6px) center / 8px 4px repeat-x; }
+
+/* the zoom buttons over the map filled in the accent under the pointer, white sign, as in the Reactome styles (user, 2026-11-09) */
+html .m2-ctrl button:hover { background: var(--m2-accent); border-color: var(--m2-accent); color: var(--m2-on-accent, #fff); }
+
+
+/* scrolling as in Default (user, 2026-11-09, for Default Lines on 2026-11-10): the page moves as one, the list with
+   its search, the map and the panel together; the list and the panel still scroll inside. Pinned in sight until then. */
+@media (min-width: 941px) {
+  html .m2-nav { align-self: stretch; }   /* the list's line on its right down to the end of the map column */
+}
+
+
+/* MINERVA's separators (user, 2026-11-09) */
+html .wrapper-masthead { border-bottom: 1px solid var(--m2-frame); margin-bottom: 0; }   /* the lines down the page meet this one (a site's own margin under the header left a gap, user 2026-11-10) */
+html #main { padding-top: 0; }
+html body.m2-head-shut #main { padding-top: 6px; }
+/* the same at the bottom: the lines down the page meet the footer's line (a site's own margin over its footer left a gap
+   under them, user 2026-11-11, on mreg-atlas); the room under the page's text kept inside the columns */
+html .wrapper-footer { margin-top: 0; border-top: 1px solid var(--m2-frame); }
+html #m2-text { padding-bottom: 40px; }
+html { --m2-split-t: 6px; }
+html .m2 { width: calc(100vw / var(--zoom, 1)); column-gap: 0; grid-template-columns: var(--m2-list-w, 240px) minmax(600px, 1fr) auto; }
+html .m2.m2-info-shut { grid-template-columns: var(--m2-list-w, 240px) minmax(600px, 1fr) 0; }
+html .m2-nav { padding: 12px 12px 0; border-right: 1px solid var(--m2-frame); box-sizing: border-box; }
+html .m2-main, html .m2-list-shut .m2-main { margin-left: 0; }
+html #m2-view { border: 0; border-radius: 0; }
+html #m2-downloads, html #m2-title, html #m2-text { padding-left: 12px; padding-right: 12px; }
+html #m2-split { left: -4px; }   /* the list's separator on its line */
+/* the panel joined to the map by a line the whole height of the map column: the line belongs to the map column */
+html .m2-info:not(.m2-over) { margin-left: 0; width: var(--m2-info-w, 240px); box-sizing: border-box; padding: 12px 16px; }   /* as wide as the list by default, 240 px (user, 2026-11-09; was 300) */
+html .m2:has(.m2-info:not(.m2-over):not(:empty)):not(.m2-info-shut) .m2-main { border-right: 1px solid var(--m2-frame); }
+@media (max-width: 940px) {
+  html .m2 { width: auto; }
+  html .m2-nav { border-right: 0; padding-bottom: 12px; }
+  html .m2-info:not(.m2-over) { width: auto; }
+}
+
+/* no dots on the separators (user, 2026-11-09): the lines are grabbed and moved as they are */
+:root { --m2-grip: transparent; --m2-grip-h: transparent; --m2-grip-t: transparent; }
+
+/* the separators show nothing under the pointer (user, 2026-11-09: no highlighting, the lines are there by default);
+   with the list out of sight its separator sits inside the window, its whole 8 px to grab (it was half outside: 4 px left) */
+html .m2-list-shut #m2-split { left: 0; }
+
+/* the download buttons lower (user, 2026-11-09): 4 px above the window's bottom, not 8; with no frame round the map the
+   8 px kept no edge in line, and the map gets the 4 px */
+:root { --m2-below-view: 42px; }
