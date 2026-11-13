@@ -53,6 +53,11 @@
     // a move by the arrow keys shown on the drawing at once, as a drag (user, 2026-11-12: a key held showed the result
     // only when let go, the drawing waiting for the keys to stop): what the keys moved since the map was last drawn
     var keyed = null, keyGuides = null;
+    // the part of a selected line last pressed (a bend point or an end), which the arrow keys move as a drag would (user,
+    // 2026-11-13: "with hand or with keys should be the same way"; the keys moved every bend point of the line at once):
+    // { k: the arc, p: a bend point } or { k, port: { k, end, n } }; a line selected with no part pressed is not moved by
+    // the keys, as a drag on the line itself does not move it
+    var part = null;
     // compartments are containers (user, 2026-11-12): resized by dragging an edge or a handle, and grown by themselves
     // when what they hold is moved past their margin; liveC: their boxes while a drag runs (index in nodes2 -> box),
     // drawn on the picture at once, until the renderer has drawn the map again
@@ -553,18 +558,37 @@
     // the grey guides of a bend point moved by the keys (user, 2026-11-12: as in a drag, to see when a segment is level or
     // upright): one bend point selected alone, a segment drawn while it is exactly level or upright; no snapping, the
     // keys move by whole steps
-    function bendGuides() {
-      if (selP.length !== 1 || selN.length || selE.length) return null;
+    function bendGuides(bp) {
+      if (bp == null) { if (selP.length !== 1 || selN.length || selE.length) return null; bp = selP[0]; }
       var k = -1, j = -1, out = [];
-      edges2.forEach(function (e, i) { var at2 = e.pts.indexOf(selP[0]); if (at2 >= 0) { k = i; j = at2 + 1; } });
+      edges2.forEach(function (e, i) { var at2 = e.pts.indexOf(bp); if (at2 >= 0) { k = i; j = at2 + 1; } });
       if (k < 0 || edges2[k].s == null || edges2[k].t == null) return null;
       var all = ports(k), B = all[j];
       [all[j - 1], all[j + 1]].forEach(function (q) { if (Math.abs(q[0] - B[0]) < 0.01 || Math.abs(q[1] - B[1]) < 0.01) out.push([B, q]); });
       return out.length ? out : null;
     }
-    function move(dx, dy) {
+    // a bend point moved by the keys stops where one of its segments turns level or upright, when the step would carry it
+    // past (a neighbour at x.5 was never met by whole steps, so the guides never showed)
+    function keyAlign(bp, d, ms) {
+      var k = -1, j = -1;
+      edges2.forEach(function (e, i) { var at2 = e.pts.indexOf(bp); if (at2 >= 0) { k = i; j = at2 + 1; } });
+      if (k < 0 || edges2[k].s == null || edges2[k].t == null) return d;
+      var all = ports(k), B = all[j], out = d.slice();
+      [j - 1, j + 1].forEach(function (i) {
+        var pi = edges2[k].pts[i - 1];
+        if (pi != null && ms.has(pi)) return;   // a neighbouring bend moving with it is no guide
+        [0, 1].forEach(function (a) {
+          if (!d[a]) return;
+          var q = all[i][a], from = B[a], to = B[a] + d[a];
+          if (Math.abs(q - from) > 0.01 && (q - from) * (q - to) <= 0 && Math.abs(q - from) < Math.abs(out[a])) out[a] = q - from;
+        });
+      });
+      return out;
+    }
+    function move(dx, dy, sets) {
       if (!dx && !dy) return;
-      var sets = moving(), all = sets.n, ps = sets.p;
+      sets = sets || moving();
+      var all = sets.n, ps = sets.p;
       var g = {}, p = {};
       all.forEach(function (i) {
         nodes2[i].geo.forEach(function (gi) {
@@ -586,7 +610,7 @@
     }
     function back(from, to) {
       if (!from.length) return;
-      to.push(text); text = from.pop(); parse(); selN = []; selP = []; selE = []; dirty = true; render(); paint(); changed();
+      to.push(text); text = from.pop(); parse(); selN = []; selP = []; selE = []; part = null; dirty = true; render(); paint(); changed();
     }
 
     // the drawing: the renderer in the browser; the map keeps its place on screen when the drawing's edges change
@@ -1120,6 +1144,15 @@
           over.push('<rect class="m2-ed-bend"' + sw(0.5) + ' x="' + f1(sx(q[0]) - sq() / 2) + '" y="' + f1(sy(q[1]) - sq() / 2) + '" width="' + f1(sq()) + '" height="' + f1(sq()) + '"/>');
         });
       });
+      // the part of the line the keys move: four small squares round it, as a bend point selected alone
+      var pt1 = !drag && part && !selN.length && !selP.length && selE.indexOf(part.k) >= 0 ? part : null;
+      if (pt1) {
+        var qa = ports(pt1.k), Q = pt1.port ? qa[pt1.port.end ? qa.length - 1 : 0] : pt(pt1.p);
+        var a1 = Math.max(1.5, 4 * z), g1 = Math.max(1, 2 * z) / 2 + sq() / 2, X1 = sx(Q[0]), Y1 = sy(Q[1]);
+        [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(function (c) {
+          over.push('<rect class="m2-ed-bend"' + sw(0.5) + ' x="' + f1(c[0] < 0 ? X1 - g1 - a1 : X1 + g1) + '" y="' + f1(c[1] < 0 ? Y1 - g1 - a1 : Y1 + g1) + '" width="' + f1(a1) + '" height="' + f1(a1) + '"/>');
+        });
+      }
       if (drag && drag.port && drag.port.to) {
         var pk = drag.port, b0 = bx(pk.n), C = [b0[0] + b0[2] / 2 + pk.to[0], b0[1] + b0[3] / 2 + pk.to[1]];
         var ph = Math.max(2, HANDLE * z);
@@ -1258,7 +1291,8 @@
       if (pp) {   // a lit line's end square: its port moved among the node's five places
         e.stopImmediatePropagation(); e.preventDefault();
         view.setPointerCapture(e.pointerId); view.focus({ preventScroll: true });
-        drag = { port: pp, x: P[0], y: P[1], dx: 0, dy: 0, cx: e.clientX, cy: e.clientY }; mv = null; paint(); return;
+        drag = { port: pp, x: P[0], y: P[1], dx: 0, dy: 0, cx: e.clientX, cy: e.clientY }; mv = null;
+        part = { k: pp.k, port: pp }; paint(); return;
       }
       // an edge of a compartment, or a handle of one selected: a drag resizes it (user, 2026-11-12: compartments are
       // containers, "resizable manually ... when I simply drag the edge of it"); a bend point or a node there comes first
@@ -1287,6 +1321,7 @@
       // parts move with the next press); a molecule still needs its first click
       var keepE = null;
       if (!there && h.p != null && selE.some(function (q) { return edges2[q].pts.indexOf(h.p) >= 0; })) {
+        part = { k: selE.find(function (q) { return edges2[q].pts.indexOf(h.p) >= 0; }), p: h.p };
         keepE = selE.slice(); selN = []; selE = []; selP = [h.p]; list = selP; there = true;
       }
       // a first click on a bend point of a line not selected selects the whole line, as a click anywhere on it (user,
@@ -1541,6 +1576,7 @@
       if (t && e.type === 'pointerup' && Math.hypot(e.clientX - t.x, e.clientY - t.y) < 5) {   // a click, not a drag of the map
         e.stopImmediatePropagation();   // the viewer's release would open the annotation (its own pointer ends with the capture)
         var hs = t.h;
+        part = null;
         if (!hs) { if (!t.shift) { selN = []; selP = []; selE = []; } paint(); return; }
         var li = hs.p != null ? selP : hs.e != null ? selE : selN, ki = hs.p != null ? hs.p : hs.e != null ? hs.e : hs.n;
         if (t.shift) { if (li.indexOf(ki) >= 0) li.splice(li.indexOf(ki), 1); else li.push(ki); }
@@ -1553,7 +1589,7 @@
         var a = [Math.min(band.x, band.x2), Math.min(band.y, band.y2)], c = [Math.max(band.x, band.x2), Math.max(band.y, band.y2)];
         nodes2.forEach(function (n, i) { var b = boxOf(i); if (cd && /\|proc$/.test(n.id)) return; if (b[0] >= a[0] && b[1] >= a[1] && b[0] + b[2] <= c[0] && b[1] + b[3] <= c[1] && selN.indexOf(i) < 0) selN.push(i); });
         points.forEach(function (p, i) { var X = num(p, 'x'), Y2 = num(p, 'y'); if (X >= a[0] && Y2 >= a[1] && X <= c[0] && Y2 <= c[1] && selP.indexOf(i) < 0) selP.push(i); });
-        band = null; paint(); return;
+        band = null; part = null; paint(); return;
       }
       var d = drag; drag = null; var sets = mv; mv = null;   // the moved groups and live arcs stay until the map is drawn again
       if (!d.port && !d.rs) frozen = true;   // the copies too: the file now has the new places, the picture not yet
@@ -1594,6 +1630,15 @@
     view.addEventListener('pointerup', release, true);
     view.addEventListener('pointercancel', release, true);
 
+    // an end of a line moved by the keys among the node's five places, as a drag sets it (user, 2026-11-13): from the
+    // centre to the side the arrow points to; from a side, the opposite arrow back to the centre, another to its side
+    function portKey(pp, d) {
+      var e = edges2[pp.k], a = pp.end ? ['tx', 'ty'] : ['sx', 'sy'], b = bx(pp.n);
+      var c = [b[0] + b[2] / 2, b[1] + b[3] / 2], o = spot(pp, [c[0] + num(e.path, a[0]), c[1] + num(e.path, a[1])]);
+      var u = [Math.sign(d[0]), Math.sign(d[1])], s = [Math.sign(o[0]), Math.sign(o[1])];
+      var to = (s[0] || s[1]) && s[0] === -u[0] && s[1] === -u[1] ? [0, 0] : [u[0] * b[2] / 2, u[1] * b[3] / 2];
+      setPort({ k: pp.k, end: pp.end, n: pp.n, to: to });
+    }
     // the keys: arrows move the selection by 1 (Shift: 10), Ctrl or Cmd with Z undoes, with S saves; Esc clears
     document.addEventListener('keydown', function (e) {
       if (!text) return;
@@ -1602,13 +1647,21 @@
       if (!on || current !== map || /input|textarea|select/i.test(document.activeElement.tagName)) return;
       if (mod && k === 'z') { e.preventDefault(); if (e.shiftKey) back(redo, undo); else back(undo, redo); return; }
       if (mod && k === 'y') { e.preventDefault(); back(redo, undo); return; }
-      if (e.key === 'Escape') { selN = []; selP = []; selE = []; keyGuides = null; paint(); return; }
+      if (e.key === 'Escape') { selN = []; selP = []; selE = []; part = null; keyGuides = null; paint(); return; }
       if ((e.key === 'Delete' || e.key === 'Backspace') && selP.length && !selN.length) { e.preventDefault(); unbend(selP); return; }
       var step = e.shiftKey ? 10 : 1, d = { arrowleft: [-step, 0], arrowright: [step, 0], arrowup: [0, -step], arrowdown: [0, step] }[k];
       if (!d) return;
       e.preventDefault(); e.stopPropagation();   // while editing the arrows never step to another map
       if (!selN.length && !selP.length && !selE.length) return;
-      remember(true); var ks = moving(); move(d[0], d[1]); keyShift(ks, d[0], d[1]); keyGuides = bendGuides(); paint();
+      // a line selected alone: only its part last pressed moves, as by hand (a bend point, or an end stepped among the
+      // node's five places); none pressed, nothing moves
+      var pt0 = part && !selN.length && !selP.length && selE.indexOf(part.k) >= 0 ? part : null;
+      if (!selN.length && !selP.length && !pt0) return;
+      if (pt0 && pt0.port) { portKey(pt0.port, d); return; }
+      var ks = pt0 ? { n: new Set(), p: new Set([pt0.p]), dx: 0, dy: 0 } : moving();
+      var bp = pt0 ? pt0.p : selP.length === 1 && !selN.length && !selE.length ? selP[0] : null;
+      if (bp != null) d = keyAlign(bp, d, ks.p);
+      remember(true); move(d[0], d[1], ks); keyShift(ks, d[0], d[1]); keyGuides = bp != null ? bendGuides(bp) : null; paint();
       clearTimeout(timer); timer = setTimeout(function () { fitThen({ moved: movedIds(ks) }, function () { render(); paint(); }); }, 150); changed();
     }, true);
 
