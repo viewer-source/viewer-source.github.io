@@ -94,7 +94,8 @@ says "the workbench", "the converter's repository", "a private repository".
   icon (the results are kept). With the icon column the list is never narrower than 160 px: under it, it closes (user: "two narrow things, not nice"); the buttons 8 px apart.
 - Legend signs C4 and C5 on trial (user, 2026-11-13): C2 with its two right squares replaced by a line each, an entity
   and its explanation twice, as a legend reads; C4 keeps C2's line under them, C5 has none (the two rows centred). In
-  the icon column after the other Legend signs (the styles' Default Icon Column Legacy); the icon row keeps C2.
+  the icon column after the other Legend signs (the styles' Default Icon Column Legacy); the icon row keeps C2. C4 the
+  favourite for now (user, 2026-11-13: "conveys it very nicely"); Legend is still out of the icon row.
 - Overlays signs on trial (user, 2026-11-13: "use this legacy space for trying new icons ... we are missing icon for
   overlays"): seven candidates in the rail before Settings (`data-win="ovl"`, `data-opt` o1 to o7: two layers, three
   layers, a sheet over a sheet, three values, a network with values, a molecule over a scale, bars), hidden in every
