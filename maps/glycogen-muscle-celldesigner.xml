@@ -2896,11 +2896,11 @@
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n0_n35" species="s_n0_n35" compartmentAlias="ca_n0">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="885.45489" y="772.532001" w="80.0" h="40.0"/>
+<celldesigner:bounds x="885.0" y="764.0" w="80.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
-<celldesigner:innerPosition x="840.786046" y="55.63964900000008"/>
+<celldesigner:innerPosition x="840.331156" y="47.107648"/>
 <celldesigner:boxSize width="80.0" height="40.0"/>
 <celldesigner:singleLine width="1.0"/>
 <celldesigner:paint color="ffc8d8eb" scheme="Color"/>
@@ -6454,7 +6454,7 @@
 <celldesigner:lineDirection index="1" value="unknown"/>
 </celldesigner:listOfLineDirection>
 </celldesigner:connectScheme>
-<celldesigner:editPoints>0.276585082848,0.535124251844</celldesigner:editPoints>
+<celldesigner:editPoints>0.236517144303,0.515736592287</celldesigner:editPoints>
 <celldesigner:line width="1.0" color="ff000000"/>
 </celldesigner:extension>
 </annotation>
