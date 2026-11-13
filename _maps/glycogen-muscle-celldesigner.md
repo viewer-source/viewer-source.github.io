@@ -10,12 +10,12 @@ draft: false
 tag: ""
 image: "/downloads/glycogen-muscle-celldesigner.svg"
 width: 2208
-height: 1864
+height: 1736
 scale: 1
 annotation: "/atlas-data/glycogen-muscle-celldesigner.json"
 image_error: ""
-v: "4181dd49b4"
-src: "baa83d4d1874ea2b324ace743affb075ab2589b7"
+v: "320574cb61"
+src: "5b99389f8b55faf6ae2096c184f0c8a0253e07d2"
 colours: true
 legend: "celldesigner"
 downloads: [{"label": "CellDesigner", "url": "/downloads/glycogen-muscle-celldesigner.xml"}, {"label": "SVG", "url": "/downloads/glycogen-muscle-celldesigner.svg"}, {"label": "SBML", "url": "/downloads/glycogen-muscle-celldesigner-sbml.xml"}, {"label": "Annotation", "url": "/downloads/glycogen-muscle-celldesigner.csv"}, {"label": "GraphML", "url": "/downloads/glycogen-muscle-celldesigner.graphml"}, {"label": "PNG", "url": "/downloads/glycogen-muscle-celldesigner.png"}, {"label": "SBGN-ML", "url": "/downloads/glycogen-muscle-celldesigner.sbgn"}, {"label": "Newt", "url": "http://web.newteditor.org/?URL=https://viewer-source.github.io/downloads/glycogen-muscle-celldesigner.sbgn"}, {"label": "MINERVA", "url": "https://mreg.elixir-luxembourg.org/minerva/index.html?id=F004-glycogen-muscle"}]
