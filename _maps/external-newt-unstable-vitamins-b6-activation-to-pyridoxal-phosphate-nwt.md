@@ -4,7 +4,7 @@ topic: "newt-unstable: vitamins b6 activation to pyridoxal phosphate (Newt file)
 tab: ""
 page: ""
 group: "SBGN-ML external"
-order: 1029
+order: 1017
 kind: "map"
 draft: false
 tag: ""

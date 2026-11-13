@@ -4,7 +4,7 @@ topic: "sbgn-website: Repressilator PD v6 color"
 tab: ""
 page: ""
 group: "SBGN-ML external"
-order: 1035
+order: 1023
 kind: "map"
 draft: false
 tag: ""

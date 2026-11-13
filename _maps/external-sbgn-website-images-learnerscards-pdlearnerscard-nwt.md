@@ -4,7 +4,7 @@ topic: "sbgn-website: pdlearnerscard (Newt file)"
 tab: ""
 page: ""
 group: "SBGN-ML external"
-order: 1058
+order: 1046
 kind: "map"
 draft: false
 tag: ""

@@ -4,7 +4,7 @@ topic: "newt-unstable: glycolysis"
 tab: ""
 page: ""
 group: "SBGN-ML external"
-order: 1022
+order: 1010
 kind: "map"
 draft: false
 tag: ""

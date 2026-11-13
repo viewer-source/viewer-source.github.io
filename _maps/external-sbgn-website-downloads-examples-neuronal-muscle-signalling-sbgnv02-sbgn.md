@@ -4,7 +4,7 @@ topic: "sbgn-website: neuronal muscle signalling SBGNv02"
 tab: ""
 page: ""
 group: "SBGN-ML external"
-order: 1049
+order: 1037
 kind: "map"
 draft: false
 tag: ""

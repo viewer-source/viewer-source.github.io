@@ -4,7 +4,7 @@ topic: "sbgn-website: downloads/examples/mapk cascade"
 tab: ""
 page: ""
 group: "SBGN-ML external"
-order: 1046
+order: 1034
 kind: "map"
 draft: false
 tag: ""
