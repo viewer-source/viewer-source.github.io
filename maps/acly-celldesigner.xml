@@ -335,7 +335,7 @@
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n22" species="s_n22">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="328.406331" y="111.97506105923907" w="80.0" h="40.0"/>
+<celldesigner:bounds x="297.0" y="97.617" w="80.0" h="40.0"/>
 <celldesigner:font size="12"/>
 <celldesigner:view state="usual"/>
 <celldesigner:structuralState angle="4.71238898038469"/>
