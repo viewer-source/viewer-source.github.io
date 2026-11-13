@@ -6052,14 +6052,13 @@
 <celldesigner:line width="1.0" color="ff000000" type="Straight"/>
 </celldesigner:productLink>
 </celldesigner:listOfProductLinks>
-<celldesigner:connectScheme connectPolicy="direct" rectangleIndex="1">
+<celldesigner:connectScheme connectPolicy="direct" rectangleIndex="0">
 <celldesigner:listOfLineDirection>
 <celldesigner:lineDirection index="0" value="unknown"/>
 <celldesigner:lineDirection index="1" value="unknown"/>
-<celldesigner:lineDirection index="2" value="unknown"/>
 </celldesigner:listOfLineDirection>
 </celldesigner:connectScheme>
-<celldesigner:editPoints>0.010632129199,-0.213203003108 1.010640011113,-0.213203003108</celldesigner:editPoints>
+<celldesigner:editPoints>1.010640011113,-0.213203003108</celldesigner:editPoints>
 <celldesigner:line width="1.0" color="ff000000"/>
 <celldesigner:listOfModification>
 <celldesigner:modification type="CATALYSIS" modifiers="s_n1_n25" aliases="sa_n1_n25" targetLineIndex="-1,3">
