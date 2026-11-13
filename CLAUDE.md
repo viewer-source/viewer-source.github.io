@@ -176,7 +176,7 @@ says "the workbench", "the converter's repository", "a private repository".
   (kept in that browser's localStorage, `atlas-edit-token`; Disconnect from GitHub removes it: a quiet grey line at the
   window's end, no button look or hover, user 2026-11-12); the build redraws it and the page swaps
   the new version in by itself (index.json checked every 30 s). The grey how-to starts with what the editor is for (user, 2026-11-12;
-  blue and a sentence on what it does not do tried and taken out): "This tool is designed for improving the layout of a map." The message after a save gives no clock time (user, 2026-11-12:
+  blue and a sentence on what it does not do tried and taken out): "This tool is designed for improving the layout of a map." The how-to is a popover since 2026-11-13 (user: the long text in the Edit window took the room palettes and new tools need): a "?" after the tools (and the ? key while editing) opens it over the map's left edge, in sections (Move and zoom, Select, Move what is selected, Layout tools, Keys), closed by "?", its cross, Esc or a click outside; open by itself the first time someone edits in a browser (`atlas-edit-help`). Its one source is `editor/src/help.js`: a tool added or changed gets its line there in the same change. The message after a save gives no clock time (user, 2026-11-12:
   "why would I need that"): "Saved. In about 2 minutes it is on the site, and this page updates by itself." Editing starts from the repository's version and its sha,
   so a file changed on GitHub meanwhile is never overwritten: saving stops and says so. A map not in the site's repository
   is saved to a place chosen once (Chrome, Edge), else as a download. Editing starts on the picture as it

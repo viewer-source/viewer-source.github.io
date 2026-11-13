@@ -571,6 +571,7 @@
       document.getElementById('m2-title').textContent = n;
       V.grid.classList.add('m2-editing');
       buttons();
+      helpFirst();
       gN = gE = null; mv = live = null; liveG = null; copies = []; frozen = false;
       if (same && same.text === t) { (cd ? cdpy() : yr()).then(function () { if (on && V.current === map && !undo.length && !gN) render(); }); paint(); say((site && site.pending) ? 'Connect to GitHub below so the moves are saved to the site.' : site ? 'Every move is saved to the site by itself.' : 'Editing ' + n + '.'); return; }
       say('Drawing ' + n + '...');
@@ -580,6 +581,7 @@
       if (!on) return;
       if (saveTimer) push();   // a move still waiting is saved now
       if (site && site.id && undo.length) V.kept = { id: site.id, v: site.v, sha: site.sha, pic: V.img, width: map.width, height: map.height, x0: picX0(), y0: picY0(), text: src(), ref: siteRef, cur: nowRef() };
+      if (helpBox) help(false);
       on = false; drag = null; band = null; V.grid.classList.remove('m2-editing'); paint(); buttons();
       say(dirty && !site ? name + ' has moves not saved: Back to it, or Save.' : 'Edit the map shown.');
     }
