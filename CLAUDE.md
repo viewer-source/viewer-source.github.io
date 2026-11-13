@@ -406,6 +406,10 @@ says "the workbench", "the converter's repository", "a private repository".
   upload, the MINERVA project's source file) and macrophage (AF11, the MINERVA project's current copy with its
   annotation) maps, each from its CellDesigner file and from a GraphML the converter made of it (`maps/asthmamap-*`, each
   with the other format in `maps/extra/`); public maps, kept as large maps for testing the viewer and the editor.
+  A new map is pushed with its build (`python3 build.py` locally, then downloads, atlas-data, _maps and cache committed),
+  not as its source alone (2026-11-13): the workflow fetches every new identifier first (585 new nodes, about four minutes
+  on GitHub's slow runners that day), and while the user's editor saves came in every few seconds each build was
+  overtaken and started again, its fetches never kept, so for 40 minutes no build landed.
 - Every change goes to `main` and is checked on the live demo before a site takes the new version. A site gets the
   viewer as a copy with a VERSION file naming this repository and its commit: `sh copy-to-site.sh <clone of the site>`
   copies only `atlas-app.html` and `atlas-tags.css` and writes the site's `_includes/VERSION`; the site's header, styles
