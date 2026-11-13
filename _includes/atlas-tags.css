@@ -15,6 +15,13 @@
   .m2-draft.m2-ext { color: var(--m2-accent); border-color: var(--m2-accent); }
   .m2-ext .m2-name { color: var(--m2-accent); }
   .m2-on.m2-ext .m2-name { color: var(--m2-on-accent); }
+  /* where the map came from (user, 2026-11-12: blue literature curation, green OmniPath, purple the Reactome-Recon lists,
+     "so I could see what comes from a different kind of analysis"; 2026-11-13: lost when the site's copy was replaced, now
+     here in the source): the name, and a draft tag, in the source's colour, published maps too; white on the chosen map */
+  .m2-src-curation .m2-name, .m2-src-curation .m2-draft:not(.m2-copy):not(.m2-error) { color: var(--m2-accent); border-color: var(--m2-accent); }
+  .m2-src-omnipath .m2-name, .m2-src-omnipath .m2-draft:not(.m2-copy):not(.m2-error) { color: var(--m2-src-omnipath, #2a8a4a); border-color: var(--m2-src-omnipath, #2a8a4a); }
+  .m2-src-reactome-recon .m2-name, .m2-src-reactome-recon .m2-draft:not(.m2-copy):not(.m2-error) { color: var(--m2-src-reactome-recon, #8e44ad); border-color: var(--m2-src-reactome-recon, #8e44ad); }
+  .m2-on.m2-on[class*="m2-src-"] .m2-name, .m2-on.m2-on[class*="m2-src-"] .m2-draft:not(.m2-copy):not(.m2-error) { color: var(--m2-on-accent); border-color: var(--m2-on-accent); }
   /* copy: the official version kept in the Atlas for comparison (user, 2026-10-18), the same
      style as the white draft */
   .m2-draft.m2-white, .m2-draft.m2-copy { color: var(--m2-faint); border-color: #bbb; }

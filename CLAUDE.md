@@ -345,3 +345,7 @@ says "the workbench", "the converter's repository", "a private repository".
   copies only `atlas-app.html` and `atlas-tags.css` and writes the site's `_includes/VERSION`; the site's header, styles
   and pages stay its own. First site: the next Metabolism Regulation version (2026-11-09).
 - Hidden from search engines for now (`noindex` in `_config.yml`).
+- Source colours in the list (user, 2026-11-12, made in the source 2026-11-13 after the first version, made only in the
+  Atlas site's copy, was lost when that copy was replaced): a map's `source` in the site's index gives its list item the
+  class `m2-src-<source>`; curation blue (the accent), omnipath green (`--m2-src-omnipath`), reactome-recon purple
+  (`--m2-src-reactome-recon`), the name and a draft tag, white on the chosen map (`atlas-tags.css`).

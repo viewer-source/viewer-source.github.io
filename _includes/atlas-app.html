@@ -23,6 +23,11 @@ look="panel" (user, 2026-11-10): Default Panel of the styles experiment, its own
      them by redefining them on :root (this :where() has no weight, so any later :root wins). */
   :where(:root) {
     --m2-accent: #4183c4;        /* the chosen map, chips, hover edges, new tags, the map pin */
+    /* where a map came from (a site's index gives each map a `source`; user, 2026-11-12, again 2026-11-13): its name and
+       draft tag in the list in the source's colour, so the sources can be counted at a glance; literature curation blue
+       (the accent), OmniPath green, the Reactome-Recon lists purple */
+    --m2-src-omnipath: #2a8a4a;
+    --m2-src-reactome-recon: #8e44ad;
     --m2-on-accent: #fff;        /* text and tag edges on the accent */
     --m2-link: #1c47a9;          /* links in the text and the panel (MINERVA's link blue) */
     --m2-text: #000;             /* map list and group names */
@@ -2244,7 +2249,7 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
         heading(group, shut);
       }
       if (shut) return;
-      var b = el('button', 'm2-item m2-map' + (m.group ? ' m2-sub' : '') + (m.tag === 'draft-ext' ? ' m2-ext' : '') + (m === (chosen || current) ? ' m2-on' : ''));
+      var b = el('button', 'm2-item m2-map' + (m.group ? ' m2-sub' : '') + (m.tag === 'draft-ext' ? ' m2-ext' : '') + (m.source ? ' m2-src-' + m.source : '') + (m === (chosen || current) ? ' m2-on' : ''));
       b.appendChild(el('span', 'm2-name', label(m)));
       b.type = 'button';
       b.setAttribute('data-id', m.id);
