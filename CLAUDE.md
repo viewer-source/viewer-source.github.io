@@ -281,8 +281,14 @@ says "the workbench", "the converter's repository", "a private repository".
   the branch moved (the site's build commits after each save) goes again when the file there is still the one last saved.
   Guides for nodes (user, 2026-11-12: "use as in yEd, then I correct"), yEd's snap lines: the node pressed snaps when one
   of its own arcs' end segments turns level or upright (thick grey, as a bend's), its centre lines up with another node's,
-  a side with the same side of another (opposite sides only within 40 units), midway between the nearest nodes on each
-  side (marks on the two gaps), or the drag is nearly straight across or down; each axis on its own, 6 px on screen, the
+  a side with the same side of another (opposite sides only within 40 units), at an equal gap (user, 2026-11-14: "one of
+  the most useful features", from yEd's screenshots: midway between the nearest nodes on each side, those just beside its
+  row or column too, within 20 units; or its gap to a node in its row or column the same as the gap between two nodes in
+  sight, one after the other and overlapping across, a node seen past smaller ones between, as a process glyph between two
+  metabolites; pairs found once per drag, none with more than 400 nodes in sight), or the drag is nearly straight across or
+  down; equal gaps marked as yEd's, a line with an open arrowhead at each end, 12 units beside the nodes on the side the
+  node moved sticks out to, thin lines from the nodes' sides out to it, a pair away from the node's row or column marked
+  beside itself, one pair a side (the nearest); each axis on its own, 6 px on screen, the
   smallest correction wins (near ties: that order), thin grey lines for centres and sides reaching 20 units past the
   nodes; only nodes in sight, not its own compartments; Ctrl or Alt held, no snapping. Not yet: the set node to node and
   node to arc distances (yEd's manual gives no default), bends snapping to node centres.

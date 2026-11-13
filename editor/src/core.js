@@ -1630,10 +1630,12 @@
         var X = sx(q[0]), Y = sy(q[1]), r = Math.max(3.5 * V.z, 4);
         out.push('<path class="m2-ed-snapline"' + gw() + ' d="M' + f1(X - r) + ' ' + f1(Y - r) + 'L' + f1(X + r) + ' ' + f1(Y + r) + 'M' + f1(X - r) + ' ' + f1(Y + r) + 'L' + f1(X + r) + ' ' + f1(Y - r) + '"/>');
       });
-      if (drag && drag.marks) drag.marks.forEach(function (g) {   // an equal gap: a line with a short bar at each end
-        var X0 = sx(g[0][0]), Y0 = sy(g[0][1]), X1 = sx(g[1][0]), Y1 = sy(g[1][1]), up = Y0 === Y1, t = 4 * V.z;
-        var bar = function (X, Y) { return up ? 'M' + f1(X) + ' ' + f1(Y - t) + 'L' + f1(X) + ' ' + f1(Y + t) : 'M' + f1(X - t) + ' ' + f1(Y) + 'L' + f1(X + t) + ' ' + f1(Y); };
-        out.push('<path class="m2-ed-mark"' + gw() + ' d="' + seg(g) + bar(X0, Y0) + bar(X1, Y1) + '"/>');
+      if (drag && drag.ext) drag.ext.forEach(function (g) { out.push('<path class="m2-ed-snapline"' + gw() + ' d="' + seg(g) + '"/>'); });
+      if (drag && drag.marks) drag.marks.forEach(function (g) {   // an equal gap, as yEd's: a line with an open arrowhead at each end
+        var X0 = sx(g[0][0]), Y0 = sy(g[0][1]), X1 = sx(g[1][0]), Y1 = sy(g[1][1]), t = Math.max(3 * V.z, 3);
+        var u = X1 - X0, v = Y1 - Y0, L = Math.hypot(u, v) || 1; u *= t / L; v *= t / L;
+        var head = function (X, Y, s) { return 'M' + f1(X + s * u - v) + ' ' + f1(Y + s * v + u) + 'L' + f1(X) + ' ' + f1(Y) + 'L' + f1(X + s * u + v) + ' ' + f1(Y + s * v - u); };
+        out.push('<path class="m2-ed-mark"' + gw() + ' d="' + seg(g) + head(X0, Y0, 1) + head(X1, Y1, -1) + '"/>');
       });
       // nodes selected: darkened (a group without what it holds, as yEd), and the eight handles round the box
       selN.forEach(function (i, j) {
@@ -1939,13 +1941,15 @@
     // guides for nodes (user, 2026-11-12: "use as in yEd, then I correct"), yEd's snap lines: the node pressed (the
     // selection moving with it) snaps when (1) one of its own arcs' segments becomes level or upright, (2) its centre lines
     // up with another node's, (3) a side with the same side of another node (opposite sides only when the two are close),
-    // (4) it sits midway between two nodes, (5) it is dragged nearly straight across or down (only x or only y changes).
+    // (4) it sits midway between two nodes, or its gap to a neighbour repeats a gap between two nodes in sight, (5) it is
+    // dragged nearly straight across or down (only x or only y changes).
     // Each axis on its own; 6 px on screen; the smallest correction wins, near ties (1 px) by that order; every reason
     // that holds is shown: thick grey for an arc, a thin line for centres and sides, marks for equal gaps. Ctrl or Alt held,
     // no snapping (yEd: Ctrl). Not yet: the set node to node and node to arc distances (no default in yEd's manual).
+    var GAP_OUT = 12;   // equal gap marks this far beside the nodes (map units)
     var CLOSE = 40;   // opposite sides snap only within this gap (map units), and lines reach this far past the nodes
     function snapNode(d) {
-      d.guides = []; d.lines = []; d.marks = []; d.crosses = [];
+      d.guides = []; d.lines = []; d.marks = []; d.ext = []; d.crosses = [];
       var T = 6 / V.z, b0 = boxOf(d.n), cand = { x: [], y: [] }, moved = mv.n, up = new Set();
       nodes2.forEach(function (n, i) { if (n.inside.indexOf(d.n) >= 0) up.add(i); });   // its own compartments: no guide
       var r = V.view.getBoundingClientRect(), v0 = [-V.tx / V.z + x0, -V.ty / V.z + y0], v1 = [(r.width / V.pz() - V.tx) / V.z + x0, (r.height / V.pz() - V.ty) / V.z + y0];
@@ -1973,14 +1977,49 @@
         if (gx <= CLOSE) { add('y', B[1], o[1] + o[3], 3, { s: o, at: 1 }); add('y', B[1] + B[3], o[1], 3, { s: o, at: 0 }); }
         if (gy <= CLOSE) { add('x', B[0], o[0] + o[2], 3, { s: o, at: 1 }); add('x', B[0] + B[2], o[0], 3, { s: o, at: 0 }); }
       });
-      ['x', 'y'].forEach(function (ax) {   // (4) midway between the nearest node on each side, among those level with it
-        var h = ax === 'x' ? 0 : 1, w = 1 - h, lo = null, hi = null;
-        others.forEach(function (o) {
-          if (o[w] > B[w] + B[w + 2] || o[w] + o[w + 2] < B[w]) return;
-          if (o[h] + o[h + 2] <= B[h] && (!lo || o[h] + o[h + 2] > lo[h] + lo[h + 2])) lo = o;
-          if (o[h] >= B[h] + B[h + 2] && (!hi || o[h] < hi[h])) hi = o;
+      // (4) equal gaps (user, 2026-11-14, from yEd's): midway between the nearest node on each side, or the gap to a node
+      // on one side the same as the gap between two nodes in sight. A node counts on a side when it is wholly on that side
+      // and can be seen from the other past the nodes nearer it (some of the width they share not covered), as yEd
+      // measures across a process glyph between two metabolites; for midway the node moved sees within NEAR across, as
+      // yEd takes a node just beside its row or column, a repeated gap stays in its row or column.
+      var NEAR = CLOSE / 2;
+      ['x', 'y'].forEach(function (ax) {
+        var h = ax === 'x' ? 0 : 1, w = 1 - h;
+        function seen(a, m, dir) {   // the nodes a sees on side dir (1 after, -1 before), nearest first
+          var lo = a[w] - m, hi = a[w] + a[w + 2] + m, cov = [], out = [];
+          var gap = function (o) { return dir > 0 ? o[h] - a[h] - a[h + 2] : a[h] - o[h] - o[h + 2]; };
+          others.filter(function (o) { return o !== a && gap(o) >= 0; }).sort(function (p, q) { return gap(p) - gap(q); }).some(function (o) {
+            var s0 = Math.max(o[w], lo), e0 = Math.min(o[w] + o[w + 2], hi);
+            if (s0 >= e0) return false;
+            var x = s0;   // the part of [s0, e0] the nearer nodes leave open
+            cov.slice().sort(function (p, q) { return p[0] - q[0]; }).forEach(function (c) { if (c[0] <= x && c[1] > x) x = c[1]; });
+            if (x < e0) out.push([o, gap(o)]);
+            cov.push([s0, e0]);
+            x = lo; cov.slice().sort(function (p, q) { return p[0] - q[0]; }).forEach(function (c) { if (c[0] <= x && c[1] > x) x = c[1]; });
+            return x >= hi;   // all covered: nothing further is seen
+          });
+          return out;
+        }
+        var lo = seen(B, NEAR, -1)[0], hi = seen(B, NEAR, 1)[0], bef = seen(B, 0, -1), aft = seen(B, 0, 1);
+        if (lo && hi) add(ax, B[h], (lo[0][h] + lo[0][h + 2] + hi[0][h] - B[h + 2]) / 2, 4, { mid: [lo[0], hi[0]] });
+        if (!bef.length && !aft.length) return;
+        var pairs = d['pairs' + ax];
+        if (!pairs) {   // once per drag (the nodes in sight stay put while it runs), by gap; none on a map zoomed far out
+          pairs = d['pairs' + ax] = [];
+          if (others.length <= 400) others.forEach(function (a) { seen(a, 0, 1).forEach(function (q) { if (q[1] > 0) pairs.push([a, q[0], q[1]]); }); });
+          pairs.sort(function (p, q) { return p[2] - q[2]; });
+        }
+        [[bef, 0], [aft, 1]].forEach(function (sd) {
+          sd[0].forEach(function (nq) {
+            var nb = nq[0], cur = nq[1], k = 0, n = pairs.length;
+            while (k < n) { var m = (k + n) >> 1; if (pairs[m][2] < cur - T) k = m + 1; else n = m; }
+            for (; k < pairs.length && pairs[k][2] <= cur + T; k++) {
+              var p = pairs[k];
+              if (sd[1]) add(ax, B[h] + B[h + 2], nb[h] - p[2], 4, { rep: p, nb: nb, side: 1 });
+              else add(ax, B[h], nb[h] + nb[h + 2] + p[2], 4, { rep: p, nb: nb, side: 0 });
+            }
+          });
         });
-        if (lo && hi) add(ax, B[h], (lo[h] + lo[h + 2] + hi[h] - B[h + 2]) / 2, 4, { mid: [lo, hi] });
       });
       add('x', d.dx, 0, 5, null); add('y', d.dy, 0, 5, null);   // (5) dragged straight: the start's x or y kept
       ['x', 'y'].forEach(function (ax) {
@@ -1996,6 +2035,7 @@
       var F = [b0[0] + d.dx, b0[1] + d.dy, b0[2], b0[3]], E = CLOSE / 2;
       ['x', 'y'].forEach(function (ax) {
         var h = ax === 'x' ? 0 : 1, w = 1 - h;
+        var gaps = [], rep = [];
         (d['w' + ax] || []).forEach(function (q) {
           if (q.arc != null) { var P = ports(q.arc); d.guides.push([P[q.end], P[q.to]]); return; }
           var o = q.c || q.s;
@@ -2006,13 +2046,36 @@
             d.crosses.push(h === 0 ? [at, m1] : [m1, at], h === 0 ? [at, m2] : [m2, at]);
             return;
           }
-          if (q.mid) {   // the two equal gaps, each with its marks, at the middle of the moved node
-            var mm = F[w] + F[w + 2] / 2, lo = q.mid[0], hi = q.mid[1];
-            [[lo[h] + lo[h + 2], F[h]], [F[h] + F[h + 2], hi[h]]].forEach(function (g) {
-              d.marks.push(h === 0 ? [[g[0], mm], [g[1], mm]] : [[mm, g[0]], [mm, g[1]]]);
-            });
+          if (q.mid) gaps.push([q.mid[0], F], [F, q.mid[1]]);
+          if (q.rep) {   // one pair a side, the nearest to the node
+            var dist = function (p) { return Math.abs(p[0][w] + p[1][w] + p[0][w + 2] / 2 + p[1][w + 2] / 2 - 2 * F[w] - F[w + 2]) + Math.abs(p[0][h] + p[1][h] + p[1][h + 2] - 2 * F[h] - F[h + 2]); };
+            if (!rep[q.side] || dist(q.rep) < dist(rep[q.side].rep)) rep[q.side] = q;
           }
         });
+        var apart = [];   // the gaps at the node, and repeated pairs away from its row or column, marked beside them
+        rep.forEach(function (q) {
+          if (!q) return;
+          gaps.push(q.side ? [F, q.nb] : [q.nb, F]);
+          (q.rep.some(function (o) { return o[w] < F[w] + F[w + 2] && o[w] + o[w + 2] > F[w]; }) ? gaps : apart).push([q.rep[0], q.rep[1]]);
+        });
+        // as yEd draws them: each gap a line with an arrowhead at each end, on one line beside its nodes, on the side the
+        // node moved sticks out to (a pair away from it: on its far side), with thin lines from the nodes' sides out to it
+        var pt2 = function (along, acr) { return h === 0 ? [along, acr] : [acr, along]; };
+        var mark = function (gs, far) {
+          var boxes = [];
+          gs.forEach(function (g) { g.forEach(function (o) { if (boxes.indexOf(o) < 0) boxes.push(o); }); });
+          var at = far ? Math.max.apply(null, boxes.map(function (o) { return o[w] + o[w + 2]; })) + GAP_OUT
+            : Math.min.apply(null, boxes.map(function (o) { return o[w]; })) - GAP_OUT, past = far ? 4 : -4;
+          gs.forEach(function (g) {
+            var a = g[0][h] + g[0][h + 2], b = g[1][h];
+            d.marks.push([pt2(a, at), pt2(b, at)]);
+            d.ext.push([pt2(a, at + past), pt2(a, far ? g[0][w] + g[0][w + 2] : g[0][w])], [pt2(b, at + past), pt2(b, far ? g[1][w] + g[1][w + 2] : g[1][w])]);
+          });
+        };
+        var mid = function (o) { return o[w] + o[w + 2] / 2; }, mean = 0, k = 0;
+        gaps.forEach(function (g) { g.forEach(function (o) { if (o !== F) { mean += mid(o); k++; } }); });
+        if (gaps.length) mark(gaps, k > 0 && mid(F) > mean / k + 0.5);
+        apart.forEach(function (g) { mark([g], mid(g[0]) + mid(g[1]) > 2 * mid(F)); });
       });
     }
     function onGrid(d) {   // snap to the grid, an axis a guide has not taken: the node pressed by its centre on 8 px, a
@@ -2050,7 +2113,7 @@
             if (nb) { drag.x = nb.at[0]; drag.y = nb.at[1]; drag.p = nb.p; drag.e = null; drag.made = drag.made || nb.k; selN = []; selE = []; selP = [nb.p]; mv = moving(); } }
           drag.dx = Math.round(P[0] - drag.x); drag.dy = Math.round(P[1] - drag.y);
           drag.gx = drag.gy = false;
-          drag.lines = []; drag.marks = [];
+          drag.lines = []; drag.marks = []; drag.ext = []; drag.crosses = [];
           if (drag.p != null) snap(drag);
           else if (drag.n != null && !e.altKey && !e.ctrlKey) snapNode(drag);
           if (gridSet.snap && !e.altKey && !e.ctrlKey) onGrid(drag);
