@@ -2389,7 +2389,9 @@ page, so its styles keep the base they were made on). The looks before (Default 
     }
     // the edited drawing on screen as a PNG, at its own size as written in its SVG
     function pngFrom(svg) {
-      var w = svg.match(/ width="([\d.]+)" height="([\d.]+)"/), u = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
+      var w = svg.match(/ width="([\d.]+)" height="([\d.]+)"/);
+      if (!w) return Promise.reject();
+      var u = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
       var p = pngOf({ width: +w[1], height: +w[2] }, { SVG: u });
       p.then(function () { URL.revokeObjectURL(u); }, function () { URL.revokeObjectURL(u); });
       return p;
@@ -2399,15 +2401,13 @@ page, so its styles keep the base they were made on). The looks before (Default 
     // site's build catches up, or a draft kept in this browser. { text, svg }, either may be missing; null: the site's
     function shown(m) {
       var e = window.m2EditNow && window.m2EditNow(), k = kept && kept.id === m.id ? kept : null;
-      if (e && e.id === m.id) return { text: e.text, svg: e.svg || (k && k.text === e.text ? k.svg : null) };
-      if (k && current && current.id === m.id && (k.text || k.svg)) return { text: k.text, svg: k.svg };
+      if (e && e.id === m.id) return { text: e.text, file: e.file, svg: e.svg || (k && k.text === e.text ? k.svg : null) };
+      if (k && current && current.id === m.id && (k.text || k.svg)) return { text: k.text, file: k.file, svg: k.svg };
       return null;
     }
-    function saveText(t, name, type) {
-      var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([t], { type: type })); a.download = name;
-      document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(function () { URL.revokeObjectURL(a.href); }, 10000);
-    }
+    function fileName(href) { return href ? href.split('/').pop().split(/[?#]/)[0] : ''; }
+    function saveAs(href, name) { var a = document.createElement('a'); a.href = href; a.download = name; document.body.appendChild(a); a.click(); a.remove(); }
+    function saveBlob(b, name) { var u = URL.createObjectURL(b); saveAs(u, name); setTimeout(function () { URL.revokeObjectURL(u); }, 10000); }
     function copyPicture(m, url, r, sh) {
       if (!navigator.clipboard || !window.ClipboardItem) return say('This browser cannot copy images', r.left, r.top);
       navigator.clipboard.write([new ClipboardItem({ 'image/png': pngOf(m, url, sh) })])
@@ -2429,11 +2429,10 @@ page, so its styles keep the base they were made on). The looks before (Default 
     // a download of the map's image: the site's file by its link, else made here (the PNG drawn as Copy image as PNG draws it)
     function saveImage(m, url, ext, r, sh) {
       var href = ext === 'svg' ? url.SVG || m.image : url.PNG;
-      var name = (href ? href.split('/').pop().split(/[?#]/)[0] : '') || (m.id || 'map') + '.' + ext;
-      var go = function (h) { var a = document.createElement('a'); a.href = h; a.download = name; document.body.appendChild(a); a.click(); a.remove(); };
-      if (sh && sh.svg && ext === 'svg') return saveText(sh.svg, name, 'image/svg+xml');
-      if (href && !(sh && sh.svg)) return go(href);
-      pngOf(m, url, sh).then(function (b) { var u = URL.createObjectURL(b); go(u); setTimeout(function () { URL.revokeObjectURL(u); }, 10000); },
+      var name = fileName(href) || (m.id || 'map') + '.' + ext;
+      if (sh && sh.svg && ext === 'svg') return saveBlob(new Blob([sh.svg], { type: 'image/svg+xml' }), name);
+      if (href && !(sh && sh.svg)) return saveAs(href, name);
+      pngOf(m, url, sh).then(function (b) { saveBlob(b, name); },
         function () { say('Not saved', r.left, r.top); });
     }
     function tab(name) {   // a tab of the icons, unless its window shows already (a second click would close it)
@@ -2474,9 +2473,9 @@ page, so its styles keep the base they were made on). The looks before (Default 
       if (document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen)
         item(box, isPageFull() ? 'Exit full screen' : 'Full screen with tools', pageFull);
       var src = (m.legend === 'celldesigner' ? ['CellDesigner', 'GraphML'] : ['GraphML', 'CellDesigner']).filter(function (l) { return url[l]; })[0];   // the format the map is drawn from
-      var sh = shown(m), lbl = src === 'GraphML' ? 'Download GraphML' : 'Download CellDesigner XML';   // what is on screen, where it is not the site's
-      if (src && sh && sh.text) item(box, lbl, function () { saveText(sh.text, url[src].split('/').pop().split(/[?#]/)[0], 'application/xml'); });
-      else if (src) link(box, lbl, url[src], true);
+      var sh = shown(m);   // what is on screen, where it is not the site's: its file under the name the editor read it by
+      if (sh && sh.text && sh.file) item(box, /\.graphml$/i.test(sh.file) ? 'Download GraphML' : 'Download CellDesigner XML', function () { saveBlob(new Blob([sh.text], { type: 'application/xml' }), fileName(sh.file)); });
+      else if (src) link(box, src === 'GraphML' ? 'Download GraphML' : 'Download CellDesigner XML', url[src], true);
       // the images as files (user, 2026-11-13): the site's own when it has them, else as the copies make them
       if (!m.imageError && (url.SVG || m.image)) item(box, 'Download SVG', function (r) { saveImage(m, url, 'svg', r, sh); });
       if (!m.imageError && (url.PNG || url.SVG || m.image)) item(box, 'Download PNG', function (r) { saveImage(m, url, 'png', r, sh); });
@@ -2588,7 +2587,7 @@ page, so its styles keep the base they were made on). The looks before (Default 
       var url = URL.createObjectURL(new Blob([recolour(k.svg)], { type: 'image/svg+xml' }));
       var pic = decoded(url).catch(function () { return null; });
       dropKept();
-      return { url: url, id: m.id, v: k.v, sha: k.sha || null, pic: pic, width: k.width, height: k.height, x0: k.x0, y0: k.y0, text: k.text || null, svg: k.svg, ref: k.ref, cur: k.cur, draft: draft };
+      return { url: url, id: m.id, v: k.v, sha: k.sha || null, pic: pic, width: k.width, height: k.height, x0: k.x0, y0: k.y0, text: k.text || null, svg: k.svg, file: k.file, ref: k.ref, cur: k.cur, draft: draft };
     }
     // edits kept in this browser for a reader with no GitHub token (user, 2026-11-13, the first of three layers: this
     // browser, a folder on the computer, GitHub): per map the edited file and its drawing, in IndexedDB, shown in place of
