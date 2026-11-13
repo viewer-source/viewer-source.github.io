@@ -220,7 +220,12 @@ says "the workbench", "the converter's repository", "a private repository".
   the map shows from the browser (a record with `site`), then the site's map takes its place. A group of the reader's
   reaches the site with its first map (the site has no empty groups). With a token Remove map on a site map hides it in
   this browser only (`atlas-hidden-maps`), its file staying on GitHub (user: deleting for real a separate step, later);
-  Show removed maps in the list's menu brings them back.
+  Show removed maps in the list's menu brings them back (for every page of this address: the demo, /styles/ and its
+  frozen copies). After the review (2026-11-14): a map waiting for its build cannot be edited (its moves would be lost
+  when the site's map takes its place); only a yEd GraphML or a CellDesigner file goes to the site (any other file would
+  stop every build); a reader's map in a site group stands in that group, so their group stays whole once the site has
+  one of that name. A new map is committed without its build, so the workflow first fetches its new identifiers: a map
+  with many new nodes can take several minutes, longer while editor saves restart the build.
   Remove map (also in the map's right-click menu) only hides: record and file stay, the same file added again brings it
   back. Settings: Example maps Shown or Hidden (the site's maps, while the reader has maps of their own). Their pictures
   and files are blob addresses (`ver` gives `#<at>`), an old version's let go only once nothing on the page uses it. No
