@@ -31,8 +31,6 @@ pd/sbgn-website/images/learnerscards/pdlearnerscard03.sbgn	PD	0.2	210	54	51885	s
 pd/sbgn-website/images/learnerscards/pdlearnerscard03plain.sbgn	PD	0.3	210	54	43404	sbgn-website	github.com/sbgn/sbgn.github.io @d2cc88d	images/learnerscards/pdlearnerscard03plain.sbgn	CC0 1.0			
 af/libsbgn/test-files/AF/AF_Reference_Card.sbgn	AF	0.3	45	9	10895	libsbgn	github.com/sbgn/libsbgn @2aae05b	test-files/AF/AF_Reference_Card.sbgn	LGPL 2.1 / EPL (LICENSE.txt)			
 af/libsbgn/test-files/AF/submaps_all-in-one.sbgn	AF	0.3	24	15	5947	libsbgn	github.com/sbgn/libsbgn @2aae05b	test-files/AF/submaps_all-in-one.sbgn	LGPL 2.1 / EPL (LICENSE.txt)			
-pd/libsbgn/test-files/PD/PD_Reference_Card.sbgn	PD	0.3	78	12	17524	libsbgn	github.com/sbgn/libsbgn @2aae05b	test-files/PD/PD_Reference_Card.sbgn	LGPL 2.1 / EPL (LICENSE.txt)			
-pd/libsbgn/test-files/PD/SBGN-PD_all.sbgn	PD	0.2	30	23	11037	libsbgn	github.com/sbgn/libsbgn @2aae05b	test-files/PD/SBGN-PD_all.sbgn	LGPL 2.1 / EPL (LICENSE.txt)			
 pd/libsbgn/test-files/PD/activated_stat1alpha_induction_of_the_irf1_gene.sbgn	PD	0.3	27	11	7143	libsbgn	github.com/sbgn/libsbgn @2aae05b	test-files/PD/activated_stat1alpha_induction_of_the_irf1_gene.sbgn	LGPL 2.1 / EPL (LICENSE.txt)			
 pd/libsbgn/test-files/PD/glycolysis.sbgn	PD	0.3	44	44	15994	libsbgn	github.com/sbgn/libsbgn @2aae05b	test-files/PD/glycolysis.sbgn	LGPL 2.1 / EPL (LICENSE.txt)			
 pd/libsbgn/test-files/PD/insulin-like_growth_factor_signaling.sbgn	PD	0.3	53	32	15713	libsbgn	github.com/sbgn/libsbgn @2aae05b	test-files/PD/insulin-like_growth_factor_signaling.sbgn	LGPL 2.1 / EPL (LICENSE.txt)			
