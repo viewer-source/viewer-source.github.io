@@ -9,6 +9,10 @@
 #   and products. Ports are where the lines meet the nodes (connection points), bends the edit points, absolute.
 #   Bend points stay where they are when a node moves (user, 2026-11-12: yEd's way, not CellDesigner's, where they
 #   live in the frame of the line's ends and stretch): they are written again in the frame of the new ends.
+#   CellDesigner's own model of a reaction (user, 2026-11-13: "build in Cell Designer's own model"): one link, its main
+#   line the two ends and the anchor points the user puts or removes; the square midway on segment rectangleIndex (|a holds
+#   the anchor points before that segment, |b the rest); added reactants and products joined at 3/8 and 5/8 of that
+#   segment (the antennas' ends), modifiers at the square's spots; all of it worked out again from those numbers.
 #   The glyph sits midway on the segment of the main line it is on (rectangleIndex), wherever that goes. It is never
 #   moved by itself (user, 2026-11-12: "in CellDesigner, it's not possible to move process itself"; the editor does not
 #   let it), and no bend point is ever added to make up for a move: the line changes only by the anchor (bend) points the
@@ -161,8 +165,8 @@ def graphml(text, off=(0.0, 0.0)):
         s = ' ' * ind
         if i in procs:
             r = procs[i]; c = r['sq']
-            out.append('%s<node id="%s" base="%r,%r"><data key="d6"><y:GenericNode configuration="com.yworks.sbgn.Process">%s</y:GenericNode></data></node>'
-                       % (s, escape(i), c[0] - off[0], c[1] - off[1], geo((c[0] - PROC / 2, c[1] - PROC / 2, PROC, PROC))))
+            out.append('%s<node id="%s"><data key="d6"><y:GenericNode configuration="com.yworks.sbgn.Process">%s</y:GenericNode></data></node>'
+                       % (s, escape(i), geo((c[0] - PROC / 2, c[1] - PROC / 2, PROC, PROC))))
             return
         b, ch = box(i), kids.get(i, [])
         if i in comps:
@@ -197,9 +201,8 @@ def graphml(text, off=(0.0, 0.0)):
         b = box(i) if i in d.alias or i in comps else None
         return (p[0] - b[0] - b[2] / 2, p[1] - b[1] - b[3] / 2)
 
-    def edge(eid, s, t, sp, tp, pts, tie=()):
-        ps = ''.join('<y:Point x="%r" y="%r"%s/>' % (p[0] - off[0], p[1] - off[1], ' with="%s"' % escape(t_) if t_ else '')
-                     for p, t_ in zip(pts, list(tie) + [None] * len(pts)))
+    def edge(eid, s, t, sp, tp, pts):
+        ps = ''.join('<y:Point x="%r" y="%r"/>' % (p[0] - off[0], p[1] - off[1]) for p in pts)
         out.append('    <edge id="%s" source="%s" target="%s"><data key="d10"><y:PolyLineEdge><y:Path sx="%r" sy="%r" tx="%r" ty="%r">%s</y:Path><y:BendStyle smoothed="false"/></y:PolyLineEdge></data></edge>'
                    % (escape(eid), escape(s), escape(t), sp[0], sp[1], tp[0], tp[1], ps))
 
@@ -210,11 +213,11 @@ def graphml(text, off=(0.0, 0.0)):
         if not r['glyph']:
             edge(rid + '|a', r['ra'], r['pa'], pa, pb, r['bends'])
             continue
-        g, k, sq, n = rid + '|proc', r['k'], r['sq'], len(r['bends'])
-        first, second = r['bends'][:k], r['bends'][k:]
-        # the segment's ends that are bend points go with the glyph
-        edge(rid + '|a', r['ra'], g, pa, (0.0, 0.0), first, [None] * (k - 1) + [g] if k else [])
-        edge(rid + '|b', g, r['pa'], (0.0, 0.0), pb, second, [g] if n - k else [])
+        g, k, sq = rid + '|proc', r['k'], r['sq']
+        # the main line split at the glyph: the anchor points before its segment in |a, the rest in |b, so the number of
+        # |a's points is rectangleIndex (a point put on |a puts the glyph on the segment after it, as its middle lies there)
+        edge(rid + '|a', r['ra'], g, pa, (0.0, 0.0), r['bends'][:k])
+        edge(rid + '|b', g, r['pa'], (0.0, 0.0), pb, r['bends'][k:])
         for m in r['mods']:
             edge('%s|m%d' % (rid, m['n']), m['alias'], g, port(m['M'], m['alias']) if m['anc'] else (0.0, 0.0),
                  (m['T'][0] - sq[0], m['T'][1] - sq[1]), m['bends'])
@@ -237,8 +240,6 @@ def read(gtext):
     for n in root.iter(G + 'node'):
         g = n.find('.//' + Y + 'Geometry')
         boxes[n.get('id')] = tuple(float(g.get(k)) for k in ('x', 'y', 'width', 'height'))
-        if n.get('base'):
-            base[n.get('id')] = tuple(float(v) for v in n.get('base').split(','))
     for e in root.iter(G + 'edge'):
         bends[e.get('id')] = [(float(p.get('x')), float(p.get('y'))) for p in e.iter(Y + 'Point')]
         pa = e.find('.//' + Y + 'Path')

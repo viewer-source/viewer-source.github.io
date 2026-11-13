@@ -36,7 +36,6 @@
     var cdp = null, pyCd = null, cd = null, drawing = false;
     function isCd(t) { return /<sbml[\s>]/.test(t.slice(0, 3000)) && t.indexOf('celldesigner') >= 0; }
     function src() { return cd ? cd.now : text; }   // the map's own file as it is now
-    var ties = {};   // a process glyph's id -> the bend points that go with it (its segment's ends, CellDesigner)
     var box = document.getElementById('m2-editwin'), status = document.getElementById('m2-ed-status');
     var overlay = document.getElementById('m2-edit-layer');
     var py = null;                 // a promise of Python with the renderer, from the first edit
@@ -322,8 +321,6 @@
                  pts: Array.prototype.slice.call(e.getElementsByTagNameNS(Y, 'Point')).map(function (p) { return pi.get(p); }),
                  smooth: e.getElementsByTagNameNS(Y, 'QuadCurveEdge').length > 0 || Array.prototype.some.call(e.getElementsByTagNameNS(Y, 'BendStyle'), function (b) { return b.getAttribute('smoothed') === 'true'; }) };
       });
-      ties = {};
-      points.forEach(function (p, i) { var w = p.getAttribute('with'); if (w) (ties[w] = ties[w] || []).push(i); });
       var byE = {}; edges2.forEach(function (e, k) { byE[e.id] = k; });
       procs = [];
       nodes2.forEach(function (n, i) {
@@ -378,7 +375,6 @@
       var ps = new Set(selP);
       selE.forEach(function (k) { edges2[k].pts.forEach(function (p) { ps.add(p); }); });
       edges2.forEach(function (e) { if (all.has(e.s) && all.has(e.t)) e.pts.forEach(function (p) { ps.add(p); }); });
-      all.forEach(function (i) { (ties[nodes2[i].id] || []).forEach(function (p) { ps.add(p); }); });
       return { n: all, p: ps, dx: 0, dy: 0 };
     }
     function bx(i) { if (liveC && liveC[i]) return liveC[i]; var b = boxOf(i);
@@ -1312,7 +1308,9 @@
       keyGuides = null;
       tap = null;
       if (!editing(e)) return;
+      var P0 = at(e);
       if (e.button === 2 || (e.button === 0 && e.ctrlKey && /Mac/.test(navigator.platform))) {   // a right click: the viewer's menu
+        rclick = P0;
         e.stopImmediatePropagation();   // (user, 2026-11-12: no right drag for the map, two fingers move it)
         return;
       }
@@ -1439,6 +1437,35 @@
       parse();
       return { p: edges2[k].pts[at], at: Q, k: k + 1 };
     }
+    // an anchor (bend) point taken away (user, 2026-11-13, CellDesigner's own model: anchor points are put and removed by
+    // the user, CellDesigner's right click Remove Anchor Point; yEd: Delete): its y:Point out of the text, one undo step.
+    // On a CellDesigner map the glyph then sits midway on the segment it is on, as CellDesigner puts it
+    function unbend(list) {
+      list = list.slice().sort(function (a, b) { return b - a; });   // last first, so the earlier ones keep their place in the text
+      var before = text;
+      list.forEach(function (pi) {
+        var re = /<y:Point\s[^>]*>/g, m, c = -1;
+        while ((m = re.exec(text))) if (++c === pi) break;
+        if (!m) return;
+        var a = m.index, b = m.index + m[0].length;
+        var s0 = text.lastIndexOf('\n', a - 1) + 1;
+        if (/^[ \t]*$/.test(text.slice(s0, a)) && text[b] === '\n') { a = s0; b += 1; }   // on a line of its own: the line goes
+        text = text.slice(0, a) + text.slice(b);
+      });
+      if (text === before) return false;
+      var keep = text; text = before; remember(false); text = keep;
+      parse(); selN = []; selP = []; selE = []; keyGuides = null; dirty = true;
+      render(); paint(); changed();
+      return true;
+    }
+    var rclick = null;   // where the last right click was, for the menu's Remove anchor point
+    window.m2EditAnchor = function () {
+      if (!on || current !== map || !rclick) return null;
+      var h = hit(rclick);
+      if (!h || h.p == null) return null;
+      var pi = h.p;
+      return function () { unbend([pi]); };
+    };
     // guides for nodes (user, 2026-11-12: "use as in yEd, then I correct"), yEd's snap lines: the node pressed (the
     // selection moving with it) snaps when (1) one of its own arcs' segments becomes level or upright, (2) its centre lines
     // up with another node's, (3) a side with the same side of another node (opposite sides only when the two are close),
@@ -1638,6 +1665,7 @@
       if (mod && k === 'z') { e.preventDefault(); if (e.shiftKey) back(redo, undo); else back(undo, redo); return; }
       if (mod && k === 'y') { e.preventDefault(); back(redo, undo); return; }
       if (e.key === 'Escape') { selN = []; selP = []; selE = []; keyGuides = null; paint(); return; }
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selP.length && !selN.length) { e.preventDefault(); unbend(selP); return; }
       var step = e.shiftKey ? 10 : 1, d = { arrowleft: [-step, 0], arrowright: [step, 0], arrowup: [0, -step], arrowdown: [0, step] }[k];
       if (!d) return;
       e.preventDefault(); e.stopPropagation();   // while editing the arrows never step to another map

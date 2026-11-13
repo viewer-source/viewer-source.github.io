@@ -2540,6 +2540,8 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
       // one layer, no submenus (user, 2026-11-12): the shortcuts aimed for on the page; the map's view, colours, link and
       // the other files stay in the viewer's own buttons and tabs
       var eb = document.querySelector('#m2-rail .m2-ri[data-win="edit"]');
+      var unanchor = ed && window.m2EditAnchor && window.m2EditAnchor();   // an anchor point under the pointer while editing
+      if (unanchor) { item(box, 'Remove anchor point', unanchor); sep(box); }
       if (ed) item(box, 'View mode', function () { tab('list'); });   // leaving the Edit window ends editing
       else if (eb && eb.offsetParent) item(box, 'Edit mode', function () { tab('edit'); });
       if (document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen)

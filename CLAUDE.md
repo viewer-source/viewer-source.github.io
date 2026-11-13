@@ -230,7 +230,7 @@ says "the workbench", "the converter's repository", "a private repository".
   2026-11-12: "in Cell Designer, it's not possible to move process itself"; a drag on it moves the map, the arrow keys
   leave it, it goes only with a group holding its whole reaction), and no bend point is ever added to make up for a move
   (user: "no bend points automatically appearing"; before, a glyph moved took its segment and its ends at nodes became
-  new bend points); anchor (bend) points come only from the user, by dragging a line as in yEd; the glyph stays midway on its segment, and follows
+  new bend points); anchor (bend) points come only from the user, by dragging a line as in yEd, and go by Delete or Backspace on a selected one or Remove anchor point in the right-click menu over one (user, 2026-11-13; GraphML maps too, as yEd's Delete); the reaction is CellDesigner's own model (user, 2026-11-13): its main line's ends and anchor points, the square midway on segment rectangleIndex (an anchor point put before it moves the square to the segment after), added reactants and products at 3/8 and 5/8 of that segment, modifiers at the square's spots, worked out live and when saving from the same numbers; the glyph stays midway on its segment, and follows
   it during a drag or a held arrow key, its lines drawn live (user, 2026-11-12: it jumped there only on release; the
   editor reckons the middle as cd_edit does, so the glyph does not jump when the map is drawn again). Saved to
   `maps/<file>.xml`. Not on CellDesigner maps: Pack and Snap map to grid (the layout skill's GraphML scripts), the live
