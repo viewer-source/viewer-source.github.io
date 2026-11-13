@@ -4,7 +4,7 @@ topic: "sbgn-website: Repressilator PD v7"
 tab: ""
 page: ""
 group: "SBGN-ML external"
-order: 1024
+order: 1021
 kind: "map"
 draft: false
 tag: ""

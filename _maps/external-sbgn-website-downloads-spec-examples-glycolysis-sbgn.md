@@ -4,7 +4,7 @@ topic: "sbgn-website: downloads/spec_examples/glycolysis"
 tab: ""
 page: ""
 group: "SBGN-ML external"
-order: 1041
+order: 1038
 kind: "map"
 draft: false
 tag: ""

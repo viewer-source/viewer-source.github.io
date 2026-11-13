@@ -4,7 +4,7 @@ topic: "sbgn-website: downloads/examples/insulin-like growth factor signaling"
 tab: ""
 page: ""
 group: "SBGN-ML external"
-order: 1031
+order: 1028
 kind: "map"
 draft: false
 tag: ""

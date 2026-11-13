@@ -4,7 +4,7 @@ topic: "sbgn-website: IFNGeneRef"
 tab: ""
 page: ""
 group: "SBGN-ML external"
-order: 1040
+order: 1037
 kind: "map"
 draft: false
 tag: ""
