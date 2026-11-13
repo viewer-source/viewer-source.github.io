@@ -2073,18 +2073,18 @@ page, so its styles keep the base they were made on). The looks before (Default 
       var g = el('button', 'm2-group' + (shut ? ' m2-shut' : ''), name);
       g.type = 'button';
       g.setAttribute('data-group', name);
-      var own = ownGroup(name);
-      if (own) { g.classList.add('m2-mine'); g.title = 'Double-click to rename'; }   // the reader's group: in the order made, not dragged
+      var mg = !!own && own.isGroup(name);
+      if (mg) { g.classList.add('m2-mine'); g.title = 'Double-click to rename'; }   // the reader's group: in the order made, not dragged
       else movable(g, { group: name });
       g.addEventListener('click', function () {
         // a double-click on the reader's group: the list is built again after each click, so the second click lands on a
         // new heading; it undoes the first's open or close and renames
-        var dbl = own && Date.now() - mineClickAt < 400; mineClickAt = dbl ? 0 : Date.now();
+        var dbl = mg && Date.now() - mineClickAt < 400; mineClickAt = dbl ? 0 : Date.now();
         closed[name] = !closed[name];
         saveClosed();
         buildList(document.getElementById('m2-search').value);
         groupsMark();
-        if (dbl) renameGroup(name);
+        if (dbl) own.rename(name);
       });
       box.appendChild(g);
     }
@@ -2100,7 +2100,7 @@ page, so its styles keep the base they were made on). The looks before (Default 
       ni++;
     }
     // the reader's groups with no map yet, in the order they were made (not while searching)
-    var gs = editorAsked && !q ? groupsHere : [], gi = 0;
+    var gs = own && !q ? own.groups() : [], gi = 0;
     function ownEmpty(upTo) {   // those before upTo (undefined: all left)
       for (; gi < gs.length && gs[gi] !== upTo; gi++) {
         var name = gs[gi];
@@ -2298,11 +2298,10 @@ page, so its styles keep the base they were made on). The looks before (Default 
   var siteList = null;
   function setMaps(list) {
     siteList = list;
-    groupsHere = mineGroupsHere();
-    var a = arrange(withMine(list));
-    var rank = function (m) { return m.group ? groupsHere.indexOf(m.group) + 1 : 0; }, first = function (m) { return m.mine && rank(m) >= 0 && !siteGroupOf(m.group); };
+    var gh = own ? own.here() : [], a = arrange(own ? own.withMine(list) : list);
+    var rank = function (m) { return m.group ? gh.indexOf(m.group) + 1 : 0; }, first = function (m) { return m.mine && rank(m) >= 0 && !siteGroupOf(m.group); };
     maps = a.filter(first).sort(function (x, y) { return rank(x) - rank(y); })
-      .concat(a.filter(function (m) { return !first(m); }));   // a reader's map in a site group (one added there, or their group the site has now) stands in it, after its maps   // the reader's maps first: those in no group at the top, then their groups in the order made
+      .concat(a.filter(function (m) { return !first(m); }));   // the reader's maps first: those in no group at the top, then their groups in the order made; one in a site group (added there, or their group the site has now) stands in it, after its maps
     byId = {}; topics = [];
     railMark(); // the map count in the Info window
     maps.forEach(function (m) {
@@ -2436,7 +2435,8 @@ page, so its styles keep the base they were made on). The looks before (Default 
       var e = window.m2EditNow && window.m2EditNow(), k = kept && kept.id === m.id ? kept : null;
       if (e && e.id === m.id) return { text: e.text, file: e.file, svg: e.svg || (k && k.text === e.text ? k.svg : null) };
       if (k && current && current.id === m.id && (k.text || k.svg)) return { text: k.text, file: k.file, svg: k.svg };
-      if (m.mine && mine[m.id]) return { text: mine[m.id].text, file: mine[m.id].file, svg: mine[m.id].svg };   // a reader's own map, under its own name
+      var r = m.mine && own && own.rec(m.id);
+      if (r) return { text: r.text, file: r.file, svg: r.svg };   // a reader's own map, under its own name
       return null;
     }
     // the Downloads tab and the download row the same (user, 2026-11-13: "Downloads tab too ... Let's be consistent"): a
@@ -2518,8 +2518,8 @@ page, so its styles keep the base they were made on). The looks before (Default 
       var key = '<span class="m2-cx-key">' + (/Mac|iPhone|iPad|iPod/.test((navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || navigator.userAgent) ? '\u2318E' : 'Ctrl+E') + '</span>';
       if (ed) item(box, 'Switch to viewer', function () { tab('list'); }, key);   // leaving the Edit window ends editing
       else if (eb && eb.offsetParent) item(box, 'Switch to edit', function () { tab('edit'); }, key);
-      if (m.mine && !ed) item(box, 'Remove map', function () { mineHide(m.id); });
-      else if (!ed && editor && editor.hasToken()) item(box, 'Remove map', function () { siteHide(siteHidden().concat([m.id])); });   // hidden here, its file stays
+      if (m.mine && !ed && own) item(box, 'Remove map', function () { own.hide(m.id); });
+      else if (!ed && own && editor.hasToken()) item(box, 'Remove map', function () { own.hideSite(m.id); });   // hidden here, its file stays
       if (document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen)
         item(box, isPageFull() ? 'Exit full screen' : 'Full screen with tools', pageFull);
       var src = (m.legend === 'celldesigner' ? ['CellDesigner', 'GraphML'] : ['GraphML', 'CellDesigner']).filter(function (l) { return url[l]; })[0];   // the format the map is drawn from
@@ -2622,13 +2622,13 @@ page, so its styles keep the base they were made on). The looks before (Default 
       kept = null;
     }
     function keep(m) {   // the edited picture, while the site still shows the version before the last save; or a draft
-      var mine = editorAsked && !hasToken() && drafts[m.id];   // only where the Edit tab is (user, 2026-11-13: the demo shows the site's maps)
+      var dr = editorAsked && !hasToken() && drafts[m.id];   // only where the Edit tab is (user, 2026-11-13: the demo shows the site's maps)
       if (kept && kept.id === m.id && kept.mine) { if (kept.v === ver(m)) return kept; dropKept(); }   // an own map just edited, until its new version is in the list
       if (kept && kept.id === m.id) {
         if (kept.draft ? editorAsked && !hasToken() : behind(m, kept)) return kept;
         dropKept();
       }
-      if (mine) return (kept = fromStore(m, mine, true));
+      if (dr) return (kept = fromStore(m, dr, true));
       var all = stored(), k = all[m.id];
       if (!k) return null;
       if (!behind(m, k) || Date.now() - k.at > 3600000) { delete all[m.id]; store(all); return null; }
@@ -2646,10 +2646,10 @@ page, so its styles keep the base they were made on). The looks before (Default 
     // (atlas-edit-drafts), so a browser with none never opens the database. Lost when the browser's site data is
     // cleared, a private window closes, or Safari has not seen the site for 7 days: said in the Edit window
     var DRAFT_KEY = 'atlas-edit-drafts', TOKEN_KEY = 'atlas-edit-token', drafts = {}, draftDb = null, draftsDone = false, draftsIn;
-    function hasToken() { try { return !!localStorage.getItem(TOKEN_KEY); } catch (e) { return false; } }
     function draftIds() {
       try { var ids = Object.keys(drafts); if (ids.length) localStorage.setItem(DRAFT_KEY, JSON.stringify(ids)); else localStorage.removeItem(DRAFT_KEY); } catch (e) {}
     }
+    function hasToken() { try { return !!localStorage.getItem(TOKEN_KEY); } catch (e) { return false; } }
     function draftDo(mode, f, store) {
       if (!draftDb) draftDb = new Promise(function (res, rej) {
         var r = indexedDB.open('atlas-edit-drafts', 3);
@@ -2666,53 +2666,19 @@ page, so its styles keep the base they were made on). The looks before (Default 
         });
       });
     }
-    function draftPut(id, rec) { rec.id = id; drafts[id] = rec; draftIds(); return draftDo('readwrite', function (st) { return st.put(rec, id); }); }
-    function draftDrop(id) {
-      if (kept && kept.id === id && kept.draft) dropKept();
-      if (!drafts[id]) return Promise.resolve();
-      delete drafts[id]; draftIds();
-      return draftDo('readwrite', function (st) { return st.delete(id); }).catch(function () {});
-    }
-    draftsIn = (function () {   // the drafts read once; the map shown taken again if it has one
+    draftsIn = (function () {   // the drafts read once; the map shown taken again if it has one (the writes are the editor's, editor/src/own.js)
       var ids; try { ids = JSON.parse(localStorage.getItem(DRAFT_KEY) || '[]'); } catch (e) { ids = []; }
       if (!ids.length || !window.indexedDB) { draftsDone = true; return Promise.resolve(); }
       return draftDo('readonly', function (st) { return st.getAll(); }).then(function (all) {
         (all || []).forEach(function (r) { if (r && r.id && !drafts[r.id]) drafts[r.id] = r; });
-        draftIds();
+        draftIds();   // ids whose records are gone let go
         draftsShown();
       }).catch(function () {}).then(function () { draftsDone = true; });
     })();
-    // the reader's folder (layer 2, user, 2026-11-13: the editor writes into it): { dir (its handle), files (map id ->
-    // { name, mod }: the files written here) } kept beside the drafts; its name also in localStorage, so the texts can
-    // name it at once and a browser with none never opens the database for it
+    // the reader's folder (layer 2): its name in localStorage, so the texts name it at once and a browser with none never
+    // opens the database for it; the folder itself is the editor's (editor/src/own.js)
     var FOLDER_KEY = 'atlas-edit-folder';
     function folderName() { try { return localStorage.getItem(FOLDER_KEY) || ''; } catch (e) { return ''; } }
-    // the folder's handle (key dir) read once per page; the files written (key files: map id -> { name, mod, size }) read
-    // afresh each time, since another tab of the site may have written one since (the review, 2026-11-13)
-    var dirP = null;
-    function folder() {
-      if (!folderName() || !window.indexedDB) return Promise.resolve(null);
-      if (!dirP) dirP = draftDo('readonly', function (st) { return st.get('dir'); }, 'folder');
-      dirP.catch(function () { dirP = null; });
-      return Promise.all([dirP, draftDo('readonly', function (st) { return st.get('files'); }, 'folder')])   // a failed read rejects: never taken for no folder
-        .then(function (r) { return r[0] ? { dir: r[0], files: r[1] || {} } : null; });
-    }
-    function folderSet(dir) {   // a folder chosen: its name said only once it is stored
-      return draftDo('readwrite', function (st) { st.put({}, 'files'); return st.put(dir, 'dir'); }, 'folder')
-        .then(function () { dirP = Promise.resolve(dir); try { localStorage.setItem(FOLDER_KEY, dir.name); } catch (e) {} });
-    }
-    function folderFile(id, w) {   // one file written: only its own entry changed, in one step
-      return draftDo('readwrite', function (st) {
-        var q = st.get('files');
-        q.onsuccess = function () { var r = q.result || {}; r[id] = w; st.put(r, 'files'); };
-        return q;
-      }, 'folder');
-    }
-    function folderForget() {   // the folder gone or refused: Choose a folder offered again
-      try { localStorage.removeItem(FOLDER_KEY); } catch (e) {}
-      dirP = null;
-      return draftDo('readwrite', function (st) { st.delete('files'); return st.delete('dir'); }, 'folder').catch(function () {});
-    }
     // text 6 (approved by the user, 2026-11-13): after editing, the changes in this browser only and no folder yet, once a
     // day at most, where a folder can be chosen
     var nudged = null;
@@ -2732,255 +2698,31 @@ page, so its styles keep the base they were made on). The looks before (Default 
       if (!editor) { editorLoad(); return; }   // the editor not loaded yet (a page just opened): a moment, then the link works
       editor.chooseFolder().then(function () { if (folderName()) k.hidden = true; }, function (er) { k.textContent = 'No folder chosen: ' + (er && er.message ? er.message : er) + '.'; });
     });
-    // The reader's own maps (user, 2026-11-13, the third layer: "they would care about their own maps"): maps a reader adds (a file
-    // chosen with Add map in the list's right-click menu or dropped on the page, or one in their folder), drawn in this browser by the editor's
-    // renderers and edited as any map, only where the Edit tab is. Kept in IndexedDB (store mine: { id, title, file, text,
-    // svg, width, height, at, hidden, group }) and, with a folder, as their files in it. Taken off the list = hidden only (user:
-    // "hide only"): the record and the file stay, the same file added again brings it back. Example maps (the site's)
-    // hidden by a setting while the reader has maps of their own
-    var MINE_KEY = 'atlas-mine', mine = {}, mineURLs = {};
-    function mineFlag() { try { if (Object.keys(mine).length) localStorage.setItem(MINE_KEY, '1'); else localStorage.removeItem(MINE_KEY); } catch (e) {} }
-    var mineIn = (function () {
-      var has; try { has = localStorage.getItem(MINE_KEY); } catch (e) {}
-      if (!has || !window.indexedDB) return Promise.resolve();
-      return draftDo('readonly', function (st) { return st.getAll(); }, 'mine').then(function (all) {
-        (all || []).forEach(function (r) { if (r && r.id && !mine[r.id]) mine[r.id] = r; });
-        var legacy = null; try { legacy = localStorage.getItem('atlas-mine-group'); localStorage.removeItem('atlas-mine-group'); } catch (e) {}
-        if (legacy && mineGroups().indexOf(legacy) < 0) mineGroupsSet(mineGroups().concat([legacy]));   // the one group of before, named by the reader
-        Object.keys(mine).forEach(function (k) { var r = mine[k]; if (r.group === undefined) { r.group = legacy || ''; minePut(r).catch(function () {}); } });
-      }).catch(function () {});
-    })();
-    function minePut(r) {
-      mine[r.id] = r; mineFlag();
-      return draftDo('readwrite', function (st) { return st.put(r, r.id); }, 'mine');
-    }
-    function mineShown() { return editorAsked ? Object.keys(mine).map(function (k) { return mine[k]; }).filter(function (r) { return !r.hidden; }) : []; }
-    // the reader's groups (user, 2026-11-13: "add group and then name it immediately", no predefined name): as many as they
-    // like, each named when made, kept in their browser in the order made (atlas-mine-groups); a map in no group stands
-    // at the top of the list. Never a name of the site's groups or another of theirs (the two would merge)
-    var GROUPS_KEY = 'atlas-mine-groups';
-    function mineGroups() {
-      try { var a = JSON.parse(localStorage.getItem(GROUPS_KEY) || '[]'); return Array.isArray(a) ? a.filter(function (g) { return typeof g === 'string' && g; }) : []; } catch (e) { return []; }
-    }
-    function mineGroupsSet(a) { try { if (a.length) localStorage.setItem(GROUPS_KEY, JSON.stringify(a)); else localStorage.removeItem(GROUPS_KEY); } catch (e) {} }
-    // kept for every atlas page of this address; on a page whose site has a group of the same name, that group of the
-    // reader's is not shown (its maps stand at the top), so the two never merge
-    var groupsHere = [];
-    function mineGroupsHere() {
-      var site = (siteList || []).map(function (m) { return m.group; });
-      return mineGroups().filter(function (g) { return site.indexOf(g) < 0; });
-    }
+    // The reader's own maps (user, 2026-11-13, the third layer): kept, listed and managed by the editor (editor/src/own.js),
+    // only where the Edit tab is; the viewer asks it (own) for the list's entries and their groups once it is loaded
+    var own = null, mineClickAt = 0;
+    // with a token a map added goes to the site: once the site lists it, the reader's record of it gives way (own.js),
+    // its old id to the site's here, so the map shown and its address follow
+    var arrived = {};
     function siteGroupOf(name) { return !!name && (siteList || []).some(function (m) { return m.group === name; }); }
-    function ownGroup(name) { return !!name && editorAsked && groupsHere.indexOf(name) >= 0; }
-    function mineValid(v, was) {
-      return v === was || !((siteList || []).some(function (m) { return m.group === v; }) || mineGroups().indexOf(v) >= 0);
-    }
-    // a group's name typed in place: Rename group, a double-click on its name, or a new group (Add group), its field
-    // where the group stands (a new one under the reader's last); Enter or a click elsewhere keeps the name, Esc leaves it;
-    // a new group left empty or with Esc is not made; a name already taken turns the field red and is not kept
-    var mineClickAt = 0;
-    function renameGroup(was) {
-      var box = document.getElementById('m2-list'), f = document.createElement('input'), done = false;
-      f.type = 'text'; f.className = 'm2-group-edit'; f.maxLength = 60; f.value = was || ''; f.placeholder = 'Name of the group';
-      f.setAttribute('aria-label', 'Name of the group');
-      if (was) {
-        var g = box.querySelector('.m2-group.m2-mine[data-group="' + CSS.escape(was) + '"]');
-        if (!g) return;
-        g.replaceWith(f);
-      } else {
-        var own = box.querySelectorAll('.m2-mine'), last = own[own.length - 1];
-        if (last) last.after(f); else box.insertBefore(f, box.firstChild);
-        f.scrollIntoView({ block: 'nearest' });
-      }
-      f.focus(); f.select();
-      var end = function (keep) {
-        if (done) return; done = true;
-        var v = f.value.trim();
-        if (keep && v && v !== was && mineValid(v, was)) {
-          var gs = mineGroups();
-          if (was && gs.indexOf(was) >= 0) {
-            gs[gs.indexOf(was)] = v;
-            Object.keys(mine).forEach(function (k) { var r = mine[k]; if (r.group === was) { r.group = v; minePut(r).catch(function () {}); } });
-            if (closed[was]) { closed[v] = true; delete closed[was]; saveClosed(); }
-          } else if (!was) gs.push(v);
-          mineGroupsSet(gs);
-        }
-        refreshMine();
-      };
-      f.addEventListener('input', function () { f.classList.remove('m2-bad'); f.title = ''; });
-      f.addEventListener('keydown', function (e) {
-        e.stopPropagation();
-        if (e.key === 'Escape') return end(false);
-        if (e.key !== 'Enter') return;
-        e.preventDefault();
-        var v = f.value.trim();
-        if (v && !mineValid(v, was)) { f.classList.add('m2-bad'); f.title = 'A group of this name is in the list already'; return; }
-        end(true);
-      });
-      f.addEventListener('blur', function () {
-        if (!document.hasFocus()) return;   // another window or tab: the field waits, its blur comes when the reader clicks elsewhere here
-        if (pressed) document.addEventListener('click', function () { setTimeout(function () { end(true); }, 0); }, { once: true, capture: true });
-        else end(true);   // a press elsewhere (a map) gets its click before the list is built again
-      });
-    }
-    var pressed = false;
-    document.addEventListener('pointerdown', function () { pressed = true; }, true);
-    document.addEventListener('pointerup', function () { setTimeout(function () { pressed = false; }, 0); }, true);
-    function removeGroup(name) {   // the group goes, its maps stay, at the top of the list
-      mineGroupsSet(mineGroups().filter(function (g) { return g !== name; }));
-      Object.keys(mine).forEach(function (k) { var r = mine[k]; if (r.group === name) { r.group = ''; minePut(r).catch(function () {}); } });
-      if (closed[name]) { delete closed[name]; saveClosed(); }
-      refreshMine();
-    }
-    // the right-click menu over the list (user, 2026-11-13: "right click on the list ... add map, add group, then separator,
-    // remove map"), where the Edit tab is: Add map (into the group clicked, if it is the reader's, else at the top), Add
-    // group; on a map of the reader's Remove map; on a group of theirs Rename group and Remove group. Shift with the right
-    // click, or a page without the Edit tab, keeps the browser's own menu
-    var addTo = '';
-    document.getElementById('m2-list').addEventListener('contextmenu', function (e) {
-      if (!editorAsked || e.shiftKey || e.target.closest('input')) return;
-      e.preventDefault();
-      var t = e.target.closest('.m2-map, .m2-group, .m2-empty'), m = t && t.classList.contains('m2-map') ? byId[t.dataset.id] : null;
-      var gh = !!(editor && editor.hasToken()), tg = t && t.dataset.group;   // with a token a site group takes maps too
-      var g = m ? (m.mine || gh ? m.group || '' : '') : tg && (ownGroup(tg) || gh) ? tg : '', onGroup = t && !m && ownGroup(g);
-      var items = [['Add map', function () { addTo = g; picker.click(); }], ['Add group', function () { renameGroup(null); }]];
-      var editing = grid.classList.contains('m2-editing') && current && current.id === (m && m.id);
-      if (m && m.mine && !editing) items.push(null, ['Remove map', function () { mineHide(m.id); }]);   // as the map's menu: not while it is edited
-      else if (m && gh && !editing) items.push(null, ['Remove map', function () { siteHide(siteHidden().concat([m.id])); }]);
-      if (onGroup) items.push(null, ['Rename group', function () { renameGroup(g); }], ['Remove group', function () { removeGroup(g); }]);
-      if (siteHidden().length) items.push(null, ['Show removed maps', function () { siteHide([]); }]);
-      listMenu(e.clientX, e.clientY, items);
-    });
-    function listMenu(x, y, items) {
-      var box = el('div', 'm2-cx');
-      box.setAttribute('role', 'menu');
-      var close = function () { box.remove(); document.removeEventListener('pointerdown', out, true); document.removeEventListener('keydown', key, true); };
-      var out = function (ev) { if (!box.contains(ev.target)) close(); };
-      var key = function (ev) {
-        if (ev.key === 'Escape') { ev.preventDefault(); ev.stopPropagation(); return close(); }
-        if (ev.key !== 'ArrowDown' && ev.key !== 'ArrowUp') return;
-        ev.preventDefault(); ev.stopPropagation();
-        var bs = Array.prototype.slice.call(box.querySelectorAll('button')), i = bs.indexOf(document.activeElement);
-        bs[(i + (ev.key === 'ArrowDown' ? 1 : bs.length - 1)) % bs.length].focus();
-      };
-      items.forEach(function (it) {
-        if (!it) return box.appendChild(el('div', 'm2-sep'));
-        var b = el('button', null, it[0]); b.type = 'button';
-        b.addEventListener('click', function () { close(); it[1](); });
-        box.appendChild(b);
-      });
-      document.body.appendChild(box);
-      box.style.left = Math.max(4, Math.min(x, innerWidth - box.offsetWidth - 4)) + 'px';
-      box.style.top = Math.max(4, Math.min(y, innerHeight - box.offsetHeight - 4)) + 'px';
-      document.addEventListener('pointerdown', out, true); document.addEventListener('keydown', key, true);
-      box.querySelector('button').focus();
-    }
-    function examplesHidden() { try { return localStorage.getItem('atlas-examples') === 'hidden'; } catch (e) { return false; } }
-    function release(url) {   // an old version's address let go once nothing on the page uses it (a link or picture shown, the map on screen)
-      setTimeout(function () {
-        var used = (current && (current.image === url || (current.downloads || []).some(function (d) { return d.url === url; }))) ||
-          Array.prototype.some.call(document.querySelectorAll('a[href], img[src]'), function (e) { return e.getAttribute('href') === url || e.getAttribute('src') === url; });
-        if (used) release(url); else URL.revokeObjectURL(url);
-      }, 10000);
-    }
-    function mineEntry(r) {
-      var u = mineURLs[r.id];
-      if (!u || u.at !== r.at) {   // new addresses for a new version, the old ones let go
-        if (u) { release(u.svg); release(u.text); }
-        u = mineURLs[r.id] = { at: r.at, svg: URL.createObjectURL(new Blob([r.svg], { type: 'image/svg+xml' })), text: URL.createObjectURL(new Blob([r.text], { type: 'application/xml' })) };
-      }
-      var cdm = /<sbml[\s>]/.test(r.text.slice(0, 3000)) && r.text.indexOf('celldesigner') >= 0;
-      return { id: r.id, title: r.title, group: r.group && (groupsHere.indexOf(r.group) >= 0 || siteGroupOf(r.group)) ? r.group : '', topic: r.id, mine: true, file: r.file, width: r.width, height: r.height, v: String(r.at),
-        image: u.svg, legend: cdm ? 'celldesigner' : 'sbgn', downloads: [{ label: cdm ? 'CellDesigner' : 'GraphML', url: u.text }] };
-    }
-    // with a token a map added goes to the site (editor.toSite): until the site's build has it, it is shown from this
-    // browser as a reader's map with `site` (its id there), dropped once the site lists that id (arrived: the old id to
-    // the site's, so the map shown follows). Remove map on a site map (with a token) hides it in this browser only, its
-    // file staying on GitHub (user, 2026-11-14: deleting for real a separate step, later); Show removed maps brings them back
-    var arrived = {}, HIDDEN_KEY = 'atlas-hidden-maps';
-    function siteHidden() { try { var a = JSON.parse(localStorage.getItem(HIDDEN_KEY) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
-    function siteHide(ids) { try { if (ids.length) localStorage.setItem(HIDDEN_KEY, JSON.stringify(ids)); else localStorage.removeItem(HIDDEN_KEY); } catch (e) {} refreshMine(); }
-    function withMine(list) {
-      var ids = {}; list.forEach(function (m) { ids[m.id] = 1; });
-      Object.keys(mine).forEach(function (k) {
-        var r = mine[k];
-        if (!r.site || !ids[r.site]) return;
-        arrived[k] = r.site; delete mine[k]; delete mineURLs[k]; mineFlag();
-        draftDo('readwrite', function (st) { return st.delete(k); }, 'mine').catch(function () {});
-      });
-      var hid = editorAsked ? siteHidden() : [];
-      if (hid.length) list = list.filter(function (m) { return hid.indexOf(m.id) < 0; });
-      var own = mineShown().sort(function (a, b) { return a.title.localeCompare(b.title); }).map(mineEntry);
-      return own.concat(own.length && examplesHidden() ? [] : list);
-    }
     function refreshMine() {   // the list again with the reader's maps as they are now; the map shown kept, else the first
       if (!siteList) return;
       var was = chosen && chosen.id, before = maps, editing = grid.classList.contains('m2-editing');   // the map asked for (while editing, current is the editor's own)
       setMaps(siteList);
       forgetOld(before);
-      var own = mineShown().length, box = document.querySelector('.m2-set-examples');
-      if (box) box.style.display = own ? '' : 'none';
-      document.querySelectorAll('#m2-set-examples button').forEach(function (b) { b.classList.toggle('m2-on', (b.dataset.examples === 'hidden') === examplesHidden()); });
+      var n = own ? own.shown().length : 0, box = document.querySelector('.m2-set-examples');
+      if (box) box.style.display = n ? '' : 'none';
+      document.querySelectorAll('#m2-set-examples button').forEach(function (b) { b.classList.toggle('m2-on', (b.dataset.examples === 'hidden') === !!(own && own.examplesHidden())); });
       if (was && byId[was]) chosen = byId[was];
       var h = location.hash.slice(1);
       if (editing) return buildList(document.getElementById('m2-search').value);
-      if (byId[h] && (!was || was !== h)) return route();   // an own map's address after a reload, once the reader's maps are in
+      var ha = byId[h] ? h : byId[arrived[h]] ? arrived[h] : null;   // an own map's address after a reload, once the reader's maps are in (or the site's map it became)
+      if (ha && (!was || was !== ha)) return route();
       if (was && !byId[was] && maps[0]) return go(maps[0].id);
       var m = current && byId[current.id];
       if (m && m.mine && ver(m) !== ver(current)) show(m, true);   // its new version on screen (the old addresses are let go)
       buildList(document.getElementById('m2-search').value);
     }
-    document.querySelectorAll('#m2-set-examples button').forEach(function (b) {
-      b.addEventListener('click', function () {
-        try { if (b.dataset.examples === 'hidden') localStorage.setItem('atlas-examples', 'hidden'); else localStorage.removeItem('atlas-examples'); } catch (e) {}
-        refreshMine();
-      });
-    });
-    function mineHide(id) {   // off the list, kept
-      var r = mine[id]; if (!r) return;
-      r.hidden = true; minePut(r).catch(function () {});
-      if (r.site) try { localStorage.setItem(HIDDEN_KEY, JSON.stringify(siteHidden().concat([r.site]))); } catch (e) {}   // the site's map, once built, hidden too
-      refreshMine();
-    }
-    // one way to make or update a reader's map, for files added here and found in their folder (the editor): by its id,
-    // else by its file's name (the same file again brings its map back, up to date)
-    function mineAdd(name, text, d, id, group) {   // group: the reader's group it was added into (undefined: where it was, else at the top)
-      var old = id ? mine[id] : Object.keys(mine).map(function (k) { return mine[k]; }).filter(function (r) { return r.file === name; })[0];
-      var r = { id: old ? old.id : 'mine-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), title: old ? old.title : name.replace(/\.(graphml|xml)$/i, ''),
-        file: old ? old.file : name, text: text, svg: d.svg, width: d.width, height: d.height, at: Date.now(), hidden: false,
-        group: group !== undefined ? group : old && old.group || '' };
-      return minePut(r).then(function () { return r; });
-    }
-    function addFiles(list, group) {   // a reader's files, drawn and kept; group: Add map or a drop on a group of theirs
-      list = Array.prototype.slice.call(list);   // the picker's list empties when it is reset
-      if (!editor) { if (editorAsked) editorWait.push(function () { addFiles(list, group); }); return; }   // the editor still loading
-      var picked = Array.prototype.filter.call(list, function (f) { return /\.(graphml|xml)$/i.test(f.name); }).slice(0, 1);   // one map at a time (user, 2026-11-13: no bulk additions for now)
-      var last = null;
-      return picked.reduce(function (p, f) {
-        return p.then(function () { return f.text(); }).then(function (t) {
-          if (editor.hasToken()) return editor.drawText(t).then(function (d) {   // with a token: to the site, shown from here until built
-            var ord = (siteList || []).reduce(function (a, m) { return (!group || m.group === group) ? Math.max(a, m.order || 0) : a; }, 0) + 1;
-            return editor.toSite(f.name, t, group, ord).then(function (s) {
-              var r = { id: 'mine-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), title: f.name.replace(/\.(graphml|xml)$/i, ''), file: f.name,
-                text: t, svg: d.svg, width: d.width, height: d.height, at: Date.now(), hidden: false, group: group || '', site: s.id };
-              return minePut(r).then(function () { last = r.id; });
-            });
-          });
-          return editor.drawText(t).then(function (d) { return mineAdd(f.name, t, d, null, group || undefined); }).then(function (r) { last = r.id; return editor.toFolder(r.id, r.file, t); });
-        }).catch(function (e) { alert(f.name + ' was not added: ' + (e && e.message ? e.message : e)); });
-      }, Promise.resolve()).then(function () { refreshMine(); if (last) go(last); });
-    }
-    var picker = document.createElement('input');
-    picker.type = 'file'; picker.multiple = false; picker.accept = '.graphml,.xml'; picker.hidden = true;
-    picker.addEventListener('change', function () { addFiles(picker.files, addTo); picker.value = ''; });
-    document.body.appendChild(picker);
-    document.addEventListener('dragover', function (e) { if (editor && e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types, 'Files') >= 0) e.preventDefault(); });
-    document.addEventListener('drop', function (e) {   // a file dropped on a group of the reader's goes into it, elsewhere to the top
-      if (!editor || !e.dataTransfer || !e.dataTransfer.files.length) return;   // before the editor is in, the browser's own
-      e.preventDefault();
-      var t = e.target.closest && e.target.closest('#m2-list [data-group]'), g = t && t.dataset.group;
-      addFiles(e.dataTransfer.files, ownGroup(g) ? g : '');
-    });
     function draftsShown() {   // the map shown taken again when its draft can be shown now (the drafts read, the editor here)
       var m = current && byId[current.id];
       if (m && drafts[m.id] && editorAsked && !hasToken() && !grid.classList.contains('m2-editing')) put(m, true);
@@ -2988,7 +2730,8 @@ page, so its styles keep the base they were made on). The looks before (Default 
     document.getElementById('m2-draft-back').addEventListener('click', function (e) {   // the reader's changes let go
       e.preventDefault();
       var m = current && byId[current.id];
-      if (m) (editor ? editor.unkeep(m.id) : draftDrop(m.id)).then(function () { if (current && current.id === m.id) put(m, true); });
+      var back = function () { editor.unkeep(m.id).then(function () { if (current && current.id === m.id) put(m, true); }); };
+      if (m) { if (editor) back(); else { editorWait.push(back); editorLoad(); } }   // drafts are shown only where the editor loads (tried again if it failed)
     });
   // the viewer's names the editor reads and writes
   var V = Object.defineProperties({ level: EDIT_LEVEL, build: BUILD, renderers: RENDERERS }, {
@@ -3019,21 +2762,22 @@ page, so its styles keep the base they were made on). The looks before (Default 
     store: { get: function () { return store; } },
     behind: { get: function () { return behind; } },
     keep: { get: function () { return keep; } },
-    draftPut: { get: function () { return draftPut; } },
-    draftDrop: { get: function () { return draftDrop; } },
     draftsIn: { get: function () { return draftsIn; } },
     draftsDone: { get: function () { return function () { return draftsDone; }; } },
-    mine: { get: function () { return mine; } },
-    mineIn: { get: function () { return mineIn; } },
-    minePut: { get: function () { return minePut; } },
-    mineAdd: { get: function () { return mineAdd; } },
     refreshMine: { get: function () { return refreshMine; } },
+    draftDo: { get: function () { return draftDo; } },
+    dropKept: { get: function () { return dropKept; } },
+    draftIds: { get: function () { return draftIds; } },
+    arrived: { get: function () { return arrived; } },
+    siteGroupOf: { get: function () { return siteGroupOf; } },
+    folderKey: { get: function () { return FOLDER_KEY; } },
+    siteList: { get: function () { return siteList; } },
+    closed: { get: function () { return closed; } },
+    saveClosed: { get: function () { return saveClosed; } },
+    el: { get: function () { return el; } },
+    go: { get: function () { return go; } },
     tokenKey: { get: function () { return TOKEN_KEY; } },
     drafts: { get: function () { return drafts; } },
-    folder: { get: function () { return folder; } },
-    folderSet: { get: function () { return folderSet; } },
-    folderFile: { get: function () { return folderFile; } },
-    folderForget: { get: function () { return folderForget; } },
     folderName: { get: function () { return folderName; } },
     maps: { get: function () { return maps; } },   // the list in its order (the editor reads ahead nearest the map shown first)
     netIdle: { get: function () { return function () { return !busy && !queue.length; }; } }   // the pictures all in
@@ -3045,7 +2789,7 @@ page, so its styles keep the base they were made on). The looks before (Default 
     setTimeout(function () {   // after the viewer's script has run to its end
       var s = document.createElement('script');
       s.src = EDITOR + 'editor.js' + BUILD;
-      s.onload = function () { editor = window.m2Editor(V); draftsShown(); mineIn.then(refreshMine); editorWait.splice(0).forEach(function (f) { f(); }); };
+      s.onload = function () { editor = window.m2Editor(V); own = editor.own; draftsShown(); own.read().then(refreshMine); editorWait.splice(0).forEach(function (f) { f(); }); };
       s.onerror = function () { editorAsked = false; };
       document.head.appendChild(s);
     }, 0);

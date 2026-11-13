@@ -179,8 +179,8 @@ says "the workbench", "the converter's repository", "a private repository".
   blue and a sentence on what it does not do tried and taken out): "This tool is designed for improving the layout of a map." The how-to is a popover since 2026-11-13 (user: the long text in the Edit window took the room palettes and new tools need): a "?" after the tools (and the ? key while editing) opens it over the map's left edge, in sections (Move and zoom, Select, Move what is selected, Layout tools, Keys), closed by "?", its cross, Esc or a click outside; never open by itself (user, 2026-11-13: it opened the first time someone edited and was taken out; the switch to edit stays clean, who needs the how-to clicks the "?"). Its one source is `editor/src/help.js`: a tool added or changed gets its line there in the same change. The status line in the Edit window says nothing while things work and only what went wrong, in red (user, 2026-11-13: "when everything works fine, no need to update. I know what I'm doing. But if something goes wrong, this is exactly the note I would like to see"): no Opening, no tool results; the save messages (Saving in a moment, Saving, Saved) shown in grey while the editor is developed (user, 2026-11-13: "save messages too during development"), to go when it is complete; a warning (not saved, cannot edit, not drawn) stays until the next thing that works.
   No token (user, 2026-11-13, the first of three layers: this browser, then a folder on the computer, then GitHub; texts
   approved by the user): the moves are kept in this browser, the map's file as edited and its drawing in IndexedDB
-  (`atlas-edit-drafts`, the ids also in localStorage so a browser with none never opens it; storage in the viewer, the
-  timing in the editor), written a moment after the last move once drawn. The viewer shows a map's draft in place of
+  (`atlas-edit-drafts`, the ids also in localStorage so a browser with none never opens it; the viewer opens the
+  database and reads the drafts at page load, the editor writes them, `editor/src/own.js`), written a moment after the last move once drawn. The viewer shows a map's draft in place of
   the site's picture, also after a reload and on the demo page, with "Your earlier changes to this map are shown." and
   Back to the site's map under the map; editing goes on from it. The Edit window says once per browser "Your changes are
   kept in this browser only. They are lost if the browser's site data is cleared or the window is private, and in Safari
@@ -227,7 +227,13 @@ says "the workbench", "the converter's repository", "a private repository".
   one of that name. A new map is committed without its build, so the workflow first fetches its new identifiers: a map
   with many new nodes can take several minutes, longer while editor saves restart the build.
   Remove map (also in the map's right-click menu) only hides: record and file stay, the same file added again brings it
-  back. Settings: Example maps Shown or Hidden (the site's maps, while the reader has maps of their own). Their pictures
+  back. A file added is the reader's map by its name and content (user, 2026-11-14: "match by name and content"): the
+  same name and the text as it is now or as first added (`src`, a hash kept on the record) brings the map back with the
+  edits kept; another file of the same name is a map of its own (its folder file beside, `-2`); a map kept before has
+  no `src` and is matched by its name alone, as then. Their code (records, groups, the list's right-click menu, Add map
+  and to the site, the drop, the site's maps hidden, the folder's record, the drafts' writes) is the editor's,
+  `editor/src/own.js` (user, 2026-11-14: moved out of the viewer's file, so a page without the Edit tab carries none of
+  it); the viewer asks it for the list's entries and groups (`own`) and keeps `arrived` (a map added, now built). Settings: Example maps Shown or Hidden (the site's maps, while the reader has maps of their own). Their pictures
   and files are blob addresses (`ver` gives `#<at>`), an old version's let go only once nothing on the page uses it. No
   panel data for them (no build). Silent (user: "enable the possibility, it's okay that it's silent"), a hint on hover
   only ("Double-click to rename"). No save time or mark by the title either (user: when and how a map is saved is the system's concern, not the person editing's). Editing starts from the repository's version and its sha,

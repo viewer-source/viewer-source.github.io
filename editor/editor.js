@@ -1,6 +1,6 @@
 ---
 # The editor in one file, built by Jekyll from editor/src/ (user, 2026-11-13: the editor out of the viewer's file, loaded
-# only where the Edit tab is): the shared core, then the GraphML part, the CellDesigner part and the how-to (help.js), all in one scope.
+# only where the Edit tab is): the shared core, then the GraphML part, the CellDesigner part, the how-to (help.js) and the reader's own storage (own.js), all in one scope.
 # The viewer loads it when its style turns --m2-edit on and calls window.m2Editor with V, its own names.
 ---
 window.m2Editor = function (V) {
@@ -8,8 +8,9 @@ window.m2Editor = function (V) {
 {% include_relative src/graphml.js %}
 {% include_relative src/celldesigner.js %}
 {% include_relative src/help.js %}
+{% include_relative src/own.js %}
     buttons();
     aheadSoon();
     syncFolder();   // the reader's folder read for My maps, when the browser still allows it
-    return { paint: paint, away: away, unkeep: unkeep, chooseFolder: chooseFolder, drawText: drawText, toFolder: toFolder, toSite: toSite, hasToken: function () { return !!(repo() && token()); }, leaving: function (m) { if (on && m !== map) stop(); }, left: function (m) { if (on && m !== map) stop(); buttons(); setTimeout(shown, 0); warmUp(); aheadSoon(); } };
+    return { paint: paint, away: away, unkeep: unkeep, chooseFolder: chooseFolder, own: own, hasToken: function () { return !!(repo() && token()); }, leaving: function (m) { if (on && m !== map) stop(); }, left: function (m) { if (on && m !== map) stop(); buttons(); setTimeout(shown, 0); warmUp(); aheadSoon(); } };
 };
