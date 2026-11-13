@@ -2184,6 +2184,7 @@ page, so its styles keep the base they were made on). The looks before (Default 
   }
   function put(m, keep) {
     if (ed) ed.leaving(m);   // editing ends first, so the edited drawing is kept for this map
+    if (m.mine && byId[m.id]) m = byId[m.id];   // a reader's own map: its newest version (editing just ended may have saved one)
     var kp = ed ? ed.keep(m) : null;   // a map just edited: its edited drawing until the site's build catches up
     if (kp) m = Object.assign({}, m, { width: kp.width, height: kp.height });
     current = m;
