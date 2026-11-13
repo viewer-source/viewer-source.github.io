@@ -2353,6 +2353,7 @@ page, so its styles keep the base they were made on). The looks before (Default 
         if (first) { placeInfo(); return route(); }
         if (index) { index = null; loadIndex(); }
         var m = old && byId[old.id];
+        if (old && !m && byId[arrived[old.id]]) { buildList(document.getElementById('m2-search').value); return go(arrived[old.id]); }   // a map added to the site, now built
         if (m && ver(m) !== ver(old)) show(m, true);
         else if (m && !(ed && ed.keep(m))) current = m;
         if (was) chosen = byId[was.id] || m || chosen;
@@ -2518,6 +2519,7 @@ page, so its styles keep the base they were made on). The looks before (Default 
       if (ed) item(box, 'Switch to viewer', function () { tab('list'); }, key);   // leaving the Edit window ends editing
       else if (eb && eb.offsetParent) item(box, 'Switch to edit', function () { tab('edit'); }, key);
       if (m.mine && !ed) item(box, 'Remove map', function () { mineHide(m.id); });
+      else if (!ed && editor && editor.hasToken()) item(box, 'Remove map', function () { siteHide(siteHidden().concat([m.id])); });   // hidden here, its file stays
       if (document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen)
         item(box, isPageFull() ? 'Exit full screen' : 'Full screen with tools', pageFull);
       var src = (m.legend === 'celldesigner' ? ['CellDesigner', 'GraphML'] : ['GraphML', 'CellDesigner']).filter(function (l) { return url[l]; })[0];   // the format the map is drawn from
@@ -2838,11 +2840,14 @@ page, so its styles keep the base they were made on). The looks before (Default 
       if (!editorAsked || e.shiftKey || e.target.closest('input')) return;
       e.preventDefault();
       var t = e.target.closest('.m2-map, .m2-group, .m2-empty'), m = t && t.classList.contains('m2-map') ? byId[t.dataset.id] : null;
-      var g = m ? (m.mine ? m.group : '') : t && ownGroup(t.dataset.group) ? t.dataset.group : '', onGroup = t && !m && !!g;
+      var gh = !!(editor && editor.hasToken()), tg = t && t.dataset.group;   // with a token a site group takes maps too
+      var g = m ? (m.mine || gh ? m.group || '' : '') : tg && (ownGroup(tg) || gh) ? tg : '', onGroup = t && !m && ownGroup(g);
       var items = [['Add map', function () { addTo = g; picker.click(); }], ['Add group', function () { renameGroup(null); }]];
       var editing = grid.classList.contains('m2-editing') && current && current.id === (m && m.id);
       if (m && m.mine && !editing) items.push(null, ['Remove map', function () { mineHide(m.id); }]);   // as the map's menu: not while it is edited
+      else if (m && gh && !editing) items.push(null, ['Remove map', function () { siteHide(siteHidden().concat([m.id])); }]);
       if (onGroup) items.push(null, ['Rename group', function () { renameGroup(g); }], ['Remove group', function () { removeGroup(g); }]);
+      if (siteHidden().length) items.push(null, ['Show removed maps', function () { siteHide([]); }]);
       listMenu(e.clientX, e.clientY, items);
     });
     function listMenu(x, y, items) {
@@ -2887,7 +2892,23 @@ page, so its styles keep the base they were made on). The looks before (Default 
       return { id: r.id, title: r.title, group: r.group && groupsHere.indexOf(r.group) >= 0 ? r.group : '', topic: r.id, mine: true, file: r.file, width: r.width, height: r.height, v: String(r.at),
         image: u.svg, legend: cdm ? 'celldesigner' : 'sbgn', downloads: [{ label: cdm ? 'CellDesigner' : 'GraphML', url: u.text }] };
     }
+    // with a token a map added goes to the site (editor.toSite): until the site's build has it, it is shown from this
+    // browser as a reader's map with `site` (its id there), dropped once the site lists that id (arrived: the old id to
+    // the site's, so the map shown follows). Remove map on a site map (with a token) hides it in this browser only, its
+    // file staying on GitHub (user, 2026-11-14: deleting for real a separate step, later); Show removed maps brings them back
+    var arrived = {}, HIDDEN_KEY = 'atlas-hidden-maps';
+    function siteHidden() { try { var a = JSON.parse(localStorage.getItem(HIDDEN_KEY) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
+    function siteHide(ids) { try { if (ids.length) localStorage.setItem(HIDDEN_KEY, JSON.stringify(ids)); else localStorage.removeItem(HIDDEN_KEY); } catch (e) {} refreshMine(); }
     function withMine(list) {
+      var ids = {}; list.forEach(function (m) { ids[m.id] = 1; });
+      Object.keys(mine).forEach(function (k) {
+        var r = mine[k];
+        if (!r.site || !ids[r.site]) return;
+        arrived[k] = r.site; delete mine[k]; delete mineURLs[k]; mineFlag();
+        draftDo('readwrite', function (st) { return st.delete(k); }, 'mine').catch(function () {});
+      });
+      var hid = editorAsked ? siteHidden() : [];
+      if (hid.length) list = list.filter(function (m) { return hid.indexOf(m.id) < 0; });
       var own = mineShown().sort(function (a, b) { return a.title.localeCompare(b.title); }).map(mineEntry);
       return own.concat(own.length && examplesHidden() ? [] : list);
     }
@@ -2935,6 +2956,14 @@ page, so its styles keep the base they were made on). The looks before (Default 
       var last = null;
       return picked.reduce(function (p, f) {
         return p.then(function () { return f.text(); }).then(function (t) {
+          if (editor.hasToken()) return editor.drawText(t).then(function (d) {   // with a token: to the site, shown from here until built
+            var ord = (siteList || []).reduce(function (a, m) { return (!group || m.group === group) ? Math.max(a, m.order || 0) : a; }, 0) + 1;
+            return editor.toSite(f.name, t, group, ord).then(function (s) {
+              var r = { id: 'mine-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), title: f.name.replace(/\.(graphml|xml)$/i, ''), file: f.name,
+                text: t, svg: d.svg, width: d.width, height: d.height, at: Date.now(), hidden: false, group: group || '', site: s.id };
+              return minePut(r).then(function () { last = r.id; });
+            });
+          });
           return editor.drawText(t).then(function (d) { return mineAdd(f.name, t, d, null, group || undefined); }).then(function (r) { last = r.id; return editor.toFolder(r.id, r.file, t); });
         }).catch(function (e) { alert(f.name + ' was not added: ' + (e && e.message ? e.message : e)); });
       }, Promise.resolve()).then(function () { refreshMine(); if (last) go(last); });

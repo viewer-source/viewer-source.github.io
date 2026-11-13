@@ -119,6 +119,34 @@
       for (var i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000));
       return btoa(s);
     }
+    // a reader's map added to the site (user, 2026-11-14: with a token, Add map "would be saved indeed" on GitHub): the
+    // file as maps/<id>.graphml or .xml and its maps/<id>.md (title from the file's name, group, order) in one commit on
+    // main, so the build makes it a map of the site; the id from the file's name, made unique among maps/. A branch moved
+    // meanwhile (the build commits after each push): built again on the newest main, three tries
+    function toSite(name, text, group, order) {
+      if (!(repo() && token())) return Promise.reject(new Error('not connected to GitHub'));
+      var ext = /\.graphml$/i.test(name) ? '.graphml' : '.xml', base = name.replace(/\.(graphml|xml)$/i, ''),
+          slug = base.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'map';
+      var md = '---\ntitle: ' + JSON.stringify(base) + '\ntopic: ' + JSON.stringify(base) + '\ngroup: ' + JSON.stringify(group || '') + '\norder: ' + (order | 0) + '\n---\n';
+      var j = function (r) { return r.ok ? r.json() : r.json().then(function (d) { var e = new Error(d && d.message || 'GitHub ' + r.status); e.status = r.status; throw e; }); };
+      var post = function (path, body, method) { return api(path, { method: method || 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(j); };
+      var listing = api('/contents/maps?ref=main').then(j).then(function (d) { var o = {}; d.forEach(function (f) { o[f.name.replace(/\.[^.]+$/, '')] = 1; }); return o; });
+      return listing.then(function (taken) {
+        var id = slug; for (var k = 2; taken[id]; k++) id = slug + '-' + k;
+        return Promise.all([post('/git/blobs', { content: b64(text), encoding: 'base64' }), post('/git/blobs', { content: b64(md), encoding: 'base64' })]).then(function (b) {
+          var tries = 0;
+          var go = function () {
+            return api('/git/ref/heads/main').then(j).then(function (ref) {
+              return api('/git/commits/' + ref.object.sha).then(j).then(function (c) {
+                return post('/git/trees', { base_tree: c.tree.sha, tree: [{ path: 'maps/' + id + ext, mode: '100644', type: 'blob', sha: b[0].sha }, { path: 'maps/' + id + '.md', mode: '100644', type: 'blob', sha: b[1].sha }] });
+              }).then(function (t) { return post('/git/commits', { message: 'Map added in the viewer: ' + id + ext, tree: t.sha, parents: [ref.object.sha] }); })
+                .then(function (c) { return post('/git/refs/heads/main', { sha: c.sha }, 'PATCH'); });
+            }).catch(function (e) { if (e.status === 422 && ++tries < 3) return go(); throw e; });
+          };
+          return go().then(function () { ghDir = null; return { id: id }; });   // the listing read again next time
+        });
+      });
+    }
     function changed() {   // after every move, undo or redo: the site's map is saved a few seconds after the last one
       if (site && site.pending) { localFor = site; clearTimeout(localTimer); localTimer = setTimeout(local, 800); localBox(); return; }   // no token: kept in this browser
       if (!site || !token() || stuck) return;
@@ -268,7 +296,7 @@
         var m = V.byId[id], f = d[id].file || (graphmlOf(m) || '').split('?')[0].split('/').pop();
         toFolder(id, f, d[id].text);
       });
-      Object.keys(V.mine).forEach(function (id) { var r = V.mine[id]; if (!r.hidden) toFolder(id, r.file, r.text); });
+      Object.keys(V.mine).forEach(function (id) { var r = V.mine[id]; if (!r.hidden && !r.site) toFolder(id, r.file, r.text); });   // one added to the site is not the folder's
       return fq;
     }
     function chooseFolder() {
