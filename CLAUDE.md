@@ -199,22 +199,26 @@ says "the workbench", "the converter's repository", "a private repository".
   the moves to GitHub and drops the draft; with a token drafts are ignored; Disconnect while editing keeps further moves
   in the browser. Not yet: a draft over a site map changed since (shown as it is).
   Drafts only where the Edit tab is (user, 2026-11-13: the demo shows the site's maps).
-  My maps (user, 2026-11-13, the third layer: "they would care about their own maps"; hide only): a reader's own GraphML
-  and CellDesigner maps, only where the Edit tab is, the list's group My maps, always first. Added by Add a map at the
-  list's end or a file dropped on the page, or found in the reader's folder (its files read when the folder is chosen,
+  The reader's own maps (user, 2026-11-13, the third layer: "they would care about their own maps"; hide only): their
+  GraphML and CellDesigner maps, only where the Edit tab is, first in the list. Managed from the list's right-click menu
+  (user, 2026-11-13: "add map, add group, then separator, remove map", as Google Docs' New folder but by right click):
+  Add map (one file at a time, no bulk additions for now) into the reader's group right-clicked, else at the top of the
+  list in no group; Add group, named at once in an inline field (empty or Esc: no group; a name of the site's groups or
+  another of theirs: the field red, not kept); Remove map on a map of theirs; Rename group (also a double-click on its
+  name) and Remove group (its maps move to the top) on a group of theirs. No predefined name ("My maps" removed, user: not
+  liked) and no Add a map row at the list's end (user: "it's not a map"). Groups kept in the browser in the order made
+  (`atlas-mine-groups`), the group on each record (`group`, '' for none); the one group of before (`atlas-mine-group`)
+  taken over once. Shift with the right click, or a page without the Edit tab, keeps the browser's menu. Also a file
+  dropped on the page (on a group of theirs: into it), or found in the reader's folder (its files read when the folder is chosen,
   allowed or the editor starts; one changed by yEd or CellDesigner is read again; the files written here for the site's
   maps are left out). Drawn by the editor's renderers (drawText), kept in IndexedDB (store `mine`: id, title, file,
-  text, svg, size, at, hidden; `atlas-mine` in localStorage) and, with a folder, as their files there; edited as any map,
-  each save the map itself (no draft), never sent to GitHub even with a token. Remove from My maps (right-click) only
-  hides: record and file stay, the same file added again brings it back. Settings: Example maps Shown or Hidden (the
-  site's maps, while the reader has maps of their own). Their pictures and files are blob addresses (`ver` gives
-  `#<at>`), an old version's let go only once nothing on the page uses it. No panel data for them (no build). The group's name is the reader's
-  (user, 2026-11-13: "they should be able to name it however they want"; small first, several groups of their own later;
-  not in Settings, which is for when there is no intuitive way): renamed in place by a double-click on its name (the
-  second click undoes the first's open or close, as the list is rebuilt after each) or Rename group in its right-click
-  menu; Enter or a click elsewhere keeps it, Esc leaves it; My maps until named, kept in the browser
-  (`atlas-mine-group`); a site group's name is refused (the two would merge). Silent (user: "enable the possibility, it's
-  okay that it's silent"), a hint on hover only ("Double-click to rename"; Add a map's file hint). No save time or mark by the title either (user: when and how a map is saved is the system's concern, not the person editing's). Editing starts from the repository's version and its sha,
+  text, svg, size, at, hidden, group; `atlas-mine` in localStorage) and, with a folder, as their files there; edited as any map,
+  each save the map itself (no draft), never sent to GitHub even with a token (GitHub for them: handover, not built).
+  Remove map (also in the map's right-click menu) only hides: record and file stay, the same file added again brings it
+  back. Settings: Example maps Shown or Hidden (the site's maps, while the reader has maps of their own). Their pictures
+  and files are blob addresses (`ver` gives `#<at>`), an old version's let go only once nothing on the page uses it. No
+  panel data for them (no build). Silent (user: "enable the possibility, it's okay that it's silent"), a hint on hover
+  only ("Double-click to rename"). No save time or mark by the title either (user: when and how a map is saved is the system's concern, not the person editing's). Editing starts from the repository's version and its sha,
   so a file changed on GitHub meanwhile is never overwritten: saving stops and says so. A map not in the site's repository
   is saved to a place chosen once (Chrome, Edge), else as a download. Read ahead (user, 2026-11-13: the switch "immediate and immediately functional"): while a map is only shown where the Edit tab is, its file, the frame of its drawing, with a token the repository's version and sha, the renderer and a CellDesigner file's GraphML are loaded, so the switch to edit waits for nothing; dropped after a save, when editing stops, when the site's version or the token changes; with a token the repository's version is checked again just after the switch. Editing starts on the picture as it
   is, with no redraw and the map not moved (user, 2026-11-12: "exactly as I see it and immediately start editing"): the
