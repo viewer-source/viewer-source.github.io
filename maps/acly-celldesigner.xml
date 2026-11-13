@@ -375,7 +375,7 @@
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n26" species="s_n26">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="8.0" y="221.85" w="80.0" h="40.0"/>
+<celldesigner:bounds x="8.0" y="260.492" w="80.0" h="40.0"/>
 <celldesigner:font size="12"/>
 <celldesigner:view state="usual"/>
 <celldesigner:structuralState angle="4.71238898038469"/>
@@ -1446,7 +1446,7 @@ AKT3: P@S472 P@T305</body>
 <celldesigner:lineDirection index="2" value="unknown"/>
 </celldesigner:listOfLineDirection>
 </celldesigner:connectScheme>
-<celldesigner:editPoints>-0.028000301548,-0.447833178418 0.347014176894,-0.284462534939</celldesigner:editPoints>
+<celldesigner:editPoints>-0.113799246229,-0.549335754378 0.292514626206,-0.348936855912</celldesigner:editPoints>
 <celldesigner:line width="1.0" color="ff000000"/>
 <celldesigner:listOfModification>
 <celldesigner:modification type="PHYSICAL_STIMULATION" modifiers="s_n7" aliases="sa_n7" targetLineIndex="-1,2">
