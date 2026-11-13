@@ -402,6 +402,10 @@ says "the workbench", "the converter's repository", "a private repository".
   CellDesigner for a GraphML map, SBGN-ML, SBML and the annotation table copied from the official site's `downloads/`,
   the PNG made from the demo's own SVG at twice its size, white background, with headless Chromium) and `newt: true`,
   `minerva:` (the official map's MINERVA project) in its `maps/<id>.md`.
+  One more group (user, 2026-11-13: "for testing ... this large map"), AsthmaMap: its mast cell (submap PD01, the user's
+  upload, the MINERVA project's source file) and macrophage (AF11, the MINERVA project's current copy with its
+  annotation) maps, each from its CellDesigner file and from a GraphML the converter made of it (`maps/asthmamap-*`, each
+  with the other format in `maps/extra/`); public maps, kept as large maps for testing the viewer and the editor.
 - Every change goes to `main` and is checked on the live demo before a site takes the new version. A site gets the
   viewer as a copy with a VERSION file naming this repository and its commit: `sh copy-to-site.sh <clone of the site>`
   copies only `atlas-app.html` and `atlas-tags.css` and writes the site's `_includes/VERSION`; the site's header, styles
