@@ -72,16 +72,37 @@
       box.querySelector('#m2-ed-grid').setAttribute('aria-pressed', String(gridSet.shown));   // the switches in the tools row
       box.querySelector('#m2-ed-snap').setAttribute('aria-pressed', String(gridSet.snap));
     }
-    function gridPaint() {   // behind the drawing, as the map window's background: lines at multiples of the step in yEd units
-      if (!on || V.current !== map || !gridSet.shown) { V.view.style.backgroundImage = V.view.style.backgroundSize = V.view.style.backgroundPosition = ''; return; }
+    // the grid one screen pixel wide (user, 2026-11-13: "2 pixel is too heavy for grid"; it was 1 CSS px, so 2 on a
+    // Retina screen, smeared over 3 where a line fell between pixels): drawn on a canvas behind the map at the screen's own
+    // pixels, each line on a whole pixel; the tones kept (7 % and 13 % black, user: "already nice")
+    var gridCv = null;
+    function gridPaint() {   // behind the drawing: lines at multiples of the step in yEd units
+      var show = on && V.current === map && gridSet.shown;
+      if (!show) { if (gridCv) gridCv.style.display = 'none'; return; }
+      if (!gridCv || gridCv.parentNode !== V.view) {
+        gridCv = document.createElement('canvas'); gridCv.id = 'm2-ed-gridcv'; gridCv.setAttribute('aria-hidden', 'true');
+        gridCv.style.cssText = 'position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none';
+        V.view.insertBefore(gridCv, V.view.firstChild);
+      }
+      gridCv.style.display = '';
+      var k = (window.devicePixelRatio || 1) * V.pz(), W = V.view.clientWidth, H = V.view.clientHeight;
+      var cw = Math.round(W * k), ch = Math.round(H * k);
+      if (gridCv.width !== cw || gridCv.height !== ch) { gridCv.width = cw; gridCv.height = ch; }
+      var c = gridCv.getContext('2d'); c.clearRect(0, 0, cw, ch); c.lineWidth = 1;
       var s = NODE_STEP; while (s * V.z < 6) s *= 2;   // never denser than 6 px on screen
-      var a = s * V.z, b = 2 * a, ox = V.tx - x0 * V.z, oy = V.ty - y0 * V.z, px = function (v, m) { return ((v % m) + m) % m; };
-      var minor = 'rgba(0,0,0,.07)', major = 'rgba(0,0,0,.13)';
-      V.view.style.backgroundImage = ['linear-gradient(to right,' + major + ' 1px,transparent 1px)', 'linear-gradient(to bottom,' + major + ' 1px,transparent 1px)',
-        'linear-gradient(to right,' + minor + ' 1px,transparent 1px)', 'linear-gradient(to bottom,' + minor + ' 1px,transparent 1px)'].join(',');
-      V.view.style.backgroundSize = [b + 'px ' + b + 'px', b + 'px ' + b + 'px', a + 'px ' + a + 'px', a + 'px ' + a + 'px'].join(',');
-      var P = function (m) { return f1(px(ox, m)) + 'px ' + f1(px(oy, m)) + 'px'; };
-      V.view.style.backgroundPosition = [P(b), P(b), P(a), P(a)].join(',');
+      var a = s * V.z, ox = V.tx - x0 * V.z, oy = V.ty - y0 * V.z;
+      [['rgba(0,0,0,.07)', 1], ['rgba(0,0,0,.13)', 0]].forEach(function (t) {   // finer lines, then every second stronger
+        c.strokeStyle = t[0]; c.beginPath();
+        [[ox, W, cw, true], [oy, H, ch, false]].forEach(function (A) {
+          var i = Math.ceil(-A[0] / a), v;
+          for (; (v = A[0] + i * a) <= A[1]; i++) {
+            if (((i % 2) + 2) % 2 !== t[1]) continue;
+            var d = Math.round(v * k) + 0.5;
+            if (A[3]) { c.moveTo(d, 0); c.lineTo(d, ch); } else { c.moveTo(0, d); c.lineTo(cw, d); }
+          }
+        });
+        c.stroke();
+      });
     }
     function toGrid(v, st) { return Math.round(v / st) * st - v; }   // the correction that puts v on the grid
     function baseOf(pub, fr) {
@@ -727,6 +748,9 @@
     // line widths in the map's units too (user, 2026-11-12: zooming in or out keeps the relative size and thickness of
     // every mark, as the handles): as inline style, which wins over the stylesheet's width
     function sw(units) { return ' style="stroke-width:' + f1(units * V.z) + 'px"'; }
+    // guides as yEd's (user, 2026-11-13): 1 map unit wide, as yEd's grow with the zoom, but never under 2 screen pixels,
+    // so a guide zoomed out stays apart from the 1 px grid lines
+    function gw() { var k = (window.devicePixelRatio || 1) * V.pz(); return ' style="stroke-width:' + Math.max(V.z, 2 / k).toFixed(2) + 'px"'; }
     function sx(X) { return V.tx + (X - x0) * V.z; }
     function sy(Y2) { return V.ty + (Y2 - y0) * V.z; }
     function f1(v) { return Math.round(v * 100) / 100; }
@@ -1011,17 +1035,23 @@
         over.push('<rect class="m2-ed-handle" x="' + f1(sx(C[0]) - ph / 2) + '" y="' + f1(sy(C[1]) - ph / 2) + '" width="' + f1(ph) + '" height="' + f1(ph) + '"/>');
       }
       if (!drag && keyGuides) keyGuides.forEach(function (g) {
-        out.push('<path class="m2-ed-guide"' + sw(3) + ' d="M' + f1(sx(g[0][0])) + ' ' + f1(sy(g[0][1])) + 'L' + f1(sx(g[1][0])) + ' ' + f1(sy(g[1][1])) + '"/>');
+        out.push('<path class="m2-ed-guide"' + gw() + ' d="M' + f1(sx(g[0][0])) + ' ' + f1(sy(g[0][1])) + 'L' + f1(sx(g[1][0])) + ' ' + f1(sy(g[1][1])) + '"/>');
       });
       if (drag && drag.guides) drag.guides.forEach(function (g) {
-        out.push('<path class="m2-ed-guide"' + sw(3) + ' d="M' + f1(sx(g[0][0])) + ' ' + f1(sy(g[0][1])) + 'L' + f1(sx(g[1][0])) + ' ' + f1(sy(g[1][1])) + '"/>');
+        out.push('<path class="m2-ed-guide"' + gw() + ' d="M' + f1(sx(g[0][0])) + ' ' + f1(sy(g[0][1])) + 'L' + f1(sx(g[1][0])) + ' ' + f1(sy(g[1][1])) + '"/>');
       });
       var seg = function (g) { return 'M' + f1(sx(g[0][0])) + ' ' + f1(sy(g[0][1])) + 'L' + f1(sx(g[1][0])) + ' ' + f1(sy(g[1][1])); };
-      if (drag && drag.lines) drag.lines.forEach(function (g) { out.push('<path class="m2-ed-snapline"' + sw(1) + ' d="' + seg(g) + '"/>'); });
+      if (drag && drag.lines) drag.lines.forEach(function (g) { out.push('<path class="m2-ed-snapline"' + gw() + ' d="' + seg(g) + '"/>'); });
+      // yEd's crosses (user, 2026-11-13): a small x at each point a centre or side line refers to, the middle of each
+      // node's side or centre on that line; about 7 units across, at least 8 px on screen
+      if (drag && drag.crosses) drag.crosses.forEach(function (q) {
+        var X = sx(q[0]), Y = sy(q[1]), r = Math.max(3.5 * V.z, 4);
+        out.push('<path class="m2-ed-snapline"' + gw() + ' d="M' + f1(X - r) + ' ' + f1(Y - r) + 'L' + f1(X + r) + ' ' + f1(Y + r) + 'M' + f1(X - r) + ' ' + f1(Y + r) + 'L' + f1(X + r) + ' ' + f1(Y - r) + '"/>');
+      });
       if (drag && drag.marks) drag.marks.forEach(function (g) {   // an equal gap: a line with a short bar at each end
         var X0 = sx(g[0][0]), Y0 = sy(g[0][1]), X1 = sx(g[1][0]), Y1 = sy(g[1][1]), up = Y0 === Y1, t = 4 * V.z;
         var bar = function (X, Y) { return up ? 'M' + f1(X) + ' ' + f1(Y - t) + 'L' + f1(X) + ' ' + f1(Y + t) : 'M' + f1(X - t) + ' ' + f1(Y) + 'L' + f1(X + t) + ' ' + f1(Y); };
-        out.push('<path class="m2-ed-mark"' + sw(1) + ' d="' + seg(g) + bar(X0, Y0) + bar(X1, Y1) + '"/>');
+        out.push('<path class="m2-ed-mark"' + gw() + ' d="' + seg(g) + bar(X0, Y0) + bar(X1, Y1) + '"/>');
       });
       // nodes selected: darkened (a group without what it holds, as yEd), and the eight handles round the box
       selN.forEach(function (i, j) {
@@ -1326,7 +1356,7 @@
     // no snapping (yEd: Ctrl). Not yet: the set node to node and node to arc distances (no default in yEd's manual).
     var CLOSE = 40;   // opposite sides snap only within this gap (map units), and lines reach this far past the nodes
     function snapNode(d) {
-      d.guides = []; d.lines = []; d.marks = [];
+      d.guides = []; d.lines = []; d.marks = []; d.crosses = [];
       var T = 6 / V.z, b0 = boxOf(d.n), cand = { x: [], y: [] }, moved = mv.n, up = new Set();
       nodes2.forEach(function (n, i) { if (n.inside.indexOf(d.n) >= 0) up.add(i); });   // its own compartments: no guide
       var r = V.view.getBoundingClientRect(), v0 = [-V.tx / V.z + x0, -V.ty / V.z + y0], v1 = [(r.width / V.pz() - V.tx) / V.z + x0, (r.height / V.pz() - V.ty) / V.z + y0];
@@ -1383,6 +1413,8 @@
           if (o) {
             var at = q.c ? o[h] + o[h + 2] / 2 : o[h] + o[h + 2] * q.at, a = Math.min(o[w], F[w]) - E, c = Math.max(o[w] + o[w + 2], F[w] + F[w + 2]) + E;
             d.lines.push(h === 0 ? [[at, a], [at, c]] : [[a, at], [c, at]]);
+            var m1 = o[w] + o[w + 2] / 2, m2 = F[w] + F[w + 2] / 2;   // the crosses: each node's middle on the line
+            d.crosses.push(h === 0 ? [at, m1] : [m1, at], h === 0 ? [at, m2] : [m2, at]);
             return;
           }
           if (q.mid) {   // the two equal gaps, each with its marks, at the middle of the moved node

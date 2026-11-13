@@ -312,7 +312,7 @@ says "the workbench", "the converter's repository", "a private repository".
   reaction's glyph too), and while it moves the copy following the move. One way only (user, 2026-11-13: "remove
   highlight way completely"; the light blue band under the line, 2026-11-12, and the Settings choice Highlight or Blue
   line are gone: while a line moved, the band was drawn over it). Every mark is in the map's units, so zooming keeps their relative size and
-  thickness (user, 2026-11-12): the guides 3, the snap lines and gap marks 1, the squares'
+  thickness (user, 2026-11-12): the guides, snap lines, gap marks and crosses 1 but never under 2 screen pixels, all in yEd's #c0c0c0 with a small x at each point a centre or side line refers to, the grid 1 screen pixel on a canvas (user, 2026-11-13, measured from yEd; a selected node darkened x0.70), the squares'
   white edge 0.5, the line drawn while an arc follows a drag 1 (only the area being selected stays in screen pixels). On a
   CellDesigner map a reaction is one item, as in CellDesigner: a click on its main line (reactant to glyph to product),
   its glyph or an added reactant or product lights them all, no squares in the glyph; a modifier is its own item (user:
