@@ -9,13 +9,13 @@ kind: "map"
 draft: false
 tag: ""
 image: "/downloads/asthmamap-mast-cell-celldesigner.svg"
-width: 23351
-height: 4461
+width: 6252
+height: 3100
 scale: 1
 annotation: "/atlas-data/asthmamap-mast-cell-celldesigner.json"
 image_error: ""
-v: "d588df3f68"
-src: "14ac334dfecf8cc36d1e4b1a73cfa78ed342c526"
+v: "1d6031b067"
+src: "55c95551b75df9e424062c012df541ee5611d3ae"
 colours: true
 legend: "celldesigner"
 downloads: [{"label": "CellDesigner", "url": "/downloads/asthmamap-mast-cell-celldesigner.xml"}, {"label": "SVG", "url": "/downloads/asthmamap-mast-cell-celldesigner.svg"}, {"label": "GraphML", "url": "/downloads/asthmamap-mast-cell-celldesigner.graphml"}]
