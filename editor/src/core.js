@@ -1444,10 +1444,12 @@
       return [[0, -1], [0, 1], [-1, -1], [1, -1], [-1, 1], [1, 1]].map(function (s) { return [h * (s[0] * f[0] - s[1] * f[1]), h * (s[0] * f[1] + s[1] * f[0])]; });
     }
     function spot(pp, P) {   // the nearest of the node's places (five, or a glyph's six), as an offset from its centre
-      var b = bx(pp.n), c = [b[0] + b[2] / 2, b[1] + b[3] / 2];
-      return (procSpots(pp) || [[0, 0], [0, -b[3] / 2], [0, b[3] / 2], [-b[2] / 2, 0], [b[2] / 2, 0]]).reduce(function (m, o) {
-        return Math.hypot(c[0] + o[0] - P[0], c[1] + o[1] - P[1]) < Math.hypot(c[0] + m[0] - P[0], c[1] + m[1] - P[1]) ? o : m;
-      });
+      var b = bx(pp.n), c = [b[0] + b[2] / 2, b[1] + b[3] / 2], S = procSpots(pp), F = null;
+      // at a glyph a tie (a drop on its centre) goes to the side facing the modifier (user, 2026-11-13): the point
+      // before the end weighs in a little
+      if (S) { var all = ports(pp.k); F = all[all.length - 2]; }
+      var cost = function (o) { var q = [c[0] + o[0], c[1] + o[1]]; return Math.hypot(q[0] - P[0], q[1] - P[1]) + (F ? 1e-3 * Math.hypot(q[0] - F[0], q[1] - F[1]) : 0); };
+      return (S || [[0, 0], [0, -b[3] / 2], [0, b[3] / 2], [-b[2] / 2, 0], [b[2] / 2, 0]]).reduce(function (m, o) { return cost(o) < cost(m) ? o : m; });
     }
     function spotNo(pp, to) {   // the number of the glyph's place at offset to (procSpots' order), null off a glyph
       var S = procSpots(pp), best = null, bd = Infinity;
