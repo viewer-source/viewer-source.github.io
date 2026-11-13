@@ -31,7 +31,7 @@
       <data key="d26" xml:space="preserve"/>
       <data key="d29">
         <y:GenericNode configuration="com.yworks.sbgn.SimpleChemical">
-          <y:Geometry height="32.0" width="60.0" x="602" y="176"/>
+          <y:Geometry height="32.0" width="60.0" x="602" y="168"/>
           <y:Fill color="#DBEBDB" transparent="false"/>
           <y:BorderStyle color="#000000" type="line" width="1.0"/>
           <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="14" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="20.48828125" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="center" visible="true" width="40.626953125" x="9.6865234375" xml:space="preserve" y="5.755859375">cAMP<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:ModelParameter><y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/></y:ModelParameter></y:NodeLabel>
@@ -137,7 +137,7 @@
       <data key="d26" xml:space="preserve"/>
       <data key="d29">
         <y:GenericNode configuration="com.yworks.sbgn.Process">
-          <y:Geometry height="18.0" width="18.0" x="743" y="207"/>
+          <y:Geometry height="18.0" width="18.0" x="743" y="199"/>
           <y:Fill color="#FFFFFF" transparent="false"/>
           <y:BorderStyle color="#000000" type="line" width="1.0"/>
           <y:NodeLabel alignment="center" autoSizePolicy="content" bottomInset="0" fontFamily="Dialog" fontSize="14" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" hasText="false" height="0.0" horizontalTextPosition="center" iconTextGap="4" leftInset="0" modelName="custom" rightInset="0" textColor="#000000" topInset="0" verticalTextPosition="center" visible="true" width="0.0" x="9.0" y="9.0">
@@ -163,7 +163,7 @@
         <y:ProxyAutoBoundsNode>
           <y:Realizers active="0">
             <y:GenericGroupNode configuration="com.yworks.sbgn.Complex">
-              <y:Geometry height="140.0" width="110" x="697" y="26"/>
+              <y:Geometry height="140.0" width="110" x="697" y="18"/>
               <y:Fill color="#FFFFFF" transparent="false"/>
               <y:BorderStyle color="#000000" type="line" width="1.0"/>
               <y:NodeLabel alignment="center" autoSizePolicy="content" borderDistance="8.0" fontFamily="Dialog" fontSize="14" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" hasText="false" height="4.0" horizontalTextPosition="center" iconTextGap="4" modelName="internal" modelPosition="t" textColor="#000000" verticalTextPosition="bottom" visible="true" width="4.0" x="54.0" y="8.0"/>
@@ -176,7 +176,7 @@
               <y:BorderInsets bottom="0" bottomF="0" left="2" leftF="2.0" right="2" rightF="2" top="0" topF="0.0"/>
             </y:GenericGroupNode>
             <y:GenericGroupNode configuration="com.yworks.sbgn.Complex">
-              <y:Geometry height="80.0" width="80.0" x="1386.345" y="1219.158"/>
+              <y:Geometry height="80.0" width="80.0" x="1386.345" y="1211.158"/>
               <y:Fill color="#FFFFFF" transparent="false"/>
               <y:BorderStyle color="#000000" type="line" width="1.0"/>
               <y:NodeLabel alignment="center" autoSizePolicy="content" borderDistance="8.0" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="18.1328125" horizontalTextPosition="center" iconTextGap="4" modelName="internal" modelPosition="t" textColor="#000000" verticalTextPosition="bottom" visible="true" width="38.482421875" x="20.7587890625" xml:space="preserve" y="8.0">LABEL</y:NodeLabel>
@@ -202,7 +202,7 @@
           <data key="d26" xml:space="preserve">[{"symbol": "PRKAR1A", "props": [["HGNC", "HGNC:9388"], ["HGNC symbol", "PRKAR1A"], ["UniProt", "P10644"]]}, {"symbol": "PRKAR1B", "props": [["HGNC", "HGNC:9390"], ["HGNC symbol", "PRKAR1B"], ["UniProt", "P31321"]]}, {"symbol": "PRKAR2A", "props": [["HGNC", "HGNC:9391"], ["HGNC symbol", "PRKAR2A"], ["UniProt", "P13861"]]}, {"symbol": "PRKAR2B", "props": [["HGNC", "HGNC:9392"], ["HGNC symbol", "PRKAR2B"], ["UniProt", "P31323"]]}]</data>
           <data key="d29">
             <y:GenericNode configuration="com.yworks.sbgn.Macromolecule">
-              <y:Geometry height="40.0" width="80.0" x="709" y="42"/>
+              <y:Geometry height="40.0" width="80.0" x="709" y="34"/>
               <y:Fill color="#C2D4ED" transparent="false"/>
               <y:BorderStyle color="#000000" type="line" width="1.0"/>
               <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="14" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="20.48828125" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="center" visible="true" width="47.490234375" x="16.2548828125" xml:space="preserve" y="9.755859375">PKA-R<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:ModelParameter><y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/></y:ModelParameter></y:NodeLabel>
@@ -231,7 +231,7 @@
           <data key="d26" xml:space="preserve">[{"symbol": "PRKACA", "props": [["HGNC", "HGNC:9380"], ["HGNC symbol", "PRKACA"], ["UniProt", "P17612"]]}, {"symbol": "PRKACB", "props": [["HGNC", "HGNC:9381"], ["HGNC symbol", "PRKACB"], ["UniProt", "P22694"]]}, {"symbol": "PRKACG", "props": [["HGNC", "HGNC:9382"], ["HGNC symbol", "PRKACG"], ["UniProt", "P22612"]]}]</data>
           <data key="d29">
             <y:GenericNode configuration="com.yworks.sbgn.Macromolecule">
-              <y:Geometry height="40.0" width="80.0" x="709" y="104"/>
+              <y:Geometry height="40.0" width="80.0" x="709" y="96"/>
               <y:Fill color="#C2D4ED" transparent="false"/>
               <y:BorderStyle color="#000000" type="line" width="1.0"/>
               <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="14" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="20.48828125" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="center" visible="true" width="48.32421875" x="15.837890625" xml:space="preserve" y="9.755859375">PKA-C<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:ModelParameter><y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/></y:ModelParameter></y:NodeLabel>
@@ -739,7 +739,7 @@
       <data key="d26" xml:space="preserve"/>
       <data key="d29">
         <y:GenericNode configuration="com.yworks.sbgn.SimpleChemical">
-          <y:Geometry height="32.0" width="60.0" x="434" y="176"/>
+          <y:Geometry height="32.0" width="60.0" x="434" y="168"/>
           <y:Fill color="#DBEBDB" transparent="false"/>
           <y:BorderStyle color="#000000" type="line" width="1.0"/>
           <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="14" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="20.48828125" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="center" visible="true" width="30.25" x="14.875" xml:space="preserve" y="5.755859375">ATP<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:ModelParameter><y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/></y:ModelParameter></y:NodeLabel>
@@ -756,7 +756,7 @@
       <data key="d26" xml:space="preserve"/>
       <data key="d29">
         <y:GenericNode configuration="com.yworks.sbgn.Process">
-          <y:Geometry height="18.0" width="18.0" x="535" y="183"/>
+          <y:Geometry height="18.0" width="18.0" x="535" y="175"/>
           <y:Fill color="#FFFFFF" transparent="false"/>
           <y:BorderStyle color="#000000" type="line" width="1.0"/>
           <y:NodeLabel alignment="center" autoSizePolicy="content" bottomInset="0" fontFamily="Dialog" fontSize="14" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" hasText="false" height="0.0" horizontalTextPosition="center" iconTextGap="4" leftInset="0" modelName="custom" rightInset="0" textColor="#000000" topInset="0" verticalTextPosition="center" visible="true" width="0.0" x="9.0" y="9.0">
@@ -780,7 +780,7 @@
       <data key="d26" xml:space="preserve">[{"symbol": "ADCY1", "props": [["HGNC", "HGNC:232"], ["HGNC symbol", "ADCY1"], ["UniProt", "Q08828"]]}, {"symbol": "ADCY2", "props": [["HGNC", "HGNC:233"], ["HGNC symbol", "ADCY2"], ["UniProt", "Q08462"]]}, {"symbol": "ADCY3", "props": [["HGNC", "HGNC:234"], ["HGNC symbol", "ADCY3"], ["UniProt", "O60266"]]}, {"symbol": "ADCY4", "props": [["HGNC", "HGNC:235"], ["HGNC symbol", "ADCY4"], ["UniProt", "Q8NFM4"]]}, {"symbol": "ADCY5", "props": [["HGNC", "HGNC:236"], ["HGNC symbol", "ADCY5"], ["UniProt", "O95622"]]}, {"symbol": "ADCY6", "props": [["HGNC", "HGNC:237"], ["HGNC symbol", "ADCY6"], ["UniProt", "O43306"]]}, {"symbol": "ADCY7", "props": [["HGNC", "HGNC:238"], ["HGNC symbol", "ADCY7"], ["UniProt", "P51828"]]}, {"symbol": "ADCY8", "props": [["HGNC", "HGNC:239"], ["HGNC symbol", "ADCY8"], ["UniProt", "P40145"]]}, {"symbol": "ADCY9", "props": [["HGNC", "HGNC:240"], ["HGNC symbol", "ADCY9"], ["UniProt", "O60503"]]}]</data>
       <data key="d29">
         <y:GenericNode configuration="com.yworks.sbgn.Macromolecule">
-          <y:Geometry height="40.0" width="80.0" x="504" y="84"/>
+          <y:Geometry height="40.0" width="80.0" x="504" y="76"/>
           <y:Fill color="#C2D4ED" transparent="false"/>
           <y:BorderStyle color="#000000" type="line" width="1.0"/>
           <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Arial" fontSize="14" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="19.640625" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="center" visible="true" width="42.896484375" x="18.5517578125" xml:space="preserve" y="10.1796875">ADCY<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:ModelParameter><y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/></y:ModelParameter></y:NodeLabel>
@@ -860,7 +860,7 @@
       <data key="d26" xml:space="preserve"/>
       <data key="d29">
         <y:GenericNode configuration="com.yworks.sbgn.SimpleChemical">
-          <y:Geometry height="32.0" width="60.0" x="546" y="224"/>
+          <y:Geometry height="32.0" width="60.0" x="546" y="216"/>
           <y:Fill color="#DBEBDB" transparent="false"/>
           <y:BorderStyle color="#000000" type="line" width="1.0"/>
           <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="14" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="20.48828125" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="center" visible="true" width="23.5234375" x="18.23828125" xml:space="preserve" y="5.755859375">PPi<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:ModelParameter><y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/></y:ModelParameter></y:NodeLabel>
@@ -932,7 +932,7 @@
       <data key="d33">
         <y:PolyLineEdge>
           <y:Path sx="0.0" sy="0.0" tx="0.0" ty="0.0">
-            <y:Point x="752" y="192"/>
+            <y:Point x="752" y="184"/>
           </y:Path>
           <y:LineStyle color="#000000" type="line" width="1.0"/>
           <y:Arrows source="none" target="none"/>
@@ -1176,7 +1176,7 @@
       <data key="d33">
         <y:PolyLineEdge>
           <y:Path sx="0.0" sy="0.0" tx="0.0" ty="0.0">
-            <y:Point x="576" y="192"/>
+            <y:Point x="576" y="184"/>
           </y:Path>
           <y:LineStyle color="#000000" type="line" width="1.0"/>
           <y:Arrows source="none" target="delta"/>
