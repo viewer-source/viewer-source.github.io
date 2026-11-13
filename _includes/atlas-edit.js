@@ -1150,6 +1150,13 @@
       };
       hlE.forEach(function (k) {
         var gs = gE && gE[edges2[k].id], still = !(live && live.has(k)) && !(pk0 && pk0.k === k);
+        // Blue line while it moves (user, 2026-11-13: a pale blue band covered the moving line): the copy drawn for
+        // the move turns blue itself, as the line does at rest; nothing over it
+        if (blue && gs) {
+          var own = gs[gs.length - 1], cs = copies.filter(function (c) { return c[1] === own; });
+          if (cs.length) cs.forEach(function (c) { c[0].classList.add('m2-ed-blue'); }); else own.classList.add('m2-ed-blue');
+          return;
+        }
         if (gs && still && !mv) {
           var q0 = line(k);
           if (!q0) return;
@@ -1162,7 +1169,7 @@
       });
       glyphs.forEach(function (i) {
         var g = gN && gN[nodes2[i].id];
-        if (g && !mv) {
+        if (g && (!mv || blue)) {
           var b0 = liveG && liveG[i] ? bx(i) : boxOf(i), el = document.createElementNS(NS, 'rect');   // a glyph following a port dragged: where it is now
           [['x', b0[0]], ['y', b0[1]], ['width', b0[2]], ['height', b0[3]]].forEach(function (a) { el.setAttribute(a[0], f1(a[1])); });
           return pic(g, el);
