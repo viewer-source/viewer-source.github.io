@@ -394,6 +394,7 @@ page, so its styles keep the base they were made on). The looks before (Default 
   #m2-set-size { display: block; width: 100%; margin: 0; accent-color: var(--m2-accent); cursor: pointer; }
   #m2-setwin .m2-set-ticks { display: flex; justify-content: space-between; padding: 0 7px; margin: 1px 0 14px; }
   #m2-setwin .m2-set-side { margin-bottom: 14px; }
+  .m2-group-edit.m2-bad { border-color: #c5221f; }
   .m2-group-edit { display: block; width: 100%; box-sizing: border-box; font: inherit; font-size: 14px; color: var(--m2-text); padding: 1px 4px; margin-top: 6px;
     border: 1px solid var(--m2-accent); border-radius: var(--m2-radius); background: var(--m2-bg); }   /* a reader's group being renamed in place */
   #m2-setwin .m2-set-ticks i { width: 1px; height: 4px; background: var(--m2-muted); }
@@ -412,7 +413,6 @@ page, so its styles keep the base they were made on). The looks before (Default 
   /* under the pointer: --m2-hover (none since 2026-11-09; was a very light grey) */
   .m2-item:hover { background: var(--m2-hover); }
   .m2-item.m2-on { background: var(--m2-accent); color: var(--m2-on-accent); }
-  .m2-item.m2-add { margin-top: 6px; color: var(--m2-muted); }   /* Add a map, at the list's end (My maps) */
   .m2-item:focus { outline: none; }
   .m2-none { font-size: 12px; color: var(--m2-muted); padding: 2px 4px; }
   /* groups as a list with sublists: the group name at the size of the
@@ -2075,6 +2075,7 @@ page, so its styles keep the base they were made on). The looks before (Default 
       g.setAttribute('data-group', name);
       movable(g, { group: name });
       var own = mineHeading(g, name);
+      if (own) g.classList.add('m2-mine');
       g.addEventListener('click', function () {
         // a double-click on the reader's group: the list is built again after each click, so the second click lands on a
         // new heading; it undoes the first's open or close and renames
@@ -2083,7 +2084,7 @@ page, so its styles keep the base they were made on). The looks before (Default 
         saveClosed();
         buildList(document.getElementById('m2-search').value);
         groupsMark();
-        if (dbl) renameGroup();
+        if (dbl) renameGroup(name);
       });
       box.appendChild(g);
     }
@@ -2098,16 +2099,30 @@ page, so its styles keep the base they were made on). The looks before (Default 
       }
       ni++;
     }
+    // the reader's groups with no map yet, in the order they were made (not while searching)
+    var gs = editorAsked && !q ? mineGroups() : [], gi = 0;
+    function ownEmpty(upTo) {   // those before upTo (undefined: all left)
+      for (; gi < gs.length && gs[gi] !== upTo; gi++) {
+        var name = gs[gi];
+        if (maps.some(function (m) { return m.mine && m.group === name; })) continue;
+        heading(name, closed[name]);
+        if (!closed[name]) { var e = el('div', 'm2-empty m2-mine', 'No maps yet'); e.setAttribute('data-group', name); box.appendChild(e); }
+      }
+      gi++;
+    }
+    var ownDone = false;
     shown.forEach(function (m) {
       // while searching every group with a match is shown open
       var shut = !q && closed[m.group];
+      if (!m.mine && !ownDone) { ownDone = true; ownEmpty(); }
+      if (m.mine && m.group && m.group !== group) ownEmpty(m.group);
       if (m.group && m.group !== group) {
         emptyGroups(m.group);
         group = m.group;
         heading(group, shut);
       }
       if (shut) return;
-      var b = el('button', 'm2-item m2-map' + (m.group ? ' m2-sub' : '') + (m.tag === 'draft-ext' ? ' m2-ext' : '') + (m.source ? ' m2-src-' + m.source : '') + (m === (chosen || current) ? ' m2-on' : ''));
+      var b = el('button', 'm2-item m2-map' + (m.mine ? ' m2-mine' : '') + (m.group ? ' m2-sub' : '') + (m.tag === 'draft-ext' ? ' m2-ext' : '') + (m.source ? ' m2-src-' + m.source : '') + (m === (chosen || current) ? ' m2-on' : ''));
       b.appendChild(el('span', 'm2-name', label(m)));
       b.type = 'button';
       b.setAttribute('data-id', m.id);
@@ -2122,6 +2137,7 @@ page, so its styles keep the base they were made on). The looks before (Default 
       b.addEventListener('click', function () { go(m.id); });
       box.appendChild(b);
     });
+    if (!ownDone) ownEmpty();
     emptyGroups();
     mols.forEach(function (g) {
       var t = el('div', 'm2-mol', g.label);
@@ -2142,7 +2158,6 @@ page, so its styles keep the base they were made on). The looks before (Default 
     if (!shown.length && !mols.length) box.appendChild(el('div', 'm2-none', index && index.length || !q ? 'No match' : 'Searching…'));
     // keep the chosen map visible when the list scrolls, with about one and a half items in sight above and below it,
     // so moving up or down the list shows where it goes next (user, 2026-11-09)
-    if (editorAsked && !q) addRow(box);
     box.scrollTop = keep;
     var on = box.querySelector('.m2-on');
     if (on && box.scrollHeight > box.clientHeight) {
@@ -2284,7 +2299,9 @@ page, so its styles keep the base they were made on). The looks before (Default 
   function setMaps(list) {
     siteList = list;
     var a = arrange(withMine(list));
-    maps = a.filter(function (m) { return m.mine; }).concat(a.filter(function (m) { return !m.mine; }));   // My maps first, whatever order the reader dragged
+    var gs = mineGroups(), rank = function (m) { return m.group ? gs.indexOf(m.group) + 1 : 0; };
+    maps = a.filter(function (m) { return m.mine; }).sort(function (x, y) { return rank(x) - rank(y) || x.title.localeCompare(y.title); })
+      .concat(a.filter(function (m) { return !m.mine; }));   // the reader's maps first: those in no group at the top, then their groups in the order made
     byId = {}; topics = [];
     railMark(); // the map count in the Info window
     maps.forEach(function (m) {
@@ -2499,7 +2516,7 @@ page, so its styles keep the base they were made on). The looks before (Default 
       var key = '<span class="m2-cx-key">' + (/Mac|iPhone|iPad|iPod/.test((navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || navigator.userAgent) ? '\u2318E' : 'Ctrl+E') + '</span>';
       if (ed) item(box, 'Switch to viewer', function () { tab('list'); }, key);   // leaving the Edit window ends editing
       else if (eb && eb.offsetParent) item(box, 'Switch to edit', function () { tab('edit'); }, key);
-      if (m.mine && !ed) item(box, 'Remove from My maps', function () { mineHide(m.id); });
+      if (m.mine && !ed) item(box, 'Remove map', function () { mineHide(m.id); });
       if (document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen)
         item(box, isPageFull() ? 'Exit full screen' : 'Full screen with tools', pageFull);
       var src = (m.legend === 'celldesigner' ? ['CellDesigner', 'GraphML'] : ['GraphML', 'CellDesigner']).filter(function (l) { return url[l]; })[0];   // the format the map is drawn from
@@ -2713,7 +2730,7 @@ page, so its styles keep the base they were made on). The looks before (Default 
       editor.chooseFolder().then(function () { if (folderName()) k.hidden = true; }, function (er) { k.textContent = 'No folder chosen: ' + (er && er.message ? er.message : er) + '.'; });
     });
     // My maps (user, 2026-11-13, the third layer: "they would care about their own maps"): maps a reader adds (a file
-    // chosen with Add a map or dropped on the page, or one in their folder), drawn in this browser by the editor's
+    // chosen with Add map in the list's right-click menu or dropped on the page, or one in their folder), drawn in this browser by the editor's
     // renderers and edited as any map, only where the Edit tab is. Kept in IndexedDB (store mine: { id, title, file, text,
     // svg, width, height, at, hidden }) and, with a folder, as their files in it. Taken off the list = hidden only (user:
     // "hide only"): the record and the file stay, the same file added again brings it back. Example maps (the site's)
@@ -2725,6 +2742,9 @@ page, so its styles keep the base they were made on). The looks before (Default 
       if (!has || !window.indexedDB) return Promise.resolve();
       return draftDo('readonly', function (st) { return st.getAll(); }, 'mine').then(function (all) {
         (all || []).forEach(function (r) { if (r && r.id && !mine[r.id]) mine[r.id] = r; });
+        var legacy = null; try { legacy = localStorage.getItem('atlas-mine-group'); localStorage.removeItem('atlas-mine-group'); } catch (e) {}
+        if (legacy && mineGroups().indexOf(legacy) < 0) mineGroupsSet(mineGroups().concat([legacy]));   // the one group of before, named by the reader
+        Object.keys(mine).forEach(function (k) { var r = mine[k]; if (r.group === undefined) { r.group = legacy || ''; minePut(r).catch(function () {}); } });
       }).catch(function () {});
     })();
     function minePut(r) {
@@ -2732,43 +2752,109 @@ page, so its styles keep the base they were made on). The looks before (Default 
       return draftDo('readwrite', function (st) { return st.put(r, r.id); }, 'mine');
     }
     function mineShown() { return editorAsked ? Object.keys(mine).map(function (k) { return mine[k]; }).filter(function (r) { return !r.hidden; }) : []; }
-    // the group's name is the reader's (user, 2026-11-13: "they should be able to name it however they want"), My maps
-    // until they do; kept in their browser; never a name of the site's own groups (the two would merge)
-    function mineGroup() { try { return localStorage.getItem('atlas-mine-group') || 'My maps'; } catch (e) { return 'My maps'; } }
-    // renamed in place (user, 2026-11-13: not in Settings, "a more intuitive way"): a double-click on the group's name or
-    // Rename group in its right-click menu turns it into a field; Enter or a click elsewhere keeps the name, Esc leaves it
+    // the reader's groups (user, 2026-11-13: "add group and then name it immediately", no predefined name): as many as they
+    // like, each named when made, kept in their browser in the order made (atlas-mine-groups); a map in no group stands
+    // at the top of the list. Never a name of the site's groups or another of theirs (the two would merge)
+    var GROUPS_KEY = 'atlas-mine-groups';
+    function mineGroups() {
+      try { var a = JSON.parse(localStorage.getItem(GROUPS_KEY) || '[]'); return Array.isArray(a) ? a.filter(function (g) { return typeof g === 'string' && g; }) : []; } catch (e) { return []; }
+    }
+    function mineGroupsSet(a) { try { if (a.length) localStorage.setItem(GROUPS_KEY, JSON.stringify(a)); else localStorage.removeItem(GROUPS_KEY); } catch (e) {} }
+    function ownGroup(name) { return !!name && editorAsked && mineGroups().indexOf(name) >= 0; }
+    function mineValid(v, was) {
+      return v === was || !((siteList || []).some(function (m) { return m.group === v; }) || mineGroups().indexOf(v) >= 0);
+    }
+    // a group's name typed in place: Rename group, a double-click on its name, or a new group (Add group), its field
+    // where the group stands (a new one under the reader's last); Enter or a click elsewhere keeps the name, Esc leaves it;
+    // a new group left empty or with Esc is not made; a name already taken turns the field red and is not kept
     var mineClickAt = 0;
-    function mineValid(v) { return !(siteList || []).some(function (m) { return m.group === v; }); }   // a site group's name would merge the two
-    function renameGroup() {
-      var g = document.querySelector('#m2-list .m2-group[data-group="' + mineGroup().replace(/"/g, '\\"') + '"]');
-      if (!g) return;
-      var f = document.createElement('input'), done = false;
-      f.type = 'text'; f.className = 'm2-group-edit'; f.maxLength = 60; f.value = mineGroup(); f.setAttribute('aria-label', 'Name of the group');
-      g.replaceWith(f); f.focus(); f.select();
+    function renameGroup(was) {
+      var box = document.getElementById('m2-list'), f = document.createElement('input'), done = false;
+      f.type = 'text'; f.className = 'm2-group-edit'; f.maxLength = 60; f.value = was || ''; f.placeholder = 'Name of the group';
+      f.setAttribute('aria-label', 'Name of the group');
+      if (was) {
+        var g = box.querySelector('.m2-group[data-group="' + CSS.escape(was) + '"]');
+        if (!g) return;
+        g.replaceWith(f);
+      } else {
+        var own = box.querySelectorAll('.m2-mine'), last = own[own.length - 1];
+        if (last) last.after(f); else box.insertBefore(f, box.firstChild);
+        f.scrollIntoView({ block: 'nearest' });
+      }
+      f.focus(); f.select();
       var end = function (keep) {
         if (done) return; done = true;
         var v = f.value.trim();
-        if (keep && v && mineValid(v)) { try { if (v !== 'My maps') localStorage.setItem('atlas-mine-group', v); else localStorage.removeItem('atlas-mine-group'); } catch (e) {} }
+        if (keep && v && v !== was && mineValid(v, was)) {
+          var gs = mineGroups();
+          if (was) {
+            gs[gs.indexOf(was)] = v;
+            Object.keys(mine).forEach(function (k) { var r = mine[k]; if (r.group === was) { r.group = v; minePut(r).catch(function () {}); } });
+            if (closed[was]) { closed[v] = true; delete closed[was]; saveClosed(); }
+          } else gs.push(v);
+          mineGroupsSet(gs);
+        }
         refreshMine();
       };
-      f.addEventListener('keydown', function (e) { e.stopPropagation(); if (e.key === 'Enter') { e.preventDefault(); end(true); } else if (e.key === 'Escape') end(false); });
+      f.addEventListener('input', function () { f.classList.remove('m2-bad'); });
+      f.addEventListener('keydown', function (e) {
+        e.stopPropagation();
+        if (e.key === 'Escape') return end(false);
+        if (e.key !== 'Enter') return;
+        e.preventDefault();
+        var v = f.value.trim();
+        if (v && !mineValid(v, was)) { f.classList.add('m2-bad'); f.title = 'A group of this name is in the list already'; return; }
+        end(true);
+      });
       f.addEventListener('blur', function () { end(true); });
     }
-    function mineHeading(g, name) {   // the reader's group heading: double-click or right-click to rename, a hint on hover only
-      if (!editorAsked || name !== mineGroup() || !mineShown().length) return false;
+    function removeGroup(name) {   // the group goes, its maps stay, at the top of the list
+      mineGroupsSet(mineGroups().filter(function (g) { return g !== name; }));
+      Object.keys(mine).forEach(function (k) { var r = mine[k]; if (r.group === name) { r.group = ''; minePut(r).catch(function () {}); } });
+      refreshMine();
+    }
+    function mineHeading(g, name) {   // a group of the reader's: double-click to rename, a hint on hover only
+      if (!ownGroup(name)) return false;
       g.title = 'Double-click to rename';
-      g.addEventListener('contextmenu', function (e) {
-        e.preventDefault();
-        var box = el('div', 'm2-cx'), b = el('button', '', 'Rename group');
-        b.type = 'button'; box.appendChild(b); document.body.appendChild(box);
-        box.style.left = Math.min(e.clientX, innerWidth - box.offsetWidth - 8) + 'px'; box.style.top = Math.min(e.clientY, innerHeight - box.offsetHeight - 8) + 'px';
-        var close = function () { box.remove(); document.removeEventListener('pointerdown', out, true); document.removeEventListener('keydown', esc, true); };
-        var out = function (ev) { if (!box.contains(ev.target)) close(); }, esc = function (ev) { if (ev.key === 'Escape') close(); };
-        b.addEventListener('click', function () { close(); renameGroup(); });
-        document.addEventListener('pointerdown', out, true); document.addEventListener('keydown', esc, true);
-        b.focus();
-      });
       return true;
+    }
+    // the right-click menu over the list (user, 2026-11-13: "right click on the list ... add map, add group, then separator,
+    // remove map"), where the Edit tab is: Add map (into the group clicked, if it is the reader's, else at the top), Add
+    // group; on a map of the reader's Remove map; on a group of theirs Rename group and Remove group. Shift with the right
+    // click, or a page without the Edit tab, keeps the browser's own menu
+    var addTo = '';
+    document.getElementById('m2-list').addEventListener('contextmenu', function (e) {
+      if (!editorAsked || e.shiftKey || e.target.closest('input')) return;
+      e.preventDefault();
+      var t = e.target.closest('.m2-map, .m2-group, .m2-empty'), m = t && t.classList.contains('m2-map') ? byId[t.dataset.id] : null;
+      var g = m ? (m.mine ? m.group : '') : t && ownGroup(t.dataset.group) ? t.dataset.group : '', onGroup = t && !m && !!g;
+      var items = [['Add map', function () { addTo = g; picker.click(); }], ['Add group', function () { renameGroup(null); }]];
+      if (m && m.mine) items.push(null, ['Remove map', function () { mineHide(m.id); }]);
+      if (onGroup) items.push(null, ['Rename group', function () { renameGroup(g); }], ['Remove group', function () { removeGroup(g); }]);
+      listMenu(e.clientX, e.clientY, items);
+    });
+    function listMenu(x, y, items) {
+      var box = el('div', 'm2-cx');
+      box.setAttribute('role', 'menu');
+      var close = function () { box.remove(); document.removeEventListener('pointerdown', out, true); document.removeEventListener('keydown', key, true); };
+      var out = function (ev) { if (!box.contains(ev.target)) close(); };
+      var key = function (ev) {
+        if (ev.key === 'Escape') { ev.preventDefault(); ev.stopPropagation(); return close(); }
+        if (ev.key !== 'ArrowDown' && ev.key !== 'ArrowUp') return;
+        ev.preventDefault();
+        var bs = Array.prototype.slice.call(box.querySelectorAll('button')), i = bs.indexOf(document.activeElement);
+        bs[(i + (ev.key === 'ArrowDown' ? 1 : bs.length - 1)) % bs.length].focus();
+      };
+      items.forEach(function (it) {
+        if (!it) return box.appendChild(el('div', 'm2-sep'));
+        var b = el('button', null, it[0]); b.type = 'button';
+        b.addEventListener('click', function () { close(); it[1](); });
+        box.appendChild(b);
+      });
+      document.body.appendChild(box);
+      box.style.left = Math.max(4, Math.min(x, innerWidth - box.offsetWidth - 4)) + 'px';
+      box.style.top = Math.max(4, Math.min(y, innerHeight - box.offsetHeight - 4)) + 'px';
+      document.addEventListener('pointerdown', out, true); document.addEventListener('keydown', key, true);
     }
     function examplesHidden() { try { return localStorage.getItem('atlas-examples') === 'hidden'; } catch (e) { return false; } }
     function release(url) {   // an old version's address let go once nothing on the page uses it (a link or picture shown, the map on screen)
@@ -2785,7 +2871,7 @@ page, so its styles keep the base they were made on). The looks before (Default 
         u = mineURLs[r.id] = { at: r.at, svg: URL.createObjectURL(new Blob([r.svg], { type: 'image/svg+xml' })), text: URL.createObjectURL(new Blob([r.text], { type: 'application/xml' })) };
       }
       var cdm = /<sbml[\s>]/.test(r.text.slice(0, 3000)) && r.text.indexOf('celldesigner') >= 0;
-      return { id: r.id, title: r.title, group: mineGroup(), topic: r.id, mine: true, file: r.file, width: r.width, height: r.height, v: String(r.at),
+      return { id: r.id, title: r.title, group: r.group && mineGroups().indexOf(r.group) >= 0 ? r.group : '', topic: r.id, mine: true, file: r.file, width: r.width, height: r.height, v: String(r.at),
         image: u.svg, legend: cdm ? 'celldesigner' : 'sbgn', downloads: [{ label: cdm ? 'CellDesigner' : 'GraphML', url: u.text }] };
     }
     function withMine(list) {
@@ -2822,36 +2908,33 @@ page, so its styles keep the base they were made on). The looks before (Default 
     }
     // one way to make or update a reader's map, for files added here and found in their folder (the editor): by its id,
     // else by its file's name (the same file again brings its map back, up to date)
-    function mineAdd(name, text, d, id) {
+    function mineAdd(name, text, d, id, group) {   // group: where Add map put it (undefined: where it was, else at the top)
       var old = id ? mine[id] : Object.keys(mine).map(function (k) { return mine[k]; }).filter(function (r) { return r.file === name; })[0];
       var r = { id: old ? old.id : 'mine-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), title: old ? old.title : name.replace(/\.(graphml|xml)$/i, ''),
-        file: old ? old.file : name, text: text, svg: d.svg, width: d.width, height: d.height, at: Date.now(), hidden: false };
+        file: old ? old.file : name, text: text, svg: d.svg, width: d.width, height: d.height, at: Date.now(), hidden: false,
+        group: group !== undefined ? group : old && old.group || '' };
       return minePut(r).then(function () { return r; });
     }
-    function addFiles(list) {   // a reader's files, drawn and kept
+    function addFiles(list, group) {   // a reader's files, drawn and kept
       if (!editor) return;
-      var picked = Array.prototype.filter.call(list, function (f) { return /\.(graphml|xml)$/i.test(f.name); });
+      var picked = Array.prototype.filter.call(list, function (f) { return /\.(graphml|xml)$/i.test(f.name); }).slice(0, 1);   // one map at a time (user, 2026-11-13: no bulk additions for now)
       var last = null;
       return picked.reduce(function (p, f) {
         return p.then(function () { return f.text(); }).then(function (t) {
-          return editor.drawText(t).then(function (d) { return mineAdd(f.name, t, d); }).then(function (r) { last = r.id; return editor.toFolder(r.id, r.file, t); });
+          return editor.drawText(t).then(function (d) { return mineAdd(f.name, t, d, null, group || ''); }).then(function (r) { last = r.id; return editor.toFolder(r.id, r.file, t); });
         }).catch(function (e) { alert(f.name + ' was not added: ' + (e && e.message ? e.message : e)); });
       }, Promise.resolve()).then(function () { refreshMine(); if (last) go(last); });
     }
     var picker = document.createElement('input');
-    picker.type = 'file'; picker.multiple = true; picker.accept = '.graphml,.xml'; picker.hidden = true;
-    picker.addEventListener('change', function () { addFiles(picker.files); picker.value = ''; });
+    picker.type = 'file'; picker.multiple = false; picker.accept = '.graphml,.xml'; picker.hidden = true;
+    picker.addEventListener('change', function () { addFiles(picker.files, addTo); picker.value = ''; });
     document.body.appendChild(picker);
-    function addRow(box) {
-      var b = el('button', 'm2-item m2-add', 'Add a map');
-      b.type = 'button'; b.title = 'A GraphML or CellDesigner file from your computer (or drop it on the page)';   // a hint on hover only (user, 2026-11-13: silent, "hover text is fine")
-      b.addEventListener('click', function () { picker.click(); });
-      box.appendChild(b);
-    }
     document.addEventListener('dragover', function (e) { if (editor && e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types, 'Files') >= 0) e.preventDefault(); });
-    document.addEventListener('drop', function (e) {
+    document.addEventListener('drop', function (e) {   // a file dropped on a group of the reader's goes into it, elsewhere to the top
       if (!editor || !e.dataTransfer || !e.dataTransfer.files.length) return;   // before the editor is in, the browser's own
-      e.preventDefault(); addFiles(e.dataTransfer.files);
+      e.preventDefault();
+      var t = e.target.closest && e.target.closest('#m2-list [data-group]'), g = t && t.dataset.group;
+      addFiles(e.dataTransfer.files, ownGroup(g) ? g : '');
     });
     function draftsShown() {   // the map shown taken again when its draft can be shown now (the drafts read, the editor here)
       var m = current && byId[current.id];
