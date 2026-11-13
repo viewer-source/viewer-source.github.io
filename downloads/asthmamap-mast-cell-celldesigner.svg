@@ -2298,7 +2298,7 @@
 <polyline points="2498.58,1799.94 2543.37,1701.76"/>
 <polyline points="2486.35,1602.75 2486.22,1787.5"/>
 <polyline points="2944.21,2777.12 2943.77,2943 2943.55,2969.25"/>
-<polyline points="2823.55,2526.63 2898.68,2518.51 2969.18,2738.48 2950.35,2848.19"/>
+<polyline points="2830.86,2534.75 2992,2534.75 2992,2856.08 2957,2856.08"/>
 <polyline points="5665.36,1317.71 5750.87,1317.34"/>
 <polyline points="5715.31,1280.25 5715.14,1305"/>
 <polyline points="1610.48,662.59 1610.4,709.25"/>
@@ -2427,7 +2427,7 @@
 <polyline points="5041.86,1692.23 5042.12,1706.62 4785.36,1707.2"/>
 <polyline points="4902.45,1675.75 4902.65,1694.43"/>
 <polyline points="2545.3,2777.25 2544.08,2947.07 202.3,2947.67 202.36,560.25"/>
-<polyline points="2740.36,2534.99 2693.55,2536.42 2633.13,2762.85 2554.99,2852.17"/>
+<polyline points="2729.35,2572.39 2633.13,2762.85 2554.99,2852.17"/>
 <polyline points="2162.36,801.73 2103.36,801.56"/>
 <polyline points="2166.49,1178.27 2136.99,801.66"/>
 <polyline points="3305.86,2296.77 3173.36,2297.18"/>
@@ -2435,7 +2435,7 @@
 <polyline points="3204.55,2227.59 3229.6,2285.12"/>
 <polyline points="3293.84,2226.33 3242.47,2286.29"/>
 <polyline points="2843.34,2777.25 2842.91,2966.75"/>
-<polyline points="2756.36,2534.83 2787.06,2535.15 2856.83,2741.29 2848.62,2871.03"/>
+<polyline points="2768.1,2572.33 2856.83,2741.29 2848.62,2871.03"/>
 <polyline points="5057.36,2219.25 5057.36,2273.75"/>
 <polyline points="4626.67,1435.69 4541.66,1437.17"/>
 <polyline points="3695.36,1608.75 2963.21,1608.38"/>
@@ -2600,9 +2600,9 @@
 <polyline points="2868.37,2374.96 2785.08,2485.86"/>
 <polyline points="1253.73,2053.69 1280.19,2053.88"/>
 <polyline points="2644.33,2777.25 2643.55,2951 2643.68,2966.75"/>
-<polyline points="2755.14,2530.5 2763.42,2525.3 2722.45,2757.47 2653.61,2853.64"/>
+<polyline points="2743.89,2573.2 2722.45,2757.47 2653.61,2853.64"/>
 <polyline points="2743.33,2778.25 2742.58,2956 2742.68,2967.75"/>
-<polyline points="2741.95,2529.97 2734.39,2524.34 2779.18,2744.17 2750,2855.41"/>
+<polyline points="2754.01,2573.16 2779.18,2744.17 2750,2855.41"/>
 </g>
 <polygon points="4250.36,1747.25 4265.28,1742 4265.44,1752" fill="#000"/>
 <polyline points="4325.86,1746 4264.36,1747.02" fill="none" stroke="#000000" stroke-width="1"/>
@@ -2755,8 +2755,8 @@
 <rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(2486.24,1800) rotate(-0.29)"/>
 <polygon points="2943.36,2991.25 2938.49,2976.21 2948.49,2976.29" fill="#000"/>
 <polyline points="2944.24,2769.12 2943.77,2943 2943.48,2977.25" fill="none" stroke="#000000" stroke-width="1"/>
-<polygon points="2949,2856.08 2946.41,2847.51 2954.3,2848.87" fill="#fff" stroke="#000"/>
-<polyline points="2815.6,2527.49 2898.68,2518.51 2969.18,2738.48 2950.35,2848.19" fill="none" stroke="#000000" stroke-width="1"/>
+<polygon points="2949,2856.08 2957,2852.08 2957,2860.08" fill="#fff" stroke="#000"/>
+<polyline points="2822.86,2534.75 2992,2534.75 2992,2856.08 2957,2856.08" fill="none" stroke="#000000" stroke-width="1"/>
 <rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(2944,2856.06) rotate(90.16)"/><text x="2944" y="2859.06" font-family="'Times New Roman', serif" font-weight="bold" font-size="10" text-anchor="middle">//</text>
 <polygon points="5772.86,1317.25 5757.89,1322.31 5757.84,1312.31" fill="#000"/>
 <polyline points="5657.36,1317.75 5758.87,1317.31" fill="none" stroke="#000000" stroke-width="1"/>
@@ -3066,7 +3066,7 @@
 <polygon points="202.36,538.25 207.36,553.25 197.36,553.25" fill="#000"/>
 <polyline points="2545.36,2769.25 2544.08,2947.07 202.3,2947.67 202.36,552.25" fill="none" stroke="#000000" stroke-width="1"/>
 <polygon points="2549.72,2858.19 2551.98,2849.54 2558,2854.81" fill="#fff" stroke="#000"/>
-<polyline points="2748.36,2534.75 2693.55,2536.42 2633.13,2762.85 2554.99,2852.17" fill="none" stroke="#000000" stroke-width="1"/>
+<polyline points="2732.95,2565.25 2633.13,2762.85 2554.99,2852.17" fill="none" stroke="#000000" stroke-width="1"/>
 <rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(2544.72,2858.16) rotate(90.41)"/><text x="2544.72" y="2861.16" font-family="'Times New Roman', serif" font-weight="bold" font-size="10" text-anchor="middle">//</text>
 <polygon points="2081.36,801.5 2096.37,796.54 2096.35,806.54" fill="#000"/>
 <polyline points="2170.36,801.75 2095.36,801.54" fill="none" stroke="#000000" stroke-width="1"/>
@@ -3084,7 +3084,7 @@
 <polygon points="2842.86,2988.75 2837.89,2973.74 2847.89,2973.76" fill="#000"/>
 <polyline points="2843.36,2769.25 2842.89,2974.75" fill="none" stroke="#000000" stroke-width="1"/>
 <polygon points="2848.11,2879.01 2844.62,2870.77 2852.61,2871.28" fill="#fff" stroke="#000"/>
-<polyline points="2748.36,2534.75 2787.06,2535.15 2856.83,2741.29 2848.62,2871.03" fill="none" stroke="#000000" stroke-width="1"/>
+<polyline points="2764.38,2565.25 2856.83,2741.29 2848.62,2871.03" fill="none" stroke="#000000" stroke-width="1"/>
 <rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(2843.11,2879) rotate(90.13)"/><text x="2843.11" y="2882" font-family="'Times New Roman', serif" font-weight="bold" font-size="10" text-anchor="middle">//</text>
 <polygon points="5057.36,2295.75 5052.36,2280.75 5062.36,2280.75" fill="#000"/>
 <polyline points="5057.36,2211.25 5057.36,2281.75" fill="none" stroke="#000000" stroke-width="1"/>
@@ -3476,11 +3476,11 @@
 <polygon points="2643.86,2988.75 2638.74,2973.79 2648.74,2973.71" fill="#000"/>
 <polyline points="2644.36,2769.25 2643.55,2951 2643.75,2974.75" fill="none" stroke="#000000" stroke-width="1"/>
 <polygon points="2648.96,2860.15 2650.36,2851.31 2656.87,2855.97" fill="#fff" stroke="#000"/>
-<polyline points="2748.36,2534.75 2763.42,2525.3 2722.45,2757.47 2653.61,2853.64" fill="none" stroke="#000000" stroke-width="1"/>
+<polyline points="2744.81,2565.25 2722.45,2757.47 2653.61,2853.64" fill="none" stroke="#000000" stroke-width="1"/>
 <rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(2643.96,2860.13) rotate(90.25)"/><text x="2643.96" y="2863.13" font-family="'Times New Roman', serif" font-weight="bold" font-size="10" text-anchor="middle">//</text>
 <polygon points="2742.86,2989.75 2737.74,2974.79 2747.74,2974.71" fill="#000"/>
 <polyline points="2743.36,2770.25 2742.58,2956 2742.74,2975.75" fill="none" stroke="#000000" stroke-width="1"/>
 <polygon points="2747.97,2863.14 2746.13,2854.39 2753.87,2856.42" fill="#fff" stroke="#000"/>
-<polyline points="2748.36,2534.75 2734.39,2524.34 2779.18,2744.17 2750,2855.41" fill="none" stroke="#000000" stroke-width="1"/>
+<polyline points="2752.85,2565.25 2779.18,2744.17 2750,2855.41" fill="none" stroke="#000000" stroke-width="1"/>
 <rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(2742.97,2863.12) rotate(90.24)"/><text x="2742.97" y="2866.12" font-family="'Times New Roman', serif" font-weight="bold" font-size="10" text-anchor="middle">//</text>
 </svg>

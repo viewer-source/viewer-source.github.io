@@ -30039,7 +30039,7 @@ Synonyms: (5Z, 13E)-(15S)-9alpha, 11alpha-Epidioxy-15-hydroxyprosta-5, 13-dienoa
 </celldesigner:connectScheme>
 <celldesigner:editPoints>0.7827777893544682,-9.656661353235601E-4</celldesigner:editPoints>
 <celldesigner:listOfModification>
-<celldesigner:modification  type="PHYSICAL_STIMULATION"  modifiers="s_id_sa178"  aliases="sa178"  targetLineIndex="0,2"  editPoints="0.17380127299287684,-0.3592784323074298 0.7649043748594525,-0.20960399717760744">
+<celldesigner:modification  type="PHYSICAL_STIMULATION"  modifiers="s_id_sa178"  aliases="sa178"  targetLineIndex="0,2"  editPoints="0.34063701989,-0.545532944035 1.06011812351,-0.096280700546">
 <celldesigner:connectScheme connectPolicy="direct" >
 <celldesigner:listOfLineDirection>
 <celldesigner:lineDirection  index="0" value="unknown"/>
@@ -34590,12 +34590,11 @@ Synonyms: (5Z, 13E)-(15S)-9alpha, 11alpha-Epidioxy-15-hydroxyprosta-5, 13-dienoa
 </celldesigner:connectScheme>
 <celldesigner:editPoints>-0.037615120997299155,-0.04007538550347045 0.4864559839017663,-0.5393506092351491</celldesigner:editPoints>
 <celldesigner:listOfModification>
-<celldesigner:modification  type="PHYSICAL_STIMULATION"  modifiers="s_id_sa178"  aliases="sa178"  targetLineIndex="0,2"  editPoints="0.0793284548432282,0.12074830926511479 0.6709567869402961,-0.05581128147101986">
+<celldesigner:modification  type="PHYSICAL_STIMULATION"  modifiers="s_id_sa178"  aliases="sa178"  targetLineIndex="0,2"  editPoints="0.67095678694,-0.055811281471">
 <celldesigner:connectScheme connectPolicy="direct" >
 <celldesigner:listOfLineDirection>
-<celldesigner:lineDirection  index="0" value="unknown"/>
-<celldesigner:lineDirection  index="1" value="unknown"/>
-<celldesigner:lineDirection  index="2" value="unknown"/>
+<celldesigner:lineDirection index="0" value="unknown"/>
+<celldesigner:lineDirection index="1" value="unknown"/>
 </celldesigner:listOfLineDirection>
 </celldesigner:connectScheme>
 <celldesigner:linkTarget species="s_id_sa178" alias="sa178">
@@ -34837,12 +34836,11 @@ Synonyms: (5Z, 13E)-(15S)-9alpha, 11alpha-Epidioxy-15-hydroxyprosta-5, 13-dienoa
 </celldesigner:listOfLineDirection>
 </celldesigner:connectScheme>
 <celldesigner:listOfModification>
-<celldesigner:modification  type="PHYSICAL_STIMULATION"  modifiers="s_id_sa178"  aliases="sa178"  targetLineIndex="0,2"  editPoints="0.031125795361125686,-0.10338850102111156 0.6377019120451728,-0.13029682024482073">
+<celldesigner:modification  type="PHYSICAL_STIMULATION"  modifiers="s_id_sa178"  aliases="sa178"  targetLineIndex="0,2"  editPoints="0.637701912045,-0.130296820245">
 <celldesigner:connectScheme connectPolicy="direct" >
 <celldesigner:listOfLineDirection>
-<celldesigner:lineDirection  index="0" value="unknown"/>
-<celldesigner:lineDirection  index="1" value="unknown"/>
-<celldesigner:lineDirection  index="2" value="unknown"/>
+<celldesigner:lineDirection index="0" value="unknown"/>
+<celldesigner:lineDirection index="1" value="unknown"/>
 </celldesigner:listOfLineDirection>
 </celldesigner:connectScheme>
 <celldesigner:linkTarget species="s_id_sa178" alias="sa178">
@@ -40538,12 +40536,11 @@ Synonyms: (5Z, 13E)-(15S)-9alpha, 11alpha-Epidioxy-15-hydroxyprosta-5, 13-dienoa
 </celldesigner:connectScheme>
 <celldesigner:editPoints>0.8280317864750385,0.0017899356841476065</celldesigner:editPoints>
 <celldesigner:listOfModification>
-<celldesigner:modification  type="PHYSICAL_STIMULATION"  modifiers="s_id_sa178"  aliases="sa178"  targetLineIndex="0,2"  editPoints="-0.03949721014905992,-0.034209822637231095 0.6482690664766873,-0.118407450965872">
+<celldesigner:modification  type="PHYSICAL_STIMULATION"  modifiers="s_id_sa178"  aliases="sa178"  targetLineIndex="0,2"  editPoints="0.648269066477,-0.118407450966">
 <celldesigner:connectScheme connectPolicy="direct" >
 <celldesigner:listOfLineDirection>
-<celldesigner:lineDirection  index="0" value="unknown"/>
-<celldesigner:lineDirection  index="1" value="unknown"/>
-<celldesigner:lineDirection  index="2" value="unknown"/>
+<celldesigner:lineDirection index="0" value="unknown"/>
+<celldesigner:lineDirection index="1" value="unknown"/>
 </celldesigner:listOfLineDirection>
 </celldesigner:connectScheme>
 <celldesigner:linkTarget species="s_id_sa178" alias="sa178">
@@ -40613,12 +40610,11 @@ Synonyms: (5Z, 13E)-(15S)-9alpha, 11alpha-Epidioxy-15-hydroxyprosta-5, 13-dienoa
 </celldesigner:connectScheme>
 <celldesigner:editPoints>0.8462296818655758,0.0016311554567499714</celldesigner:editPoints>
 <celldesigner:listOfModification>
-<celldesigner:modification  type="PHYSICAL_STIMULATION"  modifiers="s_id_sa178"  aliases="sa178"  targetLineIndex="0,2"  editPoints="-0.03165442300528591,0.04258011146272255 0.6376002260388796,-0.09461246251133192">
+<celldesigner:modification  type="PHYSICAL_STIMULATION"  modifiers="s_id_sa178"  aliases="sa178"  targetLineIndex="0,2"  editPoints="0.637600226039,-0.094612462511">
 <celldesigner:connectScheme connectPolicy="direct" >
 <celldesigner:listOfLineDirection>
-<celldesigner:lineDirection  index="0" value="unknown"/>
-<celldesigner:lineDirection  index="1" value="unknown"/>
-<celldesigner:lineDirection  index="2" value="unknown"/>
+<celldesigner:lineDirection index="0" value="unknown"/>
+<celldesigner:lineDirection index="1" value="unknown"/>
 </celldesigner:listOfLineDirection>
 </celldesigner:connectScheme>
 <celldesigner:linkTarget species="s_id_sa178" alias="sa178">
