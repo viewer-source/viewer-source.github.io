@@ -748,8 +748,9 @@ html .m2-list-shut #m2-split { left: 0; }
 }
 </style>{% endif %}
 {% if include.look == "icon-row" %}<style>
-/* look="icon-row" (user, 2026-11-12: "apply this to MREG website"): Default Icon Row of the styles experiment, copied
-   from its default-icon-row-base.css on the Default Lines rules above. A change to Default Icon Row in the styles is
+/* look="icon-row" (user, 2026-11-12: "apply this to MREG website"): Default View of the styles experiment (2026-11-13,
+   the default for projects; Default Edit is the same look with the editor), copied from its default-icon-row-base.css on
+   the Default Lines rules above. A change to Default Icon Row in the styles is
    copied here by hand. Icons as tabs at the top of the list's panel (Search, the field with the whole list; Maps;
    Downloads, Open in's links at its end; Settings), the panel fixed beside the map; annotations on the right while a
    molecule is open, or on the left as a tab (Settings); icons on top or on the left (Settings). The download row under
@@ -763,6 +764,8 @@ html .m2-icons-on .m2-ri[data-win="info"], html .m2-icons-on .m2-ri[data-win="le
 /* plain signs, not buttons (user, 2026-11-12): no fill and no change of colour when open or under the pointer; 24 px
    tabs 12 px apart, the bar 24 px tall with 6 px under the signs */
 html .m2-icons-on .m2-ri, html .m2-icons-on .m2-ri.m2-open, html .m2-icons-on .m2-ri:hover { background: none; color: #80868b; }
+/* the map list and its group names dark grey, stronger than the icons (user, 2026-11-12); the chosen map keeps its colours */
+html .m2-item:not(.m2-on), html .m2-group { color: #1e2022; }
 html .m2-icons-on .m2-ri { width: 24px; height: 24px; border-radius: 0; }
 html .m2-icons-on .m2-ri svg { width: 21px; height: 21px; }
 html .m2-icon-row #m2-rail { height: 31px; column-gap: 12px; }
