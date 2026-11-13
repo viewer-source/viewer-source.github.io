@@ -380,6 +380,10 @@ look="panel" (user, 2026-11-10): Default Panel of the styles experiment, its own
     background: var(--m2-bg); border: 1px solid var(--m2-button); border-radius: var(--m2-radius-button); color: var(--m2-button); }
   #m2-setwin .m2-set-row button:hover, #m2-setwin .m2-set-row button.m2-on { background: var(--m2-accent); border-color: var(--m2-accent); color: var(--m2-on-accent); }
   #m2-setwin .m2-set-row button:focus { outline: none; }
+  /* the two-choice rows (Groups, Annotations, Icons) as equal buttons, the same width in every row (user, 2026-11-13: a
+     unified look, as segmented controls keep their segments equal: Apple HIG, Primer) */
+  #m2-setwin .m2-set-row:not(#m2-set-colours) { display: grid; grid-template-columns: repeat(2, 1fr); max-width: 176px; }
+  #m2-setwin .m2-set-row:not(#m2-set-colours) button { min-width: 0; text-align: center; white-space: nowrap; }
   /* Map size as a slider (user, 2026-11-12: the six buttons visually noisy), 5% steps from 75 to 150% (user, 2026-11-12:
      more steps in between; were five), ticks at 75, 100, 125 and 150 only; the value beside the name */
   #m2-set-size-v { float: right; color: var(--m2-muted); }
