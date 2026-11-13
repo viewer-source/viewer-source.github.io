@@ -28,12 +28,13 @@
   /* image error: red, the map's images could not be drawn from its current GraphML
      (scripts/make_images.py, user 2026-10-17) */
   .m2-draft.m2-error { color: var(--m2-error); border-color: var(--m2-error); }
-  /* the map's format (user, 2026-11-14, option E of five): xml for CellDesigner, yed for GraphML, sbgn for SBGN-ML, from
-     the map's first download, in very light grey left of its name, no container; the list's box reaches 10 px into the
+  /* the map's format (user, 2026-11-14, option G; E, xml yed sbgn at 8 px #c8c8c8, looked thick and blurred): C for
+     CellDesigner, Y for GraphML (yEd), S for SBGN-ML, from the map's first download, one letter in a thin weight and a
+     stronger grey left of its name, no container; the list's box reaches 10 px into the
      panel's margin so the tag fits beside the group's indent and nothing in the list moves. A map in no group, or the
      list on narrow windows, has no room for it and shows none */
   @media (min-width: 941px) { #m2-list { margin-left: -10px; padding-left: 10px; } }
   .m2-item.m2-map { position: relative; }
-  .m2-fmt { position: absolute; right: 100%; bottom: 6px; margin-right: 3px; font-size: 8px; line-height: 1; color: #c8c8c8; white-space: nowrap; pointer-events: none; }
+  .m2-fmt { position: absolute; right: 100%; bottom: 5px; margin-right: 4px; font: 300 10px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif; color: #a0a0a0; white-space: nowrap; pointer-events: none; }
   .m2-map:not(.m2-sub) .m2-fmt { display: none; }
   @media (max-width: 940px) { .m2-fmt { display: none; } }
