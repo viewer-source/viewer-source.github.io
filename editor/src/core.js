@@ -1414,7 +1414,7 @@
     // a line's end moved on its node (user, 2026-11-12: "snap to center, bottom center, top center, left center, right
     // center"): an end square of a lit line dragged; it snaps to the nearest of the five, written as the port's offset
     // from the node's centre (yEd's sx, sy or tx, ty); on a CellDesigner map cd_edit makes it the connection point
-    // (none for the centre, N, S, W, E). A process glyph's ends are not moved this way
+    // (none for the centre, N, S, W, E). A process glyph's main lines are not moved this way; a modifier's end there goes round it (procSpots)
     function portAt(P) {
       var R = 6 / V.z, L = lit(), best = null, dB = R;
       L.e.forEach(function (k) {
@@ -1422,28 +1422,48 @@
         if (e.s == null || e.t == null || !e.path) return;
         var all = ports(k);
         [[0, e.s], [all.length - 1, e.t]].forEach(function (q, end) {
-          if (cd && /\|proc$/.test(nodes2[q[1]].id)) return;
+          if (cd && /\|proc$/.test(nodes2[q[1]].id) && !procSpots({ k: k, end: end, n: q[1] })) return;   // a glyph's main lines stay
           var d = Math.hypot(all[q[0]][0] - P[0], all[q[0]][1] - P[1]);
           if (d <= dB) { dB = d; best = { k: k, end: end, n: q[1], to: null }; }
         });
       });
       return best;
     }
-    function spot(pp, P) {   // the nearest of the five places of the node, as an offset from its centre
+    // a modifier's end at a CellDesigner process glyph (user, 2026-11-13): CellDesigner's six places, its corners and the
+    // middles of the two sides off the main line, turned with the line (no centre, nothing on the line itself; cd_edit
+    // writes targetLineIndex from the place's number, spot on the path: 2 to 7 in this order, cdrender's SQUARE); null
+    // for any other end
+    function procSpots(pp) {
+      var m = cd && pp.end && nodes2[pp.n].id.match(/^(.*)\|proc$/);
+      if (!m || !/\|m\d+$/.test(edges2[pp.k].id)) return null;
+      var ka = edges2.findIndex(function (e) { return e.id === m[1] + '|a'; });
+      if (ka < 0) return null;
+      var p = ports(ka), A = p[p.length - 2], C = p[p.length - 1], L = Math.hypot(C[0] - A[0], C[1] - A[1]), h = bx(pp.n)[2] / 2;
+      if (!L) return null;
+      var f = [(C[0] - A[0]) / L, (C[1] - A[1]) / L];
+      return [[0, -1], [0, 1], [-1, -1], [1, -1], [-1, 1], [1, 1]].map(function (s) { return [h * (s[0] * f[0] - s[1] * f[1]), h * (s[0] * f[1] + s[1] * f[0])]; });
+    }
+    function spot(pp, P) {   // the nearest of the node's places (five, or a glyph's six), as an offset from its centre
       var b = bx(pp.n), c = [b[0] + b[2] / 2, b[1] + b[3] / 2];
-      return [[0, 0], [0, -b[3] / 2], [0, b[3] / 2], [-b[2] / 2, 0], [b[2] / 2, 0]].reduce(function (m, o) {
+      return (procSpots(pp) || [[0, 0], [0, -b[3] / 2], [0, b[3] / 2], [-b[2] / 2, 0], [b[2] / 2, 0]]).reduce(function (m, o) {
         return Math.hypot(c[0] + o[0] - P[0], c[1] + o[1] - P[1]) < Math.hypot(c[0] + m[0] - P[0], c[1] + m[1] - P[1]) ? o : m;
       });
     }
+    function spotNo(pp, to) {   // the number of the glyph's place at offset to (procSpots' order), null off a glyph
+      var S = procSpots(pp), best = null, bd = Infinity;
+      if (S) S.forEach(function (o, i) { var d = Math.hypot(o[0] - to[0], o[1] - to[1]); if (d < bd) { bd = d; best = i + 2; } });
+      return best;
+    }
     function setPort(pp) {
-      var e = edges2[pp.k], a = pp.end ? ['tx', 'ty'] : ['sx', 'sy'];
+      var e = edges2[pp.k], a = pp.end ? ['tx', 'ty'] : ['sx', 'sy'], no = spotNo(pp, pp.to), vals = [fmt(pp.to[0]), fmt(pp.to[1])];
+      if (no) { a = a.concat('spot'); vals.push(String(no)); }
       if (Math.abs(num(e.path, a[0]) - pp.to[0]) < 0.01 && Math.abs(num(e.path, a[1]) - pp.to[1]) < 0.01) { unshift(); paint(); return; }
       remember(false);
       var nth = Array.prototype.indexOf.call(doc.getElementsByTagNameNS(Y, 'Path'), e.path), c = -1;
       text = text.replace(/<y:Path\b[^>]*>/g, function (tag) {
         if (++c !== nth) return tag;
         a.forEach(function (k, j) {
-          var v = fmt(pp.to[j]), re = new RegExp('(\\s' + k + '=")[^"]*"');
+          var v = vals[j], re = new RegExp('(\\s' + k + '=")[^"]*"');
           tag = re.test(tag) ? tag.replace(re, '$1' + v + '"') : tag.replace(/(\/?>)$/, ' ' + k + '="' + v + '"$1');
         });
         return tag;
@@ -2045,7 +2065,16 @@
     function portKey(pp, d) {
       var e = edges2[pp.k], a = pp.end ? ['tx', 'ty'] : ['sx', 'sy'], b = bx(pp.n);
       var c = [b[0] + b[2] / 2, b[1] + b[3] / 2], o = spot(pp, [c[0] + num(e.path, a[0]), c[1] + num(e.path, a[1])]);
-      var u = [Math.sign(d[0]), Math.sign(d[1])], s = [Math.sign(o[0]), Math.sign(o[1])];
+      var u = [Math.sign(d[0]), Math.sign(d[1])], s = [Math.sign(o[0]), Math.sign(o[1])], S = procSpots(pp);
+      if (S) {   // round a glyph: the next of its six places the arrow points to
+        var best = null, bs = 0.3;
+        S.forEach(function (q) {
+          var v = [q[0] - o[0], q[1] - o[1]], L = Math.hypot(v[0], v[1]), sc = L > 0.01 ? (v[0] * u[0] + v[1] * u[1]) / L - L / 1000 : -1;
+          if (sc > bs) { bs = sc; best = q; }
+        });
+        if (best) setPort({ k: pp.k, end: pp.end, n: pp.n, to: best });
+        return;
+      }
       var to = (s[0] || s[1]) && s[0] === -u[0] && s[1] === -u[1] ? [0, 0] : [u[0] * b[2] / 2, u[1] * b[3] / 2];
       setPort({ k: pp.k, end: pp.end, n: pp.n, to: to });
     }

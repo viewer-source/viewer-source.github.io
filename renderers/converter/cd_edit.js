@@ -46,6 +46,9 @@
     });
     return up;
   }
+  // the place of a modifier's end round the glyph, as cdrender's target() takes it: targetLineIndex's second number, 3
+  // when it names none of the six (SQUARE)
+  function spotOf(m) { var k = I((get(m, 'targetLineIndex') || '-1,2').split(',')[1]); return has(SQUARE, k) ? k : 3; }
   function lines(d, rx) {
     var x = find(rx, 's:annotation/cd:extension');
     var rt = find(x, 'cd:reactionType'), typ = rt ? (text(rt) || '') : null;
@@ -67,7 +70,7 @@
       var a = get(m, 'aliases');
       if (!d.alias.has(a)) return;
       var Mm = d.end(find(m, 'cd:linkTarget'), a), M = Mm[0], T = target(m, sq, fl);
-      r.mods.push({ n: n, el: m, alias: a, M: M, anc: Mm[1], T: T, bends: editPoints(get(m, 'editPoints')).map(function (p) { return fromFrame(M, T, p); }) });
+      r.mods.push({ n: n, el: m, alias: a, M: M, anc: Mm[1], T: T, spot: spotOf(m), bends: editPoints(get(m, 'editPoints')).map(function (p) { return fromFrame(M, T, p); }) });
     });
     var joins = [0.375, 0.625].map(function (t) { return [P[0] + t * (Q[0] - P[0]), P[1] + t * (Q[1] - P[1])]; });
     [['cd:listOfReactantLinks/cd:reactantLink', true], ['cd:listOfProductLinks/cd:productLink', false]].forEach(function (tg) {
@@ -168,9 +171,9 @@
       if (!d.alias.has(i) && !comps.has(i)) throw new Error("TypeError: 'NoneType' object is not subscriptable");
       var b = box(i); return [p[0] - b[0] - b[2] / 2, p[1] - b[1] - b[3] / 2];
     };
-    var edge = function (eid, s, t2, sp, tp, ps) {
+    var edge = function (eid, s, t2, sp, tp, ps, at) {
       var q = ps.map(function (p) { return '<y:Point x="' + repr(p[0] - off[0]) + '" y="' + repr(p[1] - off[1]) + '"/>'; }).join('');
-      out.push('    <edge id="' + escape(eid) + '" source="' + escape(s) + '" target="' + escape(t2) + '"><data key="d10"><y:PolyLineEdge><y:Path sx="' + repr(sp[0]) + '" sy="' + repr(sp[1]) + '" tx="' + repr(tp[0]) + '" ty="' + repr(tp[1]) + '">' + q + '</y:Path><y:BendStyle smoothed="false"/></y:PolyLineEdge></data></edge>');
+      out.push('    <edge id="' + escape(eid) + '" source="' + escape(s) + '" target="' + escape(t2) + '"><data key="d10"><y:PolyLineEdge><y:Path sx="' + repr(sp[0]) + '" sy="' + repr(sp[1]) + '" tx="' + repr(tp[0]) + '" ty="' + repr(tp[1]) + '"' + (at || '') + '>' + q + '</y:Path><y:BendStyle smoothed="false"/></y:PolyLineEdge></data></edge>');
     };
     rxs.forEach(function (r) {
       var rid = r.id, A = r.A, B = r.B, pa = r.ancA ? port(A, r.ra) : [0.0, 0.0], pb = r.ancB ? port(B, r.pa) : [0.0, 0.0];
@@ -178,7 +181,7 @@
       var g = rid + '|proc', k = r.k, sq = r.sq;
       edge(rid + '|a', r.ra, g, pa, [0.0, 0.0], r.bends.slice(0, k));
       edge(rid + '|b', g, r.pa, [0.0, 0.0], pb, r.bends.slice(k));
-      r.mods.forEach(function (m) { edge(rid + '|m' + m.n, m.alias, g, m.anc ? port(m.M, m.alias) : [0.0, 0.0], [m.T[0] - sq[0], m.T[1] - sq[1]], m.bends); });
+      r.mods.forEach(function (m) { edge(rid + '|m' + m.n, m.alias, g, m.anc ? port(m.M, m.alias) : [0.0, 0.0], [m.T[0] - sq[0], m.T[1] - sq[1]], m.bends, ' spot="' + m.spot + '"'); });
       r.links.forEach(function (l) {
         var o = l.anc ? port(l.O, l.alias) : [0.0, 0.0], j = [l.J[0] - sq[0], l.J[1] - sq[1]];
         if (l.into) edge(rid + '|r' + l.n, l.alias, g, o, j, l.bends); else edge(rid + '|p' + l.n, g, l.alias, j, o, l.bends);
@@ -204,7 +207,7 @@
     iter(r, GNS, 'edge').forEach(function (e) {
       bends.set(get(e, 'id'), iter(e, YNS, 'Point').map(function (p) { return [F(get(p, 'x')), F(get(p, 'y'))]; }));
       var pa = descendant(e, YNS, 'Path');
-      if (pa) paths.set(get(e, 'id'), ['sx', 'sy', 'tx', 'ty'].map(function (k) { return F(get(pa, k, 0)); }));
+      if (pa) { var q = ['sx', 'sy', 'tx', 'ty'].map(function (k) { return F(get(pa, k, 0)); }), sp = get(pa, 'spot'); if (sp) q.push(I(sp)); paths.set(get(e, 'id'), q); }
     });
     return [boxes, new Map(), bends, paths];
   }
@@ -279,6 +282,13 @@
     o.mods.forEach(function (m) {
       var pos = moved(rid + '|m' + m.n, 's', m.alias, m.M, m.anc, o.old);
       if (pos !== null) anchor(T, m.el, at(lists.modification, m.n), pos, 'modification', [get(m.el, 'modifiers'), m.alias]);
+    });
+    // a modifier's end the editor set round the process glyph: the place it chose (spot, one of CellDesigner's six: the
+    // corners and the middles of the two sides off the main line), by its number, so the frame it was drawn in does not
+    // matter
+    if (o.glyph) o.mods.forEach(function (m) {
+      var q = paths.get(rid + '|m' + m.n);
+      if (q && q.length > 4 && q[4] !== m.spot) m.el.setAttribute('targetLineIndex', (get(m.el, 'targetLineIndex') || '-1,2').split(',')[0] + ',' + q[4]);   // written with the edit points (reaction())
     });
     o.links.forEach(function (l) {
       var pos = moved(rid + '|' + (l.into ? 'r' : 'p') + l.n, l.into ? 's' : 't', l.alias, l.O, l.anc, o.old);
@@ -399,7 +409,7 @@
       var ms = modSpans[mo.n], M = d.end(find(mo.el, 'cd:linkTarget'), mo.alias)[0], Tt = target(mo.el, sq, fl);
       var nb = bends.has(rid + '|m' + mo.n) ? bends.get(rid + '|m' + mo.n) : mo.bends, same = near(M, mo.M, 1e-6) && near(Tt, mo.T, 1e-6);
       var tx = points(get(mo.el, 'editPoints'), mo.bends, nb, same, function (p) { return toFrame(M, Tt, p); });
-      T.attrs(ms[0], [['editPoints', tx || null]]);
+      T.attrs(ms[0], [['targetLineIndex', get(mo.el, 'targetLineIndex')], ['editPoints', tx || null]]);   // its place, if ports() moved it
       var c2 = T.span('<celldesigner:connectScheme', ms[0], ms[1]);
       if (c2) directions(T, c2, nb.length + 1);
     });

@@ -366,8 +366,17 @@ says "the workbench", "the converter's repository", "a private repository".
   "weird"), with its highlight, and on a CellDesigner map the glyph following its segment's new end; one undo step. GraphML: the port's offset from the centre (yEd's sx, sy or
   tx, ty). CellDesigner: `cd_edit` writes the connection point (the centre: no linkAnchor; N, S, W, E), on the base
   reactant or product, an added one, or a modifier's linkTarget (made after its connectScheme when missing, as
-  CellDesigner orders it); bend points stay. A process glyph's ends are not moved. Checked live on SREBP in both
+  CellDesigner orders it); bend points stay. A process glyph's main lines are not moved at the glyph. Checked live on SREBP in both
   formats (save simulated).
+  A modifier's end at
+  a process glyph (user, 2026-11-13: "In Cell Designer, there is no central location for ports for processes") snaps
+  only to CellDesigner's six places there, the four corners and the middles of the two sides off the main line, turned
+  with the line (no centre, nothing on the line's own sides); the arrow keys step to the next place the arrow points to;
+  `cd_edit` writes `targetLineIndex` (`-1,2` to `-1,7`, cdrender's SQUARE) with the modifier's edit points, its anchor
+  points staying where they are. The place travels as its number (`spot` on the modifier's y:Path in cd_edit's GraphML,
+  set by the editor's setPort), never worked out from the end's offset: that offset is in the frame of the drawing the
+  GraphML was last made from, and a main line turned by another move made every modifier jump (found by the review) (`tests/cd-modifier-spot.js` in the workflow Compare renderers; cd-compare moves
+  modifier ends too).
 - Full screen with tools (user, 2026-11-12: "use more space available on the screen, but with tools"): beside the map's
   own full screen (the map alone), the whole page goes full screen with its list, tools and panel: Shift with the
   full-screen button, or Full screen with tools in the right-click menu (Exit full screen there while on). The

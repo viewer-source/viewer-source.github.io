@@ -10,6 +10,7 @@
         'Shift with a drag on empty space selects an area.', 'Shift with a click adds to the selection.']],
       ['Move what is selected', ['A drag moves what is selected.', 'Arrow keys move by 1, with Shift by 10.',
         'With Snap to grid on (the magnet), a node dragged puts its centre on the 8 px grid and a bend point goes on 4 px. Alt held, no snapping.',
+        'A line\'s end dragged, or moved by the arrow keys, goes to the node\'s centre or the middle of a side. On a CellDesigner map a modifier\'s end at a process glyph goes to one of the six places CellDesigner has there: the corners and the middles of the two sides off the main line.',
         'A right click on a line adds an anchor point there; on an anchor point, removes it.']],
       ['Layout tools', ['The dotted square puts the whole map on the grid by the layout rules (complexes packed, rows and columns kept), one step to undo.',
         'The complex with two proteins packs the complex selected (or the one round a member selected), every complex when nothing is selected.']],

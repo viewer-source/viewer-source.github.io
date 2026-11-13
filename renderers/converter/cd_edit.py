@@ -107,7 +107,7 @@ def lines(d, rx):
             continue
         M, anc = d.end(m.find('cd:linkTarget', NS), a_)
         T = target(m, sq, fl)
-        r['mods'].append({'n': n, 'el': m, 'alias': a_, 'M': M, 'anc': anc, 'T': T,
+        r['mods'].append({'n': n, 'el': m, 'alias': a_, 'M': M, 'anc': anc, 'T': T, 'spot': spot_of(m),
                           'bends': [from_frame(M, T, p) for p in edit_points(m.get('editPoints'))]})
     joins = [(P[0] + t * (Q[0] - P[0]), P[1] + t * (Q[1] - P[1])) for t in (0.375, 0.625)]
     for tag, into in (('cd:listOfReactantLinks/cd:reactantLink', True), ('cd:listOfProductLinks/cd:productLink', False)):
@@ -180,6 +180,13 @@ def labels(d, i, b):
     return s
 
 
+def spot_of(m):
+    # the place of a modifier's end round the glyph, as cdrender's target() takes it: targetLineIndex's second number,
+    # 3 when it names none of the six (SQUARE)
+    k = int((m.get('targetLineIndex') or '-1,2').split(',')[1])
+    return k if k in SQUARE else 3
+
+
 def graphml(text, off=(0.0, 0.0)):
     # off: subtracted from every place, so the editor keeps its own frame when the file's map was shifted (place())
     d = drawing(text)
@@ -249,10 +256,10 @@ def graphml(text, off=(0.0, 0.0)):
         b = box(i) if i in d.alias or i in comps else None
         return (p[0] - b[0] - b[2] / 2, p[1] - b[1] - b[3] / 2)
 
-    def edge(eid, s, t, sp, tp, pts):
+    def edge(eid, s, t, sp, tp, pts, at=''):
         ps = ''.join('<y:Point x="%r" y="%r"/>' % (p[0] - off[0], p[1] - off[1]) for p in pts)
-        out.append('    <edge id="%s" source="%s" target="%s"><data key="d10"><y:PolyLineEdge><y:Path sx="%r" sy="%r" tx="%r" ty="%r">%s</y:Path><y:BendStyle smoothed="false"/></y:PolyLineEdge></data></edge>'
-                   % (escape(eid), escape(s), escape(t), sp[0], sp[1], tp[0], tp[1], ps))
+        out.append('    <edge id="%s" source="%s" target="%s"><data key="d10"><y:PolyLineEdge><y:Path sx="%r" sy="%r" tx="%r" ty="%r"%s>%s</y:Path><y:BendStyle smoothed="false"/></y:PolyLineEdge></data></edge>'
+                   % (escape(eid), escape(s), escape(t), sp[0], sp[1], tp[0], tp[1], at, ps))
 
     for r in rxs:
         rid, A, B = r['id'], r['A'], r['B']
@@ -268,7 +275,7 @@ def graphml(text, off=(0.0, 0.0)):
         edge(rid + '|b', g, r['pa'], (0.0, 0.0), pb, r['bends'][k:])
         for m in r['mods']:
             edge('%s|m%d' % (rid, m['n']), m['alias'], g, port(m['M'], m['alias']) if m['anc'] else (0.0, 0.0),
-                 (m['T'][0] - sq[0], m['T'][1] - sq[1]), m['bends'])
+                 (m['T'][0] - sq[0], m['T'][1] - sq[1]), m['bends'], ' spot="%d"' % m['spot'])
         for l in r['links']:
             o = port(l['O'], l['alias']) if l['anc'] else (0.0, 0.0)
             j = (l['J'][0] - sq[0], l['J'][1] - sq[1])
@@ -293,7 +300,7 @@ def read(gtext):
         bends[e.get('id')] = [(float(p.get('x')), float(p.get('y'))) for p in e.iter(Y + 'Point')]
         pa = e.find('.//' + Y + 'Path')
         if pa is not None:
-            paths[e.get('id')] = tuple(float(pa.get(k, 0)) for k in ('sx', 'sy', 'tx', 'ty'))
+            paths[e.get('id')] = tuple(float(pa.get(k, 0)) for k in ('sx', 'sy', 'tx', 'ty')) + ((int(pa.get('spot')),) if pa.get('spot') else ())
     return boxes, base, bends, paths
 
 
@@ -386,6 +393,13 @@ def ports(d, T, s, o, paths, new):
         pos = moved('%s|m%d' % (rid, m['n']), 's', m['alias'], m['M'], m['anc'], o['old'])
         if pos is not None:
             anchor(T, m['el'], lists['modification'][m['n']], pos, 'modification', (m['el'].get('modifiers'), m['alias']))
+    # a modifier's end the editor set round the process glyph: the place it chose (spot, one of CellDesigner's six:
+    # the corners and the middles of the two sides off the main line), by its number, so the frame it was drawn in
+    # does not matter
+    for m in (o['mods'] if o['glyph'] else []):
+        q = paths.get('%s|m%d' % (rid, m['n']))
+        if q and len(q) > 4 and q[4] != m['spot']:
+            m['el'].set('targetLineIndex', '%s,%d' % ((m['el'].get('targetLineIndex') or '-1,2').split(',')[0], q[4]))   # written with the edit points (place())
     for l in o['links']:
         pos = moved('%s|%s%d' % (rid, 'r' if l['into'] else 'p', l['n']), 's' if l['into'] else 't', l['alias'], l['O'], l['anc'], o['old'])
         if pos is not None:
@@ -601,7 +615,7 @@ def place(text, gtext):
             nb = bends.get('%s|m%d' % (rid, m['n']), m['bends'])
             same = near(M, m['M'], 1e-6) and near(Tt, m['T'], 1e-6)
             txt = points(m['el'].get('editPoints'), m['bends'], nb, same, lambda p, M=M, Tt=Tt: to_frame(M, Tt, p))
-            T.attrs(ms[0], {'editPoints': txt or None})
+            T.attrs(ms[0], {'targetLineIndex': m['el'].get('targetLineIndex'), 'editPoints': txt or None})   # its place, if ports() moved it
             c2 = T.span(r'<celldesigner:connectScheme', ms[0], ms[1])
             if c2:
                 directions(T, c2, len(nb) + 1)

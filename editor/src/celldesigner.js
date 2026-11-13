@@ -121,7 +121,8 @@
         bends.set(e.id, e.pts.map(function (pi) { return pt(pi); }));
         if (!e.path) return;
         var q = ['sx', 'sy', 'tx', 'ty'].map(function (a) { return parseFloat(e.path.getAttribute(a)) || 0; });
-        if (pp && pp.to && pp.k === k) { var j = pp.end ? 2 : 0; q[j] = pp.to[0]; q[j + 1] = pp.to[1]; }
+        var no = e.path.getAttribute('spot'); if (no) q.push(parseInt(no, 10));   // a modifier's place round its glyph
+        if (pp && pp.to && pp.k === k) { var j = pp.end ? 2 : 0; q[j] = pp.to[0]; q[j + 1] = pp.to[1]; no = spotNo(pp, pp.to); if (no) q[4] = no; }
         paths.set(e.id, q);
       });
       // the boxes of every node of those reactions as they are now (also when the drawing on screen is older than the
