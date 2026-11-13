@@ -63,7 +63,7 @@ look="panel" (user, 2026-11-10): Default Panel of the styles experiment, its own
     --m2-context: 0;             /* a menu on a right click over the map (user, 2026-11-12), one layer: edit, the source
                                     file, copy as PNG, open in MINERVA and Newt; over a molecule first its annotation, name, search.
                                     Shift with the right click gives the browser's own menu. Off, a style turns it on */
-    --m2-edit: 0;                /* with --m2-icons: an Edit tab, moving nodes and bend points of a yEd GraphML or CellDesigner map in the map window (user, 2026-11-12; _includes/atlas-edit.js) */
+    --m2-edit: 0;                /* with --m2-icons: an Edit tab, moving nodes and bend points of a yEd GraphML or CellDesigner map in the map window (user, 2026-11-12; editor/, loaded only when this is on) */
     --m2-dl-ext: 0;              /* with --m2-icons: the Open in links in the Downloads window, under a line, and no Open in
                                     icon (user, 2026-11-11): off, a style turns it on */
     --m2-info-float: 0;          /* the molecule's panel floating over the map's right side on wide windows too, so the map
@@ -258,7 +258,7 @@ look="panel" (user, 2026-11-10): Default Panel of the styles experiment, its own
      (36 made the list too long, user, the same day), a light grey edge, the accent fill with white text under the pointer, as the icons */
   #m2-dlwin, #m2-extwin { padding: 0 4px; }
   /* Edit (--m2-edit: 1, user 2026-11-12): moving nodes and bend points of a yEd GraphML in the map window
-     (_includes/atlas-edit.js); its buttons are the Downloads window's, the selection drawn over the map */
+     (editor/); its buttons are the Downloads window's, the selection drawn over the map */
   #m2-editwin { padding: 0 4px; font-size: 14px; line-height: 1.45; color: var(--m2-text-soft); }
   #m2-editwin button { display: block; width: 100%; box-sizing: border-box; font: inherit; font-size: 14px; line-height: 20px; padding: 4px 10px; margin: 0 0 8px; text-align: left;
     background: var(--m2-bg); border: 1px solid var(--m2-button); border-radius: var(--m2-radius-button); color: var(--m2-button); cursor: pointer; }
@@ -1504,6 +1504,7 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
     g.classList.toggle('m2-win-info', on && w === 'info');
     g.classList.toggle('m2-win-set', on && w === 'set');
     g.classList.toggle('m2-edit-on', on && setting('edit'));
+    if (on && setting('edit')) { if (!editor) g.classList.add('m2-edit-off'); editorLoad(); }   // the Edit tab shown once the editor says the map can be edited
     g.classList.toggle('m2-win-edit', on && w === 'edit');
     if (typeof ed !== 'undefined' && ed && (w !== 'edit' || !open)) ed.away();   // editing only while its window shows
     // Info is about the whole project, briefly, as MINERVA's (user, 2026-11-11: "brief info only on the whole project,
@@ -2618,6 +2619,103 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
     window.addEventListener('resize', close);
     view.addEventListener('wheel', close, { passive: true });
   })();
-{% include atlas-edit.js %}
+  // ---------- the editor (--m2-edit: 1; user, 2026-11-12) ----------
+  // Its code is in editor/ (user, 2026-11-13: out of the viewer's file, loaded only where the Edit tab is): the shared core,
+  // a GraphML part and a CellDesigner part, built by Jekyll into editor/editor.js, loaded once the style turns the Edit
+  // tab on (editorLoad, from the windows' code); a site or style without it loads nothing. edit="layout" on the include
+  // keeps the editor to the layout tools (moves, anchor points, compartments, Grid, Snap, Pack), for a site that should
+  // not offer drawing; "full" (the default) adds drawing once it exists (user, 2026-11-13). Here only what the viewer
+  // needs without the editor: the edited drawing kept on screen until the site's build catches up, also after a reload.
+  var EDITOR = '{{ include.editor | default: "/editor/" }}', EDIT_LEVEL = '{{ include.edit | default: "full" }}';
+
+    // the edited drawing, kept on screen after editing stops until the site's own build of the map has caught up
+    // (user, 2026-11-12: "after I exit this mode I don't see changes"): { id, v (the site's version when last saved), pic, width, height }
+    var kept = null;
+    // and across a reload (user, 2026-11-12): the last saved drawing of each map is kept in this browser
+    // (localStorage atlas-edit-kept: { id: { v, svg, width, height, x0, y0, at } }) until the site's version changes, an hour at most
+    var KEPT_KEY = 'atlas-edit-kept';
+    function boxes(k, list) {   // the site's click data with each node's box where the edited drawing has it
+      if (!k || !k.ref || !k.cur || !list) return list;
+      var ref = k.ref, cur = k.cur, near = function (a, b) { return Math.abs(a - b) < 0.6; };
+      return list.map(function (n) {
+        var b = n.box, i = -1;
+        for (var j = 0; j < ref.boxes.length; j++) {
+          var r = ref.boxes[j];
+          if (r && near(b[0], r[0] - ref.x0) && near(b[1], r[1] - ref.y0) && near(b[2], r[2]) && near(b[3], r[3])) { i = j; break; }
+        }
+        var c = i >= 0 ? cur.boxes[i] : null;
+        var nb = c ? [c[0] - cur.x0, c[1] - cur.y0, b[2], b[3]] : [b[0] + ref.x0 - cur.x0, b[1] + ref.y0 - cur.y0, b[2], b[3]];
+        return Object.assign({}, n, { box: nb });
+      });
+    }
+    function stored() { try { return JSON.parse(localStorage.getItem(KEPT_KEY) || '{}'); } catch (e) { return {}; } }
+    function store(all) { try { if (Object.keys(all).length) localStorage.setItem(KEPT_KEY, JSON.stringify(all)); else localStorage.removeItem(KEPT_KEY); } catch (e) {} }
+    // the site still behind the last save: its build is not yet of the file saved last (the source's sha in index.json),
+    // so a build of an earlier save does not replace the edited drawing (2026-11-12); without the sha, any new build
+    function behind(m, k) { return m.src && k.sha ? m.src !== k.sha : ver(m) === k.v; }
+    function keep(m) {   // the edited picture, while the site still shows the version before the last save
+      if (kept && kept.id === m.id) {
+        if (behind(m, kept)) return kept;
+        kept = null;
+      }
+      var all = stored(), k = all[m.id];
+      if (!k) return null;
+      if (!behind(m, k) || Date.now() - k.at > 3600000) { delete all[m.id]; store(all); return null; }
+      // after a reload: the saved drawing again, decoded before it is shown
+      var url = URL.createObjectURL(new Blob([recolour(k.svg)], { type: 'image/svg+xml' }));
+      var pic = new Promise(function (res) {
+        var i = new Image();
+        i.onload = function () { (i.decode ? i.decode() : Promise.resolve()).catch(function () {}).then(function () { res(i); }); };
+        i.onerror = function () { res(null); };
+        i.src = url;
+      });
+      kept = { id: m.id, v: k.v, sha: k.sha, pic: pic, width: k.width, height: k.height, x0: k.x0, y0: k.y0, text: null, ref: k.ref, cur: k.cur };
+      return kept;
+    }
+  // the viewer's names the editor reads and writes
+  var V = Object.defineProperties({ level: EDIT_LEVEL }, {
+    current: { get: function () { return current; }, set: function (v) { current = v; } },
+    view: { get: function () { return view; } },
+    z: { get: function () { return z; } },
+    tx: { get: function () { return tx; }, set: function (v) { tx = v; } },
+    ty: { get: function () { return ty; }, set: function (v) { ty = v; } },
+    byId: { get: function () { return byId; } },
+    ver: { get: function () { return ver; } },
+    recolour: { get: function () { return recolour; } },
+    img: { get: function () { return img; }, set: function (v) { img = v; } },
+    fit: { get: function () { return fit; } },
+    draw: { get: function () { return draw; } },
+    nodes: { get: function () { return nodes; }, set: function (v) { nodes = v; } },
+    sel: { get: function () { return sel; }, set: function (v) { sel = v; } },
+    renderInfo: { get: function () { return renderInfo; } },
+    drawPin: { get: function () { return drawPin; } },
+    grid: { get: function () { return grid; } },
+    win: { get: function () { return win; }, set: function (v) { win = v; } },
+    railMark: { get: function () { return railMark; } },
+    chosen: { get: function () { return chosen; } },
+    put: { get: function () { return put; } },
+    pz: { get: function () { return pz; } },
+    moved: { get: function () { return moved; }, set: function (v) { moved = v; } },
+    kept: { get: function () { return kept; }, set: function (v) { kept = v; } },
+    stored: { get: function () { return stored; } },
+    store: { get: function () { return store; } },
+    behind: { get: function () { return behind; } },
+    keep: { get: function () { return keep; } }
+  });
+  var editor = null, editorAsked;   // the editor once loaded; no initial value: editorLoad can run before this line
+  function editorLoad() {
+    if (editorAsked) return;
+    editorAsked = true;
+    setTimeout(function () {   // after the viewer's script has run to its end
+      var s = document.createElement('script');
+      s.src = EDITOR + 'editor.js' + BUILD;
+      s.onload = function () { editor = window.m2Editor(V); };
+      s.onerror = function () { editorAsked = false; };
+      document.head.appendChild(s);
+    }, 0);
+  }
+  var ed = { paint: function () { if (editor) editor.paint(); }, away: function () { if (editor) editor.away(); },
+             leaving: function (m) { if (editor) editor.leaving(m); }, left: function (m) { if (editor) editor.left(m); },
+             keep: keep, boxes: boxes };
 })();
 </script>

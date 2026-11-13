@@ -239,7 +239,19 @@ says "the workbench", "the converter's repository", "a private repository".
   and columns kept, compartments fitted. Pack (after it; its sign a complex with cut corners holding two proteins stacked, the proteins 2:1 as the default 80 by 40 the complex 17 by 18 with room round them (option 4 of six, user 2026-11-12; 5 also liked: 18 by 18), the same size and line as the other signs (the tools now at the tabs' 21 px and line 1.6: before, 20 px with 1.8, about 10% heavier), a little larger inside its square: user, 2026-11-12): the complex selected, or the one round
   a member selected, packed by `complex_pack` (its arcs' ends and the groups round it fitted), every complex when nothing
   is selected. The code is
-  `_includes/atlas-edit.js`, included by the viewer's script (copied to the sites with it, off there). Checked
+  in `editor/` (user, 2026-11-13: out of the viewer's file, loaded only where the Edit tab is): `editor/src/core.js`
+  (selection, drags, guides, grid, undo, saving: one code for both formats, a CellDesigner map being edited as cd_edit's
+  GraphML), `editor/src/graphml.js` (the yEd redraw, the shift out of negative places, compartment outlines while
+  dragging) and `editor/src/celldesigner.js` (Pyodide with cd_edit and cdrender, the process glyph, guides through it,
+  the canvas left out), joined by Jekyll into `editor/editor.js` in one scope (`include_relative`; no Liquid in the
+  sources). The viewer loads it once its style turns `--m2-edit` on (`editorLoad`) and hands it `V`, getters and setters
+  of the viewer names it uses (z, tx, ty, current, img, ...); a site or style without the Edit tab loads nothing. The
+  edited drawing kept until the build catches up (`keep`, `boxes`, `atlas-edit-kept`) stays in the viewer, needed before
+  any editor loads. `editor="..."` on the include gives the folder (the styles: `/styles/editor/`); `edit="layout"` is to
+  keep a site to the layout tools once drawing exists ("full" the default; user, 2026-11-13). The sites get `editor/`
+  with `copy-to-site.sh`, off there. Split checked 2026-11-13: the same actions (keys, a drag, Pack, Snap map to grid,
+  undo) on the frozen editor of the styles (Default Edit V1 Python) and the split one gave the same drawing on
+  Glycolysis and phosphoinositides GraphML, glycogen muscle and SREBP CellDesigner. Checked
   2026-11-12 on eNOS: first drawing about 4 s, a redraw after a move under a second, the saved file differing from the
   original only in x and y values. Not yet: a group growing round a member moved out of it.
   CellDesigner maps (user, 2026-11-12: "basically yEd experience with CD", for fixing by hand what a conversion from

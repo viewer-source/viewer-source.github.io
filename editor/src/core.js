@@ -1,40 +1,18 @@
-  // ---------- editing (--m2-edit: 1; user, 2026-11-12) ----------
-  // Moves only: nodes and bend points of a yEd GraphML, nudged in the map window. Nothing is drawn twice: a move changes
-  // only the numbers of that position in the file's text (everything else stays byte for byte, so yEd opens it as
-  // before), and the viewer's own yEd renderer, run in the browser by Pyodide, draws the map again. A map of the site is
-  // saved by itself, as in Google Docs (user, 2026-11-12): a few seconds after the last move its source file is committed
-  // to the site's repository with a GitHub token kept in this browser only, and the site's build redraws it; a file opened
-  // from the computer is saved back into it (Chrome, Edge), else as a download. Included inside the viewer's script.
-  var ed = (function () {
+    // ---------- the editor's shared core (editor/src/core.js) ----------
+    // Moves only: nodes and bend points of a map, nudged in the map window. A CellDesigner map is edited as the GraphML
+    // its part makes of it, so selection, dragging, guides, the grid, undo and saving are one code for both formats.
+    // Nothing is drawn twice: a move changes only the numbers of that position in the file's text (everything else stays
+    // byte for byte, so yEd or CellDesigner opens it as before), and the map's renderer draws it again. A map of the site
+    // is saved by itself, as in Google Docs (user, 2026-11-12): a few seconds after the last move its source file is
+    // committed to the site's repository with a GitHub token kept in this browser only, and the site's build redraws it; a
+    // file opened from the computer is saved back into it (Chrome, Edge), else as a download.
+    // The viewer's own names (the zoom z, the pan tx and ty, the map shown current, its picture img, ...) are read and
+    // written through V, the object the viewer hands the editor (user, 2026-11-13: the editor in its own files).
+
+    var lastSvg = null;   // the last drawing, kept with the save (the kept drawing itself is the viewer's)
     var PYODIDE = 'https://cdn.jsdelivr.net/pyodide/v0.26.4/full/';   // as the converter's page
     var Y = 'http://www.yworks.com/xml/graphml', G = 'http://graphml.graphdrawing.org/xmlns';
-    var DRIVER = [
-      'import sys, json',
-      "sys.path.insert(0, '/home/pyodide')",
-      'import yrender',
-      'yrender.CLASSES = True',
-      'import html as _h',
-      '_node, _edge = yrender.Map.read_node, yrender.Map.edge_svg',
-      'def read_node(self, node, parent):',
-      '    _node(self, node, parent)',
-      "    n = self.nodes.get(node.get('id'))",
-      "    if n and not n.get('wrapped'): n['svg'] = '<g data-n=\"' + _h.escape(node.get('id')) + '\">' + n['svg'] + '</g>'; n['wrapped'] = True",
-      'def edge_svg(self, e, parent):',
-      '    s = _edge(self, e, parent)',
-      "    return '<g data-e=\"' + _h.escape(e.get('id') or '') + '\">' + s + '</g>' if s else s",
-      'yrender.Map.read_node, yrender.Map.edge_svg = read_node, edge_svg',
-      'def draw(text):',
-      "    open('/tmp/edit.graphml', 'w', encoding='utf-8').write(text)",
-      '    yrender.errors.clear()',
-      "    svg = yrender.Map('/tmp/edit.graphml').svg()",
-      '    return json.dumps([svg, list(yrender.errors)])'].join('\n');
-    // a CellDesigner map (2026-11-12, user: "basically yEd experience with CD"): edited as the GraphML that
-    // renderers/converter/cd_edit.py makes of it (its header says how), the moves written back into the CellDesigner file
-    // by it and the map drawn by cdrender, each part in a group of its own; text is that GraphML, cd.now the file
-    var CD_FILES = ['cdrender', 'cd_edit'], MAPCONV = ['annotation', 'cd_layout', 'cd_tidy', 'celldesigner', 'graphml', 'layout', 'model', 'report', 'style'];
-    var CD_DRIVER = ['import cd_edit', 'def cd_graphml(t):', '    return cd_edit.graphml(t)', 'def cd_draw(t, g):', '    return json.dumps(cd_edit.draw(t, g))'].join('\n');
-    var cdp = null, pyCd = null, cd = null, drawing = false;
-    function isCd(t) { return /<sbml[\s>]/.test(t.slice(0, 3000)) && t.indexOf('celldesigner') >= 0; }
+    var drawing = false;           // the renderer busy with the last move
     function src() { return cd ? cd.now : text; }   // the map's own file as it is now
     var box = document.getElementById('m2-editwin'), status = document.getElementById('m2-ed-status');
     var overlay = document.getElementById('m2-edit-layer');
@@ -62,20 +40,10 @@
     // when what they hold is moved past their margin; liveC: their boxes while a drag runs (index in nodes2 -> box),
     // drawn on the picture at once, until the renderer has drawn the map again
     var liveC = null, liveOrig = null;
-    // a process glyph not moved itself stays midway on its segment of the main line wherever that goes (cd_edit), so
-    // while a drag or the keys move a segment's end it follows at once (user, 2026-11-12: it jumped there only on
-    // release): procs, each glyph with its two main arcs; liveG, the glyphs' shifts until the map is drawn again
-    var procs = [], liveG = null;
     // saving to the site: the repository is the site's own (<owner>.github.io), the map's source maps/<file>.graphml
     var TOKEN_KEY = 'atlas-edit-token', AUTOSAVE = 3000;
     var site = null;               // { path, sha } of the map being edited, when it is a map of this site
     var saveTimer = null, saving = null, saveAgain = false, stuck = false;
-    // the edited drawing, kept on screen after editing stops until the site's own build of the map has caught up
-    // (user, 2026-11-12: "after I exit this mode I don't see changes"): { id, v (the site's version when last saved), pic, width, height }
-    var kept = null;
-    // and across a reload (user, 2026-11-12): the last saved drawing of each map is kept in this browser
-    // (localStorage atlas-edit-kept: { id: { v, svg, width, height, x0, y0, at } }) until the site's version changes, an hour at most
-    var KEPT_KEY = 'atlas-edit-kept', lastSvg = null;
     // the click data (user, 2026-11-12): the site's boxes of the nodes are those of its own version; the boxes of the
     // nodes moved since follow them, so a click and the search find a molecule where it is drawn now
     var siteRef = null;   // { boxes (per node, yEd units, as in the site's version), x0, y0 (its drawing's frame) }
@@ -91,15 +59,15 @@
       box.querySelector('#m2-ed-snap').setAttribute('aria-pressed', String(gridSet.snap));
     }
     function gridPaint() {   // behind the drawing, as the map window's background: lines at multiples of the step in yEd units
-      if (!on || current !== map || !gridSet.shown) { view.style.backgroundImage = view.style.backgroundSize = view.style.backgroundPosition = ''; return; }
-      var s = NODE_STEP; while (s * z < 6) s *= 2;   // never denser than 6 px on screen
-      var a = s * z, b = 2 * a, ox = tx - x0 * z, oy = ty - y0 * z, px = function (v, m) { return ((v % m) + m) % m; };
+      if (!on || V.current !== map || !gridSet.shown) { V.view.style.backgroundImage = V.view.style.backgroundSize = V.view.style.backgroundPosition = ''; return; }
+      var s = NODE_STEP; while (s * V.z < 6) s *= 2;   // never denser than 6 px on screen
+      var a = s * V.z, b = 2 * a, ox = V.tx - x0 * V.z, oy = V.ty - y0 * V.z, px = function (v, m) { return ((v % m) + m) % m; };
       var minor = 'rgba(0,0,0,.07)', major = 'rgba(0,0,0,.13)';
-      view.style.backgroundImage = ['linear-gradient(to right,' + major + ' 1px,transparent 1px)', 'linear-gradient(to bottom,' + major + ' 1px,transparent 1px)',
+      V.view.style.backgroundImage = ['linear-gradient(to right,' + major + ' 1px,transparent 1px)', 'linear-gradient(to bottom,' + major + ' 1px,transparent 1px)',
         'linear-gradient(to right,' + minor + ' 1px,transparent 1px)', 'linear-gradient(to bottom,' + minor + ' 1px,transparent 1px)'].join(',');
-      view.style.backgroundSize = [b + 'px ' + b + 'px', b + 'px ' + b + 'px', a + 'px ' + a + 'px', a + 'px ' + a + 'px'].join(',');
+      V.view.style.backgroundSize = [b + 'px ' + b + 'px', b + 'px ' + b + 'px', a + 'px ' + a + 'px', a + 'px ' + a + 'px'].join(',');
       var P = function (m) { return f1(px(ox, m)) + 'px ' + f1(px(oy, m)) + 'px'; };
-      view.style.backgroundPosition = [P(b), P(b), P(a), P(a)].join(',');
+      V.view.style.backgroundPosition = [P(b), P(b), P(a), P(a)].join(',');
     }
     function toGrid(v, st) { return Math.round(v / st) * st - v; }   // the correction that puts v on the grid
     function baseOf(pub, fr) {
@@ -116,22 +84,6 @@
     function picX0() { return cd ? 0 : x0; }
     function picY0() { return cd ? 0 : y0; }
     function nowRef() { return { boxes: nodes2.map(function (n, i) { return boxOf(i); }), x0: x0, y0: y0 }; }
-    function boxes(k, list) {   // the site's click data with each node's box where the edited drawing has it
-      if (!k || !k.ref || !k.cur || !list) return list;
-      var ref = k.ref, cur = k.cur, near = function (a, b) { return Math.abs(a - b) < 0.6; };
-      return list.map(function (n) {
-        var b = n.box, i = -1;
-        for (var j = 0; j < ref.boxes.length; j++) {
-          var r = ref.boxes[j];
-          if (r && near(b[0], r[0] - ref.x0) && near(b[1], r[1] - ref.y0) && near(b[2], r[2]) && near(b[3], r[3])) { i = j; break; }
-        }
-        var c = i >= 0 ? cur.boxes[i] : null;
-        var nb = c ? [c[0] - cur.x0, c[1] - cur.y0, b[2], b[3]] : [b[0] + ref.x0 - cur.x0, b[1] + ref.y0 - cur.y0, b[2], b[3]];
-        return Object.assign({}, n, { box: nb });
-      });
-    }
-    function stored() { try { return JSON.parse(localStorage.getItem(KEPT_KEY) || '{}'); } catch (e) { return {}; } }
-    function store(all) { try { if (Object.keys(all).length) localStorage.setItem(KEPT_KEY, JSON.stringify(all)); else localStorage.removeItem(KEPT_KEY); } catch (e) {} }
     function repo() { var h = location.hostname; return /\.github\.io$/.test(h) ? h.split('.')[0] + '/' + h : null; }
     function token() { try { return localStorage.getItem(TOKEN_KEY) || ''; } catch (e) { return ''; } }
     function api(path, opt) {
@@ -163,13 +115,13 @@
           return r.json().then(function (d) {
             if (r.ok) {
               target.sha = d.content.sha; target.saved = body;
-              if (kept && kept.id === target.id) kept.sha = target.sha;
-              var sm = byId[target.id];
-              if (sm) target.v = ver(sm);   // the site's version still without this move
+              if (V.kept && V.kept.id === target.id) V.kept.sha = target.sha;
+              var sm = V.byId[target.id];
+              if (sm) target.v = V.ver(sm);   // the site's version still without this move
               if (lastSvg && site === target && src() === body) {
-                var all = stored();
+                var all = V.stored();
                 all[target.id] = { v: target.v, sha: target.sha, svg: lastSvg, width: map.width, height: map.height, x0: picX0(), y0: picY0(), at: Date.now(), ref: siteRef, cur: nowRef() };
-                store(all);
+                V.store(all);
               }
               if (site === target && src() === body) dirty = false;
               say('Saved. In about 2 minutes it is on the site, and this page updates by itself.');   // no clock time (user, 2026-11-12)
@@ -207,32 +159,6 @@
     }
 
     function say(t) { status.textContent = t; }
-    function python() {
-      if (py) return py;
-      say('Loading the renderer (a few seconds the first time)...');
-      py = new Promise(function (res, rej) {
-        var s = document.createElement('script');
-        s.src = PYODIDE + 'pyodide.js'; s.onload = res; s.onerror = rej;
-        document.head.appendChild(s);
-      }).then(function () { return loadPyodide({ indexURL: PYODIDE }); }).then(function (p) {
-        return Promise.all([p.loadPackage('lxml'), fetch('/renderers/yrender/yrender.py').then(function (r) { if (!r.ok) throw 'renderer not found'; return r.text(); })])
-          .then(function (r) { p.FS.mkdirTree('/home/pyodide'); p.FS.writeFile('/home/pyodide/yrender.py', r[1]); p.runPython(DRIVER); return p; });
-      });
-      py.catch(function (e) { py = null; say('The renderer did not load: ' + e); });
-      return py;
-    }
-    function cdpy() {   // the CellDesigner side: cdrender, cd_edit and the converter's modules they import
-      if (cdp) return cdp;
-      cdp = python().then(function (p) {
-        var get = function (u, to) { return fetch(u).then(function (r) { if (!r.ok) throw u + ' not found'; return r.text(); }).then(function (t) { p.FS.writeFile(to, t); }); };
-        p.FS.mkdirTree('/home/pyodide/mapconv');
-        return Promise.all(CD_FILES.map(function (f) { return get('/renderers/converter/' + f + '.py', '/home/pyodide/' + f + '.py'); })
-          .concat(MAPCONV.map(function (f) { return get('/renderers/converter/mapconv/' + f + '.py', '/home/pyodide/mapconv/' + f + '.py'); })))
-          .then(function () { p.runPython(CD_DRIVER); pyCd = p; return p; });
-      });
-      cdp.catch(function (e) { cdp = null; say('The CellDesigner renderer did not load: ' + e); });
-      return cdp;
-    }
 
     // the layout skill's tools (user, 2026-11-12): its own code, copied into renderers/layout/ and run here as it is, on the
     // map's text; only the numbers it changes are written back (tidy.py), so the rest stays byte for byte. One undo step.
@@ -249,7 +175,7 @@
       return lay;
     }
     function tool(what, ids, done) {
-      if (!on || current !== map || !text) return;
+      if (!on || V.current !== map || !text) return;
       say('Working...');
       layout().then(function (p) {
         p.globals.set('_t', text); p.globals.set('_ids', JSON.stringify(ids || []));
@@ -392,25 +318,6 @@
       if (!Object.keys(out).length) liveC = null;
       liveDraw();
     }
-    function liveDraw() {   // the compartments' outlines and labels on the picture follow their live boxes (GraphML)
-      if (!gN || cd) return;
-      if (liveOrig) Object.keys(liveOrig).forEach(function (i) { if (!liveC || !liveC[i]) undraw(+i); });
-      if (!liveC) return;
-      liveOrig = liveOrig || {};
-      Object.keys(liveC).forEach(function (k) {
-        var i = +k, n = nodes2[i], g = gN[n.id], b = liveC[i], o = boxOf(i);
-        if (!g) return;
-        var first = g.firstElementChild && g.firstElementChild.localName === 'a' ? g.firstElementChild : g;
-        var paths = Array.prototype.filter.call(first.querySelectorAll(':scope > path'), function (x) { return !x.classList.contains('m2-ed-dark'); });
-        if (!liveOrig[i]) liveOrig[i] = paths.map(function (x) { return [x, x.getAttribute('d')]; });
-        var d = outlineD(n.shape, b[0], b[1], b[2], b[3]);
-        paths.forEach(function (x) { x.setAttribute('d', d); });
-        var pos = n.labPos || 'c', h = pos.charAt(pos.length - 1), v = pos.charAt(0);
-        var ddx = /l$/.test(pos) ? b[0] - o[0] : /r$/.test(pos) ? b[0] + b[2] - o[0] - o[2] : b[0] + b[2] / 2 - o[0] - o[2] / 2;
-        var ddy = v === 't' ? b[1] - o[1] : v === 'b' ? b[1] + b[3] - o[1] - o[3] : b[1] + b[3] / 2 - o[1] - o[3] / 2;
-        first.querySelectorAll(':scope > text').forEach(function (t) { t.setAttribute('transform', 'translate(' + f1(ddx) + ' ' + f1(ddy) + ')'); });
-      });
-    }
     function undraw(i) {   // a compartment drawn as the renderer drew it again
       var g = gN && gN[nodes2[i] && nodes2[i].id];
       if (liveOrig && liveOrig[i]) liveOrig[i].forEach(function (q) { q[0].setAttribute('d', q[1]); });
@@ -432,7 +339,7 @@
     function movedIds(sets) { var a = []; sets.n.forEach(function (i) { a.push(nodes2[i].id); }); return a; }
     // an edge of a compartment under the pointer (5 px on screen), or a handle of one selected: which sides it moves
     function edgeAt(P) {
-      var T = 5 / z, hs = Math.max(HANDLE / 2, 4 / z), best = null;
+      var T = 5 / V.z, hs = Math.max(HANDLE / 2, 4 / V.z), best = null;
       selN.forEach(function (i) {
         if (!nodes2[i].comp || best) return;
         var b = bx(i), off = 3.3, L = b[0] - off, Tp = b[1] - off, R = b[0] + b[2] + off, B = b[1] + b[3] + off;
@@ -484,57 +391,6 @@
       glyphFollow(mv.n, mv.p, null);
       return true;
     }
-    function glyphMid(q, B, P, pp) {   // where cd_edit puts the glyph: midway on its segment, an end at a node cut at its box
-      var ea = edges2[q.a], eb = edges2[q.b], o = function (e, a) {
-        if (pp && pp.to && edges2[pp.k] === e && (pp.end ? 't' : 's') === a[0]) return pp.to[a[1] === 'x' ? 0 : 1];
-        return e.path ? parseFloat(e.path.getAttribute(a)) || 0 : 0;
-      };
-      var S = B(ea.s), T = B(eb.t);
-      var all = [[S[0] + S[2] / 2 + o(ea, 'sx'), S[1] + S[3] / 2 + o(ea, 'sy')]].concat(ea.pts.map(P), eb.pts.map(P),
-        [[T[0] + T[2] / 2 + o(eb, 'tx'), T[1] + T[3] / 2 + o(eb, 'ty')]]);
-      var k = ea.pts.length, n = all.length - 1, a = all[k], b = all[k + 1];
-      if (k === 0) a = cut(all[0], all[1], S);
-      if (k + 1 === n) b = cut(all[n], all[n - 1], T);
-      return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, Math.atan2(b[1] - a[1], b[0] - a[0]), Math.hypot(b[0] - a[0], b[1] - a[1])];
-    }
-    // where a line meets a glyph that follows its segment: CellDesigner ties the meeting points to the segment, an added
-    // reactant or product at a share of it (turned and stretched with it), a modifier at a spot round the glyph (turned)
-    function glyphPort(i, off, eid) {
-      var L = liveG && liveG[i];
-      if (!L || (!L[2] && L[3] === 1)) return off;
-      var c = Math.cos(L[2]), s2 = Math.sin(L[2]), f = /\|[rp]\d+$/.test(eid) ? L[3] : 1;
-      return [f * (c * off[0] - s2 * off[1]), f * (s2 * off[0] + c * off[1])];
-    }
-    // the glyphs whose segment moves: shifted by how far their middle moved (the same reckoning before and now, so a
-    // glyph does not jump at the start), their lines drawn live. ns, ps: the nodes and bend points moving; back: how far
-    // the keys moved them already in the file (null in a drag, where the file has them still where they were)
-    function glyphFollow(ns, ps, back, pp) {   // pp: a port being dragged
-      if (!procs.length || !gN) return;
-      var old = liveG; liveG = null;
-      var rest = function (i) { var b = boxOf(i); return back && ns.has(i) ? [b[0] - back[0], b[1] - back[1], b[2], b[3]] : b; };
-      var restP = function (pi) { var p = points[pi], o = back && ps.has(pi); return [num(p, 'x') - (o ? back[0] : 0), num(p, 'y') - (o ? back[1] : 0)]; };
-      var out = {}, any = false;
-      procs.forEach(function (q) {
-        var ea = edges2[q.a], eb = edges2[q.b];
-        if (ns.has(q.g) || ea.s == null || eb.t == null) return;
-        var port = pp && pp.to && (pp.k === q.a || pp.k === q.b);
-        if (!(port || ns.has(ea.s) || ns.has(eb.t) || ea.pts.concat(eb.pts).some(function (p) { return ps.has(p); }))) return;
-        var a = glyphMid(q, bx, pt, pp), b = glyphMid(q, rest, restP);
-        out[q.g] = [a[0] - b[0], a[1] - b[1], isFinite(a[2] - b[2]) && b[3] ? a[2] - b[2] : 0, b[3] ? a[3] / b[3] : 1, b]; any = true;
-      });
-      if (old) Object.keys(old).forEach(function (i) { if (!out[i]) { var g = gN[nodes2[i].id]; if (g) g.removeAttribute('transform'); } });
-      if (!any) return;
-      liveG = out; live = live || new Set();
-      Object.keys(out).forEach(function (i) {
-        var o2 = out[i], c0 = o2[4], g = gN[nodes2[i].id];   // moved with its middle and turned with its segment
-        if (g) g.setAttribute('transform', 'translate(' + f1(c0[0] + o2[0]) + ' ' + f1(c0[1] + o2[1]) + ') rotate(' + f1(o2[2] * 180 / Math.PI) + ') translate(' + f1(-c0[0]) + ' ' + f1(-c0[1]) + ')');
-        edges2.forEach(function (e, k) {
-          if (e.s !== +i && e.t !== +i) return;
-          var gs = gE[e.id]; if (gs) gs.forEach(function (x) { x.style.display = 'none'; });
-          live.add(k);
-        });
-      });
-    }
     function unshift() {   // the drawing as it was: a press that moved nothing leaves nothing hidden or shifted
       if (gN) Object.keys(gN).forEach(function (k) { gN[k].removeAttribute('transform'); });
       if (gE) Object.keys(gE).forEach(function (k) { gE[k].forEach(function (g) { g.removeAttribute('transform'); g.style.display = ''; }); });
@@ -554,59 +410,6 @@
         gs.forEach(function (g) { g.style.display = 'none'; }); live.add(k);   // the file has the new places: drawn from them
       });
       glyphFollow(keyed.n, keyed.p, [keyed.dx, keyed.dy]);
-    }
-    // the neighbour of point i of arc k (all: ports(k)) for guides: a CellDesigner reaction is one line through its glyph
-    // (user, 2026-11-13: "in cell designer concept, it's a single line ... through process and higher until the port or
-    // another bend point"), so an end at the glyph gives way to the next point past it, the glyph sitting midway between;
-    // returns [the point, its bend point index or null]
-    function beyond(k, i, all) {
-      var e = edges2[k], last = all.length - 1;
-      if (i > 0 && i < last) return [all[i], e.pts[i - 1]];
-      var q = procs.find(function (r) { return (i === last && r.a === k) || (i === 0 && r.b === k); });
-      if (!q) return [all[i], null];
-      if (i === last) { var eb = edges2[q.b]; if (eb.t == null) return [all[i], null]; return eb.pts.length ? [pt(eb.pts[0]), eb.pts[0]] : [ports(q.b)[eb.pts.length + 1], null]; }
-      var ea = edges2[q.a]; if (ea.s == null) return [all[i], null];
-      return ea.pts.length ? [pt(ea.pts[ea.pts.length - 1]), ea.pts[ea.pts.length - 1]] : [ports(q.a)[0], null];
-    }
-    // lines meeting a CellDesigner glyph that follows the segment a bend point moves (user, 2026-11-13: an added product
-    // turning level while its reaction's anchor point moved showed no guide): each such line, where it meets the glyph
-    // for the bend at B (as glyphFollow and glyphPort place it), and the point its first segment runs to
-    function glyphArcs(bp) {
-      var out = [];
-      procs.forEach(function (q) {
-        var ea = edges2[q.a], eb = edges2[q.b];
-        if (ea.s == null || eb.t == null || (ea.pts.indexOf(bp) < 0 && eb.pts.indexOf(bp) < 0)) return;
-        edges2.forEach(function (e, k) { if (k !== q.a && k !== q.b && e.s != null && e.t != null && (e.s === q.g || e.t === q.g)) out.push({ q: q, k: k }); });
-      });
-      return out;
-    }
-    function joinAt(o, bp, B) {
-      var q = o.q, e = edges2[o.k], st = e.s === q.g, P2 = function (pi) { return pi === bp ? B : pt(pi); };
-      var at = function (a) { return e.path ? parseFloat(e.path.getAttribute(a)) || 0 : 0; };
-      var r = glyphMid(q, boxOf, restPt), m = glyphMid(q, bx, P2), off = st ? [at('sx'), at('sy')] : [at('tx'), at('ty')];
-      var f = /\|[rp]\d+$/.test(e.id) && r[3] ? m[3] / r[3] : 1, t = m[2] - r[2], c = Math.cos(t), s2 = Math.sin(t), G = boxOf(q.g);
-      var J = [G[0] + G[2] / 2 + m[0] - r[0] + f * (c * off[0] - s2 * off[1]), G[1] + G[3] / 2 + m[1] - r[1] + f * (s2 * off[0] + c * off[1])];
-      var N;
-      if (st) { if (e.pts.length) N = pt(e.pts[0]); else { var T = bx(e.t); N = [T[0] + T[2] / 2 + at('tx'), T[1] + T[3] / 2 + at('ty')]; } }
-      else { if (e.pts.length) N = pt(e.pts[e.pts.length - 1]); else { var S = bx(e.s); N = [S[0] + S[2] / 2 + at('sx'), S[1] + S[3] / 2 + at('sy')]; } }
-      return [J, N];
-    }
-    // how far the bend moves along axis ax so that the line turns upright (cm 0) or level (cm 1); null if it hardly moves it
-    function joinSolve(o, bp, B, ax, cm) {
-      var c = 0;
-      for (var it = 0; it < 4; it++) {
-        var P0 = B.slice(), P1 = B.slice(); P0[ax] += c; P1[ax] += c + 1;
-        var a = joinAt(o, bp, P0), b = joinAt(o, bp, P1), res = a[0][cm] - a[1][cm], dv = (b[0][cm] - b[1][cm]) - res;
-        if (Math.abs(dv) < 0.05) return null;
-        c -= res / dv;
-        if (Math.abs(res) < 1e-4) break;
-      }
-      return c;
-    }
-    function joinGuides(bp, B) {
-      var out = [];
-      glyphArcs(bp).forEach(function (o) { var J = joinAt(o, bp, B); if (Math.abs(J[0][0] - J[1][0]) < 0.05 || Math.abs(J[0][1] - J[1][1]) < 0.05) out.push(J); });
-      return out;
     }
     // the grey guides of a bend point moved by the keys (user, 2026-11-12: as in a drag, to see when a segment is level or
     // upright): one bend point selected alone, a segment drawn while it is exactly level or upright; no snapping, the
@@ -708,39 +511,22 @@
         var svg = r[0]; lastSvg = svg; var m = svg.match(/<g transform="translate\(([-\d.]+),([-\d.]+)\)">/);
         var w = svg.match(/ width="([\d.]+)" height="([\d.]+)"/);
         var nx = -parseFloat(m[1]), ny = -parseFloat(m[2]), first = !map.width;
-        if (!first) { tx += (nx - x0) * z; ty += (ny - y0) * z; }
+        if (!first) { V.tx += (nx - x0) * V.z; V.ty += (ny - y0) * V.z; }
         x0 = nx; y0 = ny; map.width = parseFloat(w[1]); map.height = parseFloat(w[2]);
         (function () {
-          if (current !== map) return;
-          var pic = document.importNode(new DOMParser().parseFromString(recolour(svg), 'image/svg+xml').documentElement, true);
-          var old = img.src || '';
-          img.removeAttribute('id'); pic.id = 'm2-img'; pic.setAttribute('aria-label', map.title); img.replaceWith(pic); img = pic;
+          if (V.current !== map) return;
+          var pic = document.importNode(new DOMParser().parseFromString(V.recolour(svg), 'image/svg+xml').documentElement, true);
+          var old = V.img.src || '';
+          V.img.removeAttribute('id'); pic.id = 'm2-img'; pic.setAttribute('aria-label', map.title); V.img.replaceWith(pic); V.img = pic;
           if (old.indexOf('blob:') === 0) URL.revokeObjectURL(old);
           gN = {}; gE = {}; live = null; liveC = null; liveOrig = null; keyed = null; liveG = null; copies = []; frozen = false;
           pic.querySelectorAll('[data-n]').forEach(function (g) { gN[g.getAttribute('data-n')] = g; });
           pic.querySelectorAll('[data-e]').forEach(function (g) { var k = g.getAttribute('data-e'); (gE[k] = gE[k] || []).push(g); });
-          if (first) fit(); else draw();
+          if (first) V.fit(); else V.draw();
           if (!r[1].length && !site) say(name + (dirty ? ' (not saved)' : ''));
           else if (!r[1].length && site && !saveTimer && !saving && !dirty) say(site.pending ? 'Editing ' + map.title + '. Connect to GitHub below so the moves are saved to the site.' : 'Editing ' + map.title + '. Every move is saved to the site by itself.');
         })();
       }).catch(function (e) { if (t === ticket) { drawing = false; say('Not drawn: ' + (e && e.message ? e.message.split('\n').slice(-2).join(' ') : e)); } });
-    }
-    // no negative places (user, 2026-11-12: "negative coordinates in cd are bad", "lets have it universally corrected"):
-    // a map moved past the left or the top edge is shifted right or down, each on its own, by whole blocks of the grid
-    // (16, so a map on the grid stays on it) to start at 40 or a little more; the drawing stays where it is on screen
-    // (the renderer's frame follows). A GraphML here; a CellDesigner file in cd_edit.place
-    function noNegative() {
-      // what is drawn counts (a closed group's other size, kept by yEd, does not), all of it moves
-      var mx = Infinity, my = Infinity, re = /<y:(?:Geometry|Point)\s[^>]*>/g;
-      nodes2.forEach(function (n, i) { var b = boxOf(i); mx = Math.min(mx, b[0]); my = Math.min(my, b[1]); });
-      points.forEach(function (p) { mx = Math.min(mx, num(p, 'x')); my = Math.min(my, num(p, 'y')); });
-      var block = function (m) { return m < 0 ? Math.ceil((40 - m) / 16) * 16 : 0; }, sx = block(mx), sy = block(my);
-      if (!sx && !sy) return null;
-      text = text.replace(re, function (tag) {
-        return tag.replace(/(\sx=")([^"]*)"/, function (a, k, v) { return k + fmt(parseFloat(v) + sx) + '"'; })
-                  .replace(/(\sy=")([^"]*)"/, function (a, k, v) { return k + fmt(parseFloat(v) + sy) + '"'; });
-      });
-      return [sx, sy];
     }
     function start(t, n, h, s, same) {   // a CellDesigner file is first made into the GraphML the editor edits
       if (!isCd(t)) { cd = null; return begin(t, t, n, h, s, same); }
@@ -755,40 +541,22 @@
       if (same) {   // editing starts on the picture as it is: no redraw, the map stays where it is (user, 2026-11-12)
         map.width = same.width; map.height = same.height; map.scale = same.scale; x0 = same.x0; y0 = same.y0;
       }
-      current = map; on = true;
+      V.current = map; on = true;
       if (cd) plainCanvas();
-      nodes = null; sel = null; renderInfo(); drawPin();
+      V.nodes = null; V.sel = null; V.renderInfo(); V.drawPin();
       document.getElementById('m2-title').textContent = n;
-      grid.classList.add('m2-editing');
+      V.grid.classList.add('m2-editing');
       buttons();
       gN = gE = null; mv = live = null; liveG = null; copies = []; frozen = false;
-      if (same && same.text === t) { python().then(function () { if (on && current === map && !undo.length && !gN) render(); }); paint(); say((site && site.pending) ? 'Connect to GitHub below so the moves are saved to the site.' : site ? 'Every move is saved to the site by itself.' : 'Editing ' + n + '.'); return; }
+      if (same && same.text === t) { python().then(function () { if (on && V.current === map && !undo.length && !gN) render(); }); paint(); say((site && site.pending) ? 'Connect to GitHub below so the moves are saved to the site.' : site ? 'Every move is saved to the site by itself.' : 'Editing ' + n + '.'); return; }
       say('Drawing ' + n + '...');
       render();
-    }
-    // a CellDesigner drawing's white canvas left out while editing (user, 2026-11-12: "like an endless space", as a
-    // GraphML map; white hides the grid): the site's picture shown at the start is the same picture without it (an
-    // editor's drawing is in the page, where a rule of the viewer hides it)
-    function plainCanvas() {
-      var el = img;
-      if (!el || el.tagName !== 'IMG' || !el.src) return;
-      fetch(el.src).then(function (r) { return r.text(); }).then(function (t) {
-        var u = t.replace(/<rect width="100%" height="100%" fill="#fff"\/>\n?/, '');
-        if (u === t || !on || img !== el) return;
-        var url = URL.createObjectURL(new Blob([u], { type: 'image/svg+xml' })), i = new Image();
-        i.onload = function () {   // decoded first, so the picture never flickers
-          if (!on || img !== el) { URL.revokeObjectURL(url); return; }
-          var old = el.src; el.src = url;
-          if (old.indexOf('blob:') === 0) setTimeout(function () { URL.revokeObjectURL(old); }, 1000);
-        };
-        i.src = url;
-      }).catch(function () {});
     }
     function stop() {
       if (!on) return;
       if (saveTimer) push();   // a move still waiting is saved now
-      if (site && site.id && undo.length) kept = { id: site.id, v: site.v, sha: site.sha, pic: img, width: map.width, height: map.height, x0: picX0(), y0: picY0(), text: src(), ref: siteRef, cur: nowRef() };
-      on = false; drag = null; band = null; grid.classList.remove('m2-editing'); paint(); buttons();
+      if (site && site.id && undo.length) V.kept = { id: site.id, v: site.v, sha: site.sha, pic: V.img, width: map.width, height: map.height, x0: picX0(), y0: picY0(), text: src(), ref: siteRef, cur: nowRef() };
+      on = false; drag = null; band = null; V.grid.classList.remove('m2-editing'); paint(); buttons();
       say(dirty && !site ? name + ' has moves not saved: Back to it, or Save.' : 'Edit the map shown.');
     }
     function buttons() {
@@ -798,13 +566,13 @@
       box.querySelector('#m2-ed-back').hidden = on || !text;
       box.querySelector('#m2-ed-back').textContent = 'Back to ' + name;
       box.querySelector('#m2-ed-stop').hidden = !on;
-      var g = graphmlOf(current);
+      var g = graphmlOf(V.current);
       box.querySelector('#m2-ed-this').hidden = on || !g;
       // the Edit tab only on a map that can be edited, or while a file is being edited (user, 2026-11-12: "do not show
       // edit icon for maps that can not be edited"); its window gives way to the Maps list when the tab goes
       var off = !on && !(dirty && !site) && !g;
-      grid.classList.toggle('m2-edit-off', off);
-      if (off && win === 'edit') { win = 'list'; railMark(); }
+      V.grid.classList.toggle('m2-edit-off', off);
+      if (off && V.win === 'edit') { V.win = 'list'; V.railMark(); }
     }
     function graphmlOf(m) {   // a map drawn from its own file, GraphML or CellDesigner (2026-11-12): that file is first in its downloads
       var d = m && m.downloads && m.downloads[0];
@@ -829,17 +597,17 @@
       done();
     }
     function editShown() {   // the map on screen, if it is drawn from a GraphML
-      var url = graphmlOf(current), m = current;
+      var url = graphmlOf(V.current), m = V.current;
       if (!url) return;
       if (dirty && !site && !confirm(name + ' has moves not saved. Edit this map instead?')) return;
       if (saveTimer) push();
       var file = url.split('?')[0].split('/').pop(), path = 'maps/' + file;
       // the picture on screen is the site's drawing of its published GraphML: its frame (size and the offset of yEd's
       // coordinates) is read from that SVG, so editing starts on it without a redraw; the moved map is drawn again
-      var k = keep(m), shownPic = img;
+      var k = V.keep(m), shownPic = V.img;
       // the site's own version (its GraphML and the frame of its drawing): what its click data was made from
       var sitePub = fetch(url, { cache: 'no-cache' }).then(function (r) { return r.text(); });
-      var siteFrame = fetch(m.image + ver(m)).then(function (r) { return r.text(); }).then(function (svg) {
+      var siteFrame = fetch(m.image + V.ver(m)).then(function (r) { return r.text(); }).then(function (svg) {
         var t = svg.match(/<g transform="translate\(([-\d.]+),([-\d.]+)\)">/), w = svg.match(/ width="([\d.]+)" height="([\d.]+)"/);
         return w ? { width: parseFloat(w[1]), height: parseFloat(w[2]), x0: t ? -parseFloat(t[1]) : 0, y0: t ? -parseFloat(t[2]) : 0, scale: 1 } : null;   // a CellDesigner drawing: no offset
       }).catch(function () { return null; });
@@ -847,8 +615,8 @@
       var frame = k ? Promise.resolve({ width: k.width, height: k.height, x0: k.x0, y0: k.y0, scale: 1 }) : siteFrame;
       var go = function (t, s) {
         return Promise.all([published, frame, sitePub, siteFrame]).then(function (r) {
-          var same = r[1] && img === shownPic && current === m ? Object.assign({}, r[1], { text: r[0] }) : null;
-          if (s) { s.id = m.id; s.v = ver(m); }
+          var same = r[1] && V.img === shownPic && V.current === m ? Object.assign({}, r[1], { text: r[0] }) : null;
+          if (s) { s.id = m.id; s.v = V.ver(m); }
           return Promise.resolve(start(t, file, null, s, same)).then(function () {
             siteRef = r[3] ? baseOf(isCd(r[2]) && pyCd ? pyCd.globals.get('cd_graphml')(r[2]) : r[2], r[3]) : null;
             map.title = m.title; document.getElementById('m2-title').textContent = m.title;
@@ -909,9 +677,9 @@
     // the Edit tab starts editing the map shown at once (user, 2026-11-12: "does not look i can edit yet"); a map drawn
     // from a CellDesigner file says why it cannot be edited yet
     function shown() {   // the Edit window open on a map: edit it, or say why not (also when another map is chosen)
-      if (!grid.classList.contains('m2-win-edit') || on) return;
+      if (!V.grid.classList.contains('m2-win-edit') || on) return;
       if (text && dirty && !site) return resume();
-      if (graphmlOf(current)) return editShown();
+      if (graphmlOf(V.current)) return editShown();
       buttons();
 
     }
@@ -919,9 +687,9 @@
     box.querySelector('#m2-ed-save').addEventListener('click', save);
     box.querySelector('#m2-ed-undo').addEventListener('click', function () { if (on) back(undo, redo); });
     box.querySelector('#m2-ed-redo').addEventListener('click', function () { if (on) back(redo, undo); });
-    box.querySelector('#m2-ed-stop').addEventListener('click', function () { win = 'list'; railMark(); if (chosen) put(chosen); else stop(); });
+    box.querySelector('#m2-ed-stop').addEventListener('click', function () { V.win = 'list'; V.railMark(); if (V.chosen) V.put(V.chosen); else stop(); });
     function resume() {   // back to a file from the computer with moves not saved
-      current = map; on = true; grid.classList.add('m2-editing'); buttons();
+      V.current = map; on = true; V.grid.classList.add('m2-editing'); buttons();
       document.getElementById('m2-title').textContent = map.title;
       x0 = y0 = 0; map.width = 0; render();
     }
@@ -931,7 +699,7 @@
     // ends editing and shows the map of the site again (the edited drawing until the site catches up)
     function away() {
       if (!on) return;
-      if (chosen) put(chosen, true); else stop();   // at the same place and zoom: nothing jumps
+      if (V.chosen) V.put(V.chosen, true); else stop();   // at the same place and zoom: nothing jumps
     }
     window.addEventListener('beforeunload', function (e) { if (dirty) { if (saveTimer) push(); e.preventDefault(); e.returnValue = ''; } });
 
@@ -939,12 +707,12 @@
     // selected in a light grey with eight small black handles; an arc selected with black squares on its bend points and
     // its two ports; nothing else is drawn, so the map at rest with nothing selected looks as the original diagram
     var HANDLE = 5, BEND = 5;   // sizes of the handles and of the squares on an arc, in the map's units (the same, user, 2026-11-12)
-    function sq() { return Math.max(2, BEND * z); }
+    function sq() { return Math.max(2, BEND * V.z); }
     // line widths in the map's units too (user, 2026-11-12: zooming in or out keeps the relative size and thickness of
     // every mark, as the handles): as inline style, which wins over the stylesheet's width
-    function sw(units) { return ' style="stroke-width:' + f1(units * z) + 'px"'; }
-    function sx(X) { return tx + (X - x0) * z; }
-    function sy(Y2) { return ty + (Y2 - y0) * z; }
+    function sw(units) { return ' style="stroke-width:' + f1(units * V.z) + 'px"'; }
+    function sx(X) { return V.tx + (X - x0) * V.z; }
+    function sy(Y2) { return V.ty + (Y2 - y0) * V.z; }
     function f1(v) { return Math.round(v * 100) / 100; }
     function rr(x, y, w, h, r, quad) {   // a round rectangle as the renderer draws it (yEd's quadratic corners, or arcs)
       r = Math.min(r, w / 2, h / 2);
@@ -1115,7 +883,7 @@
     // from the node's centre (yEd's sx, sy or tx, ty); on a CellDesigner map cd_edit makes it the connection point
     // (none for the centre, N, S, W, E). A process glyph's ends are not moved this way
     function portAt(P) {
-      var R = 6 / z, L = lit(), best = null, dB = R;
+      var R = 6 / V.z, L = lit(), best = null, dB = R;
       L.e.forEach(function (k) {
         var e = edges2[k];
         if (e.s == null || e.t == null || !e.path) return;
@@ -1150,13 +918,13 @@
       parse(); dirty = true; render(); paint(); changed();
     }
     function paint() {
-      if (img && img.querySelectorAll) {
-        img.querySelectorAll('.m2-ed-dark').forEach(function (x) { x.remove(); });
-        img.querySelectorAll('.m2-ed-blue').forEach(function (x) { x.classList.remove('m2-ed-blue'); });
+      if (V.img && V.img.querySelectorAll) {
+        V.img.querySelectorAll('.m2-ed-dark').forEach(function (x) { x.remove(); });
+        V.img.querySelectorAll('.m2-ed-blue').forEach(function (x) { x.classList.remove('m2-ed-blue'); });
       }
       gridPaint();
-      if (!on || current !== map) { overlay.innerHTML = ''; return; }
-      var out = [], over = [], frame = '<g transform="translate(' + f1(tx - x0 * z) + ',' + f1(ty - y0 * z) + ') scale(' + z + ')">';
+      if (!on || V.current !== map) { overlay.innerHTML = ''; return; }
+      var out = [], over = [], frame = '<g transform="translate(' + f1(V.tx - x0 * V.z) + ',' + f1(V.ty - y0 * V.z) + ') scale(' + V.z + ')">';
       // arcs following a move: drawn in full in the picture (after a release they stay as they are until the map is
       // drawn again); before the editor's own drawing is in the page, as plain lines
       var pk0 = drag && drag.port && drag.port.to ? drag.port : null, lk = new Set(live || []);
@@ -1164,14 +932,14 @@
       if (gE) { if (!frozen) { if (lk.size) fullLines(lk, pk0); else dropCopies(); } }
       else lk.forEach(function (k) {
         var pts = line(k, null, null, pk0);
-        if (pts) out.push('<path class="m2-ed-live" stroke-width="' + f1(z) + '" d="' + livePath(pts, edges2[k].smooth) + '"/>');
+        if (pts) out.push('<path class="m2-ed-live" stroke-width="' + f1(V.z) + '" d="' + livePath(pts, edges2[k].smooth) + '"/>');
       });
       // arcs selected, or holding a bend point selected: drawn blue, then their bends as squares on top
       // a bend point selected alone, the arc not highlighted (user, 2026-11-12: as yEd): four small black squares round
       // the point, the lines through it seen in the gap between them (measured on yEd: squares 4 units, gap 2 units)
       selP.forEach(function (pi) {
         if (selE.some(function (k) { return edges2[k].pts.indexOf(pi) >= 0; })) return;
-        var q = pt(pi), a = Math.max(1.5, 4 * z), g = Math.max(1, 2 * z) / 2, X = sx(q[0]), Y3 = sy(q[1]);
+        var q = pt(pi), a = Math.max(1.5, 4 * V.z), g = Math.max(1, 2 * V.z) / 2, X = sx(q[0]), Y3 = sy(q[1]);
         [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(function (c) {
           over.push('<rect class="m2-ed-bend"' + sw(0.5) + ' x="' + f1(c[0] < 0 ? X - g - a : X + g) + '" y="' + f1(c[1] < 0 ? Y3 - g - a : Y3 + g) + '" width="' + f1(a) + '" height="' + f1(a) + '"/>');
         });
@@ -1193,13 +961,13 @@
         var gs = gE && gE[edges2[k].id];
         if (gs) return blueG(gs[gs.length - 1]);
         var pts = line(k, null, null, pk0);
-        if (pts) out.push('<path class="m2-ed-sel" stroke-width="' + f1(z) + '" d="' + livePath(pts, edges2[k].smooth) + '"/>');
+        if (pts) out.push('<path class="m2-ed-sel" stroke-width="' + f1(V.z) + '" d="' + livePath(pts, edges2[k].smooth) + '"/>');
       });
       glyphs.forEach(function (i) {
         var g = gN && gN[nodes2[i].id];
         if (g) return blueG(g);
         var b = bx(i);
-        out.push('<rect class="m2-ed-sel" stroke-width="' + f1(z) + '" x="' + f1(sx(b[0])) + '" y="' + f1(sy(b[1])) + '" width="' + f1(b[2] * z) + '" height="' + f1(b[3] * z) + '"/>');
+        out.push('<rect class="m2-ed-sel" stroke-width="' + f1(V.z) + '" x="' + f1(sx(b[0])) + '" y="' + f1(sy(b[1])) + '" width="' + f1(b[2] * V.z) + '" height="' + f1(b[3] * V.z) + '"/>');
       });
       hlE.forEach(function (k) {
         var e = edges2[k];
@@ -1216,14 +984,14 @@
       var pt1 = !drag && part && !selN.length && !selP.length && selE.indexOf(part.k) >= 0 ? part : null;
       if (pt1) {
         var qa = ports(pt1.k), Q = pt1.port ? qa[pt1.port.end ? qa.length - 1 : 0] : pt(pt1.p);
-        var a1 = Math.max(1.5, 4 * z), g1 = Math.max(1, 2 * z) / 2, X1 = sx(Q[0]), Y1 = sy(Q[1]);
+        var a1 = Math.max(1.5, 4 * V.z), g1 = Math.max(1, 2 * V.z) / 2, X1 = sx(Q[0]), Y1 = sy(Q[1]);
         [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(function (c) {
           over.push('<rect class="m2-ed-bend"' + sw(0.5) + ' x="' + f1(c[0] < 0 ? X1 - g1 - a1 : X1 + g1) + '" y="' + f1(c[1] < 0 ? Y1 - g1 - a1 : Y1 + g1) + '" width="' + f1(a1) + '" height="' + f1(a1) + '"/>');
         });
       }
       if (drag && drag.port && drag.port.to) {
         var pk = drag.port, b0 = bx(pk.n), C = [b0[0] + b0[2] / 2 + pk.to[0], b0[1] + b0[3] / 2 + pk.to[1]];
-        var ph = Math.max(2, HANDLE * z);
+        var ph = Math.max(2, HANDLE * V.z);
         over.push('<rect class="m2-ed-handle" x="' + f1(sx(C[0]) - ph / 2) + '" y="' + f1(sy(C[1]) - ph / 2) + '" width="' + f1(ph) + '" height="' + f1(ph) + '"/>');
       }
       if (!drag && keyGuides) keyGuides.forEach(function (g) {
@@ -1235,7 +1003,7 @@
       var seg = function (g) { return 'M' + f1(sx(g[0][0])) + ' ' + f1(sy(g[0][1])) + 'L' + f1(sx(g[1][0])) + ' ' + f1(sy(g[1][1])); };
       if (drag && drag.lines) drag.lines.forEach(function (g) { out.push('<path class="m2-ed-snapline"' + sw(1) + ' d="' + seg(g) + '"/>'); });
       if (drag && drag.marks) drag.marks.forEach(function (g) {   // an equal gap: a line with a short bar at each end
-        var X0 = sx(g[0][0]), Y0 = sy(g[0][1]), X1 = sx(g[1][0]), Y1 = sy(g[1][1]), up = Y0 === Y1, t = 4 * z;
+        var X0 = sx(g[0][0]), Y0 = sy(g[0][1]), X1 = sx(g[1][0]), Y1 = sy(g[1][1]), up = Y0 === Y1, t = 4 * V.z;
         var bar = function (X, Y) { return up ? 'M' + f1(X) + ' ' + f1(Y - t) + 'L' + f1(X) + ' ' + f1(Y + t) : 'M' + f1(X - t) + ' ' + f1(Y) + 'L' + f1(X + t) + ' ' + f1(Y); };
         out.push('<path class="m2-ed-mark"' + sw(1) + ' d="' + seg(g) + bar(X0, Y0) + bar(X1, Y1) + '"/>');
       });
@@ -1262,7 +1030,7 @@
         } else out.push(frame + '<path class="m2-ed-dark" d="' + shapeD(i) + '"/></g>');
         // the handles in the map's units, so they grow and shrink with the zoom as yEd's (user, 2026-11-12): 5 units
         // wide, their centres 3.3 units outside the box (as measured on yEd)
-        var hs = Math.max(2, HANDLE * z), off = 3.3 * z;
+        var hs = Math.max(2, HANDLE * V.z), off = 3.3 * V.z;
         var L = sx(b[0]) - off, T = sy(b[1]) - off, R = sx(b[0] + b[2]) + off, B = sy(b[1] + b[3]) + off;
         [[L, T], [(L + R) / 2, T], [R, T], [L, (T + B) / 2], [R, (T + B) / 2], [L, B], [(L + R) / 2, B], [R, B]].forEach(function (q) {
           over.push('<rect class="m2-ed-handle" x="' + f1(q[0] - hs / 2) + '" y="' + f1(q[1] - hs / 2) + '" width="' + f1(hs) + '" height="' + f1(hs) + '"/>');
@@ -1275,7 +1043,7 @@
         selE.forEach(function (k) { edges2[k].pts.forEach(function (p) { ps.add(p); }); });
         moving.forEach(function (i) {
           var b = boxOf(i);
-          over.push('<rect class="m2-ed-ghost" x="' + sx(b[0] + dx) + '" y="' + sy(b[1] + dy) + '" width="' + b[2] * z + '" height="' + b[3] * z + '"/>');
+          over.push('<rect class="m2-ed-ghost" x="' + sx(b[0] + dx) + '" y="' + sy(b[1] + dy) + '" width="' + b[2] * V.z + '" height="' + b[3] * V.z + '"/>');
         });
         ps.forEach(function (i) {
           var p = points[i];
@@ -1284,7 +1052,7 @@
       }
       if (band) {
         var a = [Math.min(band.x, band.x2), Math.min(band.y, band.y2)], c = [Math.max(band.x, band.x2), Math.max(band.y, band.y2)];
-        over.push('<rect class="m2-ed-band" x="' + sx(a[0]) + '" y="' + sy(a[1]) + '" width="' + (c[0] - a[0]) * z + '" height="' + (c[1] - a[1]) * z + '"/>');
+        over.push('<rect class="m2-ed-band" x="' + sx(a[0]) + '" y="' + sy(a[1]) + '" width="' + (c[0] - a[0]) * V.z + '" height="' + (c[1] - a[1]) * V.z + '"/>');
       }
       // the square marks magenta on a CellDesigner map, as in CellDesigner (user, 2026-11-12: "this way I will know while
       // editing that it's CD"); black on a GraphML map, as in yEd
@@ -1295,15 +1063,15 @@
     // the pointer: a press on a node, an arc or a bend point selects it and moves it (an arc: its bends), Shift adds to
     // the selection, Shift with a drag on empty space selects an area; a drag on empty space pans the map, as in the viewer
     function at(e) {
-      var r = view.getBoundingClientRect(), vx = (e.clientX - r.left) / pz(), vy = (e.clientY - r.top) / pz();
-      return [(vx - tx) / z + x0, (vy - ty) / z + y0];
+      var r = V.view.getBoundingClientRect(), vx = (e.clientX - r.left) / V.pz(), vy = (e.clientY - r.top) / V.pz();
+      return [(vx - V.tx) / V.z + x0, (vy - V.ty) / V.z + y0];
     }
     function near(P, a, b) {   // the distance from P to the segment a-b
       var dx = b[0] - a[0], dy = b[1] - a[1], L = dx * dx + dy * dy, t = L ? Math.max(0, Math.min(1, ((P[0] - a[0]) * dx + (P[1] - a[1]) * dy) / L)) : 0;
       return Math.hypot(P[0] - a[0] - dx * t, P[1] - a[1] - dy * t);
     }
     function hit(P) {   // a bend point first, then a node, then an arc, then a group (its contents and arcs come first)
-      var R = 6 / z, best = null, group = null;
+      var R = 6 / V.z, best = null, group = null;
       // among bend points close together the one selected wins, then one of the arc selected (user, 2026-11-12: select
       // the arc, see its bends, then click the bend wanted: the arc is the hint), else the nearest (a nearby bend was
       // taken and the wrong arc dragged)
@@ -1328,7 +1096,7 @@
         else if (!best || h.area < best.area) best = h;
       });
       if (best) return best;
-      var E = 5 / z, d0 = E;
+      var E = 5 / V.z, d0 = E;
       edges2.forEach(function (e, k) {
         var pts = line(k);
         if (!pts) return;
@@ -1336,14 +1104,14 @@
       });
       return best || group;
     }
-    function editing(e) { return on && current === map && !e.target.closest('.m2-ctrl, .m2-info'); }
+    function editing(e) { return on && V.current === map && !e.target.closest('.m2-ctrl, .m2-info'); }
     var rpan = null, tap = null;
     // edit mode is view mode plus the selection (user, 2026-11-12: two fingers zoomed in view mode but moved the map in
     // edit mode, "I don't like it"; was yEd's way): two-finger scrolling, the wheel and a pinch zoom; a drag on empty
     // space or on an item not selected moves the map, as in the viewer; a click selects (on empty space: clears the
     // selection; Shift with a click adds or takes out); a drag on what is selected moves it; Shift with a drag on empty
     // space selects an area; a right click opens the viewer's menu, as outside edit mode
-    view.addEventListener('pointerdown', function (e) {
+    V.view.addEventListener('pointerdown', function (e) {
       keyGuides = null;
       tap = null;
       if (!editing(e)) return;
@@ -1358,7 +1126,7 @@
       var pp = !e.shiftKey && portAt(P);
       if (pp) {   // a lit line's end square: its port moved among the node's five places
         e.stopImmediatePropagation(); e.preventDefault();
-        view.setPointerCapture(e.pointerId); view.focus({ preventScroll: true });
+        V.view.setPointerCapture(e.pointerId); V.view.focus({ preventScroll: true });
         drag = { port: pp, x: P[0], y: P[1], dx: 0, dy: 0, cx: e.clientX, cy: e.clientY }; mv = null;
         part = { k: pp.k, port: pp }; paint(); return;
       }
@@ -1368,19 +1136,19 @@
       if (rz && h && (h.p != null || (h.n != null && !nodes2[h.n].comp && selN.indexOf(rz.c) < 0))) rz = null;
       if (rz) {
         e.stopImmediatePropagation(); e.preventDefault();
-        view.setPointerCapture(e.pointerId); view.focus({ preventScroll: true });
+        V.view.setPointerCapture(e.pointerId); V.view.focus({ preventScroll: true });
         selN = [rz.c]; selP = []; selE = [];
         drag = { x: P[0], y: P[1], dx: 0, dy: 0, rs: { c: rz.c, s: rz.s, b0: boxOf(rz.c) } };
         mv = null; paint(); return;
       }
       if (!h && e.shiftKey) {   // Shift with a drag on empty space: an area added to the selection
         e.stopImmediatePropagation(); e.preventDefault();
-        view.setPointerCapture(e.pointerId); view.focus({ preventScroll: true });
+        V.view.setPointerCapture(e.pointerId); V.view.focus({ preventScroll: true });
         band = { x: P[0], y: P[1], x2: P[0], y2: P[1], add: true }; paint(); return;
       }
       // empty space, Shift on an item, or an item not selected: the viewer moves the map on a drag; a click is taken on
       // release (selects, clears, or with Shift adds or takes out)
-      var tapped = function () { tap = { h: h, shift: e.shiftKey, x: e.clientX, y: e.clientY }; view.focus({ preventScroll: true }); };
+      var tapped = function () { tap = { h: h, shift: e.shiftKey, x: e.clientX, y: e.clientY }; V.view.focus({ preventScroll: true }); };
       if (!h || e.shiftKey) return tapped();
       if (h.glyph) return tapped();   // a glyph is not dragged: a drag on it moves the map, a click selects its reaction
       var list = h.p != null ? selP : h.e != null ? selE : selN, k = h.p != null ? h.p : h.e != null ? h.e : h.n, there = list.indexOf(k) >= 0;
@@ -1403,7 +1171,7 @@
       // selects an item, and second click drags it")
       if (!there) return tapped();
       e.stopImmediatePropagation(); e.preventDefault();
-      view.setPointerCapture(e.pointerId); view.focus({ preventScroll: true });
+      V.view.setPointerCapture(e.pointerId); V.view.focus({ preventScroll: true });
       drag = { x: P[0], y: P[1], dx: 0, dy: 0, p: h.p != null && selP.indexOf(h.p) >= 0 ? h.p : null, guides: [],
                n: h.n != null && selN.indexOf(h.n) >= 0 ? h.n : null, e: h.e != null && selE.indexOf(h.e) >= 0 ? h.e : null, keepE: keepE,
                sx0: e.clientX, sy0: e.clientY };
@@ -1431,7 +1199,7 @@
       var all = ports(k), B = all[j], nb = [beyond(k, j - 1, all), beyond(k, j + 1, all)].filter(function (q) {
         return !(q[1] != null && mv.p.has(q[1]));   // a neighbouring bend moving with it is no guide
       }).map(function (q) { return q[0]; });
-      var T = 6 / z, cx = null, cy = null;
+      var T = 6 / V.z, cx = null, cy = null;
       nb.forEach(function (q) {
         if (Math.abs(q[0] - B[0]) <= T && (cx == null || Math.abs(q[0] - B[0]) < Math.abs(cx))) cx = q[0] - B[0];
         if (Math.abs(q[1] - B[1]) <= T && (cy == null || Math.abs(q[1] - B[1]) < Math.abs(cy))) cy = q[1] - B[1];
@@ -1511,7 +1279,7 @@
     }
     var rclick = null;   // where the last right click was, for the menu's Remove anchor point
     window.m2EditAnchor = function () {
-      if (!on || current !== map || !rclick) return null;
+      if (!on || V.current !== map || !rclick) return null;
       var h = hit(rclick);
       if (!h || h.p == null) return null;
       var pi = h.p;
@@ -1522,7 +1290,7 @@
     // in place, the line selected so its points show and the new one is dragged with the next press; one undo step.
     // Not on the process glyph (no anchor point there: it sits midway on its segment)
     window.m2EditAddAnchor = function () {
-      if (!on || current !== map || !rclick) return null;
+      if (!on || V.current !== map || !rclick) return null;
       var h = hit(rclick), P = rclick;
       if (!h || h.e == null || h.glyph) return null;
       var k = h.e;
@@ -1543,9 +1311,9 @@
     var CLOSE = 40;   // opposite sides snap only within this gap (map units), and lines reach this far past the nodes
     function snapNode(d) {
       d.guides = []; d.lines = []; d.marks = [];
-      var T = 6 / z, b0 = boxOf(d.n), cand = { x: [], y: [] }, moved = mv.n, up = new Set();
+      var T = 6 / V.z, b0 = boxOf(d.n), cand = { x: [], y: [] }, moved = mv.n, up = new Set();
       nodes2.forEach(function (n, i) { if (n.inside.indexOf(d.n) >= 0) up.add(i); });   // its own compartments: no guide
-      var r = view.getBoundingClientRect(), v0 = [-tx / z + x0, -ty / z + y0], v1 = [(r.width / pz() - tx) / z + x0, (r.height / pz() - ty) / z + y0];
+      var r = V.view.getBoundingClientRect(), v0 = [-V.tx / V.z + x0, -V.ty / V.z + y0], v1 = [(r.width / V.pz() - V.tx) / V.z + x0, (r.height / V.pz() - V.ty) / V.z + y0];
       var B = [b0[0] + d.dx, b0[1] + d.dy, b0[2], b0[3]];
       function add(ax, cur, to, rank, why) { var c = to - cur; if (Math.abs(c) <= T) cand[ax].push({ c: c, rank: rank, why: why }); }
       mv.dx = d.dx; mv.dy = d.dy;
@@ -1583,7 +1351,7 @@
       ['x', 'y'].forEach(function (ax) {
         var l = cand[ax];
         if (!l.length) return;
-        var m = Math.min.apply(null, l.map(function (q) { return Math.abs(q.c); })), z1 = 1 / z;
+        var m = Math.min.apply(null, l.map(function (q) { return Math.abs(q.c); })), z1 = 1 / V.z;
         var pick = l.filter(function (q) { return Math.abs(q.c) <= m + z1; }).sort(function (a, b) { return a.rank - b.rank; })[0];
         if (ax === 'x') { d.dx += pick.c; d.gx = true; } else { d.dy += pick.c; d.gy = true; }
         d['w' + ax] = l.filter(function (q) { return Math.abs(q.c - pick.c) < 0.01 && q.why; }).map(function (q) { return q.why; });
@@ -1622,11 +1390,11 @@
       if (!d.gx) d.dx += toGrid(X + d.dx, st);
       if (!d.gy) d.dy += toGrid(Y2 + d.dy, st);
     }
-    view.addEventListener('pointermove', function (e) {
+    V.view.addEventListener('pointermove', function (e) {
       if (rpan) {
         e.stopImmediatePropagation();
-        if (e.pointerType === 'mouse' && !e.buttons) { rpan = null; view.classList.remove('m2-drag'); return; }
-        tx += (e.clientX - rpan[0]) / pz(); ty += (e.clientY - rpan[1]) / pz(); rpan = [e.clientX, e.clientY]; moved = true; draw();
+        if (e.pointerType === 'mouse' && !e.buttons) { rpan = null; V.view.classList.remove('m2-drag'); return; }
+        V.tx += (e.clientX - rpan[0]) / V.pz(); V.ty += (e.clientY - rpan[1]) / V.pz(); rpan = [e.clientX, e.clientY]; V.moved = true; V.draw();
         return;
       }
       if ((drag || band) && e.pointerType === 'mouse' && !e.buttons) return release(e);   // its release never came
@@ -1655,17 +1423,17 @@
         paint();
         return;
       }
-      if (on && current === map && !e.buttons) {   // the move sign only over what a drag would move
+      if (on && V.current === map && !e.buttons) {   // the move sign only over what a drag would move
         var PP = at(e), hh = e.shiftKey ? null : hit(PP), ez = !e.shiftKey && edgeAt(PP);
         if (ez && hh && (hh.p != null || (hh.n != null && !nodes2[hh.n].comp && selN.indexOf(ez.c) < 0))) ez = null;
-        if (ez) { view.style.cursor = resizeCursor(ez.s); return; }
+        if (ez) { V.view.style.cursor = resizeCursor(ez.s); return; }
         var sel = hh && ((hh.p != null ? selP.indexOf(hh.p) : hh.e != null ? selE.indexOf(hh.e) : selN.indexOf(hh.n)) >= 0 ||
           (hh.p != null && selE.some(function (q) { return edges2[q].pts.indexOf(hh.p) >= 0; })));
-        view.style.cursor = !hh ? '' : sel ? 'move' : 'pointer';
+        V.view.style.cursor = !hh ? '' : sel ? 'move' : 'pointer';
       }
     }, true);
     function release(e) {
-      if (rpan) { rpan = null; view.classList.remove('m2-drag'); e.stopImmediatePropagation(); return; }
+      if (rpan) { rpan = null; V.view.classList.remove('m2-drag'); e.stopImmediatePropagation(); return; }
       var t = tap; tap = null;
       if (t && e.type === 'pointerup' && Math.hypot(e.clientX - t.x, e.clientY - t.y) < 5) {   // a click, not a drag of the map
         e.stopImmediatePropagation();   // the viewer's release would open the annotation (its own pointer ends with the capture)
@@ -1721,8 +1489,8 @@
       // turned sharp: the arcs were drawn as plain lines while waiting for a redraw that a move of zero never asked for)
       paint();
     }
-    view.addEventListener('pointerup', release, true);
-    view.addEventListener('pointercancel', release, true);
+    V.view.addEventListener('pointerup', release, true);
+    V.view.addEventListener('pointercancel', release, true);
 
     // an end of a line moved by the keys among the node's five places, as a drag sets it (user, 2026-11-13): from the
     // centre to the side the arrow points to; from a side, the opposite arrow back to the centre, another to its side
@@ -1738,7 +1506,7 @@
       if (!text) return;
       var mod = e.ctrlKey || e.metaKey, k = e.key.toLowerCase();
       if (mod && k === 's') { e.preventDefault(); save(); return; }
-      if (!on || current !== map || /input|textarea|select/i.test(document.activeElement.tagName)) return;
+      if (!on || V.current !== map || /input|textarea|select/i.test(document.activeElement.tagName)) return;
       if (mod && k === 'z') { e.preventDefault(); if (e.shiftKey) back(redo, undo); else back(undo, redo); return; }
       if (mod && k === 'y') { e.preventDefault(); back(redo, undo); return; }
       if (e.key === 'Escape') { selN = []; selP = []; selE = []; part = null; keyGuides = null; paint(); return; }
@@ -1758,41 +1526,3 @@
       remember(true); move(d[0], d[1], ks); keyShift(ks, d[0], d[1]); keyGuides = bp != null ? bendGuides(bp) : null; paint();
       clearTimeout(timer); timer = setTimeout(function () { fitThen({ moved: movedIds(ks) }, function () { render(); paint(); }); }, 150); changed();
     }, true);
-
-    buttons();
-    // the renderer started in the background where the Edit tab is (user, 2026-11-12: a CellDesigner map took about 4 s to
-    // open for editing, Python and the converter loading first): a few seconds after the page has shown its map, when the
-    // browser is idle; a site without the Edit tab loads nothing
-    setTimeout(function () {
-      var eb = document.querySelector('#m2-rail .m2-ri[data-win="edit"]');
-      if (!eb || !eb.offsetParent) return;
-      (window.requestIdleCallback || function (f) { setTimeout(f, 0); })(function () {
-        var s0 = status.textContent;   // quietly: its "Loading the renderer" message not shown
-        cdpy().then(function () { if (!on) status.textContent = s0; }, function () {});
-        if (!on) status.textContent = s0;
-      });
-    }, 2500);
-    // the site still behind the last save: its build is not yet of the file saved last (the source's sha in index.json),
-    // so a build of an earlier save does not replace the edited drawing (2026-11-12); without the sha, any new build
-    function behind(m, k) { return m.src && k.sha ? m.src !== k.sha : ver(m) === k.v; }
-    function keep(m) {   // the edited picture, while the site still shows the version before the last save
-      if (kept && kept.id === m.id) {
-        if (behind(m, kept)) return kept;
-        kept = null;
-      }
-      var all = stored(), k = all[m.id];
-      if (!k) return null;
-      if (!behind(m, k) || Date.now() - k.at > 3600000) { delete all[m.id]; store(all); return null; }
-      // after a reload: the saved drawing again, decoded before it is shown
-      var url = URL.createObjectURL(new Blob([recolour(k.svg)], { type: 'image/svg+xml' }));
-      var pic = new Promise(function (res) {
-        var i = new Image();
-        i.onload = function () { (i.decode ? i.decode() : Promise.resolve()).catch(function () {}).then(function () { res(i); }); };
-        i.onerror = function () { res(null); };
-        i.src = url;
-      });
-      kept = { id: m.id, v: k.v, sha: k.sha, pic: pic, width: k.width, height: k.height, x0: k.x0, y0: k.y0, text: null, ref: k.ref, cur: k.cur };
-      return kept;
-    }
-    return { paint: paint, keep: keep, boxes: boxes, away: away, leaving: function (m) { if (on && m !== map) stop(); }, left: function (m) { if (on && m !== map) stop(); buttons(); setTimeout(shown, 0); } };
-  })();
