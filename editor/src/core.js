@@ -553,6 +553,7 @@
           var rec = V.recolour(svg), dm = drawMemo && drawMemo.pic && drawMemo.rec === rec ? drawMemo : null;   // the page's elements made ahead, used once
           var pic = dm ? dm.pic : document.importNode(new DOMParser().parseFromString(rec, 'image/svg+xml').documentElement, true);
           if (dm) dm.pic = null;
+          pic.style.visibility = '';   // a drawing kept on leaving edit was hidden by the viewer while the site's picture loaded (2026-11-13: empty map on going back to edit)
           var old = V.img.src || '';
           V.img.removeAttribute('id'); pic.id = 'm2-img'; pic.setAttribute('aria-label', map.title); V.img.replaceWith(pic); V.img = pic;
           if (old.indexOf('blob:') === 0) URL.revokeObjectURL(old);
