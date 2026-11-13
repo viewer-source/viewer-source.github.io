@@ -12872,7 +12872,7 @@ Synonyms: 1, 2-Diacyl-sn-glycerol, 1, 2-diacyl-sn-glycerols, 1, 2-Diacylglycerol
 </celldesigner:compartmentAlias>
 <celldesigner:compartmentAlias id="ca8" compartment="s_id_ca8">
 <celldesigner:class>SQUARE</celldesigner:class>
-<celldesigner:bounds x="8793.381" y="820.179" w="5828.479" h="2785.821"/>
+<celldesigner:bounds x="8793.381" y="820.179" w="5828.48" h="2785.821"/>
 <celldesigner:namePoint x="8885.881" y="3383.679"/>
 <celldesigner:doubleLine thickness="12.0" outerWidth="2.0" innerWidth="1.0"/>
 <celldesigner:paint color="FFCCCCCC" scheme="Color"/>
@@ -13838,7 +13838,7 @@ Synonyms: 1, 2-Diacyl-sn-glycerol, 1, 2-diacyl-sn-glycerols, 1, 2-Diacylglycerol
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa203" species="s_id_sa203" compartmentAlias="ca8" >
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="11638.110635612476" y="2196.7500000000005" w="81.0" h="41.0" />
+<celldesigner:bounds x="11638.108" y="2157.75" w="81.0" h="41.0" />
 <celldesigner:font size="12"/><celldesigner:view state="usual"/>
 <celldesigner:usualView><celldesigner:innerPosition x="0" y="0"/><celldesigner:boxSize width="81.0" height="41.0"/><celldesigner:singleLine width="1.0"/><celldesigner:paint color="FF9BC2E9" scheme="Color"/></celldesigner:usualView>
 <celldesigner:briefView><celldesigner:innerPosition x="0" y="0"/><celldesigner:boxSize width="81.0" height="41.0"/><celldesigner:singleLine width="1.0"/><celldesigner:paint color="FF9BC2E9" scheme="Color"/></celldesigner:briefView>
@@ -29757,7 +29757,7 @@ Synonyms: (5Z, 13E)-(15S)-9alpha, 11alpha-Epidioxy-15-hydroxyprosta-5, 13-dienoa
 </celldesigner:listOfLineDirection>
 </celldesigner:connectScheme>
 <celldesigner:listOfModification>
-<celldesigner:modification  type="CATALYSIS"  modifiers="s_id_sa203"  aliases="sa203"  targetLineIndex="0,3"  editPoints="0.8820943481592771,0.3224963706845837">
+<celldesigner:modification  type="CATALYSIS"  modifiers="s_id_sa203"  aliases="sa203"  targetLineIndex="0,3"  editPoints="0.914667860535,0.279368632735">
 <celldesigner:connectScheme connectPolicy="direct" >
 <celldesigner:listOfLineDirection>
 <celldesigner:lineDirection  index="0" value="unknown"/>
@@ -34129,7 +34129,7 @@ Synonyms: (5Z, 13E)-(15S)-9alpha, 11alpha-Epidioxy-15-hydroxyprosta-5, 13-dienoa
 </celldesigner:listOfLineDirection>
 </celldesigner:connectScheme>
 <celldesigner:listOfModification>
-<celldesigner:modification  type="CATALYSIS"  modifiers="s_id_sa203"  aliases="sa203"  targetLineIndex="0,2"  editPoints="0.9190646829590237,-0.2727357539752792">
+<celldesigner:modification  type="CATALYSIS"  modifiers="s_id_sa203"  aliases="sa203"  targetLineIndex="0,2"  editPoints="0.942066131445,-0.233628543525">
 <celldesigner:connectScheme connectPolicy="direct" >
 <celldesigner:listOfLineDirection>
 <celldesigner:lineDirection  index="0" value="unknown"/>
