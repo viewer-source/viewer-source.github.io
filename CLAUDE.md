@@ -411,6 +411,12 @@ says "the workbench", "the converter's repository", "a private repository".
   the wheel or a resize close it; arrow keys move through it. Shift with the right click gives the browser's own menu;
   the same in edit mode. The page's text, the panel and the list keep the browser's
   menu. First in the styles' Default Icons. Later, when the editor goes on: Align and Distribute on a selection.
+  Where our menu shows (user, 2026-11-13: "only what is needed, we implement; what is not needed waits for later"):
+  over maps and molecules, wherever they appear (the map, the list, Search results), each the same menu in every
+  place; everywhere else the browser's (the icon bar, the annotation panel, Downloads, Settings, Edit's window, the
+  site's top bar, the text and references, every field, where only the browser's menu can paste). A menu of ours
+  elsewhere only when a real need shows (reaching for Undo in Edit, say), never as a placeholder; ideas for each panel
+  in the private handover. Never a right click that does nothing.
 - Downloads in the panel's column while no molecule is open (`--m2-dl-panel`, 2026-11-11): tried and removed the same day
   (user: it does not work); its code is in the history.
 - Narrow windows (user, 2026-11-09, 940 px and under): the map first, then its download buttons, its name, the search
