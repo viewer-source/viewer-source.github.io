@@ -1554,7 +1554,7 @@
 </celldesigner:connectScheme>
 <celldesigner:line width="1.0" color="ff000000"/>
 <celldesigner:listOfModification>
-<celldesigner:modification type="CATALYSIS" modifiers="s_n23" aliases="sa_n23" targetLineIndex="-1,2" editPoints="0.94524214102,0.197004856236">
+<celldesigner:modification type="CATALYSIS" modifiers="s_n23" aliases="sa_n23" targetLineIndex="-1,2" editPoints="0.958370504089,0.199741034795">
 <celldesigner:connectScheme connectPolicy="direct">
 <celldesigner:listOfLineDirection>
 <celldesigner:lineDirection index="0" value="unknown"/>
