@@ -4,7 +4,7 @@ topic: "sbgn-website: muscle"
 tab: ""
 page: ""
 group: "SBGN-ML external"
-order: 1062
+order: 1059
 kind: "map"
 draft: false
 tag: ""

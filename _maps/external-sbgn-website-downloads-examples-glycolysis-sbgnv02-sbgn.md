@@ -4,7 +4,7 @@ topic: "sbgn-website: glycolysis SBGNv02"
 tab: ""
 page: ""
 group: "SBGN-ML external"
-order: 1048
+order: 1045
 kind: "map"
 draft: false
 tag: ""

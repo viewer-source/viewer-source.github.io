@@ -5,7 +5,7 @@ SBGN-ML maps made by other people and tools, to test the viewer's SBGN-ML drawin
 holds it; a test that needs a change makes it in a temporary copy. Published with the site, so a test page loads a
 file by its address, e.g. `/test-maps/sbgn-ml/pd/reactome/R-HSA-111885.sbgn`.
 
-- `pd/`: Process Description, the language worked on now: 68 maps and libsbgn's 50 validation error tests.
+- `pd/`: Process Description, the language worked on now: 65 maps and libsbgn's 50 validation error tests.
 - `af/`: Activity Flow, kept for later: 13 maps and libsbgn's 15 validation error tests.
 - Left out: Entity Relationship, hybrid maps, SBML and SIF (user: not needed now); maps under 20 glyphs (user: the
   hundreds of small spec and rule cases are not useful), except the validation tests; our own Metabolism
@@ -32,13 +32,13 @@ Notes on the files:
 | `newt-unstable`, `newt-master` | github.com/iVis-at-Bilkent/newt `app/samples`, branch unstable (the one web.newteditor.org runs) and master | LGPL 3.0 |
 | `newt-saved` | Newt's samples as web.newteditor.org saves them (SBGN-ML and .nwt, 2026-10-17) | LGPL 3.0 |
 | `reactome` | Reactome pathway diagrams exported as SBGN-ML: R-HSA-111885 (eicosanoids), R-HSA-70635 (urea cycle), R-HSA-70895 (BCAA) | CC BY 4.0 |
-| `sbgn-ed-2010` | SBGN-ED's three maps for the SBGN competition 2010, in SBGN-ML's first draft (namespace `libsbgn/pd/0.1`, no language attribute): sbgn.github.io, inside the hidden `downloads/competition/Submission_software.zip` | CC0 1.0 |
 | `pd2af-website` | github.com/pd2af/pd2af.github.io (two specification cases of 20 glyphs or more) | none stated for the maps |
 | `pd2af-engine` | github.com/pd2af/converter `static/generated/`: Activity Flow written by the 2018 engine | none stated |
 
 Our own iNOS map drawn in SBGN-ED (`images/learning/` of the SBGN website) is left out.
 
-Looked at and not taken (2026-11-14): the SBGN bricks of sbgnbricks.sourceforge.net (35 single bricks in its zip; its
+Looked at and not taken (2026-11-14): SBGN-ED's three maps for the SBGN competition 2010, in SBGN-ML's first draft
+(namespace `libsbgn/pd/0.1`, no language attribute; taken first, then removed, user: "We don't need that"); the SBGN bricks of sbgnbricks.sourceforge.net (35 single bricks in its zip; its
 iNOS ER and AF maps are images only); SBGN-ED's 16 competition maps in its own GML (`SBGN_software_(1)-SBGN-ED.zip`,
 incl. PCR, CaMKII and the sodium channel, not SBGN-ML); VISIBIOweb's (BioPAX and images); the EGFR tutorial maps
 (CellDesigner); Arcadia's (SBML).
