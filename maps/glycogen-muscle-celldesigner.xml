@@ -6444,7 +6444,7 @@
 <celldesigner:lineDirection index="1" value="unknown"/>
 </celldesigner:listOfLineDirection>
 </celldesigner:connectScheme>
-<celldesigner:editPoints>0.62353184165,-0.025066123388</celldesigner:editPoints>
+<celldesigner:editPoints>0.366895474993,-0.069832548733</celldesigner:editPoints>
 <celldesigner:line width="1.0" color="ff000000" type="Straight"/>
 </celldesigner:reactantLink>
 </celldesigner:listOfReactantLinks>
@@ -6454,7 +6454,7 @@
 <celldesigner:lineDirection index="1" value="unknown"/>
 </celldesigner:listOfLineDirection>
 </celldesigner:connectScheme>
-<celldesigner:editPoints>0.293230117193,1.250628627088</celldesigner:editPoints>
+<celldesigner:editPoints>0.276584842898,0.535124757588</celldesigner:editPoints>
 <celldesigner:line width="1.0" color="ff000000"/>
 </celldesigner:extension>
 </annotation>
