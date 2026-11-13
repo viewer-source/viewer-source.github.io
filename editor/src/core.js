@@ -562,7 +562,7 @@
     function begin(g, t, n, h, s, same) {   // same: { width, height, x0, y0, scale } of the picture on screen, drawn from this very file
       try { text = g; parse(); } catch (e) { say('Cannot edit ' + n + ': ' + e); return; }
       siteRef = null; name = n; handle = h; site = s || null; if (site) site.base = t; stuck = false; dirty = false; undo = []; redo = []; selN = []; selP = []; selE = [];
-      map = { id: 'edit', title: n, width: 0, height: 0, scale: 1, downloads: [] };
+      map = { id: 'edit', title: openTitle || n, width: 0, height: 0, scale: 1, downloads: [] };
       if (same) {   // editing starts on the picture as it is: no redraw, the map stays where it is (user, 2026-11-12)
         map.width = same.width; map.height = same.height; map.scale = same.scale; x0 = same.x0; y0 = same.y0;
       }
@@ -574,7 +574,7 @@
       buttons();
       helpFirst();
       gN = gE = null; mv = live = null; liveG = null; copies = []; frozen = false;
-      if (same && same.text === t) { (cd ? cdpy() : yr()).then(function () { if (on && V.current === map && !undo.length && !gN) render(); }); paint(); say((site && site.pending) ? 'Connect to GitHub below so the moves are saved to the site.' : site ? 'Every move is saved to the site by itself.' : 'Editing ' + n + '.'); return; }
+      if (same && same.text === t) { (cd ? cdpy() : yr()).then(function () { if (on && V.current === map && !undo.length && !gN) render(); }); paint(); say((site && site.pending) ? 'Connect to GitHub below so the moves are saved to the site.' : site ? 'Every move is saved to the site by itself.' : 'Editing ' + map.title + '.'); return; }
       say('Drawing ' + n + '...');
       render();
     }
@@ -628,7 +628,7 @@
     // be "immediate and immediately functional", not only look so): the map's own file, the frame of its drawing, with a
     // token the repository's version and its sha, the renderer and, on a CellDesigner map, the GraphML the editor edits.
     // The switch then waits for nothing. Dropped after a save, when editing stops and when the site's version changes.
-    var pre = null, preTimer = null;
+    var pre = null, preTimer = null, openTitle = null;
     function preKey(m) { return m.id + '|' + V.ver(m) + '|' + (repo() && token() ? 'gh' : ''); }
     function ahead(m) {
       var url = graphmlOf(m);
@@ -688,7 +688,9 @@
         return Promise.all([published, frame, p.sitePub, p.siteFrame]).then(function (r) {
           var same = r[1] && V.img === shownPic && V.current === m ? Object.assign({}, r[1], { text: r[0] }) : null;
           if (s) { s.id = m.id; s.v = V.ver(m); }
+          openTitle = m.title;   // the map's own title in the first line said, not its file's name
           return Promise.resolve(start(t, file, null, s, same)).then(function () {
+            openTitle = null;
             siteRef = r[3] ? baseOf(isCd(r[2]) && cdJs ? cdGraphml(r[2]) : r[2], r[3]) : null;
             map.title = m.title; document.getElementById('m2-title').textContent = m.title;
           });
