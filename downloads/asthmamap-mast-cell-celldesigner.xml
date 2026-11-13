@@ -35136,12 +35136,11 @@ Synonyms: (5Z, 13E)-(15S)-9alpha, 11alpha-Epidioxy-15-hydroxyprosta-5, 13-dienoa
 </celldesigner:listOfLineDirection>
 </celldesigner:connectScheme>
 <celldesigner:listOfModification>
-<celldesigner:modification  type="CATALYSIS"  modifiers="s_id_csa57"  aliases="csa57"  targetLineIndex="0,2"  editPoints="0.04723115437828982,-0.05654476971911911 1.04170823788,-0.241893369081">
+<celldesigner:modification  type="CATALYSIS"  modifiers="s_id_csa57"  aliases="csa57"  targetLineIndex="0,2"  editPoints="1.04170823788,-0.241893369081">
 <celldesigner:connectScheme connectPolicy="direct" >
 <celldesigner:listOfLineDirection>
-<celldesigner:lineDirection  index="0" value="unknown"/>
-<celldesigner:lineDirection  index="1" value="unknown"/>
-<celldesigner:lineDirection  index="2" value="unknown"/>
+<celldesigner:lineDirection index="0" value="unknown"/>
+<celldesigner:lineDirection index="1" value="unknown"/>
 </celldesigner:listOfLineDirection>
 </celldesigner:connectScheme>
 <celldesigner:linkTarget species="s_id_csa57" alias="csa57">
@@ -39795,12 +39794,11 @@ Synonyms: (5Z, 13E)-(15S)-9alpha, 11alpha-Epidioxy-15-hydroxyprosta-5, 13-dienoa
 </celldesigner:listOfLineDirection>
 </celldesigner:connectScheme>
 <celldesigner:listOfModification>
-<celldesigner:modification  type="CATALYSIS"  modifiers="s_id_csa57"  aliases="csa57"  targetLineIndex="0,2"  editPoints="-0.14354279216519028,0.002516702207955004 0.7656254396120147,-0.4583456511841148">
+<celldesigner:modification  type="CATALYSIS"  modifiers="s_id_csa57"  aliases="csa57"  targetLineIndex="0,2"  editPoints="0.765625439612,-0.458345651184">
 <celldesigner:connectScheme connectPolicy="direct" >
 <celldesigner:listOfLineDirection>
-<celldesigner:lineDirection  index="0" value="unknown"/>
-<celldesigner:lineDirection  index="1" value="unknown"/>
-<celldesigner:lineDirection  index="2" value="unknown"/>
+<celldesigner:lineDirection index="0" value="unknown"/>
+<celldesigner:lineDirection index="1" value="unknown"/>
 </celldesigner:listOfLineDirection>
 </celldesigner:connectScheme>
 <celldesigner:linkTarget species="s_id_csa57" alias="csa57">
