@@ -30039,7 +30039,7 @@ Synonyms: (5Z, 13E)-(15S)-9alpha, 11alpha-Epidioxy-15-hydroxyprosta-5, 13-dienoa
 </celldesigner:connectScheme>
 <celldesigner:editPoints>0.7827777893544682,-9.656661353235601E-4</celldesigner:editPoints>
 <celldesigner:listOfModification>
-<celldesigner:modification  type="PHYSICAL_STIMULATION"  modifiers="s_id_sa178"  aliases="sa178"  targetLineIndex="0,2"  editPoints="0.17380127299287684,-0.3592784323074298 0.7649043748594525,-0.20960399717760744">
+<celldesigner:modification  type="PHYSICAL_STIMULATION"  modifiers="s_id_sa178"  aliases="sa178"  targetLineIndex="0,2"  editPoints="0.390969332761,-0.626140550423 0.7649043748594525,-0.20960399717760744">
 <celldesigner:connectScheme connectPolicy="direct" >
 <celldesigner:listOfLineDirection>
 <celldesigner:lineDirection  index="0" value="unknown"/>
