@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="1022" height="739" viewBox="0 0 1022 739">
 <rect width="100%" height="100%" fill="#fff"/>
-<ellipse cx="912" cy="278.49" rx="18" ry="18" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
-<text x="912" y="282.49" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-metabolite">citrate</text>
+<ellipse cx="754.13" cy="387" rx="18" ry="18" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
+<text x="754.13" y="391" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-metabolite">citrate</text>
 <ellipse cx="876.01" cy="546.09" rx="18" ry="18" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
 <text x="876.01" y="550.09" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-metabolite">acetyl-CoA</text>
 <ellipse cx="790.13" cy="484.09" rx="18" ry="18" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
@@ -20,10 +20,10 @@
 <circle cx="635.63" cy="298.49" r="8" fill="#fff" stroke="#000"/>
 <text x="635.63" y="301.99" font-family="sans-serif" font-size="9" text-anchor="middle">P</text>
 <text x="615.63" y="282.49" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-protein">AKT</text>
-<rect x="575.63" y="97.62" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
-<circle cx="595.63" cy="137.62" r="8" fill="#fff" stroke="#000"/>
-<circle cx="635.63" cy="137.62" r="8" fill="#fff" stroke="#000"/>
-<text x="615.63" y="121.62" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-protein">AKT</text>
+<rect x="664" y="116" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
+<circle cx="684" cy="156" r="8" fill="#fff" stroke="#000"/>
+<circle cx="724" cy="156" r="8" fill="#fff" stroke="#000"/>
+<text x="704" y="140" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-protein">AKT</text>
 <ellipse cx="963.07" cy="340.52" rx="18" ry="18" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
 <text x="963.07" y="344.52" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-metabolite">ATP</text>
 <ellipse cx="963.07" cy="484.09" rx="18" ry="18" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
@@ -67,17 +67,17 @@
 <ellipse cx="790.13" cy="340.52" rx="18" ry="18" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
 <text x="790.13" y="344.52" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-metabolite">CoA</text>
 <g fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
-<polyline points="908.53,304.26 881.34,506.45"/>
-<polyline points="941.36,354.77 897.9,383.3"/>
-<polyline points="814.28,350.11 897.9,383.3"/>
-<polyline points="890.11,441.28 928.57,463.85"/>
-<polyline points="890.11,441.28 923.12,440.15"/>
-<polyline points="890.11,441.28 826.89,468.35"/>
-<polyline points="760.58,413.36 881.55,411.72"/>
+<polyline points="769.94,407.64 851.68,514.34"/>
+<polyline points="941.63,355.17 802.57,450.23"/>
+<polyline points="793.05,366.34 802.57,450.23"/>
+<polyline points="827.57,482.86 923.08,483.72"/>
+<polyline points="827.57,482.86 925.07,451.14"/>
+<polyline points="827.57,482.86 830.08,482.78"/>
+<polyline points="755,437.94 804.57,465.9"/>
 <polyline points="600.6,376.1 651.74,393.41"/>
 <polyline points="620.67,306.36 633.07,374.89"/>
-<polyline points="615.63,145.62 615.63,236.49"/>
-<polyline points="544.32,202.22 602.65,198.56"/>
+<polyline points="687.38,162.8 639.63,239.8"/>
+<polyline points="544.33,205.05 647.57,204.64"/>
 <polyline points="522.19,546.44 546.13,401.71"/>
 <polyline points="332.35,487.57 515.45,467.95"/>
 <polyline points="302,627.19 302,532.82"/>
@@ -89,29 +89,29 @@
 <polyline points="567.66,274.29 205.18,242.55"/>
 <polyline points="876.01,572.09 876.01,623.69"/>
 </g>
-<polygon points="878.41,528.25 875.45,512.72 885.36,514.05" fill="#000"/>
-<polyline points="909.6,296.33 880.27,514.38" fill="none" stroke="#000000" stroke-width="1"/>
-<polyline points="948.05,350.38 897.9,383.3" fill="none" stroke="#000000" stroke-width="1"/>
-<polyline points="806.84,347.16 897.9,383.3" fill="none" stroke="#000000" stroke-width="1"/>
-<polygon points="947.55,474.98 932.08,471.7 937.14,463.08" fill="#000"/>
-<polyline points="890.11,441.28 935.47,467.9" fill="none" stroke="#000000" stroke-width="1"/>
-<polygon points="945.11,439.39 930.29,444.9 929.95,434.91" fill="#000"/>
-<polyline points="890.11,441.28 931.12,439.87" fill="none" stroke="#000000" stroke-width="1"/>
-<polygon points="806.66,477.01 818.48,466.51 822.42,475.7" fill="#000"/>
-<polyline points="890.11,441.28 819.53,471.5" fill="none" stroke="#000000" stroke-width="1"/>
-<circle cx="884.55" cy="411.68" r="3" fill="#fff" stroke="#000"/>
-<polyline points="752.58,413.47 881.55,411.72" fill="none" stroke="#000000" stroke-width="1"/>
-<rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(894,412.29) rotate(97.66)"/>
+<polygon points="865.06,531.8 851.97,522.93 859.91,516.85" fill="#000"/>
+<polyline points="765.07,401.29 856.55,520.69" fill="none" stroke="#000000" stroke-width="1"/>
+<polyline points="948.24,350.66 802.57,450.23" fill="none" stroke="#000000" stroke-width="1"/>
+<polyline points="792.15,358.39 802.57,450.23" fill="none" stroke="#000000" stroke-width="1"/>
+<polygon points="945.08,483.92 930.03,488.79 930.12,478.79" fill="#000"/>
+<polyline points="827.57,482.86 931.08,483.8" fill="none" stroke="#000000" stroke-width="1"/>
+<polygon points="945.99,444.33 933.27,453.73 930.18,444.22" fill="#000"/>
+<polyline points="827.57,482.86 932.67,448.66" fill="none" stroke="#000000" stroke-width="1"/>
+<polygon points="808.09,483.5 822.92,478.01 823.24,488" fill="#000"/>
+<polyline points="827.57,482.86 822.08,483.04" fill="none" stroke="#000000" stroke-width="1"/>
+<circle cx="807.18" cy="467.38" r="3" fill="#fff" stroke="#000"/>
+<polyline points="748.03,434.01 804.57,465.9" fill="none" stroke="#000000" stroke-width="1"/>
+<rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(815.07,466.55) rotate(52.54)"/>
 <polygon points="672.58,400.47 656.77,400.4 659.97,390.92" fill="#000"/>
 <polyline points="593.02,373.54 659.32,395.98" fill="none" stroke="#000000" stroke-width="1"/>
 <circle cx="633.6" cy="377.84" r="3" fill="#fff" stroke="#000"/>
 <polyline points="619.25,298.49 633.07,374.89" fill="none" stroke="#000000" stroke-width="1"/>
 <rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(632.8,387) rotate(18.7)"/>
-<polygon points="615.63,258.49 610.63,243.49 620.63,243.49" fill="#000"/>
-<polyline points="615.63,137.62 615.63,244.49" fill="none" stroke="#000000" stroke-width="1"/>
-<polygon points="610.63,198.05 602.9,202.55 602.4,194.56" fill="#fff" stroke="#000"/>
-<polyline points="536.33,202.72 602.65,198.56" fill="none" stroke="#000000" stroke-width="1"/>
-<rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(615.63,198.05) rotate(90)"/>
+<polygon points="628.03,258.49 631.69,243.11 640.19,248.38" fill="#000"/>
+<polyline points="691.6,156 635.41,246.59" fill="none" stroke="#000000" stroke-width="1"/>
+<polygon points="655.57,204.61 647.58,208.64 647.55,200.64" fill="#fff" stroke="#000"/>
+<polyline points="536.33,205.08 647.57,204.64" fill="none" stroke="#000000" stroke-width="1"/>
+<rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(659.82,207.25) rotate(121.81)"/>
 <polygon points="549.72,380 552.2,395.61 542.34,393.98" fill="#000"/>
 <polyline points="520.88,554.34 547.43,393.81" fill="none" stroke="#000000" stroke-width="1"/>
 <polygon points="530.37,466.35 515.98,472.92 514.92,462.98" fill="#fff" stroke="#000"/>
