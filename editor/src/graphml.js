@@ -14,7 +14,7 @@
         s.src = '/renderers/yrender/yrender.js' + V.build; s.onload = function () { res(window.yrender); }; s.onerror = function () { rej('renderer not found'); };
         document.head.appendChild(s);
       });
-      yrp.catch(function (e) { yrp = null; say('The renderer did not load: ' + e); });
+      yrp.catch(function (e) { yrp = null; warn('The renderer did not load: ' + e); });
       return yrp;
     }
     function drawGraphml(t) {   // the document the editor read is drawn when it is still this text (no second reading)
