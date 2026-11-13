@@ -113,9 +113,11 @@ says "the workbench", "the converter's repository", "a private repository".
   tab but Maps goes back to Maps too, user the same day; until then the field stayed over the list with no Search tab), one Legend sign (C2), no window title (the tab shows it); a click on the open tab keeps it, the separator
   closes the panel. Annotations on the left (Settings) open as one more tab of the panel (the panel opened if closed),
   no tab highlighted; its cross or any tab goes back. First in the styles' Default Icon Row.
-- Map colours (user, 2026-11-12, in Settings after Map size): File (the colours in the map's file, the default), then
-  Default, Paper and Haze (user, 2026-11-12: the /colours/ page's Default, Paper and frost and Haze and silver; tried and
-  removed the same day: Steel, Grey, Moss, Slate (on the /colours/ page as Mono slate), Lilac (no purple on maps), Shore,
+- Map colours (user, 2026-11-12, in Settings after Map size): File (the colours in the map's file, the default) and
+  Default (the /colours/ page's Default), only these two since 2026-11-13 (user: more schemes would need a way to edit
+  them, a hassle for now; the roles in the pictures stay, the ground for overlays; a reader's stored Paper or Haze falls
+  back to File). Paper and Haze (the /colours/ page's Paper and frost and Haze and silver) removed then; tried and
+  removed on 2026-11-12: Steel, Grey, Moss, Slate (on the /colours/ page as Mono slate), Lilac (no purple on maps), Shore,
   Pebble); a
   few to be chosen with more care later; no red highlight in any scheme, highlighted proteins in the protein colour, only
   File keeps the file's red); shown in one row where the panel is wide enough, each its name with small squares of its protein and metabolite colours on its right (under it first, user 2026-11-12) (File also its red), the chosen one filled
