@@ -24,7 +24,7 @@
       };
       cdp = (window.cdrender ? Promise.resolve() : script('cdrender')).then(function () { return window.cd_edit ? null : script('cd_edit'); })
         .then(function () { cdJs = window.cd_edit; return cdJs; });
-      cdp.catch(function (e) { cdp = null; say('The CellDesigner renderer did not load: ' + e); });
+      cdp.catch(function (e) { cdp = null; warn('The CellDesigner renderer did not load: ' + e); });
       return cdp;
     }
     // a CellDesigner file made into the editor's GraphML once per text (read ahead while the map is shown, then at the
@@ -236,9 +236,10 @@
         if (cdp || !eb || !eb.offsetParent || !cdMap(V.current)) return;
         (window.requestIdleCallback || function (f) { setTimeout(f, 0); })(function () {
           if (cdp || !cdMap(V.current)) return;
-          var s0 = status.textContent;   // quietly
-          cdpy().then(function () { if (!on) status.textContent = s0; }, function () {});
-          if (!on) status.textContent = s0;
+          var s0 = status.textContent, w0 = status.classList.contains('m2-ed-warn');   // quietly, a warning kept as it was
+          var back = function () { if (!on) { status.textContent = s0; status.classList.toggle('m2-ed-warn', w0); } };
+          cdpy().then(back, function () {});
+          back();
         });
       }, 2500);
     }
