@@ -2718,7 +2718,7 @@ page, so its styles keep the base they were made on). The looks before (Default 
         u = mineURLs[r.id] = { at: r.at, svg: URL.createObjectURL(new Blob([r.svg], { type: 'image/svg+xml' })), text: URL.createObjectURL(new Blob([r.text], { type: 'application/xml' })) };
       }
       var cdm = /<sbml[\s>]/.test(r.text.slice(0, 3000)) && r.text.indexOf('celldesigner') >= 0;
-      return { id: r.id, title: r.title, group: 'My maps', topic: r.id, mine: true, file: r.file, width: r.width, height: r.height, v: String(r.at),
+      return { id: r.id, title: r.title, group: 'My maps', topic: r.title, mine: true, file: r.file, width: r.width, height: r.height, v: String(r.at),
         image: u.svg, legend: cdm ? 'celldesigner' : 'sbgn', downloads: [{ label: cdm ? 'CellDesigner' : 'GraphML', url: u.text }] };
     }
     function withMine(list) {
@@ -2727,12 +2727,13 @@ page, so its styles keep the base they were made on). The looks before (Default 
     }
     function refreshMine() {   // the list again with the reader's maps as they are now; the map shown kept, else the first
       if (!siteList) return;
-      var was = current && current.id;
+      var was = chosen && chosen.id;   // the map asked for (while editing, current is the editor's own)
       setMaps(siteList);
       var box = document.querySelector('.m2-set-examples'), own = mineShown().length;
       if (box) box.style.display = own ? '' : 'none';
       document.querySelectorAll('#m2-set-examples button').forEach(function (b) { b.classList.toggle('m2-on', (b.dataset.examples === 'hidden') === examplesHidden()); });
-      if (was && !byId[was] && maps[0]) go(maps[0].id);
+      if (was && byId[was]) chosen = byId[was];
+      if (was && !byId[was] && maps[0] && !grid.classList.contains('m2-editing')) go(maps[0].id);
       else buildList(document.getElementById('m2-search').value);
     }
     document.querySelectorAll('#m2-set-examples button').forEach(function (b) {
