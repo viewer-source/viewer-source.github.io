@@ -87,6 +87,72 @@
         });
       });
     }
+    // a move drawn live by the drop's own code (2026-11-13, user: during a drag, a held arrow key or a dragged anchor
+    // point the reaction came apart and was right only after the drop): cd_edit.live, made once from the drawing on
+    // screen (cdBase, set where the drawing is put in; made ahead when the browser is idle), writes the reactions the
+    // move touches as the drop writes them and draws them with cdrender's own reaction drawing (the same text as the
+    // drawing after the drop, tests/cd-live.js), put in place of their groups as copies; the glyph's place follows it
+    var cdBase = null, cdLive = null;
+    function cdSession() {
+      if (!cd || !cdJs || !cdJs.live || !cdBase) return null;
+      if (cdLive && cdLive.base === cdBase) return cdLive.s;
+      try { cdLive = { base: cdBase, s: cdJs.live(cdBase.now, cdBase.text) }; } catch (e) { cdLive = null; }
+      return cdLive ? cdLive.s : null;
+    }
+    function cdSessionSoon() { (window.requestIdleCallback || function (f) { setTimeout(f, 0); })(function () { if (on) cdSession(); }); }
+    var RXE = /^(.*)\|(a|b|[rpm]\d+)$/;
+    function cdLines(ks, pp) {   // false: not drawn this way (the copies of fullLines then)
+      if (!cd || !gE) return false;
+      var rids = new Set();
+      ks.forEach(function (k) { var m = edges2[k].id.match(RXE); if (m) rids.add(m[1]); });
+      if (!rids.size) return false;
+      var S = cdSession();
+      if (!S) return false;
+      var bends = new Map(), paths = new Map(), boxes = new Map(), byE = {};
+      edges2.forEach(function (e, k) {
+        byE[e.id] = k;
+        var m = e.id.match(RXE);
+        if (!m || !rids.has(m[1])) return;
+        bends.set(e.id, e.pts.map(function (pi) { return pt(pi); }));
+        if (!e.path) return;
+        var q = ['sx', 'sy', 'tx', 'ty'].map(function (a) { return parseFloat(e.path.getAttribute(a)) || 0; });
+        if (pp && pp.to && pp.k === k) { var j = pp.end ? 2 : 0; q[j] = pp.to[0]; q[j + 1] = pp.to[1]; }
+        paths.set(e.id, q);
+      });
+      var mvd = new Set();   // what moved since the drawing on screen: a drag's, the keys', the compartments grown
+      if (mv) mv.n.forEach(function (i) { mvd.add(i); });
+      if (keyed) keyed.n.forEach(function (i) { mvd.add(i); });
+      if (liveC) Object.keys(liveC).forEach(function (i) { mvd.add(+i); });
+      mvd.forEach(function (i) { if (!/\|proc$/.test(nodes2[i].id)) boxes.set(nodes2[i].id, bx(i)); });
+      var list = Array.from(rids), out = S.frame(boxes, bends, paths, list);
+      if (list.some(function (r) { return !out[r]; })) return false;
+      dropCopies();
+      list.forEach(function (rid) {
+        var f = out[rid], ids = Object.keys(gE).filter(function (id) { return id.indexOf(rid + '|') === 0; });
+        if (!ids.length) return;
+        var ref = gE[ids[0]], hRef = ref[0], lRef = ref[ref.length - 1], pg = gN[rid + '|proc'];
+        ids.forEach(function (id) { gE[id].forEach(function (g) { g.style.display = 'none'; }); });
+        if (pg) pg.style.display = 'none';
+        var doc = new DOMParser().parseFromString('<svg xmlns="http://www.w3.org/2000/svg"><g>' + f.halo + '</g><g>' + f.lines + '</g></svg>', 'image/svg+xml').documentElement;
+        var parts = Array.prototype.filter.call(doc.childNodes, function (c) { return c.nodeType === 1; });
+        [[parts[0], hRef, 0], [parts[1], lRef, 1]].forEach(function (q) {
+          Array.prototype.filter.call(q[0].childNodes, function (c) { return c.nodeType === 1; }).forEach(function (c) {
+            var el = document.importNode(c, true), id = el.getAttribute('data-e'), pn = el.getAttribute('data-n');
+            var orig = id && gE[id] ? gE[id][q[2] ? gE[id].length - 1 : 0] : pn ? gN[pn] : null;
+            el.removeAttribute('data-e'); el.removeAttribute('data-n'); el.classList.add('m2-ed-copy');
+            q[1].parentNode.insertBefore(el, q[1]);
+            copies.push([el, orig, id && byE[id] != null ? byE[id] : null]);
+          });
+        });
+        // the glyph where it is drawn now (selection, guides, the ends of the lines at it)
+        var gi = nodes2.findIndex(function (n) { return n.id === rid + '|proc'; }), r0 = S.rest(rid);
+        if (gi >= 0 && r0 && f.sq) {
+          liveG = liveG || {};
+          liveG[gi] = [f.sq[0] - r0[0][0], f.sq[1] - r0[0][1], f.ang - r0[1], r0[2] ? f.len / r0[2] : 1, [r0[0][0], r0[0][1], r0[1], r0[2]]];
+        }
+      });
+      return true;
+    }
     // the neighbour of point i of arc k (all: ports(k)) for guides: a CellDesigner reaction is one line through its glyph
     // (user, 2026-11-13: "in cell designer concept, it's a single line ... through process and higher until the port or
     // another bend point"), so an end at the glyph gives way to the next point past it, the glyph sitting midway between;

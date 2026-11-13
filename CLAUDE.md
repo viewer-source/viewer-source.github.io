@@ -389,6 +389,14 @@ says "the workbench", "the converter's repository", "a private repository".
   workflow Compare renderers. Measured 2026-11-13 (headless, page frozen): a CellDesigner page open 2.3-2.4 s before,
   none now; switching to edit 361 ms on glycogen muscle, 258 now (SREBP 131, now 85); a move about the same (212 ms on
   glycogen muscle: one move still reads and writes the whole file three times).
+  A move on a CellDesigner map drawn live by the drop's own code (user, 2026-11-13: during a drag, a held arrow key or a
+  dragged anchor point the reaction came apart, right only after the drop): `cd_edit.live()` (JavaScript only, it writes
+  no file; `reaction()` is place()'s per-reaction part, the same text) reads the drawing on screen once, made ahead when
+  the browser is idle, and on each frame writes the reactions the move touches as the drop writes them and draws them
+  with cdrender's own `reaction()`; the editor (`cdLines` in `editor/src/celldesigner.js`) puts them in place of their
+  groups as copies. `tests/cd-live.js`, in the workflow Compare renderers: every reaction of every CellDesigner map after
+  made-up moves drawn live the same as in the drawing after the drop (4,404 reactions). Measured in Chromium: about 3 ms
+  per frame for four reactions on any map; made ahead 8 ms (ACLY), 27 ms (glycogen muscle), 200 ms (the mast cell map).
 - The build: `python3 build.py` (Python, its drawings by the JavaScript renderers through Node) turns every file in `maps/` (`.graphml` or `.xml`) into the same output
   (`downloads/`, `atlas-data/`, `_maps/`); its header says what it writes. `maps/<id>.md` gives a map's title, group,
   order and text. The workflow `build.yml` runs it on every push that touches `maps/`, `renderers/` or `build.py`.

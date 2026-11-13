@@ -347,6 +347,79 @@
   }
   var MARGIN = 40.0;
   function apply(t, gtext, opt) { return place(t, gtext, opt)[0]; }
+  // one reaction's lines written into T (s: its span), as place does for each (also the editor's live drawing, live():
+  // JavaScript only, it changes no text; cd_edit.py keeps this inside place)
+  function reaction(d, T, s, rx, o, bends, paths, nw) {
+    var rid = o.id;
+    ports(d, T, s, o, paths, nw);
+    var r = lines(d, rx), A = r.A, B = r.B;
+    var ba = bends.get(rid + '|a') || [], bb = bends.get(rid + '|b') || [], main = ba.concat(bb), k = ba.length;
+    var frameSame = near(A, o.A, 1e-6) && near(B, o.B, 1e-6);
+    var seg = T.t.slice(s[0], s[1]), subs = [], re = /<celldesigner:(listOfReactantLinks|listOfProductLinks|listOfModification)>/g, m;
+    while ((m = re.exec(seg))) subs.push(T.span('<celldesigner:' + m[1] + '>', s[0] + m.index, s[1]));
+    var inSub = function (at) { return subs.some(function (q) { return q[0] <= at && at < q[1]; }); };
+    var cs = null, re2 = /<celldesigner:connectScheme/g;
+    while ((m = re2.exec(seg))) { var at = s[0] + m.index; if (!inSub(at)) { cs = T.span('<celldesigner:connectScheme', at, s[1]); break; } }
+    var ep = T.span('<celldesigner:editPoints>', cs ? cs[1] : s[0], s[1]);
+    if (ep && inSub(ep[0])) ep = null;
+    var oldTok = ep ? T.t.slice(ep[0], ep[1]).replace(/<\/?celldesigner:editPoints>/g, '') : '';
+    var txt = points(oldTok, o.bends, main, frameSame, function (p) { return toFrame(A, B, p); });
+    if (ep) {
+      if (main.length) T.put(ep[0], ep[1], '<celldesigner:editPoints>' + txt + '</celldesigner:editPoints>');
+      else T.put(ep[0], ep[1] + (T.t.slice(ep[1], ep[1] + 1) === '\n' ? 1 : 0), '');
+    } else if (main.length && cs) {
+      var nl = T.t.slice(cs[1], cs[1] + 1) === '\n' ? '\n' : '';
+      T.put(cs[1] + nl.length, cs[1] + nl.length, '<celldesigner:editPoints>' + txt + '</celldesigner:editPoints>' + nl);
+    }
+    if (cs) {
+      directions(T, cs, main.length + 1);
+      if (o.glyph) {
+        var ri = /rectangleIndex="(\d+)"/.exec(T.t.slice(cs[0], T.t.indexOf('>', cs[0])));
+        if ((ri ? I(ri[1]) : 0) !== k) T.attrs(cs[0], [['rectangleIndex', String(k)]]);
+      }
+    }
+    if (!o.glyph) return;
+    var line = cut(d, r, main), P = line[k], Q = line[k + 1];
+    var sq = [(P[0] + Q[0]) / 2, (P[1] + Q[1]) / 2], fl = unit(Q[0] - P[0], Q[1] - P[1]), modSpans = [];
+    subs.forEach(function (q) {
+      if (T.t.startsWith('<celldesigner:listOfModification>', q[0])) {
+        var i0 = q[0];
+        while (true) { var mm2 = T.span('<celldesigner:modification ', i0, q[1]); if (!mm2) break; modSpans.push(mm2); i0 = mm2[1]; }
+      }
+    });
+    o.mods.forEach(function (mo) {
+      if (mo.n >= modSpans.length) throw new Error('IndexError: list index out of range');
+      var ms = modSpans[mo.n], M = d.end(find(mo.el, 'cd:linkTarget'), mo.alias)[0], Tt = target(mo.el, sq, fl);
+      var nb = bends.has(rid + '|m' + mo.n) ? bends.get(rid + '|m' + mo.n) : mo.bends, same = near(M, mo.M, 1e-6) && near(Tt, mo.T, 1e-6);
+      var tx = points(get(mo.el, 'editPoints'), mo.bends, nb, same, function (p) { return toFrame(M, Tt, p); });
+      T.attrs(ms[0], [['editPoints', tx || null]]);
+      var c2 = T.span('<celldesigner:connectScheme', ms[0], ms[1]);
+      if (c2) directions(T, c2, nb.length + 1);
+    });
+    var joins = [0.375, 0.625].map(function (t2) { return [P[0] + t2 * (Q[0] - P[0]), P[1] + t2 * (Q[1] - P[1])]; });
+    o.links.forEach(function (l) {
+      var key = rid + '|' + (l.into ? 'r' : 'p') + l.n;
+      if (!l.bends.length && !(bends.get(key) || []).length) return;
+      var O = d.end(l.el, l.alias)[0], J = joins[l.into ? 0 : 1], nb = bends.has(key) ? bends.get(key) : l.bends;
+      var same = near(O, l.O, 1e-6) && near(J, l.J, 1e-6);
+      var fr = l.into ? function (p) { return toFrame(O, J, p); } : function (p) { return toFrame(J, O, p); };
+      var tx = points(get(l.el, 'editPoints') || findtext(l.el, 'cd:editPoints', ''), l.bends, nb, same, fr);
+      var tag = l.into ? 'reactantLink' : 'productLink', ls = null;
+      for (var si = 0; si < subs.length && !ls; si++) {
+        var a = subs[si][0], b = subs[si][1];
+        if (T.span('<celldesigner:' + tag + ' ', a, b)) {
+          var i0 = a, c = -1;
+          while (true) { var m3 = T.span('<celldesigner:' + tag + ' ', i0, b); if (!m3) break; c++; if (c === l.n) { ls = m3; break; } i0 = m3[1]; }
+        }
+      }
+      if (!ls) return;
+      var child = T.span('<celldesigner:editPoints>', ls[0], ls[1]);
+      if (child) T.put(child[0], child[1], '<celldesigner:editPoints>' + tx + '</celldesigner:editPoints>');
+      else T.attrs(ls[0], [['editPoints', tx || null]]);
+      var c3 = T.span('<celldesigner:connectScheme', ls[0], ls[1]);
+      if (c3) directions(T, c3, nb.length + 1);
+    });
+  }
   function place(t, gtext, opt) {
     var d = drawing(t, opt), comps = compartments(d), up = tree(d, comps), rd = read(gtext, opt), boxes = rd[0], bends = rd[2], paths = rd[3];
     var xs = [], ys = [];
@@ -401,76 +474,8 @@
     rxsAll.forEach(function (rx) {
       var o = olds[get(rx, 'id')];
       if (!o) return;
-      var rid = o.id, s = T.span('<reaction [^>]*\\bid="' + reEscape(rid) + '"');
       o.old = old;
-      ports(d, T, s, o, paths, nw);
-      var r = lines(d, rx), A = r.A, B = r.B;
-      var ba = bends.get(rid + '|a') || [], bb = bends.get(rid + '|b') || [], main = ba.concat(bb), k = ba.length;
-      var frameSame = near(A, o.A, 1e-6) && near(B, o.B, 1e-6);
-      var seg = T.t.slice(s[0], s[1]), subs = [], re = /<celldesigner:(listOfReactantLinks|listOfProductLinks|listOfModification)>/g, m;
-      while ((m = re.exec(seg))) subs.push(T.span('<celldesigner:' + m[1] + '>', s[0] + m.index, s[1]));
-      var inSub = function (at) { return subs.some(function (q) { return q[0] <= at && at < q[1]; }); };
-      var cs = null, re2 = /<celldesigner:connectScheme/g;
-      while ((m = re2.exec(seg))) { var at = s[0] + m.index; if (!inSub(at)) { cs = T.span('<celldesigner:connectScheme', at, s[1]); break; } }
-      var ep = T.span('<celldesigner:editPoints>', cs ? cs[1] : s[0], s[1]);
-      if (ep && inSub(ep[0])) ep = null;
-      var oldTok = ep ? T.t.slice(ep[0], ep[1]).replace(/<\/?celldesigner:editPoints>/g, '') : '';
-      var txt = points(oldTok, o.bends, main, frameSame, function (p) { return toFrame(A, B, p); });
-      if (ep) {
-        if (main.length) T.put(ep[0], ep[1], '<celldesigner:editPoints>' + txt + '</celldesigner:editPoints>');
-        else T.put(ep[0], ep[1] + (T.t.slice(ep[1], ep[1] + 1) === '\n' ? 1 : 0), '');
-      } else if (main.length && cs) {
-        var nl = T.t.slice(cs[1], cs[1] + 1) === '\n' ? '\n' : '';
-        T.put(cs[1] + nl.length, cs[1] + nl.length, '<celldesigner:editPoints>' + txt + '</celldesigner:editPoints>' + nl);
-      }
-      if (cs) {
-        directions(T, cs, main.length + 1);
-        if (o.glyph) {
-          var ri = /rectangleIndex="(\d+)"/.exec(T.t.slice(cs[0], T.t.indexOf('>', cs[0])));
-          if ((ri ? I(ri[1]) : 0) !== k) T.attrs(cs[0], [['rectangleIndex', String(k)]]);
-        }
-      }
-      if (!o.glyph) return;
-      var line = cut(d, r, main), P = line[k], Q = line[k + 1];
-      var sq = [(P[0] + Q[0]) / 2, (P[1] + Q[1]) / 2], fl = unit(Q[0] - P[0], Q[1] - P[1]), modSpans = [];
-      subs.forEach(function (q) {
-        if (T.t.startsWith('<celldesigner:listOfModification>', q[0])) {
-          var i0 = q[0];
-          while (true) { var mm2 = T.span('<celldesigner:modification ', i0, q[1]); if (!mm2) break; modSpans.push(mm2); i0 = mm2[1]; }
-        }
-      });
-      o.mods.forEach(function (mo) {
-        if (mo.n >= modSpans.length) throw new Error('IndexError: list index out of range');
-        var ms = modSpans[mo.n], M = d.end(find(mo.el, 'cd:linkTarget'), mo.alias)[0], Tt = target(mo.el, sq, fl);
-        var nb = bends.has(rid + '|m' + mo.n) ? bends.get(rid + '|m' + mo.n) : mo.bends, same = near(M, mo.M, 1e-6) && near(Tt, mo.T, 1e-6);
-        var tx = points(get(mo.el, 'editPoints'), mo.bends, nb, same, function (p) { return toFrame(M, Tt, p); });
-        T.attrs(ms[0], [['editPoints', tx || null]]);
-        var c2 = T.span('<celldesigner:connectScheme', ms[0], ms[1]);
-        if (c2) directions(T, c2, nb.length + 1);
-      });
-      var joins = [0.375, 0.625].map(function (t2) { return [P[0] + t2 * (Q[0] - P[0]), P[1] + t2 * (Q[1] - P[1])]; });
-      o.links.forEach(function (l) {
-        var key = rid + '|' + (l.into ? 'r' : 'p') + l.n;
-        if (!l.bends.length && !(bends.get(key) || []).length) return;
-        var O = d.end(l.el, l.alias)[0], J = joins[l.into ? 0 : 1], nb = bends.has(key) ? bends.get(key) : l.bends;
-        var same = near(O, l.O, 1e-6) && near(J, l.J, 1e-6);
-        var fr = l.into ? function (p) { return toFrame(O, J, p); } : function (p) { return toFrame(J, O, p); };
-        var tx = points(get(l.el, 'editPoints') || findtext(l.el, 'cd:editPoints', ''), l.bends, nb, same, fr);
-        var tag = l.into ? 'reactantLink' : 'productLink', ls = null;
-        for (var si = 0; si < subs.length && !ls; si++) {
-          var a = subs[si][0], b = subs[si][1];
-          if (T.span('<celldesigner:' + tag + ' ', a, b)) {
-            var i0 = a, c = -1;
-            while (true) { var m3 = T.span('<celldesigner:' + tag + ' ', i0, b); if (!m3) break; c++; if (c === l.n) { ls = m3; break; } i0 = m3[1]; }
-          }
-        }
-        if (!ls) return;
-        var child = T.span('<celldesigner:editPoints>', ls[0], ls[1]);
-        if (child) T.put(child[0], child[1], '<celldesigner:editPoints>' + tx + '</celldesigner:editPoints>');
-        else T.attrs(ls[0], [['editPoints', tx || null]]);
-        var c3 = T.span('<celldesigner:connectScheme', ls[0], ls[1]);
-        if (c3) directions(T, c3, nb.length + 1);
-      });
+      reaction(d, T, T.span('<reaction [^>]*\\bid="' + reEscape(o.id) + '"'), rx, o, bends, paths, nw);
     });
     if (shifted) {
       var ly = T.span('<celldesigner:listOfLayers>'), seg3 = ly ? T.t.slice(ly[0], ly[1]) : '', re3 = /<celldesigner:bounds /g, m4;
@@ -501,6 +506,72 @@
     return [svg, c, graphml(c, sh, opt)];
   }
 
-  var api = { graphml: graphml, place: place, apply: apply, draw: draw };
+  // the editor's live drawing of a move (2026-11-13, user: during a drag the reactions came apart, right only after the
+  // drop): the drop's own code for the reactions a move touches, nothing estimated. live(cdText, graphmlText) reads the
+  // map once (the drawing on screen); frame(boxes, bends, paths, rids) puts the live places in (maps of the GraphML's
+  // node and edge ids, as read() gives them, only what changed), writes each reaction's lines as place() writes them
+  // (reaction()), and draws them with cdrender's own reaction(): { rid: { halo, lines, sq, ang, len } } with each
+  // reaction's groups as in the editor's drawing (the same text as draw()'s for that reaction, tests/cd-live.js), null
+  // for one not drawn. JavaScript only (the editor), it writes no file.
+  function live(t, gtext, opt) {
+    var d = new cdr.Drawing(t, { classes: true, groups: true, DOMParser: DP(opt) }), comps = compartments(d), rd = read(gtext, opt);
+    var old = new Map(), alias0 = new Map(), olds = {}, slices = {}, T0 = new Text(t), last = [];
+    d.alias.forEach(function (a, i) { old.set(i, a[1]); alias0.set(i, a); });
+    comps.forEach(function (v, c) { old.set(c, v[0]); });
+    findall(d.model, 's:listOfReactions/s:reaction').forEach(function (rx) { olds[get(rx, 'id')] = lines(d, rx); });
+    var open = /<sbml\b[^>]*>/.exec(t)[0];
+    var first = function (x) {   // a reaction's text as an element, read in the map's namespaces
+      var doc = new (DP(opt))().parseFromString(open + x + '</sbml>', 'application/xml');
+      for (var c = doc.documentElement.firstChild; c; c = c.nextSibling) if (c.nodeType === 1) return c;
+      return null;
+    };
+    var slice = function (rid) {
+      if (!has(slices, rid)) { var sp = T0.span('<reaction [^>]*\\bid="' + reEscape(rid) + '"'); slices[rid] = sp ? t.slice(sp[0], sp[1]) : null; }
+      return slices[rid];
+    };
+    return {
+      frame: function (boxes, bends, paths, rids) {
+        var nw = new Map(), B = new Map(rd[2]), P = new Map(rd[3]), out = {};
+        // the boxes as place() takes them to write the lines (nw), and as it writes them into the file (six decimals),
+        // which the drawing after the drop reads (fl)
+        var fl = new Map();
+        old.forEach(function (b, i) {
+          var n = boxes.has(i) ? boxes.get(i) : b; nw.set(i, n);
+          fl.set(i, n === b ? b : n.map(function (v, j) { return Math.abs(v - b[j]) < 1e-3 ? b[j] : F(num(v)); }));
+        });
+        var ids = Array.from(new Set(Array.from(boxes.keys()).concat(last))).filter(function (i) { return alias0.has(i); });
+        var put = function (m) { ids.forEach(function (i) { var a0 = alias0.get(i); d.alias.set(i, [a0[0], m.get(i), a0[2], a0[3], a0[4]]); }); };
+        last = Array.from(boxes.keys());
+        bends.forEach(function (v, k) { B.set(k, v); });
+        paths.forEach(function (v, k) { P.set(k, v); });
+        rids.forEach(function (rid) {
+          var sl = slice(rid);
+          if (!olds[rid] || !sl) { out[rid] = null; return; }
+          try {
+            // the reaction read afresh each frame (ports() writes a moved line end into the elements it reads), as at rest
+            put(old);
+            var rx0 = first(sl), o = lines(d, rx0), T = new Text(sl);
+            o.old = old;
+            put(nw);
+            reaction(d, T, [0, sl.length], rx0, o, B, P, nw);
+            var rx = first(T.done());
+            put(fl);
+            d.lines = []; d.halo = []; d.cur = rid;
+            d.reaction(rx);
+            var r = lines(d, rx), q = r && r.glyph ? r : null;
+            out[rid] = { halo: d.halo.join('\n'), lines: d.lines.join('\n'), sq: q ? q.sq : null,
+              ang: q ? Math.atan2(q.fl[1], q.fl[0]) : 0, len: q ? Math.hypot(q.Q[0] - q.P[0], q.Q[1] - q.P[1]) : 0 };
+          } catch (e) { out[rid] = null; }
+        });
+        return out;
+      },
+      rest: function (rid) {   // where the reaction's glyph is on the drawing read: [sq, angle, length]
+        var o = olds[rid];
+        return o && o.glyph ? [o.sq, Math.atan2(o.fl[1], o.fl[0]), Math.hypot(o.Q[0] - o.P[0], o.Q[1] - o.P[1])] : null;
+      }
+    };
+  }
+
+  var api = { graphml: graphml, place: place, apply: apply, draw: draw, live: live };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.cd_edit = api;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -519,7 +519,7 @@
           var dm = drawMemo && drawMemo.cd && drawMemo.base === cd.base && drawMemo.text === text ? drawMemo : null;
           var q = dm ? dm.q : p.draw(cd.base, text);
           if (t !== ticket) return;
-          cd.now = q[1]; r = [q[0], []];
+          cd.now = q[1]; r = [q[0], []]; cdBase = { now: q[1], text: q[2] };   // what the live drawing of a move starts from
           if (q[2] !== text && !drag) {   // the same map, its new bend points (a glyph moved) now its own
             var ids = selN.map(function (i) { return nodes2[i].id; }), np = points.length;
             text = q[2]; parse();
@@ -552,6 +552,7 @@
           gN = {}; gE = {}; live = null; liveC = null; liveOrig = null; keyed = null; liveG = null; copies = []; frozen = false;
           pic.querySelectorAll('[data-n]').forEach(function (g) { gN[g.getAttribute('data-n')] = g; });
           pic.querySelectorAll('[data-e]').forEach(function (g) { var k = g.getAttribute('data-e'); (gE[k] = gE[k] || []).push(g); });
+          if (cd) cdSessionSoon();
           if (first) V.fit(); else V.draw();
           if (!r[1].length && !site) say(name + (dirty ? ' (not saved)' : ''));
           else if (!r[1].length && site && !saveTimer && !saving && !dirty) say(site.pending ? 'Editing ' + map.title + '. Connect to GitHub below so the moves are saved to the site.' : 'Editing ' + map.title + '. Every move is saved to the site by itself.');
@@ -924,7 +925,7 @@
     function restBox(i) { var b = boxOf(i), k = keyed && keyed.n.has(i); return k ? [b[0] - keyed.dx, b[1] - keyed.dy, b[2], b[3]] : b; }
     function restPt(pi) { var p = points[pi], k = keyed && keyed.p && keyed.p.has(pi); return [num(p, 'x') - (k ? keyed.dx : 0), num(p, 'y') - (k ? keyed.dy : 0)]; }
     function dropCopies() {   // the copies taken away, an original shown again unless its arc still follows a move
-      copies.forEach(function (c) { c[0].remove(); if (!(live && live.has(c[2]))) c[1].style.display = ''; });
+      copies.forEach(function (c) { c[0].remove(); if (c[1] && !(live && live.has(c[2]))) c[1].style.display = ''; });
       copies = [];
     }
     // a point of the old drawing of an arc taken to the new one: it goes with the segment it lies nearest to, at the
@@ -1048,7 +1049,7 @@
       // drawn again); before the editor's own drawing is in the page, as plain lines
       var pk0 = drag && drag.port && drag.port.to ? drag.port : null, lk = new Set(live || []);
       if (pk0) { glyphFollow(new Set(), new Set(), null, pk0); (live || []).forEach(function (k) { lk.add(k); }); lk.add(pk0.k); }
-      if (gE) { if (!frozen) { if (lk.size) fullLines(lk, pk0); else dropCopies(); } }
+      if (gE) { if (!frozen) { if (lk.size) { if (!cdLines(lk, pk0)) fullLines(lk, pk0); } else dropCopies(); } }
       else lk.forEach(function (k) {
         var pts = line(k, null, null, pk0);
         if (pts) out.push('<path class="m2-ed-live" stroke-width="' + f1(V.z) + '" d="' + livePath(pts, edges2[k].smooth) + '"/>');
