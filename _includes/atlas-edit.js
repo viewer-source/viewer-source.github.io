@@ -555,6 +555,59 @@
       });
       glyphFollow(keyed.n, keyed.p, [keyed.dx, keyed.dy]);
     }
+    // the neighbour of point i of arc k (all: ports(k)) for guides: a CellDesigner reaction is one line through its glyph
+    // (user, 2026-11-13: "in cell designer concept, it's a single line ... through process and higher until the port or
+    // another bend point"), so an end at the glyph gives way to the next point past it, the glyph sitting midway between;
+    // returns [the point, its bend point index or null]
+    function beyond(k, i, all) {
+      var e = edges2[k], last = all.length - 1;
+      if (i > 0 && i < last) return [all[i], e.pts[i - 1]];
+      var q = procs.find(function (r) { return (i === last && r.a === k) || (i === 0 && r.b === k); });
+      if (!q) return [all[i], null];
+      if (i === last) { var eb = edges2[q.b]; if (eb.t == null) return [all[i], null]; return eb.pts.length ? [pt(eb.pts[0]), eb.pts[0]] : [ports(q.b)[eb.pts.length + 1], null]; }
+      var ea = edges2[q.a]; if (ea.s == null) return [all[i], null];
+      return ea.pts.length ? [pt(ea.pts[ea.pts.length - 1]), ea.pts[ea.pts.length - 1]] : [ports(q.a)[0], null];
+    }
+    // lines meeting a CellDesigner glyph that follows the segment a bend point moves (user, 2026-11-13: an added product
+    // turning level while its reaction's anchor point moved showed no guide): each such line, where it meets the glyph
+    // for the bend at B (as glyphFollow and glyphPort place it), and the point its first segment runs to
+    function glyphArcs(bp) {
+      var out = [];
+      procs.forEach(function (q) {
+        var ea = edges2[q.a], eb = edges2[q.b];
+        if (ea.s == null || eb.t == null || (ea.pts.indexOf(bp) < 0 && eb.pts.indexOf(bp) < 0)) return;
+        edges2.forEach(function (e, k) { if (k !== q.a && k !== q.b && e.s != null && e.t != null && (e.s === q.g || e.t === q.g)) out.push({ q: q, k: k }); });
+      });
+      return out;
+    }
+    function joinAt(o, bp, B) {
+      var q = o.q, e = edges2[o.k], st = e.s === q.g, P2 = function (pi) { return pi === bp ? B : pt(pi); };
+      var at = function (a) { return e.path ? parseFloat(e.path.getAttribute(a)) || 0 : 0; };
+      var r = glyphMid(q, boxOf, restPt), m = glyphMid(q, bx, P2), off = st ? [at('sx'), at('sy')] : [at('tx'), at('ty')];
+      var f = /\|[rp]\d+$/.test(e.id) && r[3] ? m[3] / r[3] : 1, t = m[2] - r[2], c = Math.cos(t), s2 = Math.sin(t), G = boxOf(q.g);
+      var J = [G[0] + G[2] / 2 + m[0] - r[0] + f * (c * off[0] - s2 * off[1]), G[1] + G[3] / 2 + m[1] - r[1] + f * (s2 * off[0] + c * off[1])];
+      var N;
+      if (st) { if (e.pts.length) N = pt(e.pts[0]); else { var T = bx(e.t); N = [T[0] + T[2] / 2 + at('tx'), T[1] + T[3] / 2 + at('ty')]; } }
+      else { if (e.pts.length) N = pt(e.pts[e.pts.length - 1]); else { var S = bx(e.s); N = [S[0] + S[2] / 2 + at('sx'), S[1] + S[3] / 2 + at('sy')]; } }
+      return [J, N];
+    }
+    // how far the bend moves along axis ax so that the line turns upright (cm 0) or level (cm 1); null if it hardly moves it
+    function joinSolve(o, bp, B, ax, cm) {
+      var c = 0;
+      for (var it = 0; it < 4; it++) {
+        var P0 = B.slice(), P1 = B.slice(); P0[ax] += c; P1[ax] += c + 1;
+        var a = joinAt(o, bp, P0), b = joinAt(o, bp, P1), res = a[0][cm] - a[1][cm], dv = (b[0][cm] - b[1][cm]) - res;
+        if (Math.abs(dv) < 0.05) return null;
+        c -= res / dv;
+        if (Math.abs(res) < 1e-4) break;
+      }
+      return c;
+    }
+    function joinGuides(bp, B) {
+      var out = [];
+      glyphArcs(bp).forEach(function (o) { var J = joinAt(o, bp, B); if (Math.abs(J[0][0] - J[1][0]) < 0.05 || Math.abs(J[0][1] - J[1][1]) < 0.05) out.push(J); });
+      return out;
+    }
     // the grey guides of a bend point moved by the keys (user, 2026-11-12: as in a drag, to see when a segment is level or
     // upright): one bend point selected alone, a segment drawn while it is exactly level or upright; no snapping, the
     // keys move by whole steps
@@ -564,7 +617,8 @@
       edges2.forEach(function (e, i) { var at2 = e.pts.indexOf(bp); if (at2 >= 0) { k = i; j = at2 + 1; } });
       if (k < 0 || edges2[k].s == null || edges2[k].t == null) return null;
       var all = ports(k), B = all[j];
-      [all[j - 1], all[j + 1]].forEach(function (q) { if (Math.abs(q[0] - B[0]) < 0.01 || Math.abs(q[1] - B[1]) < 0.01) out.push([B, q]); });
+      [beyond(k, j - 1, all)[0], beyond(k, j + 1, all)[0]].forEach(function (q) { if (Math.abs(q[0] - B[0]) < 0.01 || Math.abs(q[1] - B[1]) < 0.01) out.push([B, q]); });
+      out = out.concat(joinGuides(bp, B));
       return out.length ? out : null;
     }
     // a bend point moved by the keys stops where one of its segments turns level or upright, when the step would carry it
@@ -575,12 +629,24 @@
       if (k < 0 || edges2[k].s == null || edges2[k].t == null) return d;
       var all = ports(k), B = all[j], out = d.slice();
       [j - 1, j + 1].forEach(function (i) {
-        var pi = edges2[k].pts[i - 1];
+        var nb = beyond(k, i, all), pi = nb[1];
         if (pi != null && ms.has(pi)) return;   // a neighbouring bend moving with it is no guide
         [0, 1].forEach(function (a) {
           if (!d[a]) return;
-          var q = all[i][a], from = B[a], to = B[a] + d[a];
+          var q = nb[0][a], from = B[a], to = B[a] + d[a];
           if (Math.abs(q - from) > 0.01 && (q - from) * (q - to) <= 0 && Math.abs(q - from) < Math.abs(out[a])) out[a] = q - from;
+        });
+      });
+      glyphArcs(bp).forEach(function (o) {   // a line meeting the glyph turning level or upright on the way
+        [0, 1].forEach(function (a) {
+          if (!d[a]) return;
+          [0, 1].forEach(function (cm) {
+            var J = joinAt(o, bp, B), B2 = B.slice(); B2[a] += d[a];
+            var J2 = joinAt(o, bp, B2), r0 = J[0][cm] - J[1][cm], r1 = J2[0][cm] - J2[1][cm];
+            if (Math.abs(r0) < 0.05 || r0 * r1 > 0) return;
+            var c = joinSolve(o, bp, B, a, cm);
+            if (c != null && c * d[a] > 0 && Math.abs(c) <= Math.abs(d[a]) + 1e-6 && Math.abs(c) < Math.abs(out[a])) out[a] = c;
+          });
         });
       });
       return out;
@@ -1139,8 +1205,10 @@
         var e = edges2[k];
         if (e.s == null || e.t == null) return;
         var all = ports(k, pk0), grouped = cd && main.test(e.id);   // a reaction's own lines: no squares in its glyph
+        var pj = !drag && part && part.k === k && !selN.length && !selP.length ? (part.port ? (part.port.end ? all.length - 1 : 0) : e.pts.indexOf(part.p) + 1) : -1;
         all.forEach(function (q, j) {
           if (grouped && ((j === 0 && glyphs.has(e.s)) || (j === all.length - 1 && glyphs.has(e.t)))) return;
+          if (j === pj) return;   // the part the keys move: its four squares alone (below)
           over.push('<rect class="m2-ed-bend"' + sw(0.5) + ' x="' + f1(sx(q[0]) - sq() / 2) + '" y="' + f1(sy(q[1]) - sq() / 2) + '" width="' + f1(sq()) + '" height="' + f1(sq()) + '"/>');
         });
       });
@@ -1148,7 +1216,7 @@
       var pt1 = !drag && part && !selN.length && !selP.length && selE.indexOf(part.k) >= 0 ? part : null;
       if (pt1) {
         var qa = ports(pt1.k), Q = pt1.port ? qa[pt1.port.end ? qa.length - 1 : 0] : pt(pt1.p);
-        var a1 = Math.max(1.5, 4 * z), g1 = Math.max(1, 2 * z) / 2 + sq() / 2, X1 = sx(Q[0]), Y1 = sy(Q[1]);
+        var a1 = Math.max(1.5, 4 * z), g1 = Math.max(1, 2 * z) / 2, X1 = sx(Q[0]), Y1 = sy(Q[1]);
         [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(function (c) {
           over.push('<rect class="m2-ed-bend"' + sw(0.5) + ' x="' + f1(c[0] < 0 ? X1 - g1 - a1 : X1 + g1) + '" y="' + f1(c[1] < 0 ? Y1 - g1 - a1 : Y1 + g1) + '" width="' + f1(a1) + '" height="' + f1(a1) + '"/>');
         });
@@ -1360,20 +1428,30 @@
       edges2.forEach(function (e, i) { var at2 = e.pts.indexOf(d.p); if (at2 >= 0) { k = i; j = at2 + 1; } });
       if (k < 0 || edges2[k].s == null || edges2[k].t == null) return;
       mv.dx = d.dx; mv.dy = d.dy;
-      var all = ports(k), B = all[j], nb = [all[j - 1], all[j + 1]].filter(function (q, i) {
-        var pi = edges2[k].pts[j - 2 + i * 2];   // a neighbouring bend moving with it is no guide
-        return !(pi != null && i === 0 && j - 2 >= 0 && mv.p.has(pi)) && !(i === 1 && j < edges2[k].pts.length && mv.p.has(edges2[k].pts[j]));
-      });
-      var T = 6 / z, ax = null, ay = null;
+      var all = ports(k), B = all[j], nb = [beyond(k, j - 1, all), beyond(k, j + 1, all)].filter(function (q) {
+        return !(q[1] != null && mv.p.has(q[1]));   // a neighbouring bend moving with it is no guide
+      }).map(function (q) { return q[0]; });
+      var T = 6 / z, cx = null, cy = null;
       nb.forEach(function (q) {
-        if (Math.abs(q[0] - B[0]) <= T && (ax == null || Math.abs(q[0] - B[0]) < Math.abs(ax - B[0]))) ax = q[0];
-        if (Math.abs(q[1] - B[1]) <= T && (ay == null || Math.abs(q[1] - B[1]) < Math.abs(ay - B[1]))) ay = q[1];
+        if (Math.abs(q[0] - B[0]) <= T && (cx == null || Math.abs(q[0] - B[0]) < Math.abs(cx))) cx = q[0] - B[0];
+        if (Math.abs(q[1] - B[1]) <= T && (cy == null || Math.abs(q[1] - B[1]) < Math.abs(cy))) cy = q[1] - B[1];
       });
-      if (ax != null) d.dx += ax - B[0];
-      if (ay != null) d.dy += ay - B[1];
-      d.gx = ax != null; d.gy = ay != null;
-      var C = [B[0] + (ax != null ? ax - B[0] : 0), B[1] + (ay != null ? ay - B[1] : 0)];
+      // a line meeting a CellDesigner glyph on the segment that moves: the bend snaps where that line turns level or
+      // upright too (user, 2026-11-13)
+      glyphArcs(d.p).forEach(function (o) {
+        [0, 1].forEach(function (cm) { [0, 1].forEach(function (a) {
+          var c = joinSolve(o, d.p, B, a, cm);
+          if (c == null || Math.abs(c) > T) return;
+          if (a === 0 && (cx == null || Math.abs(c) < Math.abs(cx))) cx = c;
+          if (a === 1 && (cy == null || Math.abs(c) < Math.abs(cy))) cy = c;
+        }); });
+      });
+      if (cx != null) d.dx += cx;
+      if (cy != null) d.dy += cy;
+      d.gx = cx != null; d.gy = cy != null;
+      var C = [B[0] + (cx || 0), B[1] + (cy || 0)];
       nb.forEach(function (q) { if (Math.abs(q[0] - C[0]) < 0.01 || Math.abs(q[1] - C[1]) < 0.01) d.guides.push([C, q]); });
+      d.guides = d.guides.concat(joinGuides(d.p, C));
     }
     // a new bend point (user, 2026-11-12, as yEd: "grab a line at any point and drag where you want"): put on the arc's
     // segment nearest the press, written into the text as yEd writes a y:Point (a y:Path closed in itself opened), the
