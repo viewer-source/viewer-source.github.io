@@ -169,7 +169,7 @@ says "the workbench", "the converter's repository", "a private repository".
   top (a compartment as yEd shows it), with eight small black handles round its box (in the map's units, so they grow and shrink with the zoom as yEd's:
   5 units, centres 3.3 units outside the box; the squares on an arc the same 5 units; user, 2026-11-12); an arc clickable and selected as in yEd,
   shown by black squares on its bend points and on its two ports, where it starts and ends (user, 2026-11-12, replacing a
-  blue highlight under the line); a first click on a bend point of a line not selected selects the whole line, as a click anywhere on it (user, 2026-11-12: "let's make it consistent"), so a line is always selected first and its bend points moved with the next press; a bend point is selected alone only by an area or Shift with a click, and then shows four small black squares round it, the lines seen in the gap between them (user, 2026-11-12, as yEd: squares 4 units, gap 2 units); among bend points close together a press takes the one selected, then one of the arc selected (user, 2026-11-12: select the arc, see its bends, then click the bend wanted), else the nearest (user: a nearby bend was dragged);
+  blue band under the line; the line itself drawn blue since 2026-11-13); a first click on a bend point of a line not selected selects the whole line, as a click anywhere on it (user, 2026-11-12: "let's make it consistent"), so a line is always selected first and its bend points moved with the next press; a bend point is selected alone only by an area or Shift with a click, and then shows four small black squares round it, the lines seen in the gap between them (user, 2026-11-12, as yEd: squares 4 units, gap 2 units); among bend points close together a press takes the one selected, then one of the arc selected (user, 2026-11-12: select the arc, see its bends, then click the bend wanted), else the nearest (user: a nearby bend was dragged);
   arcs following a drag keep their rounded bends, drawn as the renderer rounds a smoothed arc (user, 2026-11-12: no sharp corners while dragging); an arc grabbed anywhere and dragged makes a new bend point there and drags it (user, 2026-11-12, as yEd; was: moved its
   bends), written into the file as yEd writes a y:Point (a y:Path closed in itself opened), one undo step, nothing made
   when dragged back to where it started; a click on an arc still only selects it. With nothing selected the map looks as the original diagram. A drag moves the item
@@ -254,21 +254,19 @@ says "the workbench", "the converter's repository", "a private repository".
   under the lines (CellDesigner's, so crossings read) are hidden while editing too (user, 2026-11-12: without the canvas
   they cut round-ended white strips through the grid and the compartments). On a CellDesigner map the square marks
   (bend points, ports, node handles) are magenta, as CellDesigner's, black on a GraphML map (user, 2026-11-12: "this way
-  I will know while editing that it's CD"); Blue line in Settings uses CellDesigner's selection blue #1437ff (user: the
+  I will know while editing that it's CD"); a selected line is CellDesigner's selection blue #1437ff (user: the
   first blue looked pale on a thin line). A selected compartment keeps its grey fill over all of it (user, 2026-11-12).
   Arrow keys: a held key shows the move on the drawing as it goes, as a drag (user, 2026-11-12: it showed only on
   release), and a bend point selected alone gets the grey guides while one of its segments is exactly level or upright,
   no snapping (user: as in a drag); they go at the next click or Esc. The renderer (Pyodide, lxml and the converter,
   about 6.8 MB) starts quietly 2.5 s after the page shows its map where the Edit tab is, so a CellDesigner map opens
   for editing in about 0.5 s (4.5 s before; user, 2026-11-12); a site without the Edit tab loads nothing.
-  A selected line highlighted under its squares (user, 2026-11-12: "I was wrong about removing highlights"): light blue
-  (#8ab4f8), solid, no blending, so overlaps show no darker parts, and under the lines (user, 2026-11-12: "not a
-  semi-transparent cover", "under the lines ... careful with compartments"): put into the drawing as the first thing of
-  the line's own group (a CellDesigner line's, not its white halo's; a reaction's glyph in its group), so it lies under
-  that line and over everything drawn before it, compartments included; over the map only until the editor's drawing is
-  in the page and while a drag runs; on CellDesigner maps too (user, 2026-11-12: "use blue and as in GraphML the same color
-  code"; CellDesigner's purple taken back). Every mark is in the map's units, so zooming keeps their relative size and
-  thickness (user, 2026-11-12): the highlight 6 units wide, the guides 3, the snap lines and gap marks 1, the squares'
+  A selected line is drawn blue itself, under its squares, in CellDesigner's selection blue #1437ff, on GraphML and
+  CellDesigner maps alike: its stroke and filled black heads (a CellDesigner line's own group, not its white halo's; a
+  reaction's glyph too), and while it moves the copy following the move. One way only (user, 2026-11-13: "remove
+  highlight way completely"; the light blue band under the line, 2026-11-12, and the Settings choice Highlight or Blue
+  line are gone: while a line moved, the band was drawn over it). Every mark is in the map's units, so zooming keeps their relative size and
+  thickness (user, 2026-11-12): the guides 3, the snap lines and gap marks 1, the squares'
   white edge 0.5, the line drawn while an arc follows a drag 1 (only the area being selected stays in screen pixels). On a
   CellDesigner map a reaction is one item, as in CellDesigner: a click on its main line (reactant to glyph to product),
   its glyph or an added reactant or product lights them all, no squares in the glyph; a modifier is its own item (user:

@@ -80,18 +80,6 @@
     // line drawn stronger). The demo's maps are mostly not on any grid: a snapped drag moves a node onto it.
     var GRID_KEY = 'atlas-edit-grid', NODE_STEP = 8, BEND_STEP = 4;
     var gridSet = (function () { try { var g = JSON.parse(localStorage.getItem(GRID_KEY) || '{}'); return { shown: g.shown !== false, snap: g.snap === true }; } catch (e) { return { shown: true, snap: false }; } })();
-    // how a selected line shows (user, 2026-11-12, both kept to try, a choice in Settings): 'under', one blue layer under
-    // every line and object, or 'blue', the line itself drawn blue
-    var HL_KEY = 'atlas-edit-highlight';
-    var hlWay = (function () { try { return localStorage.getItem(HL_KEY) === 'blue' ? 'blue' : 'under'; } catch (e) { return 'under'; } })();
-    function hlButtons() { document.querySelectorAll('#m2-set-hl button').forEach(function (b) { b.classList.toggle('m2-on', b.dataset.hl === hlWay); }); }
-    document.querySelectorAll('#m2-set-hl button').forEach(function (b) {
-      b.addEventListener('click', function () {
-        hlWay = b.dataset.hl; try { if (hlWay === 'under') localStorage.removeItem(HL_KEY); else localStorage.setItem(HL_KEY, hlWay); } catch (e) {}
-        hlButtons(); paint();
-      });
-    });
-    hlButtons();
     function gridKeep() { try { localStorage.setItem(GRID_KEY, JSON.stringify(gridSet)); } catch (e) {} }
     function gridButtons() {
       box.querySelector('#m2-ed-grid').setAttribute('aria-pressed', String(gridSet.shown));   // the switches in the tools row
@@ -1000,7 +988,6 @@
           g.style.display = 'none';
           var c = g.cloneNode(true);
           c.removeAttribute('data-e'); c.style.display = ''; c.classList.add('m2-ed-copy');
-          c.querySelectorAll('.m2-ed-hl').forEach(function (x) { x.remove(); });
           g.parentNode.insertBefore(c, g.nextSibling); copies.push([c, g, k]);
           c.querySelectorAll('*').forEach(function (el) {
             var nm = el.localName;
@@ -1074,7 +1061,7 @@
     }
     function paint() {
       if (img && img.querySelectorAll) {
-        img.querySelectorAll('.m2-ed-dark, .m2-ed-hl, .m2-ed-hlg, #m2-ed-hlmask').forEach(function (x) { x.remove(); });
+        img.querySelectorAll('.m2-ed-dark').forEach(function (x) { x.remove(); });
         img.querySelectorAll('.m2-ed-blue').forEach(function (x) { x.classList.remove('m2-ed-blue'); });
       }
       gridPaint();
@@ -1089,7 +1076,7 @@
         var pts = line(k, null, null, pk0);
         if (pts) out.push('<path class="m2-ed-live" stroke-width="' + f1(z) + '" d="' + livePath(pts, edges2[k].smooth) + '"/>');
       });
-      // arcs selected, or holding a bend point selected: the blue highlight, then their bends as squares on top
+      // arcs selected, or holding a bend point selected: drawn blue, then their bends as squares on top
       // a bend point selected alone, the arc not highlighted (user, 2026-11-12: as yEd): four small black squares round
       // the point, the lines through it seen in the gap between them (measured on yEd: squares 4 units, gap 2 units)
       selP.forEach(function (pi) {
@@ -1100,78 +1087,29 @@
         });
       });
       // an arc selected (user, 2026-11-12, as yEd): black squares on its bend points and on its two ports, where it starts
-      // and ends (often in the middle of a node); and highlighted under them (user, 2026-11-12: "I was wrong about removing
-      // highlights"), in blue, on CellDesigner maps too (user, 2026-11-12: no purple). On a CellDesigner map a
+      // and ends (often in the middle of a node); and drawn blue (below). On a CellDesigner map a
       // reaction is one item, as in CellDesigner (user, 2026-11-12): a click on its main line (reactant to glyph to
       // product), its glyph or an added reactant or product lights them all up; a modifier stays on its own
       var L = lit(), hlE = L.e, glyphs = L.g, main = MAIN;
-      // the highlight in one solid blue (user, 2026-11-12: "not a semi-transparent cover"), all of it in one layer under
-      // every line and every object (user, 2026-11-12: "all highlights go behind all lines and all objects, including
-      // complexes, including process glyph, and including molecules"; it was in each line's own group, so it lay over the
-      // complexes and lines drawn before that line): put into the drawing just before its first line, so compartments
-      // stay under it and every line over it, and every molecule, complex and glyph cut out of it by a mask. While a
-      // drag runs, or before the editor's drawing is in the page, over the map under the lines following the drag.
-      // With 'blue' in Settings the lines lit are drawn blue themselves, no highlight
-      var hl = 'm2-ed-hl', under = [], layer = null, blue = hlWay === 'blue';
-      var NS = 'http://www.w3.org/2000/svg';
-      var hlLayer = function () {
-        if (layer) return layer;
-        var e0 = img.querySelector('[data-e]');
-        if (!e0) return null;
-        // the item beside the molecules that holds the first line (on CellDesigner maps the group of white halos)
-        var n0 = img.querySelector('[data-n]'), P = n0 ? n0.parentNode : e0.parentNode, host = e0;
-        while (host.parentNode && host.parentNode !== P) host = host.parentNode;
-        if (!host.parentNode) host = e0;
-        var mask = document.createElementNS(NS, 'mask'), cover = document.createElementNS(NS, 'rect');
-        mask.id = 'm2-ed-hlmask'; mask.setAttribute('maskUnits', 'userSpaceOnUse');
-        [['x', -1e6], ['y', -1e6], ['width', 2e6], ['height', 2e6]].forEach(function (a) { mask.setAttribute(a[0], a[1]); cover.setAttribute(a[0], a[1]); });
-        cover.setAttribute('fill', '#fff'); mask.appendChild(cover);
-        var holes = document.createElementNS(NS, 'path'), d = '';
-        nodes2.forEach(function (n, i) { if (!n.comp && gN[n.id]) d += shapeD(i, true); });
-        holes.setAttribute('d', d); holes.setAttribute('fill', '#000'); mask.appendChild(holes);
-        layer = document.createElementNS(NS, 'g');
-        layer.setAttribute('class', 'm2-ed-hlg'); layer.setAttribute('mask', 'url(#m2-ed-hlmask)');
-        if (cd && (x0 || y0)) layer.setAttribute('transform', 'translate(' + f1(-x0) + ',' + f1(-y0) + ')');
-        layer.appendChild(mask);
-        // over the white halos CellDesigner maps draw under their lines (they hid the middle of the blue), under the lines
-        if (!host.hasAttribute('data-e') && host.querySelector('[data-e]')) host.after(layer); else host.parentNode.insertBefore(layer, host);
-        return layer;
-      };
-      var pic = function (g, el) {   // a CellDesigner drawing is in the file's places: -x0, -y0 from the editor's (on the layer)
-        if (blue) { g.classList.add('m2-ed-blue'); return; }
-        var L2 = hlLayer();
-        if (!L2) return;
-        el.setAttribute('class', hl); el.setAttribute('style', 'stroke-width:6px');
-        L2.appendChild(el);
+      // a line selected is drawn blue itself, in CellDesigner's selection blue, on GraphML and CellDesigner maps alike
+      // (user, 2026-11-13: the other way, a blue band under the line, removed, "remove highlight way completely"): its
+      // own group (a CellDesigner line's, not its white halo's), or the copy following a move; a glyph lit the same.
+      // Before the editor's drawing is in the page, a thin blue line over the map
+      var blueG = function (g) {
+        var cs = copies.filter(function (c) { return c[1] === g; });
+        if (cs.length) cs.forEach(function (c) { c[0].classList.add('m2-ed-blue'); }); else g.classList.add('m2-ed-blue');
       };
       hlE.forEach(function (k) {
-        var gs = gE && gE[edges2[k].id], still = !(live && live.has(k)) && !(pk0 && pk0.k === k);
-        // Blue line while it moves (user, 2026-11-13: a pale blue band covered the moving line): the copy drawn for
-        // the move turns blue itself, as the line does at rest; nothing over it
-        if (blue && gs) {
-          var own = gs[gs.length - 1], cs = copies.filter(function (c) { return c[1] === own; });
-          if (cs.length) cs.forEach(function (c) { c[0].classList.add('m2-ed-blue'); }); else own.classList.add('m2-ed-blue');
-          return;
-        }
-        if (gs && still && !mv) {
-          var q0 = line(k);
-          if (!q0) return;
-          var el = document.createElementNS(NS, 'path');
-          el.setAttribute('d', 'M' + q0.map(function (q) { return f1(q[0]) + ' ' + f1(q[1]); }).join('L'));
-          return pic(gs[gs.length - 1], el);   // a CellDesigner line's own group, not its white halo's
-        }
+        var gs = gE && gE[edges2[k].id];
+        if (gs) return blueG(gs[gs.length - 1]);
         var pts = line(k, null, null, pk0);
-        if (pts) under.push('<path class="' + hl + '"' + sw(6) + ' d="M' + pts.map(function (q) { return f1(sx(q[0])) + ' ' + f1(sy(q[1])); }).join('L') + '"/>');
+        if (pts) out.push('<path class="m2-ed-sel" stroke-width="' + f1(z) + '" d="' + livePath(pts, edges2[k].smooth) + '"/>');
       });
       glyphs.forEach(function (i) {
         var g = gN && gN[nodes2[i].id];
-        if (g && (!mv || blue)) {
-          var b0 = liveG && liveG[i] ? bx(i) : boxOf(i), el = document.createElementNS(NS, 'rect');   // a glyph following a port dragged: where it is now
-          [['x', b0[0]], ['y', b0[1]], ['width', b0[2]], ['height', b0[3]]].forEach(function (a) { el.setAttribute(a[0], f1(a[1])); });
-          return pic(g, el);
-        }
+        if (g) return blueG(g);
         var b = bx(i);
-        under.push('<rect class="' + hl + '"' + sw(6) + ' x="' + f1(sx(b[0])) + '" y="' + f1(sy(b[1])) + '" width="' + f1(b[2] * z) + '" height="' + f1(b[3] * z) + '"/>');
+        out.push('<rect class="m2-ed-sel" stroke-width="' + f1(z) + '" x="' + f1(sx(b[0])) + '" y="' + f1(sy(b[1])) + '" width="' + f1(b[2] * z) + '" height="' + f1(b[3] * z) + '"/>');
       });
       hlE.forEach(function (k) {
         var e = edges2[k];
@@ -1250,7 +1188,7 @@
       // the square marks magenta on a CellDesigner map, as in CellDesigner (user, 2026-11-12: "this way I will know while
       // editing that it's CD"); black on a GraphML map, as in yEd
       overlay.classList.toggle('m2-ed-cd', !!cd);
-      overlay.innerHTML = under.concat(out, over).join('');
+      overlay.innerHTML = out.concat(over).join('');
     }
 
     // the pointer: a press on a node, an arc or a bend point selects it and moves it (an arc: its bends), Shift adds to
