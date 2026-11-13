@@ -98,7 +98,9 @@ says "the workbench", "the converter's repository", "a private repository".
   look; a style shows them (the styles' Default Icon Column Legacy). A click does nothing until Overlays is built; the
   chosen sign then gets the window and the others go.
   O6 (a molecule over a scale) looks right for Overlays, data shown on the map, and O3 (a sheet over a sheet) is kept
-  too, maybe better (user, 2026-11-13); O1 and O2 (stacked
+  too, maybe better (user, 2026-11-13); O8 (user's idea the same day): O6 without the molecule, four bars in four
+  greys, as MINERVA shows several datasets on one molecule (split into equal parts, one per dataset, each in its
+  dataset's colour); O9 the same four parts joined in one rounded box, as the split molecule itself; O1 and O2 (stacked
   layers) are MINERVA's sign for Layers, kept in case the viewer gets layers later (user: "for later anyway if needed").
 - Icon row (user, 2026-11-11: "the place for icons is on the top of left panel"; `--m2-icon-row: 1`, with `--m2-icons: 1`,
   off in the viewer's own look): the icon column's icons as a row of tabs at the top of the list's panel (36 px, 21 px
