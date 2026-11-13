@@ -208,7 +208,11 @@ says "the workbench", "the converter's repository", "a private repository".
   each save the map itself (no draft), never sent to GitHub even with a token. Remove from My maps (right-click) only
   hides: record and file stay, the same file added again brings it back. Settings: Example maps Shown or Hidden (the
   site's maps, while the reader has maps of their own). Their pictures and files are blob addresses (`ver` gives
-  `#<at>`), an old version's let go only once nothing on the page uses it. No panel data for them (no build). No save time or mark by the title either (user: when and how a map is saved is the system's concern, not the person editing's). Editing starts from the repository's version and its sha,
+  `#<at>`), an old version's let go only once nothing on the page uses it. No panel data for them (no build). The group's name is the reader's
+  (user, 2026-11-13: "they should be able to name it however they want"; small first, several groups of their own later):
+  Settings, Name of your group (shown with Example maps once they have maps), My maps until named, kept in their browser
+  (`atlas-mine-group`); a name of one of the site's groups is refused (the two would merge). In Settings, not a
+  double-click on the group: a first click opens or closes the group and rebuilds the list. No save time or mark by the title either (user: when and how a map is saved is the system's concern, not the person editing's). Editing starts from the repository's version and its sha,
   so a file changed on GitHub meanwhile is never overwritten: saving stops and says so. A map not in the site's repository
   is saved to a place chosen once (Chrome, Edge), else as a download. Read ahead (user, 2026-11-13: the switch "immediate and immediately functional"): while a map is only shown where the Edit tab is, its file, the frame of its drawing, with a token the repository's version and sha, the renderer and a CellDesigner file's GraphML are loaded, so the switch to edit waits for nothing; dropped after a save, when editing stops, when the site's version or the token changes; with a token the repository's version is checked again just after the switch. Editing starts on the picture as it
   is, with no redraw and the map not moved (user, 2026-11-12: "exactly as I see it and immediately start editing"): the
