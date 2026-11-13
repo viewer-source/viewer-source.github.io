@@ -1,6 +1,6 @@
 ---
 title: "Mast cell (GraphML)"
-topic: "Mast cell"
+topic: "Mast cell (GraphML)"
 group: "AsthmaMap"
 order: 2
 ---

@@ -1,6 +1,6 @@
 ---
 title: "Mast cell (CellDesigner)"
-topic: "Mast cell"
+topic: "Mast cell (CellDesigner)"
 group: "AsthmaMap"
 order: 1
 ---
