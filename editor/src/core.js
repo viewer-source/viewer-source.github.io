@@ -222,7 +222,9 @@
 
     // the file read: every y:Geometry and y:Point in document order, which is also their order in the text
     function parse() {
-      doc = new DOMParser().parseFromString(text, 'application/xml');
+      var pd = preDoc.filter(function (x) { return x.text === text; })[0];   // read ahead, each used once
+      preDoc = preDoc.filter(function (x) { return x !== pd; });
+      doc = pd ? pd.doc : new DOMParser().parseFromString(text, 'application/xml');
       docText = text;
       if (doc.getElementsByTagName('parsererror').length) throw 'not a readable XML file';
       geos = Array.prototype.slice.call(doc.getElementsByTagNameNS(Y, 'Geometry'));
@@ -514,7 +516,8 @@
       return (cd ? cdpy() : yr()).then(function (p) {
         var r;
         if (cd) {   // the moves written into the CellDesigner file, drawn, and the GraphML made of it again
-          var q = p.draw(cd.base, text);
+          var dm = drawMemo && drawMemo.cd && drawMemo.base === cd.base && drawMemo.text === text ? drawMemo : null;
+          var q = dm ? dm.q : p.draw(cd.base, text);
           if (t !== ticket) return;
           cd.now = q[1]; r = [q[0], []];
           if (q[2] !== text && !drag) {   // the same map, its new bend points (a glyph moved) now its own
@@ -528,7 +531,7 @@
           // shift was taken for a new frame of the drawing and the map jumped right and down, out of sight on some maps)
           var sh = !drag && noNegative();
           if (sh) { parse(); x0 += sh[0]; y0 += sh[1]; }
-          r = drawGraphml(text);
+          r = drawMemo && !drawMemo.cd && drawMemo.text === text ? drawMemo.r : drawGraphml(text);
         }
         if (t !== ticket) return;
         drawing = false;
@@ -540,7 +543,9 @@
         x0 = nx; y0 = ny; map.width = parseFloat(w[1]); map.height = parseFloat(w[2]);
         (function () {
           if (V.current !== map) return;
-          var pic = document.importNode(new DOMParser().parseFromString(V.recolour(svg), 'image/svg+xml').documentElement, true);
+          var rec = V.recolour(svg), dm = drawMemo && drawMemo.pic && drawMemo.rec === rec ? drawMemo : null;   // the page's elements made ahead, used once
+          var pic = dm ? dm.pic : document.importNode(new DOMParser().parseFromString(rec, 'image/svg+xml').documentElement, true);
+          if (dm) dm.pic = null;
           var old = V.img.src || '';
           V.img.removeAttribute('id'); pic.id = 'm2-img'; pic.setAttribute('aria-label', map.title); V.img.replaceWith(pic); V.img = pic;
           if (old.indexOf('blob:') === 0) URL.revokeObjectURL(old);
@@ -627,7 +632,7 @@
     // be "immediate and immediately functional", not only look so): the map's own file, the frame of its drawing, with a
     // token the repository's version and its sha, the renderer and, on a CellDesigner map, the GraphML the editor edits.
     // The switch then waits for nothing. Dropped after a save, when editing stops and when the site's version changes.
-    var pre = null, preTimer = null, openTitle = null;
+    var pre = null, preTimer = null, openTitle = null, drawMemo = null, preDoc = [];   // drawMemo: the editor's drawing made ahead, with the text it was made from
     function preKey(m) { return m.id + '|' + V.ver(m) + '|' + (repo() && token() ? 'gh' : ''); }
     function ahead(m) {
       var url = graphmlOf(m);
@@ -655,9 +660,41 @@
       var drop = function () { if (pre === p) pre = null; };
       p.sitePub.catch(drop); p.gh.catch(drop);
       // the renderer, and a CellDesigner file made into the editor's GraphML now, not at the switch
+      // then, when the browser is idle, the editor's own drawing of the map (each node and line in a group of its own,
+      // for live drags), made from the text editing will start from: the switch only puts it in (the other session's
+      // measure, 2026-11-13: 100-320 ms of frozen page on entering edit on large maps, from drawing the map again)
       (cdm ? cdpy() : yr()).then(function () {
-        if (!cdm) return;
-        return Promise.all([p.sitePub, p.gh]).then(function (r) { cdGraphml(r[0]); if (r[1]) cdGraphml(r[1].text); });
+        var k = V.keep(m);
+        return Promise.all([k && k.text ? k.text : p.sitePub, p.gh]).then(function (r) {
+          var t = r[1] ? r[1].text : r[0];
+          // in steps, each in its own idle moment, so no step freezes the page long enough to be felt while the
+          // map is only looked at (one step was 84-134 ms on large maps): a CellDesigner file's GraphML, read, draw, make the page's elements
+          var idle = function () { return new Promise(function (res) { (window.requestIdleCallback || function (f) { setTimeout(f, 0); })(res); }); };
+          var still = function () { return pre === p && !on && V.current === m; };
+          var rd = function (x) { return new DOMParser().parseFromString(x, 'application/xml'); };
+          var g, d, g2, d2;
+          return idle().then(function () {
+            if (!still()) throw 0;
+            g = cdm ? cdGraphml(t) : t;   // a CellDesigner file made into the editor's GraphML: a step of its own
+            return cdm ? idle() : null;
+          }).then(function () {
+            if (!still()) throw 0;
+            d = rd(g);
+            g2 = cdm ? g : shiftedAhead(g, d);   // a map with negative places is shifted on entering edit (noNegative)
+            d2 = g2 === g ? d : rd(g2);
+            preDoc = g2 === g ? [{ text: g, doc: d }] : [{ text: g, doc: d }, { text: g2, doc: d2 }];   // the documents the editor reads its file into
+            return idle();
+          }).then(function () {
+            if (!still()) throw 0;
+            if (cdm) drawMemo = { cd: true, base: t, text: g, q: cdJs.draw(t, g) };
+            else { var y = window.yrender.render(d2, { classes: true, groups: true }); drawMemo = { cd: false, text: g2, r: [y.svg, y.errors] }; }   // the renderer only reads the document
+            return idle();
+          }).then(function () {
+            if (!still() || !drawMemo) throw 0;
+            drawMemo.rec = V.recolour(cdm ? drawMemo.q[0] : drawMemo.r[0]);   // the drawing as the page's elements, ready to put in
+            drawMemo.pic = document.importNode(new DOMParser().parseFromString(drawMemo.rec, 'image/svg+xml').documentElement, true);
+          });
+        });
       }).catch(function () {});
       pre = p;
       return p;

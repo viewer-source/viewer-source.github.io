@@ -44,6 +44,27 @@
     // a map moved past the left or the top edge is shifted right or down, each on its own, by whole blocks of the grid
     // (16, so a map on the grid stays on it) to start at 40 or a little more; the drawing stays where it is on screen
     // (the renderer's frame follows). A GraphML here; a CellDesigner file in cd_edit.place
+    // the same shift worked out ahead from a document alone (read ahead while the map is shown): the text it gives,
+    // or the text itself when nothing moves; were it ever to differ from noNegative's, the drawing made ahead is simply
+    // not used (it is kept with its text), so this can only cost time, never change a map
+    function shiftedAhead(t, d) {
+      var mx = Infinity, my = Infinity, re = /<y:(?:Geometry|Point)\s[^>]*>/g;
+      var owner = function (e) { for (var p = e.parentNode; p; p = p.parentNode) if (p.localName === 'node' && p.namespaceURI === G) return p; return null; };
+      var own = new Map();
+      Array.prototype.forEach.call(d.getElementsByTagNameNS(Y, 'Geometry'), function (g) { var n = owner(g); if (n && !own.has(n)) own.set(n, g); });
+      own.forEach(function (g0, n) {
+        var r = realizerOf(n), g = r && r.getElementsByTagNameNS(Y, 'Geometry')[0];
+        if (!g) g = g0;   // as parse(): the realizer's first geometry, else the node's first
+        mx = Math.min(mx, num(g, 'x')); my = Math.min(my, num(g, 'y'));
+      });
+      Array.prototype.forEach.call(d.getElementsByTagNameNS(Y, 'Point'), function (p) { mx = Math.min(mx, num(p, 'x')); my = Math.min(my, num(p, 'y')); });
+      var block = function (m) { return m < 0 ? Math.ceil((40 - m) / 16) * 16 : 0; }, sx = block(mx), sy = block(my);
+      if (!sx && !sy) return t;
+      return t.replace(re, function (tag) {
+        return tag.replace(/(\sx=")([^"]*)"/, function (a, k, v) { return k + fmt(parseFloat(v) + sx) + '"'; })
+                  .replace(/(\sy=")([^"]*)"/, function (a, k, v) { return k + fmt(parseFloat(v) + sy) + '"'; });
+      });
+    }
     function noNegative() {
       // what is drawn counts (a closed group's other size, kept by yEd, does not), all of it moves
       var mx = Infinity, my = Infinity, re = /<y:(?:Geometry|Point)\s[^>]*>/g;
