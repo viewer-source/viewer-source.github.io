@@ -1717,8 +1717,8 @@
 </celldesigner:compartmentAlias>
 <celldesigner:compartmentAlias id="ca_n0" compartment="c_n0">
 <celldesigner:class>SQUARE</celldesigner:class>
-<celldesigner:bounds x="44.668844" y="716.892352" w="2128.0" h="979.107648"/>
-<celldesigner:namePoint x="1065.369528" y="729.392352"/>
+<celldesigner:bounds x="40.0" y="749.532" w="2132.669" h="946.468"/>
+<celldesigner:namePoint x="1060.700684" y="762.032"/>
 <celldesigner:doubleLine thickness="12.0" outerWidth="2.0" innerWidth="1.0"/>
 <celldesigner:paint color="ffdfdbce" scheme="Color"/>
 <celldesigner:info state="empty" angle="-1.5707963267948966"/>
