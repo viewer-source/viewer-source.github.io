@@ -5,8 +5,8 @@ SBGN-ML maps made by other people and tools, to test the viewer's SBGN-ML drawin
 holds it; a test that needs a change makes it in a temporary copy. Published with the site, so a test page loads a
 file by its address, e.g. `/test-maps/sbgn-ml/pd/reactome/R-HSA-111885.sbgn`.
 
-- `pd/`: Process Description, the language worked on now: 62 maps and libsbgn's 50 validation error tests.
-- `af/`: Activity Flow, kept for later: 13 maps and libsbgn's 15 validation error tests.
+- `pd/`: Process Description, the language worked on now: 50 maps and libsbgn's 50 validation error tests.
+- `af/`: Activity Flow, kept for later: 11 maps and libsbgn's 15 validation error tests.
 - Left out: Entity Relationship, hybrid maps, SBML and SIF (user: not needed now); maps under 20 glyphs (user: the
   hundreds of small spec and rule cases are not useful), except the validation tests; our own Metabolism
   Regulation maps found in pd2af.
@@ -14,7 +14,8 @@ file by its address, e.g. `/test-maps/sbgn-ml/pd/reactome/R-HSA-111885.sbgn`.
   counts, size, source, repository and commit, its path there, licence, `hidden` when its folder is linked from no
   page of the source's website, a note, and the other places the same file (byte for byte) was found. Identical
   files are kept once; the same map written by different tools or versions (glycolysis from the SBGN website,
-  libsbgn and Newt) is kept each time, as each writer is a test of its own.
+  libsbgn and Newt) is kept each time, as each writer is a test of its own; within Newt, one copy of each example
+  only, from `newt-unstable` (user, 2026-11-14: its twins in `newt-master` and `newt-saved` removed).
 
 Notes on the files:
 
@@ -29,8 +30,7 @@ Notes on the files:
 |---|---|---|
 | `sbgn-website` | github.com/sbgn/sbgn.github.io; hidden: `downloads/examples`, `spec_examples`, `spec_images` | CC0 1.0 |
 | `libsbgn` | github.com/sbgn/libsbgn: `test-files`, `validation` | libsbgn's LICENSE.txt (LGPL 2.1 or EPL) |
-| `newt-unstable`, `newt-master` | github.com/iVis-at-Bilkent/newt `app/samples`, branch unstable (the one web.newteditor.org runs) and master | LGPL 3.0 |
-| `newt-saved` | Newt's samples as web.newteditor.org saves them (SBGN-ML and .nwt, 2026-10-17) | LGPL 3.0 |
+| `newt-unstable` | github.com/iVis-at-Bilkent/newt `app/samples`, branch unstable (the one web.newteditor.org runs) | LGPL 3.0 |
 | `reactome` | Reactome pathway diagrams exported as SBGN-ML: R-HSA-111885 (eicosanoids), R-HSA-70635 (urea cycle), R-HSA-70895 (BCAA) | CC BY 4.0 |
 | `pd2af-website` | github.com/pd2af/pd2af.github.io (two specification cases of 20 glyphs or more) | none stated for the maps |
 | `pd2af-engine` | github.com/pd2af/converter `static/generated/`: Activity Flow written by the 2018 engine | none stated |
@@ -42,6 +42,7 @@ Looked at and not taken (2026-11-14): SBGN-ED's three maps for the SBGN competit
 iNOS ER and AF maps are images only); SBGN-ED's 16 competition maps in its own GML (`SBGN_software_(1)-SBGN-ED.zip`,
 incl. PCR, CaMKII and the sodium channel, not SBGN-ML); VISIBIOweb's (BioPAX and images); the EGFR tutorial maps
 (CellDesigner); Arcadia's (SBML).
-libsbgn's `PD_Reference_Card.sbgn` and `SBGN-PD_all.sbgn` (`test-files/PD/`), taken first, then removed (user, 2026-11-14); so was Newt's `pd_learners_card.nwt` (`newt-master`).
+libsbgn's `PD_Reference_Card.sbgn` and `SBGN-PD_all.sbgn` (`test-files/PD/`), taken first, then removed (user, 2026-11-14); so was Newt's `pd_learners_card.nwt` (`newt-master`); then the folders `newt-master` (master branch) and `newt-saved`
+(the samples as web.newteditor.org saved them, 2026-10-17), twins of `newt-unstable`'s examples (user, 2026-11-14).
 
 sbgn/pathway-archive's maps are the same files as the website's and are listed there under `same_file_also_at`.

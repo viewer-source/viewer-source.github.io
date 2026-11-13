@@ -116,20 +116,6 @@ pd/newt-unstable/polyq_proteins_interference.nwt	PD	0.2	54	30	30882	newt-unstabl
 af/newt-unstable/transforming_growth_factor_beta_signaling.nwt	AF	0.2	27	24	22168	newt-unstable	github.com/iVis-at-Bilkent/newt, branch unstable, commit 55c0870, app/samples	transforming_growth_factor_beta_signaling.nwt	LGPL 3.0			
 pd/newt-unstable/two_gene_system_behavior.nwt	PD	0.2	43	28	28050	newt-unstable	github.com/iVis-at-Bilkent/newt, branch unstable, commit 55c0870, app/samples	two_gene_system_behavior.nwt	LGPL 3.0			newt-master:two_gene_system_behavior.nwt
 pd/newt-unstable/vitamins_b6_activation_to_pyridoxal_phosphate.nwt	PD	0.2	43	30	66314	newt-unstable	github.com/iVis-at-Bilkent/newt, branch unstable, commit 55c0870, app/samples	vitamins_b6_activation_to_pyridoxal_phosphate.nwt	LGPL 3.0			newt-master:vitamins_b6_activation_to_pyridoxal_phosphate.nwt
-pd/newt-master/cam-camk_dependent_signaling_to_the_nucleus.nwt	PD	0.2	89	36	36938	newt-master	github.com/iVis-at-Bilkent/newt, default branch, app/samples @fbed24d	cam-camk_dependent_signaling_to_the_nucleus.nwt	LGPL 3.0			
-af/newt-master/epidermal_growth_factor_receptor.nwt	AF	0.2	52	65	30980	newt-master	github.com/iVis-at-Bilkent/newt, default branch, app/samples @fbed24d	epidermal_growth_factor_receptor.nwt	LGPL 3.0			
-pd/newt-master/insulin-like_growth_factor_signaling.nwt	PD	0.2	51	32	28359	newt-master	github.com/iVis-at-Bilkent/newt, default branch, app/samples @fbed24d	insulin-like_growth_factor_signaling.nwt	LGPL 3.0			
-af/newt-master/transforming_growth_factor_beta_signaling.nwt	AF	0.2	27	24	17955	newt-master	github.com/iVis-at-Bilkent/newt, default branch, app/samples @fbed24d	transforming_growth_factor_beta_signaling.nwt	LGPL 3.0			
-pd/newt-saved/cam-camk_dependent_signaling_to_the_nucleus.nwt	PD	0.3	89	36	40366	newt-saved	Newt samples saved by web.newteditor.org as SBGN-ML and .nwt (2026-10-17)	cam-camk_dependent_signaling_to_the_nucleus.nwt	LGPL 3.0 (Newt)			
-pd/newt-saved/cam-camk_dependent_signaling_to_the_nucleus.sbgn	PD	0.3	89	36	35927	newt-saved	Newt samples saved by web.newteditor.org as SBGN-ML and .nwt (2026-10-17)	cam-camk_dependent_signaling_to_the_nucleus.sbgn	LGPL 3.0 (Newt)			
-pd/newt-saved/glycolysis.nwt	PD	0.3	44	44	31543	newt-saved	Newt samples saved by web.newteditor.org as SBGN-ML and .nwt (2026-10-17)	glycolysis.nwt	LGPL 3.0 (Newt)			
-pd/newt-saved/glycolysis.sbgn	PD	0.3	44	44	26535	newt-saved	Newt samples saved by web.newteditor.org as SBGN-ML and .nwt (2026-10-17)	glycolysis.sbgn	LGPL 3.0 (Newt)			
-pd/newt-saved/insulin-like_growth_factor_signaling.nwt	PD	0.3	51	32	31210	newt-saved	Newt samples saved by web.newteditor.org as SBGN-ML and .nwt (2026-10-17)	insulin-like_growth_factor_signaling.nwt	LGPL 3.0 (Newt)			
-pd/newt-saved/insulin-like_growth_factor_signaling.sbgn	PD	0.3	51	32	27022	newt-saved	Newt samples saved by web.newteditor.org as SBGN-ML and .nwt (2026-10-17)	insulin-like_growth_factor_signaling.sbgn	LGPL 3.0 (Newt)			
-pd/newt-saved/mapk_cascade.nwt	PD	0.3	35	27	20196	newt-saved	Newt samples saved by web.newteditor.org as SBGN-ML and .nwt (2026-10-17)	mapk_cascade.nwt	LGPL 3.0 (Newt)			
-pd/newt-saved/mapk_cascade.sbgn	PD	0.3	35	27	16487	newt-saved	Newt samples saved by web.newteditor.org as SBGN-ML and .nwt (2026-10-17)	mapk_cascade.sbgn	LGPL 3.0 (Newt)			
-pd/newt-saved/neuronal_muscle_signaling.nwt	PD	0.3	52	38	44100	newt-saved	Newt samples saved by web.newteditor.org as SBGN-ML and .nwt (2026-10-17)	neuronal_muscle_signaling.nwt	LGPL 3.0 (Newt)			
-pd/newt-saved/neuronal_muscle_signaling.sbgn	PD	0.3	52	38	39496	newt-saved	Newt samples saved by web.newteditor.org as SBGN-ML and .nwt (2026-10-17)	neuronal_muscle_signaling.sbgn	LGPL 3.0 (Newt)			
 pd/reactome/R-HSA-111885.sbgn	PD	0.2	232	235	113298	reactome	reactome.org pathway diagram export	R-HSA-111885.sbgn	CC BY 4.0 (Reactome)			
 pd/reactome/R-HSA-70635.sbgn	PD	0.2	95	85	42376	reactome	reactome.org pathway diagram export	R-HSA-70635.sbgn	CC BY 4.0 (Reactome)			
 pd/reactome/R-HSA-70895_1.sbgn	PD	0.2	132	152	69256	reactome	reactome.org pathway diagram export	R-HSA-70895_1.sbgn	CC BY 4.0 (Reactome)			
