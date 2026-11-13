@@ -545,4 +545,5 @@ says "the workbench", "the converter's repository", "a private repository".
   (thick and blurred), a capital letter for all three, a small letter in a grey circle as an info icon, a colour code
   (grey GraphML, blue SBGN, green CellDesigner): the circles and colours noisy. The list's box reaches 10 px into the
   panel's margin so the tag fits and nothing in the list moves (`atlas-tags.css`). None on a map in no group or on
-  narrow windows (no room).
+  narrow windows (no room). Settings' Format letters, Shown (the default) or Hidden (user, 2026-11-14), after Groups in
+  the list, shown only when a map in the list has a letter; kept in the browser (`atlas-format-letters`).
