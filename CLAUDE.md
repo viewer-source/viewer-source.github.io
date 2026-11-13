@@ -182,8 +182,18 @@ says "the workbench", "the converter's repository", "a private repository".
   the site's picture, also after a reload and on the demo page, with "Your earlier changes to this map are shown." and
   Back to the site's map under the map; editing goes on from it. The Edit window says once per browser "Your changes are
   kept in this browser only. They are lost if the browser's site data is cleared or the window is private, and in Safari
-  after a week without a visit. Download the map to keep your changes." (the approved text's folder sentence waits for
-  the folder, layer 2) with Download the map. Every move undone: the draft let go. A token connected while editing takes
+  after a week without a visit. To keep them, choose a folder on your computer: each change is then saved there by
+  itself." with Choose a folder (Chrome, Edge), or with Download the map and "This browser cannot save into a folder by
+  itself. ..." elsewhere. Layer 2 (user, 2026-11-13: "yes"): the folder chosen once (showDirectoryPicker), its handle and
+  the files written kept beside the drafts (store `folder`: `dir`, `files`; its name in localStorage
+  `atlas-edit-folder`); every kept map is written there as its file (the site's file name) with each draft, and all of
+  them when the folder is chosen or allowed again; a file this browser did not write (there before, or changed since:
+  time and size) is never overwritten, the write goes beside it (`-2`, `-3`); undone moves are written back. Texts
+  (approved): "Saving to the folder X on your computer."; after a reload when the browser asks again, "Allow the folder X
+  again to go on saving there." with Allow; a folder gone or refused says so and offers Choose a folder again. Under the
+  map after editing with no folder, at most once a day: "These changes are in this browser only. Choose a folder to keep
+  them." Not checkable headless here: the handle read back after a reload (the test browser crashes on it; in Chrome the
+  documented way). Every move undone: the draft let go. A token connected while editing takes
   the moves to GitHub and drops the draft; with a token drafts are ignored; Disconnect while editing keeps further moves
   in the browser. Not yet: a draft over a site map changed since (shown as it is). No save time or mark by the title either (user: when and how a map is saved is the system's concern, not the person editing's). Editing starts from the repository's version and its sha,
   so a file changed on GitHub meanwhile is never overwritten: saving stops and says so. A map not in the site's repository
