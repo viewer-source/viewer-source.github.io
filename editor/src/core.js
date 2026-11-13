@@ -1403,6 +1403,29 @@
         return [S.a1[0] + t1 * S.u1[0] - w * S.u1[1], S.a1[1] + t1 * S.u1[1] + w * S.u1[0]];
       };
     }
+    // what is drawn at an end of an arc (an arrowhead, a circle, a bar) carried whole with that end and turned as its end
+    // segment turned, so its shape never changes (user, 2026-11-13: an arrowhead stretched to a long thin triangle when
+    // its segment had been short, follow taking its base corners as near the segment's start); null for anything else.
+    // c: the shape's centre; P: its points, for an open shape (only a bar across the end segment counts)
+    function endShape(o, n, c, P) {
+      var L = o.length - 1, best = null, bd = 25;
+      [[o[L], o[L - 1], n[L], n[L - 1]], [o[0], o[1], n[0], n[1]]].forEach(function (E) {
+        var d = Math.hypot(c[0] - E[0][0], c[1] - E[0][1]);
+        if (d < bd) { bd = d; best = E; }
+      });
+      if (!best) return null;
+      var A = best[0], B = best[1], A1 = best[2], B1 = best[3], l = Math.hypot(A[0] - B[0], A[1] - B[1]), l1 = Math.hypot(A1[0] - B1[0], A1[1] - B1[1]);
+      var u = l ? [(A[0] - B[0]) / l, (A[1] - B[1]) / l] : [1, 0], u1 = l1 ? [(A1[0] - B1[0]) / l1, (A1[1] - B1[1]) / l1] : u;
+      if (P) {
+        if (P.length !== 2) return null;
+        var dx = P[1][0] - P[0][0], dy = P[1][1] - P[0][1], dl = Math.hypot(dx, dy);
+        if (!dl || Math.abs(dx * u[0] + dy * u[1]) / dl > 0.2) return null;
+      }
+      return function (p) {
+        var x = p[0] - A[0], y = p[1] - A[1], t = x * u[0] + y * u[1], w = -x * u[1] + y * u[0];
+        return [A1[0] + t * u1[0] - w * u1[1], A1[1] + t * u1[1] + w * u1[0]];
+      };
+    }
     function fullLines(ks, pp) {   // ks: the arcs to draw (indices in edges2), pp: a port being dragged
       dropCopies();
       ks.forEach(function (k) {
@@ -1410,12 +1433,15 @@
         if (!gs) return;
         var o = line(k, restBox, restPt), n = line(k, null, null, pp);
         if (!o || !n) return;
-        var F = follow(o, n), pair = function (str) {   // every x y of an attribute taken along
-          var v = str.match(/-?[\d.]+(?:e-?\d+)?/g) || [], k2 = 0;
+        var F0 = follow(o, n), pair = function (str, closed) {   // every x y of an attribute taken along, an end's shape whole
+          var v = str.match(/-?[\d.]+(?:e-?\d+)?/g) || [], k2 = 0, P = [];
+          for (var i = 0; i + 1 < v.length; i += 2) P.push([+v[i], +v[i + 1]]);
+          var c = P.reduce(function (s, q) { return [s[0] + q[0] / P.length, s[1] + q[1] / P.length]; }, [0, 0]);
+          var F = (P.length && endShape(o, n, c, closed ? null : P)) || F0;
           return str.replace(/-?[\d.]+(?:e-?\d+)?/g, function (m) {
             var j = k2++; if (j % 2) return f1(F([+v[j - 1], +v[j]])[1]); return f1(F([+v[j], +v[j + 1]])[0]);
           });
-        };
+        }, F = F0;
         gs.forEach(function (g) {
           g.style.display = 'none';
           var c = g.cloneNode(true);
@@ -1423,13 +1449,13 @@
           g.parentNode.insertBefore(c, g.nextSibling); copies.push([c, g, k]);
           c.querySelectorAll('*').forEach(function (el) {
             var nm = el.localName;
-            if ((nm === 'polyline' || nm === 'polygon') && !el.getAttribute('transform')) el.setAttribute('points', pair(el.getAttribute('points') || ''));
-            else if (nm === 'path' && !el.getAttribute('transform') && /^[MLQCZ\s\d.,e-]*$/.test(el.getAttribute('d') || '')) el.setAttribute('d', pair(el.getAttribute('d')));
+            if ((nm === 'polyline' || nm === 'polygon') && !el.getAttribute('transform')) el.setAttribute('points', pair(el.getAttribute('points') || '', nm === 'polygon'));
+            else if (nm === 'path' && !el.getAttribute('transform') && /^[MLQCZ\s\d.,e-]*$/.test(el.getAttribute('d') || '')) el.setAttribute('d', pair(el.getAttribute('d'), /Z\s*$/i.test(el.getAttribute('d'))));
             else if (nm === 'line') { var q1 = F([+el.getAttribute('x1'), +el.getAttribute('y1')]), q2 = F([+el.getAttribute('x2'), +el.getAttribute('y2')]);
               el.setAttribute('x1', f1(q1[0])); el.setAttribute('y1', f1(q1[1])); el.setAttribute('x2', f1(q2[0])); el.setAttribute('y2', f1(q2[1])); }
             else if (nm !== 'g' && nm !== 'title' && nm !== 'tspan') {   // anything else (a circle, a rect, a text) moved by its centre
               var b; try { b = el.getBBox(); } catch (x) { return; }
-              var m = [b.x + b.width / 2, b.y + b.height / 2], q = F(m);
+              var m = [b.x + b.width / 2, b.y + b.height / 2], q = (nm !== 'text' && endShape(o, n, m) || F)(m);
               el.setAttribute('transform', 'translate(' + f1(q[0] - m[0]) + ' ' + f1(q[1] - m[1]) + ')' + (el.getAttribute('transform') ? ' ' + el.getAttribute('transform') : ''));
             }
           });
