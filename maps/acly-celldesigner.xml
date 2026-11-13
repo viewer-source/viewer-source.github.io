@@ -10,7 +10,7 @@
 <celldesigner:listOfSpeciesAliases>
 <celldesigner:speciesAlias id="sa_n0" species="s_n0">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="858.009113" y="264.49176413657233" w="36.0" h="36.0"/>
+<celldesigner:bounds x="894.0" y="260.492" w="36.0" h="36.0"/>
 <celldesigner:font size="12"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
