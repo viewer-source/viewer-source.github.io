@@ -2573,9 +2573,9 @@ page, so its styles keep the base they were made on). The looks before (Default 
       kept = null;
     }
     function keep(m) {   // the edited picture, while the site still shows the version before the last save; or a draft
-      var mine = !hasToken() && drafts[m.id];
+      var mine = editorAsked && !hasToken() && drafts[m.id];   // only where the Edit tab is (user, 2026-11-13: the demo shows the site's maps)
       if (kept && kept.id === m.id) {
-        if (kept.draft ? !hasToken() : behind(m, kept)) return kept;
+        if (kept.draft ? editorAsked && !hasToken() : behind(m, kept)) return kept;
         dropKept();
       }
       if (mine) return (kept = fromStore(m, mine, true));
@@ -2630,7 +2630,7 @@ page, so its styles keep the base they were made on). The looks before (Default 
         (all || []).forEach(function (r) { if (r && r.id && !drafts[r.id]) drafts[r.id] = r; });
         draftIds();
         var m = current && byId[current.id];
-        if (m && drafts[m.id] && !hasToken() && !grid.classList.contains('m2-editing')) put(m, true);
+        draftsShown();
       }).catch(function () {}).then(function () { draftsDone = true; });
     })();
     // the reader's folder (layer 2, user, 2026-11-13: the editor writes into it): { dir (its handle), files (map id ->
@@ -2683,6 +2683,10 @@ page, so its styles keep the base they were made on). The looks before (Default 
       if (!editor) { editorLoad(); return; }   // the editor not loaded yet (a page just opened): a moment, then the link works
       editor.chooseFolder().then(function () { if (folderName()) k.hidden = true; }, function (er) { k.textContent = 'No folder chosen: ' + (er && er.message ? er.message : er) + '.'; });
     });
+    function draftsShown() {   // the map shown taken again when its draft can be shown now (the drafts read, the editor here)
+      var m = current && byId[current.id];
+      if (m && drafts[m.id] && editorAsked && !hasToken() && !grid.classList.contains('m2-editing')) put(m, true);
+    }
     document.getElementById('m2-draft-back').addEventListener('click', function (e) {   // the reader's changes let go
       e.preventDefault();
       var m = current && byId[current.id];
@@ -2738,7 +2742,7 @@ page, so its styles keep the base they were made on). The looks before (Default 
     setTimeout(function () {   // after the viewer's script has run to its end
       var s = document.createElement('script');
       s.src = EDITOR + 'editor.js' + BUILD;
-      s.onload = function () { editor = window.m2Editor(V); };
+      s.onload = function () { editor = window.m2Editor(V); draftsShown(); };
       s.onerror = function () { editorAsked = false; };
       document.head.appendChild(s);
     }, 0);
