@@ -319,8 +319,9 @@ says "the workbench", "the converter's repository", "a private repository".
 - Right-click menu over the map (user, 2026-11-12; `--m2-context: 1`, off in the viewer's own look): shortcuts to what
   the tabs and buttons already do, never the only way to it (phones have no right click). One layer, no submenus (user,
   2026-11-12: the shortcut is for what is aimed for on the page, as downloads and edit; the view, colours, link and the
-  other files stay in the viewer's own buttons, the address bar and Downloads): Edit mode (where the Edit tab shows;
-  in edit mode View mode in its place, and no molecule rows: right click works everywhere the same way, the right drag
+  other files stay in the viewer's own buttons, the address bar and Downloads): Switch to edit (where the Edit tab shows;
+  in edit mode Switch to viewer in its place, both with their shortcut on the right, ⌘E on Apple and Ctrl+E elsewhere,
+  user 2026-11-13, were Edit mode and View mode; and no molecule rows: right click works everywhere the same way, the right drag
   that moved the map in edit mode taken out, a drag on empty space moves it as in view mode; user, 2026-11-12),
   Download GraphML or Download CellDesigner XML (the map's source only; user, 2026-11-12: was "CellDesigner file"),
   Open in Newt, Open in MINERVA (in this order, user 2026-11-12; where the map has them, to respect the tools already

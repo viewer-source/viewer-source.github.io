@@ -544,6 +544,8 @@ look="panel" (user, 2026-11-10): Default Panel of the styles experiment, its own
   .m2-cx button:hover, .m2-cx a:hover, .m2-cx button:focus-visible, .m2-cx a:focus-visible, .m2-cx .m2-cx-open > button { background: var(--m2-accent); color: var(--m2-on-accent); outline: none; }
   .m2-cx svg { width: 13px; height: 13px; flex: none; }
   .m2-cx .m2-cx-arrow { font-size: 10px; flex: none; }
+  .m2-cx .m2-cx-key { flex: none; font-size: 12px; color: var(--m2-muted, #5f6368); }
+  .m2-cx button:hover .m2-cx-key, .m2-cx button:focus-visible .m2-cx-key { color: inherit; }
   .m2-cx .m2-sep { border-top: 1px solid var(--m2-line); margin: 4px 0; }
   .m2-cx .m2-cx-head { padding: 4px 12px; color: var(--m2-muted, #5f6368); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .m2-cx .m2-cx-sub { position: relative; }
@@ -2559,8 +2561,10 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
       var anchor = ed && !unanchor && window.m2EditAddAnchor && window.m2EditAddAnchor();   // a line under the pointer
       if (unanchor) { item(box, 'Remove anchor point', unanchor); sep(box); }
       else if (anchor) { item(box, 'Add anchor point', anchor); sep(box); }
-      if (ed) item(box, 'View mode', function () { tab('list'); });   // leaving the Edit window ends editing
-      else if (eb && eb.offsetParent) item(box, 'Edit mode', function () { tab('edit'); });
+      // its shortcut beside it, as Apple's and Windows' menus write it (user, 2026-11-13)
+      var key = '<span class="m2-cx-key">' + (/Mac|iPhone|iPad|iPod/.test((navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || navigator.userAgent) ? '\u2318E' : 'Ctrl+E') + '</span>';
+      if (ed) item(box, 'Switch to viewer', function () { tab('list'); }, key);   // leaving the Edit window ends editing
+      else if (eb && eb.offsetParent) item(box, 'Switch to edit', function () { tab('edit'); }, key);
       if (document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen)
         item(box, isPageFull() ? 'Exit full screen' : 'Full screen with tools', pageFull);
       var src = (m.legend === 'celldesigner' ? ['CellDesigner', 'GraphML'] : ['GraphML', 'CellDesigner']).filter(function (l) { return url[l]; })[0];   // the format the map is drawn from
