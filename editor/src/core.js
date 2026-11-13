@@ -286,6 +286,7 @@
     // out, a map taken off the list stays off
     function syncFolder() {
       if (!canFolder || !V.folderName()) return Promise.resolve();
+      var news = false;
       var all = function (dir) {
         var it = dir.values(), out = [];
         return (function next() { return it.next().then(function (x) { if (x.done) return out; out.push(x.value); return next(); }); })();
@@ -294,23 +295,24 @@
         if (!f) return;
         return f.dir.queryPermission({ mode: 'readwrite' }).then(function (p) {
           if (p !== 'granted') return;
-          var ours = {}, byFile = {};
+          var ours = {}, byFile = {}, siteFiles = {};
           Object.keys(f.files).forEach(function (id) { ours[f.files[id].name] = id; });
           Object.keys(V.mine).forEach(function (id) { byFile[V.mine[id].file] = V.mine[id]; });
+          V.maps.forEach(function (m) { if (!m.mine) siteFiles[(graphmlOf(m) || '').split('?')[0].split('/').pop()] = 1; });   // the site's maps' files (a draft kept here)
           return all(f.dir).then(function (hs) {
             return hs.filter(function (h) { return h.kind === 'file' && /\.(graphml|xml)$/i.test(h.name); }).reduce(function (q, h) {
               return q.then(function () {
                 var id = ours[h.name];
-                if (id && !V.mine[id]) return;   // a site's map kept here
+                if (id ? !V.mine[id] : siteFiles[h.name.replace(/-\d+(\.[^.]+)$/, '$1')]) return;   // a site's map kept here
                 var r = id ? V.mine[id] : byFile[h.name], w = r && f.files[r.id];
                 if (r && r.hidden) return;
+                if (!id && w && w.name !== h.name) return;   // the reader's own file beside the one written here for that map
                 return h.getFile().then(function (fl) {
                   if (r && w && fl.lastModified === w.mod && fl.size === w.size) return;
                   return fl.text().then(function (t) {
-                    return drawText(t).then(function (d) {
-                      var n = Object.assign({}, r || { id: 'mine-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), title: h.name.replace(/\.(graphml|xml)$/i, ''), file: h.name },
-                        { text: t, svg: d.svg, width: d.width, height: d.height, at: Date.now(), hidden: false });
-                      return V.minePut(n).then(function () { return V.folderFile(n.id, { name: h.name, mod: fl.lastModified, size: fl.size }); });
+                    return drawText(t).then(function (d) { return V.mineAdd(h.name, t, d, r && r.id); }).then(function (n) {
+                      news = true;
+                      return V.folderFile(n.id, { name: h.name, mod: fl.lastModified, size: fl.size });
                     });
                   });
                 }).catch(function () {});   // not a map this viewer can draw: left out
@@ -318,11 +320,12 @@
             }, Promise.resolve());
           });
         });
-      }).then(function () { V.refreshMine(); }, function () {});
+      }).then(function () { if (news) V.refreshMine(); }, function () {});
     }
     // a reader's own map drawn for the list (My maps): as the build draws, with the role classes
     function drawText(t) {
       var c = isCd(t);
+      if (!c && !/<graphml[\s>]/.test(t.slice(0, 3000))) return Promise.reject(new Error('not a GraphML or CellDesigner file'));
       return (c ? cdpy() : yr()).then(function () {
         var svg = c ? window.cdrender.render(t, { classes: true }) : window.yrender.render(t, { classes: true }).svg;
         var w = svg.match(/ width="([\d.]+)" height="([\d.]+)"/);
@@ -833,6 +836,7 @@
       if (saveTimer) push();   // a move still waiting is saved now
       if (site && site.id && undo.length)   // not atSite(): a CellDesigner map's text follows a move only once drawn
         V.kept = { id: site.id, v: site.v, sha: site.sha, pic: V.img, width: map.width, height: map.height, x0: picX0(), y0: picY0(), text: src(), svg: nowSvg(), file: name, ref: siteRef, cur: nowRef(), draft: !!site.pending && !site.mine, mine: !!site.mine };
+      if (site && site.mine && !localTimer) V.refreshMine();   // its last version saved already: the list takes it (else local() does)
       if (helpBox) help(false);
       on = false; drag = null; band = null; V.grid.classList.remove('m2-editing'); paint(); buttons();
       if (dirty && !site) warn(name + ' has moves not saved: Back to it, or Save.'); else quiet();
@@ -904,7 +908,7 @@
 
     function save() {
       if (!text) return;
-      if (site) { if (token()) push(); return; }
+      if (site) { if (site.pending) { if (localTimer) local(); } else if (token()) push(); return; }   // kept in this browser (and the folder), never GitHub
       var blob = new Blob([src()], { type: 'application/xml' });
       var done = function () { dirty = false; quiet(); };
       var into = function (h) { return h.createWritable().then(function (w) { return w.write(blob).then(function () { return w.close(); }); }).then(done); };

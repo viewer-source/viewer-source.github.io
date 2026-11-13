@@ -411,7 +411,6 @@ page, so its styles keep the base they were made on). The looks before (Default 
   .m2-item:hover { background: var(--m2-hover); }
   .m2-item.m2-on { background: var(--m2-accent); color: var(--m2-on-accent); }
   .m2-item.m2-add { margin-top: 6px; color: var(--m2-muted); }   /* Add a map, at the list's end (My maps) */
-  .m2-item.m2-add { margin-top: 6px; color: var(--m2-muted); }   /* Add a map, at the list's end (My maps) */
   .m2-item:focus { outline: none; }
   .m2-none { font-size: 12px; color: var(--m2-muted); padding: 2px 4px; }
   /* groups as a list with sublists: the group name at the size of the
@@ -1845,7 +1844,7 @@ page, so its styles keep the base they were made on). The looks before (Default 
   // ---------- navigation ----------
   // one row per map: the topic, with the variant in brackets when a topic
   // has several maps, as in Glycogen metabolism (muscle)
-  function label(m) { return m.topic + (m.tab ? ' (' + m.tab + ')' : ''); }
+  function label(m) { return (m.mine ? m.title : m.topic) + (m.tab ? ' (' + m.tab + ')' : ''); }   // a reader's own map: its title (its topic is its id, so no site map's text is borrowed)
   var closed = {}; // groups closed by the reader, by name
   // remembered in the reader's browser, one set per atlas page (user, 2026-11-01: the view as the reader left it)
   var closedKey = 'atlas-closed:' + location.pathname;
@@ -2276,7 +2275,9 @@ page, so its styles keep the base they were made on). The looks before (Default 
   var siteList = null;
   function setMaps(list) {
     siteList = list;
-    maps = arrange(withMine(list)); byId = {}; topics = [];
+    var a = arrange(withMine(list));
+    maps = a.filter(function (m) { return m.mine; }).concat(a.filter(function (m) { return !m.mine; }));   // My maps first, whatever order the reader dragged
+    byId = {}; topics = [];
     railMark(); // the map count in the Info window
     maps.forEach(function (m) {
       byId[m.id] = m;
@@ -2594,7 +2595,7 @@ page, so its styles keep the base they were made on). The looks before (Default 
     }
     function keep(m) {   // the edited picture, while the site still shows the version before the last save; or a draft
       var mine = editorAsked && !hasToken() && drafts[m.id];   // only where the Edit tab is (user, 2026-11-13: the demo shows the site's maps)
-      if (kept && kept.id === m.id && kept.mine) return kept;   // an own map just edited, until its new version is in the list
+      if (kept && kept.id === m.id && kept.mine) { if (kept.v === ver(m)) return kept; dropKept(); }   // an own map just edited, until its new version is in the list
       if (kept && kept.id === m.id) {
         if (kept.draft ? editorAsked && !hasToken() : behind(m, kept)) return kept;
         dropKept();
@@ -2732,7 +2733,7 @@ page, so its styles keep the base they were made on). The looks before (Default 
         u = mineURLs[r.id] = { at: r.at, svg: URL.createObjectURL(new Blob([r.svg], { type: 'image/svg+xml' })), text: URL.createObjectURL(new Blob([r.text], { type: 'application/xml' })) };
       }
       var cdm = /<sbml[\s>]/.test(r.text.slice(0, 3000)) && r.text.indexOf('celldesigner') >= 0;
-      return { id: r.id, title: r.title, group: 'My maps', topic: r.title, mine: true, file: r.file, width: r.width, height: r.height, v: String(r.at),
+      return { id: r.id, title: r.title, group: 'My maps', topic: r.id, mine: true, file: r.file, width: r.width, height: r.height, v: String(r.at),
         image: u.svg, legend: cdm ? 'celldesigner' : 'sbgn', downloads: [{ label: cdm ? 'CellDesigner' : 'GraphML', url: u.text }] };
     }
     function withMine(list) {
@@ -2741,14 +2742,20 @@ page, so its styles keep the base they were made on). The looks before (Default 
     }
     function refreshMine() {   // the list again with the reader's maps as they are now; the map shown kept, else the first
       if (!siteList) return;
-      var was = chosen && chosen.id;   // the map asked for (while editing, current is the editor's own)
+      var was = chosen && chosen.id, before = maps, editing = grid.classList.contains('m2-editing');   // the map asked for (while editing, current is the editor's own)
       setMaps(siteList);
+      forgetOld(before);
       var box = document.querySelector('.m2-set-examples'), own = mineShown().length;
       if (box) box.style.display = own ? '' : 'none';
       document.querySelectorAll('#m2-set-examples button').forEach(function (b) { b.classList.toggle('m2-on', (b.dataset.examples === 'hidden') === examplesHidden()); });
       if (was && byId[was]) chosen = byId[was];
-      if (was && !byId[was] && maps[0] && !grid.classList.contains('m2-editing')) go(maps[0].id);
-      else buildList(document.getElementById('m2-search').value);
+      var h = location.hash.slice(1);
+      if (editing) return buildList(document.getElementById('m2-search').value);
+      if (byId[h] && (!was || was !== h)) return route();   // an own map's address after a reload, once the reader's maps are in
+      if (was && !byId[was] && maps[0]) return go(maps[0].id);
+      var m = current && byId[current.id];
+      if (m && m.mine && ver(m) !== ver(current)) show(m, true);   // its new version on screen (the old addresses are let go)
+      buildList(document.getElementById('m2-search').value);
     }
     document.querySelectorAll('#m2-set-examples button').forEach(function (b) {
       b.addEventListener('click', function () {
@@ -2761,19 +2768,21 @@ page, so its styles keep the base they were made on). The looks before (Default 
       r.hidden = true; minePut(r).catch(function () {});
       refreshMine();
     }
-    function addFiles(list) {   // a reader's files, drawn and kept; the same file again (by its name) brings its map back up to date
+    // one way to make or update a reader's map, for files added here and found in their folder (the editor): by its id,
+    // else by its file's name (the same file again brings its map back, up to date)
+    function mineAdd(name, text, d, id) {
+      var old = id ? mine[id] : Object.keys(mine).map(function (k) { return mine[k]; }).filter(function (r) { return r.file === name; })[0];
+      var r = { id: old ? old.id : 'mine-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), title: old ? old.title : name.replace(/\.(graphml|xml)$/i, ''),
+        file: old ? old.file : name, text: text, svg: d.svg, width: d.width, height: d.height, at: Date.now(), hidden: false };
+      return minePut(r).then(function () { return r; });
+    }
+    function addFiles(list) {   // a reader's files, drawn and kept
       if (!editor) return;
       var picked = Array.prototype.filter.call(list, function (f) { return /\.(graphml|xml)$/i.test(f.name); });
       var last = null;
       return picked.reduce(function (p, f) {
         return p.then(function () { return f.text(); }).then(function (t) {
-          return editor.drawText(t).then(function (d) {
-            var old = Object.keys(mine).map(function (k) { return mine[k]; }).filter(function (r) { return r.file === f.name; })[0];
-            var r = { id: old ? old.id : 'mine-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), title: f.name.replace(/\.(graphml|xml)$/i, ''),
-              file: f.name, text: t, svg: d.svg, width: d.width, height: d.height, at: Date.now(), hidden: false };
-            last = r.id;
-            return minePut(r).then(function () { return editor.toFolder(r.id, r.file, t); });
-          });
+          return editor.drawText(t).then(function (d) { return mineAdd(f.name, t, d); }).then(function (r) { last = r.id; return editor.toFolder(r.id, r.file, t); });
         }).catch(function (e) { alert(f.name + ' was not added: ' + (e && e.message ? e.message : e)); });
       }, Promise.resolve()).then(function () { refreshMine(); if (last) go(last); });
     }
@@ -2787,9 +2796,9 @@ page, so its styles keep the base they were made on). The looks before (Default 
       b.addEventListener('click', function () { picker.click(); });
       box.appendChild(b);
     }
-    document.addEventListener('dragover', function (e) { if (editorAsked && e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types, 'Files') >= 0) e.preventDefault(); });
+    document.addEventListener('dragover', function (e) { if (editor && e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types, 'Files') >= 0) e.preventDefault(); });
     document.addEventListener('drop', function (e) {
-      if (!editorAsked || !e.dataTransfer || !e.dataTransfer.files.length) return;
+      if (!editor || !e.dataTransfer || !e.dataTransfer.files.length) return;   // before the editor is in, the browser's own
       e.preventDefault(); addFiles(e.dataTransfer.files);
     });
     function draftsShown() {   // the map shown taken again when its draft can be shown now (the drafts read, the editor here)
@@ -2837,6 +2846,7 @@ page, so its styles keep the base they were made on). The looks before (Default 
     mine: { get: function () { return mine; } },
     mineIn: { get: function () { return mineIn; } },
     minePut: { get: function () { return minePut; } },
+    mineAdd: { get: function () { return mineAdd; } },
     refreshMine: { get: function () { return refreshMine; } },
     tokenKey: { get: function () { return TOKEN_KEY; } },
     drafts: { get: function () { return drafts; } },
