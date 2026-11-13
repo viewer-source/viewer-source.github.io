@@ -388,6 +388,9 @@ page, so its styles keep the base they were made on). The looks before (Default 
      unified look, as segmented controls keep their segments equal: Apple HIG, Primer) */
   #m2-setwin .m2-set-row:not(#m2-set-colours) { display: grid; grid-template-columns: repeat(2, 1fr); max-width: 176px; }
   #m2-setwin .m2-set-row:not(#m2-set-colours) button { min-width: 0; text-align: center; white-space: nowrap; }
+  /* everything in Settings keeps the button rows' width when the panel is dragged wider (user, 2026-11-14: "there is
+     some sufficient width, and it should stay simply there"): the slider, its value and the colour choices no longer stretch */
+  #m2-setwin > *, #m2-setwin > div > * { max-width: 176px; }
   /* Map size as a slider (user, 2026-11-12: the six buttons visually noisy), 5% steps from 75 to 150% (user, 2026-11-12:
      more steps in between; were five), ticks at 75, 100, 125 and 150 only; the value beside the name */
   #m2-set-size-v { float: right; color: var(--m2-muted); }
