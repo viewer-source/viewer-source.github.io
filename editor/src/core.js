@@ -647,7 +647,7 @@
     function stop() {
       if (!on) return;
       if (saveTimer) push();   // a move still waiting is saved now
-      if (site && site.id && undo.length && !atSite())
+      if (site && site.id && undo.length)   // not atSite(): a CellDesigner map's text follows a move only once drawn
         V.kept = { id: site.id, v: site.v, sha: site.sha, pic: V.img, width: map.width, height: map.height, x0: picX0(), y0: picY0(), text: src(), ref: siteRef, cur: nowRef(), draft: !!site.pending };
       if (helpBox) help(false);
       on = false; drag = null; band = null; V.grid.classList.remove('m2-editing'); paint(); buttons();
