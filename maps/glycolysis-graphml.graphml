@@ -1154,7 +1154,7 @@
     <edge id="e26" source="n24" target="n18">
       <data key="d33">
         <y:PolyLineEdge>
-          <y:Path sx="0.0" sy="0.0" tx="0.0" ty="15.0">
+          <y:Path sx="0.0" sy="0.0" tx="0" ty="0">
             <y:Point x="352" y="616"/>
           </y:Path>
           <y:LineStyle color="#000000" type="line" width="1.0"/>
