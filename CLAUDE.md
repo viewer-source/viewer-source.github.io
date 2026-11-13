@@ -377,7 +377,7 @@ says "the workbench", "the converter's repository", "a private repository".
   A modifier's end at
   a process glyph (user, 2026-11-13: "In Cell Designer, there is no central location for ports for processes") snaps
   only to CellDesigner's six places there, the four corners and the middles of the two sides off the main line, turned
-  with the line (no centre, nothing on the line's own sides); the arrow keys step to the next place the arrow points to;
+  with the line (no centre, nothing on the line's own sides), a drop on the centre taking the place facing the modifier (user, 2026-11-13: CellDesigner attaches a link only to a highlighted place, so no more thinking for the user than that); the arrow keys step to the next place the arrow points to;
   `cd_edit` writes `targetLineIndex` (`-1,2` to `-1,7`, cdrender's SQUARE) with the modifier's edit points, its anchor
   points staying where they are. The place travels as its number (`spot` on the modifier's y:Path in cd_edit's GraphML,
   set by the editor's setPort), never worked out from the end's offset: that offset is in the frame of the drawing the
