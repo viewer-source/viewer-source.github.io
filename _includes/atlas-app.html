@@ -2561,7 +2561,7 @@ page, so its styles keep the base they were made on). The looks before (Default 
       else if (!ed && own && editor.hasToken()) item(box, 'Remove map', function () { own.hideSite(m.id); });   // hidden here, its file stays
       if (document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen)
         item(box, isPageFull() ? 'Exit full screen' : 'Full screen with tools', pageFull);
-      var src = (m.shownAs ? ['SBGN-ML'] : m.legend === 'celldesigner' ? ['CellDesigner', 'GraphML'] : ['GraphML', 'CellDesigner']).filter(function (l) { return url[l]; })[0];   // the format the map is drawn from
+      var src = (m.shownAs ? ['SBGN-ML'] : m.legend === 'celldesigner' ? ['CellDesigner', 'GraphML'] : ['GraphML', 'CellDesigner', 'SBGN-ML']).filter(function (l) { return url[l]; })[0];   // the format the map is drawn from
       var sh = shown(m);   // what is on screen, where it is not the site's: its file under the name the editor read it by
       if (sh && sh.text && sh.file) item(box, /\.graphml$/i.test(sh.file) ? 'Download GraphML' : 'Download CellDesigner XML', function () { saveBlob(new Blob([sh.text], { type: 'application/xml' }), fileName(sh.file)); });
       else if (src) link(box, src === 'CellDesigner' ? 'Download CellDesigner XML' : 'Download ' + src, url[src], true);

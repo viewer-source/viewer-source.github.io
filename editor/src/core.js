@@ -126,7 +126,7 @@
     function toSite(name, text, group, order) {
       if (!(repo() && token())) return Promise.reject(new Error('not connected to GitHub'));
       var ext = /\.graphml$/i.test(name) ? '.graphml' : '.xml', base = name.replace(/\.(graphml|xml)$/i, ''),
-          slug = base.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'map';
+          slug = (base.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'map').replace(/-(sbgn|sbgnml)$/, '$&-map');   // the build's own ids end so
       var head = text.slice(0, 5000);
       if (ext === '.graphml' ? head.indexOf('yworks.com') < 0 : !(/<sbml[\s>]/.test(head) && text.indexOf('celldesigner') >= 0))
         return Promise.reject(new Error(ext === '.graphml' ? 'not a yEd GraphML file' : 'not a CellDesigner file'));

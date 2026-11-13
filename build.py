@@ -18,6 +18,11 @@
 #   .sbgn file gets that file drawn as well, read by the converter (renderers/converter/mapconv: sbgnml.read, the file's
 #   own places and sizes) into GraphML and drawn by yrender.js, with its click data: downloads/<id>-sbgnml.svg and
 #   atlas-data/<id>-sbgnml.json, named in the entry's sbgn; the viewer shows it when Settings' Source is SBGN-ML.
+# The group SBGN-ML (user, 2026-11-14: "our converter's output from GraphML"): every map of the group GraphML written as
+#   SBGN-ML by the converter's copy (advanced: the drawing kept, nothing adjusted for Newt) into downloads/<name>-sbgn.sbgn
+#   and drawn back from that file as above, a map of its own with the GraphML map's title and text, so the formats stand
+#   side by side and any difference from the GraphML drawing is ours to fix (reader, writer or yrender). Not edited: its
+#   first download is the SBGN-ML file.
 # maps/extra/<id>/ (optional): more files for a map's download row, copied to downloads/ under their own names and
 #   labelled by ending (.graphml GraphML, .xml CellDesigner, .sbgn SBGN-ML, -sbml.xml SBML, .png PNG, .csv Annotation):
 #   the full set of the official site, for every map (user, 2026-11-11: glycolysis first, then all, "why only two
@@ -211,9 +216,9 @@ def drawn(name, nodes, extra=b''):
     return {'image': '/downloads/%s.svg' % name, 'annotation': '/atlas-data/%s.json' % name, 'width': w, 'height': h, 'v': v}
 
 
-def sbgnml(src, mid, body):
-    # the SBGN-ML file through the converter to GraphML, then drawn and read as a GraphML map: the entry's sbgn and the
-    # search entries of its click data (s: 1). A file the converter or the renderer cannot take is said and left out,
+def sbgnml(src, name, body):
+    # the SBGN-ML file through the converter to GraphML, then drawn and read as a GraphML map into downloads/<name>.svg:
+    # the drawing (drawn()) and its click data. A file the converter or the renderer cannot take is said and left out,
     # never stopping the build of the other maps
     import contextlib, io, tempfile
     from mapconv import sbgnml as reader, graphml as writer, report
@@ -224,16 +229,42 @@ def sbgnml(src, mid, body):
         with tempfile.NamedTemporaryFile('w', suffix='.graphml', delete=False, encoding='utf-8') as f:
             f.write(text)
         tmp = f.name
-        nodes = graphml(tmp, os.path.join(ROOT, 'downloads', mid + '-sbgnml.svg'))
+        nodes = graphml(tmp, os.path.join(ROOT, 'downloads', name + '.svg'))
     except (Exception, SystemExit) as e:
         print('warning: %s not drawn, left out: %s' % (os.path.relpath(src, ROOT), str(e).splitlines()[0] if str(e) else type(e).__name__))
         return None, []
     finally:
         if tmp:
             os.unlink(tmp)
-    d = drawn(mid + '-sbgnml', nodes, body.encode())   # the text in its version too: the map's text is fetched with it
+    d = drawn(name, nodes, body.encode())   # the text in its version too: the map's text is fetched with it
     d['file'] = '/downloads/' + os.path.basename(src)
-    return d, [dict(e, s=1) for e in search_entries(mid, nodes)]
+    return d, nodes
+
+
+def sbgn_map(src, mid, fm, body):
+    # the group SBGN-ML (header): the GraphML map src written by the converter as SBGN-ML and drawn back from it; its
+    # entry and search entries, or none when the converter or the drawing fails (said, the build goes on)
+    from mapconv import routes
+    sid = re.sub(r'-graphml$', '', mid) + '-sbgn'
+    outs = routes.outputs(src)   # a map the converter cannot read gives one route that says why
+    out = next((o for o in outs if o.ending == '-advanced.sbgn'), outs[0])
+    text, said = routes.made(out)
+    if not text or out.ending != '-advanced.sbgn':
+        print('warning: %s not written as SBGN-ML, left out: %s' % (mid, '; '.join(t for _, t in said[-1:]) or 'no route'))
+        return None, []
+    path = os.path.join(ROOT, 'downloads', sid + '.sbgn')
+    with open(path, 'w', encoding='utf-8') as f:
+        f.write(text)
+    d, nodes = sbgnml(path, sid, body)
+    if not d:
+        os.unlink(path)   # no entry, so no file left behind
+        return None, []
+    e = dict(fm, group='SBGN-ML', order=fm['order'] + 100, image=d['image'], annotation=d['annotation'], width=d['width'],
+             height=d['height'], v=d['v'], legend='sbgn', downloads=[{'label': 'SBGN-ML', 'url': d['file']},
+                                                                     {'label': 'SVG', 'url': d['image']}])
+    for k in ('src', 'sbgn'):
+        e.pop(k, None)
+    return (sid, e), search_entries(sid, nodes)
 
 
 # ---------- the atlas ----------
@@ -303,12 +334,18 @@ def main():
         fm['downloads'] += extra(mid, meta)
         sb = sorted(glob.glob(os.path.join(ROOT, 'maps', 'extra', mid, '*.sbgn')))
         if sb:
-            fm['sbgn'], found = sbgnml(sb[0], mid, body)
-            search += found
+            fm['sbgn'], found = sbgnml(sb[0], mid + '-sbgnml', body)
+            search += [dict(e, s=1) for e in search_entries(mid, found)]
             if not fm['sbgn']:
                 del fm['sbgn']
-        with open(os.path.join(ROOT, '_maps', mid + '.md'), 'w', encoding='utf-8') as f:
-            f.write('---\n' + ''.join('%s: %s\n' % (k, json.dumps(v, ensure_ascii=False)) for k, v in fm.items()) + '---\n' + body + '\n')
+        entries = [(mid, fm)]
+        if ext == '.graphml' and fm['group'] == 'GraphML':
+            own, found = sbgn_map(src, mid, fm, body)
+            entries += [own] if own else []
+            search += found
+        for eid, e in entries:
+            with open(os.path.join(ROOT, '_maps', eid + '.md'), 'w', encoding='utf-8') as f:
+                f.write('---\n' + ''.join('%s: %s\n' % (k, json.dumps(v, ensure_ascii=False)) for k, v in e.items()) + '---\n' + body + '\n')
         print('%s: %s, %d clickable' % (mid, 'yEd' if ext == '.graphml' else 'CellDesigner', len(nodes)))
     db.save()
     json.dump(search, open(os.path.join(ROOT, 'atlas-data', 'search.json'), 'w', encoding='utf-8'),

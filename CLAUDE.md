@@ -505,6 +505,12 @@ says "the workbench", "the converter's repository", "a private repository".
   CellDesigner for a GraphML map, SBGN-ML, SBML and the annotation table copied from the official site's `downloads/`,
   the PNG made from the demo's own SVG at twice its size, white background, with headless Chromium) and `newt: true`,
   `minerva:` (the official map's MINERVA project) in its `maps/<id>.md`.
+  The group SBGN-ML (user, 2026-11-14: "our converter's output from GraphML"): every map of the group GraphML written by
+  the converter's copy as SBGN-ML (advanced, nothing adjusted for Newt) and drawn back from that file in the build
+  (`build.py`, its header), a map of its own (`<name>-sbgn`), so the three formats stand side by side and any difference
+  from the GraphML drawing is ours to fix (the converter's reader or writer, or yrender); the official site's SBGN-ML
+  (MINERVA's export) stays behind Settings' Source. Not edited (its first download is the SBGN-ML file); a reader's map
+  added to the site never takes an id ending in `-sbgn` or `-sbgnml`.
   One more group (user, 2026-11-13: "for testing ... this large map"), AsthmaMap: its mast cell map (submap PD01, the
   user's upload, the MINERVA project's source file) from its CellDesigner file and from a GraphML the converter made of
   it (`maps/asthmamap-*`, each with the other format in `maps/extra/`); a public map, kept as a large map for testing the
