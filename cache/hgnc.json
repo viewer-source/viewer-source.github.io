@@ -1,4 +1,64 @@
 {
+"HGNC:10019": {
+"Alias symbols": "RIP, RIP1, RIP-1",
+"Ensembl": "ENSG00000137275",
+"Entrez": "8737",
+"HGNC": "HGNC:10019",
+"HGNC symbol": "RIPK1",
+"Previous symbols": "",
+"RefSeq": "NM_003804",
+"uniprot": [
+"Q13546"
+]
+},
+"HGNC:10430": {
+"Alias symbols": "RSK1, HU-1, p90Rsk, MAPKAPK1",
+"Ensembl": "ENSG00000117676",
+"Entrez": "6195",
+"HGNC": "HGNC:10430",
+"HGNC symbol": "RPS6KA1",
+"Previous symbols": "",
+"RefSeq": "NM_002953",
+"uniprot": [
+"Q15418"
+]
+},
+"HGNC:10434": {
+"Alias symbols": "MSK1, RLPK",
+"Ensembl": "ENSG00000100784",
+"Entrez": "9252",
+"HGNC": "HGNC:10434",
+"HGNC symbol": "RPS6KA5",
+"Previous symbols": "",
+"RefSeq": "NM_004755",
+"uniprot": [
+"O75582"
+]
+},
+"HGNC:10436": {
+"Alias symbols": "S6K1, p70(S6K)-alpha, PS6K, S6K",
+"Ensembl": "ENSG00000108443",
+"Entrez": "6198",
+"HGNC": "HGNC:10436",
+"HGNC symbol": "RPS6KB1",
+"Previous symbols": "STK14A",
+"RefSeq": "NM_003161",
+"uniprot": [
+"P23443"
+]
+},
+"HGNC:1050": {
+"Alias symbols": "",
+"Ensembl": "ENSG00000015475",
+"Entrez": "637",
+"HGNC": "HGNC:1050",
+"HGNC symbol": "BID",
+"Previous symbols": "",
+"RefSeq": "NM_197966",
+"uniprot": [
+"P55957"
+]
+},
 "HGNC:10534": {
 "Alias symbols": "SAR1, Sara",
 "Ensembl": "ENSG00000079332",
@@ -21,6 +81,18 @@
 "RefSeq": "NM_016103",
 "uniprot": [
 "Q9Y6B6"
+]
+},
+"HGNC:10610": {
+"Alias symbols": "eotaxin, MGC22554",
+"Ensembl": "ENSG00000172156",
+"Entrez": "6356",
+"HGNC": "HGNC:10610",
+"HGNC symbol": "CCL11",
+"Previous symbols": "SCYA11",
+"RefSeq": "NM_002986",
+"uniprot": [
+"P51671"
 ]
 },
 "HGNC:10701": {
@@ -95,6 +167,30 @@
 "O94855"
 ]
 },
+"HGNC:1079": {
+"Alias symbols": "ETK, PSCTK3",
+"Ensembl": "ENSG00000102010",
+"Entrez": "660",
+"HGNC": "HGNC:1079",
+"HGNC symbol": "BMX",
+"Previous symbols": "",
+"RefSeq": "NM_001721",
+"uniprot": [
+"P51813"
+]
+},
+"HGNC:10840": {
+"Alias symbols": "p66, ShcA",
+"Ensembl": "ENSG00000160691",
+"Entrez": "6464",
+"HGNC": "HGNC:10840",
+"HGNC symbol": "SHC1",
+"Previous symbols": "SHC",
+"RefSeq": "NM_183001",
+"uniprot": [
+"P29353"
+]
+},
 "HGNC:10985": {
 "Alias symbols": "ORC1, lnc-HC, D13S327",
 "Ensembl": "ENSG00000102743",
@@ -107,6 +203,30 @@
 "Q9Y619"
 ]
 },
+"HGNC:11187": {
+"Alias symbols": "HGF, GF1",
+"Ensembl": "ENSG00000115904",
+"Entrez": "6654",
+"HGNC": "HGNC:11187",
+"HGNC symbol": "SOS1",
+"Previous symbols": "GINGF",
+"RefSeq": "NM_005633",
+"uniprot": [
+"Q07889"
+]
+},
+"HGNC:11240": {
+"Alias symbols": "SPHK",
+"Ensembl": "ENSG00000176170",
+"Entrez": "8877",
+"HGNC": "HGNC:11240",
+"HGNC symbol": "SPHK1",
+"Previous symbols": "",
+"RefSeq": "NM_182965, NM_021972",
+"uniprot": [
+"Q9NYA1"
+]
+},
 "HGNC:11257": {
 "Alias symbols": "SDR38C1",
 "Ensembl": "ENSG00000116096",
@@ -117,6 +237,30 @@
 "RefSeq": "NM_003124",
 "uniprot": [
 "P35270"
+]
+},
+"HGNC:11280": {
+"Alias symbols": "p62, p60, p62B, A170",
+"Ensembl": "ENSG00000161011",
+"Entrez": "8878",
+"HGNC": "HGNC:11280",
+"HGNC symbol": "SQSTM1",
+"Previous symbols": "PDB3, OSIL",
+"RefSeq": "NM_001142298",
+"uniprot": [
+"Q13501"
+]
+},
+"HGNC:11283": {
+"Alias symbols": "ASV, c-src",
+"Ensembl": "ENSG00000197122",
+"Entrez": "6714",
+"HGNC": "HGNC:11283",
+"HGNC symbol": "SRC",
+"Previous symbols": "SRC1",
+"RefSeq": "NM_005417",
+"uniprot": [
+"P12931"
 ]
 },
 "HGNC:11289": {
@@ -167,6 +311,30 @@
 "P42224"
 ]
 },
+"HGNC:11364": {
+"Alias symbols": "APRF",
+"Ensembl": "ENSG00000168610",
+"Entrez": "6774",
+"HGNC": "HGNC:11364",
+"HGNC symbol": "STAT3",
+"Previous symbols": "",
+"RefSeq": "NM_139276, NM_003150",
+"uniprot": [
+"P40763"
+]
+},
+"HGNC:11368": {
+"Alias symbols": "D12S1644, IL-4-STAT",
+"Ensembl": "ENSG00000166888",
+"Entrez": "6778",
+"HGNC": "HGNC:11368",
+"HGNC symbol": "STAT6",
+"Previous symbols": "",
+"RefSeq": "NM_003153",
+"uniprot": [
+"P42226"
+]
+},
 "HGNC:11389": {
 "Alias symbols": "PJS, LKB1",
 "Ensembl": "ENSG00000118046",
@@ -177,6 +345,18 @@
 "RefSeq": "NM_000455",
 "uniprot": [
 "Q15831"
+]
+},
+"HGNC:11491": {
+"Alias symbols": "",
+"Ensembl": "ENSG00000165025",
+"Entrez": "6850",
+"HGNC": "HGNC:11491",
+"HGNC symbol": "SYK",
+"Previous symbols": "",
+"RefSeq": "NM_001135052",
+"uniprot": [
+"P43405"
 ]
 },
 "HGNC:115": {
@@ -215,6 +395,222 @@
 "O15056"
 ]
 },
+"HGNC:11584": {
+"Alias symbols": "NAK",
+"Ensembl": "ENSG00000183735",
+"Entrez": "29110",
+"HGNC": "HGNC:11584",
+"HGNC symbol": "TBK1",
+"Previous symbols": "",
+"RefSeq": "NM_013254",
+"uniprot": [
+"Q9UHD2"
+]
+},
+"HGNC:11609": {
+"Alias symbols": "CYP5, CYP5A1, THAS, TXS, TXAS, TS",
+"Ensembl": "ENSG00000059377",
+"Entrez": "6916",
+"HGNC": "HGNC:11609",
+"HGNC symbol": "TBXAS1",
+"Previous symbols": "",
+"RefSeq": "NM_001061",
+"uniprot": [
+"P24557"
+]
+},
+"HGNC:11719": {
+"Alias symbols": "PSCTK4",
+"Ensembl": "ENSG00000135605",
+"Entrez": "7006",
+"HGNC": "HGNC:11719",
+"HGNC symbol": "TEC",
+"Previous symbols": "",
+"RefSeq": "NM_003215",
+"uniprot": [
+"P42680"
+]
+},
+"HGNC:11892": {
+"Alias symbols": "TNFSF2, DIF, TNF-alpha",
+"Ensembl": "ENSG00000232810",
+"Entrez": "7124",
+"HGNC": "HGNC:11892",
+"HGNC symbol": "TNF",
+"Previous symbols": "TNFA",
+"RefSeq": "NM_000594",
+"uniprot": [
+"P01375"
+]
+},
+"HGNC:11916": {
+"Alias symbols": "TNF-R, TNFAR, TNFR60, TNF-R-I, CD120a, TNF-R55",
+"Ensembl": "ENSG00000067182",
+"Entrez": "7132",
+"HGNC": "HGNC:11916",
+"HGNC symbol": "TNFRSF1A",
+"Previous symbols": "TNFR1",
+"RefSeq": "NM_001065",
+"uniprot": [
+"P19438"
+]
+},
+"HGNC:11917": {
+"Alias symbols": "TNFBR, TNFR80, TNF-R75, TNF-R-II, p75, CD120b",
+"Ensembl": "ENSG00000028137",
+"Entrez": "7133",
+"HGNC": "HGNC:11917",
+"HGNC symbol": "TNFRSF1B",
+"Previous symbols": "TNFR2",
+"RefSeq": "NM_001066",
+"uniprot": [
+"P20333"
+]
+},
+"HGNC:12019": {
+"Alias symbols": "",
+"Ensembl": "ENSG00000172236",
+"Entrez": "7177",
+"HGNC": "HGNC:12019",
+"HGNC symbol": "TPSAB1",
+"Previous symbols": "TPSB1, TPS1, TPS2",
+"RefSeq": "NM_003294",
+"uniprot": [
+"Q15661"
+]
+},
+"HGNC:12030": {
+"Alias symbols": "Hs.89862",
+"Ensembl": "ENSG00000102871",
+"Entrez": "8717",
+"HGNC": "HGNC:12030",
+"HGNC symbol": "TRADD",
+"Previous symbols": "",
+"RefSeq": "NM_001323552",
+"uniprot": [
+"Q15628"
+]
+},
+"HGNC:12031": {
+"Alias symbols": "EBI6",
+"Ensembl": "ENSG00000056558",
+"Entrez": "7185",
+"HGNC": "HGNC:12031",
+"HGNC symbol": "TRAF1",
+"Previous symbols": "",
+"RefSeq": "NM_005658",
+"uniprot": [
+"Q13077"
+]
+},
+"HGNC:12032": {
+"Alias symbols": "TRAP3, RNF117",
+"Ensembl": "ENSG00000127191",
+"Entrez": "7186",
+"HGNC": "HGNC:12032",
+"HGNC symbol": "TRAF2",
+"Previous symbols": "",
+"RefSeq": "NM_021138",
+"uniprot": [
+"Q12933"
+]
+},
+"HGNC:12033": {
+"Alias symbols": "CAP-1, CD40bp, CRAF1, LAP1, RNF118",
+"Ensembl": "ENSG00000131323",
+"Entrez": "7187",
+"HGNC": "HGNC:12033",
+"HGNC symbol": "TRAF3",
+"Previous symbols": "",
+"RefSeq": "NM_145725",
+"uniprot": [
+"Q13114"
+]
+},
+"HGNC:12036": {
+"Alias symbols": "RNF85",
+"Ensembl": "ENSG00000175104",
+"Entrez": "7189",
+"HGNC": "HGNC:12036",
+"HGNC symbol": "TRAF6",
+"Previous symbols": "",
+"RefSeq": "NM_145803",
+"uniprot": [
+"Q9Y4K3"
+]
+},
+"HGNC:12333": {
+"Alias symbols": "HTRP-1",
+"Ensembl": "ENSG00000144935",
+"Entrez": "7220",
+"HGNC": "HGNC:12333",
+"HGNC symbol": "TRPC1",
+"Previous symbols": "",
+"RefSeq": "NM_003304",
+"uniprot": [
+"P48995"
+]
+},
+"HGNC:12440": {
+"Alias symbols": "JTK1",
+"Ensembl": "ENSG00000105397",
+"Entrez": "7297",
+"HGNC": "HGNC:12440",
+"HGNC symbol": "TYK2",
+"Previous symbols": "",
+"RefSeq": "NM_001385197",
+"uniprot": [
+"P29597"
+]
+},
+"HGNC:12474": {
+"Alias symbols": "UbcH5A, UBCH5, UBC4/5, E2(17)KB1",
+"Ensembl": "ENSG00000072401",
+"Entrez": "7321",
+"HGNC": "HGNC:12474",
+"HGNC symbol": "UBE2D1",
+"Previous symbols": "SFT",
+"RefSeq": "NM_003338",
+"uniprot": [
+"P51668"
+]
+},
+"HGNC:12476": {
+"Alias symbols": "UbcH5C",
+"Ensembl": "ENSG00000109332",
+"Entrez": "7323",
+"HGNC": "HGNC:12476",
+"HGNC symbol": "UBE2D3",
+"Previous symbols": "",
+"RefSeq": "NM_181893",
+"uniprot": [
+"P61077"
+]
+},
+"HGNC:12492": {
+"Alias symbols": "UbcH-ben, UBC13, MGC8489",
+"Ensembl": "ENSG00000177889",
+"Entrez": "7334",
+"HGNC": "HGNC:12492",
+"HGNC symbol": "UBE2N",
+"Previous symbols": "",
+"RefSeq": "NM_003348",
+"uniprot": [
+"P61088"
+]
+},
+"HGNC:12494": {
+"Alias symbols": "UEV-1, CROC-1, UEV1A, CROC1",
+"Ensembl": "ENSG00000244687",
+"Entrez": "7335",
+"HGNC": "HGNC:12494",
+"HGNC symbol": "UBE2V1",
+"Previous symbols": "UBE2V",
+"RefSeq": "NM_021988",
+"uniprot": [
+"Q13404"
+]
+},
 "HGNC:12527": {
 "Alias symbols": "UGPP1, SVUGP2",
 "Ensembl": "ENSG00000169764",
@@ -225,6 +621,18 @@
 "RefSeq": "NM_006759",
 "uniprot": [
 "Q16851"
+]
+},
+"HGNC:12657": {
+"Alias symbols": "",
+"Ensembl": "ENSG00000141968",
+"Entrez": "7409",
+"HGNC": "HGNC:12657",
+"HGNC symbol": "VAV1",
+"Previous symbols": "VAV",
+"RefSeq": "NM_001258206",
+"uniprot": [
+"P15498"
 ]
 },
 "HGNC:12735": {
@@ -239,6 +647,18 @@
 "O00401"
 ]
 },
+"HGNC:12749": {
+"Alias symbols": "WSCR5, HSPC046, LAB, NTAL",
+"Ensembl": "ENSG00000086730",
+"Entrez": "7462",
+"HGNC": "HGNC:12749",
+"HGNC symbol": "LAT2",
+"Previous symbols": "WBSCR15, WBSCR5",
+"RefSeq": "NM_014146",
+"uniprot": [
+"Q9GZY6"
+]
+},
 "HGNC:13205": {
 "Alias symbols": "STLK6, CALS-21, PAPK, ILPIPA, ILPIP",
 "Ensembl": "ENSG00000082146",
@@ -249,6 +669,18 @@
 "RefSeq": "NM_018571",
 "uniprot": [
 "Q9C0K7"
+]
+},
+"HGNC:14120": {
+"Alias symbols": "",
+"Ensembl": "ENSG00000197253",
+"Entrez": "64499",
+"HGNC": "HGNC:14120",
+"HGNC symbol": "TPSB2",
+"Previous symbols": "",
+"RefSeq": "NM_024164",
+"uniprot": [
+"P20231"
 ]
 },
 "HGNC:14131": {
@@ -275,6 +707,18 @@
 "P27708"
 ]
 },
+"HGNC:14348": {
+"Alias symbols": "OMI, PARK13",
+"Ensembl": "ENSG00000115317",
+"Entrez": "27429",
+"HGNC": "HGNC:14348",
+"HGNC symbol": "HTRA2",
+"Previous symbols": "PRSS25",
+"RefSeq": "NM_013247",
+"uniprot": [
+"O43464"
+]
+},
 "HGNC:1442": {
 "Alias symbols": "CAMI, PHKD, DD132, PHKD1",
 "Ensembl": "ENSG00000198668",
@@ -297,6 +741,18 @@
 "RefSeq": "NM_001743",
 "uniprot": [
 "P0DP24"
+]
+},
+"HGNC:14458": {
+"Alias symbols": "KIAA0571",
+"Ensembl": "ENSG00000033327",
+"Entrez": "9846",
+"HGNC": "HGNC:14458",
+"HGNC symbol": "GAB2",
+"Previous symbols": "",
+"RefSeq": "NM_080491",
+"uniprot": [
+"Q9UQC2"
 ]
 },
 "HGNC:1449": {
@@ -323,6 +779,18 @@
 "Q9UQM7"
 ]
 },
+"HGNC:14639": {
+"Alias symbols": "MRP8",
+"Ensembl": "ENSG00000121270",
+"Entrez": "85320",
+"HGNC": "HGNC:14639",
+"HGNC symbol": "ABCC11",
+"Previous symbols": "",
+"RefSeq": "NM_032583",
+"uniprot": [
+"Q96J66"
+]
+},
 "HGNC:1470": {
 "Alias symbols": "CAMKK, KIAA0787, CAMKKB, MGC15254",
 "Ensembl": "ENSG00000110931",
@@ -345,6 +813,114 @@
 "RefSeq": "NM_001193267",
 "uniprot": [
 "Q9NXA8"
+]
+},
+"HGNC:14983": {
+"Alias symbols": "PZF, ZNF757",
+"Ensembl": "ENSG00000186660",
+"Entrez": "80829",
+"HGNC": "HGNC:14983",
+"HGNC symbol": "ZFP91",
+"Previous symbols": "",
+"RefSeq": "NM_053023",
+"uniprot": [
+"Q96JP5"
+]
+},
+"HGNC:1500": {
+"Alias symbols": "MCH4, FLICE-2",
+"Ensembl": "ENSG00000003400",
+"Entrez": "843",
+"HGNC": "HGNC:1500",
+"HGNC symbol": "CASP10",
+"Previous symbols": "",
+"RefSeq": "NM_032977",
+"uniprot": [
+"Q92851"
+]
+},
+"HGNC:1503": {
+"Alias symbols": "ICH1, PPP1R57, MGC2181",
+"Ensembl": "ENSG00000106144",
+"Entrez": "835",
+"HGNC": "HGNC:1503",
+"HGNC symbol": "CASP2",
+"Previous symbols": "NEDD2",
+"RefSeq": "NM_032982",
+"uniprot": [
+"P42575"
+]
+},
+"HGNC:1504": {
+"Alias symbols": "CPP32, CPP32B, Yama, apopain",
+"Ensembl": "ENSG00000164305",
+"Entrez": "836",
+"HGNC": "HGNC:1504",
+"HGNC symbol": "CASP3",
+"Previous symbols": "",
+"RefSeq": "NM_004346",
+"uniprot": [
+"P42574"
+]
+},
+"HGNC:1507": {
+"Alias symbols": "MCH2, caspase-6, CSP-6",
+"Ensembl": "ENSG00000138794",
+"Entrez": "839",
+"HGNC": "HGNC:1507",
+"HGNC symbol": "CASP6",
+"Previous symbols": "",
+"RefSeq": "NM_001226",
+"uniprot": [
+"P55212"
+]
+},
+"HGNC:1508": {
+"Alias symbols": "MCH3, CMH-1, ICE-LAP3",
+"Ensembl": "ENSG00000165806",
+"Entrez": "840",
+"HGNC": "HGNC:1508",
+"HGNC symbol": "CASP7",
+"Previous symbols": "",
+"RefSeq": "NM_033338",
+"uniprot": [
+"P55210"
+]
+},
+"HGNC:1509": {
+"Alias symbols": "MCH5, MACH, FLICE, Casp-8",
+"Ensembl": "ENSG00000064012",
+"Entrez": "841",
+"HGNC": "HGNC:1509",
+"HGNC symbol": "CASP8",
+"Previous symbols": "",
+"RefSeq": "NM_001228",
+"uniprot": [
+"Q14790"
+]
+},
+"HGNC:1510": {
+"Alias symbols": "FLASH, CED-4, RIP25, FLJ11208, KIAA1315",
+"Ensembl": "ENSG00000118412",
+"Entrez": "9994",
+"HGNC": "HGNC:1510",
+"HGNC symbol": "CASP8AP2",
+"Previous symbols": "",
+"RefSeq": "NM_001137667",
+"uniprot": [
+"Q9UKL3"
+]
+},
+"HGNC:1511": {
+"Alias symbols": "MCH6, ICE-LAP6, APAF-3, PPP1R56",
+"Ensembl": "ENSG00000132906",
+"Entrez": "842",
+"HGNC": "HGNC:1511",
+"HGNC symbol": "CASP9",
+"Previous symbols": "",
+"RefSeq": "NM_032996",
+"uniprot": [
+"P55211"
 ]
 },
 "HGNC:1527": {
@@ -383,6 +959,42 @@
 "Q14703"
 ]
 },
+"HGNC:1548": {
+"Alias symbols": "SDR21C1",
+"Ensembl": "ENSG00000159228",
+"Entrez": "873",
+"HGNC": "HGNC:1548",
+"HGNC symbol": "CBR1",
+"Previous symbols": "CBR",
+"RefSeq": "NM_001286789",
+"uniprot": [
+"P16152"
+]
+},
+"HGNC:16049": {
+"Alias symbols": "p23, TEBP, cPGES",
+"Ensembl": "ENSG00000110958",
+"Entrez": "10728",
+"HGNC": "HGNC:16049",
+"HGNC symbol": "PTGES3",
+"Previous symbols": "",
+"RefSeq": "NM_006601",
+"uniprot": [
+"Q15185"
+]
+},
+"HGNC:16393": {
+"Alias symbols": "CARMA1, BIMP3",
+"Ensembl": "ENSG00000198286",
+"Entrez": "84433",
+"HGNC": "HGNC:16393",
+"HGNC symbol": "CARD11",
+"Previous symbols": "",
+"RefSeq": "NM_032415",
+"uniprot": [
+"Q9BXL7"
+]
+},
 "HGNC:16505": {
 "Alias symbols": "HGB, STAP",
 "Ensembl": "ENSG00000161544",
@@ -393,6 +1005,30 @@
 "RefSeq": "NM_134268",
 "uniprot": [
 "Q8WWM9"
+]
+},
+"HGNC:16809": {
+"Alias symbols": "",
+"Ensembl": "ENSG00000108854",
+"Entrez": "64750",
+"HGNC": "HGNC:16809",
+"HGNC symbol": "SMURF2",
+"Previous symbols": "",
+"RefSeq": "NM_022739",
+"uniprot": [
+"Q9HAU4"
+]
+},
+"HGNC:16852": {
+"Alias symbols": "KIAA0671, SOCS-5, CIS6, CISH6, Cish5",
+"Ensembl": "ENSG00000171150",
+"Entrez": "9655",
+"HGNC": "HGNC:16852",
+"HGNC symbol": "SOCS5",
+"Previous symbols": "",
+"RefSeq": "NM_014011",
+"uniprot": [
+"O75159"
 ]
 },
 "HGNC:16902": {
@@ -419,6 +1055,54 @@
 "Q9Y2H2"
 ]
 },
+"HGNC:17075": {
+"Alias symbols": "KIAA0733",
+"Ensembl": "ENSG00000055208",
+"Entrez": "23118",
+"HGNC": "HGNC:17075",
+"HGNC symbol": "TAB2",
+"Previous symbols": "MAP3K7IP2",
+"RefSeq": "NM_001292034",
+"uniprot": [
+"Q9NYJ8"
+]
+},
+"HGNC:17294": {
+"Alias symbols": "AF9Q34, DIP1/2, KIAA1743, AIP1",
+"Ensembl": "ENSG00000136848",
+"Entrez": "153090",
+"HGNC": "HGNC:17294",
+"HGNC symbol": "DAB2IP",
+"Previous symbols": "",
+"RefSeq": "NM_032552",
+"uniprot": [
+"Q5VWQ8"
+]
+},
+"HGNC:1777": {
+"Alias symbols": "PLSTIRE",
+"Ensembl": "ENSG00000105810",
+"Entrez": "1021",
+"HGNC": "HGNC:1777",
+"HGNC symbol": "CDK6",
+"Previous symbols": "",
+"RefSeq": "NM_001145306",
+"uniprot": [
+"Q00534"
+]
+},
+"HGNC:17890": {
+"Alias symbols": "GSTS, PGDS, H-PGDS, PGD2, GSTS1-1, GSTS1",
+"Ensembl": "ENSG00000163106",
+"Entrez": "27306",
+"HGNC": "HGNC:17890",
+"HGNC symbol": "HPGDS",
+"Previous symbols": "",
+"RefSeq": "NM_014485",
+"uniprot": [
+"O60760"
+]
+},
 "HGNC:17996": {
 "Alias symbols": "AGAS, ARGA, NAT7",
 "Ensembl": "ENSG00000161653",
@@ -429,6 +1113,66 @@
 "RefSeq": "NM_153006",
 "uniprot": [
 "Q8N159"
+]
+},
+"HGNC:18157": {
+"Alias symbols": "",
+"Ensembl": "ENSG00000100324",
+"Entrez": "10454",
+"HGNC": "HGNC:18157",
+"HGNC symbol": "TAB1",
+"Previous symbols": "MAP3K7IP1",
+"RefSeq": "NM_153497",
+"uniprot": [
+"Q15750"
+]
+},
+"HGNC:18173": {
+"Alias symbols": "ARTS-1, A-LAP, PILS-AP, KIAA0525, ERAAP1",
+"Ensembl": "ENSG00000164307",
+"Entrez": "51752",
+"HGNC": "HGNC:18173",
+"HGNC symbol": "ERAP1",
+"Previous symbols": "",
+"RefSeq": "NM_016442",
+"uniprot": [
+"Q9NZ08"
+]
+},
+"HGNC:1876": {
+"Alias symbols": "CASH, Casper, CLARP, FLAME, FLIP, I-FLICE, MRIT, c-FLIP, cFLIP",
+"Ensembl": "ENSG00000003402",
+"Entrez": "8837",
+"HGNC": "HGNC:1876",
+"HGNC symbol": "CFLAR",
+"Previous symbols": "CASP8AP1",
+"RefSeq": "NM_003879",
+"uniprot": [
+"O15519"
+]
+},
+"HGNC:19383": {
+"Alias symbols": "SOCS-1, SSI-1, JAB, TIP3, Cish1",
+"Ensembl": "ENSG00000185338",
+"Entrez": "8651",
+"HGNC": "HGNC:19383",
+"HGNC symbol": "SOCS1",
+"Previous symbols": "",
+"RefSeq": "NM_003745",
+"uniprot": [
+"O15524"
+]
+},
+"HGNC:195": {
+"Alias symbols": "cSVP, CD156B",
+"Ensembl": "ENSG00000151694",
+"Entrez": "6868",
+"HGNC": "HGNC:195",
+"HGNC symbol": "ADAM17",
+"Previous symbols": "TACE",
+"RefSeq": "NM_001382777",
+"uniprot": [
+"P78536"
 ]
 },
 "HGNC:19663": {
@@ -453,6 +1197,30 @@
 "RefSeq": "NM_033258",
 "uniprot": [
 "Q9UK08"
+]
+},
+"HGNC:1974": {
+"Alias symbols": "IKK1, IKK-alpha, IkBKA, NFKBIKA, IKKA",
+"Ensembl": "ENSG00000213341",
+"Entrez": "1147",
+"HGNC": "HGNC:1974",
+"HGNC symbol": "CHUK",
+"Previous symbols": "TCF16",
+"RefSeq": "NM_001278",
+"uniprot": [
+"O15111"
+]
+},
+"HGNC:19986": {
+"Alias symbols": "HCS, CYC",
+"Ensembl": "ENSG00000172115",
+"Entrez": "54205",
+"HGNC": "HGNC:19986",
+"HGNC symbol": "CYCS",
+"Previous symbols": "",
+"RefSeq": "NM_018947",
+"uniprot": [
+"P99999"
 ]
 },
 "HGNC:20203": {
@@ -513,6 +1281,42 @@
 "RefSeq": "NM_021629",
 "uniprot": [
 "Q9HAV0"
+]
+},
+"HGNC:21528": {
+"Alias symbols": "SMAC, DIABLO-S, FLJ25049, FLJ10537, DFNA64",
+"Ensembl": "ENSG00000184047",
+"Entrez": "56616",
+"HGNC": "HGNC:21528",
+"HGNC symbol": "DIABLO",
+"Previous symbols": "",
+"RefSeq": "NM_019887",
+"uniprot": [
+"Q9NR28"
+]
+},
+"HGNC:23028": {
+"Alias symbols": "",
+"Ensembl": "ENSG00000167261",
+"Entrez": "64174",
+"HGNC": "HGNC:23028",
+"HGNC symbol": "DPEP2",
+"Previous symbols": "",
+"RefSeq": "NM_022355",
+"uniprot": [
+"Q9H4A9"
+]
+},
+"HGNC:23029": {
+"Alias symbols": "",
+"Ensembl": "ENSG00000141096",
+"Entrez": "64180",
+"HGNC": "HGNC:23029",
+"HGNC symbol": "DPEP3",
+"Previous symbols": "",
+"RefSeq": "NM_022357",
+"uniprot": [
+"Q9H4B8"
 ]
 },
 "HGNC:232": {
@@ -587,6 +1391,18 @@
 "O60266"
 ]
 },
+"HGNC:2340": {
+"Alias symbols": "RAIDD",
+"Ensembl": "ENSG00000169372",
+"Entrez": "8738",
+"HGNC": "HGNC:2340",
+"HGNC symbol": "CRADD",
+"Previous symbols": "",
+"RefSeq": "NM_003805",
+"uniprot": [
+"P78560"
+]
+},
 "HGNC:2345": {
 "Alias symbols": "",
 "Ensembl": "ENSG00000118260",
@@ -597,6 +1413,18 @@
 "RefSeq": "NM_134442",
 "uniprot": [
 "P16220"
+]
+},
+"HGNC:2348": {
+"Alias symbols": "RTS, CBP, KAT3A",
+"Ensembl": "ENSG00000005339",
+"Entrez": "1387",
+"HGNC": "HGNC:2348",
+"HGNC symbol": "CREBBP",
+"Previous symbols": "RSTS",
+"RefSeq": "NM_004380",
+"uniprot": [
+"Q92793"
 ]
 },
 "HGNC:235": {
@@ -671,6 +1499,66 @@
 "O60503"
 ]
 },
+"HGNC:24002": {
+"Alias symbols": "NAP1, FLJ21939, AZ2",
+"Ensembl": "ENSG00000163512",
+"Entrez": "64343",
+"HGNC": "HGNC:24002",
+"HGNC symbol": "AZI2",
+"Previous symbols": "",
+"RefSeq": "NM_203326",
+"uniprot": [
+"Q9H6S1"
+]
+},
+"HGNC:24132": {
+"Alias symbols": "FLJ00065",
+"Ensembl": "ENSG00000104081",
+"Entrez": "90427",
+"HGNC": "HGNC:24132",
+"HGNC symbol": "BMF",
+"Previous symbols": "",
+"RefSeq": "NM_033503",
+"uniprot": [
+"Q96LC9"
+]
+},
+"HGNC:2434": {
+"Alias symbols": "GM-CSF, GMCSF",
+"Ensembl": "ENSG00000164400",
+"Entrez": "1437",
+"HGNC": "HGNC:2434",
+"HGNC symbol": "CSF2",
+"Previous symbols": "",
+"RefSeq": "NM_000758",
+"uniprot": [
+"P04141"
+]
+},
+"HGNC:2451": {
+"Alias symbols": "CK1, CK1a, CK1alpha, CKIa, CKIalpha",
+"Ensembl": "ENSG00000113712",
+"Entrez": "1452",
+"HGNC": "HGNC:2451",
+"HGNC symbol": "CSNK1A1",
+"Previous symbols": "",
+"RefSeq": "NM_001892",
+"uniprot": [
+"P48729"
+]
+},
+"HGNC:2457": {
+"Alias symbols": "Cka1, Cka2",
+"Ensembl": "ENSG00000101266",
+"Entrez": "1457",
+"HGNC": "HGNC:2457",
+"HGNC symbol": "CSNK2A1",
+"Previous symbols": "",
+"RefSeq": "NM_001895",
+"uniprot": [
+"P68400"
+]
+},
 "HGNC:25415": {
 "Alias symbols": "DKFZp761G058, PP2Ckappa, hPTMP, PP2Cm, BDP",
 "Ensembl": "ENSG00000163644",
@@ -693,6 +1581,18 @@
 "RefSeq": "NM_000781",
 "uniprot": [
 "P05108"
+]
+},
+"HGNC:26032": {
+"Alias symbols": "FLJ20481, AGPAT11, LysoPAFAT, LPLAT9",
+"Ensembl": "ENSG00000087253",
+"Entrez": "54947",
+"HGNC": "HGNC:26032",
+"HGNC symbol": "LPCAT2",
+"Previous symbols": "AYTL1",
+"RefSeq": "NM_017839",
+"uniprot": [
+"Q7L5N7"
 ]
 },
 "HGNC:2698": {
@@ -741,6 +1641,30 @@
 "RefSeq": "NM_181715",
 "uniprot": [
 "Q53ET0"
+]
+},
+"HGNC:28390": {
+"Alias symbols": "MGC26818",
+"Ensembl": "ENSG00000157870",
+"Entrez": "127281",
+"HGNC": "HGNC:28390",
+"HGNC symbol": "PRXL2B",
+"Previous symbols": "C1orf93, FAM213B",
+"RefSeq": "NM_152371",
+"uniprot": [
+"Q8TBF2"
+]
+},
+"HGNC:2849": {
+"Alias symbols": "DGK-alpha",
+"Ensembl": "ENSG00000065357",
+"Entrez": "1606",
+"HGNC": "HGNC:2849",
+"HGNC symbol": "DGKA",
+"Previous symbols": "DAGK, DAGK1",
+"RefSeq": "NM_001345",
+"uniprot": [
+"P23743"
 ]
 },
 "HGNC:286": {
@@ -803,6 +1727,18 @@
 "P50570"
 ]
 },
+"HGNC:3002": {
+"Alias symbols": "",
+"Ensembl": "ENSG00000015413",
+"Entrez": "1800",
+"HGNC": "HGNC:3002",
+"HGNC symbol": "DPEP1",
+"Previous symbols": "",
+"RefSeq": "NM_001128141",
+"uniprot": [
+"P16444"
+]
+},
 "HGNC:30172": {
 "Alias symbols": "STLK5, NY-BR-96, LYK5, Stlk, STRAD",
 "Ensembl": "ENSG00000266173",
@@ -863,6 +1799,42 @@
 "P00533"
 ]
 },
+"HGNC:3321": {
+"Alias symbols": "",
+"Ensembl": "ENSG00000126767",
+"Entrez": "2002",
+"HGNC": "HGNC:3321",
+"HGNC symbol": "ELK1",
+"Previous symbols": "",
+"RefSeq": "NM_005229",
+"uniprot": [
+"P19419"
+]
+},
+"HGNC:3373": {
+"Alias symbols": "p300, KAT3B",
+"Ensembl": "ENSG00000100393",
+"Entrez": "2033",
+"HGNC": "HGNC:3373",
+"HGNC symbol": "EP300",
+"Previous symbols": "",
+"RefSeq": "NM_001429",
+"uniprot": [
+"Q09472"
+]
+},
+"HGNC:3573": {
+"Alias symbols": "MORT1, GIG3",
+"Ensembl": "ENSG00000168040",
+"Entrez": "8772",
+"HGNC": "HGNC:3573",
+"HGNC symbol": "FADD",
+"Previous symbols": "",
+"RefSeq": "NM_003824",
+"uniprot": [
+"Q13158"
+]
+},
 "HGNC:3606": {
 "Alias symbols": "",
 "Ensembl": "ENSG00000165140",
@@ -885,6 +1857,78 @@
 "RefSeq": "NM_003837",
 "uniprot": [
 "O00757"
+]
+},
+"HGNC:3609": {
+"Alias symbols": "FcepsilonRIalpha, FCERIA",
+"Ensembl": "ENSG00000179639",
+"Entrez": "2205",
+"HGNC": "HGNC:3609",
+"HGNC symbol": "FCER1A",
+"Previous symbols": "FCE1A",
+"RefSeq": "NM_002001",
+"uniprot": [
+"P12319"
+]
+},
+"HGNC:3611": {
+"Alias symbols": "FcepsilonRIgamma",
+"Ensembl": "ENSG00000158869",
+"Entrez": "2207",
+"HGNC": "HGNC:3611",
+"HGNC symbol": "FCER1G",
+"Previous symbols": "",
+"RefSeq": "NM_004106",
+"uniprot": [
+"P30273"
+]
+},
+"HGNC:3612": {
+"Alias symbols": "CLEC4J, CD23, FCErII, FcepsilonRII",
+"Ensembl": "ENSG00000104921",
+"Entrez": "2208",
+"HGNC": "HGNC:3612",
+"HGNC symbol": "FCER2",
+"Previous symbols": "CD23A, FCE2",
+"RefSeq": "NM_002002",
+"uniprot": [
+"P06734"
+]
+},
+"HGNC:3657": {
+"Alias symbols": "FPS",
+"Ensembl": "ENSG00000182511",
+"Entrez": "2242",
+"HGNC": "HGNC:3657",
+"HGNC symbol": "FES",
+"Previous symbols": "",
+"RefSeq": "NM_002005",
+"uniprot": [
+"P07332"
+]
+},
+"HGNC:3796": {
+"Alias symbols": "c-fos, AP-1",
+"Ensembl": "ENSG00000170345",
+"Entrez": "2353",
+"HGNC": "HGNC:3796",
+"HGNC symbol": "FOS",
+"Previous symbols": "",
+"RefSeq": "NM_005252",
+"uniprot": [
+"P01100"
+]
+},
+"HGNC:386": {
+"Alias symbols": "KIAA0119, DDX, HAKRB, PGFS",
+"Ensembl": "ENSG00000196139",
+"Entrez": "8644",
+"HGNC": "HGNC:386",
+"HGNC symbol": "AKR1C3",
+"Previous symbols": "HSD17B5",
+"RefSeq": "NM_003739",
+"uniprot": [
+"P42330"
 ]
 },
 "HGNC:391": {
@@ -923,6 +1967,30 @@
 "Q9Y243"
 ]
 },
+"HGNC:3942": {
+"Alias symbols": "mTOR, RAFT1, RAPT1, FLJ44809",
+"Ensembl": "ENSG00000198793",
+"Entrez": "2475",
+"HGNC": "HGNC:3942",
+"HGNC symbol": "MTOR",
+"Previous symbols": "FRAP, FRAP2, FRAP1",
+"RefSeq": "NM_004958",
+"uniprot": [
+"P42345"
+]
+},
+"HGNC:40": {
+"Alias symbols": "P-gp, CD243, GP170, ABC20, p-170, PGY1",
+"Ensembl": "ENSG00000085563",
+"Entrez": "5243",
+"HGNC": "HGNC:40",
+"HGNC symbol": "ABCB1",
+"Previous symbols": "PGY1, MDR1, CLCS",
+"RefSeq": "NM_000927",
+"uniprot": [
+"P08183"
+]
+},
 "HGNC:4066": {
 "Alias symbols": "",
 "Ensembl": "ENSG00000109458",
@@ -933,6 +2001,18 @@
 "RefSeq": "NM_002039",
 "uniprot": [
 "Q13480"
+]
+},
+"HGNC:4172": {
+"Alias symbols": "HDR",
+"Ensembl": "ENSG00000107485",
+"Entrez": "2625",
+"HGNC": "HGNC:4172",
+"HGNC symbol": "GATA3",
+"Previous symbols": "",
+"RefSeq": "NM_001002295",
+"uniprot": [
+"P23771"
 ]
 },
 "HGNC:4191": {
@@ -959,6 +2039,54 @@
 "P47871"
 ]
 },
+"HGNC:4260": {
+"Alias symbols": "GGT-REL",
+"Ensembl": "ENSG00000099998",
+"Entrez": "2687",
+"HGNC": "HGNC:4260",
+"HGNC symbol": "GGT5",
+"Previous symbols": "GGTLA1",
+"RefSeq": "NM_004121",
+"uniprot": [
+"P36269"
+]
+},
+"HGNC:429": {
+"Alias symbols": "12S-LOX",
+"Ensembl": "ENSG00000108839",
+"Entrez": "239",
+"HGNC": "HGNC:429",
+"HGNC symbol": "ALOX12",
+"Previous symbols": "",
+"RefSeq": "NM_000697",
+"uniprot": [
+"P18054"
+]
+},
+"HGNC:430": {
+"Alias symbols": "12R-LOX",
+"Ensembl": "ENSG00000179477",
+"Entrez": "242",
+"HGNC": "HGNC:430",
+"HGNC symbol": "ALOX12B",
+"Previous symbols": "",
+"RefSeq": "NM_001139",
+"uniprot": [
+"O75342"
+]
+},
+"HGNC:433": {
+"Alias symbols": "15-LOX-1",
+"Ensembl": "ENSG00000161905",
+"Entrez": "246",
+"HGNC": "HGNC:433",
+"HGNC symbol": "ALOX15",
+"Previous symbols": "",
+"RefSeq": "NM_001140",
+"uniprot": [
+"P16050"
+]
+},
 "HGNC:4331": {
 "Alias symbols": "KIAA0838, GLS1, GAC, GAM, KGA",
 "Ensembl": "ENSG00000115419",
@@ -969,6 +2097,42 @@
 "RefSeq": "NM_001256310",
 "uniprot": [
 "O94925"
+]
+},
+"HGNC:434": {
+"Alias symbols": "15-LOX-2",
+"Ensembl": "ENSG00000179593",
+"Entrez": "247",
+"HGNC": "HGNC:434",
+"HGNC symbol": "ALOX15B",
+"Previous symbols": "",
+"RefSeq": "NM_001039130",
+"uniprot": [
+"O15296"
+]
+},
+"HGNC:435": {
+"Alias symbols": "5-LOX",
+"Ensembl": "ENSG00000012779",
+"Entrez": "240",
+"HGNC": "HGNC:435",
+"HGNC symbol": "ALOX5",
+"Previous symbols": "",
+"RefSeq": "NM_000698",
+"uniprot": [
+"P09917"
+]
+},
+"HGNC:436": {
+"Alias symbols": "FLAP",
+"Ensembl": "ENSG00000132965",
+"Entrez": "241",
+"HGNC": "HGNC:436",
+"HGNC symbol": "ALOX5AP",
+"Previous symbols": "",
+"RefSeq": "NM_001629",
+"uniprot": [
+"P20292"
 ]
 },
 "HGNC:4392": {
@@ -1118,6 +2282,54 @@
 "P06744"
 ]
 },
+"HGNC:4553": {
+"Alias symbols": "",
+"Ensembl": "ENSG00000233276",
+"Entrez": "2876",
+"HGNC": "HGNC:4553",
+"HGNC symbol": "GPX1",
+"Previous symbols": "",
+"RefSeq": "NM_000581",
+"uniprot": [
+"P07203"
+]
+},
+"HGNC:4554": {
+"Alias symbols": "GSHPX-GI",
+"Ensembl": "ENSG00000176153",
+"Entrez": "2877",
+"HGNC": "HGNC:4554",
+"HGNC symbol": "GPX2",
+"Previous symbols": "",
+"RefSeq": "NM_002083",
+"uniprot": [
+"P18283"
+]
+},
+"HGNC:4556": {
+"Alias symbols": "PHGPx, MCSP",
+"Ensembl": "ENSG00000167468",
+"Entrez": "2879",
+"HGNC": "HGNC:4556",
+"HGNC symbol": "GPX4",
+"Previous symbols": "",
+"RefSeq": "NM_002085",
+"uniprot": [
+"P36969"
+]
+},
+"HGNC:4563": {
+"Alias symbols": "GRID, Grf40, GrbX, GRBLG, GADS, Mona",
+"Ensembl": "ENSG00000100351",
+"Entrez": "9402",
+"HGNC": "HGNC:4563",
+"HGNC symbol": "GRAP2",
+"Previous symbols": "",
+"RefSeq": "NM_004810",
+"uniprot": [
+"O75791"
+]
+},
 "HGNC:4566": {
 "Alias symbols": "NCKAP2",
 "Ensembl": "ENSG00000177885",
@@ -1190,6 +2402,54 @@
 "Q01581"
 ]
 },
+"HGNC:51": {
+"Alias symbols": "GS-X",
+"Ensembl": "ENSG00000103222",
+"Entrez": "4363",
+"HGNC": "HGNC:51",
+"HGNC symbol": "ABCC1",
+"Previous symbols": "MRP, MRP1",
+"RefSeq": "NM_004996",
+"uniprot": [
+"P33527"
+]
+},
+"HGNC:5154": {
+"Alias symbols": "SDR36C1",
+"Ensembl": "ENSG00000164120",
+"Entrez": "3248",
+"HGNC": "HGNC:5154",
+"HGNC symbol": "HPGD",
+"Previous symbols": "",
+"RefSeq": "NM_000860",
+"uniprot": [
+"P15428"
+]
+},
+"HGNC:5173": {
+"Alias symbols": "",
+"Ensembl": "ENSG00000174775",
+"Entrez": "3265",
+"HGNC": "HGNC:5173",
+"HGNC symbol": "HRAS",
+"Previous symbols": "HRAS1",
+"RefSeq": "NM_176795",
+"uniprot": [
+"P01112"
+]
+},
+"HGNC:52": {
+"Alias symbols": "EST182763, MRP7, SIMRP7",
+"Ensembl": "ENSG00000124574",
+"Entrez": "89845",
+"HGNC": "HGNC:52",
+"HGNC symbol": "ABCC10",
+"Previous symbols": "",
+"RefSeq": "NM_033450",
+"uniprot": [
+"Q5T3U5"
+]
+},
 "HGNC:5253": {
 "Alias symbols": "Hsp89, Hsp90, FLJ31884, HSP90N",
 "Ensembl": "ENSG00000080824",
@@ -1212,6 +2472,30 @@
 "RefSeq": "NM_007355",
 "uniprot": [
 "P08238"
+]
+},
+"HGNC:53": {
+"Alias symbols": "DJS, MRP2, cMRP",
+"Ensembl": "ENSG00000023839",
+"Entrez": "1244",
+"HGNC": "HGNC:53",
+"HGNC symbol": "ABCC2",
+"Previous symbols": "CMOAT",
+"RefSeq": "NM_000392",
+"uniprot": [
+"Q92887"
+]
+},
+"HGNC:54": {
+"Alias symbols": "MRP3, cMOAT2, EST90757, MLP2, MOAT-D",
+"Ensembl": "ENSG00000108846",
+"Entrez": "8714",
+"HGNC": "HGNC:54",
+"HGNC symbol": "ABCC3",
+"Previous symbols": "",
+"RefSeq": "NM_020038",
+"uniprot": [
+"O15438"
 ]
 },
 "HGNC:5438": {
@@ -1248,6 +2532,222 @@
 "RefSeq": "NM_001329128",
 "uniprot": [
 "P38484"
+]
+},
+"HGNC:55": {
+"Alias symbols": "MRP4, EST170205, MOAT-B, MOATB",
+"Ensembl": "ENSG00000125257",
+"Entrez": "10257",
+"HGNC": "HGNC:55",
+"HGNC symbol": "ABCC4",
+"Previous symbols": "",
+"RefSeq": "NM_005845",
+"uniprot": [
+"O15439"
+]
+},
+"HGNC:5522": {
+"Alias symbols": "",
+"Ensembl": "ENSG00000211891",
+"Entrez": "3497",
+"HGNC": "HGNC:5522",
+"HGNC symbol": "IGHE",
+"Previous symbols": "",
+"RefSeq": "NG_001019",
+"uniprot": [
+"P01854"
+]
+},
+"HGNC:5525": {
+"Alias symbols": "",
+"Ensembl": "ENSG00000211896",
+"Entrez": "3500",
+"HGNC": "HGNC:5525",
+"HGNC symbol": "IGHG1",
+"Previous symbols": "",
+"RefSeq": "NG_001019",
+"uniprot": [
+"P01857"
+]
+},
+"HGNC:5528": {
+"Alias symbols": "",
+"Ensembl": "ENSG00000211892",
+"Entrez": "3503",
+"HGNC": "HGNC:5528",
+"HGNC symbol": "IGHG4",
+"Previous symbols": "",
+"RefSeq": "NG_001019",
+"uniprot": [
+"P01861"
+]
+},
+"HGNC:57": {
+"Alias symbols": "MRP6, EST349056, MLP1, URG7",
+"Ensembl": "ENSG00000091262",
+"Entrez": "368",
+"HGNC": "HGNC:57",
+"HGNC symbol": "ABCC6",
+"Previous symbols": "ARA, PXE",
+"RefSeq": "NM_001079528",
+"uniprot": [
+"O95255"
+]
+},
+"HGNC:576": {
+"Alias symbols": "CED4, APAF-1",
+"Ensembl": "ENSG00000120868",
+"Entrez": "317",
+"HGNC": "HGNC:576",
+"HGNC symbol": "APAF1",
+"Previous symbols": "",
+"RefSeq": "NM_181861.1",
+"uniprot": [
+"O14727"
+]
+},
+"HGNC:590": {
+"Alias symbols": "cIAP1, hiap-2, MIHB, RNF48, c-IAP1",
+"Ensembl": "ENSG00000110330",
+"Entrez": "329",
+"HGNC": "HGNC:590",
+"HGNC symbol": "BIRC2",
+"Previous symbols": "API1",
+"RefSeq": "NM_001166",
+"uniprot": [
+"Q13490"
+]
+},
+"HGNC:591": {
+"Alias symbols": "cIAP2, hiap-1, MIHC, RNF49, MALT2, c-IAP2",
+"Ensembl": "ENSG00000023445",
+"Entrez": "330",
+"HGNC": "HGNC:591",
+"HGNC symbol": "BIRC3",
+"Previous symbols": "API2",
+"RefSeq": "NM_001165",
+"uniprot": [
+"Q13489"
+]
+},
+"HGNC:592": {
+"Alias symbols": "hILP, ILP-1",
+"Ensembl": "ENSG00000101966",
+"Entrez": "331",
+"HGNC": "HGNC:592",
+"HGNC symbol": "XIAP",
+"Previous symbols": "API3, BIRC4",
+"RefSeq": "NM_001167",
+"uniprot": [
+"P98170"
+]
+},
+"HGNC:5960": {
+"Alias symbols": "IKK2, NFKBIKB, IKK-beta, IKKB",
+"Ensembl": "ENSG00000104365",
+"Entrez": "3551",
+"HGNC": "HGNC:5960",
+"HGNC symbol": "IKBKB",
+"Previous symbols": "",
+"RefSeq": "NM_001190720",
+"uniprot": [
+"O14920"
+]
+},
+"HGNC:5961": {
+"Alias symbols": "IKK-gamma, NEMO, Fip3p, FIP-3, FIP3, IKKAP1, IKKG",
+"Ensembl": "ENSG00000269335",
+"Entrez": "8517",
+"HGNC": "HGNC:5961",
+"HGNC symbol": "IKBKG",
+"Previous symbols": "IP2, IP1",
+"RefSeq": "NM_003639",
+"uniprot": [
+"Q9Y6K9"
+]
+},
+"HGNC:5973": {
+"Alias symbols": "P600, IL-13, ALRH, BHR1, MGC116786, MGC116788, MGC116789",
+"Ensembl": "ENSG00000169194",
+"Entrez": "3596",
+"HGNC": "HGNC:5973",
+"HGNC symbol": "IL13",
+"Previous symbols": "",
+"RefSeq": "NM_002188",
+"uniprot": [
+"P35225"
+]
+},
+"HGNC:5974": {
+"Alias symbols": "IL-13Ra, NR4, CD213a1",
+"Ensembl": "ENSG00000131724",
+"Entrez": "3597",
+"HGNC": "HGNC:5974",
+"HGNC symbol": "IL13RA1",
+"Previous symbols": "",
+"RefSeq": "NM_001560",
+"uniprot": [
+"P78552"
+]
+},
+"HGNC:6010": {
+"Alias symbols": "CD132",
+"Ensembl": "ENSG00000147168",
+"Entrez": "3561",
+"HGNC": "HGNC:6010",
+"HGNC symbol": "IL2RG",
+"Previous symbols": "SCIDX1, IMD4, CIDX",
+"RefSeq": "NM_000206",
+"uniprot": [
+"P31785"
+]
+},
+"HGNC:6011": {
+"Alias symbols": "IL-3, MULTI-CSF, MCGF, MGC79398, MGC79399",
+"Ensembl": "ENSG00000164399",
+"Entrez": "3562",
+"HGNC": "HGNC:6011",
+"HGNC symbol": "IL3",
+"Previous symbols": "",
+"RefSeq": "NM_000588",
+"uniprot": [
+"P08700"
+]
+},
+"HGNC:6014": {
+"Alias symbols": "BSF1, IL-4, BCGF1, BCGF-1, MGC79402",
+"Ensembl": "ENSG00000113520",
+"Entrez": "3565",
+"HGNC": "HGNC:6014",
+"HGNC symbol": "IL4",
+"Previous symbols": "",
+"RefSeq": "NM_000589",
+"uniprot": [
+"P05112"
+]
+},
+"HGNC:6015": {
+"Alias symbols": "CD124",
+"Ensembl": "ENSG00000077238",
+"Entrez": "3566",
+"HGNC": "HGNC:6015",
+"HGNC symbol": "IL4R",
+"Previous symbols": "",
+"RefSeq": "NM_000418",
+"uniprot": [
+"P24394"
+]
+},
+"HGNC:6016": {
+"Alias symbols": "IL-5, EDF, TRF",
+"Ensembl": "ENSG00000113525",
+"Entrez": "3567",
+"HGNC": "HGNC:6016",
+"HGNC symbol": "IL5",
+"Previous symbols": "",
+"RefSeq": "NM_000879",
+"uniprot": [
+"P05113"
 ]
 },
 "HGNC:6074": {
@@ -1382,6 +2882,42 @@
 "Q9Y4H2"
 ]
 },
+"HGNC:6180": {
+"Alias symbols": "Insp3r1, IP3R1, ACV, PPP1R94",
+"Ensembl": "ENSG00000150995",
+"Entrez": "3708",
+"HGNC": "HGNC:6180",
+"HGNC symbol": "ITPR1",
+"Previous symbols": "SCA15, SCA16, SCA29",
+"RefSeq": "NM_002222",
+"uniprot": [
+"Q14643"
+]
+},
+"HGNC:6181": {
+"Alias symbols": "IP3R2, CFAP48",
+"Ensembl": "ENSG00000123104",
+"Entrez": "3709",
+"HGNC": "HGNC:6181",
+"HGNC symbol": "ITPR2",
+"Previous symbols": "",
+"RefSeq": "NM_002223",
+"uniprot": [
+"Q14571"
+]
+},
+"HGNC:6182": {
+"Alias symbols": "IP3R3",
+"Ensembl": "ENSG00000096433",
+"Entrez": "3710",
+"HGNC": "HGNC:6182",
+"HGNC symbol": "ITPR3",
+"Previous symbols": "",
+"RefSeq": "NM_002224",
+"uniprot": [
+"Q14573"
+]
+},
 "HGNC:6190": {
 "Alias symbols": "JAK1A, JTK3",
 "Ensembl": "ENSG00000162434",
@@ -1406,6 +2942,42 @@
 "O60674"
 ]
 },
+"HGNC:6193": {
+"Alias symbols": "L-JAK, JAKL, LJAK, JAK3_HUMAN, JAK-3",
+"Ensembl": "ENSG00000105639",
+"Entrez": "3718",
+"HGNC": "HGNC:6193",
+"HGNC symbol": "JAK3",
+"Previous symbols": "",
+"RefSeq": "NM_000215",
+"uniprot": [
+"P52333"
+]
+},
+"HGNC:6204": {
+"Alias symbols": "c-Jun, AP-1",
+"Ensembl": "ENSG00000177606",
+"Entrez": "3725",
+"HGNC": "HGNC:6204",
+"HGNC symbol": "JUN",
+"Previous symbols": "",
+"RefSeq": "NM_002228",
+"uniprot": [
+"P05412"
+]
+},
+"HGNC:6307": {
+"Alias symbols": "FLK1, VEGFR, VEGFR2, CD309",
+"Ensembl": "ENSG00000128052",
+"Entrez": "3791",
+"HGNC": "HGNC:6307",
+"HGNC symbol": "KDR",
+"Previous symbols": "",
+"RefSeq": "NM_002253",
+"uniprot": [
+"P35968"
+]
+},
 "HGNC:6400": {
 "Alias symbols": "NTF97, IPOB, MGC2155, MGC2156, MGC2157, IMB1, Impnb, IPO1",
 "Ensembl": "ENSG00000108424",
@@ -1416,6 +2988,18 @@
 "RefSeq": "NM_002265",
 "uniprot": [
 "Q14974"
+]
+},
+"HGNC:6529": {
+"Alias symbols": "SLP-76",
+"Ensembl": "ENSG00000043462",
+"Entrez": "3937",
+"HGNC": "HGNC:6529",
+"HGNC symbol": "LCP2",
+"Previous symbols": "SLP76",
+"RefSeq": "NM_005565",
+"uniprot": [
+"Q13094"
 ]
 },
 "HGNC:6621": {
@@ -1442,6 +3026,54 @@
 "P05089"
 ]
 },
+"HGNC:6710": {
+"Alias symbols": "",
+"Ensembl": "ENSG00000111144",
+"Entrez": "4048",
+"HGNC": "HGNC:6710",
+"HGNC symbol": "LTA4H",
+"Previous symbols": "",
+"RefSeq": "NM_000895",
+"uniprot": [
+"P09960"
+]
+},
+"HGNC:6719": {
+"Alias symbols": "MGC33147",
+"Ensembl": "ENSG00000213316",
+"Entrez": "4056",
+"HGNC": "HGNC:6719",
+"HGNC symbol": "LTC4S",
+"Previous symbols": "",
+"RefSeq": "NM_000897",
+"uniprot": [
+"Q16873"
+]
+},
+"HGNC:6735": {
+"Alias symbols": "JTK8",
+"Ensembl": "ENSG00000254087",
+"Entrez": "4067",
+"HGNC": "HGNC:6735",
+"HGNC symbol": "LYN",
+"Previous symbols": "",
+"RefSeq": "NM_002350",
+"uniprot": [
+"P07948"
+]
+},
+"HGNC:6819": {
+"Alias symbols": "PCASP1",
+"Ensembl": "ENSG00000172175",
+"Entrez": "10892",
+"HGNC": "HGNC:6819",
+"HGNC symbol": "MALT1",
+"Previous symbols": "MLT",
+"RefSeq": "NM_006785",
+"uniprot": [
+"Q9UDY8"
+]
+},
 "HGNC:6840": {
 "Alias symbols": "MEK1, MAPKK1, MKK1",
 "Ensembl": "ENSG00000169032",
@@ -1466,6 +3098,102 @@
 "P36507"
 ]
 },
+"HGNC:6844": {
+"Alias symbols": "MEK4, JNKK1, PRKMK4, MKK4, MAPKK4, SAPKK1, SKK1, JNKK, SEK1",
+"Ensembl": "ENSG00000065559",
+"Entrez": "6416",
+"HGNC": "HGNC:6844",
+"HGNC symbol": "MAP2K4",
+"Previous symbols": "SERK1",
+"RefSeq": "NM_001281435",
+"uniprot": [
+"P45985"
+]
+},
+"HGNC:6847": {
+"Alias symbols": "MKK7, Jnkk2, SAPKK4",
+"Ensembl": "ENSG00000076984",
+"Entrez": "5609",
+"HGNC": "HGNC:6847",
+"HGNC symbol": "MAP2K7",
+"Previous symbols": "PRKMK7",
+"RefSeq": "NM_001297555",
+"uniprot": [
+"O14733"
+]
+},
+"HGNC:6848": {
+"Alias symbols": "MEKK, MAPKKK1",
+"Ensembl": "ENSG00000095015",
+"Entrez": "4214",
+"HGNC": "HGNC:6848",
+"HGNC symbol": "MAP3K1",
+"Previous symbols": "MEKK1",
+"RefSeq": "NM_005921",
+"uniprot": [
+"Q13233"
+]
+},
+"HGNC:6853": {
+"Alias symbols": "NIK, HSNIK, FTDCR1B, HS",
+"Ensembl": "ENSG00000006062",
+"Entrez": "9020",
+"HGNC": "HGNC:6853",
+"HGNC symbol": "MAP3K14",
+"Previous symbols": "",
+"RefSeq": "NM_003954",
+"uniprot": [
+"Q99558"
+]
+},
+"HGNC:6855": {
+"Alias symbols": "MAPKKK3",
+"Ensembl": "ENSG00000198909",
+"Entrez": "4215",
+"HGNC": "HGNC:6855",
+"HGNC symbol": "MAP3K3",
+"Previous symbols": "MEKK3",
+"RefSeq": "NM_002401",
+"uniprot": [
+"Q99759"
+]
+},
+"HGNC:6857": {
+"Alias symbols": "MAPKKK5, ASK1",
+"Ensembl": "ENSG00000197442",
+"Entrez": "4217",
+"HGNC": "HGNC:6857",
+"HGNC symbol": "MAP3K5",
+"Previous symbols": "MEKK5",
+"RefSeq": "NM_005923",
+"uniprot": [
+"Q99683"
+]
+},
+"HGNC:6859": {
+"Alias symbols": "MEKK7",
+"Ensembl": "ENSG00000135341",
+"Entrez": "6885",
+"HGNC": "HGNC:6859",
+"HGNC symbol": "MAP3K7",
+"Previous symbols": "TAK1",
+"RefSeq": "NM_145331",
+"uniprot": [
+"O43318"
+]
+},
+"HGNC:6864": {
+"Alias symbols": "GCK, BL44",
+"Ensembl": "ENSG00000168067",
+"Entrez": "5871",
+"HGNC": "HGNC:6864",
+"HGNC symbol": "MAP4K2",
+"Previous symbols": "RAB8IP",
+"RefSeq": "NM_004579",
+"uniprot": [
+"Q12851"
+]
+},
 "HGNC:6871": {
 "Alias symbols": "ERK, ERK2, p41mapk, MAPK2",
 "Ensembl": "ENSG00000100030",
@@ -1478,6 +3206,18 @@
 "P28482"
 ]
 },
+"HGNC:6872": {
+"Alias symbols": "JNK3, p493F12, p54bSAPK",
+"Ensembl": "ENSG00000109339",
+"Entrez": "5602",
+"HGNC": "HGNC:6872",
+"HGNC symbol": "MAPK10",
+"Previous symbols": "PRKM10",
+"RefSeq": "NM_001318067",
+"uniprot": [
+"P53779"
+]
+},
 "HGNC:6877": {
 "Alias symbols": "ERK1, p44mapk, p44erk1, ERK-1",
 "Ensembl": "ENSG00000102882",
@@ -1488,6 +3228,42 @@
 "RefSeq": "NM_001040056",
 "uniprot": [
 "P27361"
+]
+},
+"HGNC:6881": {
+"Alias symbols": "JNK, JNK1, SAPK1",
+"Ensembl": "ENSG00000107643",
+"Entrez": "5599",
+"HGNC": "HGNC:6881",
+"HGNC symbol": "MAPK8",
+"Previous symbols": "PRKM8",
+"RefSeq": "NM_001278547",
+"uniprot": [
+"P45983"
+]
+},
+"HGNC:6886": {
+"Alias symbols": "JNK2, p54a, SAPK",
+"Ensembl": "ENSG00000050748",
+"Entrez": "5601",
+"HGNC": "HGNC:6886",
+"HGNC symbol": "MAPK9",
+"Previous symbols": "PRKM9",
+"RefSeq": "NM_001135044",
+"uniprot": [
+"P45984"
+]
+},
+"HGNC:7316": {
+"Alias symbols": "",
+"Ensembl": "ENSG00000149534",
+"Entrez": "2206",
+"HGNC": "HGNC:7316",
+"HGNC symbol": "MS4A2",
+"Previous symbols": "FCER1B, IGER, APY",
+"RefSeq": "NM_000139",
+"uniprot": [
+"Q01362"
 ]
 },
 "HGNC:746": {
@@ -1512,6 +3288,66 @@
 "RefSeq": "NM_000050",
 "uniprot": [
 "P00966"
+]
+},
+"HGNC:7794": {
+"Alias symbols": "KBF1, p105, NFKB-p50, p50, NF-kappaB, NFkappaB, NF-kB1",
+"Ensembl": "ENSG00000109320",
+"Entrez": "4790",
+"HGNC": "HGNC:7794",
+"HGNC symbol": "NFKB1",
+"Previous symbols": "",
+"RefSeq": "NM_003998",
+"uniprot": [
+"P19838"
+]
+},
+"HGNC:7795": {
+"Alias symbols": "LYT-10, p52, p105, NF-kB2, p49/p100",
+"Ensembl": "ENSG00000077150",
+"Entrez": "4791",
+"HGNC": "HGNC:7795",
+"HGNC symbol": "NFKB2",
+"Previous symbols": "",
+"RefSeq": "NM_001077494",
+"uniprot": [
+"Q00653"
+]
+},
+"HGNC:7797": {
+"Alias symbols": "IKBA, MAD-3, IkappaBalpha",
+"Ensembl": "ENSG00000100906",
+"Entrez": "4792",
+"HGNC": "HGNC:7797",
+"HGNC symbol": "NFKBIA",
+"Previous symbols": "NFKBI",
+"RefSeq": "NM_020529",
+"uniprot": [
+"P25963"
+]
+},
+"HGNC:7798": {
+"Alias symbols": "IKBB, TRIP9",
+"Ensembl": "ENSG00000104825",
+"Entrez": "4793",
+"HGNC": "HGNC:7798",
+"HGNC symbol": "NFKBIB",
+"Previous symbols": "",
+"RefSeq": "NM_002503",
+"uniprot": [
+"Q15653"
+]
+},
+"HGNC:784": {
+"Alias symbols": "TREB7, CRE-BP1, HB16",
+"Ensembl": "ENSG00000115966",
+"Entrez": "1386",
+"HGNC": "HGNC:784",
+"HGNC symbol": "ATF2",
+"Previous symbols": "CREB2",
+"RefSeq": "NM_001880",
+"uniprot": [
+"P15336"
 ]
 },
 "HGNC:7872": {
@@ -1584,6 +3420,42 @@
 "RefSeq": "NM_000531",
 "uniprot": [
 "P00480"
+]
+},
+"HGNC:8590": {
+"Alias symbols": "",
+"Ensembl": "ENSG00000149269",
+"Entrez": "5058",
+"HGNC": "HGNC:8590",
+"HGNC symbol": "PAK1",
+"Previous symbols": "",
+"RefSeq": "NM_002576",
+"uniprot": [
+"Q13153"
+]
+},
+"HGNC:8591": {
+"Alias symbols": "PAK65, PAKgamma",
+"Ensembl": "ENSG00000180370",
+"Entrez": "5062",
+"HGNC": "HGNC:8591",
+"HGNC symbol": "PAK2",
+"Previous symbols": "",
+"RefSeq": "NM_002577",
+"uniprot": [
+"Q13177"
+]
+},
+"HGNC:8592": {
+"Alias symbols": "hPAK3, bPAK",
+"Ensembl": "ENSG00000077264",
+"Entrez": "5063",
+"HGNC": "HGNC:8592",
+"HGNC symbol": "PAK3",
+"Previous symbols": "MRX30, MRX47",
+"RefSeq": "NM_002578",
+"uniprot": [
+"O75914"
 ]
 },
 "HGNC:8779": {
@@ -1862,6 +3734,30 @@
 "Q92569"
 ]
 },
+"HGNC:8986": {
+"Alias symbols": "",
+"Ensembl": "ENSG00000137193",
+"Entrez": "5292",
+"HGNC": "HGNC:8986",
+"HGNC symbol": "PIM1",
+"Previous symbols": "PIM",
+"RefSeq": "NM_001243186",
+"uniprot": [
+"P11309"
+]
+},
+"HGNC:8988": {
+"Alias symbols": "dod",
+"Ensembl": "ENSG00000127445",
+"Entrez": "5300",
+"HGNC": "HGNC:8988",
+"HGNC symbol": "PIN1",
+"Previous symbols": "",
+"RefSeq": "NM_006221",
+"uniprot": [
+"Q13526"
+]
+},
 "HGNC:9035": {
 "Alias symbols": "cPLA2-alpha",
 "Ensembl": "ENSG00000116711",
@@ -1872,6 +3768,30 @@
 "RefSeq": "NM_024420",
 "uniprot": [
 "P47712"
+]
+},
+"HGNC:9065": {
+"Alias symbols": "PLC148, PLC-II, PLCgamma1, NCKAP3",
+"Ensembl": "ENSG00000124181",
+"Entrez": "5335",
+"HGNC": "HGNC:9065",
+"HGNC symbol": "PLCG1",
+"Previous symbols": "PLC1",
+"RefSeq": "NM_182811",
+"uniprot": [
+"P19174"
+]
+},
+"HGNC:9066": {
+"Alias symbols": "",
+"Ensembl": "ENSG00000197943",
+"Entrez": "5336",
+"HGNC": "HGNC:9066",
+"HGNC symbol": "PLCG2",
+"Previous symbols": "",
+"RefSeq": "NM_001425749",
+"uniprot": [
+"P16885"
 ]
 },
 "HGNC:9076": {
@@ -2028,6 +3948,18 @@
 "RefSeq": "NM_181678",
 "uniprot": [
 "Q00005"
+]
+},
+"HGNC:936": {
+"Alias symbols": "BCL2L8, BBC2",
+"Ensembl": "ENSG00000002330",
+"Entrez": "572",
+"HGNC": "HGNC:936",
+"HGNC symbol": "BAD",
+"Previous symbols": "",
+"RefSeq": "NM_032989",
+"uniprot": [
+"Q92934"
 ]
 },
 "HGNC:9376": {
@@ -2198,6 +4130,30 @@
 "P31323"
 ]
 },
+"HGNC:9393": {
+"Alias symbols": "PKCα",
+"Ensembl": "ENSG00000154229",
+"Entrez": "5578",
+"HGNC": "HGNC:9393",
+"HGNC symbol": "PRKCA",
+"Previous symbols": "PKCA",
+"RefSeq": "NM_002737",
+"uniprot": [
+"P17252"
+]
+},
+"HGNC:9399": {
+"Alias symbols": "PKCδ",
+"Ensembl": "ENSG00000163932",
+"Entrez": "5580",
+"HGNC": "HGNC:9399",
+"HGNC symbol": "PRKCD",
+"Previous symbols": "",
+"RefSeq": "NM_001316327",
+"uniprot": [
+"Q05655"
+]
+},
 "HGNC:94": {
 "Alias symbols": "",
 "Ensembl": "ENSG00000120437",
@@ -2210,6 +4166,18 @@
 "Q9BWD1"
 ]
 },
+"HGNC:940": {
+"Alias symbols": "SODD",
+"Ensembl": "ENSG00000156735",
+"Entrez": "9530",
+"HGNC": "HGNC:940",
+"HGNC symbol": "BAG4",
+"Previous symbols": "",
+"RefSeq": "NM_004874",
+"uniprot": [
+"O95429"
+]
+},
 "HGNC:9401": {
 "Alias symbols": "PKCε",
 "Ensembl": "ENSG00000171132",
@@ -2220,6 +4188,42 @@
 "RefSeq": "NM_005400",
 "uniprot": [
 "Q02156"
+]
+},
+"HGNC:9404": {
+"Alias symbols": "PKCλ/ι, PKCλ, PKCι, PKCI",
+"Ensembl": "ENSG00000163558",
+"Entrez": "5584",
+"HGNC": "HGNC:9404",
+"HGNC symbol": "PRKCI",
+"Previous symbols": "DXS1179E",
+"RefSeq": "NM_002740",
+"uniprot": [
+"P41743"
+]
+},
+"HGNC:9410": {
+"Alias symbols": "PKCθ",
+"Ensembl": "ENSG00000065675",
+"Entrez": "5588",
+"HGNC": "HGNC:9410",
+"HGNC symbol": "PRKCQ",
+"Previous symbols": "",
+"RefSeq": "NM_006257",
+"uniprot": [
+"Q04759"
+]
+},
+"HGNC:9412": {
+"Alias symbols": "PKCζ, PKC2",
+"Ensembl": "ENSG00000067606",
+"Entrez": "5590",
+"HGNC": "HGNC:9412",
+"HGNC symbol": "PRKCZ",
+"Previous symbols": "",
+"RefSeq": "NM_002744",
+"uniprot": [
+"Q05513"
 ]
 },
 "HGNC:9414": {
@@ -2246,6 +4250,30 @@
 "P60484"
 ]
 },
+"HGNC:959": {
+"Alias symbols": "BCL2L4",
+"Ensembl": "ENSG00000087088",
+"Entrez": "581",
+"HGNC": "HGNC:959",
+"HGNC symbol": "BAX",
+"Previous symbols": "",
+"RefSeq": "NM_138763",
+"uniprot": [
+"Q07812"
+]
+},
+"HGNC:9592": {
+"Alias symbols": "PGDS, L-PGDS",
+"Ensembl": "ENSG00000107317",
+"Entrez": "5730",
+"HGNC": "HGNC:9592",
+"HGNC symbol": "PTGDS",
+"Previous symbols": "",
+"RefSeq": "NM_000954",
+"uniprot": [
+"P41222"
+]
+},
 "HGNC:9594": {
 "Alias symbols": "EP2, COX-2",
 "Ensembl": "ENSG00000125384",
@@ -2256,6 +4284,30 @@
 "RefSeq": "NM_000956",
 "uniprot": [
 "P43116"
+]
+},
+"HGNC:9599": {
+"Alias symbols": "mPGES-1, MGST-IV, PIG12, MGST1-L1, TP53I12",
+"Ensembl": "ENSG00000148344",
+"Entrez": "9536",
+"HGNC": "HGNC:9599",
+"HGNC symbol": "PTGES",
+"Previous symbols": "MGST1L1",
+"RefSeq": "NM_004878",
+"uniprot": [
+"O14684"
+]
+},
+"HGNC:9603": {
+"Alias symbols": "PGIS, CYP8A1",
+"Ensembl": "ENSG00000124212",
+"Entrez": "5740",
+"HGNC": "HGNC:9603",
+"HGNC symbol": "PTGIS",
+"Previous symbols": "",
+"RefSeq": "NM_000961",
+"uniprot": [
+"Q16647"
 ]
 },
 "HGNC:9604": {
@@ -2318,6 +4370,18 @@
 "O15382"
 ]
 },
+"HGNC:9801": {
+"Alias symbols": "TC-25, p21-Rac1, Rac-1",
+"Ensembl": "ENSG00000136238",
+"Entrez": "5879",
+"HGNC": "HGNC:9801",
+"HGNC symbol": "RAC1",
+"Previous symbols": "",
+"RefSeq": "NM_018890",
+"uniprot": [
+"P63000"
+]
+},
 "HGNC:9829": {
 "Alias symbols": "Raf-1, c-Raf, CRAF",
 "Ensembl": "ENSG00000132155",
@@ -2352,6 +4416,54 @@
 "RefSeq": "NM_000056",
 "uniprot": [
 "P21953"
+]
+},
+"HGNC:989": {
+"Alias symbols": "CARMEN, CIPER, mE10, c-E10, CLAP",
+"Ensembl": "ENSG00000142867",
+"Entrez": "8915",
+"HGNC": "HGNC:989",
+"HGNC symbol": "BCL10",
+"Previous symbols": "",
+"RefSeq": "NM_003921",
+"uniprot": [
+"O95999"
+]
+},
+"HGNC:990": {
+"Alias symbols": "Bcl-2, PPP1R50",
+"Ensembl": "ENSG00000171791",
+"Entrez": "596",
+"HGNC": "HGNC:990",
+"HGNC symbol": "BCL2",
+"Previous symbols": "",
+"RefSeq": "NM_000633, NM_000657",
+"uniprot": [
+"P10415"
+]
+},
+"HGNC:992": {
+"Alias symbols": "BCLX, BCL2L, Bcl-X, bcl-xL, bcl-xS, PPP1R52",
+"Ensembl": "ENSG00000171552",
+"Entrez": "598",
+"HGNC": "HGNC:992",
+"HGNC symbol": "BCL2L1",
+"Previous symbols": "",
+"RefSeq": "NM_138578",
+"uniprot": [
+"Q07817"
+]
+},
+"HGNC:994": {
+"Alias symbols": "BOD, BimL, BimEL, BimS, BIM",
+"Ensembl": "ENSG00000153094",
+"Entrez": "10018",
+"HGNC": "HGNC:994",
+"HGNC symbol": "BCL2L11",
+"Previous symbols": "",
+"RefSeq": "NM_001204106",
+"uniprot": [
+"O43521"
 ]
 },
 "HGNC:9955": {
