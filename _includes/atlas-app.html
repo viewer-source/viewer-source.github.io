@@ -2527,16 +2527,22 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
     function copyText(t, r) {
       (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { say('Copied', r.left, r.top); }, function () { say('Not copied', r.left, r.top); });
     }
-    // the map's PNG download, else its picture drawn at twice its size on white, smaller where that passes what a browser
-    // draws (16,384 px a side, 64 million pixels: the mast cell map, 23,351 px wide, made no PNG at twice its size)
+    // the map's PNG download, else its SVG (the file Download SVG gives; in edit mode the map on screen is the editor's
+    // drawing, no picture) drawn at twice its size on white, smaller where that passes what a browser draws (16,384 px a
+    // side, 64 million pixels: the mast cell map, 23,351 px wide, made no PNG at twice its size)
     function pngOf(m, url) {
       if (url.PNG) return fetch(url.PNG).then(function (r) { if (!r.ok) throw r.status; return r.blob(); });
       return new Promise(function (res, rej) {
-        var k = Math.min(2, 16384 / Math.max(m.width, m.height), Math.sqrt(64e6 / (m.width * m.height)));
-        var c = document.createElement('canvas'), w = Math.floor(m.width * k), h = Math.floor(m.height * k);
-        c.width = w; c.height = h;
-        var g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, w, h); g.drawImage(img, 0, 0, w, h);
-        c.toBlob(function (b) { if (b) res(b); else rej(); }, 'image/png');
+        var pic = new Image();
+        pic.onerror = rej;
+        pic.onload = function () {
+          var k = Math.min(2, 16384 / Math.max(m.width, m.height), Math.sqrt(64e6 / (m.width * m.height)));
+          var c = document.createElement('canvas'), w = Math.floor(m.width * k), h = Math.floor(m.height * k);
+          c.width = w; c.height = h;
+          var g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, w, h); g.drawImage(pic, 0, 0, w, h);
+          c.toBlob(function (b) { if (b) res(b); else rej(); }, 'image/png');
+        };
+        pic.src = url.SVG || m.image;
       });
     }
     function copyPicture(m, url, r) {
@@ -2607,7 +2613,7 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
       if (src) link(box, src === 'GraphML' ? 'Download GraphML' : 'Download CellDesigner XML', url[src], true);
       // the images as files (user, 2026-11-13): the site's own when it has them, else as the copies make them
       if (!m.imageError && (url.SVG || m.image)) item(box, 'Download SVG', function (r) { saveImage(m, url, 'svg', r); });
-      if (!m.imageError) item(box, 'Download PNG', function (r) { saveImage(m, url, 'png', r); });
+      if (!m.imageError && (url.PNG || url.SVG || m.image)) item(box, 'Download PNG', function (r) { saveImage(m, url, 'png', r); });
       ['Newt', 'MINERVA'].forEach(function (l) { if (url[l]) link(box, 'Open in ' + l, url[l]); });
       if (!m.imageError) item(box, 'Copy image as PNG', function (r) { copyPicture(m, url, r); });
       if (!m.imageError && (url.SVG || m.image)) item(box, 'Copy image as SVG', function (r) { copySvg(m, url, r); });
