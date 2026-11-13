@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sbgn xmlns="http://sbgn.org/libsbgn/0.2">
+    <map language="process description">
+        <glyph id="A1" class="macromolecule">
+            <label text="A"/>
+            <bbox y="230.0" x="160.0" h="40.0" w="80.0"/>
+            <glyph id="A1a" class="state variable">
+                <state value="inactive1"/>
+                <bbox y="217.0" x="190.0" h="26.0" w="60.0"/>
+            </glyph>
+        </glyph>
+        <glyph id="A2" class="macromolecule">
+            <label text="A"/>
+            <bbox y="230.0" x="360.0" h="40.0" w="80.0"/>
+            <glyph id="A2a" class="state variable">
+                <state value="inactive2"/>
+                <bbox y="217.0" x="390.0" h="26.0" w="60.0"/>
+            </glyph>
+        </glyph>
+        <glyph id="p2" class="process">
+            <bbox y="238.0" x="488.0" h="24.0" w="24.0"/>
+            <port y="250.0" x="476.0" id="p2.1"/>
+            <port y="250.0" x="524.0" id="p2.2"/>
+        </glyph>
+        <glyph id="R1" class="macromolecule">
+            <label text="R1"/>
+            <bbox y="130.0" x="260.0" h="40.0" w="80.0"/>
+        </glyph>
+        <glyph id="p1" class="process">
+            <bbox y="238.0" x="288.0" h="24.0" w="24.0"/>
+            <port y="250.0" x="317.0" id="p1.2"/>
+            <port y="250.0" x="283.0" id="p1.1"/>
+        </glyph>
+        <glyph id="glyph1" class="macromolecule">
+            <label text="B"/>
+            <bbox y="329.0" x="690.0" h="40.0" w="80.0"/>
+            <glyph id="glyph1a" class="state variable">
+                <state value="S2"/>
+                <bbox y="319.0" x="735.0" h="20.0" w="30.0"/>
+            </glyph>
+        </glyph>
+        <glyph id="glyph2" class="macromolecule">
+            <label text="B"/>
+            <bbox y="329.0" x="455.0" h="40.0" w="80.0"/>
+            <glyph id="glyph2a" class="state variable">
+                <state value="S1"/>
+                <bbox y="319.0" x="500.0" h="20.0" w="30.0"/>
+            </glyph>
+        </glyph>
+        <glyph id="A3" class="macromolecule">
+            <label text="A"/>
+            <bbox y="230.0" x="560.0" h="40.0" w="80.0"/>
+            <glyph id="A3a" class="state variable">
+                <state value="active"/>
+                <bbox y="219.0" x="597.0" h="22.0" w="46.0"/>
+            </glyph>
+        </glyph>
+        <glyph id="glyph3" class="process">
+            <bbox y="337.0" x="593.0" h="24.0" w="24.0"/>
+            <port y="349.0" x="629.0" id="glyph3.2"/>
+            <port y="349.0" x="581.0" id="glyph3.1"/>
+        </glyph>
+        <arc target="p1.2" source="A2" id="consumption-1381" class="consumption">
+            <start y="250.0" x="360.0"/>
+            <end y="250.0" x="317.0"/>
+        </arc>
+        <arc target="A1" source="p1.1" id="production-1382" class="production">
+            <start y="250.0" x="283.0"/>
+            <end y="250.0" x="240.0"/>
+        </arc>
+        <arc target="p2.1" source="A2" id="consumption-1383" class="consumption">
+            <start y="250.0" x="440.0"/>
+            <end y="250.0" x="476.0"/>
+        </arc>
+        <arc target="A3" source="p2.2" id="production-1384" class="production">
+            <start y="250.0" x="524.0"/>
+            <end y="250.0" x="560.0"/>
+        </arc>
+        <arc target="p1" source="R1" id="catalysis-1385" class="catalysis">
+            <start y="170.0" x="300.0"/>
+            <end y="238.0" x="300.0"/>
+        </arc>
+        <arc target="glyph1" source="glyph3.2" id="arc1" class="production">
+            <start y="349.0" x="629.0"/>
+            <end y="349.0" x="690.0"/>
+        </arc>
+        <arc target="glyph3.1" source="glyph2" id="arc2" class="consumption">
+            <start y="349.0" x="535.0"/>
+            <end y="349.0" x="581.0"/>
+        </arc>
+        <arc target="glyph3" source="A3" id="arc3" class="inhibition">
+            <start y="270.0" x="601.0101"/>
+            <end y="337.0" x="604.3939"/>
+        </arc>
+    </map>
+</sbgn>

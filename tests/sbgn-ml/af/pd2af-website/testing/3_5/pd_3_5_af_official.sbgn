@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sbgn xmlns="http://sbgn.org/libsbgn/0.2">
+  <map language="activity flow">
+    <glyph id="C" class="biological activity">
+      <label text="C" />
+      <bbox x="110.0" y="15.0" w="80.0" h="40.0" />
+    </glyph>
+    <glyph id="and-6" class="and">
+      <bbox x="139.0" y="52.0" w="25" h="25" />
+      <port id="and-6-in" x="134.0" y="64.5" />
+      <port id="and-6-out" x="169.0" y="64.5" />
+    </glyph>
+    <glyph id="not-7" class="not">
+      <bbox x="137.0" y="122.0" w="25" h="25" />
+      <port id="not-7-in" x="132.0" y="134.5" />
+      <port id="not-7-out" x="167.0" y="134.5" />
+    </glyph>
+    <glyph id="A" class="biological activity">
+      <label text="A" />
+      <bbox x="10.0" y="115.0" w="80.0" h="40.0" />
+      <glyph id="A-uoi-12" class="unit of information">
+        <label text="" />
+        <entity name="simple chemical" />
+        <bbox x="30.0" y="110.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="B" class="biological activity">
+      <label text="B" />
+      <bbox x="210.0" y="115.0" w="80.0" h="40.0" />
+      <glyph id="B-uoi-13" class="unit of information">
+        <label text="" />
+        <entity name="simple chemical" />
+        <bbox x="230.0" y="110.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <arc class="negative influence" id="negative-influence-11" source="and-6-out" target="B">
+      <start x="151.5" y="77.0" />
+      <end x="250.0" y="115.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-9" source="C" target="and-6-in">
+      <start x="190.0" y="35.0" />
+      <end x="134.0" y="64.5" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-10" source="not-7" target="and-6-in">
+      <start x="167.0" y="134.5" />
+      <end x="134.0" y="64.5" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-8" source="A" target="not-7-in">
+      <start x="90.0" y="135.0" />
+      <end x="132.0" y="134.5" />
+    </arc>
+  </map>
+</sbgn>

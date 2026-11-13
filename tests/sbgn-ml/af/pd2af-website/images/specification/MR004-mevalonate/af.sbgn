@@ -1,0 +1,422 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sbgn xmlns="http://sbgn.org/libsbgn/0.2">
+  <map language="activity flow">
+    <glyph id="CaM" class="biological activity">
+      <label text="CaM" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="CaM-Ca-Ca" class="biological activity">
+      <label text="CaM-Ca-Ca" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="CaMKKβ" class="biological activity">
+      <label text="CaMKKβ" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="CaM-Ca-Ca-Ca-CaMKKβ-active" class="biological activity">
+      <label text="CaM-Ca-Ca-Ca-CaMKKβ-active" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="CaM-Ca-Ca-Ca-CaMKKβ-active-uoi-2556" class="unit of information">
+        <label text="" />
+        <entity name="complex" />
+        <bbox x="20.0" y="-5.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="LKB1-active-MO25α/β-STRADα/β-ATP" class="biological activity">
+      <label text="LKB1-active-MO25α/β-STRADα/β-ATP" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="LKB1-active-MO25α/β-STRADα/β-ATP-uoi-2557" class="unit of information">
+        <label text="" />
+        <entity name="complex" />
+        <bbox x="20.0" y="-5.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="LKB1" class="biological activity">
+      <label text="LKB1" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="STRADα/β" class="biological activity">
+      <label text="STRADα/β" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="MO25α/β" class="biological activity">
+      <label text="MO25α/β" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="AMPKα" class="biological activity">
+      <label text="AMPKα" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="AMPKβ" class="biological activity">
+      <label text="AMPKβ" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="AMPKγ" class="biological activity">
+      <label text="AMPKγ" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="AMPKα-AMPKβ-AMPKγ" class="biological activity">
+      <label text="AMPKα-AMPKβ-AMPKγ" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="AMPKα-AMPKβ-AMPKγ-uoi-2558" class="unit of information">
+        <label text="" />
+        <entity name="complex" />
+        <bbox x="20.0" y="-5.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="AMPKα-P-AMPKβ-AMPKγ-ATP" class="biological activity">
+      <label text="AMPKα-P-AMPKβ-AMPKγ-ATP" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="AMPKα-P-AMPKβ-AMPKγ-ATP-uoi-2559" class="unit of information">
+        <label text="" />
+        <entity name="complex" />
+        <bbox x="20.0" y="-5.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="AMPKα-P-AMPKβ-AMPKγ-AMP" class="biological activity">
+      <label text="AMPKα-P-AMPKβ-AMPKγ-AMP" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="AMPKα-P-AMPKβ-AMPKγ-AMP-uoi-2560" class="unit of information">
+        <label text="" />
+        <entity name="complex" />
+        <bbox x="20.0" y="-5.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="PP2AC" class="biological activity">
+      <label text="PP2AC" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="PP2ARA" class="biological activity">
+      <label text="PP2ARA" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="PP2AC-PP2ARA" class="biological activity">
+      <label text="PP2AC-PP2ARA" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="PP2AC-PP2ARA-uoi-2561" class="unit of information">
+        <label text="" />
+        <entity name="complex" />
+        <bbox x="20.0" y="-5.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="PP2ARB" class="biological activity">
+      <label text="PP2ARB" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="PP2AC-PP2ARA-PP2ARB" class="biological activity">
+      <label text="PP2AC-PP2ARA-PP2ARB" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="PP2AC-PP2ARA-PP2ARB-uoi-2562" class="unit of information">
+        <label text="" />
+        <entity name="complex" />
+        <bbox x="20.0" y="-5.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="PP2C" class="biological activity">
+      <label text="PP2C" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="HMGCR-tetramer" class="biological activity">
+      <label text="HMGCR-tetramer" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="ACAT1/2-tetramer" class="biological activity">
+      <label text="ACAT1/2-tetramer" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="Acetyl-CoA" class="biological activity">
+      <label text="Acetyl-CoA" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="Acetyl-CoA-uoi-2563" class="unit of information">
+        <label text="" />
+        <entity name="simple chemical" />
+        <bbox x="20.0" y="-5.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="Acetoacetyl-CoA" class="biological activity">
+      <label text="Acetoacetyl-CoA" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="Acetoacetyl-CoA-uoi-2564" class="unit of information">
+        <label text="" />
+        <entity name="simple chemical" />
+        <bbox x="20.0" y="-5.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="HMGCS2" class="biological activity">
+      <label text="HMGCS2" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="HMG-CoA" class="biological activity">
+      <label text="HMG-CoA" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="HMG-CoA-uoi-2565" class="unit of information">
+        <label text="" />
+        <entity name="simple chemical" />
+        <bbox x="20.0" y="-5.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="Mevalonate" class="biological activity">
+      <label text="Mevalonate" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="Mevalonate-uoi-2566" class="unit of information">
+        <label text="" />
+        <entity name="simple chemical" />
+        <bbox x="20.0" y="-5.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="and-2497" class="and">
+      <bbox x="27.0" y="7.0" w="25" h="25" />
+      <port id="and-2497-in" x="39.5" y="37.0" />
+      <port id="and-2497-out" x="39.5" y="2.0" />
+    </glyph>
+    <glyph id="and-2501" class="and">
+      <bbox x="27.0" y="7.0" w="25" h="25" />
+      <port id="and-2501-in" x="39.5" y="37.0" />
+      <port id="and-2501-out" x="39.5" y="2.0" />
+    </glyph>
+    <glyph id="and-2506" class="and">
+      <bbox x="32.0" y="9.0" w="25" h="25" />
+      <port id="and-2506-in" x="62.0" y="21.5" />
+      <port id="and-2506-out" x="27.0" y="21.5" />
+    </glyph>
+    <glyph id="or-2507" class="or">
+      <bbox x="27.0" y="7.0" w="25" h="25" />
+      <port id="or-2507-in" x="39.5" y="37.0" />
+      <port id="or-2507-out" x="39.5" y="2.0" />
+    </glyph>
+    <glyph id="and-2513" class="and">
+      <bbox x="27.0" y="7.0" w="25" h="25" />
+      <port id="and-2513-in" x="39.5" y="37.0" />
+      <port id="and-2513-out" x="39.5" y="2.0" />
+    </glyph>
+    <glyph id="and-2518" class="and">
+      <bbox x="32.0" y="9.0" w="25" h="25" />
+      <port id="and-2518-in" x="62.0" y="21.5" />
+      <port id="and-2518-out" x="27.0" y="21.5" />
+    </glyph>
+    <glyph id="or-2519" class="or">
+      <bbox x="27.0" y="7.0" w="25" h="25" />
+      <port id="or-2519-in" x="39.5" y="37.0" />
+      <port id="or-2519-out" x="39.5" y="2.0" />
+    </glyph>
+    <glyph id="or-2525" class="or">
+      <bbox x="27.0" y="7.0" w="25" h="25" />
+      <port id="or-2525-in" x="39.5" y="37.0" />
+      <port id="or-2525-out" x="39.5" y="2.0" />
+    </glyph>
+    <glyph id="and-2529" class="and">
+      <bbox x="27.0" y="7.0" w="25" h="25" />
+      <port id="and-2529-in" x="39.5" y="37.0" />
+      <port id="and-2529-out" x="39.5" y="2.0" />
+    </glyph>
+    <glyph id="and-2533" class="and">
+      <bbox x="27.0" y="7.0" w="25" h="25" />
+      <port id="and-2533-in" x="39.5" y="37.0" />
+      <port id="and-2533-out" x="39.5" y="2.0" />
+    </glyph>
+    <glyph id="or-2539" class="or">
+      <bbox x="27.0" y="7.0" w="25" h="25" />
+      <port id="or-2539-in" x="39.5" y="37.0" />
+      <port id="or-2539-out" x="39.5" y="2.0" />
+    </glyph>
+    <glyph id="and-2543" class="and">
+      <bbox x="27.0" y="7.0" w="25" h="25" />
+      <port id="and-2543-in" x="39.5" y="37.0" />
+      <port id="and-2543-out" x="39.5" y="2.0" />
+    </glyph>
+    <glyph id="and-2547" class="and">
+      <bbox x="27.0" y="7.0" w="25" h="25" />
+      <port id="and-2547-in" x="39.5" y="37.0" />
+      <port id="and-2547-out" x="39.5" y="2.0" />
+    </glyph>
+    <glyph id="and-2552" class="and">
+      <bbox x="27.0" y="7.0" w="25" h="25" />
+      <port id="and-2552-in" x="39.5" y="37.0" />
+      <port id="and-2552-out" x="39.5" y="2.0" />
+    </glyph>
+    <arc class="positive influence" id="positive-influence-2496" source="CaM" target="CaM-Ca-Ca">
+      <start x="80.0" y="20.0" />
+      <end x="0" y="20.0" />
+    </arc>
+    <arc class="positive influence" id="positive-influence-2500" source="and-2497-out" target="CaM-Ca-Ca-Ca-CaMKKβ-active">
+      <start x="27.0" y="19.5" />
+      <end x="80.0" y="20.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2498" source="CaM-Ca-Ca" target="and-2497-in">
+      <start x="0" y="20.0" />
+      <end x="39.5" y="37.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2499" source="CaMKKβ" target="and-2497-in">
+      <start x="0" y="20.0" />
+      <end x="39.5" y="37.0" />
+    </arc>
+    <arc class="positive influence" id="positive-influence-2505" source="and-2501-out" target="LKB1-active-MO25α/β-STRADα/β-ATP">
+      <start x="27.0" y="19.5" />
+      <end x="80.0" y="20.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2502" source="LKB1" target="and-2501-in">
+      <start x="0" y="20.0" />
+      <end x="39.5" y="37.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2503" source="STRADα/β" target="and-2501-in">
+      <start x="0" y="20.0" />
+      <end x="39.5" y="37.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2504" source="MO25α/β" target="and-2501-in">
+      <start x="0" y="20.0" />
+      <end x="39.5" y="37.0" />
+    </arc>
+    <arc class="positive influence" id="positive-influence-2512" source="and-2506-out" target="AMPKα-P-AMPKβ-AMPKγ-ATP">
+      <start x="57.0" y="21.5" />
+      <end x="0" y="20.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2510" source="AMPKα-AMPKβ-AMPKγ" target="and-2506-in">
+      <start x="80.0" y="20.0" />
+      <end x="62.0" y="21.5" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2511" source="or-2507" target="and-2506-in">
+      <start x="39.5" y="2.0" />
+      <end x="62.0" y="21.5" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2508" source="CaM-Ca-Ca-Ca-CaMKKβ-active" target="or-2507-in">
+      <start x="0" y="20.0" />
+      <end x="39.5" y="37.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2509" source="LKB1-active-MO25α/β-STRADα/β-ATP" target="or-2507-in">
+      <start x="0" y="20.0" />
+      <end x="39.5" y="37.0" />
+    </arc>
+    <arc class="positive influence" id="positive-influence-2517" source="and-2513-out" target="AMPKα-AMPKβ-AMPKγ">
+      <start x="27.0" y="19.5" />
+      <end x="80.0" y="20.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2514" source="AMPKα" target="and-2513-in">
+      <start x="0" y="20.0" />
+      <end x="39.5" y="37.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2515" source="AMPKβ" target="and-2513-in">
+      <start x="0" y="20.0" />
+      <end x="39.5" y="37.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2516" source="AMPKγ" target="and-2513-in">
+      <start x="0" y="20.0" />
+      <end x="39.5" y="37.0" />
+    </arc>
+    <arc class="positive influence" id="positive-influence-2524" source="and-2518-out" target="AMPKα-AMPKβ-AMPKγ">
+      <start x="57.0" y="21.5" />
+      <end x="0" y="20.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2522" source="AMPKα-P-AMPKβ-AMPKγ-ATP" target="and-2518-in">
+      <start x="80.0" y="20.0" />
+      <end x="62.0" y="21.5" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2523" source="or-2519" target="and-2518-in">
+      <start x="39.5" y="2.0" />
+      <end x="62.0" y="21.5" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2520" source="PP2C" target="or-2519-in">
+      <start x="0" y="20.0" />
+      <end x="39.5" y="37.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2521" source="PP2AC-PP2ARA-PP2ARB" target="or-2519-in">
+      <start x="0" y="20.0" />
+      <end x="39.5" y="37.0" />
+    </arc>
+    <arc class="negative influence" id="negative-influence-2528" source="or-2525-out" target="AMPKα-P-AMPKβ-AMPKγ-ATP">
+      <start x="27.0" y="19.5" />
+      <end x="80.0" y="20.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2526" source="PP2AC-PP2ARA-PP2ARB" target="or-2525-in">
+      <start x="0" y="20.0" />
+      <end x="39.5" y="37.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2527" source="PP2C" target="or-2525-in">
+      <start x="0" y="20.0" />
+      <end x="39.5" y="37.0" />
+    </arc>
+    <arc class="positive influence" id="positive-influence-2532" source="and-2529-out" target="PP2AC-PP2ARA">
+      <start x="27.0" y="19.5" />
+      <end x="80.0" y="20.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2530" source="PP2AC" target="and-2529-in">
+      <start x="0" y="20.0" />
+      <end x="39.5" y="37.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2531" source="PP2ARA" target="and-2529-in">
+      <start x="0" y="20.0" />
+      <end x="39.5" y="37.0" />
+    </arc>
+    <arc class="positive influence" id="positive-influence-2536" source="and-2533-out" target="PP2AC-PP2ARA-PP2ARB">
+      <start x="27.0" y="19.5" />
+      <end x="80.0" y="20.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2534" source="PP2AC-PP2ARA" target="and-2533-in">
+      <start x="0" y="20.0" />
+      <end x="39.5" y="37.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2535" source="PP2ARB" target="and-2533-in">
+      <start x="0" y="20.0" />
+      <end x="39.5" y="37.0" />
+    </arc>
+    <arc class="positive influence" id="positive-influence-2537" source="PP2AC-PP2ARA-PP2ARB" target="HMGCR-tetramer">
+      <start x="80.0" y="20.0" />
+      <end x="0" y="20.0" />
+    </arc>
+    <arc class="positive influence" id="positive-influence-2538" source="AMPKα-P-AMPKβ-AMPKγ-ATP" target="AMPKα-P-AMPKβ-AMPKγ-AMP">
+      <start x="80.0" y="20.0" />
+      <end x="0" y="20.0" />
+    </arc>
+    <arc class="negative influence" id="negative-influence-2542" source="or-2539-out" target="HMGCR-tetramer">
+      <start x="27.0" y="19.5" />
+      <end x="80.0" y="20.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2540" source="AMPKα-P-AMPKβ-AMPKγ-ATP" target="or-2539-in">
+      <start x="0" y="20.0" />
+      <end x="39.5" y="37.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2541" source="AMPKα-P-AMPKβ-AMPKγ-AMP" target="or-2539-in">
+      <start x="0" y="20.0" />
+      <end x="39.5" y="37.0" />
+    </arc>
+    <arc class="positive influence" id="positive-influence-2546" source="and-2543-out" target="Mevalonate">
+      <start x="27.0" y="19.5" />
+      <end x="80.0" y="20.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2544" source="HMGCR-tetramer" target="and-2543-in">
+      <start x="0" y="20.0" />
+      <end x="39.5" y="37.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2545" source="HMG-CoA" target="and-2543-in">
+      <start x="0" y="20.0" />
+      <end x="39.5" y="37.0" />
+    </arc>
+    <arc class="positive influence" id="positive-influence-2551" source="and-2547-out" target="HMG-CoA">
+      <start x="27.0" y="19.5" />
+      <end x="80.0" y="20.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2548" source="Acetyl-CoA" target="and-2547-in">
+      <start x="0" y="20.0" />
+      <end x="39.5" y="37.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2549" source="Acetoacetyl-CoA" target="and-2547-in">
+      <start x="0" y="20.0" />
+      <end x="39.5" y="37.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2550" source="HMGCS2" target="and-2547-in">
+      <start x="0" y="20.0" />
+      <end x="39.5" y="37.0" />
+    </arc>
+    <arc class="positive influence" id="positive-influence-2555" source="and-2552-out" target="Acetoacetyl-CoA">
+      <start x="27.0" y="19.5" />
+      <end x="80.0" y="20.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2553" source="Acetyl-CoA" target="and-2552-in">
+      <start x="0" y="20.0" />
+      <end x="39.5" y="37.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2554" source="ACAT1/2-tetramer" target="and-2552-in">
+      <start x="0" y="20.0" />
+      <end x="39.5" y="37.0" />
+    </arc>
+  </map>
+</sbgn>

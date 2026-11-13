@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sbgn xmlns="http://sbgn.org/libsbgn/0.2">
+    <map language="activity flow">
+        <glyph id="glyph0" class="biological activity">
+            <label text="enzyme"/>
+            <bbox y="20.0" x="49.0" h="40.0" w="80.0"/>
+            <glyph id="glyph0a" class="unit of information">
+                <entity name="macromolecule"/>
+                <bbox y="12.0" x="94.0" h="16.0" w="30.0"/>
+            </glyph>
+        </glyph>
+        <glyph id="glyph1" class="biological activity">
+            <label text="S1"/>
+            <bbox y="85.0" x="14.0" h="40.0" w="80.0"/>
+            <glyph id="glyph1a" class="unit of information">
+                <entity name="unspecified entity"/>
+                <bbox y="75.0" x="64.0" h="20.0" w="20.0"/>
+            </glyph>
+        </glyph>
+        <glyph id="glyph2" class="biological activity">
+            <label text="P1"/>
+            <bbox y="85.0" x="204.0" h="40.0" w="80.0"/>
+            <glyph id="glyph2a" class="unit of information">
+                <entity name="unspecified entity"/>
+                <bbox y="75.0" x="254.0" h="20.0" w="20.0"/>
+            </glyph>
+        </glyph>
+        <glyph id="glyph5" class="biological activity">
+            <label text="P2"/>
+            <bbox y="150.0" x="159.0" h="40.0" w="80.0"/>
+            <glyph id="glyph5a" class="unit of information">
+                <entity name="unspecified entity"/>
+                <bbox y="140.0" x="209.0" h="20.0" w="20.0"/>
+            </glyph>
+        </glyph>
+        <glyph id="glyph4" class="biological activity">
+            <label text="S2"/>
+            <bbox y="150.0" x="49.0" h="40.0" w="80.0"/>
+            <glyph id="glyph4a" class="unit of information">
+                <entity name="unspecified entity"/>
+                <bbox y="140.0" x="99.0" h="20.0" w="20.0"/>
+            </glyph>
+        </glyph>
+        <glyph id="glyph3" class="and">
+            <bbox y="87.0" x="127.0" h="36.0" w="36.0"/>
+            <port y="105.0" x="109.0" id="glyph3.1"/>
+            <port y="105.0" x="181.0" id="glyph3.2"/>
+        </glyph>
+        <arc target="glyph3.1" source="glyph0" id="arc2" class="logic arc">
+            <start y="60.0" x="95.15385"/>
+            <end y="105.0" x="109.0"/>
+        </arc>
+        <arc target="glyph3.1" source="glyph1" id="arc3" class="logic arc">
+            <start y="105.0" x="94.0"/>
+            <end y="105.0" x="109.0"/>
+        </arc>
+        <arc target="glyph2" source="glyph3.2" id="arc1" class="positive influence">
+            <start y="105.0" x="181.0"/>
+            <end y="105.0" x="204.0"/>
+        </arc>
+        <arc target="glyph5" source="glyph3.2" id="arc4" class="positive influence">
+            <start y="105.0" x="181.0"/>
+            <end y="150.0" x="182.38461"/>
+        </arc>
+        <arc target="glyph3.1" source="glyph4" id="arc5" class="logic arc">
+            <start y="150.0" x="95.15385"/>
+            <end y="105.0" x="109.0"/>
+        </arc>
+    </map>
+</sbgn>

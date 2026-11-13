@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sbgn xmlns="http://sbgn.org/libsbgn/0.2">
+  <map language="activity flow">
+    <glyph id="R1" class="biological activity">
+      <label text="R1" />
+      <bbox x="160.0" y="130.0" w="80" h="40" />
+    </glyph>
+    <glyph id="R2" class="biological activity">
+      <label text="R2" />
+      <bbox x="360.0" y="130.0" w="80" h="40" />
+    </glyph>
+    <glyph id="R3" class="biological activity">
+      <label text="R3" />
+      <bbox x="260.0" y="330.0" w="80" h="40" />
+    </glyph>
+    <glyph id="A2" class="biological activity">
+      <label text="A" />
+      <bbox x="260.0" y="230.0" w="80" h="40" />
+    </glyph>
+    <glyph id="or-1637" class="or">
+      <bbox x="287.0" y="170.0" w="25" h="25" />
+      <port id="or-1637-in" x="299.5" y="165.0" />
+      <port id="or-1637-out" x="299.5" y="200.0" />
+    </glyph>
+    <arc class="positive influence" id="positive-influence-1640" source="or-1637-out" target="A2">
+      <start x="299.5" y="195.0" />
+      <end x="300.0" y="230.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-1638" source="R1" target="or-1637-in">
+      <start x="240.0" y="150.0" />
+      <end x="299.5" y="165.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-1639" source="R2" target="or-1637-in">
+      <start x="360.0" y="150.0" />
+      <end x="299.5" y="165.0" />
+    </arc>
+    <arc class="negative influence" id="negative-influence-1641" source="R3" target="A2">
+      <start x="300.0" y="330.0" />
+      <end x="300.0" y="270.0" />
+    </arc>
+  </map>
+</sbgn>

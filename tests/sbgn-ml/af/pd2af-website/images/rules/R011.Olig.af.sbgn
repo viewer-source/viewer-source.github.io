@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sbgn xmlns="http://sbgn.org/libsbgn/0.2">
+    <map language="activity flow">
+        <glyph id="A" class="biological activity">
+            <label text="A"/>
+            <bbox y="20.0" x="20.0" h="40.0" w="80.0"/>
+        </glyph>
+        <glyph id="A-dimer" class="biological activity">
+            <label text="A-dimer"/>
+            <bbox y="20.0" x="180.0" h="40.0" w="80.0"/>
+        </glyph>
+        <arc target="A-dimer" source="A" id="modulation-159" class="positive influence">
+            <start y="40.0" x="100.0"/>
+            <end y="40.0" x="180.0"/>
+        </arc>
+    </map>
+</sbgn>

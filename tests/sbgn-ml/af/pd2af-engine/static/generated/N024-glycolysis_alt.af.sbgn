@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sbgn xmlns="http://sbgn.org/libsbgn/0.2">
+  <map language="activity flow">
+    <glyph id="and-34" class="and">
+      <bbox x="652.0" y="-0.16666666666666607" w="25" h="25" />
+      <port id="and-in-35" x="647.0" y="12.333333333333334" />
+      <port id="out-in-36" x="682.0" y="12.333333333333334" />
+    </glyph>
+    <glyph id="idda98c77b-8df9-1937-d6a5-f4a2ffc6c0da" class="biological activity">
+      <label text="ATP" />
+      <bbox x="550.5" y="18.5" w="55" h="25" />
+      <glyph id="uoi-40" class="unit of information">
+        <label text="" />
+        <entity name="simple chemical" />
+        <bbox x="558.0" y="13.5" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="idnwtN_a549343c-ccac-43fd-a420-d9fe98d19b02" class="biological activity">
+      <label text="ADCY" />
+      <bbox x="615" y="-66.5" w="110" h="50" />
+    </glyph>
+    <glyph id="id24bae4c6-a961-9e0c-93d9-230b0e6d8afd" class="biological activity">
+      <label text="cAMP" />
+      <bbox x="690.5" y="22.5" w="110" h="50" />
+      <glyph id="uoi-42" class="unit of information">
+        <label text="" />
+        <entity name="simple chemical" />
+        <bbox x="725.5" y="17.5" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="and-43" class="and">
+      <bbox x="801.3333333333334" y="60.83333333333333" w="25" h="25" />
+      <port id="and-in-44" x="813.8333333333334" y="55.83333333333333" />
+      <port id="out-in-45" x="813.8333333333334" y="90.83333333333333" />
+    </glyph>
+    <glyph id="id56782cd0-f75c-cdcd-438a-1b4ec9ba0f3a" class="biological activity">
+      <label text="PKA" />
+      <bbox x="806" y="-38.5" w="60" h="35" />
+    </glyph>
+    <glyph id="idnwtN_1ce0f638-2a9f-4c0d-82ef-5d924fb6b46e" class="biological activity">
+      <label text="PKA" />
+      <bbox x="805" y="168.5" w="110" h="50" />
+    </glyph>
+    <glyph id="and-51" class="and">
+      <bbox x="552.6666666666666" y="161.5" w="25" h="25" />
+      <port id="and-in-52" x="547.6666666666666" y="174.0" />
+      <port id="out-in-53" x="582.6666666666666" y="174.0" />
+    </glyph>
+    <glyph id="iddea966d5-5822-6c78-0331-fa54219ebdea" class="biological activity">
+      <label text="β-D-fructose-6P" />
+      <bbox x="259.5" y="174.5" w="101" h="25" />
+      <glyph id="uoi-57" class="unit of information">
+        <label text="" />
+        <entity name="simple chemical" />
+        <bbox x="290.0" y="169.5" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="idnwtN_07a17a20-ebbe-426e-8621-6a1f0248c3cd" class="biological activity">
+      <label text="PFKFB2" />
+      <bbox x="705" y="111.5" w="110" h="50" />
+    </glyph>
+    <glyph id="id52141225-edd3-e5c3-12b5-3460f5d030ef" class="biological activity">
+      <label text="β-D-fructose-2,6P2" />
+      <bbox x="570.5" y="173.5" w="110" h="50" />
+      <glyph id="uoi-59" class="unit of information">
+        <label text="" />
+        <entity name="simple chemical" />
+        <bbox x="605.5" y="168.5" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="and-60" class="and">
+      <bbox x="552.6666666666666" y="161.5" w="25" h="25" />
+      <port id="and-in-61" x="582.6666666666666" y="174.0" />
+      <port id="out-in-62" x="547.6666666666666" y="174.0" />
+    </glyph>
+    <glyph id="and-71" class="and">
+      <bbox x="344.6666666666667" y="231.83333333333334" w="25" h="25" />
+      <port id="and-in-72" x="374.6666666666667" y="244.33333333333334" />
+      <port id="out-in-73" x="339.6666666666667" y="244.33333333333334" />
+    </glyph>
+    <glyph id="idecb133e2-2980-ac5d-0a22-3e6123b798b2" class="biological activity">
+      <label text="PFK1" />
+      <bbox x="393" y="218.5" w="110" h="50" />
+    </glyph>
+    <glyph id="id5b9a9c3a-790b-c175-0f6d-fa0045d00e60" class="biological activity">
+      <label text="β-D-fructose-1,6P2" />
+      <bbox x="258.5" y="277.5" w="110" h="50" />
+      <glyph id="uoi-78" class="unit of information">
+        <label text="" />
+        <entity name="simple chemical" />
+        <bbox x="293.5" y="272.5" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="and-79" class="and">
+      <bbox x="275.6666666666667" y="232.16666666666666" w="25" h="25" />
+      <port id="and-in-80" x="288.1666666666667" y="262.16666666666663" />
+      <port id="out-in-81" x="288.1666666666667" y="227.16666666666666" />
+    </glyph>
+    <glyph id="id890070cc-6d71-0c13-5e18-16e1bd2e9b37" class="biological activity">
+      <label text="F1,6BP" />
+      <bbox x="186" y="219.5" w="110" h="50" />
+    </glyph>
+    <glyph id="and-86" class="and">
+      <bbox x="274.6666666666667" y="131.83333333333334" w="25" h="25" />
+      <port id="and-in-87" x="269.6666666666667" y="144.33333333333334" />
+      <port id="out-in-88" x="304.6666666666667" y="144.33333333333334" />
+    </glyph>
+    <glyph id="idnwtN_ecf61b50-6c8f-435a-b140-357afb40c14a" class="biological activity">
+      <label text="GPI" />
+      <bbox x="178" y="118.5" w="110" h="50" />
+    </glyph>
+    <glyph id="idnwtN_65613a17-41c0-49f9-a5a2-6b9d2ea1771c" class="biological activity">
+      <label text="α-D-glucose-6P" />
+      <bbox x="263.5" y="77.5" w="110" h="50" />
+      <glyph id="uoi-93" class="unit of information">
+        <label text="" />
+        <entity name="simple chemical" />
+        <bbox x="298.5" y="72.5" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <arc id="arc-37" class="logic arc" source="idnwtN_a549343c-ccac-43fd-a420-d9fe98d19b02" target="and-in-35">
+      <start x="670.0" y="-16.5" />
+      <end x="647.0" y="12.333333333333334" />
+    </arc>
+    <arc id="arc-38" class="logic arc" source="idda98c77b-8df9-1937-d6a5-f4a2ffc6c0da" target="and-in-35">
+      <start x="578.0" y="18.5" />
+      <end x="647.0" y="12.333333333333334" />
+    </arc>
+    <arc id="arc-39" class="positive influence" source="out-in-36" target="id24bae4c6-a961-9e0c-93d9-230b0e6d8afd">
+      <start x="682.0" y="12.333333333333334" />
+      <end x="745.5" y="22.5" />
+    </arc>
+    <arc id="arc-46" class="logic arc" source="id24bae4c6-a961-9e0c-93d9-230b0e6d8afd" target="and-in-44">
+      <start x="800.5" y="47.5" />
+      <end x="813.8333333333334" y="55.83333333333333" />
+    </arc>
+    <arc id="arc-47" class="logic arc" source="id56782cd0-f75c-cdcd-438a-1b4ec9ba0f3a" target="and-in-44">
+      <start x="836.0" y="-3.5" />
+      <end x="813.8333333333334" y="55.83333333333333" />
+    </arc>
+    <arc id="arc-48" class="positive influence" source="out-in-45" target="idnwtN_1ce0f638-2a9f-4c0d-82ef-5d924fb6b46e">
+      <start x="813.8333333333334" y="90.83333333333333" />
+      <end x="860.0" y="168.5" />
+    </arc>
+    <arc id="arc-54" class="logic arc" source="idnwtN_07a17a20-ebbe-426e-8621-6a1f0248c3cd" target="and-in-52">
+      <start x="760.0" y="161.5" />
+      <end x="547.6666666666666" y="174.0" />
+    </arc>
+    <arc id="arc-55" class="logic arc" source="iddea966d5-5822-6c78-0331-fa54219ebdea" target="and-in-52">
+      <start x="360.5" y="187.0" />
+      <end x="547.6666666666666" y="174.0" />
+    </arc>
+    <arc id="arc-56" class="positive influence" source="out-in-53" target="id52141225-edd3-e5c3-12b5-3460f5d030ef">
+      <start x="582.6666666666666" y="174.0" />
+      <end x="680.5" y="198.5" />
+    </arc>
+    <arc id="arc-63" class="logic arc" source="idnwtN_07a17a20-ebbe-426e-8621-6a1f0248c3cd" target="and-in-61">
+      <start x="760.0" y="161.5" />
+      <end x="582.6666666666666" y="174.0" />
+    </arc>
+    <arc id="arc-64" class="logic arc" source="id52141225-edd3-e5c3-12b5-3460f5d030ef" target="and-in-61">
+      <start x="570.5" y="198.5" />
+      <end x="582.6666666666666" y="174.0" />
+    </arc>
+    <arc id="arc-65" class="positive influence" source="out-in-62" target="iddea966d5-5822-6c78-0331-fa54219ebdea">
+      <start x="547.6666666666666" y="174.0" />
+      <end x="360.5" y="187.0" />
+    </arc>
+    <arc id="a17" class="positive influence" source="idnwtN_1ce0f638-2a9f-4c0d-82ef-5d924fb6b46e" target="idnwtN_07a17a20-ebbe-426e-8621-6a1f0248c3cd">
+      <start x="860.0" y="168.5" />
+      <end x="760.0" y="161.5" />
+    </arc>
+    <arc id="arc-74" class="logic arc" source="idecb133e2-2980-ac5d-0a22-3e6123b798b2" target="and-in-72">
+      <start x="393.0" y="243.5" />
+      <end x="374.6666666666667" y="244.33333333333334" />
+    </arc>
+    <arc id="arc-75" class="logic arc" source="iddea966d5-5822-6c78-0331-fa54219ebdea" target="and-in-72">
+      <start x="310.0" y="199.5" />
+      <end x="374.6666666666667" y="244.33333333333334" />
+    </arc>
+    <arc id="arc-76" class="positive influence" source="out-in-73" target="id5b9a9c3a-790b-c175-0f6d-fa0045d00e60">
+      <start x="339.6666666666667" y="244.33333333333334" />
+      <end x="313.5" y="277.5" />
+    </arc>
+    <arc id="arc-82" class="logic arc" source="id890070cc-6d71-0c13-5e18-16e1bd2e9b37" target="and-in-80">
+      <start x="296.0" y="244.5" />
+      <end x="288.1666666666667" y="262.16666666666663" />
+    </arc>
+    <arc id="arc-83" class="logic arc" source="id5b9a9c3a-790b-c175-0f6d-fa0045d00e60" target="and-in-80">
+      <start x="313.5" y="277.5" />
+      <end x="288.1666666666667" y="262.16666666666663" />
+    </arc>
+    <arc id="arc-84" class="positive influence" source="out-in-81" target="iddea966d5-5822-6c78-0331-fa54219ebdea">
+      <start x="288.1666666666667" y="227.16666666666666" />
+      <end x="310.0" y="199.5" />
+    </arc>
+    <arc id="arc-89" class="logic arc" source="idnwtN_ecf61b50-6c8f-435a-b140-357afb40c14a" target="and-in-87">
+      <start x="288.0" y="143.5" />
+      <end x="269.6666666666667" y="144.33333333333334" />
+    </arc>
+    <arc id="arc-90" class="positive influence" source="out-in-88" target="iddea966d5-5822-6c78-0331-fa54219ebdea">
+      <start x="304.6666666666667" y="144.33333333333334" />
+      <end x="310.0" y="174.5" />
+    </arc>
+    <arc id="arc-91" class="positive influence" source="out-in-88" target="idnwtN_65613a17-41c0-49f9-a5a2-6b9d2ea1771c">
+      <start x="304.6666666666667" y="144.33333333333334" />
+      <end x="318.5" y="127.5" />
+    </arc>
+  </map>
+</sbgn>

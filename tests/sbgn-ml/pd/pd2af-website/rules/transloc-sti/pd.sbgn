@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sbgn xmlns="http://sbgn.org/libsbgn/0.2">
+  <map language="process description">
+    <glyph class="compartment" id="C1-229">
+      <label text="C1" />
+      <bbox x="130.0" y="100.0" w="240.0" h="200.0" />
+    </glyph>
+    <glyph class="macromolecule" id="A" compartmentRef="C1-229">
+      <label text="A" />
+      <bbox x="260.0" y="230.0" w="80" h="40" />
+    </glyph>
+    <glyph class="macromolecule" id="B1" compartmentRef="C1-229">
+      <label text="B" />
+      <bbox x="160.0" y="130.0" w="80" h="40" />
+    </glyph>
+    <glyph class="compartment" id="C2-230">
+      <label text="C2" />
+      <bbox x="130.0" y="300.0" w="140.0" h="100.0" />
+    </glyph>
+    <glyph class="macromolecule" id="B2" compartmentRef="C2-230">
+      <label text="B" />
+      <bbox x="160.0" y="330.0" w="80" h="40" />
+    </glyph>
+    <glyph class="process" id="p1">
+      <bbox x="190.0" y="240.0" w="20" h="20" />
+      <port id="p1-in" x="200.0" y="235.0" />
+      <port id="p1-out" x="200.0" y="265.0" />
+    </glyph>
+    <arc class="stimulation" id="modulation-237" source="A" target="p1">
+      <start x="260.0" y="250.0" />
+      <end x="210.0" y="250.0" />
+    </arc>
+    <arc class="consumption" id="consumption-238" source="B1" target="p1-in">
+      <start x="200.0" y="170.0" />
+      <end x="200.0" y="235.0" />
+    </arc>
+    <arc class="production" id="production-239" source="p1-out" target="B2">
+      <start x="200.0" y="265.0" />
+      <end x="200.0" y="330.0" />
+    </arc>
+  </map>
+</sbgn>

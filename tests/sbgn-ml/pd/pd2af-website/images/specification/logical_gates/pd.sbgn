@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sbgn xmlns="http://sbgn.org/libsbgn/0.2">
+  <map language="process description">
+    <glyph id="M1" class="simple chemical">
+      <label text="M1" />
+      <bbox x="160.0" y="530.0" w="80" h="40" />
+    </glyph>
+    <glyph id="M2" class="simple chemical">
+      <label text="M2" />
+      <bbox x="360.0" y="530.0" w="80" h="40" />
+    </glyph>
+    <glyph id="A" class="macromolecule">
+      <label text="A" />
+      <bbox x="260.0" y="130.0" w="80" h="40" />
+    </glyph>
+    <glyph id="C" class="macromolecule">
+      <label text="C" />
+      <bbox x="360.0" y="130.0" w="80" h="40" />
+    </glyph>
+    <glyph id="D" class="macromolecule">
+      <label text="D" />
+      <bbox x="560.0" y="230.0" w="80" h="40" />
+    </glyph>
+    <glyph id="p1" class="process">
+      <bbox x="288.0" y="538.0" w="24" h="24" />
+      <port id="p1-in" x="283.0" y="550.0" />
+      <port id="p1-out" x="317.0" y="550.0" />
+    </glyph>
+    <glyph id="B" class="macromolecule">
+      <label text="B" />
+      <bbox x="460.0" y="130.0" w="80" h="40" />
+    </glyph>
+    <glyph id="or-902" class="or">
+      <bbox x="301.0" y="231.0" w="25" h="25" />
+      <port id="or-902-in" x="313.5" y="226.0" />
+      <port id="or-902-out" x="313.5" y="261.0" />
+    </glyph>
+    <glyph id="not-903" class="not">
+      <bbox x="165.0" y="275.0" w="25" h="25" />
+      <port id="not-903-in" x="177.5" y="270.0" />
+      <port id="not-903-out" x="177.5" y="305.0" />
+    </glyph>
+    <glyph id="or-904" class="or">
+      <bbox x="387.0" y="270.0" w="25" h="25" />
+      <port id="or-904-in" x="399.5" y="265.0" />
+      <port id="or-904-out" x="399.5" y="300.0" />
+    </glyph>
+    <arc class="consumption" id="consumption-900" source="M1" target="p1-in">
+      <start x="240.0" y="550.0" />
+      <end x="283.0" y="550.0" />
+    </arc>
+    <arc class="production" id="production-901" source="p1-out" target="M2">
+      <start x="317.0" y="550.0" />
+      <end x="360.0" y="550.0" />
+    </arc>
+    <arc class="catalysis" id="catalysis-911" source="or-902-out" target="p1">
+      <start x="313.5" y="256.0" />
+      <end x="300.0" y="538.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-908" source="A" target="or-902-in">
+      <start x="300.0" y="170.0" />
+      <end x="313.5" y="226.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-909" source="D" target="or-902-in">
+      <start x="560.0" y="250.0" />
+      <end x="313.5" y="226.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-910" source="not-903" target="or-902-in">
+      <start x="177.5" y="305.0" />
+      <end x="313.5" y="226.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-907" source="or-904" target="not-903-in">
+      <start x="399.5" y="300.0" />
+      <end x="177.5" y="270.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-905" source="C" target="or-904-in">
+      <start x="400.0" y="170.0" />
+      <end x="399.5" y="265.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-906" source="B" target="or-904-in">
+      <start x="500.0" y="170.0" />
+      <end x="399.5" y="265.0" />
+    </arc>
+  </map>
+</sbgn>

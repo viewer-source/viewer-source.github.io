@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sbgn xmlns="http://sbgn.org/libsbgn/0.2">
+    <map language="process description">
+        <glyph id="S" class="source and sink">
+            <bbox y="225.0" x="375.0" h="50.0" w="50.0"/>
+        </glyph>
+        <glyph id="C" class="macromolecule">
+            <label text="C"/>
+            <bbox y="130.0" x="260.0" h="40.0" w="80.0"/>
+        </glyph>
+        <glyph id="p" class="process">
+            <bbox y="238.0" x="288.0" h="24.0" w="24.0"/>
+            <port y="250.0" x="283.0" id="p.1"/>
+            <port y="250.0" x="317.0" id="p.2"/>
+        </glyph>
+        <glyph id="glyph2" class="macromolecule">
+            <label text="B"/>
+            <bbox y="354.0" x="280.0" h="40.0" w="80.0"/>
+            <glyph id="glyph2a" class="state variable">
+                <state value="S2"/>
+                <bbox y="344.0" x="325.0" h="20.0" w="30.0"/>
+            </glyph>
+        </glyph>
+        <glyph id="glyph1" class="macromolecule">
+            <label text="B"/>
+            <bbox y="354.0" x="45.0" h="40.0" w="80.0"/>
+            <glyph id="glyph1a" class="state variable">
+                <state value="S1"/>
+                <bbox y="344.0" x="90.0" h="20.0" w="30.0"/>
+            </glyph>
+        </glyph>
+        <glyph id="A" class="macromolecule">
+            <label text="A"/>
+            <bbox y="230.0" x="160.0" h="40.0" w="80.0"/>
+            <glyph id="Aa" class="state variable">
+                <state value="active"/>
+                <bbox y="219.0" x="197.0" h="22.0" w="46.0"/>
+            </glyph>
+        </glyph>
+        <glyph id="glyph3" class="process">
+            <bbox y="362.0" x="183.0" h="24.0" w="24.0"/>
+            <port y="374.0" x="219.0" id="glyph3.2"/>
+            <port y="374.0" x="171.0" id="glyph3.1"/>
+        </glyph>
+        <arc target="p.1" source="A" id="consumption-1014" class="consumption">
+            <start y="250.0" x="240.0"/>
+            <end y="250.0" x="283.0"/>
+        </arc>
+        <arc target="S" source="p.2" id="production-1015" class="production">
+            <start y="250.0" x="317.0"/>
+            <end y="250.0" x="375.0"/>
+        </arc>
+        <arc target="p" source="C" id="catalysis-1016" class="catalysis">
+            <start y="170.0" x="300.0"/>
+            <end y="238.0" x="300.0"/>
+        </arc>
+        <arc target="glyph2" source="glyph3.2" id="arc1" class="production">
+            <start y="374.0" x="219.0"/>
+            <end y="374.0" x="280.0"/>
+        </arc>
+        <arc target="glyph3.1" source="glyph1" id="arc2" class="consumption">
+            <start y="374.0" x="125.0"/>
+            <end y="374.0" x="171.0"/>
+        </arc>
+        <arc target="glyph3" source="A" id="arc3" class="inhibition">
+            <start y="270.0" x="199.19354"/>
+            <end y="362.0" x="195.48387"/>
+        </arc>
+    </map>
+</sbgn>

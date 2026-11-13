@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sbgn xmlns="http://sbgn.org/libsbgn/0.2">
+  <map language="activity flow">
+    <glyph id="glyph0" class="compartment">
+      <label text="CYTOSOL" />
+      <bbox x="35.0" y="310.0" w="1890.0" h="640.0" />
+    </glyph>
+    <glyph id="glyph1" class="compartment">
+      <label text="NUCLEUS" />
+      <bbox x="35.0" y="970.0" w="1890.0" h="280.0" />
+    </glyph>
+    <glyph id="glyph2" class="compartment">
+      <label text="EXTRACELLULAR SPACE" />
+      <bbox x="35.0" y="130.0" w="1890.0" h="160.0" />
+    </glyph>
+    <glyph id="glyph12" compartmentRef="glyph0" class="biological activity">
+      <label text="STAT1α" />
+      <bbox x="310.0" y="540.0" w="80" h="40" />
+    </glyph>
+    <glyph id="glyph10" compartmentRef="glyph0" class="biological activity">
+      <label text="STAT1α_dimer" />
+      <bbox x="60.0" y="720.0" w="80" h="40" />
+    </glyph>
+    <glyph id="glyph26" compartmentRef="glyph1" class="biological activity">
+      <label text="IRF1" />
+      <bbox x="360.0" y="1180.0" w="80" h="40" />
+      <glyph id="uoi43" class="unit of information">
+        <label text="" />
+        <entity name="nucleic acid feature" />
+        <bbox x="385.0" y="1174.0" w="30" h="12" />
+      </glyph>
+    </glyph>
+    <glyph id="glyph29" compartmentRef="glyph0" class="biological activity">
+      <label text="IRF1" />
+      <bbox x="360.0" y="750.0" w="80" h="40" />
+      <glyph id="uoi45" class="unit of information">
+        <label text="" />
+        <entity name="nucleic acid feature" />
+        <bbox x="385.0" y="744.0" w="30" h="12" />
+      </glyph>
+    </glyph>
+    <glyph id="glyph48" compartmentRef="glyph0" class="biological activity">
+      <label text="IRF1" />
+      <bbox x="580.0" y="630.0" w="80" h="40" />
+    </glyph>
+    <glyph id="gate49" class="and">
+      <bbox x="250.0" y="1125.0" w="80" h="40" />
+      <port id="in_gate_port50" x="290.0" y="1125.0" />
+      <port id="out_gate_port51" x="290.0" y="1165.0" />
+    </glyph>
+    <glyph id="glyph9" compartmentRef="glyph1" class="biological activity">
+      <label text="STAT1α_dimer" />
+      <bbox x="60.0" y="1030.0" w="80" h="40" />
+    </glyph>
+    <glyph id="glyph25" compartmentRef="glyph1" class="biological activity">
+      <label text="IRF1" />
+      <bbox x="260.0" y="1030.0" w="80" h="40" />
+      <glyph id="uoi54" class="unit of information">
+        <label text="" />
+        <entity name="nucleic acid feature" />
+        <bbox x="285.0" y="1024.0" w="30" h="12" />
+      </glyph>
+    </glyph>
+    <glyph id="gate60" class="and">
+      <bbox x="635.0" y="330.0" w="80" h="40" />
+      <port id="in_gate_port61" x="715.0" y="350.0" />
+      <port id="out_gate_port62" x="635.0" y="350.0" />
+    </glyph>
+    <glyph id="glyph7" compartmentRef="glyph0" class="biological activity">
+      <label text="JAK1-JAK2-IFNγR2-IFNγR1" />
+      <bbox x="980.0" y="310.0" w="80" h="40" />
+      <glyph id="uoi63" class="unit of information">
+        <label text="" />
+        <entity name="complex" />
+        <bbox x="1005.0" y="304.0" w="30" h="12" />
+      </glyph>
+    </glyph>
+    <glyph id="glyph16" compartmentRef="glyph2" class="biological activity">
+      <label text="IFNγ_dimer" />
+      <bbox x="850.0" y="170.0" w="80" h="40" />
+    </glyph>
+    <glyph id="glyph6" compartmentRef="glyph0" class="biological activity">
+      <label text="IFNγ-IFNγR1-IFNγR2-JAK1-JAK2" />
+      <bbox x="210.0" y="310.0" w="80" h="40" />
+      <glyph id="uoi68" class="unit of information">
+        <label text="" />
+        <entity name="complex" />
+        <bbox x="235.0" y="304.0" w="30" h="12" />
+      </glyph>
+    </glyph>
+    <arc id="arc44" class="positive influence" source="glyph26" target="glyph29">
+      <start x="400.0" y="1180.0" />
+      <end x="400.0" y="790.0" />
+    </arc>
+    <arc id="arc47" class="necessary stimulation" source="glyph29" target="glyph48">
+      <start x="400.0" y="750.0" />
+      <end x="620.0" y="670.0" />
+    </arc>
+    <arc id="arc53" class="logic arc" source="glyph9" target="in_gate_port50">
+      <start x="100.0" y="1070.0" />
+      <end x="290.0" y="1125.0" />
+    </arc>
+    <arc id="arc55" class="logic arc" source="glyph25" target="in_gate_port50">
+      <start x="300.0" y="1070.0" />
+      <end x="290.0" y="1125.0" />
+    </arc>
+    <arc id="arc56" class="necessary stimulation" source="out_gate_port51" target="glyph26">
+      <start x="290.0" y="1165.0" />
+      <end x="400.0" y="1180.0" />
+    </arc>
+    <arc id="arc58" class="positive influence" source="glyph10" target="glyph9">
+      <start x="100.0" y="760.0" />
+      <end x="100.0" y="1030.0" />
+    </arc>
+    <arc id="arc64" class="logic arc" source="glyph7" target="in_gate_port61">
+      <start x="980.0" y="330.0" />
+      <end x="715.0" y="350.0" />
+    </arc>
+    <arc id="arc66" class="logic arc" source="glyph16" target="in_gate_port61">
+      <start x="890.0" y="210.0" />
+      <end x="715.0" y="350.0" />
+    </arc>
+    <arc id="arc67" class="positive influence" source="out_gate_port62" target="glyph6">
+      <start x="635.0" y="350.0" />
+      <end x="290.0" y="330.0" />
+    </arc>
+    <arc id="arc69" class="positive influence" source="glyph6" target="glyph12">
+      <start x="250.0" y="350.0" />
+      <end x="350.0" y="540.0" />
+    </arc>
+    <arc id="arc41" class="positive influence" source="glyph12" target="glyph10">
+      <start x="350.0" y="580.0" />
+      <end x="100.0" y="720.0" />
+    </arc>
+  </map>
+</sbgn>

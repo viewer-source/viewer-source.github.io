@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sbgn xmlns="http://sbgn.org/libsbgn/0.2">
+    <map language="activity flow">
+        <glyph id="ubc9" class="biological activity">
+            <label text="ubc9"/>
+            <bbox y="15.0" x="15.0" h="40.0" w="80.0"/>
+        </glyph>
+        <glyph id="erk" class="biological activity">
+            <label text="erk"/>
+            <bbox y="15.0" x="185.0" h="40.0" w="80.0"/>
+        </glyph>
+        <glyph id="elk-1" class="biological activity">
+            <label text="elk-1"/>
+            <bbox y="110.0" x="100.0" h="40.0" w="80.0"/>
+        </glyph>
+        <glyph id="c-fos" class="biological activity">
+            <label text="c-fos"/>
+            <bbox y="205.0" x="100.0" h="40.0" w="80.0"/>
+        </glyph>
+        <arc target="elk-1" source="ubc9" id="modulation-114" class="negative influence">
+            <start y="55.0" x="72.89474"/>
+            <end y="110.0" x="122.10526"/>
+        </arc>
+        <arc target="elk-1" source="erk" id="modulation-115" class="positive influence">
+            <start y="55.0" x="207.10527"/>
+            <end y="110.0" x="157.89473"/>
+        </arc>
+        <arc target="c-fos" source="elk-1" id="modulation-116" class="positive influence">
+            <start y="150.0" x="140.0"/>
+            <end y="205.0" x="140.0"/>
+        </arc>
+    </map>
+</sbgn>

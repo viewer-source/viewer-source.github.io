@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sbgn xmlns="http://sbgn.org/libsbgn/0.2">
+  <map language="activity flow">
+    <glyph id="RAF" class="biological activity">
+      <label text="RAF" />
+      <bbox x="160.0" y="130.0" w="80" h="40" />
+    </glyph>
+    <glyph id="MEK" class="biological activity">
+      <label text="MEK" />
+      <bbox x="160.0" y="230.0" w="80" h="40" />
+    </glyph>
+    <glyph id="ERK" class="biological activity">
+      <label text="ERK" />
+      <bbox x="160.0" y="330.0" w="80" h="40" />
+    </glyph>
+    <arc class="positive influence" id="positive-influence-1470" source="RAF" target="MEK">
+      <start x="200.0" y="170.0" />
+      <end x="200.0" y="230.0" />
+    </arc>
+    <arc class="positive influence" id="positive-influence-1471" source="MEK" target="ERK">
+      <start x="200.0" y="270.0" />
+      <end x="200.0" y="330.0" />
+    </arc>
+  </map>
+</sbgn>

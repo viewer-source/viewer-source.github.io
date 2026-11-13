@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sbgn xmlns="http://sbgn.org/libsbgn/0.2">
+  <map language="activity flow">
+    <glyph id="C" class="biological activity">
+      <label text="C" />
+      <bbox x="240.0" y="50.0" w="80.0" h="40.0" />
+    </glyph>
+    <glyph id="A2" class="biological activity">
+      <label text="A2" />
+      <bbox x="340.0" y="150.0" w="80.0" h="40.0" />
+      <glyph id="A2-uoi-18" class="unit of information">
+        <label text="" />
+        <entity name="simple chemical" />
+        <bbox x="360.0" y="145.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="A1" class="biological activity">
+      <label text="A1" />
+      <bbox x="140.0" y="150.0" w="80.0" h="40.0" />
+      <glyph id="A1-uoi-19" class="unit of information">
+        <label text="" />
+        <entity name="simple chemical" />
+        <bbox x="160.0" y="145.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="glyph1" class="biological activity">
+      <label text="B" />
+      <bbox x="475.0" y="219.0" w="80.0" h="40.0" />
+    </glyph>
+    <glyph id="glyph2" class="biological activity">
+      <label text="D" />
+      <bbox x="285.0" y="284.0" w="80.0" h="40.0" />
+    </glyph>
+    <arc class="negative influence" id="negative-influence-16" source="A2" target="glyph1">
+      <start x="380.0" y="190.0" />
+      <end x="515.0" y="219.0" />
+    </arc>
+    <arc class="negative influence" id="negative-influence-17" source="A1" target="glyph2">
+      <start x="180.0" y="190.0" />
+      <end x="325.0" y="284.0" />
+    </arc>
+  </map>
+</sbgn>

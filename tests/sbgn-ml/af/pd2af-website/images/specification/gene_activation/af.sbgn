@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sbgn xmlns="http://sbgn.org/libsbgn/0.2">
+  <map language="activity flow">
+    <glyph id="cytosol" class="compartment">
+      <label text="cytosol" />
+      <bbox x="130.0" y="100.0" w="340.0" h="100.0" />
+    </glyph>
+    <glyph id="A" class="biological activity" compartmentRef="cytosol">
+      <label text="A" />
+      <bbox x="160.0" y="130.0" w="80" h="40" />
+    </glyph>
+    <glyph id="B" class="biological activity" compartmentRef="cytosol">
+      <label text="B" />
+      <bbox x="360.0" y="130.0" w="80" h="40" />
+    </glyph>
+    <glyph id="nucleus" class="compartment">
+      <label text="nucleus" />
+      <bbox x="230.0" y="200.0" w="140.0" h="100.0" />
+    </glyph>
+    <glyph id="Gene_Activation" class="biological activity" compartmentRef="nucleus">
+      <label text="Gene Activation" />
+      <bbox x="260.0" y="230.0" w="80" h="40" />
+    </glyph>
+    <arc class="positive influence" id="modulation-1053" source="A" target="Gene_Activation">
+      <start x="200.0" y="170.0" />
+      <end x="300.0" y="230.0" />
+    </arc>
+    <arc class="positive influence" id="modulation-1054" source="Gene_Activation" target="B">
+      <start x="300.0" y="230.0" />
+      <end x="400.0" y="170.0" />
+    </arc>
+  </map>
+</sbgn>

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sbgn xmlns="http://sbgn.org/libsbgn/0.2">
+    <map language="activity flow">
+        <glyph id="glyph2" class="biological activity">
+            <label text="X-P"/>
+            <bbox y="105.0" x="204.0" h="40.0" w="80.0"/>
+            <glyph id="glyph2a" class="unit of information">
+                <entity name="macromolecule"/>
+                <bbox y="97.0" x="249.0" h="16.0" w="30.0"/>
+            </glyph>
+        </glyph>
+        <glyph id="glyph0" class="biological activity">
+            <label text="kinase"/>
+            <bbox y="25.0" x="74.0" h="40.0" w="80.0"/>
+            <glyph id="glyph0a" class="unit of information">
+                <entity name="macromolecule"/>
+                <bbox y="17.0" x="119.0" h="16.0" w="30.0"/>
+            </glyph>
+        </glyph>
+        <glyph id="glyph1" class="biological activity">
+            <label text="X"/>
+            <bbox y="105.0" x="14.0" h="40.0" w="80.0"/>
+            <glyph id="glyph1a" class="unit of information">
+                <entity name="macromolecule"/>
+                <bbox y="97.0" x="59.0" h="16.0" w="30.0"/>
+            </glyph>
+        </glyph>
+        <glyph id="glyph3" class="and">
+            <bbox y="107.0" x="132.0" h="36.0" w="36.0"/>
+            <port y="125.0" x="186.0" id="glyph3.2"/>
+            <port y="125.0" x="114.0" id="glyph3.1"/>
+        </glyph>
+        <arc target="glyph2" source="glyph3.2" id="arc1" class="positive influence">
+            <start y="125.0" x="186.0"/>
+            <end y="125.0" x="204.0"/>
+        </arc>
+        <arc target="glyph3.1" source="glyph0" id="arc2" class="logic arc">
+            <start y="65.0" x="114.0"/>
+            <end y="125.0" x="114.0"/>
+        </arc>
+        <arc target="glyph3.1" source="glyph1" id="arc3" class="logic arc">
+            <start y="125.0" x="94.0"/>
+            <end y="125.0" x="114.0"/>
+        </arc>
+    </map>
+</sbgn>

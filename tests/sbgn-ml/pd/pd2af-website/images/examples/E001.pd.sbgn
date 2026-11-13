@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sbgn xmlns="http://sbgn.org/libsbgn/0.2">
+    <map language="process description">
+        <glyph id="RAF" class="macromolecule">
+            <label text="RAF"/>
+            <bbox y="15.0" x="115.0" h="40.0" w="80.0"/>
+        </glyph>
+        <glyph id="ERK2" class="macromolecule">
+            <label text="ERK"/>
+            <bbox y="215.0" x="315.0" h="40.0" w="80.0"/>
+            <glyph id="ERK2a" class="state variable">
+                <state value="P"/>
+                <bbox y="205.0" x="323.0" h="20.0" w="24.0"/>
+            </glyph>
+            <glyph id="ERK2b" class="state variable">
+                <state value="P"/>
+                <bbox y="205.0" x="363.0" h="20.0" w="24.0"/>
+            </glyph>
+        </glyph>
+        <glyph id="ERK1" class="macromolecule">
+            <label text="ERK"/>
+            <bbox y="215.0" x="115.0" h="40.0" w="80.0"/>
+            <glyph id="ERK1a" class="state variable">
+                <bbox y="205.0" x="125.0" h="20.0" w="20.0"/>
+            </glyph>
+            <glyph id="ERK1b" class="state variable">
+                <bbox y="205.0" x="165.0" h="20.0" w="20.0"/>
+            </glyph>
+        </glyph>
+        <glyph id="glyph1" class="macromolecule">
+            <label text="MEK"/>
+            <bbox y="115.0" x="215.0" h="40.0" w="80.0"/>
+            <glyph id="glyph1a" class="state variable">
+                <state value="P"/>
+                <bbox y="105.0" x="223.0" h="20.0" w="24.0"/>
+            </glyph>
+            <glyph id="glyph1b" class="state variable">
+                <state value="P"/>
+                <bbox y="105.0" x="263.0" h="20.0" w="24.0"/>
+            </glyph>
+        </glyph>
+        <glyph id="p2" class="process">
+            <bbox y="223.0" x="243.0" h="24.0" w="24.0"/>
+            <port y="235.0" x="279.0" id="p2.2"/>
+            <port y="235.0" x="231.0" id="p2.1"/>
+        </glyph>
+        <glyph id="glyph2" class="macromolecule">
+            <label text="MEK"/>
+            <bbox y="115.0" x="15.0" h="40.0" w="80.0"/>
+            <glyph id="glyph2a" class="state variable">
+                <bbox y="105.0" x="25.0" h="20.0" w="20.0"/>
+            </glyph>
+            <glyph id="glyph2b" class="state variable">
+                <bbox y="105.0" x="65.0" h="20.0" w="20.0"/>
+            </glyph>
+        </glyph>
+        <glyph id="p1" class="process">
+            <bbox y="123.0" x="143.0" h="24.0" w="24.0"/>
+            <port y="135.0" x="179.0" id="p1.2"/>
+            <port y="135.0" x="131.0" id="p1.1"/>
+        </glyph>
+        <arc target="p1" source="RAF" id="modulation-13" class="catalysis">
+            <start y="55.0" x="155.0"/>
+            <end y="123.0" x="155.0"/>
+        </arc>
+        <arc target="ERK2" source="p2.2" id="arc2" class="production">
+            <start y="235.0" x="279.0"/>
+            <end y="235.0" x="315.0"/>
+        </arc>
+        <arc target="p2.1" source="ERK1" id="arc4" class="consumption">
+            <start y="235.0" x="195.0"/>
+            <end y="235.0" x="231.0"/>
+        </arc>
+        <arc target="glyph1" source="p1.2" id="arc1" class="production">
+            <start y="135.0" x="179.0"/>
+            <end y="135.0" x="215.0"/>
+        </arc>
+        <arc target="p2" source="glyph1" id="arc3" class="catalysis">
+            <start y="155.0" x="255.0"/>
+            <end y="223.0" x="255.0"/>
+        </arc>
+        <arc target="p1.1" source="glyph2" id="arc5" class="consumption">
+            <start y="135.0" x="95.0"/>
+            <end y="135.0" x="131.0"/>
+        </arc>
+    </map>
+</sbgn>

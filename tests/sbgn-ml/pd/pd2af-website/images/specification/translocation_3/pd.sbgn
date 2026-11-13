@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sbgn xmlns="http://sbgn.org/libsbgn/0.2">
+  <map language="process description">
+    <glyph id="c1" class="compartment">
+      <label text="c1" />
+      <bbox x="130.0" y="100.0" w="240.0" h="200.0" />
+    </glyph>
+    <glyph id="B1" class="macromolecule" compartmentRef="c1">
+      <label text="B" />
+      <bbox x="160.0" y="130.0" w="80" h="40" />
+    </glyph>
+    <glyph id="R" class="macromolecule" compartmentRef="c1">
+      <label text="R" />
+      <bbox x="260.0" y="230.0" w="80" h="40" />
+    </glyph>
+    <glyph id="c2" class="compartment">
+      <label text="c2" />
+      <bbox x="130.0" y="300.0" w="140.0" h="100.0" />
+    </glyph>
+    <glyph id="B2" class="macromolecule" compartmentRef="c2">
+      <label text="B" />
+      <bbox x="160.0" y="330.0" w="80" h="40" />
+    </glyph>
+    <glyph id="p1" class="process">
+      <bbox x="188.0" y="238.0" w="24" h="24" />
+      <port id="p1-in" x="200.0" y="233.0" />
+      <port id="p1-out" x="200.0" y="267.0" />
+    </glyph>
+    <arc class="consumption" id="consumption-53" source="B1" target="p1-in">
+      <start x="200.0" y="170.0" />
+      <end x="200.0" y="233.0" />
+    </arc>
+    <arc class="production" id="production-54" source="p1-out" target="B2">
+      <start x="200.0" y="267.0" />
+      <end x="200.0" y="330.0" />
+    </arc>
+    <arc class="inhibition" id="modulation-55" source="R" target="p1">
+      <start x="260.0" y="250.0" />
+      <end x="212.0" y="250.0" />
+    </arc>
+  </map>
+</sbgn>

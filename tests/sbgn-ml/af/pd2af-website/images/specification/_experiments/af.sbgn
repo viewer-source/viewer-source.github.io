@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sbgn xmlns="http://sbgn.org/libsbgn/0.2">
+  <map language="activity flow">
+    <glyph id="M1" class="biological activity">
+      <label text="M1" />
+      <bbox x="160.0" y="530.0" w="80" h="40" />
+      <glyph id="M1-uoi-73" class="unit of information">
+        <label text="" />
+        <entity name="simple chemical" />
+        <bbox x="180.0" y="525.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="M2" class="biological activity">
+      <label text="M2" />
+      <bbox x="360.0" y="530.0" w="80" h="40" />
+      <glyph id="M2-uoi-74" class="unit of information">
+        <label text="" />
+        <entity name="simple chemical" />
+        <bbox x="380.0" y="525.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="A" class="biological activity">
+      <label text="A" />
+      <bbox x="260.0" y="130.0" w="80" h="40" />
+    </glyph>
+    <glyph id="B" class="biological activity">
+      <label text="B" />
+      <bbox x="460.0" y="130.0" w="80" h="40" />
+    </glyph>
+    <glyph id="C" class="biological activity">
+      <label text="C" />
+      <bbox x="360.0" y="130.0" w="80" h="40" />
+    </glyph>
+    <glyph id="D" class="biological activity">
+      <label text="D" />
+      <bbox x="560.0" y="230.0" w="80" h="40" />
+    </glyph>
+    <glyph id="and-57" class="and">
+      <bbox x="187.0" y="354.0" w="25" h="25" />
+      <port id="and-57-in" x="182.0" y="366.5" />
+      <port id="and-57-out" x="217.0" y="366.5" />
+    </glyph>
+    <glyph id="or-58" class="or">
+      <bbox x="162.0" y="162.0" w="25" h="25" />
+      <port id="or-58-in" x="174.5" y="157.0" />
+      <port id="or-58-out" x="174.5" y="192.0" />
+    </glyph>
+    <glyph id="and-59" class="and">
+      <bbox x="387.0" y="437.0" w="25" h="25" />
+      <port id="and-59-in" x="399.5" y="432.0" />
+      <port id="and-59-out" x="399.5" y="467.0" />
+    </glyph>
+    <glyph id="not-62" class="not">
+      <bbox x="187.0" y="262.0" w="25" h="25" />
+      <port id="not-62-in" x="199.5" y="257.0" />
+      <port id="not-62-out" x="199.5" y="292.0" />
+    </glyph>
+    <glyph id="or-63" class="or">
+      <bbox x="420.0" y="270.0" w="25" h="25" />
+      <port id="or-63-in" x="432.5" y="265.0" />
+      <port id="or-63-out" x="432.5" y="300.0" />
+    </glyph>
+    <arc class="positive influence" id="positive-influence-72" source="and-57-out" target="M2">
+      <start x="199.5" y="379.0" />
+      <end x="400.0" y="530.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-70" source="M1" target="and-57-in">
+      <start x="200.0" y="530.0" />
+      <end x="182.0" y="366.5" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-71" source="or-58" target="and-57-in">
+      <start x="174.5" y="192.0" />
+      <end x="182.0" y="366.5" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-67" source="A" target="or-58-in">
+      <start x="260.0" y="150.0" />
+      <end x="174.5" y="157.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-68" source="and-59" target="or-58-in">
+      <start x="399.5" y="467.0" />
+      <end x="174.5" y="157.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-69" source="not-62" target="or-58-in">
+      <start x="199.5" y="292.0" />
+      <end x="174.5" y="157.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-60" source="D" target="and-59-in">
+      <start x="600.0" y="270.0" />
+      <end x="399.5" y="432.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-61" source="M1" target="and-59-in">
+      <start x="200.0" y="530.0" />
+      <end x="399.5" y="432.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-66" source="or-63" target="not-62-in">
+      <start x="432.5" y="300.0" />
+      <end x="199.5" y="257.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-64" source="C" target="or-63-in">
+      <start x="400.0" y="170.0" />
+      <end x="432.5" y="265.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-65" source="B" target="or-63-in">
+      <start x="500.0" y="170.0" />
+      <end x="432.5" y="265.0" />
+    </arc>
+  </map>
+</sbgn>

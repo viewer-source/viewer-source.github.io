@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sbgn xmlns="http://sbgn.org/libsbgn/0.2">
+  <map language="process description">
+    <glyph class="source and sink" id="A1">
+      <bbox x="175.0" y="225.0" w="50" h="50" />
+    </glyph>
+    <glyph class="nucleic acid feature" id="A2">
+      <label text="A" />
+      <bbox x="360.0" y="230.0" w="80" h="40" />
+      <glyph id="A2-state-variable-1431" class="state variable">
+        <state value="inactive" variable="" />
+        <bbox x="430.0" y="222.5" w="15" h="15" />
+      </glyph>
+    </glyph>
+    <glyph class="macromolecule" id="C">
+      <label text="C" />
+      <bbox x="260.0" y="130.0" w="80" h="40" />
+    </glyph>
+    <glyph class="process" id="p1">
+      <bbox x="288.0" y="238.0" w="24" h="24" />
+      <port id="p1-in" x="283.0" y="250.0" />
+      <port id="p1-out" x="317.0" y="250.0" />
+    </glyph>
+    <arc class="consumption" id="consumption-1428" source="A1" target="p1">
+      <start x="225.0" y="250.0" />
+      <end x="283.0" y="250.0" />
+    </arc>
+    <arc class="production" id="production-1429" source="p1" target="A2">
+      <start x="317.0" y="250.0" />
+      <end x="360.0" y="250.0" />
+    </arc>
+    <arc class="stimulation" id="modulation-1430" source="C" target="p1">
+      <start x="300.0" y="170.0" />
+      <end x="300.0" y="238.0" />
+    </arc>
+  </map>
+</sbgn>

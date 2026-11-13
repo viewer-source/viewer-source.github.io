@@ -1,0 +1,213 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sbgn xmlns="http://sbgn.org/libsbgn/0.2">
+  <map language="process description">
+    <glyph id="ADCY" class="macromolecule">
+      <label text="ADCY" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="ATP" class="simple chemical">
+      <label text="ATP" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="cAMP" class="simple chemical">
+      <label text="cAMP" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="PKA-1" class="macromolecule">
+      <label text="PKA" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="PKA-1-state-variable-2013" class="state variable">
+        <state value="inactive" variable="" />
+        <bbox x="70" y="-7.5" w="15" h="15" />
+      </glyph>
+    </glyph>
+    <glyph id="PKA-2" class="macromolecule">
+      <label text="PKA" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="PKA-2-state-variable-2014" class="state variable">
+        <state value="active" variable="" />
+        <bbox x="70" y="-7.5" w="15" h="15" />
+      </glyph>
+    </glyph>
+    <glyph id="PFKFB2" class="macromolecule">
+      <label text="PFKFB2" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="PFKFB2-state-variable-2015" class="state variable">
+        <state value="" variable="S36" />
+        <bbox x="70" y="-7.5" w="30" h="15" />
+      </glyph>
+    </glyph>
+    <glyph id="PFKFB2-P" class="macromolecule">
+      <label text="PFKFB2" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="PFKFB2-P-state-variable-2016" class="state variable">
+        <state value="P" variable="S36" />
+        <bbox x="70" y="-7.5" w="30" h="15" />
+      </glyph>
+    </glyph>
+    <glyph id="α-D-glucose-6P" class="simple chemical">
+      <label text="α-D-glucose-6P" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="β-D-fructose-6P" class="simple chemical">
+      <label text="β-D-fructose-6P" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="β-D-fructose-1-6P2" class="simple chemical">
+      <label text="β-D-fructose-1-6P2" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="β-D-fructose-2-6P2" class="simple chemical">
+      <label text="β-D-fructose-2-6P2" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="GPI" class="macromolecule">
+      <label text="GPI" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="F1-6BP" class="macromolecule">
+      <label text="F1-6BP" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="PFK1" class="macromolecule">
+      <label text="PFK1" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="p1" class="process">
+      <bbox x="28.0" y="8.0" w="24" h="24" />
+      <port id="p1-in" x="40.0" y="37.0" />
+      <port id="p1-out" x="40.0" y="3.0" />
+    </glyph>
+    <glyph id="p2" class="process">
+      <bbox x="28.0" y="8.0" w="24" h="24" />
+      <port id="p2-in" x="40.0" y="37.0" />
+      <port id="p2-out" x="40.0" y="3.0" />
+    </glyph>
+    <glyph id="p4" class="process">
+      <bbox x="28.0" y="8.0" w="24" h="24" />
+      <port id="p4-in" x="40.0" y="37.0" />
+      <port id="p4-out" x="40.0" y="3.0" />
+    </glyph>
+    <glyph id="p5" class="process">
+      <bbox x="28.0" y="8.0" w="24" h="24" />
+      <port id="p5-in" x="40.0" y="37.0" />
+      <port id="p5-out" x="40.0" y="3.0" />
+    </glyph>
+    <glyph id="p6-1" class="process">
+      <bbox x="28.0" y="8.0" w="24" h="24" />
+      <port id="p6-1-in" x="40.0" y="37.0" />
+      <port id="p6-1-out" x="40.0" y="3.0" />
+    </glyph>
+    <glyph id="p6-2" class="process">
+      <bbox x="28.0" y="8.0" w="24" h="24" />
+      <port id="p6-2-in" x="40.0" y="37.0" />
+      <port id="p6-2-out" x="40.0" y="3.0" />
+    </glyph>
+    <glyph id="p7-1" class="process">
+      <bbox x="28.0" y="8.0" w="24" h="24" />
+      <port id="p7-1-in" x="40.0" y="37.0" />
+      <port id="p7-1-out" x="40.0" y="3.0" />
+    </glyph>
+    <glyph id="p7-2" class="process">
+      <bbox x="28.0" y="8.0" w="24" h="24" />
+      <port id="p7-2-in" x="40.0" y="37.0" />
+      <port id="p7-2-out" x="40.0" y="3.0" />
+    </glyph>
+    <arc class="consumption" id="consumption-1989" source="ATP" target="p1-in">
+      <start x="80.0" y="20.0" />
+      <end x="40.0" y="37.0" />
+    </arc>
+    <arc class="production" id="production-1990" source="p1-out" target="cAMP">
+      <start x="40.0" y="3.0" />
+      <end x="0" y="20.0" />
+    </arc>
+    <arc class="catalysis" id="catalysis-1991" source="ADCY" target="p1">
+      <start x="80.0" y="20.0" />
+      <end x="28.0" y="20.0" />
+    </arc>
+    <arc class="consumption" id="consumption-1992" source="PKA-1" target="p2-in">
+      <start x="80.0" y="20.0" />
+      <end x="40.0" y="37.0" />
+    </arc>
+    <arc class="production" id="production-1993" source="p2-out" target="PKA-2">
+      <start x="40.0" y="3.0" />
+      <end x="0" y="20.0" />
+    </arc>
+    <arc class="stimulation" id="stimulation-1994" source="cAMP" target="p2">
+      <start x="80.0" y="20.0" />
+      <end x="28.0" y="20.0" />
+    </arc>
+    <arc class="consumption" id="consumption-1995" source="PFKFB2" target="p4-in">
+      <start x="80.0" y="20.0" />
+      <end x="40.0" y="37.0" />
+    </arc>
+    <arc class="production" id="production-1996" source="p4-out" target="PFKFB2-P">
+      <start x="40.0" y="3.0" />
+      <end x="0" y="20.0" />
+    </arc>
+    <arc class="catalysis" id="catalysis-1997" source="PKA-2" target="p4">
+      <start x="80.0" y="20.0" />
+      <end x="28.0" y="20.0" />
+    </arc>
+    <arc class="production" id="production-1998" source="p5-in" target="α-D-glucose-6P">
+      <start x="40.0" y="3.0" />
+      <end x="0" y="20.0" />
+    </arc>
+    <arc class="production" id="production-1999" source="p5-out" target="β-D-fructose-6P">
+      <start x="40.0" y="3.0" />
+      <end x="0" y="20.0" />
+    </arc>
+    <arc class="catalysis" id="catalysis-2000" source="GPI" target="p5">
+      <start x="80.0" y="20.0" />
+      <end x="28.0" y="20.0" />
+    </arc>
+    <arc class="consumption" id="consumption-2001" source="β-D-fructose-6P" target="p6-1-in">
+      <start x="80.0" y="20.0" />
+      <end x="40.0" y="37.0" />
+    </arc>
+    <arc class="production" id="production-2002" source="p6-1-out" target="β-D-fructose-1-6P2">
+      <start x="40.0" y="3.0" />
+      <end x="0" y="20.0" />
+    </arc>
+    <arc class="catalysis" id="catalysis-2003" source="PFK1" target="p6-1">
+      <start x="80.0" y="20.0" />
+      <end x="28.0" y="20.0" />
+    </arc>
+    <arc class="consumption" id="consumption-2004" source="β-D-fructose-1-6P2" target="p6-2-in">
+      <start x="80.0" y="20.0" />
+      <end x="40.0" y="37.0" />
+    </arc>
+    <arc class="production" id="production-2005" source="p6-2-out" target="β-D-fructose-6P">
+      <start x="40.0" y="3.0" />
+      <end x="0" y="20.0" />
+    </arc>
+    <arc class="catalysis" id="catalysis-2006" source="F1-6BP" target="p6-2">
+      <start x="80.0" y="20.0" />
+      <end x="28.0" y="20.0" />
+    </arc>
+    <arc class="consumption" id="consumption-2007" source="β-D-fructose-6P" target="p7-1-in">
+      <start x="80.0" y="20.0" />
+      <end x="40.0" y="37.0" />
+    </arc>
+    <arc class="production" id="production-2008" source="p7-1-out" target="β-D-fructose-2-6P2">
+      <start x="40.0" y="3.0" />
+      <end x="0" y="20.0" />
+    </arc>
+    <arc class="catalysis" id="catalysis-2009" source="PFKFB2" target="p7-1">
+      <start x="80.0" y="20.0" />
+      <end x="28.0" y="20.0" />
+    </arc>
+    <arc class="consumption" id="consumption-2010" source="β-D-fructose-2-6P2" target="p7-2-in">
+      <start x="80.0" y="20.0" />
+      <end x="40.0" y="37.0" />
+    </arc>
+    <arc class="production" id="production-2011" source="p7-2-out" target="β-D-fructose-6P">
+      <start x="40.0" y="3.0" />
+      <end x="0" y="20.0" />
+    </arc>
+    <arc class="catalysis" id="catalysis-2012" source="PFKFB2-P" target="p7-2">
+      <start x="80.0" y="20.0" />
+      <end x="28.0" y="20.0" />
+    </arc>
+  </map>
+</sbgn>

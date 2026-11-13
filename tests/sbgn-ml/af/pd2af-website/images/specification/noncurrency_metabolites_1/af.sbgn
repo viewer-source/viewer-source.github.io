@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sbgn xmlns="http://sbgn.org/libsbgn/0.2">
+  <map language="activity flow">
+    <glyph id="C" class="biological activity">
+      <label text="C" />
+      <bbox x="260.0" y="130.0" w="80" h="40" />
+    </glyph>
+    <glyph id="M1" class="biological activity">
+      <label text="M1" />
+      <bbox x="160.0" y="330.0" w="80" h="40" />
+      <glyph id="M1-uoi-1594" class="unit of information">
+        <label text="" />
+        <entity name="simple chemical" />
+        <bbox x="180.0" y="325.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="A2" class="biological activity">
+      <label text="A" />
+      <bbox x="360.0" y="230.0" w="80" h="40" />
+    </glyph>
+    <glyph id="M2" class="biological activity">
+      <label text="M2" />
+      <bbox x="360.0" y="330.0" w="80" h="40" />
+      <glyph id="M2-uoi-1595" class="unit of information">
+        <label text="" />
+        <entity name="simple chemical" />
+        <bbox x="380.0" y="325.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="and-1589" class="and">
+      <bbox x="312.0" y="262.0" w="25" h="25" />
+      <port id="and-1589-in" x="307.0" y="274.5" />
+      <port id="and-1589-out" x="342.0" y="274.5" />
+    </glyph>
+    <arc class="positive influence" id="positive-influence-1592" source="and-1589-out" target="A2">
+      <start x="337.0" y="274.5" />
+      <end x="360.0" y="250.0" />
+    </arc>
+    <arc class="positive influence" id="positive-influence-1593" source="and-1589-out" target="M2">
+      <start x="324.5" y="287.0" />
+      <end x="400.0" y="330.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-1590" source="C" target="and-1589-in">
+      <start x="300.0" y="170.0" />
+      <end x="307.0" y="274.5" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-1591" source="M1" target="and-1589-in">
+      <start x="200.0" y="330.0" />
+      <end x="307.0" y="274.5" />
+    </arc>
+  </map>
+</sbgn>

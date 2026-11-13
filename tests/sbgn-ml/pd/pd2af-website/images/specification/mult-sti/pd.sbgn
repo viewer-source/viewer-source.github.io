@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sbgn xmlns="http://sbgn.org/libsbgn/0.2">
+    <map language="process description">
+        <glyph id="C" class="macromolecule">
+            <label text="A"/>
+            <bbox y="15.0" x="110.0" h="40.0" w="80.0"/>
+        </glyph>
+        <glyph id="glyph1" class="macromolecule multimer">
+            <label text="A"/>
+            <bbox y="160.0" x="110.0" h="40.0" w="80.0"/>
+            <glyph id="glyph1a" class="unit of information">
+                <label text="N:X"/>
+                <bbox y="152.0" x="113.5" h="16.0" w="33.0"/>
+            </glyph>
+        </glyph>
+        <glyph id="A2" class="macromolecule">
+            <label text="C"/>
+            <bbox y="80.0" x="210.0" h="40.0" w="80.0"/>
+        </glyph>
+        <glyph id="glyph2" orientation="vertical" class="process">
+            <bbox y="88.0" x="138.0" h="24.0" w="24.0"/>
+            <port y="76.0" x="150.0" id="glyph2.1"/>
+            <port y="124.0" x="150.0" id="glyph2.2"/>
+        </glyph>
+        <arc target="glyph2.1" source="C" id="arc1" class="consumption">
+            <start y="55.0" x="150.0"/>
+            <end y="76.0" x="150.0"/>
+        </arc>
+        <arc target="glyph1" source="glyph2.2" id="arc2" class="production">
+            <start y="124.0" x="150.0"/>
+            <end y="160.0" x="150.0"/>
+        </arc>
+        <arc target="glyph2" source="A2" id="arc3" class="stimulation">
+            <start y="100.0" x="210.0"/>
+            <end y="100.0" x="162.0"/>
+        </arc>
+    </map>
+</sbgn>

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sbgn xmlns="http://sbgn.org/libsbgn/0.2">
+    <map language="activity flow">
+        <glyph id="C1" class="biological activity">
+            <label text="C"/>
+            <bbox y="59.75" x="210.0" h="40.0" w="80.0"/>
+            <glyph id="C1a" class="unit of information">
+                <entity name="complex"/>
+                <bbox y="51.75" x="259.5" h="16.0" w="21.0"/>
+            </glyph>
+        </glyph>
+        <glyph id="A1" class="biological activity">
+            <label text="A"/>
+            <bbox y="15.0" x="10.0" h="40.0" w="80.0"/>
+        </glyph>
+        <glyph id="B1" class="biological activity">
+            <label text="B"/>
+            <bbox y="105.0" x="10.0" h="40.0" w="80.0"/>
+        </glyph>
+        <glyph id="and-1282" class="and">
+            <bbox y="61.75" x="123.5" h="36.0" w="36.0"/>
+            <port y="79.75" x="177.5" id="and-1282.2"/>
+            <port y="79.75" x="105.5" id="and-1282.1"/>
+        </glyph>
+        <arc target="C1" source="and-1282.2" id="positive-influence-1285" class="positive influence">
+            <start y="79.75" x="177.5"/>
+            <end y="79.75" x="210.0"/>
+        </arc>
+        <arc target="and-1282.1" source="A1" id="arc1" class="logic arc">
+            <start y="55.0" x="74.80447"/>
+            <end y="79.75" x="105.5"/>
+        </arc>
+        <arc target="and-1282.1" source="B1" id="arc2" class="logic arc">
+            <start y="105.0" x="74.53039"/>
+            <end y="79.75" x="105.5"/>
+        </arc>
+    </map>
+</sbgn>

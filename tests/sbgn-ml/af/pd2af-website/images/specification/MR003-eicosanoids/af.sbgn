@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sbgn xmlns="http://sbgn.org/libsbgn/0.2">
+  <map language="activity flow">
+    <glyph id="RAF1" class="biological activity">
+      <label text="RAF1" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="RAF1-P" class="biological activity">
+      <label text="RAF1-P" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="MEK1/2" class="biological activity">
+      <label text="MEK1/2" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="ERK1/2" class="biological activity">
+      <label text="ERK1/2" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="cPLA2" class="biological activity">
+      <label text="cPLA2" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="COX1/2" class="biological activity">
+      <label text="COX1/2" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="Phosphatydilcholine" class="biological activity">
+      <label text="Phosphatydilcholine" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="Phosphatydilcholine-uoi-2181" class="unit of information">
+        <label text="" />
+        <entity name="simple chemical" />
+        <bbox x="20.0" y="-5.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="Arachidocic_acid" class="biological activity">
+      <label text="Arachidocic acid" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="Arachidocic_acid-uoi-2182" class="unit of information">
+        <label text="" />
+        <entity name="simple chemical" />
+        <bbox x="20.0" y="-5.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="PGG2" class="biological activity">
+      <label text="PGG2" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="PGG2-uoi-2183" class="unit of information">
+        <label text="" />
+        <entity name="simple chemical" />
+        <bbox x="20.0" y="-5.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="and-2173" class="and">
+      <bbox x="27.0" y="7.0" w="25" h="25" />
+      <port id="and-2173-in" x="39.5" y="37.0" />
+      <port id="and-2173-out" x="39.5" y="2.0" />
+    </glyph>
+    <glyph id="and-2177" class="and">
+      <bbox x="27.0" y="7.0" w="25" h="25" />
+      <port id="and-2177-in" x="39.5" y="37.0" />
+      <port id="and-2177-out" x="39.5" y="2.0" />
+    </glyph>
+    <arc class="positive influence" id="positive-influence-2169" source="RAF1" target="RAF1-P">
+      <start x="80.0" y="20.0" />
+      <end x="0" y="20.0" />
+    </arc>
+    <arc class="positive influence" id="positive-influence-2170" source="RAF1-P" target="MEK1/2">
+      <start x="80.0" y="20.0" />
+      <end x="0" y="20.0" />
+    </arc>
+    <arc class="positive influence" id="positive-influence-2171" source="MEK1/2" target="ERK1/2">
+      <start x="80.0" y="20.0" />
+      <end x="0" y="20.0" />
+    </arc>
+    <arc class="positive influence" id="positive-influence-2172" source="ERK1/2" target="cPLA2">
+      <start x="80.0" y="20.0" />
+      <end x="0" y="20.0" />
+    </arc>
+    <arc class="positive influence" id="positive-influence-2176" source="and-2173-out" target="Arachidocic_acid">
+      <start x="27.0" y="19.5" />
+      <end x="80.0" y="20.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2174" source="cPLA2" target="and-2173-in">
+      <start x="0" y="20.0" />
+      <end x="39.5" y="37.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2175" source="Phosphatydilcholine" target="and-2173-in">
+      <start x="0" y="20.0" />
+      <end x="39.5" y="37.0" />
+    </arc>
+    <arc class="positive influence" id="positive-influence-2180" source="and-2177-out" target="PGG2">
+      <start x="27.0" y="19.5" />
+      <end x="80.0" y="20.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2178" source="COX1/2" target="and-2177-in">
+      <start x="0" y="20.0" />
+      <end x="39.5" y="37.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2179" source="Arachidocic_acid" target="and-2177-in">
+      <start x="0" y="20.0" />
+      <end x="39.5" y="37.0" />
+    </arc>
+  </map>
+</sbgn>

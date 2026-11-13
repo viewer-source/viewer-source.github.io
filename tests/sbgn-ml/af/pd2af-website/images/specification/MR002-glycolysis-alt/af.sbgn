@@ -1,0 +1,201 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sbgn xmlns="http://sbgn.org/libsbgn/0.2">
+  <map language="activity flow">
+    <glyph id="ADCY" class="biological activity">
+      <label text="ADCY" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="ATP" class="biological activity">
+      <label text="ATP" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="ATP-uoi-2044" class="unit of information">
+        <label text="" />
+        <entity name="simple chemical" />
+        <bbox x="20.0" y="-5.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="cAMP" class="biological activity">
+      <label text="cAMP" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="cAMP-uoi-2045" class="unit of information">
+        <label text="" />
+        <entity name="simple chemical" />
+        <bbox x="20.0" y="-5.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="PKA" class="biological activity">
+      <label text="PKA" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="PFKFB2" class="biological activity">
+      <label text="PFKFB2" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="PFKFB2-P" class="biological activity">
+      <label text="PFKFB2-P" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="α-D-glucose-6P" class="biological activity">
+      <label text="α-D-glucose-6P" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="α-D-glucose-6P-uoi-2046" class="unit of information">
+        <label text="" />
+        <entity name="simple chemical" />
+        <bbox x="20.0" y="-5.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="β-D-fructose-6P" class="biological activity">
+      <label text="β-D-fructose-6P" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="β-D-fructose-6P-uoi-2047" class="unit of information">
+        <label text="" />
+        <entity name="simple chemical" />
+        <bbox x="20.0" y="-5.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="β-D-fructose-1-6P2" class="biological activity">
+      <label text="β-D-fructose-1-6P2" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="β-D-fructose-1-6P2-uoi-2048" class="unit of information">
+        <label text="" />
+        <entity name="simple chemical" />
+        <bbox x="20.0" y="-5.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="β-D-fructose-2-6P2" class="biological activity">
+      <label text="β-D-fructose-2-6P2" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="β-D-fructose-2-6P2-uoi-2049" class="unit of information">
+        <label text="" />
+        <entity name="simple chemical" />
+        <bbox x="20.0" y="-5.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="GPI" class="biological activity">
+      <label text="GPI" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="F1-6BP" class="biological activity">
+      <label text="F1-6BP" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="PFK1" class="biological activity">
+      <label text="PFK1" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="and-2017" class="and">
+      <bbox x="27.0" y="7.0" w="25" h="25" />
+      <port id="and-2017-in" x="39.5" y="37.0" />
+      <port id="and-2017-out" x="39.5" y="2.0" />
+    </glyph>
+    <glyph id="and-2024" class="and">
+      <bbox x="27.0" y="7.0" w="25" h="25" />
+      <port id="and-2024-in" x="39.5" y="37.0" />
+      <port id="and-2024-out" x="39.5" y="2.0" />
+    </glyph>
+    <glyph id="and-2028" class="and">
+      <bbox x="27.0" y="7.0" w="25" h="25" />
+      <port id="and-2028-in" x="39.5" y="37.0" />
+      <port id="and-2028-out" x="39.5" y="2.0" />
+    </glyph>
+    <glyph id="and-2032" class="and">
+      <bbox x="27.0" y="7.0" w="25" h="25" />
+      <port id="and-2032-in" x="39.5" y="37.0" />
+      <port id="and-2032-out" x="39.5" y="2.0" />
+    </glyph>
+    <glyph id="and-2036" class="and">
+      <bbox x="27.0" y="7.0" w="25" h="25" />
+      <port id="and-2036-in" x="39.5" y="37.0" />
+      <port id="and-2036-out" x="39.5" y="2.0" />
+    </glyph>
+    <glyph id="and-2040" class="and">
+      <bbox x="27.0" y="7.0" w="25" h="25" />
+      <port id="and-2040-in" x="39.5" y="37.0" />
+      <port id="and-2040-out" x="39.5" y="2.0" />
+    </glyph>
+    <arc class="positive influence" id="positive-influence-2020" source="and-2017-out" target="cAMP">
+      <start x="27.0" y="19.5" />
+      <end x="80.0" y="20.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2018" source="ADCY" target="and-2017-in">
+      <start x="0" y="20.0" />
+      <end x="39.5" y="37.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2019" source="ATP" target="and-2017-in">
+      <start x="0" y="20.0" />
+      <end x="39.5" y="37.0" />
+    </arc>
+    <arc class="positive influence" id="positive-influence-2021" source="cAMP" target="PKA">
+      <start x="80.0" y="20.0" />
+      <end x="0" y="20.0" />
+    </arc>
+    <arc class="negative influence" id="negative-influence-2022" source="PKA" target="PFKFB2">
+      <start x="80.0" y="20.0" />
+      <end x="0" y="20.0" />
+    </arc>
+    <arc class="positive influence" id="positive-influence-2023" source="PKA" target="PFKFB2-P">
+      <start x="80.0" y="20.0" />
+      <end x="0" y="20.0" />
+    </arc>
+    <arc class="positive influence" id="positive-influence-2027" source="and-2024-out" target="β-D-fructose-2-6P2">
+      <start x="27.0" y="19.5" />
+      <end x="80.0" y="20.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2025" source="β-D-fructose-6P" target="and-2024-in">
+      <start x="0" y="20.0" />
+      <end x="39.5" y="37.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2026" source="PFKFB2" target="and-2024-in">
+      <start x="0" y="20.0" />
+      <end x="39.5" y="37.0" />
+    </arc>
+    <arc class="positive influence" id="positive-influence-2031" source="and-2028-out" target="β-D-fructose-6P">
+      <start x="27.0" y="19.5" />
+      <end x="80.0" y="20.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2029" source="β-D-fructose-2-6P2" target="and-2028-in">
+      <start x="0" y="20.0" />
+      <end x="39.5" y="37.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2030" source="PFKFB2-P" target="and-2028-in">
+      <start x="0" y="20.0" />
+      <end x="39.5" y="37.0" />
+    </arc>
+    <arc class="positive influence" id="positive-influence-2035" source="and-2032-out" target="β-D-fructose-6P">
+      <start x="27.0" y="19.5" />
+      <end x="80.0" y="20.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2033" source="GPI" target="and-2032-in">
+      <start x="0" y="20.0" />
+      <end x="39.5" y="37.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2034" source="α-D-glucose-6P" target="and-2032-in">
+      <start x="0" y="20.0" />
+      <end x="39.5" y="37.0" />
+    </arc>
+    <arc class="positive influence" id="positive-influence-2039" source="and-2036-out" target="β-D-fructose-6P">
+      <start x="27.0" y="19.5" />
+      <end x="80.0" y="20.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2037" source="F1-6BP" target="and-2036-in">
+      <start x="0" y="20.0" />
+      <end x="39.5" y="37.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2038" source="β-D-fructose-1-6P2" target="and-2036-in">
+      <start x="0" y="20.0" />
+      <end x="39.5" y="37.0" />
+    </arc>
+    <arc class="positive influence" id="positive-influence-2043" source="and-2040-out" target="β-D-fructose-1-6P2">
+      <start x="27.0" y="19.5" />
+      <end x="80.0" y="20.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2041" source="β-D-fructose-6P" target="and-2040-in">
+      <start x="0" y="20.0" />
+      <end x="39.5" y="37.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2042" source="PFK1" target="and-2040-in">
+      <start x="0" y="20.0" />
+      <end x="39.5" y="37.0" />
+    </arc>
+  </map>
+</sbgn>

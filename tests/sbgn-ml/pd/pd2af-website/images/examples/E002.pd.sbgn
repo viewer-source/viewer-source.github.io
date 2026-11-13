@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sbgn xmlns="http://sbgn.org/libsbgn/0.2">
+    <map language="process description">
+        <glyph id="p3" class="process">
+            <bbox y="128.0" x="343.0" h="24.0" w="24.0"/>
+        </glyph>
+        <glyph id="p4" class="process">
+            <bbox y="128.0" x="143.0" h="24.0" w="24.0"/>
+        </glyph>
+        <glyph id="ubc9" class="macromolecule">
+            <label text="ubc9"/>
+            <bbox y="20.0" x="115.0" h="40.0" w="80.0"/>
+        </glyph>
+        <glyph id="erk" class="macromolecule">
+            <label text="erk"/>
+            <bbox y="20.0" x="315.0" h="40.0" w="80.0"/>
+        </glyph>
+        <glyph id="c-fos" class="macromolecule">
+            <label text="c-fos"/>
+            <bbox y="205.0" x="515.0" h="40.0" w="80.0"/>
+        </glyph>
+        <glyph id="s1" class="source and sink">
+            <bbox y="207.0" x="367.0" h="36.0" w="36.0"/>
+        </glyph>
+        <glyph id="p5" class="process">
+            <bbox y="213.0" x="443.0" h="24.0" w="24.0"/>
+            <port y="225.0" x="479.0" id="p5.2"/>
+            <port y="225.0" x="431.0" id="p5.1"/>
+        </glyph>
+        <glyph id="elk-1-3" class="macromolecule">
+            <label text="elk-1"/>
+            <bbox y="120.0" x="415.0" h="40.0" w="80.0"/>
+            <glyph id="elk-1-3a" class="state variable">
+                <state value="P"/>
+                <bbox y="110.0" x="463.0" h="20.0" w="24.0"/>
+            </glyph>
+            <glyph id="elk-1-3b" class="state variable">
+                <bbox y="110.0" x="425.0" h="20.0" w="20.0"/>
+            </glyph>
+        </glyph>
+        <glyph id="elk-1-1" class="macromolecule">
+            <label text="elk-1"/>
+            <bbox y="120.0" x="15.0" h="40.0" w="80.0"/>
+            <glyph id="elk-1-1a" class="state variable">
+                <bbox y="110.0" x="65.0" h="20.0" w="20.0"/>
+            </glyph>
+            <glyph id="elk-1-1b" class="state variable">
+                <state value="sumo"/>
+                <bbox y="109.0" x="13.0" h="22.0" w="44.0"/>
+            </glyph>
+        </glyph>
+        <glyph id="p1" class="process">
+            <bbox y="128.0" x="143.0" h="24.0" w="24.0"/>
+            <port y="140.0" x="131.0" id="p1.1"/>
+            <port y="140.0" x="179.0" id="p1.2"/>
+        </glyph>
+        <glyph id="elk-1-2" class="macromolecule">
+            <label text="elk-1"/>
+            <bbox y="120.0" x="215.0" h="40.0" w="80.0"/>
+            <glyph id="elk-1-2a" class="state variable">
+                <bbox y="110.0" x="265.0" h="20.0" w="20.0"/>
+            </glyph>
+            <glyph id="elk-1-2b" class="state variable">
+                <bbox y="110.0" x="225.0" h="20.0" w="20.0"/>
+            </glyph>
+        </glyph>
+        <glyph id="p2" class="process">
+            <bbox y="128.0" x="343.0" h="24.0" w="24.0"/>
+            <port y="140.0" x="379.0" id="p2.2"/>
+            <port y="140.0" x="331.0" id="p2.1"/>
+        </glyph>
+        <arc target="p1" source="ubc9" id="modulation-94" class="catalysis">
+            <start y="60.0" x="155.0"/>
+            <end y="128.0" x="155.0"/>
+        </arc>
+        <arc target="p2" source="erk" id="modulation-95" class="catalysis">
+            <start y="60.0" x="355.0"/>
+            <end y="128.0" x="355.0"/>
+        </arc>
+        <arc target="p5" source="elk-1-3" id="modulation-96" class="necessary stimulation">
+            <start y="160.0" x="455.0"/>
+            <end y="213.0" x="455.0"/>
+        </arc>
+        <arc target="c-fos" source="p5.2" id="arc1" class="production">
+            <start y="225.0" x="479.0"/>
+            <end y="225.0" x="515.0"/>
+        </arc>
+        <arc target="p5.1" source="s1" id="arc2" class="consumption">
+            <start y="225.0" x="403.0"/>
+            <end y="225.0" x="431.0"/>
+        </arc>
+        <arc target="elk-1-3" source="p2.2" id="arc3" class="production">
+            <start y="140.0" x="379.0"/>
+            <end y="140.0" x="415.0"/>
+        </arc>
+        <arc target="elk-1-1" source="p1.1" id="arc4" class="production">
+            <start y="140.0" x="131.0"/>
+            <end y="140.0" x="95.0"/>
+        </arc>
+        <arc target="p1.2" source="elk-1-2" id="arc5" class="consumption">
+            <start y="140.0" x="215.0"/>
+            <end y="140.0" x="179.0"/>
+        </arc>
+        <arc target="p2.1" source="elk-1-2" id="arc6" class="consumption">
+            <start y="140.0" x="295.0"/>
+            <end y="140.0" x="331.0"/>
+        </arc>
+    </map>
+</sbgn>

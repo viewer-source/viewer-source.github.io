@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sbgn xmlns="http://sbgn.org/libsbgn/0.2">
+  <map language="activity flow">
+    <glyph id="M1" class="biological activity">
+      <label text="M1" />
+      <bbox x="160.0" y="530.0" w="80" h="40" />
+      <glyph id="M1-uoi-925" class="unit of information">
+        <label text="" />
+        <entity name="simple chemical" />
+        <bbox x="180.0" y="525.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="M2" class="biological activity">
+      <label text="M2" />
+      <bbox x="360.0" y="530.0" w="80" h="40" />
+      <glyph id="M2-uoi-926" class="unit of information">
+        <label text="" />
+        <entity name="simple chemical" />
+        <bbox x="380.0" y="525.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="A" class="biological activity">
+      <label text="A" />
+      <bbox x="260.0" y="130.0" w="80" h="40" />
+    </glyph>
+    <glyph id="B" class="biological activity">
+      <label text="B" />
+      <bbox x="460.0" y="130.0" w="80" h="40" />
+    </glyph>
+    <glyph id="C" class="biological activity">
+      <label text="C" />
+      <bbox x="360.0" y="130.0" w="80" h="40" />
+    </glyph>
+    <glyph id="D" class="biological activity">
+      <label text="D" />
+      <bbox x="560.0" y="230.0" w="80" h="40" />
+    </glyph>
+    <glyph id="and-912" class="and">
+      <bbox x="205.0" y="362.0" w="25" h="25" />
+      <port id="and-912-in" x="200.0" y="374.5" />
+      <port id="and-912-out" x="235.0" y="374.5" />
+    </glyph>
+    <glyph id="or-913" class="or">
+      <bbox x="326.0" y="231.0" w="25" h="25" />
+      <port id="or-913-in" x="338.5" y="226.0" />
+      <port id="or-913-out" x="338.5" y="261.0" />
+    </glyph>
+    <glyph id="not-914" class="not">
+      <bbox x="215.0" y="275.0" w="25" h="25" />
+      <port id="not-914-in" x="227.5" y="270.0" />
+      <port id="not-914-out" x="227.5" y="305.0" />
+    </glyph>
+    <glyph id="or-915" class="or">
+      <bbox x="420.0" y="270.0" w="25" h="25" />
+      <port id="or-915-in" x="432.5" y="265.0" />
+      <port id="or-915-out" x="432.5" y="300.0" />
+    </glyph>
+    <arc class="positive influence" id="positive-influence-924" source="and-912-out" target="M2">
+      <start x="217.5" y="387.0" />
+      <end x="400.0" y="530.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-922" source="M1" target="and-912-in">
+      <start x="200.0" y="530.0" />
+      <end x="200.0" y="374.5" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-923" source="or-913" target="and-912-in">
+      <start x="338.5" y="261.0" />
+      <end x="200.0" y="374.5" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-919" source="A" target="or-913-in">
+      <start x="300.0" y="170.0" />
+      <end x="338.5" y="226.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-920" source="D" target="or-913-in">
+      <start x="560.0" y="250.0" />
+      <end x="338.5" y="226.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-921" source="not-914" target="or-913-in">
+      <start x="227.5" y="305.0" />
+      <end x="338.5" y="226.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-918" source="or-915" target="not-914-in">
+      <start x="432.5" y="300.0" />
+      <end x="227.5" y="270.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-916" source="C" target="or-915-in">
+      <start x="400.0" y="170.0" />
+      <end x="432.5" y="265.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-917" source="B" target="or-915-in">
+      <start x="500.0" y="170.0" />
+      <end x="432.5" y="265.0" />
+    </arc>
+  </map>
+</sbgn>

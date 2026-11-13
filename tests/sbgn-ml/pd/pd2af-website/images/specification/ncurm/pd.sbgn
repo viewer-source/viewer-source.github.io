@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sbgn xmlns="http://sbgn.org/libsbgn/0.2">
+    <map language="process description">
+        <glyph id="A1" class="macromolecule">
+            <label text="A"/>
+            <bbox y="110.0" x="10.0" h="40.0" w="80.0"/>
+            <glyph id="A1a" class="state variable">
+                <state value="S1"/>
+                <bbox y="100.0" x="55.0" h="20.0" w="30.0"/>
+            </glyph>
+        </glyph>
+        <glyph id="A2" class="macromolecule">
+            <label text="A"/>
+            <bbox y="110.0" x="210.0" h="40.0" w="80.0"/>
+            <glyph id="A2a" class="state variable">
+                <state value="S2"/>
+                <bbox y="100.0" x="255.0" h="20.0" w="30.0"/>
+            </glyph>
+        </glyph>
+        <glyph id="C" class="macromolecule">
+            <label text="C"/>
+            <bbox y="10.0" x="110.0" h="40.0" w="80.0"/>
+        </glyph>
+        <glyph id="glyph1" class="simple chemical">
+            <label text="M1"/>
+            <bbox y="170.0" x="45.0" h="40.0" w="80.0"/>
+        </glyph>
+        <glyph id="p" class="process">
+            <bbox y="118.0" x="138.0" h="24.0" w="24.0"/>
+            <port y="130.0" x="126.0" id="p.1"/>
+            <port y="130.0" x="174.0" id="p.2"/>
+        </glyph>
+        <glyph id="glyph2" class="simple chemical">
+            <label text="M2"/>
+            <bbox y="170.0" x="170.0" h="40.0" w="80.0"/>
+        </glyph>
+        <arc target="p.1" source="A1" id="consumption-17" class="consumption">
+            <start y="130.0" x="90.0"/>
+            <end y="130.0" x="126.0"/>
+        </arc>
+        <arc target="A2" source="p.2" id="production-18" class="production">
+            <start y="130.0" x="174.0"/>
+            <end y="130.0" x="210.0"/>
+        </arc>
+        <arc target="p" source="C" id="arc1" class="stimulation">
+            <start y="50.0" x="150.0"/>
+            <end y="118.0" x="150.0"/>
+        </arc>
+        <arc target="p.1" source="glyph1" id="arc2" class="consumption">
+            <start y="173.4871" x="107.56762"/>
+            <end y="130.0" x="126.0"/>
+        </arc>
+        <arc target="glyph2" source="p.2" id="arc3" class="production">
+            <start y="130.0" x="174.0"/>
+            <end y="175.85786" x="181.71573"/>
+        </arc>
+    </map>
+</sbgn>

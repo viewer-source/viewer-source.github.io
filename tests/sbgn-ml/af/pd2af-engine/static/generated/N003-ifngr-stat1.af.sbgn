@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sbgn xmlns="http://sbgn.org/libsbgn/0.2">
+  <map language="activity flow">
+    <glyph id="glyph9" class="biological activity">
+      <label text="STAT1α_dimer" />
+      <bbox x="60.0" y="1030.0" w="80" h="40" />
+      <glyph id="uoi-37" class="unit of information">
+        <label text="" />
+        <entity name="macromolecule multimer" />
+        <bbox x="85.0" y="1024.0" w="30" h="12" />
+      </glyph>
+    </glyph>
+    <glyph id="glyph25" class="biological activity">
+      <label text="IRF1" />
+      <bbox x="260.0" y="1030.0" w="80" h="40" />
+      <glyph id="uoi-38" class="unit of information">
+        <label text="ct:gene" />
+        <entity name="nucleic acid feature" />
+        <bbox x="285.0" y="1024.0" w="30" h="12" />
+      </glyph>
+    </glyph>
+    <glyph id="glyph29" class="biological activity">
+      <label text="IRF1" />
+      <bbox x="360.0" y="750.0" w="80" h="40" />
+      <glyph id="uoi-39" class="unit of information">
+        <label text="" />
+        <entity name="nucleic acid feature" />
+        <bbox x="385.0" y="744.0" w="30" h="12" />
+      </glyph>
+    </glyph>
+    <glyph id="glyph6" class="biological activity">
+      <label text="IFNγ-IFNγR1-IFNγR2-JAK1-JAK2" />
+      <bbox x="210.0" y="310.0" w="80" h="40" />
+      <glyph id="uoi-40" class="unit of information">
+        <label text="" />
+        <entity name="complex" />
+        <bbox x="235.0" y="304.0" w="30" h="12" />
+      </glyph>
+    </glyph>
+    <glyph id="glyph12" class="biological activity">
+      <label text="STAT1α" />
+      <bbox x="310.0" y="540.0" w="80" h="40" />
+      <glyph id="uoi-46" class="unit of information">
+        <label text="" />
+        <entity name="macromolecule" />
+        <bbox x="335.0" y="534.0" w="30" h="12" />
+      </glyph>
+    </glyph>
+    <glyph id="glyph10" class="biological activity">
+      <label text="STAT1α_dimer" />
+      <bbox x="60.0" y="720.0" w="80" h="40" />
+      <glyph id="uoi-47" class="unit of information">
+        <label text="" />
+        <entity name="macromolecule multimer" />
+        <bbox x="85.0" y="714.0" w="30" h="12" />
+      </glyph>
+    </glyph>
+    <glyph id="glyph26" class="biological activity">
+      <label text="IRF1" />
+      <bbox x="360.0" y="1180.0" w="80" h="40" />
+      <glyph id="uoi-53" class="unit of information">
+        <label text="ct:mRNA" />
+        <entity name="nucleic acid feature" />
+        <bbox x="385.0" y="1174.0" w="30" h="12" />
+      </glyph>
+    </glyph>
+    <glyph id="and-59" class="AND">
+      <bbox x="710.0" y="273.3333333333333" w="20" h="20" />
+    </glyph>
+    <glyph id="glyph7" class="biological activity">
+      <label text="IFNγR1-IFNγR2-JAK1-JAK2" />
+      <bbox x="980.0" y="310.0" w="80" h="40" />
+      <glyph id="uoi-65" class="unit of information">
+        <label text="" />
+        <entity name="complex" />
+        <bbox x="1005.0" y="304.0" w="30" h="12" />
+      </glyph>
+    </glyph>
+    <glyph id="glyph16" class="biological activity">
+      <label text="IFNγ_dimer" />
+      <bbox x="850.0" y="170.0" w="80" h="40" />
+      <glyph id="uoi-66" class="unit of information">
+        <label text="" />
+        <entity name="macromolecule multimer" />
+        <bbox x="875.0" y="164.0" w="30" h="12" />
+      </glyph>
+    </glyph>
+    <arc id="arc-44" class="positive influence" source="glyph12" target="and-in-42">
+      <start x="false" y="false" />
+      <end x="false" y="false" />
+    </arc>
+    <arc id="arc-45" class="positive influence" source="out-in-43" target="glyph10">
+      <start x="false" y="false" />
+      <end x="false" y="false" />
+    </arc>
+    <arc id="arc-51" class="positive influence" source="glyph26" target="and-in-49">
+      <start x="false" y="false" />
+      <end x="false" y="false" />
+    </arc>
+    <arc id="arc-52" class="positive influence" source="out-in-50" target="glyph29">
+      <start x="false" y="false" />
+      <end x="false" y="false" />
+    </arc>
+    <arc id="arc-57" class="positive influence" source="glyph10" target="and-in-55">
+      <start x="false" y="false" />
+      <end x="false" y="false" />
+    </arc>
+    <arc id="arc-58" class="positive influence" source="out-in-56" target="glyph9">
+      <start x="false" y="false" />
+      <end x="false" y="false" />
+    </arc>
+    <arc id="arc-62" class="positive influence" source="glyph7" target="and-in-60">
+      <start x="false" y="false" />
+      <end x="false" y="false" />
+    </arc>
+    <arc id="arc-63" class="positive influence" source="glyph16" target="and-in-60">
+      <start x="false" y="false" />
+      <end x="false" y="false" />
+    </arc>
+    <arc id="arc-64" class="positive influence" source="out-in-61" target="glyph6">
+      <start x="false" y="false" />
+      <end x="false" y="false" />
+    </arc>
+  </map>
+</sbgn>

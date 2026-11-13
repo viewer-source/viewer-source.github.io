@@ -1,0 +1,335 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sbgn xmlns="http://sbgn.org/libsbgn/0.2">
+  <map language="activity flow">
+    <glyph id="nwtN_41bc33a2-f8d7-4d46-85f2-cec4769128bc" class="compartment">
+      <label text="EXTRACELLULAR SPACE" />
+      <bbox x="773.7342401768865" y="69.25" w="958.233784080844" h="49.875" />
+    </glyph>
+    <glyph id="nwtN_de46d95f-5027-4ba5-a0b1-4df17a380b15" class="compartment">
+      <label text="PLASMA MEMBRANE" />
+      <bbox x="335.322826784591" y="204.625" w="719.7249087807917" h="176.125" />
+    </glyph>
+    <glyph id="nwtN_19ef2d0c-a5e6-495b-abc8-95ec731a0f14" class="compartment">
+      <label text="CYTOSOL" />
+      <bbox x="306.375" y="435.62400509841603" w="1609.0121922978515" h="389.735776327335" />
+    </glyph>
+    <glyph id="nwtN_20b9589d-117e-4b74-845f-2ca68d4f64a8" class="compartment">
+      <label text="NUCLEUS" />
+      <bbox x="302.4376416990924" y="869.6168620005437" w="804.9796600705313" h="167.89305588244497" />
+    </glyph>
+    <glyph id="gate162" class="and">
+      <bbox x="490.2415148511975" y="959.0688463340524" w="20" h="20" />
+      <port id="in_gate_port163" x="505.2415148511975" y="949.0688463340524" />
+      <port id="out_gate_port164" x="505.2415148511975" y="989.0688463340524" />
+    </glyph>
+    <glyph id="nwtN_b222b5e2-3217-4bd8-b0c4-d1c766e0a269" compartmentRef="nwtN_20b9589d-117e-4b74-845f-2ca68d4f64a8" class="biological activity">
+      <label text="STAT1α_dimer" />
+      <bbox x="341.7978676881525" y="877.8668620005437" w="80" h="40" />
+    </glyph>
+    <arc id="arc166" class="logic arc" source="nwtN_b222b5e2-3217-4bd8-b0c4-d1c766e0a269" target="in_gate_port163">
+      <start x="381.7978676881525" y="917.8668620005437" />
+      <end x="505.2415148511975" y="949.0688463340524" />
+    </arc>
+    <glyph id="nwtN_f84a2e4d-8c8b-4848-9965-2d67896ecbf1" compartmentRef="nwtN_20b9589d-117e-4b74-845f-2ca68d4f64a8" class="biological activity">
+      <label text="IRF1" />
+      <glyph id="uoi167" class="unit of information">
+        <label text="ct:gene" />
+        <entity name="nucleic acid feature" />
+        <bbox x="486.74642217181747" y="874.4990050984158" w="30" h="12" />
+      </glyph>
+      <bbox x="461.74642217181747" y="880.4990050984158" w="80" h="40" />
+    </glyph>
+    <arc id="arc168" class="logic arc" source="nwtN_f84a2e4d-8c8b-4848-9965-2d67896ecbf1" target="in_gate_port163">
+      <start x="501.74642217181747" y="920.4990050984158" />
+      <end x="505.2415148511975" y="949.0688463340524" />
+    </arc>
+    <arc id="arc169" class="necessary stimulation" source="out_gate_port164" target="a12ab2f0-36da-9c0a-9a09-66bc930aa41c">
+      <start x="505.2415148511975" y="989.0688463340524" />
+      <end x="598.6851620142425" y="1000.2708306675611" />
+    </arc>
+    <glyph id="gate170" class="and">
+      <bbox x="961.2042566732036" y="898.4025269022726" w="20" h="20" />
+      <port id="in_gate_port171" x="961.2042566732036" y="913.4025269022726" />
+      <port id="out_gate_port172" x="991.2042566732036" y="913.4025269022726" />
+    </glyph>
+    <glyph id="nwtN_8ac3d450-7c02-4f7c-8995-4eb6db177368" compartmentRef="nwtN_20b9589d-117e-4b74-845f-2ca68d4f64a8" class="biological activity">
+      <label text="iNOS" />
+      <glyph id="uoi173" class="unit of information">
+        <label text="" />
+        <entity name="nucleic acid feature" />
+        <bbox x="946.2042566732036" y="872.4025269022726" w="30" h="12" />
+      </glyph>
+      <bbox x="921.2042566732036" y="878.4025269022726" w="80" h="40" />
+    </glyph>
+    <arc id="arc174" class="logic arc" source="nwtN_8ac3d450-7c02-4f7c-8995-4eb6db177368" target="in_gate_port171">
+      <start x="961.2042566732036" y="878.4025269022726" />
+      <end x="961.2042566732036" y="913.4025269022726" />
+    </arc>
+    <glyph id="nwtN_c94a2f71-f82c-4c16-add8-7674a3dcbc0d" compartmentRef="nwtN_20b9589d-117e-4b74-845f-2ca68d4f64a8" class="biological activity">
+      <label text="IRF1" />
+      <bbox x="785.2655168307784" y="878.113092313843" w="80" h="40" />
+    </glyph>
+    <arc id="arc176" class="logic arc" source="nwtN_c94a2f71-f82c-4c16-add8-7674a3dcbc0d" target="in_gate_port171">
+      <start x="865.2655168307784" y="898.113092313843" />
+      <end x="961.2042566732036" y="913.4025269022726" />
+    </arc>
+    <arc id="arc177" class="necessary stimulation" source="out_gate_port172" target="nwtN_8ac3d450-7c02-4f7c-8995-4eb6db177368">
+      <start x="991.2042566732036" y="913.4025269022726" />
+      <end x="961.2042566732036" y="918.4025269022726" />
+    </arc>
+    <glyph id="d68f815a-6603-fdac-6712-bd64419970c2" compartmentRef="nwtN_de46d95f-5027-4ba5-a0b1-4df17a380b15" class="biological activity">
+      <label text="IFNγ-IFNγR1-IFNγR2-JAK1-JAK2" />
+      <glyph id="uoi178" class="unit of information">
+        <label text="" />
+        <entity name="complex" />
+        <bbox x="672.5" y="268.1875" w="30" h="12" />
+      </glyph>
+      <bbox x="647.5" y="274.1875" w="80" h="40" />
+    </glyph>
+    <arc id="arc179" class="positive influence" source="d68f815a-6603-fdac-6712-bd64419970c2" target="nwtN_44cef341-d60d-4ca1-ba8a-3267a34ae0cf">
+      <start x="687.5" y="314.1875" />
+      <end x="516.0" y="468.5" />
+    </arc>
+    <glyph id="nwtN_44cef341-d60d-4ca1-ba8a-3267a34ae0cf" compartmentRef="nwtN_19ef2d0c-a5e6-495b-abc8-95ec731a0f14" class="biological activity">
+      <label text="STAT1α" />
+      <bbox x="476" y="468.5" w="80" h="40" />
+    </glyph>
+    <arc id="arc182" class="positive influence" source="nwtN_44cef341-d60d-4ca1-ba8a-3267a34ae0cf" target="c792acba-b26e-a16a-ab9e-769054f6342d">
+      <start x="false" y="false" />
+      <end x="false" y="false" />
+    </arc>
+    <glyph id="c792acba-b26e-a16a-ab9e-769054f6342d" class="biological activity">
+      <label text="false" />
+      <glyph id="uoi183" class="unit of information">
+        <label text="" />
+        <entity name="biological activity" />
+        <bbox x="25.0" y="-6.0" w="30" h="12" />
+      </glyph>
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="c792acba-b26e-a16a-ab9e-769054f6342d" class="biological activity">
+      <label text="false" />
+      <glyph id="uoi184" class="unit of information">
+        <label text="" />
+        <entity name="biological activity" />
+        <bbox x="25.0" y="-6.0" w="30" h="12" />
+      </glyph>
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <arc id="arc185" class="positive influence" source="c792acba-b26e-a16a-ab9e-769054f6342d" target="nwtN_b222b5e2-3217-4bd8-b0c4-d1c766e0a269">
+      <start x="false" y="false" />
+      <end x="false" y="false" />
+    </arc>
+    <glyph id="a12ab2f0-36da-9c0a-9a09-66bc930aa41c" compartmentRef="nwtN_20b9589d-117e-4b74-845f-2ca68d4f64a8" class="biological activity">
+      <label text="IRF1" />
+      <glyph id="uoi187" class="unit of information">
+        <label text="ct:mRNA" />
+        <entity name="nucleic acid feature" />
+        <bbox x="583.6851620142425" y="994.2708306675611" w="30" h="12" />
+      </glyph>
+      <bbox x="558.6851620142425" y="1000.2708306675611" w="80" h="40" />
+    </glyph>
+    <arc id="arc188" class="positive influence" source="a12ab2f0-36da-9c0a-9a09-66bc930aa41c" target="nwtN_352f06bf-d737-4a72-8c7e-60b1af8c579a">
+      <start x="598.6851620142425" y="1000.2708306675611" />
+      <end x="617.7816402103855" y="707.7532216482773" />
+    </arc>
+    <glyph id="nwtN_352f06bf-d737-4a72-8c7e-60b1af8c579a" compartmentRef="nwtN_19ef2d0c-a5e6-495b-abc8-95ec731a0f14" class="biological activity">
+      <label text="IRF1" />
+      <glyph id="uoi189" class="unit of information">
+        <label text="" />
+        <entity name="nucleic acid feature" />
+        <bbox x="602.7816402103855" y="661.7532216482773" w="30" h="12" />
+      </glyph>
+      <bbox x="577.7816402103855" y="667.7532216482773" w="80" h="40" />
+    </glyph>
+    <glyph id="nwtN_352f06bf-d737-4a72-8c7e-60b1af8c579a" compartmentRef="nwtN_19ef2d0c-a5e6-495b-abc8-95ec731a0f14" class="biological activity">
+      <label text="IRF1" />
+      <glyph id="uoi190" class="unit of information">
+        <label text="" />
+        <entity name="nucleic acid feature" />
+        <bbox x="602.7816402103855" y="661.7532216482773" w="30" h="12" />
+      </glyph>
+      <bbox x="577.7816402103855" y="667.7532216482773" w="80" h="40" />
+    </glyph>
+    <arc id="arc191" class="necessary stimulation" source="nwtN_352f06bf-d737-4a72-8c7e-60b1af8c579a" target="nwtN_697b5ef8-e9b6-46b4-80b4-30b25ab467fa">
+      <start x="617.7816402103855" y="667.7532216482773" />
+      <end x="811.0725604384921" y="624.2356126289931" />
+    </arc>
+    <glyph id="nwtN_697b5ef8-e9b6-46b4-80b4-30b25ab467fa" compartmentRef="nwtN_19ef2d0c-a5e6-495b-abc8-95ec731a0f14" class="biological activity">
+      <label text="IRF1" />
+      <bbox x="771.0725604384921" y="584.2356126289931" w="80" h="40" />
+    </glyph>
+    <arc id="arc194" class="positive influence" source="nwtN_697b5ef8-e9b6-46b4-80b4-30b25ab467fa" target="nwtN_c94a2f71-f82c-4c16-add8-7674a3dcbc0d">
+      <start x="811.0725604384921" y="624.2356126289931" />
+      <end x="825.2655168307784" y="878.113092313843" />
+    </arc>
+    <glyph id="nwtN_8ac3d450-7c02-4f7c-8995-4eb6db177368" compartmentRef="nwtN_20b9589d-117e-4b74-845f-2ca68d4f64a8" class="biological activity">
+      <label text="iNOS" />
+      <glyph id="uoi196" class="unit of information">
+        <label text="" />
+        <entity name="nucleic acid feature" />
+        <bbox x="946.2042566732036" y="872.4025269022726" w="30" h="12" />
+      </glyph>
+      <bbox x="921.2042566732036" y="878.4025269022726" w="80" h="40" />
+    </glyph>
+    <arc id="arc197" class="positive influence" source="nwtN_8ac3d450-7c02-4f7c-8995-4eb6db177368" target="nwtN_923a9786-f9a4-4ef1-872d-5ed8f42f1e8d">
+      <start x="961.2042566732036" y="878.4025269022726" />
+      <end x="1093.8535619271984" y="708.0778742752751" />
+    </arc>
+    <glyph id="nwtN_923a9786-f9a4-4ef1-872d-5ed8f42f1e8d" compartmentRef="nwtN_19ef2d0c-a5e6-495b-abc8-95ec731a0f14" class="biological activity">
+      <label text="iNOS" />
+      <glyph id="uoi198" class="unit of information">
+        <label text="" />
+        <entity name="nucleic acid feature" />
+        <bbox x="1078.8535619271984" y="662.0778742752751" w="30" h="12" />
+      </glyph>
+      <bbox x="1053.8535619271984" y="668.0778742752751" w="80" h="40" />
+    </glyph>
+    <glyph id="nwtN_923a9786-f9a4-4ef1-872d-5ed8f42f1e8d" compartmentRef="nwtN_19ef2d0c-a5e6-495b-abc8-95ec731a0f14" class="biological activity">
+      <label text="iNOS" />
+      <glyph id="uoi199" class="unit of information">
+        <label text="" />
+        <entity name="nucleic acid feature" />
+        <bbox x="1078.8535619271984" y="662.0778742752751" w="30" h="12" />
+      </glyph>
+      <bbox x="1053.8535619271984" y="668.0778742752751" w="80" h="40" />
+    </glyph>
+    <arc id="arc200" class="necessary stimulation" source="nwtN_923a9786-f9a4-4ef1-872d-5ed8f42f1e8d" target="nwtN_9367497a-233c-4ee5-b37a-af3976b4c69d">
+      <start x="1093.8535619271984" y="668.0778742752751" />
+      <end x="1200.4232551844962" y="625.8496998444205" />
+    </arc>
+    <glyph id="nwtN_9367497a-233c-4ee5-b37a-af3976b4c69d" compartmentRef="nwtN_19ef2d0c-a5e6-495b-abc8-95ec731a0f14" class="biological activity">
+      <label text="iNOS" />
+      <bbox x="1160.4232551844962" y="585.8496998444205" w="80" h="40" />
+    </glyph>
+    <glyph id="gate202" class="and">
+      <bbox x="1287.4179244048773" y="499.7416889424922" w="20" h="20" />
+      <port id="in_gate_port203" x="1287.4179244048773" y="514.7416889424922" />
+      <port id="out_gate_port204" x="1317.4179244048773" y="514.7416889424922" />
+    </glyph>
+    <glyph id="nwtN_feb33756-4456-4224-af6b-27d11bc071de" compartmentRef="nwtN_19ef2d0c-a5e6-495b-abc8-95ec731a0f14" class="biological activity">
+      <label text="CaM" />
+      <bbox x="1120.1154687569444" y="479.8144818058524" w="80" h="40" />
+    </glyph>
+    <arc id="arc206" class="logic arc" source="nwtN_feb33756-4456-4224-af6b-27d11bc071de" target="in_gate_port203">
+      <start x="1200.1154687569444" y="499.81448180585244" />
+      <end x="1287.4179244048773" y="514.7416889424922" />
+    </arc>
+    <arc id="arc208" class="logic arc" source="nwtN_9367497a-233c-4ee5-b37a-af3976b4c69d" target="in_gate_port203">
+      <start x="1200.4232551844962" y="585.8496998444205" />
+      <end x="1287.4179244048773" y="514.7416889424922" />
+    </arc>
+    <arc id="arc209" class="positive influence" source="out_gate_port204" target="nwtN_23bd2936-1e14-41eb-96c8-6aef9f477948">
+      <start x="1317.4179244048773" y="514.7416889424922" />
+      <end x="1374.72038005281" y="499.66889607913197" />
+    </arc>
+    <glyph id="5a8516d8-92d2-02ed-3b52-d4bef3af70dc" compartmentRef="nwtN_19ef2d0c-a5e6-495b-abc8-95ec731a0f14" class="biological activity">
+      <label text="ASS" />
+      <bbox x="1843.7621922978515" y="702.5418250334662" w="80" h="40" />
+    </glyph>
+    <arc id="arc211" class="positive influence" source="5a8516d8-92d2-02ed-3b52-d4bef3af70dc" target="48af479f-9d83-3811-c014-7a1e6bf096a8">
+      <start x="1883.7621922978515" y="742.5418250334662" />
+      <end x="1634.262192297852" y="783.5418250334661" />
+    </arc>
+    <glyph id="48af479f-9d83-3811-c014-7a1e6bf096a8" compartmentRef="nwtN_19ef2d0c-a5e6-495b-abc8-95ec731a0f14" class="biological activity">
+      <label text="arginino-succinate" />
+      <glyph id="uoi212" class="unit of information">
+        <label text="" />
+        <entity name="simple chemical" />
+        <bbox x="1619.262192297852" y="777.5418250334661" w="30" h="12" />
+      </glyph>
+      <bbox x="1594.262192297852" y="783.5418250334661" w="80" h="40" />
+    </glyph>
+    <glyph id="nwtN_87a376db-ab0b-472c-a5ef-44497a1aec2c" compartmentRef="nwtN_19ef2d0c-a5e6-495b-abc8-95ec731a0f14" class="biological activity">
+      <label text="ASL_tetramer" />
+      <bbox x="1412.762192297852" y="704.5418250334662" w="80" h="40" />
+    </glyph>
+    <arc id="arc214" class="positive influence" source="nwtN_87a376db-ab0b-472c-a5ef-44497a1aec2c" target="b276cddb-209d-9dc5-b227-09b2af2283ec">
+      <start x="1452.762192297852" y="704.5418250334662" />
+      <end x="1479.262192297852" y="666.5418250334662" />
+    </arc>
+    <glyph id="b276cddb-209d-9dc5-b227-09b2af2283ec" compartmentRef="nwtN_19ef2d0c-a5e6-495b-abc8-95ec731a0f14" class="biological activity">
+      <label text="fumarate" />
+      <glyph id="uoi215" class="unit of information">
+        <label text="" />
+        <entity name="simple chemical" />
+        <bbox x="1464.262192297852" y="620.5418250334662" w="30" h="12" />
+      </glyph>
+      <bbox x="1439.262192297852" y="626.5418250334662" w="80" h="40" />
+    </glyph>
+    <glyph id="nwtN_23bd2936-1e14-41eb-96c8-6aef9f477948" compartmentRef="nwtN_19ef2d0c-a5e6-495b-abc8-95ec731a0f14" class="biological activity">
+      <label text="CaM-iNOS" />
+      <glyph id="uoi216" class="unit of information">
+        <label text="" />
+        <entity name="complex" />
+        <bbox x="1399.72038005281" y="473.66889607913197" w="30" h="12" />
+      </glyph>
+      <bbox x="1374.72038005281" y="479.66889607913197" w="80" h="40" />
+    </glyph>
+    <arc id="arc217" class="positive influence" source="nwtN_23bd2936-1e14-41eb-96c8-6aef9f477948" target="nwtN_9af7af84-8fe0-4ae5-97a1-893648dbb144">
+      <start x="1414.72038005281" y="519.668896079132" />
+      <end x="1709.2621922978515" y="525.5418250334662" />
+    </arc>
+    <glyph id="nwtN_9af7af84-8fe0-4ae5-97a1-893648dbb144" compartmentRef="nwtN_19ef2d0c-a5e6-495b-abc8-95ec731a0f14" class="biological activity">
+      <label text="NO" />
+      <glyph id="uoi218" class="unit of information">
+        <label text="" />
+        <entity name="simple chemical" />
+        <bbox x="1694.2621922978515" y="519.5418250334662" w="30" h="12" />
+      </glyph>
+      <bbox x="1669.2621922978515" y="525.5418250334662" w="80" h="40" />
+    </glyph>
+    <glyph id="d68f815a-6603-fdac-6712-bd64419970c2" compartmentRef="nwtN_de46d95f-5027-4ba5-a0b1-4df17a380b15" class="biological activity">
+      <label text="IFNγ-IFNγR1-IFNγR2-JAK1-JAK2" />
+      <glyph id="uoi219" class="unit of information">
+        <label text="" />
+        <entity name="complex" />
+        <bbox x="672.5" y="268.1875" w="30" h="12" />
+      </glyph>
+      <bbox x="647.5" y="274.1875" w="80" h="40" />
+    </glyph>
+    <arc id="arc220" class="positive influence" source="d68f815a-6603-fdac-6712-bd64419970c2" target="d68f815a-6603-fdac-6712-bd64419970c2">
+      <start x="687.5" y="274.1875" />
+      <end x="687.5" y="314.1875" />
+    </arc>
+    <glyph id="d68f815a-6603-fdac-6712-bd64419970c2" compartmentRef="nwtN_de46d95f-5027-4ba5-a0b1-4df17a380b15" class="biological activity">
+      <label text="IFNγ-IFNγR1-IFNγR2-JAK1-JAK2" />
+      <glyph id="uoi221" class="unit of information">
+        <label text="" />
+        <entity name="complex" />
+        <bbox x="672.5" y="268.1875" w="30" h="12" />
+      </glyph>
+      <bbox x="647.5" y="274.1875" w="80" h="40" />
+    </glyph>
+    <glyph id="gate222" class="and">
+      <bbox x="751.4296200884432" y="195.84375" w="20" h="20" />
+      <port id="in_gate_port223" x="781.4296200884432" y="210.84375" />
+      <port id="out_gate_port224" x="751.4296200884432" y="210.84375" />
+    </glyph>
+    <glyph id="nwtN_ba48af24-21da-4acd-904d-13911178d655" compartmentRef="nwtN_41bc33a2-f8d7-4d46-85f2-cec4769128bc" class="biological activity">
+      <label text="IFNγ_dimer" />
+      <bbox x="775.3592401768866" y="77.5" w="80" h="40" />
+    </glyph>
+    <arc id="arc226" class="logic arc" source="nwtN_ba48af24-21da-4acd-904d-13911178d655" target="in_gate_port223">
+      <start x="815.3592401768866" y="117.5" />
+      <end x="781.4296200884432" y="210.84375" />
+    </arc>
+    <glyph id="nwtN_1e87e7a1-d924-44f6-883d-09f5f5dbd156" compartmentRef="nwtN_de46d95f-5027-4ba5-a0b1-4df17a380b15" class="biological activity">
+      <label text="IFNγR1-IFNγR2-JAK1-JAK2" />
+      <glyph id="uoi227" class="unit of information">
+        <label text="" />
+        <entity name="complex" />
+        <bbox x="949.2977355653827" y="267.8784422615304" w="30" h="12" />
+      </glyph>
+      <bbox x="924.2977355653827" y="273.8784422615304" w="80" h="40" />
+    </glyph>
+    <arc id="arc228" class="logic arc" source="nwtN_1e87e7a1-d924-44f6-883d-09f5f5dbd156" target="in_gate_port223">
+      <start x="964.2977355653827" y="273.8784422615304" />
+      <end x="781.4296200884432" y="210.84375" />
+    </arc>
+    <arc id="arc229" class="positive influence" source="out_gate_port224" target="d68f815a-6603-fdac-6712-bd64419970c2">
+      <start x="751.4296200884432" y="210.84375" />
+      <end x="687.5" y="274.1875" />
+    </arc>
+  </map>
+</sbgn>

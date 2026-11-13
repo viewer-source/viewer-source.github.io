@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sbgn xmlns="http://sbgn.org/libsbgn/0.2">
+  <map language="process description">
+    <glyph id="cytosol" class="compartment">
+      <label text="cytosol" />
+      <bbox x="130.0" y="95.0" w="540.0" h="210.0" />
+    </glyph>
+    <glyph id="A1" class="macromolecule" compartmentRef="cytosol">
+      <label text="A" />
+      <bbox x="160.0" y="130.0" w="80" h="40" />
+    </glyph>
+    <glyph id="G3" class="nucleic acid feature" compartmentRef="cytosol">
+      <label text="G3" />
+      <bbox x="460.0" y="230.0" w="80" h="40" />
+      <glyph id="G3-uoi-1050" class="unit of information">
+        <label text="ct:mRNA" />
+        <bbox x="480.0" y="225.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="s2" class="source and sink" compartmentRef="cytosol">
+      <bbox x="375.0" y="125.0" w="50" h="50" />
+    </glyph>
+    <glyph id="B" class="macromolecule" compartmentRef="cytosol">
+      <label text="B" />
+      <bbox x="560.0" y="130.0" w="80" h="40" />
+    </glyph>
+    <glyph id="p4" class="process">
+      <bbox x="488.0" y="138.0" w="24" h="24" />
+      <port id="p4-in" x="483.0" y="150.0" />
+      <port id="p4-out" x="517.0" y="150.0" />
+    </glyph>
+    <glyph id="s3" class="source and sink" compartmentRef="cytosol">
+      <bbox x="275.0" y="225.0" w="50" h="50" />
+    </glyph>
+    <glyph id="p5" class="process">
+      <bbox x="388.0" y="238.0" w="24" h="24" />
+      <port id="p5-in" x="417.0" y="250.0" />
+      <port id="p5-out" x="383.0" y="250.0" />
+    </glyph>
+    <glyph id="nucleus" class="compartment">
+      <label text="nucleus" />
+      <bbox x="130.0" y="300.0" w="440.0" h="305.0" />
+    </glyph>
+    <glyph id="A2" class="macromolecule" compartmentRef="nucleus">
+      <label text="A" />
+      <bbox x="160.0" y="330.0" w="80" h="40" />
+    </glyph>
+    <glyph id="G1" class="nucleic acid feature" compartmentRef="nucleus">
+      <label text="G1" />
+      <bbox x="360.0" y="330.0" w="80" h="40" />
+      <glyph id="G1-uoi-1051" class="unit of information">
+        <label text="ct:gene" />
+        <bbox x="380.0" y="325.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="s1" class="source and sink" compartmentRef="nucleus">
+      <bbox x="175.0" y="525.0" w="50" h="50" />
+    </glyph>
+    <glyph id="G2" class="nucleic acid feature" compartmentRef="nucleus">
+      <label text="G2" />
+      <bbox x="460.0" y="530.0" w="80" h="40" />
+      <glyph id="G2-uoi-1052" class="unit of information">
+        <label text="ct:mRNA" />
+        <bbox x="480.0" y="525.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="p1" class="process">
+      <bbox x="188.0" y="238.0" w="24" h="24" />
+      <port id="p1-in" x="200.0" y="233.0" />
+      <port id="p1-out" x="200.0" y="267.0" />
+    </glyph>
+    <glyph id="p2" class="process">
+      <bbox x="338.0" y="538.0" w="24" h="24" />
+      <port id="p2-in" x="333.0" y="550.0" />
+      <port id="p2-out" x="367.0" y="550.0" />
+    </glyph>
+    <glyph id="modulation-1044" class="and">
+      <bbox x="304.0" y="404.0" w="25" h="25" />
+      <port id="modulation-1044-in" x="316.5" y="399.0" />
+      <port id="modulation-1044-out" x="316.5" y="434.0" />
+    </glyph>
+    <glyph id="p3" class="process">
+      <bbox x="488.0" y="388.0" w="24" h="24" />
+      <port id="p3-in" x="500.0" y="417.0" />
+      <port id="p3-out" x="500.0" y="383.0" />
+    </glyph>
+    <arc class="consumption" id="consumption-1035" source="s2" target="p4-in">
+      <start x="425.0" y="150.0" />
+      <end x="483.0" y="150.0" />
+    </arc>
+    <arc class="production" id="production-1036" source="p4-out" target="B">
+      <start x="517.0" y="150.0" />
+      <end x="560.0" y="150.0" />
+    </arc>
+    <arc class="necessary stimulation" id="modulation-1037" source="G3" target="p4">
+      <start x="500.0" y="230.0" />
+      <end x="500.0" y="162.0" />
+    </arc>
+    <arc class="consumption" id="consumption-1038" source="G3" target="p5-in">
+      <start x="460.0" y="250.0" />
+      <end x="417.0" y="250.0" />
+    </arc>
+    <arc class="production" id="production-1039" source="p5-out" target="s3">
+      <start x="383.0" y="250.0" />
+      <end x="325.0" y="250.0" />
+    </arc>
+    <arc class="consumption" id="consumption-1040" source="A1" target="p1-in">
+      <start x="200.0" y="170.0" />
+      <end x="200.0" y="233.0" />
+    </arc>
+    <arc class="production" id="production-1041" source="p1-out" target="A2">
+      <start x="200.0" y="267.0" />
+      <end x="200.0" y="330.0" />
+    </arc>
+    <arc class="consumption" id="consumption-1042" source="s1" target="p2-in">
+      <start x="225.0" y="550.0" />
+      <end x="333.0" y="550.0" />
+    </arc>
+    <arc class="production" id="production-1043" source="p2-out" target="G2">
+      <start x="367.0" y="550.0" />
+      <end x="460.0" y="550.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-1045" source="A2" target="modulation-1044-in">
+      <start x="200.0" y="370.0" />
+      <end x="316.5" y="399.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-1046" source="G1" target="modulation-1044-in">
+      <start x="400.0" y="370.0" />
+      <end x="316.5" y="399.0" />
+    </arc>
+    <arc class="necessary stimulation" id="necessary-stimulation-1047" source="modulation-1044-out" target="p2">
+      <start x="316.5" y="429.0" />
+      <end x="350.0" y="538.0" />
+    </arc>
+    <arc class="consumption" id="consumption-1048" source="G2" target="p3-in">
+      <start x="500.0" y="530.0" />
+      <end x="500.0" y="417.0" />
+    </arc>
+    <arc class="production" id="production-1049" source="p3-out" target="G3">
+      <start x="500.0" y="383.0" />
+      <end x="500.0" y="270.0" />
+    </arc>
+  </map>
+</sbgn>

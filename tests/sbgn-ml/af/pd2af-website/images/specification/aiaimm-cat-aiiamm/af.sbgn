@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sbgn xmlns="http://sbgn.org/libsbgn/0.2">
+  <map language="activity flow">
+    <glyph id="A1" class="biological activity">
+      <label text="A-active1" />
+      <bbox x="160.0" y="230.0" w="80" h="40" />
+    </glyph>
+    <glyph id="C1" class="biological activity">
+      <label text="C" />
+      <bbox x="160.0" y="330.0" w="80" h="40" />
+    </glyph>
+    <glyph id="M1" class="biological activity">
+      <label text="M1" />
+      <bbox x="160.0" y="630.0" w="80" h="40" />
+      <glyph id="M1-uoi-692" class="unit of information">
+        <label text="" />
+        <entity name="simple chemical" />
+        <bbox x="180.0" y="625.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="M2" class="biological activity">
+      <label text="M2" />
+      <bbox x="160.0" y="730.0" w="80" h="40" />
+      <glyph id="M2-uoi-693" class="unit of information">
+        <label text="" />
+        <entity name="simple chemical" />
+        <bbox x="180.0" y="725.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="R" class="biological activity">
+      <label text="R" />
+      <bbox x="160.0" y="130.0" w="80" h="40" />
+    </glyph>
+    <glyph id="A2" class="biological activity">
+      <label text="A-active2" />
+      <bbox x="360.0" y="130.0" w="80" h="40" />
+    </glyph>
+    <glyph id="D2" class="biological activity">
+      <label text="D" />
+      <bbox x="360.0" y="230.0" w="80" h="40" />
+    </glyph>
+    <glyph id="M3" class="biological activity">
+      <label text="M3" />
+      <bbox x="360.0" y="630.0" w="80" h="40" />
+      <glyph id="M3-uoi-694" class="unit of information">
+        <label text="" />
+        <entity name="simple chemical" />
+        <bbox x="380.0" y="625.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="M4" class="biological activity">
+      <label text="M4" />
+      <bbox x="360.0" y="730.0" w="80" h="40" />
+      <glyph id="M4-uoi-695" class="unit of information">
+        <label text="" />
+        <entity name="simple chemical" />
+        <bbox x="380.0" y="725.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="and-681" class="and">
+      <bbox x="301.0" y="466.0" w="25" h="25" />
+      <port id="and-681-in" x="296.0" y="478.5" />
+      <port id="and-681-out" x="331.0" y="478.5" />
+    </glyph>
+    <glyph id="hyperarc-638" class="and">
+      <bbox x="187.0" y="237.0" w="25" h="25" />
+      <port id="hyperarc-638-in" x="199.5" y="232.0" />
+      <port id="hyperarc-638-out" x="199.5" y="267.0" />
+    </glyph>
+    <arc class="positive influence" id="positive-influence-685" source="and-681-out" target="A2">
+      <start x="313.5" y="466.0" />
+      <end x="400.0" y="170.0" />
+    </arc>
+    <arc class="positive influence" id="positive-influence-686" source="and-681-out" target="D2">
+      <start x="313.5" y="466.0" />
+      <end x="400.0" y="270.0" />
+    </arc>
+    <arc class="positive influence" id="positive-influence-687" source="and-681-out" target="M3">
+      <start x="313.5" y="491.0" />
+      <end x="400.0" y="630.0" />
+    </arc>
+    <arc class="positive influence" id="positive-influence-688" source="and-681-out" target="M4">
+      <start x="313.5" y="491.0" />
+      <end x="400.0" y="730.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-682" source="R" target="and-681-in">
+      <start x="200.0" y="170.0" />
+      <end x="296.0" y="478.5" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-683" source="M1" target="and-681-in">
+      <start x="200.0" y="630.0" />
+      <end x="296.0" y="478.5" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-684" source="M2" target="and-681-in">
+      <start x="200.0" y="730.0" />
+      <end x="296.0" y="478.5" />
+    </arc>
+    <arc class="negative influence" id="negative-influence-690" source="hyperarc-638-out" target="A1">
+      <start x="187.0" y="249.5" />
+      <end x="240.0" y="250.0" />
+    </arc>
+    <arc class="negative influence" id="negative-influence-691" source="hyperarc-638-out" target="C1">
+      <start x="199.5" y="262.0" />
+      <end x="200.0" y="330.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-689" source="R" target="hyperarc-638-in">
+      <start x="200.0" y="170.0" />
+      <end x="199.5" y="232.0" />
+    </arc>
+  </map>
+</sbgn>

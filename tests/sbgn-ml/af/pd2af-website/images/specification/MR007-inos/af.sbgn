@@ -1,0 +1,411 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sbgn xmlns="http://sbgn.org/libsbgn/0.2">
+  <map language="activity flow">
+    <glyph id="EXTRACELLULAR_SPACE" class="compartment">
+      <label text="EXTRACELLULAR SPACE" />
+      <bbox x="0" y="0" w="140" h="100" />
+    </glyph>
+    <glyph id="IFNγ-dimer" class="biological activity" compartmentRef="EXTRACELLULAR_SPACE">
+      <label text="IFNγ-dimer" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="arginine-extracellular" class="biological activity" compartmentRef="EXTRACELLULAR_SPACE">
+      <label text="arginine-extracellular" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="arginine-extracellular-uoi-2974" class="unit of information">
+        <label text="" />
+        <entity name="simple chemical" />
+        <bbox x="20.0" y="-5.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="NO" class="biological activity" compartmentRef="EXTRACELLULAR_SPACE">
+      <label text="NO" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="NO-uoi-2975" class="unit of information">
+        <label text="" />
+        <entity name="simple chemical" />
+        <bbox x="20.0" y="-5.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="PLASMA_MEMBRANE" class="compartment">
+      <label text="PLASMA MEMBRANE" />
+      <bbox x="0" y="0" w="140" h="100" />
+    </glyph>
+    <glyph id="IFNγR1-dimer-IFNγR2-dimer-JAK1-JAK2" class="biological activity" compartmentRef="PLASMA_MEMBRANE">
+      <label text="IFNγR1-dimer-IFNγR2-dimer-JAK1-JAK2" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="IFNγR1-dimer-IFNγR2-dimer-JAK1-JAK2-uoi-2976" class="unit of information">
+        <label text="" />
+        <entity name="complex" />
+        <bbox x="20.0" y="-5.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="IFNγ-dimer-IFNγR1-dimer-IFNγR2-dimer-JAK1-JAK2" class="biological activity" compartmentRef="PLASMA_MEMBRANE">
+      <label text="IFNγ-dimer-IFNγR1-dimer-IFNγR2-dimer-JAK1-JAK2" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="IFNγ-dimer-IFNγR1-dimer-IFNγR2-dimer-JAK1-JAK2-uoi-2977" class="unit of information">
+        <label text="" />
+        <entity name="complex" />
+        <bbox x="20.0" y="-5.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="IFNγ-dimer-IFNγR1-dimer-P-IFNγR2-dimer-JAK1-JAK2" class="biological activity" compartmentRef="PLASMA_MEMBRANE">
+      <label text="IFNγ-dimer-IFNγR1-dimer-P-IFNγR2-dimer-JAK1-JAK2" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="IFNγ-dimer-IFNγR1-dimer-P-IFNγR2-dimer-JAK1-JAK2-uoi-2978" class="unit of information">
+        <label text="" />
+        <entity name="complex" />
+        <bbox x="20.0" y="-5.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="CYTOSOL" class="compartment">
+      <label text="CYTOSOL" />
+      <bbox x="0" y="0" w="140" h="100" />
+    </glyph>
+    <glyph id="STAT1α-P-P" class="biological activity" compartmentRef="CYTOSOL">
+      <label text="STAT1α-P-P" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="STAT1α-dimer-P-P" class="biological activity" compartmentRef="CYTOSOL">
+      <label text="STAT1α-dimer-P-P" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="IRF1-mRNA" class="biological activity" compartmentRef="CYTOSOL">
+      <label text="IRF1-mRNA" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="IRF1-mRNA-uoi-2979" class="unit of information">
+        <label text="" />
+        <entity name="nucleic acid feature" />
+        <bbox x="20.0" y="-5.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="IRF1" class="biological activity" compartmentRef="CYTOSOL">
+      <label text="IRF1" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="INOS-mRNA" class="biological activity" compartmentRef="CYTOSOL">
+      <label text="INOS-mRNA" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="INOS-mRNA-uoi-2980" class="unit of information">
+        <label text="" />
+        <entity name="nucleic acid feature" />
+        <bbox x="20.0" y="-5.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="INOS" class="biological activity" compartmentRef="CYTOSOL">
+      <label text="INOS" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="CaM" class="biological activity" compartmentRef="CYTOSOL">
+      <label text="CaM" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="CaM-dimer-INOS-dimer" class="biological activity" compartmentRef="CYTOSOL">
+      <label text="CaM-dimer-INOS-dimer" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="CaM-dimer-INOS-dimer-uoi-2981" class="unit of information">
+        <label text="" />
+        <entity name="complex" />
+        <bbox x="20.0" y="-5.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="O2" class="biological activity" compartmentRef="CYTOSOL">
+      <label text="O2" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="O2-uoi-2982" class="unit of information">
+        <label text="" />
+        <entity name="simple chemical" />
+        <bbox x="20.0" y="-5.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="NO-cytosol" class="biological activity" compartmentRef="CYTOSOL">
+      <label text="NO" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="NO-cytosol-uoi-2983" class="unit of information">
+        <label text="" />
+        <entity name="simple chemical" />
+        <bbox x="20.0" y="-5.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="citrulline" class="biological activity" compartmentRef="CYTOSOL">
+      <label text="citrulline" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="citrulline-uoi-2984" class="unit of information">
+        <label text="" />
+        <entity name="simple chemical" />
+        <bbox x="20.0" y="-5.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="aspartate" class="biological activity" compartmentRef="CYTOSOL">
+      <label text="aspartate" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="aspartate-uoi-2985" class="unit of information">
+        <label text="" />
+        <entity name="simple chemical" />
+        <bbox x="20.0" y="-5.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="arginino-succinate" class="biological activity" compartmentRef="CYTOSOL">
+      <label text="arginino-succinate" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="arginino-succinate-uoi-2986" class="unit of information">
+        <label text="" />
+        <entity name="simple chemical" />
+        <bbox x="20.0" y="-5.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="fumarate" class="biological activity" compartmentRef="CYTOSOL">
+      <label text="fumarate" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="fumarate-uoi-2987" class="unit of information">
+        <label text="" />
+        <entity name="simple chemical" />
+        <bbox x="20.0" y="-5.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="arginine" class="biological activity" compartmentRef="CYTOSOL">
+      <label text="arginine" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="arginine-uoi-2988" class="unit of information">
+        <label text="" />
+        <entity name="simple chemical" />
+        <bbox x="20.0" y="-5.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="ASS" class="biological activity" compartmentRef="CYTOSOL">
+      <label text="ASS" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="ASL-tetramer" class="biological activity" compartmentRef="CYTOSOL">
+      <label text="ASL-tetramer" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="NUCLEUS" class="compartment">
+      <label text="NUCLEUS" />
+      <bbox x="0" y="0" w="140" h="100" />
+    </glyph>
+    <glyph id="STAT1α-dimer-P-P-nucleus" class="biological activity" compartmentRef="NUCLEUS">
+      <label text="STAT1α-dimer-P-P" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="IRF1-mRNA-nucleus" class="biological activity" compartmentRef="NUCLEUS">
+      <label text="IRF1-mRNA" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="IRF1-mRNA-nucleus-uoi-2989" class="unit of information">
+        <label text="" />
+        <entity name="nucleic acid feature" />
+        <bbox x="20.0" y="-5.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="IRF1-gene" class="biological activity" compartmentRef="NUCLEUS">
+      <label text="IRF1-gene" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="IRF1-gene-uoi-2990" class="unit of information">
+        <label text="" />
+        <entity name="nucleic acid feature" />
+        <bbox x="20.0" y="-5.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="IRF1-nucleus" class="biological activity" compartmentRef="NUCLEUS">
+      <label text="IRF1" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="INOS-mRNA-nucleus" class="biological activity" compartmentRef="NUCLEUS">
+      <label text="INOS-mRNA" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="INOS-mRNA-nucleus-uoi-2991" class="unit of information">
+        <label text="" />
+        <entity name="nucleic acid feature" />
+        <bbox x="20.0" y="-5.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="INOS-gene" class="biological activity" compartmentRef="NUCLEUS">
+      <label text="INOS-gene" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="INOS-gene-uoi-2992" class="unit of information">
+        <label text="" />
+        <entity name="nucleic acid feature" />
+        <bbox x="20.0" y="-5.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="and-2931" class="and">
+      <bbox x="27.0" y="7.0" w="25" h="25" />
+      <port id="and-2931-in" x="39.5" y="37.0" />
+      <port id="and-2931-out" x="39.5" y="2.0" />
+    </glyph>
+    <glyph id="and-2939" class="and">
+      <bbox x="27.0" y="7.0" w="25" h="25" />
+      <port id="and-2939-in" x="39.5" y="37.0" />
+      <port id="and-2939-out" x="39.5" y="2.0" />
+    </glyph>
+    <glyph id="and-2946" class="and">
+      <bbox x="27.0" y="7.0" w="25" h="25" />
+      <port id="and-2946-in" x="39.5" y="37.0" />
+      <port id="and-2946-out" x="39.5" y="2.0" />
+    </glyph>
+    <glyph id="and-2952" class="and">
+      <bbox x="27.0" y="7.0" w="25" h="25" />
+      <port id="and-2952-in" x="39.5" y="37.0" />
+      <port id="and-2952-out" x="39.5" y="2.0" />
+    </glyph>
+    <glyph id="and-2956" class="and">
+      <bbox x="27.0" y="7.0" w="25" h="25" />
+      <port id="and-2956-in" x="39.5" y="37.0" />
+      <port id="and-2956-out" x="39.5" y="2.0" />
+    </glyph>
+    <glyph id="and-2962" class="and">
+      <bbox x="27.0" y="7.0" w="25" h="25" />
+      <port id="and-2962-in" x="39.5" y="37.0" />
+      <port id="and-2962-out" x="39.5" y="2.0" />
+    </glyph>
+    <glyph id="and-2967" class="and">
+      <bbox x="27.0" y="7.0" w="25" h="25" />
+      <port id="and-2967-in" x="39.5" y="37.0" />
+      <port id="and-2967-out" x="39.5" y="2.0" />
+    </glyph>
+    <arc class="positive influence" id="positive-influence-2934" source="and-2931-out" target="IFNγ-dimer-IFNγR1-dimer-IFNγR2-dimer-JAK1-JAK2">
+      <start x="27.0" y="19.5" />
+      <end x="80.0" y="20.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2932" source="IFNγ-dimer" target="and-2931-in">
+      <start x="0" y="20.0" />
+      <end x="39.5" y="37.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2933" source="IFNγR1-dimer-IFNγR2-dimer-JAK1-JAK2" target="and-2931-in">
+      <start x="0" y="20.0" />
+      <end x="39.5" y="37.0" />
+    </arc>
+    <arc class="positive influence" id="positive-influence-2935" source="IFNγ-dimer-IFNγR1-dimer-IFNγR2-dimer-JAK1-JAK2" target="IFNγ-dimer-IFNγR1-dimer-P-IFNγR2-dimer-JAK1-JAK2">
+      <start x="80.0" y="20.0" />
+      <end x="0" y="20.0" />
+    </arc>
+    <arc class="positive influence" id="positive-influence-2936" source="IFNγ-dimer-IFNγR1-dimer-P-IFNγR2-dimer-JAK1-JAK2" target="STAT1α-P-P">
+      <start x="80.0" y="20.0" />
+      <end x="0" y="20.0" />
+    </arc>
+    <arc class="positive influence" id="positive-influence-2937" source="STAT1α-P-P" target="STAT1α-dimer-P-P">
+      <start x="80.0" y="20.0" />
+      <end x="0" y="20.0" />
+    </arc>
+    <arc class="positive influence" id="positive-influence-2938" source="STAT1α-dimer-P-P" target="STAT1α-dimer-P-P-nucleus">
+      <start x="80.0" y="20.0" />
+      <end x="0" y="20.0" />
+    </arc>
+    <arc class="necessary stimulation" id="necessary-stimulation-2942" source="and-2939-out" target="IRF1-mRNA-nucleus">
+      <start x="27.0" y="19.5" />
+      <end x="80.0" y="20.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2940" source="STAT1α-dimer-P-P-nucleus" target="and-2939-in">
+      <start x="0" y="20.0" />
+      <end x="39.5" y="37.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2941" source="IRF1-gene" target="and-2939-in">
+      <start x="0" y="20.0" />
+      <end x="39.5" y="37.0" />
+    </arc>
+    <arc class="positive influence" id="positive-influence-2943" source="IRF1-mRNA-nucleus" target="IRF1-mRNA">
+      <start x="80.0" y="20.0" />
+      <end x="0" y="20.0" />
+    </arc>
+    <arc class="necessary stimulation" id="necessary-stimulation-2944" source="IRF1-mRNA" target="IRF1">
+      <start x="80.0" y="20.0" />
+      <end x="0" y="20.0" />
+    </arc>
+    <arc class="positive influence" id="positive-influence-2945" source="IRF1" target="IRF1-nucleus">
+      <start x="80.0" y="20.0" />
+      <end x="0" y="20.0" />
+    </arc>
+    <arc class="necessary stimulation" id="necessary-stimulation-2949" source="and-2946-out" target="INOS-mRNA-nucleus">
+      <start x="27.0" y="19.5" />
+      <end x="80.0" y="20.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2947" source="IRF1-nucleus" target="and-2946-in">
+      <start x="0" y="20.0" />
+      <end x="39.5" y="37.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2948" source="INOS-gene" target="and-2946-in">
+      <start x="0" y="20.0" />
+      <end x="39.5" y="37.0" />
+    </arc>
+    <arc class="positive influence" id="positive-influence-2950" source="INOS-mRNA-nucleus" target="INOS-mRNA">
+      <start x="80.0" y="20.0" />
+      <end x="0" y="20.0" />
+    </arc>
+    <arc class="necessary stimulation" id="necessary-stimulation-2951" source="INOS-mRNA" target="INOS">
+      <start x="80.0" y="20.0" />
+      <end x="0" y="20.0" />
+    </arc>
+    <arc class="positive influence" id="positive-influence-2955" source="and-2952-out" target="CaM-dimer-INOS-dimer">
+      <start x="27.0" y="19.5" />
+      <end x="80.0" y="20.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2953" source="CaM" target="and-2952-in">
+      <start x="0" y="20.0" />
+      <end x="39.5" y="37.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2954" source="INOS" target="and-2952-in">
+      <start x="0" y="20.0" />
+      <end x="39.5" y="37.0" />
+    </arc>
+    <arc class="positive influence" id="positive-influence-2960" source="and-2956-out" target="citrulline">
+      <start x="27.0" y="19.5" />
+      <end x="80.0" y="20.0" />
+    </arc>
+    <arc class="positive influence" id="positive-influence-2961" source="and-2956-out" target="NO-cytosol">
+      <start x="27.0" y="19.5" />
+      <end x="80.0" y="20.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2957" source="CaM-dimer-INOS-dimer" target="and-2956-in">
+      <start x="0" y="20.0" />
+      <end x="39.5" y="37.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2958" source="arginine" target="and-2956-in">
+      <start x="0" y="20.0" />
+      <end x="39.5" y="37.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2959" source="O2" target="and-2956-in">
+      <start x="0" y="20.0" />
+      <end x="39.5" y="37.0" />
+    </arc>
+    <arc class="positive influence" id="positive-influence-2966" source="and-2962-out" target="arginino-succinate">
+      <start x="27.0" y="19.5" />
+      <end x="80.0" y="20.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2963" source="citrulline" target="and-2962-in">
+      <start x="0" y="20.0" />
+      <end x="39.5" y="37.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2964" source="aspartate" target="and-2962-in">
+      <start x="0" y="20.0" />
+      <end x="39.5" y="37.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2965" source="ASS" target="and-2962-in">
+      <start x="0" y="20.0" />
+      <end x="39.5" y="37.0" />
+    </arc>
+    <arc class="positive influence" id="positive-influence-2970" source="and-2967-out" target="arginine">
+      <start x="27.0" y="19.5" />
+      <end x="80.0" y="20.0" />
+    </arc>
+    <arc class="positive influence" id="positive-influence-2971" source="and-2967-out" target="fumarate">
+      <start x="27.0" y="19.5" />
+      <end x="80.0" y="20.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2968" source="arginino-succinate" target="and-2967-in">
+      <start x="0" y="20.0" />
+      <end x="39.5" y="37.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2969" source="ASL-tetramer" target="and-2967-in">
+      <start x="0" y="20.0" />
+      <end x="39.5" y="37.0" />
+    </arc>
+    <arc class="positive influence" id="positive-influence-2972" source="arginine-extracellular" target="arginine">
+      <start x="80.0" y="20.0" />
+      <end x="0" y="20.0" />
+    </arc>
+    <arc class="positive influence" id="positive-influence-2973" source="NO-cytosol" target="NO">
+      <start x="80.0" y="20.0" />
+      <end x="0" y="20.0" />
+    </arc>
+  </map>
+</sbgn>

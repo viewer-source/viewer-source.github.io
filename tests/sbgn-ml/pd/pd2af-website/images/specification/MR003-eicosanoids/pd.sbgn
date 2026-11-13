@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sbgn xmlns="http://sbgn.org/libsbgn/0.2">
+  <map language="process description">
+    <glyph id="RAF1-1" class="macromolecule">
+      <label text="RAF1" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="RAF1-1-state-variable-2157" class="state variable">
+        <state value="" variable="" />
+        <bbox x="70" y="-7.5" w="15" h="15" />
+      </glyph>
+    </glyph>
+    <glyph id="RAF1-2" class="macromolecule">
+      <label text="RAF1" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="RAF1-2-state-variable-2158" class="state variable">
+        <state value="P" variable="" />
+        <bbox x="70" y="-7.5" w="15" h="15" />
+      </glyph>
+    </glyph>
+    <glyph id="MEK1/2-1" class="macromolecule">
+      <label text="MEK1/2" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="MEK1/2-1-state-variable-2159" class="state variable">
+        <state value="" variable="" />
+        <bbox x="70" y="-7.5" w="15" h="15" />
+      </glyph>
+    </glyph>
+    <glyph id="MEK1/2-2" class="macromolecule">
+      <label text="MEK1/2" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="MEK1/2-2-state-variable-2160" class="state variable">
+        <state value="P" variable="" />
+        <bbox x="70" y="-7.5" w="15" h="15" />
+      </glyph>
+    </glyph>
+    <glyph id="ERK1/2-1" class="macromolecule">
+      <label text="ERK1/2" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="ERK1/2-1-state-variable-2161" class="state variable">
+        <state value="" variable="" />
+        <bbox x="70" y="-7.5" w="15" h="15" />
+      </glyph>
+      <glyph id="ERK1/2-1-state-variable-2162" class="state variable">
+        <state value="" variable="" />
+        <bbox x="10" y="-7.5" w="15" h="15" />
+      </glyph>
+    </glyph>
+    <glyph id="ERK1/2-2" class="macromolecule">
+      <label text="ERK1/2" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="ERK1/2-2-state-variable-2163" class="state variable">
+        <state value="P" variable="" />
+        <bbox x="70" y="-7.5" w="15" h="15" />
+      </glyph>
+      <glyph id="ERK1/2-2-state-variable-2164" class="state variable">
+        <state value="P" variable="" />
+        <bbox x="10" y="-7.5" w="15" h="15" />
+      </glyph>
+    </glyph>
+    <glyph id="cPLA2-1" class="macromolecule">
+      <label text="cPLA2" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="cPLA2-1-state-variable-2165" class="state variable">
+        <state value="" variable="" />
+        <bbox x="70" y="-7.5" w="15" h="15" />
+      </glyph>
+      <glyph id="cPLA2-1-state-variable-2166" class="state variable">
+        <state value="P" variable="" />
+        <bbox x="10" y="-7.5" w="15" h="15" />
+      </glyph>
+    </glyph>
+    <glyph id="cPLA2-2" class="macromolecule">
+      <label text="cPLA2" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="cPLA2-2-state-variable-2167" class="state variable">
+        <state value="P" variable="" />
+        <bbox x="70" y="-7.5" w="15" h="15" />
+      </glyph>
+      <glyph id="cPLA2-2-state-variable-2168" class="state variable">
+        <state value="P" variable="" />
+        <bbox x="10" y="-7.5" w="15" h="15" />
+      </glyph>
+    </glyph>
+    <glyph id="Phosphatydilcholine" class="simple chemical">
+      <label text="Phosphatydilcholine" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="Arachidocic_acid" class="simple chemical">
+      <label text="Arachidocic acid" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="PGG2" class="simple chemical">
+      <label text="PGG2" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="COX1/2" class="macromolecule">
+      <label text="COX1/2" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="hyperarc-2052" class="process">
+      <bbox x="28.0" y="8.0" w="24" h="24" />
+      <port id="hyperarc-2052-in" x="40.0" y="37.0" />
+      <port id="hyperarc-2052-out" x="40.0" y="3.0" />
+    </glyph>
+    <glyph id="p1" class="process">
+      <bbox x="28.0" y="8.0" w="24" h="24" />
+      <port id="p1-in" x="40.0" y="37.0" />
+      <port id="p1-out" x="40.0" y="3.0" />
+    </glyph>
+    <glyph id="p2" class="process">
+      <bbox x="28.0" y="8.0" w="24" h="24" />
+      <port id="p2-in" x="40.0" y="37.0" />
+      <port id="p2-out" x="40.0" y="3.0" />
+    </glyph>
+    <glyph id="p3" class="process">
+      <bbox x="28.0" y="8.0" w="24" h="24" />
+      <port id="p3-in" x="40.0" y="37.0" />
+      <port id="p3-out" x="40.0" y="3.0" />
+    </glyph>
+    <glyph id="p4" class="process">
+      <bbox x="28.0" y="8.0" w="24" h="24" />
+      <port id="p4-in" x="40.0" y="37.0" />
+      <port id="p4-out" x="40.0" y="3.0" />
+    </glyph>
+    <glyph id="p5" class="process">
+      <bbox x="28.0" y="8.0" w="24" h="24" />
+      <port id="p5-in" x="40.0" y="37.0" />
+      <port id="p5-out" x="40.0" y="3.0" />
+    </glyph>
+    <arc class="consumption" id="consumption-2140" source="RAF1-1" target="hyperarc-2052-in">
+      <start x="80.0" y="20.0" />
+      <end x="40.0" y="37.0" />
+    </arc>
+    <arc class="production" id="production-2141" source="hyperarc-2052-out" target="RAF1-2">
+      <start x="40.0" y="3.0" />
+      <end x="0" y="20.0" />
+    </arc>
+    <arc class="catalysis" id="catalysis-2142" source="RAF1-2" target="p1">
+      <start x="80.0" y="20.0" />
+      <end x="28.0" y="20.0" />
+    </arc>
+    <arc class="consumption" id="consumption-2143" source="MEK1/2-1" target="p1-in">
+      <start x="80.0" y="20.0" />
+      <end x="40.0" y="37.0" />
+    </arc>
+    <arc class="production" id="production-2144" source="p1-out" target="MEK1/2-2">
+      <start x="40.0" y="3.0" />
+      <end x="0" y="20.0" />
+    </arc>
+    <arc class="catalysis" id="catalysis-2145" source="MEK1/2-2" target="p2">
+      <start x="80.0" y="20.0" />
+      <end x="28.0" y="20.0" />
+    </arc>
+    <arc class="consumption" id="consumption-2146" source="ERK1/2-1" target="p2-in">
+      <start x="80.0" y="20.0" />
+      <end x="40.0" y="37.0" />
+    </arc>
+    <arc class="production" id="production-2147" source="p2-out" target="ERK1/2-2">
+      <start x="40.0" y="3.0" />
+      <end x="0" y="20.0" />
+    </arc>
+    <arc class="catalysis" id="catalysis-2148" source="ERK1/2-2" target="p3">
+      <start x="80.0" y="20.0" />
+      <end x="28.0" y="20.0" />
+    </arc>
+    <arc class="consumption" id="consumption-2149" source="cPLA2-1" target="p3-in">
+      <start x="80.0" y="20.0" />
+      <end x="40.0" y="37.0" />
+    </arc>
+    <arc class="production" id="production-2150" source="p3-out" target="cPLA2-2">
+      <start x="40.0" y="3.0" />
+      <end x="0" y="20.0" />
+    </arc>
+    <arc class="catalysis" id="catalysis-2151" source="cPLA2-2" target="p4">
+      <start x="80.0" y="20.0" />
+      <end x="28.0" y="20.0" />
+    </arc>
+    <arc class="consumption" id="consumption-2152" source="Phosphatydilcholine" target="p4-in">
+      <start x="80.0" y="20.0" />
+      <end x="40.0" y="37.0" />
+    </arc>
+    <arc class="production" id="production-2153" source="p4-out" target="Arachidocic_acid">
+      <start x="40.0" y="3.0" />
+      <end x="0" y="20.0" />
+    </arc>
+    <arc class="consumption" id="consumption-2154" source="Arachidocic_acid" target="p5-in">
+      <start x="80.0" y="20.0" />
+      <end x="40.0" y="37.0" />
+    </arc>
+    <arc class="production" id="production-2155" source="p5-out" target="PGG2">
+      <start x="40.0" y="3.0" />
+      <end x="0" y="20.0" />
+    </arc>
+    <arc class="catalysis" id="catalysis-2156" source="COX1/2" target="p5">
+      <start x="80.0" y="20.0" />
+      <end x="28.0" y="20.0" />
+    </arc>
+  </map>
+</sbgn>

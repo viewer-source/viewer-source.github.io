@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sbgn xmlns="http://sbgn.org/libsbgn/0.2">
+  <map language="activity flow">
+    <glyph class="biological activity" id="A">
+      <label text="A" />
+      <bbox x="160.0" y="230.0" w="80" h="40" />
+      <glyph id="A-uoi-2520" class="unit of information">
+        <label text="" />
+        <entity name="simple chemical" />
+        <bbox x="180.0" y="225.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph class="biological activity" id="B">
+      <label text="B" />
+      <bbox x="360.0" y="230.0" w="80" h="40" />
+      <glyph id="B-uoi-2521" class="unit of information">
+        <label text="" />
+        <entity name="simple chemical" />
+        <bbox x="380.0" y="225.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph class="biological activity" id="C">
+      <label text="C" />
+      <bbox x="260.0" y="130.0" w="80" h="40" />
+    </glyph>
+    <glyph class="and" id="modulation-2516">
+      <bbox x="287.5" y="204.16666666666666" w="25" h="25" />
+      <port id="modulation-2516-in" x="282.5" y="216.66666666666666" />
+      <port id="modulation-2516-out" x="317.5" y="216.66666666666666" />
+    </glyph>
+    <arc class="logic arc" id="logic-arc-2517" source="A" target="modulation-2516">
+      <start x="200.0" y="230.0" />
+      <end x="282.5" y="216.66666666666666" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2518" source="C" target="modulation-2516">
+      <start x="300.0" y="170.0" />
+      <end x="282.5" y="216.66666666666666" />
+    </arc>
+    <arc class="positive influence" id="positive-influence-2519" source="modulation-2516" target="B">
+      <start x="300.0" y="229.16666666666666" />
+      <end x="400.0" y="230.0" />
+    </arc>
+  </map>
+</sbgn>

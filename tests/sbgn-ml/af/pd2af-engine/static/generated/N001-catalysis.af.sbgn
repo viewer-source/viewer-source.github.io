@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sbgn xmlns="http://sbgn.org/libsbgn/0.2">
+  <map language="activity flow">
+    <glyph id="glyph2" class="biological activity">
+      <label text="enzyme" />
+      <bbox x="100.0" y="10.0" w="80" h="40" />
+    </glyph>
+    <arc id="arc159" class="positive influence" source="glyph2" target="glyph1">
+      <start x="140.0" y="50.0" />
+      <end x="250.0" y="70.0" />
+    </arc>
+    <glyph id="glyph1" class="biological activity">
+      <label text="P1" />
+      <glyph id="uoi160" class="unit of information">
+        <label text="" />
+        <entity name="simple chemical" />
+        <bbox x="235.0" y="64.0" w="30" h="12" />
+      </glyph>
+      <bbox x="210.0" y="70.0" w="80" h="40" />
+    </glyph>
+  </map>
+</sbgn>

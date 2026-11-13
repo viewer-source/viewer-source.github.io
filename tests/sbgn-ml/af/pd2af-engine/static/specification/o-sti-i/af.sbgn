@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sbgn xmlns="http://sbgn.org/libsbgn/0.2">
+  <map language="activity flow">
+    <glyph class="biological activity" id="A">
+      <label text="A" />
+      <bbox x="260.0" y="230.0" w="80" h="40" />
+      <glyph id="A-uoi-1438" class="unit of information">
+        <label text="" />
+        <entity name="nucleic acid feature" />
+        <bbox x="280.0" y="225.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph class="biological activity" id="C">
+      <label text="C" />
+      <bbox x="260.0" y="130.0" w="80" h="40" />
+    </glyph>
+    <arc class="positive influence" id="modulation-1437" source="C" target="A">
+      <start x="300.0" y="170.0" />
+      <end x="300.0" y="230.0" />
+    </arc>
+  </map>
+</sbgn>

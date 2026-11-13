@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sbgn xmlns="http://sbgn.org/libsbgn/0.2">
+  <map language="activity flow">
+    <glyph id="C" class="biological activity">
+      <label text="A" />
+      <bbox x="15.0" y="15.0" w="80.0" h="40.0" />
+    </glyph>
+    <glyph id="glyph1" class="biological activity">
+      <label text="A-multimer" />
+      <bbox x="15.0" y="160.0" w="80.0" h="40.0" />
+    </glyph>
+    <arc class="positive influence" id="positive-influence-4" source="C" target="glyph1">
+      <start x="55.0" y="55.0" />
+      <end x="55.0" y="160.0" />
+    </arc>
+  </map>
+</sbgn>

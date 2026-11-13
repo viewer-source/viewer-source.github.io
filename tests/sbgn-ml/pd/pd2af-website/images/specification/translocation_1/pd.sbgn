@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sbgn xmlns="http://sbgn.org/libsbgn/0.2">
+    <map language="process description">
+        <glyph compartmentOrder="-5.0" id="c2" class="compartment">
+            <label text="c2">
+                <bbox y="256.0" x="73.0" h="18.0" w="24.0"/>
+            </label>
+            <bbox y="215.0" x="15.0" h="100.0" w="140.0"/>
+        </glyph>
+        <glyph compartmentOrder="-4.0" id="c1" class="compartment">
+            <label text="c1">
+                <bbox y="56.0" x="73.0" h="18.0" w="24.0"/>
+            </label>
+            <bbox y="15.0" x="15.0" h="100.0" w="140.0"/>
+        </glyph>
+        <glyph compartmentRef="c1" id="B1" class="macromolecule">
+            <label text="B"/>
+            <bbox y="45.0" x="45.0" h="40.0" w="80.0"/>
+        </glyph>
+        <glyph id="p1" orientation="vertical" class="process">
+            <bbox y="153.0" x="73.0" h="24.0" w="24.0"/>
+            <port y="141.0" x="85.0" id="p1.1"/>
+            <port y="189.0" x="85.0" id="p1.2"/>
+        </glyph>
+        <glyph compartmentRef="c2" id="B2" class="macromolecule">
+            <label text="B"/>
+            <bbox y="245.0" x="45.0" h="40.0" w="80.0"/>
+        </glyph>
+        <arc target="p1.1" source="B1" id="arc1" class="consumption">
+            <start y="85.0" x="85.0"/>
+            <end y="141.0" x="85.0"/>
+        </arc>
+        <arc target="B2" source="p1.2" id="arc2" class="production">
+            <start y="189.0" x="85.0"/>
+            <end y="245.0" x="85.0"/>
+        </arc>
+    </map>
+</sbgn>

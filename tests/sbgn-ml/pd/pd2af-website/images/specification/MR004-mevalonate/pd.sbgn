@@ -1,0 +1,578 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sbgn xmlns="http://sbgn.org/libsbgn/0.2">
+  <map language="process description">
+    <glyph id="CaM" class="macromolecule">
+      <label text="CaM" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="CaM-state-variable-2469" class="state variable">
+        <state value="" variable="" />
+        <bbox x="70" y="-7.5" w="15" h="15" />
+      </glyph>
+      <glyph id="CaM-state-variable-2470" class="state variable">
+        <state value="" variable="" />
+        <bbox x="10" y="-7.5" w="15" h="15" />
+      </glyph>
+      <glyph id="CaM-state-variable-2471" class="state variable">
+        <state value="" variable="" />
+        <bbox x="40" y="-7.5" w="15" h="15" />
+      </glyph>
+      <glyph id="CaM-state-variable-2472" class="state variable">
+        <state value="" variable="" />
+        <bbox x="25" y="-7.5" w="15" h="15" />
+      </glyph>
+    </glyph>
+    <glyph id="CaM-2Ca" class="macromolecule">
+      <label text="CaM" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="CaM-2Ca-state-variable-2473" class="state variable">
+        <state value="Ca" variable="" />
+        <bbox x="70" y="-7.5" w="15" h="15" />
+      </glyph>
+      <glyph id="CaM-2Ca-state-variable-2474" class="state variable">
+        <state value="Ca" variable="" />
+        <bbox x="10" y="-7.5" w="15" h="15" />
+      </glyph>
+    </glyph>
+    <glyph id="CaMKKβ" class="macromolecule">
+      <label text="CaMKKβ" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph class="complex" id="c1">
+      <bbox x="0" y="0" w="100" h="110" />
+      <glyph id="CaMKKβ-c-c1" class="macromolecule">
+        <label text="CaMKKβ" />
+        <bbox x="10" y="5" w="80" h="40" />
+        <glyph id="CaMKKβ-c-c1-state-variable-2475" class="state variable">
+          <state value="active" variable="" />
+          <bbox x="80" y="-2.5" w="15" h="15" />
+        </glyph>
+      </glyph>
+      <glyph id="CaM-3Ca-c-c1" class="macromolecule">
+        <label text="CaM" />
+        <bbox x="10" y="60" w="80" h="40" />
+        <glyph id="CaM-3Ca-c-c1-state-variable-2476" class="state variable">
+          <state value="Ca" variable="" />
+          <bbox x="80" y="52.5" w="15" h="15" />
+        </glyph>
+        <glyph id="CaM-3Ca-c-c1-state-variable-2477" class="state variable">
+          <state value="Ca" variable="" />
+          <bbox x="20" y="52.5" w="15" h="15" />
+        </glyph>
+        <glyph id="CaM-3Ca-c-c1-state-variable-2478" class="state variable">
+          <state value="Ca" variable="" />
+          <bbox x="50" y="52.5" w="15" h="15" />
+        </glyph>
+      </glyph>
+    </glyph>
+    <glyph class="complex" id="c2">
+      <bbox x="0" y="0" w="100" h="165" />
+      <glyph id="LKB1-c-c2" class="macromolecule">
+        <label text="LKB1" />
+        <bbox x="10" y="5" w="80" h="40" />
+        <glyph id="LKB1-c-c2-state-variable-2479" class="state variable">
+          <state value="active" variable="" />
+          <bbox x="80" y="-2.5" w="15" h="15" />
+        </glyph>
+      </glyph>
+      <glyph id="MO25α/β-c-c2" class="macromolecule">
+        <label text="MO25α/β" />
+        <bbox x="10" y="60" w="80" h="40" />
+      </glyph>
+      <glyph id="STRADα/β-c-c2" class="macromolecule">
+        <label text="STRADα/β" />
+        <bbox x="10" y="115" w="80" h="40" />
+        <glyph id="STRADα/β-c-c2-state-variable-2480" class="state variable">
+          <state value="ATP" variable="" />
+          <bbox x="80" y="107.5" w="15" h="15" />
+        </glyph>
+      </glyph>
+    </glyph>
+    <glyph id="LKB1" class="macromolecule">
+      <label text="LKB1" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="LKB1-state-variable-2481" class="state variable">
+        <state value="inactive" variable="" />
+        <bbox x="70" y="-7.5" w="15" h="15" />
+      </glyph>
+    </glyph>
+    <glyph id="STRADα/β-ATP" class="macromolecule">
+      <label text="STRADα/β" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="STRADα/β-ATP-state-variable-2482" class="state variable">
+        <state value="ATP" variable="" />
+        <bbox x="70" y="-7.5" w="15" h="15" />
+      </glyph>
+    </glyph>
+    <glyph id="MO25α/β" class="macromolecule">
+      <label text="MO25α/β" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="AMPKα" class="macromolecule">
+      <label text="AMPKα" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="AMPKα-state-variable-2483" class="state variable">
+        <state value="" variable="S171" />
+        <bbox x="70" y="-7.5" w="30" h="15" />
+      </glyph>
+    </glyph>
+    <glyph id="AMPKβ" class="macromolecule">
+      <label text="AMPKβ" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="AMPKγ" class="macromolecule">
+      <label text="AMPKγ" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="AMPKγ-state-variable-2484" class="state variable">
+        <state value="" variable="" />
+        <bbox x="70" y="-7.5" w="15" h="15" />
+      </glyph>
+    </glyph>
+    <glyph class="complex" id="c3">
+      <bbox x="0" y="0" w="100" h="165" />
+      <glyph id="AMPKα-c-c3" class="macromolecule">
+        <label text="AMPKα" />
+        <bbox x="10" y="5" w="80" h="40" />
+        <glyph id="AMPKα-c-c3-state-variable-2485" class="state variable">
+          <state value="" variable="S171" />
+          <bbox x="80" y="-2.5" w="30" h="15" />
+        </glyph>
+      </glyph>
+      <glyph id="AMPKβ-c-c3" class="macromolecule">
+        <label text="AMPKβ" />
+        <bbox x="10" y="60" w="80" h="40" />
+      </glyph>
+      <glyph id="AMPKγ-c-c3" class="macromolecule">
+        <label text="AMPKγ" />
+        <bbox x="10" y="115" w="80" h="40" />
+        <glyph id="AMPKγ-c-c3-state-variable-2486" class="state variable">
+          <state value="" variable="" />
+          <bbox x="80" y="107.5" w="15" h="15" />
+        </glyph>
+      </glyph>
+    </glyph>
+    <glyph class="complex" id="c4">
+      <bbox x="0" y="0" w="100" h="165" />
+      <glyph id="AMPKβ-c-c4" class="macromolecule">
+        <label text="AMPKβ" />
+        <bbox x="10" y="60" w="80" h="40" />
+      </glyph>
+      <glyph id="AMPKα-c-P-c4" class="macromolecule">
+        <label text="AMPKα" />
+        <bbox x="10" y="5" w="80" h="40" />
+        <glyph id="AMPKα-c-P-c4-state-variable-2487" class="state variable">
+          <state value="P" variable="S171" />
+          <bbox x="80" y="-2.5" w="30" h="15" />
+        </glyph>
+      </glyph>
+      <glyph id="AMPKγ-c-ATP-c4" class="macromolecule">
+        <label text="AMPKγ" />
+        <bbox x="10" y="115" w="80" h="40" />
+        <glyph id="AMPKγ-c-ATP-c4-state-variable-2488" class="state variable">
+          <state value="ATP" variable="" />
+          <bbox x="80" y="107.5" w="15" h="15" />
+        </glyph>
+      </glyph>
+    </glyph>
+    <glyph class="complex" id="c5">
+      <bbox x="0" y="0" w="100" h="165" />
+      <glyph id="AMPKβ-c-c5" class="macromolecule">
+        <label text="AMPKβ" />
+        <bbox x="10" y="60" w="80" h="40" />
+      </glyph>
+      <glyph id="AMPKα-c-P-c5" class="macromolecule">
+        <label text="AMPKα" />
+        <bbox x="10" y="5" w="80" h="40" />
+        <glyph id="AMPKα-c-P-c5-state-variable-2489" class="state variable">
+          <state value="P" variable="S171" />
+          <bbox x="80" y="-2.5" w="30" h="15" />
+        </glyph>
+      </glyph>
+      <glyph id="AMPKγ-c-AMP-c5" class="macromolecule">
+        <label text="AMPKγ" />
+        <bbox x="10" y="115" w="80" h="40" />
+        <glyph id="AMPKγ-c-AMP-c5-state-variable-2490" class="state variable">
+          <state value="AMP" variable="" />
+          <bbox x="80" y="107.5" w="15" h="15" />
+        </glyph>
+      </glyph>
+    </glyph>
+    <glyph id="PP2AC" class="macromolecule">
+      <label text="PP2AC" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="PP2ARA" class="macromolecule">
+      <label text="PP2ARA" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph class="complex" id="c6">
+      <bbox x="0" y="0" w="100" h="110" />
+      <glyph id="PP2AC-c-c6" class="macromolecule">
+        <label text="PP2AC" />
+        <bbox x="10" y="5" w="80" h="40" />
+      </glyph>
+      <glyph id="PP2ARA-c-c6" class="macromolecule">
+        <label text="PP2ARA" />
+        <bbox x="10" y="60" w="80" h="40" />
+      </glyph>
+    </glyph>
+    <glyph id="PP2ARB" class="macromolecule">
+      <label text="PP2ARB" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph class="complex" id="c7">
+      <bbox x="0" y="0" w="100" h="110" />
+      <glyph id="PP2ARB-c-c7" class="macromolecule">
+        <label text="PP2ARB" />
+        <bbox x="10" y="5" w="80" h="40" />
+      </glyph>
+      <glyph class="complex" id="c1-c-c7">
+        <bbox x="10" y="60" w="80" h="40" />
+        <glyph id="PP2AC-c-c1-c-c7" class="macromolecule">
+          <label text="PP2AC" />
+          <bbox x="10" y="5" w="80" h="40" />
+        </glyph>
+        <glyph id="PP2ARA-c-c1-c-c7" class="macromolecule">
+          <label text="PP2ARA" />
+          <bbox x="10" y="60" w="80" h="40" />
+        </glyph>
+      </glyph>
+    </glyph>
+    <glyph id="PP2C" class="macromolecule">
+      <label text="PP2C" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="HMGCR-P" class="macromolecule multimer">
+      <label text="HMGCR" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="HMGCR-P-uoi-2491" class="unit of information">
+        <label text="N:4" />
+        <bbox x="20.0" y="-5.0" w="40" h="10" />
+      </glyph>
+      <glyph id="HMGCR-P-state-variable-2492" class="state variable">
+        <state value="P" variable="S872" />
+        <bbox x="70" y="-7.5" w="30" h="15" />
+      </glyph>
+    </glyph>
+    <glyph id="HMGCR" class="macromolecule multimer">
+      <label text="HMGCR" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="HMGCR-uoi-2493" class="unit of information">
+        <label text="N:4" />
+        <bbox x="20.0" y="-5.0" w="40" h="10" />
+      </glyph>
+      <glyph id="HMGCR-state-variable-2494" class="state variable">
+        <state value="" variable="S872" />
+        <bbox x="70" y="-7.5" w="30" h="15" />
+      </glyph>
+    </glyph>
+    <glyph id="ACAT1/2" class="macromolecule multimer">
+      <label text="ACAT1/2" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="ACAT1/2-uoi-2495" class="unit of information">
+        <label text="N:4" />
+        <bbox x="20.0" y="-5.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="Acetyl-CoA" class="simple chemical">
+      <label text="Acetyl-CoA" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="Acetoacetyl-CoA" class="simple chemical">
+      <label text="Acetoacetyl-CoA" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="HMGCS2" class="macromolecule">
+      <label text="HMGCS2" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="HMG-CoA" class="simple chemical">
+      <label text="HMG-CoA" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="Mevalonate" class="simple chemical">
+      <label text="Mevalonate" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="hyperarc-2187" class="process">
+      <bbox x="28.0" y="8.0" w="24" h="24" />
+      <port id="hyperarc-2187-in" x="40.0" y="37.0" />
+      <port id="hyperarc-2187-out" x="40.0" y="3.0" />
+    </glyph>
+    <glyph id="hyperarc-2189" class="process">
+      <bbox x="31.0" y="19.0" w="24" h="24" />
+      <port id="hyperarc-2189-in" x="60.0" y="31.0" />
+      <port id="hyperarc-2189-out" x="26.0" y="31.0" />
+    </glyph>
+    <glyph id="hyperarc-2191" class="process">
+      <bbox x="30.0" y="23.0" w="24" h="24" />
+      <port id="hyperarc-2191-in" x="59.0" y="35.0" />
+      <port id="hyperarc-2191-out" x="25.0" y="35.0" />
+    </glyph>
+    <glyph id="hyperarc-2193" class="process">
+      <bbox x="30.0" y="23.0" w="24" h="24" />
+      <port id="hyperarc-2193-in" x="59.0" y="35.0" />
+      <port id="hyperarc-2193-out" x="25.0" y="35.0" />
+    </glyph>
+    <glyph id="p1" class="process">
+      <bbox x="38.0" y="70.0" w="24" h="24" />
+      <port id="p1-in" x="50.0" y="99.0" />
+      <port id="p1-out" x="50.0" y="65.0" />
+    </glyph>
+    <glyph id="p2" class="process">
+      <bbox x="38.0" y="70.0" w="24" h="24" />
+      <port id="p2-in" x="50.0" y="99.0" />
+      <port id="p2-out" x="50.0" y="65.0" />
+    </glyph>
+    <glyph id="or-2434" class="or">
+      <bbox x="37.0" y="60.0" w="25" h="25" />
+      <port id="or-2434-in" x="67.0" y="72.5" />
+      <port id="or-2434-out" x="32.0" y="72.5" />
+    </glyph>
+    <glyph id="hyperarc-2202" class="process">
+      <bbox x="38.0" y="70.0" w="24" h="24" />
+      <port id="hyperarc-2202-in" x="50.0" y="99.0" />
+      <port id="hyperarc-2202-out" x="50.0" y="65.0" />
+    </glyph>
+    <glyph id="hyperarc-2204" class="process">
+      <bbox x="31.0" y="19.0" w="24" h="24" />
+      <port id="hyperarc-2204-in" x="60.0" y="31.0" />
+      <port id="hyperarc-2204-out" x="26.0" y="31.0" />
+    </glyph>
+    <glyph id="hyperarc-2206" class="process">
+      <bbox x="34.0" y="31.0" w="24" h="24" />
+      <port id="hyperarc-2206-in" x="63.0" y="43.0" />
+      <port id="hyperarc-2206-out" x="29.0" y="43.0" />
+    </glyph>
+    <glyph id="or-2446" class="or">
+      <bbox x="34.0" y="39.0" w="25" h="25" />
+      <port id="or-2446-in" x="64.0" y="51.5" />
+      <port id="or-2446-out" x="29.0" y="51.5" />
+    </glyph>
+    <glyph id="p3" class="process">
+      <bbox x="28.0" y="8.0" w="24" h="24" />
+      <port id="p3-in" x="40.0" y="37.0" />
+      <port id="p3-out" x="40.0" y="3.0" />
+    </glyph>
+    <glyph id="p4" class="process">
+      <bbox x="28.0" y="8.0" w="24" h="24" />
+      <port id="p4-in" x="40.0" y="37.0" />
+      <port id="p4-out" x="40.0" y="3.0" />
+    </glyph>
+    <glyph id="or-2455" class="or">
+      <bbox x="34.0" y="49.0" w="25" h="25" />
+      <port id="or-2455-in" x="46.5" y="79.0" />
+      <port id="or-2455-out" x="46.5" y="44.0" />
+    </glyph>
+    <glyph id="p5" class="process">
+      <bbox x="28.0" y="8.0" w="24" h="24" />
+      <port id="p5-in" x="40.0" y="37.0" />
+      <port id="p5-out" x="40.0" y="3.0" />
+    </glyph>
+    <glyph id="p6" class="process">
+      <bbox x="28.0" y="8.0" w="24" h="24" />
+      <port id="p6-in" x="40.0" y="37.0" />
+      <port id="p6-out" x="40.0" y="3.0" />
+    </glyph>
+    <glyph id="p7" class="process">
+      <bbox x="28.0" y="8.0" w="24" h="24" />
+      <port id="p7-in" x="40.0" y="37.0" />
+      <port id="p7-out" x="40.0" y="3.0" />
+    </glyph>
+    <arc class="consumption" id="consumption-2417" source="CaM" target="hyperarc-2187-in">
+      <start x="80.0" y="20.0" />
+      <end x="40.0" y="37.0" />
+    </arc>
+    <arc class="production" id="production-2418" source="hyperarc-2187-out" target="CaM-2Ca">
+      <start x="40.0" y="3.0" />
+      <end x="0" y="20.0" />
+    </arc>
+    <arc class="consumption" id="consumption-2419" source="CaM-2Ca" target="hyperarc-2189-in">
+      <start x="80.0" y="20.0" />
+      <end x="60.0" y="31.0" />
+    </arc>
+    <arc class="consumption" id="consumption-2420" source="CaMKKβ" target="hyperarc-2189-in">
+      <start x="80.0" y="20.0" />
+      <end x="60.0" y="31.0" />
+    </arc>
+    <arc class="production" id="production-2421" source="hyperarc-2189-out" target="c1">
+      <start x="26.0" y="31.0" />
+      <end x="100.0" y="55.0" />
+    </arc>
+    <arc class="consumption" id="consumption-2422" source="LKB1" target="hyperarc-2191-in">
+      <start x="80.0" y="20.0" />
+      <end x="59.0" y="35.0" />
+    </arc>
+    <arc class="consumption" id="consumption-2423" source="STRADα/β-ATP" target="hyperarc-2191-in">
+      <start x="80.0" y="20.0" />
+      <end x="59.0" y="35.0" />
+    </arc>
+    <arc class="consumption" id="consumption-2424" source="MO25α/β" target="hyperarc-2191-in">
+      <start x="80.0" y="20.0" />
+      <end x="59.0" y="35.0" />
+    </arc>
+    <arc class="production" id="production-2425" source="hyperarc-2191-out" target="c2">
+      <start x="25.0" y="35.0" />
+      <end x="100.0" y="82.5" />
+    </arc>
+    <arc class="consumption" id="consumption-2426" source="AMPKα" target="hyperarc-2193-in">
+      <start x="80.0" y="20.0" />
+      <end x="59.0" y="35.0" />
+    </arc>
+    <arc class="consumption" id="consumption-2427" source="AMPKβ" target="hyperarc-2193-in">
+      <start x="80.0" y="20.0" />
+      <end x="59.0" y="35.0" />
+    </arc>
+    <arc class="consumption" id="consumption-2428" source="AMPKγ" target="hyperarc-2193-in">
+      <start x="80.0" y="20.0" />
+      <end x="59.0" y="35.0" />
+    </arc>
+    <arc class="production" id="production-2429" source="hyperarc-2193-out" target="c3">
+      <start x="25.0" y="35.0" />
+      <end x="100.0" y="82.5" />
+    </arc>
+    <arc class="consumption" id="consumption-2430" source="c3" target="p1-in">
+      <start x="100.0" y="82.5" />
+      <end x="50.0" y="99.0" />
+    </arc>
+    <arc class="production" id="production-2431" source="p1-out" target="c4">
+      <start x="50.0" y="65.0" />
+      <end x="0" y="82.5" />
+    </arc>
+    <arc class="consumption" id="consumption-2432" source="c4" target="p2-in">
+      <start x="100.0" y="82.5" />
+      <end x="50.0" y="99.0" />
+    </arc>
+    <arc class="production" id="production-2433" source="p2-out" target="c3">
+      <start x="50.0" y="65.0" />
+      <end x="0" y="82.5" />
+    </arc>
+    <arc class="catalysis" id="catalysis-2437" source="or-2434-out" target="p1">
+      <start x="62.0" y="72.5" />
+      <end x="38.0" y="82.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2435" source="c1" target="or-2434-in">
+      <start x="0" y="55.0" />
+      <end x="67.0" y="72.5" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2436" source="c2" target="or-2434-in">
+      <start x="0" y="82.5" />
+      <end x="67.0" y="72.5" />
+    </arc>
+    <arc class="consumption" id="consumption-2438" source="c4" target="hyperarc-2202-in">
+      <start x="100.0" y="82.5" />
+      <end x="50.0" y="99.0" />
+    </arc>
+    <arc class="production" id="production-2439" source="hyperarc-2202-out" target="c5">
+      <start x="50.0" y="65.0" />
+      <end x="0" y="82.5" />
+    </arc>
+    <arc class="consumption" id="consumption-2440" source="PP2AC" target="hyperarc-2204-in">
+      <start x="80.0" y="20.0" />
+      <end x="60.0" y="31.0" />
+    </arc>
+    <arc class="consumption" id="consumption-2441" source="PP2ARA" target="hyperarc-2204-in">
+      <start x="80.0" y="20.0" />
+      <end x="60.0" y="31.0" />
+    </arc>
+    <arc class="production" id="production-2442" source="hyperarc-2204-out" target="c6">
+      <start x="26.0" y="31.0" />
+      <end x="100.0" y="55.0" />
+    </arc>
+    <arc class="consumption" id="consumption-2443" source="c6" target="hyperarc-2206-in">
+      <start x="0" y="55.0" />
+      <end x="63.0" y="43.0" />
+    </arc>
+    <arc class="consumption" id="consumption-2444" source="PP2ARB" target="hyperarc-2206-in">
+      <start x="80.0" y="20.0" />
+      <end x="63.0" y="43.0" />
+    </arc>
+    <arc class="production" id="production-2445" source="hyperarc-2206-out" target="c7">
+      <start x="29.0" y="43.0" />
+      <end x="100.0" y="55.0" />
+    </arc>
+    <arc class="catalysis" id="catalysis-2449" source="or-2446-out" target="p2">
+      <start x="46.5" y="64.0" />
+      <end x="50.0" y="70.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2447" source="c7" target="or-2446-in">
+      <start x="0" y="55.0" />
+      <end x="64.0" y="51.5" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2448" source="PP2C" target="or-2446-in">
+      <start x="80.0" y="20.0" />
+      <end x="64.0" y="51.5" />
+    </arc>
+    <arc class="consumption" id="consumption-2450" source="HMGCR" target="p3-in">
+      <start x="80.0" y="20.0" />
+      <end x="40.0" y="37.0" />
+    </arc>
+    <arc class="production" id="production-2451" source="p3-out" target="HMGCR-P">
+      <start x="40.0" y="3.0" />
+      <end x="0" y="20.0" />
+    </arc>
+    <arc class="consumption" id="consumption-2452" source="HMGCR-P" target="p4-in">
+      <start x="80.0" y="20.0" />
+      <end x="40.0" y="37.0" />
+    </arc>
+    <arc class="production" id="production-2453" source="p4-out" target="HMGCR">
+      <start x="40.0" y="3.0" />
+      <end x="0" y="20.0" />
+    </arc>
+    <arc class="catalysis" id="catalysis-2454" source="c7" target="p4">
+      <start x="0" y="55.0" />
+      <end x="52.0" y="20.0" />
+    </arc>
+    <arc class="catalysis" id="catalysis-2458" source="or-2455-out" target="p3">
+      <start x="46.5" y="49.0" />
+      <end x="40.0" y="32.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2456" source="c4" target="or-2455-in">
+      <start x="0" y="82.5" />
+      <end x="46.5" y="79.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2457" source="c5" target="or-2455-in">
+      <start x="0" y="82.5" />
+      <end x="46.5" y="79.0" />
+    </arc>
+    <arc class="consumption" id="consumption-2459" source="Acetyl-CoA" target="p5-in">
+      <start x="80.0" y="20.0" />
+      <end x="40.0" y="37.0" />
+    </arc>
+    <arc class="production" id="production-2460" source="p5-out" target="Acetoacetyl-CoA">
+      <start x="40.0" y="3.0" />
+      <end x="0" y="20.0" />
+    </arc>
+    <arc class="catalysis" id="catalysis-2461" source="ACAT1/2" target="p5">
+      <start x="80.0" y="20.0" />
+      <end x="28.0" y="20.0" />
+    </arc>
+    <arc class="consumption" id="consumption-2462" source="Acetyl-CoA" target="p6-in">
+      <start x="80.0" y="20.0" />
+      <end x="40.0" y="37.0" />
+    </arc>
+    <arc class="consumption" id="consumption-2463" source="Acetoacetyl-CoA" target="p6-in">
+      <start x="80.0" y="20.0" />
+      <end x="40.0" y="37.0" />
+    </arc>
+    <arc class="production" id="production-2464" source="p6-out" target="HMG-CoA">
+      <start x="40.0" y="3.0" />
+      <end x="0" y="20.0" />
+    </arc>
+    <arc class="catalysis" id="catalysis-2465" source="HMGCS2" target="p6">
+      <start x="80.0" y="20.0" />
+      <end x="28.0" y="20.0" />
+    </arc>
+    <arc class="consumption" id="consumption-2466" source="HMG-CoA" target="p7-in">
+      <start x="80.0" y="20.0" />
+      <end x="40.0" y="37.0" />
+    </arc>
+    <arc class="production" id="production-2467" source="p7-out" target="Mevalonate">
+      <start x="40.0" y="3.0" />
+      <end x="0" y="20.0" />
+    </arc>
+    <arc class="catalysis" id="catalysis-2468" source="HMGCR" target="p7">
+      <start x="80.0" y="20.0" />
+      <end x="28.0" y="20.0" />
+    </arc>
+  </map>
+</sbgn>

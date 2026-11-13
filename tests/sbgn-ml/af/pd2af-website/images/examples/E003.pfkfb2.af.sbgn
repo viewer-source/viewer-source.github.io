@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sbgn xmlns="http://sbgn.org/libsbgn/0.2">
+    <map language="activity flow">
+        <glyph id="glyph2" class="biological activity">
+            <label text="PKA"/>
+            <bbox y="15.0" x="105.0" h="40.0" w="80.0"/>
+            <glyph id="glyph2a" class="unit of information">
+                <entity name="macromolecule"/>
+                <bbox y="7.0" x="130.0" h="16.0" w="30.0"/>
+            </glyph>
+        </glyph>
+        <glyph id="glyph4" class="biological activity">
+            <label text="PFKFB2"/>
+            <bbox y="95.0" x="15.0" h="40.0" w="80.0"/>
+            <glyph id="glyph4a" class="unit of information">
+                <entity name="macromolecule"/>
+                <bbox y="87.0" x="40.0" h="16.0" w="30.0"/>
+            </glyph>
+        </glyph>
+        <glyph id="glyph7" orientation="vertical" class="and">
+            <bbox y="272.0" x="82.0" h="36.0" w="36.0"/>
+            <port y="326.0" x="100.0" id="glyph7.2"/>
+            <port y="254.0" x="100.0" id="glyph7.1"/>
+        </glyph>
+        <glyph id="glyph5" class="biological activity">
+            <label text="PFKFB2-P"/>
+            <bbox y="95.0" x="190.0" h="40.0" w="80.0"/>
+            <glyph id="glyph5a" class="unit of information">
+                <entity name="macromolecule"/>
+                <bbox y="87.0" x="215.0" h="16.0" w="30.0"/>
+            </glyph>
+        </glyph>
+        <glyph id="glyph3" class="biological activity">
+            <label text="Fru-6-P"/>
+            <bbox y="195.0" x="100.0" h="40.0" w="80.0"/>
+            <glyph id="glyph3a" class="unit of information">
+                <entity name="unspecified entity"/>
+                <bbox y="185.0" x="130.0" h="20.0" w="20.0"/>
+            </glyph>
+        </glyph>
+        <glyph id="glyph1" class="biological activity">
+            <label text="Fru-2,6-P2"/>
+            <bbox y="345.0" x="100.0" h="40.0" w="80.0"/>
+            <glyph id="glyph1a" class="unit of information">
+                <entity name="unspecified entity"/>
+                <bbox y="335.0" x="130.0" h="20.0" w="20.0"/>
+            </glyph>
+        </glyph>
+        <glyph id="glyph6" orientation="vertical" class="and">
+            <bbox y="272.0" x="162.0" h="36.0" w="36.0"/>
+            <port y="326.0" x="180.0" id="glyph6.2"/>
+            <port y="254.0" x="180.0" id="glyph6.1"/>
+        </glyph>
+        <arc target="glyph5" source="glyph2" id="arc1" class="positive influence">
+            <start y="55.0" x="166.25"/>
+            <end y="95.0" x="208.75"/>
+        </arc>
+        <arc target="glyph4" source="glyph2" id="arc2" class="negative influence">
+            <start y="55.0" x="122.5"/>
+            <end y="95.0" x="77.5"/>
+        </arc>
+        <arc target="glyph1" source="glyph7.2" id="arc3" class="positive influence">
+            <start y="326.0" x="100.0"/>
+            <end y="345.0" x="129.33333"/>
+        </arc>
+        <arc target="glyph7.1" source="glyph3" id="arc4" class="logic arc">
+            <start y="235.0" x="119.48718"/>
+            <end y="254.0" x="100.0"/>
+        </arc>
+        <arc target="glyph7.1" source="glyph4" id="arc5" class="logic arc">
+            <start y="135.0" x="55.0"/>
+            <next y="250.0" x="55.0"/>
+            <end y="254.0" x="100.0"/>
+        </arc>
+        <arc target="glyph6.2" source="glyph5" id="arc6" class="logic arc">
+            <start y="135.0" x="230.0"/>
+            <next y="330.0" x="230.0"/>
+            <end y="326.0" x="180.0"/>
+        </arc>
+        <arc target="glyph3" source="glyph6.1" id="arc7" class="positive influence">
+            <start y="254.0" x="180.0"/>
+            <end y="235.0" x="150.66667"/>
+        </arc>
+        <arc target="glyph6.2" source="glyph1" id="arc8" class="logic arc">
+            <start y="345.0" x="160.51282"/>
+            <end y="326.0" x="180.0"/>
+        </arc>
+    </map>
+</sbgn>

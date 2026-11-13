@@ -1,0 +1,689 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sbgn xmlns="http://sbgn.org/libsbgn/0.2">
+  <map language="process description">
+    <glyph id="EXTRACELLULAR_SPACE" class="compartment">
+      <label text="EXTRACELLULAR SPACE" />
+      <bbox x="0" y="0" w="140" h="100" />
+    </glyph>
+    <glyph id="IFNγ" class="macromolecule multimer" compartmentRef="EXTRACELLULAR_SPACE">
+      <label text="IFNγ" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="IFNγ-uoi-2900" class="unit of information">
+        <label text="N:2" />
+        <bbox x="20.0" y="-5.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="arginine-extracellular" class="simple chemical" compartmentRef="EXTRACELLULAR_SPACE">
+      <label text="arginine-extracellular" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="NO-extracellular" class="simple chemical" compartmentRef="EXTRACELLULAR_SPACE">
+      <label text="NO" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="PLASMA_MEMBRANE" class="compartment">
+      <label text="PLASMA MEMBRANE" />
+      <bbox x="0" y="0" w="160" h="335" />
+    </glyph>
+    <glyph class="complex" id="c1" compartmentRef="PLASMA_MEMBRANE">
+      <bbox x="0" y="0" w="100" h="220" />
+      <glyph id="IFNγR1-dimer-c-c1" class="macromolecule multimer">
+        <label text="IFNγR1" />
+        <bbox x="10" y="5" w="80" h="40" />
+        <glyph id="IFNγR1-dimer-c-c1-uoi-2901" class="unit of information">
+          <label text="N:2" />
+          <bbox x="30.0" y="0.0" w="40" h="10" />
+        </glyph>
+        <glyph id="IFNγR1-dimer-c-c1-state-variable-2902" class="state variable">
+          <state value="" variable="Y457" />
+          <bbox x="80" y="-2.5" w="30" h="15" />
+        </glyph>
+      </glyph>
+      <glyph id="IFNγR2-dimer-c-c1" class="macromolecule multimer">
+        <label text="IFNγR2" />
+        <bbox x="10" y="60" w="80" h="40" />
+        <glyph id="IFNγR2-dimer-c-c1-uoi-2903" class="unit of information">
+          <label text="N:2" />
+          <bbox x="30.0" y="55.0" w="40" h="10" />
+        </glyph>
+      </glyph>
+      <glyph id="JAK1-c-c1" class="macromolecule">
+        <label text="JAK1" />
+        <bbox x="10" y="115" w="80" h="40" />
+      </glyph>
+      <glyph id="JAK2-c-c1" class="macromolecule">
+        <label text="JAK2" />
+        <bbox x="10" y="170" w="80" h="40" />
+      </glyph>
+    </glyph>
+    <glyph class="complex" id="c2" compartmentRef="PLASMA_MEMBRANE">
+      <bbox x="0" y="0" w="100" h="275" />
+      <glyph id="IFNγ-dimer-c-c2" class="macromolecule multimer">
+        <label text="IFNγ" />
+        <bbox x="10" y="5" w="80" h="40" />
+        <glyph id="IFNγ-dimer-c-c2-uoi-2904" class="unit of information">
+          <label text="N:2" />
+          <bbox x="30.0" y="0.0" w="40" h="10" />
+        </glyph>
+      </glyph>
+      <glyph id="IFNγR1-dimer-c-c2" class="macromolecule multimer">
+        <label text="IFNγR1" />
+        <bbox x="10" y="60" w="80" h="40" />
+        <glyph id="IFNγR1-dimer-c-c2-uoi-2905" class="unit of information">
+          <label text="N:2" />
+          <bbox x="30.0" y="55.0" w="40" h="10" />
+        </glyph>
+        <glyph id="IFNγR1-dimer-c-c2-state-variable-2906" class="state variable">
+          <state value="" variable="Y457" />
+          <bbox x="80" y="52.5" w="30" h="15" />
+        </glyph>
+      </glyph>
+      <glyph id="IFNγR2-dimer-c-c2" class="macromolecule multimer">
+        <label text="IFNγR2" />
+        <bbox x="10" y="115" w="80" h="40" />
+        <glyph id="IFNγR2-dimer-c-c2-uoi-2907" class="unit of information">
+          <label text="N:2" />
+          <bbox x="30.0" y="110.0" w="40" h="10" />
+        </glyph>
+      </glyph>
+      <glyph id="JAK1-c-c2" class="macromolecule">
+        <label text="JAK1" />
+        <bbox x="10" y="170" w="80" h="40" />
+      </glyph>
+      <glyph id="JAK2-c-c2" class="macromolecule">
+        <label text="JAK2" />
+        <bbox x="10" y="225" w="80" h="40" />
+      </glyph>
+    </glyph>
+    <glyph class="complex" id="c3" compartmentRef="PLASMA_MEMBRANE">
+      <bbox x="0" y="0" w="100" h="275" />
+      <glyph id="IFNγ-dimer-c-c3" class="macromolecule multimer">
+        <label text="IFNγ" />
+        <bbox x="10" y="5" w="80" h="40" />
+        <glyph id="IFNγ-dimer-c-c3-uoi-2908" class="unit of information">
+          <label text="N:2" />
+          <bbox x="30.0" y="0.0" w="40" h="10" />
+        </glyph>
+      </glyph>
+      <glyph id="IFNγR1-dimer-P-c-c3" class="macromolecule multimer">
+        <label text="IFNγR1" />
+        <bbox x="10" y="60" w="80" h="40" />
+        <glyph id="IFNγR1-dimer-P-c-c3-uoi-2909" class="unit of information">
+          <label text="N:2" />
+          <bbox x="30.0" y="55.0" w="40" h="10" />
+        </glyph>
+        <glyph id="IFNγR1-dimer-P-c-c3-state-variable-2910" class="state variable">
+          <state value="P" variable="Y457" />
+          <bbox x="80" y="52.5" w="30" h="15" />
+        </glyph>
+      </glyph>
+      <glyph id="IFNγR2-dimer-c-c3" class="macromolecule multimer">
+        <label text="IFNγR2" />
+        <bbox x="10" y="115" w="80" h="40" />
+        <glyph id="IFNγR2-dimer-c-c3-uoi-2911" class="unit of information">
+          <label text="N:2" />
+          <bbox x="30.0" y="110.0" w="40" h="10" />
+        </glyph>
+      </glyph>
+      <glyph id="JAK1-c-c3" class="macromolecule">
+        <label text="JAK1" />
+        <bbox x="10" y="170" w="80" h="40" />
+      </glyph>
+      <glyph id="JAK2-c-c3" class="macromolecule">
+        <label text="JAK2" />
+        <bbox x="10" y="225" w="80" h="40" />
+      </glyph>
+    </glyph>
+    <glyph id="CYTOSOL" class="compartment">
+      <label text="CYTOSOL" />
+      <bbox x="0" y="0" w="160" h="170" />
+    </glyph>
+    <glyph id="STAT1α" class="macromolecule" compartmentRef="CYTOSOL">
+      <label text="STAT1α" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="STAT1α-state-variable-2912" class="state variable">
+        <state value="" variable="S727" />
+        <bbox x="70" y="-7.5" w="30" h="15" />
+      </glyph>
+      <glyph id="STAT1α-state-variable-2913" class="state variable">
+        <state value="" variable="Y701" />
+        <bbox x="10" y="-7.5" w="30" h="15" />
+      </glyph>
+    </glyph>
+    <glyph id="STAT1α-P-P" class="macromolecule" compartmentRef="CYTOSOL">
+      <label text="STAT1α" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="STAT1α-P-P-state-variable-2914" class="state variable">
+        <state value="P" variable="S727" />
+        <bbox x="70" y="-7.5" w="30" h="15" />
+      </glyph>
+      <glyph id="STAT1α-P-P-state-variable-2915" class="state variable">
+        <state value="P" variable="Y701" />
+        <bbox x="10" y="-7.5" w="30" h="15" />
+      </glyph>
+    </glyph>
+    <glyph id="STAT1α-P-P-dimer" class="macromolecule multimer" compartmentRef="CYTOSOL">
+      <label text="STAT1α" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="STAT1α-P-P-dimer-uoi-2916" class="unit of information">
+        <label text="N:2" />
+        <bbox x="20.0" y="-5.0" w="40" h="10" />
+      </glyph>
+      <glyph id="STAT1α-P-P-dimer-state-variable-2917" class="state variable">
+        <state value="P" variable="S727" />
+        <bbox x="70" y="-7.5" w="30" h="15" />
+      </glyph>
+      <glyph id="STAT1α-P-P-dimer-state-variable-2918" class="state variable">
+        <state value="P" variable="Y701" />
+        <bbox x="10" y="-7.5" w="30" h="15" />
+      </glyph>
+    </glyph>
+    <glyph id="s1" class="source" compartmentRef="CYTOSOL">
+      <bbox x="0" y="0" w="50" h="50" />
+    </glyph>
+    <glyph id="IRF1-mRNA" class="nucleic acid feature" compartmentRef="CYTOSOL">
+      <label text="IRF1" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="IRF1-mRNA-uoi-2919" class="unit of information">
+        <label text="ct:mRNA" />
+        <bbox x="20.0" y="-5.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="s2" class="sink" compartmentRef="CYTOSOL">
+      <bbox x="0" y="0" w="50" h="50" />
+    </glyph>
+    <glyph id="IRF1" class="macromolecule" compartmentRef="CYTOSOL">
+      <label text="IRF1" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="INOS-mRNA" class="nucleic acid feature" compartmentRef="CYTOSOL">
+      <label text="INOS" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="INOS-mRNA-uoi-2920" class="unit of information">
+        <label text="ct:mRNA" />
+        <bbox x="20.0" y="-5.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="s3" class="source" compartmentRef="CYTOSOL">
+      <bbox x="0" y="0" w="50" h="50" />
+    </glyph>
+    <glyph id="INOS" class="macromolecule" compartmentRef="CYTOSOL">
+      <label text="INOS" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="s4" class="sink" compartmentRef="CYTOSOL">
+      <bbox x="0" y="0" w="50" h="50" />
+    </glyph>
+    <glyph id="CaM" class="macromolecule" compartmentRef="CYTOSOL">
+      <label text="CaM" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph class="complex" id="c4" compartmentRef="CYTOSOL">
+      <bbox x="0" y="0" w="100" h="110" />
+      <glyph id="CaM-dimer-c4" class="macromolecule multimer">
+        <label text="CaM" />
+        <bbox x="10" y="5" w="80" h="40" />
+        <glyph id="CaM-dimer-c4-uoi-2921" class="unit of information">
+          <label text="N:2" />
+          <bbox x="30.0" y="0.0" w="40" h="10" />
+        </glyph>
+      </glyph>
+      <glyph id="INOS-dimer-c4" class="macromolecule multimer">
+        <label text="INOS" />
+        <bbox x="10" y="60" w="80" h="40" />
+        <glyph id="INOS-dimer-c4-uoi-2922" class="unit of information">
+          <label text="N:2" />
+          <bbox x="30.0" y="55.0" w="40" h="10" />
+        </glyph>
+      </glyph>
+    </glyph>
+    <glyph id="NO" class="simple chemical" compartmentRef="CYTOSOL">
+      <label text="NO" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="citrulline" class="simple chemical" compartmentRef="CYTOSOL">
+      <label text="citrulline" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="aspartate" class="simple chemical" compartmentRef="CYTOSOL">
+      <label text="aspartate" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="arginino-succinate" class="simple chemical" compartmentRef="CYTOSOL">
+      <label text="arginino-succinate" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="fumarate" class="simple chemical" compartmentRef="CYTOSOL">
+      <label text="fumarate" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="arginine" class="simple chemical" compartmentRef="CYTOSOL">
+      <label text="arginine" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="O2" class="simple chemical" compartmentRef="CYTOSOL">
+      <label text="O2" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="ASL" class="macromolecule multimer" compartmentRef="CYTOSOL">
+      <label text="ASL" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="ASL-uoi-2923" class="unit of information">
+        <label text="N:4" />
+        <bbox x="20.0" y="-5.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="ASS" class="macromolecule" compartmentRef="CYTOSOL">
+      <label text="ASS" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="NUCLEUS" class="compartment">
+      <label text="NUCLEUS" />
+      <bbox x="0" y="0" w="140" h="110" />
+    </glyph>
+    <glyph id="STAT1α-P-P-dimer-nucleus" class="macromolecule multimer" compartmentRef="NUCLEUS">
+      <label text="STAT1α" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="STAT1α-P-P-dimer-nucleus-uoi-2924" class="unit of information">
+        <label text="N:2" />
+        <bbox x="20.0" y="-5.0" w="40" h="10" />
+      </glyph>
+      <glyph id="STAT1α-P-P-dimer-nucleus-state-variable-2925" class="state variable">
+        <state value="P" variable="S727" />
+        <bbox x="70" y="-7.5" w="30" h="15" />
+      </glyph>
+      <glyph id="STAT1α-P-P-dimer-nucleus-state-variable-2926" class="state variable">
+        <state value="P" variable="Y701" />
+        <bbox x="10" y="-7.5" w="30" h="15" />
+      </glyph>
+    </glyph>
+    <glyph id="IRF1-gene" class="nucleic acid feature" compartmentRef="NUCLEUS">
+      <label text="IRF1" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="IRF1-gene-uoi-2927" class="unit of information">
+        <label text="ct:gene" />
+        <bbox x="20.0" y="-5.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="s5" class="source" compartmentRef="NUCLEUS">
+      <bbox x="0" y="0" w="50" h="50" />
+    </glyph>
+    <glyph id="IRF1-mRNA-nucleus" class="nucleic acid feature" compartmentRef="NUCLEUS">
+      <label text="IRF1" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="IRF1-mRNA-nucleus-uoi-2928" class="unit of information">
+        <label text="ct:mRNA" />
+        <bbox x="20.0" y="-5.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="IRF1-nucleus" class="macromolecule" compartmentRef="NUCLEUS">
+      <label text="IRF1" />
+      <bbox x="0" y="0" w="80" h="40" />
+    </glyph>
+    <glyph id="INOS-gene" class="nucleic acid feature" compartmentRef="NUCLEUS">
+      <label text="INOS" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="INOS-gene-uoi-2929" class="unit of information">
+        <label text="ct:gene" />
+        <bbox x="20.0" y="-5.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="s6" class="source" compartmentRef="NUCLEUS">
+      <bbox x="0" y="0" w="50" h="50" />
+    </glyph>
+    <glyph id="INOS-mRNA-nucleus" class="nucleic acid feature" compartmentRef="NUCLEUS">
+      <label text="INOS" />
+      <bbox x="0" y="0" w="80" h="40" />
+      <glyph id="INOS-mRNA-nucleus-uoi-2930" class="unit of information">
+        <label text="ct:mRNA" />
+        <bbox x="20.0" y="-5.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph id="hyperarc-2569" class="process">
+      <bbox x="34.0" y="77.0" w="24" h="24" />
+      <port id="hyperarc-2569-in" x="46.0" y="72.0" />
+      <port id="hyperarc-2569-out" x="46.0" y="106.0" />
+    </glyph>
+    <glyph id="p1" class="process">
+      <bbox x="38.0" y="125.0" w="24" h="24" />
+      <port id="p1-in" x="50.0" y="154.0" />
+      <port id="p1-out" x="50.0" y="120.0" />
+    </glyph>
+    <glyph id="p2" class="process">
+      <bbox x="28.0" y="8.0" w="24" h="24" />
+      <port id="p2-in" x="40.0" y="37.0" />
+      <port id="p2-out" x="40.0" y="3.0" />
+    </glyph>
+    <glyph id="hyperarc-2582" class="process">
+      <bbox x="28.0" y="8.0" w="24" h="24" />
+      <port id="hyperarc-2582-in" x="40.0" y="37.0" />
+      <port id="hyperarc-2582-out" x="40.0" y="3.0" />
+    </glyph>
+    <glyph id="hyperarc-2585" class="process">
+      <bbox x="28.0" y="8.0" w="24" h="24" />
+      <port id="hyperarc-2585-in" x="40.0" y="37.0" />
+      <port id="hyperarc-2585-out" x="40.0" y="3.0" />
+    </glyph>
+    <glyph id="p3" class="process">
+      <bbox x="20.0" y="10.0" w="24" h="24" />
+      <port id="p3-in" x="32.0" y="39.0" />
+      <port id="p3-out" x="32.0" y="5.0" />
+    </glyph>
+    <glyph id="and-2854" class="and">
+      <bbox x="24.0" y="8.0" w="25" h="25" />
+      <port id="and-2854-in" x="54.0" y="20.5" />
+      <port id="and-2854-out" x="19.0" y="20.5" />
+    </glyph>
+    <glyph id="hyperarc-2592" class="process">
+      <bbox x="28.0" y="8.0" w="24" h="24" />
+      <port id="hyperarc-2592-in" x="40.0" y="37.0" />
+      <port id="hyperarc-2592-out" x="40.0" y="3.0" />
+    </glyph>
+    <glyph id="hyperarc-2595" class="process">
+      <bbox x="20.0" y="10.0" w="24" h="24" />
+      <port id="hyperarc-2595-in" x="49.0" y="22.0" />
+      <port id="hyperarc-2595-out" x="15.0" y="22.0" />
+    </glyph>
+    <glyph id="p4" class="process">
+      <bbox x="20.0" y="10.0" w="24" h="24" />
+      <port id="p4-in" x="32.0" y="39.0" />
+      <port id="p4-out" x="32.0" y="5.0" />
+    </glyph>
+    <glyph id="hyperarc-2603" class="process">
+      <bbox x="28.0" y="8.0" w="24" h="24" />
+      <port id="hyperarc-2603-in" x="40.0" y="37.0" />
+      <port id="hyperarc-2603-out" x="40.0" y="3.0" />
+    </glyph>
+    <glyph id="p5" class="process">
+      <bbox x="20.0" y="10.0" w="24" h="24" />
+      <port id="p5-in" x="32.0" y="39.0" />
+      <port id="p5-out" x="32.0" y="5.0" />
+    </glyph>
+    <glyph id="and-2869" class="and">
+      <bbox x="24.0" y="8.0" w="25" h="25" />
+      <port id="and-2869-in" x="54.0" y="20.5" />
+      <port id="and-2869-out" x="19.0" y="20.5" />
+    </glyph>
+    <glyph id="hyperarc-2610" class="process">
+      <bbox x="28.0" y="8.0" w="24" h="24" />
+      <port id="hyperarc-2610-in" x="40.0" y="37.0" />
+      <port id="hyperarc-2610-out" x="40.0" y="3.0" />
+    </glyph>
+    <glyph id="hyperarc-2613" class="process">
+      <bbox x="20.0" y="10.0" w="24" h="24" />
+      <port id="hyperarc-2613-in" x="49.0" y="22.0" />
+      <port id="hyperarc-2613-out" x="15.0" y="22.0" />
+    </glyph>
+    <glyph id="p6" class="process">
+      <bbox x="20.0" y="10.0" w="24" h="24" />
+      <port id="p6-in" x="32.0" y="39.0" />
+      <port id="p6-out" x="32.0" y="5.0" />
+    </glyph>
+    <glyph id="hyperarc-2620" class="process">
+      <bbox x="31.0" y="19.0" w="24" h="24" />
+      <port id="hyperarc-2620-in" x="60.0" y="31.0" />
+      <port id="hyperarc-2620-out" x="26.0" y="31.0" />
+    </glyph>
+    <glyph id="p7" class="process">
+      <bbox x="28.0" y="8.0" w="24" h="24" />
+      <port id="p7-in" x="40.0" y="37.0" />
+      <port id="p7-out" x="40.0" y="3.0" />
+    </glyph>
+    <glyph id="hyperarc-2626" class="process">
+      <bbox x="28.0" y="8.0" w="24" h="24" />
+      <port id="hyperarc-2626-in" x="40.0" y="37.0" />
+      <port id="hyperarc-2626-out" x="40.0" y="3.0" />
+    </glyph>
+    <glyph id="hyperarc-2629" class="process">
+      <bbox x="28.0" y="8.0" w="24" h="24" />
+      <port id="hyperarc-2629-in" x="40.0" y="37.0" />
+      <port id="hyperarc-2629-out" x="40.0" y="3.0" />
+    </glyph>
+    <glyph id="p8" class="process">
+      <bbox x="28.0" y="8.0" w="24" h="24" />
+      <port id="p8-in" x="40.0" y="37.0" />
+      <port id="p8-out" x="40.0" y="3.0" />
+    </glyph>
+    <glyph id="p9" class="process">
+      <bbox x="28.0" y="8.0" w="24" h="24" />
+      <port id="p9-in" x="40.0" y="37.0" />
+      <port id="p9-out" x="40.0" y="3.0" />
+    </glyph>
+    <arc class="consumption" id="consumption-2839" source="IFNγ" target="hyperarc-2569-in">
+      <start x="40.0" y="40.0" />
+      <end x="46.0" y="72.0" />
+    </arc>
+    <arc class="consumption" id="consumption-2840" source="c1" target="hyperarc-2569-in">
+      <start x="0" y="110.0" />
+      <end x="46.0" y="72.0" />
+    </arc>
+    <arc class="production" id="production-2841" source="hyperarc-2569-out" target="c2">
+      <start x="46.0" y="106.0" />
+      <end x="100.0" y="137.5" />
+    </arc>
+    <arc class="consumption" id="consumption-2842" source="c2" target="p1-in">
+      <start x="100.0" y="137.5" />
+      <end x="50.0" y="154.0" />
+    </arc>
+    <arc class="production" id="production-2843" source="p1-out" target="c3">
+      <start x="50.0" y="120.0" />
+      <end x="0" y="137.5" />
+    </arc>
+    <arc class="stimulation" id="stimulation-2844" source="c2" target="p1">
+      <start x="100.0" y="137.5" />
+      <end x="38.0" y="137.0" />
+    </arc>
+    <arc class="consumption" id="consumption-2845" source="STAT1α" target="p2-in">
+      <start x="80.0" y="20.0" />
+      <end x="40.0" y="37.0" />
+    </arc>
+    <arc class="production" id="production-2846" source="p2-out" target="STAT1α-P-P">
+      <start x="40.0" y="3.0" />
+      <end x="0" y="20.0" />
+    </arc>
+    <arc class="stimulation" id="stimulation-2847" source="c3" target="p2">
+      <start x="0" y="137.5" />
+      <end x="52.0" y="20.0" />
+    </arc>
+    <arc class="consumption" id="consumption-2848" source="STAT1α-P-P" target="hyperarc-2582-in">
+      <start x="80.0" y="20.0" />
+      <end x="40.0" y="37.0" />
+    </arc>
+    <arc class="production" id="production-2849" source="hyperarc-2582-out" target="STAT1α-P-P-dimer">
+      <start x="40.0" y="3.0" />
+      <end x="0" y="20.0" />
+    </arc>
+    <arc class="consumption" id="consumption-2850" source="STAT1α-P-P-dimer" target="hyperarc-2585-in">
+      <start x="80.0" y="20.0" />
+      <end x="40.0" y="37.0" />
+    </arc>
+    <arc class="production" id="production-2851" source="hyperarc-2585-out" target="STAT1α-P-P-dimer-nucleus">
+      <start x="40.0" y="3.0" />
+      <end x="0" y="20.0" />
+    </arc>
+    <arc class="consumption" id="consumption-2852" source="s5" target="p3-in">
+      <start x="50.0" y="25.0" />
+      <end x="32.0" y="39.0" />
+    </arc>
+    <arc class="production" id="production-2853" source="p3-out" target="IRF1-mRNA-nucleus">
+      <start x="32.0" y="5.0" />
+      <end x="80.0" y="20.0" />
+    </arc>
+    <arc class="necessary stimulation" id="necessary-stimulation-2857" source="and-2854-out" target="p3">
+      <start x="24.0" y="20.5" />
+      <end x="44.0" y="22.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2855" source="STAT1α-P-P-dimer-nucleus" target="and-2854-in">
+      <start x="0" y="20.0" />
+      <end x="54.0" y="20.5" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2856" source="IRF1-gene" target="and-2854-in">
+      <start x="0" y="20.0" />
+      <end x="54.0" y="20.5" />
+    </arc>
+    <arc class="consumption" id="consumption-2858" source="IRF1-mRNA-nucleus" target="hyperarc-2592-in">
+      <start x="80.0" y="20.0" />
+      <end x="40.0" y="37.0" />
+    </arc>
+    <arc class="production" id="production-2859" source="hyperarc-2592-out" target="IRF1-mRNA">
+      <start x="40.0" y="3.0" />
+      <end x="0" y="20.0" />
+    </arc>
+    <arc class="consumption" id="consumption-2860" source="IRF1-mRNA" target="hyperarc-2595-in">
+      <start x="0" y="20.0" />
+      <end x="49.0" y="22.0" />
+    </arc>
+    <arc class="production" id="production-2861" source="hyperarc-2595-out" target="s2">
+      <start x="15.0" y="22.0" />
+      <end x="0" y="25.0" />
+    </arc>
+    <arc class="consumption" id="consumption-2862" source="s1" target="p4-in">
+      <start x="50.0" y="25.0" />
+      <end x="32.0" y="39.0" />
+    </arc>
+    <arc class="production" id="production-2863" source="p4-out" target="IRF1">
+      <start x="32.0" y="5.0" />
+      <end x="80.0" y="20.0" />
+    </arc>
+    <arc class="necessary stimulation" id="necessary-stimulation-2864" source="IRF1-mRNA" target="p4">
+      <start x="0" y="20.0" />
+      <end x="44.0" y="22.0" />
+    </arc>
+    <arc class="consumption" id="consumption-2865" source="IRF1" target="hyperarc-2603-in">
+      <start x="80.0" y="20.0" />
+      <end x="40.0" y="37.0" />
+    </arc>
+    <arc class="production" id="production-2866" source="hyperarc-2603-out" target="IRF1-nucleus">
+      <start x="40.0" y="3.0" />
+      <end x="0" y="20.0" />
+    </arc>
+    <arc class="consumption" id="consumption-2867" source="s6" target="p5-in">
+      <start x="50.0" y="25.0" />
+      <end x="32.0" y="39.0" />
+    </arc>
+    <arc class="production" id="production-2868" source="p5-out" target="INOS-mRNA-nucleus">
+      <start x="32.0" y="5.0" />
+      <end x="80.0" y="20.0" />
+    </arc>
+    <arc class="necessary stimulation" id="necessary-stimulation-2872" source="and-2869-out" target="p5">
+      <start x="24.0" y="20.5" />
+      <end x="44.0" y="22.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2870" source="IRF1-nucleus" target="and-2869-in">
+      <start x="0" y="20.0" />
+      <end x="54.0" y="20.5" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-2871" source="INOS-gene" target="and-2869-in">
+      <start x="0" y="20.0" />
+      <end x="54.0" y="20.5" />
+    </arc>
+    <arc class="consumption" id="consumption-2873" source="INOS-mRNA-nucleus" target="hyperarc-2610-in">
+      <start x="80.0" y="20.0" />
+      <end x="40.0" y="37.0" />
+    </arc>
+    <arc class="production" id="production-2874" source="hyperarc-2610-out" target="INOS-mRNA">
+      <start x="40.0" y="3.0" />
+      <end x="0" y="20.0" />
+    </arc>
+    <arc class="consumption" id="consumption-2875" source="INOS-mRNA" target="hyperarc-2613-in">
+      <start x="0" y="20.0" />
+      <end x="49.0" y="22.0" />
+    </arc>
+    <arc class="production" id="production-2876" source="hyperarc-2613-out" target="s4">
+      <start x="15.0" y="22.0" />
+      <end x="0" y="25.0" />
+    </arc>
+    <arc class="consumption" id="consumption-2877" source="s5" target="p6-in">
+      <start x="50.0" y="25.0" />
+      <end x="32.0" y="39.0" />
+    </arc>
+    <arc class="production" id="production-2878" source="p6-out" target="INOS">
+      <start x="32.0" y="5.0" />
+      <end x="80.0" y="20.0" />
+    </arc>
+    <arc class="necessary stimulation" id="necessary-stimulation-2879" source="INOS-mRNA" target="p6">
+      <start x="0" y="20.0" />
+      <end x="44.0" y="22.0" />
+    </arc>
+    <arc class="consumption" id="consumption-2880" source="INOS" target="hyperarc-2620-in">
+      <start x="80.0" y="20.0" />
+      <end x="60.0" y="31.0" />
+    </arc>
+    <arc class="consumption" id="consumption-2881" source="CaM" target="hyperarc-2620-in">
+      <start x="80.0" y="20.0" />
+      <end x="60.0" y="31.0" />
+    </arc>
+    <arc class="production" id="production-2882" source="hyperarc-2620-out" target="c4">
+      <start x="26.0" y="31.0" />
+      <end x="100.0" y="55.0" />
+    </arc>
+    <arc class="consumption" id="consumption-2883" source="arginine" target="p7-in">
+      <start x="80.0" y="20.0" />
+      <end x="40.0" y="37.0" />
+    </arc>
+    <arc class="consumption" id="consumption-2884" source="O2" target="p7-in">
+      <start x="80.0" y="20.0" />
+      <end x="40.0" y="37.0" />
+    </arc>
+    <arc class="production" id="production-2885" source="p7-out" target="NO">
+      <start x="40.0" y="3.0" />
+      <end x="0" y="20.0" />
+    </arc>
+    <arc class="production" id="production-2886" source="p7-out" target="citrulline">
+      <start x="40.0" y="3.0" />
+      <end x="0" y="20.0" />
+    </arc>
+    <arc class="catalysis" id="catalysis-2887" source="c4" target="p7">
+      <start x="0" y="55.0" />
+      <end x="52.0" y="20.0" />
+    </arc>
+    <arc class="consumption" id="consumption-2888" source="arginine-extracellular" target="hyperarc-2626-in">
+      <start x="80.0" y="20.0" />
+      <end x="40.0" y="37.0" />
+    </arc>
+    <arc class="production" id="production-2889" source="hyperarc-2626-out" target="arginine">
+      <start x="40.0" y="3.0" />
+      <end x="0" y="20.0" />
+    </arc>
+    <arc class="consumption" id="consumption-2890" source="NO" target="hyperarc-2629-in">
+      <start x="80.0" y="20.0" />
+      <end x="40.0" y="37.0" />
+    </arc>
+    <arc class="production" id="production-2891" source="hyperarc-2629-out" target="NO-extracellular">
+      <start x="40.0" y="3.0" />
+      <end x="0" y="20.0" />
+    </arc>
+    <arc class="consumption" id="consumption-2892" source="citrulline" target="p8-in">
+      <start x="80.0" y="20.0" />
+      <end x="40.0" y="37.0" />
+    </arc>
+    <arc class="consumption" id="consumption-2893" source="aspartate" target="p8-in">
+      <start x="80.0" y="20.0" />
+      <end x="40.0" y="37.0" />
+    </arc>
+    <arc class="production" id="production-2894" source="p8-out" target="arginino-succinate">
+      <start x="40.0" y="3.0" />
+      <end x="0" y="20.0" />
+    </arc>
+    <arc class="catalysis" id="catalysis-2895" source="ASS" target="p8">
+      <start x="80.0" y="20.0" />
+      <end x="28.0" y="20.0" />
+    </arc>
+    <arc class="consumption" id="consumption-2896" source="arginino-succinate" target="p9-in">
+      <start x="80.0" y="20.0" />
+      <end x="40.0" y="37.0" />
+    </arc>
+    <arc class="production" id="production-2897" source="p9-out" target="fumarate">
+      <start x="40.0" y="3.0" />
+      <end x="0" y="20.0" />
+    </arc>
+    <arc class="production" id="production-2898" source="p9-out" target="arginine">
+      <start x="40.0" y="3.0" />
+      <end x="0" y="20.0" />
+    </arc>
+    <arc class="catalysis" id="catalysis-2899" source="ASL" target="p9">
+      <start x="80.0" y="20.0" />
+      <end x="28.0" y="20.0" />
+    </arc>
+  </map>
+</sbgn>

@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sbgn xmlns="http://sbgn.org/libsbgn/0.2">
+    <map language="activity flow">
+        <glyph id="C" class="biological activity">
+            <label text="C"/>
+            <bbox y="15.0" x="110.0" h="40.0" w="80.0"/>
+        </glyph>
+        <glyph id="A1" class="biological activity">
+            <label text="A1"/>
+            <bbox y="115.0" x="10.0" h="40.0" w="80.0"/>
+            <glyph id="A1a" class="unit of information">
+                <entity name="simple chemical"/>
+                <bbox y="101.0" x="16.0" h="28.0" w="28.0"/>
+            </glyph>
+        </glyph>
+        <glyph id="and-729" class="and">
+            <bbox y="68.5" x="196.5" h="36.0" w="36.0"/>
+            <port y="86.5" x="250.5" id="and-729.2"/>
+            <port y="86.5" x="178.5" id="and-729.1"/>
+        </glyph>
+        <glyph id="A2" class="biological activity">
+            <label text="A2"/>
+            <bbox y="115.0" x="210.0" h="40.0" w="80.0"/>
+            <glyph id="A2a" class="unit of information">
+                <entity name="simple chemical"/>
+                <bbox y="101.0" x="256.0" h="28.0" w="28.0"/>
+            </glyph>
+        </glyph>
+        <glyph id="and-725" class="and">
+            <bbox y="68.5" x="66.5" h="36.0" w="36.0"/>
+            <port y="86.5" x="48.5" id="and-725.1"/>
+            <port y="86.5" x="120.5" id="and-725.2"/>
+        </glyph>
+        <arc target="A1" source="and-725.1" id="positive-influence-728" class="positive influence">
+            <start y="86.5" x="48.5"/>
+            <end y="115.0" x="64.22681"/>
+        </arc>
+        <arc target="A2" source="and-729.2" id="positive-influence-732" class="positive influence">
+            <start y="86.5" x="250.5"/>
+            <end y="115.0" x="235.36082"/>
+        </arc>
+        <arc target="and-729.1" source="C" id="arc1" class="logic arc">
+            <start y="55.0" x="161.06796"/>
+            <end y="86.5" x="178.5"/>
+        </arc>
+        <arc target="and-725.2" source="C" id="arc2" class="logic arc">
+            <start y="55.0" x="138.54369"/>
+            <end y="86.5" x="120.5"/>
+        </arc>
+        <arc target="and-729.1" source="A1" id="arc3" class="logic arc">
+            <start y="119.902725" x="90.0"/>
+            <end y="86.5" x="178.5"/>
+        </arc>
+        <arc target="and-725.2" source="A2" id="arc4" class="logic arc">
+            <start y="120.0193" x="210.0"/>
+            <end y="86.5" x="120.5"/>
+        </arc>
+    </map>
+</sbgn>

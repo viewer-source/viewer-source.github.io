@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sbgn xmlns="http://sbgn.org/libsbgn/0.2">
+  <map language="process description">
+    <glyph class="macromolecule" id="ubc9">
+      <label text="ubc9" />
+      <bbox x="260.0" y="130.0" w="80" h="40" />
+    </glyph>
+    <glyph class="macromolecule" id="elk-1-1">
+      <label text="elk-1" />
+      <bbox x="160.0" y="230.0" w="80" h="40" />
+      <glyph id="elk-1-1-state-variable-244" class="state variable">
+        <state value="" variable="" />
+        <bbox x="230.0" y="222.5" w="15" h="15" />
+      </glyph>
+      <glyph id="elk-1-1-state-variable-245" class="state variable">
+        <state value="sumo" variable="" />
+        <bbox x="170.0" y="222.5" w="15" h="15" />
+      </glyph>
+    </glyph>
+    <glyph class="macromolecule" id="elk-1-2">
+      <label text="elk-1" />
+      <bbox x="360.0" y="230.0" w="80" h="40" />
+      <glyph id="elk-1-2-state-variable-246" class="state variable">
+        <state value="" variable="" />
+        <bbox x="430.0" y="222.5" w="15" h="15" />
+      </glyph>
+      <glyph id="elk-1-2-state-variable-247" class="state variable">
+        <state value="" variable="" />
+        <bbox x="370.0" y="222.5" w="15" h="15" />
+      </glyph>
+    </glyph>
+    <glyph class="macromolecule" id="elk-1-3">
+      <label text="elk-1" />
+      <bbox x="560.0" y="230.0" w="80" h="40" />
+      <glyph id="elk-1-3-state-variable-248" class="state variable">
+        <state value="P" variable="" />
+        <bbox x="630.0" y="222.5" w="15" h="15" />
+      </glyph>
+      <glyph id="elk-1-3-state-variable-249" class="state variable">
+        <state value="" variable="" />
+        <bbox x="570.0" y="222.5" w="15" h="15" />
+      </glyph>
+    </glyph>
+    <glyph class="macromolecule" id="erk">
+      <label text="erk" />
+      <bbox x="460.0" y="130.0" w="80" h="40" />
+    </glyph>
+    <glyph class="source and sink" id="s1">
+      <bbox x="675.0" y="125.0" w="50" h="50" />
+    </glyph>
+    <glyph class="macromolecule" id="c-fos">
+      <label text="c-fos" />
+      <bbox x="660.0" y="330.0" w="80" h="40" />
+    </glyph>
+    <glyph class="process" id="p1">
+      <bbox x="288.0" y="238.0" w="24" h="24" />
+      <port id="p1-in" x="283.0" y="250.0" />
+      <port id="p1-out" x="317.0" y="250.0" />
+    </glyph>
+    <glyph class="process" id="p2">
+      <bbox x="488.0" y="238.0" w="24" h="24" />
+      <port id="p2-in" x="483.0" y="250.0" />
+      <port id="p2-out" x="517.0" y="250.0" />
+    </glyph>
+    <glyph class="process" id="p3">
+      <bbox x="488.0" y="238.0" w="24" h="24" />
+      <port id="p3-in" x="517.0" y="250.0" />
+      <port id="p3-out" x="483.0" y="250.0" />
+    </glyph>
+    <glyph class="process" id="p4">
+      <bbox x="288.0" y="238.0" w="24" h="24" />
+      <port id="p4-in" x="317.0" y="250.0" />
+      <port id="p4-out" x="283.0" y="250.0" />
+    </glyph>
+    <glyph class="process" id="p5">
+      <bbox x="688.0" y="238.0" w="24" h="24" />
+      <port id="p5-in" x="700.0" y="233.0" />
+      <port id="p5-out" x="700.0" y="267.0" />
+    </glyph>
+    <arc class="consumption" id="consumption-231" source="elk-1-1" target="p1-in">
+      <start x="240.0" y="250.0" />
+      <end x="283.0" y="250.0" />
+    </arc>
+    <arc class="production" id="production-232" source="p1-out" target="elk-1-2">
+      <start x="317.0" y="250.0" />
+      <end x="360.0" y="250.0" />
+    </arc>
+    <arc class="consumption" id="consumption-233" source="elk-1-2" target="p2-in">
+      <start x="440.0" y="250.0" />
+      <end x="483.0" y="250.0" />
+    </arc>
+    <arc class="production" id="production-234" source="p2-out" target="elk-1-3">
+      <start x="517.0" y="250.0" />
+      <end x="560.0" y="250.0" />
+    </arc>
+    <arc class="consumption" id="consumption-235" source="elk-1-3" target="p3-in">
+      <start x="560.0" y="250.0" />
+      <end x="517.0" y="250.0" />
+    </arc>
+    <arc class="production" id="production-236" source="p3-out" target="elk-1-2">
+      <start x="483.0" y="250.0" />
+      <end x="440.0" y="250.0" />
+    </arc>
+    <arc class="consumption" id="consumption-237" source="elk-1-2" target="p4-in">
+      <start x="360.0" y="250.0" />
+      <end x="317.0" y="250.0" />
+    </arc>
+    <arc class="production" id="production-238" source="p4-out" target="elk-1-1">
+      <start x="283.0" y="250.0" />
+      <end x="240.0" y="250.0" />
+    </arc>
+    <arc class="consumption" id="consumption-239" source="s1" target="p5-in">
+      <start x="700.0" y="175.0" />
+      <end x="700.0" y="233.0" />
+    </arc>
+    <arc class="production" id="production-240" source="p5-out" target="c-fos">
+      <start x="700.0" y="267.0" />
+      <end x="700.0" y="330.0" />
+    </arc>
+    <arc class="catalysis" id="modulation-241" source="ubc9" target="p1">
+      <start x="300.0" y="170.0" />
+      <end x="300.0" y="238.0" />
+    </arc>
+    <arc class="catalysis" id="modulation-242" source="erk" target="p2">
+      <start x="500.0" y="170.0" />
+      <end x="500.0" y="238.0" />
+    </arc>
+    <arc class="necessary stimulation" id="modulation-243" source="elk-1-3" target="p5">
+      <start x="640.0" y="250.0" />
+      <end x="688.0" y="250.0" />
+    </arc>
+  </map>
+</sbgn>

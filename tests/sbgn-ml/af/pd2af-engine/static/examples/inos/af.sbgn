@@ -1,0 +1,410 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sbgn xmlns="http://sbgn.org/libsbgn/0.2">
+  <map language="activity flow">
+    <glyph class="compartment" id="extracellular-space-436">
+      <label text="extracellular-space" />
+      <bbox x="830.0" y="100.0" w="540.0" h="100.0" />
+    </glyph>
+    <glyph class="biological activity" id="IFNy" compartmentRef="extracellular-space-436">
+      <label text="IFNγ" />
+      <bbox x="860.0" y="130.0" w="80" h="40" />
+      <glyph id="IFNy-uoi-525" class="unit of information">
+        <label text="N:2" />
+        <bbox x="880.0" y="125.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph class="biological activity" id="arginine-1" compartmentRef="extracellular-space-436">
+      <label text="arginine" />
+      <bbox x="1060.0" y="130.0" w="80" h="40" />
+      <glyph id="arginine-1-uoi-526" class="unit of information">
+        <label text="" />
+        <entity name="simple chemical" />
+        <bbox x="1080.0" y="125.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph class="biological activity" id="NO-1" compartmentRef="extracellular-space-436">
+      <label text="NO" />
+      <bbox x="1260.0" y="130.0" w="80" h="40" />
+      <glyph id="NO-1-uoi-527" class="unit of information">
+        <label text="" />
+        <entity name="simple chemical" />
+        <bbox x="1280.0" y="125.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph class="compartment" id="plasma-membrane-437">
+      <label text="plasma-membrane" />
+      <bbox x="230.0" y="200.0" w="840.0" h="100.0" />
+    </glyph>
+    <glyph class="biological activity" id="c1" compartmentRef="plasma-membrane-437">
+      <label text="IFNyR1-IFNyR2-JAK1-JAK2" />
+      <bbox x="960.0" y="230.0" w="80" h="40" />
+      <glyph id="c1-uoi-528" class="unit of information">
+        <label text="" />
+        <entity name="complex" />
+        <bbox x="980.0" y="225.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph class="biological activity" id="c3" compartmentRef="plasma-membrane-437">
+      <label text="IFNy-IFNyR1-IFNyR2-JAK1-JAK2" />
+      <bbox x="260.0" y="230.0" w="80" h="40" />
+      <glyph id="c3-uoi-529" class="unit of information">
+        <label text="" />
+        <entity name="complex" />
+        <bbox x="280.0" y="225.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph class="and" id="modulation-483">
+      <bbox x="720.8333333333334" y="204.16666666666666" w="25" h="25" />
+      <port id="modulation-483-in" x="750.8333333333334" y="216.66666666666666" />
+      <port id="modulation-483-out" x="715.8333333333334" y="216.66666666666666" />
+    </glyph>
+    <glyph class="compartment" id="cytosol-440">
+      <label text="cytosol" />
+      <bbox x="130.0" y="300.0" w="1240.0" h="600.0" />
+    </glyph>
+    <glyph class="biological activity" id="stat1a" compartmentRef="cytosol-440">
+      <label text="STAT1α" />
+      <bbox x="160.0" y="330.0" w="80" h="40" />
+    </glyph>
+    <glyph class="biological activity" id="stat1a-N2-cytosol" compartmentRef="cytosol-440">
+      <label text="STAT1α-dimer" />
+      <bbox x="160.0" y="530.0" w="80" h="40" />
+    </glyph>
+    <glyph class="biological activity" id="irf1-3" compartmentRef="cytosol-440">
+      <label text="IRF1" />
+      <bbox x="360.0" y="530.0" w="80" h="40" />
+      <glyph id="irf1-3-uoi-530" class="unit of information">
+        <label text="ct:mRNA" />
+        <entity name="nucleic acid feature" />
+        <bbox x="380.0" y="525.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph class="biological activity" id="irf1-4" compartmentRef="cytosol-440">
+      <label text="IRF1" />
+      <bbox x="560.0" y="430.0" w="80" h="40" />
+    </glyph>
+    <glyph class="biological activity" id="inos-3" compartmentRef="cytosol-440">
+      <label text="iNOS" />
+      <bbox x="760.0" y="530.0" w="80" h="40" />
+      <glyph id="inos-3-uoi-531" class="unit of information">
+        <label text="ct:mRNA" />
+        <entity name="nucleic acid feature" />
+        <bbox x="780.0" y="525.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph class="biological activity" id="inos-4" compartmentRef="cytosol-440">
+      <label text="iNOS" />
+      <bbox x="860.0" y="430.0" w="80" h="40" />
+    </glyph>
+    <glyph class="biological activity" id="cam" compartmentRef="cytosol-440">
+      <label text="CaM" />
+      <bbox x="760.0" y="330.0" w="80" h="40" />
+    </glyph>
+    <glyph class="biological activity" id="c4" compartmentRef="cytosol-440">
+      <label text="CaM-dimer-iNOS-dimer" />
+      <bbox x="960.0" y="330.0" w="80" h="40" />
+      <glyph id="c4-uoi-532" class="unit of information">
+        <label text="" />
+        <entity name="complex" />
+        <bbox x="980.0" y="325.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph class="biological activity" id="O2" compartmentRef="cytosol-440">
+      <label text="O2" />
+      <bbox x="1160.0" y="630.0" w="80" h="40" />
+      <glyph id="O2-uoi-533" class="unit of information">
+        <label text="" />
+        <entity name="simple chemical" />
+        <bbox x="1180.0" y="625.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph class="biological activity" id="NO-2" compartmentRef="cytosol-440">
+      <label text="NO" />
+      <bbox x="1260.0" y="430.0" w="80" h="40" />
+      <glyph id="NO-2-uoi-534" class="unit of information">
+        <label text="" />
+        <entity name="simple chemical" />
+        <bbox x="1280.0" y="425.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph class="biological activity" id="citrulline" compartmentRef="cytosol-440">
+      <label text="citrulline" />
+      <bbox x="1260.0" y="530.0" w="80" h="40" />
+      <glyph id="citrulline-uoi-535" class="unit of information">
+        <label text="" />
+        <entity name="simple chemical" />
+        <bbox x="1280.0" y="525.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph class="biological activity" id="aspartate" compartmentRef="cytosol-440">
+      <label text="aspartate" />
+      <bbox x="1260.0" y="630.0" w="80" h="40" />
+      <glyph id="aspartate-uoi-536" class="unit of information">
+        <label text="" />
+        <entity name="simple chemical" />
+        <bbox x="1280.0" y="625.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph class="biological activity" id="ass" compartmentRef="cytosol-440">
+      <label text="ASS" />
+      <bbox x="1260.0" y="730.0" w="80" h="40" />
+    </glyph>
+    <glyph class="biological activity" id="arginino-succinate" compartmentRef="cytosol-440">
+      <label text="arginino-succinate" />
+      <bbox x="1060.0" y="830.0" w="80" h="40" />
+      <glyph id="arginino-succinate-uoi-537" class="unit of information">
+        <label text="" />
+        <entity name="simple chemical" />
+        <bbox x="1080.0" y="825.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph class="biological activity" id="asl" compartmentRef="cytosol-440">
+      <label text="ASL" />
+      <bbox x="960.0" y="730.0" w="80" h="40" />
+      <glyph id="asl-uoi-538" class="unit of information">
+        <label text="N:4" />
+        <bbox x="980.0" y="725.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph class="biological activity" id="fumarate" compartmentRef="cytosol-440">
+      <label text="fumarate" />
+      <bbox x="960.0" y="630.0" w="80" h="40" />
+      <glyph id="fumarate-uoi-539" class="unit of information">
+        <label text="" />
+        <entity name="simple chemical" />
+        <bbox x="980.0" y="625.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph class="biological activity" id="arginine-2" compartmentRef="cytosol-440">
+      <label text="arginine" />
+      <bbox x="1060.0" y="530.0" w="80" h="40" />
+      <glyph id="arginine-2-uoi-540" class="unit of information">
+        <label text="" />
+        <entity name="simple chemical" />
+        <bbox x="1080.0" y="525.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph class="and" id="modulation-493">
+      <bbox x="887.5" y="370.8333333333333" w="25" h="25" />
+      <port id="modulation-493-in" x="882.5" y="383.3333333333333" />
+      <port id="modulation-493-out" x="917.5" y="383.3333333333333" />
+    </glyph>
+    <glyph class="and" id="modulation-498">
+      <bbox x="1037.5" y="687.5" w="25" h="25" />
+      <port id="modulation-498-in" x="1050.0" y="717.5" />
+      <port id="modulation-498-out" x="1050.0" y="682.5" />
+    </glyph>
+    <glyph class="and" id="modulation-503">
+      <bbox x="1167.5" y="497.5" w="25" h="25" />
+      <port id="modulation-503-in" x="1162.5" y="510.0" />
+      <port id="modulation-503-out" x="1197.5" y="510.0" />
+    </glyph>
+    <glyph class="and" id="modulation-509">
+      <bbox x="1237.5" y="687.5" w="25" h="25" />
+      <port id="modulation-509-in" x="1267.5" y="700.0" />
+      <port id="modulation-509-out" x="1232.5" y="700.0" />
+    </glyph>
+    <glyph class="compartment" id="nucleus-471">
+      <label text="nucleus" />
+      <bbox x="130.0" y="900.0" w="740.0" h="200.0" />
+    </glyph>
+    <glyph class="biological activity" id="stat1a-N2-nucleus" compartmentRef="nucleus-471">
+      <label text="STAT1α-dimer" />
+      <bbox x="160.0" y="930.0" w="80" h="40" />
+      <glyph id="stat1a-N2-nucleus-uoi-541" class="unit of information">
+        <label text="N:2" />
+        <bbox x="180.0" y="925.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph class="biological activity" id="irf1-1" compartmentRef="nucleus-471">
+      <label text="IRF1" />
+      <bbox x="260.0" y="930.0" w="80" h="40" />
+      <glyph id="irf1-1-uoi-542" class="unit of information">
+        <label text="ct:gene" />
+        <entity name="nucleic acid feature" />
+        <bbox x="280.0" y="925.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph class="biological activity" id="irf1-2" compartmentRef="nucleus-471">
+      <label text="IRF1" />
+      <bbox x="360.0" y="1030.0" w="80" h="40" />
+      <glyph id="irf1-2-uoi-543" class="unit of information">
+        <label text="ct:mRNA" />
+        <entity name="nucleic acid feature" />
+        <bbox x="380.0" y="1025.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph class="biological activity" id="irf1-5" compartmentRef="nucleus-471">
+      <label text="IRF1" />
+      <bbox x="560.0" y="930.0" w="80" h="40" />
+    </glyph>
+    <glyph class="biological activity" id="inos-1" compartmentRef="nucleus-471">
+      <label text="iNOS" />
+      <bbox x="660.0" y="930.0" w="80" h="40" />
+      <glyph id="inos-1-uoi-544" class="unit of information">
+        <label text="ct:gene" />
+        <entity name="nucleic acid feature" />
+        <bbox x="680.0" y="925.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph class="biological activity" id="inos-2" compartmentRef="nucleus-471">
+      <label text="iNOS" />
+      <bbox x="760.0" y="1030.0" w="80" h="40" />
+      <glyph id="inos-2-uoi-545" class="unit of information">
+        <label text="ct:mRNA" />
+        <entity name="nucleic acid feature" />
+        <bbox x="780.0" y="1025.0" w="40" h="10" />
+      </glyph>
+    </glyph>
+    <glyph class="and" id="modulation-516">
+      <bbox x="287.5" y="970.8333333333334" w="25" h="25" />
+      <port id="modulation-516-in" x="282.5" y="983.3333333333334" />
+      <port id="modulation-516-out" x="317.5" y="983.3333333333334" />
+    </glyph>
+    <glyph class="and" id="modulation-521">
+      <bbox x="687.5" y="970.8333333333334" w="25" h="25" />
+      <port id="modulation-521-in" x="682.5" y="983.3333333333334" />
+      <port id="modulation-521-out" x="717.5" y="983.3333333333334" />
+    </glyph>
+    <arc class="logic arc" id="logic-arc-484" source="IFNy" target="modulation-483-in">
+      <start x="900.0" y="170.0" />
+      <end x="750.8333333333334" y="216.66666666666666" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-485" source="c1" target="modulation-483-in">
+      <start x="1000.0" y="230.0" />
+      <end x="750.8333333333334" y="216.66666666666666" />
+    </arc>
+    <arc class="positive influence" id="positive-influence-486" source="modulation-483-out" target="c3">
+      <start x="733.3333333333334" y="229.16666666666666" />
+      <end x="300.0" y="230.0" />
+    </arc>
+    <arc class="positive influence" id="modulation-487" source="c3" target="stat1a">
+      <start x="300.0" y="270.0" />
+      <end x="200.0" y="330.0" />
+    </arc>
+    <arc class="positive influence" id="modulation-488" source="stat1a" target="stat1a-N2-cytosol">
+      <start x="200.0" y="370.0" />
+      <end x="200.0" y="530.0" />
+    </arc>
+    <arc class="positive influence" id="modulation-489" source="irf1-2" target="irf1-3">
+      <start x="400.0" y="1030.0" />
+      <end x="400.0" y="570.0" />
+    </arc>
+    <arc class="necessary stimulation" id="modulation-490" source="irf1-3" target="irf1-4">
+      <start x="400.0" y="530.0" />
+      <end x="600.0" y="470.0" />
+    </arc>
+    <arc class="positive influence" id="modulation-491" source="inos-2" target="inos-3">
+      <start x="800.0" y="1030.0" />
+      <end x="800.0" y="570.0" />
+    </arc>
+    <arc class="necessary stimulation" id="modulation-492" source="inos-3" target="inos-4">
+      <start x="800.0" y="530.0" />
+      <end x="900.0" y="470.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-494" source="inos-4" target="modulation-493-in">
+      <start x="900.0" y="430.0" />
+      <end x="882.5" y="383.3333333333333" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-495" source="cam" target="modulation-493-in">
+      <start x="800.0" y="370.0" />
+      <end x="882.5" y="383.3333333333333" />
+    </arc>
+    <arc class="positive influence" id="positive-influence-496" source="modulation-493-out" target="c4">
+      <start x="900.0" y="370.8333333333333" />
+      <end x="1000.0" y="370.0" />
+    </arc>
+    <arc class="positive influence" id="modulation-497" source="arginine-1" target="arginine-2">
+      <start x="1100.0" y="170.0" />
+      <end x="1100.0" y="530.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-499" source="asl" target="modulation-498-in">
+      <start x="1000.0" y="730.0" />
+      <end x="1050.0" y="717.5" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-500" source="arginino-succinate" target="modulation-498-in">
+      <start x="1100.0" y="830.0" />
+      <end x="1050.0" y="717.5" />
+    </arc>
+    <arc class="positive influence" id="positive-influence-501" source="modulation-498-out" target="fumarate">
+      <start x="1050.0" y="687.5" />
+      <end x="1000.0" y="670.0" />
+    </arc>
+    <arc class="positive influence" id="positive-influence-502" source="modulation-498-out" target="arginine-2">
+      <start x="1050.0" y="687.5" />
+      <end x="1100.0" y="570.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-504" source="c4" target="modulation-503-in">
+      <start x="1000.0" y="370.0" />
+      <end x="1162.5" y="510.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-505" source="arginine-2" target="modulation-503-in">
+      <start x="1100.0" y="530.0" />
+      <end x="1162.5" y="510.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-506" source="O2" target="modulation-503-in">
+      <start x="1200.0" y="630.0" />
+      <end x="1162.5" y="510.0" />
+    </arc>
+    <arc class="positive influence" id="positive-influence-507" source="modulation-503-out" target="NO-2">
+      <start x="1180.0" y="497.5" />
+      <end x="1300.0" y="470.0" />
+    </arc>
+    <arc class="positive influence" id="positive-influence-508" source="modulation-503-out" target="citrulline">
+      <start x="1180.0" y="522.5" />
+      <end x="1300.0" y="530.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-510" source="citrulline" target="modulation-509-in">
+      <start x="1300.0" y="570.0" />
+      <end x="1267.5" y="700.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-511" source="aspartate" target="modulation-509-in">
+      <start x="1300.0" y="670.0" />
+      <end x="1267.5" y="700.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-512" source="ass" target="modulation-509-in">
+      <start x="1300.0" y="730.0" />
+      <end x="1267.5" y="700.0" />
+    </arc>
+    <arc class="positive influence" id="positive-influence-513" source="modulation-509-out" target="arginino-succinate">
+      <start x="1250.0" y="712.5" />
+      <end x="1100.0" y="830.0" />
+    </arc>
+    <arc class="positive influence" id="modulation-514" source="NO-2" target="NO-1">
+      <start x="1300.0" y="430.0" />
+      <end x="1300.0" y="170.0" />
+    </arc>
+    <arc class="positive influence" id="modulation-515" source="stat1a-N2-cytosol" target="stat1a-N2-nucleus">
+      <start x="200.0" y="570.0" />
+      <end x="200.0" y="930.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-517" source="stat1a-N2-nucleus" target="modulation-516-in">
+      <start x="200.0" y="970.0" />
+      <end x="282.5" y="983.3333333333334" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-518" source="irf1-1" target="modulation-516-in">
+      <start x="300.0" y="970.0" />
+      <end x="282.5" y="983.3333333333334" />
+    </arc>
+    <arc class="necessary stimulation" id="necessary-stimulation-519" source="modulation-516-out" target="irf1-2">
+      <start x="300.0" y="995.8333333333334" />
+      <end x="400.0" y="1030.0" />
+    </arc>
+    <arc class="positive influence" id="modulation-520" source="irf1-4" target="irf1-5">
+      <start x="600.0" y="470.0" />
+      <end x="600.0" y="930.0" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-522" source="irf1-5" target="modulation-521-in">
+      <start x="600.0" y="970.0" />
+      <end x="682.5" y="983.3333333333334" />
+    </arc>
+    <arc class="logic arc" id="logic-arc-523" source="inos-1" target="modulation-521-in">
+      <start x="700.0" y="970.0" />
+      <end x="682.5" y="983.3333333333334" />
+    </arc>
+    <arc class="necessary stimulation" id="necessary-stimulation-524" source="modulation-521-out" target="inos-2">
+      <start x="700.0" y="995.8333333333334" />
+      <end x="800.0" y="1030.0" />
+    </arc>
+  </map>
+</sbgn>
