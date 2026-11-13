@@ -1701,8 +1701,8 @@
 <celldesigner:listOfCompartmentAliases>
 <celldesigner:compartmentAlias id="ca_n2" compartment="c_n2">
 <celldesigner:class>SQUARE</celldesigner:class>
-<celldesigner:bounds x="44.668844" y="40.0" w="2128.0" h="284.0"/>
-<celldesigner:namePoint x="1027.549703" y="52.5"/>
+<celldesigner:bounds x="56.0" y="40.0" w="2116.669" h="219.451"/>
+<celldesigner:namePoint x="1038.880859" y="52.5"/>
 <celldesigner:doubleLine thickness="12.0" outerWidth="2.0" innerWidth="1.0"/>
 <celldesigner:paint color="ffdfdbce" scheme="Color"/>
 <celldesigner:info state="empty" angle="-1.5707963267948966"/>
@@ -3888,7 +3888,7 @@
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
-<celldesigner:innerPosition x="116.217" y="167.451171"/>
+<celldesigner:innerPosition x="104.885844" y="167.451171"/>
 <celldesigner:boxSize width="80.0" height="40.0"/>
 <celldesigner:singleLine width="1.0"/>
 <celldesigner:paint color="ffc8d8eb" scheme="Color"/>
@@ -3907,7 +3907,7 @@
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
-<celldesigner:innerPosition x="1838.9898126760122" y="162.451171"/>
+<celldesigner:innerPosition x="1827.658657" y="162.451171"/>
 <celldesigner:boxSize width="40.0" height="40.0"/>
 <celldesigner:singleLine width="1.0"/>
 <celldesigner:paint color="ffdbebdb" scheme="Color"/>
