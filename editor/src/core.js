@@ -85,8 +85,10 @@
         V.view.insertBefore(gridCv, V.view.firstChild);
       }
       gridCv.style.display = '';
-      var k = (window.devicePixelRatio || 1) * V.pz(), W = V.view.clientWidth, H = V.view.clientHeight;
-      var cw = Math.round(W * k), ch = Math.round(H * k);
+      // the canvas exactly as many pixels as the screen gives it (a pixel more or less and the browser rescales it, every
+      // line smeared over two pixels again); k: screen pixels per CSS pixel of the map window
+      var R = gridCv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1, W = V.view.clientWidth, H = V.view.clientHeight;
+      var cw = Math.round(R.width * dpr), ch = Math.round(R.height * dpr), k = cw / W;
       if (gridCv.width !== cw || gridCv.height !== ch) { gridCv.width = cw; gridCv.height = ch; }
       var c = gridCv.getContext('2d'); c.clearRect(0, 0, cw, ch); c.lineWidth = 1;
       var s = NODE_STEP; while (s * V.z < 6) s *= 2;   // never denser than 6 px on screen
