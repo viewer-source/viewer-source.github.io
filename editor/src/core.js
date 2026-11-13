@@ -9,7 +9,7 @@
     // The viewer's own names (the zoom z, the pan tx and ty, the map shown current, its picture img, ...) are read and
     // written through V, the object the viewer hands the editor (user, 2026-11-13: the editor in its own files).
 
-    var lastSvg = null;   // the last drawing, kept with the save (the kept drawing itself is the viewer's)
+    var lastSvg = null, lastFor = null;   // the last drawing and the texts it was drawn from (keepAhead), kept with the save (the kept drawing itself is the viewer's)
     var Y = 'http://www.yworks.com/xml/graphml', G = 'http://graphml.graphdrawing.org/xmlns';
     var drawing = false;           // the renderer busy with the last move
     function src() { return cd ? cd.now : text; }   // the map's own file as it is now
@@ -542,7 +542,7 @@
         if (t !== ticket) return;
         drawing = false;
         if (r[1].length) warn('Drawn with warnings: ' + r[1].join('; '));
-        var svg = r[0]; lastSvg = svg; var m = svg.match(/<g transform="translate\(([-\d.]+),([-\d.]+)\)">/);
+        var svg = r[0]; lastSvg = svg; lastFor = [text, cd ? cd.now : null]; var m = svg.match(/<g transform="translate\(([-\d.]+),([-\d.]+)\)">/);
         var w = svg.match(/ width="([\d.]+)" height="([\d.]+)"/);
         var nx = -parseFloat(m[1]), ny = -parseFloat(m[2]), first = !map.width;
         if (!first) { V.tx += (nx - x0) * V.z; V.ty += (ny - y0) * V.z; }
@@ -595,7 +595,47 @@
       if (helpBox) help(false);
       on = false; drag = null; band = null; V.grid.classList.remove('m2-editing'); paint(); buttons();
       if (dirty && !site) warn(name + ' has moves not saved: Back to it, or Save.'); else quiet();
-      pre = null; aheadSoon();   // read afresh after editing (a save or a conflict may have changed the repository)
+      if (!keepAhead()) pre = null;   // else read afresh (a conflict, a move not saved: the repository may differ)
+      aheadSoon();
+    }
+    // going back to edit at once (user, 2026-11-13: switching back and forth waited 0.5-1.5 s, the read-ahead thrown away
+    // on leaving and read again over the network, the drawing made again): what the editor holds of the site's map it
+    // edited is kept as that map's read-ahead: the site's files as read before, the repository's version as this page
+    // last saved it (its sha from GitHub's answer, once a save under way is done), and the editor's own drawing of it.
+    // Not when a move is not saved or saving stopped. The check of GitHub just after the switch (recheck) stays
+    function keepAhead() {
+      var s = site, m = s && s.id ? V.byId[s.id] : null, old = editPre;
+      if (!m || !old || stuck || s.pending || old.key !== preKey(m)) return false;
+      var p = { key: old.key, path: old.path, file: old.file, sitePub: old.sitePub, siteFrame: old.siteFrame };
+      p.gh = (saving || Promise.resolve()).then(function () {
+        if (stuck || !s.sha || (dirty && site === s)) throw 'not saved';
+        return { sha: s.sha, text: s.saved || s.base };
+      });
+      p.gh.catch(function () { if (pre === p) pre = null; });
+      p.sitePub.catch(function () {});
+      pre = p;
+      var S = src(), g = text;
+      if (lastSvg && !drawing && docText === g && lastFor && lastFor[0] === g && lastFor[1] === (cd ? S : null)) {   // the drawing on screen is the one of this text: made ahead, as ahead() does
+        var svg = lastSvg;
+        // a CellDesigner map starts again from the text last saved (or read), whose drawing and GraphML these are
+        var B = s.saved || s.base;
+        if (cd) { cdMemo.unshift([B, g]); cdMemo.length = Math.min(cdMemo.length, 3); drawMemo = { cd: true, base: B, text: g, q: [svg, S, g] }; }
+        else drawMemo = { cd: false, text: g, r: [svg, []] };
+        preDoc = [{ text: g, doc: doc }];
+        var dm = drawMemo, el = V.img;
+        if (el && el.tagName.toLowerCase() === 'svg' && el.querySelector('[data-e]')) {   // the page's drawing itself, as it was drawn
+          el.querySelectorAll('.m2-ed-copy').forEach(function (x) { x.remove(); });
+          el.querySelectorAll('[data-n],[data-e]').forEach(function (x) { x.removeAttribute('transform'); x.style.display = ''; x.classList.remove('m2-ed-blue'); });
+          dm.rec = V.recolour(svg); dm.pic = el;
+          return true;
+        }
+        (window.requestIdleCallback || function (f) { setTimeout(f, 0); })(function () {
+          if (drawMemo !== dm || on) return;
+          dm.rec = V.recolour(svg);
+          dm.pic = document.importNode(new DOMParser().parseFromString(dm.rec, 'image/svg+xml').documentElement, true);
+        });
+      }
+      return true;
     }
     function buttons() {
       ['#m2-ed-save', '#m2-ed-undo', '#m2-ed-redo', '#m2-ed-grid', '#m2-ed-snap', '#m2-ed-tidy-grid', '#m2-ed-tidy-pack', '#m2-ed-help'].forEach(function (k) { box.querySelector(k).disabled = !on; });   // Grid and Snap too (user, 2026-11-13: on while the rest waited, two stories in one row)   // the layout skill's tools on both formats (a CellDesigner map through cd_edit's GraphML, its ports kept)
@@ -638,7 +678,7 @@
     // be "immediate and immediately functional", not only look so): the map's own file, the frame of its drawing, with a
     // token the repository's version and its sha, the renderer and, on a CellDesigner map, the GraphML the editor edits.
     // The switch then waits for nothing. Dropped after a save, when editing stops and when the site's version changes.
-    var pre = null, preTimer = null, openTitle = null, drawMemo = null, preDoc = [];   // drawMemo: the editor's drawing made ahead, with the text it was made from
+    var pre = null, preTimer = null, openTitle = null, drawMemo = null, preDoc = [], editPre = null;   // drawMemo: the editor's drawing made ahead, with the text it was made from
     function preKey(m) { return m.id + '|' + V.ver(m) + '|' + (repo() && token() ? 'gh' : ''); }
     function ahead(m) {
       var url = graphmlOf(m);
@@ -722,6 +762,7 @@
       if (dirty && !site && !confirm(name + ' has moves not saved. Edit this map instead?')) return;
       if (saveTimer) push();
       var p = ahead(m), file = p.file, path = p.path;
+      editPre = p;   // kept on leaving (keepAhead)
       // the picture on screen is the site's drawing of its published file: its frame (size and the offset of yEd's
       // coordinates) is read from that SVG, so editing starts on it without a redraw; the moved map is drawn again
       var k = V.keep(m), shownPic = V.img;
