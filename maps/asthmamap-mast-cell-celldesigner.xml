@@ -34590,12 +34590,11 @@ Synonyms: (5Z, 13E)-(15S)-9alpha, 11alpha-Epidioxy-15-hydroxyprosta-5, 13-dienoa
 </celldesigner:connectScheme>
 <celldesigner:editPoints>-0.037615120997299155,-0.04007538550347045 0.4864559839017663,-0.5393506092351491</celldesigner:editPoints>
 <celldesigner:listOfModification>
-<celldesigner:modification  type="PHYSICAL_STIMULATION"  modifiers="s_id_sa178"  aliases="sa178"  targetLineIndex="0,2"  editPoints="0.0793284548432282,0.12074830926511479 0.6709567869402961,-0.05581128147101986">
+<celldesigner:modification  type="PHYSICAL_STIMULATION"  modifiers="s_id_sa178"  aliases="sa178"  targetLineIndex="0,2"  editPoints="0.67095678694,-0.055811281471">
 <celldesigner:connectScheme connectPolicy="direct" >
 <celldesigner:listOfLineDirection>
-<celldesigner:lineDirection  index="0" value="unknown"/>
-<celldesigner:lineDirection  index="1" value="unknown"/>
-<celldesigner:lineDirection  index="2" value="unknown"/>
+<celldesigner:lineDirection index="0" value="unknown"/>
+<celldesigner:lineDirection index="1" value="unknown"/>
 </celldesigner:listOfLineDirection>
 </celldesigner:connectScheme>
 <celldesigner:linkTarget species="s_id_sa178" alias="sa178">
