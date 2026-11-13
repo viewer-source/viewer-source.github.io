@@ -127,6 +127,10 @@
       if (!(repo() && token())) return Promise.reject(new Error('not connected to GitHub'));
       var ext = /\.graphml$/i.test(name) ? '.graphml' : '.xml', base = name.replace(/\.(graphml|xml)$/i, ''),
           slug = base.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'map';
+      var head = text.slice(0, 5000);
+      if (ext === '.graphml' ? head.indexOf('yworks.com') < 0 : !(/<sbml[\s>]/.test(head) && text.indexOf('celldesigner') >= 0))
+        return Promise.reject(new Error(ext === '.graphml' ? 'not a yEd GraphML file' : 'not a CellDesigner file'));
+      base = base.replace(/["\\]/g, '');   // the build reads the front matter's quotes plainly
       var md = '---\ntitle: ' + JSON.stringify(base) + '\ntopic: ' + JSON.stringify(base) + '\ngroup: ' + JSON.stringify(group || '') + '\norder: ' + (order | 0) + '\n---\n';
       var j = function (r) { return r.ok ? r.json() : r.json().then(function (d) { var e = new Error(d && d.message || 'GitHub ' + r.status); e.status = r.status; throw e; }); };
       var post = function (path, body, method) { return api(path, { method: method || 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(j); };
@@ -224,6 +228,7 @@
       var pic = function () { return own ? Promise.resolve({ svg: own, width: at.width, height: at.height }) : drawText(t); };
       var fail = function (e) { if (site === s) warn('Not kept in this browser: ' + String(e && e.message ? e.message : e).replace(/\.$/, '') + '. Download the map to keep your changes.'); };
       if (s.mine) {   // a reader's own map: the map itself changed, in this browser and its folder (no draft)
+        if (!V.mine[s.id] || V.mine[s.id].site) return;   // gone from this browser meanwhile (to the site): nothing to keep
         toFolder(s.id, name, t);
         pic().then(function (d) { return V.minePut(Object.assign({}, V.mine[s.id], { text: t, svg: d.svg, width: d.width, height: d.height, at: Date.now() })); })
           .then(function () { if (site === s && src() === t) dirty = false; if (!on || site !== s) V.refreshMine(); })
@@ -1176,6 +1181,7 @@
       var notLoaded = function (e) { if (tk === opening) warn('Cannot edit ' + m.title + ': its file did not load (' + e + ').'); };
       var fromSite = function (s) { return published.then(function (t) { return go(t, s); }).catch(notLoaded); };
       quiet();
+      if (m.mine && V.mine[m.id] && V.mine[m.id].site) { warn('Cannot edit ' + m.title + ' yet: the site is building it (a few minutes).'); return; }   // its moves would be lost when the site's map takes its place
       if (m.mine) return fromSite({ path: null, sha: null, pending: true, mine: true });   // a reader's own map: kept in this browser and its folder
       if (!repo()) return fromSite(null);
       if (!token()) return fromSite({ path: path, sha: null, pending: true });

@@ -2284,7 +2284,7 @@ page, so its styles keep the base they were made on). The looks before (Default 
   function route(e) {
     // no map named: the first map; in development mode the first map of an open group, so a group closed at first
     // stays closed
-    var m = byId[location.hash.slice(1)] || (DEV && maps.filter(function (x) { return !closed[x.group]; })[0]) || maps[0];
+    var h0 = location.hash.slice(1), m = byId[h0] || byId[arrived[h0]] || (DEV && maps.filter(function (x) { return !closed[x.group]; })[0]) || maps[0];
     if (!m) return;
     if (e && e.type === 'hashchange' && m === chosen) return; // already routed by go() or an arrow key
     if (!pending) lastHit = null; // chosen from the map list, not a search result
@@ -2300,9 +2300,9 @@ page, so its styles keep the base they were made on). The looks before (Default 
     siteList = list;
     groupsHere = mineGroupsHere();
     var a = arrange(withMine(list));
-    var rank = function (m) { return m.group ? groupsHere.indexOf(m.group) + 1 : 0; };
-    maps = a.filter(function (m) { return m.mine; }).sort(function (x, y) { return rank(x) - rank(y); })
-      .concat(a.filter(function (m) { return !m.mine; }));   // the reader's maps first: those in no group at the top, then their groups in the order made
+    var rank = function (m) { return m.group ? groupsHere.indexOf(m.group) + 1 : 0; }, first = function (m) { return m.mine && rank(m) >= 0 && !siteGroupOf(m.group); };
+    maps = a.filter(first).sort(function (x, y) { return rank(x) - rank(y); })
+      .concat(a.filter(function (m) { return !first(m); }));   // a reader's map in a site group (one added there, or their group the site has now) stands in it, after its maps   // the reader's maps first: those in no group at the top, then their groups in the order made
     byId = {}; topics = [];
     railMark(); // the map count in the Info window
     maps.forEach(function (m) {
@@ -2770,6 +2770,7 @@ page, so its styles keep the base they were made on). The looks before (Default 
       var site = (siteList || []).map(function (m) { return m.group; });
       return mineGroups().filter(function (g) { return site.indexOf(g) < 0; });
     }
+    function siteGroupOf(name) { return !!name && (siteList || []).some(function (m) { return m.group === name; }); }
     function ownGroup(name) { return !!name && editorAsked && groupsHere.indexOf(name) >= 0; }
     function mineValid(v, was) {
       return v === was || !((siteList || []).some(function (m) { return m.group === v; }) || mineGroups().indexOf(v) >= 0);
@@ -2889,7 +2890,7 @@ page, so its styles keep the base they were made on). The looks before (Default 
         u = mineURLs[r.id] = { at: r.at, svg: URL.createObjectURL(new Blob([r.svg], { type: 'image/svg+xml' })), text: URL.createObjectURL(new Blob([r.text], { type: 'application/xml' })) };
       }
       var cdm = /<sbml[\s>]/.test(r.text.slice(0, 3000)) && r.text.indexOf('celldesigner') >= 0;
-      return { id: r.id, title: r.title, group: r.group && groupsHere.indexOf(r.group) >= 0 ? r.group : '', topic: r.id, mine: true, file: r.file, width: r.width, height: r.height, v: String(r.at),
+      return { id: r.id, title: r.title, group: r.group && (groupsHere.indexOf(r.group) >= 0 || siteGroupOf(r.group)) ? r.group : '', topic: r.id, mine: true, file: r.file, width: r.width, height: r.height, v: String(r.at),
         image: u.svg, legend: cdm ? 'celldesigner' : 'sbgn', downloads: [{ label: cdm ? 'CellDesigner' : 'GraphML', url: u.text }] };
     }
     // with a token a map added goes to the site (editor.toSite): until the site's build has it, it is shown from this
@@ -2938,6 +2939,7 @@ page, so its styles keep the base they were made on). The looks before (Default 
     function mineHide(id) {   // off the list, kept
       var r = mine[id]; if (!r) return;
       r.hidden = true; minePut(r).catch(function () {});
+      if (r.site) try { localStorage.setItem(HIDDEN_KEY, JSON.stringify(siteHidden().concat([r.site]))); } catch (e) {}   // the site's map, once built, hidden too
       refreshMine();
     }
     // one way to make or update a reader's map, for files added here and found in their folder (the editor): by its id,
