@@ -4,7 +4,7 @@ topic: "reactome: R-HSA-70895 1"
 tab: ""
 page: ""
 group: "SBGN-ML external"
-order: 1035
+order: 1034
 kind: "map"
 draft: false
 tag: ""

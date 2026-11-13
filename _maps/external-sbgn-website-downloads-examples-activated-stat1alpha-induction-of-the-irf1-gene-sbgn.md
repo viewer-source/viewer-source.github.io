@@ -4,7 +4,7 @@ topic: "sbgn-website: downloads/examples/activated stat1alpha induction of the i
 tab: ""
 page: ""
 group: "SBGN-ML external"
-order: 1039
+order: 1038
 kind: "map"
 draft: false
 tag: ""

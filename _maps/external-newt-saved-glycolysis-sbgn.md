@@ -4,7 +4,7 @@ topic: "newt-saved: glycolysis"
 tab: ""
 page: ""
 group: "SBGN-ML external"
-order: 1012
+order: 1011
 kind: "map"
 draft: false
 tag: ""

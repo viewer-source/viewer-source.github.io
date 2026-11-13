@@ -4,7 +4,7 @@ topic: "newt-unstable: atm mediated phosphorylation of repair proteins (Newt fil
 tab: ""
 page: ""
 group: "SBGN-ML external"
-order: 1020
+order: 1019
 kind: "map"
 draft: false
 tag: ""

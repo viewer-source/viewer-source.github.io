@@ -4,7 +4,7 @@ topic: "sbgn-website: central plant metabolism"
 tab: ""
 page: ""
 group: "SBGN-ML external"
-order: 1041
+order: 1040
 kind: "map"
 draft: false
 tag: ""
