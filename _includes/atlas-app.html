@@ -2523,10 +2523,13 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
     function copyText(t, r) {
       (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { say('Copied', r.left, r.top); }, function () { say('Not copied', r.left, r.top); });
     }
-    function pngOf(m, url) {   // the map's PNG download, else its picture drawn at twice its size on white
+    // the map's PNG download, else its picture drawn at twice its size on white, smaller where that passes what a browser
+    // draws (16,384 px a side, 64 million pixels: the mast cell map, 23,351 px wide, made no PNG at twice its size)
+    function pngOf(m, url) {
       if (url.PNG) return fetch(url.PNG).then(function (r) { if (!r.ok) throw r.status; return r.blob(); });
       return new Promise(function (res, rej) {
-        var c = document.createElement('canvas'), w = m.width * 2, h = m.height * 2;
+        var k = Math.min(2, 16384 / Math.max(m.width, m.height), Math.sqrt(64e6 / (m.width * m.height)));
+        var c = document.createElement('canvas'), w = Math.floor(m.width * k), h = Math.floor(m.height * k);
         c.width = w; c.height = h;
         var g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, w, h); g.drawImage(img, 0, 0, w, h);
         c.toBlob(function (b) { if (b) res(b); else rej(); }, 'image/png');
