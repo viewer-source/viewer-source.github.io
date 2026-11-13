@@ -1446,7 +1446,7 @@ AKT3: P@S472 P@T305</body>
 <celldesigner:lineDirection index="2" value="unknown"/>
 </celldesigner:listOfLineDirection>
 </celldesigner:connectScheme>
-<celldesigner:editPoints>0.0572680375,-0.23235417022 0.467447415806,-0.131256889374</celldesigner:editPoints>
+<celldesigner:editPoints>0.161598389687,-0.206640000701 0.467447415806,-0.131256889374</celldesigner:editPoints>
 <celldesigner:line width="1.0" color="ff000000"/>
 <celldesigner:listOfModification>
 <celldesigner:modification type="PHYSICAL_STIMULATION" modifiers="s_n7" aliases="sa_n7" targetLineIndex="-1,2">
