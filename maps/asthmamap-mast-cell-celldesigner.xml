@@ -12872,8 +12872,8 @@ Synonyms: 1, 2-Diacyl-sn-glycerol, 1, 2-diacyl-sn-glycerols, 1, 2-Diacylglycerol
 </celldesigner:compartmentAlias>
 <celldesigner:compartmentAlias id="ca8" compartment="s_id_ca8">
 <celldesigner:class>SQUARE</celldesigner:class>
-<celldesigner:bounds x="8827.0" y="971.0" w="5727.0" h="2635.0"/>
-<celldesigner:namePoint x="8919.5" y="3534.5"/>
+<celldesigner:bounds x="8793.381" y="820.179" w="5828.479" h="2785.821"/>
+<celldesigner:namePoint x="8885.881" y="3383.679"/>
 <celldesigner:doubleLine thickness="12.0" outerWidth="2.0" innerWidth="1.0"/>
 <celldesigner:paint color="FFCCCCCC" scheme="Color"/>
 </celldesigner:compartmentAlias>
@@ -13444,7 +13444,7 @@ Synonyms: 1, 2-Diacyl-sn-glycerol, 1, 2-diacyl-sn-glycerols, 1, 2-Diacylglycerol
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa197" species="s_id_sa197" compartmentAlias="ca8" >
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="11732.110635612476" y="1908.5000000000005" w="87.0" h="47.0" />
+<celldesigner:bounds x="11736.111" y="1893.25" w="87.0" h="47.0" />
 <celldesigner:font size="12"/><celldesigner:view state="usual"/>
 <celldesigner:usualView><celldesigner:innerPosition x="0" y="0"/><celldesigner:boxSize width="87.0" height="47.0"/><celldesigner:singleLine width="1.0"/><celldesigner:paint color="FF9BC2E9" scheme="Color"/></celldesigner:usualView>
 <celldesigner:briefView><celldesigner:innerPosition x="0" y="0"/><celldesigner:boxSize width="87.0" height="47.0"/><celldesigner:singleLine width="1.0"/><celldesigner:paint color="FF9BC2E9" scheme="Color"/></celldesigner:briefView>
@@ -40204,7 +40204,7 @@ Synonyms: (5Z, 13E)-(15S)-9alpha, 11alpha-Epidioxy-15-hydroxyprosta-5, 13-dienoa
 </celldesigner:listOfLineDirection>
 </celldesigner:connectScheme>
 <celldesigner:listOfModification>
-<celldesigner:modification  type="CATALYSIS"  modifiers="s_id_csa57"  aliases="csa57"  targetLineIndex="0,2"  editPoints="0.3662489890343466,-0.11848340412178228 0.9012674769883473,-0.295034206260168">
+<celldesigner:modification  type="CATALYSIS"  modifiers="s_id_csa57"  aliases="csa57"  targetLineIndex="0,2"  editPoints="0.378869156494,-0.123314422082 0.932316835208,-0.307044032722">
 <celldesigner:connectScheme connectPolicy="direct" >
 <celldesigner:listOfLineDirection>
 <celldesigner:lineDirection  index="0" value="unknown"/>
