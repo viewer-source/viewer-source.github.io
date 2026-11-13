@@ -6034,12 +6034,10 @@
 <celldesigner:reactionType>STATE_TRANSITION</celldesigner:reactionType>
 <celldesigner:baseReactants>
 <celldesigner:baseReactant species="s_n0_n37" alias="sa_n0_n37">
-<celldesigner:linkAnchor position="WSW"/>
 </celldesigner:baseReactant>
 </celldesigner:baseReactants>
 <celldesigner:baseProducts>
 <celldesigner:baseProduct species="s_n0_n36" alias="sa_n0_n36">
-<celldesigner:linkAnchor position="ESE"/>
 </celldesigner:baseProduct>
 </celldesigner:baseProducts>
 <celldesigner:listOfProductLinks>
