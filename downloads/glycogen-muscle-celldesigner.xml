@@ -6034,12 +6034,10 @@
 <celldesigner:reactionType>STATE_TRANSITION</celldesigner:reactionType>
 <celldesigner:baseReactants>
 <celldesigner:baseReactant species="s_n0_n37" alias="sa_n0_n37">
-<celldesigner:linkAnchor position="WSW"/>
 </celldesigner:baseReactant>
 </celldesigner:baseReactants>
 <celldesigner:baseProducts>
 <celldesigner:baseProduct species="s_n0_n36" alias="sa_n0_n36">
-<celldesigner:linkAnchor position="ESE"/>
 </celldesigner:baseProduct>
 </celldesigner:baseProducts>
 <celldesigner:listOfProductLinks>
@@ -6052,14 +6050,11 @@
 <celldesigner:line width="1.0" color="ff000000" type="Straight"/>
 </celldesigner:productLink>
 </celldesigner:listOfProductLinks>
-<celldesigner:connectScheme connectPolicy="direct" rectangleIndex="1">
+<celldesigner:connectScheme connectPolicy="direct" rectangleIndex="0">
 <celldesigner:listOfLineDirection>
 <celldesigner:lineDirection index="0" value="unknown"/>
-<celldesigner:lineDirection index="1" value="unknown"/>
-<celldesigner:lineDirection index="2" value="unknown"/>
 </celldesigner:listOfLineDirection>
 </celldesigner:connectScheme>
-<celldesigner:editPoints>0.010632129199,-0.213203003108 1.010640011113,-0.213203003108</celldesigner:editPoints>
 <celldesigner:line width="1.0" color="ff000000"/>
 <celldesigner:listOfModification>
 <celldesigner:modification type="CATALYSIS" modifiers="s_n1_n25" aliases="sa_n1_n25" targetLineIndex="-1,3">
