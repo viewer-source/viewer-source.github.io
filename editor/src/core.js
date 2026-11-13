@@ -1590,7 +1590,7 @@
     // the keys: arrows move the selection by 1 (Shift: 10), Ctrl or Cmd with Z undoes, with S saves; Esc clears
     document.addEventListener('keydown', function (e) {
       if (!text) return;
-      var mod = e.ctrlKey || e.metaKey, k = e.key.toLowerCase();
+      var mod = e.ctrlKey || e.metaKey, k = /^Key[A-Z]$/.test(e.code || '') ? e.code.slice(3).toLowerCase() : e.key.toLowerCase();   // letters by their place on the keyboard, so Z, Y, S, A work in any layout
       if (mod && k === 's') { e.preventDefault(); save(); return; }
       if (!on || V.current !== map || /input|textarea|select/i.test(document.activeElement.tagName)) return;
       if (mod && k === 'a') {   // select all, as yEd (user, 2026-11-13): every node and line; a CellDesigner glyph is no item of its own

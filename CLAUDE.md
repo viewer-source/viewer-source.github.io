@@ -162,7 +162,7 @@ says "the workbench", "the converter's repository", "a private repository".
   arrow points to, from a side the opposite arrow back to the centre), marked by four small squares round it, the line's own square there left out (user, 2026-11-13: as a bend point selected alone); a line
   with no part pressed is not moved by the keys; a bend point moved by the keys stops where a segment turns level or
   upright when a step would carry it past, so the grey guides show (whole steps never met a neighbour at x.5), Ctrl or Cmd
-  with Z undoes, with S saves, with A selects all (user, 2026-11-13: every node and line, as yEd; a CellDesigner process glyph is no item of its own). Only the x and y of what moved change in the
+  with Z undoes, with S saves, with A selects all (user, 2026-11-13: every node and line, as yEd; a CellDesigner process glyph is no item of its own). The letters of the shortcuts (E, Z, Y, S, A) are read by their place on the keyboard as well as by the letter, so they work in any layout (user, 2026-11-13: E alone did not switch, Cmd with E did). Only the x and y of what moved change in the
   file's text, the rest byte for byte; the yEd renderer draws the map again in the browser, so the editor draws nothing
   of its own: since 2026-11-13 `renderers/yrender/yrender.js`, the same SVG as yrender.py byte for byte (checked on 607
   maps in the build's, the editor's and the colours page's ways; `tests/yrender-compare.js`, run by the workflow Compare

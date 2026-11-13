@@ -2624,7 +2624,9 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
     // E, or Ctrl or Cmd with E, switches between view and edit mode, the same as the menu's Edit mode and View mode
     // (user, 2026-11-13); E alone not while typing (a field, a label being written), the modifier one also then
     document.addEventListener('keydown', function (e) {
-      if (!e.key || e.key.toLowerCase() !== 'e' || e.altKey || e.shiftKey || e.repeat || !current) return;
+      // the key E wherever it is typed: by its place on the keyboard (e.code), so it works in any layout (a Cyrillic or Greek
+      // one types another letter there; Cmd with E could still come through as e), or by its letter
+      if (!(e.code === 'KeyE' || (e.key && e.key.toLowerCase() === 'e')) || e.altKey || e.shiftKey || e.repeat || !current) return;
       var mod = e.ctrlKey || e.metaKey, a = document.activeElement;
       if (!mod && a && (/input|textarea|select/i.test(a.tagName) || a.isContentEditable)) return;
       var editing = grid.classList.contains('m2-editing');
