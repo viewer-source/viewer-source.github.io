@@ -14,8 +14,8 @@ height: 732
 scale: 1
 annotation: "/atlas-data/glycolysis-celldesigner.json"
 image_error: ""
-v: "4eb2da3aee"
-src: "66e34b3d4d67d64a780d624a381bdfbefb273981"
+v: "da1019f9a4"
+src: "302ea33f30e01889a8254a1a5f65266e5493305c"
 colours: true
 legend: "celldesigner"
 downloads: [{"label": "CellDesigner", "url": "/downloads/glycolysis-celldesigner.xml"}, {"label": "SVG", "url": "/downloads/glycolysis-celldesigner.svg"}, {"label": "SBML", "url": "/downloads/glycolysis-celldesigner-sbml.xml"}, {"label": "Annotation", "url": "/downloads/glycolysis-celldesigner.csv"}, {"label": "GraphML", "url": "/downloads/glycolysis-celldesigner.graphml"}, {"label": "PNG", "url": "/downloads/glycolysis-celldesigner.png"}, {"label": "SBGN-ML", "url": "/downloads/glycolysis-celldesigner.sbgn"}, {"label": "Newt", "url": "http://web.newteditor.org/?URL=https://viewer-source.github.io/downloads/glycolysis-celldesigner.sbgn"}, {"label": "MINERVA", "url": "https://mreg.elixir-luxembourg.org/minerva/index.html?id=F001-glycolysis"}]
