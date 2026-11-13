@@ -14,6 +14,10 @@
 #   made with the workbench's legend maps (only on the Metabolism Regulation Atlas, not in the demo: user, 2026-11-11).
 # maps/<id>.md gives the entry: front matter title, group, order (and topic), its body the text under the map; with
 #   newt: true a Newt link opens the map's SBGN-ML on the demo, minerva: <address> a MINERVA link.
+# SBGN-ML (user, 2026-11-13: the viewer shows SBGN-ML too, "the GraphML based way"): a map whose maps/extra/<id>/ has an
+#   .sbgn file gets that file drawn as well, read by the converter (renderers/converter/mapconv: sbgnml.read, the file's
+#   own places and sizes) into GraphML and drawn by yrender.js, with its click data: downloads/<id>-sbgnml.svg and
+#   atlas-data/<id>-sbgnml.json, named in the entry's sbgn; the viewer shows it when Settings' Source is SBGN-ML.
 # maps/extra/<id>/ (optional): more files for a map's download row, copied to downloads/ under their own names and
 #   labelled by ending (.graphml GraphML, .xml CellDesigner, .sbgn SBGN-ML, -sbml.xml SBML, .png PNG, .csv Annotation):
 #   the full set of the official site, for every map (user, 2026-11-11: glycolysis first, then all, "why only two
@@ -194,6 +198,44 @@ def celldesigner(src, out_svg):
     return nodes
 
 
+# ---------- SBGN-ML ----------
+
+
+def drawn(name, nodes, extra=b''):
+    # the click data of a drawing written beside its SVG; its size and its version (picture, click data and extra)
+    svg = os.path.join(ROOT, 'downloads', name + '.svg')
+    ann = os.path.join(ROOT, 'atlas-data', name + '.json')
+    json.dump({'nodes': nodes}, open(ann, 'w', encoding='utf-8'), ensure_ascii=False, separators=(',', ':'))
+    w, h = (int(float(v)) for v in re.search(r'<svg[^>]* width="([\d.]+)" height="([\d.]+)"', open(svg).read()).groups())
+    v = hashlib.sha1(open(svg, 'rb').read() + open(ann, 'rb').read() + extra).hexdigest()[:10]
+    return {'image': '/downloads/%s.svg' % name, 'annotation': '/atlas-data/%s.json' % name, 'width': w, 'height': h, 'v': v}
+
+
+def sbgnml(src, mid, body):
+    # the SBGN-ML file through the converter to GraphML, then drawn and read as a GraphML map: the entry's sbgn and the
+    # search entries of its click data (s: 1). A file the converter or the renderer cannot take is said and left out,
+    # never stopping the build of the other maps
+    import contextlib, io, tempfile
+    from mapconv import sbgnml as reader, graphml as writer, report
+    tmp = None
+    try:
+        with report.collect(), contextlib.redirect_stdout(io.StringIO()):
+            text = writer.write(reader.read(src))
+        with tempfile.NamedTemporaryFile('w', suffix='.graphml', delete=False, encoding='utf-8') as f:
+            f.write(text)
+        tmp = f.name
+        nodes = graphml(tmp, os.path.join(ROOT, 'downloads', mid + '-sbgnml.svg'))
+    except (Exception, SystemExit) as e:
+        print('warning: %s not drawn, left out: %s' % (os.path.relpath(src, ROOT), str(e).splitlines()[0] if str(e) else type(e).__name__))
+        return None, []
+    finally:
+        if tmp:
+            os.unlink(tmp)
+    d = drawn(mid + '-sbgnml', nodes, body.encode())   # the text in its version too: the map's text is fetched with it
+    d['file'] = '/downloads/' + os.path.basename(src)
+    return d, [dict(e, s=1) for e in search_entries(mid, nodes)]
+
+
 # ---------- the atlas ----------
 
 
@@ -242,12 +284,10 @@ def main():
         svg = os.path.join(ROOT, 'downloads', mid + '.svg')
         nodes = (graphml if ext == '.graphml' else celldesigner)(src, svg)
         shutil.copy(src, os.path.join(ROOT, 'downloads', mid + ext))
-        ann = os.path.join(ROOT, 'atlas-data', mid + '.json')
-        json.dump({'nodes': nodes}, open(ann, 'w', encoding='utf-8'), ensure_ascii=False, separators=(',', ':'))
         search += search_entries(mid, nodes)
-        w, h = (int(float(v)) for v in re.search(r'<svg[^>]* width="([\d.]+)" height="([\d.]+)"', open(svg).read()).groups())
         meta, body = entry(mid)
-        v = hashlib.sha1(open(svg, 'rb').read() + open(ann, 'rb').read() + body.encode()).hexdigest()[:10]
+        d = drawn(mid, nodes, body.encode())
+        w, h, v = d['width'], d['height'], d['v']
         # the source's git blob sha, as GitHub gives it on a save: the editor keeps its own drawing until the site's
         # build is of the very file it saved last, not of an earlier save (2026-11-12: builds of two saves overlapped)
         data = open(src, 'rb').read()
@@ -261,6 +301,12 @@ def main():
               'downloads': [{'label': 'GraphML' if ext == '.graphml' else 'CellDesigner', 'url': '/downloads/%s%s' % (mid, ext)},
                             {'label': 'SVG', 'url': '/downloads/%s.svg' % mid}]}
         fm['downloads'] += extra(mid, meta)
+        sb = sorted(glob.glob(os.path.join(ROOT, 'maps', 'extra', mid, '*.sbgn')))
+        if sb:
+            fm['sbgn'], found = sbgnml(sb[0], mid, body)
+            search += found
+            if not fm['sbgn']:
+                del fm['sbgn']
         with open(os.path.join(ROOT, '_maps', mid + '.md'), 'w', encoding='utf-8') as f:
             f.write('---\n' + ''.join('%s: %s\n' % (k, json.dumps(v, ensure_ascii=False)) for k, v in fm.items()) + '---\n' + body + '\n')
         print('%s: %s, %d clickable' % (mid, 'yEd' if ext == '.graphml' else 'CellDesigner', len(nodes)))

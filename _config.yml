@@ -41,6 +41,7 @@ exclude:
   - renderers/converter/cdrender.py
   - renderers/converter/cd_edit.py
   - renderers/converter/mapconv
+  - renderers/converter/get_mapconv.sh
   - renderers/layout/tidy.py
   - renderers/layout/complex_pack.py
   - renderers/layout/snap_grid.py

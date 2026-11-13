@@ -298,7 +298,7 @@
     function allToFolder() {   // every map kept in this browser, once a folder is chosen or allowed again
       var d = V.drafts;
       Object.keys(d).forEach(function (id) {
-        var m = V.byId[id], f = d[id].file || (graphmlOf(m) || '').split('?')[0].split('/').pop();
+        var m = V.byId[id], f = d[id].file || (graphmlOf(m && m.site || m) || '').split('?')[0].split('/').pop();   // site: the map's own entry, when it is shown from its SBGN-ML
         toFolder(id, f, d[id].text);
       });
       Object.keys(mine).forEach(function (id) { var r = mine[id]; if (!r.hidden && !r.site) toFolder(id, r.file, r.text); });   // one added to the site is not the folder's
@@ -335,7 +335,7 @@
           if (p !== 'granted') return;
           var ours = {}, siteFiles = {};
           Object.keys(f.files).forEach(function (id) { ours[f.files[id].name] = id; });
-          V.maps.forEach(function (m) { if (!m.mine) siteFiles[(graphmlOf(m) || '').split('?')[0].split('/').pop()] = 1; });   // the site's maps' files (a draft kept here)
+          V.maps.forEach(function (m) { if (!m.mine) siteFiles[(graphmlOf(m.site || m) || '').split('?')[0].split('/').pop()] = 1; });   // the site's maps' files (a draft kept here)
           return all(f.dir).then(function (hs) {
             return hs.filter(function (h) { return h.kind === 'file' && /\.(graphml|xml)$/i.test(h.name); }).reduce(function (q, h) {
               return q.then(function () {

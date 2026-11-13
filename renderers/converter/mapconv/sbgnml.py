@@ -376,6 +376,9 @@ def read(path):
     for e in root.iter(etree.Element):  # libsbgn 0.1 and 0.2 files: the same elements in an older namespace
         if e.tag.startswith('{http://sbgn.org/libsbgn/'):
             e.tag = S + etree.QName(e).localname
+        if e.tag.startswith(R):  # render attributes written with the namespace's prefix (ns1:idList, ns1:fill: libsbgn's
+            for a in [a for a in e.attrib if a.startswith(R)]:  # Java writer) read as the plain ones
+                e.set(a[len(R):], e.attrib.pop(a))
     m = root.find(S + 'map')
     af = m.get('language') == 'activity flow'
     defs = {c.get('id'): c.get('value') for c in m.iter(R + 'colorDefinition')}

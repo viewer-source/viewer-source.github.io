@@ -451,7 +451,9 @@ def write(diagram, ann, layout='straight'):
             h = etree.SubElement(sub(s, 'notes'), '{%s}html' % XH, nsmap={None: XH})
             etree.SubElement(etree.SubElement(h, '{%s}head' % XH), '{%s}title' % XH)
             body = etree.SubElement(h, '{%s}body' % XH)
-            body.text = '\n'.join(notes(d.data)) or None  # the family's name, its members' sites
+            # the family's name, its members' sites, each line ended: CellDesigner 4.4.2 drops, on saving, the text
+            # on the same line as the RDF ("Family: PKA regulatory subunits", carnitine and glycolysis, 2026-11-10)
+            body.text = ''.join(l + '\n' for l in notes(d.data)) or None
             miriam(body, spec(i), label[i], abc=True)
             x = sub(s, 'annotation'); sub(x, 'complexSpecies', spec(d.parent))
             identity(x, i)

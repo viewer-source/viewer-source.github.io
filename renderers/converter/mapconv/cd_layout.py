@@ -245,6 +245,15 @@ def draw(diagram, ents, members, label, advanced, held=False):
         B = anchor_point(front[q_] if qa else box[q_], qa, N[q_].kind == 'SimpleChemical', N[q_].kind == 'Phenotype')
         # edit points: one long L (both layouts); in the advanced layout else the route's bends
         pts, k, corner = rb + qb, len(rb), False
+        # a line that leaves a metabolite circle below its centre (meet: where the name is not) keeps its
+        # first bend in line with that point, as a modifier does (user's phosphoinositides edit,
+        # 2026-11-10: PI(3,4)P2 -> PI4P, a 7 px jog where yEd's bend stayed at the centre's height)
+        for j, (i, a, P) in ((0, (r_, ra, A)), (-1, (q_, qa, B))):
+            if pts and a and N[i].kind == 'SimpleChemical':
+                q, C = pts[j], cen(i)
+                ax = 1 if abs(q[0] - C[0]) >= abs(q[1] - C[1]) else 0  # the axis the leg keeps
+                if abs(q[ax] - C[ax]) < 1:
+                    pts[j] = (q[0], P[1]) if ax else (P[0], q[1])
         if under:
             pts, k = [under[1]], int(under[0] == r_)
         bend = (layout.corner(A, B, wr) if wr else layout.corner(B, A, wq)) if bool(wr) != bool(wq) and not twin and not under else None
@@ -279,11 +288,16 @@ def draw(diagram, ents, members, label, advanced, held=False):
             # not held: only for a modifier (or logic gate) straight across in yEd that cd_tidy could
             # not move onto the midway square (straight & bends and advanced alike)
             if across < 3 and abs(u - 0.5) * L > 3 and 0.1 < u < 0.9:
-                sq = (P[0] + u * L * f[0], P[1] + u * L * f[1])
-                h = min(u, 1 - u) / 2
-                split = [(u - h, 0.0), (u + h, 0.0)] if not pts else \
-                    [to_frame(A, B, (sq[0] + d * f[0], sq[1] + d * f[1])) for d in (-h * L, h * L)]
-                ep, k = ep[:k] + split + ep[k:], k + 1
+                at = (P[0] + u * L * f[0], P[1] + u * L * f[1])
+                # both outside the end nodes (EDGE), as above (user's phosphoinositides edit, 2026-11-10:
+                # a point inside GRB2:GAB1, the line through the complex), or the process glyph stays midway
+                d = min(min(u, 1 - u) / 2 * L, *(reach(at, (w * f[0], w * f[1]), box[i]) for w in (-1, 1) for i in (r_, q_)))
+                if d >= 1:
+                    sq, h = at, min(u, 1 - u) / 2
+                    h = h if d >= h * L else d / L
+                    split = [(u - h, 0.0), (u + h, 0.0)] if not pts else \
+                        [to_frame(A, B, (sq[0] + t * f[0], sq[1] + t * f[1])) for t in (-h * L, h * L)]
+                    ep, k = ep[:k] + split + ep[k:], k + 1
         return dict(r=r_, q=q_, ra=ra, qa=qa, A=A, B=B, ep=ep, k=k, sq=sq, f=f)
 
     def side(g, pt):  # the side of the square facing a point: 2 left of the flow, 3 right
@@ -342,7 +356,10 @@ def draw(diagram, ents, members, label, advanced, held=False):
         # a modifier arc of process p (main line g): the point of the square it ends at, its start M,
         # its end T, the anchor on the modifier and its edit points; many: several arcs regulate p
         m = e.source; M = cen(m)
-        i = target(g, e, M, many)
+        # the side facing the arc's last bend where yEd bends it, else its start (user's phosphoinositides
+        # edit, 2026-11-10: EGF:EGFR catalysing its own step sits on the main line, and the arc ended on
+        # the far side, its arrowhead hidden)
+        i = target(g, e, (yed(e.points)[-1] if advanced and e.points else M), many)
         T = attach(g, i)  # the arc's end on the square (the user's glycolysis v01 bends)
         # a slanting straight arc from the border of another entity: that anchor (as read
         # back); one that runs across at the process's height takes a lane (below)

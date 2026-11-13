@@ -113,6 +113,16 @@ says "the workbench", "the converter's repository", "a private repository".
   tab but Maps goes back to Maps too, user the same day; until then the field stayed over the list with no Search tab), one Legend sign (C2), no window title (the tab shows it); a click on the open tab keeps it, the separator
   closes the panel. Annotations on the left (Settings) open as one more tab of the panel (the panel opened if closed),
   no tab highlighted; its cross or any tab goes back. First in the styles' Default Icon Row.
+- Source (user, 2026-11-13: SBGN-ML in the viewer, "the GraphML based way", in Default Edit itself, not a style of its
+  own): Settings' Source, Map's file (the default) or SBGN-ML, shown only on a map that has an SBGN-ML file; the S key
+  flips it (not while typing or editing), the map kept where it is; kept in the browser (`atlas-map-source`). The build
+  draws a map's SBGN-ML (the `.sbgn` in `maps/extra/<id>/`) through the converter's copy (`renderers/converter/mapconv`,
+  refreshed by `get_mapconv.sh`, never edited here) to GraphML and yrender.js: `downloads/<id>-sbgnml.svg`, its click
+  data and search entries (`s: 1`), named in the entry's `sbgn`; a file it cannot read is a warning, never a stopped
+  build. The viewer shows the SBGN-ML drawing as a copy of the entry (`asSource`, `shownAs`), its downloads led by the
+  SBGN-ML file, its PNG made from that drawing; such a map is not edited (no Edit tab; editing SBGN-ML later) and never
+  shows an edited drawing of its own file. The look: true SBGN as the file gives it, its own places, sizes and colours,
+  no tool's styling (user).
 - Map colours (user, 2026-11-12, in Settings after Map size): File (the colours in the map's file, the default) and
   Default (the /colours/ page's Default), only these two since 2026-11-13 (user: more schemes would need a way to edit
   them, a hassle for now; the roles in the pictures stay, the ground for overlays; a reader's stored Paper or Haze falls
