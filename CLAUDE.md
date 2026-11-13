@@ -369,6 +369,10 @@ says "the workbench", "the converter's repository", "a private repository".
   user 2026-11-13, were Edit mode and View mode; and no molecule rows: right click works everywhere the same way, the right drag
   that moved the map in edit mode taken out, a drag on empty space moves it as in view mode; user, 2026-11-12),
   Download GraphML or Download CellDesigner XML (the map's source only; user, 2026-11-12: was "CellDesigner file"),
+  each download and copy giving the map as on screen (user, 2026-11-13: "Download what is on the screen"; the source
+  file had come without the moves just made): while editing the editor's file and drawing as they are now
+  (`window.m2EditNow`), after editing the edited drawing the viewer keeps until the site's build catches up (its file
+  kept with it, in `atlas-edit-kept` too where storage allows) or the draft kept in this browser, else the site's files,
   Open in Newt, Open in MINERVA (in this order, user 2026-11-12; where the map has them, to respect the tools already
   there), Copy image as PNG (its PNG, at twice the map's size as yEd's export at 2.0, else its picture at twice its size,
   to the clipboard: for pasting into a paper or slides), Copy image as SVG last (user, 2026-11-12: the map's SVG as
