@@ -33,9 +33,10 @@
     function cdGraphml(t) {
       for (var i = 0; i < cdMemo.length; i++) if (cdMemo[i][0] === t) return cdMemo[i][1];
       var g = cdJs.graphml(t);
-      cdMemo.unshift([t, g]); cdMemo.length = Math.min(cdMemo.length, 3);
+      cdRemember(t, g);
       return g;
     }
+    function cdRemember(t, g) { cdMemo.unshift([t, g]); cdMemo.length = Math.min(cdMemo.length, 3); }   // also the editor's own text on leaving (keepAhead)
     function glyphMid(q, B, P, pp) {   // where cd_edit puts the glyph: midway on its segment, an end at a node cut at its box
       var ea = edges2[q.a], eb = edges2[q.b], o = function (e, a) {
         if (pp && pp.to && edges2[pp.k] === e && (pp.end ? 't' : 's') === a[0]) return pp.to[a[1] === 'x' ? 0 : 1];
@@ -60,6 +61,8 @@
     // the glyphs whose segment moves: shifted by how far their middle moved (the same reckoning before and now, so a
     // glyph does not jump at the start), their lines drawn live. ns, ps: the nodes and bend points moving; back: how far
     // the keys moved them already in the file (null in a drag, where the file has them still where they were)
+    // since cdLines draws a move with the drop's own code, glyphFollow's drawing is the fallback only; its glyph place
+    // (liveG, corrected by cdLines) and the hiding of the lines still serve the guides and the selection
     function glyphFollow(ns, ps, back, pp) {   // pp: a port being dragged
       if (!procs.length || !gN) return;
       var old = liveG; liveG = null;
@@ -119,11 +122,13 @@
         if (pp && pp.to && pp.k === k) { var j = pp.end ? 2 : 0; q[j] = pp.to[0]; q[j + 1] = pp.to[1]; }
         paths.set(e.id, q);
       });
-      var mvd = new Set();   // what moved since the drawing on screen: a drag's, the keys', the compartments grown
-      if (mv) mv.n.forEach(function (i) { mvd.add(i); });
-      if (keyed) keyed.n.forEach(function (i) { mvd.add(i); });
-      if (liveC) Object.keys(liveC).forEach(function (i) { mvd.add(+i); });
-      mvd.forEach(function (i) { if (!/\|proc$/.test(nodes2[i].id)) boxes.set(nodes2[i].id, bx(i)); });
+      // the boxes of every node of those reactions as they are now (also when the drawing on screen is older than the
+      // file, a redraw under way)
+      edges2.forEach(function (e) {
+        var m = e.id.match(RXE);
+        if (!m || !rids.has(m[1])) return;
+        [e.s, e.t].forEach(function (i) { if (i != null && !/\|proc$/.test(nodes2[i].id)) boxes.set(nodes2[i].id, bx(i)); });
+      });
       var list = Array.from(rids), out = S.frame(boxes, bends, paths, list);
       if (list.some(function (r) { return !out[r]; })) return false;
       dropCopies();

@@ -515,7 +515,7 @@
   // for one not drawn. JavaScript only (the editor), it writes no file.
   function live(t, gtext, opt) {
     var d = new cdr.Drawing(t, { classes: true, groups: true, DOMParser: DP(opt) }), comps = compartments(d), rd = read(gtext, opt);
-    var old = new Map(), alias0 = new Map(), olds = {}, slices = {}, T0 = new Text(t), last = [];
+    var old = new Map(), alias0 = new Map(), olds = {}, slices = {}, T0 = new Text(t), last = [], errors = [];
     d.alias.forEach(function (a, i) { old.set(i, a[1]); alias0.set(i, a); });
     comps.forEach(function (v, c) { old.set(c, v[0]); });
     findall(d.model, 's:listOfReactions/s:reaction').forEach(function (rx) { olds[get(rx, 'id')] = lines(d, rx); });
@@ -530,6 +530,7 @@
       return slices[rid];
     };
     return {
+      errors: errors,   // reactions that failed (drawn the old way by the editor; the test fails on any)
       frame: function (boxes, bends, paths, rids) {
         var nw = new Map(), B = new Map(rd[2]), P = new Map(rd[3]), out = {};
         // the boxes as place() takes them to write the lines (nw), and as it writes them into the file (six decimals),
@@ -561,7 +562,7 @@
             var r = lines(d, rx), q = r && r.glyph ? r : null;
             out[rid] = { halo: d.halo.join('\n'), lines: d.lines.join('\n'), sq: q ? q.sq : null,
               ang: q ? Math.atan2(q.fl[1], q.fl[0]) : 0, len: q ? Math.hypot(q.Q[0] - q.P[0], q.Q[1] - q.P[1]) : 0 };
-          } catch (e) { out[rid] = null; }
+          } catch (e) { out[rid] = null; errors.push(rid + ': ' + (e && e.message || e)); }
         });
         return out;
       },

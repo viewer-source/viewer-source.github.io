@@ -6,7 +6,7 @@
 var fs = require('fs'), path = require('path');
 var here = path.join(__dirname, '..'), DP = require('@xmldom/xmldom').DOMParser;
 global.DOMParser = DP;
-var ed = require(path.join(here, 'renderers/converter/cd_edit.js')), opt = { DOMParser: DP };
+var ed = require(path.join(here, 'renderers/converter/cd_edit.js')), cdr = require(path.join(here, 'renderers/converter/cdrender.js')), opt = { DOMParser: DP };
 var files = [];
 (process.argv.length > 2 ? process.argv.slice(2) : [path.join(here, 'maps')]).forEach(function walk(p) {
   var st; try { st = fs.statSync(p); } catch (e) { return; }
@@ -46,10 +46,14 @@ files.forEach(function (f) {
     var mg = moved(g, seed), q;
     try { q = ed.draw(t, mg, opt); } catch (e) { return; }
     if (/<g transform="translate\(0,0\)"><g transform/.test(q[0])) { skipped++; return; }   // shifted after the drop: not live
-    var svg = q[0], cut = svg.indexOf('<g fill="none" stroke="#fff"'), halo = svg.slice(cut), lines = svg.slice(cut);   // the halos come first, then the lines
+    // the drawing after the drop, its halos and its lines apart (draw() is place() then this drawing)
+    var D = new cdr.Drawing(q[1], { classes: true, groups: true, DOMParser: DP }), svg = D.svg();
+    if (svg !== q[0]) { diff++; bad.push(path.basename(f) + ' seed ' + seed + ': draw() differs from place() and its drawing'); return; }
+    var halo = D.halo.join('\n'), lines = D.lines.join('\n');
     var now = read(mg), boxes = new Map();
     now[0].forEach(function (b, k) { var o = base[0].get(k); if (!o || b.some(function (v, j) { return v !== o[j]; })) boxes.set(k, b); });
-    var out = ed.live(t, g, opt).frame(boxes, now[1], now[2], rids);
+    var S = ed.live(t, g, opt), out = S.frame(boxes, now[1], now[2], rids);
+    S.errors.forEach(function (e) { diff++; if (bad.length < 10) bad.push(path.basename(f) + ' seed ' + seed + ' failed: ' + e); });
     rids.forEach(function (rid) {
       var o = out[rid];
       if (!o) { skipped++; return; }

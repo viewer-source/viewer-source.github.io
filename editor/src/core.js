@@ -138,7 +138,7 @@
           return r.json().then(function (d) {
             if (r.ok) {
               target.sha = d.content.sha; target.saved = body;
-              pre = null;   // what was read ahead is older than this save
+              if (!(pre && pre.kept === target)) pre = null;   // what was read ahead is older than this save (the copy kept on leaving waits for it: keepAhead)
               if (V.kept && V.kept.id === target.id) V.kept.sha = target.sha;
               var sm = V.byId[target.id];
               if (sm) target.v = V.ver(sm);   // the site's version still without this move
@@ -584,7 +584,7 @@
       document.getElementById('m2-title').textContent = n;
       V.grid.classList.add('m2-editing');
       buttons();
-      gN = gE = null; mv = live = null; liveG = null; copies = []; frozen = false;
+      gN = gE = null; mv = live = null; liveG = null; copies = []; frozen = false; cdBase = null;
       if (same && same.text === t) { (cd ? cdpy() : yr()).then(function () { if (on && V.current === map && !undo.length && !gN) render(); }); paint(); quiet(); return; }
       quiet();
       render();
@@ -607,35 +607,38 @@
     function keepAhead() {
       var s = site, m = s && s.id ? V.byId[s.id] : null, old = editPre;
       if (!m || !old || stuck || s.pending || old.key !== preKey(m)) return false;
-      var p = { key: old.key, path: old.path, file: old.file, sitePub: old.sitePub, siteFrame: old.siteFrame };
+      var p = { key: old.key, path: old.path, file: old.file, sitePub: old.sitePub, siteFrame: old.siteFrame, kept: s };
+      // the version as saved once a save under way is done; a save that did not go through: GitHub read afresh
       p.gh = (saving || Promise.resolve()).then(function () {
         if (stuck || !s.sha || (dirty && site === s)) throw 'not saved';
         return { sha: s.sha, text: s.saved || s.base };
-      });
+      }).catch(function () { return ghRead(p.path); });
       p.gh.catch(function () { if (pre === p) pre = null; });
       p.sitePub.catch(function () {});
       pre = p;
-      var S = src(), g = text;
-      if (lastSvg && !drawing && docText === g && lastFor && lastFor[0] === g && lastFor[1] === (cd ? S : null)) {   // the drawing on screen is the one of this text: made ahead, as ahead() does
-        var svg = lastSvg;
-        // a CellDesigner map starts again from the text last saved (or read), whose drawing and GraphML these are
-        var B = s.saved || s.base;
-        if (cd) { cdMemo.unshift([B, g]); cdMemo.length = Math.min(cdMemo.length, 3); drawMemo = { cd: true, base: B, text: g, q: [svg, S, g] }; }
+      // the drawing on screen kept with it, only when it is the drawing of the text the next editing starts from: every
+      // move in the text drawn, none moving; made ahead now, or once the save under way has written that very text
+      var S = src(), g = text, d0 = doc, el = V.img, svg = lastSvg;
+      if (!(svg && !drawing && !mv && !keyed && !liveC && docText === g && lastFor && lastFor[0] === g && lastFor[1] === (cd ? S : null))) return true;
+      var isCd = !!cd, make = function () {
+        if (isCd) { cdRemember(S, g); drawMemo = { cd: true, base: S, text: g, q: [svg, S, g] }; }
         else drawMemo = { cd: false, text: g, r: [svg, []] };
-        preDoc = [{ text: g, doc: doc }];
-        var dm = drawMemo, el = V.img;
-        if (el && el.tagName.toLowerCase() === 'svg' && el.querySelector('[data-e]')) {   // the page's drawing itself, as it was drawn
+        preDoc = [{ text: g, doc: d0 }];
+        var dm = drawMemo;
+        if (el === V.img && el.tagName.toLowerCase() === 'svg' && el.querySelector('[data-e]')) {   // the page's drawing itself
           el.querySelectorAll('.m2-ed-copy').forEach(function (x) { x.remove(); });
           el.querySelectorAll('[data-n],[data-e]').forEach(function (x) { x.removeAttribute('transform'); x.style.display = ''; x.classList.remove('m2-ed-blue'); });
           dm.rec = V.recolour(svg); dm.pic = el;
-          return true;
+          return;
         }
         (window.requestIdleCallback || function (f) { setTimeout(f, 0); })(function () {
           if (drawMemo !== dm || on) return;
           dm.rec = V.recolour(svg);
           dm.pic = document.importNode(new DOMParser().parseFromString(dm.rec, 'image/svg+xml').documentElement, true);
         });
-      }
+      };
+      if (!dirty && !saving && S === (s.saved || s.base)) make();
+      else p.gh.then(function (r) { if (r && r.text === S && pre === p && !on) make(); }, function () {});
       return true;
     }
     function buttons() {
@@ -681,6 +684,19 @@
     // The switch then waits for nothing. Dropped after a save, when editing stops and when the site's version changes.
     var pre = null, preTimer = null, openTitle = null, drawMemo = null, preDoc = [], editPre = null;   // drawMemo: the editor's drawing made ahead, with the text it was made from
     function preKey(m) { return m.id + '|' + V.ver(m) + '|' + (repo() && token() ? 'gh' : ''); }
+    // the repository's version of a map and its sha (two calls side by side); null: not a map of this repository
+    function ghRead(path) {
+      if (!(repo() && token())) return Promise.resolve(undefined);
+      return Promise.all([
+        api('/contents/' + path + '?ref=main'),
+        api('/contents/' + path + '?ref=main', { headers: { Accept: 'application/vnd.github.raw' } })
+      ]).then(function (r) {
+        if (r[0].status === 404) return null;
+        if (!r[0].ok) throw r[0].status;
+        if (!r[1].ok) throw r[1].status;
+        return Promise.all([r[0].json(), r[1].text()]).then(function (d) { return { sha: d[0].sha, text: d[1] }; });
+      });
+    }
     function ahead(m) {
       var url = graphmlOf(m);
       if (!url) return null;
@@ -695,15 +711,7 @@
       }).catch(function () { return null; });
       // the repository's version (newer than the site while a build runs) and its sha, which makes GitHub refuse a save
       // over a version changed meanwhile; null: not a map of this repository (saved as a file)
-      p.gh = !(repo() && token()) ? Promise.resolve(undefined) : Promise.all([
-        api('/contents/' + path + '?ref=main'),
-        api('/contents/' + path + '?ref=main', { headers: { Accept: 'application/vnd.github.raw' } })
-      ]).then(function (r) {
-        if (r[0].status === 404) return null;
-        if (!r[0].ok) throw r[0].status;
-        if (!r[1].ok) throw r[1].status;
-        return Promise.all([r[0].json(), r[1].text()]).then(function (d) { return { sha: d[0].sha, text: d[1] }; });
-      });
+      p.gh = ghRead(path);
       var drop = function () { if (pre === p) pre = null; };
       p.sitePub.catch(drop); p.gh.catch(drop);
       // the renderer, and a CellDesigner file made into the editor's GraphML now, not at the switch
