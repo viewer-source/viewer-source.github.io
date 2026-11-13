@@ -2023,8 +2023,10 @@
       }
       var d = drag; drag = null; var sets = mv; mv = null;   // the moved groups and live arcs stay until the map is drawn again
       if (!d.port && !d.rs) frozen = true;   // the copies too: the file now has the new places, the picture not yet
-      if (d.port) {   // dragged: the port set; a click: the node there selected, as without a line lit
-        if (d.port.to) setPort(d.port); else { selN = [d.port.n]; selP = []; selE = []; paint(); }
+      if (d.port) {   // dragged: the port set; a click: the node there selected, as without a line lit (not a glyph)
+        if (d.port.to) setPort(d.port);
+        else if (procSpots(d.port)) paint();   // at a glyph, no item of its own: the line stays selected, its end pressed for the keys
+        else { selN = [d.port.n]; selP = []; selE = []; paint(); }
         return;
       }
       if (d.rs) {   // a compartment resized: its box set, never smaller than what it holds, the ones round it grown
