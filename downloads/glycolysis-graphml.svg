@@ -56,12 +56,12 @@
 <path d="M448.93 559.5 L361 559.5" fill="none" stroke="#000000"/>
 <path d="M632 535 L632 509" fill="none" stroke="#000000"/><path d="M632 498 L638 510 L626 510 Z" fill="#000000" stroke="none"/>
 <path d="M632 588 L632 553" fill="none" stroke="#000000"/>
-<path d="M712 544 L652.8707 544" fill="none" stroke="#000000"/><circle cx="648.8707" cy="544" r="4" fill="white" class="c-white" stroke="#000000"/>
+<path d="M712 544 L649 544" fill="none" stroke="#000000"/><circle cx="645" cy="544" r="4" fill="white" class="c-white" stroke="#000000"/>
 <path d="M553 208 L591 208" fill="none" stroke="#000000"/><path d="M602 208 L590 214 L590 202 Z" fill="#000000" stroke="none"/>
 <path d="M494 208 L535 208" fill="none" stroke="#000000"/>
 <path d="M544 140 L544 186" fill="none" stroke="#000000"/><circle cx="544" cy="190" r="4" fill="white" class="c-white" stroke="#000000"/>
-<path d="M592 472 L362 472 Q352 472 352 482 L352 513" fill="none" stroke="#000000"/><circle cx="352" cy="517" r="4" fill="white" class="c-white" stroke="#000000"/>
-<path d="M592 616 L362 616 Q352 616 352 606 L352 582.5" fill="none" stroke="#000000"/><circle cx="352" cy="578.5" r="4" fill="white" class="c-white" stroke="#000000"/>
+<path d="M592 472 L362 472 Q352 472 352 482 L352 519" fill="none" stroke="#000000"/><circle cx="352" cy="523" r="4" fill="white" class="c-white" stroke="#000000"/>
+<path d="M592 616 L362 616 Q352 616 352 606 L352 576.5" fill="none" stroke="#000000"/><circle cx="352" cy="572.5" r="4" fill="white" class="c-white" stroke="#000000"/>
 <path d="M553 208 L566 208 Q576 208 576 218 L576 229" fill="none" stroke="#000000"/><path d="M576 240 L570 228 L582 228 Z" fill="#000000" stroke="none"/>
 </g>
 </svg>
