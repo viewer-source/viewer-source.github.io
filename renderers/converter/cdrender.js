@@ -404,6 +404,7 @@
       if (fy === 0 || fy === 1) return [[x + (fy === 0 ? h : 0) + fx * (w - h), y + fy * h], true];
       return [[fx === 0 ? x + h * (1 - fy) : x + w - h * fy, y + fy * h], true];
     }
+    if (cls === 'DEGRADED') { x += w / 8; y += h / 8; w *= 3 / 4; h *= 3 / 4; }  // on its drawn circle, 3/4 of the box (AsthmaMap mast cell PDF: no gap)
     return [anchorPoint([x, y, w, h], side, ROUND.indexOf(cls) >= 0, cls === 'PHENOTYPE'), true];
   };
   D.clip = function (i, P, anchored, Q) { return anchored ? P : leave(outline(this.al(i)[0], this.box(i)), P, Q); };

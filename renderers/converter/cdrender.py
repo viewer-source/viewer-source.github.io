@@ -351,6 +351,8 @@ class Drawing:
             if fy in (0, 1):
                 return (x + (h if fy == 0 else 0) + fx * (w - h), y + fy * h), True
             return ((x + h * (1 - fy)) if fx == 0 else (x + w - h * fy), y + fy * h), True
+        if self.alias[i][0] == 'DEGRADED':  # on its drawn circle, 3/4 of the box (AsthmaMap mast cell PDF: no gap)
+            x, y, w, h = x + w / 8, y + h / 8, w * 3 / 4, h * 3 / 4
         # on an ellipse at 22.5 degree steps, on a phenotype's hexagon, else on the box (the converter's rule)
         return anchor_point((x, y, w, h), side, circle=self.alias[i][0] in ROUND, hexagon=self.alias[i][0] == 'PHENOTYPE'), True
 
