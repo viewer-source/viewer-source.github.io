@@ -92,6 +92,11 @@ says "the workbench", "the converter's repository", "a private repository".
   closes, an icon closes the panel and shows its window, the right side stays free; the drawing shifts right only if the
   chosen item would be under it. The one case that needs both, stepping through search results, goes back by the Search
   icon (the results are kept). With the icon column the list is never narrower than 160 px: under it, it closes (user: "two narrow things, not nice"); the buttons 8 px apart.
+- Overlays signs on trial (user, 2026-11-13: "use this legacy space for trying new icons ... we are missing icon for
+  overlays"): seven candidates in the rail before Settings (`data-win="ovl"`, `data-opt` o1 to o7: two layers, three
+  layers, a sheet over a sheet, three values, a network with values, a molecule over a scale, bars), hidden in every
+  look; a style shows them (the styles' Default Icon Column Legacy). A click does nothing until Overlays is built; the
+  chosen sign then gets the window and the others go.
 - Icon row (user, 2026-11-11: "the place for icons is on the top of left panel"; `--m2-icon-row: 1`, with `--m2-icons: 1`,
   off in the viewer's own look): the icon column's icons as a row of tabs at the top of the list's panel (36 px, 21 px
   signs, from the left 6 px apart; a narrower panel drops whole tabs from the right, one by one, user 2026-11-12; so the panel closes only under 90 px, where one tab is left, not at the icon column's 160), the panel fixed beside the map as in the viewer's own look (user: "lets try as in default"), the top bar left
