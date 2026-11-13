@@ -120,9 +120,8 @@
       return btoa(s);
     }
     function changed() {   // after every move, undo or redo: the site's map is saved a few seconds after the last one
-      if (site && !token() && !stuck) { warn('Not saved: connect to GitHub below so the moves are saved to the site.'); return; }   // was silent
       if (!site || !token() || stuck) return;
-      quiet();
+      say('Saving in a moment...');
       clearTimeout(saveTimer); saveTimer = setTimeout(push, AUTOSAVE);
     }
     function push(again) {
@@ -131,7 +130,7 @@
       if (saving) { saveAgain = true; return saving; }
       if (drawing) { saveTimer = setTimeout(push, 300); return Promise.resolve(); }   // the last move not yet in the file
       var target = site, body = src();
-      quiet();
+      say('Saving...');
       saving = api('/contents/' + target.path, { method: 'PUT', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: 'Moved in the viewer: ' + target.path.split('/').pop(), content: b64(body), sha: target.sha, branch: 'main' }) })
         .then(function (r) {
@@ -148,7 +147,7 @@
                 V.store(all);
               }
               if (site === target && src() === body) dirty = false;
-              quiet();
+              say('Saved. In about 2 minutes it is on the site, and this page updates by itself.');   // no clock time (user, 2026-11-12)
             } else if (r.status === 409 || r.status === 422) {
               // GitHub also refuses a save when its branch moved meanwhile (the site's build commits after each save,
               // user, 2026-11-12: "Not saved" at the second move): the file as it is there now is read, and if it is
@@ -162,19 +161,19 @@
                   return push(true);
                 }).catch(conflict);
             } else if (r.status === 401 || r.status === 403 || r.status === 404) {
-              warn('Not saved: the token was refused (' + r.status + '). Connect again with a token that can write to ' + repo() + '.');
+              say('Not saved: the token was refused (' + r.status + '). Connect again with a token that can write to ' + repo() + '.');
               ghForm(true);
-            } else warn('Not saved (' + r.status + '): ' + (d.message || '') + '. The next move tries again.');
+            } else say('Not saved (' + r.status + '): ' + (d.message || '') + '. The next move tries again.');
           });
         })
-        .catch(function (e) { warn('Not saved: no connection (' + e.message + '). The next move tries again.'); })
+        .catch(function (e) { say('Not saved: no connection (' + e.message + '). The next move tries again.'); })
         .then(function () { if (saving !== mine) return; saving = null; if (saveAgain) { saveAgain = false; if (dirty) return push(); } });
       var mine = saving;
       return saving;
     }
     function conflict() {
       stuck = true; pre = null;   // opened again, the map is read afresh
-      warn('Not saved: the map was changed on GitHub since it was opened, and it is not overwritten. Stop editing and open the map again to go on from that version.');
+      say('Not saved: the map was changed on GitHub since it was opened, and it is not overwritten. Stop editing and open the map again to go on from that version.');
     }
     function ghForm(show) {   // the token field: shown while editing a map of this site with no token
       var f = box.querySelector('#m2-ed-gh');
@@ -182,12 +181,7 @@
       box.querySelector('#m2-ed-gh-off').hidden = show || !token() || !repo();
     }
 
-    // the status line says nothing while things work and only what went wrong, in red (user, 2026-11-13: "when everything
-    // works fine, no need to update. I know what I'm doing. But if something goes wrong, this is exactly the note I would
-    // like to see"; no save time or mark by the title either: when and how a map is saved is the system's concern). A
-    // warning stays until the next thing that works.
-    function warn(t) { status.textContent = t; status.classList.add('m2-ed-warn'); }
-    function quiet() { status.textContent = ''; status.classList.remove('m2-ed-warn'); }
+    function say(t) { status.textContent = t; }
 
     // the layout skill's tools (user, 2026-11-12): its own code, copied into renderers/layout/ and run here as it is, on the
     // map's text; only the numbers it changes are written back (tidy.py), so the rest stays byte for byte. One undo step.
@@ -202,19 +196,19 @@
         s.src = '/renderers/layout/layout.js' + V.build; s.onload = function () { res(window.layout); }; s.onerror = function () { rej('layout tools not found'); };
         document.head.appendChild(s);
       });
-      lay.catch(function (e) { lay = null; warn('The layout tools did not load: ' + e); });
+      lay.catch(function (e) { lay = null; say('The layout tools did not load: ' + e); });
       return lay;
     }
     function tool(what, ids, done) {
       if (!on || V.current !== map || !text) return;
-      quiet();
+      say('Working...');
       layout().then(function (L) {
         var r = L.tidy(text, what, ids || [], !!cd);
-        if (r[1] < 0) { warn(done[2]); return; }
-        if (!r[1]) return;   // nothing to change: nothing said
+        if (r[1] < 0) { say(done[2]); return; }
+        if (!r[1]) { say(done[0]); return; }
         remember(false); text = r[0]; parse(); selN = []; selP = []; selE = []; dirty = true;
-        render(); paint(); changed();
-      }).catch(function (e) { warn('Not done: ' + (e && e.message ? e.message.split('\n').slice(-2).join(' ') : e)); });
+        render(); paint(); changed(); say(done[1]);
+      }).catch(function (e) { say('Not done: ' + (e && e.message ? e.message.split('\n').slice(-2).join(' ') : e)); });
     }
     box.querySelector('#m2-ed-tidy-grid').addEventListener('click', function () {
       tool('grid', [], ['The map is on the grid already.', 'The map is on the grid. Ctrl or Cmd with Z takes it back.']);
@@ -367,7 +361,7 @@
         var r = L.tidy(text, 'fit', arg, false);
         if (r[1] > 0) { text = r[0]; parse(); dirty = true; }
         then(r[1]);
-      }).catch(function (e) { warn('Compartments not fitted: ' + (e && e.message ? e.message.split('\n').slice(-2).join(' ') : e)); then(0); });
+      }).catch(function (e) { say('Compartments not fitted: ' + (e && e.message ? e.message.split('\n').slice(-2).join(' ') : e)); then(0); });
     }
     function movedIds(sets) { var a = []; sets.n.forEach(function (i) { a.push(nodes2[i].id); }); return a; }
     // an edge of a compartment under the pointer (5 px on screen), or a handle of one selected: which sides it moves
@@ -541,7 +535,7 @@
         }
         if (t !== ticket) return;
         drawing = false;
-        if (r[1].length) warn('Drawn with warnings: ' + r[1].join('; '));
+        if (r[1].length) say('Drawn with warnings: ' + r[1].join('; '));
         var svg = r[0]; lastSvg = svg; var m = svg.match(/<g transform="translate\(([-\d.]+),([-\d.]+)\)">/);
         var w = svg.match(/ width="([\d.]+)" height="([\d.]+)"/);
         var nx = -parseFloat(m[1]), ny = -parseFloat(m[2]), first = !map.width;
@@ -559,18 +553,19 @@
           pic.querySelectorAll('[data-n]').forEach(function (g) { gN[g.getAttribute('data-n')] = g; });
           pic.querySelectorAll('[data-e]').forEach(function (g) { var k = g.getAttribute('data-e'); (gE[k] = gE[k] || []).push(g); });
           if (first) V.fit(); else V.draw();
-          if (!r[1].length && !saveTimer && !saving && !dirty) quiet();
+          if (!r[1].length && !site) say(name + (dirty ? ' (not saved)' : ''));
+          else if (!r[1].length && site && !saveTimer && !saving && !dirty) say(site.pending ? 'Editing ' + map.title + '. Connect to GitHub below so the moves are saved to the site.' : 'Editing ' + map.title + '. Every move is saved to the site by itself.');
         })();
-      }).catch(function (e) { if (t === ticket) { drawing = false; warn('Not drawn: ' + (e && e.message ? e.message.split('\n').slice(-2).join(' ') : e)); } });
+      }).catch(function (e) { if (t === ticket) { drawing = false; say('Not drawn: ' + (e && e.message ? e.message.split('\n').slice(-2).join(' ') : e)); } });
     }
     function start(t, n, h, s, same) {   // a CellDesigner file is first made into the GraphML the editor edits
       if (!isCd(t)) { cd = null; return begin(t, t, n, h, s, same); }
-      quiet();
+      say('Opening ' + n + '...');
       return cdpy().then(function () { cd = { base: t, now: t }; begin(cdGraphml(t), t, n, h, s, same); })
-        .catch(function (e) { warn('Cannot edit ' + n + ': ' + e); });
+        .catch(function (e) { say('Cannot edit ' + n + ': ' + e); });
     }
     function begin(g, t, n, h, s, same) {   // same: { width, height, x0, y0, scale } of the picture on screen, drawn from this very file
-      try { text = g; parse(); } catch (e) { warn('Cannot edit ' + n + ': ' + e); return; }
+      try { text = g; parse(); } catch (e) { say('Cannot edit ' + n + ': ' + e); return; }
       siteRef = null; name = n; handle = h; site = s || null; if (site) site.base = t; stuck = false; dirty = false; undo = []; redo = []; selN = []; selP = []; selE = [];
       map = { id: 'edit', title: openTitle || n, width: 0, height: 0, scale: 1, downloads: [] };
       if (same) {   // editing starts on the picture as it is: no redraw, the map stays where it is (user, 2026-11-12)
@@ -583,8 +578,8 @@
       V.grid.classList.add('m2-editing');
       buttons();
       gN = gE = null; mv = live = null; liveG = null; copies = []; frozen = false;
-      if (same && same.text === t) { (cd ? cdpy() : yr()).then(function () { if (on && V.current === map && !undo.length && !gN) render(); }); paint(); quiet(); return; }
-      quiet();
+      if (same && same.text === t) { (cd ? cdpy() : yr()).then(function () { if (on && V.current === map && !undo.length && !gN) render(); }); paint(); say((site && site.pending) ? 'Connect to GitHub below so the moves are saved to the site.' : site ? 'Every move is saved to the site by itself.' : 'Editing ' + map.title + '.'); return; }
+      say('Drawing ' + n + '...');
       render();
     }
     function stop() {
@@ -593,7 +588,7 @@
       if (site && site.id && undo.length) V.kept = { id: site.id, v: site.v, sha: site.sha, pic: V.img, width: map.width, height: map.height, x0: picX0(), y0: picY0(), text: src(), ref: siteRef, cur: nowRef() };
       if (helpBox) help(false);
       on = false; drag = null; band = null; V.grid.classList.remove('m2-editing'); paint(); buttons();
-      if (dirty && !site) warn(name + ' has moves not saved: Back to it, or Save.'); else quiet();
+      say(dirty && !site ? name + ' has moves not saved: Back to it, or Save.' : 'Edit the map shown.');
       pre = null; aheadSoon();   // read afresh after editing (a save or a conflict may have changed the repository)
     }
     function buttons() {
@@ -620,13 +615,13 @@
       if (!text) return;
       if (site) { if (token()) push(); return; }
       var blob = new Blob([src()], { type: 'application/xml' });
-      var done = function () { dirty = false; quiet(); };
+      var done = function () { dirty = false; say('Saved ' + name + '.'); };
       var into = function (h) { return h.createWritable().then(function (w) { return w.write(blob).then(function () { return w.close(); }); }).then(done); };
-      if (handle) return into(handle).catch(function (e) { warn('Not saved: ' + e.message); });
+      if (handle) return into(handle).catch(function (e) { say('Not saved: ' + e.message); });
       if (window.showSaveFilePicker) {
         return window.showSaveFilePicker({ suggestedName: name, types: [cd ? { description: 'CellDesigner', accept: { 'application/xml': ['.xml'] } } : { description: 'yEd GraphML', accept: { 'application/xml': ['.graphml'] } }] })
           .then(function (h) { handle = h; name = h.name; return into(h); })
-          .catch(function (e) { if (e.name !== 'AbortError') warn('Not saved: ' + e.message); });
+          .catch(function (e) { if (e.name !== 'AbortError') say('Not saved: ' + e.message); });
       }
       var a = document.createElement('a');   // other browsers: a download
       a.href = URL.createObjectURL(blob); a.download = name; a.click();
@@ -739,15 +734,15 @@
         });
       };
       // the map's own file not loaded (the site's copy missing, no connection): said, not left at Opening
-      var notLoaded = function (e) { warn('Cannot edit ' + m.title + ': its file did not load (' + e + ').'); };
+      var notLoaded = function (e) { say('Cannot edit ' + m.title + ': its file did not load (' + e + ').'); };
       var fromSite = function (s) { return published.then(function (t) { return go(t, s); }).catch(notLoaded); };
-      quiet();
+      say('Opening ' + m.title + '...');
       if (!repo()) return fromSite(null);
       if (!token()) return fromSite({ path: path, sha: null, pending: true });
       p.gh.then(function (g) {
         if (!g) return fromSite(null);   // not a map of this repository: saved as a file
         return go(g.text, { path: path, sha: g.sha }).then(function () { recheck(p, g, m); }, notLoaded);
-      }, function (e) { warn('Could not read the map from GitHub (' + e + '); the token may be refused.'); ghForm(true); });
+      }, function (e) { say('Could not read the map from GitHub (' + e + '); the token may be refused.'); ghForm(true); });
     }
     // the repository's version read ahead may have changed since (another tab, another person): checked once more right
     // after the switch, in the background; with no move made yet editing simply goes on from the newer version, with a
@@ -764,8 +759,8 @@
     box.querySelector('#m2-ed-gh-go').addEventListener('click', function () {
       var v = box.querySelector('#m2-ed-gh-token').value.trim();
       if (!v) return;
-      try { localStorage.setItem(TOKEN_KEY, v); } catch (e) { warn('This browser does not keep the token.'); return; }
-      quiet();
+      try { localStorage.setItem(TOKEN_KEY, v); } catch (e) { say('This browser does not keep the token.'); return; }
+      say('Checking the token...');
       api('').then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); }).then(function (d) {
         if (!d.permissions || !d.permissions.push) throw 'it cannot write to ' + repo();
         box.querySelector('#m2-ed-gh-token').value = '';
@@ -777,19 +772,19 @@
             api('/contents/' + s0.path + '?ref=main', { headers: { Accept: 'application/vnd.github.raw' } }).then(function (r) { return r.text(); })])
             .then(function (f) {
               s0.sha = f[0].sha; s0.pending = false; buttons();
-              if (f[1] !== s0.base) { stuck = true; warn('Connected, but the map in the repository is newer than the copy opened: moves not saved, nothing overwritten. Stop editing and open the map again.'); return; }
-              if (moved) { text = keep; dirty = true; push(); } else quiet();
+              if (f[1] !== s0.base) { stuck = true; say('Connected, but the map in the repository is newer than the copy opened: moves not saved, nothing overwritten. Stop editing and open the map again.'); return; }
+              if (moved) { text = keep; dirty = true; push(); } else say('Connected. Every move is now saved to the site by itself.');
             });
-        } else { buttons(); quiet(); }
+        } else { buttons(); say('Connected. Every move on a map of this site is saved by itself.'); }
       }).catch(function (e) {
         try { localStorage.removeItem(TOKEN_KEY); } catch (x) {}
-        warn('The token was not accepted (' + e + ').'); ghForm(true);
+        say('The token was not accepted (' + e + ').'); ghForm(true);
       });
     });
     box.querySelector('#m2-ed-gh-off').addEventListener('click', function () {
       if (saveTimer) push();
       try { localStorage.removeItem(TOKEN_KEY); } catch (e) {}
-      buttons(); quiet();
+      buttons(); say('Disconnected: the token is removed from this browser.');
     });
     box.querySelector('#m2-ed-this').addEventListener('click', editShown);
     box.querySelector('#m2-ed-grid').addEventListener('click', function () { gridSet.shown = !gridSet.shown; gridKeep(); gridButtons(); paint(); });
