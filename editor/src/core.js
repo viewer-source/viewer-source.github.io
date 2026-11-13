@@ -172,7 +172,7 @@
       return saving;
     }
     function conflict() {
-      stuck = true;
+      stuck = true; pre = null;   // opened again, the map is read afresh
       say('Not saved: the map was changed on GitHub since it was opened, and it is not overwritten. Stop editing and open the map again to go on from that version.');
     }
     function ghForm(show) {   // the token field: shown while editing a map of this site with no token
@@ -589,7 +589,7 @@
       if (helpBox) help(false);
       on = false; drag = null; band = null; V.grid.classList.remove('m2-editing'); paint(); buttons();
       say(dirty && !site ? name + ' has moves not saved: Back to it, or Save.' : 'Edit the map shown.');
-      aheadSoon();
+      pre = null; aheadSoon();   // read afresh after editing (a save or a conflict may have changed the repository)
     }
     function buttons() {
       ['#m2-ed-save', '#m2-ed-undo', '#m2-ed-redo', '#m2-ed-grid', '#m2-ed-snap', '#m2-ed-tidy-grid', '#m2-ed-tidy-pack'].forEach(function (k) { box.querySelector(k).disabled = !on; });   // Grid and Snap too (user, 2026-11-13: on while the rest waited, two stories in one row)   // the layout skill's tools on both formats (a CellDesigner map through cd_edit's GraphML, its ports kept)
@@ -709,8 +709,9 @@
         });
       }, 300);
     }
-    function editShown() {   // the map on screen, if it is drawn from its own GraphML or CellDesigner file
-      var url = graphmlOf(V.current), m = V.current;
+    function editShown() { return editMap(V.current); }   // the map on screen, if it is drawn from its own GraphML or CellDesigner file
+    function editMap(m) {
+      var url = graphmlOf(m);
       if (!url) return;
       if (dirty && !site && !confirm(name + ' has moves not saved. Edit this map instead?')) return;
       if (saveTimer) push();
@@ -732,24 +733,26 @@
           });
         });
       };
-      var fromSite = function (s) { return published.then(function (t) { return go(t, s); }); };
+      // the map's own file not loaded (the site's copy missing, no connection): said, not left at Opening
+      var notLoaded = function (e) { say('Cannot edit ' + m.title + ': its file did not load (' + e + ').'); };
+      var fromSite = function (s) { return published.then(function (t) { return go(t, s); }).catch(notLoaded); };
       say('Opening ' + m.title + '...');
       if (!repo()) return fromSite(null);
       if (!token()) return fromSite({ path: path, sha: null, pending: true });
       p.gh.then(function (g) {
         if (!g) return fromSite(null);   // not a map of this repository: saved as a file
-        return go(g.text, { path: path, sha: g.sha }).then(function () { recheck(p, g); });
-      }).catch(function (e) { say('Could not read the map from GitHub (' + e + '); the token may be refused.'); ghForm(true); });
+        return go(g.text, { path: path, sha: g.sha }).then(function () { recheck(p, g, m); }, notLoaded);
+      }, function (e) { say('Could not read the map from GitHub (' + e + '); the token may be refused.'); ghForm(true); });
     }
     // the repository's version read ahead may have changed since (another tab, another person): checked once more right
     // after the switch, in the background; with no move made yet editing simply goes on from the newer version, with a
     // move made the save finds it and says so, as before
-    function recheck(p, g) {
+    function recheck(p, g, m) {
       var s0 = site;
       api('/contents/' + p.path + '?ref=main').then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
         if (!d || d.sha === g.sha || !on || site !== s0) return;
         if (pre === p) pre = null;
-        if (!undo.length && !dirty) { on = false; editShown(); }
+        if (!undo.length && !dirty) { on = false; editMap(m); }   // the site's map, not the editor's own (V.current is that now)
       }).catch(function () {});
     }
     // the token: pasted once, checked against the repository, kept in this browser only (localStorage)
