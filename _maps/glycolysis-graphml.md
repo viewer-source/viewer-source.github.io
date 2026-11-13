@@ -10,12 +10,12 @@ draft: false
 tag: ""
 image: "/downloads/glycolysis-graphml.svg"
 width: 983
-height: 722
+height: 700
 scale: 1
 annotation: "/atlas-data/glycolysis-graphml.json"
 image_error: ""
-v: "0c85a7b798"
-src: "00c3c69e32c1cec8a908d1721454077f9aa4ddc3"
+v: "c139d4ee5c"
+src: "021c4dd19fdf45caaa6c2fc31fcdbf5c2cd2be98"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "GraphML", "url": "/downloads/glycolysis-graphml.graphml"}, {"label": "SVG", "url": "/downloads/glycolysis-graphml.svg"}, {"label": "SBML", "url": "/downloads/glycolysis-graphml-sbml.xml"}, {"label": "Annotation", "url": "/downloads/glycolysis-graphml.csv"}, {"label": "PNG", "url": "/downloads/glycolysis-graphml.png"}, {"label": "SBGN-ML", "url": "/downloads/glycolysis-graphml.sbgn"}, {"label": "CellDesigner", "url": "/downloads/glycolysis-graphml.xml"}, {"label": "Newt", "url": "http://web.newteditor.org/?URL=https://viewer-source.github.io/downloads/glycolysis-graphml.sbgn"}, {"label": "MINERVA", "url": "https://mreg.elixir-luxembourg.org/minerva/index.html?id=F001-glycolysis"}]
