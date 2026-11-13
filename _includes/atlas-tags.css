@@ -28,13 +28,13 @@
   /* image error: red, the map's images could not be drawn from its current GraphML
      (scripts/make_images.py, user 2026-10-17) */
   .m2-draft.m2-error { color: var(--m2-error); border-color: var(--m2-error); }
-  /* the map's format (user, 2026-11-14: a small letter in a circle, as an info icon; before, E: xml yed sbgn at 8 px
-     #c8c8c8, thick and blurred, then G: one capital letter): c for CellDesigner, y for GraphML (yEd), s for SBGN-ML, from
-     the map's first download, a thin grey circle left of its name; the list's box reaches 10 px into the panel's margin
-     so it fits beside the group's indent and nothing in the list moves. A map in no group, or the list on narrow
-     windows, has no room for it and shows none */
+  /* the map's format (user, 2026-11-14): one letter, almost unseen, left of its name: C for CellDesigner, S for SBGN-ML,
+     none for GraphML, the default; from the map's first download. Tried before the same day: xml yed sbgn at 8 px (thick
+     and blurred), a capital letter for all three, a small letter in a grey circle and colour versions (noisy). The list's
+     box reaches 10 px into the panel's margin so it fits beside the group's indent and nothing in the list moves. A map
+     in no group, or the list on narrow windows, has no room for it and shows none */
   @media (min-width: 941px) { #m2-list { margin-left: -10px; padding-left: 10px; } }
   .m2-item.m2-map { position: relative; }
-  .m2-fmt { position: absolute; right: 100%; top: 50%; transform: translateY(-50%); margin-right: 4px; box-sizing: border-box; width: 13px; height: 13px; border: 1px solid #a8a8a8; border-radius: 50%; display: flex; align-items: center; justify-content: center; font: 400 9px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif; color: #8c8c8c; padding-bottom: 1px; white-space: nowrap; pointer-events: none; }
+  .m2-fmt { position: absolute; right: 100%; bottom: 5px; margin-right: 4px; font: 300 10px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif; color: #c4c4c4; white-space: nowrap; pointer-events: none; }
   .m2-map:not(.m2-sub) .m2-fmt { display: none; }
   @media (max-width: 940px) { .m2-fmt { display: none; } }
