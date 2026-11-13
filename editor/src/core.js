@@ -553,14 +553,56 @@
       write(g, p);
       dirty = true;
     }
+    // undo and redo keep only what changed (review 2026-11-13: a whole copy of the text per step, up to 200, could reach
+    // about 320 MB on the 1.6 MB mast cell GraphML). Each stack's top entry is whole, each entry below a change that
+    // rebuilds it from the entry above, so nothing depends on the text now (a CellDesigner redraw, a late fit or a merged
+    // nudge may change it between steps; review 2026-11-13). A change: the part between the common start and end, and
+    // inside it only the lines that differ when the line count is the same (a move changes numbers in place)
+    function delta(from, to) {   // what rebuilds to from from
+      var a = 0, n = Math.min(from.length, to.length);
+      while (a < n && from.charCodeAt(a) === to.charCodeAt(a)) a++;
+      var b = 0;
+      while (b < n - a && from.charCodeAt(from.length - 1 - b) === to.charCodeAt(to.length - 1 - b)) b++;
+      var fl = from.slice(a, from.length - b).split('\n'), tl = to.slice(a, to.length - b).split('\n'), d = { a: a, b: b, len: to.length };
+      if (fl.length === tl.length) {
+        var at = [], lines = [];
+        for (var i = 0; i < tl.length; i++) if (fl[i] !== tl[i]) { at.push(i); lines.push(tl[i]); }
+        d.at = at; d.lines = JSON.parse(JSON.stringify(lines));   // copies of their own: a slice would keep the whole text alive
+      } else d.mid = JSON.parse(JSON.stringify(to.slice(a, to.length - b)));
+      return d;
+    }
+    function rebuild(d, from) {
+      if (typeof d === 'string') return d;   // a top entry, whole
+      var mid;
+      if (d.at) { mid = from.slice(d.a, from.length - d.b).split('\n'); d.at.forEach(function (i, j) { mid[i] = d.lines[j]; }); mid = mid.join('\n'); }
+      else mid = d.mid;
+      var t = from.slice(0, d.a) + mid + from.slice(from.length - d.b);
+      if (t.length !== d.len) throw 'undo history broken';
+      return t;
+    }
+    function sizeOf(d) { return typeof d === 'string' ? d.length : d.at ? d.lines.reduce(function (k, l) { return k + l.length + 8; }, 0) : d.mid.length; }
+    function step(stack, t) {   // t whole on top; the old top a change from it
+      var top = stack.length - 1;
+      if (top >= 0) stack[top] = delta(t, stack[top]);
+      stack.push(t);
+      for (var k = 0, i = stack.length - 1; i >= 0; i--) { k += sizeOf(stack[i]); if (k > 40e6 || stack.length - i > 200) { stack.splice(0, i + 1); break; } }   // 200 steps or 40 million characters
+    }
+    function take(stack) {   // the top, whole; the one below made whole in its place
+      var t = stack.pop(), top = stack.length - 1;
+      if (top >= 0) stack[top] = rebuild(stack[top], t);
+      return t;
+    }
+    function unpush() { return take(undo); }   // the text before the step just taken, which is taken back
     function remember(merge) {   // the text before a change, for undo; nudges in a row are one step
       var now = Date.now();
-      if (!(merge && now - nudgeAt < 800)) { undo.push(text); if (undo.length > 200) undo.shift(); redo = []; }
+      if (!(merge && now - nudgeAt < 800)) { step(undo, text); redo = []; }
       nudgeAt = merge ? now : 0;
     }
     function back(from, to) {
       if (!from.length) return;
-      to.push(text); text = from.pop(); parse(); selN = []; selP = []; selE = []; part = null; dirty = true; render(); paint(); changed();
+      var t;
+      try { t = take(from); } catch (e) { from.length = 0; warn('Undo history lost: ' + e + '.'); return; }
+      step(to, text); text = t; nudgeAt = 0; parse(); selN = []; selP = []; selE = []; part = null; dirty = true; render(); paint(); changed();
     }
 
     // the drawing: the renderer in the browser; the map keeps its place on screen when the drawing's edges change
@@ -1814,9 +1856,9 @@
       if (d.rs) {   // a compartment resized: its box set, never smaller than what it holds, the ones round it grown
         var nb = liveC && liveC[d.rs.c];
         if (!nb || nb.every(function (v, j) { return Math.abs(v - d.rs.b0[j]) < 0.01; })) { liveOff(); paint(); return; }
-        remember(false);
+        var mine = text; remember(false);
         fitThen({ resize: [nodes2[d.rs.c].id].concat(nb), moved: [] }, function (k) {
-          if (!k) { undo.pop(); liveOff(); paint(); return; }
+          if (!k) { if (undo[undo.length - 1] === mine) unpush(); liveOff(); paint(); return; }   // only this resize's step
           render(); paint(); changed();
         });
         return;
@@ -1825,7 +1867,7 @@
         fitThen({ moved: movedIds(sets) }, function () { render(); changed(); });
       };
       if (d.made != null && Math.abs(d.dx) < 0.01 && Math.abs(d.dy) < 0.01) {   // a new bend dragged back to where it was made (a snap may leave a hair): none made
-        text = undo.pop(); parse(); selP = []; selE = [d.made - 1]; unshift(); paint(); return;
+        text = unpush(); parse(); selP = []; selE = [d.made - 1]; unshift(); paint(); return;
       }
       // a second click on what is selected, with no drag (under 4 px on screen): it is deselected (user, 2026-11-12: "if
       // you click second time and do not move it, then it deselects it"); a bend point of an arc selected keeps its arc

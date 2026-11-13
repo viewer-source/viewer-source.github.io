@@ -253,7 +253,7 @@ says "the workbench", "the converter's repository", "a private repository".
   is selected. The code is
   in `editor/` (user, 2026-11-13: out of the viewer's file, loaded only where the Edit tab is): `editor/src/core.js`
   (selection, drags, guides, grid, undo, saving: one code for both formats, a CellDesigner map being edited as cd_edit's
-  GraphML), `editor/src/graphml.js` (the yEd redraw, the shift out of negative places, compartment outlines while
+  GraphML), undo and redo keeping only what changed (2026-11-13, user: whole copies per step could reach about 320 MB on the mast cell map; each stack's top whole, each entry below the changed lines that rebuild it from the one above; 200 steps or 40 million characters), `editor/src/graphml.js` (the yEd redraw, the shift out of negative places, compartment outlines while
   dragging) and `editor/src/celldesigner.js` (Pyodide with cd_edit and cdrender, the process glyph, guides through it,
   the canvas left out), joined by Jekyll into `editor/editor.js` in one scope (`include_relative`; no Liquid in the
   sources). The viewer loads it once its style turns `--m2-edit` on (`editorLoad`) and hands it `V`, getters and setters
