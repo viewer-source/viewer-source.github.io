@@ -2753,8 +2753,8 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
     // the site's map and edited further until the reader goes back to the site's map. The ids also in localStorage
     // (atlas-edit-drafts), so a browser with none never opens the database. Lost when the browser's site data is
     // cleared, a private window closes, or Safari has not seen the site for 7 days: said in the Edit window
-    var DRAFT_KEY = 'atlas-edit-drafts', drafts = {}, draftDb = null;
-    function hasToken() { try { return !!localStorage.getItem('atlas-edit-token'); } catch (e) { return false; } }
+    var DRAFT_KEY = 'atlas-edit-drafts', TOKEN_KEY = 'atlas-edit-token', drafts = {}, draftDb = null, draftsDone = false, draftsIn;
+    function hasToken() { try { return !!localStorage.getItem(TOKEN_KEY); } catch (e) { return false; } }
     function draftIds() {
       try { var ids = Object.keys(drafts); if (ids.length) localStorage.setItem(DRAFT_KEY, JSON.stringify(ids)); else localStorage.removeItem(DRAFT_KEY); } catch (e) {}
     }
@@ -2780,20 +2780,20 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
       delete drafts[id]; draftIds();
       return draftDo('readwrite', function (st) { return st.delete(id); }).catch(function () {});
     }
-    (function () {   // the drafts read once; the map shown taken again if it has one
+    draftsIn = (function () {   // the drafts read once; the map shown taken again if it has one
       var ids; try { ids = JSON.parse(localStorage.getItem(DRAFT_KEY) || '[]'); } catch (e) { ids = []; }
-      if (!ids.length || !window.indexedDB) return;
-      draftDo('readonly', function (st) { return st.getAll(); }).then(function (all) {
+      if (!ids.length || !window.indexedDB) { draftsDone = true; return Promise.resolve(); }
+      return draftDo('readonly', function (st) { return st.getAll(); }).then(function (all) {
         (all || []).forEach(function (r) { if (r && r.id && !drafts[r.id]) drafts[r.id] = r; });
         draftIds();
         var m = current && byId[current.id];
         if (m && drafts[m.id] && !hasToken() && !grid.classList.contains('m2-editing')) put(m, true);
-      }).catch(function () {});
+      }).catch(function () {}).then(function () { draftsDone = true; });
     })();
     document.getElementById('m2-draft-back').addEventListener('click', function (e) {   // the reader's changes let go
       e.preventDefault();
       var m = current && byId[current.id];
-      if (m) draftDrop(m.id).then(function () { if (current && current.id === m.id) put(m, true); });
+      if (m) (editor ? editor.unkeep(m.id) : draftDrop(m.id)).then(function () { if (current && current.id === m.id) put(m, true); });
     });
   // the viewer's names the editor reads and writes
   var V = Object.defineProperties({ level: EDIT_LEVEL, build: BUILD, renderers: RENDERERS }, {
@@ -2826,6 +2826,9 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
     keep: { get: function () { return keep; } },
     draftPut: { get: function () { return draftPut; } },
     draftDrop: { get: function () { return draftDrop; } },
+    draftsIn: { get: function () { return draftsIn; } },
+    draftsDone: { get: function () { return function () { return draftsDone; }; } },
+    tokenKey: { get: function () { return TOKEN_KEY; } },
     maps: { get: function () { return maps; } },   // the list in its order (the editor reads ahead nearest the map shown first)
     netIdle: { get: function () { return function () { return !busy && !queue.length; }; } }   // the pictures all in
   });

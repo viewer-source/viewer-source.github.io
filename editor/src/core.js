@@ -40,7 +40,7 @@
     // drawn on the picture at once, until the renderer has drawn the map again
     var liveC = null, liveOrig = null;
     // saving to the site: the repository is the site's own (<owner>.github.io), the map's source maps/<file>.graphml
-    var TOKEN_KEY = 'atlas-edit-token', AUTOSAVE = 3000;
+    var TOKEN_KEY = V.tokenKey, AUTOSAVE = 3000;   // the key is the viewer's (it ignores drafts while a token is in)
     var site = null;               // { path, sha } of the map being edited, when it is a map of this site
     var saveTimer = null, saving = null, saveAgain = false, stuck = false;
     // the click data (user, 2026-11-12): the site's boxes of the nodes are those of its own version; the boxes of the
@@ -187,11 +187,18 @@
       if (!drawn && !force) { localTimer = setTimeout(local, 300); return; }
       localFor = null;
       var t = src();
-      if (t === s.pub) { V.draftDrop(s.id); dirty = false; localBox(); return; }
+      if (atSite()) { V.draftDrop(s.id); dirty = false; localBox(); return; }
       if (!lastSvg) return;
       V.draftPut(s.id, { v: s.v, text: t, svg: lastSvg, width: map.width, height: map.height, x0: picX0(), y0: picY0(), ref: siteRef, cur: nowRef(), at: Date.now() })
         .then(function () { if (site === s && src() === t) dirty = false; })
         .catch(function (e) { if (site === s) warn('Not kept in this browser: ' + (e && e.message ? e.message : e) + '. Download the map to keep your changes.'); });
+    }
+    // the map as the site has it: its text, or every move undone (a map shifted out of negative places never gives the
+    // site's text back: the review, 2026-11-13)
+    function atSite() { return site.pending && (src() === site.pub || (!undo.length && !site.fromDraft)); }
+    function unkeep(id) {   // the reader's changes let go (Back to the site's map, a token connected): a write waiting dropped too
+      if (localFor && localFor.id === id) { clearTimeout(localTimer); localTimer = null; localFor = null; }
+      return V.draftDrop(id);
     }
     // the first layer said in the Edit window while a map of the site is edited with no token, once a move is made: the
     // explanation the first time in this browser, the download always (texts approved by the user, 2026-11-13)
@@ -610,6 +617,7 @@
     // another map is opened before it is done (review 2026-11-13: leaving at once left edit mode on, autosave armed)
     var opening = 0;
     function start(t, n, h, s, same) {   // a CellDesigner file is first made into the GraphML the editor edits
+      if (localTimer) local(true);   // the last move of the map before kept first, before cd and text change (the review, 2026-11-13)
       if (!isCd(t)) { cd = null; return begin(t, t, n, h, s, same); }
       quiet();
       var tk = opening;
@@ -617,7 +625,6 @@
         .catch(function (e) { if (tk === opening) warn('Cannot edit ' + n + ': ' + e); });
     }
     function begin(g, t, n, h, s, same) {   // same: { width, height, x0, y0, scale } of the picture on screen, drawn from this very file
-      if (localTimer) local(true);   // the last move of the map before kept first
       try { text = g; parse(); } catch (e) { warn('Cannot edit ' + n + ': ' + e); return; }
       siteRef = null; name = n; handle = h; site = s || null;
       if (site) { site.base = site.pending && site.pub != null ? site.pub : t; site.fromDraft = t !== site.base; }   // no token: the site's text, a draft on top of it
@@ -640,7 +647,7 @@
     function stop() {
       if (!on) return;
       if (saveTimer) push();   // a move still waiting is saved now
-      if (site && site.id && undo.length && !(site.pending && src() === site.pub))
+      if (site && site.id && undo.length && !atSite())
         V.kept = { id: site.id, v: site.v, sha: site.sha, pic: V.img, width: map.width, height: map.height, x0: picX0(), y0: picY0(), text: src(), ref: siteRef, cur: nowRef(), draft: !!site.pending };
       if (helpBox) help(false);
       on = false; drag = null; band = null; V.grid.classList.remove('m2-editing'); paint(); buttons();
@@ -915,6 +922,7 @@
     function editMap(m) {
       var url = graphmlOf(m);
       if (!url) return;
+      if (!V.draftsDone()) { V.draftsIn.then(function () { setTimeout(shown, 0); }); return; }   // a draft of this map read first (the review, 2026-11-13)
       if (dirty && !site && !confirm(name + ' has moves not saved. Edit this map instead?')) return;
       if (saveTimer) push();
       var tk = ++opening;
@@ -984,7 +992,7 @@
             .then(function (f) {
               s0.sha = f[0].sha; s0.pending = false; buttons();
               if (f[1] !== s0.base) { stuck = true; warn('Connected, but the map in the repository is newer than the copy opened: moves not saved, nothing overwritten. Stop editing and open the map again.'); return; }
-              if (s0.id) V.draftDrop(s0.id);   // GitHub holds the map from now on
+              if (s0.id) unkeep(s0.id);   // GitHub holds the map from now on
               if (moved) { text = keep; dirty = true; push(); } else quiet();
             });
         } else { buttons(); quiet(); }
@@ -996,6 +1004,7 @@
     box.querySelector('#m2-ed-gh-off').addEventListener('click', function () {
       if (saveTimer) push();
       try { localStorage.removeItem(TOKEN_KEY); } catch (e) {}
+      if (site && !site.pending) { site.pending = true; site.pub = site.saved || site.base; site.fromDraft = false; }   // further moves kept in this browser (the review: else lost silently)
       buttons(); quiet();
     });
     box.querySelector('#m2-ed-this').addEventListener('click', editShown);
