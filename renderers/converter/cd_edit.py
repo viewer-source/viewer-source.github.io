@@ -19,6 +19,9 @@
 #   user puts and moves. (Before, a glyph moved took its segment and an end at a node became a new bend point.)
 #   Left as they are, drawn but not editable: logic gates, associations and dissociations (their geometry stays in
 #   CellDesigner's frames, so it stretches with the nodes).
+#   For the layout skill's Pack and Snap map to grid (user, 2026-11-13), the GraphML also carries each complex's name as an
+#   inside bottom label and the marks round an alias (residues, structural states, an open unit of information) as state
+#   labels, so the tools leave them room; nothing reads them back.
 #     graphml(cd_text) -> GraphML text;  apply(cd_text, graphml_text) -> CellDesigner text
 import io, math, re
 from xml.sax.saxutils import escape
@@ -133,6 +136,49 @@ def target(m, sq, fl):
 
 # the GraphML -----------------------------------------------------------------------------------------------------
 
+def marks(d, i):
+    # what CellDesigner draws round an alias beyond its box, as cdrender draws it (absolute x, y, w, h): residue
+    # circles and structural states on the border of each copy of a multimer, the open unit of information on the
+    # front copy. Given to the layout skill's tools as state labels, so Pack keeps them apart as on a yEd map
+    cls, (x, y, w, h), a, name, si = d.alias[i]
+    hd = si.find('cd:state/cd:homodimer', NS) if si is not None else None
+    n = int(hd.text) if hd is not None else 1
+    fw, fh = w - 6 * (n - 1), h - 6 * (n - 1)
+    pref = si.find('cd:proteinReference', NS) if si is not None else None
+    pid = pref.text if pref is not None else None
+    out = []
+    for k in range(n):
+        b = (x + 6 * k, y + 6 * k, fw, fh)
+        for (p_, r_), (ang, site) in d.residues.items():
+            if p_ == pid:
+                px, py = cdrender.on_border(b, ang)
+                out.append((px - 8, py - 8, 16.0, 16.0))
+        for st in si.iterfind('cd:state/cd:listOfStructuralStates/cd:structuralState', NS) if si is not None else ():
+            sa = a.find('cd:structuralState', NS)
+            px, py = cdrender.on_border(b, float(sa.get('angle')) if sa is not None else -math.pi / 2)
+            rx = int(cdrender.width(st.get('structuralState') or '', 10) / 2 + 12)
+            out.append((px - rx, py - 8, 2.0 * rx, 16.0))
+    info = a.find('cd:info', NS)
+    if info is not None and info.get('state') == 'open':
+        out.append((x + fw / 2 - 35, y - 8, 70.0, 16.0))
+    return out
+
+
+def labels(d, i, b):
+    # the labels the layout skill's tools read: a complex's name inside at the bottom, where cdrender writes it (its
+    # height, lines 7/6 of the font apart), and the marks round the alias as state icons
+    cls, a, name = d.alias[i][0], d.alias[i][2], d.alias[i][3]
+    s = ''
+    if cls == 'COMPLEX':
+        fe = a.find('cd:font', NS)
+        z = float(fe.get('size')) if fe is not None and fe.get('size') else 12.0
+        s += '<y:NodeLabel modelName="internal" modelPosition="b" height="%r">%s</y:NodeLabel>' % (
+            z * 7 / 6 * len(d.name_lines(name)), escape(' '.join(d.name_lines(name)) or ' '))
+    for m in marks(d, i):
+        s += '<y:NodeLabel iconData="cdmark" x="%r" y="%r" width="%r" height="%r"/>' % (m[0] - b[0], m[1] - b[1], m[2], m[3])
+    return s
+
+
 def graphml(text, off=(0.0, 0.0)):
     # off: subtracted from every place, so the editor keeps its own frame when the file's map was shifted (place())
     d = drawing(text)
@@ -158,6 +204,7 @@ def graphml(text, off=(0.0, 0.0)):
     out = ['<?xml version="1.0" encoding="UTF-8"?>',
            '<graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:y="http://www.yworks.com/xml/graphml">',
            '  <key for="node" id="d6" yfiles.type="nodegraphics"/>', '  <key for="edge" id="d10" yfiles.type="edgegraphics"/>',
+           '  <key for="graphml" id="d7" yfiles.type="resources"/>',
            '  <graph edgedefault="directed" id="G">']
     geo = lambda b: '<y:Geometry x="%r" y="%r" width="%r" height="%r"/>' % (b[0] - off[0], b[1] - off[1], float(b[2]), float(b[3]))
 
@@ -176,15 +223,15 @@ def graphml(text, off=(0.0, 0.0)):
             real = ('<y:GroupNode>%s<y:Shape type="%s"/><y:Insets%s/><y:BorderInsets bottom="0" bottomF="0.0" left="0" leftF="0.0" right="0" rightF="0.0" top="0" topF="0.0"/></y:GroupNode>'
                     % (geo(b), shape, ins))
         elif d.alias[i][0] == 'COMPLEX':
-            real = ('<y:GenericGroupNode configuration="com.yworks.sbgn.Complex">%s<y:StyleProperties><y:Property name="com.yworks.sbgn.style.radiusX" value="5"/><y:Property name="com.yworks.sbgn.style.radiusY" value="5"/></y:StyleProperties>'
-                    '<y:Insets bottom="0" bottomF="0.0" left="0" leftF="0.0" right="0" rightF="0.0" top="0" topF="0.0"/><y:BorderInsets bottom="0" bottomF="0.0" left="0" leftF="0.0" right="0" rightF="0.0" top="0" topF="0.0"/></y:GenericGroupNode>' % geo(b))
+            real = ('<y:GenericGroupNode configuration="com.yworks.sbgn.Complex">%s%s<y:StyleProperties><y:Property name="com.yworks.sbgn.style.radiusX" value="5"/><y:Property name="com.yworks.sbgn.style.radiusY" value="5"/></y:StyleProperties>'
+                    '<y:Insets bottom="0" bottomF="0.0" left="0" leftF="0.0" right="0" rightF="0.0" top="0" topF="0.0"/><y:BorderInsets bottom="0" bottomF="0.0" left="0" leftF="0.0" right="0" rightF="0.0" top="0" topF="0.0"/></y:GenericGroupNode>' % (geo(b), labels(d, i, b)))
         else:
             k = SHAPE.get(d.alias[i][0], 'rectangle')
             props = '<y:StyleProperties><y:Property name="com.yworks.sbgn.style.radius" value="5"/></y:StyleProperties>' if k == 'Macromolecule' else ''
             if k in ('ellipse', 'rectangle'):
-                out.append('%s<node id="%s"><data key="d6"><y:ShapeNode>%s<y:Shape type="%s"/></y:ShapeNode></data></node>' % (s, escape(i), geo(b), k))
+                out.append('%s<node id="%s"><data key="d6"><y:ShapeNode>%s%s<y:Shape type="%s"/></y:ShapeNode></data></node>' % (s, escape(i), geo(b), labels(d, i, b), k))
             else:
-                out.append('%s<node id="%s"><data key="d6"><y:GenericNode configuration="com.yworks.sbgn.%s">%s%s</y:GenericNode></data></node>' % (s, escape(i), k, geo(b), props))
+                out.append('%s<node id="%s"><data key="d6"><y:GenericNode configuration="com.yworks.sbgn.%s">%s%s%s</y:GenericNode></data></node>' % (s, escape(i), k, geo(b), labels(d, i, b), props))
             return
         out.append('%s<node id="%s" yfiles.foldertype="group"><data key="d6"><y:ProxyAutoBoundsNode><y:Realizers active="0">%s</y:Realizers></y:ProxyAutoBoundsNode></data>'
                    % (s, escape(i), real))
@@ -228,7 +275,8 @@ def graphml(text, off=(0.0, 0.0)):
                 edge('%s|r%d' % (rid, l['n']), l['alias'], g, o, j, l['bends'])
             else:
                 edge('%s|p%d' % (rid, l['n']), g, l['alias'], j, o, l['bends'])
-    out += ['  </graph>', '</graphml>', '']
+    # the marks round an alias count as state icons for the layout skill's Pack (a first row's in the top margin)
+    out += ['  </graph>', '  <data key="d7"><y:Resources><y:Resource id="cdmark"><y:GenericNode configuration="com.yworks.sbgn.StateVariable"/></y:Resource></y:Resources></data>', '</graphml>', '']
     return '\n'.join(out)
 
 

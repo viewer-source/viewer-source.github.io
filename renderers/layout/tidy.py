@@ -8,6 +8,10 @@
 #                                 smaller than what it holds; the compartments round it and round the nodes moved grow to
 #                                 hold them, never shrink; their BorderInsets fitted (and those of the complexes round the
 #                                 nodes moved), so yEd keeps the boxes. Nodes keep their sizes.
+#   keep_ports                    a CellDesigner map (the GraphML the converter's cd_edit makes of it): every line keeps
+#                                 its ports, as CellDesigner keeps a line's connection point on the node (one of its 16)
+#                                 and moves it with the node, so a tool moving or resizing nodes never changes where a
+#                                 line meets them (snap_grid's straightened ports had turned ENE into E)
 # Returns [new text, how many attributes changed]. The tools change attributes only, never add or remove elements, so the
 # n-th start tag of the text is the n-th element lxml reads.
 import re
@@ -72,7 +76,7 @@ def fit(root, resize=None, moved=()):
                 bi.set(k, str(int(round(v)))); bi.set(k + 'F', repr(v))
 
 
-def tidy(text, what, ids=()):
+def tidy(text, what, ids=(), keep_ports=False):
     root = etree.fromstring(text.encode('utf-8'))
     els = list(root.iter(etree.Element))
     before = [dict(e.attrib) for e in els]
@@ -83,6 +87,9 @@ def tidy(text, what, ids=()):
     else:
         complex_pack.pack(root)
     after = [dict(e.attrib) for e in els]
+    if keep_ports:
+        PATH = '{http://www.yworks.com/xml/graphml}Path'
+        after = [b if e.tag == PATH else a for e, a, b in zip(els, after, before)]
     if what == 'pack' and ids:   # only the complexes chosen: what they hold, the ends of their arcs, the groups round them
         G = complex_pack.G
         chosen = []   # a complex chosen, or the complex round a member chosen

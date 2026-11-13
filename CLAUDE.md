@@ -256,7 +256,13 @@ says "the workbench", "the converter's repository", "a private repository".
   new bend points); anchor (bend) points come only from the user, by dragging a line as in yEd, and go by Delete or Backspace on a selected one or Remove anchor point in the right-click menu over one (user, 2026-11-13; GraphML maps too, as yEd's Delete); the reaction is CellDesigner's own model (user, 2026-11-13): its main line's ends and anchor points, the square midway on segment rectangleIndex (an anchor point put before it moves the square to the segment after), added reactants and products at 3/8 and 5/8 of that segment, modifiers at the square's spots, worked out live and when saving from the same numbers; the glyph stays midway on its segment, and follows
   it during a drag or a held arrow key, its lines drawn live (user, 2026-11-12: it jumped there only on release; the
   editor reckons the middle as cd_edit does, so the glyph does not jump when the map is drawn again). Saved to
-  `maps/<file>.xml`. Not on CellDesigner maps: Pack and Snap map to grid (the layout skill's GraphML scripts), the live
+  `maps/<file>.xml`. Pack and Snap map to grid on CellDesigner maps too (user, 2026-11-13: "complex repack and snap to
+  grid in Cell Designer"): the layout skill's scripts run on cd_edit's GraphML, which carries each complex's name as an
+  inside bottom label (its height as cdrender writes it) and the residue circles, structural states and open unit of
+  information round an alias as state labels, so Pack leaves them room as on a yEd map; every line keeps its connection
+  point (tidy.py `keep_ports`: CellDesigner moves it with the node, and snap_grid's straightened ports had turned ENE into
+  E); cd_edit writes back the bounds, inner positions and anchor points that changed. Checked on the 21 demo maps (both
+  tools, the files read back, no connection point changed). Not on CellDesigner maps: the live
   outline of a compartment resized (it is redrawn after the drag); logic gates, associations and dissociations are left
   as they are (none on the demo). Checked 2026-11-12: all 21 demo maps written back byte for byte with no move, every
   process glyph where cdrender draws it, 259 moves leaving every bend point in place, live on SREBP (a molecule, a glyph,
