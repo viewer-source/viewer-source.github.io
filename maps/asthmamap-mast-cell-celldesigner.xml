@@ -40611,12 +40611,11 @@ Synonyms: (5Z, 13E)-(15S)-9alpha, 11alpha-Epidioxy-15-hydroxyprosta-5, 13-dienoa
 </celldesigner:connectScheme>
 <celldesigner:editPoints>0.8462296818655758,0.0016311554567499714</celldesigner:editPoints>
 <celldesigner:listOfModification>
-<celldesigner:modification  type="PHYSICAL_STIMULATION"  modifiers="s_id_sa178"  aliases="sa178"  targetLineIndex="0,2"  editPoints="-0.03165442300528591,0.04258011146272255 0.6376002260388796,-0.09461246251133192">
+<celldesigner:modification  type="PHYSICAL_STIMULATION"  modifiers="s_id_sa178"  aliases="sa178"  targetLineIndex="0,2"  editPoints="0.637600226039,-0.094612462511">
 <celldesigner:connectScheme connectPolicy="direct" >
 <celldesigner:listOfLineDirection>
-<celldesigner:lineDirection  index="0" value="unknown"/>
-<celldesigner:lineDirection  index="1" value="unknown"/>
-<celldesigner:lineDirection  index="2" value="unknown"/>
+<celldesigner:lineDirection index="0" value="unknown"/>
+<celldesigner:lineDirection index="1" value="unknown"/>
 </celldesigner:listOfLineDirection>
 </celldesigner:connectScheme>
 <celldesigner:linkTarget species="s_id_sa178" alias="sa178">
