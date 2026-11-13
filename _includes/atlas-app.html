@@ -2767,8 +2767,9 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
       if (!draftDb) draftDb = new Promise(function (res, rej) {
         var r = indexedDB.open('atlas-edit-drafts', 2);
         r.onupgradeneeded = function () { ['maps', 'folder'].forEach(function (n) { if (!r.result.objectStoreNames.contains(n)) r.result.createObjectStore(n); }); };
-        r.onsuccess = function () { res(r.result); };
+        r.onsuccess = function () { var d = r.result; d.onversionchange = function () { d.close(); draftDb = null; }; res(d); };   // a newer page's upgrade not held up by this one
         r.onerror = function () { rej(r.error); };
+        r.onblocked = function () { draftDb = null; rej(new Error('another tab of this site holds the stored edits; close it and reload')); };
       });
       return draftDb.then(function (d) {
         return new Promise(function (res, rej) {
@@ -2798,24 +2799,33 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
     // the reader's folder (layer 2, user, 2026-11-13: the editor writes into it): { dir (its handle), files (map id ->
     // { name, mod }: the files written here) } kept beside the drafts; its name also in localStorage, so the texts can
     // name it at once and a browser with none never opens the database for it
-    var FOLDER_KEY = 'atlas-edit-folder', folderRec;
+    var FOLDER_KEY = 'atlas-edit-folder';
     function folderName() { try { return localStorage.getItem(FOLDER_KEY) || ''; } catch (e) { return ''; } }
-    function folder() {
-      if (folderRec !== undefined) return Promise.resolve(folderRec);
-      if (!folderName() || !window.indexedDB) return Promise.resolve(folderRec = null);
-      return draftDo('readonly', function (st) { return st.get('dir'); }, 'folder').then(function (r) { return (folderRec = r || null); }, function () { return null; });
+    function folder() {   // read afresh each time: another tab of the site may have written a file since (the review, 2026-11-13)
+      if (!folderName() || !window.indexedDB) return Promise.resolve(null);
+      return draftDo('readonly', function (st) { return st.get('dir'); }, 'folder').then(function (r) { return r || null; });   // a failed read rejects: never taken for no folder
     }
-    function folderSet(r) {
-      folderRec = r;
-      try { localStorage.setItem(FOLDER_KEY, r.dir.name); } catch (e) {}
-      return draftDo('readwrite', function (st) { return st.put(r, 'dir'); }, 'folder');
+    function folderSet(dir) {   // a folder chosen: its name said only once it is stored
+      return draftDo('readwrite', function (st) { return st.put({ dir: dir, files: {} }, 'dir'); }, 'folder')
+        .then(function () { try { localStorage.setItem(FOLDER_KEY, dir.name); } catch (e) {} });
+    }
+    function folderFile(id, w) {   // one file written: only its own entry changed, in one step
+      return draftDo('readwrite', function (st) {
+        var q = st.get('dir');
+        q.onsuccess = function () { var r = q.result; if (r) { r.files[id] = w; st.put(r, 'dir'); } };
+        return q;
+      }, 'folder');
+    }
+    function folderForget() {   // the folder gone or refused: Choose a folder offered again
+      try { localStorage.removeItem(FOLDER_KEY); } catch (e) {}
+      return draftDo('readwrite', function (st) { return st.delete('dir'); }, 'folder').catch(function () {});
     }
     // text 6 (approved by the user, 2026-11-13): after editing, the changes in this browser only and no folder yet, once a
     // day at most, where a folder can be chosen
     var nudged = null;
     function nudge(m, kp) {
       var show = false;
-      if (kp && kp.draft && editor && 'showDirectoryPicker' in window && !folderName()) {
+      if (kp && kp.draft && 'showDirectoryPicker' in window && !folderName()) {
         var day = new Date().toDateString(), last = null;
         try { last = localStorage.getItem('atlas-edit-nudged'); } catch (e) {}
         if (nudged === m.id) show = true;
@@ -2825,7 +2835,9 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
     }
     document.getElementById('m2-draft-folder').addEventListener('click', function (e) {
       e.preventDefault();
-      if (editor) editor.chooseFolder().then(function () { if (folderName()) document.getElementById('m2-draft-keep').hidden = true; });
+      var k = document.getElementById('m2-draft-keep');
+      if (!editor) { editorLoad(); return; }   // the editor not loaded yet (a page just opened): a moment, then the link works
+      editor.chooseFolder().then(function () { if (folderName()) k.hidden = true; }, function (er) { k.textContent = 'No folder chosen: ' + (er && er.message ? er.message : er) + '.'; });
     });
     document.getElementById('m2-draft-back').addEventListener('click', function (e) {   // the reader's changes let go
       e.preventDefault();
@@ -2869,6 +2881,8 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
     drafts: { get: function () { return drafts; } },
     folder: { get: function () { return folder; } },
     folderSet: { get: function () { return folderSet; } },
+    folderFile: { get: function () { return folderFile; } },
+    folderForget: { get: function () { return folderForget; } },
     folderName: { get: function () { return folderName; } },
     maps: { get: function () { return maps; } },   // the list in its order (the editor reads ahead nearest the map shown first)
     netIdle: { get: function () { return function () { return !busy && !queue.length; }; } }   // the pictures all in
