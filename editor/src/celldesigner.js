@@ -27,6 +27,15 @@
       cdp.catch(function (e) { cdp = null; say('The CellDesigner renderer did not load: ' + e); });
       return cdp;
     }
+    // a CellDesigner file made into the editor's GraphML once per text (read ahead while the map is shown, then at the
+    // switch and for the click data the same text again): the last few kept
+    var cdMemo = [];
+    function cdGraphml(t) {
+      for (var i = 0; i < cdMemo.length; i++) if (cdMemo[i][0] === t) return cdMemo[i][1];
+      var g = cdJs.graphml(t);
+      cdMemo.unshift([t, g]); cdMemo.length = Math.min(cdMemo.length, 3);
+      return g;
+    }
     function glyphMid(q, B, P, pp) {   // where cd_edit puts the glyph: midway on its segment, an end at a node cut at its box
       var ea = edges2[q.a], eb = edges2[q.b], o = function (e, a) {
         if (pp && pp.to && edges2[pp.k] === e && (pp.end ? 't' : 's') === a[0]) return pp.to[a[1] === 'x' ? 0 : 1];

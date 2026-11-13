@@ -137,6 +137,7 @@
           return r.json().then(function (d) {
             if (r.ok) {
               target.sha = d.content.sha; target.saved = body;
+              pre = null;   // what was read ahead is older than this save
               if (V.kept && V.kept.id === target.id) V.kept.sha = target.sha;
               var sm = V.byId[target.id];
               if (sm) target.v = V.ver(sm);   // the site's version still without this move
@@ -555,7 +556,7 @@
     function start(t, n, h, s, same) {   // a CellDesigner file is first made into the GraphML the editor edits
       if (!isCd(t)) { cd = null; return begin(t, t, n, h, s, same); }
       say('Opening ' + n + '...');
-      return cdpy().then(function (p) { cd = { base: t, now: t }; begin(p.graphml(t), t, n, h, s, same); })
+      return cdpy().then(function () { cd = { base: t, now: t }; begin(cdGraphml(t), t, n, h, s, same); })
         .catch(function (e) { say('Cannot edit ' + n + ': ' + e); });
     }
     function begin(g, t, n, h, s, same) {   // same: { width, height, x0, y0, scale } of the picture on screen, drawn from this very file
@@ -584,9 +585,10 @@
       if (helpBox) help(false);
       on = false; drag = null; band = null; V.grid.classList.remove('m2-editing'); paint(); buttons();
       say(dirty && !site ? name + ' has moves not saved: Back to it, or Save.' : 'Edit the map shown.');
+      aheadSoon();
     }
     function buttons() {
-      ['#m2-ed-save', '#m2-ed-undo', '#m2-ed-redo', '#m2-ed-tidy-grid', '#m2-ed-tidy-pack'].forEach(function (k) { box.querySelector(k).disabled = !on; });   // the layout skill's tools on both formats (a CellDesigner map through cd_edit's GraphML, its ports kept)
+      ['#m2-ed-save', '#m2-ed-undo', '#m2-ed-redo', '#m2-ed-grid', '#m2-ed-snap', '#m2-ed-tidy-grid', '#m2-ed-tidy-pack'].forEach(function (k) { box.querySelector(k).disabled = !on; });   // Grid and Snap too (user, 2026-11-13: on while the rest waited, two stories in one row)   // the layout skill's tools on both formats (a CellDesigner map through cd_edit's GraphML, its ports kept)
       box.querySelector('#m2-ed-save').hidden = !!site;   // a map of the site saves by itself
       ghForm(!!(on && site && !token()));
       box.querySelector('#m2-ed-back').hidden = on || !text;
@@ -622,29 +624,72 @@
       setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
       done();
     }
-    function editShown() {   // the map on screen, if it is drawn from a GraphML
+    // what editing a map needs, loaded ahead while the map is only shown (user, 2026-11-13: the switch to edit should
+    // be "immediate and immediately functional", not only look so): the map's own file, the frame of its drawing, with a
+    // token the repository's version and its sha, the renderer and, on a CellDesigner map, the GraphML the editor edits.
+    // The switch then waits for nothing. Dropped after a save, when editing stops and when the site's version changes.
+    var pre = null, preTimer = null;
+    function preKey(m) { return m.id + '|' + V.ver(m) + '|' + (repo() && token() ? 'gh' : ''); }
+    function ahead(m) {
+      var url = graphmlOf(m);
+      if (!url) return null;
+      var key = preKey(m);
+      if (pre && pre.key === key) return pre;
+      var file = url.split('?')[0].split('/').pop(), path = 'maps/' + file, cdm = cdMap(m);
+      var p = { key: key, path: path, file: file };
+      p.sitePub = fetch(url, { cache: 'no-cache' }).then(function (r) { if (!r.ok) throw r.status; return r.text(); });
+      p.siteFrame = fetch(m.image + V.ver(m)).then(function (r) { return r.text(); }).then(function (svg) {
+        var t = svg.match(/<g transform="translate\(([-\d.]+),([-\d.]+)\)">/), w = svg.match(/ width="([\d.]+)" height="([\d.]+)"/);
+        return w ? { width: parseFloat(w[1]), height: parseFloat(w[2]), x0: t ? -parseFloat(t[1]) : 0, y0: t ? -parseFloat(t[2]) : 0, scale: 1 } : null;   // a CellDesigner drawing: no offset
+      }).catch(function () { return null; });
+      // the repository's version (newer than the site while a build runs) and its sha, which makes GitHub refuse a save
+      // over a version changed meanwhile; null: not a map of this repository (saved as a file)
+      p.gh = !(repo() && token()) ? Promise.resolve(undefined) : Promise.all([
+        api('/contents/' + path + '?ref=main'),
+        api('/contents/' + path + '?ref=main', { headers: { Accept: 'application/vnd.github.raw' } })
+      ]).then(function (r) {
+        if (r[0].status === 404) return null;
+        if (!r[0].ok) throw r[0].status;
+        if (!r[1].ok) throw r[1].status;
+        return Promise.all([r[0].json(), r[1].text()]).then(function (d) { return { sha: d[0].sha, text: d[1] }; });
+      });
+      var drop = function () { if (pre === p) pre = null; };
+      p.sitePub.catch(drop); p.gh.catch(drop);
+      // the renderer, and a CellDesigner file made into the editor's GraphML now, not at the switch
+      (cdm ? cdpy() : yr()).then(function () {
+        if (!cdm) return;
+        return Promise.all([p.sitePub, p.gh]).then(function (r) { cdGraphml(r[0]); if (r[1]) cdGraphml(r[1].text); });
+      }).catch(function () {});
+      pre = p;
+      return p;
+    }
+    function aheadSoon() {   // after the map has shown, when the browser is idle, only where the Edit tab is
+      clearTimeout(preTimer);
+      preTimer = setTimeout(function () {
+        (window.requestIdleCallback || function (f) { setTimeout(f, 0); })(function () {
+          var eb = document.querySelector('#m2-rail .m2-ri[data-win="edit"]');
+          if (on || !eb || !eb.offsetParent) return;
+          ahead(V.current);
+        });
+      }, 300);
+    }
+    function editShown() {   // the map on screen, if it is drawn from its own GraphML or CellDesigner file
       var url = graphmlOf(V.current), m = V.current;
       if (!url) return;
       if (dirty && !site && !confirm(name + ' has moves not saved. Edit this map instead?')) return;
       if (saveTimer) push();
-      var file = url.split('?')[0].split('/').pop(), path = 'maps/' + file;
-      // the picture on screen is the site's drawing of its published GraphML: its frame (size and the offset of yEd's
+      var p = ahead(m), file = p.file, path = p.path;
+      // the picture on screen is the site's drawing of its published file: its frame (size and the offset of yEd's
       // coordinates) is read from that SVG, so editing starts on it without a redraw; the moved map is drawn again
       var k = V.keep(m), shownPic = V.img;
-      // the site's own version (its GraphML and the frame of its drawing): what its click data was made from
-      var sitePub = fetch(url, { cache: 'no-cache' }).then(function (r) { return r.text(); });
-      var siteFrame = fetch(m.image + V.ver(m)).then(function (r) { return r.text(); }).then(function (svg) {
-        var t = svg.match(/<g transform="translate\(([-\d.]+),([-\d.]+)\)">/), w = svg.match(/ width="([\d.]+)" height="([\d.]+)"/);
-        return w ? { width: parseFloat(w[1]), height: parseFloat(w[2]), x0: t ? -parseFloat(t[1]) : 0, y0: t ? -parseFloat(t[2]) : 0, scale: 1 } : null;   // a CellDesigner drawing: no offset
-      }).catch(function () { return null; });
-      var published = k && k.text ? Promise.resolve(k.text) : sitePub;
-      var frame = k ? Promise.resolve({ width: k.width, height: k.height, x0: k.x0, y0: k.y0, scale: 1 }) : siteFrame;
+      var published = k && k.text ? Promise.resolve(k.text) : p.sitePub;
+      var frame = k ? Promise.resolve({ width: k.width, height: k.height, x0: k.x0, y0: k.y0, scale: 1 }) : p.siteFrame;
       var go = function (t, s) {
-        return Promise.all([published, frame, sitePub, siteFrame]).then(function (r) {
+        return Promise.all([published, frame, p.sitePub, p.siteFrame]).then(function (r) {
           var same = r[1] && V.img === shownPic && V.current === m ? Object.assign({}, r[1], { text: r[0] }) : null;
           if (s) { s.id = m.id; s.v = V.ver(m); }
           return Promise.resolve(start(t, file, null, s, same)).then(function () {
-            siteRef = r[3] ? baseOf(isCd(r[2]) && cdJs ? cdJs.graphml(r[2]) : r[2], r[3]) : null;
+            siteRef = r[3] ? baseOf(isCd(r[2]) && cdJs ? cdGraphml(r[2]) : r[2], r[3]) : null;
             map.title = m.title; document.getElementById('m2-title').textContent = m.title;
           });
         });
@@ -653,17 +698,21 @@
       say('Opening ' + m.title + '...');
       if (!repo()) return fromSite(null);
       if (!token()) return fromSite({ path: path, sha: null, pending: true });
-      // with a token: the source as it is in the repository now (newer than the site while a build runs), and its sha,
-      // which makes GitHub refuse a save over a version changed meanwhile
-      api('/contents/' + path + '?ref=main').then(function (r) {
-        if (r.status === 404) return fromSite(null);   // not a map of this repository: saved as a file
-        if (!r.ok) throw r.status;
-        return r.json().then(function (d) {
-          return api('/contents/' + path + '?ref=main', { headers: { Accept: 'application/vnd.github.raw' } })
-            .then(function (r2) { if (!r2.ok) throw r2.status; return r2.text(); })
-            .then(function (t) { go(t, { path: path, sha: d.sha }); });
-        });
+      p.gh.then(function (g) {
+        if (!g) return fromSite(null);   // not a map of this repository: saved as a file
+        return go(g.text, { path: path, sha: g.sha }).then(function () { recheck(p, g); });
       }).catch(function (e) { say('Could not read the map from GitHub (' + e + '); the token may be refused.'); ghForm(true); });
+    }
+    // the repository's version read ahead may have changed since (another tab, another person): checked once more right
+    // after the switch, in the background; with no move made yet editing simply goes on from the newer version, with a
+    // move made the save finds it and says so, as before
+    function recheck(p, g) {
+      var s0 = site;
+      api('/contents/' + p.path + '?ref=main').then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
+        if (!d || d.sha === g.sha || !on || site !== s0) return;
+        if (pre === p) pre = null;
+        if (!undo.length && !dirty) { on = false; editShown(); }
+      }).catch(function () {});
     }
     // the token: pasted once, checked against the repository, kept in this browser only (localStorage)
     box.querySelector('#m2-ed-gh-go').addEventListener('click', function () {
