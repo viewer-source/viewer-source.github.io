@@ -1517,6 +1517,22 @@
       var pi = h.p;
       return function () { unbend([pi]); };
     };
+    // an anchor point put where the right click was on a line (user, 2026-11-13: "not only remove anchor point, but also
+    // add anchor point"; CellDesigner's right click Add Anchor Point): the same new point a drag on the line makes, left
+    // in place, the line selected so its points show and the new one is dragged with the next press; one undo step.
+    // Not on the process glyph (no anchor point there: it sits midway on its segment)
+    window.m2EditAddAnchor = function () {
+      if (!on || current !== map || !rclick) return null;
+      var h = hit(rclick), P = rclick;
+      if (!h || h.e == null || h.glyph) return null;
+      var k = h.e;
+      return function () {
+        var nb = bend(k, P);
+        if (!nb) return;
+        selN = []; selP = []; selE = [k]; keyGuides = null; dirty = true;
+        render(); paint(); changed();
+      };
+    };
     // guides for nodes (user, 2026-11-12: "use as in yEd, then I correct"), yEd's snap lines: the node pressed (the
     // selection moving with it) snaps when (1) one of its own arcs' segments becomes level or upright, (2) its centre lines
     // up with another node's, (3) a side with the same side of another node (opposite sides only when the two are close),

@@ -2556,7 +2556,9 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
       // the other files stay in the viewer's own buttons and tabs
       var eb = document.querySelector('#m2-rail .m2-ri[data-win="edit"]');
       var unanchor = ed && window.m2EditAnchor && window.m2EditAnchor();   // an anchor point under the pointer while editing
+      var anchor = ed && !unanchor && window.m2EditAddAnchor && window.m2EditAddAnchor();   // a line under the pointer
       if (unanchor) { item(box, 'Remove anchor point', unanchor); sep(box); }
+      else if (anchor) { item(box, 'Add anchor point', anchor); sep(box); }
       if (ed) item(box, 'View mode', function () { tab('list'); });   // leaving the Edit window ends editing
       else if (eb && eb.offsetParent) item(box, 'Edit mode', function () { tab('edit'); });
       if (document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen)
