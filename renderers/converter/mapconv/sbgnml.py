@@ -474,7 +474,7 @@ def read(path):
     for g in m.findall(S + 'glyph'):
         glyph(g, g.get('compartmentRef'))
     arcs, performers = [], {}
-    head = dict(HEAD, **{'equivalence arc': None}) if af else HEAD  # AF: a plain line (user, 2026-10-17)
+    head = dict(HEAD, **{'equivalence arc': None})  # a plain line (user, 2026-10-17 for AF; 2026-11-14 for PD too: to a submap)
     for a in m.findall(S + 'arc'):
         cls = a.get('class')
         s, t = (port.get(a.get(k), a.get(k)) for k in ('source', 'target'))
