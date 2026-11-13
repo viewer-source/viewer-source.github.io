@@ -468,8 +468,8 @@ def read(path):
         if g.find(S + 'clone') is not None:
             skipped.setdefault('clone marker', []).append(i)
         for c in g.findall(S + 'glyph'):
-            if c.get('class') not in ('state variable', 'unit of information'):
-                glyph(c, i)  # a complex's members
+            if c.get('class') not in ('state variable', 'unit of information'):  # a complex's members; glyphs drawn
+                glyph(c, i if kind == 'Complex' else parent)  # inside any other glyph (a submap used as a frame) beside it
 
     for g in m.findall(S + 'glyph'):
         glyph(g, g.get('compartmentRef'))

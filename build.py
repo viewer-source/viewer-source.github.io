@@ -23,6 +23,11 @@
 #   and drawn back from that file as above, a map of its own with the GraphML map's title and text, so the formats stand
 #   side by side and any difference from the GraphML drawing is ours to fix (reader, writer or yrender). Not edited: its
 #   first download is the SBGN-ML file.
+# The group SBGN-ML external (user, 2026-11-14: "import external collection ... go through them problem by problem"):
+#   the Process Description maps of test-maps/sbgn-ml/pd/ (other people's and tools' files, unchanged; libsbgn's
+#   validation error tests left out), each drawn from its file as above (downloaded from its own address there), a map
+#   of its own named after its source and file, its text the source, path and licence from sources.tsv. A file that
+#   cannot be drawn is said and left out.
 # maps/extra/<id>/ (optional): more files for a map's download row, copied to downloads/ under their own names and
 #   labelled by ending (.graphml GraphML, .xml CellDesigner, .sbgn SBGN-ML, -sbml.xml SBML, .png PNG, .csv Annotation):
 #   the full set of the official site, for every map (user, 2026-11-11: glycolysis first, then all, "why only two
@@ -51,7 +56,10 @@ def render(kind, src):
         _node = subprocess.Popen(['node', os.path.join(ROOT, 'renderers', 'render.js')], stdin=subprocess.PIPE,
                                  stdout=subprocess.PIPE, text=True, encoding='utf-8', bufsize=1)
     _node.stdin.write(json.dumps({'kind': kind, 'src': src}) + '\n'); _node.stdin.flush()
-    r = json.loads(_node.stdout.readline())
+    line = _node.stdout.readline()
+    if not line:   # the renderer is gone: stop the build, never a map after another left out quietly
+        sys.exit('the renderer stopped (node %s)' % _node.poll())
+    r = json.loads(line)
     if 'error' in r:
         raise SystemExit('%s: %s' % (src, r['error']))
     return r
@@ -236,9 +244,7 @@ def sbgnml(src, name, body):
     finally:
         if tmp:
             os.unlink(tmp)
-    d = drawn(name, nodes, body.encode())   # the text in its version too: the map's text is fetched with it
-    d['file'] = '/downloads/' + os.path.basename(src)
-    return d, nodes
+    return drawn(name, nodes, body.encode()), nodes   # the text in its version too: the map's text is fetched with it
 
 
 def sbgn_map(src, mid, fm, body):
@@ -259,12 +265,46 @@ def sbgn_map(src, mid, fm, body):
     if not d:
         os.unlink(path)   # no entry, so no file left behind
         return None, []
-    e = dict(fm, group='SBGN-ML', order=fm['order'] + 100, image=d['image'], annotation=d['annotation'], width=d['width'],
-             height=d['height'], v=d['v'], legend='sbgn', downloads=[{'label': 'SBGN-ML', 'url': d['file']},
-                                                                     {'label': 'SVG', 'url': d['image']}])
-    for k in ('src', 'sbgn'):
-        e.pop(k, None)
-    return (sid, e), search_entries(sid, nodes)
+    d['file'] = '/downloads/' + os.path.basename(path)
+    return (sid, entry_of(fm['title'], 'SBGN-ML', fm['order'] + 100, d, topic=fm['topic'])), search_entries(sid, nodes)
+
+
+def examples():
+    # the group SBGN-ML external (header): [(id, entry, search entries, text)]
+    import csv
+    pd = os.path.join(ROOT, 'test-maps', 'sbgn-ml', 'pd')
+    src = {r['file']: r for r in csv.DictReader(open(os.path.join(ROOT, 'test-maps', 'sbgn-ml', 'sources.tsv'), encoding='utf-8'), delimiter='\t')}
+    rels = sorted(os.path.relpath(f, pd) for f in glob.glob(os.path.join(pd, '**', '*'), recursive=True) if f.endswith(('.sbgn', '.nwt')))
+    rels = [r for r in rels if 'validation' not in r.split(os.sep)]   # libsbgn's error tests left out
+    name = lambda r: os.path.splitext(os.path.basename(r))[0].replace('_', ' ') + (' (Newt file)' if r.endswith('.nwt') else '')
+    short = collections.Counter(name(r) for r in rels)
+    out = []
+    for k, rel in enumerate(rels):
+        key = rel.replace(os.sep, '/')
+        r = src['pd/' + key]
+        sid = 'external-' + re.sub(r'[^a-z0-9]+', '-', key.lower()).strip('-')   # with its ending: a Newt .nwt beside its .sbgn
+        db.current = sid
+        body = 'From %s (%s), `%s`, %s. Unchanged, drawn from its own file.' % (r['source'], r['repository'], r['path_in_source'], r['licence'])
+        d, nodes = sbgnml(os.path.join(pd, rel), sid, body)
+        if not d:
+            continue
+        d['file'] = '/test-maps/sbgn-ml/pd/' + key   # published as it is (test-maps/sbgn-ml/README.md)
+        title = '%s: %s' % (key.split('/')[0], name(rel) if short[name(rel)] == 1 else '/'.join(key.split('/')[1:-1] + [name(rel)]))
+        out.append((sid, entry_of(title, 'SBGN-ML external', 1000 + k, d), search_entries(sid, nodes), body))
+    return out
+
+
+def entry_of(title, group, order, d, **more):
+    # a map's entry (_maps/<id>.md front matter) from its drawing (drawn() and its file): its first download the file
+    return dict({'title': title, 'topic': title, 'tab': '', 'page': '', 'group': group, 'order': order, 'kind': 'map',
+                 'draft': False, 'tag': '', 'image': d['image'], 'width': d['width'], 'height': d['height'], 'scale': 1,
+                 'annotation': d['annotation'], 'image_error': '', 'v': d['v'], 'colours': True, 'legend': 'sbgn',
+                 'downloads': [{'label': 'SBGN-ML', 'url': d['file']}, {'label': 'SVG', 'url': d['image']}]}, **more)
+
+
+def write_entry(eid, e, body):
+    with open(os.path.join(ROOT, '_maps', eid + '.md'), 'w', encoding='utf-8') as f:
+        f.write('---\n' + ''.join('%s: %s\n' % (k, json.dumps(v, ensure_ascii=False)) for k, v in e.items()) + '---\n' + body + '\n')
 
 
 # ---------- the atlas ----------
@@ -336,7 +376,9 @@ def main():
         if sb:
             fm['sbgn'], found = sbgnml(sb[0], mid + '-sbgnml', body)
             search += [dict(e, s=1) for e in search_entries(mid, found)]
-            if not fm['sbgn']:
+            if fm['sbgn']:
+                fm['sbgn']['file'] = '/downloads/' + os.path.basename(sb[0])   # copied there by extra()
+            else:
                 del fm['sbgn']
         entries = [(mid, fm)]
         if ext == '.graphml' and fm['group'] == 'GraphML':
@@ -344,9 +386,12 @@ def main():
             entries += [own] if own else []
             search += found
         for eid, e in entries:
-            with open(os.path.join(ROOT, '_maps', eid + '.md'), 'w', encoding='utf-8') as f:
-                f.write('---\n' + ''.join('%s: %s\n' % (k, json.dumps(v, ensure_ascii=False)) for k, v in e.items()) + '---\n' + body + '\n')
+            write_entry(eid, e, body)
         print('%s: %s, %d clickable' % (mid, 'yEd' if ext == '.graphml' else 'CellDesigner', len(nodes)))
+    for sid, e, found, body in examples():
+        search += found
+        write_entry(sid, e, body)
+        print('%s: SBGN-ML external' % sid)
     db.save()
     json.dump(search, open(os.path.join(ROOT, 'atlas-data', 'search.json'), 'w', encoding='utf-8'),
               ensure_ascii=False, separators=(',', ':'))

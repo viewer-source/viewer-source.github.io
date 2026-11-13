@@ -6,7 +6,7 @@ name: Build atlas
 on:
   push:
     branches: [main]
-    paths: ['maps/**', 'renderers/**', 'build.py', 'databases.py', 'cache/overrides.json', 'package.json']
+    paths: ['maps/**', 'renderers/**', 'build.py', 'databases.py', 'cache/overrides.json', 'package.json', 'test-maps/sbgn-ml/**']
   workflow_dispatch:
     inputs:
       refresh:
