@@ -54,8 +54,34 @@
     var s = fixed(v).replace(/0+$/, '').replace(/\.$/, '');
     return s === '-0' ? '0' : s;
   }
-  // math.dist: Math.hypot gives the same written numbers on every map checked (tests/yrender-compare.js, 607 maps)
-  function dist(a, b) { return Math.hypot(a[0] - b[0], a[1] - b[1]); }
+  // math.dist and math.hypot of CPython 3.12 (vector_norm): the squares exact (fma there, Dekker's split here: the same exact error
+  // term), summed with their errors kept, one correction step; Math.hypot can differ in the last bit
+  function dlMul(x, y) {
+    var z = x * y, t1 = x * 134217729.0, xh = t1 - (t1 - x), xl = x - xh, t2 = y * 134217729.0, yh = t2 - (t2 - y), yl = y - yh;
+    return [z, xh * yh - z + (xh * yl + xl * yh) + xl * yl];
+  }
+  function hypot(a, b) {
+    a = Math.abs(a); b = Math.abs(b);
+    var max = a > b ? a : b;
+    if (max === Infinity) return max;
+    if (a !== a || b !== b) return NaN;
+    if (max === 0) return max;
+    buf.setFloat64(0, max);
+    var e = (buf.getUint32(0) >>> 20) & 0x7ff;
+    if (e === 0) return 2.2250738585072014e-308 * hypot(a / 2.2250738585072014e-308, b / 2.2250738585072014e-308);   // subnormal
+    var scale = Math.pow(2, -(e - 1022)), csum = 1.0, frac1 = 0.0, frac2 = 0.0, pr, s, x;
+    [a, b].forEach(function (v) {
+      x = v * scale; pr = dlMul(x, x);
+      s = csum + pr[0]; frac2 += (csum - s) + pr[0]; csum = s; frac1 += pr[1];
+    });
+    var h = Math.sqrt(csum - 1.0 + (frac1 + frac2));
+    pr = dlMul(-h, h);
+    s = csum + pr[0]; frac2 += (csum - s) + pr[0]; csum = s; frac1 += pr[1];
+    x = csum - 1.0 + (frac1 + frac2);
+    h += x / (2.0 * h);
+    return h / scale;
+  }
+  function dist(a, b) { return hypot(a[0] - b[0], a[1] - b[1]); }
   function pyFloat(s) {   // float(s) of Python for the numbers a GraphML holds
     if (s === null || s === undefined) throw new Error('TypeError: float() argument must be a string or a real number, not NoneType');
     var t = String(s).trim();

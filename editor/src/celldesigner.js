@@ -1,43 +1,29 @@
     // ---------- the CellDesigner part (editor/src/celldesigner.js) ----------
-    // A CellDesigner map edited in CellDesigner's own model: the GraphML renderers/converter/cd_edit.py makes of it, the
-    // moves written back into the CellDesigner text by it, the map drawn by cdrender (Pyodide, lxml and the converter);
+    // A CellDesigner map edited in CellDesigner's own model: the GraphML renderers/converter/cd_edit.js makes of it, the
+    // moves written back into the CellDesigner text by it, the map drawn by cdrender.js (both in JavaScript since
+    // 2026-11-13, the same text as their Python masters byte for byte, tests/cd-compare.js: no Python in the editor);
     // the process glyph that follows its segment, the guides through it, the canvas left out while editing.
 
     // a CellDesigner map (2026-11-12, user: "basically yEd experience with CD"): edited as the GraphML that
-    // renderers/converter/cd_edit.py makes of it (its header says how), the moves written back into the CellDesigner file
+    // renderers/converter/cd_edit.js makes of it (cd_edit.py's header says how), the moves written back into the CellDesigner file
     // by it and the map drawn by cdrender, each part in a group of its own; text is that GraphML, cd.now the file
-    var PYODIDE = 'https://cdn.jsdelivr.net/pyodide/v0.26.4/full/';   // as the converter's page
-    var py = null;                 // a promise of Python with lxml (Pyodide): only for the CellDesigner side
-    function python() {
-      if (py) return py;
-      say('Loading Python (a few seconds the first time)...');
-      py = new Promise(function (res, rej) {
-        var s = document.createElement('script');
-        s.src = PYODIDE + 'pyodide.js'; s.onload = res; s.onerror = rej;
-        document.head.appendChild(s);
-      }).then(function () { return loadPyodide({ indexURL: PYODIDE }); }).then(function (p) {
-        return p.loadPackage('lxml').then(function () { p.FS.mkdirTree('/home/pyodide'); p.runPython("import sys, json\nsys.path.insert(0, '/home/pyodide')"); return p; });
-      });
-      py.catch(function (e) { py = null; say('Python did not load: ' + e); });
-      return py;
-    }
-    var cdp = null, pyCd = null, cd = null;   // Python with the CellDesigner side, that Python once ready, the file edited ({ base, now })
-    var CD_FILES = ['cdrender', 'cd_edit'], MAPCONV = ['annotation', 'cd_layout', 'cd_tidy', 'celldesigner', 'graphml', 'layout', 'model', 'report', 'style'];
-    var CD_DRIVER = ['import cd_edit', 'def cd_graphml(t):', '    return cd_edit.graphml(t)', 'def cd_draw(t, g):', '    return json.dumps(cd_edit.draw(t, g))'].join('\n');
+    var cdp = null, cdJs = null, cd = null;   // the CellDesigner side loading, once loaded, the file edited ({ base, now })
     function isCd(t) { return /<sbml[\s>]/.test(t.slice(0, 3000)) && t.indexOf('celldesigner') >= 0; }
     // a process glyph not moved itself stays midway on its segment of the main line wherever that goes (cd_edit), so
     // while a drag or the keys move a segment's end it follows at once (user, 2026-11-12: it jumped there only on
     // release): procs, each glyph with its two main arcs; liveG, the glyphs' shifts until the map is drawn again
     var procs = [], liveG = null;
-    function cdpy() {   // the CellDesigner side: cdrender, cd_edit and the converter's modules they import
+    function cdpy() {   // the CellDesigner side: cdrender.js, then cd_edit.js (it reads cdrender), quick to load
       if (cdp) return cdp;
-      cdp = python().then(function (p) {
-        var get = function (u, to) { return fetch(u).then(function (r) { if (!r.ok) throw u + ' not found'; return r.text(); }).then(function (t) { p.FS.writeFile(to, t); }); };
-        p.FS.mkdirTree('/home/pyodide/mapconv');
-        return Promise.all(CD_FILES.map(function (f) { return get('/renderers/converter/' + f + '.py', '/home/pyodide/' + f + '.py'); })
-          .concat(MAPCONV.map(function (f) { return get('/renderers/converter/mapconv/' + f + '.py', '/home/pyodide/mapconv/' + f + '.py'); })))
-          .then(function () { p.runPython(CD_DRIVER); pyCd = p; return p; });
-      });
+      var script = function (f) {
+        return new Promise(function (res, rej) {
+          var s = document.createElement('script');
+          s.src = '/renderers/converter/' + f + '.js' + V.build; s.onload = res; s.onerror = function () { rej(f + ' not found'); };
+          document.head.appendChild(s);
+        });
+      };
+      cdp = (window.cdrender ? Promise.resolve() : script('cdrender')).then(function () { return window.cd_edit ? null : script('cd_edit'); })
+        .then(function () { cdJs = window.cd_edit; return cdJs; });
       cdp.catch(function (e) { cdp = null; say('The CellDesigner renderer did not load: ' + e); });
       return cdp;
     }
@@ -163,10 +149,9 @@
         i.src = url;
       }).catch(function () {});
     }
-    // Python started in the background (user, 2026-11-12: a CellDesigner map took about 4 s to open for editing, Python and
-    // the converter loading first): a few seconds after the page has shown a CellDesigner map where the Edit tab is, when
-    // the browser is idle. Since 2026-11-13 only for a CellDesigner map (a GraphML map needs no Python: its renderer and
-    // the layout tools are JavaScript), so a page on a GraphML map never freezes for Python's start
+    // the CellDesigner side loaded in the background a few seconds after the page has shown a CellDesigner map where the
+    // Edit tab is (user, 2026-11-12: a map took about 4 s to open for editing while Python loaded; since 2026-11-13 two
+    // small JavaScript files, no Python)
     function cdMap(m) { var d = m && m.downloads && m.downloads[0]; return !!(d && d.label === 'CellDesigner'); }
     var warm = null;
     function warmUp() {
@@ -176,7 +161,7 @@
         if (cdp || !eb || !eb.offsetParent || !cdMap(V.current)) return;
         (window.requestIdleCallback || function (f) { setTimeout(f, 0); })(function () {
           if (cdp || !cdMap(V.current)) return;
-          var s0 = status.textContent;   // quietly: its "Loading" message not shown
+          var s0 = status.textContent;   // quietly
           cdpy().then(function () { if (!on) status.textContent = s0; }, function () {});
           if (!on) status.textContent = s0;
         });

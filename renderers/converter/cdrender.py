@@ -4,6 +4,7 @@
 # as the converter reads it (anchors, edit points in the frame of their two ends, added links
 # joining the main line at 3/8 and 5/8).
 #   python3 converter/cdrender.py <map.xml> <out.svg>
+# Its JavaScript twin cdrender.js (the editor's, 2026-11-13) is changed with it in the same commit (tests/cd-compare.js).
 import math, os, sys
 from xml.sax.saxutils import escape
 from lxml import etree

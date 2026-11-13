@@ -1,11 +1,12 @@
 # The Python masters and their JavaScript twins in the editor must give the same, byte for byte: yrender.py and
 # yrender.js on every demo map in the renderer's three ways (tests/yrender-compare.js); tidy.py with the layout skill's
-# complex_pack.py and snap_grid.py and layout.js in every case of tests/layout-compare.js. Runs when any changes, or by hand.
+# complex_pack.py and snap_grid.py and layout.js in every case of tests/layout-compare.js; cdrender.py and cd_edit.py
+# and their .js twins on every demo CellDesigner map (tests/cd-compare.js). Runs when any changes, or by hand.
 name: Compare renderers
 on:
   push:
     branches: [main]
-    paths: ['renderers/yrender/**', 'renderers/layout/**', 'tests/**', 'maps/**']
+    paths: ['renderers/**', 'tests/**', 'maps/**']
   workflow_dispatch:
 permissions:
   contents: read
@@ -21,3 +22,4 @@ jobs:
       - run: pip install lxml && npm install --no-save @xmldom/xmldom
       - run: node tests/yrender-compare.js python3
       - run: node tests/layout-compare.js python3
+      - run: node tests/cd-compare.js python3

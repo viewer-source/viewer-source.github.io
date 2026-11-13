@@ -167,7 +167,7 @@ says "the workbench", "the converter's repository", "a private repository".
   of its own: since 2026-11-13 `renderers/yrender/yrender.js`, the same SVG as yrender.py byte for byte (checked on 607
   maps in the build's, the editor's and the colours page's ways; `tests/yrender-compare.js`, run by the workflow Compare
   renderers on every change), reusing the document the editor read when it is still the text drawn (the reading took
-  most of the time); Python (Pyodide, the converter page's version) only for the CellDesigner side.
+  most of the time). No Python in the editor since 2026-11-13: the CellDesigner side is `renderers/converter/cdrender.js` and `cd_edit.js` (below).
   Measured 2026-11-13 (headless, glycogen muscle and eNOS GraphML, page frozen): switching to edit 270-296 ms with
   Python, 67-129 ms now.
   A map of the site saves by itself (user, 2026-11-12: "as in Google Docs"): no Save button; 3 s after the last move,
@@ -374,6 +374,15 @@ says "the workbench", "the converter's repository", "a private repository".
   maps draw the same with both versions (2026-11-11: 21 maps, byte-identical).
   yrender.js beside it (2026-11-13) is its JavaScript twin for the editor, changed with it in the same commit; the
   workflow Compare renderers checks the two draw every demo map alike (Python stays the master until the user says).
+  cdrender.js and cd_edit.js beside the Python (2026-11-13) are their JavaScript twins for the editor, with the converter's
+  four helpers they use (the frame maths, anchor points, name decoding) and Python's number writing (repr, round, '%.2f',
+  and CPython's exact hypot, which Math.hypot misses in the last bit on a third of pairs; yrender.js uses it too):
+  the same text byte for byte on 409 CellDesigner maps of the demo, the workbench, the official site and the
+  neuroinflammation map, 2,863 comparisons (the build's drawing and click data, the editor's drawing, cd_edit's GraphML,
+  the write-back after moves of nodes, bend points and ports, a whole map shifted); `tests/cd-compare.js`, in the
+  workflow Compare renderers. Measured 2026-11-13 (headless, page frozen): a CellDesigner page open 2.3-2.4 s before,
+  none now; switching to edit 361 ms on glycogen muscle, 258 now (SREBP 131, now 85); a move about the same (212 ms on
+  glycogen muscle: one move still reads and writes the whole file three times).
 - The build: `python3 build.py` turns every file in `maps/` (`.graphml` or `.xml`) into the same output
   (`downloads/`, `atlas-data/`, `_maps/`); its header says what it writes. `maps/<id>.md` gives a map's title, group,
   order and text. The workflow `build.yml` runs it on every push that touches `maps/`, `renderers/` or `build.py`.

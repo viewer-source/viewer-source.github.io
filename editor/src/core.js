@@ -513,7 +513,7 @@
       return (cd ? cdpy() : yr()).then(function (p) {
         var r;
         if (cd) {   // the moves written into the CellDesigner file, drawn, and the GraphML made of it again
-          var q = JSON.parse(p.globals.get('cd_draw')(cd.base, text));
+          var q = p.draw(cd.base, text);
           if (t !== ticket) return;
           cd.now = q[1]; r = [q[0], []];
           if (q[2] !== text && !drag) {   // the same map, its new bend points (a glyph moved) now its own
@@ -555,7 +555,7 @@
     function start(t, n, h, s, same) {   // a CellDesigner file is first made into the GraphML the editor edits
       if (!isCd(t)) { cd = null; return begin(t, t, n, h, s, same); }
       say('Opening ' + n + '...');
-      return cdpy().then(function (p) { cd = { base: t, now: t }; begin(p.globals.get('cd_graphml')(t), t, n, h, s, same); })
+      return cdpy().then(function (p) { cd = { base: t, now: t }; begin(p.graphml(t), t, n, h, s, same); })
         .catch(function (e) { say('Cannot edit ' + n + ': ' + e); });
     }
     function begin(g, t, n, h, s, same) {   // same: { width, height, x0, y0, scale } of the picture on screen, drawn from this very file
@@ -644,7 +644,7 @@
           var same = r[1] && V.img === shownPic && V.current === m ? Object.assign({}, r[1], { text: r[0] }) : null;
           if (s) { s.id = m.id; s.v = V.ver(m); }
           return Promise.resolve(start(t, file, null, s, same)).then(function () {
-            siteRef = r[3] ? baseOf(isCd(r[2]) && pyCd ? pyCd.globals.get('cd_graphml')(r[2]) : r[2], r[3]) : null;
+            siteRef = r[3] ? baseOf(isCd(r[2]) && cdJs ? cdJs.graphml(r[2]) : r[2], r[3]) : null;
             map.title = m.title; document.getElementById('m2-title').textContent = m.title;
           });
         });

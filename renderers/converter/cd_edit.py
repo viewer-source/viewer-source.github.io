@@ -23,6 +23,7 @@
 #   inside bottom label and the marks round an alias (residues, structural states, an open unit of information) as state
 #   labels, so the tools leave them room; nothing reads them back.
 #     graphml(cd_text) -> GraphML text;  apply(cd_text, graphml_text) -> CellDesigner text
+# Its JavaScript twin cd_edit.js (the editor's, 2026-11-13) is changed with it in the same commit (tests/cd-compare.js).
 import io, math, re
 from xml.sax.saxutils import escape
 from lxml import etree
