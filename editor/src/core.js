@@ -143,9 +143,10 @@
               if (V.kept && V.kept.id === target.id) V.kept.sha = target.sha;
               var sm = V.byId[target.id];
               if (sm) target.v = V.ver(sm);   // the site's version still without this move
-              if (lastSvg && site === target && src() === body) {
+              var ks = lastFor && lastFor[2] === target.id ? lastSvg : null;   // this map's drawing only, never the map edited before (the review, 2026-11-14)
+              if (ks && site === target && src() === body) {
                 var all = V.stored();
-                var one = {}; one[target.id] = all[target.id] = { v: target.v, sha: target.sha, svg: lastSvg, text: body, file: name, width: map.width, height: map.height, x0: picX0(), y0: picY0(), at: Date.now(), ref: siteRef, cur: nowRef() };
+                var one = {}; one[target.id] = all[target.id] = { v: target.v, sha: target.sha, svg: ks, text: body, file: name, width: map.width, height: map.height, x0: picX0(), y0: picY0(), at: Date.now(), ref: siteRef, cur: nowRef() };
                 // the browser's storage full (a few large maps): the other maps' files left out first (their downloads after a
                 // reload are then the site's), then this map's, then this map's drawing alone, else none of it (never an older one)
                 var bare = function (o, keep) { Object.keys(o).forEach(function (k) { if (k !== keep) delete o[k].text; }); return o; };
@@ -188,20 +189,24 @@
       var drawn = !drawing && lastFor && lastFor[0] === text && lastFor[1] === (cd ? cd.now : null);
       if (!drawn && !force) { localTimer = setTimeout(local, 300); return; }
       localFor = null;
-      var t = src();
+      var t = src(), at = { width: map.width, height: map.height, x0: picX0(), y0: picY0(), ref: siteRef, cur: nowRef() };
+      // this map's drawing only: the map edited before still drawn while this one's first redraw runs (another map opened
+      // at once) is never stored with it; then this text is drawn for it here (the review, 2026-11-14)
+      var own = lastFor && lastFor[2] === s.id ? lastSvg : null;
+      var pic = function () { return own ? Promise.resolve({ svg: own, width: at.width, height: at.height }) : drawText(t); };
+      var fail = function (e) { if (site === s) warn('Not kept in this browser: ' + String(e && e.message ? e.message : e).replace(/\.$/, '') + '. Download the map to keep your changes.'); };
       if (s.mine) {   // a reader's own map: the map itself changed, in this browser and its folder (no draft)
-        var r = Object.assign({}, V.mine[s.id], { text: t, svg: lastSvg, width: map.width, height: map.height, at: Date.now() });
         toFolder(s.id, name, t);
-        V.minePut(r).then(function () { if (site === s && src() === t) dirty = false; if (!on || site !== s) V.refreshMine(); })
-          .catch(function (e) { if (site === s) warn('Not kept in this browser: ' + String(e && e.message ? e.message : e).replace(/\.$/, '') + '. Download the map to keep your changes.'); });
+        pic().then(function (d) { return V.minePut(Object.assign({}, V.mine[s.id], { text: t, svg: d.svg, width: d.width, height: d.height, at: Date.now() })); })
+          .then(function () { if (site === s && src() === t) dirty = false; if (!on || site !== s) V.refreshMine(); })
+          .catch(fail);
         return;
       }
       if (atSite()) { V.draftDrop(s.id); dirty = false; localBox(); toFolder(s.id, name, t, true); return; }   // a file in the folder back to the site's map too
-      if (!lastSvg) return;
       toFolder(s.id, name, t);   // layer 2: the same file into the reader's folder, when there is one
-      V.draftPut(s.id, { file: name, v: s.v, text: t, svg: lastSvg, width: map.width, height: map.height, x0: picX0(), y0: picY0(), ref: siteRef, cur: nowRef(), at: Date.now() })
+      pic().then(function (d) { return V.draftPut(s.id, { file: name, v: s.v, text: t, svg: d.svg, width: d.width, height: d.height, x0: at.x0, y0: at.y0, ref: at.ref, cur: at.cur, at: Date.now() }); })
         .then(function () { if (site === s && src() === t) dirty = false; })
-        .catch(function (e) { if (site === s) warn('Not kept in this browser: ' + (e && e.message ? e.message : e) + '. Download the map to keep your changes.'); });
+        .catch(fail);
     }
     // the map as the site has it: its text, or every move undone (a map shifted out of negative places never gives the
     // site's text back: the review, 2026-11-13)

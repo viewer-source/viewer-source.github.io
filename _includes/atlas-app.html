@@ -2659,7 +2659,6 @@ page, so its styles keep the base they were made on). The looks before (Default 
       return draftDo('readonly', function (st) { return st.getAll(); }).then(function (all) {
         (all || []).forEach(function (r) { if (r && r.id && !drafts[r.id]) drafts[r.id] = r; });
         draftIds();
-        var m = current && byId[current.id];
         draftsShown();
       }).catch(function () {}).then(function () { draftsDone = true; });
     })();
