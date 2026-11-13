@@ -252,6 +252,13 @@
       if (!q) return null;
       var port = which === 's' ? q.slice(0, 2) : q.slice(2), c = cen(old.get(alias)), was = anc ? [P[0] - c[0], P[1] - c[1]] : [0.0, 0.0];
       if (py.hypot(port[0] - was[0], port[1] - was[1]) < 0.5) return null;
+      // the same connection point on the node's new box (Snap or Pack resized it, and the GraphML was made again from the
+      // file): not a move, so a point between the five (ENE) is kept, not taken to the nearest side
+      var ob = old.get(alias), nb = nw.get(alias);
+      if (anc && nb && ob[2] && ob[3]) {
+        var now = [(P[0] - ob[0]) / ob[2] * nb[2] - nb[2] / 2, (P[1] - ob[1]) / ob[3] * nb[3] - nb[3] / 2];
+        if (py.hypot(port[0] - now[0], port[1] - now[1]) < 0.5) return null;
+      }
       return side(port, nw.get(alias));
     };
     var x = o.x;

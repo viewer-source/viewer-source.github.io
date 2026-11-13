@@ -24,3 +24,4 @@ jobs:
       - run: node tests/layout-compare.js python3
       - run: node tests/cd-compare.js python3
       - run: node tests/cd-live.js
+      - run: node tests/cd-snap-redo.js

@@ -297,7 +297,7 @@ says "the workbench", "the converter's repository", "a private repository".
   inside bottom label (its height as cdrender writes it) and the residue circles, structural states and open unit of
   information round an alias as state labels, so Pack leaves them room as on a yEd map; every line keeps its connection
   point (tidy.py `keep_ports`: CellDesigner moves it with the node, and snap_grid's straightened ports had turned ENE into
-  E); cd_edit writes back the bounds, inner positions and anchor points that changed. Checked on the 21 demo maps (both
+  E); a connection point still where it was on a node Snap or Pack resized is no move either, so a later move, an undo or a redo keeps ENE (2026-11-13, user: it came back as E; `tests/cd-snap-redo.js` in the workflow Compare renderers); cd_edit writes back the bounds, inner positions and anchor points that changed. Checked on the 21 demo maps (both
   tools, the files read back, no connection point changed). Not on CellDesigner maps: the live
   outline of a compartment resized (it is redrawn after the drag); logic gates, associations and dissociations are left
   as they are (none on the demo). Checked 2026-11-12: all 21 demo maps written back byte for byte with no move, every

@@ -357,6 +357,13 @@ def ports(d, T, s, o, paths, new):
         was = (P[0] - c[0], P[1] - c[1]) if anc else (0.0, 0.0)
         if math.hypot(port[0] - was[0], port[1] - was[1]) < 0.5:
             return None
+        # the same connection point on the node's new box (Snap or Pack resized it, and the GraphML was made again from
+        # the file): not a move, so a point between the five (ENE) is kept, not taken to the nearest side
+        ob, nb = old[alias], new.get(alias)
+        if anc and nb and ob[2] and ob[3]:
+            now = ((P[0] - ob[0]) / ob[2] * nb[2] - nb[2] / 2, (P[1] - ob[1]) / ob[3] * nb[3] - nb[3] / 2)
+            if math.hypot(port[0] - now[0], port[1] - now[1]) < 0.5:
+                return None
         return side(port, new[alias])
     x = o['x']
     for k, (tag, eid, which, alias, P, anc) in enumerate((('baseReactant', rid + '|a', 's', o['ra'], o['A'], o['ancA']),
