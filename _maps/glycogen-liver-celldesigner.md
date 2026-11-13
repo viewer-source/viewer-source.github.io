@@ -19,6 +19,7 @@ src: "f94318f6d7c1b35c520e3108fc47be3047eac9fa"
 colours: true
 legend: "celldesigner"
 downloads: [{"label": "CellDesigner", "url": "/downloads/glycogen-liver-celldesigner.xml"}, {"label": "SVG", "url": "/downloads/glycogen-liver-celldesigner.svg"}, {"label": "SBML", "url": "/downloads/glycogen-liver-celldesigner-sbml.xml"}, {"label": "Annotation", "url": "/downloads/glycogen-liver-celldesigner.csv"}, {"label": "GraphML", "url": "/downloads/glycogen-liver-celldesigner.graphml"}, {"label": "PNG", "url": "/downloads/glycogen-liver-celldesigner.png"}, {"label": "SBGN-ML", "url": "/downloads/glycogen-liver-celldesigner.sbgn"}, {"label": "Newt", "url": "http://web.newteditor.org/?URL=https://viewer-source.github.io/downloads/glycogen-liver-celldesigner.sbgn"}, {"label": "MINERVA", "url": "https://mreg.elixir-luxembourg.org/minerva/index.html?id=F004-glycogen-liver"}]
+sbgn: {"image": "/downloads/glycogen-liver-celldesigner-sbgnml.svg", "annotation": "/atlas-data/glycogen-liver-celldesigner-sbgnml.json", "width": 2162, "height": 1710, "v": "4af477c217", "file": "/downloads/glycogen-liver-celldesigner.sbgn"}
 ---
 ## Description
 

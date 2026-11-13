@@ -19,6 +19,7 @@ src: "44ae181abc0a98063bf7869cb6aff1ad94bb82aa"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "GraphML", "url": "/downloads/tag-graphml.graphml"}, {"label": "SVG", "url": "/downloads/tag-graphml.svg"}, {"label": "SBML", "url": "/downloads/tag-graphml-sbml.xml"}, {"label": "Annotation", "url": "/downloads/tag-graphml.csv"}, {"label": "PNG", "url": "/downloads/tag-graphml.png"}, {"label": "SBGN-ML", "url": "/downloads/tag-graphml.sbgn"}, {"label": "CellDesigner", "url": "/downloads/tag-graphml.xml"}, {"label": "Newt", "url": "http://web.newteditor.org/?URL=https://viewer-source.github.io/downloads/tag-graphml.sbgn"}, {"label": "MINERVA", "url": "https://mreg.elixir-luxembourg.org/minerva/index.html?id=F015-tag"}]
+sbgn: {"image": "/downloads/tag-graphml-sbgnml.svg", "annotation": "/atlas-data/tag-graphml-sbgnml.json", "width": 808, "height": 763, "v": "b5bfa61cd0", "file": "/downloads/tag-graphml.sbgn"}
 ---
 ## Description
 
