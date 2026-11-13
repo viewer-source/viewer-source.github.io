@@ -572,7 +572,6 @@
       document.getElementById('m2-title').textContent = n;
       V.grid.classList.add('m2-editing');
       buttons();
-      helpFirst();
       gN = gE = null; mv = live = null; liveG = null; copies = []; frozen = false;
       if (same && same.text === t) { (cd ? cdpy() : yr()).then(function () { if (on && V.current === map && !undo.length && !gN) render(); }); paint(); say((site && site.pending) ? 'Connect to GitHub below so the moves are saved to the site.' : site ? 'Every move is saved to the site by itself.' : 'Editing ' + map.title + '.'); return; }
       say('Drawing ' + n + '...');

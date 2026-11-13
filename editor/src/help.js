@@ -1,8 +1,8 @@
     // ---------- How to edit (editor/src/help.js) ----------
     // The one source of the editor's how-to (user, 2026-11-13: the long text in the Edit window took the room palettes and
     // new tools need): shown as a popover over the map's left edge by the "?" after the tools, or the ? key while
-    // editing; open by itself the first time someone edits in a browser (atlas-edit-help), closed after. A tool added or
-    // changed gets its line here in the same change. Each section: a title ('' for none) and lines, or [key, what] pairs.
+    // editing; never open by itself (user, 2026-11-13: the switch to edit stays clean, who needs it clicks). A tool added
+    // or changed gets its line here in the same change. Each section: a title ('' for none) and lines, or [key, what] pairs.
     var HELP = [
       ['', 'This tool is designed for improving the layout of a map. Moves are saved by themselves; the site shows them about two minutes later.'],
       ['Move and zoom', ['A drag on empty space moves the map.', 'Two-finger scrolling or a pinch zooms.', 'A right click opens the same menu as outside edit mode.']],
@@ -16,7 +16,7 @@
       ['Keys', [['Ctrl or Cmd Z', 'undo'], ['Ctrl or Cmd Y', 'redo'], ['Ctrl or Cmd S', 'save at once'], ['Ctrl or Cmd A', 'select all'], ['Esc', 'clear the selection'],
         ['Delete', 'remove the anchor point selected'], ['E', 'switch between edit and view mode (not while typing in a field)'], ['?', 'this help']]]
     ];
-    var HELP_KEY = 'atlas-edit-help', helpBtn = box.querySelector('#m2-ed-help'), helpBox = null;
+    var helpBtn = box.querySelector('#m2-ed-help'), helpBox = null;
     function helpBuild() {
       var e = function (t) { return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;'); };
       helpBox = document.createElement('div');
@@ -41,10 +41,6 @@
         helpBox.style.left = left + 'px'; helpBox.style.top = Math.max(16, Math.min(top, innerHeight - 16 - h)) + 'px';
       } else helpBox.hidden = true;
       helpBtn.setAttribute('aria-pressed', String(show));
-    }
-    function helpFirst() {   // the first time someone edits in this browser
-      try { if (localStorage.getItem(HELP_KEY)) return; localStorage.setItem(HELP_KEY, '1'); } catch (x) { return; }
-      setTimeout(function () { if (on) help(true); }, 300);
     }
     helpBtn.addEventListener('click', function () { help(); });
     document.addEventListener('keydown', function (ev) {
