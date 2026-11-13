@@ -4,7 +4,7 @@ topic: "sbgn-website: activated stat1alpha induction of the irf1 gene SBGNv02"
 tab: ""
 page: ""
 group: "SBGN-ML external"
-order: 1042
+order: 1040
 kind: "map"
 draft: false
 tag: ""

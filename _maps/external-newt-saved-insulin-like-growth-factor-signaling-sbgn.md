@@ -4,7 +4,7 @@ topic: "newt-saved: insulin-like growth factor signaling"
 tab: ""
 page: ""
 group: "SBGN-ML external"
-order: 1016
+order: 1014
 kind: "map"
 draft: false
 tag: ""

@@ -4,7 +4,7 @@ topic: "pd2af-website: images/specification/gene_activation/pd"
 tab: ""
 page: ""
 group: "SBGN-ML external"
-order: 1034
+order: 1032
 kind: "map"
 draft: false
 tag: ""

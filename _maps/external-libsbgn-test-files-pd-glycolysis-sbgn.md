@@ -4,7 +4,7 @@ topic: "libsbgn: test-files/PD/glycolysis"
 tab: ""
 page: ""
 group: "SBGN-ML external"
-order: 1003
+order: 1001
 kind: "map"
 draft: false
 tag: ""

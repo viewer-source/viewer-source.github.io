@@ -4,7 +4,7 @@ topic: "newt-saved: neuronal muscle signaling"
 tab: ""
 page: ""
 group: "SBGN-ML external"
-order: 1020
+order: 1018
 kind: "map"
 draft: false
 tag: ""

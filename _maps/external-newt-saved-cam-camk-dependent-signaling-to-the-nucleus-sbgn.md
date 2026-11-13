@@ -4,7 +4,7 @@ topic: "newt-saved: cam-camk dependent signaling to the nucleus"
 tab: ""
 page: ""
 group: "SBGN-ML external"
-order: 1012
+order: 1010
 kind: "map"
 draft: false
 tag: ""

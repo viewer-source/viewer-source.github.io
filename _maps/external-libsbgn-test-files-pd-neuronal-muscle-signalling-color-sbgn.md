@@ -4,7 +4,7 @@ topic: "libsbgn: neuronal muscle signalling color"
 tab: ""
 page: ""
 group: "SBGN-ML external"
-order: 1007
+order: 1005
 kind: "map"
 draft: false
 tag: ""

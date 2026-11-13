@@ -4,7 +4,7 @@ topic: "newt-unstable: neuronal muscle signaling (Newt file)"
 tab: ""
 page: ""
 group: "SBGN-ML external"
-order: 1029
+order: 1027
 kind: "map"
 draft: false
 tag: ""

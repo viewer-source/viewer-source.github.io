@@ -4,7 +4,7 @@ topic: "libsbgn: test-files/PD/activated stat1alpha induction of the irf1 gene"
 tab: ""
 page: ""
 group: "SBGN-ML external"
-order: 1002
+order: 1000
 kind: "map"
 draft: false
 tag: ""

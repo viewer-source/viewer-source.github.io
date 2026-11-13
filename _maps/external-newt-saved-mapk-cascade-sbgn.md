@@ -4,7 +4,7 @@ topic: "newt-saved: mapk cascade"
 tab: ""
 page: ""
 group: "SBGN-ML external"
-order: 1018
+order: 1016
 kind: "map"
 draft: false
 tag: ""

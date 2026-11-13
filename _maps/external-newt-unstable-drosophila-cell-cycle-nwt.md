@@ -4,7 +4,7 @@ topic: "newt-unstable: drosophila cell cycle (Newt file)"
 tab: ""
 page: ""
 group: "SBGN-ML external"
-order: 1024
+order: 1022
 kind: "map"
 draft: false
 tag: ""

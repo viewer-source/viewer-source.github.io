@@ -4,7 +4,7 @@ topic: "libsbgn: test-files/PD/neuronal muscle signalling"
 tab: ""
 page: ""
 group: "SBGN-ML external"
-order: 1006
+order: 1004
 kind: "map"
 draft: false
 tag: ""

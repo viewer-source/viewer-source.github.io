@@ -4,7 +4,7 @@ topic: "newt-unstable: mammalian cholesterol (Newt file)"
 tab: ""
 page: ""
 group: "SBGN-ML external"
-order: 1027
+order: 1025
 kind: "map"
 draft: false
 tag: ""

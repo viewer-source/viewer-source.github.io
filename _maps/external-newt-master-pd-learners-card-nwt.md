@@ -4,7 +4,7 @@ topic: "newt-master: pd learners card (Newt file)"
 tab: ""
 page: ""
 group: "SBGN-ML external"
-order: 1010
+order: 1008
 kind: "map"
 draft: false
 tag: ""

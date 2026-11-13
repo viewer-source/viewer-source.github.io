@@ -4,7 +4,7 @@ topic: "libsbgn: test-files/PD/mapk cascade"
 tab: ""
 page: ""
 group: "SBGN-ML external"
-order: 1005
+order: 1003
 kind: "map"
 draft: false
 tag: ""

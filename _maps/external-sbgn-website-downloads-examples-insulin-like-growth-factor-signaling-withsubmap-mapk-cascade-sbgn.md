@@ -4,7 +4,7 @@ topic: "sbgn-website: insulin-like growth factor signaling withSubmap mapk casca
 tab: ""
 page: ""
 group: "SBGN-ML external"
-order: 1048
+order: 1046
 kind: "map"
 draft: false
 tag: ""

@@ -4,7 +4,7 @@ topic: "sbgn-website: downloads/examples/neuronal muscle signalling"
 tab: ""
 page: ""
 group: "SBGN-ML external"
-order: 1051
+order: 1049
 kind: "map"
 draft: false
 tag: ""

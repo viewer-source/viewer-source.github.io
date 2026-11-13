@@ -4,7 +4,7 @@ topic: "libsbgn: test-files/PD/insulin-like growth factor signaling"
 tab: ""
 page: ""
 group: "SBGN-ML external"
-order: 1004
+order: 1002
 kind: "map"
 draft: false
 tag: ""

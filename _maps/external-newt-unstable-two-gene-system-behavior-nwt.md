@@ -4,7 +4,7 @@ topic: "newt-unstable: two gene system behavior (Newt file)"
 tab: ""
 page: ""
 group: "SBGN-ML external"
-order: 1031
+order: 1029
 kind: "map"
 draft: false
 tag: ""
