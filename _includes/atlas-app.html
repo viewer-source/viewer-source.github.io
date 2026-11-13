@@ -2755,8 +2755,9 @@ page, so its styles keep the base they were made on). The looks before (Default 
       f.addEventListener('keydown', function (e) { e.stopPropagation(); if (e.key === 'Enter') { e.preventDefault(); end(true); } else if (e.key === 'Escape') end(false); });
       f.addEventListener('blur', function () { end(true); });
     }
-    function mineHeading(g, name) {   // the reader's group heading: double-click or right-click to rename, silently (no hint)
+    function mineHeading(g, name) {   // the reader's group heading: double-click or right-click to rename, a hint on hover only
       if (!editorAsked || name !== mineGroup() || !mineShown().length) return false;
+      g.title = 'Double-click to rename';
       g.addEventListener('contextmenu', function (e) {
         e.preventDefault();
         var box = el('div', 'm2-cx'), b = el('button', '', 'Rename group');
@@ -2844,7 +2845,7 @@ page, so its styles keep the base they were made on). The looks before (Default 
     document.body.appendChild(picker);
     function addRow(box) {
       var b = el('button', 'm2-item m2-add', 'Add a map');
-      b.type = 'button';   // silent (user, 2026-11-13: "enable the possibility, it's okay that it's silent")
+      b.type = 'button'; b.title = 'A GraphML or CellDesigner file from your computer (or drop it on the page)';   // a hint on hover only (user, 2026-11-13: silent, "hover text is fine")
       b.addEventListener('click', function () { picker.click(); });
       box.appendChild(b);
     }
