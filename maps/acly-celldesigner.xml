@@ -124,7 +124,7 @@
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n8" species="s_n8">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="836.009" y="206.85" w="80.0" h="40.0"/>
+<celldesigner:bounds x="575.63" y="97.617" w="80.0" h="40.0"/>
 <celldesigner:font size="12"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -355,7 +355,7 @@
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n23" species="s_n23">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="456.334071" y="40.0" w="80.0" h="40.0"/>
+<celldesigner:bounds x="344.0" y="364.0" w="80.0" h="40.0"/>
 <celldesigner:font size="12"/>
 <celldesigner:view state="usual"/>
 <celldesigner:structuralState angle="4.71238898038469"/>
@@ -375,7 +375,7 @@
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n26" species="s_n26">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="208.0" y="284.0" w="80.0" h="40.0"/>
+<celldesigner:bounds x="80.0" y="268.0" w="80.0" h="40.0"/>
 <celldesigner:font size="12"/>
 <celldesigner:view state="usual"/>
 <celldesigner:structuralState angle="4.71238898038469"/>
@@ -1446,7 +1446,7 @@ AKT3: P@S472 P@T305</body>
 <celldesigner:lineDirection index="2" value="unknown"/>
 </celldesigner:listOfLineDirection>
 </celldesigner:connectScheme>
-<celldesigner:editPoints>-0.443646162227,0.299554398781 0.082996758877,0.190278159052</celldesigner:editPoints>
+<celldesigner:editPoints>-0.335434389895,-0.338490870594 0.151732256057,-0.215008061078</celldesigner:editPoints>
 <celldesigner:line width="1.0" color="ff000000"/>
 <celldesigner:listOfModification>
 <celldesigner:modification type="PHYSICAL_STIMULATION" modifiers="s_n7" aliases="sa_n7" targetLineIndex="-1,2">
