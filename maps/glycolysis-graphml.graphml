@@ -1093,7 +1093,7 @@
     <edge id="e21" source="n6" target="n19">
       <data key="d33">
         <y:PolyLineEdge>
-          <y:Path sx="0.0" sy="0.0" tx="12.870726157191712" ty="0.0"/>
+          <y:Path sx="0.0" sy="0.0" tx="0" ty="0"/>
           <y:LineStyle color="#000000" type="line" width="1.0"/>
           <y:Arrows source="none" target="white_circle"/>
           <y:BendStyle smoothed="false"/>
