@@ -2727,10 +2727,17 @@ page, so its styles keep the base they were made on). The looks before (Default 
     }
     function mineShown() { return editorAsked ? Object.keys(mine).map(function (k) { return mine[k]; }).filter(function (r) { return !r.hidden; }) : []; }
     function examplesHidden() { try { return localStorage.getItem('atlas-examples') === 'hidden'; } catch (e) { return false; } }
+    function release(url) {   // an old version's address let go once nothing on the page uses it (a link or picture shown, the map on screen)
+      setTimeout(function () {
+        var used = (current && (current.image === url || (current.downloads || []).some(function (d) { return d.url === url; }))) ||
+          Array.prototype.some.call(document.querySelectorAll('a[href], img[src]'), function (e) { return e.getAttribute('href') === url || e.getAttribute('src') === url; });
+        if (used) release(url); else URL.revokeObjectURL(url);
+      }, 10000);
+    }
     function mineEntry(r) {
       var u = mineURLs[r.id];
       if (!u || u.at !== r.at) {   // new addresses for a new version, the old ones let go
-        if (u) setTimeout(function () { URL.revokeObjectURL(u.svg); URL.revokeObjectURL(u.text); }, 10000);
+        if (u) { release(u.svg); release(u.text); }
         u = mineURLs[r.id] = { at: r.at, svg: URL.createObjectURL(new Blob([r.svg], { type: 'image/svg+xml' })), text: URL.createObjectURL(new Blob([r.text], { type: 'application/xml' })) };
       }
       var cdm = /<sbml[\s>]/.test(r.text.slice(0, 3000)) && r.text.indexOf('celldesigner') >= 0;
