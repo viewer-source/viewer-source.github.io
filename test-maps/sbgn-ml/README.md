@@ -3,9 +3,9 @@
 SBGN-ML maps made by other people and tools, to test the viewer's SBGN-ML drawing against files we did not produce
 (user, 2026-11-14). Our own maps are left out: they are on our atlas sites. Every file is unchanged, as its source
 holds it; a test that needs a change makes it in a temporary copy. Published with the site, so a test page loads a
-file by its address, e.g. `/test-maps/sbgn-ml/pd/reactome/R-HSA-111885.sbgn`.
+file by its address, e.g. `/test-maps/sbgn-ml/pd/libsbgn/test-files/PD/glycolysis.sbgn`.
 
-- `pd/`: Process Description, the language worked on now: 50 maps and libsbgn's 50 validation error tests.
+- `pd/`: Process Description, the language worked on now: 47 maps and libsbgn's 50 validation error tests.
 - `af/`: Activity Flow, kept for later: 11 maps and libsbgn's 15 validation error tests.
 - Left out: Entity Relationship, hybrid maps, SBML and SIF (user: not needed now); maps under 20 glyphs (user: the
   hundreds of small spec and rule cases are not useful), except the validation tests; our own Metabolism
@@ -22,8 +22,7 @@ Notes on the files:
 - `invalid on purpose`: libsbgn's validation error tests (`libsbgn/validation/error-test-files/`), each breaking one
   rule; the viewer should draw what it can and not fail.
 - `.nwt` is Newt's own file: SBGN-ML with Newt's settings in an extension, read as SBGN-ML.
-- Largest: central plant metabolism (1,324 glyphs), Reactome's eicosanoids (232), BCAA (132) and urea cycle (95)
-  diagrams, the PD learner's cards (210), Newt's ATM, CaM-CaMK, Drosophila cell cycle
+- Largest: central plant metabolism (1,324 glyphs), the PD learner's cards (210), Newt's ATM, CaM-CaMK, Drosophila cell cycle
   and cholesterol maps (74 to 91).
 
 | Folder | Source | Licence |
@@ -31,7 +30,6 @@ Notes on the files:
 | `sbgn-website` | github.com/sbgn/sbgn.github.io; hidden: `downloads/examples`, `spec_examples`, `spec_images` | CC0 1.0 |
 | `libsbgn` | github.com/sbgn/libsbgn: `test-files`, `validation` | libsbgn's LICENSE.txt (LGPL 2.1 or EPL) |
 | `newt-unstable` | github.com/iVis-at-Bilkent/newt `app/samples`, branch unstable (the one web.newteditor.org runs) | LGPL 3.0 |
-| `reactome` | Reactome pathway diagrams exported as SBGN-ML: R-HSA-111885 (eicosanoids), R-HSA-70635 (urea cycle), R-HSA-70895 (BCAA) | CC BY 4.0 |
 | `pd2af-website` | github.com/pd2af/pd2af.github.io (two specification cases of 20 glyphs or more) | none stated for the maps |
 | `pd2af-engine` | github.com/pd2af/converter `static/generated/`: Activity Flow written by the 2018 engine | none stated |
 
@@ -43,6 +41,8 @@ iNOS ER and AF maps are images only); SBGN-ED's 16 competition maps in its own G
 incl. PCR, CaMKII and the sodium channel, not SBGN-ML); VISIBIOweb's (BioPAX and images); the EGFR tutorial maps
 (CellDesigner); Arcadia's (SBML).
 libsbgn's `PD_Reference_Card.sbgn` and `SBGN-PD_all.sbgn` (`test-files/PD/`), taken first, then removed (user, 2026-11-14); so was Newt's `pd_learners_card.nwt` (`newt-master`); then the folders `newt-master` (master branch) and `newt-saved`
-(the samples as web.newteditor.org saved them, 2026-10-17), twins of `newt-unstable`'s examples (user, 2026-11-14).
+(the samples as web.newteditor.org saved them, 2026-10-17), twins of `newt-unstable`'s examples (user, 2026-11-14);
+then Reactome's three diagrams exported as SBGN-ML (R-HSA-111885 eicosanoids, R-HSA-70635 urea cycle, R-HSA-70895
+BCAA; user, 2026-11-14).
 
 sbgn/pathway-archive's maps are the same files as the website's and are listed there under `same_file_also_at`.

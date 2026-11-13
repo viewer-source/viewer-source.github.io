@@ -116,9 +116,6 @@ pd/newt-unstable/polyq_proteins_interference.nwt	PD	0.2	54	30	30882	newt-unstabl
 af/newt-unstable/transforming_growth_factor_beta_signaling.nwt	AF	0.2	27	24	22168	newt-unstable	github.com/iVis-at-Bilkent/newt, branch unstable, commit 55c0870, app/samples	transforming_growth_factor_beta_signaling.nwt	LGPL 3.0			
 pd/newt-unstable/two_gene_system_behavior.nwt	PD	0.2	43	28	28050	newt-unstable	github.com/iVis-at-Bilkent/newt, branch unstable, commit 55c0870, app/samples	two_gene_system_behavior.nwt	LGPL 3.0			newt-master:two_gene_system_behavior.nwt
 pd/newt-unstable/vitamins_b6_activation_to_pyridoxal_phosphate.nwt	PD	0.2	43	30	66314	newt-unstable	github.com/iVis-at-Bilkent/newt, branch unstable, commit 55c0870, app/samples	vitamins_b6_activation_to_pyridoxal_phosphate.nwt	LGPL 3.0			newt-master:vitamins_b6_activation_to_pyridoxal_phosphate.nwt
-pd/reactome/R-HSA-111885.sbgn	PD	0.2	232	235	113298	reactome	reactome.org pathway diagram export	R-HSA-111885.sbgn	CC BY 4.0 (Reactome)			
-pd/reactome/R-HSA-70635.sbgn	PD	0.2	95	85	42376	reactome	reactome.org pathway diagram export	R-HSA-70635.sbgn	CC BY 4.0 (Reactome)			
-pd/reactome/R-HSA-70895_1.sbgn	PD	0.2	132	152	69256	reactome	reactome.org pathway diagram export	R-HSA-70895_1.sbgn	CC BY 4.0 (Reactome)			
 pd/pd2af-website/images/specification/aiaimm-cat-aiiamm/pd.sbgn	PD	0.2	28	19	7261	pd2af-website	github.com/pd2af/pd2af.github.io @b5df65a	images/specification/aiaimm-cat-aiiamm/pd.sbgn	MIT (site theme); maps none stated			
 pd/pd2af-website/images/specification/gene_activation/pd.sbgn	PD	0.2	20	14	5728	pd2af-website	github.com/pd2af/pd2af.github.io @b5df65a	images/specification/gene_activation/pd.sbgn	MIT (site theme); maps none stated			
 af/pd2af-engine/static/generated/N003-ifngr-stat1.vanted.af.sbgn	AF	0.2	20	11	5502	pd2af-engine	github.com/pd2af/converter @2f88934	static/generated/N003-ifngr-stat1.vanted.af.sbgn	none stated			
