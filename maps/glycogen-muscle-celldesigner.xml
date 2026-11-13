@@ -1709,8 +1709,8 @@
 </celldesigner:compartmentAlias>
 <celldesigner:compartmentAlias id="ca_n1" compartment="c_n1">
 <celldesigner:class>SQUARE</celldesigner:class>
-<celldesigner:bounds x="44.668844" y="196.0" w="2128.0" h="672.532"/>
-<celldesigner:namePoint x="1039.293844" y="208.5"/>
+<celldesigner:bounds x="52.987" y="77.0" w="2128.0" h="672.532"/>
+<celldesigner:namePoint x="1047.612" y="89.5"/>
 <celldesigner:doubleLine thickness="12.0" outerWidth="2.0" innerWidth="1.0"/>
 <celldesigner:paint color="ffdfdbce" scheme="Color"/>
 <celldesigner:info state="empty" angle="-1.5707963267948966"/>
@@ -1853,7 +1853,7 @@
 </celldesigner:complexSpeciesAlias>
 <celldesigner:complexSpeciesAlias id="sa_n1_n5" species="s_n1_n5" compartmentAlias="ca_n1">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="258.310466" y="290.807209" w="100.0" h="128.0"/>
+<celldesigner:bounds x="266.628" y="171.807" w="100.0" h="128.0"/>
 <celldesigner:font size="12"/>
 <celldesigner:view state="usual"/>
 <celldesigner:backupSize w="0.0" h="0.0"/>
@@ -1874,7 +1874,7 @@
 </celldesigner:complexSpeciesAlias>
 <celldesigner:complexSpeciesAlias id="sa_n1_n7" species="s_n1_n7" compartmentAlias="ca_n1">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="452.640117" y="261.807209" w="116.0" h="186.0"/>
+<celldesigner:bounds x="460.958" y="142.807" w="116.0" h="186.0"/>
 <celldesigner:font size="12"/>
 <celldesigner:view state="usual"/>
 <celldesigner:backupSize w="0.0" h="0.0"/>
@@ -1895,7 +1895,7 @@
 </celldesigner:complexSpeciesAlias>
 <celldesigner:complexSpeciesAlias id="sa_n1_n9" species="s_n1_n9" compartmentAlias="ca_n1">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="605.038317" y="440.205686" w="150.0" h="70.0"/>
+<celldesigner:bounds x="613.356" y="321.206" w="150.0" h="70.0"/>
 <celldesigner:font size="12"/>
 <celldesigner:view state="usual"/>
 <celldesigner:backupSize w="0.0" h="0.0"/>
@@ -1916,7 +1916,7 @@
 </celldesigner:complexSpeciesAlias>
 <celldesigner:complexSpeciesAlias id="sa_n1_n11" species="s_n1_n11" compartmentAlias="ca_n1">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="714.978" y="648.0" w="106.044" h="128.0"/>
+<celldesigner:bounds x="723.296" y="529.0" w="106.044" h="128.0"/>
 <celldesigner:font size="12"/>
 <celldesigner:view state="usual"/>
 <celldesigner:backupSize w="0.0" h="0.0"/>
@@ -1937,7 +1937,7 @@
 </celldesigner:complexSpeciesAlias>
 <celldesigner:complexSpeciesAlias id="sa_n1_n13" species="s_n1_n13" compartmentAlias="ca_n1">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="529.641007" y="536.95921" w="106.044" h="128.0"/>
+<celldesigner:bounds x="537.959" y="417.959" w="106.044" h="128.0"/>
 <celldesigner:font size="12"/>
 <celldesigner:view state="usual"/>
 <celldesigner:backupSize w="0.0" h="0.0"/>
@@ -1958,7 +1958,7 @@
 </celldesigner:complexSpeciesAlias>
 <celldesigner:complexSpeciesAlias id="sa_n1_n17" species="s_n1_n17" compartmentAlias="ca_n1">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="1730.100037" y="234.902366" w="118.044" h="120.0"/>
+<celldesigner:bounds x="1738.418" y="115.902" w="118.044" h="120.0"/>
 <celldesigner:font size="12"/>
 <celldesigner:view state="usual"/>
 <celldesigner:backupSize w="0.0" h="0.0"/>
@@ -1979,7 +1979,7 @@
 </celldesigner:complexSpeciesAlias>
 <celldesigner:complexSpeciesAlias id="sa_n1_n19" species="s_n1_n19" compartmentAlias="ca_n1">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="1904.82978" y="369.945743" w="230.0" h="150.0"/>
+<celldesigner:bounds x="1913.148" y="250.946" w="230.0" h="150.0"/>
 <celldesigner:font size="12"/>
 <celldesigner:view state="usual"/>
 <celldesigner:backupSize w="0.0" h="0.0"/>
@@ -2000,7 +2000,7 @@
 </celldesigner:complexSpeciesAlias>
 <celldesigner:complexSpeciesAlias id="sa_n1_n19_n0" species="s_n1_n19_n0" complexSpeciesAlias="sa_n1_n19">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="2024.82978" y="379.945743" w="100.0" h="120.0"/>
+<celldesigner:bounds x="2033.148" y="260.946" w="100.0" h="120.0"/>
 <celldesigner:font size="12"/>
 <celldesigner:view state="usual"/>
 <celldesigner:backupSize w="0.0" h="0.0"/>
@@ -2021,7 +2021,7 @@
 </celldesigner:complexSpeciesAlias>
 <celldesigner:complexSpeciesAlias id="sa_n1_n19_n1" species="s_n1_n19_n1" complexSpeciesAlias="sa_n1_n19">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="1914.82978" y="379.945743" w="100.0" h="120.0"/>
+<celldesigner:bounds x="1923.148" y="260.946" w="100.0" h="120.0"/>
 <celldesigner:font size="12"/>
 <celldesigner:view state="usual"/>
 <celldesigner:backupSize w="0.0" h="0.0"/>
@@ -2042,7 +2042,7 @@
 </celldesigner:complexSpeciesAlias>
 <celldesigner:complexSpeciesAlias id="sa_n1_n20" species="s_n1_n20" compartmentAlias="ca_n1">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="1569.330837" y="384.945743" w="100.0" h="120.0"/>
+<celldesigner:bounds x="1577.649" y="265.946" w="100.0" h="120.0"/>
 <celldesigner:font size="12"/>
 <celldesigner:view state="usual"/>
 <celldesigner:backupSize w="0.0" h="0.0"/>
@@ -2063,7 +2063,7 @@
 </celldesigner:complexSpeciesAlias>
 <celldesigner:complexSpeciesAlias id="sa_n1_n22" species="s_n1_n22" compartmentAlias="ca_n1">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="1679.330837" y="480.164158" w="100.0" h="120.0"/>
+<celldesigner:bounds x="1687.649" y="361.164" w="100.0" h="120.0"/>
 <celldesigner:font size="12"/>
 <celldesigner:view state="usual"/>
 <celldesigner:backupSize w="0.0" h="0.0"/>
@@ -2084,7 +2084,7 @@
 </celldesigner:complexSpeciesAlias>
 <celldesigner:complexSpeciesAlias id="sa_n1_n25" species="s_n1_n25" compartmentAlias="ca_n1">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="1413.337688" y="441.625357" w="120.0" h="200.0"/>
+<celldesigner:bounds x="1421.656" y="322.625" w="120.0" h="200.0"/>
 <celldesigner:font size="12"/>
 <celldesigner:view state="usual"/>
 <celldesigner:backupSize w="0.0" h="0.0"/>
@@ -2105,7 +2105,7 @@
 </celldesigner:complexSpeciesAlias>
 <celldesigner:complexSpeciesAlias id="sa_n1_n25_n1" species="s_n1_n25_n1" complexSpeciesAlias="sa_n1_n25">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="1423.337688" y="451.625357" w="100.0" h="120.0"/>
+<celldesigner:bounds x="1431.656" y="332.625" w="100.0" h="120.0"/>
 <celldesigner:font size="12"/>
 <celldesigner:view state="usual"/>
 <celldesigner:backupSize w="0.0" h="0.0"/>
@@ -2126,7 +2126,7 @@
 </celldesigner:complexSpeciesAlias>
 <celldesigner:complexSpeciesAlias id="sa_n1_n27" species="s_n1_n27" compartmentAlias="ca_n1">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="1424.52866" y="268.639493" w="100.0" h="120.0"/>
+<celldesigner:bounds x="1432.847" y="149.639" w="100.0" h="120.0"/>
 <celldesigner:font size="12"/>
 <celldesigner:view state="usual"/>
 <celldesigner:backupSize w="0.0" h="0.0"/>
@@ -2147,7 +2147,7 @@
 </celldesigner:complexSpeciesAlias>
 <celldesigner:complexSpeciesAlias id="sa_n1_n29" species="s_n1_n29" compartmentAlias="ca_n1">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="1214.599315" y="229.63949300000002" w="123.0" h="201.0"/>
+<celldesigner:bounds x="1222.917" y="110.639" w="123.0" h="201.0"/>
 <celldesigner:font size="12"/>
 <celldesigner:view state="usual"/>
 <celldesigner:backupSize w="0.0" h="0.0"/>
@@ -2168,7 +2168,7 @@
 </celldesigner:complexSpeciesAlias>
 <celldesigner:complexSpeciesAlias id="sa_n1_n29_n1" species="s_n1_n29_n1" complexSpeciesAlias="sa_n1_n29">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="1227.599315" y="288.639493" w="100.0" h="120.0"/>
+<celldesigner:bounds x="1235.917" y="169.639" w="100.0" h="120.0"/>
 <celldesigner:font size="12"/>
 <celldesigner:view state="usual"/>
 <celldesigner:backupSize w="0.0" h="0.0"/>
@@ -2189,7 +2189,7 @@
 </celldesigner:complexSpeciesAlias>
 <celldesigner:complexSpeciesAlias id="sa_n1_n30" species="s_n1_n30" compartmentAlias="ca_n1">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="1092.599315" y="545.423379" w="100.0" h="120.0"/>
+<celldesigner:bounds x="1100.917" y="426.423" w="100.0" h="120.0"/>
 <celldesigner:font size="12"/>
 <celldesigner:view state="usual"/>
 <celldesigner:backupSize w="0.0" h="0.0"/>
@@ -3029,7 +3029,7 @@
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n1_n1" species="s_n1_n1" compartmentAlias="ca_n1">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="1104.334717" y="465.205686" w="40.0" h="40.0"/>
+<celldesigner:bounds x="1112.653" y="346.206" w="40.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -3048,7 +3048,7 @@
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n1_n2" species="s_n1_n2" compartmentAlias="ca_n1">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="905.45489" y="465.205686" w="40.0" h="40.0"/>
+<celldesigner:bounds x="913.773" y="346.206" w="40.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -3067,7 +3067,7 @@
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n1_n4" species="s_n1_n4" compartmentAlias="ca_n1">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="86.430681" y="334.807209" w="80.0" h="40.0"/>
+<celldesigner:bounds x="94.749" y="215.807" w="80.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -3086,7 +3086,7 @@
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n1_n5_n0" species="s_n1_n5_n0" complexSpeciesAlias="sa_n1_n5">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="268.310466" y="350.807209" w="80.0" h="40.0"/>
+<celldesigner:bounds x="276.628" y="231.807" w="80.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -3105,7 +3105,7 @@
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n1_n5_n1" species="s_n1_n5_n1" complexSpeciesAlias="sa_n1_n5">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="268.310466" y="300.807209" w="80.0" h="40.0"/>
+<celldesigner:bounds x="276.628" y="181.807" w="80.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -3124,7 +3124,7 @@
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n1_n7_n0" species="s_n1_n7_n0" complexSpeciesAlias="sa_n1_n7">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="470.640117" y="379.807209" w="80.0" h="40.0"/>
+<celldesigner:bounds x="478.958" y="260.807" w="80.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -3143,7 +3143,7 @@
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n1_n7_n1" species="s_n1_n7_n1" complexSpeciesAlias="sa_n1_n7">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="470.640117" y="321.807209" w="80.0" h="40.0"/>
+<celldesigner:bounds x="478.958" y="202.807" w="80.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -3162,7 +3162,7 @@
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n1_n7_n2" species="s_n1_n7_n2" complexSpeciesAlias="sa_n1_n7">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="470.640117" y="271.807209" w="80.0" h="40.0"/>
+<celldesigner:bounds x="478.958" y="152.807" w="80.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -3181,7 +3181,7 @@
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n1_n9_n0" species="s_n1_n9_n0" complexSpeciesAlias="sa_n1_n9">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="615.038317" y="450.205686" w="40.0" h="40.0"/>
+<celldesigner:bounds x="623.356" y="331.206" w="40.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -3200,7 +3200,7 @@
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n1_n9_n1" species="s_n1_n9_n1" complexSpeciesAlias="sa_n1_n9">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="665.038317" y="450.205686" w="80.0" h="40.0"/>
+<celldesigner:bounds x="673.356" y="331.206" w="80.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -3219,7 +3219,7 @@
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n1_n11_n0" species="s_n1_n11_n0" complexSpeciesAlias="sa_n1_n11">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="748.0" y="658.0" w="40.0" h="40.0"/>
+<celldesigner:bounds x="756.318" y="539.0" w="40.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -3238,7 +3238,7 @@
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n1_n11_n1" species="s_n1_n11_n1" complexSpeciesAlias="sa_n1_n11">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="728.0" y="708.0" w="80.0" h="40.0"/>
+<celldesigner:bounds x="736.318" y="589.0" w="80.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -3257,7 +3257,7 @@
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n1_n13_n0" species="s_n1_n13_n0" complexSpeciesAlias="sa_n1_n13">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="562.663007" y="546.95921" w="40.0" h="40.0"/>
+<celldesigner:bounds x="570.981" y="427.959" w="40.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -3276,7 +3276,7 @@
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n1_n13_n1" species="s_n1_n13_n1" complexSpeciesAlias="sa_n1_n13">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="542.663007" y="596.95921" w="80.0" h="40.0"/>
+<celldesigner:bounds x="550.981" y="477.959" w="80.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -3295,7 +3295,7 @@
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n1_n15" species="s_n1_n15" compartmentAlias="ca_n1">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="1923.658657" y="274.902366" w="80.0" h="40.0"/>
+<celldesigner:bounds x="1931.977" y="155.902" w="80.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -3314,7 +3314,7 @@
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n1_n17_n0" species="s_n1_n17_n0" complexSpeciesAlias="sa_n1_n17">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="1749.122037" y="294.902366" w="80.0" h="40.0"/>
+<celldesigner:bounds x="1757.44" y="175.902" w="80.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -3333,7 +3333,7 @@
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n1_n17_n1" species="s_n1_n17_n1" complexSpeciesAlias="sa_n1_n17">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="1769.122037" y="244.902366" w="40.0" h="40.0"/>
+<celldesigner:bounds x="1777.44" y="125.902" w="40.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -3352,7 +3352,7 @@
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n1_n18" species="s_n1_n18" compartmentAlias="ca_n1">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="1580.50196" y="593.522991" w="80.0" h="40.0"/>
+<celldesigner:bounds x="1588.82" y="474.523" w="80.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -3371,7 +3371,7 @@
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n1_n19_n0_n0" species="s_n1_n19_n0_n0" complexSpeciesAlias="sa_n1_n19_n0">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="2034.82978" y="389.945743" w="80.0" h="40.0"/>
+<celldesigner:bounds x="2043.148" y="270.946" w="80.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -3390,7 +3390,7 @@
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n1_n19_n0_n1" species="s_n1_n19_n0_n1" complexSpeciesAlias="sa_n1_n19_n0">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="2034.82978" y="439.945743" w="80.0" h="40.0"/>
+<celldesigner:bounds x="2043.148" y="320.946" w="80.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -3409,7 +3409,7 @@
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n1_n19_n1_n0" species="s_n1_n19_n1_n0" complexSpeciesAlias="sa_n1_n19_n1">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="1924.82978" y="389.945743" w="80.0" h="40.0"/>
+<celldesigner:bounds x="1933.148" y="270.946" w="80.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -3428,7 +3428,7 @@
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n1_n19_n1_n1" species="s_n1_n19_n1_n1" complexSpeciesAlias="sa_n1_n19_n1">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="1944.82978" y="439.945743" w="40.0" h="40.0"/>
+<celldesigner:bounds x="1953.148" y="320.946" w="40.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -3447,7 +3447,7 @@
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n1_n20_n0" species="s_n1_n20_n0" complexSpeciesAlias="sa_n1_n20">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="1599.330837" y="444.945743" w="40.0" h="40.0"/>
+<celldesigner:bounds x="1607.649" y="325.946" w="40.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -3466,7 +3466,7 @@
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n1_n20_n1" species="s_n1_n20_n1" complexSpeciesAlias="sa_n1_n20">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="1579.330837" y="394.945743" w="80.0" h="40.0"/>
+<celldesigner:bounds x="1587.649" y="275.946" w="80.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -3485,7 +3485,7 @@
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n1_n22_n0" species="s_n1_n22_n0" complexSpeciesAlias="sa_n1_n22">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="1689.330837" y="490.164158" w="80.0" h="40.0"/>
+<celldesigner:bounds x="1697.649" y="371.164" w="80.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -3504,7 +3504,7 @@
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n1_n22_n1" species="s_n1_n22_n1" complexSpeciesAlias="sa_n1_n22">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="1689.330837" y="540.164158" w="80.0" h="40.0"/>
+<celldesigner:bounds x="1697.649" y="421.164" w="80.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -3523,7 +3523,7 @@
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n1_n23" species="s_n1_n23" compartmentAlias="ca_n1">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="1825.665279" y="480.445743" w="40.0" h="40.0"/>
+<celldesigner:bounds x="1833.983" y="361.446" w="40.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -3542,7 +3542,7 @@
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n1_n24" species="s_n1_n24" compartmentAlias="ca_n1">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="1709.330837" y="369.445743" w="40.0" h="40.0"/>
+<celldesigner:bounds x="1717.649" y="250.446" w="40.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -3561,7 +3561,7 @@
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n1_n25_n0" species="s_n1_n25_n0" complexSpeciesAlias="sa_n1_n25">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="1433.337688" y="581.625357" w="80.0" h="40.0"/>
+<celldesigner:bounds x="1441.656" y="462.625" w="80.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -3580,7 +3580,7 @@
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n1_n25_n1_n0" species="s_n1_n25_n1_n0" complexSpeciesAlias="sa_n1_n25_n1">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="1433.337688" y="461.625357" w="80.0" h="40.0"/>
+<celldesigner:bounds x="1441.656" y="342.625" w="80.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -3599,7 +3599,7 @@
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n1_n25_n1_n1" species="s_n1_n25_n1_n1" complexSpeciesAlias="sa_n1_n25_n1">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="1453.337688" y="511.625357" w="40.0" h="40.0"/>
+<celldesigner:bounds x="1461.656" y="392.625" w="40.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -3618,7 +3618,7 @@
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n1_n27_n0" species="s_n1_n27_n0" complexSpeciesAlias="sa_n1_n27">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="1434.52866" y="278.639493" w="80.0" h="40.0"/>
+<celldesigner:bounds x="1442.847" y="159.639" w="80.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -3637,7 +3637,7 @@
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n1_n27_n1" species="s_n1_n27_n1" complexSpeciesAlias="sa_n1_n27">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="1434.52866" y="328.639493" w="80.0" h="40.0"/>
+<celldesigner:bounds x="1442.847" y="209.639" w="80.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -3656,7 +3656,7 @@
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n1_n29_n0" species="s_n1_n29_n0" complexSpeciesAlias="sa_n1_n29">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="1236.599315" y="238.63949300000002" w="80.0" h="40.0"/>
+<celldesigner:bounds x="1244.917" y="119.639" w="80.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -3675,7 +3675,7 @@
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n1_n29_n1_n0" species="s_n1_n29_n1_n0" complexSpeciesAlias="sa_n1_n29_n1">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="1237.599315" y="348.639493" w="80.0" h="40.0"/>
+<celldesigner:bounds x="1245.917" y="229.639" w="80.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -3694,7 +3694,7 @@
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n1_n29_n1_n1" species="s_n1_n29_n1_n1" complexSpeciesAlias="sa_n1_n29_n1">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="1257.599315" y="298.639493" w="40.0" h="40.0"/>
+<celldesigner:bounds x="1265.917" y="179.639" w="40.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -3713,7 +3713,7 @@
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n1_n30_n0" species="s_n1_n30_n0" complexSpeciesAlias="sa_n1_n30">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="1102.599315" y="605.423379" w="80.0" h="40.0"/>
+<celldesigner:bounds x="1110.917" y="486.423" w="80.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -3732,7 +3732,7 @@
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n1_n30_n1" species="s_n1_n30_n1" complexSpeciesAlias="sa_n1_n30">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="1122.599315" y="555.423379" w="40.0" h="40.0"/>
+<celldesigner:bounds x="1130.917" y="436.423" w="40.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -3751,7 +3751,7 @@
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n1_n32" species="s_n1_n32" compartmentAlias="ca_n1">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="1041.95489" y="413.205686" w="40.0" h="40.0"/>
+<celldesigner:bounds x="1050.273" y="294.206" w="40.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -3770,7 +3770,7 @@
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n1_n33" species="s_n1_n33" compartmentAlias="ca_n1">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="959.954844" y="413.205686" w="40.0" h="40.0"/>
+<celldesigner:bounds x="968.273" y="294.206" w="40.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -3789,7 +3789,7 @@
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n1_n35" species="s_n1_n35" compartmentAlias="ca_n1">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="984.894804" y="242.205686" w="80.0" h="40.0"/>
+<celldesigner:bounds x="993.213" y="123.206" w="80.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -3808,7 +3808,7 @@
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n1_n36" species="s_n1_n36" compartmentAlias="ca_n1">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="1044.894804" y="358.205686" w="40.0" h="40.0"/>
+<celldesigner:bounds x="1053.213" y="239.206" w="40.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -3827,7 +3827,7 @@
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n1_n38" species="s_n1_n38" compartmentAlias="ca_n1">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="715.45489" y="348.205686" w="40.0" h="40.0"/>
+<celldesigner:bounds x="723.773" y="229.206" w="40.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -3846,7 +3846,7 @@
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n1_n39" species="s_n1_n39" compartmentAlias="ca_n1">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="795.45489" y="288.205686" w="80.0" h="40.0"/>
+<celldesigner:bounds x="803.773" y="169.206" w="80.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -3865,7 +3865,7 @@
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n1_n40" species="s_n1_n36" compartmentAlias="ca_n1">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="775.45489" y="398.349852" w="40.0" h="40.0"/>
+<celldesigner:bounds x="783.773" y="279.35" w="40.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
@@ -6198,7 +6198,7 @@
 </celldesigner:connectScheme>
 <celldesigner:line width="1.0" color="ff000000"/>
 <celldesigner:listOfModification>
-<celldesigner:modification type="CATALYSIS" modifiers="s_n0_n33" aliases="sa_n0_n33" targetLineIndex="-1,2" editPoints="0.3404898388809997,0.47387393735000005">
+<celldesigner:modification type="CATALYSIS" modifiers="s_n0_n33" aliases="sa_n0_n33" targetLineIndex="-1,2" editPoints="0.243290848568,0.421520340513">
 <celldesigner:connectScheme connectPolicy="direct">
 <celldesigner:listOfLineDirection>
 <celldesigner:lineDirection index="0" value="unknown"/>
@@ -6332,7 +6332,7 @@
 <celldesigner:lineDirection index="1" value="unknown"/>
 </celldesigner:listOfLineDirection>
 </celldesigner:connectScheme>
-<celldesigner:editPoints>0.472776713253,-0.000866520291</celldesigner:editPoints>
+<celldesigner:editPoints>0.550775691068,0.004014159014</celldesigner:editPoints>
 <celldesigner:line width="1.0" color="ff000000"/>
 </celldesigner:extension>
 </annotation>
@@ -6391,7 +6391,7 @@
 <celldesigner:lineDirection index="1" value="unknown"/>
 </celldesigner:listOfLineDirection>
 </celldesigner:connectScheme>
-<celldesigner:editPoints>0.9096955645081679,0.2880007020199571</celldesigner:editPoints>
+<celldesigner:editPoints>0.716828946131,0.158116101943</celldesigner:editPoints>
 <celldesigner:line width="1.0" color="ff000000"/>
 </celldesigner:extension>
 </annotation>
@@ -6439,7 +6439,7 @@
 <celldesigner:lineDirection index="1" value="unknown"/>
 </celldesigner:listOfLineDirection>
 </celldesigner:connectScheme>
-<celldesigner:editPoints>0.337228879814,-0.058655803295</celldesigner:editPoints>
+<celldesigner:editPoints>0.615294196152,-0.060401465865</celldesigner:editPoints>
 <celldesigner:line width="1.0" color="ff000000" type="Straight"/>
 </celldesigner:reactantLink>
 </celldesigner:listOfReactantLinks>
@@ -6449,7 +6449,7 @@
 <celldesigner:lineDirection index="1" value="unknown"/>
 </celldesigner:listOfLineDirection>
 </celldesigner:connectScheme>
-<celldesigner:editPoints>0.173776958402,0.378930312071</celldesigner:editPoints>
+<celldesigner:editPoints>0.234739530334,0.182730590833</celldesigner:editPoints>
 <celldesigner:line width="1.0" color="ff000000"/>
 </celldesigner:extension>
 </annotation>
@@ -6496,7 +6496,7 @@
 <celldesigner:lineDirection index="2" value="unknown"/>
 </celldesigner:listOfLineDirection>
 </celldesigner:connectScheme>
-<celldesigner:editPoints>0.480429880383,0.31128958989 0.750305626537,0.14959917089</celldesigner:editPoints>
+<celldesigner:editPoints>0.480432019132,0.311288885455 0.750306731961,0.149598785867</celldesigner:editPoints>
 <celldesigner:line width="1.0" color="ff000000"/>
 <celldesigner:listOfModification>
 <celldesigner:modification type="CATALYSIS" modifiers="s_n1_n9" aliases="sa_n1_n9" targetLineIndex="-1,3">
@@ -6637,7 +6637,7 @@
 <celldesigner:lineDirection index="2" value="unknown"/>
 </celldesigner:listOfLineDirection>
 </celldesigner:connectScheme>
-<celldesigner:editPoints>0.364076223242,0.0 0.788025407695,0.0</celldesigner:editPoints>
+<celldesigner:editPoints>0.36407581542,0.0 0.788026936397,0.0</celldesigner:editPoints>
 <celldesigner:line width="1.0" color="ff000000"/>
 <celldesigner:listOfModification>
 <celldesigner:modification type="CATALYSIS" modifiers="s_n1_n17" aliases="sa_n1_n17" targetLineIndex="-1,3">
@@ -6726,7 +6726,7 @@
 <celldesigner:lineDirection index="1" value="unknown"/>
 </celldesigner:listOfLineDirection>
 </celldesigner:connectScheme>
-<celldesigner:editPoints>0.202069986343,0.397319882104</celldesigner:editPoints>
+<celldesigner:editPoints>0.202071453553,0.397321808543</celldesigner:editPoints>
 <celldesigner:line width="1.0" color="ff000000"/>
 </celldesigner:extension>
 </annotation>
@@ -6837,7 +6837,7 @@
 <celldesigner:lineDirection index="2" value="unknown"/>
 </celldesigner:listOfLineDirection>
 </celldesigner:connectScheme>
-<celldesigner:editPoints>0.553240015941,0.121446518092 0.952566521546,0.209105797527</celldesigner:editPoints>
+<celldesigner:editPoints>0.623662291583,0.119863901822 0.967225217128,0.179961451496</celldesigner:editPoints>
 <celldesigner:line width="1.0" color="ff000000"/>
 </celldesigner:extension>
 </annotation>
@@ -6894,7 +6894,7 @@
 <celldesigner:lineDirection index="2" value="unknown"/>
 </celldesigner:listOfLineDirection>
 </celldesigner:connectScheme>
-<celldesigner:editPoints>-2.9665159217984183E-13,-0.7894214433585645 1.0000000001709948,-0.7843932813024219</celldesigner:editPoints>
+<celldesigner:editPoints>0.0,-0.789420756235 1.0,-0.784392598552</celldesigner:editPoints>
 <celldesigner:line width="1.0" color="ff000000"/>
 <celldesigner:listOfModification>
 <celldesigner:modification type="CATALYSIS" modifiers="s_n1_n35" aliases="sa_n1_n35" targetLineIndex="-1,2">
@@ -6973,7 +6973,7 @@
 <celldesigner:lineDirection index="1" value="unknown"/>
 </celldesigner:listOfLineDirection>
 </celldesigner:connectScheme>
-<celldesigner:editPoints>0.2351781928109995,0.42411013951199994</celldesigner:editPoints>
+<celldesigner:editPoints>0.23518146986,0.424112402702</celldesigner:editPoints>
 <celldesigner:line width="1.0" color="ff000000"/>
 <celldesigner:listOfModification>
 <celldesigner:modification type="CATALYSIS" modifiers="s_n1_n39" aliases="sa_n1_n39" targetLineIndex="-1,3">
