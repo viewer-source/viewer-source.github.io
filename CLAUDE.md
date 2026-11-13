@@ -123,6 +123,8 @@ says "the workbench", "the converter's repository", "a private repository".
   SBGN-ML file, its PNG made from that drawing; such a map is not edited (no Edit tab; editing SBGN-ML later) and never
   shows an edited drawing of its own file. The look: true SBGN as the file gives it, its own places, sizes and colours,
   no tool's styling (user).
+- Settings' width (user, 2026-11-14: "there is some sufficient width, and it should stay simply there"): everything in
+  Settings (slider, colour choices, button pairs) keeps 176 px when the list is dragged wider; nothing stretches with the panel.
 - Map colours (user, 2026-11-12, in Settings after Map size): File (the colours in the map's file, the default) and
   Default (the /colours/ page's Default), only these two since 2026-11-13 (user: more schemes would need a way to edit
   them, a hassle for now; the roles in the pictures stay, the ground for overlays; a reader's stored Paper or Haze falls
