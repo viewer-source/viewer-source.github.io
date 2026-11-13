@@ -6,6 +6,21 @@
     // a CellDesigner map (2026-11-12, user: "basically yEd experience with CD"): edited as the GraphML that
     // renderers/converter/cd_edit.py makes of it (its header says how), the moves written back into the CellDesigner file
     // by it and the map drawn by cdrender, each part in a group of its own; text is that GraphML, cd.now the file
+    var PYODIDE = 'https://cdn.jsdelivr.net/pyodide/v0.26.4/full/';   // as the converter's page
+    var py = null;                 // a promise of Python with lxml (Pyodide): only for the CellDesigner side
+    function python() {
+      if (py) return py;
+      say('Loading Python (a few seconds the first time)...');
+      py = new Promise(function (res, rej) {
+        var s = document.createElement('script');
+        s.src = PYODIDE + 'pyodide.js'; s.onload = res; s.onerror = rej;
+        document.head.appendChild(s);
+      }).then(function () { return loadPyodide({ indexURL: PYODIDE }); }).then(function (p) {
+        return p.loadPackage('lxml').then(function () { p.FS.mkdirTree('/home/pyodide'); p.runPython("import sys, json\nsys.path.insert(0, '/home/pyodide')"); return p; });
+      });
+      py.catch(function (e) { py = null; say('Python did not load: ' + e); });
+      return py;
+    }
     var cdp = null, pyCd = null, cd = null;   // Python with the CellDesigner side, that Python once ready, the file edited ({ base, now })
     var CD_FILES = ['cdrender', 'cd_edit'], MAPCONV = ['annotation', 'cd_layout', 'cd_tidy', 'celldesigner', 'graphml', 'layout', 'model', 'report', 'style'];
     var CD_DRIVER = ['import cd_edit', 'def cd_graphml(t):', '    return cd_edit.graphml(t)', 'def cd_draw(t, g):', '    return json.dumps(cd_edit.draw(t, g))'].join('\n');
@@ -148,15 +163,23 @@
         i.src = url;
       }).catch(function () {});
     }
-    // the renderer started in the background where the Edit tab is (user, 2026-11-12: a CellDesigner map took about 4 s to
-    // open for editing, Python and the converter loading first): a few seconds after the page has shown its map, when the
-    // browser is idle; a site without the Edit tab loads nothing
-    setTimeout(function () {
-      var eb = document.querySelector('#m2-rail .m2-ri[data-win="edit"]');
-      if (!eb || !eb.offsetParent) return;
-      (window.requestIdleCallback || function (f) { setTimeout(f, 0); })(function () {
-        var s0 = status.textContent;   // quietly: its "Loading the renderer" message not shown
-        cdpy().then(function () { if (!on) status.textContent = s0; }, function () {});
-        if (!on) status.textContent = s0;
-      });
-    }, 2500);
+    // Python started in the background (user, 2026-11-12: a CellDesigner map took about 4 s to open for editing, Python and
+    // the converter loading first): a few seconds after the page has shown a CellDesigner map where the Edit tab is, when
+    // the browser is idle. Since 2026-11-13 only for a CellDesigner map (a GraphML map needs no Python: its renderer and
+    // the layout tools are JavaScript), so a page on a GraphML map never freezes for Python's start
+    function cdMap(m) { var d = m && m.downloads && m.downloads[0]; return !!(d && d.label === 'CellDesigner'); }
+    var warm = null;
+    function warmUp() {
+      clearTimeout(warm);
+      warm = setTimeout(function () {
+        var eb = document.querySelector('#m2-rail .m2-ri[data-win="edit"]');
+        if (cdp || !eb || !eb.offsetParent || !cdMap(V.current)) return;
+        (window.requestIdleCallback || function (f) { setTimeout(f, 0); })(function () {
+          if (cdp || !cdMap(V.current)) return;
+          var s0 = status.textContent;   // quietly: its "Loading" message not shown
+          cdpy().then(function () { if (!on) status.textContent = s0; }, function () {});
+          if (!on) status.textContent = s0;
+        });
+      }, 2500);
+    }
+    warmUp();

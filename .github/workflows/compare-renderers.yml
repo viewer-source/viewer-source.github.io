@@ -1,10 +1,11 @@
-# yrender.py (the master) and yrender.js (the editor's redraw) must draw every map alike, byte for byte, in the three
-# ways the renderer is used (tests/yrender-compare.js). Runs when either changes, or by hand.
+# The Python masters and their JavaScript twins in the editor must give the same, byte for byte: yrender.py and
+# yrender.js on every demo map in the renderer's three ways (tests/yrender-compare.js); tidy.py with the layout skill's
+# complex_pack.py and snap_grid.py and layout.js in every case of tests/layout-compare.js. Runs when any changes, or by hand.
 name: Compare renderers
 on:
   push:
     branches: [main]
-    paths: ['renderers/yrender/**', 'tests/**', 'maps/**']
+    paths: ['renderers/yrender/**', 'renderers/layout/**', 'tests/**', 'maps/**']
   workflow_dispatch:
 permissions:
   contents: read
@@ -19,3 +20,4 @@ jobs:
         with: {node-version: '22'}
       - run: pip install lxml && npm install --no-save @xmldom/xmldom
       - run: node tests/yrender-compare.js python3
+      - run: node tests/layout-compare.js python3

@@ -167,9 +167,9 @@ says "the workbench", "the converter's repository", "a private repository".
   of its own: since 2026-11-13 `renderers/yrender/yrender.js`, the same SVG as yrender.py byte for byte (checked on 607
   maps in the build's, the editor's and the colours page's ways; `tests/yrender-compare.js`, run by the workflow Compare
   renderers on every change), reusing the document the editor read when it is still the text drawn (the reading took
-  most of the time); Python (Pyodide, the converter page's version) only for the CellDesigner side and the layout tools.
-  Measured 2026-11-13 (headless, glycogen muscle and eNOS GraphML, page frozen): switching to edit 293 ms with Python,
-  0-102 ms now; a move 305-343 ms, now 254-256 ms (tidy's fit still in Python).
+  most of the time); Python (Pyodide, the converter page's version) only for the CellDesigner side.
+  Measured 2026-11-13 (headless, glycogen muscle and eNOS GraphML, page frozen): switching to edit 270-296 ms with
+  Python, 67-129 ms now.
   A map of the site saves by itself (user, 2026-11-12: "as in Google Docs"): no Save button; 3 s after the last move,
   undo or redo, the map's source `maps/<file>.graphml` is committed to the site's own repository (`<owner>/<owner>.github.io`,
   from the address) through GitHub's contents API, with a fine-grained token the user pastes once in the Edit window
@@ -238,8 +238,16 @@ says "the workbench", "the converter's repository", "a private repository".
   node moved), so yEd keeps the boxes; one undo step with the move.
   The layout skill's tools in the editor (user, 2026-11-12: reuse its code, no AI): a copy of its `complex_pack.py` and
   `snap_grid.py` in `renderers/layout/` (each starting with a line naming the skill's commit; refreshed with
-  `sh renderers/layout/get_layout.sh <clone of the skill>`, never edited here), run in the browser by Pyodide through
-  `renderers/layout/tidy.py`, which writes back only the attributes they change, the rest byte for byte; one undo step.
+  `sh renderers/layout/get_layout.sh <clone of the skill>`, never edited here) with `renderers/layout/tidy.py`, which
+  writes back only the attributes they change, the rest byte for byte; one undo step. In the browser they run as
+  `renderers/layout/layout.js` (2026-11-13): the three in JavaScript, the same text as the Python byte for byte (checked
+  on 1,006 maps of the demo, the workbench and the official site, 5,158 runs: Snap, Pack all and chosen, the fit after a
+  move and after a resize, CellDesigner maps with their ports kept; `tests/layout-compare.js`, run by the workflow Compare
+  renderers). A new copy of the skill's scripts or a change to tidy.py is made in layout.js too and the comparison run;
+  the Python stays the master until the user says. Python (Pyodide) is now loaded only for CellDesigner maps, started in
+  the background only when one is shown. Measured 2026-11-13 (headless, page frozen, glycogen muscle and eNOS GraphML):
+  page open 2.3-2.7 s from Python's start before, none now; a move 357-362 ms, now 113-130 ms; Snap map to grid 463-604
+  ms in Python, 135-217 ms now.
   Snap the whole map to the grid (the dotted square after the magnet): `snap_grid.snap`, complexes packed first, rows
   and columns kept, compartments fitted. Pack (after it; its sign a complex with cut corners holding two proteins stacked, the proteins 2:1 as the default 80 by 40 the complex 17 by 18 with room round them (option 4 of six, user 2026-11-12; 5 also liked: 18 by 18), the same size and line as the other signs (the tools now at the tabs' 21 px and line 1.6: before, 20 px with 1.8, about 10% heavier), a little larger inside its square: user, 2026-11-12): the complex selected, or the one round
   a member selected, packed by `complex_pack` (its arcs' ends and the groups round it fitted), every complex when nothing
