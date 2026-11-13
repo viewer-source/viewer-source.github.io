@@ -10,5 +10,5 @@ window.m2Editor = function (V) {
 {% include_relative src/help.js %}
     buttons();
     aheadSoon();
-    return { paint: paint, away: away, unkeep: unkeep, leaving: function (m) { if (on && m !== map) stop(); }, left: function (m) { if (on && m !== map) stop(); buttons(); setTimeout(shown, 0); warmUp(); aheadSoon(); } };
+    return { paint: paint, away: away, unkeep: unkeep, chooseFolder: chooseFolder, leaving: function (m) { if (on && m !== map) stop(); }, left: function (m) { if (on && m !== map) stop(); buttons(); setTimeout(shown, 0); warmUp(); aheadSoon(); } };
 };

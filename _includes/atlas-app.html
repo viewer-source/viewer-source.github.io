@@ -270,9 +270,9 @@ look="panel" (user, 2026-11-10): Default Panel of the styles experiment, its own
   #m2-editwin input[type="password"] { display: block; width: 100%; box-sizing: border-box; font: inherit; font-size: 14px; padding: 4px 8px; margin: 0 0 8px; border: 1px solid var(--m2-button, #777); border-radius: var(--m2-radius-button, 4px); }
   #m2-ed-gh[hidden], #m2-ed-local[hidden], #m2-ed-local .m2-set-note[hidden] { display: none; }
   #m2-ed-local .m2-set-note { margin-top: 0; }
-  #m2-draft { margin: 6px 0 0; font-size: 12px; color: var(--m2-muted); }
-  #m2-draft a { color: inherit; }
-  #m2-draft[hidden], .m2-editing #m2-draft { display: none; }
+  #m2-draft, #m2-draft-keep { margin: 6px 0 0; font-size: 12px; color: var(--m2-muted); }
+  #m2-draft a, #m2-draft-keep a { color: inherit; }
+  #m2-draft[hidden], #m2-draft-keep[hidden], .m2-editing #m2-draft, .m2-editing #m2-draft-keep { display: none; }
   #m2-editwin .m2-ed-row button { text-align: center; }
   #m2-ed-status { margin: 0 0 10px; overflow-wrap: anywhere; }
   #m2-ed-status:empty { display: none; }
@@ -807,7 +807,7 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
 <div id="m2-dlwin"></div>
 <div id="m2-extwin"></div>
 <div id="m2-infowin"><p class="m2-pi-name">{{ include.name | default: site.name | default: site.title }}</p>{% assign about = include.about | default: site.description %}{% if about %}<p>{{ about }}</p>{% endif %}<p class="m2-k" id="m2-info-count"></p></div>
-<div id="m2-editwin"><div class="m2-ed-tools" role="toolbar" aria-label="Edit tools"><button type="button" id="m2-ed-undo" title="Undo (Ctrl or Cmd with Z)" aria-label="Undo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button><button type="button" id="m2-ed-redo" title="Redo (Ctrl or Cmd with Y)" aria-label="Redo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 14l5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button><span class="m2-ed-sep"></span><button type="button" id="m2-ed-grid" title="Grid" aria-label="Grid" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z"/><path d="M9.3 4v16M14.7 4v16M4 9.3h16M4 14.7h16"/></svg></button><button type="button" id="m2-ed-snap" title="Snap to grid (Alt held: no snapping)" aria-label="Snap to grid" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5h4v7a3 3 0 0 0 6 0V5h4v7a7 7 0 0 1-14 0z"/><path d="M5 9h4M15 9h4"/></svg></button><span class="m2-ed-sep"></span><button type="button" id="m2-ed-tidy-grid" title="Snap the whole map to the grid (the layout rules: complexes packed, lines kept)" aria-label="Snap the whole map to the grid"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h.01M12 4h.01M20 4h.01M4 12h.01M20 12h.01M4 20h.01M12 20h.01M20 20h.01" stroke-width="2.6"/><path d="M8.5 8.5h7v7h-7z"/></svg></button><button type="button" id="m2-ed-tidy-pack" title="Pack the complex selected, or every complex when nothing is selected (the layout rules)" aria-label="Pack complexes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 3h11l3 3v12l-3 3h-11l-3-3V6z"/><rect x="7.5" y="6.3" width="9" height="4.5" rx="1.2"/><rect x="7.5" y="13.2" width="9" height="4.5" rx="1.2"/></svg></button><button type="button" id="m2-ed-help" title="How to edit (?)" aria-label="How to edit" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 0 1 4.9.8c0 1.7-2.5 2.1-2.5 3.8"/><path d="M12 17.3h.01" stroke-width="2.6"/></svg></button></div><p id="m2-ed-status"></p><div id="m2-ed-local" hidden><p class="m2-set-note">Your changes are kept in this browser only. They are lost if the browser's site data is cleared or the window is private, and in Safari after a week without a visit. Download the map to keep your changes.</p><button type="button" id="m2-ed-local-dl">Download the map</button></div><div id="m2-ed-gh" hidden><p class="m2-set-note">To save moves to the site, paste a GitHub token that can write to this site's repository. It stays in this browser only.</p><input type="password" id="m2-ed-gh-token" placeholder="GitHub token" autocomplete="off"><button type="button" id="m2-ed-gh-go">Connect</button></div><button type="button" id="m2-ed-this">Edit this map</button><button type="button" id="m2-ed-back" hidden>Back</button><button type="button" id="m2-ed-save" disabled>Save</button><button type="button" id="m2-ed-stop" hidden>Stop editing</button><button type="button" id="m2-ed-gh-off" hidden>Disconnect from GitHub</button></div>
+<div id="m2-editwin"><div class="m2-ed-tools" role="toolbar" aria-label="Edit tools"><button type="button" id="m2-ed-undo" title="Undo (Ctrl or Cmd with Z)" aria-label="Undo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/></svg></button><button type="button" id="m2-ed-redo" title="Redo (Ctrl or Cmd with Y)" aria-label="Redo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 14l5-5-5-5"/><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/></svg></button><span class="m2-ed-sep"></span><button type="button" id="m2-ed-grid" title="Grid" aria-label="Grid" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z"/><path d="M9.3 4v16M14.7 4v16M4 9.3h16M4 14.7h16"/></svg></button><button type="button" id="m2-ed-snap" title="Snap to grid (Alt held: no snapping)" aria-label="Snap to grid" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5h4v7a3 3 0 0 0 6 0V5h4v7a7 7 0 0 1-14 0z"/><path d="M5 9h4M15 9h4"/></svg></button><span class="m2-ed-sep"></span><button type="button" id="m2-ed-tidy-grid" title="Snap the whole map to the grid (the layout rules: complexes packed, lines kept)" aria-label="Snap the whole map to the grid"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h.01M12 4h.01M20 4h.01M4 12h.01M20 12h.01M4 20h.01M12 20h.01M20 20h.01" stroke-width="2.6"/><path d="M8.5 8.5h7v7h-7z"/></svg></button><button type="button" id="m2-ed-tidy-pack" title="Pack the complex selected, or every complex when nothing is selected (the layout rules)" aria-label="Pack complexes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 3h11l3 3v12l-3 3h-11l-3-3V6z"/><rect x="7.5" y="6.3" width="9" height="4.5" rx="1.2"/><rect x="7.5" y="13.2" width="9" height="4.5" rx="1.2"/></svg></button><button type="button" id="m2-ed-help" title="How to edit (?)" aria-label="How to edit" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 0 1 4.9.8c0 1.7-2.5 2.1-2.5 3.8"/><path d="M12 17.3h.01" stroke-width="2.6"/></svg></button></div><p id="m2-ed-status"></p><div id="m2-ed-local" hidden><p class="m2-set-note" id="m2-ed-l1">Your changes are kept in this browser only. They are lost if the browser's site data is cleared or the window is private, and in Safari after a week without a visit. To keep them, choose a folder on your computer: each change is then saved there by itself.</p><p class="m2-set-note" id="m2-ed-l4">Allow the folder <span></span> again to go on saving there.</p><button type="button" id="m2-ed-l-folder">Choose a folder</button><button type="button" id="m2-ed-l-allow">Allow</button><button type="button" id="m2-ed-local-dl">Download the map</button><p class="m2-set-note" id="m2-ed-l2">This browser cannot save into a folder by itself. Download the map to keep your changes. In Chrome or Edge, changes are saved to a folder automatically.</p><p class="m2-set-note" id="m2-ed-l3">Saving to the folder <span></span> on your computer.</p></div><div id="m2-ed-gh" hidden><p class="m2-set-note">To save moves to the site, paste a GitHub token that can write to this site's repository. It stays in this browser only.</p><input type="password" id="m2-ed-gh-token" placeholder="GitHub token" autocomplete="off"><button type="button" id="m2-ed-gh-go">Connect</button></div><button type="button" id="m2-ed-this">Edit this map</button><button type="button" id="m2-ed-back" hidden>Back</button><button type="button" id="m2-ed-save" disabled>Save</button><button type="button" id="m2-ed-stop" hidden>Stop editing</button><button type="button" id="m2-ed-gh-off" hidden>Disconnect from GitHub</button></div>
 <div id="m2-setwin"><div class="m2-set-groups" style="margin-bottom:14px"><p class="m2-set-k">Groups in the list</p><div class="m2-set-row" id="m2-set-groups"><button type="button" data-groups="open">Open all</button><button type="button" data-groups="close">Close all</button></div></div><p class="m2-set-k">Map size <span id="m2-set-size-v"></span></p><input type="range" id="m2-set-size" min="0" max="15" step="1" aria-label="Map size"><div class="m2-set-ticks"><i></i><i></i><i></i><i></i></div><div class="m2-set-colours"><p class="m2-set-k">Map colours</p><div class="m2-set-row" id="m2-set-colours"><button type="button" data-colours="file"><span>File</span><span class="m2-sw"><i style="background:#C8D8EB"></i><i style="background:#DBEBDB"></i><i style="background:#E2ACA3"></i></span></button><button type="button" data-colours="default"><span>Default</span><span class="m2-sw"><i style="background:#C8D8EB"></i><i style="background:#DBEBDB"></i></span></button><button type="button" data-colours="paper"><span>Paper</span><span class="m2-sw"><i style="background:#D3D1CA"></i><i style="background:#D7E3F1"></i></span></button><button type="button" data-colours="haze"><span>Haze</span><span class="m2-sw"><i style="background:#D4DFED"></i><i style="background:#E8E6E2"></i></span></button></div></div><div class="m2-set-side"><p class="m2-set-k">Annotations</p><div class="m2-set-row" id="m2-set-side"><button type="button" data-side="left">Left</button><button type="button" data-side="right">Right</button></div></div><div class="m2-set-bar"><p class="m2-set-k">Icons</p><div class="m2-set-row" id="m2-set-bar"><button type="button" data-bar="left">Left</button><button type="button" data-bar="top">Top</button></div></div></div>
 </div>
 <div class="m2-main">
@@ -825,6 +825,7 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
 </div>
 <div id="m2-downloads"></div>
 <p id="m2-draft" hidden>Your earlier changes to this map are shown. <a href="#" id="m2-draft-back">Back to the site's map</a></p>
+<p id="m2-draft-keep" hidden>These changes are in this browser only. <a href="#" id="m2-draft-folder">Choose a folder</a> to keep them.</p>
 <!-- the full title opens the text; the list already names the map -->
 <h2 id="m2-title"></h2>
 <div id="m2-text"></div>
@@ -2373,6 +2374,7 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
     if (kp) m = Object.assign({}, m, { width: kp.width, height: kp.height });
     current = m;
     document.getElementById('m2-draft').hidden = !(kp && kp.draft);
+    nudge(m, kp);
     var cb = document.querySelector('.m2-set-colours'); if (cb) cb.style.display = m.colours ? '' : 'none';
     if (ed) ed.left(m);
     document.getElementById('m2-title').textContent = m.title;
@@ -2761,16 +2763,16 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
     function draftIds() {
       try { var ids = Object.keys(drafts); if (ids.length) localStorage.setItem(DRAFT_KEY, JSON.stringify(ids)); else localStorage.removeItem(DRAFT_KEY); } catch (e) {}
     }
-    function draftDo(mode, f) {
+    function draftDo(mode, f, store) {
       if (!draftDb) draftDb = new Promise(function (res, rej) {
-        var r = indexedDB.open('atlas-edit-drafts', 1);
-        r.onupgradeneeded = function () { r.result.createObjectStore('maps'); };
+        var r = indexedDB.open('atlas-edit-drafts', 2);
+        r.onupgradeneeded = function () { ['maps', 'folder'].forEach(function (n) { if (!r.result.objectStoreNames.contains(n)) r.result.createObjectStore(n); }); };
         r.onsuccess = function () { res(r.result); };
         r.onerror = function () { rej(r.error); };
       });
       return draftDb.then(function (d) {
         return new Promise(function (res, rej) {
-          var t = d.transaction('maps', mode), q = f(t.objectStore('maps'));
+          var t = d.transaction(store || 'maps', mode), q = f(t.objectStore(store || 'maps'));
           t.oncomplete = function () { res(q.result); };
           t.onerror = t.onabort = function () { rej(t.error); };
         });
@@ -2793,6 +2795,38 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
         if (m && drafts[m.id] && !hasToken() && !grid.classList.contains('m2-editing')) put(m, true);
       }).catch(function () {}).then(function () { draftsDone = true; });
     })();
+    // the reader's folder (layer 2, user, 2026-11-13: the editor writes into it): { dir (its handle), files (map id ->
+    // { name, mod }: the files written here) } kept beside the drafts; its name also in localStorage, so the texts can
+    // name it at once and a browser with none never opens the database for it
+    var FOLDER_KEY = 'atlas-edit-folder', folderRec;
+    function folderName() { try { return localStorage.getItem(FOLDER_KEY) || ''; } catch (e) { return ''; } }
+    function folder() {
+      if (folderRec !== undefined) return Promise.resolve(folderRec);
+      if (!folderName() || !window.indexedDB) return Promise.resolve(folderRec = null);
+      return draftDo('readonly', function (st) { return st.get('dir'); }, 'folder').then(function (r) { return (folderRec = r || null); }, function () { return null; });
+    }
+    function folderSet(r) {
+      folderRec = r;
+      try { localStorage.setItem(FOLDER_KEY, r.dir.name); } catch (e) {}
+      return draftDo('readwrite', function (st) { return st.put(r, 'dir'); }, 'folder');
+    }
+    // text 6 (approved by the user, 2026-11-13): after editing, the changes in this browser only and no folder yet, once a
+    // day at most, where a folder can be chosen
+    var nudged = null;
+    function nudge(m, kp) {
+      var show = false;
+      if (kp && kp.draft && editor && 'showDirectoryPicker' in window && !folderName()) {
+        var day = new Date().toDateString(), last = null;
+        try { last = localStorage.getItem('atlas-edit-nudged'); } catch (e) {}
+        if (nudged === m.id) show = true;
+        else if (last !== day && !nudged) { show = true; nudged = m.id; try { localStorage.setItem('atlas-edit-nudged', day); } catch (e) {} }
+      }
+      document.getElementById('m2-draft-keep').hidden = !show;
+    }
+    document.getElementById('m2-draft-folder').addEventListener('click', function (e) {
+      e.preventDefault();
+      if (editor) editor.chooseFolder().then(function () { if (folderName()) document.getElementById('m2-draft-keep').hidden = true; });
+    });
     document.getElementById('m2-draft-back').addEventListener('click', function (e) {   // the reader's changes let go
       e.preventDefault();
       var m = current && byId[current.id];
@@ -2832,6 +2866,10 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
     draftsIn: { get: function () { return draftsIn; } },
     draftsDone: { get: function () { return function () { return draftsDone; }; } },
     tokenKey: { get: function () { return TOKEN_KEY; } },
+    drafts: { get: function () { return drafts; } },
+    folder: { get: function () { return folder; } },
+    folderSet: { get: function () { return folderSet; } },
+    folderName: { get: function () { return folderName; } },
     maps: { get: function () { return maps; } },   // the list in its order (the editor reads ahead nearest the map shown first)
     netIdle: { get: function () { return function () { return !busy && !queue.length; }; } }   // the pictures all in
   });
