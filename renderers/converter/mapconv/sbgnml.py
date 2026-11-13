@@ -3,7 +3,7 @@
 # GraphML. Colours as the SBML render extension on the map (the spec's Appendix B), annotation
 # as RDF in each glyph's extension with identifiers.org links in Newt's form (db:id).
 # read() at the end goes the other way, also for Newt's .nwt (SBGN-ML with its settings).
-import collections, copy, os, re
+import collections, math, copy, os, re
 from lxml import etree
 from . import report
 from .annotation import from_graphml, from_notes, notes, to_properties
@@ -45,6 +45,22 @@ def border(d, p):
         return cx, cy
     t = min(w / 2 / abs(dx) if dx else float('inf'), h / 2 / abs(dy) if dy else float('inf'))
     return cx + t * dx, cy + t * dy
+
+
+def at(d, ref, p, q):
+    # where an arc read from SBGN-ML meets its glyph, from the glyph's centre (Arc.source_at, target_at): the file's own
+    # point (user, 2026-11-14: our SBGN-ML should draw as our GraphML; any tool's arc ends kept as the file gives them),
+    # unless it lies on the line from the centre toward the next point q (within 1.5 px), which the centre (0, 0) draws
+    # the same wherever on it the end stops (Newt stops short of the glyph for the arrowhead, others on its shape); an
+    # end at a process's or gate's port is its centre, as on our maps
+    if p is None or q is None or ref != d.id:
+        return (0.0, 0.0)
+    (cx, cy) = centre(d)
+    ux, uy, vx, vy = q[0] - cx, q[1] - cy, p[0] - cx, p[1] - cy
+    n = math.hypot(ux, uy)
+    if not n or (abs(ux * vy - uy * vx) / n <= 1.5 and ux * vx + uy * vy >= 0):
+        return (0.0, 0.0)
+    return (vx, vy)
 
 
 def cuts(p, q, box, inset=1):
@@ -161,11 +177,11 @@ def write(diagram, layout='advanced', newt=False):
     # colours and font sizes: one render style per fill, outline and size (user, 2026-10-28: the source's sizes kept)
     fills = {}
     for i, d in N.items():
-        if d.fill or d.line or d.font:
-            fills.setdefault((d.fill.lower() if d.fill else None, d.line and d.line.lower(), d.font), []).append(ids[i])
+        if d.fill or d.line or d.font or d.weight:
+            fills.setdefault((d.fill.lower() if d.fill else None, d.line and d.line.lower(), d.font, d.weight), []).append(ids[i])
         if d.small:
             n = len(decorations(d)[1])
-            fills.setdefault((None, None, d.small), []).extend(['%s_sv%d' % (ids[i], k) for k in range(len(d.states))] +
+            fills.setdefault((None, None, d.small, None), []).extend(['%s_sv%d' % (ids[i], k) for k in range(len(d.states))] +
                                                          ['%s_ui%d' % (ids[i], k) for k in range(n)])
     if fills:
         ri = etree.SubElement(etree.SubElement(m, S + 'extension'), R + 'renderInformation', nsmap={None: RENDER},
@@ -173,7 +189,7 @@ def write(diagram, layout='advanced', newt=False):
         cd = etree.SubElement(ri, R + 'listOfColorDefinitions')
         etree.SubElement(cd, R + 'colorDefinition', id='black', value='#000000')
         st = etree.SubElement(ri, R + 'listOfStyles')
-        for k, ((f, line, size), members) in enumerate(fills.items()):
+        for k, ((f, line, size, weight), members) in enumerate(fills.items()):
             s = etree.SubElement(st, R + 'style', id='style_%d' % k, idList=' '.join(members))
             g = etree.SubElement(s, R + 'g', stroke='black')
             if f:
@@ -182,7 +198,7 @@ def write(diagram, layout='advanced', newt=False):
             if line:
                 etree.SubElement(cd, R + 'colorDefinition', id='line_%d' % k, value=line)
                 g.set('stroke', 'line_%d' % k)
-            g.set('stroke-width', '1')
+            g.set('stroke-width', '%g' % (weight or 1))
             if size:
                 g.set('font-size', '%g' % size)
 
@@ -300,18 +316,20 @@ def write(diagram, layout='advanced', newt=False):
             p1 = (centre(N[t])[0] + t_at[0], centre(N[t])[1] + t_at[1]) if any(t_at) else border(N[t], prv)
             if newt and any(t_at) and t not in hubs:
                 pts = pts + newt_layout.leaving(N[t], p1, prv, border(N[t], prv))
-        # key bends only (user, 2026-10-18): a bend stays if leaving it out moves the line by more
-        # than 20 px (layout.bends, as for CellDesigner), or the line without it runs through a node
-        # it does not run through now
+        # advanced, plain: every bend the source draws (user, 2026-11-14: our SBGN-ML should look exactly as our
+        # GraphML), only a bend exactly on the line between its neighbours left out. For Newt and straight, key bends
+        # only (user, 2026-10-18): a bend stays if leaving it out moves the line by more than 20 px (layout.bends, as
+        # for CellDesigner), or the line without it runs through a node it does not run through now; then a bend on or
+        # near (5 px) the straight line between its neighbours is left out (the bends that placed the process in
+        # CellDesigner, and the 3 px stubs at its anchor points, are not needed; user, 2026-10-18)
         line = [p0] + pts + [p1]
-        key = [p0] + bends(line) + [p1]
-        if crossed(key, s, t) - crossed(line, s, t):
-            key = line
-        pts = key[1:-1]
-        # a bend on or near (5 px) the straight line between its neighbours is left out: SBGN-ML
-        # places the process itself (the bends that placed it in CellDesigner, and the 3 px stubs at
-        # its anchor points, are not needed; user, 2026-10-18)
-        pts = unbent([p0] + pts + [p1], 5)[1:-1]
+        if layout == 'advanced' and not newt:
+            pts = unbent(line, 0.5)[1:-1]
+        else:
+            key = [p0] + bends(line) + [p1]
+            if crossed(key, s, t) - crossed(line, s, t):
+                key = line
+            pts = unbent(key, 5)[1:-1]
         if newt:
             pts = newt_layout.unaimed(pts, p0 if s in ports else centre(N[s]), p1 if t in ports else centre(N[t]))
         e = etree.SubElement(m, S + 'arc', {'class': cls, 'id': xml_id(a.id), 'source': src, 'target': tgt})
@@ -382,12 +400,11 @@ def read(path):
     m = root.find(S + 'map')
     af = m.get('language') == 'activity flow'
     defs = {c.get('id'): c.get('value') for c in m.iter(R + 'colorDefinition')}
-    fill, line = ({i: st.find(R + 'g').get(a) for st in m.iter(R + 'style') if st.find(R + 'g') is not None
-                   for i in (st.get('idList') or '').split()} for a in ('fill', 'stroke'))
+    def style(a, f=str):  # glyph id -> one render attribute of its style, where the style gives it
+        return {i: f(st.find(R + 'g').get(a)) for st in m.iter(R + 'style') if st.find(R + 'g') is not None
+                and st.find(R + 'g').get(a) for i in (st.get('idList') or '').split()}
+    fill, line, weight, font = style('fill'), style('stroke'), style('stroke-width', float), style('font-size', float)
     line = {i: c for i, c in line.items() if colour(c, defs) != '#000000'}  # black: the default outline
-    font = {i: float(st.find(R + 'g').get('font-size')) for st in m.iter(R + 'style')
-            if st.find(R + 'g') is not None and st.find(R + 'g').get('font-size')
-            for i in (st.get('idList') or '').split()}
     port = {}
     nodes, skipped, activities, renamed = {}, {}, set(), []
 
@@ -441,6 +458,7 @@ def read(path):
         nodes[i] = Node(id=i, kind=kind, box=(x, y, w, h), parent=parent,
                         labels=[OPERATORS[cls]] if kind == 'Operator' else [text(g)],
                         fill=colour(fill.get(i), defs), line=colour(line.get(i), defs) if kind == 'Compartment' else None,
+                        weight=weight.get(i) if kind == 'Compartment' else None,
                         states=states, units=units,
                         count=(n[0] if n else 2) if cls.endswith(' multimer') else 1,
                         label_at=(float(lb.get('x')) - x, float(lb.get('y')) - y) if kind == 'Compartment' and lb is not None else None,
@@ -464,8 +482,11 @@ def read(path):
             performers.setdefault(t, []).append((s, a.get('id'))); continue
         if cls not in head or s not in nodes or t not in nodes:
             skipped.setdefault(cls + ' arc' if cls not in head else 'arc to a glyph left out', []).append(a.get('id')); continue
-        arcs.append(Arc(id=a.get('id'), source=s, target=t, head=head[cls], dashed=UNKNOWN in text_of(a),
-                        points=[(float(p.get('x')), float(p.get('y'))) for p in a.findall(S + 'next')]))
+        pts = [(float(p.get('x')), float(p.get('y'))) for p in a.findall(S + 'next')]
+        ends = [(float(e.get('x')), float(e.get('y'))) if e is not None else None for e in (a.find(S + 'start'), a.find(S + 'end'))]
+        arcs.append(Arc(id=a.get('id'), source=s, target=t, head=head[cls], dashed=UNKNOWN in text_of(a), points=pts,
+                        source_at=at(nodes[s], a.get('source'), ends[0], (pts or ends[1:])[0]),
+                        target_at=at(nodes[t], a.get('target'), ends[1], (pts[-1:] or ends[:1])[0])))
     for t, ps in performers.items():
         if len(ps) > 1:  # which entity it stands for is not guessed
             skipped.setdefault('performance arc', []).extend(i for _, i in ps); continue
@@ -473,6 +494,7 @@ def read(path):
         for a in arcs:  # the activity's arcs start or end at its entity, straight
             if t in (a.source, a.target):
                 a.source, a.target, a.points = s if a.source == t else a.source, s if a.target == t else a.target, []
+                a.source_at = a.target_at = (0.0, 0.0)
         report.say('changed', 'activity of %s: drawn as %s, its entity (performance arc)'
                    % (' '.join(nodes[t].labels[0].split()) or t, ' '.join(nodes[s].labels[0].split()) or s))
         del nodes[t]

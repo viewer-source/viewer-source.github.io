@@ -19,7 +19,7 @@ src: "f345a06133d685c864f1fd316a121aef535c15f8"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "GraphML", "url": "/downloads/glycolysis-graphml.graphml"}, {"label": "SVG", "url": "/downloads/glycolysis-graphml.svg"}, {"label": "SBML", "url": "/downloads/glycolysis-graphml-sbml.xml"}, {"label": "Annotation", "url": "/downloads/glycolysis-graphml.csv"}, {"label": "PNG", "url": "/downloads/glycolysis-graphml.png"}, {"label": "SBGN-ML", "url": "/downloads/glycolysis-graphml.sbgn"}, {"label": "CellDesigner", "url": "/downloads/glycolysis-graphml.xml"}, {"label": "Newt", "url": "http://web.newteditor.org/?URL=https://viewer-source.github.io/downloads/glycolysis-graphml.sbgn"}, {"label": "MINERVA", "url": "https://mreg.elixir-luxembourg.org/minerva/index.html?id=F001-glycolysis"}]
-sbgn: {"image": "/downloads/glycolysis-graphml-sbgnml.svg", "annotation": "/atlas-data/glycolysis-graphml-sbgnml.json", "width": 1002, "height": 677, "v": "94f0f5d7e2", "file": "/downloads/glycolysis-graphml.sbgn"}
+sbgn: {"image": "/downloads/glycolysis-graphml-sbgnml.svg", "annotation": "/atlas-data/glycolysis-graphml-sbgnml.json", "width": 1002, "height": 677, "v": "413b009225", "file": "/downloads/glycolysis-graphml.sbgn"}
 ---
 ## References
 

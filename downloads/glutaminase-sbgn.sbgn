@@ -345,6 +345,8 @@
     </arc>
     <arc class="production" id="e13" source="n14.2" target="n12">
       <start x="528.0" y="478.0"/>
+      <next x="534.0" y="478.0"/>
+      <next x="528.0" y="478.0"/>
       <end x="575.12" y="535.0"/>
     </arc>
     <arc class="catalysis" id="e14" source="n13" target="n14">

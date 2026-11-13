@@ -14,7 +14,7 @@ height: 778
 scale: 1
 annotation: "/atlas-data/mevalonate-sbgn.json"
 image_error: ""
-v: "61b2eecaa3"
+v: "a6f4afe12f"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/downloads/mevalonate-sbgn.sbgn"}, {"label": "SVG", "url": "/downloads/mevalonate-sbgn.svg"}]

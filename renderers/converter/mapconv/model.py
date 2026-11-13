@@ -17,6 +17,7 @@ class Node:
     parent: str = None  # enclosing complex or compartment
     fill: str = None   # '#RRGGBB' or '#RRGGBBAA'
     line: str = None   # a compartment's outline colour '#RRGGBB', None for black (CellDesigner's paint)
+    weight: float = None  # a compartment's outline width, where the file gives one (yEd, SBGN-ML), kept on conversion
     states: list = field(default_factory=list)  # state variables: (text, rx, ry), place as offset from the centre in node widths and heights
     units: list = field(default_factory=list)   # units of information: ct:gene, N:4, ...
     count: int = 1     # multimer: number of units (2 when drawn as a multimer without N:x)

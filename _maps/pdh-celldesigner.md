@@ -19,7 +19,7 @@ src: "38c56a1e39815b1d31c4526c22fd072579ec9948"
 colours: true
 legend: "celldesigner"
 downloads: [{"label": "CellDesigner", "url": "/downloads/pdh-celldesigner.xml"}, {"label": "SVG", "url": "/downloads/pdh-celldesigner.svg"}, {"label": "SBML", "url": "/downloads/pdh-celldesigner-sbml.xml"}, {"label": "Annotation", "url": "/downloads/pdh-celldesigner.csv"}, {"label": "GraphML", "url": "/downloads/pdh-celldesigner.graphml"}, {"label": "PNG", "url": "/downloads/pdh-celldesigner.png"}, {"label": "SBGN-ML", "url": "/downloads/pdh-celldesigner.sbgn"}, {"label": "Newt", "url": "http://web.newteditor.org/?URL=https://viewer-source.github.io/downloads/pdh-celldesigner.sbgn"}, {"label": "MINERVA", "url": "https://mreg.elixir-luxembourg.org/minerva/index.html?id=F023-pdh"}]
-sbgn: {"image": "/downloads/pdh-celldesigner-sbgnml.svg", "annotation": "/atlas-data/pdh-celldesigner-sbgnml.json", "width": 826, "height": 570, "v": "cc64984b85", "file": "/downloads/pdh-celldesigner.sbgn"}
+sbgn: {"image": "/downloads/pdh-celldesigner-sbgnml.svg", "annotation": "/atlas-data/pdh-celldesigner-sbgnml.json", "width": 826, "height": 570, "v": "02e1d0a08e", "file": "/downloads/pdh-celldesigner.sbgn"}
 ---
 ## Reactome-Recon connection
 

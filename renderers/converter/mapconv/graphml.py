@@ -136,6 +136,7 @@ def read(path):
             parent=p.get('id') if p.tag.endswith('node') else None,
             fill=fill.get('color') if fill is not None else None,
             line=line if kind == 'Compartment' and line != '#000000' else None,
+            weight=float(border.get('width')) if kind == 'Compartment' and border is not None and border.get('width') else None,
             states=states(gn, res), units=us, count=count(gn, us),
             label_at=(float(l.get('x')), float(l.get('y'))) if (kind == 'Compartment' or outline) and l is not None else None,
             data={names[x.get('key')]: x.text.strip() for x in n.findall('g:data', NS)
@@ -270,6 +271,7 @@ def write(diagram, soft=False):
         if d.fill: fill.set('color', d.fill)
         else: del fill.attrib['color']; fill.set('hasColor', 'false')  # no fill (aspirin's drugs)
         if d.line: gn.find('y:BorderStyle', NS).set('color', d.line)
+        if d.weight: gn.find('y:BorderStyle', NS).set('width', repr(float(d.weight)))
         if d.dashed: gn.find('y:BorderStyle', NS).set('type', 'dashed')
         if not d.border: gn.find('y:BorderStyle', NS).set('hasColor', 'false')
         l = gn.find('y:NodeLabel', NS)
@@ -283,6 +285,13 @@ def write(diagram, soft=False):
         if d.kind == 'Compartment':  # its name where the source has it, else centred at the top (the template's place)
             lx, ly = d.label_at or (float(l.get('x')), 0.0)
             l.set('x', repr(float(lx))); l.set('y', repr(float(ly)))
+            if d.label_at:  # yEd and yrender place an internal label by its side and one distance from the border:
+                # the side by the third its middle stands in, the distance its own from the top (2026-11-14; its exact
+                # left or right edge is approximate, the label's width being our estimate); centred when it does not fit
+                lw, bd = float(l.get('width')), max(0.0, float(ly))
+                mid = (lx + lw / 2) / w
+                l.set('modelPosition', 't' if lw + 2 * bd > w else 'tl' if mid < 1 / 3 else 'tr' if mid > 2 / 3 else 't')
+                l.set('borderDistance', repr(bd))
         for c in n.findall('g:data/y:ProxyAutoBoundsNode/y:Realizers/*', NS)[1:]:  # folded in yEd: its own name, not the template's
             c.find('y:NodeLabel', NS).text = l.text
             c.find('y:NodeLabel', NS).set('fontSize', l.get('fontSize'))

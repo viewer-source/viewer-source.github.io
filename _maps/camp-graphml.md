@@ -19,7 +19,7 @@ src: "3fde34f17a72379dc0f693ef58faa0e013583c86"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "GraphML", "url": "/downloads/camp-graphml.graphml"}, {"label": "SVG", "url": "/downloads/camp-graphml.svg"}, {"label": "SBML", "url": "/downloads/camp-graphml-sbml.xml"}, {"label": "Annotation", "url": "/downloads/camp-graphml.csv"}, {"label": "PNG", "url": "/downloads/camp-graphml.png"}, {"label": "SBGN-ML", "url": "/downloads/camp-graphml.sbgn"}, {"label": "CellDesigner", "url": "/downloads/camp-graphml.xml"}, {"label": "Newt", "url": "http://web.newteditor.org/?URL=https://viewer-source.github.io/downloads/camp-graphml.sbgn"}, {"label": "MINERVA", "url": "https://mreg.elixir-luxembourg.org/minerva/index.html?id=F012-camp"}]
-sbgn: {"image": "/downloads/camp-graphml-sbgnml.svg", "annotation": "/atlas-data/camp-graphml-sbgnml.json", "width": 754, "height": 770, "v": "f64137316c", "file": "/downloads/camp-graphml.sbgn"}
+sbgn: {"image": "/downloads/camp-graphml-sbgnml.svg", "annotation": "/atlas-data/camp-graphml-sbgnml.json", "width": 754, "height": 770, "v": "90032ac7cc", "file": "/downloads/camp-graphml.sbgn"}
 ---
 ## Description
 

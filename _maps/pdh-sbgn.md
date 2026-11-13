@@ -14,7 +14,7 @@ height: 570
 scale: 1
 annotation: "/atlas-data/pdh-sbgn.json"
 image_error: ""
-v: "7bac34b51d"
+v: "3a7c8cf8fa"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/downloads/pdh-sbgn.sbgn"}, {"label": "SVG", "url": "/downloads/pdh-sbgn.svg"}]

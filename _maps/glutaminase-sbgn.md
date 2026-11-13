@@ -14,7 +14,7 @@ height: 581
 scale: 1
 annotation: "/atlas-data/glutaminase-sbgn.json"
 image_error: ""
-v: "67e03940fb"
+v: "027e1970ac"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/downloads/glutaminase-sbgn.sbgn"}, {"label": "SVG", "url": "/downloads/glutaminase-sbgn.svg"}]

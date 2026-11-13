@@ -19,7 +19,7 @@ src: "972a940c1dae5d2bf29f3f345e1cf1b473b3fd6f"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "GraphML", "url": "/downloads/nnos-graphml.graphml"}, {"label": "SVG", "url": "/downloads/nnos-graphml.svg"}, {"label": "SBML", "url": "/downloads/nnos-graphml-sbml.xml"}, {"label": "Annotation", "url": "/downloads/nnos-graphml.csv"}, {"label": "PNG", "url": "/downloads/nnos-graphml.png"}, {"label": "SBGN-ML", "url": "/downloads/nnos-graphml.sbgn"}, {"label": "CellDesigner", "url": "/downloads/nnos-graphml.xml"}, {"label": "Newt", "url": "http://web.newteditor.org/?URL=https://viewer-source.github.io/downloads/nnos-graphml.sbgn"}, {"label": "MINERVA", "url": "https://mreg.elixir-luxembourg.org/minerva/index.html?id=F025-nnos"}]
-sbgn: {"image": "/downloads/nnos-graphml-sbgnml.svg", "annotation": "/atlas-data/nnos-graphml-sbgnml.json", "width": 908, "height": 794, "v": "b2d1548680", "file": "/downloads/nnos-graphml.sbgn"}
+sbgn: {"image": "/downloads/nnos-graphml-sbgnml.svg", "annotation": "/atlas-data/nnos-graphml-sbgnml.json", "width": 908, "height": 794, "v": "954a45db62", "file": "/downloads/nnos-graphml.sbgn"}
 ---
 ## Reactome-Recon connection
 

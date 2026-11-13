@@ -14,7 +14,7 @@ height: 1066
 scale: 1
 annotation: "/atlas-data/ureacycle-sbgn.json"
 image_error: ""
-v: "fe58600857"
+v: "bdb40e2634"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/downloads/ureacycle-sbgn.sbgn"}, {"label": "SVG", "url": "/downloads/ureacycle-sbgn.svg"}]

@@ -14,7 +14,7 @@
         </listOfColorDefinitions>
         <listOfStyles>
           <style id="style_0" idList="n0">
-            <g stroke="black" fill="color_0" stroke-width="1" font-size="12"/>
+            <g stroke="black" fill="color_0" stroke-width="3" font-size="12"/>
           </style>
           <style id="style_1" idList="n0__n0 n0__n6 n0__n7 n0__n8 n0__n9 n0__n10 n0__n13 n0__n14 n0__n15">
             <g stroke="black" fill="color_1" stroke-width="1" font-size="14"/>

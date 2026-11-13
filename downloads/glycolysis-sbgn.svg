@@ -39,21 +39,21 @@
 <path d="M732 441 L732 479" fill="none" stroke="#000000"/>
 <path d="M732 219 L732 256" fill="none" stroke="#000000"/><path d="M732 267 L726 255 L738 255 Z" fill="#000000" stroke="none"/>
 <path d="M732 160 L732 201" fill="none" stroke="#000000"/>
-<path d="M741 489.8947 L784.236 498.997" fill="none" stroke="#000000"/><path d="M795 501.2632 L782.0213 504.6623 L784.4935 492.9197 Z" fill="#000000" stroke="none"/>
-<path d="M640.8828 191.7766 L723 208.2" fill="none" stroke="#000000"/>
+<path d="M732 497 L732 520 L784 520" fill="none" stroke="#000000"/><path d="M795 520 L783 526 L783 514 Z" fill="#000000" stroke="none"/>
+<path d="M642 186 L732 186 L732 201" fill="none" stroke="#000000"/>
 <path d="M172 521 L172 549" fill="none" stroke="#000000"/><path d="M172 560 L166 548 L178 548 Z" fill="#000000" stroke="none"/>
 <path d="M172 503 L172 475" fill="none" stroke="#000000"/><path d="M172 464 L178 476 L166 476 Z" fill="#000000" stroke="none"/>
 <path d="M100 512 L155 512" fill="none" stroke="#000000"/><circle cx="159" cy="512" r="4" fill="white" class="c-white" stroke="#000000"/>
 <path d="M108 648 L141 648" fill="none" stroke="#000000"/><circle cx="145" cy="648" r="4" fill="white" class="c-white" stroke="#000000"/>
-<path d="M168.5 696 L159.9688 657" fill="none" stroke="#000000"/>
-<path d="M159.75 639 L166.7893 602.7978" fill="none" stroke="#000000"/><path d="M168.8889 592 L172.4881 604.9246 L160.7088 602.6342 Z" fill="#000000" stroke="none"/>
-<path d="M185.75 657 L178.6679 685.3284" fill="none" stroke="#000000"/><path d="M176 696 L173.0896 682.9031 L184.7313 685.8135 Z" fill="#000000" stroke="none"/>
-<path d="M175.5556 592 L186 639" fill="none" stroke="#000000"/>
+<path d="M158 696 L158 657" fill="none" stroke="#000000"/>
+<path d="M158 639 L158 603" fill="none" stroke="#000000"/><path d="M158 592 L164 604 L152 604 Z" fill="#000000" stroke="none"/>
+<path d="M188 657 L188 685" fill="none" stroke="#000000"/><path d="M188 696 L182 684 L194 684 Z" fill="#000000" stroke="none"/>
+<path d="M188 592 L188 639" fill="none" stroke="#000000"/>
 <path d="M236 648 L205 648" fill="none" stroke="#000000"/><circle cx="201" cy="648" r="4" fill="white" class="c-white" stroke="#000000"/>
-<path d="M341 568.4444 L413.4045 572.02" fill="none" stroke="#000000"/><path d="M424.3911 572.5625 L412.1098 577.9634 L412.7017 565.978 Z" fill="#000000" stroke="none"/>
-<path d="M323 590.6281 L251.469 583.6986" fill="none" stroke="#000000"/><path d="M240.5202 582.6379 L253.0428 577.8229 L251.8858 589.767 Z" fill="#000000" stroke="none"/>
-<path d="M241.5957 572.5202 L323 568.45" fill="none" stroke="#000000"/>
-<path d="M425.4375 582.56 L341 590.6389" fill="none" stroke="#000000"/>
+<path d="M341 568 L415.2191 568" fill="none" stroke="#000000"/><path d="M426.2191 568 L414.2191 574 L414.2191 562 Z" fill="#000000" stroke="none"/>
+<path d="M323 591.5 L248 591.5" fill="none" stroke="#000000"/><path d="M237 591.5 L249 585.5 L249 597.5 Z" fill="#000000" stroke="none"/>
+<path d="M239.7809 568 L323 568" fill="none" stroke="#000000"/>
+<path d="M428.93 591.5 L341 591.5" fill="none" stroke="#000000"/>
 <path d="M612 567 L612 541" fill="none" stroke="#000000"/><path d="M612 530 L618 542 L606 542 Z" fill="#000000" stroke="none"/>
 <path d="M612 628 L612 585" fill="none" stroke="#000000"/>
 <path d="M692 576 L629 576" fill="none" stroke="#000000"/><circle cx="625" cy="576" r="4" fill="white" class="c-white" stroke="#000000"/>
@@ -62,6 +62,6 @@
 <path d="M524 118 L524 169" fill="none" stroke="#000000"/><circle cx="524" cy="173" r="4" fill="white" class="c-white" stroke="#000000"/>
 <path d="M572 504 L332 504 L332 551" fill="none" stroke="#000000"/><circle cx="332" cy="555" r="4" fill="white" class="c-white" stroke="#000000"/>
 <path d="M572 648 L332 648 L332 608.5" fill="none" stroke="#000000"/><circle cx="332" cy="604.5" r="4" fill="white" class="c-white" stroke="#000000"/>
-<path d="M530 195 L539.2316 208.8474" fill="none" stroke="#000000"/><path d="M545.3333 218 L533.6846 211.3436 L543.6692 204.6872 Z" fill="#000000" stroke="none"/>
+<path d="M533 186 L556 186 L556 207" fill="none" stroke="#000000"/><path d="M556 218 L550 206 L562 206 Z" fill="#000000" stroke="none"/>
 </g>
 </svg>

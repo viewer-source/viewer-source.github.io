@@ -14,7 +14,7 @@
         </listOfColorDefinitions>
         <listOfStyles>
           <style id="style_0" idList="n0 n1">
-            <g stroke="black" fill="color_0" stroke-width="1" font-size="12"/>
+            <g stroke="black" fill="color_0" stroke-width="3" font-size="12"/>
           </style>
           <style id="style_1" idList="n1__n0 n1__n2 n1__n3 n1__n4 n1__n5 n1__n6 n1__n7__n1__n1 n1__n10__n1 n1__n22 n1__n23 n3">
             <g stroke="black" fill="color_1" stroke-width="1" font-size="14"/>
@@ -621,6 +621,7 @@
     </arc>
     <arc class="consumption" id="n1__e11" source="n1__n12" target="n1__n11.1">
       <start x="489.27272727272725" y="205.6328125"/>
+      <next x="490.5" y="295.6328125"/>
       <end x="502.0" y="295.6328125"/>
     </arc>
     <arc class="production" id="n1__e12" source="n1__n11.2" target="n1__n13">
@@ -661,6 +662,7 @@
     </arc>
     <arc class="consumption" id="n1__e21" source="n1__n22" target="n1__n20.1">
       <start x="660.0" y="398.6328125"/>
+      <next x="660.0" y="428.3828125"/>
       <end x="648.0" y="428.3828125"/>
     </arc>
     <arc class="production" id="n1__e22" source="n1__n20.2" target="n1__n10">

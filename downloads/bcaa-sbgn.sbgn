@@ -13,7 +13,7 @@
         </listOfColorDefinitions>
         <listOfStyles>
           <style id="style_0" idList="n0 n1">
-            <g stroke="black" fill="color_0" stroke-width="1" font-size="12"/>
+            <g stroke="black" fill="color_0" stroke-width="3" font-size="12"/>
           </style>
           <style id="style_1" idList="n0__n0 n0__n1 n0__n2 n1__n0 n1__n3 n1__n4 n1__n5 n1__n7 n1__n8 n1__n9 n1__n10 n1__n11 n1__n13 n1__n15 n1__n16 n1__n17 n1__n18 n1__n19 n1__n20 n1__n21 n1__n22 n1__n24 n1__n26 n1__n27 n1__n28 n1__n29 n1__n30 n1__n31 n1__n32 n1__n33 n1__n36__n1">
             <g stroke="black" fill="color_1" stroke-width="1" font-size="14"/>
@@ -900,6 +900,7 @@
     </arc>
     <arc class="production" id="n1__e5" source="n1__n1.1" target="n1__n3">
       <start x="485.92618797064006" y="287.5291377551673"/>
+      <next x="485.92618797064006" y="276.77731620576634"/>
       <end x="524.9261879706401" y="276.77731620576634"/>
     </arc>
     <arc class="production" id="n1__e6" source="n1__n1.2" target="n1__n4">
@@ -921,10 +922,12 @@
     </arc>
     <arc class="consumption" id="n1__e10" source="n1__n7" target="n1__n6.1">
       <start x="446.9261879706403" y="521.6817470151946"/>
+      <next x="485.92618797064006" y="521.6817470151946"/>
       <end x="485.92618797064006" y="542.6034041873086"/>
     </arc>
     <arc class="consumption" id="n1__e11" source="n1__n8" target="n1__n6.1">
       <start x="524.9261879706401" y="521.6817470151946"/>
+      <next x="485.92618797064006" y="521.6817470151946"/>
       <end x="485.92618797064006" y="542.6034041873086"/>
     </arc>
     <arc class="production" id="n1__e12" source="n1__n6.2" target="n1__n9">
@@ -1006,6 +1009,7 @@
     </arc>
     <arc class="production" id="n1__e29" source="n1__n25.1" target="n1__n32">
       <start x="1161.106327910516" y="356.4328167626426"/>
+      <next x="1161.106327910516" y="367.4328167626426"/>
       <end x="1200.7439799355802" y="367.4328167626426"/>
     </arc>
     <arc class="consumption" id="n1__e30" source="n1__n33" target="n1__n34.1">
@@ -1028,10 +1032,12 @@
     </arc>
     <arc class="production" id="n1__e34" source="n1__n34.2" target="n1__n28">
       <start x="1161.106327910516" y="614.771903904782"/>
+      <next x="1161.106327910516" y="633.8107790440012"/>
       <end x="1122.106327910516" y="633.8107790440012"/>
     </arc>
     <arc class="production" id="n1__e35" source="n1__n34.2" target="n1__n29">
       <start x="1161.106327910516" y="614.771903904782"/>
+      <next x="1161.106327910516" y="633.8107790440012"/>
       <end x="1200.106327910516" y="633.8107790440012"/>
     </arc>
     <arc class="catalysis" id="n1__e36" source="n1__n2" target="n1__n25">
