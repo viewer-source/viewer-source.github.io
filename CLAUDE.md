@@ -97,6 +97,8 @@ says "the workbench", "the converter's repository", "a private repository".
   layers, a sheet over a sheet, three values, a network with values, a molecule over a scale, bars), hidden in every
   look; a style shows them (the styles' Default Icon Column Legacy). A click does nothing until Overlays is built; the
   chosen sign then gets the window and the others go.
+  O6 (a molecule over a scale) looks right for Overlays, data shown on the map (user, 2026-11-13); O1 and O2 (stacked
+  layers) are MINERVA's sign for Layers, kept in case the viewer gets layers later (user: "for later anyway if needed").
 - Icon row (user, 2026-11-11: "the place for icons is on the top of left panel"; `--m2-icon-row: 1`, with `--m2-icons: 1`,
   off in the viewer's own look): the icon column's icons as a row of tabs at the top of the list's panel (36 px, 21 px
   signs, from the left 6 px apart; a narrower panel drops whole tabs from the right, one by one, user 2026-11-12; so the panel closes only under 90 px, where one tab is left, not at the icon column's 160), the panel fixed beside the map as in the viewer's own look (user: "lets try as in default"), the top bar left
