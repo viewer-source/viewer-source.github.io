@@ -495,11 +495,11 @@
 </celldesigner:speciesAlias>
 <celldesigner:speciesAlias id="sa_n5_n1" species="s_n5_n1" complexSpeciesAlias="sa_n5">
 <celldesigner:activity>inactive</celldesigner:activity>
-<celldesigner:bounds x="740.049395" y="367.152646" w="80.0" h="40.0"/>
+<celldesigner:bounds x="765.049" y="367.152646" w="80.0" h="40.0"/>
 <celldesigner:font size="14"/>
 <celldesigner:view state="usual"/>
 <celldesigner:usualView>
-<celldesigner:innerPosition x="45.0" y="90.0"/>
+<celldesigner:innerPosition x="69.999605" y="90.0"/>
 <celldesigner:boxSize width="80.0" height="40.0"/>
 <celldesigner:singleLine width="1.0"/>
 <celldesigner:paint color="ffc2d4ed" scheme="Color"/>
