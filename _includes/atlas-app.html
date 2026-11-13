@@ -2411,6 +2411,20 @@ page, so its styles keep the base they were made on). The looks before (Default 
       if (m.mine && mine[m.id]) return { text: mine[m.id].text, file: mine[m.id].file, svg: mine[m.id].svg };   // a reader's own map, under its own name
       return null;
     }
+    // the Downloads tab and the download row the same (user, 2026-11-13: "Downloads tab too ... Let's be consistent"): a
+    // click on the map's source file, its SVG or its PNG gives them as on screen; the other files (the other format,
+    // SBGN-ML, SBML, the tables) stay the site's, made by its build
+    document.addEventListener('click', function (e) {
+      var a = e.target.closest && e.target.closest('#m2-downloads a[download], #m2-dlwin a[download], #m2-menu-list a[download]');
+      var m = grid.classList.contains('m2-editing') && chosen ? chosen : current, sh = a && m && shown(m);
+      if (!sh) return;
+      var url = {}, f = fileName(a.getAttribute('href'));
+      (m.downloads || []).forEach(function (d) { url[d.label] = d.url; });
+      if (sh.text && sh.file && f === fileName(sh.file)) { e.preventDefault(); return saveBlob(new Blob([sh.text], { type: 'application/xml' }), f); }
+      if (!sh.svg || m.imageError) return;
+      if (f === fileName(url.SVG || m.image)) { e.preventDefault(); return saveImage(m, url, 'svg', null, sh); }
+      if (f === fileName(url.PNG)) { e.preventDefault(); saveImage(m, url, 'png', a.getBoundingClientRect(), sh); }
+    }, true);
     function fileName(href) { return href ? href.split('/').pop().split(/[?#]/)[0] : ''; }
     function saveAs(href, name) { var a = document.createElement('a'); a.href = href; a.download = name; document.body.appendChild(a); a.click(); a.remove(); }
     function saveBlob(b, name) { var u = URL.createObjectURL(b); saveAs(u, name); setTimeout(function () { URL.revokeObjectURL(u); }, 10000); }
