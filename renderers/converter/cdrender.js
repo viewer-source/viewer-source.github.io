@@ -383,7 +383,7 @@
       if (Array.from(label).length > 11) label = Array.from(label).slice(0, 8).join('') + '... ';
       var ux = x + w / 2 - 35, uy = y - 8;
       this.out.push('<rect x="' + fmt(ux) + '" y="' + fmt(uy) + '" width="70" height="16" fill="#fff" stroke="#000"/>');
-      this.text(label, ux + 5, uy + 12, 12, 'start', null, ' xml:space="preserve"');
+      this.text(label.trim(), x + w / 2, uy + 12, 12);  // centred in its box, as CellDesigner (AsthmaMap mast cell PDF)
     }
   };
   D.centre = function (i) { var b = this.box(i); return [b[0] + b[2] / 2, b[1] + b[3] / 2]; };

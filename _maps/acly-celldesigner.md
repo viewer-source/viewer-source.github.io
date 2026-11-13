@@ -14,7 +14,7 @@ height: 739
 scale: 1
 annotation: "/atlas-data/acly-celldesigner.json"
 image_error: ""
-v: "5ce1dd74ce"
+v: "4eb1bb015e"
 src: "7d85be69702eee71364de45eeb225130816bb1f7"
 colours: true
 legend: "celldesigner"

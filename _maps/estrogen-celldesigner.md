@@ -14,7 +14,7 @@ height: 1396
 scale: 1
 annotation: "/atlas-data/estrogen-celldesigner.json"
 image_error: ""
-v: "827e0628ef"
+v: "239903faf1"
 src: "39012aca6021b3408fa35150bf1ff4293cb49ea9"
 colours: true
 legend: "celldesigner"

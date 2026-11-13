@@ -14,7 +14,7 @@ height: 3100
 scale: 1
 annotation: "/atlas-data/asthmamap-mast-cell-celldesigner.json"
 image_error: ""
-v: "1d6031b067"
+v: "0a8bc37a56"
 src: "55c95551b75df9e424062c012df541ee5611d3ae"
 colours: true
 legend: "celldesigner"

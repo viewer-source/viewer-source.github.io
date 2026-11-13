@@ -14,7 +14,7 @@ height: 1248
 scale: 1
 annotation: "/atlas-data/inos-celldesigner.json"
 image_error: ""
-v: "fc2e2f5513"
+v: "e6126c7797"
 src: "6eb72e66be94de4c238e814a78799329b2646c21"
 colours: true
 legend: "celldesigner"

@@ -14,7 +14,7 @@ height: 1880
 scale: 1
 annotation: "/atlas-data/enos-celldesigner.json"
 image_error: ""
-v: "4ebd1db62f"
+v: "74be389fb9"
 src: "42e64e5c721e24521dfb2cfc797161fc4a54903d"
 colours: true
 legend: "celldesigner"

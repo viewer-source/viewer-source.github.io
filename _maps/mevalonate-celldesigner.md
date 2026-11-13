@@ -14,7 +14,7 @@ height: 1006
 scale: 1
 annotation: "/atlas-data/mevalonate-celldesigner.json"
 image_error: ""
-v: "ae291fa608"
+v: "a2cfe4baf2"
 src: "ede9eebe31ad87058d07fb0da44bae1955123170"
 colours: true
 legend: "celldesigner"

@@ -53,7 +53,7 @@
 <line x1="560.12" y1="773.76" x2="545.72" y2="809.76" stroke="#000"/>
 <polygon points="477.92,866.76 517.92,866.76 477.92,906.76 437.92,906.76" fill="#ffffff" stroke="#000" class="c-gene"/>
 <rect x="442.92" y="858.76" width="70" height="16" fill="#fff" stroke="#000"/>
-<text x="447.92" y="870.76" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="start" xml:space="preserve"> ct:mRNA </text>
+<text x="477.92" y="870.76" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">ct:mRNA</text>
 <text x="477.92" y="891.43" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-gene">StAR</text>
 <rect x="607.92" y="771.76" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
 <text x="647.92" y="796.43" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">PKA-C</text>
@@ -68,13 +68,13 @@
 <text x="857.92" y="1000.26" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">CREB</text>
 <rect x="342.92" y="1182.49" width="80" height="40" fill="#ffffff" stroke="#000" class="c-gene"/>
 <rect x="347.92" y="1174.49" width="70" height="16" fill="#fff" stroke="#000"/>
-<text x="352.92" y="1186.49" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="start" xml:space="preserve"> ct:gene </text>
+<text x="382.92" y="1186.49" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">ct:gene</text>
 <text x="382.92" y="1207.16" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-gene">StAR</text>
 <circle cx="477.92" cy="1269.99" r="13.5" fill="#ffffff" stroke="#000" class="c-white"/>
 <line x1="485.12" y1="1251.99" x2="470.72" y2="1287.99" stroke="#000"/>
 <polygon points="477.92,1114.99 517.92,1114.99 477.92,1154.99 437.92,1154.99" fill="#ffffff" stroke="#000" class="c-gene"/>
 <rect x="442.92" y="1106.99" width="70" height="16" fill="#fff" stroke="#000"/>
-<text x="447.92" y="1118.99" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="start" xml:space="preserve"> ct:mRNA </text>
+<text x="477.92" y="1118.99" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">ct:mRNA</text>
 <text x="477.92" y="1139.66" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-gene">StAR</text>
 <rect x="607.92" y="1021.8" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
 <text x="647.92" y="1046.46" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">PKA-C</text>

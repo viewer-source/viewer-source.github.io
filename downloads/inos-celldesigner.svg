@@ -43,11 +43,11 @@
 <text x="1404" y="593.33" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="16" text-anchor="middle" class="t-metabolite">NO</text>
 <polygon points="783,792 833,792 793,832 743,832" fill="#ffffff" stroke="#000" class="c-gene"/>
 <rect x="753" y="784" width="70" height="16" fill="#fff" stroke="#000"/>
-<text x="758" y="796" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="start" xml:space="preserve"> ct:mRNA </text>
+<text x="788" y="796" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">ct:mRNA</text>
 <text x="788" y="817.33" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="16" text-anchor="middle" class="t-gene">iNOS</text>
 <polygon points="343,784 393,784 353,824 303,824" fill="#ffffff" stroke="#000" class="c-gene"/>
 <rect x="313" y="776" width="70" height="16" fill="#fff" stroke="#000"/>
-<text x="318" y="788" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="start" xml:space="preserve"> ct:mRNA </text>
+<text x="348" y="788" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">ct:mRNA</text>
 <text x="348" y="809.33" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="16" text-anchor="middle" class="t-gene">IRF1</text>
 <ellipse cx="1324" cy="876" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
 <text x="1324" y="881.33" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="16" text-anchor="middle" class="t-metabolite">argininosuccinate</text>
@@ -85,7 +85,7 @@
 <rect x="1026" y="782" width="74" height="34" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
 <rect x="1020" y="776" width="74" height="34" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
 <rect x="1022" y="768" width="70" height="16" fill="#fff" stroke="#000"/>
-<text x="1027" y="780" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="start" xml:space="preserve"> N:4 </text>
+<text x="1057" y="780" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">N:4</text>
 <text x="1057" y="798.33" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="16" text-anchor="middle" class="t-protein">ASL</text>
 <rect x="1524" y="776" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
 <text x="1564" y="801.33" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="16" text-anchor="middle" class="t-protein">ASS1</text>
@@ -102,11 +102,11 @@
 <text x="121" y="998.33" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="16" text-anchor="middle" class="t-protein">STAT1</text>
 <rect x="223" y="976" width="90" height="40" fill="#ffffff" stroke="#000" class="c-gene"/>
 <rect x="233" y="968" width="70" height="16" fill="#fff" stroke="#000"/>
-<text x="238" y="980" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="start" xml:space="preserve"> ct:gene </text>
+<text x="268" y="980" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">ct:gene</text>
 <text x="268" y="1001.33" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="16" text-anchor="middle" class="t-gene">IRF1</text>
 <polygon points="343,1128 393,1128 353,1168 303,1168" fill="#ffffff" stroke="#000" class="c-gene"/>
 <rect x="313" y="1120" width="70" height="16" fill="#fff" stroke="#000"/>
-<text x="318" y="1132" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="start" xml:space="preserve"> ct:mRNA </text>
+<text x="348" y="1132" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">ct:mRNA</text>
 <text x="348" y="1153.33" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="16" text-anchor="middle" class="t-gene">IRF1</text>
 <circle cx="132" cy="1148" r="15" fill="#ffffff" stroke="#000" class="c-white"/>
 <line x1="140" y1="1128" x2="124" y2="1168" stroke="#000"/>
@@ -114,11 +114,11 @@
 <line x1="564" y1="1128" x2="548" y2="1168" stroke="#000"/>
 <polygon points="783,1128 833,1128 793,1168 743,1168" fill="#ffffff" stroke="#000" class="c-gene"/>
 <rect x="753" y="1120" width="70" height="16" fill="#fff" stroke="#000"/>
-<text x="758" y="1132" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="start" xml:space="preserve"> ct:mRNA </text>
+<text x="788" y="1132" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">ct:mRNA</text>
 <text x="788" y="1153.33" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="16" text-anchor="middle" class="t-gene">iNOS</text>
 <rect x="647" y="976" width="90" height="40" fill="#ffffff" stroke="#000" class="c-gene"/>
 <rect x="657" y="968" width="70" height="16" fill="#fff" stroke="#000"/>
-<text x="662" y="980" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="start" xml:space="preserve"> ct:gene </text>
+<text x="692" y="980" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">ct:gene</text>
 <text x="692" y="1001.33" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="16" text-anchor="middle" class="t-gene">iNOS</text>
 <rect x="516" y="976" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
 <text x="556" y="1001.33" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="16" text-anchor="middle" class="t-protein">IRF1</text>

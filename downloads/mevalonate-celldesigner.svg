@@ -26,19 +26,19 @@
 <circle cx="1770.13" cy="858.78" r="8" fill="#fff" stroke="#000"/>
 <text x="1770.13" y="862.28" font-family="sans-serif" font-size="9" text-anchor="middle">P</text>
 <rect x="1734.82" y="816.78" width="70" height="16" fill="#fff" stroke="#000"/>
-<text x="1739.82" y="828.78" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="start" xml:space="preserve"> N:4 </text>
+<text x="1769.82" y="828.78" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">N:4</text>
 <text x="1769.82" y="846.45" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">HMGCR</text>
 <rect x="2157.3" y="525.59" width="74" height="34" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
 <rect x="2151.3" y="519.59" width="74" height="34" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
 <rect x="2153.3" y="511.59" width="70" height="16" fill="#fff" stroke="#000"/>
-<text x="2158.3" y="523.59" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="start" xml:space="preserve"> N:4 </text>
+<text x="2188.3" y="523.59" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">N:4</text>
 <text x="2188.3" y="541.26" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">ACAT2</text>
 <rect x="1945.09" y="830.78" width="74" height="34" rx="5" fill="#e2aca3" stroke="#000" class="c-protein"/>
 <circle cx="1982.39" cy="864.78" r="8" fill="#fff" stroke="#000"/>
 <rect x="1939.09" y="824.78" width="74" height="34" rx="5" fill="#e2aca3" stroke="#000" class="c-protein"/>
 <circle cx="1976.39" cy="858.78" r="8" fill="#fff" stroke="#000"/>
 <rect x="1941.09" y="816.78" width="70" height="16" fill="#fff" stroke="#000"/>
-<text x="1946.09" y="828.78" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="start" xml:space="preserve"> N:4 </text>
+<text x="1976.09" y="828.78" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">N:4</text>
 <text x="1976.09" y="846.45" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">HMGCR</text>
 <ellipse cx="2072.57" cy="625.3" rx="20" ry="20" fill="#dbebdb" stroke="#000" class="c-metabolite"/>
 <text x="2072.57" y="629.97" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-metabolite">acetyl-CoA</text>

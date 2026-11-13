@@ -14,7 +14,7 @@ height: 631
 scale: 1
 annotation: "/atlas-data/glutaminase-celldesigner.json"
 image_error: ""
-v: "59fcd306da"
+v: "8e61e62dd6"
 src: "9c0579ba4cc3b22131e0163aeb4758ea5b8aec71"
 colours: true
 legend: "celldesigner"

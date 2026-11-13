@@ -40,13 +40,13 @@
 <line x1="525.88" y1="549.64" x2="511.48" y2="585.64" stroke="#000"/>
 <polygon points="302,470.82 342,470.82 302,510.82 262,510.82" fill="#ffffff" stroke="#000" class="c-gene"/>
 <rect x="267" y="462.82" width="70" height="16" fill="#fff" stroke="#000"/>
-<text x="272" y="474.82" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="start" xml:space="preserve"> ct:mRNA </text>
+<text x="302" y="474.82" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">ct:mRNA</text>
 <text x="302" y="494.82" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-gene">ACLY</text>
 <circle cx="302" cy="648.69" r="13.5" fill="#ffffff" stroke="#000" class="c-white"/>
 <line x1="309.2" y1="630.69" x2="294.8" y2="666.69" stroke="#000"/>
 <rect x="372" y="552.88" width="80" height="40" fill="#ffffff" stroke="#000" class="c-gene"/>
 <rect x="377" y="544.88" width="70" height="16" fill="#fff" stroke="#000"/>
-<text x="382" y="556.88" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="start" xml:space="preserve"> ct:gene </text>
+<text x="412" y="556.88" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">ct:gene</text>
 <text x="412" y="576.88" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle" class="t-gene">ACLY</text>
 <rect x="152.21" y="552.88" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
 <ellipse cx="189.5" cy="592.88" rx="25" ry="8" fill="#fff" stroke="#000"/>

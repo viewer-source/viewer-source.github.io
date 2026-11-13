@@ -320,7 +320,7 @@ class Drawing:
                 label = label[:8] + '... '
             ux, uy = x + w / 2 - 35, y - 8
             self.out.append('<rect x="%s" y="%s" width="70" height="16" fill="#fff" stroke="#000"/>' % (fmt(ux), fmt(uy)))
-            self.text(label, ux + 5, uy + 12, anchor='start', extra=' xml:space="preserve"')
+            self.text(label.strip(), x + w / 2, uy + 12)  # centred in its box, as CellDesigner (AsthmaMap mast cell PDF)
 
     # -- lines ----------------------------------------------------------------------------
     def centre(self, i):

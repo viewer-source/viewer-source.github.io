@@ -10,11 +10,11 @@
 <text x="245" y="417.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">GAC</text>
 <rect x="250" y="117" width="80" height="40" fill="#ffffff" stroke="#000" class="c-gene"/>
 <rect x="255" y="109" width="70" height="16" fill="#fff" stroke="#000"/>
-<text x="260" y="121" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="start" xml:space="preserve"> ct:gene </text>
+<text x="290" y="121" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">ct:gene</text>
 <text x="290" y="141.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-gene">PKCε</text>
 <polygon points="185,206.5 225,206.5 185,246.5 145,246.5" fill="#ffffff" stroke="#000" class="c-gene"/>
 <rect x="150" y="198.5" width="70" height="16" fill="#fff" stroke="#000"/>
-<text x="155" y="210.5" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="start" xml:space="preserve"> ct:mRNA </text>
+<text x="185" y="210.5" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">ct:mRNA</text>
 <text x="185" y="231.17" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-gene">PKCε</text>
 <rect x="40" y="117" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
 <text x="80" y="141.67" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">NF-κB</text>

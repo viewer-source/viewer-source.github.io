@@ -14,7 +14,7 @@ height: 1224
 scale: 1
 annotation: "/atlas-data/srebp-celldesigner.json"
 image_error: ""
-v: "7a717aff12"
+v: "76569171b3"
 src: "2a7184a6041a0c51fc5cfec3c2cefac385dfa445"
 colours: true
 legend: "celldesigner"

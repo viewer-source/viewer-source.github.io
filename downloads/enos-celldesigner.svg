@@ -68,7 +68,7 @@
 <rect x="337.93" y="92.97" width="74" height="30" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
 <rect x="331.93" y="86.97" width="74" height="30" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
 <rect x="333.93" y="78.97" width="70" height="16" fill="#fff" stroke="#000"/>
-<text x="338.93" y="90.97" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="start" xml:space="preserve"> N:3 </text>
+<text x="368.93" y="90.97" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">N:3</text>
 <text x="368.93" y="107.31" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="16" text-anchor="middle" class="t-protein">NOSTRIN</text>
 <rect x="738.21" y="87.97" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
 <text x="778.21" y="113.31" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="16" text-anchor="middle" class="t-protein">DNM2</text>
@@ -342,7 +342,7 @@
 <rect x="620.28" y="240.88" width="74" height="30" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
 <rect x="614.28" y="234.88" width="74" height="30" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
 <rect x="616.28" y="226.88" width="70" height="16" fill="#fff" stroke="#000"/>
-<text x="621.28" y="238.88" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="start" xml:space="preserve"> N:3 </text>
+<text x="651.28" y="238.88" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">N:3</text>
 <text x="651.28" y="255.21" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="16" text-anchor="middle" class="t-protein">NOSTRIN</text>
 <rect x="910.94" y="169.88" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
 <text x="950.94" y="195.21" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="16" text-anchor="middle" class="t-protein">CAV1</text>
@@ -366,7 +366,7 @@
 <rect x="1014.94" y="239.88" width="74" height="30" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
 <rect x="1008.94" y="233.88" width="74" height="30" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
 <rect x="1010.94" y="225.88" width="70" height="16" fill="#fff" stroke="#000"/>
-<text x="1015.94" y="237.88" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="start" xml:space="preserve"> N:3 </text>
+<text x="1045.94" y="237.88" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">N:3</text>
 <text x="1045.94" y="254.21" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="16" text-anchor="middle" class="t-protein">NOSTRIN</text>
 <rect x="910.94" y="231.88" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
 <text x="950.94" y="257.21" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="16" text-anchor="middle" class="t-protein">DNM2</text>
@@ -392,7 +392,7 @@
 <rect x="1014.94" y="501.47" width="74" height="30" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
 <rect x="1008.94" y="495.47" width="74" height="30" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
 <rect x="1010.94" y="487.47" width="70" height="16" fill="#fff" stroke="#000"/>
-<text x="1015.94" y="499.47" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="start" xml:space="preserve"> N:3 </text>
+<text x="1045.94" y="499.47" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="12" text-anchor="middle">N:3</text>
 <text x="1045.94" y="515.8" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="16" text-anchor="middle" class="t-protein">NOSTRIN</text>
 <rect x="910.94" y="493.47" width="80" height="40" rx="5" fill="#c8d8eb" stroke="#000" class="c-protein"/>
 <text x="950.94" y="518.8" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="16" text-anchor="middle" class="t-protein">DNM2</text>
