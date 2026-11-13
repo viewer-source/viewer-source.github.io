@@ -1544,6 +1544,12 @@
       var mod = e.ctrlKey || e.metaKey, k = e.key.toLowerCase();
       if (mod && k === 's') { e.preventDefault(); save(); return; }
       if (!on || V.current !== map || /input|textarea|select/i.test(document.activeElement.tagName)) return;
+      if (mod && k === 'a') {   // select all, as yEd (user, 2026-11-13): every node and line; a CellDesigner glyph is no item of its own
+        e.preventDefault(); part = null; keyGuides = null; selP = [];
+        selN = nodes2.map(function (n, i) { return i; }).filter(function (i) { return !(cd && /\|proc$/.test(nodes2[i].id)); });
+        selE = edges2.map(function (x, k2) { return k2; });
+        paint(); return;
+      }
       if (mod && k === 'z') { e.preventDefault(); if (e.shiftKey) back(redo, undo); else back(undo, redo); return; }
       if (mod && k === 'y') { e.preventDefault(); back(redo, undo); return; }
       if (e.key === 'Escape') { selN = []; selP = []; selE = []; part = null; keyGuides = null; paint(); return; }

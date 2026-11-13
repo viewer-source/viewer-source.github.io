@@ -13,7 +13,7 @@
         'A right click on a line adds an anchor point there; on an anchor point, removes it.']],
       ['Layout tools', ['The dotted square puts the whole map on the grid by the layout rules (complexes packed, rows and columns kept), one step to undo.',
         'The complex with two proteins packs the complex selected (or the one round a member selected), every complex when nothing is selected.']],
-      ['Keys', [['Ctrl or Cmd Z', 'undo'], ['Ctrl or Cmd Y', 'redo'], ['Ctrl or Cmd S', 'save at once'], ['Esc', 'clear the selection'],
+      ['Keys', [['Ctrl or Cmd Z', 'undo'], ['Ctrl or Cmd Y', 'redo'], ['Ctrl or Cmd S', 'save at once'], ['Ctrl or Cmd A', 'select all'], ['Esc', 'clear the selection'],
         ['Delete', 'remove the anchor point selected'], ['E', 'switch between edit and view mode (not while typing in a field)'], ['?', 'this help']]]
     ];
     var HELP_KEY = 'atlas-edit-help', helpBtn = box.querySelector('#m2-ed-help'), helpBox = null;
