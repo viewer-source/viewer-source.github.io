@@ -138,7 +138,8 @@
           return r.json().then(function (d) {
             if (r.ok) {
               target.sha = d.content.sha; target.saved = body;
-              if (!(pre && pre.kept === target)) pre = null;   // what was read ahead is older than this save (the copy kept on leaving waits for it: keepAhead)
+              if (bank[target.id] && bank[target.id].kept !== target) forget(target.id);   // what was read ahead is older than this save (the copy kept on leaving waits for it: keepAhead)
+              learnt(target.path, target.sha);   // the folder's listing read before is older for this map
               if (V.kept && V.kept.id === target.id) V.kept.sha = target.sha;
               var sm = V.byId[target.id];
               if (sm) target.v = V.ver(sm);   // the site's version still without this move
@@ -173,7 +174,7 @@
       return saving;
     }
     function conflict() {
-      stuck = true; pre = null;   // opened again, the map is read afresh
+      stuck = true; forget(site && site.id); if (site) learnt(site.path, 'changed');   // opened again, the map is read afresh from GitHub
       warn('Not saved: the map was changed on GitHub since it was opened, and it is not overwritten. Stop editing and open the map again to go on from that version.');
     }
     function ghForm(show) {   // the token field: shown while editing a map of this site with no token
@@ -597,7 +598,8 @@
       if (helpBox) help(false);
       on = false; drag = null; band = null; V.grid.classList.remove('m2-editing'); paint(); buttons();
       if (dirty && !site) warn(name + ' has moves not saved: Back to it, or Save.'); else quiet();
-      if (!keepAhead()) pre = null;   // else read afresh (a conflict, a move not saved: the repository may differ)
+      drawMemo = null; preDoc = [];   // what was read ahead for this opening, let go
+      if (!keepAhead()) forget(editPre && editPre.id);   // else read afresh (a conflict, a move not saved: the repository may differ)
       aheadSoon();
     }
     // going back to edit at once (user, 2026-11-13: switching back and forth waited 0.5-1.5 s, the read-ahead thrown away
@@ -608,38 +610,37 @@
     function keepAhead() {
       var s = site, m = s && s.id ? V.byId[s.id] : null, old = editPre;
       if (!m || !old || stuck || s.pending || old.key !== preKey(m)) return false;
-      var p = { key: old.key, path: old.path, file: old.file, sitePub: old.sitePub, siteFrame: old.siteFrame, kept: s };
+      var p = { key: old.key, id: old.id, path: old.path, file: old.file, img: old.img, sitePub: old.sitePub, siteFrame: old.siteFrame, kept: s };
       // the version as saved once a save under way is done; a save that did not go through: GitHub read afresh
       p.gh = (saving || Promise.resolve()).then(function () {
         if (stuck || !s.sha || (dirty && site === s)) throw 'not saved';
         return { sha: s.sha, text: s.saved || s.base };
       }).catch(function () { return ghRead(p.path); });
-      p.gh.catch(function () { if (pre === p) pre = null; });
+      p.gh.catch(function () { if (bank[p.id] === p) forget(p.id); });
       p.sitePub.catch(function () {});
-      pre = p;
+      bank[p.id] = p;
       // the drawing on screen kept with it, only when it is the drawing of the text the next editing starts from: every
       // move in the text drawn, none moving; made ahead now, or once the save under way has written that very text
       var S = src(), g = text, d0 = doc, el = V.img, svg = lastSvg;
       if (!(svg && !drawing && !mv && !keyed && !liveC && docText === g && lastFor && lastFor[0] === g && lastFor[1] === (cd ? S : null))) return true;
       var isCd = !!cd, make = function () {
-        if (isCd) { cdRemember(S, g); drawMemo = { cd: true, base: S, text: g, q: [svg, S, g] }; }
-        else drawMemo = { cd: false, text: g, r: [svg, []] };
-        preDoc = [{ text: g, doc: d0 }];
-        var dm = drawMemo;
+        var dm = isCd ? { cd: true, base: S, text: g, q: [svg, S, g] } : { cd: false, text: g, r: [svg, []] };
+        if (isCd) cdRemember(S, g);
+        p.memo = dm; p.docs = [{ text: g, doc: d0 }]; p.drawn = Promise.resolve();
         if (el === V.img && el.tagName.toLowerCase() === 'svg' && el.querySelector('[data-e]')) {   // the page's drawing itself
           el.querySelectorAll('.m2-ed-copy').forEach(function (x) { x.remove(); });
           el.querySelectorAll('[data-n],[data-e]').forEach(function (x) { x.removeAttribute('transform'); x.style.display = ''; x.classList.remove('m2-ed-blue'); });
           dm.rec = V.recolour(svg); dm.pic = el;
           return;
         }
-        (window.requestIdleCallback || function (f) { setTimeout(f, 0); })(function () {
-          if (drawMemo !== dm || on) return;
+        idle().then(function () {
+          if (p.memo !== dm || on) return;
           dm.rec = V.recolour(svg);
           dm.pic = document.importNode(new DOMParser().parseFromString(dm.rec, 'image/svg+xml').documentElement, true);
         });
       };
       if (!dirty && !saving && S === (s.saved || s.base)) make();
-      else p.gh.then(function (r) { if (r && r.text === S && pre === p && !on) make(); }, function () {});
+      else p.gh.then(function (r) { if (r && r.text === S && bank[p.id] === p && !on) make(); }, function () {});
       return true;
     }
     function buttons() {
@@ -682,9 +683,15 @@
     // what editing a map needs, loaded ahead while the map is only shown (user, 2026-11-13: the switch to edit should
     // be "immediate and immediately functional", not only look so): the map's own file, the frame of its drawing, with a
     // token the repository's version and its sha, the renderer and, on a CellDesigner map, the GraphML the editor edits.
-    // The switch then waits for nothing. Dropped after a save, when editing stops and when the site's version changes.
-    var pre = null, preTimer = null, openTitle = null, drawMemo = null, preDoc = [], editPre = null;   // drawMemo: the editor's drawing made ahead, with the text it was made from
+    // The switch then waits for nothing. Dropped after a save (unless kept on leaving: keepAhead), after a refused save
+    // and when the site's version changes.
+    // Every map, not only the one shown (user, 2026-11-13: "silently get to the after-background-reading state for all
+    // maps", nearest the map shown first, lowest priority): the files and a CellDesigner map's GraphML for every map that
+    // can be edited, one map at a time once the viewer's pictures are in; the editor's drawing (the heavy part, in
+    // memory) only for the map shown and its two nearest, dropped for maps further away. One entry per map in bank.
+    var bank = {}, preTimer = null, sweepT = 0, openTitle = null, drawMemo = null, preDoc = [], editPre = null;   // drawMemo, preDoc: the drawing and documents of the map being opened
     function preKey(m) { return m.id + '|' + V.ver(m) + '|' + (repo() && token() ? 'gh' : ''); }
+    function forget(id) { if (id && bank[id]) delete bank[id]; }
     // the repository's version of a map and its sha (two calls side by side); null: not a map of this repository
     function ghRead(path) {
       if (!(repo() && token())) return Promise.resolve(undefined);
@@ -698,70 +705,164 @@
         return Promise.all([r[0].json(), r[1].text()]).then(function (d) { return { sha: d[0].sha, text: d[1] }; });
       });
     }
-    function ahead(m) {
-      var url = graphmlOf(m);
-      if (!url) return null;
-      var key = preKey(m);
-      if (pre && pre.key === key) return pre;
-      var file = url.split('?')[0].split('/').pop(), path = 'maps/' + file, cdm = cdMap(m);
-      var p = { key: key, path: path, file: file };
-      p.sitePub = fetch(url, { cache: 'no-cache' }).then(function (r) { if (!r.ok) throw r.status; return r.text(); });
-      p.siteFrame = fetch(m.image + V.ver(m)).then(function (r) { return r.text(); }).then(function (svg) {
+    // the versions of all maps in one call (the folder's listing: each file's git sha), in place of two calls per map:
+    // a map whose site copy has the repository's sha is the repository's version, read from the site; only a map changed
+    // since the site's build is read from GitHub. Kept 5 minutes; null: no listing (each map read on its own)
+    // known: a newer sha this page learnt for a path after asking for the listing (its own save, the check after a
+    // switch, a refused save), with when; it outranks a listing asked for before it, so a stale listing never hides a
+    // version GitHub already said is newer (the review, 2026-11-13: else the check after the switch reopened in a loop)
+    var ghDir = null, known = {};
+    function ghList() {
+      if (ghDir && Date.now() - ghDir.at < 300000) return ghDir;
+      ghDir = { at: Date.now() };
+      ghDir.p = api('/contents/maps?ref=main').then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
+        if (!Array.isArray(d) || d.length >= 1000) return null;   // GitHub lists at most 1000 files here: then map by map
+        var o = {};
+        d.forEach(function (f) { o[f.path] = f.sha; });
+        return o;
+      }).catch(function () { return null; });
+      return ghDir;
+    }
+    function learnt(path, sha) { known[path] = { sha: sha, at: Date.now() }; }
+    function blobSha(t) {   // git's sha of a text, as GitHub gives it
+      var u = new TextEncoder().encode(t), h = new TextEncoder().encode('blob ' + u.length + '\0'), all = new Uint8Array(h.length + u.length);
+      all.set(h); all.set(u, h.length);
+      return crypto.subtle.digest('SHA-1', all).then(function (b) { return Array.from(new Uint8Array(b)).map(function (x) { return (x < 16 ? '0' : '') + x.toString(16); }).join(''); });
+    }
+    function ghFor(path, sitePub) {
+      if (!(repo() && token())) return Promise.resolve(undefined);
+      var L = ghList();
+      return L.p.then(function (d) {
+        if (!d || !window.crypto || !crypto.subtle) return ghRead(path);
+        var k = known[path], sha = k && k.at >= L.at ? k.sha : d[path];
+        if (!sha) return ghRead(path);   // not in the listing (a map added since): GitHub asked, its 404 says not a map of this repository
+        return sitePub.then(blobSha).then(function (h) {
+          return h === sha ? sitePub.then(function (t) { return { sha: sha, text: t }; }) : ghRead(path);
+        }, function () { return ghRead(path); });
+      });
+    }
+    function frameOf(p) {   // the frame of the site's drawing (its size and the offset of yEd's coordinates), read when wanted
+      if (!p.siteFrame) p.siteFrame = fetch(p.img).then(function (r) { return r.text(); }).then(function (svg) {
         var t = svg.match(/<g transform="translate\(([-\d.]+),([-\d.]+)\)">/), w = svg.match(/ width="([\d.]+)" height="([\d.]+)"/);
         return w ? { width: parseFloat(w[1]), height: parseFloat(w[2]), x0: t ? -parseFloat(t[1]) : 0, y0: t ? -parseFloat(t[2]) : 0, scale: 1 } : null;   // a CellDesigner drawing: no offset
       }).catch(function () { return null; });
+      return p.siteFrame;
+    }
+    var idle = function () { return new Promise(function (res) { (window.requestIdleCallback || function (f) { setTimeout(f, 0); })(res); }); };
+    // lowest priority (user, 2026-11-13: "truly does not compete with anything else"): a step for a map other than the
+    // one shown waits until the reader has not clicked, scrolled, dragged or typed for 1.5 s, then for an idle moment.
+    // A step cannot be stopped once begun (the largest, a big CellDesigner map's conversion, 80-160 ms measured
+    // headless), so it starts only while the reader is reading, not moving
+    var lastInput = 0, mark = function () { lastInput = Date.now(); };
+    ['pointerdown', 'wheel', 'keydown', 'touchstart'].forEach(function (k) { document.addEventListener(k, mark, { capture: true, passive: true }); });
+    document.addEventListener('pointermove', function (e) { if (e.buttons) mark(); }, { capture: true, passive: true });
+    function calm() {
+      return new Promise(function (res) {
+        (function w() { var q = Date.now() - lastInput; if (q >= 1500) idle().then(res); else setTimeout(w, 1500 - q); })();
+      });
+    }
+    function waitFor(m) { return V.current && V.current.id === m.id ? idle() : calm(); }   // the map shown: an idle moment is enough
+    // a map's entry: its files asked for now (the map shown at the browser's usual priority, the others low), then, in
+    // idle moments, the renderer and a CellDesigner file's GraphML (p.ready, the text editing starts from)
+    function ahead(m, low) {
+      var url = graphmlOf(m);
+      if (!url) return null;
+      var key = preKey(m), old = bank[m.id];
+      if (old && old.key === key && (!old.bad || (low && Date.now() - old.bad < 300000))) return old;
+      var file = url.split('?')[0].split('/').pop(), path = 'maps/' + file;
+      var p = { key: key, id: m.id, path: path, file: file, img: m.image + V.ver(m) };
+      p.sitePub = fetch(url, { cache: 'no-cache', priority: low ? 'low' : 'auto' }).then(function (r) { if (!r.ok) throw r.status; return r.text(); });
       // the repository's version (newer than the site while a build runs) and its sha, which makes GitHub refuse a save
       // over a version changed meanwhile; null: not a map of this repository (saved as a file)
-      p.gh = ghRead(path);
-      var drop = function () { if (pre === p) pre = null; };
+      p.gh = ghFor(path, p.sitePub);
+      // a file or GitHub that failed: the sweep leaves the map for 5 minutes (a refused token, a rate limit, no
+      // connection: else every map switch asked again for every map); opening the map asks afresh
+      var drop = function () { p.bad = p.bad || Date.now(); };
       p.sitePub.catch(drop); p.gh.catch(drop);
-      // the renderer, and a CellDesigner file made into the editor's GraphML now, not at the switch
-      // then, when the browser is idle, the editor's own drawing of the map (each node and line in a group of its own,
-      // for live drags), made from the text editing will start from: the switch only puts it in (the other session's
-      // measure, 2026-11-13: 100-320 ms of frozen page on entering edit on large maps, from drawing the map again)
-      (cdm ? cdpy() : yr()).then(function () {
-        var k = V.keep(m);
-        return Promise.all([k && k.text ? k.text : p.sitePub, p.gh]).then(function (r) {
-          var t = r[1] ? r[1].text : r[0];
-          // in steps, each in its own idle moment, so no step freezes the page long enough to be felt while the
-          // map is only looked at (one step was 84-134 ms on large maps): a CellDesigner file's GraphML, read, draw, make the page's elements
-          var idle = function () { return new Promise(function (res) { (window.requestIdleCallback || function (f) { setTimeout(f, 0); })(res); }); };
-          var still = function () { return pre === p && !on && V.current === m; };
-          var rd = function (x) { return new DOMParser().parseFromString(x, 'application/xml'); };
-          var g, d, g2, d2;
-          return idle().then(function () {
-            if (!still()) throw 0;
-            g = cdm ? cdGraphml(t) : t;   // a CellDesigner file made into the editor's GraphML: a step of its own
-            return cdm ? idle() : null;
-          }).then(function () {
-            if (!still()) throw 0;
-            d = rd(g);
-            g2 = cdm ? g : shiftedAhead(g, d);   // a map with negative places is shifted on entering edit (noNegative)
-            d2 = g2 === g ? d : rd(g2);
-            preDoc = g2 === g ? [{ text: g, doc: d }] : [{ text: g, doc: d }, { text: g2, doc: d2 }];   // the documents the editor reads its file into
-            return idle();
-          }).then(function () {
-            if (!still()) throw 0;
-            if (cdm) drawMemo = { cd: true, base: t, text: g, q: cdJs.draw(t, g) };
-            else { var y = window.yrender.render(d2, { classes: true, groups: true }); drawMemo = { cd: false, text: g2, r: [y.svg, y.errors] }; }   // the renderer only reads the document
-            return idle();
-          }).then(function () {
-            if (!still() || !drawMemo) throw 0;
-            drawMemo.rec = V.recolour(cdm ? drawMemo.q[0] : drawMemo.r[0]);   // the drawing as the page's elements, ready to put in
-            drawMemo.pic = document.importNode(new DOMParser().parseFromString(drawMemo.rec, 'image/svg+xml').documentElement, true);
-          });
-        });
-      }).catch(function () {});
-      pre = p;
+      bank[m.id] = p;
       return p;
+    }
+    function readyOf(p, m) {   // made again when an earlier try stopped (editing began, a newer entry)
+      if (p.ready) return p.ready;
+      var cdm = cdMap(m), still = function () { return bank[m.id] === p && !on; };
+      var r = p.ready = (cdm ? cdpy() : yr()).then(function () {
+        // the edited text this page holds for the map, read without V.keep (it would load a stored drawing and replace
+        // the viewer's kept one: the review, 2026-11-13)
+        var k = V.kept && V.kept.id === m.id && V.behind(m, V.kept) ? V.kept : null;
+        return Promise.all([k && k.text ? k.text : p.sitePub, p.gh]);
+      }).then(function (x) {
+        p.t = x[1] ? x[1].text : x[0];
+        if (!cdm) return p;   // a GraphML map is ready as it is
+        return waitFor(m).then(function () {
+          if (!still()) throw 0;
+          p.g = cdKnown(p.t) || cdJs.graphml(p.t);   // a CellDesigner file made into the editor's GraphML: a step of its own
+          return p;
+        });
+      });
+      r.catch(function () { if (p.ready === r) p.ready = null; });
+      return r;
+    }
+    // the editor's own drawing of a map (each node and line in a group of its own, for live drags), made from the text
+    // editing will start from, so the switch only puts it in (the other session's measure, 2026-11-13: 100-320 ms of
+    // frozen page on entering edit on large maps). In steps, each in its own idle moment, so no step freezes the page
+    // long enough to be felt while the map is only looked at (one step was 84-134 ms on large maps)
+    function drawAhead(p, m) {
+      if (p.drawn) return p.drawn;
+      var cdm = cdMap(m), mine = {};
+      var still = function () { return bank[m.id] === p && !on && p.drawn === mine.p; };
+      var rd = function (x) { return new DOMParser().parseFromString(x, 'application/xml'); };
+      var g, d, g2, d2, dm;
+      frameOf(p);
+      mine.p = p.drawn = readyOf(p, m).then(function () {
+        if (!still()) throw 0;
+        g = cdm ? p.g : p.t;
+        d = rd(g);
+        g2 = cdm ? g : shiftedAhead(g, d);   // a map with negative places is shifted on entering edit (noNegative)
+        d2 = g2 === g ? d : rd(g2);
+        p.docs = g2 === g ? [{ text: g, doc: d }] : [{ text: g, doc: d }, { text: g2, doc: d2 }];   // the documents the editor reads its file into
+        return waitFor(m);
+      }).then(function () {
+        if (!still()) throw 0;
+        if (cdm) dm = { cd: true, base: p.t, text: g, q: cdJs.draw(p.t, g) };
+        else { var y = window.yrender.render(d2, { classes: true, groups: true }); dm = { cd: false, text: g2, r: [y.svg, y.errors] }; }   // the renderer only reads the document
+        p.memo = dm;
+        return waitFor(m);
+      }).then(function () {
+        if (!still() || p.memo !== dm) throw 0;
+        dm.rec = V.recolour(cdm ? dm.q[0] : dm.r[0]);   // the drawing as the page's elements, ready to put in
+        dm.pic = document.importNode(new DOMParser().parseFromString(dm.rec, 'image/svg+xml').documentElement, true);
+      });
+      mine.p.catch(function () { if (p.drawn === mine.p) p.drawn = null; });
+      return mine.p;
+    }
+    function dropDrawing(p) { p.drawn = null; p.memo = null; p.docs = null; }
+    // the sweep: the map shown first, then the others nearest it in the list, one at a time; maps beyond the two nearest
+    // only once the viewer's own pictures are in (V.netIdle), so nothing here competes with what the reader looks at
+    function sweep() {
+      var cur = V.current, t = ++sweepT, here = cur ? V.maps.indexOf(V.byId[cur.id]) : -1;   // by id: a map just edited is shown as a copy of its entry
+      if (here < 0) return;
+      var list = V.maps.filter(function (m) { return graphmlOf(m); }).map(function (m, i) { return [m, Math.abs(V.maps.indexOf(m) - here), i]; })
+        .sort(function (a, b) { return a[1] - b[1] || a[2] - b[2]; }).map(function (x) { return x[0]; });
+      var near = list.slice(0, 3);
+      Object.keys(bank).forEach(function (id) { if (!V.byId[id]) delete bank[id]; else if (!near.some(function (m) { return m.id === id; })) dropDrawing(bank[id]); });   // the drawings of maps further away let go
+      var i = 0;
+      var next = function () {
+        if (t !== sweepT || on || i >= list.length) return;
+        var m = list[i], bg = m.id !== cur.id;
+        if (bg && V.netIdle && !V.netIdle()) { setTimeout(next, 500); return; }   // the viewer's pictures first
+        var go = function () { if (t !== sweepT || on) return; var p = ahead(m, bg); i++; (near.indexOf(m) >= 0 ? drawAhead(p, m) : readyOf(p, m)).then(idle, idle).then(next); };
+        if (bg) calm().then(go); else go();   // a map's file asked for only while the reader is not moving either
+      };
+      next();
     }
     function aheadSoon() {   // after the map has shown, when the browser is idle, only where the Edit tab is
       clearTimeout(preTimer);
+      sweepT++;   // a sweep under way stops
       preTimer = setTimeout(function () {
-        (window.requestIdleCallback || function (f) { setTimeout(f, 0); })(function () {
+        idle().then(function () {
           var eb = document.querySelector('#m2-rail .m2-ri[data-win="edit"]');
           if (on || !eb || !eb.offsetParent) return;
-          ahead(V.current);
+          sweep();
         });
       }, 300);
     }
@@ -777,9 +878,13 @@
       // coordinates) is read from that SVG, so editing starts on it without a redraw; the moved map is drawn again
       var k = V.keep(m), shownPic = V.img;
       var published = k && k.text ? Promise.resolve(k.text) : p.sitePub;
-      var frame = k ? Promise.resolve({ width: k.width, height: k.height, x0: k.x0, y0: k.y0, scale: 1 }) : p.siteFrame;
+      var frame = k ? Promise.resolve({ width: k.width, height: k.height, x0: k.x0, y0: k.y0, scale: 1 }) : frameOf(p);
       var go = function (t, s) {
-        return Promise.all([published, frame, p.sitePub, p.siteFrame]).then(function (r) {
+        return Promise.all([published, frame, p.sitePub, frameOf(p)]).then(function (r) {
+          // what was read ahead for this map handed to the editor, used once (made again by the sweep if wanted)
+          drawMemo = p.memo || null; preDoc = p.docs || [];
+          if (p.g && p.t === t) cdRemember(t, p.g);
+          dropDrawing(p);
           var same = r[1] && V.img === shownPic && V.current === m ? Object.assign({}, r[1], { text: r[0] }) : null;
           if (s) { s.id = m.id; s.v = V.ver(m); }
           openTitle = m.title;   // the map's own title in the first line said, not its file's name
@@ -808,7 +913,8 @@
       var s0 = site;
       api('/contents/' + p.path + '?ref=main').then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
         if (!d || d.sha === g.sha || !on || site !== s0) return;
-        if (pre === p) pre = null;
+        learnt(p.path, d.sha);
+        if (bank[p.id] === p) forget(p.id);
         if (!undo.length && !dirty) { on = false; editMap(m); }   // the site's map, not the editor's own (V.current is that now)
       }).catch(function () {});
     }

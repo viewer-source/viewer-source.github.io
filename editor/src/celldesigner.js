@@ -31,11 +31,13 @@
     // switch and for the click data the same text again): the last few kept
     var cdMemo = [];
     function cdGraphml(t) {
-      for (var i = 0; i < cdMemo.length; i++) if (cdMemo[i][0] === t) return cdMemo[i][1];
-      var g = cdJs.graphml(t);
+      var g = cdKnown(t);
+      if (g) return g;
+      g = cdJs.graphml(t);
       cdRemember(t, g);
       return g;
     }
+    function cdKnown(t) { for (var i = 0; i < cdMemo.length; i++) if (cdMemo[i][0] === t) return cdMemo[i][1]; return null; }   // without adding to the memo
     function cdRemember(t, g) { cdMemo.unshift([t, g]); cdMemo.length = Math.min(cdMemo.length, 3); }   // also the editor's own text on leaving (keepAhead)
     function glyphMid(q, B, P, pp) {   // where cd_edit puts the glyph: midway on its segment, an end at a node cut at its box
       var ea = edges2[q.a], eb = edges2[q.b], o = function (e, a) {

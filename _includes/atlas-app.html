@@ -2721,7 +2721,9 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
     stored: { get: function () { return stored; } },
     store: { get: function () { return store; } },
     behind: { get: function () { return behind; } },
-    keep: { get: function () { return keep; } }
+    keep: { get: function () { return keep; } },
+    maps: { get: function () { return maps; } },   // the list in its order (the editor reads ahead nearest the map shown first)
+    netIdle: { get: function () { return function () { return !busy && !queue.length; }; } }   // the pictures all in
   });
   var editor = null, editorAsked;   // the editor once loaded; no initial value: editorLoad can run before this line
   function editorLoad() {
