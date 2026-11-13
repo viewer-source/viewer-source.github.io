@@ -2550,6 +2550,15 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
         : navigator.clipboard ? plain() : Promise.reject();
       go.then(function () { say('Image copied', r.left, r.top); }, function () { say('Not copied', r.left, r.top); });
     }
+    // a download of the map's image: the site's file by its link, else made here (the PNG drawn as Copy image as PNG draws it)
+    function saveImage(m, url, ext, r) {
+      var href = ext === 'svg' ? url.SVG || m.image : url.PNG;
+      var name = (href ? href.split('/').pop().split(/[?#]/)[0] : '') || (m.id || 'map') + '.' + ext;
+      var go = function (h) { var a = document.createElement('a'); a.href = h; a.download = name; document.body.appendChild(a); a.click(); a.remove(); };
+      if (href) return go(href);
+      pngOf(m, url).then(function (b) { var u = URL.createObjectURL(b); go(u); setTimeout(function () { URL.revokeObjectURL(u); }, 10000); },
+        function () { say('Not saved', r.left, r.top); });
+    }
     function tab(name) {   // a tab of the icons, unless its window shows already (a second click would close it)
       var b = document.querySelector('#m2-rail .m2-ri[data-win="' + name + '"]');
       if (!b || !b.offsetParent) return false;
@@ -2589,6 +2598,9 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
         item(box, isPageFull() ? 'Exit full screen' : 'Full screen with tools', pageFull);
       var src = (m.legend === 'celldesigner' ? ['CellDesigner', 'GraphML'] : ['GraphML', 'CellDesigner']).filter(function (l) { return url[l]; })[0];   // the format the map is drawn from
       if (src) link(box, src === 'GraphML' ? 'Download GraphML' : 'Download CellDesigner XML', url[src], true);
+      // the images as files (user, 2026-11-13): the site's own when it has them, else as the copies make them
+      if (!m.imageError && (url.SVG || m.image)) item(box, 'Download SVG', function (r) { saveImage(m, url, 'svg', r); });
+      if (!m.imageError) item(box, 'Download PNG', function (r) { saveImage(m, url, 'png', r); });
       ['Newt', 'MINERVA'].forEach(function (l) { if (url[l]) link(box, 'Open in ' + l, url[l]); });
       if (!m.imageError) item(box, 'Copy image as PNG', function (r) { copyPicture(m, url, r); });
       if (!m.imageError && (url.SVG || m.image)) item(box, 'Copy image as SVG', function (r) { copySvg(m, url, r); });
