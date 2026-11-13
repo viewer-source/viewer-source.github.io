@@ -122,7 +122,7 @@
     function changed() {   // after every move, undo or redo: the site's map is saved a few seconds after the last one
       if (site && !token() && !stuck) { warn('Not saved: connect to GitHub below so the moves are saved to the site.'); return; }   // was silent
       if (!site || !token() || stuck) return;
-      quiet();
+      note('Saving in a moment...');   // the save messages kept during development (user, 2026-11-13), warnings in red beside them
       clearTimeout(saveTimer); saveTimer = setTimeout(push, AUTOSAVE);
     }
     function push(again) {
@@ -131,7 +131,7 @@
       if (saving) { saveAgain = true; return saving; }
       if (drawing) { saveTimer = setTimeout(push, 300); return Promise.resolve(); }   // the last move not yet in the file
       var target = site, body = src();
-      quiet();
+      note('Saving...');
       saving = api('/contents/' + target.path, { method: 'PUT', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: 'Moved in the viewer: ' + target.path.split('/').pop(), content: b64(body), sha: target.sha, branch: 'main' }) })
         .then(function (r) {
@@ -148,7 +148,7 @@
                 V.store(all);
               }
               if (site === target && src() === body) dirty = false;
-              quiet();
+              note('Saved. In about 2 minutes it is on the site, and this page updates by itself.');   // no clock time (user, 2026-11-12)
             } else if (r.status === 409 || r.status === 422) {
               // GitHub also refuses a save when its branch moved meanwhile (the site's build commits after each save,
               // user, 2026-11-12: "Not saved" at the second move): the file as it is there now is read, and if it is
@@ -187,6 +187,7 @@
     // like to see"; no save time or mark by the title either: when and how a map is saved is the system's concern). A
     // warning stays until the next thing that works.
     function warn(t) { status.textContent = t; status.classList.add('m2-ed-warn'); }
+    function note(t) { status.textContent = t; status.classList.remove('m2-ed-warn'); }   // a save message, in the usual grey
     function quiet() { status.textContent = ''; status.classList.remove('m2-ed-warn'); }
 
     // the layout skill's tools (user, 2026-11-12): its own code, copied into renderers/layout/ and run here as it is, on the
