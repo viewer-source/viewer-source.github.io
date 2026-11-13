@@ -2613,24 +2613,31 @@ page, so its styles keep the base they were made on). The looks before (Default 
     // name it at once and a browser with none never opens the database for it
     var FOLDER_KEY = 'atlas-edit-folder';
     function folderName() { try { return localStorage.getItem(FOLDER_KEY) || ''; } catch (e) { return ''; } }
-    function folder() {   // read afresh each time: another tab of the site may have written a file since (the review, 2026-11-13)
+    // the folder's handle (key dir) read once per page; the files written (key files: map id -> { name, mod, size }) read
+    // afresh each time, since another tab of the site may have written one since (the review, 2026-11-13)
+    var dirP = null;
+    function folder() {
       if (!folderName() || !window.indexedDB) return Promise.resolve(null);
-      return draftDo('readonly', function (st) { return st.get('dir'); }, 'folder').then(function (r) { return r || null; });   // a failed read rejects: never taken for no folder
+      if (!dirP) dirP = draftDo('readonly', function (st) { return st.get('dir'); }, 'folder');
+      dirP.catch(function () { dirP = null; });
+      return Promise.all([dirP, draftDo('readonly', function (st) { return st.get('files'); }, 'folder')])   // a failed read rejects: never taken for no folder
+        .then(function (r) { return r[0] ? { dir: r[0], files: r[1] || {} } : null; });
     }
     function folderSet(dir) {   // a folder chosen: its name said only once it is stored
-      return draftDo('readwrite', function (st) { return st.put({ dir: dir, files: {} }, 'dir'); }, 'folder')
-        .then(function () { try { localStorage.setItem(FOLDER_KEY, dir.name); } catch (e) {} });
+      return draftDo('readwrite', function (st) { st.put({}, 'files'); return st.put(dir, 'dir'); }, 'folder')
+        .then(function () { dirP = Promise.resolve(dir); try { localStorage.setItem(FOLDER_KEY, dir.name); } catch (e) {} });
     }
     function folderFile(id, w) {   // one file written: only its own entry changed, in one step
       return draftDo('readwrite', function (st) {
-        var q = st.get('dir');
-        q.onsuccess = function () { var r = q.result; if (r) { r.files[id] = w; st.put(r, 'dir'); } };
+        var q = st.get('files');
+        q.onsuccess = function () { var r = q.result || {}; r[id] = w; st.put(r, 'files'); };
         return q;
       }, 'folder');
     }
     function folderForget() {   // the folder gone or refused: Choose a folder offered again
       try { localStorage.removeItem(FOLDER_KEY); } catch (e) {}
-      return draftDo('readwrite', function (st) { return st.delete('dir'); }, 'folder').catch(function () {});
+      dirP = null;
+      return draftDo('readwrite', function (st) { st.delete('files'); return st.delete('dir'); }, 'folder').catch(function () {});
     }
     // text 6 (approved by the user, 2026-11-13): after editing, the changes in this browser only and no folder yet, once a
     // day at most, where a folder can be chosen
