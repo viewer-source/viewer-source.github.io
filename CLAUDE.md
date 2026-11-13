@@ -259,7 +259,7 @@ says "the workbench", "the converter's repository", "a private repository".
   sources). The viewer loads it once its style turns `--m2-edit` on (`editorLoad`) and hands it `V`, getters and setters
   of the viewer names it uses (z, tx, ty, current, img, ...); a site or style without the Edit tab loads nothing. The
   edited drawing kept until the build catches up (`keep`, `boxes`, `atlas-edit-kept`) stays in the viewer, needed before
-  any editor loads. `editor="..."` on the include gives the folder (the styles: `/styles/editor/`); `edit="layout"` is to
+  any editor loads. `editor="..."` on the include gives the folder (the styles: `/styles/editor/`); `renderers="..."` the folder of the four renderers it runs (default `/renderers/`; the styles: `/styles/renderers/`, copied by its `update.sh` as `copy-to-site.sh` copies them, so a copy runs the renderers of its own commit, 2026-11-13); `edit="layout"` is to
   keep a site to the layout tools once drawing exists ("full" the default; user, 2026-11-13). The sites get `editor/`
   with `copy-to-site.sh`, off there. Split checked 2026-11-13: the same actions (keys, a drag, Pack, Snap map to grid,
   undo) on the frozen editor of the styles (Default Edit V1 Python) and the split one gave the same drawing on

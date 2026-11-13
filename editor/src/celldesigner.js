@@ -18,7 +18,7 @@
       var script = function (f) {
         return new Promise(function (res, rej) {
           var s = document.createElement('script');
-          s.src = '/renderers/converter/' + f + '.js' + V.build; s.onload = res; s.onerror = function () { rej(f + ' not found'); };
+          s.src = V.renderers + 'converter/' + f + '.js' + V.build; s.onload = res; s.onerror = function () { rej(f + ' not found'); };
           document.head.appendChild(s);
         });
       };

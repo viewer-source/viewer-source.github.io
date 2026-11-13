@@ -145,8 +145,9 @@
               if (sm) target.v = V.ver(sm);   // the site's version still without this move
               if (lastSvg && site === target && src() === body) {
                 var all = V.stored();
-                all[target.id] = { v: target.v, sha: target.sha, svg: lastSvg, width: map.width, height: map.height, x0: picX0(), y0: picY0(), at: Date.now(), ref: siteRef, cur: nowRef() };
-                V.store(all);
+                var one = {}; one[target.id] = all[target.id] = { v: target.v, sha: target.sha, svg: lastSvg, width: map.width, height: map.height, x0: picX0(), y0: picY0(), at: Date.now(), ref: siteRef, cur: nowRef() };
+                // the browser's storage full (a few large maps): this map's drawing alone, else none of it (never an older one)
+                if (!V.store(all) && !V.store(one)) { all = V.stored(); delete all[target.id]; V.store(all); }
               }
               if (site === target && src() === body) dirty = false;
               note('Saved. In about 2 minutes it is on the site, and this page updates by itself.');   // no clock time (user, 2026-11-12)
@@ -201,7 +202,7 @@
       lay = new Promise(function (res, rej) {
         if (window.layout) return res(window.layout);
         var s = document.createElement('script');
-        s.src = '/renderers/layout/layout.js' + V.build; s.onload = function () { res(window.layout); }; s.onerror = function () { rej('layout tools not found'); };
+        s.src = V.renderers + 'layout/layout.js' + V.build; s.onload = function () { res(window.layout); }; s.onerror = function () { rej('layout tools not found'); };
         document.head.appendChild(s);
       });
       lay.catch(function (e) { lay = null; warn('The layout tools did not load: ' + e); });
@@ -567,11 +568,15 @@
         })();
       }).catch(function (e) { if (t === ticket) { drawing = false; warn('Not drawn: ' + (e && e.message ? e.message.split('\n').slice(-2).join(' ') : e)); } });
     }
+    // an opening under way (the files read, a CellDesigner file converted) is dropped when the Edit window is left or
+    // another map is opened before it is done (review 2026-11-13: leaving at once left edit mode on, autosave armed)
+    var opening = 0;
     function start(t, n, h, s, same) {   // a CellDesigner file is first made into the GraphML the editor edits
       if (!isCd(t)) { cd = null; return begin(t, t, n, h, s, same); }
       quiet();
-      return cdpy().then(function () { cd = { base: t, now: t }; begin(cdGraphml(t), t, n, h, s, same); })
-        .catch(function (e) { warn('Cannot edit ' + n + ': ' + e); });
+      var tk = opening;
+      return cdpy().then(function () { if (tk !== opening) return; cd = { base: t, now: t }; begin(cdGraphml(t), t, n, h, s, same); })
+        .catch(function (e) { if (tk === opening) warn('Cannot edit ' + n + ': ' + e); });
     }
     function begin(g, t, n, h, s, same) {   // same: { width, height, x0, y0, scale } of the picture on screen, drawn from this very file
       try { text = g; parse(); } catch (e) { warn('Cannot edit ' + n + ': ' + e); return; }
@@ -872,6 +877,7 @@
       if (!url) return;
       if (dirty && !site && !confirm(name + ' has moves not saved. Edit this map instead?')) return;
       if (saveTimer) push();
+      var tk = ++opening;
       var p = ahead(m), file = p.file, path = p.path;
       editPre = p;   // kept on leaving (keepAhead)
       // the picture on screen is the site's drawing of its published file: its frame (size and the offset of yEd's
@@ -881,6 +887,7 @@
       var frame = k ? Promise.resolve({ width: k.width, height: k.height, x0: k.x0, y0: k.y0, scale: 1 }) : frameOf(p);
       var go = function (t, s) {
         return Promise.all([published, frame, p.sitePub, frameOf(p)]).then(function (r) {
+          if (tk !== opening) return;   // left, or another map opened, meanwhile
           // what was read ahead for this map handed to the editor, used once (made again by the sweep if wanted)
           drawMemo = p.memo || null; preDoc = p.docs || [];
           if (p.g && p.t === t) cdRemember(t, p.g);
@@ -890,21 +897,22 @@
           openTitle = m.title;   // the map's own title in the first line said, not its file's name
           return Promise.resolve(start(t, file, null, s, same)).then(function () {
             openTitle = null;
+            if (tk !== opening) return;
             siteRef = r[3] ? baseOf(isCd(r[2]) && cdJs ? cdGraphml(r[2]) : r[2], r[3]) : null;
             map.title = m.title; document.getElementById('m2-title').textContent = m.title;
           });
         });
       };
       // the map's own file not loaded (the site's copy missing, no connection): said, not left at Opening
-      var notLoaded = function (e) { warn('Cannot edit ' + m.title + ': its file did not load (' + e + ').'); };
+      var notLoaded = function (e) { if (tk === opening) warn('Cannot edit ' + m.title + ': its file did not load (' + e + ').'); };
       var fromSite = function (s) { return published.then(function (t) { return go(t, s); }).catch(notLoaded); };
       quiet();
       if (!repo()) return fromSite(null);
       if (!token()) return fromSite({ path: path, sha: null, pending: true });
       p.gh.then(function (g) {
         if (!g) return fromSite(null);   // not a map of this repository: saved as a file
-        return go(g.text, { path: path, sha: g.sha }).then(function () { recheck(p, g, m); }, notLoaded);
-      }, function (e) { warn('Could not read the map from GitHub (' + e + '); the token may be refused.'); ghForm(true); });
+        return go(g.text, { path: path, sha: g.sha }).then(function () { if (tk === opening) recheck(p, g, m); }, notLoaded);
+      }, function (e) { if (tk !== opening) return; warn('Could not read the map from GitHub (' + e + '); the token may be refused.'); ghForm(true); });
     }
     // the repository's version read ahead may have changed since (another tab, another person): checked once more right
     // after the switch, in the background; with no move made yet editing simply goes on from the newer version, with a
@@ -977,7 +985,11 @@
     // or something else, I am out"): no Edit this map or Stop editing; leaving the Edit window, or closing the panel,
     // ends editing and shows the map of the site again (the edited drawing until the site catches up)
     function away() {
-      if (!on) return;
+      if (!on) {   // an opening under way is dropped; a reopen under way (recheck) also gives the site's map back
+        opening++;
+        if (V.grid.classList.contains('m2-editing')) { V.grid.classList.remove('m2-editing'); buttons(); if (V.chosen) V.put(V.chosen, true); }
+        return;
+      }
       if (V.chosen) V.put(V.chosen, true); else stop();   // at the same place and zoom: nothing jumps
     }
     window.addEventListener('beforeunload', function (e) { if (dirty) { if (saveTimer) push(); e.preventDefault(); e.returnValue = ''; } });

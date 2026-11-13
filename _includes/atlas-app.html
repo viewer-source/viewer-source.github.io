@@ -893,13 +893,14 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
     // a map's picture in a colour scheme: its text with the scheme's style, shown from a blob
     var src = SCHEME !== 'file' && isMapPicture(url) ? fetch(url).then(function (r) { if (!r.ok) throw r.status; return r.text(); })
       .then(function (t) { return URL.createObjectURL(new Blob([recolour(t)], { type: 'image/svg+xml' })); }) : Promise.resolve(url);
-    return src.then(function (s) {
-      return new Promise(function (res, rej) {
-        var i = new Image();
-        i.onload = function () { (i.decode ? i.decode() : Promise.resolve()).catch(function () {}).then(function () { res(i); }); };
-        i.onerror = rej;
-        i.src = s;
-      });
+    return src.then(decoded);
+  }
+  function decoded(s) {   // the image at s, decoded before it is shown
+    return new Promise(function (res, rej) {
+      var i = new Image();
+      i.onload = function () { (i.decode ? i.decode() : Promise.resolve()).catch(function () {}).then(function () { res(i); }); };
+      i.onerror = rej;
+      i.src = s;
     });
   }
   function get(url, low) {  // a promise of the decoded image (.svg, .png) or the parsed JSON, null if it failed
@@ -940,7 +941,7 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
   }
   function prefetch() {
     var here = Math.max(0, maps.indexOf(current));
-    maps.slice().sort(function (a, b) { return Math.abs(maps.indexOf(a) - here) - Math.abs(maps.indexOf(b) - here); })
+    maps.map(function (m, i) { return [Math.abs(i - here), m]; }).sort(function (a, b) { return a[0] - b[0]; }).map(function (x) { return x[1]; })
       .forEach(function (m, i) { files(m, true); if (i === 4) legendCard(); });
     legendCard();   // fewer than five maps
   }
@@ -2468,6 +2469,22 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
     for (var h = 0, i = 0; i < listText.length; i++) h = (h * 31 + listText.charCodeAt(i)) | 0;
     return '?v=' + (h >>> 0).toString(36);
   }
+  function urlsOf(m) { return [m.image, m.annotation, m.data].filter(Boolean).map(function (u) { return u + ver(m); }); }
+  function forgetOld(before) {   // the files of a map's earlier version let go once the list has a newer one (a blob a while after it left the page)
+    before.forEach(function (o) {
+      var m = byId[o.id];
+      if (m && ver(m) === ver(o)) return;
+      urlsOf(o).forEach(function (u) {
+        var g = got[u], at = g ? queue.indexOf(g) : -1;
+        if (!g) return;
+        delete got[u];
+        if (at >= 0) { queue.splice(at, 1); return; }   // not started: never fetched
+        g.p.then(function (i) {
+          if (i && i.src && i.src.indexOf('blob:') === 0) setTimeout(function () { if (!document.contains(i)) URL.revokeObjectURL(i.src); }, 10000);
+        });
+      });
+    });
+  }
   function check() {
     if (document.visibilityState !== 'visible') return;
     fetch('{{ include.index | relative_url }}', { cache: 'no-cache' }).then(function (r) { return r.ok ? r.text() : null; })
@@ -2475,8 +2492,9 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
         if (!text || text === listText) return;
         var first = !listText;
         listText = text;
-        var old = current, was = chosen;
+        var old = current, was = chosen, before = maps;
         setMaps(JSON.parse(text));
+        forgetOld(before);
         if (first) { placeInfo(); return route(); }
         if (index) { index = null; loadIndex(); }
         var m = old && byId[old.id];
@@ -2672,7 +2690,8 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
   // keeps the editor to the layout tools (moves, anchor points, compartments, Grid, Snap, Pack), for a site that should
   // not offer drawing; "full" (the default) adds drawing once it exists (user, 2026-11-13). Here only what the viewer
   // needs without the editor: the edited drawing kept on screen until the site's build catches up, also after a reload.
-  var EDITOR = '{{ include.editor | default: "/editor/" }}', EDIT_LEVEL = '{{ include.edit | default: "full" }}';
+  // the editor and the renderers it runs, from the same copy of the viewer (renderers= on the include: a copy's own)
+  var EDITOR = '{{ include.editor | default: "/editor/" }}', RENDERERS = '{{ include.renderers | default: "/renderers/" }}', EDIT_LEVEL = '{{ include.edit | default: "full" }}';
 
     // the edited drawing, kept on screen after editing stops until the site's own build of the map has caught up
     // (user, 2026-11-12: "after I exit this mode I don't see changes"): { id, v (the site's version when last saved), pic, width, height }
@@ -2695,31 +2714,33 @@ html .m2-icons-on:not(.m2-icon-row) #m2-rail { width: 52px; gap: 14px; padding-t
       });
     }
     function stored() { try { return JSON.parse(localStorage.getItem(KEPT_KEY) || '{}'); } catch (e) { return {}; } }
-    function store(all) { try { if (Object.keys(all).length) localStorage.setItem(KEPT_KEY, JSON.stringify(all)); else localStorage.removeItem(KEPT_KEY); } catch (e) {} }
+    function store(all) {   // true once kept (a large drawing can fill the browser's storage)
+      try { if (Object.keys(all).length) localStorage.setItem(KEPT_KEY, JSON.stringify(all)); else localStorage.removeItem(KEPT_KEY); return true; } catch (e) { return false; }
+    }
     // the site still behind the last save: its build is not yet of the file saved last (the source's sha in index.json),
     // so a build of an earlier save does not replace the edited drawing (2026-11-12); without the sha, any new build
     function behind(m, k) { return m.src && k.sha ? m.src !== k.sha : ver(m) === k.v; }
+    function dropKept() {   // the drawing kept after a reload let go, with its blob
+      if (kept && kept.url) URL.revokeObjectURL(kept.url);
+      kept = null;
+    }
     function keep(m) {   // the edited picture, while the site still shows the version before the last save
       if (kept && kept.id === m.id) {
         if (behind(m, kept)) return kept;
-        kept = null;
+        dropKept();
       }
       var all = stored(), k = all[m.id];
       if (!k) return null;
       if (!behind(m, k) || Date.now() - k.at > 3600000) { delete all[m.id]; store(all); return null; }
       // after a reload: the saved drawing again, decoded before it is shown
       var url = URL.createObjectURL(new Blob([recolour(k.svg)], { type: 'image/svg+xml' }));
-      var pic = new Promise(function (res) {
-        var i = new Image();
-        i.onload = function () { (i.decode ? i.decode() : Promise.resolve()).catch(function () {}).then(function () { res(i); }); };
-        i.onerror = function () { res(null); };
-        i.src = url;
-      });
-      kept = { id: m.id, v: k.v, sha: k.sha, pic: pic, width: k.width, height: k.height, x0: k.x0, y0: k.y0, text: null, ref: k.ref, cur: k.cur };
+      var pic = decoded(url).catch(function () { return null; });
+      dropKept();
+      kept = { url: url, id: m.id, v: k.v, sha: k.sha, pic: pic, width: k.width, height: k.height, x0: k.x0, y0: k.y0, text: null, ref: k.ref, cur: k.cur };
       return kept;
     }
   // the viewer's names the editor reads and writes
-  var V = Object.defineProperties({ level: EDIT_LEVEL, build: BUILD }, {
+  var V = Object.defineProperties({ level: EDIT_LEVEL, build: BUILD, renderers: RENDERERS }, {
     current: { get: function () { return current; }, set: function (v) { current = v; } },
     view: { get: function () { return view; } },
     z: { get: function () { return z; } },

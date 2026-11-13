@@ -35,7 +35,17 @@ exclude:
   - VERSION
   - build.py
   - maps
-  # renderers/ is published: the editor runs yrender, cdrender, cd_edit and the converter modules in the browser
+  # renderers/ is published for its JavaScript, which the editor runs in the browser; the Python twins, the converter
+  # modules and the layout script serve the build and the tests only
+  - renderers/yrender/yrender.py
+  - renderers/converter/cdrender.py
+  - renderers/converter/cd_edit.py
+  - renderers/converter/mapconv
+  - renderers/layout/tidy.py
+  - renderers/layout/complex_pack.py
+  - renderers/layout/snap_grid.py
+  - renderers/layout/get_layout.sh
+  - renderers/render.js
   - databases.py
   - cache
   - tests

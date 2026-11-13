@@ -11,7 +11,7 @@
       yrp = new Promise(function (res, rej) {
         if (window.yrender) return res(window.yrender);
         var s = document.createElement('script');
-        s.src = '/renderers/yrender/yrender.js' + V.build; s.onload = function () { res(window.yrender); }; s.onerror = function () { rej('renderer not found'); };
+        s.src = V.renderers + 'yrender/yrender.js' + V.build; s.onload = function () { res(window.yrender); }; s.onerror = function () { rej('renderer not found'); };
         document.head.appendChild(s);
       });
       yrp.catch(function (e) { yrp = null; warn('The renderer did not load: ' + e); });
