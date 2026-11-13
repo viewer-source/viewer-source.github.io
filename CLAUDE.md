@@ -213,7 +213,14 @@ says "the workbench", "the converter's repository", "a private repository".
   allowed or the editor starts; one changed by yEd or CellDesigner is read again; the files written here for the site's
   maps are left out). Drawn by the editor's renderers (drawText), kept in IndexedDB (store `mine`: id, title, file,
   text, svg, size, at, hidden, group; `atlas-mine` in localStorage) and, with a folder, as their files there; edited as any map,
-  each save the map itself (no draft), never sent to GitHub even with a token (GitHub for them: handover, not built).
+  each save the map itself (no draft). With a token (user, 2026-11-14: "it would be saved indeed. And this is
+  intended"): Add map puts the map on the site, its file as `maps/<id>.graphml` or `.xml` and `maps/<id>.md` (title from
+  the file's name, group, order after the group's last) in one commit on main (the Git Data API, `toSite` in core.js), the
+  id from the file's name, unique among `maps/`; a site group right-clicked takes it too; until the build lists the id,
+  the map shows from the browser (a record with `site`), then the site's map takes its place. A group of the reader's
+  reaches the site with its first map (the site has no empty groups). With a token Remove map on a site map hides it in
+  this browser only (`atlas-hidden-maps`), its file staying on GitHub (user: deleting for real a separate step, later);
+  Show removed maps in the list's menu brings them back.
   Remove map (also in the map's right-click menu) only hides: record and file stay, the same file added again brings it
   back. Settings: Example maps Shown or Hidden (the site's maps, while the reader has maps of their own). Their pictures
   and files are blob addresses (`ver` gives `#<at>`), an old version's let go only once nothing on the page uses it. No
