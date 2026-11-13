@@ -216,7 +216,7 @@
     }
     function lost(e) {   // the folder moved, deleted or refused for good: said, and Choose a folder offered again
       V.folderForget().then(function () { folderOk = null; localBox(); });
-      warn('Not saved to the folder: ' + (e && e.message ? e.message : e) + '.');
+      warn('Not saved to the folder: ' + String(e && e.message ? e.message : e).replace(/\.$/, '') + '.');
     }
     function freeName(dir, file, n) {
       var nm = file.replace(/(\.[^.]+)?$/, '-' + n + '$1');
@@ -245,7 +245,7 @@
             });
           });
         });
-      }).catch(function (e) { if (e && (e.name === 'NotFoundError' || e.name === 'NotAllowedError')) lost(e); else warn('Not saved to the folder: ' + (e && e.message ? e.message : e) + '.'); });
+      }).catch(function (e) { if (e && (e.name === 'NotFoundError' || e.name === 'NotAllowedError')) lost(e); else warn('Not saved to the folder: ' + String(e && e.message ? e.message : e).replace(/\.$/, '') + '.'); });
       return fq;
     }
     function allToFolder() {   // every map kept in this browser, once a folder is chosen or allowed again
@@ -261,7 +261,7 @@
       return window.showDirectoryPicker({ id: 'atlas-maps', mode: 'readwrite' })
         .then(function (dir) { return V.folderSet(dir); })
         .then(function () { folderOk = true; localBox(); return allToFolder(); })
-        .catch(function (e) { if (e && e.name === 'AbortError') return; warn('No folder chosen: ' + (e && e.message ? e.message : e) + '.'); throw e; });
+        .catch(function (e) { if (e && e.name === 'AbortError') return; warn('No folder chosen: ' + String(e && e.message ? e.message : e).replace(/\.$/, '') + '.'); throw e; });
     }
     function allowFolder() {
       return V.folder().then(function (f) { return f ? f.dir.requestPermission({ mode: 'readwrite' }) : 'denied'; })
