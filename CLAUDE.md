@@ -197,7 +197,18 @@ says "the workbench", "the converter's repository", "a private repository".
   them." Not checkable headless here: the handle read back after a reload (the test browser crashes on it; in Chrome the
   documented way). Every move undone: the draft let go. A token connected while editing takes
   the moves to GitHub and drops the draft; with a token drafts are ignored; Disconnect while editing keeps further moves
-  in the browser. Not yet: a draft over a site map changed since (shown as it is). No save time or mark by the title either (user: when and how a map is saved is the system's concern, not the person editing's). Editing starts from the repository's version and its sha,
+  in the browser. Not yet: a draft over a site map changed since (shown as it is).
+  Drafts only where the Edit tab is (user, 2026-11-13: the demo shows the site's maps).
+  My maps (user, 2026-11-13, the third layer: "they would care about their own maps"; hide only): a reader's own GraphML
+  and CellDesigner maps, only where the Edit tab is, the list's group My maps, always first. Added by Add a map at the
+  list's end or a file dropped on the page, or found in the reader's folder (its files read when the folder is chosen,
+  allowed or the editor starts; one changed by yEd or CellDesigner is read again; the files written here for the site's
+  maps are left out). Drawn by the editor's renderers (drawText), kept in IndexedDB (store `mine`: id, title, file,
+  text, svg, size, at, hidden; `atlas-mine` in localStorage) and, with a folder, as their files there; edited as any map,
+  each save the map itself (no draft), never sent to GitHub even with a token. Remove from My maps (right-click) only
+  hides: record and file stay, the same file added again brings it back. Settings: Example maps Shown or Hidden (the
+  site's maps, while the reader has maps of their own). Their pictures and files are blob addresses (`ver` gives
+  `#<at>`), an old version's let go only once nothing on the page uses it. No panel data for them (no build). No save time or mark by the title either (user: when and how a map is saved is the system's concern, not the person editing's). Editing starts from the repository's version and its sha,
   so a file changed on GitHub meanwhile is never overwritten: saving stops and says so. A map not in the site's repository
   is saved to a place chosen once (Chrome, Edge), else as a download. Read ahead (user, 2026-11-13: the switch "immediate and immediately functional"): while a map is only shown where the Edit tab is, its file, the frame of its drawing, with a token the repository's version and sha, the renderer and a CellDesigner file's GraphML are loaded, so the switch to edit waits for nothing; dropped after a save, when editing stops, when the site's version or the token changes; with a token the repository's version is checked again just after the switch. Editing starts on the picture as it
   is, with no redraw and the map not moved (user, 2026-11-12: "exactly as I see it and immediately start editing"): the
