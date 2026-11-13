@@ -668,6 +668,8 @@ page, so its styles keep the base they were made on). The looks before (Default 
     'draft-ext': ['<span class="m2-draft m2-ext"><span>draft</span></span>', 'Draft map of the Atlas extension'],
     'copy': ['<span class="m2-draft m2-copy"><span>copy</span></span>', 'Copy of the official map, for comparison']
   };
+  // the map's format beside its name, by its first download (user, 2026-11-14)
+  var FORMATS = { 'CellDesigner': 'xml', 'GraphML': 'yed', 'SBGN-ML': 'sbgn' };
   // a red tag when the map's images could not be drawn from its current GraphML (make_images.py)
   var ERROR_ICON = '<span class="m2-draft m2-error"><span>image error</span></span>';
   var DL_ICON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5"/><path d="M4 15v5h16v-5"/></svg>';
@@ -2159,6 +2161,8 @@ page, so its styles keep the base they were made on). The looks before (Default 
       }
       if (shut) return;
       var b = el('button', 'm2-item m2-map' + (m.mine ? ' m2-mine' : '') + (m.group ? ' m2-sub' : '') + (m.tag === 'draft-ext' ? ' m2-ext' : '') + (m.source ? ' m2-src-' + m.source : '') + (m === (chosen || current) ? ' m2-on' : ''));
+      var fmt = FORMATS[((m.downloads || [])[0] || {}).label];
+      if (fmt) b.appendChild(el('span', 'm2-fmt', fmt));
       b.appendChild(el('span', 'm2-name', label(m)));
       b.type = 'button';
       b.setAttribute('data-id', m.id);

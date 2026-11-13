@@ -537,3 +537,8 @@ says "the workbench", "the converter's repository", "a private repository".
   Atlas site's copy, was lost when that copy was replaced): a map's `source` in the site's index gives its list item the
   class `m2-src-<source>`; curation blue (the accent), omnipath green (`--m2-src-omnipath`), reactome-recon purple
   (`--m2-src-reactome-recon`), the name and a draft tag, white on the chosen map (`atlas-tags.css`).
+- Format tags in the list (user, 2026-11-14, option E of five previewed on the demo): xml (CellDesigner), yed (GraphML),
+  sbgn (SBGN-ML) in very light grey (#c8c8c8, 8 px, no container) left of a map's name, in the group's indent, read
+  from the map's first download's label (the viewer still reads no file format itself); the list's box reaches 10 px
+  into the panel's margin so the tag fits and nothing in the list moves (`atlas-tags.css`). None on a map in no group or
+  on narrow windows (no room).
