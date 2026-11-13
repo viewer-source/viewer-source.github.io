@@ -372,7 +372,9 @@ says "the workbench", "the converter's repository", "a private repository".
   each download and copy giving the map as on screen (user, 2026-11-13: "Download what is on the screen"; the source
   file had come without the moves just made): while editing the editor's file and drawing as they are now
   (`window.m2EditNow`), after editing the edited drawing the viewer keeps until the site's build catches up (its file
-  kept with it, in `atlas-edit-kept` too where storage allows) or the draft kept in this browser, else the site's files,
+  kept with it, in `atlas-edit-kept` too where storage allows) or the draft kept in this browser, else the site's files;
+  the Downloads tab and the download row the same for the source file, SVG and PNG (one click handler; the other
+  format, SBGN-ML, SBML and the tables stay the site's),
   Open in Newt, Open in MINERVA (in this order, user 2026-11-12; where the map has them, to respect the tools already
   there), Copy image as PNG (its PNG, at twice the map's size as yEd's export at 2.0, else its picture at twice its size,
   to the clipboard: for pasting into a paper or slides), Copy image as SVG last (user, 2026-11-12: the map's SVG as
