@@ -2371,7 +2371,8 @@ page, so its styles keep the base they were made on). The looks before (Default 
     // the map's PNG download, else its SVG (the file Download SVG gives; in edit mode the map on screen is the editor's
     // drawing, no picture) drawn at twice its size on white, smaller where that passes what a browser draws (16,384 px a
     // side, 64 million pixels: the mast cell map, 23,351 px wide, made no PNG at twice its size)
-    function pngOf(m, url) {
+    function pngOf(m, url, sh) {
+      if (sh && sh.svg) return pngFrom(sh.svg);
       if (url.PNG) return fetch(url.PNG).then(function (r) { if (!r.ok) throw r.status; return r.blob(); });
       return new Promise(function (res, rej) {
         var pic = new Image();
@@ -2386,16 +2387,37 @@ page, so its styles keep the base they were made on). The looks before (Default 
         pic.src = url.SVG || m.image;
       });
     }
-    function copyPicture(m, url, r) {
+    // the edited drawing on screen as a PNG, at its own size as written in its SVG
+    function pngFrom(svg) {
+      var w = svg.match(/ width="([\d.]+)" height="([\d.]+)"/), u = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
+      var p = pngOf({ width: +w[1], height: +w[2] }, { SVG: u });
+      p.then(function () { URL.revokeObjectURL(u); }, function () { URL.revokeObjectURL(u); });
+      return p;
+    }
+    // the map as it is on screen where it is not the site's file (user, 2026-11-13: "Download what is on the screen"):
+    // being edited, its file and drawing as they are now; after editing, the edited drawing the viewer keeps until the
+    // site's build catches up, or a draft kept in this browser. { text, svg }, either may be missing; null: the site's
+    function shown(m) {
+      var e = window.m2EditNow && window.m2EditNow(), k = kept && kept.id === m.id ? kept : null;
+      if (e && e.id === m.id) return { text: e.text, svg: e.svg || (k && k.text === e.text ? k.svg : null) };
+      if (k && current && current.id === m.id && (k.text || k.svg)) return { text: k.text, svg: k.svg };
+      return null;
+    }
+    function saveText(t, name, type) {
+      var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([t], { type: type })); a.download = name;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 10000);
+    }
+    function copyPicture(m, url, r, sh) {
       if (!navigator.clipboard || !window.ClipboardItem) return say('This browser cannot copy images', r.left, r.top);
-      navigator.clipboard.write([new ClipboardItem({ 'image/png': pngOf(m, url) })])
+      navigator.clipboard.write([new ClipboardItem({ 'image/png': pngOf(m, url, sh) })])
         .then(function () { say('Image copied', r.left, r.top); }, function () { say('Not copied', r.left, r.top); });
     }
     // the map's SVG as the file on the site (its SVG download, else the picture shown): image/svg+xml where the browser
     // can (Chrome), with the text as well, so an app that takes no SVG image pastes the markup (user, 2026-11-12)
-    function copySvg(m, url, r) {
+    function copySvg(m, url, r, sh) {
       var src = url.SVG || m.image;
-      var text = fetch(src).then(function (x) { if (!x.ok) throw x.status; return x.text(); });
+      var text = sh && sh.svg ? Promise.resolve(sh.svg) : fetch(src).then(function (x) { if (!x.ok) throw x.status; return x.text(); });
       var plain = function () { return text.then(function (t) { return navigator.clipboard.writeText(t); }); };
       var go = window.ClipboardItem && ClipboardItem.supports && ClipboardItem.supports('image/svg+xml')
         ? navigator.clipboard.write([new ClipboardItem({
@@ -2405,12 +2427,13 @@ page, so its styles keep the base they were made on). The looks before (Default 
       go.then(function () { say('Image copied', r.left, r.top); }, function () { say('Not copied', r.left, r.top); });
     }
     // a download of the map's image: the site's file by its link, else made here (the PNG drawn as Copy image as PNG draws it)
-    function saveImage(m, url, ext, r) {
+    function saveImage(m, url, ext, r, sh) {
       var href = ext === 'svg' ? url.SVG || m.image : url.PNG;
       var name = (href ? href.split('/').pop().split(/[?#]/)[0] : '') || (m.id || 'map') + '.' + ext;
       var go = function (h) { var a = document.createElement('a'); a.href = h; a.download = name; document.body.appendChild(a); a.click(); a.remove(); };
-      if (href) return go(href);
-      pngOf(m, url).then(function (b) { var u = URL.createObjectURL(b); go(u); setTimeout(function () { URL.revokeObjectURL(u); }, 10000); },
+      if (sh && sh.svg && ext === 'svg') return saveText(sh.svg, name, 'image/svg+xml');
+      if (href && !(sh && sh.svg)) return go(href);
+      pngOf(m, url, sh).then(function (b) { var u = URL.createObjectURL(b); go(u); setTimeout(function () { URL.revokeObjectURL(u); }, 10000); },
         function () { say('Not saved', r.left, r.top); });
     }
     function tab(name) {   // a tab of the icons, unless its window shows already (a second click would close it)
@@ -2451,13 +2474,15 @@ page, so its styles keep the base they were made on). The looks before (Default 
       if (document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen)
         item(box, isPageFull() ? 'Exit full screen' : 'Full screen with tools', pageFull);
       var src = (m.legend === 'celldesigner' ? ['CellDesigner', 'GraphML'] : ['GraphML', 'CellDesigner']).filter(function (l) { return url[l]; })[0];   // the format the map is drawn from
-      if (src) link(box, src === 'GraphML' ? 'Download GraphML' : 'Download CellDesigner XML', url[src], true);
+      var sh = shown(m), lbl = src === 'GraphML' ? 'Download GraphML' : 'Download CellDesigner XML';   // what is on screen, where it is not the site's
+      if (src && sh && sh.text) item(box, lbl, function () { saveText(sh.text, url[src].split('/').pop().split(/[?#]/)[0], 'application/xml'); });
+      else if (src) link(box, lbl, url[src], true);
       // the images as files (user, 2026-11-13): the site's own when it has them, else as the copies make them
-      if (!m.imageError && (url.SVG || m.image)) item(box, 'Download SVG', function (r) { saveImage(m, url, 'svg', r); });
-      if (!m.imageError && (url.PNG || url.SVG || m.image)) item(box, 'Download PNG', function (r) { saveImage(m, url, 'png', r); });
+      if (!m.imageError && (url.SVG || m.image)) item(box, 'Download SVG', function (r) { saveImage(m, url, 'svg', r, sh); });
+      if (!m.imageError && (url.PNG || url.SVG || m.image)) item(box, 'Download PNG', function (r) { saveImage(m, url, 'png', r, sh); });
       ['Newt', 'MINERVA'].forEach(function (l) { if (url[l]) link(box, 'Open in ' + l, url[l]); });
-      if (!m.imageError) item(box, 'Copy image as PNG', function (r) { copyPicture(m, url, r); });
-      if (!m.imageError && (url.SVG || m.image)) item(box, 'Copy image as SVG', function (r) { copySvg(m, url, r); });
+      if (!m.imageError) item(box, 'Copy image as PNG', function (r) { copyPicture(m, url, r, sh); });
+      if (!m.imageError && (url.SVG || m.image)) item(box, 'Copy image as SVG', function (r) { copySvg(m, url, r, sh); });
       while (box.lastChild && box.lastChild.classList.contains('m2-sep')) box.removeChild(box.lastChild);
       return box;
     }
@@ -2563,7 +2588,7 @@ page, so its styles keep the base they were made on). The looks before (Default 
       var url = URL.createObjectURL(new Blob([recolour(k.svg)], { type: 'image/svg+xml' }));
       var pic = decoded(url).catch(function () { return null; });
       dropKept();
-      return { url: url, id: m.id, v: k.v, sha: k.sha || null, pic: pic, width: k.width, height: k.height, x0: k.x0, y0: k.y0, text: draft ? k.text : null, ref: k.ref, cur: k.cur, draft: draft };
+      return { url: url, id: m.id, v: k.v, sha: k.sha || null, pic: pic, width: k.width, height: k.height, x0: k.x0, y0: k.y0, text: k.text || null, svg: k.svg, ref: k.ref, cur: k.cur, draft: draft };
     }
     // edits kept in this browser for a reader with no GitHub token (user, 2026-11-13, the first of three layers: this
     // browser, a folder on the computer, GitHub): per map the edited file and its drawing, in IndexedDB, shown in place of

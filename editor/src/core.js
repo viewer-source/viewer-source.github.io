@@ -145,9 +145,10 @@
               if (sm) target.v = V.ver(sm);   // the site's version still without this move
               if (lastSvg && site === target && src() === body) {
                 var all = V.stored();
-                var one = {}; one[target.id] = all[target.id] = { v: target.v, sha: target.sha, svg: lastSvg, width: map.width, height: map.height, x0: picX0(), y0: picY0(), at: Date.now(), ref: siteRef, cur: nowRef() };
-                // the browser's storage full (a few large maps): this map's drawing alone, else none of it (never an older one)
-                if (!V.store(all) && !V.store(one)) { all = V.stored(); delete all[target.id]; V.store(all); }
+                var one = {}; one[target.id] = all[target.id] = { v: target.v, sha: target.sha, svg: lastSvg, text: body, width: map.width, height: map.height, x0: picX0(), y0: picY0(), at: Date.now(), ref: siteRef, cur: nowRef() };
+                // the browser's storage full (a few large maps): this map alone, then its drawing without its file (a download
+                // after a reload is then the site's file), else none of it (never an older one)
+                if (!V.store(all) && !V.store(one)) { delete one[target.id].text; if (!V.store(one)) { all = V.stored(); delete all[target.id]; V.store(all); } }
               }
               if (site === target && src() === body) dirty = false;
               note('Saved. In about 2 minutes it is on the site, and this page updates by itself.');   // no clock time (user, 2026-11-12)
@@ -771,7 +772,7 @@
       if (!on) return;
       if (saveTimer) push();   // a move still waiting is saved now
       if (site && site.id && undo.length)   // not atSite(): a CellDesigner map's text follows a move only once drawn
-        V.kept = { id: site.id, v: site.v, sha: site.sha, pic: V.img, width: map.width, height: map.height, x0: picX0(), y0: picY0(), text: src(), ref: siteRef, cur: nowRef(), draft: !!site.pending };
+        V.kept = { id: site.id, v: site.v, sha: site.sha, pic: V.img, width: map.width, height: map.height, x0: picX0(), y0: picY0(), text: src(), svg: nowSvg(), ref: siteRef, cur: nowRef(), draft: !!site.pending };
       if (helpBox) help(false);
       on = false; drag = null; band = null; V.grid.classList.remove('m2-editing'); paint(); buttons();
       if (dirty && !site) warn(name + ' has moves not saved: Back to it, or Save.'); else quiet();
@@ -1751,6 +1752,11 @@
       return true;
     }
     var rclick = null;   // where the last right click was, for the menu's Remove anchor point
+    // the drawing of the file as it is now, when the renderer has drawn it (not before the first move: the picture is then still the one editing started on)
+    function nowSvg() { return lastFor && lastFor[0] === text && lastFor[1] === (cd ? cd.now : null) ? lastSvg : null; }
+    // the map being edited as it is now, for the viewer's menu (user, 2026-11-13: "Download what is on the screen";
+    // Download CellDesigner XML gave the site's file without the moves just made)
+    window.m2EditNow = function () { return on && site && site.id && text ? { id: site.id, text: src(), svg: nowSvg() } : null; };
     window.m2EditAnchor = function () {
       if (!on || V.current !== map || !rclick) return null;
       var h = hit(rclick);
