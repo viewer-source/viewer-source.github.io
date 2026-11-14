@@ -641,7 +641,51 @@
       <bbox x="336" y="164" w="80" h="40"/>
       <glyph class="state variable" id="glyph_2_sv0">
         <state value=""/>
-        <bbox x="372.5" y="196.5" w="15" h="15"/>
+        <bbox x="368.5" y="196.5" w="15" h="15"/>
+      </glyph>
+      <glyph class="state variable" id="glyph_2_sv1">
+        <state value=""/>
+        <bbox x="368.5" y="156.5" w="15" h="15"/>
+      </glyph>
+      <glyph class="state variable" id="glyph_2_sv2">
+        <state value=""/>
+        <bbox x="388.5" y="156.5" w="15" h="15"/>
+      </glyph>
+      <glyph class="state variable" id="glyph_2_sv3">
+        <state value=""/>
+        <bbox x="348.5" y="156.5" w="15" h="15"/>
+      </glyph>
+      <glyph class="state variable" id="glyph_2_sv4">
+        <state value=""/>
+        <bbox x="408.5" y="176.5" w="15" h="15"/>
+      </glyph>
+      <glyph class="state variable" id="glyph_2_sv5">
+        <state value=""/>
+        <bbox x="328.5" y="176.5" w="15" h="15"/>
+      </glyph>
+      <glyph class="state variable" id="glyph_2_sv6">
+        <state value=""/>
+        <bbox x="408.5" y="156.5" w="15" h="15"/>
+      </glyph>
+      <glyph class="state variable" id="glyph_2_sv7">
+        <state value=""/>
+        <bbox x="328.5" y="156.5" w="15" h="15"/>
+      </glyph>
+      <glyph class="state variable" id="glyph_2_sv8">
+        <state value=""/>
+        <bbox x="408.5" y="196.5" w="15" h="15"/>
+      </glyph>
+      <glyph class="state variable" id="glyph_2_sv9">
+        <state value=""/>
+        <bbox x="328.5" y="196.5" w="15" h="15"/>
+      </glyph>
+      <glyph class="state variable" id="glyph_2_sv10">
+        <state value=""/>
+        <bbox x="388.5" y="196.5" w="15" h="15"/>
+      </glyph>
+      <glyph class="state variable" id="glyph_2_sv11">
+        <state value=""/>
+        <bbox x="348.5" y="196.5" w="15" h="15"/>
       </glyph>
     </glyph>
     <glyph class="macromolecule" id="glyph_3">
