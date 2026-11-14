@@ -14,7 +14,7 @@ height: 738
 scale: 1
 annotation: "/atlas-data/glycolysis-sbgn.json"
 image_error: ""
-v: "e8ffc5d7d5"
+v: "f9144ee27a"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/downloads/glycolysis-sbgn.sbgn"}, {"label": "SVG", "url": "/downloads/glycolysis-sbgn.svg"}]
@@ -22,6 +22,8 @@ src: "55c67d51fd52a781b40df3991d715a74db4a6989"
 edit_path: "maps/sbgn-ml/glycolysis-sbgn.sbgn"
 edit_base: "/atlas-data/glycolysis-sbgn.graphml"
 ---
+Edited in the viewer: drawn from its edited copy, no longer written from the GraphML map.
+
 ## References
 
 1. Deprez J, Vertommen D, Alessi DR, Hue L, Rider MH. Phosphorylation and activation of heart 6-phosphofructo-2-kinase by protein kinase B and other protein kinases of the insulin signaling cascades. J Biol Chem. 1997 Jul 11;272(28):17269-75. doi: 10.1074/jbc.272.28.17269. PMID: 9211863.
