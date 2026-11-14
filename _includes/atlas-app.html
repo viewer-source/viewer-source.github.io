@@ -1041,12 +1041,12 @@ page, so its styles keep the base they were made on). The looks before (Default 
   // Editing, Layout (the default) or Full (user, 2026-11-14): full editing changes the network (a line's end moved to
   // another node; drawing later); layout keeps to what is drawn. Kept in the browser; not offered where the include
   // keeps the editor to layout (edit="layout") or the page has no Edit tab
-  var EDIT_FULL = false;
+  var EDIT_CAP = '{{ include.edit | default: "full" }}', EDIT_FULL = false;   // EDIT_CAP: the include's edit=, as EDIT_LEVEL below
   try { EDIT_FULL = localStorage.getItem('atlas-edit-level') === 'full'; } catch (e) {}
-  function editLevel() { return EDIT_LEVEL === 'layout' ? 'layout' : EDIT_FULL ? 'full' : 'layout'; }
+  function editLevel() { return EDIT_CAP !== 'layout' && EDIT_FULL ? 'full' : 'layout'; }
   function editRow() {
     var r = document.querySelector('.m2-set-edit'), eb = document.querySelector('#m2-rail .m2-ri[data-win="edit"]');
-    if (r) r.style.display = typeof EDIT_LEVEL === 'string' && EDIT_LEVEL !== 'layout' && eb && eb.offsetParent ? '' : 'none';
+    if (r) r.style.display = EDIT_CAP !== 'layout' && eb && eb.offsetParent ? '' : 'none';
     document.querySelectorAll('#m2-set-edit button').forEach(function (b) { b.classList.toggle('m2-on', (b.dataset.edit === 'full') === EDIT_FULL); });
   }
   document.querySelectorAll('#m2-set-edit button').forEach(function (b) {
@@ -1484,6 +1484,7 @@ page, so its styles keep the base they were made on). The looks before (Default 
     g.classList.toggle('m2-win-set', on && w === 'set');
     g.classList.toggle('m2-edit-on', on && setting('edit'));
     if (on && setting('edit')) { if (!editor) g.classList.add('m2-edit-off'); editorLoad(); }   // the Edit tab shown once the editor says the map can be edited
+    if (on && w === 'set') editRow();   // the Edit tab's state known only now
     g.classList.toggle('m2-win-edit', on && w === 'edit');
     if (typeof ed !== 'undefined' && ed && (w !== 'edit' || !open)) ed.away();   // editing only while its window shows
     // Info is about the whole project, briefly, as MINERVA's (user, 2026-11-11: "brief info only on the whole project,
