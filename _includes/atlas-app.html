@@ -2645,8 +2645,9 @@ page, so its styles keep the base they were made on). The looks before (Default 
       if (unbendAll) item(box, 'Remove all bend points', unbendAll);
       // the editing items at the top, one separator below them, then the general ones (user, 2026-11-14)
       if (unbend || bend || turn || unbendAll) sep(box);
-      // its shortcut beside it, as Apple's and Windows' menus write it (user, 2026-11-13)
-      var key = '<span class="m2-cx-key">' + (/Mac|iPhone|iPad|iPod/.test((navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || navigator.userAgent) ? '\u2318E' : 'Ctrl+E') + '</span>';
+      // its shortcut beside it, as Apple's and Windows' menus write it (user, 2026-11-13); case-blind: Chrome, Edge, Brave and Arc on a Mac
+      // give the platform as "macOS", which /Mac/ missed, so only Safari showed ⌘E (user, 2026-11-14)
+      var key = '<span class="m2-cx-key">' + (/mac|iphone|ipad|ipod/i.test((navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || navigator.userAgent) ? '\u2318E' : 'Ctrl+E') + '</span>';
       if (ed) item(box, 'Switch to viewer', function () { tab('list'); }, key);   // leaving the Edit window ends editing
       else if (eb && eb.offsetParent) item(box, 'Switch to edit', function () { tab('edit'); }, key);
       // no Remove map here: it is in the list's right-click menu only (user, 2026-11-14)
