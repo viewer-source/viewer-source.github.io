@@ -14,12 +14,12 @@ height: 804
 scale: 1
 annotation: "/atlas-data/nnos-celldesigner.json"
 image_error: ""
-v: "d4bcd7eab4"
+v: "5b9a010a91"
 src: "aec23262731d530b96a8415fff463ec9322cbc46"
 colours: true
 legend: "celldesigner"
 downloads: [{"label": "CellDesigner", "url": "/downloads/nnos-celldesigner.xml"}, {"label": "SVG", "url": "/downloads/nnos-celldesigner.svg"}, {"label": "SBML", "url": "/downloads/nnos-celldesigner-sbml.xml"}, {"label": "Annotation", "url": "/downloads/nnos-celldesigner.csv"}, {"label": "GraphML", "url": "/downloads/nnos-celldesigner.graphml"}, {"label": "PNG", "url": "/downloads/nnos-celldesigner.png"}, {"label": "SBGN-ML", "url": "/downloads/nnos-celldesigner.sbgn"}, {"label": "Newt", "url": "http://web.newteditor.org/?URL=https://viewer-source.github.io/downloads/nnos-celldesigner.sbgn"}, {"label": "MINERVA", "url": "https://mreg.elixir-luxembourg.org/minerva/index.html?id=F025-nnos"}]
-sbgn: {"image": "/downloads/nnos-celldesigner-sbgnml.svg", "annotation": "/atlas-data/nnos-celldesigner-sbgnml.json", "width": 908, "height": 794, "v": "978c6b8d4a", "file": "/downloads/nnos-celldesigner.sbgn"}
+sbgn: {"image": "/downloads/nnos-celldesigner-sbgnml.svg", "annotation": "/atlas-data/nnos-celldesigner-sbgnml.json", "width": 908, "height": 794, "v": "863b967285", "file": "/downloads/nnos-celldesigner.sbgn"}
 ---
 ## Reactome-Recon connection
 

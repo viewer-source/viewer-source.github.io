@@ -14,12 +14,12 @@ height: 601
 scale: 1
 annotation: "/atlas-data/eicosanoids-celldesigner.json"
 image_error: ""
-v: "daa51d62cb"
+v: "e1308ddb90"
 src: "e7510b4d946e261ba5ca81228cf340fba8418f51"
 colours: true
 legend: "celldesigner"
 downloads: [{"label": "CellDesigner", "url": "/downloads/eicosanoids-celldesigner.xml"}, {"label": "SVG", "url": "/downloads/eicosanoids-celldesigner.svg"}, {"label": "SBML", "url": "/downloads/eicosanoids-celldesigner-sbml.xml"}, {"label": "Annotation", "url": "/downloads/eicosanoids-celldesigner.csv"}, {"label": "GraphML", "url": "/downloads/eicosanoids-celldesigner.graphml"}, {"label": "PNG", "url": "/downloads/eicosanoids-celldesigner.png"}, {"label": "SBGN-ML", "url": "/downloads/eicosanoids-celldesigner.sbgn"}, {"label": "Newt", "url": "http://web.newteditor.org/?URL=https://viewer-source.github.io/downloads/eicosanoids-celldesigner.sbgn"}, {"label": "MINERVA", "url": "https://mreg.elixir-luxembourg.org/minerva/index.html?id=F002-eicosanoids"}]
-sbgn: {"image": "/downloads/eicosanoids-celldesigner-sbgnml.svg", "annotation": "/atlas-data/eicosanoids-celldesigner-sbgnml.json", "width": 671, "height": 554, "v": "119501d5c6", "file": "/downloads/eicosanoids-celldesigner.sbgn"}
+sbgn: {"image": "/downloads/eicosanoids-celldesigner-sbgnml.svg", "annotation": "/atlas-data/eicosanoids-celldesigner-sbgnml.json", "width": 671, "height": 554, "v": "029213da51", "file": "/downloads/eicosanoids-celldesigner.sbgn"}
 ---
 ## References
 

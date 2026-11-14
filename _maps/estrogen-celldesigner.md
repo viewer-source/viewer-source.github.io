@@ -14,12 +14,12 @@ height: 1396
 scale: 1
 annotation: "/atlas-data/estrogen-celldesigner.json"
 image_error: ""
-v: "85f944b4fa"
+v: "2eadd6f625"
 src: "39012aca6021b3408fa35150bf1ff4293cb49ea9"
 colours: true
 legend: "celldesigner"
 downloads: [{"label": "CellDesigner", "url": "/downloads/estrogen-celldesigner.xml"}, {"label": "SVG", "url": "/downloads/estrogen-celldesigner.svg"}, {"label": "SBML", "url": "/downloads/estrogen-celldesigner-sbml.xml"}, {"label": "Annotation", "url": "/downloads/estrogen-celldesigner.csv"}, {"label": "GraphML", "url": "/downloads/estrogen-celldesigner.graphml"}, {"label": "PNG", "url": "/downloads/estrogen-celldesigner.png"}, {"label": "SBGN-ML", "url": "/downloads/estrogen-celldesigner.sbgn"}, {"label": "Newt", "url": "http://web.newteditor.org/?URL=https://viewer-source.github.io/downloads/estrogen-celldesigner.sbgn"}, {"label": "MINERVA", "url": "https://mreg.elixir-luxembourg.org/minerva/index.html?id=F018-estrogen"}]
-sbgn: {"image": "/downloads/estrogen-celldesigner-sbgnml.svg", "annotation": "/atlas-data/estrogen-celldesigner-sbgnml.json", "width": 1295, "height": 1363, "v": "f53b611084", "file": "/downloads/estrogen-celldesigner.sbgn"}
+sbgn: {"image": "/downloads/estrogen-celldesigner-sbgnml.svg", "annotation": "/atlas-data/estrogen-celldesigner-sbgnml.json", "width": 1295, "height": 1363, "v": "d190a17992", "file": "/downloads/estrogen-celldesigner.sbgn"}
 ---
 ## Description
 

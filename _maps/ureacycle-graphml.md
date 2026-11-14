@@ -14,12 +14,12 @@ height: 1067
 scale: 1
 annotation: "/atlas-data/ureacycle-graphml.json"
 image_error: ""
-v: "4228a953da"
+v: "2c6b638f3a"
 src: "2852d66d31f99434928ab27c48f7d68218e655ca"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "GraphML", "url": "/downloads/ureacycle-graphml.graphml"}, {"label": "SVG", "url": "/downloads/ureacycle-graphml.svg"}, {"label": "SBML", "url": "/downloads/ureacycle-graphml-sbml.xml"}, {"label": "Annotation", "url": "/downloads/ureacycle-graphml.csv"}, {"label": "PNG", "url": "/downloads/ureacycle-graphml.png"}, {"label": "SBGN-ML", "url": "/downloads/ureacycle-graphml.sbgn"}, {"label": "CellDesigner", "url": "/downloads/ureacycle-graphml.xml"}, {"label": "Newt", "url": "http://web.newteditor.org/?URL=https://viewer-source.github.io/downloads/ureacycle-graphml.sbgn"}, {"label": "MINERVA", "url": "https://mreg.elixir-luxembourg.org/minerva/index.html?id=F021-ureacycle"}]
-sbgn: {"image": "/downloads/ureacycle-graphml-sbgnml.svg", "annotation": "/atlas-data/ureacycle-graphml-sbgnml.json", "width": 1099, "height": 1071, "v": "652917a8a3", "file": "/downloads/ureacycle-graphml.sbgn"}
+sbgn: {"image": "/downloads/ureacycle-graphml-sbgnml.svg", "annotation": "/atlas-data/ureacycle-graphml-sbgnml.json", "width": 1099, "height": 1071, "v": "b02f2a93fe", "file": "/downloads/ureacycle-graphml.sbgn"}
 ---
 ## Reactome-Recon connection
 

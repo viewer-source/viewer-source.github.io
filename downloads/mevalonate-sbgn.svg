@@ -67,12 +67,12 @@
 <path d="M103.711 69 C103.711 57.954 112.665 49 123.711 49 L123.711 49 C134.757 49 143.711 57.954 143.711 69 L143.711 69 C143.711 80.046 134.757 89 123.711 89 L123.711 89 C112.665 89 103.711 80.046 103.711 69 Z" fill="#DBEBDB" class="c-metabolite" stroke="none"/><path d="M103.711 69 C103.711 57.954 112.665 49 123.711 49 L123.711 49 C134.757 49 143.711 57.954 143.711 69 L143.711 69 C143.711 80.046 134.757 89 123.711 89 L123.711 89 C112.665 89 103.711 80.046 103.711 69 Z" fill="none" stroke="#000000"/><text x="123.711" y="74.2913" text-anchor="middle" font-family="'Dialog', Arial, Helvetica, sans-serif" font-size="14" fill="#000000" class="t-metabolite" stroke="none" xml:space="preserve">Ca2+</text>
 <path d="M694.8904 397.7995 C694.8904 388.9627 702.0536 381.7995 710.8904 381.7995 L738.8904 381.7995 C747.7272 381.7995 754.8904 388.9627 754.8904 397.7995 L754.8904 397.7995 C754.8904 406.6363 747.7272 413.7995 738.8904 413.7995 L710.8904 413.7995 C702.0536 413.7995 694.8904 406.6363 694.8904 397.7995 Z" fill="#DBEBDB" class="c-metabolite" stroke="none"/><path d="M694.8904 397.7995 C694.8904 388.9627 702.0536 381.7995 710.8904 381.7995 L738.8904 381.7995 C747.7272 381.7995 754.8904 388.9627 754.8904 397.7995 L754.8904 397.7995 C754.8904 406.6363 747.7272 413.7995 738.8904 413.7995 L710.8904 413.7995 C702.0536 413.7995 694.8904 406.6363 694.8904 397.7995 Z" fill="none" stroke="#000000"/><text x="724.8904" y="403.0908" text-anchor="middle" font-family="'Dialog', Arial, Helvetica, sans-serif" font-size="14" fill="#000000" class="t-metabolite" stroke="none" xml:space="preserve">AMP</text>
 <path d="M818.3139 358.2995 L948.9531 358.2995" fill="none" stroke="#000000"/><path d="M959.9531 358.2995 L947.9531 364.2995 L947.9531 352.2995 Z" fill="#000000" stroke="none"/>
-<path d="M1055.9531 461.1575 L1055.9531 617.7812" fill="none" stroke="#000000"/><circle cx="1055.9531" cy="621.7812" r="4" fill="white" class="c-white" stroke="#000000"/>
+<path d="M1055.9531 461.1575 L1055.9531 618.7812" fill="none" stroke="#000000"/><circle cx="1055.9531" cy="622.7812" r="4" fill="white" class="c-white" stroke="#000000"/>
 <path d="M1037.9531 637.7812 L1007.783 637.7812" fill="none" stroke="#000000"/><path d="M996.783 637.7812 L1008.783 631.7812 L1008.783 643.7812 Z" fill="#000000" stroke="none"/>
 <path d="M1073.9531 667.4479 L1112.0986 667.4479" fill="none" stroke="#000000"/><path d="M1123.0986 667.4479 L1111.0986 673.4479 L1111.0986 661.4479 Z" fill="#000000" stroke="none"/>
 <path d="M1119.1198 637.7812 L1073.9531 637.7812" fill="none" stroke="#000000"/>
 <path d="M998.6397 667.4479 L1037.9531 667.4479" fill="none" stroke="#000000"/>
-<path d="M1205.0853 648.7812 L1351.2985 648.7812" fill="none" stroke="#000000"/><circle cx="1355.2985" cy="648.7812" r="4" fill="white" class="c-white" stroke="#000000"/>
+<path d="M1205.0853 648.7812 L1352.2985 648.7812" fill="none" stroke="#000000"/><circle cx="1356.2985" cy="648.7812" r="4" fill="white" class="c-white" stroke="#000000"/>
 <path d="M1371.2985 666.7812 L1371.2985 680.4015" fill="none" stroke="#000000"/><path d="M1371.2985 691.4015 L1365.2985 679.4015 L1377.2985 679.4015 Z" fill="#000000" stroke="none"/>
 <path d="M1371.2985 551.5405 L1371.2985 565.1608" fill="none" stroke="#000000"/><path d="M1371.2985 576.1608 L1365.2985 564.1608 L1377.2985 564.1608 Z" fill="#000000" stroke="none"/>
 <path d="M1389.2985 429.2995 L1414.026 429.2995" fill="none" stroke="#000000"/><path d="M1425.026 429.2995 L1413.026 435.2995 L1413.026 423.2995 Z" fill="#000000" stroke="none"/>
@@ -80,14 +80,14 @@
 <path d="M1252.571 444.2995 L1371.2985 504.5405 L1371.2985 515.5405" fill="none" stroke="#000000"/>
 <path d="M1490.026 444.2995 L1371.2985 504.5405 L1371.2985 515.5405" fill="none" stroke="#000000"/>
 <path d="M1371.2985 606.1608 L1371.2985 630.7812" fill="none" stroke="#000000"/>
-<path d="M1371.2985 369.5938 L1371.2985 409.2995" fill="none" stroke="#000000"/><circle cx="1371.2985" cy="413.2995" r="4" fill="white" class="c-white" stroke="#000000"/>
-<path d="M1306.2985 533.5405 L1351.2985 533.5405" fill="none" stroke="#000000"/><circle cx="1355.2985" cy="533.5405" r="4" fill="white" class="c-white" stroke="#000000"/>
+<path d="M1371.2985 369.5938 L1371.2985 410.2995" fill="none" stroke="#000000"/><circle cx="1371.2985" cy="414.2995" r="4" fill="white" class="c-white" stroke="#000000"/>
+<path d="M1306.2985 533.5405 L1352.2985 533.5405" fill="none" stroke="#000000"/><circle cx="1356.2985" cy="533.5405" r="4" fill="white" class="c-white" stroke="#000000"/>
 <path d="M170.711 139 L192.8861 139" fill="none" stroke="#000000"/><path d="M203.8861 139 L191.8861 145 L191.8861 133 Z" fill="#000000" stroke="none"/>
-<path d="M800.3139 315.351 L800.3139 338.2995" fill="none" stroke="#000000"/><circle cx="800.3139" cy="342.2995" r="4" fill="white" class="c-white" stroke="#000000"/>
-<path d="M800.3139 484.9416 L800.3139 456.7995" fill="none" stroke="#000000"/><circle cx="800.3139" cy="452.7995" r="4" fill="white" class="c-white" stroke="#000000"/>
+<path d="M800.3139 315.351 L800.3139 339.2995" fill="none" stroke="#000000"/><circle cx="800.3139" cy="343.2995" r="4" fill="white" class="c-white" stroke="#000000"/>
+<path d="M800.3139 484.9416 L800.3139 455.7995" fill="none" stroke="#000000"/><circle cx="800.3139" cy="451.7995" r="4" fill="white" class="c-white" stroke="#000000"/>
 <path d="M959.9531 434.176 L818.3139 436.7995" fill="none" stroke="#000000"/>
 <path d="M800.3139 628.7812 L800.3139 544.9416" fill="none" stroke="#000000"/>
-<path d="M593.6907 710.0496 L1055.9531 710.0496 L1055.9531 687.4479" fill="none" stroke="#000000"/><circle cx="1055.9531" cy="683.4479" r="4" fill="white" class="c-white" stroke="#000000"/>
+<path d="M593.6907 710.0496 L1055.9531 710.0496 L1055.9531 686.4479" fill="none" stroke="#000000"/><circle cx="1055.9531" cy="682.4479" r="4" fill="white" class="c-white" stroke="#000000"/>
 <path d="M1016.5957 136.0154 L962.891 136.0154" fill="none" stroke="#000000"/>
 <path d="M989.6584 186.0154 L989.6584 136.0154 L962.891 136.0154" fill="none" stroke="#000000"/>
 <path d="M307.8861 139 L372.3139 139" fill="none" stroke="#000000"/>

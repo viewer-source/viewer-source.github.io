@@ -14,7 +14,7 @@ height: 551
 scale: 1
 annotation: "/atlas-data/eicosanoids-sbgn.json"
 image_error: ""
-v: "b6b0253231"
+v: "f88ebcefc7"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/downloads/eicosanoids-sbgn.sbgn"}, {"label": "SVG", "url": "/downloads/eicosanoids-sbgn.svg"}]

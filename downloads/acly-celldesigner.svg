@@ -73,9 +73,9 @@
 <polyline points="827.57,482.86 923.08,483.72"/>
 <polyline points="827.57,482.86 925.07,451.14"/>
 <polyline points="827.57,482.86 830.08,482.78"/>
-<polyline points="755.07,437.98 804.57,465.9"/>
+<polyline points="755.07,437.98 804.13,465.66"/>
 <polyline points="600.6,376.1 651.74,393.41"/>
-<polyline points="620.67,306.36 633.07,374.89"/>
+<polyline points="620.67,306.36 632.98,374.4"/>
 <polyline points="682.78,170.22 639.63,239.8"/>
 <polyline points="544.33,205.05 647.57,204.64"/>
 <polyline points="522.19,546.44 546.13,401.71"/>
@@ -99,13 +99,13 @@
 <polyline points="827.57,482.86 932.67,448.66" fill="none" stroke="#000000" stroke-width="1"/>
 <polygon points="808.09,483.5 822.92,478.01 823.24,488" fill="#000"/>
 <polyline points="827.57,482.86 822.08,483.04" fill="none" stroke="#000000" stroke-width="1"/>
-<circle cx="807.18" cy="467.38" r="3" fill="#fff" stroke="#000"/>
-<polyline points="748.11,434.05 804.57,465.9" fill="none" stroke="#000000" stroke-width="1"/>
+<circle cx="806.74" cy="467.13" r="3" fill="#fff" stroke="#000"/>
+<polyline points="748.11,434.05 804.13,465.66" fill="none" stroke="#000000" stroke-width="1"/>
 <rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(815.07,466.55) rotate(52.54)"/>
 <polygon points="672.58,400.47 656.77,400.4 659.97,390.92" fill="#000"/>
 <polyline points="593.02,373.54 659.32,395.98" fill="none" stroke="#000000" stroke-width="1"/>
-<circle cx="633.6" cy="377.84" r="3" fill="#fff" stroke="#000"/>
-<polyline points="619.25,298.49 633.07,374.89" fill="none" stroke="#000000" stroke-width="1"/>
+<circle cx="633.51" cy="377.35" r="3" fill="#fff" stroke="#000"/>
+<polyline points="619.25,298.49 632.98,374.4" fill="none" stroke="#000000" stroke-width="1"/>
 <rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(632.8,387) rotate(18.7)"/>
 <polygon points="628.03,258.49 631.69,243.11 640.19,248.38" fill="#000"/>
 <polyline points="687,163.42 635.41,246.59" fill="none" stroke="#000000" stroke-width="1"/>

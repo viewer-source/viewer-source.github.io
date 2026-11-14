@@ -14,7 +14,7 @@ height: 1338
 scale: 1
 annotation: "/atlas-data/estrogen-sbgn.json"
 image_error: ""
-v: "c39495ae83"
+v: "876b92fa94"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/downloads/estrogen-sbgn.sbgn"}, {"label": "SVG", "url": "/downloads/estrogen-sbgn.svg"}]
