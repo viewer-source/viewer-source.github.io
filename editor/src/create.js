@@ -153,6 +153,7 @@
       if (i < 0) return;
       var b = boxOf(i), sv = j == null ? null : svList(i)[j];
       if (j != null && !sv) return;
+      selN = []; selP = []; selE = []; part = null; svSel = null; paint();   // only the cursor while typing, nothing shown selected (user, 2026-11-14)
       // the text edited in place (user, 2026-11-14: "do not change the color ... just simply make it editable"): the box
       // inside the glyph's outline, in its fill, text colour and font size, no frame
       var r = realizerOf(nodes2[i].el), fl = r && Array.prototype.filter.call(r.children, function (c) { return c.localName === 'Fill'; })[0];
@@ -229,7 +230,7 @@
       paint();
     }, true);
     window.addEventListener('pointermove', function (e) {
-      if (!svDrag) return;
+      if (!svDrag || !svSel) return;
       if (!svDrag.to && Math.hypot(e.clientX - svDrag.x, e.clientY - svDrag.y) < 4) return;
       var i = svDrag.i, b = boxOf(i), r = border(i, at(e)), q = svList(i)[svSel.j];
       svDrag.r = r; svDrag.to = [b[0] + (0.5 + r[0]) * b[2], b[1] + (0.5 + r[1]) * b[3]];
@@ -238,14 +239,14 @@
       ghost.textContent = q[0];
       ghost.style.cssText = 'left:' + (sx(svDrag.to[0]) - w / 2) + 'px;top:' + (sy(svDrag.to[1]) - h / 2) + 'px;width:' + w + 'px;height:' + h + 'px;font-size:' + 10 * V.z + 'px;border-radius:' + h / 2 + 'px';
       paint();
-    });
-    window.addEventListener('pointerup', function () {
+    }, true);
+    window.addEventListener('pointerup', function () {   // capture: the core's own handlers may stop the release on the map
       var d = svDrag; svDrag = null;
       if (ghost) { ghost.remove(); ghost = null; }
       if (!d) return;
       if (d.r && svSel) { remember(false); text = sbJs.stateMove(text, svSel.id, svSel.j, d.r[0], d.r[1]); parse(); dirty = true; render(); paint(); changed(); }
       else if (d.again && svSel) typeIn(svSel.id, svSel.j);   // a click on it selected: its text
-    });
+    }, true);
     function svDelete() {
       if (svNode() < 0) return false;
       remember(false); text = sbJs.stateDelete(text, svSel.id, svSel.j); svSel = null;
@@ -295,6 +296,6 @@
       if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom || !palOn()) return;
       placedAt = Date.now();
       if (d.kind === 'macromolecule') makeEntity(at(e));
-    });
+    }, true);
     ['wheel', 'gesturestart'].forEach(function (k) { V.view.addEventListener(k, function () { if (typing) typing.done(true); }, { capture: true, passive: true }); });   // the box would stand off its node after a zoom
     window.addEventListener('resize', function () { if (typing) typing.done(true); });
