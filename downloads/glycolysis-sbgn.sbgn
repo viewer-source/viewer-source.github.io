@@ -703,6 +703,34 @@
     </glyph>
     <glyph class="macromolecule" id="glyph_14">
       <bbox x="208" y="340" w="80" h="40"/>
+      <glyph class="state variable" id="glyph_14_sv0">
+        <state value=""/>
+        <bbox x="240.5" y="372.5" w="15" h="15"/>
+      </glyph>
+      <glyph class="state variable" id="glyph_14_sv1">
+        <state value=""/>
+        <bbox x="260.5" y="372.5" w="15" h="15"/>
+      </glyph>
+      <glyph class="state variable" id="glyph_14_sv2">
+        <state value=""/>
+        <bbox x="220.5" y="372.5" w="15" h="15"/>
+      </glyph>
+      <glyph class="state variable" id="glyph_14_sv3">
+        <state value=""/>
+        <bbox x="280.5" y="352.5" w="15" h="15"/>
+      </glyph>
+      <glyph class="state variable" id="glyph_14_sv4">
+        <state value=""/>
+        <bbox x="200.5" y="352.5" w="15" h="15"/>
+      </glyph>
+      <glyph class="state variable" id="glyph_14_sv5">
+        <state value=""/>
+        <bbox x="280.5" y="372.5" w="15" h="15"/>
+      </glyph>
+      <glyph class="state variable" id="glyph_14_sv6">
+        <state value=""/>
+        <bbox x="200.5" y="372.5" w="15" h="15"/>
+      </glyph>
     </glyph>
     <glyph class="simple chemical" id="glyph_15">
       <bbox x="108" y="388" w="40" h="40"/>
