@@ -159,6 +159,9 @@
       var a = S.arc[id], e = G.edge[id];
       if (!a) return;
       var E = ends(S, a), pts = E[4];
+      [['source', 's', 0], ['target', 't', 1]].forEach(function (q) {   // an end moved to another glyph in the editor: that glyph
+        if (E[q[2]] !== e[q[1]] && G.node[E[q[2]]] && G.node[e[q[1]]]) { T.set(e.el, q[0], E[q[2]]); e[q[1]] = E[q[2]]; }
+      });
       if (E[0] !== e.s || E[1] !== e.t || !S.glyph[E[0]] || !S.glyph[E[1]]) return;   // an activity's arcs moved to its entity: as the converter left them
       var o = at(S, E[0], a.getAttribute('source'), E[2], (pts.length ? pts : [E[3]])[0])
         .concat(at(S, E[1], a.getAttribute('target'), E[3], (pts.length ? pts[pts.length - 1] : E[2]), flux(a)));
@@ -211,7 +214,17 @@
     Object.keys(S.arc).forEach(function (id) {
       var a = S.arc[id], e = G.edge[id];
       if (!e) return;
-      var E = ends(S, a);
+      var E = ends(S, a), ref = [a.getAttribute('source'), a.getAttribute('target')], cls = a.getAttribute('class');
+      // an end moved to another glyph (the editor, user 2026-11-14): the arc names that glyph, its port set below; the
+      // arrowhead-less line is a consumption at a process and a logic arc at a gate (user: one connector for both)
+      var moved = [0, 1].map(function (j) { var g = j ? e.t : e.s; return E[j] !== g && !!G.node[E[j]] && !!G.node[g] && !!S.glyph[g]; });
+      moved.forEach(function (m, j) { if (m) { E[j] = ref[j] = j ? e.t : e.s; E[2 + j] = null; } });
+      if (moved[0] || moved[1]) {
+        var hub = (S.glyph[E[1]] && S.glyph[E[1]].el.getAttribute('class')) || '';
+        if (cls === 'consumption' && /^(and|or|not|equivalence)$/.test(hub)) cls = 'logic arc';
+        else if (cls === 'logic arc' && HUB.test(hub) && !/^(and|or|not|equivalence)$/.test(hub)) cls = 'consumption';
+        if (cls !== a.getAttribute('class')) T.set(a, 'class', cls);
+      }
       if (E[0] !== e.s || E[1] !== e.t || !G.node[E[0]] || !G.node[E[1]] || !S.glyph[E[0]] || !S.glyph[E[1]]) return;
       var nx = kids(a, 'next');
       if (nx.length !== e.pts.length || nx.some(function (q, j) { var p = xy(q); return !close(p[0], e.pts[j][0]) || !close(p[1], e.pts[j][1]); })) {
@@ -233,7 +246,7 @@
       // while it lies on the line toward the next point (sbgnml.at's rule), else where that line leaves the box
       var side = [['source', 'start', 0, E[0], E[2]], ['target', 'end', 2, E[1], E[3]]].map(function (q) {
         var gid = q[3], b = G.node[gid].box, c = centre(b), o = S.glyph[gid].box;
-        var port = a.getAttribute(q[0]) !== gid && (q[0] === 'source' || flux(a));   // an end the converter reads at its port
+        var port = ref[q[2] / 2] !== gid && (q[0] === 'source' || /^(consumption|logic arc)$/.test(cls));   // an end the converter reads at its port
         var zero = !e.off[q[2]] && !e.off[q[2] + 1] && !port;
         return { q: q, gid: gid, c: c, zero: zero, port: port, P: [c[0] + e.off[q[2]], c[1] + e.off[q[2] + 1]],
                  old: q[4] && (map[gid] ? [q[4][0] + b[0] - o[0], q[4][1] + b[1] - o[1]] : q[4]) };
@@ -241,7 +254,7 @@
       // nothing about the arc changed (its glyphs, bends and ends as the converter reads them from the file): its ends kept
       var fileOff = at(S, E[0], a.getAttribute('source'), E[2], (E[4].length ? E[4] : [E[3]])[0])
         .concat(at(S, E[1], a.getAttribute('target'), E[3], (E[4].length ? E[4][E[4].length - 1] : E[2]), flux(a)));
-      var still = !map[E[0]] && !map[E[1]] && nx.length === e.pts.length && fileOff.every(function (v, j) { return close(v, e.off[j]); }) &&
+      var still = !moved[0] && !moved[1] && !map[E[0]] && !map[E[1]] && nx.length === e.pts.length && fileOff.every(function (v, j) { return close(v, e.off[j]); }) &&
         e.pts.every(function (p, j) { var q = xy(nx[j]); return close(p[0], q[0]) && close(p[1], q[1]); });
       if (still) return;
       var keep = function (s, aim) { return !!s.old && onLine(s.c, s.old, aim); };   // the file's own end carried with its glyph while on the line
@@ -262,29 +275,31 @@
         else { side[0].P = cut(side[0], side[1].c); side[1].P = cut(side[1], side[0].P); }   // toward the start written (the converter's aim)
       } else side.forEach(function (s, j) { var o = side[1 - j]; if (s.zero) s.P = keep(s, o.zero ? o.old || o.c : o.P) ? s.old : cut(s, o.P); });
       side.forEach(function (s) {
-        var q = s.q, ref = a.getAttribute(q[0]), el = kid(a, q[1]), P = s.P;
+        var q = s.q, j0 = q[2] / 2, rf = ref[j0], el = kid(a, q[1]), P = s.P;
         if (!el) return;
-        if (!s.port && ref !== s.gid && !s.zero) T.set(a, q[0], s.gid);   // a modifier the file aimed at a port, moved: now at the glyph (read as the centre else)
-        if (s.port) {   // at a port: the port where the GraphML has it, the arc's end on it (the file's own kept while the port stays)
-          portAt[ref] = portAt[ref] || P;
-          var o0 = xy(S.port[ref]);
-          if (!close(o0[0], portAt[ref][0]) || !close(o0[1], portAt[ref][1])) setXY(el, portAt[ref]);   // a port moved: the end on it
+        if (!s.port && rf !== s.gid && !s.zero) ref[j0] = s.gid;   // a modifier the file aimed at a port, moved: now at the glyph (read as the centre else)
+        if (s.port) {
+          // at a port: the port where the GraphML has it, the arc's end on it (the file's own kept while the port stays)
+          portAt[rf] = portAt[rf] || P;
+          var o0 = xy(S.port[rf]);
+          if (!close(o0[0], portAt[rf][0]) || !close(o0[1], portAt[rf][1])) setXY(el, portAt[rf]);   // a port moved: the end on it
           return;
         }
         var b2 = G.node[s.gid].box, out2 = Math.abs(P[0] - s.c[0]) > b2[2] / 2 + 0.5 || Math.abs(P[1] - s.c[1]) > b2[3] / 2 + 0.5;
-        var cls = a.getAttribute('class'), no = cls === 'production' ? 2 : cls === 'consumption' || cls === 'logic arc' ? 1 : 0;
+        var no = cls === 'production' ? 2 : cls === 'consumption' ? 1 : cls === 'logic arc' ? (q[0] === 'source' ? 2 : 1) : 0;   // a logic arc leaving a gate (into another gate) from its port two
         if (!s.zero && out2 && no && HUB.test(S.glyph[s.gid].el.getAttribute('class') || '')) {   // at a port of a process or gate
           // the arc named the glyph: now the port its glyph's other consumptions (products) use, else a port made
           var have = kids(S.glyph[s.gid].el, 'port').map(function (x) { return x.getAttribute('id'); }), other = use[s.gid + '\u0000' + (3 - no)];
           var pid = use[s.gid + '\u0000' + no] || (have.length >= 2 ? have.filter(function (x) { return x !== other; })[other ? 0 : no - 1] : null);
-          if (pid) { T.set(a, q[0], pid); portAt[pid] = portAt[pid] || P; }
+          if (pid) { ref[j0] = pid; portAt[pid] = portAt[pid] || P; }
           else {
             (newPorts[s.gid] = newPorts[s.gid] || {})[no] = newPorts[s.gid][no] || P;
-            T.set(a, q[0], newId(s.gid, no));
+            ref[j0] = newId(s.gid, no);
           }
         }
         setXY(el, P);
       });
+      ['source', 'target'].forEach(function (k, j) { if (ref[j] !== a.getAttribute(k)) T.set(a, k, ref[j]); });
     });
     // the ports: where their arcs put them; a port no arc names moves with its glyph; a made one written
     Object.keys(S.port).forEach(function (pid) {

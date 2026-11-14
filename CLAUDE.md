@@ -452,6 +452,19 @@ says "the workbench", "the converter's repository", "a private repository".
   reactant or product, an added one, or a modifier's linkTarget (made after its connectScheme when missing, as
   CellDesigner orders it); bend points stay. A process glyph's main lines are not moved at the glyph. Checked live on SREBP in both
   formats (save simulated).
+  An end moved to another node (user, 2026-11-14: "yes ... to any viable option to another node ... Sometimes it's
+  needed"; GraphML and SBGN-ML maps, not yet CellDesigner): an end square dragged off its node goes on release to the
+  innermost node under the pointer that can take it (lit grey while the pointer is over it), else back where it was;
+  one undo step; the end at the node's nearest of the five places, at a process or gate the port its line takes (a
+  modifier at one of its two sides). Which node can take it, SBGN's rules (user, the same day): never a member inside a
+  complex (the complex takes it), never a compartment; the one arrowhead-less line (user: "just one arrowheadless
+  connector", a consumption at a process and an input at a gate alike) has its hub end at a process or gate and its
+  other end at an entity, or at a gate going into a gate; a production goes from a process to an entity; a modulation
+  from an entity or a gate to a process or phenotype (never into a gate: a gate's inputs are arrowhead-less, its
+  modulations leave from it). The GraphML gets the edge's new source or target and the port; `sbgn_edit.write` writes
+  the arc's new source or target (a process's port where it has one) and turns consumption into logic arc at a gate and
+  back at a process, and `graphml()` takes such moved ends from the file. An end at a process's or gate's port is
+  grabbed for this only; on its own process it stays.
   A modifier's end at
   a process glyph (user, 2026-11-13: "In Cell Designer, there is no central location for ports for processes") snaps
   only to CellDesigner's six places there, the four corners and the middles of the two sides off the main line, turned

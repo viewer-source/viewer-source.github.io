@@ -1369,8 +1369,8 @@
       var e = edges2[k];
       if (e.s == null || e.t == null) return null;
       B = B || bx; P = P || pt;
-      var S = B(e.s), T = B(e.t), pa = e.path, o = function (a) {
-        if (pp && pp.to && pp.k === k && (pp.end ? 't' : 's') === a[0]) return pp.to[a[1] === 'x' ? 0 : 1];
+      var mine = pp && pp.to && pp.k === k, S = B(mine && !pp.end && pp.n2 != null ? pp.n2 : e.s), T = B(mine && pp.end && pp.n2 != null ? pp.n2 : e.t), pa = e.path, o = function (a) {
+        if (mine && (pp.end ? 't' : 's') === a[0]) return pp.to[a[1] === 'x' ? 0 : 1];
         return pa ? parseFloat(pa.getAttribute(a)) || 0 : 0;
       };
       var so = [o('sx'), o('sy')], to = [o('tx'), o('ty')];
@@ -1551,9 +1551,9 @@
         var all = ports(k);
         [[0, e.s], [all.length - 1, e.t]].forEach(function (q, end) {
           if (cd && /\|proc$/.test(nodes2[q[1]].id) && !procSpots({ k: k, end: end, n: q[1] })) return;   // a glyph's main lines stay
-          if (hubEnd(k, end)) return;   // at a process's or gate's port: it goes with the process (Turn process)
-          var d = Math.hypot(all[q[0]][0] - P[0], all[q[0]][1] - P[1]);
-          if (d <= dB) { dB = d; best = { k: k, end: end, n: q[1], to: null }; }
+          var d = Math.hypot(all[q[0]][0] - P[0], all[q[0]][1] - P[1]), hb = !!hubEnd(k, end), b = hb && bx(q[1]);   // an end at a process's or gate's port goes with the process, or to another node
+          if (hb && P[0] >= b[0] && P[0] <= b[0] + b[2] && P[1] >= b[1] && P[1] <= b[1] + b[3]) return;   // a press on the process itself moves the process
+          if (d <= dB) { dB = d; best = { k: k, end: end, n: q[1], to: null, hub: hb }; }
         });
       });
       return best;
@@ -1627,19 +1627,77 @@
       if (S) S.forEach(function (o, i) { var d = Math.hypot(o[0] - to[0], o[1] - to[1]); if (d < bd) { bd = d; best = i + 2; } });
       return best;
     }
+    // an end moved to another node (user, 2026-11-14: "yes ... to any viable option to another node ... Sometimes it's
+    // needed"): an end square dragged off its node goes, on release, to the node under the pointer that can take it,
+    // lit while the pointer is over it, else back where it was. SBGN's rules (user, the same day): an arc goes from or
+    // to a complex, never a member inside it (the complex takes the end); a logic gate takes only the one
+    // arrowhead-less line, a consumption at a process and an input at a gate alike, and its modulations leave from it.
+    // GraphML and SBGN-ML maps; not yet CellDesigner, whose reactions hold their species in several places
+    var EPN = /^(Macromolecule|SimpleChemical|Complex|NucleicAcidFeature|UnspecifiedEntity|EmptySet|PerturbingAgent)$/;
+    var MODS = /^(white_circle|white_delta|white_delta_bar|t_shape|crows_foot_one|white_diamond)$/;
+    function roleOf(i) {   // 'epn', 'proc', 'gate', 'pheno', or null (a compartment, a member inside a complex, a decoration)
+      var n = nodes2[i];
+      if (n.comp || (n.up != null && !nodes2[n.up].comp)) return null;
+      if (n.hub) return n.shape.kind === 'Operator' ? 'gate' : 'proc';
+      return EPN.test(n.shape.kind) ? 'epn' : n.shape.kind === 'Phenotype' ? 'pheno' : null;
+    }
+    function takes(k, end, i) {   // whether node i can take that end of arc k (its own node aside)
+      var e = edges2[k], a = e.arr, other = end ? e.s : e.t, r = roleOf(i), ro = roleOf(other);
+      var hub = function (x) { return x === 'proc' || x === 'gate'; };
+      if (cd || i === other || !r || a[0] !== 'none') return false;
+      if (a[1] === 'none') {   // the arrowhead-less line: its hub end at a process or gate, its other end at an entity (or a gate into a gate)
+        if (!hub(roleOf(e.s)) && !hub(roleOf(e.t))) return false;   // a plain line between other glyphs (an equivalence arc): not this line
+        var h = hub(roleOf(e.t)) ? 1 : 0;
+        return end === h ? hub(r) && !(r === 'proc' && ro === 'gate') : r === 'epn' || (r === 'gate' && ro === 'gate');
+      }
+      if (a[1] === 'delta') return hub(roleOf(end ? e.t : e.s)) ? r === 'proc' : r === 'epn';   // a production: from a process to an entity
+      if (MODS.test(a[1])) return end ? r === 'proc' || r === 'pheno' : r === 'epn' || r === 'gate';   // a modulation: from an entity or gate to a process or phenotype
+      return false;
+    }
+    function takerAt(pp, P) {   // the innermost node under P that can take the end, or its own node; null over nothing that can
+      var R = 4 / V.z, best = null, ba = Infinity;
+      nodes2.forEach(function (n, i) {
+        var b = bx(i);
+        if (P[0] < b[0] - R || P[0] > b[0] + b[2] + R || P[1] < b[1] - R || P[1] > b[1] + b[3] + R) return;
+        if (i !== pp.n && !takes(pp.k, pp.end, i)) return;
+        if (b[2] * b[3] < ba) { ba = b[2] * b[3]; best = i; }
+      });
+      return best;
+    }
+    function portOn(pp, i, P) {   // the end's place at node i from its centre: at a process or gate the port its line takes, else spot's (a modifier: one of the two sides)
+      var b = bx(i), e = edges2[pp.k], H = nodes2[i].hub && window.yrender && hubPorts()[nodes2[i].id];
+      if (!H || (MODS.test(e.arr[1]) && pp.end)) return spot({ k: pp.k, end: pp.end, n: i }, P);
+      var q = pp.end || (e.arr[1] === 'none' && !nodes2[e.t].hub) ? H[0] : H[1];   // into port one, or out of port two
+      return [q[0] - b[0] - b[2] / 2, q[1] - b[1] - b[3] / 2];
+    }
+    function aim(pp, P) {   // the dragged end's next place: on its own node, on a node that takes it, or free at the pointer
+      var i = takerAt(pp, P), b;
+      pp.n2 = null; pp.free = false;
+      if (i === pp.n) { pp.to = pp.hub ? null : spot(pp, P); return; }   // an end at a port stays with its process
+      if (i != null) { pp.n2 = i; pp.to = portOn(pp, i, P); return; }
+      b = bx(pp.n); pp.free = true; pp.to = [P[0] - b[0] - b[2] / 2, P[1] - b[1] - b[3] / 2];
+    }
+    function reconnect(pp) {   // the end of arc pp.k put on node pp.n2 at offset pp.to, one undo step; the line's end square no longer pressed
+      part = null; frozen = true;   // the copy stays until the map is drawn again (no flash of the old line)
+      setPorts([pp], { k: pp.k, att: pp.end ? 'target' : 'source', id: nodes2[pp.n2].id.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;') });
+    }
     function setPort(pp) { setPorts([pp]); }
-    function setPorts(list) {   // ends of lines put at their offsets (pp: k, end, to), one undo step
+    function setPorts(list, re) {   // ends of lines put at their offsets (pp: k, end, to), one undo step; re: { k, att, id }, that edge's source or target set too
       var all = Array.prototype.slice.call(doc.getElementsByTagNameNS(Y, 'Path')), by = new Map();
+      if (re && (text.match(/<edge\b[^>]*>/g) || []).length !== edges2.length) { frozen = false; warn('The line could not be moved to another node: the file is not read edge for edge.'); unshift(); paint(); return; }
       list.forEach(function (pp) {
         var e = edges2[pp.k], a = pp.end ? ['tx', 'ty'] : ['sx', 'sy'], no = spotNo(pp, pp.to), vals = [fmt(pp.to[0]), fmt(pp.to[1])];
         if (no) { a = a.concat('spot'); vals.push(String(no)); }
-        if (Math.abs((num(e.path, a[0]) || 0) - pp.to[0]) < 0.01 && Math.abs((num(e.path, a[1]) || 0) - pp.to[1]) < 0.01) return;
+        if (!re && Math.abs((num(e.path, a[0]) || 0) - pp.to[0]) < 0.01 && Math.abs((num(e.path, a[1]) || 0) - pp.to[1]) < 0.01) return;
         var nth = all.indexOf(e.path);
         by.set(nth, (by.get(nth) || []).concat(a.map(function (k, j) { return [k, vals[j]]; })));
       });
       if (!by.size) { unshift(); paint(); return; }
       remember(false);
-      var c = -1;
+      var c = -1, ce = -1;
+      if (re) text = text.replace(/<edge\b[^>]*>/g, function (tag) {
+        return ++ce !== re.k ? tag : tag.replace(new RegExp('(\\s' + re.att + '\\s*=\\s*)("[^"]*"|\'[^\']*\')'), function (m, p1) { return p1 + '"' + re.id + '"'; });
+      });
       text = text.replace(/<y:Path\b[^>]*>/g, function (tag) {
         var kv = by.get(++c);
         if (!kv) return tag;
@@ -1724,10 +1782,11 @@
         });
       }
       if (drag && drag.port && drag.port.to) {
-        var pk = drag.port, b0 = bx(pk.n), C = [b0[0] + b0[2] / 2 + pk.to[0], b0[1] + b0[3] / 2 + pk.to[1]];
+        var pk = drag.port, b0 = bx(pk.n2 != null ? pk.n2 : pk.n), C = [b0[0] + b0[2] / 2 + pk.to[0], b0[1] + b0[3] / 2 + pk.to[1]];
         var ph = Math.max(2, HANDLE * V.z);
         over.push('<rect class="m2-ed-handle" x="' + f1(sx(C[0]) - ph / 2) + '" y="' + f1(sy(C[1]) - ph / 2) + '" width="' + f1(ph) + '" height="' + f1(ph) + '"/>');
       }
+      if (drag && drag.port && drag.port.n2 != null) out.push(frame + '<path class="m2-ed-dark" d="' + shapeD(drag.port.n2) + '"/></g>');   // the node that takes the end
       if (!drag && keyGuides) keyGuides.forEach(function (g) {
         out.push('<path class="m2-ed-guide"' + gw() + ' d="M' + f1(sx(g[0][0])) + ' ' + f1(sy(g[0][1])) + 'L' + f1(sx(g[1][0])) + ' ' + f1(sy(g[1][1])) + '"/>');
       });
@@ -1926,8 +1985,8 @@
     // bend pressed snaps when one of its two segments is nearly level or upright, and a segment so lined up is drawn
     // as a thick grey line while the drag runs (both for an L)
     function ports(k, pp) {   // the arc's points with its ends at the ports (node centre and offset), as yEd lines them up
-      var e = edges2[k], S = bx(e.s), T = bx(e.t), pa = e.path, o = function (a) {
-        if (pp && pp.to && pp.k === k && (pp.end ? 't' : 's') === a[0]) return pp.to[a[1] === 'x' ? 0 : 1];
+      var e = edges2[k], mine = pp && pp.to && pp.k === k, S = bx(mine && !pp.end && pp.n2 != null ? pp.n2 : e.s), T = bx(mine && pp.end && pp.n2 != null ? pp.n2 : e.t), pa = e.path, o = function (a) {
+        if (mine && (pp.end ? 't' : 's') === a[0]) return pp.to[a[1] === 'x' ? 0 : 1];
         return pa ? parseFloat(pa.getAttribute(a)) || 0 : 0;
       };
       return [[S[0] + S[2] / 2 + o('sx'), S[1] + S[3] / 2 + o('sy')]].concat(e.pts.map(pt), [[T[0] + T[2] / 2 + o('tx'), T[1] + T[3] / 2 + o('ty')]]);
@@ -2218,7 +2277,7 @@
         e.stopImmediatePropagation();
         var P = at(e);
         if (band) { band.x2 = P[0]; band.y2 = P[1]; }
-        else if (drag.port) { if (drag.port.to || Math.hypot(e.clientX - drag.cx, e.clientY - drag.cy) >= 4) drag.port.to = spot(drag.port, P); }
+        else if (drag.port) { if (drag.port.moved || Math.hypot(e.clientX - drag.cx, e.clientY - drag.cy) >= 4) { drag.port.moved = true; aim(drag.port, P); } }
         else if (drag.rs) {
           var seed = {}; seed[drag.rs.c] = resized(drag, P, gridSet.snap && !e.altKey && !e.ctrlKey);
           liveFit(seed);
@@ -2272,7 +2331,9 @@
       var d = drag; drag = null; var sets = mv; mv = null;   // the moved groups and live arcs stay until the map is drawn again
       if (!d.port && !d.rs) frozen = true;   // the copies too: the file now has the new places, the picture not yet
       if (d.port) {   // dragged: the port set; a click: the node there selected, as without a line lit (not a glyph)
-        if (d.port.to) setPort(d.port);
+        if (d.port.n2 != null) reconnect(d.port);
+        else if (d.port.free || (d.port.moved && !d.port.to) || (d.port.hub && !d.port.to)) { unshift(); paint(); }   // over nothing that takes it, or on its own process: back where it was (a click there keeps the line)
+        else if (d.port.to) setPort(d.port);
         else if (procSpots(d.port)) paint();   // at a glyph, no item of its own: the line stays selected, its end pressed for the keys
         else { selN = [d.port.n]; selP = []; selE = []; paint(); }
         return;
@@ -2313,6 +2374,7 @@
     // an end of a line moved by the keys among the node's five places, as a drag sets it (user, 2026-11-13): from the
     // centre to the side the arrow points to; from a side, the opposite arrow back to the centre, another to its side
     function portKey(pp, d) {
+      if (pp.hub) return;   // at a process's or gate's port: it goes with the process
       var e = edges2[pp.k], a = pp.end ? ['tx', 'ty'] : ['sx', 'sy'], b = bx(pp.n);
       var c = [b[0] + b[2] / 2, b[1] + b[3] / 2], o = spot(pp, [c[0] + num(e.path, a[0]), c[1] + num(e.path, a[1])]);
       var u = [Math.sign(d[0]), Math.sign(d[1])], s = [Math.sign(o[0]), Math.sign(o[1])], S = procSpots(pp) || hubSides(pp);
