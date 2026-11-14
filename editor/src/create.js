@@ -99,9 +99,12 @@
     // corners, then the top and the sides' other places
     var ORDER = [[0, 0.5], [0.25, 0.5], [-0.25, 0.5], [0.5, 0], [-0.5, 0], [0.5, 0.5], [-0.5, 0.5], [0.5, -0.5], [-0.5, -0.5],
       [0, -0.5], [0.25, -0.5], [-0.25, -0.5], [0.5, 0.25], [-0.5, 0.25], [0.5, -0.25], [-0.5, -0.25]];
+    // a drag lands on the nearest of more places (user, 2026-11-14: "add more snap in between"): each side cut in eighths,
+    // so the corners, the middles, the quarters and the points between; the arrow keys move it by single units (below)
+    var PLACES = (function () { var out = [], k; for (k = -4; k <= 4; k++) { out.push([k / 8, -0.5], [k / 8, 0.5]); if (Math.abs(k) < 4) out.push([-0.5, k / 8], [0.5, k / 8]); } return out; })();
     function border(i, P) {   // the place nearest P
       var b = boxOf(i), best = null, d0 = Infinity;
-      ORDER.forEach(function (q) { var d = Math.hypot(b[0] + (0.5 + q[0]) * b[2] - P[0], b[1] + (0.5 + q[1]) * b[3] - P[1]); if (d < d0) { d0 = d; best = q; } });
+      PLACES.forEach(function (q) { var d = Math.hypot(b[0] + (0.5 + q[0]) * b[2] - P[0], b[1] + (0.5 + q[1]) * b[3] - P[1]); if (d < d0) { d0 = d; best = q; } });
       return best.slice();
     }
     window.m2EditAddState = function () {   // the right-click menu's Add state variable over a macromolecule
@@ -216,15 +219,15 @@
     }
 
     // a state variable selected (user, 2026-11-14): a click selects it, a drag moves it along its node's border, snapping
-    // to the nearest of its places (ORDER) only, its own drawing following; a click on it selected opens its text; Delete or the right-click menu
+    // to the nearest of its places (PLACES) only, its own drawing following; the arrow keys move it by single units; a click on it selected opens its text; Delete or the right-click menu
     // deletes it
-    var svSel = null, svDrag = null;   // svSel: { id, j }
+    var svSel = null, svDrag = null, svKey = null;   // svSel: { id, j }; svKey: a move by the arrow keys under way
     function svNode() { if (!svSel) return -1; var i = nodes2.findIndex(function (n) { return n.id === svSel.id; }); return i >= 0 && svList(i)[svSel.j] ? i : -1; }
     function svMarks(over) {   // four black squares at the corners of the state variable selected (paint, core.js)
       if (typing) typing.place();   // the text field follows a zoom or a pan (user, 2026-11-14: it stayed where it was)
       var i = svNode();
       if (i < 0 || !palOn()) { svSel = null; return; }
-      var q = svList(i)[svSel.j], c = svDrag && svDrag.to ? svDrag.to : q[1], hs = Math.max(2, HANDLE * V.z);
+      var q = svList(i)[svSel.j], c = svDrag && svDrag.to ? svDrag.to : svKey ? svKey.to : q[1], hs = Math.max(2, HANDLE * V.z);
       [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(function (d) {
         over.push('<rect class="m2-ed-handle" x="' + f1(sx(c[0] + d[0] * q[2][0] / 2) - hs / 2) + '" y="' + f1(sy(c[1] + d[1] * q[2][1] / 2) - hs / 2) + '" width="' + f1(hs) + '" height="' + f1(hs) + '"/>');
       });
@@ -293,6 +296,57 @@
       parse(); dirty = true; render(); paint(); changed();
       return true;
     }
+    // the arrow keys move the state variable selected round its node's border by 1 unit, with Shift by 10 (user,
+    // 2026-11-14: "pixel by pixel ... it would move along the border"), free of the places. The key's direction along the
+    // side: on the bottom Right and Down go right, Left and Up go left; a key across the side goes clockwise inward,
+    // anticlockwise outward. A key held keeps its first direction round the corners ("it kind of pushes it all the way").
+    // Drawn live, written once on the key's release (one undo step)
+    var KEYS = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
+    function perim(b) { return 2 * (b[2] + b[3]); }
+    function toT(b, r) {   // a place [rx, ry] on the border as its distance clockwise from the top left corner
+      var w = b[2], h = b[3], dt = Math.abs(r[1] + 0.5) * h, dr = Math.abs(r[0] - 0.5) * w, db = Math.abs(r[1] - 0.5) * h, dl = Math.abs(r[0] + 0.5) * w, m = Math.min(dt, dr, db, dl);
+      if (m === dt) return (r[0] + 0.5) * w;
+      if (m === dr) return w + (r[1] + 0.5) * h;
+      if (m === db) return w + h + (0.5 - r[0]) * w;
+      return 2 * w + h + (0.5 - r[1]) * h;
+    }
+    function fromT(b, t) {
+      var w = b[2], h = b[3], P = perim(b); t = ((t % P) + P) % P;
+      if (t < w) return [t / w - 0.5, -0.5];
+      if (t < w + h) return [0.5, (t - w) / h - 0.5];
+      if (t < 2 * w + h) return [0.5 - (t - w - h) / w, 0.5];
+      return [-0.5, 0.5 - (t - 2 * w - h) / h];
+    }
+    function keyDir(b, t, d) {   // +1 clockwise, -1 anticlockwise; as the arrow points wherever it can (user: "if it's on the side, down would be down")
+      var w = b[2], h = b[3], P = perim(b), sideOf = function (u) { u = ((u % P) + P) % P; return u < w ? 0 : u < w + h ? 1 : u < 2 * w + h ? 2 : 3; };
+      var TAN = [[1, 0], [0, 1], [-1, 0], [0, -1]], OUT = [[0, -1], [1, 0], [0, 1], [-1, 0]];
+      var sides = [sideOf(t), sideOf(t - 0.5), sideOf(t + 0.5)];   // at a corner both its sides: the one the arrow runs along
+      for (var k = 0; k < sides.length; k++) { var a = d[0] * TAN[sides[k]][0] + d[1] * TAN[sides[k]][1]; if (a) return Math.sign(a); }
+      return d[0] * OUT[sides[0]][0] + d[1] * OUT[sides[0]][1] > 0 ? -1 : 1;   // across the side: clockwise inward, anticlockwise outward
+    }
+    document.addEventListener('keydown', function (e) {
+      var d = KEYS[e.key];
+      if (!d || !svSel || !palOn() || e.ctrlKey || e.metaKey || e.altKey || /input|textarea|select/i.test(document.activeElement.tagName)) return;
+      var i = svNode();
+      if (i < 0) return;
+      e.preventDefault(); e.stopImmediatePropagation();
+      var b = boxOf(i), q = svList(i)[svSel.j];
+      if (!svKey) svKey = { i: i, t: toT(b, [(q[1][0] - b[0]) / b[2] - 0.5, (q[1][1] - b[1]) / b[3] - 0.5]), c0: q[1], parts: svParts(i, q) };
+      if (!e.repeat || svKey.key !== e.key) { svKey.key = e.key; svKey.dir = keyDir(b, ((svKey.t % perim(b)) + perim(b)) % perim(b), d); }
+      svKey.t += svKey.dir * (e.shiftKey ? 10 : 1);
+      var r = fromT(b, svKey.t);
+      svKey.r = [Math.round(r[0] * 10000) / 10000, Math.round(r[1] * 10000) / 10000];
+      svKey.to = [b[0] + (0.5 + svKey.r[0]) * b[2], b[1] + (0.5 + svKey.r[1]) * b[3]];
+      var dx = svKey.to[0] - svKey.c0[0], dy = svKey.to[1] - svKey.c0[1];
+      svKey.parts.forEach(function (el) { el.setAttribute('transform', 'translate(' + f1(dx) + ' ' + f1(dy) + ')'); });
+      paint();
+    }, true);
+    document.addEventListener('keyup', function (e) {
+      if (!KEYS[e.key] || !svKey) return;
+      var k = svKey; svKey = null;
+      if (!k.r || !svSel) return;
+      remember(false); text = sbJs.stateMove(text, svSel.id, svSel.j, k.r[0], k.r[1]); parse(); dirty = true; render(); paint(); changed();
+    }, true);
     document.addEventListener('keydown', function (e) {   // Esc, undo, redo and select all leave no state variable selected
       if (svSel && (e.key === 'Escape' || ((e.ctrlKey || e.metaKey) && /^[zya]$/i.test(e.key)))) { svSel = null; paint(); }
     }, true);
