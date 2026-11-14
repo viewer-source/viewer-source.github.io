@@ -13,8 +13,8 @@
     // state variable, or a click on a state variable already selected, opens its text in place, in the glyph's own
     // colours and font (user: "simply make it editable for the text"); Enter or a click elsewhere keeps it, Esc not.
     var PAL = [
-      ['Entity pool nodes', [['macromolecule', 'Macromolecule', '<rect x="6" y="5" width="28" height="14" rx="4"/>'],
-        ['simple chemical', 'Simple chemical', '<circle cx="20" cy="12" r="7.5"/>']]]
+      ['Entity pool nodes', [['macromolecule', 'Macromolecule', '<rect x="2.5" y="6.5" width="19" height="11" rx="3"/>'],
+        ['simple chemical', 'Simple chemical', '<circle cx="12" cy="12" r="7"/>']]]
     ];
     var tool = null;   // { kind, sticky } in hand
     var pal = document.createElement('div');
@@ -22,7 +22,7 @@
     pal.innerHTML = PAL.map(function (s) {
       return '<p>' + s[0] + '</p><div class="m2-ed-prow">' + s[1].map(function (q) {
         return '<button type="button" data-make="' + q[0] + '" title="' + q[1] + ' (click: once; double click: several)" aria-label="' + q[1] + '" aria-pressed="false">' +
-          '<svg viewBox="0 0 40 24" fill="none" stroke="currentColor" aria-hidden="true">' + q[2] + '</svg></button>';
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">' + q[2] + '</svg></button>';
       }).join('') + '</div>';
     }).join('');
     box.querySelector('.m2-ed-tools').insertAdjacentElement('afterend', pal);

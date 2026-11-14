@@ -295,11 +295,11 @@ page, so its styles keep the base they were made on). The looks before (Default 
      tools' grey square, one kept in hand for several (a double click) with a darker edge as well */
   #m2-editwin .m2-ed-palette { margin: 0 0 10px; padding: 0 0 8px; border-bottom: 1px solid var(--m2-frame); }
   #m2-editwin .m2-ed-palette p { margin: 2px 0 2px; font-size: 12px; line-height: 16px; color: var(--m2-text-soft); }
-  #m2-editwin .m2-ed-prow { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 4px; }
-  #m2-editwin .m2-ed-palette button { display: flex; align-items: center; justify-content: center; flex: none; width: 44px; height: 30px; padding: 0; margin: 0; border: 1px solid transparent; border-radius: 4px; background: none; color: #80868b; }   /* the tools' grey (user, 2026-11-14: the signs were darker than the others) */
+  #m2-editwin .m2-ed-prow { display: flex; flex-wrap: wrap; gap: 4px 2px; margin: 0 0 4px; }   /* on the tools' grid (user, 2026-11-14: the palette's signs in the tools' columns): the same button, gap and sign box */
+  #m2-editwin .m2-ed-palette button { display: flex; align-items: center; justify-content: center; flex: none; box-sizing: border-box; width: 32px; height: 32px; padding: 0; margin: 0; border: 1px solid transparent; border-radius: 6px; background: none; color: #80868b; }   /* the tools' grey (user, 2026-11-14: the signs were darker than the others) */
   #m2-editwin .m2-ed-palette button[aria-pressed="true"], #m2-editwin .m2-ed-palette button[aria-pressed="true"]:hover { background: #f1f3f4; color: #70757a; }
   #m2-editwin .m2-ed-palette button.m2-ed-sticky, #m2-editwin .m2-ed-palette button.m2-ed-sticky:hover { border-color: #70757a; }
-  #m2-editwin .m2-ed-palette svg { width: 36px; height: 22px; stroke-width: 1.6; }
+  #m2-editwin .m2-ed-palette svg { width: 21px; height: 21px; stroke-width: 1.6; }
   #m2-view .m2-ed-palghost { position: absolute; z-index: 5; pointer-events: none; } #m2-view .m2-ed-palghost svg { display: block; }   /* the future node dragged from the palette, at its size */
   #m2-view .m2-ed-type { position: absolute; z-index: 5; box-sizing: border-box; margin: 0; padding: 0; border: 0; border-radius: 0; background: #fff; color: #000; text-align: center; font-family: Dialog, Arial, Helvetica, sans-serif; outline: none; box-shadow: none; }   /* the text edited in place, in the glyph's own colours (create.js), no frame (user, 2026-11-14) */
   /* How to edit (user, 2026-11-13: the long how-to took the room tools need): the "?" after the tools opens it as
