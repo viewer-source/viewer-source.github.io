@@ -1424,7 +1424,9 @@
           if (d < bd) { bd = d; best = [S, t, -x * S.u[1] + y * S.u[0]]; }
         });
         var S = best[0], t = best[1], w = best[2];
-        var t1 = t <= 15 || S.L <= 0 ? t : S.L - t <= 15 ? S.L1 - (S.L - t) : t * S.L1 / S.L;
+        var nA = t <= 15, nB = S.L - t <= 15;
+        if (nA && nB) { nA = t <= S.L - t; nB = !nA; }   // a short segment: the nearer end (a line's end 1.5 units from a new bend went with the bend)
+        var t1 = nA || S.L <= 0 ? t : nB ? S.L1 - (S.L - t) : t * S.L1 / S.L;
         return [S.a1[0] + t1 * S.u1[0] - w * S.u1[1], S.a1[1] + t1 * S.u1[1] + w * S.u1[0]];
       };
     }
@@ -1451,6 +1453,39 @@
         return [A1[0] + t * u1[0] - w * u1[1], A1[1] + t * u1[1] + w * u1[0]];
       };
     }
+    // a bend point the renderer's drawing does not have yet (made by grabbing the line in this drag, user 2026-11-14: the
+    // line stayed straight until the release) put into the drawn line where it lies, so follow takes it to its new place.
+    // str: a path's d (M, L, Q, C) or a polyline's points; R: the arc's bend points at rest
+    function withBends(str, R) {
+      var tk = str.match(/[MLQCZ]|-?[\d.]+(?:e-?\d+)?/gi) || [], poly = !/[A-Z]/i.test(str);
+      if (poly) { var q = ['M']; tk.forEach(function (x, i) { if (i > 0 && i % 2 === 0) q.push('L'); q.push(x); }); tk = q; }
+      var segs = [], seen = [], cur = null, N = { M: 2, L: 2, Q: 4, C: 6, Z: 0 };
+      for (var i = 0; i < tk.length;) {
+        var c = tk[i], m = N[c];
+        if (m == null) return str;   // relative or implicit commands: left as drawn
+        var a = tk.slice(i + 1, i + 1 + m).map(Number);
+        for (var j = 0; j + 1 < a.length; j += 2) seen.push([a[j], a[j + 1]]);
+        if (c === 'L' && cur) segs.push({ at: i, a: cur });
+        if (m) cur = [a[m - 2], a[m - 1]];
+        i += 1 + m;
+      }
+      var add = [];
+      R.forEach(function (r) {
+        if (seen.some(function (s) { return Math.hypot(s[0] - r[0], s[1] - r[1]) < 0.5; })) return;
+        segs.some(function (s) {
+          var b = [+tk[s.at + 1], +tk[s.at + 2]], dx = b[0] - s.a[0], dy = b[1] - s.a[1], L = dx * dx + dy * dy;
+          if (!L) return false;
+          var t = ((r[0] - s.a[0]) * dx + (r[1] - s.a[1]) * dy) / L;
+          if (t <= 0 || t >= 1 || Math.hypot(s.a[0] + dx * t - r[0], s.a[1] + dy * t - r[1]) > 1.5) return false;
+          add.push([s.at, t, r]); return true;
+        });
+      });
+      if (!add.length) return str;
+      add.sort(function (x, y) { return y[0] - x[0] || y[1] - x[1]; });   // from the end, so the places before stay
+      add.forEach(function (x) { tk.splice(x[0], 0, 'L', String(x[2][0]), String(x[2][1])); });
+      if (poly) return tk.filter(function (x) { return !/^[ML]$/.test(x); }).reduce(function (s, x, i) { return s + (i % 2 ? ',' : i ? ' ' : '') + x; }, '');
+      return tk.join(' ');
+    }
     function fullLines(ks, pp) {   // ks: the arcs to draw (indices in edges2), pp: a port being dragged
       dropCopies();
       ks.forEach(function (k) {
@@ -1459,6 +1494,7 @@
         var o = line(k, restBox, restPt), n = line(k, null, null, pp);
         if (!o || !n) return;
         var F0 = follow(o, n), pair = function (str, closed) {   // every x y of an attribute taken along, an end's shape whole
+          if (!closed) str = withBends(str, o.slice(1, -1));
           var v = str.match(/-?[\d.]+(?:e-?\d+)?/g) || [], k2 = 0, P = [];
           for (var i = 0; i + 1 < v.length; i += 2) P.push([+v[i], +v[i + 1]]);
           var c = P.reduce(function (s, q) { return [s[0] + q[0] / P.length, s[1] + q[1] / P.length]; }, [0, 0]);
