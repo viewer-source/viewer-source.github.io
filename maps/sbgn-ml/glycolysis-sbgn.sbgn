@@ -665,10 +665,6 @@
       <bbox x="64" y="334" w="80" h="40"/>
       <glyph class="state variable" id="glyph_6_sv0">
         <state value=""/>
-        <bbox x="116.5" y="326.5" w="15" h="15"/>
-      </glyph>
-      <glyph class="state variable" id="glyph_6_sv1">
-        <state value=""/>
         <bbox x="96.5" y="366.5" w="15" h="15"/>
       </glyph>
     </glyph>
