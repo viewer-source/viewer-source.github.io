@@ -528,7 +528,7 @@
         : r[2] === 'num' ? '<input type="number" id="' + id + '" step="any"' + (r[0] === 'width' ? ' min="0.25" max="20"' : ' min="4" max="5000"') + '>'
         : '<input type="text" id="' + id + '" spellcheck="false" autocomplete="off">';
       return '<tr data-k="' + r[0] + '"><th><label for="' + id + '">' + r[1] + '</label></th><td>' + f + '</td></tr>';
-    }).join('') + '<tr class="m2-ed-pstep"><th><label for="m2-ed-step" title="Width and height change in steps of this many units when a node is resized by its handles; Alt or Ctrl held, any size">Size step</label></th>' +
+    }).join('') + '<tr><th><label for="m2-ed-step" title="Width and height change in steps of this many units when a node is resized by its handles; Alt or Ctrl held, any size">Size step</label></th>' +
       '<td><input type="number" id="m2-ed-step" min="1" max="100" step="1"></td></tr></table><button type="button" class="m2-ed-pdef"></button>';
     pal.insertAdjacentElement('afterend', props);
     var inW = props.querySelector('#m2-ed-w'), inH = props.querySelector('#m2-ed-h'), inStep = props.querySelector('#m2-ed-step');
@@ -555,9 +555,11 @@
         if (!all && document.activeElement === f) return;
         if (r[2] === 'check') { f.checked = pNow[r[0]]; return; }
         if (f.value !== pNow[r[0]]) f.value = pNow[r[0]];   // only what changed (it runs with every paint)
-        if (r[2] === 'colour') f.previousElementSibling.value = pNow[r[0]] || '#ffffff';
+        var pk = f.previousElementSibling;
+        if (r[2] === 'colour' && document.activeElement !== pk && pk.value !== (pNow[r[0]] || '#ffffff')) pk.value = pNow[r[0]] || '#ffffff';   // not under a choice being made
       });
-      props.querySelector('.m2-ed-pdef').textContent = 'Set as default for ' + kindOf(i);
+      var dt = 'Set as default for ' + kindOf(i), db = props.querySelector('.m2-ed-pdef');
+      if (db.textContent !== dt) db.textContent = dt;
     }
     [inW, inH].forEach(function (inp, k) {
       inp.addEventListener('change', function () {
@@ -597,23 +599,27 @@
     });
     props.addEventListener('keydown', function (e) {   // Enter keeps the value, Esc takes it back; the map's keys stay out of the fields
       if (e.key === 'Enter') { e.target.blur(); e.preventDefault(); }
-      else if (e.key === 'Escape') { e.target.blur(); propsShow(true); e.preventDefault(); }
+      else if (e.key === 'Escape') { propsShow(true); e.target.blur(); e.preventDefault(); }   // the value put back first, so leaving the field changes nothing
       e.stopPropagation();
     });
     // Set as default (Newt's): the next ones of that kind made from the palette take this node's size, colours, border and
-    // multimer; kept in this browser for every map (atlas-edit-defaults, by kind)
+    // multimer; kept in this browser for every map (atlas-edit-defaults, by kind), the size as a share of the map's own
+    // (sbgn_edit.defaults), so a map drawn at another scale gets it at its scale
     var DEF_KEY = 'atlas-edit-defaults';
     function defsKept() { try { return JSON.parse(localStorage.getItem(DEF_KEY) || '{}') || {}; } catch (e) { return {}; } }
     function defOf(cls) {   // the look a new glyph of that kind gets: the map's (sbgn_edit.defaults), or the one set as default
       var D = sbJs.defaults(src(), null, cls), k = defsKept()[cls];
       D.multimer = false;
-      if (k) ['w', 'h', 'fill', 'line', 'width', 'multimer'].forEach(function (q) { if (q in k) D[q] = k[q]; });
+      if (k) {
+        ['fill', 'line', 'width', 'multimer'].forEach(function (q) { if (q in k) D[q] = k[q]; });
+        if (k.wr > 0 && k.hr > 0) { D.w = Math.round(D.w * k.wr * 100) / 100; D.h = Math.round(D.h * k.hr * 100) / 100; }
+      }
       return D;
     }
     props.querySelector('.m2-ed-pdef').addEventListener('click', function () {
       var i = propNode();
       if (i < 0) return;
-      var o = sbJs.lookOf(realizerOf(nodes2[i].el)), b = boxOf(i), all = defsKept();
-      all[kindOf(i)] = { w: b[2], h: b[3], fill: o.fill, line: o.line, width: o.width, multimer: o.multimer };
+      var o = sbJs.lookOf(realizerOf(nodes2[i].el)), b = boxOf(i), all = defsKept(), D = sbJs.defaults(src(), null, kindOf(i));
+      all[kindOf(i)] = { wr: b[2] / D.w, hr: b[3] / D.h, fill: o.fill, line: o.line, width: o.width, multimer: o.multimer };
       try { localStorage.setItem(DEF_KEY, JSON.stringify(all)); } catch (e) { warn('The default could not be kept in this browser.'); }
     });

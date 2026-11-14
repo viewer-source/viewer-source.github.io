@@ -628,7 +628,7 @@ says "the workbench", "the converter's repository", "a private repository".
   its class use, else a new style keeping its old style's other attributes, colours in the map's colour definitions, a
   render extension made where the file had none. The converter reads every glyph's border colour and width since
   2026-11-14 (user: read for all glyphs; the converter's D27), so Newt's files draw their grey borders.
-  `tests/sbgn-create.js` covers it (fill, border, colours of glyphs made, two sharing one new style).
+  `tests/sbgn-create.js` covers it (fill, border, colours of glyphs made, two sharing one new style), and `tests/sbgn-restyle.js` every shape of render extension (none, other content only, colour definitions without styles, a glyph in two styles, prefixed attributes, an empty map) against the converter; both in Compare renderers. Set as default keeps the size as a share of the map's own (`defaults`), so a map at another scale gets it at its scale.
 - Full screen with tools (user, 2026-11-12: "use more space available on the screen, but with tools"): beside the map's
   own full screen (the map alone), the whole page goes full screen with its list, tools and panel: Shift with the
   full-screen button, or Full screen with tools in the right-click menu (Exit full screen there while on). The

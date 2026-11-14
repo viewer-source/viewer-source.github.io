@@ -398,12 +398,12 @@
         fu.map(function (q, k) { return uiXml(id, k, q[0], uBox(q[0], n.box, k, fu.length), ind0 + '  '); }).join('') + '\n' + ind0 + '</' + pre + 'glyph>';
       if (lk.fill || lk.line || lk.width !== 1) looks.set(id, { fill: lk.fill, line: lk.line, width: lk.width, font: L.main ? F(L.main.getAttribute('fontSize')) : null, cls: cls, fresh: true });
     });
+    var ext = restyle0(S, T, St, looks, pre);   // a render extension written for an empty <map/>: put into it below
     if (fresh) {
       var ms = T.at.get(mapEl);
-      if (!last && ms[2]) T.ed.push([ms[0], ms[1], T.t.slice(ms[0], ms[1] - 2).replace(/\s+$/, '') + '>' + fresh + '\n' + T.indent(mapEl) + '</' + pre + 'map>']);   // an empty <map/>
+      if (!last && ms[2]) T.ed.push([ms[0], ms[1], T.t.slice(ms[0], ms[1] - 2).replace(/\s+$/, '') + '>' + (ext || '') + fresh + '\n' + T.indent(mapEl) + '</' + pre + 'map>']);   // an empty <map/>
       else { var e2 = last ? T.end(last) : ms[1]; T.ed.push([e2, e2, fresh]); }
     }
-    restyle0(S, T, St, looks, pre);
     // the arcs: their bends, then their ends (an end at a port gives the port its place)
     var portAt = {}, newPorts = {}, use = {};
     Object.keys(S.arc).forEach(function (id) {   // which port of a glyph its consumptions (1) and products (2) use in the file
@@ -729,8 +729,9 @@
   // the node's look in the GraphML set to o (fill, line, width: those given)
   function setLook(T, G, id, o) {
     var n = G.node[id], r = n.geo.parentNode, fl = kid(r, 'Fill'), bs = kid(r, 'BorderStyle'), now = lookG(G, id);
-    if ('fill' in o && o.fill !== now.fill && fl) {
-      if (o.fill) { T.set(fl, 'color', o.fill); T.unset(fl, 'hasColor'); } else { T.unset(fl, 'color'); T.set(fl, 'hasColor', 'false'); }
+    if ('fill' in o && o.fill !== now.fill && fl) {   // as graphml.write writes it: color first, or hasColor last
+      var fs0 = T.at.get(fl), tr = fl.getAttribute('transparent') || 'false';
+      T.ed.push([fs0[0], fs0[1], o.fill ? '<y:Fill color="' + o.fill + '" transparent="' + tr + '"/>' : '<y:Fill transparent="' + tr + '" hasColor="false"/>']);
     }
     if ('line' in o && o.line !== now.line && bs) T.set(bs, 'color', o.line || '#000000');
     if ('width' in o && o.width !== now.width && bs) T.set(bs, 'width', repr(o.width));
@@ -747,7 +748,8 @@
   // the looks wanted put into the file's render styles: each glyph out of the styles naming it, into a plain style of its
   // fill, border and font (for a glyph made in the editor, a style with no font as well: the map's own), the one most of
   // the map's glyphs of its class use; else a style made for it, with the attributes of its old style it does not set
-  // (font family, text colour), its colours in the map's colour definitions
+  // (font family, text colour), its colours in the map's colour definitions; a style left naming nothing taken out. Returns
+  // the render extension's text when it is new and the map an empty <map/> (write() puts it in with the glyphs made)
   function restyle0(S, T, St, looks, pre) {
     if (!looks.size) return;
     var lists = new Map(), made = {}, order = [], used = {};
@@ -756,16 +758,16 @@
     Array.prototype.forEach.call(all, function (e) { if (av(e, 'id')) used[av(e, 'id')] = 1; });
     var fresh = function (base) { var k = 1; while (used[base + k]) k++; used[base + k] = 1; return base + k; };
     looks.forEach(function (o, id) {
-      var old = null;
-      St.forEach(function (st) { if (st.plain && st.ids.indexOf(id) >= 0) { old = st; lists.set(st, (lists.get(st) || st.ids.slice()).filter(function (x) { return x !== id; })); } });
+      var old = [];   // every style naming it, in order (a later one's attributes win, as sbgnml.read takes them)
+      St.forEach(function (st) { if (st.plain && st.ids.indexOf(id) >= 0) { old.push(st); lists.set(st, (lists.get(st) || st.ids.slice()).filter(function (x) { return x !== id; })); } });
       var cand = St.filter(function (x) { return x.plain && x.fill === o.fill && (x.line === '#000000' ? null : x.line) === o.line && (x.width || 1) === o.width && (x.font === o.font || (o.fresh && x.font == null)); });
       cand.sort(function (a, b) { return (b.font === o.font) - (a.font === o.font) || cnt(b, o.cls) - cnt(a, o.cls); });
       if (cand[0]) { lists.set(cand[0], (lists.get(cand[0]) || cand[0].ids.slice()).concat(id)); return; }
-      var key = [o.fill, o.line, o.width, o.font, old && !o.fresh ? St.indexOf(old) : -1].join('\u0000');
-      if (!made[key]) { made[key] = { o: o, old: o.fresh ? null : old, ids: [] }; order.push(made[key]); }
+      var key = [o.fill, o.line, o.width, o.font, o.fresh ? '' : old.map(function (x) { return St.indexOf(x); }).join(',')].join('\u0000');
+      if (!made[key]) { made[key] = { o: o, old: o.fresh ? [] : old, ids: [] }; order.push(made[key]); }
       made[key].ids.push(id);
     });
-    lists.forEach(function (ids, st) { T.set(st.el, st.idName, ids.join(' ')); });
+    lists.forEach(function (ids, st) { if (ids.length) T.set(st.el, st.idName, ids.join(' ')); else T.cut(st.el); });   // a style left naming nothing taken out
     if (!order.length) return;
     var lsEl = first('listOfStyles'), lcEl = first('listOfColorDefinitions'), defs = St.defs, mapEl = kids(S.doc.documentElement, 'map')[0];
     var rp = lsEl && lsEl.prefix ? lsEl.prefix + ':' : '', ap = St.some(function (x) { return x.idName.indexOf(':') > 0; }) ? rp : '', bi = lsEl ? T.indent(lsEl) : T.indent(mapEl) + '      ', colours = '', styles = '';
@@ -778,7 +780,7 @@
     };
     order.forEach(function (m) {
       var o = m.o, at = {};
-      if (m.old && m.old.g) Array.prototype.forEach.call(m.old.g.attributes, function (a) { if (!/^(fill|stroke|stroke-width|font-size)$/.test(a.localName || a.name) && !/^xmlns/.test(a.name)) at[a.name] = a.value; });
+      m.old.forEach(function (st) { if (st.g) Array.prototype.forEach.call(st.g.attributes, function (a) { if (!/^(fill|stroke|stroke-width|font-size)$/.test(a.localName || a.name) && !/^xmlns/.test(a.name)) at[a.name] = a.value; }); });
       at[ap + 'stroke'] = cid(o.line || '#000000');
       if (o.fill) at[ap + 'fill'] = cid(o.fill);
       at[ap + 'stroke-width'] = num(o.width);
@@ -793,14 +795,22 @@
       T.ed.push(/^\s*$/.test(T.t.slice(ls + 1, e)) ? [ls, ls, xml] : [e, e, xml + '\n' + T.indent(el)]);
     };
     if (lsEl) { if (colours) into(lcEl, colours); into(lsEl, styles); return; }
-    // a map with no render extension yet: one written, as the converter writes it
     var i0 = T.indent(mapEl) + '  ', R = 'http://www.sbml.org/sbml/level3/version1/render/version1';
+    if (lcEl) {   // colour definitions but no styles yet: a list of styles beside them
+      var lp = lcEl.prefix ? lcEl.prefix + ':' : '';
+      if (colours) into(lcEl, colours);
+      into(lcEl.parentNode, '\n' + T.indent(lcEl) + '<' + lp + 'listOfStyles>' + styles + '\n' + T.indent(lcEl) + '</' + lp + 'listOfStyles>');
+      return;
+    }
+    // a map with no render extension yet: one written, as the converter writes it
     var info = '\n' + i0 + '  <renderInformation xmlns="' + R + '" id="renderInformation">\n' + i0 + '    <listOfColorDefinitions>' + colours + '\n' + i0 + '    </listOfColorDefinitions>\n' +
       i0 + '    <listOfStyles>' + styles + '\n' + i0 + '    </listOfStyles>\n' + i0 + '  </renderInformation>';
     var ext = kids(mapEl, 'extension')[0];
     if (ext) { into(ext, info); return; }
+    var block = '\n' + i0 + '<' + pre + 'extension>' + info + '\n' + i0 + '</' + pre + 'extension>';
+    if (T.at.get(mapEl)[2]) return block;   // an empty <map/>: write() puts it in with the glyphs made
     var notes = kids(mapEl, 'notes')[0], at0 = notes ? T.end(notes) : T.at.get(mapEl)[1];
-    T.ed.push([at0, at0, '\n' + i0 + '<' + pre + 'extension>' + info + '\n' + i0 + '</' + pre + 'extension>']);
+    T.ed.push([at0, at0, block]);
   }
   function drop(t, ids, opt, lost) {   // the file with the glyphs (state variables too) deleted in the editor taken out, and every arc at them; lost: the glyphs that lose a unit of information
     var S = sbgn(t, opt), del = {}, T = null;
