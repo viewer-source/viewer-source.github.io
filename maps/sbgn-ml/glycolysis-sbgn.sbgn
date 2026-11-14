@@ -738,7 +738,7 @@
     <glyph class="simple chemical" id="glyph_15">
       <bbox x="108" y="388" w="40" h="40"/>
     </glyph>
-    <glyph class="macromolecule" id="glyph_16">
+    <glyph class="macromolecule multimer" id="glyph_16">
       <bbox x="40" y="36" w="80" h="40"/>
     </glyph>
     <glyph class="macromolecule" id="glyph_17">
