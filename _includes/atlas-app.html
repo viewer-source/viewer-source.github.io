@@ -2558,6 +2558,12 @@ page, so its styles keep the base they were made on). The looks before (Default 
       if (f === fileName(url.SVG || m.image)) { e.preventDefault(); return saveImage(m, url, 'svg', null, sh); }
       if (f === fileName(url.PNG)) { e.preventDefault(); saveImage(m, url, 'png', a.getBoundingClientRect(), sh); }
     }, true);
+    // the format of the file on screen, from its root element: an SBGN-ML map's edited copy may keep a .xml name (user,
+    // 2026-11-14: an SBGN-ML map offered Download CellDesigner XML)
+    function fileKind(sh) {
+      var head = sh.text.slice(0, 2000);
+      return /<(\w+:)?graphml[\s>]/.test(head) ? 'GraphML' : /<(\w+:)?sbgn[\s>]/.test(head) ? 'SBGN-ML' : /\.graphml$/i.test(sh.file) ? 'GraphML' : 'CellDesigner XML';
+    }
     function fileName(href) { return href ? href.split('/').pop().split(/[?#]/)[0] : ''; }
     function saveAs(href, name) { var a = document.createElement('a'); a.href = href; a.download = name; document.body.appendChild(a); a.click(); a.remove(); }
     function saveBlob(b, name) { var u = URL.createObjectURL(b); saveAs(u, name); setTimeout(function () { URL.revokeObjectURL(u); }, 10000); }
@@ -2631,7 +2637,7 @@ page, so its styles keep the base they were made on). The looks before (Default 
         item(box, isPageFull() ? 'Exit full screen' : 'Full screen with tools', pageFull);
       var src = (m.shownAs ? ['SBGN-ML'] : m.legend === 'celldesigner' ? ['CellDesigner', 'GraphML'] : ['GraphML', 'CellDesigner', 'SBGN-ML']).filter(function (l) { return url[l]; })[0];   // the format the map is drawn from
       var sh = shown(m);   // what is on screen, where it is not the site's: its file under the name the editor read it by
-      if (sh && sh.text && sh.file) item(box, /\.graphml$/i.test(sh.file) ? 'Download GraphML' : 'Download CellDesigner XML', function () { saveBlob(new Blob([sh.text], { type: 'application/xml' }), fileName(sh.file)); });
+      if (sh && sh.text && sh.file) item(box, 'Download ' + fileKind(sh), function () { saveBlob(new Blob([sh.text], { type: 'application/xml' }), fileName(sh.file)); });
       else if (src) link(box, src === 'CellDesigner' ? 'Download CellDesigner XML' : 'Download ' + src, url[src], true);
       // the images as files (user, 2026-11-13): the site's own when it has them, else as the copies make them
       if (!m.imageError && (url.SVG || m.image)) item(box, 'Download SVG', function (r) { saveImage(m, url, 'svg', r, sh); });
