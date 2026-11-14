@@ -431,7 +431,8 @@
       }
       if (!ls) return;
       var child = T.span('<celldesigner:editPoints>', ls[0], ls[1]);
-      if (child) T.put(child[0], child[1], '<celldesigner:editPoints>' + tx + '</celldesigner:editPoints>');
+      if (child && tx) T.put(child[0], child[1], '<celldesigner:editPoints>' + tx + '</celldesigner:editPoints>');
+      else if (child) T.put(child[0], child[1] + (T.t.slice(child[1], child[1] + 1) === '\n' ? 1 : 0), '');   // its last bend point gone: the element goes, as the main line's
       else T.attrs(ls[0], [['editPoints', tx || null]]);
       var c3 = T.span('<celldesigner:connectScheme', ls[0], ls[1]);
       if (c3) directions(T, c3, nb.length + 1);

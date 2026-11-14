@@ -649,8 +649,10 @@ def place(text, gtext):
             if ls is None:
                 continue
             child = T.span(r'<celldesigner:editPoints>', ls[0], ls[1])
-            if child:
+            if child and txt:
                 T.put(child[0], child[1], '<celldesigner:editPoints>%s</celldesigner:editPoints>' % txt)
+            elif child:   # its last bend point gone: the element goes, as the main line's
+                T.put(child[0], child[1] + (1 if T.t[child[1]:child[1] + 1] == '\n' else 0), '')
             else:
                 T.attrs(ls[0], {'editPoints': txt or None})
             c2 = T.span(r'<celldesigner:connectScheme', ls[0], ls[1])
