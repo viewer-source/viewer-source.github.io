@@ -46,6 +46,11 @@ says "the workbench", "the converter's repository", "a private repository".
   for those maps (none shown now).
   "Anchor point" is not one of our words: it stays only where CellDesigner's or MINERVA's own names are quoted
   (menus, XML, function names such as anchorPoint, kept as they are).
+- Architecture and Guide (user, 2026-11-14: the complexity "managed and reviewed"): `/architecture/` (`architecture.html`:
+  the figure, State, Modules, Masters and copies, How a map travels, To be sorted out, Next, the Updated line) and
+  `/guide/` (`guide.html`, an outline with first text, sections marked "to write"), linked to each other and the atlas by
+  `_includes/docs-nav.html`; hidden as the whole site. A module added, moved or split, and each architecture review,
+  updates the architecture page in the same change; a tool for readers gets its line in the guide.
 - The viewer: `_includes/atlas-app.html` (list on the left, the map, its panel, search, downloads row). It never
   knows a map's source format.
 - Two modes (user, 2026-11-08). Presentation, the default: a fixed list for reading and reviewing maps, as a published
