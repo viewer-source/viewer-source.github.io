@@ -82,7 +82,12 @@
   // glyphs deleted in the editor (user, 2026-11-14): their ids kept in a comment at the end of the editor's GraphML, so
   // write() takes them out of the file (a glyph the GraphML lacks is no proof: the converter leaves some out)
   var GONE = /<!-- deleted: ([^>]*?) -->/;
-  function gone(gtext) { var m = gtext.match(GONE); return m ? m[1].split(' ') : []; }
+  function gone(gtext) { var m = gtext.match(GONE); return m ? m[1].split(' ').map(decodeURIComponent) : []; }
+  function goneMark(t, ids) {   // the ids added to the comment (encoded: an id with -- would end the comment)
+    var all = gone(t).concat(ids).filter(function (x, i, a) { return x && a.indexOf(x) === i; });
+    var mark = '<!-- deleted: ' + all.map(function (x) { return encodeURIComponent(x).replace(/-/g, '%2D'); }).join(' ') + ' -->';
+    return GONE.test(t) ? t.replace(GONE, mark) : t.replace(/\s*$/, '\n' + mark + '\n');
+  }
 
   // ---------- the SBGN-ML side, read as sbgnml.read reads it ----------
   function sbgn(t, opt) {
@@ -617,7 +622,7 @@
     styles(S).forEach(function (st) { var k = st.ids.filter(function (i) { return macro[i]; }).length; if (st.fill && st.plain && k > n) { n = k; best = st; } });
     return { w: 80 * s, h: 40 * s, font: best && best.font || Math.round(14 * s + 0.01), fill: best ? best.fill : null };
   }
-  function drop(t, ids, opt) {   // the file with the glyphs deleted in the editor taken out, and every arc at them
+  function drop(t, ids, opt) {   // the file with the glyphs (state variables too) deleted in the editor taken out, and every arc at them
     var S = sbgn(t, opt), del = {}, T = null;
     ids.forEach(function (id) {
       var g = S.glyph[id];
@@ -640,24 +645,27 @@
     T.set(l, 'x', repr((0.5 + rx) * b[2] - F(l.getAttribute('width')) / 2)); T.set(l, 'y', repr((0.5 + ry) * b[3] - F(l.getAttribute('height')) / 2));
     return T.text();
   }
+  // the j-th state variable deleted; opt.sbgn, the SBGN-ML file the GraphML is written into: one of the file's own is
+  // named in the deleted-ids comment by its id, so write() takes out that element and no other (the GraphML holds the
+  // file's remaining state variables first, in the file's order, then those made in the editor)
   function stateDelete(t, id, j, opt) {
     var G = gml(t, opt), l = svLabel(G, id, j);
     if (!l) return t;
-    var T = new Tags(t, G.doc); T.cut(l);
-    return T.text();
+    var T = new Tags(t, G.doc); T.cut(l); t = T.text();
+    var g = opt && opt.sbgn && sbgn(opt.sbgn, opt).glyph[id], del = gone(t);
+    var left = g ? kids(g.el, 'glyph').filter(function (c) { return c.getAttribute('class') === 'state variable' && del.indexOf(c.getAttribute('id')) < 0; }) : [];
+    return j < left.length && left[j].getAttribute('id') ? goneMark(t, [left[j].getAttribute('id')]) : t;
   }
   function remove(t, ids, opt) {   // nodes deleted in the editor's GraphML, with every line at them; their ids kept for write()
     var G = gml(t, opt), T = new Tags(t, G.doc), del = {};
     ids.forEach(function (id) { if (G.node[id]) { del[id] = 1; T.cut(G.node[id].el); } });
     Object.keys(G.edge).forEach(function (k) { var e = G.edge[k]; if (del[e.s] || del[e.t]) T.cut(e.el); });
-    var all = gone(t).concat(Object.keys(del)).filter(function (x, i, a) { return x && a.indexOf(x) === i; }), mark = '<!-- deleted: ' + all.join(' ') + ' -->';
-    t = T.text();
-    return GONE.test(t) ? t.replace(GONE, mark) : t.replace(/\s*$/, '\n' + mark + '\n');
+    return goneMark(T.text(), Object.keys(del));
   }
   function nameable(t, id, opt) { var g = sbgn(t, opt).glyph[id]; return !!g && NAMED.test(g.el.getAttribute('class') || ''); }   // a name the editor may change: one write() carries
   function svText(value, variable) { return (value || '') + (variable ? '@' + variable : ''); }
   var HUB = /process|^(and|or|not|association|dissociation|equivalence)$/;
 
-  var api = { graphml: graphml, write: write, defaults: defaults, add: add, label: label, state: state, stateValue: stateValue, stateMove: stateMove, stateDelete: stateDelete, remove: remove, nameable: nameable };
+  var api = { graphml: graphml, write: write, defaults: defaults, add: add, label: label, state: state, stateValue: stateValue, stateMove: stateMove, stateDelete: stateDelete, remove: remove, gone: gone, nameable: nameable };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.sbgn_edit = api;
 })(typeof self !== 'undefined' ? self : this);

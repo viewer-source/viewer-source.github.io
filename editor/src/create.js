@@ -67,7 +67,7 @@
     }
     function freeId(base) {   // an id neither file has
       var s = src(), i = 1;
-      var used = function (q) { return text.indexOf('"' + q + '"') >= 0 || s.indexOf('"' + q + '"') >= 0 || s.indexOf("'" + q + "'") >= 0; };
+      var del = sbJs.gone(text), used = function (q) { return text.indexOf('"' + q + '"') >= 0 || s.indexOf('"' + q + '"') >= 0 || s.indexOf("'" + q + "'") >= 0 || del.indexOf(q) >= 0; };   // an id deleted earlier is not used again (a draft reopened on an older build would join them)
       while (used(base + i)) i++;
       return base + i;
     }
@@ -212,7 +212,7 @@
     function svNode() { if (!svSel) return -1; var i = nodes2.findIndex(function (n) { return n.id === svSel.id; }); return i >= 0 && svList(i)[svSel.j] ? i : -1; }
     function svMarks(over) {   // four black squares at the corners of the state variable selected (paint, core.js)
       var i = svNode();
-      if (i < 0 || !on || V.current !== map) { svSel = null; return; }
+      if (i < 0 || !palOn()) { svSel = null; return; }
       var q = svList(i)[svSel.j], c = svDrag && svDrag.to ? svDrag.to : q[1], hs = Math.max(2, HANDLE * V.z);
       [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(function (d) {
         over.push('<rect class="m2-ed-handle" x="' + f1(sx(c[0] + d[0] * q[2][0] / 2) - hs / 2) + '" y="' + f1(sy(c[1] + d[1] * q[2][1] / 2) - hs / 2) + '" width="' + f1(hs) + '" height="' + f1(hs) + '"/>');
@@ -220,9 +220,10 @@
     }
     V.view.addEventListener('pointerdown', function (e) {
       if (!palOn() || tool || e.button !== 0 || !editing(e)) return;
-      var P = at(e), q = svAt(P);
-      if (!q) { if (svSel) { svSel = null; paint(); } return; }
-      e.stopImmediatePropagation(); e.preventDefault();
+      var P = at(e), q = svAt(P), h = q && !e.shiftKey && hit(P);
+      if (!q || e.shiftKey || (h && h.p != null) || selE.length) { if (svSel) { svSel = null; paint(); } return; }   // Shift, a bend point there, or a line selected (its end squares): the core's
+      e.stopImmediatePropagation();
+      V.view.focus({ preventScroll: true });
       var again = !!svSel && svSel.id === nodes2[q[0]].id && svSel.j === q[1];
       selN = []; selP = []; selE = []; part = null;
       svSel = { id: nodes2[q[0]].id, j: q[1] };
@@ -231,6 +232,7 @@
     }, true);
     window.addEventListener('pointermove', function (e) {
       if (!svDrag || !svSel) return;
+      if (!e.buttons) { svUp(); return; }   // released outside the window: no sticky hand
       if (!svDrag.to && Math.hypot(e.clientX - svDrag.x, e.clientY - svDrag.y) < 4) return;
       var i = svDrag.i, b = boxOf(i), r = border(i, at(e)), q = svList(i)[svSel.j];
       svDrag.r = r; svDrag.to = [b[0] + (0.5 + r[0]) * b[2], b[1] + (0.5 + r[1]) * b[3]];
@@ -240,16 +242,17 @@
       ghost.style.cssText = 'left:' + (sx(svDrag.to[0]) - w / 2) + 'px;top:' + (sy(svDrag.to[1]) - h / 2) + 'px;width:' + w + 'px;height:' + h + 'px;font-size:' + 10 * V.z + 'px;border-radius:' + h / 2 + 'px';
       paint();
     }, true);
-    window.addEventListener('pointerup', function () {   // capture: the core's own handlers may stop the release on the map
+    window.addEventListener('pointerup', svUp, true);   // capture: the core's own handlers may stop the release on the map
+    function svUp() {
       var d = svDrag; svDrag = null;
       if (ghost) { ghost.remove(); ghost = null; }
       if (!d) return;
       if (d.r && svSel) { remember(false); text = sbJs.stateMove(text, svSel.id, svSel.j, d.r[0], d.r[1]); parse(); dirty = true; render(); paint(); changed(); }
       else if (d.again && svSel) typeIn(svSel.id, svSel.j);   // a click on it selected: its text
-    }, true);
+    }
     function svDelete() {
       if (svNode() < 0) return false;
-      remember(false); text = sbJs.stateDelete(text, svSel.id, svSel.j); svSel = null;
+      remember(false); text = sbJs.stateDelete(text, svSel.id, svSel.j, { sbgn: sb.base }); svSel = null;
       parse(); dirty = true; render(); paint(); changed();
       return true;
     }
@@ -260,6 +263,9 @@
       parse(); dirty = true; render(); paint(); changed();
       return true;
     }
+    document.addEventListener('keydown', function (e) {   // Esc, undo, redo and select all leave no state variable selected
+      if (svSel && (e.key === 'Escape' || ((e.ctrlKey || e.metaKey) && /^[zya]$/i.test(e.key)))) { svSel = null; paint(); }
+    }, true);
     document.addEventListener('keydown', function (e) {
       if ((e.key !== 'Delete' && e.key !== 'Backspace') || !palOn() || /input|textarea|select/i.test(document.activeElement.tagName)) return;
       if (svDelete() || (selN.length && !selP.length && nodesDelete(selN))) { e.preventDefault(); e.stopImmediatePropagation(); }
@@ -273,29 +279,35 @@
       return function () { nodesDelete(selN.indexOf(i) >= 0 ? selN : [i]); };
     };
 
-    // a sign dragged from the palette onto the map (user, 2026-11-14): put where it is dropped
+    // a sign dragged from the palette onto the map (user, 2026-11-14): nothing shown over the panel; over the map the
+    // future node at its own size and the map's zoom follows the pointer, and is put where it is dropped
     var palDrag = null;
     pal.addEventListener('pointerdown', function (e) {
       var b = e.target.closest('button[data-make]');
       if (b && e.button === 0) palDrag = { kind: b.dataset.make, x: e.clientX, y: e.clientY, img: null };
     });
+    function palOver(e) { var r = V.view.getBoundingClientRect(); return e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom; }
     window.addEventListener('pointermove', function (e) {
       if (!palDrag) return;
+      if (!e.buttons) { if (palDrag.img) palDrag.img.remove(); palDrag = null; return; }   // released outside the window
+      if (!palDrag.moved && Math.hypot(e.clientX - palDrag.x, e.clientY - palDrag.y) < 5) return;
+      palDrag.moved = true;
+      if (!palOver(e) || !palOn()) { if (palDrag.img) palDrag.img.hidden = true; return; }
       if (!palDrag.img) {
-        if (Math.hypot(e.clientX - palDrag.x, e.clientY - palDrag.y) < 5) return;
-        palDrag.img = pal.querySelector('button[data-make="' + palDrag.kind + '"] svg').cloneNode(true);
-        palDrag.img.setAttribute('class', 'm2-ed-palghost'); document.body.appendChild(palDrag.img);
+        var D = sbJs.defaults(src());
+        palDrag.img = document.createElement('div'); palDrag.img.className = 'm2-ed-palghost';
+        palDrag.img.style.cssText = 'width:' + D.w * V.z + 'px;height:' + D.h * V.z + 'px;border-radius:' + 10 * V.z + 'px;background:' + (D.fill || '#fff');
+        V.view.appendChild(palDrag.img);
       }
-      palDrag.img.style.left = e.clientX - 18 + 'px'; palDrag.img.style.top = e.clientY - 11 + 'px';
-    });
+      var r = V.view.getBoundingClientRect(), g = palDrag.img;
+      g.hidden = false;
+      g.style.left = (e.clientX - r.left) / V.pz() - g.offsetWidth / 2 + 'px'; g.style.top = (e.clientY - r.top) / V.pz() - g.offsetHeight / 2 + 'px';
+    }, true);
     window.addEventListener('pointerup', function (e) {
       var d = palDrag; palDrag = null;
-      if (!d || !d.img) return;
-      d.img.remove();
-      var r = V.view.getBoundingClientRect();
-      if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom || !palOn()) return;
+      if (!d || !d.moved) return;
+      if (d.img) d.img.remove();
+      if (!palOver(e) || !palOn()) return;
       placedAt = Date.now();
       if (d.kind === 'macromolecule') makeEntity(at(e));
     }, true);
-    ['wheel', 'gesturestart'].forEach(function (k) { V.view.addEventListener(k, function () { if (typing) typing.done(true); }, { capture: true, passive: true }); });   // the box would stand off its node after a zoom
-    window.addEventListener('resize', function () { if (typing) typing.done(true); });

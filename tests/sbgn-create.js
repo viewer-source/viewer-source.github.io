@@ -43,6 +43,10 @@ function glyphs(s) {   // [id, class, box, compartmentRef, has a state variable]
   });
   return out;
 }
+function svOf(s, id) {   // the ids of a glyph's state variables in the file
+  var doc = new DP().parseFromString(s.replace(/^\ufeff/, ''), 'application/xml'), g = Array.prototype.filter.call(doc.getElementsByTagName('glyph'), function (x) { return x.getAttribute('id') === id; })[0];
+  return g ? Array.prototype.filter.call(g.childNodes, function (c) { return c.localName === 'glyph' && c.getAttribute('class') === 'state variable'; }).map(function (c) { return c.getAttribute('id'); }) : [];
+}
 function r3(b) { return b.map(function (v) { return Math.round(v * 1000) / 1000; }); }   // places as the editor writes them (fmt)
 var bases = conv(files), made = [], tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'sbgn-create-')), bad = 0, ran = 0;
 files.forEach(function (f, i) {
@@ -64,11 +68,13 @@ files.forEach(function (f, i) {
   g2 = se.state(g2, 'made1', 'gone', 0.5, 0, opt);
   g2 = se.stateDelete(g2, 'made1', 2, opt);
   if (withSv) g2 = se.stateMove(g2, withSv.id, 0, 0.5, 0.25, opt);
+  var svIds = withSv ? svOf(s, withSv.id) : [];
+  if (svIds.length > 1) g2 = se.stateDelete(g2, withSv.id, 0, { DOMParser: DP, sbgn: s });   // the moved one, not the last: taken out by its id
   var doomed = mac.filter(function (q) { return q.top && q !== mac[0] && q !== withSv; })[0];
   if (doomed) g2 = se.remove(g2, [doomed.id], opt);
   var s2 = se.write(s, g2, opt), p2 = path.join(tmp, i + path.extname(f));
   fs.writeFileSync(p2, s2);
-  made.push({ f: f, s: s, g: g, g2: g2, s2: s2, p2: p2, comp: !!comp, mac: mac[0], withSv: withSv, doomed: doomed });
+  made.push({ f: f, s: s, g: g, g2: g2, s2: s2, p2: p2, comp: !!comp, mac: mac[0], withSv: withSv, doomed: doomed, svIds: svIds });
 });
 var after = conv(made.map(function (m) { return m.p2; }));
 made.forEach(function (m, i) {
@@ -85,7 +91,8 @@ made.forEach(function (m, i) {
   if (m.s2.indexOf('id="made1"') < 0 || m.s2.indexOf('value="P" variable="S12"') < 0 || m.s2.indexOf('text="Made one"') < 0) why.push('made1 not written as made');
   if (m.comp && !/id="made2" compartmentRef="/.test(m.s2)) why.push('made2 not in its compartment');
   if (m.mac && m.s2.indexOf('text="Renamed &amp; &lt;x&gt;"') < 0) why.push('the rename not written');
-  if (m.withSv && m.s2.indexOf('value="Ac"') < 0) why.push('the state variable\'s value not written');
+  if (m.withSv && m.svIds.length < 2 && m.s2.indexOf('value="Ac"') < 0) why.push('the state variable\'s value not written');
+  if (m.svIds.length > 1 && (m.s2.indexOf('id="' + m.svIds[0] + '"') >= 0 || m.svIds.slice(1).some(function (x) { return m.s2.indexOf('id="' + x + '"') < 0; }))) why.push('the wrong state variable deleted');
   if (m.s2.indexOf('value="gone"') >= 0) why.push('a deleted state variable written');
   if (m.doomed && m.s2.indexOf('id="' + m.doomed.id + '"') >= 0) why.push('a deleted macromolecule still in the file');
   if (why.length) { bad++; console.log('DIFFERENT ' + name + ': ' + why.join('; ')); }
