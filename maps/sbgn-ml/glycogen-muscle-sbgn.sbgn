@@ -2392,8 +2392,8 @@
     <arc class="production" id="n1__e19" source="n1__n8.2" target="n1__n5">
       <start x="485.971" y="466"/>
       <next x="485.971" y="483.16"/>
-      <next x="280.642" y="483.16"/>
-      <end x="282.2264573416109" y="404.807"/>
+      <next x="283.642" y="483.16"/>
+      <end x="283.642" y="404.807"/>
     </arc>
     <arc class="catalysis" id="n1__e20" source="n1__n9" target="n1__n14">
       <start x="662.369" y="499.206"/>
