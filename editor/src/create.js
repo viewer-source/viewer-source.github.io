@@ -168,10 +168,12 @@
       inp.type = 'text'; inp.className = 'm2-ed-type'; inp.value = before; inp.spellcheck = false;
       inp.setAttribute('aria-label', j == null ? 'Name' : 'State variable (value, or value@site)');
       // the drawn text hidden while typing, the field itself transparent (user, 2026-11-14: a filled field cut the shape's
-      // rounded corners); before the editor's own drawing is in the page, the field in the glyph's fill
+      // rounded corners); before the editor's own drawing is in the page, the field in the glyph's fill. Whether the
+      // drawing is there, not whether it has text: an empty glyph has no text to hide and still got the filled box (user,
+      // 2026-11-14)
       var hid = textsOf(i, j);
       hid.forEach(function (el) { el.style.visibility = 'hidden'; });
-      inp.style.background = hid.length ? 'transparent' : j == null && fl && fl.getAttribute('hasColor') !== 'false' && fl.getAttribute('color') ? fl.getAttribute('color').slice(0, 7) : '#fff';
+      inp.style.background = gN && gN[nodes2[i].id] ? 'transparent' : j == null && fl && fl.getAttribute('hasColor') !== 'false' && fl.getAttribute('color') ? fl.getAttribute('color').slice(0, 7) : '#fff';
       inp.style.color = lab && lab.getAttribute('textColor') || '#000';
       var place = function () {   // at the glyph in the map's units: again after every zoom or pan (paint), so a pinch keeps it on its glyph
         var st = inp.style;
