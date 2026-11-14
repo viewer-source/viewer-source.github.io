@@ -2005,6 +2005,13 @@
       var pi = h.p;
       return function () { unbend([pi]); };
     };
+    // every bend point of the map taken away at once (user, 2026-11-14: maps from another editor can be so messy that
+    // removing them all and rerouting by hand is quicker than one by one): the right-click menu's Remove all bend points,
+    // anywhere on the map while editing; one undo step
+    window.m2EditAllBends = function () {
+      if (!on || V.current !== map || !points.length) return null;
+      return function () { unbend(points.map(function (p, i) { return i; })); };
+    };
     // a bend point put where the right click was on a line (user, 2026-11-13: "not only remove anchor point, but also
     // add anchor point"; CellDesigner's right click Add Anchor Point): the same new point a drag on the line makes, left
     // in place, the line selected so its points show and the new one is dragged with the next press; one undo step.

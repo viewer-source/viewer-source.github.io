@@ -2639,6 +2639,8 @@ page, so its styles keep the base they were made on). The looks before (Default 
       if (unbend) { item(box, 'Remove bend point', unbend); sep(box); }
       else if (bend) { item(box, 'Add bend point', bend); sep(box); }
       else if (turn) { item(box, turn.label, turn.go); sep(box); }
+      var unbendAll = ed && window.m2EditAllBends && window.m2EditAllBends();   // every bend point of the map (user, 2026-11-14)
+      if (unbendAll) { item(box, 'Remove all bend points', unbendAll); sep(box); }
       // its shortcut beside it, as Apple's and Windows' menus write it (user, 2026-11-13)
       var key = '<span class="m2-cx-key">' + (/Mac|iPhone|iPad|iPod/.test((navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || navigator.userAgent) ? '\u2318E' : 'Ctrl+E') + '</span>';
       if (ed) item(box, 'Switch to viewer', function () { tab('list'); }, key);   // leaving the Edit window ends editing
