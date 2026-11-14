@@ -1954,6 +1954,7 @@
         drag = { port: pp, x: P[0], y: P[1], dx: 0, dy: 0, cx: e.clientX, cy: e.clientY }; mv = null;
         part = { k: pp.k, port: pp }; paint(); return;
       }
+      if (svDown(e, P, h)) return;   // a state variable before its node (create.js)
       // an edge of a compartment, or a handle of one selected: a drag resizes it (user, 2026-11-12: compartments are
       // containers, "resizable manually ... when I simply drag the edge of it"); a bend point or a node there comes first
       var rz = !e.shiftKey && edgeAt(P);

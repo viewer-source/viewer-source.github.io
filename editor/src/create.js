@@ -234,10 +234,11 @@
         over.push('<rect class="m2-ed-handle" x="' + f1(sx(c[0] + d[0] * q[2][0] / 2) - hs / 2) + '" y="' + f1(sy(c[1] + d[1] * q[2][1] / 2) - hs / 2) + '" width="' + f1(hs) + '" height="' + f1(hs) + '"/>');
       });
     }
-    V.view.addEventListener('pointerdown', function (e) {
-      if (!palOn() || tool || e.button !== 0 || !editing(e)) return;
-      var P = at(e), q = svAt(P), h = q && !e.shiftKey && hit(P);
-      if (!q || e.shiftKey || (h && h.p != null) || selE.length) { if (svSel) { svSel = null; paint(); } return; }   // Shift, a bend point there, or a line selected (its end squares): the core's
+    // a press on a state variable (called by the core's press before nodes, user, 2026-11-14: "the state variable ... is on
+    // the top": a click on it selects it, also over its macromolecule, selected or not); true when it takes the press
+    function svDown(e, P, h) {
+      var q = palOn() && !tool ? svAt(P) : null;
+      if (!q || e.shiftKey || (h && h.p != null)) { if (svSel) { svSel = null; paint(); } return false; }   // Shift or a bend point there: the core's
       e.stopImmediatePropagation();
       V.view.focus({ preventScroll: true });
       var again = !!svSel && svSel.id === nodes2[q[0]].id && svSel.j === q[1];
@@ -245,7 +246,8 @@
       svSel = { id: nodes2[q[0]].id, j: q[1] };
       svDrag = { i: q[0], again: again, x: e.clientX, y: e.clientY, to: null, r: null };
       paint();
-    }, true);
+      return true;
+    }
     function textsOf(i, j) {   // the drawn text of node i's name (j null) or of its j-th state variable
       var g = gN && gN[nodes2[i].id];
       if (!g) return [];
