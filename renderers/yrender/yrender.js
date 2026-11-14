@@ -12,7 +12,7 @@
   var NODE_STYLES = new Set(['Macromolecule', 'SimpleChemical', 'Complex', 'Process', 'EmptySet', 'Operator', 'Phenotype', 'Submap',
     'NucleicAcidFeature', 'StateVariable', 'UnitOfInformation', 'UnspecifiedEntity', 'PerturbingAgent']);
   var SHAPES = new Set(['rectangle', 'roundrectangle']);
-  var HUBS = new Set(['Process', 'Operator']), ANTENNA = 0.5, ANTENNA_MIN = 9;   // ports: yrender.py's header
+  var HUBS = new Set(['Process', 'Operator']), ANTENNA = 0.5, ANTENNA_MIN = 9, EQUIV = '\u2261';   // ports: yrender.py's header
   var STYLE_PROPS = new Set(['radius', 'radiusX', 'radiusY', 'mcount']);
   var ARROWS = new Set(['none', 'delta', 'white_delta', 'white_circle', 'white_delta_bar', 't_shape', 'white_diamond']);
   var FONTS = {
@@ -386,7 +386,7 @@
   YMap.prototype.ends = function (e, ar) {   // 'in', 'out' or null at the source and the target (yrender.py's ends)
     var hs = HUBS.has(this.nodes[get(e, 'source')].kind), ht = HUBS.has(this.nodes[get(e, 'target')].kind);
     var bare = get(ar, 'target') === 'none';
-    return [hs ? (!ht && bare && get(ar, 'source') === 'none' ? 'in' : 'out') : null, ht && bare ? 'in' : null];
+    return [hs ? (!ht && bare && get(ar, 'source') === 'none' && !this.nodes[get(e, 'source')].eq ? 'in' : 'out') : null, ht && bare ? 'in' : null];
   };
   YMap.prototype.hubPorts = function () {
     var self = this, ins = Object.create(null), outs = Object.create(null), given = Object.create(null);
@@ -417,6 +417,7 @@
       else if (O.length) { vx = O[0][0] - cx; vy = O[0][1] - cy; }
       else { vx = 1; vy = 0; }
       var gin = given[nid + '\u0000in'], gout = given[nid + '\u0000out'], one, two;
+      if (gin && gout && dist(gin, gout) < 2) gin = gout = undefined;   // both in one place: computed instead
       if (gin || gout) {   // the file's own ports, a missing one mirrored
         one = gin || [2 * cx - gout[0], 2 * cy - gout[1]];
         two = gout || [2 * cx - gin[0], 2 * cy - gin[1]];
@@ -443,6 +444,7 @@
     var c = this.mid(nid), P = this.ports[nid];
     for (var i = 0; i < 2; i++) {
       var dx = P[i][0] - c[0], dy = P[i][1] - c[1];
+      if (dx === 0 && dy === 0) continue;
       var t = Math.min(1, Math.max(0, ((p[0] - c[0]) * dx + (p[1] - c[1]) * dy) / (dx * dx + dy * dy)));
       if (dist(p, [c[0] + t * dx, c[1] + t * dy]) <= 1.5) return true;
     }
@@ -512,7 +514,8 @@
     var url = this.link(node);
     if (url) s = '<a xlink:href="' + esc(url) + '" target="_blank">' + s + '</a>';
     if (this.groups) s = '<g data-n="' + esc(nid) + '">' + s + '</g>';
-    this.nodes[nid] = { geo: [x, y, w, h], polys: outlines.map(function (c) { return polygon(c); }), svg: s, kind: k, stroke: stroke };
+    var eq = k === 'Operator' && kids(r, Y, 'NodeLabel').some(function (lb) { return pyStrip(itertext(lb)) === EQUIV; });
+    this.nodes[nid] = { geo: [x, y, w, h], polys: outlines.map(function (c) { return polygon(c); }), svg: s, kind: k, stroke: stroke, eq: eq };
     this.boxes.push([x, y, w, h]);
     this.order.push(['n', nid]);
     var sub = kid(node, G, 'graph');

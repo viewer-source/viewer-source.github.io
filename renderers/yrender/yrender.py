@@ -59,6 +59,7 @@ NODE_STYLES = {'Macromolecule', 'SimpleChemical', 'Complex', 'Process', 'EmptySe
                'UnspecifiedEntity', 'PerturbingAgent'}
 SHAPES = {'rectangle', 'roundrectangle'}
 HUBS = {'Process', 'Operator'}
+EQUIV = '\u2261'  # the equivalence operator's label in yEd's SBGN palette
 ANTENNA, ANTENNA_MIN = 0.5, 9
 STYLE_PROPS = {'radius', 'radiusX', 'radiusY', 'mcount'}
 ARROWS = {'none', 'delta', 'white_delta', 'white_circle', 'white_delta_bar', 't_shape', 'white_diamond'}
@@ -417,7 +418,7 @@ class Map:
         self.order = []   # paint order: ('n', id), ('e', element), ('block',)
         self.boxes = []   # nodes, node labels and edge bends: the image spans them
         self.read_graph(self.root.find(G + 'graph'), top=True)
-        self.ports = {}   # hub id -> (port one, port two, horizontal, has arcs coming in)
+        self.ports = {}   # hub id -> (port one, port two, has arcs coming in)
         self.hub_ports()
 
     def link(self, el):
@@ -496,7 +497,8 @@ class Map:
         url = self.link(node)
         if url:
             s = f'<a xlink:href="{html.escape(url)}" target="_blank">{s}</a>'
-        self.nodes[nid] = dict(geo=(x, y, w, h), polys=[polygon(c) for c in outlines], svg=s, kind=k, stroke=stroke)
+        eq = k == 'Operator' and any(''.join(lb.itertext()).strip() == EQUIV for lb in r.findall(Y + 'NodeLabel'))
+        self.nodes[nid] = dict(geo=(x, y, w, h), polys=[polygon(c) for c in outlines], svg=s, kind=k, stroke=stroke, eq=eq)
         self.boxes.append((x, y, w, h))
         self.order.append(('n', nid))
         sub = node.find(G + 'graph')
@@ -526,7 +528,8 @@ class Map:
         s, t = e.get('source'), e.get('target')
         hs, ht = self.nodes[s]['kind'] in HUBS, self.nodes[t]['kind'] in HUBS
         bare = ar.get('target') == 'none'
-        at_s = ('in' if not ht and bare and ar.get('source') == 'none' else 'out') if hs else None
+        # (an equivalence gate's output is a plain line too: always its output)
+        at_s = ('in' if not ht and bare and ar.get('source') == 'none' and not self.nodes[s]['eq'] else 'out') if hs else None
         return at_s, 'in' if ht and bare else None
 
     def hub_ports(self):
@@ -567,6 +570,8 @@ class Map:
             else:
                 vx, vy = 1.0, 0.0
             gin, gout = given.get((nid, 'in')), given.get((nid, 'out'))
+            if gin and gout and math.dist(gin, gout) < 2:  # both in one place (a file's slip): computed instead
+                gin = gout = None
             if gin or gout:  # the file's own ports (SBGN-ML's, through the converter), a missing one mirrored
                 one = gin or (2 * cx - gout[0], 2 * cy - gout[1])
                 two = gout or (2 * cx - gin[0], 2 * cy - gin[1])
@@ -600,6 +605,8 @@ class Map:
         c = self.mid(nid)
         for q in self.ports[nid][:2]:
             dx, dy = q[0] - c[0], q[1] - c[1]
+            if dx == 0 and dy == 0:
+                continue
             t = ((p[0] - c[0]) * dx + (p[1] - c[1]) * dy) / (dx * dx + dy * dy)
             t = min(1.0, max(0.0, t))
             if math.dist(p, (c[0] + t * dx, c[1] + t * dy)) <= 1.5:
