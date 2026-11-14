@@ -19,7 +19,7 @@ src: "3ecd5c4f58fabe4d249e5335de902f66fb07424a"
 colours: true
 legend: "celldesigner"
 downloads: [{"label": "CellDesigner", "url": "/downloads/ureacycle-celldesigner.xml"}, {"label": "SVG", "url": "/downloads/ureacycle-celldesigner.svg"}, {"label": "SBML", "url": "/downloads/ureacycle-celldesigner-sbml.xml"}, {"label": "Annotation", "url": "/downloads/ureacycle-celldesigner.csv"}, {"label": "GraphML", "url": "/downloads/ureacycle-celldesigner.graphml"}, {"label": "PNG", "url": "/downloads/ureacycle-celldesigner.png"}, {"label": "SBGN-ML", "url": "/downloads/ureacycle-celldesigner.sbgn"}, {"label": "Newt", "url": "http://web.newteditor.org/?URL=https://viewer-source.github.io/downloads/ureacycle-celldesigner.sbgn"}, {"label": "MINERVA", "url": "https://mreg.elixir-luxembourg.org/minerva/index.html?id=F021-ureacycle"}]
-sbgn: {"image": "/downloads/ureacycle-celldesigner-sbgnml.svg", "annotation": "/atlas-data/ureacycle-celldesigner-sbgnml.json", "width": 1099, "height": 1071, "v": "cf9d12ee22", "file": "/downloads/ureacycle-celldesigner.sbgn"}
+sbgn: {"image": "/downloads/ureacycle-celldesigner-sbgnml.svg", "annotation": "/atlas-data/ureacycle-celldesigner-sbgnml.json", "width": 1099, "height": 1071, "v": "418f0638b5", "file": "/downloads/ureacycle-celldesigner.sbgn"}
 ---
 ## Reactome-Recon connection
 

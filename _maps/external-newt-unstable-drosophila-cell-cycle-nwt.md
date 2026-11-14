@@ -14,7 +14,7 @@ height: 720
 scale: 1
 annotation: "/atlas-data/external-newt-unstable-drosophila-cell-cycle-nwt.json"
 image_error: ""
-v: "7ee9fd067c"
+v: "c93ecbdf27"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/test-maps/sbgn-ml/pd/newt-unstable/drosophila_cell_cycle.nwt"}, {"label": "SVG", "url": "/downloads/external-newt-unstable-drosophila-cell-cycle-nwt.svg"}]

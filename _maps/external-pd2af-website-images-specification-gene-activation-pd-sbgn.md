@@ -14,7 +14,7 @@ height: 540
 scale: 1
 annotation: "/atlas-data/external-pd2af-website-images-specification-gene-activation-pd-sbgn.json"
 image_error: ""
-v: "584a936f6f"
+v: "b71c02ed63"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/test-maps/sbgn-ml/pd/pd2af-website/images/specification/gene_activation/pd.sbgn"}, {"label": "SVG", "url": "/downloads/external-pd2af-website-images-specification-gene-activation-pd-sbgn.svg"}]

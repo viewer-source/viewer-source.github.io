@@ -14,12 +14,12 @@ height: 989
 scale: 1
 annotation: "/atlas-data/phosphoinositides-graphml.json"
 image_error: ""
-v: "3f30052b8e"
+v: "2da253c7fd"
 src: "6a762394c5bd5dfb29ab78143565eecf5ac04973"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "GraphML", "url": "/downloads/phosphoinositides-graphml.graphml"}, {"label": "SVG", "url": "/downloads/phosphoinositides-graphml.svg"}, {"label": "SBML", "url": "/downloads/phosphoinositides-graphml-sbml.xml"}, {"label": "Annotation", "url": "/downloads/phosphoinositides-graphml.csv"}, {"label": "PNG", "url": "/downloads/phosphoinositides-graphml.png"}, {"label": "SBGN-ML", "url": "/downloads/phosphoinositides-graphml.sbgn"}, {"label": "CellDesigner", "url": "/downloads/phosphoinositides-graphml.xml"}, {"label": "Newt", "url": "http://web.newteditor.org/?URL=https://viewer-source.github.io/downloads/phosphoinositides-graphml.sbgn"}, {"label": "MINERVA", "url": "https://mreg.elixir-luxembourg.org/minerva/index.html?id=F009-phosphoinositides"}]
-sbgn: {"image": "/downloads/phosphoinositides-graphml-sbgnml.svg", "annotation": "/atlas-data/phosphoinositides-graphml-sbgnml.json", "width": 739, "height": 990, "v": "2be98f3b9c", "file": "/downloads/phosphoinositides-graphml.sbgn"}
+sbgn: {"image": "/downloads/phosphoinositides-graphml-sbgnml.svg", "annotation": "/atlas-data/phosphoinositides-graphml-sbgnml.json", "width": 739, "height": 990, "v": "0a46dd003f", "file": "/downloads/phosphoinositides-graphml.sbgn"}
 ---
 ## References
 

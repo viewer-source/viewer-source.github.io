@@ -14,7 +14,7 @@ height: 1266
 scale: 1
 annotation: "/atlas-data/carnitine-sbgn.json"
 image_error: ""
-v: "29d88987d8"
+v: "dcad9d4fe9"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/downloads/carnitine-sbgn.sbgn"}, {"label": "SVG", "url": "/downloads/carnitine-sbgn.svg"}]

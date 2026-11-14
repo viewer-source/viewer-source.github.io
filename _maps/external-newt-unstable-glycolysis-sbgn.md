@@ -14,7 +14,7 @@ height: 437
 scale: 1
 annotation: "/atlas-data/external-newt-unstable-glycolysis-sbgn.json"
 image_error: ""
-v: "cabfa103e7"
+v: "78b360cb04"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/test-maps/sbgn-ml/pd/newt-unstable/glycolysis.sbgn"}, {"label": "SVG", "url": "/downloads/external-newt-unstable-glycolysis-sbgn.svg"}]

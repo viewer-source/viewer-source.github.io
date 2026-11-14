@@ -14,12 +14,12 @@ height: 581
 scale: 1
 annotation: "/atlas-data/glutaminase-graphml.json"
 image_error: ""
-v: "4bbf83639b"
+v: "5e3c16368c"
 src: "5d48142a81617ede949c84d03bf069924ebf8ecb"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "GraphML", "url": "/downloads/glutaminase-graphml.graphml"}, {"label": "SVG", "url": "/downloads/glutaminase-graphml.svg"}, {"label": "SBML", "url": "/downloads/glutaminase-graphml-sbml.xml"}, {"label": "Annotation", "url": "/downloads/glutaminase-graphml.csv"}, {"label": "PNG", "url": "/downloads/glutaminase-graphml.png"}, {"label": "SBGN-ML", "url": "/downloads/glutaminase-graphml.sbgn"}, {"label": "CellDesigner", "url": "/downloads/glutaminase-graphml.xml"}, {"label": "Newt", "url": "http://web.newteditor.org/?URL=https://viewer-source.github.io/downloads/glutaminase-graphml.sbgn"}, {"label": "MINERVA", "url": "https://mreg.elixir-luxembourg.org/minerva/index.html?id=F019-glutaminase"}]
-sbgn: {"image": "/downloads/glutaminase-graphml-sbgnml.svg", "annotation": "/atlas-data/glutaminase-graphml-sbgnml.json", "width": 688, "height": 587, "v": "3c43a50c95", "file": "/downloads/glutaminase-graphml.sbgn"}
+sbgn: {"image": "/downloads/glutaminase-graphml-sbgnml.svg", "annotation": "/atlas-data/glutaminase-graphml-sbgnml.json", "width": 688, "height": 587, "v": "6cac517430", "file": "/downloads/glutaminase-graphml.sbgn"}
 ---
 ## Description
 

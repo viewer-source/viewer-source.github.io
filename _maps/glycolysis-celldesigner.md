@@ -19,7 +19,7 @@ src: "b4e3a5f599a8bd5369a85d2fa70b304ce07c347d"
 colours: true
 legend: "celldesigner"
 downloads: [{"label": "CellDesigner", "url": "/downloads/glycolysis-celldesigner.xml"}, {"label": "SVG", "url": "/downloads/glycolysis-celldesigner.svg"}, {"label": "SBML", "url": "/downloads/glycolysis-celldesigner-sbml.xml"}, {"label": "Annotation", "url": "/downloads/glycolysis-celldesigner.csv"}, {"label": "GraphML", "url": "/downloads/glycolysis-celldesigner.graphml"}, {"label": "PNG", "url": "/downloads/glycolysis-celldesigner.png"}, {"label": "SBGN-ML", "url": "/downloads/glycolysis-celldesigner.sbgn"}, {"label": "Newt", "url": "http://web.newteditor.org/?URL=https://viewer-source.github.io/downloads/glycolysis-celldesigner.sbgn"}, {"label": "MINERVA", "url": "https://mreg.elixir-luxembourg.org/minerva/index.html?id=F001-glycolysis"}]
-sbgn: {"image": "/downloads/glycolysis-celldesigner-sbgnml.svg", "annotation": "/atlas-data/glycolysis-celldesigner-sbgnml.json", "width": 1002, "height": 677, "v": "f7707091d6", "file": "/downloads/glycolysis-celldesigner.sbgn"}
+sbgn: {"image": "/downloads/glycolysis-celldesigner-sbgnml.svg", "annotation": "/atlas-data/glycolysis-celldesigner-sbgnml.json", "width": 1002, "height": 677, "v": "c90e695d56", "file": "/downloads/glycolysis-celldesigner.sbgn"}
 ---
 ## References
 

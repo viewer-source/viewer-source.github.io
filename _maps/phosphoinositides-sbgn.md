@@ -14,7 +14,7 @@ height: 988
 scale: 1
 annotation: "/atlas-data/phosphoinositides-sbgn.json"
 image_error: ""
-v: "29b1278660"
+v: "9145033a78"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/downloads/phosphoinositides-sbgn.sbgn"}, {"label": "SVG", "url": "/downloads/phosphoinositides-sbgn.svg"}]

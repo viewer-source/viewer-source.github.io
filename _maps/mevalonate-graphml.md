@@ -14,12 +14,12 @@ height: 779
 scale: 1
 annotation: "/atlas-data/mevalonate-graphml.json"
 image_error: ""
-v: "d970aaf149"
+v: "91895e629c"
 src: "e61bbb1173cb29e9310c539eabde8b279b49569b"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "GraphML", "url": "/downloads/mevalonate-graphml.graphml"}, {"label": "SVG", "url": "/downloads/mevalonate-graphml.svg"}, {"label": "SBML", "url": "/downloads/mevalonate-graphml-sbml.xml"}, {"label": "Annotation", "url": "/downloads/mevalonate-graphml.csv"}, {"label": "PNG", "url": "/downloads/mevalonate-graphml.png"}, {"label": "SBGN-ML", "url": "/downloads/mevalonate-graphml.sbgn"}, {"label": "CellDesigner", "url": "/downloads/mevalonate-graphml.xml"}, {"label": "Newt", "url": "http://web.newteditor.org/?URL=https://viewer-source.github.io/downloads/mevalonate-graphml.sbgn"}, {"label": "MINERVA", "url": "https://mreg.elixir-luxembourg.org/minerva/index.html?id=F003-mevalonate"}]
-sbgn: {"image": "/downloads/mevalonate-graphml-sbgnml.svg", "annotation": "/atlas-data/mevalonate-graphml-sbgnml.json", "width": 1572, "height": 780, "v": "03b7dbc784", "file": "/downloads/mevalonate-graphml.sbgn"}
+sbgn: {"image": "/downloads/mevalonate-graphml-sbgnml.svg", "annotation": "/atlas-data/mevalonate-graphml-sbgnml.json", "width": 1572, "height": 780, "v": "891bea5c86", "file": "/downloads/mevalonate-graphml.sbgn"}
 ---
 <!--Upper mevalonate pathway of eukaryotes, archaea, and eubacteria all begin the same way. The sole carbon feed stock of the pathway is acetyl-CoA. The first step condenses two acetyl-CoA molecules to yield acetoacetyl-CoA. This is followed by a second condensation to form HMG-CoA (3-hydroxy-3- methyl-glutaryl-CoA). Reduction of HMG-CoA yields (R)-mevalonate. These first 3 enzymatic steps are called the upper mevalonate pathway [3,6]. The mevalonate production is regulated by HGMCR. The cartoon is redrawn from Cholesterol biosynthesis pathway [8]. HGMCR becomes inactive by phosphorylation through AMPK heterotrimer [2,5,10]. HGMCR becomes active by dephosphorylation through the catalyst PP2A [1]. The phosphorylation of the AMPK heterotrimer is regulated by LKB1-STRAD-MO25 complex or by CaMMKK [4].  The phosphorylated AMPK binds AMP. The cartoon is redrawn from Activated AMPK stimulates fatty-acid oxidation in muscle [9].-->
 
