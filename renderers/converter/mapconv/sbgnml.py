@@ -235,7 +235,7 @@ def write(diagram, layout='advanced', newt=False):
                 report.say('left out', 'gate %s: label %r is not AND, OR, NOT or %s, left out' % (i, d.labels[:1], EQUIV)); return
         elif d.kind in CLASS:
             cls = CLASS[d.kind] + (' multimer' if d.count > 1 and d.kind in MULTIMER else '')
-            if d.data.get('SBGN class') in DRAWN_AS:
+            if DRAWN_AS.get(d.data.get('SBGN class')) == d.kind:   # only on the glyph it belongs to (changed in yEd: dropped)
                 cls = d.data['SBGN class']
         else:
             report.say('left out', 'node %s: no SBGN glyph for %s, left out' % (i, d.kind)); return
@@ -355,7 +355,8 @@ KIND['perturbing agent'] = 'Phenotype'  # as in CellDesigner
 # SBGN classes our maps draw as another glyph (association and dissociation as the generic process, a perturbing
 # agent as a phenotype), kept as the node property "SBGN class" (user, 2026-11-14: shown as themselves): yrender draws
 # the circles from it, yEd's PerturbingAgent carries the agent in GraphML, and SBGN-ML is written with the class again
-DRAWN_AS = ('association', 'dissociation', 'perturbing agent')  # a submap is read as itself (yEd's Submap, a rectangle)
+DRAWN_AS = {'association': 'Process', 'dissociation': 'Process', 'perturbing agent': 'Phenotype'}  # class: our glyph (a
+# submap is read as itself, yEd's Submap, a rectangle)
 HEAD = {'consumption': None, 'logic arc': None, 'production': 'production', 'catalysis': 'catalysis',
         'inhibition': 'inhibition', 'modulation': 'modulation', 'stimulation': 'stimulation',
         'necessary stimulation': 'trigger'}

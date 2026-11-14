@@ -711,6 +711,9 @@ page, so its styles keep the base they were made on). The looks before (Default 
   // the generic process it keeps hidden beside them (<g class="sbgn-generic">), shown for a map whose entry has 'shapes'
   var GENERIC = false;
   try { GENERIC = localStorage.getItem('atlas-sbgn-shapes') === 'process'; } catch (e) {}
+  function shaped(url) {   // a picture with SBGN's circles (its entry's 'shapes', or its SBGN-ML drawing's): only these change
+    return maps.some(function (m) { return [m, m.sbgn].some(function (e) { return e && e.shapes && url.indexOf(e.image) === 0; }); });
+  }
   function recolour(svg) {   // the scheme's style and the generic process, put into the picture's text
     var css = (SCHEME === 'file' ? '' : schemeCss(SCHEMES[SCHEME])) +
       (GENERIC ? '.sbgn-association,.sbgn-dissociation{display:none}.sbgn-generic{display:inline}' : '');
@@ -742,7 +745,7 @@ page, so its styles keep the base they were made on). The looks before (Default 
   var got = {}, queue = [], busy = 0;
   function picture(url) {
     // a map's picture in a colour scheme: its text with the scheme's style, shown from a blob
-    var src = (SCHEME !== 'file' || GENERIC) && isMapPicture(url) ? fetch(url).then(function (r) { if (!r.ok) throw r.status; return r.text(); })
+    var src = (SCHEME !== 'file' || GENERIC && shaped(url)) && isMapPicture(url) ? fetch(url).then(function (r) { if (!r.ok) throw r.status; return r.text(); })
       .then(function (t) { return URL.createObjectURL(new Blob([recolour(t)], { type: 'image/svg+xml' })); }) : Promise.resolve(url);
     return src.then(decoded);
   }
@@ -1030,6 +1033,7 @@ page, so its styles keep the base they were made on). The looks before (Default 
     });
   });
   // Source: the list made again from the site's list, the map on screen drawn from the other source where it is
+  function shapesRow() { var hb = document.querySelector('.m2-set-shapes'); if (hb) hb.style.display = current && current.shapes ? '' : 'none'; }
   function sourceRow() { var sb = document.querySelector('.m2-set-source'); if (sb) sb.style.display = current && current.sbgn ? '' : 'none'; }
   function setSource(v) {
     if (v === SOURCE || !siteList || grid.classList.contains('m2-editing')) return;
@@ -1058,7 +1062,7 @@ page, so its styles keep the base they were made on). The looks before (Default 
     document.getElementById('m2-set-size').value = SIZES.indexOf(SIZE);
     document.querySelectorAll('#m2-set-colours button').forEach(function (b) { b.classList.toggle('m2-on', b.dataset.colours === SCHEME); });
     var cb = document.querySelector('.m2-set-colours'); if (cb) cb.style.display = current && current.colours ? '' : 'none';
-    var hb = document.querySelector('.m2-set-shapes'); if (hb) hb.style.display = current && current.shapes ? '' : 'none';
+    shapesRow();
     document.querySelectorAll('#m2-set-shapes button').forEach(function (b) { b.classList.toggle('m2-on', (b.dataset.shapes === 'process') === GENERIC); });
     document.querySelectorAll('#m2-set-source button').forEach(function (b) { b.classList.toggle('m2-on', b.dataset.source === SOURCE); });
     sourceRow();
@@ -2290,7 +2294,7 @@ page, so its styles keep the base they were made on). The looks before (Default 
     document.getElementById('m2-draft').hidden = !(kp && kp.draft);
     nudge(m, kp);
     var cb = document.querySelector('.m2-set-colours'); if (cb) cb.style.display = m.colours ? '' : 'none';
-    sourceRow();
+    sourceRow(); shapesRow();
     if (ed) ed.left(m);
     document.getElementById('m2-title').textContent = m.title;
     document.title = m.title + ' – {{ include.name }}';

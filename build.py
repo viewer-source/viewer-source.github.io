@@ -219,10 +219,11 @@ def drawn(name, nodes, extra=b''):
     svg = os.path.join(ROOT, 'downloads', name + '.svg')
     ann = os.path.join(ROOT, 'atlas-data', name + '.json')
     json.dump({'nodes': nodes}, open(ann, 'w', encoding='utf-8'), ensure_ascii=False, separators=(',', ':'))
-    w, h = (int(float(v)) for v in re.search(r'<svg[^>]* width="([\d.]+)" height="([\d.]+)"', open(svg).read()).groups())
+    text = open(svg, encoding='utf-8').read()
+    w, h = (int(float(v)) for v in re.search(r'<svg[^>]* width="([\d.]+)" height="([\d.]+)"', text).groups())
     v = hashlib.sha1(open(svg, 'rb').read() + open(ann, 'rb').read() + extra).hexdigest()[:10]
     return dict({'image': '/downloads/%s.svg' % name, 'annotation': '/atlas-data/%s.json' % name, 'width': w, 'height': h, 'v': v},
-                **({'shapes': True} if 'class="sbgn-generic"' in open(svg).read() else {}))   # association or dissociation drawn
+                **({'shapes': True} if 'class="sbgn-generic"' in text else {}))   # association or dissociation drawn
 
 
 def sbgnml(src, name, body):
@@ -373,6 +374,8 @@ def main():
               'legend': 'sbgn' if ext == '.graphml' else 'celldesigner',  # the legend the Legend window opens on
               'downloads': [{'label': 'GraphML' if ext == '.graphml' else 'CellDesigner', 'url': '/downloads/%s%s' % (mid, ext)},
                             {'label': 'SVG', 'url': '/downloads/%s.svg' % mid}]}
+        if d.get('shapes'):
+            fm['shapes'] = True
         fm['downloads'] += extra(mid, meta)
         sb = sorted(glob.glob(os.path.join(ROOT, 'maps', 'extra', mid, '*.sbgn')))
         if sb:

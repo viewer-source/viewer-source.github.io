@@ -147,8 +147,11 @@ def read(path):
             dashed=border is not None and border.get('type') != 'line',
             font=float(l.get('fontSize')) if l is not None and l.get('fontSize') else None,  # kept on conversion (user, 2026-10-28)
             small=next((float(f) for f in map(small, labs[1:]) if f), None))
+        cls = nodes[n.get('id')].data
         if agent:
-            nodes[n.get('id')].data['SBGN class'] = 'perturbing agent'
+            cls['SBGN class'] = 'perturbing agent'
+        elif cls.get('SBGN class') == 'perturbing agent':  # the glyph changed in yEd: its shape decides
+            del cls['SBGN class']
     ovals(nodes)
     for d in nodes.values():
         if d.kind != 'Compartment':
