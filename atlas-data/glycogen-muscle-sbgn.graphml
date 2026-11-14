@@ -1329,7 +1329,7 @@ glucose (N:n+1)<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelMod
           </data>
         <data key="d1">INS</data><data key="d2">HGNC:6081</data><data key="d3">P01308</data></node></graph></node><node id="n1__n8"><data key="ng">
         <y:GenericNode configuration="com.yworks.sbgn.Process">
-          <y:Geometry height="18.0" width="18.0" x="476.971" y="440.145"/>
+          <y:Geometry height="18.0" width="18.0" x="476.971" y="447.206"/>
           <y:Fill color="#FFFFFF" transparent="false"/>
           <y:BorderStyle color="#000000" type="line" width="1.0"/>
           <y:NodeLabel alignment="center" autoSizePolicy="content" bottomInset="0" fontFamily="Dialog" fontSize="14" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" hasText="false" height="4.0" horizontalTextPosition="center" iconTextGap="4" leftInset="0" modelName="custom" rightInset="0" textColor="#000000" topInset="0" verticalTextPosition="center" visible="true" width="0.0" x="9.0" y="7.0"><y:LabelModel>
@@ -2664,7 +2664,7 @@ glucose (N:n+1)<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelMod
     <edge id="n1__e19" source="n1__n8" target="n1__n5">
       <data key="eg">
         <y:PolyLineEdge>
-          <y:Path sx="0.0" sy="18.0" tx="0.0" ty="0.0"><y:Point x="485.971" y="483.16"/><y:Point x="280.642" y="483.16"/></y:Path>
+          <y:Path sx="0.0" sy="18.0" tx="0.0" ty="0.0"><y:Point x="485.971" y="483.16"/><y:Point x="283.642" y="483.16"/></y:Path>
           <y:LineStyle color="#000000" type="line" width="1.0"/>
           <y:Arrows source="none" target="delta"/>
           <y:BendStyle smoothed="false"/>
