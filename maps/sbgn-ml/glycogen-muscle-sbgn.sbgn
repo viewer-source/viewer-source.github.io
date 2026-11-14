@@ -2386,8 +2386,8 @@
       <end x="424.971" y="334.807"/>
     </arc>
     <arc class="consumption" id="n1__e18" source="n1__n7" target="n1__n8.1">
-      <start x="546.971" y="373.1676"/>
-      <next x="596" y="404"/>
+      <start x="485.971" y="432.807"/>
+      <next x="485.971" y="429.992"/>
       <end x="485.971" y="431.145"/>
     </arc>
     <arc class="production" id="n1__e19" source="n1__n8.2" target="n1__n5">
