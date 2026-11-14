@@ -382,14 +382,14 @@
     Object.keys(olds).forEach(function (rid) {
       var r = olds[rid];
       if (!r) return;
-      var todo = [], here = new Set([r.ra, r.pa]);
-      r.mods.forEach(function (m) { here.add(m.alias); });
-      r.links.forEach(function (l) { here.add(l.alias); });
-      var want = function (eid, j, old, kind, n, el) { var g = ends.get(eid), a = g ? g[j] : null; if (a && a !== old && d.alias.has(a) && !here.has(a)) todo.push([kind, old, a, n, el]); };
-      want(rid + '|a', 0, r.ra, 'baseReactant', 0, null);
-      want(rid + (r.glyph ? '|b' : '|a'), 1, r.pa, 'baseProduct', 0, null);
-      r.mods.forEach(function (m) { want(rid + '|m' + m.n, 0, m.alias, 'modification', m.n, m.el); });
-      r.links.forEach(function (l) { want(rid + '|' + (l.into ? 'r' : 'p') + l.n, l.into ? 0 : 1, l.alias, l.into ? 'reactantLink' : 'productLink', l.n, null); });
+      // the reaction's ends: [edge, end, alias in the file, kind, n, el]; an end may move onto an alias none of the
+      // reaction's other ends has as the GraphML now stands (one freed by an earlier move is free: the review of V4)
+      var all = [[rid + '|a', 0, r.ra, 'baseReactant', 0, null], [rid + (r.glyph ? '|b' : '|a'), 1, r.pa, 'baseProduct', 0, null]]
+        .concat(r.mods.map(function (m) { return [rid + '|m' + m.n, 0, m.alias, 'modification', m.n, m.el]; }))
+        .concat(r.links.map(function (l) { return [rid + '|' + (l.into ? 'r' : 'p') + l.n, l.into ? 0 : 1, l.alias, l.into ? 'reactantLink' : 'productLink', l.n, null]; }));
+      var now = all.map(function (q) { var g = ends.get(q[0]), a = g ? g[q[1]] : null; return a && a !== q[2] && d.alias.has(a) ? a : q[2]; });
+      var todo = [];
+      all.forEach(function (q, i) { if (now[i] !== q[2] && !now.some(function (b, k) { return k !== i && b === now[i]; })) todo.push([q[3], q[2], now[i], q[4], q[5]]); });
       if (!todo.length) return;
       var s = T.span('<reaction [^>]*\\bid="' + reEscape(rid) + '"'), gone = new Set();
       todo.forEach(function (q) {

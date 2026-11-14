@@ -33,6 +33,10 @@
     var s = String(v);
     return /[.e]/.test(s) ? s : s + '.0';
   }
+  // an attribute's value as XML text (an id may hold & < > ")
+  function esc(v) { return String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+  // the element before el among its parent's children (the start before an arc's first next)
+  function prevEl(el) { var p = el.previousSibling; while (p && p.nodeType !== 1) p = p.previousSibling; return p; }
   // a number written into the SBGN-ML file: four places at most, as short as it goes
   function num(v) { var r = Math.round(v * 10000) / 10000; return String(r === 0 ? 0 : r); }
 
@@ -47,6 +51,7 @@
     for (var i = 0; i < all.length; i++) this.at.set(all[i], list[i]);
   }
   Tags.prototype.set = function (el, k, v) {   // the attribute's value, added before the tag's end when missing
+    v = esc(v);
     var s = this.at.get(el), tag = this.t.slice(s[0], s[1]), re = new RegExp('(\\s' + k.replace(/[.:]/g, '\\$&') + '\\s*=\\s*)("[^"]*"|\'[^\']*\')'), m = tag.match(re);
     if (m) { var from = s[0] + m.index + m[1].length; this.ed.push([from, from + m[2].length, '"' + v + '"']); }
     else { var end = s[1] - (s[2] ? 2 : 1); this.ed.push([end, end, ' ' + k + '="' + v + '"']); }
@@ -233,7 +238,7 @@
         if (nx.length) {
           var ind = '\n' + T.indent(nx[0]);
           var from = T.at.get(nx[0])[0];
-          if (!out.length) from = T.t.lastIndexOf('\n', from - 1);   // all taken out: their lines go
+          if (!out.length) from = T.end(prevEl(nx[0]));   // all taken out: from the tag before them (a one-line file too: the review of V4)
           T.ed.push([from, T.end(nx[nx.length - 1]), out.join(ind)]);
         } else {
           var en = kid(a, 'end'), at0 = en ? T.at.get(en)[0] : T.end(kid(a, 'start'));
@@ -310,7 +315,7 @@
       var g = S.glyph[gid], P = newPorts[gid], c = centre(G.node[gid].box);
       P[1] = P[1] || [2 * c[0] - P[2][0], 2 * c[1] - P[2][1]]; P[2] = P[2] || [2 * c[0] - P[1][0], 2 * c[1] - P[1][1]];
       var ind = '\n' + T.indent(g.bbox), e = T.end(g.bbox);
-      T.ed.push([e, e, [1, 2].map(function (k) { return ind + '<' + (g.el.prefix ? g.el.prefix + ':' : '') + 'port id="' + newId(gid, k) + '" x="' + num(P[k][0]) + '" y="' + num(P[k][1]) + '"/>'; }).join('')]);
+      T.ed.push([e, e, [1, 2].map(function (k) { return ind + '<' + (g.el.prefix ? g.el.prefix + ':' : '') + 'port id="' + esc(newId(gid, k)) + '" x="' + num(P[k][0]) + '" y="' + num(P[k][1]) + '"/>'; }).join('')]);
     });
     // a process's orientation, where the file gives one, follows its ports
     Object.keys(S.glyph).forEach(function (gid) {
