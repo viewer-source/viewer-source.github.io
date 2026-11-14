@@ -279,8 +279,9 @@
       return function () { nodesDelete(selN.indexOf(i) >= 0 ? selN : [i]); };
     };
 
-    // a sign dragged from the palette onto the map (user, 2026-11-14): nothing shown over the panel; over the map the
-    // future node at its own size and the map's zoom follows the pointer, and is put where it is dropped
+    // a sign dragged from the palette onto the map (user, 2026-11-14): the future node at its own size and the map's zoom
+    // follows the pointer inside the map window only, so over the panel it is hidden behind it and slides in as it nears
+    // the map ("as if it is already on the map ... behind the panel"); it is put where it is dropped
     var palDrag = null;
     pal.addEventListener('pointerdown', function (e) {
       var b = e.target.closest('button[data-make]');
@@ -292,8 +293,8 @@
       if (!e.buttons) { if (palDrag.img) palDrag.img.remove(); palDrag = null; return; }   // released outside the window
       if (!palDrag.moved && Math.hypot(e.clientX - palDrag.x, e.clientY - palDrag.y) < 5) return;
       palDrag.moved = true;
-      if (!palOver(e) || !palOn()) { if (palDrag.img) palDrag.img.hidden = true; return; }
-      if (!palDrag.img) {
+      if (!palOn()) { if (palDrag.img) palDrag.img.hidden = true; return; }
+      if (!palDrag.img) {   // in the map window from the start, so it slides in from behind the panel as it nears the map (user, 2026-11-14)
         var D = sbJs.defaults(src());
         palDrag.img = document.createElement('div'); palDrag.img.className = 'm2-ed-palghost';
         palDrag.img.style.cssText = 'width:' + D.w * V.z + 'px;height:' + D.h * V.z + 'px;border-radius:' + 10 * V.z + 'px;background:' + (D.fill || '#fff');

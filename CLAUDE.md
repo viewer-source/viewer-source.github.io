@@ -542,7 +542,7 @@ says "the workbench", "the converter's repository", "a private repository".
   line, grouped by SBGN's names (Entity pool nodes), shown only with Settings, Editing on Full and, for now, on SBGN-ML
   maps. A click on a sign takes it for one use (the next click on the map places it, then the sign lets go); a double
   click keeps it in hand for several in a row (user: "this tool stick to your hand"), marked by a darker edge, until the
-  sign is clicked again or Esc; a sign dragged onto the map is put where it is dropped; the pointer stays the plain arrow
+  sign is clicked again or Esc; a sign dragged onto the map is put where it is dropped, the future node at its size following the pointer inside the map window only, so it slides in from behind the panel; the pointer stays the plain arrow
   (user: no cross); a drag on the map still moves it. A macromolecule at the map's protein size and its proteins' render
   style, centred on the click (on the grid with Snap), in the innermost compartment there, not into a complex, unnamed:
   nothing asks for a name when made (user: "I will name when I want to name"). State variables (user, the same day:
