@@ -27,6 +27,12 @@ says "the workbench", "the converter's repository", "a private repository".
     visual_end (the node's label icons of state variables and units of information), cdrender's extras and enter (its
     residue circles, structural state ellipses, unit of information box); a CellDesigner reaction's square is placed
     from the ends cut at the shape alone, and only then its visual ends cut, so no reaction moves.
+  - **behind its own nodes** (user, 2026-11-14: an antenna's tip or a bend point inside a complex drew the line across the
+    complex to its middle): a line is drawn from where it first leaves its source's shape to where it last enters its
+    target's, so the part inside either is behind it; an antenna whose tip lies inside a node joined at that port stops on
+    that node's outline, and the arc from that port runs along it between the two outlines (a product keeps its
+    arrowhead, which may then lie over the process when the product is closer than an arrowhead's length). yrender only
+    (behind, stick_end); cdrender's lines start at CellDesigner's ports on the outline. Nodes inside one another as before.
 - Our own drawing (user, 2026-11-14: "go with our own clean visualization, even if the original editor does it kind of
   wrong"): a map's file (CellDesigner, GraphML, SBGN-ML) is the source of what is drawn and where things are attached;
   how it looks is ours, the same rules for every format, never a copy of the editor that made it. Nothing of the
