@@ -33,7 +33,8 @@
 #    was drawn). Port two: where every other arc leaving the hub starts (a product, a gate's output; with nothing
 #    coming in, each takes the nearer port: reversible). The axis runs from the mean of the arcs' near points coming
 #    in to that of those going out (with nothing coming in, along the leaving arcs' spread), horizontal unless
-#    steeper, as the converter puts SBGN-ML's ports. Bends lying on a stick (the bend points that drew antennas
+#    steeper, as the converter puts SBGN-ML's ports; ports the map gives (an arc's end outside the glyph, as the
+#    converter keeps SBGN-ML's own: each tool's antenna length, user 2026-11-14) are drawn where they are. Bends lying on a stick (the bend points that drew antennas
 #    before) are left out; modifiers end on the glyph's outline as before; arc labels keep yEd's anchor point
 #  - UnspecifiedEntity drawn as an ellipse, dashed lines as dashes 6 and gaps 2 times the line width
 #    (2026-10-27; checked against a yEd export: same shapes)
@@ -530,19 +531,22 @@ class Map:
 
     def hub_ports(self):
         # the two ports of every process and gate (the header's ports), their sticks put beside the glyph
-        ins, outs = {}, {}
+        ins, outs, given = {}, {}, {}
         for item in self.order:
             if item[0] != 'e':
                 continue
             e = item[1][0]; pl = self.polyline(e); s, t = e.get('source'), e.get('target')
             if pl is None or s not in self.nodes or t not in self.nodes:
                 continue
-            bends = [(float(q.get('x')), float(q.get('y'))) for q in pl.find(Y + 'Path').findall(Y + 'Point')]
+            path = pl.find(Y + 'Path')
+            bends = [(float(q.get('x')), float(q.get('y'))) for q in path.findall(Y + 'Point')]
             at_s, at_t = self.ends(e, pl.find(Y + 'Arrows'))
             if at_t == 'in':
                 ins.setdefault(t, []).append(bends[-1] if bends else self.mid(s))
+                self.given(given, t, 'in', path, 'tx', 'ty')
             if at_s:
                 (ins if at_s == 'in' else outs).setdefault(s, []).append(bends[0] if bends else self.mid(t))
+                self.given(given, s, at_s, path, 'sx', 'sy')
         def mean(q):  # added in order (not sum(), which compensates since Python 3.12): as yrender.js adds
             sx = sy = 0.0
             for p in q:
@@ -562,15 +566,20 @@ class Map:
                 vx, vy = O[0][0] - cx, O[0][1] - cy
             else:
                 vx, vy = 1.0, 0.0
-            hz = abs(vx) >= abs(vy)
-            k = 1 if (vx if hz else vy) >= 0 else -1
-            side = w if hz else h
-            r = side / 2 + max(ANTENNA * side, ANTENNA_MIN)
-            one, two = ((cx - k * r, cy), (cx + k * r, cy)) if hz else ((cx, cy - k * r), (cx, cy + k * r))
-            self.ports[nid] = (one, two, hz, nid in ins, r)
+            gin, gout = given.get((nid, 'in')), given.get((nid, 'out'))
+            if gin or gout:  # the file's own ports (SBGN-ML's, through the converter), a missing one mirrored
+                one = gin or (2 * cx - gout[0], 2 * cy - gout[1])
+                two = gout or (2 * cx - gin[0], 2 * cy - gin[1])
+            else:
+                hz = abs(vx) >= abs(vy)
+                k = 1 if (vx if hz else vy) >= 0 else -1
+                side = w if hz else h
+                r = side / 2 + max(ANTENNA * side, ANTENNA_MIN)
+                one, two = ((cx - k * r, cy), (cx + k * r, cy)) if hz else ((cx, cy - k * r), (cx, cy + k * r))
+            self.ports[nid] = (one, two, nid in ins)
             st = n['stroke']
             col, wa = (st[0], f' stroke-width="{num(st[1])}"' if st[1] != 1 else '') if st else ('#000000', '')
-            e1, e2 = ((cx - k * side / 2, cy), (cx + k * side / 2, cy)) if hz else ((cx, cy - k * side / 2), (cx, cy + k * side / 2))
+            e1, e2 = clip(one, (cx, cy), n['polys']), clip(two, (cx, cy), n['polys'])
             # two sticks, not one line under the glyph: a glyph without fill (SBGN-ML's) would show it through
             ant = (f'<path d="M{num(one[0])} {num(one[1])} L{num(e1[0])} {num(e1[1])} M{num(e2[0])} {num(e2[1])}'
                    f' L{num(two[0])} {num(two[1])}" fill="none"{ink("stroke", col)}{wa}/>')
@@ -578,11 +587,24 @@ class Map:
             n['svg'] = re.sub(r'^(<g data-n="[^"]*">)', lambda m: m.group(1) + ant, n['svg']) if n['svg'].startswith('<g data-n="') else ant + n['svg']
             self.boxes += [(one[0], one[1], 0, 0), (two[0], two[1], 0, 0)]
 
+    def given(self, given, nid, side, path, ax, ay):
+        # an arc's end the map puts outside the hub's glyph is that port, the first one found
+        # (more than half a pixel outside its box: yEd's maps end some arcs on the outline)
+        x, y, w, h = self.nodes[nid]['geo']
+        ox, oy = float(path.get(ax)), float(path.get(ay))
+        if (nid, side) not in given and (abs(ox) > w / 2 + 0.5 or abs(oy) > h / 2 + 0.5):
+            given[(nid, side)] = (x + w / 2 + ox, y + h / 2 + oy)
+
     def on_stick(self, nid, p):
-        # a bend on one of the hub's sticks (or inside it): the stick draws it now
-        (one, two, hz, _, r), (cx, cy) = self.ports[nid], self.mid(nid)
-        along, across = (p[0] - cx, p[1] - cy) if hz else (p[1] - cy, p[0] - cx)
-        return abs(across) <= 1.5 and abs(along) <= r
+        # a bend within 1.5 px of the line from the hub's centre to one of its ports: the stick draws it now
+        c = self.mid(nid)
+        for q in self.ports[nid][:2]:
+            dx, dy = q[0] - c[0], q[1] - c[1]
+            t = ((p[0] - c[0]) * dx + (p[1] - c[1]) * dy) / (dx * dx + dy * dy)
+            t = min(1.0, max(0.0, t))
+            if math.dist(p, (c[0] + t * dx, c[1] + t * dy)) <= 1.5:
+                return True
+        return False
 
     def edge_svg(self, e, parent):
         where = 'edge ' + e.get('id')
@@ -612,7 +634,7 @@ class Map:
         if at_s:  # a consumption drawn from the process: port one; leaving: port two (nothing coming in: the nearer)
             while len(pts) > 2 and self.on_stick(s_id, pts[1]):
                 del pts[1]
-            one, two, _, has_in, _ = self.ports[s_id]
+            one, two, has_in = self.ports[s_id]
             pts[0] = one if at_s == 'in' else two if has_in or math.dist(two, pts[1]) <= math.dist(one, pts[1]) else one
         else:
             pts[0] = clip(pts[1], pts[0], S['polys'])

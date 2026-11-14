@@ -389,16 +389,17 @@
     return [hs ? (!ht && bare && get(ar, 'source') === 'none' ? 'in' : 'out') : null, ht && bare ? 'in' : null];
   };
   YMap.prototype.hubPorts = function () {
-    var self = this, ins = Object.create(null), outs = Object.create(null);
+    var self = this, ins = Object.create(null), outs = Object.create(null), given = Object.create(null);
     var add = function (m, k, p) { (m[k] = m[k] || []).push(p); };
     this.order.forEach(function (item) {
       if (item[0] !== 'e') return;
       var e = item[1][0], pl = polyline(e), s = get(e, 'source'), t = get(e, 'target');
       if (!pl || !has(self.nodes, s) || !has(self.nodes, t)) return;
-      var bends = kids(kid(pl, Y, 'Path'), Y, 'Point').map(function (q) { return [pyFloat(get(q, 'x')), pyFloat(get(q, 'y'))]; });
+      var path = kid(pl, Y, 'Path');
+      var bends = kids(path, Y, 'Point').map(function (q) { return [pyFloat(get(q, 'x')), pyFloat(get(q, 'y'))]; });
       var at = self.ends(e, kid(pl, Y, 'Arrows'));
-      if (at[1] === 'in') add(ins, t, bends.length ? bends[bends.length - 1] : self.mid(s));
-      if (at[0]) add(at[0] === 'in' ? ins : outs, s, bends.length ? bends[0] : self.mid(t));
+      if (at[1] === 'in') { add(ins, t, bends.length ? bends[bends.length - 1] : self.mid(s)); self.given(given, t, 'in', path, 'tx', 'ty'); }
+      if (at[0]) { add(at[0] === 'in' ? ins : outs, s, bends.length ? bends[0] : self.mid(t)); self.given(given, s, at[0], path, 'sx', 'sy'); }
     });
     var mean = function (q) {
       var sx = 0, sy = 0;
@@ -415,23 +416,37 @@
       else if (O.length > 1) { vx = spread(O, 0); vy = spread(O, 1); }
       else if (O.length) { vx = O[0][0] - cx; vy = O[0][1] - cy; }
       else { vx = 1; vy = 0; }
-      var hz = Math.abs(vx) >= Math.abs(vy);
-      var k = (hz ? vx : vy) >= 0 ? 1 : -1, side = hz ? w : h;
-      var r = side / 2 + Math.max(ANTENNA * side, ANTENNA_MIN);
-      var one = hz ? [cx - k * r, cy] : [cx, cy - k * r], two = hz ? [cx + k * r, cy] : [cx, cy + k * r];
-      self.ports[nid] = [one, two, hz, nid in ins, r];
+      var gin = given[nid + '\u0000in'], gout = given[nid + '\u0000out'], one, two;
+      if (gin || gout) {   // the file's own ports, a missing one mirrored
+        one = gin || [2 * cx - gout[0], 2 * cy - gout[1]];
+        two = gout || [2 * cx - gin[0], 2 * cy - gin[1]];
+      } else {
+        var hz = Math.abs(vx) >= Math.abs(vy);
+        var k = (hz ? vx : vy) >= 0 ? 1 : -1, side = hz ? w : h;
+        var r = side / 2 + Math.max(ANTENNA * side, ANTENNA_MIN);
+        one = hz ? [cx - k * r, cy] : [cx, cy - k * r]; two = hz ? [cx + k * r, cy] : [cx, cy + k * r];
+      }
+      self.ports[nid] = [one, two, nid in ins];
       var st = n.stroke, col = st ? st[0] : '#000000', wa = st && st[1] !== 1 ? ' stroke-width="' + num(st[1]) + '"' : '';
-      var e1 = hz ? [cx - k * side / 2, cy] : [cx, cy - k * side / 2], e2 = hz ? [cx + k * side / 2, cy] : [cx, cy + k * side / 2];
+      var e1 = clip(one, [cx, cy], n.polys), e2 = clip(two, [cx, cy], n.polys);
       var ant = '<path d="M' + num(one[0]) + ' ' + num(one[1]) + ' L' + num(e1[0]) + ' ' + num(e1[1]) + ' M' + num(e2[0]) + ' ' + num(e2[1]) +
         ' L' + num(two[0]) + ' ' + num(two[1]) + '" fill="none"' + ink('stroke', col) + wa + '/>';
       n.svg = self.groups ? n.svg.replace(/^(<g data-n="[^"]*">)/, function (m) { return m + ant; }) : ant + n.svg;
       self.boxes.push([one[0], one[1], 0, 0], [two[0], two[1], 0, 0]);
     });
   };
-  YMap.prototype.onStick = function (nid, p) {
-    var P = this.ports[nid], c = this.mid(nid), hz = P[2], r = P[4];
-    var along = hz ? p[0] - c[0] : p[1] - c[1], across = hz ? p[1] - c[1] : p[0] - c[0];
-    return Math.abs(across) <= 1.5 && Math.abs(along) <= r;
+  YMap.prototype.given = function (given, nid, side, path, ax, ay) {   // yrender.py's given
+    var g = this.nodes[nid].geo, ox = pyFloat(get(path, ax)), oy = pyFloat(get(path, ay));
+    if (!(nid + '\u0000' + side in given) && (Math.abs(ox) > g[2] / 2 + 0.5 || Math.abs(oy) > g[3] / 2 + 0.5)) given[nid + '\u0000' + side] = [g[0] + g[2] / 2 + ox, g[1] + g[3] / 2 + oy];
+  };
+  YMap.prototype.onStick = function (nid, p) {   // yrender.py's on_stick
+    var c = this.mid(nid), P = this.ports[nid];
+    for (var i = 0; i < 2; i++) {
+      var dx = P[i][0] - c[0], dy = P[i][1] - c[1];
+      var t = Math.min(1, Math.max(0, ((p[0] - c[0]) * dx + (p[1] - c[1]) * dy) / (dx * dx + dy * dy)));
+      if (dist(p, [c[0] + t * dx, c[1] + t * dy]) <= 1.5) return true;
+    }
+    return false;
   };
   YMap.prototype.link = function (el) {
     var dds = kids(el, G, 'data');
@@ -532,7 +547,7 @@
     if (at[0]) {   // a consumption drawn from the process: port one; leaving: port two (nothing coming in: the nearer)
       while (pts.length > 2 && this.onStick(sId, pts[1])) pts.splice(1, 1);
       var P = this.ports[sId];
-      pts[0] = at[0] === 'in' ? P[0] : P[3] || dist(P[1], pts[1]) <= dist(P[0], pts[1]) ? P[1] : P[0];
+      pts[0] = at[0] === 'in' ? P[0] : P[2] || dist(P[1], pts[1]) <= dist(P[0], pts[1]) ? P[1] : P[0];
     } else pts[0] = clip(pts[1], pts[0], S.polys);
     if (at[1] !== 'in') pts[pts.length - 1] = clip(pts[pts.length - 2], pts[pts.length - 1], T.polys);
     var ls = kid(pl, Y, 'LineStyle');

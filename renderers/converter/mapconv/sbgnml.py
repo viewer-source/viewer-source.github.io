@@ -47,13 +47,19 @@ def border(d, p):
     return cx + t * dx, cy + t * dy
 
 
-def at(d, ref, p, q):
+def at(d, ref, p, q, port=None):
     # where an arc read from SBGN-ML meets its glyph, from the glyph's centre (Arc.source_at, target_at): the file's own
     # point (user, 2026-11-14: our SBGN-ML should draw as our GraphML; any tool's arc ends kept as the file gives them),
     # unless it lies on the line from the centre toward the next point q (within 1.5 px), which the centre (0, 0) draws
     # the same wherever on it the end stops (Newt stops short of the glyph for the arrowhead, others on its shape); an
-    # end at a process's or gate's port is its centre, as on our maps
-    if p is None or q is None or ref != d.id:
+    # end at a process's or gate's port is the port itself (user, 2026-11-14: each file's own antenna length; the
+    # renderer draws a port given outside the glyph as it is, its own 0.5 only where none is given), else its centre
+    if ref != d.id:
+        if port is None:
+            return (0.0, 0.0)
+        cx, cy = centre(d)
+        return (port[0] - cx, port[1] - cy)
+    if p is None or q is None:
         return (0.0, 0.0)
     (cx, cy) = centre(d)
     ux, uy, vx, vy = q[0] - cx, q[1] - cy, p[0] - cx, p[1] - cy
@@ -156,6 +162,16 @@ def write(diagram, layout='advanced', newt=False):
         ins = [pts[-1] if pts else centre(N[s]) for _, c, s, t, pts, *_ in arcs if t == p and c in ('consumption', 'logic arc')]
         outs = [pts[0] if pts else centre(N[t]) for _, c, s, t, pts, *_ in arcs if s == p and (c == 'production' or p in ops)]
         (cx, cy), w, h = centre(N[p]), N[p].box[2], N[p].box[3]
+        # a port the map gives (an arc's end outside the glyph: read from SBGN-ML, user 2026-11-14) is kept; the
+        # other one mirrored through the centre
+        out_of = lambda o: o is not None and (abs(o[0]) > w / 2 + 0.5 or abs(o[1]) > h / 2 + 0.5)
+        gin = next(((cx + ta[0], cy + ta[1]) for _, c, s, t, _, _, ta in arcs if t == p and c in ('consumption', 'logic arc') and out_of(ta)), None)
+        gout = next(((cx + sa[0], cy + sa[1]) for _, c, s, t, _, sa, _ in arcs if s == p and (c == 'production' or p in ops) and out_of(sa)), None)
+        if gin or gout:
+            one = gin or (2 * cx - gout[0], 2 * cy - gout[1])
+            two = gout or (2 * cx - gin[0], 2 * cy - gin[1])
+            ports[p] = ('horizontal' if abs(two[0] - one[0]) >= abs(two[1] - one[1]) else 'vertical', one, two)
+            continue
         mean = lambda q, d: (sum(x for x, _ in q) / len(q), sum(y for _, y in q) / len(q)) if q else d
         a, b = mean(ins, (cx, cy)), mean(outs, (cx, cy))
         if a == b:  # reversible (products on both sides): the line through the first two
@@ -412,7 +428,7 @@ def read(path):
                 and st.find(R + 'g').get(a) for i in (st.get('idList') or '').split()}
     fill, line, weight, font = style('fill'), style('stroke'), style('stroke-width', float), style('font-size', float)
     line = {i: c for i, c in line.items() if colour(c, defs) != '#000000'}  # black: the default outline
-    port = {}
+    port, at_port = {}, {}
     nodes, skipped, activities, renamed = {}, {}, set(), []
 
     def text(g):
@@ -440,6 +456,7 @@ def read(path):
             skipped.setdefault(cls, []).append(i); return
         for p in g.findall(S + 'port'):
             port[p.get('id')] = i
+            at_port[p.get('id')] = (float(p.get('x')), float(p.get('y')))
         states, units = [], []
         for c in g.findall(S + 'glyph'):
             cb = c.find(S + 'bbox')
@@ -494,8 +511,8 @@ def read(path):
         pts = [(float(p.get('x')), float(p.get('y'))) for p in a.findall(S + 'next')]
         ends = [(float(e.get('x')), float(e.get('y'))) if e is not None else None for e in (a.find(S + 'start'), a.find(S + 'end'))]
         arcs.append(Arc(id=a.get('id'), source=s, target=t, head=head[cls], dashed=UNKNOWN in text_of(a), points=pts,
-                        source_at=at(nodes[s], a.get('source'), ends[0], (pts or ends[1:])[0]),
-                        target_at=at(nodes[t], a.get('target'), ends[1], (pts[-1:] or ends[:1])[0])))
+                        source_at=at(nodes[s], a.get('source'), ends[0], (pts or ends[1:])[0], at_port.get(a.get('source'))),
+                        target_at=at(nodes[t], a.get('target'), ends[1], (pts[-1:] or ends[:1])[0], at_port.get(a.get('target')))))
     for t, ps in performers.items():
         if len(ps) > 1:  # which entity it stands for is not guessed
             skipped.setdefault('performance arc', []).extend(i for _, i in ps); continue
