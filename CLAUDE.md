@@ -123,6 +123,15 @@ says "the workbench", "the converter's repository", "a private repository".
   SBGN-ML file, its PNG made from that drawing; such a map is not edited (no Edit tab; editing SBGN-ML later) and never
   shows an edited drawing of its own file. The look: true SBGN as the file gives it, its own places, sizes and colours,
   no tool's styling (user).
+- Association and dissociation (user, 2026-11-14: "draw them as SBGN's filled circle and circle in a circle, with a Settings
+  switch to show them as the generic process"): the converter keeps an SBGN-ML association, dissociation or perturbing
+  agent as the node property "SBGN class" on our maps' glyph (the generic process, a phenotype; a perturbing agent as
+  yEd's PerturbingAgent, drawn by yrender as the phenotype turned inside out); yrender (both twins) draws a Process with
+  that property as SBGN's circles in `<g class="sbgn-association">` or `sbgn-dissociation`, the generic square beside
+  them in `<g class="sbgn-generic" display="none">`. Settings' Association, dissociation: SBGN (the default) or Process,
+  shown only for a map whose entry has `shapes` (build.py, from the drawing), kept in the browser (`atlas-sbgn-shapes`);
+  Process puts a style into the picture's text, as Map colours do, no second picture. Names of the row and buttons the
+  session's, for the user to change.
 - Settings' width (user, 2026-11-14: "there is some sufficient width, and it should stay simply there"): everything in
   Settings (slider, colour choices, button pairs) keeps 176 px when the list is dragged wider; nothing stretches with the panel.
 - Map colours (user, 2026-11-12, in Settings after Map size): File (the colours in the map's file, the default) and

@@ -127,6 +127,9 @@ def read(path):
             kind = PROCESS_LABEL.get(l.text.strip(), kind)
         if kind == 'Submap':  # our maps' phenotype, as in CellDesigner (user, 2026-10-21: SREBP's two submap glyphs)
             kind = 'Phenotype'
+        agent = kind == 'PerturbingAgent'   # yEd's own glyph: our maps' phenotype, its SBGN class kept (2026-11-14)
+        if agent:
+            kind = 'Phenotype'
         outline = kind if kind in OUTLINE else None
         if outline:
             kind = 'Operator' if (l is not None and l.text.strip() in ('AND', 'OR', 'NOT') and 'ellipse' in outline) else OUTLINE[outline]
@@ -144,6 +147,8 @@ def read(path):
             dashed=border is not None and border.get('type') != 'line',
             font=float(l.get('fontSize')) if l is not None and l.get('fontSize') else None,  # kept on conversion (user, 2026-10-28)
             small=next((float(f) for f in map(small, labs[1:]) if f), None))
+        if agent:
+            nodes[n.get('id')].data['SBGN class'] = 'perturbing agent'
     ovals(nodes)
     for d in nodes.values():
         if d.kind != 'Compartment':
@@ -259,6 +264,8 @@ def write(diagram, soft=False):
             missing.setdefault(d.kind, []).append(i); return
         n = copy.deepcopy(tpl[name])
         n.set('id', i)
+        if d.kind == 'Phenotype' and d.data.get('SBGN class') == 'perturbing agent':  # yEd's own glyph for it (2026-11-14)
+            realizer(n).set('configuration', 'com.yworks.sbgn.PerturbingAgent')
         parent.append(n)
         for k, name in enumerate(names):
             if d.data.get(name):

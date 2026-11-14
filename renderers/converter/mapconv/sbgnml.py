@@ -141,7 +141,7 @@ def write(diagram, layout='advanced', newt=False):
             cls = ARC.get(a.head)
             if cls is None:
                 report.say('left out', 'arc %s: no SBGN arc for %s, left out' % (a.id, a.head)); continue
-        if N[s].kind == 'Phenotype':  # a perturbing agent, a submap or neither: not guessed (user, 2026-10-17)
+        if N[s].kind == 'Phenotype' and N[s].data.get('SBGN class') != 'perturbing agent':  # a perturbing agent, a submap or neither: not guessed (user, 2026-10-17)
             report.say('left out', 'arc %s: leaves phenotype %s (%s), no SBGN Process Description equivalent, left out'
                        % (a.id, s, N[s].labels[0] if N[s].labels else '')); continue
         if a.tail:
@@ -235,6 +235,8 @@ def write(diagram, layout='advanced', newt=False):
                 report.say('left out', 'gate %s: label %r is not AND, OR, NOT or %s, left out' % (i, d.labels[:1], EQUIV)); return
         elif d.kind in CLASS:
             cls = CLASS[d.kind] + (' multimer' if d.count > 1 and d.kind in MULTIMER else '')
+            if d.data.get('SBGN class') in DRAWN_AS:
+                cls = d.data['SBGN class']
         else:
             report.say('left out', 'node %s: no SBGN glyph for %s, left out' % (i, d.kind)); return
         g = etree.SubElement(parent, S + 'glyph', {'class': cls, 'id': ids[i]})
@@ -349,7 +351,11 @@ def text_of(el):  # an element's notes as plain text
 # --- reading SBGN-ML (and Newt's .nwt) into the map model (docs/SBGNML.md, "The way back")
 KIND = {v: k for k, v in CLASS.items() if k != 'SourceAndSink'}  # source and sink: yEd's EmptySet
 KIND.update(association='Process', dissociation='Process')  # read as the generic process (MINERVA, Newt)
-KIND['perturbing agent'] = 'Phenotype'  # as in CellDesigner; written back as a perturbing agent when an arc leaves it
+KIND['perturbing agent'] = 'Phenotype'  # as in CellDesigner
+# SBGN classes our maps draw as another glyph (association and dissociation as the generic process, a perturbing
+# agent as a phenotype), kept as the node property "SBGN class" (user, 2026-11-14: shown as themselves): yrender draws
+# the circles from it, yEd's PerturbingAgent carries the agent in GraphML, and SBGN-ML is written with the class again
+DRAWN_AS = ('association', 'dissociation', 'perturbing agent')  # a submap is read as itself (yEd's Submap, a rectangle)
 HEAD = {'consumption': None, 'logic arc': None, 'production': 'production', 'catalysis': 'catalysis',
         'inhibition': 'inhibition', 'modulation': 'modulation', 'stimulation': 'stimulation',
         'necessary stimulation': 'trigger'}
@@ -455,6 +461,8 @@ def read(path):
                     data.update(to_properties(etree.QName(q).localname == 'hasVersion', urns))
             break  # the glyph's own description
         data = from_notes(text_of(g), data)
+        if cls in DRAWN_AS:  # drawn as itself, read as the glyph our maps use (user, 2026-11-14)
+            data['SBGN class'] = cls
         nodes[i] = Node(id=i, kind=kind, box=(x, y, w, h), parent=parent,
                         labels=[OPERATORS[cls]] if kind == 'Operator' else [text(g)],
                         fill=colour(fill.get(i), defs), line=colour(line.get(i), defs) if kind == 'Compartment' else None,

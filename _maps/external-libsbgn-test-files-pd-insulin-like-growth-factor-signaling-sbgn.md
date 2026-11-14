@@ -14,9 +14,10 @@ height: 1170
 scale: 1
 annotation: "/atlas-data/external-libsbgn-test-files-pd-insulin-like-growth-factor-signaling-sbgn.json"
 image_error: ""
-v: "604fe0cf92"
+v: "8bdbb81f27"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/test-maps/sbgn-ml/pd/libsbgn/test-files/PD/insulin-like_growth_factor_signaling.sbgn"}, {"label": "SVG", "url": "/downloads/external-libsbgn-test-files-pd-insulin-like-growth-factor-signaling-sbgn.svg"}]
+shapes: true
 ---
 From libsbgn (github.com/sbgn/libsbgn @2aae05b), `test-files/PD/insulin-like_growth_factor_signaling.sbgn`, LGPL 2.1 / EPL (LICENSE.txt). Unchanged, drawn from its own file.

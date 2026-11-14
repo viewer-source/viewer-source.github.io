@@ -22,6 +22,10 @@
 #  - PerturbingAgent: the Phenotype's hexagon turned inside out, its points indented h/4 (2026-11-11, the SBGN
 #    learner's card); white_diamond (modulation) 16 long and 12 wide like white_delta; a QuadCurveEdge drawn as a
 #    polyline with soft bends (yEd's spline is close to that at the card's straightness 0.1)
+#  - association and dissociation (2026-11-14, user): a Process whose node property "SBGN class" says so (yEd has
+#    neither) drawn as SBGN's filled circle or circle in a circle (the inner one 0.6 of the outer), the generic square
+#    kept beside it in <g class="sbgn-generic" display="none">, the circles in <g class="sbgn-association"> or
+#    "sbgn-dissociation", so a page can show either; the arcs end at the square's outline as before
 #  - UnspecifiedEntity drawn as an ellipse, dashed lines as dashes 6 and gaps 2 times the line width
 #    (2026-10-27; checked against a yEd export: same shapes)
 #  - edge labels: placed from the edge's first point (anchor and up vector when rotated,
@@ -396,6 +400,7 @@ class Map:
         self.res = {r.get('id'): r for r in self.root.iter(Y + 'Resource')}
         keys = {k.get('id'): (k.get('for'), k.get('attr.name')) for k in self.root.findall(G + 'key')}
         self.url = {k for k, v in keys.items() if v[1] == 'url'}
+        self.cls = {k for k, v in keys.items() if v[1] == 'SBGN class'}
         self.nodes = {}   # id -> dict(geo, polys, svg)
         self.order = []   # paint order: ('n', id), ('e', element), ('block',)
         self.boxes = []   # nodes, node labels and edge bends: the image spans them
@@ -406,6 +411,9 @@ class Map:
             if dd.get('key') in self.url and (dd.text or '').strip():
                 return dd.text.strip()
         return None
+
+    def sbgn_class(self, el):
+        return next(((dd.text or '').strip() for dd in el.findall(G + 'data') if dd.get('key') in self.cls), '')
 
     def read_graph(self, graph, top=False, parent='page'):
         # nodes depth first, groups before their members; parent: the role of the group they are in
@@ -444,6 +452,14 @@ class Map:
         s = ''.join(shape_svg(c, fill, stroke, rl) for c in outlines)
         if k == 'EmptySet' and stroke:
             s += f'<path d="M{num(x)} {num(y + h)} L{num(x + w)} {num(y)}" fill="none"{ink("stroke", stroke[0])}/>'
+        sc = self.sbgn_class(node) if k == 'Process' else ''
+        if sc in ('association', 'dissociation'):
+            c = shape_svg(ellipse(x, y, w, h), fill if sc == 'dissociation' else None, stroke, rl)
+            if sc == 'association':
+                c = f'<path d="{d(ellipse(x, y, w, h))}"{ink("fill", stroke[0] if stroke else "#000000")} stroke="none"/>' + c
+            else:
+                c += shape_svg(ellipse(x + w * 0.2, y + h * 0.2, w * 0.6, h * 0.6), None, stroke, rl)
+            s = f'<g class="sbgn-{sc}">{c}</g><g class="sbgn-generic" display="none">{s}</g>'
         for lab in r.findall(Y + 'NodeLabel'):
             if lab.get('visible') == 'false':
                 continue

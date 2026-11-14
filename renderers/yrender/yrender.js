@@ -370,6 +370,7 @@
     var keys = {};
     kids(this.root, G, 'key').forEach(function (k) { keys[get(k, 'id')] = [get(k, 'for'), get(k, 'attr.name')]; });
     this.url = new Set(Object.keys(keys).filter(function (k) { return keys[k][1] === 'url'; }));
+    this.cls = new Set(Object.keys(keys).filter(function (k) { return keys[k][1] === 'SBGN class'; }));
     this.nodes = {}; this.order = []; this.boxes = [];
     this.readGraph(kid(this.root, G, 'graph'), true, 'page');
   }
@@ -380,6 +381,11 @@
       if (this.url.has(get(dds[i], 'key')) && pyStrip(t)) return pyStrip(t);
     }
     return null;
+  };
+  YMap.prototype.sbgnClass = function (el) {
+    var dds = kids(el, G, 'data');
+    for (var i = 0; i < dds.length; i++) if (this.cls.has(get(dds[i], 'key'))) return pyStrip(leadText(dds[i]));
+    return '';
   };
   YMap.prototype.readGraph = function (graph, top, parent) {
     var self = this;
@@ -407,6 +413,13 @@
     if (props.get('mcount') === '2') { outlines.unshift(outline(k, x + 6, y + 6, w, h, props)); this.boxes.push([x + 6, y + 6, w, h]); }
     var s = outlines.map(function (c) { return shapeSvg(c, fill, stroke, rl); }).join('');
     if (k === 'EmptySet' && stroke) s += '<path d="M' + num(x) + ' ' + num(y + h) + ' L' + num(x + w) + ' ' + num(y) + '" fill="none"' + ink('stroke', stroke[0]) + '/>';
+    var sc = k === 'Process' ? this.sbgnClass(node) : '';
+    if (sc === 'association' || sc === 'dissociation') {   // SBGN's circles, the generic square kept hidden (yrender.py's header)
+      var c = shapeSvg(ellipse(x, y, w, h), sc === 'dissociation' ? fill : null, stroke, rl);
+      if (sc === 'association') c = '<path d="' + d(ellipse(x, y, w, h)) + '"' + ink('fill', stroke ? stroke[0] : '#000000') + ' stroke="none"/>' + c;
+      else c += shapeSvg(ellipse(x + w * 0.2, y + h * 0.2, w * 0.6, h * 0.6), null, stroke, rl);
+      s = '<g class="sbgn-' + sc + '">' + c + '</g><g class="sbgn-generic" display="none">' + s + '</g>';
+    }
     kids(r, Y, 'NodeLabel').forEach(function (lab) {
       if (get(lab, 'visible') === 'false') return;
       var box = labelPlace(lab, x, y, w, h);

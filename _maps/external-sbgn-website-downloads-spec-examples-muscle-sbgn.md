@@ -14,9 +14,10 @@ height: 1435
 scale: 1
 annotation: "/atlas-data/external-sbgn-website-downloads-spec-examples-muscle-sbgn.json"
 image_error: ""
-v: "c2cfbf9732"
+v: "e9a3b6c9f4"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/test-maps/sbgn-ml/pd/sbgn-website/downloads/spec_examples/muscle.sbgn"}, {"label": "SVG", "url": "/downloads/external-sbgn-website-downloads-spec-examples-muscle-sbgn.svg"}]
+shapes: true
 ---
 From sbgn-website (github.com/sbgn/sbgn.github.io @d2cc88d), `downloads/spec_examples/muscle.sbgn`, CC0 1.0. Unchanged, drawn from its own file.

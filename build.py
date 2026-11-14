@@ -221,7 +221,8 @@ def drawn(name, nodes, extra=b''):
     json.dump({'nodes': nodes}, open(ann, 'w', encoding='utf-8'), ensure_ascii=False, separators=(',', ':'))
     w, h = (int(float(v)) for v in re.search(r'<svg[^>]* width="([\d.]+)" height="([\d.]+)"', open(svg).read()).groups())
     v = hashlib.sha1(open(svg, 'rb').read() + open(ann, 'rb').read() + extra).hexdigest()[:10]
-    return {'image': '/downloads/%s.svg' % name, 'annotation': '/atlas-data/%s.json' % name, 'width': w, 'height': h, 'v': v}
+    return dict({'image': '/downloads/%s.svg' % name, 'annotation': '/atlas-data/%s.json' % name, 'width': w, 'height': h, 'v': v},
+                **({'shapes': True} if 'class="sbgn-generic"' in open(svg).read() else {}))   # association or dissociation drawn
 
 
 def sbgnml(src, name, body):
@@ -299,7 +300,8 @@ def entry_of(title, group, order, d, **more):
     return dict({'title': title, 'topic': title, 'tab': '', 'page': '', 'group': group, 'order': order, 'kind': 'map',
                  'draft': False, 'tag': '', 'image': d['image'], 'width': d['width'], 'height': d['height'], 'scale': 1,
                  'annotation': d['annotation'], 'image_error': '', 'v': d['v'], 'colours': True, 'legend': 'sbgn',
-                 'downloads': [{'label': 'SBGN-ML', 'url': d['file']}, {'label': 'SVG', 'url': d['image']}]}, **more)
+                 'downloads': [{'label': 'SBGN-ML', 'url': d['file']}, {'label': 'SVG', 'url': d['image']}]},
+                **({'shapes': True} if d.get('shapes') else {}), **more)
 
 
 def write_entry(eid, e, body):

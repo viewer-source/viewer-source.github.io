@@ -43,11 +43,11 @@
 <path d="M553 563 L577 563 L577 587 L553 587 Z" fill="none" stroke="#000000"/>
 <path d="M823 688 L847 688 L847 712 L823 712 Z" fill="none" stroke="#000000"/>
 <path d="M1123 798 L1147 798 L1147 822 L1123 822 Z" fill="none" stroke="#000000"/>
-<path d="M473 953 L497 953 L497 977 L473 977 Z" fill="none" stroke="#000000"/>
+<g class="sbgn-dissociation"><path d="M473 965 C473 958.3724 478.3724 953 485 953 L485 953 C491.6276 953 497 958.3724 497 965 L497 965 C497 971.6276 491.6276 977 485 977 L485 977 C478.3724 977 473 971.6276 473 965 Z" fill="none" stroke="#000000"/><path d="M477.8 965 C477.8 961.0234 481.0234 957.8 485 957.8 L485 957.8 C488.9766 957.8 492.2 961.0234 492.2 965 L492.2 965 C492.2 968.9766 488.9766 972.2 485 972.2 L485 972.2 C481.0234 972.2 477.8 968.9766 477.8 965 Z" fill="none" stroke="#000000"/></g><g class="sbgn-generic" display="none"><path d="M473 953 L497 953 L497 977 L473 977 Z" fill="none" stroke="#000000"/></g>
 <path d="M167.5 1355 L292.5 1355 L315 1400 L292.5 1445 L167.5 1445 L145 1400 Z" fill="none" stroke="#000000"/><text x="230" y="1395.5711" text-anchor="middle" font-family="'Dialog', Arial, Helvetica, sans-serif" font-size="21" fill="#000000" class="t-page" stroke="none" xml:space="preserve"> muscle </text><text x="230" y="1420.3028" text-anchor="middle" font-family="'Dialog', Arial, Helvetica, sans-serif" font-size="21" fill="#000000" class="t-page" stroke="none" xml:space="preserve"> contraction</text>
 <path d="M688 1193 L712 1193 L712 1217 L688 1217 Z" fill="none" stroke="#000000"/>
 <path d="M823 448 L847 448 L847 472 L823 472 Z" fill="none" stroke="#000000"/>
-<path d="M968 1038 L992 1038 L992 1062 L968 1062 Z" fill="none" stroke="#000000"/>
+<g class="sbgn-association"><path d="M968 1050 C968 1043.3724 973.3724 1038 980 1038 L980 1038 C986.6276 1038 992 1043.3724 992 1050 L992 1050 C992 1056.6276 986.6276 1062 980 1062 L980 1062 C973.3724 1062 968 1056.6276 968 1050 Z" fill="#000000" stroke="none"/><path d="M968 1050 C968 1043.3724 973.3724 1038 980 1038 L980 1038 C986.6276 1038 992 1043.3724 992 1050 L992 1050 C992 1056.6276 986.6276 1062 980 1062 L980 1062 C973.3724 1062 968 1056.6276 968 1050 Z" fill="none" stroke="#000000"/></g><g class="sbgn-generic" display="none"><path d="M968 1038 L992 1038 L992 1062 L968 1062 Z" fill="none" stroke="#000000"/></g>
 <path d="M365 275 L423 275" fill="none" stroke="#000000"/>
 <path d="M356.7115 207.255 L423 264.6161" fill="none" stroke="#000000"/>
 <path d="M585 275 L648 275" fill="none" stroke="#000000"/>
