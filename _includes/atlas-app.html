@@ -903,6 +903,7 @@ page, so its styles keep the base they were made on). The looks before (Default 
   }
   function draw() {
     if (!current) return;
+    if (followPanel()) { if (mode === 'fit') fit(); else standard(); return; }
     clamp();
     // sized by width and height, not a scale transform, so that an SVG map
     // is drawn sharp at every zoom
@@ -923,20 +924,9 @@ page, so its styles keep the base they were made on). The looks before (Default 
     draw();
   }
   // fits the map to the view, no space around it (user, 2026-10-22, as on the Colours page)
-  function fitZoom() {
-    var s = size(current), x0 = freeLeft();
+  function fitZoom(x0) {
+    var s = size(current);
     return Math.min((view.clientWidth - x0) / s.w, view.clientHeight / s.h);
-  }
-  // the room the list's panel takes, kept free when the viewer places a map (user, 2026-11-14: a map opens clear of
-  // the panel, collapsed or open): the larger of the usual width and the panel's width now, measured from where the
-  // panel starts; in the map window's pixels from its left edge, 0 when the panel is beside the map at its usual width
-  // or wider. Not on narrow windows (the list above the map) nor with the map window alone in full screen
-  function freeLeft() {
-    if (typeof LIST_W !== 'number' || window.matchMedia('(max-width: 940px)').matches || isFull()) return 0;
-    var g = grid.getBoundingClientRect(), v = view.getBoundingClientRect(), k = pz();
-    var start = g.left + (parseFloat(getComputedStyle(grid).paddingLeft) || 0) * k;
-    var x0 = (start + Math.max(LIST_W, listW) * k - v.left) / k;
-    return Math.max(0, Math.min(view.clientWidth / 2, x0));
   }
   // the browser's own zoom (Cmd + / Cmd -). Browsers do not report it, but
   // the window's width in screen pixels over its width in page pixels gives
@@ -966,10 +956,10 @@ page, so its styles keep the base they were made on). The looks before (Default 
   function standard() {
     var s = size(current);
     z = STANDARD * SIZE / bz;
-    var x0 = freeLeft();
-    tx = x0 + (view.clientWidth - x0 - s.w * z) / 2;
+    tx = centre()[0] - s.w * z / 2;
     ty = TOP;
     moved = false;
+    panelPlaced();
     draw();
   }
   // the whole map in the view, but never larger than the standard
@@ -977,11 +967,12 @@ page, so its styles keep the base they were made on). The looks before (Default 
   var FIT_MAX = 1;
   function fit() {
     var s = size(current);
-    z = Math.min(fitZoom(), STANDARD * SIZE * FIT_MAX / bz);
     var x0 = freeLeft();
+    z = Math.min(fitZoom(x0), STANDARD * SIZE * FIT_MAX / bz);
     tx = x0 + (view.clientWidth - x0 - s.w * z) / 2;
     ty = (view.clientHeight - s.h * z) / 2; // centred
     moved = false;
+    panelPlaced();
     draw();
   }
   var centre = function () { var x0 = freeLeft(); return [x0 + (view.clientWidth - x0) / 2, view.clientHeight / 2]; };
@@ -1379,6 +1370,33 @@ page, so its styles keep the base they were made on). The looks before (Default 
     if (!on || listW === LIST_W) grid.style.removeProperty('--m2-list-w'); else grid.style.setProperty('--m2-list-w', listW + 'px');
     if (save) { try { if (listW === LIST_W) localStorage.removeItem(widthKey); else localStorage.setItem(widthKey, listW); } catch (e) {} }
     listHeight();
+    draw();   // the map stays where it is (followPanel)
+  }
+  // The map stays where it is on screen when the map window's left edge moves (user, 2026-11-14: "when I move panel,
+  // map stays in place and doesn't move with it"): the panel dragged, collapsed or opened, the icons moved. draw()
+  // asks first; the edge's place is read each time, as it can move with the map window's size unchanged. An edge moved
+  // otherwise (a style's file arriving, the icons put on the left) places a map not yet zoomed or panned again (true);
+  // full screen in or out, and the list going above the map, are placed by their own handlers
+  var edge = null;   // where the map was last drawn: the edge's offset in the grid, the panel's width, full screen, side by side
+  function edgeNow() { return { off: (view.getBoundingClientRect().left - grid.getBoundingClientRect().left) / pz(), w: listW, fs: isFull(), side: sideBySide.matches }; }
+  function panelPlaced() { edge = edgeNow(); }
+  function followPanel() {
+    var was = edge, now = edge = edgeNow(), d = was ? now.off - was.off : 0;
+    if (!was || Math.abs(d) < 0.5 || now.fs || now.fs !== was.fs || now.side !== was.side) return false;
+    if (!moved && now.w === was.w) return true;
+    tx -= d; moved = true;   // no longer the mode's view: Fit or Read places it again
+    return false;
+  }
+  // the room the panel takes, kept free when the viewer places a map (user, 2026-11-14: a map opens clear of the panel,
+  // collapsed or open): the larger of the usual width and the panel's width now, from where the panel starts; in the
+  // map window's pixels from its left edge, 0 when the panel is beside the map at its usual width or wider. Not on
+  // narrow windows (the list above the map) nor with the map window alone in full screen
+  function freeLeft() {
+    if (!sideBySide.matches || isFull()) return 0;
+    var g = grid.getBoundingClientRect(), v = view.getBoundingClientRect(), k = pz();
+    var start = g.left + (parseFloat(getComputedStyle(grid).paddingLeft) || 0) * k;
+    var w = Math.max(LIST_W, setting('separators') ? listW : 0);   // without separators the panel keeps its usual width
+    return Math.max(0, Math.min(view.clientWidth / 2, (start + w * k - v.left) / k));
   }
   grid.classList.toggle('m2-rail-shut', railShut);
   setListWidth(listW, false);
@@ -1494,16 +1512,10 @@ page, so its styles keep the base they were made on). The looks before (Default 
   }
   // with the floating list (--m2-nav-float) a map not yet zoomed or panned is fitted again when the map window's width
   // changes (the style's file arriving, the icon column closed), so a small map stays centred in the whole width
-  // The map stays where it is on screen when the map window's left edge moves (user, 2026-11-14: "when I move panel,
-  // map stays in place and doesn't move with it"): the list's panel dragged, collapsed or opened, the icons moved
-  var viewW = 0, viewOff = null, viewFs = false;
-  function offsetInGrid() { return (view.getBoundingClientRect().left - grid.getBoundingClientRect().left) / pz(); }
+  var viewW = 0;
   if (window.ResizeObserver) new ResizeObserver(function () {
     var w = view.clientWidth, again = w !== viewW && viewW && current && !moved && grid.classList.contains('m2-nav-float');
     viewW = w;
-    var off = offsetInGrid(), fs = isFull();   // full screen in or out: placed again by its own handler
-    if (viewOff !== null && current && fs === viewFs && Math.abs(off - viewOff) > 0.5) tx -= off - viewOff;
-    viewOff = off; viewFs = fs;
     if (again) { if (mode === 'fit') fit(); else standard(); } else draw();
   }).observe(view);
 
