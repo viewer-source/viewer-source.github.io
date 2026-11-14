@@ -385,7 +385,13 @@
       if (!palDrag.img) {   // in the map window from the start, so it slides in from behind the panel as it nears the map (user, 2026-11-14)
         var D = sbJs.defaults(src());
         palDrag.img = document.createElement('div'); palDrag.img.className = 'm2-ed-palghost';
-        palDrag.img.style.cssText = 'width:' + D.w * V.z + 'px;height:' + D.h * V.z + 'px;border-radius:' + 10 * V.z + 'px;background:' + (D.fill || '#fff');
+        palDrag.img.style.cssText = 'width:' + D.w * V.z + 'px;height:' + D.h * V.z + 'px';
+        // drawn as the renderer draws a macromolecule (user, 2026-11-14: a CSS box with a 1 px border looked thin, its
+        // corners round where yrender's are quadratic): its path in map units (radius 10, as sbgn_edit writes), stroke 1
+        var w = D.w, h = D.h, q = Math.min(10, w / 2, h / 2);
+        palDrag.img.innerHTML = '<svg width="100%" height="100%" viewBox="0 0 ' + w + ' ' + h + '" overflow="visible"><path d="M0 ' + q +
+          ' Q0 0 ' + q + ' 0 L' + (w - q) + ' 0 Q' + w + ' 0 ' + w + ' ' + q + ' L' + w + ' ' + (h - q) + ' Q' + w + ' ' + h + ' ' + (w - q) + ' ' + h +
+          ' L' + q + ' ' + h + ' Q0 ' + h + ' 0 ' + (h - q) + ' Z" fill="' + (D.fill || '#fff') + '" stroke="#000" stroke-width="1"/></svg>';
         V.view.appendChild(palDrag.img);
       }
       var r = V.view.getBoundingClientRect(), g = palDrag.img;
