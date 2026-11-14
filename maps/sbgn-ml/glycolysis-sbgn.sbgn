@@ -648,7 +648,7 @@
         <bbox x="388.5" y="196.5" w="15" h="15"/>
       </glyph>
       <glyph class="state variable" id="glyph_2_sv2">
-        <state value=""/>
+        <state value="P"/>
         <bbox x="348.5" y="196.5" w="15" h="15"/>
       </glyph>
     </glyph>
