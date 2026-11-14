@@ -24,11 +24,6 @@ pd/sbgn-website/downloads/spec_examples/glycolysis.sbgn	PD	0.2	45	44	16712	sbgn-
 pd/sbgn-website/downloads/spec_examples/insulin.sbgn	PD	0.2	48	32	15232	sbgn-website	github.com/sbgn/sbgn.github.io @d2cc88d	downloads/spec_examples/insulin.sbgn	CC0 1.0	hidden		
 pd/sbgn-website/downloads/spec_examples/mapk.sbgn	PD	0.2	26	27	9831	sbgn-website	github.com/sbgn/sbgn.github.io @d2cc88d	downloads/spec_examples/mapk.sbgn	CC0 1.0	hidden		
 pd/sbgn-website/downloads/spec_examples/muscle.sbgn	PD	0.2	48	38	16919	sbgn-website	github.com/sbgn/sbgn.github.io @d2cc88d	downloads/spec_examples/muscle.sbgn	CC0 1.0	hidden		
-pd/sbgn-website/downloads/spec_images/layout-branching.sbgn	PD	0.2	20	14	6062	sbgn-website	github.com/sbgn/sbgn.github.io @d2cc88d	downloads/spec_images/layout-branching.sbgn	CC0 1.0	hidden		
-pd/sbgn-website/images/learnerscards/pdlearnerscard.nwt	PD	0.2	210	54	51855	sbgn-website	github.com/sbgn/sbgn.github.io @d2cc88d	images/learnerscards/pdlearnerscard.nwt	CC0 1.0			
-pd/sbgn-website/images/learnerscards/pdlearnerscard02plain.sbgn	PD	0.2	210	54	43372	sbgn-website	github.com/sbgn/sbgn.github.io @d2cc88d	images/learnerscards/pdlearnerscard02plain.sbgn	CC0 1.0			
-pd/sbgn-website/images/learnerscards/pdlearnerscard03.sbgn	PD	0.2	210	54	51885	sbgn-website	github.com/sbgn/sbgn.github.io @d2cc88d	images/learnerscards/pdlearnerscard03.sbgn	CC0 1.0			
-pd/sbgn-website/images/learnerscards/pdlearnerscard03plain.sbgn	PD	0.3	210	54	43404	sbgn-website	github.com/sbgn/sbgn.github.io @d2cc88d	images/learnerscards/pdlearnerscard03plain.sbgn	CC0 1.0			
 af/libsbgn/test-files/AF/AF_Reference_Card.sbgn	AF	0.3	45	9	10895	libsbgn	github.com/sbgn/libsbgn @2aae05b	test-files/AF/AF_Reference_Card.sbgn	LGPL 2.1 / EPL (LICENSE.txt)			
 af/libsbgn/test-files/AF/submaps_all-in-one.sbgn	AF	0.3	24	15	5947	libsbgn	github.com/sbgn/libsbgn @2aae05b	test-files/AF/submaps_all-in-one.sbgn	LGPL 2.1 / EPL (LICENSE.txt)			
 pd/libsbgn/test-files/PD/activated_stat1alpha_induction_of_the_irf1_gene.sbgn	PD	0.3	27	11	7143	libsbgn	github.com/sbgn/libsbgn @2aae05b	test-files/PD/activated_stat1alpha_induction_of_the_irf1_gene.sbgn	LGPL 2.1 / EPL (LICENSE.txt)			

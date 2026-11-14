@@ -5,7 +5,7 @@ SBGN-ML maps made by other people and tools, to test the viewer's SBGN-ML drawin
 holds it; a test that needs a change makes it in a temporary copy. Published with the site, so a test page loads a
 file by its address, e.g. `/test-maps/sbgn-ml/pd/libsbgn/test-files/PD/glycolysis.sbgn`.
 
-- `pd/`: Process Description, the language worked on now: 47 maps and libsbgn's 50 validation error tests.
+- `pd/`: Process Description, the language worked on now: 42 maps and libsbgn's 50 validation error tests.
 - `af/`: Activity Flow, kept for later: 11 maps and libsbgn's 15 validation error tests.
 - Left out: Entity Relationship, hybrid maps, SBML and SIF (user: not needed now); maps under 20 glyphs (user: the
   hundreds of small spec and rule cases are not useful), except the validation tests; our own Metabolism
@@ -22,7 +22,7 @@ Notes on the files:
 - `invalid on purpose`: libsbgn's validation error tests (`libsbgn/validation/error-test-files/`), each breaking one
   rule; the viewer should draw what it can and not fail.
 - `.nwt` is Newt's own file: SBGN-ML with Newt's settings in an extension, read as SBGN-ML.
-- Largest: central plant metabolism (1,324 glyphs), the PD learner's cards (210), Newt's ATM, CaM-CaMK, Drosophila cell cycle
+- Largest: central plant metabolism (1,324 glyphs), Newt's ATM, CaM-CaMK, Drosophila cell cycle
   and cholesterol maps (74 to 91).
 
 | Folder | Source | Licence |
@@ -43,6 +43,7 @@ incl. PCR, CaMKII and the sodium channel, not SBGN-ML); VISIBIOweb's (BioPAX and
 libsbgn's `PD_Reference_Card.sbgn` and `SBGN-PD_all.sbgn` (`test-files/PD/`), taken first, then removed (user, 2026-11-14); so was Newt's `pd_learners_card.nwt` (`newt-master`); then the folders `newt-master` (master branch) and `newt-saved`
 (the samples as web.newteditor.org saved them, 2026-10-17), twins of `newt-unstable`'s examples (user, 2026-11-14);
 then Reactome's three diagrams exported as SBGN-ML (R-HSA-111885 eicosanoids, R-HSA-70635 urea cycle, R-HSA-70895
-BCAA; user, 2026-11-14).
+BCAA; user, 2026-11-14); then the SBGN website's PD learner's cards (`images/learnerscards/`: the .nwt, 02plain,
+03, 03plain) and `downloads/spec_images/layout-branching.sbgn` (user, 2026-11-14).
 
 sbgn/pathway-archive's maps are the same files as the website's and are listed there under `same_file_also_at`.
