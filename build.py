@@ -304,6 +304,7 @@ def examples():
     import csv
     pd = os.path.join(ROOT, 'test-maps', 'sbgn-ml', 'pd')
     if not os.path.exists(os.path.join(ROOT, 'test-maps', 'sbgn-ml', 'sources.tsv')):
+        print('note: no test-maps/sbgn-ml/sources.tsv, the group SBGN-ML external is left out')
         return []   # a site built from this file without the demo's test maps
     src = {r['file']: r for r in csv.DictReader(open(os.path.join(ROOT, 'test-maps', 'sbgn-ml', 'sources.tsv'), encoding='utf-8'), delimiter='\t')}
     rels = sorted(os.path.relpath(f, pd) for f in glob.glob(os.path.join(pd, '**', '*'), recursive=True) if f.endswith(('.sbgn', '.nwt')))
