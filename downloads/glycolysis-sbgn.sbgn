@@ -638,6 +638,7 @@
       </glyph>
     </glyph>
     <glyph class="macromolecule" id="glyph_2">
+      <label text="STSTS"/>
       <bbox x="336" y="164" w="80" h="40"/>
       <glyph class="state variable" id="glyph_2_sv0">
         <state value=""/>
