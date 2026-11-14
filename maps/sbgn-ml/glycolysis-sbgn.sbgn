@@ -701,7 +701,7 @@
       <end x="314.0" y="568.0"/>
     </arc>
     <arc class="consumption" id="e18" source="n16" target="n18.1">
-      <start x="424" y="576"/>
+      <start x="428.93" y="591.5"/>
       <end x="350.0" y="591.5"/>
     </arc>
     <arc class="production" id="e19" source="n19.2" target="n23">
