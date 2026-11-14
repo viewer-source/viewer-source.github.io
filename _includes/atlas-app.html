@@ -2664,8 +2664,8 @@ page, so its styles keep the base they were made on). The looks before (Default 
       var bend = ed && !unbend && window.m2EditAddBend && window.m2EditAddBend();   // a line under the pointer
       var turn = ed && window.m2EditTurn && window.m2EditTurn();   // a process or logic gate under the pointer: turned a quarter
       var main = ed && window.m2EditMain && window.m2EditMain();   // an added reactant's or product's line of a CellDesigner reaction
-      var addSv = ed && !unbend && !turn && window.m2EditAddState && window.m2EditAddState();   // a macromolecule under the pointer (Full, SBGN-ML)
-      var del = ed && !unbend && !turn && window.m2EditDelete && window.m2EditDelete();   // a state variable, a macromolecule or a simple chemical under the pointer (Full, SBGN-ML)
+      var mac = ed && !unbend && !turn && window.m2EditNodeItems && window.m2EditNodeItems();   // a macromolecule under the pointer (Full, SBGN-ML): Add state variable, Add unit of information, Make multimer or Make macromolecule
+      var del = ed && !unbend && !turn && window.m2EditDelete && window.m2EditDelete();   // a state variable, unit of information, macromolecule or simple chemical under the pointer (Full, SBGN-ML)
       // every bend point of the map, on empty map space only (user, 2026-11-14: a right click on a bend point means that
       // bend point)
       var unbendAll = ed && window.m2EditAllBends && window.m2EditAllBends();
@@ -2673,11 +2673,11 @@ page, so its styles keep the base they were made on). The looks before (Default 
       else if (bend) item(box, 'Add bend point', bend);
       else if (turn) item(box, turn.label, turn.go);
       if (main) item(box, main.label, main.go);
-      if (addSv) item(box, 'Add state variable', addSv);
+      (mac || []).forEach(function (q) { item(box, q[0], q[1]); });
       if (del) item(box, 'Delete', del);
       if (unbendAll) item(box, 'Remove all bend points', unbendAll);
       // the editing items at the top, one separator below them, then the general ones (user, 2026-11-14)
-      if (unbend || bend || turn || main || addSv || del || unbendAll) sep(box);
+      if (unbend || bend || turn || main || mac || del || unbendAll) sep(box);
       // its shortcut beside it, as Apple's and Windows' menus write it (user, 2026-11-13); case-blind: Chrome, Edge, Brave and Arc on a Mac
       // give the platform as "macOS", which /Mac/ missed, so only Safari showed ⌘E (user, 2026-11-14)
       var key = '<span class="m2-cx-key">' + (/mac|iphone|ipad|ipod/i.test((navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || navigator.userAgent) ? '\u2318E' : 'Ctrl+E') + '</span>';

@@ -36,11 +36,12 @@ function draw(g) { var r = yr.render(g, { DOMParser: DP }); return r.svg; }
 function d3(svg) { return svg.replace(/-?\d+\.\d+/g, function (v) { return String(Math.round(parseFloat(v) * 1000) / 1000); }); }
 function glyphs(s) {   // [id, class, box, compartmentRef, has a state variable] of the top-level glyphs
   var doc = new DP().parseFromString(s.replace(/^\ufeff/, ''), 'application/xml'), out = [];
-  Array.prototype.forEach.call(doc.getElementsByTagName('glyph'), function (g) {
+  Array.prototype.forEach.call(doc.getElementsByTagNameNS('*', 'glyph'), function (g) {
     var b = Array.prototype.filter.call(g.childNodes, function (c) { return c.localName === 'bbox'; })[0];
     if (!b) return;
     out.push({ id: g.getAttribute('id'), cls: g.getAttribute('class'), top: g.parentNode.localName === 'map', box: ['x', 'y', 'w', 'h'].map(function (k) { return parseFloat(b.getAttribute(k)); }),
-               sv: Array.prototype.some.call(g.childNodes, function (c) { return c.localName === 'glyph' && c.getAttribute('class') === 'state variable'; }) });
+               sv: Array.prototype.some.call(g.childNodes, function (c) { return c.localName === 'glyph' && c.getAttribute('class') === 'state variable'; }),
+               ui: Array.prototype.filter.call(g.childNodes, function (c) { return c.localName === 'glyph' && c.getAttribute('class') === 'unit of information'; }).map(function (c) { return c.getAttribute('id'); }) });
   });
   return out;
 }
@@ -83,9 +84,18 @@ files.forEach(function (f, i) {
   if (svIds.length > 1) g2 = se.stateDelete(g2, withSv.id, 0, { DOMParser: DP, sbgn: s });   // the moved one, not the last: taken out by its id
   var doomed = mac.filter(function (q) { return q.top && q !== mac[0] && q !== withSv; })[0];
   if (doomed) g2 = se.remove(g2, [doomed.id], opt);
+  // units of information and multimers (2026-11-14): made1 a multimer with N:3 and two more units, one retyped, one
+  // deleted; a file's macromolecule made a multimer with a unit; a file's multimer made single, one of its units deleted
+  g2 = se.multimer(g2, 'made1', true, opt);
+  g2 = se.unit(g2, 'made1', 'N:3', opt); g2 = se.unit(g2, 'made1', 'ct:gene', opt); g2 = se.unit(g2, 'made1', 'gone unit', opt);
+  g2 = se.unitValue(g2, 'made1', 1, 'mt:prot & <x>', opt); g2 = se.unitDelete(g2, 'made1', 2, opt);
+  var single = mac.filter(function (q) { return q !== mac[0] && q !== withSv && q !== doomed; })[0];
+  if (single) { g2 = se.multimer(g2, single.id, true, opt); g2 = se.unit(g2, single.id, 'N:2', opt); }
+  var multi = all.filter(function (q) { return /^(macromolecule|simple chemical|nucleic acid feature) multimer$/.test(q.cls) && q.ui.length && q.top; })[0];
+  if (multi) { g2 = se.multimer(g2, multi.id, false, opt); g2 = se.unitDelete(g2, multi.id, 0, { DOMParser: DP, sbgn: s }); }
   var s2 = se.write(s, g2, opt), p2 = path.join(tmp, i + path.extname(f));
   fs.writeFileSync(p2, s2);
-  made.push({ f: f, s: s, g: g, g2: g2, s2: s2, p2: p2, comp: !!comp, mac: mac[0], withSv: withSv, doomed: doomed, svIds: svIds, chem: chem });
+  made.push({ f: f, s: s, g: g, g2: g2, s2: s2, p2: p2, comp: !!comp, mac: mac[0], withSv: withSv, doomed: doomed, svIds: svIds, chem: chem, single: single, multi: multi });
 });
 var after = conv(made.map(function (m) { return m.p2; }));
 made.forEach(function (m, i) {
@@ -110,8 +120,14 @@ made.forEach(function (m, i) {
   if (m.svIds.length > 1 && (m.s2.indexOf('id="' + m.svIds[0] + '"') >= 0 || m.svIds.slice(1).some(function (x) { return m.s2.indexOf('id="' + x + '"') < 0; }))) why.push('the wrong state variable deleted');
   if (m.s2.indexOf('value="gone"') >= 0) why.push('a deleted state variable written');
   if (m.doomed && m.s2.indexOf('id="' + m.doomed.id + '"') >= 0) why.push('a deleted macromolecule still in the file');
+  var cls2 = {}; glyphs(m.s2).forEach(function (q) { cls2[q.id] = q; });
+  if (!cls2.made1 || cls2.made1.cls !== 'macromolecule multimer' || cls2.made1.ui.length !== 2 || m.s2.indexOf('text="mt:prot &amp; &lt;x&gt;"') < 0 || m.s2.indexOf('text="N:3"') < 0) why.push('made1 not a multimer with its two units');
+  if (m.s2.indexOf('gone unit') >= 0) why.push('a deleted unit of information written');
+  if (m.single && (!cls2[m.single.id] || cls2[m.single.id].cls !== 'macromolecule multimer')) why.push('a macromolecule not made a multimer');
+  if (m.multi && (!cls2[m.multi.id] || / multimer$/.test(cls2[m.multi.id].cls) || cls2[m.multi.id].ui.indexOf(m.multi.ui[0]) >= 0 || cls2[m.multi.id].ui.length !== m.multi.ui.length - 1)) why.push('a multimer not made single, or the wrong unit deleted');
   if (why.length) { bad++; console.log('DIFFERENT ' + name + ': ' + why.join('; ')); }
 });
 fs.rmSync(tmp, { recursive: true, force: true });
-console.log(ran + ' SBGN-ML maps, macromolecules and simple chemicals made, named, with state variables: ' + (bad ? bad + ' different' : 'all the same'));
+console.log(ran + ' SBGN-ML maps, macromolecules and simple chemicals made, named, with state variables and units of information (' + made.filter(function (m) { return m.single; }).length + ' made multimers, ' +
+  made.filter(function (m) { return m.multi; }).length + ' multimers made single): ' + (bad ? bad + ' different' : 'all the same'));
 process.exit(bad ? 1 : 0);

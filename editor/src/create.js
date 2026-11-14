@@ -6,9 +6,11 @@
     // Full, and for now only on SBGN-ML maps: sbgn_edit (renderers/converter/sbgn_edit.js, its master, tested against the
     // converter by tests/sbgn-create.js) writes what is made into the editor's GraphML as the converter writes it, and
     // into the SBGN-ML file. So far: a macromolecule, its name, its state variables (added from the right-click menu over
-    // a macromolecule, user: "Auxiliary units - remove this section, to be added via right click"), and deleting them; a
-    // simple chemical, 40 by 40 at the map's scale, with its name only (user, 2026-11-14: no state variable or unit of
-    // information on it for now, though SBGN allows them: CellDesigner keeps none, and they are rarely welcome there).
+    // a macromolecule, user: "Auxiliary units - remove this section, to be added via right click"), its units of
+    // information (free text, user: "they should know notation and they should type it themselves"), a multimer or a
+    // single macromolecule again (right-click Make multimer, Make macromolecule), and deleting them; a simple chemical,
+    // 40 by 40 at the map's scale, with its name only (user, 2026-11-14: no state variable or unit of information on it
+    // for now, though SBGN allows them: CellDesigner keeps none, and they are rarely welcome there).
     // Nothing asks for a name when made (user: "I will name when I want to name"): a double click on a named entity or a
     // state variable, or a click on a state variable already selected, opens its text in place, in the glyph's own
     // colours and font (user: "simply make it editable for the text"); Enter or a click elsewhere keeps it, Esc not.
@@ -115,18 +117,32 @@
       PLACES.forEach(function (q) { var d = Math.hypot(b[0] + (0.5 + q[0]) * b[2] - P[0], b[1] + (0.5 + q[1]) * b[3] - P[1]); if (d < d0) { d0 = d; best = q; } });
       return best.slice();
     }
-    window.m2EditAddState = function () {   // the right-click menu's Add state variable over a macromolecule
-      var P = rclick;
-      if (!palOn() || !P || svAt(P) || macroAt(P) < 0) return null;
-      return function () { makeState(P); };
+    // the right-click menu over a macromolecule (not over its state variables or units): Add state variable, Add unit of
+    // information, Make multimer or Make macromolecule (user, 2026-11-14: SBGN's names, macromolecule and macromolecule
+    // multimer); [label, action] pairs
+    window.m2EditNodeItems = function () {
+      var P = rclick, i = P && palOn() && !svAt(P) ? macroAt(P) : -1;
+      if (i < 0) return null;
+      var id = nodes2[i].id, multi = isMulti(i);
+      return [['Add state variable', function () { makeState(P); }],
+              ['Add unit of information', function () { typeIn(id, null, true); }],
+              [multi ? 'Make macromolecule' : 'Make multimer', function () {
+                var t2 = sbJs.multimer(text, id, !multi);
+                if (t2 === text) return;
+                remember(false); text = t2; made(id);
+              }]];
     };
+    function isMulti(i) {   // drawn as a multimer: yEd's mcount (sbgn_edit.multimer)
+      var r = realizerOf(nodes2[i].el), sp = r && Array.prototype.filter.call(r.children, function (c) { return c.localName === 'StyleProperties'; })[0];
+      return !!sp && Array.prototype.some.call(sp.children, function (c) { return c.getAttribute('name') === 'com.yworks.sbgn.style.mcount' && c.getAttribute('value') !== '1'; });
+    }
     function makeState(P) {   // an empty state variable on the first free place in ORDER (user: "anywhere within the shape ... start from the bottom"), selected to be dragged
       var i = macroAt(P);
       if (i < 0) return;
       var b = boxOf(i), have = svList(i), r = ORDER.filter(function (q) {
         return !have.some(function (h) { return Math.hypot(b[0] + (0.5 + q[0]) * b[2] - h[1][0], b[1] + (0.5 + q[1]) * b[3] - h[1][1]) < Math.max(18, h[2][0]); });
       })[0] || ORDER[0];
-      var id = nodes2[i].id, j = have.length;
+      var id = nodes2[i].id, j = have.filter(function (h) { return h[3] === SV; }).length;   // after the state variables, before the units
       remember(false); text = sbJs.state(text, id, '', r[0], r[1]); made(id);
       selN = []; svSel = { id: id, j: j }; paint();
     }
@@ -135,21 +151,26 @@
       nodes2.forEach(function (n, i) { if (n.id === id) selN = [i]; });
       dirty = true; quiet(); render(); paint(); changed();
     }
-    function svIcons() {   // the map's state variable icons: id -> text
+    // a node's icons: its state variables and units of information (yEd's names), as one list in the order the node has
+    // them (state variables first); svSel's j counts in that list, sbgn_edit counts each kind on its own (q[4])
+    var SV = 'StateVariable', UI = 'UnitOfInformation';
+    function svIcons() {   // the map's icons of both kinds: id -> [kind, text]
       var res = {};
       Array.prototype.forEach.call(doc.getElementsByTagNameNS(Y, 'Resource'), function (q) {
-        var gn = q.getElementsByTagNameNS(Y, 'GenericNode')[0], l = gn && gn.getElementsByTagNameNS(Y, 'NodeLabel')[0];
-        if (gn && /StateVariable$/.test(gn.getAttribute('configuration') || '')) res[q.getAttribute('id')] = l ? ownText(l) : '';
+        var gn = q.getElementsByTagNameNS(Y, 'GenericNode')[0], l = gn && gn.getElementsByTagNameNS(Y, 'NodeLabel')[0], m = gn && /(StateVariable|UnitOfInformation)$/.exec(gn.getAttribute('configuration') || '');
+        if (m) res[q.getAttribute('id')] = [m[1], l ? ownText(l) : ''];
       });
       return res;
     }
     function ownText(l) { var t = ''; for (var c = l.firstChild; c; c = c.nextSibling) if (c.nodeType === 3 || c.nodeType === 4) t += c.nodeValue; return t; }
-    function svList(i, res) {   // the state variables shown on node i: [text, centre in yEd units, size]; res: svIcons(), read once by a caller going through many nodes
-      var r = realizerOf(nodes2[i].el), b = boxOf(i), out = [];
+    function svList(i, res) {   // the icons shown on node i: [text, centre in yEd units, size, kind, index among its kind]; res: svIcons(), read once by a caller going through many nodes
+      var r = realizerOf(nodes2[i].el), b = boxOf(i), out = [], n = {};
       res = res || svIcons();
       if (r) Array.prototype.forEach.call(r.children, function (l) {
-        if (l.localName !== 'NodeLabel' || !(l.getAttribute('iconData') in res)) return;
-        out.push([res[l.getAttribute('iconData')], [b[0] + num(l, 'x') + num(l, 'width') / 2, b[1] + num(l, 'y') + num(l, 'height') / 2], [num(l, 'width'), num(l, 'height')]]);
+        var q = l.localName === 'NodeLabel' && res[l.getAttribute('iconData')];
+        if (!q) return;
+        n[q[0]] = (n[q[0]] || 0) + 1;
+        out.push([q[1], [b[0] + num(l, 'x') + num(l, 'width') / 2, b[1] + num(l, 'y') + num(l, 'height') / 2], [num(l, 'width'), num(l, 'height')], q[0], n[q[0]] - 1]);
       });
       return out;
     }
@@ -157,37 +178,50 @@
       var r = realizerOf(nodes2[i].el), l = r && Array.prototype.filter.call(r.children, function (c) { return c.localName === 'NodeLabel' && !c.getAttribute('iconData'); })[0];
       return l ? ownText(l) : '';
     }
-    // a name (j null) or the j-th state variable's value typed in a box over the map; Enter or leaving it keeps it, Esc not
+    // a name (j null), or the j-th icon's text (a state variable's value, a unit of information), typed in a box over the
+    // map; Enter or leaving it keeps it, Esc not. fresh: a new unit of information, made only when Enter or leaving it
+    // keeps some text (user, 2026-11-14: no predefined units, the reader types N:3, mt:prot, ct:mRNA)
     var typing = null;
-    function typeIn(id, j) {
+    function typeIn(id, j, fresh) {
       if (typing) typing.done(true);
       var i = nodes2.findIndex(function (n) { return n.id === id; });
       if (i < 0) return;
       var b = boxOf(i), sv = j == null ? null : svList(i)[j];
       if (j != null && !sv) return;
+      if (fresh) {   // where the converter will put it: the last of the node's units, spread evenly along the top
+        var nu = svList(i).filter(function (q) { return q[3] === UI; }).length;
+        sv = ['', [b[0] + (nu + 1) / (nu + 2) * b[2], b[1]], [45, 16], UI, nu];
+      }
+      var unit = !!sv && sv[3] === UI;
       selN = []; selP = []; selE = []; part = null; svSel = null; paint();   // only the cursor while typing, nothing shown selected (user, 2026-11-14)
       // the text edited in place (user, 2026-11-14: "do not change the color ... just simply make it editable"): the box
       // inside the glyph's outline, in its fill, text colour and font size, no frame
       var r = realizerOf(nodes2[i].el), fl = r && Array.prototype.filter.call(r.children, function (c) { return c.localName === 'Fill'; })[0];
-      var lab = j == null ? r && Array.prototype.filter.call(r.children, function (c) { return c.localName === 'NodeLabel' && !c.getAttribute('iconData'); })[0] : null;
+      var lab = !sv ? r && Array.prototype.filter.call(r.children, function (c) { return c.localName === 'NodeLabel' && !c.getAttribute('iconData'); })[0] : null;
       var fs = lab ? num(lab, 'fontSize') || 12 : 10, inset = 2;
-      var at0 = j == null ? [b[0] + inset, b[1] + inset, b[2] - 2 * inset, b[3] - 2 * inset] : [sv[1][0] - sv[2][0] / 2 + 1, sv[1][1] - sv[2][1] / 2 + 1, sv[2][0] - 2, sv[2][1] - 2];
-      var inp = document.createElement('input'), before = j == null ? nameOf(i) : sv[0], m0 = map;
+      var at0 = !sv ? [b[0] + inset, b[1] + inset, b[2] - 2 * inset, b[3] - 2 * inset] : [sv[1][0] - sv[2][0] / 2 + 1, sv[1][1] - sv[2][1] / 2 + 1, sv[2][0] - 2, sv[2][1] - 2];
+      var inp = document.createElement('input'), before = !sv ? nameOf(i) : sv[0], m0 = map;
       inp.type = 'text'; inp.className = 'm2-ed-type'; inp.value = before; inp.spellcheck = false;
-      inp.setAttribute('aria-label', j == null ? 'Name' : 'State variable (value, or value@site)');
+      inp.setAttribute('aria-label', !sv ? 'Name' : unit ? 'Unit of information' : 'State variable (value, or value@site)');
       // the drawn text hidden while typing, the field itself transparent (user, 2026-11-14: a filled field cut the shape's
       // rounded corners); before the editor's own drawing is in the page, the field in the glyph's fill. Whether the
       // drawing is there, not whether it has text: an empty glyph has no text to hide and still got the filled box (user,
       // 2026-11-14)
-      var hid = textsOf(i, j);
+      var hid = fresh ? [] : textsOf(i, j);
       hid.forEach(function (el) { el.style.visibility = 'hidden'; });
-      inp.style.background = gN && gN[nodes2[i].id] ? 'transparent' : j == null && fl && fl.getAttribute('hasColor') !== 'false' && fl.getAttribute('color') ? fl.getAttribute('color').slice(0, 7) : '#fff';
+      if (fresh) inp.style.border = '1px solid #000';   // nothing drawn yet: the unit's own outline
+      inp.style.background = fresh ? '#fff' : gN && gN[nodes2[i].id] ? 'transparent' : !sv && fl && fl.getAttribute('hasColor') !== 'false' && fl.getAttribute('color') ? fl.getAttribute('color').slice(0, 7) : '#fff';
       inp.style.color = lab && lab.getAttribute('textColor') || '#000';
       var place = function () {   // at the glyph in the map's units: again after every zoom or pan (paint), so a pinch keeps it on its glyph
         var st = inp.style;
+        if (unit) {   // a unit of information grows with its text round its centre, as the converter sizes it (5.4 a character, 8 more)
+          var cx = at0[0] + at0[2] / 2, uw = Math.max(at0[2], Math.ceil(inp.value.length * 5.4 + 8) + 4);
+          at0[0] = cx - uw / 2; at0[2] = uw;
+        }
         st.left = sx(at0[0]) + 'px'; st.top = sy(at0[1]) + 'px'; st.width = at0[2] * V.z + 'px'; st.height = at0[3] * V.z + 'px'; st.fontSize = fs * V.z + 'px';
-        if (j != null) st.borderRadius = at0[3] * V.z / 2 + 'px';
+        if (sv && !unit) st.borderRadius = at0[3] * V.z / 2 + 'px';
       };
+      if (unit) inp.addEventListener('input', place);
       place();
       V.view.appendChild(inp);
       typing = {
@@ -195,9 +229,9 @@
           if (!typing || typing.inp !== inp) return;
           typing = null; inp.remove(); hid.forEach(function (el) { el.style.visibility = ''; });
           var v = inp.value.replace(/[\r\n]+/g, ' ');
-          if (j != null) v = v.replace(/@+$/, '');   // P@ is P (a site needs a name)
+          if (sv && !unit) v = v.replace(/@+$/, '');   // P@ is P (a site needs a name)
           if (!keep || v === before.replace(/[\r\n]+/g, ' ') || !on || map !== m0) return;   // a name on several lines, untouched, kept as it was (the box shows it on one)
-          var t2 = j == null ? sbJs.label(text, id, v) : sbJs.stateValue(text, id, j, v);
+          var t2 = fresh ? sbJs.unit(text, id, v) : !sv ? sbJs.label(text, id, v) : unit ? sbJs.unitValue(text, id, sv[4], v) : sbJs.stateValue(text, id, sv[4], v);
           if (t2 === text) return;
           remember(false); text = t2; parse(); dirty = true; quiet(); render(); paint(); changed();
         }, inp: inp, place: place
@@ -211,7 +245,7 @@
       inp.addEventListener('pointerdown', function (e) { e.stopPropagation(); });
       setTimeout(function () { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }, 0);   // only the cursor, at the end (user: "simple cursor where I need"), nothing selected in blue
     }
-    // a double click on a named entity, or on one of its state variables, opens its text
+    // a double click on a named entity, or on one of its state variables or units of information, opens its text
     V.view.addEventListener('dblclick', function (e) {
       if (!palOn() || !editing(e)) return;
       if (tool || Date.now() - placedAt < 600) { e.stopImmediatePropagation(); return; }   // the clicks of a placing: no box
@@ -219,7 +253,7 @@
       if (q) { e.stopImmediatePropagation(); typeIn(nodes2[q[0]].id, q[1]); return; }
       if (i >= 0) { e.stopImmediatePropagation(); typeIn(nodes2[i].id, null); }
     }, true);
-    function svAt(P) {   // the state variable under P: [node, j] (its circle may stand out of its node)
+    function svAt(P) {   // the state variable or unit of information under P: [node, j] (it may stand out of its node)
       var res = svIcons(), found = null, pad = 3 / V.z;
       nodes2.forEach(function (n, k) {
         if (n.shape.kind !== 'Macromolecule') return;
@@ -252,11 +286,11 @@
       var again = !!svSel && svSel.id === nodes2[q[0]].id && svSel.j === q[1];
       selN = []; selP = []; selE = []; part = null;
       svSel = { id: nodes2[q[0]].id, j: q[1] };
-      svDrag = { i: q[0], again: again, x: e.clientX, y: e.clientY, to: null, r: null };
+      svDrag = { i: q[0], again: again, x: e.clientX, y: e.clientY, to: null, r: null, fixed: svList(q[0])[q[1]][3] === UI };   // a unit of information stays where the converter puts it
       paint();
       return true;
     }
-    function textsOf(i, j) {   // the drawn text of node i's name (j null) or of its j-th state variable
+    function textsOf(i, j) {   // the drawn text of node i's name (j null) or of its j-th icon
       var g = gN && gN[nodes2[i].id];
       if (!g) return [];
       var svs = svList(i), r = V.view.getBoundingClientRect(), k = V.pz();
@@ -280,7 +314,7 @@
     window.addEventListener('pointermove', function (e) {
       if (!svDrag || !svSel) return;
       if (!e.buttons) { svUp(); return; }   // released outside the window: no sticky hand
-      if (!svDrag.to && Math.hypot(e.clientX - svDrag.x, e.clientY - svDrag.y) < 4) return;
+      if (svDrag.fixed || (!svDrag.to && Math.hypot(e.clientX - svDrag.x, e.clientY - svDrag.y) < 4)) return;
       var i = svDrag.i, b = boxOf(i), r = border(i, at(e)), q = svList(i)[svSel.j];
       if (!svDrag.parts) svDrag.parts = svParts(i, q);   // the state variable itself moves (user, 2026-11-14: "as with moving other items on the map"), no copy
       svDrag.r = r; svDrag.to = [b[0] + (0.5 + r[0]) * b[2], b[1] + (0.5 + r[1]) * b[3]];
@@ -292,12 +326,14 @@
     function svUp() {
       var d = svDrag; svDrag = null;
       if (!d) return;
-      if (d.r && svSel) { remember(false); text = sbJs.stateMove(text, svSel.id, svSel.j, d.r[0], d.r[1]); parse(); dirty = true; render(); paint(); changed(); }
+      if (d.r && svSel) { remember(false); text = sbJs.stateMove(text, svSel.id, svList(d.i)[svSel.j][4], d.r[0], d.r[1]); parse(); dirty = true; render(); paint(); changed(); }
       else if (d.again && svSel) typeIn(svSel.id, svSel.j);   // a click on it selected: its text
     }
     function svDelete() {
-      if (svNode() < 0) return false;
-      remember(false); text = sbJs.stateDelete(text, svSel.id, svSel.j, { sbgn: sb.base }); svSel = null;
+      var i = svNode();
+      if (i < 0) return false;
+      var q = svList(i)[svSel.j];
+      remember(false); text = (q[3] === UI ? sbJs.unitDelete : sbJs.stateDelete)(text, svSel.id, q[4], { sbgn: sb.base }); svSel = null;
       parse(); dirty = true; render(); paint(); changed();
       return true;
     }
@@ -340,7 +376,7 @@
       var d = KEYS[e.key];
       if (!d || !svSel || !palOn() || e.ctrlKey || e.metaKey || e.altKey || /input|textarea|select/i.test(document.activeElement.tagName)) return;
       var i = svNode();
-      if (i < 0) return;
+      if (i < 0 || svList(i)[svSel.j][3] === UI) return;   // a unit of information: not moved
       e.preventDefault(); e.stopImmediatePropagation();
       var b = boxOf(i), q = svList(i)[svSel.j];
       if (!svKey) svKey = { i: i, t: toT(b, [(q[1][0] - b[0]) / b[2] - 0.5, (q[1][1] - b[1]) / b[3] - 0.5]), c0: q[1], parts: svParts(i, q) };
@@ -357,7 +393,7 @@
       if (!KEYS[e.key] || !svKey) return;
       var k = svKey; svKey = null;
       if (!k.r || !svSel) return;
-      remember(false); text = sbJs.stateMove(text, svSel.id, svSel.j, k.r[0], k.r[1]); parse(); dirty = true; render(); paint(); changed();
+      remember(false); text = sbJs.stateMove(text, svSel.id, svList(k.i)[svSel.j][4], k.r[0], k.r[1]); parse(); dirty = true; render(); paint(); changed();
     }, true);
     document.addEventListener('keydown', function (e) {   // Esc, undo, redo and select all leave no state variable selected
       if (svSel && (e.key === 'Escape' || ((e.ctrlKey || e.metaKey) && /^[zya]$/i.test(e.key)))) { svSel = null; paint(); }
@@ -366,7 +402,7 @@
       if ((e.key !== 'Delete' && e.key !== 'Backspace') || !palOn() || /input|textarea|select/i.test(document.activeElement.tagName)) return;
       if (svDelete() || (selN.length && !selP.length && nodesDelete(selN))) { e.preventDefault(); e.stopImmediatePropagation(); }
     }, true);
-    window.m2EditDelete = function () {   // the right-click menu's Delete over a state variable, a macromolecule or a simple chemical
+    window.m2EditDelete = function () {   // the right-click menu's Delete over a state variable, a unit of information, a macromolecule or a simple chemical
       if (!palOn() || !rclick) return null;
       var q = svAt(rclick);
       if (q) return function () { svSel = { id: nodes2[q[0]].id, j: q[1] }; svDelete(); };

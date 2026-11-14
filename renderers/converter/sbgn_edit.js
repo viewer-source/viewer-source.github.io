@@ -164,17 +164,22 @@
       var B = g.box, w = B[2], h = B[3], to = function (el, k, v) { if (el.getAttribute(k) !== v) T.set(el, k, v); };
       ['x', 'y', 'width', 'height'].forEach(function (k, j) { to(n.geo, k, repr(B[j])); });
       // what graphml.write works out from the box: the state variables' places (their ratios read from the file as
-      // sbgnml.read reads them; units of information keep theirs), a compartment's name where the file has it
+      // sbgnml.read reads them), the units of information spread evenly along the top (graphml.write, whatever the
+      // file's places), a compartment's name where the file has it. Counted by kind: one deleted in the editor is cut
       var r = n.geo.parentNode, labs = kids(r, 'NodeLabel'), icons = labs.filter(function (l) { return l.getAttribute('iconData'); });
-      var states = kids(g.el, 'glyph').filter(function (c) { return c.getAttribute('class') === 'state variable'; });
+      var states = kids(g.el, 'glyph').filter(function (c) { return c.getAttribute('class') === 'state variable'; }), units = unitsOf(g.el), js = 0, ju = 0;
       var R = G.R || (G.R = resources(G));
-      icons.forEach(function (l, j) {
-        var p = l.getElementsByTagNameNS(YNS, 'SmartNodeLabelModelParameter')[0], rx, ry;
+      icons.forEach(function (l) {
+        var p = l.getElementsByTagNameNS(YNS, 'SmartNodeLabelModelParameter')[0], kind = (R[l.getAttribute('iconData')] || {}).kind, rx, ry, j;
         if (!p) return;
-        if (j >= states.length && (R[l.getAttribute('iconData')] || {}).kind === 'StateVariable') { T.cut(l); return; }   // deleted in the editor
-        if (j < states.length) {
+        if (kind === 'StateVariable') {
+          if ((j = js++) >= states.length) { T.cut(l); return; }   // deleted in the editor
           var cb = kid(states[j], 'bbox'), cx = F(cb.getAttribute('x')) + F(cb.getAttribute('w')) / 2, cy = F(cb.getAttribute('y')) + F(cb.getAttribute('h')) / 2;
           rx = (cx - B[0] - w / 2) / w; ry = (cy - B[1] - h / 2) / h;
+          to(p, 'nodeRatioX', repr(rx)); to(p, 'nodeRatioY', repr(ry));
+        } else if (kind === 'UnitOfInformation') {
+          if ((j = ju++) >= units.length) { T.cut(l); return; }
+          rx = uRatio(j, units.length); ry = -0.5;
           to(p, 'nodeRatioX', repr(rx)); to(p, 'nodeRatioY', repr(ry));
         } else { rx = F(p.getAttribute('nodeRatioX')); ry = F(p.getAttribute('nodeRatioY')); }
         to(l, 'x', repr((0.5 + rx) * w - F(l.getAttribute('width')) / 2)); to(l, 'y', repr((0.5 + ry) * h - F(l.getAttribute('height')) / 2));
@@ -221,36 +226,54 @@
     Object.keys(S.glyph).forEach(function (id) {
       var g = S.glyph[id], cls = g.el.getAttribute('class') || '', lab = kid(g.el, 'label'), name = lab ? lab.getAttribute('text') || '' : '';
       if (!G.node[id]) {
-        if (!MAKE[cls] || g.el.parentNode.localName !== 'map') return;
-        St = St || styles(S); D = D || {}; D[cls] = D[cls] || defaults(t, opt, cls);
+        var base = cls.replace(/ multimer$/, '');
+        if (!MAKE[base] || g.el.parentNode.localName !== 'map') return;
+        St = St || styles(S); D = D || {}; D[base] = D[base] || defaults(t, opt, base);
         var st = St.filter(function (x) { return x.ids.indexOf(id) >= 0; })[0], cref = g.el.getAttribute('compartmentRef');
-        out = add(out, { id: id, cls: cls, label: name, box: g.box, parent: cref && S.glyph[cref] ? cref : null, fill: st ? st.fill : null, font: st && st.font || D[cls].font, states: svOf(g) }, opt);
+        out = add(out, { id: id, cls: base, label: name, box: g.box, parent: cref && S.glyph[cref] ? cref : null, fill: st ? st.fill : null, font: st && st.font || D[base].font,
+                         states: svOf(g), units: unitsOf(g.el).map(unitText), multimer: fileMulti(g.el) }, opt);
         return;
       }
       if (!NAMED.test(cls)) return;
       if (Hfor !== out) { H = gml(out, opt); Hfor = out; }
       var L = labelsOf(H, id);
       if (L.main && ownText(L.main) !== name) out = label(out, id, name, opt);
-      var svs = L.icons.filter(function (q) { return q[1].kind === 'StateVariable'; });
+      var svs = L.icons.filter(function (q) { return q[1].kind === 'StateVariable'; }), uis = L.icons.filter(function (q) { return q[1].kind === 'UnitOfInformation'; });
+      var multi = isMulti(H, id);
       svOf(g).forEach(function (q, j) {
         if (j >= svs.length) out = state(out, id, q[0], q[1], q[2], opt);
         else if ((svs[j][1].text || '') !== q[0]) out = stateValue(out, id, j, q[0], opt);
       });
+      unitsOf(g.el).map(unitText).forEach(function (u, j) {
+        if (j >= uis.length) out = unit(out, id, u, opt);
+        else if ((uis[j][1].text || '') !== u) out = unitValue(out, id, j, u, opt);
+      });
+      if (multi !== fileMulti(g.el)) out = multimer(out, id, !multi, opt);
     });
     return out;
   }
 
   // ---------- back into the SBGN-ML text ----------
   function write(t, gtext, opt) {
-    t = drop(t, gone(gtext), opt);
+    var dropped = {}, was = gone(gtext);   // dropped: glyphs one of whose units of information was deleted; was: ids never given again (the comment stays with the GraphML)
+    t = drop(t, was, opt, dropped);
     var S = sbgn(t, opt), G = gml(gtext, opt), T = new Tags(t, S.doc);
     var close = function (a, b) { return Math.abs(a - b) < 1e-6; };
-    var iconsOf = function (id) {   // [text, rx, ry, label] of a node's state variables in the GraphML
-      return labelsOf(G, id).icons.filter(function (q) { return q[1].kind === 'StateVariable'; }).map(function (q) {
+    var iconsOf = function (id, kind) {   // [text, rx, ry] of a node's state variables (or units of information) in the GraphML
+      return labelsOf(G, id).icons.filter(function (q) { return q[1].kind === (kind || 'StateVariable'); }).map(function (q) {
         var p = q[0].getElementsByTagNameNS(YNS, 'SmartNodeLabelModelParameter')[0];
         return [q[1].text || '', F(p.getAttribute('nodeRatioX')), F(p.getAttribute('nodeRatioY'))];
       });
     };
+    // units of information changed in the editor (one added, deleted or retyped): all of the glyph's written again where
+    // the converter draws them, spread evenly along the top (layout.decorations); untouched ones stay as the file has them
+    var uChanged = {};
+    Object.keys(S.glyph).forEach(function (id) {
+      var g = S.glyph[id];
+      if (!G.node[id] || !NAMED.test(g.el.getAttribute('class') || '')) return;
+      var have = unitsOf(g.el).map(unitText), now = iconsOf(id, 'UnitOfInformation').map(function (q) { return q[0]; });
+      if (dropped[id] || have.length !== now.length || have.some(function (u, j) { return u !== now[j]; })) uChanged[id] = 1;
+    });
     var setXY = function (el, p, kx, ky) {
       kx = kx || 'x'; ky = ky || 'y';
       if (!close(F(el.getAttribute(kx)), p[0])) T.set(el, kx, num(p[0]));
@@ -280,7 +303,7 @@
       var f = map[id] = function (p) { return [b[0] + (o[2] ? (p[0] - o[0]) * b[2] / o[2] : b[2] / 2), b[1] + (o[3] ? (p[1] - o[1]) * b[3] / o[3] : b[3] / 2)]; };
       kids(g.el, 'glyph').forEach(function (c) {   // state variables, units of information, glyphs the converter left out
         var cb = kid(c, 'bbox');
-        if (!cb || G.node[c.getAttribute('id')] || svMoved.has(cb)) return;
+        if (!cb || G.node[c.getAttribute('id')] || svMoved.has(cb) || (uChanged[id] && c.getAttribute('class') === 'unit of information')) return;
         var w = F(cb.getAttribute('w')), h = F(cb.getAttribute('h')), m = f([F(cb.getAttribute('x')) + w / 2, F(cb.getAttribute('y')) + h / 2]);
         setXY(cb, [m[0] - w / 2, m[1] - h / 2]);
       });
@@ -293,9 +316,15 @@
     var bboxXml = function (b) { return '<' + pre + 'bbox x="' + num(b[0]) + '" y="' + num(b[1]) + '" w="' + num(b[2]) + '" h="' + num(b[3]) + '"/>'; };
     var svXml = function (gid, k, q, b, ind) {
       var v = q[0].split('@'), val = v.shift(), vr = v.join('@'), sid = gid + '_sv' + k, j = 0;
-      while (S.glyph[sid] || S.port[sid] || S.arc[sid]) sid = gid + '_sv' + k + '_' + (++j);
+      while (S.glyph[sid] || S.port[sid] || S.arc[sid] || was.indexOf(sid) >= 0) sid = gid + '_sv' + k + '_' + (++j);
       return '\n' + ind + '<' + pre + 'glyph class="state variable" id="' + esc(sid) + '">\n' + ind + '  <' + pre + 'state value="' + esc(val) + '"' + (vr ? ' variable="' + esc(vr) + '"' : '') + '/>\n' +
         ind + '  ' + bboxXml(svBox(q[0], b, q[1], q[2])) + '\n' + ind + '</' + pre + 'glyph>';
+    };
+    var uiXml = function (gid, k, txt, b, ind) {   // a unit of information as sbgnml.write writes it
+      var uid = gid + '_ui' + k, j = 0;
+      while (S.glyph[uid] || S.port[uid] || S.arc[uid] || was.indexOf(uid) >= 0) uid = gid + '_ui' + k + '_' + (++j);
+      return '\n' + ind + '<' + pre + 'glyph class="unit of information" id="' + esc(uid) + '">\n' + ind + '  <' + pre + 'label text="' + esc(txt) + '"/>\n' +
+        ind + '  ' + bboxXml(b) + '\n' + ind + '</' + pre + 'glyph>';
     };
     Object.keys(S.glyph).forEach(function (id) {
       var g = S.glyph[id], n = G.node[id], cls = g.el.getAttribute('class') || '';
@@ -305,9 +334,29 @@
         if (lab) T.set(lab, 'text', ownText(L.main));
         else { var at1 = T.at.get(g.bbox)[0]; T.ed.push([at1, at1, '<' + pre + 'label text="' + esc(ownText(L.main)) + '"/>\n' + T.indent(g.bbox)]); }
       }
+      // made a multimer or a single macromolecule again (user, 2026-11-14): the class, where the converter would read the
+      // file otherwise (a multimer with N:1 reads as one unit: left as it is)
+      var base = cls.replace(/ multimer$/, ''), multi = isMulti(G, id);
+      if (MULTI.test(base) && multi !== fileMulti(g.el)) T.set(g.el, 'class', base + (multi ? ' multimer' : ''));
       var have = kids(g.el, 'glyph').filter(function (c) { return c.getAttribute('class') === 'state variable'; }), more = '';
-      var icons = iconsOf(id);
-      have.slice(icons.length).forEach(function (c) { T.cut(c); });   // deleted in the editor
+      var icons = iconsOf(id), hu = unitsOf(g.el), ui = iconsOf(id, 'UnitOfInformation'), cutEls = [];
+      have.slice(icons.length).forEach(function (c) { T.cut(c); cutEls.push(c); });   // deleted in the editor
+      var moreU = '';
+      if (uChanged[id]) {   // units of information: their text, all placed as the converter draws them, new ones written
+        hu.slice(ui.length).forEach(function (c) { T.cut(c); cutEls.push(c); });
+        ui.forEach(function (q, k) {
+          var ub = uBox(q[0], n.box, k, ui.length);
+          if (k >= hu.length) { moreU += uiXml(id, k, q[0], ub, T.indent(g.bbox)); return; }
+          var cb2 = kid(hu[k], 'bbox'), lab2 = kid(hu[k], 'label');
+          if (unitText(hu[k]) !== q[0]) {
+            if (lab2) T.set(lab2, 'text', q[0]);
+            else { var at3 = T.at.get(cb2)[0]; T.ed.push([at3, at3, '<' + pre + 'label text="' + esc(q[0]) + '"/>\n' + T.indent(cb2)]); }
+          }
+          setXY(cb2, ub);
+          if (!close(F(cb2.getAttribute('w')), ub[2])) T.set(cb2, 'w', num(ub[2]));
+          if (!close(F(cb2.getAttribute('h')), ub[3])) T.set(cb2, 'h', num(ub[3]));
+        });
+      }
       icons.forEach(function (q, j) {
         if (j >= have.length) { more += svXml(id, j, q, n.box, T.indent(g.bbox)); return; }
         var cb = kid(have[j], 'bbox');
@@ -318,7 +367,10 @@
         T.set(st, 'value', val);
         if (vr) T.set(st, 'variable', vr); else T.unset(st, 'variable');
       });
-      if (more) { var e1 = T.end(have.length ? have[have.length - 1] : g.bbox); T.ed.push([e1, e1, more]); }
+      if (more || moreU) {   // after the last state variable or unit of information that stays, else after the bbox
+        var lastKid = have.concat(hu).filter(function (c) { return cutEls.indexOf(c) < 0; }).sort(function (x, y) { return T.at.get(y)[0] - T.at.get(x)[0]; })[0];
+        var e1 = T.end(lastKid || g.bbox); T.ed.push([e1, e1, more + moreU]);
+      }
     });
     var mapEl = kids(S.doc.documentElement, 'map')[0], tops = kids(mapEl, 'glyph'), last = tops[tops.length - 1];
     var ind0 = last ? T.indent(last) : T.indent(mapEl) + '  ', fresh = '', St = null, joinTo = new Map();
@@ -330,9 +382,11 @@
       var up = n.el.parentNode; while (up && up.localName !== 'node') up = up.parentNode;
       var cref = up && S.glyph[up.getAttribute('id')] && S.glyph[up.getAttribute('id')].el.getAttribute('class') === 'compartment' ? up.getAttribute('id') : null;
       var L = labelsOf(G, id), name = L.main ? ownText(L.main) : '', fl = kid(r, 'Fill'), fill = fl && fl.getAttribute('hasColor') !== 'false' ? (fl.getAttribute('color') || '').toUpperCase() : null;
-      fresh += '\n' + ind0 + '<' + pre + 'glyph class="' + cls + '" id="' + esc(id) + '"' + (cref ? ' compartmentRef="' + esc(cref) + '"' : '') + '>' +
+      var fu = iconsOf(id, 'UnitOfInformation');
+      fresh += '\n' + ind0 + '<' + pre + 'glyph class="' + cls + (isMulti(G, id) && MULTI.test(cls) ? ' multimer' : '') + '" id="' + esc(id) + '"' + (cref ? ' compartmentRef="' + esc(cref) + '"' : '') + '>' +
         (name ? '\n' + ind0 + '  <' + pre + 'label text="' + esc(name) + '"/>' : '') + '\n' + ind0 + '  ' + bboxXml(n.box) +
-        iconsOf(id).map(function (q, k) { return svXml(id, k, q, n.box, ind0 + '  '); }).join('') + '\n' + ind0 + '</' + pre + 'glyph>';
+        iconsOf(id).map(function (q, k) { return svXml(id, k, q, n.box, ind0 + '  '); }).join('') +
+        fu.map(function (q, k) { return uiXml(id, k, q[0], uBox(q[0], n.box, k, fu.length), ind0 + '  '); }).join('') + '\n' + ind0 + '</' + pre + 'glyph>';
       if (fill) {   // its colour: a style of that fill and of its font, the one most of the map's glyphs of its class use (defaults' choice)
         St = St || styles(S);
         var fs = L.main ? F(L.main.getAttribute('fontSize')) : null, kin = function (x) { return x.ids.filter(function (i) { return S.glyph[i] && S.glyph[i].el.getAttribute('class') === cls; }).length; };
@@ -516,13 +570,14 @@
     return out;
   }
   // a state variable's icon of that text (shared, as yEd shares them): its id, the text with the icon added when new
-  function svIcon(t, text, opt, small) {   // small: the node's icons' own font size (a Newt map's), else 10
+  function svIcon(t, text, opt, small, kind) {   // small: the node's icons' own font size (a Newt map's), else 10; kind: UnitOfInformation, else a state variable
+    kind = kind || 'StateVariable';
     var G = gml(t, opt), R = resources(G), id = null, max = 0, fs = small ? String(small) : '10', k = (small || 10) / 10;
-    Object.keys(R).forEach(function (q) { max = Math.max(max, parseInt(q, 10) || 0); if (R[q].kind === 'StateVariable' && R[q].text === text && R[q].font === fs) id = id || q; });
+    Object.keys(R).forEach(function (q) { max = Math.max(max, parseInt(q, 10) || 0); if (R[q].kind === kind && R[q].text === text && R[q].font === fs) id = id || q; });
     if (id) return [id, t, R[id].size];
-    var sz = svSize(text, k), b = labelBox(text, sz[0], sz[1], k * 10 / 14);
+    var sz = kind === 'UnitOfInformation' ? [Math.ceil(text.length * ICON_CHAR * k + 8 * k), 16 * k] : svSize(text, k), b = labelBox(text, sz[0], sz[1], k * 10 / 14);
     id = String(max + 1);
-    var res = '<y:Resource id="' + id + '">\n        <yed:NodeRealizerIcon>\n          <y:GenericNode configuration="com.yworks.sbgn.StateVariable">\n' +
+    var res = '<y:Resource id="' + id + '">\n        <yed:NodeRealizerIcon>\n          <y:GenericNode configuration="com.yworks.sbgn.' + kind + '">\n' +
       '            <y:Geometry height="' + repr(sz[1]) + '" width="' + repr(sz[0]) + '" x="0.0" y="0.0"/>\n            <y:Fill color="#FFFFFF" transparent="false"/>\n            <y:BorderStyle color="#000000" type="line" width="1.0"/>\n' +
       '            <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="' + fs + '" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="' + repr(b[1]) +
       '" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="center" visible="true" width="' + repr(b[0]) + '" x="' + repr(b[2]) +
@@ -541,20 +596,23 @@
     }
     return [id, T.text(), sz];
   }
-  function nodeXml(o, svs) {   // svs: [[icon id, size, rx, ry], ...]
+  function nodeXml(o, svs) {   // svs: [[icon id, size, rx, ry], ...], state variables then units of information
     var w = o.box[2], h = o.box[3];
     return '<node id="' + esc(o.id) + '"><data key="ng">\n        <y:GenericNode configuration="com.yworks.sbgn.' + MAKE[o.cls] + '">\n' +
       '          <y:Geometry height="' + repr(h) + '" width="' + repr(w) + '" x="' + repr(o.box[0]) + '" y="' + repr(o.box[1]) + '"/>\n' +
       '          ' + (o.fill ? '<y:Fill color="' + o.fill + '" transparent="false"/>' : '<y:Fill transparent="false" hasColor="false"/>') + '\n' +
       '          <y:BorderStyle color="#000000" type="line" width="1.0"/>\n          ' + mainLabel(o.label || '', w, h, o.font || 14) +
       (svs || []).map(function (q) { return iconLabel(q[0], q[1], w, h, q[2], q[3]); }).join('') + '\n' +
-      (o.cls === 'macromolecule' ? '          <y:StyleProperties>\n            <y:Property class="java.lang.Integer" name="com.yworks.sbgn.style.radius" value="10"/>\n            </y:StyleProperties>\n' : '') +   // yEd's simple chemical template has none
+      (o.cls === 'macromolecule' || o.multimer ? '          <y:StyleProperties>\n            ' + (o.cls === 'macromolecule' ? '<y:Property class="java.lang.Integer" name="com.yworks.sbgn.style.radius" value="10"/>\n            ' : '') +
+        (o.multimer ? MCOUNT : '') + '</y:StyleProperties>\n' : '') +   // yEd's simple chemical template has none
       '        </y:GenericNode>\n      </data>\n    </node>';
   }
   function add(t, o, opt) {
     if (!MAKE[o.cls]) throw new Error('cannot make a ' + o.cls);
     var svs = [];
-    (o.cls === 'macromolecule' ? o.states || [] : []).forEach(function (q) { var r = svIcon(t, q[0], opt); t = r[1]; svs.push([r[0], r[2], q[1], q[2]]); });
+    var mac = o.cls === 'macromolecule';   // the house profile: state variables and units of information on macromolecules only
+    (mac ? o.states || [] : []).forEach(function (q) { var r = svIcon(t, q[0], opt); t = r[1]; svs.push([r[0], r[2], q[1], q[2]]); });
+    (mac ? o.units || [] : []).forEach(function (u, k, all) { var r = svIcon(t, u, opt, null, 'UnitOfInformation'); t = r[1]; svs.push([r[0], r[2], uRatio(k, all.length), -0.5]); });
     var G = gml(t, opt), T = new Tags(t, G.doc), xml = nodeXml(o, svs), graph;
     if (o.parent && G.node[o.parent]) graph = kids(G.node[o.parent].el, 'graph')[0];
     if (!graph) graph = kids(G.doc.documentElement, 'graph')[0];
@@ -587,20 +645,22 @@
     var L = G.node[id] && labelsOf(G, id), f = L && L.icons.map(function (q) { return q[1].font; }).filter(function (x) { return x && x !== '10'; })[0];
     return f ? F(f) : null;
   }
-  function state(t, id, value, rx, ry, opt) {
+  function state(t, id, value, rx, ry, opt, kind) {   // a state variable added after the node's last one (a unit of information after its last icon)
+    kind = kind || 'StateVariable';
     var G0 = gml(t, opt), n0 = G0.node[id];
-    if (!n0 || !/Macromolecule$/.test(n0.geo.parentNode.getAttribute('configuration') || '')) return t;   // the house profile: state variables on macromolecules only (none on a simple chemical)
-    var r = svIcon(t, value, opt, smallOf(t, id, opt, G0)); t = r[1];
+    if (!n0 || !/Macromolecule$/.test(n0.geo.parentNode.getAttribute('configuration') || '')) return t;   // the house profile: state variables and units of information on macromolecules only (none on a simple chemical)
+    var r = svIcon(t, value, opt, smallOf(t, id, opt, G0), kind); t = r[1];
     var G = gml(t, opt), n = G.node[id], L = n && labelsOf(G, id);
     if (!L || !L.main) return t;
-    var svs = L.icons.filter(function (q) { return q[1].kind === 'StateVariable'; }), after = svs.length ? svs[svs.length - 1][0] : L.main;
+    var svs = L.icons.filter(function (q) { return kind === 'UnitOfInformation' || q[1].kind === 'StateVariable'; }), after = svs.length ? svs[svs.length - 1][0] : L.main;
     var T = new Tags(t, G.doc), e = T.end(after);
     T.ed.push([e, e, iconLabel(r[0], r[2], n.box[2], n.box[3], rx, ry)]);
     return T.text();
   }
-  function stateValue(t, id, j, value, opt) {
-    var r = svIcon(t, value, opt, smallOf(t, id, opt)); t = r[1];
-    var G = gml(t, opt), n = G.node[id], L = n && labelsOf(G, id), q = L && L.icons.filter(function (x) { return x[1].kind === 'StateVariable'; })[j];
+  function stateValue(t, id, j, value, opt, kind) {
+    kind = kind || 'StateVariable';
+    var r = svIcon(t, value, opt, smallOf(t, id, opt), kind); t = r[1];
+    var G = gml(t, opt), n = G.node[id], L = n && labelsOf(G, id), q = L && L.icons.filter(function (x) { return x[1].kind === kind; })[j];
     if (!q) return t;
     var T = new Tags(t, G.doc), p = q[0].getElementsByTagNameNS(YNS, 'SmartNodeLabelModelParameter')[0];
     var rx = F(p.getAttribute('nodeRatioX')), ry = F(p.getAttribute('nodeRatioY')), w = n.box[2], h = n.box[3];
@@ -630,12 +690,13 @@
     var sz = SIZE[cls] || SIZE.macromolecule;
     return { w: sz[0] * s, h: sz[1] * s, font: best && best.font || Math.round(14 * s + 0.01), fill: best ? best.fill : null };
   }
-  function drop(t, ids, opt) {   // the file with the glyphs (state variables too) deleted in the editor taken out, and every arc at them
+  function drop(t, ids, opt, lost) {   // the file with the glyphs (state variables too) deleted in the editor taken out, and every arc at them; lost: the glyphs that lose a unit of information
     var S = sbgn(t, opt), del = {}, T = null;
     ids.forEach(function (id) {
       var g = S.glyph[id];
       if (!g) return;
       del[id] = 1;
+      if (lost && g.el.getAttribute('class') === 'unit of information' && g.el.parentNode.getAttribute) lost[g.el.parentNode.getAttribute('id')] = 1;
       Array.prototype.forEach.call(g.el.getElementsByTagName('*'), function (c) { if (c.getAttribute('id')) del[c.getAttribute('id')] = 1; });
     });
     if (!Object.keys(del).length) return t;
@@ -644,7 +705,7 @@
     Object.keys(S.arc).forEach(function (id) { var a = S.arc[id]; if (del[a.getAttribute('source')] || del[a.getAttribute('target')]) T.cut(a); });
     return T.text();
   }
-  function svLabel(G, id, j) { var L = G.node[id] && labelsOf(G, id); return L ? (L.icons.filter(function (x) { return x[1].kind === 'StateVariable'; })[j] || [])[0] : null; }
+  function svLabel(G, id, j, kind) { var L = G.node[id] && labelsOf(G, id); return L ? (L.icons.filter(function (x) { return x[1].kind === (kind || 'StateVariable'); })[j] || [])[0] : null; }
   function stateMove(t, id, j, rx, ry, opt) {   // the j-th state variable moved to rx, ry on its node's border (the editor's GraphML)
     var G = gml(t, opt), l = svLabel(G, id, j);
     if (!l) return t;
@@ -656,14 +717,63 @@
   // the j-th state variable deleted; opt.sbgn, the SBGN-ML file the GraphML is written into: one of the file's own is
   // named in the deleted-ids comment by its id, so write() takes out that element and no other (the GraphML holds the
   // file's remaining state variables first, in the file's order, then those made in the editor)
-  function stateDelete(t, id, j, opt) {
-    var G = gml(t, opt), l = svLabel(G, id, j);
+  function stateDelete(t, id, j, opt, kind) {   // kind UnitOfInformation: the j-th unit of information, the others spread again
+    var unit = kind === 'UnitOfInformation', G = gml(t, opt), l = svLabel(G, id, j, kind);
     if (!l) return t;
     var T = new Tags(t, G.doc); T.cut(l); t = T.text();
+    if (unit) t = respace(t, id, opt);
     var g = opt && opt.sbgn && sbgn(opt.sbgn, opt).glyph[id], del = gone(t);
-    var left = g ? kids(g.el, 'glyph').filter(function (c) { return c.getAttribute('class') === 'state variable' && del.indexOf(c.getAttribute('id')) < 0; }) : [];
+    var left = g ? (unit ? unitsOf(g.el) : kids(g.el, 'glyph').filter(function (c) { return c.getAttribute('class') === 'state variable'; })).filter(function (c) { return del.indexOf(c.getAttribute('id')) < 0; }) : [];
     return j < left.length && left[j].getAttribute('id') ? goneMark(t, [left[j].getAttribute('id')]) : t;
   }
+  // units of information (user, 2026-11-14: free text, "people know what they're doing"): spread evenly along the top as
+  // graphml.write places them, (k + 1) / (n + 1) of the width, again whenever one is added or deleted
+  function uRatio(k, n) { return (k + 1) / (n + 1) - 0.5; }
+  function respace(t, id, opt) {
+    var G = gml(t, opt), n = G.node[id], L = n && labelsOf(G, id);
+    if (!L) return t;
+    var us = L.icons.filter(function (q) { return q[1].kind === 'UnitOfInformation'; }), T = new Tags(t, G.doc), b = n.box;
+    us.forEach(function (q, k) {
+      var l = q[0], p = l.getElementsByTagNameNS(YNS, 'SmartNodeLabelModelParameter')[0], rx = uRatio(k, us.length), set = function (el, a, v) { if (el.getAttribute(a) !== v) T.set(el, a, v); };
+      set(p, 'nodeRatioX', repr(rx)); set(p, 'nodeRatioY', repr(-0.5));
+      set(l, 'x', repr((0.5 + rx) * b[2] - F(l.getAttribute('width')) / 2)); set(l, 'y', repr(-F(l.getAttribute('height')) / 2));
+    });
+    return T.text();
+  }
+  function unit(t, id, value, opt) { return respace(state(t, id, value, 0, -0.5, opt, 'UnitOfInformation'), id, opt); }
+  function unitValue(t, id, j, value, opt) { return stateValue(t, id, j, value, opt, 'UnitOfInformation'); }
+  function unitDelete(t, id, j, opt) { return stateDelete(t, id, j, opt, 'UnitOfInformation'); }
+  // a multimer (user, 2026-11-14: "make multimer ... make macromolecule"): yEd's two shapes, mcount 2 (graphml.write); the
+  // count, if any, is a unit of information the reader types (N:3)
+  var MCOUNT = '<y:Property class="java.lang.Integer" name="com.yworks.sbgn.style.mcount" value="2"/>', MULTI = /^(macromolecule|simple chemical|nucleic acid feature)$/;
+  function mcountOf(G, id) {
+    var r = G.node[id] && G.node[id].geo.parentNode, sp = r && kid(r, 'StyleProperties');
+    return sp ? kids(sp, 'Property').filter(function (p) { return p.getAttribute('name') === 'com.yworks.sbgn.style.mcount'; })[0] || null : null;
+  }
+  function isMulti(G, id) { var p = mcountOf(G, id); return !!p && p.getAttribute('value') !== '1'; }
+  function multimer(t, id, on, opt) {
+    var G = gml(t, opt), n = G.node[id];
+    if (!n || isMulti(G, id) === !!on) return t;
+    var T = new Tags(t, G.doc), p = mcountOf(G, id), r = n.geo.parentNode, sp = kid(r, 'StyleProperties');
+    if (!on) { T.cut(p); return T.text(); }
+    if (p) { T.set(p, 'value', '2'); return T.text(); }
+    if (sp) { var s = T.at.get(sp); if (s[2]) T.ed.push([s[0], s[1], '<y:StyleProperties>' + MCOUNT + '</y:StyleProperties>']); else { var c = T.t.lastIndexOf('</', T.end(sp) - 1); T.ed.push([c, c, MCOUNT]); } }
+    else { var c2 = T.t.lastIndexOf('</', T.end(r) - 1); T.ed.push([c2, c2, '<y:StyleProperties>' + MCOUNT + '</y:StyleProperties>']); }
+    return T.text();
+  }
+  // the file's side, read as sbgnml.read reads it: a glyph's units of information (an empty one only off a biological
+  // activity), their text, and whether the converter draws the glyph as a multimer (a count from N:x, else 2)
+  function unitsOf(el) {
+    var act = el.getAttribute('class') === 'biological activity';
+    return kids(el, 'glyph').filter(function (c) { return c.getAttribute('class') === 'unit of information' && (unitText(c) || !act); });
+  }
+  function unitText(c) { var l = kid(c, 'label'); return l ? l.getAttribute('text') || '' : ''; }
+  function fileMulti(el) {
+    if (!/ multimer$/.test(el.getAttribute('class') || '')) return false;
+    var n = unitsOf(el).map(unitText).filter(function (u) { return /^N:\d+$/.test(u); })[0];
+    return (n ? parseInt(n.slice(2), 10) : 2) > 1;
+  }
+  function uBox(txt, b, k, n) { var uw = Math.max(15, txt.length * 7); return [b[0] + (k + 1) / (n + 1) * b[2] - uw / 2, b[1] - 7.5, uw, 15]; }   // layout.decorations
   function remove(t, ids, opt) {   // nodes deleted in the editor's GraphML, with every line at them; their ids kept for write()
     var G = gml(t, opt), T = new Tags(t, G.doc), del = {};
     ids.forEach(function (id) { if (G.node[id]) { del[id] = 1; T.cut(G.node[id].el); } });
@@ -674,6 +784,7 @@
   function svText(value, variable) { return (value || '') + (variable ? '@' + variable : ''); }
   var HUB = /process|^(and|or|not|association|dissociation|equivalence)$/;
 
-  var api = { graphml: graphml, write: write, defaults: defaults, add: add, label: label, state: state, stateValue: stateValue, stateMove: stateMove, stateDelete: stateDelete, remove: remove, gone: gone, nameable: nameable };
+  var api = { graphml: graphml, write: write, defaults: defaults, add: add, label: label, state: state, stateValue: stateValue, stateMove: stateMove, stateDelete: stateDelete,
+              unit: unit, unitValue: unitValue, unitDelete: unitDelete, multimer: multimer, remove: remove, gone: gone, nameable: nameable };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.sbgn_edit = api;
 })(typeof self !== 'undefined' ? self : this);

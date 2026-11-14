@@ -565,8 +565,17 @@ says "the workbench", "the converter's repository", "a private repository".
   it selected opens its text. Text in place (user: "simple cursor where I need"): a double click on a named entity or a
   state variable, or that click, puts a field over the text in the glyph's own fill, text colour and font size, no
   frame, the cursor at the end, nothing selected; Enter or a click elsewhere keeps it (P, or P@S505), Esc not. Delete
-  (the key, or Delete in the right-click menu) removes the state variable selected, or the macromolecules and simple chemicals selected with
-  every line at them. No zoom on a double click anywhere in the viewer (user: "double click is for entering naming
+  (the key, or Delete in the right-click menu) removes the state variable or unit of information selected, or the
+  macromolecules and simple chemicals selected with every line at them. Units of information and multimers (user, 2026-11-14: "make multimer,
+  make macromolecule"; "there shouldn't be any predefined thing ... people know what they're doing"): the right-click
+  menu over a macromolecule has Add state variable, Add unit of information, then Make multimer (Make macromolecule on a
+  multimer, SBGN's names; the class written as `macromolecule multimer`, yEd's mcount 2). Add unit of information opens a
+  field on the top: free text, nothing offered or checked (N:3, mt:prot, ct:mRNA); Enter makes it, Esc or an empty field
+  makes none. A count is only what the reader types (N:x); nothing is added with Make multimer. Units sit where the
+  converter puts them, spread evenly along the top ((k + 1) / (n + 1) of the width), spread again when one is added or
+  deleted; they are selected, retyped and deleted like state variables but not dragged (the converter reads a unit's
+  text, not its place, so a moved unit would come back on the next build). In the file a unit changed rewrites all of
+  that glyph's units' boxes as the converter writes them (layout.decorations); untouched ones stay byte for byte. No zoom on a double click anywhere in the viewer (user: "double click is for entering naming
   field"). What is made, moved or deleted is written by `sbgn_edit.js` (add, label, state, stateValue, stateMove,
   stateDelete, remove, defaults; write() and graphml() carry them both ways; a deleted glyph's id kept in a comment at the
   end of the editor's GraphML, since a glyph missing from the GraphML is no proof: the converter leaves some out) as the
