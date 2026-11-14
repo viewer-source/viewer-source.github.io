@@ -18,7 +18,8 @@ CHEMICAL = 40.0  # metabolites are drawn as circles of this diameter, centred on
 # has 6 and 7)
 SQUARE = {2: (0, -1), 3: (0, 1), 4: (-1, -1), 5: (1, -1), 6: (-1, 1), 7: (1, 1)}
 
-# CellDesigner's anchor points on a node box (Startup Guide, Appendix 2.3; cd2sbgnml): the
+# CellDesigner's 16 ports on a node, worked out from its box and lying on its outline (CellDesigner's
+# anchor points; Startup Guide, Appendix 2.3; cd2sbgnml): the
 # quarter points (written for two processes on the same two species), the sides' middles and
 # the corners
 QUARTER = {'NNE': (.75, 0), 'ENE': (1, .25), 'ESE': (1, .75), 'SSE': (.75, 1),
@@ -136,7 +137,7 @@ def draw(diagram, ents, members, label, advanced, held=False):
     # each process's arcs, the main reactant and product first (layout.py), on the boxes as they are
     lines = lambda: main_lines(diagram, box, ents, (x0, y0))
 
-    # anchor points sit on the front shape of a multimer: CellDesigner draws it 6 smaller in
+    # ports sit on the front shape of a multimer: CellDesigner draws it 6 smaller in
     # width and height (the user's glycolysis file: PFKFB2 dimer; every multimer is a dimer here)
     front = {}
     for i, d in ents.items():

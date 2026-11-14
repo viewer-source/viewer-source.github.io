@@ -1505,7 +1505,7 @@
     }
     // a line's end moved on its node (user, 2026-11-12: "snap to center, bottom center, top center, left center, right
     // center"): an end square of a lit line dragged; it snaps to the nearest of the five, written as the port's offset
-    // from the node's centre (yEd's sx, sy or tx, ty); on a CellDesigner map cd_edit makes it the connection point
+    // from the node's centre (yEd's sx, sy or tx, ty); on a CellDesigner map cd_edit makes it CellDesigner's port
     // (none for the centre, N, S, W, E). A process glyph's main lines are not moved this way; a modifier's end there goes round it (procSpots)
     function portAt(P) {
       var R = 6 / V.z, L = lit(), best = null, dB = R;

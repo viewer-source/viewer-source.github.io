@@ -5,11 +5,23 @@ https://viewer-source.github.io. Names no private repository in files, pages, co
 says "the workbench", "the converter's repository", "a private repository".
 
 - Words (user, 2026-11-14: "our own vocabulary and be consistent everywhere"), the same on every map, in menus, help,
-  code and notes: **bend point**, a point where a line changes direction (CellDesigner calls it an anchor point,
-  `editPoints` in its file; yEd a bend, `y:Point`; SBGN-ML an intermediate point, `next`); **port**, the end of a
-  process's or logic gate's antenna, where its lines attach (SBGN-ML's `port`, which its schema calls an anchor point);
-  **end**, where a line meets a glyph. "Anchor point" is left to CellDesigner's own fixed places on a node's box (its
-  `anchor`, cdrender's anchorPoint) and never used for a bend point.
+  code and notes:
+  - **port**: where a line is attached to a glyph, the point it aims at: the centre, a place on a side, the tip of a
+    process's or logic gate's antenna, or on a CellDesigner map one of its 16 places named by compass direction (N,
+    NNE, NE, ...; its `linkAnchor`, which CellDesigner calls an anchor point). yEd keeps a port as an offset from the
+    node's centre (`sx`, `sy`, `tx`, `ty`; 0,0 the centre); SBGN-ML has a `port` only for a process's or gate's antenna.
+  - **end**: where the drawn line stops: on the glyph's outline for a port inside the glyph (a line aimed at the centre
+    is cut where it crosses the outline), the port itself for a port on the outline or at an antenna's tip.
+  - **antenna**: the short stick from a process or logic gate to its port.
+  - **bend point**: a point where a line changes direction (CellDesigner: an anchor point, `editPoints`; yEd: a bend,
+    `y:Point`; SBGN-ML: an intermediate point, `next`).
+  - **box** and **outline**: a glyph's box is the rectangle its file gives (position and size: CellDesigner's
+    `bounds`, yEd's `y:Geometry`, SBGN-ML's `bbox`), whatever its shape; its outline is the shape drawn in it (a
+    rectangle, a circle, a hexagon). CellDesigner's 16 ports are worked out from the box and lie on the outline: on a
+    rectangle at its corners, the sides' middles and quarter points, on a circle every 22.5 degrees round it, on a
+    phenotype on its slanted sides (cdrender's anchorPoint).
+  "Anchor point" is not one of our words: it stays only where CellDesigner's or MINERVA's own names are quoted
+  (menus, XML, function names such as anchorPoint, kept as they are).
 - The viewer: `_includes/atlas-app.html` (list on the left, the map, its panel, search, downloads row). It never
   knows a map's source format.
 - Two modes (user, 2026-11-08). Presentation, the default: a fixed list for reading and reviewing maps, as a published
@@ -377,8 +389,8 @@ says "the workbench", "the converter's repository", "a private repository".
   inside bottom label (its height as cdrender writes it) and the residue circles, structural states and open unit of
   information round an alias as state labels, so Pack leaves them room as on a yEd map; every line keeps its connection
   point (tidy.py `keep_ports`: CellDesigner moves it with the node, and snap_grid's straightened ports had turned ENE into
-  E); a connection point still where it was on a node Snap or Pack resized is no move either, so a later move, an undo or a redo keeps ENE (2026-11-13, user: it came back as E; `tests/cd-snap-redo.js` in the workflow Compare renderers); cd_edit writes back the bounds, inner positions and bend points that changed. Checked on the 21 demo maps (both
-  tools, the files read back, no connection point changed). Not on CellDesigner maps: the live
+  E); a port still where it was on a node Snap or Pack resized is no move either, so a later move, an undo or a redo keeps ENE (2026-11-13, user: it came back as E; `tests/cd-snap-redo.js` in the workflow Compare renderers); cd_edit writes back the bounds, inner positions and bend points that changed. Checked on the 21 demo maps (both
+  tools, the files read back, no port changed). Not on CellDesigner maps: the live
   outline of a compartment resized (it is redrawn after the drag); logic gates, associations and dissociations are left
   as they are (none on the demo). Checked 2026-11-12: all 21 demo maps written back byte for byte with no move, every
   process glyph where cdrender draws it, 259 moves leaving every bend point in place, live on SREBP (a molecule, a glyph,
@@ -424,7 +436,7 @@ says "the workbench", "the converter's repository", "a private repository".
   there), snaps to the nearest of the node's centre and the middles of its four sides, shown by a square while the drag
   runs, the line itself drawn in full to it (the original hidden, user 2026-11-13: a second line beside the old one was
   "weird"), with its highlight, and on a CellDesigner map the glyph following its segment's new end; one undo step. GraphML: the port's offset from the centre (yEd's sx, sy or
-  tx, ty). CellDesigner: `cd_edit` writes the connection point (the centre: no linkAnchor; N, S, W, E), on the base
+  tx, ty). CellDesigner: `cd_edit` writes the port (the centre: no linkAnchor; N, S, W, E), on the base
   reactant or product, an added one, or a modifier's linkTarget (made after its connectScheme when missing, as
   CellDesigner orders it); bend points stay. A process glyph's main lines are not moved at the glyph. Checked live on SREBP in both
   formats (save simulated).
@@ -514,7 +526,7 @@ says "the workbench", "the converter's repository", "a private repository".
   alike. Switch checked 2026-11-13: the build through Node and the Python build gave the same 389 files (downloads,
   atlas-data, _maps, cache, images), byte for byte.
   cdrender.js and cd_edit.js beside the Python (2026-11-13) are their JavaScript twins for the editor, with the converter's
-  four helpers they use (the frame maths, CellDesigner's anchor points on a node's box, name decoding) and Python's number writing (repr, round, '%.2f',
+  four helpers they use (the frame maths, CellDesigner's ports, name decoding) and Python's number writing (repr, round, '%.2f',
   and CPython's exact hypot, which Math.hypot misses in the last bit on a third of pairs; yrender.js uses it too):
   the same text byte for byte on 409 CellDesigner maps of the demo, the workbench, the official site and the
   neuroinflammation map, 2,863 comparisons (the build's drawing and click data, the editor's drawing, cd_edit's GraphML,

@@ -349,7 +349,7 @@ def write(diagram, layout='advanced', newt=False):
         # only (user, 2026-10-18): a bend stays if leaving it out moves the line by more than 20 px (layout.bends, as
         # for CellDesigner), or the line without it runs through a node it does not run through now; then a bend on or
         # near (5 px) the straight line between its neighbours is left out (the bends that placed the process in
-        # CellDesigner, and the 3 px stubs at its anchor points, are not needed; user, 2026-10-18)
+        # CellDesigner, and the 3 px stubs at its ports, are not needed; user, 2026-10-18)
         line = [p0] + pts + [p1]
         if layout == 'advanced' and not newt:
             pts = unbent(line, 0.5)[1:-1]

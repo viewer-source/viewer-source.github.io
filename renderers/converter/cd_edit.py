@@ -6,7 +6,7 @@
 #   what names it as compartmentAlias, and the compartments inside it); each reaction's process glyph is a node of
 #   10 by 10 (id <reaction>|proc), and its lines are arcs: |a reactant to glyph, |b glyph to product (|a alone, reactant
 #   to product, for a reaction drawn without a glyph), |m<i> modifier i to the glyph, |r<i> and |p<i> added reactants
-#   and products. Ports are where the lines meet the nodes (connection points), bends the edit points, absolute.
+#   and products. Ports are where the lines are attached to the nodes (linkAnchor), bend points the edit points, absolute.
 #   Bend points stay where they are when a node moves (user, 2026-11-12: yEd's way, not CellDesigner's, where they
 #   live in the frame of the line's ends and stretch): they are written again in the frame of the new ends.
 #   CellDesigner's own model of a reaction (user, 2026-11-13: "build in Cell Designer's own model"): one link, its main
@@ -305,8 +305,8 @@ def read(gtext):
 
 
 # where a line meets a node, as the editor sets it (user, 2026-11-12: "snap to center, bottom center, top center, left
-# center, right center"): the centre (no connection point: the line starts from the centre, cut at the shape) or the
-# middle of a side (CellDesigner's N, S, W, E); a port the editor did not touch keeps its connection point
+# center, right center"): the centre (no linkAnchor: the line starts from the centre, cut at the shape) or the
+# middle of a side (CellDesigner's N, S, W, E); a port the editor did not touch keeps its port
 SIDES = {'': (0.0, 0.0), 'N': (0.0, -0.5), 'S': (0.0, 0.5), 'W': (-0.5, 0.0), 'E': (0.5, 0.0)}
 
 
@@ -315,7 +315,7 @@ def side(port, b):
 
 
 def anchor(T, el, span, pos, tag, target=None):
-    # the connection point pos ('' the centre) of el (its linkAnchor child; a modifier's in its linkTarget, made when
+    # the port pos ('' the centre) of el (its linkAnchor child; a modifier's in its linkTarget, made when
     # missing from target: (species, alias)), in the tree and in the text
     cd = '{%s}' % NS['cd']
     if target:
@@ -364,7 +364,7 @@ def ports(d, T, s, o, paths, new):
         was = (P[0] - c[0], P[1] - c[1]) if anc else (0.0, 0.0)
         if math.hypot(port[0] - was[0], port[1] - was[1]) < 0.5:
             return None
-        # the same connection point on the node's new box (Snap or Pack resized it, and the GraphML was made again from
+        # the same port on the node's new box (Snap or Pack resized it, and the GraphML was made again from
         # the file): not a move, so a point between the five (ENE) is kept, not taken to the nearest side
         ob, nb = old[alias], new.get(alias)
         if anc and nb and ob[2] and ob[3]:
@@ -563,7 +563,7 @@ def place(text, gtext):
         s = T.span(r'<reaction [^>]*\bid="%s"' % re.escape(rid))
         o['old'] = old
         ports(d, T, s, o, paths, new)
-        r = lines(d, rx)   # the ends as the nodes and connection points are now (the bends still in the old frames: not used)
+        r = lines(d, rx)   # the ends as the nodes and ports are now (the bends still in the old frames: not used)
         A, B = r['A'], r['B']
         main = list(bends.get(rid + '|a', [])) + list(bends.get(rid + '|b', []))
         k = len(bends.get(rid + '|a', []))
