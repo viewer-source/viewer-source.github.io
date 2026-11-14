@@ -474,9 +474,9 @@ class Drawing:
             self.lines.append('<line x1="%s" y1="%s" x2="%s" y2="%s" stroke="#000"/>' % (*map(fmt, at(20, 4.5)), *map(fmt, at(20, -4.5))))
             return at(15, 0)
         if kind == 'catalysis':
-            c = at(5, 0)  # 1 px of white before the outline (user, 2026-11-14; CellDesigner's 4.5 left 0.5 px), as yrender
+            c = at(6, 0)  # 2 px of white before the outline (user, 2026-11-14; CellDesigner's 4.5 left 0.5 px, 1 px not enough), as yrender
             self.lines.append('<circle cx="%s" cy="%s" r="3" fill="#fff" stroke="#000"/>' % (fmt(c[0]), fmt(c[1])))
-            return at(8, 0)
+            return at(9, 0)
         if kind == 'inhibition':
             self.lines.append('<line x1="%s" y1="%s" x2="%s" y2="%s" stroke="#000"/>' % (*map(fmt, at(3, 6)), *map(fmt, at(3, -6))))
             return at(3, 0)

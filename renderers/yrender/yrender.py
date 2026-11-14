@@ -20,9 +20,9 @@
 #    variables and units of information: visual_end, user 2026-11-14); soft bends are
 #    quadratic curves cutting 10 px (at most half a segment) on each side of the bend
 #  - arrows: tip on the outline; the line stops where the arrow head covers it. A catalysis circle or an
-#    inhibition bar cut at the outline, or with its port on it, is moved back along its line until 1 px (circle)
-#    or 2 px (bar) of white part it from the outline, also when it comes in at a slant (user, 2026-11-14: "doesn't
-#    look nice when it touches", the bar "almost becomes invisible"; the circle 2 px at first, then 1 px tried);
+#    inhibition bar cut at the outline, or with its port on it, is moved back along its line until 2 px
+#    of white part it from the outline, also when it comes in at a slant (user, 2026-11-14: "doesn't
+#    look nice when it touches", the bar "almost becomes invisible"; 1 px tried for the circle and not enough);
 #    a port 1 px or more outside the shape, as hand-made gaps, as given. The file is never changed, only the drawing
 #  - an arc goes behind its own nodes (2026-11-14, user: a bend or an antenna's tip inside a node drew the line across
 #    it, to its middle): it starts where it first leaves its source and stops where it last enters its target;
@@ -73,7 +73,7 @@ EQUIV = '\u2261'  # the equivalence operator's label in yEd's SBGN palette
 ANTENNA, ANTENNA_MIN = 0.5, 9
 STYLE_PROPS = {'radius', 'radiusX', 'radiusY', 'mcount'}
 ARROWS = {'none', 'delta', 'white_delta', 'white_circle', 'white_delta_bar', 't_shape', 'white_diamond'}
-AIR, AIR_MAX = {'white_circle': 1, 't_shape': 2}, 16  # px of white each head keeps off the outline (the header, arrows)
+AIR, AIR_MAX = {'white_circle': 2, 't_shape': 2}, 16  # px of white each head keeps off the outline (the header, arrows)
 FONTS = {  # ascent and line height / font size as yEd measured them; fallbacks for systems without the font
     'Dialog': (0.9668, 1.1777, "'Dialog', Arial, Helvetica, sans-serif"),
     'Arial': (0.905, 1.1172, "Arial, Helvetica, sans-serif"),

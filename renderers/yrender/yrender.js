@@ -15,7 +15,7 @@
   var HUBS = new Set(['Process', 'Operator']), ANTENNA = 0.5, ANTENNA_MIN = 9, EQUIV = '\u2261';   // ports: yrender.py's header
   var STYLE_PROPS = new Set(['radius', 'radiusX', 'radiusY', 'mcount']);
   var ARROWS = new Set(['none', 'delta', 'white_delta', 'white_circle', 'white_delta_bar', 't_shape', 'white_diamond']);
-  var AIR = { white_circle: 1, t_shape: 2 }, AIR_MAX = 16;   // px of white each head keeps off the outline: yrender.py's header
+  var AIR = { white_circle: 2, t_shape: 2 }, AIR_MAX = 16;   // px of white each head keeps off the outline: yrender.py's header
   var FONTS = {
     Dialog: [0.9668, 1.1777, "'Dialog', Arial, Helvetica, sans-serif"],
     Arial: [0.905, 1.1172, 'Arial, Helvetica, sans-serif'],
