@@ -14,11 +14,11 @@ height: 1686
 scale: 1
 annotation: "/atlas-data/glycogen-muscle-sbgn.json"
 image_error: ""
-v: "531acd9dd2"
+v: "100e718a54"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/downloads/glycogen-muscle-sbgn.sbgn"}, {"label": "SVG", "url": "/downloads/glycogen-muscle-sbgn.svg"}]
-src: "c3b186f5c50772e620107891a216441693f50e5d"
+src: "16e931ccf9e00db394f33aa0ba4235663584bb0b"
 edit_path: "maps/sbgn-ml/glycogen-muscle-sbgn.sbgn"
 edit_base: "/atlas-data/glycogen-muscle-sbgn.graphml"
 ---
