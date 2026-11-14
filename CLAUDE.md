@@ -54,6 +54,19 @@ says "the workbench", "the converter's repository", "a private repository".
   Written in neutral language (user, 2026-11-14: "do not use like we, us, or some internal notes"): no we, us or our,
   no names of who decided what or when, no review history or open questions to the user; what the code is, with its
   open points stated as facts and possible changes. The architecture shows everything that is there.
+- Buttons, one look per kind (user, 2026-11-14: "be consistent ... write it down"; the Edit window had four hovers at
+  once: a darker sign on "?", the accent fill and edge on the palette, nothing on Undo, Redo and the layout tools, the
+  grey square only on a switch already on). Every button is one of these kinds and takes that kind's rules, never a hover
+  of its own:
+  - **Sign buttons** (the Edit window's tools, "?" and palette): no frame, the sign #80868b; under the pointer the light
+    grey square #f1f3f4 over the whole button, the sign unchanged; on (a switch, a sign in hand) the same square with
+    the sign #70757a; a sign kept in hand adds the #70757a edge. One CSS rule for all of them in `atlas-app.html`.
+  - **Text buttons** (Save, Connect, Downloads, Settings' choices): the light grey edge, the accent fill with white text
+    under the pointer and when chosen.
+  - **Tabs** (Maps, Search, Edit, ...): plain signs, no change open or under the pointer (`look-view.css`).
+  - **Quiet text** (Disconnect from GitHub): no button look, no hover.
+  A new button joins a kind (its selector added to that kind's rule) in the same change, and the whole panel is looked at
+  under the pointer before it is reported done; `tests/hover.js` checks the sign buttons on the live page.
 - The viewer: `_includes/atlas-app.html` (list on the left, the map, its panel, search, downloads row). It never
   knows a map's source format.
 - Two modes (user, 2026-11-08). Presentation, the default: a fixed list for reading and reviewing maps, as a published

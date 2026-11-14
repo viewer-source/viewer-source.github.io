@@ -281,15 +281,15 @@ page, so its styles keep the base they were made on). The looks before (Default 
   /* the tools as a row of signs at the top of the Edit window (user, 2026-11-12, after yEd's toolbar: "not as words but
      as normal symbols"; a few now, more as they are needed): plain grey signs as the tabs; a switch that is on gets a
      a very light grey square with a soft grey sign (user, 2026-11-12: a black sign "destroys nice soft grey view"; the
-     accent fill tried and taken back the same round; the square made lighter so the soft sign reads); Undo and Redo, not switches,
-     never change under the pointer (user: "no need to select it at all or highlight it at all"); a thin line between
-     groups */
+     accent fill tried and taken back the same round; the square made lighter so the soft sign reads); a thin line between
+     groups. Every sign button of the Edit window (tools, "?", palette) has one hover (user, 2026-11-14: "be consistent"):
+     the same light grey square over the whole button, the sign unchanged, never a darker sign, a frame or the accent
+     fill; it replaces Undo and Redo staying still under the pointer (2026-11-12) */
   #m2-editwin .m2-ed-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 2px; margin: 0 0 10px; padding: 0 0 8px; border-bottom: 1px solid var(--m2-frame); }
   #m2-editwin .m2-ed-tools button { display: flex; align-items: center; justify-content: center; flex: none; width: 32px; height: 32px; padding: 0; margin: 0;
     border: 0; border-radius: 6px; background: none; color: #80868b; }
-  #m2-editwin .m2-ed-tools button:hover:not(:disabled) { background: none; border: 0; color: var(--m2-text-soft); }
+  #m2-editwin .m2-ed-tools button:hover:not(:disabled), #m2-editwin .m2-ed-palette button:hover:not(:disabled) { background: #f1f3f4; border-color: transparent; color: #80868b; }   /* the one hover of the sign buttons, tools and palette alike */
   #m2-editwin .m2-ed-tools button[aria-pressed="true"], #m2-editwin .m2-ed-tools button[aria-pressed="true"]:hover { background: #f1f3f4; color: #70757a; }   /* on: the grey square, the sign between its usual grey and the first darker one (user, 2026-11-12) */
-  #m2-editwin .m2-ed-tools button:not([aria-pressed]):hover { color: #80868b; }
   #m2-editwin .m2-ed-tools svg { width: 21px; height: 21px; stroke-width: 1.6; }
   /* the palette (the full editor, user 2026-11-14: as yEd's and Newt's): signs under the tools, shown with Settings, Editing on Full; a sign in hand on the
      tools' grey square, one kept in hand for several (a double click) with a darker edge as well */
