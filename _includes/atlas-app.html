@@ -2636,13 +2636,15 @@ page, so its styles keep the base they were made on). The looks before (Default 
       var unbend = ed && window.m2EditBend && window.m2EditBend();   // a bend point under the pointer while editing
       var bend = ed && !unbend && window.m2EditAddBend && window.m2EditAddBend();   // a line under the pointer
       var turn = ed && window.m2EditTurn && window.m2EditTurn();   // a process or logic gate under the pointer: turned a quarter
-      if (unbend) { item(box, 'Remove bend point', unbend); sep(box); }
-      else if (bend) { item(box, 'Add bend point', bend); sep(box); }
-      else if (turn) { item(box, turn.label, turn.go); sep(box); }
       // every bend point of the map, on empty map space only (user, 2026-11-14: a right click on a bend point means that
-      // bend point); at the top with the other editing items, a separator below them (user)
+      // bend point)
       var unbendAll = ed && window.m2EditAllBends && window.m2EditAllBends();
-      if (unbendAll) { item(box, 'Remove all bend points', unbendAll); sep(box); }
+      if (unbend) item(box, 'Remove bend point', unbend);
+      else if (bend) item(box, 'Add bend point', bend);
+      else if (turn) item(box, turn.label, turn.go);
+      if (unbendAll) item(box, 'Remove all bend points', unbendAll);
+      // the editing items at the top, one separator below them, then the general ones (user, 2026-11-14)
+      if (unbend || bend || turn || unbendAll) sep(box);
       // its shortcut beside it, as Apple's and Windows' menus write it (user, 2026-11-13)
       var key = '<span class="m2-cx-key">' + (/Mac|iPhone|iPad|iPod/.test((navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || navigator.userAgent) ? '\u2318E' : 'Ctrl+E') + '</span>';
       if (ed) item(box, 'Switch to viewer', function () { tab('list'); }, key);   // leaving the Edit window ends editing
