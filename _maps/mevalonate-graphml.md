@@ -14,7 +14,7 @@ height: 779
 scale: 1
 annotation: "/atlas-data/mevalonate-graphml.json"
 image_error: ""
-v: "91895e629c"
+v: "4d93b60f60"
 src: "e61bbb1173cb29e9310c539eabde8b279b49569b"
 colours: true
 legend: "sbgn"

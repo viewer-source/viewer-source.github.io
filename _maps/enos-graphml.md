@@ -14,7 +14,7 @@ height: 1830
 scale: 1
 annotation: "/atlas-data/enos-graphml.json"
 image_error: ""
-v: "d9ed44364f"
+v: "3b1d7aef0c"
 src: "233b57588a15d50da39a7d052d40ae619e8b6147"
 colours: true
 legend: "sbgn"

@@ -14,7 +14,7 @@ height: 1193
 scale: 1
 annotation: "/atlas-data/srebp-graphml.json"
 image_error: ""
-v: "36aa2a7096"
+v: "4b0fd7fe2d"
 src: "d4e0f997534de63af10dd9b862960bc1f8c54edd"
 colours: true
 legend: "sbgn"

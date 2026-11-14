@@ -14,7 +14,7 @@ height: 1686
 scale: 1
 annotation: "/atlas-data/glycogen-muscle-graphml.json"
 image_error: ""
-v: "4b6d0b630d"
+v: "f58f3bfb32"
 src: "873722203df6d1bbe85c26b4d65effa3f4187b5b"
 colours: true
 legend: "sbgn"

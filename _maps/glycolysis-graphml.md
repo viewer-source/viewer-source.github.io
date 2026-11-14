@@ -14,7 +14,7 @@ height: 738
 scale: 1
 annotation: "/atlas-data/glycolysis-graphml.json"
 image_error: ""
-v: "d8b2d8393a"
+v: "1fa13f8aa3"
 src: "f345a06133d685c864f1fd316a121aef535c15f8"
 colours: true
 legend: "sbgn"

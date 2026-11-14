@@ -14,7 +14,7 @@ height: 1686
 scale: 1
 annotation: "/atlas-data/glycogen-liver-graphml.json"
 image_error: ""
-v: "17dc33b3c8"
+v: "2e5b23d2a2"
 src: "784dfc6feef241e37d689f6959be1be378afc3f3"
 colours: true
 legend: "sbgn"

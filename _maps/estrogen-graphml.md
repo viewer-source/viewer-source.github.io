@@ -14,7 +14,7 @@ height: 1338
 scale: 1
 annotation: "/atlas-data/estrogen-graphml.json"
 image_error: ""
-v: "f2db52c3f8"
+v: "8ed6e4710a"
 src: "41b3f9a51c2e247bbf9f7c21fec6ed09c31a5bef"
 colours: true
 legend: "sbgn"

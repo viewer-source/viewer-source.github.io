@@ -14,7 +14,7 @@ height: 767
 scale: 1
 annotation: "/atlas-data/camp-graphml.json"
 image_error: ""
-v: "a63a889a7e"
+v: "a09d5cfe7a"
 src: "3fde34f17a72379dc0f693ef58faa0e013583c86"
 colours: true
 legend: "sbgn"
