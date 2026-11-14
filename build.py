@@ -301,6 +301,11 @@ def examples():
                                                'Edited in the viewer; the original is in test-maps/.' if edited else 'Unchanged, drawn from its own file.')
         src_file = mine if edited else os.path.join(pd, rel)
         d, nodes = sbgnml(src_file, sid, body, keep=True)
+        if not d and edited:   # an edited copy that cannot be drawn: the file drawn instead, so the map stays (and can be edited again)
+            print('warning: %s not drawn, the file in test-maps/ shown instead' % os.path.relpath(mine, ROOT))
+            edited, src_file = False, os.path.join(pd, rel)
+            body = body.replace('Edited in the viewer; the original is in test-maps/.', 'Unchanged, drawn from its own file.')
+            d, nodes = sbgnml(src_file, sid, body, keep=True)
         if not d:
             continue
         if edited:

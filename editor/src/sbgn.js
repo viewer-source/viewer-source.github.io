@@ -5,9 +5,9 @@
     // that change; the map is drawn by the yEd renderer as any GraphML map, so a GraphML map and an SBGN-ML map are edited
     // alike. text is that GraphML, sb.base the SBGN-ML text editing started from, src() the SBGN-ML text with the moves.
     // A map of the site saves its edited copy to its editPath (maps/sbgn-ml/...), the file it came from left unchanged.
-    var sbp = null, sbJs = null, sb = null, sbNext = null;   // the SBGN-ML side loading, loaded, the file edited, the GraphML of the next opening
-    function isSb(t) { return /<sbgn[\s>]/.test(t.slice(0, 3000)); }
-    function sbMap(m) { m = m && (m.site || m); return !!(m && m.editBase && !m.shownAs); }
+    var sbp = null, sbJs = null, sb = null;   // the SBGN-ML side loading, loaded, the file edited ({ base: its text, g0: the build's GraphML })
+    function isSb(t) { return /<([\w.-]+:)?sbgn[\s>]/.test(t.slice(0, 3000)); }
+    function sbMap(m) { return !!(m && !m.shownAs && (m.site || m).editBase); }   // shown from another file (Settings' Source): not this one
     function sbpy() {   // sbgn_edit.js, then the yEd renderer
       if (sbp) return sbp;
       sbp = new Promise(function (res, rej) {
@@ -28,11 +28,15 @@
     function sbGraphml(t, base) {
       for (var i = 0; i < sbMemo.length; i++) if (sbMemo[i][0] === t) return sbMemo[i][1];
       var g = sbJs.graphml(t, base);
-      sbMemo.unshift([t, g]); sbMemo.length = Math.min(sbMemo.length, 3);
+      sbRemember(t, g);
       return g;
     }
+    function sbRemember(t, g) { sbMemo.unshift([t, g]); sbMemo.length = Math.min(sbMemo.length, 3); }
     var sbLast = null;   // [GraphML, its SBGN-ML text]: the moves written once per text
-    function sbNow() {
-      if (!sbLast || sbLast[0] !== text || sbLast[2] !== sb) sbLast = [text, sbJs.write(sb.base, text), sb];
+    function sbNow() {   // a write that fails is said, and the last text written stands (never the file without its moves silently)
+      if (!sbLast || sbLast[0] !== text || sbLast[2] !== sb) {
+        try { sbLast = [text, sbJs.write(sb.base, text), sb]; }
+        catch (e) { warn('The moves could not be written into the SBGN-ML file: ' + (e && e.message || e) + '. The last version written is kept.'); return sbLast && sbLast[2] === sb ? sbLast[1] : sb.base; }
+      }
       return sbLast[1];
     }

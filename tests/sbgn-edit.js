@@ -120,6 +120,22 @@ function compare(want, got) {   // what differs between the places the editor ha
   return bad;
 }
 
+// a variant of a file with one modifier aimed at a port of its process (the review, 2026-11-14: libsbgn's pd10105 has one;
+// the converter reads such an end as the glyph's centre), written beside the files for the same checks
+function aimedAtPort(t) {
+  var doc = new DP().parseFromString(t.replace(/^\ufeff/, ''), 'application/xml'), ports = {};
+  Array.prototype.forEach.call(doc.getElementsByTagName('*'), function (e) { if (e.localName === 'port') ports[e.parentNode.getAttribute('id')] = e.getAttribute('id'); });
+  var a = Array.prototype.find.call(doc.getElementsByTagName('*'), function (e) { return e.localName === 'arc' && /catalysis|stimulation|modulation|inhibition/.test(e.getAttribute('class')) && ports[e.getAttribute('target')]; });
+  if (!a) return null;
+  var m = t.indexOf('id="' + a.getAttribute('id') + '"'), tag = t.lastIndexOf('<', m), end = t.indexOf('>', m);
+  return t.slice(0, tag) + t.slice(tag, end).replace('target="' + a.getAttribute('target') + '"', 'target="' + ports[a.getAttribute('target')] + '"') + t.slice(end);
+}
+var tmp0 = fs.mkdtempSync(path.join(os.tmpdir(), 'sbgn-aim-'));
+files.slice().forEach(function (f, i) {
+  if (!/test-maps/.test(f)) return;
+  var v = aimedAtPort(fs.readFileSync(f, 'utf8'));
+  if (v) { var q = path.join(tmp0, i + '-' + path.basename(f)); fs.writeFileSync(q, v); files.push(q); }
+});
 var rel = function (f) { return path.relative(here, f); };
 var g0 = conv(files), fails = 0, runs = 0, tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'sbgn-edit-'));
 var later = [];
@@ -146,6 +162,6 @@ later.forEach(function (x, j) {
   var back = se.graphml(x.s1, x.base, opt);
   if (back !== g2[j]) { say('graphml(write(s, g), conv(s)) is not conv(write(s, g))'); if (process.env.DUMP) { fs.writeFileSync(process.env.DUMP + '-a', g2[j]); fs.writeFileSync(process.env.DUMP + '-b', back); process.exit(1); } }
 });
-fs.rmSync(tmp, { recursive: true, force: true });
+fs.rmSync(tmp, { recursive: true, force: true }); fs.rmSync(tmp0, { recursive: true, force: true });
 console.log(runs + ' SBGN-ML maps, ' + later.length + ' runs with moves: ' + (fails ? fails + ' failures' : 'all the same'));
 process.exit(fails ? 1 : 0);

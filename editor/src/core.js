@@ -846,13 +846,18 @@
     // an opening under way (the files read, a CellDesigner file converted) is dropped when the Edit window is left or
     // another map is opened before it is done (review 2026-11-13: leaving at once left edit mode on, autosave armed)
     var opening = 0;
-    function start(t, n, h, s, same) {   // a CellDesigner file is first made into the GraphML the editor edits
+    function start(t, n, h, s, same, g0) {   // a CellDesigner file is first made into the GraphML the editor edits; g0: an SBGN-ML map's GraphML as the build made it
       if (localTimer) local(true);   // the last move of the map before kept first, before cd and text change (the review, 2026-11-13)
       var tk = opening;
-      if (isSb(t)) {   // an SBGN-ML map: the GraphML of its text, made from the converter's (sbNext, read with the map)
+      if (isSb(t)) {   // an SBGN-ML map: the GraphML of its text, made from the build's (g0, read with the map)
         cd = null; quiet();
-        var g0 = sbNext; sbNext = null;
-        return sbpy().then(function () { if (tk !== opening) return; if (!g0) throw 'its GraphML did not load'; sb = { base: t, g0: g0 }; begin(sbGraphml(t, g0), t, n, h, s, same); })
+        return sbpy().then(function () {
+          if (tk !== opening) return;
+          if (!g0) throw 'its GraphML did not load';
+          var g = sbGraphml(t, g0);
+          sbJs.write(t, g);   // a file whose moves could not be written back is said now, not at the first save
+          sb = { base: t, g0: g0 }; begin(g, t, n, h, s, same);
+        })
           .catch(function (e) { if (tk === opening) warn('Cannot edit ' + n + ': ' + e); });
       }
       sb = null;
@@ -919,7 +924,7 @@
       var isCd = !!cd, isSbm = !!sb, make = function () {
         var dm = isCd ? { cd: true, base: S, text: g, q: [svg, S, g] } : { cd: false, text: g, r: [svg, []] };
         if (isCd) cdRemember(S, g);
-        else if (isSbm) { sbMemo.unshift([S, g]); sbMemo.length = Math.min(sbMemo.length, 3); }   // an SBGN-ML map reopened on the very GraphML it was left with
+        else if (isSbm) sbRemember(S, g);   // an SBGN-ML map reopened on the very GraphML it was left with
         p.memo = dm; p.docs = [{ text: g, doc: d0 }]; p.drawn = Promise.resolve();
         if (el === V.img && el.tagName.toLowerCase() === 'svg' && el.querySelector('[data-e]')) {   // the page's drawing itself
           el.querySelectorAll('.m2-ed-copy').forEach(function (x) { x.remove(); });
@@ -1086,7 +1091,11 @@
         return Promise.all([k && k.text ? k.text : p.sitePub, p.gh]);
       }).then(function (x) {
         p.t = x[1] ? x[1].text : x[0];
-        if (sbm) return p.base.then(function (b) { p.b = b; p.g = sbGraphml(p.t, b); return p; });   // an SBGN-ML map: the GraphML of its text
+        if (sbm) return p.base.then(function (b) { p.b = b; return waitFor(m); }).then(function () {   // an SBGN-ML map: the GraphML of its text, a step of its own
+          if (!still()) throw 0;
+          p.g = sbGraphml(p.t, p.b);
+          return p;
+        });
         if (!cdm) return p;   // a GraphML map is ready as it is
         return waitFor(m).then(function () {
           if (!still()) throw 0;
@@ -1186,7 +1195,7 @@
           var same = r[1] && V.img === shownPic && V.current === m ? Object.assign({}, r[1], { text: r[0] }) : null;
           if (s) { s.id = m.id; s.v = V.ver(m); if (s.pending) s.pub = r[2]; }   // the site's own text: a draft back to it is let go
           openTitle = m.title;   // the map's own title in the first line said, not its file's name
-          return Promise.resolve(p.base ? p.base.then(function (b) { if (tk === opening) sbNext = b; }) : null).then(function () { return start(t, file, null, s, same); }).then(function () {
+          return Promise.resolve(p.base || null).then(function (b) { if (tk === opening) return start(t, file, null, s, same, b); }).then(function () {
             openTitle = null;
             if (tk !== opening) return;
             siteRef = r[3] ? baseOf(isCd(r[2]) && cdJs ? cdGraphml(r[2]) : sb && isSb(r[2]) ? sbGraphml(r[2], sb.g0) : r[2], r[3]) : null;
@@ -1233,10 +1242,10 @@
         if (on && site) {   // connected while editing: go on from the repository's version, keeping the moves made
           var keep = text;
           var s0 = site;   // (s0.base: the text editing started from)
-          Promise.all([api('/contents/' + s0.path + '?ref=main').then(function (r) { return r.json(); }),
-            api('/contents/' + s0.path + '?ref=main', { headers: { Accept: 'application/vnd.github.raw' } }).then(function (r) { return r.text(); })])
+          Promise.all([api('/contents/' + s0.path + '?ref=main').then(function (r) { return r.status === 404 && sb ? {} : r.json(); }),   // an SBGN-ML map's edited copy not made yet: the first save makes it
+            api('/contents/' + s0.path + '?ref=main', { headers: { Accept: 'application/vnd.github.raw' } }).then(function (r) { return r.status === 404 && sb ? s0.base : r.text(); })])
             .then(function (f) {
-              s0.sha = f[0].sha; s0.pending = false; buttons();
+              s0.sha = f[0].sha || null; s0.pending = false; buttons();
               if (f[1] !== s0.base) { stuck = true; warn('Connected, but the map in the repository is newer than the copy opened: moves not saved, nothing overwritten. Stop editing and open the map again.'); return; }
               if (s0.id) unkeep(s0.id);   // GitHub holds the map from now on
               if (moved) { text = keep; dirty = true; push(); } else quiet();
@@ -1540,7 +1549,7 @@
     }
     var hpMemo = null;
     function hubPorts() {   // the ports as the renderer draws them, per node id: [port one, port two, anything coming in]
-      if (!hpMemo || hpMemo[0] !== text) hpMemo = [text, window.yrender.render(docText === text ? doc : text, {}).ports];
+      if (!hpMemo || hpMemo[0] !== text) hpMemo = [text, window.yrender.render(docText === text ? doc : text, {}).ports];   // the editor's own drawing sets it (drawGraphml): this only before it
       return hpMemo[1];
     }
     function hubSides(pp) {   // a modifier's places at a process or gate: the middles of the two sides off its antennas
@@ -1559,7 +1568,7 @@
         [0, 1].forEach(function (end) {
           if ((end ? e.t : e.s) !== i) return;
           var a = end ? ['tx', 'ty'] : ['sx', 'sy'], o = [num(e.path, a[0]) || 0, num(e.path, a[1]) || 0], role = hubEnd(k, end);
-          if (role && !o[0] && !o[1]) {   // at the port the renderer chose (a product of a process with nothing coming in: the nearer)
+          if (role && Math.abs(o[0]) <= b[2] / 2 + 0.5 && Math.abs(o[1]) <= b[3] / 2 + 0.5) {   // on the glyph, not a port the renderer takes as given: at the port it chose (a product of a process with nothing coming in: the nearer)
             if (role === 'in') o = rel(P[0]);
             else if (P[2]) o = rel(P[1]);
             else { var all = ports(k), nx = all[1]; o = rel(Math.hypot(P[1][0] - nx[0], P[1][1] - nx[1]) <= Math.hypot(P[0][0] - nx[0], P[0][1] - nx[1]) ? P[1] : P[0]); }

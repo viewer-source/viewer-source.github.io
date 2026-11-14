@@ -82,14 +82,15 @@
   function xy(el) { return el ? [F(el.getAttribute('x')), F(el.getAttribute('y'))] : null; }
   function centre(b) { return [b[0] + b[2] / 2, b[1] + b[3] / 2]; }
   // sbgnml.at: where an arc meets its glyph, from the glyph's centre
-  function at(S, gid, ref, p, q) {
+  function at(S, gid, ref, p, q, flux) {   // flux false: an arc ending at a port that is not a consumption's or a gate input's (a modifier), read as the centre
     var c = centre(S.glyph[gid].box);
-    if (ref !== gid) { var P = xy(S.port[ref]); return P ? [P[0] - c[0], P[1] - c[1]] : [0, 0]; }
+    if (ref !== gid) { var P = flux !== false && xy(S.port[ref]); return P ? [P[0] - c[0], P[1] - c[1]] : [0, 0]; }
     if (!p || !q) return [0, 0];
     var ux = q[0] - c[0], uy = q[1] - c[1], vx = p[0] - c[0], vy = p[1] - c[1], n = Math.hypot(ux, uy);
     if (!n || (Math.abs(ux * vy - uy * vx) / n <= 1.5 && ux * vx + uy * vy >= 0)) return [0, 0];
     return [vx, vy];
   }
+  function flux(a) { return /^(consumption|logic arc)$/.test(a.getAttribute('class')); }   // sbgnml.read's flux
   function ends(S, a) {   // [glyph of the source, of the target, the file's start, end, next points]
     var s = a.getAttribute('source'), t = a.getAttribute('target');
     return [S.portOf[s] || s, S.portOf[t] || t, xy(kid(a, 'start')), xy(kid(a, 'end')), kids(a, 'next').map(xy)];
@@ -160,7 +161,7 @@
       var E = ends(S, a), pts = E[4];
       if (E[0] !== e.s || E[1] !== e.t || !S.glyph[E[0]] || !S.glyph[E[1]]) return;   // an activity's arcs moved to its entity: as the converter left them
       var o = at(S, E[0], a.getAttribute('source'), E[2], (pts.length ? pts : [E[3]])[0])
-        .concat(at(S, E[1], a.getAttribute('target'), E[3], (pts.length ? pts[pts.length - 1] : E[2])));
+        .concat(at(S, E[1], a.getAttribute('target'), E[3], (pts.length ? pts[pts.length - 1] : E[2]), flux(a)));
       ['sx', 'sy', 'tx', 'ty'].forEach(function (k, j) { if (repr(o[j]) !== e.path.getAttribute(k)) T.set(e.path, k, repr(o[j])); });
       var same = pts.length === e.pts.length && pts.every(function (p, j) { return repr(p[0]) === e.ptEl[j].getAttribute('x') && repr(p[1]) === e.ptEl[j].getAttribute('y'); });
       if (same) return;
@@ -200,7 +201,13 @@
       if (lb) setXY(lb, [F(lb.getAttribute('x')) + b[0] - o[0], F(lb.getAttribute('y')) + b[1] - o[1]]);
     });
     // the arcs: their bends, then their ends (an end at a port gives the port its place)
-    var portAt = {}, newPorts = {};
+    var portAt = {}, newPorts = {}, use = {};
+    Object.keys(S.arc).forEach(function (id) {   // which port of a glyph its consumptions (1) and products (2) use in the file
+      var a = S.arc[id], src = a.getAttribute('source'), tgt = a.getAttribute('target');
+      if (S.portOf[src]) use[S.portOf[src] + '\u0000' + 2] = use[S.portOf[src] + '\u0000' + 2] || src;
+      if (S.portOf[tgt] && flux(a)) use[S.portOf[tgt] + '\u0000' + 1] = use[S.portOf[tgt] + '\u0000' + 1] || tgt;
+    });
+    var newId = function (gid, no) { var i = gid + '.' + no, k = 0; while (S.port[i] || S.glyph[i]) i = gid + '.p' + no + (k++ ? k : ''); return i; };
     Object.keys(S.arc).forEach(function (id) {
       var a = S.arc[id], e = G.edge[id];
       if (!e) return;
@@ -212,7 +219,9 @@
         var out = e.pts.map(function (p, j) { return '<' + pre + 'next x="' + (e.ptEl[j].getAttribute('x')) + '" y="' + (e.ptEl[j].getAttribute('y')) + '"/>'; });
         if (nx.length) {
           var ind = '\n' + T.indent(nx[0]);
-          T.ed.push([T.at.get(nx[0])[0], T.end(nx[nx.length - 1]), out.join(ind)]);
+          var from = T.at.get(nx[0])[0];
+          if (!out.length) from = T.t.lastIndexOf('\n', from - 1);   // all taken out: their lines go
+          T.ed.push([from, T.end(nx[nx.length - 1]), out.join(ind)]);
         } else {
           var en = kid(a, 'end'), at0 = en ? T.at.get(en)[0] : T.end(kid(a, 'start'));
           var ind2 = en ? T.indent(en) : T.indent(kid(a, 'start'));
@@ -224,17 +233,18 @@
       // while it lies on the line toward the next point (sbgnml.at's rule), else where that line leaves the box
       var side = [['source', 'start', 0, E[0], E[2]], ['target', 'end', 2, E[1], E[3]]].map(function (q) {
         var gid = q[3], b = G.node[gid].box, c = centre(b), o = S.glyph[gid].box;
-        var zero = !e.off[q[2]] && !e.off[q[2] + 1] && a.getAttribute(q[0]) === gid;
-        return { q: q, gid: gid, c: c, zero: zero, P: [c[0] + e.off[q[2]], c[1] + e.off[q[2] + 1]],
+        var port = a.getAttribute(q[0]) !== gid && (q[0] === 'source' || flux(a));   // an end the converter reads at its port
+        var zero = !e.off[q[2]] && !e.off[q[2] + 1] && !port;
+        return { q: q, gid: gid, c: c, zero: zero, port: port, P: [c[0] + e.off[q[2]], c[1] + e.off[q[2] + 1]],
                  old: q[4] && (map[gid] ? [q[4][0] + b[0] - o[0], q[4][1] + b[1] - o[1]] : q[4]) };
       });
       // nothing about the arc changed (its glyphs, bends and ends as the converter reads them from the file): its ends kept
       var fileOff = at(S, E[0], a.getAttribute('source'), E[2], (E[4].length ? E[4] : [E[3]])[0])
-        .concat(at(S, E[1], a.getAttribute('target'), E[3], (E[4].length ? E[4][E[4].length - 1] : E[2])));
+        .concat(at(S, E[1], a.getAttribute('target'), E[3], (E[4].length ? E[4][E[4].length - 1] : E[2]), flux(a)));
       var still = !map[E[0]] && !map[E[1]] && nx.length === e.pts.length && fileOff.every(function (v, j) { return close(v, e.off[j]); }) &&
         e.pts.every(function (p, j) { var q = xy(nx[j]); return close(p[0], q[0]) && close(p[1], q[1]); });
       if (still) return;
-      var keep = function (s, j, aim) { return !!s.old && onLine(s.c, s.old, aim); };   // the file's own end carried with its glyph while on the line
+      var keep = function (s, aim) { return !!s.old && onLine(s.c, s.old, aim); };   // the file's own end carried with its glyph while on the line
       var onLine = function (c, p, aim) {
         var u = [aim[0] - c[0], aim[1] - c[1]], v = [p[0] - c[0], p[1] - c[1]], n = Math.hypot(u[0], u[1]);
         return !n || (Math.abs(u[0] * v[1] - u[1] * v[0]) / n <= 1 && u[0] * v[0] + u[1] * v[1] >= 0);   // within 1 of the converter's 1.5: safe after rounding
@@ -246,15 +256,16 @@
         return [c[0] + tt * u[0], c[1] + tt * u[1]];
       };
       var aim = [e.pts.length ? e.pts[0] : null, e.pts.length ? e.pts[e.pts.length - 1] : null];
-      if (e.pts.length) side.forEach(function (s, j) { if (s.zero) s.P = keep(s, j, aim[j]) ? s.old : cut(s, aim[j]); });
+      if (e.pts.length) side.forEach(function (s, j) { if (s.zero) s.P = keep(s, aim[j]) ? s.old : cut(s, aim[j]); });
       else if (side[0].zero && side[1].zero) {   // both at their centres: kept as a pair, else both on the line between the centres
-        if (keep(side[0], 0, side[1].old || side[1].c) && keep(side[1], 1, side[0].old || side[0].c)) { side[0].P = side[0].old; side[1].P = side[1].old; }
+        if (keep(side[0], side[1].old || side[1].c) && keep(side[1], side[0].old || side[0].c)) { side[0].P = side[0].old; side[1].P = side[1].old; }
         else { side[0].P = cut(side[0], side[1].c); side[1].P = cut(side[1], side[0].P); }   // toward the start written (the converter's aim)
-      } else side.forEach(function (s, j) { var o = side[1 - j]; if (s.zero) s.P = keep(s, j, o.zero ? o.old || o.c : o.P) ? s.old : cut(s, o.P); });
+      } else side.forEach(function (s, j) { var o = side[1 - j]; if (s.zero) s.P = keep(s, o.zero ? o.old || o.c : o.P) ? s.old : cut(s, o.P); });
       side.forEach(function (s) {
         var q = s.q, ref = a.getAttribute(q[0]), el = kid(a, q[1]), P = s.P;
         if (!el) return;
-        if (ref !== s.gid) {   // at a port: the port where the GraphML has it, the arc's end on it (the file's own kept while the port stays)
+        if (!s.port && ref !== s.gid && !s.zero) T.set(a, q[0], s.gid);   // a modifier the file aimed at a port, moved: now at the glyph (read as the centre else)
+        if (s.port) {   // at a port: the port where the GraphML has it, the arc's end on it (the file's own kept while the port stays)
           portAt[ref] = portAt[ref] || P;
           var o0 = xy(S.port[ref]);
           if (!close(o0[0], portAt[ref][0]) || !close(o0[1], portAt[ref][1])) setXY(el, portAt[ref]);   // a port moved: the end on it
@@ -263,13 +274,13 @@
         var b2 = G.node[s.gid].box, out2 = Math.abs(P[0] - s.c[0]) > b2[2] / 2 + 0.5 || Math.abs(P[1] - s.c[1]) > b2[3] / 2 + 0.5;
         var cls = a.getAttribute('class'), no = cls === 'production' ? 2 : cls === 'consumption' || cls === 'logic arc' ? 1 : 0;
         if (!s.zero && out2 && no && HUB.test(S.glyph[s.gid].el.getAttribute('class') || '')) {   // at a port of a process or gate
-          var have = kids(S.glyph[s.gid].el, 'port');
-          if (have.length >= 2) {   // the arc named the glyph: now its port (else the converter reads an end on the line as the centre)
-            var pid = have[no - 1].getAttribute('id');
-            T.set(a, q[0], pid); portAt[pid] = portAt[pid] || P;
-          } else {   // a port the file did not have: made
+          // the arc named the glyph: now the port its glyph's other consumptions (products) use, else a port made
+          var have = kids(S.glyph[s.gid].el, 'port').map(function (x) { return x.getAttribute('id'); }), other = use[s.gid + '\u0000' + (3 - no)];
+          var pid = use[s.gid + '\u0000' + no] || (have.length >= 2 ? have.filter(function (x) { return x !== other; })[other ? 0 : no - 1] : null);
+          if (pid) { T.set(a, q[0], pid); portAt[pid] = portAt[pid] || P; }
+          else {
             (newPorts[s.gid] = newPorts[s.gid] || {})[no] = newPorts[s.gid][no] || P;
-            T.set(a, q[0], s.gid + '.' + no);
+            T.set(a, q[0], newId(s.gid, no));
           }
         }
         setXY(el, P);
@@ -284,7 +295,7 @@
       var g = S.glyph[gid], P = newPorts[gid], c = centre(G.node[gid].box);
       P[1] = P[1] || [2 * c[0] - P[2][0], 2 * c[1] - P[2][1]]; P[2] = P[2] || [2 * c[0] - P[1][0], 2 * c[1] - P[1][1]];
       var ind = '\n' + T.indent(g.bbox), e = T.end(g.bbox);
-      T.ed.push([e, e, [1, 2].map(function (k) { return ind + '<' + (g.el.prefix ? g.el.prefix + ':' : '') + 'port id="' + gid + '.' + k + '" x="' + num(P[k][0]) + '" y="' + num(P[k][1]) + '"/>'; }).join('')]);
+      T.ed.push([e, e, [1, 2].map(function (k) { return ind + '<' + (g.el.prefix ? g.el.prefix + ':' : '') + 'port id="' + newId(gid, k) + '" x="' + num(P[k][0]) + '" y="' + num(P[k][1]) + '"/>'; }).join('')]);
     });
     // a process's orientation, where the file gives one, follows its ports
     Object.keys(S.glyph).forEach(function (gid) {
@@ -299,6 +310,6 @@
   }
   var HUB = /process|^(and|or|not|association|dissociation|equivalence)$/;
 
-  var api = { graphml: graphml, write: write, repr: repr };
+  var api = { graphml: graphml, write: write };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.sbgn_edit = api;
 })(typeof self !== 'undefined' ? self : this);

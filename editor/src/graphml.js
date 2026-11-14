@@ -19,6 +19,7 @@
     }
     function drawGraphml(t) {   // the document the editor read is drawn when it is still this text (no second reading)
       var r = window.yrender.render(t === docText && doc ? doc : t, { classes: true, groups: true });
+      hpMemo = [t, r.ports];   // the processes' ports as drawn, for Turn process and modifier ends (hubPorts)
       return [r.svg, r.errors];
     }
     function liveDraw() {   // the compartments' outlines and labels on the picture follow their live boxes (GraphML)
