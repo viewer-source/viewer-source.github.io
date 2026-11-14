@@ -645,13 +645,9 @@
       </glyph>
       <glyph class="state variable" id="glyph_2_sv1">
         <state value=""/>
-        <bbox x="408.5" y="196.5" w="15" h="15"/>
-      </glyph>
-      <glyph class="state variable" id="glyph_2_sv2">
-        <state value=""/>
         <bbox x="388.5" y="196.5" w="15" h="15"/>
       </glyph>
-      <glyph class="state variable" id="glyph_2_sv3">
+      <glyph class="state variable" id="glyph_2_sv2">
         <state value=""/>
         <bbox x="348.5" y="196.5" w="15" h="15"/>
       </glyph>
