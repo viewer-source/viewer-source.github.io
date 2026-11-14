@@ -89,11 +89,11 @@
     function makeEntity(P, cls) {
       var cx = innermost(P, function (n) { return n.el.getAttribute('yfiles.foldertype') === 'group' && !n.comp; });
       if (cx >= 0) { warn('A new entity goes beside a complex for now, not into it.'); return; }
-      var D = sbJs.defaults(src(), null, cls), w = D.w, h = D.h, X = P[0] - w / 2, Y2 = P[1] - h / 2;
+      var D = defOf(cls), w = D.w, h = D.h, X = P[0] - w / 2, Y2 = P[1] - h / 2;
       if (gridSet.snap) { X += toGrid(X + w / 2, NODE_STEP); Y2 += toGrid(Y2 + h / 2, NODE_STEP); }   // its centre on the grid, as a drag puts it
       var c = innermost(P, function (n) { return n.comp; }), id = freeId('glyph_');
       var t2;
-      try { t2 = sbJs.add(text, { id: id, cls: cls, label: '', box: [+fmt(X), +fmt(Y2), w, h], parent: c >= 0 ? nodes2[c].id : null, fill: D.fill, font: D.font }); }
+      try { t2 = sbJs.add(text, { id: id, cls: cls, label: '', box: [+fmt(X), +fmt(Y2), w, h], parent: c >= 0 ? nodes2[c].id : null, fill: D.fill, line: D.line, width: D.width, multimer: D.multimer, font: D.font }); }
       catch (err) { warn('The ' + cls + ' could not be added: ' + (err && err.message || err) + '.'); return; }
       remember(false); text = t2; made(id);
     }
@@ -430,13 +430,13 @@
       palDrag.moved = true;
       if (!palOn()) { if (palDrag.img) palDrag.img.hidden = true; return; }
       if (!palDrag.img) {   // in the map window from the start, so it slides in from behind the panel as it nears the map (user, 2026-11-14)
-        var D = sbJs.defaults(src(), null, palDrag.kind);
+        var D = defOf(palDrag.kind);
         palDrag.img = document.createElement('div'); palDrag.img.className = 'm2-ed-palghost';
         palDrag.img.style.cssText = 'width:' + D.w * V.z + 'px;height:' + D.h * V.z + 'px';
         // drawn as the renderer draws a macromolecule (user, 2026-11-14: a CSS box with a 1 px border looked thin, its
         // corners round where yrender's are quadratic): its path in map units (radius 10, as sbgn_edit writes), stroke 1; a
         // simple chemical a circle (yrender's round rectangle of radius half its side)
-        var w = D.w, h = D.h, q = Math.min(10, w / 2, h / 2), paint0 = '" fill="' + (D.fill || '#fff') + '" stroke="#000" stroke-width="1"/></svg>';
+        var w = D.w, h = D.h, q = Math.min(10, w / 2, h / 2), paint0 = '" fill="' + (D.fill || '#fff') + '" stroke="' + (D.line || '#000') + '" stroke-width="' + D.width + '"/></svg>';
         palDrag.img.innerHTML = '<svg width="100%" height="100%" viewBox="0 0 ' + w + ' ' + h + '" overflow="visible">' + (palDrag.kind === 'simple chemical'
           ? '<rect width="' + w + '" height="' + h + '" rx="' + Math.min(w, h) / 2 + paint0
           : '<path d="M0 ' + q + ' Q0 0 ' + q + ' 0 L' + (w - q) + ' 0 Q' + w + ' 0 ' + w + ' ' + q + ' L' + w + ' ' + (h - q) + ' Q' + w + ' ' + h + ' ' + (w - q) + ' ' + h +
@@ -511,27 +511,58 @@
       selN = []; nodes2.forEach(function (n, k) { if (n.id === id) selN = [k]; });
       fitThen({ moved: [id] }, function () { sizeRec = null; render(); paint(); changed(); });
     }
+    // Properties as yEd's Properties View (user, 2026-11-14: "I'm used to the graph editor way ... intuitive and nice and
+    // compact"): two columns, the name on the left; with Newt's fields our maps keep (user: label, width, height, border and
+    // fill colour, border width: "if people want to create some super colorful diagram, they can", multimer, Set as
+    // default; state variables and units of information have their own ways on the map, Cloned skipped). A field is
+    // applied on Enter or when it is left (Esc puts it back), a colour also when the picker closes; one undo step each.
+    // Shown for one macromolecule or simple chemical selected (not an Activity Flow activity drawn as one: write() carries
+    // none of its changes); Width and Height not for a member of a complex (Pack sizes those); Size step always
+    var ROWS = [['label', 'Label', 'text'], ['w', 'Width', 'num'], ['h', 'Height', 'num'], ['fill', 'Fill colour', 'colour'],
+      ['line', 'Border colour', 'colour'], ['width', 'Border width', 'num'], ['multimer', 'Multimer', 'check']];
     var props = document.createElement('div');
     props.className = 'm2-ed-props'; props.hidden = true;
-    props.innerHTML = '<p>Properties</p><div class="m2-ed-prop-size"><label>Width <input type="number" id="m2-ed-w" min="4" max="5000" step="any"></label>' +
-      '<label>Height <input type="number" id="m2-ed-h" min="4" max="5000" step="any"></label></div>' +
-      '<label title="Width and height change in steps of this many units when a node is resized by its handles; Alt or Ctrl held, any size">Size step <input type="number" id="m2-ed-step" min="1" max="100" step="1"></label>';
+    props.innerHTML = '<p>Properties</p><table class="m2-ed-ptab">' + ROWS.map(function (r) {
+      var id = 'm2-ed-' + r[0], f = r[2] === 'check' ? '<input type="checkbox" id="' + id + '">'
+        : r[2] === 'colour' ? '<span class="m2-ed-pc"><input type="color" tabindex="-1" aria-label="' + r[1] + ', picker"><input type="text" id="' + id + '" spellcheck="false" autocomplete="off"' + (r[0] === 'fill' ? ' placeholder="none"' : '') + '></span>'
+        : r[2] === 'num' ? '<input type="number" id="' + id + '" step="any"' + (r[0] === 'width' ? ' min="0.25" max="20"' : ' min="4" max="5000"') + '>'
+        : '<input type="text" id="' + id + '" spellcheck="false" autocomplete="off">';
+      return '<tr data-k="' + r[0] + '"><th><label for="' + id + '">' + r[1] + '</label></th><td>' + f + '</td></tr>';
+    }).join('') + '<tr class="m2-ed-pstep"><th><label for="m2-ed-step" title="Width and height change in steps of this many units when a node is resized by its handles; Alt or Ctrl held, any size">Size step</label></th>' +
+      '<td><input type="number" id="m2-ed-step" min="1" max="100" step="1"></td></tr></table><button type="button" class="m2-ed-pdef"></button>';
     pal.insertAdjacentElement('afterend', props);
     var inW = props.querySelector('#m2-ed-w'), inH = props.querySelector('#m2-ed-h'), inStep = props.querySelector('#m2-ed-step');
-    function propNode() { return selN.length === 1 && !selP.length && !selE.length && !svSel && sizable(selN[0]) ? selN[0] : -1; }
+    var field = function (k) { return props.querySelector('#m2-ed-' + k); }, pNow = {}, pCls = [];
+    function propNode() {   // the one macromolecule or simple chemical selected (its class read from the file once per selection and change)
+      if (selN.length !== 1 || selP.length || selE.length || svSel || !palOn() || !isMade(nodes2[selN[0]])) return -1;
+      var id = nodes2[selN[0]].id;
+      if (pCls[0] !== id || pCls[1] !== text) pCls = [id, text, /^(macromolecule|simple chemical)( multimer)?$/.test(sbJs.classOf(src(), id))];
+      return pCls[2] ? selN[0] : -1;
+    }
+    function kindOf(i) { return nodes2[i].shape.kind === 'SimpleChemical' ? 'simple chemical' : 'macromolecule'; }
     function propsShow(all) {   // all: every field shown again, the one focused too (Esc)
       props.hidden = !palOn();
       if (props.hidden) return;
-      var i = propNode(), b = i >= 0 ? bx(i) : null, r2 = function (v) { return String(Math.round(v * 100) / 100); };
-      props.querySelector('.m2-ed-prop-size').hidden = i < 0;
-      if (b && (all || document.activeElement !== inW)) inW.value = r2(b[2]);
-      if (b && (all || document.activeElement !== inH)) inH.value = r2(b[3]);
+      var i = propNode(), r2 = function (v) { return String(Math.round(v * 100) / 100); };
+      Array.prototype.forEach.call(props.querySelectorAll('tr[data-k]'), function (tr) { tr.hidden = i < 0 || (/^[wh]$/.test(tr.dataset.k) && !sizable(i)); });
+      props.querySelector('.m2-ed-pdef').hidden = i < 0;
       if (all || document.activeElement !== inStep) inStep.value = String(gridSet.step);
+      if (i < 0) return;
+      var o = sbJs.lookOf(realizerOf(nodes2[i].el)), b = bx(i);
+      pNow = { label: nameOf(i), w: r2(b[2]), h: r2(b[3]), fill: o.fill ? o.fill.slice(0, 7).toLowerCase() : '', line: (o.line || '#000000').slice(0, 7).toLowerCase(), width: r2(o.width), multimer: o.multimer };
+      ROWS.forEach(function (r) {
+        var f = field(r[0]);
+        if (!all && document.activeElement === f) return;
+        if (r[2] === 'check') { f.checked = pNow[r[0]]; return; }
+        if (f.value !== pNow[r[0]]) f.value = pNow[r[0]];   // only what changed (it runs with every paint)
+        if (r[2] === 'colour') f.previousElementSibling.value = pNow[r[0]] || '#ffffff';
+      });
+      props.querySelector('.m2-ed-pdef').textContent = 'Set as default for ' + kindOf(i);
     }
     [inW, inH].forEach(function (inp, k) {
       inp.addEventListener('change', function () {
         var i = propNode(), v = parseFloat(inp.value);
-        if (i < 0) return;
+        if (i < 0 || !sizable(i)) return;
         var b = boxOf(i);
         if (!(v >= 4 && v <= 5000) || Math.abs(v - b[2 + k]) < 0.005) { propsShow(); return; }
         var nb = b.slice(); nb[2 + k] = v; nb[k] = b[k] + b[2 + k] / 2 - v / 2;   // its centre kept
@@ -539,8 +570,50 @@
       });
     });
     inStep.addEventListener('change', function () { gridSet.step = stepOk(parseFloat(inStep.value)); gridKeep(); inStep.value = String(gridSet.step); });
+    function hex(v) {   // #rgb or #rrggbb, with or without #, as yEd writes it ('' for none, null not a colour)
+      v = v.trim().replace(/^#/, '');
+      if (/^[0-9a-f]{3}$/i.test(v)) v = v.replace(/./g, '$&$&');
+      return /^[0-9a-f]{6}$/i.test(v) ? '#' + v.toUpperCase() : v ? null : '';
+    }
+    function propSet(k) {   // the label, a colour, the border width or multimer, from its field
+      var i = propNode();
+      if (i < 0) return;
+      var f = field(k), id = nodes2[i].id, t2 = text, v = k === 'multimer' ? f.checked : f.value;
+      if (k === 'label') t2 = sbJs.label(text, id, v.replace(/[\r\n]+/g, ' '));
+      else if (k === 'multimer') t2 = sbJs.multimer(text, id, v);   // a count, if any, stays the unit of information typed (N:3)
+      else if (k === 'width') { var x = parseFloat(v); if (x > 0 && x <= 20) t2 = sbJs.restyle(text, id, { width: x }); }
+      else {
+        var c = hex(v), o = {};
+        if (c !== null && !(c === '' && k === 'line')) { o[k] = c === '#000000' && k === 'line' ? null : c || null; t2 = sbJs.restyle(text, id, o); }
+      }
+      if (t2 === text) { propsShow(true); return; }
+      remember(false); text = t2; made(id);
+    }
+    ROWS.forEach(function (r) {
+      if (r[2] === 'num' && r[0] !== 'width') return;   // Width and Height: above
+      var f = field(r[0]);
+      f.addEventListener('change', function () { propSet(r[0]); });
+      if (r[2] === 'colour') f.previousElementSibling.addEventListener('change', function (e) { f.value = e.target.value; propSet(r[0]); });
+    });
     props.addEventListener('keydown', function (e) {   // Enter keeps the value, Esc takes it back; the map's keys stay out of the fields
       if (e.key === 'Enter') { e.target.blur(); e.preventDefault(); }
       else if (e.key === 'Escape') { e.target.blur(); propsShow(true); e.preventDefault(); }
       e.stopPropagation();
+    });
+    // Set as default (Newt's): the next ones of that kind made from the palette take this node's size, colours, border and
+    // multimer; kept in this browser for every map (atlas-edit-defaults, by kind)
+    var DEF_KEY = 'atlas-edit-defaults';
+    function defsKept() { try { return JSON.parse(localStorage.getItem(DEF_KEY) || '{}') || {}; } catch (e) { return {}; } }
+    function defOf(cls) {   // the look a new glyph of that kind gets: the map's (sbgn_edit.defaults), or the one set as default
+      var D = sbJs.defaults(src(), null, cls), k = defsKept()[cls];
+      D.multimer = false;
+      if (k) ['w', 'h', 'fill', 'line', 'width', 'multimer'].forEach(function (q) { if (q in k) D[q] = k[q]; });
+      return D;
+    }
+    props.querySelector('.m2-ed-pdef').addEventListener('click', function () {
+      var i = propNode();
+      if (i < 0) return;
+      var o = sbJs.lookOf(realizerOf(nodes2[i].el)), b = boxOf(i), all = defsKept();
+      all[kindOf(i)] = { w: b[2], h: b[3], fill: o.fill, line: o.line, width: o.width, multimer: o.multimer };
+      try { localStorage.setItem(DEF_KEY, JSON.stringify(all)); } catch (e) { warn('The default could not be kept in this browser.'); }
     });

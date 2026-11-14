@@ -141,7 +141,7 @@ sitemap: false
   <text class="ca-sub" x="855" y="522" text-anchor="middle">the viewer's own look</text>
 
   <!-- 5 editor -->
-  <rect class="ca-hub" x="1005" y="70" width="160" height="232" rx="6"/>
+  <rect class="ca-hub" x="1005" y="70" width="160" height="240" rx="6"/>
   <text class="ca-name" x="1085" y="92" text-anchor="middle">editor.js</text>
   <text class="ca-sub" x="1085" y="108" text-anchor="middle">joined by Jekyll from src/</text>
   <rect class="ca-lay" x="1018" y="120" width="134" height="26" rx="4"/>
@@ -152,6 +152,7 @@ sitemap: false
     <rect class="ca-inner" x="1018" y="202" width="134" height="22" rx="4"/><text x="1085" y="217">sbgn.js</text>
     <rect class="ca-inner" x="1018" y="228" width="134" height="22" rx="4"/><text x="1085" y="243">help.js</text>
     <rect class="ca-inner" x="1018" y="254" width="134" height="22" rx="4"/><text x="1085" y="269">own.js</text>
+    <rect class="ca-inner" x="1018" y="280" width="134" height="22" rx="4"/><text x="1085" y="295">create.js</text>
   </g>
   <rect class="ca-box" x="1005" y="316" width="160" height="152" rx="6"/>
   <text class="ca-title" x="1085" y="336" text-anchor="middle">Renderers in the page</text>
@@ -268,6 +269,7 @@ own file back, which the build then draws again. This page shows the parts, wher
   <tr><td><code>src/graphml.js</code></td><td>yEd maps: the redraw by yrender.js, the shift out of negative places, compartment outlines while dragging.</td></tr>
   <tr><td><code>src/celldesigner.js</code></td><td>CellDesigner maps through cd_edit: the process square following its segment, guides through it, reactions drawn live while a drag runs.</td></tr>
   <tr><td><code>src/sbgn.js</code></td><td>SBGN-ML maps through sbgn_edit; saved as an edited copy, the original file left as it is.</td></tr>
+  <tr><td><code>src/create.js</code></td><td>The full editor on SBGN-ML maps: the palette and what it makes (entities, names typed in place, state variables, units of information, multimers, deleting), resizing by the handles, and Properties (label, size, fill and border colours, border width, multimer, Set as default for the next one made), written through sbgn_edit.</td></tr>
   <tr><td><code>src/help.js</code></td><td>The one source of the how-to shown by "?".</td></tr>
   <tr><td><code>src/own.js</code></td><td>What a reader keeps without a token: drafts, the folder on the computer, their own maps and groups; Add map to the site with a token.</td></tr>
 

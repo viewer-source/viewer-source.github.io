@@ -100,6 +100,15 @@ files.forEach(function (f, i) {
   if (big) sized.push([big.id, r3([big.box[0] - 4, big.box[1] + 4, big.box[2] + 16, big.box[3] - 8])]);
   if (chem[0]) sized.push([chem[0].id, r3([chem[0].box[0], chem[0].box[1], chem[0].box[2] + 16, chem[0].box[3] + 8])]);
   sized.forEach(function (q) { g2 = se.resize(g2, q[0], q[1], opt); });
+  // Properties' colours and border (2026-11-14): fill, border colour and width of a file's macromolecule, a border colour
+  // alone, no fill on a multimer made single, a simple chemical's fill; two glyphs made with a whole look (Set as default),
+  // sharing one new style
+  var styled = single || mac.filter(function (q) { return q !== mac[0] && q !== withSv && q !== doomed; })[0];
+  if (styled) g2 = se.restyle(g2, styled.id, { fill: '#FFCC00', line: '#AA0000', width: 2.5 }, opt);
+  if (mac[0]) g2 = se.restyle(g2, mac[0].id, { line: '#123456' }, opt);
+  if (multi) g2 = se.restyle(g2, multi.id, { fill: null }, opt);
+  if (chem[0]) g2 = se.restyle(g2, chem[0].id, { fill: '#00FF00' }, opt);
+  ['made3', 'made4'].forEach(function (id, k) { g2 = se.add(g2, { id: id, cls: 'macromolecule', label: id, box: r3([right + 100, top + 100 + 80 * k, D.w, D.h]), fill: '#FFEEDD', line: '#0000FF', width: 3, multimer: true, font: D.font }, opt); });
   var s2 = se.write(s, g2, opt), p2 = path.join(tmp, i + path.extname(f));
   fs.writeFileSync(p2, s2);
   made.push({ f: f, s: s, g: g, g2: g2, s2: s2, p2: p2, comp: !!comp, mac: mac[0], withSv: withSv, doomed: doomed, svIds: svIds, chem: chem, single: single, multi: multi, sized: sized });
@@ -138,6 +147,9 @@ made.forEach(function (m, i) {
     var b = g && Array.prototype.filter.call(g.childNodes, function (c) { return c.localName === 'bbox'; })[0];
     if (!b || r3(['x', 'y', 'w', 'h'].map(function (k) { return parseFloat(b.getAttribute(k)); })).join() !== q[1].join()) why.push(q[0] + ' not resized as asked');
   });
+  var cls2 = {}; glyphs(m.s2).forEach(function (q) { cls2[q.id] = q.cls; });
+  if (cls2.made3 !== 'macromolecule multimer') why.push('made3 not a multimer');
+  if (!/<(\w+:)?style [^>]*idList="made3 made4"/.test(m.s2)) why.push('made3 and made4 not in one style');
   if (why.length) { bad++; console.log('DIFFERENT ' + name + ': ' + why.join('; ')); }
 });
 fs.rmSync(tmp, { recursive: true, force: true });

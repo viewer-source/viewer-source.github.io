@@ -818,7 +818,7 @@ def read(path):
         if any(alias_of(e) not in nodes for e in br + bp):
             report.say('left out', 'reaction %s: an end is not converted, left out' % rid); continue
         if typ in REDUCED_TYPES:  # reduced notation: an arc between the entities (user, Q8), its ends at their
-            # connection points and its edit points in the frame between them, as a process's main line
+            # ports and its edit points in the frame between them, as a process's main line
             A, B, s_, t_ = end(br[0]), end(bp[0]), alias_of(br[0]), alias_of(bp[0])
             arcs.append(Arc(id=rid, source=s_, target=t_, head=HEAD[typ],
                             points=[from_frame(A, B, q) for q in points(x.findtext('cd:editPoints', namespaces=ns))],

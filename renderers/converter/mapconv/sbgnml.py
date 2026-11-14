@@ -493,8 +493,8 @@ def read(path):
             data['SBGN class'] = cls
         nodes[i] = Node(id=i, kind=kind, box=(x, y, w, h), parent=parent,
                         labels=[OPERATORS[cls]] if kind == 'Operator' else [text(g)],
-                        fill=colour(fill.get(i), defs), line=colour(line.get(i), defs) if kind == 'Compartment' else None,
-                        weight=weight.get(i) if kind == 'Compartment' else None,
+                        fill=colour(fill.get(i), defs), line=colour(line.get(i), defs),
+                        weight=weight.get(i),
                         states=states, units=units,
                         count=(n[0] if n else 2) if cls.endswith(' multimer') else 1,
                         label_at=(float(lb.get('x')) - x, float(lb.get('y')) - y) if kind == 'Compartment' and lb is not None else None,

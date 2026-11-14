@@ -611,6 +611,24 @@ says "the workbench", "the converter's repository", "a private repository".
   read as aimed at the centre set so); write() scales what the file's glyph carries the same way, its own line ends
   too. On a map with few proteins a much taller one can move the converter's map scale (the median protein height,
   style.scale_of), so the next build draws its fonts at another size.
+  Properties as a table (user, 2026-11-14: "I'm used to the graph editor way, and I find it quite intuitive and nice and
+  compact"; the fields from Newt's Macromolecule Visual Properties the user picked): yEd's two columns, the names on the
+  left, for one macromolecule or simple chemical selected (not an Activity Flow activity drawn as one): Label, Width,
+  Height (not on a member of a complex), Fill colour, Border colour, Border width (user: "certain editors like Cell
+  Designer will not support changing the color of the border, but here we are flexible ... super colorful diagram ...
+  thickness of the border, let's add it as well"), Multimer; Size step under them; then Set as default for macromolecule
+  (or simple chemical), as Newt's: the next ones of that kind made from the palette take that size, colours, border and
+  multimer, kept in this browser for every map (`atlas-edit-defaults`, by kind). Left out (user): state variables and
+  units of information (their own ways on the map), Cloned, Image, Font, Fill opacity. A field is applied on Enter or
+  when it is left, Esc puts it back; a colour as its hex (an empty fill is none) or from its swatch, applied when the
+  picker closes; one undo step each. `sbgn_edit.restyle` and `lookOf` (multimer: `multimer`): the GraphML as the
+  converter writes it; the SBGN-ML file's render extension as the converter reads it (each attribute from the last
+  style naming the glyph that gives it; prefixed attributes such as libsbgn's `ns1:idList` read and written under their
+  own names): the glyph moves out of its styles into a plain style of its fill, border and font, the one most glyphs of
+  its class use, else a new style keeping its old style's other attributes, colours in the map's colour definitions, a
+  render extension made where the file had none. The converter reads every glyph's border colour and width since
+  2026-11-14 (user: read for all glyphs; the converter's D27), so Newt's files draw their grey borders.
+  `tests/sbgn-create.js` covers it (fill, border, colours of glyphs made, two sharing one new style).
 - Full screen with tools (user, 2026-11-12: "use more space available on the screen, but with tools"): beside the map's
   own full screen (the map alone), the whole page goes full screen with its list, tools and panel: Shift with the
   full-screen button, or Full screen with tools in the right-click menu (Exit full screen there while on). The
