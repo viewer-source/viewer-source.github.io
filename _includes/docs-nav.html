@@ -6,9 +6,9 @@
   .dn-row a:hover { color: #333; }
   .dn-row span { color: #333; }
 </style>
-<nav class="dn-row" aria-label="The viewer's pages">
+<div class="dn-row" role="navigation" aria-label="The viewer's pages">
   {% assign here = include.here %}
   {% if here == "atlas" %}<span>Atlas</span>{% else %}<a href="/">Atlas</a>{% endif %}
   {% if here == "architecture" %}<span>Architecture</span>{% else %}<a href="/architecture/">Architecture</a>{% endif %}
   {% if here == "guide" %}<span>Guide</span>{% else %}<a href="/guide/">Guide</a>{% endif %}
-</nav>
+</div>
