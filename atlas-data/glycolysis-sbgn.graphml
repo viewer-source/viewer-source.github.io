@@ -447,7 +447,7 @@
       </data>
     </node><node id="n20"><data key="d0">CHEBI:30616</data><data key="ng">
         <y:GenericNode configuration="com.yworks.sbgn.SimpleChemical">
-          <y:Geometry height="32.0" width="60.0" x="414.0" y="170.0"/>
+          <y:Geometry height="32.0" width="60.0" x="406.0" y="170.0"/>
           <y:Fill color="#DBEBDB" transparent="false"/>
           <y:BorderStyle color="#000000" type="line" width="1.0"/>
           <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="14" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="20.5" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="center" visible="true" width="28.5" x="15.75" xml:space="preserve" y="5.75" hasText="true">ATP<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:ModelParameter><y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/></y:ModelParameter></y:NodeLabel>
@@ -813,7 +813,7 @@
     <edge id="e27" source="n21" target="n25">
       <data key="eg">
         <y:PolyLineEdge>
-          <y:Path sx="18.0" sy="0.0" tx="0.0" ty="0.0"><y:Point x="556.0" y="186.0"/></y:Path>
+          <y:Path sx="18.0" sy="0.0" tx="0.0" ty="0.0"/>
           <y:LineStyle color="#000000" type="line" width="1.0"/>
           <y:Arrows source="none" target="delta"/>
           <y:BendStyle smoothed="false"/>
