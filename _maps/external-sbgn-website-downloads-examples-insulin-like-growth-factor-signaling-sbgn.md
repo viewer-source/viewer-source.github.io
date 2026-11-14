@@ -1,10 +1,10 @@
 ---
-title: "sbgn-website: downloads/examples/insulin-like growth factor signaling"
-topic: "sbgn-website: downloads/examples/insulin-like growth factor signaling"
+title: "sbgn-website: insulin-like growth factor signaling"
+topic: "sbgn-website: insulin-like growth factor signaling"
 tab: ""
 page: ""
 group: "SBGN-ML external"
-order: 1028
+order: 1022
 kind: "map"
 draft: false
 tag: ""

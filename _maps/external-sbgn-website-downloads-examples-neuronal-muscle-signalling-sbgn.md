@@ -1,10 +1,10 @@
 ---
-title: "sbgn-website: downloads/examples/neuronal muscle signalling"
-topic: "sbgn-website: downloads/examples/neuronal muscle signalling"
+title: "sbgn-website: neuronal muscle signalling"
+topic: "sbgn-website: neuronal muscle signalling"
 tab: ""
 page: ""
 group: "SBGN-ML external"
-order: 1033
+order: 1027
 kind: "map"
 draft: false
 tag: ""

@@ -4,7 +4,7 @@ topic: "sbgn-website: mapk"
 tab: ""
 page: ""
 group: "SBGN-ML external"
-order: 1040
+order: 1034
 kind: "map"
 draft: false
 tag: ""

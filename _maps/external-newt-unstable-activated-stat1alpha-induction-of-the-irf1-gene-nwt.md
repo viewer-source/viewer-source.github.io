@@ -4,7 +4,7 @@ topic: "newt-unstable: activated stat1alpha induction of the irf1 gene (Newt fil
 tab: ""
 page: ""
 group: "SBGN-ML external"
-order: 1006
+order: 1000
 kind: "map"
 draft: false
 tag: ""

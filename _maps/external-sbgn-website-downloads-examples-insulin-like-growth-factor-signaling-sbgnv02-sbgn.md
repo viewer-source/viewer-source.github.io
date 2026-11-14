@@ -4,7 +4,7 @@ topic: "sbgn-website: insulin-like growth factor signaling SBGNv02"
 tab: ""
 page: ""
 group: "SBGN-ML external"
-order: 1029
+order: 1023
 kind: "map"
 draft: false
 tag: ""

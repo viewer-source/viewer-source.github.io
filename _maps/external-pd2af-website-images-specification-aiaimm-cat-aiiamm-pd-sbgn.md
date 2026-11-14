@@ -4,7 +4,7 @@ topic: "pd2af-website: images/specification/aiaimm-cat-aiiamm/pd"
 tab: ""
 page: ""
 group: "SBGN-ML external"
-order: 1018
+order: 1012
 kind: "map"
 draft: false
 tag: ""

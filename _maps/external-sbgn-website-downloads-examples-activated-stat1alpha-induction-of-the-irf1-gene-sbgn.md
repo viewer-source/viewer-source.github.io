@@ -1,10 +1,10 @@
 ---
-title: "sbgn-website: downloads/examples/activated stat1alpha induction of the irf1 gene"
-topic: "sbgn-website: downloads/examples/activated stat1alpha induction of the irf1 gene"
+title: "sbgn-website: activated stat1alpha induction of the irf1 gene"
+topic: "sbgn-website: activated stat1alpha induction of the irf1 gene"
 tab: ""
 page: ""
 group: "SBGN-ML external"
-order: 1023
+order: 1017
 kind: "map"
 draft: false
 tag: ""

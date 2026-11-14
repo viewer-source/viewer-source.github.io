@@ -4,7 +4,7 @@ topic: "sbgn-website: insulin"
 tab: ""
 page: ""
 group: "SBGN-ML external"
-order: 1039
+order: 1033
 kind: "map"
 draft: false
 tag: ""

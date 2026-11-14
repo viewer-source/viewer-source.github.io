@@ -4,7 +4,7 @@ topic: "newt-unstable: polyq proteins interference (Newt file)"
 tab: ""
 page: ""
 group: "SBGN-ML external"
-order: 1015
+order: 1009
 kind: "map"
 draft: false
 tag: ""
