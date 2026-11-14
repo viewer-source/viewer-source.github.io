@@ -6,12 +6,15 @@
     // Full, and for now only on SBGN-ML maps: sbgn_edit (renderers/converter/sbgn_edit.js, its master, tested against the
     // converter by tests/sbgn-create.js) writes what is made into the editor's GraphML as the converter writes it, and
     // into the SBGN-ML file. So far: a macromolecule, its name, its state variables (added from the right-click menu over
-    // a macromolecule, user: "Auxiliary units - remove this section, to be added via right click"), and deleting them.
+    // a macromolecule, user: "Auxiliary units - remove this section, to be added via right click"), and deleting them; a
+    // simple chemical, 40 by 40 at the map's scale, with its name only (user, 2026-11-14: no state variable or unit of
+    // information on it for now, though SBGN allows them: CellDesigner keeps none, and they are rarely welcome there).
     // Nothing asks for a name when made (user: "I will name when I want to name"): a double click on a named entity or a
     // state variable, or a click on a state variable already selected, opens its text in place, in the glyph's own
     // colours and font (user: "simply make it editable for the text"); Enter or a click elsewhere keeps it, Esc not.
     var PAL = [
-      ['Entity pool nodes', [['macromolecule', 'Macromolecule', '<rect x="6" y="5" width="28" height="14" rx="4"/>']]]
+      ['Entity pool nodes', [['macromolecule', 'Macromolecule', '<rect x="6" y="5" width="28" height="14" rx="4"/>'],
+        ['simple chemical', 'Simple chemical', '<circle cx="20" cy="12" r="7.5"/>']]]
     ];
     var tool = null;   // { kind, sticky } in hand
     var pal = document.createElement('div');
@@ -61,7 +64,7 @@
       e.stopImmediatePropagation();   // not the viewer's click (it would open an annotation)
       if (!tool) return true;   // let go between the press and the release (Esc)
       placedAt = Date.now();
-      if (tool.kind === 'macromolecule') makeEntity(p.P);
+      makeEntity(p.P, tool.kind);
       if (tool && !tool.sticky) palTake(null);
       return true;
     }
@@ -80,17 +83,19 @@
       });
       return best;
     }
-    function makeEntity(P) {
+    function makeEntity(P, cls) {
       var cx = innermost(P, function (n) { return n.el.getAttribute('yfiles.foldertype') === 'group' && !n.comp; });
       if (cx >= 0) { warn('A new entity goes beside a complex for now, not into it.'); return; }
-      var D = sbJs.defaults(src()), w = D.w, h = D.h, X = P[0] - w / 2, Y2 = P[1] - h / 2;
+      var D = sbJs.defaults(src(), null, cls), w = D.w, h = D.h, X = P[0] - w / 2, Y2 = P[1] - h / 2;
       if (gridSet.snap) { X += toGrid(X + w / 2, NODE_STEP); Y2 += toGrid(Y2 + h / 2, NODE_STEP); }   // its centre on the grid, as a drag puts it
       var c = innermost(P, function (n) { return n.comp; }), id = freeId('glyph_');
       var t2;
-      try { t2 = sbJs.add(text, { id: id, cls: 'macromolecule', label: '', box: [+fmt(X), +fmt(Y2), w, h], parent: c >= 0 ? nodes2[c].id : null, fill: D.fill, font: D.font }); }
-      catch (err) { warn('The macromolecule could not be added: ' + (err && err.message || err) + '.'); return; }
+      try { t2 = sbJs.add(text, { id: id, cls: cls, label: '', box: [+fmt(X), +fmt(Y2), w, h], parent: c >= 0 ? nodes2[c].id : null, fill: D.fill, font: D.font }); }
+      catch (err) { warn('The ' + cls + ' could not be added: ' + (err && err.message || err) + '.'); return; }
       remember(false); text = t2; made(id);
     }
+    var MADE = /^(Macromolecule|SimpleChemical)$/;   // the glyphs the palette makes, which Delete removes
+    function madeAt(P) { return innermost(P, function (n) { return MADE.test(n.shape.kind) && n.el.getAttribute('yfiles.foldertype') !== 'group'; }); }
     function macroAt(P) { return innermost(P, function (n) { return n.shape.kind === 'Macromolecule' && n.el.getAttribute('yfiles.foldertype') !== 'group'; }); }
     // the places a state variable sits on its node's border, as [rx, ry] (user, 2026-11-14: "it's like with ports"):
     // the corners, each side's middle and the points between them; never marked, a drag always lands on the nearest.
@@ -293,8 +298,8 @@
       parse(); dirty = true; render(); paint(); changed();
       return true;
     }
-    function nodesDelete(list) {   // macromolecules deleted with every line at them
-      var ids = list.filter(function (i) { return nodes2[i].shape.kind === 'Macromolecule' && nodes2[i].el.getAttribute('yfiles.foldertype') !== 'group'; }).map(function (i) { return nodes2[i].id; });
+    function nodesDelete(list) {   // macromolecules and simple chemicals deleted with every line at them
+      var ids = list.filter(function (i) { return MADE.test(nodes2[i].shape.kind) && nodes2[i].el.getAttribute('yfiles.foldertype') !== 'group'; }).map(function (i) { return nodes2[i].id; });
       if (!ids.length) return false;
       remember(false); text = sbJs.remove(text, ids); selN = []; selP = []; selE = []; part = null;
       parse(); dirty = true; render(); paint(); changed();
@@ -358,11 +363,11 @@
       if ((e.key !== 'Delete' && e.key !== 'Backspace') || !palOn() || /input|textarea|select/i.test(document.activeElement.tagName)) return;
       if (svDelete() || (selN.length && !selP.length && nodesDelete(selN))) { e.preventDefault(); e.stopImmediatePropagation(); }
     }, true);
-    window.m2EditDelete = function () {   // the right-click menu's Delete over a state variable or a macromolecule
+    window.m2EditDelete = function () {   // the right-click menu's Delete over a state variable, a macromolecule or a simple chemical
       if (!palOn() || !rclick) return null;
       var q = svAt(rclick);
       if (q) return function () { svSel = { id: nodes2[q[0]].id, j: q[1] }; svDelete(); };
-      var i = macroAt(rclick);
+      var i = madeAt(rclick);
       if (i < 0) return null;
       return function () { nodesDelete(selN.indexOf(i) >= 0 ? selN : [i]); };
     };
@@ -383,15 +388,17 @@
       palDrag.moved = true;
       if (!palOn()) { if (palDrag.img) palDrag.img.hidden = true; return; }
       if (!palDrag.img) {   // in the map window from the start, so it slides in from behind the panel as it nears the map (user, 2026-11-14)
-        var D = sbJs.defaults(src());
+        var D = sbJs.defaults(src(), null, palDrag.kind);
         palDrag.img = document.createElement('div'); palDrag.img.className = 'm2-ed-palghost';
         palDrag.img.style.cssText = 'width:' + D.w * V.z + 'px;height:' + D.h * V.z + 'px';
         // drawn as the renderer draws a macromolecule (user, 2026-11-14: a CSS box with a 1 px border looked thin, its
-        // corners round where yrender's are quadratic): its path in map units (radius 10, as sbgn_edit writes), stroke 1
-        var w = D.w, h = D.h, q = Math.min(10, w / 2, h / 2);
-        palDrag.img.innerHTML = '<svg width="100%" height="100%" viewBox="0 0 ' + w + ' ' + h + '" overflow="visible"><path d="M0 ' + q +
-          ' Q0 0 ' + q + ' 0 L' + (w - q) + ' 0 Q' + w + ' 0 ' + w + ' ' + q + ' L' + w + ' ' + (h - q) + ' Q' + w + ' ' + h + ' ' + (w - q) + ' ' + h +
-          ' L' + q + ' ' + h + ' Q0 ' + h + ' 0 ' + (h - q) + ' Z" fill="' + (D.fill || '#fff') + '" stroke="#000" stroke-width="1"/></svg>';
+        // corners round where yrender's are quadratic): its path in map units (radius 10, as sbgn_edit writes), stroke 1; a
+        // simple chemical a circle (yrender's round rectangle of radius half its side)
+        var w = D.w, h = D.h, q = Math.min(10, w / 2, h / 2), paint0 = '" fill="' + (D.fill || '#fff') + '" stroke="#000" stroke-width="1"/></svg>';
+        palDrag.img.innerHTML = '<svg width="100%" height="100%" viewBox="0 0 ' + w + ' ' + h + '" overflow="visible">' + (palDrag.kind === 'simple chemical'
+          ? '<rect width="' + w + '" height="' + h + '" rx="' + Math.min(w, h) / 2 + paint0
+          : '<path d="M0 ' + q + ' Q0 0 ' + q + ' 0 L' + (w - q) + ' 0 Q' + w + ' 0 ' + w + ' ' + q + ' L' + w + ' ' + (h - q) + ' Q' + w + ' ' + h + ' ' + (w - q) + ' ' + h +
+            ' L' + q + ' ' + h + ' Q0 ' + h + ' 0 ' + (h - q) + ' Z' + paint0);
         V.view.appendChild(palDrag.img);
       }
       var r = V.view.getBoundingClientRect(), g = palDrag.img;
@@ -404,5 +411,5 @@
       if (d.img) d.img.remove();
       if (!palOver(e) || !palOn()) return;
       placedAt = Date.now();
-      if (d.kind === 'macromolecule') makeEntity(at(e));
+      makeEntity(at(e), d.kind);
     }, true);

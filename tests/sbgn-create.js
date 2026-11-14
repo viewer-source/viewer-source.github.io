@@ -59,6 +59,16 @@ files.forEach(function (f, i) {
   g2 = se.state(g2, 'made1', '', -0.25, 0.5, opt);
   var comp = all.filter(function (q) { return q.cls === 'compartment' && q.top && q.box[2] > 2 * D.w && q.box[3] > 2 * D.h; })[0];
   if (comp) g2 = se.add(g2, { id: 'made2', cls: 'macromolecule', label: 'Made in a compartment', box: r3([comp.box[0] + 10, comp.box[1] + 10, D.w, D.h]), parent: comp.id, fill: D.fill, font: D.font, states: [['Ub', 0.5, 0]] }, opt);
+  // simple chemicals (2026-11-14): one on the map, named; one in a compartment; a state variable asked for and refused
+  // (the house profile); a file's own simple chemical renamed and another deleted
+  var C = se.defaults(s, opt, 'simple chemical');
+  g2 = se.add(g2, { id: 'chem1', cls: 'simple chemical', label: 'ATP', box: r3([right + 220, top, C.w, C.h]), fill: C.fill, font: C.font }, opt);
+  var g2a = se.state(g2, 'chem1', 'P', 0, 0.5, opt);
+  if (g2a !== g2) bad++, console.log('DIFFERENT ' + path.relative(here, f) + ': a state variable added to a simple chemical');
+  if (comp) g2 = se.add(g2, { id: 'chem2', cls: 'simple chemical', label: '', box: r3([comp.box[0] + 10, comp.box[1] + 20 + D.h, C.w, C.h]), parent: comp.id, fill: C.fill, font: C.font }, opt);
+  var chem = all.filter(function (q) { return q.cls === 'simple chemical' && q.top && !q.sv; });
+  if (chem[0]) g2 = se.label(g2, chem[0].id, 'Renamed chemical', opt);
+  if (chem[1]) g2 = se.remove(g2, [chem[1].id], opt);
   var mac = all.filter(function (q) { return q.cls === 'macromolecule'; });
   if (mac[0]) g2 = se.label(g2, mac[0].id, 'Renamed & <x>', opt);
   var withSv = mac.filter(function (q) { return q.sv; })[0];
@@ -74,7 +84,7 @@ files.forEach(function (f, i) {
   if (doomed) g2 = se.remove(g2, [doomed.id], opt);
   var s2 = se.write(s, g2, opt), p2 = path.join(tmp, i + path.extname(f));
   fs.writeFileSync(p2, s2);
-  made.push({ f: f, s: s, g: g, g2: g2, s2: s2, p2: p2, comp: !!comp, mac: mac[0], withSv: withSv, doomed: doomed, svIds: svIds });
+  made.push({ f: f, s: s, g: g, g2: g2, s2: s2, p2: p2, comp: !!comp, mac: mac[0], withSv: withSv, doomed: doomed, svIds: svIds, chem: chem });
 });
 var after = conv(made.map(function (m) { return m.p2; }));
 made.forEach(function (m, i) {
@@ -90,6 +100,10 @@ made.forEach(function (m, i) {
   }
   if (m.s2.indexOf('id="made1"') < 0 || m.s2.indexOf('value="P" variable="S12"') < 0 || m.s2.indexOf('text="Made one"') < 0) why.push('made1 not written as made');
   if (m.comp && !/id="made2" compartmentRef="/.test(m.s2)) why.push('made2 not in its compartment');
+  if (!/<(\w+:)?glyph class="simple chemical" id="chem1">\s*<(\w+:)?label text="ATP"\/>\s*<(\w+:)?bbox [^>]*\/>\s*<\/(\w+:)?glyph>/.test(m.s2)) why.push('chem1 not written as made');
+  if (m.comp && !/class="simple chemical" id="chem2" compartmentRef="/.test(m.s2)) why.push('chem2 not in its compartment');
+  if (m.chem[0] && m.s2.indexOf('text="Renamed chemical"') < 0) why.push('the chemical\'s rename not written');
+  if (m.chem[1] && m.s2.indexOf('id="' + m.chem[1].id + '"') >= 0) why.push('a deleted simple chemical still in the file');
   if (m.mac && m.s2.indexOf('text="Renamed &amp; &lt;x&gt;"') < 0) why.push('the rename not written');
   if (m.withSv && m.svIds.length < 2 && m.s2.indexOf('value="Ac"') < 0) why.push('the state variable\'s value not written');
   if (m.svIds.length > 1 && (m.s2.indexOf('id="' + m.svIds[0] + '"') >= 0 || m.svIds.slice(1).some(function (x) { return m.s2.indexOf('id="' + x + '"') < 0; }))) why.push('the wrong state variable deleted');
@@ -98,5 +112,5 @@ made.forEach(function (m, i) {
   if (why.length) { bad++; console.log('DIFFERENT ' + name + ': ' + why.join('; ')); }
 });
 fs.rmSync(tmp, { recursive: true, force: true });
-console.log(ran + ' SBGN-ML maps, macromolecules made, named, with state variables: ' + (bad ? bad + ' different' : 'all the same'));
+console.log(ran + ' SBGN-ML maps, macromolecules and simple chemicals made, named, with state variables: ' + (bad ? bad + ' different' : 'all the same'));
 process.exit(bad ? 1 : 0);

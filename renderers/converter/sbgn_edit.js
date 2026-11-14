@@ -222,9 +222,9 @@
       var g = S.glyph[id], cls = g.el.getAttribute('class') || '', lab = kid(g.el, 'label'), name = lab ? lab.getAttribute('text') || '' : '';
       if (!G.node[id]) {
         if (!MAKE[cls] || g.el.parentNode.localName !== 'map') return;
-        St = St || styles(S); D = D || defaults(t, opt);
+        St = St || styles(S); D = D || {}; D[cls] = D[cls] || defaults(t, opt, cls);
         var st = St.filter(function (x) { return x.ids.indexOf(id) >= 0; })[0], cref = g.el.getAttribute('compartmentRef');
-        out = add(out, { id: id, cls: cls, label: name, box: g.box, parent: cref && S.glyph[cref] ? cref : null, fill: st ? st.fill : null, font: st && st.font || D.font, states: svOf(g) }, opt);
+        out = add(out, { id: id, cls: cls, label: name, box: g.box, parent: cref && S.glyph[cref] ? cref : null, fill: st ? st.fill : null, font: st && st.font || D[cls].font, states: svOf(g) }, opt);
         return;
       }
       if (!NAMED.test(cls)) return;
@@ -333,9 +333,9 @@
       fresh += '\n' + ind0 + '<' + pre + 'glyph class="' + cls + '" id="' + esc(id) + '"' + (cref ? ' compartmentRef="' + esc(cref) + '"' : '') + '>' +
         (name ? '\n' + ind0 + '  <' + pre + 'label text="' + esc(name) + '"/>' : '') + '\n' + ind0 + '  ' + bboxXml(n.box) +
         iconsOf(id).map(function (q, k) { return svXml(id, k, q, n.box, ind0 + '  '); }).join('') + '\n' + ind0 + '</' + pre + 'glyph>';
-      if (fill) {   // its colour: a style of that fill and of its font, the one most of the map's macromolecules use (defaults' choice)
+      if (fill) {   // its colour: a style of that fill and of its font, the one most of the map's glyphs of its class use (defaults' choice)
         St = St || styles(S);
-        var fs = L.main ? F(L.main.getAttribute('fontSize')) : null, mac = function (x) { return x.ids.filter(function (i) { return S.glyph[i] && S.glyph[i].el.getAttribute('class') === 'macromolecule'; }).length; };
+        var fs = L.main ? F(L.main.getAttribute('fontSize')) : null, mac = function (x) { return x.ids.filter(function (i) { return S.glyph[i] && S.glyph[i].el.getAttribute('class') === cls; }).length; };
         var cand = St.filter(function (x) { return x.plain && x.fill === fill && (x.font == null || x.font === fs); });
         cand.sort(function (a, b) { return (b.font === fs) - (a.font === fs) || mac(b) - mac(a); });
         if (cand[0]) joinTo.set(cand[0], (joinTo.get(cand[0]) || []).concat(id));
@@ -471,13 +471,16 @@
   // ---------- creating (user, 2026-11-14: the full editor, entities added from a palette as in yEd and Newt) ----------
   // What the editor adds is written into its GraphML as graphml.write writes it (the yed.graphml templates, its label
   // and icon sizes), write() puts it into the SBGN-ML text, and graphml() makes it again from the SBGN-ML text (a draft
-  // reopened before the build has drawn it). So far: a macromolecule, its name, its state variables.
-  //   defaults(sbgnText) -> { w, h, font, fill } of a new macromolecule on that map (its scale, its proteins' style)
+  // reopened before the build has drawn it). So far: a macromolecule, its name, its state variables; a simple chemical and
+  // its name (no state variable or unit of information: the house profile, user 2026-11-14, CellDesigner keeps none).
+  //   defaults(sbgnText, opt, cls) -> { w, h, font, fill } of a new glyph of that class on that map (its scale, the style
+  //   most of the map's glyphs of that class use); cls defaults to macromolecule
   //   add(g, { id, cls, label, box, parent, fill, font }) -> g with the node (parent: a compartment's node id)
   //   label(g, id, text) -> g with the node's name; state(g, id, value, rx, ry) -> g with a state variable added at that
   //   point of the border (rx, ry from the centre, as yEd's nodeRatio); stateValue(g, id, j, value): its j-th one's value
   var CHAR = 9.5, LINE = 16.5, ICON_CHAR = 5.4;   // graphml.py: a label line's height and a character's width at 14; an icon's character
-  var MAKE = { macromolecule: 'Macromolecule' };   // what the palette makes: SBGN class -> yEd's configuration
+  var MAKE = { macromolecule: 'Macromolecule', 'simple chemical': 'SimpleChemical' };   // what the palette makes: SBGN class -> yEd's configuration
+  var SIZE = { macromolecule: [80, 40], 'simple chemical': [40, 40] };   // the converter's standard sizes (style.py), times the map's scale
   var NAMED = /^(macromolecule|simple chemical|nucleic acid feature|unspecified entity|perturbing agent|phenotype)( multimer)?$/;   // names kept in step both ways
   function ownText(el) { var t = ''; for (var c = el.firstChild; c; c = c.nextSibling) if (c.nodeType === 3 || c.nodeType === 4) t += c.nodeValue; return t; }
   function labelBox(text, w, h, k) {   // graphml._label: the label's box estimated and centred
@@ -545,13 +548,13 @@
       '          ' + (o.fill ? '<y:Fill color="' + o.fill + '" transparent="false"/>' : '<y:Fill transparent="false" hasColor="false"/>') + '\n' +
       '          <y:BorderStyle color="#000000" type="line" width="1.0"/>\n          ' + mainLabel(o.label || '', w, h, o.font || 14) +
       (svs || []).map(function (q) { return iconLabel(q[0], q[1], w, h, q[2], q[3]); }).join('') + '\n' +
-      '          <y:StyleProperties>\n            <y:Property class="java.lang.Integer" name="com.yworks.sbgn.style.radius" value="10"/>\n            </y:StyleProperties>\n' +
+      (o.cls === 'macromolecule' ? '          <y:StyleProperties>\n            <y:Property class="java.lang.Integer" name="com.yworks.sbgn.style.radius" value="10"/>\n            </y:StyleProperties>\n' : '') +   // yEd's simple chemical template has none
       '        </y:GenericNode>\n      </data>\n    </node>';
   }
   function add(t, o, opt) {
     if (!MAKE[o.cls]) throw new Error('cannot make a ' + o.cls);
     var svs = [];
-    (o.states || []).forEach(function (q) { var r = svIcon(t, q[0], opt); t = r[1]; svs.push([r[0], r[2], q[1], q[2]]); });
+    (o.cls === 'macromolecule' ? o.states || [] : []).forEach(function (q) { var r = svIcon(t, q[0], opt); t = r[1]; svs.push([r[0], r[2], q[1], q[2]]); });
     var G = gml(t, opt), T = new Tags(t, G.doc), xml = nodeXml(o, svs), graph;
     if (o.parent && G.node[o.parent]) graph = kids(G.node[o.parent].el, 'graph')[0];
     if (!graph) graph = kids(G.doc.documentElement, 'graph')[0];
@@ -584,6 +587,8 @@
     return f ? F(f) : null;
   }
   function state(t, id, value, rx, ry, opt) {
+    var n0 = gml(t, opt).node[id];
+    if (!n0 || !/Macromolecule$/.test(n0.geo.parentNode.getAttribute('configuration') || '')) return t;   // the house profile: state variables on macromolecules only
     var r = svIcon(t, value, opt, smallOf(t, id, opt)); t = r[1];
     var G = gml(t, opt), n = G.node[id], L = n && labelsOf(G, id);
     if (!L || !L.main) return t;
@@ -613,14 +618,16 @@
                ids: (st.getAttribute('idList') || '').split(/\s+/).filter(Boolean), plain: st.hasAttribute('idList') };
     });
   }
-  function defaults(t, opt) {
-    var S = sbgn(t, opt), hs = [], best = null, n = 0, macro = {};
-    Object.keys(S.glyph).forEach(function (id) { if (S.glyph[id].el.getAttribute('class') === 'macromolecule') { hs.push(S.glyph[id].box[3]); macro[id] = 1; } });
+  function defaults(t, opt, cls) {
+    cls = cls || 'macromolecule';
+    var S = sbgn(t, opt), hs = [], best = null, n = 0, same = {};
+    Object.keys(S.glyph).forEach(function (id) { var c = S.glyph[id].el.getAttribute('class'); if (c === 'macromolecule') hs.push(S.glyph[id].box[3]); if (c === cls) same[id] = 1; });
     hs.sort(function (a, b) { return a - b; });
-    var m = hs.length ? (hs.length % 2 ? hs[(hs.length - 1) / 2] : (hs[hs.length / 2 - 1] + hs[hs.length / 2]) / 2) : 40, s = m / 40;
-    if (!(s > 1.2 || s < 1 / 1.2)) s = 1;   // style.scale_of
-    styles(S).forEach(function (st) { var k = st.ids.filter(function (i) { return macro[i]; }).length; if (st.fill && st.plain && k > n) { n = k; best = st; } });
-    return { w: 80 * s, h: 40 * s, font: best && best.font || Math.round(14 * s + 0.01), fill: best ? best.fill : null };
+    var m = hs.length ? (hs.length % 2 ? hs[(hs.length - 1) / 2] : (hs[hs.length / 2 - 1] + hs[hs.length / 2]) / 2) : 40, s = m / 40;   // the map's scale from its proteins, as style.scale_of
+    if (!(s > 1.2 || s < 1 / 1.2)) s = 1;
+    styles(S).forEach(function (st) { var k = st.ids.filter(function (i) { return same[i]; }).length; if (st.fill && st.plain && k > n) { n = k; best = st; } });
+    var sz = SIZE[cls] || SIZE.macromolecule;
+    return { w: sz[0] * s, h: sz[1] * s, font: best && best.font || Math.round(14 * s + 0.01), fill: best ? best.fill : null };
   }
   function drop(t, ids, opt) {   // the file with the glyphs (state variables too) deleted in the editor taken out, and every arc at them
     var S = sbgn(t, opt), del = {}, T = null;
