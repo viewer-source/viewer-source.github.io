@@ -12,7 +12,7 @@
   var NODE_STYLES = new Set(['Macromolecule', 'SimpleChemical', 'Complex', 'Process', 'EmptySet', 'Operator', 'Phenotype', 'Submap',
     'NucleicAcidFeature', 'StateVariable', 'UnitOfInformation', 'UnspecifiedEntity', 'PerturbingAgent']);
   var SHAPES = new Set(['rectangle', 'roundrectangle']);
-  var HUBS = new Set(['Process', 'Operator']), ANTENNA = 0.75, ANTENNA_MIN = 13.5;   // ports: yrender.py's header
+  var HUBS = new Set(['Process', 'Operator']), ANTENNA = 0.5, ANTENNA_MIN = 9;   // ports: yrender.py's header
   var STYLE_PROPS = new Set(['radius', 'radiusX', 'radiusY', 'mcount']);
   var ARROWS = new Set(['none', 'delta', 'white_delta', 'white_circle', 'white_delta_bar', 't_shape', 'white_diamond']);
   var FONTS = {

@@ -27,8 +27,8 @@
 #    kept beside it in <g class="sbgn-generic" display="none">, the circles in <g class="sbgn-association"> or
 #    "sbgn-dissociation", so a page can show either; the arcs end at the square's outline as before
 #  - ports (2026-11-14, user: proper SBGN ports, not bend points): a Process (any SBGN class) or an Operator (logic
-#    gate) gets a stick on each side, ANTENNA (0.75) of its side long, never shorter than ANTENNA_MIN (0.75 of our
-#    standard 18 px process: small squares need room), drawn under the glyph; port one where the arcs coming in
+#    gate) gets a stick on each side, ANTENNA (0.5; 0.75 first, too long on the demo) of its side long, never shorter
+#    than ANTENNA_MIN (0.5 of our standard 18 px process: small squares need room), drawn beside the glyph; port one where the arcs coming in
 #    without an arrow end (consumption, a gate's input), port two where the arcs leaving it start (a product, a gate's
 #    output; with nothing coming in, each leaving arc takes the nearer port: reversible). The axis runs from the mean
 #    of the arcs' near points coming in to that of those going out (horizontal unless steeper), as the converter puts
@@ -57,7 +57,7 @@ NODE_STYLES = {'Macromolecule', 'SimpleChemical', 'Complex', 'Process', 'EmptySe
                'UnspecifiedEntity', 'PerturbingAgent'}
 SHAPES = {'rectangle', 'roundrectangle'}
 HUBS = {'Process', 'Operator'}
-ANTENNA, ANTENNA_MIN = 0.75, 13.5
+ANTENNA, ANTENNA_MIN = 0.5, 9
 STYLE_PROPS = {'radius', 'radiusX', 'radiusY', 'mcount'}
 ARROWS = {'none', 'delta', 'white_delta', 'white_circle', 'white_delta_bar', 't_shape', 'white_diamond'}
 FONTS = {  # ascent and line height / font size as yEd measured them; fallbacks for systems without the font
