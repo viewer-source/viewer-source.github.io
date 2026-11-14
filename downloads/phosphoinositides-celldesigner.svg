@@ -93,40 +93,40 @@
 <text x="294.79" y="359.23" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="14" text-anchor="middle" class="t-protein">GAB1</text>
 <g fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
 <polyline points="582.44,743.98 582.05,696.75"/>
-<polyline points="703.61,796.85 593.69,717.98"/>
+<polyline points="703.61,796.85 594.5,718.57"/>
 <polyline points="566.63,682.75 567.02,729.98"/>
-<polyline points="470.59,713.4 553.88,713.4"/>
+<polyline points="470.59,713.4 552.88,713.4"/>
 <polyline points="574.85,798.45 574.85,833.08"/>
 <polyline points="341.24,871.19 451.35,824.07"/>
 <polyline points="342.81,836.98 450.89,822.38"/>
 <polyline points="343.78,803.19 450.91,820.48"/>
 <polyline points="344.15,769.27 451.43,818.79"/>
-<polyline points="457.33,821.51 561.85,822.68"/>
+<polyline points="457.33,821.51 560.85,822.67"/>
 <polyline points="601.33,882.62 639.85,882.08 639.85,937.6"/>
-<polyline points="713.76,847.35 650.32,915"/>
+<polyline points="713.76,847.35 651.01,914.28"/>
 <polyline points="422.59,616.02 422.59,671.4"/>
 <polyline points="352.79,646.86 409.59,646.73"/>
 <polyline points="548.37,882.62 508.85,882.08 508.85,937.71"/>
-<polyline points="452.57,924.25 495.87,921.42"/>
+<polyline points="452.57,924.25 494.87,921.48"/>
 <polyline points="293.14,88 292.14,151.54"/>
 <polyline points="231.54,108.77 292.71,115.08"/>
 <polyline points="352.79,237.54 451.24,237.54"/>
 <polyline points="294.79,463.04 294.79,560.99"/>
-<polyline points="465.25,517.98 307.79,518.96"/>
+<polyline points="465.25,517.98 308.79,518.96"/>
 <polyline points="68.25,418.37 77.74,440 226.26,440 226.89,439.55"/>
 <polyline points="135.41,356.94 133.43,440"/>
 <polyline points="527.24,309.54 527.24,431.59"/>
-<polyline points="589.24,237.57 621.23,237.58 621.17,377.68 540.24,377.58"/>
+<polyline points="589.24,237.57 621.23,237.58 621.17,377.68 541.24,377.58"/>
 </g>
 <polygon points="581.88,674.75 587,689.71 577,689.79" fill="#000"/>
 <polyline points="582.51,751.97 581.99,688.75" fill="none" stroke="#000000" stroke-width="1"/>
-<circle cx="591.25" cy="716.24" r="3" fill="#fff" stroke="#000"/>
-<polyline points="710.11,801.51 593.69,717.98" fill="none" stroke="#000000" stroke-width="1"/>
+<circle cx="592.07" cy="716.82" r="3" fill="#fff" stroke="#000"/>
+<polyline points="710.11,801.51 594.5,718.57" fill="none" stroke="#000000" stroke-width="1"/>
 <rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(582.19,713.36) rotate(-90.47)"/>
 <polygon points="567.2,751.97 562.08,737.02 572.08,736.93" fill="#000"/>
 <polyline points="566.57,674.75 567.08,737.98" fill="none" stroke="#000000" stroke-width="1"/>
-<circle cx="556.88" cy="713.4" r="3" fill="#fff" stroke="#000"/>
-<polyline points="462.59,713.4 553.88,713.4" fill="none" stroke="#000000" stroke-width="1"/>
+<circle cx="555.88" cy="713.4" r="3" fill="#fff" stroke="#000"/>
+<polyline points="462.59,713.4 552.88,713.4" fill="none" stroke="#000000" stroke-width="1"/>
 <rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(566.88,713.36) rotate(89.53)"/>
 <polygon points="574.85,855.08 569.85,840.08 579.85,840.08" fill="#000"/>
 <polyline points="574.85,790.45 574.85,841.08" fill="none" stroke="#000000" stroke-width="1"/>
@@ -134,15 +134,15 @@
 <polyline points="334.89,838.05 450.89,822.38" fill="none" stroke="#000000" stroke-width="1"/>
 <polyline points="335.89,801.91 450.91,820.48" fill="none" stroke="#000000" stroke-width="1"/>
 <polyline points="336.89,765.92 451.43,818.79" fill="none" stroke="#000000" stroke-width="1"/>
-<circle cx="564.85" cy="822.71" r="3" fill="#fff" stroke="#000"/>
-<polyline points="457.33,821.51 561.85,822.68" fill="none" stroke="#000000" stroke-width="1"/>
+<circle cx="563.85" cy="822.7" r="3" fill="#fff" stroke="#000"/>
+<polyline points="457.33,821.51 560.85,822.67" fill="none" stroke="#000000" stroke-width="1"/>
 <rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(574.85,822.77) rotate(90)"/>
 <circle cx="457.33" cy="821.51" r="6" fill="#fff" stroke="#000"/>
 <text x="457.33" y="825.51" font-family="sans-serif" font-size="11" text-anchor="middle">|</text>
 <polygon points="639.85,959.6 634.85,944.6 644.85,944.6" fill="#000"/>
 <polyline points="593.33,882.73 639.85,882.08 639.85,945.6" fill="none" stroke="#000000" stroke-width="1"/>
-<circle cx="648.27" cy="917.19" r="3" fill="#fff" stroke="#000"/>
-<polyline points="719.24,841.51 650.32,915" fill="none" stroke="#000000" stroke-width="1"/>
+<circle cx="648.96" cy="916.46" r="3" fill="#fff" stroke="#000"/>
+<polyline points="719.24,841.51 651.01,914.28" fill="none" stroke="#000000" stroke-width="1"/>
 <rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(639.85,920.84) rotate(90)"/>
 <polygon points="422.59,693.4 417.59,678.4 427.59,678.4" fill="#000"/>
 <polyline points="422.59,608.02 422.59,679.4" fill="none" stroke="#000000" stroke-width="1"/>
@@ -151,8 +151,8 @@
 <rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(422.59,646.71) rotate(90)"/>
 <polygon points="508.85,959.71 503.85,944.71 513.85,944.71" fill="#000"/>
 <polyline points="556.37,882.73 508.85,882.08 508.85,945.71" fill="none" stroke="#000000" stroke-width="1"/>
-<circle cx="498.86" cy="921.22" r="3" fill="#fff" stroke="#000"/>
-<polyline points="444.59,924.77 495.87,921.42" fill="none" stroke="#000000" stroke-width="1"/>
+<circle cx="497.86" cy="921.29" r="3" fill="#fff" stroke="#000"/>
+<polyline points="444.59,924.77 494.87,921.48" fill="none" stroke="#000000" stroke-width="1"/>
 <rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(508.85,920.89) rotate(90)"/>
 <polygon points="291.8,173.54 287.03,158.46 297.03,158.62" fill="#000"/>
 <polyline points="293.26,80 292.02,159.54" fill="none" stroke="#000000" stroke-width="1"/>
@@ -163,8 +163,8 @@
 <rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(409.02,237.54) rotate(0)"/>
 <polygon points="294.79,582.99 289.79,567.99 299.79,567.99" fill="#000"/>
 <polyline points="294.79,455.04 294.79,568.99" fill="none" stroke="#000000" stroke-width="1"/>
-<circle cx="304.79" cy="518.98" r="3" fill="#fff" stroke="#000"/>
-<polyline points="473.24,517.93 307.79,518.96" fill="none" stroke="#000000" stroke-width="1"/>
+<circle cx="305.79" cy="518.98" r="3" fill="#fff" stroke="#000"/>
+<polyline points="473.24,517.93 308.79,518.96" fill="none" stroke="#000000" stroke-width="1"/>
 <rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(294.79,519.01) rotate(90)"/>
 <polygon points="244.79,426.76 235.49,439.55 229.68,431.41" fill="#000"/>
 <polyline points="65.04,411.04 77.74,440 226.26,440 233.4,434.9" fill="none" stroke="#000000" stroke-width="1"/>
@@ -172,7 +172,7 @@
 <rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(152,440) rotate(0)"/>
 <polygon points="527.24,453.59 522.24,438.59 532.24,438.59" fill="#000"/>
 <polyline points="527.24,301.54 527.24,439.59" fill="none" stroke="#000000" stroke-width="1"/>
-<circle cx="537.24" cy="377.57" r="3" fill="#fff" stroke="#000"/>
-<polyline points="581.24,237.56 621.23,237.58 621.17,377.68 540.24,377.58" fill="none" stroke="#000000" stroke-width="1"/>
+<circle cx="538.24" cy="377.57" r="3" fill="#fff" stroke="#000"/>
+<polyline points="581.24,237.56 621.23,237.58 621.17,377.68 541.24,377.58" fill="none" stroke="#000000" stroke-width="1"/>
 <rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(527.24,377.57) rotate(90)"/>
 </svg>

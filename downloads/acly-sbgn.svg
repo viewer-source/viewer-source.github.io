@@ -34,7 +34,7 @@
 <path d="M744.0091 411.7735 L744.0091 420.5176 L770.1708 419.9935" fill="none" stroke="#000000"/><path d="M781.1686 419.7732 L769.2912 426.0123 L769.0508 414.0147 Z" fill="#000000" stroke="none"/>
 <path d="M744.0091 411.7735 L744.0091 463.7344 L719.1057 463.8366" fill="none" stroke="#000000"/><path d="M708.1058 463.8817 L720.0811 457.8325 L720.1303 469.8324 Z" fill="#000000" stroke="none"/>
 <path d="M744.0091 411.7735 L744.0091 499.0868" fill="none" stroke="#000000"/><path d="M744.0091 510.0868 L738.0091 498.0868 L750.0091 498.0868 Z" fill="#000000" stroke="none"/>
-<path d="M620.5785 393.7735 L725.0091 393.7735" fill="none" stroke="#000000"/><circle cx="729.0091" cy="393.7735" r="4" fill="white" class="c-white" stroke="#000000"/>
+<path d="M620.5785 393.7735 L724.0091 393.7735" fill="none" stroke="#000000"/><circle cx="728.0091" cy="393.7735" r="4" fill="white" class="c-white" stroke="#000000"/>
 <path d="M501.6302 394.0085 L529.5786 393.9253" fill="none" stroke="#000000"/><path d="M540.5785 393.8925 L528.5964 399.9282 L528.5607 387.9283 Z" fill="#000000" stroke="none"/>
 <path d="M426.6819 394.0085 L465.6302 394.0085" fill="none" stroke="#000000"/>
 <path d="M483.6302 131.9751 L483.6302 166.1127" fill="none" stroke="#000000"/>
@@ -54,7 +54,7 @@
 <path d="M60.0779 213.0751 L59.955 240.4918" fill="none" stroke="#000000"/>
 <path d="M59.955 276.4918 L59.9951 528.0913" fill="none" stroke="#000000"/><path d="M59.9968 539.0913 L53.9949 527.0923 L65.9949 527.0904 Z" fill="#000000" stroke="none"/>
 <path d="M443.6302 258.4918 L83.955 258.4918" fill="none" stroke="#000000"/><path d="M68.955 258.4918 L84.955 252.4918 L84.955 264.4918 Z" fill="white" class="c-white" stroke="#000000"/>
-<path d="M483.6302 278.4918 L483.6302 375.0085" fill="none" stroke="#000000"/><circle cx="483.6302" cy="379.0085" r="4" fill="white" class="c-white" stroke="#000000"/>
+<path d="M483.6302 278.4918 L483.6302 374.0085" fill="none" stroke="#000000"/><circle cx="483.6302" cy="378.0085" r="4" fill="white" class="c-white" stroke="#000000"/>
 <path d="M781.0779 320.6223 L743.7938 320.6969 L744.0091 375.7735" fill="none" stroke="#000000"/>
 <path d="M708.1162 320.6242 L743.7938 320.6969 L744.0091 375.7735" fill="none" stroke="#000000"/>
 </g>

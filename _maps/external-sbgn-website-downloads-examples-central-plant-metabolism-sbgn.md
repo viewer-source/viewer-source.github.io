@@ -14,7 +14,7 @@ height: 3810
 scale: 1
 annotation: "/atlas-data/external-sbgn-website-downloads-examples-central-plant-metabolism-sbgn.json"
 image_error: ""
-v: "0ece3d1772"
+v: "f4d97c68da"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/test-maps/sbgn-ml/pd/sbgn-website/downloads/examples/central_plant_metabolism.sbgn"}, {"label": "SVG", "url": "/downloads/external-sbgn-website-downloads-examples-central-plant-metabolism-sbgn.svg"}]

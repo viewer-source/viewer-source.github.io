@@ -62,13 +62,13 @@
 <path d="M454.3631 902.3378 C454.3631 893.501 461.5263 886.3378 470.3631 886.3378 L498.3631 886.3378 C507.1999 886.3378 514.3631 893.501 514.3631 902.3378 L514.3631 902.3378 C514.3631 911.1746 507.1999 918.3378 498.3631 918.3378 L470.3631 918.3378 C461.5263 918.3378 454.3631 911.1746 454.3631 902.3378 Z" fill="#DBEBDB" class="c-metabolite" stroke="none"/><path d="M454.3631 902.3378 C454.3631 893.501 461.5263 886.3378 470.3631 886.3378 L498.3631 886.3378 C507.1999 886.3378 514.3631 893.501 514.3631 902.3378 L514.3631 902.3378 C514.3631 911.1746 507.1999 918.3378 498.3631 918.3378 L470.3631 918.3378 C461.5263 918.3378 454.3631 911.1746 454.3631 902.3378 Z" fill="none" stroke="#000000"/><text x="484.3631" y="907.6291" text-anchor="middle" font-family="'Dialog', Arial, Helvetica, sans-serif" font-size="14" fill="#000000" class="t-metabolite" stroke="none" xml:space="preserve">AMP</text>
 <path d="M421.5565 836.0526 L466.5 836.0342" fill="none" stroke="#000000"/>
 <path d="M502.5 836.0342 L536.1697 836.048" fill="none" stroke="#000000"/><path d="M547.1697 836.0525 L535.1672 842.0476 L535.1721 830.0476 Z" fill="#000000" stroke="none"/>
-<path d="M381.5565 864.9307 L381.5565 938.6065" fill="none" stroke="#000000"/><circle cx="381.5565" cy="942.6065" r="4" fill="white" class="c-white" stroke="#000000"/>
+<path d="M381.5565 864.9307 L381.5565 937.6065" fill="none" stroke="#000000"/><circle cx="381.5565" cy="941.6065" r="4" fill="white" class="c-white" stroke="#000000"/>
 <path d="M331.8201 957.6065 L363.5565 957.6065" fill="none" stroke="#000000"/>
 <path d="M399.5565 957.6065 L429.8823 957.6065" fill="none" stroke="#000000"/><path d="M440.8823 957.6065 L428.8823 963.6065 L428.8823 951.6065 Z" fill="#000000" stroke="none"/>
 <path d="M500.8823 973.6065 L500.8823 1055.0847 L514.0015 1054.7335" fill="none" stroke="#000000"/>
 <path d="M550.0015 1054.7335 L584.6323 1054.7335" fill="none" stroke="#000000"/><path d="M595.6323 1054.7335 L583.6323 1060.7335 L583.6323 1048.7335 Z" fill="#000000" stroke="none"/>
-<path d="M484.5 760.3842 L484.5 817.0342" fill="none" stroke="#000000"/><circle cx="484.5" cy="821.0342" r="4" fill="white" class="c-white" stroke="#000000"/>
-<path d="M272.9797 584.9047 L465.3631 584.9047" fill="none" stroke="#000000"/><circle cx="469.3631" cy="584.9047" r="4" fill="white" class="c-white" stroke="#000000"/>
+<path d="M484.5 760.3842 L484.5 816.0342" fill="none" stroke="#000000"/><circle cx="484.5" cy="820.0342" r="4" fill="white" class="c-white" stroke="#000000"/>
+<path d="M272.9797 584.9047 L464.3631 584.9047" fill="none" stroke="#000000"/><circle cx="468.3631" cy="584.9047" r="4" fill="white" class="c-white" stroke="#000000"/>
 <path d="M484.3631 602.9047 L484.3848 617.3842" fill="none" stroke="#000000"/><path d="M484.4012 628.3842 L478.3833 616.3932 L490.3833 616.3752 Z" fill="#000000" stroke="none"/>
 <path d="M176.9797 488.9313 L176.9797 515.9047" fill="none" stroke="#000000"/><path d="M176.9797 526.9047 L170.9797 514.9047 L182.9797 514.9047 Z" fill="#000000" stroke="none"/>
 <path d="M126.1234 441.5624 L176.1234 441.5624 L176.9797 452.9313" fill="none" stroke="#000000"/>
@@ -76,11 +76,11 @@
 <path d="M953.1234 150.4837 L924.1234 150.4837" fill="none" stroke="#000000"/>
 <path d="M578.1234 150.4837 L557.1234 150.4837" fill="none" stroke="#000000"/><path d="M546.1234 150.4837 L558.1234 144.4837 L558.1234 156.4837 Z" fill="#000000" stroke="none"/>
 <path d="M934.286 62.3521 L934.286 150.4837 L924.1234 150.4837" fill="none" stroke="#000000"/>
-<path d="M256.1234 148.6447 L195.1234 148.6447" fill="none" stroke="#000000"/><circle cx="191.1234" cy="148.6447" r="4" fill="white" class="c-white" stroke="#000000"/>
+<path d="M256.1234 148.6447 L196.1234 148.6447" fill="none" stroke="#000000"/><circle cx="192.1234" cy="148.6447" r="4" fill="white" class="c-white" stroke="#000000"/>
 <path d="M210.3757 1158.323 L224.7796 1158.323" fill="none" stroke="#000000"/><path d="M235.7796 1158.323 L223.7796 1164.323 L223.7796 1152.323 Z" fill="#000000" stroke="none"/>
 <path d="M131.2621 1127.9301 L167.1379 1158.323 L174.3757 1158.323" fill="none" stroke="#000000"/>
 <path d="M131.4757 1188.1971 L167.1379 1158.323 L174.3757 1158.323" fill="none" stroke="#000000"/>
-<path d="M192.3757 1075.2231 L192.3757 1139.323" fill="none" stroke="#000000"/><circle cx="192.3757" cy="1143.323" r="4" fill="white" class="c-white" stroke="#000000"/>
+<path d="M192.3757 1075.2231 L192.3757 1138.323" fill="none" stroke="#000000"/><circle cx="192.3757" cy="1142.323" r="4" fill="white" class="c-white" stroke="#000000"/>
 <path d="M176.1234 167.4617 L176.1234 179.9644" fill="none" stroke="#000000"/><path d="M176.1234 190.9644 L170.1234 178.9644 L182.1234 178.9644 Z" fill="#000000" stroke="none"/>
 <path d="M176.4283 400.5316 L176.9797 452.9313" fill="none" stroke="#000000"/>
 <path d="M176.1234 112.4704 L176.1234 131.4617" fill="none" stroke="#000000"/>

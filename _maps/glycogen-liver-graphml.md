@@ -14,12 +14,12 @@ height: 1686
 scale: 1
 annotation: "/atlas-data/glycogen-liver-graphml.json"
 image_error: ""
-v: "9e1ff22290"
+v: "d482ebd2a2"
 src: "784dfc6feef241e37d689f6959be1be378afc3f3"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "GraphML", "url": "/downloads/glycogen-liver-graphml.graphml"}, {"label": "SVG", "url": "/downloads/glycogen-liver-graphml.svg"}, {"label": "SBML", "url": "/downloads/glycogen-liver-graphml-sbml.xml"}, {"label": "Annotation", "url": "/downloads/glycogen-liver-graphml.csv"}, {"label": "PNG", "url": "/downloads/glycogen-liver-graphml.png"}, {"label": "SBGN-ML", "url": "/downloads/glycogen-liver-graphml.sbgn"}, {"label": "CellDesigner", "url": "/downloads/glycogen-liver-graphml.xml"}, {"label": "Newt", "url": "http://web.newteditor.org/?URL=https://viewer-source.github.io/downloads/glycogen-liver-graphml.sbgn"}, {"label": "MINERVA", "url": "https://mreg.elixir-luxembourg.org/minerva/index.html?id=F004-glycogen-liver"}]
-sbgn: {"image": "/downloads/glycogen-liver-graphml-sbgnml.svg", "annotation": "/atlas-data/glycogen-liver-graphml-sbgnml.json", "width": 2162, "height": 1710, "v": "fc28fa7680", "file": "/downloads/glycogen-liver-graphml.sbgn"}
+sbgn: {"image": "/downloads/glycogen-liver-graphml-sbgnml.svg", "annotation": "/atlas-data/glycogen-liver-graphml-sbgnml.json", "width": 2162, "height": 1710, "v": "098012998b", "file": "/downloads/glycogen-liver-graphml.sbgn"}
 ---
 ## Description
 

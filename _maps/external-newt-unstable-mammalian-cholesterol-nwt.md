@@ -14,7 +14,7 @@ height: 1488
 scale: 1
 annotation: "/atlas-data/external-newt-unstable-mammalian-cholesterol-nwt.json"
 image_error: ""
-v: "656d532de0"
+v: "dfa05253ce"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/test-maps/sbgn-ml/pd/newt-unstable/mammalian_cholesterol.nwt"}, {"label": "SVG", "url": "/downloads/external-newt-unstable-mammalian-cholesterol-nwt.svg"}]

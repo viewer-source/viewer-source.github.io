@@ -129,9 +129,9 @@
 <polyline points="212.75,265.37 187.33,261.8"/>
 <polyline points="624.18,713.53 624.18,824.72"/>
 <polyline points="624.18,798.78 641.3,800.58"/>
-<polyline points="587.18,779.73 611.18,780.03"/>
+<polyline points="587.18,779.73 610.18,780.02"/>
 <polyline points="624.18,902.72 624.18,975.92"/>
-<polyline points="586.18,950.32 611.18,950.32"/>
+<polyline points="586.18,950.32 610.18,950.32"/>
 <polyline points="576.18,1025.92 447.55,1025.92 350.47,1025.92 347.43,1025.92"/>
 <polyline points="399.01,1067.92 399.01,1038.92"/>
 <polyline points="187.33,541.64 187.33,613.14"/>
@@ -159,13 +159,13 @@
 <polyline points="624.18,705.53 624.18,832.72" fill="none" stroke="#000000" stroke-width="1"/>
 <polygon points="663.18,802.9 647.74,806.29 648.79,796.35" fill="#000"/>
 <polyline points="624.18,798.78 649.26,801.43" fill="none" stroke="#000000" stroke-width="1"/>
-<circle cx="614.18" cy="780.07" r="3" fill="#fff" stroke="#000"/>
-<polyline points="579.18,779.63 611.18,780.03" fill="none" stroke="#000000" stroke-width="1"/>
+<circle cx="613.18" cy="780.05" r="3" fill="#fff" stroke="#000"/>
+<polyline points="579.18,779.63 610.18,780.02" fill="none" stroke="#000000" stroke-width="1"/>
 <rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(624.18,780.13) rotate(90)"/>
 <polygon points="624.18,997.92 619.18,982.92 629.18,982.92" fill="#000"/>
 <polyline points="624.18,894.72 624.18,983.92" fill="none" stroke="#000000" stroke-width="1"/>
-<circle cx="614.18" cy="950.32" r="3" fill="#fff" stroke="#000"/>
-<polyline points="578.18,950.32 611.18,950.32" fill="none" stroke="#000000" stroke-width="1"/>
+<circle cx="613.18" cy="950.32" r="3" fill="#fff" stroke="#000"/>
+<polyline points="578.18,950.32 610.18,950.32" fill="none" stroke="#000000" stroke-width="1"/>
 <rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(624.18,950.32) rotate(90)"/>
 <polygon points="341.43,1025.92 356.43,1020.92 356.43,1030.92" fill="#000"/>
 <polyline points="584.18,1025.92 447.55,1025.92 350.47,1025.92 355.43,1025.92" fill="none" stroke="#000000" stroke-width="1"/>

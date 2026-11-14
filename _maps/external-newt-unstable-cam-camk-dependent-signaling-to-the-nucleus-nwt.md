@@ -14,7 +14,7 @@ height: 1334
 scale: 1
 annotation: "/atlas-data/external-newt-unstable-cam-camk-dependent-signaling-to-the-nucleus-nwt.json"
 image_error: ""
-v: "c1f87f3980"
+v: "51a31b3aab"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/test-maps/sbgn-ml/pd/newt-unstable/cam-camk_dependent_signaling_to_the_nucleus.nwt"}, {"label": "SVG", "url": "/downloads/external-newt-unstable-cam-camk-dependent-signaling-to-the-nucleus-nwt.svg"}]
