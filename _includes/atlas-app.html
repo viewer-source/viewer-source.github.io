@@ -2534,7 +2534,7 @@ page, so its styles keep the base they were made on). The looks before (Default 
       if (!sh) return;
       var url = {}, f = fileName(a.getAttribute('href'));
       (m.downloads || []).forEach(function (d) { url[d.label] = d.url; });
-      if (sh.text && sh.file && f === fileName(sh.file)) { e.preventDefault(); return saveBlob(new Blob([sh.text], { type: 'application/xml' }), f); }
+      if (sh.text && sh.file && (f === fileName(sh.file) || f === fileName((m.downloads || [])[0] && m.downloads[0].url))) { e.preventDefault(); return saveBlob(new Blob([sh.text], { type: 'application/xml' }), f); }   // the map's source file (an SBGN-ML map's edited copy keeps the file's own name)
       if (!sh.svg || m.imageError) return;
       if (f === fileName(url.SVG || m.image)) { e.preventDefault(); return saveImage(m, url, 'svg', null, sh); }
       if (f === fileName(url.PNG)) { e.preventDefault(); saveImage(m, url, 'png', a.getBoundingClientRect(), sh); }
@@ -2598,8 +2598,10 @@ page, so its styles keep the base they were made on). The looks before (Default 
       var eb = document.querySelector('#m2-rail .m2-ri[data-win="edit"]');
       var unanchor = ed && window.m2EditAnchor && window.m2EditAnchor();   // an anchor point under the pointer while editing
       var anchor = ed && !unanchor && window.m2EditAddAnchor && window.m2EditAddAnchor();   // a line under the pointer
+      var turn = ed && window.m2EditTurn && window.m2EditTurn();   // a process or logic gate under the pointer: turned a quarter
       if (unanchor) { item(box, 'Remove anchor point', unanchor); sep(box); }
       else if (anchor) { item(box, 'Add anchor point', anchor); sep(box); }
+      else if (turn) { item(box, turn.label, turn.go); sep(box); }
       // its shortcut beside it, as Apple's and Windows' menus write it (user, 2026-11-13)
       var key = '<span class="m2-cx-key">' + (/Mac|iPhone|iPad|iPod/.test((navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || navigator.userAgent) ? '\u2318E' : 'Ctrl+E') + '</span>';
       if (ed) item(box, 'Switch to viewer', function () { tab('list'); }, key);   // leaving the Edit window ends editing

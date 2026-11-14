@@ -652,13 +652,13 @@
     return [bar(0, 5), 0];
   }
 
-  // the drawing of a GraphML (its text, or a parsed document): { svg, errors }; nothing thrown for what it cannot draw
+  // the drawing of a GraphML (its text, or a parsed document): { svg, errors, ports }; nothing thrown for what it cannot draw
   function render(src, opt) {
     opt = opt || {};
     errors = []; ROLES = !!opt.roles; CLASSES = !!opt.classes;
     var doc = typeof src === 'string' ? new (root.DOMParser || opt.DOMParser)().parseFromString(src, 'application/xml') : src;
     var m = new YMap(doc, opt), svg = m.svg();
-    return { svg: svg, errors: errors.slice() };
+    return { svg: svg, errors: errors.slice(), ports: m.ports };   // ports: each process's and gate's two, for the editor (JavaScript only)
   }
   var api = { render: render, num: num, dist: dist };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.yrender = api;

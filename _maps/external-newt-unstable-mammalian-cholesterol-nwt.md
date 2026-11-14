@@ -18,5 +18,8 @@ v: "2026d69690"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/test-maps/sbgn-ml/pd/newt-unstable/mammalian_cholesterol.nwt"}, {"label": "SVG", "url": "/downloads/external-newt-unstable-mammalian-cholesterol-nwt.svg"}]
+src: "e3fab52d17c17e4427e168603d9c9459a97cedf1"
+edit_path: "maps/sbgn-ml/pd/newt-unstable/mammalian_cholesterol.nwt"
+edit_base: "/atlas-data/external-newt-unstable-mammalian-cholesterol-nwt.graphml"
 ---
 From newt-unstable (github.com/iVis-at-Bilkent/newt, branch unstable, commit 55c0870, app/samples), `mammalian_cholesterol.nwt`, LGPL 3.0. Unchanged, drawn from its own file.

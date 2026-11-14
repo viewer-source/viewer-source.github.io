@@ -27,7 +27,10 @@
 #   the Process Description maps of test-maps/sbgn-ml/pd/ (other people's and tools' files, unchanged; libsbgn's
 #   validation error tests left out), each drawn from its file as above (downloaded from its own address there), a map
 #   of its own named after its source and file, its text the source, path and licence from sources.tsv. A file that
-#   cannot be drawn is said and left out.
+#   cannot be drawn is said and left out. Edited in the viewer (user, 2026-11-14): the editor saves a map's edited copy
+#   to maps/sbgn-ml/pd/<its path>, which is then drawn in its place (downloaded from downloads/<id>.sbgn or .nwt), the
+#   file in test-maps/ staying unchanged; atlas-data/<id>.graphml, the converter's GraphML of the file drawn, is what
+#   the editor edits it as (entry's edit_base; edit_path, where it saves).
 # maps/extra/<id>/ (optional): more files for a map's download row, copied to downloads/ under their own names and
 #   labelled by ending (.graphml GraphML, .xml CellDesigner, .sbgn SBGN-ML, -sbml.xml SBML, .png PNG, .csv Annotation):
 #   the full set of the official site, for every map (user, 2026-11-11: glycolysis first, then all, "why only two
@@ -226,10 +229,11 @@ def drawn(name, nodes, extra=b''):
                 **({'shapes': True} if 'class="sbgn-generic"' in text else {}))   # association or dissociation drawn
 
 
-def sbgnml(src, name, body):
+def sbgnml(src, name, body, keep=False):
     # the SBGN-ML file through the converter to GraphML, then drawn and read as a GraphML map into downloads/<name>.svg:
     # the drawing (drawn()) and its click data. A file the converter or the renderer cannot take is said and left out,
-    # never stopping the build of the other maps
+    # never stopping the build of the other maps. keep: the GraphML kept as atlas-data/<name>.graphml, the file the
+    # editor edits the map as (renderers/converter/sbgn_edit.js)
     import contextlib, io, tempfile
     from mapconv import sbgnml as reader, graphml as writer, report
     tmp = None
@@ -240,6 +244,8 @@ def sbgnml(src, name, body):
             f.write(text)
         tmp = f.name
         nodes = graphml(tmp, os.path.join(ROOT, 'downloads', name + '.svg'))
+        if keep:
+            shutil.copy(tmp, os.path.join(ROOT, 'atlas-data', name + '.graphml'))
     except (Exception, SystemExit) as e:
         print('warning: %s not drawn, left out: %s' % (os.path.relpath(src, ROOT), str(e).splitlines()[0] if str(e) else type(e).__name__))
         return None, []
@@ -286,11 +292,25 @@ def examples():
         r = src['pd/' + key]
         sid = 'external-' + re.sub(r'[^a-z0-9]+', '-', key.lower()).strip('-')   # with its ending: a Newt .nwt beside its .sbgn
         db.current = sid
-        body = 'From %s (%s), `%s`, %s. Unchanged, drawn from its own file.' % (r['source'], r['repository'], r['path_in_source'], r['licence'])
-        d, nodes = sbgnml(os.path.join(pd, rel), sid, body)
+        # edited in the viewer (user, 2026-11-14): the edited copy in maps/sbgn-ml/pd/<the same path> is drawn in place of
+        # the file, which stays unchanged in test-maps/; the editor saves there (edit_path) and edits the map as the
+        # converter's GraphML of the file drawn (edit_base)
+        mine = os.path.join(ROOT, 'maps', 'sbgn-ml', 'pd', rel)
+        edited = os.path.exists(mine)
+        body = 'From %s (%s), `%s`, %s. %s' % (r['source'], r['repository'], r['path_in_source'], r['licence'],
+                                               'Edited in the viewer; the original is in test-maps/.' if edited else 'Unchanged, drawn from its own file.')
+        src_file = mine if edited else os.path.join(pd, rel)
+        d, nodes = sbgnml(src_file, sid, body, keep=True)
         if not d:
             continue
-        d['file'] = '/test-maps/sbgn-ml/pd/' + key   # published as it is (test-maps/sbgn-ml/README.md)
+        if edited:
+            shutil.copy(mine, os.path.join(ROOT, 'downloads', sid + os.path.splitext(rel)[1]))
+            d['file'] = '/downloads/' + sid + os.path.splitext(rel)[1]
+        else:
+            d['file'] = '/test-maps/sbgn-ml/pd/' + key   # published as it is (test-maps/sbgn-ml/README.md)
+        data = open(src_file, 'rb').read()
+        d['src'] = hashlib.sha1(b'blob %d\0' % len(data) + data).hexdigest()   # as for a map of maps/: the kept drawing waits for its build
+        d['edit_path'], d['edit_base'] = 'maps/sbgn-ml/pd/' + key, '/atlas-data/%s.graphml' % sid
         title = '%s: %s' % (key.split('/')[0], name(rel) if short[name(rel)] == 1 else '/'.join(key.split('/')[1:-1] + [name(rel)]))
         out.append((sid, entry_of(title, 'SBGN-ML external', 1000 + k, d), search_entries(sid, nodes), body))
     return out
@@ -302,7 +322,7 @@ def entry_of(title, group, order, d, **more):
                  'draft': False, 'tag': '', 'image': d['image'], 'width': d['width'], 'height': d['height'], 'scale': 1,
                  'annotation': d['annotation'], 'image_error': '', 'v': d['v'], 'colours': True, 'legend': 'sbgn',
                  'downloads': [{'label': 'SBGN-ML', 'url': d['file']}, {'label': 'SVG', 'url': d['image']}]},
-                **({'shapes': True} if d.get('shapes') else {}), **more)
+                **({'shapes': True} if d.get('shapes') else {}), **{k: d[k] for k in ('src', 'edit_path', 'edit_base') if k in d}, **more)
 
 
 def write_entry(eid, e, body):

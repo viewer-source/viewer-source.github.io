@@ -19,5 +19,8 @@ colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/test-maps/sbgn-ml/pd/sbgn-website/downloads/spec_examples/IFNGeneRef.sbgn"}, {"label": "SVG", "url": "/downloads/external-sbgn-website-downloads-spec-examples-ifngeneref-sbgn.svg"}]
 shapes: true
+src: "a134ecb762da67acba2526a465778a829c00bf4e"
+edit_path: "maps/sbgn-ml/pd/sbgn-website/downloads/spec_examples/IFNGeneRef.sbgn"
+edit_base: "/atlas-data/external-sbgn-website-downloads-spec-examples-ifngeneref-sbgn.graphml"
 ---
 From sbgn-website (github.com/sbgn/sbgn.github.io @d2cc88d), `downloads/spec_examples/IFNGeneRef.sbgn`, CC0 1.0. Unchanged, drawn from its own file.

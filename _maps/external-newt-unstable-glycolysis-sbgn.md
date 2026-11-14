@@ -18,5 +18,8 @@ v: "5d8ffa5f8b"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/test-maps/sbgn-ml/pd/newt-unstable/glycolysis.sbgn"}, {"label": "SVG", "url": "/downloads/external-newt-unstable-glycolysis-sbgn.svg"}]
+src: "2e0a398b0c98fa5a226dc546341d2396dc7f7df0"
+edit_path: "maps/sbgn-ml/pd/newt-unstable/glycolysis.sbgn"
+edit_base: "/atlas-data/external-newt-unstable-glycolysis-sbgn.graphml"
 ---
 From newt-unstable (github.com/iVis-at-Bilkent/newt, branch unstable, commit 55c0870, app/samples), `glycolysis.sbgn`, LGPL 3.0. Unchanged, drawn from its own file.

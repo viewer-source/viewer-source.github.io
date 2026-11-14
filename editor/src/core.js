@@ -12,7 +12,7 @@
     var lastSvg = null, lastFor = null;   // the last drawing and the texts it was drawn from (keepAhead), kept with the save (the kept drawing itself is the viewer's)
     var Y = 'http://www.yworks.com/xml/graphml', G = 'http://graphml.graphdrawing.org/xmlns';
     var drawing = false;           // the renderer busy with the last move
-    function src() { return cd ? cd.now : text; }   // the map's own file as it is now
+    function src() { return cd ? cd.now : sb ? sbNow() : text; }   // the map's own file as it is now (an SBGN-ML map's with the moves written in)
     var box = document.getElementById('m2-editwin'), status = document.getElementById('m2-ed-status');
     var overlay = document.getElementById('m2-edit-layer');
     var on = false, map = null;    // editing, and the map object shown while editing
@@ -165,7 +165,7 @@
       var target = site, body = src();
       note('Saving...');
       saving = api('/contents/' + target.path, { method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: 'Moved in the viewer: ' + target.path.split('/').pop(), content: b64(body), sha: target.sha, branch: 'main' }) })
+        body: JSON.stringify({ message: 'Moved in the viewer: ' + target.path.split('/').pop(), content: b64(body), sha: target.sha || undefined, branch: 'main' }) })
         .then(function (r) {
           return r.json().then(function (d) {
             if (r.ok) {
@@ -483,6 +483,8 @@
         var r = realizerOf(n.el), g = r && r.getElementsByTagNameNS(Y, 'Geometry')[0];
         n.ag = g && gi.has(g) ? gi.get(g) : n.geo[0];   // the geometry of the realizer shown (a group open or closed)
         n.shape = r ? shapeOf(r) : { kind: 'rectangle', props: {} };
+        n.hub = !cd && /sbgn\.(Process|Operator)$/.test(r ? r.getAttribute('configuration') || '' : '');   // a process or logic gate: one object with its two ports
+        n.eq = n.hub && n.shape.kind === 'Operator' && Array.prototype.some.call(r.getElementsByTagNameNS(Y, 'NodeLabel'), function (l) { return l.textContent.trim() === '\u2261'; });   // an equivalence gate (yrender's eq)
         n.up = null;
         n.comp = n.el.getAttribute('yfiles.foldertype') === 'group' && !/omplex/.test(r ? r.getAttribute('configuration') || '' : '');
         var ins = r && r.getElementsByTagNameNS(Y, 'Insets')[0], iv = function (k) { return ins ? parseFloat(ins.getAttribute(k + 'F') || ins.getAttribute(k)) || 0 : 0; };
@@ -499,7 +501,9 @@
       var byId = {}; nodes2.forEach(function (n, i) { byId[n.id] = i; });
       var pi = new Map(); points.forEach(function (p, i) { pi.set(p, i); });
       edges2 = Array.prototype.slice.call(doc.getElementsByTagNameNS(G, 'edge')).map(function (e) {
+        var ar = e.getElementsByTagNameNS(Y, 'Arrows')[0];
         return { id: e.getAttribute('id'), s: byId[e.getAttribute('source')], t: byId[e.getAttribute('target')], path: e.getElementsByTagNameNS(Y, 'Path')[0] || null,
+                 arr: ar ? [ar.getAttribute('source') || 'none', ar.getAttribute('target') || 'none'] : ['none', 'none'],
                  pts: Array.prototype.slice.call(e.getElementsByTagNameNS(Y, 'Point')).map(function (p) { return pi.get(p); }),
                  smooth: e.getElementsByTagNameNS(Y, 'QuadCurveEdge').length > 0 || Array.prototype.some.call(e.getElementsByTagNameNS(Y, 'BendStyle'), function (b) { return b.getAttribute('smoothed') === 'true'; }) };
       });
@@ -844,9 +848,16 @@
     var opening = 0;
     function start(t, n, h, s, same) {   // a CellDesigner file is first made into the GraphML the editor edits
       if (localTimer) local(true);   // the last move of the map before kept first, before cd and text change (the review, 2026-11-13)
+      var tk = opening;
+      if (isSb(t)) {   // an SBGN-ML map: the GraphML of its text, made from the converter's (sbNext, read with the map)
+        cd = null; quiet();
+        var g0 = sbNext; sbNext = null;
+        return sbpy().then(function () { if (tk !== opening) return; if (!g0) throw 'its GraphML did not load'; sb = { base: t, g0: g0 }; begin(sbGraphml(t, g0), t, n, h, s, same); })
+          .catch(function (e) { if (tk === opening) warn('Cannot edit ' + n + ': ' + e); });
+      }
+      sb = null;
       if (!isCd(t)) { cd = null; return begin(t, t, n, h, s, same); }
       quiet();
-      var tk = opening;
       return cdpy().then(function () { if (tk !== opening) return; cd = { base: t, now: t }; begin(cdGraphml(t), t, n, h, s, same); })
         .catch(function (e) { if (tk === opening) warn('Cannot edit ' + n + ': ' + e); });
     }
@@ -892,7 +903,7 @@
     function keepAhead() {
       var s = site, m = s && s.id ? V.byId[s.id] : null, old = editPre;
       if (!m || !old || stuck || s.pending || old.key !== preKey(m)) return false;
-      var p = { key: old.key, id: old.id, path: old.path, file: old.file, img: old.img, sitePub: old.sitePub, siteFrame: old.siteFrame, kept: s };
+      var p = { key: old.key, id: old.id, path: old.path, file: old.file, img: old.img, sitePub: old.sitePub, siteFrame: old.siteFrame, base: old.base, kept: s };
       // the version as saved once a save under way is done; a save that did not go through: GitHub read afresh
       p.gh = (saving || Promise.resolve()).then(function () {
         if (stuck || !s.sha || (dirty && site === s)) throw 'not saved';
@@ -905,9 +916,10 @@
       // move in the text drawn, none moving; made ahead now, or once the save under way has written that very text
       var S = src(), g = text, d0 = doc, el = V.img, svg = lastSvg;
       if (!(svg && !drawing && !mv && !keyed && !liveC && docText === g && lastFor && lastFor[0] === g && lastFor[1] === (cd ? S : null))) return true;
-      var isCd = !!cd, make = function () {
+      var isCd = !!cd, isSbm = !!sb, make = function () {
         var dm = isCd ? { cd: true, base: S, text: g, q: [svg, S, g] } : { cd: false, text: g, r: [svg, []] };
         if (isCd) cdRemember(S, g);
+        else if (isSbm) { sbMemo.unshift([S, g]); sbMemo.length = Math.min(sbMemo.length, 3); }   // an SBGN-ML map reopened on the very GraphML it was left with
         p.memo = dm; p.docs = [{ text: g, doc: d0 }]; p.drawn = Promise.resolve();
         if (el === V.img && el.tagName.toLowerCase() === 'svg' && el.querySelector('[data-e]')) {   // the page's drawing itself
           el.querySelectorAll('.m2-ed-copy').forEach(function (x) { x.remove(); });
@@ -941,9 +953,9 @@
       V.grid.classList.toggle('m2-edit-off', off);
       if (off && V.win === 'edit') { V.win = 'list'; V.railMark(); }
     }
-    function graphmlOf(m) {   // a map drawn from its own file, GraphML or CellDesigner (2026-11-12): that file is first in its downloads
+    function graphmlOf(m) {   // a map drawn from its own file, GraphML, CellDesigner (2026-11-12) or SBGN-ML with an editBase (2026-11-14): that file is first in its downloads
       var d = m && m.downloads && m.downloads[0];
-      return d && (d.label === 'GraphML' || d.label === 'CellDesigner') ? d.url : null;
+      return d && (d.label === 'GraphML' || d.label === 'CellDesigner' || (d.label === 'SBGN-ML' && sbMap(m))) ? d.url : null;
     }
 
     function save() {
@@ -954,7 +966,7 @@
       var into = function (h) { return h.createWritable().then(function (w) { return w.write(blob).then(function () { return w.close(); }); }).then(done); };
       if (handle) return into(handle).catch(function (e) { warn('Not saved: ' + e.message); });
       if (window.showSaveFilePicker) {
-        return window.showSaveFilePicker({ suggestedName: name, types: [cd ? { description: 'CellDesigner', accept: { 'application/xml': ['.xml'] } } : { description: 'yEd GraphML', accept: { 'application/xml': ['.graphml'] } }] })
+        return window.showSaveFilePicker({ suggestedName: name, types: [cd ? { description: 'CellDesigner', accept: { 'application/xml': ['.xml'] } } : sb ? { description: 'SBGN-ML', accept: { 'application/xml': ['.sbgn', '.nwt'] } } : { description: 'yEd GraphML', accept: { 'application/xml': ['.graphml'] } }] })
           .then(function (h) { handle = h; name = h.name; return into(h); })
           .catch(function (e) { if (e.name !== 'AbortError') warn('Not saved: ' + e.message); });
       }
@@ -1050,7 +1062,9 @@
       var key = preKey(m), old = bank[m.id];
       if (old && old.key === key && (!old.bad || (low && Date.now() - old.bad < 300000))) return old;
       var file = url.split('?')[0].split('/').pop(), path = 'maps/' + file;
+      if (sbMap(m)) { path = m.editPath; file = path.split('/').pop(); }   // an SBGN-ML map: its edited copy (maps/sbgn-ml/...), under the file's own name
       var p = { key: key, id: m.id, path: path, file: file, img: m.image + V.ver(m) };
+      if (sbMap(m)) { p.base = sbBase(m, low); p.base.catch(function () { p.bad = p.bad || Date.now(); }); }
       p.sitePub = fetch(url, { cache: 'no-cache', priority: low ? 'low' : 'auto' }).then(function (r) { if (!r.ok) throw r.status; return r.text(); });
       // the repository's version (newer than the site while a build runs) and its sha, which makes GitHub refuse a save
       // over a version changed meanwhile; null: not a map of this repository (saved as a file)
@@ -1064,14 +1078,15 @@
     }
     function readyOf(p, m) {   // made again when an earlier try stopped (editing began, a newer entry)
       if (p.ready) return p.ready;
-      var cdm = cdMap(m), still = function () { return bank[m.id] === p && !on; };
-      var r = p.ready = (cdm ? cdpy() : yr()).then(function () {
+      var cdm = cdMap(m), sbm = sbMap(m), still = function () { return bank[m.id] === p && !on; };
+      var r = p.ready = (cdm ? cdpy() : sbm ? sbpy() : yr()).then(function () {
         // the edited text this page holds for the map, read without V.keep (it would load a stored drawing and replace
         // the viewer's kept one: the review, 2026-11-13)
         var k = V.kept && V.kept.id === m.id && (V.kept.draft || V.behind(m, V.kept)) ? V.kept : null;
         return Promise.all([k && k.text ? k.text : p.sitePub, p.gh]);
       }).then(function (x) {
         p.t = x[1] ? x[1].text : x[0];
+        if (sbm) return p.base.then(function (b) { p.b = b; p.g = sbGraphml(p.t, b); return p; });   // an SBGN-ML map: the GraphML of its text
         if (!cdm) return p;   // a GraphML map is ready as it is
         return waitFor(m).then(function () {
           if (!still()) throw 0;
@@ -1095,7 +1110,7 @@
       frameOf(p);
       mine.p = p.drawn = readyOf(p, m).then(function () {
         if (!still()) throw 0;
-        g = cdm ? p.g : p.t;
+        g = p.g || p.t;   // a CellDesigner or SBGN-ML map: the GraphML made of it
         d = rd(g);
         g2 = cdm ? g : shiftedAhead(g, d);   // a map with negative places is shifted on entering edit (noNegative)
         d2 = g2 === g ? d : rd(g2);
@@ -1166,15 +1181,15 @@
           if (tk !== opening) return;   // left, or another map opened, meanwhile
           // what was read ahead for this map handed to the editor, used once (made again by the sweep if wanted)
           drawMemo = p.memo || null; preDoc = p.docs || [];
-          if (p.g && p.t === t) cdRemember(t, p.g);
+          if (p.g && p.t === t && !p.b) cdRemember(t, p.g);
           dropDrawing(p);
           var same = r[1] && V.img === shownPic && V.current === m ? Object.assign({}, r[1], { text: r[0] }) : null;
           if (s) { s.id = m.id; s.v = V.ver(m); if (s.pending) s.pub = r[2]; }   // the site's own text: a draft back to it is let go
           openTitle = m.title;   // the map's own title in the first line said, not its file's name
-          return Promise.resolve(start(t, file, null, s, same)).then(function () {
+          return Promise.resolve(p.base ? p.base.then(function (b) { if (tk === opening) sbNext = b; }) : null).then(function () { return start(t, file, null, s, same); }).then(function () {
             openTitle = null;
             if (tk !== opening) return;
-            siteRef = r[3] ? baseOf(isCd(r[2]) && cdJs ? cdGraphml(r[2]) : r[2], r[3]) : null;
+            siteRef = r[3] ? baseOf(isCd(r[2]) && cdJs ? cdGraphml(r[2]) : sb && isSb(r[2]) ? sbGraphml(r[2], sb.g0) : r[2], r[3]) : null;
             map.title = m.title; document.getElementById('m2-title').textContent = m.title;
           });
         });
@@ -1188,6 +1203,7 @@
       if (!repo()) return fromSite(null);
       if (!token()) return fromSite({ path: path, sha: null, pending: true });
       p.gh.then(function (g) {
+        if (!g && sbMap(m)) return published.then(function (t) { return go(t, { path: path, sha: null }); }).catch(notLoaded);   // an SBGN-ML map with no edited copy yet: the first save makes it
         if (!g) return fromSite(null);   // not a map of this repository: saved as a file
         return go(g.text, { path: path, sha: g.sha }).then(function () { if (tk === opening) recheck(p, g, m); }, notLoaded);
       }, function (e) { if (tk !== opening) return; warn('Could not read the map from GitHub (' + e + '); the token may be refused.'); ghForm(true); });
@@ -1490,6 +1506,7 @@
         var all = ports(k);
         [[0, e.s], [all.length - 1, e.t]].forEach(function (q, end) {
           if (cd && /\|proc$/.test(nodes2[q[1]].id) && !procSpots({ k: k, end: end, n: q[1] })) return;   // a glyph's main lines stay
+          if (hubEnd(k, end)) return;   // at a process's or gate's port: it goes with the process (Turn process)
           var d = Math.hypot(all[q[0]][0] - P[0], all[q[0]][1] - P[1]);
           if (d <= dB) { dB = d; best = { k: k, end: end, n: q[1], to: null }; }
         });
@@ -1510,8 +1527,50 @@
       var f = [(C[0] - A[0]) / L, (C[1] - A[1]) / L];
       return [[0, -1], [0, 1], [-1, -1], [1, -1], [-1, 1], [1, 1]].map(function (s) { return [h * (s[0] * f[0] - s[1] * f[1]), h * (s[0] * f[1] + s[1] * f[0])]; });
     }
+    // a process or logic gate as one object with its two ports (user, 2026-11-14: "as in yEd", as if yEd's SBGN palette
+    // had a process with antennas, turned to any of four directions): its consumptions (a gate's inputs) end on port one,
+    // its products leave from port two, both drawn by the yEd renderer at the ends of its antennas; a modifier ends on one
+    // of the two sides off the antennas. The ports move with the process; Turn process (the right-click menu over it)
+    // turns it a quarter clockwise, every end at it with it. GraphML and SBGN-ML maps alike (CellDesigner has its own glyph)
+    function hubEnd(k, end) {   // 'in', 'out' or null: how arc k meets a process or gate at that end (yrender's ends)
+      var e = edges2[k], n = end ? e.t : e.s;
+      if (n == null || !nodes2[n].hub) return null;
+      if (end) return e.arr[1] === 'none' ? 'in' : null;
+      return !(e.t != null && nodes2[e.t].hub) && e.arr[0] === 'none' && e.arr[1] === 'none' && !nodes2[n].eq ? 'in' : 'out';
+    }
+    var hpMemo = null;
+    function hubPorts() {   // the ports as the renderer draws them, per node id: [port one, port two, anything coming in]
+      if (!hpMemo || hpMemo[0] !== text) hpMemo = [text, window.yrender.render(docText === text ? doc : text, {}).ports];
+      return hpMemo[1];
+    }
+    function hubSides(pp) {   // a modifier's places at a process or gate: the middles of the two sides off its antennas
+      var n = nodes2[pp.n];
+      if (!n.hub || hubEnd(pp.k, pp.end) || !window.yrender) return null;
+      var P = hubPorts()[n.id], b = bx(pp.n);
+      if (!P) return null;
+      return Math.abs(P[1][0] - P[0][0]) >= Math.abs(P[1][1] - P[0][1]) ? [[0, -b[3] / 2], [0, b[3] / 2]] : [[-b[2] / 2, 0], [b[2] / 2, 0]];
+    }
+    function turn(i) {   // a quarter clockwise: every end at the process turned round its centre, an end at a port first put there
+      var P = hubPorts()[nodes2[i].id], b = boxOf(i), c = [b[0] + b[2] / 2, b[1] + b[3] / 2];
+      if (!P) return;
+      var rel = function (q) { return [q[0] - c[0], q[1] - c[1]]; }, list = [];
+      edges2.forEach(function (e, k) {
+        if (!e.path) return;
+        [0, 1].forEach(function (end) {
+          if ((end ? e.t : e.s) !== i) return;
+          var a = end ? ['tx', 'ty'] : ['sx', 'sy'], o = [num(e.path, a[0]) || 0, num(e.path, a[1]) || 0], role = hubEnd(k, end);
+          if (role && !o[0] && !o[1]) {   // at the port the renderer chose (a product of a process with nothing coming in: the nearer)
+            if (role === 'in') o = rel(P[0]);
+            else if (P[2]) o = rel(P[1]);
+            else { var all = ports(k), nx = all[1]; o = rel(Math.hypot(P[1][0] - nx[0], P[1][1] - nx[1]) <= Math.hypot(P[0][0] - nx[0], P[0][1] - nx[1]) ? P[1] : P[0]); }
+          }
+          list.push({ k: k, end: end, to: [-o[1], o[0]] });
+        });
+      });
+      if (list.length) setPorts(list);
+    }
     function spot(pp, P) {   // the nearest of the node's places (five, or a glyph's six), as an offset from its centre
-      var b = bx(pp.n), c = [b[0] + b[2] / 2, b[1] + b[3] / 2], S = procSpots(pp), F = null;
+      var b = bx(pp.n), c = [b[0] + b[2] / 2, b[1] + b[3] / 2], S = procSpots(pp) || hubSides(pp), F = null;
       // at a glyph a tie (a drop on its centre) goes to the side facing the modifier (user, 2026-11-13): the point
       // before the end weighs in a little
       if (S) { var all = ports(pp.k); F = all[all.length - 2]; }
@@ -1523,17 +1582,25 @@
       if (S) S.forEach(function (o, i) { var d = Math.hypot(o[0] - to[0], o[1] - to[1]); if (d < bd) { bd = d; best = i + 2; } });
       return best;
     }
-    function setPort(pp) {
-      var e = edges2[pp.k], a = pp.end ? ['tx', 'ty'] : ['sx', 'sy'], no = spotNo(pp, pp.to), vals = [fmt(pp.to[0]), fmt(pp.to[1])];
-      if (no) { a = a.concat('spot'); vals.push(String(no)); }
-      if (Math.abs(num(e.path, a[0]) - pp.to[0]) < 0.01 && Math.abs(num(e.path, a[1]) - pp.to[1]) < 0.01) { unshift(); paint(); return; }
+    function setPort(pp) { setPorts([pp]); }
+    function setPorts(list) {   // ends of lines put at their offsets (pp: k, end, to), one undo step
+      var all = Array.prototype.slice.call(doc.getElementsByTagNameNS(Y, 'Path')), by = new Map();
+      list.forEach(function (pp) {
+        var e = edges2[pp.k], a = pp.end ? ['tx', 'ty'] : ['sx', 'sy'], no = spotNo(pp, pp.to), vals = [fmt(pp.to[0]), fmt(pp.to[1])];
+        if (no) { a = a.concat('spot'); vals.push(String(no)); }
+        if (Math.abs((num(e.path, a[0]) || 0) - pp.to[0]) < 0.01 && Math.abs((num(e.path, a[1]) || 0) - pp.to[1]) < 0.01) return;
+        var nth = all.indexOf(e.path);
+        by.set(nth, (by.get(nth) || []).concat(a.map(function (k, j) { return [k, vals[j]]; })));
+      });
+      if (!by.size) { unshift(); paint(); return; }
       remember(false);
-      var nth = Array.prototype.indexOf.call(doc.getElementsByTagNameNS(Y, 'Path'), e.path), c = -1;
+      var c = -1;
       text = text.replace(/<y:Path\b[^>]*>/g, function (tag) {
-        if (++c !== nth) return tag;
-        a.forEach(function (k, j) {
-          var v = vals[j], re = new RegExp('(\\s' + k + '=")[^"]*"');
-          tag = re.test(tag) ? tag.replace(re, '$1' + v + '"') : tag.replace(/(\/?>)$/, ' ' + k + '="' + v + '"$1');
+        var kv = by.get(++c);
+        if (!kv) return tag;
+        kv.forEach(function (q) {
+          var re = new RegExp('(\\s' + q[0] + '=")[^"]*"');
+          tag = re.test(tag) ? tag.replace(re, '$1' + q[1] + '"') : tag.replace(/(\/?>)$/, ' ' + q[0] + '="' + q[1] + '"$1');
         });
         return tag;
       });
@@ -1915,6 +1982,13 @@
     // the map being edited as it is now, for the viewer's menu (user, 2026-11-13: "Download what is on the screen";
     // Download CellDesigner XML gave the site's file without the moves just made)
     window.m2EditNow = function () { return on && site && site.id && text ? { id: site.id, text: src(), svg: shownSvg(), file: name } : null; };
+    window.m2EditTurn = function () {   // the right-click menu's Turn process over a process or logic gate
+      if (!on || V.current !== map || !rclick || !window.yrender) return null;
+      var h = hit(rclick);
+      if (!h || h.n == null || !nodes2[h.n].hub) return null;
+      var i = h.n, gate = nodes2[i].shape.kind === 'Operator';
+      return { label: gate ? 'Turn logic gate' : 'Turn process', go: function () { turn(i); } };
+    };
     window.m2EditAnchor = function () {
       if (!on || V.current !== map || !rclick) return null;
       var h = hit(rclick);
@@ -2189,7 +2263,7 @@
     function portKey(pp, d) {
       var e = edges2[pp.k], a = pp.end ? ['tx', 'ty'] : ['sx', 'sy'], b = bx(pp.n);
       var c = [b[0] + b[2] / 2, b[1] + b[3] / 2], o = spot(pp, [c[0] + num(e.path, a[0]), c[1] + num(e.path, a[1])]);
-      var u = [Math.sign(d[0]), Math.sign(d[1])], s = [Math.sign(o[0]), Math.sign(o[1])], S = procSpots(pp);
+      var u = [Math.sign(d[0]), Math.sign(d[1])], s = [Math.sign(o[0]), Math.sign(o[1])], S = procSpots(pp) || hubSides(pp);
       if (S) {   // round a glyph: the next of its six places the arrow points to
         var best = null, bs = 0.3;
         S.forEach(function (q) {

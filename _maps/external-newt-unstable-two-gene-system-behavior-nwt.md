@@ -19,5 +19,8 @@ colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/test-maps/sbgn-ml/pd/newt-unstable/two_gene_system_behavior.nwt"}, {"label": "SVG", "url": "/downloads/external-newt-unstable-two-gene-system-behavior-nwt.svg"}]
 shapes: true
+src: "35480f2242647cf2347498d46c00b99bbd87a1be"
+edit_path: "maps/sbgn-ml/pd/newt-unstable/two_gene_system_behavior.nwt"
+edit_base: "/atlas-data/external-newt-unstable-two-gene-system-behavior-nwt.graphml"
 ---
 From newt-unstable (github.com/iVis-at-Bilkent/newt, branch unstable, commit 55c0870, app/samples), `two_gene_system_behavior.nwt`, LGPL 3.0. Unchanged, drawn from its own file.
