@@ -1212,7 +1212,7 @@ page, so its styles keep the base they were made on). The looks before (Default 
   });
   view.addEventListener('gestureend', function (e) { if (gest != null) e.preventDefault(); gest = null; });
   view.addEventListener('dblclick', function (e) {
-    if (e.target.closest('.m2-ctrl, .m2-info')) return;
+    if (e.target.closest('.m2-ctrl, .m2-info, .m2-ed-type')) return;   // not in the editor's name box
     var r = view.getBoundingClientRect();
     zoomAt(z * 1.5, (e.clientX - r.left) / pz(), (e.clientY - r.top) / pz());
   });
@@ -2771,7 +2771,7 @@ page, so its styles keep the base they were made on). The looks before (Default 
     function boxes(k, list) {   // the site's click data with each node's box where the edited drawing has it
       if (!k || !k.ref || !k.cur || !list) return list;
       var ref = k.ref, cur = k.cur, near = function (a, b) { return Math.abs(a - b) < 0.6; }, at = null;
-      if (ref.ids && cur.ids) { at = {}; cur.ids.forEach(function (id, j) { at[id] = j; }); }   // by node id: a node made since moves no other's box (the full editor)
+      if (ref.ids && cur.ids) { at = Object.create(null); cur.ids.forEach(function (id, j) { at[id] = j; }); }   // by node id: a node made since moves no other's box (the full editor)
       return list.map(function (n) {
         var b = n.box, i = -1;
         for (var j = 0; j < ref.boxes.length; j++) {

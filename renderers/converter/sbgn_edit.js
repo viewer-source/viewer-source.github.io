@@ -188,7 +188,7 @@
   }
   // what the editor made or renamed that the base GraphML lacks (a draft reopened before the build has drawn it)
   function made(S, G, out, t, opt) {
-    var St = null, D = null;
+    var St = null, D = null, H = null, Hfor = null;   // the output read again only after it changed (the review: a reading per glyph froze a 2 MB map for minutes)
     var svOf = function (g) {   // a glyph's state variables: [text, rx, ry]
       var B = g.box;
       return kids(g.el, 'glyph').filter(function (c) { return c.getAttribute('class') === 'state variable'; }).map(function (c) {
@@ -206,7 +206,8 @@
         return;
       }
       if (!NAMED.test(cls)) return;
-      var H = gml(out, opt), L = labelsOf(H, id);
+      if (Hfor !== out) { H = gml(out, opt); Hfor = out; }
+      var L = labelsOf(H, id);
       if (L.main && ownText(L.main) !== name) out = label(out, id, name, opt);
       var svs = L.icons.filter(function (q) { return q[1].kind === 'StateVariable'; });
       svOf(g).forEach(function (q, j) {
@@ -293,14 +294,19 @@
       fresh += '\n' + ind0 + '<' + pre + 'glyph class="' + cls + '" id="' + esc(id) + '"' + (cref ? ' compartmentRef="' + esc(cref) + '"' : '') + '>' +
         (name ? '\n' + ind0 + '  <' + pre + 'label text="' + esc(name) + '"/>' : '') + '\n' + ind0 + '  ' + bboxXml(n.box) +
         iconsOf(id).map(function (q, k) { return svXml(id, k, q, n.box, ind0 + '  '); }).join('') + '\n' + ind0 + '</' + pre + 'glyph>';
-      if (fill) {   // its colour: the style of that fill the map's proteins use
+      if (fill) {   // its colour: a style of that fill and of its font, the one most of the map's macromolecules use (defaults' choice)
         St = St || styles(S);
-        var cand = St.filter(function (x) { return x.plain && x.fill === fill; });
-        cand.sort(function (a, b) { return b.ids.length - a.ids.length; });
+        var fs = L.main ? F(L.main.getAttribute('fontSize')) : null, mac = function (x) { return x.ids.filter(function (i) { return S.glyph[i] && S.glyph[i].el.getAttribute('class') === 'macromolecule'; }).length; };
+        var cand = St.filter(function (x) { return x.plain && x.fill === fill && (x.font == null || x.font === fs); });
+        cand.sort(function (a, b) { return (b.font === fs) - (a.font === fs) || mac(b) - mac(a); });
         if (cand[0]) joinTo.set(cand[0], (joinTo.get(cand[0]) || []).concat(id));
       }
     });
-    if (fresh) { var e2 = last ? T.end(last) : T.at.get(mapEl)[1]; T.ed.push([e2, e2, fresh]); }
+    if (fresh) {
+      var ms = T.at.get(mapEl);
+      if (!last && ms[2]) T.ed.push([ms[0], ms[1], T.t.slice(ms[0], ms[1] - 2).replace(/\s+$/, '') + '>' + fresh + '\n' + T.indent(mapEl) + '</' + pre + 'map>']);   // an empty <map/>
+      else { var e2 = last ? T.end(last) : ms[1]; T.ed.push([e2, e2, fresh]); }
+    }
     joinTo.forEach(function (ids, st) { T.set(st.el, 'idList', st.ids.concat(ids).join(' ')); });
     // the arcs: their bends, then their ends (an end at a port gives the port its place)
     var portAt = {}, newPorts = {}, use = {};
@@ -577,9 +583,10 @@
     styles(S).forEach(function (st) { var k = st.ids.filter(function (i) { return macro[i]; }).length; if (st.fill && st.plain && k > n) { n = k; best = st; } });
     return { w: 80 * s, h: 40 * s, font: best && best.font || Math.round(14 * s + 0.01), fill: best ? best.fill : null };
   }
+  function nameable(t, id, opt) { var g = sbgn(t, opt).glyph[id]; return !!g && NAMED.test(g.el.getAttribute('class') || ''); }   // a name the editor may change: one write() carries
   function svText(value, variable) { return (value || '') + (variable ? '@' + variable : ''); }
   var HUB = /process|^(and|or|not|association|dissociation|equivalence)$/;
 
-  var api = { graphml: graphml, write: write, defaults: defaults, add: add, label: label, state: state, stateValue: stateValue };
+  var api = { graphml: graphml, write: write, defaults: defaults, add: add, label: label, state: state, stateValue: stateValue, nameable: nameable };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.sbgn_edit = api;
 })(typeof self !== 'undefined' ? self : this);

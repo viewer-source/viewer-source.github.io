@@ -97,7 +97,15 @@
         var a = function (n) { var m = tag.match(new RegExp('\\s' + n + '="([^"]*)"')); return m ? parseFloat(m[1]) : NaN; };
         return [a('x'), a('y'), a('width'), a('height')];
       });
-      if (all.length !== geos.length) return null;   // not the same file with moves only
+      if (all.length !== geos.length) {   // nodes made since (the full editor): the boxes of the nodes the site has, by id
+        var d = new DOMParser().parseFromString(pub, 'application/xml'), by = {};
+        if (d.getElementsByTagName('parsererror').length) return null;
+        Array.prototype.forEach.call(d.getElementsByTagNameNS(G, 'node'), function (n) {
+          var r = realizerOf(n), g = r && r.getElementsByTagNameNS(Y, 'Geometry')[0];
+          if (g) by[n.getAttribute('id')] = [num(g, 'x'), num(g, 'y'), num(g, 'width'), num(g, 'height')];
+        });
+        return { ids: nodes2.map(function (n) { return n.id; }), boxes: nodes2.map(function (n) { return by[n.id] || null; }), x0: fr.x0, y0: fr.y0 };
+      }
       return { ids: nodes2.map(function (n) { return n.id; }), boxes: nodes2.map(function (n) { return all[n.ag]; }), x0: fr.x0, y0: fr.y0 };
     }
     // the frame of the picture against the file saved (kept with the edited drawing, the start of the next editing): a
@@ -847,6 +855,7 @@
     // another map is opened before it is done (review 2026-11-13: leaving at once left edit mode on, autosave armed)
     var opening = 0;
     function start(t, n, h, s, same, g0) {   // a CellDesigner file is first made into the GraphML the editor edits; g0: an SBGN-ML map's GraphML as the build made it
+      if (typing) typing.done(true);
       if (localTimer) local(true);   // the last move of the map before kept first, before cd and text change (the review, 2026-11-13)
       var tk = opening;
       if (isSb(t)) {   // an SBGN-ML map: the GraphML of its text, made from the build's (g0, read with the map)
@@ -888,6 +897,7 @@
       render();
     }
     function stop() {
+      if (typing) typing.done(true);   // a name being typed kept on its own map first (create.js)
       if (!on) return;
       if (saveTimer) push();   // a move still waiting is saved now
       if (site && site.id && undo.length)   // not atSite(): a CellDesigner map's text follows a move only once drawn
@@ -1916,7 +1926,7 @@
       });
       return best || group;
     }
-    function editing(e) { return on && V.current === map && !e.target.closest('.m2-ctrl, .m2-info'); }
+    function editing(e) { return on && V.current === map && !e.target.closest('.m2-ctrl, .m2-info, .m2-ed-type'); }   // a press in the name box is the box's
     var rpan = null, tap = null;
     // edit mode is view mode plus the selection (user, 2026-11-12: two fingers zoomed in view mode but moved the map in
     // edit mode, "I don't like it"; was yEd's way): two-finger scrolling, the wheel and a pinch zoom; a drag on empty

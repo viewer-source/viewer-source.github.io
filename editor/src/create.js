@@ -48,7 +48,7 @@
     document.addEventListener('keydown', function (e) { if (tool && e.key === 'Escape') palTake(null); }, true);
 
     // the map clicked with something in hand: a press only noted, so a drag still moves the map; the click is taken on release
-    var placeAt = null;
+    var placeAt = null, placedAt = 0;   // placedAt: when something was last put on the map (a double click there is not a second request)
     function palDown(e) {
       if (!tool || !palOn()) return false;
       placeAt = { x: e.clientX, y: e.clientY, P: at(e) };
@@ -58,6 +58,8 @@
       var p = placeAt; placeAt = null;
       if (!p || e.type !== 'pointerup' || Math.hypot(e.clientX - p.x, e.clientY - p.y) >= 5) return false;
       e.stopImmediatePropagation();   // not the viewer's click (it would open an annotation)
+      if (!tool) return true;   // let go between the press and the release (Esc)
+      placedAt = Date.now();
       if (tool.kind === 'macromolecule') makeEntity(p.P);
       else if (tool.kind === 'state') makeState(p.P);
       if (tool && !tool.sticky) palTake(null);
@@ -65,7 +67,8 @@
     }
     function freeId(base) {   // an id neither file has
       var s = src(), i = 1;
-      while (text.indexOf('"' + base + i + '"') >= 0 || s.indexOf('"' + base + i + '"') >= 0) i++;
+      var used = function (q) { return text.indexOf('"' + q + '"') >= 0 || s.indexOf('"' + q + '"') >= 0 || s.indexOf("'" + q + "'") >= 0; };
+      while (used(base + i)) i++;
       return base + i;
     }
     function innermost(P, test) {   // the smallest node round P that passes test
@@ -104,12 +107,18 @@
       nodes2.forEach(function (n, i) { if (n.id === id) selN = [i]; });
       dirty = true; quiet(); render(); paint(); changed();
     }
-    function svList(i) {   // the state variables shown on node i: [text, centre in yEd units, size]
-      var r = realizerOf(nodes2[i].el), b = boxOf(i), res = {}, out = [];
+    function svIcons() {   // the map's state variable icons: id -> text
+      var res = {};
       Array.prototype.forEach.call(doc.getElementsByTagNameNS(Y, 'Resource'), function (q) {
         var gn = q.getElementsByTagNameNS(Y, 'GenericNode')[0], l = gn && gn.getElementsByTagNameNS(Y, 'NodeLabel')[0];
-        if (gn && /StateVariable$/.test(gn.getAttribute('configuration') || '')) res[q.getAttribute('id')] = l ? l.textContent.replace(/\s+$/, '') : '';
+        if (gn && /StateVariable$/.test(gn.getAttribute('configuration') || '')) res[q.getAttribute('id')] = l ? ownText(l) : '';
       });
+      return res;
+    }
+    function ownText(l) { var t = ''; for (var c = l.firstChild; c; c = c.nextSibling) if (c.nodeType === 3 || c.nodeType === 4) t += c.nodeValue; return t; }
+    function svList(i, res) {   // the state variables shown on node i: [text, centre in yEd units, size]; res: svIcons(), read once by a caller going through many nodes
+      var r = realizerOf(nodes2[i].el), b = boxOf(i), out = [];
+      res = res || svIcons();
       if (r) Array.prototype.forEach.call(r.children, function (l) {
         if (l.localName !== 'NodeLabel' || !(l.getAttribute('iconData') in res)) return;
         out.push([res[l.getAttribute('iconData')], [b[0] + num(l, 'x') + num(l, 'width') / 2, b[1] + num(l, 'y') + num(l, 'height') / 2], [num(l, 'width'), num(l, 'height')]]);
@@ -118,9 +127,7 @@
     }
     function nameOf(i) {
       var r = realizerOf(nodes2[i].el), l = r && Array.prototype.filter.call(r.children, function (c) { return c.localName === 'NodeLabel' && !c.getAttribute('iconData'); })[0];
-      if (!l) return '';
-      var t = ''; for (var c = l.firstChild; c; c = c.nextSibling) if (c.nodeType === 3 || c.nodeType === 4) t += c.nodeValue;
-      return t;
+      return l ? ownText(l) : '';
     }
     // a name (j null) or the j-th state variable's value typed in a box over the map; Enter or leaving it keeps it, Esc not
     var typing = null;
@@ -129,7 +136,7 @@
       var i = nodes2.findIndex(function (n) { return n.id === id; });
       if (i < 0) return;
       var b = boxOf(i), sv = j == null ? null : svList(i)[j], at0 = j == null ? [b[0], b[1], b[2], b[3]] : [sv[1][0] - 40, sv[1][1] - 9, 80, 18];
-      var inp = document.createElement('input'), before = j == null ? nameOf(i) : sv[0], step = undo.length, fresh = text;
+      var inp = document.createElement('input'), before = j == null ? nameOf(i) : sv[0], step = undo.length, m0 = map;
       inp.type = 'text'; inp.className = 'm2-ed-type'; inp.value = before; inp.spellcheck = false;
       inp.setAttribute('aria-label', j == null ? 'Name' : 'State variable (value, or value@site)');
       inp.style.cssText = 'left:' + sx(at0[0]) + 'px;top:' + sy(at0[1]) + 'px;width:' + Math.max(60, at0[2] * V.z) + 'px;height:' + Math.max(20, at0[3] * V.z) + 'px;font-size:' + Math.max(11, Math.min(18, 14 * V.z)) + 'px';
@@ -139,10 +146,11 @@
           if (!typing || typing.inp !== inp) return;
           typing = null; inp.remove();
           var v = inp.value.replace(/[\r\n]+/g, ' ');
-          if (!keep || v === before || !on) return;
+          if (j != null) v = v.replace(/@+$/, '');   // P@ is P (a site needs a name)
+          if (!keep || v === before.replace(/[\r\n]+/g, ' ') || !on || map !== m0) return;   // a name on several lines, untouched, kept as it was (the box shows it on one)
           var t2 = j == null ? sbJs.label(text, id, v) : sbJs.stateValue(text, id, j, v);
           if (t2 === text) return;
-          if (!(merge && undo.length === step && text === fresh)) remember(false);
+          if (!(merge && undo.length === step)) remember(false);   // nothing done since its making: the same undo step (a shift out of negative places in the redraw is no step)
           text = t2; made(id);
         }, inp: inp
       };
@@ -157,14 +165,16 @@
     }
     // a double click on a named entity, or on one of its state variables, opens the box again
     V.view.addEventListener('dblclick', function (e) {
-      if (!palOn() || !editing(e) || e.target.closest('.m2-ed-type')) return;
-      var P = at(e), i = innermost(P, function (n) { return /^(Macromolecule|SimpleChemical|NucleicAcidFeature|UnspecifiedEntity|Phenotype|PerturbingAgent)$/.test(n.shape.kind) && n.el.getAttribute('yfiles.foldertype') !== 'group'; });
-      var near0 = -1, best = 12 / Math.max(V.z, 0.2);
+      if (!palOn() || !editing(e)) return;
+      if (tool || Date.now() - placedAt < 600) { e.stopImmediatePropagation(); return; }   // the clicks of a placing: no zoom, no box again
+      var base = src(), P = at(e), i = innermost(P, function (n) { return n.el.getAttribute('yfiles.foldertype') !== 'group' && sbJs.nameable(base, n.id); });
+      var near0 = -1, best = 12 / Math.max(V.z, 0.2), res = svIcons();
       nodes2.forEach(function (n, k) {   // a state variable's circle, which may stand out of its node
         if (n.shape.kind !== 'Macromolecule') return;
-        svList(k).forEach(function (q, j) { var d = Math.hypot(q[1][0] - P[0], q[1][1] - P[1]); if (d < Math.max(best, q[2][0] / 2)) { best = d; near0 = [k, j]; } });
+        svList(k, res).forEach(function (q, j) { var d = Math.hypot(q[1][0] - P[0], q[1][1] - P[1]); if (d < Math.max(best, q[2][0] / 2)) { best = d; near0 = [k, j]; } });
       });
       if (near0 !== -1) { e.stopImmediatePropagation(); typeIn(nodes2[near0[0]].id, near0[1]); return; }
       if (i >= 0) { e.stopImmediatePropagation(); typeIn(nodes2[i].id, null); }
     }, true);
-    V.view.addEventListener('wheel', function () { if (typing) typing.done(true); }, { capture: true, passive: true });
+    ['wheel', 'gesturestart'].forEach(function (k) { V.view.addEventListener(k, function () { if (typing) typing.done(true); }, { capture: true, passive: true }); });   // the box would stand off its node after a zoom
+    window.addEventListener('resize', function () { if (typing) typing.done(true); });
