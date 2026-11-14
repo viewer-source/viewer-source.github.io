@@ -254,10 +254,10 @@
       side.forEach(function (s) {
         var q = s.q, ref = a.getAttribute(q[0]), el = kid(a, q[1]), P = s.P;
         if (!el) return;
-        if (ref !== s.gid) {   // at a port: the port where the GraphML has it, the arc's own end (Newt's stops short) carried with it
+        if (ref !== s.gid) {   // at a port: the port where the GraphML has it, the arc's end on it (the file's own kept while the port stays)
           portAt[ref] = portAt[ref] || P;
-          var o0 = xy(S.port[ref]), e0 = xy(el);
-          setXY(el, [e0[0] + portAt[ref][0] - o0[0], e0[1] + portAt[ref][1] - o0[1]]);
+          var o0 = xy(S.port[ref]);
+          if (!close(o0[0], portAt[ref][0]) || !close(o0[1], portAt[ref][1])) setXY(el, portAt[ref]);   // a port moved: the end on it
           return;
         }
         var b2 = G.node[s.gid].box, out2 = Math.abs(P[0] - s.c[0]) > b2[2] / 2 + 0.5 || Math.abs(P[1] - s.c[1]) > b2[3] / 2 + 0.5;

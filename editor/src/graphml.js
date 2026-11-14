@@ -60,10 +60,12 @@
       Array.prototype.forEach.call(d.getElementsByTagNameNS(Y, 'Point'), function (p) { mx = Math.min(mx, num(p, 'x')); my = Math.min(my, num(p, 'y')); });
       var block = function (m) { return m < 0 ? Math.ceil((40 - m) / 16) * 16 : 0; }, sx = block(mx), sy = block(my);
       if (!sx && !sy) return t;
-      return t.replace(re, function (tag) {
-        return tag.replace(/(\sx=")([^"]*)"/, function (a, k, v) { return k + fmt(parseFloat(v) + sx) + '"'; })
-                  .replace(/(\sy=")([^"]*)"/, function (a, k, v) { return k + fmt(parseFloat(v) + sy) + '"'; });
-      });
+      return t.replace(re, function (tag) { return shiftTag(tag, sx, sy); });
+    }
+    function shiftTag(tag, sx, sy) {   // only the axis shifted is written (an SBGN-ML map's other numbers stay as they are)
+      if (sx) tag = tag.replace(/(\sx=")([^"]*)"/, function (a, k, v) { return k + fmt(parseFloat(v) + sx) + '"'; });
+      if (sy) tag = tag.replace(/(\sy=")([^"]*)"/, function (a, k, v) { return k + fmt(parseFloat(v) + sy) + '"'; });
+      return tag;
     }
     function noNegative() {
       // what is drawn counts (a closed group's other size, kept by yEd, does not), all of it moves
@@ -72,9 +74,6 @@
       points.forEach(function (p) { mx = Math.min(mx, num(p, 'x')); my = Math.min(my, num(p, 'y')); });
       var block = function (m) { return m < 0 ? Math.ceil((40 - m) / 16) * 16 : 0; }, sx = block(mx), sy = block(my);
       if (!sx && !sy) return null;
-      text = text.replace(re, function (tag) {
-        return tag.replace(/(\sx=")([^"]*)"/, function (a, k, v) { return k + fmt(parseFloat(v) + sx) + '"'; })
-                  .replace(/(\sy=")([^"]*)"/, function (a, k, v) { return k + fmt(parseFloat(v) + sy) + '"'; });
-      });
+      text = text.replace(re, function (tag) { return shiftTag(tag, sx, sy); });
       return [sx, sy];
     }

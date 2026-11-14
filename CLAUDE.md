@@ -120,7 +120,7 @@ says "the workbench", "the converter's repository", "a private repository".
   refreshed by `get_mapconv.sh`, never edited here) to GraphML and yrender.js: `downloads/<id>-sbgnml.svg`, its click
   data and search entries (`s: 1`), named in the entry's `sbgn`; a file it cannot read is a warning, never a stopped
   build. The viewer shows the SBGN-ML drawing as a copy of the entry (`asSource`, `shownAs`), its downloads led by the
-  SBGN-ML file, its PNG made from that drawing; such a map is not edited (no Edit tab; editing SBGN-ML later) and never
+  SBGN-ML file, its PNG made from that drawing; such a map is not edited (no Edit tab; the external SBGN-ML maps are, Edit below) and never
   shows an edited drawing of its own file. The look: true SBGN as the file gives it, its own places, sizes and colours,
   no tool's styling (user).
 - Association and dissociation (user, 2026-11-14: "draw them as SBGN's filled circle and circle in a circle, with a Settings
@@ -431,6 +431,25 @@ says "the workbench", "the converter's repository", "a private repository".
   set by the editor's setPort), never worked out from the end's offset: that offset is in the frame of the drawing the
   GraphML was last made from, and a main line turned by another move made every modifier jump (found by the review) (`tests/cd-modifier-spot.js` in the workflow Compare renderers; cd-compare moves
   modifier ends too).
+  SBGN-ML maps (user, 2026-11-14: "the same idea", layout only, nothing deleted or created; for now the maps of the
+  group SBGN-ML external): edited as the GraphML the converter's copy makes of their file, kept by the build as
+  `atlas-data/<id>.graphml` (the entry's `edit_base`); `renderers/converter/sbgn_edit.js` makes the GraphML of the text
+  being edited from it and writes the moves back into the SBGN-ML text, only the numbers that change (a glyph's bbox,
+  what it carries mapped with it, an arc's start, end and next points, a port's place), the rest byte for byte; an end
+  at a glyph's centre is written where the line toward its next point leaves the glyph (the file's own kept while it
+  stays on that line). `tests/sbgn-edit.js` (workflow Compare renderers): both ways the same as the converter, byte for
+  byte, on every SBGN-ML file of the demo, also after made-up moves. The editor (`editor/src/sbgn.js`) draws it with the
+  yEd renderer as a GraphML map, so the tools are the same. Saved (user, 2026-11-14: an edited copy) to the entry's
+  `edit_path`, `maps/sbgn-ml/pd/<the file's path>`, created by the first save; the build then draws that copy in place of
+  the file (downloaded from `downloads/<id>.sbgn` or `.nwt`), the file in `test-maps/` never changed. Not edited: the
+  group SBGN-ML (rewritten from GraphML at every build) and the official SBGN-ML behind Settings' Source.
+  Processes and logic gates (user, 2026-11-14: "assume that yEd has this SBGN process with antennas ... and simply do as
+  in yEd"), on GraphML and SBGN-ML maps (CellDesigner keeps its own glyph): one object with its two ports, drawn by the
+  yEd renderer at the ends of its antennas; consumptions (a gate's inputs) end on port one, products leave from port
+  two, and those ends are not dragged (they go with the process); a modifier's end goes to the middle of one of the two
+  sides off the antennas; Turn process (Turn logic gate) in the right-click menu over it turns it a quarter clockwise,
+  every end at it with it, four turns round (an SBGN-ML process with no ports in its file gets them, its arcs pointed at
+  them). The renderer gives the editor the ports it draws (`yrender.render(...).ports`, JavaScript only).
 - Full screen with tools (user, 2026-11-12: "use more space available on the screen, but with tools"): beside the map's
   own full screen (the map alone), the whole page goes full screen with its list, tools and panel: Shift with the
   full-screen button, or Full screen with tools in the right-click menu (Exit full screen there while on). The
