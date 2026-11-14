@@ -65,9 +65,9 @@
 <path d="M1050 790 L1050 972" fill="none" stroke="#000000"/><circle cx="1050" cy="976" r="4" fill="white" class="c-white" stroke="#000000"/>
 <path d="M1200 1020 L1200 1065" fill="none" stroke="#000000"/><path d="M1200 1080 L1194 1064 L1206 1064 Z" fill="white" class="c-white" stroke="#000000"/>
 <path d="M400 410 L459 410" fill="none" stroke="#000000"/><path d="M470 410 L458 416 L458 404 Z" fill="#000000" stroke="none"/>
-<path d="M950 990 L1030 990" fill="none" stroke="#000000"/>
-<path d="M290 410 L360 410" fill="none" stroke="#000000"/>
-<path d="M800 760 L880 760" fill="none" stroke="#000000"/>
+<path d="M959 990 L1030 990" fill="none" stroke="#000000"/>
+<path d="M299 410 L360 410" fill="none" stroke="#000000"/>
+<path d="M809 760 L880 760" fill="none" stroke="#000000"/>
 <path d="M206.6667 570 L280 630" fill="none" stroke="#000000"/>
 <path d="M353.3333 570 L280 630" fill="none" stroke="#000000"/>
 </g>

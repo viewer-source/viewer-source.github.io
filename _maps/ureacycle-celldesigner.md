@@ -14,7 +14,7 @@ height: 1116
 scale: 1
 annotation: "/atlas-data/ureacycle-celldesigner.json"
 image_error: ""
-v: "9aebf75c2b"
+v: "c36f490101"
 src: "3ecd5c4f58fabe4d249e5335de902f66fb07424a"
 colours: true
 legend: "celldesigner"

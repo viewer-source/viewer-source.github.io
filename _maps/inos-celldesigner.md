@@ -14,12 +14,12 @@ height: 1248
 scale: 1
 annotation: "/atlas-data/inos-celldesigner.json"
 image_error: ""
-v: "e6126c7797"
+v: "a14c2064ab"
 src: "6eb72e66be94de4c238e814a78799329b2646c21"
 colours: true
 legend: "celldesigner"
 downloads: [{"label": "CellDesigner", "url": "/downloads/inos-celldesigner.xml"}, {"label": "SVG", "url": "/downloads/inos-celldesigner.svg"}, {"label": "SBML", "url": "/downloads/inos-celldesigner-sbml.xml"}, {"label": "Annotation", "url": "/downloads/inos-celldesigner.csv"}, {"label": "GraphML", "url": "/downloads/inos-celldesigner.graphml"}, {"label": "PNG", "url": "/downloads/inos-celldesigner.png"}, {"label": "SBGN-ML", "url": "/downloads/inos-celldesigner.sbgn"}, {"label": "Newt", "url": "http://web.newteditor.org/?URL=https://viewer-source.github.io/downloads/inos-celldesigner.sbgn"}, {"label": "MINERVA", "url": "https://mreg.elixir-luxembourg.org/minerva/index.html?id=F007-inos"}]
-sbgn: {"image": "/downloads/inos-celldesigner-sbgnml.svg", "annotation": "/atlas-data/inos-celldesigner-sbgnml.json", "width": 1638, "height": 1261, "v": "8f32464d78", "file": "/downloads/inos-celldesigner.sbgn"}
+sbgn: {"image": "/downloads/inos-celldesigner-sbgnml.svg", "annotation": "/atlas-data/inos-celldesigner-sbgnml.json", "width": 1638, "height": 1261, "v": "e97c93613f", "file": "/downloads/inos-celldesigner.sbgn"}
 ---
 ## References
 

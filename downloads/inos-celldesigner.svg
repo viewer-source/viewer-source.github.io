@@ -181,9 +181,9 @@
 <text x="305" y="365.33" font-family="'Dialog', 'Liberation Sans', Arial, sans-serif" font-size="16" text-anchor="middle" class="t-protein">JAK2</text>
 <g fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
 <polyline points="283,708 304,708 392,708 494,708"/>
-<polyline points="348,776 348,728"/>
+<polyline points="348,768 348,728"/>
 <polyline points="731,716 748,716 828,716 838,716"/>
-<polyline points="788,784 788,736"/>
+<polyline points="788,776 788,736"/>
 <polyline points="1198.48,691.65 1419.52,691.65"/>
 <polyline points="1241.41,612.55 1284.62,691.65"/>
 <polyline points="1347.38,691.65 1383.88,624.84"/>
@@ -216,21 +216,21 @@
 <polyline points="829,311 725.69,311"/>
 <polyline points="794.76,135.99 787.01,311"/>
 <polyline points="124,760 124,954"/>
-<polyline points="348,1120 348,846"/>
+<polyline points="348,1112 348,846"/>
 <polyline points="556,736 556,954"/>
-<polyline points="788,1120 788,854"/>
+<polyline points="788,1112 788,854"/>
 </g>
 <polygon points="516,708 501,713 501,703" fill="#000"/>
 <polyline points="275,708 304,708 392,708 502,708" fill="none" stroke="#000000" stroke-width="1"/>
 <polygon points="348,713 353,728 343,728" fill="#fff" stroke="#000"/>
 <line x1="352.5" y1="733" x2="343.5" y2="733" stroke="#000"/>
-<polyline points="348,784 348,728" fill="none" stroke="#000000" stroke-width="1"/>
+<polyline points="348,776 348,728" fill="none" stroke="#000000" stroke-width="1"/>
 <rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(348,708) rotate(0)"/>
 <polygon points="860,716 845,721 845,711" fill="#000"/>
 <polyline points="723,716 748,716 828,716 846,716" fill="none" stroke="#000000" stroke-width="1"/>
 <polygon points="788,721 793,736 783,736" fill="#fff" stroke="#000"/>
 <line x1="792.5" y1="741" x2="783.5" y2="741" stroke="#000"/>
-<polyline points="788,792 788,736" fill="none" stroke="#000000" stroke-width="1"/>
+<polyline points="788,784 788,736" fill="none" stroke="#000000" stroke-width="1"/>
 <rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(788,716) rotate(0)"/>
 <polygon points="1441.52,691.65 1426.52,696.65 1426.52,686.65" fill="#000"/>
 <polyline points="1190.48,691.65 1427.52,691.65" fill="none" stroke="#000000" stroke-width="1"/>
@@ -310,12 +310,12 @@
 <polyline points="124,752 124,962" fill="none" stroke="#000000" stroke-width="1"/>
 <rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(124,864) rotate(90)"/>
 <polygon points="348,824 353,839 343,839" fill="#000"/>
-<polyline points="348,1128 348,838" fill="none" stroke="#000000" stroke-width="1"/>
+<polyline points="348,1120 348,838" fill="none" stroke="#000000" stroke-width="1"/>
 <rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(348,976) rotate(-90)"/>
 <polygon points="556,976 551,961 561,961" fill="#000"/>
 <polyline points="556,728 556,962" fill="none" stroke="#000000" stroke-width="1"/>
 <rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(556,852) rotate(90)"/>
 <polygon points="788,832 793,847 783,847" fill="#000"/>
-<polyline points="788,1128 788,846" fill="none" stroke="#000000" stroke-width="1"/>
+<polyline points="788,1120 788,846" fill="none" stroke="#000000" stroke-width="1"/>
 <rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(788,980) rotate(-90)"/>
 </svg>

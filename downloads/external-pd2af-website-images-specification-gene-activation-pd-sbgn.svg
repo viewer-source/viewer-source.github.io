@@ -20,7 +20,7 @@
 <path d="M500 417 L500 412 M500 388 L500 383" fill="none" stroke="#000000"/><path d="M488 388 L512 388 L512 412 L488 412 Z" fill="none" stroke="#000000"/>
 <path d="M425 150 L483 150" fill="none" stroke="#000000"/>
 <path d="M517 150 L549 150" fill="none" stroke="#000000"/><path d="M560 150 L548 156 L548 144 Z" fill="#000000" stroke="none"/>
-<path d="M500 230 L500 183" fill="none" stroke="#000000"/><path d="M500 162 L506 178 L494 178 Z" fill="white" class="c-white" stroke="#000000"/><path d="M492 183 L508 183" fill="none" stroke="#000000" stroke-linecap="square"/>
+<path d="M500 222 L500 183" fill="none" stroke="#000000"/><path d="M500 162 L506 178 L494 178 Z" fill="white" class="c-white" stroke="#000000"/><path d="M492 183 L508 183" fill="none" stroke="#000000" stroke-linecap="square"/>
 <path d="M460 250 L417 250" fill="none" stroke="#000000"/>
 <path d="M383 250 L336 250" fill="none" stroke="#000000"/><path d="M325 250 L337 244 L337 256 Z" fill="#000000" stroke="none"/>
 <path d="M200 170 L200 233" fill="none" stroke="#000000"/>
@@ -30,7 +30,7 @@
 <path d="M200 370 L316.5 399" fill="none" stroke="#000000"/>
 <path d="M400 370 L316.5 399" fill="none" stroke="#000000"/>
 <path d="M316.5 434 L343.5614 518.0114" fill="none" stroke="#000000"/><path d="M350 538 L339.3833 524.6102 L350.8054 520.931 Z" fill="white" class="c-white" stroke="#000000"/><path d="M351.1761 515.5586 L335.9467 520.4642" fill="none" stroke="#000000" stroke-linecap="square"/>
-<path d="M500 530 L500 417" fill="none" stroke="#000000"/>
+<path d="M500 522 L500 417" fill="none" stroke="#000000"/>
 <path d="M500 383 L500 281" fill="none" stroke="#000000"/><path d="M500 270 L506 282 L494 282 Z" fill="#000000" stroke="none"/>
 </g>
 </svg>

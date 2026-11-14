@@ -14,7 +14,7 @@ height: 474
 scale: 1
 annotation: "/atlas-data/external-newt-unstable-two-gene-system-behavior-nwt.json"
 image_error: ""
-v: "97861dce91"
+v: "4e61e7e0bd"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/test-maps/sbgn-ml/pd/newt-unstable/two_gene_system_behavior.nwt"}, {"label": "SVG", "url": "/downloads/external-newt-unstable-two-gene-system-behavior-nwt.svg"}]

@@ -14,7 +14,7 @@ height: 1193
 scale: 1
 annotation: "/atlas-data/srebp-sbgn.json"
 image_error: ""
-v: "8adaf830a1"
+v: "dda080bfaf"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/downloads/srebp-sbgn.sbgn"}, {"label": "SVG", "url": "/downloads/srebp-sbgn.svg"}]

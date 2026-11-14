@@ -57,8 +57,8 @@
 <path d="M552 778 L591 778" fill="none" stroke="#000000"/><circle cx="595" cy="778" r="4" fill="white" class="c-white" stroke="#000000"/>
 <path d="M552 946 L591 946" fill="none" stroke="#000000"/><circle cx="595" cy="946" r="4" fill="white" class="c-white" stroke="#000000"/>
 <path d="M608 894 L608 928" fill="none" stroke="#000000"/>
-<path d="M608 796 L608 843" fill="none" stroke="#000000"/><path d="M608 854 L602 842 L614 842 Z" fill="#000000" stroke="none"/>
-<path d="M608 964 L608 995" fill="none" stroke="#000000"/><path d="M608 1006 L602 994 L614 994 Z" fill="#000000" stroke="none"/>
+<path d="M608 796 L608 835" fill="none" stroke="#000000"/><path d="M608 846 L602 834 L614 834 Z" fill="#000000" stroke="none"/>
+<path d="M608 964 L608 987" fill="none" stroke="#000000"/><path d="M608 998 L602 986 L614 986 Z" fill="#000000" stroke="none"/>
 <path d="M271.5 130 L414 130" fill="none" stroke="#000000"/>
 <path d="M400 90 L400 130 L414 130" fill="none" stroke="#000000"/>
 <path d="M450 130 L525.5 130" fill="none" stroke="#000000"/><path d="M536.5 130 L524.5 136 L524.5 124 Z" fill="#000000" stroke="none"/>

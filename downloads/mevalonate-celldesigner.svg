@@ -155,7 +155,7 @@
 <polyline points="1172.67,91.99 1186.06,335"/>
 <polyline points="1188.94,593.8 1273.94,593.8"/>
 <polyline points="1209.66,650.45 1224.06,593.8"/>
-<polyline points="1206.25,536.83 1224.06,593.8"/>
+<polyline points="1207.28,540.13 1224.06,593.8"/>
 </g>
 <polygon points="1777.95,561.8 1762.95,566.8 1762.95,556.8" fill="#000"/>
 <polyline points="1485.94,561.8 1763.95,561.8" fill="none" stroke="#000000" stroke-width="1"/>
@@ -229,6 +229,6 @@
 <polygon points="1295.94,593.8 1280.94,598.8 1280.94,588.8" fill="#000"/>
 <polyline points="1180.94,593.8 1281.94,593.8" fill="none" stroke="#000000" stroke-width="1"/>
 <polyline points="1207.69,658.2 1224.06,593.8" fill="none" stroke="#000000" stroke-width="1"/>
-<polyline points="1203.86,529.2 1224.06,593.8" fill="none" stroke="#000000" stroke-width="1"/>
+<polyline points="1204.89,532.5 1224.06,593.8" fill="none" stroke="#000000" stroke-width="1"/>
 <rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(1238.44,593.8) rotate(0)"/>
 </svg>

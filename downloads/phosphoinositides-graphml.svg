@@ -68,7 +68,7 @@
 <path d="M216.3508 -442.1313 L216.3508 -403.4742" fill="none" stroke="#000000"/>
 <path d="M268.0239 -284.5901 L310.2371 -284.5901" fill="none" stroke="#000000"/><g transform="translate(299.1981,-282.5901)"><rect x="0" y="0" width="11.5879" height="18.1328" fill="#FFFFFF" class="c-white" stroke="none"/><rect x="0" y="0" width="11.5879" height="18.1328" fill="none" stroke="#000000"/><text x="5.7939" y="13.6018" text-anchor="middle" font-family="'Dialog', Arial, Helvetica, sans-serif" font-size="12" fill="#000000" class="t-white" stroke="none" xml:space="preserve">2</text></g>
 <path d="M72.0364 -134.1701 L101.1936 -134.1701" fill="none" stroke="#000000"/>
-<path d="M344.8692 82.1604 L344.8692 105.0044" fill="none" stroke="#000000"/>
+<path d="M344.8692 83.5691 L344.8692 105.0044" fill="none" stroke="#000000"/>
 <path d="M273.5642 122.0044 L321.8692 122.0044" fill="none" stroke="#000000"/><path d="M336.8692 122.0044 L320.8692 128.0044 L320.8692 116.0044 Z" fill="white" class="c-white" stroke="#000000"/>
 <path d="M137.1936 -134.1701 L154.0126 -133.5206" fill="none" stroke="#000000"/><path d="M165.0044 -133.0961 L152.7818 -127.5636 L153.2449 -139.5547 Z" fill="#000000" stroke="none"/>
 <path d="M217.0044 -69.0879 L217.0044 -26.5476" fill="none" stroke="#000000"/>
@@ -80,6 +80,6 @@
 <path d="M346.2371 -284.5901 L387.9704 -284.5901" fill="none" stroke="#000000"/><path d="M398.9704 -284.5901 L386.9704 -278.5901 L386.9704 -290.5901 Z" fill="#000000" stroke="none"/>
 <path d="M216.3508 -367.4742 L216.2872 -357.5899" fill="none" stroke="#000000"/><path d="M216.2164 -346.5901 L210.2937 -358.6285 L222.2935 -358.5513 Z" fill="#000000" stroke="none"/>
 <path d="M146.3508 -418.3027 L206.2568 -418.3027 Q216.2568 -418.3027 216.3038 -410.8885 L216.3508 -403.4742" fill="none" stroke="#000000"/>
-<path d="M91.115 -194.1589 L91.115 -144.1701 Q91.115 -134.1701 96.1543 -134.1701 L101.1936 -134.1701" fill="none" stroke="#000000"/>
+<path d="M91.115 -185.1589 L91.115 -144.1701 Q91.115 -134.1701 96.1543 -134.1701 L101.1936 -134.1701" fill="none" stroke="#000000"/>
 </g>
 </svg>

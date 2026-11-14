@@ -14,7 +14,7 @@ height: 405
 scale: 1
 annotation: "/atlas-data/pyrimidine-sbgn.json"
 image_error: ""
-v: "d984efeb85"
+v: "e2b550797c"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/downloads/pyrimidine-sbgn.sbgn"}, {"label": "SVG", "url": "/downloads/pyrimidine-sbgn.svg"}]

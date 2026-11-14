@@ -103,7 +103,7 @@
 <polyline points="792.76,577.72 749.14,645.35"/>
 <polyline points="450,270.37 450,389.5"/>
 <polyline points="267.77,305.69 450,318.3"/>
-<polyline points="450,128.37 450,200.37"/>
+<polyline points="450,130.81 450,200.37"/>
 <polyline points="512,171.37 462.5,171.37"/>
 <polyline points="920,677 920,740.79 920,807.21 920,814.41"/>
 <polyline points="781,774 907.5,774"/>
@@ -161,7 +161,7 @@
 <polyline points="259.79,305.14 450,318.3" fill="none" stroke="#000000" stroke-width="1"/>
 <rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(450,336.94) rotate(90)"/>
 <polygon points="450,222.37 445,207.37 455,207.37" fill="#000"/>
-<polyline points="450,120.37 450,208.37" fill="none" stroke="#000000" stroke-width="1"/>
+<polyline points="450,122.81 450,208.37" fill="none" stroke="#000000" stroke-width="1"/>
 <circle cx="459.5" cy="171.37" r="3" fill="#fff" stroke="#000"/>
 <polyline points="520,171.37 462.5,171.37" fill="none" stroke="#000000" stroke-width="1"/>
 <rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(450,171.37) rotate(90)"/>
