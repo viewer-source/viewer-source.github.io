@@ -283,7 +283,7 @@ says "the workbench", "the converter's repository", "a private repository".
   stop every build); a reader's map in a site group stands in that group, so their group stays whole once the site has
   one of that name. A new map is committed without its build, so the workflow first fetches its new identifiers: a map
   with many new nodes can take several minutes, longer while editor saves restart the build.
-  Remove map (also in the map's right-click menu) only hides: record and file stay, the same file added again brings it
+  Remove map (in the list's right-click menu only, never the map's: user, 2026-11-14) only hides: record and file stay, the same file added again brings it
   back. A file added is the reader's map by its name and content (user, 2026-11-14: "match by name and content"): the
   same name and the text as it is now or as first added (`src`, a hash kept on the record) brings the map back with the
   edits kept; another file of the same name is a map of its own (its folder file beside, `-2`); a map kept before has

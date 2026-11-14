@@ -283,11 +283,10 @@
       var t = e.target.closest && e.target.closest('#m2-list [data-group]'), g = t && t.dataset.group;
       addFiles(e.dataTransfer.files, ownGroup(g) ? g : '');
     });
-    // what the viewer asks of this part (the list's entries and groups, a map's record, Remove map)
+    // what the viewer asks of this part (the list's entries and groups, a map's record)
     var own = {
       read: function () { return mineIn; },
       here: function () { return (groupsHere = mineGroupsHere()); }, groups: function () { return groupsHere; },
-      withMine: withMine, isGroup: ownGroup, rename: renameGroup, hide: mineHide, shown: mineShown, examplesHidden: examplesHidden,
-      hideSite: function (id) { siteHide(siteHidden().concat([id])); },
+      withMine: withMine, isGroup: ownGroup, rename: renameGroup, shown: mineShown, examplesHidden: examplesHidden,
       rec: function (id) { return mine[id] || null; }
     };
