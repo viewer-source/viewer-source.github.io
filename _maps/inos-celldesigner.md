@@ -14,8 +14,8 @@ height: 1248
 scale: 1
 annotation: "/atlas-data/inos-celldesigner.json"
 image_error: ""
-v: "c122ae231c"
-src: "5ac6ed7585ec263e70c7af373e381921939af500"
+v: "3c4a95ca15"
+src: "224d613ad22666fa7fce8f9336ca63c7ba2c6039"
 colours: true
 legend: "celldesigner"
 downloads: [{"label": "CellDesigner", "url": "/downloads/inos-celldesigner.xml"}, {"label": "SVG", "url": "/downloads/inos-celldesigner.svg"}, {"label": "SBML", "url": "/downloads/inos-celldesigner-sbml.xml"}, {"label": "Annotation", "url": "/downloads/inos-celldesigner.csv"}, {"label": "GraphML", "url": "/downloads/inos-celldesigner.graphml"}, {"label": "PNG", "url": "/downloads/inos-celldesigner.png"}, {"label": "SBGN-ML", "url": "/downloads/inos-celldesigner.sbgn"}, {"label": "Newt", "url": "http://web.newteditor.org/?URL=https://viewer-source.github.io/downloads/inos-celldesigner.sbgn"}, {"label": "MINERVA", "url": "https://mreg.elixir-luxembourg.org/minerva/index.html?id=F007-inos"}]
