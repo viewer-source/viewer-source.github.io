@@ -14,11 +14,11 @@ height: 738
 scale: 1
 annotation: "/atlas-data/glycolysis-sbgn.json"
 image_error: ""
-v: "138e0d5215"
+v: "6eb4acf0ec"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/downloads/glycolysis-sbgn.sbgn"}, {"label": "SVG", "url": "/downloads/glycolysis-sbgn.svg"}]
-src: "181306fe8f751fe6ff5754566fe5a938e018db7c"
+src: "ea69f923168267695530833f69f1e29f745b49d2"
 edit_path: "maps/sbgn-ml/glycolysis-sbgn.sbgn"
 edit_base: "/atlas-data/glycolysis-sbgn.graphml"
 ---
