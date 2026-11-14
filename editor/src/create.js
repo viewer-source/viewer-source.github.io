@@ -206,9 +206,9 @@
     }
 
     // a state variable selected (user, 2026-11-14): a click selects it, a drag moves it along its node's border, snapping
-    // to the nearest of its places (ORDER) only; a click on it selected opens its text; Delete or the right-click menu
+    // to the nearest of its places (ORDER) only, its own drawing following; a click on it selected opens its text; Delete or the right-click menu
     // deletes it
-    var svSel = null, svDrag = null, ghost = null;   // svSel: { id, j }
+    var svSel = null, svDrag = null;   // svSel: { id, j }
     function svNode() { if (!svSel) return -1; var i = nodes2.findIndex(function (n) { return n.id === svSel.id; }); return i >= 0 && svList(i)[svSel.j] ? i : -1; }
     function svMarks(over) {   // four black squares at the corners of the state variable selected (paint, core.js)
       var i = svNode();
@@ -230,22 +230,30 @@
       svDrag = { i: q[0], again: again, x: e.clientX, y: e.clientY, to: null, r: null };
       paint();
     }, true);
+    function svParts(i, q) {   // the drawn parts of a state variable (its box, outline, text) in its node's group of the editor's drawing
+      var g = gN && gN[nodes2[i].id];
+      if (!g) return [];
+      var first = g.firstElementChild && g.firstElementChild.localName === 'a' ? g.firstElementChild : g, r = V.view.getBoundingClientRect(), k = V.pz();
+      var L = r.left + sx(q[1][0] - q[2][0] / 2) * k - 1.5, T = r.top + sy(q[1][1] - q[2][1] / 2) * k - 1.5, R = L + q[2][0] * V.z * k + 3, B = T + q[2][1] * V.z * k + 3;
+      return Array.prototype.filter.call(first.children, function (el) {
+        var b = el.getBoundingClientRect(), cx = b.left + b.width / 2, cy = b.top + b.height / 2;
+        return b.width + b.height > 0 && cx >= L && cx <= R && cy >= T && cy <= B && b.left >= L - 2 && b.right <= R + 2 && b.top >= T - 2 && b.bottom <= B + 2;
+      });
+    }
     window.addEventListener('pointermove', function (e) {
       if (!svDrag || !svSel) return;
       if (!e.buttons) { svUp(); return; }   // released outside the window: no sticky hand
       if (!svDrag.to && Math.hypot(e.clientX - svDrag.x, e.clientY - svDrag.y) < 4) return;
       var i = svDrag.i, b = boxOf(i), r = border(i, at(e)), q = svList(i)[svSel.j];
+      if (!svDrag.parts) svDrag.parts = svParts(i, q);   // the state variable itself moves (user, 2026-11-14: "as with moving other items on the map"), no copy
       svDrag.r = r; svDrag.to = [b[0] + (0.5 + r[0]) * b[2], b[1] + (0.5 + r[1]) * b[3]];
-      if (!ghost) { ghost = document.createElement('div'); ghost.className = 'm2-ed-svghost'; V.view.appendChild(ghost); }
-      var w = q[2][0] * V.z, h = q[2][1] * V.z;
-      ghost.textContent = q[0];
-      ghost.style.cssText = 'left:' + (sx(svDrag.to[0]) - w / 2) + 'px;top:' + (sy(svDrag.to[1]) - h / 2) + 'px;width:' + w + 'px;height:' + h + 'px;font-size:' + 10 * V.z + 'px;border-radius:' + h / 2 + 'px';
+      var dx = svDrag.to[0] - q[1][0], dy = svDrag.to[1] - q[1][1];
+      svDrag.parts.forEach(function (el) { if (dx || dy) el.setAttribute('transform', 'translate(' + f1(dx) + ' ' + f1(dy) + ')'); else el.removeAttribute('transform'); });
       paint();
     }, true);
     window.addEventListener('pointerup', svUp, true);   // capture: the core's own handlers may stop the release on the map
     function svUp() {
       var d = svDrag; svDrag = null;
-      if (ghost) { ghost.remove(); ghost = null; }
       if (!d) return;
       if (d.r && svSel) { remember(false); text = sbJs.stateMove(text, svSel.id, svSel.j, d.r[0], d.r[1]); parse(); dirty = true; render(); paint(); changed(); }
       else if (d.again && svSel) typeIn(svSel.id, svSel.j);   // a click on it selected: its text

@@ -551,8 +551,8 @@ says "the workbench", "the converter's repository", "a private repository".
   the middle"): the top's middle, right and left of it, the right and left sides' middles, the corners, then the bottom
   and the sides' other places; selected. Its places are like ports (user: "it's like with ports ... simply like it's
   traveling on a grid"): the corners, each side's middle and the points halfway between, never marked; a click selects
-  one (four black squares at its corners), a drag moves it to the nearest place only (a ghost follows, the map drawn
-  again on release); the file keeps its coordinates as before. A click on
+  one (four black squares at its corners), a drag moves it to the nearest place only, its own drawing following from
+  place to place (no copy; the map drawn again on release); the file keeps its coordinates as before. A click on
   it selected opens its text. Text in place (user: "simple cursor where I need"): a double click on a named entity or a
   state variable, or that click, puts a field over the text in the glyph's own fill, text colour and font size, no
   frame, the cursor at the end, nothing selected; Enter or a click elsewhere keeps it (P, or P@S505), Esc not. Delete
