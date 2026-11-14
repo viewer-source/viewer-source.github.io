@@ -5,10 +5,8 @@ permalink: /architecture/
 sitemap: false
 ---
 
-<!-- how the viewer is built, its modules and where each lives (user, 2026-11-14: "this complexity to be managed and
-     reviewed"), drawn as the converter's and the layout tool's architecture pages: a column per stage, left to right,
-     then State, Modules, Masters and copies, How a map travels, To be sorted out, Next. Update the figure, the tables
-     and the Updated line when a module is added, moved or split, and at each architecture review. -->
+<!-- How the viewer is built: a column per stage, left to right, then State, Modules, Masters and copies, How a map
+     travels, Open points, Next. The figure, the tables and the Updated line follow every module added, moved or split. -->
 <style>
   #main a, #main a:hover, #main a:active { color: #1c47a9; }
   .ca-fig { overflow-x: auto; margin: 12px 0 8px; }
@@ -200,13 +198,13 @@ sitemap: false
   <rect class="ca-box" x="610" y="650" width="175" height="110" rx="6"/>
   <text class="ca-title" x="697" y="672" text-anchor="middle">Out: style experiments</text>
   <text class="ca-sub" x="697" y="692" text-anchor="middle">/styles/, frozen versions</text>
-  <text class="ca-sub" x="697" y="707" text-anchor="middle">V1 to V4 as fallbacks</text>
+  <text class="ca-sub" x="697" y="707" text-anchor="middle">of the viewer</text>
   <text class="ca-name" x="697" y="732" text-anchor="middle">update.sh</text>
   <rect class="ca-lay" x="800" y="650" width="175" height="110" rx="6"/>
   <text class="ca-title" x="887" y="672" text-anchor="middle">Python twins</text>
   <text class="ca-sub" x="887" y="692" text-anchor="middle">yrender.py, cdrender.py,</text>
   <text class="ca-sub" x="887" y="707" text-anchor="middle">cd_edit.py, tidy.py: for</text>
-  <text class="ca-sub" x="887" y="722" text-anchor="middle">tools elsewhere, their copies</text>
+  <text class="ca-sub" x="887" y="722" text-anchor="middle">tools in Python elsewhere</text>
   <rect class="ca-box" x="990" y="650" width="175" height="110" rx="6"/>
   <text class="ca-title" x="1077" y="672" text-anchor="middle">Checks</text>
   <text class="ca-sub" x="1077" y="692" text-anchor="middle">workflow Compare renderers:</text>
@@ -217,7 +215,7 @@ sitemap: false
 </div>
 <div class="ca-legend">
   <span><i class="ca-sw hub"></i>entry points: what starts the build, what the viewer loads for editing</span>
-  <span><i class="ca-sw lay"></i>to be sorted out: grown too large, or kept twice</span>
+  <span><i class="ca-sw lay"></i>open points: grown large, or kept twice</span>
   <span><i class="ca-sw" style="background:#fff"></i>files</span>
 </div>
 
@@ -225,8 +223,7 @@ sitemap: false
 map, a panel with what is clicked. Each map is drawn when the site is built, by a renderer for its format, into one
 picture and one set of click data, so the viewer in the browser never knows which format a map came from. An editor
 for the layout, loaded only where the Edit tab is, draws with the same renderers in the browser and saves the map's
-own file back, which the build then draws again. This page shows the parts, where each lives and what is to be sorted
-out. How to use it: <a href="/guide/">Guide</a>.</p>
+own file back, which the build then draws again. This page shows the parts, where each lives and the open points. How to use it: <a href="/guide/">Guide</a>.</p>
 
 <p class="ca-upd">Updated 2026-11-14, viewer at 1ae65ed.</p>
 
@@ -239,7 +236,7 @@ out. How to use it: <a href="/guide/">Guide</a>.</p>
   <tr><td>Viewer</td><td>One file, <code>_includes/atlas-app.html</code>: 2,963 lines, 227 KB (57 KB of style, 148 KB of script), in ten sections. Its look in two small CSS files.</td></tr>
   <tr><td>Editor</td><td>Layout editing on all three formats: moves, bend points, ports, compartments, Grid, Snap, Pack, undo; with Editing on Full, a line's end moved to another node. Six source files joined into <code>editor/editor.js</code>; <code>core.js</code> alone is 2,451 lines.</td></tr>
   <tr><td>Saving</td><td>With a GitHub token: the map's file committed a few seconds after the last move. Without: kept in the browser, or written into a folder chosen once (Chrome, Edge).</td></tr>
-  <tr><td>Demo maps</td><td>83 entries in five groups: GraphML (21), CellDesigner (21), SBGN-ML from our GraphML (21), SBGN-ML external (18), AsthmaMap (2).</td></tr>
+  <tr><td>Demo maps</td><td>83 entries in five groups: GraphML (21), CellDesigner (21), SBGN-ML written from the GraphML maps (21), SBGN-ML external (18), AsthmaMap (2).</td></tr>
   <tr><td>Checks</td><td>11 tests in the workflow Compare renderers: the twins alike on every demo map, the editor's writes back into CellDesigner and SBGN-ML, live drawing equal to the drawing after the drop. No browser test of the page itself.</td></tr>
 </table>
 
@@ -254,7 +251,7 @@ out. How to use it: <a href="/guide/">Guide</a>.</p>
   <tr><td><code>index.json</code></td><td>The map list, written by Jekyll from the entries in <code>_maps/</code>.</td></tr>
 
   <tr class="ca-group"><td colspan="2">Renderers, used by the build and in the page</td></tr>
-  <tr><td><code>yrender/yrender.js</code></td><td>yEd GraphML drawn as yEd draws it, with our own rules where yEd's look misleads (visual ends at the shape outline, lines behind their own nodes). Gives the ports it draws to the editor.</td></tr>
+  <tr><td><code>yrender/yrender.js</code></td><td>yEd GraphML drawn as yEd draws it, with the viewer's own rules where yEd's look misleads (visual ends at the shape outline, lines behind their own nodes). Gives the ports it draws to the editor.</td></tr>
   <tr><td><code>converter/cdrender.js</code></td><td>CellDesigner drawn as CellDesigner draws it, with the click data. Python's number writing copied in, so it matches its twin to the last digit.</td></tr>
   <tr><td><code>converter/cd_edit.js</code></td><td>A CellDesigner file as GraphML for the editor, and the moves written back into the CellDesigner text: only the numbers that change. Reaction rules as CellDesigner's own model (main line, process square, added reactants at 3/8 and 5/8).</td></tr>
   <tr><td><code>converter/sbgn_edit.js</code></td><td>The same for SBGN-ML: its GraphML from the build's, and the moves written back into the SBGN-ML text.</td></tr>
@@ -287,12 +284,12 @@ out. How to use it: <a href="/guide/">Guide</a>.</p>
 <table class="ca-table">
   <tr><th>Thing</th><th>Master</th><th>Copies</th></tr>
   <tr><td>Viewer, look, editor</td><td>here</td><td>atlas sites (<code>copy-to-site.sh</code>), the style experiments (<code>update.sh</code>)</td></tr>
-  <tr><td>yrender</td><td>here, <code>yrender.js</code></td><td><code>yrender.py</code> beside it (twin); the workbench's and the official site's copies taken from the twin</td></tr>
-  <tr><td>cdrender, cd_edit</td><td>here, the <code>.js</code></td><td>the <code>.py</code> twins; the official site's CD viewer</td></tr>
+  <tr><td>yrender</td><td>here, <code>yrender.js</code></td><td><code>yrender.py</code> beside it (twin); copies in other map tools are taken from the twin</td></tr>
+  <tr><td>cdrender, cd_edit</td><td>here, the <code>.js</code></td><td>the <code>.py</code> twins; a copy in another site's CellDesigner viewer</td></tr>
   <tr><td>tidy</td><td>here, <code>layout.js</code></td><td><code>tidy.py</code> (twin)</td></tr>
   <tr><td>complex_pack, snap_grid</td><td>the layout skill (Python)</td><td>here as <code>.py</code> and inside <code>layout.js</code></td></tr>
   <tr><td>mapconv</td><td>the converter's repository</td><td>here, <code>renderers/converter/mapconv/</code></td></tr>
-  <tr><td><code>databases.py</code></td><td>here</td><td>the workbench, for the next Metabolism Regulation Atlas</td></tr>
+  <tr><td><code>databases.py</code></td><td>here</td><td>the build of another atlas site</td></tr>
 </table>
 
 <h2>How a map travels</h2>
@@ -305,24 +302,23 @@ out. How to use it: <a href="/guide/">Guide</a>.</p>
   <li>In edit mode the page reads the map's file, draws it again with the same renderer after each move, and saves the file a few seconds after the last one. The drawing just edited stays on screen until step 2 has caught up.</li>
 </ol>
 
-<h2>To be sorted out</h2>
+<h2>Open points</h2>
 
-<p>Findings of the reviews so far (the last on 2026-11-13), for the user to decide; nothing here is started.</p>
+<p>Parts of the code that have grown large or are kept twice, with the change each would take.</p>
 
 <table class="ca-table">
-  <tr><th>What</th><th>Why it matters, and the proposal</th></tr>
-  <tr><td>The viewer in one file</td><td><code>atlas-app.html</code> is 227 KB, its 148 KB of script inline in every page, so no browser keeps it between visits and every change touches one long file. Proposal: the script into its own files as the editor's were (the sections above are its natural parts), loaded and cached as a file.</td></tr>
-  <tr><td><code>core.js</code> too large</td><td>2,451 lines hold selection, dragging, guides, undo, read-ahead and saving. Proposal: the read-ahead and the saving apart first, as they change for other reasons than the editing itself.</td></tr>
-  <tr><td>The editor's model by position</td><td>Nodes and arcs are found by their place in the file, so adding or removing one shifts every index. The full editor (adding and removing glyphs) needs a model keyed by id first; yEd renumbers its own ids on each save, so the id to use (our own <code>Dev id</code> on every node and arc) waits on a decision.</td></tr>
-  <tr><td>Python twins</td><td>About 2,700 lines kept twice (<code>yrender.py</code>, <code>cdrender.py</code>, <code>cd_edit.py</code>, <code>tidy.py</code>), held equal by the tests, every change made in both. They stay while tools elsewhere run Python copies; retired once those take the JavaScript.</td></tr>
-  <tr><td>Built files in the history</td><td>Each save is followed by a commit of the drawings and data, so the history grows with every edit. Publishing the site from an Action would keep the built files out of the repository.</td></tr>
-  <tr><td>Copies on the sites</td><td>The newer atlas sites take their viewer from here with <code>copy-to-site.sh</code>; the older ones carry copies taken earlier from the official site's viewer, not checked one by one.</td></tr>
-  <tr><td>No test of the page</td><td>The renderers and the writes are tested; switching Edit on and off and between maps is checked only by hand. Proposal: one browser smoke test in the workflow.</td></tr>
+  <tr><th>What</th><th>Why it matters, and a possible change</th></tr>
+  <tr><td>The viewer in one file</td><td><code>atlas-app.html</code> is 227 KB, its 148 KB of script inline in every page, so a browser does not keep it between visits and every change touches one long file. Possible change: the script in its own files, as the editor's are (the sections above are its natural parts), loaded and cached as files.</td></tr>
+  <tr><td><code>core.js</code> large</td><td>2,451 lines hold selection, dragging, guides, undo, read-ahead and saving. Possible change: the read-ahead and the saving in files of their own, as they change for other reasons than the editing itself.</td></tr>
+  <tr><td>The editor's model by position</td><td>Nodes and arcs are found by their place in the file, so adding or removing one shifts every index. Adding and removing glyphs needs a model keyed by id. yEd renumbers its ids on each save, so a lasting id is needed: a <code>Dev id</code> property on every node and arc, which yEd keeps.</td></tr>
+  <tr><td>Python twins</td><td>About 2,700 lines kept twice (<code>yrender.py</code>, <code>cdrender.py</code>, <code>cd_edit.py</code>, <code>tidy.py</code>), held equal by the tests, every change made in both. Needed while tools elsewhere run Python; retired once those take the JavaScript.</td></tr>
+  <tr><td>Built files in the history</td><td>Each save is followed by a commit of the drawings and data, so the repository's history grows with every edit. Publishing the site from a GitHub Action would keep the built files out of it.</td></tr>
+  <tr><td>Copies on sites</td><td>Newer atlas sites take the viewer with <code>copy-to-site.sh</code>; older ones carry earlier copies, not compared with the current version.</td></tr>
+  <tr><td>No test of the page</td><td>The renderers and the writes are tested; switching Edit on and off and between maps is checked by hand only. Possible change: one browser test in the workflow.</td></tr>
 </table>
 
 <h2>Next</h2>
 
 <ul>
-  <li>The full editor (adding and removing glyphs and arcs), SBGN-ML first; the model keyed by id before it.</li>
-  <li>An architecture review of the whole code when it has grown by several features since the last one; this page updated with it.</li>
+  <li>Full editing (adding and removing glyphs and arcs), SBGN-ML first, on a model keyed by id.</li>
 </ul>
