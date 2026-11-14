@@ -47,7 +47,7 @@
 <path d="M275.5106 352.8199 L275.5106 389.3106" fill="none" stroke="#000000"/>
 <path d="M295.5106 378.3106 L275.5106 378.3106 L275.5106 389.3106" fill="none" stroke="#000000"/>
 <path d="M318.5701 560.4496 L355.1626 604.9686" fill="none" stroke="#000000"/><path d="M364.6873 616.5565 L349.8924 608.0059 L359.1628 600.3862 Z" fill="white" class="c-white" stroke="#000000"/>
-<path d="M372.0848 294.6299 L372.0848 608.5565" fill="none" stroke="#000000"/><circle cx="372.0848" cy="612.5565" r="4" fill="white" class="c-white" stroke="#000000"/>
+<path d="M372.0848 294.6299 L372.0848 605.5565" fill="none" stroke="#000000"/><circle cx="372.0848" cy="609.5565" r="4" fill="white" class="c-white" stroke="#000000"/>
 <path d="M449.1292 143.3842 L425.8199 143.3842" fill="none" stroke="#000000"/>
 <path d="M389.8199 143.3842 L342.5106 143.3842" fill="none" stroke="#000000"/><path d="M331.5106 143.3842 L343.5106 137.3842 L343.5106 149.3842 Z" fill="#000000" stroke="none"/>
 <path d="M389.8199 143.3842 L372.0848 143.3842 L372.0848 243.6299" fill="none" stroke="#000000"/><path d="M372.0848 254.6299 L366.0848 242.6299 L378.0848 242.6299 Z" fill="#000000" stroke="none"/>
@@ -59,7 +59,7 @@
 <path d="M77.113 614.5565 L77.113 625.5565 L224.0354 625.5565" fill="none" stroke="#000000"/><path d="M235.0354 625.5565 L223.0354 631.5565 L223.0354 619.5565 Z" fill="#000000" stroke="none"/>
 <path d="M77.113 229.3812 L77.113 256.6299" fill="none" stroke="#000000"/>
 <path d="M77.113 292.6299 L77.6795 386.9053" fill="none" stroke="#000000"/><path d="M77.7456 397.9051 L71.6736 385.9414 L83.6734 385.8692 Z" fill="#000000" stroke="none"/>
-<path d="M332.0848 274.6299 L94.113 274.6299" fill="none" stroke="#000000"/><circle cx="90.113" cy="274.6299" r="4" fill="white" class="c-white" stroke="#000000"/>
+<path d="M332.0848 274.6299 L97.113 274.6299" fill="none" stroke="#000000"/><circle cx="93.113" cy="274.6299" r="4" fill="white" class="c-white" stroke="#000000"/>
 <path d="M230.698 455.3217 L94.4775 295.059" fill="none" stroke="#000000"/><path d="M84.7629 283.6299 L99.6968 291.9351 L90.5535 299.7068 Z" fill="white" class="c-white" stroke="#000000"/>
 <path d="M77.4428 545.9051 L77.113 578.5565" fill="none" stroke="#000000"/>
 </g>

@@ -14,7 +14,7 @@ height: 751
 scale: 1
 annotation: "/atlas-data/external-newt-unstable-atm-mediated-phosphorylation-of-repair-proteins-nwt.json"
 image_error: ""
-v: "ed080ebec1"
+v: "65b34fdeac"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/test-maps/sbgn-ml/pd/newt-unstable/atm_mediated_phosphorylation_of_repair_proteins.nwt"}, {"label": "SVG", "url": "/downloads/external-newt-unstable-atm-mediated-phosphorylation-of-repair-proteins-nwt.svg"}]

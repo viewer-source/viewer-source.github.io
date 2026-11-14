@@ -14,7 +14,7 @@ height: 766
 scale: 1
 annotation: "/atlas-data/camp-sbgn.json"
 image_error: ""
-v: "7de0435a2c"
+v: "93ff9c852d"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/downloads/camp-sbgn.sbgn"}, {"label": "SVG", "url": "/downloads/camp-sbgn.svg"}]

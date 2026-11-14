@@ -14,7 +14,7 @@ height: 738
 scale: 1
 annotation: "/atlas-data/glycolysis-sbgn.json"
 image_error: ""
-v: "1f1fffd0ee"
+v: "713899da59"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/downloads/glycolysis-sbgn.sbgn"}, {"label": "SVG", "url": "/downloads/glycolysis-sbgn.svg"}]

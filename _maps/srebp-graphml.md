@@ -14,12 +14,12 @@ height: 1193
 scale: 1
 annotation: "/atlas-data/srebp-graphml.json"
 image_error: ""
-v: "4b0fd7fe2d"
+v: "f01e578bc1"
 src: "d4e0f997534de63af10dd9b862960bc1f8c54edd"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "GraphML", "url": "/downloads/srebp-graphml.graphml"}, {"label": "SVG", "url": "/downloads/srebp-graphml.svg"}, {"label": "SBML", "url": "/downloads/srebp-graphml-sbml.xml"}, {"label": "Annotation", "url": "/downloads/srebp-graphml.csv"}, {"label": "PNG", "url": "/downloads/srebp-graphml.png"}, {"label": "SBGN-ML", "url": "/downloads/srebp-graphml.sbgn"}, {"label": "CellDesigner", "url": "/downloads/srebp-graphml.xml"}, {"label": "Newt", "url": "http://web.newteditor.org/?URL=https://viewer-source.github.io/downloads/srebp-graphml.sbgn"}, {"label": "MINERVA", "url": "https://mreg.elixir-luxembourg.org/minerva/index.html?id=F005-srebp"}]
-sbgn: {"image": "/downloads/srebp-graphml-sbgnml.svg", "annotation": "/atlas-data/srebp-graphml-sbgnml.json", "width": 864, "height": 1281, "v": "33bf6c54b4", "file": "/downloads/srebp-graphml.sbgn"}
+sbgn: {"image": "/downloads/srebp-graphml-sbgnml.svg", "annotation": "/atlas-data/srebp-graphml-sbgnml.json", "width": 864, "height": 1281, "v": "88a5e33838", "file": "/downloads/srebp-graphml.sbgn"}
 ---
 ## Description
 

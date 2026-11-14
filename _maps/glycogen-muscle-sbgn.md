@@ -14,7 +14,7 @@ height: 1686
 scale: 1
 annotation: "/atlas-data/glycogen-muscle-sbgn.json"
 image_error: ""
-v: "6c7c6dbb54"
+v: "da58ee3205"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/downloads/glycogen-muscle-sbgn.sbgn"}, {"label": "SVG", "url": "/downloads/glycogen-muscle-sbgn.svg"}]

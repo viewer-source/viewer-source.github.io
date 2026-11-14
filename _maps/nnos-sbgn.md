@@ -14,7 +14,7 @@ height: 755
 scale: 1
 annotation: "/atlas-data/nnos-sbgn.json"
 image_error: ""
-v: "68ed50d7b0"
+v: "9e418dca21"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/downloads/nnos-sbgn.sbgn"}, {"label": "SVG", "url": "/downloads/nnos-sbgn.svg"}]

@@ -14,7 +14,7 @@ height: 1170
 scale: 1
 annotation: "/atlas-data/external-sbgn-website-downloads-examples-insulin-like-growth-factor-signaling-withsubmap-mapk-cascade-sbgn.json"
 image_error: ""
-v: "c7d17c49d6"
+v: "0121e3fa82"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/test-maps/sbgn-ml/pd/sbgn-website/downloads/examples/insulin-like_growth_factor_signaling_withSubmap_mapk_cascade.sbgn"}, {"label": "SVG", "url": "/downloads/external-sbgn-website-downloads-examples-insulin-like-growth-factor-signaling-withsubmap-mapk-cascade-sbgn.svg"}]

@@ -14,7 +14,7 @@ height: 1686
 scale: 1
 annotation: "/atlas-data/glycogen-liver-sbgn.json"
 image_error: ""
-v: "a7cb715309"
+v: "6ce0794e5d"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/downloads/glycogen-liver-sbgn.sbgn"}, {"label": "SVG", "url": "/downloads/glycogen-liver-sbgn.svg"}]

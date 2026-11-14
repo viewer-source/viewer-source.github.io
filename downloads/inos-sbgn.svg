@@ -112,8 +112,8 @@
 <path d="M1186.9352 651.5231 L1264 624" fill="none" stroke="#000000"/>
 <path d="M1226 586 L1264 624" fill="none" stroke="#000000"/>
 <path d="M1223.1631 844.6159 L1152 804 L1152 800" fill="none" stroke="#000000"/>
-<path d="M1096 520 L1288 520 L1288 604" fill="none" stroke="#000000"/><circle cx="1288" cy="608" r="4" fill="white" class="c-white" stroke="#000000"/>
-<path d="M1504 776 L1460 776" fill="none" stroke="#000000"/><circle cx="1456" cy="776" r="4" fill="white" class="c-white" stroke="#000000"/>
+<path d="M1096 520 L1288 520 L1288 601" fill="none" stroke="#000000"/><circle cx="1288" cy="605" r="4" fill="white" class="c-white" stroke="#000000"/>
+<path d="M1504 776 L1463 776" fill="none" stroke="#000000"/><circle cx="1459" cy="776" r="4" fill="white" class="c-white" stroke="#000000"/>
 <path d="M1152 352 L1152 635" fill="none" stroke="#000000"/><path d="M1152 646 L1146 634 L1158 634 Z" fill="#000000" stroke="none"/>
 <path d="M1152 106 L1152 304" fill="none" stroke="#000000"/>
 <path d="M1384 304 L1384 117" fill="none" stroke="#000000"/><path d="M1384 106 L1390 118 L1378 118 Z" fill="#000000" stroke="none"/>
@@ -129,7 +129,7 @@
 <path d="M720 296 L699 296" fill="none" stroke="#000000"/><path d="M688 296 L700 290 L700 302 Z" fill="#000000" stroke="none"/>
 <path d="M808 296 L768 296" fill="none" stroke="#000000"/>
 <path d="M776 114 L776 296 L768 296" fill="none" stroke="#000000"/>
-<path d="M1086 776 L1132 776" fill="none" stroke="#000000"/><circle cx="1136" cy="776" r="4" fill="white" class="c-white" stroke="#000000"/>
+<path d="M1086 776 L1129 776" fill="none" stroke="#000000"/><circle cx="1133" cy="776" r="4" fill="white" class="c-white" stroke="#000000"/>
 <path d="M584 202 L584 168 L408 168 L408 269" fill="none" stroke="#000000"/><path d="M408 284 L402 268 L414 268 Z" fill="white" class="c-white" stroke="#000000"/>
 <path d="M216 528 L155 528" fill="none" stroke="#000000"/><path d="M144 528 L156 522 L156 534 Z" fill="#000000" stroke="none"/>
 <path d="M104 548 L104 592" fill="none" stroke="#000000"/>

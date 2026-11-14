@@ -39,6 +39,6 @@
 <path d="M317 650 L395.3939 820.0108" fill="none" stroke="#000000"/><path d="M400 830 L389.5265 821.6151 L400.4238 816.5903 Z" fill="#000000" stroke="none"/>
 <path d="M317 650 L396.8737 919.4536" fill="none" stroke="#000000"/><path d="M400 930 L390.837 920.2001 L402.3421 916.7896 Z" fill="#000000" stroke="none"/>
 <path d="M317 650 L397.6527 1019.2534" fill="none" stroke="#000000"/><path d="M400 1030 L391.5775 1019.5567 L403.3011 1016.9961 Z" fill="#000000" stroke="none"/>
-<path d="M300 170 L300 630" fill="none" stroke="#000000"/><circle cx="300" cy="634" r="4" fill="white" class="c-white" stroke="#000000"/>
+<path d="M300 170 L300 627" fill="none" stroke="#000000"/><circle cx="300" cy="631" r="4" fill="white" class="c-white" stroke="#000000"/>
 </g>
 </svg>
