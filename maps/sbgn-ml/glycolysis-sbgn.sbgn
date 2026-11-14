@@ -705,7 +705,7 @@
       <bbox x="160" y="340" w="80" h="40"/>
     </glyph>
     <glyph class="simple chemical" id="glyph_15">
-      <bbox x="4" y="388" w="40" h="40"/>
+      <bbox x="60" y="388" w="40" h="40"/>
     </glyph>
     <arc class="production" id="e0" source="n4.2" target="n6">
       <start x="1068" y="506.0"/>
