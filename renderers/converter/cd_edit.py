@@ -503,15 +503,18 @@ MARGIN = 40.0   # the converter's margin round a CellDesigner map
 # a line's end moved to another node in the editor (user, 2026-11-14: "let's implement for CellDesigner"): the
 # reaction's participant at that end rewritten in every place CellDesigner keeps it, the rest byte for byte: the base
 # reactant or product (species, alias), an added reactant's or product's link (reactant or product, alias), a modifier
-# (modifiers, aliases, its linkTarget's species and alias), and SBML's speciesReference or modifierSpeciesReference
-# (species, its celldesigner:alias); the old port taken off with it (ports() then writes the one the editor chose).
-# Only an end at a species moves this way, never the process glyph's end of a line. ends: edge id -> (source, target)
-# in the GraphML; the text as it was when no end moved
+# (modifiers, aliases, its linkTarget's species and alias), SBML's speciesReference or modifierSpeciesReference
+# (species, its celldesigner:alias), and for a catalysis the species' listOfCatalyzedReactions where the file keeps
+# it; the old port taken off with it (ports() then writes the one the editor chose). Only an end at a species moves,
+# never the process glyph's end of a line, and never onto an alias the reaction already has (the editor refuses it).
+# A kineticLaw is left as it is (none on the demo maps). ends: edge id -> (source, target) in the GraphML; olds:
+# lines() of each reaction; the text as it was when no end moved
 ROLE = {'baseReactant': ('species', 'alias', 'listOfReactants', 'speciesReference'),
         'baseProduct': ('species', 'alias', 'listOfProducts', 'speciesReference'),
         'reactantLink': ('reactant', 'alias', 'listOfReactants', 'speciesReference'),
         'productLink': ('product', 'alias', 'listOfProducts', 'speciesReference'),
         'modification': ('modifiers', 'aliases', 'listOfModifiers', 'modifierSpeciesReference')}
+CAT = re.compile(r'^(UNKNOWN_)?CATALYSIS$')
 
 
 def nth(T, open_re, s, n):
@@ -524,31 +527,31 @@ def nth(T, open_re, s, n):
     return q
 
 
-def rewire(d, text, ends):
-    T, done = Text(text), set()
+def rewire(d, text, ends, olds):
+    T, done, cats = Text(text), set(), []
     sp = lambda a: d.alias[a][2].get('species')
-    for rx in d.model.findall('s:listOfReactions/s:reaction', NS):
-        r = lines(d, rx)
+    for rid, r in olds.items():
         if r is None:
             continue
-        rid, todo = r['id'], []
+        todo = []
+        here = {r['ra'], r['pa']} | {m['alias'] for m in r['mods']} | {l['alias'] for l in r['links']}
 
-        def want(eid, j, old, kind, n):
+        def want(eid, j, old, kind, n, el):
             g = ends.get(eid)
             a = g[j] if g else None
-            if a and a != old and a in d.alias:
-                todo.append((kind, old, a, n))
-        want(rid + '|a', 0, r['ra'], 'baseReactant', 0)
-        want(rid + ('|b' if r['glyph'] else '|a'), 1, r['pa'], 'baseProduct', 0)
+            if a and a != old and a in d.alias and a not in here:
+                todo.append((kind, old, a, n, el))
+        want(rid + '|a', 0, r['ra'], 'baseReactant', 0, None)
+        want(rid + ('|b' if r['glyph'] else '|a'), 1, r['pa'], 'baseProduct', 0, None)
         for m in r['mods']:
-            want(rid + '|m%d' % m['n'], 0, m['alias'], 'modification', m['n'])
+            want(rid + '|m%d' % m['n'], 0, m['alias'], 'modification', m['n'], m['el'])
         for l in r['links']:
             want(rid + '|%s%d' % ('r' if l['into'] else 'p', l['n']), 0 if l['into'] else 1, l['alias'],
-                 'reactantLink' if l['into'] else 'productLink', l['n'])
+                 'reactantLink' if l['into'] else 'productLink', l['n'], None)
         if not todo:
             continue
-        s = T.span(r'<reaction [^>]*\bid="%s"' % re.escape(rid))
-        for kind, old, a, n in todo:
+        s, gone, mine = T.span(r'<reaction [^>]*\bid="%s"' % re.escape(rid)), [], []
+        for kind, old, a, n, mel in todo:
             R, so, sn = ROLE[kind], sp(old), sp(a)
             el = nth(T, '<celldesigner:%s ' % kind, s, n)
             if el is None:
@@ -561,6 +564,9 @@ def rewire(d, text, ends):
             la = T.span('<celldesigner:linkAnchor ', w[0], w[1])
             if la:
                 T.put(la[0], la[1] + (1 if T.t[la[1]:la[1] + 1] == '\n' else 0), '')
+            if mel is not None and CAT.match(mel.get('type') or ''):
+                gone.append(mel)
+                mine.append([rid, so, sn, mel])
             # SBML's reference: the one naming that alias, else the first of that species naming none
             ls = T.span('<%s>' % R[2], s[0], s[1])
             hit = first = None
@@ -570,13 +576,13 @@ def rewire(d, text, ends):
                 if sr is None:
                     break
                 i0 = sr[1]
-                if sr[0] in done or (' species="%s"' % so) not in T.t[sr[0]:T.t.index('>', sr[0])]:
+                if sr[0] in done:
                     continue
                 al = re.search(r'<celldesigner:alias>([^<]*)</celldesigner:alias>', T.t[sr[0]:sr[1]])
                 if al and al.group(1) == old:
                     hit = (sr, al)
                     break
-                if not al and first is None:
+                if not al and first is None and (' species="%s"' % so) in T.t[sr[0]:T.t.index('>', sr[0])]:
                     first = (sr, None)
             hit = hit or first
             if hit is None:
@@ -586,6 +592,42 @@ def rewire(d, text, ends):
             if hit[1]:
                 at = hit[0][0] + hit[1].start(1)
                 T.put(at, at + len(old), a)
+        # a catalysis moved: the old species no longer catalyses the reaction unless another of its catalyses stays
+        for c in mine:
+            c.append(any(all(m['el'] is not g for g in gone) and sp(m['alias']) == c[1] and CAT.match(m['el'].get('type') or '')
+                         for m in r['mods']))
+        cats += mine
+    # the species' lists of the reactions they catalyse, only where the old species listed it (the file keeps them)
+    LIST = '<celldesigner:listOfCatalyzedReactions>'
+
+    def listed(sid):
+        s = T.span(r'<species [^>]*\bid="%s"' % re.escape(sid))
+        l = T.span(LIST, s[0], s[1]) if s else None
+        return s, l, re.findall(r'<celldesigner:catalyzed reaction="([^"]*)"/>', T.t[l[0]:l[1]]) if l else []
+    lists = {}
+    for c in cats:
+        if c[0] not in listed(c[1])[2]:
+            continue
+        for x in (c[1], c[2]):
+            if x not in lists:
+                lists[x] = list(listed(x)[2])
+        if not c[4]:
+            lists[c[1]] = [x for x in lists[c[1]] if x != c[0]]
+        if c[0] not in lists[c[2]]:
+            lists[c[2]].append(c[0])
+    for sid, lst in lists.items():
+        s, l, now = listed(sid)
+        if s is None or lst == now:
+            continue
+        body = LIST + ''.join('\n<celldesigner:catalyzed reaction="%s"/>' % x for x in lst) + '\n</celldesigner:listOfCatalyzedReactions>'
+        if l and not lst:
+            T.put(l[0], l[1] + (1 if T.t[l[1]:l[1] + 1] == '\n' else 0), '')
+        elif l:
+            T.put(l[0], l[1], body)
+        else:
+            at = T.t.find('</celldesigner:extension>', s[0])
+            if 0 <= at < s[1]:
+                T.put(at, at, body + '\n')
     return T.done()
 
 
@@ -599,9 +641,11 @@ def place(text, gtext):
     # blocks of the grid (16) to start at the margin (40) or a little more; the canvas grows with it
     d = drawing(text)
     boxes, base, bends, paths, ends = read(gtext)
-    t2 = rewire(d, text, ends)
-    if t2 != text:   # a line's end moved to another node: the participant first
+    olds = {rx.get('id'): lines(d, rx) for rx in d.model.iterfind('s:listOfReactions/s:reaction', NS)}
+    t2 = rewire(d, text, ends, olds)
+    if t2 != text:   # a line's end moved to another node: the participant first, then read again
         text, d = t2, drawing(t2)
+        olds = {rx.get('id'): lines(d, rx) for rx in d.model.iterfind('s:listOfReactions/s:reaction', NS)}
     comps = compartments(d)
     up = tree(d, comps)
     xs = [b[0] for b in boxes.values()] + [p[0] for ps in bends.values() for p in ps]
@@ -645,7 +689,6 @@ def place(text, gtext):
     if md and (far[0] > d.W or far[1] > d.H):
         T.attrs(md[0], {k: str(int(math.ceil(v + 40))) for k, v, have in (('sizeX', far[0], d.W), ('sizeY', far[1], d.H)) if v > have})
     # the reactions, with the nodes where they are now
-    olds = {rx.get('id'): lines(d, rx) for rx in d.model.iterfind('s:listOfReactions/s:reaction', NS)}
     for i, a in d.alias.items():
         d.alias[i] = (a[0], new[i], a[2], a[3], a[4])
     for rx in d.model.iterfind('s:listOfReactions/s:reaction', NS):
@@ -725,18 +768,9 @@ def place(text, gtext):
             txt = points(old_tok, l['bends'], nb, same, fr)
             tag = 'reactantLink' if l['into'] else 'productLink'
             ls = None
-            for a, b in subs:
-                found = [T.span(r'<celldesigner:%s ' % tag, a, b)]
-                if found[0]:
-                    i0, c = a, -1
-                    while True:
-                        m_ = T.span(r'<celldesigner:%s ' % tag, i0, b)
-                        if not m_:
-                            break
-                        c += 1
-                        if c == l['n']:
-                            ls = m_; break
-                        i0 = m_[1]
+            for sub in subs:
+                if T.span(r'<celldesigner:%s ' % tag, sub[0], sub[1]):
+                    ls = nth(T, r'<celldesigner:%s ' % tag, sub, l['n'])
                 if ls:
                     break
             if ls is None:

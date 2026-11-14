@@ -1646,9 +1646,10 @@
     function takes(k, end, i) {   // whether node i can take that end of arc k (its own node aside)
       var e = edges2[k], a = e.arr, other = end ? e.s : e.t, r = roleOf(i), ro = roleOf(other);
       var hub = function (x) { return x === 'proc' || x === 'gate'; };
-      if (cd) {   // a reaction's end at a species, to another species or complex (no member, no compartment, no glyph)
-        var nd = nodes2[i], here = end ? e.t : e.s, proc = function (x) { return /\|proc$/.test(nodes2[x].id); };
-        return i !== other && !proc(here) && !proc(i) && !nd.comp && !(nd.up != null && !nodes2[nd.up].comp);
+      if (cd) {   // a reaction's end at a species, to another species or complex (no member, no compartment, no glyph, none the reaction has already)
+        var nd = nodes2[i], here = end ? e.t : e.s, proc = function (x) { return /\|proc$/.test(nodes2[x].id); }, rid = e.id.slice(0, e.id.lastIndexOf('|') + 1);
+        if (edges2.some(function (f) { return f.id.indexOf(rid) === 0 && (f.s === i || f.t === i); })) return false;
+        return !proc(here) && !proc(i) && !nd.comp && !(nd.up != null && !nodes2[nd.up].comp);
       }
       if (i === other || !r || a[0] !== 'none') return false;
       if (a[1] === 'none') {   // the arrowhead-less line: its hub end at a process or gate, its other end at an entity (or a gate into a gate)

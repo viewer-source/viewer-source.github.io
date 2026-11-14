@@ -50,6 +50,9 @@ files.forEach(function (f) {
     if (!to) return;
     jobs.push({ f: f, t: t, g0: g, kind: k[2], eid: eid, j: k[1], from: now, to: to, g1: setEnd(g, eid, k[1], to, ki % 2 ? ['0.0', '0.0'] : ['0.0', '-10.0']) });
   });
+  // refused: an end put on a species the reaction already has (the editor refuses it; cd_edit leaves the participant)
+  var a0 = Object.keys(I.E).filter(function (e) { return /\|a$/.test(e) && I.E[e.replace(/a$/, 'b')]; })[0];
+  if (a0) { var pb = I.E[a0.replace(/a$/, 'b')][1]; jobs.push({ f: f, t: t, g0: g, kind: 'refused', eid: a0, j: 0, from: I.E[a0][0], to: pb, g1: setEnd(g, a0, 0, pb, ['0.0', '0.0']) }); }
 });
 var DRIVER = ['import sys, json', 'sys.path[:0] = [' + JSON.stringify(path.join(here, 'renderers/converter')) + ']', 'import cd_edit', 'out = []',
   'for t, g in json.load(sys.stdin):', '    try: out.append(cd_edit.apply(t, g))', '    except Exception as e: out.append("ERR " + repr(e))', 'json.dump(out, sys.stdout)'].join('\n');
@@ -59,7 +62,10 @@ jobs.forEach(function (j, n) {
   var tag = path.basename(j.f) + ' ' + j.kind + ' ' + j.eid + ': ' + j.from + ' -> ' + j.to, msg = [], out;
   try { out = ed.apply(j.t, j.g1, opt); } catch (e) { msg.push('JavaScript: ' + (e && e.message || e)); }
   if (out !== undefined && out !== pyOut[n]) msg.push('JavaScript and Python differ' + (/^ERR/.test(pyOut[n]) ? ' (' + pyOut[n] + ')' : ''));
-  if (out !== undefined) {
+  if (out !== undefined && j.kind === 'refused') {
+    var E0 = graph(j.g0).E, E1 = graph(ed.graphml(out, null, opt)).E;   // every line at the nodes it had (only the port of that end may change)
+    if (Object.keys(E0).some(function (e) { return !E1[e] || E1[e].join() !== E0[e].join(); })) msg.push('a participant changed');
+  } else if (out !== undefined) {
     var doc = new DP({ onError: function (l, m) { if (l !== 'warning') msg.push('XML: ' + m); } }).parseFromString(out, 'application/xml');
     var A = graph(ed.graphml(out, null, opt)), B = graph(j.g1);
     if (!A.E[j.eid] || A.E[j.eid][j.j] !== j.to) msg.push('read back at ' + (A.E[j.eid] && A.E[j.eid][j.j]));
@@ -67,8 +73,16 @@ jobs.forEach(function (j, n) {
     var rx = out.slice(out.indexOf('id="' + j.eid.split('|')[0] + '"'));
     rx = rx.slice(0, rx.indexOf('</reaction>'));
     if (rx.indexOf('<celldesigner:alias>' + j.to + '<') < 0) msg.push('SBML reference not moved to the new alias');
+    // a catalysis: the species' lists of the reactions they catalyse follow, where the file keeps them
+    var rid = j.eid.split('|')[0], sid = function (tt, al) { var m = new RegExp('Alias id="' + al + '"[^>]*species="([^"]*)"').exec(tt) || new RegExp('species="([^"]*)"[^>]*id="' + al + '"').exec(tt); return m && m[1]; };
+    var cats = function (tt, s2) { var i = tt.indexOf('<species '), m = new RegExp('<species [^>]*\\bid="' + s2 + '"[\\s\\S]*?</species>').exec(tt); return m ? m[0].indexOf('<celldesigner:catalyzed reaction="' + rid + '"/>') >= 0 : false; };
+    if (j.kind === 'modifier' && /type="(UNKNOWN_)?CATALYSIS"/.test(rx.slice(0, rx.indexOf('</celldesigner:modification>'))) && cats(j.t, sid(j.t, j.from))) {
+      if (!cats(out, sid(out, j.to))) msg.push('the new species does not list the reaction it catalyses');
+      if (cats(out, sid(j.t, j.from)) && (rx.match(/<celldesigner:modification /g) || []).length < 2) msg.push('the old species still lists the reaction');
+      j.cat = true;
+    }
   }
   if (msg.length) { bad++; console.log('DIFF', tag, '|', msg.slice(0, 4).join(' | ')); } else if (process.env.VERBOSE) console.log('ok  ', tag);
 });
-console.log(jobs.length + ' moves on ' + files.length + ' maps: ' + (bad ? bad + ' wrong' : 'all right'));
+console.log(jobs.length + ' moves on ' + files.length + ' maps (' + jobs.filter(function (j) { return j.kind === 'refused'; }).length + ' refused, ' + jobs.filter(function (j) { return j.cat; }).length + ' catalyses with their lists): ' + (bad ? bad + ' wrong' : 'all right'));
 process.exit(bad ? 1 : 0);

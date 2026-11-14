@@ -366,27 +366,32 @@
   // a line's end moved to another node in the editor (user, 2026-11-14: "let's implement for CellDesigner"): the
   // reaction's participant at that end rewritten in every place CellDesigner keeps it, the rest byte for byte: the base
   // reactant or product (species, alias), an added reactant's or product's link (reactant or product, alias), a modifier
-  // (modifiers, aliases, its linkTarget's species and alias), and SBML's speciesReference or modifierSpeciesReference
-  // (species, its celldesigner:alias); the old port taken off with it (ports() then writes the one the editor chose).
-  // Only an end at a species moves this way, never the process glyph's end of a line. ends: edge id -> [source, target]
-  // in the GraphML; the text as it was when no end moved
+  // (modifiers, aliases, its linkTarget's species and alias), SBML's speciesReference or modifierSpeciesReference
+  // (species, its celldesigner:alias), and for a catalysis the species' listOfCatalyzedReactions where the file keeps
+  // it; the old port taken off with it (ports() then writes the one the editor chose). Only an end at a species moves,
+  // never the process glyph's end of a line, and never onto an alias the reaction already has (the editor refuses it).
+  // A kineticLaw is left as it is (none on the demo maps). ends: edge id -> [source, target] in the GraphML; olds:
+  // lines() of each reaction; the text as it was when no end moved
   var ROLE = { baseReactant: ['species', 'alias', 'listOfReactants', 'speciesReference'], baseProduct: ['species', 'alias', 'listOfProducts', 'speciesReference'],
     reactantLink: ['reactant', 'alias', 'listOfReactants', 'speciesReference'], productLink: ['product', 'alias', 'listOfProducts', 'speciesReference'],
     modification: ['modifiers', 'aliases', 'listOfModifiers', 'modifierSpeciesReference'] };
+  var CAT = /^(UNKNOWN_)?CATALYSIS$/;
   function nth(T, open, s, n) { var i0 = s[0], q = null; for (var c = 0; c <= n; c++) { q = T.span(open, i0, s[1]); if (!q) return null; i0 = q[1]; } return q; }
-  function rewire(d, t, ends) {
-    var T = new Text(t), done = new Set(), sp = function (a) { return get(d.alias.get(a)[2], 'species'); };
-    findall(d.model, 's:listOfReactions/s:reaction').forEach(function (rx) {
-      var r = lines(d, rx);
+  function rewire(d, t, ends, olds) {
+    var T = new Text(t), done = new Set(), cats = [], sp = function (a) { return get(d.alias.get(a)[2], 'species'); };
+    Object.keys(olds).forEach(function (rid) {
+      var r = olds[rid];
       if (!r) return;
-      var rid = r.id, todo = [];
-      var want = function (eid, j, old, kind, n) { var g = ends.get(eid), a = g ? g[j] : null; if (a && a !== old && d.alias.has(a)) todo.push([kind, old, a, n]); };
-      want(rid + '|a', 0, r.ra, 'baseReactant', 0);
-      want(rid + (r.glyph ? '|b' : '|a'), 1, r.pa, 'baseProduct', 0);
-      r.mods.forEach(function (m) { want(rid + '|m' + m.n, 0, m.alias, 'modification', m.n); });
-      r.links.forEach(function (l) { want(rid + '|' + (l.into ? 'r' : 'p') + l.n, l.into ? 0 : 1, l.alias, l.into ? 'reactantLink' : 'productLink', l.n); });
+      var todo = [], here = new Set([r.ra, r.pa]);
+      r.mods.forEach(function (m) { here.add(m.alias); });
+      r.links.forEach(function (l) { here.add(l.alias); });
+      var want = function (eid, j, old, kind, n, el) { var g = ends.get(eid), a = g ? g[j] : null; if (a && a !== old && d.alias.has(a) && !here.has(a)) todo.push([kind, old, a, n, el]); };
+      want(rid + '|a', 0, r.ra, 'baseReactant', 0, null);
+      want(rid + (r.glyph ? '|b' : '|a'), 1, r.pa, 'baseProduct', 0, null);
+      r.mods.forEach(function (m) { want(rid + '|m' + m.n, 0, m.alias, 'modification', m.n, m.el); });
+      r.links.forEach(function (l) { want(rid + '|' + (l.into ? 'r' : 'p') + l.n, l.into ? 0 : 1, l.alias, l.into ? 'reactantLink' : 'productLink', l.n, null); });
       if (!todo.length) return;
-      var s = T.span('<reaction [^>]*\\bid="' + reEscape(rid) + '"');
+      var s = T.span('<reaction [^>]*\\bid="' + reEscape(rid) + '"'), gone = new Set();
       todo.forEach(function (q) {
         var R = ROLE[q[0]], old = q[1], a = q[2], so = sp(old), sn = sp(a);
         var el = nth(T, '<celldesigner:' + q[0] + ' ', s, q[3]);
@@ -396,14 +401,15 @@
         if (lt) T.attrs(lt[0], [['species', sn], ['alias', a]]);
         var la = T.span('<celldesigner:linkAnchor ', w[0], w[1]);
         if (la) T.put(la[0], la[1] + (T.t.slice(la[1], la[1] + 1) === '\n' ? 1 : 0), '');
+        if (q[4] && CAT.test(get(q[4], 'type') || '')) { gone.add(q[4]); cats.push([rid, so, sn, q[4]]); }
         // SBML's reference: the one naming that alias, else the first of that species naming none
         var ls = T.span('<' + R[2] + '>', s[0], s[1]), hit = null, first = null, i0 = ls ? ls[0] : 0, sr, al;
         while (ls && (sr = T.span('<' + R[3] + ' ', i0, ls[1]))) {
           i0 = sr[1];
-          if (done.has(sr[0]) || T.t.slice(sr[0], T.t.indexOf('>', sr[0])).indexOf(' species="' + so + '"') < 0) continue;
+          if (done.has(sr[0])) continue;
           al = /<celldesigner:alias>([^<]*)<\/celldesigner:alias>/.exec(T.t.slice(sr[0], sr[1]));
           if (al && al[1] === old) { hit = [sr, al]; break; }
-          if (!al && !first) first = [sr, null];
+          if (!al && !first && T.t.slice(sr[0], T.t.indexOf('>', sr[0])).indexOf(' species="' + so + '"') >= 0) first = [sr, null];
         }
         hit = hit || first;
         if (!hit) return;
@@ -411,6 +417,32 @@
         T.attrs(hit[0][0], [['species', sn]]);
         if (hit[1]) { var at = hit[0][0] + hit[1].index + '<celldesigner:alias>'.length; T.put(at, at + old.length, a); }
       });
+      // a catalysis moved: the old species no longer catalyses the reaction unless another of its catalyses stays
+      cats.forEach(function (c) {
+        if (c[0] === rid && c.length === 4) c.push(r.mods.some(function (m) { return !gone.has(m.el) && sp(m.alias) === c[1] && CAT.test(get(m.el, 'type') || ''); }));
+      });
+    });
+    // the species' lists of the reactions they catalyse, only where the old species listed it (the file keeps them)
+    var LIST = '<celldesigner:listOfCatalyzedReactions>', spanOf = function (sid) { return T.span('<species [^>]*\\bid="' + reEscape(sid) + '"'); };
+    var listed = function (sid) {
+      var s = spanOf(sid), l = s ? T.span(LIST, s[0], s[1]) : null, re = /<celldesigner:catalyzed reaction="([^"]*)"\/>/g, m, out = [];
+      if (l) { var body = T.t.slice(l[0], l[1]); while ((m = re.exec(body))) out.push(m[1]); }
+      return [s, l, out];
+    };
+    var lists = new Map();
+    cats.forEach(function (c) {
+      if (listed(c[1])[2].indexOf(c[0]) < 0) return;
+      [c[1], c[2]].forEach(function (x) { if (!lists.has(x)) lists.set(x, listed(x)[2].slice()); });
+      if (!c[4]) lists.set(c[1], lists.get(c[1]).filter(function (x) { return x !== c[0]; }));
+      if (lists.get(c[2]).indexOf(c[0]) < 0) lists.get(c[2]).push(c[0]);
+    });
+    lists.forEach(function (list, sid) {
+      var L = listed(sid), s = L[0], l = L[1];
+      if (!s || list.join() === L[2].join()) return;
+      var body = LIST + list.map(function (x) { return '\n<celldesigner:catalyzed reaction="' + x + '"/>'; }).join('') + '\n</celldesigner:listOfCatalyzedReactions>';
+      if (l && !list.length) T.put(l[0], l[1] + (T.t.slice(l[1], l[1] + 1) === '\n' ? 1 : 0), '');
+      else if (l) T.put(l[0], l[1], body);
+      else { var at = T.t.indexOf('</celldesigner:extension>', s[0]); if (at >= 0 && at < s[1]) T.put(at, at, body + '\n'); }
     });
     return T.done();
   }
@@ -474,13 +506,7 @@
       var fr = l.into ? function (p) { return toFrame(O, J, p); } : function (p) { return toFrame(J, O, p); };
       var tx = points(get(l.el, 'editPoints') || findtext(l.el, 'cd:editPoints', ''), l.bends, nb, same, fr);
       var tag = l.into ? 'reactantLink' : 'productLink', ls = null;
-      for (var si = 0; si < subs.length && !ls; si++) {
-        var a = subs[si][0], b = subs[si][1];
-        if (T.span('<celldesigner:' + tag + ' ', a, b)) {
-          var i0 = a, c = -1;
-          while (true) { var m3 = T.span('<celldesigner:' + tag + ' ', i0, b); if (!m3) break; c++; if (c === l.n) { ls = m3; break; } i0 = m3[1]; }
-        }
-      }
+      for (var si = 0; si < subs.length && !ls; si++) if (T.span('<celldesigner:' + tag + ' ', subs[si][0], subs[si][1])) ls = nth(T, '<celldesigner:' + tag + ' ', subs[si], l.n);
       if (!ls) return;
       var child = T.span('<celldesigner:editPoints>', ls[0], ls[1]);
       if (child && tx) T.put(child[0], child[1], '<celldesigner:editPoints>' + tx + '</celldesigner:editPoints>');
@@ -491,8 +517,13 @@
     });
   }
   function place(t, gtext, opt) {
-    var d = drawing(t, opt), rd = read(gtext, opt), t2 = rewire(d, t, rd[4]);
-    if (t2 !== t) { t = t2; d = drawing(t, opt); }   // a line's end moved to another node: the participant first
+    var d = drawing(t, opt), rd = read(gtext, opt), rxsAll = findall(d.model, 's:listOfReactions/s:reaction'), olds = {};
+    rxsAll.forEach(function (rx) { olds[get(rx, 'id')] = lines(d, rx); });
+    var t2 = rewire(d, t, rd[4], olds);
+    if (t2 !== t) {   // a line's end moved to another node: the participant first, then read again
+      t = t2; d = drawing(t, opt); rxsAll = findall(d.model, 's:listOfReactions/s:reaction'); olds = {};
+      rxsAll.forEach(function (rx) { olds[get(rx, 'id')] = lines(d, rx); });
+    }
     var comps = compartments(d), up = tree(d, comps), boxes = rd[0], bends = rd[2], paths = rd[3];
     var xs = [], ys = [];
     boxes.forEach(function (b) { xs.push(b[0]); ys.push(b[1]); });
@@ -540,8 +571,6 @@
     var md = T.span('<celldesigner:modelDisplay ');
     if (md && (far[0] > d.W || far[1] > d.H))
       T.attrs(md[0], [['sizeX', far[0], d.W], ['sizeY', far[1], d.H]].filter(function (q) { return q[1] > q[2]; }).map(function (q) { return [q[0], String(Math.ceil(q[1] + 40))]; }));
-    var rxsAll = findall(d.model, 's:listOfReactions/s:reaction'), olds = {};
-    rxsAll.forEach(function (rx) { olds[get(rx, 'id')] = lines(d, rx); });
     d.alias.forEach(function (a, i) { d.alias.set(i, [a[0], nw.get(i), a[2], a[3], a[4]]); });
     rxsAll.forEach(function (rx) {
       var o = olds[get(rx, 'id')];

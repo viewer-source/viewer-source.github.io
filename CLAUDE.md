@@ -470,8 +470,12 @@ says "the workbench", "the converter's repository", "a private repository".
   where an end at a species goes to another species or complex, never a member or a compartment, the process glyph's
   end staying: `cd_edit` (both twins) `rewire()` first writes the reaction's participant there in every place the file
   keeps it (the base reactant or product, an added reactant's or product's link, a modifier and its linkTarget, SBML's
-  speciesReference or modifierSpeciesReference with its celldesigner:alias), the old port taken off, then the moves as
-  before; `tests/cd-reconnect.js` in Compare renderers, both twins byte for byte): an end square dragged off its node goes on release to the
+  speciesReference or modifierSpeciesReference with its celldesigner:alias, found by that alias first, and for a
+  catalysis the species' listOfCatalyzedReactions where the file keeps them), the old port taken off, then the moves as
+  before; never onto an alias the reaction already has (the editor refuses it, rewire skips it: it had made a line of
+  length 0); a kineticLaw left as it is (none on the demo maps); `tests/cd-reconnect.js` in Compare renderers, both
+  twins byte for byte, refused moves and the catalysis lists too; the independent review's crash, lists and fallback
+  fixed the same day): an end square dragged off its node goes on release to the
   innermost node under the pointer that can take it (lit grey while the pointer is over it), else back where it was;
   one undo step; the end at the node's nearest of the five places, at a process or gate the port its line takes (a
   modifier at one of its two sides). Which node can take it, SBGN's rules (user, the same day): never a member inside a
