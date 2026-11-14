@@ -175,7 +175,7 @@
       return ea.pts.length ? [pt(ea.pts[ea.pts.length - 1]), ea.pts[ea.pts.length - 1]] : [ports(q.a)[0], null];
     }
     // lines meeting a CellDesigner glyph that follows the segment a bend point moves (user, 2026-11-13: an added product
-    // turning level while its reaction's anchor point moved showed no guide): each such line, where it meets the glyph
+    // turning level while its reaction's bend point moved showed no guide): each such line, where it meets the glyph
     // for the bend at B (as glyphFollow and glyphPort place it), and the point its first segment runs to
     function glyphArcs(bp) {
       var out = [];

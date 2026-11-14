@@ -4,6 +4,12 @@ Public repository: the one source of the atlas viewer every map site uses, and i
 https://viewer-source.github.io. Names no private repository in files, pages, code comments or commit messages: it
 says "the workbench", "the converter's repository", "a private repository".
 
+- Words (user, 2026-11-14: "our own vocabulary and be consistent everywhere"), the same on every map, in menus, help,
+  code and notes: **bend point**, a point where a line changes direction (CellDesigner calls it an anchor point,
+  `editPoints` in its file; yEd a bend, `y:Point`; SBGN-ML an intermediate point, `next`); **port**, the end of a
+  process's or logic gate's antenna, where its lines attach (SBGN-ML's `port`, which its schema calls an anchor point);
+  **end**, where a line meets a glyph. "Anchor point" is left to CellDesigner's own fixed places on a node's box (its
+  `anchor`, cdrender's anchorPoint) and never used for a bend point.
 - The viewer: `_includes/atlas-app.html` (list on the left, the map, its panel, search, downloads row). It never
   knows a map's source format.
 - Two modes (user, 2026-11-08). Presentation, the default: a fixed list for reading and reviewing maps, as a published
@@ -178,7 +184,7 @@ says "the workbench", "the converter's repository", "a private repository".
   yEd's, wrapping onto more lines in a narrow panel (user, 2026-11-12: they were cut off on the right); below, Save and Stop editing (Open file, a yEd GraphML from the computer, removed: user, 2026-11-12, not needed outside the Atlas; in the history); the tab starts editing the map shown at once and follows the map chosen, and shows only on a map drawn from its own GraphML or CellDesigner file (or while a file is edited or has moves not saved; user, 2026-11-12). Moves only: a node or a bend point
   dragged (a group with what it holds, and the bends of arcs inside it; a bend alone stays put when its nodes move, as
   in yEd), the first click selects and a drag moves only what is selected already (user, 2026-11-12, as yEd: "first click selects an item, and second click drags it"; the plan: mimic yEd's behaviour in general); a connector is different (user, 2026-11-12, checked in yEd): once an arc is selected, its parts (its two ends, its bend points) are dragged with the next press, no click of their own, the arc staying selected. Gestures as in view mode, editing only adds (user, 2026-11-12: two-finger scrolling zoomed in view mode but moved the map in edit mode, "I don't like it"; replacing yEd's way of the same day, where a drag on empty space selected an area, two fingers moved the map and Shift with a drag moved it from anywhere): two-finger scrolling, the wheel and a pinch zoom; a drag on empty space or on an item not selected moves the map; a click selects (on empty space clears the selection); Shift with a drag on empty space selects an area, Shift with a click adds to the selection or takes out; a right click opens the viewer's menu as everywhere; arrow keys move by 1 (Shift 10), as a drag would (user, 2026-11-13: "with hand or with keys should be the same
-  way"; the keys moved every anchor point of a CellDesigner reaction at once): with a line selected they move only its
+  way"; the keys moved every bend point of a CellDesigner reaction at once): with a line selected they move only its
   part last pressed, a bend point, or an end stepped among the node's five places (from the centre to the side the
   arrow points to, from a side the opposite arrow back to the centre), marked by four small squares round it, the line's own square there left out (user, 2026-11-13: as a bend point selected alone); a line
   with no part pressed is not moved by the keys; a bend point moved by the keys stops where a segment turns level or
@@ -293,7 +299,7 @@ says "the workbench", "the converter's repository", "a private repository".
   as yEd's for an L-shaped bend): the bend pressed snaps (6 px on screen) when one of its two segments is nearly level or
   upright, and each segment so lined up is drawn as a thick grey line while the drag runs. On a CellDesigner map (user, 2026-11-13) a
   reaction is one line through its glyph ("in cell designer concept, it's a single line"): a segment ending at the glyph
-  is lined up with the next anchor point or port past it, the guide running through the glyph to it; and a line meeting
+  is lined up with the next bend point or port past it, the guide running through the glyph to it; and a line meeting
   the glyph (an added reactant or product, a modifier) gets its guide too, the bend snapping (by hand) or stopping (by
   the keys) where that line turns level or upright as the glyph follows its segment. A press whose release never comes (a right
   press: a two-finger click or Ctrl with a click on a Mac opens the context menu) no longer leaves the map following the
@@ -363,7 +369,7 @@ says "the workbench", "the converter's repository", "a private repository".
   2026-11-12: "in Cell Designer, it's not possible to move process itself"; a drag on it moves the map, the arrow keys
   leave it, it goes only with a group holding its whole reaction), and no bend point is ever added to make up for a move
   (user: "no bend points automatically appearing"; before, a glyph moved took its segment and its ends at nodes became
-  new bend points); anchor (bend) points come only from the user, by dragging a line as in yEd or by Add anchor point in the right-click menu over a line (user, 2026-11-13; put where the click was, the line selected, never on the process glyph; GraphML maps too), and go by Delete or Backspace on a selected one or Remove anchor point in the right-click menu over one (user, 2026-11-13; GraphML maps too, as yEd's Delete); the reaction is CellDesigner's own model (user, 2026-11-13): its main line's ends and anchor points, the square midway on segment rectangleIndex (an anchor point put before it moves the square to the segment after), added reactants and products at 3/8 and 5/8 of that segment, modifiers at the square's spots, worked out live and when saving from the same numbers; the glyph stays midway on its segment, and follows
+  new bend points); bend points come only from the user, by dragging a line as in yEd or by Add bend point in the right-click menu over a line (user, 2026-11-13; put where the click was, the line selected, never on the process glyph; GraphML maps too), and go by Delete or Backspace on a selected one or Remove bend point in the right-click menu over one (user, 2026-11-13; GraphML maps too, as yEd's Delete); the reaction is CellDesigner's own model (user, 2026-11-13): its main line's ends and bend points, the square midway on segment rectangleIndex (a bend point put before it moves the square to the segment after), added reactants and products at 3/8 and 5/8 of that segment, modifiers at the square's spots, worked out live and when saving from the same numbers; the glyph stays midway on its segment, and follows
   it during a drag or a held arrow key, its lines drawn live (user, 2026-11-12: it jumped there only on release; the
   editor reckons the middle as cd_edit does, so the glyph does not jump when the map is drawn again). Saved to
   `maps/<file>.xml`. Pack and Snap map to grid on CellDesigner maps too (user, 2026-11-13: "complex repack and snap to
@@ -371,7 +377,7 @@ says "the workbench", "the converter's repository", "a private repository".
   inside bottom label (its height as cdrender writes it) and the residue circles, structural states and open unit of
   information round an alias as state labels, so Pack leaves them room as on a yEd map; every line keeps its connection
   point (tidy.py `keep_ports`: CellDesigner moves it with the node, and snap_grid's straightened ports had turned ENE into
-  E); a connection point still where it was on a node Snap or Pack resized is no move either, so a later move, an undo or a redo keeps ENE (2026-11-13, user: it came back as E; `tests/cd-snap-redo.js` in the workflow Compare renderers); cd_edit writes back the bounds, inner positions and anchor points that changed. Checked on the 21 demo maps (both
+  E); a connection point still where it was on a node Snap or Pack resized is no move either, so a later move, an undo or a redo keeps ENE (2026-11-13, user: it came back as E; `tests/cd-snap-redo.js` in the workflow Compare renderers); cd_edit writes back the bounds, inner positions and bend points that changed. Checked on the 21 demo maps (both
   tools, the files read back, no connection point changed). Not on CellDesigner maps: the live
   outline of a compartment resized (it is redrawn after the drag); logic gates, associations and dissociations are left
   as they are (none on the demo). Checked 2026-11-12: all 21 demo maps written back byte for byte with no move, every
@@ -508,7 +514,7 @@ says "the workbench", "the converter's repository", "a private repository".
   alike. Switch checked 2026-11-13: the build through Node and the Python build gave the same 389 files (downloads,
   atlas-data, _maps, cache, images), byte for byte.
   cdrender.js and cd_edit.js beside the Python (2026-11-13) are their JavaScript twins for the editor, with the converter's
-  four helpers they use (the frame maths, anchor points, name decoding) and Python's number writing (repr, round, '%.2f',
+  four helpers they use (the frame maths, CellDesigner's anchor points on a node's box, name decoding) and Python's number writing (repr, round, '%.2f',
   and CPython's exact hypot, which Math.hypot misses in the last bit on a third of pairs; yrender.js uses it too):
   the same text byte for byte on 409 CellDesigner maps of the demo, the workbench, the official site and the
   neuroinflammation map, 2,863 comparisons (the build's drawing and click data, the editor's drawing, cd_edit's GraphML,
@@ -517,7 +523,7 @@ says "the workbench", "the converter's repository", "a private repository".
   none now; switching to edit 361 ms on glycogen muscle, 258 now (SREBP 131, now 85); a move about the same (212 ms on
   glycogen muscle: one move still reads and writes the whole file three times).
   A move on a CellDesigner map drawn live by the drop's own code (user, 2026-11-13: during a drag, a held arrow key or a
-  dragged anchor point the reaction came apart, right only after the drop): `cd_edit.live()` (JavaScript only, it writes
+  dragged bend point the reaction came apart, right only after the drop): `cd_edit.live()` (JavaScript only, it writes
   no file; `reaction()` is place()'s per-reaction part, the same text) reads the drawing on screen once, made ahead when
   the browser is idle, and on each frame writes the reactions the move touches as the drop writes them and draws them
   with cdrender's own `reaction()`; the editor (`cdLines` in `editor/src/celldesigner.js`) puts them in place of their

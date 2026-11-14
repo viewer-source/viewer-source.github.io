@@ -2,7 +2,7 @@
 // the middles of the two sides off the main line; no centre, nothing on the line): the first three modifiers at a glyph
 // of each demo CellDesigner map (each draw writes the whole file) set to each of the six places as the editor offers them
 // (turned with the main line, read from the GraphML), written back by cd_edit: the file's targetLineIndex names that
-// place, the GraphML made again from the file has the end there, and the modifier's anchor points stay where they were.
+// place, the GraphML made again from the file has the end there, and the modifier's bend points stay where they were.
 //   node tests/cd-modifier-spot.js [CellDesigner files or folders ...]   (default: maps/)
 var fs = require('fs'), path = require('path');
 var here = path.join(__dirname, '..'), DP = require('@xmldom/xmldom').DOMParser;
@@ -56,7 +56,7 @@ files.forEach(function (f) {
       var e2 = m2.edges[id];
       if (Math.hypot(e2.at('tx') - sp[k][0], e2.at('ty') - sp[k][1]) > 0.01) return fail(rel + ' ' + id + ' place ' + k + ': the end not there after writing');
       if (e2.pts.length !== e.pts.length || e2.pts.some(function (p, i) { return Math.hypot(p[0] - e.pts[i][0], p[1] - e.pts[i][1]) > 0.01; }))
-        return fail(rel + ' ' + id + ' place ' + k + ': anchor points moved');
+        return fail(rel + ' ' + id + ' place ' + k + ': bend points moved');
     });
     m = read(g);   // the next modifier from the file as it was
   });

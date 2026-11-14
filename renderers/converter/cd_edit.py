@@ -10,8 +10,8 @@
 #   Bend points stay where they are when a node moves (user, 2026-11-12: yEd's way, not CellDesigner's, where they
 #   live in the frame of the line's ends and stretch): they are written again in the frame of the new ends.
 #   CellDesigner's own model of a reaction (user, 2026-11-13: "build in Cell Designer's own model"): one link, its main
-#   line the two ends and the anchor points the user puts or removes; the square midway on segment rectangleIndex (|a holds
-#   the anchor points before that segment, |b the rest); added reactants and products joined at 3/8 and 5/8 of that
+#   line the two ends and the bend points the user puts or removes; the square midway on segment rectangleIndex (|a holds
+#   the bend points before that segment, |b the rest); added reactants and products joined at 3/8 and 5/8 of that
 #   segment (the antennas' ends), modifiers at the square's spots; all of it worked out again from those numbers.
 #   The glyph sits midway on the segment of the main line it is on (rectangleIndex), wherever that goes. It is never
 #   moved by itself (user, 2026-11-12: "in CellDesigner, it's not possible to move process itself"; the editor does not
@@ -269,7 +269,7 @@ def graphml(text, off=(0.0, 0.0)):
             edge(rid + '|a', r['ra'], r['pa'], pa, pb, r['bends'])
             continue
         g, k, sq = rid + '|proc', r['k'], r['sq']
-        # the main line split at the glyph: the anchor points before its segment in |a, the rest in |b, so the number of
+        # the main line split at the glyph: the bend points before its segment in |a, the rest in |b, so the number of
         # |a's points is rectangleIndex (a point put on |a puts the glyph on the segment after it, as its middle lies there)
         edge(rid + '|a', r['ra'], g, pa, (0.0, 0.0), r['bends'][:k])
         edge(rid + '|b', g, r['pa'], (0.0, 0.0), pb, r['bends'][k:])

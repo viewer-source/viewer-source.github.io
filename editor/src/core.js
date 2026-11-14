@@ -1962,8 +1962,8 @@
       parse();
       return { p: edges2[k].pts[at], at: Q, k: k + 1 };
     }
-    // an anchor (bend) point taken away (user, 2026-11-13, CellDesigner's own model: anchor points are put and removed by
-    // the user, CellDesigner's right click Remove Anchor Point; yEd: Delete): its y:Point out of the text, one undo step.
+    // a bend point taken away (user, 2026-11-13, CellDesigner's own model: bend points are put and removed by the user,
+    // CellDesigner's right click Remove Anchor Point; yEd: Delete): its y:Point out of the text, one undo step.
     // On a CellDesigner map the glyph then sits midway on the segment it is on, as CellDesigner puts it
     function unbend(list) {
       list = list.slice().sort(function (a, b) { return b - a; });   // last first, so the earlier ones keep their place in the text
@@ -1983,7 +1983,7 @@
       render(); paint(); changed();
       return true;
     }
-    var rclick = null;   // where the last right click was, for the menu's Remove anchor point
+    var rclick = null;   // where the last right click was, for the menu's Remove bend point
     // the drawing of the file as it is now, when the renderer has drawn it (not before the first move: the picture is then still the one editing started on)
     function nowSvg() { return lastFor && lastFor[0] === text && lastFor[1] === (cd ? cd.now : null) ? lastSvg : null; }
     // while a redraw runs, the last drawing of this map (one move behind for a moment) in place of the site's picture
@@ -1998,18 +1998,18 @@
       var i = h.n, gate = nodes2[i].shape.kind === 'Operator';
       return { label: gate ? 'Turn logic gate' : 'Turn process', go: function () { turn(i); } };
     };
-    window.m2EditAnchor = function () {
+    window.m2EditBend = function () {
       if (!on || V.current !== map || !rclick) return null;
       var h = hit(rclick);
       if (!h || h.p == null) return null;
       var pi = h.p;
       return function () { unbend([pi]); };
     };
-    // an anchor point put where the right click was on a line (user, 2026-11-13: "not only remove anchor point, but also
+    // a bend point put where the right click was on a line (user, 2026-11-13: "not only remove anchor point, but also
     // add anchor point"; CellDesigner's right click Add Anchor Point): the same new point a drag on the line makes, left
     // in place, the line selected so its points show and the new one is dragged with the next press; one undo step.
-    // Not on the process glyph (no anchor point there: it sits midway on its segment)
-    window.m2EditAddAnchor = function () {
+    // Not on the process glyph (no bend point there: it sits midway on its segment)
+    window.m2EditAddBend = function () {
       if (!on || V.current !== map || !rclick) return null;
       var h = hit(rclick), P = rclick;
       if (!h || h.e == null || h.glyph) return null;

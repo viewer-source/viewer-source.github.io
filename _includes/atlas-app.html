@@ -2615,11 +2615,11 @@ page, so its styles keep the base they were made on). The looks before (Default 
       // one layer, no submenus (user, 2026-11-12): the shortcuts aimed for on the page; the map's view, colours, link and
       // the other files stay in the viewer's own buttons and tabs
       var eb = document.querySelector('#m2-rail .m2-ri[data-win="edit"]');
-      var unanchor = ed && window.m2EditAnchor && window.m2EditAnchor();   // an anchor point under the pointer while editing
-      var anchor = ed && !unanchor && window.m2EditAddAnchor && window.m2EditAddAnchor();   // a line under the pointer
+      var unbend = ed && window.m2EditBend && window.m2EditBend();   // a bend point under the pointer while editing
+      var bend = ed && !unbend && window.m2EditAddBend && window.m2EditAddBend();   // a line under the pointer
       var turn = ed && window.m2EditTurn && window.m2EditTurn();   // a process or logic gate under the pointer: turned a quarter
-      if (unanchor) { item(box, 'Remove anchor point', unanchor); sep(box); }
-      else if (anchor) { item(box, 'Add anchor point', anchor); sep(box); }
+      if (unbend) { item(box, 'Remove bend point', unbend); sep(box); }
+      else if (bend) { item(box, 'Add bend point', bend); sep(box); }
       else if (turn) { item(box, turn.label, turn.go); sep(box); }
       // its shortcut beside it, as Apple's and Windows' menus write it (user, 2026-11-13)
       var key = '<span class="m2-cx-key">' + (/Mac|iPhone|iPad|iPod/.test((navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || navigator.userAgent) ? '\u2318E' : 'Ctrl+E') + '</span>';
@@ -2691,7 +2691,7 @@ page, so its styles keep the base they were made on). The looks before (Default 
   // Its code is in editor/ (user, 2026-11-13: out of the viewer's file, loaded only where the Edit tab is): the shared core,
   // a GraphML part and a CellDesigner part, built by Jekyll into editor/editor.js, loaded once the style turns the Edit
   // tab on (editorLoad, from the windows' code); a site or style without it loads nothing. edit="layout" on the include
-  // keeps the editor to the layout tools (moves, anchor points, compartments, Grid, Snap, Pack), for a site that should
+  // keeps the editor to the layout tools (moves, bend points, compartments, Grid, Snap, Pack), for a site that should
   // not offer drawing; "full" (the default) adds drawing once it exists (user, 2026-11-13). Here only what the viewer
   // needs without the editor: the edited drawing kept on screen until the site's build catches up, also after a reload.
   // the editor and the renderers it runs, from the same copy of the viewer (renderers= on the include: a copy's own)

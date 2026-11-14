@@ -12,11 +12,11 @@
         'With Snap to grid on (the magnet), a node dragged puts its centre on the 8 px grid and a bend point goes on 4 px. Alt held, no snapping.',
         'A line\'s end dragged, or moved by the arrow keys, goes to the node\'s centre or the middle of a side. On a CellDesigner map a modifier\'s end at a process glyph goes to one of the six places CellDesigner has there: the corners and the middles of the two sides off the main line.',
         'A process or logic gate is one object with its two ports: what it consumes ends on one, what it makes leaves from the other, and they move with it. A modifier\'s end goes to the middle of one of its two sides off the ports. A right click on it turns it a quarter clockwise (Turn process), four turns round.',
-        'A right click on a line adds an anchor point there; on an anchor point, removes it.']],
+        'A right click on a line adds a bend point there; on a bend point, removes it.']],
       ['Layout tools', ['The dotted square puts the whole map on the grid by the layout rules (complexes packed, rows and columns kept), one step to undo.',
         'The complex with two proteins packs the complex selected (or the one round a member selected), every complex when nothing is selected.']],
       ['Keys', [['Ctrl or Cmd Z', 'undo'], ['Ctrl or Cmd Y', 'redo'], ['Ctrl or Cmd S', 'save at once'], ['Ctrl or Cmd A', 'select all'], ['Esc', 'clear the selection'],
-        ['Delete', 'remove the anchor point selected'], ['E', 'switch between edit and view mode (not while typing in a field)'], ['?', 'this help']]]
+        ['Delete', 'remove the bend point selected'], ['E', 'switch between edit and view mode (not while typing in a field)'], ['?', 'this help']]]
     ];
     var helpBtn = box.querySelector('#m2-ed-help'), helpBox = null;
     function helpBuild() {
