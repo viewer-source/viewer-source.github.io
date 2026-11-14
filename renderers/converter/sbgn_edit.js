@@ -273,7 +273,7 @@
       iconsOf(id).forEach(function (q, j) {
         if (j >= have.length) { more += svXml(id, j, q, n.box, T.indent(g.bbox)); return; }
         var st = kid(have[j], 'state'), v = q[0].split('@'), val = v.shift(), vr = v.join('@');
-        if (st && svText(st.getAttribute('value'), st.getAttribute('variable')) === q[0]) return;
+        if ((st ? svText(st.getAttribute('value'), st.getAttribute('variable')) : '') === q[0]) return;   // no state element reads as empty (sbgnml.read)
         if (!st) { var at2 = T.at.get(kid(have[j], 'bbox'))[0]; T.ed.push([at2, at2, '<' + pre + 'state value="' + esc(val) + '"' + (vr ? ' variable="' + esc(vr) + '"' : '') + '/>\n' + T.indent(kid(have[j], 'bbox'))]); return; }
         T.set(st, 'value', val);
         if (vr) T.set(st, 'variable', vr); else T.unset(st, 'variable');
