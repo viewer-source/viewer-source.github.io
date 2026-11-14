@@ -9,16 +9,16 @@ kind: "map"
 draft: false
 tag: ""
 image: "/downloads/glycolysis-sbgn.svg"
-width: 983
+width: 1107
 height: 738
 scale: 1
 annotation: "/atlas-data/glycolysis-sbgn.json"
 image_error: ""
-v: "713899da59"
+v: "b4a17aef40"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/downloads/glycolysis-sbgn.sbgn"}, {"label": "SVG", "url": "/downloads/glycolysis-sbgn.svg"}]
-src: "c2e34379e6b1e4b82f310d6fe304a02b5c264d6c"
+src: "c7c36a01fc4daf1cae162cf82bff34cddc2c449a"
 edit_path: "maps/sbgn-ml/glycolysis-sbgn.sbgn"
 edit_base: "/atlas-data/glycolysis-sbgn.graphml"
 ---
