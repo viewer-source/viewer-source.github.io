@@ -313,7 +313,8 @@ says "the workbench", "the converter's repository", "a private repository".
   it goes (user, 2026-11-13: "the line should be drawn in full during drag ... it should feel quite natural"; plain grey
   lines before): a copy of the renderer's own group of that arc, so its colour, width and dashes stay, its line through
   the new places and what is drawn at each end (arrowhead, circle, bar) carried to that end and turned as its end segment
-  turned; the original hidden, the copy kept after the release until the renderer has drawn the map again (under a
+  turned (a bend point made by grabbing the line put into the copy where it lies, user 2026-11-14: the line stayed
+  straight until the release; a point on a segment shorter than 30 units follows its nearer end); the original hidden, the copy kept after the release until the renderer has drawn the map again (under a
   second), so nothing jumps. Every point of the copy goes with the segment it lies nearest to (within 15 units of a
   segment's end it keeps its distance from that end, else its share of the segment), so a line drawn in two pieces or a
   mark midway stays on the line (user, 2026-11-13: a short second line showed beside a CellDesigner reaction). A
