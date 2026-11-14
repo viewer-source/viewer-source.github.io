@@ -1615,12 +1615,13 @@
 </celldesigner:connectScheme>
 <celldesigner:line width="1.0" color="ff000000"/>
 <celldesigner:listOfModification>
-<celldesigner:modification type="CATALYSIS" modifiers="s_n24" aliases="sa_n24" targetLineIndex="-1,2" editPoints="0.976944145702,-0.150080917778 1.000000069707,4.53756e-07">
+<celldesigner:modification type="CATALYSIS" modifiers="s_n24" aliases="sa_n24" targetLineIndex="-1,3" editPoints="0.96590835081,-0.18146462092 0.818755441888,-0.016832791056 1.000000084284,4.4863e-07">
 <celldesigner:connectScheme connectPolicy="direct">
 <celldesigner:listOfLineDirection>
 <celldesigner:lineDirection index="0" value="unknown"/>
 <celldesigner:lineDirection index="1" value="unknown"/>
 <celldesigner:lineDirection index="2" value="unknown"/>
+<celldesigner:lineDirection index="3" value="unknown"/>
 </celldesigner:listOfLineDirection>
 </celldesigner:connectScheme>
 <celldesigner:line width="1.0" color="ff000000"/>
