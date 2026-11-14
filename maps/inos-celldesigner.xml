@@ -2624,7 +2624,7 @@
 <celldesigner:lineDirection index="2" value="unknown"/>
 </celldesigner:listOfLineDirection>
 </celldesigner:connectScheme>
-<celldesigner:editPoints>0.515486215284,-0.324028345368 0.852738956761,-0.098483786598</celldesigner:editPoints>
+<celldesigner:editPoints>0.515486215284,-0.324028345368 0.70929172917,-0.194417007221</celldesigner:editPoints>
 <celldesigner:line width="1.0" color="ff000000"/>
 <celldesigner:listOfModification>
 <celldesigner:modification type="CATALYSIS" modifiers="s_n0_n20" aliases="sa_n0_n20" targetLineIndex="-1,2">
