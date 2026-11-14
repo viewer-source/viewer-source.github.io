@@ -56,11 +56,17 @@
     if (m) { var from = s[0] + m.index + m[1].length; this.ed.push([from, from + m[2].length, '"' + v + '"']); }
     else { var end = s[1] - (s[2] ? 2 : 1); this.ed.push([end, end, ' ' + k + '="' + v + '"']); }
   };
+  Tags.prototype.unset = function (el, k) {   // the attribute taken out, where the tag has it
+    var s = this.at.get(el), tag = this.t.slice(s[0], s[1]), m = tag.match(new RegExp('\\s+' + k.replace(/[.:]/g, '\\$&') + '\\s*=\\s*("[^"]*"|\'[^\']*\')'));
+    if (m) this.ed.push([s[0] + m.index, s[0] + m.index + m[0].length, '']);
+  };
   Tags.prototype.end = function (el) {   // where the element ends (a self-closed tag, or its end tag)
     var s = this.at.get(el);
     if (s[2]) return s[1];
-    var name = this.t.slice(s[0] + 1).match(/^[^\s/>]+/)[0], i = this.t.indexOf('</' + name, s[1]);
-    return this.t.indexOf('>', i) + 1;
+    var name = this.t.slice(s[0] + 1).match(/^[^\s/>]+/)[0], re = new RegExp('<(/?)' + name.replace(/[.:]/g, '\\$&') + '(?=[\\s/>])[^>]*?(/?)>', 'g'), m, depth = 1;   // nested ones of the same name (a group's graph) counted
+    re.lastIndex = s[1];
+    while ((m = re.exec(this.t))) { if (m[1]) depth--; else if (!m[2]) depth++; if (!depth) return m.index + m[0].length; }
+    return this.t.length;
   };
   Tags.prototype.indent = function (el) { var s = this.at.get(el), i = this.t.lastIndexOf('\n', s[0]); return this.t.slice(i + 1, s[0]).match(/^\s*/)[0]; };
   Tags.prototype.text = function () {
@@ -113,9 +119,10 @@
     return null;
   }
   function gml(t, opt) {
-    var doc = new (DP(opt))().parseFromString(t, 'application/xml'), G = { doc: doc, node: {}, edge: {} };
+    var doc = new (DP(opt))().parseFromString(t, 'application/xml'), G = { doc: doc, node: {}, edge: {}, ids: [] };
     Array.prototype.forEach.call(doc.getElementsByTagNameNS(GNS, 'node'), function (n) {
       var r = realizer(n), geo = r && kid(r, 'Geometry');
+      if (geo) G.ids.push(n.getAttribute('id'));
       if (geo) G.node[n.getAttribute('id')] = { el: n, geo: geo, box: ['x', 'y', 'width', 'height'].map(function (k) { return F(geo.getAttribute(k)); }) };
     });
     Array.prototype.forEach.call(doc.getElementsByTagNameNS(GNS, 'edge'), function (e) {
@@ -177,7 +184,37 @@
       var body = pts.map(function (p) { return '<y:Point x="' + repr(p[0]) + '" y="' + repr(p[1]) + '"/>'; }).join(''), s = T.at.get(e.path);
       T.ed.push([s[1] - (s[2] ? 2 : 1), T.end(e.path), body ? '>' + body + '</y:Path>' : '/>']);
     });
-    return T.text();
+    return made(S, G, T.text(), t, opt);
+  }
+  // what the editor made or renamed that the base GraphML lacks (a draft reopened before the build has drawn it)
+  function made(S, G, out, t, opt) {
+    var St = null, D = null;
+    var svOf = function (g) {   // a glyph's state variables: [text, rx, ry]
+      var B = g.box;
+      return kids(g.el, 'glyph').filter(function (c) { return c.getAttribute('class') === 'state variable'; }).map(function (c) {
+        var st = kid(c, 'state'), cb = kid(c, 'bbox'), cx = F(cb.getAttribute('x')) + F(cb.getAttribute('w')) / 2, cy = F(cb.getAttribute('y')) + F(cb.getAttribute('h')) / 2;
+        return [st ? svText(st.getAttribute('value'), st.getAttribute('variable')) : '', (cx - B[0] - B[2] / 2) / B[2], (cy - B[1] - B[3] / 2) / B[3]];
+      });
+    };
+    Object.keys(S.glyph).forEach(function (id) {
+      var g = S.glyph[id], cls = g.el.getAttribute('class') || '', lab = kid(g.el, 'label'), name = lab ? lab.getAttribute('text') || '' : '';
+      if (!G.node[id]) {
+        if (!MAKE[cls] || g.el.parentNode.localName !== 'map') return;
+        St = St || styles(S); D = D || defaults(t, opt);
+        var st = St.filter(function (x) { return x.ids.indexOf(id) >= 0; })[0], cref = g.el.getAttribute('compartmentRef');
+        out = add(out, { id: id, cls: cls, label: name, box: g.box, parent: cref && S.glyph[cref] ? cref : null, fill: st ? st.fill : null, font: st && st.font || D.font, states: svOf(g) }, opt);
+        return;
+      }
+      if (!NAMED.test(cls)) return;
+      var H = gml(out, opt), L = labelsOf(H, id);
+      if (L.main && ownText(L.main) !== name) out = label(out, id, name, opt);
+      var svs = L.icons.filter(function (q) { return q[1].kind === 'StateVariable'; });
+      svOf(g).forEach(function (q, j) {
+        if (j >= svs.length) out = state(out, id, q[0], q[1], q[2], opt);
+        else if ((svs[j][1].text || '') !== q[0]) out = stateValue(out, id, j, q[0], opt);
+      });
+    });
+    return out;
   }
 
   // ---------- back into the SBGN-ML text ----------
@@ -208,6 +245,63 @@
       var lab = kid(g.el, 'label'), lb = lab && kid(lab, 'bbox');
       if (lb) setXY(lb, [F(lb.getAttribute('x')) + b[0] - o[0], F(lb.getAttribute('y')) + b[1] - o[1]]);
     });
+    // names and state variables set in the editor, and glyphs it made (user, 2026-11-14: the full editor)
+    var pre = S.doc.documentElement.prefix ? S.doc.documentElement.prefix + ':' : '';
+    var svBox = function (txt, b, rx, ry) { var sw = txt.length <= 2 ? 15 : 45; return [b[0] + b[2] / 2 + rx * b[2] - sw / 2, b[1] + b[3] / 2 + ry * b[3] - 7.5, sw, 15]; };   // layout.decorations
+    var bboxXml = function (b) { return '<' + pre + 'bbox x="' + num(b[0]) + '" y="' + num(b[1]) + '" w="' + num(b[2]) + '" h="' + num(b[3]) + '"/>'; };
+    var svXml = function (gid, k, q, b, ind) {
+      var v = q[0].split('@'), val = v.shift(), vr = v.join('@'), sid = gid + '_sv' + k, j = 0;
+      while (S.glyph[sid] || S.port[sid] || S.arc[sid]) sid = gid + '_sv' + k + '_' + (++j);
+      return '\n' + ind + '<' + pre + 'glyph class="state variable" id="' + esc(sid) + '">\n' + ind + '  <' + pre + 'state value="' + esc(val) + '"' + (vr ? ' variable="' + esc(vr) + '"' : '') + '/>\n' +
+        ind + '  ' + bboxXml(svBox(q[0], b, q[1], q[2])) + '\n' + ind + '</' + pre + 'glyph>';
+    };
+    var iconsOf = function (id) {   // [text, rx, ry, label] of a node's state variables in the GraphML
+      return labelsOf(G, id).icons.filter(function (q) { return q[1].kind === 'StateVariable'; }).map(function (q) {
+        var p = q[0].getElementsByTagNameNS(YNS, 'SmartNodeLabelModelParameter')[0];
+        return [q[1].text || '', F(p.getAttribute('nodeRatioX')), F(p.getAttribute('nodeRatioY'))];
+      });
+    };
+    Object.keys(S.glyph).forEach(function (id) {
+      var g = S.glyph[id], n = G.node[id], cls = g.el.getAttribute('class') || '';
+      if (!n || !NAMED.test(cls)) return;
+      var L = labelsOf(G, id), lab = kid(g.el, 'label');
+      if (L.main && ownText(L.main) !== (lab ? lab.getAttribute('text') || '' : '')) {
+        if (lab) T.set(lab, 'text', ownText(L.main));
+        else { var at1 = T.at.get(g.bbox)[0]; T.ed.push([at1, at1, '<' + pre + 'label text="' + esc(ownText(L.main)) + '"/>\n' + T.indent(g.bbox)]); }
+      }
+      var have = kids(g.el, 'glyph').filter(function (c) { return c.getAttribute('class') === 'state variable'; }), more = '';
+      iconsOf(id).forEach(function (q, j) {
+        if (j >= have.length) { more += svXml(id, j, q, n.box, T.indent(g.bbox)); return; }
+        var st = kid(have[j], 'state'), v = q[0].split('@'), val = v.shift(), vr = v.join('@');
+        if (st && svText(st.getAttribute('value'), st.getAttribute('variable')) === q[0]) return;
+        if (!st) { var at2 = T.at.get(kid(have[j], 'bbox'))[0]; T.ed.push([at2, at2, '<' + pre + 'state value="' + esc(val) + '"' + (vr ? ' variable="' + esc(vr) + '"' : '') + '/>\n' + T.indent(kid(have[j], 'bbox'))]); return; }
+        T.set(st, 'value', val);
+        if (vr) T.set(st, 'variable', vr); else T.unset(st, 'variable');
+      });
+      if (more) { var e1 = T.end(have.length ? have[have.length - 1] : g.bbox); T.ed.push([e1, e1, more]); }
+    });
+    var mapEl = kids(S.doc.documentElement, 'map')[0], tops = kids(mapEl, 'glyph'), last = tops[tops.length - 1];
+    var ind0 = last ? T.indent(last) : T.indent(mapEl) + '  ', fresh = '', St = null, joinTo = new Map();
+    G.ids.forEach(function (id) {
+      if (S.glyph[id] || S.port[id] || S.arc[id] || id.indexOf('|') >= 0) return;
+      var n = G.node[id], r = n.geo.parentNode, cfg = (r.getAttribute('configuration') || '').replace('com.yworks.sbgn.', ''), cls = null;
+      Object.keys(MAKE).forEach(function (c) { if (MAKE[c] === cfg) cls = c; });
+      if (!cls) return;
+      var up = n.el.parentNode; while (up && up.localName !== 'node') up = up.parentNode;
+      var cref = up && S.glyph[up.getAttribute('id')] && S.glyph[up.getAttribute('id')].el.getAttribute('class') === 'compartment' ? up.getAttribute('id') : null;
+      var L = labelsOf(G, id), name = L.main ? ownText(L.main) : '', fl = kid(r, 'Fill'), fill = fl && fl.getAttribute('hasColor') !== 'false' ? (fl.getAttribute('color') || '').toUpperCase() : null;
+      fresh += '\n' + ind0 + '<' + pre + 'glyph class="' + cls + '" id="' + esc(id) + '"' + (cref ? ' compartmentRef="' + esc(cref) + '"' : '') + '>' +
+        (name ? '\n' + ind0 + '  <' + pre + 'label text="' + esc(name) + '"/>' : '') + '\n' + ind0 + '  ' + bboxXml(n.box) +
+        iconsOf(id).map(function (q, k) { return svXml(id, k, q, n.box, ind0 + '  '); }).join('') + '\n' + ind0 + '</' + pre + 'glyph>';
+      if (fill) {   // its colour: the style of that fill the map's proteins use
+        St = St || styles(S);
+        var cand = St.filter(function (x) { return x.plain && x.fill === fill; });
+        cand.sort(function (a, b) { return b.ids.length - a.ids.length; });
+        if (cand[0]) joinTo.set(cand[0], (joinTo.get(cand[0]) || []).concat(id));
+      }
+    });
+    if (fresh) { var e2 = last ? T.end(last) : T.at.get(mapEl)[1]; T.ed.push([e2, e2, fresh]); }
+    joinTo.forEach(function (ids, st) { T.set(st.el, 'idList', st.ids.concat(ids).join(' ')); });
     // the arcs: their bends, then their ends (an end at a port gives the port its place)
     var portAt = {}, newPorts = {}, use = {};
     Object.keys(S.arc).forEach(function (id) {   // which port of a glyph its consumptions (1) and products (2) use in the file
@@ -328,8 +422,164 @@
     });
     return T.text();
   }
+
+  // ---------- creating (user, 2026-11-14: the full editor, entities added from a palette as in yEd and Newt) ----------
+  // What the editor adds is written into its GraphML as graphml.write writes it (the yed.graphml templates, its label
+  // and icon sizes), write() puts it into the SBGN-ML text, and graphml() makes it again from the SBGN-ML text (a draft
+  // reopened before the build has drawn it). So far: a macromolecule, its name, its state variables.
+  //   defaults(sbgnText) -> { w, h, font, fill } of a new macromolecule on that map (its scale, its proteins' style)
+  //   add(g, { id, cls, label, box, parent, fill, font }) -> g with the node (parent: a compartment's node id)
+  //   label(g, id, text) -> g with the node's name; state(g, id, value, rx, ry) -> g with a state variable added at that
+  //   point of the border (rx, ry from the centre, as yEd's nodeRatio); stateValue(g, id, j, value): its j-th one's value
+  var CHAR = 9.5, LINE = 16.5, ICON_CHAR = 5.4;   // graphml.py: a label line's height and a character's width at 14; an icon's character
+  var MAKE = { macromolecule: 'Macromolecule' };   // what the palette makes: SBGN class -> yEd's configuration
+  var NAMED = /^(macromolecule|simple chemical|nucleic acid feature|unspecified entity|perturbing agent|phenotype)( multimer)?$/;   // names kept in step both ways
+  function ownText(el) { var t = ''; for (var c = el.firstChild; c; c = c.nextSibling) if (c.nodeType === 3 || c.nodeType === 4) t += c.nodeValue; return t; }
+  function labelBox(text, w, h, k) {   // graphml._label: the label's box estimated and centred
+    var lines = text ? text.split('\n') : [], n = 0;
+    lines.forEach(function (x) { n = Math.max(n, x.length); });
+    var lw = n * CHAR * k, lh = lines.length * LINE * k + 4;
+    return [lw, lh, (w - lw) / 2, (h - lh) / 2];
+  }
+  var LM = '<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel>';
+  function mainLabel(text, w, h, fs) {
+    var b = labelBox(text, w, h, fs / 14);
+    return '<y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="' + fs + '" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="' + repr(b[1]) +
+      '" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="center" visible="true" width="' + repr(b[0]) + '" x="' + repr(b[2]) +
+      '" xml:space="preserve" y="' + repr(b[3]) + '" hasText="' + (text ? 'true' : 'false') + '">' + esc(text) + LM +
+      '<y:ModelParameter><y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/></y:ModelParameter></y:NodeLabel>';
+  }
+  function svSize(text, k) { return text.length <= 2 ? [18 * k, 18 * k] : [Math.ceil(text.length * ICON_CHAR * k + 12 * k), 18 * k]; }   // graphml.write's resource (k: its font against 10)
+  function iconLabel(rid, size, w, h, rx, ry) {
+    return '<y:NodeLabel alignment="center" autoSizePolicy="content" borderDistance="0.0" bottomInset="0" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" hasText="false" height="' + repr(size[1]) +
+      '" horizontalTextPosition="center" iconData="' + rid + '" iconTextGap="0" leftInset="0" modelName="custom" rightInset="0" textColor="#000000" topInset="0" verticalTextPosition="center" visible="true" width="' + repr(size[0]) +
+      '" x="' + repr((0.5 + rx) * w - size[0] / 2) + '" y="' + repr((0.5 + ry) * h - size[1] / 2) + '">\n' +
+      '                <y:LabelModel>\n                  <y:SmartNodeLabelModel distance="4.0"/>\n                </y:LabelModel>\n                <y:ModelParameter>\n' +
+      '                  <y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="' + repr(rx) + '" nodeRatioY="' + repr(ry) + '" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/>\n' +
+      '                </y:ModelParameter>\n              </y:NodeLabel>';
+  }
+  function resources(G) {   // the GraphML's shared icons: id -> { kind, text, size, font }
+    var out = {};
+    Array.prototype.forEach.call(G.doc.getElementsByTagNameNS(YNS, 'Resource'), function (r) {
+      var gn = r.getElementsByTagNameNS(YNS, 'GenericNode')[0], l = gn && kid(gn, 'NodeLabel'), geo = gn && kid(gn, 'Geometry');
+      if (!gn || !l || !geo) return;
+      out[r.getAttribute('id')] = { el: r, kind: (gn.getAttribute('configuration') || '').replace('com.yworks.sbgn.', ''), text: ownText(l), font: l.getAttribute('fontSize'), size: [F(geo.getAttribute('width')), F(geo.getAttribute('height'))] };
+    });
+    return out;
+  }
+  // a state variable's icon of that text (shared, as yEd shares them): its id, the text with the icon added when new
+  function svIcon(t, text, opt, small) {   // small: the node's icons' own font size (a Newt map's), else 10
+    var G = gml(t, opt), R = resources(G), id = null, max = 0, fs = small ? String(small) : '10', k = (small || 10) / 10;
+    Object.keys(R).forEach(function (q) { max = Math.max(max, parseInt(q, 10) || 0); if (R[q].kind === 'StateVariable' && R[q].text === text && R[q].font === fs) id = id || q; });
+    if (id) return [id, t, R[id].size];
+    var sz = svSize(text, k), b = labelBox(text, sz[0], sz[1], k * 10 / 14);
+    id = String(max + 1);
+    var res = '<y:Resource id="' + id + '">\n        <yed:NodeRealizerIcon>\n          <y:GenericNode configuration="com.yworks.sbgn.StateVariable">\n' +
+      '            <y:Geometry height="' + repr(sz[1]) + '" width="' + repr(sz[0]) + '" x="0.0" y="0.0"/>\n            <y:Fill color="#FFFFFF" transparent="false"/>\n            <y:BorderStyle color="#000000" type="line" width="1.0"/>\n' +
+      '            <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="' + fs + '" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="' + repr(b[1]) +
+      '" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="center" visible="true" width="' + repr(b[0]) + '" x="' + repr(b[2]) +
+      '" xml:space="preserve" y="' + repr(b[3]) + '" hasText="' + (text ? 'true' : 'false') + '">' + esc(text) + LM +
+      '<y:ModelParameter><y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/></y:ModelParameter></y:NodeLabel>\n' +
+      '          </y:GenericNode>\n        </yed:NodeRealizerIcon>\n      </y:Resource>';
+    var rs = G.doc.getElementsByTagNameNS(YNS, 'Resources')[0], T = new Tags(t, G.doc);
+    if (!G.doc.documentElement.getAttribute('xmlns:yed')) T.set(G.doc.documentElement, 'xmlns:yed', 'http://www.yworks.com/xml/yed/3');   // a map with no icons yet: lxml left the prefix out
+    if (rs) {
+      var s = T.at.get(rs);
+      if (s[2]) T.ed.push([s[0], s[1], '<y:Resources>' + res + '</y:Resources>']);
+      else { var e = T.end(rs), c = t.lastIndexOf('</', e - 1); T.ed.push([c, c, res]); }
+    } else {
+      var root = G.doc.documentElement, re = T.end(root), rc = t.lastIndexOf('</', re - 1);
+      T.ed.push([rc, rc, '<data key="res"><y:Resources>' + res + '</y:Resources></data>\n']);
+    }
+    return [id, T.text(), sz];
+  }
+  function nodeXml(o, svs) {   // svs: [[icon id, size, rx, ry], ...]
+    var w = o.box[2], h = o.box[3];
+    return '<node id="' + esc(o.id) + '"><data key="ng">\n        <y:GenericNode configuration="com.yworks.sbgn.' + MAKE[o.cls] + '">\n' +
+      '          <y:Geometry height="' + repr(h) + '" width="' + repr(w) + '" x="' + repr(o.box[0]) + '" y="' + repr(o.box[1]) + '"/>\n' +
+      '          ' + (o.fill ? '<y:Fill color="' + o.fill + '" transparent="false"/>' : '<y:Fill transparent="false" hasColor="false"/>') + '\n' +
+      '          <y:BorderStyle color="#000000" type="line" width="1.0"/>\n          ' + mainLabel(o.label || '', w, h, o.font || 14) +
+      (svs || []).map(function (q) { return iconLabel(q[0], q[1], w, h, q[2], q[3]); }).join('') + '\n' +
+      '          <y:StyleProperties>\n            <y:Property class="java.lang.Integer" name="com.yworks.sbgn.style.radius" value="10"/>\n            </y:StyleProperties>\n' +
+      '        </y:GenericNode>\n      </data>\n    </node>';
+  }
+  function add(t, o, opt) {
+    if (!MAKE[o.cls]) throw new Error('cannot make a ' + o.cls);
+    var svs = [];
+    (o.states || []).forEach(function (q) { var r = svIcon(t, q[0], opt); t = r[1]; svs.push([r[0], r[2], q[1], q[2]]); });
+    var G = gml(t, opt), T = new Tags(t, G.doc), xml = nodeXml(o, svs), graph;
+    if (o.parent && G.node[o.parent]) graph = kids(G.node[o.parent].el, 'graph')[0];
+    if (!graph) graph = kids(G.doc.documentElement, 'graph')[0];
+    var s = T.at.get(graph);
+    if (s[2]) { T.ed.push([s[0], s[1], T.t.slice(s[0], s[1] - 2) + '>' + xml + '</graph>']); return T.text(); }
+    var first = kids(graph, 'edge')[0], at0 = first ? T.at.get(first)[0] : T.t.lastIndexOf('</', T.end(graph) - 1);
+    T.ed.push([at0, at0, xml]);
+    return T.text();
+  }
+  function labelsOf(G, id) {   // the node's main label, and its icons ([label, resource])
+    var n = G.node[id], R = G.R || (G.R = resources(G)), labs = n ? kids(n.geo.parentNode, 'NodeLabel') : [];
+    return { main: labs.filter(function (l) { return !l.getAttribute('iconData'); })[0] || null,
+             icons: labs.filter(function (l) { return l.getAttribute('iconData'); }).map(function (l) { return [l, R[l.getAttribute('iconData')] || {}]; }) };
+  }
+  function label(t, id, text, opt) {
+    var G = gml(t, opt), n = G.node[id], L = n && labelsOf(G, id).main;
+    if (!L) return t;
+    var T = new Tags(t, G.doc), s = T.at.get(L), b = labelBox(text, n.box[2], n.box[3], (F(L.getAttribute('fontSize')) || 12) / 14);
+    [['width', b[0]], ['height', b[1]], ['x', b[2]], ['y', b[3]]].forEach(function (q) { T.set(L, q[0], repr(q[1])); });
+    T.set(L, 'hasText', text ? 'true' : 'false');
+    if (s[2]) { T.ed.push([s[1] - 2, s[1], '>' + esc(text) + '</y:NodeLabel>']); return T.text(); }
+    var c = L.firstChild, from = s[1], to = s[1];
+    while (c && (c.nodeType === 3 || c.nodeType === 4)) c = c.nextSibling;
+    to = c ? T.at.get(c)[0] : T.t.lastIndexOf('</', T.end(L) - 1);
+    T.ed.push([from, to, esc(text)]);
+    return T.text();
+  }
+  function smallOf(t, id, opt) {   // the font size the node's icons have, where it is not the usual 10
+    var G = gml(t, opt), L = G.node[id] && labelsOf(G, id), f = L && L.icons.map(function (q) { return q[1].font; }).filter(function (x) { return x && x !== '10'; })[0];
+    return f ? F(f) : null;
+  }
+  function state(t, id, value, rx, ry, opt) {
+    var r = svIcon(t, value, opt, smallOf(t, id, opt)); t = r[1];
+    var G = gml(t, opt), n = G.node[id], L = n && labelsOf(G, id);
+    if (!L || !L.main) return t;
+    var svs = L.icons.filter(function (q) { return q[1].kind === 'StateVariable'; }), after = svs.length ? svs[svs.length - 1][0] : L.main;
+    var T = new Tags(t, G.doc), e = T.end(after);
+    T.ed.push([e, e, iconLabel(r[0], r[2], n.box[2], n.box[3], rx, ry)]);
+    return T.text();
+  }
+  function stateValue(t, id, j, value, opt) {
+    var r = svIcon(t, value, opt, smallOf(t, id, opt)); t = r[1];
+    var G = gml(t, opt), n = G.node[id], L = n && labelsOf(G, id), q = L && L.icons.filter(function (x) { return x[1].kind === 'StateVariable'; })[j];
+    if (!q) return t;
+    var T = new Tags(t, G.doc), p = q[0].getElementsByTagNameNS(YNS, 'SmartNodeLabelModelParameter')[0];
+    var rx = F(p.getAttribute('nodeRatioX')), ry = F(p.getAttribute('nodeRatioY')), w = n.box[2], h = n.box[3];
+    T.set(q[0], 'iconData', r[0]); T.set(q[0], 'width', repr(r[2][0])); T.set(q[0], 'height', repr(r[2][1]));
+    T.set(q[0], 'x', repr((0.5 + rx) * w - r[2][0] / 2)); T.set(q[0], 'y', repr((0.5 + ry) * h - r[2][1] / 2));
+    return T.text();
+  }
+  // the map's render styles: [{ el, fill (as yEd writes it), font, ids }]
+  function styles(S) {
+    var defs = {};
+    Array.prototype.forEach.call(S.doc.getElementsByTagName('*'), function (e) { if (e.localName === 'colorDefinition') defs[e.getAttribute('id')] = e.getAttribute('value'); });
+    var colour = function (c) { var v = defs[c] || c; if (!v || v.charAt(0) !== '#') return null; v = v.toUpperCase(); return v.length === 9 && /FF$/.test(v) ? v.slice(0, 7) : v; };
+    return Array.prototype.filter.call(S.doc.getElementsByTagName('*'), function (e) { return e.localName === 'style'; }).map(function (st) {
+      var g = kids(st, 'g')[0];
+      return { el: st, fill: g ? colour(g.getAttribute('fill')) : null, font: g && g.getAttribute('font-size') ? F(g.getAttribute('font-size')) : null,
+               ids: (st.getAttribute('idList') || '').split(/\s+/).filter(Boolean), plain: st.hasAttribute('idList') };
+    });
+  }
+  function defaults(t, opt) {
+    var S = sbgn(t, opt), hs = [], best = null, n = 0, macro = {};
+    Object.keys(S.glyph).forEach(function (id) { if (S.glyph[id].el.getAttribute('class') === 'macromolecule') { hs.push(S.glyph[id].box[3]); macro[id] = 1; } });
+    hs.sort(function (a, b) { return a - b; });
+    var m = hs.length ? (hs.length % 2 ? hs[(hs.length - 1) / 2] : (hs[hs.length / 2 - 1] + hs[hs.length / 2]) / 2) : 40, s = m / 40;
+    if (!(s > 1.2 || s < 1 / 1.2)) s = 1;   // style.scale_of
+    styles(S).forEach(function (st) { var k = st.ids.filter(function (i) { return macro[i]; }).length; if (st.fill && st.plain && k > n) { n = k; best = st; } });
+    return { w: 80 * s, h: 40 * s, font: best && best.font || Math.round(14 * s + 0.01), fill: best ? best.fill : null };
+  }
+  function svText(value, variable) { return (value || '') + (variable ? '@' + variable : ''); }
   var HUB = /process|^(and|or|not|association|dissociation|equivalence)$/;
 
-  var api = { graphml: graphml, write: write };
+  var api = { graphml: graphml, write: write, defaults: defaults, add: add, label: label, state: state, stateValue: stateValue };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.sbgn_edit = api;
 })(typeof self !== 'undefined' ? self : this);

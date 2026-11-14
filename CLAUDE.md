@@ -537,6 +537,22 @@ says "the workbench", "the converter's repository", "a private repository".
   sides off the antennas; Turn process (Turn logic gate) in the right-click menu over it turns it a quarter clockwise,
   every end at it with it, four turns round (an SBGN-ML process with no ports in its file gets them, its arcs pointed at
   them). The renderer gives the editor the ports it draws (`yrender.render(...).ports`, JavaScript only).
+  The full editor's palette (user, 2026-11-14: "we need to create a palette for map entities ... as in the graph
+  editor ... and in Newt"; right click stays for what is on the map; `editor/src/create.js`): signs under the tools in
+  the Edit window, grouped by SBGN's names (Entity pool nodes, Auxiliary units), shown only with Settings, Editing on
+  Full and, for now, on SBGN-ML maps. A click on a sign takes it for one use (the next click on the map places it, then
+  the sign lets go); a double click keeps it in hand for several in a row (user: "this tool stick to your hand"), marked
+  by a darker edge, until the sign is clicked again or Esc; a drag still moves the map. So far: a macromolecule, at the
+  map's protein size and its proteins' render style, centred on the click (on the grid with Snap), in the innermost
+  compartment there, not into a complex; its name typed at once in a box over it (Enter or a click elsewhere keeps it,
+  Esc leaves it unnamed), one undo step with the making; a state variable on a macromolecule at the nearest point of its
+  border, its value typed the same way (P, or P@S505). A double click on a named entity or a state variable opens the
+  box again. What is made is written by `sbgn_edit.js` (add, label, state, stateValue, defaults; write() and graphml()
+  carry new glyphs, names and values both ways) as the converter writes it: `tests/sbgn-create.js` (workflow Compare
+  renderers) checks on every SBGN-ML map of the demo that the editor draws exactly what the converter makes of the file
+  written, that a draft reopened from an older build draws the same, and that the file written is stable. The glyphs
+  the editor offers are the house profile, kept with the map content rules in a private repository. The click data
+  kept after editing is matched by node id (`ids` in the kept boxes), so a node made never shifts another's box.
 - Full screen with tools (user, 2026-11-12: "use more space available on the screen, but with tools"): beside the map's
   own full screen (the map alone), the whole page goes full screen with its list, tools and panel: Shift with the
   full-screen button, or Full screen with tools in the right-click menu (Exit full screen there while on). The

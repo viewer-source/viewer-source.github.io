@@ -31,3 +31,4 @@ jobs:
       - run: node tests/cd-square.js
       - run: node tests/sbgn-edit.js python3
       - run: node tests/sbgn-reconnect.js python3
+      - run: node tests/sbgn-create.js python3

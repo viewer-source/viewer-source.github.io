@@ -98,14 +98,14 @@
         return [a('x'), a('y'), a('width'), a('height')];
       });
       if (all.length !== geos.length) return null;   // not the same file with moves only
-      return { boxes: nodes2.map(function (n) { return all[n.ag]; }), x0: fr.x0, y0: fr.y0 };
+      return { ids: nodes2.map(function (n) { return n.id; }), boxes: nodes2.map(function (n) { return all[n.ag]; }), x0: fr.x0, y0: fr.y0 };
     }
     // the frame of the picture against the file saved (kept with the edited drawing, the start of the next editing): a
     // CellDesigner drawing is in the file's places, which already hold a shift out of negative places, so 0, 0; the
     // editor's own frame (x0, y0) is that shift less (2026-11-12, user: back in edit mode the map jumped by the shift)
     function picX0() { return cd ? 0 : x0; }
     function picY0() { return cd ? 0 : y0; }
-    function nowRef() { return { boxes: nodes2.map(function (n, i) { return boxOf(i); }), x0: x0, y0: y0 }; }
+    function nowRef() { return { ids: nodes2.map(function (n) { return n.id; }), boxes: nodes2.map(function (n, i) { return boxOf(i); }), x0: x0, y0: y0 }; }   // ids: nodes made since keep their own boxes apart
     function repo() { var h = location.hostname; return /\.github\.io$/.test(h) ? h.split('.')[0] + '/' + h : null; }
     function token() { try { return localStorage.getItem(TOKEN_KEY) || ''; } catch (e) { return ''; } }
     function api(path, opt) {
@@ -1719,6 +1719,7 @@
       parse(); dirty = true; render(); paint(); changed();
     }
     function paint() {
+      palShow();
       if (V.img && V.img.querySelectorAll) {
         V.img.querySelectorAll('.m2-ed-dark').forEach(function (x) { x.remove(); });
         V.img.querySelectorAll('.m2-ed-blue').forEach(function (x) { x.classList.remove('m2-ed-blue'); });
@@ -1933,6 +1934,7 @@
         return;
       }
       if (e.button !== 0) return;
+      if (palDown(e)) return;   // something in hand from the palette: the click puts it there (create.js)
       var P = at(e), h = hit(P);
       var pp = !e.shiftKey && portAt(P);
       if (pp) {   // a lit line's end square: its port moved among the node's five places
@@ -2326,6 +2328,7 @@
         paint();
         return;
       }
+      if (tool && on && V.current === map && !e.buttons) { V.view.style.cursor = 'crosshair'; return; }   // something in hand from the palette
       if (on && V.current === map && !e.buttons) {   // the move sign only over what a drag would move
         var PP = at(e), hh = e.shiftKey ? null : hit(PP), ez = !e.shiftKey && edgeAt(PP);
         if (ez && hh && (hh.p != null || (hh.n != null && !nodes2[hh.n].comp && selN.indexOf(ez.c) < 0))) ez = null;
@@ -2336,6 +2339,7 @@
       }
     }, true);
     function release(e) {
+      if (palUp(e)) return;
       if (rpan) { rpan = null; V.view.classList.remove('m2-drag'); e.stopImmediatePropagation(); return; }
       var t = tap; tap = null;
       if (t && e.type === 'pointerup' && Math.hypot(e.clientX - t.x, e.clientY - t.y) < 5) {   // a click, not a drag of the map

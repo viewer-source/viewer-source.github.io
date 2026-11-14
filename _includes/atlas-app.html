@@ -291,6 +291,17 @@ page, so its styles keep the base they were made on). The looks before (Default 
   #m2-editwin .m2-ed-tools button[aria-pressed="true"], #m2-editwin .m2-ed-tools button[aria-pressed="true"]:hover { background: #f1f3f4; color: #70757a; }   /* on: the grey square, the sign between its usual grey and the first darker one (user, 2026-11-12) */
   #m2-editwin .m2-ed-tools button:not([aria-pressed]):hover { color: #80868b; }
   #m2-editwin .m2-ed-tools svg { width: 21px; height: 21px; stroke-width: 1.6; }
+  /* the palette (the full editor, user 2026-11-14: as yEd's and Newt's): signs under the tools, shown with Settings, Editing on Full; a sign in hand on the
+     tools' grey square, one kept in hand for several (a double click) with a darker edge as well */
+  #m2-editwin .m2-ed-palette { margin: 0 0 10px; padding: 0 0 8px; border-bottom: 1px solid var(--m2-frame); }
+  #m2-editwin .m2-ed-palette p { margin: 2px 0 2px; font-size: 12px; line-height: 16px; color: var(--m2-text-soft); }
+  #m2-editwin .m2-ed-prow { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 4px; }
+  #m2-editwin .m2-ed-palette button { display: flex; align-items: center; justify-content: center; flex: none; width: 44px; height: 30px; padding: 0; margin: 0; border: 1px solid transparent; border-radius: 4px; background: none; color: var(--m2-text-soft); }
+  #m2-editwin .m2-ed-palette button:hover:not(:disabled) { background: none; border-color: transparent; color: #80868b; }
+  #m2-editwin .m2-ed-palette button[aria-pressed="true"], #m2-editwin .m2-ed-palette button[aria-pressed="true"]:hover { background: #f1f3f4; color: #70757a; }
+  #m2-editwin .m2-ed-palette button.m2-ed-sticky, #m2-editwin .m2-ed-palette button.m2-ed-sticky:hover { border-color: #70757a; }
+  #m2-editwin .m2-ed-palette svg { width: 36px; height: 22px; }
+  #m2-view .m2-ed-type { position: absolute; z-index: 5; box-sizing: border-box; margin: 0; padding: 0 4px; border: 1px solid #1437ff; border-radius: 3px; background: #fff; color: #000; text-align: center; font-family: Dialog, Arial, Helvetica, sans-serif; outline: none; }
   /* How to edit (user, 2026-11-13: the long how-to took the room tools need): the "?" after the tools opens it as
      a popover over the map's left edge, built by the editor from one list (editor/src/help.js) */
   #m2-ed-help-box { position: fixed; z-index: 60; width: 320px; max-width: calc(100vw - 32px); max-height: calc(100vh - 32px); overflow: auto;
@@ -2759,14 +2770,15 @@ page, so its styles keep the base they were made on). The looks before (Default 
     var KEPT_KEY = 'atlas-edit-kept';
     function boxes(k, list) {   // the site's click data with each node's box where the edited drawing has it
       if (!k || !k.ref || !k.cur || !list) return list;
-      var ref = k.ref, cur = k.cur, near = function (a, b) { return Math.abs(a - b) < 0.6; };
+      var ref = k.ref, cur = k.cur, near = function (a, b) { return Math.abs(a - b) < 0.6; }, at = null;
+      if (ref.ids && cur.ids) { at = {}; cur.ids.forEach(function (id, j) { at[id] = j; }); }   // by node id: a node made since moves no other's box (the full editor)
       return list.map(function (n) {
         var b = n.box, i = -1;
         for (var j = 0; j < ref.boxes.length; j++) {
           var r = ref.boxes[j];
           if (r && near(b[0], r[0] - ref.x0) && near(b[1], r[1] - ref.y0) && near(b[2], r[2]) && near(b[3], r[3])) { i = j; break; }
         }
-        var c = i >= 0 ? cur.boxes[i] : null;
+        var c = i < 0 ? null : at ? (ref.ids[i] in at ? cur.boxes[at[ref.ids[i]]] : null) : cur.boxes[i];
         var nb = c ? [c[0] - cur.x0, c[1] - cur.y0, b[2], b[3]] : [b[0] + ref.x0 - cur.x0, b[1] + ref.y0 - cur.y0, b[2], b[3]];
         return Object.assign({}, n, { box: nb });
       });
