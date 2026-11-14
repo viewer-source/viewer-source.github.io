@@ -418,7 +418,8 @@
       var c = shapeSvg(ellipse(x, y, w, h), sc === 'dissociation' ? fill : null, stroke, rl);
       if (sc === 'association') c = '<path d="' + d(ellipse(x, y, w, h)) + '"' + ink('fill', stroke ? stroke[0] : '#000000') + ' stroke="none"/>' + c;
       else c += shapeSvg(ellipse(x + w * 0.2, y + h * 0.2, w * 0.6, h * 0.6), null, stroke, rl);
-      s = '<g class="sbgn-' + sc + '">' + c + '</g><g class="sbgn-generic" display="none">' + s + '</g>';
+      // the generic square white as every process (user, 2026-11-14: Newt fills an association dark grey)
+      s = '<g class="sbgn-' + sc + '">' + c + '</g><g class="sbgn-generic" display="none">' + outlines.map(function (o) { return shapeSvg(o, '#FFFFFF', stroke, rl); }).join('') + '</g>';
     }
     kids(r, Y, 'NodeLabel').forEach(function (lab) {
       if (get(lab, 'visible') === 'false') return;

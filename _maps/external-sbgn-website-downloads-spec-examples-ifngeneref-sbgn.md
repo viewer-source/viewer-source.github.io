@@ -14,7 +14,7 @@ height: 770
 scale: 1
 annotation: "/atlas-data/external-sbgn-website-downloads-spec-examples-ifngeneref-sbgn.json"
 image_error: ""
-v: "4ebe4b4cc2"
+v: "69e918ce8c"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/test-maps/sbgn-ml/pd/sbgn-website/downloads/spec_examples/IFNGeneRef.sbgn"}, {"label": "SVG", "url": "/downloads/external-sbgn-website-downloads-spec-examples-ifngeneref-sbgn.svg"}]

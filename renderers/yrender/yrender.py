@@ -459,7 +459,8 @@ class Map:
                 c = f'<path d="{d(ellipse(x, y, w, h))}"{ink("fill", stroke[0] if stroke else "#000000")} stroke="none"/>' + c
             else:
                 c += shape_svg(ellipse(x + w * 0.2, y + h * 0.2, w * 0.6, h * 0.6), None, stroke, rl)
-            s = f'<g class="sbgn-{sc}">{c}</g><g class="sbgn-generic" display="none">{s}</g>'
+            # the generic square white as every process (user, 2026-11-14: Newt fills an association dark grey)
+            s = f'<g class="sbgn-{sc}">{c}</g><g class="sbgn-generic" display="none">' + ''.join(shape_svg(o, '#FFFFFF', stroke, rl) for o in outlines) + '</g>'
         for lab in r.findall(Y + 'NodeLabel'):
             if lab.get('visible') == 'false':
                 continue
