@@ -11,17 +11,20 @@ says "the workbench", "the converter's repository", "a private repository".
     NNE, NE, ...; its `linkAnchor`, which CellDesigner calls an anchor point). yEd keeps a port as an offset from the
     node's centre (`sx`, `sy`, `tx`, `ty`; 0,0 the centre); SBGN-ML has a `port` only for a process's or gate's antenna.
   - **visual end** (user, 2026-11-14: "end could mean simply the final point of the link"): where the drawn line stops:
-    on the glyph's outline for a port inside the glyph (a line aimed at the centre is cut where it crosses the outline),
-    the port itself for a port on the outline or at an antenna's tip. A line's **end** alone is its last point as the
-    file gives it (its source end, its target end), wherever that is.
+    on the shape outline for a port inside the glyph (a line aimed at the centre is cut where it first meets the shape
+    outline), the port itself for a port on the outline or at an antenna's tip. A line's **end** alone is its last point
+    as the file gives it (its source end, its target end), wherever that is.
   - **antenna**: the short stick from a process or logic gate to its port.
   - **bend point**: a point where a line changes direction (CellDesigner: an anchor point, `editPoints`; yEd: a bend,
     `y:Point`; SBGN-ML: an intermediate point, `next`).
-  - **box** and **outline**: a glyph's box is the rectangle its file gives (position and size: CellDesigner's
-    `bounds`, yEd's `y:Geometry`, SBGN-ML's `bbox`), whatever its shape; its outline is the shape drawn in it (a
-    rectangle, a circle, a hexagon). CellDesigner's 16 ports are worked out from the box and lie on the outline: on a
-    rectangle at its corners, the sides' middles and quarter points, on a circle every 22.5 degrees round it, on a
-    phenotype on its slanted sides (cdrender's anchorPoint).
+  - **box**: the rectangle a glyph's file gives (position and size: CellDesigner's `bounds`, yEd's `y:Geometry`, SBGN-ML's
+    `bbox`), whatever its shape.
+  - **shape outline** (user, 2026-11-14): the shape drawn in the box (a rectangle, a circle, a hexagon) together with its
+    state variables and units of information, so a visual end stops at a state variable on its way and never runs
+    through it to the shape behind. CellDesigner's 16 ports are worked out from the box and lie on the shape's own edge:
+    on a rectangle at its corners, the sides' middles and quarter points, on a circle every 22.5 degrees round it, on a
+    phenotype on its slanted sides (cdrender's anchorPoint). Not yet drawn so (2026-11-14): both renderers cut a line at
+    the shape alone, a state variable on its way left crossed.
   "Anchor point" is not one of our words: it stays only where CellDesigner's or MINERVA's own names are quoted
   (menus, XML, function names such as anchorPoint, kept as they are).
 - The viewer: `_includes/atlas-app.html` (list on the left, the map, its panel, search, downloads row). It never
