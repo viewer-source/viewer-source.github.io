@@ -15,6 +15,7 @@
   var HUBS = new Set(['Process', 'Operator']), ANTENNA = 0.5, ANTENNA_MIN = 9, EQUIV = '\u2261';   // ports: yrender.py's header
   var STYLE_PROPS = new Set(['radius', 'radiusX', 'radiusY', 'mcount']);
   var ARROWS = new Set(['none', 'delta', 'white_delta', 'white_circle', 'white_delta_bar', 't_shape', 'white_diamond']);
+  var AIR = 2, AIR_MAX = 16, AIRED = new Set(['white_circle', 't_shape']);   // heads kept AIR px off the outline: yrender.py's header
   var FONTS = {
     Dialog: [0.9668, 1.1777, "'Dialog', Arial, Helvetica, sans-serif"],
     Arial: [0.905, 1.1172, 'Arial, Helvetica, sans-serif'],
@@ -598,12 +599,17 @@
     if (get(ls, 'type') !== 'line' && get(ls, 'type') !== 'dashed') refuse(where, 'line type ' + get(ls, 'type'));
     var col = get(ls, 'color'), width = pyFloat(get(ls, 'width'));
     var dash = get(ls, 'type') === 'dashed' ? ' stroke-dasharray="' + num(6 * width) + ' ' + num(2 * width) + '"' : '';
-    var heads = '', line = pts.slice();
+    var heads = '', line = pts.slice(), orig = pts.slice();
     [['target', get(ar, 'target')], ['source', get(ar, 'source')]].forEach(function (q) {
       var end = q[0], kind = q[1];
       if (!ARROWS.has(kind)) { refuse(where, 'unknown arrow ' + kind); return; }
       if (kind === 'none') return;
       var i = end === 'target' ? pts.length - 1 : 0, j = end === 'target' ? pts.length - 2 : 1;
+      if (AIRED.has(kind) && !(end === 'target' ? at[1] === 'in' : at[0])) {   // cut at the outline, or a port on it: moved off
+        var N = end === 'target' ? T : S, raw = end === 'target' ? centre(T, 'tx', 'ty') : centre(S, 'sx', 'sy');
+        var both = pts.length === 2 && get(ar, end === 'target' ? 'source' : 'target') !== 'none';   // the other head keeps its half
+        if (dist(pts[i], raw) > 0 || clearance(null, raw, null, N.polys.concat(N.aux), 0) < 1) pts[i] = air(kind, pts[i], orig[j], N, width, both);
+      }
       var a = arrow(kind, pts[i], pts[j], col, width);
       heads += a[0];
       var tx = pts[i][0], ty = pts[i][1], px = pts[j][0], py = pts[j][1], L = dist(pts[i], pts[j]);
@@ -672,6 +678,43 @@
       '" viewBox="0 0 ' + int(W) + ' ' + int(H) + '" stroke-linecap="butt" stroke-miterlimit="10">\n<g transform="translate(' + int(-x0) + ',' + int(-y0) + ')">\n' +
       body.filter(function (b) { return b; }).join('\n') + '\n</g>\n</svg>\n';
   };
+  function segDist(p, a, b) {   // from a point to a segment
+    var dx = b[0] - a[0], dy = b[1] - a[1], q = dx * dx + dy * dy, t = q > 0 ? ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / q : 0;
+    t = Math.max(0, Math.min(1, t));
+    return dist(p, [a[0] + t * dx, a[1] + t * dy]);
+  }
+  function crosses(a, b, c, d) {   // two segments meet
+    var o = function (p, q, r) { return (q[0] - p[0]) * (r[1] - p[1]) - (q[1] - p[1]) * (r[0] - p[0]); };
+    return o(a, b, c) * o(a, b, d) <= 0 && o(c, d, a) * o(c, d, b) <= 0;
+  }
+  // the least distance from a head at tip (kind null: the point tip itself) to the outline's line; a bar across it 0
+  function clearance(kind, tip, prev, polys, ink) {
+    var best = Infinity, c, b1, b2;
+    if (kind) {
+      var L = dist(tip, prev), ux = (tip[0] - prev[0]) / L, uy = (tip[1] - prev[1]) / L;
+      c = [tip[0] - ux * 4, tip[1] - uy * 4]; b1 = [tip[0] - uy * 5, tip[1] + ux * 5]; b2 = [tip[0] + uy * 5, tip[1] - ux * 5];
+    }
+    polys.forEach(function (poly) {
+      for (var i = 0; i < poly.length; i++) {
+        var A = poly[(i - 1 + poly.length) % poly.length], B = poly[i], d;
+        if (!kind) d = segDist(tip, A, B);
+        else if (kind === 'white_circle') d = segDist(c, A, B) - 4;
+        else d = crosses(b1, b2, A, B) ? 0 : Math.min(segDist(b1, A, B), segDist(b2, A, B), segDist(A, b1, b2), segDist(B, b1, b2));
+        best = Math.min(best, d - ink);
+      }
+    });
+    return best;
+  }
+  // the head moved back along its line until AIR px of white part its ink from the outline's (the node's line width, the
+  // circle's 1 px, the bar's the arc's), at most AIR_MAX and never into the line's other point (or the other head's half)
+  function air(kind, tip, prev, n, width, both) {
+    var L = dist(tip, prev), room = both ? L / 2 - 8 : L - 8;
+    if (!(L > 0) || room <= 0) return tip;
+    var ink = (n.stroke ? n.stroke[1] : 1) / 2 + (kind === 'white_circle' ? 0.5 : width / 2);
+    var at = function (d) { return [tip[0] + (prev[0] - tip[0]) * d / L, tip[1] + (prev[1] - tip[1]) * d / L]; };
+    for (var d = 1; d < room && d <= AIR_MAX; d += 0.5) if (clearance(kind, at(d), prev, n.polys.concat(n.aux), ink) >= AIR) return at(d);
+    return at(Math.min(room, AIR_MAX));
+  }
   function arrow(kind, tip, prev, col, width) {
     var L = dist(tip, prev) || 1, ux = (tip[0] - prev[0]) / L, uy = (tip[1] - prev[1]) / L, nx = -uy, ny = ux;
     var at = function (back, side) { return [tip[0] - ux * back + nx * side, tip[1] - uy * back + ny * side]; };

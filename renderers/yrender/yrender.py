@@ -19,7 +19,10 @@
 #  - edges: from port to port through the bends, cut at the node's shape outline (its shape with its state
 #    variables and units of information: visual_end, user 2026-11-14); soft bends are
 #    quadratic curves cutting 10 px (at most half a segment) on each side of the bend
-#  - arrows: tip on the outline; the line stops where the arrow head covers it
+#  - arrows: tip on the outline; the line stops where the arrow head covers it. A catalysis circle or an
+#    inhibition bar cut at the outline, or with its port on it, is moved back along its line until AIR px of white
+#    part it from the outline, also when it comes in at a slant (user, 2026-11-14: "doesn't look nice when it
+#    touches", the bar "almost becomes invisible"); a port 1 px or more outside the shape, as hand-made gaps, as given
 #  - an arc goes behind its own nodes (2026-11-14, user: a bend or an antenna's tip inside a node drew the line across
 #    it, to its middle): it starts where it first leaves its source and stops where it last enters its target;
 #    a stick whose tip lies inside a node joined by an arc at that port stops on that node's outline, and that arc runs along
@@ -69,6 +72,7 @@ EQUIV = '\u2261'  # the equivalence operator's label in yEd's SBGN palette
 ANTENNA, ANTENNA_MIN = 0.5, 9
 STYLE_PROPS = {'radius', 'radiusX', 'radiusY', 'mcount'}
 ARROWS = {'none', 'delta', 'white_delta', 'white_circle', 'white_delta_bar', 't_shape', 'white_diamond'}
+AIR, AIR_MAX, AIRED = 2, 16, {'white_circle', 't_shape'}  # heads kept AIR px off the outline (the header, arrows)
 FONTS = {  # ascent and line height / font size as yEd measured them; fallbacks for systems without the font
     'Dialog': (0.9668, 1.1777, "'Dialog', Arial, Helvetica, sans-serif"),
     'Arial': (0.905, 1.1172, "Arial, Helvetica, sans-serif"),
@@ -728,13 +732,18 @@ class Map:
             refuse(where, f'line type {ls.get("type")}')
         col, width = ls.get('color'), float(ls.get('width'))
         dash = f' stroke-dasharray="{num(6 * width)} {num(2 * width)}"' if ls.get('type') == 'dashed' else ''
-        heads, line = '', list(pts)
+        heads, line, orig = '', list(pts), list(pts)
         for end, kind in (('target', ar.get('target')), ('source', ar.get('source'))):
             if kind not in ARROWS:
                 refuse(where, f'unknown arrow {kind}'); continue
             if kind == 'none':
                 continue
             i, j = (-1, -2) if end == 'target' else (0, 1)
+            if kind in AIRED and not (at_t == 'in' if end == 'target' else at_s):  # cut at the outline, or a port on it: moved off
+                N, raw = (T, centre(T, 'tx', 'ty')) if end == 'target' else (S, centre(S, 'sx', 'sy'))
+                both = len(pts) == 2 and ar.get('source' if end == 'target' else 'target') != 'none'  # the other head keeps its half
+                if math.dist(pts[i], raw) > 0 or clearance(None, raw, None, N['polys'] + N['aux'], 0) < 1:
+                    pts[i] = air(kind, pts[i], orig[j], N, width, both)
             svg, cut = arrow(kind, pts[i], pts[j], col, width)
             heads += svg
             (tx, ty), (px, py) = pts[i], pts[j]
@@ -805,6 +814,59 @@ class Map:
                 f' xmlns:xlink="http://www.w3.org/1999/xlink" width="{W}" height="{H}" viewBox="0 0 {W} {H}"'
                 f' stroke-linecap="butt" stroke-miterlimit="10">\n'
                 f'<g transform="translate({-x0},{-y0})">\n' + '\n'.join(b for b in body if b) + '\n</g>\n</svg>\n')
+
+
+def seg_dist(p, a, b):  # from a point to a segment
+    dx, dy = b[0] - a[0], b[1] - a[1]
+    q = dx * dx + dy * dy
+    t = ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / q if q > 0 else 0
+    t = max(0, min(1, t))
+    return math.dist(p, (a[0] + t * dx, a[1] + t * dy))
+
+
+def crosses(a, b, c, d):  # two segments meet
+    def o(p, q, r):
+        return (q[0] - p[0]) * (r[1] - p[1]) - (q[1] - p[1]) * (r[0] - p[0])
+    return o(a, b, c) * o(a, b, d) <= 0 and o(c, d, a) * o(c, d, b) <= 0
+
+
+def clearance(kind, tip, prev, polys, ink):
+    """The least distance from a head at tip (kind None: the point tip itself) to the outline's line; a bar across it 0."""
+    best = math.inf
+    if kind:
+        L = math.dist(tip, prev)
+        ux, uy = (tip[0] - prev[0]) / L, (tip[1] - prev[1]) / L
+        c, b1, b2 = (tip[0] - ux * 4, tip[1] - uy * 4), (tip[0] - uy * 5, tip[1] + ux * 5), (tip[0] + uy * 5, tip[1] - ux * 5)
+    for poly in polys:
+        for i in range(len(poly)):
+            A, B = poly[(i - 1 + len(poly)) % len(poly)], poly[i]
+            if not kind:
+                d = seg_dist(tip, A, B)
+            elif kind == 'white_circle':
+                d = seg_dist(c, A, B) - 4
+            else:
+                d = 0 if crosses(b1, b2, A, B) else min(seg_dist(b1, A, B), seg_dist(b2, A, B), seg_dist(A, b1, b2), seg_dist(B, b1, b2))
+            best = min(best, d - ink)
+    return best
+
+
+def air(kind, tip, prev, n, width, both):
+    """The head moved back along its line until AIR px of white part its ink from the outline's (the node's line width,
+    the circle's 1 px, the bar's the arc's), at most AIR_MAX and never into the line's other point (or the other head's
+    half)."""
+    L = math.dist(tip, prev)
+    room = L / 2 - 8 if both else L - 8
+    if not L > 0 or room <= 0:
+        return tip
+    ink = (n['stroke'][1] if n['stroke'] else 1) / 2 + (0.5 if kind == 'white_circle' else width / 2)
+    def at(d):
+        return (tip[0] + (prev[0] - tip[0]) * d / L, tip[1] + (prev[1] - tip[1]) * d / L)
+    d = 1
+    while d < room and d <= AIR_MAX:
+        if clearance(kind, at(d), prev, n['polys'] + n['aux'], ink) >= AIR:
+            return at(d)
+        d += 0.5
+    return at(min(room, AIR_MAX))
 
 
 def arrow(kind, tip, prev, col, width):
