@@ -583,7 +583,7 @@
     <edge id="e4" source="n4" target="n1">
       <data key="eg">
         <y:PolyLineEdge>
-          <y:Path sx="0.0" sy="18.0" tx="0.0" ty="0.0"><y:Point x="732.0" y="520.0"/></y:Path>
+          <y:Path sx="0.0" sy="18.0" tx="0.0" ty="0.0"/>
           <y:LineStyle color="#000000" type="line" width="1.0"/>
           <y:Arrows source="none" target="delta"/>
           <y:BendStyle smoothed="false"/>
