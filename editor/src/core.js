@@ -1644,6 +1644,8 @@
       return EPN.test(n.shape.kind) ? 'epn' : n.shape.kind === 'Phenotype' ? 'pheno' : null;
     }
     function takes(k, end, i) {   // whether node i can take that end of arc k (its own node aside)
+      // moving an end to another node changes the network: full editing only (Settings, Editing; user, 2026-11-14)
+      if (V.level !== 'full') return false;
       var e = edges2[k], a = e.arr, other = end ? e.s : e.t, r = roleOf(i), ro = roleOf(other);
       var hub = function (x) { return x === 'proc' || x === 'gate'; };
       if (cd) {   // a reaction's end at a species, to another species or complex (no member, no compartment, no glyph, none the reaction has already)
@@ -2101,6 +2103,54 @@
       var i = h.n, gate = nodes2[i].shape.kind === 'Operator';
       return { label: gate ? 'Turn logic gate' : 'Turn process', go: function () { turn(i); } };
     };
+    // Make main (user, 2026-11-14: CellDesigner's main reactant or product is often an accident of the conversion): the
+    // right-click menu on an added reactant's or product's line of a CellDesigner reaction swaps it with the main one. The
+    // two lines trade their species ends, their ports there and their bend points, so each species keeps its line's route
+    // and only the roles change (the network stays: layout editing too); cd_edit's rewire writes the participants and
+    // CellDesigner's process square goes to the middle of the new main line. One undo step.
+    window.m2EditMain = function () {
+      if (!on || V.current !== map || !rclick || !cd) return null;
+      var h = hit(rclick);
+      if (!h || h.e == null || h.glyph) return null;
+      var m = /^(.*\|)([rp])\d+$/.exec(edges2[h.e].id);
+      if (!m) return null;
+      var into = m[2] === 'r', ids = into ? [m[1] + 'a'] : [m[1] + 'b', m[1] + 'a'], kb = -1;
+      ids.some(function (id) { kb = edges2.findIndex(function (q) { return q.id === id; }); return kb >= 0; });
+      if (kb < 0) return null;
+      var k = h.e, glyph = edges2.some(function (q) { return q.id === m[1] + 'b'; });
+      return { label: into ? 'Make main reactant' : 'Make main product', go: function () { swapMain(kb, k, into, glyph); } };
+    };
+    function swapMain(ka, kb, into, glyph) {   // edges ka (the main line) and kb trade their species end (source for a reactant, target for a product)
+      var blocks = text.match(/<edge\b[\s\S]*?<\/edge>/g) || [];
+      if (blocks.length !== edges2.length) { warn('The main line could not be changed: the file is not read edge for edge.'); return; }
+      var att = into ? 'source' : 'target', xy = into ? ['sx', 'sy'] : ['tx', 'ty'];
+      var get = function (s, k) { var r = new RegExp('\\s' + k + '\\s*=\\s*"([^"]*)"').exec(s); return r ? r[1] : null; };
+      var set = function (s, k, v) {
+        var r = new RegExp('(\\s' + k + '\\s*=\\s*")[^"]*"');
+        return v == null ? s.replace(new RegExp('\\s' + k + '\\s*=\\s*"[^"]*"'), '') : r.test(s) ? s.replace(r, '$1' + v + '"') : s.replace(/(\/?>)$/, ' ' + k + '="' + v + '"$1');
+      };
+      var path = function (b) { var r = /<y:Path\b[^>]*?(\/>|>[\s\S]*?<\/y:Path>)/.exec(b); return r ? r[0] : null; };
+      var head = function (p) { return /^<y:Path\b[^>]*>/.exec(p)[0]; };
+      // the bend points go with the species only where both lines run from the species to the process square: a reaction
+      // drawn without one has its main line's points on both sides of it
+      var withPts = glyph;
+      var A = blocks[ka], B = blocks[kb], pa = path(A), pb = path(B);
+      if (!pa || !pb) { warn('The main line could not be changed: a line has no path in the file.'); return; }
+      var tagA = /^<edge\b[^>]*>/.exec(A)[0], tagB = /^<edge\b[^>]*>/.exec(B)[0];
+      var ptsA = pa.replace(/^<y:Path\b[^>]*?(\/>|>)/, '').replace(/<\/y:Path>$/, ''), ptsB = pb.replace(/^<y:Path\b[^>]*?(\/>|>)/, '').replace(/<\/y:Path>$/, '');
+      var mk = function (p, from, pts) {   // a path with the other line's port at the species (and its points)
+        var h0 = head(p).replace(/\/>$/, '>');
+        xy.forEach(function (k) { h0 = set(h0, k, get(head(from), k)); });
+        var body = withPts ? pts : p.replace(/^<y:Path\b[^>]*?(\/>|>)/, '').replace(/<\/y:Path>$/, '');
+        return body.trim() ? h0 + body + '</y:Path>' : h0.replace(/>$/, '/>');
+      };
+      var A2 = A.replace(tagA, set(tagA, att, get(tagB, att))).replace(pa, mk(pa, pb, ptsB));
+      var B2 = B.replace(tagB, set(tagB, att, get(tagA, att))).replace(pb, mk(pb, pa, ptsA));
+      remember(false);
+      var c = -1;
+      text = text.replace(/<edge\b[\s\S]*?<\/edge>/g, function (b) { ++c; return c === ka ? A2 : c === kb ? B2 : b; });
+      parse(); selN = []; selP = []; selE = []; keyGuides = null; dirty = true; render(); paint(); changed();
+    }
     window.m2EditBend = function () {
       if (!on || V.current !== map || !rclick) return null;
       var h = hit(rclick);

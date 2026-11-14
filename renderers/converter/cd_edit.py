@@ -534,7 +534,7 @@ def rewire(d, text, ends, olds):
         if r is None:
             continue
         # the reaction's ends: (edge, end, alias in the file, kind, n, el); an end may move onto an alias none of the
-        # reaction's other ends has as the GraphML now stands (one freed by an earlier move is free: the review of V4)
+        # reaction's other ends of its kind has as the GraphML now stands (one freed by an earlier move is free: the review of V4)
         every = [(rid + '|a', 0, r['ra'], 'baseReactant', 0, None), (rid + ('|b' if r['glyph'] else '|a'), 1, r['pa'], 'baseProduct', 0, None)]
         every += [(rid + '|m%d' % m['n'], 0, m['alias'], 'modification', m['n'], m['el']) for m in r['mods']]
         every += [(rid + '|%s%d' % ('r' if l['into'] else 'p', l['n']), 0 if l['into'] else 1, l['alias'],
@@ -545,8 +545,11 @@ def rewire(d, text, ends, olds):
             a = g[q[1]] if g else None
             return a if a and a != q[2] and a in d.alias else q[2]
         now = [now_of(q) for q in every]
+        # a modifier and a reactant or product may share a species alias (as files have it, and Make main swaps into);
+        # two reactants or products may not (a line of length 0)
+        mod = lambda q: q[3] == 'modification'
         todo = [(q[3], q[2], now[i], q[4], q[5]) for i, q in enumerate(every)
-                if now[i] != q[2] and not any(k != i and b == now[i] for k, b in enumerate(now))]
+                if now[i] != q[2] and not any(k != i and b == now[i] and mod(every[k]) == mod(q) for k, b in enumerate(now))]
         if not todo:
             continue
         s, gone, mine = T.span(r'<reaction [^>]*\bid="%s"' % re.escape(rid)), [], []

@@ -27,6 +27,7 @@ jobs:
       - run: node tests/cd-snap-redo.js
       - run: node tests/cd-modifier-spot.js
       - run: node tests/cd-reconnect.js python3
+      - run: node tests/cd-make-main.js python3
       - run: node tests/cd-square.js
       - run: node tests/sbgn-edit.js python3
       - run: node tests/sbgn-reconnect.js python3
