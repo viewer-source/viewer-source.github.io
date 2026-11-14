@@ -634,7 +634,7 @@
       </glyph>
       <glyph class="state variable" id="glyph_1_sv1">
         <state value=""/>
-        <bbox x="136.5" y="84.5" w="15" h="15"/>
+        <bbox x="176.5" y="124.5" w="15" h="15"/>
       </glyph>
     </glyph>
     <glyph class="macromolecule" id="glyph_2">
