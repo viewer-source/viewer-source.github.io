@@ -491,7 +491,7 @@
       L.push(line(at(20, 4.5), at(20, -4.5)));
       return at(15, 0);
     }
-    if (kind === 'catalysis') { var c = at(4.5, 0); L.push('<circle cx="' + fmt(c[0]) + '" cy="' + fmt(c[1]) + '" r="3" fill="#fff" stroke="#000"/>'); return at(7.5, 0); }
+    if (kind === 'catalysis') { var c = at(5, 0); L.push('<circle cx="' + fmt(c[0]) + '" cy="' + fmt(c[1]) + '" r="3" fill="#fff" stroke="#000"/>'); return at(8, 0); }   // 1 px of white before the outline (user, 2026-11-14; CellDesigner's 4.5 left 0.5 px), as yrender
     if (kind === 'inhibition') { L.push(line(at(3, 6), at(3, -6))); return at(3, 0); }
     if (kind === 'modulation') { L.push('<polygon points="' + pts([T, at(5, 4), at(10, 0), at(5, -4)]) + '" fill="#fff" stroke="#000"/>'); return at(10, 0); }
     return T;

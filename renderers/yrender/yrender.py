@@ -20,9 +20,10 @@
 #    variables and units of information: visual_end, user 2026-11-14); soft bends are
 #    quadratic curves cutting 10 px (at most half a segment) on each side of the bend
 #  - arrows: tip on the outline; the line stops where the arrow head covers it. A catalysis circle or an
-#    inhibition bar cut at the outline, or with its port on it, is moved back along its line until AIR px of white
-#    part it from the outline, also when it comes in at a slant (user, 2026-11-14: "doesn't look nice when it
-#    touches", the bar "almost becomes invisible"); a port 1 px or more outside the shape, as hand-made gaps, as given
+#    inhibition bar cut at the outline, or with its port on it, is moved back along its line until 1 px (circle)
+#    or 2 px (bar) of white part it from the outline, also when it comes in at a slant (user, 2026-11-14: "doesn't
+#    look nice when it touches", the bar "almost becomes invisible"; the circle 2 px at first, then 1 px tried);
+#    a port 1 px or more outside the shape, as hand-made gaps, as given. The file is never changed, only the drawing
 #  - an arc goes behind its own nodes (2026-11-14, user: a bend or an antenna's tip inside a node drew the line across
 #    it, to its middle): it starts where it first leaves its source and stops where it last enters its target;
 #    a stick whose tip lies inside a node joined by an arc at that port stops on that node's outline, and that arc runs along
@@ -72,7 +73,7 @@ EQUIV = '\u2261'  # the equivalence operator's label in yEd's SBGN palette
 ANTENNA, ANTENNA_MIN = 0.5, 9
 STYLE_PROPS = {'radius', 'radiusX', 'radiusY', 'mcount'}
 ARROWS = {'none', 'delta', 'white_delta', 'white_circle', 'white_delta_bar', 't_shape', 'white_diamond'}
-AIR, AIR_MAX, AIRED = 2, 16, {'white_circle', 't_shape'}  # heads kept AIR px off the outline (the header, arrows)
+AIR, AIR_MAX = {'white_circle': 1, 't_shape': 2}, 16  # px of white each head keeps off the outline (the header, arrows)
 FONTS = {  # ascent and line height / font size as yEd measured them; fallbacks for systems without the font
     'Dialog': (0.9668, 1.1777, "'Dialog', Arial, Helvetica, sans-serif"),
     'Arial': (0.905, 1.1172, "Arial, Helvetica, sans-serif"),
@@ -739,7 +740,7 @@ class Map:
             if kind == 'none':
                 continue
             i, j = (-1, -2) if end == 'target' else (0, 1)
-            if kind in AIRED and not (at_t == 'in' if end == 'target' else at_s):  # cut at the outline, or a port on it: moved off
+            if kind in AIR and not (at_t == 'in' if end == 'target' else at_s):  # cut at the outline, or a port on it: moved off
                 N, raw = (T, centre(T, 'tx', 'ty')) if end == 'target' else (S, centre(S, 'sx', 'sy'))
                 both = len(pts) == 2 and ar.get('source' if end == 'target' else 'target') != 'none'  # the other head keeps its half
                 if math.dist(pts[i], raw) > 0 or clearance(None, raw, None, N['polys'] + N['aux'], 0) < 1:
@@ -851,7 +852,7 @@ def clearance(kind, tip, prev, polys, ink):
 
 
 def air(kind, tip, prev, n, width, both):
-    """The head moved back along its line until AIR px of white part its ink from the outline's (the node's line width,
+    """The head moved back along its line until AIR[kind] px of white part its ink from the outline's (the node's line width,
     the circle's 1 px, the bar's the arc's), at most AIR_MAX and never into the line's other point (or the other head's
     half)."""
     L = math.dist(tip, prev)
@@ -863,7 +864,7 @@ def air(kind, tip, prev, n, width, both):
         return (tip[0] + (prev[0] - tip[0]) * d / L, tip[1] + (prev[1] - tip[1]) * d / L)
     d = 1
     while d < room and d <= AIR_MAX:
-        if clearance(kind, at(d), prev, n['polys'] + n['aux'], ink) >= AIR:
+        if clearance(kind, at(d), prev, n['polys'] + n['aux'], ink) >= AIR[kind]:
             return at(d)
         d += 0.5
     return at(min(room, AIR_MAX))

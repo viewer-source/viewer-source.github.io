@@ -15,7 +15,7 @@
   var HUBS = new Set(['Process', 'Operator']), ANTENNA = 0.5, ANTENNA_MIN = 9, EQUIV = '\u2261';   // ports: yrender.py's header
   var STYLE_PROPS = new Set(['radius', 'radiusX', 'radiusY', 'mcount']);
   var ARROWS = new Set(['none', 'delta', 'white_delta', 'white_circle', 'white_delta_bar', 't_shape', 'white_diamond']);
-  var AIR = 2, AIR_MAX = 16, AIRED = new Set(['white_circle', 't_shape']);   // heads kept AIR px off the outline: yrender.py's header
+  var AIR = { white_circle: 1, t_shape: 2 }, AIR_MAX = 16;   // px of white each head keeps off the outline: yrender.py's header
   var FONTS = {
     Dialog: [0.9668, 1.1777, "'Dialog', Arial, Helvetica, sans-serif"],
     Arial: [0.905, 1.1172, 'Arial, Helvetica, sans-serif'],
@@ -605,7 +605,7 @@
       if (!ARROWS.has(kind)) { refuse(where, 'unknown arrow ' + kind); return; }
       if (kind === 'none') return;
       var i = end === 'target' ? pts.length - 1 : 0, j = end === 'target' ? pts.length - 2 : 1;
-      if (AIRED.has(kind) && !(end === 'target' ? at[1] === 'in' : at[0])) {   // cut at the outline, or a port on it: moved off
+      if (has(AIR, kind) && !(end === 'target' ? at[1] === 'in' : at[0])) {   // cut at the outline, or a port on it: moved off
         var N = end === 'target' ? T : S, raw = end === 'target' ? centre(T, 'tx', 'ty') : centre(S, 'sx', 'sy');
         var both = pts.length === 2 && get(ar, end === 'target' ? 'source' : 'target') !== 'none';   // the other head keeps its half
         if (dist(pts[i], raw) > 0 || clearance(null, raw, null, N.polys.concat(N.aux), 0) < 1) pts[i] = air(kind, pts[i], orig[j], N, width, both);
@@ -705,14 +705,14 @@
     });
     return best;
   }
-  // the head moved back along its line until AIR px of white part its ink from the outline's (the node's line width, the
+  // the head moved back along its line until AIR[kind] px of white part its ink from the outline's (the node's line width, the
   // circle's 1 px, the bar's the arc's), at most AIR_MAX and never into the line's other point (or the other head's half)
   function air(kind, tip, prev, n, width, both) {
     var L = dist(tip, prev), room = both ? L / 2 - 8 : L - 8;
     if (!(L > 0) || room <= 0) return tip;
     var ink = (n.stroke ? n.stroke[1] : 1) / 2 + (kind === 'white_circle' ? 0.5 : width / 2);
     var at = function (d) { return [tip[0] + (prev[0] - tip[0]) * d / L, tip[1] + (prev[1] - tip[1]) * d / L]; };
-    for (var d = 1; d < room && d <= AIR_MAX; d += 0.5) if (clearance(kind, at(d), prev, n.polys.concat(n.aux), ink) >= AIR) return at(d);
+    for (var d = 1; d < room && d <= AIR_MAX; d += 0.5) if (clearance(kind, at(d), prev, n.polys.concat(n.aux), ink) >= AIR[kind]) return at(d);
     return at(Math.min(room, AIR_MAX));
   }
   function arrow(kind, tip, prev, col, width) {
