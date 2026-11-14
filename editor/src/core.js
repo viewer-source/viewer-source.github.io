@@ -2102,9 +2102,12 @@
     };
     // every bend point of the map taken away at once (user, 2026-11-14: maps from another editor can be so messy that
     // removing them all and rerouting by hand is quicker than one by one): the right-click menu's Remove all bend points,
-    // anywhere on the map while editing; one undo step
+    // on empty map space while editing (user, 2026-11-14: a right click on a bend point means that bend point; inside a
+    // compartment counts as empty); one undo step
     window.m2EditAllBends = function () {
-      if (!on || V.current !== map || !points.length) return null;
+      if (!on || V.current !== map || !points.length || !rclick) return null;
+      var h = hit(rclick);
+      if (h && !(h.n != null && nodes2[h.n].kids.length)) return null;
       return function () { unbend(points.map(function (p, i) { return i; })); };
     };
     // a bend point put where the right click was on a line (user, 2026-11-13: "not only remove anchor point, but also

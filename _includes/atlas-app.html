@@ -574,11 +574,11 @@ page, so its styles keep the base they were made on). The looks before (Default 
   /* the right-click menu over the map (--m2-context): the look of the Downloads menu, a submenu beside its row */
   .m2-cx { position: fixed; z-index: 50; min-width: 190px; max-width: 280px; background: var(--m2-bg); border: 1px solid var(--m2-line); border-radius: var(--m2-radius-button); box-shadow: 0 2px 8px rgba(0, 0, 0, .12); padding: 4px 0; font-size: 14px; line-height: 20px; }
   .m2-cx button, .m2-cx a { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; box-sizing: border-box; padding: 4px 12px; border: 0; background: none; font: inherit; color: var(--m2-text); text-align: left; text-decoration: none; cursor: pointer; }
-  .m2-cx button:hover, .m2-cx a:hover, .m2-cx button:focus-visible, .m2-cx a:focus-visible, .m2-cx .m2-cx-open > button { background: var(--m2-accent); color: var(--m2-on-accent); outline: none; }
+  .m2-cx:not(.m2-cx-still) button:hover, .m2-cx:not(.m2-cx-still) a:hover, .m2-cx button:focus-visible, .m2-cx a:focus-visible, .m2-cx .m2-cx-open > button { background: var(--m2-accent); color: var(--m2-on-accent); outline: none; }
   .m2-cx svg { width: 13px; height: 13px; flex: none; }
   .m2-cx .m2-cx-arrow { font-size: 10px; flex: none; }
   .m2-cx .m2-cx-key { flex: none; font-size: 12px; color: var(--m2-muted, #5f6368); }
-  .m2-cx button:hover .m2-cx-key, .m2-cx button:focus-visible .m2-cx-key { color: inherit; }
+  .m2-cx:not(.m2-cx-still) button:hover .m2-cx-key, .m2-cx button:focus-visible .m2-cx-key { color: inherit; }
   .m2-cx .m2-sep { border-top: 1px solid var(--m2-line); margin: 4px 0; }
   .m2-cx .m2-cx-head { padding: 4px 12px; color: var(--m2-muted, #5f6368); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .m2-cx .m2-cx-sub { position: relative; }
@@ -2639,8 +2639,6 @@ page, so its styles keep the base they were made on). The looks before (Default 
       if (unbend) { item(box, 'Remove bend point', unbend); sep(box); }
       else if (bend) { item(box, 'Add bend point', bend); sep(box); }
       else if (turn) { item(box, turn.label, turn.go); sep(box); }
-      var unbendAll = ed && window.m2EditAllBends && window.m2EditAllBends();   // every bend point of the map (user, 2026-11-14)
-      if (unbendAll) { item(box, 'Remove all bend points', unbendAll); sep(box); }
       // its shortcut beside it, as Apple's and Windows' menus write it (user, 2026-11-13)
       var key = '<span class="m2-cx-key">' + (/Mac|iPhone|iPad|iPod/.test((navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || navigator.userAgent) ? '\u2318E' : 'Ctrl+E') + '</span>';
       if (ed) item(box, 'Switch to viewer', function () { tab('list'); }, key);   // leaving the Edit window ends editing
@@ -2648,6 +2646,10 @@ page, so its styles keep the base they were made on). The looks before (Default 
       // no Remove map here: it is in the list's right-click menu only (user, 2026-11-14)
       if (document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen)
         item(box, isPageFull() ? 'Exit full screen' : 'Full screen with tools', pageFull);
+      // every bend point of the map, on empty map space only and as a plain item, never first (user, 2026-11-14: too
+      // drastic to be offered on a bend point or at the top)
+      var unbendAll = ed && window.m2EditAllBends && window.m2EditAllBends();
+      if (unbendAll) item(box, 'Remove all bend points', unbendAll);
       var src = (m.shownAs ? ['SBGN-ML'] : m.legend === 'celldesigner' ? ['CellDesigner', 'GraphML'] : ['GraphML', 'CellDesigner', 'SBGN-ML']).filter(function (l) { return url[l]; })[0];   // the format the map is drawn from
       var sh = shown(m);   // what is on screen, where it is not the site's: its file under the name the editor read it by
       if (sh && sh.text && sh.file) item(box, 'Download ' + fileKind(sh), function () { saveBlob(new Blob([sh.text], { type: 'application/xml' }), fileName(sh.file)); });
@@ -2665,6 +2667,14 @@ page, so its styles keep the base they were made on). The looks before (Default 
       close();
       var r = view.getBoundingClientRect();
       menu = build((cx - r.left) / pz(), (cy - r.top) / pz(), ed);
+      // no item lit under a pointer that has not moved (user, 2026-11-14: a menu moved up off the window's edge opened
+      // with Remove all bend points lit, as if chosen): the highlight follows the pointer from its first move
+      menu.classList.add('m2-cx-still');
+      var still = menu;
+      menu.addEventListener('pointermove', function moved(e) {   // a real move, not the browser's own after the menu appears
+        if (Math.abs(e.clientX - cx) + Math.abs(e.clientY - cy) < 3) return;
+        still.classList.remove('m2-cx-still'); still.removeEventListener('pointermove', moved);
+      });
       menu.style.left = cx + 'px'; menu.style.top = cy + 'px';
       document.body.appendChild(menu);
       var b = menu.getBoundingClientRect();   // inside the window: moved left or up when it would run over an edge
