@@ -28,12 +28,13 @@
 #    "sbgn-dissociation", so a page can show either; the arcs end at the square's outline as before
 #  - ports (2026-11-14, user: proper SBGN ports, not bend points): a Process (any SBGN class) or an Operator (logic
 #    gate) gets a stick on each side, ANTENNA (0.5; 0.75 first, too long on the demo) of its side long, never shorter
-#    than ANTENNA_MIN (0.5 of our standard 18 px process: small squares need room), drawn beside the glyph; port one where the arcs coming in
-#    without an arrow end (consumption, a gate's input), port two where the arcs leaving it start (a product, a gate's
-#    output; with nothing coming in, each leaving arc takes the nearer port: reversible). The axis runs from the mean
-#    of the arcs' near points coming in to that of those going out (horizontal unless steeper), as the converter puts
-#    SBGN-ML's ports. Bends lying on a stick (the bend points that drew antennas before) are left out; modifiers end
-#    on the glyph's outline as before
+#    than ANTENNA_MIN (0.5 of our standard 18 px process: small squares need room), drawn beside the glyph. Port one:
+#    where a consumption or a gate's input ends (an arc without arrows between a hub and an entity, whichever way it
+#    was drawn). Port two: where every other arc leaving the hub starts (a product, a gate's output; with nothing
+#    coming in, each takes the nearer port: reversible). The axis runs from the mean of the arcs' near points coming
+#    in to that of those going out (with nothing coming in, along the leaving arcs' spread), horizontal unless
+#    steeper, as the converter puts SBGN-ML's ports. Bends lying on a stick (the bend points that drew antennas
+#    before) are left out; modifiers end on the glyph's outline as before; arc labels keep yEd's anchor point
 #  - UnspecifiedEntity drawn as an ellipse, dashed lines as dashes 6 and gaps 2 times the line width
 #    (2026-10-27; checked against a yEd export: same shapes)
 #  - edge labels: placed from the edge's first point (anchor and up vector when rotated,
@@ -517,8 +518,18 @@ class Map:
     def mid(self, nid):
         x, y, w, h = self.nodes[nid]['geo']; return (x + w / 2, y + h / 2)
 
+    def ends(self, e, ar):
+        # how an arc meets a hub at its source and at its target: 'in' (port one), 'out' (port two) or None (a
+        # modifier, or no hub). An arc without arrows between a hub and an entity is a consumption whichever way it
+        # was drawn (yEd's maps draw some from the process); between two gates, the source's output, the target's input
+        s, t = e.get('source'), e.get('target')
+        hs, ht = self.nodes[s]['kind'] in HUBS, self.nodes[t]['kind'] in HUBS
+        bare = ar.get('target') == 'none'
+        at_s = ('in' if not ht and bare and ar.get('source') == 'none' else 'out') if hs else None
+        return at_s, 'in' if ht and bare else None
+
     def hub_ports(self):
-        # the two ports of every process and gate (the header's ports), their sticks put under the glyph
+        # the two ports of every process and gate (the header's ports), their sticks put beside the glyph
         ins, outs = {}, {}
         for item in self.order:
             if item[0] != 'e':
@@ -527,13 +538,12 @@ class Map:
             if pl is None or s not in self.nodes or t not in self.nodes:
                 continue
             bends = [(float(q.get('x')), float(q.get('y'))) for q in pl.find(Y + 'Path').findall(Y + 'Point')]
-            if self.nodes[t]['kind'] in HUBS and pl.find(Y + 'Arrows').get('target') == 'none':
+            at_s, at_t = self.ends(e, pl.find(Y + 'Arrows'))
+            if at_t == 'in':
                 ins.setdefault(t, []).append(bends[-1] if bends else self.mid(s))
-            if self.nodes[s]['kind'] in HUBS:
-                outs.setdefault(s, []).append(bends[0] if bends else self.mid(t))
-        def mean(q, dflt):  # added in order (not sum(), which compensates since Python 3.12): as yrender.js adds
-            if not q:
-                return dflt
+            if at_s:
+                (ins if at_s == 'in' else outs).setdefault(s, []).append(bends[0] if bends else self.mid(t))
+        def mean(q):  # added in order (not sum(), which compensates since Python 3.12): as yrender.js adds
             sx = sy = 0.0
             for p in q:
                 sx += p[0]; sy += p[1]
@@ -542,17 +552,22 @@ class Map:
             if n['kind'] not in HUBS:
                 continue
             x, y, w, h = n['geo']; cx, cy = x + w / 2, y + h / 2
-            a, b = mean(ins.get(nid, []), (cx, cy)), mean(outs.get(nid, []), (cx, cy))
-            if a == b:  # no way through (products on both sides, or no arcs): the line through the first two
-                q = outs[nid][:2] if len(outs.get(nid, [])) > 1 else [(cx - 1, cy), (cx + 1, cy)]
-                a, b = q[0], q[1]
-            vx, vy = b[0] - a[0], b[1] - a[1]
+            I, O = ins.get(nid, []), outs.get(nid, [])
+            if I:  # from what comes in to what goes out
+                a = mean(I); b = mean(O) if O else (cx, cy)
+                vx, vy = b[0] - a[0], b[1] - a[1]
+            elif len(O) > 1:  # nothing comes in (reversible): along the spread of the leaving arcs
+                vx = max(p[0] for p in O) - min(p[0] for p in O); vy = max(p[1] for p in O) - min(p[1] for p in O)
+            elif O:
+                vx, vy = O[0][0] - cx, O[0][1] - cy
+            else:
+                vx, vy = 1.0, 0.0
             hz = abs(vx) >= abs(vy)
             k = 1 if (vx if hz else vy) >= 0 else -1
             side = w if hz else h
             r = side / 2 + max(ANTENNA * side, ANTENNA_MIN)
             one, two = ((cx - k * r, cy), (cx + k * r, cy)) if hz else ((cx, cy - k * r), (cx, cy + k * r))
-            self.ports[nid] = (one, two, hz, nid in ins)
+            self.ports[nid] = (one, two, hz, nid in ins, r)
             st = n['stroke']
             col, wa = (st[0], f' stroke-width="{num(st[1])}"' if st[1] != 1 else '') if st else ('#000000', '')
             e1, e2 = ((cx - k * side / 2, cy), (cx + k * side / 2, cy)) if hz else ((cx, cy - k * side / 2), (cx, cy + k * side / 2))
@@ -565,8 +580,7 @@ class Map:
 
     def on_stick(self, nid, p):
         # a bend on one of the hub's sticks (or inside it): the stick draws it now
-        (one, two, hz, _), (cx, cy) = self.ports[nid], self.mid(nid)
-        r = abs(two[0] - cx) if hz else abs(two[1] - cy)
+        (one, two, hz, _, r), (cx, cy) = self.ports[nid], self.mid(nid)
         along, across = (p[0] - cx, p[1] - cy) if hz else (p[1] - cy, p[0] - cx)
         return abs(across) <= 1.5 and abs(along) <= r
 
@@ -588,26 +602,27 @@ class Map:
             x, y, w, h = n['geo']; return (x + w / 2 + float(p.get(dx)), y + h / 2 + float(p.get(dy)))
         pts = [centre(S, 'sx', 'sy')] + [(float(q.get('x')), float(q.get('y'))) for q in p.findall(Y + 'Point')] + [centre(T, 'tx', 'ty')]
         s_id, t_id = e.get('source'), e.get('target')
-        into = t_id in self.ports and pl.find(Y + 'Arrows').get('target') == 'none'
-        if into:  # coming in without an arrow: ends on port one
+        ar = pl.find(Y + 'Arrows')
+        at_s, at_t = self.ends(e, ar)
+        label_at = clip(pts[1], pts[0], S['polys'])  # the arc's labels keep the point yEd placed them from
+        if at_t == 'in':  # a consumption or a gate's input: ends on port one
             while len(pts) > 2 and self.on_stick(t_id, pts[-2]):
                 del pts[-2]
             pts[-1] = self.ports[t_id][0]
-        if s_id in self.ports:  # leaving a hub: starts on port two (with nothing coming in, the nearer port)
+        if at_s:  # a consumption drawn from the process: port one; leaving: port two (nothing coming in: the nearer)
             while len(pts) > 2 and self.on_stick(s_id, pts[1]):
                 del pts[1]
-            one, two, _, has_in = self.ports[s_id]
-            pts[0] = two if has_in or math.dist(two, pts[1]) <= math.dist(one, pts[1]) else one
+            one, two, _, has_in, _ = self.ports[s_id]
+            pts[0] = one if at_s == 'in' else two if has_in or math.dist(two, pts[1]) <= math.dist(one, pts[1]) else one
         else:
             pts[0] = clip(pts[1], pts[0], S['polys'])
-        if not into:
+        if at_t != 'in':
             pts[-1] = clip(pts[-2], pts[-1], T['polys'])
         ls = pl.find(Y + 'LineStyle')
         if ls.get('type') not in ('line', 'dashed'):
             refuse(where, f'line type {ls.get("type")}')
         col, width = ls.get('color'), float(ls.get('width'))
         dash = f' stroke-dasharray="{num(6 * width)} {num(2 * width)}"' if ls.get('type') == 'dashed' else ''
-        ar = pl.find(Y + 'Arrows')
         heads, line = '', list(pts)
         for end, kind in (('target', ar.get('target')), ('source', ar.get('source'))):
             if kind not in ARROWS:
@@ -641,7 +656,7 @@ class Map:
         for lab in pl.findall(Y + 'EdgeLabel'):
             if lab.get('visible') == 'false' or not (lab.text or '').strip():
                 continue
-            s += self.edge_label(lab, pts[0], where, parent)
+            s += self.edge_label(lab, label_at, where, parent)
         url = self.link(e)
         return f'<a xlink:href="{html.escape(url)}" target="_blank">{s}</a>' if url else s
 

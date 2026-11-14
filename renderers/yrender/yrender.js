@@ -383,36 +383,43 @@
     return pl;
   }
   YMap.prototype.mid = function (nid) { var g = this.nodes[nid].geo; return [g[0] + g[2] / 2, g[1] + g[3] / 2]; };
+  YMap.prototype.ends = function (e, ar) {   // 'in', 'out' or null at the source and the target (yrender.py's ends)
+    var hs = HUBS.has(this.nodes[get(e, 'source')].kind), ht = HUBS.has(this.nodes[get(e, 'target')].kind);
+    var bare = get(ar, 'target') === 'none';
+    return [hs ? (!ht && bare && get(ar, 'source') === 'none' ? 'in' : 'out') : null, ht && bare ? 'in' : null];
+  };
   YMap.prototype.hubPorts = function () {
-    var self = this, ins = {}, outs = {};
+    var self = this, ins = Object.create(null), outs = Object.create(null);
+    var add = function (m, k, p) { (m[k] = m[k] || []).push(p); };
     this.order.forEach(function (item) {
       if (item[0] !== 'e') return;
       var e = item[1][0], pl = polyline(e), s = get(e, 'source'), t = get(e, 'target');
       if (!pl || !has(self.nodes, s) || !has(self.nodes, t)) return;
       var bends = kids(kid(pl, Y, 'Path'), Y, 'Point').map(function (q) { return [pyFloat(get(q, 'x')), pyFloat(get(q, 'y'))]; });
-      if (HUBS.has(self.nodes[t].kind) && get(kid(pl, Y, 'Arrows'), 'target') === 'none') (ins[t] = ins[t] || []).push(bends.length ? bends[bends.length - 1] : self.mid(s));
-      if (HUBS.has(self.nodes[s].kind)) (outs[s] = outs[s] || []).push(bends.length ? bends[0] : self.mid(t));
+      var at = self.ends(e, kid(pl, Y, 'Arrows'));
+      if (at[1] === 'in') add(ins, t, bends.length ? bends[bends.length - 1] : self.mid(s));
+      if (at[0]) add(at[0] === 'in' ? ins : outs, s, bends.length ? bends[0] : self.mid(t));
     });
-    var mean = function (q, dflt) {
-      if (!q || !q.length) return dflt;
+    var mean = function (q) {
       var sx = 0, sy = 0;
       q.forEach(function (p) { sx += p[0]; sy += p[1]; });
       return [sx / q.length, sy / q.length];
     };
+    var spread = function (q, i) { return Math.max.apply(null, q.map(function (p) { return p[i]; })) - Math.min.apply(null, q.map(function (p) { return p[i]; })); };
     Object.keys(this.nodes).forEach(function (nid) {
       var n = self.nodes[nid];
       if (!HUBS.has(n.kind)) return;
       var x = n.geo[0], y = n.geo[1], w = n.geo[2], h = n.geo[3], cx = x + w / 2, cy = y + h / 2;
-      var a = mean(ins[nid], [cx, cy]), b = mean(outs[nid], [cx, cy]);
-      if (a[0] === b[0] && a[1] === b[1]) {
-        var q = outs[nid] && outs[nid].length > 1 ? outs[nid].slice(0, 2) : [[cx - 1, cy], [cx + 1, cy]];
-        a = q[0]; b = q[1];
-      }
-      var vx = b[0] - a[0], vy = b[1] - a[1], hz = Math.abs(vx) >= Math.abs(vy);
+      var I = ins[nid] || [], O = outs[nid] || [], vx, vy;
+      if (I.length) { var a = mean(I), b = O.length ? mean(O) : [cx, cy]; vx = b[0] - a[0]; vy = b[1] - a[1]; }
+      else if (O.length > 1) { vx = spread(O, 0); vy = spread(O, 1); }
+      else if (O.length) { vx = O[0][0] - cx; vy = O[0][1] - cy; }
+      else { vx = 1; vy = 0; }
+      var hz = Math.abs(vx) >= Math.abs(vy);
       var k = (hz ? vx : vy) >= 0 ? 1 : -1, side = hz ? w : h;
       var r = side / 2 + Math.max(ANTENNA * side, ANTENNA_MIN);
       var one = hz ? [cx - k * r, cy] : [cx, cy - k * r], two = hz ? [cx + k * r, cy] : [cx, cy + k * r];
-      self.ports[nid] = [one, two, hz, has(ins, nid)];
+      self.ports[nid] = [one, two, hz, nid in ins, r];
       var st = n.stroke, col = st ? st[0] : '#000000', wa = st && st[1] !== 1 ? ' stroke-width="' + num(st[1]) + '"' : '';
       var e1 = hz ? [cx - k * side / 2, cy] : [cx, cy - k * side / 2], e2 = hz ? [cx + k * side / 2, cy] : [cx, cy + k * side / 2];
       var ant = '<path d="M' + num(one[0]) + ' ' + num(one[1]) + ' L' + num(e1[0]) + ' ' + num(e1[1]) + ' M' + num(e2[0]) + ' ' + num(e2[1]) +
@@ -422,8 +429,7 @@
     });
   };
   YMap.prototype.onStick = function (nid, p) {
-    var P = this.ports[nid], c = this.mid(nid), one = P[0], two = P[1], hz = P[2];
-    var r = hz ? Math.abs(two[0] - c[0]) : Math.abs(two[1] - c[1]);
+    var P = this.ports[nid], c = this.mid(nid), hz = P[2], r = P[4];
     var along = hz ? p[0] - c[0] : p[1] - c[1], across = hz ? p[1] - c[1] : p[0] - c[0];
     return Math.abs(across) <= 1.5 && Math.abs(along) <= r;
   };
@@ -517,22 +523,23 @@
     var centre = function (n, dx, dy) { var g = n.geo; return [g[0] + g[2] / 2 + pyFloat(get(p, dx)), g[1] + g[3] / 2 + pyFloat(get(p, dy))]; };
     var pts = [centre(S, 'sx', 'sy')].concat(kids(p, Y, 'Point').map(function (q) { return [pyFloat(get(q, 'x')), pyFloat(get(q, 'y'))]; }), [centre(T, 'tx', 'ty')]);
     var sId = get(e, 'source'), tId = get(e, 'target');
-    var into = has(this.ports, tId) && get(kid(pl, Y, 'Arrows'), 'target') === 'none';
-    if (into) {   // coming in without an arrow: ends on port one
+    var ar = kid(pl, Y, 'Arrows'), at = this.ends(e, ar);
+    var labelAt = clip(pts[1], pts[0], S.polys);   // the arc's labels keep the point yEd placed them from
+    if (at[1] === 'in') {   // a consumption or a gate's input: ends on port one
       while (pts.length > 2 && this.onStick(tId, pts[pts.length - 2])) pts.splice(pts.length - 2, 1);
       pts[pts.length - 1] = this.ports[tId][0];
     }
-    if (has(this.ports, sId)) {   // leaving a hub: starts on port two (with nothing coming in, the nearer port)
+    if (at[0]) {   // a consumption drawn from the process: port one; leaving: port two (nothing coming in: the nearer)
       while (pts.length > 2 && this.onStick(sId, pts[1])) pts.splice(1, 1);
       var P = this.ports[sId];
-      pts[0] = P[3] || dist(P[1], pts[1]) <= dist(P[0], pts[1]) ? P[1] : P[0];
+      pts[0] = at[0] === 'in' ? P[0] : P[3] || dist(P[1], pts[1]) <= dist(P[0], pts[1]) ? P[1] : P[0];
     } else pts[0] = clip(pts[1], pts[0], S.polys);
-    if (!into) pts[pts.length - 1] = clip(pts[pts.length - 2], pts[pts.length - 1], T.polys);
+    if (at[1] !== 'in') pts[pts.length - 1] = clip(pts[pts.length - 2], pts[pts.length - 1], T.polys);
     var ls = kid(pl, Y, 'LineStyle');
     if (get(ls, 'type') !== 'line' && get(ls, 'type') !== 'dashed') refuse(where, 'line type ' + get(ls, 'type'));
     var col = get(ls, 'color'), width = pyFloat(get(ls, 'width'));
     var dash = get(ls, 'type') === 'dashed' ? ' stroke-dasharray="' + num(6 * width) + ' ' + num(2 * width) + '"' : '';
-    var ar = kid(pl, Y, 'Arrows'), heads = '', line = pts.slice();
+    var heads = '', line = pts.slice();
     [['target', get(ar, 'target')], ['source', get(ar, 'source')]].forEach(function (q) {
       var end = q[0], kind = q[1];
       if (!ARROWS.has(kind)) { refuse(where, 'unknown arrow ' + kind); return; }
@@ -564,7 +571,7 @@
     var s = '<path d="' + dd + '" fill="none"' + ink('stroke', col) + wa + dash + '/>' + heads;
     kids(pl, Y, 'EdgeLabel').forEach(function (lab) {
       if (get(lab, 'visible') === 'false' || !pyStrip(leadText(lab))) return;
-      s += self.edgeLabel(lab, pts[0], where, parent);
+      s += self.edgeLabel(lab, labelAt, where, parent);
     });
     var url = this.link(e);
     s = url ? '<a xlink:href="' + esc(url) + '" target="_blank">' + s + '</a>' : s;
