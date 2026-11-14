@@ -17,7 +17,7 @@
           <style id="style_1" idList="n1 n2 n3 n4 n5 n5__n0 n10 n11 n12 n17 n18 n19 n21">
             <g stroke="black" fill="color_1" stroke-width="1"/>
           </style>
-          <style id="style_2" idList="n1__n0 n3__n0 n3__n1 n5__n0__n0 n5__n1 n6 n9 n14 n15 n22 glyph_1 glyph_2 glyph_3 glyph_4 glyph_5 glyph_6 glyph_7 glyph_8 glyph_9 glyph_10 glyph_11 glyph_12 glyph_13 glyph_14 glyph_16 glyph_17 glyph_18 glyph_21">
+          <style id="style_2" idList="n1__n0 n3__n0 n3__n1 n5__n0__n0 n5__n1 n6 n9 n14 n15 n22 glyph_1 glyph_2 glyph_3 glyph_4 glyph_5 glyph_6 glyph_7 glyph_8 glyph_9 glyph_10 glyph_11 glyph_12 glyph_13 glyph_14 glyph_17 glyph_18 glyph_21">
             <g stroke="black" fill="color_2" stroke-width="1" font-size="14"/>
           </style>
           <style id="style_3" idList="n1__n0_ui0 n3__n0_ui0 n3__n1_ui0 n5__n0__n0_ui0 n5__n1_ui0 n23_sv0 n23_ui0 n24_sv0 n24_ui0">
@@ -25,6 +25,9 @@
           </style>
           <style id="style_4" idList="n23 n24">
             <g stroke="black" fill="color_4" stroke-width="1" font-size="14"/>
+          </style>
+          <style id="style_e1" idList="glyph_16">
+            <g stroke="black" fill="color_2" stroke-width="1.5" font-size="14"/>
           </style>
         </listOfStyles>
       </renderInformation>
