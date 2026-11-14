@@ -14,7 +14,7 @@ height: 290
 scale: 1
 annotation: "/atlas-data/aspirin-sbgn.json"
 image_error: ""
-v: "433e7ac19d"
+v: "194330e0f8"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/downloads/aspirin-sbgn.sbgn"}, {"label": "SVG", "url": "/downloads/aspirin-sbgn.svg"}]

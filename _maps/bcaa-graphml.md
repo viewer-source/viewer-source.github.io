@@ -14,12 +14,12 @@ height: 982
 scale: 1
 annotation: "/atlas-data/bcaa-graphml.json"
 image_error: ""
-v: "1643058f37"
+v: "d370cbe032"
 src: "1d6f402330b684ccb7d5c635229499234dce1bd9"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "GraphML", "url": "/downloads/bcaa-graphml.graphml"}, {"label": "SVG", "url": "/downloads/bcaa-graphml.svg"}, {"label": "SBML", "url": "/downloads/bcaa-graphml-sbml.xml"}, {"label": "Annotation", "url": "/downloads/bcaa-graphml.csv"}, {"label": "PNG", "url": "/downloads/bcaa-graphml.png"}, {"label": "SBGN-ML", "url": "/downloads/bcaa-graphml.sbgn"}, {"label": "CellDesigner", "url": "/downloads/bcaa-graphml.xml"}, {"label": "Newt", "url": "http://web.newteditor.org/?URL=https://viewer-source.github.io/downloads/bcaa-graphml.sbgn"}, {"label": "MINERVA", "url": "https://mreg.elixir-luxembourg.org/minerva/index.html?id=F022-bcaa"}]
-sbgn: {"image": "/downloads/bcaa-graphml-sbgnml.svg", "annotation": "/atlas-data/bcaa-graphml-sbgnml.json", "width": 1378, "height": 1091, "v": "1fc45763ee", "file": "/downloads/bcaa-graphml.sbgn"}
+sbgn: {"image": "/downloads/bcaa-graphml-sbgnml.svg", "annotation": "/atlas-data/bcaa-graphml-sbgnml.json", "width": 1378, "height": 1091, "v": "36f784fc02", "file": "/downloads/bcaa-graphml.sbgn"}
 ---
 ## Reactome-Recon connection
 

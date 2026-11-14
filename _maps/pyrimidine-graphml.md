@@ -14,12 +14,12 @@ height: 405
 scale: 1
 annotation: "/atlas-data/pyrimidine-graphml.json"
 image_error: ""
-v: "d829214866"
+v: "850ca4b8a8"
 src: "67f99a21ce64fd32edacc18cb645fca20e369482"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "GraphML", "url": "/downloads/pyrimidine-graphml.graphml"}, {"label": "SVG", "url": "/downloads/pyrimidine-graphml.svg"}, {"label": "SBML", "url": "/downloads/pyrimidine-graphml-sbml.xml"}, {"label": "Annotation", "url": "/downloads/pyrimidine-graphml.csv"}, {"label": "PNG", "url": "/downloads/pyrimidine-graphml.png"}, {"label": "SBGN-ML", "url": "/downloads/pyrimidine-graphml.sbgn"}, {"label": "CellDesigner", "url": "/downloads/pyrimidine-graphml.xml"}, {"label": "Newt", "url": "http://web.newteditor.org/?URL=https://viewer-source.github.io/downloads/pyrimidine-graphml.sbgn"}, {"label": "MINERVA", "url": "https://mreg.elixir-luxembourg.org/minerva/index.html?id=F020-pyrimidine"}]
-sbgn: {"image": "/downloads/pyrimidine-graphml-sbgnml.svg", "annotation": "/atlas-data/pyrimidine-graphml-sbgnml.json", "width": 455, "height": 410, "v": "adb5ac7017", "file": "/downloads/pyrimidine-graphml.sbgn"}
+sbgn: {"image": "/downloads/pyrimidine-graphml-sbgnml.svg", "annotation": "/atlas-data/pyrimidine-graphml-sbgnml.json", "width": 455, "height": 410, "v": "d1257a41f8", "file": "/downloads/pyrimidine-graphml.sbgn"}
 ---
 ## Description
 

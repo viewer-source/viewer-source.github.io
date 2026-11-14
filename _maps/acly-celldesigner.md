@@ -19,7 +19,7 @@ src: "7d85be69702eee71364de45eeb225130816bb1f7"
 colours: true
 legend: "celldesigner"
 downloads: [{"label": "CellDesigner", "url": "/downloads/acly-celldesigner.xml"}, {"label": "SVG", "url": "/downloads/acly-celldesigner.svg"}, {"label": "SBML", "url": "/downloads/acly-celldesigner-sbml.xml"}, {"label": "Annotation", "url": "/downloads/acly-celldesigner.csv"}, {"label": "GraphML", "url": "/downloads/acly-celldesigner.graphml"}, {"label": "PNG", "url": "/downloads/acly-celldesigner.png"}, {"label": "SBGN-ML", "url": "/downloads/acly-celldesigner.sbgn"}, {"label": "Newt", "url": "http://web.newteditor.org/?URL=https://viewer-source.github.io/downloads/acly-celldesigner.sbgn"}, {"label": "MINERVA", "url": "https://mreg.elixir-luxembourg.org/minerva/index.html?id=F006-acly"}]
-sbgn: {"image": "/downloads/acly-celldesigner-sbgnml.svg", "annotation": "/atlas-data/acly-celldesigner-sbgnml.json", "width": 860, "height": 690, "v": "f972ccf7d6", "file": "/downloads/acly-celldesigner.sbgn"}
+sbgn: {"image": "/downloads/acly-celldesigner-sbgnml.svg", "annotation": "/atlas-data/acly-celldesigner-sbgnml.json", "width": 860, "height": 690, "v": "846a598961", "file": "/downloads/acly-celldesigner.sbgn"}
 ---
 ## Description
 

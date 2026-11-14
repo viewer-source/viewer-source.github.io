@@ -14,7 +14,7 @@ height: 441
 scale: 1
 annotation: "/atlas-data/external-newt-unstable-neuronal-muscle-signaling-nwt.json"
 image_error: ""
-v: "d8a40b9a66"
+v: "1eb33870bb"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/test-maps/sbgn-ml/pd/newt-unstable/neuronal_muscle_signaling.nwt"}, {"label": "SVG", "url": "/downloads/external-newt-unstable-neuronal-muscle-signaling-nwt.svg"}]

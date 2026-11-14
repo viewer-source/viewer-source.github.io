@@ -14,12 +14,12 @@ height: 570
 scale: 1
 annotation: "/atlas-data/pdh-graphml.json"
 image_error: ""
-v: "9c7723448b"
+v: "d9763ce139"
 src: "0e4add34f8f36ec33c5ea09539173133559af172"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "GraphML", "url": "/downloads/pdh-graphml.graphml"}, {"label": "SVG", "url": "/downloads/pdh-graphml.svg"}, {"label": "SBML", "url": "/downloads/pdh-graphml-sbml.xml"}, {"label": "Annotation", "url": "/downloads/pdh-graphml.csv"}, {"label": "PNG", "url": "/downloads/pdh-graphml.png"}, {"label": "SBGN-ML", "url": "/downloads/pdh-graphml.sbgn"}, {"label": "CellDesigner", "url": "/downloads/pdh-graphml.xml"}, {"label": "Newt", "url": "http://web.newteditor.org/?URL=https://viewer-source.github.io/downloads/pdh-graphml.sbgn"}, {"label": "MINERVA", "url": "https://mreg.elixir-luxembourg.org/minerva/index.html?id=F023-pdh"}]
-sbgn: {"image": "/downloads/pdh-graphml-sbgnml.svg", "annotation": "/atlas-data/pdh-graphml-sbgnml.json", "width": 826, "height": 570, "v": "02e1d0a08e", "file": "/downloads/pdh-graphml.sbgn"}
+sbgn: {"image": "/downloads/pdh-graphml-sbgnml.svg", "annotation": "/atlas-data/pdh-graphml-sbgnml.json", "width": 826, "height": 570, "v": "227aa17211", "file": "/downloads/pdh-graphml.sbgn"}
 ---
 ## Reactome-Recon connection
 

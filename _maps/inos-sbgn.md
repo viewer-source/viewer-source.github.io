@@ -14,7 +14,7 @@ height: 1198
 scale: 1
 annotation: "/atlas-data/inos-sbgn.json"
 image_error: ""
-v: "710ce78fb8"
+v: "60f449ba8d"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/downloads/inos-sbgn.sbgn"}, {"label": "SVG", "url": "/downloads/inos-sbgn.svg"}]

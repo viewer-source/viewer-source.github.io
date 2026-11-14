@@ -14,12 +14,12 @@ height: 1686
 scale: 1
 annotation: "/atlas-data/glycogen-muscle-graphml.json"
 image_error: ""
-v: "fbe1ad9639"
+v: "c88273447f"
 src: "873722203df6d1bbe85c26b4d65effa3f4187b5b"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "GraphML", "url": "/downloads/glycogen-muscle-graphml.graphml"}, {"label": "SVG", "url": "/downloads/glycogen-muscle-graphml.svg"}, {"label": "SBML", "url": "/downloads/glycogen-muscle-graphml-sbml.xml"}, {"label": "Annotation", "url": "/downloads/glycogen-muscle-graphml.csv"}, {"label": "PNG", "url": "/downloads/glycogen-muscle-graphml.png"}, {"label": "SBGN-ML", "url": "/downloads/glycogen-muscle-graphml.sbgn"}, {"label": "CellDesigner", "url": "/downloads/glycogen-muscle-graphml.xml"}, {"label": "Newt", "url": "http://web.newteditor.org/?URL=https://viewer-source.github.io/downloads/glycogen-muscle-graphml.sbgn"}, {"label": "MINERVA", "url": "https://mreg.elixir-luxembourg.org/minerva/index.html?id=F004-glycogen-muscle"}]
-sbgn: {"image": "/downloads/glycogen-muscle-graphml-sbgnml.svg", "annotation": "/atlas-data/glycogen-muscle-graphml-sbgnml.json", "width": 2162, "height": 1710, "v": "21ab57553b", "file": "/downloads/glycogen-muscle-graphml.sbgn"}
+sbgn: {"image": "/downloads/glycogen-muscle-graphml-sbgnml.svg", "annotation": "/atlas-data/glycogen-muscle-graphml-sbgnml.json", "width": 2162, "height": 1710, "v": "aba1ba9830", "file": "/downloads/glycogen-muscle-graphml.sbgn"}
 ---
 ## Description
 

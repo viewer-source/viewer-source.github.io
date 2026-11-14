@@ -14,7 +14,7 @@ height: 690
 scale: 1
 annotation: "/atlas-data/acly-sbgn.json"
 image_error: ""
-v: "99a80968cd"
+v: "86c1a9dc8a"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/downloads/acly-sbgn.sbgn"}, {"label": "SVG", "url": "/downloads/acly-sbgn.svg"}]

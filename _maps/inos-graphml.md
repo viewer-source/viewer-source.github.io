@@ -14,12 +14,12 @@ height: 1198
 scale: 1
 annotation: "/atlas-data/inos-graphml.json"
 image_error: ""
-v: "cbdba79857"
+v: "0dc0f3dc9f"
 src: "f5bad82df8813fbb1b805976c09e2dd840529a7b"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "GraphML", "url": "/downloads/inos-graphml.graphml"}, {"label": "SVG", "url": "/downloads/inos-graphml.svg"}, {"label": "SBML", "url": "/downloads/inos-graphml-sbml.xml"}, {"label": "Annotation", "url": "/downloads/inos-graphml.csv"}, {"label": "PNG", "url": "/downloads/inos-graphml.png"}, {"label": "SBGN-ML", "url": "/downloads/inos-graphml.sbgn"}, {"label": "CellDesigner", "url": "/downloads/inos-graphml.xml"}, {"label": "Newt", "url": "http://web.newteditor.org/?URL=https://viewer-source.github.io/downloads/inos-graphml.sbgn"}, {"label": "MINERVA", "url": "https://mreg.elixir-luxembourg.org/minerva/index.html?id=F007-inos"}]
-sbgn: {"image": "/downloads/inos-graphml-sbgnml.svg", "annotation": "/atlas-data/inos-graphml-sbgnml.json", "width": 1638, "height": 1261, "v": "9fe6832135", "file": "/downloads/inos-graphml.sbgn"}
+sbgn: {"image": "/downloads/inos-graphml-sbgnml.svg", "annotation": "/atlas-data/inos-graphml-sbgnml.json", "width": 1638, "height": 1261, "v": "ac5b133edd", "file": "/downloads/inos-graphml.sbgn"}
 ---
 ## References
 

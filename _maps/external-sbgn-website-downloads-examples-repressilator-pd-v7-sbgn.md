@@ -14,7 +14,7 @@ height: 671
 scale: 1
 annotation: "/atlas-data/external-sbgn-website-downloads-examples-repressilator-pd-v7-sbgn.json"
 image_error: ""
-v: "59eb2ce1fc"
+v: "ad51b4b263"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/test-maps/sbgn-ml/pd/sbgn-website/downloads/examples/Repressilator_PD_v7.sbgn"}, {"label": "SVG", "url": "/downloads/external-sbgn-website-downloads-examples-repressilator-pd-v7-sbgn.svg"}]

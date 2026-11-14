@@ -19,7 +19,7 @@ src: "9c0579ba4cc3b22131e0163aeb4758ea5b8aec71"
 colours: true
 legend: "celldesigner"
 downloads: [{"label": "CellDesigner", "url": "/downloads/glutaminase-celldesigner.xml"}, {"label": "SVG", "url": "/downloads/glutaminase-celldesigner.svg"}, {"label": "SBML", "url": "/downloads/glutaminase-celldesigner-sbml.xml"}, {"label": "Annotation", "url": "/downloads/glutaminase-celldesigner.csv"}, {"label": "GraphML", "url": "/downloads/glutaminase-celldesigner.graphml"}, {"label": "PNG", "url": "/downloads/glutaminase-celldesigner.png"}, {"label": "SBGN-ML", "url": "/downloads/glutaminase-celldesigner.sbgn"}, {"label": "Newt", "url": "http://web.newteditor.org/?URL=https://viewer-source.github.io/downloads/glutaminase-celldesigner.sbgn"}, {"label": "MINERVA", "url": "https://mreg.elixir-luxembourg.org/minerva/index.html?id=F019-glutaminase"}]
-sbgn: {"image": "/downloads/glutaminase-celldesigner-sbgnml.svg", "annotation": "/atlas-data/glutaminase-celldesigner-sbgnml.json", "width": 688, "height": 587, "v": "2520ae75ea", "file": "/downloads/glutaminase-celldesigner.sbgn"}
+sbgn: {"image": "/downloads/glutaminase-celldesigner-sbgnml.svg", "annotation": "/atlas-data/glutaminase-celldesigner-sbgnml.json", "width": 688, "height": 587, "v": "3c43a50c95", "file": "/downloads/glutaminase-celldesigner.sbgn"}
 ---
 ## Description
 

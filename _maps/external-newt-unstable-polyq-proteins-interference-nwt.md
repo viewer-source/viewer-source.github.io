@@ -14,7 +14,7 @@ height: 902
 scale: 1
 annotation: "/atlas-data/external-newt-unstable-polyq-proteins-interference-nwt.json"
 image_error: ""
-v: "1d741bb2c5"
+v: "b139c371d4"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/test-maps/sbgn-ml/pd/newt-unstable/polyq_proteins_interference.nwt"}, {"label": "SVG", "url": "/downloads/external-newt-unstable-polyq-proteins-interference-nwt.svg"}]
