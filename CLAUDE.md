@@ -539,14 +539,14 @@ says "the workbench", "the converter's repository", "a private repository".
   them). The renderer gives the editor the ports it draws (`yrender.render(...).ports`, JavaScript only).
   The full editor's palette (user, 2026-11-14: "we need to create a palette for map entities ... as in the graph
   editor ... and in Newt"; right click stays for what is on the map; `editor/src/create.js`): signs under the tools in
-  the Edit window, grouped by SBGN's names (Entity pool nodes, Auxiliary units), shown only with Settings, Editing on
+  the Edit window, grouped by SBGN's names (Entity pool nodes; Auxiliary units taken out the same day, user: state variables come from the right-click menu), shown only with Settings, Editing on
   Full and, for now, on SBGN-ML maps. A click on a sign takes it for one use (the next click on the map places it, then
   the sign lets go); a double click keeps it in hand for several in a row (user: "this tool stick to your hand"), marked
   by a darker edge, until the sign is clicked again or Esc; a drag still moves the map. So far: a macromolecule, at the
   map's protein size and its proteins' render style, centred on the click (on the grid with Snap), in the innermost
   compartment there, not into a complex; its name typed at once in a box over it (Enter or a click elsewhere keeps it,
-  Esc leaves it unnamed), one undo step with the making; a state variable on a macromolecule at the nearest point of its
-  border, its value typed the same way (P, or P@S505). A double click on a named entity or a state variable opens the
+  Esc leaves it unnamed), one undo step with the making; a state variable (Add state variable in the right-click menu over a macromolecule) at the nearest point of its
+  border to the right click, its value typed the same way (P, or P@S505). A double click on a named entity or a state variable opens the
   box again. What is made is written by `sbgn_edit.js` (add, label, state, stateValue, defaults; write() and graphml()
   carry new glyphs, names and values both ways) as the converter writes it: `tests/sbgn-create.js` (workflow Compare
   renderers) checks on every SBGN-ML map of the demo that the editor draws exactly what the converter makes of the file

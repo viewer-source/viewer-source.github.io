@@ -5,12 +5,13 @@
     // click on the sign again or Esc (user: "this tool stick to your hand"). Only with Settings, Editing on Full, and for
     // now only on SBGN-ML maps: sbgn_edit (renderers/converter/sbgn_edit.js, its master, tested against the converter by
     // tests/sbgn-create.js) writes what is made into the editor's GraphML as the converter writes it, and into the SBGN-ML
-    // file. So far: a macromolecule, its name, its state variables. A name or a value is typed in a box over the map that
+    // file. So far: a macromolecule, its name, its state variables (these from the right-click menu). A name or a value is typed in a box over the map that
     // opens at once (Enter or a click elsewhere keeps it, Esc leaves it as it was); a double click on a named entity or
     // on a state variable opens it again. Adding and naming are one undo step.
+    // A state variable is added from the right-click menu over a macromolecule (user, 2026-11-14: "Auxiliary units -
+    // remove this section, to be added via right click"): it belongs to a glyph already on the map.
     var PAL = [
-      ['Entity pool nodes', [['macromolecule', 'Macromolecule', '<rect x="6" y="5" width="28" height="14" rx="4"/>']]],
-      ['Auxiliary units', [['state', 'State variable (on a macromolecule)', '<rect x="6" y="9" width="28" height="11" rx="3"/><ellipse cx="20" cy="9" rx="5" ry="4.5" fill="var(--m2-bg, #fff)"/>']]]
+      ['Entity pool nodes', [['macromolecule', 'Macromolecule', '<rect x="6" y="5" width="28" height="14" rx="4"/>']]]
     ];
     var tool = null;   // { kind, sticky } in hand
     var pal = document.createElement('div');
@@ -61,7 +62,6 @@
       if (!tool) return true;   // let go between the press and the release (Esc)
       placedAt = Date.now();
       if (tool.kind === 'macromolecule') makeEntity(p.P);
-      else if (tool.kind === 'state') makeState(p.P);
       if (tool && !tool.sticky) palTake(null);
       return true;
     }
@@ -92,9 +92,15 @@
       remember(false); text = t2; made(id);
       typeIn(id, null, true);
     }
+    function macroAt(P) { return innermost(P, function (n) { return n.shape.kind === 'Macromolecule' && n.el.getAttribute('yfiles.foldertype') !== 'group'; }); }
+    window.m2EditAddState = function () {   // the right-click menu's Add state variable over a macromolecule, put where the border is nearest the click
+      var P = rclick;
+      if (!palOn() || !P || macroAt(P) < 0) return null;
+      return function () { makeState(P); };
+    };
     function makeState(P) {
-      var i = innermost(P, function (n) { return n.shape.kind === 'Macromolecule' && n.el.getAttribute('yfiles.foldertype') !== 'group'; });
-      if (i < 0) { warn('A state variable goes on a macromolecule: click on one.'); return; }
+      var i = macroAt(P);
+      if (i < 0) return;
       var b = boxOf(i), dx = (P[0] - b[0] - b[2] / 2) / b[2], dy = (P[1] - b[1] - b[3] / 2) / b[3], r2 = function (v) { return Math.round(Math.max(-0.5, Math.min(0.5, v)) * 100) / 100; };
       var side = (0.5 - Math.abs(dx)) * b[2] < (0.5 - Math.abs(dy)) * b[3];   // a left or right side nearer than the top or bottom
       var rx = side ? (dx < 0 ? -0.5 : 0.5) : r2(dx), ry = side ? r2(dy) : (dy <= 0 ? -0.5 : 0.5);   // on the middle line: the top, where state variables usually sit   // the nearest point of its border

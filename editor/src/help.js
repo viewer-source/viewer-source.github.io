@@ -15,7 +15,7 @@
         'A process or logic gate is one object with its two ports: what it consumes ends on one, what it makes leaves from the other, and they move with it. A modifier\'s end goes to the middle of one of its two sides off the ports. A right click on it turns it a quarter clockwise (Turn process), four turns round.',
         'A right click on a line adds a bend point there; on a bend point, removes it. A right click on empty map space offers Remove all bend points, which takes every bend point of the map away at once.']],
       ['Make (Settings, Editing: Full; SBGN-ML maps)', ['A click on a sign of the palette takes it for one use: a click on the map puts it there. A double click keeps it in hand for several, until the sign is clicked again or Esc.',
-        'A new macromolecule opens a box for its name: Enter keeps it, Esc leaves it unnamed. A state variable goes on a macromolecule where its border is nearest the click; its value is typed the same way (P, or P@S505 with the site).',
+        'A new macromolecule opens a box for its name: Enter keeps it, Esc leaves it unnamed. Add state variable in the right-click menu over a macromolecule puts one where its border is nearest the click; its value is typed the same way (P, or P@S505 with the site).',
         'A double click on a named entity or on a state variable opens its box again.']],
       ['Layout tools', ['The dotted square puts the whole map on the grid by the layout rules (complexes packed, rows and columns kept), one step to undo.',
         'The complex with two proteins packs the complex selected (or the one round a member selected), every complex when nothing is selected.']],
