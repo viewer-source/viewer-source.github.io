@@ -89,6 +89,7 @@ files.forEach(function (f, i) {
   g2 = se.multimer(g2, 'made1', true, opt);
   g2 = se.unit(g2, 'made1', 'N:3', opt); g2 = se.unit(g2, 'made1', 'ct:gene', opt); g2 = se.unit(g2, 'made1', 'gone unit', opt);
   g2 = se.unitValue(g2, 'made1', 1, 'mt:prot & <x>', opt); g2 = se.unitDelete(g2, 'made1', 2, opt);
+  if (mac[0]) g2 = se.unit(g2, mac[0].id, '', opt);   // an empty one, as Add unit of information makes it (N:2's size)
   var single = mac.filter(function (q) { return q !== mac[0] && q !== withSv && q !== doomed; })[0];
   if (single) { g2 = se.multimer(g2, single.id, true, opt); g2 = se.unit(g2, single.id, 'N:2', opt); }
   var multi = all.filter(function (q) { return /^(macromolecule|simple chemical|nucleic acid feature) multimer$/.test(q.cls) && q.ui.length && q.top; })[0];

@@ -320,7 +320,7 @@ page, so its styles keep the base they were made on). The looks before (Default 
   #m2-editwin .m2-ed-pc input[type="color"]::-webkit-color-swatch-wrapper { padding: 2px; }
   #m2-editwin .m2-ed-pc input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 2px; }
   #m2-editwin .m2-ed-pc input[type="color"]::-moz-color-swatch { border: 0; border-radius: 2px; }
-  #m2-editwin .m2-ed-props .m2-ed-pdef { text-align: center; margin: 0; }
+  #m2-editwin .m2-ed-props .m2-ed-pdef { display: inline-block; width: auto; margin: 0; padding: 2px 10px; font-size: 13px; }   /* small, as a text button (user, 2026-11-14: "I don't like large button") */
   #m2-editwin .m2-ed-props .m2-ed-pdef[hidden] { display: none; }
   #m2-view .m2-ed-palghost { position: absolute; z-index: 5; pointer-events: none; } #m2-view .m2-ed-palghost svg { display: block; }   /* the future node dragged from the palette, at its size */
   #m2-view .m2-ed-type { position: absolute; z-index: 5; box-sizing: border-box; margin: 0; padding: 0; border: 0; border-radius: 0; background: #fff; color: #000; text-align: center; font-family: Dialog, Arial, Helvetica, sans-serif; outline: none; box-shadow: none; }   /* the text edited in place, in the glyph's own colours (create.js), no frame (user, 2026-11-14) */

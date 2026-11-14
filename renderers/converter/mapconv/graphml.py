@@ -245,7 +245,7 @@ def write(diagram, soft=False):
             if kind == 'StateVariable':
                 w, h = (18.0 * k, 18.0 * k) if len(text) <= 2 else (float(math.ceil(len(text) * ICON_CHAR * k + 12 * k)), 18.0 * k)
             else:
-                w, h = float(math.ceil(len(text) * ICON_CHAR * k + 8 * k)), 16.0 * k
+                w, h = float(math.ceil(max(len(text), 3) * ICON_CHAR * k + 8 * k)), 16.0 * k  # at least N:2's box (25 x 16), so an empty unit is one to type into
             gn.find('y:Geometry', NS).set('width', repr(w)); gn.find('y:Geometry', NS).set('height', repr(h))
             if small:
                 gn.find('y:NodeLabel', NS).set('fontSize', '%g' % small)

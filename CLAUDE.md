@@ -582,9 +582,11 @@ says "the workbench", "the converter's repository", "a private repository".
   macromolecules and simple chemicals selected with every line at them. Units of information and multimers (user, 2026-11-14: "make multimer,
   make macromolecule"; "there shouldn't be any predefined thing ... people know what they're doing"): the right-click
   menu over a macromolecule has Add state variable, Add unit of information, then Make multimer (Make macromolecule on a
-  multimer, SBGN's names; the class written as `macromolecule multimer`, yEd's mcount 2). Add unit of information opens a
-  field on the top: free text, nothing offered or checked (N:3, mt:prot, ct:mRNA); Enter makes it, Esc or an empty field
-  makes none. A count is only what the reader types (N:x); nothing is added with Make multimer. Units sit where the
+  multimer, SBGN's names; the class written as `macromolecule multimer`, yEd's mcount 2). Add unit of information puts an
+  empty one on the top at once, selected, as Add state variable does (user, 2026-11-14: "immediately there, and then a
+  user would double click on it and add text"), at N:2's size, 25 by 16 (the yEd maps' size for three characters;
+  the converter's smallest unit since 2026-11-14, 21 wide in SBGN-ML, so an empty one is a box, not a sliver); its text
+  free, nothing offered or checked (N:3, mt:prot, ct:mRNA), an emptied one stays. A count is only what the reader types (N:x); nothing is added with Make multimer. Units sit where the
   converter puts them, spread evenly along the top ((k + 1) / (n + 1) of the width), spread again when one is added or
   deleted; they are selected, retyped and deleted like state variables but not dragged (the converter reads a unit's
   text, not its place, so a moved unit would come back on the next build). In the file a unit changed rewrites all of
@@ -601,12 +603,12 @@ says "the workbench", "the converter's repository", "a private repository".
   Resizing (user, 2026-11-14: "resizing of the element ... by dragging its side ... 8 handles"; in the full editor only,
   where Layout keeps sizes standard): a macromolecule or a simple chemical selected, not a member of a complex (Pack
   keeps those), is resized by its eight handles, the cursor a resize arrow over them; the sides dragged move, the
-  others stay, its width and height in whole steps of Size step (user: "multiples of 8 ... people would change if they
+  others stay, its width and height in multiples of Size grid (user: "multiples of 8 ... people would change if they
   want to 4"; 8 by default, 1 to 100, kept in this browser with the grid settings, `atlas-edit-grid`), Alt or Ctrl held
   for any size. Drawn as it goes: its outline, its name and its state variables and units of information follow, the
   compartments round it grow; its lines are drawn again on release. Properties (user: "if people want specific size,
   they could type it in the properties"), under the palette: Width and Height of the one selected (Enter sets it, its
-  centre kept; Esc takes it back) and Size step. `sbgn_edit.resize` writes the box, the name centred, the state
+  centre kept; Esc takes it back) and Size grid. `sbgn_edit.resize` writes the box, the name centred, the state
   variables and units at their ratios, the ends of its lines off its centre scaled with the box (one the converter would
   read as aimed at the centre set so); write() scales what the file's glyph carries the same way, its own line ends
   too. On a map with few proteins a much taller one can move the converter's map scale (the median protein height,
@@ -616,7 +618,7 @@ says "the workbench", "the converter's repository", "a private repository".
   left, for one macromolecule or simple chemical selected (not an Activity Flow activity drawn as one): Label, Width,
   Height (not on a member of a complex), Fill colour, Border colour, Border width (user: "certain editors like Cell
   Designer will not support changing the color of the border, but here we are flexible ... super colorful diagram ...
-  thickness of the border, let's add it as well"), Multimer; Size step under them; then Set as default for macromolecule
+  thickness of the border, let's add it as well"), Multimer; Size grid under them (named so, user, 2026-11-14: "step, I'm completely unclear"; a field with 4, 8, 16, 32 offered under it, any number typed; Properties shown only with its node selected, user: "it belongs to a protein"); then Set as default (user: the longer "Set as default for macromolecule" too long, a small button), for macromolecule
   (or simple chemical), as Newt's: the next ones of that kind made from the palette take that size, colours, border and
   multimer, kept in this browser for every map (`atlas-edit-defaults`, by kind). Left out (user): state variables and
   units of information (their own ways on the map), Cloned, Image, Font, Fill opacity. A field is applied on Enter or

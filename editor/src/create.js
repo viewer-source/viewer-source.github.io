@@ -126,7 +126,7 @@
       if (i < 0 || !/^macromolecule( multimer)?$/.test(sbJs.classOf(src(), nodes2[i].id))) return null;   // not an Activity Flow activity drawn as one (write() carries none of its changes)
       var id = nodes2[i].id, multi = isMulti(i);
       return [['Add state variable', function () { makeState(P); }],
-              ['Add unit of information', function () { typeIn(id, null, true); }],
+              ['Add unit of information', function () { makeUnit(id); }],
               [multi ? 'Make macromolecule' : 'Make multimer', function () {
                 var t2 = sbJs.multimer(text, id, !multi);
                 if (t2 === text) return;
@@ -145,6 +145,15 @@
       })[0] || ORDER[0];
       var id = nodes2[i].id, j = have.filter(function (h) { return h[3] === SV; }).length;   // after the state variables, before the units
       remember(false); text = sbJs.state(text, id, '', r[0], r[1]); made(id);
+      selN = []; svSel = { id: id, j: j }; paint();
+    }
+    // an empty unit of information (user, 2026-11-14: "as with state variables ... immediately there, and then a user would
+    // double click on it and add text"): N:2's box (the converter's smallest), the last on the top, selected
+    function makeUnit(id) {
+      var i = nodes2.findIndex(function (n) { return n.id === id; });
+      if (i < 0) return;
+      var j = svList(i).length;   // the units come last in the node's list
+      remember(false); text = sbJs.unit(text, id, ''); made(id);
       selN = []; svSel = { id: id, j: j }; paint();
     }
     function made(id) {   // the text changed by a palette action: read again, the node selected, drawn, saved
@@ -180,19 +189,14 @@
       return l ? ownText(l) : '';
     }
     // a name (j null), or the j-th icon's text (a state variable's value, a unit of information), typed in a box over the
-    // map; Enter or leaving it keeps it, Esc not. fresh: a new unit of information, made only when Enter or leaving it
-    // keeps some text (user, 2026-11-14: no predefined units, the reader types N:3, mt:prot, ct:mRNA)
+    // map; Enter or leaving it keeps it, Esc not (a unit's text free, user, 2026-11-14: N:3, mt:prot, ct:mRNA)
     var typing = null;
-    function typeIn(id, j, fresh) {
+    function typeIn(id, j) {
       if (typing) typing.done(true);
       var i = nodes2.findIndex(function (n) { return n.id === id; });
       if (i < 0) return;
       var b = boxOf(i), sv = j == null ? null : svList(i)[j];
       if (j != null && !sv) return;
-      if (fresh) {   // where the converter will put it: the last of the node's units, spread evenly along the top
-        var nu = svList(i).filter(function (q) { return q[3] === UI; }).length;
-        sv = ['', [b[0] + (nu + 1) / (nu + 2) * b[2], b[1]], [45, 16], UI, nu];
-      }
       var unit = !!sv && sv[3] === UI;
       selN = []; selP = []; selE = []; part = null; svSel = null; paint();   // only the cursor while typing, nothing shown selected (user, 2026-11-14)
       // the text edited in place (user, 2026-11-14: "do not change the color ... just simply make it editable"): the box
@@ -208,10 +212,9 @@
       // rounded corners); before the editor's own drawing is in the page, the field in the glyph's fill. Whether the
       // drawing is there, not whether it has text: an empty glyph has no text to hide and still got the filled box (user,
       // 2026-11-14)
-      var hid = fresh ? [] : textsOf(i, j);
+      var hid = textsOf(i, j);
       hid.forEach(function (el) { el.style.visibility = 'hidden'; });
-      if (fresh) inp.style.border = '1px solid #000';   // nothing drawn yet: the unit's own outline
-      inp.style.background = fresh ? '#fff' : gN && gN[nodes2[i].id] ? 'transparent' : !sv && fl && fl.getAttribute('hasColor') !== 'false' && fl.getAttribute('color') ? fl.getAttribute('color').slice(0, 7) : '#fff';
+      inp.style.background = gN && gN[nodes2[i].id] ? 'transparent' : !sv && fl && fl.getAttribute('hasColor') !== 'false' && fl.getAttribute('color') ? fl.getAttribute('color').slice(0, 7) : '#fff';
       inp.style.color = lab && lab.getAttribute('textColor') || '#000';
       var place = function () {   // at the glyph in the map's units: again after every zoom or pan (paint), so a pinch keeps it on its glyph
         var st = inp.style;
@@ -232,8 +235,8 @@
           var v = inp.value.replace(/[\r\n]+/g, ' ');
           if (sv && !unit) v = v.replace(/@+$/, '');   // P@ is P (a site needs a name)
           if (unit) v = v.trim();   // a unit of only spaces is none
-          if (!keep || v === before.replace(/[\r\n]+/g, ' ') || !on || map !== m0 || (fresh && !v)) return;   // a name on several lines, untouched, kept as it was (the box shows it on one)
-          var t2 = fresh ? sbJs.unit(text, id, v) : unit && !v ? sbJs.unitDelete(text, id, sv[4], { sbgn: sb.base }) : !sv ? sbJs.label(text, id, v) : unit ? sbJs.unitValue(text, id, sv[4], v) : sbJs.stateValue(text, id, sv[4], v);
+          if (!keep || v === before.replace(/[\r\n]+/g, ' ') || !on || map !== m0 ) return;   // a name on several lines, untouched, kept as it was (the box shows it on one)
+          var t2 = !sv ? sbJs.label(text, id, v) : unit ? sbJs.unitValue(text, id, sv[4], v) : sbJs.stateValue(text, id, sv[4], v);
           if (t2 === text) return;
           remember(false); text = t2; parse(); dirty = true; quiet(); render(); paint(); changed();
         }, inp: inp, place: place
@@ -458,9 +461,9 @@
 
     // ---------- resizing and Properties (user, 2026-11-14) ----------
     // A macromolecule or a simple chemical selected is resized by its eight handles: the sides dragged move, its width and
-    // height in whole steps of Size step (8 by default: "so when you drag, it kind of not random, but multiples of 8"),
+    // height in multiples of Size grid (8 by default: "so when you drag, it kind of not random, but multiples of 8"),
     // Alt or Ctrl held for any size (sized, core.js). Properties, under the palette, shows the width and the height of the
-    // one selected, typed for an exact size (its centre kept), and Size step, kept in this browser with the grid settings.
+    // one selected, typed for an exact size (its centre kept), and Size grid, kept in this browser with the grid settings.
     // sbgn_edit.resize writes the box, its name kept centred, its state variables at their places on the border; write()
     // scales what the SBGN-ML glyph carries the same way.
     function sizable(i) {   // not a member of a complex (Pack keeps a complex's members to the layout rules)
@@ -517,7 +520,9 @@
     // default; state variables and units of information have their own ways on the map, Cloned skipped). A field is
     // applied on Enter or when it is left (Esc puts it back), a colour also when the picker closes; one undo step each.
     // Shown for one macromolecule or simple chemical selected (not an Activity Flow activity drawn as one: write() carries
-    // none of its changes); Width and Height not for a member of a complex (Pack sizes those); Size step always
+    // none of its changes); Width and Height not for a member of a complex (Pack sizes those). Size grid last, with the node
+    // (user, 2026-11-14: "it belongs to a protein"; "step, I'm completely unclear"): a field to type in with 4, 8, 16 and 32
+    // offered under it (a datalist: suggested, any value typed still taken)
     var ROWS = [['label', 'Label', 'text'], ['w', 'Width', 'num'], ['h', 'Height', 'num'], ['fill', 'Fill colour', 'colour'],
       ['line', 'Border colour', 'colour'], ['width', 'Border width', 'num'], ['multimer', 'Multimer', 'check']];
     var props = document.createElement('div');
@@ -528,8 +533,9 @@
         : r[2] === 'num' ? '<input type="number" id="' + id + '" step="any"' + (r[0] === 'width' ? ' min="0.25" max="20"' : ' min="4" max="5000"') + '>'
         : '<input type="text" id="' + id + '" spellcheck="false" autocomplete="off">';
       return '<tr data-k="' + r[0] + '"><th><label for="' + id + '">' + r[1] + '</label></th><td>' + f + '</td></tr>';
-    }).join('') + '<tr><th><label for="m2-ed-step" title="Width and height change in steps of this many units when a node is resized by its handles; Alt or Ctrl held, any size">Size step</label></th>' +
-      '<td><input type="number" id="m2-ed-step" min="1" max="100" step="1"></td></tr></table><button type="button" class="m2-ed-pdef"></button>';
+    }).join('') + '<tr data-k="step"><th><label for="m2-ed-step" title="Width and height snap to multiples of this when the node is resized by its handles (Alt or Ctrl held: any size)">Size grid</label></th>' +
+      '<td><input type="number" id="m2-ed-step" min="1" max="100" step="1" list="m2-ed-steps"><datalist id="m2-ed-steps"><option value="4"><option value="8"><option value="16"><option value="32"></datalist></td></tr></table>' +
+      '<button type="button" class="m2-ed-pdef" title="The next ones of this kind made from the palette take these">Set as default</button>';
     pal.insertAdjacentElement('afterend', props);
     var inW = props.querySelector('#m2-ed-w'), inH = props.querySelector('#m2-ed-h'), inStep = props.querySelector('#m2-ed-step');
     var field = function (k) { return props.querySelector('#m2-ed-' + k); }, pNow = {}, pCls = [];
@@ -541,13 +547,11 @@
     }
     function kindOf(i) { return nodes2[i].shape.kind === 'SimpleChemical' ? 'simple chemical' : 'macromolecule'; }
     function propsShow(all) {   // all: every field shown again, the one focused too (Esc)
-      props.hidden = !palOn();
-      if (props.hidden) return;
       var i = propNode(), r2 = function (v) { return String(Math.round(v * 100) / 100); };
-      Array.prototype.forEach.call(props.querySelectorAll('tr[data-k]'), function (tr) { tr.hidden = i < 0 || (/^[wh]$/.test(tr.dataset.k) && !sizable(i)); });
-      props.querySelector('.m2-ed-pdef').hidden = i < 0;
+      props.hidden = !palOn() || i < 0;   // only with its node: nothing selected, no Properties
+      if (props.hidden) return;
+      Array.prototype.forEach.call(props.querySelectorAll('tr[data-k]'), function (tr) { tr.hidden = /^[wh]$/.test(tr.dataset.k) && !sizable(i); });
       if (all || document.activeElement !== inStep) inStep.value = String(gridSet.step);
-      if (i < 0) return;
       var o = sbJs.lookOf(realizerOf(nodes2[i].el)), b = bx(i);
       pNow = { label: nameOf(i), w: r2(b[2]), h: r2(b[3]), fill: o.fill ? o.fill.slice(0, 7).toLowerCase() : '', line: (o.line || '#000000').slice(0, 7).toLowerCase(), width: r2(o.width), multimer: o.multimer };
       ROWS.forEach(function (r) {
@@ -558,8 +562,6 @@
         var pk = f.previousElementSibling;
         if (r[2] === 'colour' && document.activeElement !== pk && pk.value !== (pNow[r[0]] || '#ffffff')) pk.value = pNow[r[0]] || '#ffffff';   // not under a choice being made
       });
-      var dt = 'Set as default for ' + kindOf(i), db = props.querySelector('.m2-ed-pdef');
-      if (db.textContent !== dt) db.textContent = dt;
     }
     [inW, inH].forEach(function (inp, k) {
       inp.addEventListener('change', function () {

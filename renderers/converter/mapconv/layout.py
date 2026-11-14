@@ -32,7 +32,7 @@ def decorations(d):
         sw = 15.0 if len(txt) <= 2 else 45.0  # as yEd's icons on our maps
         states.append((cx + rx * w - sw / 2, cy + ry * h - 7.5, sw, 15.0))
     units = d.units + (['N:%d' % d.count] if d.count > 2 and not any(re.fullmatch(r'N:\d+', u) for u in d.units) else [])
-    uw = [max(15.0, len(u) * 7.0) for u in units]
+    uw = [max(3, len(u)) * 7.0 for u in units]  # at least N:2's width, as graphml.write
     return states, [(u, (x + (k + 1) / (len(units) + 1) * w - uw[k] / 2, y - 7.5, uw[k], 15.0)) for k, u in enumerate(units)]
 
 

@@ -579,7 +579,7 @@
     var G = gml(t, opt), R = resources(G), id = null, max = 0, fs = small ? String(small) : '10', k = (small || 10) / 10;
     Object.keys(R).forEach(function (q) { max = Math.max(max, parseInt(q, 10) || 0); if (R[q].kind === kind && R[q].text === text && R[q].font === fs) id = id || q; });
     if (id) return [id, t, R[id].size];
-    var sz = kind === 'UnitOfInformation' ? [Math.ceil(text.length * ICON_CHAR * k + 8 * k), 16 * k] : svSize(text, k), b = labelBox(text, sz[0], sz[1], k * 10 / 14);
+    var sz = kind === 'UnitOfInformation' ? [Math.ceil(Math.max(text.length, 3) * ICON_CHAR * k + 8 * k), 16 * k] : svSize(text, k), b = labelBox(text, sz[0], sz[1], k * 10 / 14);
     id = String(max + 1);
     var res = '<y:Resource id="' + id + '">\n        <yed:NodeRealizerIcon>\n          <y:GenericNode configuration="com.yworks.sbgn.' + kind + '">\n' +
       '            <y:Geometry height="' + repr(sz[1]) + '" width="' + repr(sz[0]) + '" x="0.0" y="0.0"/>\n            <y:Fill color="#FFFFFF" transparent="false"/>\n            <y:BorderStyle color="#000000" type="line" width="1.0"/>\n' +
@@ -896,7 +896,7 @@
     var n = units.filter(function (u) { return /^N:\d+$/.test(u); })[0];
     return (n ? parseInt(n.slice(2), 10) : 2) > 1;
   }
-  function uBox(txt, b, k, n) { var uw = Math.max(15, txt.length * 7); return [b[0] + (k + 1) / (n + 1) * b[2] - uw / 2, b[1] - 7.5, uw, 15]; }   // layout.decorations
+  function uBox(txt, b, k, n) { var uw = Math.max(3, txt.length) * 7; return [b[0] + (k + 1) / (n + 1) * b[2] - uw / 2, b[1] - 7.5, uw, 15]; }   // layout.decorations
   // a node's box set (user, 2026-11-14: a macromolecule or a simple chemical resized by its handles or its size typed):
   // the box written, its name kept centred, its state variables at their places on the border (yEd's ratios), and the
   // ends of its lines that are off its centre moved with the box in proportion, so a port on the border stays on it;

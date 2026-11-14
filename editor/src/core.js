@@ -51,7 +51,7 @@
     // layout rules' (the layout skill, Grid): node centres on 8 px, bend points on 4 px, blocks on 16 (every second
     // line drawn stronger). The demo's maps are mostly not on any grid: a snapped drag moves a node onto it.
     var GRID_KEY = 'atlas-edit-grid', NODE_STEP = 8, BEND_STEP = 4;
-    // Size step (user, 2026-11-14: "multiples of 8 ... people would change if they want to 4"): a node resized by its handles
+    // Size grid (user, 2026-11-14: "multiples of 8 ... people would change if they want to 4"): a node resized by its handles
     // takes widths and heights in whole steps, 8 by default, set in Properties (create.js); Alt or Ctrl held, any size
     var STEP0 = 8, stepOk = function (v) { return v >= 1 && v <= 100 ? Math.round(v) : STEP0; };
     var gridSet = (function () { try { var g = JSON.parse(localStorage.getItem(GRID_KEY) || '{}'); return { shown: g.shown !== false, snap: g.snap === true, step: stepOk(+g.step) }; } catch (e) { return { shown: true, snap: false, step: STEP0 }; } })();
@@ -658,7 +658,7 @@
       return [x0, y0, x1 - x0, y1 - y0];
     }
     function sized(d, P, free) {   // the box of a macromolecule or a simple chemical resized: the sides dragged move, the
-      // others stay; its width and height in whole steps of Size step (free: Alt or Ctrl held, any size), one step at least
+      // others stay; its width and height in multiples of Size grid (free: Alt or Ctrl held, any size), one step at least
       var b = d.rs.b0, s = d.rs.s, st = gridSet.step, dx = P[0] - d.x, dy = P[1] - d.y;
       var size = function (v) { return free ? Math.max(4, Math.round(v * 100) / 100) : Math.max(st, Math.round(v / st) * st); };
       var w = /[lr]/.test(s) ? size(b[2] + (/l/.test(s) ? -dx : dx)) : b[2], h = /[tb]/.test(s) ? size(b[3] + (/t/.test(s) ? -dy : dy)) : b[3];
