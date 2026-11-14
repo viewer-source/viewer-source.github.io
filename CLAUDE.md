@@ -495,8 +495,8 @@ says "the workbench", "the converter's repository", "a private repository".
   the arc's new source or target (a process's port where it has one) and turns consumption into logic arc at a gate and
   back at a process, and `graphml()` takes such moved ends from the file. An end at a process's or gate's port is
   grabbed for this only; on its own process it stays.
-  Only with Settings, Editing on Full (user, 2026-11-14: moving an end changes the network, so not layout): Layout, the
-  default, and Full, kept in the browser (localStorage atlas-edit-level), `V.level` read by `takes()`; the row only where
+  Only with Settings, Editing on Full (user, 2026-11-14: moving an end changes the network, so not layout): Full, the
+  default since 2026-11-14 (user: "make full default"; the palette was missed under Layout), and Layout, kept in the browser (localStorage atlas-edit-level, always written: the frozen V4 reads a missing key as Layout), `V.level` read by `takes()`; the row only where
   the style has the Edit tab and the include allows full editing (edit="layout" keeps it to Layout, no row).
   Make main (user, 2026-11-14: "better than reconnecting by hand"; CellDesigner's main reactant or product is often an
   accident of the conversion): the right-click menu on an added reactant's or product's line of a CellDesigner reaction,
