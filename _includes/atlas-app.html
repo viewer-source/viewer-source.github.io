@@ -1701,6 +1701,16 @@ page, so its styles keep the base they were made on). The looks before (Default 
       if (save) { try { if (on) localStorage.setItem(key, '1'); else localStorage.removeItem(key); } catch (e) {} }
       window.dispatchEvent(new Event('resize')); // the map window's height, the list and the other separators follow
     }
+    // with the header shut the separator is the only way back, so all of it stays on the page: a style whose gap above
+    // the map is smaller than the separator (Default Edit: 6 px for 8) left it partly above the page's top, too thin
+    // to find (user, 2026-11-14: the header lost twice, no way to drag it back)
+    function keepOn() {
+      ts.style.top = '';
+      if (!document.body.classList.contains('m2-head-shut')) return;
+      var y = ts.getBoundingClientRect().top + window.scrollY;
+      if (y < 0) ts.style.top = ts.offsetTop - y / (ts.currentCSSZoom || 1) + 'px';
+    }
+    window.addEventListener('resize', keepOn); window.addEventListener('load', keepOn);
     try { if (localStorage.getItem(key)) setShut(true, false); } catch (e) {}
     ts.addEventListener('pointerdown', function (e) {
       if (e.button !== 0) return;
