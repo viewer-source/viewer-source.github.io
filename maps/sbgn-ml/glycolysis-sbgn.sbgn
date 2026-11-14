@@ -635,6 +635,10 @@
     </glyph>
     <glyph class="macromolecule" id="glyph_2">
       <bbox x="144" y="164" w="80" h="40"/>
+      <glyph class="state variable" id="glyph_2_sv0">
+        <state value=""/>
+        <bbox x="180.5" y="196.5" w="15" h="15"/>
+      </glyph>
     </glyph>
     <glyph class="macromolecule" id="glyph_3">
       <bbox x="200" y="108" w="80" h="40"/>
