@@ -500,7 +500,7 @@
         </annotation>
       </extension>
       <label text="ATP"/>
-      <bbox x="414.0" y="170.0" w="60.0" h="32.0"/>
+      <bbox x="406" y="170.0" w="60.0" h="32.0"/>
     </glyph>
     <glyph class="process" id="n21" orientation="horizontal">
       <bbox x="515.0" y="177.0" w="18.0" h="18.0"/>
@@ -721,7 +721,7 @@
       <end x="582.0" y="186.0"/>
     </arc>
     <arc class="consumption" id="e23" source="n20" target="n21.1">
-      <start x="474.0" y="186.0"/>
+      <start x="466" y="186.0"/>
       <end x="506.0" y="186.0"/>
     </arc>
     <arc class="catalysis" id="e24" source="n22" target="n21">
