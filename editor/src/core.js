@@ -1879,6 +1879,7 @@
       // the square marks magenta on a CellDesigner map, as in CellDesigner (user, 2026-11-12: "this way I will know while
       // editing that it's CD"); black on a GraphML map, as in yEd
       overlay.classList.toggle('m2-ed-cd', !!cd);
+      svMarks(over);   // a state variable selected (create.js)
       overlay.innerHTML = out.concat(over).join('');
     }
 
@@ -2338,7 +2339,7 @@
         paint();
         return;
       }
-      if (tool && on && V.current === map && !e.buttons) { V.view.style.cursor = 'crosshair'; return; }   // something in hand from the palette
+      if (tool && on && V.current === map && !e.buttons) { V.view.style.cursor = 'default'; return; }   // something in hand from the palette: the plain arrow (user, 2026-11-14: no cross)
       if (on && V.current === map && !e.buttons) {   // the move sign only over what a drag would move
         var PP = at(e), hh = e.shiftKey ? null : hit(PP), ez = !e.shiftKey && edgeAt(PP);
         if (ez && hh && (hh.p != null || (hh.n != null && !nodes2[hh.n].comp && selN.indexOf(ez.c) < 0))) ez = null;

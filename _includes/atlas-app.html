@@ -297,11 +297,12 @@ page, so its styles keep the base they were made on). The looks before (Default 
   #m2-editwin .m2-ed-palette p { margin: 2px 0 2px; font-size: 12px; line-height: 16px; color: var(--m2-text-soft); }
   #m2-editwin .m2-ed-prow { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 4px; }
   #m2-editwin .m2-ed-palette button { display: flex; align-items: center; justify-content: center; flex: none; width: 44px; height: 30px; padding: 0; margin: 0; border: 1px solid transparent; border-radius: 4px; background: none; color: #80868b; }   /* the tools' grey (user, 2026-11-14: the signs were darker than the others) */
-  #m2-editwin .m2-ed-palette button:hover:not(:disabled) { background: none; border-color: transparent; color: #80868b; }
   #m2-editwin .m2-ed-palette button[aria-pressed="true"], #m2-editwin .m2-ed-palette button[aria-pressed="true"]:hover { background: #f1f3f4; color: #70757a; }
   #m2-editwin .m2-ed-palette button.m2-ed-sticky, #m2-editwin .m2-ed-palette button.m2-ed-sticky:hover { border-color: #70757a; }
   #m2-editwin .m2-ed-palette svg { width: 36px; height: 22px; stroke-width: 1.6; }
-  #m2-view .m2-ed-type { position: absolute; z-index: 5; box-sizing: border-box; margin: 0; padding: 0 4px; border: 1px solid #1437ff; border-radius: 3px; background: #fff; color: #000; text-align: center; font-family: Dialog, Arial, Helvetica, sans-serif; outline: none; }
+  .m2-ed-palghost { position: fixed; z-index: 1000; width: 36px; height: 22px; fill: none; stroke: #80868b; stroke-width: 1.6; pointer-events: none; }   /* a sign dragged onto the map */
+  #m2-view .m2-ed-svghost { position: absolute; z-index: 5; box-sizing: border-box; border: 1px solid #000; background: #fff; color: #000; display: flex; align-items: center; justify-content: center; font-family: Dialog, Arial, Helvetica, sans-serif; pointer-events: none; }   /* a state variable being dragged */
+  #m2-view .m2-ed-type { position: absolute; z-index: 5; box-sizing: border-box; margin: 0; padding: 0; border: 0; border-radius: 0; background: #fff; color: #000; text-align: center; font-family: Dialog, Arial, Helvetica, sans-serif; outline: none; box-shadow: none; }   /* the text edited in place, in the glyph's own colours (create.js), no frame (user, 2026-11-14) */
   /* How to edit (user, 2026-11-13: the long how-to took the room tools need): the "?" after the tools opens it as
      a popover over the map's left edge, built by the editor from one list (editor/src/help.js) */
   #m2-ed-help-box { position: fixed; z-index: 60; width: 320px; max-width: calc(100vw - 32px); max-height: calc(100vh - 32px); overflow: auto;
@@ -1211,11 +1212,7 @@ page, so its styles keep the base they were made on). The looks before (Default 
     gest = s;
   });
   view.addEventListener('gestureend', function (e) { if (gest != null) e.preventDefault(); gest = null; });
-  view.addEventListener('dblclick', function (e) {
-    if (e.target.closest('.m2-ctrl, .m2-info, .m2-ed-type')) return;   // not in the editor's name box
-    var r = view.getBoundingClientRect();
-    zoomAt(z * 1.5, (e.clientX - r.left) / pz(), (e.clientY - r.top) / pz());
-  });
+  // no zoom on a double click (user, 2026-11-14: "double click is for entering naming field")
   // drag with one pointer, pinch with two
   var pts = {}, last = null, press = null;
   view.addEventListener('pointerdown', function (e) {
@@ -2669,6 +2666,7 @@ page, so its styles keep the base they were made on). The looks before (Default 
       var turn = ed && window.m2EditTurn && window.m2EditTurn();   // a process or logic gate under the pointer: turned a quarter
       var main = ed && window.m2EditMain && window.m2EditMain();   // an added reactant's or product's line of a CellDesigner reaction
       var addSv = ed && !unbend && !turn && window.m2EditAddState && window.m2EditAddState();   // a macromolecule under the pointer (Full, SBGN-ML)
+      var del = ed && !unbend && !turn && window.m2EditDelete && window.m2EditDelete();   // a state variable or a macromolecule under the pointer (Full, SBGN-ML)
       // every bend point of the map, on empty map space only (user, 2026-11-14: a right click on a bend point means that
       // bend point)
       var unbendAll = ed && window.m2EditAllBends && window.m2EditAllBends();
@@ -2677,9 +2675,10 @@ page, so its styles keep the base they were made on). The looks before (Default 
       else if (turn) item(box, turn.label, turn.go);
       if (main) item(box, main.label, main.go);
       if (addSv) item(box, 'Add state variable', addSv);
+      if (del) item(box, 'Delete', del);
       if (unbendAll) item(box, 'Remove all bend points', unbendAll);
       // the editing items at the top, one separator below them, then the general ones (user, 2026-11-14)
-      if (unbend || bend || turn || main || addSv || unbendAll) sep(box);
+      if (unbend || bend || turn || main || addSv || del || unbendAll) sep(box);
       // its shortcut beside it, as Apple's and Windows' menus write it (user, 2026-11-13); case-blind: Chrome, Edge, Brave and Arc on a Mac
       // give the platform as "macOS", which /Mac/ missed, so only Safari showed ⌘E (user, 2026-11-14)
       var key = '<span class="m2-cx-key">' + (/mac|iphone|ipad|ipod/i.test((navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || navigator.userAgent) ? '\u2318E' : 'Ctrl+E') + '</span>';
@@ -2722,7 +2721,7 @@ page, so its styles keep the base they were made on). The looks before (Default 
     // the same in edit mode (user, 2026-11-12: "right click works everywhere the same way"; the map moves there with two
     // fingers or Shift with a drag, no right drag), View mode in place of Edit mode
     view.addEventListener('contextmenu', function (e) {
-      if (!setting('context') || e.shiftKey || !current || e.target.closest('.m2-ctrl, .m2-info')) return;
+      if (!setting('context') || e.shiftKey || !current || e.target.closest('.m2-ctrl, .m2-info, .m2-ed-type')) return;   // the editor's text box keeps the browser's menu
       e.preventDefault();
       show(e.clientX, e.clientY, grid.classList.contains('m2-editing'));
     });

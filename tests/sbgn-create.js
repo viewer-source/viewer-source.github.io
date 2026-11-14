@@ -1,6 +1,7 @@
 // sbgn_edit.js's creating (the full editor, 2026-11-14) against the converter (renderers/converter/mapconv, Python), on
 // the demo's SBGN-ML maps: a macromolecule added on the map and one in a compartment, named, with state variables (one
-// with a site, one empty), an existing macromolecule renamed and a state variable's value changed, as the editor makes
+// with a site, one empty), an existing macromolecule renamed and a state variable's value changed, state variables moved
+// and deleted, a macromolecule of the file deleted, as the editor makes
 // them on its GraphML (g2); then s2 = write(s, g2), the SBGN-ML file saved. Checks:
 //   1. the converter's GraphML of s2 is drawn by yrender exactly as g2 (the editor shows what the file will hold);
 //   2. graphml(s2, conv(s)) is drawn the same too (a draft reopened before the build: the base lacks what was made);
@@ -29,6 +30,9 @@ var DRIVER = [
   'json.dump(out, sys.stdout)'].join('\n');
 function conv(paths) { return JSON.parse(cp.execFileSync(py, ['-c', DRIVER], { input: JSON.stringify(paths), maxBuffer: 1 << 30 }).toString()); }
 function draw(g) { var r = yr.render(g, { DOMParser: DP }); return r.svg; }
+// a state variable moved on a glyph of the file is written to 4 decimals and read back as a ratio of its glyph's box, so
+// its drawing may differ from the editor's in the 4th decimal: numbers compared to 3 decimals
+function d3(svg) { return svg.replace(/-?\d+\.\d+/g, function (v) { return String(Math.round(parseFloat(v) * 1000) / 1000); }); }
 function glyphs(s) {   // [id, class, box, compartmentRef, has a state variable] of the top-level glyphs
   var doc = new DP().parseFromString(s.replace(/^\ufeff/, ''), 'application/xml'), out = [];
   Array.prototype.forEach.call(doc.getElementsByTagName('glyph'), function (g) {
@@ -55,9 +59,16 @@ files.forEach(function (f, i) {
   if (mac[0]) g2 = se.label(g2, mac[0].id, 'Renamed & <x>', opt);
   var withSv = mac.filter(function (q) { return q.sv; })[0];
   if (withSv) g2 = se.stateValue(g2, withSv.id, 0, 'Ac', opt);
+  // moved along the border and deleted (2026-11-14): a made one and a file's own, a made one deleted, a file's macromolecule deleted
+  g2 = se.stateMove(g2, 'made1', 0, 0, -0.5, opt);
+  g2 = se.state(g2, 'made1', 'gone', 0.5, 0, opt);
+  g2 = se.stateDelete(g2, 'made1', 2, opt);
+  if (withSv) g2 = se.stateMove(g2, withSv.id, 0, 0.5, 0.25, opt);
+  var doomed = mac.filter(function (q) { return q.top && q !== mac[0] && q !== withSv; })[0];
+  if (doomed) g2 = se.remove(g2, [doomed.id], opt);
   var s2 = se.write(s, g2, opt), p2 = path.join(tmp, i + path.extname(f));
   fs.writeFileSync(p2, s2);
-  made.push({ f: f, s: s, g: g, g2: g2, s2: s2, p2: p2, comp: !!comp, mac: mac[0], withSv: withSv });
+  made.push({ f: f, s: s, g: g, g2: g2, s2: s2, p2: p2, comp: !!comp, mac: mac[0], withSv: withSv, doomed: doomed });
 });
 var after = conv(made.map(function (m) { return m.p2; }));
 made.forEach(function (m, i) {
@@ -65,16 +76,18 @@ made.forEach(function (m, i) {
   var name = path.relative(here, m.f), c2 = after[i], why = [];
   if (!c2) why.push('the converter cannot read the file written');
   else {
-    var want = draw(c2);
-    if (draw(m.g2) !== want) why.push('the editor\'s drawing differs from the converter\'s of the file written');
+    var want = d3(draw(c2));
+    if (d3(draw(m.g2)) !== want) why.push('the editor\'s drawing differs from the converter\'s of the file written');
     var re = se.graphml(m.s2, m.g, opt);
-    if (draw(re) !== want) why.push('graphml(s2, base) is drawn differently');
+    if (d3(draw(re)) !== want) why.push('graphml(s2, base) is drawn differently');
     if (se.write(m.s2, c2, opt) !== m.s2) why.push('write(s2, conv(s2)) is not s2');
   }
   if (m.s2.indexOf('id="made1"') < 0 || m.s2.indexOf('value="P" variable="S12"') < 0 || m.s2.indexOf('text="Made one"') < 0) why.push('made1 not written as made');
   if (m.comp && !/id="made2" compartmentRef="/.test(m.s2)) why.push('made2 not in its compartment');
   if (m.mac && m.s2.indexOf('text="Renamed &amp; &lt;x&gt;"') < 0) why.push('the rename not written');
   if (m.withSv && m.s2.indexOf('value="Ac"') < 0) why.push('the state variable\'s value not written');
+  if (m.s2.indexOf('value="gone"') >= 0) why.push('a deleted state variable written');
+  if (m.doomed && m.s2.indexOf('id="' + m.doomed.id + '"') >= 0) why.push('a deleted macromolecule still in the file');
   if (why.length) { bad++; console.log('DIFFERENT ' + name + ': ' + why.join('; ')); }
 });
 fs.rmSync(tmp, { recursive: true, force: true });

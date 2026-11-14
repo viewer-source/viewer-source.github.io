@@ -1,15 +1,15 @@
     // ---------- making new things: the palette (editor/src/create.js) ----------
-    // The full editor (user, 2026-11-14): entities taken from a palette in the Edit window, as in yEd and Newt, never from
-    // the right-click menu (that stays for what is on the map already). A click on a sign takes it for one use: the next
-    // click on the map puts it there and the sign lets go; a double click keeps it in hand for several in a row, until a
-    // click on the sign again or Esc (user: "this tool stick to your hand"). Only with Settings, Editing on Full, and for
-    // now only on SBGN-ML maps: sbgn_edit (renderers/converter/sbgn_edit.js, its master, tested against the converter by
-    // tests/sbgn-create.js) writes what is made into the editor's GraphML as the converter writes it, and into the SBGN-ML
-    // file. So far: a macromolecule, its name, its state variables (these from the right-click menu). A name or a value is typed in a box over the map that
-    // opens at once (Enter or a click elsewhere keeps it, Esc leaves it as it was); a double click on a named entity or
-    // on a state variable opens it again. Adding and naming are one undo step.
-    // A state variable is added from the right-click menu over a macromolecule (user, 2026-11-14: "Auxiliary units -
-    // remove this section, to be added via right click"): it belongs to a glyph already on the map.
+    // The full editor (user, 2026-11-14): entities taken from a palette in the Edit window, as in yEd and Newt. A click on
+    // a sign takes it for one use: the next click on the map puts it there and the sign lets go; a double click keeps it
+    // in hand for several in a row, until a click on the sign again or Esc (user: "this tool stick to your hand"); a sign
+    // dragged onto the map is put where it is dropped. The pointer stays the plain arrow. Only with Settings, Editing on
+    // Full, and for now only on SBGN-ML maps: sbgn_edit (renderers/converter/sbgn_edit.js, its master, tested against the
+    // converter by tests/sbgn-create.js) writes what is made into the editor's GraphML as the converter writes it, and
+    // into the SBGN-ML file. So far: a macromolecule, its name, its state variables (added from the right-click menu over
+    // a macromolecule, user: "Auxiliary units - remove this section, to be added via right click"), and deleting them.
+    // Nothing asks for a name when made (user: "I will name when I want to name"): a double click on a named entity or a
+    // state variable, or a click on a state variable already selected, opens its text in place, in the glyph's own
+    // colours and font (user: "simply make it editable for the text"); Enter or a click elsewhere keeps it, Esc not.
     var PAL = [
       ['Entity pool nodes', [['macromolecule', 'Macromolecule', '<rect x="6" y="5" width="28" height="14" rx="4"/>']]]
     ];
@@ -19,7 +19,7 @@
     pal.innerHTML = PAL.map(function (s) {
       return '<p>' + s[0] + '</p><div class="m2-ed-prow">' + s[1].map(function (q) {
         return '<button type="button" data-make="' + q[0] + '" title="' + q[1] + ' (click: once; double click: several)" aria-label="' + q[1] + '" aria-pressed="false">' +
-          '<svg viewBox="0 0 40 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">' + q[2] + '</svg></button>';
+          '<svg viewBox="0 0 40 24" fill="none" stroke="currentColor" aria-hidden="true">' + q[2] + '</svg></button>';
       }).join('') + '</div>';
     }).join('');
     box.querySelector('.m2-ed-tools').insertAdjacentElement('afterend', pal);
@@ -33,7 +33,7 @@
         b.setAttribute('aria-pressed', String(mine));
         b.classList.toggle('m2-ed-sticky', mine && tool.sticky);
       });
-      if (!tool && V.view.style.cursor === 'crosshair') V.view.style.cursor = '';
+      if (!tool && V.view.style.cursor === 'default') V.view.style.cursor = '';
     }
     function palTake(kind, sticky) { tool = kind ? { kind: kind, sticky: !!sticky } : null; palShow(); }
     pal.addEventListener('click', function (e) {
@@ -90,23 +90,33 @@
       try { t2 = sbJs.add(text, { id: id, cls: 'macromolecule', label: '', box: [+fmt(X), +fmt(Y2), w, h], parent: c >= 0 ? nodes2[c].id : null, fill: D.fill, font: D.font }); }
       catch (err) { warn('The macromolecule could not be added: ' + (err && err.message || err) + '.'); return; }
       remember(false); text = t2; made(id);
-      typeIn(id, null, true);
     }
     function macroAt(P) { return innermost(P, function (n) { return n.shape.kind === 'Macromolecule' && n.el.getAttribute('yfiles.foldertype') !== 'group'; }); }
-    window.m2EditAddState = function () {   // the right-click menu's Add state variable over a macromolecule, put where the border is nearest the click
+    // the places a state variable snaps to on its node's border: each side's middle, quarters and corners, as [rx, ry]
+    var SNAPS = (function () { var out = [], q = [-0.5, -0.25, 0, 0.25, 0.5]; q.forEach(function (v) { out.push([v, -0.5], [v, 0.5]); if (Math.abs(v) < 0.5) out.push([-0.5, v], [0.5, v]); }); return out; })();
+    function border(i, P) {   // P put on node i's border: [rx, ry], snapped to a place within 8 screen pixels
+      var b = boxOf(i), dx = (P[0] - b[0] - b[2] / 2) / b[2], dy = (P[1] - b[1] - b[3] / 2) / b[3], cl = function (v) { return Math.max(-0.5, Math.min(0.5, v)); };
+      var side = (0.5 - Math.abs(dx)) * b[2] < (0.5 - Math.abs(dy)) * b[3];   // a left or right side nearer than the top or bottom
+      var r = side ? [dx < 0 ? -0.5 : 0.5, cl(dy)] : [cl(dx), dy <= 0 ? -0.5 : 0.5], best = 8 / V.z;
+      SNAPS.forEach(function (q) { var d = Math.hypot((q[0] - r[0]) * b[2], (q[1] - r[1]) * b[3]); if (d < best) { best = d; r = q.slice(); } });
+      return [Math.round(r[0] * 1000) / 1000, Math.round(r[1] * 1000) / 1000];
+    }
+    window.m2EditAddState = function () {   // the right-click menu's Add state variable over a macromolecule
       var P = rclick;
-      if (!palOn() || !P || macroAt(P) < 0) return null;
+      if (!palOn() || !P || svAt(P) || macroAt(P) < 0) return null;
       return function () { makeState(P); };
     };
-    function makeState(P) {
+    function makeState(P) {   // an empty state variable on the free place nearest the click (user: "it kind of snaps to one of the places if available"), selected to be dragged
       var i = macroAt(P);
       if (i < 0) return;
-      var b = boxOf(i), dx = (P[0] - b[0] - b[2] / 2) / b[2], dy = (P[1] - b[1] - b[3] / 2) / b[3], r2 = function (v) { return Math.round(Math.max(-0.5, Math.min(0.5, v)) * 100) / 100; };
-      var side = (0.5 - Math.abs(dx)) * b[2] < (0.5 - Math.abs(dy)) * b[3];   // a left or right side nearer than the top or bottom
-      var rx = side ? (dx < 0 ? -0.5 : 0.5) : r2(dx), ry = side ? r2(dy) : (dy <= 0 ? -0.5 : 0.5);   // on the middle line: the top, where state variables usually sit   // the nearest point of its border
-      var id = nodes2[i].id, j = svList(i).length;
-      remember(false); text = sbJs.state(text, id, '', rx, ry); made(id);
-      typeIn(id, j, true);
+      var b = boxOf(i), have = svList(i), want = border(i, P), free = SNAPS.filter(function (q) {
+        return !have.some(function (h) { return Math.hypot(b[0] + (0.5 + q[0]) * b[2] - h[1][0], b[1] + (0.5 + q[1]) * b[3] - h[1][1]) < Math.max(18, h[2][0]); });
+      });
+      var dist = function (q) { return Math.hypot((q[0] - want[0]) * b[2], (q[1] - want[1]) * b[3]); };
+      var r = free.length ? free.sort(function (x, y) { return dist(x) - dist(y); })[0] : want;
+      var id = nodes2[i].id, j = have.length;
+      remember(false); text = sbJs.state(text, id, '', r[0], r[1]); made(id);
+      selN = []; svSel = { id: id, j: j }; paint();
     }
     function made(id) {   // the text changed by a palette action: read again, the node selected, drawn, saved
       parse(); selN = []; selP = []; selE = []; part = null;
@@ -137,15 +147,24 @@
     }
     // a name (j null) or the j-th state variable's value typed in a box over the map; Enter or leaving it keeps it, Esc not
     var typing = null;
-    function typeIn(id, j, merge) {   // merge: right after its making, the same undo step
+    function typeIn(id, j) {
       if (typing) typing.done(true);
       var i = nodes2.findIndex(function (n) { return n.id === id; });
       if (i < 0) return;
-      var b = boxOf(i), sv = j == null ? null : svList(i)[j], at0 = j == null ? [b[0], b[1], b[2], b[3]] : [sv[1][0] - 40, sv[1][1] - 9, 80, 18];
-      var inp = document.createElement('input'), before = j == null ? nameOf(i) : sv[0], step = undo.length, m0 = map;
+      var b = boxOf(i), sv = j == null ? null : svList(i)[j];
+      if (j != null && !sv) return;
+      // the text edited in place (user, 2026-11-14: "do not change the color ... just simply make it editable"): the box
+      // inside the glyph's outline, in its fill, text colour and font size, no frame
+      var r = realizerOf(nodes2[i].el), fl = r && Array.prototype.filter.call(r.children, function (c) { return c.localName === 'Fill'; })[0];
+      var lab = j == null ? r && Array.prototype.filter.call(r.children, function (c) { return c.localName === 'NodeLabel' && !c.getAttribute('iconData'); })[0] : null;
+      var fs = lab ? num(lab, 'fontSize') || 12 : 10, inset = 2;
+      var at0 = j == null ? [b[0] + inset, b[1] + inset, b[2] - 2 * inset, b[3] - 2 * inset] : [sv[1][0] - sv[2][0] / 2 + 1, sv[1][1] - sv[2][1] / 2 + 1, sv[2][0] - 2, sv[2][1] - 2];
+      var inp = document.createElement('input'), before = j == null ? nameOf(i) : sv[0], m0 = map;
       inp.type = 'text'; inp.className = 'm2-ed-type'; inp.value = before; inp.spellcheck = false;
       inp.setAttribute('aria-label', j == null ? 'Name' : 'State variable (value, or value@site)');
-      inp.style.cssText = 'left:' + sx(at0[0]) + 'px;top:' + sy(at0[1]) + 'px;width:' + Math.max(60, at0[2] * V.z) + 'px;height:' + Math.max(20, at0[3] * V.z) + 'px;font-size:' + Math.max(11, Math.min(18, 14 * V.z)) + 'px';
+      inp.style.cssText = 'left:' + sx(at0[0]) + 'px;top:' + sy(at0[1]) + 'px;width:' + at0[2] * V.z + 'px;height:' + at0[3] * V.z + 'px;font-size:' + fs * V.z + 'px;' +
+        'background:' + (j == null && fl && fl.getAttribute('hasColor') !== 'false' && fl.getAttribute('color') ? fl.getAttribute('color').slice(0, 7) : '#fff') + ';color:' + (lab && lab.getAttribute('textColor') || '#000') +
+        (j == null ? '' : ';border-radius:' + at0[3] * V.z / 2 + 'px');
       V.view.appendChild(inp);
       typing = {
         done: function (keep) {
@@ -156,8 +175,7 @@
           if (!keep || v === before.replace(/[\r\n]+/g, ' ') || !on || map !== m0) return;   // a name on several lines, untouched, kept as it was (the box shows it on one)
           var t2 = j == null ? sbJs.label(text, id, v) : sbJs.stateValue(text, id, j, v);
           if (t2 === text) return;
-          if (!(merge && undo.length === step)) remember(false);   // nothing done since its making: the same undo step (a shift out of negative places in the redraw is no step)
-          text = t2; made(id);
+          remember(false); text = t2; parse(); dirty = true; quiet(); render(); paint(); changed();
         }, inp: inp
       };
       inp.addEventListener('keydown', function (e) {
@@ -167,20 +185,116 @@
       });
       inp.addEventListener('blur', function () { if (typing && typing.inp === inp) typing.done(true); });
       inp.addEventListener('pointerdown', function (e) { e.stopPropagation(); });
-      setTimeout(function () { inp.focus(); inp.select(); }, 0);
+      setTimeout(function () { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }, 0);   // only the cursor, at the end (user: "simple cursor where I need"), nothing selected in blue
     }
-    // a double click on a named entity, or on one of its state variables, opens the box again
+    // a double click on a named entity, or on one of its state variables, opens its text
     V.view.addEventListener('dblclick', function (e) {
       if (!palOn() || !editing(e)) return;
-      if (tool || Date.now() - placedAt < 600) { e.stopImmediatePropagation(); return; }   // the clicks of a placing: no zoom, no box again
-      var base = src(), P = at(e), i = innermost(P, function (n) { return n.el.getAttribute('yfiles.foldertype') !== 'group' && sbJs.nameable(base, n.id); });
-      var near0 = -1, best = 12 / Math.max(V.z, 0.2), res = svIcons();
-      nodes2.forEach(function (n, k) {   // a state variable's circle, which may stand out of its node
-        if (n.shape.kind !== 'Macromolecule') return;
-        svList(k, res).forEach(function (q, j) { var d = Math.hypot(q[1][0] - P[0], q[1][1] - P[1]); if (d < Math.max(best, q[2][0] / 2)) { best = d; near0 = [k, j]; } });
-      });
-      if (near0 !== -1) { e.stopImmediatePropagation(); typeIn(nodes2[near0[0]].id, near0[1]); return; }
+      if (tool || Date.now() - placedAt < 600) { e.stopImmediatePropagation(); return; }   // the clicks of a placing: no box
+      var base = src(), P = at(e), q = svAt(P), i = innermost(P, function (n) { return n.el.getAttribute('yfiles.foldertype') !== 'group' && sbJs.nameable(base, n.id); });
+      if (q) { e.stopImmediatePropagation(); typeIn(nodes2[q[0]].id, q[1]); return; }
       if (i >= 0) { e.stopImmediatePropagation(); typeIn(nodes2[i].id, null); }
     }, true);
+    function svAt(P) {   // the state variable under P: [node, j] (its circle may stand out of its node)
+      var res = svIcons(), found = null, pad = 3 / V.z;
+      nodes2.forEach(function (n, k) {
+        if (n.shape.kind !== 'Macromolecule') return;
+        svList(k, res).forEach(function (q, j) { if (Math.abs(P[0] - q[1][0]) <= q[2][0] / 2 + pad && Math.abs(P[1] - q[1][1]) <= q[2][1] / 2 + pad) found = [k, j]; });
+      });
+      return found;
+    }
+
+    // a state variable selected (user, 2026-11-14): a click selects it, a drag moves it along its node's border, snapping
+    // to the sides' middles, quarters and corners; a click on it selected opens its text; Delete or the right-click menu
+    // deletes it
+    var svSel = null, svDrag = null, ghost = null;   // svSel: { id, j }
+    function svNode() { if (!svSel) return -1; var i = nodes2.findIndex(function (n) { return n.id === svSel.id; }); return i >= 0 && svList(i)[svSel.j] ? i : -1; }
+    function svMarks(over) {   // four black squares at the corners of the state variable selected (paint, core.js)
+      var i = svNode();
+      if (i < 0 || !on || V.current !== map) { svSel = null; return; }
+      var q = svList(i)[svSel.j], c = svDrag && svDrag.to ? svDrag.to : q[1], hs = Math.max(2, HANDLE * V.z);
+      [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(function (d) {
+        over.push('<rect class="m2-ed-handle" x="' + f1(sx(c[0] + d[0] * q[2][0] / 2) - hs / 2) + '" y="' + f1(sy(c[1] + d[1] * q[2][1] / 2) - hs / 2) + '" width="' + f1(hs) + '" height="' + f1(hs) + '"/>');
+      });
+    }
+    V.view.addEventListener('pointerdown', function (e) {
+      if (!palOn() || tool || e.button !== 0 || !editing(e)) return;
+      var P = at(e), q = svAt(P);
+      if (!q) { if (svSel) { svSel = null; paint(); } return; }
+      e.stopImmediatePropagation(); e.preventDefault();
+      var again = !!svSel && svSel.id === nodes2[q[0]].id && svSel.j === q[1];
+      selN = []; selP = []; selE = []; part = null;
+      svSel = { id: nodes2[q[0]].id, j: q[1] };
+      svDrag = { i: q[0], again: again, x: e.clientX, y: e.clientY, to: null, r: null };
+      paint();
+    }, true);
+    window.addEventListener('pointermove', function (e) {
+      if (!svDrag) return;
+      if (!svDrag.to && Math.hypot(e.clientX - svDrag.x, e.clientY - svDrag.y) < 4) return;
+      var i = svDrag.i, b = boxOf(i), r = border(i, at(e)), q = svList(i)[svSel.j];
+      svDrag.r = r; svDrag.to = [b[0] + (0.5 + r[0]) * b[2], b[1] + (0.5 + r[1]) * b[3]];
+      if (!ghost) { ghost = document.createElement('div'); ghost.className = 'm2-ed-svghost'; V.view.appendChild(ghost); }
+      var w = q[2][0] * V.z, h = q[2][1] * V.z;
+      ghost.textContent = q[0];
+      ghost.style.cssText = 'left:' + (sx(svDrag.to[0]) - w / 2) + 'px;top:' + (sy(svDrag.to[1]) - h / 2) + 'px;width:' + w + 'px;height:' + h + 'px;font-size:' + 10 * V.z + 'px;border-radius:' + h / 2 + 'px';
+      paint();
+    });
+    window.addEventListener('pointerup', function () {
+      var d = svDrag; svDrag = null;
+      if (ghost) { ghost.remove(); ghost = null; }
+      if (!d) return;
+      if (d.r && svSel) { remember(false); text = sbJs.stateMove(text, svSel.id, svSel.j, d.r[0], d.r[1]); parse(); dirty = true; render(); paint(); changed(); }
+      else if (d.again && svSel) typeIn(svSel.id, svSel.j);   // a click on it selected: its text
+    });
+    function svDelete() {
+      if (svNode() < 0) return false;
+      remember(false); text = sbJs.stateDelete(text, svSel.id, svSel.j); svSel = null;
+      parse(); dirty = true; render(); paint(); changed();
+      return true;
+    }
+    function nodesDelete(list) {   // macromolecules deleted with every line at them
+      var ids = list.filter(function (i) { return nodes2[i].shape.kind === 'Macromolecule' && nodes2[i].el.getAttribute('yfiles.foldertype') !== 'group'; }).map(function (i) { return nodes2[i].id; });
+      if (!ids.length) return false;
+      remember(false); text = sbJs.remove(text, ids); selN = []; selP = []; selE = []; part = null;
+      parse(); dirty = true; render(); paint(); changed();
+      return true;
+    }
+    document.addEventListener('keydown', function (e) {
+      if ((e.key !== 'Delete' && e.key !== 'Backspace') || !palOn() || /input|textarea|select/i.test(document.activeElement.tagName)) return;
+      if (svDelete() || (selN.length && !selP.length && nodesDelete(selN))) { e.preventDefault(); e.stopImmediatePropagation(); }
+    }, true);
+    window.m2EditDelete = function () {   // the right-click menu's Delete over a state variable or a macromolecule
+      if (!palOn() || !rclick) return null;
+      var q = svAt(rclick);
+      if (q) return function () { svSel = { id: nodes2[q[0]].id, j: q[1] }; svDelete(); };
+      var i = macroAt(rclick);
+      if (i < 0) return null;
+      return function () { nodesDelete(selN.indexOf(i) >= 0 ? selN : [i]); };
+    };
+
+    // a sign dragged from the palette onto the map (user, 2026-11-14): put where it is dropped
+    var palDrag = null;
+    pal.addEventListener('pointerdown', function (e) {
+      var b = e.target.closest('button[data-make]');
+      if (b && e.button === 0) palDrag = { kind: b.dataset.make, x: e.clientX, y: e.clientY, img: null };
+    });
+    window.addEventListener('pointermove', function (e) {
+      if (!palDrag) return;
+      if (!palDrag.img) {
+        if (Math.hypot(e.clientX - palDrag.x, e.clientY - palDrag.y) < 5) return;
+        palDrag.img = pal.querySelector('button[data-make="' + palDrag.kind + '"] svg').cloneNode(true);
+        palDrag.img.setAttribute('class', 'm2-ed-palghost'); document.body.appendChild(palDrag.img);
+      }
+      palDrag.img.style.left = e.clientX - 18 + 'px'; palDrag.img.style.top = e.clientY - 11 + 'px';
+    });
+    window.addEventListener('pointerup', function (e) {
+      var d = palDrag; palDrag = null;
+      if (!d || !d.img) return;
+      d.img.remove();
+      var r = V.view.getBoundingClientRect();
+      if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom || !palOn()) return;
+      placedAt = Date.now();
+      if (d.kind === 'macromolecule') makeEntity(at(e));
+    });
     ['wheel', 'gesturestart'].forEach(function (k) { V.view.addEventListener(k, function () { if (typing) typing.done(true); }, { capture: true, passive: true }); });   // the box would stand off its node after a zoom
     window.addEventListener('resize', function () { if (typing) typing.done(true); });

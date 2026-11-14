@@ -75,6 +75,15 @@
     return t;
   };
 
+  Tags.prototype.cut = function (el) {   // the element taken out, with the line it stood on when it stood alone there
+    var s = this.at.get(el), i = this.t.lastIndexOf('\n', s[0] - 1), from = /^\s*$/.test(this.t.slice(i + 1, s[0])) && i >= 0 ? i : s[0];
+    this.ed.push([from, this.end(el), '']);
+  };
+  // glyphs deleted in the editor (user, 2026-11-14): their ids kept in a comment at the end of the editor's GraphML, so
+  // write() takes them out of the file (a glyph the GraphML lacks is no proof: the converter leaves some out)
+  var GONE = /<!-- deleted: ([^>]*?) -->/;
+  function gone(gtext) { var m = gtext.match(GONE); return m ? m[1].split(' ') : []; }
+
   // ---------- the SBGN-ML side, read as sbgnml.read reads it ----------
   function sbgn(t, opt) {
     var doc = new (DP(opt))().parseFromString(t.replace(/^\ufeff/, ''), 'application/xml');
@@ -137,7 +146,13 @@
 
   // the GraphML of sbgnText: baseGraphml with the places sbgnml.read takes from sbgnText (graphml.write's numbers)
   function graphml(t, base, opt) {
-    var S = sbgn(t, opt), G = gml(base, opt), T = new Tags(base, G.doc);
+    var S = sbgn(t, opt), G = gml(base, opt), T = new Tags(base, G.doc), out = {};
+    Object.keys(G.node).forEach(function (id) {   // a glyph deleted in the editor: its node and lines out
+      var cfg = (G.node[id].geo.parentNode.getAttribute('configuration') || '').replace('com.yworks.sbgn.', '');
+      if (S.glyph[id] || S.port[id] || S.arc[id] || id.indexOf('|') >= 0 || !Object.keys(MAKE).some(function (c) { return MAKE[c] === cfg; })) return;
+      out[id] = 1; T.cut(G.node[id].el);
+    });
+    Object.keys(G.edge).forEach(function (id) { var e = G.edge[id]; if ((out[e.s] || out[e.t]) && !S.arc[id]) T.cut(e.el); });
     Object.keys(G.node).forEach(function (id) {
       var g = S.glyph[id], n = G.node[id];
       if (!g) return;
@@ -147,9 +162,11 @@
       // sbgnml.read reads them; units of information keep theirs), a compartment's name where the file has it
       var r = n.geo.parentNode, labs = kids(r, 'NodeLabel'), icons = labs.filter(function (l) { return l.getAttribute('iconData'); });
       var states = kids(g.el, 'glyph').filter(function (c) { return c.getAttribute('class') === 'state variable'; });
+      var R = G.R || (G.R = resources(G));
       icons.forEach(function (l, j) {
         var p = l.getElementsByTagNameNS(YNS, 'SmartNodeLabelModelParameter')[0], rx, ry;
         if (!p) return;
+        if (j >= states.length && (R[l.getAttribute('iconData')] || {}).kind === 'StateVariable') { T.cut(l); return; }   // deleted in the editor
         if (j < states.length) {
           var cb = kid(states[j], 'bbox'), cx = F(cb.getAttribute('x')) + F(cb.getAttribute('w')) / 2, cy = F(cb.getAttribute('y')) + F(cb.getAttribute('h')) / 2;
           rx = (cx - B[0] - w / 2) / w; ry = (cy - B[1] - h / 2) / h;
@@ -220,8 +237,15 @@
 
   // ---------- back into the SBGN-ML text ----------
   function write(t, gtext, opt) {
+    t = drop(t, gone(gtext), opt);
     var S = sbgn(t, opt), G = gml(gtext, opt), T = new Tags(t, S.doc);
     var close = function (a, b) { return Math.abs(a - b) < 1e-6; };
+    var iconsOf = function (id) {   // [text, rx, ry, label] of a node's state variables in the GraphML
+      return labelsOf(G, id).icons.filter(function (q) { return q[1].kind === 'StateVariable'; }).map(function (q) {
+        var p = q[0].getElementsByTagNameNS(YNS, 'SmartNodeLabelModelParameter')[0];
+        return [q[1].text || '', F(p.getAttribute('nodeRatioX')), F(p.getAttribute('nodeRatioY'))];
+      });
+    };
     var setXY = function (el, p, kx, ky) {
       kx = kx || 'x'; ky = ky || 'y';
       if (!close(F(el.getAttribute(kx)), p[0])) T.set(el, kx, num(p[0]));
@@ -229,6 +253,18 @@
     };
     // the glyphs: their boxes, and what they carry mapped from the old box to the new (centres scaled with the box,
     // a label kept at its place from the top left)
+    var svMoved = new Set();   // state variables the editor moved along their glyph's border: placed below, not mapped here
+    Object.keys(S.glyph).forEach(function (id) {
+      var g = S.glyph[id], n = G.node[id];
+      if (!n || !NAMED.test(g.el.getAttribute('class') || '')) return;
+      var have = kids(g.el, 'glyph').filter(function (c) { return c.getAttribute('class') === 'state variable'; });
+      iconsOf(id).forEach(function (q, j) {
+        var cb = have[j] && kid(have[j], 'bbox'), B = g.box;
+        if (!cb) return;
+        var rx = (F(cb.getAttribute('x')) + F(cb.getAttribute('w')) / 2 - B[0] - B[2] / 2) / B[2], ry = (F(cb.getAttribute('y')) + F(cb.getAttribute('h')) / 2 - B[1] - B[3] / 2) / B[3];
+        if (!close(rx, q[1]) || !close(ry, q[2])) svMoved.add(cb);
+      });
+    });
     var map = {};   // glyph id -> function from an old point to the new
     Object.keys(S.glyph).forEach(function (id) {
       var g = S.glyph[id], n = G.node[id];
@@ -239,7 +275,7 @@
       var f = map[id] = function (p) { return [b[0] + (o[2] ? (p[0] - o[0]) * b[2] / o[2] : b[2] / 2), b[1] + (o[3] ? (p[1] - o[1]) * b[3] / o[3] : b[3] / 2)]; };
       kids(g.el, 'glyph').forEach(function (c) {   // state variables, units of information, glyphs the converter left out
         var cb = kid(c, 'bbox');
-        if (!cb || G.node[c.getAttribute('id')]) return;
+        if (!cb || G.node[c.getAttribute('id')] || svMoved.has(cb)) return;
         var w = F(cb.getAttribute('w')), h = F(cb.getAttribute('h')), m = f([F(cb.getAttribute('x')) + w / 2, F(cb.getAttribute('y')) + h / 2]);
         setXY(cb, [m[0] - w / 2, m[1] - h / 2]);
       });
@@ -256,12 +292,6 @@
       return '\n' + ind + '<' + pre + 'glyph class="state variable" id="' + esc(sid) + '">\n' + ind + '  <' + pre + 'state value="' + esc(val) + '"' + (vr ? ' variable="' + esc(vr) + '"' : '') + '/>\n' +
         ind + '  ' + bboxXml(svBox(q[0], b, q[1], q[2])) + '\n' + ind + '</' + pre + 'glyph>';
     };
-    var iconsOf = function (id) {   // [text, rx, ry, label] of a node's state variables in the GraphML
-      return labelsOf(G, id).icons.filter(function (q) { return q[1].kind === 'StateVariable'; }).map(function (q) {
-        var p = q[0].getElementsByTagNameNS(YNS, 'SmartNodeLabelModelParameter')[0];
-        return [q[1].text || '', F(p.getAttribute('nodeRatioX')), F(p.getAttribute('nodeRatioY'))];
-      });
-    };
     Object.keys(S.glyph).forEach(function (id) {
       var g = S.glyph[id], n = G.node[id], cls = g.el.getAttribute('class') || '';
       if (!n || !NAMED.test(cls)) return;
@@ -271,8 +301,12 @@
         else { var at1 = T.at.get(g.bbox)[0]; T.ed.push([at1, at1, '<' + pre + 'label text="' + esc(ownText(L.main)) + '"/>\n' + T.indent(g.bbox)]); }
       }
       var have = kids(g.el, 'glyph').filter(function (c) { return c.getAttribute('class') === 'state variable'; }), more = '';
-      iconsOf(id).forEach(function (q, j) {
+      var icons = iconsOf(id);
+      have.slice(icons.length).forEach(function (c) { T.cut(c); });   // deleted in the editor
+      icons.forEach(function (q, j) {
         if (j >= have.length) { more += svXml(id, j, q, n.box, T.indent(g.bbox)); return; }
+        var cb = kid(have[j], 'bbox');
+        if (svMoved.has(cb)) { var nb = svBox(q[0], n.box, q[1], q[2]), w0 = F(cb.getAttribute('w')), h0 = F(cb.getAttribute('h')); setXY(cb, [nb[0] + nb[2] / 2 - w0 / 2, nb[1] + nb[3] / 2 - h0 / 2]); }
         var st = kid(have[j], 'state'), v = q[0].split('@'), val = v.shift(), vr = v.join('@');
         if ((st ? svText(st.getAttribute('value'), st.getAttribute('variable')) : '') === q[0]) return;   // no state element reads as empty (sbgnml.read)
         if (!st) { var at2 = T.at.get(kid(have[j], 'bbox'))[0]; T.ed.push([at2, at2, '<' + pre + 'state value="' + esc(val) + '"' + (vr ? ' variable="' + esc(vr) + '"' : '') + '/>\n' + T.indent(kid(have[j], 'bbox'))]); return; }
@@ -583,10 +617,47 @@
     styles(S).forEach(function (st) { var k = st.ids.filter(function (i) { return macro[i]; }).length; if (st.fill && st.plain && k > n) { n = k; best = st; } });
     return { w: 80 * s, h: 40 * s, font: best && best.font || Math.round(14 * s + 0.01), fill: best ? best.fill : null };
   }
+  function drop(t, ids, opt) {   // the file with the glyphs deleted in the editor taken out, and every arc at them
+    var S = sbgn(t, opt), del = {}, T = null;
+    ids.forEach(function (id) {
+      var g = S.glyph[id];
+      if (!g) return;
+      del[id] = 1;
+      Array.prototype.forEach.call(g.el.getElementsByTagName('*'), function (c) { if (c.getAttribute('id')) del[c.getAttribute('id')] = 1; });
+    });
+    if (!Object.keys(del).length) return t;
+    T = new Tags(t, S.doc);
+    ids.forEach(function (id) { if (S.glyph[id]) T.cut(S.glyph[id].el); });
+    Object.keys(S.arc).forEach(function (id) { var a = S.arc[id]; if (del[a.getAttribute('source')] || del[a.getAttribute('target')]) T.cut(a); });
+    return T.text();
+  }
+  function svLabel(G, id, j) { var L = G.node[id] && labelsOf(G, id); return L ? (L.icons.filter(function (x) { return x[1].kind === 'StateVariable'; })[j] || [])[0] : null; }
+  function stateMove(t, id, j, rx, ry, opt) {   // the j-th state variable moved to rx, ry on its node's border (the editor's GraphML)
+    var G = gml(t, opt), l = svLabel(G, id, j);
+    if (!l) return t;
+    var T = new Tags(t, G.doc), p = l.getElementsByTagNameNS(YNS, 'SmartNodeLabelModelParameter')[0], b = G.node[id].box;
+    T.set(p, 'nodeRatioX', repr(rx)); T.set(p, 'nodeRatioY', repr(ry));
+    T.set(l, 'x', repr((0.5 + rx) * b[2] - F(l.getAttribute('width')) / 2)); T.set(l, 'y', repr((0.5 + ry) * b[3] - F(l.getAttribute('height')) / 2));
+    return T.text();
+  }
+  function stateDelete(t, id, j, opt) {
+    var G = gml(t, opt), l = svLabel(G, id, j);
+    if (!l) return t;
+    var T = new Tags(t, G.doc); T.cut(l);
+    return T.text();
+  }
+  function remove(t, ids, opt) {   // nodes deleted in the editor's GraphML, with every line at them; their ids kept for write()
+    var G = gml(t, opt), T = new Tags(t, G.doc), del = {};
+    ids.forEach(function (id) { if (G.node[id]) { del[id] = 1; T.cut(G.node[id].el); } });
+    Object.keys(G.edge).forEach(function (k) { var e = G.edge[k]; if (del[e.s] || del[e.t]) T.cut(e.el); });
+    var all = gone(t).concat(Object.keys(del)).filter(function (x, i, a) { return x && a.indexOf(x) === i; }), mark = '<!-- deleted: ' + all.join(' ') + ' -->';
+    t = T.text();
+    return GONE.test(t) ? t.replace(GONE, mark) : t.replace(/\s*$/, '\n' + mark + '\n');
+  }
   function nameable(t, id, opt) { var g = sbgn(t, opt).glyph[id]; return !!g && NAMED.test(g.el.getAttribute('class') || ''); }   // a name the editor may change: one write() carries
   function svText(value, variable) { return (value || '') + (variable ? '@' + variable : ''); }
   var HUB = /process|^(and|or|not|association|dissociation|equivalence)$/;
 
-  var api = { graphml: graphml, write: write, defaults: defaults, add: add, label: label, state: state, stateValue: stateValue, nameable: nameable };
+  var api = { graphml: graphml, write: write, defaults: defaults, add: add, label: label, state: state, stateValue: stateValue, stateMove: stateMove, stateDelete: stateDelete, remove: remove, nameable: nameable };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.sbgn_edit = api;
 })(typeof self !== 'undefined' ? self : this);

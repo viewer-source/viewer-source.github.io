@@ -14,13 +14,14 @@
         'A line\'s end dragged, or moved by the arrow keys, goes to the node\'s centre or the middle of a side. On a CellDesigner map a modifier\'s end at a process glyph goes to one of the six places CellDesigner has there: the corners and the middles of the two sides off the main line.',
         'A process or logic gate is one object with its two ports: what it consumes ends on one, what it makes leaves from the other, and they move with it. A modifier\'s end goes to the middle of one of its two sides off the ports. A right click on it turns it a quarter clockwise (Turn process), four turns round.',
         'A right click on a line adds a bend point there; on a bend point, removes it. A right click on empty map space offers Remove all bend points, which takes every bend point of the map away at once.']],
-      ['Make (Settings, Editing: Full; SBGN-ML maps)', ['A click on a sign of the palette takes it for one use: a click on the map puts it there. A double click keeps it in hand for several, until the sign is clicked again or Esc.',
-        'A new macromolecule opens a box for its name: Enter keeps it, Esc leaves it unnamed. Add state variable in the right-click menu over a macromolecule puts one where its border is nearest the click; its value is typed the same way (P, or P@S505 with the site).',
-        'A double click on a named entity or on a state variable opens its box again.']],
+      ['Make (Settings, Editing: Full; SBGN-ML maps)', ['A click on a sign of the palette takes it for one use: a click on the map puts it there. A double click keeps it in hand for several, until the sign is clicked again or Esc. A sign can also be dragged onto the map.',
+        'Add state variable in the right-click menu over a macromolecule puts an empty one on the free place of its border nearest the click. A state variable is selected by a click and dragged along the border, snapping to the middles, quarters and corners of the sides.',
+        'Nothing asks for a name when it is made: a double click on a macromolecule or a state variable, or a click on a state variable already selected, edits its text in place (P, or P@S505 with the site). Enter keeps it, Esc not.',
+        'Delete, or Delete in the right-click menu, removes the state variable or the macromolecules selected, with their lines.']],
       ['Layout tools', ['The dotted square puts the whole map on the grid by the layout rules (complexes packed, rows and columns kept), one step to undo.',
         'The complex with two proteins packs the complex selected (or the one round a member selected), every complex when nothing is selected.']],
       ['Keys', [['Ctrl or Cmd Z', 'undo'], ['Ctrl or Cmd Y', 'redo'], ['Ctrl or Cmd S', 'save at once'], ['Ctrl or Cmd A', 'select all'], ['Esc', 'clear the selection'],
-        ['Delete', 'remove the bend point selected'], ['E', 'switch between edit and view mode (not while typing in a field)'], ['?', 'this help']]]
+        ['Delete', 'remove the bend point, state variable or macromolecule selected'], ['E', 'switch between edit and view mode (not while typing in a field)'], ['?', 'this help']]]
     ];
     var helpBtn = box.querySelector('#m2-ed-help'), helpBox = null;
     function helpBuild() {
