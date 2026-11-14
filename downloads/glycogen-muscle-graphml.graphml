@@ -1712,7 +1712,7 @@ P@Y941</data>
               <y:Shape type="roundrectangle"/>
               <y:State closed="true" closedHeight="80.0" closedWidth="80.0" innerGraphDisplayEnabled="false"/>
               <y:Insets bottom="15" bottomF="15.0" left="15" leftF="15.0" right="15" rightF="15.0" top="15" topF="15.0"/>
-              <y:BorderInsets bottom="34" bottomF="34.46897347001908" left="27" leftF="26.761837049917517" right="18" rightF="17.839064329335315" top="7" topF="7.019553107023626"/>
+              <y:BorderInsets bottom="34" bottomF="34.46897347001908" left="27" leftF="26.761837049917517" right="18" rightF="17.839064329335315" top="7" topF="7.019"/>
             </y:GroupNode>
           </y:Realizers>
         </y:ProxyAutoBoundsNode>
@@ -2119,7 +2119,7 @@ P@Y999</data>
           <data key="d28" xml:space="preserve"/>
           <data key="d31">
             <y:GenericNode configuration="com.yworks.sbgn.Process">
-              <y:Geometry height="18.0" width="18.0" x="504.971" y="468.145"/>
+              <y:Geometry height="18.0" width="18.0" x="504.971" y="463"/>
               <y:Fill color="#FFFFFF" transparent="false"/>
               <y:BorderStyle color="#000000" type="line" width="1.0"/>
               <y:NodeLabel alignment="center" autoSizePolicy="content" bottomInset="0" fontFamily="Dialog" fontSize="14" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" hasText="false" height="0.0" horizontalTextPosition="center" iconTextGap="4" leftInset="0" modelName="custom" rightInset="0" textColor="#000000" topInset="0" verticalTextPosition="center" visible="true" width="0.0" x="9.0" y="9.0">
