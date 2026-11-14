@@ -17,7 +17,7 @@
           <style id="style_1" idList="n1 n2 n3 n4 n5 n5__n0 n10 n11 n12 n17 n18 n19 n21">
             <g stroke="black" fill="color_1" stroke-width="1"/>
           </style>
-          <style id="style_2" idList="n1__n0 n3__n0 n3__n1 n5__n0__n0 n5__n1 n6 n9 n14 n15 n22 glyph_1 glyph_2 glyph_3 glyph_4">
+          <style id="style_2" idList="n1__n0 n3__n0 n3__n1 n5__n0__n0 n5__n1 n6 n9 n14 n15 n22 glyph_1 glyph_2 glyph_3 glyph_4 glyph_5">
             <g stroke="black" fill="color_2" stroke-width="1" font-size="14"/>
           </style>
           <style id="style_3" idList="n1__n0_ui0 n3__n0_ui0 n3__n1_ui0 n5__n0__n0_ui0 n5__n1_ui0 n23_sv0 n23_ui0 n24_sv0 n24_ui0">
@@ -628,6 +628,10 @@
     </glyph>
     <glyph class="macromolecule" id="glyph_1">
       <bbox x="40" y="92" w="80" h="40"/>
+      <glyph class="state variable" id="glyph_1_sv0">
+        <state value="hjk"/>
+        <bbox x="48.7" y="124.5" w="45" h="15"/>
+      </glyph>
     </glyph>
     <glyph class="macromolecule" id="glyph_2">
       <bbox x="144" y="164" w="80" h="40"/>
@@ -637,6 +641,9 @@
     </glyph>
     <glyph class="macromolecule" id="glyph_4">
       <bbox x="280" y="44" w="80" h="40"/>
+    </glyph>
+    <glyph class="macromolecule" id="glyph_5">
+      <bbox x="200" y="108" w="80" h="40"/>
     </glyph>
     <arc class="production" id="e0" source="n4.2" target="n6">
       <start x="876" y="506.0"/>
