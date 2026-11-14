@@ -93,9 +93,16 @@ files.forEach(function (f, i) {
   if (single) { g2 = se.multimer(g2, single.id, true, opt); g2 = se.unit(g2, single.id, 'N:2', opt); }
   var multi = all.filter(function (q) { return /^(macromolecule|simple chemical|nucleic acid feature) multimer$/.test(q.cls) && q.ui.length && q.top; })[0];
   if (multi) { g2 = se.multimer(g2, multi.id, false, opt); g2 = se.unitDelete(g2, multi.id, 0, { DOMParser: DP, sbgn: s }); }
+  // resized (2026-11-14): a made macromolecule with state variables, a file's own with its lines, a file's own simple
+  // chemical; the box written, what the glyph carries scaled with it
+  var sized = [['made1', r3([right + 100, top - 8, D.w + 24, D.h + 8])]];   // under 1.2 times the height: the converter's map scale (median protein height) stays
+  var big = mac.filter(function (q) { return q !== mac[0] && q !== withSv && q !== doomed; })[0];
+  if (big) sized.push([big.id, r3([big.box[0] - 4, big.box[1] + 4, big.box[2] + 16, big.box[3] - 8])]);
+  if (chem[0]) sized.push([chem[0].id, r3([chem[0].box[0], chem[0].box[1], chem[0].box[2] + 16, chem[0].box[3] + 8])]);
+  sized.forEach(function (q) { g2 = se.resize(g2, q[0], q[1], opt); });
   var s2 = se.write(s, g2, opt), p2 = path.join(tmp, i + path.extname(f));
   fs.writeFileSync(p2, s2);
-  made.push({ f: f, s: s, g: g, g2: g2, s2: s2, p2: p2, comp: !!comp, mac: mac[0], withSv: withSv, doomed: doomed, svIds: svIds, chem: chem, single: single, multi: multi });
+  made.push({ f: f, s: s, g: g, g2: g2, s2: s2, p2: p2, comp: !!comp, mac: mac[0], withSv: withSv, doomed: doomed, svIds: svIds, chem: chem, single: single, multi: multi, sized: sized });
 });
 var after = conv(made.map(function (m) { return m.p2; }));
 made.forEach(function (m, i) {
@@ -125,9 +132,15 @@ made.forEach(function (m, i) {
   if (m.s2.indexOf('gone unit') >= 0) why.push('a deleted unit of information written');
   if (m.single && (!cls2[m.single.id] || cls2[m.single.id].cls !== 'macromolecule multimer')) why.push('a macromolecule not made a multimer');
   if (m.multi && (!cls2[m.multi.id] || / multimer$/.test(cls2[m.multi.id].cls) || cls2[m.multi.id].ui.indexOf(m.multi.ui[0]) >= 0 || cls2[m.multi.id].ui.length !== m.multi.ui.length - 1)) why.push('a multimer not made single, or the wrong unit deleted');
+  var now = new DP().parseFromString(m.s2.replace(/^\ufeff/, ''), 'application/xml'), gl = now.getElementsByTagNameNS('*', 'glyph');
+  m.sized.forEach(function (q) {
+    var g = Array.prototype.filter.call(gl, function (x) { return x.getAttribute('id') === q[0]; })[0];
+    var b = g && Array.prototype.filter.call(g.childNodes, function (c) { return c.localName === 'bbox'; })[0];
+    if (!b || r3(['x', 'y', 'w', 'h'].map(function (k) { return parseFloat(b.getAttribute(k)); })).join() !== q[1].join()) why.push(q[0] + ' not resized as asked');
+  });
   if (why.length) { bad++; console.log('DIFFERENT ' + name + ': ' + why.join('; ')); }
 });
 fs.rmSync(tmp, { recursive: true, force: true });
-console.log(ran + ' SBGN-ML maps, macromolecules and simple chemicals made, named, with state variables and units of information (' + made.filter(function (m) { return m.single; }).length + ' made multimers, ' +
+console.log(ran + ' SBGN-ML maps, macromolecules and simple chemicals made, named, with state variables and units of information, resized (' + made.filter(function (m) { return m.single; }).length + ' made multimers, ' +
   made.filter(function (m) { return m.multi; }).length + ' multimers made single): ' + (bad ? bad + ' different' : 'all the same'));
 process.exit(bad ? 1 : 0);

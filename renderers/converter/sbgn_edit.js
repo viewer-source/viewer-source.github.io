@@ -447,7 +447,7 @@
         var port = ref[q[2] / 2] !== gid && (q[0] === 'source' || /^(consumption|logic arc)$/.test(cls));   // an end the converter reads at its port
         var zero = !e.off[q[2]] && !e.off[q[2] + 1] && !port;
         return { q: q, gid: gid, c: c, zero: zero, port: port, P: [c[0] + e.off[q[2]], c[1] + e.off[q[2] + 1]],
-                 old: q[4] && (map[gid] ? [q[4][0] + b[0] - o[0], q[4][1] + b[1] - o[1]] : q[4]) };
+                 old: q[4] && (map[gid] ? map[gid](q[4]) : q[4]) };   // with its glyph, scaled when the box was resized
       });
       // nothing about the arc changed (its glyphs, bends and ends as the converter reads them from the file): its ends kept
       var fileOff = at(S, E[0], a.getAttribute('source'), E[2], (E[4].length ? E[4] : [E[3]])[0])
@@ -532,6 +532,7 @@
   //   add(g, { id, cls, label, box, parent, fill, font }) -> g with the node (parent: a compartment's node id)
   //   label(g, id, text) -> g with the node's name; state(g, id, value, rx, ry) -> g with a state variable added at that
   //   point of the border (rx, ry from the centre, as yEd's nodeRatio); stateValue(g, id, j, value): its j-th one's value
+  //   resize(g, id, [x, y, w, h]) -> g with the node's box set, its name, state variables and line ends following
   var CHAR = 9.5, LINE = 16.5, ICON_CHAR = 5.4;   // graphml.py: a label line's height and a character's width at 14; an icon's character
   var MAKE = { macromolecule: 'Macromolecule', 'simple chemical': 'SimpleChemical' };   // what the palette makes: SBGN class -> yEd's configuration
   var SIZE = { macromolecule: [80, 40], 'simple chemical': [40, 40] };   // the converter's standard sizes (style.py), times the map's scale
@@ -775,6 +776,44 @@
     return (n ? parseInt(n.slice(2), 10) : 2) > 1;
   }
   function uBox(txt, b, k, n) { var uw = Math.max(15, txt.length * 7); return [b[0] + (k + 1) / (n + 1) * b[2] - uw / 2, b[1] - 7.5, uw, 15]; }   // layout.decorations
+  // a node's box set (user, 2026-11-14: a macromolecule or a simple chemical resized by its handles or its size typed):
+  // the box written, its name kept centred, its state variables at their places on the border (yEd's ratios), and the
+  // ends of its lines that are off its centre moved with the box in proportion, so a port on the border stays on it;
+  // write() then scales what the SBGN-ML file's glyph carries the same way
+  function resize(t, id, box, opt) {
+    var G = gml(t, opt), n = G.node[id];
+    if (!n) return t;
+    var o = n.box, w = box[2], h = box[3], T = new Tags(t, G.doc);
+    ['x', 'y', 'width', 'height'].forEach(function (k, j) { if (Math.abs(o[j] - box[j]) > 1e-9) T.set(n.geo, k, repr(box[j])); });
+    var L = labelsOf(G, id);
+    if (L.main) { T.set(L.main, 'x', repr((w - F(L.main.getAttribute('width'))) / 2)); T.set(L.main, 'y', repr((h - F(L.main.getAttribute('height'))) / 2)); }
+    L.icons.forEach(function (q) {
+      var l = q[0], p = l.getElementsByTagNameNS(YNS, 'SmartNodeLabelModelParameter')[0];
+      if (!p) return;
+      T.set(l, 'x', repr((0.5 + F(p.getAttribute('nodeRatioX'))) * w - F(l.getAttribute('width')) / 2));
+      T.set(l, 'y', repr((0.5 + F(p.getAttribute('nodeRatioY'))) * h - F(l.getAttribute('height')) / 2));
+    });
+    // an end that comes to lie within 1.5 of the line from the centre toward the line's next point is read by the
+    // converter as aimed at the centre (sbgnml.at): set so here too, so the editor draws what the file will hold
+    var kx = o[2] ? w / o[2] : 1, ky = o[3] ? h / o[3] : 1, c = centre(box);
+    var endAt = function (gid, ox, oy) { var b = gid === id ? box : G.node[gid] && G.node[gid].box; return b ? [b[0] + b[2] / 2 + ox, b[1] + b[3] / 2 + oy] : null; };
+    Object.keys(G.edge).forEach(function (k) {
+      var e = G.edge[k];
+      [[e.s, 'sx', 'sy', 0], [e.t, 'tx', 'ty', 2]].forEach(function (q) {
+        if (q[0] !== id || (!e.off[q[3]] && !e.off[q[3] + 1])) return;
+        var v = [e.off[q[3]] * kx, e.off[q[3] + 1] * ky], j = 2 - q[3];
+        var aim = e.pts.length ? e.pts[q[3] ? e.pts.length - 1 : 0] : endAt(q[3] ? e.s : e.t, e.off[j], e.off[j + 1]);
+        if (aim) {
+          var u = [aim[0] - c[0], aim[1] - c[1]], n = Math.hypot(u[0], u[1]);
+          if (n && Math.abs(u[0] * v[1] - u[1] * v[0]) / n <= 1.5 && u[0] * v[0] + u[1] * v[1] >= 0) v = [0, 0];
+        }
+        var r4 = function (x) { return Math.round(x * 10000) / 10000; };   // as write() puts the point in the file: the offset the converter reads back
+        if (v[0] || v[1]) v = [r4(c[0] + v[0]) - c[0], r4(c[1] + v[1]) - c[1]];
+        T.set(e.path, q[1], repr(v[0])); T.set(e.path, q[2], repr(v[1]));
+      });
+    });
+    return T.text();
+  }
   function remove(t, ids, opt) {   // nodes deleted in the editor's GraphML, with every line at them; their ids kept for write()
     var G = gml(t, opt), T = new Tags(t, G.doc), del = {};
     ids.forEach(function (id) { if (G.node[id]) { del[id] = 1; T.cut(G.node[id].el); } });
@@ -787,6 +826,6 @@
   var HUB = /process|^(and|or|not|association|dissociation|equivalence)$/;
 
   var api = { graphml: graphml, write: write, defaults: defaults, add: add, label: label, state: state, stateValue: stateValue, stateMove: stateMove, stateDelete: stateDelete,
-              unit: unit, unitValue: unitValue, unitDelete: unitDelete, multimer: multimer, classOf: classOf, remove: remove, gone: gone, nameable: nameable };
+              unit: unit, unitValue: unitValue, unitDelete: unitDelete, multimer: multimer, classOf: classOf, remove: remove, resize: resize, gone: gone, nameable: nameable };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.sbgn_edit = api;
 })(typeof self !== 'undefined' ? self : this);

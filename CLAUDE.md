@@ -232,7 +232,7 @@ says "the workbench", "the converter's repository", "a private repository".
   viewer's own look): the molecule's panel as a card over the map's right side on wide windows too, sliding in; the
   drawing shifts left only when the card would cover the chosen item. First in the styles' Default Icon Column.
 - Edit (user, 2026-11-12: moving things a little here and there, as in yEd; its purpose is layout only, moving by hand
-  where needed: no resizing of nodes (their sizes are standard), no new items or links, user 2026-11-12; compartments are
+  where needed: no resizing of nodes in Layout (their sizes are standard; the full editor resizes macromolecules and simple chemicals, below), no new items or links, user 2026-11-12; compartments are
   containers and the exception, resizable (user, 2026-11-12); GraphML first, then the same rules for CellDesigner
   maps within CellDesigner's constraints; `--m2-edit: 1`, with the icons, off in the
   viewer's own look): a pencil tab right after Maps (user, 2026-11-12: "after list and only then everything else"; was before Settings) opens the Edit window: at its top the tools as a row of signs (user,
@@ -598,6 +598,19 @@ says "the workbench", "the converter's repository", "a private repository".
   is stable. The glyphs the editor offers are the house profile, kept with the map content rules in a private
   repository. The click data kept after editing is matched by node id (`ids` in the kept boxes), so a node made never
   shifts another's box.
+  Resizing (user, 2026-11-14: "resizing of the element ... by dragging its side ... 8 handles"; in the full editor only,
+  where Layout keeps sizes standard): a macromolecule or a simple chemical selected, not a member of a complex (Pack
+  keeps those), is resized by its eight handles, the cursor a resize arrow over them; the sides dragged move, the
+  others stay, its width and height in whole steps of Size step (user: "multiples of 8 ... people would change if they
+  want to 4"; 8 by default, 1 to 100, kept in this browser with the grid settings, `atlas-edit-grid`), Alt or Ctrl held
+  for any size. Drawn as it goes: its outline, its name and its state variables and units of information follow, the
+  compartments round it grow; its lines are drawn again on release. Properties (user: "if people want specific size,
+  they could type it in the properties"), under the palette: Width and Height of the one selected (Enter sets it, its
+  centre kept; Esc takes it back) and Size step. `sbgn_edit.resize` writes the box, the name centred, the state
+  variables and units at their ratios, the ends of its lines off its centre scaled with the box (one the converter would
+  read as aimed at the centre set so); write() scales what the file's glyph carries the same way, its own line ends
+  too. On a map with few proteins a much taller one can move the converter's map scale (the median protein height,
+  style.scale_of), so the next build draws its fonts at another size.
 - Full screen with tools (user, 2026-11-12: "use more space available on the screen, but with tools"): beside the map's
   own full screen (the map alone), the whole page goes full screen with its list, tools and panel: Shift with the
   full-screen button, or Full screen with tools in the right-click menu (Exit full screen there while on). The

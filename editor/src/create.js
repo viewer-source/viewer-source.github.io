@@ -39,6 +39,7 @@
         b.classList.toggle('m2-ed-sticky', mine && tool.sticky);
       });
       if (!tool && V.view.style.cursor === 'default') V.view.style.cursor = '';
+      if (props) propsShow();   // Properties (below), as the selection or Settings change
     }
     function palTake(kind, sticky) { tool = kind ? { kind: kind, sticky: !!sticky } : null; palShow(); }
     pal.addEventListener('click', function (e) {
@@ -454,3 +455,92 @@
       placedAt = Date.now();
       makeEntity(at(e), d.kind);
     }, true);
+
+    // ---------- resizing and Properties (user, 2026-11-14) ----------
+    // A macromolecule or a simple chemical selected is resized by its eight handles: the sides dragged move, its width and
+    // height in whole steps of Size step (8 by default: "so when you drag, it kind of not random, but multiples of 8"),
+    // Alt or Ctrl held for any size (sized, core.js). Properties, under the palette, shows the width and the height of the
+    // one selected, typed for an exact size (its centre kept), and Size step, kept in this browser with the grid settings.
+    // sbgn_edit.resize writes the box, its name kept centred, its state variables at their places on the border; write()
+    // scales what the SBGN-ML glyph carries the same way.
+    function sizable(i) {   // not a member of a complex (Pack keeps a complex's members to the layout rules)
+      var n = nodes2[i], u = n && n.up != null ? nodes2[n.up] : null;
+      return palOn() && !!n && isMade(n) && (!u || u.comp);
+    }
+    var sizeRec = null;   // the node drawn live while it is resized: its parts and how they were
+    function sizeLive(i, nb) {
+      var g = gN && gN[nodes2[i].id];
+      if (!g) return;
+      if (!sizeRec || sizeRec.i !== i) {
+        sizeOff();
+        var first = g.firstElementChild && g.firstElementChild.localName === 'a' ? g.firstElementChild : g, b = boxOf(i), seen = new Set();
+        var svs = svList(i).map(function (q) {
+          var parts = svParts(i, q); parts.forEach(function (el) { seen.add(el); });
+          return { parts: parts, r: [(q[1][0] - b[0]) / b[2] - 0.5, (q[1][1] - b[1]) / b[3] - 0.5], c: q[1] };
+        });
+        var shapes = [], kids = Array.prototype.filter.call(first.children, function (el) { return !el.classList.contains('m2-ed-dark'); });
+        for (var k = 0; k < kids.length && kids[k].localName === 'path' && !seen.has(kids[k]); k++) shapes.push(kids[k]);   // the shape first (two for a multimer)
+        sizeRec = { i: i, b: b, shapes: shapes, svs: svs, texts: kids.filter(function (el) { return el.localName === 'text' && !seen.has(el); }), was: new Map() };
+        shapes.concat(sizeRec.texts).forEach(function (el) { sizeRec.was.set(el, [el.getAttribute('d'), el.getAttribute('transform')]); });
+        svs.forEach(function (s) { s.parts.forEach(function (el) { sizeRec.was.set(el, [el.getAttribute('d'), el.getAttribute('transform')]); }); });
+      }
+      var R = sizeRec, n = nodes2[i], b0 = R.b, two = R.shapes.length > 1 && n.shape.props.mcount === '2';
+      // a multimer's back shape first, its fill and its stroke (each outline is two paths)
+      R.shapes.forEach(function (el, k) { var o = two && k < R.shapes.length / 2 ? 6 : 0; el.setAttribute('d', outlineD(n.shape, nb[0] + o, nb[1] + o, nb[2], nb[3])); });
+      var tr = function (dx, dy) { return 'translate(' + f1(dx) + ' ' + f1(dy) + ')'; };
+      R.texts.forEach(function (el) { el.setAttribute('transform', tr(nb[0] + nb[2] / 2 - b0[0] - b0[2] / 2, nb[1] + nb[3] / 2 - b0[1] - b0[3] / 2)); });
+      R.svs.forEach(function (s) {
+        var t = tr(nb[0] + (0.5 + s.r[0]) * nb[2] - s.c[0], nb[1] + (0.5 + s.r[1]) * nb[3] - s.c[1]);
+        s.parts.forEach(function (el) { el.setAttribute('transform', t); });
+      });
+    }
+    function sizeOff() {   // the node drawn as the renderer drew it
+      if (!sizeRec) return;
+      sizeRec.was.forEach(function (v, el) {
+        if (v[0] != null) el.setAttribute('d', v[0]);
+        if (v[1] != null) el.setAttribute('transform', v[1]); else el.removeAttribute('transform');
+      });
+      sizeRec = null;
+    }
+    function setSize(i, nb) {   // node i given the box nb, one undo step with the compartments round it grown to hold it
+      var id = nodes2[i].id, t2;
+      nb = nb.map(function (v) { return +fmt(v); });
+      try { t2 = sbJs.resize(text, id, nb); } catch (err) { warn('Not resized: ' + (err && err.message || err) + '.'); liveOff(); sizeOff(); paint(); return; }
+      if (t2 === text) { liveOff(); sizeOff(); paint(); return; }
+      remember(false); text = t2; parse(); dirty = true;
+      selN = []; nodes2.forEach(function (n, k) { if (n.id === id) selN = [k]; });
+      fitThen({ moved: [id] }, function () { sizeRec = null; render(); paint(); changed(); });
+    }
+    var props = document.createElement('div');
+    props.className = 'm2-ed-props'; props.hidden = true;
+    props.innerHTML = '<p>Properties</p><div class="m2-ed-prop-size"><label>Width <input type="number" id="m2-ed-w" min="4" max="5000" step="any"></label>' +
+      '<label>Height <input type="number" id="m2-ed-h" min="4" max="5000" step="any"></label></div>' +
+      '<label title="Width and height change in steps of this many units when a node is resized by its handles; Alt or Ctrl held, any size">Size step <input type="number" id="m2-ed-step" min="1" max="100" step="1"></label>';
+    pal.insertAdjacentElement('afterend', props);
+    var inW = props.querySelector('#m2-ed-w'), inH = props.querySelector('#m2-ed-h'), inStep = props.querySelector('#m2-ed-step');
+    function propNode() { return selN.length === 1 && !selP.length && !selE.length && !svSel && sizable(selN[0]) ? selN[0] : -1; }
+    function propsShow(all) {   // all: every field shown again, the one focused too (Esc)
+      props.hidden = !palOn();
+      if (props.hidden) return;
+      var i = propNode(), b = i >= 0 ? bx(i) : null, r2 = function (v) { return String(Math.round(v * 100) / 100); };
+      props.querySelector('.m2-ed-prop-size').hidden = i < 0;
+      if (b && (all || document.activeElement !== inW)) inW.value = r2(b[2]);
+      if (b && (all || document.activeElement !== inH)) inH.value = r2(b[3]);
+      if (all || document.activeElement !== inStep) inStep.value = String(gridSet.step);
+    }
+    [inW, inH].forEach(function (inp, k) {
+      inp.addEventListener('change', function () {
+        var i = propNode(), v = parseFloat(inp.value);
+        if (i < 0) return;
+        var b = boxOf(i);
+        if (!(v >= 4 && v <= 5000) || Math.abs(v - b[2 + k]) < 0.005) { propsShow(); return; }
+        var nb = b.slice(); nb[2 + k] = v; nb[k] = b[k] + b[2 + k] / 2 - v / 2;   // its centre kept
+        setSize(i, nb);
+      });
+    });
+    inStep.addEventListener('change', function () { gridSet.step = stepOk(parseFloat(inStep.value)); gridKeep(); inStep.value = String(gridSet.step); });
+    props.addEventListener('keydown', function (e) {   // Enter keeps the value, Esc takes it back; the map's keys stay out of the fields
+      if (e.key === 'Enter') { e.target.blur(); e.preventDefault(); }
+      else if (e.key === 'Escape') { e.target.blur(); propsShow(true); e.preventDefault(); }
+      e.stopPropagation();
+    });

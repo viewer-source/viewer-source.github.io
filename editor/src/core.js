@@ -51,7 +51,10 @@
     // layout rules' (the layout skill, Grid): node centres on 8 px, bend points on 4 px, blocks on 16 (every second
     // line drawn stronger). The demo's maps are mostly not on any grid: a snapped drag moves a node onto it.
     var GRID_KEY = 'atlas-edit-grid', NODE_STEP = 8, BEND_STEP = 4;
-    var gridSet = (function () { try { var g = JSON.parse(localStorage.getItem(GRID_KEY) || '{}'); return { shown: g.shown !== false, snap: g.snap === true }; } catch (e) { return { shown: true, snap: false }; } })();
+    // Size step (user, 2026-11-14: "multiples of 8 ... people would change if they want to 4"): a node resized by its handles
+    // takes widths and heights in whole steps, 8 by default, set in Properties (create.js); Alt or Ctrl held, any size
+    var STEP0 = 8, stepOk = function (v) { return v >= 1 && v <= 100 ? Math.round(v) : STEP0; };
+    var gridSet = (function () { try { var g = JSON.parse(localStorage.getItem(GRID_KEY) || '{}'); return { shown: g.shown !== false, snap: g.snap === true, step: stepOk(+g.step) }; } catch (e) { return { shown: true, snap: false, step: STEP0 }; } })();
     function gridKeep() { try { localStorage.setItem(GRID_KEY, JSON.stringify(gridSet)); } catch (e) {} }
     function gridButtons() {
       box.querySelector('#m2-ed-grid').setAttribute('aria-pressed', String(gridSet.shown));   // the switches in the tools row
@@ -612,16 +615,21 @@
       }).catch(function (e) { warn('Compartments not fitted: ' + (e && e.message ? e.message.split('\n').slice(-2).join(' ') : e)); then(0); });
     }
     function movedIds(sets) { var a = []; sets.n.forEach(function (i) { a.push(nodes2[i].id); }); return a; }
-    // an edge of a compartment under the pointer (5 px on screen), or a handle of one selected: which sides it moves
-    function edgeAt(P) {
-      var T = 5 / V.z, hs = Math.max(HANDLE / 2, 4 / V.z), best = null;
+    // an edge of a compartment under the pointer (5 px on screen), or a handle of one selected, or of a macromolecule or a
+    // simple chemical selected in the full editor (sizable, create.js; user, 2026-11-14): which sides it moves
+    function handleAt(P, only) {   // a handle of a compartment or a sizable node selected (only: sizable nodes alone)
+      var hs = Math.max(HANDLE / 2, 4 / V.z), best = null;
       selN.forEach(function (i) {
-        if (!nodes2[i].comp || best) return;
+        if (!(only ? sizable(i) : nodes2[i].comp || sizable(i)) || best) return;
         var b = bx(i), off = 3.3, L = b[0] - off, Tp = b[1] - off, R = b[0] + b[2] + off, B = b[1] + b[3] + off;
         [[L, Tp, 'lt'], [(L + R) / 2, Tp, 't'], [R, Tp, 'rt'], [L, (Tp + B) / 2, 'l'], [R, (Tp + B) / 2, 'r'], [L, B, 'lb'], [(L + R) / 2, B, 'b'], [R, B, 'rb']].forEach(function (q) {
           if (!best && Math.abs(P[0] - q[0]) <= hs && Math.abs(P[1] - q[1]) <= hs) best = { c: i, s: q[2] };
         });
       });
+      return best;
+    }
+    function edgeAt(P) {
+      var T = 5 / V.z, best = handleAt(P);
       if (best) return best;
       nodes2.forEach(function (n, i) {
         if (!n.comp) return;
@@ -648,6 +656,13 @@
       if (x1 - x0 < 20) { if (/l/.test(s)) x0 = x1 - 20; else x1 = x0 + 20; }
       if (y1 - y0 < 20) { if (/t/.test(s)) y0 = y1 - 20; else y1 = y0 + 20; }
       return [x0, y0, x1 - x0, y1 - y0];
+    }
+    function sized(d, P, free) {   // the box of a macromolecule or a simple chemical resized: the sides dragged move, the
+      // others stay; its width and height in whole steps of Size step (free: Alt or Ctrl held, any size), one step at least
+      var b = d.rs.b0, s = d.rs.s, st = gridSet.step, dx = P[0] - d.x, dy = P[1] - d.y;
+      var size = function (v) { return free ? Math.max(4, Math.round(v * 100) / 100) : Math.max(st, Math.round(v / st) * st); };
+      var w = /[lr]/.test(s) ? size(b[2] + (/l/.test(s) ? -dx : dx)) : b[2], h = /[tb]/.test(s) ? size(b[3] + (/t/.test(s) ? -dy : dy)) : b[3];
+      return [/l/.test(s) ? b[0] + b[2] - w : b[0], /t/.test(s) ? b[1] + b[3] - h : b[1], w, h];
     }
     function pt(pi) { var p = points[pi], o = mv && mv.p.has(pi); return [num(p, 'x') + (o ? mv.dx : 0), num(p, 'y') + (o ? mv.dy : 0)]; }
     function shift() {   // the drag shown on the drawing itself: groups moved, arcs touched hidden (drawn live)
@@ -842,7 +857,7 @@
           var old = V.img.src || '';
           V.img.removeAttribute('id'); pic.id = 'm2-img'; pic.setAttribute('aria-label', map.title); V.img.replaceWith(pic); V.img = pic;
           if (old.indexOf('blob:') === 0) URL.revokeObjectURL(old);
-          gN = {}; gE = {}; live = null; liveC = null; liveOrig = null; keyed = null; liveG = null; copies = []; frozen = false;
+          gN = {}; gE = {}; live = null; liveC = null; liveOrig = null; sizeRec = null; keyed = null; liveG = null; copies = []; frozen = false;
           pic.querySelectorAll('[data-n]').forEach(function (g) { gN[g.getAttribute('data-n')] = g; });
           pic.querySelectorAll('[data-e]').forEach(function (g) { var k = g.getAttribute('data-e'); (gE[k] = gE[k] || []).push(g); });
           if (cd) cdSessionSoon();
@@ -1954,7 +1969,7 @@
         drag = { port: pp, x: P[0], y: P[1], dx: 0, dy: 0, cx: e.clientX, cy: e.clientY }; mv = null;
         part = { k: pp.k, port: pp }; paint(); return;
       }
-      if (svDown(e, P, h)) return;   // a state variable before its node (create.js)
+      if (!(!e.shiftKey && handleAt(P, true)) && svDown(e, P, h)) return;   // a state variable before its node (create.js); a node's handle over it first (review)
       // an edge of a compartment, or a handle of one selected: a drag resizes it (user, 2026-11-12: compartments are
       // containers, "resizable manually ... when I simply drag the edge of it"); a bend point or a node there comes first
       var rz = !e.shiftKey && edgeAt(P);
@@ -1963,7 +1978,7 @@
         e.stopImmediatePropagation(); e.preventDefault();
         V.view.setPointerCapture(e.pointerId); V.view.focus({ preventScroll: true });
         selN = [rz.c]; selP = []; selE = [];
-        drag = { x: P[0], y: P[1], dx: 0, dy: 0, rs: { c: rz.c, s: rz.s, b0: boxOf(rz.c) } };
+        drag = { x: P[0], y: P[1], dx: 0, dy: 0, rs: { c: rz.c, s: rz.s, b0: boxOf(rz.c), cx: e.clientX, cy: e.clientY } };
         mv = null; paint(); return;
       }
       if (!h && e.shiftKey) {   // Shift with a drag on empty space: an area added to the selection
@@ -2320,9 +2335,12 @@
         var P = at(e);
         if (band) { band.x2 = P[0]; band.y2 = P[1]; }
         else if (drag.port) { if (drag.port.moved || Math.hypot(e.clientX - drag.cx, e.clientY - drag.cy) >= 4) { drag.port.moved = true; aim(drag.port, P); } }
+        else if (drag.rs && !drag.rs.go && Math.hypot(e.clientX - drag.rs.cx, e.clientY - drag.rs.cy) < 4) return;   // not a resize yet: a click with a jitter changes nothing (review)
         else if (drag.rs) {
-          var seed = {}; seed[drag.rs.c] = resized(drag, P, gridSet.snap && !e.altKey && !e.ctrlKey);
+          var seed = {}, rc = drag.rs.c; drag.rs.go = true;
+          seed[rc] = nodes2[rc].comp ? resized(drag, P, gridSet.snap && !e.altKey && !e.ctrlKey) : sized(drag, P, e.altKey || e.ctrlKey);
           liveFit(seed);
+          if (!nodes2[rc].comp) sizeLive(rc, seed[rc]);
         }
         else if (drag.grab && Math.hypot(e.clientX - drag.grab.sx, e.clientY - drag.grab.sy) < 4) return;   // not a drag yet
         else {
@@ -2384,7 +2402,8 @@
       }
       if (d.rs) {   // a compartment resized: its box set, never smaller than what it holds, the ones round it grown
         var nb = liveC && liveC[d.rs.c];
-        if (!nb || nb.every(function (v, j) { return Math.abs(v - d.rs.b0[j]) < 0.01; })) { liveOff(); paint(); return; }
+        if (!nb || nb.every(function (v, j) { return Math.abs(v - d.rs.b0[j]) < 0.01; })) { liveOff(); sizeOff(); paint(); return; }
+        if (!nodes2[d.rs.c].comp) { setSize(d.rs.c, nb); return; }   // a macromolecule or a simple chemical (create.js)
         var mine = text; remember(false);
         fitThen({ resize: [nodes2[d.rs.c].id].concat(nb), moved: [] }, function (k) {
           if (!k) { if (undo[undo.length - 1] === mine) unpush(); liveOff(); paint(); return; }   // only this resize's step

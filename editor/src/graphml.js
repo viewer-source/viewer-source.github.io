@@ -29,7 +29,7 @@
       liveOrig = liveOrig || {};
       Object.keys(liveC).forEach(function (k) {
         var i = +k, n = nodes2[i], g = gN[n.id], b = liveC[i], o = boxOf(i);
-        if (!g) return;
+        if (!g || !n.comp) return;   // a node resized is drawn by sizeLive (create.js)
         var first = g.firstElementChild && g.firstElementChild.localName === 'a' ? g.firstElementChild : g;
         var paths = Array.prototype.filter.call(first.querySelectorAll(':scope > path'), function (x) { return !x.classList.contains('m2-ed-dark'); });
         if (!liveOrig[i]) liveOrig[i] = paths.map(function (x) { return [x, x.getAttribute('d')]; });

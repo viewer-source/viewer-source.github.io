@@ -300,6 +300,14 @@ page, so its styles keep the base they were made on). The looks before (Default 
   #m2-editwin .m2-ed-palette button[aria-pressed="true"], #m2-editwin .m2-ed-palette button[aria-pressed="true"]:hover { background: #f1f3f4; color: #70757a; }
   #m2-editwin .m2-ed-palette button.m2-ed-sticky, #m2-editwin .m2-ed-palette button.m2-ed-sticky:hover { border-color: #70757a; }
   #m2-editwin .m2-ed-palette svg { width: 21px; height: 21px; stroke-width: 1.6; }
+  /* Properties (user, 2026-11-14): under the palette, the width and height of the macromolecule or simple chemical selected,
+     and Size step, the step of a resize by the handles; small fields in the palette's grey */
+  #m2-editwin .m2-ed-props { margin: 0 0 10px; padding: 0 0 8px; border-bottom: 1px solid var(--m2-frame); font-size: 12px; line-height: 16px; color: var(--m2-text-soft); }
+  #m2-editwin .m2-ed-props p { margin: 2px 0 4px; }
+  #m2-editwin .m2-ed-props label { display: inline-flex; align-items: center; gap: 4px; margin: 0 10px 4px 0; white-space: nowrap; }
+  #m2-editwin .m2-ed-prop-size[hidden] { display: none; }
+  #m2-editwin .m2-ed-props input { box-sizing: border-box; width: 52px; height: 22px; padding: 0 4px; border: 1px solid var(--m2-frame); border-radius: 4px; background: var(--m2-bg); color: var(--m2-text); font: inherit; -moz-appearance: textfield; }
+  #m2-editwin .m2-ed-props input::-webkit-inner-spin-button, #m2-editwin .m2-ed-props input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
   #m2-view .m2-ed-palghost { position: absolute; z-index: 5; pointer-events: none; } #m2-view .m2-ed-palghost svg { display: block; }   /* the future node dragged from the palette, at its size */
   #m2-view .m2-ed-type { position: absolute; z-index: 5; box-sizing: border-box; margin: 0; padding: 0; border: 0; border-radius: 0; background: #fff; color: #000; text-align: center; font-family: Dialog, Arial, Helvetica, sans-serif; outline: none; box-shadow: none; }   /* the text edited in place, in the glyph's own colours (create.js), no frame (user, 2026-11-14) */
   /* How to edit (user, 2026-11-13: the long how-to took the room tools need): the "?" after the tools opens it as
