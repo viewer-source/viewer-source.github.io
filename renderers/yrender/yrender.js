@@ -236,6 +236,14 @@
     });
     return best === null ? port : [px + (qx - px) * best, py + (qy - py) * best];
   }
+  function within(p, polys) { return polys.some(function (poly) { return inside(p, poly); }); }
+  function behind(pts, n) {   // yrender.py's behind: the leading points inside the node dropped; null when all are
+    var k = 0;
+    while (k < pts.length && within(pts[k], n.polys)) k++;
+    if (k === pts.length) return null;
+    if (k === 0) return [visualEnd(pts[1], pts[0], n)].concat(pts.slice(1));   // the end outside the shape: as visualEnd gives it
+    return [visualEnd(pts[k], pts[k - 1], n)].concat(pts.slice(k));
+  }
 
   // ---- reading the GraphML ----
   function styleProps(r) {   // insertion order as Python's dict
@@ -395,7 +403,7 @@
     return [hs ? (!ht && bare && get(ar, 'source') === 'none' && !this.nodes[get(e, 'source')].eq ? 'in' : 'out') : null, ht && bare ? 'in' : null];
   };
   YMap.prototype.hubPorts = function () {
-    var self = this, ins = Object.create(null), outs = Object.create(null), given = Object.create(null);
+    var self = this, ins = Object.create(null), outs = Object.create(null), given = Object.create(null), near = Object.create(null);
     var add = function (m, k, p) { (m[k] = m[k] || []).push(p); };
     this.order.forEach(function (item) {
       if (item[0] !== 'e') return;
@@ -404,8 +412,8 @@
       var path = kid(pl, Y, 'Path');
       var bends = kids(path, Y, 'Point').map(function (q) { return [pyFloat(get(q, 'x')), pyFloat(get(q, 'y'))]; });
       var at = self.ends(e, kid(pl, Y, 'Arrows'));
-      if (at[1] === 'in') { add(ins, t, bends.length ? bends[bends.length - 1] : self.mid(s)); self.given(given, t, 'in', path, 'tx', 'ty'); }
-      if (at[0]) { add(at[0] === 'in' ? ins : outs, s, bends.length ? bends[0] : self.mid(t)); self.given(given, s, at[0], path, 'sx', 'sy'); }
+      if (at[1] === 'in') { add(ins, t, bends.length ? bends[bends.length - 1] : self.mid(s)); self.given(given, t, 'in', path, 'tx', 'ty'); add(near, t + '\u0000in', s); }
+      if (at[0]) { add(at[0] === 'in' ? ins : outs, s, bends.length ? bends[0] : self.mid(t)); self.given(given, s, at[0], path, 'sx', 'sy'); add(near, s + '\u0000' + at[0], t); }
     });
     var mean = function (q) {
       var sx = 0, sy = 0;
@@ -437,11 +445,24 @@
       self.ports[nid] = [one, two, nid in ins];
       var st = n.stroke, col = st ? st[0] : '#000000', wa = st && st[1] !== 1 ? ' stroke-width="' + num(st[1]) + '"' : '';
       var e1 = clip(one, [cx, cy], n.polys), e2 = clip(two, [cx, cy], n.polys);
-      var ant = '<path d="M' + num(one[0]) + ' ' + num(one[1]) + ' L' + num(e1[0]) + ' ' + num(e1[1]) + ' M' + num(e2[0]) + ' ' + num(e2[1]) +
-        ' L' + num(two[0]) + ' ' + num(two[1]) + '" fill="none"' + ink('stroke', col) + wa + '/>';
+      var nIn = near[nid + '\u0000in'] || [], nOut = near[nid + '\u0000out'] || [];
+      var d1 = self.stickEnd(nid, e1, one, I.length ? nIn : nIn.concat(nOut)), d2 = self.stickEnd(nid, e2, two, nOut);   // reversible: either
+      var ant = '<path d="M' + num(d1[0]) + ' ' + num(d1[1]) + ' L' + num(e1[0]) + ' ' + num(e1[1]) + ' M' + num(e2[0]) + ' ' + num(e2[1]) +
+        ' L' + num(d2[0]) + ' ' + num(d2[1]) + '" fill="none"' + ink('stroke', col) + wa + '/>';
       n.svg = self.groups ? n.svg.replace(/^(<g data-n="[^"]*">)/, function (m) { return m + ant; }) : ant + n.svg;
       self.boxes.push([one[0], one[1], 0, 0], [two[0], two[1], 0, 0]);
     });
+  };
+  YMap.prototype.stickEnd = function (nid, base, tip, near) {   // yrender.py's stick_end
+    var c = this.mid(nid), end = tip, self = this;
+    near.forEach(function (m) {
+      var N = self.nodes[m], P = N.polys;
+      if (m !== nid && within(tip, P) && !within(c, P)) {
+        var q = visualEnd(base, tip, N);
+        if (dist(base, q) < dist(base, end)) end = q;
+      }
+    });
+    return end;
   };
   YMap.prototype.given = function (given, nid, side, path, ax, ay) {   // yrender.py's given
     var g = this.nodes[nid].geo, ox = pyFloat(get(path, ax)), oy = pyFloat(get(path, ay));
@@ -559,8 +580,20 @@
       while (pts.length > 2 && this.onStick(sId, pts[1])) pts.splice(1, 1);
       var P = this.ports[sId];
       pts[0] = at[0] === 'in' ? P[0] : P[2] || dist(P[1], pts[1]) <= dist(P[0], pts[1]) ? P[1] : P[0];
-    } else pts[0] = visualEnd(pts[1], pts[0], S);
-    if (at[1] !== 'in') pts[pts.length - 1] = visualEnd(pts[pts.length - 2], pts[pts.length - 1], T);
+    }
+    var b, g;   // behind its own nodes, or along the stick from a port inside the other node (yrender.py's edge_svg)
+    if (!at[0]) {
+      b = behind(pts, S);
+      if (b !== null) pts = b;
+      else if (at[1] === 'in' && !within(this.mid(tId), S.polys)) { g = visualEnd(pts[pts.length - 1], this.mid(tId), T); pts = [visualEnd(g, pts[pts.length - 1], S), g]; }
+      else pts[0] = visualEnd(pts[1], pts[0], S);
+    }
+    if (at[1] !== 'in') {
+      b = behind(pts.slice().reverse(), T);
+      if (b !== null) pts = b.reverse();
+      else if (at[0] && !within(this.mid(sId), T.polys)) { g = visualEnd(pts[0], this.mid(sId), S); pts = [g, visualEnd(g, pts[0], T)]; }
+      else pts[pts.length - 1] = visualEnd(pts[pts.length - 2], pts[pts.length - 1], T);
+    }
     var ls = kid(pl, Y, 'LineStyle');
     if (get(ls, 'type') !== 'line' && get(ls, 'type') !== 'dashed') refuse(where, 'line type ' + get(ls, 'type'));
     var col = get(ls, 'color'), width = pyFloat(get(ls, 'width'));
@@ -574,7 +607,7 @@
       var a = arrow(kind, pts[i], pts[j], col, width);
       heads += a[0];
       var tx = pts[i][0], ty = pts[i][1], px = pts[j][0], py = pts[j][1], L = dist(pts[i], pts[j]);
-      if (L > 0) line[i] = [tx + (px - tx) * a[1] / L, ty + (py - ty) * a[1] / L];
+      if (L > 0) line[i] = [tx + (px - tx) * Math.min(a[1], L) / L, ty + (py - ty) * Math.min(a[1], L) / L];   // never past the other end
     });
     var bs = kid(pl, Y, 'BendStyle');
     var smooth = pl.localName === 'QuadCurveEdge' || (bs !== null && get(bs, 'smoothed') === 'true');

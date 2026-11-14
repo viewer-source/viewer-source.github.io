@@ -20,6 +20,10 @@
 #    variables and units of information: visual_end, user 2026-11-14); soft bends are
 #    quadratic curves cutting 10 px (at most half a segment) on each side of the bend
 #  - arrows: tip on the outline; the line stops where the arrow head covers it
+#  - an arc goes behind its own nodes (2026-11-14, user: a bend or an antenna's tip inside a node drew the line across
+#    it, to its middle): it starts where it first leaves its source and stops where it last enters its target;
+#    a stick whose tip lies inside a node joined by an arc at that port stops on that node's outline, and that arc runs along
+#    the stick between the two outlines (a product keeps its arrowhead); nodes inside one another as before
 #  - PerturbingAgent: the Phenotype's hexagon turned inside out, its points indented h/4 (2026-11-11, the SBGN
 #    learner's card); white_diamond (modulation) 16 long and 12 wide like white_delta; a QuadCurveEdge drawn as a
 #    polyline with soft bends (yEd's spline is close to that at the card's straightness 0.1)
@@ -243,6 +247,24 @@ def clip(outer, port, polys, crossed=False):
             if 0 <= t <= 1 and 0 <= u <= 1 and (best is None or t < best):
                 best = t
     return port if best is None else (px + (qx - px) * best, py + (qy - py) * best)
+
+
+def within(p, polys):
+    return any(inside(p, poly) for poly in polys)
+
+
+def behind(pts, n):
+    # an arc goes behind the node it starts at (user, 2026-11-14: a bend or an antenna's tip inside the node drew the
+    # line across it, to its middle): the leading points inside the node's outline are dropped and the line starts where
+    # it first leaves it. None when every point lies inside (nested nodes, or a port inside the node: edge_svg)
+    k = 0
+    while k < len(pts) and within(pts[k], n['polys']):
+        k += 1
+    if k == len(pts):
+        return None
+    if k == 0:  # the end itself outside the shape: as visual_end gives it (a state variable on the way still stops it)
+        return [visual_end(pts[1], pts[0], n)] + pts[1:]
+    return [visual_end(pts[k], pts[k - 1], n)] + pts[k:]
 
 
 # ---- reading the GraphML ----
@@ -550,7 +572,7 @@ class Map:
 
     def hub_ports(self):
         # the two ports of every process and gate (the header's ports), their sticks put beside the glyph
-        ins, outs, given = {}, {}, {}
+        ins, outs, given, near = {}, {}, {}, {}  # near: (hub, 'in' or 'out') -> the nodes whose arcs use that port
         for item in self.order:
             if item[0] != 'e':
                 continue
@@ -563,9 +585,11 @@ class Map:
             if at_t == 'in':
                 ins.setdefault(t, []).append(bends[-1] if bends else self.mid(s))
                 self.given(given, t, 'in', path, 'tx', 'ty')
+                near.setdefault((t, 'in'), []).append(s)
             if at_s:
                 (ins if at_s == 'in' else outs).setdefault(s, []).append(bends[0] if bends else self.mid(t))
                 self.given(given, s, at_s, path, 'sx', 'sy')
+                near.setdefault((s, at_s), []).append(t)
         def mean(q):  # added in order (not sum(), which compensates since Python 3.12): as yrender.js adds
             sx = sy = 0.0
             for p in q:
@@ -604,12 +628,27 @@ class Map:
             st = n['stroke']
             col, wa = (st[0], f' stroke-width="{num(st[1])}"' if st[1] != 1 else '') if st else ('#000000', '')
             e1, e2 = clip(one, (cx, cy), n['polys']), clip(two, (cx, cy), n['polys'])
+            n_in, n_out = near.get((nid, 'in'), []), near.get((nid, 'out'), [])
+            d1 = self.stick_end(nid, e1, one, n_in + ([] if I else n_out))  # reversible: a leaving arc may take either
+            d2 = self.stick_end(nid, e2, two, n_out)
             # two sticks, not one line under the glyph: a glyph without fill (SBGN-ML's) would show it through
-            ant = (f'<path d="M{num(one[0])} {num(one[1])} L{num(e1[0])} {num(e1[1])} M{num(e2[0])} {num(e2[1])}'
-                   f' L{num(two[0])} {num(two[1])}" fill="none"{ink("stroke", col)}{wa}/>')
+            ant = (f'<path d="M{num(d1[0])} {num(d1[1])} L{num(e1[0])} {num(e1[1])} M{num(e2[0])} {num(e2[1])}'
+                   f' L{num(d2[0])} {num(d2[1])}" fill="none"{ink("stroke", col)}{wa}/>')
             # inside the node's own group when a caller puts each node in one (the editor's way), so it moves with it
             n['svg'] = re.sub(r'^(<g data-n="[^"]*">)', lambda m: m.group(1) + ant, n['svg']) if n['svg'].startswith('<g data-n="') else ant + n['svg']
             self.boxes += [(one[0], one[1], 0, 0), (two[0], two[1], 0, 0)]
+
+    def stick_end(self, nid, base, tip, near):
+        # a stick whose tip lies inside a node joined by an arc at that port goes behind that node: it stops on the
+        # node's outline, the nearest such stop to the glyph (not when the glyph itself is inside the node: nested)
+        c, end = self.mid(nid), tip
+        for m in near:
+            N = self.nodes[m]; P = N['polys']
+            if m != nid and within(tip, P) and not within(c, P):
+                q = visual_end(base, tip, N)
+                if math.dist(base, q) < math.dist(base, end):
+                    end = q
+        return end
 
     def given(self, given, nid, side, path, ax, ay):
         # an arc's end the map puts outside the hub's glyph is that port, the first one found
@@ -662,10 +701,28 @@ class Map:
                 del pts[1]
             one, two, has_in = self.ports[s_id]
             pts[0] = one if at_s == 'in' else two if has_in or math.dist(two, pts[1]) <= math.dist(one, pts[1]) else one
-        else:
-            pts[0] = visual_end(pts[1], pts[0], S)
+        # behind its own nodes (behind): the line starts where it first leaves its source and stops where it last
+        # enters its target. An arc from a port lying inside the node at its other end runs along the stick
+        # instead, from the glyph to that node's outline, so a product keeps its arrowhead (the stick stops there too,
+        # stick_end); nested nodes as before
+        if not at_s:
+            b = behind(pts, S)
+            if b is not None:
+                pts = b
+            elif at_t == 'in' and not within(self.mid(t_id), S['polys']):
+                g = visual_end(pts[-1], self.mid(t_id), T)
+                pts = [visual_end(g, pts[-1], S), g]
+            else:
+                pts[0] = visual_end(pts[1], pts[0], S)
         if at_t != 'in':
-            pts[-1] = visual_end(pts[-2], pts[-1], T)
+            b = behind(pts[::-1], T)
+            if b is not None:
+                pts = b[::-1]
+            elif at_s and not within(self.mid(s_id), T['polys']):
+                g = visual_end(pts[0], self.mid(s_id), S)
+                pts = [g, visual_end(g, pts[0], T)]
+            else:
+                pts[-1] = visual_end(pts[-2], pts[-1], T)
         ls = pl.find(Y + 'LineStyle')
         if ls.get('type') not in ('line', 'dashed'):
             refuse(where, f'line type {ls.get("type")}')
@@ -682,8 +739,8 @@ class Map:
             heads += svg
             (tx, ty), (px, py) = pts[i], pts[j]
             L = math.dist(pts[i], pts[j])
-            if L > 0:
-                line[i] = (tx + (px - tx) * cut / L, ty + (py - ty) * cut / L)
+            if L > 0:  # never past the segment's other end (a head longer than its segment: the line not run backwards)
+                line[i] = (tx + (px - tx) * min(cut, L) / L, ty + (py - ty) * min(cut, L) / L)
         smooth = pl.tag == Y + 'QuadCurveEdge' or pl.find(Y + 'BendStyle') is not None and pl.find(Y + 'BendStyle').get('smoothed') == 'true'
         dd = f'M{num(line[0][0])} {num(line[0][1])}'
         for i in range(1, len(pts) - 1):
