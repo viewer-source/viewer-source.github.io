@@ -163,21 +163,30 @@
       var inp = document.createElement('input'), before = j == null ? nameOf(i) : sv[0], m0 = map;
       inp.type = 'text'; inp.className = 'm2-ed-type'; inp.value = before; inp.spellcheck = false;
       inp.setAttribute('aria-label', j == null ? 'Name' : 'State variable (value, or value@site)');
-      inp.style.cssText = 'left:' + sx(at0[0]) + 'px;top:' + sy(at0[1]) + 'px;width:' + at0[2] * V.z + 'px;height:' + at0[3] * V.z + 'px;font-size:' + fs * V.z + 'px;' +
-        'background:' + (j == null && fl && fl.getAttribute('hasColor') !== 'false' && fl.getAttribute('color') ? fl.getAttribute('color').slice(0, 7) : '#fff') + ';color:' + (lab && lab.getAttribute('textColor') || '#000') +
-        (j == null ? '' : ';border-radius:' + at0[3] * V.z / 2 + 'px');
+      // the drawn text hidden while typing, the field itself transparent (user, 2026-11-14: a filled field cut the shape's
+      // rounded corners); before the editor's own drawing is in the page, the field in the glyph's fill
+      var hid = textsOf(i, j);
+      hid.forEach(function (el) { el.style.visibility = 'hidden'; });
+      inp.style.background = hid.length ? 'transparent' : j == null && fl && fl.getAttribute('hasColor') !== 'false' && fl.getAttribute('color') ? fl.getAttribute('color').slice(0, 7) : '#fff';
+      inp.style.color = lab && lab.getAttribute('textColor') || '#000';
+      var place = function () {   // at the glyph in the map's units: again after every zoom or pan (paint), so a pinch keeps it on its glyph
+        var st = inp.style;
+        st.left = sx(at0[0]) + 'px'; st.top = sy(at0[1]) + 'px'; st.width = at0[2] * V.z + 'px'; st.height = at0[3] * V.z + 'px'; st.fontSize = fs * V.z + 'px';
+        if (j != null) st.borderRadius = at0[3] * V.z / 2 + 'px';
+      };
+      place();
       V.view.appendChild(inp);
       typing = {
         done: function (keep) {
           if (!typing || typing.inp !== inp) return;
-          typing = null; inp.remove();
+          typing = null; inp.remove(); hid.forEach(function (el) { el.style.visibility = ''; });
           var v = inp.value.replace(/[\r\n]+/g, ' ');
           if (j != null) v = v.replace(/@+$/, '');   // P@ is P (a site needs a name)
           if (!keep || v === before.replace(/[\r\n]+/g, ' ') || !on || map !== m0) return;   // a name on several lines, untouched, kept as it was (the box shows it on one)
           var t2 = j == null ? sbJs.label(text, id, v) : sbJs.stateValue(text, id, j, v);
           if (t2 === text) return;
           remember(false); text = t2; parse(); dirty = true; quiet(); render(); paint(); changed();
-        }, inp: inp
+        }, inp: inp, place: place
       };
       inp.addEventListener('keydown', function (e) {
         e.stopPropagation();
@@ -211,6 +220,7 @@
     var svSel = null, svDrag = null;   // svSel: { id, j }
     function svNode() { if (!svSel) return -1; var i = nodes2.findIndex(function (n) { return n.id === svSel.id; }); return i >= 0 && svList(i)[svSel.j] ? i : -1; }
     function svMarks(over) {   // four black squares at the corners of the state variable selected (paint, core.js)
+      if (typing) typing.place();   // the text field follows a zoom or a pan (user, 2026-11-14: it stayed where it was)
       var i = svNode();
       if (i < 0 || !palOn()) { svSel = null; return; }
       var q = svList(i)[svSel.j], c = svDrag && svDrag.to ? svDrag.to : q[1], hs = Math.max(2, HANDLE * V.z);
@@ -230,6 +240,17 @@
       svDrag = { i: q[0], again: again, x: e.clientX, y: e.clientY, to: null, r: null };
       paint();
     }, true);
+    function textsOf(i, j) {   // the drawn text of node i's name (j null) or of its j-th state variable
+      var g = gN && gN[nodes2[i].id];
+      if (!g) return [];
+      var svs = svList(i), r = V.view.getBoundingClientRect(), k = V.pz();
+      var rect = function (q) { var L = r.left + sx(q[1][0] - q[2][0] / 2) * k, T = r.top + sy(q[1][1] - q[2][1] / 2) * k; return [L - 1.5, T - 1.5, L + q[2][0] * V.z * k + 1.5, T + q[2][1] * V.z * k + 1.5]; };
+      var inside = function (b, R) { var cx = b.left + b.width / 2, cy = b.top + b.height / 2; return cx >= R[0] && cx <= R[2] && cy >= R[1] && cy <= R[3]; };
+      return Array.prototype.filter.call(g.querySelectorAll('text'), function (t) {
+        var b = t.getBoundingClientRect();
+        return j == null ? !svs.some(function (q) { return inside(b, rect(q)); }) : inside(b, rect(svs[j]));
+      });
+    }
     function svParts(i, q) {   // the drawn parts of a state variable (its box, outline, text) in its node's group of the editor's drawing
       var g = gN && gN[nodes2[i].id];
       if (!g) return [];
