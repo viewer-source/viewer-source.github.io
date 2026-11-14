@@ -18,6 +18,9 @@ v: "48fa4c3591"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/downloads/glycogen-liver-sbgn.sbgn"}, {"label": "SVG", "url": "/downloads/glycogen-liver-sbgn.svg"}]
+src: "191f87e6a36c63759391da0faee2589de9adbd1a"
+edit_path: "maps/sbgn-ml/glycogen-liver-sbgn.sbgn"
+edit_base: "/atlas-data/glycogen-liver-sbgn.graphml"
 ---
 ## Description
 

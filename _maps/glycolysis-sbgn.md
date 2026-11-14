@@ -18,6 +18,9 @@ v: "e8ffc5d7d5"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/downloads/glycolysis-sbgn.sbgn"}, {"label": "SVG", "url": "/downloads/glycolysis-sbgn.svg"}]
+src: "55c67d51fd52a781b40df3991d715a74db4a6989"
+edit_path: "maps/sbgn-ml/glycolysis-sbgn.sbgn"
+edit_base: "/atlas-data/glycolysis-sbgn.graphml"
 ---
 ## References
 

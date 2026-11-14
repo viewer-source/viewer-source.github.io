@@ -18,6 +18,9 @@ v: "469b631d98"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/downloads/aspirin-sbgn.sbgn"}, {"label": "SVG", "url": "/downloads/aspirin-sbgn.svg"}]
+src: "966360e18c88e346ae446544c402ba5a945e0ef8"
+edit_path: "maps/sbgn-ml/aspirin-sbgn.sbgn"
+edit_base: "/atlas-data/aspirin-sbgn.graphml"
 ---
 ## References
 

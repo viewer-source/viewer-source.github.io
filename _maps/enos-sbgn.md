@@ -18,6 +18,9 @@ v: "1c68d5676a"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/downloads/enos-sbgn.sbgn"}, {"label": "SVG", "url": "/downloads/enos-sbgn.svg"}]
+src: "7ab56acc8e4dc3e6749445acd6e0e4e37e6fafe9"
+edit_path: "maps/sbgn-ml/enos-sbgn.sbgn"
+edit_base: "/atlas-data/enos-sbgn.graphml"
 ---
 ## References
 

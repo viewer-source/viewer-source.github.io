@@ -18,6 +18,9 @@ v: "46b27a3a46"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/downloads/eicosanoids-sbgn.sbgn"}, {"label": "SVG", "url": "/downloads/eicosanoids-sbgn.svg"}]
+src: "d2338be46ed99e6a9137a00891ba01e68929e5e4"
+edit_path: "maps/sbgn-ml/eicosanoids-sbgn.sbgn"
+edit_base: "/atlas-data/eicosanoids-sbgn.graphml"
 ---
 ## References
 

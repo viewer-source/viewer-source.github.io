@@ -18,6 +18,9 @@ v: "34a03b8f76"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/downloads/glutaminase-sbgn.sbgn"}, {"label": "SVG", "url": "/downloads/glutaminase-sbgn.svg"}]
+src: "09ac1b7c2386431185397f85c1b256c1db9fc9c3"
+edit_path: "maps/sbgn-ml/glutaminase-sbgn.sbgn"
+edit_base: "/atlas-data/glutaminase-sbgn.graphml"
 ---
 ## Description
 

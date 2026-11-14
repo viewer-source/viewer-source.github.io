@@ -18,6 +18,9 @@ v: "83e90876ac"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/downloads/pdh-sbgn.sbgn"}, {"label": "SVG", "url": "/downloads/pdh-sbgn.svg"}]
+src: "b5f6d74bb395537d3082c4e486a6dead0dd45eae"
+edit_path: "maps/sbgn-ml/pdh-sbgn.sbgn"
+edit_base: "/atlas-data/pdh-sbgn.graphml"
 ---
 ## Reactome-Recon connection
 

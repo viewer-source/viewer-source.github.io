@@ -18,6 +18,9 @@ v: "151b6ba766"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/downloads/ureacycle-sbgn.sbgn"}, {"label": "SVG", "url": "/downloads/ureacycle-sbgn.svg"}]
+src: "d0031a758c1a5ff84c1c8aaf88d5467b66313efc"
+edit_path: "maps/sbgn-ml/ureacycle-sbgn.sbgn"
+edit_base: "/atlas-data/ureacycle-sbgn.graphml"
 ---
 ## Reactome-Recon connection
 

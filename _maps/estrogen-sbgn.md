@@ -18,6 +18,9 @@ v: "ecadbb05ba"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/downloads/estrogen-sbgn.sbgn"}, {"label": "SVG", "url": "/downloads/estrogen-sbgn.svg"}]
+src: "6afc64c96d794aede7222ca3f98ba8612f03c629"
+edit_path: "maps/sbgn-ml/estrogen-sbgn.sbgn"
+edit_base: "/atlas-data/estrogen-sbgn.graphml"
 ---
 ## Description
 

@@ -18,6 +18,9 @@ v: "d1a1353913"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/downloads/tag-sbgn.sbgn"}, {"label": "SVG", "url": "/downloads/tag-sbgn.svg"}]
+src: "e25f7d06f9b61e04773e56b64b2a344eb2bcd384"
+edit_path: "maps/sbgn-ml/tag-sbgn.sbgn"
+edit_base: "/atlas-data/tag-sbgn.graphml"
 ---
 ## Description
 

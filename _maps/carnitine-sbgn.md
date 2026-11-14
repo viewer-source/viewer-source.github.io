@@ -18,6 +18,9 @@ v: "dcad9d4fe9"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/downloads/carnitine-sbgn.sbgn"}, {"label": "SVG", "url": "/downloads/carnitine-sbgn.svg"}]
+src: "d703693f70b3c238ca8a27cbba9f2676e92bf006"
+edit_path: "maps/sbgn-ml/carnitine-sbgn.sbgn"
+edit_base: "/atlas-data/carnitine-sbgn.graphml"
 ---
 ## Description
 

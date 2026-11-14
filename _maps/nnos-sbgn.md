@@ -18,6 +18,9 @@ v: "68ed50d7b0"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/downloads/nnos-sbgn.sbgn"}, {"label": "SVG", "url": "/downloads/nnos-sbgn.svg"}]
+src: "25147e51bab32d5d3feb3715c4314c530fa6ff91"
+edit_path: "maps/sbgn-ml/nnos-sbgn.sbgn"
+edit_base: "/atlas-data/nnos-sbgn.graphml"
 ---
 ## Reactome-Recon connection
 

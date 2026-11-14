@@ -18,6 +18,9 @@ v: "9145033a78"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/downloads/phosphoinositides-sbgn.sbgn"}, {"label": "SVG", "url": "/downloads/phosphoinositides-sbgn.svg"}]
+src: "c552739a5997602dd00543dcd489b24e0c4c76a4"
+edit_path: "maps/sbgn-ml/phosphoinositides-sbgn.sbgn"
+edit_base: "/atlas-data/phosphoinositides-sbgn.graphml"
 ---
 ## References
 

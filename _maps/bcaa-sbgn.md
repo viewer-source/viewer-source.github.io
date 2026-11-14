@@ -18,6 +18,9 @@ v: "a04aaf1fd8"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/downloads/bcaa-sbgn.sbgn"}, {"label": "SVG", "url": "/downloads/bcaa-sbgn.svg"}]
+src: "ea3f9f0dfaeb123014a45c720f4d3b2d329802d9"
+edit_path: "maps/sbgn-ml/bcaa-sbgn.sbgn"
+edit_base: "/atlas-data/bcaa-sbgn.graphml"
 ---
 ## Reactome-Recon connection
 

@@ -18,6 +18,9 @@ v: "4f2f17f7d7"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/downloads/acly-sbgn.sbgn"}, {"label": "SVG", "url": "/downloads/acly-sbgn.svg"}]
+src: "e1ce1d34dc113cbdf8340bcc82bb7eb63a1b18e5"
+edit_path: "maps/sbgn-ml/acly-sbgn.sbgn"
+edit_base: "/atlas-data/acly-sbgn.graphml"
 ---
 ## Description
 

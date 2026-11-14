@@ -18,6 +18,9 @@ v: "e617caac21"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/downloads/mevalonate-sbgn.sbgn"}, {"label": "SVG", "url": "/downloads/mevalonate-sbgn.svg"}]
+src: "edf7b5b6c20a1c8c60f42831e8819a85df009ad5"
+edit_path: "maps/sbgn-ml/mevalonate-sbgn.sbgn"
+edit_base: "/atlas-data/mevalonate-sbgn.graphml"
 ---
 <!--Upper mevalonate pathway of eukaryotes, archaea, and eubacteria all begin the same way. The sole carbon feed stock of the pathway is acetyl-CoA. The first step condenses two acetyl-CoA molecules to yield acetoacetyl-CoA. This is followed by a second condensation to form HMG-CoA (3-hydroxy-3- methyl-glutaryl-CoA). Reduction of HMG-CoA yields (R)-mevalonate. These first 3 enzymatic steps are called the upper mevalonate pathway [3,6]. The mevalonate production is regulated by HGMCR. The cartoon is redrawn from Cholesterol biosynthesis pathway [8]. HGMCR becomes inactive by phosphorylation through AMPK heterotrimer [2,5,10]. HGMCR becomes active by dephosphorylation through the catalyst PP2A [1]. The phosphorylation of the AMPK heterotrimer is regulated by LKB1-STRAD-MO25 complex or by CaMMKK [4].  The phosphorylated AMPK binds AMP. The cartoon is redrawn from Activated AMPK stimulates fatty-acid oxidation in muscle [9].-->
 

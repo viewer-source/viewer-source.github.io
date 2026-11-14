@@ -18,6 +18,9 @@ v: "8adaf830a1"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/downloads/srebp-sbgn.sbgn"}, {"label": "SVG", "url": "/downloads/srebp-sbgn.svg"}]
+src: "520797d29fb322df1e84c17229bb59d6f899b38a"
+edit_path: "maps/sbgn-ml/srebp-sbgn.sbgn"
+edit_base: "/atlas-data/srebp-sbgn.graphml"
 ---
 ## Description
 

@@ -18,6 +18,9 @@ v: "ad0ecf1f7c"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/downloads/camp-sbgn.sbgn"}, {"label": "SVG", "url": "/downloads/camp-sbgn.svg"}]
+src: "088bf582c3ae974a3067ab21309984a5b16c307f"
+edit_path: "maps/sbgn-ml/camp-sbgn.sbgn"
+edit_base: "/atlas-data/camp-sbgn.graphml"
 ---
 ## Description
 

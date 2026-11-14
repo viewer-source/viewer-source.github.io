@@ -18,6 +18,9 @@ v: "d984efeb85"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/downloads/pyrimidine-sbgn.sbgn"}, {"label": "SVG", "url": "/downloads/pyrimidine-sbgn.svg"}]
+src: "2f6184c75992cda719c8ebddf58c49a4f4df4e1c"
+edit_path: "maps/sbgn-ml/pyrimidine-sbgn.sbgn"
+edit_base: "/atlas-data/pyrimidine-sbgn.graphml"
 ---
 ## Description
 
