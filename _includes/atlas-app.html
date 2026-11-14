@@ -307,14 +307,14 @@ page, so its styles keep the base they were made on). The looks before (Default 
   #m2-editwin .m2-ed-props[hidden], #m2-editwin .m2-ed-props tr[hidden] { display: none; }
   #m2-editwin .m2-ed-props p { margin: 2px 0 4px; }
   #m2-editwin .m2-ed-ptab { width: 100%; border-collapse: collapse; margin: 0 0 8px; }
-  #m2-editwin .m2-ed-ptab th { width: 1%; padding: 1px 8px 1px 0; font-weight: 400; text-align: left; white-space: nowrap; }
-  #m2-editwin .m2-ed-ptab td { padding: 1px 0; }
+  #m2-editwin .m2-ed-ptab th { width: 1%; padding: 1px 8px 1px 0; font-weight: 400; text-align: left; white-space: nowrap; vertical-align: middle; }
+  #m2-editwin .m2-ed-ptab td { height: 24px; padding: 1px 0; vertical-align: middle; }
   #m2-editwin .m2-ed-ptab input[type="text"], #m2-editwin .m2-ed-ptab input[type="number"] { box-sizing: border-box; width: 100%; min-width: 0; height: 22px; margin: 0; padding: 0 4px;
     border: 1px solid var(--m2-frame); border-radius: 4px; background: var(--m2-bg); color: var(--m2-text); font: inherit; -moz-appearance: textfield; }
   #m2-editwin .m2-ed-ptab input[type="number"] { width: 64px; }
   #m2-editwin .m2-ed-ptab input:focus { outline: none; border-color: #70757a; }
   #m2-editwin .m2-ed-ptab input::-webkit-inner-spin-button, #m2-editwin .m2-ed-ptab input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-  #m2-editwin .m2-ed-ptab input[type="checkbox"] { margin: 3px 0; }
+  #m2-editwin .m2-ed-ptab input[type="checkbox"] { display: block; margin: 0; }
   #m2-editwin .m2-ed-pc { display: flex; gap: 4px; align-items: center; }
   #m2-editwin .m2-ed-pc input[type="color"] { flex: none; width: 22px; height: 22px; margin: 0; padding: 0; border: 1px solid var(--m2-frame); border-radius: 4px; background: none; cursor: pointer; }
   #m2-editwin .m2-ed-pc input[type="color"]::-webkit-color-swatch-wrapper { padding: 2px; }
