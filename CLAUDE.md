@@ -487,6 +487,18 @@ says "the workbench", "the converter's repository", "a private repository".
   the arc's new source or target (a process's port where it has one) and turns consumption into logic arc at a gate and
   back at a process, and `graphml()` takes such moved ends from the file. An end at a process's or gate's port is
   grabbed for this only; on its own process it stays.
+  Only with Settings, Editing on Full (user, 2026-11-14: moving an end changes the network, so not layout): Layout, the
+  default, and Full, kept in the browser (localStorage atlas-edit-level), `V.level` read by `takes()`; the row only where
+  the style has the Edit tab and the include allows full editing (edit="layout" keeps it to Layout, no row).
+  Make main (user, 2026-11-14: "better than reconnecting by hand"; CellDesigner's main reactant or product is often an
+  accident of the conversion): the right-click menu on an added reactant's or product's line of a CellDesigner reaction,
+  or a bend point of it, says Make main reactant or Make main product, in Layout too (the network stays).
+  `cd_edit.makeMain` (JavaScript only, one master for the editor and `tests/cd-make-main.js`) swaps the two lines in
+  the GraphML: species end, port there, bend points, so each species keeps its route; not offered when the species is
+  already another reactant's or product's of the reaction. `rewire()` (both twins) writes the participants all or
+  nothing per reaction (a refused end leaves the reaction as it was) and lets a reactant or product share an alias with
+  a modifier; `ports()` keeps a port at one of CellDesigner's 16 anchors as that anchor (cdrender's `at()`), else the
+  nearest of the five. CellDesigner's process square goes to the middle of the new main line. One undo step.
   A modifier's end at
   a process glyph (user, 2026-11-13: "In Cell Designer, there is no central location for ports for processes") snaps
   only to CellDesigner's six places there, the four corners and the middles of the two sides off the main line, turned
