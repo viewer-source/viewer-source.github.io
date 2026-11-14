@@ -36,7 +36,7 @@
             <y:GenericGroupNode configuration="com.yworks.sbgn.Complex">
               <y:Geometry height="106.5" width="93.25" x="258.02282054282813" y="84.61400404169493"/>
               <y:Fill color="#C6DBEF7F" transparent="false"/>
-              <y:BorderStyle color="#000000" type="line" width="1.0"/>
+              <y:BorderStyle color="#555555" type="line" width="1.25"/>
               <y:NodeLabel alignment="center" autoSizePolicy="content" borderDistance="0.0" fontFamily="Dialog" fontSize="11" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" hasText="true" height="16.964285714285715" horizontalTextPosition="center" iconTextGap="4" modelName="internal" modelPosition="b" textColor="#000000" verticalTextPosition="bottom" visible="true" width="37.32142857142857" x="27.964285714285715" y="89.53571428571428">Hsp70</y:NodeLabel>
               <y:StyleProperties>
                 <y:Property class="java.lang.Integer" name="com.yworks.sbgn.style.radiusY" value="12"/>
@@ -66,7 +66,7 @@
             <y:GenericNode configuration="com.yworks.sbgn.Macromolecule">
               <y:Geometry height="35.0" width="70.0" x="269.64782054282813" y="96.23900404169493"/>
               <y:Fill color="#EFF3FF" transparent="false"/>
-              <y:BorderStyle color="#000000" type="line" width="1.0"/>
+              <y:BorderStyle color="#555555" type="line" width="1.25"/>
               <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="11" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="16.964285714285715" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="center" visible="true" width="37.32142857142857" x="16.339285714285715" xml:space="preserve" y="9.017857142857142" hasText="true">Hsp70<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:ModelParameter><y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/></y:ModelParameter></y:NodeLabel>
               <y:StyleProperties>
                 <y:Property class="java.lang.Integer" name="com.yworks.sbgn.style.radius" value="10"/>
@@ -77,7 +77,7 @@
             <y:GenericNode configuration="com.yworks.sbgn.Macromolecule">
               <y:Geometry height="35.0" width="70.0" x="269.64782054282813" y="144.48900404169493"/>
               <y:Fill color="#EFF3FF" transparent="false"/>
-              <y:BorderStyle color="#000000" type="line" width="1.0"/>
+              <y:BorderStyle color="#555555" type="line" width="1.25"/>
               <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="11" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="29.928571428571427" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="center" visible="true" width="67.17857142857143" x="1.4107142857142847" xml:space="preserve" y="2.5357142857142865" hasText="true">misfolded
 protein<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:ModelParameter><y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/></y:ModelParameter></y:NodeLabel>
               <y:StyleProperties>
@@ -115,7 +115,7 @@ protein<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:Mo
         <y:GenericNode configuration="com.yworks.sbgn.EmptySet">
           <y:Geometry height="25.0" width="25.0" x="1056.9163417549303" y="876.3069034826349"/>
           <y:Fill color="#EFF3FF" transparent="false"/>
-          <y:BorderStyle color="#000000" type="line" width="1.0"/>
+          <y:BorderStyle color="#555555" type="line" width="1.25"/>
           <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="11" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" hasText="false" height="4.0" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="center" visible="true" width="0.0" x="12.5" y="10.5"><y:LabelModel>
               <y:SmartNodeLabelModel distance="4.0"/>
             </y:LabelModel>
@@ -131,7 +131,7 @@ protein<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:Mo
             <y:GenericGroupNode configuration="com.yworks.sbgn.Complex">
               <y:Geometry height="116.125" width="176.5" x="739.2929618043319" y="654.607936647751"/>
               <y:Fill color="#C6DBEF7F" transparent="false"/>
-              <y:BorderStyle color="#000000" type="line" width="1.0"/>
+              <y:BorderStyle color="#555555" type="line" width="1.25"/>
               <y:NodeLabel alignment="center" autoSizePolicy="content" borderDistance="0.0" fontFamily="Dialog" fontSize="11" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" hasText="true" height="16.964285714285715" horizontalTextPosition="center" iconTextGap="4" modelName="internal" modelPosition="b" textColor="#000000" verticalTextPosition="bottom" visible="true" width="37.32142857142857" x="69.58928571428572" y="99.16071428571428">Hsp70</y:NodeLabel>
               <y:StyleProperties>
                 <y:Property class="java.lang.Integer" name="com.yworks.sbgn.style.radiusY" value="12"/>
@@ -161,7 +161,7 @@ protein<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:Mo
             <y:GenericNode configuration="com.yworks.sbgn.Macromolecule">
               <y:Geometry height="35.0" width="70.0" x="750.9179618043319" y="724.107936647751"/>
               <y:Fill color="#EFF3FF" transparent="false"/>
-              <y:BorderStyle color="#000000" type="line" width="1.0"/>
+              <y:BorderStyle color="#555555" type="line" width="1.25"/>
               <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="11" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="16.964285714285715" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="center" visible="true" width="37.32142857142857" x="16.339285714285715" xml:space="preserve" y="9.017857142857142" hasText="true">Hsp70<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:ModelParameter><y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/></y:ModelParameter></y:NodeLabel>
               <y:StyleProperties>
                 <y:Property class="java.lang.Integer" name="com.yworks.sbgn.style.radius" value="10"/>
@@ -172,7 +172,7 @@ protein<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:Mo
             <y:GenericNode configuration="com.yworks.sbgn.Macromolecule">
               <y:Geometry height="35.0" width="70.0" x="834.1679618043319" y="724.107936647751"/>
               <y:Fill color="#EFF3FF" transparent="false"/>
-              <y:BorderStyle color="#000000" type="line" width="1.0"/>
+              <y:BorderStyle color="#555555" type="line" width="1.25"/>
               <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="11" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="29.928571428571427" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="center" visible="true" width="67.17857142857143" x="1.4107142857142847" xml:space="preserve" y="2.5357142857142865" hasText="true">misfolded
 protein<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:ModelParameter><y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/></y:ModelParameter></y:NodeLabel>
               <y:StyleProperties>
@@ -184,7 +184,7 @@ protein<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:Mo
             <y:GenericNode configuration="com.yworks.sbgn.Macromolecule">
               <y:Geometry height="36.0" width="74.0" x="750.9179618043319" y="674.857936647751"/>
               <y:Fill color="#EFF3FF" transparent="false"/>
-              <y:BorderStyle color="#000000" type="line" width="1.0"/>
+              <y:BorderStyle color="#555555" type="line" width="1.25"/>
               <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="11" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="16.964285714285715" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="center" visible="true" width="29.857142857142858" x="22.07142857142857" xml:space="preserve" y="9.517857142857142" hasText="true">Sis1<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:ModelParameter><y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/></y:ModelParameter></y:NodeLabel>
               <y:NodeLabel alignment="center" autoSizePolicy="content" borderDistance="0.0" bottomInset="0" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" hasText="false" height="14.4" horizontalTextPosition="center" iconData="1" iconTextGap="0" leftInset="0" modelName="custom" rightInset="0" textColor="#000000" topInset="0" verticalTextPosition="center" visible="true" width="22.0" x="26.0" y="-7.2">
                 <y:LabelModel>
@@ -203,7 +203,7 @@ protein<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:Mo
         <y:GenericNode configuration="com.yworks.sbgn.Process">
           <y:Geometry height="10.714285714285715" width="10.714285714285715" x="957.2736106661647" y="730.4776187029585"/>
           <y:Fill color="#FFFFFF" transparent="false"/>
-          <y:BorderStyle color="#000000" type="line" width="1.0"/>
+          <y:BorderStyle color="#555555" type="line" width="1.25"/>
           <y:NodeLabel alignment="center" autoSizePolicy="content" bottomInset="0" fontFamily="Dialog" fontSize="14" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" hasText="false" height="4.0" horizontalTextPosition="center" iconTextGap="4" leftInset="0" modelName="custom" rightInset="0" textColor="#000000" topInset="0" verticalTextPosition="center" visible="true" width="0.0" x="5.357142857142858" y="3.3571428571428577"><y:LabelModel>
               <y:SmartNodeLabelModel distance="4.0"/>
             </y:LabelModel>
@@ -217,7 +217,7 @@ protein<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:Mo
             <y:GenericNode configuration="com.yworks.sbgn.Macromolecule">
               <y:Geometry height="35.0" width="70.0" x="963.0203592378725" y="778.8860488498126"/>
               <y:Fill color="#EFF3FF" transparent="false"/>
-              <y:BorderStyle color="#000000" type="line" width="1.0"/>
+              <y:BorderStyle color="#555555" type="line" width="1.25"/>
               <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="11" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="29.928571428571427" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="center" visible="true" width="67.17857142857143" x="1.4107142857142847" xml:space="preserve" y="2.5357142857142865" hasText="true">misfolded
 protein<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:ModelParameter><y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/></y:ModelParameter></y:NodeLabel>
               <y:StyleProperties>
@@ -229,7 +229,7 @@ protein<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:Mo
         <y:GenericNode configuration="com.yworks.sbgn.Process">
           <y:Geometry height="10.714285714285715" width="10.714285714285715" x="1070.8103562383692" y="827.4094718658681"/>
           <y:Fill color="#FFFFFF" transparent="false"/>
-          <y:BorderStyle color="#000000" type="line" width="1.0"/>
+          <y:BorderStyle color="#555555" type="line" width="1.25"/>
           <y:NodeLabel alignment="center" autoSizePolicy="content" bottomInset="0" fontFamily="Dialog" fontSize="14" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" hasText="false" height="4.0" horizontalTextPosition="center" iconTextGap="4" leftInset="0" modelName="custom" rightInset="0" textColor="#000000" topInset="0" verticalTextPosition="center" visible="true" width="0.0" x="5.357142857142858" y="3.3571428571428577"><y:LabelModel>
               <y:SmartNodeLabelModel distance="4.0"/>
             </y:LabelModel>
@@ -243,7 +243,7 @@ protein<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:Mo
             <y:GenericNode configuration="com.yworks.sbgn.Macromolecule">
               <y:Geometry height="35.0" width="70.0" x="949.364189360105" y="656.5195962733725"/>
               <y:Fill color="#EFF3FF" transparent="false"/>
-              <y:BorderStyle color="#000000" type="line" width="1.0"/>
+              <y:BorderStyle color="#555555" type="line" width="1.25"/>
               <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="11" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="16.964285714285715" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="center" visible="true" width="37.32142857142857" x="16.339285714285715" xml:space="preserve" y="9.017857142857142" hasText="true">Hsp70<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:ModelParameter><y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/></y:ModelParameter></y:NodeLabel>
               <y:StyleProperties>
                 <y:Property class="java.lang.Integer" name="com.yworks.sbgn.style.radius" value="10"/>
@@ -254,7 +254,7 @@ protein<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:Mo
         <y:GenericNode configuration="com.yworks.sbgn.Process">
           <y:Geometry height="10.714285714285715" width="10.714285714285715" x="1034.2451543841678" y="621.1885604329287"/>
           <y:Fill color="#FFFFFF" transparent="false"/>
-          <y:BorderStyle color="#000000" type="line" width="1.0"/>
+          <y:BorderStyle color="#555555" type="line" width="1.25"/>
           <y:NodeLabel alignment="center" autoSizePolicy="content" bottomInset="0" fontFamily="Dialog" fontSize="14" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" hasText="false" height="4.0" horizontalTextPosition="center" iconTextGap="4" leftInset="0" modelName="custom" rightInset="0" textColor="#000000" topInset="0" verticalTextPosition="center" visible="true" width="0.0" x="5.357142857142858" y="3.3571428571428577"><y:LabelModel>
               <y:SmartNodeLabelModel distance="4.0"/>
             </y:LabelModel>
@@ -268,7 +268,7 @@ protein<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:Mo
             <y:GenericNode configuration="com.yworks.sbgn.Macromolecule">
               <y:Geometry height="36.0" width="74.0" x="1008.1868915515513" y="717.6819707828051"/>
               <y:Fill color="#EFF3FF" transparent="false"/>
-              <y:BorderStyle color="#000000" type="line" width="1.0"/>
+              <y:BorderStyle color="#555555" type="line" width="1.25"/>
               <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="11" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="16.964285714285715" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="center" visible="true" width="29.857142857142858" x="22.07142857142857" xml:space="preserve" y="9.517857142857142" hasText="true">Sis1<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:ModelParameter><y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/></y:ModelParameter></y:NodeLabel>
               <y:NodeLabel alignment="center" autoSizePolicy="content" borderDistance="0.0" bottomInset="0" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" hasText="false" height="14.4" horizontalTextPosition="center" iconData="1" iconTextGap="0" leftInset="0" modelName="custom" rightInset="0" textColor="#000000" topInset="0" verticalTextPosition="center" visible="true" width="22.0" x="26.0" y="-7.2">
                 <y:LabelModel>
@@ -287,7 +287,7 @@ protein<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:Mo
         <y:GenericNode configuration="com.yworks.sbgn.Process">
           <y:Geometry height="10.714285714285715" width="10.714285714285715" x="1116.2461348490551" y="691.8582294646014"/>
           <y:Fill color="#FFFFFF" transparent="false"/>
-          <y:BorderStyle color="#000000" type="line" width="1.0"/>
+          <y:BorderStyle color="#555555" type="line" width="1.25"/>
           <y:NodeLabel alignment="center" autoSizePolicy="content" bottomInset="0" fontFamily="Dialog" fontSize="14" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" hasText="false" height="4.0" horizontalTextPosition="center" iconTextGap="4" leftInset="0" modelName="custom" rightInset="0" textColor="#000000" topInset="0" verticalTextPosition="center" visible="true" width="0.0" x="5.357142857142858" y="3.3571428571428577"><y:LabelModel>
               <y:SmartNodeLabelModel distance="4.0"/>
             </y:LabelModel>
@@ -301,7 +301,7 @@ protein<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:Mo
             <y:GenericNode configuration="com.yworks.sbgn.Macromolecule">
               <y:Geometry height="35.0" width="70.0" x="1144.4631571542498" y="889.1177129705799"/>
               <y:Fill color="#EFF3FF" transparent="false"/>
-              <y:BorderStyle color="#000000" type="line" width="1.0"/>
+              <y:BorderStyle color="#555555" type="line" width="1.25"/>
               <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="11" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="16.964285714285715" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="center" visible="true" width="59.714285714285715" x="5.142857142857142" xml:space="preserve" y="9.017857142857142" hasText="true">E3(San1)<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:ModelParameter><y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/></y:ModelParameter></y:NodeLabel>
               <y:StyleProperties>
                 <y:Property class="java.lang.Integer" name="com.yworks.sbgn.style.radius" value="10"/>
@@ -312,7 +312,7 @@ protein<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:Mo
         <y:GenericNode configuration="com.yworks.sbgn.Complex">
           <y:Geometry height="30.0" width="30.0" x="1179.9150092625237" y="807.0709790162017"/>
           <y:Fill color="#C6DBEF7F" transparent="false"/>
-          <y:BorderStyle color="#000000" type="line" width="1.0"/>
+          <y:BorderStyle color="#555555" type="line" width="1.25"/>
           <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="11" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="29.928571428571427" horizontalTextPosition="center" iconTextGap="4" modelName="internal" modelPosition="c" textColor="#000000" verticalTextPosition="bottom" visible="true" width="74.64285714285714" x="-22.32142857142857" xml:space="preserve" y="0.035714285714286476" hasText="true">nuclear
 proteasome</y:NodeLabel>
         </y:GenericNode>
@@ -321,7 +321,7 @@ proteasome</y:NodeLabel>
         <y:GenericNode configuration="com.yworks.sbgn.Operator">
           <y:Geometry height="25.0" width="25.0" x="1121.5885895173253" y="834.0646119564072"/>
           <y:Fill color="#FFFFFF" transparent="false"/>
-          <y:BorderStyle color="#000000" type="line" width="1.0"/>
+          <y:BorderStyle color="#555555" type="line" width="1.25"/>
           <y:NodeLabel alignment="center" autoSizePolicy="content" bottomInset="0" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="20.5" horizontalTextPosition="center" iconTextGap="4" leftInset="0" modelName="custom" rightInset="0" textColor="#000000" topInset="0" verticalTextPosition="center" visible="true" width="28.5" x="-1.75" xml:space="preserve" y="2.25" hasText="true">AND<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:ModelParameter><y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/></y:ModelParameter></y:NodeLabel>
         </y:GenericNode>
       </data>
@@ -329,7 +329,7 @@ proteasome</y:NodeLabel>
             <y:GenericNode configuration="com.yworks.sbgn.Macromolecule">
               <y:Geometry height="35.0" width="70.0" x="386.3641919958123" y="221.99935014985581"/>
               <y:Fill color="#EFF3FF" transparent="false"/>
-              <y:BorderStyle color="#000000" type="line" width="1.0"/>
+              <y:BorderStyle color="#555555" type="line" width="1.25"/>
               <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="11" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="16.964285714285715" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="center" visible="true" width="14.928571428571429" x="27.535714285714285" xml:space="preserve" y="9.017857142857142" hasText="true">E3<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:ModelParameter><y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/></y:ModelParameter></y:NodeLabel>
               <y:StyleProperties>
                 <y:Property class="java.lang.Integer" name="com.yworks.sbgn.style.radius" value="10"/>
@@ -342,7 +342,7 @@ proteasome</y:NodeLabel>
             <y:GenericGroupNode configuration="com.yworks.sbgn.Complex">
               <y:Geometry height="116.12500000000006" width="102.25" x="103.24818928611256" y="415.605374441516"/>
               <y:Fill color="#C6DBEF7F" transparent="false"/>
-              <y:BorderStyle color="#000000" type="line" width="1.0"/>
+              <y:BorderStyle color="#555555" type="line" width="1.25"/>
               <y:NodeLabel alignment="center" autoSizePolicy="content" borderDistance="0.0" fontFamily="Dialog" fontSize="11" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" hasText="true" height="16.964285714285715" horizontalTextPosition="center" iconTextGap="4" modelName="internal" modelPosition="b" textColor="#000000" verticalTextPosition="bottom" visible="true" width="119.42857142857143" x="-8.589285714285715" y="99.16071428571433">PolyQ aggregates</y:NodeLabel>
               <y:StyleProperties>
                 <y:Property class="java.lang.Integer" name="com.yworks.sbgn.style.radiusY" value="12"/>
@@ -372,7 +372,7 @@ proteasome</y:NodeLabel>
             <y:GenericNode configuration="com.yworks.sbgn.Macromolecule">
               <y:Geometry height="35.0" width="70.0" x="114.87318928611256" y="485.10537444151595"/>
               <y:Fill color="#EFF3FF" transparent="false"/>
-              <y:BorderStyle color="#000000" type="line" width="1.0"/>
+              <y:BorderStyle color="#555555" type="line" width="1.25"/>
               <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="11" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="29.928571428571427" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="center" visible="true" width="74.64285714285714" x="-2.3214285714285694" xml:space="preserve" y="2.5357142857142865" hasText="true">PolyQ
 aggregates<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:ModelParameter><y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/></y:ModelParameter></y:NodeLabel>
               <y:StyleProperties>
@@ -384,7 +384,7 @@ aggregates<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y
             <y:GenericNode configuration="com.yworks.sbgn.Macromolecule">
               <y:Geometry height="36.0" width="74.0" x="114.87318928611256" y="435.85537444151595"/>
               <y:Fill color="#EFF3FF" transparent="false"/>
-              <y:BorderStyle color="#000000" type="line" width="1.0"/>
+              <y:BorderStyle color="#555555" type="line" width="1.25"/>
               <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="11" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="16.964285714285715" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="center" visible="true" width="29.857142857142858" x="22.07142857142857" xml:space="preserve" y="9.517857142857142" hasText="true">Sis1<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:ModelParameter><y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/></y:ModelParameter></y:NodeLabel>
               <y:NodeLabel alignment="center" autoSizePolicy="content" borderDistance="0.0" bottomInset="0" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" hasText="false" height="14.4" horizontalTextPosition="center" iconData="1" iconTextGap="0" leftInset="0" modelName="custom" rightInset="0" textColor="#000000" topInset="0" verticalTextPosition="center" visible="true" width="22.0" x="26.0" y="-7.2">
                 <y:LabelModel>
@@ -403,7 +403,7 @@ aggregates<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y
             <y:GenericNode configuration="com.yworks.sbgn.Macromolecule">
               <y:Geometry height="35.0" width="70.0" x="570.8153616177069" y="650.9894693080497"/>
               <y:Fill color="#EFF3FF" transparent="false"/>
-              <y:BorderStyle color="#000000" type="line" width="1.0"/>
+              <y:BorderStyle color="#555555" type="line" width="1.25"/>
               <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="11" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="16.964285714285715" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="center" visible="true" width="59.714285714285715" x="5.142857142857142" xml:space="preserve" y="9.017857142857142" hasText="true">importin<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:ModelParameter><y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/></y:ModelParameter></y:NodeLabel>
               <y:StyleProperties>
                 <y:Property class="java.lang.Integer" name="com.yworks.sbgn.style.radius" value="10"/>
@@ -414,7 +414,7 @@ aggregates<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y
             <y:GenericNode configuration="com.yworks.sbgn.Macromolecule">
               <y:Geometry height="35.0" width="70.0" x="873.9224976631683" y="472.21740697892386"/>
               <y:Fill color="#EFF3FF" transparent="false"/>
-              <y:BorderStyle color="#000000" type="line" width="1.0"/>
+              <y:BorderStyle color="#555555" type="line" width="1.25"/>
               <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="11" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="16.964285714285715" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="center" visible="true" width="37.32142857142857" x="16.339285714285715" xml:space="preserve" y="9.017857142857142" hasText="true">Hsp70<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:ModelParameter><y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/></y:ModelParameter></y:NodeLabel>
               <y:StyleProperties>
                 <y:Property class="java.lang.Integer" name="com.yworks.sbgn.style.radius" value="10"/>
@@ -425,7 +425,7 @@ aggregates<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y
             <y:GenericNode configuration="com.yworks.sbgn.Macromolecule">
               <y:Geometry height="36.0" width="74.0" x="1212.6039819272858" y="528.622915542494"/>
               <y:Fill color="#EFF3FF" transparent="false"/>
-              <y:BorderStyle color="#000000" type="line" width="1.0"/>
+              <y:BorderStyle color="#555555" type="line" width="1.25"/>
               <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="11" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="16.964285714285715" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="center" visible="true" width="29.857142857142858" x="22.07142857142857" xml:space="preserve" y="9.517857142857142" hasText="true">Sis1<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:ModelParameter><y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/></y:ModelParameter></y:NodeLabel>
               <y:NodeLabel alignment="center" autoSizePolicy="content" borderDistance="0.0" bottomInset="0" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" hasText="false" height="14.4" horizontalTextPosition="center" iconData="1" iconTextGap="0" leftInset="0" modelName="custom" rightInset="0" textColor="#000000" topInset="0" verticalTextPosition="center" visible="true" width="22.0" x="26.0" y="-7.2">
                 <y:LabelModel>
@@ -444,7 +444,7 @@ aggregates<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y
             <y:GenericNode configuration="com.yworks.sbgn.Macromolecule">
               <y:Geometry height="35.0" width="70.0" x="201.08828493831618" y="364.07005421915164"/>
               <y:Fill color="#EFF3FF" transparent="false"/>
-              <y:BorderStyle color="#000000" type="line" width="1.0"/>
+              <y:BorderStyle color="#555555" type="line" width="1.25"/>
               <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="11" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="29.928571428571427" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="center" visible="true" width="74.64285714285714" x="-2.3214285714285694" xml:space="preserve" y="2.5357142857142865" hasText="true">PolyQ
 aggregates<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:ModelParameter><y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/></y:ModelParameter></y:NodeLabel>
               <y:StyleProperties>
@@ -456,7 +456,7 @@ aggregates<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y
         <y:GenericNode configuration="com.yworks.sbgn.Process">
           <y:Geometry height="10.714285714285715" width="10.714285714285715" x="236.50542575541112" y="437.8401961369092"/>
           <y:Fill color="#FFFFFF" transparent="false"/>
-          <y:BorderStyle color="#000000" type="line" width="1.0"/>
+          <y:BorderStyle color="#555555" type="line" width="1.25"/>
           <y:NodeLabel alignment="center" autoSizePolicy="content" bottomInset="0" fontFamily="Dialog" fontSize="14" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" hasText="false" height="4.0" horizontalTextPosition="center" iconTextGap="4" leftInset="0" modelName="custom" rightInset="0" textColor="#000000" topInset="0" verticalTextPosition="center" visible="true" width="0.0" x="5.357142857142858" y="3.3571428571428577"><y:LabelModel>
               <y:SmartNodeLabelModel distance="4.0"/>
             </y:LabelModel>
@@ -470,7 +470,7 @@ aggregates<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y
             <y:GenericNode configuration="com.yworks.sbgn.Macromolecule">
               <y:Geometry height="36.0" width="74.0" x="285.53308088949177" y="446.04901483552896"/>
               <y:Fill color="#EFF3FF" transparent="false"/>
-              <y:BorderStyle color="#000000" type="line" width="1.0"/>
+              <y:BorderStyle color="#555555" type="line" width="1.25"/>
               <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="11" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="16.964285714285715" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="center" visible="true" width="29.857142857142858" x="22.07142857142857" xml:space="preserve" y="9.517857142857142" hasText="true">Sis1<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:ModelParameter><y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/></y:ModelParameter></y:NodeLabel>
               <y:NodeLabel alignment="center" autoSizePolicy="content" borderDistance="0.0" bottomInset="0" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" hasText="false" height="14.4" horizontalTextPosition="center" iconData="1" iconTextGap="0" leftInset="0" modelName="custom" rightInset="0" textColor="#000000" topInset="0" verticalTextPosition="center" visible="true" width="22.0" x="26.0" y="-7.2">
                 <y:LabelModel>
@@ -489,7 +489,7 @@ aggregates<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y
         <y:GenericNode configuration="com.yworks.sbgn.Process">
           <y:Geometry height="10.714285714285715" width="10.714285714285715" x="398.6634100090847" y="446.62128156722446"/>
           <y:Fill color="#FFFFFF" transparent="false"/>
-          <y:BorderStyle color="#000000" type="line" width="1.0"/>
+          <y:BorderStyle color="#555555" type="line" width="1.25"/>
           <y:NodeLabel alignment="center" autoSizePolicy="content" bottomInset="0" fontFamily="Dialog" fontSize="14" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" hasText="false" height="4.0" horizontalTextPosition="center" iconTextGap="4" leftInset="0" modelName="custom" rightInset="0" textColor="#000000" topInset="0" verticalTextPosition="center" visible="true" width="0.0" x="5.357142857142858" y="3.3571428571428577"><y:LabelModel>
               <y:SmartNodeLabelModel distance="4.0"/>
             </y:LabelModel>
@@ -503,7 +503,7 @@ aggregates<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y
         <y:GenericNode configuration="com.yworks.sbgn.SimpleChemical">
           <y:Geometry height="40.0" width="40.0" x="488.11465903778645" y="252.24877252430213"/>
           <y:Fill color="#EFF3FF" transparent="false"/>
-          <y:BorderStyle color="#000000" type="line" width="1.0"/>
+          <y:BorderStyle color="#555555" type="line" width="1.25"/>
           <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="11" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="16.964285714285715" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="center" visible="true" width="14.928571428571429" x="12.535714285714285" xml:space="preserve" y="11.517857142857142" hasText="true">Ub<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:ModelParameter><y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/></y:ModelParameter></y:NodeLabel>
         </y:GenericNode>
       </data>
@@ -513,7 +513,7 @@ aggregates<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y
             <y:GenericGroupNode configuration="com.yworks.sbgn.Complex">
               <y:Geometry height="117.125" width="93.25" x="471.5642832933702" y="321.5344129262429"/>
               <y:Fill color="#C6DBEF7F" transparent="false"/>
-              <y:BorderStyle color="#000000" type="line" width="1.0"/>
+              <y:BorderStyle color="#555555" type="line" width="1.25"/>
               <y:NodeLabel alignment="center" autoSizePolicy="content" borderDistance="0.0" fontFamily="Dialog" fontSize="11" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" hasText="true" height="16.964285714285715" horizontalTextPosition="center" iconTextGap="4" modelName="internal" modelPosition="b" textColor="#000000" verticalTextPosition="bottom" visible="true" width="126.89285714285714" x="-16.82142857142857" y="100.16071428571428">misfolded protein</y:NodeLabel>
               <y:StyleProperties>
                 <y:Property class="java.lang.Integer" name="com.yworks.sbgn.style.radiusY" value="12"/>
@@ -543,7 +543,7 @@ aggregates<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y
             <y:GenericNode configuration="com.yworks.sbgn.Macromolecule">
               <y:Geometry height="35.0" width="70.0" x="483.1892832933702" y="343.7844129262429"/>
               <y:Fill color="#EFF3FF" transparent="false"/>
-              <y:BorderStyle color="#000000" type="line" width="1.0"/>
+              <y:BorderStyle color="#555555" type="line" width="1.25"/>
               <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="11" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="29.928571428571427" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="center" visible="true" width="67.17857142857143" x="1.4107142857142847" xml:space="preserve" y="2.5357142857142865" hasText="true">misfolded
 protein<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:ModelParameter><y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/></y:ModelParameter></y:NodeLabel>
               <y:NodeLabel alignment="center" autoSizePolicy="content" borderDistance="0.0" bottomInset="0" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" hasText="false" height="16.2" horizontalTextPosition="center" iconData="2" iconTextGap="0" leftInset="0" modelName="custom" rightInset="0" textColor="#000000" topInset="0" verticalTextPosition="center" visible="true" width="16.2" x="37.4" y="-8.1">
@@ -563,7 +563,7 @@ protein<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:Mo
             <y:GenericNode configuration="com.yworks.sbgn.Macromolecule">
               <y:Geometry height="35.0" width="70.0" x="483.1892832933702" y="392.0344129262429"/>
               <y:Fill color="#EFF3FF" transparent="false"/>
-              <y:BorderStyle color="#000000" type="line" width="1.0"/>
+              <y:BorderStyle color="#555555" type="line" width="1.25"/>
               <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="11" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="16.964285714285715" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="center" visible="true" width="37.32142857142857" x="16.339285714285715" xml:space="preserve" y="9.017857142857142" hasText="true">Hsp70<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:ModelParameter><y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/></y:ModelParameter></y:NodeLabel>
               <y:StyleProperties>
                 <y:Property class="java.lang.Integer" name="com.yworks.sbgn.style.radius" value="10"/>
@@ -576,7 +576,7 @@ protein<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:Mo
             <y:GenericGroupNode configuration="com.yworks.sbgn.Complex">
               <y:Geometry height="116.12499999999994" width="176.50000000000006" x="414.7785668122808" y="473.33425203218394"/>
               <y:Fill color="#C6DBEF7F" transparent="false"/>
-              <y:BorderStyle color="#000000" type="line" width="1.0"/>
+              <y:BorderStyle color="#555555" type="line" width="1.25"/>
               <y:NodeLabel alignment="center" autoSizePolicy="content" borderDistance="0.0" fontFamily="Dialog" fontSize="11" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" hasText="true" height="16.964285714285715" horizontalTextPosition="center" iconTextGap="4" modelName="internal" modelPosition="b" textColor="#000000" verticalTextPosition="bottom" visible="true" width="37.32142857142857" x="69.58928571428575" y="99.16071428571422">Hsp70</y:NodeLabel>
               <y:StyleProperties>
                 <y:Property class="java.lang.Integer" name="com.yworks.sbgn.style.radiusY" value="12"/>
@@ -606,7 +606,7 @@ protein<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:Mo
             <y:GenericNode configuration="com.yworks.sbgn.Macromolecule">
               <y:Geometry height="35.0" width="70.0" x="426.40356681228076" y="542.8342520321839"/>
               <y:Fill color="#EFF3FF" transparent="false"/>
-              <y:BorderStyle color="#000000" type="line" width="1.0"/>
+              <y:BorderStyle color="#555555" type="line" width="1.25"/>
               <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="11" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="16.964285714285715" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="center" visible="true" width="37.32142857142857" x="16.339285714285715" xml:space="preserve" y="9.017857142857142" hasText="true">Hsp70<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:ModelParameter><y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/></y:ModelParameter></y:NodeLabel>
               <y:StyleProperties>
                 <y:Property class="java.lang.Integer" name="com.yworks.sbgn.style.radius" value="10"/>
@@ -617,7 +617,7 @@ protein<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:Mo
             <y:GenericNode configuration="com.yworks.sbgn.Macromolecule">
               <y:Geometry height="35.0" width="70.0" x="509.6535668122808" y="542.8342520321839"/>
               <y:Fill color="#EFF3FF" transparent="false"/>
-              <y:BorderStyle color="#000000" type="line" width="1.0"/>
+              <y:BorderStyle color="#555555" type="line" width="1.25"/>
               <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="11" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="29.928571428571427" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="center" visible="true" width="67.17857142857143" x="1.4107142857142847" xml:space="preserve" y="2.5357142857142865" hasText="true">misfolded
 protein<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:ModelParameter><y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/></y:ModelParameter></y:NodeLabel>
               <y:StyleProperties>
@@ -629,7 +629,7 @@ protein<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:Mo
             <y:GenericNode configuration="com.yworks.sbgn.Macromolecule">
               <y:Geometry height="36.0" width="74.0" x="426.40356681228076" y="493.584252032184"/>
               <y:Fill color="#EFF3FF" transparent="false"/>
-              <y:BorderStyle color="#000000" type="line" width="1.0"/>
+              <y:BorderStyle color="#555555" type="line" width="1.25"/>
               <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="11" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="16.964285714285715" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="center" visible="true" width="29.857142857142858" x="22.07142857142857" xml:space="preserve" y="9.517857142857142" hasText="true">Sis1<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:ModelParameter><y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/></y:ModelParameter></y:NodeLabel>
               <y:NodeLabel alignment="center" autoSizePolicy="content" borderDistance="0.0" bottomInset="0" fontFamily="Dialog" fontSize="12" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" hasText="false" height="14.4" horizontalTextPosition="center" iconData="1" iconTextGap="0" leftInset="0" modelName="custom" rightInset="0" textColor="#000000" topInset="0" verticalTextPosition="center" visible="true" width="22.0" x="26.0" y="-7.2">
                 <y:LabelModel>
@@ -648,7 +648,7 @@ protein<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:Mo
         <y:GenericNode configuration="com.yworks.sbgn.Process">
           <y:Geometry height="10.714285714285715" width="10.714285714285715" x="623.4856111714724" y="605.3277931671727"/>
           <y:Fill color="#FFFFFF" transparent="false"/>
-          <y:BorderStyle color="#000000" type="line" width="1.0"/>
+          <y:BorderStyle color="#555555" type="line" width="1.25"/>
           <y:NodeLabel alignment="center" autoSizePolicy="content" bottomInset="0" fontFamily="Dialog" fontSize="14" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" hasText="false" height="4.0" horizontalTextPosition="center" iconTextGap="4" leftInset="0" modelName="custom" rightInset="0" textColor="#000000" topInset="0" verticalTextPosition="center" visible="true" width="0.0" x="5.357142857142858" y="3.3571428571428577"><y:LabelModel>
               <y:SmartNodeLabelModel distance="4.0"/>
             </y:LabelModel>
@@ -662,7 +662,7 @@ protein<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:Mo
         <y:GenericNode configuration="com.yworks.sbgn.Process">
           <y:Geometry height="10.714285714285715" width="10.714285714285715" x="324.2136949226627" y="260.51105064265823"/>
           <y:Fill color="#FFFFFF" transparent="false"/>
-          <y:BorderStyle color="#000000" type="line" width="1.0"/>
+          <y:BorderStyle color="#555555" type="line" width="1.25"/>
           <y:NodeLabel alignment="center" autoSizePolicy="content" bottomInset="0" fontFamily="Dialog" fontSize="14" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" hasText="false" height="4.0" horizontalTextPosition="center" iconTextGap="4" leftInset="0" modelName="custom" rightInset="0" textColor="#000000" topInset="0" verticalTextPosition="center" visible="true" width="0.0" x="5.357142857142858" y="3.3571428571428577"><y:LabelModel>
               <y:SmartNodeLabelModel distance="4.0"/>
             </y:LabelModel>
@@ -676,7 +676,7 @@ protein<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:Mo
         <y:GenericNode configuration="com.yworks.sbgn.Complex">
           <y:Geometry height="36.0" width="68.08837890625" x="177.1841333020095" y="256.87267866973554"/>
           <y:Fill color="#C6DBEF7F" transparent="false"/>
-          <y:BorderStyle color="#000000" type="line" width="1.0"/>
+          <y:BorderStyle color="#555555" type="line" width="1.25"/>
           <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="11" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="29.928571428571427" horizontalTextPosition="center" iconTextGap="4" modelName="internal" modelPosition="c" textColor="#000000" verticalTextPosition="bottom" visible="true" width="74.64285714285714" x="-3.2772391183035694" xml:space="preserve" y="3.0357142857142865" hasText="true">cytosolic
 proteasome</y:NodeLabel>
         </y:GenericNode>
@@ -687,7 +687,7 @@ proteasome</y:NodeLabel>
             <y:GenericGroupNode configuration="com.yworks.sbgn.Complex">
               <y:Geometry height="106.5" width="93.25" x="318.2436668979196" y="304.6322669899152"/>
               <y:Fill color="#C6DBEF7F" transparent="false"/>
-              <y:BorderStyle color="#000000" type="line" width="1.0"/>
+              <y:BorderStyle color="#555555" type="line" width="1.25"/>
               <y:NodeLabel alignment="center" autoSizePolicy="content" borderDistance="0.0" fontFamily="Dialog" fontSize="11" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" hasText="true" height="16.964285714285715" horizontalTextPosition="center" iconTextGap="4" modelName="internal" modelPosition="b" textColor="#000000" verticalTextPosition="bottom" visible="true" width="126.89285714285714" x="-16.82142857142857" y="89.53571428571428">misfolded protein</y:NodeLabel>
               <y:StyleProperties>
                 <y:Property class="java.lang.Integer" name="com.yworks.sbgn.style.radiusY" value="12"/>
@@ -717,7 +717,7 @@ proteasome</y:NodeLabel>
             <y:GenericNode configuration="com.yworks.sbgn.Macromolecule">
               <y:Geometry height="35.0" width="70.0" x="329.8686668979196" y="316.2572669899152"/>
               <y:Fill color="#EFF3FF" transparent="false"/>
-              <y:BorderStyle color="#000000" type="line" width="1.0"/>
+              <y:BorderStyle color="#555555" type="line" width="1.25"/>
               <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="11" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="29.928571428571427" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="center" visible="true" width="67.17857142857143" x="1.4107142857142847" xml:space="preserve" y="2.5357142857142865" hasText="true">misfolded
 protein<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:ModelParameter><y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/></y:ModelParameter></y:NodeLabel>
               <y:StyleProperties>
@@ -729,7 +729,7 @@ protein<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:Mo
             <y:GenericNode configuration="com.yworks.sbgn.Macromolecule">
               <y:Geometry height="35.0" width="70.0" x="329.8686668979196" y="364.5072669899152"/>
               <y:Fill color="#EFF3FF" transparent="false"/>
-              <y:BorderStyle color="#000000" type="line" width="1.0"/>
+              <y:BorderStyle color="#555555" type="line" width="1.25"/>
               <y:NodeLabel alignment="center" autoSizePolicy="content" fontFamily="Dialog" fontSize="11" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="16.964285714285715" horizontalTextPosition="center" iconTextGap="4" modelName="custom" textColor="#000000" verticalTextPosition="center" visible="true" width="37.32142857142857" x="16.339285714285715" xml:space="preserve" y="9.017857142857142" hasText="true">Hsp70<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:ModelParameter><y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/></y:ModelParameter></y:NodeLabel>
               <y:StyleProperties>
                 <y:Property class="java.lang.Integer" name="com.yworks.sbgn.style.radius" value="10"/>
@@ -740,7 +740,7 @@ protein<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:Mo
         <y:GenericNode configuration="com.yworks.sbgn.Process">
           <y:Geometry height="10.714285714285715" width="10.714285714285715" x="273.2187634422346" y="311.32174721282655"/>
           <y:Fill color="#FFFFFF" transparent="false"/>
-          <y:BorderStyle color="#000000" type="line" width="1.0"/>
+          <y:BorderStyle color="#555555" type="line" width="1.25"/>
           <y:NodeLabel alignment="center" autoSizePolicy="content" bottomInset="0" fontFamily="Dialog" fontSize="14" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" hasText="true" height="20.5" horizontalTextPosition="center" iconTextGap="4" leftInset="0" modelName="custom" rightInset="0" textColor="#000000" topInset="0" verticalTextPosition="center" visible="true" width="9.5" x="0.6071428571428577" y="-4.892857142857142">?<y:LabelModel>
               <y:SmartNodeLabelModel distance="4.0"/>
             </y:LabelModel>
@@ -754,7 +754,7 @@ protein<y:LabelModel><y:SmartNodeLabelModel distance="4.0"/></y:LabelModel><y:Mo
         <y:GenericNode configuration="com.yworks.sbgn.Process">
           <y:Geometry height="10.714285714285715" width="10.714285714285715" x="441.01791090495345" y="292.7295846535714"/>
           <y:Fill color="#FFFFFF" transparent="false"/>
-          <y:BorderStyle color="#000000" type="line" width="1.0"/>
+          <y:BorderStyle color="#555555" type="line" width="1.25"/>
           <y:NodeLabel alignment="center" autoSizePolicy="content" bottomInset="0" fontFamily="Dialog" fontSize="14" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" hasText="false" height="4.0" horizontalTextPosition="center" iconTextGap="4" leftInset="0" modelName="custom" rightInset="0" textColor="#000000" topInset="0" verticalTextPosition="center" visible="true" width="0.0" x="5.357142857142858" y="3.3571428571428577"><y:LabelModel>
               <y:SmartNodeLabelModel distance="4.0"/>
             </y:LabelModel>
