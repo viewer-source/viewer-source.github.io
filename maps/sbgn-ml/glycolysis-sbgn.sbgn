@@ -667,6 +667,10 @@
         <state value=""/>
         <bbox x="116.5" y="326.5" w="15" h="15"/>
       </glyph>
+      <glyph class="state variable" id="glyph_6_sv1">
+        <state value=""/>
+        <bbox x="96.5" y="366.5" w="15" h="15"/>
+      </glyph>
     </glyph>
     <glyph class="macromolecule" id="glyph_7">
       <bbox x="72" y="188" w="80" h="40"/>
