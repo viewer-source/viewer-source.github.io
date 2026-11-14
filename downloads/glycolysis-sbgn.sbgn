@@ -641,10 +641,10 @@
       </glyph>
     </glyph>
     <glyph class="macromolecule" id="glyph_3">
-      <bbox x="200" y="108" w="80" h="40"/>
+      <bbox x="306" y="120" w="80" h="40"/>
       <glyph class="state variable" id="glyph_3_sv0">
         <state value=""/>
-        <bbox x="239.7" y="100.5" w="15" h="15"/>
+        <bbox x="345.7" y="112.5" w="15" h="15"/>
       </glyph>
     </glyph>
     <glyph class="macromolecule" id="glyph_4">
@@ -655,7 +655,7 @@
       </glyph>
     </glyph>
     <glyph class="macromolecule" id="glyph_5">
-      <bbox x="200" y="108" w="80" h="40"/>
+      <bbox x="246" y="177" w="80" h="40"/>
     </glyph>
     <arc class="production" id="e0" source="n4.2" target="n6">
       <start x="876" y="506.0"/>
