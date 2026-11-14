@@ -97,7 +97,7 @@
       if (i < 0) { warn('A state variable goes on a macromolecule: click on one.'); return; }
       var b = boxOf(i), dx = (P[0] - b[0] - b[2] / 2) / b[2], dy = (P[1] - b[1] - b[3] / 2) / b[3], r2 = function (v) { return Math.round(Math.max(-0.5, Math.min(0.5, v)) * 100) / 100; };
       var side = (0.5 - Math.abs(dx)) * b[2] < (0.5 - Math.abs(dy)) * b[3];   // a left or right side nearer than the top or bottom
-      var rx = side ? (dx < 0 ? -0.5 : 0.5) : r2(dx), ry = side ? r2(dy) : (dy < 0 ? -0.5 : 0.5);   // the nearest point of its border
+      var rx = side ? (dx < 0 ? -0.5 : 0.5) : r2(dx), ry = side ? r2(dy) : (dy <= 0 ? -0.5 : 0.5);   // on the middle line: the top, where state variables usually sit   // the nearest point of its border
       var id = nodes2[i].id, j = svList(i).length;
       remember(false); text = sbJs.state(text, id, '', rx, ry); made(id);
       typeIn(id, j, true);
