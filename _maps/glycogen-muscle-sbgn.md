@@ -14,14 +14,16 @@ height: 1686
 scale: 1
 annotation: "/atlas-data/glycogen-muscle-sbgn.json"
 image_error: ""
-v: "9227378b05"
+v: "531acd9dd2"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/downloads/glycogen-muscle-sbgn.sbgn"}, {"label": "SVG", "url": "/downloads/glycogen-muscle-sbgn.svg"}]
-src: "16e931ccf9e00db394f33aa0ba4235663584bb0b"
+src: "c3b186f5c50772e620107891a216441693f50e5d"
 edit_path: "maps/sbgn-ml/glycogen-muscle-sbgn.sbgn"
 edit_base: "/atlas-data/glycogen-muscle-sbgn.graphml"
 ---
+Edited in the viewer: drawn from its edited copy, no longer written from the GraphML map.
+
 ## Description
 
 Intracellular glycogen stores contribute to blood-glucose homeostasis during fasting, provide energy for muscle contraction and support a broad range of cellular activities in many tissues. Glycogen synthase and glycogen phosphorylase control glycogen synthesis and breakdown, respectively. Glycogen phosphorylases, including the liver, muscle and brain forms PYGL, PYGM and PYGB, catalyse glycogen breakdown to glucose-1-phosphate.
