@@ -1,0 +1,120 @@
+---
+layout: default
+title: Guide
+permalink: /guide/
+sitemap: false
+---
+
+<!-- the user guide (user, 2026-11-14: "at least set some kind of outline for user guide. Some simple initial things"):
+     an outline with short first text; sections marked "to write" wait. Uses the words of the viewer's CLAUDE.md
+     (port, visual end, bend point, box). The editor's how-to stays in editor/src/help.js; this page points to it. -->
+<style>
+  #main a, #main a:hover, #main a:active { color: #1c47a9; }
+  .g-toc { columns: 2; column-gap: 32px; font-size: 14px; margin: 8px 0 20px; padding-left: 20px; }
+  .g-todo { color: #999; font-size: 13px; }
+  .g-keys { border-collapse: collapse; font-size: 14px; margin: 8px 0 16px; }
+  .g-keys td { padding: 5px 18px 5px 0; border-bottom: 1px solid #eee; vertical-align: top; }
+  .g-keys td:first-child { white-space: nowrap; color: #555; }
+  @media (max-width: 600px) { .g-toc { columns: 1; } }
+</style>
+
+{% include docs-nav.html here="guide" %}
+
+<p>A map viewer with an edit mode: maps from yEd (GraphML), CellDesigner and SBGN-ML shown alike, each clickable for what
+is known about a molecule or reaction, and their layout improved in the page. This guide is an outline; sections marked
+<span class="g-todo">to write</span> come later. How it is built: <a href="/architecture/">Architecture</a>.</p>
+
+<ol class="g-toc">
+  <li><a href="#maps">Finding a map</a></li>
+  <li><a href="#moving">Moving round a map</a></li>
+  <li><a href="#clicking">What a click shows</a></li>
+  <li><a href="#downloads">Downloads and other viewers</a></li>
+  <li><a href="#menu">The right-click menu</a></li>
+  <li><a href="#settings">Settings</a></li>
+  <li><a href="#legend">Legend</a></li>
+  <li><a href="#editing">Editing the layout</a></li>
+  <li><a href="#saving">Where edits are kept</a></li>
+  <li><a href="#own">Your own maps</a></li>
+  <li><a href="#keys">Keys</a></li>
+  <li><a href="#site">A site of your own</a></li>
+</ol>
+
+<h2 id="maps">1. Finding a map</h2>
+<p>The list on the left holds the maps in groups; a click on a group's name opens or closes it. A small letter before a
+name gives the map's format: C for CellDesigner, S for SBGN-ML, none for GraphML. Search, in the row of tabs above the
+list, filters the list as you type and finds a name in every map.</p>
+<p class="g-todo">To write: search results stepping through a map; reordering the list (development mode, Shift with a drag).</p>
+
+<h2 id="moving">2. Moving round a map</h2>
+<p>A drag moves the map; two-finger scrolling, a pinch, or Ctrl or Cmd with the wheel zooms. The buttons over the map
+zoom out and in, switch between the whole map and reading size, and go full screen (with Shift: the whole page, list
+and tools included). The separators between the list, the map and the panel are dragged to give the map more room.</p>
+<p class="g-todo">To write: Shift with the wheel to scroll the page; narrow windows and phones.</p>
+
+<h2 id="clicking">3. What a click shows</h2>
+<p>A click on a molecule, complex or reaction opens its panel: names, function, location, cross-references and the
+references of a reaction. A second click closes it.</p>
+<p class="g-todo">To write: where the panel's data come from; Annotations on the left or right.</p>
+
+<h2 id="downloads">4. Downloads and other viewers</h2>
+<p>Downloads gives the map's files: its source (GraphML or CellDesigner), the other formats where the site has them
+(SBGN-ML, SBML), the picture as SVG and PNG, and the annotation table. Under them, Open in Newt or MINERVA where the
+map is there too. A download made while or after editing gives the map as it is on screen.</p>
+
+<h2 id="menu">5. The right-click menu</h2>
+<p>A right click on the map gives shortcuts: switch to edit, download the source, SVG or PNG, open in Newt or MINERVA,
+copy the picture as PNG or SVG (for slides or a paper). Over a molecule: show its annotation, copy its name, find it in
+all maps. Shift with the right click gives the browser's own menu.</p>
+
+<h2 id="settings">6. Settings</h2>
+<p>Kept in your browser, for every map:</p>
+<ul>
+  <li><b>Groups in the list</b>: open all or close all.</li>
+  <li><b>Format letters</b>: the C and S before the names, shown or hidden.</li>
+  <li><b>Map size</b>: what 100% means, from 75 to 150%.</li>
+  <li><b>Map colours</b>: the colours in the map's file, or the viewer's Default.</li>
+  <li><b>Source</b>: on a map that also has an SBGN-ML file, the map's own file or that SBGN-ML (the S key flips it).</li>
+  <li><b>Association, dissociation</b>: SBGN's circles or the generic process square.</li>
+  <li><b>Editing</b>: Layout (moves only) or Full (a line's end may also go to another node).</li>
+  <li><b>Icons</b>: the tabs on top of the list or in a column on the left.</li>
+</ul>
+
+<h2 id="legend">7. Legend</h2>
+<p class="g-todo">To write: the SBGN and CellDesigner legends, and which one a map opens on.</p>
+
+<h2 id="editing">8. Editing the layout</h2>
+<p>The Edit tab (the pencil, or the E key) turns the map shown into an editable one, as it is on screen. The editor is
+for the layout: nodes, bend points and ports moved, compartments resized, the map put on the grid, complexes packed. It
+adds and removes nothing in the map's content. The "?" after the tools, or the ? key, opens the full how-to.</p>
+<p class="g-todo">To write: selecting; guides and snap lines; ports and visual ends; processes and their antennas;
+CellDesigner reactions (Make main reactant or product); SBGN-ML maps; how this differs from yEd.</p>
+
+<h2 id="saving">9. Where edits are kept</h2>
+<ul>
+  <li><b>With a GitHub token</b> for the site, pasted once in the Edit window: each change is saved to the site by
+  itself a few seconds after the last move; the site shows it about two minutes later.</li>
+  <li><b>Without a token</b>: changes are kept in this browser only, and lost if its site data is cleared. Choose a
+  folder on your computer (Chrome, Edge) and each change is also written there as the map's file.</li>
+</ul>
+<p class="g-todo">To write: making the token (a recipe with every field); a conflict with a newer version on GitHub.</p>
+
+<h2 id="own">10. Your own maps</h2>
+<p>Where the Edit tab is, a right click on the list offers Add map and Add group: a GraphML or CellDesigner file from
+your computer, shown and edited as any map. A file dropped on the page is added too. Without a token it stays in this
+browser (and your folder); with one it goes to the site.</p>
+
+<h2 id="keys">11. Keys</h2>
+<table class="g-keys">
+  <tr><td>E</td><td>edit mode on or off</td></tr>
+  <tr><td>S</td><td>the map's file or its SBGN-ML (Settings, Source)</td></tr>
+  <tr><td>?</td><td>how to edit, while editing</td></tr>
+  <tr><td>Ctrl or Cmd Z, Y</td><td>undo, redo</td></tr>
+  <tr><td>Ctrl or Cmd S</td><td>save at once</td></tr>
+  <tr><td>Ctrl or Cmd A</td><td>select all</td></tr>
+  <tr><td>Arrow keys</td><td>move what is selected by 1, with Shift by 10</td></tr>
+  <tr><td>Esc</td><td>clear the selection, close a window</td></tr>
+</table>
+
+<h2 id="site">12. A site of your own</h2>
+<p class="g-todo">To write: giving a site the viewer (<code>copy-to-site.sh</code>), its two modes (presentation and
+development), the maps folder and the build.</p>
