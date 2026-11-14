@@ -92,28 +92,28 @@
       remember(false); text = t2; made(id);
     }
     function macroAt(P) { return innermost(P, function (n) { return n.shape.kind === 'Macromolecule' && n.el.getAttribute('yfiles.foldertype') !== 'group'; }); }
-    // the places a state variable snaps to on its node's border: each side's middle, quarters and corners, as [rx, ry]
-    var SNAPS = (function () { var out = [], q = [-0.5, -0.25, 0, 0.25, 0.5]; q.forEach(function (v) { out.push([v, -0.5], [v, 0.5]); if (Math.abs(v) < 0.5) out.push([-0.5, v], [0.5, v]); }); return out; })();
-    function border(i, P) {   // P put on node i's border: [rx, ry], snapped to a place within 8 screen pixels
-      var b = boxOf(i), dx = (P[0] - b[0] - b[2] / 2) / b[2], dy = (P[1] - b[1] - b[3] / 2) / b[3], cl = function (v) { return Math.max(-0.5, Math.min(0.5, v)); };
-      var side = (0.5 - Math.abs(dx)) * b[2] < (0.5 - Math.abs(dy)) * b[3];   // a left or right side nearer than the top or bottom
-      var r = side ? [dx < 0 ? -0.5 : 0.5, cl(dy)] : [cl(dx), dy <= 0 ? -0.5 : 0.5], best = 8 / V.z;
-      SNAPS.forEach(function (q) { var d = Math.hypot((q[0] - r[0]) * b[2], (q[1] - r[1]) * b[3]); if (d < best) { best = d; r = q.slice(); } });
-      return [Math.round(r[0] * 1000) / 1000, Math.round(r[1] * 1000) / 1000];
+    // the places a state variable sits on its node's border, as [rx, ry] (user, 2026-11-14: "it's like with ports"):
+    // the corners, each side's middle and the points between them; never marked, a drag always lands on the nearest.
+    // ORDER is how new ones fill them, the most used first: the top's middle, right and left of it, the sides' middles,
+    // the corners, then the rest
+    var ORDER = [[0, -0.5], [0.25, -0.5], [-0.25, -0.5], [0.5, 0], [-0.5, 0], [0.5, -0.5], [-0.5, -0.5], [0.5, 0.5], [-0.5, 0.5],
+      [0, 0.5], [0.25, 0.5], [-0.25, 0.5], [0.5, -0.25], [0.5, 0.25], [-0.5, -0.25], [-0.5, 0.25]];
+    function border(i, P) {   // the place nearest P
+      var b = boxOf(i), best = null, d0 = Infinity;
+      ORDER.forEach(function (q) { var d = Math.hypot(b[0] + (0.5 + q[0]) * b[2] - P[0], b[1] + (0.5 + q[1]) * b[3] - P[1]); if (d < d0) { d0 = d; best = q; } });
+      return best.slice();
     }
     window.m2EditAddState = function () {   // the right-click menu's Add state variable over a macromolecule
       var P = rclick;
       if (!palOn() || !P || svAt(P) || macroAt(P) < 0) return null;
       return function () { makeState(P); };
     };
-    function makeState(P) {   // an empty state variable on the free place nearest the click (user: "it kind of snaps to one of the places if available"), selected to be dragged
+    function makeState(P) {   // an empty state variable on the first free place in ORDER (user: "anywhere within the shape ... first in the middle"), selected to be dragged
       var i = macroAt(P);
       if (i < 0) return;
-      var b = boxOf(i), have = svList(i), want = border(i, P), free = SNAPS.filter(function (q) {
+      var b = boxOf(i), have = svList(i), r = ORDER.filter(function (q) {
         return !have.some(function (h) { return Math.hypot(b[0] + (0.5 + q[0]) * b[2] - h[1][0], b[1] + (0.5 + q[1]) * b[3] - h[1][1]) < Math.max(18, h[2][0]); });
-      });
-      var dist = function (q) { return Math.hypot((q[0] - want[0]) * b[2], (q[1] - want[1]) * b[3]); };
-      var r = free.length ? free.sort(function (x, y) { return dist(x) - dist(y); })[0] : want;
+      })[0] || ORDER[0];
       var id = nodes2[i].id, j = have.length;
       remember(false); text = sbJs.state(text, id, '', r[0], r[1]); made(id);
       selN = []; svSel = { id: id, j: j }; paint();
@@ -206,7 +206,7 @@
     }
 
     // a state variable selected (user, 2026-11-14): a click selects it, a drag moves it along its node's border, snapping
-    // to the sides' middles, quarters and corners; a click on it selected opens its text; Delete or the right-click menu
+    // to the nearest of its places (ORDER) only; a click on it selected opens its text; Delete or the right-click menu
     // deletes it
     var svSel = null, svDrag = null, ghost = null;   // svSel: { id, j }
     function svNode() { if (!svSel) return -1; var i = nodes2.findIndex(function (n) { return n.id === svSel.id; }); return i >= 0 && svList(i)[svSel.j] ? i : -1; }

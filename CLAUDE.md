@@ -546,10 +546,13 @@ says "the workbench", "the converter's repository", "a private repository".
   (user: no cross); a drag on the map still moves it. A macromolecule at the map's protein size and its proteins' render
   style, centred on the click (on the grid with Snap), in the innermost compartment there, not into a complex, unnamed:
   nothing asks for a name when made (user: "I will name when I want to name"). State variables (user, the same day:
-  "Auxiliary units - remove this section, to be added via right click"): Add state variable in the right-click menu over
-  a macromolecule puts an empty one on the free place of its border nearest the click (the places: each side's middle,
-  quarters and corners), selected; a click selects one (four black squares at its corners), a drag moves it along the
-  border, snapping to those places within 8 screen pixels (a ghost follows, the map drawn again on release), a click on
+  "Auxiliary units - remove this section, to be added via right click"): Add state variable in the right-click menu anywhere over
+  a macromolecule puts an empty one on the first free place in a fixed order (user: "first it would be dropped down in
+  the middle"): the top's middle, right and left of it, the right and left sides' middles, the corners, then the bottom
+  and the sides' other places; selected. Its places are like ports (user: "it's like with ports ... simply like it's
+  traveling on a grid"): the corners, each side's middle and the points halfway between, never marked; a click selects
+  one (four black squares at its corners), a drag moves it to the nearest place only (a ghost follows, the map drawn
+  again on release); the file keeps its coordinates as before. A click on
   it selected opens its text. Text in place (user: "simple cursor where I need"): a double click on a named entity or a
   state variable, or that click, puts a field over the text in the glyph's own fill, text colour and font size, no
   frame, the cursor at the end, nothing selected; Enter or a click elsewhere keeps it (P, or P@S505), Esc not. Delete
