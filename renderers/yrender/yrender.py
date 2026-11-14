@@ -33,7 +33,8 @@
 #    was drawn). Port two: where every other arc leaving the hub starts (a product, a gate's output; with nothing
 #    coming in, each takes the nearer port: reversible). The axis runs from the mean of the arcs' near points coming
 #    in to that of those going out (with nothing coming in, along the leaving arcs' spread), horizontal unless
-#    steeper, as the converter puts SBGN-ML's ports; ports the map gives (an arc's end outside the glyph, as the
+#    steeper (a gate: from its centre to what it controls, user 2026-11-14: its output turned back otherwise), as the
+#    converter puts SBGN-ML's ports; ports the map gives (an arc's end outside the glyph, as the
 #    converter keeps SBGN-ML's own: each tool's antenna length, user 2026-11-14) are drawn where they are. Bends lying on a stick (the bend points that drew antennas
 #    before) are left out; modifiers end on the glyph's outline as before; arc labels keep yEd's anchor point
 #  - UnspecifiedEntity drawn as an ellipse, dashed lines as dashes 6 and gaps 2 times the line width
@@ -560,7 +561,10 @@ class Map:
                 continue
             x, y, w, h = n['geo']; cx, cy = x + w / 2, y + h / 2
             I, O = ins.get(nid, []), outs.get(nid, [])
-            if I:  # from what comes in to what goes out
+            if n['kind'] == 'Operator' and O:  # a gate faces what it controls (user, 2026-11-14), its inputs behind it
+                a, b = (cx, cy), mean(O)
+                vx, vy = b[0] - a[0], b[1] - a[1]
+            elif I:  # from what comes in to what goes out
                 a = mean(I); b = mean(O) if O else (cx, cy)
                 vx, vy = b[0] - a[0], b[1] - a[1]
             elif len(O) > 1:  # nothing comes in (reversible): along the spread of the leaving arcs

@@ -412,7 +412,8 @@
       if (!HUBS.has(n.kind)) return;
       var x = n.geo[0], y = n.geo[1], w = n.geo[2], h = n.geo[3], cx = x + w / 2, cy = y + h / 2;
       var I = ins[nid] || [], O = outs[nid] || [], vx, vy;
-      if (I.length) { var a = mean(I), b = O.length ? mean(O) : [cx, cy]; vx = b[0] - a[0]; vy = b[1] - a[1]; }
+      if (n.kind === 'Operator' && O.length) { var go = mean(O); vx = go[0] - cx; vy = go[1] - cy; }   // a gate faces what it controls
+      else if (I.length) { var a = mean(I), b = O.length ? mean(O) : [cx, cy]; vx = b[0] - a[0]; vy = b[1] - a[1]; }
       else if (O.length > 1) { vx = spread(O, 0); vy = spread(O, 1); }
       else if (O.length) { vx = O[0][0] - cx; vy = O[0][1] - cy; }
       else { vx = 1; vy = 0; }

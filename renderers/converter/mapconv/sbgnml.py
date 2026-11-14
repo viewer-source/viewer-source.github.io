@@ -180,6 +180,8 @@ def write(diagram, layout='advanced', newt=False):
             continue
         mean = lambda q, d: (sum(x for x, _ in q) / len(q), sum(y for _, y in q) / len(q)) if q else d
         a, b = mean(ins, (cx, cy)), mean(outs, (cx, cy))
+        if p in ops and outs:  # a gate faces what it controls (user, 2026-11-14; the viewer's renderer the same)
+            a = (cx, cy)
         if a == b:  # reversible (products on both sides): the line through the first two
             q = outs[:2] if len(outs) > 1 else [(cx - 1, cy), (cx + 1, cy)]
             a, b = q[0], q[1]
