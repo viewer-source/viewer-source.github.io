@@ -335,9 +335,9 @@
         iconsOf(id).map(function (q, k) { return svXml(id, k, q, n.box, ind0 + '  '); }).join('') + '\n' + ind0 + '</' + pre + 'glyph>';
       if (fill) {   // its colour: a style of that fill and of its font, the one most of the map's glyphs of its class use (defaults' choice)
         St = St || styles(S);
-        var fs = L.main ? F(L.main.getAttribute('fontSize')) : null, mac = function (x) { return x.ids.filter(function (i) { return S.glyph[i] && S.glyph[i].el.getAttribute('class') === cls; }).length; };
+        var fs = L.main ? F(L.main.getAttribute('fontSize')) : null, kin = function (x) { return x.ids.filter(function (i) { return S.glyph[i] && S.glyph[i].el.getAttribute('class') === cls; }).length; };
         var cand = St.filter(function (x) { return x.plain && x.fill === fill && (x.font == null || x.font === fs); });
-        cand.sort(function (a, b) { return (b.font === fs) - (a.font === fs) || mac(b) - mac(a); });
+        cand.sort(function (a, b) { return (b.font === fs) - (a.font === fs) || kin(b) - kin(a); });
         if (cand[0]) joinTo.set(cand[0], (joinTo.get(cand[0]) || []).concat(id));
       }
     });
@@ -582,14 +582,15 @@
     T.ed.push([from, to, esc(text)]);
     return T.text();
   }
-  function smallOf(t, id, opt) {   // the font size the node's icons have, where it is not the usual 10
-    var G = gml(t, opt), L = G.node[id] && labelsOf(G, id), f = L && L.icons.map(function (q) { return q[1].font; }).filter(function (x) { return x && x !== '10'; })[0];
+  function smallOf(t, id, opt, G) {   // the font size the node's icons have, where it is not the usual 10 (G: t read already)
+    G = G || gml(t, opt);
+    var L = G.node[id] && labelsOf(G, id), f = L && L.icons.map(function (q) { return q[1].font; }).filter(function (x) { return x && x !== '10'; })[0];
     return f ? F(f) : null;
   }
   function state(t, id, value, rx, ry, opt) {
-    var n0 = gml(t, opt).node[id];
-    if (!n0 || !/Macromolecule$/.test(n0.geo.parentNode.getAttribute('configuration') || '')) return t;   // the house profile: state variables on macromolecules only
-    var r = svIcon(t, value, opt, smallOf(t, id, opt)); t = r[1];
+    var G0 = gml(t, opt), n0 = G0.node[id];
+    if (!n0 || !/Macromolecule$/.test(n0.geo.parentNode.getAttribute('configuration') || '')) return t;   // the house profile: state variables on macromolecules only (none on a simple chemical)
+    var r = svIcon(t, value, opt, smallOf(t, id, opt, G0)); t = r[1];
     var G = gml(t, opt), n = G.node[id], L = n && labelsOf(G, id);
     if (!L || !L.main) return t;
     var svs = L.icons.filter(function (q) { return q[1].kind === 'StateVariable'; }), after = svs.length ? svs[svs.length - 1][0] : L.main;

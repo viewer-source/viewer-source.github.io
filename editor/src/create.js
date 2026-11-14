@@ -94,9 +94,12 @@
       catch (err) { warn('The ' + cls + ' could not be added: ' + (err && err.message || err) + '.'); return; }
       remember(false); text = t2; made(id);
     }
-    var MADE = /^(Macromolecule|SimpleChemical)$/;   // the glyphs the palette makes, which Delete removes
-    function madeAt(P) { return innermost(P, function (n) { return MADE.test(n.shape.kind) && n.el.getAttribute('yfiles.foldertype') !== 'group'; }); }
-    function macroAt(P) { return innermost(P, function (n) { return n.shape.kind === 'Macromolecule' && n.el.getAttribute('yfiles.foldertype') !== 'group'; }); }
+    // the kinds of glyph the palette makes, and Delete removes (the map's own ones too)
+    function isMade(n) { return /^(Macromolecule|SimpleChemical)$/.test(n.shape.kind) && n.el.getAttribute('yfiles.foldertype') !== 'group'; }
+    function madeAt(P) { return innermost(P, isMade); }
+    // the macromolecule under P, only when it is the innermost such glyph there: a simple chemical lying over a protein
+    // takes the right click (found by the review: Add state variable went to the protein under it)
+    function macroAt(P) { var i = madeAt(P); return i >= 0 && nodes2[i].shape.kind === 'Macromolecule' ? i : -1; }
     // the places a state variable sits on its node's border, as [rx, ry] (user, 2026-11-14: "it's like with ports"):
     // the corners, each side's middle and the points between them; never marked, a drag always lands on the nearest.
     // ORDER is how new ones fill them, the most used first (user, 2026-11-14: "start from the bottom ... the top is for
@@ -299,7 +302,7 @@
       return true;
     }
     function nodesDelete(list) {   // macromolecules and simple chemicals deleted with every line at them
-      var ids = list.filter(function (i) { return MADE.test(nodes2[i].shape.kind) && nodes2[i].el.getAttribute('yfiles.foldertype') !== 'group'; }).map(function (i) { return nodes2[i].id; });
+      var ids = list.filter(function (i) { return isMade(nodes2[i]); }).map(function (i) { return nodes2[i].id; });
       if (!ids.length) return false;
       remember(false); text = sbJs.remove(text, ids); selN = []; selP = []; selE = []; part = null;
       parse(); dirty = true; render(); paint(); changed();

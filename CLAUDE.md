@@ -545,7 +545,11 @@ says "the workbench", "the converter's repository", "a private repository".
   sign is clicked again or Esc; a sign dragged onto the map is put where it is dropped, the future node at its size following the pointer inside the map window only, so it slides in from behind the panel; the pointer stays the plain arrow
   (user: no cross); a drag on the map still moves it. A macromolecule at the map's protein size and its proteins' render
   style, centred on the click (on the grid with Snap), in the innermost compartment there, not into a complex, unnamed:
-  nothing asks for a name when made (user: "I will name when I want to name"). State variables (user, the same day:
+  nothing asks for a name when made (user: "I will name when I want to name"). A simple chemical (user, 2026-11-14) the same
+  way, a circle of 40 by 40 at the map's scale in the style most of the map's simple chemicals use, with its name only: no
+  state variable and no unit of information on it for now, though SBGN allows them (CellDesigner keeps none, and they are
+  rarely welcome on a small molecule); `sbgn_edit.state` refuses one, and Add state variable is offered over a
+  macromolecule only. State variables (user, the same day:
   "Auxiliary units - remove this section, to be added via right click"): Add state variable in the right-click menu anywhere over
   a macromolecule puts an empty one on the first free place in a fixed order (user: "first it would be dropped down in
   the middle"; then "start from the bottom ... the top is for unit of information"): the bottom's middle, right and left
@@ -561,7 +565,7 @@ says "the workbench", "the converter's repository", "a private repository".
   it selected opens its text. Text in place (user: "simple cursor where I need"): a double click on a named entity or a
   state variable, or that click, puts a field over the text in the glyph's own fill, text colour and font size, no
   frame, the cursor at the end, nothing selected; Enter or a click elsewhere keeps it (P, or P@S505), Esc not. Delete
-  (the key, or Delete in the right-click menu) removes the state variable selected, or the macromolecules selected with
+  (the key, or Delete in the right-click menu) removes the state variable selected, or the macromolecules and simple chemicals selected with
   every line at them. No zoom on a double click anywhere in the viewer (user: "double click is for entering naming
   field"). What is made, moved or deleted is written by `sbgn_edit.js` (add, label, state, stateValue, stateMove,
   stateDelete, remove, defaults; write() and graphml() carry them both ways; a deleted glyph's id kept in a comment at the

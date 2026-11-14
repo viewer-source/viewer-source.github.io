@@ -2665,7 +2665,7 @@ page, so its styles keep the base they were made on). The looks before (Default 
       var turn = ed && window.m2EditTurn && window.m2EditTurn();   // a process or logic gate under the pointer: turned a quarter
       var main = ed && window.m2EditMain && window.m2EditMain();   // an added reactant's or product's line of a CellDesigner reaction
       var addSv = ed && !unbend && !turn && window.m2EditAddState && window.m2EditAddState();   // a macromolecule under the pointer (Full, SBGN-ML)
-      var del = ed && !unbend && !turn && window.m2EditDelete && window.m2EditDelete();   // a state variable or a macromolecule under the pointer (Full, SBGN-ML)
+      var del = ed && !unbend && !turn && window.m2EditDelete && window.m2EditDelete();   // a state variable, a macromolecule or a simple chemical under the pointer (Full, SBGN-ML)
       // every bend point of the map, on empty map space only (user, 2026-11-14: a right click on a bend point means that
       // bend point)
       var unbendAll = ed && window.m2EditAllBends && window.m2EditAllBends();

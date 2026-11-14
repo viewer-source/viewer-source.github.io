@@ -1,7 +1,8 @@
 // sbgn_edit.js's creating (the full editor, 2026-11-14) against the converter (renderers/converter/mapconv, Python), on
 // the demo's SBGN-ML maps: a macromolecule added on the map and one in a compartment, named, with state variables (one
 // with a site, one empty), an existing macromolecule renamed and a state variable's value changed, state variables moved
-// and deleted, a macromolecule of the file deleted, as the editor makes
+// and deleted, a macromolecule of the file deleted; a simple chemical made on the map and in a compartment, named, a state
+// variable on it refused, a file's own simple chemical renamed and another deleted, as the editor makes
 // them on its GraphML (g2); then s2 = write(s, g2), the SBGN-ML file saved. Checks:
 //   1. the converter's GraphML of s2 is drawn by yrender exactly as g2 (the editor shows what the file will hold);
 //   2. graphml(s2, conv(s)) is drawn the same too (a draft reopened before the build: the base lacks what was made);
