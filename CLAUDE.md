@@ -38,6 +38,12 @@ says "the workbench", "the converter's repository", "a private repository".
   how it looks is ours, the same rules for every format, never a copy of the editor that made it. Nothing of the
   drawing is written back into the file, so the file opens in its own editor as before, which may then look different
   (as CellDesigner's own pixelated lines already do).
+  Harmless or misrepresenting (user, 2026-11-14: "we are not changing coordinates, we are not changing the meaning, we
+  simply show things nicer"): a drawing rule of ours may change how a thing looks, never where it is (boxes, bend
+  points, ports), what is attached to what, or what it means (glyph class, arc type). A visual end at a state
+  variable is harmless in Process Description and CellDesigner maps, where no line attaches to a state variable; in a
+  format where one can (SBGN Entity Relationship), stopping there would read as such an attachment, so the rule is not
+  for those maps (none shown now).
   "Anchor point" is not one of our words: it stays only where CellDesigner's or MINERVA's own names are quoted
   (menus, XML, function names such as anchorPoint, kept as they are).
 - The viewer: `_includes/atlas-app.html` (list on the left, the map, its panel, search, downloads row). It never
