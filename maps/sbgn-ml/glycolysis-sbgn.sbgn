@@ -690,6 +690,10 @@
     </glyph>
     <glyph class="macromolecule" id="glyph_9">
       <bbox x="168" y="92" w="80" h="40"/>
+      <glyph class="unit of information" id="glyph_9_ui0">
+        <label text="N:2"/>
+        <bbox x="197.5" y="84.5" w="21" h="15"/>
+      </glyph>
     </glyph>
     <glyph class="macromolecule" id="glyph_10">
       <bbox x="128" y="292" w="80" h="40"/>
