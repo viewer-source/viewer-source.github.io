@@ -26,6 +26,14 @@
 #    neither) drawn as SBGN's filled circle or circle in a circle (the inner one 0.6 of the outer), the generic square
 #    kept beside it in <g class="sbgn-generic" display="none">, the circles in <g class="sbgn-association"> or
 #    "sbgn-dissociation", so a page can show either; the arcs end at the square's outline as before
+#  - ports (2026-11-14, user: proper SBGN ports, not bend points): a Process (any SBGN class) or an Operator (logic
+#    gate) gets a stick on each side, ANTENNA (0.75) of its side long, never shorter than ANTENNA_MIN (0.75 of our
+#    standard 18 px process: small squares need room), drawn under the glyph; port one where the arcs coming in
+#    without an arrow end (consumption, a gate's input), port two where the arcs leaving it start (a product, a gate's
+#    output; with nothing coming in, each leaving arc takes the nearer port: reversible). The axis runs from the mean
+#    of the arcs' near points coming in to that of those going out (horizontal unless steeper), as the converter puts
+#    SBGN-ML's ports. Bends lying on a stick (the bend points that drew antennas before) are left out; modifiers end
+#    on the glyph's outline as before
 #  - UnspecifiedEntity drawn as an ellipse, dashed lines as dashes 6 and gaps 2 times the line width
 #    (2026-10-27; checked against a yEd export: same shapes)
 #  - edge labels: placed from the edge's first point (anchor and up vector when rotated,
@@ -48,6 +56,8 @@ NODE_STYLES = {'Macromolecule', 'SimpleChemical', 'Complex', 'Process', 'EmptySe
                'Phenotype', 'Submap', 'NucleicAcidFeature', 'StateVariable', 'UnitOfInformation',
                'UnspecifiedEntity', 'PerturbingAgent'}
 SHAPES = {'rectangle', 'roundrectangle'}
+HUBS = {'Process', 'Operator'}
+ANTENNA, ANTENNA_MIN = 0.75, 13.5
 STYLE_PROPS = {'radius', 'radiusX', 'radiusY', 'mcount'}
 ARROWS = {'none', 'delta', 'white_delta', 'white_circle', 'white_delta_bar', 't_shape', 'white_diamond'}
 FONTS = {  # ascent and line height / font size as yEd measured them; fallbacks for systems without the font
@@ -405,6 +415,8 @@ class Map:
         self.order = []   # paint order: ('n', id), ('e', element), ('block',)
         self.boxes = []   # nodes, node labels and edge bends: the image spans them
         self.read_graph(self.root.find(G + 'graph'), top=True)
+        self.ports = {}   # hub id -> (port one, port two, horizontal, has arcs coming in)
+        self.hub_ports()
 
     def link(self, el):
         for dd in el.findall(G + 'data'):
@@ -482,7 +494,7 @@ class Map:
         url = self.link(node)
         if url:
             s = f'<a xlink:href="{html.escape(url)}" target="_blank">{s}</a>'
-        self.nodes[nid] = dict(geo=(x, y, w, h), polys=[polygon(c) for c in outlines], svg=s)
+        self.nodes[nid] = dict(geo=(x, y, w, h), polys=[polygon(c) for c in outlines], svg=s, kind=k, stroke=stroke)
         self.boxes.append((x, y, w, h))
         self.order.append(('n', nid))
         sub = node.find(G + 'graph')
@@ -492,6 +504,71 @@ class Map:
                 refuse(where, 'closed group')
             else:
                 self.read_graph(sub, parent=rl if fill else parent)
+
+    @staticmethod
+    def polyline(e):
+        pl = None
+        for dd in e.findall(G + 'data'):
+            for c in dd:
+                if c.tag in (Y + 'PolyLineEdge', Y + 'QuadCurveEdge'):
+                    pl = c
+        return pl
+
+    def mid(self, nid):
+        x, y, w, h = self.nodes[nid]['geo']; return (x + w / 2, y + h / 2)
+
+    def hub_ports(self):
+        # the two ports of every process and gate (the header's ports), their sticks put under the glyph
+        ins, outs = {}, {}
+        for item in self.order:
+            if item[0] != 'e':
+                continue
+            e = item[1][0]; pl = self.polyline(e); s, t = e.get('source'), e.get('target')
+            if pl is None or s not in self.nodes or t not in self.nodes:
+                continue
+            bends = [(float(q.get('x')), float(q.get('y'))) for q in pl.find(Y + 'Path').findall(Y + 'Point')]
+            if self.nodes[t]['kind'] in HUBS and pl.find(Y + 'Arrows').get('target') == 'none':
+                ins.setdefault(t, []).append(bends[-1] if bends else self.mid(s))
+            if self.nodes[s]['kind'] in HUBS:
+                outs.setdefault(s, []).append(bends[0] if bends else self.mid(t))
+        def mean(q, dflt):  # added in order (not sum(), which compensates since Python 3.12): as yrender.js adds
+            if not q:
+                return dflt
+            sx = sy = 0.0
+            for p in q:
+                sx += p[0]; sy += p[1]
+            return (sx / len(q), sy / len(q))
+        for nid, n in self.nodes.items():
+            if n['kind'] not in HUBS:
+                continue
+            x, y, w, h = n['geo']; cx, cy = x + w / 2, y + h / 2
+            a, b = mean(ins.get(nid, []), (cx, cy)), mean(outs.get(nid, []), (cx, cy))
+            if a == b:  # no way through (products on both sides, or no arcs): the line through the first two
+                q = outs[nid][:2] if len(outs.get(nid, [])) > 1 else [(cx - 1, cy), (cx + 1, cy)]
+                a, b = q[0], q[1]
+            vx, vy = b[0] - a[0], b[1] - a[1]
+            hz = abs(vx) >= abs(vy)
+            k = 1 if (vx if hz else vy) >= 0 else -1
+            side = w if hz else h
+            r = side / 2 + max(ANTENNA * side, ANTENNA_MIN)
+            one, two = ((cx - k * r, cy), (cx + k * r, cy)) if hz else ((cx, cy - k * r), (cx, cy + k * r))
+            self.ports[nid] = (one, two, hz, nid in ins)
+            st = n['stroke']
+            col, wa = (st[0], f' stroke-width="{num(st[1])}"' if st[1] != 1 else '') if st else ('#000000', '')
+            e1, e2 = ((cx - k * side / 2, cy), (cx + k * side / 2, cy)) if hz else ((cx, cy - k * side / 2), (cx, cy + k * side / 2))
+            # two sticks, not one line under the glyph: a glyph without fill (SBGN-ML's) would show it through
+            ant = (f'<path d="M{num(one[0])} {num(one[1])} L{num(e1[0])} {num(e1[1])} M{num(e2[0])} {num(e2[1])}'
+                   f' L{num(two[0])} {num(two[1])}" fill="none"{ink("stroke", col)}{wa}/>')
+            # inside the node's own group when a caller puts each node in one (the editor's way), so it moves with it
+            n['svg'] = re.sub(r'^(<g data-n="[^"]*">)', lambda m: m.group(1) + ant, n['svg']) if n['svg'].startswith('<g data-n="') else ant + n['svg']
+            self.boxes += [(one[0], one[1], 0, 0), (two[0], two[1], 0, 0)]
+
+    def on_stick(self, nid, p):
+        # a bend on one of the hub's sticks (or inside it): the stick draws it now
+        (one, two, hz, _), (cx, cy) = self.ports[nid], self.mid(nid)
+        r = abs(two[0] - cx) if hz else abs(two[1] - cy)
+        along, across = (p[0] - cx, p[1] - cy) if hz else (p[1] - cy, p[0] - cx)
+        return abs(across) <= 1.5 and abs(along) <= r
 
     def edge_svg(self, e, parent):
         where = 'edge ' + e.get('id')
@@ -510,8 +587,21 @@ class Map:
         def centre(n, dx, dy):
             x, y, w, h = n['geo']; return (x + w / 2 + float(p.get(dx)), y + h / 2 + float(p.get(dy)))
         pts = [centre(S, 'sx', 'sy')] + [(float(q.get('x')), float(q.get('y'))) for q in p.findall(Y + 'Point')] + [centre(T, 'tx', 'ty')]
-        pts[0] = clip(pts[1], pts[0], S['polys'])
-        pts[-1] = clip(pts[-2], pts[-1], T['polys'])
+        s_id, t_id = e.get('source'), e.get('target')
+        into = t_id in self.ports and pl.find(Y + 'Arrows').get('target') == 'none'
+        if into:  # coming in without an arrow: ends on port one
+            while len(pts) > 2 and self.on_stick(t_id, pts[-2]):
+                del pts[-2]
+            pts[-1] = self.ports[t_id][0]
+        if s_id in self.ports:  # leaving a hub: starts on port two (with nothing coming in, the nearer port)
+            while len(pts) > 2 and self.on_stick(s_id, pts[1]):
+                del pts[1]
+            one, two, _, has_in = self.ports[s_id]
+            pts[0] = two if has_in or math.dist(two, pts[1]) <= math.dist(one, pts[1]) else one
+        else:
+            pts[0] = clip(pts[1], pts[0], S['polys'])
+        if not into:
+            pts[-1] = clip(pts[-2], pts[-1], T['polys'])
         ls = pl.find(Y + 'LineStyle')
         if ls.get('type') not in ('line', 'dashed'):
             refuse(where, f'line type {ls.get("type")}')

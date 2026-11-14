@@ -12,6 +12,7 @@
   var NODE_STYLES = new Set(['Macromolecule', 'SimpleChemical', 'Complex', 'Process', 'EmptySet', 'Operator', 'Phenotype', 'Submap',
     'NucleicAcidFeature', 'StateVariable', 'UnitOfInformation', 'UnspecifiedEntity', 'PerturbingAgent']);
   var SHAPES = new Set(['rectangle', 'roundrectangle']);
+  var HUBS = new Set(['Process', 'Operator']), ANTENNA = 0.75, ANTENNA_MIN = 13.5;   // ports: yrender.py's header
   var STYLE_PROPS = new Set(['radius', 'radiusX', 'radiusY', 'mcount']);
   var ARROWS = new Set(['none', 'delta', 'white_delta', 'white_circle', 'white_delta_bar', 't_shape', 'white_diamond']);
   var FONTS = {
@@ -373,7 +374,59 @@
     this.cls = new Set(Object.keys(keys).filter(function (k) { return keys[k][1] === 'SBGN class'; }));
     this.nodes = {}; this.order = []; this.boxes = [];
     this.readGraph(kid(this.root, G, 'graph'), true, 'page');
+    this.ports = {};
+    this.hubPorts();
   }
+  function polyline(e) {
+    var pl = null;
+    kids(e, G, 'data').forEach(function (dd) { elems(dd).forEach(function (c) { if (c.namespaceURI === Y && (c.localName === 'PolyLineEdge' || c.localName === 'QuadCurveEdge')) pl = c; }); });
+    return pl;
+  }
+  YMap.prototype.mid = function (nid) { var g = this.nodes[nid].geo; return [g[0] + g[2] / 2, g[1] + g[3] / 2]; };
+  YMap.prototype.hubPorts = function () {
+    var self = this, ins = {}, outs = {};
+    this.order.forEach(function (item) {
+      if (item[0] !== 'e') return;
+      var e = item[1][0], pl = polyline(e), s = get(e, 'source'), t = get(e, 'target');
+      if (!pl || !has(self.nodes, s) || !has(self.nodes, t)) return;
+      var bends = kids(kid(pl, Y, 'Path'), Y, 'Point').map(function (q) { return [pyFloat(get(q, 'x')), pyFloat(get(q, 'y'))]; });
+      if (HUBS.has(self.nodes[t].kind) && get(kid(pl, Y, 'Arrows'), 'target') === 'none') (ins[t] = ins[t] || []).push(bends.length ? bends[bends.length - 1] : self.mid(s));
+      if (HUBS.has(self.nodes[s].kind)) (outs[s] = outs[s] || []).push(bends.length ? bends[0] : self.mid(t));
+    });
+    var mean = function (q, dflt) {
+      if (!q || !q.length) return dflt;
+      var sx = 0, sy = 0;
+      q.forEach(function (p) { sx += p[0]; sy += p[1]; });
+      return [sx / q.length, sy / q.length];
+    };
+    Object.keys(this.nodes).forEach(function (nid) {
+      var n = self.nodes[nid];
+      if (!HUBS.has(n.kind)) return;
+      var x = n.geo[0], y = n.geo[1], w = n.geo[2], h = n.geo[3], cx = x + w / 2, cy = y + h / 2;
+      var a = mean(ins[nid], [cx, cy]), b = mean(outs[nid], [cx, cy]);
+      if (a[0] === b[0] && a[1] === b[1]) {
+        var q = outs[nid] && outs[nid].length > 1 ? outs[nid].slice(0, 2) : [[cx - 1, cy], [cx + 1, cy]];
+        a = q[0]; b = q[1];
+      }
+      var vx = b[0] - a[0], vy = b[1] - a[1], hz = Math.abs(vx) >= Math.abs(vy);
+      var k = (hz ? vx : vy) >= 0 ? 1 : -1, side = hz ? w : h;
+      var r = side / 2 + Math.max(ANTENNA * side, ANTENNA_MIN);
+      var one = hz ? [cx - k * r, cy] : [cx, cy - k * r], two = hz ? [cx + k * r, cy] : [cx, cy + k * r];
+      self.ports[nid] = [one, two, hz, has(ins, nid)];
+      var st = n.stroke, col = st ? st[0] : '#000000', wa = st && st[1] !== 1 ? ' stroke-width="' + num(st[1]) + '"' : '';
+      var e1 = hz ? [cx - k * side / 2, cy] : [cx, cy - k * side / 2], e2 = hz ? [cx + k * side / 2, cy] : [cx, cy + k * side / 2];
+      var ant = '<path d="M' + num(one[0]) + ' ' + num(one[1]) + ' L' + num(e1[0]) + ' ' + num(e1[1]) + ' M' + num(e2[0]) + ' ' + num(e2[1]) +
+        ' L' + num(two[0]) + ' ' + num(two[1]) + '" fill="none"' + ink('stroke', col) + wa + '/>';
+      n.svg = self.groups ? n.svg.replace(/^(<g data-n="[^"]*">)/, function (m) { return m + ant; }) : ant + n.svg;
+      self.boxes.push([one[0], one[1], 0, 0], [two[0], two[1], 0, 0]);
+    });
+  };
+  YMap.prototype.onStick = function (nid, p) {
+    var P = this.ports[nid], c = this.mid(nid), one = P[0], two = P[1], hz = P[2];
+    var r = hz ? Math.abs(two[0] - c[0]) : Math.abs(two[1] - c[1]);
+    var along = hz ? p[0] - c[0] : p[1] - c[1], across = hz ? p[1] - c[1] : p[0] - c[0];
+    return Math.abs(across) <= 1.5 && Math.abs(along) <= r;
+  };
   YMap.prototype.link = function (el) {
     var dds = kids(el, G, 'data');
     for (var i = 0; i < dds.length; i++) {
@@ -438,7 +491,7 @@
     var url = this.link(node);
     if (url) s = '<a xlink:href="' + esc(url) + '" target="_blank">' + s + '</a>';
     if (this.groups) s = '<g data-n="' + esc(nid) + '">' + s + '</g>';
-    this.nodes[nid] = { geo: [x, y, w, h], polys: outlines.map(function (c) { return polygon(c); }), svg: s };
+    this.nodes[nid] = { geo: [x, y, w, h], polys: outlines.map(function (c) { return polygon(c); }), svg: s, kind: k, stroke: stroke };
     this.boxes.push([x, y, w, h]);
     this.order.push(['n', nid]);
     var sub = kid(node, G, 'graph');
@@ -463,8 +516,18 @@
     var p = kid(pl, Y, 'Path');
     var centre = function (n, dx, dy) { var g = n.geo; return [g[0] + g[2] / 2 + pyFloat(get(p, dx)), g[1] + g[3] / 2 + pyFloat(get(p, dy))]; };
     var pts = [centre(S, 'sx', 'sy')].concat(kids(p, Y, 'Point').map(function (q) { return [pyFloat(get(q, 'x')), pyFloat(get(q, 'y'))]; }), [centre(T, 'tx', 'ty')]);
-    pts[0] = clip(pts[1], pts[0], S.polys);
-    pts[pts.length - 1] = clip(pts[pts.length - 2], pts[pts.length - 1], T.polys);
+    var sId = get(e, 'source'), tId = get(e, 'target');
+    var into = has(this.ports, tId) && get(kid(pl, Y, 'Arrows'), 'target') === 'none';
+    if (into) {   // coming in without an arrow: ends on port one
+      while (pts.length > 2 && this.onStick(tId, pts[pts.length - 2])) pts.splice(pts.length - 2, 1);
+      pts[pts.length - 1] = this.ports[tId][0];
+    }
+    if (has(this.ports, sId)) {   // leaving a hub: starts on port two (with nothing coming in, the nearer port)
+      while (pts.length > 2 && this.onStick(sId, pts[1])) pts.splice(1, 1);
+      var P = this.ports[sId];
+      pts[0] = P[3] || dist(P[1], pts[1]) <= dist(P[0], pts[1]) ? P[1] : P[0];
+    } else pts[0] = clip(pts[1], pts[0], S.polys);
+    if (!into) pts[pts.length - 1] = clip(pts[pts.length - 2], pts[pts.length - 1], T.polys);
     var ls = kid(pl, Y, 'LineStyle');
     if (get(ls, 'type') !== 'line' && get(ls, 'type') !== 'dashed') refuse(where, 'line type ' + get(ls, 'type'));
     var col = get(ls, 'color'), width = pyFloat(get(ls, 'width'));
