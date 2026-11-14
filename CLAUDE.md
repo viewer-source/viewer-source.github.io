@@ -441,8 +441,10 @@ says "the workbench", "the converter's repository", "a private repository".
   byte, on every SBGN-ML file of the demo, also after made-up moves. The editor (`editor/src/sbgn.js`) draws it with the
   yEd renderer as a GraphML map, so the tools are the same. Saved (user, 2026-11-14: an edited copy) to the entry's
   `edit_path`, `maps/sbgn-ml/pd/<the file's path>`, created by the first save; the build then draws that copy in place of
-  the file (downloaded from `downloads/<id>.sbgn` or `.nwt`), the file in `test-maps/` never changed. Not edited: the
-  group SBGN-ML (rewritten from GraphML at every build) and the official SBGN-ML behind Settings' Source.
+  the file (downloaded from `downloads/<id>.sbgn` or `.nwt`), the file in `test-maps/` never changed. The group SBGN-ML
+  (our maps, user, 2026-11-14: "make for our own maps as well") the same way: saved to `maps/sbgn-ml/<name>-sbgn.sbgn`,
+  drawn in place of the converter's file and no longer rewritten from the GraphML map (a later change there reaches it
+  only once the copy is deleted). Not edited: the official SBGN-ML behind Settings' Source.
   Processes and logic gates (user, 2026-11-14: "assume that yEd has this SBGN process with antennas ... and simply do as
   in yEd"), on GraphML and SBGN-ML maps (CellDesigner keeps its own glyph): one object with its two ports, drawn by the
   yEd renderer at the ends of its antennas; consumptions (a gate's inputs) end on port one, products leave from port
@@ -539,7 +541,8 @@ says "the workbench", "the converter's repository", "a private repository".
   the converter's copy as SBGN-ML (advanced, nothing adjusted for Newt) and drawn back from that file in the build
   (`build.py`, its header), a map of its own (`<name>-sbgn`), so the three formats stand side by side and any difference
   from the GraphML drawing is ours to fix (the converter's reader or writer, or yrender); the official site's SBGN-ML
-  (MINERVA's export) stays behind Settings' Source. Not edited (its first download is the SBGN-ML file); a reader's map
+  (MINERVA's export) stays behind Settings' Source. Edited as the external maps (Edit, above), its first download the
+  SBGN-ML file drawn; a reader's map
   added to the site never takes an id ending in `-sbgn` or `-sbgnml`, or starting with `external-`.
   The group SBGN-ML external (user, 2026-11-14: "import external collection ... go through them problem by problem";
   a group of its own beside the SBGN-ML group of our maps): the Process Description maps of `test-maps/sbgn-ml/pd/`

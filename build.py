@@ -21,8 +21,10 @@
 # The group SBGN-ML (user, 2026-11-14: "our converter's output from GraphML"): every map of the group GraphML written as
 #   SBGN-ML by the converter's copy (advanced: the drawing kept, nothing adjusted for Newt) into downloads/<name>-sbgn.sbgn
 #   and drawn back from that file as above, a map of its own with the GraphML map's title and text, so the formats stand
-#   side by side and any difference from the GraphML drawing is ours to fix (reader, writer or yrender). Not edited: its
-#   first download is the SBGN-ML file.
+#   side by side and any difference from the GraphML drawing is ours to fix (reader, writer or yrender). Edited in the
+#   viewer as the external maps below (user, 2026-11-14: "make for our own maps as well"): the edited copy in
+#   maps/sbgn-ml/<name>-sbgn.sbgn is drawn in its place and no longer rewritten from the GraphML map (a later change to
+#   that map reaches it only once the copy is deleted); its first download is the SBGN-ML file drawn.
 # The group SBGN-ML external (user, 2026-11-14: "import external collection ... go through them problem by problem"):
 #   the Process Description maps of test-maps/sbgn-ml/pd/ (other people's and tools' files, unchanged; libsbgn's
 #   validation error tests left out), each drawn from its file as above (downloaded from its own address there), a map
@@ -217,6 +219,12 @@ def celldesigner(src, out_svg):
 # ---------- SBGN-ML ----------
 
 
+def blob_sha(path):
+    # a file's git blob sha, as GitHub gives it on a save
+    data = open(path, 'rb').read()
+    return hashlib.sha1(b'blob %d\0' % len(data) + data).hexdigest()
+
+
 def drawn(name, nodes, extra=b''):
     # the click data of a drawing written beside its SVG; its size and its version (picture, click data and extra)
     svg = os.path.join(ROOT, 'downloads', name + '.svg')
@@ -256,25 +264,39 @@ def sbgnml(src, name, body, keep=False):
 
 
 def sbgn_map(src, mid, fm, body):
-    # the group SBGN-ML (header): the GraphML map src written by the converter as SBGN-ML and drawn back from it; its
-    # entry and search entries, or none when the converter or the drawing fails (said, the build goes on)
+    # the group SBGN-ML (header): the GraphML map src written by the converter as SBGN-ML and drawn back from it, or its
+    # edited copy maps/sbgn-ml/<id>.sbgn where the viewer saved one; its (id, entry, text) and search entries, or none
+    # when the converter or the drawing fails (said, the build goes on)
     from mapconv import routes
     sid = re.sub(r'-graphml$', '', mid) + '-sbgn'
-    outs = routes.outputs(src)   # a map the converter cannot read gives one route that says why
-    out = next((o for o in outs if o.ending == '-advanced.sbgn'), outs[0])
-    text, said = routes.made(out)
-    if not text or out.ending != '-advanced.sbgn':
-        print('warning: %s not written as SBGN-ML, left out: %s' % (mid, '; '.join(t for _, t in said[-1:]) or 'no route'))
-        return None, []
     path = os.path.join(ROOT, 'downloads', sid + '.sbgn')
-    with open(path, 'w', encoding='utf-8') as f:
-        f.write(text)
-    d, nodes = sbgnml(path, sid, body)
+    mine = os.path.join(ROOT, 'maps', 'sbgn-ml', sid + '.sbgn')
+    note = 'Edited in the viewer: drawn from its edited copy, no longer written from the GraphML map.\n\n'
+    d = None
+    if os.path.exists(mine):
+        d, nodes = sbgnml(mine, sid, note + body, keep=True)
+        if d:
+            shutil.copy(mine, path)
+            body = note + body
+        else:   # an edited copy that cannot be drawn: the converter's file drawn instead, so the map stays
+            print('warning: %s: the converter\'s SBGN-ML shown instead' % os.path.relpath(mine, ROOT))
     if not d:
-        os.unlink(path)   # no entry, so no file left behind
-        return None, []
+        outs = routes.outputs(src)   # a map the converter cannot read gives one route that says why
+        out = next((o for o in outs if o.ending == '-advanced.sbgn'), outs[0])
+        text, said = routes.made(out)
+        if not text or out.ending != '-advanced.sbgn':
+            print('warning: %s not written as SBGN-ML, left out: %s' % (mid, '; '.join(t for _, t in said[-1:]) or 'no route'))
+            return None, []
+        with open(path, 'w', encoding='utf-8') as f:
+            f.write(text)
+        d, nodes = sbgnml(path, sid, body, keep=True)
+        if not d:
+            os.unlink(path)   # no entry, so no file left behind
+            return None, []
     d['file'] = '/downloads/' + os.path.basename(path)
-    return (sid, entry_of(fm['title'], 'SBGN-ML', fm['order'] + 100, d, topic=fm['topic'])), search_entries(sid, nodes)
+    d['src'] = blob_sha(path)   # the kept drawing waits for the build of its save
+    d['edit_path'], d['edit_base'] = 'maps/sbgn-ml/%s.sbgn' % sid, '/atlas-data/%s.graphml' % sid
+    return (sid, entry_of(fm['title'], 'SBGN-ML', fm['order'] + 100, d, topic=fm['topic']), body), search_entries(sid, nodes)
 
 
 def examples():
@@ -313,8 +335,7 @@ def examples():
             d['file'] = '/downloads/' + sid + os.path.splitext(rel)[1]
         else:
             d['file'] = '/test-maps/sbgn-ml/pd/' + key   # published as it is (test-maps/sbgn-ml/README.md)
-        data = open(src_file, 'rb').read()
-        d['src'] = hashlib.sha1(b'blob %d\0' % len(data) + data).hexdigest()   # as for a map of maps/: the kept drawing waits for its build
+        d['src'] = blob_sha(src_file)   # as for a map of maps/: the kept drawing waits for its build
         d['edit_path'], d['edit_base'] = 'maps/sbgn-ml/pd/' + key, '/atlas-data/%s.graphml' % sid
         title = '%s: %s' % (key.split('/')[0], name(rel) if short[name(rel)] == 1 else '/'.join(key.split('/')[1:-1] + [name(rel)]))
         out.append((sid, entry_of(title, 'SBGN-ML external', 1000 + k, d), search_entries(sid, nodes), body))
@@ -375,7 +396,7 @@ def main():
     for d in ('downloads', 'atlas-data', '_maps'):
         shutil.rmtree(os.path.join(ROOT, d), ignore_errors=True)
         os.makedirs(os.path.join(ROOT, d))
-    search = []
+    search, sids = [], set()
     sources = sorted(glob.glob(os.path.join(ROOT, 'maps', '*.graphml')) + glob.glob(os.path.join(ROOT, 'maps', '*.xml')))
     for src in sources:
         mid, ext = os.path.splitext(os.path.basename(src))
@@ -389,8 +410,7 @@ def main():
         w, h, v = d['width'], d['height'], d['v']
         # the source's git blob sha, as GitHub gives it on a save: the editor keeps its own drawing until the site's
         # build is of the very file it saved last, not of an earlier save (2026-11-12: builds of two saves overlapped)
-        data = open(src, 'rb').read()
-        sha = hashlib.sha1(b'blob %d\0' % len(data) + data).hexdigest()
+        sha = blob_sha(src)
         fm = {'title': meta.get('title', mid), 'topic': meta.get('topic', meta.get('title', mid)), 'tab': '', 'page': '',
               'group': meta.get('group', ''), 'order': int(meta.get('order', 0)), 'kind': 'map', 'draft': False, 'tag': '',
               'image': '/downloads/%s.svg' % mid, 'width': w, 'height': h, 'scale': 1,
@@ -410,14 +430,21 @@ def main():
                 fm['sbgn']['file'] = '/downloads/' + os.path.basename(sb[0])   # copied there by extra()
             else:
                 del fm['sbgn']
-        entries = [(mid, fm)]
-        if ext == '.graphml' and fm['group'] == 'GraphML':
+        entries = [(mid, fm, body)]
+        sid = re.sub(r'-graphml$', '', mid) + '-sbgn'
+        if ext == '.graphml' and fm['group'] == 'GraphML' and sid in sids:   # foo and foo-graphml: one SBGN-ML id, one edited copy
+            print('warning: %s left out of the group SBGN-ML: %s is taken' % (mid, sid))
+        elif ext == '.graphml' and fm['group'] == 'GraphML':
+            sids.add(sid)
             own, found = sbgn_map(src, mid, fm, body)
             entries += [own] if own else []
             search += found
-        for eid, e in entries:
-            write_entry(eid, e, body)
+        for eid, e, text in entries:
+            write_entry(eid, e, text)
         print('%s: %s, %d clickable' % (mid, 'yEd' if ext == '.graphml' else 'CellDesigner', len(nodes)))
+    for f in sorted(glob.glob(os.path.join(ROOT, 'maps', 'sbgn-ml', '*.sbgn'))):   # an edited copy whose GraphML map went
+        if os.path.basename(f)[:-5] not in sids:
+            print('warning: %s belongs to no map of the group GraphML, not drawn' % os.path.relpath(f, ROOT))
     for sid, e, found, body in examples():
         search += found
         write_entry(sid, e, body)
