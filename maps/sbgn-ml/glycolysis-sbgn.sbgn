@@ -655,7 +655,7 @@
       </glyph>
     </glyph>
     <glyph class="macromolecule" id="glyph_5">
-      <bbox x="200" y="108" w="80" h="40"/>
+      <bbox x="246" y="177" w="80" h="40"/>
     </glyph>
     <arc class="production" id="e0" source="n4.2" target="n6">
       <start x="876" y="506.0"/>
