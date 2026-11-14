@@ -94,10 +94,11 @@
     function macroAt(P) { return innermost(P, function (n) { return n.shape.kind === 'Macromolecule' && n.el.getAttribute('yfiles.foldertype') !== 'group'; }); }
     // the places a state variable sits on its node's border, as [rx, ry] (user, 2026-11-14: "it's like with ports"):
     // the corners, each side's middle and the points between them; never marked, a drag always lands on the nearest.
-    // ORDER is how new ones fill them, the most used first: the top's middle, right and left of it, the sides' middles,
-    // the corners, then the rest
-    var ORDER = [[0, -0.5], [0.25, -0.5], [-0.25, -0.5], [0.5, 0], [-0.5, 0], [0.5, -0.5], [-0.5, -0.5], [0.5, 0.5], [-0.5, 0.5],
-      [0, 0.5], [0.25, 0.5], [-0.25, 0.5], [0.5, -0.25], [0.5, 0.25], [-0.5, -0.25], [-0.5, 0.25]];
+    // ORDER is how new ones fill them, the most used first (user, 2026-11-14: "start from the bottom ... the top is for
+    // unit of information"): the bottom's middle, right and left of it, the sides' middles, the bottom corners, the top
+    // corners, then the top and the sides' other places
+    var ORDER = [[0, 0.5], [0.25, 0.5], [-0.25, 0.5], [0.5, 0], [-0.5, 0], [0.5, 0.5], [-0.5, 0.5], [0.5, -0.5], [-0.5, -0.5],
+      [0, -0.5], [0.25, -0.5], [-0.25, -0.5], [0.5, 0.25], [-0.5, 0.25], [0.5, -0.25], [-0.5, -0.25]];
     function border(i, P) {   // the place nearest P
       var b = boxOf(i), best = null, d0 = Infinity;
       ORDER.forEach(function (q) { var d = Math.hypot(b[0] + (0.5 + q[0]) * b[2] - P[0], b[1] + (0.5 + q[1]) * b[3] - P[1]); if (d < d0) { d0 = d; best = q; } });
@@ -108,7 +109,7 @@
       if (!palOn() || !P || svAt(P) || macroAt(P) < 0) return null;
       return function () { makeState(P); };
     };
-    function makeState(P) {   // an empty state variable on the first free place in ORDER (user: "anywhere within the shape ... first in the middle"), selected to be dragged
+    function makeState(P) {   // an empty state variable on the first free place in ORDER (user: "anywhere within the shape ... start from the bottom"), selected to be dragged
       var i = macroAt(P);
       if (i < 0) return;
       var b = boxOf(i), have = svList(i), r = ORDER.filter(function (q) {
