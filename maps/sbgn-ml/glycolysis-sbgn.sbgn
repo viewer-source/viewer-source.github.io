@@ -326,7 +326,7 @@
         </annotation>
       </extension>
       <label text="α-D-glucose-6P"/>
-      <bbox x="163" y="409" w="140.0" h="32.0"/>
+      <bbox x="102.0" y="432.0" w="140.0" h="32.0"/>
     </glyph>
     <glyph class="simple chemical" id="n8">
       <extension>
@@ -658,7 +658,7 @@
     </arc>
     <arc class="production" id="e7" source="n10.2" target="n7">
       <start x="172.0" y="494.0"/>
-      <end x="218.8551" y="441"/>
+      <end x="172.0" y="464.0"/>
     </arc>
     <arc class="catalysis" id="e8" source="n9" target="n10">
       <start x="100.0" y="512.0"/>
