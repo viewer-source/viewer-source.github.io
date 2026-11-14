@@ -1632,7 +1632,9 @@
     // lit while the pointer is over it, else back where it was. SBGN's rules (user, the same day): an arc goes from or
     // to a complex, never a member inside it (the complex takes the end); a logic gate takes only the one
     // arrowhead-less line, a consumption at a process and an input at a gate alike, and its modulations leave from it.
-    // GraphML and SBGN-ML maps; not yet CellDesigner, whose reactions hold their species in several places
+    // GraphML, SBGN-ML and CellDesigner maps (user, 2026-11-14: "let's implement for CellDesigner"): on a CellDesigner map
+    // an end at a species goes to another species or complex, never the process glyph's end, and cd_edit rewrites the
+    // reaction's participant in every place the file keeps it
     var EPN = /^(Macromolecule|SimpleChemical|Complex|NucleicAcidFeature|UnspecifiedEntity|EmptySet|PerturbingAgent)$/;
     var MODS = /^(white_circle|white_delta|white_delta_bar|t_shape|crows_foot_one|white_diamond)$/;
     function roleOf(i) {   // 'epn', 'proc', 'gate', 'pheno', or null (a compartment, a member inside a complex, a decoration)
@@ -1644,7 +1646,11 @@
     function takes(k, end, i) {   // whether node i can take that end of arc k (its own node aside)
       var e = edges2[k], a = e.arr, other = end ? e.s : e.t, r = roleOf(i), ro = roleOf(other);
       var hub = function (x) { return x === 'proc' || x === 'gate'; };
-      if (cd || i === other || !r || a[0] !== 'none') return false;
+      if (cd) {   // a reaction's end at a species, to another species or complex (no member, no compartment, no glyph)
+        var nd = nodes2[i], here = end ? e.t : e.s, proc = function (x) { return /\|proc$/.test(nodes2[x].id); };
+        return i !== other && !proc(here) && !proc(i) && !nd.comp && !(nd.up != null && !nodes2[nd.up].comp);
+      }
+      if (i === other || !r || a[0] !== 'none') return false;
       if (a[1] === 'none') {   // the arrowhead-less line: its hub end at a process or gate, its other end at an entity (or a gate into a gate)
         if (!hub(roleOf(e.s)) && !hub(roleOf(e.t))) return false;   // a plain line between other glyphs (an equivalence arc): not this line
         var h = hub(roleOf(e.t)) ? 1 : 0;
@@ -1720,8 +1726,9 @@
       // arcs following a move: drawn in full in the picture (after a release they stay as they are until the map is
       // drawn again); before the editor's own drawing is in the page, as plain lines
       var pk0 = drag && drag.port && drag.port.to ? drag.port : null, lk = new Set(live || []);
-      if (pk0) { glyphFollow(new Set(), new Set(), null, pk0); (live || []).forEach(function (k) { lk.add(k); }); lk.add(pk0.k); }
-      if (gE) { if (!frozen) { if (lk.size) { if (!cdLines(lk, pk0)) fullLines(lk, pk0); } else dropCopies(); } }
+      var away = pk0 && (pk0.n2 != null || pk0.free);   // an end going to another node: its line follows as a copy (a CellDesigner glyph keeps its place until the drop)
+      if (pk0) { if (!away) glyphFollow(new Set(), new Set(), null, pk0); (live || []).forEach(function (k) { lk.add(k); }); lk.add(pk0.k); }
+      if (gE) { if (!frozen) { if (lk.size) { if (away || !cdLines(lk, pk0)) fullLines(lk, pk0); } else dropCopies(); } }
       else lk.forEach(function (k) {
         var pts = line(k, null, null, pk0);
         if (pts) out.push('<path class="m2-ed-live" stroke-width="' + f1(V.z) + '" d="' + livePath(pts, edges2[k].smooth) + '"/>');

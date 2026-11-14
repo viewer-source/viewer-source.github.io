@@ -202,14 +202,15 @@
   }
   function iter(el, ns, name, out) { out = out || []; if (el.namespaceURI === ns && el.localName === name) out.push(el); for (var c = el.firstChild; c; c = c.nextSibling) if (c.nodeType === 1) iter(c, ns, name, out); return out; }
   function read(gtext, opt) {
-    var r = new (DP(opt))().parseFromString(gtext, 'application/xml').documentElement, boxes = new Map(), bends = new Map(), paths = new Map();
+    var r = new (DP(opt))().parseFromString(gtext, 'application/xml').documentElement, boxes = new Map(), bends = new Map(), paths = new Map(), ends = new Map();
     iter(r, GNS, 'node').forEach(function (n) { var g = descendant(n, YNS, 'Geometry'); boxes.set(get(n, 'id'), ['x', 'y', 'width', 'height'].map(function (k) { return F(get(g, k)); })); });
     iter(r, GNS, 'edge').forEach(function (e) {
       bends.set(get(e, 'id'), iter(e, YNS, 'Point').map(function (p) { return [F(get(p, 'x')), F(get(p, 'y'))]; }));
+      ends.set(get(e, 'id'), [get(e, 'source'), get(e, 'target')]);
       var pa = descendant(e, YNS, 'Path');
       if (pa) { var q = ['sx', 'sy', 'tx', 'ty'].map(function (k) { return F(get(pa, k, 0)); }), sp = get(pa, 'spot'); if (sp) q.push(I(sp)); paths.set(get(e, 'id'), q); }
     });
-    return [boxes, new Map(), bends, paths];
+    return [boxes, new Map(), bends, paths, ends];
   }
   var SIDES = [['', [0.0, 0.0]], ['N', [0.0, -0.5]], ['S', [0.0, 0.5]], ['W', [-0.5, 0.0]], ['E', [0.5, 0.0]]];
   function side(p, b) {
@@ -362,6 +363,57 @@
     for (var j = 0; j < n; j++) nw += sep + '<celldesigner:lineDirection index="' + j + '" value="' + (j < vals.length ? vals[j] : 'unknown') + '"/>';
     T.put(s[0], s[1], '<celldesigner:listOfLineDirection>' + nw + sep + '</celldesigner:listOfLineDirection>');
   }
+  // a line's end moved to another node in the editor (user, 2026-11-14: "let's implement for CellDesigner"): the
+  // reaction's participant at that end rewritten in every place CellDesigner keeps it, the rest byte for byte: the base
+  // reactant or product (species, alias), an added reactant's or product's link (reactant or product, alias), a modifier
+  // (modifiers, aliases, its linkTarget's species and alias), and SBML's speciesReference or modifierSpeciesReference
+  // (species, its celldesigner:alias); the old port taken off with it (ports() then writes the one the editor chose).
+  // Only an end at a species moves this way, never the process glyph's end of a line. ends: edge id -> [source, target]
+  // in the GraphML; the text as it was when no end moved
+  var ROLE = { baseReactant: ['species', 'alias', 'listOfReactants', 'speciesReference'], baseProduct: ['species', 'alias', 'listOfProducts', 'speciesReference'],
+    reactantLink: ['reactant', 'alias', 'listOfReactants', 'speciesReference'], productLink: ['product', 'alias', 'listOfProducts', 'speciesReference'],
+    modification: ['modifiers', 'aliases', 'listOfModifiers', 'modifierSpeciesReference'] };
+  function nth(T, open, s, n) { var i0 = s[0], q = null; for (var c = 0; c <= n; c++) { q = T.span(open, i0, s[1]); if (!q) return null; i0 = q[1]; } return q; }
+  function rewire(d, t, ends) {
+    var T = new Text(t), done = new Set(), sp = function (a) { return get(d.alias.get(a)[2], 'species'); };
+    findall(d.model, 's:listOfReactions/s:reaction').forEach(function (rx) {
+      var r = lines(d, rx);
+      if (!r) return;
+      var rid = r.id, todo = [];
+      var want = function (eid, j, old, kind, n) { var g = ends.get(eid), a = g ? g[j] : null; if (a && a !== old && d.alias.has(a)) todo.push([kind, old, a, n]); };
+      want(rid + '|a', 0, r.ra, 'baseReactant', 0);
+      want(rid + (r.glyph ? '|b' : '|a'), 1, r.pa, 'baseProduct', 0);
+      r.mods.forEach(function (m) { want(rid + '|m' + m.n, 0, m.alias, 'modification', m.n); });
+      r.links.forEach(function (l) { want(rid + '|' + (l.into ? 'r' : 'p') + l.n, l.into ? 0 : 1, l.alias, l.into ? 'reactantLink' : 'productLink', l.n); });
+      if (!todo.length) return;
+      var s = T.span('<reaction [^>]*\\bid="' + reEscape(rid) + '"');
+      todo.forEach(function (q) {
+        var R = ROLE[q[0]], old = q[1], a = q[2], so = sp(old), sn = sp(a);
+        var el = nth(T, '<celldesigner:' + q[0] + ' ', s, q[3]);
+        if (!el) return;
+        T.attrs(el[0], [[R[0], sn], [R[1], a]]);
+        var lt = q[0] === 'modification' ? T.span('<celldesigner:linkTarget[\\s>/]', el[0], el[1]) : null, w = lt || el;
+        if (lt) T.attrs(lt[0], [['species', sn], ['alias', a]]);
+        var la = T.span('<celldesigner:linkAnchor ', w[0], w[1]);
+        if (la) T.put(la[0], la[1] + (T.t.slice(la[1], la[1] + 1) === '\n' ? 1 : 0), '');
+        // SBML's reference: the one naming that alias, else the first of that species naming none
+        var ls = T.span('<' + R[2] + '>', s[0], s[1]), hit = null, first = null, i0 = ls ? ls[0] : 0, sr, al;
+        while (ls && (sr = T.span('<' + R[3] + ' ', i0, ls[1]))) {
+          i0 = sr[1];
+          if (done.has(sr[0]) || T.t.slice(sr[0], T.t.indexOf('>', sr[0])).indexOf(' species="' + so + '"') < 0) continue;
+          al = /<celldesigner:alias>([^<]*)<\/celldesigner:alias>/.exec(T.t.slice(sr[0], sr[1]));
+          if (al && al[1] === old) { hit = [sr, al]; break; }
+          if (!al && !first) first = [sr, null];
+        }
+        hit = hit || first;
+        if (!hit) return;
+        done.add(hit[0][0]);
+        T.attrs(hit[0][0], [['species', sn]]);
+        if (hit[1]) { var at = hit[0][0] + hit[1].index + '<celldesigner:alias>'.length; T.put(at, at + old.length, a); }
+      });
+    });
+    return T.done();
+  }
   var MARGIN = 40.0;
   function apply(t, gtext, opt) { return place(t, gtext, opt)[0]; }
   // one reaction's lines written into T (s: its span), as place does for each (also the editor's live drawing, live():
@@ -439,7 +491,9 @@
     });
   }
   function place(t, gtext, opt) {
-    var d = drawing(t, opt), comps = compartments(d), up = tree(d, comps), rd = read(gtext, opt), boxes = rd[0], bends = rd[2], paths = rd[3];
+    var d = drawing(t, opt), rd = read(gtext, opt), t2 = rewire(d, t, rd[4]);
+    if (t2 !== t) { t = t2; d = drawing(t, opt); }   // a line's end moved to another node: the participant first
+    var comps = compartments(d), up = tree(d, comps), boxes = rd[0], bends = rd[2], paths = rd[3];
     var xs = [], ys = [];
     boxes.forEach(function (b) { xs.push(b[0]); ys.push(b[1]); });
     bends.forEach(function (ps) { ps.forEach(function (p) { xs.push(p[0]); ys.push(p[1]); }); });

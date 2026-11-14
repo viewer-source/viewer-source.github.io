@@ -292,16 +292,17 @@ def graphml(text, off=(0.0, 0.0)):
 
 def read(gtext):
     root = etree.fromstring(gtext.encode('utf-8'))
-    boxes, base, bends, paths = {}, {}, {}, {}
+    boxes, base, bends, paths, ends = {}, {}, {}, {}, {}
     for n in root.iter(G + 'node'):
         g = n.find('.//' + Y + 'Geometry')
         boxes[n.get('id')] = tuple(float(g.get(k)) for k in ('x', 'y', 'width', 'height'))
     for e in root.iter(G + 'edge'):
         bends[e.get('id')] = [(float(p.get('x')), float(p.get('y'))) for p in e.iter(Y + 'Point')]
+        ends[e.get('id')] = (e.get('source'), e.get('target'))
         pa = e.find('.//' + Y + 'Path')
         if pa is not None:
             paths[e.get('id')] = tuple(float(pa.get(k, 0)) for k in ('sx', 'sy', 'tx', 'ty')) + ((int(pa.get('spot')),) if pa.get('spot') else ())
-    return boxes, base, bends, paths
+    return boxes, base, bends, paths, ends
 
 
 # where a line meets a node, as the editor sets it (user, 2026-11-12: "snap to center, bottom center, top center, left
@@ -499,6 +500,95 @@ def directions(T, span, n):
 MARGIN = 40.0   # the converter's margin round a CellDesigner map
 
 
+# a line's end moved to another node in the editor (user, 2026-11-14: "let's implement for CellDesigner"): the
+# reaction's participant at that end rewritten in every place CellDesigner keeps it, the rest byte for byte: the base
+# reactant or product (species, alias), an added reactant's or product's link (reactant or product, alias), a modifier
+# (modifiers, aliases, its linkTarget's species and alias), and SBML's speciesReference or modifierSpeciesReference
+# (species, its celldesigner:alias); the old port taken off with it (ports() then writes the one the editor chose).
+# Only an end at a species moves this way, never the process glyph's end of a line. ends: edge id -> (source, target)
+# in the GraphML; the text as it was when no end moved
+ROLE = {'baseReactant': ('species', 'alias', 'listOfReactants', 'speciesReference'),
+        'baseProduct': ('species', 'alias', 'listOfProducts', 'speciesReference'),
+        'reactantLink': ('reactant', 'alias', 'listOfReactants', 'speciesReference'),
+        'productLink': ('product', 'alias', 'listOfProducts', 'speciesReference'),
+        'modification': ('modifiers', 'aliases', 'listOfModifiers', 'modifierSpeciesReference')}
+
+
+def nth(T, open_re, s, n):
+    i0, q = s[0], None
+    for _ in range(n + 1):
+        q = T.span(open_re, i0, s[1])
+        if q is None:
+            return None
+        i0 = q[1]
+    return q
+
+
+def rewire(d, text, ends):
+    T, done = Text(text), set()
+    sp = lambda a: d.alias[a][2].get('species')
+    for rx in d.model.findall('s:listOfReactions/s:reaction', NS):
+        r = lines(d, rx)
+        if r is None:
+            continue
+        rid, todo = r['id'], []
+
+        def want(eid, j, old, kind, n):
+            g = ends.get(eid)
+            a = g[j] if g else None
+            if a and a != old and a in d.alias:
+                todo.append((kind, old, a, n))
+        want(rid + '|a', 0, r['ra'], 'baseReactant', 0)
+        want(rid + ('|b' if r['glyph'] else '|a'), 1, r['pa'], 'baseProduct', 0)
+        for m in r['mods']:
+            want(rid + '|m%d' % m['n'], 0, m['alias'], 'modification', m['n'])
+        for l in r['links']:
+            want(rid + '|%s%d' % ('r' if l['into'] else 'p', l['n']), 0 if l['into'] else 1, l['alias'],
+                 'reactantLink' if l['into'] else 'productLink', l['n'])
+        if not todo:
+            continue
+        s = T.span(r'<reaction [^>]*\bid="%s"' % re.escape(rid))
+        for kind, old, a, n in todo:
+            R, so, sn = ROLE[kind], sp(old), sp(a)
+            el = nth(T, '<celldesigner:%s ' % kind, s, n)
+            if el is None:
+                continue
+            T.attrs(el[0], {R[0]: sn, R[1]: a})
+            lt = T.span(r'<celldesigner:linkTarget[\s>/]', el[0], el[1]) if kind == 'modification' else None
+            w = lt or el
+            if lt:
+                T.attrs(lt[0], {'species': sn, 'alias': a})
+            la = T.span('<celldesigner:linkAnchor ', w[0], w[1])
+            if la:
+                T.put(la[0], la[1] + (1 if T.t[la[1]:la[1] + 1] == '\n' else 0), '')
+            # SBML's reference: the one naming that alias, else the first of that species naming none
+            ls = T.span('<%s>' % R[2], s[0], s[1])
+            hit = first = None
+            i0 = ls[0] if ls else 0
+            while ls:
+                sr = T.span('<%s ' % R[3], i0, ls[1])
+                if sr is None:
+                    break
+                i0 = sr[1]
+                if sr[0] in done or (' species="%s"' % so) not in T.t[sr[0]:T.t.index('>', sr[0])]:
+                    continue
+                al = re.search(r'<celldesigner:alias>([^<]*)</celldesigner:alias>', T.t[sr[0]:sr[1]])
+                if al and al.group(1) == old:
+                    hit = (sr, al)
+                    break
+                if not al and first is None:
+                    first = (sr, None)
+            hit = hit or first
+            if hit is None:
+                continue
+            done.add(hit[0][0])
+            T.attrs(hit[0][0], {'species': sn})
+            if hit[1]:
+                at = hit[0][0] + hit[1].start(1)
+                T.put(at, at + len(old), a)
+    return T.done()
+
+
 def apply(text, gtext):
     return place(text, gtext)[0]
 
@@ -508,9 +598,12 @@ def place(text, gtext):
     # (user, 2026-11-12), so a map moved past the left or the top edge is shifted right or down, each on its own, by whole
     # blocks of the grid (16) to start at the margin (40) or a little more; the canvas grows with it
     d = drawing(text)
+    boxes, base, bends, paths, ends = read(gtext)
+    t2 = rewire(d, text, ends)
+    if t2 != text:   # a line's end moved to another node: the participant first
+        text, d = t2, drawing(t2)
     comps = compartments(d)
     up = tree(d, comps)
-    boxes, base, bends, paths = read(gtext)
     xs = [b[0] for b in boxes.values()] + [p[0] for ps in bends.values() for p in ps]
     ys = [b[1] for b in boxes.values()] + [p[1] for ps in bends.values() for p in ps]
     block = lambda m: math.ceil((MARGIN - m) / 16) * 16.0 if m < 0 else 0.0   # whole blocks of the grid: a map on it stays on it
