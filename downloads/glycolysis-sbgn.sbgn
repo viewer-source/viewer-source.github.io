@@ -662,10 +662,11 @@
       <bbox x="358" y="177" w="80" h="40"/>
     </glyph>
     <glyph class="macromolecule" id="glyph_6">
+      <label text="PKA-R"/>
       <bbox x="112" y="334" w="80" h="40"/>
       <glyph class="state variable" id="glyph_6_sv0">
-        <state value=""/>
-        <bbox x="144.5" y="366.5" w="15" h="15"/>
+        <state value=".hv,"/>
+        <bbox x="184.5" y="356.5" w="15" h="15"/>
       </glyph>
     </glyph>
     <glyph class="macromolecule" id="glyph_7">
