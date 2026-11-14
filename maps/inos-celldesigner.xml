@@ -2865,14 +2865,13 @@
 <celldesigner:line width="1.0" color="ff000000" type="Straight"/>
 </celldesigner:reactantLink>
 </celldesigner:listOfReactantLinks>
-<celldesigner:connectScheme connectPolicy="direct" rectangleIndex="1">
+<celldesigner:connectScheme connectPolicy="direct" rectangleIndex="0">
 <celldesigner:listOfLineDirection>
 <celldesigner:lineDirection index="0" value="unknown"/>
 <celldesigner:lineDirection index="1" value="unknown"/>
-<celldesigner:lineDirection index="2" value="unknown"/>
 </celldesigner:listOfLineDirection>
 </celldesigner:connectScheme>
-<celldesigner:editPoints>0.3645412326,-0.214580399412 0.520773189429,-0.306543427732</celldesigner:editPoints>
+<celldesigner:editPoints>0.520773189429,-0.306543427732</celldesigner:editPoints>
 <celldesigner:line width="1.0" color="ff000000"/>
 <celldesigner:listOfModification>
 <celldesigner:modification type="CATALYSIS" modifiers="s_n0_n21" aliases="sa_n0_n21" targetLineIndex="-1,2">
