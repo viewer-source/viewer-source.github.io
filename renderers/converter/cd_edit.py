@@ -125,8 +125,8 @@ def lines(d, rx):
 def cut(d, r, bends):
     # the main line as cdrender places the glyph on it: an end at a node's centre cut where the line leaves its shape
     line = [r['A']] + list(bends) + [r['B']]
-    line[0] = d.clip(r['ra'], r['A'], r['ancA'], line[1])
-    line[-1] = d.clip(r['pa'], r['B'], r['ancB'], line[-2])
+    line[0] = d.clip(r['ra'], r['A'], r['ancA'], line[1], True)   # the shape alone, as cdrender places the square
+    line[-1] = d.clip(r['pa'], r['B'], r['ancB'], line[-2], True)
     return line
 
 

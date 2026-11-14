@@ -26,4 +26,5 @@ jobs:
       - run: node tests/cd-live.js
       - run: node tests/cd-snap-redo.js
       - run: node tests/cd-modifier-spot.js
+      - run: node tests/cd-square.js
       - run: node tests/sbgn-edit.js python3

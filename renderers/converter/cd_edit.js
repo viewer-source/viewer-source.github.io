@@ -87,8 +87,8 @@
   }
   function cut(d, r, bends) {
     var line = [r.A].concat(bends, [r.B]), L = line.length;
-    line[0] = d.clip(r.ra, r.A, r.ancA, line[1]);
-    line[L - 1] = d.clip(r.pa, r.B, r.ancB, line[L - 2]);
+    line[0] = d.clip(r.ra, r.A, r.ancA, line[1], true);   // the shape alone, as cdrender places the square
+    line[L - 1] = d.clip(r.pa, r.B, r.ancB, line[L - 2], true);
     return line;
   }
 
@@ -591,6 +591,6 @@
     };
   }
 
-  var api = { graphml: graphml, place: place, apply: apply, draw: draw, live: live };
+  var api = { graphml: graphml, place: place, apply: apply, draw: draw, live: live, lines: lines, drawing: drawing };   // lines, drawing: for tests/cd-square.js
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.cd_edit = api;
 })(typeof window !== 'undefined' ? window : globalThis);

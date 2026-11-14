@@ -221,10 +221,10 @@
     }
     return c;
   }
-  function clip(outer, port, polys) {
+  function clip(outer, port, polys, crossed) {   // crossed: any outline the segment crosses counts (yrender.py's clip)
     var px = outer[0], py = outer[1], qx = port[0], qy = port[1], best = null;
     polys.forEach(function (poly) {
-      if (!inside(port, poly)) return;
+      if (!crossed && !inside(port, poly)) return;
       var n = poly.length;
       for (var i = 0; i < n; i++) {
         var A = poly[(i - 1 + n) % n], B = poly[i], ax = A[0], ay = A[1], bx = B[0], by = B[1];
@@ -347,14 +347,20 @@
       s += '<rect x="' + num(x) + '" y="' + num(y) + '" width="' + num(w) + '" height="' + num(h) + '" fill="none"' + ink('stroke', get(lab, 'lineColor')) + '/>';
     return s;
   }
-  function iconSvg(res, lab, x, y, w, h, where) {
+  function visualEnd(outer, port, n) {   // the visual end on the node's shape outline, state variables included (yrender.py's visual_end)
+    var q = clip(outer, port, n.polys);
+    return n.aux.length ? clip(outer, q, n.aux, true) : q;
+  }
+  function iconSvg(res, lab, x, y, w, h, where, aux) {
     var gn = res ? iter(res, Y, ['GenericNode', 'ShapeNode'])[0] || null : null;
     if (!gn) { refuse(where, 'label icon is not a node'); return ''; }
     var k = kindOf(gn, where);
     if (k !== 'StateVariable' && k !== 'UnitOfInformation' && !SHAPES.has(k)) { refuse(where, 'label icon ' + k); return ''; }
     var g = kid(gn, Y, 'Geometry'), iw = pyFloat(get(g, 'width')), ih = pyFloat(get(g, 'height'));
     var ix = x + (w - iw) / 2, iy = y + (h - ih) / 2, fs = checkFillBorder(gn, where);
-    var s = shapeSvg(outline(k, ix, iy, iw, ih, new Map()), fs[0], fs[1]);
+    var c = outline(k, ix, iy, iw, ih, new Map());
+    if (aux && (k === 'StateVariable' || k === 'UnitOfInformation')) aux.push(polygon(c));
+    var s = shapeSvg(c, fs[0], fs[1]);
     kids(gn, Y, 'NodeLabel').forEach(function (il) {
       if (get(il, 'visible') === 'false' || get(il, 'hasText') === 'false') return;
       s += textLines(il, ix, iy, iw, ih, where, 'white', 'center');
@@ -498,6 +504,7 @@
       // the generic square white as every process (user, 2026-11-14: Newt fills an association dark grey)
       s = '<g class="sbgn-' + sc + '">' + c + '</g><g class="sbgn-generic" display="none">' + outlines.map(function (o) { return shapeSvg(o, '#FFFFFF', stroke, rl); }).join('') + '</g>';
     }
+    var aux = [];   // the outlines of its state variables and units of information (visualEnd)
     kids(r, Y, 'NodeLabel').forEach(function (lab) {
       if (get(lab, 'visible') === 'false') return;
       var box = labelPlace(lab, x, y, w, h);
@@ -505,7 +512,7 @@
       var ax = box[0], ay = box[1], lw = box[2], lh = box[3];
       self.boxes.push([ax, ay, lw, lh]);
       s += labelBox(lab, ax, ay, lw, lh);
-      if (get(lab, 'iconData')) s += iconSvg(has(self.res, get(lab, 'iconData')) ? self.res[get(lab, 'iconData')] : null, lab, ax, ay, lw, lh, where);
+      if (get(lab, 'iconData')) s += iconSvg(has(self.res, get(lab, 'iconData')) ? self.res[get(lab, 'iconData')] : null, lab, ax, ay, lw, lh, where, aux);
       if (get(lab, 'hasText') !== 'false') {
         var on = get(lab, 'hasBackgroundColor') !== 'false' && get(lab, 'backgroundColor') ? 'white'
           : fill && x <= ax + 2 && ax + 2 <= x + w && y <= ay + lh / 2 && ay + lh / 2 <= y + h ? rl : parent;
@@ -516,7 +523,7 @@
     if (url) s = '<a xlink:href="' + esc(url) + '" target="_blank">' + s + '</a>';
     if (this.groups) s = '<g data-n="' + esc(nid) + '">' + s + '</g>';
     var eq = k === 'Operator' && kids(r, Y, 'NodeLabel').some(function (lb) { return pyStrip(itertext(lb)) === EQUIV; });
-    this.nodes[nid] = { geo: [x, y, w, h], polys: outlines.map(function (c) { return polygon(c); }), svg: s, kind: k, stroke: stroke, eq: eq };
+    this.nodes[nid] = { geo: [x, y, w, h], polys: outlines.map(function (c) { return polygon(c); }), aux: aux, svg: s, kind: k, stroke: stroke, eq: eq };
     this.boxes.push([x, y, w, h]);
     this.order.push(['n', nid]);
     var sub = kid(node, G, 'graph');
@@ -552,8 +559,8 @@
       while (pts.length > 2 && this.onStick(sId, pts[1])) pts.splice(1, 1);
       var P = this.ports[sId];
       pts[0] = at[0] === 'in' ? P[0] : P[2] || dist(P[1], pts[1]) <= dist(P[0], pts[1]) ? P[1] : P[0];
-    } else pts[0] = clip(pts[1], pts[0], S.polys);
-    if (at[1] !== 'in') pts[pts.length - 1] = clip(pts[pts.length - 2], pts[pts.length - 1], T.polys);
+    } else pts[0] = visualEnd(pts[1], pts[0], S);
+    if (at[1] !== 'in') pts[pts.length - 1] = visualEnd(pts[pts.length - 2], pts[pts.length - 1], T);
     var ls = kid(pl, Y, 'LineStyle');
     if (get(ls, 'type') !== 'line' && get(ls, 'type') !== 'dashed') refuse(where, 'line type ' + get(ls, 'type'));
     var col = get(ls, 'color'), width = pyFloat(get(ls, 'width'));

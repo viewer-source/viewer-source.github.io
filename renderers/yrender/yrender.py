@@ -16,7 +16,8 @@
 #    measured them, Dialog being Lucida Grande on a Mac) is centred in it inside the insets
 #  - state variables and units of information are label icons (a node kept in Resources),
 #    centred in the label box
-#  - edges: from port to port through the bends, cut at the node outlines; soft bends are
+#  - edges: from port to port through the bends, cut at the node's shape outline (its shape with its state
+#    variables and units of information: visual_end, user 2026-11-14); soft bends are
 #    quadratic curves cutting 10 px (at most half a segment) on each side of the bend
 #  - arrows: tip on the outline; the line stops where the arrow head covers it
 #  - PerturbingAgent: the Phenotype's hexagon turned inside out, its points indented h/4 (2026-11-11, the SBGN
@@ -223,13 +224,14 @@ def inside(p, poly):
     return c
 
 
-def clip(outer, port, polys):
+def clip(outer, port, polys, crossed=False):
     # where the segment from outer to port first meets the node's outlines (a multimer has
-    # two); the port itself when it lies outside them
+    # two); the port itself when it lies outside them. crossed: any outline the segment crosses
+    # counts, the port inside it or not (a state variable on the way)
     (px, py), (qx, qy) = outer, port
     best = None
     for poly in polys:
-        if not inside(port, poly):
+        if not crossed and not inside(port, poly):
             continue
         for i in range(len(poly)):
             (ax, ay), (bx, by) = poly[i - 1], poly[i]
@@ -386,8 +388,17 @@ def label_box(lab, x, y, w, h):
     return s
 
 
-def icon_svg(res, lab, x, y, w, h, where):
-    # a state variable or unit of information kept as a label icon, centred in the label box
+def visual_end(outer, port, n):
+    # the visual end: where the line from outer to port first meets the node's shape outline, its
+    # shape with its state variables and units of information (user, 2026-11-14: the line stops at a
+    # state variable on its way, never crossing it to the shape behind)
+    q = clip(outer, port, n['polys'])
+    return clip(outer, q, n['aux'], True) if n['aux'] else q
+
+
+def icon_svg(res, lab, x, y, w, h, where, aux=None):
+    # a state variable or unit of information kept as a label icon, centred in the label box; its
+    # outline added to aux, part of the node's shape outline
     gn = next((n for n in res.iter(Y + 'GenericNode', Y + 'ShapeNode')), None) if res is not None else None
     if gn is None:
         refuse(where, 'label icon is not a node'); return ''
@@ -397,7 +408,10 @@ def icon_svg(res, lab, x, y, w, h, where):
     g = gn.find(Y + 'Geometry'); iw, ih = float(g.get('width')), float(g.get('height'))
     ix, iy = x + (w - iw) / 2, y + (h - ih) / 2
     fill, stroke = check_fill_border(gn, where)
-    s = shape_svg(outline(k, ix, iy, iw, ih, {}), fill, stroke)
+    c = outline(k, ix, iy, iw, ih, {})
+    if aux is not None and k in ('StateVariable', 'UnitOfInformation'):
+        aux.append(polygon(c))
+    s = shape_svg(c, fill, stroke)
     for il in gn.findall(Y + 'NodeLabel'):
         if il.get('visible') == 'false' or il.get('hasText') == 'false':
             continue
@@ -477,6 +491,7 @@ class Map:
                 c += shape_svg(ellipse(x + w * 0.2, y + h * 0.2, w * 0.6, h * 0.6), None, stroke, rl)
             # the generic square white as every process (user, 2026-11-14: Newt fills an association dark grey)
             s = f'<g class="sbgn-{sc}">{c}</g><g class="sbgn-generic" display="none">' + ''.join(shape_svg(o, '#FFFFFF', stroke, rl) for o in outlines) + '</g>'
+        aux = []   # the outlines of its state variables and units of information (visual_end)
         for lab in r.findall(Y + 'NodeLabel'):
             if lab.get('visible') == 'false':
                 continue
@@ -489,7 +504,7 @@ class Map:
             self.boxes.append((ax, ay, lw, lh))
             s += label_box(lab, ax, ay, lw, lh)
             if lab.get('iconData'):
-                s += icon_svg(self.res.get(lab.get('iconData')), lab, ax, ay, lw, lh, where)
+                s += icon_svg(self.res.get(lab.get('iconData')), lab, ax, ay, lw, lh, where, aux)
             if lab.get('hasText') != 'false':
                 # the text's role: of the fill under its start, the label's box, the node or the group
                 on = 'white' if lab.get('hasBackgroundColor') != 'false' and lab.get('backgroundColor') else \
@@ -499,7 +514,7 @@ class Map:
         if url:
             s = f'<a xlink:href="{html.escape(url)}" target="_blank">{s}</a>'
         eq = k == 'Operator' and any(''.join(lb.itertext()).strip() == EQUIV for lb in r.findall(Y + 'NodeLabel'))
-        self.nodes[nid] = dict(geo=(x, y, w, h), polys=[polygon(c) for c in outlines], svg=s, kind=k, stroke=stroke, eq=eq)
+        self.nodes[nid] = dict(geo=(x, y, w, h), polys=[polygon(c) for c in outlines], aux=aux, svg=s, kind=k, stroke=stroke, eq=eq)
         self.boxes.append((x, y, w, h))
         self.order.append(('n', nid))
         sub = node.find(G + 'graph')
@@ -648,9 +663,9 @@ class Map:
             one, two, has_in = self.ports[s_id]
             pts[0] = one if at_s == 'in' else two if has_in or math.dist(two, pts[1]) <= math.dist(one, pts[1]) else one
         else:
-            pts[0] = clip(pts[1], pts[0], S['polys'])
+            pts[0] = visual_end(pts[1], pts[0], S)
         if at_t != 'in':
-            pts[-1] = clip(pts[-2], pts[-1], T['polys'])
+            pts[-1] = visual_end(pts[-2], pts[-1], T)
         ls = pl.find(Y + 'LineStyle')
         if ls.get('type') not in ('line', 'dashed'):
             refuse(where, f'line type {ls.get("type")}')

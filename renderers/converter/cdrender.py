@@ -104,6 +104,35 @@ def outline(cls, b):
     return [(x, y), (x + w, y), (x + w, y + h), (x, y + h)]
 
 
+def enter(shapes, Q, P):
+    # where the segment Q (outside) -> P first enters one of the shapes (('e', cx, cy, rx, ry) an ellipse, ('r', x, y,
+    # w, h) a rectangle), else P: a state variable or unit of information on the way (user, 2026-11-14, the shape outline)
+    dx, dy, best = P[0] - Q[0], P[1] - Q[1], None
+    for s in shapes:
+        if s[0] == 'e':
+            ux, uy = (Q[0] - s[1]) / s[3], (Q[1] - s[2]) / s[4]
+            vx, vy = dx / s[3], dy / s[4]
+            a, b, c = vx * vx + vy * vy, ux * vx + uy * vy, ux * ux + uy * uy - 1
+            if a == 0 or c <= 0 or b * b - a * c < 0:
+                continue
+            t = (-b - math.sqrt(b * b - a * c)) / a
+        else:
+            lo, hi = 0.0, 1.0
+            for q, d, mn, mx in ((Q[0], dx, s[1], s[1] + s[3]), (Q[1], dy, s[2], s[2] + s[4])):
+                if d == 0:
+                    if q < mn or q > mx:
+                        lo, hi = 1.0, 0.0
+                    continue
+                t1, t2 = (mn - q) / d, (mx - q) / d
+                lo, hi = max(lo, min(t1, t2)), min(hi, max(t1, t2))
+            if lo > hi or lo <= 0:
+                continue
+            t = lo
+        if 0 < t <= 1 and (best is None or t < best):
+            best = t
+    return P if best is None else (Q[0] + best * dx, Q[1] + best * dy)
+
+
 def leave(poly, P, Q):
     # where the segment P (inside) -> Q leaves the polygon, else P
     best = None
@@ -135,6 +164,7 @@ class Drawing:
                    for s in model.iterfind('s:listOfSpecies/s:species', NS)}
         species.update({s.get('id'): (s.get('name'), f(s, 'cd:annotation/cd:speciesIdentity'))
                         for s in ext.iterfind('cd:listOfIncludedSpecies/cd:species', NS)})
+        self.extra = {}   # extras(): per alias, what does not depend on its box
         self.residues = {(p.get('id'), m.get('id')): (float(m.get('angle', 0)), m.get('name'))
                          for p in ext.iterfind('cd:listOfProteins/cd:protein', NS)
                          for m in p.iterfind('cd:listOfModificationResidues/cd:modificationResidue', NS)}
@@ -356,12 +386,52 @@ class Drawing:
         # on an ellipse at 22.5 degree steps, on a phenotype's hexagon, else on the box (the converter's rule)
         return anchor_point((x, y, w, h), side, circle=self.alias[i][0] in ROUND, hexagon=self.alias[i][0] == 'PHENOTYPE'), True
 
-    def clip(self, i, P, anchored, Q):
-        # the line's end at alias i: an anchor as it is, else where the line from the centre leaves the shape
-        if anchored:
-            return P
-        cls = self.alias[i][0]
-        return leave(outline(cls, self.box(i)), P, Q)
+    def clip(self, i, P, anchored, Q, shape_only=False):
+        # the line's visual end at alias i: an anchor as it is, else where the line from the centre leaves the shape;
+        # then the first state variable or unit of information it meets on its way in (the shape outline)
+        if not anchored:
+            P = leave(outline(self.alias[i][0], self.box(i)), P, Q)
+        return P if shape_only else enter(self.extras(i), Q, P)
+
+    def ends(self, line, ra, pa):
+        # a reaction's visual ends, cut at the state variables once its square is placed from the shape-only ends
+        A, B, A1, B1 = line[0], line[-1], line[1], line[-2]
+        line[0], line[-1] = enter(self.extras(ra), A1, A), enter(self.extras(pa), B1, B)
+
+    def extras(self, i):
+        # the shapes states() draws round alias i, on every copy of a multimer: residue circles, structural state
+        # ellipses, the unit of information's box on the front copy. What does not depend on the box is read once
+        # per alias (the editor moves boxes in place, never the states)
+        cls, (x, y, w, h), a, name, si = self.alias[i]
+        if i not in self.extra:
+            f = self.f
+            hd = f(si, 'cd:state/cd:homodimer')
+            pref = f(si, 'cd:proteinReference')
+            pid = pref.text if pref is not None else None
+            mods = [m.get('residue') for m in si.iterfind('cd:state/cd:listOfModifications/cd:modification', NS)]
+            angs = [ang for (p_, r_), (ang, site) in self.residues.items() if p_ == pid and r_ not in mods] + \
+                   [self.residues.get((pid, r_), (0.0, None))[0] for r_ in mods]
+            rxs = [int(width(st.get('structuralState'), 10) / 2 + 12)
+                   for st in si.iterfind('cd:state/cd:listOfStructuralStates/cd:structuralState', NS)]
+            sa = f(a, 'cd:structuralState')
+            info = f(a, 'cd:info')
+            self.extra[i] = (int(hd.text) if hd is not None else 1, angs, rxs,
+                             float(sa.get('angle')) if sa is not None else -math.pi / 2,
+                             info is not None and info.get('state') == 'open')
+        n, angs, rxs, sang, info = self.extra[i]
+        s6 = 6 * (n - 1)
+        out = []
+        for k in range(n - 1, -1, -1):
+            b = (x + 6 * k, y + 6 * k, w - s6, h - s6)
+            for ang in angs:
+                px, py = on_border(b, ang)
+                out.append(('e', px, py, 8, 8))
+            for rx_ in rxs:
+                px, py = on_border(b, sang)
+                out.append(('e', px, py, rx_, 8))
+            if k == 0 and info:
+                out.append(('r', b[0] + b[2] / 2 - 35, b[1] - 8, 70, 16))
+        return out
 
     def open(self, e):  # a group of the editor's (GROUPS) for one line, in the lines and in their halo
         if GROUPS:
@@ -447,13 +517,14 @@ class Drawing:
         if typ == 'BOOLEAN_LOGIC_GATE':
             raise ValueError('a logic gate between entities, not drawn')
         line = [A] + [from_frame(A, B, p) for p in q] + [B]
-        line[0] = self.clip(ra, A, ancA, line[1])
-        line[-1] = self.clip(pa, B, ancB, line[-2])
+        line[0] = self.clip(ra, A, ancA, line[1], True)   # the shape alone: the square's place (ends below)
+        line[-1] = self.clip(pa, B, ancB, line[-2], True)
         reduced = typ not in ('STATE_TRANSITION', 'KNOWN_TRANSITION_OMITTED', 'UNKNOWN_TRANSITION', 'TRANSPORT',
                               'TRANSCRIPTION', 'TRANSLATION', 'HETERODIMER_ASSOCIATION', 'DISSOCIATION', 'TRUNCATION')
         dash = reduced and typ.startswith('UNKNOWN')  # an unknown transition keeps a solid line, a ? in its square
         dash = {'TRANSCRIPTION': '10,4,2,4,2,4', 'TRANSLATION': '10,3,2,3'}.get(typ, dash)
         if reduced:  # an arc between the entities, its head by type
+            self.ends(line, ra, pa)
             kind = {'PHYSICAL_STIMULATION': 'stimulation-reduced', 'REDUCED_PHYSICAL_STIMULATION': 'stimulation-reduced',
                     'NEGATIVE_INFLUENCE': 'inhibition', 'REDUCED_MODULATION': 'modulation', 'REDUCED_TRIGGER': 'trigger',
                     'POSITIVE_INFLUENCE': 'production', 'CATALYSIS': 'catalysis', 'INHIBITION': 'inhibition'}.get(typ.replace('UNKNOWN_', ''), 'production')
@@ -469,6 +540,7 @@ class Drawing:
         P, Q = line[k], line[k + 1]
         sq = ((P[0] + Q[0]) / 2, (P[1] + Q[1]) / 2)
         fl = unit(Q[0] - P[0], Q[1] - P[1])
+        self.ends(line, ra, pa)
         reversible = rx.get('reversible') != 'false'
         # the main line: reactant to product, the head at the product (and the reactant if reversible)
         u = unit(line[-1][0] - line[-2][0], line[-1][1] - line[-2][1])
@@ -517,12 +589,22 @@ class Drawing:
             # (the user's PDF of Ferroptosis, 2026-11-03)
             out_ = [J] + [from_frame(J, E, p) for p in arm_pts[k]] + [E]
             seq = out_[::-1] if inward else out_
-            if inward:
-                seq[0] = self.clip(e.get('alias'), E, anc, seq[1])
+            if inward:  # the shape alone: the square's place, the visual end below
+                seq[0] = self.clip(e.get('alias'), E, anc, seq[1], True)
             else:
-                seq[-1] = self.clip(e.get('alias'), E, anc, seq[-2])
-            arms.append((seq, inward))
-        for k, (seq, inward) in enumerate(arms):
+                seq[-1] = self.clip(e.get('alias'), E, anc, seq[-2], True)
+            arms.append((seq, inward, e.get('alias')))
+        seq = arms[2][0] if assoc else arms[0][0]
+        k = min(int(ep.get('tShapeIndex', 0)) if ep is not None else 0, len(seq) - 2)
+        P, Q = seq[k], seq[k + 1]
+        sq = ((P[0] + Q[0]) / 2, (P[1] + Q[1]) / 2)
+        fl = unit(Q[0] - P[0], Q[1] - P[1])
+        for seq, inward, al in arms:  # the visual ends, once the square is placed
+            if inward:
+                seq[0] = enter(self.extras(al), seq[1], seq[0])
+            else:
+                seq[-1] = enter(self.extras(al), seq[-2], seq[-1])
+        for k, (seq, inward, al) in enumerate(arms):
             p_ = list(seq)
             single = k == 2 if assoc else k == 0
             head_here = (not inward) or reversible  # products get a head, reactants too when reversible
@@ -533,11 +615,6 @@ class Drawing:
                 u = unit(p_[-1][0] - p_[-2][0], p_[-1][1] - p_[-2][1])
                 p_[-1] = self.head('production', p_[-1], u)
             self.path(p_, col, width, False, start_node=inward, end_node=not inward)
-        seq = arms[2][0] if assoc else arms[0][0]
-        k = min(int(ep.get('tShapeIndex', 0)) if ep is not None else 0, len(seq) - 2)
-        P, Q = seq[k], seq[k + 1]
-        sq = ((P[0] + Q[0]) / 2, (P[1] + Q[1]) / 2)
-        fl = unit(Q[0] - P[0], Q[1] - P[1])
         if assoc:
             self.lines.append('<circle cx="%s" cy="%s" r="3.5" fill="#000"/>' % (fmt(J[0]), fmt(J[1])))
         else:

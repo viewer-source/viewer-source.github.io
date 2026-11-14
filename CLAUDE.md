@@ -23,8 +23,15 @@ says "the workbench", "the converter's repository", "a private repository".
     state variables and units of information, so a visual end stops at a state variable on its way and never runs
     through it to the shape behind. CellDesigner's 16 ports are worked out from the box and lie on the shape's own edge:
     on a rectangle at its corners, the sides' middles and quarter points, on a circle every 22.5 degrees round it, on a
-    phenotype on its slanted sides (cdrender's anchorPoint). Not yet drawn so (2026-11-14): both renderers cut a line at
-    the shape alone, a state variable on its way left crossed.
+    phenotype on its slanted sides (cdrender's anchorPoint). Drawn so by both renderers (2026-11-14): yrender's
+    visual_end (the node's label icons of state variables and units of information), cdrender's extras and enter (its
+    residue circles, structural state ellipses, unit of information box); a CellDesigner reaction's square is placed
+    from the ends cut at the shape alone, and only then its visual ends cut, so no reaction moves.
+- Our own drawing (user, 2026-11-14: "go with our own clean visualization, even if the original editor does it kind of
+  wrong"): a map's file (CellDesigner, GraphML, SBGN-ML) is the source of what is drawn and where things are attached;
+  how it looks is ours, the same rules for every format, never a copy of the editor that made it. Nothing of the
+  drawing is written back into the file, so the file opens in its own editor as before, which may then look different
+  (as CellDesigner's own pixelated lines already do).
   "Anchor point" is not one of our words: it stays only where CellDesigner's or MINERVA's own names are quoted
   (menus, XML, function names such as anchorPoint, kept as they are).
 - The viewer: `_includes/atlas-app.html` (list on the left, the map, its panel, search, downloads row). It never

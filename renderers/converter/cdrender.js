@@ -196,6 +196,30 @@
     if (cls === 'RECEPTOR') return [[x, y], [x + w / 2, y + h / 5], [x + w, y], [x + w, y + h * 4 / 5], [x + w / 2, y + h], [x, y + h * 4 / 5]];
     return [[x, y], [x + w, y], [x + w, y + h], [x, y + h]];
   }
+  function enter(shapes, Q, P) {   // cdrender.py's enter: the first state variable or unit of information on the way in
+    var dx = P[0] - Q[0], dy = P[1] - Q[1], best = null;
+    shapes.forEach(function (s) {
+      var t;
+      if (s[0] === 'e') {
+        var ux = (Q[0] - s[1]) / s[3], uy = (Q[1] - s[2]) / s[4], vx = dx / s[3], vy = dy / s[4];
+        var a = vx * vx + vy * vy, b = ux * vx + uy * vy, c = ux * ux + uy * uy - 1;
+        if (a === 0 || c <= 0 || b * b - a * c < 0) return;
+        t = (-b - Math.sqrt(b * b - a * c)) / a;
+      } else {
+        var lo = 0.0, hi = 1.0;
+        [[Q[0], dx, s[1], s[1] + s[3]], [Q[1], dy, s[2], s[2] + s[4]]].forEach(function (z) {
+          var q = z[0], d = z[1], mn = z[2], mx = z[3];
+          if (d === 0) { if (q < mn || q > mx) { lo = 1.0; hi = 0.0; } return; }
+          var t1 = (mn - q) / d, t2 = (mx - q) / d;
+          lo = Math.max(lo, Math.min(t1, t2)); hi = Math.min(hi, Math.max(t1, t2));
+        });
+        if (lo > hi || lo <= 0) return;
+        t = lo;
+      }
+      if (t > 0 && t <= 1 && (best === null || t < best)) best = t;
+    });
+    return best === null ? P : [Q[0] + best * dx, Q[1] + best * dy];
+  }
   function leave(poly, P, Q) {
     var best = null;
     for (var i = 0; i < poly.length; i++) {
@@ -234,6 +258,7 @@
     var species = new Map();
     findall(model, 's:listOfSpecies/s:species').forEach(function (s) { species.set(get(s, 'id'), [get(s, 'name'), find(s, 's:annotation/cd:extension/cd:speciesIdentity')]); });
     findall(ext, 'cd:listOfIncludedSpecies/cd:species').forEach(function (s) { species.set(get(s, 'id'), [get(s, 'name'), find(s, 'cd:annotation/cd:speciesIdentity')]); });
+    this.extra = new Map();   // extras(): per alias, what does not depend on its box
     this.residues = new Map();
     findall(ext, 'cd:listOfProteins/cd:protein').forEach(function (p) {
       findall(p, 'cd:listOfModificationResidues/cd:modificationResidue').forEach(function (m) {
@@ -407,7 +432,36 @@
     if (cls === 'DEGRADED') { x += w / 8; y += h / 8; w *= 3 / 4; h *= 3 / 4; }  // on its drawn circle, 3/4 of the box (AsthmaMap mast cell PDF: no gap)
     return [anchorPoint([x, y, w, h], side, ROUND.indexOf(cls) >= 0, cls === 'PHENOTYPE'), true];
   };
-  D.clip = function (i, P, anchored, Q) { return anchored ? P : leave(outline(this.al(i)[0], this.box(i)), P, Q); };
+  D.clip = function (i, P, anchored, Q, shapeOnly) {   // the visual end (cdrender.py's clip)
+    if (!anchored) P = leave(outline(this.al(i)[0], this.box(i)), P, Q);
+    return shapeOnly ? P : enter(this.extras(i), Q, P);
+  };
+  D.ends = function (line, ra, pa) {   // cdrender.py's ends
+    var L = line.length, A = line[0], B = line[L - 1], A1 = line[1], B1 = line[L - 2];
+    line[0] = enter(this.extras(ra), A1, A);
+    line[L - 1] = enter(this.extras(pa), B1, B);
+  };
+  D.extras = function (i) {   // cdrender.py's extras
+    var A = this.al(i), x = A[1][0], y = A[1][1], w = A[1][2], h = A[1][3], self = this;
+    if (!this.extra.has(i)) {
+      var a = A[2], si = A[4], hd = find(si, 'cd:state/cd:homodimer'), pref = find(si, 'cd:proteinReference'), pid = pref ? text(pref) : null;
+      var mods = findall(si, 'cd:state/cd:listOfModifications/cd:modification').map(function (m) { return get(m, 'residue'); });
+      var angs = [];
+      this.residues.forEach(function (r) { if (r[2] === pid && mods.indexOf(r[3]) < 0) angs.push(r[0]); });
+      mods.forEach(function (r) { var q = self.residues.get(pid + '\u0001' + r); angs.push(q ? q[0] : 0.0); });
+      var rxs = findall(si, 'cd:state/cd:listOfStructuralStates/cd:structuralState').map(function (st) { return Math.trunc(width(get(st, 'structuralState'), 10) / 2 + 12); });
+      var sa = find(a, 'cd:structuralState'), info = find(a, 'cd:info');
+      this.extra.set(i, [hd ? I(text(hd)) : 1, angs, rxs, sa ? F(get(sa, 'angle')) : -Math.PI / 2, !!info && get(info, 'state') === 'open']);
+    }
+    var E = this.extra.get(i), n = E[0], s6 = 6 * (n - 1), out = [];
+    for (var k = n - 1; k >= 0; k--) {
+      var b = [x + 6 * k, y + 6 * k, w - s6, h - s6];
+      E[1].forEach(function (ang) { var p = onBorder(b, ang); out.push(['e', p[0], p[1], 8, 8]); });
+      E[2].forEach(function (rx) { var p = onBorder(b, E[3]); out.push(['e', p[0], p[1], rx, 8]); });
+      if (k === 0 && E[4]) out.push(['r', b[0] + b[2] / 2 - 35, b[1] - 8, 70, 16]);
+    }
+    return out;
+  };
   D.open = function (e) { if (this.GROUPS) { this.lines.push('<g data-e="' + escape(e) + '">'); this.halo.push('<g data-e="' + escape(e) + '">'); } };
   D.close = function () { if (this.GROUPS) { this.lines.push('</g>'); this.halo.push('</g>'); } };
   D.path = function (p, col, wd, dash, startNode, endNode) {
@@ -466,14 +520,15 @@
     var EA = this.end(br[0], ra), A = EA[0], ancA = EA[1], EB = this.end(bp[0], pa), B = EB[0], ancB = EB[1];
     if (typ === 'BOOLEAN_LOGIC_GATE') throw new Error('a logic gate between entities, not drawn');
     var line = [A].concat(q.map(function (p) { return fromFrame(A, B, p); }), [B]), L = line.length;
-    line[0] = this.clip(ra, A, ancA, line[1]);
-    line[L - 1] = this.clip(pa, B, ancB, line[L - 2]);
+    line[0] = this.clip(ra, A, ancA, line[1], true);   // the shape alone: the square's place (ends below)
+    line[L - 1] = this.clip(pa, B, ancB, line[L - 2], true);
     var reduced = ['STATE_TRANSITION', 'KNOWN_TRANSITION_OMITTED', 'UNKNOWN_TRANSITION', 'TRANSPORT', 'TRANSCRIPTION', 'TRANSLATION',
       'HETERODIMER_ASSOCIATION', 'DISSOCIATION', 'TRUNCATION'].indexOf(typ) < 0;
     var dash = reduced && typ.indexOf('UNKNOWN') === 0;
     dash = { TRANSCRIPTION: '10,4,2,4,2,4', TRANSLATION: '10,3,2,3' }[typ] || dash;
     var u;
     if (reduced) {
+      this.ends(line, ra, pa);
       var kind = REDUCED_HEAD[typ.split('UNKNOWN_').join('')] || 'production';
       u = unit(line[L - 1][0] - line[L - 2][0], line[L - 1][1] - line[L - 2][1]);
       this.open(this.cur + '|a');
@@ -485,6 +540,7 @@
     var cs = find(x, 'cd:connectScheme'), k = cs ? I(get(cs, 'rectangleIndex', 0)) : 0;
     k = Math.min(k, L - 2);
     var P = line[k], Q = line[k + 1], sq = [(P[0] + Q[0]) / 2, (P[1] + Q[1]) / 2], fl = unit(Q[0] - P[0], Q[1] - P[1]);
+    this.ends(line, ra, pa);
     var reversible = get(rx, 'reversible') !== 'false';
     u = unit(line[L - 1][0] - line[L - 2][0], line[L - 1][1] - line[L - 2][1]);
     if (this.GROUPS) {
@@ -519,9 +575,17 @@
       var Ea = self.end(e, get(e, 'alias')), E = Ea[0], anc = Ea[1], inward = assoc ? k < 2 : k === 0;
       var out = [J].concat(armPts[k].map(function (p) { return fromFrame(J, E, p); }), [E]);
       var seq = inward ? out.slice().reverse() : out;
-      if (inward) seq[0] = self.clip(get(e, 'alias'), E, anc, seq[1]);
-      else seq[seq.length - 1] = self.clip(get(e, 'alias'), E, anc, seq[seq.length - 2]);
-      arms.push([seq, inward]);
+      if (inward) seq[0] = self.clip(get(e, 'alias'), E, anc, seq[1], true);   // the shape alone: the square's place, the visual end below
+      else seq[seq.length - 1] = self.clip(get(e, 'alias'), E, anc, seq[seq.length - 2], true);
+      arms.push([seq, inward, get(e, 'alias')]);
+    });
+    var seq = assoc ? arms[2][0] : arms[0][0];
+    var k = Math.min(ep ? I(get(ep, 'tShapeIndex', 0)) : 0, seq.length - 2);
+    var P = seq[k], Q = seq[k + 1], sq = [(P[0] + Q[0]) / 2, (P[1] + Q[1]) / 2], fl = unit(Q[0] - P[0], Q[1] - P[1]);
+    arms.forEach(function (arm) {   // the visual ends, once the square is placed
+      var s = arm[0], L = s.length;
+      if (arm[1]) s[0] = enter(self.extras(arm[2]), s[1], s[0]);
+      else s[L - 1] = enter(self.extras(arm[2]), s[L - 2], s[L - 1]);
     });
     arms.forEach(function (arm) {
       var p = arm[0].slice(), inward = arm[1], headHere = !inward || reversible;
@@ -529,9 +593,6 @@
       if (!inward) { var L = p.length; p[L - 1] = self.head('production', p[L - 1], unit(p[L - 1][0] - p[L - 2][0], p[L - 1][1] - p[L - 2][1])); }
       self.path(p, col, wd, false, inward, !inward);
     });
-    var seq = assoc ? arms[2][0] : arms[0][0];
-    var k = Math.min(ep ? I(get(ep, 'tShapeIndex', 0)) : 0, seq.length - 2);
-    var P = seq[k], Q = seq[k + 1], sq = [(P[0] + Q[0]) / 2, (P[1] + Q[1]) / 2], fl = unit(Q[0] - P[0], Q[1] - P[1]);
     if (assoc) this.lines.push('<circle cx="' + fmt(J[0]) + '" cy="' + fmt(J[1]) + '" r="3.5" fill="#000"/>');
     else [5.5, 3].forEach(function (r) { self.lines.push('<circle cx="' + fmt(J[0]) + '" cy="' + fmt(J[1]) + '" r="' + fmt(r) + '" fill="#fff" stroke="#000"/>'); });
     this.linksAndModifiers(x, P, Q, sq, fl, col, wd, false, typ);
