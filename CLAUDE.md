@@ -527,10 +527,11 @@ says "the workbench", "the converter's repository", "a private repository".
   (other groups' and tools' files, unchanged; libsbgn's validation error tests left out), each drawn from its file by
   the same SBGN-ML path, its sizes and places as the file gives them (no standard sizes; user: where the file says
   nothing, our own way), downloaded from its own address there, its text the source and licence from `sources.tsv`.
-  all 42 drawn (2026-11-14; SBGN-ED's three 2010 files, in SBGN-ML's first draft, libsbgn's PD Reference Card and
+  all 36 drawn (2026-11-14; SBGN-ED's three 2010 files, in SBGN-ML's first draft, libsbgn's PD Reference Card and
   SBGN-PD all, newt-master's PD learner's card .nwt, and Newt's twins (one copy per example, from newt-unstable)
   Reactome's three, the SBGN
-  website's four PD learner's cards and its layout-branching, removed, user). The build workflow also
+  website's four PD learner's cards and its layout-branching, and libsbgn's six PD test files (copies of Newt's
+  examples), removed, user). The build workflow also
   runs on a change under `test-maps/sbgn-ml/`.
   One more group (user, 2026-11-13: "for testing ... this large map"), AsthmaMap: its mast cell map (submap PD01, the
   user's upload, the MINERVA project's source file) from its CellDesigner file and from a GraphML the converter made of
