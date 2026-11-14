@@ -662,6 +662,7 @@
       <bbox x="358" y="177" w="80" h="40"/>
     </glyph>
     <glyph class="macromolecule" id="glyph_6">
+      <label text="mgv,hb"/>
       <bbox x="112" y="334" w="80" h="40"/>
       <glyph class="state variable" id="glyph_6_sv0">
         <state value=".hv,"/>
