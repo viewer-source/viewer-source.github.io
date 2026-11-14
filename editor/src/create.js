@@ -122,7 +122,7 @@
     // multimer); [label, action] pairs
     window.m2EditNodeItems = function () {
       var P = rclick, i = P && palOn() && !svAt(P) ? macroAt(P) : -1;
-      if (i < 0) return null;
+      if (i < 0 || !/^macromolecule( multimer)?$/.test(sbJs.classOf(src(), nodes2[i].id))) return null;   // not an Activity Flow activity drawn as one (write() carries none of its changes)
       var id = nodes2[i].id, multi = isMulti(i);
       return [['Add state variable', function () { makeState(P); }],
               ['Add unit of information', function () { typeIn(id, null, true); }],
@@ -230,8 +230,9 @@
           typing = null; inp.remove(); hid.forEach(function (el) { el.style.visibility = ''; });
           var v = inp.value.replace(/[\r\n]+/g, ' ');
           if (sv && !unit) v = v.replace(/@+$/, '');   // P@ is P (a site needs a name)
-          if (!keep || v === before.replace(/[\r\n]+/g, ' ') || !on || map !== m0) return;   // a name on several lines, untouched, kept as it was (the box shows it on one)
-          var t2 = fresh ? sbJs.unit(text, id, v) : !sv ? sbJs.label(text, id, v) : unit ? sbJs.unitValue(text, id, sv[4], v) : sbJs.stateValue(text, id, sv[4], v);
+          if (unit) v = v.trim();   // a unit of only spaces is none
+          if (!keep || v === before.replace(/[\r\n]+/g, ' ') || !on || map !== m0 || (fresh && !v)) return;   // a name on several lines, untouched, kept as it was (the box shows it on one)
+          var t2 = fresh ? sbJs.unit(text, id, v) : unit && !v ? sbJs.unitDelete(text, id, sv[4], { sbgn: sb.base }) : !sv ? sbJs.label(text, id, v) : unit ? sbJs.unitValue(text, id, sv[4], v) : sbJs.stateValue(text, id, sv[4], v);
           if (t2 === text) return;
           remember(false); text = t2; parse(); dirty = true; quiet(); render(); paint(); changed();
         }, inp: inp, place: place
@@ -314,7 +315,8 @@
     window.addEventListener('pointermove', function (e) {
       if (!svDrag || !svSel) return;
       if (!e.buttons) { svUp(); return; }   // released outside the window: no sticky hand
-      if (svDrag.fixed || (!svDrag.to && Math.hypot(e.clientX - svDrag.x, e.clientY - svDrag.y) < 4)) return;
+      if (!svDrag.to && Math.hypot(e.clientX - svDrag.x, e.clientY - svDrag.y) < 4) return;
+      if (svDrag.fixed) { svDrag.moved = true; return; }   // a unit of information is not dragged; a drag on it is no click
       var i = svDrag.i, b = boxOf(i), r = border(i, at(e)), q = svList(i)[svSel.j];
       if (!svDrag.parts) svDrag.parts = svParts(i, q);   // the state variable itself moves (user, 2026-11-14: "as with moving other items on the map"), no copy
       svDrag.r = r; svDrag.to = [b[0] + (0.5 + r[0]) * b[2], b[1] + (0.5 + r[1]) * b[3]];
@@ -327,7 +329,7 @@
       var d = svDrag; svDrag = null;
       if (!d) return;
       if (d.r && svSel) { remember(false); text = sbJs.stateMove(text, svSel.id, svList(d.i)[svSel.j][4], d.r[0], d.r[1]); parse(); dirty = true; render(); paint(); changed(); }
-      else if (d.again && svSel) typeIn(svSel.id, svSel.j);   // a click on it selected: its text
+      else if (d.again && !d.moved && svSel) typeIn(svSel.id, svSel.j);   // a click on it selected: its text
     }
     function svDelete() {
       var i = svNode();

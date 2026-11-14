@@ -337,7 +337,7 @@
       // made a multimer or a single macromolecule again (user, 2026-11-14): the class, where the converter would read the
       // file otherwise (a multimer with N:1 reads as one unit: left as it is)
       var base = cls.replace(/ multimer$/, ''), multi = isMulti(G, id);
-      if (MULTI.test(base) && multi !== fileMulti(g.el)) T.set(g.el, 'class', base + (multi ? ' multimer' : ''));
+      if (MULTI.test(base) && multi !== drawnMulti(cls, iconsOf(id, 'UnitOfInformation').map(function (q) { return q[0]; }))) T.set(g.el, 'class', base + (multi ? ' multimer' : ''));   // judged by the units as now typed
       var have = kids(g.el, 'glyph').filter(function (c) { return c.getAttribute('class') === 'state variable'; }), more = '';
       var icons = iconsOf(id), hu = unitsOf(g.el), ui = iconsOf(id, 'UnitOfInformation'), cutEls = [];
       have.slice(icons.length).forEach(function (c) { T.cut(c); cutEls.push(c); });   // deleted in the editor
@@ -768,9 +768,10 @@
     return kids(el, 'glyph').filter(function (c) { return c.getAttribute('class') === 'unit of information' && (unitText(c) || !act); });
   }
   function unitText(c) { var l = kid(c, 'label'); return l ? l.getAttribute('text') || '' : ''; }
-  function fileMulti(el) {
-    if (!/ multimer$/.test(el.getAttribute('class') || '')) return false;
-    var n = unitsOf(el).map(unitText).filter(function (u) { return /^N:\d+$/.test(u); })[0];
+  function fileMulti(el) { return drawnMulti(el.getAttribute('class') || '', unitsOf(el).map(unitText)); }
+  function drawnMulti(cls, units) {   // sbgnml.read's count: the first N:x, else 2 for a multimer; above 1 drawn as a multimer
+    if (!/ multimer$/.test(cls)) return false;
+    var n = units.filter(function (u) { return /^N:\d+$/.test(u); })[0];
     return (n ? parseInt(n.slice(2), 10) : 2) > 1;
   }
   function uBox(txt, b, k, n) { var uw = Math.max(15, txt.length * 7); return [b[0] + (k + 1) / (n + 1) * b[2] - uw / 2, b[1] - 7.5, uw, 15]; }   // layout.decorations
@@ -780,11 +781,12 @@
     Object.keys(G.edge).forEach(function (k) { var e = G.edge[k]; if (del[e.s] || del[e.t]) T.cut(e.el); });
     return goneMark(T.text(), Object.keys(del));
   }
+  function classOf(t, id, opt) { var g = sbgn(t, opt).glyph[id]; return g ? g.el.getAttribute('class') || '' : ''; }
   function nameable(t, id, opt) { var g = sbgn(t, opt).glyph[id]; return !!g && NAMED.test(g.el.getAttribute('class') || ''); }   // a name the editor may change: one write() carries
   function svText(value, variable) { return (value || '') + (variable ? '@' + variable : ''); }
   var HUB = /process|^(and|or|not|association|dissociation|equivalence)$/;
 
   var api = { graphml: graphml, write: write, defaults: defaults, add: add, label: label, state: state, stateValue: stateValue, stateMove: stateMove, stateDelete: stateDelete,
-              unit: unit, unitValue: unitValue, unitDelete: unitDelete, multimer: multimer, remove: remove, gone: gone, nameable: nameable };
+              unit: unit, unitValue: unitValue, unitDelete: unitDelete, multimer: multimer, classOf: classOf, remove: remove, gone: gone, nameable: nameable };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.sbgn_edit = api;
 })(typeof self !== 'undefined' ? self : this);
