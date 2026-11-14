@@ -10,8 +10,10 @@ says "the workbench", "the converter's repository", "a private repository".
     process's or logic gate's antenna, or on a CellDesigner map one of its 16 places named by compass direction (N,
     NNE, NE, ...; its `linkAnchor`, which CellDesigner calls an anchor point). yEd keeps a port as an offset from the
     node's centre (`sx`, `sy`, `tx`, `ty`; 0,0 the centre); SBGN-ML has a `port` only for a process's or gate's antenna.
-  - **end**: where the drawn line stops: on the glyph's outline for a port inside the glyph (a line aimed at the centre
-    is cut where it crosses the outline), the port itself for a port on the outline or at an antenna's tip.
+  - **visual end** (user, 2026-11-14: "end could mean simply the final point of the link"): where the drawn line stops:
+    on the glyph's outline for a port inside the glyph (a line aimed at the centre is cut where it crosses the outline),
+    the port itself for a port on the outline or at an antenna's tip. A line's **end** alone is its last point as the
+    file gives it (its source end, its target end), wherever that is.
   - **antenna**: the short stick from a process or logic gate to its port.
   - **bend point**: a point where a line changes direction (CellDesigner: an anchor point, `editPoints`; yEd: a bend,
     `y:Point`; SBGN-ML: an intermediate point, `next`).
