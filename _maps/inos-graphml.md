@@ -14,7 +14,7 @@ height: 1198
 scale: 1
 annotation: "/atlas-data/inos-graphml.json"
 image_error: ""
-v: "0d8b9db312"
+v: "dd63fbc944"
 src: "f5bad82df8813fbb1b805976c09e2dd840529a7b"
 colours: true
 legend: "sbgn"

@@ -14,7 +14,7 @@ height: 1266
 scale: 1
 annotation: "/atlas-data/carnitine-graphml.json"
 image_error: ""
-v: "35e9861618"
+v: "d42ffcd23c"
 src: "50e2a25498f92283409a34308df2992409f46201"
 colours: true
 legend: "sbgn"

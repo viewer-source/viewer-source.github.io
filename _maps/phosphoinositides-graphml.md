@@ -14,7 +14,7 @@ height: 989
 scale: 1
 annotation: "/atlas-data/phosphoinositides-graphml.json"
 image_error: ""
-v: "51c3c500ba"
+v: "9e8b9814f7"
 src: "6a762394c5bd5dfb29ab78143565eecf5ac04973"
 colours: true
 legend: "sbgn"

@@ -113,7 +113,7 @@
 <path d="M831.1063 289.3 L831.1063 302.4328" fill="none" stroke="#000000"/><path d="M831.1063 313.4328 L825.1063 301.4328 L837.1063 301.4328 Z" fill="#000000" stroke="none"/>
 <path d="M346.9262 271.3 L814.1063 271.3" fill="none" stroke="#000000"/><circle cx="818.1063" cy="271.3" r="4" fill="white" class="c-white" stroke="#000000"/>
 <path d="M1161.1063 89.1672 L1161.1063 269.3" fill="none" stroke="#000000"/>
-<path d="M1161.1063 305.3 L1161.1063 302.4328" fill="none" stroke="#000000"/><path d="M1161.1063 313.4328 L1155.1063 301.4328 L1167.1063 301.4328 Z" fill="#000000" stroke="none"/>
+<path d="M1161.1063 305.3 L1161.1063 305.3" fill="none" stroke="#000000"/><path d="M1161.1063 313.4328 L1155.1063 301.4328 L1167.1063 301.4328 Z" fill="#000000" stroke="none"/>
 <path d="M346.9262 287.3 L1144.1063 287.3" fill="none" stroke="#000000"/><circle cx="1148.1063" cy="287.3" r="4" fill="white" class="c-white" stroke="#000000"/>
 </g>
 </svg>
