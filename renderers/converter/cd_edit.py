@@ -308,6 +308,7 @@ def read(gtext):
 # where a line meets a node, as the editor sets it (user, 2026-11-12: "snap to center, bottom center, top center, left
 # center, right center"): the centre (no linkAnchor: the line starts from the centre, cut at the shape) or the
 # middle of a side (CellDesigner's N, S, W, E); a port the editor did not touch keeps its port
+ANCHORS = ('N', 'S', 'W', 'E', 'NE', 'NW', 'SE', 'SW', 'NNE', 'ENE', 'ESE', 'SSE', 'SSW', 'WSW', 'WNW', 'NNW')
 SIDES = {'': (0.0, 0.0), 'N': (0.0, -0.5), 'S': (0.0, 0.5), 'W': (-0.5, 0.0), 'E': (0.5, 0.0)}
 
 
@@ -372,6 +373,12 @@ def ports(d, T, s, o, paths, new):
             now = ((P[0] - ob[0]) / ob[2] * nb[2] - nb[2] / 2, (P[1] - ob[1]) / ob[3] * nb[3] - nb[3] / 2)
             if math.hypot(port[0] - now[0], port[1] - now[1]) < 0.5:
                 return None
+        # one of CellDesigner's 16 anchors on the node (Make main trades two lines' ports, ENE included): kept as that anchor
+        c2 = cen(new[alias])
+        for k in ANCHORS:
+            A = d.at(alias, k)
+            if math.hypot(port[0] - (A[0] - c2[0]), port[1] - (A[1] - c2[1])) < 0.5:
+                return k
         return side(port, new[alias])
     x = o['x']
     for k, (tag, eid, which, alias, P, anc) in enumerate((('baseReactant', rid + '|a', 's', o['ra'], o['A'], o['ancA']),
@@ -548,8 +555,11 @@ def rewire(d, text, ends, olds):
         # a modifier and a reactant or product may share a species alias (as files have it, and Make main swaps into);
         # two reactants or products may not (a line of length 0)
         mod = lambda q: q[3] == 'modification'
-        todo = [(q[3], q[2], now[i], q[4], q[5]) for i, q in enumerate(every)
-                if now[i] != q[2] and not any(k != i and b == now[i] and mod(every[k]) == mod(q) for k, b in enumerate(now))]
+        # all or nothing: one end refused leaves the reaction as it was (a swap half done would change the network)
+        free = lambda i: not any(k != i and b == now[i] and mod(every[k]) == mod(every[i]) for k, b in enumerate(now))
+        if any(now[i] != q[2] and not free(i) for i, q in enumerate(every)):
+            continue
+        todo = [(q[3], q[2], now[i], q[4], q[5]) for i, q in enumerate(every) if now[i] != q[2]]
         if not todo:
             continue
         s, gone, mine = T.span(r'<reaction [^>]*\bid="%s"' % re.escape(rid)), [], []

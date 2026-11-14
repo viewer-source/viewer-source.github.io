@@ -422,15 +422,18 @@
     var b = e ? find(e, 'cd:linkAnchor') : null, bx = this.box(i), x = bx[0], y = bx[1], w = bx[2], h = bx[3];
     var side = b ? get(b, 'position') : null;
     if (!side || !has(ANCHOR, side)) return [[x + w / 2, y + h / 2], false];
-    var f = this.front(i); x = f[0]; y = f[1]; w = f[2]; h = f[3];
+    return [this.at(i, side), true];
+  };
+  D.at = function (i, side) {   // anchor side's point on alias i (cdrender.py's at)
+    var f = this.front(i), x = f[0], y = f[1], w = f[2], h = f[3];
     var cls = this.al(i)[0];
     if (cls === 'RNA') {
       var fx = ANCHOR[side][0], fy = ANCHOR[side][1];
-      if (fy === 0 || fy === 1) return [[x + (fy === 0 ? h : 0) + fx * (w - h), y + fy * h], true];
-      return [[fx === 0 ? x + h * (1 - fy) : x + w - h * fy, y + fy * h], true];
+      if (fy === 0 || fy === 1) return [x + (fy === 0 ? h : 0) + fx * (w - h), y + fy * h];
+      return [fx === 0 ? x + h * (1 - fy) : x + w - h * fy, y + fy * h];
     }
     if (cls === 'DEGRADED') { x += w / 8; y += h / 8; w *= 3 / 4; h *= 3 / 4; }  // on its drawn circle, 3/4 of the box (AsthmaMap mast cell PDF: no gap)
-    return [anchorPoint([x, y, w, h], side, ROUND.indexOf(cls) >= 0, cls === 'PHENOTYPE'), true];
+    return anchorPoint([x, y, w, h], side, ROUND.indexOf(cls) >= 0, cls === 'PHENOTYPE');
   };
   D.clip = function (i, P, anchored, Q, shapeOnly) {   // the visual end (cdrender.py's clip)
     if (!anchored) P = leave(outline(this.al(i)[0], this.box(i)), P, Q);

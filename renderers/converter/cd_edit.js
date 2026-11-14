@@ -212,6 +212,7 @@
     });
     return [boxes, new Map(), bends, paths, ends];
   }
+  var ANCHORS = ['N', 'S', 'W', 'E', 'NE', 'NW', 'SE', 'SW', 'NNE', 'ENE', 'ESE', 'SSE', 'SSW', 'WSW', 'WNW', 'NNW'];
   var SIDES = [['', [0.0, 0.0]], ['N', [0.0, -0.5]], ['S', [0.0, 0.5]], ['W', [-0.5, 0.0]], ['E', [0.5, 0.0]]];
   function side(p, b) {
     var best = null, bd = null;
@@ -263,7 +264,10 @@
         var now = [(P[0] - ob[0]) / ob[2] * nb[2] - nb[2] / 2, (P[1] - ob[1]) / ob[3] * nb[3] - nb[3] / 2];
         if (py.hypot(port[0] - now[0], port[1] - now[1]) < 0.5) return null;
       }
-      return side(port, nw.get(alias));
+      // one of CellDesigner's 16 anchors on the node (Make main trades two lines' ports, ENE included): kept as that anchor
+      var c2 = cen(nw.get(alias)), hit = null;
+      ANCHORS.some(function (k) { var A = d.at(alias, k); if (py.hypot(port[0] - (A[0] - c2[0]), port[1] - (A[1] - c2[1])) < 0.5) { hit = k; return true; } return false; });
+      return hit !== null ? hit : side(port, nw.get(alias));
     };
     var x = o.x;
     [['baseReactant', rid + '|a', 's', o.ra, o.A, o.ancA], ['baseProduct', rid + (o.glyph ? '|b' : '|a'), 't', o.pa, o.B, o.ancB]].forEach(function (q) {
@@ -392,7 +396,10 @@
       // a modifier and a reactant or product may share a species alias (as files have it, and Make main swaps into); two
       // reactants or products may not (a line of length 0)
       var mod = function (q) { return q[3] === 'modification'; };
-      all.forEach(function (q, i) { if (now[i] !== q[2] && !now.some(function (b, k) { return k !== i && b === now[i] && mod(all[k]) === mod(q); })) todo.push([q[3], q[2], now[i], q[4], q[5]]); });
+      // all or nothing: one end refused leaves the reaction as it was (a swap half done would change the network)
+      var free = function (i) { return !now.some(function (b, k) { return k !== i && b === now[i] && mod(all[k]) === mod(all[i]); }); };
+      if (all.some(function (q, i) { return now[i] !== q[2] && !free(i); })) return;
+      all.forEach(function (q, i) { if (now[i] !== q[2]) todo.push([q[3], q[2], now[i], q[4], q[5]]); });
       if (!todo.length) return;
       var s = T.span('<reaction [^>]*\\bid="' + reEscape(rid) + '"'), gone = new Set();
       todo.forEach(function (q) {
@@ -677,6 +684,46 @@
     };
   }
 
-  var api = { graphml: graphml, place: place, apply: apply, draw: draw, live: live, lines: lines, drawing: drawing };   // lines, drawing: for tests/cd-square.js
+  // Make main (user, 2026-11-14; JavaScript only, the editor's and tests/cd-make-main.js's one master): in cd_edit's
+  // GraphML g the added reactant's or product's line linkId ('<reaction>|r<n>' or '|p<n>') and the main one ('|a' or
+  // '|b') trade their species end, their port there and their bend points, so each species keeps its line's route and
+  // only the roles change; place() then writes the participants. null when it cannot be done: not such a line, or its
+  // species is already another reactant's or product's of the reaction (rewire would refuse it)
+  function makeMain(g, linkId) {
+    var m = /^(.*\|)([rp])\d+$/.exec(linkId);
+    if (!m) return null;
+    var into = m[2] === 'r', mainId = m[1] + (into ? 'a' : 'b'), att = into ? 'source' : 'target', xy = into ? ['sx', 'sy'] : ['tx', 'ty'];
+    var blocks = {}, re = /<edge\b[\s\S]*?<\/edge>/g, b;
+    while ((b = re.exec(g))) { var id = /\sid="([^"]*)"/.exec(b[0]); if (id && id[1].indexOf(m[1]) === 0) blocks[id[1]] = [b.index, b[0]]; }
+    var A = blocks[mainId], B = blocks[linkId];
+    if (!A || !B) return null;
+    var attr = function (t, k) { var r = new RegExp('\\s' + k + '="([^"]*)"').exec(t); return r ? r[1] : null; };
+    var put = function (t, k, v) {
+      var r = new RegExp('(\\s' + k + '=")[^"]*"');
+      if (v == null) return t.replace(new RegExp('\\s' + k + '="[^"]*"'), function () { return ''; });
+      return r.test(t) ? t.replace(r, function (x, p1) { return p1 + v + '"'; }) : t.replace(/(\/?>)$/, function (x) { return ' ' + k + '="' + v + '"' + x; });
+    };
+    var tag = function (blk) { return /^<edge\b[^>]*>/.exec(blk)[0]; }, nodeOf = function (blk) { return attr(tag(blk), att); };
+    var other = Object.keys(blocks).some(function (id) { return id !== mainId && id !== linkId && !/\|m\d+$/.test(id) && [attr(tag(blocks[id][1]), 'source'), attr(tag(blocks[id][1]), 'target')].indexOf(nodeOf(B[1])) >= 0; });
+    if (other || nodeOf(A[1]) === nodeOf(B[1])) return null;
+    var path = function (blk) { return /<y:Path\b[^>]*?(\/>|>[\s\S]*?<\/y:Path>)/.exec(blk); };
+    var pa = path(A[1]), pb = path(B[1]);
+    if (!pa || !pb) return null;
+    var head = function (p) { return /^<y:Path\b[^>]*?\/?>/.exec(p)[0]; }, pts = function (p) { return p.slice(head(p).length).replace(/<\/y:Path>$/, ''); };
+    var mk = function (p, from) {   // p with the port at the species and the bend points of from
+      var h = head(p).replace(/\/>$/, '>'), body = pts(from[0]);
+      xy.forEach(function (k) { h = put(h, k, attr(head(from[0]), k)); });
+      return body.trim() ? h + body + '</y:Path>' : h.replace(/>$/, '/>');
+    };
+    var swap = function (blk, p, from, end) {
+      var t = tag(blk), rest = blk.slice(t.length), at = p.index - t.length;
+      return put(t, att, end) + rest.slice(0, at) + mk(p[0], from) + rest.slice(at + p[0].length);
+    };
+    var A2 = swap(A[1], pa, pb, nodeOf(B[1])), B2 = swap(B[1], pb, pa, nodeOf(A[1]));
+    var parts = [[A[0], A[1], A2], [B[0], B[1], B2]].sort(function (x, y) { return y[0] - x[0]; });
+    parts.forEach(function (q) { g = g.slice(0, q[0]) + q[2] + g.slice(q[0] + q[1].length); });
+    return g;
+  }
+  var api = { graphml: graphml, place: place, apply: apply, draw: draw, live: live, lines: lines, drawing: drawing, makeMain: makeMain };   // lines, drawing: for tests/cd-square.js
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.cd_edit = api;
 })(typeof window !== 'undefined' ? window : globalThis);

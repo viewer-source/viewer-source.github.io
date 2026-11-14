@@ -373,18 +373,22 @@ class Drawing:
         side = b.get('position') if b is not None else None
         if side not in ANCHOR:  # no anchor: the centre of the whole box, a multimer's copies included (iNOS's SVG)
             return (x + w / 2, y + h / 2), False
+        return self.at(i, side), True
+
+    def at(self, i, side):
+        # anchor side's point on alias i
         # an anchor sits on a multimer's front copy (the user's PDF of Ferroptosis, 2026-11-03: FTH1 as 12 copies)
         x, y, w, h = self.front(i)
         if self.alias[i][0] == 'RNA':  # on the parallelogram, slant h: along its top and bottom edges, down its
             # slanted sides (the user's PDF of Ferroptosis, 2026-11-03: SSE three quarters along the bottom edge)
             fx, fy = ANCHOR[side]
             if fy in (0, 1):
-                return (x + (h if fy == 0 else 0) + fx * (w - h), y + fy * h), True
-            return ((x + h * (1 - fy)) if fx == 0 else (x + w - h * fy), y + fy * h), True
+                return (x + (h if fy == 0 else 0) + fx * (w - h), y + fy * h)
+            return ((x + h * (1 - fy)) if fx == 0 else (x + w - h * fy), y + fy * h)
         if self.alias[i][0] == 'DEGRADED':  # on its drawn circle, 3/4 of the box (AsthmaMap mast cell PDF: no gap)
             x, y, w, h = x + w / 8, y + h / 8, w * 3 / 4, h * 3 / 4
         # on an ellipse at 22.5 degree steps, on a phenotype's hexagon, else on the box (the converter's rule)
-        return anchor_point((x, y, w, h), side, circle=self.alias[i][0] in ROUND, hexagon=self.alias[i][0] == 'PHENOTYPE'), True
+        return anchor_point((x, y, w, h), side, circle=self.alias[i][0] in ROUND, hexagon=self.alias[i][0] == 'PHENOTYPE')
 
     def clip(self, i, P, anchored, Q, shape_only=False):
         # the line's visual end at alias i: an anchor as it is, else where the line from the centre leaves the shape;
