@@ -14,7 +14,7 @@ height: 528
 scale: 1
 annotation: "/atlas-data/external-newt-unstable-activated-stat1alpha-induction-of-the-irf1-gene-nwt.json"
 image_error: ""
-v: "080d48c83d"
+v: "13a5c808d2"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/test-maps/sbgn-ml/pd/newt-unstable/activated_stat1alpha_induction_of_the_irf1_gene.nwt"}, {"label": "SVG", "url": "/downloads/external-newt-unstable-activated-stat1alpha-induction-of-the-irf1-gene-nwt.svg"}]

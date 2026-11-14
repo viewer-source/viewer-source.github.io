@@ -14,7 +14,7 @@ height: 522
 scale: 1
 annotation: "/atlas-data/external-newt-unstable-mapk-cascade-sbgn.json"
 image_error: ""
-v: "99d4181d1e"
+v: "3375e911ae"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/test-maps/sbgn-ml/pd/newt-unstable/mapk_cascade.sbgn"}, {"label": "SVG", "url": "/downloads/external-newt-unstable-mapk-cascade-sbgn.svg"}]

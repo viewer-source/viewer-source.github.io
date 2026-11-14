@@ -14,7 +14,7 @@ height: 762
 scale: 1
 annotation: "/atlas-data/external-newt-unstable-insulin-like-growth-factor-signaling-nwt.json"
 image_error: ""
-v: "1cfdabc749"
+v: "1427e30f61"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/test-maps/sbgn-ml/pd/newt-unstable/insulin-like_growth_factor_signaling.nwt"}, {"label": "SVG", "url": "/downloads/external-newt-unstable-insulin-like-growth-factor-signaling-nwt.svg"}]

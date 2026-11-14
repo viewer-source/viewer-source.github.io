@@ -14,7 +14,7 @@ height: 970
 scale: 1
 annotation: "/atlas-data/external-pd2af-website-images-specification-aiaimm-cat-aiiamm-pd-sbgn.json"
 image_error: ""
-v: "1447f958e1"
+v: "fb7580efac"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/test-maps/sbgn-ml/pd/pd2af-website/images/specification/aiaimm-cat-aiiamm/pd.sbgn"}, {"label": "SVG", "url": "/downloads/external-pd2af-website-images-specification-aiaimm-cat-aiiamm-pd-sbgn.svg"}]

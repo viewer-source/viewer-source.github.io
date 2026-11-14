@@ -14,12 +14,12 @@ height: 290
 scale: 1
 annotation: "/atlas-data/aspirin-graphml.json"
 image_error: ""
-v: "5e05765656"
+v: "15a9d1d2d6"
 src: "109f87fa24a823c99d934afb6b43d90fe0fbb1d4"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "GraphML", "url": "/downloads/aspirin-graphml.graphml"}, {"label": "SVG", "url": "/downloads/aspirin-graphml.svg"}, {"label": "SBML", "url": "/downloads/aspirin-graphml-sbml.xml"}, {"label": "Annotation", "url": "/downloads/aspirin-graphml.csv"}, {"label": "PNG", "url": "/downloads/aspirin-graphml.png"}, {"label": "SBGN-ML", "url": "/downloads/aspirin-graphml.sbgn"}, {"label": "CellDesigner", "url": "/downloads/aspirin-graphml.xml"}, {"label": "Newt", "url": "http://web.newteditor.org/?URL=https://viewer-source.github.io/downloads/aspirin-graphml.sbgn"}, {"label": "MINERVA", "url": "https://mreg.elixir-luxembourg.org/minerva/index.html?id=F100-aspirin"}]
-sbgn: {"image": "/downloads/aspirin-graphml-sbgnml.svg", "annotation": "/atlas-data/aspirin-graphml-sbgnml.json", "width": 919, "height": 286, "v": "f318f6a686", "file": "/downloads/aspirin-graphml.sbgn"}
+sbgn: {"image": "/downloads/aspirin-graphml-sbgnml.svg", "annotation": "/atlas-data/aspirin-graphml-sbgnml.json", "width": 919, "height": 286, "v": "52576c22fd", "file": "/downloads/aspirin-graphml.sbgn"}
 ---
 ## References
 

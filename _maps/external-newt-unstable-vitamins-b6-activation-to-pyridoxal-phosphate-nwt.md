@@ -14,7 +14,7 @@ height: 558
 scale: 1
 annotation: "/atlas-data/external-newt-unstable-vitamins-b6-activation-to-pyridoxal-phosphate-nwt.json"
 image_error: ""
-v: "d700567e84"
+v: "064fa2a637"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/test-maps/sbgn-ml/pd/newt-unstable/vitamins_b6_activation_to_pyridoxal_phosphate.nwt"}, {"label": "SVG", "url": "/downloads/external-newt-unstable-vitamins-b6-activation-to-pyridoxal-phosphate-nwt.svg"}]

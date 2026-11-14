@@ -14,7 +14,7 @@ height: 982
 scale: 1
 annotation: "/atlas-data/bcaa-sbgn.json"
 image_error: ""
-v: "705555e051"
+v: "a04aaf1fd8"
 colours: true
 legend: "sbgn"
 downloads: [{"label": "SBGN-ML", "url": "/downloads/bcaa-sbgn.sbgn"}, {"label": "SVG", "url": "/downloads/bcaa-sbgn.svg"}]
