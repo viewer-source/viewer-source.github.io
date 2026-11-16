@@ -348,22 +348,27 @@
       return best;
     }
     // a glyph dropped on a complex becomes its member, as soon as it is dropped on the complex's surface (a smaller
-    // complex on a larger one too): each glyph moved (not one inside another
+    // complex on a larger one too), as a glyph dropped in a compartment joins it: each glyph moved (not one inside another
     // moved, nor one in a complex already) whose centre lies on a complex not moving with it joins the innermost such
-    // complex (sbgn_edit.join; the complex grows to hold it), in the move's undo step; a glyph made from the palette on a
-    // complex the same. SBGN-ML maps in the full editor, not Activity Flow; a glyph with lines stays beside it (a line
-    // goes to a complex, never to a member). Returns the warning to show once the map is drawn again, else ''
-    function joinDrop(moved) {   // moved: the ids of the nodes the move moved (a group with what it holds), or of the one made
-      if (!palOn() || !sbJs || !sbJs.join || palKind() === 'af' || afSbgn || !moved.length) return '';
-      var at = {}, cx = [], sel = selN.map(function (i) { return nodes2[i].id; }), lines = [], joined = 0;
+    // complex, in the move's undo step, and the complex is packed (Pack: the members side by side, the complex and what
+    // holds it grown); a glyph made from the palette on a complex the same. SBGN-ML maps (not Activity Flow) with
+    // sbgn_edit.join, CellDesigner maps with cd_make.join; Full editing only. A glyph with lines is not taken in (a line
+    // goes to a complex, never to a member): the whole move is taken back, the reason said (joinPlan's why).
+    // joinPlan(moved) -> { joins: [[id, complex id], ...], why }   moved: the ids the move moved, or the one made
+    function joinWhy(code, name) {
+      return { lines: name + ' has lines, so it stays where it was: a line goes to a complex, never to its member.',
+        copies: name + ' is drawn more than once, so it stays where it was: a complex member is drawn once.' }[code] || '';
+    }
+    function joinPlan(moved) {
+      var out = { joins: [], why: '' };
+      if (!on || V.current !== map || V.level !== 'full' || !moved.length || (cd ? !cdMk || !cdMk.join : !palOn() || !sbJs.join || palKind() === 'af' || afSbgn)) return out;
+      var at = {}, cx = [], mv0 = {};
       nodes2.forEach(function (n, i) { at[n.id] = i; if (n.shape.kind === 'Complex') cx.push(i); });
-      if (!cx.length) return '';
-      var mv0 = {}; moved.forEach(function (id) { mv0[id] = 1; });
+      moved.forEach(function (id) { mv0[id] = 1; });
       var inCx = function (i) { for (var u = nodes2[i].up; u != null; u = nodes2[u].up) if (nodes2[u].shape.kind === 'Complex') return true; return false; };
-      var ids = moved.filter(function (id) { var i = at[id]; return i != null && (nodes2[i].up == null || !mv0[nodes2[nodes2[i].up].id]) && !inCx(i); });
-      ids.forEach(function (id) {
+      moved.forEach(function (id) {
         var i = at[id];
-        if (i == null) return;
+        if (i == null || out.why || (cd && cdOwn(i)) || (nodes2[i].up != null && mv0[nodes2[nodes2[i].up].id]) || inCx(i)) return;
         var b = boxOf(i), P = [b[0] + b[2] / 2, b[1] + b[3] / 2], best = -1, area = Infinity;
         cx.forEach(function (j) {   // the innermost complex round its centre that does not move with it
           var q = boxOf(j);
@@ -372,17 +377,31 @@
           best = j; area = q[2] * q[3];
         });
         if (best < 0) return;
-        var why = sbJs.joinable(text, id, nodes2[best].id);
-        if (why === 'lines') { lines.push(nameOf(i) || 'A glyph'); return; }
-        if (why) return;
-        try { text = sbJs.join(text, id, nodes2[best].id, { checked: true }); joined++; }
-        catch (err) { lines = null; return; }
-        parse(); at = {}; cx = []; nodes2.forEach(function (n, k) { at[n.id] = k; if (n.shape.kind === 'Complex') cx.push(k); });
+        var why;
+        try { why = cd ? cdMk.joinable(cd.now, id, nodes2[best].id) : sbJs.joinable(text, id, nodes2[best].id); } catch (err) { return; }
+        if (!why) out.joins.push([id, nodes2[best].id]);
+        else out.why = joinWhy(why, '"' + (nameOf(i) || id) + '"');
       });
-      if (joined) { selN = []; sel.forEach(function (id) { if (at[id] != null) selN.push(at[id]); }); dirty = true; }
-      if (lines === null) return 'A glyph could not be put into the complex.';
-      return lines.length ? lines.join(', ') + (lines.length > 1 ? ' have lines, so they stay' : ' has lines, so it stays') + ' beside the complex: a line goes to a complex, never to its member.' : '';
+      return out;
     }
+    // the joins of joinPlan written (SBGN-ML: into the editor's GraphML; CellDesigner: into the file, the GraphML made again
+    // from it), the selection kept; returns the ids of the complexes that took a member
+    function joinDo(joins) {
+      if (!joins.length) return [];
+      var sel = selN.map(function (i) { return nodes2[i].id; }), done = [];
+      if (cd) {
+        var t = cdJs.draw(cd.base, text)[1];
+        joins.forEach(function (q) { try { t = cdMk.join(t, q[0], q[1]); done.push(q[1]); } catch (err) { warn(String(err && err.message || err)); } });
+        if (done.length) { cd.base = t; text = cdGraphml(t); }
+      } else joins.forEach(function (q) { try { text = sbJs.join(text, q[0], q[1], { checked: true }); done.push(q[1]); } catch (err) { warn('A glyph could not be put into the complex.'); } });
+      if (!done.length) return done;
+      parse(); dirty = true;
+      var at = {}; nodes2.forEach(function (n, i) { at[n.id] = i; });
+      selN = sel.filter(function (id) { return at[id] != null; }).map(function (id) { return at[id]; });
+      return done;
+    }
+    // the complexes that took a member packed, in the same undo step (Pack's own code, layTool)
+    function joinPack(cids) { if (cids.length) layTool('pack', cids, ['', '', ''], true); }
     function makeEntity(P, cls) {
       var units = PRESET[cls] ? PRESET[cls][1] : null; cls = baseKind(cls);
       var act = ACT_UNIT[cls], D = defOf(cls), w = D.w, h = D.h, X = P[0] - w / 2, Y2 = P[1] - h / 2;   // act: an activity's unit
@@ -399,12 +418,8 @@
       }
       if (!onCx) { made(id); return; }
       parse();
-      var before = boxesBefore(boxOf);
-      var msg = joinDrop([id]);   // made on a complex: its member
-      var k1 = nodes2.findIndex(function (n) { return n.id === id; }), up1 = k1 >= 0 ? nodes2[k1].up : null;   // the complex it joined grown: the compartments round it grown as round a drag (grown)
-      if (up1 != null) setBoxes(grown([up1], boxOf, function (k) { return before[nodes2[k].id] || boxOf(k); }, function () { return false; }));
-      refit([id]);
-      made(id); if (msg) warn(msg);
+      var cids = joinDo(joinPlan([id]).joins);   // made on a complex: its member, the complex packed round it
+      made(id); joinPack(cids);
     }
     // the kinds of glyph the palette makes, and Delete removes (the map's own ones too)
     // the kinds made: sbgn_edit's MAKE (the master), but the compartment, resized and deleted its own way

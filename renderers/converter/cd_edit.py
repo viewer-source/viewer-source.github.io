@@ -821,8 +821,8 @@ def place(text, gtext):
     # what holds what as the editor set it, freely: an alias or a complex the GraphML
     # puts into another compartment, or none, gets that compartment as its compartmentAlias (none: the attribute taken off)
     # and its species that compartment's own (default for none), as CellDesigner 4.4 writes them; a compartment put into
-    # another gets that one's compartment as its outside. A complex's member stays as the file has it (the editor refuses
-    # taking one out: nestCheck in cd_edit.js)
+    # another gets that one's compartment as its outside. A complex's member stays as the file has it (one taken out is
+    # written by cd_make.js's leave after this)
     cid = lambda c: 'default' if c is None else comps[c][1].get('compartment')
     sp_done = set()
     for i in old:

@@ -132,7 +132,7 @@
     }
     function cdRid(i) { return nodes2[i].id.replace(/\|(proc|g\d*)$/, ''); }
     function cdGateRef(i) { var m = nodes2[i].id.match(/^(.*)\|g(\d*)$/); return m[2] ? m[1] + '|m' + m[2] : m[1]; }   // cd_make's name of a gate
-    function cdOnComplex(P) { return innermost(P, function (n) { return !n.comp && n.el.getAttribute('yfiles.foldertype') === 'group'; }) >= 0; }
+    function cdComplexAt(P) { var i = innermost(P, function (n) { return n.shape.kind === 'Complex'; }); return i >= 0 ? nodes2[i].id : null; }   // the innermost complex under P, its alias
 
     // a species or compartment placed: centred where clicked or dropped (on the grid with Snap), at CellDesigner's own size
     function cdSize(cls) { return cls === 'COMPARTMENT' ? [300, 200] : cdMk.LOOK[cls].slice(0, 2); }
@@ -142,13 +142,14 @@
       var s = cdSize(cls), X = P[0] - s[0] / 2, Y2 = P[1] - s[1] / 2;
       if (gridSet.snap) { X += toGrid(X + s[0] / 2, gridSet.step); Y2 += toGrid(Y2 + s[1] / 2, gridSet.step); }
       var b = [+fmt(Math.max(0, X)), +fmt(Math.max(0, Y2)), s[0], s[1]];   // never left of or above the canvas's corner (CellDesigner draws from 0, 0)
-      // a species is not put into a complex on a CellDesigner map (how CellDesigner writes its members is not checked), as with moves into one; the warning says so
-      if (cls !== 'COMPARTMENT' && cdOnComplex(P)) { warn('On a CellDesigner map a species is not put into a complex yet: place it beside the complex.'); return; }
-      var made = null;
-      cdApply(function (t) {
-        var r = cls === 'COMPARTMENT' ? cdMk.compartment(t, { name: '', box: b }) : cdMk.species(t, { cls: cls, name: '', box: b });
+      // a species placed on a complex is its member (an included species, cd_make), the complex packed round it in the same
+      // undo step; a phenotype or a degraded species not (CellDesigner keeps neither in a complex)
+      var cx = cls !== 'COMPARTMENT' && !/^(PHENOTYPE|DEGRADED)$/.test(cls) ? cdComplexAt(P) : null, made = null;
+      var ok = cdApply(function (t) {
+        var r = cls === 'COMPARTMENT' ? cdMk.compartment(t, { name: '', box: b }) : cdMk.species(t, { cls: cls, name: '', box: b, complex: cx });
         made = r.alias; return r.text;
       }, function () { return [made]; });
+      if (ok && cx) joinPack([cx]);
     }
 
     // a gate by three clicks: its inputs (two for AND and OR, one for NOT and the unknown gate), then

@@ -685,8 +685,8 @@
     // what holds what as the editor set it: an alias or a complex the GraphML
     // puts into another compartment, or none, gets that compartment as its compartmentAlias (none: the attribute taken off)
     // and its species that compartment's own (default for none), as CellDesigner 4.4 writes them; a compartment put into
-    // another gets that one's compartment as its outside. A complex's member stays as the file has it (the editor refuses
-    // taking one out: nestCheck)
+    // another gets that one's compartment as its outside. A complex's member stays as the file has it (one taken out is
+    // written by cd_make.leave after this)
     var cid = function (c) { return c === null ? 'default' : get(comps.get(c)[1], 'compartment'); }, spDone = new Set();
     old.forEach(function (b, i) {
       if (!ups.has(i)) return;
@@ -775,9 +775,9 @@
     return out;
   }
   // the editor's check before it changes what holds what on a CellDesigner map (JavaScript only): why
-  // the file cannot hold the moves ([[node id, parent node id or null], ...]), or null. A complex's member stays in its
-  // complex (taking one out would make its species a species of the map: not handled); every alias of a species stays
-  // in one compartment, as CellDesigner keeps a species in one
+  // the file cannot hold the moves ([[node id, parent node id or null], ...]), or null. A move goes into a compartment or
+  // none (a complex's member taken out is written by cd_make.leave, a species into a complex by cd_make.join); every
+  // alias of a species stays in one compartment, as CellDesigner keeps a species in one
   function nestCheck(t, moves, opt) {
     var d = drawing(t, opt), comps = compartments(d), to = new Map(), why = null;
     moves.forEach(function (m) { to.set(m[0], m[1]); });
@@ -785,7 +785,7 @@
       var i = m[0], p = m[1], A = d.alias.get(i);
       if (!A) return false;
       var nm = '"' + (typeof A[3] === 'string' ? cdr.plainName(A[3]) : get(A[2], 'species')) + '"', sid = get(A[2], 'species');
-      if (get(A[2], 'complexSpeciesAlias') !== null || (p !== null && !comps.has(p))) { why = nm + ' stays in its complex: a member taken out of a complex is not written into CellDesigner files yet.'; return true; }
+      if (p !== null && !comps.has(p)) { why = nm + ' goes into a complex only when dropped on it.'; return true; }
       d.alias.forEach(function (B, j) {
         if (why || j === i || get(B[2], 'species') !== sid) return;
         var q = to.has(j) ? to.get(j) : comps.has(get(B[2], 'compartmentAlias')) ? get(B[2], 'compartmentAlias') : null;

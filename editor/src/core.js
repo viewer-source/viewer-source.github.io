@@ -472,10 +472,12 @@
       lay.catch(function (e) { lay = null; warn('The layout tools did not load: ' + e); });
       return lay;
     }
-    function layTool(what, ids, done) {   // not tool: create.js's palette sign in hand, of the same scope, replaced it (Snap map to grid and Pack would fail)
-      if (!on || V.current !== map || !text) return;
-      quiet();
+    function layTool(what, ids, done, same) {   // not tool: create.js's palette sign in hand, of the same scope, replaced it (Snap map to grid and Pack would fail)
+      if (!on || V.current !== map || !text) return;   // same: part of the change just made (its undo step), nothing said
+      if (!same) quiet();
+      var tAt = text;
       Promise.all([layout(), sbpy()]).then(function (q) {
+        if (same && text !== tAt) return;   // changed meanwhile (an undo)
         // the layout tools grow a compartment round all it holds, which would take an edge member inside: what crosses a
         // compartment's border is taken out of it for the run and put back after, its compartment then grown only so far
         // that it crosses again (grown), so every member keeps its place
@@ -486,11 +488,14 @@
         });
         out.forEach(function (m) { t1 = N.moveInto(t1, [[m[0], null]]); });
         var r = L.tidy(t1, what, ids || [], !!cd);
-        if (r[1] < 0) { warn(done[2]); return; }
+        if (r[1] < 0) { if (!same) warn(done[2]); return; }
         if (!r[1]) return;   // nothing to change: nothing said
         var t2 = r[0];
         out.slice().reverse().forEach(function (m) { t2 = N.moveInto(t2, [m]); });
-        remember(false); text = t2; parse(); selN = []; selP = []; selE = []; dirty = true;
+        if (!same) remember(false);
+        var keepSel = same ? selN.map(function (i) { return nodes2[i].id; }) : [];
+        text = t2; parse(); selN = []; selP = []; selE = []; dirty = true;
+        if (keepSel.length) nodes2.forEach(function (n, k) { if (keepSel.indexOf(n.id) >= 0) selN.push(k); });
         if (out.length) {
           var at = {}; nodes2.forEach(function (n, k) { at[n.id] = k; });
           setBoxes(grown(out.map(function (m) { return at[m[0]]; }), boxOf, function (k) { return before[nodes2[k].id] || boxOf(k); }, function () { return false; }));
@@ -658,7 +663,7 @@
     // longer overlaps it and leaves its own holder once resized past its edge, a compartment moved past its holder's edge
     // grows the holder, and a compartment whose box changed (drawn, moved, resized) takes in every compartment and glyph
     // whose whole box it newly holds, with what is inside, also one that held it once it has left it. regroup puts
-    // nothing into a complex: a glyph dropped on one joins it after (joinDrop, create.js); processes and logic gates are
+    // nothing into a complex: a glyph dropped on one joins it after (joinPlan, create.js); processes and logic gates are
     // never taken in, only let go to a compartment already round them; a CellDesigner glyph or gate the same, cd_edit
     // placing it again.
     function full() { return V.level === 'full'; }
@@ -829,7 +834,7 @@
     }
     // the new holders written into the GraphML (sbgn_edit.moveInto, the master of moving a GraphML node into another), the
     // map read again with the selection kept (by id: moveInto may reorder what a group's graph holds); then a glyph
-    // dropped on a complex put into it (arg.join, the ids moved: joinDrop, create.js) and the holders grown round what
+    // dropped on a complex put into it (arg.join, the ids moved: joinPlan, create.js) and the holders grown round what
     // moved (arg.grow: the ids grown round, arg.before: every node's box before, by id, arg.moving: the ids that moved);
     // all in the undo step taken before. A CellDesigner file that cannot hold the change (cd_edit.nestCheck, a species
     // dropped on a complex) is not changed: refused(why). An undo while it waits stops it
@@ -850,17 +855,22 @@
       out.forEach(function (t, i) { moves.push([nodes2[i].id, t == null ? null : nodes2[t].id]); });
       var why = moves.length && cd && cdJs && cdJs.nestCheck ? cdJs.nestCheck(cd.now, moves) : null;
       if (why) return refused(why);
-      if (cd && arg.join) {   // a CellDesigner species is not put into a complex (its alias would turn an included species): the drop refused
-        var mv0 = new Set(arg.join.map(function (id) { return at[id]; }).filter(function (i) { return i != null; }));
-        var onCx = Array.from(mv0).some(function (i) {
-          if (cdOwn(i) || (nodes2[i].up != null && mv0.has(nodes2[i].up))) return false;
-          var b = boxOf(i), c = innermost([b[0] + b[2] / 2, b[1] + b[3] / 2], function (n, k) { return n.shape.kind === 'Complex' && !mv0.has(k) && !under(k, i); });
-          return c >= 0 && c !== nodes2[i].up;
-        });
-        if (onCx) return refused('A molecule dropped on a complex is not put into it on a CellDesigner map yet: CellDesigner keeps a complex\'s members as species of their own.');
-      }
+      var jp = arg.join && arg.join.length ? joinPlan(arg.join) : { joins: [], why: '' };   // a glyph dropped on a complex: its member (create.js)
+      if (jp.why) return refused(jp.why);
+      // CellDesigner: a member that left its complex (Shift) made a species of the compartment it went to (cd_make.leave);
+      // the GraphML made again from the file
+      var cdLeave = function () {
+        if (!cd || !cdMk) return;
+        var t = cdJs.draw(cd.base, text)[1], t0 = t, sel = selN.map(function (i) { return nodes2[i].id; });
+        moves.forEach(function (m) { try { if (cdMk.aliasInfo(t, m[0]).complex) t = cdMk.leave(t, m[0], m[1]); } catch (err) { warn(String(err && err.message || err)); } });
+        if (t === t0) return;
+        cd.base = t; text = cdGraphml(t); parse(); dirty = true;
+        var ix = {}; nodes2.forEach(function (n, i) { ix[n.id] = i; });
+        selN = sel.filter(function (id) { return ix[id] != null; }).map(function (id) { return ix[id]; });
+      };
       var rest = function () {
-        var msg = arg.join && arg.join.length ? joinDrop(arg.join) : '';
+        cdLeave();
+        var cids = joinDo(jp.joins);
         var grew = [];   // the holders grown: their boxes changed too (stacked below)
         if (arg.grow && arg.grow.length) {
           var idx = {}, mvd = {}; nodes2.forEach(function (n, i) { idx[n.id] = i; }); (arg.moving || []).forEach(function (id) { mvd[id] = 1; });
@@ -871,7 +881,7 @@
         }
         stackComps((arg.moving || []).concat(moves.map(function (m) { return m[0]; }), grew));   // compartments whose box or holder changed: the smaller in front where they partly overlap (sbgn_edit.stack)
         refit((arg.moving || []).concat(moves.map(function (m) { return m[0]; })));   // yEd's box the one saved
-        done(); if (msg) warn(msg);   // the warning after changed()'s note
+        done(); joinPack(cids);   // the complexes that took a member packed, in this undo step
       };
       if (!moves.length) return rest();
       var t0 = text;
@@ -2795,7 +2805,7 @@
         return;
       }
       var movedNow = sets ? movedIds(sets) : [];   // by id: the map is read again below
-      var fitAfter = function () {   // what holds what settled again (Full: regroup), a glyph dropped on a complex put into it (joinDrop, create.js), the holders round what moved grown (grown), in the same undo step
+      var fitAfter = function () {   // what holds what settled again (Full: regroup), a glyph dropped on a complex put into it (joinPlan, create.js), the holders round what moved grown (grown), in the same undo step
         var B0 = function (k) { var b = boxOf(k); return sets.n.has(k) ? [b[0] - d.dx, b[1] - d.dy, b[2], b[3]] : b; };   // the boxes before the drag
         settle(full() ? regroup(d.alone ? 'alone' : 'plain', sets.n, boxOf, B0) : new Map(), { join: full() ? movedNow : null, grow: tops(sets.n, d.alone).map(function (k) { return nodes2[k].id; }), before: boxesBefore(B0), moving: movedNow },
           function () { render(); changed(); }, function (why) { text = unpush(); parse(); unshift(); paint(); warn(why); });   // a CellDesigner file that cannot hold it: not moved

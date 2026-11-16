@@ -18,6 +18,7 @@
 //   gateInput(t, gate, alias) -> { text, part } (part null between entities); gateInputRemove(t, gate, alias), gateType(t, gate, { kind, output }) -> text
 //   residue(t, alias, { name, state }) -> { text, residue }; residueState(t, alias, n, state), residueRemove(t, alias, n) -> text
 //   structural(t, alias, text|null, replace), info(t, alias, text|null, replace), homodimer(t, alias, n) -> text
+//   joinable(t, alias, cx) -> '' or why not; join(t, alias, cx), leave(t, alias, ca|null) -> text   (complex membership)
 //   about(t, rid) -> { type, mods, modAliases, gate, inputs, gates, rl, pl }; aliasInfo(t, alias) -> { kind, cls, id, name, complex, box }   (for the editor's menus)
 //   (in Node the XML parser is @xmldom/xmldom, in the browser its own; cdrender.js and cd_edit.js load first)
 (function (root) {
@@ -801,6 +802,70 @@
       modAliases: R.mods.map(function (m) { return at(m.tag, 'aliases'); }), inputs: g ? at(g.tag, 'aliases').split(',') : null,
       rl: R.rl.map(function (p) { return at(p.tag, 'alias'); }), pl: R.pl.map(function (p) { return at(p.tag, 'alias'); }) };
   }
+  // ---- complex membership: a species dropped on a complex joins it, one taken out with Shift leaves it ----
+  // A member is an included species, as the converter's write() writes it (checked in CellDesigner 4.4.2): its alias
+  // carries complexSpeciesAlias (and the complex's compartmentAlias where the complex has one) and its offset in the
+  // complex; its species sits in listOfIncludedSpecies with the notes' text and the RDF in celldesigner:notes, the
+  // complex's species and the identity (class, reference, residues, name) in celldesigner:annotation. Same ids, so
+  // nothing else changes. joinable(t, alias, cx) -> '' or why not: 'kind' (a compartment, a phenotype, a degraded
+  // species), 'member' (in a complex already), 'inside' (the complex is inside it), 'copies' (its species drawn more
+  // than once: a member is one alias), 'lines' (a line goes to a complex, never to its member)
+  var NO_MEMBER = /^(PHENOTYPE|DEGRADED)$/;
+  function joinable(t, id, cx) {
+    var A = alias(t, id), C = alias(t, cx);
+    if (C.kind !== 'complexSpeciesAlias') fail('That is not a complex.');
+    if (!A.species || NO_MEMBER.test(A.cls)) return 'kind';
+    if (A.complex) return 'member';
+    for (var P = C; P; P = P.complex ? alias(t, P.complex) : null) if (P.id === A.id) return 'inside';
+    if (aliasesOf(t, A.species).length > 1) return 'copies';
+    var lr = span(t, '<listOfReactions[\\s>]'), named = new RegExp('["\',>](?:' + q(A.id) + '|' + q(A.species) + ')["\',<]');
+    return lr && named.test(t.slice(lr[0], lr[1])) ? 'lines' : '';
+  }
+  function parts_(t, S) {   // a species' identity, its notes' text (the RDF left out) and its RDF
+    var seg = t.slice(S.sp[0], S.sp[1]), rdf = /<rdf:RDF[\s>][\s\S]*?<\/rdf:RDF>/.exec(seg), body = /<body>([\s\S]*?)<\/body>/.exec(seg);
+    return { identity: /<celldesigner:speciesIdentity>[\s\S]*?<\/celldesigner:speciesIdentity>/.exec(seg)[0], rdf: rdf ? rdf[0] : '',
+      text: body ? body[1].replace(/<rdf:RDF[\s>][\s\S]*?<\/rdf:RDF>/, '').replace(/\s+$/, '') : '' };
+  }
+  function html(text, rdf) { return '<html xmlns="http://www.w3.org/1999/xhtml">\n<head>\n<title/>\n</head>\n' + (text || rdf ? '<body>' + (text ? text + '\n' : '') + (rdf ? rdf + '\n' : '') + '</body>' : '<body/>') + '\n</html>'; }
+  function carry(t, id, ca) {   // the members carrying a compartmentAlias (nested ones too): ca, or none
+    ed.carriers(t, id).forEach(function (m) { if (m[1] !== ca) t = attrs(t, alias(t, m[0]).sp[0], [['compartmentAlias', ca]]); });
+    return t;
+  }
+  function inner(t, id, P) {   // the alias's offset from P's top left (its usual view), [0, 0] with none
+    var A = alias(t, id), ip = span(t, '<celldesigner:innerPosition ', span(t, '<celldesigner:usualView>', A.sp[0], A.sp[1])[0]);
+    return ip ? attrs(t, ip[0], [['x', num(P ? A.box[0] - P.box[0] : 0)], ['y', num(P ? A.box[1] - P.box[1] : 0)]]) : t;
+  }
+  function join(t, id, cx) {
+    var why = joinable(t, id, cx);
+    if (why) fail({ kind: 'Only a molecule goes into a complex.', member: 'It is in a complex already.', inside: 'A complex does not go into itself.',
+      copies: 'It is drawn more than once: a complex member is drawn once.', lines: 'It has lines: a line goes to a complex, never to its member.' }[why]);
+    var A = alias(t, id), C = alias(t, cx), S = species(t, A.species), P = parts_(t, S);
+    var inc = '<celldesigner:species id="' + S.id + '" name="' + S.name + '">\n<celldesigner:notes>\n' + html(P.text, P.rdf) + '\n</celldesigner:notes>\n<celldesigner:annotation>\n' +
+      '<celldesigner:complexSpecies>' + C.species + '</celldesigner:complexSpecies>\n' + P.identity + '\n</celldesigner:annotation>\n</celldesigner:species>';
+    t = drop(t, S.sp, ['listOfSpecies']);
+    t = add(t, CD + 'listOfIncludedSpecies', inc, 0, t.indexOf(EXT), after(t, '>', t.indexOf('<celldesigner:modelDisplay ')));
+    if (A.kind === 'complexSpeciesAlias' && A.sp[0] < C.sp[0]) {   // a complex after the complex holding it, as CellDesigner lists them
+      var a = alias(t, id), txt = t.slice(a.sp[0], eol(t, a.sp[1]));
+      t = cut(t, a.sp); var c = alias(t, cx); t = put(t, eol(t, c.sp[1]), eol(t, c.sp[1]), txt);
+    }
+    t = attrs(t, alias(t, id).sp[0], [['complexSpeciesAlias', cx], ['compartmentAlias', C.ca]]);
+    return carry(inner(t, id, C), id, C.ca);
+  }
+  // leave(t, alias, ca): a member out of its complex, into compartment alias ca (null: none), as a species of the map,
+  // inside or transmembrane as its box lies in ca's (cd_edit's place())
+  function leave(t, id, ca) {
+    var A = alias(t, id), K = ca ? alias(t, ca) : null;
+    if (!A.complex) fail('It is in no complex.');
+    if (K && K.kind !== 'compartmentAlias') fail('That is not a compartment.');
+    var S = species(t, A.species), P = parts_(t, S), pos = K && !ed.inside(A.box, K.box) ? 'transmembrane' : 'inside';
+    var sp = '<species metaid="' + S.id + '" id="' + S.id + '" name="' + S.name + '" compartment="' + (K ? K.compartment : 'default') + '" initialAmount="0">\n' +
+      (P.text ? '<notes>\n' + html(P.text, '') + '\n</notes>\n' : '') + '<annotation>\n<celldesigner:extension>\n<celldesigner:positionToCompartment>' + pos +
+      '</celldesigner:positionToCompartment>\n' + P.identity + '\n</celldesigner:extension>\n' + (P.rdf ? P.rdf + '\n' : '') + '</annotation>\n</species>';
+    t = drop(t, S.sp, [CD + 'listOfIncludedSpecies']);
+    t = add(t, 'listOfSpecies', sp, 0, t.length, after(t, '</listOfCompartments>'));
+    t = attrs(t, alias(t, id).sp[0], [['complexSpeciesAlias', null], ['compartmentAlias', K ? K.id : null]]);
+    return carry(inner(t, id, K), id, K ? K.id : null);
+  }
   // what an alias is: its class (COMPLEX, PROTEIN, ...; null for a compartment), its species' name, the complex holding it
   function aliasInfo(t, id) {
     var A = alias(t, id), C = A.kind === 'compartmentAlias' ? span(t, '<compartment(?=\\s)[^>]*\\sid="' + q(A.compartment) + '"') : null;
@@ -809,6 +874,6 @@
   var api = { LOOK: LOOK, PROCESS: PROCESS, REDUCED: REDUCED, MODS: MODS, NEED: NEED, about: about, aliasInfo: aliasInfo, empty: empty, species: newSpecies, compartment: compartment, rename: rename, retype: retype, remove: remove, reaction: reaction, reduced: reduced,
     reactant: reactant, product: product, modifier: modifier, reactionType: reactionType, modifierType: modifierType, removeLine: removeLine,
     gate: gate, gateInput: gateInput, gateInputRemove: gateInputRemove, gateType: gateType, residue: residue, residueState: residueState,
-    residueRemove: residueRemove, structural: structural, info: info, homodimer: homodimer, cdName: cdName };
+    residueRemove: residueRemove, structural: structural, info: info, homodimer: homodimer, cdName: cdName, joinable: joinable, join: join, leave: leave };
   if (node) module.exports = api; else root.cd_make = api;
 })(typeof window !== 'undefined' ? window : globalThis);
