@@ -12,6 +12,6 @@ for f in yrender/yrender.js converter/cdrender.js converter/cd_edit.js converter
   mkdir -p "$site/renderers/$(dirname $f)" && cp "$here/renderers/$f" "$site/renderers/$f"
 done
 mkdir -p "$site/images/legend" && cp "$here"/images/legend/* "$site/images/legend/"   # the legend card the viewer opens
-git -C "$here" log -1 --format='viewer-source/viewer-source.github.io %h %cs' > "$site/_includes/VERSION"
+git -C "$here" log -1 --format='viewer-source/viewer-source.github.io %h' > "$site/_includes/VERSION"
 cat "$site/_includes/VERSION"
 grep -q '"v":' "$site"/pages/*index.json "$site"/index.json 2>/dev/null || echo 'note: the site'"'"'s map index has no "v" field (each map'"'"'s version); add it as in index.json here'
