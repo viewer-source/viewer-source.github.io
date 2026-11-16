@@ -10,40 +10,43 @@
     // the saved file opens in CellDesigner 4.4 as it was left; one undo step each (core.js keeps the file in the step).
     // the kinds are cd_make's (LOOK, PROCESS, MODS, REDUCED, NEED) and the gate signs cdrender's GATE, written here as
     // well because the palette is drawn before those files load; cdCheck() compares them once they have
+    // each sign drawn as CellDesigner's own toolbar draws it, in the palette's weights (atlas-app.html, Sign weights); a
+    // species' shape in the proportions CellDesigner gives it on the map where those cannot change (RNA's slant at 45 degrees)
     var CD_SP = [['PROTEIN', 'Protein', '<rect x="1.5" y="5" width="21" height="14" rx="3.5"/>'],
       ['GENE', 'Gene', '<rect x="1.5" y="6" width="21" height="12"/>'],
-      ['RNA', 'RNA', '<path d="M6 6h16.5l-4.5 12h-16.5z"/>'],
-      ['SIMPLE_MOLECULE', 'Simple molecule', '<ellipse cx="12" cy="12" rx="10.5" ry="6"/>'],
+      ['RNA', 'RNA', '<path d="M11.5 7h11l-10 10h-11z"/>'],
+      ['SIMPLE_MOLECULE', 'Simple molecule', '<circle cx="12" cy="12" r="7"/>'],
       ['UNKNOWN', 'Unknown', '<ellipse cx="12" cy="12" rx="10.5" ry="6" fill="currentColor" fill-opacity=".35" stroke="none"/>'],
       ['PHENOTYPE', 'Phenotype', '<path d="M6 5h12l4.5 7-4.5 7h-12l-4.5-7z"/>'],
       ['DEGRADED', 'Degraded', '<circle cx="12" cy="12" r="8"/><path d="M4 20l16-16"/>'],
-      // CellDesigner's own signs for these two, in the palette's weights: the complex with two members inside (its box
-      // with cut corners, square as CellDesigner's button), the compartment's thick double border as a tinted band
-      ['COMPLEX', 'Complex', '<path d="M6 2.5h12l3.5 3.5v12l-3.5 3.5h-12l-3.5-3.5v-12z"/><rect x="6" y="6" width="8.5" height="6.5" rx="1.8" class="in"/><circle cx="15" cy="15" r="3.6" class="in"/>'],
-      ['COMPARTMENT', 'Compartment', '<path fill="currentColor" fill-opacity=".22" fill-rule="evenodd" stroke="none" d="M7 3.5h10a5.5 5.5 0 0 1 5.5 5.5v6a5.5 5.5 0 0 1-5.5 5.5h-10a5.5 5.5 0 0 1-5.5-5.5v-6a5.5 5.5 0 0 1 5.5-5.5zM7.5 7h9a2.5 2.5 0 0 1 2.5 2.5v5a2.5 2.5 0 0 1-2.5 2.5h-9a2.5 2.5 0 0 1-2.5-2.5v-5a2.5 2.5 0 0 1 2.5-2.5z"/><rect x="1.5" y="3.5" width="21" height="17" rx="5.5"/><rect x="5" y="7" width="14" height="10" rx="2.5"/>']];
-    // gates as CellDesigner draws them, a circle with its sign (the unknown gate offered too, as SBGN has one)
-    var CD_GATES = [['AND', 'AND gate', '&amp;'], ['OR', 'OR gate', '|'], ['NOT', 'NOT gate', '!'], ['UNKNOWN', 'Unknown gate', '?']].map(function (q) {
-      return [q[0], q[1], '<circle cx="12" cy="12" r="9"/><text x="12" y="16.2" text-anchor="middle" font-size="11.5">' + q[2] + '</text>'];
+      // the complex: its box with cut corners holding three overlapping members, each opaque over the one behind it
+      ['COMPLEX', 'Complex', '<path d="M6 2.5h12l3.5 3.5v12l-3.5 3.5h-12l-3.5-3.5v-12z"/><g class="in" fill="#fff"><rect x="8.5" y="5.5" width="7.5" height="6.5" rx="1"/><rect x="5" y="10" width="6.5" height="4.5" rx="1"/><ellipse cx="14.3" cy="14.8" rx="4.6" ry="3.6"/></g>'],
+      ['COMPARTMENT', 'Compartment', '<rect x="1.5" y="3.5" width="21" height="17" rx="6"/><rect x="4.5" y="6.5" width="15" height="11" rx="3.5"/>']];
+    // gates: the circle with its sign, two input lines above and the output line below; the signs centred in the circle
+    // (the bar and ! drawn, not letters, so they sit in its middle); the fourth item is cdrender's GATE sign, for cdCheck
+    var CD_Q = '<path d="M9.8 10.2a2.2 2.2 0 1 1 3.2 2c-.7.4-1 .8-1 1.6" class="in"/><circle class="dot" cx="12" cy="16.4" r=".8"/>';
+    var CD_GATES = [['AND', 'AND gate', '<text x="12" y="16.2" text-anchor="middle" font-size="9">&amp;</text>', '&amp;'], ['OR', 'OR gate', '<path d="M12 9.5v7" class="in"/>', '|'],
+      ['NOT', 'NOT gate', '<path d="M12 9.6v4.6" class="in"/><circle class="dot" cx="12" cy="16.6" r=".8"/>', '!'], ['UNKNOWN', 'Unknown gate', '<g transform="translate(0 .7)">' + CD_Q + '</g>', '?']].map(function (q) {
+      return [q[0], q[1], '<circle cx="12" cy="13" r="6.5"/><path d="M3 4l4.4 4.4M21 4l-4.4 4.4M12 19.5V23"/>' + q[2], q[3]];
     });
-    // a reaction: its main line with the square midway and CellDesigner's filled arrowhead
-    var CD_SQ = '<rect x="5.5" y="8.5" width="7" height="7"/>', CD_HEAD = '<path d="M15 8l7 4-7 4z" fill="currentColor"/>';
-    var CD_RX = [['STATE_TRANSITION', 'State transition', '<path d="M1.5 12h4M12.5 12h3"/>' + CD_SQ + CD_HEAD],
-      ['KNOWN_TRANSITION_OMITTED', 'Known transition omitted', '<path d="M1.5 12h4M12.5 12h3"/>' + CD_SQ + '<path d="M7.6 13.8l1.3-3.6M9.9 13.8l1.3-3.6" class="in"/>' + CD_HEAD],
-      ['UNKNOWN_TRANSITION', 'Unknown transition', '<path d="M1.5 12h4M12.5 12h3"/>' + CD_SQ + '<path d="M8 11a1.1 1.1 0 1 1 1.6 1c-.35.2-.5.4-.5.8" class="in"/><circle class="dot" cx="9" cy="14" r=".55"/>' + CD_HEAD]];
-    // a modifier ends on a reaction's square (drawn small at its end), reduced notation on an entity (the bare head)
-    var CD_HEADS = { CATALYSIS: '<circle cx="13" cy="12" r="3"/>', INHIBITION: '<path d="M16 7v10"/>', PHYSICAL_STIMULATION: '<path d="M10 8l6 4-6 4z"/>',
+    // a reaction: the bare arrow with CellDesigner's filled head, the omitted one crossed by two slashes, the unknown one by ?
+    var CD_LINE = '<path d="M1.5 12h15"/>', CD_HEAD = '<path d="M16 8.5l6.5 3.5-6.5 3.5z" fill="currentColor"/>';
+    var CD_RX = [['STATE_TRANSITION', 'State transition', CD_LINE + CD_HEAD],
+      ['KNOWN_TRANSITION_OMITTED', 'Known transition omitted', CD_LINE + '<path d="M6.5 16l2.5-8M10 16l2.5-8" class="in"/>' + CD_HEAD],
+      ['UNKNOWN_TRANSITION', 'Unknown transition', CD_LINE + '<g transform="translate(-2.5 -1.5)">' + CD_Q + '</g>' + CD_HEAD]];
+    // a modifier points down onto a reaction, as in CellDesigner's toolbar; reduced notation runs across, between entities
+    var CD_MOD = [['CATALYSIS', 'Catalysis', '<path d="M12 1.5v14"/><circle cx="12" cy="18.5" r="3"/>'],
+      ['INHIBITION', 'Inhibition', '<path d="M12 1.5v19M7 20.5h10"/>'],
+      ['PHYSICAL_STIMULATION', 'Physical stimulation', '<path d="M12 1.5v12.5M7.5 14h9l-4.5 7.5z"/>'],
+      ['MODULATION', 'Modulation', '<path d="M12 1.5v11M12 12.5l3.5 4.5-3.5 4.5-3.5-4.5z"/>'],
+      ['TRIGGER', 'Trigger', '<path d="M12 1.5v12.5M7 12.5h10M7.5 15h9l-4.5 7z"/>']].map(function (q) { return [q[0], q[1] + ' (to a reaction)', q[2]]; });
+    var CD_HEADS = { INHIBITION: '<path d="M16 7v10"/>', PHYSICAL_STIMULATION: '<path d="M10 8l6 4-6 4z"/>',
       MODULATION: '<path d="M9 12l3.5-3.5 3.5 3.5-3.5 3.5z"/>', TRIGGER: '<path d="M9 6.5v11M10.5 8l5.5 4-5.5 4z"/>', POSITIVE_INFLUENCE: '<path d="M10 7.5l6 4.5-6 4.5"/>' };
-    var CD_TAIL = { CATALYSIS: 10, INHIBITION: 16, PHYSICAL_STIMULATION: 10, MODULATION: 9, TRIGGER: 9, POSITIVE_INFLUENCE: 16 };
-    function cdArc(head, mod) {   // the sign of a line: its tail, its head, a modifier's small square
-      var dx = mod ? 0 : 5;   // reduced notation's head at the sign's end, a modifier's before its square
-      return '<g transform="translate(' + dx + ' 0)"><path d="M' + (1.5 - dx) + ' 12H' + CD_TAIL[head] + '"/>' + CD_HEADS[head] + (mod ? '<rect x="17" y="9" width="6" height="6"/>' : '') + '</g>';
-    }
-    var CD_MOD = [['CATALYSIS', 'Catalysis'], ['INHIBITION', 'Inhibition'], ['PHYSICAL_STIMULATION', 'Physical stimulation'], ['MODULATION', 'Modulation'], ['TRIGGER', 'Trigger']].map(function (q) {
-      return [q[0], q[1] + ' (to a reaction)', cdArc(q[0], true)];
-    });
+    var CD_TAIL = { INHIBITION: 16, PHYSICAL_STIMULATION: 10, MODULATION: 9, TRIGGER: 9, POSITIVE_INFLUENCE: 16 };
+    function cdArc(head) { return '<g transform="translate(5 0)"><path d="M-3.5 12H' + CD_TAIL[head] + '"/>' + CD_HEADS[head] + '</g>'; }   // its head at the sign's end
     var CD_RED = [['POSITIVE_INFLUENCE', 'POSITIVE_INFLUENCE', 'Positive influence'], ['NEGATIVE_INFLUENCE', 'INHIBITION', 'Negative influence'],
       ['REDUCED_PHYSICAL_STIMULATION', 'PHYSICAL_STIMULATION', 'Reduced physical stimulation'], ['REDUCED_MODULATION', 'MODULATION', 'Reduced modulation'],
-      ['REDUCED_TRIGGER', 'TRIGGER', 'Reduced trigger']].map(function (q) { return [q[0], q[2] + ' (between entities)', cdArc(q[1], false)]; });
+      ['REDUCED_TRIGGER', 'TRIGGER', 'Reduced trigger']].map(function (q) { return [q[0], q[2] + ' (between entities)', cdArc(q[1])]; });
     var CD_NAME = {};   // CellDesigner's names, for the menus and the status line (a gate's by G_ and its kind: UNKNOWN is a species too)
     CD_SP.concat(CD_RX, CD_MOD, CD_RED).forEach(function (q) { CD_NAME[q[0]] = q[1].replace(/ \(.*\)$/, ''); });
     CD_GATES.forEach(function (q) { CD_NAME['G_' + q[0]] = q[1]; });
@@ -91,7 +94,7 @@
         .concat(CD_RX.filter(function (q) { return cdMk.PROCESS.indexOf(q[0]) < 0; }).map(function (q) { return q[0]; }), CD_MOD.filter(function (q) { return cdMk.MODS.indexOf(q[0]) < 0; }).map(function (q) { return q[0]; }),
           CD_RED.filter(function (q) { return cdMk.REDUCED.indexOf(q[0]) < 0; }).map(function (q) { return q[0]; }), CD_GATES.filter(function (q) { return !cdMk.NEED[q[0]]; }).map(function (q) { return q[0]; }));
       if (miss.length) console.error('The CellDesigner palette offers kinds cd_make lacks: ' + miss.join(', '));
-      if (g) CD_GATES.forEach(function (q) { var v = g[q[0]]; if (v && q[2].indexOf('>' + v + '<') < 0) console.error('The palette\u2019s ' + q[1] + ' sign differs from cdrender\u2019s ' + v); });
+      if (g) CD_GATES.forEach(function (q) { var v = g[q[0]]; if (v && q[3] !== v) console.error('The palette\u2019s ' + q[1] + ' sign differs from cdrender\u2019s ' + v); });
     }
     pal.querySelector('.m2-ed-pstrict input').addEventListener('change', function (e) {   // on a CellDesigner map: kept per map, the reduced signs shown or not
       if (!cdPal()) return;
