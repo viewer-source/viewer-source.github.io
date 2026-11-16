@@ -1245,7 +1245,7 @@
     }
     EROWS.forEach(function (r) {
       var f = field(r[0]);
-      [f, f.previousElementSibling].forEach(function (x) { x.addEventListener('focus', function () { var k = propEdge(); eFor = k < 0 ? null : edges2[k].id; }); });
+      [f, f.previousElementSibling].filter(Boolean).forEach(function (x) { x.addEventListener('focus', function () { var k = propEdge(); eFor = k < 0 ? null : edges2[k].id; }); });
       f.addEventListener('change', function () { edgeSet(r[0]); });
       if (r[2] === 'colour') f.previousElementSibling.addEventListener('change', function (e) { f.value = e.target.value; edgeSet(r[0]); });
     });
