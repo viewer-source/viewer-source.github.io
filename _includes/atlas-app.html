@@ -51,8 +51,6 @@ page, so its styles keep the base they were made on).
     --m2-hover: transparent;     /* a map in the list under the pointer: no highlight (as on phones) */
     --m2-grip: transparent;      /* the three dots on the separator beside the list: none in the viewer's own look */
     --m2-grip-h: transparent;    /* the dots on the one under the map window: none */
-    --m2-grip-t: transparent;    /* the dots on the one above it, under the site's header */
-    --m2-split-t: 16px;          /* the gap above the map window: its separator hides or shows the site's header */
     /* behaviours, on: the separators in place of the corner grip, a second click on a molecule
        closing its panel, dragging in the list only with Shift held; 0 turns one off */
     --m2-separators: 1;
@@ -118,13 +116,6 @@ page, so its styles keep the base they were made on).
   #m2-split-r { position: absolute; display: none; cursor: col-resize; touch-action: none; z-index: 1; }
   .m2-info-shut .m2-info:not(.m2-over) { display: none; }
   .m2.m2-info-shut { grid-template-columns: var(--m2-list-w, 240px) minmax(600px, 1fr) 0; }
-  /* the separator above the map window, under the site's header: dragged up it hides the header (the map takes the
-     page from its top), a click or a drag down brings it back; kept in the reader's browser */
-  #m2-split-t { position: absolute; left: 0; right: 0; top: calc(-1 * var(--m2-split-t)); height: var(--m2-split-t); cursor: row-resize; touch-action: none; z-index: 1; }
-  #m2-split-t::after { content: ''; position: absolute; top: 50%; left: 50%; width: 20px; height: 4px; margin: -2px 0 0 -10px;
-    background: radial-gradient(circle, var(--m2-grip-t) 1.5px, transparent 2px) center / 8px 4px repeat-x; }
-  .m2:not(.m2-seps) #m2-split-t { display: none; }
-  body.m2-head-shut .wrapper-masthead { display: none; }
   #m2-split-r::after { content: ''; position: absolute; top: 50%; left: 50%; width: 4px; height: 20px; margin: -10px 0 0 -2px;
     background: radial-gradient(circle, var(--m2-grip) 1.5px, transparent 2px) center / 4px 8px repeat-y; }
   #m2-list { max-height: calc(100vh / var(--zoom, 1) - 180px); overflow-y: auto; }
@@ -135,7 +126,7 @@ page, so its styles keep the base they were made on).
     .m2 { display: flex; flex-direction: column; align-items: stretch; width: auto; left: 0; transform: none; }
     .m2-main { display: contents; }
     .m2 > *, .m2-main > * { order: 9; }
-    #m2-split-t { order: 1; } #m2-view { order: 2; } #m2-split-h { order: 3; } #m2-downloads { order: 4; }
+    #m2-view { order: 2; } #m2-split-h { order: 3; } #m2-downloads { order: 4; }
     #m2-title { order: 5; margin-top: 12px; } .m2-nav { order: 6; margin: 10px 0 0; } #m2-text { order: 7; }
     #m2-search { margin-bottom: 8px; }
     #m2-list { max-height: 92px; border-bottom: 1px solid #eee; }
@@ -1963,49 +1954,6 @@ page, so its styles keep the base they were made on).
     window.addEventListener('resize', place);
     if (window.ResizeObserver) { new ResizeObserver(place).observe(info); new ResizeObserver(place).observe(view); }
     if (window.MutationObserver) new MutationObserver(place).observe(info, { childList: true });
-  })();
-  // the separator above the map window: hides or shows the site's header, in both modes (every atlas has its top bar,
-  // development mode included)
-  (function () {
-    var head = document.querySelector('.wrapper-masthead');
-    if (!head) return;
-    var ts = document.createElement('div'), key = 'atlas-header-shut:' + location.pathname, drag = null;
-    ts.id = 'm2-split-t'; ts.title = 'Drag up to hide the header, click to bring it back';
-    document.querySelector('.m2-main').insertBefore(ts, view);
-    function setShut(on, save) {
-      document.body.classList.toggle('m2-head-shut', on);
-      if (save) { try { if (on) localStorage.setItem(key, '1'); else localStorage.removeItem(key); } catch (e) {} }
-      window.dispatchEvent(new Event('resize')); // the map window's height, the list and the other separators follow
-    }
-    // with the header shut the separator is the only way back, so all of it stays on the page: a style whose gap above
-    // the map is smaller than the separator (Default Edit: 6 px for 8) left it partly above the page's top, too thin
-    // to find, with no way to drag the header back)
-    function keepOn() {
-      ts.style.top = '';
-      if (!document.body.classList.contains('m2-head-shut')) return;
-      var y = ts.getBoundingClientRect().top + window.scrollY;
-      if (y < 0) ts.style.top = ts.offsetTop - y / (ts.currentCSSZoom || 1) + 'px';
-    }
-    window.addEventListener('resize', keepOn); window.addEventListener('load', keepOn);
-    try { if (localStorage.getItem(key)) setShut(true, false); } catch (e) {}
-    ts.addEventListener('pointerdown', function (e) {
-      if (e.button !== 0) return;
-      e.preventDefault(); ts.setPointerCapture(e.pointerId);
-      drag = { y: e.clientY, moved: false };
-    });
-    ts.addEventListener('pointermove', function (e) {
-      if (!drag) return;
-      var dy = e.clientY - drag.y, shut = document.body.classList.contains('m2-head-shut');
-      if (dy < -12 && !shut) { drag.moved = true; setShut(true, false); drag.y = e.clientY; }
-      else if (dy > 12 && shut) { drag.moved = true; setShut(false, false); drag.y = e.clientY; }
-    });
-    function end() {
-      if (!drag) return;
-      var shut = document.body.classList.contains('m2-head-shut');
-      if (drag.moved) setShut(shut, true); else if (shut) setShut(false, true);
-      drag = null;
-    }
-    ts.addEventListener('pointerup', end); ts.addEventListener('pointercancel', end);
   })();
   function loadNodes(m) {
     nodes = null; sel = null; renderInfo(); drawPin();

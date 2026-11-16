@@ -9,7 +9,6 @@
    base's own, transparent): the lines are grabbed as they are, nothing shows under the pointer. */
 :root {
   --m2-separator-below: 1;   /* the separator under the map on: dragged up the map gets smaller */
-  --m2-split-t: 8px;         /* the room above the map for its separator (hides or shows the site's header) */
   --m2-split: 8px;
   --m2-split-h: 8px;
 }
@@ -19,7 +18,6 @@ html .wrapper-masthead .container { width: calc(100vw / var(--zoom, 1) - 16px); 
 html .masthead { padding: 6px 0 7px 4px; }
 html .wrapper-masthead { border-bottom: 1px solid var(--m2-frame); margin-bottom: 0; }
 html #main { padding-top: 0; }
-html body.m2-head-shut #main { padding-top: 6px; }
 /* the same at the bottom: the lines down the page meet the footer's line; the room
    under the page's text kept inside the columns */
 html .wrapper-footer { margin-top: 0; border-top: 1px solid var(--m2-frame); }
