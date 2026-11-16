@@ -133,7 +133,21 @@
     }
     // the CellDesigner part of the live drawing of a move (live.js, liveFmt): its process glyphs following their segments, its
     // reactions drawn by the drop's own code, its holders drawn by cdrender
-    var liveCd = { glyphs: glyphFollow, lines: cdLines, holders: cdHolders };
+    // a species resized by its handles drawn by cdrender at its live box (sizeLive, live.js): R its record, made with no box,
+    // put back by liveBack
+    function cdSizeLive(i, nb, R) {
+      var S = cdSession(), g = gN && gN[nodes2[i].id];
+      if (!S || !S.holder || !g) return R;
+      if (!R) { var kids = Array.prototype.slice.call(g.childNodes); return { i: i, back: function () { g.replaceChildren.apply(g, kids); } }; }
+      if (!nb || (R.at && R.at.every(function (v, j) { return v === nb[j]; }))) return R;
+      var svg = S.holder(nodes2[i].id, toPic(nb));
+      if (svg == null) return R;
+      var doc = new DOMParser().parseFromString('<svg xmlns="http://www.w3.org/2000/svg"><g>' + svg + '</g></svg>', 'image/svg+xml').documentElement.firstElementChild;
+      g.replaceChildren.apply(g, Array.prototype.map.call(doc.childNodes, function (c) { return document.importNode(c, true); }));
+      R.at = nb.slice();
+      return R;
+    }
+    var liveCd = { glyphs: glyphFollow, lines: cdLines, holders: cdHolders, size: cdSizeLive };
     var RXE = /^(.*)\|(a|b|[rpmi]\d+)$/;   // i: an input of a gate between entities
     function cdLines(ks, pp) {   // false: not drawn this way (the copies of fullLines then)
       if (!cd || !gE) return false;

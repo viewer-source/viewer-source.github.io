@@ -1144,9 +1144,11 @@
       props.hidden = i < 0;   // only with its node: nothing selected, no Properties
       if (props.hidden) return;
       var pf = propFmt(), b = bx(i);
+      pNow = pf.look(i);
+      if (!pNow) { props.hidden = true; return; }
       Array.prototype.forEach.call(props.querySelectorAll('tr[data-k]'), function (tr) { tr.hidden = (/^[wh]$/.test(tr.dataset.k) && !sizable(i)) || pf.off(tr.dataset.k, i); });
       props.querySelector('.m2-ed-pdef').hidden = !pf.def;
-      pNow = pf.look(i); pNow.w = r2(b[2]); pNow.h = r2(b[3]); pNow.width = r2(pNow.width);
+      pNow.w = r2(b[2]); pNow.h = r2(b[3]); pNow.width = r2(pNow.width);
       ROWS.forEach(function (r) {
         var f = field(r[0]);
         if (!all && document.activeElement === f) return;

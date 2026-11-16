@@ -916,12 +916,12 @@
     Object.keys(cc.n).forEach(function (k) { o[k] = {}; Object.keys(cc.n[k]).forEach(function (c) { if (c !== 'best') o[k][c] = cc.n[k][c]; }); });
     return o;
   }
-  // a species alias's look as Properties shows it: its fill (#rrggbb, CellDesigner's paint without the alpha), border
+  // a species alias's look as Properties shows it (with its class): its fill (#rrggbb, CellDesigner's paint without the alpha), border
   // width (singleLine) and multimer (its species' homodimer count above 1), all from the usual view
   function look(t, id) {
     var A = entity(t, id), u = span(t, '<celldesigner:usualView>', A.sp[0], A.sp[1]), seg = u ? t.slice(u[0], u[1]) : '';
     var p = /<celldesigner:paint color="([0-9a-fA-F]{8})"/.exec(seg), w = /<celldesigner:singleLine width="([^"]*)"/.exec(seg), h = inState(t, A.species, '<celldesigner:homodimer>');
-    return { fill: p ? '#' + p[1].slice(2).toLowerCase() : '', width: w ? F(w[1]) : 1, multimer: h ? +/>(\d+)</.exec(t.slice(h[0], h[1]))[1] > 1 : false };
+    return { fill: p ? '#' + p[1].slice(2).toLowerCase() : '', width: w ? F(w[1]) : 1, multimer: h ? +/>(\d+)</.exec(t.slice(h[0], h[1]))[1] > 1 : false, cls: A.cls };
   }
   // the fill (#rrggbb, written opaque) and the border width of one species alias, in its usual view; the brief view kept
   function restyle(t, id, o) {

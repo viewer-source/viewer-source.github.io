@@ -442,8 +442,12 @@
     }
     var PF_CD = { sizable: cdSpecies, size: cdSetSize, def: false,
       node: function (i) { return cdSpecies(i) ? i : -1; },
-      off: function (k, i) { return k === 'line' || (/^(label|fill|multimer)$/.test(k) && cdMk.aliasInfo(cd.now, nodes2[i].id).cls === 'DEGRADED'); },
-      look: function (i) { var id = nodes2[i].id, L = cdMk.look(cd.now, id); return { label: cdNameOf(id), fill: L.fill, line: '#000000', width: L.width, multimer: L.multimer }; },
+      off: function (k, i) { return k === 'line' || (/^(label|fill|multimer)$/.test(k) && pNow.cls === 'DEGRADED'); },   // pNow: look's, read just before
+      look: function (i) {   // null while the file is behind the map read (an undo not drawn yet)
+        var id = nodes2[i].id, L;
+        try { L = cdMk.look(cd.now, id); } catch (e) { return null; }
+        return { label: cdNameOf(id), fill: L.fill, line: '#000000', width: L.width, multimer: L.multimer, cls: L.cls };
+      },
       set: function (k, v, i) {
         var id = nodes2[i].id;
         if (k === 'label') return cdApply(function (t) { return cdMk.rename(t, id, v.replace(/[\r\n]+/g, ' ')); }, [id]);

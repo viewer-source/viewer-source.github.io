@@ -279,9 +279,10 @@
         if (v[1] != null) el.setAttribute('transform', v[1]); else el.removeAttribute('transform');
       });
     }
-    function sizeLive(i, nb) {
-      if (!sizeRec || sizeRec.i !== i) { sizeOff(); sizeRec = liveRec(i); }
-      if (sizeRec) livePut(sizeRec, nb);
+    function sizeLive(i, nb) {   // a format's own drawing where it has one (liveFmt's size: (i, box, record) -> record), else the parts reshaped
+      var own = liveFmt().size;
+      if (!sizeRec || sizeRec.i !== i) { sizeOff(); sizeRec = own ? own(i, null, null) : liveRec(i); }
+      if (sizeRec) { if (own) own(i, nb, sizeRec); else livePut(sizeRec, nb); }
     }
     function sizeOff() {   // the node drawn as the renderer drew it
       if (!sizeRec) return;
