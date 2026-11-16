@@ -372,6 +372,7 @@ page, so its styles keep the base they were made on).
     border: 1px solid var(--m2-frame); border-radius: 4px; background: var(--m2-bg); color: var(--m2-text); font: inherit; -moz-appearance: textfield; }
   #m2-editwin .m2-ed-ptab input[type="number"], #m2-editwin .m2-ed-pc input[type="text"] { width: 64px; }   /* a number or a hex colour needs no more */
   #m2-editwin .m2-ed-ptab input:focus { outline: none; border-color: #70757a; }
+  #m2-editwin .m2-ed-ptab input:disabled { border-color: transparent; background: transparent; color: #9aa0a6; }   /* shown, not typed: a line's end at a process's or gate's port */
   #m2-editwin .m2-ed-ptab input::-webkit-inner-spin-button, #m2-editwin .m2-ed-ptab input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
   #m2-editwin .m2-ed-ptab input[type="checkbox"] { display: block; margin: 0; }
   #m2-editwin .m2-ed-pc { display: flex; gap: 4px; align-items: center; }
