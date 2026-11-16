@@ -406,7 +406,8 @@
     if (PROCESS.indexOf(type) < 0) fail('The reaction type ' + type + ' is not offered.');
     return newReaction(t, type, [e[0]], e[1], scheme(true), null, o.toAt);
   }
-  // reduced notation: a reaction with no square, both ends at the centre (no linkAnchor, as the converter writes them)
+  // reduced notation: a reaction with no square, its start at the centre (no linkAnchor, as the converter writes it), its
+  // end at the place given (o.toAt) or the centre
   function reduced(t, o) {
     var e = ends(t, o);
     if (REDUCED.indexOf(o.type) < 0) fail('The reduced notation type ' + o.type + ' is not offered.');
@@ -549,6 +550,7 @@
   function gate(t, o) {
     var k = o.kind, ins = (o.inputs || []).map(function (a) { return end(t, a); }), out = o.output;
     if (!NEED[k]) fail('The gate ' + k + ' is not offered.');
+    if (o.spot != null && !(o.spot >= 2 && o.spot <= 7)) fail('No place ' + o.spot + ' at a reaction\u2019s square.');   // o.spot: its line's place at the square (none: the side facing it); o.toAt: at a species (none: the centre)
     if (ins.length < NEED[k]) fail(an(k).replace(/^a/, 'A') + ' gate needs ' + (NEED[k] === 2 ? 'two inputs.' : 'an input.'));
     if (new Set(o.inputs).size !== ins.length || o.inputs.indexOf(o.target) >= 0) fail('A gate\'s inputs and its target are different entities.');
     var mean = function (ps) { return [ps.reduce(function (s, p) { return s + p[0]; }, 0) / ps.length, ps.reduce(function (s, p) { return s + p[1]; }, 0) / ps.length]; };
@@ -561,7 +563,7 @@
       ins.forEach(function (A) { twin(R, A.id, out, []); });
       G = mean(C.concat([r.sq])); pt = num(G[0]) + ',' + num(G[1]);
       var g = '<celldesigner:modification type="' + type + '" modifiers="' + ins.map(function (A) { return A.species; }).join(',') + '" aliases="' + al +
-        '" modificationType="' + out + '" targetLineIndex="-1,' + side(G, r) + '" editPoints="' + pt + '">\n' + scheme(false) + '\n' + LINE + '\n</celldesigner:modification>';
+        '" modificationType="' + out + '" targetLineIndex="-1,' + (o.spot != null ? o.spot : side(G, r)) + '" editPoints="' + pt + '">\n' + scheme(false) + '\n' + LINE + '\n</celldesigner:modification>';
       t = addMods(t, o.target, [g].concat(ins.map(function (A) { return ownLine('modification', out, A); })), ins);
       return { text: t, reaction: o.target, gate: o.target + '|m' + R.mods.length, at: G };
     }
@@ -572,7 +574,7 @@
     G = mean(C.concat([centre(T)])); pt = num(G[0]) + ',' + num(G[1]);
     var r2 = newReaction(t, 'BOOLEAN_LOGIC_GATE', ins, T, '<celldesigner:connectScheme connectPolicy="direct"/>\n<celldesigner:editPoints>' + pt + '</celldesigner:editPoints>',
       '<celldesigner:listOfGateMember>\n<celldesigner:GateMember type="' + type + '" aliases="' + al + '" modificationType="' + out + '" targetLineIndex="-1,-1" editPoints="' + pt +
-      '">\n' + scheme(false) + '\n' + LINE + '\n</celldesigner:GateMember>\n' + ins.map(function (A) { return ownLine('GateMember', out, A); }).join('\n') + '\n</celldesigner:listOfGateMember>');
+      '">\n' + scheme(false) + '\n' + LINE + '\n</celldesigner:GateMember>\n' + ins.map(function (A) { return ownLine('GateMember', out, A); }).join('\n') + '\n</celldesigner:listOfGateMember>', o.toAt);
     return { text: r2.text, reaction: r2.reaction, gate: r2.reaction, at: G };
   }
   function ownLine(tag, out, A) {   // an input's own line to its gate: the output's type, from the input's centre (INACTIVE)
@@ -953,7 +955,8 @@
   }
   function aliasInfo(t, id) {
     var A = alias(t, id), C = A.kind === 'compartmentAlias' ? span(t, '<compartment(?=\\s)[^>]*\\sid="' + q(A.compartment) + '"') : null;
-    return { kind: A.kind, cls: A.cls || null, id: A.species || A.compartment, name: A.s ? A.s.name : C ? at(head(t, C), 'name') : null, complex: A.complex, box: A.box };
+    var hd = A.s && /<celldesigner:homodimer>(\d+)</.exec(t.slice(A.s.sp[0], A.s.sp[1]));
+    return { kind: A.kind, cls: A.cls || null, id: A.species || A.compartment, name: A.s ? A.s.name : C ? at(head(t, C), 'name') : null, complex: A.complex, box: A.box, homodimer: hd ? +hd[1] : 1 };
   }
   var api = { LOOK: LOOK, PROCESS: PROCESS, REDUCED: REDUCED, sbgn: sbgn, MODS: MODS, NEED: NEED, about: about, aliasInfo: aliasInfo, classColour: classColour, classColours: classColours, empty: empty, species: newSpecies, compartment: compartment, rename: rename, retype: retype, remove: remove, reaction: reaction, reduced: reduced,
     reactant: reactant, product: product, modifier: modifier, reactionType: reactionType, modifierType: modifierType, removeLine: removeLine,

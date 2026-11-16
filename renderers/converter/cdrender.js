@@ -420,9 +420,9 @@
   D.box = function (i) { return this.al(i)[1]; };
   D.front = function (i) {
     var A = this.al(i), b = A[1], si = A[4], hd = si ? find(si, 'cd:state/cd:homodimer') : null, t = hd ? text(hd) : null;
-    var s = t && isdigit(t) ? 6 * (I(t) - 1) : 0;
-    return [b[0], b[1], b[2] - s, b[3] - s];
+    return frontBox(b, t && isdigit(t) ? I(t) : 1);
   };
+  function frontBox(b, n) { var s = 6 * (n - 1); return [b[0], b[1], b[2] - s, b[3] - s]; }   // a multimer of n drawn as its copies: the front one
   D.end = function (e, i) {
     var b = e ? find(e, 'cd:linkAnchor') : null, bx = this.box(i), x = bx[0], y = bx[1], w = bx[2], h = bx[3];
     var side = b ? get(b, 'position') : null;
@@ -751,7 +751,7 @@
     return [svg, { aliases: aliases, reactions: reactions }];
   }
   var api = { render: render, renderHits: renderHits, Drawing: Drawing, py: py, xml: xml, SQUARE: SQUARE, ANCHOR: ANCHOR, fromFrame: fromFrame, toFrame: toFrame,
-    editPoints: editPoints, unit: unit, onBorder: onBorder, width: width, target: target, plainName: plainName, NAME: NAME, GATE: GATE, ROLE: ROLE, ANCHOR: ANCHOR, anchorAt: anchorAt };   // GATE: the editor's palette checks its signs against it   // NAME: cd_make.js writes names
+    editPoints: editPoints, unit: unit, onBorder: onBorder, width: width, target: target, plainName: plainName, NAME: NAME, GATE: GATE, ROLE: ROLE, ANCHOR: ANCHOR, anchorAt: anchorAt, frontBox: frontBox };   // GATE: the editor's palette checks its signs against it   // NAME: cd_make.js writes names
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.cdrender = api;
 
   if (typeof require !== 'undefined' && typeof module !== 'undefined' && require.main === module) {   // node cdrender.js map.xml out.svg

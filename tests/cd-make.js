@@ -485,7 +485,17 @@ var landChecks = 0;
   });
   var E = cdr.anchorAt('SIMPLE_MOLECULE', [0, 0, 40, 40], 'NE');
   if (Math.abs(Math.hypot(E[0] - 20, E[1] - 20) - 20) > 1e-9) fault('land: a circle\u2019s place off its circle');
-  landChecks += 12;
+  var gr = mk.gate(r.text, { kind: 'AND', inputs: [A.alias, C.alias], target: r.reaction, spot: 5 });
+  if (!/BOOLEAN_LOGIC_GATE_AND"[^>]*targetLineIndex="-1,5"/.test(gr.text)) fault('land: the gate\u2019s place at the square not written');
+  var D2 = mk.species(t, { cls: 'PROTEIN', name: 'D', box: [600, 300] }), ge = mk.gate(D2.text, { kind: 'OR', inputs: [A.alias, B.alias], target: D2.alias, toAt: 'W' });
+  if (!/<celldesigner:baseProduct species="[^"]+" alias="[^"]+">\s*<celldesigner:linkAnchor position="W"\/>/.test(ge.text)) fault('land: the gate\u2019s place at a species not written');
+  try { mk.gate(r.text, { kind: 'AND', inputs: [A.alias, C.alias], target: r.reaction, spot: 1 }); fault('land: a wrong gate place taken'); } catch (e) {}
+  [gr.text, ge.text].forEach(function (x, k) { try { cdr.render(x, { DOMParser: DP }); ed.graphml(x, null, opt); } catch (e) { fault('land: gate case ' + k + ': ' + e.message); } });
+  var H = mk.species(t, { cls: 'PROTEIN', name: 'H', box: [0, 0] }), hh = mk.homodimer ? mk.homodimer(H.text, H.alias, 2) : null;
+  if (hh && mk.aliasInfo(hh.text || hh, H.alias).homodimer !== 2) fault('land: aliasInfo misses the homodimer');
+  var fb = cdr.frontBox([0, 0, 80, 40], 2);
+  if (fb[2] !== 74 || fb[3] !== 34) fault('land: frontBox');
+  landChecks += 18;
 })();
 console.log(landChecks + ' landing checks');
 fs.rmSync(tmp, { recursive: true, force: true });

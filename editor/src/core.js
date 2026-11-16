@@ -1615,6 +1615,15 @@
     // guides as yEd's: 1 map unit wide, as yEd's grow with the zoom, but never under 2 screen pixels,
     // so a guide zoomed out stays apart from the 1 px grid lines
     function gw() { var k = (window.devicePixelRatio || 1) * V.pz(); return ' style="stroke-width:' + Math.max(V.z, 2 / k).toFixed(2) + 'px"'; }
+    function handleMarks(b, cls) {   // eight handles round box b in the map's units, so they grow and shrink with the zoom as
+      // yEd's: 5 units wide, their centres 3.3 units outside the box (as measured on yEd)
+      var hs = Math.max(2, HANDLE * V.z), off = 3.3 * V.z, o = '';
+      var L = sx(b[0]) - off, T = sy(b[1]) - off, R = sx(b[0] + b[2]) + off, B = sy(b[1] + b[3]) + off;
+      [[L, T], [(L + R) / 2, T], [R, T], [L, (T + B) / 2], [R, (T + B) / 2], [L, B], [(L + R) / 2, B], [R, B]].forEach(function (q) {
+        o += '<rect class="' + cls + '" x="' + f1(q[0] - hs / 2) + '" y="' + f1(q[1] - hs / 2) + '" width="' + f1(hs) + '" height="' + f1(hs) + '"/>';
+      });
+      return o;
+    }
     function sx(X) { return V.tx + (X - x0) * V.z; }
     function sy(Y2) { return V.ty + (Y2 - y0) * V.z; }
     function f1(v) { return Math.round(v * 100) / 100; }
@@ -1745,12 +1754,13 @@
     // middles of the two sides off the main line, turned with the line (no centre, nothing on the line itself; cd_edit
     // writes targetLineIndex from the place's number, spot on the path: 2 to 7 in this order, cdrender's SQUARE); null
     // for any other end
-    function procSpots(pp) {
-      var m = cd && pp.end && nodes2[pp.n].id.match(/^(.*)\|proc$/);
-      if (!m || !/\|m\d+$/.test(edges2[pp.k].id)) return null;
+    function procSpots(pp) { return pp.end && /\|m\d+$/.test(edges2[pp.k].id) ? procPlaces(pp.n) : null; }
+    function procPlaces(n) {   // the six places round process glyph n, from its centre (cdcreate.js's landing too); null for any other node
+      var m = cd && nodes2[n].id.match(/^(.*)\|proc$/);
+      if (!m) return null;
       var ka = edges2.findIndex(function (e) { return e.id === m[1] + '|a'; });
       if (ka < 0) return null;
-      var p = ports(ka), A = p[p.length - 2], C = p[p.length - 1], L = Math.hypot(C[0] - A[0], C[1] - A[1]), h = bx(pp.n)[2] / 2;
+      var p = ports(ka), A = p[p.length - 2], C = p[p.length - 1], L = Math.hypot(C[0] - A[0], C[1] - A[1]), h = bx(n)[2] / 2;
       if (!L) return null;
       var f = [(C[0] - A[0]) / L, (C[1] - A[1]) / L];
       return [[0, -1], [0, 1], [-1, -1], [1, -1], [-1, 1], [1, 1]].map(function (s) { return [h * (s[0] * f[0] - s[1] * f[1]), h * (s[0] * f[1] + s[1] * f[0])]; });
@@ -2028,11 +2038,7 @@
         } else out.push(frame + '<path class="m2-ed-dark" d="' + shapeD(i) + '"/></g>');
         // the handles in the map's units, so they grow and shrink with the zoom as yEd's: 5 units
         // wide, their centres 3.3 units outside the box (as measured on yEd)
-        var hs = Math.max(2, HANDLE * V.z), off = 3.3 * V.z;
-        var L = sx(b[0]) - off, T = sy(b[1]) - off, R = sx(b[0] + b[2]) + off, B = sy(b[1] + b[3]) + off;
-        [[L, T], [(L + R) / 2, T], [R, T], [L, (T + B) / 2], [R, (T + B) / 2], [L, B], [(L + R) / 2, B], [R, B]].forEach(function (q) {
-          over.push('<rect class="m2-ed-handle" x="' + f1(q[0] - hs / 2) + '" y="' + f1(q[1] - hs / 2) + '" width="' + f1(hs) + '" height="' + f1(hs) + '"/>');
-        });
+        over.push(handleMarks(b, 'm2-ed-handle'));
       });
       // while a drag runs: a thin grey outline of where it goes (or the area being selected), gone on release
       if (drag && (drag.dx || drag.dy) && !gN) {   // no drawing to move yet: where it goes, as an outline

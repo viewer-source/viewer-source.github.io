@@ -248,9 +248,9 @@
       }
       if (r !== 'proc' && r !== 'epn') { warn(name + ': click the reaction’s square, or the target species.'); return; }
       if (r === 'epn' && cdStrict()) { warn(name + ': a gate between species is reduced notation, unticked in the palette; click a reaction’s square.'); return; }
-      var g = cdGate, target = r === 'proc' ? cdRid(i) : nodes2[i].id, out = null;
+      var g = cdGate, target = r === 'proc' ? cdRid(i) : nodes2[i].id, out = null, L = cdGateLand(i, P) || {};   // where its line out lands, as shown
       // refused (the status line says why), the inputs clicked stay for another target
-      if (!cdApply(function (t) { var q = cdMk.gate(t, { kind: g.kind, inputs: g.inputs, target: target }); out = q.gate; return q.text; },
+      if (!cdApply(function (t) { var q = cdMk.gate(t, { kind: g.kind, inputs: g.inputs, target: target, spot: L.spot, toAt: L.at }); out = q.gate; return q.text; },
         function () { return [/\|m\d+$/.test(out) ? out.replace(/\|m(\d+)$/, '|g$1') : out + '|g']; })) return;   // the gate selected: Delete takes it back
       cdGate = null;
       if (tool && !tool.sticky) palTake(null);
@@ -259,15 +259,8 @@
     // as selected, its outline and handles in magenta with a magenta dot at the port its line takes (the centre); the node
     // the next click or the line's end would land on with a dashed box, grey handles and a blue square at the port it
     // would take. In the map's units, so they follow the zoom as the other marks
-    var cdHover = -1;   // the node a gate's next click would take, under the pointer
-    function cdHandles(i, cls) {
-      var b = bx(i), hs = Math.max(2, HANDLE * V.z), off = 3.3 * V.z, o = '';
-      var L = sx(b[0]) - off, T = sy(b[1]) - off, R = sx(b[0] + b[2]) + off, B = sy(b[1] + b[3]) + off;
-      [[L, T], [(L + R) / 2, T], [R, T], [L, (T + B) / 2], [R, (T + B) / 2], [L, B], [(L + R) / 2, B], [R, B]].forEach(function (q) {
-        o += '<rect class="' + cls + '" x="' + f1(q[0] - hs / 2) + '" y="' + f1(q[1] - hs / 2) + '" width="' + f1(hs) + '" height="' + f1(hs) + '"/>';
-      });
-      return o;
-    }
+    var cdHover = null;   // { id, P }: the node a gate's next click would take, under the pointer at P
+    function cdHandles(i, cls) { return handleMarks(bx(i), cls); }
     function cdDot(Q, cls) { var d = Math.max(3, 4 * V.z); return '<rect class="' + cls + '" x="' + f1(sx(Q[0]) - d / 2) + '" y="' + f1(sy(Q[1]) - d / 2) + '" width="' + f1(d) + '" height="' + f1(d) + '"/>'; }
     function cdCentre(i) { var b = bx(i); return [b[0] + b[2] / 2, b[1] + b[3] / 2]; }
     function cdPicked(out, i) {   // a node picked: magenta outline, handles and the centre's dot
@@ -285,17 +278,26 @@
       if (got.length < need) return r === 'epn' && got.indexOf(nodes2[i].id) < 0;
       return r === 'proc' || (r === 'epn' && !cdStrict());
     }
+    function cdGateLand(i, P) {   // where the gate's line out lands on its target i: a reaction's square or a species' place
+      var r = cdRole(i);
+      return r === 'proc' ? cdPort(i, P, { mod: true }) : r === 'epn' ? cdPort(i, P, { red: true }) : null;
+    }
     V.view.addEventListener('pointermove', function (e) {
-      var on_ = cdPal() && tool && CD_GATE[tool.kind] && !e.buttons, i = on_ ? linkEnd(at(e), -1) : -1;
+      var on_ = cdPal() && tool && CD_GATE[tool.kind] && !e.buttons, P = on_ ? at(e) : null, i = on_ ? linkEnd(P, -1) : -1;
       if (on_ && !cdGateOk(i)) i = -1;
-      if (i !== cdHover) { cdHover = i; paint(); }
+      var h = i >= 0 ? { id: nodes2[i].id, P: P } : null, was = cdHover;   // by id: a re-parse (an undo, the gate made) renumbers nodes2
+      cdHover = h;
+      var q = function (x) { if (!x) return ''; var k = nodes2.findIndex(function (n) { return n.id === x.id; }), L = k >= 0 && cdGateLand0(k, x.P); return x.id + (L ? (L.at || '') + (L.spot || '') : ''); };
+      if (q(was) !== q(h)) paint();   // only when the node or its blue place changes
     });
-    V.view.addEventListener('pointerleave', function () { if (cdHover >= 0) { cdHover = -1; paint(); } });
+    function cdGateLand0(k, P) { var need = cdMk.NEED[CD_GATE[tool.kind]], got = cdGate && cdGate.kind === CD_GATE[tool.kind] ? cdGate.inputs.length : 0; return got >= need ? cdGateLand(k, P) : null; }
+    V.view.addEventListener('pointerleave', function () { if (cdHover) { cdHover = null; paint(); } });
     function cdGateMarks(out) {   // a gate being made by clicks (paint, core.js through linkPaint): its inputs picked, the next click's node
-      if (!tool || !CD_GATE[tool.kind] || !cdPal()) { cdGate = null; cdHover = -1; return; }
+      if (!tool || !CD_GATE[tool.kind] || !cdPal()) { cdGate = null; cdHover = null; return; }
       if (cdGate && CD_GATE[tool.kind] !== cdGate.kind) cdGate = null;
       if (cdGate) cdGate.inputs.forEach(function (id) { var i = nodes2.findIndex(function (n) { return n.id === id; }); if (i >= 0) cdPicked(out, i); });
-      if (cdHover >= 0 && cdHover < nodes2.length) cdLand(out, cdHover);
+      var k = cdHover ? nodes2.findIndex(function (n) { return n.id === cdHover.id; }) : -1;
+      if (k >= 0 && cdGateOk(k)) { var L = cdGateLand0(k, cdHover.P); cdLand(out, k, L && L.Q); }
     }
     function cdLinkMarks(out) {   // a line drawn by a drag on a CellDesigner map: its start picked, the node it would land on
       cdPicked(out, link.from);
@@ -318,23 +320,22 @@
     var cdClsMemo = [null, {}];
     function cdClsOf(id) {
       if (cdClsMemo[0] !== cd.now) cdClsMemo = [cd.now, {}];
-      if (!(id in cdClsMemo[1])) { try { cdClsMemo[1][id] = cdMk.aliasInfo(cd.now, id).cls; } catch (e) { cdClsMemo[1][id] = null; } }
+      if (!(id in cdClsMemo[1])) { try { var A = cdMk.aliasInfo(cd.now, id); cdClsMemo[1][id] = A.cls && [A.cls, A.homodimer || 1]; } catch (e) { cdClsMemo[1][id] = null; } }
       return cdClsMemo[1][id];
     }
     function cdPort(i, P, how) {
       var b = bx(i), C = [b[0] + b[2] / 2, b[1] + b[3] / 2], best = null, bd = Infinity;
       var near = function (Q, o) { var d = Math.hypot(Q[0] - P[0], Q[1] - P[1]); if (d < bd) { bd = d; best = o; o.Q = Q; } };
-      if (how.mod && cdRole(i) === 'proc') {
-        var rid = cdRid(i), ka = edges2.findIndex(function (e) { return e.id === rid + '|a'; }), p = ka >= 0 ? ports(ka) : null;
-        var A = p && p[p.length - 2], E = p && p[p.length - 1], L = p ? Math.hypot(E[0] - A[0], E[1] - A[1]) : 0, h = b[2] / 2;
-        if (!L) return { Q: C };
-        var f = [(E[0] - A[0]) / L, (E[1] - A[1]) / L];
-        [[0, -1], [0, 1], [-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(function (s, k) { near([C[0] + h * (s[0] * f[0] - s[1] * f[1]), C[1] + h * (s[0] * f[1] + s[1] * f[0])], { spot: k + 2 }); });
+      if (how.mod && cdRole(i) === 'proc') {   // procPlaces (core.js): the six places in cdrender SQUARE's order, 2 to 7
+        var S = procPlaces(i);
+        if (!S) return { Q: C };
+        S.forEach(function (o, k) { near([C[0] + o[0], C[1] + o[1]], { spot: k + 2 }); });
         return best;
       }
-      var cls = (how.rx || how.red || how.part === 'product') && cdRole(i) === 'epn' && window.cdrender && window.cdrender.anchorAt ? cdClsOf(nodes2[i].id) : null;
-      if (!cls || Math.max(Math.abs(P[0] - C[0]) / (b[2] / 2 || 1), Math.abs(P[1] - C[1]) / (b[3] / 2 || 1)) < 0.5) return { Q: C };
-      Object.keys(window.cdrender.ANCHOR).forEach(function (k) { near(window.cdrender.anchorAt(cls, b, k), { at: k }); });
+      var cl = (how.rx || how.red || how.part === 'product') && cdRole(i) === 'epn' && window.cdrender && window.cdrender.anchorAt ? cdClsOf(nodes2[i].id) : null;
+      if (!cl || Math.max(Math.abs(P[0] - C[0]) / (b[2] / 2 || 1), Math.abs(P[1] - C[1]) / (b[3] / 2 || 1)) < 0.5) return { Q: C };
+      var f = window.cdrender.frontBox(b, cl[1]);   // a multimer's places on its front copy, as cdrender draws the line (D.front)
+      Object.keys(window.cdrender.ANCHOR).forEach(function (k) { near(window.cdrender.anchorAt(cl[0], f, k), { at: k }); });
       return best;
     }
     function cdHow0(a, b) {
