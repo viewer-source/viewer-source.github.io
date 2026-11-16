@@ -8,7 +8,7 @@
 //   CellDesigner (every demo map with a compartment): an alias taken out of its compartment and one put into another,
 //     a compartment put into another; cd_edit.js and cd_edit.py write the same text byte for byte; the alias's
 //     compartmentAlias and its species' compartment, a compartment's outside, as CellDesigner writes them; the GraphML
-//     made again from it nests the alias as moved. nestCheck refuses a complex's member and one copy of a species drawn
+//     made again from it nests the alias as moved. nestCheck lets a complex's member out (cd_make.leave writes it) and refuses one copy of a species drawn
 //     twice in one compartment.
 //   GraphML (every demo yEd map with a compartment): a node taken out of its compartment and put into another: the
 //     GraphML reads as XML, nests it there, and yrender draws it.
@@ -110,7 +110,8 @@ cfiles.forEach(function (f) {
   var c0 = comps.filter(function (c) { return !I.U[c]; });
   if (c0.length > 1) cjobs.push({ f: f, t: t, g: g, what: 'compartment into another', moves: [[c0[0], c0[1]]], comp: true });
   var mem = ids.filter(function (id) { var A = d.alias.get(id); return A && A[2].getAttribute('complexSpeciesAlias'); })[0];
-  if (mem) { ran++; if (!ed.nestCheck(t, [[mem, null]], opt)) fail(path.basename(f) + ' nestCheck', 'a complex member taken out was not refused'); }
+  // a complex member taken out (Shift) is allowed: cd_make.leave writes it as a species after the move
+  if (mem) { ran++; var w = ed.nestCheck(t, [[mem, null]], opt); if (w) fail(path.basename(f) + ' nestCheck', 'a complex member taken out was refused: ' + w); }
   var twice = Object.keys(spOf).filter(function (s) { return spOf[s].length > 1 && spOf[s].every(function (a) { return !d.alias.get(a)[2].getAttribute('complexSpeciesAlias'); }); })[0];
   if (twice) {
     ran++;

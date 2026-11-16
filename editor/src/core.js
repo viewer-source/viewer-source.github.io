@@ -686,9 +686,10 @@
     function tops(set, alone) {   // the nodes a move grows round: those not moving with their holder; with Shift only compartments (rule 2)
       return Array.from(set).filter(function (i) { return !cdOwn(i) && (alone ? nodes2[i].comp : !(nodes2[i].up != null && set.has(nodes2[i].up))); });
     }
-    // an inside member's least space to its compartment's inner line: inside CellDesigner's double border, clear of a
-    // compartment's name (one unit: the editor allows the most; spacing is the layout tools' job)
-    var PAD = 1;
+    // an inside member's least space to its compartment's inner line (inside CellDesigner's double border, clear of a
+    // compartment's name) when a drag grows the compartment round it: a small visible gap, the layout tools giving the
+    // final spacing
+    var PAD = 5;
     // a plain drag or the keys keep an edge member crossing the border (dragged inward it stops while
     // its box still crosses the border): the move [dx, dy] of the nodes in set corrected, by the least, where one that
     // crossed its compartment's border would come fully inside
@@ -2711,8 +2712,11 @@
       if (!drag || drag.hinted || drag.n == null) return;
       var n = nodes2[drag.n];
       if (n.up == null || !nodes2[n.up].comp || n.comp || inComplex(drag.n) || (!full() && n.kids.length)) return;   // only where Shift would change it (not a compartment pushing its holder, nor a complex's member)
+      // an edge member held crossing the border: Shift only takes it outside, in Full editing
+      var s0 = boxOf(drag.n), c = boxOf(n.up), edge = overlap(s0, c) && !inBox(s0, c);
+      if (edge && !inward && !full()) return;
       drag.hinted = true; hintOn = true;
-      note(inward ? 'Hold Shift to place it inside.' : full() ? 'Hold Shift to place it on the edge or outside.' : 'Hold Shift to place it on the edge.');
+      note(inward ? 'Hold Shift to place it inside.' : edge ? 'Hold Shift to place it outside.' : full() ? 'Hold Shift to place it on the edge or outside.' : 'Hold Shift to place it on the edge.');
     }
     function unhint() { if (hintOn) { hintOn = false; quiet(); } }
     function tether(d) {
