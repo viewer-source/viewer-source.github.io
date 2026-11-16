@@ -414,6 +414,11 @@ page, so its styles keep the base they were made on).
   #m2-edit-layer .m2-ed-handle { fill: #000; stroke: none; }
   #m2-edit-layer .m2-ed-bend { fill: #000; stroke: #fff; stroke-width: 0.5; }
   #m2-edit-layer.m2-ed-cd .m2-ed-handle, #m2-edit-layer.m2-ed-cd .m2-ed-bend { fill: #ff00ff; }   /* CellDesigner's magenta marks */
+  #m2-edit-layer .m2-ed-pick { fill: none; stroke: #ff00ff; }   /* while a CellDesigner line is made (cdcreate.js): what is picked, magenta */
+  #m2-edit-layer .m2-ed-pickh { fill: #ff00ff; stroke: none; }
+  #m2-edit-layer .m2-ed-landbox { fill: none; stroke: #808080; stroke-width: 1; stroke-dasharray: 3 2; }   /* where it would land: CellDesigner's dashed box, grey handles */
+  #m2-edit-layer .m2-ed-landh { fill: #808080; stroke: none; }
+  #m2-edit-layer .m2-ed-port { fill: #1437ff; stroke: none; }   /* the port it would take, CellDesigner's blue */
   /* a line selected (no highlight band under the line):
      the line itself in CellDesigner's selection blue (stronger than #1a73e8, which
      looks pale on a thin line), on GraphML and CellDesigner maps alike: its stroke and a filled black head; white heads

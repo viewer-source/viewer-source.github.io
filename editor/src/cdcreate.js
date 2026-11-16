@@ -255,11 +255,51 @@
       cdGate = null;
       if (tool && !tool.sticky) palTake(null);
     }
-    function cdGateMarks(out) {   // the inputs clicked so far, lit grey (paint, core.js)
-      if (!cdGate || !tool || CD_GATE[tool.kind] !== cdGate.kind) { cdGate = null; return; }
-      var g = '<g transform="translate(' + f1(V.tx - x0 * V.z) + ',' + f1(V.ty - y0 * V.z) + ') scale(' + V.z + ')">';
-      cdGate.inputs.forEach(function (id) { var i = nodes2.findIndex(function (n) { return n.id === id; }); if (i >= 0) g += '<path class="m2-ed-dark" d="' + shapeD(i) + '"/>'; });
-      out.push(g + '</g>');
+    // Marks while a CellDesigner line is made, as CellDesigner shows them: what is picked (a gate's inputs clicked so far)
+    // as selected, its outline and handles in magenta with a magenta dot at the port its line takes (the centre); the node
+    // the next click or the line's end would land on with a dashed box, grey handles and a blue square at the port it
+    // would take. In the map's units, so they follow the zoom as the other marks
+    var cdHover = -1;   // the node a gate's next click would take, under the pointer
+    function cdHandles(i, cls) {
+      var b = bx(i), hs = Math.max(2, HANDLE * V.z), off = 3.3 * V.z, o = '';
+      var L = sx(b[0]) - off, T = sy(b[1]) - off, R = sx(b[0] + b[2]) + off, B = sy(b[1] + b[3]) + off;
+      [[L, T], [(L + R) / 2, T], [R, T], [L, (T + B) / 2], [R, (T + B) / 2], [L, B], [(L + R) / 2, B], [R, B]].forEach(function (q) {
+        o += '<rect class="' + cls + '" x="' + f1(q[0] - hs / 2) + '" y="' + f1(q[1] - hs / 2) + '" width="' + f1(hs) + '" height="' + f1(hs) + '"/>';
+      });
+      return o;
+    }
+    function cdDot(Q, cls) { var d = Math.max(3, 4 * V.z); return '<rect class="' + cls + '" x="' + f1(sx(Q[0]) - d / 2) + '" y="' + f1(sy(Q[1]) - d / 2) + '" width="' + f1(d) + '" height="' + f1(d) + '"/>'; }
+    function cdCentre(i) { var b = bx(i); return [b[0] + b[2] / 2, b[1] + b[3] / 2]; }
+    function cdPicked(out, i) {   // a node picked: magenta outline, handles and the centre's dot
+      out.push('<g transform="translate(' + f1(V.tx - x0 * V.z) + ',' + f1(V.ty - y0 * V.z) + ') scale(' + V.z + ')"><path class="m2-ed-pick" stroke-width="' + f1(1 / Math.max(V.z, 0.01)) + '" d="' + shapeD(i) + '"/></g>');
+      out.push(cdHandles(i, 'm2-ed-pickh') + cdDot(cdCentre(i), 'm2-ed-pickh'));
+    }
+    function cdLand(out, i, Q) {   // the node a line would land on: dashed box, grey handles, the port it would take in blue
+      var b = bx(i), off = 3.3 * V.z;
+      out.push('<rect class="m2-ed-landbox" x="' + f1(sx(b[0]) - off) + '" y="' + f1(sy(b[1]) - off) + '" width="' + f1(b[2] * V.z + 2 * off) + '" height="' + f1(b[3] * V.z + 2 * off) + '"/>');
+      out.push(cdHandles(i, 'm2-ed-landh') + cdDot(Q || cdCentre(i), 'm2-ed-port'));
+    }
+    function cdGateOk(i) {   // whether a gate's next click would take node i
+      if (i < 0) return false;
+      var r = cdRole(i), need = cdMk.NEED[CD_GATE[tool.kind]], got = cdGate && cdGate.kind === CD_GATE[tool.kind] ? cdGate.inputs : [];
+      if (got.length < need) return r === 'epn' && got.indexOf(nodes2[i].id) < 0;
+      return r === 'proc' || (r === 'epn' && !cdStrict());
+    }
+    V.view.addEventListener('pointermove', function (e) {
+      var on_ = cdPal() && tool && CD_GATE[tool.kind] && !e.buttons, i = on_ ? linkEnd(at(e), -1) : -1;
+      if (on_ && !cdGateOk(i)) i = -1;
+      if (i !== cdHover) { cdHover = i; paint(); }
+    });
+    V.view.addEventListener('pointerleave', function () { if (cdHover >= 0) { cdHover = -1; paint(); } });
+    function cdGateMarks(out) {   // a gate being made by clicks (paint, core.js through linkPaint): its inputs picked, the next click's node
+      if (!tool || !CD_GATE[tool.kind] || !cdPal()) { cdGate = null; cdHover = -1; return; }
+      if (cdGate && CD_GATE[tool.kind] !== cdGate.kind) cdGate = null;
+      if (cdGate) cdGate.inputs.forEach(function (id) { var i = nodes2.findIndex(function (n) { return n.id === id; }); if (i >= 0) cdPicked(out, i); });
+      if (cdHover >= 0 && cdHover < nodes2.length) cdLand(out, cdHover);
+    }
+    function cdLinkMarks(out) {   // a line drawn by a drag on a CellDesigner map: its start picked, the node it would land on
+      cdPicked(out, link.from);
+      if (link.to >= 0 && link.how && !link.how.no) cdLand(out, link.to);
     }
     // the map clicked with a CellDesigner sign in hand (palUp, create.js)
     function cdClick(P) { if (CD_GATE[tool.kind]) cdGateClick(P); else cdMake(P, tool.kind); }
