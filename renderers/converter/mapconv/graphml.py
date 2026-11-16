@@ -351,6 +351,7 @@ def write(diagram, soft=False):
         for q in a.points:
             etree.SubElement(yp, Y + 'Point', x=repr(float(q[0])), y=repr(float(q[1])))
         if a.dashed: pl.find('y:LineStyle', NS).set('type', 'dashed')
+        if a.line: pl.find('y:LineStyle', NS).set('color', a.line.upper())
         pl.find('y:Arrows', NS).set('target', ARROW[a.head] if a.head else 'none')
         pl.find('y:Arrows', NS).set('source', 'delta' if a.tail else 'none')
         if soft:  # soft bends on a map from yEd; from CellDesigner or Newt as they draw them, sharp

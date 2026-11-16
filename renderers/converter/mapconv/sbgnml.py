@@ -209,6 +209,9 @@ def write(diagram, layout='advanced', newt=False):
             n = len(decorations(d)[1])
             fills.setdefault((None, None, d.small, None), []).extend(['%s_sv%d' % (ids[i], k) for k in range(len(d.states))] +
                                                          ['%s_ui%d' % (ids[i], k) for k in range(n)])
+    for a, *_ in arcs:  # an arc's colour: a style naming the arc, its stroke the colour
+        if a.line:
+            fills.setdefault((None, a.line.lower(), None, None), []).append(xml_id(a.id))
     if fills:
         ri = etree.SubElement(etree.SubElement(m, S + 'extension'), R + 'renderInformation', nsmap={None: RENDER},
                               id='renderInformation')
@@ -533,6 +536,7 @@ def read(path):
         # it ends only for these: a modifier aimed at a port ends on the glyph
         ends = [(float(e.get('x')), float(e.get('y'))) if e is not None else None for e in (a.find(S + 'start'), a.find(S + 'end'))]
         arcs.append(Arc(id=a.get('id'), source=s, target=t, head=head[cls], dashed=UNKNOWN in text_of(a), points=pts,
+                        line=colour(line.get(a.get('id')), defs),
                         source_at=at(nodes[s], a.get('source'), ends[0], (pts or ends[1:])[0], at_port.get(a.get('source'))),
                         target_at=at(nodes[t], a.get('target'), ends[1], (pts[-1:] or ends[:1])[0], flux and at_port.get(a.get('target')))))
     for t, ps in performers.items():

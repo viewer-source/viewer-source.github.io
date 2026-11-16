@@ -1118,13 +1118,17 @@
       ['line', 'Border colour', 'colour'], ['width', 'Border width', 'num'], ['multimer', 'Multimer', 'check']];
     var props = document.createElement('div');
     props.className = 'm2-ed-props'; props.hidden = true;
-    props.innerHTML = '<p>Properties</p><table class="m2-ed-ptab">' + ROWS.map(function (r) {
+    // a line's rows (yEd's Properties View for an edge): its colour, its two ports as offsets from its glyph's centre
+    var EROWS = [['ecol', 'Line colour', 'colour'], ['sx', 'Source port X', 'num'], ['sy', 'Source port Y', 'num'],
+      ['tx', 'Target port X', 'num'], ['ty', 'Target port Y', 'num']];
+    function table(rows, cls) { return '<table class="m2-ed-ptab' + cls + '">' + rows.map(function (r) {
       var id = 'm2-ed-' + r[0], f = r[2] === 'check' ? '<input type="checkbox" id="' + id + '">'
         : r[2] === 'colour' ? '<span class="m2-ed-pc"><input type="color" tabindex="-1" aria-label="' + r[1] + ', picker"><input type="text" id="' + id + '" spellcheck="false" autocomplete="off"' + (r[0] === 'fill' ? ' placeholder="none"' : '') + '></span>'
-        : r[2] === 'num' ? '<input type="number" id="' + id + '" step="any"' + (r[0] === 'width' ? ' min="0.25" max="20"' : ' min="4" max="5000"') + '>'
+        : r[2] === 'num' ? '<input type="number" id="' + id + '" step="any"' + (r[0] === 'width' ? ' min="0.25" max="20"' : /^[st][xy]$/.test(r[0]) ? '' : ' min="4" max="5000"') + '>'
         : '<input type="text" id="' + id + '" spellcheck="false" autocomplete="off">';
       return '<tr data-k="' + r[0] + '"><th><label for="' + id + '">' + r[1] + '</label></th><td>' + f + '</td></tr>';
-    }).join('') + '</table>' +
+    }).join('') + '</table>'; }
+    props.innerHTML = '<p>Properties</p>' + table(ROWS, ' m2-ed-pnode') + table(EROWS, ' m2-ed-pedge') +
       '<button type="button" class="m2-ed-pdef" title="The next ones of this kind made from the palette take these">Set as default</button>';
     pal.insertAdjacentElement('afterend', props);
     var inW = props.querySelector('#m2-ed-w'), inH = props.querySelector('#m2-ed-h');
@@ -1141,13 +1145,15 @@
     }
     function kindOf(i) { return propNode() === i && pCls[3] ? 'biological activity' : nodes2[i].shape.kind === 'SimpleChemical' ? 'simple chemical' : 'macromolecule'; }   // Set as default's kind (every activity alike, defOf)
     function propsShow(all) {   // all: every field shown again, the one focused too (Esc)
-      var i = propNode(), r2 = function (v) { return String(Math.round(v * 100) / 100); };
-      props.hidden = i < 0;   // only with its node: nothing selected, no Properties
+      var i = propNode(), k = propEdge(), r2 = function (v) { return String(Math.round(v * 100) / 100); };
+      props.hidden = i < 0 && k < 0;   // only with its node or line: nothing selected, no Properties
       if (props.hidden) return;
+      props.querySelector('.m2-ed-pnode').hidden = i < 0; props.querySelector('.m2-ed-pedge').hidden = i >= 0;
+      if (i < 0) { edgeShow(k, all, r2); return; }
       var pf = propFmt(), b = bx(i);
       pNow = pf.look(i);
       if (!pNow) { props.hidden = true; return; }
-      Array.prototype.forEach.call(props.querySelectorAll('tr[data-k]'), function (tr) { tr.hidden = (/^[wh]$/.test(tr.dataset.k) && !sizable(i)) || pf.off(tr.dataset.k, i); });
+      Array.prototype.forEach.call(props.querySelectorAll('.m2-ed-pnode tr[data-k]'), function (tr) { tr.hidden = (/^[wh]$/.test(tr.dataset.k) && !sizable(i)) || pf.off(tr.dataset.k, i); });
       props.querySelector('.m2-ed-pdef').hidden = !pf.def;
       pNow.w = r2(b[2]); pNow.h = r2(b[3]); pNow.width = r2(pNow.width);
       ROWS.forEach(function (r) {
@@ -1194,8 +1200,55 @@
       return true;
     }
     var PF_SB = { sizable: sbSizable, size: sbSetSize, node: sbNode, set: sbSet, def: true,
+      line: { colour: function (el) { return sbJs.lineOf(el); }, recolour: function (t, id, c) { return sbJs.recolour(t, id, c); } },   // a line's colour (edgeShow, edgeSet)
       off: function (k) { return k === 'multimer' && pCls[3]; },   // an activity is no multimer
       look: function (i) { var o = sbJs.lookOf(realizerOf(nodes2[i].el)); return { label: nameOf(i), fill: o.fill ? o.fill.slice(0, 7).toLowerCase() : '', line: (o.line || '#000000').slice(0, 7).toLowerCase(), width: o.width, multimer: o.multimer }; } };
+    // a line's Properties, one line selected on a map whose format's part has a line's answers (PF_SB.line): Line colour
+    // and its ports as yEd gives them, offsets from its glyph's centre (sx, sy at the source, tx, ty at the target), set
+    // as a dragged end sets them (setPorts). An end at a process's or gate's port goes with it: shown, not typed.
+    // A field applies to the line it was typed for (eFor), also when another line was clicked before it was left
+    var eFor = null;
+    function propEdge() { var f = propFmt(); return f && f.line && selE.length === 1 && !selN.length && !selP.length && !svSel && edges2[selE[0]] && edges2[selE[0]].path ? selE[0] : -1; }
+    function atHub(k, end) { var e = edges2[k], n = end ? e.t : e.s; return n == null || !!nodes2[n].hub; }
+    function edgeShow(k, all, r2) {
+      props.querySelector('.m2-ed-pdef').hidden = true;
+      var e = edges2[k], el = e.path.parentNode;
+      while (el && el.localName !== 'edge') el = el.parentNode;
+      var now = { ecol: (propFmt().line.colour(el) || '#000000').slice(0, 7).toLowerCase() };
+      ['sx', 'sy', 'tx', 'ty'].forEach(function (a) { now[a] = r2(num(e.path, a) || 0); });
+      EROWS.forEach(function (r) {
+        var f = field(r[0]);
+        if (r[2] === 'num') f.disabled = atHub(k, r[0].charAt(0) === 't');
+        if (!all && document.activeElement === f) return;
+        if (f.value !== now[r[0]]) f.value = now[r[0]];
+        var pk = f.previousElementSibling;
+        if (r[2] === 'colour' && document.activeElement !== pk && pk.value !== now.ecol) pk.value = now.ecol;
+      });
+    }
+    function edgeSet(key) {   // one undo step; a field left unchanged or not a number puts the value back
+      var f = field(key), k = edges2.findIndex(function (q) { return q.id === eFor; }), pf = propFmt();
+      if (k < 0 || !pf || !pf.line) return;
+      var e = edges2[k], id = e.id;
+      if (key === 'ecol') {
+        var c = hex(f.value);
+        if (c === null) { propsShow(true); return; }
+        var t2 = pf.line.recolour(text, id, c === '' || c === '#000000' ? null : c);
+        if (t2 === text) { propsShow(true); return; }
+        remember(false); text = t2; parse(); selE = []; edges2.forEach(function (q, j) { if (q.id === id) selE = [j]; });
+        dirty = true; render(); paint(); changed();
+        return;
+      }
+      var end = key.charAt(0) === 't', v = parseFloat(f.value), a = end ? ['tx', 'ty'] : ['sx', 'sy'];
+      if (atHub(k, end) || !(Math.abs(v) <= 5000)) { propsShow(true); return; }
+      var to = a.map(function (q) { return q === key ? v : num(e.path, q) || 0; });
+      setPort({ k: k, end: end, n: end ? e.t : e.s, to: to });
+    }
+    EROWS.forEach(function (r) {
+      var f = field(r[0]);
+      [f, f.previousElementSibling].forEach(function (x) { x.addEventListener('focus', function () { var k = propEdge(); eFor = k < 0 ? null : edges2[k].id; }); });
+      f.addEventListener('change', function () { edgeSet(r[0]); });
+      if (r[2] === 'colour') f.previousElementSibling.addEventListener('change', function (e) { f.value = e.target.value; edgeSet(r[0]); });
+    });
     ROWS.forEach(function (r) {
       if (r[2] === 'num' && r[0] !== 'width') return;   // Width and Height: above
       var f = field(r[0]);
