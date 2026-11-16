@@ -293,8 +293,10 @@ def graphml(text, off=(0.0, 0.0)):
             # a phenotype's points indented half its height, as cdrender's hexagon (the editor's outline reads indent)
             props = ('<y:StyleProperties><y:Property name="com.yworks.sbgn.style.radius" value="5"/></y:StyleProperties>' if k == 'Macromolecule'
                      else '<y:StyleProperties><y:Property name="com.yworks.sbgn.style.indent" value="0.5"/></y:StyleProperties>' if k == 'Phenotype' else '')
+            # a degraded species' circle inset an eighth of its box on each side, as cdrender draws it (the editor's outline reads inset)
+            ins = '<y:StyleProperties><y:Property name="com.yworks.sbgn.style.inset" value="0.125"/></y:StyleProperties>' if d.alias[i][0] == 'DEGRADED' else ''
             if k in ('ellipse', 'rectangle'):
-                out.append('%s<node id="%s"><data key="d6"><y:ShapeNode>%s%s<y:Shape type="%s"/></y:ShapeNode></data></node>' % (s, escape(i), geo(b), labels(d, i, b), k))
+                out.append('%s<node id="%s"><data key="d6"><y:ShapeNode>%s%s<y:Shape type="%s"/>%s</y:ShapeNode></data></node>' % (s, escape(i), geo(b), labels(d, i, b), k, ins))
             else:
                 out.append('%s<node id="%s"><data key="d6"><y:GenericNode configuration="com.yworks.sbgn.%s">%s%s%s</y:GenericNode></data></node>' % (s, escape(i), k, geo(b), labels(d, i, b), props))
             return

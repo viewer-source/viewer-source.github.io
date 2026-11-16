@@ -1631,6 +1631,8 @@
     }
     function poly(pts) { return 'M' + pts.map(function (q) { return q[0] + ' ' + q[1]; }).join('L') + 'Z'; }
     function outlineD(sh, x, y, w, h) {   // the node's outline, as the yEd renderer's outline()
+      var f = parseFloat(sh.props.inset || 0);   // inset: the shape drawn inside its box by that share of it on each side (CellDesigner's degraded 0.125)
+      if (f > 0) { x += w * f; y += h * f; w *= 1 - 2 * f; h *= 1 - 2 * f; }
       var k = sh.kind, pr = sh.props, i = h * parseFloat(pr.indent || 0.25);   // indent: a hexagon's points as a share of the height (CellDesigner's phenotype 0.5)
       if (k === 'Macromolecule') return rr(x, y, w, h, parseFloat(pr.radius || 12), true);
       if (k === 'SimpleChemical' || k === 'StateVariable') return rr(x, y, w, h, Math.min(w, h) / 2, false);
