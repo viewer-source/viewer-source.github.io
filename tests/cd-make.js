@@ -426,6 +426,40 @@ reads.forEach(function (q, i) {
   keys.forEach(function (k) { var d = (o.n[k] || 0) - (p.n[k] || 0); if (d !== (q.delta[k] || 0)) diff.push(k + ' ' + d + ' (expected ' + (q.delta[k] || 0) + ')'); });
   if (diff.length) fault(q.tag + ': the converter reads ' + diff.join(', '));
 });
+// ---- 3. colours of new species ----
+// classColour against a slow count alias by alias; a species written in a colour given, a wrong one refused; a retype
+// moving the colour of the editor's choice (cols) and CellDesigner's own (none)
+var colChecks = 0;
+maps.forEach(function (f) {
+  var t = fs.readFileSync(path.join(here, 'maps', f), 'utf8'), n = {}, re = /<celldesigner:(?:speciesAlias|complexSpeciesAlias)(?=\s)[^>]*\sid="([^"]+)"/g, m;
+  while ((m = re.exec(t))) {
+    var A = mk.aliasInfo(t, m[1]), from = t.indexOf('>', m.index), el = t.slice(m.index, t.indexOf('</celldesigner:' + (A.kind === 'complexSpeciesAlias' ? 'complexSpeciesAlias' : 'speciesAlias') + '>', from));
+    var u = /<celldesigner:usualView>[\s\S]*?<celldesigner:paint color="([0-9a-fA-F]{8})"/.exec(el);
+    if (!u || !A.cls) continue;
+    var N = n[A.cls] || (n[A.cls] = {}); N[u[1].toLowerCase()] = (N[u[1].toLowerCase()] || 0) + 1;
+  }
+  Object.keys(mk.LOOK).concat('RECEPTOR', 'ION').forEach(function (cls) {
+    var got = mk.classColour(t, cls), N = n[cls] || {}, top = Math.max.apply(null, [0].concat(Object.keys(N).map(function (k) { return N[k]; })));
+    colChecks++;
+    if (top ? N[got] !== top : got !== null) fault(f + ': classColour ' + cls + ' gave ' + got + ', the counts ' + JSON.stringify(N));
+  });
+});
+(function () {
+  var t = mk.empty ? mk.empty() : null;
+  if (!t) { fault('colours: no empty map to try them on'); return; }
+  var r = mk.species(t, { cls: 'PROTEIN', name: 'P', box: [100, 100], colour: 'FFC8D8EB' });
+  if (!/<celldesigner:usualView>[\s\S]*?paint color="ffc8d8eb"/.test(r.text)) fault('colours: the colour given not written');
+  if (mk.classColour(r.text, 'PROTEIN') !== 'ffc8d8eb') fault('colours: classColour misses the new protein');
+  var t2 = mk.retype(r.text, r.alias, 'SIMPLE_MOLECULE', { from: 'ffc8d8eb', to: 'ffdbebdb' });
+  if (mk.classColour(t2, 'SIMPLE_MOLECULE') !== 'ffdbebdb') fault('colours: retype did not move the chosen colour');
+  var r2 = mk.species(t, { cls: 'PROTEIN', name: 'Q', box: [100, 100] }), t3 = mk.retype(r2.text, r2.alias, 'SIMPLE_MOLECULE');
+  if (mk.classColour(t3, 'SIMPLE_MOLECULE') !== mk.LOOK.SIMPLE_MOLECULE[2]) fault('colours: retype left CellDesigner\u2019s colour');
+  var t4 = mk.retype(r.text, r.alias, 'GENE');
+  if (mk.classColour(t4, 'GENE') !== 'ffc8d8eb') fault('colours: a colour not the old class\u2019s default moved without cols');
+  try { mk.species(t, { cls: 'PROTEIN', box: [0, 0], colour: 'red' }); fault('colours: a wrong colour taken'); } catch (e) {}
+  colChecks += 6;
+})();
+console.log(colChecks + ' colour checks');
 fs.rmSync(tmp, { recursive: true, force: true });
 console.log(reads.length + ' steps read by cdrender, cd_edit and the converter; ' + maps.length + ' demo maps: ' + (bad ? bad + ' failures' : 'all right'));
 process.exit(bad ? 1 : 0);

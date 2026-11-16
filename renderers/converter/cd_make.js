@@ -184,8 +184,8 @@
     return '<celldesigner:speciesIdentity>\n<celldesigner:class>' + cls + '</celldesigner:class>\n' +
       (r ? '<celldesigner:' + r[1] + '>' + ref + '</celldesigner:' + r[1] + '>' : '<celldesigner:name>' + name + '</celldesigner:name>') + '\n</celldesigner:speciesIdentity>';
   }
-  function aliasXml(id, sid, cls, b, extra, ip) {
-    var cx = cls === 'COMPLEX', tag = cx ? 'complexSpeciesAlias' : 'speciesAlias', col = LOOK[cls][2], w = cx ? '2.0' : '1.0';
+  function aliasXml(id, sid, cls, b, extra, ip, colour) {
+    var cx = cls === 'COMPLEX', tag = cx ? 'complexSpeciesAlias' : 'speciesAlias', col = colour || LOOK[cls][2], w = cx ? '2.0' : '1.0';
     return '<celldesigner:' + tag + ' id="' + id + '" species="' + sid + '"' + extra + '>\n<celldesigner:activity>inactive</celldesigner:activity>\n' +
       '<celldesigner:bounds x="' + num(b[0]) + '" y="' + num(b[1]) + '" w="' + num(b[2]) + '" h="' + num(b[3]) + '"/>\n<celldesigner:font size="12"/>\n' +
       '<celldesigner:view state="usual"/>\n' + (cx ? '<celldesigner:backupSize w="0.0" h="0.0"/>\n<celldesigner:backupView state="none"/>\n' : '') +
@@ -288,6 +288,7 @@
   function newSpecies(t, o) {
     var cls = o.cls;
     if (!LOOK[cls]) fail('The CellDesigner class ' + cls + ' is not offered.');
+    if (o.colour != null && !/^[0-9a-f]{8}$/i.test(o.colour)) fail('A species\u2019 colour is eight hex digits (alpha, red, green, blue).');
     var L = LOOK[cls], b0 = o.box || [0, 0], b = [F(b0[0]), F(b0[1]), F(b0[2] != null ? b0[2] : L[0]), F(b0[3] != null ? b0[3] : L[1])];
     var sid = next(t, 's'), aid = next(t, cls === 'COMPLEX' ? 'csa' : 'sa'), extra = '', ip = [0, 0], comp = 'default', C = null, ref = null;
     // a new species is named after its id until named (CellDesigner's way), a degraded one always
@@ -303,7 +304,7 @@
       extra = ' compartmentAlias="' + K.id + '"'; ip = [b[0] - K.box[0], b[1] - K.box[1]]; comp = K.compartment;
     }
     if (REF[cls]) { var rr = referenceFor(t, cls, name); t = rr[0]; ref = rr[1]; }
-    t = add(t, CD + ALIASES[cls === 'COMPLEX' ? 'complexSpeciesAlias' : 'speciesAlias'], aliasXml(aid, sid, cls, b, extra, ip), 0, t.length, t.indexOf(EXT));
+    t = add(t, CD + ALIASES[cls === 'COMPLEX' ? 'complexSpeciesAlias' : 'speciesAlias'], aliasXml(aid, sid, cls, b, extra, ip, o.colour && o.colour.toLowerCase()), 0, t.length, t.indexOf(EXT));
     if (C) {   // an included species, not in listOfSpecies
       t = add(t, CD + 'listOfIncludedSpecies', '<celldesigner:species id="' + sid + '" name="' + name + '">\n<celldesigner:notes>\n<html xmlns="http://www.w3.org/1999/xhtml">\n' +
         '<head>\n<title/>\n</head>\n<body/>\n</html>\n</celldesigner:notes>\n<celldesigner:annotation>\n<celldesigner:complexSpecies>' + C.species +
@@ -349,8 +350,9 @@
   // a class changed into one of the palette's: the identity's reference (the one of the new class's name and type) or
   // name; residue states dropped when the protein changes (the residues are the protein's); the old reference dropped when
   // unused; the fill moved to the new class's when it was the old one's default (a class outside the palette keeps its
-  // colour); never to or from a complex
-  function retype(t, id, cls) {
+  // colour), or cols.from, the old class's colour for new species in the editor's choice, then to cols.to; never to or
+  // from a complex
+  function retype(t, id, cls, cols) {
     var A = entity(t, id), was = A.cls;
     if (!LOOK[cls]) fail('The CellDesigner class ' + cls + ' is not offered.');
     if (cls === 'COMPLEX' || was === 'COMPLEX') fail('A complex and a single species cannot be changed into one another: delete it and draw anew.');
@@ -367,7 +369,8 @@
     if (S.ref) t = unused(t, S.ref);
     aliasesOf(t, S.id).forEach(function (a) {
       var B = alias(t, a), u = span(t, '<celldesigner:usualView>', B.sp[0], B.sp[1]), p = u && span(t, '<celldesigner:paint ', u[0], u[1]);
-      if (p && LOOK[was] && at(head(t, p), 'color') === LOOK[was][2]) t = attrs(t, p[0], [['color', LOOK[cls][2]]]);
+      var now = p && at(head(t, p), 'color');
+      if (now && (LOOK[was] && now === LOOK[was][2] || cols && cols.from && now === cols.from)) t = attrs(t, p[0], [['color', cols && cols.to || LOOK[cls][2]]]);
     });
     return t;
   }
@@ -885,11 +888,31 @@
     return carry(inner(t, id, K), id, K ? K.id : null);
   }
   // what an alias is: its class (COMPLEX, PROTEIN, ...; null for a compartment), its species' name, the complex holding it
+  // the colour most species of a class already have on the map (their usual view's paint), or null when it has none;
+  // on a tie the colour that reached the top count first. One pass over the species, one over the aliases (a large
+  // map, 2 MB, in a few ms); the last map's answer kept, as the palette asks on every drag and drop
+  var cc = { t: null, n: null };
+  function classColour(t, cls) {
+    if (cc.t !== t) {
+      var kind = {}, n = {}, m, re = /<(species|celldesigner:species)(?=\s)[^>]*\sid="([^"]+)"[\s\S]*?<\/\1>/g;
+      while ((m = re.exec(t))) { var c = /<celldesigner:class>([^<]*)</.exec(m[0]); if (c) kind[m[2]] = c[1]; }
+      re = /<celldesigner:(speciesAlias|complexSpeciesAlias)(?=\s)[^>]*\sspecies="([^"]+)"[\s\S]*?<\/celldesigner:\1>/g;
+      while ((m = re.exec(t))) {
+        var k = kind[m[2]], u = k && /<celldesigner:usualView>[\s\S]*?<celldesigner:paint color="([0-9a-fA-F]{8})"/.exec(m[0]);
+        if (!u) continue;
+        var N = n[k] || (n[k] = { best: null }), col = u[1].toLowerCase();
+        N[col] = (N[col] || 0) + 1;
+        if (!N.best || N[col] > N[N.best]) N.best = col;
+      }
+      cc = { t: t, n: n };
+    }
+    return cc.n[cls] ? cc.n[cls].best : null;
+  }
   function aliasInfo(t, id) {
     var A = alias(t, id), C = A.kind === 'compartmentAlias' ? span(t, '<compartment(?=\\s)[^>]*\\sid="' + q(A.compartment) + '"') : null;
     return { kind: A.kind, cls: A.cls || null, id: A.species || A.compartment, name: A.s ? A.s.name : C ? at(head(t, C), 'name') : null, complex: A.complex, box: A.box };
   }
-  var api = { LOOK: LOOK, PROCESS: PROCESS, REDUCED: REDUCED, sbgn: sbgn, MODS: MODS, NEED: NEED, about: about, aliasInfo: aliasInfo, empty: empty, species: newSpecies, compartment: compartment, rename: rename, retype: retype, remove: remove, reaction: reaction, reduced: reduced,
+  var api = { LOOK: LOOK, PROCESS: PROCESS, REDUCED: REDUCED, sbgn: sbgn, MODS: MODS, NEED: NEED, about: about, aliasInfo: aliasInfo, classColour: classColour, empty: empty, species: newSpecies, compartment: compartment, rename: rename, retype: retype, remove: remove, reaction: reaction, reduced: reduced,
     reactant: reactant, product: product, modifier: modifier, reactionType: reactionType, modifierType: modifierType, removeLine: removeLine,
     gate: gate, gateInput: gateInput, gateInputRemove: gateInputRemove, gateType: gateType, residue: residue, residueState: residueState,
     residueRemove: residueRemove, structural: structural, info: info, homodimer: homodimer, cdName: cdName, joinable: joinable, join: join, leave: leave };

@@ -751,7 +751,7 @@
     return [svg, { aliases: aliases, reactions: reactions }];
   }
   var api = { render: render, renderHits: renderHits, Drawing: Drawing, py: py, xml: xml, SQUARE: SQUARE, ANCHOR: ANCHOR, fromFrame: fromFrame, toFrame: toFrame,
-    editPoints: editPoints, unit: unit, onBorder: onBorder, width: width, target: target, plainName: plainName, NAME: NAME, GATE: GATE };   // GATE: the editor's palette checks its signs against it   // NAME: cd_make.js writes names
+    editPoints: editPoints, unit: unit, onBorder: onBorder, width: width, target: target, plainName: plainName, NAME: NAME, GATE: GATE, ROLE: ROLE };   // GATE: the editor's palette checks its signs against it   // NAME: cd_make.js writes names
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.cdrender = api;
 
   if (typeof require !== 'undefined' && typeof module !== 'undefined' && require.main === module) {   // node cdrender.js map.xml out.svg

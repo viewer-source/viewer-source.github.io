@@ -342,6 +342,9 @@ page, so its styles keep the base they were made on).
   #m2-editwin .m2-ed-pblk { margin: 0 0 8px 6px; }
   #m2-editwin .m2-ed-pblk[hidden] { display: none; }
   #m2-editwin .m2-ed-pblk .m2-ed-phyb { margin: 0; }
+  #m2-editwin .m2-ed-pcols { display: flex; align-items: center; gap: 2px 4px; flex-wrap: wrap; font-size: 12px; color: var(--m2-text-soft); }   /* one line: CellDesigner, File, Default (cdcreate.js); wraps only on a panel narrower than its default */
+  #m2-editwin .m2-ed-pcols[hidden] { display: none; }
+  #m2-editwin .m2-ed-pcols .m2-ed-phyb { gap: 2px; }
   /* the circled i beside Connecting arcs (an info glyph): a sign button
      opening How to edit at its section; no shade under the pointer or open. Small and light:
      a 12 px sign, thin ring, the sign buttons' grey, in a 16 px hit area */
@@ -906,6 +909,11 @@ page, so its styles keep the base they were made on).
   // No colours (colourless maps, as in the specification): every
   // node white, compartments transparent ('-'), text and lines black (an eighth code: every stroke)
   var SCHEMES = { 'default': 'F7F6F3 FFFFFF C8D8EB DBEBDB C8D8EB FFFFFF 000000', none: '- FFFFFF FFFFFF FFFFFF FFFFFF FFFFFF 000000 000000' };   // the Default colours' master is renderers/converter/sbgn_edit.js FILL (the editor's new glyphs where a map has no glyph of their kind); this the viewer's one copy, kept the same, and Settings' squares are made from it
+  var SCHEME_ROLES = ['compartment', 'complex', 'protein', 'metabolite', 'hlProtein', 'white'];   // the order of a scheme's code; a gene's fill is white's
+  function schemeFill(name, role) {   // a scheme's fill for a role, six hex digits, or null ('-', no scheme of that name)
+    var i = SCHEME_ROLES.indexOf(role === 'gene' ? 'white' : role), c = SCHEMES[name] && SCHEMES[name].split(' ')[i];
+    return c && c !== '-' ? c : null;
+  }
   var SCHEME = 'file';
   try { var sc = localStorage.getItem('atlas-map-colours'); if (SCHEMES[sc]) SCHEME = sc; } catch (e) {}
   // Every rule under the picture's own root (.m2-pic, set by recolour): the editor puts the drawing into the page itself,
@@ -914,7 +922,7 @@ page, so its styles keep the base they were made on).
   // association dots filled in their line's colour (a fill with no role class; a CellDesigner compartment's band, its
   // fill-opacity, keeps its colour)
   function schemeCss(code) {
-    var h = code.split(' ').map(function (c) { return c === '-' ? 'none' : '#' + c; }), roles = ['compartment', 'complex', 'protein', 'metabolite', 'hlProtein', 'white'];
+    var h = code.split(' ').map(function (c) { return c === '-' ? 'none' : '#' + c; }), roles = SCHEME_ROLES;
     var P = '.m2-pic ', but = function (a) { return ['none', '#fff', '#ffffff', 'white'].map(function (v) { return ':not([' + a + '="' + v + '" i])'; }).join(''); };
     var css = roles.map(function (r, i) { return P + '.c-' + r + '{fill:' + h[i] + '}'; }).join('') + P + '.c-gene{fill:' + h[5] + '}';
     return css + roles.concat('gene').map(function (r) { return P + '.t-' + r; }).join(',') + '{fill:' + h[6] + '}' +
@@ -3202,6 +3210,7 @@ page, so its styles keep the base they were made on).
     ver: { get: function () { return ver; } },
     recolour: { get: function () { return recolour; } },
     scheme: { get: function () { return SCHEME; } },
+    schemeFill: { get: function () { return schemeFill; } },   // the CellDesigner palette's Default colours (cdcreate.js cdColour)
     img: { get: function () { return img; }, set: function (v) { img = v; } },
     fit: { get: function () { return fit; } },
     draw: { get: function () { return draw; } },

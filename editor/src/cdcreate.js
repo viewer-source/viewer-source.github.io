@@ -75,6 +75,7 @@
       hy.hidden = false;
       if (hyc.checked !== !strict) hyc.checked = !strict;
       cdInfo(hy, true);
+      cdColsRow().hidden = false;
       var k = 'cd' + (strict ? 'S' : '') + (palGrouped() ? 'G' : '');
       if (palShown === k) return;
       palShown = k;
@@ -138,6 +139,30 @@
     function cdComplexAt(P) { var i = innermost(P, function (n) { return n.shape.kind === 'Complex'; }); return i >= 0 ? nodes2[i].id : null; }   // the innermost complex under P, its alias
 
     // a species or compartment placed: centred where clicked or dropped (on the grid with Snap), at CellDesigner's own size
+    // the colours of new species (the Colours line under the palette's tick box, kept in this browser for every
+    // CellDesigner map): CellDesigner's own (cd_make LOOK, the default), the file's (the colour most species of the class
+    // already have on the map, else CellDesigner's) or the viewer's Default scheme (Settings, Map colours) by the class's role
+    var CD_COL_KEY = 'atlas-edit-cd-colours', CD_COLS = [['cd', 'CellDesigner'], ['file', 'File'], ['default', 'Default']];
+    function cdCols() { var v = null; try { v = localStorage.getItem(CD_COL_KEY); } catch (e) {} return v === 'file' || v === 'default' ? v : 'cd'; }
+    function cdColour(t, cls) {   // eight hex digits for cd_make, or null for CellDesigner's own
+      var m = cdCols();
+      if (m === 'file') return t ? cdMk.classColour(t, cls) : null;   // no file yet: the ghost before the map is loaded
+      var c = m === 'default' && V.schemeFill && window.cdrender ? V.schemeFill('default', window.cdrender.ROLE[cls] || 'white') : null;
+      return c ? 'ff' + c.toLowerCase() : null;
+    }
+    function cdColsRow() {   // one line under the tick box, the three as radio buttons (no word before them: the line then fits the panel's default width)
+      var r = pal.querySelector('.m2-ed-pcols');
+      if (!r) {
+        r = document.createElement('div'); r.className = 'm2-ed-pblk m2-ed-pcols'; r.setAttribute('role', 'radiogroup'); r.setAttribute('aria-label', 'Colours of new species'); r.title = 'Colours of new species';
+        r.innerHTML = CD_COLS.map(function (c) { return '<label class="m2-ed-phyb" title="New species in ' + (c[0] === 'cd' ? 'CellDesigner\u2019s own colours' : c[0] === 'file' ? 'the colour most species of their class have on this map' : 'the viewer\u2019s Default colours') + '"><input type="radio" name="m2-ed-pcols" value="' + c[0] + '"><span>' + c[1] + '</span></label>'; }).join('');
+        r.addEventListener('change', function (e) { try { if (e.target.value === 'cd') localStorage.removeItem(CD_COL_KEY); else localStorage.setItem(CD_COL_KEY, e.target.value); } catch (er) {} });
+        r.addEventListener('click', function (e) { if (e.target.tagName === 'INPUT') e.target.blur(); });   // also on the one already chosen (no change): the editor's keys work at once
+        pal.querySelector('.m2-ed-pstrict').insertAdjacentElement('afterend', r);
+        var m = cdCols();
+        Array.prototype.forEach.call(r.querySelectorAll('input'), function (x) { x.checked = x.value === m; });
+      }
+      return r;
+    }
     function cdSize(cls) { return cls === 'COMPARTMENT' ? [300, 200] : cdMk.LOOK[cls].slice(0, 2); }
     function cdMake(P, kind) {
       var cls = cdKind(kind);
@@ -149,7 +174,7 @@
       // undo step; a phenotype or a degraded species not (CellDesigner keeps neither in a complex)
       var cx = cls !== 'COMPARTMENT' && !/^(PHENOTYPE|DEGRADED)$/.test(cls) ? cdComplexAt(P) : null, made = null;
       var ok = cdApply(function (t) {
-        var r = cls === 'COMPARTMENT' ? cdMk.compartment(t, { name: '', box: b }) : cdMk.species(t, { cls: cls, name: '', box: b, complex: cx });
+        var r = cls === 'COMPARTMENT' ? cdMk.compartment(t, { name: '', box: b }) : cdMk.species(t, { cls: cls, name: '', box: b, complex: cx, colour: cdColour(t, cls) });
         made = r.alias; return r.text;
       }, function () { return [made]; });
       if (ok && cx) joinPack([cx]);
@@ -298,7 +323,7 @@
         var A = cdMk.aliasInfo(cd.now, id);
         if (!A.cls || A.cls === 'COMPLEX') return null;
         CD_SP.forEach(function (q) {
-          if (q[0] !== A.cls && q[0] !== 'COMPLEX' && q[0] !== 'COMPARTMENT') out.push(['Make ' + q[1].toLowerCase(), function () { cdApply(function (t) { return cdMk.retype(t, id, q[0]); }, [id]); }]);
+          if (q[0] !== A.cls && q[0] !== 'COMPLEX' && q[0] !== 'COMPARTMENT') out.push(['Make ' + q[1].toLowerCase(), function () { cdApply(function (t) { return cdMk.retype(t, id, q[0], { from: cdColour(t, A.cls), to: cdColour(t, q[0]) }); }, [id]); }]);
         });
         return out;
       }
@@ -352,7 +377,7 @@
 
     // a sign dragged from the palette: CellDesigner's shape at its size following the pointer (create.js palDrag)
     function cdGhost(kind) {
-      var cls = cdKind(kind), s = cdSize(cls), w = s[0], h = s[1], col = cls === 'COMPARTMENT' ? 'none' : '#' + cdMk.LOOK[cls][2].slice(2), ink = ' fill="' + col + '" stroke="#000" stroke-width="1"';
+      var cls = cdKind(kind), s = cdSize(cls), w = s[0], h = s[1], col = cls === 'COMPARTMENT' ? 'none' : '#' + (cdColour(cd && cd.now, cls) || cdMk.LOOK[cls][2]).slice(2), ink = ' fill="' + col + '" stroke="#000" stroke-width="1"';
       var shape = {
         PROTEIN: '<rect width="' + w + '" height="' + h + '" rx="6"' + ink + '/>', GENE: '<rect width="' + w + '" height="' + h + '"' + ink + '/>',
         RNA: '<path d="M' + w * 0.15 + ' 0H' + w + 'L' + w * 0.85 + ' ' + h + 'H0z"' + ink + '/>', SIMPLE_MOLECULE: '<ellipse cx="' + w / 2 + '" cy="' + h / 2 + '" rx="' + w / 2 + '" ry="' + h / 2 + '"' + ink + '/>',
