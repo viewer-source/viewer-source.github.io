@@ -41,10 +41,11 @@
       ['MODULATION', 'Modulation', '<path d="M12 1.5v11M12 12.5l3.5 4.5-3.5 4.5-3.5-4.5z"/>'],
       ['TRIGGER', 'Trigger', '<path d="M12 1.5v12.5M7 12.5h10M7.5 15h9l-4.5 7z"/>']].map(function (q) { return [q[0], q[1] + ' (to a reaction)', q[2]]; });
     var CD_HEADS = { INHIBITION: '<path d="M16 7v10"/>', PHYSICAL_STIMULATION: '<path d="M10 8l6 4-6 4z"/>',
-      MODULATION: '<path d="M9 12l3.5-3.5 3.5 3.5-3.5 3.5z"/>', TRIGGER: '<path d="M9 6.5v11M10.5 8l5.5 4-5.5 4z"/>', POSITIVE_INFLUENCE: '<path d="M10 7.5l6 4.5-6 4.5"/>' };
-    var CD_TAIL = { INHIBITION: 16, PHYSICAL_STIMULATION: 10, MODULATION: 9, TRIGGER: 9, POSITIVE_INFLUENCE: 16 };
+      MODULATION: '<path d="M9 12l3.5-3.5 3.5 3.5-3.5 3.5z"/>', TRIGGER: '<path d="M9 6.5v11M10.5 8l5.5 4-5.5 4z"/>' };
+    var CD_TAIL = { INHIBITION: 16, PHYSICAL_STIMULATION: 10, MODULATION: 9, TRIGGER: 9 };
     function cdArc(head) { return '<g transform="translate(5 0)"><path d="M-3.5 12H' + CD_TAIL[head] + '"/>' + CD_HEADS[head] + '</g>'; }   // its head at the sign's end
-    var CD_RED = [['POSITIVE_INFLUENCE', 'POSITIVE_INFLUENCE', 'Positive influence'], ['NEGATIVE_INFLUENCE', 'INHIBITION', 'Negative influence'],
+    // no Positive influence: CellDesigner's open arrowhead is not SBGN's, the file's taken in as the open triangle (cd_make sbgn)
+    var CD_RED = [['NEGATIVE_INFLUENCE', 'INHIBITION', 'Negative influence'],
       ['REDUCED_PHYSICAL_STIMULATION', 'PHYSICAL_STIMULATION', 'Reduced physical stimulation'], ['REDUCED_MODULATION', 'MODULATION', 'Reduced modulation'],
       ['REDUCED_TRIGGER', 'TRIGGER', 'Reduced trigger']].map(function (q) { return [q[0], q[2] + ' (between entities)', cdArc(q[1])]; });
     var CD_NAME = {};   // CellDesigner's names, for the menus and the status line (a gate's by G_ and its kind: UNKNOWN is a species too)

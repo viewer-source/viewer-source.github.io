@@ -1185,7 +1185,13 @@
       sb = null;
       if (!isCd(t)) { cd = null; return begin(t, t, n, h, s, same); }
       quiet();
-      return cdpy().then(function () { if (tk !== opening) return; cd = { base: t, now: t }; begin(cdGraphml(t), t, n, h, s, same); })
+      return cdpy().then(function () {
+        if (tk !== opening) return;
+        var sg = cdMk ? cdMk.sbgn(t) : { n: 0 };   // CellDesigner's open arrowhead taken in as SBGN's open triangle (cd_make sbgn): the file changed, redrawn
+        if (sg.n) { t = sg.text; same = null; }
+        cd = { base: t, now: t }; begin(cdGraphml(t), t, n, h, s, same);
+        if (sg.n) note(sg.n + (sg.n > 1 ? ' positive influences' : ' positive influence') + ' (open arrowhead, not SBGN) made reduced physical stimulation (open triangle).');
+      })
         .catch(function (e) { if (tk === opening) warn('Cannot edit ' + n + ': ' + e); });
     }
     function begin(g, t, n, h, s, same) {   // same: { width, height, x0, y0, scale } of the picture on screen, drawn from this very file

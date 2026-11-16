@@ -117,8 +117,14 @@ var HEAD = { CATALYSIS: 'catalysis', INHIBITION: 'inhibition', PHYSICAL_STIMULAT
   var d = {}; d[HEAD[type]] = 1;
   step('modifier ' + type, function (x) { return mk.modifier(x, R1, [A.g, A.h, A.i, A.GENE, A.RNA][k], type); }, d);
 });
-var RED = { POSITIVE_INFLUENCE: 'stimulation', NEGATIVE_INFLUENCE: 'inhibition', REDUCED_PHYSICAL_STIMULATION: 'stimulation', REDUCED_MODULATION: 'modulation', REDUCED_TRIGGER: 'trigger' };
+var RED = { NEGATIVE_INFLUENCE: 'inhibition', REDUCED_PHYSICAL_STIMULATION: 'stimulation', REDUCED_MODULATION: 'modulation', REDUCED_TRIGGER: 'trigger' };
 Object.keys(RED).forEach(function (type, k) { var d = {}; d[RED[type]] = 1; step('reduced ' + type, function (x) { return mk.reduced(x, { type: type, from: [A.j, A.k, A.l, A.UNKNOWN, A.c][k], to: A.PHENOTYPE }); }, d); });
+refused('a positive influence (not SBGN)', function () { mk.reduced(t, { type: 'POSITIVE_INFLUENCE', from: A.j, to: A.PHENOTYPE }); }, /not offered/);
+(function () {   // CellDesigner's open arrowhead taken in as the open triangle: reaction type, gate output and its inputs' lines
+  var x = '<celldesigner:reactionType>POSITIVE_INFLUENCE</celldesigner:reactionType><celldesigner:GateMember type="BOOLEAN_LOGIC_GATE_AND" modificationType="POSITIVE_INFLUENCE"/><celldesigner:GateMember type="POSITIVE_INFLUENCE"/><celldesigner:reactionType>UNKNOWN_POSITIVE_INFLUENCE</celldesigner:reactionType>';
+  var r = mk.sbgn(x);
+  if (r.n !== 3 || /[>"]POSITIVE_INFLUENCE/.test(r.text) || r.text.indexOf('UNKNOWN_POSITIVE_INFLUENCE') < 0 || mk.sbgn(t).n !== 0) fault('sbgn: positive influence not taken in as the open triangle (' + r.n + ')');
+})();
 var gates = {};
 [['AND', [A.g, A.h], R2, 'CATALYSIS'], ['OR', [A.i, A.j], R3, 'INHIBITION'], ['NOT', [A.k], R2, 'TRIGGER'], ['UNKNOWN', [A.l, A.a], R3, 'MODULATION']].forEach(function (q) {
   var d = { Operator: 1, line: q[1].length }; d[HEAD[q[3]]] = 1;
@@ -128,6 +134,11 @@ var gates = {};
   var d = { Operator: 1, line: q[1].length }; d[RED[q[3]]] = 1;
   gates['r' + q[0]] = step('gate ' + q[0] + ' between entities', function (x) { return mk.gate(x, { kind: q[0], inputs: q[1], target: q[2], output: q[3] }); }, d).gate;
 });
+(function () {   // a file with open arrowheads (reduced and a gate's output) taken in: read by cdrender and cd_edit, all now the open triangle
+  var y = t.replace(/(["'>])NEGATIVE_INFLUENCE(?=["'<])/g, '$1POSITIVE_INFLUENCE'), r = mk.sbgn(y), errs = [];
+  try { cdr.render(r.text, { DOMParser: DP, log: function (s) { errs.push(s); } }); ed.graphml(r.text, null, opt); } catch (e) { errs.push(e.message); }
+  if (r.n < 3 || errs.length || r.text.split('REDUCED_PHYSICAL_STIMULATION').length - y.split('REDUCED_PHYSICAL_STIMULATION').length !== r.n) fault('sbgn on a whole file: ' + r.n + ' ' + errs.join('; '));
+})();
 var before = t;
 step('gate input on a reaction', function (x) { return mk.gateInput(x, gates.OR, A.l); }, { line: 1 });
 step('gate input between entities', function (x) { return mk.gateInput(x, gates.rOR, A.l); }, { line: 1 });

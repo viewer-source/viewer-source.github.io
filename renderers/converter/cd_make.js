@@ -39,7 +39,9 @@
     ANTISENSE_RNA: ['AntisenseRNA', 'antisensernaReference', 'listOfAntisenseRNAs', 'arn', 'ANTISENSE_RNA'] };
   var PROCESS = ['STATE_TRANSITION', 'KNOWN_TRANSITION_OMITTED', 'UNKNOWN_TRANSITION'];
   var FULL = PROCESS.concat(['TRANSPORT', 'TRANSCRIPTION', 'TRANSLATION']);   // reactions drawn with a process square (cd_edit's FULL)
-  var REDUCED = ['POSITIVE_INFLUENCE', 'NEGATIVE_INFLUENCE', 'REDUCED_PHYSICAL_STIMULATION', 'REDUCED_MODULATION', 'REDUCED_TRIGGER'];
+  // reduced notation as SBGN's influences: POSITIVE_INFLUENCE (CellDesigner's open arrowhead, not an SBGN sign) is neither
+  // offered nor kept; sbgn() makes it REDUCED_PHYSICAL_STIMULATION (the open triangle) when a file is opened for editing
+  var REDUCED = ['NEGATIVE_INFLUENCE', 'REDUCED_PHYSICAL_STIMULATION', 'REDUCED_MODULATION', 'REDUCED_TRIGGER'];
   var MODS = ['CATALYSIS', 'INHIBITION', 'PHYSICAL_STIMULATION', 'MODULATION', 'TRIGGER'];
   // inputs a gate needs: AND and OR two, NOT one, the unknown gate one (it has no rule of its own); a gate
   // left with fewer, by a removal, goes as a whole
@@ -439,6 +441,11 @@
     var el = '<celldesigner:modification type="' + type + '" modifiers="' + A.species + '" aliases="' + id + '" targetLineIndex="-1,' + side(centre(A), square(t, rid)) +
       '">\n' + scheme(false) + '\n' + LINE + '\n</celldesigner:modification>';
     return { text: addMods(t, rid, [el], [A]), part: 'm' + R.mods.length };
+  }
+  function sbgn(t) {   // -> { text, n }: every POSITIVE_INFLUENCE (a reaction's type, a gate's output, its inputs' lines) the open triangle
+    var n = 0;
+    t = t.replace(/(["'>])POSITIVE_INFLUENCE(?=["'<])/g, function (m, a) { n++; return a + 'REDUCED_PHYSICAL_STIMULATION'; });
+    return { text: t, n: n };
   }
   function reactionType(t, rid, type) {
     var R = parts(t, rid), fam = function (x) { return FULL.indexOf(x) >= 0 ? 1 : /INFLUENCE|REDUCED/.test(x) ? 2 : 0; };
@@ -871,7 +878,7 @@
     var A = alias(t, id), C = A.kind === 'compartmentAlias' ? span(t, '<compartment(?=\\s)[^>]*\\sid="' + q(A.compartment) + '"') : null;
     return { kind: A.kind, cls: A.cls || null, id: A.species || A.compartment, name: A.s ? A.s.name : C ? at(head(t, C), 'name') : null, complex: A.complex, box: A.box };
   }
-  var api = { LOOK: LOOK, PROCESS: PROCESS, REDUCED: REDUCED, MODS: MODS, NEED: NEED, about: about, aliasInfo: aliasInfo, empty: empty, species: newSpecies, compartment: compartment, rename: rename, retype: retype, remove: remove, reaction: reaction, reduced: reduced,
+  var api = { LOOK: LOOK, PROCESS: PROCESS, REDUCED: REDUCED, sbgn: sbgn, MODS: MODS, NEED: NEED, about: about, aliasInfo: aliasInfo, empty: empty, species: newSpecies, compartment: compartment, rename: rename, retype: retype, remove: remove, reaction: reaction, reduced: reduced,
     reactant: reactant, product: product, modifier: modifier, reactionType: reactionType, modifierType: modifierType, removeLine: removeLine,
     gate: gate, gateInput: gateInput, gateInputRemove: gateInputRemove, gateType: gateType, residue: residue, residueState: residueState,
     residueRemove: residueRemove, structural: structural, info: info, homodimer: homodimer, cdName: cdName, joinable: joinable, join: join, leave: leave };
