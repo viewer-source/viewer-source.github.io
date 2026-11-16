@@ -687,9 +687,9 @@
       return Array.from(set).filter(function (i) { return !cdOwn(i) && (alone ? nodes2[i].comp : !(nodes2[i].up != null && set.has(nodes2[i].up))); });
     }
     // an inside member's least space to its compartment's inner line (inside CellDesigner's double border, clear of a
-    // compartment's name) when a drag grows the compartment round it: a small visible gap, the layout tools giving the
-    // final spacing
-    var PAD = 5;
+    // compartment's name) when a drag grows the compartment round it: one unit, the closest the editor allows, the
+    // layout tools giving the final spacing
+    var PAD = 1;
     // a plain drag or the keys keep an edge member crossing the border (dragged inward it stops while
     // its box still crosses the border): the move [dx, dy] of the nodes in set corrected, by the least, where one that
     // crossed its compartment's border would come fully inside
