@@ -438,15 +438,20 @@
       var k0 = nodes2.findIndex(function (n) { return n.id === id; });
       setBoxes(grown([k0], boxOf, function (k) { return k === k0 ? was : boxOf(k); }, function () { return false; }));
       selN = []; nodes2.forEach(function (n, k) { if (n.id === id) selN = [k]; });
-      refit([id]); render(); paint(); changed();
+      sizeRec = null; render(); paint(); changed();
     }
+    var cdLook = [];   // [alias id, file, its look]
     var PF_CD = { sizable: cdSpecies, size: cdSetSize, def: false,
       node: function (i) { return cdSpecies(i) ? i : -1; },
       off: function (k, i) { return k === 'line' || (/^(label|fill|multimer)$/.test(k) && pNow.cls === 'DEGRADED'); },   // pNow: look's, read just before
-      look: function (i) {   // null while the file is behind the map read (an undo not drawn yet)
-        var id = nodes2[i].id, L;
-        try { L = cdMk.look(cd.now, id); } catch (e) { return null; }
-        return { label: cdNameOf(id), fill: L.fill, line: '#000000', width: L.width, multimer: L.multimer, cls: L.cls };
+      look: function (i) {   // null while the file is behind the map read (an undo not drawn yet); read once per node and file (it runs with every paint)
+        var id = nodes2[i].id;
+        if (cdLook[0] !== id || cdLook[1] !== cd.now) {
+          var L = null;
+          try { L = cdMk.look(cd.now, id); L = { label: cdNameOf(id), fill: L.fill, line: '#000000', width: L.width, multimer: L.multimer, cls: L.cls }; } catch (e) { L = null; }
+          cdLook = [id, cd.now, L];
+        }
+        return cdLook[2] && Object.assign({}, cdLook[2]);
       },
       set: function (k, v, i) {
         var id = nodes2[i].id;

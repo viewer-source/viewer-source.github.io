@@ -876,8 +876,8 @@
         rest();
       }).catch(function (e) { warn('Not regrouped: ' + (e && e.message || e)); rest(); });
     }
-    // an edge of a compartment under the pointer (5 px on screen), or a handle of one selected, or of a macromolecule or a
-    // simple chemical selected in the full editor (sizable, create.js): which sides it moves
+    // an edge of a compartment under the pointer (5 px on screen), or a handle of one selected, or of a node that can be
+    // resized selected in the full editor (sizable, create.js: the format's part says which): which sides it moves
     function handleAt(P, only) {   // a handle of a compartment or a sizable node selected (only: sizable nodes alone)
       var hs = Math.max(HANDLE / 2, 4 / V.z), best = null;
       selN.forEach(function (i) {
@@ -918,7 +918,7 @@
       if (y1 - y0 < 20) { if (/t/.test(s)) y0 = y1 - 20; else y1 = y0 + 20; }
       return [x0, y0, x1 - x0, y1 - y0];
     }
-    function sized(d, P, free) {   // the box of a macromolecule or a simple chemical resized: the sides dragged move, the
+    function sized(d, P, free) {   // the box of a node resized by its handles (not a compartment): the sides dragged move, the
       // others stay; its width and height in multiples of Grid size (free: Alt or Ctrl held, any size), one step at least
       var b = d.rs.b0, s = d.rs.s, st = gridSet.step, dx = P[0] - d.x, dy = P[1] - d.y;
       var size = function (v) { return free ? Math.max(4, Math.round(v * 100) / 100) : Math.max(st, Math.round(v / st) * st); };
@@ -2616,7 +2616,7 @@
       if (d.rs) {   // a compartment resized: its box set; in Full what no longer overlaps it let go, what it now covers taken in, past its holder's edge it leaves it (regroup); in Layout its holder grows (grown)
         var nb = liveC && liveC[d.rs.c];
         if (!nb || nb.every(function (v, j) { return Math.abs(v - d.rs.b0[j]) < 0.01; })) { liveOff(); sizeOff(); paint(); return; }
-        if (!nodes2[d.rs.c].comp) { setSize(d.rs.c, nb); return; }   // a macromolecule or a simple chemical (create.js)
+        if (!nodes2[d.rs.c].comp) { setSize(d.rs.c, nb); return; }   // a node resized by its handles (create.js, the format's part)
         var rc = d.rs.c, rid = nodes2[rc].id, b0r = d.rs.b0, one = {}; remember(false);
         one[rc] = nb; setBoxes(one);
         var before = boxesBefore(function (k) { return nodes2[k].id === rid ? b0r : boxOf(k); });
