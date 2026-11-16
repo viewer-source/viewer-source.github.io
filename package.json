@@ -1,0 +1,5 @@
+{
+  "private": true,
+  "description": "The build's and the checks' one dependency: an XML parser for the JavaScript renderers under Node (the browser has its own).",
+  "dependencies": { "@xmldom/xmldom": "0.9.12" }
+}

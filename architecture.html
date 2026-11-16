@@ -1,0 +1,308 @@
+---
+layout: default
+title: Architecture
+permalink: /architecture/
+sitemap: false
+---
+
+<!-- How the viewer is built: a column per stage, left to right, then State, Modules, Masters and copies, How a map
+     travels. The figure, the tables and the Updated line follow every module added, moved or split. -->
+<style>
+  #main a, #main a:hover, #main a:active { color: #1c47a9; }
+  .ca-fig { overflow-x: auto; margin: 12px 0 8px; }
+  .ca-fig svg { display: block; width: 100%; min-width: 900px; height: auto; font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; }
+  .ca-head { fill: #888; font-size: 11px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+  .ca-col { fill: #fbfbfb; stroke: #e4e4e4; stroke-width: 1; }
+  .ca-fmt { fill: #fff; stroke: #ccc; stroke-width: 1; }
+  .ca-box { fill: #f5f7fa; stroke: #ccc; stroke-width: 1; }
+  .ca-hub { fill: #eaf2fa; stroke: #4183c4; stroke-width: 1.5; }
+  .ca-inner { fill: #fff; stroke: #4183c4; stroke-width: 1; }
+  .ca-lay { fill: #fcf3e3; stroke: #c47a12; stroke-width: 2; }
+  .ca-band { fill: none; stroke: #ccc; stroke-width: 1; stroke-dasharray: 5 5; }
+  .ca-name { fill: #222; font: 600 12.5px Menlo, Consolas, "Liberation Mono", monospace; }
+  .ca-title { fill: #222; font-size: 13px; font-weight: 600; }
+  .ca-sub { fill: #777; font-size: 11px; }
+  .ca-arr { stroke: #888; stroke-width: 1.3; fill: none; }
+  .ca-dash { stroke-dasharray: 4 4; }
+  .ca-tip { fill: #888; }
+  .ca-legend { display: flex; flex-wrap: wrap; gap: 6px 22px; font-size: 13px; color: #777; margin: 0 0 16px; }
+  .ca-legend span { display: inline-flex; align-items: center; gap: 8px; }
+  .ca-sw { display: inline-block; width: 22px; height: 14px; border-radius: 4px; border: 1px solid #ccc; background: #f5f7fa; }
+  .ca-sw.lay { border: 2px solid #c47a12; background: #fcf3e3; }
+  .ca-sw.hub { border: 1.5px solid #4183c4; background: #eaf2fa; }
+  .ca-table { border-collapse: collapse; font-size: 14px; width: 100%; margin: 8px 0 16px; }
+  .ca-table th { text-align: left; font-weight: normal; color: #888; font-size: 13px; padding: 4px 16px 4px 0; border-bottom: 1px solid #ddd; }
+  .ca-table td { padding: 8px 16px 8px 0; vertical-align: top; border-bottom: 1px solid #eee; }
+  .ca-table td:first-child { white-space: nowrap; }
+  .ca-table tr.ca-group td { color: #888; font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; padding-top: 18px; }
+  .ca-upd { color: #888; font-size: 13px; }
+  @media (max-width: 600px) { .ca-table td:first-child { white-space: normal; } }
+</style>
+
+<div class="ca-fig">
+<svg viewBox="0 0 1200 800" role="img" aria-label="The viewer: map files, the build that draws them, the published files, the viewer in the browser, the editor that saves back into the map files, and around them the parts kept elsewhere">
+  <defs>
+    <marker id="va-tip" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path class="ca-tip" d="M0,0 L10,5 L0,10 z"/>
+    </marker>
+  </defs>
+
+  <!-- column heads -->
+  <text class="ca-head" x="115" y="36" text-anchor="middle">Map files</text>
+  <text class="ca-head" x="365" y="36" text-anchor="middle">Build (GitHub)</text>
+  <text class="ca-head" x="615" y="36" text-anchor="middle">Published files</text>
+  <text class="ca-head" x="855" y="36" text-anchor="middle">Viewer (browser)</text>
+  <text class="ca-head" x="1085" y="36" text-anchor="middle">Editor (browser)</text>
+
+  <rect class="ca-col" x="20" y="50" width="190" height="510" rx="8"/>
+  <rect class="ca-col" x="250" y="50" width="230" height="510" rx="8"/>
+  <rect class="ca-col" x="520" y="50" width="190" height="510" rx="8"/>
+  <rect class="ca-col" x="750" y="50" width="210" height="510" rx="8"/>
+  <rect class="ca-col" x="990" y="50" width="190" height="510" rx="8"/>
+
+  <!-- 1 map files -->
+  <rect class="ca-fmt" x="35" y="70" width="160" height="50" rx="6"/>
+  <text class="ca-title" x="115" y="91" text-anchor="middle">GraphML (yEd)</text>
+  <text class="ca-sub" x="115" y="108" text-anchor="middle">maps/&lt;id&gt;.graphml</text>
+  <rect class="ca-fmt" x="35" y="132" width="160" height="50" rx="6"/>
+  <text class="ca-title" x="115" y="153" text-anchor="middle">CellDesigner</text>
+  <text class="ca-sub" x="115" y="170" text-anchor="middle">maps/&lt;id&gt;.xml</text>
+  <rect class="ca-fmt" x="35" y="194" width="160" height="66" rx="6"/>
+  <text class="ca-title" x="115" y="215" text-anchor="middle">SBGN-ML</text>
+  <text class="ca-sub" x="115" y="232" text-anchor="middle">maps/extra/, maps/sbgn-ml/</text>
+  <text class="ca-sub" x="115" y="248" text-anchor="middle">test-maps/ (others' files)</text>
+  <rect class="ca-fmt" x="35" y="272" width="160" height="50" rx="6"/>
+  <text class="ca-title" x="115" y="293" text-anchor="middle">Map text</text>
+  <text class="ca-sub" x="115" y="310" text-anchor="middle">maps/&lt;id&gt;.md: title, group</text>
+  <rect class="ca-fmt" x="35" y="334" width="160" height="50" rx="6"/>
+  <text class="ca-title" x="115" y="355" text-anchor="middle">Other downloads</text>
+  <text class="ca-sub" x="115" y="372" text-anchor="middle">maps/extra/&lt;id&gt;/</text>
+
+  <!-- 2 build -->
+  <rect class="ca-hub" x="265" y="70" width="200" height="56" rx="6"/>
+  <text class="ca-name" x="365" y="93" text-anchor="middle">build.py</text>
+  <text class="ca-sub" x="365" y="112" text-anchor="middle">workflow Build atlas, on each push</text>
+  <rect class="ca-box" x="265" y="140" width="200" height="118" rx="6"/>
+  <text class="ca-name" x="365" y="160" text-anchor="middle">render.js (Node)</text>
+  <rect class="ca-inner" x="280" y="172" width="170" height="34" rx="5"/>
+  <text class="ca-name" x="365" y="188" text-anchor="middle">yrender.js</text>
+  <text class="ca-sub" x="365" y="200" text-anchor="middle">GraphML as yEd draws it</text>
+  <rect class="ca-inner" x="280" y="214" width="170" height="34" rx="5"/>
+  <text class="ca-name" x="365" y="230" text-anchor="middle">cdrender.js</text>
+  <text class="ca-sub" x="365" y="242" text-anchor="middle">CellDesigner as it draws it</text>
+  <rect class="ca-box" x="265" y="272" width="200" height="56" rx="6"/>
+  <text class="ca-name" x="365" y="295" text-anchor="middle">mapconv</text>
+  <text class="ca-sub" x="365" y="314" text-anchor="middle">the converter: SBGN-ML to GraphML</text>
+  <rect class="ca-box" x="265" y="342" width="200" height="66" rx="6"/>
+  <text class="ca-name" x="365" y="364" text-anchor="middle">databases.py</text>
+  <text class="ca-sub" x="365" y="382" text-anchor="middle">UniProt, HGNC, ChEBI, PubMed</text>
+  <text class="ca-sub" x="365" y="397" text-anchor="middle">fetched once into cache/</text>
+
+  <!-- 3 published -->
+  <rect class="ca-fmt" x="535" y="70" width="160" height="50" rx="6"/>
+  <text class="ca-name" x="615" y="91" text-anchor="middle">downloads/</text>
+  <text class="ca-sub" x="615" y="108" text-anchor="middle">&lt;id&gt;.svg, the map files</text>
+  <rect class="ca-fmt" x="535" y="132" width="160" height="50" rx="6"/>
+  <text class="ca-name" x="615" y="153" text-anchor="middle">atlas-data/&lt;id&gt;.json</text>
+  <text class="ca-sub" x="615" y="170" text-anchor="middle">click data: boxes, names</text>
+  <rect class="ca-fmt" x="535" y="194" width="160" height="50" rx="6"/>
+  <text class="ca-name" x="615" y="215" text-anchor="middle">search.json</text>
+  <text class="ca-sub" x="615" y="232" text-anchor="middle">the search index of all maps</text>
+  <rect class="ca-fmt" x="535" y="256" width="160" height="50" rx="6"/>
+  <text class="ca-name" x="615" y="277" text-anchor="middle">_maps/&lt;id&gt;.md</text>
+  <text class="ca-sub" x="615" y="294" text-anchor="middle">entry: list, downloads, hash</text>
+  <rect class="ca-fmt" x="535" y="318" width="160" height="50" rx="6"/>
+  <text class="ca-name" x="615" y="339" text-anchor="middle">index.json</text>
+  <text class="ca-sub" x="615" y="356" text-anchor="middle">the map list (Jekyll)</text>
+  <rect class="ca-fmt" x="535" y="380" width="160" height="50" rx="6"/>
+  <text class="ca-name" x="615" y="401" text-anchor="middle">atlas-data/&lt;id&gt;.graphml</text>
+  <text class="ca-sub" x="615" y="418" text-anchor="middle">an SBGN-ML map, to edit</text>
+
+  <!-- 4 viewer -->
+  <rect class="ca-lay" x="765" y="70" width="180" height="398" rx="6"/>
+  <text class="ca-name" x="855" y="92" text-anchor="middle">atlas-app.html</text>
+  <text class="ca-sub" x="855" y="108" text-anchor="middle">one file: style, page, script</text>
+  <g class="ca-sub" text-anchor="middle">
+    <rect class="ca-fmt" x="778" y="120" width="154" height="26" rx="4"/><text x="855" y="137">loading, the read-ahead</text>
+    <rect class="ca-fmt" x="778" y="152" width="154" height="26" rx="4"/><text x="855" y="169">map window: zoom, pan</text>
+    <rect class="ca-fmt" x="778" y="184" width="154" height="26" rx="4"/><text x="855" y="201">annotation panel</text>
+    <rect class="ca-fmt" x="778" y="216" width="154" height="26" rx="4"/><text x="855" y="233">tabs, windows, Settings</text>
+    <rect class="ca-fmt" x="778" y="248" width="154" height="26" rx="4"/><text x="855" y="265">the list, its order</text>
+    <rect class="ca-fmt" x="778" y="280" width="154" height="26" rx="4"/><text x="855" y="297">search</text>
+    <rect class="ca-fmt" x="778" y="312" width="154" height="26" rx="4"/><text x="855" y="329">one map, its downloads</text>
+    <rect class="ca-fmt" x="778" y="344" width="154" height="26" rx="4"/><text x="855" y="361">new maps without a reload</text>
+    <rect class="ca-fmt" x="778" y="376" width="154" height="26" rx="4"/><text x="855" y="393">right-click menu</text>
+    <rect class="ca-fmt" x="778" y="408" width="154" height="26" rx="4"/><text x="855" y="425">editor loader, kept drawing</text>
+  </g>
+  <rect class="ca-box" x="765" y="482" width="180" height="56" rx="6"/>
+  <text class="ca-name" x="855" y="504" text-anchor="middle">look-*.css</text>
+  <text class="ca-sub" x="855" y="522" text-anchor="middle">the viewer's own look</text>
+
+  <!-- 5 editor -->
+  <rect class="ca-hub" x="1005" y="70" width="160" height="264" rx="6"/>
+  <text class="ca-name" x="1085" y="92" text-anchor="middle">editor.js</text>
+  <text class="ca-sub" x="1085" y="108" text-anchor="middle">joined by Jekyll from src/</text>
+  <rect class="ca-lay" x="1018" y="120" width="134" height="26" rx="4"/>
+  <text class="ca-name" x="1085" y="138" text-anchor="middle">core.js</text>
+  <g class="ca-name" text-anchor="middle">
+    <rect class="ca-inner" x="1018" y="150" width="134" height="22" rx="4"/><text x="1085" y="165">graphml.js</text>
+    <rect class="ca-inner" x="1018" y="176" width="134" height="22" rx="4"/><text x="1085" y="191">celldesigner.js</text>
+    <rect class="ca-inner" x="1018" y="202" width="134" height="22" rx="4"/><text x="1085" y="217">sbgn.js</text>
+    <rect class="ca-inner" x="1018" y="228" width="134" height="22" rx="4"/><text x="1085" y="243">help.js</text>
+    <rect class="ca-inner" x="1018" y="254" width="134" height="22" rx="4"/><text x="1085" y="269">own.js</text>
+    <rect class="ca-inner" x="1018" y="280" width="134" height="22" rx="4"/><text x="1085" y="295">create.js</text>
+    <rect class="ca-inner" x="1018" y="306" width="134" height="22" rx="4"/><text x="1085" y="321">cdcreate.js</text>
+  </g>
+  <rect class="ca-box" x="1005" y="340" width="160" height="174" rx="6"/>
+  <text class="ca-title" x="1085" y="360" text-anchor="middle">Renderers in the page</text>
+  <g class="ca-name" text-anchor="middle">
+    <text x="1085" y="384">yrender.js</text>
+    <text x="1085" y="406">cdrender.js</text>
+    <text x="1085" y="428">cd_edit.js</text>
+    <text x="1085" y="450">cd_make.js</text>
+    <text x="1085" y="472">sbgn_edit.js</text>
+    <text x="1085" y="494">layout.js</text>
+  </g>
+  <rect class="ca-box" x="1005" y="524" width="160" height="50" rx="6"/>
+  <text class="ca-title" x="1085" y="544" text-anchor="middle">Browser storage</text>
+  <text class="ca-sub" x="1085" y="562" text-anchor="middle">settings, drafts, own maps</text>
+
+  <!-- flow -->
+  <path class="ca-arr" d="M210,220 L248,220" marker-end="url(#va-tip)"/>
+  <path class="ca-arr" d="M480,220 L518,220" marker-end="url(#va-tip)"/>
+  <path class="ca-arr" d="M710,220 L748,220" marker-end="url(#va-tip)"/>
+  <path class="ca-arr" d="M960,186 L988,186" marker-end="url(#va-tip)"/>
+  <text class="ca-sub" x="975" y="176" text-anchor="middle">Edit</text>
+  <path class="ca-arr" d="M1085,328 L1085,338" marker-end="url(#va-tip)"/>
+  <!-- save loop -->
+  <path class="ca-arr ca-dash" d="M1172,186 L1188,186 L1188,580 L115,580 L115,388" marker-end="url(#va-tip)"/>
+  <text class="ca-sub" x="650" y="574" text-anchor="middle">a save: the edited map file committed with the reader's GitHub token, then built again (about two minutes)</text>
+
+  <!-- kept elsewhere -->
+  <rect class="ca-band" x="20" y="610" width="1160" height="170" rx="8"/>
+  <text class="ca-head" x="40" y="634">Kept elsewhere, copied in or out</text>
+  <rect class="ca-box" x="40" y="650" width="175" height="110" rx="6"/>
+  <text class="ca-title" x="127" y="672" text-anchor="middle">In: the converter</text>
+  <text class="ca-sub" x="127" y="692" text-anchor="middle">mapconv, its master in</text>
+  <text class="ca-sub" x="127" y="707" text-anchor="middle">the converter's repository</text>
+  <text class="ca-name" x="127" y="732" text-anchor="middle">get_mapconv.sh</text>
+  <rect class="ca-box" x="230" y="650" width="175" height="110" rx="6"/>
+  <text class="ca-title" x="317" y="672" text-anchor="middle">In: the layout skill</text>
+  <text class="ca-sub" x="317" y="692" text-anchor="middle">complex_pack, snap_grid</text>
+  <text class="ca-sub" x="317" y="707" text-anchor="middle">(also as layout.js)</text>
+  <text class="ca-name" x="317" y="732" text-anchor="middle">get_layout.sh</text>
+  <rect class="ca-box" x="420" y="650" width="175" height="110" rx="6"/>
+  <text class="ca-title" x="507" y="672" text-anchor="middle">Out: atlas sites</text>
+  <text class="ca-sub" x="507" y="692" text-anchor="middle">viewer, look, editor,</text>
+  <text class="ca-sub" x="507" y="707" text-anchor="middle">renderers, VERSION</text>
+  <text class="ca-name" x="507" y="732" text-anchor="middle">copy-to-site.sh</text>
+  <rect class="ca-box" x="610" y="650" width="175" height="110" rx="6"/>
+  <text class="ca-title" x="697" y="672" text-anchor="middle">Out: style experiments</text>
+  <text class="ca-sub" x="697" y="692" text-anchor="middle">/styles/, frozen versions</text>
+  <text class="ca-sub" x="697" y="707" text-anchor="middle">of the viewer</text>
+  <text class="ca-name" x="697" y="732" text-anchor="middle">update.sh</text>
+  <rect class="ca-lay" x="800" y="650" width="175" height="110" rx="6"/>
+  <text class="ca-title" x="887" y="672" text-anchor="middle">Python twins</text>
+  <text class="ca-sub" x="887" y="692" text-anchor="middle">yrender.py, cdrender.py,</text>
+  <text class="ca-sub" x="887" y="707" text-anchor="middle">cd_edit.py, tidy.py: for</text>
+  <text class="ca-sub" x="887" y="722" text-anchor="middle">tools in Python elsewhere</text>
+  <rect class="ca-box" x="990" y="650" width="175" height="110" rx="6"/>
+  <text class="ca-title" x="1077" y="672" text-anchor="middle">Checks</text>
+  <text class="ca-sub" x="1077" y="692" text-anchor="middle">workflow Compare renderers:</text>
+  <text class="ca-sub" x="1077" y="707" text-anchor="middle">11 tests, twins byte for byte,</text>
+  <text class="ca-sub" x="1077" y="722" text-anchor="middle">editor writes checked</text>
+  <text class="ca-name" x="1077" y="747" text-anchor="middle">tests/</text>
+</svg>
+</div>
+<div class="ca-legend">
+  <span><i class="ca-sw hub"></i>entry points: what starts the build, what the viewer loads for editing</span>
+  <span><i class="ca-sw lay"></i>large files, or code kept in two languages</span>
+  <span><i class="ca-sw" style="background:#fff"></i>files</span>
+</div>
+
+<p>The viewer shows maps from three formats (yEd GraphML, CellDesigner, SBGN-ML) in one page: a list of maps, the
+map, a panel with what is clicked. Each map is drawn when the site is built, by a renderer for its format, into one
+picture and one set of click data, so the viewer in the browser never knows which format a map came from. An editor
+for the layout, loaded only where the Edit tab is, draws with the same renderers in the browser and saves the map's
+own file back, which the build then draws again. This page shows the parts and where each lives. How to use it: <a href="/guide/">Guide</a>.</p>
+
+<p class="ca-upd">Updated 2026-11-16, with the CellDesigner palette.</p>
+
+<h2>State</h2>
+
+<table class="ca-table">
+  <tr><th>Part</th><th>State</th></tr>
+  <tr><td>Build</td><td><code>build.py</code> draws every map in <code>maps/</code> through the JavaScript renderers under Node, writes the click data, the search index and each map's entry. Run by the workflow Build atlas on each release and after each save, with the maps read from the site's private data repository; what it makes is published, never committed.</td></tr>
+  <tr><td>Renderers</td><td>yrender (GraphML) and cdrender (CellDesigner), JavaScript the master, each with a Python twin kept byte for byte equal. SBGN-ML is read by the converter's copy into GraphML and drawn by yrender.</td></tr>
+  <tr><td>Viewer</td><td>One file, <code>_includes/atlas-app.html</code>, style and script in ten sections. Its look in two small CSS files.</td></tr>
+  <tr><td>Editor</td><td>Layout editing on all three formats: moves, bend points, ports, compartments, Grid, Snap, Pack, undo. With Editing on Full, SBGN-ML and CellDesigner maps are edited in full: a palette of glyphs, arcs, logic gates, a line's end moved to another node. Eight source files joined into <code>editor/editor.js</code>, <code>core.js</code> the largest.</td></tr>
+  <tr><td>Saving</td><td>With a GitHub token: the map's file committed to the site's data repository a few seconds after the last move, and the site's build started. Without: kept in the browser, or written into a folder chosen once (Chrome, Edge).</td></tr>
+  <tr><td>Demo maps</td><td>92 entries in six groups: GraphML (21), CellDesigner (21), SBGN-ML written from the GraphML maps (21), SBGN-ML external (18), SBGN-ML external AF (9), AsthmaMap (2).</td></tr>
+  <tr><td>Checks</td><td>Tests in the workflow Compare renderers: the twins alike on every demo map, the editor's writes back into CellDesigner and SBGN-ML, live drawing equal to the drawing after the drop. No browser test of the page itself.</td></tr>
+</table>
+
+<h2>Modules</h2>
+
+<table class="ca-table">
+  <tr><th>Module</th><th>What it does</th></tr>
+  <tr class="ca-group"><td colspan="2">Build, run on GitHub</td></tr>
+  <tr><td><code>build.py</code></td><td>Turns <code>maps/</code> into <code>downloads/</code>, <code>atlas-data/</code> and <code>_maps/</code>. A map's entry carries a hash of its picture, click data and text, so an open page fetches a map again only when it changed.</td></tr>
+  <tr><td><code>renderers/render.js</code></td><td>Started once per build; answers one drawing per line of JSON, from yrender.js or cdrender.js.</td></tr>
+  <tr><td><code>databases.py</code></td><td>What the panel shows beyond the file's identifiers: names, function, location, cross-references from UniProt, HGNC and ChEBI, citations from PubMed. Each identifier fetched once into <code>cache/</code>; <code>cache/overrides.json</code> by hand beats a fetched value.</td></tr>
+  <tr><td><code>index.json</code></td><td>The map list, written by Jekyll from the entries in <code>_maps/</code>.</td></tr>
+
+  <tr class="ca-group"><td colspan="2">Renderers, used by the build and in the page</td></tr>
+  <tr><td><code>yrender/yrender.js</code></td><td>yEd GraphML drawn as yEd draws it, with the viewer's own rules where yEd's look misleads (visual ends at the shape outline, lines behind their own nodes). Gives the ports it draws to the editor.</td></tr>
+  <tr><td><code>converter/cdrender.js</code></td><td>CellDesigner drawn as CellDesigner draws it, with the click data. Python's number writing copied in, so it matches its twin to the last digit.</td></tr>
+  <tr><td><code>converter/cd_edit.js</code></td><td>A CellDesigner file as GraphML for the editor, and the moves written back into the CellDesigner text: only the numbers that change. Reaction rules as CellDesigner's own model (main line, process square, added reactants at 3/8 and 5/8).</td></tr>
+  <tr><td><code>converter/cd_make.js</code></td><td>What the CellDesigner palette makes and changes, written into the CellDesigner text as CellDesigner 4.4 saves it: species, compartments, reactions, modifiers, reduced notation, gates placed where CellDesigner places them, residues, renames, retypes, removals; the rest of the file byte for byte. JavaScript only; tests/cd-make.js checks it against the converter's reading.</td></tr>
+  <tr><td><code>converter/sbgn_edit.js</code></td><td>The same for SBGN-ML: its GraphML from the build's, and the moves written back into the SBGN-ML text.</td></tr>
+  <tr><td><code>converter/mapconv/</code></td><td>The converter's package (copy): reads SBGN-ML into GraphML for the build, gives cdrender four helpers.</td></tr>
+  <tr><td><code>layout/layout.js</code></td><td>The layout skill's Pack and Snap, and <code>tidy</code>, which writes back only the attributes they change.</td></tr>
+
+  <tr class="ca-group"><td colspan="2">Viewer, in the browser</td></tr>
+  <tr><td><code>atlas-app.html</code></td><td>The page: the list (groups, order by dragging in development mode), the map window (zoom, pan, separators, full screen), the panel, search, downloads, Settings, the legend, the right-click menu. Loads the editor only when the look turns the Edit tab on, and keeps an edited drawing on screen until the build catches up.</td></tr>
+  <tr><td><code>atlas-app.html</code>, closed mode</td><td>With <code>closed="&lt;folder&gt;"</code> on the include, every address under the page's folder (its map list, pictures, click data, texts, downloads) is read from the organisation's private data repository, <code>closed/&lt;folder&gt;/</code>, through GitHub's API with the reader's token, which the editor shares. Files with a version in their address are kept in the browser's Cache Storage until they change. Without a token, or with one refused, the page shows only a sign-in; Sign out in Settings forgets the token and the files kept. For maps that may not be published.</td></tr>
+  <tr><td><code>look-lines.css</code>, <code>look-view.css</code></td><td>The viewer's own look, switched on by settings in CSS (<code>--m2-icons</code>, <code>--m2-edit</code>, ...); a style of the experiments is one more CSS file over them.</td></tr>
+  <tr><td><code>atlas-tags.css</code></td><td>Tags and source colours in the list.</td></tr>
+
+  <tr class="ca-group"><td colspan="2">Editor, loaded only with the Edit tab</td></tr>
+  <tr><td><code>src/core.js</code></td><td>One code for all formats: selection, dragging, guides, grid, undo kept as changes, the read-ahead of every map, saving to GitHub. Changes only the numbers in the file's text; the renderer draws again.</td></tr>
+  <tr><td><code>src/graphml.js</code></td><td>yEd maps: the redraw by yrender.js, the shift out of negative places, compartment outlines while dragging.</td></tr>
+  <tr><td><code>src/celldesigner.js</code></td><td>CellDesigner maps through cd_edit: the process square following its segment, guides through it, reactions drawn live while a drag runs.</td></tr>
+  <tr><td><code>src/sbgn.js</code></td><td>SBGN-ML maps through sbgn_edit; saved as an edited copy, the original file left as it is.</td></tr>
+  <tr><td><code>src/create.js</code></td><td>The full editor on SBGN-ML maps: the palette and what it makes (entities, names typed in place, state variables, units of information, multimers, deleting), resizing by the handles, and Properties (label, size, fill and border colours, border width, multimer, Set as default for the next one made), written through sbgn_edit.</td></tr>
+  <tr><td><code>src/cdcreate.js</code></td><td>The full editor on CellDesigner maps: CellDesigner's palette (species, logic gates by clicks, reactions, modifiers, reduced notation), lines drawn by a drag, names typed in place, the right-click menus' other kinds, deleting; every change written into the CellDesigner file by cd_make.js and the editor's GraphML made again from it. Its gestures are create.js's.</td></tr>
+  <tr><td><code>src/help.js</code></td><td>The one source of the how-to shown by "?".</td></tr>
+  <tr><td><code>src/own.js</code></td><td>What a reader keeps without a token: drafts, the folder on the computer, their own maps and groups; New SBGN-ML map (an empty SBGN-ML map edited from a fixed empty GraphML) and New CellDesigner map (an empty CellDesigner file from cd_make.js), renaming a map, Add map to the site with a token.</td></tr>
+
+  <tr class="ca-group"><td colspan="2">Around it</td></tr>
+  <tr><td><code>copy-to-site.sh</code></td><td>Gives an atlas site the viewer, its look, the editor and the renderers it runs, with a VERSION file naming the commit. The site's own header and pages are not touched.</td></tr>
+  <tr><td><code>tests/</code></td><td>Node scripts run by Compare renderers (above).</td></tr>
+  <tr><td><code>get_mapconv.sh</code>, <code>get_layout.sh</code></td><td>Take the converter's and the layout skill's code from their masters; never edited here.</td></tr>
+</table>
+
+<h2>Masters and copies</h2>
+
+<p>One master per thing; a copy names the commit it came from and is never edited.</p>
+
+<table class="ca-table">
+  <tr><th>Thing</th><th>Master</th><th>Copies</th></tr>
+  <tr><td>Viewer, look, editor</td><td>here</td><td>atlas sites (<code>copy-to-site.sh</code>), the style experiments (<code>update.sh</code>)</td></tr>
+  <tr><td>yrender</td><td>here, <code>yrender.js</code></td><td><code>yrender.py</code> beside it (twin); copies in other map tools are taken from the twin</td></tr>
+  <tr><td>cdrender, cd_edit</td><td>here, the <code>.js</code></td><td>the <code>.py</code> twins; a copy in another site's CellDesigner viewer</td></tr>
+  <tr><td>tidy</td><td>here, <code>layout.js</code></td><td><code>tidy.py</code> (twin)</td></tr>
+  <tr><td>complex_pack, snap_grid</td><td>the layout skill (Python)</td><td>here as <code>.py</code> and inside <code>layout.js</code></td></tr>
+  <tr><td>mapconv</td><td>the converter's repository</td><td>here, <code>renderers/converter/mapconv/</code></td></tr>
+  <tr><td><code>databases.py</code></td><td>here</td><td>the build of another atlas site</td></tr>
+</table>
+
+<h2>How a map travels</h2>
+
+<ol>
+  <li>A map file lands in <code>maps/</code>: pushed, added from the list with a token, or saved by the editor.</li>
+  <li>The workflow Build atlas runs <code>build.py</code>: each map drawn by its renderer, its identifiers looked up (new ones fetched, the rest from the cache), its entry written. The results are published as the site; a save that comes in meanwhile starts a newer build, which replaces the one running.</li>
+  <li>GitHub Pages publishes the site; <code>index.json</code> lists the maps with their hashes.</li>
+  <li>An open page checks <code>index.json</code> every 30 seconds and swaps in a map whose hash changed, without a reload.</li>
+  <li>In edit mode the page reads the map's file, draws it again with the same renderer after each move, and saves the file a few seconds after the last one. The drawing just edited stays on screen until step 2 has caught up.</li>
+</ol>

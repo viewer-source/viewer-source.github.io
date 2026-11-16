@@ -1,0 +1,68 @@
+# Builds and publishes the site: the page code from this repository, the site's data (the demo maps, the test maps,
+# the database cache) from the organisation's private <owner>-data repository, read with the
+# read-only token DATA_TOKEN. build.py draws every map into _maps/, atlas-data/ and downloads/, Jekyll makes the
+# site, and it is deployed as the Pages artifact: nothing built is committed anywhere. Started by a release (push),
+# by the editor after a save (workflow_dispatch), or by hand; a newer run cancels one still running. Run by hand with
+# "refresh" ticked, it fetches every cached UniProt, HGNC, ChEBI and PubMed entry again and shows an identifier that
+# no longer resolves as a warning on the run's page. Entries fetched by a build are kept between builds in the Actions
+# cache, merged under the data repository's cache/ (an entry there wins), so they are not fetched again.
+# Pages source: GitHub Actions.
+name: Build atlas
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      refresh:
+        description: 'Fetch every UniProt, HGNC, ChEBI and PubMed entry again'
+        type: boolean
+        default: false
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:   # a run in progress finishes (never cut during a deploy); of the runs waiting, GitHub keeps the newest
+  group: pages
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository_owner }}/${{ github.repository_owner }}-data
+          token: ${{ secrets.DATA_TOKEN }}
+          path: .data
+      - run: for d in maps test-maps cache; do [ -d .data/$d ] && cp -r .data/$d .; done; rm -rf .data   # only the data's folders, never a file of the code
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: pip install lxml && npm ci   # the drawings by the JavaScript renderers (renderers/render.js), the rest Python
+      - uses: actions/cache/restore@v4
+        with: {path: .dbcache, key: 'db-${{ github.run_id }}', restore-keys: 'db-'}
+      - name: Cache merged
+        run: |
+          python3 - <<'PY'
+          import json, os, glob
+          for f in glob.glob('.dbcache/*.json'):
+              n = os.path.join('cache', os.path.basename(f)); have = json.load(open(n)) if os.path.exists(n) else {}
+              os.makedirs('cache', exist_ok=True); json.dump({**json.load(open(f)), **have}, open(n, 'w'), ensure_ascii=False, indent=0, sort_keys=True)
+          PY
+      - run: python3 build.py ${{ inputs.refresh && '--refresh' || '' }}
+      - run: rm -rf .dbcache && cp -r cache .dbcache
+      - uses: actions/cache/save@v4
+        with: {path: .dbcache, key: 'db-${{ github.run_id }}'}
+      - uses: actions/jekyll-build-pages@v1
+        with: {source: ., destination: ./_site}
+      - uses: actions/upload-pages-artifact@v3
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
