@@ -144,23 +144,31 @@
     // already have on the map, else CellDesigner's) or the viewer's Default scheme (Settings, Map colours) by the class's role
     var CD_COL_KEY = 'atlas-edit-cd-colours', CD_COLS = [['cd', 'CellDesigner'], ['file', 'File'], ['default', 'Default']];
     function cdCols() { var v = null; try { v = localStorage.getItem(CD_COL_KEY); } catch (e) {} return v === 'file' || v === 'default' ? v : 'cd'; }
-    function cdColour(t, cls) {   // eight hex digits for cd_make, or null for CellDesigner's own
-      var m = cdCols();
+    function cdColour(t, cls) { return cdColourIn(cdCols(), t, cls); }   // eight hex digits for cd_make, or null for CellDesigner's own
+    function cdColourIn(m, t, cls) {
       if (m === 'file') return t ? cdMk.classColour(t, cls) : null;   // no file yet: the ghost before the map is loaded
       var c = m === 'default' && V.schemeFill && window.cdrender ? V.schemeFill('default', window.cdrender.ROLE[cls] || 'white') : null;
       return c ? 'ff' + c.toLowerCase() : null;
     }
-    function cdColsRow() {   // one line under the tick box, the three as radio buttons (no word before them: the line then fits the panel's default width)
+    function cdColsRow() {   // a list above the tick box, one row each: a radio button, the name, its protein's and simple molecule's colours (as Settings' Map colours)
       var r = pal.querySelector('.m2-ed-pcols');
       if (!r) {
         r = document.createElement('div'); r.className = 'm2-ed-pblk m2-ed-pcols'; r.setAttribute('role', 'radiogroup'); r.setAttribute('aria-label', 'Colours of new species'); r.title = 'Colours of new species';
-        r.innerHTML = CD_COLS.map(function (c) { return '<label class="m2-ed-phyb" title="New species in ' + (c[0] === 'cd' ? 'CellDesigner\u2019s own colours' : c[0] === 'file' ? 'the colour most species of their class have on this map' : 'the viewer\u2019s Default colours') + '"><input type="radio" name="m2-ed-pcols" value="' + c[0] + '"><span>' + c[1] + '</span></label>'; }).join('');
+        r.innerHTML = CD_COLS.map(function (c) { return '<label class="m2-ed-phyb" title="New species in ' + (c[0] === 'cd' ? 'CellDesigner\u2019s own colours' : c[0] === 'file' ? 'the colour most species of their class have on this map' : 'the viewer\u2019s Default colours') + '"><input type="radio" name="m2-ed-pcols" value="' + c[0] + '"><span>' + c[1] + '</span><span class="m2-sw" data-for="' + c[0] + '"></span></label>'; }).join('');
         r.addEventListener('change', function (e) { try { if (e.target.value === 'cd') localStorage.removeItem(CD_COL_KEY); else localStorage.setItem(CD_COL_KEY, e.target.value); } catch (er) {} });
         r.addEventListener('click', function (e) { if (e.target.tagName === 'INPUT') e.target.blur(); });   // also on the one already chosen (no change): the editor's keys work at once
-        pal.querySelector('.m2-ed-pstrict').insertAdjacentElement('afterend', r);
+        pal.querySelector('.m2-ed-pstrict').insertAdjacentElement('beforebegin', r);
         var m = cdCols();
         Array.prototype.forEach.call(r.querySelectorAll('input'), function (x) { x.checked = x.value === m; });
       }
+      // the squares: each scheme's protein and simple molecule, once each; File's from the map as it is now (after every change)
+      // (classColour keeps its last answer, so a paint with the map unchanged costs nothing; the squares written only when changed)
+      var t = cd && cd.now;
+      CD_COLS.forEach(function (c) {
+        var cols = ['PROTEIN', 'SIMPLE_MOLECULE'].map(function (cls) { return (c[0] === 'cd' ? null : cdColourIn(c[0], t, cls)) || cdMk.LOOK[cls][2]; });
+        var sw = r.querySelector('[data-for="' + c[0] + '"]'), h = cols.filter(function (x, i) { return cols.indexOf(x) === i; }).map(function (x) { return '<i style="background:#' + x.slice(2) + '"></i>'; }).join('');
+        if (sw.dataset.h !== h) { sw.dataset.h = h; sw.innerHTML = h; }
+      });
       return r;
     }
     function cdSize(cls) { return cls === 'COMPARTMENT' ? [300, 200] : cdMk.LOOK[cls].slice(0, 2); }
