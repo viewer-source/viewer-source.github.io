@@ -1,4 +1,4 @@
-# Copy of the layout skill's snap_grid.py at 7fc1773; its master is in the skill, never edited here.
+# Copy of the layout skill's snap_grid.py at 58d8306; its master is in the skill, never edited here.
 # Snap to grid (the layout skill's SKILL.md section 3).
 #   python3 snap_grid.py <in.graphml> <out.graphml> [--node 8] [--route 4] [--tol 4] [--link 12]
 #   from snap_grid import snap                         snap(root) -> largest move

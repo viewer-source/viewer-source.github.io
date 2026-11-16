@@ -1,4 +1,4 @@
-# Copy of the layout skill's complex_pack.py at 6ff7d84; its master is in the skill, never edited here.
+# Copy of the layout skill's complex_pack.py at 58d8306; its master is in the skill, never edited here.
 # Complex packing and the group fit (SKILL.md section 5, Group bounds; section 3, Complex packing).
 #   python3 complex_pack.py <in.graphml> <out.graphml>   packs every complex, then fits all groups
 #   from complex_pack import fit_insets                  fit_insets(root) ends every build that

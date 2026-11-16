@@ -5,7 +5,7 @@
 # them as layout.js (JavaScript): a new copy is made there too, then node tests/layout-compare.js shows it gives the same.
 set -e
 src=$1/.claude/skills/sbgn-human-like-layout
-c=$(git -C "$1" log -1 --format='%h %cs')
+c=$(git -C "$1" log -1 --format='%h')
 for f in complex_pack.py snap_grid.py; do
   { echo "# Copy of the layout skill's $f at $c; its master is in the skill, never edited here."; cat "$src/$f"; } > "renderers/layout/$f"
 done
