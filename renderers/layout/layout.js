@@ -227,6 +227,7 @@
   }
   function packOne(n, state) {
     var ks = members(n);
+    if (!ks.length) return;   // an empty complex keeps its box: nothing to pack
     ks.forEach(function (k) { if (isComplex(k)) packOne(k, state); });
     var b = box(n), x = b[0], y = b[1], w = b[2], h = b[3], cs = [];
     ks.forEach(function (k) {

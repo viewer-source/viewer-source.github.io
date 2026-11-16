@@ -1,4 +1,4 @@
-# Copy of the layout skill's complex_pack.py at 7fc1773; its master is in the skill, never edited here.
+# Copy of the layout skill's complex_pack.py at 6ff7d84; its master is in the skill, never edited here.
 # Complex packing and the group fit (SKILL.md section 5, Group bounds; section 3, Complex packing).
 #   python3 complex_pack.py <in.graphml> <out.graphml>   packs every complex, then fits all groups
 #   from complex_pack import fit_insets                  fit_insets(root) ends every build that
@@ -211,6 +211,8 @@ def scaffold(k):  # a protein drawn tall, as a scaffold its partners dock on (SK
 
 def pack_one(n, state):
     kids = members(n)
+    if not kids:  # an empty complex keeps its box: nothing to pack
+        return
     for k in kids:
         if is_complex(k):
             pack_one(k, state)
