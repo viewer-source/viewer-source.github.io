@@ -128,6 +128,9 @@
         g.replaceChildren.apply(g, Array.prototype.map.call(parts[k].childNodes, function (c) { return document.importNode(c, true); }));
       });
     }
+    // the CellDesigner part of the live drawing of a move (live.js, liveFmt): its process glyphs following their segments, its
+    // reactions drawn by the drop's own code, its holders drawn by cdrender
+    var liveCd = { glyphs: glyphFollow, lines: cdLines, holders: cdHolders };
     var RXE = /^(.*)\|(a|b|[rpmi]\d+)$/;   // i: an input of a gate between entities
     function cdLines(ks, pp) {   // false: not drawn this way (the copies of fullLines then)
       if (!cd || !gE) return false;

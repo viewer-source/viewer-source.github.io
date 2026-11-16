@@ -120,28 +120,6 @@
       out.push(svg.slice(at));
       return out.join('');
     }
-    // the holders growing round a move (liveC: compartments and complexes) follow their live boxes on the picture, on
-    // every format: drawn again at once, not only after the drop. skip: nodes drawn by sizeLive (a node resized by its
-    // handles). GraphML and SBGN-ML: each holder's own parts reshaped (liveRec, livePut, as a resize shows a node);
-    // CellDesigner: drawn by cdrender's own code (cdHolders)
-    function liveDraw(skip) {
-      if (!gN) return;
-      if (liveOrig) Object.keys(liveOrig).forEach(function (i) { if (!liveC || !liveC[i]) undraw(+i); });
-      if (!liveC) return;
-      liveOrig = liveOrig || {};
-      skip = skip || [];
-      // a holder whose group still carries the keys' shift (its file box already moved, the map not drawn again) is left
-      // as it is: drawn at its live box inside that shift it would show moved twice
-      var ks = Object.keys(liveC).map(Number).filter(function (i) {
-        var n = nodes2[i], g = gN[n.id];
-        return g && skip.indexOf(i) < 0 && (n.comp || n.shape.kind === 'Complex') && (liveOrig[i] || !g.getAttribute('transform'));
-      });
-      if (cd) { cdHolders(ks); return; }
-      ks.forEach(function (i) {
-        if (!liveOrig[i]) liveOrig[i] = liveRec(i);
-        if (liveOrig[i]) livePut(liveOrig[i], liveC[i]);
-      });
-    }
     // no negative places (negative coordinates are invalid in CellDesigner, so corrected in every format):
     // a map moved past the left or the top edge is shifted right or down, each on its own, by whole blocks of the grid
     // (16, so a map on the grid stays on it) to start at 40 or a little more; the drawing stays where it is on screen

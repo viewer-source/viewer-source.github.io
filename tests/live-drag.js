@@ -1,0 +1,95 @@
+// The live drawing of a move in the browser, compared between two versions of the editor: each case run on the live
+// /styles/ page twice, once with the editor and renderers of a commit (default HEAD) and once with the working tree,
+// both routed into the page, and the picture and the overlay read mid-move and after the release. Any difference is
+// listed. Cases: a CellDesigner map shifted out of negative places, then a modifier's species dragged (its reaction
+// drawn live); a complex member dragged out on CellDesigner and SBGN-ML (the complex growing); a member pushed out of a
+// compartment (it grows); a reactant dragged (the process glyph following); the arrow keys held; a node resized by its
+// handles; a line's bend point made by grabbing it. Maps are the site's, read live: the two runs of a case follow each
+// other, so a map changed on the site between them shows as a difference (run again).
+//   node tests/live-drag.js [commit]        (needs Playwright; run from viewer/; ONLY=<part of a case's name> runs those)
+var { chromium } = require('playwright'), fs = require('fs'), path = require('path'), cp = require('child_process');
+var here = path.join(__dirname, '..'), rev = process.argv[2] || 'HEAD', URL = 'https://viewer-source.github.io/styles/#';
+function src(which, rel) {   // a file of the working tree or of the commit
+  if (which === 'now') return fs.readFileSync(path.join(here, rel), 'utf8');
+  var top = cp.execFileSync('git', ['rev-parse', '--show-prefix'], { cwd: here }).toString().trim();
+  return cp.execFileSync('git', ['show', rev + ':' + top + rel], { cwd: here, maxBuffer: 1 << 28 }).toString();
+}
+function editor(which) {   // editor.js joined as Jekyll joins it
+  return src(which, 'editor/editor.js').replace(/^---[\s\S]*?---\n/, '').replace(/\{% include_relative (\S+) %\}/g, function (m, f) {
+    try { return src(which, 'editor/' + f); } catch (e) { return ''; }   // a part not in that commit
+  });
+}
+async function open(browser, which, map, wait) {
+  var p = await browser.newPage({ viewport: { width: 1400, height: 900 } }), errs = [];
+  await p.route(/\/styles\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: editor(which) }); });
+  await p.route(/\/styles\/renderers\/(converter\/(cdrender|cd_edit|cd_make|sbgn_edit)|yrender\/yrender|layout\/layout)\.js/, function (r) {
+    var f = /renderers\/(.*\.js)/.exec(r.request().url())[1]; r.fulfill({ contentType: 'application/javascript', body: src(which, 'renderers/' + f) });
+  });
+  p.on('pageerror', function (e) { errs.push(e.message); });
+  await p.addInitScript(function () { try { localStorage.setItem('atlas-edit-level', 'full'); } catch (e) {} });
+  await p.goto(URL + map, { waitUntil: 'load' });
+  await p.waitForSelector('.m2-ri[data-win="edit"]', { timeout: 30000 });
+  await p.click('.m2-ri[data-win="edit"]');
+  await p.waitForFunction(function (id) { return !!document.querySelector('[data-n="' + id + '"]'); }, wait, { timeout: 60000 });
+  await p.waitForTimeout(2500);
+  p.errs = errs;
+  return p;
+}
+function centre(p, id) { return p.evaluate(function (id) { var q = document.querySelector('[data-n="' + id + '"]').getBoundingClientRect(); return [q.left + q.width / 2, q.top + q.height / 2, q.right, q.bottom]; }, id); }
+function snap(p) {   // the picture and the overlay as they are, numbers to 2 decimals
+  return p.evaluate(function () {
+    var img = document.getElementById('m2-img'), ov = document.getElementById('m2-edit-layer');
+    return ((img ? img.outerHTML : '') + '\n' + (ov ? ov.innerHTML : '')).replace(/-?\d+\.\d+/g, function (v) { return String(Math.round(parseFloat(v) * 100) / 100); });
+  });
+}
+async function drag(p, id, dx, dy, o) {   // o: { shift, select, at: [fx, fy] share of the box from its centre }
+  o = o || {};
+  var r = await centre(p, id), x = r[0], y = r[1];
+  if (o.at) { x = r[2] - 1; y = r[3] - 1; }
+  if (o.select !== false) { await p.mouse.click(r[0], r[1]); await p.waitForTimeout(250); }
+  if (o.shift) await p.keyboard.down('Shift');
+  await p.mouse.move(x, y); await p.mouse.down();
+  for (var k = 1; k <= 12; k++) { await p.mouse.move(x + dx * k / 12, y + dy * k / 12); await p.waitForTimeout(25); }
+  await p.waitForTimeout(250);
+  var mid = await snap(p);
+  await p.mouse.up(); if (o.shift) await p.keyboard.up('Shift');
+  await p.waitForTimeout(3000);
+  return [mid, await snap(p)];
+}
+async function keys(p, id, key, n) {
+  var r = await centre(p, id); await p.mouse.click(r[0], r[1]); await p.waitForTimeout(250);
+  for (var k = 0; k < n; k++) { await p.keyboard.down(key); await p.waitForTimeout(20); }
+  var mid = await snap(p);
+  await p.keyboard.up(key); await p.waitForTimeout(3000);
+  return [mid, await snap(p)];
+}
+var CASES = [
+  ['CellDesigner shifted, a modifier dragged', 'glycolysis-celldesigner', 'sa9', async function (p) { await drag(p, 'sa9', 0, -300); return drag(p, 'sa_n22', -40, -90); }],
+  ['CellDesigner complex member out', 'glycolysis-celldesigner', 'sa_n3_n0', function (p) { return drag(p, 'sa_n3_n0', 60, -70); }],
+  ['CellDesigner member pushed out of a compartment', 'glycolysis-celldesigner', 'sa1', function (p) { return drag(p, 'sa1', -150, -40); }],
+  ['CellDesigner reactant dragged, glyph following', 'glycolysis-celldesigner', 'sa_n13', function (p) { return drag(p, 'sa_n13', 50, 30); }],
+  ['CellDesigner arrow keys', 'glycolysis-celldesigner', 'sa_n22', function (p) { return keys(p, 'sa_n22', 'ArrowUp', 15); }],
+  ['SBGN-ML complex member out', 'glycolysis-sbgn', 'n3__n1', function (p) { return drag(p, 'n3__n1', 70, 60); }],
+  ['SBGN-ML node resized by its handle', 'glycolysis-sbgn', 'n14', function (p) { return drag(p, 'n14', 30, 20, { at: true }); }],
+  ['SBGN-ML arrow keys', 'glycolysis-sbgn', 'n14', function (p) { return keys(p, 'n14', 'ArrowRight', 12); }],
+  ['GraphML node dragged with its lines', 'glycolysis-graphml', 'n14', function (p) { return drag(p, 'n14', 40, -60); }]
+];
+(async function () {
+  var browser = await chromium.launch(), bad = 0, ran = 0;
+  for (var c of CASES.filter(function (c) { return !process.env.ONLY || c[0].indexOf(process.env.ONLY) >= 0; })) {
+    var out = {};
+    for (var which of ['ref', 'now']) {
+      var p;
+      try { p = await open(browser, which, c[1], c[2]); out[which] = await c[3](p); out[which].push(p.errs.join('; ')); }
+      catch (e) { out[which] = ['', '', 'failed: ' + (e && e.message || e)]; }
+      if (p) await p.close();
+    }
+    ran++;
+    var diff = ['mid-move', 'after release', 'page errors'].filter(function (w, j) { return out.ref[j] !== out.now[j]; });
+    if (out.now[2]) diff.push('errors now: ' + out.now[2].slice(0, 200));
+    if (diff.length) { bad++; console.log('DIFF', c[0] + ':', diff.join(', ')); } else console.log('same', c[0]);
+  }
+  await browser.close();
+  console.log(ran + ' cases against ' + rev + ': ' + (bad ? bad + ' different' : 'all the same'));
+  process.exit(bad ? 1 : 0);
+})();
