@@ -83,7 +83,7 @@
     }
     // the tick box's title and circled i on a CellDesigner map say what it does there (the SBGN text speaks of
     // hybrid maps and SBGN-ML files); palFill puts the SBGN ones back
-    var CD_INFO = 'Shows CellDesigner\u2019s Reduced Notation signs, which join two species directly (a positive or negative influence, a reduced physical stimulation, modulation or trigger), and allows a logic gate between species. Unticked: reactions and their modifiers only.';
+    var CD_INFO = 'Shows CellDesigner\u2019s Reduced Notation signs, which join two species directly (a negative influence, a reduced physical stimulation, modulation or trigger; CellDesigner\u2019s positive influence, not an SBGN sign, is made a reduced physical stimulation when a map is opened), and allows a logic gate between species. Unticked: reactions and their modifiers only.';
     function cdInfo(hy, on_) {
       var lab = hy.querySelector('label'), ti = hy.querySelector('.m2-ed-ptip'), tx = hy.querySelector('.m2-ed-ptext');
       if (!lab.dataset.sbgn) { lab.dataset.sbgn = lab.title; tx.dataset.sbgn = tx.textContent; }
@@ -321,7 +321,7 @@
       }
       return null;
     }
-    function cdRxItems(rid) {   // a reaction's other types: a process's among the three, reduced notation's among its five
+    function cdRxItems(rid) {   // a reaction's other types: a process's among the three, reduced notation's among its four
       var ab = cdMk.about(cd.now, rid), set = cdMk.PROCESS.indexOf(ab.type) >= 0 ? CD_RX : cdMk.REDUCED.indexOf(ab.type) >= 0 ? CD_RED : null;
       if (!set) return null;
       return set.filter(function (q) { return q[0] !== ab.type; }).map(function (q) {

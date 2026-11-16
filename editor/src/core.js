@@ -1159,7 +1159,7 @@
           pic.querySelectorAll('[data-e]').forEach(function (g) { var k = g.getAttribute('data-e'); (gE[k] = gE[k] || []).push(g); });
           if (cd) cdSessionSoon();
           if (first) V.fit(); else V.draw();
-          if (!r[1].length && !saveTimer && !saving && !dirty) quiet();
+          if (!r[1].length && !saveTimer && !saving && !dirty) { if (takenIn) note(takenIn); else quiet(); takenIn = null; }
         })();
       }).catch(function (e) { if (t === ticket) { drawing = false; warn('Not drawn: ' + (e && e.message ? e.message.split('\n').slice(-2).join(' ') : e)); } });
     }
@@ -1187,19 +1187,22 @@
       quiet();
       return cdpy().then(function () {
         if (tk !== opening) return;
-        var sg = cdMk ? cdMk.sbgn(t) : { n: 0 };   // CellDesigner's open arrowhead taken in as SBGN's open triangle (cd_make sbgn): the file changed, redrawn
-        if (sg.n) { t = sg.text; same = null; }
-        cd = { base: t, now: t }; begin(cdGraphml(t), t, n, h, s, same);
-        if (sg.n) note(sg.n + (sg.n > 1 ? ' positive influences' : ' positive influence') + ' (open arrowhead, not SBGN) made reduced physical stimulation (open triangle).');
+        // CellDesigner's open arrowhead taken in as SBGN's open triangle (cd_make sbgn): the editor works on the changed
+        // text, written at the next save; the file as it was stays the site's base (what GitHub and the site hold)
+        var sg = cdMk ? cdMk.sbgn(t) : { n: 0 }, t0 = t;
+        if (sg.n) { t = sg.text; takenIn = sg.n + (sg.n > 1 ? ' positive influences' : ' positive influence') + ' (open arrowhead, not SBGN) made reduced physical stimulation (open triangle).'; }
+        cd = { base: t, now: t }; begin(cdGraphml(t), t, n, h, s, same, t0);
       })
         .catch(function (e) { if (tk === opening) warn('Cannot edit ' + n + ': ' + e); });
     }
-    function begin(g, t, n, h, s, same) {   // same: { width, height, x0, y0, scale } of the picture on screen, drawn from this very file
+    var takenIn = null;   // what the opening changed in the file (cd_make sbgn), said once the map is drawn
+    function begin(g, t, n, h, s, same, t0) {   // same: { width, height, x0, y0, scale } of the picture on screen, drawn from this very file; t0: the file as read, where the opening changed it
       layout();   // its extent() measures what the holders grow round (extOf), at the first move
       sbpy();   // sbgn_edit quietly, on every map: its stacking (stackComps) and moveInto serve GraphML maps too
       try { text = g; parse(); } catch (e) { warn('Cannot edit ' + n + ': ' + e); return; }
       siteRef = null; name = n; handle = h; site = s || null;
-      if (site) { site.base = site.pending && site.pub != null ? site.pub : t; site.fromDraft = t !== site.base; }   // no token: the site's text, a draft on top of it
+      t0 = t0 || t;
+      if (site) { site.base = site.pending && site.pub != null ? site.pub : t0; site.fromDraft = t0 !== site.base; }   // no token: the site's text, a draft on top of it
       if (site && site.pending && canFolder && V.folderName()) folderCheck();
       stuck = false; dirty = false; undo = []; redo = []; cdGate = null; selN = []; selP = []; selE = [];
       map = { id: 'edit', title: openTitle || n, width: 0, height: 0, scale: 1, downloads: [], colours: true };   // drawn with the role classes (graphml.js, V.recolour): Settings' Map colours offered while editing

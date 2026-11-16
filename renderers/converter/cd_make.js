@@ -444,7 +444,9 @@
   }
   function sbgn(t) {   // -> { text, n }: every POSITIVE_INFLUENCE (a reaction's type, a gate's output, its inputs' lines) the open triangle
     var n = 0;
-    t = t.replace(/(["'>])POSITIVE_INFLUENCE(?=["'<])/g, function (m, a) { n++; return a + 'REDUCED_PHYSICAL_STIMULATION'; });
+    // only where CellDesigner writes a type (reactionType, a line's type, a gate's modificationType), never a name or a note
+    var to = function (m, a) { n++; return a + 'REDUCED_PHYSICAL_STIMULATION'; };
+    t = t.replace(/(<celldesigner:reactionType>\s*)POSITIVE_INFLUENCE(?=\s*<)/g, to).replace(/(\s(?:type|modificationType)=["'])POSITIVE_INFLUENCE(?=["'])/g, to);
     return { text: t, n: n };
   }
   function reactionType(t, rid, type) {

@@ -121,9 +121,9 @@ var RED = { NEGATIVE_INFLUENCE: 'inhibition', REDUCED_PHYSICAL_STIMULATION: 'sti
 Object.keys(RED).forEach(function (type, k) { var d = {}; d[RED[type]] = 1; step('reduced ' + type, function (x) { return mk.reduced(x, { type: type, from: [A.j, A.k, A.l, A.UNKNOWN, A.c][k], to: A.PHENOTYPE }); }, d); });
 refused('a positive influence (not SBGN)', function () { mk.reduced(t, { type: 'POSITIVE_INFLUENCE', from: A.j, to: A.PHENOTYPE }); }, /not offered/);
 (function () {   // CellDesigner's open arrowhead taken in as the open triangle: reaction type, gate output and its inputs' lines
-  var x = '<celldesigner:reactionType>POSITIVE_INFLUENCE</celldesigner:reactionType><celldesigner:GateMember type="BOOLEAN_LOGIC_GATE_AND" modificationType="POSITIVE_INFLUENCE"/><celldesigner:GateMember type="POSITIVE_INFLUENCE"/><celldesigner:reactionType>UNKNOWN_POSITIVE_INFLUENCE</celldesigner:reactionType>';
+  var x = '<celldesigner:reactionType>POSITIVE_INFLUENCE</celldesigner:reactionType><celldesigner:GateMember type="BOOLEAN_LOGIC_GATE_AND" modificationType="POSITIVE_INFLUENCE"/><celldesigner:GateMember type="POSITIVE_INFLUENCE"/><celldesigner:reactionType>UNKNOWN_POSITIVE_INFLUENCE</celldesigner:reactionType><celldesigner:reactionType>\n  POSITIVE_INFLUENCE\n</celldesigner:reactionType><species name="POSITIVE_INFLUENCE"><notes><p>POSITIVE_INFLUENCE</p></notes></species>';
   var r = mk.sbgn(x);
-  if (r.n !== 3 || /[>"]POSITIVE_INFLUENCE/.test(r.text) || r.text.indexOf('UNKNOWN_POSITIVE_INFLUENCE') < 0 || mk.sbgn(t).n !== 0) fault('sbgn: positive influence not taken in as the open triangle (' + r.n + ')');
+  if (r.n !== 4 || r.text.split('POSITIVE_INFLUENCE').length !== 4 || r.text.indexOf('UNKNOWN_POSITIVE_INFLUENCE') < 0 || mk.sbgn(t).n !== 0) fault('sbgn: positive influence not taken in as the open triangle (' + r.n + ')');
 })();
 var gates = {};
 [['AND', [A.g, A.h], R2, 'CATALYSIS'], ['OR', [A.i, A.j], R3, 'INHIBITION'], ['NOT', [A.k], R2, 'TRIGGER'], ['UNKNOWN', [A.l, A.a], R3, 'MODULATION']].forEach(function (q) {
