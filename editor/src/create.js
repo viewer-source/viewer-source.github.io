@@ -163,8 +163,15 @@
       return '<button type="button" data-make="' + q[0] + '" title="' + q[1] + (ARCS[q[0]] ? ': drag from one node to another (click: once; double click: several)' : CD_GATE[q[0]] ? ': click its inputs, then the reaction\u2019s square or the target species (click: once; double click: several)' : ' (click: once; double click: several)') + '" aria-label="' + q[1] + '" aria-pressed="false">' +
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">' + q[2] + '</svg></button>';
     }
+    // the one list in blocks: a group marked as starting a block (its third item, true) begins a new row, so the list reads
+    // as a few small groups with no names; kept while the blocks cost no row more than the plain list would at the panel's
+    // width and at every width up to its usual one (palBlocks), else the plain list, so a narrowed panel stays compact
     function palSigns(set) {
-      if (!palGrouped()) return '<div class="m2-ed-prow">' + set.map(function (s) { return s[1].map(palSign).join(''); }).join('') + '</div>';
+      if (!palGrouped()) {
+        var blocks = [];
+        set.forEach(function (s, i) { if (!i || s[2]) blocks.push(0); blocks[blocks.length - 1] += s[1].length; });
+        return '<div class="m2-ed-prow" data-blocks="' + blocks.join(',') + '">' + set.map(function (s, i) { return (i && s[2] ? '<span class="m2-ed-pbr" aria-hidden="true"></span>' : '') + s[1].map(palSign).join(''); }).join('') + '</div>';
+      }
       return set.map(function (s) {
       var info = s[0] === 'Connecting arcs' || s[0] === 'Arcs' ? ' <button type="button" class="m2-ed-pinfo" aria-label="How arcs are drawn" title="How arcs are drawn"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true"><circle cx="8" cy="8" r="7.2" stroke-width="1.1"/><path d="M8 7.3v4.2" stroke-width="1.8" stroke-linecap="round"/><circle cx="8" cy="4.6" r="1.2" fill="currentColor" stroke="none"/></svg></button>' : '';
       return '<p>' + s[0] + info + '</p><div class="m2-ed-prow">' + s[1].map(palSign).join('') + '</div>';
@@ -222,6 +229,16 @@
       '<div class="m2-ed-pblk m2-ed-pstrict">' + palTip('<label class="m2-ed-phyb" title="Ticked (the default): under PD a modulation may also end on an entity, and a logic gate\u2019s output go to one (CellDesigner\u2019s reduced notation); with a process on the map the file stays Process Description, without one such a link makes it Activity Flow. Unticked: Process Description only"><input type="checkbox"><span>Reduced notation</span></label>', 'Reduced notation', INFO.strict) + '</div>' +
       '<div class="m2-ed-psigns"></div>';
     var palSignsEl = pal.querySelector('.m2-ed-psigns'), palShown = null;
+    function palBlocks() {   // the blocks of the one list shown, or the plain list (palSigns)
+      var row = palSignsEl.querySelector('.m2-ed-prow[data-blocks]'), b = row && row.querySelector('button');
+      if (!row || !b) return;
+      var n = row.dataset.blocks.split(',').map(Number), all = n.reduce(function (a, x) { return a + x; }, 0);
+      var gap = parseFloat(getComputedStyle(row).columnGap) || 0, step = b.offsetWidth + gap, most = parseFloat(getComputedStyle(pal).maxWidth) || row.clientWidth;
+      var cols = Math.max(1, Math.floor((row.clientWidth + gap) / step)), top = Math.max(cols, Math.floor((most + gap) / step)), flat = false;
+      for (var c = cols; c <= top && !flat; c++) flat = n.reduce(function (a, x) { return a + Math.ceil(x / c); }, 0) > Math.ceil(all / c);
+      row.classList.toggle('m2-ed-pflat', flat);
+    }
+    if (window.ResizeObserver) new ResizeObserver(palBlocks).observe(palSignsEl);
     function palKey() { return palLangNow() === 'pd' ? 'pd' : palLookNow() + (protOn ? 'P' : ''); }
     // the tick box's state lives in the file: on opening, ticked when the map's protein activities all
     // carry the protein's unit, unticked when none or some do; read again after every change where they all agree (an
@@ -252,7 +269,7 @@
       if (palShown === k) return;
       palShown = k;
       if (tool && !palOk(tool.kind)) tool = null;   // a sign in hand that this set lacks (e.g. a delay kept after the map turned PD)
-      palSignsEl.innerHTML = palSigns(PALS[k]);
+      palSignsEl.innerHTML = palSigns(PALS[k]); palBlocks();
       var pi = palSignsEl.querySelector('.m2-ed-pinfo');
       if (pi) pi.addEventListener('click', function (e) { e.stopPropagation(); help(true, 'Connecting arcs'); });
     }

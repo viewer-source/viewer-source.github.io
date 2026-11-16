@@ -53,8 +53,8 @@
     CD_RED.forEach(function (q) { CD_NAME[q[0]] = CD_NAME[q[1]]; });
     CD_GATES.forEach(function (q) { CD_NAME['G_' + q[0]] = q[1]; });
     var cdK = function (q) { return ['cd:' + q[0], q[1], q[2]]; };   // the tool kinds, apart from the SBGN palette's
-    function palCd() {   // the set: nodes, the gates, the lines last (as the SBGN palette)
-      return [['Species', CD_SP.map(cdK)], ['Logic gates', CD_GATES.map(function (q) { return ['cd:G_' + q[0], q[1], q[2]]; })], ['Reactions', CD_RX.map(cdK)], ['Modifiers', CD_MOD.map(cdK)]];
+    function palCd() {   // the set: nodes, the gates, the lines last (as the SBGN palette); three blocks in the one list: species, gates, lines
+      return [['Species', CD_SP.map(cdK)], ['Logic gates', CD_GATES.map(function (q) { return ['cd:G_' + q[0], q[1], q[2]]; }), true], ['Reactions', CD_RX.map(cdK), true], ['Modifiers', CD_MOD.map(cdK)]];
     }
     CD_RX.concat(CD_MOD).forEach(function (q) { ARCS['cd:' + q[0]] = 1; });   // the signs that draw a line (arcTool)
     var CD_GATE = {}; CD_GATES.forEach(function (q) { CD_GATE['cd:G_' + q[0]] = q[0]; });   // tool kind -> gate kind
@@ -78,7 +78,7 @@
       var k = 'cd' + (strict ? 'S' : '') + (palGrouped() ? 'G' : '');
       if (palShown === k) return;
       palShown = k;
-      palSignsEl.innerHTML = palSigns(palCd());
+      palSignsEl.innerHTML = palSigns(palCd()); palBlocks();
     }
     // the tick box's title and circled i on a CellDesigner map say what it does there (the SBGN text speaks of
     // hybrid maps and SBGN-ML files); palFill puts the SBGN ones back
