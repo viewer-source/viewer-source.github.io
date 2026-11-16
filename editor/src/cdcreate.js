@@ -299,7 +299,7 @@
     }
     function cdLinkMarks(out) {   // a line drawn by a drag on a CellDesigner map: its start picked, the node it would land on
       cdPicked(out, link.from);
-      if (link.to >= 0 && link.how && !link.how.no) cdLand(out, link.to);
+      if (link.to >= 0 && link.how && !link.how.no) cdLand(out, link.to, link.how.land && link.how.land.Q);
     }
     // the map clicked with a CellDesigner sign in hand (palUp, create.js)
     function cdClick(P) { if (CD_GATE[tool.kind]) cdGateClick(P); else cdMake(P, tool.kind); }
@@ -308,7 +308,36 @@
     // a species onto a reaction's square a catalysis; a square to a species an added product; a species onto a gate a new
     // input. A reaction sign picked: species to species that reaction, a species onto a square an added reactant. A
     // modifier picked: a species onto a square, or species to species its reduced notation type (the tick box ticked)
-    function cdHow(a, b) {
+    // what a line from a to b makes (cdHow0), with where its end would land when let go at P (land: { Q, at, spot },
+    // shown by cdLand and written by cdLink)
+    function cdHow(a, b, P) { var h = cdHow0(a, b); if (h && !h.no && P) h.land = cdPort(b, P, h); return h; }
+    // where an end let go at P lands on node i. A species, for a reaction's or reduced line's product end or an added
+    // product: one of CellDesigner's 16 places (cdrender anchorAt, its one master), the nearest to P, or the centre while
+    // P is in the middle half of the box. A reaction's square, for a modifier: the nearest of its six places, turned with
+    // the main line (cdrender SQUARE's order, 2 to 7). Anything else: the centre
+    var cdClsMemo = [null, {}];
+    function cdClsOf(id) {
+      if (cdClsMemo[0] !== cd.now) cdClsMemo = [cd.now, {}];
+      if (!(id in cdClsMemo[1])) { try { cdClsMemo[1][id] = cdMk.aliasInfo(cd.now, id).cls; } catch (e) { cdClsMemo[1][id] = null; } }
+      return cdClsMemo[1][id];
+    }
+    function cdPort(i, P, how) {
+      var b = bx(i), C = [b[0] + b[2] / 2, b[1] + b[3] / 2], best = null, bd = Infinity;
+      var near = function (Q, o) { var d = Math.hypot(Q[0] - P[0], Q[1] - P[1]); if (d < bd) { bd = d; best = o; o.Q = Q; } };
+      if (how.mod && cdRole(i) === 'proc') {
+        var rid = cdRid(i), ka = edges2.findIndex(function (e) { return e.id === rid + '|a'; }), p = ka >= 0 ? ports(ka) : null;
+        var A = p && p[p.length - 2], E = p && p[p.length - 1], L = p ? Math.hypot(E[0] - A[0], E[1] - A[1]) : 0, h = b[2] / 2;
+        if (!L) return { Q: C };
+        var f = [(E[0] - A[0]) / L, (E[1] - A[1]) / L];
+        [[0, -1], [0, 1], [-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(function (s, k) { near([C[0] + h * (s[0] * f[0] - s[1] * f[1]), C[1] + h * (s[0] * f[1] + s[1] * f[0])], { spot: k + 2 }); });
+        return best;
+      }
+      var cls = (how.rx || how.red || how.part === 'product') && cdRole(i) === 'epn' && window.cdrender && window.cdrender.anchorAt ? cdClsOf(nodes2[i].id) : null;
+      if (!cls || Math.max(Math.abs(P[0] - C[0]) / (b[2] / 2 || 1), Math.abs(P[1] - C[1]) / (b[3] / 2 || 1)) < 0.5) return { Q: C };
+      Object.keys(window.cdrender.ANCHOR).forEach(function (k) { near(window.cdrender.anchorAt(cls, b, k), { at: k }); });
+      return best;
+    }
+    function cdHow0(a, b) {
       if (b < 0) return null;
       var ra = cdRole(a), rb = cdRole(b), want = tool && ARCS[tool.kind] ? cdKind(tool.kind) : null;
       var isRx = want && CD_RX.some(function (q) { return q[0] === want; }), isMod = want && cdMk.MODS.indexOf(want) >= 0;
@@ -333,11 +362,12 @@
       var ia = nodes2[a].id, ib = nodes2[b].id, line = null;
       cdApply(function (t) {
         var q;
-        if (how.rx) { q = cdMk.reaction(t, { type: how.rx, from: ia, to: ib }); line = q.reaction; }
-        else if (how.red) { q = cdMk.reduced(t, { type: how.red, from: ia, to: ib }); line = q.reaction; }
+        var L = how.land || {};   // where its end lands (cdPort)
+        if (how.rx) { q = cdMk.reaction(t, { type: how.rx, from: ia, to: ib, toAt: L.at }); line = q.reaction; }
+        else if (how.red) { q = cdMk.reduced(t, { type: how.red, from: ia, to: ib, toAt: L.at }); line = q.reaction; }
         else if (how.gate) q = cdMk.gateInput(t, cdGateRef(b), ia);
-        else if (how.mod) { q = cdMk.modifier(t, cdRid(b), ia, how.mod); line = cdRid(b) + '|' + q.part; }
-        else { q = how.part === 'reactant' ? cdMk.reactant(t, cdRid(b), ia) : cdMk.product(t, cdRid(a), ib); line = cdRid(how.part === 'reactant' ? b : a) + '|' + q.part; }
+        else if (how.mod) { q = cdMk.modifier(t, cdRid(b), ia, how.mod, L.spot); line = cdRid(b) + '|' + q.part; }
+        else { q = how.part === 'reactant' ? cdMk.reactant(t, cdRid(b), ia) : cdMk.product(t, cdRid(a), ib, L.at); line = cdRid(how.part === 'reactant' ? b : a) + '|' + q.part; }
         return q.text;
       }, [], function () { return line ? [line] : []; });   // the new line selected: Delete takes it back
     }

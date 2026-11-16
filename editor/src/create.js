@@ -967,7 +967,7 @@
     // arc to its entity; an entity to a phenotype a stimulation. The modulation guessed is a stimulation, or a catalysis
     // from a macromolecule or complex onto a process that consumes a simple chemical (a metabolic step)
     function linkHow(a, b, P) {
-      if (cd) return cdHow(a, b);   // a CellDesigner map's (cdcreate.js)
+      if (cd) return cdHow(a, b, P);   // a CellDesigner map's (cdcreate.js), with where its end lands
       if (b < 0) return null;
       var ra = roleOf(a), rb = roleOf(b), want = arcTool(), eqA = !!nodes2[a].eq, eqB = !!nodes2[b].eq;
       var has = function (s, t, head) { return edges2.some(function (q) { return q.s === s && q.t === t && q.arr[1] === head; }); };

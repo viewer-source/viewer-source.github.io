@@ -378,11 +378,18 @@
   }
 
   // ---- reactions ----
-  function newReaction(t, type, ins, out, scheme_, body) {
+  // a line's end at a species: one of CellDesigner's 16 places (cdrender ANCHOR), or none, the centre
+  var PLACES = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+  function anchorXml(at) {
+    if (at && PLACES.indexOf(at) < 0) fail('No place ' + at + ' on a species.');
+    return at ? '<celldesigner:linkAnchor position="' + at + '"/>\n' : '';
+  }
+  function newReaction(t, type, ins, out, scheme_, body, outAt) {
     var rid = next(t, 're'), meta = metas(t), ref = function (A) { return sref('speciesReference', meta(), A); };
     var x = '<reaction metaid="' + rid + '" id="' + rid + '" reversible="false">\n<annotation>\n<celldesigner:extension>\n<celldesigner:reactionType>' + type +
       '</celldesigner:reactionType>\n<celldesigner:baseReactants>\n' + ins.map(function (A) { return '<celldesigner:baseReactant species="' + A.species + '" alias="' + A.id + '"/>\n'; }).join('') +
-      '</celldesigner:baseReactants>\n<celldesigner:baseProducts>\n<celldesigner:baseProduct species="' + out.species + '" alias="' + out.id + '"/>\n</celldesigner:baseProducts>\n' +
+      '</celldesigner:baseReactants>\n<celldesigner:baseProducts>\n<celldesigner:baseProduct species="' + out.species + '" alias="' + out.id + '"' +
+      (outAt ? '>\n' + anchorXml(outAt) + '</celldesigner:baseProduct>' : '/>') + '\n</celldesigner:baseProducts>\n' +
       scheme_ + '\n' + LINE + '\n' + (body ? body + '\n' : '') + '</celldesigner:extension>\n</annotation>\n<listOfReactants>\n' + ins.map(ref).join('\n') +
       '\n</listOfReactants>\n<listOfProducts>\n' + ref(out) + '\n</listOfProducts>\n</reaction>';
     // a new listOfReactions in SBML L2V4's order of a model's lists: before listOfEvents, the last
@@ -397,29 +404,29 @@
   function reaction(t, o) {
     var type = o.type || 'STATE_TRANSITION', e = ends(t, o);
     if (PROCESS.indexOf(type) < 0) fail('The reaction type ' + type + ' is not offered.');
-    return newReaction(t, type, [e[0]], e[1], scheme(true));
+    return newReaction(t, type, [e[0]], e[1], scheme(true), null, o.toAt);
   }
   // reduced notation: a reaction with no square, both ends at the centre (no linkAnchor, as the converter writes them)
   function reduced(t, o) {
     var e = ends(t, o);
     if (REDUCED.indexOf(o.type) < 0) fail('The reduced notation type ' + o.type + ' is not offered.');
-    return newReaction(t, o.type, [e[0]], e[1], scheme(false));
+    return newReaction(t, o.type, [e[0]], e[1], scheme(false), null, o.toAt);
   }
   function joined(R) { return R.br.concat(R.bp, R.rl, R.pl).map(function (p) { return at(p.tag, 'alias'); }); }
   // an added reactant or product: its link to the square's segment (no linkAnchor: to the centre) and its SBML reference
-  function link(t, rid, id, into) {
+  function link(t, rid, id, into, at) {   // at: the place at the species (none: the centre)
     var R = process(t, rid), A = end(t, id), list = into ? 'listOfReactantLinks' : 'listOfProductLinks', n = (into ? R.rl : R.pl).length;
     if (joined(R).indexOf(id) >= 0) fail('This entity is already a reactant or product of the reaction.');
     var el = '<celldesigner:' + (into ? 'reactantLink reactant' : 'productLink product') + '="' + A.species + '" alias="' + id + '" targetLineIndex="-1,' + (into ? 0 : 1) +
-      '">\n' + scheme(false) + '\n<celldesigner:line width="1.0" color="ff000000" type="Straight"/>\n</celldesigner:' + (into ? 'reactantLink' : 'productLink') + '>';
+      '">\n' + anchorXml(at) + scheme(false) + '\n<celldesigner:line width="1.0" color="ff000000" type="Straight"/>\n</celldesigner:' + (into ? 'reactantLink' : 'productLink') + '>';
     var rl = span(t, '<celldesigner:listOfReactantLinks>', R.x[0], R.x[1]);
     t = add(t, CD + list, el, R.x[0], R.x[1], into || !rl ? after(t, '</celldesigner:baseProducts>', R.x[0]) : after(t, '</celldesigner:listOfReactantLinks>', R.x[0]));
     var rs = rspan(t, rid);
     t = add(t, into ? 'listOfReactants' : 'listOfProducts', sref('speciesReference', metas(t)(), A), rs[0], rs[1]);
     return { text: t, part: (into ? 'r' : 'p') + n };
   }
-  function reactant(t, rid, id) { return link(t, rid, id, true); }
-  function product(t, rid, id) { return link(t, rid, id, false); }
+  function reactant(t, rid, id, at) { return link(t, rid, id, true, at); }
+  function product(t, rid, id, at) { return link(t, rid, id, false, at); }
   // modifications appended to a reaction's listOfModification, each species' SBML reference, and the reaction in each
   // species' listOfCatalyzedReactions (CellDesigner lists every modifier there, not only catalysts)
   function addMods(t, rid, els, ins) {
@@ -439,11 +446,12 @@
     var S = species(t, sid), item = '<celldesigner:catalyzed reaction="' + rid + '"/>', i = t.indexOf(item, S.sp[0]);
     return i >= 0 && i < S.sp[1] ? drop(t, [i, i + item.length], [CD + 'listOfCatalyzedReactions']) : t;
   }
-  function modifier(t, rid, id, type) {
+  function modifier(t, rid, id, type, spot) {   // spot: its place at the square, 2 to 7 (cdrender SQUARE; none: the side facing it)
     var R = process(t, rid), A = end(t, id);
     if (MODS.indexOf(type) < 0) fail('The modifier type ' + type + ' is not offered.');
+    if (spot != null && !(spot >= 2 && spot <= 7)) fail('No place ' + spot + ' at a reaction\u2019s square.');
     twin(R, id, type, []);
-    var el = '<celldesigner:modification type="' + type + '" modifiers="' + A.species + '" aliases="' + id + '" targetLineIndex="-1,' + side(centre(A), square(t, rid)) +
+    var el = '<celldesigner:modification type="' + type + '" modifiers="' + A.species + '" aliases="' + id + '" targetLineIndex="-1,' + (spot != null ? spot : side(centre(A), square(t, rid))) +
       '">\n' + scheme(false) + '\n' + LINE + '\n</celldesigner:modification>';
     return { text: addMods(t, rid, [el], [A]), part: 'm' + R.mods.length };
   }

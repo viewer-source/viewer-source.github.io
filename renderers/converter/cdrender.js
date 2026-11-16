@@ -429,9 +429,9 @@
     if (!side || !has(ANCHOR, side)) return [[x + w / 2, y + h / 2], false];
     return [this.at(i, side), true];
   };
-  D.at = function (i, side) {   // anchor side's point on alias i (cdrender.py's at)
-    var f = this.front(i), x = f[0], y = f[1], w = f[2], h = f[3];
-    var cls = this.al(i)[0];
+  D.at = function (i, side) { return anchorAt(this.al(i)[0], this.front(i), side); };   // anchor side's point on alias i (cdrender.py's at)
+  function anchorAt(cls, f, side) {   // anchor side's point on a species of class cls drawn in box f (the editor's landing places too)
+    var x = f[0], y = f[1], w = f[2], h = f[3];
     if (cls === 'RNA') {
       var fx = ANCHOR[side][0], fy = ANCHOR[side][1];
       if (fy === 0 || fy === 1) return [x + (fy === 0 ? h : 0) + fx * (w - h), y + fy * h];
@@ -439,7 +439,7 @@
     }
     if (cls === 'DEGRADED') { x += w / 8; y += h / 8; w *= 3 / 4; h *= 3 / 4; }  // on its drawn circle, 3/4 of the box (AsthmaMap mast cell PDF: no gap)
     return anchorPoint([x, y, w, h], side, ROUND.indexOf(cls) >= 0, cls === 'PHENOTYPE');
-  };
+  }
   D.clip = function (i, P, anchored, Q, shapeOnly) {   // the visual end (cdrender.py's clip)
     if (!anchored) P = leave(outline(this.al(i)[0], this.box(i)), P, Q);
     return shapeOnly ? P : enter(this.extras(i), Q, P);
@@ -751,7 +751,7 @@
     return [svg, { aliases: aliases, reactions: reactions }];
   }
   var api = { render: render, renderHits: renderHits, Drawing: Drawing, py: py, xml: xml, SQUARE: SQUARE, ANCHOR: ANCHOR, fromFrame: fromFrame, toFrame: toFrame,
-    editPoints: editPoints, unit: unit, onBorder: onBorder, width: width, target: target, plainName: plainName, NAME: NAME, GATE: GATE, ROLE: ROLE };   // GATE: the editor's palette checks its signs against it   // NAME: cd_make.js writes names
+    editPoints: editPoints, unit: unit, onBorder: onBorder, width: width, target: target, plainName: plainName, NAME: NAME, GATE: GATE, ROLE: ROLE, ANCHOR: ANCHOR, anchorAt: anchorAt };   // GATE: the editor's palette checks its signs against it   // NAME: cd_make.js writes names
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.cdrender = api;
 
   if (typeof require !== 'undefined' && typeof module !== 'undefined' && require.main === module) {   // node cdrender.js map.xml out.svg

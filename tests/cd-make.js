@@ -460,6 +460,34 @@ maps.forEach(function (f) {
   colChecks += 6;
 })();
 console.log(colChecks + ' colour checks');
+// ---- 4. where a line's end lands: a place at the species (linkAnchor), a modifier's place at the square ----
+var landChecks = 0;
+(function () {
+  var t = mk.empty(), A = mk.species(t, { cls: 'PROTEIN', name: 'A', box: [100, 100] }); t = A.text;
+  var B = mk.species(t, { cls: 'PROTEIN', name: 'B', box: [400, 100] }); t = B.text;
+  var C = mk.species(t, { cls: 'SIMPLE_MOLECULE', name: 'C', box: [250, 300] }); t = C.text;
+  var r = mk.reaction(t, { type: 'STATE_TRANSITION', from: A.alias, to: B.alias, toAt: 'WNW' });
+  if (!/<celldesigner:baseProduct species="[^"]+" alias="[^"]+">\s*<celldesigner:linkAnchor position="WNW"\/>\s*<\/celldesigner:baseProduct>/.test(r.text)) fault('land: the product\u2019s place not written');
+  var r0 = mk.reaction(t, { type: 'STATE_TRANSITION', from: A.alias, to: B.alias });
+  if (/linkAnchor/.test(r0.text.slice(r0.text.indexOf('<celldesigner:baseProducts>')))) fault('land: a place written with none given');
+  var q = mk.product(r.text, r.reaction, C.alias, 'N');
+  if (!/<celldesigner:productLink [^>]*>\s*<celldesigner:linkAnchor position="N"\/>\s*<celldesigner:connectScheme/.test(q.text)) fault('land: the added product\u2019s place not written');
+  var m = mk.modifier(r.text, r.reaction, C.alias, 'CATALYSIS', 6);
+  if (!/<celldesigner:modification type="CATALYSIS"[^>]*targetLineIndex="-1,6"/.test(m.text)) fault('land: the modifier\u2019s place not written');
+  var d = mk.reduced(t, { type: 'NEGATIVE_INFLUENCE', from: A.alias, to: C.alias, toAt: 'SSE' });
+  if (!/linkAnchor position="SSE"/.test(d.text)) fault('land: the reduced line\u2019s place not written');
+  [function () { mk.reaction(t, { type: 'STATE_TRANSITION', from: A.alias, to: B.alias, toAt: 'UP' }); }, function () { mk.modifier(r.text, r.reaction, C.alias, 'CATALYSIS', 9); }]
+    .forEach(function (f) { try { f(); fault('land: a wrong place taken'); } catch (e) {} });
+  [r.text, q.text, m.text, d.text].forEach(function (x, k) { try { cdr.render(x, { DOMParser: DP }); ed.graphml(x, null, opt); } catch (e) { fault('land: cdrender could not draw case ' + k + ': ' + e.message); } });
+  ['N', 'E', 'SSW'].forEach(function (k) {   // the places cdrender draws a line to are the ones anchorAt gives
+    var P = cdr.anchorAt('PROTEIN', [400, 100, 80, 40], k), F = cdr.ANCHOR[k];
+    if (Math.abs(P[0] - (400 + F[0] * 80)) > 1e-9 || Math.abs(P[1] - (100 + F[1] * 40)) > 1e-9) fault('land: anchorAt ' + k + ' off the rectangle');
+  });
+  var E = cdr.anchorAt('SIMPLE_MOLECULE', [0, 0, 40, 40], 'NE');
+  if (Math.abs(Math.hypot(E[0] - 20, E[1] - 20) - 20) > 1e-9) fault('land: a circle\u2019s place off its circle');
+  landChecks += 12;
+})();
+console.log(landChecks + ' landing checks');
 fs.rmSync(tmp, { recursive: true, force: true });
 console.log(reads.length + ' steps read by cdrender, cd_edit and the converter; ' + maps.length + ' demo maps: ' + (bad ? bad + ' failures' : 'all right'));
 process.exit(bad ? 1 : 0);
