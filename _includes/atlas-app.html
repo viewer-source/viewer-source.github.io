@@ -342,15 +342,15 @@ page, so its styles keep the base they were made on).
   #m2-editwin .m2-ed-pblk { margin: 0 0 8px 6px; }
   #m2-editwin .m2-ed-pblk[hidden] { display: none; }
   #m2-editwin .m2-ed-pblk .m2-ed-phyb { margin: 0; }
-  #m2-editwin .m2-ed-pcols { margin-left: 0; padding: 0 0 8px 6px; border-bottom: 1px solid var(--m2-frame); }   /* the colours of new species as a dropdown above Reduced notation, a separator under it (cdcreate.js) */
+  #m2-editwin .m2-ed-pcols { margin-left: 6px; }   /* the colours of new species as a dropdown above Reduced notation (cdcreate.js) */
   #m2-editwin .m2-ed-pcols[hidden] { display: none; }
   #m2-editwin .m2-ed-palette .m2-ed-pcols .m2-cs-box { display: flex; align-items: center; gap: 6px; width: 100%; height: 24px; box-sizing: border-box; margin: 0; padding: 0 0 0 6px; line-height: 22px; border: 1px solid var(--m2-frame); border-radius: 4px; background: #fff; font: inherit; font-size: 12px; color: var(--m2-text-soft); cursor: pointer; }   /* Grid size's field and arrow, one box */
   #m2-editwin .m2-ed-palette .m2-ed-pcols .m2-cs-box:hover:not(:disabled) { border-color: #70757a; background: #fff; color: var(--m2-text-soft); }
   #m2-editwin .m2-ed-palette .m2-ed-pcols .m2-cs-box svg { flex: none; width: 10px; height: 6px; margin: 0 6px 0 -1px; color: #80868b; }   /* margins, not padding: the page sizes every box border-box */
   #m2-editwin .m2-cs-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; }
-  .m2-cs-sw { display: flex; flex-direction: row-reverse; flex: none; gap: 2px; }   /* three at most, the most used at the right */
+  .m2-cs-sw { display: flex; flex-direction: row-reverse; flex: none; gap: 2px; }   /* five at most, the first at the right; in the menu only */
   .m2-cs-sw i { width: 12px; height: 12px; border-radius: 2px; border: 1px solid #0002; box-sizing: border-box; }
-  .m2-cx.m2-cs-menu { min-width: 0; font-size: 12px; }   /* the colours' list, the right-click menu's look, as wide as the box */
+  .m2-cx.m2-cs-menu { min-width: 0; font-size: 12px; }   /* the colours' list, the right-click menu's look, at least as wide as the box */
   .m2-cx.m2-cs-menu button { padding: 4px 6px 4px 8px; }
   .m2-cx.m2-cs-menu button[aria-checked="true"] { font-weight: 500; }
   /* the circled i beside Connecting arcs (an info glyph): a sign button

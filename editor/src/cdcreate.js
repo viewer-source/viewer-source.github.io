@@ -150,31 +150,37 @@
       var c = m === 'default' && V.schemeFill && window.cdrender ? V.schemeFill('default', window.cdrender.ROLE[cls] || 'white') : null;
       return c ? 'ff' + c.toLowerCase() : null;
     }
-    // the squares of a choice, three, the first at the right (row-reverse). CellDesigner and Default, fixed sets: the
-    // protein's, the simple molecule's and the phenotype's colours. File: the three colours most species on the map have,
-    // the most used first, from the map as it is now (classColours keeps its last answer, so a paint with the map
-    // unchanged costs nothing)
-    var CD_SQ = [['PROTEIN', 'protein'], ['SIMPLE_MOLECULE', 'simple molecule'], ['PHENOTYPE', 'phenotype']];
+    // the squares of a choice in the menu (the box shows its name only: bright colours there would draw the eye from the
+    // map), five at most, the first at the right (row-reverse). CellDesigner and Default, fixed sets: the protein's, simple
+    // molecule's, phenotype's, gene's and RNA's colours, each once. File: the five colours most species on the map have,
+    // the most used first, from the map as it is now (classColours keeps its last answer)
+    var CD_SQ = [['PROTEIN', 'protein'], ['SIMPLE_MOLECULE', 'simple molecule'], ['PHENOTYPE', 'phenotype'], ['GENE', 'gene'], ['RNA', 'RNA']];
     function cdSquares(mode) {
       var sq = function (x, t) { return '<i style="background:#' + x.slice(2) + '" title="' + t + '"></i>'; }, h;
-      if (mode !== 'file') h = CD_SQ.map(function (q) { var x = (mode === 'cd' ? null : cdColourIn(mode, null, q[0])) || cdMk.LOOK[q[0]][2]; return sq(x, q[1] + ', #' + x.slice(2).toUpperCase()); }).join('');
-      else {
+      if (mode !== 'file') {
+        var seen = {};
+        h = CD_SQ.map(function (q) {
+          var x = (mode === 'cd' ? null : cdColourIn(mode, null, q[0])) || cdMk.LOOK[q[0]][2];
+          if (seen[x]) { seen[x].push(q[1]); return null; }
+          seen[x] = [q[1]]; return x;
+        }).filter(Boolean).map(function (x) { return sq(x, seen[x].join(', ') + ', #' + x.slice(2).toUpperCase()); }).join('');
+      } else {
         var n = cd && cd.now ? cdMk.classColours(cd.now) : {}, w = {}, order = [];
         Object.keys(n).forEach(function (cls) { Object.keys(n[cls]).forEach(function (col) { if (!(col in w)) { w[col] = 0; order.push(col); } w[col] += n[cls][col]; }); });
-        h = order.slice().sort(function (a, b) { return w[b] - w[a] || order.indexOf(a) - order.indexOf(b); }).slice(0, 3).map(function (x) { return sq(x, '#' + x.slice(2).toUpperCase() + ', ' + w[x] + ' species'); }).join('');
+        h = order.slice().sort(function (a, b) { return w[b] - w[a] || order.indexOf(a) - order.indexOf(b); }).slice(0, 5).map(function (x) { return sq(x, '#' + x.slice(2).toUpperCase() + ', ' + w[x] + ' species'); }).join('');
       }
       return '<span class="m2-cs-sw">' + h + '</span>';
     }
     function cdColsName(m) { return CD_COLS.filter(function (c) { return c[0] === m; })[0][1]; }
     var csMenu = null, csText = null;   // the menu open, the map's text it was made from
     function csClose() { if (csMenu) { csMenu.remove(); csMenu = null; var bx = pal.querySelector('.m2-cs-box'); if (bx) bx.setAttribute('aria-expanded', 'false'); } }
-    // above the tick box, a separator under it: the choice as a dropdown (the Grid size list's way, core.js), its name and
-    // squares in the box, the three in the menu, each with its squares
+    // above the tick box: the choice as a dropdown (the Grid size list's way, core.js), its name in
+    // the box, the three in the menu, each with its squares
     function cdColsRow() {
       var r = pal.querySelector('.m2-ed-pcols');
       if (!r) {
         r = document.createElement('div'); r.className = 'm2-ed-pblk m2-ed-pcols';
-        r.innerHTML = '<button type="button" class="m2-cs-box" title="Colours of new species" aria-label="Colours of new species" aria-haspopup="menu" aria-expanded="false"><span class="m2-cs-name"></span><span class="m2-cs-now"></span><svg viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.4"/></svg></button>';
+        r.innerHTML = '<button type="button" class="m2-cs-box" title="Colours of new species" aria-label="Colours of new species" aria-haspopup="menu" aria-expanded="false"><span class="m2-cs-name"></span><svg viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.4"/></svg></button>';
         var bx = r.firstChild;
         bx.addEventListener('click', function (e) {
           e.stopPropagation(); bx.blur();   // the editor's keys work at once
@@ -194,7 +200,7 @@
           });
           document.body.appendChild(csMenu);
           var k = csMenu.getBoundingClientRect().width / csMenu.offsetWidth || 1;   // the page's own zoom: a fixed box is placed in its units
-          csMenu.style.left = rc.left / k + 'px'; csMenu.style.top = (rc.bottom + 2) / k + 'px'; csMenu.style.width = rc.width / k + 'px';
+          csMenu.style.left = rc.left / k + 'px'; csMenu.style.top = (rc.bottom + 2) / k + 'px'; csMenu.style.minWidth = rc.width / k + 'px';   // wider when five squares need it
         });
         document.addEventListener('pointerdown', function (e) { if (csMenu && !csMenu.contains(e.target) && !bx.contains(e.target)) csClose(); }, true);
         document.addEventListener('keydown', function (e) { if (csMenu && e.key === 'Escape') { e.stopPropagation(); csClose(); } }, true);   // Escape closes the menu only (not also the tool in hand)
@@ -203,9 +209,8 @@
         pal.querySelector('.m2-ed-pstrict').insertAdjacentElement('beforebegin', r);
       }
       if (csMenu && csText !== (cd && cd.now)) csClose();   // the map changed (an edit, an undo, another map): its squares would be stale
-      var m = cdCols(), h = cdSquares(m), now = r.querySelector('.m2-cs-now');   // written only when changed (every paint comes here)
-      r.querySelector('.m2-cs-name').textContent = cdColsName(m);
-      if (now.dataset.h !== h) { now.dataset.h = h; now.innerHTML = h; }
+      var nm = r.querySelector('.m2-cs-name'), v = cdColsName(cdCols());
+      if (nm.textContent !== v) nm.textContent = v;   // written only when changed (every paint comes here)
       return r;
     }
     function cdSize(cls) { return cls === 'COMPARTMENT' ? [300, 200] : cdMk.LOOK[cls].slice(0, 2); }
