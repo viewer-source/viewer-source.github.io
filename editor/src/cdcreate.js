@@ -17,8 +17,10 @@
       ['UNKNOWN', 'Unknown', '<ellipse cx="12" cy="12" rx="10.5" ry="6" fill="currentColor" fill-opacity=".35" stroke="none"/>'],
       ['PHENOTYPE', 'Phenotype', '<path d="M6 5h12l4.5 7-4.5 7h-12l-4.5-7z"/>'],
       ['DEGRADED', 'Degraded', '<circle cx="12" cy="12" r="8"/><path d="M4 20l16-16"/>'],
-      ['COMPLEX', 'Complex', '<path d="M6 4h12l4 4v8l-4 4h-12l-4-4v-8z"/>'],
-      ['COMPARTMENT', 'Compartment', '<rect x="1.5" y="3" width="21" height="18" rx="4.5"/><rect x="4.5" y="6" width="15" height="12" rx="2.5"/>']];
+      // CellDesigner's own signs for these two, in the palette's weights: the complex with two members inside (its box
+      // with cut corners, square as CellDesigner's button), the compartment's thick double border as a tinted band
+      ['COMPLEX', 'Complex', '<path d="M6 2.5h12l3.5 3.5v12l-3.5 3.5h-12l-3.5-3.5v-12z"/><rect x="6" y="6" width="8.5" height="6.5" rx="1.8" class="in"/><circle cx="15" cy="15" r="3.6" class="in"/>'],
+      ['COMPARTMENT', 'Compartment', '<path fill="currentColor" fill-opacity=".22" fill-rule="evenodd" stroke="none" d="M7 3.5h10a5.5 5.5 0 0 1 5.5 5.5v6a5.5 5.5 0 0 1-5.5 5.5h-10a5.5 5.5 0 0 1-5.5-5.5v-6a5.5 5.5 0 0 1 5.5-5.5zM7.5 7h9a2.5 2.5 0 0 1 2.5 2.5v5a2.5 2.5 0 0 1-2.5 2.5h-9a2.5 2.5 0 0 1-2.5-2.5v-5a2.5 2.5 0 0 1 2.5-2.5z"/><rect x="1.5" y="3.5" width="21" height="17" rx="5.5"/><rect x="5" y="7" width="14" height="10" rx="2.5"/>']];
     // gates as CellDesigner draws them, a circle with its sign (the unknown gate offered too, as SBGN has one)
     var CD_GATES = [['AND', 'AND gate', '&amp;'], ['OR', 'OR gate', '|'], ['NOT', 'NOT gate', '!'], ['UNKNOWN', 'Unknown gate', '?']].map(function (q) {
       return [q[0], q[1], '<circle cx="12" cy="12" r="9"/><text x="12" y="16.2" text-anchor="middle" font-size="11.5">' + q[2] + '</text>'];
