@@ -174,13 +174,13 @@
     function cdColsName(m) { return CD_COLS.filter(function (c) { return c[0] === m; })[0][1]; }
     var csMenu = null, csText = null;   // the menu open, the map's text it was made from
     function csClose() { if (csMenu) { csMenu.remove(); csMenu = null; var bx = pal.querySelector('.m2-cs-box'); if (bx) bx.setAttribute('aria-expanded', 'false'); } }
-    // above the tick box: the choice as a dropdown (the Grid size list's way, core.js), its name in
-    // the box, the three in the menu, each with its squares
+    // under the palette's signs, last (it needs little attention): the choice as a dropdown (the Grid size list's way,
+    // core.js), 'Colour scheme: ' and its name in the box, the three in the menu by name, each with its squares
     function cdColsRow() {
       var r = pal.querySelector('.m2-ed-pcols');
       if (!r) {
         r = document.createElement('div'); r.className = 'm2-ed-pblk m2-ed-pcols';
-        r.innerHTML = '<button type="button" class="m2-cs-box" title="Colours of new species" aria-label="Colours of new species" aria-haspopup="menu" aria-expanded="false"><span class="m2-cs-name"></span><svg viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.4"/></svg></button>';
+        r.innerHTML = '<button type="button" class="m2-cs-box" title="Colours of new species" aria-label="Colours of new species" aria-haspopup="menu" aria-expanded="false"><span class="m2-cs-name"><span class="m2-cs-lab">Colour scheme: </span><span class="m2-cs-val"></span></span><svg viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.4"/></svg></button>';
         var bx = r.firstChild;
         bx.addEventListener('click', function (e) {
           e.stopPropagation(); bx.blur();   // the editor's keys work at once
@@ -200,16 +200,17 @@
           });
           document.body.appendChild(csMenu);
           var k = csMenu.getBoundingClientRect().width / csMenu.offsetWidth || 1;   // the page's own zoom: a fixed box is placed in its units
-          csMenu.style.left = rc.left / k + 'px'; csMenu.style.top = (rc.bottom + 2) / k + 'px'; csMenu.style.minWidth = rc.width / k + 'px';   // wider when five squares need it
+          var up = rc.bottom + 2 + csMenu.offsetHeight * k > window.innerHeight && rc.top - 2 - csMenu.offsetHeight * k > 0;   // above the box when it would leave the window below
+          csMenu.style.left = rc.left / k + 'px'; csMenu.style.top = (up ? rc.top - 2 - csMenu.offsetHeight * k : rc.bottom + 2) / k + 'px'; csMenu.style.minWidth = rc.width / k + 'px';   // wider when five squares need it
         });
         document.addEventListener('pointerdown', function (e) { if (csMenu && !csMenu.contains(e.target) && !bx.contains(e.target)) csClose(); }, true);
         document.addEventListener('keydown', function (e) { if (csMenu && e.key === 'Escape') { e.stopPropagation(); csClose(); } }, true);   // Escape closes the menu only (not also the tool in hand)
         window.addEventListener('resize', csClose);
         document.addEventListener('scroll', function (e) { if (csMenu && !csMenu.contains(e.target)) csClose(); }, true);   // a fixed menu would stay where the box was
-        pal.querySelector('.m2-ed-pstrict').insertAdjacentElement('beforebegin', r);
+        pal.querySelector('.m2-ed-psigns').insertAdjacentElement('afterend', r);
       }
       if (csMenu && csText !== (cd && cd.now)) csClose();   // the map changed (an edit, an undo, another map): its squares would be stale
-      var nm = r.querySelector('.m2-cs-name'), v = cdColsName(cdCols());
+      var nm = r.querySelector('.m2-cs-val'), v = cdColsName(cdCols());
       if (nm.textContent !== v) nm.textContent = v;   // written only when changed (every paint comes here)
       return r;
     }
@@ -462,16 +463,18 @@
         return false;
       } };
 
-    // a sign dragged from the palette: CellDesigner's shape at its size following the pointer (create.js palDrag)
+    // a sign dragged from the palette: CellDesigner's shape at its size following the pointer (create.js palDrag), drawn
+    // as cdrender draws it once dropped (D.shape, outline: RNA slanted by its height, a protein's corners 5, a complex's
+    // cut 5, a degraded circle 3/8 of the width with its stroke), so nothing changes shape on the drop
     function cdGhost(kind) {
       var cls = cdKind(kind), s = cdSize(cls), w = s[0], h = s[1], col = cls === 'COMPARTMENT' ? 'none' : '#' + (cdColour(cd && cd.now, cls) || cdMk.LOOK[cls][2]).slice(2), ink = ' fill="' + col + '" stroke="#000" stroke-width="1"';
       var shape = {
-        PROTEIN: '<rect width="' + w + '" height="' + h + '" rx="6"' + ink + '/>', GENE: '<rect width="' + w + '" height="' + h + '"' + ink + '/>',
-        RNA: '<path d="M' + w * 0.15 + ' 0H' + w + 'L' + w * 0.85 + ' ' + h + 'H0z"' + ink + '/>', SIMPLE_MOLECULE: '<ellipse cx="' + w / 2 + '" cy="' + h / 2 + '" rx="' + w / 2 + '" ry="' + h / 2 + '"' + ink + '/>',
+        PROTEIN: '<rect width="' + w + '" height="' + h + '" rx="5"' + ink + '/>', GENE: '<rect width="' + w + '" height="' + h + '"' + ink + '/>',
+        RNA: '<path d="M' + h + ' 0H' + w + 'L' + (w - h) + ' ' + h + 'H0z"' + ink + '/>', SIMPLE_MOLECULE: '<ellipse cx="' + w / 2 + '" cy="' + h / 2 + '" rx="' + w / 2 + '" ry="' + h / 2 + '"' + ink + '/>',
         UNKNOWN: '<ellipse cx="' + w / 2 + '" cy="' + h / 2 + '" rx="' + w / 2 + '" ry="' + h / 2 + '" fill="' + col + '"/>',
         PHENOTYPE: '<path d="M' + h / 2 + ' 0H' + (w - h / 2) + 'L' + w + ' ' + h / 2 + 'L' + (w - h / 2) + ' ' + h + 'H' + h / 2 + 'L0 ' + h / 2 + 'z"' + ink + '/>',
-        DEGRADED: '<circle cx="' + w / 2 + '" cy="' + h / 2 + '" r="' + w / 2 + '"' + ink + '/><path d="M0 ' + h + 'L' + w + ' 0" stroke="#000"/>',
-        COMPLEX: '<path d="M10 0H' + (w - 10) + 'L' + w + ' 10V' + (h - 10) + 'L' + (w - 10) + ' ' + h + 'H10L0 ' + (h - 10) + 'V10z"' + ink + ' stroke-width="2"/>',
+        DEGRADED: '<circle cx="' + w / 2 + '" cy="' + h / 2 + '" r="' + w * 3 / 8 + '"' + ink + '/><path d="M' + w * 0.7 + ' 0L' + w * 0.3 + ' ' + h + '" stroke="#000"/>',
+        COMPLEX: '<path d="M5 0H' + (w - 5) + 'L' + w + ' 5V' + (h - 5) + 'L' + (w - 5) + ' ' + h + 'H5L0 ' + (h - 5) + 'V5z"' + ink + ' stroke-width="2"/>',
         COMPARTMENT: '<rect width="' + w + '" height="' + h + '" rx="10" fill="none" stroke="#000" stroke-width="2"/><rect x="6" y="6" width="' + (w - 12) + '" height="' + (h - 12) + '" rx="6" fill="none" stroke="#000"/>'
       }[cls];
       return { w: w, h: h, svg: '<svg width="100%" height="100%" viewBox="0 0 ' + w + ' ' + h + '" overflow="visible">' + shape + '</svg>' };
