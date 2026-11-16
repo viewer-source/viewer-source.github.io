@@ -150,19 +150,20 @@
       var c = m === 'default' && V.schemeFill && window.cdrender ? V.schemeFill('default', window.cdrender.ROLE[cls] || 'white') : null;
       return c ? 'ff' + c.toLowerCase() : null;
     }
-    // the squares of a choice: its three most used colours on the map, the most used at the right (row-reverse).
-    // File: the colours the species have; CellDesigner and Default: each palette class's colour, counted by the species of
-    // that class on the map, the unused after in the palette's order. From the map as it is now (classColours keeps its
-    // last answer, so a paint with the map unchanged costs nothing)
+    // the squares of a choice, three, the first at the right (row-reverse). CellDesigner and Default, fixed sets: the
+    // protein's, the simple molecule's and the phenotype's colours. File: the three colours most species on the map have,
+    // the most used first, from the map as it is now (classColours keeps its last answer, so a paint with the map
+    // unchanged costs nothing)
+    var CD_SQ = [['PROTEIN', 'protein'], ['SIMPLE_MOLECULE', 'simple molecule'], ['PHENOTYPE', 'phenotype']];
     function cdSquares(mode) {
-      var n = cd && cd.now ? cdMk.classColours(cd.now) : {}, w = {}, order = [], add = function (col, k) { if (!(col in w)) { w[col] = 0; order.push(col); } w[col] += k; };
-      if (mode === 'file') Object.keys(n).forEach(function (cls) { Object.keys(n[cls]).forEach(function (col) { add(col, n[cls][col]); }); });
-      else Object.keys(cdMk.LOOK).forEach(function (cls) {
-        var k = 0; Object.keys(n[cls] || {}).forEach(function (col) { k += n[cls][col]; });
-        add((mode === 'cd' ? null : cdColourIn(mode, null, cls)) || cdMk.LOOK[cls][2], k);
-      });
-      return '<span class="m2-cs-sw">' + order.slice().sort(function (a, b) { return w[b] - w[a] || order.indexOf(a) - order.indexOf(b); }).slice(0, 3)
-        .map(function (x) { return '<i style="background:#' + x.slice(2) + '" title="#' + x.slice(2).toUpperCase() + (w[x] ? ', ' + w[x] + ' species' : '') + '"></i>'; }).join('') + '</span>';
+      var sq = function (x, t) { return '<i style="background:#' + x.slice(2) + '" title="' + t + '"></i>'; }, h;
+      if (mode !== 'file') h = CD_SQ.map(function (q) { var x = (mode === 'cd' ? null : cdColourIn(mode, null, q[0])) || cdMk.LOOK[q[0]][2]; return sq(x, q[1] + ', #' + x.slice(2).toUpperCase()); }).join('');
+      else {
+        var n = cd && cd.now ? cdMk.classColours(cd.now) : {}, w = {}, order = [];
+        Object.keys(n).forEach(function (cls) { Object.keys(n[cls]).forEach(function (col) { if (!(col in w)) { w[col] = 0; order.push(col); } w[col] += n[cls][col]; }); });
+        h = order.slice().sort(function (a, b) { return w[b] - w[a] || order.indexOf(a) - order.indexOf(b); }).slice(0, 3).map(function (x) { return sq(x, '#' + x.slice(2).toUpperCase() + ', ' + w[x] + ' species'); }).join('');
+      }
+      return '<span class="m2-cs-sw">' + h + '</span>';
     }
     function cdColsName(m) { return CD_COLS.filter(function (c) { return c[0] === m; })[0][1]; }
     var csMenu = null;
