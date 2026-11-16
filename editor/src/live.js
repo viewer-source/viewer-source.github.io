@@ -205,8 +205,6 @@
     // CellDesigner reaction by the drop's code), else copies of the renderer's groups (fullLines); before the
     // editor's own drawing is in the page, plain lines into out. Returns the port being dragged, if any
     function liveLines(out) {
-      // arcs following a move: drawn in full in the picture (after a release they stay as they are until the map is
-      // drawn again); before the editor's own drawing is in the page, as plain lines
       var pk0 = drag && drag.port && drag.port.to ? drag.port : null, lk = new Set(live || []);
       var away = pk0 && (pk0.n2 != null || pk0.free);   // an end going to another node: its line follows as a copy (a CellDesigner glyph keeps its place until the drop)
       if (pk0) { if (!away) liveFmt().glyphs(new Set(), new Set(), null, pk0); (live || []).forEach(function (k) { lk.add(k); }); lk.add(pk0.k); }
@@ -220,7 +218,7 @@
     // the holders growing round a move (liveC: compartments and complexes) follow their live boxes on the picture, on
     // every format: drawn again at once, not only after the drop. skip: nodes drawn by sizeLive (a node resized by its
     // handles). GraphML and SBGN-ML: each holder's own parts reshaped (liveRec, livePut, as a resize shows a node);
-    // CellDesigner: drawn by cdrender's own code (its holders, fmt)
+    // CellDesigner: drawn by cdrender's own code (its holders, liveFmt)
     function liveDraw(skip) {
       if (!gN) return;
       if (liveOrig) Object.keys(liveOrig).forEach(function (i) { if (!liveC || !liveC[i]) undraw(+i); });
@@ -275,7 +273,7 @@
       });
     }
     function liveBack(R) {
-      if (R.back) { R.back(); return; }   // a CellDesigner holder (its holders, fmt)
+      if (R.back) { R.back(); return; }   // a CellDesigner holder (its holders, liveFmt)
       R.was.forEach(function (v, el) {
         if (v[0] != null) el.setAttribute('d', v[0]);
         if (v[1] != null) el.setAttribute('transform', v[1]); else el.removeAttribute('transform');

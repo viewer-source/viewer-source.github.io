@@ -4,7 +4,10 @@
 // listed. Cases: a CellDesigner map shifted out of negative places, then a modifier's species dragged (its reaction
 // drawn live); a complex member dragged out on CellDesigner and SBGN-ML (the complex growing); a member pushed out of a
 // compartment (it grows); a reactant dragged (the process glyph following); the arrow keys held; a node resized by its
-// handles; a line's bend point made by grabbing it. Maps are the site's, read live: the two runs of a case follow each
+// handles. A case whose picture did not change during the move counts as failed (the press missed). Not covered: a port
+// end dragged, Shift drags, a CellDesigner compartment resized, undo during a drag. On CellDesigner maps the live reactions
+// come from a session made while the browser is idle: a run where it is not ready yet draws the fallback, so a lone
+// difference there is run again before it is believed. After the change is committed, pass the commit before it. Maps are the site's, read live: the two runs of a case follow each
 // other, so a map changed on the site between them shows as a difference (run again).
 //   node tests/live-drag.js [commit]        (needs Playwright; run from viewer/; ONLY=<part of a case's name> runs those)
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path'), cp = require('child_process');
@@ -16,7 +19,7 @@ function src(which, rel) {   // a file of the working tree or of the commit
 }
 function editor(which) {   // editor.js joined as Jekyll joins it
   return src(which, 'editor/editor.js').replace(/^---[\s\S]*?---\n/, '').replace(/\{% include_relative (\S+) %\}/g, function (m, f) {
-    try { return src(which, 'editor/' + f); } catch (e) { return ''; }   // a part not in that commit
+    try { return src(which, 'editor/' + f); } catch (e) { if (which === 'now') throw e; return ''; }   // a part not in that commit (live.js before it existed)
   });
 }
 async function open(browser, which, map, wait) {
@@ -42,9 +45,9 @@ function snap(p) {   // the picture and the overlay as they are, numbers to 2 de
     return ((img ? img.outerHTML : '') + '\n' + (ov ? ov.innerHTML : '')).replace(/-?\d+\.\d+/g, function (v) { return String(Math.round(parseFloat(v) * 100) / 100); });
   });
 }
-async function drag(p, id, dx, dy, o) {   // o: { shift, select, at: [fx, fy] share of the box from its centre }
+async function drag(p, id, dx, dy, o) {   // o: { shift, select, at: true to press at the box's bottom right corner (a handle) }
   o = o || {};
-  var r = await centre(p, id), x = r[0], y = r[1];
+  var before = await snap(p), r = await centre(p, id), x = r[0], y = r[1];
   if (o.at) { x = r[2] - 1; y = r[3] - 1; }
   if (o.select !== false) { await p.mouse.click(r[0], r[1]); await p.waitForTimeout(250); }
   if (o.shift) await p.keyboard.down('Shift');
@@ -52,14 +55,17 @@ async function drag(p, id, dx, dy, o) {   // o: { shift, select, at: [fx, fy] sh
   for (var k = 1; k <= 12; k++) { await p.mouse.move(x + dx * k / 12, y + dy * k / 12); await p.waitForTimeout(25); }
   await p.waitForTimeout(250);
   var mid = await snap(p);
+  if (mid === before) mid = 'NOTHING MOVED';
   await p.mouse.up(); if (o.shift) await p.keyboard.up('Shift');
   await p.waitForTimeout(3000);
   return [mid, await snap(p)];
 }
 async function keys(p, id, key, n) {
   var r = await centre(p, id); await p.mouse.click(r[0], r[1]); await p.waitForTimeout(250);
+  var before = await snap(p);
   for (var k = 0; k < n; k++) { await p.keyboard.down(key); await p.waitForTimeout(20); }
   var mid = await snap(p);
+  if (mid === before) mid = 'NOTHING MOVED';
   await p.keyboard.up(key); await p.waitForTimeout(3000);
   return [mid, await snap(p)];
 }
@@ -87,6 +93,7 @@ var CASES = [
     ran++;
     var diff = ['mid-move', 'after release', 'page errors'].filter(function (w, j) { return out.ref[j] !== out.now[j]; });
     if (out.now[2]) diff.push('errors now: ' + out.now[2].slice(0, 200));
+    if (out.now[0] === 'NOTHING MOVED' || out.ref[0] === 'NOTHING MOVED') diff.push('nothing moved during the move');
     if (diff.length) { bad++; console.log('DIFF', c[0] + ':', diff.join(', ')); } else console.log('same', c[0]);
   }
   await browser.close();
