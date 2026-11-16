@@ -41,7 +41,7 @@
       ['INHIBITION', 'Inhibition', '<path d="M12 1.5v19M7 20.5h10"/>'],
       ['PHYSICAL_STIMULATION', 'Physical stimulation', '<path d="M12 1.5v12.5M7.5 14h9l-4.5 7.5z"/>'],
       ['MODULATION', 'Modulation', '<path d="M12 1.5v11M12 12.5l3.5 4.5-3.5 4.5-3.5-4.5z"/>'],
-      ['TRIGGER', 'Trigger', '<path d="M12 1.5v12.5M7 12.5h10M7.5 15h9l-4.5 7z"/>']].map(function (q) {
+      ['TRIGGER', 'Trigger', '<path d="M12 1.5v13.5M7 10.5h10M7.5 15h9l-4.5 7z"/>']].map(function (q) {
       return [q[0], q[1] + (q[0] === 'CATALYSIS' ? ' (onto a reaction)' : ' (onto a reaction, or between species with Reduced notation ticked)'), q[2]];
     });
     // reduced notation's types, each named as the modifier whose sign draws it (no positive influence: CellDesigner's open
