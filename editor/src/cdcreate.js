@@ -142,7 +142,7 @@
     // the colours of new species (the Colours line under the palette's tick box, kept in this browser for every
     // CellDesigner map): CellDesigner's own (cd_make LOOK, the default), the file's (the colour most species of the class
     // already have on the map, else CellDesigner's) or the viewer's Default scheme (Settings, Map colours) by the class's role
-    var CD_COL_KEY = 'atlas-edit-cd-colours', CD_COLS = [['cd', 'CellDesigner'], ['file', 'File'], ['default', 'Default']];
+    var CD_COL_KEY = 'atlas-edit-cd-colours', CD_COLS = [['cd', 'CellDesigner', 'CellDesigner\u2019s own colours'], ['file', 'File', 'the colour most species of their class have on this map'], ['default', 'Default', 'the viewer\u2019s Default colours']];
     function cdCols() { var v = null; try { v = localStorage.getItem(CD_COL_KEY); } catch (e) {} return v === 'file' || v === 'default' ? v : 'cd'; }
     function cdColour(t, cls) { return cdColourIn(cdCols(), t, cls); }   // eight hex digits for cd_make, or null for CellDesigner's own
     function cdColourIn(m, t, cls) {
@@ -166,24 +166,24 @@
       return '<span class="m2-cs-sw">' + h + '</span>';
     }
     function cdColsName(m) { return CD_COLS.filter(function (c) { return c[0] === m; })[0][1]; }
-    var csMenu = null;
-    function csClose() { if (csMenu) { csMenu.remove(); csMenu = null; } }
+    var csMenu = null, csText = null;   // the menu open, the map's text it was made from
+    function csClose() { if (csMenu) { csMenu.remove(); csMenu = null; var bx = pal.querySelector('.m2-cs-box'); if (bx) bx.setAttribute('aria-expanded', 'false'); } }
     // above the tick box, a separator under it: the choice as a dropdown (the Grid size list's way, core.js), its name and
     // squares in the box, the three in the menu, each with its squares
     function cdColsRow() {
       var r = pal.querySelector('.m2-ed-pcols');
       if (!r) {
         r = document.createElement('div'); r.className = 'm2-ed-pblk m2-ed-pcols';
-        r.innerHTML = '<button type="button" class="m2-cs-box" title="Colours of new species" aria-label="Colours of new species" aria-haspopup="menu"><span class="m2-cs-name"></span><span class="m2-cs-now"></span><svg viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.4"/></svg></button>';
+        r.innerHTML = '<button type="button" class="m2-cs-box" title="Colours of new species" aria-label="Colours of new species" aria-haspopup="menu" aria-expanded="false"><span class="m2-cs-name"></span><span class="m2-cs-now"></span><svg viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.4"/></svg></button>';
         var bx = r.firstChild;
         bx.addEventListener('click', function (e) {
           e.stopPropagation(); bx.blur();   // the editor's keys work at once
           if (csMenu) { csClose(); return; }
           var rc = bx.getBoundingClientRect(), m = cdCols();
-          csMenu = document.createElement('div'); csMenu.className = 'm2-cx m2-cs-menu'; csMenu.setAttribute('role', 'menu');
+          csMenu = document.createElement('div'); csMenu.className = 'm2-cx m2-cs-menu'; csMenu.setAttribute('role', 'menu'); csText = cd && cd.now; bx.setAttribute('aria-expanded', 'true');
           CD_COLS.forEach(function (c) {
             var b = document.createElement('button'); b.type = 'button'; b.setAttribute('role', 'menuitemradio'); b.setAttribute('aria-checked', String(c[0] === m));
-            b.title = 'New species in ' + (c[0] === 'cd' ? 'CellDesigner\u2019s own colours' : c[0] === 'file' ? 'the colour most species of their class have on this map' : 'the viewer\u2019s Default colours');
+            b.title = 'New species in ' + c[2];
             b.innerHTML = '<span>' + c[1] + '</span>' + cdSquares(c[0]);
             b.addEventListener('click', function (ev) {
               ev.stopPropagation(); csClose();
@@ -197,10 +197,12 @@
           csMenu.style.left = rc.left / k + 'px'; csMenu.style.top = (rc.bottom + 2) / k + 'px'; csMenu.style.width = rc.width / k + 'px';
         });
         document.addEventListener('pointerdown', function (e) { if (csMenu && !csMenu.contains(e.target) && !bx.contains(e.target)) csClose(); }, true);
-        document.addEventListener('keydown', function (e) { if (csMenu && e.key === 'Escape') csClose(); }, true);
+        document.addEventListener('keydown', function (e) { if (csMenu && e.key === 'Escape') { e.stopPropagation(); csClose(); } }, true);   // Escape closes the menu only (not also the tool in hand)
         window.addEventListener('resize', csClose);
+        document.addEventListener('scroll', function (e) { if (csMenu && !csMenu.contains(e.target)) csClose(); }, true);   // a fixed menu would stay where the box was
         pal.querySelector('.m2-ed-pstrict').insertAdjacentElement('beforebegin', r);
       }
+      if (csMenu && csText !== (cd && cd.now)) csClose();   // the map changed (an edit, an undo, another map): its squares would be stale
       var m = cdCols(), h = cdSquares(m), now = r.querySelector('.m2-cs-now');   // written only when changed (every paint comes here)
       r.querySelector('.m2-cs-name').textContent = cdColsName(m);
       if (now.dataset.h !== h) { now.dataset.h = h; now.innerHTML = h; }

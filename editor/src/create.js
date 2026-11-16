@@ -305,6 +305,7 @@
     function palOn() { return on && V.current === map && !!sb && !!sbJs && V.level === 'full'; }
     function palShow() {
       var cdp_ = cdPal(), show = palOn() || cdp_;   // a CellDesigner map: its own set (cdcreate.js)
+      if (!cdp_) csClose();   // the CellDesigner colours' menu (cdcreate.js) closed with its palette
       if (cdp_) cdFill();
       else if (show) { palSync(); palFill(); }   // palFill: a process added or removed turns the SBGN view off or on
       pal.hidden = !show;
