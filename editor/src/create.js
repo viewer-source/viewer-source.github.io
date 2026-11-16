@@ -386,8 +386,21 @@
     }
     // the joins of joinPlan written (SBGN-ML: into the editor's GraphML; CellDesigner: into the file, the GraphML made again
     // from it), the selection kept; returns the ids of the complexes that took a member
+    // a glyph joining a complex where it would lie on a member is put first under the members, its left side on theirs
+    // (Pack keeps members where they are and would leave the two on top of each other), with what it holds
+    function joinBeside(id, cid) {
+      var at = {}; nodes2.forEach(function (n, k) { at[n.id] = k; });
+      var i = at[id], c = at[cid];
+      if (i == null || c == null) return;
+      var b = boxOf(i), ms = nodes2.map(function (n, k) { return k; }).filter(function (k) { return nodes2[k].up === c && k !== i; });
+      if (!ms.some(function (k) { return overlap(boxOf(k), b); })) return;
+      var u = ms.map(boxOf).reduce(function (a, q) { return [Math.min(a[0], q[0]), Math.max(a[1], q[1] + q[3])]; }, [Infinity, -Infinity]), dx = u[0] - b[0], dy = u[1] + 4 - b[1], nb = {};
+      nodes2.forEach(function (n, k) { if (k === i || under(k, i)) { var q = boxOf(k); nb[k] = [q[0] + dx, q[1] + dy, q[2], q[3]]; } });
+      setBoxes(nb);
+    }
     function joinDo(joins) {
       if (!joins.length) return [];
+      joins.forEach(function (q) { joinBeside(q[0], q[1]); });
       var sel = selN.map(function (i) { return nodes2[i].id; }), done = [];
       if (cd) {
         var t = cdJs.draw(cd.base, text)[1];
