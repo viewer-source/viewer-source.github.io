@@ -150,33 +150,59 @@
       var c = m === 'default' && V.schemeFill && window.cdrender ? V.schemeFill('default', window.cdrender.ROLE[cls] || 'white') : null;
       return c ? 'ff' + c.toLowerCase() : null;
     }
-    function cdColsRow() {   // a list above the tick box, one row each: a radio button, the name, its protein's and simple molecule's colours (as Settings' Map colours)
+    // the squares of a choice: its three most used colours on the map, the most used at the right (row-reverse).
+    // File: the colours the species have; CellDesigner and Default: each palette class's colour, counted by the species of
+    // that class on the map, the unused after in the palette's order. From the map as it is now (classColours keeps its
+    // last answer, so a paint with the map unchanged costs nothing)
+    function cdSquares(mode) {
+      var n = cd && cd.now ? cdMk.classColours(cd.now) : {}, w = {}, order = [], add = function (col, k) { if (!(col in w)) { w[col] = 0; order.push(col); } w[col] += k; };
+      if (mode === 'file') Object.keys(n).forEach(function (cls) { Object.keys(n[cls]).forEach(function (col) { add(col, n[cls][col]); }); });
+      else Object.keys(cdMk.LOOK).forEach(function (cls) {
+        var k = 0; Object.keys(n[cls] || {}).forEach(function (col) { k += n[cls][col]; });
+        add((mode === 'cd' ? null : cdColourIn(mode, null, cls)) || cdMk.LOOK[cls][2], k);
+      });
+      return '<span class="m2-cs-sw">' + order.slice().sort(function (a, b) { return w[b] - w[a] || order.indexOf(a) - order.indexOf(b); }).slice(0, 3)
+        .map(function (x) { return '<i style="background:#' + x.slice(2) + '" title="#' + x.slice(2).toUpperCase() + (w[x] ? ', ' + w[x] + ' species' : '') + '"></i>'; }).join('') + '</span>';
+    }
+    function cdColsName(m) { return CD_COLS.filter(function (c) { return c[0] === m; })[0][1]; }
+    var csMenu = null;
+    function csClose() { if (csMenu) { csMenu.remove(); csMenu = null; } }
+    // above the tick box, a separator under it: the choice as a dropdown (the Grid size list's way, core.js), its name and
+    // squares in the box, the three in the menu, each with its squares
+    function cdColsRow() {
       var r = pal.querySelector('.m2-ed-pcols');
       if (!r) {
-        r = document.createElement('div'); r.className = 'm2-ed-pblk m2-ed-pcols'; r.setAttribute('role', 'radiogroup'); r.setAttribute('aria-label', 'Colours of new species'); r.title = 'Colours of new species';
-        r.innerHTML = CD_COLS.map(function (c) { return '<label class="m2-ed-phyb" title="New species in ' + (c[0] === 'cd' ? 'CellDesigner\u2019s own colours' : c[0] === 'file' ? 'the colour most species of their class have on this map' : 'the viewer\u2019s Default colours') + '"><input type="radio" name="m2-ed-pcols" value="' + c[0] + '"><span>' + c[1] + '</span><span class="m2-sw" data-for="' + c[0] + '"></span></label>'; }).join('');
-        r.addEventListener('change', function (e) { try { if (e.target.value === 'cd') localStorage.removeItem(CD_COL_KEY); else localStorage.setItem(CD_COL_KEY, e.target.value); } catch (er) {} });
-        r.addEventListener('click', function (e) { if (e.target.tagName === 'INPUT') e.target.blur(); });   // also on the one already chosen (no change): the editor's keys work at once
-        pal.querySelector('.m2-ed-pstrict').insertAdjacentElement('beforebegin', r);
-        var m = cdCols();
-        Array.prototype.forEach.call(r.querySelectorAll('input'), function (x) { x.checked = x.value === m; });
-      }
-      // the squares: each choice's three most used colours on the map, the most used at the right (the CSS hides any that
-      // would reach the name). File: the colours the species have; CellDesigner and Default: each palette class's
-      // colour, counted by the species of that class on the map, the unused after in the palette's order. From the map as
-      // it is now (classColours keeps its last answer, so a paint with the map unchanged costs nothing; written only when changed)
-      var n = cd && cd.now ? cdMk.classColours(cd.now) : {};
-      CD_COLS.forEach(function (c) {
-        var w = {}, order = [], add = function (col, k) { if (!(col in w)) { w[col] = 0; order.push(col); } w[col] += k; };
-        if (c[0] === 'file') Object.keys(n).forEach(function (cls) { Object.keys(n[cls]).forEach(function (col) { add(col, n[cls][col]); }); });
-        else Object.keys(cdMk.LOOK).forEach(function (cls) {
-          var k = 0; Object.keys(n[cls] || {}).forEach(function (col) { k += n[cls][col]; });
-          add((c[0] === 'cd' ? null : cdColourIn(c[0], null, cls)) || cdMk.LOOK[cls][2], k);
+        r = document.createElement('div'); r.className = 'm2-ed-pblk m2-ed-pcols';
+        r.innerHTML = '<button type="button" class="m2-cs-box" title="Colours of new species" aria-label="Colours of new species" aria-haspopup="menu"><span class="m2-cs-name"></span><span class="m2-cs-now"></span><svg viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.4"/></svg></button>';
+        var bx = r.firstChild;
+        bx.addEventListener('click', function (e) {
+          e.stopPropagation(); bx.blur();   // the editor's keys work at once
+          if (csMenu) { csClose(); return; }
+          var rc = bx.getBoundingClientRect(), m = cdCols();
+          csMenu = document.createElement('div'); csMenu.className = 'm2-cx m2-cs-menu'; csMenu.setAttribute('role', 'menu');
+          CD_COLS.forEach(function (c) {
+            var b = document.createElement('button'); b.type = 'button'; b.setAttribute('role', 'menuitemradio'); b.setAttribute('aria-checked', String(c[0] === m));
+            b.title = 'New species in ' + (c[0] === 'cd' ? 'CellDesigner\u2019s own colours' : c[0] === 'file' ? 'the colour most species of their class have on this map' : 'the viewer\u2019s Default colours');
+            b.innerHTML = '<span>' + c[1] + '</span>' + cdSquares(c[0]);
+            b.addEventListener('click', function (ev) {
+              ev.stopPropagation(); csClose();
+              try { if (c[0] === 'cd') localStorage.removeItem(CD_COL_KEY); else localStorage.setItem(CD_COL_KEY, c[0]); } catch (er) {}
+              cdColsRow();
+            });
+            csMenu.appendChild(b);
+          });
+          document.body.appendChild(csMenu);
+          var k = csMenu.getBoundingClientRect().width / csMenu.offsetWidth || 1;   // the page's own zoom: a fixed box is placed in its units
+          csMenu.style.left = rc.left / k + 'px'; csMenu.style.top = (rc.bottom + 2) / k + 'px'; csMenu.style.width = rc.width / k + 'px';
         });
-        var cols = order.slice().sort(function (a, b) { return w[b] - w[a] || order.indexOf(a) - order.indexOf(b); }).slice(0, 3);
-        var sw = r.querySelector('[data-for="' + c[0] + '"]'), h = cols.map(function (x) { return '<i style="background:#' + x.slice(2) + '" title="#' + x.slice(2).toUpperCase() + (w[x] ? ', ' + w[x] + ' species' : '') + '"></i>'; }).join('');
-        if (sw.dataset.h !== h) { sw.dataset.h = h; sw.innerHTML = h; }
-      });
+        document.addEventListener('pointerdown', function (e) { if (csMenu && !csMenu.contains(e.target) && !bx.contains(e.target)) csClose(); }, true);
+        document.addEventListener('keydown', function (e) { if (csMenu && e.key === 'Escape') csClose(); }, true);
+        window.addEventListener('resize', csClose);
+        pal.querySelector('.m2-ed-pstrict').insertAdjacentElement('beforebegin', r);
+      }
+      var m = cdCols(), h = cdSquares(m), now = r.querySelector('.m2-cs-now');   // written only when changed (every paint comes here)
+      r.querySelector('.m2-cs-name').textContent = cdColsName(m);
+      if (now.dataset.h !== h) { now.dataset.h = h; now.innerHTML = h; }
       return r;
     }
     function cdSize(cls) { return cls === 'COMPARTMENT' ? [300, 200] : cdMk.LOOK[cls].slice(0, 2); }

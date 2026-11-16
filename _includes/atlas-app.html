@@ -342,11 +342,17 @@ page, so its styles keep the base they were made on).
   #m2-editwin .m2-ed-pblk { margin: 0 0 8px 6px; }
   #m2-editwin .m2-ed-pblk[hidden] { display: none; }
   #m2-editwin .m2-ed-pblk .m2-ed-phyb { margin: 0; }
-  #m2-editwin .m2-ed-pcols { margin-left: 0; padding: 0 0 6px 6px; border-bottom: 1px solid var(--m2-frame); font-size: 12px; color: var(--m2-text-soft); }   /* a list above Reduced notation, a separator under it: CellDesigner, File, Default, each with its colours on the right (cdcreate.js) */
+  #m2-editwin .m2-ed-pcols { margin-left: 0; padding: 0 0 8px 6px; border-bottom: 1px solid var(--m2-frame); }   /* the colours of new species as a dropdown above Reduced notation, a separator under it (cdcreate.js) */
   #m2-editwin .m2-ed-pcols[hidden] { display: none; }
-  #m2-editwin .m2-ed-pcols .m2-ed-phyb { display: flex; width: 100%; margin: 0 0 3px; }
-  #m2-editwin .m2-ed-pcols .m2-sw { display: flex; flex-direction: row-reverse; flex-wrap: wrap; flex: 1 1 0; min-width: 0; height: 12px; overflow: hidden; gap: 2px; margin-left: 8px; padding-right: 6px; }   /* three at most, the most used at the right; one that would reach the name wraps out of sight */
-  #m2-editwin .m2-ed-pcols .m2-sw i { width: 12px; height: 12px; border-radius: 2px; border: 1px solid #0002; box-sizing: border-box; }
+  #m2-editwin .m2-ed-palette .m2-ed-pcols .m2-cs-box { display: flex; align-items: center; gap: 6px; width: 100%; height: 24px; box-sizing: border-box; margin: 0; padding: 0 0 0 6px; line-height: 22px; border: 1px solid var(--m2-frame); border-radius: 4px; background: #fff; font: inherit; font-size: 12px; color: var(--m2-text-soft); cursor: pointer; }   /* Grid size's field and arrow, one box */
+  #m2-editwin .m2-ed-palette .m2-ed-pcols .m2-cs-box:hover:not(:disabled) { border-color: #70757a; background: #fff; color: var(--m2-text-soft); }
+  #m2-editwin .m2-ed-palette .m2-ed-pcols .m2-cs-box svg { flex: none; width: 10px; height: 6px; margin: 0 6px 0 -1px; color: #80868b; }   /* margins, not padding: the page sizes every box border-box */
+  #m2-editwin .m2-cs-name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: left; }
+  .m2-cs-sw { display: flex; flex-direction: row-reverse; flex: none; gap: 2px; }   /* three at most, the most used at the right */
+  .m2-cs-sw i { width: 12px; height: 12px; border-radius: 2px; border: 1px solid #0002; box-sizing: border-box; }
+  .m2-cx.m2-cs-menu { min-width: 0; font-size: 12px; }   /* the colours' list, the right-click menu's look, as wide as the box */
+  .m2-cx.m2-cs-menu button { padding: 4px 6px 4px 8px; }
+  .m2-cx.m2-cs-menu button[aria-checked="true"] { font-weight: 500; }
   /* the circled i beside Connecting arcs (an info glyph): a sign button
      opening How to edit at its section; no shade under the pointer or open. Small and light:
      a 12 px sign, thin ring, the sign buttons' grey, in a 16 px hit area */

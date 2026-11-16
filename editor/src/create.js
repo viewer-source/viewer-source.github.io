@@ -255,7 +255,7 @@
       var k = palKey();
       var lang = palLangNow(), look = palLookNow();
       var pn = pal.querySelector('.m2-ed-pnot'); pn.hidden = false; pn.style.display = '';   // hidden on a CellDesigner map (cdFill)
-      var pc = pal.querySelector('.m2-ed-pcols'); if (pc) pc.hidden = true;   // the CellDesigner colours line (cdcreate.js)
+      var pc = pal.querySelector('.m2-ed-pcols'); if (pc) { pc.hidden = true; csClose(); }   // the CellDesigner colours' dropdown and its menu (cdcreate.js)
       Array.prototype.forEach.call(pal.querySelectorAll('[data-lang]'), function (b) { b.setAttribute('aria-pressed', String(b.dataset.lang === lang)); });
       Array.prototype.forEach.call(pal.querySelectorAll('[data-look]'), function (b) { b.setAttribute('aria-checked', String(b.dataset.look === look)); });
       pal.querySelector('.m2-ed-plook').hidden = !palViews();
