@@ -283,28 +283,33 @@
     var key = function (a) { var b = find(a, 'cd:bounds'); return -F(get(b, 'w')) * F(get(b, 'h')); };
     cs = cs.map(function (a) { return [a, key(a)]; }).sort(function (p, q) { return p[1] - q[1]; }).map(function (p) { return p[0]; });
     cs.forEach(function (a) {
-      var b = find(a, 'cd:bounds');
-      if (!b) return;
+      if (!find(a, 'cd:bounds')) return;
       if (self.GROUPS) self.out.push('<g data-n="' + escape(get(a, 'id')) + '">');
-      var x = F(get(b, 'x')), y = F(get(b, 'y')), w = F(get(b, 'w')), h = F(get(b, 'h'));
-      var dl = find(a, 'cd:doubleLine');
-      var t = dl ? F(get(dl, 'thickness', 12)) : 12, ow = dl ? F(get(dl, 'outerWidth', 2)) : 2, iw = dl ? F(get(dl, 'innerWidth', 1)) : 1;
-      var fill = colour(get(find(a, 'cd:paint'), 'color'))[0];
-      var rgb = [1, 3, 5].map(function (k) { return parseInt(fill.slice(k, k + 2), 16); }), ink = Math.min.apply(null, rgb) > 230 ? '#000' : fill;
-      if (text(find(a, 'cd:class')) === 'OVAL') {
-        self.out.push('<ellipse cx="' + fmt(x + w / 2) + '" cy="' + fmt(y + h / 2) + '" rx="' + fmt(w / 2 - t / 2) + '" ry="' + fmt(h / 2 - t / 2) + '" fill="none" stroke="' + fill + '" stroke-opacity="0.25" stroke-width="' + fmt(t) + '"/>');
-        self.out.push('<ellipse cx="' + fmt(x + w / 2) + '" cy="' + fmt(y + h / 2) + '" rx="' + fmt(w / 2) + '" ry="' + fmt(h / 2) + '" fill="none" stroke="' + ink + '" stroke-width="' + fmt(ow) + '"/>');
-        self.out.push('<ellipse cx="' + fmt(x + w / 2) + '" cy="' + fmt(y + h / 2) + '" rx="' + fmt(w / 2 - t) + '" ry="' + fmt(h / 2 - t) + '" fill="none" stroke="' + ink + '" stroke-width="' + fmt(iw) + '"/>');
-      } else {
-        self.out.push('<path d="' + rrect(x, y, w, h, 20) + ' ' + rrect(x + t, y + t, w - 2 * t, h - 2 * t, 14) + '" fill="' + fill + '" fill-opacity="0.25" fill-rule="evenodd"/>');
-        self.out.push('<rect x="' + fmt(x) + '" y="' + fmt(y) + '" width="' + fmt(w) + '" height="' + fmt(h) + '" rx="20" fill="none" stroke="' + ink + '" stroke-width="' + fmt(ow) + '"/>');
-        self.out.push('<rect x="' + fmt(x + t) + '" y="' + fmt(y + t) + '" width="' + fmt(w - 2 * t) + '" height="' + fmt(h - 2 * t) + '" rx="14" fill="none" stroke="' + ink + '" stroke-width="' + fmt(iw) + '"/>');
-      }
-      var np = find(a, 'cd:namePoint');
-      if (np) self.nameLines(has(self.cnames, get(a, 'compartment')) ? self.cnames[get(a, 'compartment')] : '').forEach(function (line, k) {
-        self.text(line, F(get(np, 'x')), F(get(np, 'y')) + 15.5 + 14 * k, 12, 'start');
-      });
+      self.compartment(a);
       if (self.GROUPS) self.out.push('</g>');
+    });
+  };
+  // one compartment, at its bounds or at box (the editor's live drawing of one growing during a drag: its name moved
+  // with its corner, as cd_edit's place() moves the namePoint)
+  D.compartment = function (a, box) {
+    var self = this, b = find(a, 'cd:bounds'), x0 = F(get(b, 'x')), y0 = F(get(b, 'y'));
+    var x = box ? box[0] : x0, y = box ? box[1] : y0, w = box ? box[2] : F(get(b, 'w')), h = box ? box[3] : F(get(b, 'h'));
+    var dl = find(a, 'cd:doubleLine');
+    var t = dl ? F(get(dl, 'thickness', 12)) : 12, ow = dl ? F(get(dl, 'outerWidth', 2)) : 2, iw = dl ? F(get(dl, 'innerWidth', 1)) : 1;
+    var fill = colour(get(find(a, 'cd:paint'), 'color'))[0];
+    var rgb = [1, 3, 5].map(function (k) { return parseInt(fill.slice(k, k + 2), 16); }), ink = Math.min.apply(null, rgb) > 230 ? '#000' : fill;
+    if (text(find(a, 'cd:class')) === 'OVAL') {
+      self.out.push('<ellipse cx="' + fmt(x + w / 2) + '" cy="' + fmt(y + h / 2) + '" rx="' + fmt(w / 2 - t / 2) + '" ry="' + fmt(h / 2 - t / 2) + '" fill="none" stroke="' + fill + '" stroke-opacity="0.25" stroke-width="' + fmt(t) + '"/>');
+      self.out.push('<ellipse cx="' + fmt(x + w / 2) + '" cy="' + fmt(y + h / 2) + '" rx="' + fmt(w / 2) + '" ry="' + fmt(h / 2) + '" fill="none" stroke="' + ink + '" stroke-width="' + fmt(ow) + '"/>');
+      self.out.push('<ellipse cx="' + fmt(x + w / 2) + '" cy="' + fmt(y + h / 2) + '" rx="' + fmt(w / 2 - t) + '" ry="' + fmt(h / 2 - t) + '" fill="none" stroke="' + ink + '" stroke-width="' + fmt(iw) + '"/>');
+    } else {
+      self.out.push('<path d="' + rrect(x, y, w, h, 20) + ' ' + rrect(x + t, y + t, w - 2 * t, h - 2 * t, 14) + '" fill="' + fill + '" fill-opacity="0.25" fill-rule="evenodd"/>');
+      self.out.push('<rect x="' + fmt(x) + '" y="' + fmt(y) + '" width="' + fmt(w) + '" height="' + fmt(h) + '" rx="20" fill="none" stroke="' + ink + '" stroke-width="' + fmt(ow) + '"/>');
+      self.out.push('<rect x="' + fmt(x + t) + '" y="' + fmt(y + t) + '" width="' + fmt(w - 2 * t) + '" height="' + fmt(h - 2 * t) + '" rx="14" fill="none" stroke="' + ink + '" stroke-width="' + fmt(iw) + '"/>');
+    }
+    var np = find(a, 'cd:namePoint');
+    if (np) self.nameLines(has(self.cnames, get(a, 'compartment')) ? self.cnames[get(a, 'compartment')] : '').forEach(function (line, k) {
+      self.text(line, F(get(np, 'x')) + (x - x0), F(get(np, 'y')) + (y - y0) + 15.5 + 14 * k, 12, 'start');
     });
   };
   D.text = function (s, x, y, size, anchor, family, extra) {

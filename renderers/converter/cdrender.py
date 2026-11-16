@@ -185,40 +185,46 @@ class Drawing:
         cs = [a for a in self.ext.iterfind('cd:listOfCompartmentAliases/cd:compartmentAlias', self.NS())]
         cs.sort(key=lambda a: -float(self.f(a, 'cd:bounds').get('w')) * float(self.f(a, 'cd:bounds').get('h')))
         for a in cs:
-            b = self.f(a, 'cd:bounds')
-            if b is None:
+            if self.f(a, 'cd:bounds') is None:
                 continue
             if GROUPS:
                 self.out.append('<g data-n="%s">' % escape(a.get('id')))
-            x, y, w, h = (float(b.get(k)) for k in 'xywh')
-            dl = self.f(a, 'cd:doubleLine')
-            t = float(dl.get('thickness', 12)) if dl is not None else 12
-            ow = float(dl.get('outerWidth', 2)) if dl is not None else 2
-            iw = float(dl.get('innerWidth', 1)) if dl is not None else 1
-            fill, _ = colour(self.f(a, 'cd:paint').get('color'))
-            # the lines in the compartment's colour, black for a near-white one (CellDesigner's PDF exports of the
-            # neuroinflammation map against the SVG exports of the metabolism maps)
-            rgb = [int(fill[k:k + 2], 16) for k in (1, 3, 5)]
-            ink = '#000' if min(rgb) > 230 else fill
-            oval = self.f(a, 'cd:class').text == 'OVAL'
-            if oval:
-                self.out.append('<ellipse cx="%s" cy="%s" rx="%s" ry="%s" fill="none" stroke="%s" stroke-opacity="0.25" stroke-width="%s"/>'
-                                % (fmt(x + w / 2), fmt(y + h / 2), fmt(w / 2 - t / 2), fmt(h / 2 - t / 2), fill, fmt(t)))
-                self.out.append('<ellipse cx="%s" cy="%s" rx="%s" ry="%s" fill="none" stroke="%s" stroke-width="%s"/>' % (fmt(x + w / 2), fmt(y + h / 2), fmt(w / 2), fmt(h / 2), ink, fmt(ow)))
-                self.out.append('<ellipse cx="%s" cy="%s" rx="%s" ry="%s" fill="none" stroke="%s" stroke-width="%s"/>' % (fmt(x + w / 2), fmt(y + h / 2), fmt(w / 2 - t), fmt(h / 2 - t), ink, fmt(iw)))
-            else:
-                # the band between the two lines in the compartment's colour, at a quarter (CellDesigner's
-                # opacity 0.498 on a fill-opacity 0.498)
-                self.out.append('<path d="%s %s" fill="%s" fill-opacity="0.25" fill-rule="evenodd"/>'
-                                % (rrect(x, y, w, h, 20), rrect(x + t, y + t, w - 2 * t, h - 2 * t, 14), fill))
-                self.out.append('<rect x="%s" y="%s" width="%s" height="%s" rx="20" fill="none" stroke="%s" stroke-width="%s"/>' % (fmt(x), fmt(y), fmt(w), fmt(h), ink, fmt(ow)))
-                self.out.append('<rect x="%s" y="%s" width="%s" height="%s" rx="14" fill="none" stroke="%s" stroke-width="%s"/>' % (fmt(x + t), fmt(y + t), fmt(w - 2 * t), fmt(h - 2 * t), ink, fmt(iw)))
-            np_ = self.f(a, 'cd:namePoint')
-            if np_ is not None:
-                for k, line in enumerate(self.name_lines(self.cnames.get(a.get('compartment'), ''))):
-                    self.text(line, float(np_.get('x')), float(np_.get('y')) + 15.5 + 14 * k, anchor='start')
+            self.compartment(a)
             if GROUPS:
                 self.out.append('</g>')
+
+    def compartment(self, a, box=None):
+        # one compartment, at its bounds or at box (the editor's live drawing of one growing during a drag: its name
+        # moved with its corner, as cd_edit's place() moves the namePoint)
+        b = self.f(a, 'cd:bounds')
+        x0, y0 = float(b.get('x')), float(b.get('y'))
+        x, y, w, h = box if box else (float(b.get(k)) for k in 'xywh')
+        dl = self.f(a, 'cd:doubleLine')
+        t = float(dl.get('thickness', 12)) if dl is not None else 12
+        ow = float(dl.get('outerWidth', 2)) if dl is not None else 2
+        iw = float(dl.get('innerWidth', 1)) if dl is not None else 1
+        fill, _ = colour(self.f(a, 'cd:paint').get('color'))
+        # the lines in the compartment's colour, black for a near-white one (CellDesigner's PDF exports of the
+        # neuroinflammation map against the SVG exports of the metabolism maps)
+        rgb = [int(fill[k:k + 2], 16) for k in (1, 3, 5)]
+        ink = '#000' if min(rgb) > 230 else fill
+        oval = self.f(a, 'cd:class').text == 'OVAL'
+        if oval:
+            self.out.append('<ellipse cx="%s" cy="%s" rx="%s" ry="%s" fill="none" stroke="%s" stroke-opacity="0.25" stroke-width="%s"/>'
+                            % (fmt(x + w / 2), fmt(y + h / 2), fmt(w / 2 - t / 2), fmt(h / 2 - t / 2), fill, fmt(t)))
+            self.out.append('<ellipse cx="%s" cy="%s" rx="%s" ry="%s" fill="none" stroke="%s" stroke-width="%s"/>' % (fmt(x + w / 2), fmt(y + h / 2), fmt(w / 2), fmt(h / 2), ink, fmt(ow)))
+            self.out.append('<ellipse cx="%s" cy="%s" rx="%s" ry="%s" fill="none" stroke="%s" stroke-width="%s"/>' % (fmt(x + w / 2), fmt(y + h / 2), fmt(w / 2 - t), fmt(h / 2 - t), ink, fmt(iw)))
+        else:
+            # the band between the two lines in the compartment's colour, at a quarter (CellDesigner's
+            # opacity 0.498 on a fill-opacity 0.498)
+            self.out.append('<path d="%s %s" fill="%s" fill-opacity="0.25" fill-rule="evenodd"/>'
+                            % (rrect(x, y, w, h, 20), rrect(x + t, y + t, w - 2 * t, h - 2 * t, 14), fill))
+            self.out.append('<rect x="%s" y="%s" width="%s" height="%s" rx="20" fill="none" stroke="%s" stroke-width="%s"/>' % (fmt(x), fmt(y), fmt(w), fmt(h), ink, fmt(ow)))
+            self.out.append('<rect x="%s" y="%s" width="%s" height="%s" rx="14" fill="none" stroke="%s" stroke-width="%s"/>' % (fmt(x + t), fmt(y + t), fmt(w - 2 * t), fmt(h - 2 * t), ink, fmt(iw)))
+        np_ = self.f(a, 'cd:namePoint')
+        if np_ is not None:
+            for k, line in enumerate(self.name_lines(self.cnames.get(a.get('compartment'), ''))):
+                self.text(line, float(np_.get('x')) + (x - x0), float(np_.get('y')) + (y - y0) + 15.5 + 14 * k, anchor='start')
 
     def NS(self):
         return NS

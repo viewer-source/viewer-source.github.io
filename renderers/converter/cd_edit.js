@@ -866,6 +866,18 @@
         });
         return out;
       },
+      // a compartment or a species alias drawn at box by cdrender's own code (the editor's holders growing during a drag:
+      // compartments and complexes): what its group holds, as text; null for an id that is neither
+      holder: function (id, box) {
+        d.out = [];
+        if (comps.has(id)) d.compartment(comps.get(id)[1], box);
+        else if (alias0.has(id)) {
+          var a = d.alias.get(id);
+          d.alias.set(id, [a[0], box, a[2], a[3], a[4]]);
+          try { d.node(id); } finally { d.alias.set(id, a); }
+        } else return null;
+        return d.out.join('\n');
+      },
       rest: function (rid) {   // where the reaction's glyph is on the drawing read: [sq, angle, length]
         var o = olds[rid];
         return o && o.glyph ? [o.sq, Math.atan2(o.fl[1], o.fl[0]), Math.hypot(o.Q[0] - o.P[0], o.Q[1] - o.P[1])] : null;

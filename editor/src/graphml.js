@@ -120,23 +120,26 @@
       out.push(svg.slice(at));
       return out.join('');
     }
-    function liveDraw() {   // the compartments' outlines and labels on the picture follow their live boxes (GraphML)
-      if (!gN || cd) return;
+    // the holders growing round a move (liveC: compartments and complexes) follow their live boxes on the picture, on
+    // every format: drawn again at once, not only after the drop. skip: nodes drawn by sizeLive (a node resized by its
+    // handles). GraphML and SBGN-ML: each holder's own parts reshaped (liveRec, livePut, as a resize shows a node);
+    // CellDesigner: drawn by cdrender's own code (cdHolders)
+    function liveDraw(skip) {
+      if (!gN) return;
       if (liveOrig) Object.keys(liveOrig).forEach(function (i) { if (!liveC || !liveC[i]) undraw(+i); });
       if (!liveC) return;
       liveOrig = liveOrig || {};
-      Object.keys(liveC).forEach(function (k) {
-        var i = +k, n = nodes2[i], g = gN[n.id], b = liveC[i], o = boxOf(i);
-        if (!g || !n.comp) return;   // a node resized is drawn by sizeLive (create.js)
-        var first = g.firstElementChild && g.firstElementChild.localName === 'a' ? g.firstElementChild : g;
-        var paths = Array.prototype.filter.call(first.querySelectorAll(':scope > path'), function (x) { return !x.classList.contains('m2-ed-dark'); });
-        if (!liveOrig[i]) liveOrig[i] = paths.map(function (x) { return [x, x.getAttribute('d')]; });
-        var d = outlineD(n.shape, b[0], b[1], b[2], b[3]);
-        paths.forEach(function (x) { x.setAttribute('d', d); });
-        var pos = n.labPos || 'c', h = pos.charAt(pos.length - 1), v = pos.charAt(0);
-        var ddx = /l$/.test(pos) ? b[0] - o[0] : /r$/.test(pos) ? b[0] + b[2] - o[0] - o[2] : b[0] + b[2] / 2 - o[0] - o[2] / 2;
-        var ddy = v === 't' ? b[1] - o[1] : v === 'b' ? b[1] + b[3] - o[1] - o[3] : b[1] + b[3] / 2 - o[1] - o[3] / 2;
-        first.querySelectorAll(':scope > text').forEach(function (t) { t.setAttribute('transform', 'translate(' + f1(ddx) + ' ' + f1(ddy) + ')'); });
+      skip = skip || [];
+      // a holder whose group still carries the keys' shift (its file box already moved, the map not drawn again) is left
+      // as it is: drawn at its live box inside that shift it would show moved twice
+      var ks = Object.keys(liveC).map(Number).filter(function (i) {
+        var n = nodes2[i], g = gN[n.id];
+        return g && skip.indexOf(i) < 0 && (n.comp || n.shape.kind === 'Complex') && (liveOrig[i] || !g.getAttribute('transform'));
+      });
+      if (cd) { cdHolders(ks); return; }
+      ks.forEach(function (i) {
+        if (!liveOrig[i]) liveOrig[i] = liveRec(i);
+        if (liveOrig[i]) livePut(liveOrig[i], liveC[i]);
       });
     }
     // no negative places (negative coordinates are invalid in CellDesigner, so corrected in every format):

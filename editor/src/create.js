@@ -1088,38 +1088,54 @@
       return palOn() && !!n && isMade(n) && n.shape.kind !== 'Process' && n.shape.kind !== 'Operator' && (!u || u.comp);   // a process or gate keeps its size (its antennas)
     }
     var sizeRec = null;   // the node drawn live while it is resized: its parts and how they were
-    function sizeLive(i, nb) {
+    // a node drawn at another box during a drag, on the picture itself until the renderer draws the map again: a node
+    // resized by its handles (sizeLive) and the holders growing round a move (liveDraw) alike. liveRec(i) reads what node
+    // i draws: its shape (two for a multimer), its state variables and units of information (kept at their place on its
+    // box), its texts (moved with the label's place: a compartment's name stays at its top, a complex's at its bottom);
+    // livePut(R, nb) draws it at box nb; liveBack(R) as the renderer drew it
+    function liveRec(i) {
       var g = gN && gN[nodes2[i].id];
-      if (!g) return;
-      if (!sizeRec || sizeRec.i !== i) {
-        sizeOff();
-        var first = g.firstElementChild && g.firstElementChild.localName === 'a' ? g.firstElementChild : g, b = boxOf(i), seen = new Set();
-        var svs = svList(i).map(function (q) {
-          var parts = svParts(i, q); parts.forEach(function (el) { seen.add(el); });
-          return { parts: parts, r: [(q[1][0] - b[0]) / b[2] - 0.5, (q[1][1] - b[1]) / b[3] - 0.5], c: q[1] };
-        });
-        var shapes = [], kids = Array.prototype.filter.call(first.children, function (el) { return !el.classList.contains('m2-ed-dark'); });
-        for (var k = 0; k < kids.length && kids[k].localName === 'path' && !seen.has(kids[k]); k++) shapes.push(kids[k]);   // the shape first (two for a multimer)
-        sizeRec = { i: i, b: b, shapes: shapes, svs: svs, texts: kids.filter(function (el) { return el.localName === 'text' && !seen.has(el); }), was: new Map() };
-        shapes.concat(sizeRec.texts).forEach(function (el) { sizeRec.was.set(el, [el.getAttribute('d'), el.getAttribute('transform')]); });
-        svs.forEach(function (s) { s.parts.forEach(function (el) { sizeRec.was.set(el, [el.getAttribute('d'), el.getAttribute('transform')]); }); });
-      }
-      var R = sizeRec, n = nodes2[i], b0 = R.b, two = R.shapes.length > 1 && n.shape.props.mcount === '2';
+      if (!g) return null;
+      var first = g.firstElementChild && g.firstElementChild.localName === 'a' ? g.firstElementChild : g, b = boxOf(i), seen = new Set();
+      var svs = svList(i).map(function (q) {
+        var parts = svParts(i, q); parts.forEach(function (el) { seen.add(el); });
+        return { parts: parts, r: [(q[1][0] - b[0]) / b[2] - 0.5, (q[1][1] - b[1]) / b[3] - 0.5], c: q[1] };
+      });
+      var shapes = [], kids = Array.prototype.filter.call(first.children, function (el) { return !el.classList.contains('m2-ed-dark'); });
+      for (var k = 0; k < kids.length && kids[k].localName === 'path' && !seen.has(kids[k]); k++) shapes.push(kids[k]);   // the shape first (two for a multimer)
+      var R = { i: i, b: b, shapes: shapes, svs: svs, texts: kids.filter(function (el) { return el.localName === 'text' && !seen.has(el); }), was: new Map() };
+      shapes.concat(R.texts).forEach(function (el) { R.was.set(el, [el.getAttribute('d'), el.getAttribute('transform')]); });
+      svs.forEach(function (s) { s.parts.forEach(function (el) { R.was.set(el, [el.getAttribute('d'), el.getAttribute('transform')]); }); });
+      return R;
+    }
+    function livePut(R, nb) {
+      var n = nodes2[R.i], b0 = R.b, two = R.shapes.length > 1 && n.shape.props.mcount === '2';
       // a multimer's back shape first, its fill and its stroke (each outline is two paths)
       R.shapes.forEach(function (el, k) { var o = two && k < R.shapes.length / 2 ? 6 : 0; el.setAttribute('d', outlineD(n.shape, nb[0] + o, nb[1] + o, nb[2], nb[3])); });
       var tr = function (dx, dy) { return 'translate(' + f1(dx) + ' ' + f1(dy) + ')'; };
-      R.texts.forEach(function (el) { el.setAttribute('transform', tr(nb[0] + nb[2] / 2 - b0[0] - b0[2] / 2, nb[1] + nb[3] / 2 - b0[1] - b0[3] / 2)); });
+      var pos = n.labPos || 'c', v = pos.charAt(0);
+      var ddx = /l$/.test(pos) ? nb[0] - b0[0] : /r$/.test(pos) ? nb[0] + nb[2] - b0[0] - b0[2] : nb[0] + nb[2] / 2 - b0[0] - b0[2] / 2;
+      var ddy = v === 't' ? nb[1] - b0[1] : v === 'b' ? nb[1] + nb[3] - b0[1] - b0[3] : nb[1] + nb[3] / 2 - b0[1] - b0[3] / 2;
+      R.texts.forEach(function (el) { el.setAttribute('transform', tr(ddx, ddy)); });
       R.svs.forEach(function (s) {
         var t = tr(nb[0] + (0.5 + s.r[0]) * nb[2] - s.c[0], nb[1] + (0.5 + s.r[1]) * nb[3] - s.c[1]);
         s.parts.forEach(function (el) { el.setAttribute('transform', t); });
       });
     }
-    function sizeOff() {   // the node drawn as the renderer drew it
-      if (!sizeRec) return;
-      sizeRec.was.forEach(function (v, el) {
+    function liveBack(R) {
+      if (R.back) { R.back(); return; }   // a CellDesigner holder (cdHolders)
+      R.was.forEach(function (v, el) {
         if (v[0] != null) el.setAttribute('d', v[0]);
         if (v[1] != null) el.setAttribute('transform', v[1]); else el.removeAttribute('transform');
       });
+    }
+    function sizeLive(i, nb) {
+      if (!sizeRec || sizeRec.i !== i) { sizeOff(); sizeRec = liveRec(i); }
+      if (sizeRec) livePut(sizeRec, nb);
+    }
+    function sizeOff() {   // the node drawn as the renderer drew it
+      if (!sizeRec) return;
+      liveBack(sizeRec);
       sizeRec = null;
     }
     function setSize(i, nb) {   // node i given the box nb, one undo step with the compartments round it grown to hold it

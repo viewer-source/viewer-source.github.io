@@ -86,7 +86,7 @@
       if (!any) return;
       liveG = out; live = live || new Set();
       Object.keys(out).forEach(function (i) {
-        var o2 = out[i], c0 = o2[4], g = gN[nodes2[i].id];   // moved with its middle and turned with its segment
+        var o2 = out[i], c0 = toPic(o2[4]), g = gN[nodes2[i].id];   // moved with its middle and turned with its segment (about its middle on the picture)
         if (g) g.setAttribute('transform', 'translate(' + f1(c0[0] + o2[0]) + ' ' + f1(c0[1] + o2[1]) + ') rotate(' + f1(o2[2] * 180 / Math.PI) + ') translate(' + f1(-c0[0]) + ' ' + f1(-c0[1]) + ')');
         edges2.forEach(function (e, k) {
           if (e.s !== +i && e.t !== +i) return;
@@ -108,6 +108,26 @@
       return cdLive ? cdLive.s : null;
     }
     function cdSessionSoon() { (window.requestIdleCallback || function (f) { setTimeout(f, 0); })(function () { if (on) cdSession(); }); }
+    // the compartments and complexes growing round a move (ks, from liveDraw), drawn by cdrender's own code at their live
+    // boxes (cd_edit.live's holder) in place of what their groups hold, until the map is drawn again (undraw puts it
+    // back); drawn again only when a box changed, all in one parse per frame
+    function cdHolders(ks) {
+      var S = cdSession();
+      if (!S || !S.holder) return;
+      var todo = ks.filter(function (i) {
+        var R = liveOrig[i], b = liveC[i];
+        return !(R && R.at && R.at.every(function (v, j) { return v === b[j]; }));
+      }).map(function (i) { return [i, S.holder(nodes2[i].id, toPic(liveC[i]))]; }).filter(function (q) { return q[1] != null; });
+      if (!todo.length) return;
+      var doc = new DOMParser().parseFromString('<svg xmlns="http://www.w3.org/2000/svg">' + todo.map(function (q) { return '<g>' + q[1] + '</g>'; }).join('') + '</svg>', 'image/svg+xml').documentElement;
+      var parts = Array.prototype.filter.call(doc.childNodes, function (c) { return c.nodeType === 1; });
+      todo.forEach(function (q, k) {
+        var i = q[0], g = gN[nodes2[i].id];
+        if (!liveOrig[i]) { var kids = Array.prototype.filter.call(g.childNodes, function (c) { return !(c.classList && c.classList.contains('m2-ed-dark')); }); liveOrig[i] = { back: function () { g.replaceChildren.apply(g, kids); } }; }
+        liveOrig[i].at = liveC[i].slice();
+        g.replaceChildren.apply(g, Array.prototype.map.call(parts[k].childNodes, function (c) { return document.importNode(c, true); }));
+      });
+    }
     var RXE = /^(.*)\|(a|b|[rpmi]\d+)$/;   // i: an input of a gate between entities
     function cdLines(ks, pp) {   // false: not drawn this way (the copies of fullLines then)
       if (!cd || !gE) return false;
@@ -121,7 +141,7 @@
         byE[e.id] = k;
         var m = e.id.match(RXE);
         if (!m || !rids.has(m[1])) return;
-        bends.set(e.id, e.pts.map(function (pi) { return pt(pi); }));
+        bends.set(e.id, e.pts.map(function (pi) { return toPic(pt(pi)); }));   // in the picture's frame, as the live session reads the file
         if (!e.path) return;
         var q = ['sx', 'sy', 'tx', 'ty'].map(function (a) { return parseFloat(e.path.getAttribute(a)) || 0; });
         var no = e.path.getAttribute('spot'); if (no) q.push(parseInt(no, 10));   // a modifier's place round its glyph
@@ -133,7 +153,7 @@
       edges2.forEach(function (e) {
         var m = e.id.match(RXE);
         if (!m || !rids.has(m[1])) return;
-        [e.s, e.t].forEach(function (i) { if (i != null && !/\|proc$/.test(nodes2[i].id)) boxes.set(nodes2[i].id, bx(i)); });
+        [e.s, e.t].forEach(function (i) { if (i != null && !/\|proc$/.test(nodes2[i].id)) boxes.set(nodes2[i].id, toPic(bx(i))); });
       });
       var list = Array.from(rids), out = S.frame(boxes, bends, paths, list);
       if (list.some(function (r) { return !out[r]; })) return false;
@@ -159,7 +179,7 @@
         var gi = nodes2.findIndex(function (n) { return n.id === rid + '|proc'; }), r0 = S.rest(rid);
         if (gi >= 0 && r0 && f.sq) {
           liveG = liveG || {};
-          liveG[gi] = [f.sq[0] - r0[0][0], f.sq[1] - r0[0][1], f.ang - r0[1], r0[2] ? f.len / r0[2] : 1, [r0[0][0], r0[0][1], r0[1], r0[2]]];
+          liveG[gi] = [f.sq[0] - r0[0][0], f.sq[1] - r0[0][1], f.ang - r0[1], r0[2] ? f.len / r0[2] : 1, [r0[0][0] + picOff()[0], r0[0][1] + picOff()[1], r0[1], r0[2]]];   // the rest place in the editor's frame, as glyphFollow's
         }
       });
       return true;

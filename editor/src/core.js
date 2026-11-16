@@ -40,6 +40,8 @@
     // compartments are containers: resized by dragging an edge or a handle, and grown by themselves
     // when what they hold is moved past their margin; liveC: their boxes while a drag runs (index in nodes2 -> box),
     // drawn on the picture at once, until the renderer has drawn the map again
+    // liveOrig: per holder drawn live, how to put back what the renderer drew (liveRec's record, or a CellDesigner
+    // holder's { back, at }: liveBack)
     var liveC = null, liveOrig = null;
     // saving to the site: the maps are in the site's data repository (<owner>/<owner>-data, private), the map's source
     // maps/<file>.graphml; after a write the site's build is started (its workflow in <owner>/<owner>.github.io)
@@ -635,15 +637,19 @@
       var nb = ks.length ? grown(ks, bx, boxOf, function (k) { return !!(mv && mv.n.has(k)); }) : {};
       liveC = Object.assign({}, seed || {}, nb);
       if (!Object.keys(liveC).length) liveC = null;
-      liveDraw();
+      liveDraw(seed ? Object.keys(seed).map(Number).filter(function (i) { return !nodes2[i].comp; }) : []);
       return Object.keys(nb).some(function (k) { return nodes2[+k].comp; });   // a compartment grows round what moves
     }
-    function undraw(i) {   // a compartment drawn as the renderer drew it again
-      var g = gN && gN[nodes2[i] && nodes2[i].id];
-      if (liveOrig && liveOrig[i]) liveOrig[i].forEach(function (q) { q[0].setAttribute('d', q[1]); });
-      if (g) g.querySelectorAll('text').forEach(function (t) { t.removeAttribute('transform'); });
+    function undraw(i) {   // a holder drawn as the renderer drew it again
+      if (liveOrig && liveOrig[i]) liveBack(liveOrig[i]);
       if (liveOrig) delete liveOrig[i];
     }
+    // the picture's frame: a CellDesigner picture is in the file's places, which a shift out of negative places
+    // (cd_edit.place) puts x0, y0 from the editor's (the frame's two translates cancel inside the picture); a GraphML
+    // picture is in the editor's own. Everything put into the picture during a move (the selection's fill, the live
+    // reactions, the holders growing) is placed through it, the one place this is reckoned
+    function picOff() { return cd ? [x0, y0] : [0, 0]; }
+    function toPic(b) { var o = picOff(); return b.length > 2 ? [b[0] - o[0], b[1] - o[1], b[2], b[3]] : [b[0] - o[0], b[1] - o[1]]; }
     function liveOff() { liveC = null; if (liveOrig) Object.keys(liveOrig).forEach(function (i) { undraw(+i); }); liveOrig = null; }
     function movedIds(sets) { var a = []; sets.n.forEach(function (i) { a.push(nodes2[i].id); }); return a; }
     // what holds what, freely changed, on every format (the member's place and the compartment rules
@@ -2200,7 +2206,7 @@
           // (and so has a node dragged, from its release until the map is drawn again): the group's shift taken off
           var tm = !mv && (g.getAttribute('transform') || '').match(/translate\(([-\d.e]+)[ ,]+([-\d.e]+)\)/);
           var kx = tm ? +tm[1] : 0, ky = tm ? +tm[2] : 0;
-          var ox = (cd ? x0 : 0) + kx, oy = (cd ? y0 : 0) + ky;
+          var po = picOff(), ox = po[0] + kx, oy = po[1] + ky;
           if (ox || oy) el.setAttribute('transform', 'translate(' + f1(-ox) + ',' + f1(-oy) + ')');
           var first = g.firstElementChild && g.firstElementChild.localName === 'a' ? g.firstElementChild : g;
           // after the node's own shapes, under its state variables and units of information (not over
