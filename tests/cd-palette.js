@@ -39,9 +39,9 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#acly-celld
   var e0 = await es(); await drag(await at(p), await at(m));
   var rx = (await es()).filter(function (i) { return e0.indexOf(i) < 0; }), rid = rx[0] && rx[0].split('|')[0];
   ok('a state transition drawn between two species', rx.length === 2);
-  await page.keyboard.press('Control+z'); await page.waitForTimeout(800); await page.keyboard.press('Control+z'); await page.waitForTimeout(800);
-  ok('undo takes back the reaction, then the complex', !(await es()).some(function (i) { return i.indexOf(rid + '|') === 0; }) && (await ids()).indexOf(cx) < 0 && (await ids()).indexOf(p) >= 0);
-  await page.keyboard.press('Control+y'); await page.waitForTimeout(800); await page.keyboard.press('Control+y'); await page.waitForTimeout(800);
+  for (var u = 0; u < 3; u++) { await page.keyboard.press('Control+z'); await page.waitForTimeout(800); }
+  ok('undo takes back the reaction, the protein in the complex, then the complex', !(await es()).some(function (i) { return i.indexOf(rid + '|') === 0; }) && (await ids()).indexOf(cx) < 0 && (await ids()).indexOf(p) >= 0);
+  for (var u2 = 0; u2 < 3; u2++) { await page.keyboard.press('Control+y'); await page.waitForTimeout(800); }
   ok('redo gives them back', (await es()).some(function (i) { return i.indexOf(rid + '|') === 0; }) && (await ids()).indexOf(cx) >= 0);
   await sign('cd:G_AND'); await page.mouse.click.apply(page.mouse, await at(r)); await page.waitForTimeout(200); await page.mouse.click.apply(page.mouse, await at(g)); await page.waitForTimeout(200);
   ok('the gate asks for its target', /square/.test(await status()));
