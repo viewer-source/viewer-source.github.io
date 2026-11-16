@@ -354,21 +354,23 @@
     // holds it grown); a glyph made from the palette on a complex the same. SBGN-ML maps (not Activity Flow) with
     // sbgn_edit.join, CellDesigner maps with cd_make.join; Full editing only. A glyph with lines is not taken in (a line
     // goes to a complex, never to a member): the whole move is taken back, the reason said (joinPlan's why).
-    // joinPlan(moved) -> { joins: [[id, complex id], ...], why }   moved: the ids the move moved, or the one made
+    // joinPlan(moved, leaving) -> { joins: [[id, complex id], ...], why }   moved: the ids the move moved, or the one made;
+    // leaving: the ids whose holder the move changes (a member taken out with Shift may land on another complex)
     function joinWhy(code, name) {
       return { lines: name + ' has lines, so it stays where it was: a line goes to a complex, never to its member.',
         copies: name + ' is drawn more than once, so it stays where it was: a complex member is drawn once.' }[code] || '';
     }
-    function joinPlan(moved) {
+    function joinPlan(moved, leaving) {
       var out = { joins: [], why: '' };
       if (!on || V.current !== map || V.level !== 'full' || !moved.length || (cd ? !cdMk || !cdMk.join : !palOn() || !sbJs.join || palKind() === 'af' || afSbgn)) return out;
       var at = {}, cx = [], mv0 = {};
       nodes2.forEach(function (n, i) { at[n.id] = i; if (n.shape.kind === 'Complex') cx.push(i); });
       moved.forEach(function (id) { mv0[id] = 1; });
+      var out0 = {}; (leaving || []).forEach(function (id) { out0[id] = 1; });
       var inCx = function (i) { for (var u = nodes2[i].up; u != null; u = nodes2[u].up) if (nodes2[u].shape.kind === 'Complex') return true; return false; };
       moved.forEach(function (id) {
         var i = at[id];
-        if (i == null || out.why || (cd && cdOwn(i)) || (nodes2[i].up != null && mv0[nodes2[nodes2[i].up].id]) || inCx(i)) return;
+        if (i == null || out.why || (cd && cdOwn(i)) || (nodes2[i].up != null && mv0[nodes2[nodes2[i].up].id]) || (!out0[id] && inCx(i))) return;
         var b = boxOf(i), P = [b[0] + b[2] / 2, b[1] + b[3] / 2], best = -1, area = Infinity;
         cx.forEach(function (j) {   // the innermost complex round its centre that does not move with it
           var q = boxOf(j);

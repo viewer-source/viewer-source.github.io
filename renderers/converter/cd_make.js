@@ -813,8 +813,8 @@
   }
   // ---- complex membership: a species dropped on a complex joins it, one taken out with Shift leaves it ----
   // A member is an included species, as the converter's write() writes it (checked in CellDesigner 4.4.2): its alias
-  // carries complexSpeciesAlias (and the complex's compartmentAlias where the complex has one) and its offset in the
-  // complex; its species sits in listOfIncludedSpecies with the notes' text and the RDF in celldesigner:notes, the
+  // carries complexSpeciesAlias and its offset in the complex, no compartmentAlias (its members none either: the
+  // converter's form, as species() makes a member); its species sits in listOfIncludedSpecies with the notes' text and the RDF in celldesigner:notes, the
   // complex's species and the identity (class, reference, residues, name) in celldesigner:annotation. Same ids, so
   // nothing else changes. joinable(t, alias, cx) -> '' or why not: 'kind' (a compartment, a phenotype, a degraded
   // species), 'member' (in a complex already), 'inside' (the complex is inside it), 'copies' (its species drawn more
@@ -832,11 +832,13 @@
   }
   function parts_(t, S) {   // a species' identity, its notes' text (the RDF left out) and its RDF
     var seg = t.slice(S.sp[0], S.sp[1]), rdf = /<rdf:RDF[\s>][\s\S]*?<\/rdf:RDF>/.exec(seg), body = /<body>([\s\S]*?)<\/body>/.exec(seg);
-    return { identity: /<celldesigner:speciesIdentity>[\s\S]*?<\/celldesigner:speciesIdentity>/.exec(seg)[0], rdf: rdf ? rdf[0] : '',
+    var idn = /<celldesigner:speciesIdentity>[\s\S]*?<\/celldesigner:speciesIdentity>/.exec(seg);
+    if (!idn) fail('Its species has no CellDesigner identity in the file.');
+    return { identity: idn[0], rdf: rdf ? rdf[0] : '',
       text: body ? body[1].replace(/<rdf:RDF[\s>][\s\S]*?<\/rdf:RDF>/, '').replace(/\s+$/, '') : '' };
   }
-  function html(text, rdf) { return '<html xmlns="http://www.w3.org/1999/xhtml">\n<head>\n<title/>\n</head>\n' + (text || rdf ? '<body>' + (text ? text + '\n' : '') + (rdf ? rdf + '\n' : '') + '</body>' : '<body/>') + '\n</html>'; }
-  function carry(t, id, ca) {   // the members carrying a compartmentAlias (nested ones too): ca, or none
+  function html(text, rdf) { return '<html xmlns="http://www.w3.org/1999/xhtml">\n<head>\n<title/>\n</head>\n' + (text || rdf ? '<body>' + (rdf ? (text ? text + '\n' : '') + rdf + '\n' : text) + '</body>' : '<body/>') + '\n</html>'; }
+  function carry(t, id, ca) {   // the members carrying a compartmentAlias (nested ones too): ca, or none (null)
     ed.carriers(t, id).forEach(function (m) { if (m[1] !== ca) t = attrs(t, alias(t, m[0]).sp[0], [['compartmentAlias', ca]]); });
     return t;
   }
@@ -852,13 +854,20 @@
     var inc = '<celldesigner:species id="' + S.id + '" name="' + S.name + '">\n<celldesigner:notes>\n' + html(P.text, P.rdf) + '\n</celldesigner:notes>\n<celldesigner:annotation>\n' +
       '<celldesigner:complexSpecies>' + C.species + '</celldesigner:complexSpecies>\n' + P.identity + '\n</celldesigner:annotation>\n</celldesigner:species>';
     t = drop(t, S.sp, ['listOfSpecies']);
-    t = add(t, CD + 'listOfIncludedSpecies', inc, 0, t.indexOf(EXT), after(t, '>', t.indexOf('<celldesigner:modelDisplay ')));
-    if (A.kind === 'complexSpeciesAlias' && A.sp[0] < C.sp[0]) {   // a complex after the complex holding it, as CellDesigner lists them
-      var a = alias(t, id), txt = t.slice(a.sp[0], eol(t, a.sp[1]));
-      t = cut(t, a.sp); var c = alias(t, cx); t = put(t, eol(t, c.sp[1]), eol(t, c.sp[1]), txt);
+    var mine = t.indexOf('<celldesigner:complexSpecies>' + S.id + '</');   // a complex's species before its members' (as CellDesigner lists them)
+    if (mine >= 0) { var o = t.lastIndexOf('<celldesigner:species ', mine); t = put(t, o, o, inc + '\n'); }
+    else t = add(t, CD + 'listOfIncludedSpecies', inc, 0, t.indexOf(EXT), after(t, '>', t.indexOf('<celldesigner:modelDisplay ')));
+    if (A.kind === 'complexSpeciesAlias') {   // a complex, with the complexes inside it, after the complex now holding it
+      var sub = [id];
+      for (var k = 0; k < sub.length; k++) inside(t, 'complexSpeciesAlias', sub[k]).forEach(function (m) { if (alias(t, m).kind === 'complexSpeciesAlias') sub.push(m); });
+      if (sub.some(function (m) { return alias(t, m).sp[0] < C.sp[0]; })) {
+        var txt = sub.map(function (m) { var sp = alias(t, m).sp; return t.slice(sp[0], eol(t, sp[1])); }).join('');
+        sub.forEach(function (m) { t = cut(t, alias(t, m).sp); });
+        var c = alias(t, cx); t = put(t, eol(t, c.sp[1]), eol(t, c.sp[1]), txt);
+      }
     }
-    t = attrs(t, alias(t, id).sp[0], [['complexSpeciesAlias', cx], ['compartmentAlias', C.ca]]);
-    return carry(inner(t, id, C), id, C.ca);
+    t = attrs(t, alias(t, id).sp[0], [['complexSpeciesAlias', cx], ['compartmentAlias', null]]);
+    return carry(inner(t, id, C), id, null);
   }
   // leave(t, alias, ca): a member out of its complex, into compartment alias ca (null: none), as a species of the map,
   // inside or transmembrane as its box lies in ca's (cd_edit's place())

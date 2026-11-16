@@ -3,7 +3,8 @@
 //   1. the first six members of each map with no line and its species drawn once: taken out (leave, into its complex's compartment), the
 //      converter reads it with no complex; put back (join), it reads it in that complex again, its annotations kept;
 //   2. a protein made beside the map and joined to a complex, then taken out: the text the original byte for byte;
-//      a complex made and put into another complex (a complex in a complex);
+//      a complex made and put into another complex (a complex in a complex), and one holding a complex listed after
+//      the complex it joins;
 //   3. joinable refuses a species with lines ('lines'), a complex put into itself ('inside') and a member ('member');
 //   4. cdrender draws every text written with no error.
 // node tests/cd-join.js [python3]
@@ -34,13 +35,13 @@ files.forEach(function (f) {
   if (t.indexOf('<celldesigner:extension>') < 0) return;
   var seen = 0;
   while ((m = re.exec(t)) && seen < 6) {   // 1: each member out and back in (the first six with no line on each map)
-    var a = m[1], cx = m[2], I = mk.aliasInfo(t, cx), ca = (new RegExp('id="' + cx + '"[^>]*\\scompartmentAlias="([^"]+)"').exec(t) || [])[1] || null;
+    var a = m[1], cx = m[2], ca = (new RegExp('id="' + cx + '"[^>]*\\scompartmentAlias="([^"]+)"').exec(t) || [])[1] || null;
     var out = mk.leave(t, a, ca), why = mk.joinable(out, a, cx);
     if (why === 'lines' || why === 'copies') continue;   // a member with lines (other tools' files): not taken in again
     if (why) { wrong(name + ' ' + a + ': not joinable again (' + why + ')'); continue; }
     if (mk.joinable(t, a, cx) !== 'member') wrong(name + ' ' + a + ': a member not refused');
     var back = mk.join(out, a, cx); seen++;
-    jobs.push([name, a, t, a, cx, I], [name, a + ' out', out, a, ca], [name, a + ' back', back, a, cx]);
+    jobs.push([name, a, t, a, cx], [name, a + ' out', out, a, ca], [name, a + ' back', back, a, cx]);
     draws(out, name + ' ' + a + ' out'); draws(back, name + ' ' + a + ' back');
   }
   // 2: a protein made beside the map joins a complex and leaves it again; a complex into another
@@ -48,7 +49,7 @@ files.forEach(function (f) {
   while ((m = re.exec(t))) cxs.push(m[1]);
   if (!cxs.length) return;
   var W = +/sizeX="([\d.]+)"/.exec(t)[1], p = mk.species(t, { cls: 'PROTEIN', name: 'joined', box: [W + 100, 100] }), t1 = p.text;
-  var j = mk.join(t1, p.alias, cxs[0]), l = mk.leave(j, p.alias, mk.aliasInfo(j, cxs[0]) && (new RegExp('id="' + cxs[0] + '"[^>]*\\scompartmentAlias="([^"]+)"').exec(j) || [])[1] || null);
+  var j = mk.join(t1, p.alias, cxs[0]), l = mk.leave(j, p.alias, (new RegExp('id="' + cxs[0] + '"[^>]*\\scompartmentAlias="([^"]+)"').exec(j) || [])[1] || null);
   if (l !== t1 && !/compartmentAlias/.test(new RegExp('<celldesigner:complexSpeciesAlias id="' + cxs[0] + '"[^>]*>').exec(t)[0])) wrong(name + ': a protein joined and taken out again is not the text before');
   jobs.push([name, 'new protein in', j, p.alias, cxs[0]]);
   var c2 = mk.species(t, { cls: 'COMPLEX', name: 'outer', box: [W + 300, 100, 400, 400] }), c3 = mk.species(c2.text, { cls: 'COMPLEX', name: 'inner', box: [W + 350, 150] });
@@ -56,6 +57,13 @@ files.forEach(function (f) {
   if (mk.joinable(jj, c2.alias, c3.alias) !== 'inside') wrong(name + ': a complex into its own member not refused');
   jobs.push([name, 'complex in complex', jj, c3.alias, c2.alias]);
   draws(j, name + ' new protein in'); draws(jj, name + ' complex in complex');
+  // a complex holding a complex, both listed before the one it joins: listed after it, the inner one last
+  var oA = mk.species(t, { cls: 'COMPLEX', name: 'A', box: [W + 800, 100, 300, 300] }), oA2 = mk.species(oA.text, { cls: 'COMPLEX', name: 'A2', box: [W + 820, 120] });
+  var oC = mk.species(mk.join(oA2.text, oA2.alias, oA.alias), { cls: 'COMPLEX', name: 'C', box: [W + 1200, 100, 400, 400] }), tc = mk.join(oC.text, oA.alias, oC.alias);
+  var pos = function (x) { return tc.indexOf('<celldesigner:complexSpeciesAlias id="' + x + '"'); };
+  if (!(pos(oC.alias) < pos(oA.alias) && pos(oA.alias) < pos(oA2.alias))) wrong(name + ': complexes in complexes not listed after their holders');
+  jobs.push([name, 'complex in complex, inner', tc, oA2.alias, oA.alias], [name, 'complex in complex, outer', tc, oA.alias, oC.alias]);
+  draws(tc, name + ' complexes in complexes');
   // 3: a species with lines
   var withLine = /<celldesigner:baseReactant species="[^"]+" alias="([^"]+)"/.exec(t);
   var other = withLine && cxs.filter(function (c) { return c !== withLine[1] && mk.joinable(t, withLine[1], c) !== 'inside'; })[0];

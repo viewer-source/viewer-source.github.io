@@ -1,6 +1,6 @@
 // The CellDesigner palette (editor/src/cdcreate.js) on a page with the editor, by default the styles page on a
 // CellDesigner demo map: its signs shown in place of PD and AF; species, a compartment and a complex placed by a click
-// and by a drag from the palette; a protein refused on a complex; a state transition drawn between two species, undone
+// and by a drag from the palette; a protein placed on a complex its member; a state transition drawn between two species, undone
 // and redone with the species made before it; an AND gate by three clicks onto the reaction's square; an inhibition onto
 // the square; the gate's menu (no NOT for two inputs); the gate's line out and an input line deleted together; a reduced physical stimulation between two species; a name typed in place; the right-click menus' other kinds;
 // a species deleted with its reaction; New CellDesigner map making species and a reaction on an empty map. Nothing is
@@ -34,8 +34,8 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#acly-celld
   await page.mouse.move(sg[0], sg[1]); await page.mouse.down(); await page.mouse.move(600, 500, { steps: 6 }); await page.mouse.move(1280, 450, { steps: 10 }); await page.mouse.up(); await page.waitForTimeout(800);
   var cx = (await ids()).filter(function (i) { return before.indexOf(i) < 0; })[0];
   ok('a complex dropped from the palette', /^csa/.test(cx || ''));
-  await sign('cd:PROTEIN'); var C = await at(cx); await page.mouse.click(C[0], C[1]); await page.waitForTimeout(500);
-  ok('a protein on the complex refused with the reason', /complex/.test(await status())); await page.keyboard.press('Escape');
+  await sign('cd:PROTEIN'); var C = await at(cx); await page.mouse.click(C[0], C[1]); await page.waitForTimeout(1500);
+  ok('a protein placed on the complex is its member', new RegExp('<celldesigner:speciesAlias id="[^"]+"[^>]*complexSpeciesAlias="' + cx + '"').test(await page.evaluate(function () { return window.m2EditNow().text; }))); await page.keyboard.press('Escape');
   var e0 = await es(); await drag(await at(p), await at(m));
   var rx = (await es()).filter(function (i) { return e0.indexOf(i) < 0; }), rid = rx[0] && rx[0].split('|')[0];
   ok('a state transition drawn between two species', rx.length === 2);

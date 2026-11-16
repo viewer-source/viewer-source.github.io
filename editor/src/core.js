@@ -475,9 +475,9 @@
     function layTool(what, ids, done, same) {   // not tool: create.js's palette sign in hand, of the same scope, replaced it (Snap map to grid and Pack would fail)
       if (!on || V.current !== map || !text) return;   // same: part of the change just made (its undo step), nothing said
       if (!same) quiet();
-      var tAt = text;
+      var uAt = undo.length, uTop = undo[uAt - 1];   // the step it belongs to (render may write the same text in other numbers first)
       Promise.all([layout(), sbpy()]).then(function (q) {
-        if (same && text !== tAt) return;   // changed meanwhile (an undo)
+        if (same && (undo.length !== uAt || undo[uAt - 1] !== uTop)) return;   // undone or another change meanwhile
         // the layout tools grow a compartment round all it holds, which would take an edge member inside: what crosses a
         // compartment's border is taken out of it for the run and put back after, its compartment then grown only so far
         // that it crosses again (grown), so every member keeps its place
@@ -855,12 +855,12 @@
       out.forEach(function (t, i) { moves.push([nodes2[i].id, t == null ? null : nodes2[t].id]); });
       var why = moves.length && cd && cdJs && cdJs.nestCheck ? cdJs.nestCheck(cd.now, moves) : null;
       if (why) return refused(why);
-      var jp = arg.join && arg.join.length ? joinPlan(arg.join) : { joins: [], why: '' };   // a glyph dropped on a complex: its member (create.js)
+      var jp = arg.join && arg.join.length ? joinPlan(arg.join, moves.map(function (m) { return m[0]; })) : { joins: [], why: '' };   // a glyph dropped on a complex: its member (create.js)
       if (jp.why) return refused(jp.why);
       // CellDesigner: a member that left its complex (Shift) made a species of the compartment it went to (cd_make.leave);
       // the GraphML made again from the file
       var cdLeave = function () {
-        if (!cd || !cdMk) return;
+        if (!cd || !cdMk || !moves.some(function (m) { try { return !!cdMk.aliasInfo(cd.now, m[0]).complex; } catch (err) { return false; } })) return;
         var t = cdJs.draw(cd.base, text)[1], t0 = t, sel = selN.map(function (i) { return nodes2[i].id; });
         moves.forEach(function (m) { try { if (cdMk.aliasInfo(t, m[0]).complex) t = cdMk.leave(t, m[0], m[1]); } catch (err) { warn(String(err && err.message || err)); } });
         if (t === t0) return;
