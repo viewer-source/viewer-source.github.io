@@ -1085,13 +1085,17 @@
     // one selected, typed for an exact size (its centre kept); Grid size beside the Grid and Snap switches (core.js), kept in this browser with them.
     // sbgn_edit.resize writes the box, its name kept centred, its state variables at their places on the border; write()
     // scales what the SBGN-ML glyph carries the same way.
-    function sizable(i) {   // not a member of a complex (Pack keeps a complex's members to the layout rules)
-      var n = nodes2[i], u = n && n.up != null ? nodes2[n.up] : null;
-      return palOn() && !!n && isMade(n) && n.shape.kind !== 'Process' && n.shape.kind !== 'Operator' && (!u || u.comp);   // a process or gate keeps its size (its antennas)
+    // Resizing and Properties serve every format with a palette through its part's answers (propFmt: PF_SB here, PF_CD in
+    // cdcreate.js): which node they are for, which rows apply, its look, a field set, a size set
+    function propFmt() { return palOn() ? PF_SB : cdPal() ? PF_CD : null; }
+    function sizable(i) { var f = propFmt(); return !!f && !!nodes2[i] && f.sizable(i); }
+    function setSize(i, nb) { var f = propFmt(); if (f) f.size(i, nb.map(function (v) { return +fmt(v); })); }
+    function sbSizable(i) {   // not a member of a complex (Pack keeps a complex's members to the layout rules)
+      var n = nodes2[i], u = n.up != null ? nodes2[n.up] : null;
+      return isMade(n) && n.shape.kind !== 'Process' && n.shape.kind !== 'Operator' && (!u || u.comp);   // a process or gate keeps its size (its antennas)
     }
-    function setSize(i, nb) {   // node i given the box nb, one undo step with the compartments round it grown to hold it
+    function sbSetSize(i, nb) {   // node i given the box nb, one undo step with the compartments round it grown to hold it
       var id = nodes2[i].id, t2, was = boxOf(i);
-      nb = nb.map(function (v) { return +fmt(v); });
       try { t2 = sbJs.resize(text, id, nb); } catch (err) { warn('Not resized: ' + (err && err.message || err) + '.'); liveOff(); sizeOff(); paint(); return; }
       if (t2 === text) { liveOff(); sizeOff(); paint(); return; }
       remember(false); text = t2; parse(); dirty = true;
@@ -1124,20 +1128,25 @@
     pal.insertAdjacentElement('afterend', props);
     var inW = props.querySelector('#m2-ed-w'), inH = props.querySelector('#m2-ed-h');
     var field = function (k) { return props.querySelector('#m2-ed-' + k); }, pNow = {}, pCls = [];
-    function propNode() {   // the one macromolecule, simple chemical or activity selected (its class read from the file once per selection and change)
-      if (selN.length !== 1 || selP.length || selE.length || svSel || !palOn() || !isMade(nodes2[selN[0]])) return -1;
-      var id = nodes2[selN[0]].id;
+    function propNode() {   // the one node selected that Properties is for (propFmt's node), else -1
+      var f = propFmt();
+      return !f || selN.length !== 1 || selP.length || selE.length || svSel ? -1 : f.node(selN[0]);
+    }
+    function sbNode(i) {   // a macromolecule, simple chemical or activity (its class read from the file once per selection and change)
+      if (!isMade(nodes2[i])) return -1;
+      var id = nodes2[i].id;
       if (pCls[0] !== id || pCls[1] !== text) { var c = sbJs.classOf(src(), id); pCls = [id, text, /^(macromolecule|simple chemical)( multimer)?$|^biological activity$/.test(c), c === 'biological activity']; }
-      return pCls[2] ? selN[0] : -1;
+      return pCls[2] ? i : -1;
     }
     function kindOf(i) { return propNode() === i && pCls[3] ? 'biological activity' : nodes2[i].shape.kind === 'SimpleChemical' ? 'simple chemical' : 'macromolecule'; }   // Set as default's kind (every activity alike, defOf)
     function propsShow(all) {   // all: every field shown again, the one focused too (Esc)
       var i = propNode(), r2 = function (v) { return String(Math.round(v * 100) / 100); };
-      props.hidden = !palOn() || i < 0;   // only with its node: nothing selected, no Properties
+      props.hidden = i < 0;   // only with its node: nothing selected, no Properties
       if (props.hidden) return;
-      Array.prototype.forEach.call(props.querySelectorAll('tr[data-k]'), function (tr) { tr.hidden = (/^[wh]$/.test(tr.dataset.k) && !sizable(i)) || (tr.dataset.k === 'multimer' && pCls[3]); });   // an activity is no multimer
-      var o = sbJs.lookOf(realizerOf(nodes2[i].el)), b = bx(i);
-      pNow = { label: nameOf(i), w: r2(b[2]), h: r2(b[3]), fill: o.fill ? o.fill.slice(0, 7).toLowerCase() : '', line: (o.line || '#000000').slice(0, 7).toLowerCase(), width: r2(o.width), multimer: o.multimer };
+      var pf = propFmt(), b = bx(i);
+      Array.prototype.forEach.call(props.querySelectorAll('tr[data-k]'), function (tr) { tr.hidden = (/^[wh]$/.test(tr.dataset.k) && !sizable(i)) || pf.off(tr.dataset.k, i); });
+      props.querySelector('.m2-ed-pdef').hidden = !pf.def;
+      pNow = pf.look(i); pNow.w = r2(b[2]); pNow.h = r2(b[3]); pNow.width = r2(pNow.width);
       ROWS.forEach(function (r) {
         var f = field(r[0]);
         if (!all && document.activeElement === f) return;
@@ -1162,10 +1171,14 @@
       if (/^[0-9a-f]{3}$/i.test(v)) v = v.replace(/./g, '$&$&');
       return /^[0-9a-f]{6}$/i.test(v) ? '#' + v.toUpperCase() : v ? null : '';
     }
-    function propSet(k) {   // the label, a colour, the border width or multimer, from its field
+    function propSet(k) {   // the label, a colour, the border width or multimer, from its field (the format's part writes it)
       var i = propNode();
       if (i < 0) return;
-      var f = field(k), id = nodes2[i].id, t2 = text, v = k === 'multimer' ? f.checked : f.value;
+      var f = field(k), v = k === 'multimer' ? f.checked : f.value;
+      if (!propFmt().set(k, v, i)) propsShow(true);
+    }
+    function sbSet(k, v, i) {   // true when the text changed
+      var id = nodes2[i].id, t2 = text;
       if (k === 'label') t2 = sbJs.label(text, id, v.replace(/[\r\n]+/g, ' '));
       else if (k === 'multimer') t2 = sbJs.multimer(text, id, v);   // a count, if any, stays the unit of information typed (N:3)
       else if (k === 'width') { var x = parseFloat(v); if (x > 0 && x <= 20) t2 = sbJs.restyle(text, id, { width: x }); }
@@ -1173,9 +1186,13 @@
         var c = hex(v), o = {};
         if (c !== null && !(c === '' && k === 'line')) { o[k] = c === '#000000' && k === 'line' ? null : c || null; t2 = sbJs.restyle(text, id, o); }
       }
-      if (t2 === text) { propsShow(true); return; }
+      if (t2 === text) return false;
       remember(false); text = t2; made(id);
+      return true;
     }
+    var PF_SB = { sizable: sbSizable, size: sbSetSize, node: sbNode, set: sbSet, def: true,
+      off: function (k) { return k === 'multimer' && pCls[3]; },   // an activity is no multimer
+      look: function (i) { var o = sbJs.lookOf(realizerOf(nodes2[i].el)); return { label: nameOf(i), fill: o.fill ? o.fill.slice(0, 7).toLowerCase() : '', line: (o.line || '#000000').slice(0, 7).toLowerCase(), width: o.width, multimer: o.multimer }; } };
     ROWS.forEach(function (r) {
       if (r[2] === 'num' && r[0] !== 'width') return;   // Width and Height: above
       var f = field(r[0]);
@@ -1215,7 +1232,7 @@
     }
     props.querySelector('.m2-ed-pdef').addEventListener('click', function () {
       var i = propNode();
-      if (i < 0) return;
+      if (i < 0 || !propFmt().def) return;
       var o = sbJs.lookOf(realizerOf(nodes2[i].el)), b = boxOf(i), all = defsKept(), D = sbJs.defaults(src(), null, kindOf(i));
       all[kindOf(i)] = { wr: b[2] / D.w, hr: b[3] / D.h, fill: o.fill, line: o.line, width: o.width, multimer: o.multimer };
       try { localStorage.setItem(DEF_KEY, JSON.stringify(all)); } catch (e) { warn('The default could not be kept in this browser.'); }

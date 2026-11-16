@@ -809,6 +809,11 @@ def place(text, gtext):
         s = T.span(r'<celldesigner:%s id="%s"' % (kind, re.escape(i)))
         bt = T.span(r'<celldesigner:bounds ', s[0], s[1])
         T.attrs(bt[0], {k: num(n[j]) for j, k in enumerate('xywh') if abs(n[j] - b[j]) >= 1e-3})
+        # a species resized: its usual view's boxSize the same as its bounds (CellDesigner keeps both)
+        uv = i not in comps and (abs(n[2] - b[2]) >= 1e-3 or abs(n[3] - b[3]) >= 1e-3) and T.span(r'<celldesigner:usualView>', s[0], s[1])
+        bs = uv and T.span(r'<celldesigner:boxSize ', uv[0], uv[1])
+        if bs:
+            T.attrs(bs[0], {'width': num(n[2]), 'height': num(n[3])})
         p = up.get(i)
         ip = T.span(r'<celldesigner:innerPosition ', s[0], s[1])
         if ip and p and not regrouped(i):

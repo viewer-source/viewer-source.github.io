@@ -668,6 +668,9 @@
       if (!s) throw new Error("TypeError: 'NoneType' object is not subscriptable");
       var bt = T.span('<celldesigner:bounds ', s[0], s[1]);
       T.attrs(bt[0], ['x', 'y', 'w', 'h'].map(function (k, j) { return [k, j]; }).filter(function (q) { return Math.abs(n[q[1]] - b[q[1]]) >= 1e-3; }).map(function (q) { return [q[0], num(n[q[1]])]; }));
+      // a species resized: its usual view's boxSize the same as its bounds (CellDesigner keeps both)
+      var uv = !comps.has(i) && (Math.abs(n[2] - b[2]) >= 1e-3 || Math.abs(n[3] - b[3]) >= 1e-3) && T.span('<celldesigner:usualView>', s[0], s[1]), bs = uv && T.span('<celldesigner:boxSize ', uv[0], uv[1]);
+      if (bs) T.attrs(bs[0], [['width', num(n[2])], ['height', num(n[3])]]);
       var p = up.has(i) ? up.get(i) : null, ip = T.span('<celldesigner:innerPosition ', s[0], s[1]);
       if (ip && p !== null && !regrouped(i)) {
         var v = {}, re = /\s([xy])="([^"]*)"/g, mm, seg = T.t.slice(ip[0], ip[1]);

@@ -916,6 +916,32 @@
     Object.keys(cc.n).forEach(function (k) { o[k] = {}; Object.keys(cc.n[k]).forEach(function (c) { if (c !== 'best') o[k][c] = cc.n[k][c]; }); });
     return o;
   }
+  // a species alias's look as Properties shows it: its fill (#rrggbb, CellDesigner's paint without the alpha), border
+  // width (singleLine) and multimer (its species' homodimer count above 1), all from the usual view
+  function look(t, id) {
+    var A = entity(t, id), u = span(t, '<celldesigner:usualView>', A.sp[0], A.sp[1]), seg = u ? t.slice(u[0], u[1]) : '';
+    var p = /<celldesigner:paint color="([0-9a-fA-F]{8})"/.exec(seg), w = /<celldesigner:singleLine width="([^"]*)"/.exec(seg), h = inState(t, A.species, '<celldesigner:homodimer>');
+    return { fill: p ? '#' + p[1].slice(2).toLowerCase() : '', width: w ? F(w[1]) : 1, multimer: h ? +/>(\d+)</.exec(t.slice(h[0], h[1]))[1] > 1 : false };
+  }
+  // the fill (#rrggbb, written opaque) and the border width of one species alias, in its usual view; the brief view kept
+  function restyle(t, id, o) {
+    var A = entity(t, id);
+    if (A.cls === 'DEGRADED' && o.fill != null) fail('A degraded species keeps CellDesigner\u2019s look.');
+    var set = function (open, k, v) {
+      var B = alias(t, id), u = span(t, '<celldesigner:usualView>', B.sp[0], B.sp[1]), s = u && span(t, open, u[0], u[1]);
+      if (!s) fail('No usual view on ' + id + '.');
+      t = attrs(t, s[0], [[k, v]]);
+    };
+    if (o.fill != null) {
+      if (!/^#[0-9a-fA-F]{6}$/.test(o.fill)) fail('A fill is a colour #rrggbb.');
+      set('<celldesigner:paint ', 'color', 'ff' + o.fill.slice(1).toLowerCase());
+    }
+    if (o.width != null) {
+      if (!(o.width > 0 && o.width <= 20)) fail('A border width is above 0 and 20 at most.');
+      set('<celldesigner:singleLine ', 'width', num(o.width));
+    }
+    return t;
+  }
   function aliasInfo(t, id) {
     var A = alias(t, id), C = A.kind === 'compartmentAlias' ? span(t, '<compartment(?=\\s)[^>]*\\sid="' + q(A.compartment) + '"') : null;
     return { kind: A.kind, cls: A.cls || null, id: A.species || A.compartment, name: A.s ? A.s.name : C ? at(head(t, C), 'name') : null, complex: A.complex, box: A.box };
@@ -923,6 +949,6 @@
   var api = { LOOK: LOOK, PROCESS: PROCESS, REDUCED: REDUCED, sbgn: sbgn, MODS: MODS, NEED: NEED, about: about, aliasInfo: aliasInfo, classColour: classColour, classColours: classColours, empty: empty, species: newSpecies, compartment: compartment, rename: rename, retype: retype, remove: remove, reaction: reaction, reduced: reduced,
     reactant: reactant, product: product, modifier: modifier, reactionType: reactionType, modifierType: modifierType, removeLine: removeLine,
     gate: gate, gateInput: gateInput, gateInputRemove: gateInputRemove, gateType: gateType, residue: residue, residueState: residueState,
-    residueRemove: residueRemove, structural: structural, info: info, homodimer: homodimer, cdName: cdName, joinable: joinable, join: join, leave: leave };
+    residueRemove: residueRemove, structural: structural, info: info, homodimer: homodimer, look: look, restyle: restyle, cdName: cdName, joinable: joinable, join: join, leave: leave };
   if (node) module.exports = api; else root.cd_make = api;
 })(typeof window !== 'undefined' ? window : globalThis);

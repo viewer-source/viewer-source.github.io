@@ -425,6 +425,34 @@
     }
     function cdRename(id, v) { cdApply(function (t) { return cdMk.rename(t, id, v); }, [id]); }
 
+    // resizing and Properties on a CellDesigner map (propFmt, create.js): a species not in a complex, a complex aside (its
+    // members set its size), resized by its handles or by Width and Height, as on SBGN-ML maps; the label, the fill, the
+    // border width and multimer (the species' homodimer, 2 when ticked) written by cd_make. No border colour (CellDesigner's
+    // species have none); a degraded species keeps its look and its id as its name. Set as default not yet: the colours of
+    // new species come from the palette's list
+    function cdSpecies(i) { return cdRole(i) === 'epn' && nodes2[i].el.getAttribute('yfiles.foldertype') !== 'group'; }
+    function cdSetSize(i, nb) {   // node i given the box nb, one undo step with the compartments round it grown to hold it (written back by cd_edit)
+      var id = nodes2[i].id, was = boxOf(i), one = {};
+      if (nb.every(function (v, j) { return Math.abs(v - was[j]) < 0.005; })) { liveOff(); sizeOff(); paint(); return; }
+      remember(false); one[i] = nb; setBoxes(one);
+      var k0 = nodes2.findIndex(function (n) { return n.id === id; });
+      setBoxes(grown([k0], boxOf, function (k) { return k === k0 ? was : boxOf(k); }, function () { return false; }));
+      selN = []; nodes2.forEach(function (n, k) { if (n.id === id) selN = [k]; });
+      refit([id]); render(); paint(); changed();
+    }
+    var PF_CD = { sizable: cdSpecies, size: cdSetSize, def: false,
+      node: function (i) { return cdSpecies(i) ? i : -1; },
+      off: function (k, i) { return k === 'line' || (/^(label|fill|multimer)$/.test(k) && cdMk.aliasInfo(cd.now, nodes2[i].id).cls === 'DEGRADED'); },
+      look: function (i) { var id = nodes2[i].id, L = cdMk.look(cd.now, id); return { label: cdNameOf(id), fill: L.fill, line: '#000000', width: L.width, multimer: L.multimer }; },
+      set: function (k, v, i) {
+        var id = nodes2[i].id;
+        if (k === 'label') return cdApply(function (t) { return cdMk.rename(t, id, v.replace(/[\r\n]+/g, ' ')); }, [id]);
+        if (k === 'multimer') return cdApply(function (t) { return cdMk.homodimer(t, id, v ? 2 : 1); }, [id]);
+        if (k === 'width') { var x = parseFloat(v); return x > 0 && x <= 20 && cdApply(function (t) { return cdMk.restyle(t, id, { width: x }); }, [id]); }
+        if (k === 'fill') { var c = hex(v); return !!c && cdApply(function (t) { return cdMk.restyle(t, id, { fill: c }); }, [id]); }
+        return false;
+      } };
+
     // a sign dragged from the palette: CellDesigner's shape at its size following the pointer (create.js palDrag)
     function cdGhost(kind) {
       var cls = cdKind(kind), s = cdSize(cls), w = s[0], h = s[1], col = cls === 'COMPARTMENT' ? 'none' : '#' + (cdColour(cd && cd.now, cls) || cdMk.LOOK[cls][2]).slice(2), ink = ' fill="' + col + '" stroke="#000" stroke-width="1"';
