@@ -9,6 +9,9 @@
     // by it and the map drawn by cdrender, each part in a group of its own; text is that GraphML, cd.now the file
     var cdp = null, cdJs = null, cdMk = null, cd = null;   // the CellDesigner side loading, once loaded (cd_edit, cd_make), the file edited ({ base, now })
     function isCd(t) { return /<sbml[\s>]/.test(t.slice(0, 3000)) && t.indexOf('celldesigner') >= 0; }
+    // a node selected darkened under its handles (yEd's way), or the handles alone (CellDesigner's way, on its maps);
+    // the targets of a line being drawn or moved stay darkened on every format
+    function darkSel() { return !cd; }
     // a process glyph not moved itself stays midway on its segment of the main line wherever that goes (cd_edit), so
     // while a drag or the keys move a segment's end it follows at once (not only on
     // release): procs, each glyph with its two main arcs; liveG, the glyphs' shifts until the map is drawn again

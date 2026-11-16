@@ -1992,10 +1992,13 @@
         var head = function (X, Y, s) { return 'M' + f1(X + s * u - v) + ' ' + f1(Y + s * v + u) + 'L' + f1(X) + ' ' + f1(Y) + 'L' + f1(X + s * u + v) + ' ' + f1(Y + s * v - u); };
         out.push('<path class="m2-ed-mark"' + gw() + ' d="' + seg(g) + head(X0, Y0, 1) + head(X1, Y1, -1) + '"/>');
       });
-      // nodes selected: darkened (a group without what it holds, as yEd), and the eight handles round the box
+      // nodes selected: darkened (a group without what it holds, as yEd; not where the format's part says no: darkSel),
+      // and the eight handles round the box
+      var dark = darkSel();
       selN.forEach(function (i, j) {
         var n = nodes2[i], b = bx(i), g = gN && gN[n.id];
-        if (g) {   // in the drawing itself, right over the node's own shape: what is drawn after it (its contents, the
+        if (!dark) {
+        } else if (g) {   // in the drawing itself, right over the node's own shape: what is drawn after it (its contents, the
           // arcs, the labels) stays on top, as yEd shows a group selected
           var el = document.createElementNS('http://www.w3.org/2000/svg', 'path');
           el.setAttribute('class', 'm2-ed-dark'); el.setAttribute('d', shapeD(i, true));
