@@ -52,6 +52,7 @@ jobs:
           PY
       - run: python3 build.py ${{ inputs.refresh && '--refresh' || '' }}
       - run: rm -rf .dbcache && cp -r cache .dbcache
+      - run: chmod -R a+rX .   # files the build writes through temporary files are private to it; Pages publishes only readable files
       - uses: actions/cache/save@v4
         with: {path: .dbcache, key: 'db-${{ github.run_id }}'}
       - uses: actions/jekyll-build-pages@v1
