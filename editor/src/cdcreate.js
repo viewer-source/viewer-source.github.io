@@ -161,8 +161,8 @@
         var m = cdCols();
         Array.prototype.forEach.call(r.querySelectorAll('input'), function (x) { x.checked = x.value === m; });
       }
-      // the squares: each choice's colours, the most used on the map first, drawn from the right (as many as fit before the
-      // name: the CSS hides the rest). File: the colours the species have; CellDesigner and Default: each palette class's
+      // the squares: each choice's three most used colours on the map, the most used at the right (the CSS hides any that
+      // would reach the name). File: the colours the species have; CellDesigner and Default: each palette class's
       // colour, counted by the species of that class on the map, the unused after in the palette's order. From the map as
       // it is now (classColours keeps its last answer, so a paint with the map unchanged costs nothing; written only when changed)
       var n = cd && cd.now ? cdMk.classColours(cd.now) : {};
@@ -173,7 +173,7 @@
           var k = 0; Object.keys(n[cls] || {}).forEach(function (col) { k += n[cls][col]; });
           add((c[0] === 'cd' ? null : cdColourIn(c[0], null, cls)) || cdMk.LOOK[cls][2], k);
         });
-        var cols = order.slice().sort(function (a, b) { return w[b] - w[a] || order.indexOf(a) - order.indexOf(b); });
+        var cols = order.slice().sort(function (a, b) { return w[b] - w[a] || order.indexOf(a) - order.indexOf(b); }).slice(0, 3);
         var sw = r.querySelector('[data-for="' + c[0] + '"]'), h = cols.map(function (x) { return '<i style="background:#' + x.slice(2) + '" title="#' + x.slice(2).toUpperCase() + (w[x] ? ', ' + w[x] + ' species' : '') + '"></i>'; }).join('');
         if (sw.dataset.h !== h) { sw.dataset.h = h; sw.innerHTML = h; }
       });
