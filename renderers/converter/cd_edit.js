@@ -202,7 +202,9 @@
         real = '<y:GenericGroupNode configuration="com.yworks.sbgn.Complex">' + geo(b) + labels(d, i, b) + '<y:StyleProperties><y:Property name="com.yworks.sbgn.style.radiusX" value="5"/><y:Property name="com.yworks.sbgn.style.radiusY" value="5"/></y:StyleProperties>' + ZERO + ZB + '</y:GenericGroupNode>';
       } else {
         var k = SHAPE[d.alias.get(i)[0]] || 'rectangle';
-        var props = k === 'Macromolecule' ? '<y:StyleProperties><y:Property name="com.yworks.sbgn.style.radius" value="5"/></y:StyleProperties>' : '';
+        // a phenotype's points indented half its height, as cdrender's hexagon (the editor's outline reads indent)
+        var props = k === 'Macromolecule' ? '<y:StyleProperties><y:Property name="com.yworks.sbgn.style.radius" value="5"/></y:StyleProperties>'
+          : k === 'Phenotype' ? '<y:StyleProperties><y:Property name="com.yworks.sbgn.style.indent" value="0.5"/></y:StyleProperties>' : '';
         if (k === 'ellipse' || k === 'rectangle') out.push(s + '<node id="' + escape(i) + '"><data key="d6"><y:ShapeNode>' + geo(b) + labels(d, i, b) + '<y:Shape type="' + k + '"/></y:ShapeNode></data></node>');
         else out.push(s + '<node id="' + escape(i) + '"><data key="d6"><y:GenericNode configuration="com.yworks.sbgn.' + k + '">' + geo(b) + labels(d, i, b) + props + '</y:GenericNode></data></node>');
         return;

@@ -290,7 +290,9 @@ def graphml(text, off=(0.0, 0.0)):
                     '<y:Insets bottom="0" bottomF="0.0" left="0" leftF="0.0" right="0" rightF="0.0" top="0" topF="0.0"/><y:BorderInsets bottom="0" bottomF="0.0" left="0" leftF="0.0" right="0" rightF="0.0" top="0" topF="0.0"/></y:GenericGroupNode>' % (geo(b), labels(d, i, b)))
         else:
             k = SHAPE.get(d.alias[i][0], 'rectangle')
-            props = '<y:StyleProperties><y:Property name="com.yworks.sbgn.style.radius" value="5"/></y:StyleProperties>' if k == 'Macromolecule' else ''
+            # a phenotype's points indented half its height, as cdrender's hexagon (the editor's outline reads indent)
+            props = ('<y:StyleProperties><y:Property name="com.yworks.sbgn.style.radius" value="5"/></y:StyleProperties>' if k == 'Macromolecule'
+                     else '<y:StyleProperties><y:Property name="com.yworks.sbgn.style.indent" value="0.5"/></y:StyleProperties>' if k == 'Phenotype' else '')
             if k in ('ellipse', 'rectangle'):
                 out.append('%s<node id="%s"><data key="d6"><y:ShapeNode>%s%s<y:Shape type="%s"/></y:ShapeNode></data></node>' % (s, escape(i), geo(b), labels(d, i, b), k))
             else:
