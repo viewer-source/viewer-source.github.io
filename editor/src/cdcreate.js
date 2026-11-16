@@ -20,7 +20,7 @@
       ['PHENOTYPE', 'Phenotype', '<path d="M6 5h12l4.5 7-4.5 7h-12l-4.5-7z"/>'],
       ['DEGRADED', 'Degraded', '<circle cx="12" cy="12" r="8"/><path d="M4 20l16-16"/>'],
       // the complex: its box with cut corners holding three overlapping members, each opaque over the one behind it
-      ['COMPLEX', 'Complex', '<path d="M6 2.5h12l3.5 3.5v12l-3.5 3.5h-12l-3.5-3.5v-12z"/><g class="in" fill="#fff"><rect x="8.5" y="5.5" width="7.5" height="6.5" rx="1"/><rect x="5" y="10" width="6.5" height="4.5" rx="1"/><ellipse cx="14.3" cy="14.8" rx="4.6" ry="3.6"/></g>'],
+      ['COMPLEX', 'Complex', '<path d="M6 2.5h12l3.5 3.5v12l-3.5 3.5h-12l-3.5-3.5v-12z"/><g class="thin" fill="#fff"><rect x="8.5" y="5.5" width="7.5" height="6.5" rx="1"/><rect x="5" y="10" width="6.5" height="4.5" rx="1"/><ellipse cx="14.3" cy="14.8" rx="4.6" ry="3.6"/></g>'],
       ['COMPARTMENT', 'Compartment', '<rect x="1.5" y="3.5" width="21" height="17" rx="6"/><rect x="4.5" y="6.5" width="15" height="11" rx="3.5"/>']];
     // gates: the circle with its sign, two input lines above and the output line below; the signs centred in the circle
     // (the bar and ! drawn, not letters, so they sit in its middle); the fourth item is cdrender's GATE sign, for cdCheck
@@ -34,29 +34,29 @@
     var CD_RX = [['STATE_TRANSITION', 'State transition', CD_LINE + CD_HEAD],
       ['KNOWN_TRANSITION_OMITTED', 'Known transition omitted', CD_LINE + '<path d="M6.5 16l2.5-8M10 16l2.5-8" class="in"/>' + CD_HEAD],
       ['UNKNOWN_TRANSITION', 'Unknown transition', CD_LINE + '<g transform="translate(-2.5 -1.5)">' + CD_Q + '</g>' + CD_HEAD]];
-    // a modifier points down onto a reaction, as in CellDesigner's toolbar; reduced notation runs across, between entities
+    // a modifier points down onto a reaction, as in CellDesigner's toolbar. The same signs draw reduced notation: with the
+    // Reduced notation tick box ticked, a modifier's sign dragged from species to species makes CellDesigner's reduced
+    // notation type for it (CD_RED), written as such in the file; catalysis has none in CellDesigner
     var CD_MOD = [['CATALYSIS', 'Catalysis', '<path d="M12 1.5v14"/><circle cx="12" cy="18.5" r="3"/>'],
       ['INHIBITION', 'Inhibition', '<path d="M12 1.5v19M7 20.5h10"/>'],
       ['PHYSICAL_STIMULATION', 'Physical stimulation', '<path d="M12 1.5v12.5M7.5 14h9l-4.5 7.5z"/>'],
       ['MODULATION', 'Modulation', '<path d="M12 1.5v11M12 12.5l3.5 4.5-3.5 4.5-3.5-4.5z"/>'],
-      ['TRIGGER', 'Trigger', '<path d="M12 1.5v12.5M7 12.5h10M7.5 15h9l-4.5 7z"/>']].map(function (q) { return [q[0], q[1] + ' (to a reaction)', q[2]]; });
-    var CD_HEADS = { INHIBITION: '<path d="M16 7v10"/>', PHYSICAL_STIMULATION: '<path d="M10 8l6 4-6 4z"/>',
-      MODULATION: '<path d="M9 12l3.5-3.5 3.5 3.5-3.5 3.5z"/>', TRIGGER: '<path d="M9 6.5v11M10.5 8l5.5 4-5.5 4z"/>' };
-    var CD_TAIL = { INHIBITION: 16, PHYSICAL_STIMULATION: 10, MODULATION: 9, TRIGGER: 9 };
-    function cdArc(head) { return '<g transform="translate(5 0)"><path d="M-3.5 12H' + CD_TAIL[head] + '"/>' + CD_HEADS[head] + '</g>'; }   // its head at the sign's end
-    // no Positive influence: CellDesigner's open arrowhead is not SBGN's, the file's taken in as the open triangle (cd_make sbgn)
-    var CD_RED = [['NEGATIVE_INFLUENCE', 'INHIBITION', 'Negative influence'],
-      ['REDUCED_PHYSICAL_STIMULATION', 'PHYSICAL_STIMULATION', 'Reduced physical stimulation'], ['REDUCED_MODULATION', 'MODULATION', 'Reduced modulation'],
-      ['REDUCED_TRIGGER', 'TRIGGER', 'Reduced trigger']].map(function (q) { return [q[0], q[2] + ' (between entities)', cdArc(q[1])]; });
+      ['TRIGGER', 'Trigger', '<path d="M12 1.5v12.5M7 12.5h10M7.5 15h9l-4.5 7z"/>']].map(function (q) {
+      return [q[0], q[1] + (q[0] === 'CATALYSIS' ? ' (onto a reaction)' : ' (onto a reaction, or between species with Reduced notation ticked)'), q[2]];
+    });
+    // reduced notation's types, each named as the modifier whose sign draws it (no positive influence: CellDesigner's open
+    // arrowhead is not SBGN's, the file's taken in as the open triangle, cd_make sbgn)
+    var CD_RED = [['NEGATIVE_INFLUENCE', 'INHIBITION'], ['REDUCED_PHYSICAL_STIMULATION', 'PHYSICAL_STIMULATION'], ['REDUCED_MODULATION', 'MODULATION'], ['REDUCED_TRIGGER', 'TRIGGER']];
+    var RED_OF = {}; CD_RED.forEach(function (q) { RED_OF[q[1]] = q[0]; });   // a modifier's type -> its reduced notation type
     var CD_NAME = {};   // CellDesigner's names, for the menus and the status line (a gate's by G_ and its kind: UNKNOWN is a species too)
-    CD_SP.concat(CD_RX, CD_MOD, CD_RED).forEach(function (q) { CD_NAME[q[0]] = q[1].replace(/ \(.*\)$/, ''); });
+    CD_SP.concat(CD_RX, CD_MOD).forEach(function (q) { CD_NAME[q[0]] = q[1].replace(/ \(.*\)$/, ''); });
+    CD_RED.forEach(function (q) { CD_NAME[q[0]] = CD_NAME[q[1]]; });
     CD_GATES.forEach(function (q) { CD_NAME['G_' + q[0]] = q[1]; });
     var cdK = function (q) { return ['cd:' + q[0], q[1], q[2]]; };   // the tool kinds, apart from the SBGN palette's
-    function palCd(strict) {   // the set: nodes, the gates, the lines last (as the SBGN palette); reduced notation with the tick box
-      return [['Species', CD_SP.map(cdK)], ['Logic gates', CD_GATES.map(function (q) { return ['cd:G_' + q[0], q[1], q[2]]; })], ['Reactions', CD_RX.map(cdK)], ['Modifiers', CD_MOD.map(cdK)]]
-        .concat(strict ? [] : [['Reduced notation', CD_RED.map(cdK)]]);
+    function palCd() {   // the set: nodes, the gates, the lines last (as the SBGN palette)
+      return [['Species', CD_SP.map(cdK)], ['Logic gates', CD_GATES.map(function (q) { return ['cd:G_' + q[0], q[1], q[2]]; })], ['Reactions', CD_RX.map(cdK)], ['Modifiers', CD_MOD.map(cdK)]];
     }
-    CD_RX.concat(CD_MOD, CD_RED).forEach(function (q) { ARCS['cd:' + q[0]] = 1; });   // the signs that draw a line (arcTool)
+    CD_RX.concat(CD_MOD).forEach(function (q) { ARCS['cd:' + q[0]] = 1; });   // the signs that draw a line (arcTool)
     var CD_GATE = {}; CD_GATES.forEach(function (q) { CD_GATE['cd:G_' + q[0]] = q[0]; });   // tool kind -> gate kind
     function cdKind(k) { return k && k.indexOf('cd:') === 0 ? k.slice(3) : null; }
 
@@ -78,12 +78,11 @@
       var k = 'cd' + (strict ? 'S' : '') + (palGrouped() ? 'G' : '');
       if (palShown === k) return;
       palShown = k;
-      if (tool && cdKind(tool.kind) && strict && CD_RED.some(function (q) { return 'cd:' + q[0] === tool.kind; })) tool = null;
-      palSignsEl.innerHTML = palSigns(palCd(strict));
+      palSignsEl.innerHTML = palSigns(palCd());
     }
     // the tick box's title and circled i on a CellDesigner map say what it does there (the SBGN text speaks of
     // hybrid maps and SBGN-ML files); palFill puts the SBGN ones back
-    var CD_INFO = 'Shows CellDesigner\u2019s Reduced Notation signs, which join two species directly (a negative influence, a reduced physical stimulation, modulation or trigger; CellDesigner\u2019s positive influence, not an SBGN sign, is made a reduced physical stimulation when a map is opened), and allows a logic gate between species. Unticked: reactions and their modifiers only.';
+    var CD_INFO = 'Lets the modifiers\u2019 signs (inhibition, physical stimulation, modulation, trigger) join two species directly, written as CellDesigner\u2019s reduced notation, and allows a logic gate between species. Unticked: reactions and their modifiers only. CellDesigner\u2019s positive influence (an open arrowhead, not an SBGN sign) is made a physical stimulation when a map is opened.';
     function cdInfo(hy, on_) {
       var lab = hy.querySelector('label'), ti = hy.querySelector('.m2-ed-ptip'), tx = hy.querySelector('.m2-ed-ptext');
       if (!lab.dataset.sbgn) { lab.dataset.sbgn = lab.title; tx.dataset.sbgn = tx.textContent; }
@@ -97,7 +96,7 @@
       if (miss.length) console.error('The CellDesigner palette offers kinds cd_make lacks: ' + miss.join(', '));
       if (g) CD_GATES.forEach(function (q) { var v = g[q[0]]; if (v && q[3] !== v) console.error('The palette\u2019s ' + q[1] + ' sign differs from cdrender\u2019s ' + v); });
     }
-    pal.querySelector('.m2-ed-pstrict input').addEventListener('change', function (e) {   // on a CellDesigner map: kept per map, the reduced signs shown or not
+    pal.querySelector('.m2-ed-pstrict input').addEventListener('change', function (e) {   // on a CellDesigner map: kept per map, modifiers' signs between species allowed or not
       if (!cdPal()) return;
       var all = palStore(), id = palId();
       cdStrictMemo = [id, !e.target.checked];
@@ -192,11 +191,11 @@
     // a line drawn by a drag (create.js linkHow, linkMake). With no sign picked: species to species a state transition;
     // a species onto a reaction's square a catalysis; a square to a species an added product; a species onto a gate a new
     // input. A reaction sign picked: species to species that reaction, a species onto a square an added reactant. A
-    // modifier picked: a species onto a square. A reduced notation sign: species to species (the tick box ticked)
+    // modifier picked: a species onto a square, or species to species its reduced notation type (the tick box ticked)
     function cdHow(a, b) {
       if (b < 0) return null;
       var ra = cdRole(a), rb = cdRole(b), want = tool && ARCS[tool.kind] ? cdKind(tool.kind) : null;
-      var isRx = want && CD_RX.some(function (q) { return q[0] === want; }), isMod = want && cdMk.MODS.indexOf(want) >= 0, isRed = want && cdMk.REDUCED.indexOf(want) >= 0;
+      var isRx = want && CD_RX.some(function (q) { return q[0] === want; }), isMod = want && cdMk.MODS.indexOf(want) >= 0;
       if (!rb) return { no: 'A line joins species, a reaction’s square or a logic gate: never a compartment or a complex’s member.' };
       if (ra === 'gate') return { no: 'A logic gate has one line out, made with the gate.' };
       if (rb === 'gate') {
@@ -204,13 +203,14 @@
         return want ? { no: 'A line onto a logic gate adds an input: no sign picked.' } : { gate: true };
       }
       if (ra === 'proc' && rb === 'proc') return { no: 'A line does not join two reactions.' };
-      if (ra === 'proc') return isMod || isRed ? { no: 'A ' + CD_NAME[want].toLowerCase() + ' goes from a species.' } : { part: 'product' };
+      if (ra === 'proc') return isMod ? { no: 'A ' + CD_NAME[want].toLowerCase() + ' goes from a species.' } : { part: 'product' };
       if (rb === 'proc') {
-        if (isRed) return { no: 'A ' + CD_NAME[want].toLowerCase() + ' joins two species; a modifier ends on a reaction’s square.' };
         return isRx ? { part: 'reactant' } : { mod: want || 'CATALYSIS' };
       }
-      if (isMod) return { no: 'A ' + CD_NAME[want].toLowerCase() + ' ends on a reaction’s square' + (cdStrict() ? '.' : '; between species use its reduced notation sign.') };
-      if (isRed) return cdStrict() ? { no: 'Reduced notation is unticked in the palette.' } : { red: want };
+      if (isMod) {   // between species: its reduced notation type, with the tick box ticked
+        if (!RED_OF[want]) return { no: 'CellDesigner has no catalysis between species: it ends on a reaction’s square (between species, physical stimulation).' };
+        return cdStrict() ? { no: 'A ' + CD_NAME[want].toLowerCase() + ' between species is reduced notation, unticked in the palette; it ends on a reaction’s square.' } : { red: RED_OF[want] };
+      }
       return { rx: want || 'STATE_TRANSITION' };
     }
     function cdLink(a, b, how) {
