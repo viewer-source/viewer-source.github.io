@@ -45,7 +45,8 @@
   // reduced notation, a modulation or a gate's
   var TWO_WAY = FULL.concat(['HETERODIMER_ASSOCIATION', 'DISSOCIATION', 'TRUNCATION']);
   // reduced notation as SBGN's influences: POSITIVE_INFLUENCE (CellDesigner's open arrowhead, not an SBGN sign) is neither
-  // offered nor kept; sbgn() makes it REDUCED_PHYSICAL_STIMULATION (the open triangle) when a file is opened for editing
+  // offered nor kept; sbgn() makes it REDUCED_PHYSICAL_STIMULATION (the open triangle) when a file is opened for editing,
+  // and its dashed UNKNOWN_POSITIVE_INFLUENCE UNKNOWN_REDUCED_PHYSICAL_STIMULATION
   var REDUCED = ['NEGATIVE_INFLUENCE', 'REDUCED_PHYSICAL_STIMULATION', 'REDUCED_MODULATION', 'REDUCED_TRIGGER'];
   var MODS = ['CATALYSIS', 'INHIBITION', 'PHYSICAL_STIMULATION', 'MODULATION', 'TRIGGER'];
   // inputs a gate needs: AND and OR two, NOT one, the unknown gate one (it has no rule of its own); a gate
@@ -463,11 +464,11 @@
       '">\n' + scheme(false) + '\n' + LINE + '\n</celldesigner:modification>';
     return { text: addMods(t, rid, [el], [A]), part: 'm' + R.mods.length };
   }
-  function sbgn(t) {   // -> { text, n }: every POSITIVE_INFLUENCE (a reaction's type, a gate's output, its inputs' lines) the open triangle
+  function sbgn(t) {   // -> { text, n }: every (UNKNOWN_)POSITIVE_INFLUENCE (a reaction's type, a gate's output, its inputs' lines) the open triangle
     var n = 0;
     // only where CellDesigner writes a type (reactionType, a line's type, a gate's modificationType), never a name or a note
-    var to = function (m, a) { n++; return a + 'REDUCED_PHYSICAL_STIMULATION'; };
-    t = t.replace(/(<celldesigner:reactionType>\s*)POSITIVE_INFLUENCE(?=\s*<)/g, to).replace(/(\s(?:type|modificationType)=["'])POSITIVE_INFLUENCE(?=["'])/g, to);
+    var to = function (m, a, u) { n++; return a + (u || '') + 'REDUCED_PHYSICAL_STIMULATION'; };
+    t = t.replace(/(<celldesigner:reactionType>\s*)(UNKNOWN_)?POSITIVE_INFLUENCE(?=\s*<)/g, to).replace(/(\s(?:type|modificationType)=["'])(UNKNOWN_)?POSITIVE_INFLUENCE(?=["'])/g, to);
     return { text: t, n: n };
   }
   function reactionType(t, rid, type) {
