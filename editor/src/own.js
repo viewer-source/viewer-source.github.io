@@ -195,6 +195,11 @@
     // GraphML or CellDesigner map as it is now (the edits this page holds, else GitHub's version, else the site's);
     // with a token a copy of a site map goes to the site, as Add map does (named there by its file; renamed once built)
     function canCopy(m) { return !!m && !m.shownAs && (m.mine ? !!mine[m.id] && !mine[m.id].site : !!graphmlOf(m) && !sbMap(m)); }
+    function freeTitle(t) {   // a name no map in the list has: (1), (2), ... after it, whatever the format (a file's format is not its name)
+      var titles = mineShown().map(function (r) { return r.title; }).concat((V.siteList || []).map(function (m) { return m.topic || m.title; })), f = t;
+      for (var k = 1; titles.indexOf(f) >= 0; k++) f = t + ' (' + k + ')';
+      return f;
+    }
     function freeFile(name) {   // a file name no map of the reader's has (-2, -3, ... before the extension)
       var files = Object.keys(mine).map(function (k) { return mine[k].file; }), ext = (name.match(/\.[^.]+$/) || [''])[0], base = name.slice(0, name.length - ext.length), f = name;
       for (var k = 2; files.indexOf(f) >= 0; k++) f = base + '-' + k + ext;
@@ -214,7 +219,7 @@
     function copyMap(id) {
       if (naming) naming(true);
       var m = V.byId[id]; if (!m || !canCopy(m)) return;
-      var r0 = m.mine ? mine[id] : null, title = 'Copy of ' + (r0 ? r0.title : m.topic || m.title), group = m.group || '', next = after(id);   // next: read before the copy is in the list
+      var r0 = m.mine ? mine[id] : null, title = freeTitle('Copy of ' + (r0 ? r0.title : m.topic || m.title)), group = m.group || '', next = after(id);   // next: read before the copy is in the list
       var ext = r0 ? (r0.file.match(/\.[^.]+$/) || ['.xml'])[0] : cdMap(m) ? '.xml' : '.graphml';
       var file = freeFile(title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') + ext);
       var gh = !!(repo() && token()) && !m.mine;
@@ -386,7 +391,7 @@
     function mineAdd(name, text, d, id, group) {   // group: the reader's group it was added into (undefined: where it was, else at the top)
       var h = textHash(text), old = id ? mine[id] : mineMatch(name, text, h);
       var back = !id && old && old.text !== text && old.src === h;   // the file as first added, the map since edited: the edits kept (an older map, matched by name alone, takes the new file)
-      var r = { id: old ? old.id : newId(), title: old ? old.title : name.replace(/\.(graphml|xml|sbgn)$/i, ''),
+      var r = { id: old ? old.id : newId(), title: old ? old.title : freeTitle(name.replace(/\.(graphml|xml|sbgn)$/i, '')),
         file: old ? old.file : name, text: back ? old.text : text, svg: back ? old.svg : d.svg, width: back ? old.width : d.width, height: back ? old.height : d.height,
         at: back ? old.at : Date.now(), src: old ? old.src || (id ? undefined : h) : h, hidden: false, group: group !== undefined ? group : old && old.group || '' };
       return minePut(r).then(function () { return r; });
@@ -399,8 +404,9 @@
         return p.then(function () { return f.text(); }).then(function (t) {
           if (isSb(t) && !madeHere(t)) throw new Error('an SBGN-ML file from another editor cannot be added yet, only one made here with New map');
           if (repo() && token() && !isSb(t)) return drawText(t).then(function (d) {   // with a token: to the site, shown from here until built (a map made here stays the reader's: the build takes no SBGN-ML map of its own)
-            return toSite(f.name, t, group, siteOrder(group)).then(function (s) {
-              var r = { id: newId(), title: f.name.replace(/\.(graphml|xml)$/i, ''), file: f.name,
+            var base = f.name.replace(/\.(graphml|xml)$/i, ''), ext = f.name.slice(base.length), title = freeTitle(base);   // the site's map named so too (toSite takes its title from the name)
+            return toSite(title + ext, t, group, siteOrder(group)).then(function (s) {
+              var r = { id: newId(), title: title, file: f.name,
                 text: t, svg: d.svg, width: d.width, height: d.height, at: Date.now(), hidden: false, group: group || '', site: s.id };
               return minePut(r).then(function () { last = r.id; });
             });
