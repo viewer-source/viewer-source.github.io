@@ -2067,7 +2067,7 @@
     }
 
     // the pointer: a press on a node, an arc or a bend point selects it and moves it (an arc: its bends), Shift adds to
-    // the selection, Shift with a drag on empty space selects an area; a drag on empty space pans the map, as in the viewer
+    // the selection, Shift with a drag from anywhere but the selection selects an area; a drag on empty space pans the map, as in the viewer
     function at(e) {
       var r = V.view.getBoundingClientRect(), vx = (e.clientX - r.left) / V.pz(), vy = (e.clientY - r.top) / V.pz();
       return [(vx - V.tx) / V.z + x0, (vy - V.ty) / V.z + y0];
@@ -2118,7 +2118,7 @@
     // two-finger scrolling, the wheel and a pinch zoom; a drag on empty
     // space or on an item not selected moves the map, as in the viewer; a click selects (on empty space: clears the
     // selection; Shift with a click adds or takes out); a drag on what is selected moves it (with Shift by itself, out of
-    // its container: regroup); Shift with a drag on empty space selects an area; a right click opens the viewer's menu,
+    // its container: regroup); Shift with a drag from anywhere else, inside a compartment too, selects an area; a right click opens the viewer's menu,
     // as outside edit mode
     V.view.addEventListener('pointerdown', function (e) {
       keyGuides = null; unhint(); keyFlush();
@@ -2152,20 +2152,21 @@
         drag = { x: P[0], y: P[1], dx: 0, dy: 0, rs: { c: rz.c, s: rz.s, b0: boxOf(rz.c), cx: e.clientX, cy: e.clientY } };
         mv = null; paint(); return;
       }
-      if (!h && e.shiftKey) {   // Shift with a drag on empty space: an area added to the selection
-        e.stopImmediatePropagation(); e.preventDefault();
-        V.view.setPointerCapture(e.pointerId); V.view.focus({ preventScroll: true });
-        band = { x: P[0], y: P[1], x2: P[0], y2: P[1], add: true }; paint(); return;
-      }
-      // empty space, Shift on an item, or an item not selected: the viewer moves the map on a drag; a click is taken on
-      // release (selects, clears, or with Shift adds or takes out)
-      var tapped = function () { tap = { h: h, shift: e.shiftKey, x: e.clientX, y: e.clientY }; V.view.focus({ preventScroll: true }); };
       // Shift on a node selected: a drag moves the selection by itself, out of what holds it and without what it holds
       // (regroup); a click with no move still takes it out of the selection, as Shift with a click does (release)
       // (in Layout only a member that holds nothing, not in a complex: what holds what never changes there; else a plain drag)
       var shiftOn = e.shiftKey && !!h && h.n != null && !h.glyph && selN.indexOf(h.n) >= 0;
       var alone = shiftOn && (full() || selN.every(function (i) { return !nodes2[i].kids.length && !inComplex(i); }));
-      if (!h || (e.shiftKey && !shiftOn)) return tapped();
+      if (e.shiftKey && !shiftOn) {   // Shift with a drag from anywhere but the selection (inside a compartment or a complex too): an
+        // area added to the selection; Shift with a click (no move) adds or takes out what is under it (release)
+        e.stopImmediatePropagation(); e.preventDefault();
+        V.view.setPointerCapture(e.pointerId); V.view.focus({ preventScroll: true });
+        band = { x: P[0], y: P[1], x2: P[0], y2: P[1], add: true, h: h, cx: e.clientX, cy: e.clientY }; paint(); return;
+      }
+      // empty space or an item not selected: the viewer moves the map on a drag; a click is taken on
+      // release (selects, or on empty space clears)
+      var tapped = function () { tap = { h: h, shift: e.shiftKey, x: e.clientX, y: e.clientY }; V.view.focus({ preventScroll: true }); };
+      if (!h) return tapped();
       if (h.glyph) return tapped();   // a glyph is not dragged: a drag on it moves the map, a click selects its reaction
       if (!alone && h.n != null && (arcTool() || selN.indexOf(h.n) < 0) && linkDown(e, P, h)) return;   // Full, SBGN-ML: a drag from an entity or a process draws an arc (create.js)
       var list = h.p != null ? selP : h.e != null ? selE : selN, k = h.p != null ? h.p : h.e != null ? h.e : h.n, there = list.indexOf(k) >= 0;
@@ -2593,22 +2594,30 @@
       var t = tap; tap = null;
       if (t && e.type === 'pointerup' && Math.hypot(e.clientX - t.x, e.clientY - t.y) < 5) {   // a click, not a drag of the map
         e.stopImmediatePropagation();   // the viewer's release would open the annotation (its own pointer ends with the capture)
-        var hs = t.h;
-        part = null;
-        if (!hs) { if (!t.shift) { selN = []; selP = []; selE = []; } paint(); return; }
-        var li = hs.p != null ? selP : hs.e != null ? selE : selN, ki = hs.p != null ? hs.p : hs.e != null ? hs.e : hs.n;
-        if (t.shift) { if (li.indexOf(ki) >= 0) li.splice(li.indexOf(ki), 1); else li.push(ki); }
-        else { selN = hs.n != null ? [ki] : []; selP = hs.p != null ? [ki] : []; selE = hs.e != null ? [ki] : []; }
-        paint(); return;
+        click(t); return;
       }
       if (!drag && !band) return;
       e.stopImmediatePropagation();
       if (band) {
-        var a = [Math.min(band.x, band.x2), Math.min(band.y, band.y2)], c = [Math.max(band.x, band.x2), Math.max(band.y, band.y2)];
+        var bd = band; band = null;
+        if (e.type === 'pointerup' && Math.hypot(e.clientX - bd.cx, e.clientY - bd.cy) < 5) { click({ h: bd.h, shift: true }); return; }   // Shift with a click
+        var a = [Math.min(bd.x, bd.x2), Math.min(bd.y, bd.y2)], c = [Math.max(bd.x, bd.x2), Math.max(bd.y, bd.y2)];
         nodes2.forEach(function (n, i) { var b = boxOf(i); if (cd && /\|proc$/.test(n.id)) return; if (b[0] >= a[0] && b[1] >= a[1] && b[0] + b[2] <= c[0] && b[1] + b[3] <= c[1] && selN.indexOf(i) < 0) selN.push(i); });
         points.forEach(function (p, i) { var X = num(p, 'x'), Y2 = num(p, 'y'); if (X >= a[0] && Y2 >= a[1] && X <= c[0] && Y2 <= c[1] && selP.indexOf(i) < 0) selP.push(i); });
-        band = null; part = null; paint(); return;
+        part = null; paint(); return;
       }
+      dragEnd(e);
+    }
+    function click(t) {   // a click taken on release: selects, clears, or with Shift adds or takes out
+      var hs = t.h;
+      part = null;
+      if (!hs) { if (!t.shift) { selN = []; selP = []; selE = []; } paint(); return; }
+      var li = hs.p != null ? selP : hs.e != null ? selE : selN, ki = hs.p != null ? hs.p : hs.e != null ? hs.e : hs.n;
+      if (t.shift) { if (li.indexOf(ki) >= 0) li.splice(li.indexOf(ki), 1); else li.push(ki); }
+      else { selN = hs.n != null ? [ki] : []; selP = hs.p != null ? [ki] : []; selE = hs.e != null ? [ki] : []; }
+      paint();
+    }
+    function dragEnd(e) {   // the end of a drag of the selection, a port or a resize
       var d = drag; drag = null; var sets = mv; mv = null;   // the moved groups and live arcs stay until the map is drawn again
       if (!d.port && !d.rs) frozen = true;   // the copies too: the file now has the new places, the picture not yet
       if (d.port) {   // dragged: the port set; a click: the node there selected, as without a line lit (not a glyph)

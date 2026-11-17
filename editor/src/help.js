@@ -7,7 +7,7 @@
       ['', 'This tool is designed for improving the layout of a map. Moves are saved by themselves; the site shows them about two minutes later.'],
       ['Move and zoom', ['A drag on empty space moves the map.', 'Two-finger scrolling or a pinch zooms.', 'A right click opens the same menu as outside edit mode.']],
       ['Select', ['A click selects a node, an arc or a bend point; a second click without a drag deselects it.',
-        'Shift with a drag on empty space selects an area.', 'Shift with a click adds to the selection.']],
+        'Shift with a drag selects an area, also inside a compartment or a complex.', 'Shift with a click adds to the selection.']],
       ['Move what is selected', ['A drag moves what is selected.', 'Arrow keys move by 1, with Shift by 10.',
         'A member of a compartment is inside it or on its edge (crossing its border); a drag keeps it so, the compartment growing where it would cross. Hold Shift while dragging to move it alone: dropped crossing the border it is on the edge, dropped fully inside it is inside, and (unless Layout only is ticked) dropped fully outside it leaves the compartment; unless Layout only is ticked, a compartment or complex dragged with Shift moves without what it holds. A member of a complex is held fully: a drag grows the complex, and only Shift (unless Layout only is ticked) takes it out.',
         'Grid size, beside the Grid and Snap switches (8 by default; its arrow offers 4, 8, 16, 32 and 64, any whole number typed), sets the grid drawn and its snapping. With Snap to grid on (the magnet), a node dragged puts its centre on the grid and a bend point goes on half of it. Alt held, no snapping.',
