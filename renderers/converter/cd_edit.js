@@ -646,7 +646,18 @@
     var xs = [], ys = [];
     boxes.forEach(function (b) { xs.push(b[0]); ys.push(b[1]); });
     bends.forEach(function (ps) { ps.forEach(function (p) { xs.push(p[0]); ys.push(p[1]); }); });
-    var block = function (m) { return m < 0 ? Math.ceil((MARGIN - m) / 16) * 16.0 : 0.0; };
+    // opt.fit (JavaScript only): the canvas fitted round the map, what is drawn moved by whole grid blocks so its top
+    // left lies MARGIN to MARGIN + 16 from the corner, the canvas MARGIN past its right and bottom (free texts counted too)
+    var fit = !!(opt && opt.fit), lyB = [];
+    if (fit) {
+      var lyS = /<celldesigner:listOfLayers>[\s\S]*?<\/celldesigner:listOfLayers>/.exec(t), reB = /<celldesigner:bounds ([^>]*)>/g, mB;
+      while (lyS && (mB = reB.exec(lyS[0]))) {
+        var vB = {}, reV = /\b([xywh])="([^"]*)"/g, mV;
+        while ((mV = reV.exec(mB[1]))) vB[mV[1]] = F(mV[2]);
+        if (['x', 'y', 'w', 'h'].every(function (k) { return isFinite(vB[k]); })) { lyB.push([vB.x, vB.y, vB.w, vB.h]); xs.push(vB.x); ys.push(vB.y); }
+      }
+    }
+    var block = function (m) { return fit ? Math.ceil((MARGIN - m) / 16) * 16.0 || 0.0 : m < 0 ? Math.ceil((MARGIN - m) / 16) * 16.0 : 0.0; };
     var mn = function (a) { return a.reduce(function (p, v) { return v < p ? v : p; }, Infinity); };
     var sh = [xs.length ? block(mn(xs)) : 0.0, ys.length ? block(mn(ys)) : 0.0], shifted = sh[0] !== 0 || sh[1] !== 0;
     if (shifted) {
@@ -735,7 +746,12 @@
     var far = [-Infinity, -Infinity];
     nw.forEach(function (n) { far[0] = Math.max(far[0], n[0] + n[2]); far[1] = Math.max(far[1], n[1] + n[3]); });
     var md = T.span('<celldesigner:modelDisplay ');
-    if (md && (far[0] > d.W || far[1] > d.H))
+    if (md && fit && far[0] > -Infinity) {
+      bends.forEach(function (ps) { ps.forEach(function (p) { far[0] = Math.max(far[0], p[0]); far[1] = Math.max(far[1], p[1]); }); });
+      lyB.forEach(function (b) { far[0] = Math.max(far[0], b[0] + b[2] + sh[0]); far[1] = Math.max(far[1], b[1] + b[3] + sh[1]); });
+      var fW = String(Math.ceil(far[0] + MARGIN)), fH = String(Math.ceil(far[1] + MARGIN));
+      if (F(fW) !== d.W || F(fH) !== d.H) T.attrs(md[0], [['sizeX', fW], ['sizeY', fH]]);
+    } else if (md && (far[0] > d.W || far[1] > d.H))
       T.attrs(md[0], [['sizeX', far[0], d.W], ['sizeY', far[1], d.H]].filter(function (q) { return q[1] > q[2]; }).map(function (q) { return [q[0], String(Math.ceil(q[1] + 40))]; }));
     d.alias.forEach(function (a, i) { d.alias.set(i, [a[0], nw.get(i), a[2], a[3], a[4]]); });
     rxsAll.forEach(function (rx) {

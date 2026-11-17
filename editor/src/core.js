@@ -1043,12 +1043,14 @@
       if (!(merge && now - nudgeAt < 800)) { step(undo, undoText()); redo = []; }
       nudgeAt = merge ? now : 0;
     }
+    var backHooks = [];   // a format's own part told of each undo or redo step: f(the step left, the step taken), before the redraw
     function back(from, to) {
       if (!from.length) return;
       var t;
       try { t = take(from); } catch (e) { from.length = 0; warn('Undo history lost: ' + e + '.'); return; }
       clearTimeout(timer); keyDue = null; keyRun = null;   // the keys' run undone: nothing settled on top of it
-      step(to, undoText()); text = fromUndo(t); nudgeAt = 0; cdGate = null; sbBack = true; parse(); selN = []; selP = []; selE = []; part = null; dirty = true; render(); paint(); changed();
+      var was = undoText();
+      step(to, was); text = fromUndo(t); backHooks.forEach(function (f) { f(was, t); }); nudgeAt = 0; cdGate = null; sbBack = true; parse(); selN = []; selP = []; selE = []; part = null; dirty = true; render(); paint(); changed();
     }
 
     // the drawing: the renderer in the browser; the map keeps its place on screen when the drawing's edges change
@@ -2535,11 +2537,15 @@
     // the whole map's tools of the Edit window in the right-click menu too, on empty map space:
     // Snap map to grid, Pack all complexes (every complex, whatever is selected), and the
     // Show grid and Snap to grid switches, a check beside a switch that is on; each the same code as its button
+    // and after Pack the whole-map items a format's own part adds (mapTools: functions giving [label, go] or nothing)
+    var mapTools = [];
     window.m2EditMapItems = function () {
       if (!emptyClick()) return null;
       var tick = function (v) { return v ? '<span class="m2-cx-key" aria-hidden="true">\u2713</span>' : ''; };
-      return [['Snap map to grid', snapMap], ['Pack all complexes', function () { pack([]); }],
-        ['Show grid', gridShow, tick(gridSet.shown), gridSet.shown], ['Snap to grid', gridSnap, tick(gridSet.snap), gridSet.snap]];
+      var own = [];
+      mapTools.forEach(function (f) { var q = f(); if (q) own.push(q); });
+      return [['Snap map to grid', snapMap], ['Pack all complexes', function () { pack([]); }]].concat(own,
+        [['Show grid', gridShow, tick(gridSet.shown), gridSet.shown], ['Snap to grid', gridSnap, tick(gridSet.snap), gridSet.snap]]);
     };
     // a bend point put where the right click was on a line (as
     // CellDesigner's right click Add Anchor Point): the same new point a drag on the line makes, left

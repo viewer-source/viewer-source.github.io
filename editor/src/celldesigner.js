@@ -278,6 +278,26 @@
         i.src = url;
       }).catch(function () {});
     }
+    // Fit canvas, in the right-click menu on empty map space: the canvas (modelDisplay) fitted round the map with MARGIN
+    // to spare on every side, everything moved by whole grid blocks so its top left lies 40 to 56 from the corner
+    // (cd_edit.place's fit); one undo step. The editor's frame moves with the shift, so nothing moves on screen, also on
+    // its undo and redo (fits: [file before, file after, shift])
+    var fits = [];
+    function cdFit() {
+      var sh = null, before = cd.base;
+      if (!cdApply(function (now) { var r = cdJs.place(now, text, { fit: true }); sh = r[1]; return r[0]; })) return;
+      fits.unshift([before, cd.base, sh]); fits.length = Math.min(fits.length, 20);
+      x0 += sh[0]; y0 += sh[1];
+    }
+    mapTools.push(function () { return cd && cdJs ? ['Fit canvas', cdFit] : null; });
+    backHooks.push(function (was, t) {
+      if (!cd || !was || !t || typeof t === 'string') return;
+      fits.some(function (f) {
+        var k = was.b === f[1] && t.b === f[0] ? -1 : was.b === f[0] && t.b === f[1] ? 1 : 0;
+        if (k) { x0 += k * f[2][0]; y0 += k * f[2][1]; }
+        return k !== 0;
+      });
+    });
     // the CellDesigner side loaded in the background a few seconds after the page has shown a CellDesigner map where the
     // Edit tab is (two small JavaScript files, so opening for editing does not wait on them)
     function cdMap(m) { var d = m && m.downloads && m.downloads[0]; return !!(d && d.label === 'CellDesigner'); }
