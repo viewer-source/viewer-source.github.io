@@ -742,8 +742,15 @@
       var r = realizerOf(nodes2[i].el), fl = r && Array.prototype.filter.call(r.children, function (c) { return c.localName === 'Fill'; })[0];
       var lab = !sv ? r && Array.prototype.filter.call(r.children, function (c) { return c.localName === 'NodeLabel' && !c.getAttribute('iconData'); })[0] : null;
       var fs = lab ? num(lab, 'fontSize') || 12 : 10, inset = 2;
-      // a compartment's name typed in its top band
-      var at0 = !sv ? [b[0] + inset, b[1] + inset, b[2] - 2 * inset, nodes2[i].comp ? Math.min(b[3] - 2 * inset, fs * 1.6) : b[3] - 2 * inset] : [sv[1][0] - sv[2][0] / 2 + 1, sv[1][1] - sv[2][1] / 2 + 1, sv[2][0] - 2, sv[2][1] - 2];
+      // a group's name (a complex, a compartment) typed where it is drawn, in a band of its own across the group: the drawn
+      // name's place, else the label's place in the file, else a compartment's top band or a complex's bottom one
+      var grp = !sv && nodes2[i].el.getAttribute('yfiles.foldertype') === 'group', nb = grp ? nameBox(i) : null, padL = null, at0;
+      if (grp) {
+        var bh = Math.min(b[3] - 2 * inset, Math.max(fs * 1.6, nb ? nb[3] + 2 : 0)), ly = lab && lab.hasAttribute('y') ? num(lab, 'y') : null;
+        var by = nb ? nb[1] + nb[3] / 2 - bh / 2 : ly != null && ly >= 0 && ly <= b[3] ? b[1] + ly + num(lab, 'height') / 2 - bh / 2 : nodes2[i].comp ? b[1] + inset : b[1] + b[3] - inset - bh;
+        at0 = [b[0] + inset, Math.max(b[1] + inset, Math.min(by, b[1] + b[3] - inset - bh)), b[2] - 2 * inset, bh];
+        if (nb && Math.abs(nb[0] + nb[2] / 2 - (b[0] + b[2] / 2)) > 2) padL = Math.max(0, nb[0] - at0[0]);   // a name drawn off the middle (a compartment's at its left) typed from where it starts
+      } else at0 = !sv ? [b[0] + inset, b[1] + inset, b[2] - 2 * inset, b[3] - 2 * inset] : [sv[1][0] - sv[2][0] / 2 + 1, sv[1][1] - sv[2][1] / 2 + 1, sv[2][0] - 2, sv[2][1] - 2];
       var au0 = unit && afSbgn ? sbJs.activities(text)[id] : null;   // an activity's unit in the SBGN AF view: typed where it is drawn (afUnitBox)
       if (au0 != null) { var B0 = sbJs.afUnitBox(b, au0, sv[0] || 'x'); at0 = [B0[0] + 1, B0[1] + 1, B0[2] - 2, B0[3] - 2]; }
       var inp = document.createElement('input'), before = !sv ? (cd ? cdNameOf(id) : nameOf(i)) : sv[0], m0 = map;   // a CellDesigner name from its file (cdcreate.js)
@@ -764,6 +771,7 @@
         }
         st.left = sx(at0[0]) + 'px'; st.top = sy(at0[1]) + 'px'; st.width = at0[2] * V.z + 'px'; st.height = at0[3] * V.z + 'px'; st.fontSize = fs * V.z + 'px';
         if (sv && !unit) st.borderRadius = at0[3] * V.z / 2 + 'px';
+        if (padL != null) { st.textAlign = 'left'; st.paddingLeft = padL * V.z + 'px'; }
       };
       if (unit) inp.addEventListener('input', place);
       place();
@@ -777,8 +785,9 @@
           if (unit) v = v.trim();   // a unit of only spaces is none
           if (fresh && (!keep || !v) && on && map === m0) { var t0 = undo.length ? unpush() : text; if (t0 !== text) { text = t0; parse(); dirty = true; quiet(); render(); paint(); changed(); } return; }
           if (!keep || v === before.replace(/[\r\n]+/g, ' ') || !on || map !== m0 ) return;   // a name on several lines, untouched, kept as it was (the box shows it on one)
-          if (cd) { if (!sv) cdRename(id, v); return; }   // a CellDesigner map: written into its file (cdcreate.js)
-          var t2 = !sv ? sbJs.label(text, id, v) : unit ? sbJs.unitValue(text, id, sv[4], v) : sbJs.stateValue(text, id, sv[4], v);
+          if (!sv) { setName(id, v); return; }
+          if (cd) return;
+          var t2 = unit ? sbJs.unitValue(text, id, sv[4], v) : sbJs.stateValue(text, id, sv[4], v);
           if (t2 === text) return;
           if (!fresh) remember(false);   // a unit made for this typing: one step with its making (its step is taken back when nothing is kept, above)
           text = t2; parse(); dirty = true; quiet(); render(); paint(); changed();
@@ -793,14 +802,46 @@
       inp.addEventListener('pointerdown', function (e) { e.stopPropagation(); });
       setTimeout(function () { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }, 0);   // only the cursor, at the end, nothing selected in blue
     }
+    // a name written as typing writes it (typeIn): a CellDesigner map's into its file (cdcreate.js), an SBGN-ML map's label
+    function nameNow(i) { return (cd ? cdNameOf(nodes2[i].id) : nameOf(i)).replace(/[\r\n]+/g, ' ').trim(); }   // a name as one line (a CellDesigner one from its file, cdcreate.js)
+    function setName(id, v) {
+      if (cd) { cdRename(id, v); return; }
+      if (!sbJs.nameable(src(), id)) return;
+      var t2 = sbJs.label(text, id, v);
+      if (t2 === text) return;
+      remember(false); text = t2; parse(); dirty = true; quiet(); render(); paint(); changed();
+    }
+    // Name complex from members: a complex named by its members' names joined by colons (A:B, CellDesigner's usual name for
+    // a complex), in reading order (rows from the top, each from the left); a member complex with no name gives its own
+    // members' names. Offered with Repack complex (core.js), not when the name would be empty or is already that
+    function membersName(c) {
+      var ms = [], rows = [], mid = function (k, d) { var b = boxOf(k); return b[d] + b[d + 2] / 2; };
+      nodes2.forEach(function (n, k) { if (n.up === c) ms.push(k); });
+      ms.sort(function (a, b) { return mid(a, 1) - mid(b, 1); }).forEach(function (k) {   // rows from the top: a member joins the row whose first member's middle is within half its height
+        var r = rows[rows.length - 1];
+        if (r && mid(k, 1) - mid(r[0], 1) <= boxOf(r[0])[3] / 2) r.push(k); else rows.push([k]);
+      });
+      return [].concat.apply([], rows.map(function (r) { return r.sort(function (a, b) { return mid(a, 0) - mid(b, 0); }); }))
+        .map(function (k) { return nameNow(k) || (nodes2[k].shape.kind === 'Complex' ? membersName(k) : ''); }).filter(function (s) { return s; }).join(':');
+    }
+    window.m2EditNameHere = function (member) {
+      var c = complexHere(member);
+      if (c == null || !(cd ? cdPal() : palOn()) || afSbgn || afKind()) return null;   // not in an Activity Flow view, where members are not drawn
+      var v = membersName(c);
+      if (!v || v === nameNow(c) || !cd && !sbJs.nameable(src(), nodes2[c].id)) return null;
+      var id = nodes2[c].id;
+      return function () { setName(id, v); };
+    };
     // a double click on a named entity, or on one of its state variables or units of information, opens its text
     V.view.addEventListener('dblclick', function (e) {
       if (!palOn() || !editing(e)) return;
       if (tool || Date.now() - placedAt < 600) { e.stopImmediatePropagation(); return; }   // the clicks of a placing: no box
       var base = src(), P = at(e), q = svAt(P), i = innermost(P, function (n, k) {   // a compartment by its top band, where its name is (inside it the double click stays the map's)
-        return (n.el.getAttribute('yfiles.foldertype') !== 'group' || (n.comp && P[1] - boxOf(k)[1] <= 24)) && sbJs.nameable(base, n.id);
+        return (n.el.getAttribute('yfiles.foldertype') !== 'group' || (n.comp && P[1] - boxOf(k)[1] <= 24 && !nameBox(k))) && sbJs.nameable(base, n.id);
       });
       if (q) { e.stopImmediatePropagation(); typeIn(nodes2[q[0]].id, q[1]); return; }
+      var g = nameHit(P, function (n) { return sbJs.nameable(base, n.id); });   // a group's name where it is drawn (a complex's too)
+      if (g >= 0 && (i < 0 || nodes2[i].el.getAttribute('yfiles.foldertype') === 'group')) i = g;
       if (i >= 0) { e.stopImmediatePropagation(); typeIn(nodes2[i].id, null); }
     }, true);
     function svAt(P) {   // the state variable or unit of information under P: [node, j] (it may stand out of its node)
@@ -841,16 +882,35 @@
       paint();
       return true;
     }
-    function textsOf(i, j) {   // the drawn text of node i's name (j null) or of its j-th icon
+    function textsOf(i, j, res) {   // the drawn text of node i's name (j null) or of its j-th icon; res: svIcons(), read once by a caller going through many nodes
       var g = gN && gN[nodes2[i].id];
       if (!g) return [];
-      var svs = svList(i), r = V.view.getBoundingClientRect(), k = V.pz();
+      var svs = svList(i, res), r = V.view.getBoundingClientRect(), k = V.pz();
       var rect = function (q) { var L = r.left + sx(q[1][0] - q[2][0] / 2) * k, T = r.top + sy(q[1][1] - q[2][1] / 2) * k; return [L - 1.5, T - 1.5, L + q[2][0] * V.z * k + 1.5, T + q[2][1] * V.z * k + 1.5]; };
       var inside = function (b, R) { var cx = b.left + b.width / 2, cy = b.top + b.height / 2; return cx >= R[0] && cx <= R[2] && cy >= R[1] && cy <= R[3]; };
       return Array.prototype.filter.call(g.querySelectorAll('text:not(.m2-af-ut)'), function (t) {   // not an activity's unit text of the SBGN AF view
+        if (t.closest('[data-n]') !== g) return false;   // a member's own drawing, if nested, is not this node's text
         var b = t.getBoundingClientRect();
         return j == null ? !svs.some(function (q) { return inside(b, rect(q)); }) : inside(b, rect(svs[j]));
       });
+    }
+    function nameBox(i, res) {   // the drawn name of node i as a box in the map's units [x, y, w, h], null when none is drawn (texts not in its name, a CellDesigner state or count, left out)
+      var nm = nameNow(i), ts = textsOf(i, null, res).filter(function (t) { var x = t.textContent.trim(); return x && nm.indexOf(x) >= 0; });
+      if (!ts.length) return null;
+      var r = V.view.getBoundingClientRect(), k = V.pz(), L = Infinity, T = Infinity, R = -Infinity, B = -Infinity;
+      ts.forEach(function (t) { var q = t.getBoundingClientRect(); L = Math.min(L, q.left); T = Math.min(T, q.top); R = Math.max(R, q.right); B = Math.max(B, q.bottom); });
+      var X = function (c) { return ((c - r.left) / k - V.tx) / V.z + x0; }, Y2 = function (c) { return ((c - r.top) / k - V.ty) / V.z + y0; };
+      return [X(L), Y2(T), X(R) - X(L), Y2(B) - Y2(T)];
+    }
+    function nameHit(P, test) {   // the innermost group (a complex, a compartment) whose drawn name lies under P and passes test: its name is edited where it is drawn
+      var best = -1, area = Infinity, pad = 3 / V.z, res = null;
+      nodes2.forEach(function (n, k) {
+        var b = boxOf(k);
+        if (n.el.getAttribute('yfiles.foldertype') !== 'group' || b[2] * b[3] >= area || P[0] < b[0] - 20 || P[1] < b[1] - 20 || P[0] > b[0] + b[2] + 20 || P[1] > b[1] + b[3] + 20 || !test(n, k)) return;   // a name drawn in or just by its group
+        var nb = nameBox(k, res = res || svIcons());
+        if (nb && P[0] >= nb[0] - pad && P[0] <= nb[0] + nb[2] + pad && P[1] >= nb[1] - pad && P[1] <= nb[1] + nb[3] + pad) { area = b[2] * b[3]; best = k; }
+      });
+      return best;
     }
     function svParts(i, q) {   // the drawn parts of a state variable (its box, outline, text) in its node's group of the editor's drawing
       var g = gN && gN[nodes2[i].id];

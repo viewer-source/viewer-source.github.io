@@ -473,12 +473,16 @@
       if (cdRxSeen[0] !== key) { var ab = null; try { ab = cdMk.about(cd.now, rid); } catch (e) { ab = null; } cdRxSeen = [key, ab ? ab.reversible : null]; }
       return cdRxSeen[1] === null ? null : { rid: rid, on: cdRxSeen[1] };
     }
-    // a name typed in place (a double click on a species or a compartment's top band, typeIn in create.js), written by
-    // cd_make.rename; a degraded species has none
+    // a name typed in place (a double click on a species, a complex's member included, on a complex's or a compartment's
+    // drawn name, or a complex's bottom band or a compartment's top one; typeIn in create.js), written by cd_make.rename;
+    // a degraded species has none
     V.view.addEventListener('dblclick', function (e) {
       if (!cdPal() || !editing(e)) return;
       if (tool || Date.now() - placedAt < 600) { e.stopImmediatePropagation(); return; }
-      var P = at(e), i = innermost(P, function (n, k) { return cdRole(k) === 'epn' && (n.el.getAttribute('yfiles.foldertype') !== 'group' || P[1] - boxOf(k)[1] >= boxOf(k)[3] - 24) || (n.comp && P[1] - boxOf(k)[1] <= 24); });
+      var named = function (n, k) { return cdRole(k) === 'epn' || n.comp || (n.up != null && nodes2[n.up].shape.kind === 'Complex'); };
+      var P = at(e), i = innermost(P, function (n, k) { return named(n, k) && n.el.getAttribute('yfiles.foldertype') !== 'group'; });
+      if (i < 0) i = nameHit(P, named);
+      if (i < 0) i = innermost(P, function (n, k) { return named(n, k) && (!n.comp && P[1] - boxOf(k)[1] >= boxOf(k)[3] - 24 || n.comp && P[1] - boxOf(k)[1] <= 24) && !nameBox(k); });   // the bands only for a group with no name drawn
       if (i < 0) return;
       var A = cdMk.aliasInfo(cd.now, nodes2[i].id);
       if (A.cls === 'DEGRADED') return;
