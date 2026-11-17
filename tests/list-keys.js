@@ -16,9 +16,9 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysis
       return { name: on.textContent.trim(), above: o.top - b.top, below: b.bottom - o.bottom, h: o.height, top: box.scrollTop, max: box.scrollHeight - box.clientHeight };
     });
     if (!r) continue;
-    // at the list's top or bottom end there is no more room to give
+    // at the list's top or bottom end there is no more room to give (the last item may sit a fraction of a pixel past the edge)
     var need = r.h * 0.5;
-    if ((r.above < need && r.top > 1) || (r.below < need && r.top < r.max - 1) || r.above < 0 || r.below < 0) bad.push(key + ' ' + r.name + ' ' + JSON.stringify(r));
+    if ((r.above < need && r.top > 1) || (r.below < need && r.top < r.max - 1) || r.above < -1 || r.below < -1) bad.push(key + ' ' + r.name + ' ' + JSON.stringify(r));
   }
   await browser.close();
   if (bad.length) { console.log('FAIL\n' + bad.join('\n')); process.exit(1); }
