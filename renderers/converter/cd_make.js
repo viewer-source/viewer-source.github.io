@@ -836,7 +836,9 @@
   // gate between entities with its kind and output, and its added reactants' and products' aliases
   function about(t, rid) {
     var R = parts(t, rid), g = R.gm.filter(isGate)[0];
-    return { type: R.type, reversible: TWO_WAY.indexOf(R.type) < 0 ? null : at(head(t, R.rs), 'reversible') !== 'false',   // null: not one that may be mods: R.mods.map(function (m) { return at(m.tag, 'type'); }), gate: g ? { kind: at(g.tag, 'type').slice(19), out: at(g.tag, 'modificationType') } : null,
+    // reversible: null for a type that may not be reversible
+    return { type: R.type, reversible: TWO_WAY.indexOf(R.type) < 0 ? null : at(head(t, R.rs), 'reversible') !== 'false',
+      mods: R.mods.map(function (m) { return at(m.tag, 'type'); }), gate: g ? { kind: at(g.tag, 'type').slice(19), out: at(g.tag, 'modificationType') } : null,
       gates: R.mods.map(function (m) { return isGate(m) ? { kind: at(m.tag, 'type').slice(19), out: at(m.tag, 'modificationType'), inputs: at(m.tag, 'aliases').split(',') } : null; }),
       modAliases: R.mods.map(function (m) { return at(m.tag, 'aliases'); }), inputs: g ? at(g.tag, 'aliases').split(',') : null,
       rl: R.rl.map(function (p) { return at(p.tag, 'alias'); }), pl: R.pl.map(function (p) { return at(p.tag, 'alias'); }) };
