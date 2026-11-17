@@ -75,9 +75,13 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#acly-celld
   var k1 = await ci(); await page.click('.m2-ci button:has-text("Gene")').catch(function () {}); await page.waitForTimeout(800);
   var l2 = await menu(await at(p)); await page.click('.m2-cx button:has-text("Change identity")').catch(function () {}); await page.waitForTimeout(300);
   var k2 = await ci(); await page.keyboard.press('Escape'); await page.waitForTimeout(200);
-  ok('the species menu has one Change identity, under Delete', l1.indexOf('Change identity\u2026') === l1.indexOf('Delete') + 1 && !l1.some(function (t) { return /^Make /.test(t); }));
+  ok('the species menu has one Change identity, under Delete', l1.indexOf('Change identity\u2026') === l1.indexOf('Delete') + 1 && !l1.some(function (t) { return /^Make (protein|gene|rna|simple|unknown|phenotype|degraded)/i.test(t); }));
   ok('its window lists the seven kinds, the own checked, and retypes', k1.length === 7 && k1[0] === 'Protein*' && k2.indexOf('Gene*') >= 0 && k2.indexOf('Protein') >= 0);
   ok('Escape closes the window', !(await page.$('.m2-ci')));
+  await menu(await at(p)); await page.click('.m2-cx button:has-text("Change identity")').catch(function () {}); await page.waitForTimeout(300);
+  var k3 = !!(await page.$('.m2-ci')); await page.keyboard.press('Control+z'); await page.waitForTimeout(800);
+  ok('any other key closes it too (an undo), and the retype is one undo step', k3 && !(await page.$('.m2-ci')) && (await menu(await at(p)), await page.click('.m2-cx button:has-text("Change identity")').catch(function () {}), await page.waitForTimeout(300), (await ci())[0] === 'Protein*'));
+  await page.keyboard.press('Escape');
   var l3 = await menu(await at(rid + '|proc')); await page.keyboard.press('Escape');
   ok('the square offers the other reaction types', l3.indexOf('Make unknown transition') >= 0 && l3.indexOf('Make state transition') < 0);
   await page.mouse.click(10, 880); await page.mouse.click.apply(page.mouse, await at(m)); await page.waitForTimeout(200); await page.keyboard.press('Delete'); await page.waitForTimeout(900);

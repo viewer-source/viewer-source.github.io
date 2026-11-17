@@ -474,13 +474,14 @@
     }
     // Change identity: a small window by the menu item listing the species kinds (the palette's signs and names, no complex
     // or compartment), the species' own checked; a click retypes it (cd_make.retype, its colour following the scheme) in
-    // one undo step. Escape, a click outside, a scroll or a resize close it
-    var ciBox = null;
+    // one undo step. Any key (Escape, E leaving the editor, an undo), a click outside, a scroll or a resize close it
+    var ciBox = null, ciText = null;   // the window open, the map's text it was made from
     function ciClose() { if (ciBox) { ciBox.remove(); ciBox = null; } }
     function cdIdentity(id, r) {
       ciClose();
       var A = cdMk.aliasInfo(cd.now, id);
       if (!A.cls) return;
+      ciText = cd.now;
       ciBox = document.createElement('div'); ciBox.className = 'm2-cx m2-ci'; ciBox.setAttribute('role', 'dialog'); ciBox.setAttribute('aria-label', 'Change identity');
       ciBox.innerHTML = '<div class="m2-ci-head"><span>Change identity</span><button type="button" class="m2-ci-x" title="Close" aria-label="Close"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M3 3l8 8M11 3l-8 8"/></svg></button></div>';
       ciBox.querySelector('.m2-ci-x').addEventListener('click', function (e) { e.stopPropagation(); ciClose(); });
@@ -492,8 +493,9 @@
         b.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true">' + q[2] + '</svg><span>' + q[1] + '</span>';
         b.addEventListener('click', function (e) {
           e.stopPropagation(); ciClose();
-          var now = cdMk.aliasInfo(cd.now, id).cls;   // as the map is now (an undo may have come between)
-          if (!now || now === q[0]) return;
+          if (!on || V.current !== map || cd.now !== ciText) return;   // the editor left or the map changed since it opened
+          var now = A.cls;
+          if (now === q[0]) return;
           cdApply(function (t) { return cdMk.retype(t, id, q[0], { from: cdColour(t, now), to: cdColour(t, q[0]) }); }, [id]);
         });
         list.appendChild(b);
@@ -504,7 +506,7 @@
       ciBox.style.left = x / k + 'px'; ciBox.style.top = y / k + 'px';
     }
     document.addEventListener('pointerdown', function (e) { if (ciBox && !ciBox.contains(e.target)) ciClose(); }, true);
-    document.addEventListener('keydown', function (e) { if (ciBox && e.key === 'Escape') { e.stopPropagation(); ciClose(); } }, true);
+    document.addEventListener('keydown', function (e) { if (!ciBox) return; if (e.key === 'Escape') e.stopPropagation(); ciClose(); }, true);
     window.addEventListener('resize', ciClose);
     document.addEventListener('scroll', function (e) { if (ciBox && !ciBox.contains(e.target)) ciClose(); }, true);
     function cdRxItems(rid) {   // a reaction's other types: a process's among the three, reduced notation's among its four
