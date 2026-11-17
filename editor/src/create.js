@@ -302,7 +302,7 @@
     var STYLE_KEY = 'atlas-edit-style', STYLES = [['file', 'From file', 'New nodes the size most nodes of their kind have on this map'], ['default', 'Default', 'New nodes at the editor\u2019s own sizes']];
     function palStyle() { return keptChoice(STYLE_KEY, ['file', 'default']); }
     function styleRow() { return palDrop({ key: 'style', label: 'Style', title: 'Sizes of new nodes', list: STYLES, get: palStyle, set: function (v) { keepChoice(STYLE_KEY, v, 'file'); } }); }
-    // Colour scheme on SBGN-ML maps, kept in this browser: the map's own (sbgn_edit.defaults: the fill most glyphs of the
+    // Colours on SBGN-ML maps, kept in this browser: the map's own (sbgn_edit.defaults: the fill most glyphs of the
     // kind have; the Default colours for a kind the map lacks), the viewer's Default colours, or none
     var SB_COL_KEY = 'atlas-edit-sb-colours', SB_COLS = [['file', 'From file', 'New glyphs in the colour most glyphs of their kind have on this map'], ['default', 'Default', 'New glyphs in the viewer\u2019s Default colours'], ['none', 'No colours', 'New glyphs unfilled']];
     function sbCols() { return keptChoice(SB_COL_KEY, ['file', 'default', 'none']); }
@@ -317,12 +317,12 @@
       });
       return '<span class="m2-cs-sw">' + h + '</span>';
     }
-    function sbColsRow() { return palDrop({ key: 'cols', label: 'Colour scheme', title: 'Colours of new glyphs', list: SB_COLS, get: sbCols, set: function (v) { keepChoice(SB_COL_KEY, v, 'file'); }, sq: sbSquares }); }
+    function sbColsRow() { return palDrop({ key: 'cols', label: 'Colours', title: 'Colours of new glyphs', list: SB_COLS, get: sbCols, set: function (v) { keepChoice(SB_COL_KEY, v, 'file'); }, sq: sbSquares }); }
     function palFill() {   // the signs of the set chosen; the tabs and the look marked
       var k = palKey();
       var lang = palLangNow(), look = palLookNow();
       var pn = pal.querySelector('.m2-ed-pnot'); pn.hidden = false; pn.style.display = '';   // hidden on a CellDesigner map (cdFill)
-      sbColsRow(); styleRow();   // at the end of the palette, the same rows a CellDesigner map shows with its own choices (cdFill)
+      styleRow(); sbColsRow();   // at the end of the palette, the same rows a CellDesigner map shows with its own choices (cdFill)
       Array.prototype.forEach.call(pal.querySelectorAll('[data-lang]'), function (b) { b.setAttribute('aria-pressed', String(b.dataset.lang === lang)); });
       Array.prototype.forEach.call(pal.querySelectorAll('[data-look]'), function (b) { b.setAttribute('aria-checked', String(b.dataset.look === look)); });
       pal.querySelector('.m2-ed-plook').hidden = !palViews();
@@ -1456,7 +1456,7 @@
         ['fill', 'line', 'width', 'multimer'].forEach(function (q) { if (q in k) D[q] = k[q]; });
         if (k.wr > 0 && k.hr > 0) { D.w = Math.round(D.w * k.wr * 100) / 100; D.h = Math.round(D.h * k.hr * 100) / 100; }
       }
-      var cm = sbCols();   // Colour scheme: Default and No colours over the map's and a look set as default
+      var cm = sbCols();   // Colours: Default and No colours over the map's and a look set as default
       if (cm === 'default') { D.fill = sbJs.fillFor(u != null ? 'biological activity' : cls, u != null ? u : ACT_UNIT[kind0]); D.line = null; D.fallback = true; }
       else if (cm === 'none') { D.fill = null; D.line = null; D.fallback = false; }
       // a metabolite's activity is placed square, as tall as the others, in either view (in the reduced

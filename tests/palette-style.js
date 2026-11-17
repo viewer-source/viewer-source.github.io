@@ -1,7 +1,7 @@
-// The palette's Style and Colour scheme dropdowns (palDrop, editor/src/create.js) on a page with the editor, by default
+// The palette's Style and Colours dropdowns (palDrop, editor/src/create.js) on a page with the editor, by default
 // the styles page: on the Testing Glycolysis SBGN-ML map (its processes 10 by 10) and CellDesigner map, the two rows
 // at the palette's end, From file chosen; a process and a macromolecule placed take the map's sizes; Style Default gives
-// the built-in ones; the map's fill under From file; Colour scheme No colours leaves a new glyph unfilled. Nothing is saved (no token). No script error.
+// the built-in ones; the map's fill under From file; Colours No colours leaves a new glyph unfilled. Nothing is saved (no token). No script error.
 //   node tests/palette-style.js [base address]
 var { chromium } = require('playwright');
 var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
@@ -24,22 +24,22 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
   await page.goto(base, { waitUntil: 'load' }); await page.evaluate(function () { ['atlas-edit-style', 'atlas-edit-sb-colours', 'atlas-edit-cd-colours'].forEach(function (k) { localStorage.removeItem(k); }); });
   await start('testing-glycolysis-sbgn', 'process');
   var R = await last();
-  ok('SBGN-ML: two dropdowns at the palette’s end, From file chosen', R.length === 2 && /^Colour scheme: From file/.test(R[0]) && /^Style: From file/.test(R[1]), JSON.stringify(R));
+  ok('SBGN-ML: two dropdowns at the palette’s end, From file chosen', R.length === 2 && /^Style: From file/.test(R[0]) && /^Colours: From file/.test(R[1]), JSON.stringify(R));
   var p = await made('process', 700, 450), m = await made('macromolecule', 700, 650);
   ok('a process placed takes the map’s 10 by 10', JSON.stringify(await sbBox(p)) === '[10,10]', JSON.stringify(await sbBox(p)));
   ok('a macromolecule placed takes the map’s 80 by 40', JSON.stringify(await sbBox(m)) === '[80,40]', JSON.stringify(await sbBox(m)));
-  ok('and the map’s fill, #C2D4ED (Colour scheme From file)', String(await sbFill(m)).toUpperCase() === '#C2D4ED', String(await sbFill(m)));
+  ok('and the map’s fill, #C2D4ED (Colours From file)', String(await sbFill(m)).toUpperCase() === '#C2D4ED', String(await sbFill(m)));
   await pick('style', 'Default');
   var p2 = await made('process', 760, 450);
   ok('Style Default: the built-in process 18 by 18', JSON.stringify(await sbBox(p2)) === '[18,18]', JSON.stringify(await sbBox(p2)));
   await pick('cols', 'No colours');
   var m2 = await made('macromolecule', 900, 650);
-  ok('Colour scheme No colours: a new macromolecule unfilled', !(await sbFill(m2)), String(await sbFill(m2)));
-  ok('the boxes say the choices', JSON.stringify(await rows()) === JSON.stringify(['Colour scheme: No colours', 'Style: Default']), JSON.stringify(await rows()));
+  ok('Colours No colours: a new macromolecule unfilled', !(await sbFill(m2)), String(await sbFill(m2)));
+  ok('the boxes say the choices', JSON.stringify(await rows()) === JSON.stringify(['Style: Default', 'Colours: No colours']), JSON.stringify(await rows()));
   await pick('style', 'From file'); await pick('cols', 'From file');
   await start('glycolysis-celldesigner', 'cd:PROTEIN');
   R = await last();
-  ok('CellDesigner: the same two rows at the end, From file', R.length === 2 && /^Colour scheme: From file/.test(R[0]) && /^Style: From file/.test(R[1]), JSON.stringify(R));
+  ok('CellDesigner: the same two rows at the end, From file', R.length === 2 && /^Style: From file/.test(R[0]) && /^Colours: From file/.test(R[1]), JSON.stringify(R));
   await page.click('#m2-editwin .m2-ed-pdrop-cols .m2-cs-box'); await page.waitForTimeout(200);
   var items = await page.$$eval('.m2-cs-menu button', function (l) { return l.map(function (x) { return x.querySelector('span').textContent; }); }); await page.keyboard.press('Escape');
   ok('its colour menu: From file, CellDesigner, Default, No colours', JSON.stringify(items) === JSON.stringify(['From file', 'CellDesigner', 'Default', 'No colours']), JSON.stringify(items));

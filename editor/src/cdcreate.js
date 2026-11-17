@@ -78,7 +78,7 @@
       hy.hidden = false;
       if (hyc.checked !== !strict) hyc.checked = !strict;
       cdInfo(hy, true);
-      cdColsRow(); styleRow();
+      styleRow(); cdColsRow();
       var k = 'cd' + (strict ? 'S' : '') + (palGrouped() ? 'G' : '');
       if (palShown === k) return;
       palShown = k;
@@ -142,7 +142,7 @@
     function cdComplexAt(P) { var i = innermost(P, function (n) { return n.shape.kind === 'Complex'; }); return i >= 0 ? nodes2[i].id : null; }   // the innermost complex under P, its alias
 
     // a species or compartment placed: centred where clicked or dropped (on the grid with Snap), at CellDesigner's own size
-    // the colours of new species (Colour scheme at the end of the palette, palDrop in create.js, kept in this browser for
+    // the colours of new species (Colours at the end of the palette, palDrop in create.js, kept in this browser for
     // every CellDesigner map): the file's (the colour most species of the class already have on the map, else
     // CellDesigner's; the one when none is kept), CellDesigner's own (cd_make LOOK), the viewer's Default scheme (Settings,
     // Map colours) by the class's role, or none (white, as CellDesigner has no unfilled species)
@@ -177,7 +177,7 @@
       }
       return '<span class="m2-cs-sw">' + h + '</span>';
     }
-    function cdColsRow() { return palDrop({ key: 'cols', label: 'Colour scheme', title: 'Colours of new species', list: CD_COLS, get: cdCols, set: function (v) { keepChoice(CD_COL_KEY, v, 'file'); }, sq: cdSquares }); }
+    function cdColsRow() { return palDrop({ key: 'cols', label: 'Colours', title: 'Colours of new species', list: CD_COLS, get: cdCols, set: function (v) { keepChoice(CD_COL_KEY, v, 'file'); }, sq: cdSquares }); }
     function cdSize(cls) { return cdComp(cls) ? [300, 200] : (palStyle() === 'file' && cls !== 'COMPLEX' && cd && cdMk.classSize(cd.now, cls)) || cdMk.LOOK[cls].slice(0, 2); }   // Style: From file, the size most species of that class have on the map; else, or none there, CellDesigner's
     function cdMake(P, kind) {
       var cls = cdKind(kind);
