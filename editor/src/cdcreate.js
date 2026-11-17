@@ -487,7 +487,7 @@
       ciBox.querySelector('.m2-ci-x').addEventListener('click', function (e) { e.stopPropagation(); ciClose(); });
       var list = document.createElement('div'); list.setAttribute('role', 'menu'); ciBox.appendChild(list);
       CD_SP.forEach(function (q) {
-        if (q[0] === 'COMPLEX' || cdComp(q[0])) return;
+        if (q[0] === 'COMPLEX' || cdComp(q[0]) || (A.complex && /^(PHENOTYPE|DEGRADED)$/.test(q[0]))) return;   // a complex's member: no phenotype or degraded (CellDesigner keeps neither in a complex)
         var b = document.createElement('button'), own = q[0] === A.cls; b.type = 'button';
         b.setAttribute('role', 'menuitemradio'); b.setAttribute('aria-checked', String(own)); b.disabled = own;
         b.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true">' + q[2] + '</svg><span>' + q[1] + '</span>';
