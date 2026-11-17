@@ -1361,14 +1361,14 @@
       bank[m.id] = p;
       return p;
     }
+    // the edited text this page holds for a map in the viewer's keeping (a draft shown, or a drawing still ahead of the
+    // site's), read without V.keep (it would load a stored drawing and replace the viewer's kept one); null: none
+    function heldText(m) { var k = V.kept; return k && k.id === m.id && (k.draft || V.behind(m, k)) && k.text ? k.text : null; }
     function readyOf(p, m) {   // made again when an earlier try stopped (editing began, a newer entry)
       if (p.ready) return p.ready;
       var cdm = cdMap(m), sbm = sbMap(m), still = function () { return bank[m.id] === p && !on; };
       var r = p.ready = (cdm ? cdpy() : sbm ? sbpy() : yr()).then(function () {
-        // the edited text this page holds for the map, read without V.keep (it would load a stored drawing and replace
-        // the viewer's kept one)
-        var k = V.kept && V.kept.id === m.id && (V.kept.draft || V.behind(m, V.kept)) ? V.kept : null;
-        return Promise.all([k && k.text ? k.text : p.sitePub, p.gh]);
+        return Promise.all([heldText(m) || p.sitePub, p.gh]);
       }).then(function (x) {
         p.t = x[1] ? x[1].text : x[0];
         if (sbm) return p.base.then(function (b) { p.b = b; return waitFor(m); }).then(function () {   // an SBGN-ML map: the GraphML of its text, a step of its own

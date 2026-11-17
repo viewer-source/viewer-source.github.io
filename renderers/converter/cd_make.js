@@ -226,9 +226,9 @@
     var b = (o.box || [0, 0, 300, 200]).map(F), cid = next(t, 'c'), aid = next(t, 'ca'), name = esc(cdName(o.name || cid));
     if (!(b[2] > 0 && b[3] > 0)) fail('A compartment needs a width and a height.');
     var out = holder(t, b), pc = out ? out.compartment : 'default', moved = [];
-    // the name where the converter writes it (6 in, on the baseline 12.5 below the top); on an oval, 0.3 of the width in,
+    // the name where the converter writes it (6 in, on the baseline 12.5 below the top); on an oval, 0.4 of the width in,
     // where the oval's inner line is below the top's band; CellDesigner's yellow
-    var nx = o.oval ? b[0] + 0.3 * b[2] : b[0] + 6;
+    var nx = o.oval ? b[0] + 0.4 * b[2] : b[0] + 6;
     t = add(t, CD + 'listOfCompartmentAliases', '<celldesigner:compartmentAlias id="' + aid + '" compartment="' + cid + '">\n<celldesigner:class>' + (o.oval ? 'OVAL' : 'SQUARE') + '</celldesigner:class>\n' +
       '<celldesigner:bounds x="' + num(b[0]) + '" y="' + num(b[1]) + '" w="' + num(b[2]) + '" h="' + num(b[3]) + '"/>\n<celldesigner:namePoint x="' + num(nx) +
       '" y="' + num(b[1] + 12.5) + '"/>\n<celldesigner:doubleLine thickness="12.0" outerWidth="2.0" innerWidth="1.0"/>\n<celldesigner:paint color="ffcccc00" scheme="Color"/>\n' +

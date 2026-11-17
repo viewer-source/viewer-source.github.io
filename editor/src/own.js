@@ -144,10 +144,10 @@
       if (V.closed[name]) { delete V.closed[name]; V.saveClosed(); }
       V.refreshMine();
     }
-    // the right-click menu over the list (Add map, Add group, then a separator,
-    // Remove map), where the Edit tab is: Add map (into the group clicked, if it is the reader's, else at the top), Add
-    // group; on a map of the reader's Remove map; on a group of theirs Rename group and Remove group. The viewer asks for
-    // them (listItems) and shows the menu, with its Open all groups and Close all groups after them
+    // the right-click menu over the list, where the Edit tab is: New SBGN-ML map, New CellDesigner map, Add map from file
+    // (into the group clicked, if it is the reader's or with a token the site's, else at the top), Add group; on a map
+    // Rename map, Make a copy, Move to; on a group of theirs Rename group and Remove group; Remove map last of all
+    // (items.last). The viewer asks for them (listItems) and shows the menu, its own entries (Open all groups, ...) between
     var addTo = '';
     function listItems(e) {
       var t = e.target.closest('.m2-map, .m2-group, .m2-empty'), m = t && t.classList.contains('m2-map') ? V.byId[t.dataset.id] : null;
@@ -161,7 +161,7 @@
       var mapItems = [], x = e.clientX, y = e.clientY;
       if (m && canRename(m, gh)) mapItems.push(['Rename map', function () { renameMap(m.id); }]);
       if (m && canCopy(m)) mapItems.push(['Make a copy', function () { copyMap(m.id); }]);
-      if (m && movable(m)) mapItems.push(['Move to...', function () { moveMenu(m, x, y); }]);
+      if (m && movable(m) && V.listGroups().length) mapItems.push(['Move to...', function () { moveMenu(m, x, y); }]);
       if (mapItems.length) items = items.concat([null], mapItems);
       if (onGroup) items.push(null, ['Rename group', function () { renameGroup(g); }], ['Remove group', function () { removeGroup(g); }]);
       if (siteHidden().length) items.push(null, ['Show removed maps', function () { siteHide([]); }]);
@@ -177,7 +177,11 @@
     function moveTo(id, g, before) {
       var r = mine[id]; if (!r) return;
       r.group = g || ''; minePut(r).catch(function () {});
-      V.refreshMine(); V.place(id, r.group, before); V.refreshMine();
+      put(id, r.group, before);
+    }
+    function put(id, g, before) {   // a map into the reader's order of group g, the group opened so the map stays in sight
+      if (g && V.closed[g]) { delete V.closed[g]; V.saveClosed(); }
+      V.placeMap(id, g, before); V.refreshMine();
     }
     function moveMenu(m, x, y) {   // the groups the map can go to, in the list's order; its own greyed
       var site = (V.siteList || []).map(function (s) { return s.group; });
@@ -191,41 +195,43 @@
     // GraphML or CellDesigner map as it is now (the edits this page holds, else GitHub's version, else the site's);
     // with a token a copy of a site map goes to the site, as Add map does (named there by its file; renamed once built)
     function canCopy(m) { return !!m && !m.shownAs && (m.mine ? !!mine[m.id] && !mine[m.id].site : !!graphmlOf(m) && !sbMap(m)); }
-    function copyName(title) { return 'Copy of ' + title; }
     function freeFile(name) {   // a file name no map of the reader's has (-2, -3, ... before the extension)
       var files = Object.keys(mine).map(function (k) { return mine[k].file; }), ext = (name.match(/\.[^.]+$/) || [''])[0], base = name.slice(0, name.length - ext.length), f = name;
       for (var k = 2; files.indexOf(f) >= 0; k++) f = base + '-' + k + ext;
       return f;
     }
-    function siteNow(m) {   // a site map's text as it is now
-      var k = V.kept && V.kept.id === m.id && (V.kept.draft || V.behind(m, V.kept)) ? V.kept : null;
-      if (k && k.text) return Promise.resolve(k.text);
+    // a map's text as it is now: the editor's own while it is edited (every move in), the reader's record, this browser's
+    // draft, the text the viewer keeps, GitHub's version, else the site's file (also when GitHub cannot be read)
+    function textNow(m) {
+      if (on && site && site.id === m.id) return Promise.resolve(src());
+      if (m.mine) return Promise.resolve(mine[m.id].text);
+      var t = V.drafts[m.id] && V.drafts[m.id].text || heldText(m);
+      if (t) return Promise.resolve(t);
       var p = ahead(m);
       if (!p) return Promise.reject(new Error('its file is not known'));
-      return Promise.all([p.sitePub, p.gh]).then(function (x) { return x[1] ? x[1].text : x[0]; });
+      return Promise.all([p.sitePub, p.gh.catch(function () { return null; })]).then(function (x) { return x[1] ? x[1].text : x[0]; });
     }
     function copyMap(id) {
       if (naming) naming(true);
       var m = V.byId[id]; if (!m || !canCopy(m)) return;
-      var r0 = m.mine ? mine[id] : null, title = copyName(r0 ? r0.title : m.topic || m.title), group = m.group || '';
+      var r0 = m.mine ? mine[id] : null, title = 'Copy of ' + (r0 ? r0.title : m.topic || m.title), group = m.group || '', next = after(id);   // next: read before the copy is in the list
       var ext = r0 ? (r0.file.match(/\.[^.]+$/) || ['.xml'])[0] : cdMap(m) ? '.xml' : '.graphml';
       var file = freeFile(title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') + ext);
       var gh = !!(repo() && token()) && !m.mine;
-      var text = r0 ? Promise.resolve(r0.text) : siteNow(m);
-      return mineIn.then(function () { return text; }).then(function (t) {
-        var made = r0 ? Promise.resolve({ svg: r0.svg, width: r0.width, height: r0.height }) : drawText(t);
+      return mineIn.then(function () { return textNow(m); }).then(function (t) {
+        var made = r0 && t === r0.text ? Promise.resolve({ svg: r0.svg, width: r0.width, height: r0.height }) : drawText(t);
         return made.then(function (d) {
           var r = { id: newId(), title: title, file: file, text: t, svg: d.svg, width: d.width, height: d.height, at: Date.now(), src: textHash(t), hidden: false, group: group };
           if (!gh) return minePut(r).then(function () { toFolder(r.id, r.file, r.text); return r; });
-          var ord = (V.siteList || []).reduce(function (a, s) { return (!group || s.group === group) ? Math.max(a, s.order || 0) : a; }, 0) + 1;
-          return toSite(title + ext, t, group, ord).then(function (s) { r.site = s.id; return minePut(r).then(function () { return r; }); });
+          return toSite(title + ext, t, group, siteOrder(group)).then(function (s) { r.site = s.id; return minePut(r).then(function () { return r; }); });
         });
       }).then(function (r) {
-        V.refreshMine(); V.place(r.id, group, after(id)); V.refreshMine();
+        put(r.id, group, next);
         V.go(r.id);
-        if (!r.site) setTimeout(function () { renameMap(r.id); }, 0);   // its name field open, the text selected
+        if (!naming) setTimeout(function () { renameMap(r.id); }, 0);   // its name field open, the text selected (a copy on its way to the site is named by its file)
       }).catch(function (e) { alert('No copy was made: ' + (e && e.message ? e.message : e)); });
     }
+    function siteOrder(group) { return (V.siteList || []).reduce(function (a, s) { return (!group || s.group === group) ? Math.max(a, s.order || 0) : a; }, 0) + 1; }   // after the group's last on the site
     function after(id) {   // the map after id in its group, so a copy lands right under the original
       var ms = V.maps, i = ms.findIndex(function (x) { return x.id === id; });
       return i >= 0 && ms[i + 1] && (ms[i + 1].group || '') === (ms[i].group || '') ? ms[i + 1].id : null;
@@ -393,8 +399,7 @@
         return p.then(function () { return f.text(); }).then(function (t) {
           if (isSb(t) && !madeHere(t)) throw new Error('an SBGN-ML file from another editor cannot be added yet, only one made here with New map');
           if (repo() && token() && !isSb(t)) return drawText(t).then(function (d) {   // with a token: to the site, shown from here until built (a map made here stays the reader's: the build takes no SBGN-ML map of its own)
-            var ord = (V.siteList || []).reduce(function (a, m) { return (!group || m.group === group) ? Math.max(a, m.order || 0) : a; }, 0) + 1;
-            return toSite(f.name, t, group, ord).then(function (s) {
+            return toSite(f.name, t, group, siteOrder(group)).then(function (s) {
               var r = { id: newId(), title: f.name.replace(/\.(graphml|xml)$/i, ''), file: f.name,
                 text: t, svg: d.svg, width: d.width, height: d.height, at: Date.now(), hidden: false, group: group || '', site: s.id };
               return minePut(r).then(function () { last = r.id; });

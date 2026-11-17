@@ -2283,7 +2283,7 @@ page, so its styles keep the base they were made on).
   // ---------- the reader's order ----------
   // Groups and the maps inside a group are put in another order by dragging them in the list,
   // kept in this browser, one order per atlas page: {groups: [names], maps: {group: [ids]}}.
-  // A map keeps its group; a group or a map the order does not know yet comes after the known ones, in the site's
+  // A site map keeps its group (a reader's own map may change it: own.js moveTo); a group or a map the order does not know yet comes after the known ones, in the site's
   // order. Not while searching, which hides groups.
   var orderKey = 'atlas-order:' + location.pathname, order = {};
   try { order = JSON.parse(localStorage.getItem(orderKey) || '{}') || {}; } catch (e) { order = {}; }
@@ -2299,7 +2299,7 @@ page, so its styles keep the base they were made on).
   var moving = null; // {group: name} or {map: id, group: name, any} while dragging
   // a map put in the reader's order of a group, before the map `before` or at the group's end, and taken out of the order
   // of any other group (a reader's own map moved to another group: own.js moveTo)
-  function place(id, group, before) {
+  function placeMap(id, group, before) {
     if (!ARRANGE) return;
     order.maps = order.maps || {};
     Object.keys(order.maps).forEach(function (g) { order.maps[g] = order.maps[g].filter(function (x) { return x !== id; }); });
@@ -2307,8 +2307,7 @@ page, so its styles keep the base they were made on).
     var i = before ? ids.indexOf(before) : -1;
     ids.splice(i < 0 ? ids.length : i, 0, id);
     order.maps[group] = ids;
-    saveOrder();
-    maps = arrange(maps);
+    saveOrder();   // the list is made again by the caller (own.js put: refreshMine)
   }
   // in the development mode (include ... mode="development"), or with drag=true (a page that wants it in the
   // presentation mode, the styles page): a published site's viewer stays a fixed list for reading the maps
@@ -2318,7 +2317,7 @@ page, so its styles keep the base they were made on).
   if (!ARRANGE) order = {};
   // Dragging with the pointer (mouse, pen or finger), not the browser's drag and drop: a list row is a button, and
   // some browsers (Firefox) never start a native drag on a button, so the rows would not drag. A press that moves more than 5 px drags the row; a press that does not is a click as before.
-  // A map moves only among the maps of its own group, a group among the groups. The order is the
+  // A site map moves only among the maps of its own group, a reader's own map into any group, a group among the groups. The order is the
   // reader's, kept in this browser; the site's order never changes.
   var press = null, swallow = false;
   if (ARRANGE) {
@@ -2345,7 +2344,9 @@ page, so its styles keep the base they were made on).
   function dropPlace(y) {
     var sel = moving.any ? '#m2-list .m2-map, #m2-list .m2-empty[data-group], #m2-list .m2-group:not(.m2-link-group)' :
       moving.map ? '#m2-list .m2-map[data-group="' + CSS.escape(moving.group) + '"]' : '#m2-list .m2-group';
-    var rows = Array.prototype.slice.call(document.querySelectorAll(sel));
+    var rows = Array.prototype.slice.call(document.querySelectorAll(sel)).filter(function (r) {   // a site group with no map yet takes none of the reader's (as Move to)
+      return !moving.any || !r.classList.contains('m2-group') || own.isGroup(r.dataset.group) || maps.some(function (m) { return !m.mine && m.group === r.dataset.group; });
+    });
     for (var i = 0; i < rows.length; i++) { var r = rows[i].getBoundingClientRect(); if (y < r.top + r.height / 2) return { row: rows[i], rows: rows }; }
     return { row: null, rows: rows };
   }
@@ -2379,8 +2380,7 @@ page, so its styles keep the base they were made on).
           else { to = at.getAttribute('data-group') || ''; before = at.classList.contains('m2-map') ? at.getAttribute('data-id') : null; }
         }
         if (before === moving.map) return;
-        if (to !== moving.group) return own.moveTo(moving.map, to, before);
-        place(moving.map, to, before);
+        return own.moveTo(moving.map, to, before);   // the record's group, the order, and the list made again with the reader's maps first
       } else if (moving.map) {
         var ids = maps.filter(function (m) { return (m.group || '') === moving.group; }).map(function (m) { return m.id; });
         var before = d.row && d.row.getAttribute('data-id');
@@ -3292,7 +3292,7 @@ page, so its styles keep the base they were made on).
     draftIds: { get: function () { return draftIds; } },
     arrived: { get: function () { return arrived; } },
     siteGroupOf: { get: function () { return siteGroupOf; } },
-    place: { get: function () { return place; } },
+    placeMap: { get: function () { return placeMap; } },
     listMenu: { get: function () { return listMenu; } },
     listGroups: { get: function () { return listGroups; } },
     folderKey: { get: function () { return FOLDER_KEY; } },
