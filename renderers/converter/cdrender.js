@@ -437,6 +437,10 @@
       if (fy === 0 || fy === 1) return [x + (fy === 0 ? h : 0) + fx * (w - h), y + fy * h];
       return [fx === 0 ? x + h * (1 - fy) : x + w - h * fy, y + fy * h];
     }
+    if (cls === 'COMPLEX' && /^(NE|SE|SW|NW)$/.test(side)) {   // a corner on the middle of its cut (the cut 5)
+      var cx = ANCHOR[side][0], cy = ANCHOR[side][1];
+      return [x + cx * w + (cx === 0 ? 2.5 : -2.5), y + cy * h + (cy === 0 ? 2.5 : -2.5)];
+    }
     if (cls === 'DEGRADED') { x += w / 8; y += h / 8; w *= 3 / 4; h *= 3 / 4; }  // on its drawn circle, 3/4 of the box (AsthmaMap mast cell PDF: no gap)
     return anchorPoint([x, y, w, h], side, ROUND.indexOf(cls) >= 0, cls === 'PHENOTYPE');
   }
