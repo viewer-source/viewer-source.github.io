@@ -1850,7 +1850,7 @@
     // is the axis the outline runs closer to there (x on a top or bottom side, y on a left or right side; on a curve
     // switching where it runs at 45 degrees); the other is read from the outline. A run of one axis ends at that switch or
     // at a corner. The outline is the drawn one (outlineD), flattened into a polygon with the 45 degree points kept.
-    var PG = 5, rimMemo = new Map();
+    var PG = 8, rimMemo = new Map();
     function rim(n) {   // node n's outline round its centre, a closed polygon
       var b = bx(n), sh = drawnShape(n), key = sh.kind + JSON.stringify(sh.props) + '|' + b[2] + '|' + b[3], R = rimMemo.get(key);
       if (!R) { R = flatten(outlineD(sh, -b[2] / 2, -b[3] / 2, b[2], b[3])); if (rimMemo.size > 200) rimMemo.clear(); rimMemo.set(key, R); }
@@ -2774,12 +2774,11 @@
     function dragEnd(e) {   // the end of a drag of the selection, a port or a resize
       var d = drag; drag = null; var sets = mv; mv = null;   // the moved groups and live arcs stay until the map is drawn again
       if (!d.port && !d.rs) frozen = true;   // the copies too: the file now has the new places, the picture not yet
-      if (d.port) {   // dragged: the port set; a click: the node there selected, as without a line lit (not a glyph)
+      if (d.port) {   // dragged: the port set; a click: that end selected, the line staying lit, for the arrow keys
         if (d.port.n2 != null) reconnect(d.port);
         else if (d.port.free || (d.port.moved && !d.port.to) || (d.port.hub && !d.port.to)) { unshift(); paint(); }   // over nothing that takes it, or on its own process: back where it was (a click there keeps the line)
         else if (d.port.to) setPort(d.port);
-        else if (procSpots(d.port)) paint();   // at a glyph, no item of its own: the line stays selected, its end pressed for the keys
-        else { selN = [d.port.n]; selP = []; selE = []; paint(); }
+        else paint();
         return;
       }
       if (d.rs) {   // a compartment resized: its box set; in Full what no longer overlaps it let go, what it now covers taken in, past its holder's edge it leaves it (regroup); in Layout its holder grows (grown)
