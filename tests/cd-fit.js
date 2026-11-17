@@ -40,6 +40,35 @@ files.forEach(function (f) {
     ok++;
   } catch (e) { bad.push(name + ': ' + (e && e.message || e)); }
 });
+// free texts and a free line (no demo map has a layer): put into the first map, far right and below, and a second time with
+// a node first moved past the top left (the editor's file then already shifted out of negative places, its GraphML not)
+function layered(t) {
+  return t.replace('<celldesigner:listOfLayers/>', '<celldesigner:listOfLayers>\n<celldesigner:layer id="1" name="L" locked="false" visible="true">\n' +
+    '<celldesigner:listOfTexts>\n<celldesigner:layerSpeciesAlias x="0.0" y="0.0">\n<celldesigner:layerNotes>\nnote\n</celldesigner:layerNotes>\n' +
+    '<celldesigner:bounds x="2000.0" y="1500.0" w="300.0" h="60.0"/>\n<celldesigner:paint color="ff000000"/>\n<celldesigner:font size="12"/>\n</celldesigner:layerSpeciesAlias>\n</celldesigner:listOfTexts>\n' +
+    '<celldesigner:listOfFreeLines>\n<celldesigner:layerFreeLine isArrow="false" isDotted="false">\n<celldesigner:bounds sx="2400.0" sy="1700.0" ex="2600.0" ey="1900.0"/>\n' +
+    '<celldesigner:line width="1.0" color="ff000000"/>\n</celldesigner:layerFreeLine>\n</celldesigner:listOfFreeLines>\n</celldesigner:layer>\n</celldesigner:listOfLayers>');
+}
+function layerNums(t) { var o = [], re = /<celldesigner:bounds ((?:s?[xy]|[se][xy]|[wh])="[^"]*"[^>]*)>/g, ly = /<celldesigner:listOfLayers>[\s\S]*?<\/celldesigner:listOfLayers>/.exec(t), m; while (ly && (m = re.exec(ly[0]))) { var v = {}; m[1].replace(/\b(\w+)="([^"]*)"/g, function (_, k, x) { v[k] = parseFloat(x); }); o.push(v); } return o; }
+(function () {
+  var f = files.filter(function (p) { return fs.readFileSync(p, 'utf8').indexOf('<celldesigner:listOfLayers/>') >= 0; })[0];
+  if (!f) return;
+  var name = path.relative(process.cwd(), f) + ' with free texts';
+  try {
+    var t = layered(fs.readFileSync(f, 'utf8')), g = ed.graphml(t, null, opt), r = ed.place(t, g, { DOMParser: DP, fit: true }), a = layerNums(t), b = layerNums(r[0]), d = new cdr.Drawing(r[0], opt);
+    if (b.length !== 2 || b[0].x !== a[0].x + r[1][0] || b[0].y !== a[0].y + r[1][1] || b[1].sx !== a[1].sx + r[1][0] || b[1].ey !== a[1].ey + r[1][1]) throw new Error('free text or line not moved by the shift: ' + JSON.stringify([a, b, r[1]]));
+    if (d.W !== Math.ceil(2600 + r[1][0] + 40) || d.H !== Math.ceil(1900 + r[1][1] + 40)) throw new Error('canvas not round the free line: ' + d.W + ' x ' + d.H);
+    // a node moved past the top left, drawn (the file shifted), then fitted from the file and its own GraphML, as the editor does
+    var id = /<node id="([^"|]+)"/.exec(g)[1], g2 = g.replace(new RegExp('(<node id="' + id + '">[\\s\\S]*?<y:Geometry )x="[^"]*" y="[^"]*"'), '$1x="-500" y="-300"');
+    var now = ed.draw(t, g2, opt)[1], r2 = ed.place(now, ed.graphml(now, null, opt), { DOMParser: DP, fit: true }), c = layerNums(now), e = layerNums(r2[0]);
+    var a0 = aliasBounds(t), bb = aliasBounds(r2[0]), still = Object.keys(a0).filter(function (k) { return k !== id; })[0];   // a node not moved: the free texts keep their place beside it
+    if (Math.abs((e[0].x - bb[still].x) - (a[0].x - a0[still].x)) > 1e-3 || Math.abs((e[0].y - bb[still].y) - (a[0].y - a0[still].y)) > 1e-3 || Math.abs((e[1].sx - bb[still].x) - (a[1].sx - a0[still].x)) > 1e-3)
+      throw new Error('after a move past the edge: the free texts moved apart from the map ' + JSON.stringify([a, e, r2[1]]));
+    bb = aliasBounds(r2[0]), mx = Infinity, my = Infinity; Object.keys(bb).forEach(function (k) { mx = Math.min(mx, bb[k].x); my = Math.min(my, bb[k].y); });
+    if (mx < 40 || mx > 56 || my < 40 || my > 56) throw new Error('after a move past the edge: top left at ' + mx + ', ' + my);
+    ok++; files.push(name);
+  } catch (e) { bad.push(name + ': ' + (e && e.message || e)); }
+})();
 console.log(ok + ' of ' + files.length + ' CellDesigner maps fitted');
 bad.forEach(function (l) { console.log('  ' + l); });
 process.exit(bad.length || !files.length ? 1 : 0);

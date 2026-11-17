@@ -651,11 +651,13 @@
     var fit = !!(opt && opt.fit), lyB = [];
     if (fit) {
       var lyS = /<celldesigner:listOfLayers>[\s\S]*?<\/celldesigner:listOfLayers>/.exec(t), reB = /<celldesigner:bounds ([^>]*)>/g, mB;
-      while (lyS && (mB = reB.exec(lyS[0]))) {
-        var vB = {}, reV = /\b([xywh])="([^"]*)"/g, mV;
-        while ((mV = reV.exec(mB[1]))) vB[mV[1]] = F(mV[2]);
-        if (['x', 'y', 'w', 'h'].every(function (k) { return isFinite(vB[k]); })) { lyB.push([vB.x, vB.y, vB.w, vB.h]); xs.push(vB.x); ys.push(vB.y); }
+      while (lyS && (mB = reB.exec(lyS[0]))) {   // a free text's x, y, w, h, a free line's two ends sx, sy, ex, ey
+        var vB = {}, reV = /\s((?:[se])?[xy]|[wh])="([^"]*)"/g, mV;
+        while ((mV = reV.exec(' ' + mB[1]))) vB[mV[1]] = F(mV[2]);
+        if (isFinite(vB.x) && isFinite(vB.y)) lyB.push([vB.x, vB.y, vB.x + (vB.w || 0), vB.y + (vB.h || 0)]);
+        if (isFinite(vB.sx) && isFinite(vB.sy) && isFinite(vB.ex) && isFinite(vB.ey)) lyB.push([Math.min(vB.sx, vB.ex), Math.min(vB.sy, vB.ey), Math.max(vB.sx, vB.ex), Math.max(vB.sy, vB.ey)]);
       }
+      lyB.forEach(function (b) { xs.push(b[0]); ys.push(b[1]); });
     }
     var block = function (m) { return fit ? Math.ceil((MARGIN - m) / 16) * 16.0 || 0.0 : m < 0 ? Math.ceil((MARGIN - m) / 16) * 16.0 : 0.0; };
     var mn = function (a) { return a.reduce(function (p, v) { return v < p ? v : p; }, Infinity); };
@@ -748,7 +750,7 @@
     var md = T.span('<celldesigner:modelDisplay ');
     if (md && fit && far[0] > -Infinity) {
       bends.forEach(function (ps) { ps.forEach(function (p) { far[0] = Math.max(far[0], p[0]); far[1] = Math.max(far[1], p[1]); }); });
-      lyB.forEach(function (b) { far[0] = Math.max(far[0], b[0] + b[2] + sh[0]); far[1] = Math.max(far[1], b[1] + b[3] + sh[1]); });
+      lyB.forEach(function (b) { far[0] = Math.max(far[0], b[2] + sh[0]); far[1] = Math.max(far[1], b[3] + sh[1]); });
       var fW = String(Math.ceil(far[0] + MARGIN)), fH = String(Math.ceil(far[1] + MARGIN));
       if (F(fW) !== d.W || F(fH) !== d.H) T.attrs(md[0], [['sizeX', fW], ['sizeY', fH]]);
     } else if (md && (far[0] > d.W || far[1] > d.H))
@@ -763,9 +765,10 @@
     if (shifted) {
       var ly = T.span('<celldesigner:listOfLayers>'), seg3 = ly ? T.t.slice(ly[0], ly[1]) : '', re3 = /<celldesigner:bounds /g, m4;
       while ((m4 = re3.exec(seg3))) {
-        var tg = T.t.slice(ly[0] + m4.index, T.t.indexOf('>', ly[0] + m4.index)), v2 = {}, re4 = /\s([xy])="([^"]*)"/g, m5;
+        var tg = T.t.slice(ly[0] + m4.index, T.t.indexOf('>', ly[0] + m4.index)), v2 = {}, re4 = /\s((?:[se])?[xy])="([^"]*)"/g, m5;
         while ((m5 = re4.exec(tg))) v2[m5[1]] = m5[2];
-        T.attrs(ly[0] + m4.index, [['x', num(F(v2.x) + sh[0])], ['y', num(F(v2.y) + sh[1])]]);
+        // a free text's corner, a free line's two ends
+        T.attrs(ly[0] + m4.index, ['x', 'y', 'sx', 'sy', 'ex', 'ey'].filter(function (k) { return has(v2, k); }).map(function (k) { return [k, num(F(v2[k]) + sh[/y$/.test(k) ? 1 : 0])]; }));
       }
       // the gates reaction() did not write (their reactions not read by lines())
       var own = rxsAll.filter(function (rx) { var o = olds[get(rx, 'id')]; return o && (o.gate || o.gates.length); }).map(function (rx) { return T.span('<reaction [^>]*\\bid="' + reEscape(get(rx, 'id')) + '"'); });

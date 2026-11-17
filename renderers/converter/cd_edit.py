@@ -1011,8 +1011,9 @@ def place(text, gtext):
         ly = T.span(r'<celldesigner:listOfLayers>')
         for m in re.finditer(r'<celldesigner:bounds ', T.t[ly[0]:ly[1]] if ly else ''):
             tag = T.t[ly[0] + m.start():T.t.index('>', ly[0] + m.start())]
-            v = dict(re.findall(r'\s([xy])="([^"]*)"', tag))
-            T.attrs(ly[0] + m.start(), {'x': num(float(v['x']) + sh[0]), 'y': num(float(v['y']) + sh[1])})
+            v = dict(re.findall(r'\s((?:[se])?[xy])="([^"]*)"', tag))
+            # a free text's corner, a free line's two ends
+            T.attrs(ly[0] + m.start(), {k: num(float(v[k]) + sh[1 if k.endswith('y') else 0]) for k in ('x', 'y', 'sx', 'sy', 'ex', 'ey') if k in v})
         own = [T.span(r'<reaction [^>]*\bid="%s"' % re.escape(rid)) for rid, o in olds.items() if o and (o.get('gate') or o['gates'])]   # written by gate_back and the reactions' own
         for m in re.finditer(r'<celldesigner:(?:GateMember|modification) [^>]*type="BOOLEAN_LOGIC_GATE[^>]*>', T.t):
             if any(a <= m.start() < b for a, b in own):
