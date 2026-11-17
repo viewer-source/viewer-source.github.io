@@ -447,9 +447,8 @@
         if (r === 'proc') return cdRxItems(cdRid(i));
         var A = cdMk.aliasInfo(cd.now, id);
         if (!A.cls || A.cls === 'COMPLEX') return null;
-        CD_SP.forEach(function (q) {
-          if (q[0] !== A.cls && q[0] !== 'COMPLEX' && !cdComp(q[0])) out.push(['Make ' + q[1].toLowerCase(), function () { cdApply(function (t) { return cdMk.retype(t, id, q[0], { from: cdColour(t, A.cls), to: cdColour(t, q[0]) }); }, [id]); }]);
-        });
+        out.push(['Change identity\u2026', function (r) { cdIdentity(id, r); }]);
+        out.late = true;   // under Delete: rarely used
         return out;
       }
       if (h && h.e != null && h.p == null) {
@@ -471,6 +470,41 @@
       }
       return null;
     }
+    // Change identity: a small window by the menu item listing the species kinds (the palette's signs and names, no complex
+    // or compartment), the species' own checked; a click retypes it (cd_make.retype, its colour following the scheme) in
+    // one undo step. Escape, a click outside, a scroll or a resize close it
+    var ciBox = null;
+    function ciClose() { if (ciBox) { ciBox.remove(); ciBox = null; } }
+    function cdIdentity(id, r) {
+      ciClose();
+      var A = cdMk.aliasInfo(cd.now, id);
+      if (!A.cls) return;
+      ciBox = document.createElement('div'); ciBox.className = 'm2-cx m2-ci'; ciBox.setAttribute('role', 'dialog'); ciBox.setAttribute('aria-label', 'Change identity');
+      ciBox.innerHTML = '<div class="m2-ci-head"><span>Change identity</span><button type="button" class="m2-ci-x" title="Close" aria-label="Close"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M3 3l8 8M11 3l-8 8"/></svg></button></div>';
+      ciBox.querySelector('.m2-ci-x').addEventListener('click', function (e) { e.stopPropagation(); ciClose(); });
+      var list = document.createElement('div'); list.setAttribute('role', 'menu'); ciBox.appendChild(list);
+      CD_SP.forEach(function (q) {
+        if (q[0] === 'COMPLEX' || cdComp(q[0])) return;
+        var b = document.createElement('button'), own = q[0] === A.cls; b.type = 'button';
+        b.setAttribute('role', 'menuitemradio'); b.setAttribute('aria-checked', String(own)); b.disabled = own;
+        b.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true">' + q[2] + '</svg><span>' + q[1] + '</span>';
+        b.addEventListener('click', function (e) {
+          e.stopPropagation(); ciClose();
+          var now = cdMk.aliasInfo(cd.now, id).cls;   // as the map is now (an undo may have come between)
+          if (!now || now === q[0]) return;
+          cdApply(function (t) { return cdMk.retype(t, id, q[0], { from: cdColour(t, now), to: cdColour(t, q[0]) }); }, [id]);
+        });
+        list.appendChild(b);
+      });
+      document.body.appendChild(ciBox);
+      var k = ciBox.getBoundingClientRect().width / ciBox.offsetWidth || 1, w = ciBox.offsetWidth * k, h = ciBox.offsetHeight * k;   // the page's own zoom: a fixed box is placed in its units
+      var x = Math.max(4, Math.min(r.left, window.innerWidth - 4 - w)), y = Math.max(4, Math.min(r.top, window.innerHeight - 4 - h));
+      ciBox.style.left = x / k + 'px'; ciBox.style.top = y / k + 'px';
+    }
+    document.addEventListener('pointerdown', function (e) { if (ciBox && !ciBox.contains(e.target)) ciClose(); }, true);
+    document.addEventListener('keydown', function (e) { if (ciBox && e.key === 'Escape') { e.stopPropagation(); ciClose(); } }, true);
+    window.addEventListener('resize', ciClose);
+    document.addEventListener('scroll', function (e) { if (ciBox && !ciBox.contains(e.target)) ciClose(); }, true);
     function cdRxItems(rid) {   // a reaction's other types: a process's among the three, reduced notation's among its four
       var ab = cdMk.about(cd.now, rid), set = cdMk.PROCESS.indexOf(ab.type) >= 0 ? CD_RX : cdMk.REDUCED.indexOf(ab.type) >= 0 ? CD_RED : null;
       if (!set) return null;

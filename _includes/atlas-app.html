@@ -353,6 +353,16 @@ page, so its styles keep the base they were made on).
   .m2-cx.m2-cs-menu { min-width: 0; font-size: 12px; }   /* the colours' list, the right-click menu's look, at least as wide as the box */
   .m2-cx.m2-cs-menu button { padding: 4px 6px 4px 8px; }
   .m2-cx.m2-cs-menu button[aria-checked="true"] { font-weight: 500; }
+  /* Change identity's small window (CellDesigner species): the right-click menu's look, a title with a close sign, each
+     kind with its palette sign, the species' own kind checked */
+  .m2-cx.m2-ci { min-width: 0; font-size: 13px; }
+  .m2-ci .m2-ci-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 4px 4px 12px; color: var(--m2-muted, #5f6368); }
+  .m2-cx.m2-ci .m2-ci-x { width: 22px; height: 22px; padding: 4px; justify-content: center; border-radius: var(--m2-radius-button); color: #80868b; }
+  .m2-cx.m2-ci:not(.m2-cx-still) .m2-ci-x:hover, .m2-cx.m2-ci .m2-ci-x:focus-visible { background: #f1f3f4; color: #80868b; }
+  .m2-ci .m2-ci-x svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; }
+  .m2-cx.m2-ci [role="menu"] button { justify-content: flex-start; gap: 8px; padding: 3px 12px; }
+  .m2-cx.m2-ci [role="menu"] svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.37; }
+  .m2-cx.m2-ci button[aria-checked="true"], .m2-cx.m2-ci:not(.m2-cx-still) button[aria-checked="true"]:hover { font-weight: 500; color: var(--m2-text); }
   /* the circled i beside Connecting arcs (an info glyph): a sign button
      opening How to edit at its section; no shade under the pointer or open. Small and light:
      a 12 px sign, thin ring, the sign buttons' grey, in a 16 px hit area */
@@ -3001,8 +3011,9 @@ page, so its styles keep the base they were made on).
       else if (bend) item(box, 'Add bend point', bend);
       else if (turn) item(box, turn.label, turn.go);
       if (main) item(box, main.label, main.go);
-      (mac || []).forEach(function (q) { item(box, q[0], q[1]); });
+      if (mac && !mac.late) mac.forEach(function (q) { item(box, q[0], q[1]); });
       if (del) item(box, 'Delete', del);
+      if (mac && mac.late) mac.forEach(function (q) { item(box, q[0], q[1]); });   // a rarely used item, under Delete
       if (unbendAll) item(box, 'Remove all bend points', unbendAll);
       var whole = ed && window.m2EditMapItems && window.m2EditMapItems();   // the whole map's tools and the grid switches, on empty map space
       (whole || []).forEach(function (q) {

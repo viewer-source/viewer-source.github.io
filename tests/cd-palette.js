@@ -2,7 +2,7 @@
 // CellDesigner demo map: its signs shown in place of PD and AF; species, a compartment and a complex placed by a click
 // and by a drag from the palette; a protein placed on a complex its member; a state transition drawn between two species, undone
 // and redone with the species made before it; an AND gate by three clicks onto the reaction's square; an inhibition onto
-// the square; the gate's menu (no NOT for two inputs); the gate's line out and an input line deleted together; a reduced physical stimulation between two species; a name typed in place; the right-click menus' other kinds;
+// the square; the gate's menu (no NOT for two inputs); the gate's line out and an input line deleted together; a reduced physical stimulation between two species; a name typed in place; the right-click menus' other kinds, a species' through Change identity's window;
 // a species deleted with its reaction; New CellDesigner map making species and a reaction on an empty map. Nothing is
 // saved (no token). No script error anywhere.
 //   node tests/cd-palette.js [address]
@@ -70,9 +70,14 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#acly-celld
   var f = await page.$('.m2-ed-type'); ok('the name field opens empty on an unnamed species', !!f && (await f.inputValue()) === '');
   if (f) { await page.keyboard.type('MEK1'); await page.keyboard.press('Enter'); await page.waitForTimeout(800); }
   ok('the name written', /MEK1/.test(await page.$eval('#m2-img [data-n="' + p + '"]', function (x) { return x.textContent; })));
-  var l1 = await menu(await at(p)); await page.click('.m2-cx button:has-text("Make gene")').catch(function () {}); await page.waitForTimeout(800);
-  var l2 = await menu(await at(p)); await page.keyboard.press('Escape');
-  ok('the species menu retypes', l1.indexOf('Make gene') >= 0 && l2.indexOf('Make protein') >= 0 && l2.indexOf('Make gene') < 0);
+  var ci = function () { return page.$$eval('.m2-ci [role="menu"] button', function (l) { return l.map(function (x) { return x.textContent + (x.getAttribute('aria-checked') === 'true' ? '*' : ''); }); }); };
+  var l1 = await menu(await at(p)); await page.click('.m2-cx button:has-text("Change identity")').catch(function () {}); await page.waitForTimeout(300);
+  var k1 = await ci(); await page.click('.m2-ci button:has-text("Gene")').catch(function () {}); await page.waitForTimeout(800);
+  var l2 = await menu(await at(p)); await page.click('.m2-cx button:has-text("Change identity")').catch(function () {}); await page.waitForTimeout(300);
+  var k2 = await ci(); await page.keyboard.press('Escape'); await page.waitForTimeout(200);
+  ok('the species menu has one Change identity, under Delete', l1.indexOf('Change identity\u2026') === l1.indexOf('Delete') + 1 && !l1.some(function (t) { return /^Make /.test(t); }));
+  ok('its window lists the seven kinds, the own checked, and retypes', k1.length === 7 && k1[0] === 'Protein*' && k2.indexOf('Gene*') >= 0 && k2.indexOf('Protein') >= 0);
+  ok('Escape closes the window', !(await page.$('.m2-ci')));
   var l3 = await menu(await at(rid + '|proc')); await page.keyboard.press('Escape');
   ok('the square offers the other reaction types', l3.indexOf('Make unknown transition') >= 0 && l3.indexOf('Make state transition') < 0);
   await page.mouse.click(10, 880); await page.mouse.click.apply(page.mouse, await at(m)); await page.waitForTimeout(200); await page.keyboard.press('Delete'); await page.waitForTimeout(900);
