@@ -1,7 +1,7 @@
 // The palette's Style and Colour scheme dropdowns (palDrop, editor/src/create.js) on a page with the editor, by default
 // the styles page: on the Testing Glycolysis SBGN-ML map (its processes 10 by 10) and CellDesigner map, the two rows
 // at the palette's end, From file chosen; a process and a macromolecule placed take the map's sizes; Style Default gives
-// the built-in ones; Colour scheme No colours leaves a new glyph unfilled. Nothing is saved (no token). No script error.
+// the built-in ones; the map's fill under From file; Colour scheme No colours leaves a new glyph unfilled. Nothing is saved (no token). No script error.
 //   node tests/palette-style.js [base address]
 var { chromium } = require('playwright');
 var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
@@ -28,6 +28,7 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
   var p = await made('process', 700, 450), m = await made('macromolecule', 700, 650);
   ok('a process placed takes the map’s 10 by 10', JSON.stringify(await sbBox(p)) === '[10,10]', JSON.stringify(await sbBox(p)));
   ok('a macromolecule placed takes the map’s 80 by 40', JSON.stringify(await sbBox(m)) === '[80,40]', JSON.stringify(await sbBox(m)));
+  ok('and the map’s fill, #C2D4ED (Colour scheme From file)', String(await sbFill(m)).toUpperCase() === '#C2D4ED', String(await sbFill(m)));
   await pick('style', 'Default');
   var p2 = await made('process', 760, 450);
   ok('Style Default: the built-in process 18 by 18', JSON.stringify(await sbBox(p2)) === '[18,18]', JSON.stringify(await sbBox(p2)));
