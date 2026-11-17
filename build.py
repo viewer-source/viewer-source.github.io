@@ -18,6 +18,8 @@
 #   .sbgn file gets that file drawn as well, read by the converter (renderers/converter/mapconv: sbgnml.read, the file's
 #   own places and sizes) into GraphML and drawn by yrender.js, with its click data: downloads/<id>-sbgnml.svg and
 #   atlas-data/<id>-sbgnml.json, named in the entry's sbgn; the viewer shows it when Settings' Source is SBGN-ML.
+# maps/<id>.sbgn with its maps/<id>.md: an SBGN-ML map of its own in the group its entry names, drawn from the file as
+#   above and edited in place (edit_path maps/<id>.sbgn).
 # The group SBGN-ML (the converter's output from GraphML): every map of the group GraphML written as
 #   SBGN-ML by the converter's copy (advanced: the drawing kept, nothing adjusted for Newt) into downloads/<name>-sbgn.sbgn
 #   and drawn back from that file as above, a map of its own with the GraphML map's title and text, so the formats stand
@@ -445,6 +447,20 @@ def main():
         for eid, e, text in entries:
             write_entry(eid, e, text)
         print('%s: %s, %d clickable' % (mid, 'yEd' if ext == '.graphml' else 'CellDesigner', len(nodes)))
+    for f in sorted(glob.glob(os.path.join(ROOT, 'maps', '*.sbgn'))):   # an SBGN-ML map of its own: drawn from its file, edited in place
+        mid = os.path.basename(f)[:-5]
+        db.current = mid
+        meta, body = entry(mid)
+        d, nodes = sbgnml(f, mid, body, keep=True)
+        if not d:
+            continue
+        shutil.copy(f, os.path.join(ROOT, 'downloads', mid + '.sbgn'))
+        d['file'], d['src'] = '/downloads/%s.sbgn' % mid, blob_sha(f)
+        d['edit_path'], d['edit_base'] = 'maps/%s.sbgn' % mid, '/atlas-data/%s.graphml' % mid
+        search += search_entries(mid, nodes)
+        title = meta.get('title', mid)
+        write_entry(mid, entry_of(title, meta.get('group', ''), int(meta.get('order', 0)), d, topic=meta.get('topic', title)), body)
+        print('%s: SBGN-ML, %d clickable' % (mid, len(nodes)))
     for f in sorted(glob.glob(os.path.join(ROOT, 'maps', 'sbgn-ml', '*.sbgn'))):   # an edited copy whose GraphML map went
         if os.path.basename(f)[:-5] not in sids:
             print('warning: %s belongs to no map of the group GraphML, not drawn' % os.path.relpath(f, ROOT))
