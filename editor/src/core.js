@@ -2575,13 +2575,23 @@
     // Snap map to grid, Repack all complexes (every complex, whatever is selected), and the
     // Show grid and Snap to grid switches, a check beside a switch that is on; each the same code as its button
     // and after Repack all complexes the whole-map items a format's own part adds (mapTools: functions giving [label, go] or nothing)
+    // and, above Repack all complexes, Repack complex: the complex the right click is in (inside it on empty space, or on a
+    // member, the innermost complex round it, then in the member's own menu above Select all of this kind), alone
     var mapTools = [];
+    window.m2EditPackHere = function (member) {   // member: asked by the object's menu, so not on empty space (the map's items have it there)
+      if (!on || V.current !== map || !text || !rclick || (member && emptyClick())) return null;
+      var h = hit(rclick), c = h && h.n != null ? h.n : null;
+      while (c != null && nodes2[c].shape.kind !== 'Complex') c = nodes2[c].up;
+      if (c == null) return null;
+      var id = nodes2[c].id;
+      return function () { pack([id]); };
+    };
     window.m2EditMapItems = function () {
       if (!emptyClick()) return null;
       var tick = function (v) { return v ? '<span class="m2-cx-key" aria-hidden="true">\u2713</span>' : ''; };
-      var own = [];
+      var own = [], one = window.m2EditPackHere();
       mapTools.forEach(function (f) { var q = f(); if (q) own.push(q); });
-      return [['Snap map to grid', snapMap], ['Repack all complexes', function () { pack([]); }]].concat(own,
+      return [['Snap map to grid', snapMap]].concat(one ? [['Repack complex', one]] : [], [['Repack all complexes', function () { pack([]); }]], own,
         [['Show grid', gridShow, tick(gridSet.shown), gridSet.shown], ['Snap to grid', gridSnap, tick(gridSet.snap), gridSet.snap]]);
     };
     // a bend point put where the right click was on a line (as

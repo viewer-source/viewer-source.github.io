@@ -3062,6 +3062,8 @@ page, so its styles keep the base they were made on).
       // and Delete last, as file and drawing tools keep it
       if (mac && !mac.late) mac.forEach(function (q) { item(box, q[0], q[1]); });
       if (mac && mac.late) mac.forEach(function (q) { item(box, q[0], q[1]); });
+      var packHere = ed && !unbend && window.m2EditPackHere && window.m2EditPackHere(true);   // on a member of a complex: that complex repacked alone
+      if (packHere) item(box, 'Repack complex', packHere);
       if (mac && mac.tail) mac.tail.forEach(function (q) { item(box, q[0], q[1]); });
       if (del) { if (box.lastChild && box.lastChild.tagName === 'BUTTON') sep(box); item(box, 'Delete', del); }
       var whole = ed && window.m2EditMapItems && window.m2EditMapItems();   // the whole map's tools and the grid switches, on empty map space
