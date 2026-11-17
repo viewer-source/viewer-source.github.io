@@ -31,9 +31,9 @@
         // two presets in place of the bare one (conceptual type gene and conceptual type mRNA, so the kind is always clear
         // and compatible: CellDesigner has a gene and an RNA, no nucleic acid feature): each
         // made with its unit of information (PRESET), which can be retyped or deleted as any other; the signs' words centred
-        // in the shape, mRNA's as rna for compactness (the unit made stays ct:mRNA)
-        ['nucleic acid feature ct:gene', 'Nucleic acid feature, ct:gene', '<path d="M1.5 5h21v9.5q0 4.5-4.5 4.5h-12q-4.5 0-4.5-4.5z"/><text x="12" y="13.8" text-anchor="middle" font-size="7">gene</text>'],
-        ['nucleic acid feature ct:mRNA', 'Nucleic acid feature, ct:mRNA', '<path d="M1.5 5h21v9.5q0 4.5-4.5 4.5h-12q-4.5 0-4.5-4.5z"/><text x="12" y="13.8" text-anchor="middle" font-size="7">mrna</text>'],
+        // in the shape at one size, mRNA in its own capitals (the unit made stays ct:mRNA)
+        ['nucleic acid feature ct:gene', 'Nucleic acid feature, ct:gene', '<path d="M1.5 5h21v9.5q0 4.5-4.5 4.5h-12q-4.5 0-4.5-4.5z"/><text x="12" y="14" text-anchor="middle" font-size="5.5">gene</text>'],
+        ['nucleic acid feature ct:mRNA', 'Nucleic acid feature, ct:mRNA', '<path d="M1.5 5h21v9.5q0 4.5-4.5 4.5h-12q-4.5 0-4.5-4.5z"/><text x="12" y="14" text-anchor="middle" font-size="5.5">mRNA</text>'],
         ['unspecified entity', 'Unspecified entity', '<ellipse cx="12" cy="12" rx="10.5" ry="7"/>'],
         ['complex', 'Complex', '<path d="M6 4h12l4 4v8l-4 4h-12l-4-4v-8z"/>'],
         ['perturbing agent', 'Perturbing agent', '<path d="M1.5 5h21l-3.5 7 3.5 7h-21l3.5-7z"/>'],
@@ -105,13 +105,13 @@
     // a nucleic acid feature's activity as two presets, in both views (gene told apart
     // from mRNA; the AF specification's conceptual types, text in the unit as SBGN-ML keeps it): made with the unit's
     // text ct:gene or ct:mRNA (PRESET), retyped or removed from its right-click menu; the signs' words as the PD presets'
-    var NAF_ACT = 'nucleic acid feature activity', NAF_CT = [['ct:gene', 'gene'], ['ct:mRNA', 'mrna']];   // the conceptual types and their signs' words
+    var NAF_ACT = 'nucleic acid feature activity', NAF_CT = [['ct:gene', 'gene'], ['ct:mRNA', 'mRNA']];   // the conceptual types and their signs' words
     NAF_CT.forEach(function (q) { PRESET[NAF_ACT + ' ' + q[0]] = [NAF_ACT, [q[0]]]; });
     var nafSplit = function (set, sbgnLook) {
       return [].concat.apply([], set.map(function (q) {
         if (q[0] !== NAF_ACT) return [q];
         return NAF_CT.map(function (c) {
-          var sign = sbgnLook ? q[2] + '<text x="11" y="15.6" text-anchor="middle" font-size="6.6">' + c[1] + '</text>' : PAL_PD[0][1].filter(function (p) { return p[0] === 'nucleic acid feature ' + c[0]; })[0][2];
+          var sign = sbgnLook ? q[2] + '<text x="12" y="15.9" text-anchor="middle" font-size="5.5">' + c[1] + '</text>' : PAL_PD[0][1].filter(function (p) { return p[0] === 'nucleic acid feature ' + c[0]; })[0][2];
           return [NAF_ACT + ' ' + c[0], q[1] + ', ' + c[0], sign];
         });
       }));
