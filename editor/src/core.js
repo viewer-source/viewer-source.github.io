@@ -1726,9 +1726,25 @@
       var pts = [[S[0] + S[2] / 2 + so[0], S[1] + S[3] / 2 + so[1]]];
       e.pts.forEach(function (pi) { pts.push(P(pi)); });
       pts.push([T[0] + T[2] / 2 + to[0], T[1] + T[3] / 2 + to[1]]);
-      pts[0] = cut(pts[0], pts[1], S);
-      pts[pts.length - 1] = cut(pts[pts.length - 1], pts[pts.length - 2], T);
+      pts[0] = cutShape(mine && !pp.end && pp.n2 != null ? pp.n2 : e.s, pts[0], pts[1], S);
+      pts[pts.length - 1] = cutShape(mine && pp.end && pp.n2 != null ? pp.n2 : e.t, pts[pts.length - 1], pts[pts.length - 2], T);
       return pts;
+    }
+    // where the arc from outer to its port inside node n's shape (at box b) first meets the shape outline, as the
+    // renderer's visual end (so a line followed live ends where the drawing after the drop ends it, not at the box's
+    // edge off a round shape); the port itself when it lies on the outline (within a hair, as the ports' grid writes it
+    // to two decimals) or outside
+    function cutShape(n, port, outer, b) {
+      var cx = b[0] + b[2] / 2, cy = b[1] + b[3] / 2, R = rimOf(n, b), q = [port[0] - cx, port[1] - cy];
+      if (!inRim(R, q) || onRim(R, q).d < 0.05) return port;
+      var o = [outer[0] - cx, outer[1] - cy], best = null;
+      R.forEach(function (A, i) {
+        var B = R[(i + 1) % R.length], den = (q[0] - o[0]) * (B[1] - A[1]) - (q[1] - o[1]) * (B[0] - A[0]);
+        if (Math.abs(den) < 1e-12) return;
+        var t = ((A[0] - o[0]) * (B[1] - A[1]) - (A[1] - o[1]) * (B[0] - A[0])) / den, u = ((A[0] - o[0]) * (q[1] - o[1]) - (A[1] - o[1]) * (q[0] - o[0])) / den;
+        if (t >= 0 && t <= 1 && u >= 0 && u <= 1 && (best === null || t < best)) best = t;
+      });
+      return best === null ? port : [outer[0] + (port[0] - outer[0]) * best, outer[1] + (port[1] - outer[1]) * best];
     }
     function livePath(pts, smooth) {   // the arc while dragged, its bends rounded as the renderer rounds them (10 units each side), so the line does not turn sharp during a drag
       return roundPath(pts, smooth, function (q) { return f1(sx(q[0])) + ' ' + f1(sy(q[1])); });
@@ -1860,8 +1876,9 @@
     // switching where it runs at 45 degrees); the other is read from the outline. A run of one axis ends at that switch or
     // at a corner. The outline is the drawn one (outlineD), flattened into a polygon with the 45 degree points kept.
     var PG = 8, rimMemo = new Map();
-    function rim(n) {   // node n's outline round its centre, a closed polygon
-      var b = bx(n), sh = drawnShape(n), key = sh.kind + JSON.stringify(sh.props) + '|' + b[2] + '|' + b[3], R = rimMemo.get(key);
+    function rim(n) { return rimOf(n, bx(n)); }   // node n's outline round its centre, a closed polygon
+    function rimOf(n, b) {   // the same at box b
+      var sh = drawnShape(n), key = sh.kind + JSON.stringify(sh.props) + '|' + b[2] + '|' + b[3], R = rimMemo.get(key);
       if (!R) { R = flatten(outlineD(sh, -b[2] / 2, -b[3] / 2, b[2], b[3])); if (rimMemo.size > 200) rimMemo.clear(); rimMemo.set(key, R); }
       return R;
     }
