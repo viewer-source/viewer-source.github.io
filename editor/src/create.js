@@ -636,11 +636,14 @@
                 ['Add unit of information ct:gene', function () { makeUnit(nid, 'ct:gene'); }]];
       }
       var pc = k >= 0 && nodes2[k].shape.kind === 'Process' ? sbJs.classOf(src(), nodes2[k].id) : '';
-      if (sbJs.PROCESSES.indexOf(pc) >= 0) {   // the other kinds of process (not an association or dissociation of a file)
-        var pid = nodes2[k].id;
-        return sbJs.PROCESSES.filter(function (c) { return c !== pc; }).map(function (c) {
-          return ['Make ' + c, function () { var t2 = sbJs.kind(text, pid, c); if (t2 === text) return; remember(false); text = t2; made(pid); }];
-        });
+      if (sbJs.PROCESSES.indexOf(pc) >= 0) {   // its kinds by Change identity, the palette's signs (not an association or dissociation of a file)
+        var pid = nodes2[k].id, psigns = PAL_PD.filter(function (g) { return g[0] === 'Process nodes'; })[0][1];
+        return lateItem(['Change identity\u2026', function (r) {
+          kindWindow(r, sbJs.PROCESSES.map(function (c) {
+            var q = psigns.filter(function (s) { return s[0] === c; })[0];
+            return q && { name: q[1], sign: q[2], own: c === pc, go: function () { var t2 = sbJs.kind(text, pid, c); if (t2 === text) return; remember(false); text = t2; made(pid); } };
+          }).filter(Boolean));
+        }]);
       }
       // a compartment's name in one of its six places (never in the middle):
       // over a named compartment and nothing else, the places it is not in (sbgn_edit.nameAt)

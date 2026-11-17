@@ -86,8 +86,9 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#acly-celld
   var k3 = !!(await page.$('.m2-ci')); await page.keyboard.press('Control+z'); await page.waitForTimeout(800);
   ok('any other key closes it too (an undo), and the retype is one undo step', k3 && !(await page.$('.m2-ci')) && (await menu(await at(p)), await page.click('.m2-cx button:has-text("Change identity")').catch(function () {}), await page.waitForTimeout(300), (await ci())[0] === 'Protein*'));
   await page.keyboard.press('Escape');
-  var l3 = await menu(await at(rid + '|proc')); await page.keyboard.press('Escape');
-  ok('the square offers the other reaction types', l3.indexOf('Make unknown transition') >= 0 && l3.indexOf('Make state transition') < 0);
+  var l3 = await menu(await at(rid + '|proc')); await page.click('.m2-cx button:has-text("Change identity")').catch(function () {}); await page.waitForTimeout(300);
+  var k4 = await ci(); await page.keyboard.press('Escape');
+  ok('the square offers its reaction types in Change identity, above Delete, its own marked', l3.indexOf('Change identity\u2026') >= 0 && l3.indexOf('Change identity\u2026') < l3.indexOf('Delete') && !l3.some(function (x) { return /^Make (state|unknown|known)/.test(x); }) && JSON.stringify(k4) === JSON.stringify(['State transition*', 'Known transition omitted', 'Unknown transition']), JSON.stringify([l3, k4]));
   var arcIs = async function (id) {   // a modulation's right-click menu and its Change identity window: [menu, kinds], the own one marked *
     var l = await menu(await lineAt(id)); await page.click('.m2-cx button:has-text("Change identity")').catch(function () {}); await page.waitForTimeout(300);
     return [l, await ci()];

@@ -451,9 +451,13 @@
       var ab = cdMk.about(cd.now, rid), set = cdMk.PROCESS.indexOf(ab.type) >= 0 ? CD_RX : null;
       if (cdMk.REDUCED.indexOf(ab.type) >= 0) return cdModIdentity(CD_RED, ab.type, function (k) { cdApply(function (t) { return cdMk.reactionType(t, rid, k); }, [], [rid]); });
       if (ab.reversible === null) return null;
-      return (set || []).filter(function (q) { return q[0] !== ab.type; }).map(function (q) {
-        return ['Make ' + CD_NAME[q[0]].toLowerCase(), function () { cdApply(function (t) { return cdMk.reactionType(t, rid, q[0]); }, [], [rid]); }];
-      }).concat([[ab.reversible ? 'Make irreversible' : 'Make reversible', function () { cdReversible(rid, !ab.reversible); }]]);
+      // its other types by Change identity (core.js kindWindow), as a species' and a modifier's; then reversible or not
+      var out = set ? [['Change identity\u2026', function (r) {
+        kindWindow(r, set.map(function (q) { return { name: q[1], sign: q[2], own: q[0] === ab.type, go: function () { cdApply(function (t) { return cdMk.reactionType(t, rid, q[0]); }, [], [rid]); } }; }));
+      }]] : [];
+      out.push([ab.reversible ? 'Make irreversible' : 'Make reversible', function () { cdReversible(rid, !ab.reversible); }]);
+      out.late = true;   // rarely used: after the common items, above Delete
+      return out;
     }
     // reversible or not (cd_make.reversible; about() null where a reaction may not be): also the Reversible tick box in
     // Properties, for one reaction selected (its lines or its square, nothing else); true when written
