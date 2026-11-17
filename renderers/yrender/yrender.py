@@ -931,7 +931,7 @@ def arrow(kind, tip, prev, col, width):
     if kind == 'white_diamond':
         return poly([tip, at(8, 6), at(16, 0), at(8, -6)], 'white'), 15
     if kind == 'white_delta_bar':
-        return poly([tip, at(16, 6), at(16, -6)], 'white') + bar(21, 8), 21
+        return poly([tip, at(16, 6), at(16, -6)], 'white') + bar(21, 8), 15  # the line runs through the bar to the head's base, as SBGN draws it
     return bar(0, 5), 0  # t_shape
 
 

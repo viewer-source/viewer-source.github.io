@@ -64,7 +64,7 @@
         ['stimulation', 'Stimulation', '<path d="M3 12h10"/><path d="M13 7.5l8 4.5-8 4.5z"/>'],
         ['catalysis', 'Catalysis', '<path d="M3 12h12"/><circle cx="18" cy="12" r="3"/>'],
         ['inhibition', 'Inhibition', '<path d="M3 12h17M20 6v12"/>'],
-        ['necessary stimulation', 'Necessary stimulation', '<path d="M3 12h7M10 7v10"/><path d="M13 7.5l8 4.5-8 4.5z"/>']]]
+        ['necessary stimulation', 'Necessary stimulation', '<path d="M3 12h10M10 7v10"/><path d="M13 7.5l8 4.5-8 4.5z"/>']]]
     ];
     // Activity Flow (two tabs, PD and AF, and under AF the
     // view, Reduced notation (CellDesigner) or SBGN: one set of rules, two ways of drawing the nodes). A node made in either

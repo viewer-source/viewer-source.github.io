@@ -748,7 +748,7 @@
     if (kind === 'white_delta') return [poly([tip, at(16, 6), at(16, -6)], 'white'), 15];
     if (kind === 'white_circle') { var c = at(4, 0); return ['<circle cx="' + num(c[0]) + '" cy="' + num(c[1]) + '" r="4"' + white() + ink('stroke', col) + '/>', 8]; }
     if (kind === 'white_diamond') return [poly([tip, at(8, 6), at(16, 0), at(8, -6)], 'white'), 15];
-    if (kind === 'white_delta_bar') return [poly([tip, at(16, 6), at(16, -6)], 'white') + bar(21, 8), 21];
+    if (kind === 'white_delta_bar') return [poly([tip, at(16, 6), at(16, -6)], 'white') + bar(21, 8), 15];   // the line runs through the bar to the head's base, as SBGN draws it
     return [bar(0, 5), 0];
   }
 
