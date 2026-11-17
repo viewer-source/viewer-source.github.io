@@ -12,6 +12,9 @@
     // a node selected darkened under its handles (yEd's way), or the handles alone (CellDesigner's way, on its maps);
     // the targets of a line being drawn or moved stay darkened on every format
     function darkSel() { return !cd; }
+    // a line's end on a node: on a grid inside the shape and along its outline (core.js, gridPorts), or at one of the node's
+    // places only, as a CellDesigner file keeps a species' line
+    function gridPorts() { return !cd; }
     // a process glyph not moved itself stays midway on its segment of the main line wherever that goes (cd_edit), so
     // while a drag or the keys move a segment's end it follows at once (not only on
     // release): procs, each glyph with its two main arcs; liveG, the glyphs' shifts until the map is drawn again

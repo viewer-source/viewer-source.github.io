@@ -1693,10 +1693,11 @@
       var b = liveC && liveC[i] ? liveC[i] : still ? boxOf(i) : bx(i), n = nodes2[i];
       // the SBGN AF view draws an activity as a sharp rectangle: its selection and highlights take that shape (else
       // the grey under a selected activity keeps the protein's rounded corners)
-      var act = afSbgn && AF_KINDS.test(n.shape.kind), sh = act ? { kind: 'Macromolecule', props: { radius: '0' } } : n.shape, d = outlineD(sh, b[0], b[1], b[2], b[3]);
-      if (!act && n.shape.props.mcount === '2') d = outlineD(n.shape, b[0] + 6, b[1] + 6, b[2], b[3]) + d;
+      var sh = drawnShape(i), d = outlineD(sh, b[0], b[1], b[2], b[3]);
+      if (sh === n.shape && n.shape.props.mcount === '2') d = outlineD(n.shape, b[0] + 6, b[1] + 6, b[2], b[3]) + d;
       return d;
     }
+    function drawnShape(i) { return afSbgn && AF_KINDS.test(nodes2[i].shape.kind) ? { kind: 'Macromolecule', props: { radius: '0' } } : nodes2[i].shape; }
     function cut(port, outer, b) {   // where the arc from outer to its port inside the box b meets the box's edge
       if (!(port[0] > b[0] && port[0] < b[0] + b[2] && port[1] > b[1] && port[1] < b[1] + b[3])) return port;
       var dx = port[0] - outer[0], dy = port[1] - outer[1], best = 1;
@@ -1759,7 +1760,7 @@
       }
       return { e: hlE, g: glyphs };
     }
-    // a line's end moved on its node (snapped to the centre, or the middle of the bottom, top, left or right
+    // a line's end moved on its node (on the ports' grid, gridSpot; else snapped to the centre or the middle of a
     // side): an end square of a lit line dragged; it snaps to the nearest of the five, written as the port's offset
     // from the node's centre (yEd's sx, sy or tx, ty); on a CellDesigner map cd_edit makes it CellDesigner's port
     // (none for the centre, N, S, W, E). A process glyph's main lines are not moved this way; a modifier's end there goes round it (procSpots)
@@ -1835,13 +1836,137 @@
       });
       if (list.length) setPorts(list);
     }
-    function spot(pp, P) {   // the nearest of the node's places (five, or a glyph's six), as an offset from its centre
+    function spot(pp, P, free) {   // the end's place on its node as an offset from its centre: a glyph's six, the ports' grid (free: anywhere, gridSpot), else the nearest of five
       var b = bx(pp.n), c = [b[0] + b[2] / 2, b[1] + b[3] / 2], S = procSpots(pp) || hubSides(pp), F = null;
+      if (!S && gridPorts()) return gridSpot(pp.n, [P[0] - c[0], P[1] - c[1]], free);
       // at a glyph a tie (a drop on its centre) goes to the side facing the modifier: the point
       // before the end weighs in a little
       if (S) { var all = ports(pp.k); F = all[all.length - 2]; }
       var cost = function (o) { var q = [c[0] + o[0], c[1] + o[1]]; return Math.hypot(q[0] - P[0], q[1] - P[1]) + (F ? 1e-3 * Math.hypot(q[0] - F[0], q[1] - F[1]) : 0); };
       return (S || [[0, 0], [0, -b[3] / 2], [0, b[3] / 2], [-b[2] / 2, 0], [b[2] / 2, 0]]).reduce(function (m, o) { return cost(o) < cost(m) ? o : m; });
+    }
+    // ---- ports on a grid (where the format's part says so: gridPorts), as offsets from the node's centre ----
+    // Inside the shape a grid of PG from the centre. On the outline the port stays on it, and the coordinate on the grid
+    // is the axis the outline runs closer to there (x on a top or bottom side, y on a left or right side; on a curve
+    // switching where it runs at 45 degrees); the other is read from the outline. A run of one axis ends at that switch or
+    // at a corner. The outline is the drawn one (outlineD), flattened into a polygon with the 45 degree points kept.
+    var PG = 5, rimMemo = new Map();
+    function rim(n) {   // node n's outline round its centre, a closed polygon
+      var b = bx(n), sh = drawnShape(n), key = sh.kind + JSON.stringify(sh.props) + '|' + b[2] + '|' + b[3], R = rimMemo.get(key);
+      if (!R) { R = flatten(outlineD(sh, -b[2] / 2, -b[3] / 2, b[2], b[3])); if (rimMemo.size > 200) rimMemo.clear(); rimMemo.set(key, R); }
+      return R;
+    }
+    function flatten(d) {   // an outline path (M, L, h, v, Q, A, Z, absolute but h and v) as points; curves fine, with their 45 degree points
+      var tk = d.match(/[a-zA-Z]|-?(?:\d+\.?\d*|\.\d+)(?:e[-+]?\d+)?/g) || [], i = 0, P = [], cur = [0, 0], st = [0, 0], c = '';
+      var n = function () { return parseFloat(tk[i++]); }, same = function (a, q) { return Math.abs(a[0] - q[0]) < 1e-9 && Math.abs(a[1] - q[1]) < 1e-9; };
+      var add = function (q) { if (!P.length || !same(P[P.length - 1], q)) P.push(q); cur = q; };
+      var inside = function (ts) { return ts.filter(function (t) { return t > 0 && t <= 1; }).sort(function (x, y) { return x - y; }); };
+      while (i < tk.length) {
+        if (/[a-zA-Z]/.test(tk[i])) c = tk[i++];
+        if (c === 'M') { st = [n(), n()]; add(st); }
+        else if (c === 'L') add([n(), n()]);
+        else if (c === 'h') add([cur[0] + n(), cur[1]]);
+        else if (c === 'v') add([cur[0], cur[1] + n()]);
+        else if (c === 'Q') {
+          var q0 = cur, q1 = [n(), n()], q2 = [n(), n()], a = [q1[0] - q0[0], q1[1] - q0[1]], e = [q2[0] - q1[0], q2[1] - q1[1]], ts = [];
+          [1, -1].forEach(function (sg) { var den = (e[0] - a[0]) - sg * (e[1] - a[1]); if (Math.abs(den) > 1e-12) ts.push(-(a[0] - sg * a[1]) / den); });
+          for (var k = 1; k <= 24; k++) ts.push(k / 24);
+          inside(ts).forEach(function (t) { var u = 1 - t; add([u * u * q0[0] + 2 * u * t * q1[0] + t * t * q2[0], u * u * q0[1] + 2 * u * t * q1[1] + t * t * q2[1]]); });
+        } else if (c === 'A') {
+          var rx = n(), ry = n(); n(); var fa = n(), fs = n(), p2 = [n(), n()], p1 = cur;
+          var dx = (p1[0] - p2[0]) / 2, dy = (p1[1] - p2[1]) / 2, lam = dx * dx / (rx * rx) + dy * dy / (ry * ry);
+          if (lam > 1) { rx *= Math.sqrt(lam); ry *= Math.sqrt(lam); }
+          var co = (fa === fs ? -1 : 1) * Math.sqrt(Math.max(0, (rx * rx * ry * ry - rx * rx * dy * dy - ry * ry * dx * dx) / (rx * rx * dy * dy + ry * ry * dx * dx)));
+          var cxp = co * rx * dy / ry, cyp = -co * ry * dx / rx, cx = cxp + (p1[0] + p2[0]) / 2, cy = cyp + (p1[1] + p2[1]) / 2;
+          var t1 = Math.atan2((dy - cyp) / ry, (dx - cxp) / rx), dt = Math.atan2((-dy - cyp) / ry, (-dx - cxp) / rx) - t1;
+          if (fs && dt < 0) dt += 2 * Math.PI; if (!fs && dt > 0) dt -= 2 * Math.PI;
+          var m = Math.max(2, Math.ceil(Math.abs(dt) / (Math.PI / 180))), th = [], t0 = Math.atan(ry / rx);
+          for (var k2 = 1; k2 <= m; k2++) th.push(k2 / m);
+          for (var j = -4; j <= 4; j++) [t0, -t0].forEach(function (x) { th.push((x + j * Math.PI - t1) / dt); });
+          inside(th).forEach(function (f) { var t = t1 + f * dt; add([cx + rx * Math.cos(t), cy + ry * Math.sin(t)]); });
+          add(p2);
+        } else if (c === 'Z' || c === 'z') add(st);
+        else i++;
+      }
+      if (P.length > 1 && same(P[0], P[P.length - 1])) P.pop();
+      return P;
+    }
+    function keyAx(v) { return Math.abs(v[0]) >= Math.abs(v[1]) ? 0 : 1; }   // the axis a piece of outline runs closer to
+    function gridNext(v, s, g) { var e = 0.02 / g; return s > 0 ? (Math.floor(v / g + e) + 1) * g : (Math.ceil(v / g - e) - 1) * g; }   // within 0.02 of a grid value counts as on it (offsets kept to two decimals)
+    function dec2(q) { return [Math.round(q[0] * 100) / 100, Math.round(q[1] * 100) / 100]; }
+    function onRim(R, o) {   // the outline's point nearest o: its segment j (R[j] to R[j+1]), the point, the distance
+      var best = { d: Infinity };
+      R.forEach(function (p, j) {
+        var q = R[(j + 1) % R.length], v = [q[0] - p[0], q[1] - p[1]], L = v[0] * v[0] + v[1] * v[1];
+        var t = L ? Math.max(0, Math.min(1, ((o[0] - p[0]) * v[0] + (o[1] - p[1]) * v[1]) / L)) : 0, X = [p[0] + t * v[0], p[1] + t * v[1]], d = Math.hypot(X[0] - o[0], X[1] - o[1]);
+        if (d < best.d) best = { d: d, j: j, pt: X };
+      });
+      return best;
+    }
+    function inRim(R, o) {
+      var inn = false;
+      for (var i = 0, j = R.length - 1; i < R.length; j = i++) {
+        var a = R[i], b = R[j];
+        if ((a[1] > o[1]) !== (b[1] > o[1]) && o[0] < (b[0] - a[0]) * (o[1] - a[1]) / (b[1] - a[1]) + a[0]) inn = !inn;
+      }
+      return inn;
+    }
+    // from loc on the outline, along it with coordinate A going toward s, while the outline runs closer to A: the point
+    // where A reaches its next grid value, else the run's end; null when no run goes that way from here
+    function along(R, loc, A, s, g) {
+      var N = R.length, v = gridNext(loc.pt[A], s, g);
+      for (var di = 0; di < 2; di++) {
+        var p = loc.pt, moved = false;
+        for (var m = 0; m < N; m++) {
+          var q = di ? R[((loc.j - m) % N + N) % N] : R[(loc.j + 1 + m) % N], w = [q[0] - p[0], q[1] - p[1]];
+          if (Math.hypot(w[0], w[1]) < 0.05) { p = q; continue; }   // a piece within rounding of the start (an offset kept to two decimals)
+          if (keyAx(w) !== A || Math.sign(w[A]) !== s) break;
+          if ((q[A] - v) * s >= -1e-9) { var t = (v - p[A]) / w[A], X = [p[0] + t * w[0], p[1] + t * w[1]]; X[A] = v; return X; }
+          p = q; moved = true;
+        }
+        if (moved && Math.hypot(p[0] - loc.pt[0], p[1] - loc.pt[1]) > 0.05) return p;
+      }
+      return null;
+    }
+    // an arrow key on a port at offset o (d: the arrow; g: the step): inside, a grid step, stopping on the outline where
+    // the line along the arrow meets it; on the outline, along it (along), else one step inward; outward nothing
+    function portStep(n, o, d, g) {
+      var R = rim(n), A = d[0] ? 0 : 1, s = Math.sign(d[A]), loc = onRim(R, o), t = o.slice();
+      if (loc.d > 0.05 && !inRim(R, o)) return dec2(loc.pt);   // outside (a node resized smaller): onto the outline first
+      if (loc.d > 0.05) {
+        t[A] = gridNext(o[A], s, g);
+        if (inRim(R, t) && onRim(R, t).d > 0.05) return dec2(t);
+        var hit = null;   // where the line from o along the arrow leaves the shape
+        R.forEach(function (p, j) {
+          var q = R[(j + 1) % R.length], B = 1 - A;
+          if ((p[B] - o[B]) * (q[B] - o[B]) > 0 || p[B] === q[B]) return;
+          var X = p[A] + (q[A] - p[A]) * (o[B] - p[B]) / (q[B] - p[B]);
+          if ((X - o[A]) * s > 1e-9 && (hit == null || (X - hit) * s < 0)) hit = X;
+        });
+        if (hit == null) return null;
+        t[A] = hit; return dec2(t);
+      }
+      var r = along(R, loc, A, s, g);
+      if (r) return dec2(r);
+      var probe = loc.pt.slice(); probe[A] += s * 0.5; t = loc.pt.slice(); t[A] = gridNext(t[A], s, g);
+      return inRim(R, probe) && inRim(R, t) && onRim(R, t).d > 0.05 ? dec2(t) : null;
+    }
+    // a port dragged to offset q: onto the outline within 3 px of it or outside (its grid coordinate on the grid), else
+    // the nearest grid point inside; free (Alt or Ctrl): where it is, inside or on the outline
+    function gridSpot(n, q, free) {
+      var R = rim(n), loc = onRim(R, q), inn = inRim(R, q);
+      if (free) return dec2(inn ? q : loc.pt);
+      if (inn && loc.d > 3 / V.z) {   // inside: the nearest grid point inside the shape (the rounded one may lie outside, near a curve)
+        var x0 = Math.floor(q[0] / PG) * PG, y0 = Math.floor(q[1] / PG) * PG, best = null, bd = Infinity;
+        [0, PG].forEach(function (dx) { [0, PG].forEach(function (dy) {
+          var g = [x0 + dx, y0 + dy], d = Math.hypot(g[0] - q[0], g[1] - q[1]);
+          if (d < bd && inRim(R, g) && onRim(R, g).d > 0.05) { bd = d; best = g; }
+        }); });
+        if (best) return best;
+      }
+      var p = loc.pt, j = loc.j, w = [R[(j + 1) % R.length][0] - R[j][0], R[(j + 1) % R.length][1] - R[j][1]], A = keyAx(w), v = Math.round(p[A] / PG) * PG;
+      if (Math.abs(v - p[A]) < 1e-6) return dec2(p);
+      return dec2(along(R, loc, A, Math.sign(v - p[A]), PG) || p);
     }
     function spotNo(pp, to) {   // the number of the glyph's place at offset to (procSpots' order), null off a glyph
       var S = procSpots(pp), best = null, bd = Infinity;
@@ -1893,17 +2018,17 @@
       });
       return best;
     }
-    function portOn(pp, i, P) {   // the end's place at node i from its centre: at a process or gate the port its line takes, else spot's (a modifier: one of the two sides)
+    function portOn(pp, i, P, free) {   // the end's place at node i from its centre: at a process or gate the port its line takes, else spot's (a modifier: one of the two sides)
       var b = bx(i), e = edges2[pp.k], H = nodes2[i].hub && window.yrender && hubPorts()[nodes2[i].id];
-      if (!H || (MODS.test(e.arr[1]) && pp.end)) return spot({ k: pp.k, end: pp.end, n: i }, P);
+      if (!H || (MODS.test(e.arr[1]) && pp.end)) return spot({ k: pp.k, end: pp.end, n: i }, P, free);
       var q = pp.end || (e.arr[1] === 'none' && !nodes2[e.t].hub) ? H[0] : H[1];   // into port one, or out of port two
       return [q[0] - b[0] - b[2] / 2, q[1] - b[1] - b[3] / 2];
     }
-    function aim(pp, P) {   // the dragged end's next place: on its own node, on a node that takes it, or free at the pointer
+    function aim(pp, P, free) {   // the dragged end's next place: on its own node, on a node that takes it, or free at the pointer (free: off the ports' grid)
       var i = takerAt(pp, P), b;
       pp.n2 = null; pp.free = false;
-      if (i === pp.n) { pp.to = pp.hub ? null : spot(pp, P); return; }   // an end at a port stays with its process
-      if (i != null) { pp.n2 = i; pp.to = portOn(pp, i, P); return; }
+      if (i === pp.n) { pp.to = pp.hub ? null : spot(pp, P, free); return; }   // an end at a port stays with its process
+      if (i != null) { pp.n2 = i; pp.to = portOn(pp, i, P, free); return; }
       b = bx(pp.n); pp.free = true; pp.to = [P[0] - b[0] - b[2] / 2, P[1] - b[1] - b[3] / 2];
     }
     function reconnect(pp) {   // the end of arc pp.k put on node pp.n2 at offset pp.to, one undo step; the line's end square no longer pressed
@@ -2580,7 +2705,7 @@
         e.stopImmediatePropagation();
         var P = at(e);
         if (band) { band.x2 = P[0]; band.y2 = P[1]; }
-        else if (drag.port) { if (drag.port.moved || Math.hypot(e.clientX - drag.cx, e.clientY - drag.cy) >= 4) { drag.port.moved = true; aim(drag.port, P); } }
+        else if (drag.port) { if (drag.port.moved || Math.hypot(e.clientX - drag.cx, e.clientY - drag.cy) >= 4) { drag.port.moved = true; aim(drag.port, P, e.altKey || e.ctrlKey); } }
         else if (drag.rs && !drag.rs.go && Math.hypot(e.clientX - drag.rs.cx, e.clientY - drag.rs.cy) < 4) return;   // not a resize yet: a click with a jitter changes nothing
         else if (drag.rs) {
           var seed = {}, rc = drag.rs.c; drag.rs.go = true;
@@ -2695,13 +2820,19 @@
     V.view.addEventListener('pointerup', release, true);
     V.view.addEventListener('pointercancel', release, true);
 
-    // an end of a line moved by the keys among the node's five places, as a drag sets it: from the
-    // centre to the side the arrow points to; from a side, the opposite arrow back to the centre, another to its side
-    function portKey(pp, d) {
+    // an end of a line moved by the keys, as a drag sets it: round a glyph to its next place; on the ports' grid
+    // (portStep); else among the node's five places, from the centre to the side the arrow points to, from a side the
+    // opposite arrow back to the centre, another to its side
+    function portKey(pp, d, fine) {
       if (pp.hub) return;   // at a process's or gate's port: it goes with the process
-      var e = edges2[pp.k], a = pp.end ? ['tx', 'ty'] : ['sx', 'sy'], b = bx(pp.n);
-      var c = [b[0] + b[2] / 2, b[1] + b[3] / 2], o = spot(pp, [c[0] + num(e.path, a[0]), c[1] + num(e.path, a[1])]);
-      var u = [Math.sign(d[0]), Math.sign(d[1])], s = [Math.sign(o[0]), Math.sign(o[1])], S = procSpots(pp) || hubSides(pp);
+      var e = edges2[pp.k], a = pp.end ? ['tx', 'ty'] : ['sx', 'sy'], b = bx(pp.n), u = [Math.sign(d[0]), Math.sign(d[1])];
+      var off = [num(e.path, a[0]) || 0, num(e.path, a[1]) || 0], S = procSpots(pp) || hubSides(pp);
+      if (!S && gridPorts()) {   // plain arrows a step of PG, Shift 1
+        var g2 = portStep(pp.n, off, u, fine ? 1 : PG);
+        if (g2) setPort({ k: pp.k, end: pp.end, n: pp.n, to: g2 });
+        return;
+      }
+      var c = [b[0] + b[2] / 2, b[1] + b[3] / 2], o = spot(pp, [c[0] + off[0], c[1] + off[1]]), s = [Math.sign(o[0]), Math.sign(o[1])];
       if (S) {   // round a glyph: the next of its six places the arrow points to
         var best = null, bs = 0.3;
         S.forEach(function (q) {
@@ -2740,7 +2871,7 @@
       // node's five places); none pressed, nothing moves
       var pt0 = part && !selN.length && !selP.length && selE.indexOf(part.k) >= 0 ? part : null;
       if (!selN.length && !selP.length && !pt0) return;
-      if (pt0 && pt0.port) { portKey(pt0.port, d); return; }
+      if (pt0 && pt0.port) { portKey(pt0.port, d, e.shiftKey); return; }
       var ks = pt0 ? { n: new Set(), p: new Set([pt0.p]), dx: 0, dy: 0 } : moving();
       var bp = pt0 ? pt0.p : selP.length === 1 && !selN.length && !selE.length ? selP[0] : null;
       if (bp != null) d = keyAlign(bp, d, ks.p);
