@@ -482,7 +482,31 @@
     // information, Make multimer or Make macromolecule (SBGN's names, macromolecule and macromolecule
     // multimer); [label, action] pairs
     var NAME_WORDS = { tl: 'Name at top left', t: 'Name at top middle', tr: 'Name at top right', bl: 'Name at bottom left', b: 'Name at bottom middle', br: 'Name at bottom right' };
+    // Select all of this kind, at the end of the right-click menu over a node: every node of the map of its kind selected
+    // (SBGN-ML: its class, a multimer with its plain kind; CellDesigner: its species class, or compartment; GraphML: its
+    // shape), so Properties sets them together
     window.m2EditNodeItems = function () {
+      var it = nodeItems(), h = rclick && on && V.current === map ? hit(rclick) : null, i = h && h.n != null && h.p == null ? h.n : -1;
+      if (i < 0 || kindKey(i, src()) == null) return it;
+      var s = ['Select all of this kind', function () { selectKind(i); }];
+      if (!it) return [s];
+      it.push(s); return it;   // its late mark kept (the item then under Delete with the others)
+    };
+    function kindKey(i, s) {
+      var n = nodes2[i];
+      if (!n) return null;
+      if (cd) { try { var A = cdMk.aliasInfo(cd.now, n.id); return A.kind === 'compartmentAlias' ? 'compartment' : A.cls; } catch (e) { return null; } }
+      if (sb) { var c = sbJs.classOf(s, n.id); return c ? c.replace(/ multimer$/, '') : null; }
+      return n.shape && n.shape.kind || null;
+    }
+    function selectKind(i) {
+      var s = src(), key = kindKey(i, s);
+      if (key == null) return;
+      selN = nodes2.map(function (n, k) { return kindKey(k, s) === key ? k : -1; }).filter(function (k) { return k >= 0; });
+      selP = []; selE = []; part = null; svSel = null;
+      paint();
+    }
+    function nodeItems() {
       if (cdPal()) return cdItems();   // a CellDesigner map's (cdcreate.js)
       var P = rclick, k = P && palOn() && !svAt(P) ? madeAt(P) : -1;
       if (k < 0 && P && palOn()) {   // a modulation under the pointer: Change identity, its kinds
@@ -569,7 +593,7 @@
                 if (t2 === text) return;
                 remember(false); text = t2; made(id);
               }]];
-    };
+    }
     function isMulti(i) {   // drawn as a multimer: yEd's mcount (sbgn_edit.multimer)
       var r = realizerOf(nodes2[i].el), sp = r && Array.prototype.filter.call(r.children, function (c) { return c.localName === 'StyleProperties'; })[0];
       return !!sp && Array.prototype.some.call(sp.children, function (c) { return c.getAttribute('name') === 'com.yworks.sbgn.style.mcount' && c.getAttribute('value') !== '1'; });
@@ -595,9 +619,10 @@
       remember(false); text = t2; made(id);
       selN = []; svSel = { id: id, j: j }; paint();
     }
-    function made(id) {   // the text changed by a palette action: read again, the node selected, drawn, saved
+    function made(id) {   // the text changed by a palette action: read again, the node (or nodes: an array) selected, drawn, saved
+      var ids = [].concat(id);
       parse(); selN = []; selP = []; selE = []; part = null;
-      nodes2.forEach(function (n, i) { if (n.id === id) selN = [i]; });
+      nodes2.forEach(function (n, i) { if (ids.indexOf(n.id) >= 0) selN.push(i); });
       dirty = true; quiet(); render(); paint(); changed();
     }
     // a node's icons: its state variables and units of information (yEd's names), as one list in the order the node has
@@ -1093,20 +1118,24 @@
     // cdcreate.js): which node they are for, which rows apply, its look, a field set, a size set
     function propFmt() { return palOn() ? PF_SB : cdPal() ? PF_CD : null; }
     function sizable(i) { var f = propFmt(); return !!f && !!nodes2[i] && f.sizable(i); }
-    function setSize(i, nb) { var f = propFmt(); if (f) f.size(i, nb.map(function (v) { return +fmt(v); })); }
+    function setSize(i, nb) { setSizes([[i, nb]]); }
+    function setSizes(pairs) {   // [[node, box], ...]: one undo step for them all (Properties with several nodes selected)
+      var f = propFmt(); if (f) f.size(pairs.map(function (q) { return [q[0], q[1].map(function (v) { return +fmt(v); })]; }));
+    }
     function sbSizable(i) {   // not a member of a complex (Pack keeps a complex's members to the layout rules)
       var n = nodes2[i], u = n.up != null ? nodes2[n.up] : null;
       return isMade(n) && n.shape.kind !== 'Process' && n.shape.kind !== 'Operator' && (!u || u.comp);   // a process or gate keeps its size (its antennas)
     }
-    function sbSetSize(i, nb) {   // node i given the box nb, one undo step with the compartments round it grown to hold it
-      var id = nodes2[i].id, t2, was = boxOf(i);
-      try { t2 = sbJs.resize(text, id, nb); } catch (err) { warn('Not resized: ' + (err && err.message || err) + '.'); liveOff(); sizeOff(); paint(); return; }
+    function sbSetSize(pairs) {   // each node given its box, one undo step with the compartments round them grown to hold them
+      var ids = [], was = {}, t2 = text;
+      try { pairs.forEach(function (q) { var id = nodes2[q[0]].id; ids.push(id); was[id] = boxOf(q[0]); t2 = sbJs.resize(t2, id, q[1]); }); }
+      catch (err) { warn('Not resized: ' + (err && err.message || err) + '.'); liveOff(); sizeOff(); paint(); return; }
       if (t2 === text) { liveOff(); sizeOff(); paint(); return; }
       remember(false); text = t2; parse(); dirty = true;
-      selN = []; nodes2.forEach(function (n, k) { if (n.id === id) selN = [k]; });
-      var k0 = selN[0];   // its holders grown round it as round a drag (grown)
-      if (k0 != null) setBoxes(grown([k0], boxOf, function (k) { return k === k0 ? was : boxOf(k); }, function () { return false; }));
-      refit([id]);
+      selN = []; nodes2.forEach(function (n, k) { if (ids.indexOf(n.id) >= 0) selN.push(k); });
+      var ks = selN.slice();   // their holders grown round them as round a drag (grown)
+      if (ks.length) setBoxes(grown(ks, boxOf, function (k) { return was[nodes2[k].id] || boxOf(k); }, function () { return false; }));
+      refit(ids);
       sizeRec = null; render(); paint(); changed();
     }
     // Properties as yEd's Properties View (familiar from the graph editor, compact): two columns, the name on the left;
@@ -1140,6 +1169,14 @@
       var f = propFmt();
       return !f || selN.length !== 1 || selP.length || selE.length || svSel ? -1 : f.node(selN[0]);
     }
+    // the nodes selected that Properties is for: one, or several when every node selected is one (no line or other item
+    // with them); [] else
+    function propNodes() {
+      var f = propFmt();
+      if (!f || !selN.length || selP.length || selE.length || svSel) return [];
+      var a = selN.map(function (i) { return f.node(i); });
+      return a.every(function (i) { return i >= 0; }) ? a : [];
+    }
     function sbNode(i) {   // a macromolecule, simple chemical or activity (its class read from the file once per selection and change)
       if (!isMade(nodes2[i])) return -1;
       var id = nodes2[i].id;
@@ -1148,7 +1185,10 @@
     }
     function kindOf(i) { return propNode() === i && pCls[3] ? 'biological activity' : nodes2[i].shape.kind === 'SimpleChemical' ? 'simple chemical' : 'macromolecule'; }   // Set as default's kind (every activity alike, defOf)
     function propsShow(all) {   // all: every field shown again, the one focused too (Esc)
-      var i = propNode(), k = propEdge(), r2 = function (v) { return String(Math.round(v * 100) / 100); };
+      var i = propNode(), k = propEdge(), r2 = function (v) { return String(Math.round(v * 100) / 100); }, ns = propNodes();
+      if (ns.length > 1) return propsMany(ns, all, r2);
+      Array.prototype.forEach.call(props.querySelectorAll('.m2-mixed'), function (tr) { tr.classList.remove('m2-mixed'); });
+      props.querySelector('#m2-ed-multimer').indeterminate = false;
       props.hidden = i < 0 && k < 0;   // only with its node or line: nothing selected, no Properties
       if (props.hidden) return;
       props.querySelector('.m2-ed-pnode').hidden = i < 0; props.querySelector('.m2-ed-pedge').hidden = i >= 0;
@@ -1168,14 +1208,44 @@
         if (r[2] === 'colour' && document.activeElement !== pk && pk.value !== (pNow[r[0]] || '#ffffff')) pk.value = pNow[r[0]] || '#ffffff';   // not under a choice being made
       });
     }
+    // Several nodes selected (Select all of this kind, an area, Shift with clicks): the rows every one has, Label and Set as
+    // default never; a row whose value is the same for all shows it, one that differs is empty with the grey placeholder
+    // mixed (a colour's swatch crossed out, a tick box neither), still editable: a value set goes to all of them in one
+    // undo step, Width and Height each keeping its node's centre. Their looks read once per selection and file
+    var mLook = [null, null];
+    function propsMany(ns, all, r2) {
+      var pf = propFmt(), key = ns.join(',') + '|' + (cd ? cd.now : text);
+      if (mLook[0] !== key) mLook = [key, ns.map(function (i) { var L = pf.look(i), b = bx(i); if (L) { L.w = r2(b[2]); L.h = r2(b[3]); L.width = r2(L.width); } return L; })];
+      var Ls = mLook[1];
+      if (Ls.some(function (L) { return !L; })) { props.hidden = true; return; }
+      props.hidden = false;
+      props.querySelector('.m2-ed-pnode').hidden = false; props.querySelector('.m2-ed-pedge').hidden = true;
+      props.querySelector('.m2-ed-pdef').hidden = true;
+      ROWS.forEach(function (r) {
+        var tr = props.querySelector('.m2-ed-pnode tr[data-k="' + r[0] + '"]'), f = field(r[0]);
+        tr.hidden = r[0] === 'label' || ns.some(function (i, j) { pNow = Ls[j]; return (/^[wh]$/.test(r[0]) && !sizable(i)) || pf.off(r[0], i); });
+        if (tr.hidden || (!all && document.activeElement === f)) return;
+        var vs = Ls.map(function (L) { return r[2] === 'check' ? !!L[r[0]] : String(L[r[0]] == null ? '' : L[r[0]]); }), one = vs.every(function (v) { return v === vs[0]; });
+        tr.classList.toggle('m2-mixed', !one);
+        if (r[2] === 'check') { f.indeterminate = !one; f.checked = one && vs[0]; return; }
+        var v = one ? vs[0] : '';
+        if (f.value !== v) f.value = v;
+        f.placeholder = one ? (r[0] === 'fill' ? 'none' : '') : 'mixed';
+        var pk = f.previousElementSibling;
+        if (r[2] === 'colour' && one && document.activeElement !== pk) pk.value = v || '#ffffff';
+      });
+    }
     [inW, inH].forEach(function (inp, k) {
       inp.addEventListener('change', function () {
-        var i = propNode(), v = parseFloat(inp.value);
-        if (i < 0 || !sizable(i)) return;
-        var b = boxOf(i);
-        if (!(v >= 4 && v <= 5000) || Math.abs(v - b[2 + k]) < 0.005) { propsShow(); return; }
-        var nb = b.slice(); nb[2 + k] = v; nb[k] = b[k] + b[2 + k] / 2 - v / 2;   // its centre kept
-        setSize(i, nb);
+        var ns = propNodes(), v = parseFloat(inp.value);
+        if (!ns.length || !ns.every(sizable)) return;
+        if (!(v >= 4 && v <= 5000)) { propsShow(true); return; }
+        var pairs = ns.map(function (i) {
+          var b = boxOf(i), nb = b.slice(); nb[2 + k] = v; nb[k] = b[k] + b[2 + k] / 2 - v / 2;   // its centre kept
+          return [i, nb];
+        }).filter(function (q) { return Math.abs(v - boxOf(q[0])[2 + k]) >= 0.005; });
+        if (!pairs.length) { propsShow(true); return; }
+        setSizes(pairs);
       });
     });
     function hex(v) {   // #rgb or #rrggbb, with or without #, as yEd writes it ('' for none, null not a colour)
@@ -1183,23 +1253,26 @@
       if (/^[0-9a-f]{3}$/i.test(v)) v = v.replace(/./g, '$&$&');
       return /^[0-9a-f]{6}$/i.test(v) ? '#' + v.toUpperCase() : v ? null : '';
     }
-    function propSet(k) {   // the label, a colour, the border width or multimer, from its field (the format's part writes it)
-      var i = propNode();
-      if (i < 0) return;
+    function propSet(k) {   // the label, a colour, the border width or multimer, from its field (the format's part writes it), to every node it is for
+      var ns = propNodes();
+      if (!ns.length) return;
       var f = field(k), v = k === 'multimer' ? f.checked : f.value;
-      if (!propFmt().set(k, v, i)) propsShow(true);
+      if (ns.length > 1 && k !== 'multimer' && v === '' && f.closest('tr').classList.contains('m2-mixed')) { propsShow(true); return; }   // left mixed: nothing set
+      if (!propFmt().set(k, v, ns)) propsShow(true);
     }
-    function sbSet(k, v, i) {   // true when the text changed
-      var id = nodes2[i].id, t2 = text;
-      if (k === 'label') t2 = sbJs.label(text, id, v.replace(/[\r\n]+/g, ' '));
-      else if (k === 'multimer') t2 = sbJs.multimer(text, id, v);   // a count, if any, stays the unit of information typed (N:3)
-      else if (k === 'width') { var x = parseFloat(v); if (x > 0 && x <= 20) t2 = sbJs.restyle(text, id, { width: x }); }
-      else {
-        var c = hex(v), o = {};
-        if (c !== null && !(c === '' && k === 'line')) { o[k] = c === '#000000' && k === 'line' ? null : c || null; t2 = sbJs.restyle(text, id, o); }
-      }
+    function sbSet(k, v, is) {   // every node of is given the value, one undo step; true when the text changed
+      var ids = is.map(function (i) { return nodes2[i].id; }), t2 = text;
+      ids.forEach(function (id) {
+        if (k === 'label') t2 = sbJs.label(t2, id, v.replace(/[\r\n]+/g, ' '));
+        else if (k === 'multimer') t2 = sbJs.multimer(t2, id, v);   // a count, if any, stays the unit of information typed (N:3)
+        else if (k === 'width') { var x = parseFloat(v); if (x > 0 && x <= 20) t2 = sbJs.restyle(t2, id, { width: x }); }
+        else {
+          var c = hex(v), o = {};
+          if (c !== null && !(c === '' && k === 'line')) { o[k] = c === '#000000' && k === 'line' ? null : c || null; t2 = sbJs.restyle(t2, id, o); }
+        }
+      });
       if (t2 === text) return false;
-      remember(false); text = t2; made(id);
+      remember(false); text = t2; made(ids);
       return true;
     }
     var PF_SB = { sizable: sbSizable, size: sbSetSize, node: sbNode, set: sbSet, def: true,

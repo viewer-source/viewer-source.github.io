@@ -522,13 +522,14 @@
     // species have none); a degraded species keeps its look and its id as its name. Set as default not yet: the colours of
     // new species come from the palette's list
     function cdSpecies(i) { return cdRole(i) === 'epn' && nodes2[i].el.getAttribute('yfiles.foldertype') !== 'group'; }
-    function cdSetSize(i, nb) {   // node i given the box nb, one undo step with the compartments round it grown to hold it (written back by cd_edit)
-      var id = nodes2[i].id, was = boxOf(i), one = {};
-      if (nb.every(function (v, j) { return Math.abs(v - was[j]) < 0.005; })) { liveOff(); sizeOff(); paint(); return; }
-      remember(false); one[i] = nb; setBoxes(one);
-      var k0 = nodes2.findIndex(function (n) { return n.id === id; });
-      setBoxes(grown([k0], boxOf, function (k) { return k === k0 ? was : boxOf(k); }, function () { return false; }));
-      selN = []; nodes2.forEach(function (n, k) { if (n.id === id) selN = [k]; });
+    function cdSetSize(pairs) {   // each node given its box, one undo step with the compartments round them grown to hold them (written back by cd_edit)
+      var ids = [], was = {}, one = {};
+      pairs.forEach(function (q) { var b = boxOf(q[0]); if (q[1].some(function (v, j) { return Math.abs(v - b[j]) >= 0.005; })) { ids.push(nodes2[q[0]].id); was[nodes2[q[0]].id] = b; one[q[0]] = q[1]; } });
+      if (!ids.length) { liveOff(); sizeOff(); paint(); return; }
+      remember(false); setBoxes(one);
+      var ks = nodes2.map(function (n, k) { return ids.indexOf(n.id) >= 0 ? k : -1; }).filter(function (k) { return k >= 0; });
+      setBoxes(grown(ks, boxOf, function (k) { return was[nodes2[k].id] || boxOf(k); }, function () { return false; }));
+      selN = []; nodes2.forEach(function (n, k) { if (ids.indexOf(n.id) >= 0) selN.push(k); });
       sizeRec = null; render(); paint(); changed();
     }
     var cdLook = [];   // [alias id, file, its look]
@@ -544,12 +545,12 @@
         }
         return cdLook[2] && Object.assign({}, cdLook[2]);
       },
-      set: function (k, v, i) {
-        var id = nodes2[i].id;
-        if (k === 'label') return cdApply(function (t) { return cdMk.rename(t, id, v.replace(/[\r\n]+/g, ' ')); }, [id]);
-        if (k === 'multimer') return cdApply(function (t) { return cdMk.homodimer(t, id, v ? 2 : 1); }, [id]);
-        if (k === 'width') { var x = parseFloat(v); return x > 0 && x <= 20 && cdApply(function (t) { return cdMk.restyle(t, id, { width: x }); }, [id]); }
-        if (k === 'fill') { var c = hex(v); return !!c && cdApply(function (t) { return cdMk.restyle(t, id, { fill: c }); }, [id]); }
+      set: function (k, v, is) {   // every node of is given the value, one undo step
+        var ids = is.map(function (i) { return nodes2[i].id; }), all = function (f) { return cdApply(function (t) { ids.forEach(function (id) { t = f(t, id); }); return t; }, ids); };
+        if (k === 'label') return all(function (t, id) { return cdMk.rename(t, id, v.replace(/[\r\n]+/g, ' ')); });
+        if (k === 'multimer') return all(function (t, id) { return cdMk.homodimer(t, id, v ? 2 : 1); });
+        if (k === 'width') { var x = parseFloat(v); return x > 0 && x <= 20 && all(function (t, id) { return cdMk.restyle(t, id, { width: x }); }); }
+        if (k === 'fill') { var c = hex(v); return !!c && all(function (t, id) { return cdMk.restyle(t, id, { fill: c }); }); }
         return false;
       } };
 
