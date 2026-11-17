@@ -1,5 +1,5 @@
-// Fit canvas on the live page (by default the styles page), on Glycolysis (CellDesigner): in the right-click menu on empty
-// map space after Pack all complexes, absent on a GraphML map; chosen, the file's canvas fitted (content's top left 40 to 56
+// Resize canvas on the live page (by default the styles page), on Glycolysis (CellDesigner): in the right-click menu on empty
+// map space after Repack all complexes, absent on a GraphML map; chosen, the file's canvas fitted (content's top left 40 to 56
 // from the corner, 40 past its right and bottom), a node kept where it was on screen, undo and redo keeping it there too.
 // Nothing is saved (no token). No script error.
 //   node tests/cd-fit-live.js [base address]
@@ -25,13 +25,13 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
   var where = function () { return page.evaluate(function () { var g = document.querySelector('#m2-img [data-n]'), r = g.getBoundingClientRect(); return [g.getAttribute('data-n'), Math.round(r.left), Math.round(r.top)]; }); };
   await start('glycolysis-graphml');
   var P = await empty(), l0 = P ? await menu(P) : [];
-  ok('GraphML map: no Fit canvas', P && l0.indexOf('Snap map to grid') >= 0 && l0.indexOf('Fit canvas') < 0, JSON.stringify(l0));
+  ok('GraphML map: no Resize canvas', P && l0.indexOf('Snap map to grid') >= 0 && l0.indexOf('Resize canvas') < 0, JSON.stringify(l0));
   await page.keyboard.press('Escape');
   await start('glycolysis-celldesigner');
   P = await empty(); var l1 = P ? await menu(P) : [];
-  ok('CellDesigner map: Fit canvas after Pack all complexes', l1.indexOf('Fit canvas') === l1.indexOf('Pack all complexes') + 1, JSON.stringify(l1));
+  ok('CellDesigner map: Resize canvas after Repack all complexes', l1.indexOf('Resize canvas') === l1.indexOf('Repack all complexes') + 1, JSON.stringify(l1));
   var s0 = await size(), w0 = await where();
-  await page.click('.m2-cx button:has-text("Fit canvas")'); await page.waitForTimeout(2500);
+  await page.click('.m2-cx button:has-text("Resize canvas")'); await page.waitForTimeout(2500);
   var s1 = await size(), w1 = await where();
   ok('the canvas changed', s1 && (s1[0] !== s0[0] || s1[1] !== s0[1]), JSON.stringify([s0, s1]));
   ok('the map stayed still on screen', w1[0] === w0[0] && Math.abs(w1[1] - w0[1]) <= 1 && Math.abs(w1[2] - w0[2]) <= 1, JSON.stringify([w0, w1]));

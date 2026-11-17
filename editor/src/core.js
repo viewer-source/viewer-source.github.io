@@ -2535,16 +2535,16 @@
       return function () { unbend(points.map(function (p, i) { return i; })); };
     };
     // the whole map's tools of the Edit window in the right-click menu too, on empty map space:
-    // Snap map to grid, Pack all complexes (every complex, whatever is selected), and the
+    // Snap map to grid, Repack all complexes (every complex, whatever is selected), and the
     // Show grid and Snap to grid switches, a check beside a switch that is on; each the same code as its button
-    // and after Pack the whole-map items a format's own part adds (mapTools: functions giving [label, go] or nothing)
+    // and after Repack all complexes the whole-map items a format's own part adds (mapTools: functions giving [label, go] or nothing)
     var mapTools = [];
     window.m2EditMapItems = function () {
       if (!emptyClick()) return null;
       var tick = function (v) { return v ? '<span class="m2-cx-key" aria-hidden="true">\u2713</span>' : ''; };
       var own = [];
       mapTools.forEach(function (f) { var q = f(); if (q) own.push(q); });
-      return [['Snap map to grid', snapMap], ['Pack all complexes', function () { pack([]); }]].concat(own,
+      return [['Snap map to grid', snapMap], ['Repack all complexes', function () { pack([]); }]].concat(own,
         [['Show grid', gridShow, tick(gridSet.shown), gridSet.shown], ['Snap to grid', gridSnap, tick(gridSet.snap), gridSet.snap]]);
     };
     // a bend point put where the right click was on a line (as

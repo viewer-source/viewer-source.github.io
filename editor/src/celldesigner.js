@@ -278,7 +278,7 @@
         i.src = url;
       }).catch(function () {});
     }
-    // Fit canvas, in the right-click menu on empty map space: the canvas (modelDisplay) fitted round the map with MARGIN
+    // Resize canvas, in the right-click menu on empty map space: the canvas (modelDisplay) fitted round the map with MARGIN
     // to spare on every side, everything moved by whole grid blocks so its top left lies 40 to 56 from the corner
     // (cd_edit.place's fit); one undo step. The editor's frame moves with the shift, so nothing moves on screen, also on
     // its undo and redo (fits: [key of the file before, of the file after, shift, map]). Fitted from the file as drawn now and
@@ -292,7 +292,7 @@
       fits.unshift([before, fitKey(cd.base), sh, map]); fits.length = Math.min(fits.length, 10);
       x0 += sh[0]; y0 += sh[1];
     }
-    mapTools.push(function () { return cd && cdJs ? ['Fit canvas', cdFit] : null; });
+    mapTools.push(function () { return cd && cdJs ? ['Resize canvas', cdFit] : null; });
     backHooks.push(function (was, t) {
       if (!cd || !was || !t || typeof t === 'string') return;
       var a = fitKey(was.b), z = fitKey(t.b);

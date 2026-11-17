@@ -1,4 +1,4 @@
-// cd_edit.place(..., { fit: true }), the right-click menu's Fit canvas on CellDesigner maps: for every CellDesigner map,
+// cd_edit.place(..., { fit: true }), the right-click menu's Resize canvas on CellDesigner maps: for every CellDesigner map,
 // the canvas fitted round what is drawn (its top left MARGIN to MARGIN + 16 from the corner, MARGIN to spare past its right
 // and bottom), everything moved by the same whole grid blocks, the reactions' own (relative) bend points untouched, the
 // file read again by cdrender, and a second fit changing nothing.
