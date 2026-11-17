@@ -387,7 +387,7 @@
       if (!rclick) return null;
       var h = hit(rclick);
       if (h && h.n != null) { var i = h.n; return function () { cdDelete(selN.indexOf(i) >= 0 ? selN : [i], selN.indexOf(i) >= 0 ? selE : []); }; }
-      if (h && h.e != null && h.p == null) { var k = h.e; return function () { cdDelete([], selE.indexOf(k) >= 0 ? selE : [k]); }; }
+      if (h && h.e != null && h.p == null) { var k = h.e; return function () { var all = selE.indexOf(k) >= 0; cdDelete(all ? selN : [], all ? selE : [k]); }; }   // over the selection: all of it
       return null;
     }
     // the right-click menu over a species, a line or a gate: its other kinds within the palette's

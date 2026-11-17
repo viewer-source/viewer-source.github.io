@@ -1570,7 +1570,7 @@
       gsMenu.style.left = r.left / k + 'px'; gsMenu.style.top = (r.bottom + 2) / k + 'px';
     });
     document.addEventListener('pointerdown', function (e) { if (gsMenu && !gsMenu.contains(e.target) && !e.target.closest('#m2-ed-gsdrop')) gsClose(); }, true);
-    document.addEventListener('keydown', function (e) { if (gsMenu && e.key === 'Escape') gsClose(); }, true);
+    document.addEventListener('keydown', function (e) { if (gsMenu && e.key === 'Escape') { e.preventDefault(); gsClose(); } }, true);   // marked done: Escape closes the menu only
     window.addEventListener('resize', gsClose);
     gridButtons();
     // Change identity's small window, for any format's part: where the menu item was, a title with a close sign, each kind
@@ -1597,7 +1597,7 @@
       kwBox.style.left = Math.max(4, Math.min(r.left, window.innerWidth - 4 - w)) / k + 'px'; kwBox.style.top = Math.max(4, Math.min(r.top, window.innerHeight - 4 - h)) / k + 'px';
     }
     document.addEventListener('pointerdown', function (e) { if (kwBox && !kwBox.contains(e.target)) kwClose(); }, true);
-    document.addEventListener('keydown', function (e) { if (!kwBox) return; if (e.key === 'Escape') e.stopPropagation(); kwClose(); }, true);
+    document.addEventListener('keydown', function (e) { if (!kwBox) return; if (e.key === 'Escape') { e.stopPropagation(); e.preventDefault(); } kwClose(); }, true);   // Escape closes the window only
     window.addEventListener('resize', kwClose);
     document.addEventListener('scroll', function (e) { if (kwBox && !kwBox.contains(e.target)) kwClose(); }, true);
     function lateItem(it) { var out = [it]; out.late = true; return out; }   // a rarely used right-click item: after the common ones, above Delete
@@ -2039,7 +2039,9 @@
         return end === h ? hub(r) && !(r === 'proc' && ro === 'gate') : r === 'epn' || (r === 'gate' && ro === 'gate');
       }
       if (a[1] === 'delta') return hub(roleOf(end ? e.t : e.s)) ? r === 'proc' : r === 'epn';   // a production: from a process to an entity
-      if (MODS.test(a[1])) return end ? r === 'proc' || r === 'pheno' : r === 'epn' || r === 'gate';   // a modulation: from an entity or gate to a process or phenotype
+      // a modulation: from an entity or gate to a process or phenotype; an influence (Activity Flow) or a reduced
+      // notation one (Hybrid) to an entity too, as the palette makes them (linkHow), never a catalysis
+      if (MODS.test(a[1])) return end ? r === 'proc' || r === 'pheno' || (r === 'epn' && a[1] !== 'white_circle' && (roleOf(e.t) === 'epn' || palLangNow() === 'af' || hybOn())) : r === 'epn' || r === 'gate';
       return false;
     }
     function takerAt(pp, P) {   // the innermost node under P that can take the end, or its own node; null over nothing that can
@@ -2905,7 +2907,8 @@
       }
       if (mod && k === 'z') { e.preventDefault(); if (e.shiftKey) back(redo, undo); else back(undo, redo); return; }
       if (mod && k === 'y') { e.preventDefault(); back(redo, undo); return; }
-      if (e.key === 'Escape') { selN = []; selP = []; selE = []; part = null; keyGuides = null; paint(); return; }
+      // Escape does one thing: a window, menu, list, help box, tool or line in hand closed first (their own listeners), the selection after
+      if (e.key === 'Escape') { if (e.defaultPrevented || ddOpen || tool || link || (helpBox && !helpBox.hidden)) return; selN = []; selP = []; selE = []; part = null; keyGuides = null; paint(); return; }
       if ((e.key === 'Delete' || e.key === 'Backspace') && selP.length && !selN.length) { e.preventDefault(); unbend(selP); return; }
       var step = e.shiftKey ? 10 : 1, d = { arrowleft: [-step, 0], arrowright: [step, 0], arrowup: [0, -step], arrowdown: [0, step] }[k];
       if (!d) return;

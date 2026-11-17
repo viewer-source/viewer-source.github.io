@@ -884,10 +884,15 @@
       parse(); dirty = true; render(); paint(); changed();
       return true;
     }
-    function nodesDelete(list) {   // the glyphs the palette makes, an empty compartment too, deleted with every line at them
+    function nodesDelete(list, arcs) {   // the glyphs the palette makes, an empty compartment too, deleted with every line at them,
+      // and the lines selected with them (one undo step, as cdDelete on a CellDesigner map)
       var ids = list.filter(function (i) { return isMade(nodes2[i]) || emptyComp(nodes2[i]); }).map(function (i) { return nodes2[i].id; });
-      if (!ids.length) return false;
-      remember(false); text = sbJs.remove(text, ids); selN = []; selP = []; selE = []; part = null;
+      var eids = (arcs || []).map(function (k) { return edges2[k] && edges2[k].id; }).filter(Boolean);
+      if (!ids.length && !eids.length) return false;
+      var t2 = ids.length ? sbJs.remove(text, ids) : text;
+      if (eids.length) t2 = sbJs.arcRemove(t2, eids);
+      if (t2 === text) return false;
+      remember(false); text = t2; selN = []; selP = []; selE = []; part = null;
       parse(); dirty = true; render(); paint(); changed();
       return true;
     }
@@ -947,7 +952,7 @@
     }, true);
     document.addEventListener('keydown', function (e) {
       if ((e.key !== 'Delete' && e.key !== 'Backspace') || !palOn() || /input|textarea|select/i.test(document.activeElement.tagName)) return;
-      if (svDelete() || (selN.length && !selP.length && nodesDelete(selN)) || (selE.length && !selN.length && !selP.length && arcsDelete(selE))) { e.preventDefault(); e.stopImmediatePropagation(); }
+      if (svDelete() || (!selP.length && (selN.length || selE.length) && nodesDelete(selN, selE))) { e.preventDefault(); e.stopImmediatePropagation(); }
     }, true);
     window.m2EditDelete = function () {   // the right-click menu's Delete over a state variable, a unit of information, a macromolecule or a simple chemical
       if (cdPal()) return cdDeleteItem();   // a CellDesigner map's (cdcreate.js)
@@ -956,10 +961,10 @@
       if (q) return function () { svSel = { id: nodes2[q[0]].id, j: q[1] }; svDelete(); };
       var i = madeAt(rclick);
       if (i < 0) i = innermost(rclick, emptyComp);
-      if (i >= 0) return function () { nodesDelete(selN.indexOf(i) >= 0 ? selN : [i]); };
-      var h = hit(rclick);   // a line: the arcs selected with it, or it alone
+      if (i >= 0) return function () { if (selN.indexOf(i) >= 0) nodesDelete(selN, selP.length ? [] : selE); else nodesDelete([i]); };   // over the selection: all of it (as the key)
+      var h = hit(rclick);   // a line: everything selected with it, or it alone
       if (!h || h.e == null || h.p != null) return null;
-      return function () { arcsDelete(selE.indexOf(h.e) >= 0 && !selN.length && !selP.length ? selE : [h.e]); };
+      return function () { if (selE.indexOf(h.e) >= 0 && !selP.length) nodesDelete(selN, selE); else arcsDelete([h.e]); };
     };
     function arcsDelete(list) {   // arcs deleted, the file's own and those made (Settings, Editing on Full, SBGN-ML maps)
       var ids = list.map(function (k) { return edges2[k] && edges2[k].id; }).filter(Boolean);
