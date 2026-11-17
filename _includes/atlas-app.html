@@ -1379,7 +1379,7 @@ page, so its styles keep the base they were made on).
   document.getElementById('m2-list').addEventListener('contextmenu', function (e) {
     if (e.shiftKey || e.target.closest('input')) return;
     // the editor's entries first (where the Edit tab is), then, under a line, what changes how the list looks
-    var items = own && own.listItems ? own.listItems(e) : [], view = [], names = listGroups();
+    var items = own && own.listItems ? own.listItems(e) : [], view = [], names = listGroups(), last = items.last || [];
     if (names.length && !document.getElementById('m2-search').value) {   // while searching every group shows open
       var shut = names.filter(function (n) { return closed[n]; }).length, all = function (c) {
         return function () { names.forEach(function (n) { closed[n] = c; }); saveClosed(); buildList(document.getElementById('m2-search').value); };
@@ -1396,6 +1396,8 @@ page, so its styles keep the base they were made on).
     if (maps && maps.some(formatOf)) view.push([FORMATS_OFF ? 'Show file format tags' : 'Hide file format tags', function () { setFormats(!FORMATS_OFF); }]);
     if (items.length && view.length) items.push(null);
     items = items.concat(view);
+    if (items.length && last.length) items.push(null);
+    items = items.concat(last);   // the editor's last entries (Remove map) under everything else
     if (!items.length) return;
     e.preventDefault();
     listMenu(e.clientX, e.clientY, items);
@@ -2284,7 +2286,20 @@ page, so its styles keep the base they were made on).
       return [rank(order.groups, g, groups.indexOf(g)), rank((order.maps || {})[g], m.id, i), m];
     }).sort(function (a, b) { return a[0] - b[0] || a[1] - b[1]; }).map(function (r) { return r[2]; });
   }
-  var moving = null; // {group: name} or {map: id, group: name} while dragging
+  var moving = null; // {group: name} or {map: id, group: name, any} while dragging
+  // a map put in the reader's order of a group, before the map `before` or at the group's end, and taken out of the order
+  // of any other group (a reader's own map moved to another group: own.js moveTo)
+  function place(id, group, before) {
+    if (!ARRANGE) return;
+    order.maps = order.maps || {};
+    Object.keys(order.maps).forEach(function (g) { order.maps[g] = order.maps[g].filter(function (x) { return x !== id; }); });
+    var ids = maps.filter(function (m) { return (m.group || '') === group && m.id !== id; }).map(function (m) { return m.id; });
+    var i = before ? ids.indexOf(before) : -1;
+    ids.splice(i < 0 ? ids.length : i, 0, id);
+    order.maps[group] = ids;
+    saveOrder();
+    maps = arrange(maps);
+  }
   // in the development mode (include ... mode="development"), or with drag=true (a page that wants it in the
   // presentation mode, the styles page): a published site's viewer stays a fixed list for reading the maps
   // groups and maps reordered by dragging: in development mode, and in presentation mode with drag=true on the include
@@ -2306,7 +2321,7 @@ page, so its styles keep the base they were made on).
     b.classList.add('m2-grab');
     var shift = setting('drag-shift');
     if (what.group && !what.map) b.title = shift ? 'Click to open or close, Shift and drag to move the group' : 'Click to open or close, drag to move the group';
-    else if (shift) b.title = 'Shift and drag to move the map in its group';
+    else if (shift) b.title = what.any ? 'Shift and drag to move the map' : 'Shift and drag to move the map in its group';
     b.addEventListener('pointerdown', function (e) {
       if (e.button !== 0 || (setting('drag-shift') && !e.shiftKey)) return;
       if (!DEV && !setting('drag-shift')) return; // drag=true in presentation mode: only for a style with Shift dragging
@@ -2315,8 +2330,11 @@ page, so its styles keep the base they were made on).
   }
   // where the dragged row goes: before the first row of its kind whose middle is below the pointer (a map only
   // among the maps of its own group), or after the last
+  // A reader's own map (moving.any) goes to any group: the rows are every map, a group's No maps yet and the headings; a
+  // place before a heading is the end of the group above it
   function dropPlace(y) {
-    var sel = moving.map ? '#m2-list .m2-map[data-group="' + CSS.escape(moving.group) + '"]' : '#m2-list .m2-group';
+    var sel = moving.any ? '#m2-list .m2-map, #m2-list .m2-empty[data-group], #m2-list .m2-group:not(.m2-link-group)' :
+      moving.map ? '#m2-list .m2-map[data-group="' + CSS.escape(moving.group) + '"]' : '#m2-list .m2-group';
     var rows = Array.prototype.slice.call(document.querySelectorAll(sel));
     for (var i = 0; i < rows.length; i++) { var r = rows[i].getBoundingClientRect(); if (y < r.top + r.height / 2) return { row: rows[i], rows: rows }; }
     return { row: null, rows: rows };
@@ -2342,7 +2360,18 @@ page, so its styles keep the base they were made on).
     }
     function drop(y) {
       var d = dropPlace(y);
-      if (moving.map) {
+      if (moving.any) {
+        var at = d.row || d.rows[d.rows.length - 1], to = '', before = null;
+        if (at) {
+          var prev = d.rows[d.rows.indexOf(at) - 1];
+          if (!d.row) to = at.getAttribute('data-group') || '';   // under the last row: the end of its group
+          else if (at.classList.contains('m2-group')) to = prev ? prev.getAttribute('data-group') || '' : '';   // above a heading: the group above it
+          else { to = at.getAttribute('data-group') || ''; before = at.classList.contains('m2-map') ? at.getAttribute('data-id') : null; }
+        }
+        if (before === moving.map) return;
+        if (to !== moving.group) return own.moveTo(moving.map, to, before);
+        place(moving.map, to, before);
+      } else if (moving.map) {
         var ids = maps.filter(function (m) { return (m.group || '') === moving.group; }).map(function (m) { return m.id; });
         var before = d.row && d.row.getAttribute('data-id');
         if (before === moving.map) return;
@@ -2526,7 +2555,7 @@ page, so its styles keep the base they were made on).
       b.type = 'button';
       b.setAttribute('data-id', m.id);
       b.setAttribute('data-group', m.group || '');
-      movable(b, { map: m.id, group: m.group || '' });
+      movable(b, { map: m.id, group: m.group || '', any: !!own && !!own.movable && own.movable(m) });
       var tips = [label(m)];
       if (m.kind === 'drug') { b.insertAdjacentHTML('beforeend', DRUG_ICON); tips.push('Drug action mechanism map'); }
       var tag = TAG_ICONS[m.tag];
@@ -3252,6 +3281,9 @@ page, so its styles keep the base they were made on).
     draftIds: { get: function () { return draftIds; } },
     arrived: { get: function () { return arrived; } },
     siteGroupOf: { get: function () { return siteGroupOf; } },
+    place: { get: function () { return place; } },
+    listMenu: { get: function () { return listMenu; } },
+    listGroups: { get: function () { return listGroups; } },
     folderKey: { get: function () { return FOLDER_KEY; } },
     siteList: { get: function () { return siteList; } },
     closed: { get: function () { return closed; } },

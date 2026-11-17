@@ -21,7 +21,10 @@
       ['DEGRADED', 'Degraded', '<circle cx="12" cy="12" r="8"/><path d="M4 20l16-16"/>'],
       // the complex: its box with cut corners holding three overlapping members, each opaque over the one behind it
       ['COMPLEX', 'Complex', '<path d="M6 2.5h12l3.5 3.5v12l-3.5 3.5h-12l-3.5-3.5v-12z"/><g class="thin" fill="#fff"><rect x="8.5" y="5.5" width="7.5" height="6.5" rx="1"/><rect x="5" y="10" width="6.5" height="4.5" rx="1"/><ellipse cx="14.3" cy="14.8" rx="4.6" ry="3.6"/></g>'],
-      ['COMPARTMENT', 'Compartment', '<rect x="1.5" y="3.5" width="21" height="17" rx="6"/><rect class="thin" x="4.5" y="6.5" width="15" height="11" rx="3.5"/>']];
+      ['COMPARTMENT', 'Compartment', '<rect x="1.5" y="3.5" width="21" height="17" rx="6"/><rect class="thin" x="4.5" y="6.5" width="15" height="11" rx="3.5"/>'],
+      // CellDesigner's oval compartment (class OVAL), its two lines as the square one's
+      ['OVAL', 'Oval compartment', '<ellipse cx="12" cy="12" rx="10.5" ry="8.5"/><ellipse class="thin" cx="12" cy="12" rx="7.5" ry="5.5"/>']];
+    function cdComp(cls) { return cls === 'COMPARTMENT' || cls === 'OVAL'; }   // the two compartment kinds of the palette
     // gates: the circle with its sign, two input lines above and the output line below; the signs centred in the circle
     // (the bar and ! drawn, not letters, so they sit in its middle); the fourth item is cdrender's GATE sign, for cdCheck
     var CD_Q = '<path d="M9.8 10.2a2.2 2.2 0 1 1 3.2 2c-.7.4-1 .8-1 1.6" class="in"/><circle class="dot" cx="12" cy="16.4" r=".8"/>';
@@ -91,7 +94,7 @@
       if (tx.textContent !== v) { lab.title = on_ ? 'Ticked (the default): the reduced notation signs shown' : lab.dataset.sbgn; ti.title = v; tx.textContent = v; }
     }
     function cdCheck() {   // the palette's kinds against cd_make's and cdrender's, once loaded: a drift said in the console
-      var g = window.cdrender && window.cdrender.GATE, miss = CD_SP.filter(function (q) { return q[0] !== 'COMPARTMENT' && !cdMk.LOOK[q[0]]; }).map(function (q) { return q[0]; })
+      var g = window.cdrender && window.cdrender.GATE, miss = CD_SP.filter(function (q) { return !cdComp(q[0]) && !cdMk.LOOK[q[0]]; }).map(function (q) { return q[0]; })
         .concat(CD_RX.filter(function (q) { return cdMk.PROCESS.indexOf(q[0]) < 0; }).map(function (q) { return q[0]; }), CD_MOD.filter(function (q) { return cdMk.MODS.indexOf(q[0]) < 0; }).map(function (q) { return q[0]; }),
           CD_RED.filter(function (q) { return cdMk.REDUCED.indexOf(q[0]) < 0; }).map(function (q) { return q[0]; }), CD_GATES.filter(function (q) { return !cdMk.NEED[q[0]]; }).map(function (q) { return q[0]; }));
       if (miss.length) console.error('The CellDesigner palette offers kinds cd_make lacks: ' + miss.join(', '));
@@ -214,7 +217,7 @@
       if (nm.textContent !== v) nm.textContent = v;   // written only when changed (every paint comes here)
       return r;
     }
-    function cdSize(cls) { return cls === 'COMPARTMENT' ? [300, 200] : cdMk.LOOK[cls].slice(0, 2); }
+    function cdSize(cls) { return cdComp(cls) ? [300, 200] : cdMk.LOOK[cls].slice(0, 2); }
     function cdMake(P, kind) {
       var cls = cdKind(kind);
       if (!cls || CD_GATE[kind]) return;
@@ -223,9 +226,9 @@
       var b = [+fmt(Math.max(0, X)), +fmt(Math.max(0, Y2)), s[0], s[1]];   // never left of or above the canvas's corner (CellDesigner draws from 0, 0)
       // a species placed on a complex is its member (an included species, cd_make), the complex packed round it in the same
       // undo step; a phenotype or a degraded species not (CellDesigner keeps neither in a complex)
-      var cx = cls !== 'COMPARTMENT' && !/^(PHENOTYPE|DEGRADED)$/.test(cls) ? cdComplexAt(P) : null, made = null;
+      var cx = !cdComp(cls) && !/^(PHENOTYPE|DEGRADED)$/.test(cls) ? cdComplexAt(P) : null, made = null;
       var ok = cdApply(function (t) {
-        var r = cls === 'COMPARTMENT' ? cdMk.compartment(t, { name: '', box: b }) : cdMk.species(t, { cls: cls, name: '', box: b, complex: cx, colour: cdColour(t, cls) });
+        var r = cdComp(cls) ? cdMk.compartment(t, { name: '', box: b, oval: cls === 'OVAL' }) : cdMk.species(t, { cls: cls, name: '', box: b, complex: cx, colour: cdColour(t, cls) });
         made = r.alias; return r.text;
       }, function () { return [made]; });
       if (ok && cx) joinPack([cx]);
@@ -445,7 +448,7 @@
         var A = cdMk.aliasInfo(cd.now, id);
         if (!A.cls || A.cls === 'COMPLEX') return null;
         CD_SP.forEach(function (q) {
-          if (q[0] !== A.cls && q[0] !== 'COMPLEX' && q[0] !== 'COMPARTMENT') out.push(['Make ' + q[1].toLowerCase(), function () { cdApply(function (t) { return cdMk.retype(t, id, q[0], { from: cdColour(t, A.cls), to: cdColour(t, q[0]) }); }, [id]); }]);
+          if (q[0] !== A.cls && q[0] !== 'COMPLEX' && !cdComp(q[0])) out.push(['Make ' + q[1].toLowerCase(), function () { cdApply(function (t) { return cdMk.retype(t, id, q[0], { from: cdColour(t, A.cls), to: cdColour(t, q[0]) }); }, [id]); }]);
         });
         return out;
       }
@@ -538,7 +541,7 @@
     // as cdrender draws it once dropped (D.shape, outline: RNA slanted by its height, a protein's corners 5, a complex's
     // cut 5, a degraded circle 3/8 of the width with its stroke), so nothing changes shape on the drop
     function cdGhost(kind) {
-      var cls = cdKind(kind), s = cdSize(cls), w = s[0], h = s[1], col = cls === 'COMPARTMENT' ? 'none' : '#' + (cdColour(cd && cd.now, cls) || cdMk.LOOK[cls][2]).slice(2), ink = ' fill="' + col + '" stroke="#000" stroke-width="1"';
+      var cls = cdKind(kind), s = cdSize(cls), w = s[0], h = s[1], col = cdComp(cls) ? 'none' : '#' + (cdColour(cd && cd.now, cls) || cdMk.LOOK[cls][2]).slice(2), ink = ' fill="' + col + '" stroke="#000" stroke-width="1"';
       var shape = {
         PROTEIN: '<rect width="' + w + '" height="' + h + '" rx="5"' + ink + '/>', GENE: '<rect width="' + w + '" height="' + h + '"' + ink + '/>',
         RNA: '<path d="M' + h + ' 0H' + w + 'L' + (w - h) + ' ' + h + 'H0z"' + ink + '/>', SIMPLE_MOLECULE: '<ellipse cx="' + w / 2 + '" cy="' + h / 2 + '" rx="' + w / 2 + '" ry="' + h / 2 + '"' + ink + '/>',
@@ -546,7 +549,8 @@
         PHENOTYPE: '<path d="M' + h / 2 + ' 0H' + (w - h / 2) + 'L' + w + ' ' + h / 2 + 'L' + (w - h / 2) + ' ' + h + 'H' + h / 2 + 'L0 ' + h / 2 + 'z"' + ink + '/>',
         DEGRADED: '<circle cx="' + w / 2 + '" cy="' + h / 2 + '" r="' + w * 3 / 8 + '"' + ink + '/><path d="M' + w * 0.7 + ' 0L' + w * 0.3 + ' ' + h + '" stroke="#000"/>',
         COMPLEX: '<path d="M5 0H' + (w - 5) + 'L' + w + ' 5V' + (h - 5) + 'L' + (w - 5) + ' ' + h + 'H5L0 ' + (h - 5) + 'V5z"' + ink + ' stroke-width="2"/>',
-        COMPARTMENT: '<rect width="' + w + '" height="' + h + '" rx="10" fill="none" stroke="#000" stroke-width="2"/><rect x="6" y="6" width="' + (w - 12) + '" height="' + (h - 12) + '" rx="6" fill="none" stroke="#000"/>'
+        COMPARTMENT: '<rect width="' + w + '" height="' + h + '" rx="10" fill="none" stroke="#000" stroke-width="2"/><rect x="6" y="6" width="' + (w - 12) + '" height="' + (h - 12) + '" rx="6" fill="none" stroke="#000"/>',
+        OVAL: '<ellipse cx="' + w / 2 + '" cy="' + h / 2 + '" rx="' + w / 2 + '" ry="' + h / 2 + '" fill="none" stroke="#000" stroke-width="2"/><ellipse cx="' + w / 2 + '" cy="' + h / 2 + '" rx="' + (w / 2 - 6) + '" ry="' + (h / 2 - 6) + '" fill="none" stroke="#000"/>'
       }[cls];
       return { w: w, h: h, svg: '<svg width="100%" height="100%" viewBox="0 0 ' + w + ' ' + h + '" overflow="visible">' + shape + '</svg>' };
     }

@@ -2100,7 +2100,8 @@
         var gm = cd && n.id.match(/^(.*)\|proc$/);
         if (gm) { var ga = edges2.findIndex(function (q) { return q.id === gm[1] + '|a'; }); if (ga >= 0 && !best) best = { e: ga, glyph: true, area: 0 }; return; }
         if (afSbgn && inComplex(i)) return;   // the SBGN AF view: a complex's members not drawn, the complex taken whole
-        if (n.kids.length && !(afSbgn && n.shape.kind === 'Complex')) { if (!group || h.area < group.area) group = h; }
+        // a holder (anything with contents, and a compartment always, empty or not) only where no node or line is hit
+        if ((n.kids.length || n.comp) && !(afSbgn && n.shape.kind === 'Complex')) { if (!group || h.area < group.area) group = h; }
         else if (!best || h.area < best.area) best = h;
       });
       if (best) return best;

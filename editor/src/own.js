@@ -156,14 +156,79 @@
       var into = m ? m.group || '' : tg && (ownGroup(tg) || V.siteGroupOf(tg) || t.classList.contains('m2-empty')) ? tg : '';   // a new map: into the group clicked, whoever's it is
       var items = [['New SBGN-ML map', function () { newMap(into); }], ['New CellDesigner map', function () { newMap(into, 'cd'); }], ['Add map from file', function () { addTo = g; picker.click(); }], ['Add group', function () { renameGroup(null); }]];
       var editing = V.grid.classList.contains('m2-editing') && V.current && V.current.id === (m && m.id);
-      var mapItems = [];   // on a map: Rename map, Remove map (as the map's menu: not while it is edited), under one line
+      // on a map, under one line: Rename map, Make a copy, Move to; Remove map last of all, under a line of its own, away
+      // from the others (as the map's menu: not while it is edited)
+      var mapItems = [], x = e.clientX, y = e.clientY;
       if (m && canRename(m, gh)) mapItems.push(['Rename map', function () { renameMap(m.id); }]);
-      if (m && m.mine && !editing) mapItems.push(['Remove map', function () { mineHide(m.id); }]);
-      else if (m && gh && !editing) mapItems.push(['Remove map', function () { siteHide(siteHidden().concat([m.id])); }]);
+      if (m && canCopy(m)) mapItems.push(['Make a copy', function () { copyMap(m.id); }]);
+      if (m && movable(m)) mapItems.push(['Move to...', function () { moveMenu(m, x, y); }]);
       if (mapItems.length) items = items.concat([null], mapItems);
       if (onGroup) items.push(null, ['Rename group', function () { renameGroup(g); }], ['Remove group', function () { removeGroup(g); }]);
       if (siteHidden().length) items.push(null, ['Show removed maps', function () { siteHide([]); }]);
+      // items.last: put by the viewer under its own entries too, so Remove map is the menu's last line
+      if (m && m.mine && !editing) items.last = [['Remove map', function () { mineHide(m.id); }]];
+      else if (m && gh && !editing) items.last = [['Remove map', function () { siteHide(siteHidden().concat([m.id])); }]];
       return items;
+    }
+    // a reader's own map moved to another group, theirs or the site's ('': no group, at the top of the list): by Move to
+    // in the list's menu or by dragging it there (the viewer's dropPlace); put before the map `before`, else at the
+    // group's end. A map on its way to the site goes where the site puts it, so it is not moved
+    function movable(m) { var r = m && m.mine && mine[m.id]; return !!r && !r.site; }
+    function moveTo(id, g, before) {
+      var r = mine[id]; if (!r) return;
+      r.group = g || ''; minePut(r).catch(function () {});
+      V.refreshMine(); V.place(id, r.group, before); V.refreshMine();
+    }
+    function moveMenu(m, x, y) {   // the groups the map can go to, in the list's order; its own greyed
+      var site = (V.siteList || []).map(function (s) { return s.group; });
+      var gs = V.listGroups().filter(function (n) { return ownGroup(n) || site.indexOf(n) >= 0; });
+      V.listMenu(x, y, [['No group', function () { moveTo(m.id, ''); }, !m.group], null].concat(gs.map(function (n) {
+        return [n, function () { moveTo(m.id, n); }, n === m.group];
+      })));
+    }
+    // Make a copy, in the list's menu: a new map named Copy of <name> (as in Google Docs), in the same group right under
+    // the original, opened at once with its name field open to rename it. Of a reader's own map, or of the site's
+    // GraphML or CellDesigner map as it is now (the edits this page holds, else GitHub's version, else the site's);
+    // with a token a copy of a site map goes to the site, as Add map does (named there by its file; renamed once built)
+    function canCopy(m) { return !!m && !m.shownAs && (m.mine ? !!mine[m.id] && !mine[m.id].site : !!graphmlOf(m) && !sbMap(m)); }
+    function copyName(title) { return 'Copy of ' + title; }
+    function freeFile(name) {   // a file name no map of the reader's has (-2, -3, ... before the extension)
+      var files = Object.keys(mine).map(function (k) { return mine[k].file; }), ext = (name.match(/\.[^.]+$/) || [''])[0], base = name.slice(0, name.length - ext.length), f = name;
+      for (var k = 2; files.indexOf(f) >= 0; k++) f = base + '-' + k + ext;
+      return f;
+    }
+    function siteNow(m) {   // a site map's text as it is now
+      var k = V.kept && V.kept.id === m.id && (V.kept.draft || V.behind(m, V.kept)) ? V.kept : null;
+      if (k && k.text) return Promise.resolve(k.text);
+      var p = ahead(m);
+      if (!p) return Promise.reject(new Error('its file is not known'));
+      return Promise.all([p.sitePub, p.gh]).then(function (x) { return x[1] ? x[1].text : x[0]; });
+    }
+    function copyMap(id) {
+      if (naming) naming(true);
+      var m = V.byId[id]; if (!m || !canCopy(m)) return;
+      var r0 = m.mine ? mine[id] : null, title = copyName(r0 ? r0.title : m.topic || m.title), group = m.group || '';
+      var ext = r0 ? (r0.file.match(/\.[^.]+$/) || ['.xml'])[0] : cdMap(m) ? '.xml' : '.graphml';
+      var file = freeFile(title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') + ext);
+      var gh = !!(repo() && token()) && !m.mine;
+      var text = r0 ? Promise.resolve(r0.text) : siteNow(m);
+      return mineIn.then(function () { return text; }).then(function (t) {
+        var made = r0 ? Promise.resolve({ svg: r0.svg, width: r0.width, height: r0.height }) : drawText(t);
+        return made.then(function (d) {
+          var r = { id: newId(), title: title, file: file, text: t, svg: d.svg, width: d.width, height: d.height, at: Date.now(), src: textHash(t), hidden: false, group: group };
+          if (!gh) return minePut(r).then(function () { toFolder(r.id, r.file, r.text); return r; });
+          var ord = (V.siteList || []).reduce(function (a, s) { return (!group || s.group === group) ? Math.max(a, s.order || 0) : a; }, 0) + 1;
+          return toSite(title + ext, t, group, ord).then(function (s) { r.site = s.id; return minePut(r).then(function () { return r; }); });
+        });
+      }).then(function (r) {
+        V.refreshMine(); V.place(r.id, group, after(id)); V.refreshMine();
+        V.go(r.id);
+        if (!r.site) setTimeout(function () { renameMap(r.id); }, 0);   // its name field open, the text selected
+      }).catch(function (e) { alert('No copy was made: ' + (e && e.message ? e.message : e)); });
+    }
+    function after(id) {   // the map after id in its group, so a copy lands right under the original
+      var ms = V.maps, i = ms.findIndex(function (x) { return x.id === id; });
+      return i >= 0 && ms[i + 1] && (ms[i + 1].group || '') === (ms[i].group || '') ? ms[i + 1].id : null;
     }
     function examplesHidden() { try { return localStorage.getItem('atlas-examples') === 'hidden'; } catch (e) { return false; } }
     function letGo(url) {   // an old version's address let go once nothing on the page uses it (a link or picture shown, the map on screen)
@@ -354,6 +419,6 @@
     var own = {
       read: function () { return mineIn; },
       here: function () { return (groupsHere = mineGroupsHere()); }, groups: function () { return groupsHere; },
-      withMine: withMine, isGroup: ownGroup, rename: renameGroup, renameMap: renameMap, canRename: canRename, newMap: newMap, shown: mineShown, examplesHidden: examplesHidden, examplesHide: examplesHide, listItems: listItems,
+      withMine: withMine, isGroup: ownGroup, movable: movable, moveTo: moveTo, rename: renameGroup, renameMap: renameMap, canRename: canRename, newMap: newMap, shown: mineShown, examplesHidden: examplesHidden, examplesHide: examplesHide, listItems: listItems,
       rec: function (id) { return mine[id] || null; }, naming: function () { return !!naming; }
     };
