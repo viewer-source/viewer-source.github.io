@@ -1,5 +1,5 @@
 // Repack complex on the live page (by default the styles page), on Glycolysis (GraphML and CellDesigner): a right click inside a
-// complex on empty space offers Repack complex just above Repack all complexes; on a member, Repack complex in its own menu;
+// complex on empty space offers Repack complex and none of the whole map's tools (grid, Repack all complexes); on a member, Repack complex in its own menu;
 // on empty map space outside every complex, no Repack complex. Chosen after a member is moved out of place, only that
 // complex's members move back. On an SBGN-ML map, a state variable added to a member has its own menu, without Repack complex.
 // Nothing is saved (no token). No script error.
@@ -32,7 +32,7 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
     ok(h + ': a complex found on screen', !!spot, JSON.stringify(spot));
     if (!spot) continue;
     var l1 = await menu(spot.empty);
-    ok(h + ': inside a complex, Repack complex just above Repack all complexes', l1.indexOf('Repack complex') >= 0 && l1.indexOf('Repack complex') + 1 === l1.indexOf('Repack all complexes'), JSON.stringify(l1));
+    ok(h + ': inside a complex, Repack complex and none of the whole map\'s tools', l1.indexOf('Repack complex') >= 0 && !l1.some(function (t) { return /^(Snap map to grid|Repack all complexes|Show grid|Snap to grid|Remove all bend points|Resize canvas)/.test(t); }), JSON.stringify(l1));
     var l2 = await menu(spot.member);
     ok(h + ': on a member, Repack complex in its menu', l2.indexOf('Repack complex') >= 0 && l2.indexOf('Repack all complexes') < 0, JSON.stringify(l2));
     var out = await page.evaluate(function () {

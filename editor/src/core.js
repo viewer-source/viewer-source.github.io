@@ -2577,10 +2577,10 @@
       var pi = h.p;
       return function () { unbend([pi]); };
     };
-    function emptyClick() {   // the right click on empty map space (inside a compartment counts as empty) of the map being edited
+    function emptyClick() {   // the right click on empty map space (inside a compartment counts as empty, inside a complex not: the complex's own items there) of the map being edited
       if (!on || V.current !== map || !text || !rclick) return false;
       var h = hit(rclick);
-      return !h || (h.n != null && nodes2[h.n].kids.length > 0);
+      return !h || (h.n != null && nodes2[h.n].kids.length > 0 && nodes2[h.n].shape.kind !== 'Complex');
     }
     // every bend point of the map taken away at once (maps from another editor can be so messy that
     // removing them all and rerouting by hand is quicker than one by one): the right-click menu's Remove all bend points,
@@ -2594,12 +2594,12 @@
     // Snap map to grid, Repack all complexes (every complex, whatever is selected), and the
     // Show grid and Snap to grid switches, a check beside a switch that is on; each the same code as its button
     // and after Repack all complexes the whole-map items a format's own part adds (mapTools: functions giving [label, go] or nothing)
-    // and, above Repack all complexes, Repack complex: the complex the right click is in (inside it on empty space, or on a
-    // member, then in the member's own menu above Select all of this kind), the outermost round it (outerComplex), alone;
-    // above it Name complex from members for the innermost complex there (create.js)
+    // and Repack complex, in the object's menu of a complex (a right click inside it) or of a member, above Select all of
+    // this kind: the outermost complex round it (outerComplex), alone; above it Name complex from members for the innermost
+    // complex there (create.js)
     var mapTools = [];
     var ownMenus = [];   // a format's part: functions telling a point that has its own right-click menu (a state variable), where no complex item is offered
-    function complexHere(member) {   // the innermost complex round the right click, or null; member: asked by the object's menu, so not on empty space (the map's items have it there)
+    function complexHere(member) {   // the innermost complex round the right click, or null; member: asked by the object's menu, so not on empty space
       if (!on || V.current !== map || !text || !rclick || (member && (emptyClick() || ownMenus.some(function (f) { return f(rclick); })))) return null;
       var h = hit(rclick), c = h && h.n != null ? h.n : null;
       while (c != null && nodes2[c].shape.kind !== 'Complex') c = nodes2[c].up;
@@ -2615,9 +2615,9 @@
     window.m2EditMapItems = function () {
       if (!emptyClick()) return null;
       var tick = function (v) { return v ? '<span class="m2-cx-key" aria-hidden="true">\u2713</span>' : ''; };
-      var own = [], one = window.m2EditPackHere(), nm = window.m2EditNameHere && window.m2EditNameHere();
+      var own = [];
       mapTools.forEach(function (f) { var q = f(); if (q) own.push(q); });
-      return [['Snap map to grid', snapMap]].concat(nm ? [['Name complex from members', nm]] : [], one ? [['Repack complex', one]] : [], [['Repack all complexes', function () { pack([]); }]], own,
+      return [['Snap map to grid', snapMap], ['Repack all complexes', function () { pack([]); }]].concat(own,
         [['Show grid', gridShow, tick(gridSet.shown), gridSet.shown], ['Snap to grid', gridSnap, tick(gridSet.snap), gridSet.snap]]);
     };
     // a bend point put where the right click was on a line (as
