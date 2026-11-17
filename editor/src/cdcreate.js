@@ -448,6 +448,8 @@
         var A = cdMk.aliasInfo(cd.now, id);
         if (!A.cls || A.cls === 'COMPLEX') return null;
         out.push(['Change identity\u2026', function (r) { cdIdentity(id, r); }]);
+        // after it, the species' homodimer, as Properties' Multimer (2 when made, 1 back)
+        if (A.cls !== 'DEGRADED') out.push([A.homodimer > 1 ? 'Make monomer' : 'Make multimer', function () { cdApply(function (t) { return cdMk.homodimer(t, id, A.homodimer > 1 ? 1 : 2); }, [id]); }]);
         out.late = true;   // under Delete: rarely used
         return out;
       }
