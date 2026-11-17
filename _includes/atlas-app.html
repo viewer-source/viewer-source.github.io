@@ -2651,7 +2651,9 @@ page, so its styles keep the base they were made on).
     box.scrollTop = keep;
     var on = box.querySelector('.m2-on');
     if (on && box.scrollHeight > box.clientHeight) {
-      var top = on.getBoundingClientRect().top - box.getBoundingClientRect().top + box.scrollTop,
+      // the page's CSS zoom: getBoundingClientRect is in zoomed pixels, scrollTop and offsetHeight in the box's own
+      var br = box.getBoundingClientRect(), z = br.height ? box.offsetHeight / br.height : 1;
+      var top = (on.getBoundingClientRect().top - br.top) * z - box.clientTop + box.scrollTop,
           room = Math.min(Math.round(on.offsetHeight * 1.5), Math.max(0, (box.clientHeight - on.offsetHeight) / 2));
       box.scrollTop = Math.max(0, Math.min(box.scrollTop, top - room), top + on.offsetHeight + room - box.clientHeight);
     }
