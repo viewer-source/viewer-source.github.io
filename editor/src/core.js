@@ -1573,13 +1573,13 @@
     gridButtons();
     // Change identity's small window, for any format's part: where the menu item was, a title with a close sign, each kind
     // with its sign ({ name, sign, own, go }), the own kind greyed and not a choice. A click runs go() only while the
-    // editor is still on the same map and now() (the format's text) is unchanged since it opened; any key, a click
-    // outside, a scroll or a resize close it
+    // editor is still on the same map and its text is unchanged since it opened (every format's change passes through
+    // text); any key, a click outside, a scroll or a resize close it
     var kwBox = null;
     function kwClose() { if (kwBox) { kwBox.remove(); kwBox = null; } }
-    function kindWindow(r, items, now) {
+    function kindWindow(r, items) {
       kwClose();
-      var t0 = now(), m0 = map;
+      var t0 = text, m0 = map;
       kwBox = document.createElement('div'); kwBox.className = 'm2-cx m2-ci'; kwBox.setAttribute('role', 'dialog'); kwBox.setAttribute('aria-label', 'Change identity');
       kwBox.innerHTML = '<div class="m2-ci-head"><span>Change identity</span><button type="button" class="m2-ci-x" title="Close" aria-label="Close"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M3 3l8 8M11 3l-8 8"/></svg></button></div><div role="menu"></div>';
       kwBox.querySelector('.m2-ci-x').addEventListener('click', function (e) { e.stopPropagation(); kwClose(); });
@@ -1587,7 +1587,7 @@
         var b = document.createElement('button'); b.type = 'button';
         b.setAttribute('role', 'menuitemradio'); b.setAttribute('aria-checked', String(!!q.own)); b.disabled = !!q.own;
         b.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true">' + q.sign + '</svg><span>' + q.name + '</span>';
-        b.addEventListener('click', function (e) { e.stopPropagation(); kwClose(); if (on && V.current === m0 && map === m0 && now() === t0) q.go(); });
+        b.addEventListener('click', function (e) { e.stopPropagation(); kwClose(); if (on && V.current === m0 && text === t0) q.go(); });
         kwBox.lastChild.appendChild(b);
       });
       document.body.appendChild(kwBox);

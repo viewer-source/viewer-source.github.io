@@ -485,9 +485,9 @@
     window.m2EditNodeItems = function () {
       if (cdPal()) return cdItems();   // a CellDesigner map's (cdcreate.js)
       var P = rclick, k = P && palOn() && !svAt(P) ? madeAt(P) : -1;
-      if (k < 0 && P && palOn()) {   // a modulation under the pointer: the other kinds
+      if (k < 0 && P && palOn()) {   // a modulation under the pointer: Change identity, its kinds
         var h = hit(P), ed = h && h.e != null && h.p == null ? edges2[h.e] : null, now = ed && Object.keys(MODK).filter(function (c) { return sbJs.ARROW[c] === ed.arr[1]; })[0];
-        var afN = afMap();   // under AF its influences, by AF's names (no catalysis there)
+        var afN = afKind();   // an AF map (the map, not the tab): its influences by AF's names, no catalysis there
         if (now) return lateItem(['Change identity\u2026', function (r) {   // its kinds by Change identity (core.js kindWindow), the palette's signs
           kindWindow(r, PAL_PD[4][1].filter(function (q) { return MODK[q[0]] && !(q[0] === 'catalysis' && (afN || roleOf(ed.t) === 'pheno')); }).map(function (q) {
             var c = q[0], af = afN && sbJs.AF_ARC[c];
@@ -498,7 +498,7 @@
               selE = edges2.map(function (e2, j) { return e2.id === ed.id ? j : -1; }).filter(function (j) { return j >= 0; });
               dirty = true; render(); paint(); changed();
             } };
-          }), function () { return text; });
+          }));
         }]);
       }
       // an activity under AF: made another kind, its unit

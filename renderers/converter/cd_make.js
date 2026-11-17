@@ -361,7 +361,8 @@
     if (!LOOK[cls]) fail('The CellDesigner class ' + cls + ' is not offered.');
     if (cls === 'COMPLEX' || was === 'COMPLEX') fail('A complex and a single species cannot be changed into one another: delete it and draw anew.');
     if (cls === was) return t;
-    if (cls === 'DEGRADED' && inState(t, A.species, '<celldesigner:homodimer>')) { t = homodimer(t, id, 1); A = entity(t, id); }   // a degraded species is no multimer: the count to 1 first, its box with it
+    var hd = cls === 'DEGRADED' && inState(t, A.species, '<celldesigner:homodimer>');   // a degraded species is no multimer: the count to 1 first, its box with it, a count of 1 dropped
+    if (hd) { t = +/>(\d+)</.exec(t.slice(hd[0], hd[1]))[1] > 1 ? homodimer(t, id, 1) : drop(t, hd, [CD + 'state']); A = entity(t, id); }
     var S = A.s, name = S.name, ref = null;
     if (REF[cls]) { var rr = referenceFor(t, cls, name); t = rr[0]; ref = rr[1]; }
     if (S.ref && ref !== S.ref) t = noResidues(t, S.id);

@@ -471,19 +471,18 @@
     // Change identity (core.js kindWindow): a species' kinds, the palette's signs and names, no complex or compartment (a
     // complex and a single species are not changed into one another), none a complex cannot hold for its member (phenotype,
     // degraded); a click retypes it (cd_make.retype, its colour following the scheme), one undo step
-    function cdNow() { return cd.now; }
     function cdIdentity(id, r) {
       var A = cdMk.aliasInfo(cd.now, id);
       if (!A.cls) return;
       kindWindow(r, CD_SP.filter(function (q) { return q[0] !== 'COMPLEX' && !cdComp(q[0]) && !(A.complex && /^(PHENOTYPE|DEGRADED)$/.test(q[0])); }).map(function (q) {
         return { name: q[1], sign: q[2], own: q[0] === A.cls, go: function () { cdApply(function (t) { return cdMk.retype(t, id, q[0], { from: cdColour(t, A.cls), to: cdColour(t, q[0]) }); }, [id]); } };
-      }), cdNow);
+      }));
     }
     // a modulation's kinds (a modifier on a reaction: the five; reduced notation between species: its four, no catalysis),
     // each by the modifier's sign and name; set: [[type, modifier type]], go(type) writes it
     function cdModIdentity(set, was, go) {
       return lateItem(['Change identity\u2026', function (r) {
-        kindWindow(r, set.map(function (q) { var s = CD_MOD.filter(function (m) { return m[0] === q[1]; })[0]; return { name: CD_NAME[q[1]], sign: s[2], own: q[0] === was, go: function () { go(q[0]); } }; }), cdNow);
+        kindWindow(r, set.map(function (q) { var s = CD_MOD.filter(function (m) { return m[0] === q[1]; })[0]; return { name: CD_NAME[q[1]], sign: s[2], own: q[0] === was, go: function () { go(q[0]); } }; }));
       }]);
     }
     var CD_MODS = CD_MOD.map(function (q) { return [q[0], q[0]]; });   // a modifier's types, each its own sign
