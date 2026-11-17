@@ -1571,6 +1571,34 @@
     document.addEventListener('keydown', function (e) { if (gsMenu && e.key === 'Escape') gsClose(); }, true);
     window.addEventListener('resize', gsClose);
     gridButtons();
+    // Change identity's small window, for any format's part: where the menu item was, a title with a close sign, each kind
+    // with its sign ({ name, sign, own, go }), the own kind greyed and not a choice. A click runs go() only while the
+    // editor is still on the same map and now() (the format's text) is unchanged since it opened; any key, a click
+    // outside, a scroll or a resize close it
+    var kwBox = null;
+    function kwClose() { if (kwBox) { kwBox.remove(); kwBox = null; } }
+    function kindWindow(r, items, now) {
+      kwClose();
+      var t0 = now(), m0 = map;
+      kwBox = document.createElement('div'); kwBox.className = 'm2-cx m2-ci'; kwBox.setAttribute('role', 'dialog'); kwBox.setAttribute('aria-label', 'Change identity');
+      kwBox.innerHTML = '<div class="m2-ci-head"><span>Change identity</span><button type="button" class="m2-ci-x" title="Close" aria-label="Close"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M3 3l8 8M11 3l-8 8"/></svg></button></div><div role="menu"></div>';
+      kwBox.querySelector('.m2-ci-x').addEventListener('click', function (e) { e.stopPropagation(); kwClose(); });
+      items.forEach(function (q) {
+        var b = document.createElement('button'); b.type = 'button';
+        b.setAttribute('role', 'menuitemradio'); b.setAttribute('aria-checked', String(!!q.own)); b.disabled = !!q.own;
+        b.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true">' + q.sign + '</svg><span>' + q.name + '</span>';
+        b.addEventListener('click', function (e) { e.stopPropagation(); kwClose(); if (on && V.current === m0 && map === m0 && now() === t0) q.go(); });
+        kwBox.lastChild.appendChild(b);
+      });
+      document.body.appendChild(kwBox);
+      var k = kwBox.getBoundingClientRect().width / kwBox.offsetWidth || 1, w = kwBox.offsetWidth * k, h = kwBox.offsetHeight * k;   // the page's own zoom: a fixed box is placed in its units
+      kwBox.style.left = Math.max(4, Math.min(r.left, window.innerWidth - 4 - w)) / k + 'px'; kwBox.style.top = Math.max(4, Math.min(r.top, window.innerHeight - 4 - h)) / k + 'px';
+    }
+    document.addEventListener('pointerdown', function (e) { if (kwBox && !kwBox.contains(e.target)) kwClose(); }, true);
+    document.addEventListener('keydown', function (e) { if (!kwBox) return; if (e.key === 'Escape') e.stopPropagation(); kwClose(); }, true);
+    window.addEventListener('resize', kwClose);
+    document.addEventListener('scroll', function (e) { if (kwBox && !kwBox.contains(e.target)) kwClose(); }, true);
+    function lateItem(it) { var out = [it]; out.late = true; return out; }   // a right-click item under Delete (rarely used)
     // the Edit tab starts editing the map shown at once; a map that
     // cannot be edited says why
     function shown() {   // the Edit window open on a map: edit it, or say why not (also when another map is chosen)

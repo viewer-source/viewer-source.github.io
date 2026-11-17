@@ -459,58 +459,37 @@
         if (ln.s != null && cdRole(ln.s) === 'gate') {   // a gate's line out: its other output types (a modifier's on a reaction, reduced notation's between species)
           var gs = ln.s, gref = cdGateRef(gs), ga = cdMk.about(cd.now, cdRid(gs)), gm = nodes2[gs].id.match(/\|g(\d+)$/), gw = gm ? ga.gates[+gm[1]] : ga.gate;
           if (!gw) return null;
-          return (gm ? CD_MOD : CD_RED).filter(function (q) { return q[0] !== gw.out; }).map(function (q) {
-            return ['Make ' + CD_NAME[q[0]].toLowerCase(), function () { cdApply(function (t) { return cdMk.gateType(t, gref, { output: q[0] }); }, [nodes2[gs].id]); }];
-          });
+          return cdModIdentity(gm ? CD_MODS : CD_RED, gw.out, function (k) { cdApply(function (t) { return cdMk.gateType(t, gref, { output: k }); }, [nodes2[gs].id]); });
         }
         if (mm[2][0] !== 'm') return cdRxItems(mm[1]);
         var n = +mm[2].slice(1), ab = cdMk.about(cd.now, mm[1]), was = ab.mods[n];
         if (cdMk.MODS.indexOf(was) < 0) return null;   // a gate's own line: its gate's menu
-        return CD_MOD.filter(function (q) { return q[0] !== was; }).map(function (q) {
-          return ['Make ' + CD_NAME[q[0]].toLowerCase(), function () { cdApply(function (t) { return cdMk.modifierType(t, mm[1], n, q[0]); }, [], [mm[1] + '|m' + n]); }];
-        });
+        return cdModIdentity(CD_MODS, was, function (k) { cdApply(function (t) { return cdMk.modifierType(t, mm[1], n, k); }, [], [mm[1] + '|m' + n]); });
       }
       return null;
     }
-    // Change identity: a small window by the menu item listing the species kinds (the palette's signs and names, no complex
-    // or compartment), the species' own checked; a click retypes it (cd_make.retype, its colour following the scheme) in
-    // one undo step. Any key (Escape, E leaving the editor, an undo), a click outside, a scroll or a resize close it
-    var ciBox = null, ciText = null;   // the window open, the map's text it was made from
-    function ciClose() { if (ciBox) { ciBox.remove(); ciBox = null; } }
+    // Change identity (core.js kindWindow): a species' kinds, the palette's signs and names, no complex or compartment (a
+    // complex and a single species are not changed into one another), none a complex cannot hold for its member (phenotype,
+    // degraded); a click retypes it (cd_make.retype, its colour following the scheme), one undo step
+    function cdNow() { return cd.now; }
     function cdIdentity(id, r) {
-      ciClose();
       var A = cdMk.aliasInfo(cd.now, id);
       if (!A.cls) return;
-      ciText = cd.now;
-      ciBox = document.createElement('div'); ciBox.className = 'm2-cx m2-ci'; ciBox.setAttribute('role', 'dialog'); ciBox.setAttribute('aria-label', 'Change identity');
-      ciBox.innerHTML = '<div class="m2-ci-head"><span>Change identity</span><button type="button" class="m2-ci-x" title="Close" aria-label="Close"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M3 3l8 8M11 3l-8 8"/></svg></button></div>';
-      ciBox.querySelector('.m2-ci-x').addEventListener('click', function (e) { e.stopPropagation(); ciClose(); });
-      var list = document.createElement('div'); list.setAttribute('role', 'menu'); ciBox.appendChild(list);
-      CD_SP.forEach(function (q) {
-        if (q[0] === 'COMPLEX' || cdComp(q[0]) || (A.complex && /^(PHENOTYPE|DEGRADED)$/.test(q[0]))) return;   // a complex's member: no phenotype or degraded (CellDesigner keeps neither in a complex)
-        var b = document.createElement('button'), own = q[0] === A.cls; b.type = 'button';
-        b.setAttribute('role', 'menuitemradio'); b.setAttribute('aria-checked', String(own)); b.disabled = own;
-        b.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true">' + q[2] + '</svg><span>' + q[1] + '</span>';
-        b.addEventListener('click', function (e) {
-          e.stopPropagation(); ciClose();
-          if (!on || V.current !== map || cd.now !== ciText) return;   // the editor left or the map changed since it opened
-          var now = A.cls;
-          if (now === q[0]) return;
-          cdApply(function (t) { return cdMk.retype(t, id, q[0], { from: cdColour(t, now), to: cdColour(t, q[0]) }); }, [id]);
-        });
-        list.appendChild(b);
-      });
-      document.body.appendChild(ciBox);
-      var k = ciBox.getBoundingClientRect().width / ciBox.offsetWidth || 1, w = ciBox.offsetWidth * k, h = ciBox.offsetHeight * k;   // the page's own zoom: a fixed box is placed in its units
-      var x = Math.max(4, Math.min(r.left, window.innerWidth - 4 - w)), y = Math.max(4, Math.min(r.top, window.innerHeight - 4 - h));
-      ciBox.style.left = x / k + 'px'; ciBox.style.top = y / k + 'px';
+      kindWindow(r, CD_SP.filter(function (q) { return q[0] !== 'COMPLEX' && !cdComp(q[0]) && !(A.complex && /^(PHENOTYPE|DEGRADED)$/.test(q[0])); }).map(function (q) {
+        return { name: q[1], sign: q[2], own: q[0] === A.cls, go: function () { cdApply(function (t) { return cdMk.retype(t, id, q[0], { from: cdColour(t, A.cls), to: cdColour(t, q[0]) }); }, [id]); } };
+      }), cdNow);
     }
-    document.addEventListener('pointerdown', function (e) { if (ciBox && !ciBox.contains(e.target)) ciClose(); }, true);
-    document.addEventListener('keydown', function (e) { if (!ciBox) return; if (e.key === 'Escape') e.stopPropagation(); ciClose(); }, true);
-    window.addEventListener('resize', ciClose);
-    document.addEventListener('scroll', function (e) { if (ciBox && !ciBox.contains(e.target)) ciClose(); }, true);
-    function cdRxItems(rid) {   // a reaction's other types: a process's among the three, reduced notation's among its four
-      var ab = cdMk.about(cd.now, rid), set = cdMk.PROCESS.indexOf(ab.type) >= 0 ? CD_RX : cdMk.REDUCED.indexOf(ab.type) >= 0 ? CD_RED : null;
+    // a modulation's kinds (a modifier on a reaction: the five; reduced notation between species: its four, no catalysis),
+    // each by the modifier's sign and name; set: [[type, modifier type]], go(type) writes it
+    function cdModIdentity(set, was, go) {
+      return lateItem(['Change identity\u2026', function (r) {
+        kindWindow(r, set.map(function (q) { var s = CD_MOD.filter(function (m) { return m[0] === q[1]; })[0]; return { name: CD_NAME[q[1]], sign: s[2], own: q[0] === was, go: function () { go(q[0]); } }; }), cdNow);
+      }]);
+    }
+    var CD_MODS = CD_MOD.map(function (q) { return [q[0], q[0]]; });   // a modifier's types, each its own sign
+    function cdRxItems(rid) {   // a reaction's other types: a process's among the three; reduced notation (a modulation) by Change identity
+      var ab = cdMk.about(cd.now, rid), set = cdMk.PROCESS.indexOf(ab.type) >= 0 ? CD_RX : null;
+      if (cdMk.REDUCED.indexOf(ab.type) >= 0) return cdModIdentity(CD_RED, ab.type, function (k) { cdApply(function (t) { return cdMk.reactionType(t, rid, k); }, [], [rid]); });
       if (!set) return null;
       return set.filter(function (q) { return q[0] !== ab.type; }).map(function (q) {
         return ['Make ' + CD_NAME[q[0]].toLowerCase(), function () { cdApply(function (t) { return cdMk.reactionType(t, rid, q[0]); }, [], [rid]); }];

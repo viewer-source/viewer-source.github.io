@@ -353,7 +353,7 @@
   }
   // a class changed into one of the palette's: the identity's reference (the one of the new class's name and type) or
   // name; residue states dropped when the protein changes (the residues are the protein's); the old reference dropped when
-  // unused; the fill moved to the new class's when it was the old one's default (a class outside the palette keeps its
+  // unused; a multimer made degraded a single one first; the fill moved to the new class's when it was the old one's default (a class outside the palette keeps its
   // colour), or cols.from, the old class's colour for new species in the editor's choice, then to cols.to; never to or
   // from a complex
   function retype(t, id, cls, cols) {
@@ -361,6 +361,7 @@
     if (!LOOK[cls]) fail('The CellDesigner class ' + cls + ' is not offered.');
     if (cls === 'COMPLEX' || was === 'COMPLEX') fail('A complex and a single species cannot be changed into one another: delete it and draw anew.');
     if (cls === was) return t;
+    if (cls === 'DEGRADED' && inState(t, A.species, '<celldesigner:homodimer>')) { t = homodimer(t, id, 1); A = entity(t, id); }   // a degraded species is no multimer: the count to 1 first, its box with it
     var S = A.s, name = S.name, ref = null;
     if (REF[cls]) { var rr = referenceFor(t, cls, name); t = rr[0]; ref = rr[1]; }
     if (S.ref && ref !== S.ref) t = noResidues(t, S.id);

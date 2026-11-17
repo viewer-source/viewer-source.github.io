@@ -488,15 +488,18 @@
       if (k < 0 && P && palOn()) {   // a modulation under the pointer: the other kinds
         var h = hit(P), ed = h && h.e != null && h.p == null ? edges2[h.e] : null, now = ed && Object.keys(MODK).filter(function (c) { return sbJs.ARROW[c] === ed.arr[1]; })[0];
         var afN = afMap();   // under AF its influences, by AF's names (no catalysis there)
-        if (now) return Object.keys(MODK).filter(function (c) { return c !== now && !(c === 'catalysis' && (afN || roleOf(ed.t) === 'pheno')); }).map(function (c) {
-          return ['Make ' + (afN && sbJs.AF_ARC[c] || c), function () {
-            var t2 = sbJs.arcKind(text, ed.id, c);
-            if (t2 === text) return;
-            remember(false); text = t2; parse(); selN = []; selP = []; part = null;
-            selE = edges2.map(function (q, j) { return q.id === ed.id ? j : -1; }).filter(function (j) { return j >= 0; });
-            dirty = true; render(); paint(); changed();
-          }];
-        });
+        if (now) return lateItem(['Change identity\u2026', function (r) {   // its kinds by Change identity (core.js kindWindow), the palette's signs
+          kindWindow(r, PAL_PD[4][1].filter(function (q) { return MODK[q[0]] && !(q[0] === 'catalysis' && (afN || roleOf(ed.t) === 'pheno')); }).map(function (q) {
+            var c = q[0], af = afN && sbJs.AF_ARC[c];
+            return { name: af ? af[0].toUpperCase() + af.slice(1) : q[1], sign: q[2], own: c === now, go: function () {
+              var t2 = sbJs.arcKind(text, ed.id, c);
+              if (t2 === text) return;
+              remember(false); text = t2; parse(); selN = []; selP = []; part = null;
+              selE = edges2.map(function (e2, j) { return e2.id === ed.id ? j : -1; }).filter(function (j) { return j >= 0; });
+              dirty = true; render(); paint(); changed();
+            } };
+          }), function () { return text; });
+        }]);
       }
       // an activity under AF: made another kind, its unit
       // given, or its unit taken off (a protein's activity again: with no auxiliary unit an activity is a protein's)

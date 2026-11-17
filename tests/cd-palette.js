@@ -50,7 +50,8 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#acly-celld
   var q = await made('cd:PROTEIN', 1320, 330); await sign('cd:INHIBITION'); e0 = await es(); await drag(await at(q), await at(rid + '|proc'));
   ok('an inhibition onto the square', (await es()).filter(function (i) { return e0.indexOf(i) < 0; }).some(function (i) { return /\|m\d+$/.test(i); }));
   await sign('cd:PHYSICAL_STIMULATION'); e0 = await es(); await drag(await at(g), await at(q));
-  ok('a reduced physical stimulation between two species', (await es()).filter(function (i) { return e0.indexOf(i) < 0; }).length === 1);
+  var red = (await es()).filter(function (i) { return e0.indexOf(i) < 0; });
+  ok('a reduced physical stimulation between two species', red.length === 1);
   // the gate's line out and one input's line deleted together leave the inhibition; a NOT gate
   // offered only where it would have one input
   var lineAt = function (id) { return page.evaluate(function (id) {   // the middle of the line's longest drawn part, on screen
@@ -84,6 +85,18 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#acly-celld
   await page.keyboard.press('Escape');
   var l3 = await menu(await at(rid + '|proc')); await page.keyboard.press('Escape');
   ok('the square offers the other reaction types', l3.indexOf('Make unknown transition') >= 0 && l3.indexOf('Make state transition') < 0);
+  var arcIs = async function (id) {   // a modulation's right-click menu and its Change identity window: [menu, kinds], the own one marked *
+    var l = await menu(await lineAt(id)); await page.click('.m2-cx button:has-text("Change identity")').catch(function () {}); await page.waitForTimeout(300);
+    return [l, await ci()];
+  };
+  var inh = null, a1 = null, ms = (await es()).filter(function (i) { return i.indexOf(rid + '|m') === 0; });
+  for (var mi = 0; mi < ms.length && !inh; mi++) { var t1 = await arcIs(ms[mi]); if (t1[1].indexOf('Inhibition*') >= 0) { inh = ms[mi]; a1 = t1; } else await page.keyboard.press('Escape'); }
+  a1 = a1 || [[], []]; await page.click('.m2-ci button:has-text("Catalysis")').catch(function () {}); await page.waitForTimeout(800);
+  var a2 = inh ? await arcIs(inh) : [[], []]; await page.keyboard.press('Escape');
+  ok('a modifier: Change identity under Delete, its five kinds, the own greyed, retyped', a1[0].indexOf('Change identity\u2026') === a1[0].indexOf('Delete') + 1 && !a1[0].some(function (t) { return /^Make /.test(t); })
+    && a1[1].length === 5 && a1[1].indexOf('Inhibition*') >= 0 && a2[1].indexOf('Catalysis*') >= 0);
+  var a3 = await arcIs(red[0]); await page.keyboard.press('Escape');
+  ok('reduced notation: its four kinds, no catalysis, the own greyed', a3[1].length === 4 && a3[1].indexOf('Physical stimulation*') >= 0 && a3[1].indexOf('Catalysis') < 0);
   await page.mouse.click(10, 880); await page.mouse.click.apply(page.mouse, await at(m)); await page.waitForTimeout(200); await page.keyboard.press('Delete'); await page.waitForTimeout(900);
   ok('a species deleted with its reaction', (await ids()).indexOf(m) < 0 && !(await es()).some(function (i) { return i.indexOf(rid + '|') === 0; }));
   // New CellDesigner map, from a fresh page (a map with changes not saved keeps the editor on it)
