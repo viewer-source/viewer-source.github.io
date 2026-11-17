@@ -1734,11 +1734,11 @@
     }
     // where the arc from outer to its port inside node n's shape (at box b) first meets the shape outline, as the
     // renderer's visual end (so a line followed live ends where the drawing after the drop ends it, not at the box's
-    // edge off a round shape); the port itself when it lies on the outline (within a hair, as the ports' grid writes it
-    // to two decimals) or outside
+    // edge off a round shape); a port on the outline (within half a unit, as the renderer) counts as inside, so one on the
+    // far side is reached where the line first meets the shape, never across it; the port itself when outside
     function cutShape(n, port, outer, b) {
       var cx = b[0] + b[2] / 2, cy = b[1] + b[3] / 2, R = rimOf(n, b), q = [port[0] - cx, port[1] - cy];
-      if (!inRim(R, q) || onRim(R, q).d < 0.05) return port;
+      if (!inRim(R, q) && onRim(R, q).d >= 0.5) return port;
       var o = [outer[0] - cx, outer[1] - cy], best = null;
       R.forEach(function (A, i) {
         var B = R[(i + 1) % R.length], den = (q[0] - o[0]) * (B[1] - A[1]) - (q[1] - o[1]) * (B[0] - A[0]);

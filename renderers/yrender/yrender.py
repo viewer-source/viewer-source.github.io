@@ -422,11 +422,26 @@ def label_box(lab, x, y, w, h):
     return s
 
 
+def on_outline(p, poly, eps=0.5):
+    # p within eps of the outline poly (a port written on the outline, which the flattened outline may leave a hair
+    # outside or inside)
+    x, y = p
+    for i in range(len(poly)):
+        (ax, ay), (bx, by) = poly[i - 1], poly[i]
+        vx, vy = bx - ax, by - ay
+        L = vx * vx + vy * vy
+        t = max(0.0, min(1.0, ((x - ax) * vx + (y - ay) * vy) / L)) if L else 0.0
+        if math.hypot(ax + t * vx - x, ay + t * vy - y) < eps:
+            return True
+    return False
+
+
 def visual_end(outer, port, n):
     # the visual end: where the line from outer to port first meets the node's shape outline, its
     # shape with its state variables and units of information (the line stops at a
-    # state variable on its way, never crossing it to the shape behind)
-    q = clip(outer, port, n['polys'])
+    # state variable on its way, never crossing it to the shape behind); a port on the outline counts as inside, so a
+    # port on the far side of the shape is reached where the line first meets it, never across the node
+    q = clip(outer, port, [poly for poly in n['polys'] if inside(port, poly) or on_outline(port, poly)], True)
     return clip(outer, q, n['aux'], True) if n['aux'] else q
 
 

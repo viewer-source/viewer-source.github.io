@@ -360,8 +360,17 @@
       s += '<rect x="' + num(x) + '" y="' + num(y) + '" width="' + num(w) + '" height="' + num(h) + '" fill="none"' + ink('stroke', get(lab, 'lineColor')) + '/>';
     return s;
   }
-  function visualEnd(outer, port, n) {   // the visual end on the node's shape outline, state variables included (yrender.py's visual_end)
-    var q = clip(outer, port, n.polys);
+  function onOutline(p, poly, eps) {   // yrender.py's on_outline
+    eps = eps == null ? 0.5 : eps;
+    for (var i = 0; i < poly.length; i++) {
+      var A = poly[(i - 1 + poly.length) % poly.length], B = poly[i], vx = B[0] - A[0], vy = B[1] - A[1], L = vx * vx + vy * vy;
+      var t = L ? Math.max(0, Math.min(1, ((p[0] - A[0]) * vx + (p[1] - A[1]) * vy) / L)) : 0;
+      if (Math.hypot(A[0] + t * vx - p[0], A[1] + t * vy - p[1]) < eps) return true;
+    }
+    return false;
+  }
+  function visualEnd(outer, port, n) {   // the visual end on the node's shape outline, state variables included (yrender.py's visual_end); a port on the outline counts as inside, so a far-side port is reached where the line first meets the shape
+    var q = clip(outer, port, n.polys.filter(function (poly) { return inside(port, poly) || onOutline(port, poly); }), true);
     return n.aux.length ? clip(outer, q, n.aux, true) : q;
   }
   function iconSvg(res, lab, x, y, w, h, where, aux) {
