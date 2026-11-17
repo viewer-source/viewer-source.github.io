@@ -1169,13 +1169,13 @@
       var f = propFmt();
       return !f || selN.length !== 1 || selP.length || selE.length || svSel ? -1 : f.node(selN[0]);
     }
-    // the nodes selected that Properties is for: one, or several when every node selected is one (no line or other item
-    // with them); [] else
+    // the nodes selected that Properties is for (no line or other item selected with them): one alone, or of several
+    // those it covers (a CellDesigner complex's member, which it does not, left out); [] else
     function propNodes() {
       var f = propFmt();
       if (!f || !selN.length || selP.length || selE.length || svSel) return [];
       var a = selN.map(function (i) { return f.node(i); });
-      return a.every(function (i) { return i >= 0; }) ? a : [];
+      return selN.length === 1 ? (a[0] >= 0 ? a : []) : a.filter(function (i) { return i >= 0; });
     }
     function sbNode(i) {   // a macromolecule, simple chemical or activity (its class read from the file once per selection and change)
       if (!isMade(nodes2[i])) return -1;
