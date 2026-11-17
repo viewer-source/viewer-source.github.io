@@ -23,6 +23,7 @@ if (!data) { console.log('usage: node tests/save-failed.js <base address> <clone
       var p = decodeURIComponent(c[1]), d = JSON.parse(r.postData());
       puts.push(p);
       if (failNext > 0) { failNext--; return json(500, { message: 'test: refused' }); }
+      if (sha[p] && d.sha !== sha[p]) return json(409, { message: 'test: sha does not match' });   // as GitHub: a save on an older version refused
       body[p] = Buffer.from(d.content, 'base64').toString('utf8'); sha[p] = 'saved' + puts.length;
       return json(200, { content: { sha: sha[p] } });
     }
@@ -77,10 +78,11 @@ if (!data) { console.log('usage: node tests/save-failed.js <base address> <clone
   await page.waitForTimeout(5000);
   await leave();
   ok('a second refused save, warning kept', /not saved on GitHub/.test(await status()), await status());
-  sha[p] = 'someone-else'; body[p] = moved;   // another tab saved meanwhile
-  await edit();
-  ok('GitHub changed meanwhile: its version opened', (await now()) === moved && moved !== moved2);
-  ok('and the moves not taken up are said', /could not be taken up/.test(await status()), await status());
+  var other = moved.replace(/<\/graphml>\s*$/, '<!-- another tab -->\n</graphml>\n');
+  sha[p] = 'someone-else'; body[p] = other;   // another tab saved meanwhile
+  await edit(); await page.waitForTimeout(6000);
+  ok('GitHub changed meanwhile: its file not overwritten', body[p] === other && moved2 !== other);
+  ok('and that is said', /could not be taken up|changed on GitHub/.test(await status()), await status());
   ok('no script error', !errs.length, errs.join(' | '));
   await b.close(); process.exit(bad ? 1 : 0);
 })();
