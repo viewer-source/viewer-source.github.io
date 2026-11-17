@@ -1768,8 +1768,10 @@
     function markSize() { return Math.max(1.5, 4 * V.z); }   // the four marks round a selected bend point or end, in screen px
     function markReach() { return markSize() + Math.max(1, 2 * V.z) / 2; }   // from their centre to their outer edge
     function portAt(P) {
-      var R = 6 / V.z, L = lit(), best = null, dB = R, ps = partSel(), hp = ps && ps.port && hit(P);
-      if (hp && hp.e === ps.k && hp.p != null) ps = null;   // the line's own bend point under the press: the bend point, not the end's wider grab
+      // a line selected alone: its ends taken anywhere within the square their four marks cover (the end pressed before
+      // first), so a press a little off an end never falls on the node and begins a new line from it; the line's own
+      // bend point under the press keeps the press
+      var R = 6 / V.z, L = lit(), best = null, dB = R, ps = partSel(), wide = !selN.length && !selP.length, hp = wide && L.e.length && hit(P);
       L.e.forEach(function (k) {
         var e = edges2[k];
         if (e.s == null || e.t == null || !e.path) return;
@@ -1778,7 +1780,9 @@
           if (cd && /\|proc$/.test(nodes2[q[1]].id) && !procSpots({ k: k, end: end, n: q[1] })) return;   // a glyph's main lines stay
           var d = Math.hypot(all[q[0]][0] - P[0], all[q[0]][1] - P[1]), hb = !!hubEnd(k, end), b = hb && bx(q[1]);   // an end at a process's or gate's port goes with the process, or to another node
           if (hb && P[0] >= b[0] && P[0] <= b[0] + b[2] && P[1] >= b[1] && P[1] <= b[1] + b[3]) return;   // a press on the process itself moves the process
-          if (ps && ps.port && ps.k === k && ps.port.end === end && Math.max(Math.abs(all[q[0]][0] - P[0]), Math.abs(all[q[0]][1] - P[1])) * V.z <= markReach() + 2) d = 0;   // the end selected: anywhere within its four marks
+          var sq = Math.max(Math.abs(all[q[0]][0] - P[0]), Math.abs(all[q[0]][1] - P[1])) * V.z;
+          if (wide && selE.indexOf(k) >= 0 && !(hp && hp.e === k && hp.p != null) && sq <= markReach() + 2)
+            d = ps && ps.port && ps.k === k && ps.port.end === end ? 0 : sq / 1e4;   // within the marks' square: before any plain hit, the nearest end
           if (d <= dB) { dB = d; best = { k: k, end: end, n: q[1], to: null, hub: hb }; }
         });
       });
@@ -2047,8 +2051,8 @@
       part = null; frozen = true;   // the copy stays until the map is drawn again (no flash of the old line)
       setPorts([pp], { k: pp.k, att: pp.end ? 'target' : 'source', id: nodes2[pp.n2].id.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;') });
     }
-    function setPort(pp) { setPorts([pp]); }
-    function setPorts(list, re) {   // ends of lines put at their offsets (pp: k, end, to), one undo step; re: { k, att, id }, that edge's source or target set too
+    function setPort(pp, merge) { setPorts([pp], null, merge); }
+    function setPorts(list, re, merge) {   // ends of lines put at their offsets (pp: k, end, to), one undo step (merge: a key's steps in a row one step); re: { k, att, id }, that edge's source or target set too
       var all = Array.prototype.slice.call(doc.getElementsByTagNameNS(Y, 'Path')), by = new Map();
       if (re && (text.match(/<edge\b[^>]*>/g) || []).length !== edges2.length) { frozen = false; warn('The line could not be moved to another node: the file is not read edge for edge.'); unshift(); paint(); return; }
       list.forEach(function (pp) {
@@ -2059,7 +2063,7 @@
         by.set(nth, (by.get(nth) || []).concat(a.map(function (k, j) { return [k, vals[j]]; })));
       });
       if (!by.size) { unshift(); paint(); return; }
-      remember(false);
+      remember(!!merge);
       var c = -1, ce = -1;
       if (re) text = text.replace(/<edge\b[^>]*>/g, function (tag) {
         return ++ce !== re.k ? tag : tag.replace(new RegExp('(\\s' + re.att + '\\s*=\\s*)("[^"]*"|\'[^\']*\')'), function (m, p1) { return p1 + '"' + re.id + '"'; });
@@ -2842,7 +2846,7 @@
         var rn = pp.run, go = rn && rn.u + '' === u + '' && Math.abs(rn.to[0] - off[0]) < 0.01 && Math.abs(rn.to[1] - off[1]) < 0.01 ? rn.di : null;   // the run lives on the pressed end: a new press, undo or Esc ends it
         var g2 = portStep(pp.n, off, u, fine ? 1 : PG, go);
         pp.run = g2 && g2.di != null ? { u: u, di: g2.di, to: g2.to } : null;
-        if (g2) setPort({ k: pp.k, end: pp.end, n: pp.n, to: g2.to });
+        if (g2) setPort({ k: pp.k, end: pp.end, n: pp.n, to: g2.to }, true);
         return;
       }
       var c = [b[0] + b[2] / 2, b[1] + b[3] / 2], o = spot(pp, [c[0] + off[0], c[1] + off[1]]), s = [Math.sign(o[0]), Math.sign(o[1])];
@@ -2852,11 +2856,11 @@
           var v = [q[0] - o[0], q[1] - o[1]], L = Math.hypot(v[0], v[1]), sc = L > 0.01 ? (v[0] * u[0] + v[1] * u[1]) / L - L / 1000 : -1;
           if (sc > bs) { bs = sc; best = q; }
         });
-        if (best) setPort({ k: pp.k, end: pp.end, n: pp.n, to: best });
+        if (best) setPort({ k: pp.k, end: pp.end, n: pp.n, to: best }, true);
         return;
       }
       var to = (s[0] || s[1]) && s[0] === -u[0] && s[1] === -u[1] ? [0, 0] : [u[0] * b[2] / 2, u[1] * b[3] / 2];
-      setPort({ k: pp.k, end: pp.end, n: pp.n, to: to });
+      setPort({ k: pp.k, end: pp.end, n: pp.n, to: to }, true);
     }
     // the keys: arrows move the selection by 1 (Shift: 10), Ctrl or Cmd with Z undoes, with S saves; Esc clears
     document.addEventListener('keydown', function (e) {
