@@ -59,9 +59,9 @@
       // guessed from its two ends; a sign picked is used as it is
       ['Connecting arcs', [['consumption', 'Consumption / logic arc', '<path d="M3 12h18"/>'],
         ['production', 'Production', '<path d="M3 12h11"/><path d="M13 7.5l8 4.5-8 4.5z" fill="currentColor"/>'],
-        // the modulations, by use: modulation, the least used, last
-        ['stimulation', 'Stimulation', '<path d="M3 12h10"/><path d="M13 7.5l8 4.5-8 4.5z"/>'],
+        // the modulations, by use: catalysis, the most used, first; modulation, the least used, last
         ['catalysis', 'Catalysis', '<path d="M3 12h12"/><circle cx="18" cy="12" r="3"/>'],
+        ['stimulation', 'Stimulation', '<path d="M3 12h10"/><path d="M13 7.5l8 4.5-8 4.5z"/>'],
         ['inhibition', 'Inhibition', '<path d="M3 12h17M20 6v12"/>'],
         ['necessary stimulation', 'Necessary stimulation', '<path d="M3 12h10M10 7v10"/><path d="M13 7.5l8 4.5-8 4.5z"/>'],
         ['modulation', 'Modulation', '<path d="M3 12h10"/><path d="M13 12l4-4 4 4-4 4z"/>']]]
