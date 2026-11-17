@@ -88,7 +88,10 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
   ok('an influence between activities and another activity in view', !!A && !!to, JSON.stringify(A) + ' ' + to);
   if (A && to) {
     await page.mouse.click.apply(page.mouse, await onLine(A[0], 0.5)); await page.waitForTimeout(400);
-    var EP = await onLine(A[0], 1);
+    var EP = await onLine(A[0], 1);   // the end square nearest the line's end (the port, often inside the node)
+    var sq = await page.$$eval('#m2-edit-layer rect', function (l) { return l.map(function (r) { var b = r.getBoundingClientRect(); return [b.left + b.width / 2, b.top + b.height / 2]; }); });
+    sq.sort(function (p, q) { return Math.hypot(p[0] - EP[0], p[1] - EP[1]) - Math.hypot(q[0] - EP[0], q[1] - EP[1]); });
+    if (sq.length && Math.hypot(sq[0][0] - EP[0], sq[0][1] - EP[1]) < 60) EP = sq[0];
     await page.mouse.move(EP[0], EP[1]); await page.mouse.down(); await page.mouse.move((EP[0] + TP[0]) / 2, (EP[1] + TP[1]) / 2, { steps: 6 });
     await page.mouse.move(TP[0], TP[1], { steps: 6 }); await page.mouse.up(); await page.waitForTimeout(1200);
     var now = await page.evaluate(function (id) { var x = new DOMParser().parseFromString(window.m2EditNow().text, 'application/xml').querySelector('arc[id="' + id + '"]'); return x ? x.getAttribute('target') : null; }, A[0]);
