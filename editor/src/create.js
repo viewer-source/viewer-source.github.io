@@ -264,7 +264,7 @@
       ddOpen.remove(); ddOpen = null;
     }
     document.addEventListener('pointerdown', function (e) { if (ddOpen && !pmap.contains(e.target)) ddClose(); }, true);
-    document.addEventListener('keydown', function (e) { if (ddOpen && e.key === 'Escape') { e.stopPropagation(); ddClose(); } }, true);   // Escape closes the list only (not also the tool in hand)
+    document.addEventListener('keydown', function (e) { if (ddOpen && e.key === 'Escape') { e.stopImmediatePropagation(); ddClose(); } }, true);   // Escape closes the list only (not also the tool in hand: their listeners come later)
     function palDrop(o) {
       var r = pmap.querySelector('tr[data-k="' + o.key + '"]');
       if (!r) {
@@ -284,13 +284,15 @@
             b.addEventListener('click', function (ev) { ev.stopPropagation(); ddClose(); q.set(c[0]); palDrop(q); });
             td.appendChild(b);
           });
-          r.insertAdjacentElement('afterend', lr); ddOpen = lr; bx.setAttribute('aria-expanded', 'true');
+          r.insertAdjacentElement('afterend', lr); ddOpen = lr; lr._t = src(); lr._list = q.list; bx.setAttribute('aria-expanded', 'true');   // the map and choices it was made from
         });
         pmap.firstChild.appendChild(r);
       }
       r._o = o;
-      var th = r.firstChild, f = r.querySelector('.m2-ed-pdd'), v = o.list.filter(function (c) { return c[0] === o.get(); })[0][1];
-      if (th.textContent !== o.label) { th.textContent = o.label; f.title = o.title; f.setAttribute('aria-label', o.label + ', ' + o.title); }
+      if (ddOpen && ddOpen.previousElementSibling === r && (ddOpen._t !== src() || ddOpen._list !== o.list)) ddClose();   // the map changed (an edit, an undo, another format): its squares and choices would be stale
+      var th = r.firstChild, f = r.querySelector('.m2-ed-pdd'), cur = o.get(), v = o.list.filter(function (c) { return c[0] === cur; })[0][1];
+      if (th.textContent !== o.label) th.textContent = o.label;
+      if (f.title !== o.title) { f.title = o.title; f.setAttribute('aria-label', o.label + ', ' + o.title); }
       if (f.firstChild.textContent !== v) f.firstChild.textContent = v;   // written only when changed (every paint comes here)
       return r;
     }
@@ -371,11 +373,11 @@
     function palOn() { return on && V.current === map && !!sb && !!sbJs && V.level === 'full'; }
     function palShow() {
       var cdp_ = cdPal(), show = palOn() || cdp_;   // a CellDesigner map: its own set (cdcreate.js)
-      if (!show) ddClose();
       if (cdp_) cdFill();
       else if (show) { palSync(); palFill(); }   // palFill: a process added or removed turns the SBGN view off or on
       pal.hidden = !show;
-      pmap.hidden = !show;   // under its line while nothing is selected (Properties in its place otherwise: the page's styles)
+      pmap.hidden = !show || !!(selN.length || selE.length || selP.length || svSel);   // only while nothing is selected
+      if (pmap.hidden) ddClose();
       if (!show) tool = null;
       Array.prototype.forEach.call(pal.querySelectorAll('button[data-make]'), function (b) {
         var mine = !!tool && tool.kind === b.dataset.make;

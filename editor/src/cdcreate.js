@@ -142,7 +142,7 @@
     function cdComplexAt(P) { var i = innermost(P, function (n) { return n.shape.kind === 'Complex'; }); return i >= 0 ? nodes2[i].id : null; }   // the innermost complex under P, its alias
 
     // a species or compartment placed: centred where clicked or dropped (on the grid with Snap), at CellDesigner's own size
-    // the colours of new species (Colours at the end of the palette, palDrop in create.js, kept in this browser for
+    // the colours of new species (Colours under the palette, palDrop in create.js, kept in this browser for
     // every CellDesigner map): the file's (the colour most species of the class already have on the map, else
     // CellDesigner's; the one when none is kept), CellDesigner's own (cd_make LOOK), the viewer's Default scheme (Settings,
     // Map colours) by the class's role, or none (white, as CellDesigner has no unfilled species)
@@ -155,7 +155,7 @@
       var c = m === 'default' && V.schemeFill && window.cdrender ? V.schemeFill('default', window.cdrender.ROLE[cls] || 'white') : null;
       return c ? 'ff' + c.toLowerCase() : null;
     }
-    // the squares of a choice in the menu (the box shows its name only: bright colours there would draw the eye from the
+    // the squares of a choice in its list (the field shows its name only: bright colours there would draw the eye from the
     // map), five at most, the first at the right (row-reverse). CellDesigner and Default, fixed sets: the protein's, simple
     // molecule's, phenotype's, gene's and RNA's colours, each once; No colours one white. From file: the five colours most
     // species on the map have, the most used first, from the map as it is now (classColours keeps its last answer)

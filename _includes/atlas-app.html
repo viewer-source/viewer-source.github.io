@@ -343,7 +343,8 @@ page, so its styles keep the base they were made on).
   #m2-editwin .m2-ed-pblk[hidden] { display: none; }
   #m2-editwin .m2-ed-pblk .m2-ed-phyb { margin: 0; }
   #m2-editwin .m2-ed-pmap { margin: 0 0 10px; font-size: 12px; line-height: 16px; color: var(--m2-text-soft); }   /* the map's choices for new nodes (palDrop, create.js), under the palette's own line */
-  #m2-editwin .m2-ed-pmap[hidden], #m2-editwin .m2-ed-props:not([hidden]) + .m2-ed-pmap { display: none; }   /* Properties in its place while something is selected */
+  #m2-editwin .m2-ed-pmap[hidden] { display: none; }
+  #m2-editwin .m2-ed-pmap .m2-ed-ptab { margin: 0; }
   #m2-editwin .m2-ed-pmap .m2-ed-pdd { display: flex; align-items: center; gap: 4px; width: 100%; height: 22px; box-sizing: border-box; margin: 0; padding: 0 4px; border: 1px solid var(--m2-frame); border-radius: 4px; background: var(--m2-bg); color: var(--m2-text); font: inherit; text-align: left; cursor: pointer; }   /* a Properties field with its arrow */
   #m2-editwin .m2-ed-pmap .m2-ed-pdd:hover:not(:disabled), #m2-editwin .m2-ed-pmap .m2-ed-pdd[aria-expanded="true"] { border-color: #70757a; background: var(--m2-bg); color: var(--m2-text); }   /* a field, not a button: no accent */
   #m2-editwin .m2-ed-pmap .m2-ed-pdd span { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -353,7 +354,7 @@ page, so its styles keep the base they were made on).
   #m2-editwin .m2-ed-plist button span:first-child { flex: 1 1 auto; }
   #m2-editwin .m2-ed-plist button:hover, #m2-editwin .m2-ed-plist button:focus-visible { background: var(--m2-accent); color: var(--m2-on-accent); outline: none; }   /* as the right-click menu's items */
   #m2-editwin .m2-ed-plist button[aria-selected="true"] { font-weight: 500; }
-  .m2-cs-sw { display: flex; flex-direction: row-reverse; flex: none; gap: 2px; }   /* five at most, the first at the right; in the menu only */
+  .m2-cs-sw { display: flex; flex-direction: row-reverse; flex: none; gap: 2px; }   /* five at most, the first at the right; in the lists only */
   .m2-cs-sw i { width: 12px; height: 12px; border-radius: 2px; border: 1px solid #0002; box-sizing: border-box; }
   /* Change identity's small window (core.js kindWindow: species, modulations): the right-click menu's look, a title with a close sign, each
      kind with its palette sign, the species' own kind greyed out */
