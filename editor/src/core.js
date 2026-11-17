@@ -1764,8 +1764,12 @@
     // side): an end square of a lit line dragged; it snaps to the nearest of the five, written as the port's offset
     // from the node's centre (yEd's sx, sy or tx, ty); on a CellDesigner map cd_edit makes it CellDesigner's port
     // (none for the centre, N, S, W, E). A process glyph's main lines are not moved this way; a modifier's end there goes round it (procSpots)
+    function partSel() { return part && !selN.length && !selP.length && selE.indexOf(part.k) >= 0 ? part : null; }   // the part of a line selected alone that the keys move (marked)
+    function markSize() { return Math.max(1.5, 4 * V.z); }   // the four marks round a selected bend point or end, in screen px
+    function markReach() { return markSize() + Math.max(1, 2 * V.z) / 2; }   // from their centre to their outer edge
     function portAt(P) {
-      var R = 6 / V.z, L = lit(), best = null, dB = R;
+      var R = 6 / V.z, L = lit(), best = null, dB = R, ps = partSel(), hp = ps && ps.port && hit(P);
+      if (hp && hp.e === ps.k && hp.p != null) ps = null;   // the line's own bend point under the press: the bend point, not the end's wider grab
       L.e.forEach(function (k) {
         var e = edges2[k];
         if (e.s == null || e.t == null || !e.path) return;
@@ -1774,6 +1778,7 @@
           if (cd && /\|proc$/.test(nodes2[q[1]].id) && !procSpots({ k: k, end: end, n: q[1] })) return;   // a glyph's main lines stay
           var d = Math.hypot(all[q[0]][0] - P[0], all[q[0]][1] - P[1]), hb = !!hubEnd(k, end), b = hb && bx(q[1]);   // an end at a process's or gate's port goes with the process, or to another node
           if (hb && P[0] >= b[0] && P[0] <= b[0] + b[2] && P[1] >= b[1] && P[1] <= b[1] + b[3]) return;   // a press on the process itself moves the process
+          if (ps && ps.port && ps.k === k && ps.port.end === end && Math.max(Math.abs(all[q[0]][0] - P[0]), Math.abs(all[q[0]][1] - P[1])) * V.z <= markReach() + 2) d = 0;   // the end selected: anywhere within its four marks
           if (d <= dB) { dB = d; best = { k: k, end: end, n: q[1], to: null, hub: hb }; }
         });
       });
@@ -1911,31 +1916,35 @@
       }
       return inn;
     }
-    // from loc on the outline, along it with coordinate A going toward s, while the outline runs closer to A: the point
-    // where A reaches its next grid value, else the run's end; null when no run goes that way from here
-    function along(R, loc, A, s, g) {
-      var N = R.length, v = gridNext(loc.pt[A], s, g);
-      for (var di = 0; di < 2; di++) {
-        var p = loc.pt, moved = false;
-        for (var m = 0; m < N; m++) {
-          var q = di ? R[((loc.j - m) % N + N) % N] : R[(loc.j + 1 + m) % N], w = [q[0] - p[0], q[1] - p[1]];
-          if (Math.hypot(w[0], w[1]) < 0.05) { p = q; continue; }   // a piece within rounding of the start (an offset kept to two decimals)
-          if (keyAx(w) !== A || Math.sign(w[A]) !== s) break;
-          if ((q[A] - v) * s >= -1e-9) { var t = (v - p[A]) / w[A], X = [p[0] + t * w[0], p[1] + t * w[1]]; X[A] = v; return X; }
-          p = q; moved = true;
-        }
-        if (moved && Math.hypot(p[0] - loc.pt[0], p[1] - loc.pt[1]) > 0.05) return p;
+    // from loc along the outline one way (di 0: in the polygon's order, 1: against it) while it runs closer to one axis A
+    // (given with its sign s, or null: the axis of the piece ahead): the point where A reaches its next grid value, else
+    // the run's end; null when no run goes that way from here
+    function walk(R, loc, di, A, s, g) {
+      var N = R.length, p = loc.pt, moved = false;
+      for (var m = 0; m < N; m++) {
+        var q = di ? R[((loc.j - m) % N + N) % N] : R[(loc.j + 1 + m) % N], w = [q[0] - p[0], q[1] - p[1]];
+        if (Math.hypot(w[0], w[1]) < 0.05) { p = q; continue; }   // a piece within rounding of the start (an offset kept to two decimals)
+        if (A == null) { A = keyAx(w); s = Math.sign(w[A]); }
+        if (keyAx(w) !== A || Math.sign(w[A]) !== s) break;
+        var v = gridNext(loc.pt[A], s, g);
+        if ((q[A] - v) * s >= -1e-9) { var t = (v - p[A]) / w[A], X = [p[0] + t * w[0], p[1] + t * w[1]]; X[A] = v; return X; }
+        p = q; moved = true;
       }
+      return moved && Math.hypot(p[0] - loc.pt[0], p[1] - loc.pt[1]) > 0.05 ? p : null;
+    }
+    function along(R, loc, A, s, g) {   // walk with coordinate A going toward s, whichever way round that is: { to, di } or null
+      for (var di = 0; di < 2; di++) { var X = walk(R, loc, di, A, s, g); if (X) return { to: X, di: di }; }
       return null;
     }
-    // an arrow key on a port at offset o (d: the arrow; g: the step): inside, a grid step, stopping on the outline where
-    // the line along the arrow meets it; on the outline, along it (along), else one step inward; outward nothing
-    function portStep(n, o, d, g) {
+    // an arrow key on a port at offset o (d: the arrow; g: the step): { to, di } or null. Inside, a grid step, stopping on
+    // the outline where the line along the arrow meets it. On the outline, along it as the arrow points (along), else one
+    // step inward, outward nothing; round (di given: the same key again), on round the outline that way past every run's end
+    function portStep(n, o, d, g, round) {
       var R = rim(n), A = d[0] ? 0 : 1, s = Math.sign(d[A]), loc = onRim(R, o), t = o.slice();
-      if (loc.d > 0.05 && !inRim(R, o)) return dec2(loc.pt);   // outside (a node resized smaller): onto the outline first
+      if (loc.d > 0.05 && !inRim(R, o)) return { to: dec2(loc.pt) };   // outside (a node resized smaller): onto the outline first
       if (loc.d > 0.05) {
         t[A] = gridNext(o[A], s, g);
-        if (inRim(R, t) && onRim(R, t).d > 0.05) return dec2(t);
+        if (inRim(R, t) && onRim(R, t).d > 0.05) return { to: dec2(t) };
         var hit = null;   // where the line from o along the arrow leaves the shape
         R.forEach(function (p, j) {
           var q = R[(j + 1) % R.length], B = 1 - A;
@@ -1944,12 +1953,13 @@
           if ((X - o[A]) * s > 1e-9 && (hit == null || (X - hit) * s < 0)) hit = X;
         });
         if (hit == null) return null;
-        t[A] = hit; return dec2(t);
+        t[A] = hit; return { to: dec2(t) };
       }
+      if (round != null) { var X = walk(R, loc, round, null, 0, g); return X ? { to: dec2(X), di: round } : null; }
       var r = along(R, loc, A, s, g);
-      if (r) return dec2(r);
+      if (r) return { to: dec2(r.to), di: r.di };
       var probe = loc.pt.slice(); probe[A] += s * 0.5; t = loc.pt.slice(); t[A] = gridNext(t[A], s, g);
-      return inRim(R, probe) && inRim(R, t) && onRim(R, t).d > 0.05 ? dec2(t) : null;
+      return inRim(R, probe) && inRim(R, t) && onRim(R, t).d > 0.05 ? { to: dec2(t) } : null;
     }
     // a port dragged to offset q: onto the outline within 3 px of it or outside (its grid coordinate on the grid), else
     // the nearest grid point inside; free (Alt or Ctrl): where it is, inside or on the outline
@@ -1966,7 +1976,8 @@
       }
       var p = loc.pt, j = loc.j, w = [R[(j + 1) % R.length][0] - R[j][0], R[(j + 1) % R.length][1] - R[j][1]], A = keyAx(w), v = Math.round(p[A] / PG) * PG;
       if (Math.abs(v - p[A]) < 1e-6) return dec2(p);
-      return dec2(along(R, loc, A, Math.sign(v - p[A]), PG) || p);
+      var r = along(R, loc, A, Math.sign(v - p[A]), PG);
+      return dec2(r ? r.to : p);
     }
     function spotNo(pp, to) {   // the number of the glyph's place at offset to (procSpots' order), null off a glyph
       var S = procSpots(pp), best = null, bd = Infinity;
@@ -1974,7 +1985,7 @@
       return best;
     }
     // an end moved to another node (to any node that can take it): an end square dragged off its node goes, on release, to the node under the pointer that can take it,
-    // lit while the pointer is over it, else back where it was. SBGN's rules: an arc goes from or
+    // lit while the pointer is over it, else back where it was (on the ports' grid: on its own outline, aim). SBGN's rules: an arc goes from or
     // to a complex, never a member inside it (the complex takes the end); a logic gate takes only the one
     // arrowhead-less line, a consumption at a process and an input at a gate alike, and its modulations leave from it.
     // GraphML, SBGN-ML and CellDesigner maps: on a CellDesigner map
@@ -2024,9 +2035,10 @@
       var q = pp.end || (e.arr[1] === 'none' && !nodes2[e.t].hub) ? H[0] : H[1];   // into port one, or out of port two
       return [q[0] - b[0] - b[2] / 2, q[1] - b[1] - b[3] / 2];
     }
-    function aim(pp, P, free) {   // the dragged end's next place: on its own node, on a node that takes it, or free at the pointer (free: off the ports' grid)
+    function aim(pp, P, free) {   // the dragged end's next place: on its own node, on a node that takes it, or free at the pointer (Alt or Ctrl, a process's port, or off the ports' grid)
       var i = takerAt(pp, P), b;
       pp.n2 = null; pp.free = false;
+      if (i == null && !pp.hub && !free && gridPorts()) i = pp.n;   // on the ports' grid, over nothing that takes it: on its own outline, nearest the pointer
       if (i === pp.n) { pp.to = pp.hub ? null : spot(pp, P, free); return; }   // an end at a port stays with its process
       if (i != null) { pp.n2 = i; pp.to = portOn(pp, i, P, free); return; }
       b = bx(pp.n); pp.free = true; pp.to = [P[0] - b[0] - b[2] / 2, P[1] - b[1] - b[3] / 2];
@@ -2078,7 +2090,7 @@
       // the point, the lines through it seen in the gap between them (measured on yEd: squares 4 units, gap 2 units)
       selP.forEach(function (pi) {
         if (selE.some(function (k) { return edges2[k].pts.indexOf(pi) >= 0; })) return;
-        var q = pt(pi), a = Math.max(1.5, 4 * V.z), g = Math.max(1, 2 * V.z) / 2, X = sx(q[0]), Y3 = sy(q[1]);
+        var q = pt(pi), a = markSize(), g = markReach() - a, X = sx(q[0]), Y3 = sy(q[1]);
         [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(function (c) {
           over.push('<rect class="m2-ed-bend"' + sw(0.5) + ' x="' + f1(c[0] < 0 ? X - g - a : X + g) + '" y="' + f1(c[1] < 0 ? Y3 - g - a : Y3 + g) + '" width="' + f1(a) + '" height="' + f1(a) + '"/>');
         });
@@ -2120,10 +2132,10 @@
         });
       });
       // the part of the line the keys move: four small squares round it, as a bend point selected alone
-      var pt1 = !drag && part && !selN.length && !selP.length && selE.indexOf(part.k) >= 0 ? part : null;
+      var pt1 = !drag ? partSel() : null;
       if (pt1) {
         var qa = ports(pt1.k), Q = pt1.port ? qa[pt1.port.end ? qa.length - 1 : 0] : pt(pt1.p);
-        var a1 = Math.max(1.5, 4 * V.z), g1 = Math.max(1, 2 * V.z) / 2, X1 = sx(Q[0]), Y1 = sy(Q[1]);
+        var a1 = markSize(), g1 = markReach() - a1, X1 = sx(Q[0]), Y1 = sy(Q[1]);
         [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(function (c) {
           over.push('<rect class="m2-ed-bend"' + sw(0.5) + ' x="' + f1(c[0] < 0 ? X1 - g1 - a1 : X1 + g1) + '" y="' + f1(c[1] < 0 ? Y1 - g1 - a1 : Y1 + g1) + '" width="' + f1(a1) + '" height="' + f1(a1) + '"/>');
         });
@@ -2826,9 +2838,11 @@
       if (pp.hub) return;   // at a process's or gate's port: it goes with the process
       var e = edges2[pp.k], a = pp.end ? ['tx', 'ty'] : ['sx', 'sy'], b = bx(pp.n), u = [Math.sign(d[0]), Math.sign(d[1])];
       var off = [num(e.path, a[0]) || 0, num(e.path, a[1]) || 0], S = procSpots(pp) || hubSides(pp);
-      if (!S && gridPorts()) {   // plain arrows a step of PG, Shift 1
-        var g2 = portStep(pp.n, off, u, fine ? 1 : PG);
-        if (g2) setPort({ k: pp.k, end: pp.end, n: pp.n, to: g2 });
+      if (!S && gridPorts()) {   // plain arrows a step of PG, Shift 1; the same key again goes on round the outline the same way
+        var rn = pp.run, go = rn && rn.u + '' === u + '' && Math.abs(rn.to[0] - off[0]) < 0.01 && Math.abs(rn.to[1] - off[1]) < 0.01 ? rn.di : null;   // the run lives on the pressed end: a new press, undo or Esc ends it
+        var g2 = portStep(pp.n, off, u, fine ? 1 : PG, go);
+        pp.run = g2 && g2.di != null ? { u: u, di: g2.di, to: g2.to } : null;
+        if (g2) setPort({ k: pp.k, end: pp.end, n: pp.n, to: g2.to });
         return;
       }
       var c = [b[0] + b[2] / 2, b[1] + b[3] / 2], o = spot(pp, [c[0] + off[0], c[1] + off[1]]), s = [Math.sign(o[0]), Math.sign(o[1])];
@@ -2868,7 +2882,7 @@
       if (!selN.length && !selP.length && !selE.length) return;
       // a line selected alone: only its part last pressed moves, as by hand (a bend point, or an end stepped among the
       // node's five places); none pressed, nothing moves
-      var pt0 = part && !selN.length && !selP.length && selE.indexOf(part.k) >= 0 ? part : null;
+      var pt0 = partSel();
       if (!selN.length && !selP.length && !pt0) return;
       if (pt0 && pt0.port) { portKey(pt0.port, d, e.shiftKey); return; }
       var ks = pt0 ? { n: new Set(), p: new Set([pt0.p]), dx: 0, dy: 0 } : moving();
