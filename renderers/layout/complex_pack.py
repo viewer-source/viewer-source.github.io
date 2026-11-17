@@ -1,4 +1,4 @@
-# Copy of the layout skill's complex_pack.py at 58d8306; its master is in the skill, never edited here.
+# Copy of the layout skill's complex_pack.py at 06a42e8; its master is in the skill, never edited here.
 # Complex packing and the group fit (SKILL.md section 5, Group bounds; section 3, Complex packing).
 #   python3 complex_pack.py <in.graphml> <out.graphml>   packs every complex, then fits all groups
 #   from complex_pack import fit_insets                  fit_insets(root) ends every build that
@@ -6,7 +6,8 @@
 # Packing: members 12 px from the left and right edges, 8 px from each other,
 # 16 px from the top (yEd's Insets 12 + its 4 px group label; N:2 and units of information of a
 # first-row member sit in it) and 16 px from the bottom (mirroring the top, and room for the name
-# CellDesigner and MINERVA write there), counting state variables, units of information, names wider
+# CellDesigner and MINERVA write there; a name shown inside at the bottom: its label 6 px under the
+# members, NAMED, in place of the 16, its text then about 9 px clear as members are 8), counting state variables, units of information, names wider
 # than the node and a multimer's second outline; 10 px between a member and an inner complex one
 # above the other (the complex's thin outline reads as glued at 8). Exact on every complex: no grid inside complexes
 # (it made the bottom and right margins grow by up to 8 px). Members keep their arrangement: those
@@ -20,6 +21,7 @@ from lxml import etree
 NS = {'g': 'http://graphml.graphdrawing.org/xmlns', 'y': 'http://www.yworks.com/xml/graphml'}
 G, Y = '{%s}' % NS['g'], '{%s}' % NS['y']
 GAP, LEFT, TOP, RIGHT, BOTTOM = 8.0, 12.0, 16.0, 12.0, 16.0
+NAMED = 6.0  # under the members, above a name shown inside at the bottom (its label box keeps 3 px above the text)
 GAP_COMPLEX = 10.0  # one above the other, a member and an inner complex (mevalonate PP2ARB)
 INSETS = (('left', 10), ('top', 12), ('right', 10), ('bottom', 16))  # top + the 4 px group label = TOP
 TOL = 5.0  # centres closer than this share a line
@@ -235,10 +237,10 @@ def pack_one(n, state):
         ys, hn = placed([(cy, (o[1], o[3]), (cx + o[0], cx + o[2]), top, kh / 2) for cx, cy, o, top, _, kh in cs], TOP,
                     {i for i, k in enumerate(kids) if is_complex(k)})
     # a name yEd shows inside at the bottom (every complex of the osteoarthritis blocks) sits
-    # under the bottom margin, as yEd draws it (room)
+    # NAMED under the members in place of the bottom margin, as yEd draws it (room)
     name = max([float(l.get('height')) for l in realizer(n).findall('y:NodeLabel', NS) if l.get('modelName') == 'internal'
                 and l.get('visible') != 'false' and (l.get('modelPosition') or '')[:1] == 'b' and (l.text or '').strip()] or [0.0])
-    wn, hn = wn + RIGHT, hn + BOTTOM + name
+    wn, hn = wn + RIGHT, hn + (NAMED + name if name else BOTTOM)
     nx, ny = x + w / 2 - wn / 2, y + h / 2 - hn / 2
     for k, (cx, cy, *_), ax, ay in zip(kids, cs, xs, ys):
         shift(k, nx + ax - cx, ny + ay - cy)
@@ -246,7 +248,8 @@ def pack_one(n, state):
     for r in n.find('g:data/y:ProxyAutoBoundsNode/y:Realizers', NS):
         i = r.find('y:Insets', NS)
         for side, v in INSETS:
-            i.set(side, str(v)); i.set(side + 'F', repr(float(v)))
+            v = NAMED if side == 'bottom' and name else v  # yEd draws the name under the bottom Insets
+            i.set(side, str(int(v))); i.set(side + 'F', repr(float(v)))
 
 
 def ligand_on_top(n):

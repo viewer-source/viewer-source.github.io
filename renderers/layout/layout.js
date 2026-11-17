@@ -9,7 +9,7 @@
 (function (root) {
   'use strict';
   var GNS = 'http://graphml.graphdrawing.org/xmlns', YNS = 'http://www.yworks.com/xml/graphml';
-  var GAP = 8.0, LEFT = 12.0, TOP = 16.0, RIGHT = 12.0, BOTTOM = 16.0, GAP_COMPLEX = 10.0, TOL = 5.0, SHORT = 2.0;
+  var GAP = 8.0, LEFT = 12.0, TOP = 16.0, RIGHT = 12.0, BOTTOM = 16.0, NAMED = 6.0, GAP_COMPLEX = 10.0, TOL = 5.0, SHORT = 2.0;
   var INSETS = [['left', 10], ['top', 12], ['right', 10], ['bottom', 16]];
 
   // ---- Python's arithmetic where JavaScript's differs ----
@@ -252,7 +252,7 @@
     var name = maxOr0(kids(realizer(n), YNS, 'NodeLabel').filter(function (l) {
       return get(l, 'modelName') === 'internal' && get(l, 'visible') !== 'false' && (get(l, 'modelPosition') || '').slice(0, 1) === 'b' && strip(leadText(l));
     }).map(function (l) { return F(get(l, 'height')); }));
-    wn = wn + RIGHT; hn = hn + BOTTOM + name;
+    wn = wn + RIGHT; hn = hn + (name ? NAMED + name : BOTTOM);   // a name shown inside: its label NAMED under the members
     var nx = x + w / 2 - wn / 2, ny = y + h / 2 - hn / 2;
     ks.forEach(function (k, i) { shift(k, nx + xs[i] - cs[i][0], ny + ys[i] - cs[i][1]); });
     setBox(n, [nx, ny, wn, hn]);
@@ -260,7 +260,7 @@
     if (!rs) throw new Error('TypeError: NoneType is not iterable');
     rs.forEach(function (r) {
       var ins = kid(r, YNS, 'Insets');
-      INSETS.forEach(function (q) { ins.setAttribute(q[0], String(q[1])); ins.setAttribute(q[0] + 'F', R(q[1])); });
+      INSETS.forEach(function (q) { var v = q[0] === 'bottom' && name ? NAMED : q[1]; ins.setAttribute(q[0], String(v)); ins.setAttribute(q[0] + 'F', R(v)); });
     });
   }
   function pack(rootEl) {
