@@ -2,7 +2,8 @@
 // the styles page: on the Testing Glycolysis SBGN-ML map (its processes 10 by 10) and CellDesigner map, the two rows
 // under a line below the palette while nothing is selected (Properties in their place otherwise), From file chosen; the list
 // opened in place and closed by a choice; a process and a macromolecule placed take the map's sizes; Style Default gives
-// the built-in ones; the map's fill under From file; Colours No colours leaves a new glyph unfilled. Nothing is saved (no token). No script error.
+// the built-in ones; the map's fill under From file; Colours No colours leaves a new glyph unfilled; Custom takes what Set as default kept, as it is, and Set as default
+// switches both rows to it (a CellDesigner map, with no Set as default, reads a kept Custom as From file). Nothing is saved (no token). No script error.
 //   node tests/palette-style.js [base address]
 var { chromium } = require('playwright');
 var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
@@ -44,14 +45,31 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
   ok('Colours No colours: a new macromolecule unfilled', !(await sbFill(m2)), String(await sbFill(m2)));
   ok('the boxes say the choices', JSON.stringify(await rows()) === JSON.stringify(['Style: Default', 'Colours: No colours']), JSON.stringify(await rows()));
   await pick('style', 'From file'); await pick('cols', 'From file');
+  // Custom: Set as default keeps the node's look as it is and switches both rows to Custom; a kind with none kept takes From file
+  await page.evaluate(function () { localStorage.setItem('atlas-edit-defaults', JSON.stringify({ macromolecule: { w: 120, h: 60, fill: '#123456' } })); });
+  await pick('style', 'Custom'); await pick('cols', 'Custom');
+  var m3 = await made('macromolecule', 1000, 650), p3 = await made('process', 820, 450);
+  ok('Custom: a macromolecule at the kept 120 by 60, not a share of another size', JSON.stringify(await sbBox(m3)) === '[120,60]', JSON.stringify(await sbBox(m3)));
+  ok('and the kept fill #123456', String(await sbFill(m3)).toUpperCase() === '#123456', String(await sbFill(m3)));
+  ok('a process, none kept: the map’s 10 by 10', JSON.stringify(await sbBox(p3)) === '[10,10]', JSON.stringify(await sbBox(p3)));
+  await pick('style', 'From file'); await pick('cols', 'From file');
+  await page.mouse.click.apply(page.mouse, await page.$eval('#m2-img [data-n="' + m + '"]', function (g) { var r = g.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; })); await page.waitForTimeout(400);
+  await page.click('#m2-editwin .m2-ed-pdef'); await page.waitForTimeout(300); await page.keyboard.press('Escape'); await page.mouse.click(1350, 880); await page.waitForTimeout(400);
+  var kept = await page.evaluate(function () { return JSON.parse(localStorage.getItem('atlas-edit-defaults')).macromolecule; });
+  ok('Set as default keeps the node as it is (80 by 40, #C2D4ED)', kept.w === 80 && kept.h === 40 && String(kept.fill).toUpperCase() === '#C2D4ED', JSON.stringify(kept));
+  ok('and switches both rows to Custom', JSON.stringify(await rows()) === JSON.stringify(['Style: Custom', 'Colours: Custom']), JSON.stringify(await rows()));
   await start('glycolysis-celldesigner', 'cd:PROTEIN');
   R = await last();
-  ok('CellDesigner: the same two rows, From file', R.length === 2 && /^Style: From file/.test(R[0]) && /^Colours: From file/.test(R[1]), JSON.stringify(R));
+  ok('CellDesigner: the same two rows, From file (a kept Custom read as From file, no Set as default there)', R.length === 2 && /^Style: From file/.test(R[0]) && /^Colours: From file/.test(R[1]), JSON.stringify(R));
   await page.click('#m2-editwin .m2-ed-pmap tr[data-k="cols"] .m2-ed-pdd'); await page.waitForTimeout(200);
   var items = await page.$$eval('#m2-editwin .m2-ed-plist button', function (l) { return l.map(function (x) { return x.querySelector('span').textContent; }); });
   await page.click('#m2-editwin .m2-ed-plist button:has-text("From file")'); await page.waitForTimeout(200);
   ok('the list opens in place under its row and closes on a choice', items.length === 4 && !(await page.$('#m2-editwin .m2-ed-plist')));
   ok('its colour menu: From file, CellDesigner, Default, No colours', JSON.stringify(items) === JSON.stringify(['From file', 'CellDesigner', 'Default', 'No colours']), JSON.stringify(items));
+  await pick('style', 'From file');
+  await start('testing-glycolysis-sbgn', 'process');
+  ok('Style From file chosen on a CellDesigner map is the SBGN-ML map’s too', JSON.stringify(await rows()) === JSON.stringify(['Style: From file', 'Colours: Custom']), JSON.stringify(await rows()));
+  await page.evaluate(function () { ['atlas-edit-style', 'atlas-edit-sb-colours', 'atlas-edit-defaults'].forEach(function (k) { localStorage.removeItem(k); }); });
   ok('no script error', !errs.length, errs.join(' | '));
   await b.close(); process.exit(bad ? 1 : 0);
 })();
