@@ -354,7 +354,7 @@ page, so its styles keep the base they were made on).
   .m2-cx.m2-cs-menu button { padding: 4px 6px 4px 8px; }
   .m2-cx.m2-cs-menu button[aria-checked="true"] { font-weight: 500; }
   /* Change identity's small window (CellDesigner species): the right-click menu's look, a title with a close sign, each
-     kind with its palette sign, the species' own kind greyed out */
+     kind with its palette sign, the species' own kind checked */
   .m2-cx.m2-ci { min-width: 0; font-size: 13px; }
   .m2-ci .m2-ci-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 4px 4px 12px; color: var(--m2-muted, #5f6368); }
   .m2-cx.m2-ci .m2-ci-x { width: 22px; height: 22px; padding: 4px; justify-content: center; border-radius: var(--m2-radius-button); color: #80868b; }
@@ -362,7 +362,7 @@ page, so its styles keep the base they were made on).
   .m2-ci .m2-ci-x svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; }
   .m2-cx.m2-ci [role="menu"] button { justify-content: flex-start; gap: 8px; padding: 3px 12px; }
   .m2-cx.m2-ci [role="menu"] svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.37; }
-  .m2-cx.m2-ci button[aria-checked="true"], .m2-cx.m2-ci:not(.m2-cx-still) button[aria-checked="true"]:hover { color: #bdc1c6; background: none; }   /* the species' own kind: greyed, not a choice */
+  .m2-cx.m2-ci button[aria-checked="true"], .m2-cx.m2-ci:not(.m2-cx-still) button[aria-checked="true"]:hover { font-weight: 500; color: var(--m2-text); }
   /* the circled i beside Connecting arcs (an info glyph): a sign button
      opening How to edit at its section; no shade under the pointer or open. Small and light:
      a 12 px sign, thin ring, the sign buttons' grey, in a 16 px hit area */
