@@ -21,7 +21,7 @@
       ['DEGRADED', 'Degraded', '<circle cx="12" cy="12" r="8"/><path d="M4 20l16-16"/>'],
       // the complex: its box with cut corners holding three overlapping members, each opaque over the one behind it
       ['COMPLEX', 'Complex', '<path d="M6 2.5h12l3.5 3.5v12l-3.5 3.5h-12l-3.5-3.5v-12z"/><g class="thin" fill="#fff"><rect x="8.5" y="5.5" width="7.5" height="6.5" rx="1"/><rect x="5" y="10" width="6.5" height="4.5" rx="1"/><ellipse cx="14.3" cy="14.8" rx="4.6" ry="3.6"/></g>'],
-      ['COMPARTMENT', 'Compartment', '<rect x="1.5" y="3.5" width="21" height="17" rx="6"/><rect x="4.5" y="6.5" width="15" height="11" rx="3.5"/>']];
+      ['COMPARTMENT', 'Compartment', '<rect x="1.5" y="3.5" width="21" height="17" rx="6"/><rect class="thin" x="4.5" y="6.5" width="15" height="11" rx="3.5"/>']];
     // gates: the circle with its sign, two input lines above and the output line below; the signs centred in the circle
     // (the bar and ! drawn, not letters, so they sit in its middle); the fourth item is cdrender's GATE sign, for cdCheck
     var CD_Q = '<path d="M9.8 10.2a2.2 2.2 0 1 1 3.2 2c-.7.4-1 .8-1 1.6" class="in"/><circle class="dot" cx="12" cy="16.4" r=".8"/>';
