@@ -548,7 +548,7 @@
       set: function (k, v, is) {   // every node of is given the value, one undo step
         var ids = is.map(function (i) { return nodes2[i].id; }), all = function (f) { return cdApply(function (t) { ids.forEach(function (id) { t = f(t, id); }); return t; }, ids); };
         if (k === 'label') return all(function (t, id) { return cdMk.rename(t, id, v.replace(/[\r\n]+/g, ' ')); });
-        if (k === 'multimer') return all(function (t, id) { return cdMk.homodimer(t, id, v ? 2 : 1); });
+        if (k === 'multimer') return all(function (t, id) { return !v ? cdMk.homodimer(t, id, 1) : cdMk.aliasInfo(t, id).homodimer > 1 ? t : cdMk.homodimer(t, id, 2); });   // a count above 2 kept
         if (k === 'width') { var x = parseFloat(v); return x > 0 && x <= 20 && all(function (t, id) { return cdMk.restyle(t, id, { width: x }); }); }
         if (k === 'fill') { var c = hex(v); return !!c && all(function (t, id) { return cdMk.restyle(t, id, { fill: c }); }); }
         return false;

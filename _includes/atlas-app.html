@@ -2303,13 +2303,20 @@ page, so its styles keep the base they were made on).
   function regroup(list) {
     return list.map(function (m) {
       if (m.mine || !Object.prototype.hasOwnProperty.call(regrouped, m.id)) return m;
-      var sg = m.siteGroup != null ? m.siteGroup : m.group || '';   // the site's group (a list arranged again holds the regrouped copies)
-      if (sg === regrouped[m.id]) { setMoved(m.id, null); return Object.assign({}, m, { group: sg, siteGroup: undefined }); }
-      return Object.assign({}, m, { group: regrouped[m.id], siteGroup: sg });
+      if ((m.group || '') === regrouped[m.id]) { setMoved(m.id, null); return m; }   // the site has it there now
+      return Object.assign({}, m, { group: regrouped[m.id], siteGroup: m.group || '' });
     });
   }
+  function regroupRename(from, to) {   // a reader's group renamed (to) or removed (null: its site maps back to their own groups)
+    Object.keys(regrouped).forEach(function (id) { if (regrouped[id] === from) setMoved(id, to); });
+  }
+  function regroupPrune(list) {   // entries of maps no longer on the site let go
+    var ids = {}; list.forEach(function (m) { ids[m.id] = 1; });
+    Object.keys(regrouped).forEach(function (id) { if (!ids[id]) setMoved(id, null); });
+  }
+  function movedOf(id) { return Object.prototype.hasOwnProperty.call(regrouped, id) ? regrouped[id] : null; }
   function arrange(list) {  // the site's list in the reader's order
-    var site = regroup(list), groups = siteGroups(site);
+    var site = list.slice(), groups = siteGroups(site);
     var rank = function (known, x, i) { var k = (known || []).indexOf(x); return k < 0 ? 1e6 + i : k; };
     return site.map(function (m, i) {
       var g = m.group || '';
@@ -2570,10 +2577,11 @@ page, so its styles keep the base they were made on).
     shown.forEach(function (m) {
       // while searching every group with a match is shown open
       var shut = !q && closed[m.group];
-      if (!m.mine && !ownDone) { ownDone = true; ownEmpty(); }
-      if (m.mine && m.group && m.group !== group) ownEmpty(m.group);
+      var inOwn = m.mine || (!!m.group && !!own && own.isGroup(m.group)) || (!m.group && m.siteGroup != null);   // the reader's section: their maps, their groups, maps moved to no group
+      if (!inOwn && !ownDone) { ownDone = true; ownEmpty(); }
+      if (inOwn && m.group && m.group !== group) ownEmpty(m.group);
       if (m.group && m.group !== group) {
-        emptyGroups(m.group);
+        if (!(own && own.isGroup(m.group))) emptyGroups(m.group);   // the site's empty groups before a site group only
         group = m.group;
         heading(group, shut);
       }
@@ -2795,8 +2803,9 @@ page, so its styles keep the base they were made on).
     list = list.filter(function (m) { return !(m.kind === 'link' && m.url); });
     siteList = list;
     list = list.map(asSource);
-    var gh = own ? own.here() : [], a = arrange(own ? own.withMine(list) : list);
-    var rank = function (m) { return m.group ? gh.indexOf(m.group) + 1 : 0; }, first = function (m) { return m.group ? rank(m) > 0 : !!m.mine; };   // the reader's groups (a site map moved into one too) and their ungrouped maps
+    regroupPrune(list);
+    var gh = own ? own.here() : [], a = arrange(regroup(own ? own.withMine(list) : list));   // site maps moved to another group (regroup), then the reader's order
+    var rank = function (m) { return m.group ? gh.indexOf(m.group) + 1 : 0; }, first = function (m) { return m.group ? rank(m) > 0 : !!m.mine || m.siteGroup != null; };   // the reader's groups (a site map moved into one too) and the ungrouped maps they made or moved there
     maps = a.filter(first).sort(function (x, y) { return rank(x) - rank(y); })
       .concat(a.filter(function (m) { return !first(m); }));   // the reader's maps first: those in no group at the top, then their groups in the order made; one in a site group (added there, or their group the site has now) stands in it, after its maps
     byId = {}; topics = [];
@@ -3034,6 +3043,7 @@ page, so its styles keep the base they were made on).
       if (mac && !mac.late) mac.forEach(function (q) { item(box, q[0], q[1]); });
       if (del) item(box, 'Delete', del);
       if (mac && mac.late) mac.forEach(function (q) { item(box, q[0], q[1]); });   // a rarely used item, under Delete
+      if (mac && mac.tail) mac.tail.forEach(function (q) { item(box, q[0], q[1]); });   // the node's last items (Select all of this kind)
       if (unbendAll) item(box, 'Remove all bend points', unbendAll);
       var whole = ed && window.m2EditMapItems && window.m2EditMapItems();   // the whole map's tools and the grid switches, on empty map space
       (whole || []).forEach(function (q) {
@@ -3314,6 +3324,8 @@ page, so its styles keep the base they were made on).
     siteGroupOf: { get: function () { return siteGroupOf; } },
     placeMap: { get: function () { return placeMap; } },
     setMoved: { get: function () { return setMoved; } },
+    movedOf: { get: function () { return movedOf; } },
+    regroupRename: { get: function () { return regroupRename; } },
     listMenu: { get: function () { return listMenu; } },
     listGroups: { get: function () { return listGroups; } },
     folderKey: { get: function () { return FOLDER_KEY; } },

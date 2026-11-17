@@ -130,6 +130,7 @@
           if (was && gs.indexOf(was) >= 0) {
             gs[gs.indexOf(was)] = v;
             Object.keys(mine).forEach(function (k) { var r = mine[k]; if (r.group === was) { r.group = v; minePut(r).catch(function () {}); } });
+            V.regroupRename(was, v);   // site maps moved into it follow
             if (V.closed[was]) { V.closed[v] = true; delete V.closed[was]; V.saveClosed(); }
           } else if (!was) gs.push(v);
           mineGroupsSet(gs);
@@ -141,6 +142,7 @@
     function removeGroup(name) {   // the group goes, its maps stay, at the top of the list
       mineGroupsSet(mineGroups().filter(function (g) { return g !== name; }));
       Object.keys(mine).forEach(function (k) { var r = mine[k]; if (r.group === name) { r.group = ''; minePut(r).catch(function () {}); } });
+      V.regroupRename(name, null);   // site maps moved into it back to their own groups
       if (V.closed[name]) { delete V.closed[name]; V.saveClosed(); }
       V.refreshMine();
     }
@@ -184,21 +186,29 @@
       var m = V.byId[id], r = mine[id];
       if (r) { r.group = g; minePut(r).catch(function () {}); }
       else if (m) {
-        var was = m.group || '';
-        V.setMoved(id, g);
-        if (repo() && token() && canRename(m, true)) toSiteGroup(id, g).catch(function (e) {
-          V.setMoved(id, null); V.refreshMine(); alert((m.topic || m.title) + ' was not moved on the site: ' + (e && e.message ? e.message : e) + '. It stays in ' + (was || 'no group') + '.');
-        });
+        if (g !== (m.group || '')) {   // a reorder in its own group is the reader's order alone
+          // to the site with a token, the move kept in this browser too until the build has it; a reader's group stays theirs
+          // (its name never written to the site, where it would merge with theirs); the build's own maps (no page) here only
+          if (repo() && token() && canRename(m, true) && !ownGroup(g)) g = g.replace(/["\\]/g, '');
+          V.setMoved(id, g);
+          if (repo() && token() && canRename(m, true) && !ownGroup(g)) toSiteGroup(id, g).catch(function (e) {
+            if (!e || !e.noPage) alert((m.topic || m.title) + ' was not moved on the site: ' + (e && e.message ? e.message : e) + '. The move is kept in this browser only.');
+          });
+        }
       } else return;
       put(id, g, before);
     }
     function toSiteGroup(id, g) {   // maps/<id>.md: its group and its order (after the group's last); one commit
       var path = '/contents/maps/' + encodeURIComponent(id) + '.md', q = JSON.stringify(g.replace(/["\\]/g, ''));
-      return api(path + '?ref=main').then(function (r) { if (!r.ok) throw new Error(r.status === 404 ? 'it has no page of its own' : 'GitHub ' + r.status); return r.json(); })
+      return api(path + '?ref=main').then(function (r) { if (!r.ok) { var e = new Error(r.status === 404 ? 'it has no page of its own' : 'GitHub ' + r.status); e.noPage = r.status === 404; throw e; } return r.json(); })
         .then(function (d) {
           var md = new TextDecoder().decode(Uint8Array.from(atob(d.content.replace(/\n/g, '')), function (c) { return c.charCodeAt(0); }));
-          var set = function (k, v) { md = new RegExp('^' + k + ': .*$', 'm').test(md) ? md.replace(new RegExp('^' + k + ': .*$', 'm'), function () { return k + ': ' + v; }) : md.replace(/^---\n/, function () { return '---\n' + k + ': ' + v + '\n'; }); };
+          var fm = /^---(\r?\n)([\s\S]*?)\r?\n---/.exec(md);   // the front matter only, in the file's line ends
+          if (!fm) throw new Error('its page has no front matter');
+          var nl = fm[1], head = fm[2];
+          var set = function (k, v) { var re = new RegExp('^' + k + ':.*$', 'm'); head = re.test(head) ? head.replace(re, function () { return k + ': ' + v; }) : k + ': ' + v + nl + head; };
           set('group', q); set('order', String(siteOrder(g)));
+          md = '---' + nl + head + fm[0].slice(3 + nl.length + fm[2].length) + md.slice(fm[0].length);   // its closing line and the body as they were
           return api(path, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: 'Map moved in the viewer: ' + id, content: b64(md), sha: d.sha, branch: 'main' }) });
         }).then(function (r) { if (!r.ok) throw new Error('GitHub ' + r.status); });
     }
