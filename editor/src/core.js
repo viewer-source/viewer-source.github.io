@@ -2598,8 +2598,9 @@
     // member, then in the member's own menu above Select all of this kind), the outermost round it (outerComplex), alone;
     // above it Name complex from members for the innermost complex there (create.js)
     var mapTools = [];
+    var ownMenus = [];   // a format's part: functions telling a point that has its own right-click menu (a state variable), where no complex item is offered
     function complexHere(member) {   // the innermost complex round the right click, or null; member: asked by the object's menu, so not on empty space (the map's items have it there)
-      if (!on || V.current !== map || !text || !rclick || (member && emptyClick())) return null;
+      if (!on || V.current !== map || !text || !rclick || (member && (emptyClick() || ownMenus.some(function (f) { return f(rclick); })))) return null;
       var h = hit(rclick), c = h && h.n != null ? h.n : null;
       while (c != null && nodes2[c].shape.kind !== 'Complex') c = nodes2[c].up;
       return c;

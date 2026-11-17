@@ -556,6 +556,7 @@
     // Select all of this kind, at the end of the right-click menu over a node: every node of the map of its kind selected
     // (SBGN-ML: its class, a multimer with its plain kind; CellDesigner: its species class, or compartment; GraphML: its
     // shape), so Properties sets them together
+    ownMenus.push(function (P) { return sb && svAt(P); });   // a state variable or unit of information: its own menu only
     window.m2EditNodeItems = function () {
       var it = nodeItems(), h = rclick && on && V.current === map ? hit(rclick) : null, i = h && h.n != null && h.p == null ? h.n : -1;
       if (i < 0 || (sb && svAt(rclick)) || kindKey(i) == null) return it;   // not over a state variable or unit (its own menu)

@@ -1,7 +1,8 @@
 // Repack complex on the live page (by default the styles page), on Glycolysis (GraphML and CellDesigner): a right click inside a
 // complex on empty space offers Repack complex just above Repack all complexes; on a member, Repack complex in its own menu;
 // on empty map space outside every complex, no Repack complex. Chosen after a member is moved out of place, only that
-// complex's members move back. Nothing is saved (no token). No script error.
+// complex's members move back. On an SBGN-ML map, a state variable added to a member has its own menu, without Repack complex.
+// Nothing is saved (no token). No script error.
 //   node tests/repack-one.js [base address]
 var { chromium } = require('playwright');
 var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
@@ -53,6 +54,29 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
     var t2 = await page.evaluate(function () { return window.m2EditNow().text; });
     ok(h + ': moved, then chosen, the complex repacked', t1 !== t0 && t2 !== t1, JSON.stringify([t1 !== t0, t2 !== t1]));
   }
+  // SBGN-ML: a state variable on a complex member, its own menu only
+  await page.goto(base + '#glycolysis-sbgn', { waitUntil: 'load' }); await page.waitForSelector('.m2-ri[data-win="edit"]', { timeout: 30000 });
+  await page.click('.m2-ri[data-win="edit"]'); await page.waitForTimeout(4000);
+  var mem = await page.evaluate(function () {
+    var rs = Array.prototype.slice.call(document.querySelectorAll('#m2-img [data-n]')).map(function (g) { return g.getBoundingClientRect(); });
+    var inside = function (a, c) { return a.left >= c.left - 0.5 && a.top >= c.top - 0.5 && a.right <= c.right + 0.5 && a.bottom <= c.bottom + 0.5; };
+    for (var i = 0; i < rs.length; i++) for (var j = 0; j < rs.length; j++) if (i !== j && rs[j].width < rs[i].width && inside(rs[j], rs[i])) { var k = rs[j]; return [k.left, k.top, k.width, k.height]; }
+    return null;
+  });
+  var svOk = false, svMenu = null;
+  if (mem) {
+    var lm = await menu([mem[0] + mem[2] / 2, mem[1] + mem[3] / 2]);
+    if (lm.indexOf('Add state variable') >= 0) {
+      await page.click('.m2-cx button:text-is("Add state variable")'); await page.waitForTimeout(1500); await page.keyboard.press('Escape');
+      for (var y = mem[1] - 8; y <= mem[1] + mem[3] + 8 && !svMenu; y += 2) for (var x = mem[0] - 8; x <= mem[0] + mem[2] + 8 && !svMenu; x += 3) {
+        if (y > mem[1] + 6 && y < mem[1] + mem[3] - 6 && x > mem[0] + 6 && x < mem[0] + mem[2] - 6) continue;   // the border only
+        var l = await menu([x, y]);
+        if (l.length && l.indexOf('Select all of this kind') < 0 && l.indexOf('Delete') >= 0 && l.indexOf('Snap map to grid') < 0) svMenu = l;
+      }
+      svOk = !!svMenu && svMenu.indexOf('Repack complex') < 0 && svMenu.indexOf('Name complex from members') < 0;
+    }
+  }
+  ok('glycolysis-sbgn: a state variable on a member, its own menu without complex items', svOk, JSON.stringify([mem, svMenu]));
   ok('no script error', !errs.length, errs.join(' | '));
   await b.close(); process.exit(bad ? 1 : 0);
 })();
