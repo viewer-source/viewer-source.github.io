@@ -55,8 +55,7 @@
         ['or', 'OR', '<circle cx="12" cy="12" r="10"/><text x="12" y="14.9" text-anchor="middle" font-size="8.2">OR</text>'],
         ['not', 'NOT', '<circle cx="12" cy="12" r="10"/><text x="12" y="14.7" text-anchor="middle" font-size="7.4" letter-spacing="-.1">NOT</text>'],
         ['equivalence', 'Equivalence', '<circle cx="12" cy="12" r="10"/><path d="M7.5 8.8h9M7.5 12h9M7.5 15.2h9" class="in"/>']]],
-      // arcs: drawn by a drag from a node, the kind
-      // guessed from its two ends; a sign picked is used as it is
+      // arcs: drawn by a drag from a node with the arc's sign picked
       ['Connecting arcs', [['consumption', 'Consumption / logic arc', '<path d="M3 12h18"/>'],
         ['production', 'Production', '<path d="M3 12h11"/><path d="M13 7.5l8 4.5-8 4.5z" fill="currentColor"/>'],
         // the modulations, by use: catalysis, the most used, first; modulation, the least used, last
@@ -1030,7 +1029,7 @@
 
     // ---------- arcs drawn by a drag from a node with an arc's sign picked ----------
     // With Settings, Editing on Full: a drag from a node with a sign of
-    // Connecting arcs or Modulating arcs picked, draws a line to where it is let go (a click still selects). The kind is guessed from the two
+    // Connecting arcs picked, draws a line to where it is let go (a click still selects). The kind is guessed from the two
     // ends, no connector type needed: an entity to a
     // process a consumption, ending on its port in; a process to an entity a production, from its port out; an entity to
     // an entity a process made midway with both,
@@ -1065,7 +1064,7 @@
       return true;
     }
     // what a line from node a to node b makes: { cls }, { pair }, { no: the reason }, or null over nothing. P: where it is
-    // let go. With no sign picked (guessed, then changed from the right-click menu): an entity
+    // let go. With no sign picked (not reached since lines need a sign: kept for a start without one): an entity
     // into a process a consumption, or a modulation when it lands on a side off the antennas of a process that has them;
     // a process to an entity a production; two entities a process between them; into a gate a logic arc (from an entity,
     // or a gate into a gate), out of a gate a stimulation (to a process or a phenotype), out of an equivalence a logic
@@ -1103,7 +1102,7 @@
         return ok('logic arc');
       }
       if (ra === 'gate') {   // a gate's output
-        if (want === 'logic arc' && eqA) return rb === 'epn' ? ok('logic arc') : { no: 'An equivalence\u2019s line goes to an entity.' };
+        if ((want === 'logic arc' || want === 'consumption') && eqA) return rb === 'epn' ? ok('logic arc') : { no: 'An equivalence\u2019s line goes to an entity.' };
         if (want) return { no: 'A ' + want + ' does not leave a logic gate: its output is a modulation (a stimulation, unless another is picked).' };
         if (eqA) return rb === 'epn' ? ok('logic arc') : { no: 'An equivalence’s line goes to an entity.' };
         return rb === 'epn' ? { no: 'A logic gate’s output goes to a process, a phenotype or another gate (Reduced notation is unticked in the palette).' } : ok('stimulation');
@@ -1113,9 +1112,8 @@
         return ok('stimulation');
       }
       if (ra === 'proc' && rb === 'proc') return { no: 'An arc goes from an entity into a process (a consumption) or from a process to an entity (a production), not between two processes.' };
-      // two entities (a shortcut): a process made between them, with no sign picked or with Consumption
-      // or Production picked alike
-      if (ra === 'epn' && rb === 'epn') return !want || want === 'consumption' || want === 'production' ? { pair: true } : { no: 'A ' + want + ' does not join two entities. A process is made between them with no sign, Consumption or Production picked.' };
+      // two entities (a shortcut): a process made between them, with Consumption or Production picked
+      if (ra === 'epn' && rb === 'epn') return !want || want === 'consumption' || want === 'production' ? { pair: true } : { no: 'A ' + want + ' does not join two entities. A process is made between them with Consumption or Production picked.' };
       var cls = ra === 'epn' ? 'consumption' : 'production';
       if (want && want !== cls) return { no: want === 'consumption' ? 'A consumption goes from an entity into a process.' : 'A production goes from a process to an entity.' };
       if (!want && cls === 'consumption' && P && offAxis(b, P)) {   // landed on a side off the antennas: a modulation
