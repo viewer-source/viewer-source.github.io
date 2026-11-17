@@ -509,7 +509,12 @@
         (ids.length ? 'Packed.' : 'Every complex packed.') + ' Ctrl or Cmd with Z takes it back.', 'Select a complex, or nothing for every complex.']);
     }
     box.querySelector('#m2-ed-tidy-grid').addEventListener('click', snapMap);
-    box.querySelector('#m2-ed-tidy-pack').addEventListener('click', function () { pack(selN.map(function (i) { return nodes2[i].id; })); });
+    function outerComplex(i) {   // the outermost complex round node i (itself included), or null: the layout tools pack a complex inside another
+      var c = null;   // with it, and one packed alone would land where the outer's packing puts it, over its neighbours
+      for (var u = i; u != null; u = nodes2[u].up) if (nodes2[u].shape.kind === 'Complex') c = u;
+      return c;
+    }
+    box.querySelector('#m2-ed-tidy-pack').addEventListener('click', function () { pack(selN.map(function (i) { var c = outerComplex(i); return nodes2[c == null ? i : c].id; })); });
 
     // the file read: every y:Geometry and y:Point in document order, which is also their order in the text
     function parse() {
@@ -2576,8 +2581,8 @@
     // Show grid and Snap to grid switches, a check beside a switch that is on; each the same code as its button
     // and after Repack all complexes the whole-map items a format's own part adds (mapTools: functions giving [label, go] or nothing)
     // and, above Repack all complexes, Repack complex: the complex the right click is in (inside it on empty space, or on a
-    // member, the innermost complex round it, then in the member's own menu above Select all of this kind), alone; above
-    // it Name complex from members for the same complex (create.js)
+    // member, then in the member's own menu above Select all of this kind), the outermost round it (outerComplex), alone;
+    // above it Name complex from members for the innermost complex there (create.js)
     var mapTools = [];
     function complexHere(member) {   // the innermost complex round the right click, or null; member: asked by the object's menu, so not on empty space (the map's items have it there)
       if (!on || V.current !== map || !text || !rclick || (member && emptyClick())) return null;
@@ -2587,6 +2592,7 @@
     }
     window.m2EditPackHere = function (member) {
       var c = complexHere(member);
+      if (c != null) c = outerComplex(c);
       if (c == null) return null;
       var id = nodes2[c].id;
       return function () { pack([id]); };
