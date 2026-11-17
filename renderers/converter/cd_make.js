@@ -29,10 +29,10 @@
   var py = cdr.py, repr = py.repr, F = py.F, X = cdr.xml, q = ed.reEscape;
   var CD = 'celldesigner:';
   // CellDesigner 4.4's new species: box width, height and fill (its saves and maps made in it); the palette. A simple
-  // molecule 40 by 40, a circle as the palette's sign and SBGN's simple chemical (CellDesigner's own is 70 by 25); a gene
-  // 80 by 40, a protein's size (CellDesigner's own is 80 by 30)
-  var LOOK = { PROTEIN: [80, 40, 'ffccffcc'], GENE: [80, 40, 'ffffff66'], RNA: [80, 30, 'ff66ff66'], SIMPLE_MOLECULE: [40, 40, 'ffccff66'],
-    UNKNOWN: [70, 25, 'ffcccccc'], PHENOTYPE: [80, 30, 'ffcc99ff'], DEGRADED: [30, 30, 'ffffcccc'], COMPLEX: [100, 120, 'fff7f7f7'] };
+  // molecule 40 by 40, a circle as the palette's sign and SBGN's simple chemical (CellDesigner's own is 70 by 25); a gene,
+  // an RNA and a phenotype 80 by 40, a protein's size (CellDesigner's own is 80 by 30)
+  var LOOK = { PROTEIN: [80, 40, 'ffccffcc'], GENE: [80, 40, 'ffffff66'], RNA: [80, 40, 'ff66ff66'], SIMPLE_MOLECULE: [40, 40, 'ffccff66'],
+    UNKNOWN: [70, 25, 'ffcccccc'], PHENOTYPE: [80, 40, 'ffcc99ff'], DEGRADED: [30, 30, 'ffffcccc'], COMPLEX: [100, 120, 'fff7f7f7'] };
   // classes with a reference: its element, the species' element naming it, its list, id prefix, type. The protein kinds
   // (receptor, ion channel, truncated) share proteins, told apart by type, and carry residues
   var PROT = ['protein', 'proteinReference', 'listOfProteins', 'pr'];
