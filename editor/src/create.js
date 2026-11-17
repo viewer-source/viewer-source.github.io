@@ -251,48 +251,47 @@
       protMemo = [text, r];
       return r;
     }
-    // a choice at the end of the palette as a dropdown (the Grid size list's way, core.js): '<label>: ' and the choice's
-    // name in the box, the choices in the menu by name, each with its squares (sq(id): their HTML, or ''); rows in the order
-    // made. o: { key, label, title, list: [[id, name, title]], get(), set(id), sq(id) }
-    var dd = { menu: null, box: null, text: null };   // the menu open, its box, the map's text it was made from
-    function ddClose() { if (dd.menu) { dd.menu.remove(); dd.menu = null; dd.box.setAttribute('aria-expanded', 'false'); } }
-    document.addEventListener('pointerdown', function (e) { if (dd.menu && !dd.menu.contains(e.target) && !dd.box.contains(e.target)) ddClose(); }, true);
-    document.addEventListener('keydown', function (e) { if (dd.menu && e.key === 'Escape') { e.stopPropagation(); ddClose(); } }, true);   // Escape closes the menu only (not also the tool in hand)
-    window.addEventListener('resize', ddClose);
-    document.addEventListener('scroll', function (e) { if (dd.menu && !dd.menu.contains(e.target)) ddClose(); }, true);   // a fixed menu would stay where the box was
+    // the map's own choices for new nodes (Style, Colours) in a block of their own under the palette (pmap), shown where
+    // Properties is while nothing is selected: rows as Properties' (the name, then a field with its arrow), the field's
+    // list opened in place under its row and closed by a choice, Escape or a press elsewhere. Rows in the order made.
+    // o: { key, label, title, list: [[id, name, title]], get(), set(id), sq(id): the choice's squares as HTML, or none }
+    var pmap = document.createElement('div'); pmap.className = 'm2-ed-pmap'; pmap.hidden = true;
+    pmap.innerHTML = '<table class="m2-ed-ptab"></table>';
+    var ddOpen = null;   // the list's row while open
+    function ddClose() {
+      if (!ddOpen) return;
+      ddOpen.previousElementSibling.querySelector('.m2-ed-pdd').setAttribute('aria-expanded', 'false');
+      ddOpen.remove(); ddOpen = null;
+    }
+    document.addEventListener('pointerdown', function (e) { if (ddOpen && !pmap.contains(e.target)) ddClose(); }, true);
+    document.addEventListener('keydown', function (e) { if (ddOpen && e.key === 'Escape') { e.stopPropagation(); ddClose(); } }, true);   // Escape closes the list only (not also the tool in hand)
     function palDrop(o) {
-      var r = pal.querySelector('.m2-ed-pdrop-' + o.key);
+      var r = pmap.querySelector('tr[data-k="' + o.key + '"]');
       if (!r) {
-        r = document.createElement('div'); r.className = 'm2-ed-pblk m2-ed-pcols m2-ed-pdrop-' + o.key;
-        r.innerHTML = '<button type="button" class="m2-cs-box" aria-haspopup="menu" aria-expanded="false"><span class="m2-cs-name"><span class="m2-cs-lab"></span><span class="m2-cs-val"></span></span><svg viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.4"/></svg></button>';
-        var bx = r.firstChild;
+        r = document.createElement('tr'); r.dataset.k = o.key;
+        r.innerHTML = '<th></th><td><button type="button" class="m2-ed-pdd" aria-haspopup="listbox" aria-expanded="false"><span></span><svg viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.4"/></svg></button></td>';
+        var bx = r.querySelector('button');
         bx.addEventListener('click', function (e) {
           e.stopPropagation(); bx.blur();   // the editor's keys work at once
-          var was = dd.menu && dd.box === bx; ddClose();
+          var was = ddOpen && ddOpen.previousElementSibling === r; ddClose();
           if (was) return;
-          var rc = bx.getBoundingClientRect(), m = r._o.get(), q = r._o;
-          dd.menu = document.createElement('div'); dd.menu.className = 'm2-cx m2-cs-menu'; dd.menu.setAttribute('role', 'menu'); dd.box = bx; dd.text = src(); bx.setAttribute('aria-expanded', 'true');
+          var q = r._o, m = q.get(), lr = document.createElement('tr'), td = document.createElement('td');
+          lr.className = 'm2-ed-plist'; td.colSpan = 2; td.setAttribute('role', 'listbox'); lr.appendChild(td);
           q.list.forEach(function (c) {
-            var b = document.createElement('button'); b.type = 'button'; b.setAttribute('role', 'menuitemradio'); b.setAttribute('aria-checked', String(c[0] === m));
+            var b = document.createElement('button'); b.type = 'button'; b.setAttribute('role', 'option'); b.setAttribute('aria-selected', String(c[0] === m));
             b.title = c[2];
             b.innerHTML = '<span>' + c[1] + '</span>' + (q.sq ? q.sq(c[0]) : '');
             b.addEventListener('click', function (ev) { ev.stopPropagation(); ddClose(); q.set(c[0]); palDrop(q); });
-            dd.menu.appendChild(b);
+            td.appendChild(b);
           });
-          document.body.appendChild(dd.menu);
-          var k = dd.menu.getBoundingClientRect().width / dd.menu.offsetWidth || 1;   // the page's own zoom: a fixed box is placed in its units
-          var up = rc.bottom + 2 + dd.menu.offsetHeight * k > window.innerHeight && rc.top - 2 - dd.menu.offsetHeight * k > 0;   // above the box when it would leave the window below
-          dd.menu.style.left = rc.left / k + 'px'; dd.menu.style.top = (up ? rc.top - 2 - dd.menu.offsetHeight * k : rc.bottom + 2) / k + 'px'; dd.menu.style.minWidth = rc.width / k + 'px';   // wider when five squares need it
+          r.insertAdjacentElement('afterend', lr); ddOpen = lr; bx.setAttribute('aria-expanded', 'true');
         });
-        var last = pal.querySelectorAll('.m2-ed-pcols');
-        (last.length ? last[last.length - 1] : palSignsEl).insertAdjacentElement('afterend', r);
+        pmap.firstChild.appendChild(r);
       }
       r._o = o;
-      var bx2 = r.firstChild; bx2.title = o.title; bx2.setAttribute('aria-label', o.title);
-      r.querySelector('.m2-cs-lab').textContent = o.label + ': ';
-      if (dd.menu && dd.box === bx2 && dd.text !== src()) ddClose();   // the map changed (an edit, an undo, another map): its squares would be stale
-      var nm = r.querySelector('.m2-cs-val'), v = o.list.filter(function (c) { return c[0] === o.get(); })[0][1];
-      if (nm.textContent !== v) nm.textContent = v;   // written only when changed (every paint comes here)
+      var th = r.firstChild, f = r.querySelector('.m2-ed-pdd'), v = o.list.filter(function (c) { return c[0] === o.get(); })[0][1];
+      if (th.textContent !== o.label) { th.textContent = o.label; f.title = o.title; f.setAttribute('aria-label', o.label + ', ' + o.title); }
+      if (f.firstChild.textContent !== v) f.firstChild.textContent = v;   // written only when changed (every paint comes here)
       return r;
     }
     function keptChoice(key, ids) { var v = null; try { v = localStorage.getItem(key); } catch (e) {} return ids.indexOf(v) >= 0 ? v : ids[0]; }   // the first: the one when none is kept
@@ -322,7 +321,7 @@
       var k = palKey();
       var lang = palLangNow(), look = palLookNow();
       var pn = pal.querySelector('.m2-ed-pnot'); pn.hidden = false; pn.style.display = '';   // hidden on a CellDesigner map (cdFill)
-      styleRow(); sbColsRow();   // at the end of the palette, the same rows a CellDesigner map shows with its own choices (cdFill)
+      styleRow(); sbColsRow();   // the map's choices for new glyphs (pmap); a CellDesigner map shows the same rows with its own (cdFill)
       Array.prototype.forEach.call(pal.querySelectorAll('[data-lang]'), function (b) { b.setAttribute('aria-pressed', String(b.dataset.lang === lang)); });
       Array.prototype.forEach.call(pal.querySelectorAll('[data-look]'), function (b) { b.setAttribute('aria-checked', String(b.dataset.look === look)); });
       pal.querySelector('.m2-ed-plook').hidden = !palViews();
@@ -372,10 +371,11 @@
     function palOn() { return on && V.current === map && !!sb && !!sbJs && V.level === 'full'; }
     function palShow() {
       var cdp_ = cdPal(), show = palOn() || cdp_;   // a CellDesigner map: its own set (cdcreate.js)
-      if (!show) ddClose();   // a palette dropdown's menu closed with its palette (a changed map: palDrop)
+      if (!show) ddClose();
       if (cdp_) cdFill();
       else if (show) { palSync(); palFill(); }   // palFill: a process added or removed turns the SBGN view off or on
       pal.hidden = !show;
+      pmap.hidden = !show;   // under its line while nothing is selected (Properties in its place otherwise: the page's styles)
       if (!show) tool = null;
       Array.prototype.forEach.call(pal.querySelectorAll('button[data-make]'), function (b) {
         var mine = !!tool && tool.kind === b.dataset.make;
@@ -1232,6 +1232,7 @@
     props.innerHTML = '<p>Properties</p>' + table(ROWS, ' m2-ed-pnode') + table(EROWS, ' m2-ed-pedge') + table(RROWS, ' m2-ed-prx') +
       '<button type="button" class="m2-ed-pdef" title="The next ones of this kind made from the palette take these">Set as default</button>';
     pal.insertAdjacentElement('afterend', props);
+    props.insertAdjacentElement('afterend', pmap);
     var inW = props.querySelector('#m2-ed-w'), inH = props.querySelector('#m2-ed-h');
     var field = function (k) { return props.querySelector('#m2-ed-' + k); }, pNow = {};
     function propNode() {   // the one node selected that Properties is for (propFmt's node), else -1
