@@ -1694,6 +1694,12 @@
       });
       return o;
     }
+    function landMarks(Ps, Q, cls) {   // where a line's end may land (points in the map's units), as CellDesigner shows them: each place
+      // a small grey square (3 units), the one it would take (Q) blue at 4 (cls: another class), on every format
+      var sqr = function (q, cls, u) { var h = Math.max(u, u * V.z); return '<rect class="' + cls + '" x="' + f1(sx(q[0]) - h / 2) + '" y="' + f1(sy(q[1]) - h / 2) + '" width="' + f1(h) + '" height="' + f1(h) + '"/>'; }, o = '';
+      Ps.forEach(function (q) { if (!Q || Math.hypot(q[0] - Q[0], q[1] - Q[1]) > 1e-6) o += sqr(q, 'm2-ed-place', 3); });
+      return Q ? o + sqr(Q, cls || 'm2-ed-port', cls ? HANDLE : 4) : o;
+    }
     function sx(X) { return V.tx + (X - x0) * V.z; }
     function sy(Y2) { return V.ty + (Y2 - y0) * V.z; }
     function f1(v) { return Math.round(v * 100) / 100; }
@@ -1903,6 +1909,11 @@
       });
       if (list.length) setPorts(list);
     }
+    function placesOf(pp) {   // the places an end may take at node pp.n (portOn's choice), as offsets from its centre; null on the ports' grid (any point of it)
+      if (nodes2[pp.n].hub && !(MODS.test(edges2[pp.k].arr[1]) && pp.end) && window.yrender && hubPorts()[nodes2[pp.n].id]) return null;   // a process's or gate's own port: the one place
+      return procSpots(pp) || hubSides(pp) || (gridPorts() ? null : fivePlaces(pp.n));
+    }
+    function fivePlaces(n) { var b = bx(n); return [[0, 0], [0, -b[3] / 2], [0, b[3] / 2], [-b[2] / 2, 0], [b[2] / 2, 0]]; }   // the centre and the sides' middles
     function spot(pp, P, free) {   // the end's place on its node as an offset from its centre: a glyph's six, the ports' grid (free: anywhere, gridSpot), else the nearest of five
       var b = bx(pp.n), c = [b[0] + b[2] / 2, b[1] + b[3] / 2], S = procSpots(pp) || hubSides(pp), F = null;
       if (!S && gridPorts()) return gridSpot(pp.n, [P[0] - c[0], P[1] - c[1]], free);
@@ -1910,7 +1921,7 @@
       // before the end weighs in a little
       if (S) { var all = ports(pp.k); F = all[all.length - 2]; }
       var cost = function (o) { var q = [c[0] + o[0], c[1] + o[1]]; return Math.hypot(q[0] - P[0], q[1] - P[1]) + (F ? 1e-3 * Math.hypot(q[0] - F[0], q[1] - F[1]) : 0); };
-      return (S || [[0, 0], [0, -b[3] / 2], [0, b[3] / 2], [-b[2] / 2, 0], [b[2] / 2, 0]]).reduce(function (m, o) { return cost(o) < cost(m) ? o : m; });
+      return (S || fivePlaces(pp.n)).reduce(function (m, o) { return cost(o) < cost(m) ? o : m; });
     }
     // ---- ports on a grid (where the format's part says so: gridPorts), as offsets from the node's centre ----
     // Inside the shape a grid of PG from the centre. On the outline the port stays on it, and the coordinate on the grid
@@ -2193,6 +2204,7 @@
         all.forEach(function (q, j) {
           if (grouped && ((j === 0 && glyphs.has(e.s)) || (j === all.length - 1 && glyphs.has(e.t)))) return;
           if (j === pj) return;   // the part the keys move: its four squares alone (below)
+          if (drag && drag.port && drag.port.to && drag.port.k === k && j === (drag.port.end ? all.length - 1 : 0)) return;   // the end dragged: its landing marks alone (below)
           over.push('<rect class="m2-ed-bend"' + sw(0.5) + ' x="' + f1(sx(q[0]) - sq() / 2) + '" y="' + f1(sy(q[1]) - sq() / 2) + '" width="' + f1(sq()) + '" height="' + f1(sq()) + '"/>');
         });
       });
@@ -2205,10 +2217,12 @@
           over.push('<rect class="m2-ed-bend"' + sw(0.5) + ' x="' + f1(c[0] < 0 ? X1 - g1 - a1 : X1 + g1) + '" y="' + f1(c[1] < 0 ? Y1 - g1 - a1 : Y1 + g1) + '" width="' + f1(a1) + '" height="' + f1(a1) + '"/>');
         });
       }
-      if (drag && drag.port && drag.port.to) {
-        var pk = drag.port, b0 = bx(pk.n2 != null ? pk.n2 : pk.n), C = [b0[0] + b0[2] / 2 + pk.to[0], b0[1] + b0[3] / 2 + pk.to[1]];
-        var ph = Math.max(2, HANDLE * V.z);
-        over.push('<rect class="m2-ed-handle" x="' + f1(sx(C[0]) - ph / 2) + '" y="' + f1(sy(C[1]) - ph / 2) + '" width="' + f1(ph) + '" height="' + f1(ph) + '"/>');
+      if (drag && drag.port && drag.port.to) {   // the end's places on the node it would land on, the one it takes filled
+        var pk = drag.port, n0 = pk.n2 != null ? pk.n2 : pk.n, b0 = bx(n0), c0 = [b0[0] + b0[2] / 2, b0[1] + b0[3] / 2];
+        var at0 = function (o) { return [c0[0] + o[0], c0[1] + o[1]]; };
+        // free at the pointer (no node takes it): the plain end square, with a modifier's places at its own glyph still shown
+        over.push(pk.free ? landMarks((procSpots(pk) || hubSides(pk) || []).map(at0), null) + landMarks([], at0(pk.to), 'm2-ed-handle')
+          : landMarks((placesOf({ k: pk.k, end: pk.end, n: n0 }) || []).map(at0), at0(pk.to)));
       }
       if (drag && drag.port && drag.port.n2 != null) out.push(frame + '<path class="m2-ed-dark" d="' + shapeD(drag.port.n2) + '"/></g>');   // the node that takes the end
       if (!drag && keyGuides) keyGuides.forEach(function (g) {

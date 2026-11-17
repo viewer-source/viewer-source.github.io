@@ -231,10 +231,10 @@
       out.push('<g transform="translate(' + f1(V.tx - x0 * V.z) + ',' + f1(V.ty - y0 * V.z) + ') scale(' + V.z + ')"><path class="m2-ed-pick" stroke-width="' + f1(1 / Math.max(V.z, 0.01)) + '" d="' + shapeD(i) + '"/></g>');
       out.push(cdHandles(i, 'm2-ed-pickh') + cdDot(cdCentre(i), 'm2-ed-pickh'));
     }
-    function cdLand(out, i, Q) {   // the node a line would land on: dashed box, grey handles, the port it would take in blue
+    function cdLand(out, i, L) {   // the node a line would land on: dashed box, grey handles, its places (landMarks, core.js), the one it would take filled
       var b = bx(i), off = 3.3 * V.z;
       out.push('<rect class="m2-ed-landbox" x="' + f1(sx(b[0]) - off) + '" y="' + f1(sy(b[1]) - off) + '" width="' + f1(b[2] * V.z + 2 * off) + '" height="' + f1(b[3] * V.z + 2 * off) + '"/>');
-      out.push(cdHandles(i, 'm2-ed-landh') + cdDot(Q || cdCentre(i), 'm2-ed-port'));
+      out.push(cdHandles(i, 'm2-ed-landh') + landMarks((L && L.all) || [], (L && L.Q) || cdCentre(i)));
     }
     function cdGateOk(i) {   // whether a gate's next click would take node i
       if (i < 0) return false;
@@ -261,11 +261,11 @@
       if (cdGate && CD_GATE[tool.kind] !== cdGate.kind) cdGate = null;
       if (cdGate) cdGate.inputs.forEach(function (id) { var i = nodes2.findIndex(function (n) { return n.id === id; }); if (i >= 0) cdPicked(out, i); });
       var k = cdHover ? nodes2.findIndex(function (n) { return n.id === cdHover.id; }) : -1;
-      if (k >= 0 && cdGateOk(k)) { var L = cdGateLand0(k, cdHover.P); cdLand(out, k, L && L.Q); }
+      if (k >= 0 && cdGateOk(k)) cdLand(out, k, cdGateLand0(k, cdHover.P));
     }
     function cdLinkMarks(out) {   // a line drawn by a drag on a CellDesigner map: its start picked, the node it would land on
       cdPicked(out, link.from);
-      if (link.to >= 0 && link.how && !link.how.no) cdLand(out, link.to, link.how.land && link.how.land.Q);
+      if (link.to >= 0 && link.how && !link.how.no) cdLand(out, link.to, link.how.land);
     }
     // the map clicked with a CellDesigner sign in hand (palUp, create.js)
     function cdClick(P) { if (CD_GATE[tool.kind]) cdGateClick(P); else cdMake(P, tool.kind); }
@@ -287,19 +287,23 @@
       if (!(id in cdClsMemo[1])) { try { var A = cdMk.aliasInfo(cd.now, id); cdClsMemo[1][id] = A.cls && [A.cls, A.homodimer || 1]; } catch (e) { cdClsMemo[1][id] = null; } }
       return cdClsMemo[1][id];
     }
-    function cdPort(i, P, how) {
-      var b = bx(i), C = [b[0] + b[2] / 2, b[1] + b[3] / 2], best = null, bd = Infinity;
-      var near = function (Q, o) { var d = Math.hypot(Q[0] - P[0], Q[1] - P[1]); if (d < bd) { bd = d; best = o; o.Q = Q; } };
+    function cdPort(i, P, how) {   // all: every place offered, for the marks (cdLand)
+      var b = bx(i), C = [b[0] + b[2] / 2, b[1] + b[3] / 2], best = null, bd = Infinity, all = [];
+      var near = function (Q, o) { all.push(Q); var d = Math.hypot(Q[0] - P[0], Q[1] - P[1]); if (d < bd) { bd = d; best = o; o.Q = Q; } };
       if (how.mod && cdRole(i) === 'proc') {   // procPlaces (core.js): the six places in cdrender SQUARE's order, 2 to 7
         var S = procPlaces(i);
         if (!S) return { Q: C };
         S.forEach(function (o, k) { near([C[0] + o[0], C[1] + o[1]], { spot: k + 2 }); });
+        best.all = all;
         return best;
       }
       var cl = (how.rx || how.red || how.part === 'product') && cdRole(i) === 'epn' && window.cdrender && window.cdrender.anchorAt ? cdClsOf(nodes2[i].id) : null;
-      if (!cl || Math.max(Math.abs(P[0] - C[0]) / (b[2] / 2 || 1), Math.abs(P[1] - C[1]) / (b[3] / 2 || 1)) < 0.5) return { Q: C };
+      if (!cl) return { Q: C };
       var f = window.cdrender.frontBox(b, cl[1]);   // a multimer's places on its front copy, as cdrender draws the line (D.front)
       Object.keys(window.cdrender.ANCHOR).forEach(function (k) { near(window.cdrender.anchorAt(cl[0], f, k), { at: k }); });
+      all.push(C);
+      if (Math.max(Math.abs(P[0] - C[0]) / (b[2] / 2 || 1), Math.abs(P[1] - C[1]) / (b[3] / 2 || 1)) < 0.5) return { Q: C, all: all };   // the middle half: the centre
+      best.all = all;
       return best;
     }
     function cdHow0(a, b) {
