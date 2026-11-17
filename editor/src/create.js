@@ -1277,7 +1277,12 @@
       return sbClsMemo[1];
     }
     function isAct(i) { return sbClasses()[nodes2[i].id] === 'biological activity'; }
-    function kindOf(i) { return propNode() === i && isAct(i) ? 'biological activity' : nodes2[i].shape.kind === 'SimpleChemical' ? 'simple chemical' : 'macromolecule'; }   // Set as default's kind (every activity alike, defOf)
+    function lookKey(cls, unit) { return cls === 'biological activity' ? cls + ':' + (unit || '') : cls; }   // Set as default's kind: the glyph's class, an activity's by its unit
+    function kindOf(i) {
+      var c = (sbClasses()[nodes2[i].id] || '').replace(/ multimer$/, '');
+      if (c === 'biological activity') return lookKey(c, sbJs.activities(text)[nodes2[i].id]);
+      return c || (nodes2[i].shape.kind === 'SimpleChemical' ? 'simple chemical' : 'macromolecule');
+    }
     function propsShow(all) {   // all: every field shown again, the one focused too (Esc)
       var i = propNode(), k = propEdge(), r2 = function (v) { return String(Math.round(v * 100) / 100); }, ns = propNodes();
       props.querySelector('.m2-ed-prx').hidden = true;
@@ -1460,13 +1465,14 @@
     function defOf(cls) {   // the look a new glyph of that kind gets: the map's (sbgn_edit.defaults), or the one set as default
       cls = baseKind(cls);
       var kind0 = cls;
-      if (ACT_UNIT[cls] != null) cls = 'biological activity';   // every activity under one look set as default; its size by its unit's kind (sbgn_edit.defaults)
-      var D = sbJs.defaults(src(), null, cls, ACT_UNIT[kind0]), k = defsKept()[cls];   // an activity's fill by its unit where the map has none (sbgn_edit.fillFor)
+      if (ACT_UNIT[cls] != null) cls = 'biological activity';   // its size by its unit's kind (sbgn_edit.defaults)
+      var D = sbJs.defaults(src(), null, cls, ACT_UNIT[kind0]), kept = defsKept(), k = kept[lookKey(cls, ACT_UNIT[kind0])];   // an activity's fill by its unit where the map has none (sbgn_edit.fillFor)
       D.multimer = false;
       // on an Activity Flow map a plain entity is saved as its activity: its fill as the map's activities of that kind
       // (CaMKII: a protein placed from the PD palette white as its unfilled protein activities, not the Default blue)
       var u = cls !== 'biological activity' && palKind() === 'af' ? sbJs.unitFor(kind0) : null;
-      if (u != null) { var DA = sbJs.defaults(src(), null, 'biological activity', u); D.fill = DA.fill; D.fallback = DA.fallback; if (DA.w !== DA.w0 || DA.h !== DA.h0) { D.w = DA.w; D.h = DA.h; } }   // and its size, where the map's activities of that kind share one
+      if (u != null) { k = kept[lookKey('biological activity', u)]; var DA = sbJs.defaults(src(), null, 'biological activity', u); D.fill = DA.fill; D.fallback = DA.fallback; if (DA.w !== DA.w0 || DA.h !== DA.h0) { D.w = DA.w; D.h = DA.h; } }   // and its size, where the map's activities of that kind share one
+      if (k && !(k.w > 0)) k = null;   // a look kept before sizes were kept as they are
       var st = palStyle(true), cm = sbCols();
       if (st === 'default') { D.w = D.w0; D.h = D.h0; }   // Style: Default, the built-in sizes (at the map's scale)
       else if (st === 'custom' && k) {

@@ -46,11 +46,13 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
   ok('the boxes say the choices', JSON.stringify(await rows()) === JSON.stringify(['Style: Default', 'Colours: No colours']), JSON.stringify(await rows()));
   await pick('style', 'From file'); await pick('cols', 'From file');
   // Custom: Set as default keeps the node's look as it is and switches both rows to Custom; a kind with none kept takes From file
-  await page.evaluate(function () { localStorage.setItem('atlas-edit-defaults', JSON.stringify({ macromolecule: { w: 120, h: 60, fill: '#123456' } })); });
+  await page.evaluate(function () { localStorage.setItem('atlas-edit-defaults', JSON.stringify({ macromolecule: { w: 120, h: 60, fill: '#123456' }, complex: { w: 300, h: 300, fill: '#ABCDEF' }, 'simple chemical': { wr: 2, hr: 2, fill: '#FEDCBA' } })); });
   await pick('style', 'Custom'); await pick('cols', 'Custom');
   var m3 = await made('macromolecule', 1000, 650), p3 = await made('process', 820, 450);
   ok('Custom: a macromolecule at the kept 120 by 60, not a share of another size', JSON.stringify(await sbBox(m3)) === '[120,60]', JSON.stringify(await sbBox(m3)));
   ok('and the kept fill #123456', String(await sbFill(m3)).toUpperCase() === '#123456', String(await sbFill(m3)));
+  var c3 = await made('simple chemical', 1150, 650);
+  ok('a look kept the old way (a share of a size) left out: a simple chemical not #FEDCBA', String(await sbFill(c3)).toUpperCase() !== '#FEDCBA', String(await sbFill(c3)));
   ok('a process, none kept: the map’s 10 by 10', JSON.stringify(await sbBox(p3)) === '[10,10]', JSON.stringify(await sbBox(p3)));
   await pick('style', 'From file'); await pick('cols', 'From file');
   await page.mouse.click.apply(page.mouse, await page.$eval('#m2-img [data-n="' + m + '"]', function (g) { var r = g.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; })); await page.waitForTimeout(400);
