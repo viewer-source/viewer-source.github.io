@@ -1028,9 +1028,9 @@
       makeEntity(at(e), d.kind);
     }, true);
 
-    // ---------- arcs drawn by a drag from a node's handle, or from any node with an arc's sign picked ----------
-    // With Settings, Editing on Full: a drag from the handle of the node selected (linkGrip), or from a node with a sign of
-    // Connecting arcs picked, draws a line to where it is let go (a click still selects). The kind is guessed from the two
+    // ---------- arcs drawn by a drag from a node with an arc's sign picked ----------
+    // With Settings, Editing on Full: a drag from a node with a sign of
+    // Connecting arcs or Modulating arcs picked, draws a line to where it is let go (a click still selects). The kind is guessed from the two
     // ends, no connector type needed: an entity to a
     // process a consumption, ending on its port in; a process to an entity a production, from its port out; an entity to
     // an entity a process made midway with both,
@@ -1050,33 +1050,12 @@
     var downs = new Set();   // the pointers down on the map: a second finger (a pinch) never begins a line
     window.addEventListener('pointerdown', function (e) { downs.add(e.pointerId); }, true);   // before the map's own (core.js stops the press it takes)
     ['pointerup', 'pointercancel'].forEach(function (k) { window.addEventListener(k, function (e) { downs.delete(e.pointerId); }, true); });
-    // A line starts only from something grabbed for it: the handle beside the one node selected (a small circle off its
-    // right side), or any node with an arc's sign picked in the palette. A drag on a node not selected moves the map, as
-    // in the viewer, so a missed aim never starts a line.
-    function linkGrip() {   // the handle of the one node selected that can start a line: { i, x, y } in the map's units, or null
-      if (!(palOn() || cdPal()) || selN.length !== 1 || selE.length || selP.length || link || drag || band) return null;
-      var i = selN[0], r = cd ? cdRole(i) : roleOf(i);
-      if (!r || r === 'pheno' || (r === 'gate' && (cd || edges2.some(function (q) { return q.s === i; })))) return null;   // nothing leaves a phenotype; a gate has one line out
-      var b = bx(i), out = 3.3 * V.z + Math.max(2, HANDLE * V.z) / 2;   // past the outer edge of the right resize handle (handleMarks)
-      return { i: i, x: b[0] + b[2] + (out + GRIP_OFF) / V.z, y: b[1] + b[3] / 2 };
-    }
-    var GRIP_OFF = 12, GRIP_R = 5;   // screen pixels: the handle's centre past the resize handle's edge, its radius
-    function onGrip(P, e) {   // the handle under P (a finger gets a larger reach), or null
-      var g = linkGrip();
-      return g && Math.hypot(P[0] - g.x, P[1] - g.y) * V.z <= GRIP_R + (e && e.pointerType === 'touch' ? 12 : 4) ? g : null;
-    }
-    function gripMarks(over) {   // the handle drawn (paint, core.js)
-      var g = linkGrip();
-      if (g) over.push('<circle class="m2-ed-grip" cx="' + f1(sx(g.x)) + '" cy="' + f1(sy(g.y)) + '" r="' + GRIP_R + '"/>');
-    }
-    function gripDown(e, P) {   // a press on the handle (core.js, before anything else on the map): a line begun from its node
-      var g = !e.shiftKey && !(palOn() && svAt(P)) && onGrip(P, e);   // a state variable standing out over it comes first
-      return g ? linkDown(e, P, { n: g.i, area: 0 }, g.i) : false;
-    }
-    function linkDown(e, P, h, from) {   // a press on a node with an arc's sign picked, or on the handle (from): a line begun there
+    // A line starts only from a node with an arc's sign picked in the palette. With no sign picked, a drag on a node not
+    // selected moves the map, as in the viewer, so a missed aim never starts a line.
+    function linkDown(e, P, h) {   // a press on a node with an arc's sign picked: a line begun there
       if (!(palOn() || cdPal()) || e.shiftKey || downs.size > 1 || link) return false;
-      if (from == null && !arcTool()) return false;   // no sign picked: a drag on a node moves the map (or what is selected)
-      var i = from != null ? from : linkEnd(P, -1);
+      if (!arcTool()) return false;   // no sign picked: a drag on a node moves the map (or what is selected)
+      var i = linkEnd(P, -1);
       if (i < 0) return false;
       if (cd && cdRole(i) === 'gate') return false;   // a CellDesigner gate's one line out is made with it: a drag moves the gate
       e.stopImmediatePropagation(); e.preventDefault();

@@ -270,9 +270,9 @@
     // the map clicked with a CellDesigner sign in hand (palUp, create.js)
     function cdClick(P) { if (CD_GATE[tool.kind]) cdGateClick(P); else cdMake(P, tool.kind); }
 
-    // a line drawn by a drag (create.js linkHow, linkMake). With no sign picked: species to species a state transition;
-    // a species onto a reaction's square a catalysis; a square to a species an added product; a species onto a gate a new
-    // input. A reaction sign picked: species to species that reaction, a species onto a square an added reactant. A
+    // a line drawn by a drag from a node with a line's sign picked (create.js linkDown, linkHow, linkMake). A reaction
+    // sign: species to species that reaction, a species onto a square an added reactant, a square to a species an added
+    // product, a species onto a gate a new input. A
     // modifier picked: a species onto a square, or species to species its reduced notation type (the tick box ticked)
     // what a line from a to b makes (cdHow0), with where its end would land when let go at P (land: { Q, at, spot },
     // shown by cdLand and written by cdLink)
@@ -310,7 +310,7 @@
       if (ra === 'gate') return { no: 'A logic gate has one line out, made with the gate.' };
       if (rb === 'gate') {
         if (ra !== 'epn') return { no: 'A logic gate’s inputs are species.' };
-        return want ? { no: 'A line onto a logic gate adds an input: no sign picked.' } : { gate: true };
+        return isMod ? { no: 'A line onto a logic gate adds an input: a reaction’s sign picked, not a modifier’s.' } : { gate: true };
       }
       if (ra === 'proc' && rb === 'proc') return { no: 'A line does not join two reactions.' };
       if (ra === 'proc') return isMod ? { no: 'A ' + CD_NAME[want].toLowerCase() + ' goes from a species.' } : { part: 'product' };

@@ -2287,7 +2287,6 @@
       // recognised while editing; black on a GraphML map, as in yEd
       overlay.classList.toggle('m2-ed-cd', !!cd);
       svMarks(over);   // a state variable selected (create.js)
-      gripMarks(over);   // the line handle of the node selected (create.js)
       linkPaint(out);   // an arc being drawn (create.js)
       overlay.innerHTML = out.concat(over).join('');
     }
@@ -2360,7 +2359,6 @@
       if (e.button !== 0) return;
       if (palDown(e)) return;   // something in hand from the palette: the click puts it there (create.js)
       var P = at(e), h = hit(P);
-      if (gripDown(e, P)) return;   // the line handle beside the node selected: a line begun (create.js)
       var pp = !e.shiftKey && portAt(P);
       if (pp) {   // a lit line's end square: its port moved among the node's five places
         e.stopImmediatePropagation(); e.preventDefault();
@@ -2812,7 +2810,6 @@
       if (tool && on && V.current === map && !e.buttons) { V.view.style.cursor = 'default'; return; }   // something in hand from the palette: the plain arrow (no cross)
       if (on && V.current === map && !e.buttons) {   // the move sign only over what a drag would move
         var PP = at(e);
-        if (!e.shiftKey && onGrip(PP, e)) { V.view.style.cursor = 'crosshair'; return; }   // the line handle (create.js)
         var hh = e.shiftKey ? null : hit(PP), ez = !e.shiftKey && edgeAt(PP);
         if (ez && hh && (hh.p != null || (hh.n != null && !nodes2[hh.n].comp && selN.indexOf(ez.c) < 0))) ez = null;
         if (ez) { V.view.style.cursor = resizeCursor(ez.s); return; }
