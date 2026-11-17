@@ -3054,11 +3054,8 @@ page, so its styles keep the base they were made on).
       if (mac && mac.late) mac.forEach(function (q) { item(box, q[0], q[1]); });
       if (mac && mac.tail) mac.tail.forEach(function (q) { item(box, q[0], q[1]); });
       if (del) { if (box.lastChild && box.lastChild.tagName === 'BUTTON') sep(box); item(box, 'Delete', del); }
-      var whole = ed && window.m2EditMapItems && window.m2EditMapItems();   // the whole map's tools and the grid switches, on empty map space
-      (whole || []).forEach(function (q) {
-        var b = item(box, q[0], q[1], q[2]);
-        if (q.length > 3) { b.setAttribute('role', 'menuitemcheckbox'); b.setAttribute('aria-checked', String(!!q[3])); }
-      });
+      var whole = ed && window.m2EditMapItems && window.m2EditMapItems();   // the whole map's tools, on empty map space
+      (whole || []).forEach(function (q) { item(box, q[0], q[1]); });
       if (unbendAll) item(box, 'Remove all bend points', unbendAll);   // a removal: under the map's tools
       // the editing items at the top, one separator below them, then the general ones
       if (unbend || bend || turn || main || mac || del || unbendAll || whole) sep(box);
