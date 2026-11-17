@@ -19,6 +19,12 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#acly-celld
   var sign = function (k) { return page.click('#m2-editwin button[data-make="' + k + '"]'); };
   var made = async function (k, x, y) { var a = await ids(); await sign(k); await page.mouse.click(x, y); await page.waitForTimeout(700); return (await ids()).filter(function (i) { return a.indexOf(i) < 0; })[0]; };
   var drag = async function (A, B) { await page.mouse.move(A[0], A[1]); await page.mouse.down(); await page.mouse.move(A[0] + 8, A[1] + 25, { steps: 4 }); await page.mouse.move(B[0], B[1], { steps: 8 }); await page.mouse.up(); await page.waitForTimeout(800); };
+  // a line with no sign picked starts from the handle beside the one node selected (the small white circle past its right side)
+  var line = async function (A, B) {
+    await page.keyboard.press('Escape'); await page.mouse.click(A[0], A[1]); await page.waitForTimeout(300);
+    var G = await page.$eval('#m2-edit-layer .m2-ed-grip', function (c) { var r = c.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; });
+    await drag(G, B);
+  };
   var menu = async function (P) { await page.mouse.click(P[0], P[1], { button: 'right' }); await page.waitForTimeout(300); return page.$$eval('.m2-cx button', function (l) { return l.map(function (x) { return x.textContent; }); }); };
   var start = async function (u) {
     await page.goto(u, { waitUntil: 'load' }); await page.waitForSelector('.m2-ri[data-win="edit"]', { timeout: 30000 });
@@ -36,7 +42,7 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#acly-celld
   ok('a complex dropped from the palette', /^csa/.test(cx || ''));
   await sign('cd:PROTEIN'); var C = await at(cx); await page.mouse.click(C[0], C[1]); await page.waitForTimeout(1500);
   ok('a protein placed on the complex is its member', new RegExp('<celldesigner:speciesAlias id="[^"]+"[^>]*complexSpeciesAlias="' + cx + '"').test(await page.evaluate(function () { return window.m2EditNow().text; }))); await page.keyboard.press('Escape');
-  var e0 = await es(); await drag(await at(p), await at(m));
+  var e0 = await es(); await line(await at(p), await at(m));
   var rx = (await es()).filter(function (i) { return e0.indexOf(i) < 0; }), rid = rx[0] && rx[0].split('|')[0];
   ok('a state transition drawn between two species', rx.length === 2);
   for (var u = 0; u < 3; u++) { await page.keyboard.press('Control+z'); await page.waitForTimeout(800); }
@@ -104,7 +110,7 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#acly-celld
   var it = await page.$('.m2-map'), bb = await it.boundingBox(); await menu([bb.x + 20, bb.y + bb.height / 2]);
   await page.click('.m2-cx button:has-text("New CellDesigner map")'); await page.waitForTimeout(3500);
   ok('New CellDesigner map opens empty with the palette', (await ids()).length === 0 && !!(await page.$('#m2-editwin button[data-make="cd:PROTEIN"]:visible')));
-  var a = await made('cd:PROTEIN', 700, 300), z = await made('cd:GENE', 950, 300); e0 = await es(); await drag(await at(a), await at(z));
+  var a = await made('cd:PROTEIN', 700, 300), z = await made('cd:GENE', 950, 300); e0 = await es(); await line(await at(a), await at(z));
   ok('species and a reaction on the new map', !!a && !!z && (await es()).length === 2);
   ok('no script error', !errs.length); errs.forEach(function (e) { console.log('  ' + e); });
   await b.close();

@@ -17,6 +17,7 @@
     var overlay = document.getElementById('m2-edit-layer');
     var on = false, map = null;    // editing, and the map object shown while editing
     var text = '', name = '', handle = null, dirty = false;
+    var unsaved = {};   // by map id: a site map left with moves not saved on GitHub { id, name, site, text }; its sha read from site when used
     var doc = null, geos = [], points = [], nodes2 = [], edges2 = [];
     var docText = null;            // the text doc was read from (kept by a move, which changes both alike): the renderer reuses doc then
     var x0 = 0, y0 = 0;            // where the drawing's top left is in yEd units
@@ -218,6 +219,8 @@
                 if (!V.store(all) && !V.store(bare(all, target.id)) && !V.store(bare(all)) && !V.store(bare(one))) { all = V.stored(); delete all[target.id]; V.store(all); }
               }
               if (site === target && src() === body) dirty = false;
+              var uk = unsaved[target.id];
+              if (uk && uk.site === target && (uk.text === body || (site === target && !dirty))) delete unsaved[target.id];
               note('Saved. In about 2 minutes it is on the site, and this page updates by itself.');   // no clock time
             } else if (r.status === 409 || r.status === 422) {
               // GitHub also refuses a save when its branch moved meanwhile (another page or tab saved meanwhile,
@@ -436,7 +439,7 @@
     }
     box.querySelector('#m2-ed-local-dl').addEventListener('click', function () { if (text) download(); });
     function conflict() {
-      stuck = true; forget(site && site.id); if (site) learnt(site.path, 'changed');   // opened again, the map is read afresh from GitHub
+      stuck = true; forget(site && site.id); if (site) { learnt(site.path, 'changed'); delete unsaved[site.id]; }   // opened again, the map is read afresh from GitHub
       warn('Not saved: the map was changed on GitHub since it was opened, and it is not overwritten. Stop editing and open the map again to go on from that version.');
     }
     function ghForm(show) {   // the token field: shown while editing a map of this site with no token
@@ -1082,6 +1085,7 @@
         if (r[1].length) warn('Drawn with warnings: ' + r[1].join('; '));
         var svg = r[0]; lastSvg = svg; lastFor = [text, cd ? cd.now : null, site && site.id, afSbgn];   // [3]: drawn in the SBGN AF view, never kept, saved or downloaded (graphml.js)
         if (!on && site && V.kept && V.kept.id === site.id && V.kept.text != null) { V.kept.text = src(); V.kept.svg = svg; }   // left before this redraw ended: the kept file and drawing as drawn
+        if (!on && site && unsaved[site.id] && unsaved[site.id].site === site) unsaved[site.id].text = src();   // the same for moves not saved
         var m = svg.match(/<g transform="translate\(([-\d.]+),([-\d.]+)\)">/);
         var w = svg.match(/ width="([\d.]+)" height="([\d.]+)"/);
         var nx = -parseFloat(m[1]), ny = -parseFloat(m[2]), first = !map.width;
@@ -1178,9 +1182,27 @@
       on = false; drag = null; band = null; V.grid.classList.remove('m2-editing'); paint(); buttons();
       if (site && site.mine && !localTimer) V.refreshMine();   // its last version saved already: the list takes it (else local() does)
       if (dirty && !site) warn(name + ' has moves not saved: Back to it, or Save.'); else quiet();
+      // a site map whose last save did not go through (no connection, a GitHub error): its file kept in this page, so
+      // editing it again starts from it and saves it, and said until then (else going back read GitHub's older version)
+      if (site && site.id && !site.pending && !stuck && dirty && token()) { unsaved[site.id] = { id: site.id, name: name, site: site, text: src() }; leftLater(unsaved[site.id]); }
+      else leftSay();
       drawMemo = null; preDoc = [];   // what was read ahead for this opening, let go
       if (!keepAhead()) forget(editPre && editPre.id);   // else read afresh (a conflict, a move not saved: the repository may differ)
       aheadSoon();
+    }
+    // a site map left with moves not saved: said once its last save has settled (a move still drawn, a save waiting or
+    // under way), its text then as saved would be; let go if that save went through or met a conflict
+    function leftLater(u) {
+      if (unsaved[u.id] !== u) return leftSay();
+      if (on) return;   // another map opened meanwhile: kept as it is, said when that one is left
+      if (drawing || saveTimer || saving) { setTimeout(function () { leftLater(u); }, 300); return; }
+      if (stuck || (site === u.site && !dirty)) { delete unsaved[u.id]; return leftSay(); }
+      if (site === u.site) u.text = src();
+      leftSay();
+    }
+    function leftSay() {   // out of editing: the maps still holding moves not saved, said (kept in this page only)
+      var l = Object.keys(unsaved).map(function (k) { return unsaved[k].name; });
+      if (!on && l.length) warn(l.join(', ') + (l.length > 1 ? ': moves' : ': the last moves') + ' not saved on GitHub. Edit ' + (l.length > 1 ? 'each' : 'it') + ' again before leaving this page to save them.');
     }
     // going back to edit at once (without this, switching back and forth waited 0.5-1.5 s, the read-ahead thrown away
     // on leaving and read again over the network, the drawing made again): what the editor holds of the site's map it
@@ -1494,9 +1516,22 @@
       if (!repo()) return fromSite(null);
       if (!token()) return fromSite({ path: path, sha: null, pending: true });
       p.gh.then(function (g) {
-        if (!g && sbMap(m)) return published.then(function (t) { return go(t, { path: path, sha: null }); }).catch(notLoaded);   // an SBGN-ML map with no edited copy yet: the first save makes it
+        // moves of this map not saved on GitHub when editing was left: taken up again and saved, if GitHub is still at
+        // the version they were made on (saved: GitHub's text, for the check of a refused save; an SBGN-ML map's edited
+        // copy not made yet: none on GitHub still)
+        var u = unsaved[m.id], usha = u ? u.site.sha || null : undefined;
+        delete unsaved[m.id];
+        if (u && (g ? g.sha : null) === usha) return go(u.text, g ? { path: path, sha: g.sha, saved: g.text } : { path: path, sha: null }).then(function () {
+          if (tk !== opening) return;
+          dirty = true; changed(); note('The moves not saved before are back; saving them now.');
+        }, notLoaded);
+        var gone = function () { if (tk === opening && u) warn('The moves not saved before could not be taken up: the map changed on GitHub meanwhile. This is its version there.'); };
+        if (!g && sbMap(m)) return published.then(function (t) { return go(t, { path: path, sha: null }); }).then(gone).catch(notLoaded);   // an SBGN-ML map with no edited copy yet: the first save makes it
         if (!g) return fromSite(null);   // not a map of this repository: saved as a file
-        return go(g.text, { path: path, sha: g.sha }).then(function () { if (tk === opening) recheck(p, g, m); }, notLoaded);
+        return go(g.text, { path: path, sha: g.sha }).then(function () {
+          if (tk !== opening) return;
+          recheck(p, g, m); gone();
+        }, notLoaded);
       }, function (e) { if (tk !== opening) return; warn('Could not read the map from GitHub (' + e + '); the token may be refused.'); ghForm(true); });
     }
     // the repository's version read ahead may have changed since (another tab, another person): checked once more right
