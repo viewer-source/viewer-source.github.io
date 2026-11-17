@@ -2294,17 +2294,18 @@ page, so its styles keep the base they were made on).
   function saveOrder() { try { localStorage.setItem(orderKey, JSON.stringify(order)); } catch (e) {} }
   // A site map put in another group (own.js moveTo), kept in this browser per page ({ id: group }) whatever the
   // reordering mode; dropped once the site's list gives the map that group (a move written to the site, built)
-  var movedKey = 'atlas-moved:' + location.pathname, moved = {};
-  try { moved = JSON.parse(localStorage.getItem(movedKey) || '{}') || {}; } catch (e) { moved = {}; }
+  var regroupKey = 'atlas-moved:' + location.pathname, regrouped = {};
+  try { regrouped = JSON.parse(localStorage.getItem(regroupKey) || '{}') || {}; } catch (e) { regrouped = {}; }
   function setMoved(id, g) {
-    if (g === null) delete moved[id]; else moved[id] = g;
-    try { if (Object.keys(moved).length) localStorage.setItem(movedKey, JSON.stringify(moved)); else localStorage.removeItem(movedKey); } catch (e) {}
+    if (g === null) delete regrouped[id]; else regrouped[id] = g;
+    try { if (Object.keys(regrouped).length) localStorage.setItem(regroupKey, JSON.stringify(regrouped)); else localStorage.removeItem(regroupKey); } catch (e) {}
   }
   function regroup(list) {
     return list.map(function (m) {
-      if (m.mine || !Object.prototype.hasOwnProperty.call(moved, m.id)) return m;
-      if ((m.group || '') === moved[m.id]) { setMoved(m.id, null); return m; }
-      return Object.assign({}, m, { group: moved[m.id] });
+      if (m.mine || !Object.prototype.hasOwnProperty.call(regrouped, m.id)) return m;
+      var sg = m.siteGroup != null ? m.siteGroup : m.group || '';   // the site's group (a list arranged again holds the regrouped copies)
+      if (sg === regrouped[m.id]) { setMoved(m.id, null); return Object.assign({}, m, { group: sg, siteGroup: undefined }); }
+      return Object.assign({}, m, { group: regrouped[m.id], siteGroup: sg });
     });
   }
   function arrange(list) {  // the site's list in the reader's order
