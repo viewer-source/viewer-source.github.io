@@ -1447,8 +1447,9 @@ page, so its styles keep the base they were made on).
       box.classList.remove('m2-cx-still'); box.removeEventListener('pointermove', moved);
     });
     document.body.appendChild(box);
-    box.style.left = Math.max(4, Math.min(x, innerWidth - box.offsetWidth - 4)) + 'px';
-    box.style.top = Math.max(4, Math.min(y, innerHeight - box.offsetHeight - 4)) + 'px';
+    var k = pz();   // a fixed box is placed in the page's zoomed units, the pointer and the window in the screen's
+    box.style.left = Math.max(4, Math.min(x, innerWidth - box.offsetWidth * k - 4)) / k + 'px';
+    box.style.top = Math.max(4, Math.min(y, innerHeight - box.offsetHeight * k - 4)) / k + 'px';
     document.addEventListener('pointerdown', out, true); document.addEventListener('keydown', key, true);
     window.addEventListener('blur', close); window.addEventListener('resize', close); document.getElementById('m2-list').addEventListener('wheel', close, { passive: true });
     var f = box.querySelector('button:not(:disabled)'); if (f) f.focus();
@@ -2883,7 +2884,7 @@ page, so its styles keep the base they were made on).
     function close() { if (menu) { menu.remove(); menu = null; } }
     function say(text, x, y) {
       if (note) note.remove();
-      note = el('div', 'm2-cx-note', text); note.style.left = x + 'px'; note.style.top = y + 'px';
+      note = el('div', 'm2-cx-note', text); note.style.left = x / pz() + 'px'; note.style.top = y / pz() + 'px';
       document.body.appendChild(note);
       var n = note; setTimeout(function () { n.remove(); if (note === n) note = null; }, 1400);
     }
@@ -3094,11 +3095,12 @@ page, so its styles keep the base they were made on).
         if (Math.abs(e.clientX - cx) + Math.abs(e.clientY - cy) < 3) return;
         still.classList.remove('m2-cx-still'); still.removeEventListener('pointermove', moved);
       });
-      menu.style.left = cx + 'px'; menu.style.top = cy + 'px';
+      var k = pz();   // a fixed box is placed in the page's zoomed units, the pointer and the window in the screen's
+      menu.style.left = cx / k + 'px'; menu.style.top = cy / k + 'px';
       document.body.appendChild(menu);
       var b = menu.getBoundingClientRect();   // inside the window: moved left or up when it would run over an edge
-      if (b.right > window.innerWidth - 4) menu.style.left = Math.max(4, cx - b.width) + 'px';
-      if (b.bottom > window.innerHeight - 4) menu.style.top = Math.max(4, window.innerHeight - 4 - b.height) + 'px';
+      if (b.right > window.innerWidth - 4) menu.style.left = Math.max(4, cx - b.width) / k + 'px';
+      if (b.bottom > window.innerHeight - 4) menu.style.top = Math.max(4, window.innerHeight - 4 - b.height) / k + 'px';
     }
     // the same in edit mode (a right click works the same everywhere; the map moves there with two
     // fingers or Shift with a drag, no right drag), View mode in place of Edit mode

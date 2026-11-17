@@ -67,9 +67,9 @@
       if (show) {   // over the map's left edge, level with the "?"; on a narrow page under it
         var b = helpBtn.getBoundingClientRect(), p = V.view.getBoundingClientRect();
         helpBox.hidden = false;
-        var w = helpBox.offsetWidth, h = helpBox.offsetHeight, left = Math.max(p.left + 28, b.right + 8), top = b.top;   // past the separator over the map window's edge
+        var k = V.pz(), w = helpBox.offsetWidth * k, h = helpBox.offsetHeight * k, left = Math.max(p.left + 28, b.right + 8), top = b.top;   // past the separator over the map window's edge
         if (left + w > innerWidth - 16) { left = Math.max(16, Math.min(b.right - w, innerWidth - 16 - w)); top = b.bottom + 6; }
-        helpBox.style.left = left + 'px'; helpBox.style.top = Math.max(16, Math.min(top, innerHeight - 16 - h)) + 'px';
+        helpBox.style.left = left / k + 'px'; helpBox.style.top = Math.max(16, Math.min(top, innerHeight - 16 - h)) / k + 'px';   // a fixed box in the page's zoomed units
         var h4 = at && Array.prototype.filter.call(helpBox.querySelectorAll('h4'), function (x) { return x.textContent === at; })[0];
         if (h4) helpBox.scrollTop = h4.offsetTop - 8;
       } else helpBox.hidden = true;
