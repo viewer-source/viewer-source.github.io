@@ -2288,8 +2288,23 @@ page, so its styles keep the base they were made on).
   var orderKey = 'atlas-order:' + location.pathname, order = {};
   try { order = JSON.parse(localStorage.getItem(orderKey) || '{}') || {}; } catch (e) { order = {}; }
   function saveOrder() { try { localStorage.setItem(orderKey, JSON.stringify(order)); } catch (e) {} }
+  // A site map put in another group (own.js moveTo), kept in this browser per page ({ id: group }) whatever the
+  // reordering mode; dropped once the site's list gives the map that group (a move written to the site, built)
+  var movedKey = 'atlas-moved:' + location.pathname, moved = {};
+  try { moved = JSON.parse(localStorage.getItem(movedKey) || '{}') || {}; } catch (e) { moved = {}; }
+  function setMoved(id, g) {
+    if (g === null) delete moved[id]; else moved[id] = g;
+    try { if (Object.keys(moved).length) localStorage.setItem(movedKey, JSON.stringify(moved)); else localStorage.removeItem(movedKey); } catch (e) {}
+  }
+  function regroup(list) {
+    return list.map(function (m) {
+      if (m.mine || !Object.prototype.hasOwnProperty.call(moved, m.id)) return m;
+      if ((m.group || '') === moved[m.id]) { setMoved(m.id, null); return m; }
+      return Object.assign({}, m, { group: moved[m.id] });
+    });
+  }
   function arrange(list) {  // the site's list in the reader's order
-    var site = list.slice(), groups = siteGroups(list);
+    var site = regroup(list), groups = siteGroups(site);
     var rank = function (known, x, i) { var k = (known || []).indexOf(x); return k < 0 ? 1e6 + i : k; };
     return site.map(function (m, i) {
       var g = m.group || '';
@@ -2540,7 +2555,7 @@ page, so its styles keep the base they were made on).
     function ownEmpty(upTo) {   // those before upTo (undefined: all left)
       for (; gi < gs.length && gs[gi] !== upTo; gi++) {
         var name = gs[gi];
-        if (maps.some(function (m) { return m.mine && m.group === name; })) continue;
+        if (maps.some(function (m) { return m.group === name; })) continue;
         heading(name, closed[name]);
         if (!closed[name]) { var e = el('div', 'm2-empty m2-mine', 'No maps yet'); e.setAttribute('data-group', name); box.appendChild(e); }
       }
@@ -2776,7 +2791,7 @@ page, so its styles keep the base they were made on).
     siteList = list;
     list = list.map(asSource);
     var gh = own ? own.here() : [], a = arrange(own ? own.withMine(list) : list);
-    var rank = function (m) { return m.group ? gh.indexOf(m.group) + 1 : 0; }, first = function (m) { return m.mine && rank(m) >= 0 && !siteGroupOf(m.group); };
+    var rank = function (m) { return m.group ? gh.indexOf(m.group) + 1 : 0; }, first = function (m) { return m.group ? rank(m) > 0 : !!m.mine; };   // the reader's groups (a site map moved into one too) and their ungrouped maps
     maps = a.filter(first).sort(function (x, y) { return rank(x) - rank(y); })
       .concat(a.filter(function (m) { return !first(m); }));   // the reader's maps first: those in no group at the top, then their groups in the order made; one in a site group (added there, or their group the site has now) stands in it, after its maps
     byId = {}; topics = [];
@@ -3293,6 +3308,7 @@ page, so its styles keep the base they were made on).
     arrived: { get: function () { return arrived; } },
     siteGroupOf: { get: function () { return siteGroupOf; } },
     placeMap: { get: function () { return placeMap; } },
+    setMoved: { get: function () { return setMoved; } },
     listMenu: { get: function () { return listMenu; } },
     listGroups: { get: function () { return listGroups; } },
     folderKey: { get: function () { return FOLDER_KEY; } },

@@ -173,11 +173,34 @@
     // a reader's own map moved to another group, theirs or the site's ('': no group, at the top of the list): by Move to
     // in the list's menu or by dragging it there (the viewer's dropPlace); put before the map `before`, else at the
     // group's end. A map on its way to the site goes where the site puts it, so it is not moved
-    function movable(m) { var r = m && m.mine && mine[m.id]; return !!r && !r.site; }
+    // A site map too: kept in this browser (V.setMoved), and with a token written to its maps/<id>.md (group, and order
+    // after the group's last on the site), as Rename map; the build's own maps (no page of their own) stay in this browser
+    function movable(m) {
+      if (!m || m.shownAs) return false;
+      var r = m.mine && mine[m.id]; return m.mine ? !!r && !r.site : true;
+    }
     function moveTo(id, g, before) {
-      var r = mine[id]; if (!r) return;
-      r.group = g || ''; minePut(r).catch(function () {});
-      put(id, r.group, before);
+      g = g || '';
+      var m = V.byId[id], r = mine[id];
+      if (r) { r.group = g; minePut(r).catch(function () {}); }
+      else if (m) {
+        var was = m.group || '';
+        V.setMoved(id, g);
+        if (repo() && token() && canRename(m, true)) toSiteGroup(id, g).catch(function (e) {
+          V.setMoved(id, null); V.refreshMine(); alert((m.topic || m.title) + ' was not moved on the site: ' + (e && e.message ? e.message : e) + '. It stays in ' + (was || 'no group') + '.');
+        });
+      } else return;
+      put(id, g, before);
+    }
+    function toSiteGroup(id, g) {   // maps/<id>.md: its group and its order (after the group's last); one commit
+      var path = '/contents/maps/' + encodeURIComponent(id) + '.md', q = JSON.stringify(g.replace(/["\\]/g, ''));
+      return api(path + '?ref=main').then(function (r) { if (!r.ok) throw new Error(r.status === 404 ? 'it has no page of its own' : 'GitHub ' + r.status); return r.json(); })
+        .then(function (d) {
+          var md = new TextDecoder().decode(Uint8Array.from(atob(d.content.replace(/\n/g, '')), function (c) { return c.charCodeAt(0); }));
+          var set = function (k, v) { md = new RegExp('^' + k + ': .*$', 'm').test(md) ? md.replace(new RegExp('^' + k + ': .*$', 'm'), function () { return k + ': ' + v; }) : md.replace(/^---\n/, function () { return '---\n' + k + ': ' + v + '\n'; }); };
+          set('group', q); set('order', String(siteOrder(g)));
+          return api(path, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: 'Map moved in the viewer: ' + id, content: b64(md), sha: d.sha, branch: 'main' }) });
+        }).then(function (r) { if (!r.ok) throw new Error('GitHub ' + r.status); });
     }
     function put(id, g, before) {   // a map into the reader's order of group g, the group opened so the map stays in sight
       if (g && V.closed[g]) { delete V.closed[g]; V.saveClosed(); }
@@ -185,7 +208,7 @@
     }
     function moveMenu(m, x, y) {   // the groups the map can go to, in the list's order; its own greyed
       var site = (V.siteList || []).map(function (s) { return s.group; });
-      var gs = V.listGroups().filter(function (n) { return ownGroup(n) || site.indexOf(n) >= 0; });
+      var gs = V.listGroups().filter(function (n) { return n && (ownGroup(n) || site.indexOf(n) >= 0); });
       V.listMenu(x, y, [['No group', function () { moveTo(m.id, ''); }, !m.group], null].concat(gs.map(function (n) {
         return [n, function () { moveTo(m.id, n); }, n === m.group];
       })));
