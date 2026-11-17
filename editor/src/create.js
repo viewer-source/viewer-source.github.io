@@ -59,12 +59,12 @@
       // guessed from its two ends; a sign picked is used as it is
       ['Connecting arcs', [['consumption', 'Consumption / logic arc', '<path d="M3 12h18"/>'],
         ['production', 'Production', '<path d="M3 12h11"/><path d="M13 7.5l8 4.5-8 4.5z" fill="currentColor"/>'],
-        // the modulations, the card's order
-        ['modulation', 'Modulation', '<path d="M3 12h10"/><path d="M13 12l4-4 4 4-4 4z"/>'],
+        // the modulations, by use: modulation, the least used, last
         ['stimulation', 'Stimulation', '<path d="M3 12h10"/><path d="M13 7.5l8 4.5-8 4.5z"/>'],
         ['catalysis', 'Catalysis', '<path d="M3 12h12"/><circle cx="18" cy="12" r="3"/>'],
         ['inhibition', 'Inhibition', '<path d="M3 12h17M20 6v12"/>'],
-        ['necessary stimulation', 'Necessary stimulation', '<path d="M3 12h10M10 7v10"/><path d="M13 7.5l8 4.5-8 4.5z"/>']]]
+        ['necessary stimulation', 'Necessary stimulation', '<path d="M3 12h10M10 7v10"/><path d="M13 7.5l8 4.5-8 4.5z"/>'],
+        ['modulation', 'Modulation', '<path d="M3 12h10"/><path d="M13 12l4-4 4 4-4 4z"/>']]]
     ];
     // Activity Flow (two tabs, PD and AF, and under AF the
     // view, Reduced notation (CellDesigner) or SBGN: one set of rules, two ways of drawing the nodes). A node made in either
