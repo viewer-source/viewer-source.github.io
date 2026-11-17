@@ -1231,8 +1231,8 @@
       });
     }
     // Several nodes selected (Select all of this kind, an area, Shift with clicks): the rows every one has, Label and Set as
-    // default never; a row whose value is the same for all shows it, one that differs is empty with the grey placeholder
-    // mixed (a colour's swatch crossed out, a tick box neither), still editable: a value set goes to all of them in one
+    // default never; a row whose value is the same for all shows it, one that differs is an empty grey field
+    // (a colour's swatch crossed out, a tick box neither), still editable: a value set goes to all of them in one
     // undo step, Width and Height each keeping its node's centre. Their looks read once per selection and file
     var mLook = [null, null, null];   // [nodes, their looks, the file read]
     function propsMany(ns, all, r2) {
@@ -1252,7 +1252,7 @@
         if (r[2] === 'check') { f.indeterminate = !one; f.checked = one && vs[0]; return; }
         var v = one ? vs[0] : '';
         if (f.value !== v) f.value = v;
-        f.placeholder = one ? (r[0] === 'fill' ? 'none' : '') : 'mixed';
+        f.placeholder = one && r[0] === 'fill' ? 'none' : '';
         var pk = f.previousElementSibling;
         if (r[2] === 'colour' && one && document.activeElement !== pk) pk.value = v || '#ffffff';
       });

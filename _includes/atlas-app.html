@@ -390,7 +390,8 @@ page, so its styles keep the base they were made on).
   #m2-editwin .m2-ed-pc input[type="color"]::-webkit-color-swatch-wrapper { padding: 2px; }
   #m2-editwin .m2-ed-pc input[type="color"]::-webkit-color-swatch { border: 0; border-radius: 2px; }
   #m2-editwin .m2-ed-pc input[type="color"]::-moz-color-swatch { border: 0; border-radius: 2px; }
-  /* several nodes selected whose colours differ (create.js propsMany): the swatch empty, crossed by a thin line */
+  /* several nodes selected whose values differ (create.js propsMany): the field empty and grey, a colour's swatch crossed by a thin line */
+  #m2-editwin .m2-ed-ptab tr.m2-mixed input[type="text"], #m2-editwin .m2-ed-ptab tr.m2-mixed input[type="number"] { background: #e8eaed; }
   #m2-editwin .m2-ed-ptab tr.m2-mixed input[type="color"] { background: linear-gradient(to top right, transparent calc(50% - .6px), #9aa0a6 50%, transparent calc(50% + .6px)); }
   #m2-editwin .m2-ed-ptab tr.m2-mixed input[type="color"]::-webkit-color-swatch { background: transparent !important; }
   #m2-editwin .m2-ed-ptab tr.m2-mixed input[type="color"]::-moz-color-swatch { background: transparent !important; }
