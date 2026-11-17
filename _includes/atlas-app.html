@@ -432,6 +432,7 @@ page, so its styles keep the base they were made on).
      a node in light grey with black handles; an arc with black squares on its bends and its two ports */
   #m2-edit-layer .m2-ed-dark, #m2-img .m2-ed-dark { fill: #b3b3b3; stroke: none; mix-blend-mode: multiply; }
   #m2-edit-layer .m2-ed-handle { fill: #000; stroke: none; }
+  #m2-edit-layer .m2-ed-grip { fill: #fff; stroke: #5f6368; stroke-width: 1.5; }   /* the line handle beside the node selected */
   #m2-edit-layer .m2-ed-bend { fill: #000; stroke: #fff; stroke-width: 0.5; }
   #m2-edit-layer.m2-ed-cd .m2-ed-handle, #m2-edit-layer.m2-ed-cd .m2-ed-bend { fill: #ff00ff; }   /* CellDesigner's magenta marks */
   #m2-edit-layer .m2-ed-pick { fill: none; stroke: #ff00ff; }   /* while a CellDesigner line is made (cdcreate.js): what is picked, magenta */
@@ -1505,11 +1506,21 @@ page, so its styles keep the base they were made on).
     // screen, so the text under it was reached only from the edges); browsers send Shift with the wheel as a sideways
     // scroll, so either direction is taken as the page's
     if (e.shiftKey && !e.ctrlKey && !e.metaKey) { var d = e.deltaY || e.deltaX; window.scrollBy(0, e.deltaMode === 1 ? d * 16 : e.deltaMode === 2 ? d * window.innerHeight : d); return; }
+    // two-finger scrolling (and a mouse wheel, which a browser does not tell apart) moves the map, in any direction, in
+    // the viewer and the editor alike: a map is read at one zoom and moved around at it, and a swipe touches nothing on
+    // the map, so it never moves an item or starts a line by a missed aim. A pinch (the wheel with Ctrl) and Ctrl or Cmd
+    // with the wheel zoom
+    if (!e.ctrlKey && !e.metaKey) {
+      var ux = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? r.width : 1, uy = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? r.height : 1;
+      tx -= e.deltaX * ux / pz(); ty -= e.deltaY * uy / pz();
+      moved = true; draw();
+      return;
+    }
     // a pinch on a trackpad comes as the wheel with Ctrl and small steps (about 1 to 10 px each): with the wheel's rate it
-    // zoomed far too little, so it takes a rate about seven times the wheel's, each
-    // step capped so that Ctrl with a mouse wheel's notch (about 100 px) does not jump
+    // zoomed far too little, so a small step takes a rate twelve times the wheel's (one pinch covers a large zoom); a mouse
+    // wheel's notch (about 100 px) with Ctrl or Cmd keeps the wheel's own rate, so it does not jump
     var dy = e.deltaY;
-    if (e.ctrlKey && !e.deltaMode) dy = Math.max(-25, Math.min(25, dy)) * 7;
+    if (e.ctrlKey && !e.deltaMode && Math.abs(dy) < 25) dy *= 12;
     if (gest != null) return;   // Safari's own pinch (below) zooms
     zoomAt(z * Math.exp(-dy * (e.deltaMode ? 0.05 : 0.0015)), (e.clientX - r.left) / pz(), (e.clientY - r.top) / pz());
   }, { passive: false });
@@ -1521,7 +1532,7 @@ page, so its styles keep the base they were made on).
     if (gest == null) return;
     e.preventDefault();
     var r = view.getBoundingClientRect(), s = e.scale || 1;
-    zoomAt(z * s / gest, ((e.clientX || r.left + r.width / 2) - r.left) / pz(), ((e.clientY || r.top + r.height / 2) - r.top) / pz());
+    zoomAt(z * Math.pow(s / gest, 1.7), ((e.clientX || r.left + r.width / 2) - r.left) / pz(), ((e.clientY || r.top + r.height / 2) - r.top) / pz());
     gest = s;
   });
   view.addEventListener('gestureend', function (e) { if (gest != null) e.preventDefault(); gest = null; });

@@ -3,7 +3,7 @@
     // window's palette offers CellDesigner's own set, SBGN-suited only: species, logic gates, reactions,
     // modifiers and, with the Reduced notation tick box, CellDesigner's reduced notation. The gestures are the SBGN
     // palette's (create.js): a click takes a sign once, a double click keeps it in hand, a sign dragged onto the map is put
-    // where it is dropped; a drag from a node not selected draws a line, its kind guessed from its ends or the sign picked;
+    // where it is dropped; a drag from the handle of the node selected (or from any node with a line's sign picked) draws a line, its kind guessed from its ends or the sign picked;
     // a gate takes three clicks (its inputs, then the reaction's square or the target entity; a NOT or unknown gate one
     // input), placed where CellDesigner puts it (cd_make.gate). Every change is written into the CellDesigner file by
     // cd_make (renderers/converter/cd_make.js, tests/cd-make.js), the editor's GraphML made again from it by cd_edit, so

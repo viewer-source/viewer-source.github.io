@@ -2250,6 +2250,7 @@
       // recognised while editing; black on a GraphML map, as in yEd
       overlay.classList.toggle('m2-ed-cd', !!cd);
       svMarks(over);   // a state variable selected (create.js)
+      gripMarks(over);   // the line handle of the node selected (create.js)
       linkPaint(out);   // an arc being drawn (create.js)
       overlay.innerHTML = out.concat(over).join('');
     }
@@ -2304,7 +2305,7 @@
     function editing(e) { return on && V.current === map && !e.target.closest('.m2-ctrl, .m2-info, .m2-ed-type'); }   // a press in the name box is the box's
     var rpan = null, tap = null;
     // edit mode is view mode plus the selection (the same gestures as in view mode, not yEd's way):
-    // two-finger scrolling, the wheel and a pinch zoom; a drag on empty
+    // two-finger scrolling moves the map, a pinch zooms (the viewer's wheel handler); a drag on empty
     // space or on an item not selected moves the map, as in the viewer; a click selects (on empty space: clears the
     // selection; Shift with a click adds or takes out); a drag on what is selected moves it (with Shift by itself, out of
     // its container: regroup); Shift with a drag from anywhere else, inside a compartment too, selects an area; a right click opens the viewer's menu,
@@ -2322,6 +2323,7 @@
       if (e.button !== 0) return;
       if (palDown(e)) return;   // something in hand from the palette: the click puts it there (create.js)
       var P = at(e), h = hit(P);
+      if (gripDown(e, P)) return;   // the line handle beside the node selected: a line begun (create.js)
       var pp = !e.shiftKey && portAt(P);
       if (pp) {   // a lit line's end square: its port moved among the node's five places
         e.stopImmediatePropagation(); e.preventDefault();
@@ -2357,7 +2359,7 @@
       var tapped = function () { tap = { h: h, shift: e.shiftKey, x: e.clientX, y: e.clientY }; V.view.focus({ preventScroll: true }); };
       if (!h) return tapped();
       if (h.glyph) return tapped();   // a glyph is not dragged: a drag on it moves the map, a click selects its reaction
-      if (!alone && h.n != null && (arcTool() || selN.indexOf(h.n) < 0) && linkDown(e, P, h)) return;   // Full, SBGN-ML: a drag from an entity or a process draws an arc (create.js)
+      if (!alone && h.n != null && linkDown(e, P, h)) return;   // an arc's sign picked: a drag from an entity or a process draws it (create.js)
       var list = h.p != null ? selP : h.e != null ? selE : selN, k = h.p != null ? h.p : h.e != null ? h.e : h.n, there = list.indexOf(k) >= 0;
       // a bend point of an arc selected is a part of that connector: dragged at once, as its ends, the arc staying
       // selected after (as yEd does for connectors: the whole connector selected, its
@@ -2772,7 +2774,9 @@
       }
       if (tool && on && V.current === map && !e.buttons) { V.view.style.cursor = 'default'; return; }   // something in hand from the palette: the plain arrow (no cross)
       if (on && V.current === map && !e.buttons) {   // the move sign only over what a drag would move
-        var PP = at(e), hh = e.shiftKey ? null : hit(PP), ez = !e.shiftKey && edgeAt(PP);
+        var PP = at(e);
+        if (!e.shiftKey && onGrip(PP, e)) { V.view.style.cursor = 'crosshair'; return; }   // the line handle (create.js)
+        var hh = e.shiftKey ? null : hit(PP), ez = !e.shiftKey && edgeAt(PP);
         if (ez && hh && (hh.p != null || (hh.n != null && !nodes2[hh.n].comp && selN.indexOf(ez.c) < 0))) ez = null;
         if (ez) { V.view.style.cursor = resizeCursor(ez.s); return; }
         var sel = hh && ((hh.p != null ? selP.indexOf(hh.p) : hh.e != null ? selE.indexOf(hh.e) : selN.indexOf(hh.n)) >= 0 ||
