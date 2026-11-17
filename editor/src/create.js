@@ -293,7 +293,6 @@
       if (dd.menu && dd.box === bx2 && dd.text !== src()) ddClose();   // the map changed (an edit, an undo, another map): its squares would be stale
       var nm = r.querySelector('.m2-cs-val'), v = o.list.filter(function (c) { return c[0] === o.get(); })[0][1];
       if (nm.textContent !== v) nm.textContent = v;   // written only when changed (every paint comes here)
-      r.hidden = false;
       return r;
     }
     function keptChoice(key, ids) { var v = null; try { v = localStorage.getItem(key); } catch (e) {} return ids.indexOf(v) >= 0 ? v : ids[0]; }   // the first: the one when none is kept
@@ -373,7 +372,7 @@
     function palOn() { return on && V.current === map && !!sb && !!sbJs && V.level === 'full'; }
     function palShow() {
       var cdp_ = cdPal(), show = palOn() || cdp_;   // a CellDesigner map: its own set (cdcreate.js)
-      if (!cdp_) ddClose();   // a palette dropdown's menu closed with its palette
+      if (!show) ddClose();   // a palette dropdown's menu closed with its palette (a changed map: palDrop)
       if (cdp_) cdFill();
       else if (show) { palSync(); palFill(); }   // palFill: a process added or removed turns the SBGN view off or on
       pal.hidden = !show;
@@ -1445,13 +1444,13 @@
     function defOf(cls) {   // the look a new glyph of that kind gets: the map's (sbgn_edit.defaults), or the one set as default
       cls = baseKind(cls);
       var kind0 = cls;
-      if (ACT_UNIT[cls] != null) cls = 'biological activity';   // every activity alike: all activities the same size
+      if (ACT_UNIT[cls] != null) cls = 'biological activity';   // every activity under one look set as default; its size by its unit's kind (sbgn_edit.defaults)
       var D = sbJs.defaults(src(), null, cls, ACT_UNIT[kind0]), k = defsKept()[cls];   // an activity's fill by its unit where the map has none (sbgn_edit.fillFor)
       D.multimer = false;
       // on an Activity Flow map a plain entity is saved as its activity: its fill as the map's activities of that kind
       // (CaMKII: a protein placed from the PD palette white as its unfilled protein activities, not the Default blue)
       var u = cls !== 'biological activity' && palKind() === 'af' ? sbJs.unitFor(kind0) : null;
-      if (u != null) { var DA = sbJs.defaults(src(), null, 'biological activity', u); D.fill = DA.fill; D.fallback = DA.fallback; }
+      if (u != null) { var DA = sbJs.defaults(src(), null, 'biological activity', u); D.fill = DA.fill; D.fallback = DA.fallback; if (DA.w !== DA.w0 || DA.h !== DA.h0) { D.w = DA.w; D.h = DA.h; } }   // and its size, where the map's activities of that kind share one
       if (palStyle() === 'default') { D.w = D.w0; D.h = D.h0; }   // Style: Default, the built-in sizes (at the map's scale)
       if (k) {
         ['fill', 'line', 'width', 'multimer'].forEach(function (q) { if (q in k) D[q] = k[q]; });
@@ -1470,7 +1469,7 @@
     props.querySelector('.m2-ed-pdef').addEventListener('click', function () {
       var i = propNode();
       if (i < 0 || !propFmt().def) return;
-      var o = sbJs.lookOf(realizerOf(nodes2[i].el)), b = boxOf(i), all = defsKept(), D = sbJs.defaults(src(), null, kindOf(i)), st = palStyle() === 'default';
+      var o = sbJs.lookOf(realizerOf(nodes2[i].el)), b = boxOf(i), all = defsKept(), D = sbJs.defaults(src(), null, kindOf(i), kindOf(i) === 'biological activity' ? sbJs.activities(text)[nodes2[i].id] || '' : undefined), st = palStyle() === 'default';   // an activity's size by its unit's kind, as defOf
       all[kindOf(i)] = { wr: b[2] / (st ? D.w0 : D.w), hr: b[3] / (st ? D.h0 : D.h), fill: o.fill, line: o.line, width: o.width, multimer: o.multimer };   // the size as a share of the one Style gives (defOf)
       try { localStorage.setItem(DEF_KEY, JSON.stringify(all)); } catch (e) { warn('The default could not be kept in this browser.'); }
     });

@@ -1109,7 +1109,8 @@
     var filled = false;   // a glyph of that kind with a fill: a map whose glyphs of that kind have none (CaMKII) gets none
     styles(S).forEach(function (st) { var k = st.ids.filter(function (i) { return same[i]; }).length; if (st.fill && k) filled = true; if (st.fill && st.plain && k > n) { n = k; best = st; } });
     var sz = SIZE[cls] || SIZE.macromolecule, fallback = !best && (filled || !Object.keys(same).length);   // the Default colours only on a map with no glyph of that kind (a New map)
-    return { w: own ? own[0] : sz[0] * s, h: own ? own[1] : sz[1] * s, w0: sz[0] * s, h0: sz[1] * s,   // w0, h0: the size below, whatever the map has (the palette's Style: Default) font: best && best.font || Math.round(14 * s + 0.01), fill: best ? best.fill : fallback ? fillFor(cls, unit) : null, fallback: fallback,   // fallback: the fill is the Default colours' (create.js: dropped under No colours)
+    // w0, h0: the size below, whatever the map has (the palette's Style: Default)
+    return { w: own ? own[0] : sz[0] * s, h: own ? own[1] : sz[1] * s, w0: sz[0] * s, h0: sz[1] * s, font: best && best.font || Math.round(14 * s + 0.01), fill: best ? best.fill : fallback ? fillFor(cls, unit) : null, fallback: fallback,   // fallback: the fill is the Default colours' (create.js: dropped under No colours)
              line: best && best.line !== '#000000' ? best.line : null, width: cls === 'compartment' ? 2 : best && best.width || 1 };   // a new compartment's border 2 whatever the map's
   }
   // ---------- the look of a glyph (Properties as yEd's, with Newt's fields): its fill, border colour and
