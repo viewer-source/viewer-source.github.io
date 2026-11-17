@@ -1186,7 +1186,7 @@
     function kindOf(i) { return propNode() === i && pCls[3] ? 'biological activity' : nodes2[i].shape.kind === 'SimpleChemical' ? 'simple chemical' : 'macromolecule'; }   // Set as default's kind (every activity alike, defOf)
     function propsShow(all) {   // all: every field shown again, the one focused too (Esc)
       var i = propNode(), k = propEdge(), r2 = function (v) { return String(Math.round(v * 100) / 100); }, ns = propNodes();
-      if (ns.length > 1) return propsMany(ns, all, r2);
+      if (ns.length > 1 || (ns.length && selN.length > 1)) return propsMany(ns, all, r2);
       Array.prototype.forEach.call(props.querySelectorAll('.m2-mixed'), function (tr) { tr.classList.remove('m2-mixed'); });
       props.querySelector('#m2-ed-multimer').indeterminate = false;
       props.hidden = i < 0 && k < 0;   // only with its node or line: nothing selected, no Properties
