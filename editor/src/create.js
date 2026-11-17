@@ -251,11 +251,79 @@
       protMemo = [text, r];
       return r;
     }
+    // a choice at the end of the palette as a dropdown (the Grid size list's way, core.js): '<label>: ' and the choice's
+    // name in the box, the choices in the menu by name, each with its squares (sq(id): their HTML, or ''); rows in the order
+    // made. o: { key, label, title, list: [[id, name, title]], get(), set(id), sq(id) }
+    var dd = { menu: null, box: null, text: null };   // the menu open, its box, the map's text it was made from
+    function ddClose() { if (dd.menu) { dd.menu.remove(); dd.menu = null; dd.box.setAttribute('aria-expanded', 'false'); } }
+    document.addEventListener('pointerdown', function (e) { if (dd.menu && !dd.menu.contains(e.target) && !dd.box.contains(e.target)) ddClose(); }, true);
+    document.addEventListener('keydown', function (e) { if (dd.menu && e.key === 'Escape') { e.stopPropagation(); ddClose(); } }, true);   // Escape closes the menu only (not also the tool in hand)
+    window.addEventListener('resize', ddClose);
+    document.addEventListener('scroll', function (e) { if (dd.menu && !dd.menu.contains(e.target)) ddClose(); }, true);   // a fixed menu would stay where the box was
+    function palDrop(o) {
+      var r = pal.querySelector('.m2-ed-pdrop-' + o.key);
+      if (!r) {
+        r = document.createElement('div'); r.className = 'm2-ed-pblk m2-ed-pcols m2-ed-pdrop-' + o.key;
+        r.innerHTML = '<button type="button" class="m2-cs-box" aria-haspopup="menu" aria-expanded="false"><span class="m2-cs-name"><span class="m2-cs-lab"></span><span class="m2-cs-val"></span></span><svg viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.4"/></svg></button>';
+        var bx = r.firstChild;
+        bx.addEventListener('click', function (e) {
+          e.stopPropagation(); bx.blur();   // the editor's keys work at once
+          var was = dd.menu && dd.box === bx; ddClose();
+          if (was) return;
+          var rc = bx.getBoundingClientRect(), m = r._o.get(), q = r._o;
+          dd.menu = document.createElement('div'); dd.menu.className = 'm2-cx m2-cs-menu'; dd.menu.setAttribute('role', 'menu'); dd.box = bx; dd.text = src(); bx.setAttribute('aria-expanded', 'true');
+          q.list.forEach(function (c) {
+            var b = document.createElement('button'); b.type = 'button'; b.setAttribute('role', 'menuitemradio'); b.setAttribute('aria-checked', String(c[0] === m));
+            b.title = c[2];
+            b.innerHTML = '<span>' + c[1] + '</span>' + (q.sq ? q.sq(c[0]) : '');
+            b.addEventListener('click', function (ev) { ev.stopPropagation(); ddClose(); q.set(c[0]); palDrop(q); });
+            dd.menu.appendChild(b);
+          });
+          document.body.appendChild(dd.menu);
+          var k = dd.menu.getBoundingClientRect().width / dd.menu.offsetWidth || 1;   // the page's own zoom: a fixed box is placed in its units
+          var up = rc.bottom + 2 + dd.menu.offsetHeight * k > window.innerHeight && rc.top - 2 - dd.menu.offsetHeight * k > 0;   // above the box when it would leave the window below
+          dd.menu.style.left = rc.left / k + 'px'; dd.menu.style.top = (up ? rc.top - 2 - dd.menu.offsetHeight * k : rc.bottom + 2) / k + 'px'; dd.menu.style.minWidth = rc.width / k + 'px';   // wider when five squares need it
+        });
+        var last = pal.querySelectorAll('.m2-ed-pcols');
+        (last.length ? last[last.length - 1] : palSignsEl).insertAdjacentElement('afterend', r);
+      }
+      r._o = o;
+      var bx2 = r.firstChild; bx2.title = o.title; bx2.setAttribute('aria-label', o.title);
+      r.querySelector('.m2-cs-lab').textContent = o.label + ': ';
+      if (dd.menu && dd.box === bx2 && dd.text !== src()) ddClose();   // the map changed (an edit, an undo, another map): its squares would be stale
+      var nm = r.querySelector('.m2-cs-val'), v = o.list.filter(function (c) { return c[0] === o.get(); })[0][1];
+      if (nm.textContent !== v) nm.textContent = v;   // written only when changed (every paint comes here)
+      r.hidden = false;
+      return r;
+    }
+    function keptChoice(key, ids) { var v = null; try { v = localStorage.getItem(key); } catch (e) {} return ids.indexOf(v) >= 0 ? v : ids[0]; }   // the first: the one when none is kept
+    function keepChoice(key, v, first) { try { if (v === first) localStorage.removeItem(key); else localStorage.setItem(key, v); } catch (e) {} }
+    // Style, the sizes of new nodes, for every map with a palette, kept in this browser: the size most nodes of that kind
+    // have on the map (sbgn_edit.defaults, cd_make.classSize; the built-in size where it has none), or the built-in sizes
+    var STYLE_KEY = 'atlas-edit-style', STYLES = [['file', 'From file', 'New nodes the size most nodes of their kind have on this map'], ['default', 'Default', 'New nodes at the editor\u2019s own sizes']];
+    function palStyle() { return keptChoice(STYLE_KEY, ['file', 'default']); }
+    function styleRow() { return palDrop({ key: 'style', label: 'Style', title: 'Sizes of new nodes', list: STYLES, get: palStyle, set: function (v) { keepChoice(STYLE_KEY, v, 'file'); } }); }
+    // Colour scheme on SBGN-ML maps, kept in this browser: the map's own (sbgn_edit.defaults: the fill most glyphs of the
+    // kind have; the Default colours for a kind the map lacks), the viewer's Default colours, or none
+    var SB_COL_KEY = 'atlas-edit-sb-colours', SB_COLS = [['file', 'From file', 'New glyphs in the colour most glyphs of their kind have on this map'], ['default', 'Default', 'New glyphs in the viewer\u2019s Default colours'], ['none', 'No colours', 'New glyphs unfilled']];
+    function sbCols() { return keptChoice(SB_COL_KEY, ['file', 'default', 'none']); }
+    var SB_SQ = ['macromolecule', 'simple chemical', 'nucleic acid feature', 'phenotype', 'compartment'];
+    function sbSquares(mode) {   // five at most, the first at the right (row-reverse), each colour once
+      var seen = {}, h = '';
+      SB_SQ.forEach(function (c) {
+        var x = mode === 'none' ? '#FFFFFF' : mode === 'default' ? sbJs.fillFor(c) : sbJs.defaults(src(), null, c).fill || '#FFFFFF';
+        x = String(x).toUpperCase();
+        if (seen[x]) return; seen[x] = 1;
+        h += '<i style="background:' + x + '" title="' + c + ', ' + x + '"></i>';
+      });
+      return '<span class="m2-cs-sw">' + h + '</span>';
+    }
+    function sbColsRow() { return palDrop({ key: 'cols', label: 'Colour scheme', title: 'Colours of new glyphs', list: SB_COLS, get: sbCols, set: function (v) { keepChoice(SB_COL_KEY, v, 'file'); }, sq: sbSquares }); }
     function palFill() {   // the signs of the set chosen; the tabs and the look marked
       var k = palKey();
       var lang = palLangNow(), look = palLookNow();
       var pn = pal.querySelector('.m2-ed-pnot'); pn.hidden = false; pn.style.display = '';   // hidden on a CellDesigner map (cdFill)
-      var pc = pal.querySelector('.m2-ed-pcols'); if (pc) { pc.hidden = true; csClose(); }   // the CellDesigner colours' dropdown and its menu (cdcreate.js)
+      sbColsRow(); styleRow();   // at the end of the palette, the same rows a CellDesigner map shows with its own choices (cdFill)
       Array.prototype.forEach.call(pal.querySelectorAll('[data-lang]'), function (b) { b.setAttribute('aria-pressed', String(b.dataset.lang === lang)); });
       Array.prototype.forEach.call(pal.querySelectorAll('[data-look]'), function (b) { b.setAttribute('aria-checked', String(b.dataset.look === look)); });
       pal.querySelector('.m2-ed-plook').hidden = !palViews();
@@ -305,7 +373,7 @@
     function palOn() { return on && V.current === map && !!sb && !!sbJs && V.level === 'full'; }
     function palShow() {
       var cdp_ = cdPal(), show = palOn() || cdp_;   // a CellDesigner map: its own set (cdcreate.js)
-      if (!cdp_) csClose();   // the CellDesigner colours' menu (cdcreate.js) closed with its palette
+      if (!cdp_) ddClose();   // a palette dropdown's menu closed with its palette
       if (cdp_) cdFill();
       else if (show) { palSync(); palFill(); }   // palFill: a process added or removed turns the SBGN view off or on
       pal.hidden = !show;
@@ -1384,10 +1452,14 @@
       // (CaMKII: a protein placed from the PD palette white as its unfilled protein activities, not the Default blue)
       var u = cls !== 'biological activity' && palKind() === 'af' ? sbJs.unitFor(kind0) : null;
       if (u != null) { var DA = sbJs.defaults(src(), null, 'biological activity', u); D.fill = DA.fill; D.fallback = DA.fallback; }
+      if (palStyle() === 'default') { D.w = D.w0; D.h = D.h0; }   // Style: Default, the built-in sizes (at the map's scale)
       if (k) {
         ['fill', 'line', 'width', 'multimer'].forEach(function (q) { if (q in k) D[q] = k[q]; });
         if (k.wr > 0 && k.hr > 0) { D.w = Math.round(D.w * k.wr * 100) / 100; D.h = Math.round(D.h * k.hr * 100) / 100; }
       }
+      var cm = sbCols();   // Colour scheme: Default and No colours over the map's and a look set as default
+      if (cm === 'default') { D.fill = sbJs.fillFor(u != null ? 'biological activity' : cls, u != null ? u : ACT_UNIT[kind0]); D.line = null; D.fallback = true; }
+      else if (cm === 'none') { D.fill = null; D.line = null; D.fallback = false; }
       // a metabolite's activity is placed square, as tall as the others, in either view (in the reduced
       // notation view a circle 40 by 40, not an 80 by 40 stadium; in the SBGN view a square, its palette sign
       // still a rectangle)
@@ -1398,7 +1470,7 @@
     props.querySelector('.m2-ed-pdef').addEventListener('click', function () {
       var i = propNode();
       if (i < 0 || !propFmt().def) return;
-      var o = sbJs.lookOf(realizerOf(nodes2[i].el)), b = boxOf(i), all = defsKept(), D = sbJs.defaults(src(), null, kindOf(i));
-      all[kindOf(i)] = { wr: b[2] / D.w, hr: b[3] / D.h, fill: o.fill, line: o.line, width: o.width, multimer: o.multimer };
+      var o = sbJs.lookOf(realizerOf(nodes2[i].el)), b = boxOf(i), all = defsKept(), D = sbJs.defaults(src(), null, kindOf(i)), st = palStyle() === 'default';
+      all[kindOf(i)] = { wr: b[2] / (st ? D.w0 : D.w), hr: b[3] / (st ? D.h0 : D.h), fill: o.fill, line: o.line, width: o.width, multimer: o.multimer };   // the size as a share of the one Style gives (defOf)
       try { localStorage.setItem(DEF_KEY, JSON.stringify(all)); } catch (e) { warn('The default could not be kept in this browser.'); }
     });

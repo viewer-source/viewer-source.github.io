@@ -78,7 +78,7 @@
       hy.hidden = false;
       if (hyc.checked !== !strict) hyc.checked = !strict;
       cdInfo(hy, true);
-      cdColsRow().hidden = false;
+      cdColsRow(); styleRow();
       var k = 'cd' + (strict ? 'S' : '') + (palGrouped() ? 'G' : '');
       if (palShown === k) return;
       palShown = k;
@@ -142,25 +142,28 @@
     function cdComplexAt(P) { var i = innermost(P, function (n) { return n.shape.kind === 'Complex'; }); return i >= 0 ? nodes2[i].id : null; }   // the innermost complex under P, its alias
 
     // a species or compartment placed: centred where clicked or dropped (on the grid with Snap), at CellDesigner's own size
-    // the colours of new species (the Colours line under the palette's tick box, kept in this browser for every
-    // CellDesigner map): CellDesigner's own (cd_make LOOK, the default), the file's (the colour most species of the class
-    // already have on the map, else CellDesigner's) or the viewer's Default scheme (Settings, Map colours) by the class's role
-    var CD_COL_KEY = 'atlas-edit-cd-colours', CD_COLS = [['cd', 'CellDesigner', 'CellDesigner\u2019s own colours'], ['file', 'File', 'the colour most species of their class have on this map'], ['default', 'Default', 'the viewer\u2019s Default colours']];
-    function cdCols() { var v = null; try { v = localStorage.getItem(CD_COL_KEY); } catch (e) {} return v === 'file' || v === 'default' ? v : 'cd'; }
+    // the colours of new species (Colour scheme at the end of the palette, palDrop in create.js, kept in this browser for
+    // every CellDesigner map): the file's (the colour most species of the class already have on the map, else
+    // CellDesigner's; the one when none is kept), CellDesigner's own (cd_make LOOK), the viewer's Default scheme (Settings,
+    // Map colours) by the class's role, or none (white, as CellDesigner has no unfilled species)
+    var CD_COL_KEY = 'atlas-edit-cd-colours', CD_COLS = [['file', 'From file', 'New species in the colour most species of their class have on this map'], ['cd', 'CellDesigner', 'New species in CellDesigner\u2019s own colours'], ['default', 'Default', 'New species in the viewer\u2019s Default colours'], ['none', 'No colours', 'New species white']];
+    function cdCols() { return keptChoice(CD_COL_KEY, ['file', 'cd', 'default', 'none']); }
     function cdColour(t, cls) { return cdColourIn(cdCols(), t, cls); }   // eight hex digits for cd_make, or null for CellDesigner's own
     function cdColourIn(m, t, cls) {
+      if (m === 'none') return 'ffffffff';
       if (m === 'file') return t ? cdMk.classColour(t, cls) : null;   // no file yet: the ghost before the map is loaded
       var c = m === 'default' && V.schemeFill && window.cdrender ? V.schemeFill('default', window.cdrender.ROLE[cls] || 'white') : null;
       return c ? 'ff' + c.toLowerCase() : null;
     }
     // the squares of a choice in the menu (the box shows its name only: bright colours there would draw the eye from the
     // map), five at most, the first at the right (row-reverse). CellDesigner and Default, fixed sets: the protein's, simple
-    // molecule's, phenotype's, gene's and RNA's colours, each once. File: the five colours most species on the map have,
-    // the most used first, from the map as it is now (classColours keeps its last answer)
+    // molecule's, phenotype's, gene's and RNA's colours, each once; No colours one white. From file: the five colours most
+    // species on the map have, the most used first, from the map as it is now (classColours keeps its last answer)
     var CD_SQ = [['PROTEIN', 'protein'], ['SIMPLE_MOLECULE', 'simple molecule'], ['PHENOTYPE', 'phenotype'], ['GENE', 'gene'], ['RNA', 'RNA']];
     function cdSquares(mode) {
       var sq = function (x, t) { return '<i style="background:#' + x.slice(2) + '" title="' + t + '"></i>'; }, h;
-      if (mode !== 'file') {
+      if (mode === 'none') h = sq('ffffffff', 'every species, #FFFFFF');
+      else if (mode !== 'file') {
         var seen = {};
         h = CD_SQ.map(function (q) {
           var x = (mode === 'cd' ? null : cdColourIn(mode, null, q[0])) || cdMk.LOOK[q[0]][2];
@@ -174,50 +177,8 @@
       }
       return '<span class="m2-cs-sw">' + h + '</span>';
     }
-    function cdColsName(m) { return CD_COLS.filter(function (c) { return c[0] === m; })[0][1]; }
-    var csMenu = null, csText = null;   // the menu open, the map's text it was made from
-    function csClose() { if (csMenu) { csMenu.remove(); csMenu = null; var bx = pal.querySelector('.m2-cs-box'); if (bx) bx.setAttribute('aria-expanded', 'false'); } }
-    // under the palette's signs, last (it needs little attention): the choice as a dropdown (the Grid size list's way,
-    // core.js), 'Colour scheme: ' and its name in the box, the three in the menu by name, each with its squares
-    function cdColsRow() {
-      var r = pal.querySelector('.m2-ed-pcols');
-      if (!r) {
-        r = document.createElement('div'); r.className = 'm2-ed-pblk m2-ed-pcols';
-        r.innerHTML = '<button type="button" class="m2-cs-box" title="Colours of new species" aria-label="Colours of new species" aria-haspopup="menu" aria-expanded="false"><span class="m2-cs-name"><span class="m2-cs-lab">Colour scheme: </span><span class="m2-cs-val"></span></span><svg viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.4"/></svg></button>';
-        var bx = r.firstChild;
-        bx.addEventListener('click', function (e) {
-          e.stopPropagation(); bx.blur();   // the editor's keys work at once
-          if (csMenu) { csClose(); return; }
-          var rc = bx.getBoundingClientRect(), m = cdCols();
-          csMenu = document.createElement('div'); csMenu.className = 'm2-cx m2-cs-menu'; csMenu.setAttribute('role', 'menu'); csText = cd && cd.now; bx.setAttribute('aria-expanded', 'true');
-          CD_COLS.forEach(function (c) {
-            var b = document.createElement('button'); b.type = 'button'; b.setAttribute('role', 'menuitemradio'); b.setAttribute('aria-checked', String(c[0] === m));
-            b.title = 'New species in ' + c[2];
-            b.innerHTML = '<span>' + c[1] + '</span>' + cdSquares(c[0]);
-            b.addEventListener('click', function (ev) {
-              ev.stopPropagation(); csClose();
-              try { if (c[0] === 'cd') localStorage.removeItem(CD_COL_KEY); else localStorage.setItem(CD_COL_KEY, c[0]); } catch (er) {}
-              cdColsRow();
-            });
-            csMenu.appendChild(b);
-          });
-          document.body.appendChild(csMenu);
-          var k = csMenu.getBoundingClientRect().width / csMenu.offsetWidth || 1;   // the page's own zoom: a fixed box is placed in its units
-          var up = rc.bottom + 2 + csMenu.offsetHeight * k > window.innerHeight && rc.top - 2 - csMenu.offsetHeight * k > 0;   // above the box when it would leave the window below
-          csMenu.style.left = rc.left / k + 'px'; csMenu.style.top = (up ? rc.top - 2 - csMenu.offsetHeight * k : rc.bottom + 2) / k + 'px'; csMenu.style.minWidth = rc.width / k + 'px';   // wider when five squares need it
-        });
-        document.addEventListener('pointerdown', function (e) { if (csMenu && !csMenu.contains(e.target) && !bx.contains(e.target)) csClose(); }, true);
-        document.addEventListener('keydown', function (e) { if (csMenu && e.key === 'Escape') { e.stopPropagation(); csClose(); } }, true);   // Escape closes the menu only (not also the tool in hand)
-        window.addEventListener('resize', csClose);
-        document.addEventListener('scroll', function (e) { if (csMenu && !csMenu.contains(e.target)) csClose(); }, true);   // a fixed menu would stay where the box was
-        pal.querySelector('.m2-ed-psigns').insertAdjacentElement('afterend', r);
-      }
-      if (csMenu && csText !== (cd && cd.now)) csClose();   // the map changed (an edit, an undo, another map): its squares would be stale
-      var nm = r.querySelector('.m2-cs-val'), v = cdColsName(cdCols());
-      if (nm.textContent !== v) nm.textContent = v;   // written only when changed (every paint comes here)
-      return r;
-    }
-    function cdSize(cls) { return cdComp(cls) ? [300, 200] : cdMk.LOOK[cls].slice(0, 2); }
+    function cdColsRow() { return palDrop({ key: 'cols', label: 'Colour scheme', title: 'Colours of new species', list: CD_COLS, get: cdCols, set: function (v) { keepChoice(CD_COL_KEY, v, 'file'); }, sq: cdSquares }); }
+    function cdSize(cls) { return cdComp(cls) ? [300, 200] : (palStyle() === 'file' && cls !== 'COMPLEX' && cd && cdMk.classSize(cd.now, cls)) || cdMk.LOOK[cls].slice(0, 2); }   // Style: From file, the size most species of that class have on the map; else, or none there, CellDesigner's
     function cdMake(P, kind) {
       var cls = cdKind(kind);
       if (!cls || CD_GATE[kind]) return;

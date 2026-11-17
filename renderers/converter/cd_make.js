@@ -924,16 +924,26 @@
       var kind = {}, n = {}, m, re = /<(species|celldesigner:species)(?=\s)[^>]*\sid="([^"]+)"[\s\S]*?<\/\1>/g;
       while ((m = re.exec(t))) { var c = /<celldesigner:class>([^<]*)</.exec(m[0]); if (c) kind[m[2]] = c[1]; }
       re = /<celldesigner:(speciesAlias|complexSpeciesAlias)(?=\s)[^>]*\sspecies="([^"]+)"[\s\S]*?<\/celldesigner:\1>/g;
+      var sz = {};
       while ((m = re.exec(t))) {
-        var k = kind[m[2]], u = k && /<celldesigner:usualView>[\s\S]*?<celldesigner:paint color="([0-9a-fA-F]{8})"/.exec(m[0]);
+        var k = kind[m[2]], b = k && /<celldesigner:bounds [^>]*\sw="([^"]+)"[^>]*\sh="([^"]+)"/.exec(m[0]);
+        if (b) { var Z = sz[k] || (sz[k] = { all: 0, best: null }), key = F(b[1]) + ',' + F(b[2]); Z.all++; Z[key] = (Z[key] || 0) + 1; if (!Z.best || Z[key] > Z[Z.best]) Z.best = key; }
+        var u = k && /<celldesigner:usualView>[\s\S]*?<celldesigner:paint color="([0-9a-fA-F]{8})"/.exec(m[0]);
         if (!u) continue;
         var N = n[k] || (n[k] = { best: null }), col = u[1].toLowerCase();
         N[col] = (N[col] || 0) + 1;
         if (!N.best || N[col] > N[N.best]) N.best = col;
       }
-      cc = { t: t, n: n };
+      cc = { t: t, n: n, sz: sz };
     }
     return cc.n[cls] ? cc.n[cls].best : null;
+  }
+  // the size most species of a class have on the map ([w, h], the same pass), or null: none of that class, or no size
+  // shared by two of them while there are several (complexes, sized to their members, mostly differ)
+  function classSize(t, cls) {
+    classColour(t, null);
+    var Z = cc.sz[cls];
+    return Z && Z.best && (Z[Z.best] > 1 || Z.all === 1) ? Z.best.split(',').map(Number) : null;
   }
   // every class's colours and how many species have each: { PROTEIN: { ffc8d8eb: 12, ... }, ... } (the same pass)
   function classColours(t) {
@@ -973,7 +983,7 @@
     var hd = A.s && /<celldesigner:homodimer>(\d+)</.exec(t.slice(A.s.sp[0], A.s.sp[1]));
     return { kind: A.kind, cls: A.cls || null, id: A.species || A.compartment, name: A.s ? A.s.name : C ? at(head(t, C), 'name') : null, complex: A.complex, box: A.box, homodimer: hd ? +hd[1] : 1 };
   }
-  var api = { LOOK: LOOK, PROCESS: PROCESS, REDUCED: REDUCED, sbgn: sbgn, MODS: MODS, NEED: NEED, about: about, aliasInfo: aliasInfo, classColour: classColour, classColours: classColours, empty: empty, species: newSpecies, compartment: compartment, rename: rename, retype: retype, remove: remove, reaction: reaction, reduced: reduced,
+  var api = { LOOK: LOOK, PROCESS: PROCESS, REDUCED: REDUCED, sbgn: sbgn, MODS: MODS, NEED: NEED, about: about, aliasInfo: aliasInfo, classColour: classColour, classColours: classColours, classSize: classSize, empty: empty, species: newSpecies, compartment: compartment, rename: rename, retype: retype, remove: remove, reaction: reaction, reduced: reduced,
     reactant: reactant, product: product, modifier: modifier, reactionType: reactionType, reversible: reversible, modifierType: modifierType, removeLine: removeLine,
     gate: gate, gateInput: gateInput, gateInputRemove: gateInputRemove, gateType: gateType, residue: residue, residueState: residueState,
     residueRemove: residueRemove, structural: structural, info: info, homodimer: homodimer, look: look, restyle: restyle, cdName: cdName, joinable: joinable, join: join, leave: leave };

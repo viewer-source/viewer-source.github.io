@@ -1094,13 +1094,22 @@
       // activity does not take the protein activities' fill)
       if ((c || '').replace(/ multimer$/, '') === cls && (c !== 'biological activity' || unit === undefined || actCls(fileUnit(S.glyph[id].el)) === actCls(unit))) same[id] = 1;
     });
+    // the size most glyphs of that kind have on the map (the three process kinds counted as one, drawn alike), when two
+    // share it or the kind has one glyph; else the size below at the map's scale. Compartments, complexes and submaps are
+    // sized to what they hold, so theirs stay the size below
+    var PROC = /^(omitted |uncertain )?process$/, cnt = {}, all = 0, top = null;
+    if (!/^(compartment|complex|submap)$/.test(cls)) Object.keys(S.glyph).forEach(function (id) {
+      var c = (S.glyph[id].el.getAttribute('class') || '').replace(/ multimer$/, ''), b = S.glyph[id].box, k = b[2] + ',' + b[3];
+      if (PROC.test(cls) ? PROC.test(c) : same[id]) { all++; cnt[k] = (cnt[k] || 0) + 1; if (!top || cnt[k] > cnt[top]) top = k; }
+    });
+    var own = top && (cnt[top] > 1 || all === 1) ? top.split(',').map(Number) : null;
     hs.sort(function (a, b) { return a - b; });
     var m = hs.length ? (hs.length % 2 ? hs[(hs.length - 1) / 2] : (hs[hs.length / 2 - 1] + hs[hs.length / 2]) / 2) : 40, s = m / 40;   // the map's scale from its proteins, as style.scale_of
     if (!(s > 1.2 || s < 1 / 1.2)) s = 1;
     var filled = false;   // a glyph of that kind with a fill: a map whose glyphs of that kind have none (CaMKII) gets none
     styles(S).forEach(function (st) { var k = st.ids.filter(function (i) { return same[i]; }).length; if (st.fill && k) filled = true; if (st.fill && st.plain && k > n) { n = k; best = st; } });
     var sz = SIZE[cls] || SIZE.macromolecule, fallback = !best && (filled || !Object.keys(same).length);   // the Default colours only on a map with no glyph of that kind (a New map)
-    return { w: sz[0] * s, h: sz[1] * s, font: best && best.font || Math.round(14 * s + 0.01), fill: best ? best.fill : fallback ? fillFor(cls, unit) : null, fallback: fallback,   // fallback: the fill is the Default colours' (create.js: dropped under No colours)
+    return { w: own ? own[0] : sz[0] * s, h: own ? own[1] : sz[1] * s, w0: sz[0] * s, h0: sz[1] * s,   // w0, h0: the size below, whatever the map has (the palette's Style: Default) font: best && best.font || Math.round(14 * s + 0.01), fill: best ? best.fill : fallback ? fillFor(cls, unit) : null, fallback: fallback,   // fallback: the fill is the Default colours' (create.js: dropped under No colours)
              line: best && best.line !== '#000000' ? best.line : null, width: cls === 'compartment' ? 2 : best && best.width || 1 };   // a new compartment's border 2 whatever the map's
   }
   // ---------- the look of a glyph (Properties as yEd's, with Newt's fields): its fill, border colour and
