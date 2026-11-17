@@ -557,7 +557,7 @@
       var it = nodeItems(), h = rclick && on && V.current === map ? hit(rclick) : null, i = h && h.n != null && h.p == null ? h.n : -1;
       if (i < 0 || (sb && svAt(rclick)) || kindKey(i) == null) return it;   // not over a state variable or unit (its own menu)
       it = it || [];
-      it.tail = [['Select all of this kind', function () { selectKind(i); }]];   // the menu's last editing item, under Delete
+      it.tail = [['Select all of this kind', function () { selectKind(i); }]];   // the object's last item before Delete
       return it;
     };
     function kindKey(i) {

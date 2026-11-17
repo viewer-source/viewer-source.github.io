@@ -1598,7 +1598,7 @@
     document.addEventListener('keydown', function (e) { if (!kwBox) return; if (e.key === 'Escape') e.stopPropagation(); kwClose(); }, true);
     window.addEventListener('resize', kwClose);
     document.addEventListener('scroll', function (e) { if (kwBox && !kwBox.contains(e.target)) kwClose(); }, true);
-    function lateItem(it) { var out = [it]; out.late = true; return out; }   // a right-click item under Delete (rarely used)
+    function lateItem(it) { var out = [it]; out.late = true; return out; }   // a rarely used right-click item: after the common ones, above Delete
     // the Edit tab starts editing the map shown at once; a map that
     // cannot be edited says why
     function shown() {   // the Edit window open on a map: edit it, or say why not (also when another map is chosen)

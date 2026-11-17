@@ -76,7 +76,7 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#acly-celld
   var k1 = await ci(); await page.click('.m2-ci button:has-text("Gene")').catch(function () {}); await page.waitForTimeout(800);
   var l2 = await menu(await at(p)); await page.click('.m2-cx button:has-text("Change identity")').catch(function () {}); await page.waitForTimeout(300);
   var k2 = await ci(); await page.keyboard.press('Escape'); await page.waitForTimeout(200);
-  ok('the species menu has one Change identity, under Delete', l1.indexOf('Change identity\u2026') === l1.indexOf('Delete') + 1 && !l1.some(function (t) { return /^Make (protein|gene|rna|simple|unknown|phenotype|degraded)/i.test(t); }));
+  ok('the species menu has one Change identity, above Delete, Delete the last of its items', l1.indexOf('Change identity\u2026') >= 0 && l1.indexOf('Change identity\u2026') < l1.indexOf('Delete') && l1.indexOf('Select all of this kind') < l1.indexOf('Delete') && !l1.some(function (t) { return /^Make (protein|gene|rna|simple|unknown|phenotype|degraded)/i.test(t); }));
   ok('its window lists the seven kinds, the own checked, and retypes', k1.length === 7 && k1[0] === 'Protein*' && k2.indexOf('Gene*') >= 0 && k2.indexOf('Protein') >= 0);
   ok('Escape closes the window', !(await page.$('.m2-ci')));
   await menu(await at(p)); await page.click('.m2-cx button:has-text("Change identity")').catch(function () {}); await page.waitForTimeout(300);
@@ -93,7 +93,7 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#acly-celld
   for (var mi = 0; mi < ms.length && !inh; mi++) { var t1 = await arcIs(ms[mi]); if (t1[1].indexOf('Inhibition*') >= 0) { inh = ms[mi]; a1 = t1; } else await page.keyboard.press('Escape'); }
   a1 = a1 || [[], []]; await page.click('.m2-ci button:has-text("Catalysis")').catch(function () {}); await page.waitForTimeout(800);
   var a2 = inh ? await arcIs(inh) : [[], []]; await page.keyboard.press('Escape');
-  ok('a modifier: Change identity under Delete, its five kinds, the own greyed, retyped', a1[0].indexOf('Change identity\u2026') === a1[0].indexOf('Delete') + 1 && !a1[0].some(function (t) { return /^Make /.test(t); })
+  ok('a modifier: Change identity above Delete, its five kinds, the own greyed, retyped', a1[0].indexOf('Change identity\u2026') >= 0 && a1[0].indexOf('Change identity\u2026') < a1[0].indexOf('Delete') && !a1[0].some(function (t) { return /^Make /.test(t); })
     && a1[1].length === 5 && a1[1].indexOf('Inhibition*') >= 0 && a2[1].indexOf('Catalysis*') >= 0);
   var a3 = await arcIs(red[0]); await page.keyboard.press('Escape');
   ok('reduced notation: its four kinds, no catalysis, the own greyed', a3[1].length === 4 && a3[1].indexOf('Physical stimulation*') >= 0 && a3[1].indexOf('Catalysis') < 0);

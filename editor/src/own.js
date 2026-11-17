@@ -146,10 +146,10 @@
       if (V.closed[name]) { delete V.closed[name]; V.saveClosed(); }
       V.refreshMine();
     }
-    // the right-click menu over the list, where the Edit tab is: New SBGN-ML map, New CellDesigner map, Add map from file
-    // (into the group clicked, if it is the reader's or with a token the site's, else at the top), Add group; on a map
-    // Rename map, Make a copy, Move to; on a group of theirs Rename group and Remove group; Remove map last of all
-    // (items.last). The viewer asks for them (listItems) and shows the menu, its own entries (Open all groups, ...) between
+    // the right-click menu over the list, where the Edit tab is: on a map Rename map, Make a copy, Move to, or on a group
+    // of theirs Rename group, first; then New SBGN-ML map, New CellDesigner map, Add map from file (into the group
+    // clicked, if it is the reader's or with a token the site's, else at the top), Add group; Remove map or Remove group
+    // last of all (items.last). The viewer asks for them (listItems) and shows the menu, its own entries (Open all groups, ...) between
     var addTo = '';
     function listItems(e) {
       var t = e.target.closest('.m2-map, .m2-group, .m2-empty'), m = t && t.classList.contains('m2-map') ? V.byId[t.dataset.id] : null;
@@ -158,16 +158,18 @@
       var into = m ? m.group || '' : tg && (ownGroup(tg) || V.siteGroupOf(tg) || t.classList.contains('m2-empty')) ? tg : '';   // a new map: into the group clicked, whoever's it is
       var items = [['New SBGN-ML map', function () { newMap(into); }], ['New CellDesigner map', function () { newMap(into, 'cd'); }], ['Add map from file', function () { addTo = g; picker.click(); }], ['Add group', function () { renameGroup(null); }]];
       var editing = V.grid.classList.contains('m2-editing') && V.current && V.current.id === (m && m.id);
-      // on a map, under one line: Rename map, Make a copy, Move to; Remove map last of all, under a line of its own, away
+      // on a map: Rename map, Make a copy, Move to, at the top; Remove map last of all, under a line of its own, away
       // from the others (as the map's menu: not while it is edited)
       var mapItems = [], x = e.clientX, y = e.clientY;
       if (m && canRename(m, gh)) mapItems.push(['Rename map', function () { renameMap(m.id); }]);
       if (m && canCopy(m)) mapItems.push(['Make a copy', function () { copyMap(m.id); }]);
       if (m && movable(m) && V.listGroups().length) mapItems.push(['Move to...', function () { moveMenu(m, x, y); }]);
-      if (mapItems.length) items = items.concat([null], mapItems);
-      if (onGroup) items.push(null, ['Rename group', function () { renameGroup(g); }], ['Remove group', function () { removeGroup(g); }]);
+      // the clicked map's or group's own items first, as file lists keep them; the new maps and groups under a line
+      if (mapItems.length) items = mapItems.concat([null], items);
+      if (onGroup) items = [['Rename group', function () { renameGroup(g); }], null].concat(items);
       if (siteHidden().length) items.push(null, ['Show removed maps', function () { siteHide([]); }]);
       // items.last: put by the viewer under its own entries too, so Remove map is the menu's last line
+      if (onGroup) items.last = [['Remove group', function () { removeGroup(g); }]];   // a removal: last, as Remove map
       if (m && m.mine && !editing) items.last = [['Remove map', function () { mineHide(m.id); }]];
       else if (m && gh && !editing) items.last = [['Remove map', function () { siteHide(siteHidden().concat([m.id])); }]];
       return items;
