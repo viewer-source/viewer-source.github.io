@@ -1153,6 +1153,8 @@
     // a line's rows (yEd's Properties View for an edge): its colour, its two ports as offsets from its glyph's centre
     var EROWS = [['ecol', 'Line colour', 'colour'], ['sx', 'Source port X', 'num'], ['sy', 'Source port Y', 'num'],
       ['tx', 'Target port X', 'num'], ['ty', 'Target port Y', 'num']];
+    // a reaction's rows, one reaction selected on a map whose format's part has a reaction's answers (PF_CD.rx)
+    var RROWS = [['rev', 'Reversible', 'check']];
     function table(rows, cls) { return '<table class="m2-ed-ptab' + cls + '">' + rows.map(function (r) {
       var id = 'm2-ed-' + r[0], f = r[2] === 'check' ? '<input type="checkbox" id="' + id + '">'
         : r[2] === 'colour' ? '<span class="m2-ed-pc"><input type="color" tabindex="-1" aria-label="' + r[1] + ', picker"><input type="text" id="' + id + '" spellcheck="false" autocomplete="off"' + (r[0] === 'fill' ? ' placeholder="none"' : '') + '></span>'
@@ -1160,7 +1162,7 @@
         : '<input type="text" id="' + id + '" spellcheck="false" autocomplete="off">';
       return '<tr data-k="' + r[0] + '"><th><label for="' + id + '">' + r[1] + '</label></th><td>' + f + '</td></tr>';
     }).join('') + '</table>'; }
-    props.innerHTML = '<p>Properties</p>' + table(ROWS, ' m2-ed-pnode') + table(EROWS, ' m2-ed-pedge') +
+    props.innerHTML = '<p>Properties</p>' + table(ROWS, ' m2-ed-pnode') + table(EROWS, ' m2-ed-pedge') + table(RROWS, ' m2-ed-prx') +
       '<button type="button" class="m2-ed-pdef" title="The next ones of this kind made from the palette take these">Set as default</button>';
     pal.insertAdjacentElement('afterend', props);
     var inW = props.querySelector('#m2-ed-w'), inH = props.querySelector('#m2-ed-h');
@@ -1195,7 +1197,17 @@
     function kindOf(i) { return propNode() === i && isAct(i) ? 'biological activity' : nodes2[i].shape.kind === 'SimpleChemical' ? 'simple chemical' : 'macromolecule'; }   // Set as default's kind (every activity alike, defOf)
     function propsShow(all) {   // all: every field shown again, the one focused too (Esc)
       var i = propNode(), k = propEdge(), r2 = function (v) { return String(Math.round(v * 100) / 100); }, ns = propNodes();
+      props.querySelector('.m2-ed-prx').hidden = true;
       if (ns.length > 1 || (ns.length && selN.length > 1)) return propsMany(ns, all, r2);
+      var rx = propRx();
+      if (rx) {   // one reaction: its Reversible tick box alone
+        props.hidden = false;
+        ['.m2-ed-pnode', '.m2-ed-pedge', '.m2-ed-pdef'].forEach(function (c) { props.querySelector(c).hidden = true; });
+        props.querySelector('.m2-ed-prx').hidden = false;
+        var fr = field('rev');
+        if (all || document.activeElement !== fr) fr.checked = rx.on;
+        return;
+      }
       Array.prototype.forEach.call(props.querySelectorAll('.m2-mixed'), function (tr) { tr.classList.remove('m2-mixed'); });
       props.querySelector('#m2-ed-multimer').indeterminate = false;
       ROWS.forEach(function (r) { if (r[2] !== 'check') field(r[0]).placeholder = r[0] === 'fill' ? 'none' : ''; });
@@ -1299,6 +1311,12 @@
     // as a dragged end sets them (setPorts). An end at a process's or gate's port goes with it: shown, not typed.
     // A field applies to the line it was typed for (eFor), also when another line was clicked before it was left
     var eFor = null;
+    function propRx() { var f = propFmt(); return f && f.rx ? f.rx.of() : null; }   // the reaction Properties is for ({ rid, on }), else null
+    field('rev').addEventListener('change', function (e) {
+      e.target.blur();   // the editor's keys (undo) work at once
+      var r = propRx();
+      if (!r || !propFmt().rx.set(r.rid, e.target.checked)) propsShow(true);   // not written: the box shows the file again
+    });
     function propEdge() { var f = propFmt(); return f && f.line && selE.length === 1 && !selN.length && !selP.length && !svSel && edges2[selE[0]] && edges2[selE[0]].path ? selE[0] : -1; }
     function atHub(k, end) { var e = edges2[k], n = end ? e.t : e.s; return n == null || !!nodes2[n].hub; }
     function edgeShow(k, all, r2) {

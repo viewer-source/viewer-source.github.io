@@ -489,10 +489,24 @@
     function cdRxItems(rid) {   // a reaction's other types: a process's among the three; reduced notation (a modulation) by Change identity
       var ab = cdMk.about(cd.now, rid), set = cdMk.PROCESS.indexOf(ab.type) >= 0 ? CD_RX : null;
       if (cdMk.REDUCED.indexOf(ab.type) >= 0) return cdModIdentity(CD_RED, ab.type, function (k) { cdApply(function (t) { return cdMk.reactionType(t, rid, k); }, [], [rid]); });
-      if (!set) return null;
-      return set.filter(function (q) { return q[0] !== ab.type; }).map(function (q) {
+      if (ab.reversible === null) return null;
+      return (set || []).filter(function (q) { return q[0] !== ab.type; }).map(function (q) {
         return ['Make ' + CD_NAME[q[0]].toLowerCase(), function () { cdApply(function (t) { return cdMk.reactionType(t, rid, q[0]); }, [], [rid]); }];
-      });
+      }).concat([[ab.reversible ? 'Make irreversible' : 'Make reversible', function () { cdReversible(rid, !ab.reversible); }]]);
+    }
+    // reversible or not (cd_make.reversible; about() null where a reaction may not be): also the Reversible tick box in
+    // Properties, for one reaction selected (its lines or its square, nothing else); true when written
+    function cdReversible(rid, on) { return cdApply(function (t) { return cdMk.reversible(t, rid, on); }, [], [rid]); }
+    var cdRxSeen = [null, null];   // [rid and file, reversible or null]: read once per selection and change (Properties runs with every paint)
+    function cdRxOf() {   // { rid, on } of the one reaction selected that may be reversible, else null
+      if (!cd || selP.length || svSel || (!selE.length && !selN.length)) return null;
+      var rid = null, ok = true;
+      selE.forEach(function (k) { var m = edges2[k] && edges2[k].id.match(/^(.*)\|(a|b|r\d+|p\d+)$/); if (!m || (rid && rid !== m[1])) ok = false; else rid = m[1]; });
+      selN.forEach(function (i) { var m = nodes2[i] && nodes2[i].id.match(/^(.*)\|proc$/); if (!m || (rid && rid !== m[1])) ok = false; else rid = m[1]; });
+      if (!ok || !rid) return null;
+      var key = rid + '\u0000' + cd.now;
+      if (cdRxSeen[0] !== key) { var ab = null; try { ab = cdMk.about(cd.now, rid); } catch (e) { ab = null; } cdRxSeen = [key, ab ? ab.reversible : null]; }
+      return cdRxSeen[1] === null ? null : { rid: rid, on: cdRxSeen[1] };
     }
     // a name typed in place (a double click on a species or a compartment's top band, typeIn in create.js), written by
     // cd_make.rename; a degraded species has none
@@ -534,6 +548,7 @@
     }
     var cdLook = [];   // [alias id, file, its look]
     var PF_CD = { sizable: cdSpecies, size: cdSetSize, def: false,
+      rx: { of: cdRxOf, set: cdReversible },   // a reaction's Reversible (propRx, create.js)
       node: function (i) { return cdSpecies(i) ? i : -1; },
       off: function (k, i) { return k === 'line' || (/^(label|fill|multimer)$/.test(k) && pNow.cls === 'DEGRADED'); },   // pNow: look's, read just before
       look: function (i) {   // null while the file is behind the map read (an undo not drawn yet); read once per node and file (it runs with every paint)

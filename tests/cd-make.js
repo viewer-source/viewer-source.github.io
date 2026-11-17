@@ -12,7 +12,7 @@
 //    line break, special characters) and named back, the new species removed: the text is the original byte for byte;
 //    each step changes no original line but the ones it means to, and reads as in 1. Existing species, complexes and
 //    compartments removed and retyped; gates added and removed on three maps; the same on one map written on one line
-//    and with CRLF line ends.
+//    and with CRLF line ends. Every reaction made reversible (or not) and back; a modulation's type refused.
 // 3. Gate placement: the gates CellDesigner 4.4 placed in the gate cases, made again on the file before them;
 //    each within TOL of CellDesigner's place, on the same side of the reaction.
 //   node tests/cd-make.js [python] [gate cases folder]   (default python3; the folder, also CD_GATE_CASES, holds
@@ -346,6 +346,18 @@ maps.forEach(function (f) {
       var s = first(new RegExp('<species metaid="([^"]*)"[^>]*>\\s*<annotation>\\s*<celldesigner:extension>\\s*<celldesigner:positionToCompartment>[^<]*</celldesigner:positionToCompartment>\\s*<celldesigner:speciesIdentity>\\s*<celldesigner:class>' + q[0] + '<'));
       var a = s && first(new RegExp('<celldesigner:speciesAlias id="([^"]*)" species="' + s + '"'));
       if (a) check(c + ' retype ' + q[0] + ' to ' + q[1], mk.retype(t0, a, q[1]), null, c);
+    });
+    // every reaction made reversible (irreversible) and back: read as such, only its own line changed, and back the
+    // original but for the space CellDesigner writes before a tag's end (Text.attrs drops it); any other refused
+    (t0.match(/<reaction [^>]*>/g) || []).forEach(function (h) {
+      var rid = /\sid="([^"]*)"/.exec(h)[1], ab = mk.about(t0, rid), red = ab.reversible === null;
+      try {
+        var t1 = mk.reversible(t0, rid, !ab.reversible);
+        if (red) { fault(c + ' ' + rid + ': reduced notation made reversible'); return; }
+        if (mk.about(t1, rid).reversible !== !ab.reversible) fault(c + ' ' + rid + ': reversible not set');
+        kept(c + ' ' + rid + ' reversible', t0, t1, /^<reaction /);
+        if (mk.reversible(t1, rid, ab.reversible).replace(/" >/g, '">') !== t0.replace(/" >/g, '">')) fault(c + ' ' + rid + ': reversible and back is not the original');
+      } catch (e) { if (!red || !/is not reversible/.test(e.message)) fault(c + ' ' + rid + ' reversible: ' + e.message); }
     });
   } catch (e) { fault(tag + ': ' + e.stack); }
 });

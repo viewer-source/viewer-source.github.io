@@ -13,7 +13,7 @@
 //   rename(t, alias, name), retype(t, alias, cls), remove(t, [alias, ...]) -> text
 //   reaction(t, { type, from, to }), reduced(t, { type, from, to }) -> { text, reaction }
 //   reactant(t, rid, alias), product(t, rid, alias), modifier(t, rid, alias, type) -> { text, part }   (part: r<n>, p<n>, m<n>)
-//   reactionType(t, rid, type), modifierType(t, rid, n, type), removeLine(t, rid, part?) -> text
+//   reactionType(t, rid, type), reversible(t, rid, on), modifierType(t, rid, n, type), removeLine(t, rid, part?) -> text
 //   gate(t, { kind, inputs, target, output }) -> { text, reaction, gate, at }   (gate: '<rid>|m<n>' on a reaction, '<rid>' between entities)
 //   gateInput(t, gate, alias) -> { text, part } (part null between entities); gateInputRemove(t, gate, alias), gateType(t, gate, { kind, output }) -> text
 //   residue(t, alias, { name, state }) -> { text, residue }; residueState(t, alias, n, state), residueRemove(t, alias, n) -> text
@@ -41,6 +41,9 @@
     ANTISENSE_RNA: ['AntisenseRNA', 'antisensernaReference', 'listOfAntisenseRNAs', 'arn', 'ANTISENSE_RNA'] };
   var PROCESS = ['STATE_TRANSITION', 'KNOWN_TRANSITION_OMITTED', 'UNKNOWN_TRANSITION'];
   var FULL = PROCESS.concat(['TRANSPORT', 'TRANSCRIPTION', 'TRANSLATION']);   // reactions drawn with a process square (cd_edit's FULL)
+  // the reactions that may be reversible: every one with a process (cdrender's list of the non-reduced types), never
+  // reduced notation, a modulation or a gate's
+  var TWO_WAY = FULL.concat(['HETERODIMER_ASSOCIATION', 'DISSOCIATION', 'TRUNCATION']);
   // reduced notation as SBGN's influences: POSITIVE_INFLUENCE (CellDesigner's open arrowhead, not an SBGN sign) is neither
   // offered nor kept; sbgn() makes it REDUCED_PHYSICAL_STIMULATION (the open triangle) when a file is opened for editing
   var REDUCED = ['NEGATIVE_INFLUENCE', 'REDUCED_PHYSICAL_STIMULATION', 'REDUCED_MODULATION', 'REDUCED_TRIGGER'];
@@ -474,6 +477,14 @@
     var s = span(t, '<celldesigner:reactionType>', R.x[0]);
     return put(t, s[0], s[1], '<celldesigner:reactionType>' + type + '</celldesigner:reactionType>');
   }
+  // a reaction made reversible or not: CellDesigner's reversible attribute, left out when reversible (SBML's default, as
+  // CellDesigner and the converter write it), "false" when not; cdrender then draws a head at its reactants too. Only a
+  // reaction of TWO_WAY (reduced notation is a modulation, never reversible)
+  function reversible(t, rid, on) {
+    var R = parts(t, rid);
+    if (TWO_WAY.indexOf(R.type) < 0) fail('A ' + R.type + ' is not reversible: only a reaction with a process is.');
+    return attrs(t, R.rs[0], [['reversible', on ? null : 'false']]);
+  }
   function modifierType(t, rid, n, type) {
     var R = parts(t, rid), m = R.mods[n];
     if (!m) fail('No modifier ' + n + ' on ' + rid + '.');
@@ -825,7 +836,7 @@
   // gate between entities with its kind and output, and its added reactants' and products' aliases
   function about(t, rid) {
     var R = parts(t, rid), g = R.gm.filter(isGate)[0];
-    return { type: R.type, mods: R.mods.map(function (m) { return at(m.tag, 'type'); }), gate: g ? { kind: at(g.tag, 'type').slice(19), out: at(g.tag, 'modificationType') } : null,
+    return { type: R.type, reversible: TWO_WAY.indexOf(R.type) < 0 ? null : at(head(t, R.rs), 'reversible') !== 'false',   // null: not one that may be mods: R.mods.map(function (m) { return at(m.tag, 'type'); }), gate: g ? { kind: at(g.tag, 'type').slice(19), out: at(g.tag, 'modificationType') } : null,
       gates: R.mods.map(function (m) { return isGate(m) ? { kind: at(m.tag, 'type').slice(19), out: at(m.tag, 'modificationType'), inputs: at(m.tag, 'aliases').split(',') } : null; }),
       modAliases: R.mods.map(function (m) { return at(m.tag, 'aliases'); }), inputs: g ? at(g.tag, 'aliases').split(',') : null,
       rl: R.rl.map(function (p) { return at(p.tag, 'alias'); }), pl: R.pl.map(function (p) { return at(p.tag, 'alias'); }) };
@@ -963,7 +974,7 @@
     return { kind: A.kind, cls: A.cls || null, id: A.species || A.compartment, name: A.s ? A.s.name : C ? at(head(t, C), 'name') : null, complex: A.complex, box: A.box, homodimer: hd ? +hd[1] : 1 };
   }
   var api = { LOOK: LOOK, PROCESS: PROCESS, REDUCED: REDUCED, sbgn: sbgn, MODS: MODS, NEED: NEED, about: about, aliasInfo: aliasInfo, classColour: classColour, classColours: classColours, empty: empty, species: newSpecies, compartment: compartment, rename: rename, retype: retype, remove: remove, reaction: reaction, reduced: reduced,
-    reactant: reactant, product: product, modifier: modifier, reactionType: reactionType, modifierType: modifierType, removeLine: removeLine,
+    reactant: reactant, product: product, modifier: modifier, reactionType: reactionType, reversible: reversible, modifierType: modifierType, removeLine: removeLine,
     gate: gate, gateInput: gateInput, gateInputRemove: gateInputRemove, gateType: gateType, residue: residue, residueState: residueState,
     residueRemove: residueRemove, structural: structural, info: info, homodimer: homodimer, look: look, restyle: restyle, cdName: cdName, joinable: joinable, join: join, leave: leave };
   if (node) module.exports = api; else root.cd_make = api;
