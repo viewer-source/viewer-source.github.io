@@ -479,8 +479,8 @@
       lay.catch(function (e) { lay = null; warn('The layout tools did not load: ' + e); });
       return lay;
     }
-    function layTool(what, ids, done, same) {   // not tool: create.js's palette sign in hand, of the same scope, replaced it (Snap map to grid and Pack would fail)
-      if (!on || V.current !== map || !text) return;   // same: part of the change just made (its undo step), nothing said
+    function layTool(what, ids, same) {   // not tool: create.js's palette sign in hand, of the same scope, replaced it (Snap map to grid and Pack would fail)
+      if (!on || V.current !== map || !text) return;   // same: part of the change just made (its undo step)
       if (!same) quiet();
       var uAt = undo.length, uTop = undo[uAt - 1];   // the step it belongs to (render may write the same text in other numbers first)
       Promise.all([layout(), sbpy()]).then(function (q) {
@@ -495,7 +495,7 @@
         });
         out.forEach(function (m) { t1 = N.moveInto(t1, [[m[0], null]]); });
         var r = L.tidy(t1, what, ids || [], !!cd);
-        if (r[1] < 0) { if (!same) warn(done[2]); return; }
+        if (r[1] < 0) return;   // nothing it applies to: nothing said
         if (!r[1]) return;   // nothing to change: nothing said
         var t2 = r[0];
         out.slice().reverse().forEach(function (m) { t2 = N.moveInto(t2, [m]); });
@@ -511,10 +511,9 @@
         render(); paint(); changed();
       }).catch(function (e) { warn('Not done: ' + (e && e.message ? e.message.split('\n').slice(-2).join(' ') : e)); });
     }
-    function snapMap() { layTool('grid', [], ['The map is on the grid already.', 'The map is on the grid. Ctrl or Cmd with Z takes it back.']); }
+    function snapMap() { layTool('grid', []); }
     function pack(ids) {
-      layTool('pack', ids, [ids.length ? 'Packed already.' : 'Every complex is packed already.',
-        (ids.length ? 'Packed.' : 'Every complex packed.') + ' Ctrl or Cmd with Z takes it back.', 'Select a complex, or nothing for every complex.']);
+      layTool('pack', ids);
     }
     box.querySelector('#m2-ed-tidy-grid').addEventListener('click', snapMap);
     function outerComplex(i) {   // the outermost complex round node i (itself included), or null: the layout tools pack a complex inside another
@@ -851,7 +850,7 @@
     // dropped on a complex put into it (arg.join, the ids moved: joinPlan, create.js) and the holders grown round what
     // moved (arg.grow: the ids grown round, arg.before: every node's box before, by id, arg.moving: the ids that moved, arg.away: the drag's furthest moves, grown);
     // all in the undo step taken before. A CellDesigner file that cannot hold the change (cd_edit.nestCheck, a species
-    // dropped on a complex) is not changed: refused(why). An undo while it waits stops it
+    // dropped on a complex) is not changed: refused(), nothing said. An undo while it waits stops it
     // a compartment that partly overlaps another of its holder is
     // drawn behind it when larger, in front when smaller (sbgn_edit.stack, the order in the file); not on CellDesigner maps
     function stackComps(ids) {   // in Full editing (Layout keeps the file's order), GraphML and SBGN-ML maps (sbgn_edit loaded at the start, begin)
@@ -2992,7 +2991,7 @@
       var before = boxesBefore(function (k) { return nodes2[k].id === rid ? b0r : boxOf(k); });
       var B0r = function (k) { return before[nodes2[k].id] || boxOf(k); }, doneR = function () { render(); paint(); changed(); }, ri = nodes2.findIndex(function (n) { return n.id === rid; });
       if (!full() || !nodes2[ri].comp) { setBoxes(grown([ri], boxOf, B0r, function () { return false; })); refit([rid]); doneR(); return; }   // a complex: its members kept (roomy), its holders grown
-      settle(regroup('box', new Set([ri]), boxOf, B0r), { moving: [rid] }, doneR, function (why) { text = unpush(); parse(); liveOff(); paint(); warn(why); });
+      settle(regroup('box', new Set([ri]), boxOf, B0r), { moving: [rid] }, doneR, function () { text = unpush(); parse(); liveOff(); paint(); });   // refused: taken back, nothing said
     }
     function dragEnd(e) {   // the end of a drag of the selection, a port or a resize
       var d = drag; drag = null; var sets = mv; mv = null;   // the moved groups and live arcs stay until the map is drawn again
@@ -3015,7 +3014,7 @@
       var fitAfter = function () {   // what holds what settled again (Full: regroup), a glyph dropped on a complex put into it (joinPlan, create.js), the holders round what moved grown (grown), in the same undo step
         var B0 = function (k) { var b = boxOf(k); return sets.n.has(k) ? [b[0] - d.dx, b[1] - d.dy, b[2], b[3]] : b; };   // the boxes before the drag
         settle(full() ? regroup(d.alone ? 'alone' : 'plain', sets.n, boxOf, B0) : new Map(), { join: full() ? movedNow : null, grow: tops(sets.n, d.alone).map(function (k) { return nodes2[k].id; }), before: boxesBefore(B0), moving: movedNow, away: d.away },
-          function () { render(); changed(); }, function (why) { text = unpush(); parse(); unshift(); paint(); warn(why); });   // a CellDesigner file that cannot hold it: not moved
+          function () { render(); changed(); }, function () { text = unpush(); parse(); unshift(); paint(); });   // a CellDesigner file that cannot hold it: not moved, nothing said
       };
       if (d.made != null && Math.abs(d.dx) < 0.01 && Math.abs(d.dy) < 0.01) {   // a new bend dragged back to where it was made (a snap may leave a hair): none made
         text = unpush(); parse(); selP = []; selE = [d.made - 1]; unshift(); paint(); return;
@@ -3101,7 +3100,7 @@
         var r0 = keyRun || [0, 0], dd = d, Bk = function (k) { var b = boxOf(k); return ks.n.has(k) ? [b[0] + dd[0], b[1] + dd[1], b[2], b[3]] : b; };
         var mvs = []; regroup('plain', ks.n, Bk, function (k) { var b = boxOf(k); return ks.n.has(k) ? [b[0] - r0[0], b[1] - r0[1], b[2], b[3]] : b; }).forEach(function (t2, i) { mvs.push([nodes2[i].id, t2 == null ? null : nodes2[t2].id]); });
         var whyK = mvs.length ? cdJs.nestCheck(cd.now, mvs) : null;
-        if (whyK) { warn(whyK); return; }
+        if (whyK) return;   // refused: nothing moves, nothing said
       }
       remember(true); move(d[0], d[1], ks); keyShift(ks, d[0], d[1]); keyGuides = bp != null ? bendGuides(bp) : null; paint();
       var kids = movedIds(ks);
@@ -3112,7 +3111,7 @@
         var set = new Set(nodes2.map(function (n, i) { return kids.indexOf(n.id) >= 0 ? i : -1; }).filter(function (i) { return i >= 0; }));
         var B0 = function (k) { var b = boxOf(k); return set.has(k) ? [b[0] - run[0], b[1] - run[1], b[2], b[3]] : b; };
         settle(full() ? regroup('plain', set, boxOf, B0) : new Map(), { grow: tops(set, false).map(function (k) { return nodes2[k].id; }), before: boxesBefore(B0), moving: kids }, function () { render(); paint(); },
-          function (why) { text = unpush(); parse(); keyed = null; render(); paint(); warn(why); });   // refused (checked at each key already): taken back
+          function () { text = unpush(); parse(); keyed = null; render(); paint(); });   // refused (checked at each key already): taken back, nothing said
       };
       clearTimeout(timer); timer = setTimeout(function () { if (keyDue) keyDue(); }, 150); changed();
     }, true);

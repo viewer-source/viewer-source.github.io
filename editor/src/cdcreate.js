@@ -120,7 +120,7 @@
       keyFlush();   // a run of arrow keys settled first (else a nudge then Delete within 150 ms loses the nudge)
       var N = cdNow(), now = N.t;   // a move not drawn yet is in the file too
       var t2;
-      try { t2 = fn(now, N.sh); } catch (err) { warn(String(err && err.message || err).replace(/\.?$/, '.')); return false; }
+      try { t2 = fn(now, N.sh); } catch (err) { if (!(err && err.refused)) warn(String(err && err.message || err).replace(/\.?$/, '.')); return false; }   // a rule of the format (cd_make's refuse): nothing said; a fault in red
       if (t2 && t2.text != null) t2 = t2.text;
       if (!t2 || t2 === now) return false;
       remember(false);
@@ -255,7 +255,7 @@
       }
       if (r !== 'proc' && (r !== 'epn' || cdStrict())) return;   // the same: a species only in reduced notation
       var g = cdGate, target = r === 'proc' ? cdRid(i) : nodes2[i].id, out = null, L = cdGateLand(i, P) || {};   // where its line out lands, as shown
-      // refused (the status line says why), the inputs clicked stay for another target
+      // refused (nothing said), the inputs clicked stay for another target
       if (!cdApply(function (t) { var q = cdMk.gate(t, { kind: g.kind, inputs: g.inputs, target: target, spot: L.spot, toAt: L.at }); out = q.gate; return q.text; },
         function () { return [/\|m\d+$/.test(out) ? out.replace(/\|m(\d+)$/, '|g$1') : out + '|g']; })) return;   // the gate selected: Delete takes it back
       cdGate = null;

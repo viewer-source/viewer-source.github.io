@@ -94,9 +94,9 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#acly-celld
   e2 = e3;
   // refusals
   await page.keyboard.press('Escape'); await sign('cd:STATE_TRANSITION'); await drag(await at('sa_n13'), await at('re_n3|proc'));
-  ok('a reaction sign onto a square refused, Add reactant named', /Add reactant/.test(await status()) && (await es()).length === e2.length, await status());
+  ok('a reaction sign onto a square refused, nothing said', (await status()) === '' && (await es()).length === e2.length, await status());
   await page.keyboard.press('Escape'); await sign('cd:ADD_REACTANT'); await drag(await at('sa_n13'), await at(sm));
-  ok('Add reactant between two species refused', /Add reactant goes/.test(await status()) && (await es()).length === e2.length, await status());
+  ok('Add reactant between two species refused, nothing said', (await status()) === '' && (await es()).length === e2.length, await status());
   ok('no script error', !errs.length, errs.join(' | '));
   await b.close();
   process.exit(bad ? 1 : 0);

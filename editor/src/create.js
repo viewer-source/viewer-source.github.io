@@ -469,7 +469,7 @@
     // complex, in the move's undo step, and the complex is packed (Pack: the members side by side, the complex and what
     // holds it grown); a glyph made from the palette on a complex the same. SBGN-ML maps (not Activity Flow) with
     // sbgn_edit.join, CellDesigner maps with cd_make.join; Full editing only. A glyph with lines is not taken in (a line
-    // goes to a complex, never to a member): the whole move is taken back, the reason said (joinPlan's why).
+    // goes to a complex, never to a member): the whole move is taken back, nothing said (joinPlan's why).
     // joinPlan(moved, leaving) -> { joins: [[id, complex id], ...], why }   moved: the ids the move moved, or the one made;
     // leaving: the ids whose holder the move changes (a member taken out with Shift may land on another complex)
     function joinWhy(code, name) {
@@ -532,7 +532,7 @@
       return done;
     }
     // the complexes that took a member packed, in the same undo step (Pack's own code, layTool)
-    function joinPack(cids) { if (cids.length) layTool('pack', cids, ['', '', ''], true); }
+    function joinPack(cids) { if (cids.length) layTool('pack', cids, true); }
     function makeEntity(P, cls) {
       var units = PRESET[cls] ? PRESET[cls][1] : null; cls = baseKind(cls);
       var act = ACT_UNIT[cls], D = defOf(cls), w = D.w, h = D.h, X = P[0] - w / 2, Y2 = P[1] - h / 2;   // act: an activity's unit
@@ -545,7 +545,7 @@
       if (cls === 'compartment') {   // what it covers taken in, in the same undo step
         parse();
         var ni = nodes2.findIndex(function (n) { return n.id === id; }), inn = ni >= 0 ? regroup('box', new Set([ni]), boxOf, function (k) { return k === ni ? [0, 0, 0, 0] : boxOf(k); }) : new Map();
-        return settle(inn, { moving: [id] }, function () { made(id); }, function (why) { warn(why); made(id); });   // also stacked among the compartments it partly overlaps
+        return settle(inn, { moving: [id] }, function () { made(id); }, function () { made(id); });   // also stacked among the compartments it partly overlaps
       }
       if (!onCx) { made(id); return; }
       parse();
@@ -1240,7 +1240,7 @@
       if (!l.moved) return false;
       e.stopImmediatePropagation(); paint();
       if (e.type !== 'pointerup' || !l.how || l.at !== text) return true;
-      if (l.how.no) { warn(l.how.no); return true; }
+      if (l.how.no) return true;   // refused (drawn dashed, its target not lit while dragged): nothing made, nothing said
       linkMake(l.from, l.to, l.how);
       if (tool && !tool.sticky) palTake(null);
       return true;

@@ -6,7 +6,7 @@
 // and as the converter's celldesigner.py write() writes it (checked against CellDesigner 4.4.2): one element per line,
 // no indentation, the same order and defaults; inserted lines take the file's line ends. Ids as CellDesigner makes them
 // (s, sa, csa, c, ca, re, pr, gn, rn, rs), the number after the highest one in the text. Everything refused throws an
-// Error whose message is the reason, for the editor's status line.
+// Error whose message is the reason: a rule of the format marked refused (the editor stays silent), a fault not.
 //   empty(opt) -> text                                     opt: { id, W, H }
 //   species(t, { cls, name, box, compartment, complex }) -> { text, alias, species }   (compartment left out: the one round its box)
 //   compartment(t, { name, box, oval }) -> { text, alias, compartment }   oval: CellDesigner's OVAL class, else SQUARE
@@ -66,6 +66,7 @@
   function cdName(s) { s = String(s).replace(/\r?\n/g, '_br_'); cdr.NAME.forEach(function (n) { s = s.split(n[0]).join(n[1]); }); return s; }
   function esc(s) { return py.escape(s).replace(/"/g, '&quot;'); }
   function fail(s) { throw new Error(s); }
+  function refuse(s) { var e = new Error(s); e.refused = true; throw e; }   // a rule of the format, not a fault: the editor says nothing
   function an(w) { return (/^(RNA|[aeiou])/i.test(w) ? 'an ' : 'a ') + w; }
   function kind(cls) { return /RNA/.test(cls) ? cls.replace('ANTISENSE_', 'antisense ') : cls.toLowerCase().replace(/_/g, ' '); }
 
@@ -129,9 +130,9 @@
     if (A.species) { A.s = species(t, A.species); A.cls = A.s.cls; }
     return A;
   }
-  function entity(t, id) { var A = alias(t, id); if (!A.species) fail('A compartment has no lines, residues or units.'); return A; }
+  function entity(t, id) { var A = alias(t, id); if (!A.species) refuse('A compartment has no lines, residues or units.'); return A; }
   // a line's end: never a complex's member, until a CellDesigner save shows how it holds one
-  function end(t, id) { var A = entity(t, id); if (A.complex) fail('A line joins the complex, not one of its members.'); return A; }
+  function end(t, id) { var A = entity(t, id); if (A.complex) refuse('A line joins the complex, not one of its members.'); return A; }
   function species(t, sid) {
     var sp = span(t, '<species(?=\\s)[^>]*\\sid="' + q(sid) + '"') || span(t, '<celldesigner:species(?=\\s)[^>]*\\sid="' + q(sid) + '"');
     if (!sp) fail('No species ' + sid + ' on the map.');
@@ -156,7 +157,7 @@
       rl: all(t, '<celldesigner:reactantLink ', x), pl: all(t, '<celldesigner:productLink ', x),
       mods: all(t, '<celldesigner:modification ', x), gm: all(t, '<celldesigner:GateMember ', x) };
   }
-  function process(t, rid) { var R = parts(t, rid); if (FULL.indexOf(R.type) < 0) fail('Only a reaction with a process square takes this; ' + rid + ' is ' + R.type + '.'); return R; }
+  function process(t, rid) { var R = parts(t, rid); if (FULL.indexOf(R.type) < 0) refuse('Only a reaction with a process square takes this; ' + rid + ' is ' + R.type + '.'); return R; }
   // the reaction's square and the direction of its main line, as cd_edit's lines() places them, read from a map of the
   // reaction and its two ends alone (its modifiers left out: they do not move the square); null on a branched reaction
   function square(t, rid) {
@@ -306,12 +307,12 @@
     var name = esc(cdName(cls !== 'DEGRADED' && o.name ? o.name : sid));
     if (o.complex) {   // a member: its offset in the complex, no compartment (CellDesigner's files)
       C = alias(t, o.complex);
-      if (C.kind !== 'complexSpeciesAlias') fail('That is not a complex.');
+      if (C.kind !== 'complexSpeciesAlias') refuse('That is not a complex.');
       extra = ' complexSpeciesAlias="' + C.id + '"'; ip = [b[0] - C.box[0], b[1] - C.box[1]];
     } else if (o.compartment || holder(t, b)) {   // in a compartment, given or else the innermost holding its box: its offset
       // from the compartment's top left (CellDesigner's save of estrogen)
       var K = o.compartment ? alias(t, o.compartment) : holder(t, b);
-      if (K.kind !== 'compartmentAlias') fail('That is not a compartment.');
+      if (K.kind !== 'compartmentAlias') refuse('That is not a compartment.');
       extra = ' compartmentAlias="' + K.id + '"'; ip = [b[0] - K.box[0], b[1] - K.box[1]]; comp = K.compartment;
     }
     if (REF[cls]) { var rr = referenceFor(t, cls, name); t = rr[0]; ref = rr[1]; }
@@ -348,7 +349,7 @@
       if (np && A.box && Math.abs(nx0 - cdr.nameLeft(A.box, was)) < 1) t = attrs(t, span(t, '<celldesigner:namePoint ', alias(t, id).sp[0], alias(t, id).sp[1])[0], [['x', num(cdr.nameLeft(A.box, cdName(name)))]]);
       return t;
     }
-    if (A.cls === 'DEGRADED') fail('A degraded species keeps its id as its name.');
+    if (A.cls === 'DEGRADED') refuse('A degraded species keeps its id as its name.');
     var S = A.s, old = S.name;
     if (!S.ref) { set((S.inc ? '<celldesigner:species' : '<species') + '(?=\\s)[^>]*\\sid="' + q(S.id) + '"'); return t; }
     var named = users(t, S.ref), group = named.filter(function (s) { return s === S.id || species(t, s).name === old; });
@@ -372,7 +373,7 @@
   function retype(t, id, cls, cols) {
     var A = entity(t, id), was = A.cls;
     if (!LOOK[cls]) fail('The CellDesigner class ' + cls + ' is not offered.');
-    if (cls === 'COMPLEX' || was === 'COMPLEX') fail('A complex and a single species cannot be changed into one another: delete it and draw anew.');
+    if (cls === 'COMPLEX' || was === 'COMPLEX') refuse('A complex and a single species cannot be changed into one another: delete it and draw anew.');
     if (cls === was) return t;
     var hd = cls === 'DEGRADED' && inState(t, A.species, '<celldesigner:homodimer>');   // a degraded species is no multimer: the count to 1 first, its box with it, a count of 1 dropped
     if (hd) { t = +/>(\d+)</.exec(t.slice(hd[0], hd[1]))[1] > 1 ? homodimer(t, id, 1) : drop(t, hd, [CD + 'state']); A = entity(t, id); }
@@ -414,7 +415,7 @@
   }
   function ends(t, o) {
     var A = end(t, o.from), B = end(t, o.to);
-    if (A.id === B.id) fail('A line needs two different entities.');
+    if (A.id === B.id) refuse('A line needs two different entities.');
     return [A, B];
   }
   // a reaction: the base reactant to the base product, the square midway on its one segment (rectangleIndex 0)
@@ -434,7 +435,7 @@
   // an added reactant or product: its link to the square's segment (no linkAnchor: to the centre) and its SBML reference
   function link(t, rid, id, into, at) {   // at: the place at the species (none: the centre)
     var R = process(t, rid), A = end(t, id), list = into ? 'listOfReactantLinks' : 'listOfProductLinks', n = (into ? R.rl : R.pl).length;
-    if (joined(R).indexOf(id) >= 0) fail('This entity is already a reactant or product of the reaction.');
+    if (joined(R).indexOf(id) >= 0) refuse('This entity is already a reactant or product of the reaction.');
     var el = '<celldesigner:' + (into ? 'reactantLink reactant' : 'productLink product') + '="' + A.species + '" alias="' + id + '" targetLineIndex="-1,' + (into ? 0 : 1) +
       '">\n' + anchorXml(at) + scheme(false) + '\n<celldesigner:line width="1.0" color="ff000000" type="Straight"/>\n</celldesigner:' + (into ? 'reactantLink' : 'productLink') + '>';
     var rl = span(t, '<celldesigner:listOfReactantLinks>', R.x[0], R.x[1]);
@@ -483,7 +484,7 @@
   function reactionType(t, rid, type) {
     var R = parts(t, rid), fam = function (x) { return FULL.indexOf(x) >= 0 ? 1 : /INFLUENCE|REDUCED/.test(x) ? 2 : 0; };
     if ((PROCESS.indexOf(type) < 0 && REDUCED.indexOf(type) < 0) || !fam(R.type) || fam(type) !== fam(R.type))
-      fail('A ' + R.type + ' cannot become ' + type + ': reactions change among reactions, reduced notation among its own kinds.');
+      refuse('A ' + R.type + ' cannot become ' + type + ': reactions change among reactions, reduced notation among its own kinds.');
     var s = span(t, '<celldesigner:reactionType>', R.x[0]);
     return put(t, s[0], s[1], '<celldesigner:reactionType>' + type + '</celldesigner:reactionType>');
   }
@@ -492,7 +493,7 @@
   // reaction of TWO_WAY (reduced notation is a modulation, never reversible)
   function reversible(t, rid, on) {
     var R = parts(t, rid);
-    if (TWO_WAY.indexOf(R.type) < 0) fail('A ' + R.type + ' is not reversible: only a reaction with a process is.');
+    if (TWO_WAY.indexOf(R.type) < 0) refuse('A ' + R.type + ' is not reversible: only a reaction with a process is.');
     return attrs(t, R.rs[0], [['reversible', on ? null : 'false']]);
   }
   function modifierType(t, rid, n, type) {
@@ -522,7 +523,7 @@
   // of one type (the modifications in `skip` left out: the lines being changed)
   function twin(R, id, type, skip) {
     if (R.mods.some(function (m, k) { return skip.indexOf(k) < 0 && (!isGate(m) && at(m.tag, 'aliases') === id && at(m.tag, 'type') === type || isGate(m) && at(m.tag, 'aliases').split(',').indexOf(id) >= 0 && at(m.tag, 'modificationType') === type); }))
-      fail('This entity already has ' + an(type.toLowerCase().replace(/_/g, ' ')) + ' line to the reaction; a second one could not be told apart.');
+      refuse('This entity already has ' + an(type.toLowerCase().replace(/_/g, ' ')) + ' line to the reaction; a second one could not be told apart.');
   }
   // a reaction's k-th SBML reference to alias a (the k-th line of that alias; else its last), else the first of its
   // species naming no alias
@@ -576,15 +577,15 @@
     var k = o.kind, ins = (o.inputs || []).map(function (a) { return end(t, a); }), out = o.output;
     if (!NEED[k]) fail('The gate ' + k + ' is not offered.');
     if (o.spot != null && !(o.spot >= 2 && o.spot <= 7)) fail('No place ' + o.spot + ' at a reaction\u2019s square.');   // o.spot: its line's place at the square (none: the side facing it); o.toAt: at a species (none: the centre)
-    if (ins.length < NEED[k]) fail(an(k).replace(/^a/, 'A') + ' gate needs ' + (NEED[k] === 2 ? 'two inputs.' : 'an input.'));
-    if (new Set(o.inputs).size !== ins.length || o.inputs.indexOf(o.target) >= 0) fail('A gate\'s inputs and its target are different entities.');
+    if (ins.length < NEED[k]) refuse(an(k).replace(/^a/, 'A') + ' gate needs ' + (NEED[k] === 2 ? 'two inputs.' : 'an input.'));
+    if (new Set(o.inputs).size !== ins.length || o.inputs.indexOf(o.target) >= 0) refuse('A gate\'s inputs and its target are different entities.');
     var mean = function (ps) { return [ps.reduce(function (s, p) { return s + p[0]; }, 0) / ps.length, ps.reduce(function (s, p) { return s + p[1]; }, 0) / ps.length]; };
     var C = ins.slice(0, 2).map(centre), type = 'BOOLEAN_LOGIC_GATE_' + k, al = o.inputs.join(','), G, pt;
     if (isReaction(t, o.target)) {   // on a reaction: a BOOLEAN_LOGIC_GATE_* modification listing the inputs, then each input's own
       var R = process(t, o.target), r = square(t, o.target);
       out = out || 'CATALYSIS';   // CellDesigner's default output
-      if (!r) fail('A gate joins a reaction with one reactant and one product.');
-      if (MODS.indexOf(out) < 0) fail('A gate\'s output ' + out + ' is not a modifier type.');
+      if (!r) refuse('A gate joins a reaction with one reactant and one product.');
+      if (MODS.indexOf(out) < 0) refuse('A gate\'s output ' + out + ' is not a modifier type.');
       ins.forEach(function (A) { twin(R, A.id, out, []); });
       G = mean(C.concat([r.sq])); pt = num(G[0]) + ',' + num(G[1]);
       var g = '<celldesigner:modification type="' + type + '" modifiers="' + ins.map(function (A) { return A.species; }).join(',') + '" aliases="' + al +
@@ -595,7 +596,7 @@
     // between entities: a BOOLEAN_LOGIC_GATE reaction, the inputs its base reactants, the target its base product
     var T = end(t, o.target);
     out = out || 'REDUCED_TRIGGER';   // as in CellDesigner's save of the gate cases
-    if (REDUCED.indexOf(out) < 0) fail('A gate\'s output ' + out + ' is not a reduced notation type.');
+    if (REDUCED.indexOf(out) < 0) refuse('A gate\'s output ' + out + ' is not a reduced notation type.');
     G = mean(C.concat([centre(T)])); pt = num(G[0]) + ',' + num(G[1]);
     var r2 = newReaction(t, 'BOOLEAN_LOGIC_GATE', ins, T, '<celldesigner:connectScheme connectPolicy="direct"/>\n<celldesigner:editPoints>' + pt + '</celldesigner:editPoints>',
       '<celldesigner:listOfGateMember>\n<celldesigner:GateMember type="' + type + '" aliases="' + al + '" modificationType="' + out + '" targetLineIndex="-1,-1" editPoints="' + pt +
@@ -614,8 +615,8 @@
   }
   function gateInput(t, ref, id) {
     var g = gateAt(t, ref), A = end(t, id);
-    if (g.inputs.indexOf(id) >= 0 || joined(g.R).indexOf(id) >= 0 && g.n < 0) fail('This entity is already joined to the gate.');
-    if (g.kind === 'NOT') fail('A NOT gate has one input, and this one has it.');
+    if (g.inputs.indexOf(id) >= 0 || joined(g.R).indexOf(id) >= 0 && g.n < 0) refuse('This entity is already joined to the gate.');
+    if (g.kind === 'NOT') refuse('A NOT gate has one input, and this one has it.');
     if (g.n >= 0) twin(g.R, id, g.out, []);
     var el = ownLine(g.n < 0 ? 'GateMember' : 'modification', g.out, A);
     t = attrs(t, g.el.sp[0], [g.n < 0 ? null : ['modifiers', at(g.el.tag, 'modifiers') + ',' + A.species], ['aliases', g.inputs.concat([id]).join(',')]].filter(Boolean));
@@ -633,7 +634,7 @@
   // SBML reference; the gate goes whole when left with fewer inputs than it needs (NEED)
   function gateInputRemove(t, ref, id) {
     var g = gateAt(t, ref), i = g.inputs.indexOf(id);
-    if (i < 0) fail('That entity is not an input of the gate.');
+    if (i < 0) refuse('That entity is not an input of the gate.');
     if (g.inputs.length - 1 < NEED[g.kind]) return dropGate(t, g);
     var keep = g.inputs.filter(function (a) { return a !== id; });
     if (g.n >= 0) {
@@ -654,12 +655,12 @@
     var g = gateAt(t, ref);
     if (o.kind) {
       if (!NEED[o.kind]) fail('The gate ' + o.kind + ' is not offered.');
-      if (g.inputs.length < NEED[o.kind]) fail(an(o.kind).replace(/^a/, 'A') + ' gate needs two inputs.');
-      if (o.kind === 'NOT' && g.inputs.length > 1) fail('A NOT gate has one input; this gate has ' + g.inputs.length + '.');
+      if (g.inputs.length < NEED[o.kind]) refuse(an(o.kind).replace(/^a/, 'A') + ' gate needs two inputs.');
+      if (o.kind === 'NOT' && g.inputs.length > 1) refuse('A NOT gate has one input; this gate has ' + g.inputs.length + '.');
       t = attrs(t, g.el.sp[0], [['type', 'BOOLEAN_LOGIC_GATE_' + o.kind]]);
     }
     if (o.output && o.output !== g.out) {
-      if ((g.n < 0 ? REDUCED : MODS).indexOf(o.output) < 0) fail('A gate\'s output ' + o.output + ' is not offered here.');
+      if ((g.n < 0 ? REDUCED : MODS).indexOf(o.output) < 0) refuse('A gate\'s output ' + o.output + ' is not offered here.');
       if (g.n >= 0) g.inputs.forEach(function (a) { twin(g.R, a, o.output, [g.n, own(g.R.mods, g.el, a)]); });
       g.inputs.forEach(function (a) {   // the inputs' own lines first, found by the old output
         var h = gateAt(t, ref), list = h.n < 0 ? h.R.gm : h.R.mods, k = own(list, h.el, a);
@@ -691,7 +692,7 @@
       var c = A.compartment, cs = compartments(t), last = cs.every(function (C) { return C.compartment !== c || S.has(C.id); });
       var within = ids(t, '<compartment(?=\\s)[^>]*\\soutside="' + q(c) + '"');
       if (inside(t, 'compartmentAlias', A.id).some(function (a) { return !S.has(a); }) || last && (ids(t, '<species(?=\\s)[^>]*\\scompartment="' + q(c) + '"').some(function (s) { return !gone.has(s); }) ||
-          cs.some(function (C) { return within.indexOf(C.compartment) >= 0 && !S.has(C.id); }))) fail('The compartment still holds other things: empty it first.');
+          cs.some(function (C) { return within.indexOf(C.compartment) >= 0 && !S.has(C.id); }))) refuse('The compartment still holds other things: empty it first.');
     });
     // only the reactions whose text names a removed alias
     var named = new RegExp('["\',>](?:' + Array.from(S).map(q).join('|') + ')["\',<]'), rids = [], i = 0, o;
@@ -746,7 +747,7 @@
   function inState(t, sid, open) { var S = species(t, sid), st = span(t, '<celldesigner:state>', S.sp[0], S.sp[1]); return st && span(t, open, st[0], st[1]); }
   function protein(t, id) {
     var A = entity(t, id);
-    if (!REF[A.cls] || REF[A.cls][0] !== 'protein' || !A.s.ref) fail('Residues belong to proteins; this is ' + an(kind(A.cls || 'species')) + '.');
+    if (!REF[A.cls] || REF[A.cls][0] !== 'protein' || !A.s.ref) refuse('Residues belong to proteins; this is ' + an(kind(A.cls || 'species')) + '.');
     return A;
   }
   var OPEN = /<celldesigner:protein [^>]*[^/]>\s+<\/celldesigner:protein>/;   // a protein with no residues written open
@@ -756,7 +757,7 @@
   // on this species
   function residue(t, id, o) {
     var A = protein(t, id), state = o.state || 'empty', rs = residues(t, A);
-    if (STATES.indexOf(state) < 0) fail('CellDesigner has no residue state ' + state + '.');
+    if (STATES.indexOf(state) < 0) refuse('CellDesigner has no residue state ' + state + '.');
     var used = rs.map(function (r) { return F(at(r.tag, 'angle')); }), P = Math.PI;
     var ang = [P, 0, 3 * P / 4, P / 4, 5 * P / 4, 7 * P / 4, 3 * P / 2].filter(function (a) { return !used.some(function (u) { return Math.abs(u - a) < 0.3; }); })[0];
     var rid = next(t, 'rs'), p = reference(t, A.s.ref), el = '<celldesigner:modificationResidue angle="' + repr(ang === undefined ? P : ang) + '" id="' + rid + '"' +
@@ -773,7 +774,7 @@
   }
   function residueAt(t, id, n) { var A = protein(t, id), r = residues(t, A)[n]; if (!r) fail('No residue ' + n + ' on this protein.'); return [A, at(r.tag, 'id'), r]; }
   function residueState(t, id, n, state) {
-    if (STATES.indexOf(state) < 0) fail('CellDesigner has no residue state ' + state + '.');
+    if (STATES.indexOf(state) < 0) refuse('CellDesigner has no residue state ' + state + '.');
     var r = residueAt(t, id, n);
     return setState(t, r[0].species, r[1], state);
   }
@@ -795,14 +796,14 @@
   // the one structural state of a species (free text) and its place on every alias (CellDesigner's default: the top)
   function structural(t, id, txt, replace) {
     var A = entity(t, id), sid = A.species, st = inState(t, sid, '<celldesigner:listOfStructuralStates>');
-    if (A.cls === 'DEGRADED') fail('A degraded species has no structural state.');
+    if (A.cls === 'DEGRADED') refuse('A degraded species has no structural state.');
     if (txt == null || txt === '') {
       if (!st) return t;
       t = drop(t, st, [CD + 'state']);
       aliasesOf(t, sid).forEach(function (a) { var B = alias(t, a), s = span(t, '<celldesigner:structuralState ', B.sp[0], B.sp[1]); if (s) t = cut(t, s); });
       return t;
     }
-    if (st && !replace) fail('This species already has a structural state; CellDesigner keeps one free text there.');
+    if (st && !replace) refuse('This species already has a structural state; CellDesigner keeps one free text there.');
     if (st) return attrs(t, span(t, '<celldesigner:structuralState ', st[0], st[1])[0], [['structuralState', esc(txt)]]);
     t = toState(t, sid, list(t, CD + 'listOfStructuralStates', '<celldesigner:structuralState structuralState="' + esc(txt) + '"/>'));
     aliasesOf(t, sid).forEach(function (a) {
@@ -816,7 +817,7 @@
   function info(t, id, txt, replace) {
     var A = alias(t, id), s = span(t, '<celldesigner:info ', A.sp[0], A.sp[1]), angle = s ? at(head(t, s), 'angle') : DOWN;
     var u = txt == null || txt === '' ? null : /^ct:/.test(txt) ? ['ct', txt.slice(3)] : /^N:\d+$/.test(txt) ? ['N', txt.slice(2)] : ['free input', txt];
-    if (u && s && at(head(t, s), 'state') === 'open' && !replace) fail('This entity already has a unit of information; CellDesigner keeps one.');
+    if (u && s && at(head(t, s), 'state') === 'open' && !replace) refuse('This entity already has a unit of information; CellDesigner keeps one.');
     var el = '<celldesigner:info state="' + (u ? 'open" prefix="' + esc(u[0]) + '" label="' + esc(u[1]) : 'empty') + '" angle="' + angle + '"/>';
     if (!u && s) return /<celldesigner:info state="empty"/.test(t.slice(0, s[0]) + t.slice(s[1])) ? put(t, s[0], s[1], el) : cut(t, s);
     if (s) return put(t, s[0], s[1], el);
@@ -828,8 +829,8 @@
   function homodimer(t, id, n) {
     var A = entity(t, id), h = inState(t, A.species, '<celldesigner:homodimer>'), was = h ? +/>(\d+)</.exec(t.slice(h[0], h[1]))[1] : 1;
     n = +n;
-    if (!(n >= 1 && n === Math.floor(n))) fail('A multimer counts 1 or more.');
-    if (A.cls === 'DEGRADED') fail('A degraded species is no multimer.');
+    if (!(n >= 1 && n === Math.floor(n))) refuse('A multimer counts 1 or more.');
+    if (A.cls === 'DEGRADED') refuse('A degraded species is no multimer.');
     if (n === was) return t;
     var el = '<celldesigner:homodimer>' + n + '</celldesigner:homodimer>';
     t = h ? (n > 1 ? put(t, h[0], h[1], el) : drop(t, h, [CD + 'state'])) : toState(t, A.species, el);
@@ -864,7 +865,7 @@
   var NO_MEMBER = /^(PHENOTYPE|DEGRADED)$/;
   function joinable(t, id, cx) {
     var A = alias(t, id), C = alias(t, cx);
-    if (C.kind !== 'complexSpeciesAlias') fail('That is not a complex.');
+    if (C.kind !== 'complexSpeciesAlias') refuse('That is not a complex.');
     if (!A.species || NO_MEMBER.test(A.cls)) return 'kind';
     if (A.complex) return 'member';
     for (var P = C; P; P = P.complex ? alias(t, P.complex) : null) if (P.id === A.id) return 'inside';
@@ -890,7 +891,7 @@
   }
   function join(t, id, cx) {
     var why = joinable(t, id, cx);
-    if (why) fail({ kind: 'Only a molecule goes into a complex.', member: 'It is in a complex already.', inside: 'A complex does not go into itself.',
+    if (why) refuse({ kind: 'Only a molecule goes into a complex.', member: 'It is in a complex already.', inside: 'A complex does not go into itself.',
       copies: 'It is drawn more than once: a complex member is drawn once.', lines: 'It has lines: a line goes to a complex, never to its member.' }[why]);
     var A = alias(t, id), C = alias(t, cx), S = species(t, A.species), P = parts_(t, S);
     var inc = '<celldesigner:species id="' + S.id + '" name="' + S.name + '">\n<celldesigner:notes>\n' + html(P.text, P.rdf) + '\n</celldesigner:notes>\n<celldesigner:annotation>\n' +
@@ -915,8 +916,8 @@
   // inside or transmembrane as its box lies in ca's (cd_edit's place())
   function leave(t, id, ca) {
     var A = alias(t, id), K = ca ? alias(t, ca) : null;
-    if (!A.complex) fail('It is in no complex.');
-    if (K && K.kind !== 'compartmentAlias') fail('That is not a compartment.');
+    if (!A.complex) refuse('It is in no complex.');
+    if (K && K.kind !== 'compartmentAlias') refuse('That is not a compartment.');
     var S = species(t, A.species), P = parts_(t, S), pos = K && !ed.inside(A.box, K.box) ? 'transmembrane' : 'inside';
     var sp = '<species metaid="' + S.id + '" id="' + S.id + '" name="' + S.name + '" compartment="' + (K ? K.compartment : 'default') + '" initialAmount="0">\n' +
       (P.text ? '<notes>\n' + html(P.text, '') + '\n</notes>\n' : '') + '<annotation>\n<celldesigner:extension>\n<celldesigner:positionToCompartment>' + pos +
@@ -980,11 +981,11 @@
   function restyle(t, id, o) {
     var C = alias(t, id);
     if (C.kind === 'compartmentAlias') {   // its colour (CellDesigner's paint, the band and the lines drawn from it) and its double line
-      if (o.width != null) fail('A compartment keeps its two lines.');
+      if (o.width != null) refuse('A compartment keeps its two lines.');
       if (o.mem != null || o.outer != null || o.inner != null) {   // CellDesigner's limits: thickness 2 at least, inner above 0, outer at least inner + 1
         var L = look(t, id), mem = o.mem != null ? o.mem : L.mem, ow = o.outer != null ? o.outer : L.outer, iw = o.inner != null ? o.inner : L.inner;
-        if (!(mem >= 2)) fail('A membrane is 2 thick at least.');
-        if (!(iw > 0) || !(ow >= iw + 1)) fail('The outer line is at least the inner line + 1.');
+        if (!(mem >= 2)) refuse('A membrane is 2 thick at least.');
+        if (!(iw > 0) || !(ow >= iw + 1)) refuse('The outer line is at least the inner line + 1.');
         var ds = span(t, '<celldesigner:doubleLine', C.sp[0], C.sp[1]), kv = [['thickness', num(mem)], ['outerWidth', num(ow)], ['innerWidth', num(iw)]];
         if (ds) t = attrs(t, ds[0], kv);
         else {   // none written: one after the namePoint (else the bounds), as CellDesigner orders them
@@ -1002,7 +1003,7 @@
       return attrs(t, cs[0], [['color', 'ff' + o.fill.slice(1).toLowerCase()]]);
     }
     var A = entity(t, id);
-    if (A.cls === 'DEGRADED' && o.fill != null) fail('A degraded species keeps CellDesigner\u2019s look.');
+    if (A.cls === 'DEGRADED' && o.fill != null) refuse('A degraded species keeps CellDesigner\u2019s look.');
     var set = function (open, k, v) {
       var B = alias(t, id), u = span(t, '<celldesigner:usualView>', B.sp[0], B.sp[1]), s = u && span(t, open, u[0], u[1]);
       if (!s) fail('No usual view on ' + id + '.');
@@ -1013,7 +1014,7 @@
       set('<celldesigner:paint ', 'color', 'ff' + o.fill.slice(1).toLowerCase());
     }
     if (o.width != null) {
-      if (!(o.width > 0 && o.width <= 20)) fail('A border width is above 0 and 20 at most.');
+      if (!(o.width > 0 && o.width <= 20)) refuse('A border width is above 0 and 20 at most.');
       set('<celldesigner:singleLine ', 'width', num(o.width));
     }
     return t;
@@ -1035,7 +1036,7 @@
   function recolourLine(t, eid, c) {   // c #rrggbb, written opaque
     if (!/^#[0-9a-fA-F]{6}$/.test(c || '')) fail('A line colour is a colour #rrggbb.');
     var L = lineAt(t, eid), col = 'ff' + c.slice(1).toLowerCase();
-    if (!L) fail('A logic gate\u2019s lines take their reaction\u2019s colour.');
+    if (!L) refuse('A logic gate\u2019s lines take their reaction\u2019s colour.');
     return attrs(t, L[0], [['color', col]]);   // that line alone: the reaction's leaves its added reactants and products their own
   }
   function aliasInfo(t, id) {
