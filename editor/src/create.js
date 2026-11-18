@@ -1657,7 +1657,6 @@
       // notation view a circle 40 by 40, not an 80 by 40 stadium; in the SBGN view a square, its palette sign
       // still a rectangle)
       if (kind0 === 'metabolite activity') D.w = D.h;
-      if (V.scheme === 'none' && D.fallback && !kc) D.fill = null;   // Settings' No colours: only the Default colours dropped (no fill in the file, drawn white as the file is: yrender), the map's own fill and a look set as default kept
       return D;
     }
     // Set as default asks the format's part (propFmt().def: sbDef here, cdDef in cdcreate.js), which keeps the look and
