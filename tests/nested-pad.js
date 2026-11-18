@@ -1,7 +1,7 @@
-// Nested compartments padding (Settings, Editing; core.js pads().cc, grown): a compartment inside another, dragged against
-// its holder's side, grows the holder and keeps the padding between them, from the inner one's outer line to the holder's
-// inner line (CellDesigner: inside the membrane, 12 by default). Set to 48 in this browser before the page loads, on a
-// CellDesigner and an SBGN-ML map; a member that is not a compartment keeps Compartment padding (10). Nothing is saved.
+// Compartments padding for nested compartments (Settings, Editing; core.js pads().comp, grown): a compartment inside
+// another, dragged against its holder's side, grows the holder and keeps the padding between them, from the inner one's
+// outer line to the holder's inner line (CellDesigner: inside the membrane, 12 by default). Set to 48 in this browser
+// before the page loads, on a CellDesigner and an SBGN-ML map; a species keeps the same 48. Nothing is saved.
 //   node tests/nested-pad.js [viewer folder: its editor and renderers served in place of the page's]
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path');
 var local = process.argv[2];
@@ -11,7 +11,7 @@ var MAPS = [['https://viewer-source.github.io/styles/#acly-celldesigner', 'cd:CO
   var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more && !v ? '  ' + more : '')); };
   for (var M of MAPS) {
     var page = await b.newPage({ viewport: { width: 1400, height: 900 } });
-    await page.addInitScript(function () { try { localStorage.setItem('atlas-edit-padding', JSON.stringify({ cc: 48, comp: 10 })); } catch (e) {} });
+    await page.addInitScript(function () { try { localStorage.setItem('atlas-edit-padding', JSON.stringify({ comp: 48 })); } catch (e) {} });
     if (local) {
       var ed = fs.readFileSync(path.join(local, 'editor/editor.js'), 'utf8').replace(/^---[\s\S]*?---\n/, '')
         .replace(/\{% include_relative (src\/[\w.]+) %\}/g, function (m, f) { return fs.readFileSync(path.join(local, 'editor', f), 'utf8'); });
@@ -50,7 +50,7 @@ var MAPS = [['https://viewer-source.github.io/styles/#acly-celldesigner', 'cd:CO
     await page.waitForTimeout(1500);
     await page.keyboard.press('Escape'); await page.waitForTimeout(300); ra = await rect(A); rp = await rect(P);
     var g2 = (ra[3] - rp[3]) / unit - M[3];
-    ok(M[0].split('#')[1] + ': a species pushed down keeps Compartment padding, 10 (' + g2.toFixed(1) + ')', Math.abs(g2 - 10) < 3, JSON.stringify([ra, rp]));
+    ok(M[0].split('#')[1] + ': a species pushed down keeps the same padding, 48 (' + g2.toFixed(1) + ')', Math.abs(g2 - 48) < 3, JSON.stringify([ra, rp]));
     await page.close();
   }
   ok('no script error', !errs.length, errs.join(' | '));

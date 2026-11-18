@@ -673,16 +673,16 @@
     }
     // an inside member's least space to its compartment's inner line (inside CellDesigner's double border, clear of a
     // compartment's name) when a drag grows the compartment round it (PAD in grown):
-    // its value Settings' Compartment padding (the viewer writes the key), 10 by default, 0 the closest; a compartment's
-    // own inside another its Nested compartments padding (16 by default, up to 64), from its outer line (its box) to the
-    // holder's inner line (CellDesigner: inside the membrane, the inset its thickness gives); a complex's room
+    // its value Settings' Compartments padding (the viewer writes the key), 12 by default, 0 to 64 in steps of 4; a
+    // compartment inside another the same, from its outer line (its box) to the holder's inner line (CellDesigner: inside
+    // the membrane, the inset its thickness gives); a value off the steps (an older 10) read as the default; a complex's room
     // its Complex padding: As Repack (layout.js room, what Pack leaves: the sides, top and bottom, or NAMED over a name
     // inside) or a number on every side, the name's own height added (cxRoom)
     var PAD_KEY = 'atlas-edit-padding';
     function pads() {
       var p = {}; try { p = JSON.parse(localStorage.getItem(PAD_KEY) || '{}') || {}; } catch (e) {}
-      var ok = function (v, m) { return typeof v === 'number' && v >= 0 && v <= (m || 32); };
-      return { comp: ok(p.comp) ? p.comp : 10, cx: ok(p.cx) ? p.cx : 'repack', cc: ok(p.cc, 64) ? p.cc : 16 };
+      var ok = function (v, m) { return typeof v === 'number' && v >= 0 && v <= m && v % 4 === 0; };
+      return { comp: ok(p.comp, 64) ? p.comp : 12, cx: ok(p.cx, 32) ? p.cx : 'repack' };
     }
     function cxRoom(n) {   // [left, top, right, bottom] from complex n's members (what they draw) to its box
       var p = pads().cx, R = window.layout && window.layout.room;
@@ -727,7 +727,7 @@
         }
         else if (inBox(s0, c0)) {   // inside: PAD from its inner line (as close as it was, where it already was closer: another tool's file)
           var io = [cd ? n.ins[0] : 0, (cd ? n.ins[1] : 0) + n.lab.t, cd ? n.ins[2] : 0, (cd ? n.ins[3] : 0) + n.lab.b];
-          var PAD = nodes2[k].comp ? pads().cc : pads().comp, pad = [e0[0] - c0[0], e0[1] - c0[1], c0[0] + c0[2] - e0[2], c0[1] + c0[3] - e0[3]].map(function (v, j) { return Math.min(PAD, v - io[j]) + io[j]; });
+          var PAD = pads().comp, pad = [e0[0] - c0[0], e0[1] - c0[1], c0[0] + c0[2] - e0[2], c0[1] + c0[3] - e0[3]].map(function (v, j) { return Math.min(PAD, v - io[j]) + io[j]; });
           w = [e[0] - pad[0], e[1] - pad[1], e[2] + pad[2], e[3] + pad[3]];
         } else if (overlap(s0, c0)) w = [b[0] + b[2] - 1, b[1] + b[3] - 1, b[0] + 1, b[1] + 1];   // on the edge: kept crossing it
         else return;   // fully outside already (another tool's file): as it is
