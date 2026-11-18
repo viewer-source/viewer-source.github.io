@@ -1,5 +1,5 @@
 // Gestures on the live page (book Gestures): a mouse or trackpad drag selects an area and never moves the map, in view
-// and edit mode; the area is an outline with no menu of its own; a click clears it; Shift with the wheel moves the map
+// and edit mode; the area's right-click menu zooms to it or copies it as PNG; a click clears it; Shift with the wheel moves the map
 // sideways only; Space held with the wheel scrolls the page and leaves the map still.
 //   node tests/gestures.js [page address]
 var { chromium } = require('playwright');
@@ -24,7 +24,21 @@ var URL0 = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysi
   ok('view mode: the area is an outline only, no fill', await page.$eval('#m2-area', function (e) { var b = getComputedStyle(e).backgroundColor; return b === 'rgba(0, 0, 0, 0)' || b === 'transparent'; }));
   await page.mouse.click(cx, cy, { button: 'right' }); await page.waitForTimeout(300);
   var menu = await page.$$eval('.m2-cx button, .m2-cx .m2-cx-head', function (l) { return l.map(function (x) { return x.textContent.trim(); }); });
-  ok('right click inside: no area menu, the map menu', menu.indexOf('Selected area') < 0 && menu.indexOf('Copy names') < 0 && menu.length > 0, menu.join(' | '));
+  ok('right click inside: the area menu, Zoom to area and Copy image as PNG only', menu.join('|') === 'Selected area|Zoom to area|Copy image as PNG', menu.join(' | '));
+  await page.click('.m2-cx button:has-text("Copy image as PNG")'); await page.waitForTimeout(2500);
+  var got = await page.evaluate(async function () {
+    var it = (await navigator.clipboard.read())[0], bm = await createImageBitmap(await it.getType('image/png')); return bm.width + 'x' + bm.height;
+  }).catch(function (e) { return 'error ' + e.message; });
+  ok('Copy image as PNG of the area: a sharp picture', /^\d+x\d+$/.test(got) && +got.split('x')[0] > 500, got);
+  var ar = await page.$eval('#m2-area', function (e) { var r = e.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2, r.width]; });
+  await page.mouse.click(cx, cy, { button: 'right' }); await page.waitForTimeout(300);
+  await page.click('.m2-cx button:has-text("Zoom to area")'); await page.waitForTimeout(500);
+  var z1 = await tf(), gone = await page.$eval('#m2-area', function (e) { return e.style.display === 'none'; });
+  ok('Zoom to area: the map zoomed in and the area ended', z1 !== t0 && gone, t0 + ' -> ' + z1);
+  // the area's middle now at the middle of the free part of the window: the picture point under the window's centre
+  var mid = await page.evaluate(function () { var v = document.getElementById('m2-view').getBoundingClientRect(); return [v.left, v.top, v.width, v.height]; });
+  console.log('      area width ' + Math.round(ar[2]) + ' px, view ' + Math.round(mid[2]) + ' px');
+  await page.mouse.move(cx - 150, cy - 120); await page.mouse.down(); await page.mouse.move(cx + 150, cy + 120, { steps: 10 }); await page.mouse.up();
   await page.keyboard.press('Escape'); await page.waitForTimeout(100);
   await page.mouse.click(v[0] + 30, v[1] + v[3] - 40); await page.waitForTimeout(200);
   ok('a click clears the area', await page.$eval('#m2-area', function (e) { return e.style.display === 'none'; }));
