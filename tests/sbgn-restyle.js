@@ -1,5 +1,5 @@
 // sbgn_edit's restyle (the editor's Properties) on SBGN-ML files of every render-extension shape, against the
-// converter: a macromolecule made on an empty <map/>, and a file's own macromolecule given a fill, a border colour and a
+// converter: a macromolecule made on an empty <map/>, and a file's own macromolecule (a compartment, a complex with a member, a process) given a fill, a border colour and a
 // width, in a file with no extension, with an extension holding other things, with colour definitions but no styles, with
 // the glyph named in two styles (the font family of the first kept), with libsbgn's prefixed attributes. Checks: the
 // converter reads the look written; graphml(s2, conv(s)) is conv(s2) byte for byte (drawn the same for the glyph made); write(s2, conv(s2)) is s2.
@@ -26,6 +26,9 @@ var cases = [
   ['colour definitions, no styles', file('\n    <extension>\n      <renderInformation xmlns="' + R + '" id="ri">\n        <listOfColorDefinitions>\n          <colorDefinition id="c1" value="#ffcc00"/>\n        </listOfColorDefinitions>\n      </renderInformation>\n    </extension>', G1)],
   ['two styles', file('\n    <extension>\n      <renderInformation xmlns="' + R + '" id="ri">\n        <listOfColorDefinitions>\n          <colorDefinition id="c1" value="#c2d4ed"/>\n        </listOfColorDefinitions>\n        <listOfStyles>\n          <style id="s1" idList="g1"><g fill="c1" font-family="Helvetica"/></style>\n          <style id="s2" idList="g1"><g font-size="12" stroke="#000000"/></style>\n        </listOfStyles>\n      </renderInformation>\n    </extension>', G1)],
   ['prefixed', file('\n    <extension>\n      <ns1:renderInformation ns1:id="ri">\n        <ns1:listOfColorDefinitions>\n          <ns1:colorDefinition ns1:id="c1" ns1:value="#c2d4ed"/>\n        </ns1:listOfColorDefinitions>\n        <ns1:listOfStyles>\n          <ns1:style ns1:idList="g1"><ns1:g ns1:fill="c1"/></ns1:style>\n        </ns1:listOfStyles>\n      </ns1:renderInformation>\n    </extension>', G1, true)],
+  ['a compartment', file('', '\n    <glyph class="compartment" id="g1">\n      <label text="C"/>\n      <bbox x="0" y="0" w="200" h="160"/>\n    </glyph>' + G1.replace('id="g1"', 'id="g2" compartmentRef="g1"'))],
+  ['a complex', file('', '\n    <glyph class="complex" id="g1">\n      <label text="X"/>\n      <bbox x="0" y="0" w="120" h="80"/>' + G1.replace('id="g1"', 'id="g2"').replace(/\n/g, '\n  ') + '\n    </glyph>')],
+  ['a process', file('', '\n    <glyph class="process" id="g1">\n      <bbox x="40" y="40" w="10" h="10"/>\n    </glyph>')],
   ['an empty map', '<?xml version="1.0" encoding="UTF-8"?>\n<sbgn xmlns="http://sbgn.org/libsbgn/0.3">\n  <map language="process description"/>\n</sbgn>\n']
 ];
 var base = conv(cases.map(function (c) { return c[1]; })), s2s = [], bad = 0;

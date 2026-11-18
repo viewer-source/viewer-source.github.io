@@ -179,7 +179,9 @@
       if (g.el.getAttribute('class') === 'submap') { var sc = afL ? 'Phenotype' : 'Submap', sr = n.geo.parentNode; if (sr.localName === 'GenericNode' && cfgOf(sr) !== sc) T.set(sr, 'configuration', 'com.yworks.sbgn.' + sc); }
       var B = g.box, w = B[2], h = B[3], to = function (el, k, v) { if (el.getAttribute(k) !== v) T.set(el, k, v); };
       ['x', 'y', 'width', 'height'].forEach(function (k, j) { to(n.geo, k, repr(B[j])); });
-      if (LOOKED.test(g.el.getAttribute('class') || '')) setLook(T, G, id, fileLook(St, id));   // the file's look (a draft, a build of an older converter)
+      var gc = g.el.getAttribute('class') || '';
+      if (LOOKED.test(gc)) setLook(T, G, id, fileLook(St, id, gc));   // the file's look (a draft, a build of an older converter)
+      else if (LOOKS.test(gc)) setLook(T, G, id, statedLook(St, id));   // what its styles state, over the converter's template
       // what graphml.write works out from the box: the state variables' places (their ratios read from the file as
       // sbgnml.read reads them), the units of information spread evenly along the top (graphml.write, whatever the
       // file's places), a compartment's name where the file has it. Counted by kind: one deleted in the editor is cut
@@ -537,8 +539,8 @@
     var St = styles(S), looks = new Map();   // glyph id -> the look wanted, where it is not the file's
     Object.keys(S.glyph).forEach(function (id) {
       var cls = S.glyph[id].el.getAttribute('class') || '';
-      if (!G.node[id] || !LOOKED.test(cls)) return;   // the glyphs the editor restyles (other kinds keep their templates' borders: a compartment's 2)
-      var want = lookG(G, id), have = fileLook(St, id);
+      if (!G.node[id] || !LOOKS.test(cls)) return;   // the glyphs the editor restyles
+      var want = lookG(G, id), have = fileLook(St, id, cls);
       if (want.fill !== have.fill || want.line !== have.line || want.width !== have.width) looks.set(id, { fill: want.fill, line: want.line, width: want.width, font: have.font, cls: cls });
     });
     Object.keys(S.arc).forEach(function (id) {   // a line's colour: the rest of its style (width, a fill some tools give) kept
@@ -1117,7 +1119,10 @@
   // width (size: resize(); multimer: multimer()). In the GraphML as graphml.write writes them; in the SBGN-ML file in the
   // render extension, read as sbgnml.read reads it (each attribute from the last style naming the glyph that gives it; a
   // black border and a width of 1 are the defaults)
-  var LOOKED = /^(macromolecule|simple chemical)( multimer)?$|^biological activity$/;   // the glyphs the editor restyles (an activity too)
+  var LOOKED = /^(macromolecule|simple chemical)( multimer)?$|^biological activity$/;   // the glyphs whose file look graphml() puts in whole
+  // every glyph Properties restyles: those above and the rest, whose file look graphml() puts in only where a style
+  // states it (the converter's template gives the others: a compartment's border 2)
+  var LOOKS = /^(macromolecule|simple chemical|nucleic acid feature|complex)( multimer)?$|^(biological activity|unspecified entity|perturbing agent|perturbation|phenotype|submap|source and sink|compartment|process|omitted process|uncertain process|association|dissociation|and|or|not|equivalence|delay)$/;
   function lookG(G, id) { return lookOf(G.node[id].geo.parentNode); }
   function lookOf(r) {   // a node's realizer: its fill, border colour (null: black) and width, drawn as a multimer
     var fl = kid(r, 'Fill'), bs = kid(r, 'BorderStyle'), line = ((bs && bs.getAttribute('color')) || '#000000').toUpperCase();
@@ -1125,16 +1130,26 @@
              line: line === '#000000' ? null : line, width: bs && bs.getAttribute('width') ? F(bs.getAttribute('width')) : 1,
              multimer: kids(kid(r, 'StyleProperties') || r, 'Property').some(function (q) { return q.getAttribute('name') === 'com.yworks.sbgn.style.mcount' && q.getAttribute('value') !== '1'; }) };
   }
-  function fileLook(St, id) {
-    var o = { fill: null, line: null, width: 1, font: null };
+  function fileLook(St, id, cls) {   // cls: the glyph's, for the converter's default border (a compartment's 2, else 1)
+    var o = { fill: null, line: null, width: cls === 'compartment' ? 2 : 1, font: null };
     St.forEach(function (st) {
       if (!st.plain || st.ids.indexOf(id) < 0) return;
       if (st.has.fill) o.fill = st.fill;
       if (st.has.line) o.line = st.line;
-      if (st.has.width) o.width = st.width || 1;
+      if (st.has.width) o.width = st.width || o.width;
       if (st.has.font) o.font = st.font;
     });
     if (o.line === '#000000') o.line = null;
+    return o;
+  }
+  function statedLook(St, id) {   // only what the file's styles state of a glyph's look
+    var o = {};
+    St.forEach(function (st) {
+      if (!st.plain || st.ids.indexOf(id) < 0) return;
+      if (st.has.fill) o.fill = st.fill;
+      if (st.has.line) o.line = st.line === '#000000' ? null : st.line;
+      if (st.has.width && st.width) o.width = st.width;
+    });
     return o;
   }
   // the node's look in the GraphML set to o (fill, line, width: those given)
@@ -2121,7 +2136,7 @@
     return t;
   }
 
-  var api = { graphml: graphml, write: write, join: join, joinable: joinable, nameAt: nameAt, namePlaces: namePlaces, stack: stack, restack: restack, stackMoves: stackMoves, NAME_PLACES: NAME_PLACES, defaults: defaults, add: add, lookOf: lookOf, restyle: restyle, lineOf: lineOf, recolour: recolour, label: label, state: state, stateValue: stateValue, stateMove: stateMove, stateDelete: stateDelete,
+  var api = { LOOKS: LOOKS, graphml: graphml, write: write, join: join, joinable: joinable, nameAt: nameAt, namePlaces: namePlaces, stack: stack, restack: restack, stackMoves: stackMoves, NAME_PLACES: NAME_PLACES, defaults: defaults, add: add, lookOf: lookOf, restyle: restyle, lineOf: lineOf, recolour: recolour, label: label, state: state, stateValue: stateValue, stateMove: stateMove, stateDelete: stateDelete,
               unit: unit, unitValue: unitValue, unitDelete: unitDelete, multimer: multimer, classOf: classOf, MAKE: MAKE, kind: kind, PROCESSES: ['process'].concat(Object.keys(SIGN)), SIGN: SIGN, remove: remove, resize: resize, scaleEnds: scaleEnds, gone: gone, nameable: nameable,
               moveInto: moveInto, connect: connect, arcRemove: arcRemove, arcKind: arcKind, GATE: GATE, ARROW: ARROW, MODULATIONS: ['stimulation', 'catalysis', 'inhibition', 'necessary stimulation', 'modulation'],
               activity: activity, activities: activities, proteinBoxes: proteinBoxes, afUnitBox: afUnitBox, afUnitFont: afUnitFont, isAf: isAf, mapKind: mapKind, unitFor: unitFor, fillFor: fillFor, AF_ARC: AF_ARC, UNITS: Object.keys(UNIT_CLS).filter(function (u) { return u && u !== 'perturbation'; }), unitClass: actCls };

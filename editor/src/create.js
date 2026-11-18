@@ -1303,9 +1303,9 @@
     function setSizes(pairs) {   // [[node, box], ...]: one undo step for them all (Properties with several nodes selected)
       var f = propFmt(); if (f) f.size(pairs.map(function (q) { return [q[0], q[1].map(function (v) { return +fmt(v); })]; }));
     }
-    function sbSizable(i) {   // a glyph made from the palette, a complex's member too (the complex grows round it)
+    function sbSizable(i) {   // a glyph made from the palette, a complex's member too (the complex grows round it), a compartment
       var n = nodes2[i];
-      return isMade(n) && n.shape.kind !== 'Process' && n.shape.kind !== 'Operator';   // a process or gate keeps its size (its antennas)
+      return !!n.comp || (isMade(n) && n.shape.kind !== 'Process' && n.shape.kind !== 'Operator');   // a compartment too (holderSize); a process or gate keeps its size (its antennas)
     }
     function sbSetSize(pairs) {   // each node given its box, one undo step with the compartments round them grown to hold them
       var ids = [], was = {}, t2 = text;
@@ -1324,9 +1324,9 @@
     // fill colour, border width, so a map may be as colourful as its curator wants, multimer, Set as
     // default; state variables and units of information have their own ways on the map, Cloned skipped). A field is
     // applied on Enter or when it is left (Esc puts it back), a colour also when the picker closes; one undo step each.
-    // Shown for one macromolecule or simple chemical selected (not an Activity Flow activity drawn as one: write() carries
-    // none of its changes); Width and Height for a member of a complex too (Pack keeps member sizes). Grid size is beside the
-    // Grid and Snap switches (core.js)
+    // Shown for any glyph selected that sbgn_edit restyles (LOOKS), its rows by its class (sbOff); Width and Height for a
+    // member of a complex too (Pack keeps member sizes), not for a process or gate (their antennas), a holder's typed as
+    // its handles resize it (holderSize). Grid size is beside the Grid and Snap switches (core.js)
     var ROWS = [['label', 'Label', 'text'], ['w', 'Width', 'num'], ['h', 'Height', 'num'], ['fill', 'Fill colour', 'colour'],
       ['line', 'Border colour', 'colour'], ['width', 'Border width', 'num'], ['multimer', 'Multimer', 'check']];
     var props = document.createElement('div');
@@ -1361,9 +1361,17 @@
       var a = selN.map(function (i) { return f.node(i); });
       return selN.length === 1 ? (a[0] >= 0 ? a : []) : a.filter(function (i) { return i >= 0; });
     }
-    function sbNode(i) {   // a macromolecule, simple chemical or activity (its class read from the file once per selection and change)
-      if (!isMade(nodes2[i])) return -1;
-      return /^(macromolecule|simple chemical)( multimer)?$|^biological activity$/.test(sbClasses()[nodes2[i].id] || '') ? i : -1;
+    function sbNode(i) {   // a glyph Properties restyles (sbgn_edit LOOKS: entities, complexes, compartments, processes, gates; its class read from the file once per selection and change)
+      return sbJs.LOOKS.test(sbClasses()[nodes2[i].id] || '') ? i : -1;
+    }
+    // the rows a glyph has by its class: no name on a process, gate or empty set; Multimer where SBGN-ML has one (an
+    // activity has none); Set as default for the kinds the palette makes in a kept look
+    function sbOff(k, i) {
+      var c = sbClasses()[nodes2[i].id] || '';
+      if (k === 'label') return /process$|^(association|dissociation|and|or|not|equivalence|delay|source and sink)$/.test(c);
+      if (k === 'multimer') return !/^(macromolecule|simple chemical|nucleic acid feature)( multimer)?$/.test(c);
+      if (k === 'def') return !/^(macromolecule|simple chemical)( multimer)?$|^biological activity$/.test(c);
+      return false;
     }
     // every glyph's class in the SBGN-ML file as written now, read once per change of the editor's text (src() writes the file)
     var sbClsMemo = [null, {}];
@@ -1375,7 +1383,6 @@
       }
       return sbClsMemo[1];
     }
-    function isAct(i) { return sbClasses()[nodes2[i].id] === 'biological activity'; }
     function lookKey(cls, unit) { return cls === 'biological activity' ? cls + ':' + (unit || '') : cls; }   // Set as default's kind: the glyph's class, an activity's by its unit
     function kindOf(i) {
       var c = (sbClasses()[nodes2[i].id] || '').replace(/ multimer$/, '');
@@ -1498,7 +1505,7 @@
     function sbEnds(id, o, box) { var t2 = sbJs.scaleEnds(text, id, o, box); if (t2 !== text) { text = t2; parse(); } }   // a complex's line ends after its box was set (dragEnd, core.js)
     var PF_SB = { sizable: sbSizable, size: sbSetSize, node: sbNode, set: sbSet, def: sbDef, ends: sbEnds,
       line: { colour: sbLineColour, set: sbLineSet, ports: true },   // a line's colour and its ports' rows (edgeShow, edgeSet)
-      off: function (k, i) { return k === 'multimer' && isAct(i); },   // an activity is no multimer
+      off: sbOff,
       look: function (i) { var o = sbJs.lookOf(realizerOf(nodes2[i].el)); return { label: nameOf(i), fill: o.fill ? o.fill.slice(0, 7).toLowerCase() : '', line: (o.line || '#000000').slice(0, 7).toLowerCase(), width: o.width, multimer: o.multimer }; } };
     // a line's Properties, one line selected on a map whose format's part has a line's answers (PF_SB.line): Line colour
     // and its ports as yEd gives them, offsets from its glyph's centre (sx, sy at the source, tx, ty at the target), set
