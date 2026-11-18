@@ -41,6 +41,11 @@ html .m2:has(.m2-info:not(.m2-over):not(:empty)):not(.m2-info-shut) .m2-main { b
 /* the Edit panel on the right: the list's padding, its line on its left, down the map column; its separator on that line */
 html #m2-epanel { padding: 12px 12px 0; border-left: 1px solid var(--m2-frame); align-self: stretch; }
 html #m2-split-e { left: -4px; }
+/* beside the list: its line on its right, between it and the map, the separator on that line; the list's own line on its left */
+html .m2-edit-beside #m2-epanel { border-left: 0; border-right: 1px solid var(--m2-frame); }
+html .m2-edit-beside #m2-split-e { left: auto; right: -4px; }
+html .m2-edit-beside.m2-win-edit:not(.m2-edit-off) #m2-split { left: calc(-4px - var(--m2-edit-w)); }
+html .m2-edit-beside.m2-win-edit:not(.m2-edit-off).m2-list-shut #m2-split { left: calc(0px - var(--m2-edit-w)); }
 html .m2.m2-edit-right.m2-win-edit:not(.m2-edit-off):not(.m2-info-shut) .m2-main { border-right: 0; }   /* the panel's own line only */
 /* the zoom buttons over the map filled in the accent under the pointer, white sign */
 html .m2-ctrl button:hover { background: var(--m2-accent); border-color: var(--m2-accent); color: var(--m2-on-accent, #fff); }
