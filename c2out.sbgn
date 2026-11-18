@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sbgn xmlns="http://sbgn.org/libsbgn/0.3">
+  <map id="m" language="process description">
+    <extension>
+      <renderInformation xmlns="http://www.sbml.org/sbml/level3/version1/render/version1" id="ri">
+        <listOfColorDefinitions>
+          <colorDefinition id="c0" value="#000000"/>
+        </listOfColorDefinitions>
+        <listOfStyles>
+          <style id="s1" idList="m1">
+            <g stroke="c0"/>
+          </style>
+          <style id="style_e1" idList="c1">
+            <g stroke="c0" stroke-width="1"/>
+          </style>
+        </listOfStyles>
+      </renderInformation>
+    </extension>
+    <glyph class="compartment" id="c1">
+      <label text="cell"/>
+      <bbox x="0" y="0" w="400" h="300"/>
+    </glyph>
+    <glyph class="macromolecule" id="m1" compartmentRef="c1">
+      <label text="A"/>
+      <bbox x="50" y="50" w="80" h="40"/>
+    </glyph>
+  </map>
+</sbgn>

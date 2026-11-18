@@ -1364,12 +1364,11 @@
     function sbNode(i) {   // a glyph Properties restyles (sbgn_edit LOOKS: entities, complexes, compartments, processes, gates; its class read from the file once per selection and change)
       return sbJs.LOOKS.test(sbClasses()[nodes2[i].id] || '') ? i : -1;
     }
-    // the rows a glyph has by its class: no name on a process, gate or empty set; Multimer where SBGN-ML has one (an
-    // activity has none); Set as default for the kinds the palette makes in a kept look
+    // the rows a glyph has by its class: Label where sbgn_edit keeps a name (NAMED), Multimer where it writes one (MULTI); Set as default for the kinds the palette makes in a kept look
     function sbOff(k, i) {
       var c = sbClasses()[nodes2[i].id] || '';
-      if (k === 'label') return /process$|^(association|dissociation|and|or|not|equivalence|delay|source and sink)$/.test(c);
-      if (k === 'multimer') return !/^(macromolecule|simple chemical|nucleic acid feature)( multimer)?$/.test(c);
+      if (k === 'label') return !sbJs.NAMED.test(c);
+      if (k === 'multimer') return !sbJs.MULTI.test(c.replace(/ multimer$/, ''));
       if (k === 'def') return !/^(macromolecule|simple chemical)( multimer)?$|^biological activity$/.test(c);
       return false;
     }
