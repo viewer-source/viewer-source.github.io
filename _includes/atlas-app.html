@@ -419,6 +419,8 @@ page, so its styles keep the base they were made on).
   #m2-tips { position: fixed; z-index: 70; top: 16px; left: 50%; transform: translateX(-50%); width: 760px; max-width: calc(100vw - 32px); max-height: calc(100vh - 32px); overflow: auto;
     box-sizing: border-box; padding: 14px 18px 16px; background: var(--m2-bg); color: var(--m2-text-soft); border: 1px solid var(--m2-line); border-radius: 8px; box-shadow: 0 6px 24px #0003; font-size: 13px; line-height: 1.45; }
   #m2-tips[hidden] { display: none; }
+  #m2-setwin .m2-set-help { margin-top: 14px; }
+  #m2-setwin #m2-set-tips { flex: 1 1 100%; width: 100%; white-space: nowrap; }
   #m2-tips h3 { margin: 0 32px 8px 0; font-size: 16px; font-weight: normal; color: var(--m2-text); }
   #m2-tips h4 { margin: 14px 0 4px; font-size: 13px; font-weight: 600; color: var(--m2-text); }
   #m2-tips table { width: 100%; border-collapse: collapse; }
@@ -1584,7 +1586,7 @@ page, so its styles keep the base they were made on).
   var tipsBox = null, MOD = /mac|iphone|ipad|ipod/i.test((navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || navigator.userAgent) ? 'Cmd' : 'Ctrl';
   function tipsBuild() {
     var e = function (t) { return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;'); };
-    var table = function (head, rows) { return '<table><tr>' + head.map(function (h) { return '<th>' + e(h) + '</th>'; }).join('') + '</tr>' + rows.map(function (r) { return '<tr>' + r.map(function (c) { return '<td>' + e(c) + '</td>'; }).join('') + '</tr>'; }).join('') + '</table>'; };
+    var table = function (head, rows) { return '<table>' + (head ? '<tr>' + head.map(function (h) { return '<th>' + e(h) + '</th>'; }).join('') + '</tr>' : '') + rows.map(function (r) { return '<tr>' + r.map(function (c) { return '<td>' + e(c) + '</td>'; }).join('') + '</tr>'; }).join('') + '</table>'; };
     var list = function (l) { return '<ul>' + l.map(function (x) { return '<li>' + e(x) + '</li>'; }).join('') + '</ul>'; };
     tipsBox = document.createElement('div');
     tipsBox.id = 'm2-tips'; tipsBox.setAttribute('role', 'dialog'); tipsBox.setAttribute('aria-label', 'Gestures and keys'); tipsBox.hidden = true;
@@ -1596,7 +1598,7 @@ page, so its styles keep the base they were made on).
         ['Select an area', 'Drag', 'Drag', '-'],
         ['Open the menu', 'Two-finger click', 'Right click', '-'],
         ['Scroll the page', 'Space + two fingers', 'Space + wheel', 'One finger outside the map']]) +
-      '<h4>More</h4>' + table(['', ''], [
+      '<h4>More</h4>' + table(null, [
         ['Shift + two fingers', 'move the map sideways only'],
         ['Right click inside an area', 'Copy names (one per line), Copy image as PNG or SVG of that part'],
         ['Esc, or a click', 'ends the area'],
@@ -1605,7 +1607,7 @@ page, so its styles keep the base they were made on).
         ['0, or Fit and Read', 'the whole map or reading size'],
         ['E, or ' + MOD + ' + E', 'switch between viewing and editing'],
         ['?', 'this window (while editing: the editor’s help)']]) +
-      '<h4>While editing</h4>' + table(['', ''], [
+      '<h4>While editing</h4>' + table(null, [
         ['Click, then drag', 'an item is selected first, then moved'],
         ['Drag on empty space or an item not selected', 'selects an area in place of the selection'],
         ['Shift + click, Shift + drag', 'adds to the selection, or takes out'],
