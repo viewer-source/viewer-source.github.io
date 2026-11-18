@@ -620,7 +620,7 @@ page, so its styles keep the base they were made on).
      separator under it instead of the grip in its corner */
   #m2-view { position: relative; width: 100%; height: 504px; min-height: 300px; max-height: calc(100vh / var(--zoom, 1) - var(--m2-below-view, 56px)); resize: vertical; overflow: hidden; box-sizing: border-box; border: 1px solid var(--m2-frame); border-radius: var(--m2-radius); background: var(--m2-bg); cursor: default; touch-action: none; user-select: none; }
   #m2-view.m2-drag { cursor: grabbing; }
-  #m2-area { position: absolute; left: 0; top: 0; display: none; box-sizing: border-box; border: 1px solid #80868b; background: rgba(95, 99, 104, .07); pointer-events: none; }
+  #m2-area { position: absolute; left: 0; top: 0; display: none; box-sizing: border-box; border: 1px solid #80868b; background: none; pointer-events: none; }
   /* full screen: the map alone, the annotation over its right side */
   #m2-view:fullscreen { width: 100vw; height: 100vh !important; max-height: none; border: 0; border-radius: 0; resize: none; }
   #m2-view:-webkit-full-screen { width: 100vw; height: 100vh !important; max-height: none; border: 0; border-radius: 0; resize: none; }
@@ -1600,7 +1600,6 @@ page, so its styles keep the base they were made on).
         ['Scroll the page', 'Space + two fingers', 'Space + wheel', 'One finger outside the map']]) +
       '<h4>More</h4>' + table(null, [
         ['Shift + two fingers', 'move the map sideways only'],
-        ['Right click inside an area', 'Copy names (one per line), Copy image as PNG or SVG of that part'],
         ['Esc, or a click', 'ends the area'],
         ['Shift + right click', 'the browser’s own menu'],
         ['+ and − keys, or buttons', 'zoom out and in'],
@@ -1686,7 +1685,7 @@ page, so its styles keep the base they were made on).
   view.addEventListener('gestureend', function (e) { if (gest != null) e.preventDefault(); gest = null; });
   // no zoom on a double click (a double click opens the name field)
   // a finger: drag with one, pinch with two. A mouse or trackpad: a drag selects an area (two fingers move the map, the
-  // wheel handler above), kept as the area the right-click menu copies; a click picks
+  // wheel handler above), outlined until Esc or a click; a click picks
   var pts = {}, last = null, press = null, vband = null, area = null;
   var areaEl = document.getElementById('m2-area');
   function toPic(cx, cy) { var r = view.getBoundingClientRect(), k = scaleOf(current); return [((cx - r.left) / pz() - tx) / z * k, ((cy - r.top) / pz() - ty) / z * k]; }
@@ -3274,16 +3273,16 @@ page, so its styles keep the base they were made on).
     function fileName(href) { return href ? href.split('/').pop().split(/[?#]/)[0] : ''; }
     function saveAs(href, name) { var a = document.createElement('a'); a.href = href; a.download = name; document.body.appendChild(a); a.click(); a.remove(); }
     function saveBlob(b, name) { var u = URL.createObjectURL(b); saveAs(u, name); setTimeout(function () { URL.revokeObjectURL(u); }, 10000); }
-    function copyPicture(m, url, r, sh, a) {   // a: the area selected, else the whole map
+    function copyPicture(m, url, r, sh) {
       if (!navigator.clipboard || !window.ClipboardItem) return say('This browser cannot copy images', r.left, r.top);
-      navigator.clipboard.write([new ClipboardItem({ 'image/png': a ? areaPng(m, url, sh, a) : pngOf(m, url, sh) })])
+      navigator.clipboard.write([new ClipboardItem({ 'image/png': pngOf(m, url, sh) })])
         .then(function () { say('Image copied', r.left, r.top); }, function () { say('Not copied', r.left, r.top); });
     }
     // the map's SVG as the file on the site (its SVG download, else the picture shown): image/svg+xml where the browser
     // can (Chrome), with the text as well, so an app that takes no SVG image pastes the markup
     function svgText(m, url, sh) { return sh && sh.svg ? Promise.resolve(sh.svg) : fetch(svgOf(m, url)).then(function (x) { if (!x.ok) throw x.status; return x.text(); }); }
-    function copySvg(m, url, r, sh, a) {   // a: the area selected, else the whole map
-      var text = svgText(m, url, sh).then(function (t) { return a ? cropSvg(t, m, a) : t; });
+    function copySvg(m, url, r, sh) {
+      var text = svgText(m, url, sh);
       var plain = function () { return text.then(function (t) { return navigator.clipboard.writeText(t); }); };
       var go = window.ClipboardItem && ClipboardItem.supports && ClipboardItem.supports('image/svg+xml')
         ? navigator.clipboard.write([new ClipboardItem({
@@ -3314,8 +3313,6 @@ page, so its styles keep the base they were made on).
       var m = ed && chosen ? chosen : current, box = el('div', 'm2-cx'), n = ed ? null : nodeAt(vx, vy), url = {};   // in edit mode the site's map, with its files
       box.setAttribute('role', 'menu');
       (m.downloads || []).forEach(function (d) { url[d.label] = d.url; });
-      var a = !ed && area && area.map === m.id && area, k0 = scaleOf(m), ax = (vx - tx) / z * k0, ay = (vy - ty) / z * k0;
-      if (a && ax >= a.x && ax <= a.x + a.w && ay >= a.y && ay <= a.y + a.h) return areaMenu(box, m, url, a);   // inside the area selected: its own items
       if (n) {   // a molecule, a complex or a reaction: its name first
         var name = n.label || '';
         box.appendChild(el('div', 'm2-cx-head', (n.members ? 'Protein family' : (KIND[n['class']] || n['class'])) + (name ? ': ' + name : '')));
@@ -3391,44 +3388,6 @@ page, so its styles keep the base they were made on).
       if (!m.imageError && svgOf(m, url)) item(box, 'Copy image as SVG', function (r) { copySvg(m, url, r, sh); });
       while (box.lastChild && box.lastChild.classList.contains('m2-sep')) box.removeChild(box.lastChild);
       return box;
-    }
-    // the area selected (a drag on the map): what lies fully inside it, and its piece of the image
-    function inArea(a) {
-      return (nodes || []).filter(function (q) { var b = q.box; return !q.reaction && b[0] >= a.x && b[1] >= a.y && b[0] + b[2] <= a.x + a.w && b[1] + b[3] <= a.y + a.h; })
-        .sort(function (p, q) { return p.box[1] - q.box[1] || p.box[0] - q.box[0]; });
-    }
-    function areaMenu(box, m, url, a) {
-      var sh = shown(m), names = [];
-      inArea(a).forEach(function (q) { var t = (q.label || '').trim(); if (t && names.indexOf(t) < 0) names.push(t); });
-      box.appendChild(el('div', 'm2-cx-head', 'Selected area'));
-      if (names.length) item(box, 'Copy names', function (r) { copyText(names.join('\n'), r); });
-      if (!m.imageError) item(box, 'Copy image as PNG', function (r) { copyPicture(m, url, r, sh, a); });
-      if (!m.imageError && svgOf(m, url)) item(box, 'Copy image as SVG', function (r) { copySvg(m, url, r, sh, a); });
-      return box;
-    }
-    // the area as a PNG: its piece of the SVG drawn at twice its size where the map has an SVG (sharp, and a large map
-    // is not drawn whole), else the map's PNG cut to it
-    function areaPng(m, url, sh, a) {
-      if ((sh && sh.svg) || svgOf(m, url)) return svgText(m, url, sh).then(function (t) { return pngFrom(cropSvg(t, m, a)); });
-      return pngOf(m, url, sh).then(function (b) { return createImageBitmap(b); }).then(function (bm) {
-        var k = bm.width / m.width, c = document.createElement('canvas');
-        c.width = Math.max(1, Math.round(a.w * k)); c.height = Math.max(1, Math.round(a.h * k));
-        var g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);
-        g.drawImage(bm, a.x * k, a.y * k, a.w * k, a.h * k, 0, 0, c.width, c.height);
-        return new Promise(function (res, rej) { c.toBlob(function (x) { if (x) res(x); else rej(); }, 'image/png'); });
-      });
-    }
-    // the map's SVG with its view box and size set to the area (in the picture's pixels, as the map is drawn)
-    function cropSvg(t, m, a) {
-      var hm = t.match(/<svg\b[^>]*>/);
-      if (!hm) return t;
-      var h = hm[0], vb = h.match(/\sviewBox="([^"]+)"/), W = parseFloat((h.match(/\swidth="([\d.]+)/) || [])[1]), H = parseFloat((h.match(/\sheight="([\d.]+)/) || [])[1]);
-      var v = vb ? vb[1].trim().split(/[\s,]+/).map(Number) : [0, 0, W, H];
-      if (v.length !== 4 || v.some(isNaN)) return t;
-      var fx = v[2] / m.width, fy = v[3] / m.height, r2 = function (q) { return Math.round(q * 100) / 100; };
-      var nv = [v[0] + a.x * fx, v[1] + a.y * fy, a.w * fx, a.h * fy].map(r2).join(' ');
-      var nh = h.replace(/\s(viewBox|width|height)="[^"]*"/g, '').replace(/^<svg/, '<svg width="' + r2(a.w) + '" height="' + r2(a.h) + '" viewBox="' + nv + '"');
-      return t.replace(h, nh);
     }
     function show(cx, cy, ed) {
       close();

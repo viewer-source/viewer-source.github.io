@@ -1,5 +1,5 @@
 // Gestures on the live page (book Gestures): a mouse or trackpad drag selects an area and never moves the map, in view
-// and edit mode; the area's right-click menu copies its names; a click clears it; Shift with the wheel moves the map
+// and edit mode; the area is an outline with no menu of its own; a click clears it; Shift with the wheel moves the map
 // sideways only; Space held with the wheel scrolls the page and leaves the map still.
 //   node tests/gestures.js [page address]
 var { chromium } = require('playwright');
@@ -21,27 +21,10 @@ var URL0 = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysi
   await page.mouse.move(cx - 150, cy - 120); await page.mouse.down(); await page.mouse.move(cx + 150, cy + 120, { steps: 10 }); await page.mouse.up();
   ok('view mode: a drag leaves the map still', (await tf()) === t0, t0 + ' -> ' + (await tf()));
   ok('view mode: the area shows', await page.$eval('#m2-area', function (e) { return e.style.display === 'block' && e.offsetWidth > 250; }));
+  ok('view mode: the area is an outline only, no fill', await page.$eval('#m2-area', function (e) { var b = getComputedStyle(e).backgroundColor; return b === 'rgba(0, 0, 0, 0)' || b === 'transparent'; }));
   await page.mouse.click(cx, cy, { button: 'right' }); await page.waitForTimeout(300);
   var menu = await page.$$eval('.m2-cx button, .m2-cx .m2-cx-head', function (l) { return l.map(function (x) { return x.textContent.trim(); }); });
-  ok('right click inside: the area menu', menu[0] === 'Selected area' && menu.indexOf('Copy image as PNG') >= 0, menu.join(' | '));
-  if (menu.indexOf('Copy names') >= 0) {
-    await page.click('.m2-cx button:has-text("Copy names")'); await page.waitForTimeout(400);
-    var txt = await page.evaluate(function () { return navigator.clipboard.readText(); });
-    ok('Copy names: one name per line', txt.split('\n').length >= 1 && txt.length > 0, JSON.stringify(txt.slice(0, 80)));
-    console.log('      names: ' + txt.split('\n').slice(0, 6).join(', '));
-  } else ok('Copy names offered (a map with names inside the area)', false, menu.join(' | '));
-  for (var kind of ['PNG', 'SVG']) {
-    await page.mouse.click(cx, cy, { button: 'right' }); await page.waitForTimeout(300);
-    if (!(await page.$('.m2-cx button:has-text("Copy image as ' + kind + '")'))) { console.log('      (no Copy image as ' + kind + ' here)'); await page.keyboard.press('Escape'); continue; }
-    await page.click('.m2-cx button:has-text("Copy image as ' + kind + '")'); await page.waitForTimeout(2500);
-    var got = await page.evaluate(async function (kind) {
-      var items = await navigator.clipboard.read(), it = items[0], t = it.types;
-      if (kind === 'PNG') { var bl = await it.getType('image/png'), bm = await createImageBitmap(bl); return t.join(',') + ' ' + bm.width + 'x' + bm.height; }
-      var tx = await (await it.getType(t.indexOf('image/svg+xml') >= 0 ? 'image/svg+xml' : 'text/plain')).text(); return t.join(',') + ' ' + (tx.match(/<svg\b[^>]*>/) || [''])[0].slice(0, 400);
-    }, kind).catch(function (e) { return 'error ' + e.message; });
-    console.log('      ' + kind + ': ' + got);
-    ok('Copy image as ' + kind + ' of the area', kind === 'PNG' ? /image\/png (\d+)x(\d+)/.test(got) && +got.match(/ (\d+)x/)[1] > 300 : /viewBox="[-\d.]+ [-\d.]+ [\d.]+ [\d.]+"/.test(got), got);
-  }
+  ok('right click inside: no area menu, the map menu', menu.indexOf('Selected area') < 0 && menu.indexOf('Copy names') < 0 && menu.length > 0, menu.join(' | '));
   await page.keyboard.press('Escape'); await page.waitForTimeout(100);
   await page.mouse.click(v[0] + 30, v[1] + v[3] - 40); await page.waitForTimeout(200);
   ok('a click clears the area', await page.$eval('#m2-area', function (e) { return e.style.display === 'none'; }));
