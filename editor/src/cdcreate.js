@@ -584,6 +584,7 @@
     var cdRxSeen = [null, null];   // [rid and file, reversible or null]: read once per selection and change (Properties runs with every paint)
     function cdRxOf() {   // { rid, on } of the one reaction selected that may be reversible, else null
       if (!cd || selP.length || svSel || (!selE.length && !selN.length)) return null;
+      if (selE.length === 1 && !selN.length && edges2[selE[0]] && /\|[rp]\d+$/.test(edges2[selE[0]].id)) return null;   // an added reactant or product alone: its own line's Properties
       var rid = null, ok = true;
       selE.forEach(function (k) { var m = edges2[k] && edges2[k].id.match(/^(.*)\|(a|b|r\d+|p\d+)$/); if (!m || (rid && rid !== m[1])) ok = false; else rid = m[1]; });
       selN.forEach(function (i) { var m = nodes2[i] && nodes2[i].id.match(/^(.*)\|proc$/); if (!m || (rid && rid !== m[1])) ok = false; else rid = m[1]; });
@@ -651,7 +652,7 @@
       // a line's colour (edgeShow, edgeSet): a modifier's, an added reactant's or product's own, else its reaction's (a
       // reduced notation's line, a main line); a gate's lines none (cd_make.lineColour null), no ports as offsets
       line: { colour: cdLineColour, set: function (k, c) {   // the line, or its whole reaction, selected again
-        var id = edges2[k].id, keep = /\|m\d+$/.test(id) ? id : id.replace(/\|[^|]*$/, '');
+        var id = edges2[k].id, keep = /\|[mrp]\d+$/.test(id) ? id : id.replace(/\|[^|]*$/, '');
         return cdApply(function (t) { return cdMk.recolourLine(t, id, c || '#000000'); }, [], [keep]);
       }, ports: false },
       node: function (i) { return cdProp(i) ? i : -1; },

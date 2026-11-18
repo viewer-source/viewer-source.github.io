@@ -1520,7 +1520,7 @@
     function lineOfRx() {   // a line of the one reaction selected (Properties' reaction rows) whose colour is the reaction's, else -1
       var r = propRx(), f = propFmt();
       if (!r || !f.line) return -1;
-      var k = edges2.findIndex(function (q) { return q.id.indexOf(r.rid + '|') === 0 && !/\|m\d+$/.test(q.id); });
+      var k = edges2.findIndex(function (q) { return q.id.indexOf(r.rid + '|') === 0 && !/\|[mrp]\d+$/.test(q.id); });   // not a line with its own colour
       return k >= 0 && f.line.colour(k) != null ? k : -1;
     }
     function sbLineColour(k) { var el = edges2[k].path.parentNode; while (el && el.localName !== 'edge') el = el.parentNode; return sbJs.lineOf(el) || '#000000'; }

@@ -674,7 +674,7 @@
         var bends = editPoints(get(l, 'editPoints') || findtext(l, 'cd:editPoints', '')).map(function (p) { return into ? fromFrame(O, J, p) : fromFrame(J, O, p); });
         var seq = [O].concat(into ? bends : bends.slice().reverse(), [J]);
         seq[0] = self.clip(i, O, Oo[1], seq[1]);
-        var lcol = col;   // an added reactant or product in its reaction's colour (a colour of its own in the file not drawn: one colour per reaction)
+        var lc = find(l, 'cd:line'), lcol = lc ? colour(get(lc, 'color'))[0] : col;   // an added reactant or product in its own colour, as CellDesigner keeps one for each
         if (into) self.path(seq, lcol, wd, dash, true, false);
         else {
           seq = seq.reverse();

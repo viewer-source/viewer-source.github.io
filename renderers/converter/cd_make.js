@@ -1001,13 +1001,14 @@
     }
     return t;
   }
-  // a line's colour (#rrggbb): a modifier's own line (rid|mN), else its reaction's, one colour for the whole reaction (its
-  // main line, a reduced notation's line, added reactants and products: cdrender draws them all in it). A logic gate's
-  // lines, its inputs included, are drawn in the reaction's colour: none of their own (null from lineColour)
+  // a line's colour (#rrggbb): a modifier's (rid|mN), an added reactant's or product's (rid|rN, rid|pN) its own line, as
+  // CellDesigner keeps one for each; else its reaction's (its main line, a reduced notation's line). A logic gate's lines,
+  // its inputs included, are drawn in the reaction's colour: none of their own (null from lineColour)
   function lineAt(t, eid) {
     var m = /^(.*)\|(a|b|i\d+|m\d+|r\d+|p\d+)$/.exec(eid);
     if (!m) return null;
-    var R = parts(t, m[1]), k = m[2][0], n = +m[2].slice(1), own = k === 'm' ? R.mods[n] : null;
+    var R = parts(t, m[1]), k = m[2][0], n = +m[2].slice(1), own = k === 'm' ? R.mods[n] : k === 'r' ? R.rl[n] : k === 'p' ? R.pl[n] : null;
+    if ((k === 'r' || k === 'p') && !own) return null;
     if (k === 'm' && (!own || isGate(own) || owner(R, n) !== null)) return null;
     if (own) return span(t, '<celldesigner:line ', own.sp[0], own.sp[1]);
     var skip = ['listOfModification', 'listOfReactantLinks', 'listOfProductLinks', 'listOfGateMember'].map(function (l) { return span(t, '<celldesigner:' + l + '>', R.x[0], R.x[1]); }).filter(Boolean);
@@ -1018,12 +1019,7 @@
     if (!/^#[0-9a-fA-F]{6}$/.test(c || '')) fail('A line colour is a colour #rrggbb.');
     var L = lineAt(t, eid), col = 'ff' + c.slice(1).toLowerCase();
     if (!L) fail('A logic gate\u2019s lines take their reaction\u2019s colour.');
-    t = attrs(t, L[0], [['color', col]]);
-    if (/\|m\d+$/.test(eid)) return t;
-    // the whole reaction: its added reactants' and products' lines too, so CellDesigner shows it in one colour as well
-    var R = parts(t, eid.replace(/\|[^|]*$/, ''));
-    R.rl.concat(R.pl).map(function (l) { return l.sp; }).sort(function (p, r) { return r[0] - p[0]; }).forEach(function (sp) { var s2 = span(t, '<celldesigner:line ', sp[0], sp[1]); if (s2) t = attrs(t, s2[0], [['color', col]]); });
-    return t;
+    return attrs(t, L[0], [['color', col]]);   // that line alone: the reaction's leaves its added reactants and products their own
   }
   function aliasInfo(t, id) {
     var A = alias(t, id), C = A.kind === 'compartmentAlias' ? span(t, '<compartment(?=\\s)[^>]*\\sid="' + q(A.compartment) + '"') : null;

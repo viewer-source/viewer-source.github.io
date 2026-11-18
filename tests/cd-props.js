@@ -1,7 +1,8 @@
 // Compartments and complexes on a CellDesigner map (editor/src/cdcreate.js, cd_make.js): a compartment's sign dragged from
 // the palette drawn as the map draws it (its colour, 12 between its lines), placed 160 by 160; Properties for a complex
 // (Width, Height, Fill, Border width; no Multimer) and for a compartment (Width, Height, Fill), each value written into the
-// file and undone; a modifier's Line colour and a reaction's (no ports' rows), written and drawn. Nothing is saved (no token). No script error.
+// file and undone; a modifier's Line colour and a reaction's (no ports' rows), written and drawn, the reaction's added
+// reactants and products keeping their own. Nothing is saved (no token). No script error.
 //   node tests/cd-props.js [address] [viewer folder: its editor and renderers served in place of the page's]
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path');
 var url = process.argv[2] || 'https://viewer-source.github.io/styles/#acly-celldesigner', local = process.argv[3];
@@ -106,10 +107,11 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#acly-celld
     var er = await erows();
     var rev = await page.$eval('.m2-ed-prx', function (x) { return !x.hidden; });
     ok(L + (L === mod ? ': Line colour alone' : ': Reversible and Line colour'), JSON.stringify(er) === JSON.stringify(['ecol']) && rev === (L !== mod), JSON.stringify(er) + ' ' + rev);
+    var links = function (t) { var r = new RegExp('<reaction [^>]*id="' + L.split('|')[0] + '"[\\s\\S]*?</reaction>').exec(t)[0]; return (r.match(/<celldesigner:(reactantLink|productLink) [\s\S]*?<\/celldesigner:\1>/g) || []).join(''); }, links0 = links(await now());
     await type('ecol', '#ff0000');
     var tx = await now(), rid = L.split('|')[0], rx = new RegExp('<reaction [^>]*id="' + rid + '"[\\s\\S]*?</reaction>').exec(tx)[0];
     var mseg = /<celldesigner:modification [\s\S]*?<\/celldesigner:modification>/.exec(rx), lmain = rx.replace(/<celldesigner:listOfModification>[\s\S]*?<\/celldesigner:listOfModification>/, '');
-    ok(L + ': its own line written red', L === mod ? /color="ffff0000"/.test(mseg ? mseg[0] : '') && !/color="ffff0000"/.test(lmain) : /<celldesigner:line [^>]*color="ffff0000"/.test(lmain) && (lmain.match(/<celldesigner:line [^>]*>/g) || []).every(function (l) { return /ffff0000/.test(l); }), rx.slice(0, 1500));
+    ok(L + ': its own line written red', L === mod ? /color="ffff0000"/.test(mseg ? mseg[0] : '') && !/color="ffff0000"/.test(lmain) : /<celldesigner:line [^>]*color="ffff0000"/.test(lmain) && links(tx) === links0, rx.slice(0, 1500));   // its added reactants and products keep their own
     ok(L + ': drawn red', /#ff0000/i.test(await drawnIn(L)));
     ok(L + ': still selected', (await erows()).length === 1);
     if (L === main) ok(L + ': the whole reaction red, its other half too', /#ff0000/i.test(await drawnIn(rid + '|b')));

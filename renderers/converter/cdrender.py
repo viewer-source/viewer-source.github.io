@@ -699,7 +699,8 @@ class Drawing:
                 bends = [from_frame(O, J, p) if into else from_frame(J, O, p) for p in edit_points(l.get('editPoints') or l.findtext('cd:editPoints', '', NS))]
                 seq = [O] + (bends if into else bends[::-1]) + [J]
                 seq[0] = self.clip(i, O, anc, seq[1])
-                lcol = col  # an added reactant or product in its reaction's colour (a colour of its own in the file not drawn)
+                lc = f(l, 'cd:line')
+                lcol = colour(lc.get('color'))[0] if lc is not None else col  # its own colour, as CellDesigner keeps one for each
                 if into:
                     self.path(seq, lcol, width, dash, end_node=False)
                 else:
