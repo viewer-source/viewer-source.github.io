@@ -541,6 +541,7 @@
     return [out.join(''), changed];
   }
 
-  var api = { tidy: tidy, pyRound: pyRound, pySum: pySum, floorDiv: floorDiv, num: num, extent: extent };   // extent: what a node draws round its box, for the editor's growing (grown, refit), as room() measures it
+  var api = { tidy: tidy, pyRound: pyRound, pySum: pySum, floorDiv: floorDiv, num: num, extent: extent,
+    room: { left: LEFT, top: TOP, right: RIGHT, bottom: BOTTOM, named: NAMED } };   // room: what Pack leaves round a complex's members (the editor's complex padding As Repack)   // extent: what a node draws round its box, for the editor's growing (grown, refit), as room() measures it
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.layout = api;
 })(typeof window !== 'undefined' ? window : globalThis);

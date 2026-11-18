@@ -664,9 +664,22 @@
       return Array.from(set).filter(function (i) { return !cdOwn(i) && (alone ? nodes2[i].comp : !(nodes2[i].up != null && set.has(nodes2[i].up))); });
     }
     // an inside member's least space to its compartment's inner line (inside CellDesigner's double border, clear of a
-    // compartment's name) when a drag grows the compartment round it: one unit, the closest the editor allows, the
-    // layout tools giving the final spacing
-    var PAD = 1;
+    // compartment's name) when a drag grows the compartment round it (PAD in grown):
+    // its value Settings' Compartment padding (the viewer writes the key), 10 by default, 0 the closest; a complex's room
+    // its Complex padding: As Repack (layout.js room, what Pack leaves: the sides, top and bottom, or NAMED over a name
+    // inside) or a number on every side, the name's own height added (cxRoom)
+    var PAD_KEY = 'atlas-edit-padding';
+    function pads() {
+      var p = {}; try { p = JSON.parse(localStorage.getItem(PAD_KEY) || '{}') || {}; } catch (e) {}
+      var ok = function (v) { return typeof v === 'number' && v >= 0 && v <= 32; };
+      return { comp: ok(p.comp) ? p.comp : 10, cx: ok(p.cx) ? p.cx : 'repack' };
+    }
+    function cxRoom(n) {   // [left, top, right, bottom] from complex n's members (what they draw) to its box
+      var p = pads().cx, R = window.layout && window.layout.room;
+      if (p === 'repack' && R) return [R.left, R.top + n.lab.t, R.right, n.lab.b ? R.named + n.lab.b : R.bottom];
+      if (p === 'repack') p = 12;
+      return [p, p + n.lab.t, p, p + n.lab.b];
+    }
     // a plain drag or the keys keep an edge member crossing the border (dragged inward it stops while
     // its box still crosses the border): the move [dx, dy] of the nodes in set corrected, by the least, where one that
     // crossed its compartment's border would come fully inside
@@ -686,7 +699,7 @@
     }
     // the holders grown round a change of places: node -> its new box. ks: the nodes moved (tops) or the one resized; B:
     // the boxes now, B0: before; moving(k): k moves with them. Measured by what each node draws round its box (extOf). A
-    // complex grows to hold its member with its Insets and labels; a compartment to keep PAD from its inner line round an inside member (as close as it was, where it was
+    // complex grows to hold its member with its padding and labels (cxRoom); a compartment to keep PAD from its inner line round an inside member (as close as it was, where it was
     // closer), an edge member
     // crossing its border by one unit, nothing for one already fully outside; what grows grows its own holder in turn the
     // same way; never smaller
@@ -697,10 +710,14 @@
         if (p == null || moving(p)) return;
         var n = nodes2[p], c = box(p), b = box(k), w, e = extOf(k, b);
         var s0 = B0(k), c0 = B0(p), e0 = extOf(k, s0);
-        if (n.shape.kind === 'Complex') w = [e[0] - n.ins[0], e[1] - n.ins[1] - n.lab.t, e[2] + n.ins[2], e[3] + n.ins[3] + n.lab.b];
+        if (n.shape.kind === 'Complex') {   // its padding, as close as the member was where it was closer (as a compartment's)
+          var g0 = [e0[0] - c0[0], e0[1] - c0[1], c0[0] + c0[2] - e0[2], c0[1] + c0[3] - e0[3]];
+          var rm = cxRoom(n).map(function (v, j) { return Math.min(v, Math.max(g0[j], 0)); });
+          w = [e[0] - rm[0], e[1] - rm[1], e[2] + rm[2], e[3] + rm[3]];
+        }
         else if (inBox(s0, c0)) {   // inside: PAD from its inner line (as close as it was, where it already was closer: another tool's file)
           var io = [cd ? n.ins[0] : 0, (cd ? n.ins[1] : 0) + n.lab.t, cd ? n.ins[2] : 0, (cd ? n.ins[3] : 0) + n.lab.b];
-          var pad = [e0[0] - c0[0], e0[1] - c0[1], c0[0] + c0[2] - e0[2], c0[1] + c0[3] - e0[3]].map(function (v, j) { return Math.min(PAD, v - io[j]) + io[j]; });
+          var PAD = pads().comp, pad = [e0[0] - c0[0], e0[1] - c0[1], c0[0] + c0[2] - e0[2], c0[1] + c0[3] - e0[3]].map(function (v, j) { return Math.min(PAD, v - io[j]) + io[j]; });
           w = [e[0] - pad[0], e[1] - pad[1], e[2] + pad[2], e[3] + pad[3]];
         } else if (overlap(s0, c0)) w = [b[0] + b[2] - 1, b[1] + b[3] - 1, b[0] + 1, b[1] + 1];   // on the edge: kept crossing it
         else return;   // fully outside already (another tool's file): as it is
@@ -936,12 +953,13 @@
     // a node that holds others (a compartment; a complex with members, the only other holder a format part makes
     // resizable): resized as a holder, its parts drawn by liveDraw
     function holds(i) { return !!nodes2[i].comp || nodes2[i].kids.length > 0; }
-    // a complex resized by its handles: the sides dragged (s) held where its members still fit, with its Insets and labels
+    // a complex resized by its handles: the sides dragged (s) held where its members still fit, with its padding and labels
     // as grown() holds a member, never further out than where they started (b0: members closer than the Insets in another
     // tool's file keep their room); the members stay where they are
     function roomy(i, b, s, b0) {
       var n = nodes2[i], x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
-      n.kids.forEach(function (k) { var e = extOf(k, boxOf(k)); x0 = Math.min(x0, e[0] - n.ins[0]); y0 = Math.min(y0, e[1] - n.ins[1] - n.lab.t); x1 = Math.max(x1, e[2] + n.ins[2]); y1 = Math.max(y1, e[3] + n.ins[3] + n.lab.b); });
+      var rm = cxRoom(n);
+      n.kids.forEach(function (k) { var e = extOf(k, boxOf(k)); x0 = Math.min(x0, e[0] - rm[0]); y0 = Math.min(y0, e[1] - rm[1]); x1 = Math.max(x1, e[2] + rm[2]); y1 = Math.max(y1, e[3] + rm[3]); });
       if (x0 === Infinity) return b;
       var L = b[0], T = b[1], R = b[0] + b[2], B = b[1] + b[3];
       if (/l/.test(s)) L = Math.min(L, Math.max(x0, b0[0])); if (/r/.test(s)) R = Math.max(R, Math.min(x1, b0[0] + b0[2]));

@@ -200,7 +200,9 @@ gfiles.forEach(function (f) {
 // ---------- the editor's rules (regroup) ----------
 var core = fs.readFileSync(path.join(here, 'editor/src/core.js'), 'utf8');
 function lift(name) { var i = core.indexOf('    function ' + name + '('); if (i < 0) throw new Error('no ' + name + ' in core.js'); var j = core.indexOf('\n    function ', i + 10), k = core.indexOf('\n    //', i + 10); return core.slice(i, Math.min(j < 0 ? 1e9 : j, k < 0 ? 1e9 : k)); }
-var CODE = 'var PAD = 1;\n' + ['inBox', 'overlap', 'under', 'notIn', 'cdOwn', 'holder', 'regroup', 'inComplex', 'grown', 'keepEdge', 'tops', 'extOf'].map(lift).join('\n');
+// the paddings as Settings keeps them (core.js pads): compartments 1 here, as these cases were set, complexes As Repack
+var PADS = 'var PAD_KEY = "k", localStorage = { getItem: function () { return JSON.stringify({ comp: 1, cx: "repack" }); } };\n';
+var CODE = PADS + ['pads', 'cxRoom', 'inBox', 'overlap', 'under', 'notIn', 'cdOwn', 'holder', 'regroup', 'inComplex', 'grown', 'keepEdge', 'tops', 'extOf'].map(lift).join('\n');
 var LAY = require(path.join(here, 'renderers/layout/layout.js'));   // extOf's layout.extent
 function editorOf(g, cd) {   // the editor's nodes2 (up, kids, inside, comp, hub, shape), as parse() reads them
   var d = new DP().parseFromString(g, 'application/xml'), N = [], byEl = new Map();
@@ -308,7 +310,7 @@ function tiny() {
 // yEd's own box after a push: a compartment's member pushed 20 past the border on
 // every demo GraphML map, its holders grown (grown) and their Insets and BorderInsets refitted (refit); then yEd's box of
 // the holder, what it holds inside (as layout.js extent() measures it) with its Insets and BorderInsets, is the box saved
-var CODE2 = 'var PAD = 1, text = T0;\n' + ['inBox', 'overlap', 'under', 'inComplex', 'grown', 'extOf', 'refit', 'insetsOf'].map(lift).join('\n') + '\nfunction parse() { reparse(text); }\nreturn { grown: grown, refit: refit, text: function () { return text; } };';
+var CODE2 = PADS + 'var text = T0;\n' + ['pads', 'cxRoom', 'inBox', 'overlap', 'under', 'inComplex', 'grown', 'extOf', 'refit', 'insetsOf'].map(lift).join('\n') + '\nfunction parse() { reparse(text); }\nreturn { grown: grown, refit: refit, text: function () { return text; } };';
 var yn = 0;
 fs.readdirSync(path.join(here, 'maps')).filter(function (f) { return /\.graphml$/.test(f); }).forEach(function (f) {
   var g = fs.readFileSync(path.join(here, 'maps', f), 'utf8'), E = editorOf(g, false), N = E.N;
