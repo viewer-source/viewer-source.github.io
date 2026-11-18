@@ -73,8 +73,8 @@ def for_newt(diagram):
               if a != b and not within(a, b) and not within(b, a) and value(a, ax + 2) - 2 <= value(b, ax)
               and min(value(a, 3 - ax), value(b, 3 - ax)) - max(value(a, 1 - ax), value(b, 1 - ax)) > 0.5]
     # a node outside every compartment that a compartment, once in place, grows over by more than
-    # half is covered whole, so the edge does not stop inside it (SREBP from CellDesigner, straight:
-    # the COPII vesicle grew to its process and cut the Sec23:Sec24 complex); one
+    # half is covered whole, so the edge does not stop inside it (SREBP from CellDesigner:
+    # the COPII vesicle grew to its process and would cut the Sec23:Sec24 complex); one
     # the growth only grazes, or the source draws across the edge, stays as it is
     free = [i for i, d in N.items() if d.kind != 'Compartment' and d.parent is None and compartment_of(N, i) is None]
     covered = {}

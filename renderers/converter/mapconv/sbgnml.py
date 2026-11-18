@@ -131,9 +131,7 @@ def write(diagram, newt=False):
     arcs = []
     for a in diagram.arcs:
         s, t, pts, s_at, t_at = a.source, a.target, list(a.points), a.source_at, a.target_at
-        given = (s_at, t_at)  # the ends as the map gives them: a process's port kept (below); a gate's arcs end at its antennas
-        if s in ops or t in ops:
-            s_at, t_at = (0.0, 0.0), (0.0, 0.0)
+        given = (s_at, t_at)  # the ends as the map gives them: a process's or gate's port kept (below)
         if a.head is None:
             if s in hubs - eq and t not in hubs:
                 s, t, pts, s_at, t_at, given = t, s, pts[::-1], t_at, s_at, given[::-1]
@@ -315,7 +313,7 @@ def write(diagram, newt=False):
         return {i for i, d in N.items() if d.kind != 'Compartment' and i not in ends and (d.parent is None or N[d.parent].kind == 'Compartment')
                 and d.box[0] < max(xs) and min(xs) < d.box[0] + d.box[2] and d.box[1] < max(ys) and min(ys) < d.box[1] + d.box[3]
                 and any(cuts(p, q, d.box) for p, q in zip(line, line[1:]))}
-    side = []  # arcs that meet a process from the side: they turn at its antenna
+    turned = []  # arcs that meet a process from the side or behind: they turn at its antenna's tip
     for a, cls, s, t, pts, s_at, t_at, _ in arcs:
         if ids[s] not in made or ids[t] not in made:
             continue
@@ -330,6 +328,11 @@ def write(diagram, newt=False):
         tgt = ids[t] + '.1' if t in ports and cls in ('consumption', 'logic arc') else ids[t]
         p0 = ports[s][k] if s in ports else None
         p1 = ports[t][1] if tgt.endswith('.1') and t in ports else None
+        # a bend near a process or gate at or behind its antenna's tip drew the antenna: the antenna draws it now
+        if p0:
+            pts = antenna(N[s], p0, pts)
+        if p1:
+            pts = antenna(N[t], p1, pts[::-1])[::-1]
         nxt = pts[0] if pts else (p1 or centre(N[t]))
         prv = pts[-1] if pts else (p0 or centre(N[s]))
         if p0 is None:
@@ -340,14 +343,9 @@ def write(diagram, newt=False):
             p1 = (centre(N[t])[0] + t_at[0], centre(N[t])[1] + t_at[1]) if any(t_at) else border(N[t], prv)
             if newt and any(t_at) and t not in hubs:
                 pts = pts + newt_layout.leaving(N[t], p1, prv, border(N[t], prv))
-        # a bend near a process or gate that imitates its antenna, or lies behind its tip, joins the antenna
-        if s in ports:
-            pts = antenna(N[s], p0, pts)
-        if t in ports and tgt.endswith('.1'):
-            pts = antenna(N[t], p1, pts[::-1])[::-1]
-        for hub, end, q in ((s, p0, pts[0] if pts else p1), (t, p1, pts[-1] if pts else p0)):
-            if hub in ports and hub not in ops and (hub == s or tgt.endswith('.1')) and sideways(N[hub], end, q):
-                side.append(a.id)
+        if any(hub in ports and hub not in ops and (hub == s or tgt.endswith('.1')) and sideways(N[hub], end, q)
+               for hub, end, q in ((s, p0, pts[0] if pts else p1), (t, p1, pts[-1] if pts else p0))):
+            turned.append(a.id)
         # plain: every bend the source draws (the SBGN-ML looks as its GraphML), only a bend exactly on the line
         # between its neighbours left out. For Newt, key bends only: a bend stays if leaving it out moves the line by
         # more than 20 px (layout.bends, as for CellDesigner), or the line without it runs through a node it does not
@@ -370,29 +368,31 @@ def write(diagram, newt=False):
         for q in pts:
             etree.SubElement(e, S + 'next', x=repr(float(q[0])), y=repr(float(q[1])))
         etree.SubElement(e, S + 'end', x=repr(float(p1[0])), y=repr(float(p1[1])))
-    if side:
-        report.say('changed', '%d arc%s meet%s a process from the side and turn%s at its antenna: %s'
-                   % (len(side), 's' * (len(side) > 1), '' if len(side) > 1 else 's', '' if len(side) > 1 else 's', ', '.join(dict.fromkeys(side))))
+    if turned:
+        report.say('changed', '%d %s a process from the side or behind and %s at its antenna\'s tip: %s'
+                   % (len(turned), 'arcs meet' if len(turned) > 1 else 'arc meets', 'turn' if len(turned) > 1 else 'turns', ', '.join(turned)))
     return etree.tostring(root, pretty_print=True, xml_declaration=True, encoding='UTF-8').decode('utf-8')
 
 
 def antenna(d, tip, pts):
-    # pts from the antenna's tip outward without the bends near the glyph (REACH beyond its box) at or behind the
-    # tip: inside the antenna's reach they drew it, or the turn of the inputs into a gate (iNOS), which the antenna
-    # now draws; a bend past the tip is a corner of the line and stays
-    (cx, cy), half = centre(d), max(d.box[2], d.box[3]) / 2
+    # pts from the antenna's tip outward without the bends near it (REACH beyond the glyph's box or the tip) that lie
+    # on its side of the glyph, at or behind the tip: they drew the antenna, or the turn of the inputs into a gate (iNOS),
+    # which the antenna now draws; a bend past the tip is a corner of the line, one beside or behind the glyph routes
+    # the line around it, and both stay
+    (cx, cy) = centre(d)
     ux, uy = tip[0] - cx, tip[1] - cy
     r = math.hypot(ux, uy)
+    reach = max(max(d.box[2], d.box[3]) / 2, r) + REACH
     while pts and r:
         vx, vy = pts[0][0] - cx, pts[0][1] - cy
-        if math.hypot(vx, vy) > half + REACH or (ux * vx + uy * vy) / r > r + 0.5:
+        if math.hypot(vx, vy) > reach or not 0 < (ux * vx + uy * vy) / r <= r + 0.5:
             break
         pts = pts[1:]
     return pts
 
 
 def sideways(d, tip, q):
-    # whether the line from the antenna's tip to q turns more than 45 degrees off the antenna
+    # whether the line from the antenna's tip to q turns more than 45 degrees off the antenna (from the side or behind)
     (cx, cy) = centre(d)
     ux, uy, vx, vy = tip[0] - cx, tip[1] - cy, q[0] - tip[0], q[1] - tip[1]
     n = math.hypot(ux, uy) * math.hypot(vx, vy)
