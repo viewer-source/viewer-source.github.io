@@ -1,7 +1,8 @@
 // Edit mode kept over a reload of the tab. GitHub is played by this script (page.route on api.github.com, files from a
 // clone of the site's data repository). Per map (GraphML, CellDesigner, SBGN-ML): editing started, the map zoomed and
 // panned, a node selected, moved and saved, then the page reloaded: no Leave page question, editing again, the map where
-// it was (place and zoom), the node still selected. A reload before the autosave asks Leave page, as before. The map's
+// it was (place and zoom), the node still selected, and no frame shown before editing started (the page revealed once,
+// with the grid and the Edit window in place). A reload before the autosave asks Leave page, as before. The map's
 // picture failing to load: editing starts all the same. A reload in view mode stays in view mode, and the same address
 // opened in a new tab opens in view mode.
 //   node tests/edit-reload.js <base address> <clone of the site's data repository> [--local]
@@ -44,6 +45,15 @@ function viewerHunks() {   // [old, new] pieces of the viewer's file changed sin
       r.fulfill({ response: res, body: t, headers: Object.assign({}, res.headers(), { 'content-type': 'text/html; charset=utf-8' }) });
     });
   }
+  await page.addInitScript(function () {   // frames shown with the Edit window open but editing not started yet: the blink
+    window.__early = 0;
+    var t0 = performance.now(), look = function () {
+      var g = document.querySelector('.m2');
+      if (g && !document.documentElement.classList.contains('m2-hold') && g.classList.contains('m2-win-edit') && !g.classList.contains('m2-editing')) window.__early++;
+      if (performance.now() - t0 < 5000) requestAnimationFrame(look);
+    };
+    requestAnimationFrame(look);
+  });
   var sha = {}, puts = [], body = {}, noPic = null;
   await page.route('https://api.github.com/**', async function (route) {
     var r = route.request(), u = new URL(r.url()), m = u.pathname.match(/^\/repos\/[^/]+\/[^/]+(\/.*)?$/), rest = m ? m[1] || '' : '';
@@ -109,6 +119,7 @@ function viewerHunks() {   // [old, new] pieces of the viewer's file changed sin
     ok('the map where it was', (await view()) === v0, v0 + ' | ' + (await view()));
     ok('the node still selected', (await selCount()) === sel0, (await selCount()) + ' handles');
     ok('the saved move there', (await now()) === moved);
+    ok('no frame shown before editing started', (await page.evaluate(function () { return window.__early; })) === 0, (await page.evaluate(function () { return window.__early; })) + ' frames');
     // a reload before the autosave: the question as before
     await page.keyboard.press('Escape'); await page.waitForTimeout(200);   // the node kept selected: a click on it would open its name
     await pickNode(); await nudge();

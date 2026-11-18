@@ -1213,10 +1213,12 @@
       V.grid.classList.add('m2-editing');
       buttons();
       gN = gE = null; mv = live = null; liveG = null; copies = []; frozen = false; cdBase = null;
-      if (same && same.text === t) { (cd ? cdpy() : yr()).then(function () { if (on && V.current === map && !undo.length && !gN) render(); }); paint(); quiet(); return; }
+      if (same && same.text === t) { (cd ? cdpy() : yr()).then(function () { if (on && V.current === map && !undo.length && !gN) render(); }); paint(); quiet(); shownWhole(); return; }
       quiet();
       render();
+      shownWhole();
     }
+    function shownWhole() { if (window.m2Shown) window.m2Shown(); }   // a reload in edit mode: the page shown once editing has started, in one step
     function stop() {
       if (typing) typing.done(true);   // a name being typed kept on its own map first (create.js)
       if (!on) return;
@@ -1726,6 +1728,7 @@
       if (text && dirty && !site) return resume();
       if (graphmlOf(V.current)) return editShown();
       buttons();
+      shownWhole();   // nothing to edit here: nothing more to wait for
 
     }
     document.querySelectorAll('#m2-rail .m2-ri[data-win="edit"]').forEach(function (b) { b.addEventListener('click', shown); });

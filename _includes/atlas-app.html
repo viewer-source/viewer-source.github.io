@@ -2769,7 +2769,7 @@ page, so its styles keep the base they were made on).
       if (pic !== img) { img.removeAttribute('id'); pic.id = 'm2-img'; pic.alt = m.title; img.replaceWith(pic); img = pic; }
       img.style.visibility = '';
       draw();
-      m2Shown();   // the first map in: the page shown whole
+      if (!reloaded()) m2Shown();   // the first map in: the page shown whole (reloaded in edit mode: once editing has started, core.js begin, or at the limit)
       ed.pictured();   // the Edit window waiting for this picture (a reload in edit mode): editing starts on it
     });
     var rv = reloaded();
