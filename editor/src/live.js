@@ -24,7 +24,7 @@
       var nb = ks.length ? grown(ks, bx, boxOf, function (k) { return !!(mv && mv.n.has(k)); }) : {};
       liveC = Object.assign({}, seed || {}, nb);
       if (!Object.keys(liveC).length) liveC = null;
-      liveDraw(seed ? Object.keys(seed).map(Number).filter(function (i) { return !nodes2[i].comp; }) : []);
+      liveDraw(seed ? Object.keys(seed).map(Number).filter(function (i) { return !holds(i); }) : []);
       return Object.keys(nb).some(function (k) { return nodes2[+k].comp; });   // a compartment grows round what moves
     }
     function undraw(i) {   // a holder drawn as the renderer drew it again

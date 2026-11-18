@@ -1356,6 +1356,20 @@
       T.set(l, 'x', repr((0.5 + F(p.getAttribute('nodeRatioX'))) * w - F(l.getAttribute('width')) / 2));
       T.set(l, 'y', repr((0.5 + F(p.getAttribute('nodeRatioY'))) * h - F(l.getAttribute('height')) / 2));
     });
+    scaleOn(T, G, id, o, box);
+    return T.text();
+  }
+  // the ends of node id's lines that are off its centre moved with its box (o to box) in proportion, so a port on the
+  // border stays on it: a glyph resized, a complex resized by its handles (scaleEnds: its box already written)
+  function scaleEnds(t, id, o, box, opt) {
+    var G = gml(t, opt);
+    if (!G.node[id]) return t;
+    var T = new Tags(t, G.doc);
+    scaleOn(T, G, id, o, box);
+    return T.text();
+  }
+  function scaleOn(T, G, id, o, box) {
+    var w = box[2], h = box[3];
     // an end that comes to lie within 1.5 of the line from the centre toward the line's next point is read by the
     // converter as aimed at the centre (sbgnml.at): set so here too, so the editor draws what the file will hold
     var kx = o[2] ? w / o[2] : 1, ky = o[3] ? h / o[3] : 1, c = centre(box);
@@ -1375,7 +1389,6 @@
         T.set(e.path, q[1], repr(v[0])); T.set(e.path, q[2], repr(v[1]));
       });
     });
-    return T.text();
   }
   function remove(t, ids, opt) {   // nodes deleted in the editor's GraphML, with every line at them; their ids kept for write()
     var G = gml(t, opt), T = new Tags(t, G.doc), del = {};
@@ -2109,7 +2122,7 @@
   }
 
   var api = { graphml: graphml, write: write, join: join, joinable: joinable, nameAt: nameAt, namePlaces: namePlaces, stack: stack, restack: restack, stackMoves: stackMoves, NAME_PLACES: NAME_PLACES, defaults: defaults, add: add, lookOf: lookOf, restyle: restyle, lineOf: lineOf, recolour: recolour, label: label, state: state, stateValue: stateValue, stateMove: stateMove, stateDelete: stateDelete,
-              unit: unit, unitValue: unitValue, unitDelete: unitDelete, multimer: multimer, classOf: classOf, MAKE: MAKE, kind: kind, PROCESSES: ['process'].concat(Object.keys(SIGN)), SIGN: SIGN, remove: remove, resize: resize, gone: gone, nameable: nameable,
+              unit: unit, unitValue: unitValue, unitDelete: unitDelete, multimer: multimer, classOf: classOf, MAKE: MAKE, kind: kind, PROCESSES: ['process'].concat(Object.keys(SIGN)), SIGN: SIGN, remove: remove, resize: resize, scaleEnds: scaleEnds, gone: gone, nameable: nameable,
               moveInto: moveInto, connect: connect, arcRemove: arcRemove, arcKind: arcKind, GATE: GATE, ARROW: ARROW, MODULATIONS: ['stimulation', 'catalysis', 'inhibition', 'necessary stimulation', 'modulation'],
               activity: activity, activities: activities, proteinBoxes: proteinBoxes, afUnitBox: afUnitBox, afUnitFont: afUnitFont, isAf: isAf, mapKind: mapKind, unitFor: unitFor, fillFor: fillFor, AF_ARC: AF_ARC, UNITS: Object.keys(UNIT_CLS).filter(function (u) { return u && u !== 'perturbation'; }), unitClass: actCls };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.sbgn_edit = api;

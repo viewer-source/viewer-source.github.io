@@ -1255,7 +1255,8 @@
     document.addEventListener('keydown', function (e) { if (link && e.key === 'Escape') { link = null; tap = null; paint(); } }, true);
 
     // ---------- resizing and Properties ----------
-    // A macromolecule or a simple chemical selected is resized by its eight handles: the sides dragged move, its width and
+    // A glyph selected (a complex's member too, its complex growing round it; a complex with members held round them,
+    // roomy in core.js) is resized by its eight handles: the sides dragged move, its width and
     // height in multiples of Grid size (8 by default, so a drag gives regular sizes),
     // Alt or Ctrl held for any size (sized, core.js). Properties, under the palette, shows the width and the height of the
     // one selected, typed for an exact size (its centre kept); Grid size beside the Grid and Snap switches (core.js), kept in this browser with them.
@@ -1264,14 +1265,18 @@
     // Resizing and Properties serve every format with a palette through its part's answers (propFmt: PF_SB here, PF_CD in
     // cdcreate.js): which node they are for, which rows apply, its look, a field set, a size set
     function propFmt() { return palOn() ? PF_SB : cdPal() ? PF_CD : null; }
-    function sizable(i) { var f = propFmt(); return !!f && !!nodes2[i] && f.sizable(i); }
+    function sizable(i) {   // a complex holding members on every format with a part (held round them: roomy, core.js), not in AF's SBGN view (its members not drawn); else the part's answer
+      var f = propFmt(), n = nodes2[i];
+      if (!f || !n) return false;
+      return n.shape.kind === 'Complex' && n.kids.length ? !afSbgn : f.sizable(i);
+    }
     function setSize(i, nb) { setSizes([[i, nb]]); }
     function setSizes(pairs) {   // [[node, box], ...]: one undo step for them all (Properties with several nodes selected)
       var f = propFmt(); if (f) f.size(pairs.map(function (q) { return [q[0], q[1].map(function (v) { return +fmt(v); })]; }));
     }
-    function sbSizable(i) {   // not a member of a complex (Pack keeps a complex's members to the layout rules)
-      var n = nodes2[i], u = n.up != null ? nodes2[n.up] : null;
-      return isMade(n) && n.shape.kind !== 'Process' && n.shape.kind !== 'Operator' && (!u || u.comp);   // a process or gate keeps its size (its antennas)
+    function sbSizable(i) {   // a glyph made from the palette, a complex's member too (the complex grows round it)
+      var n = nodes2[i];
+      return isMade(n) && n.shape.kind !== 'Process' && n.shape.kind !== 'Operator';   // a process or gate keeps its size (its antennas)
     }
     function sbSetSize(pairs) {   // each node given its box, one undo step with the compartments round them grown to hold them
       var ids = [], was = {}, t2 = text;
@@ -1291,7 +1296,7 @@
     // default; state variables and units of information have their own ways on the map, Cloned skipped). A field is
     // applied on Enter or when it is left (Esc puts it back), a colour also when the picker closes; one undo step each.
     // Shown for one macromolecule or simple chemical selected (not an Activity Flow activity drawn as one: write() carries
-    // none of its changes); Width and Height not for a member of a complex (Pack sizes those). Grid size is beside the
+    // none of its changes); Width and Height for a member of a complex too (Pack keeps member sizes). Grid size is beside the
     // Grid and Snap switches (core.js)
     var ROWS = [['label', 'Label', 'text'], ['w', 'Width', 'num'], ['h', 'Height', 'num'], ['fill', 'Fill colour', 'colour'],
       ['line', 'Border colour', 'colour'], ['width', 'Border width', 'num'], ['multimer', 'Multimer', 'check']];
@@ -1455,7 +1460,8 @@
       remember(false); text = t2; made(ids);
       return true;
     }
-    var PF_SB = { sizable: sbSizable, size: sbSetSize, node: sbNode, set: sbSet, def: true,
+    function sbEnds(id, o, box) { var t2 = sbJs.scaleEnds(text, id, o, box); if (t2 !== text) { text = t2; parse(); } }   // a complex's line ends after its box was set (dragEnd, core.js)
+    var PF_SB = { sizable: sbSizable, size: sbSetSize, node: sbNode, set: sbSet, def: true, ends: sbEnds,
       line: { colour: function (el) { return sbJs.lineOf(el); }, recolour: function (t, id, c) { return sbJs.recolour(t, id, c); } },   // a line's colour (edgeShow, edgeSet)
       off: function (k, i) { return k === 'multimer' && isAct(i); },   // an activity is no multimer
       look: function (i) { var o = sbJs.lookOf(realizerOf(nodes2[i].el)); return { label: nameOf(i), fill: o.fill ? o.fill.slice(0, 7).toLowerCase() : '', line: (o.line || '#000000').slice(0, 7).toLowerCase(), width: o.width, multimer: o.multimer }; } };

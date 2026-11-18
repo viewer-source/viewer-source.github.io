@@ -502,8 +502,8 @@
     }
     function cdRename(id, v) { cdApply(function (t) { return cdMk.rename(t, id, v); }, [id]); }
 
-    // resizing and Properties on a CellDesigner map (propFmt, create.js): a species not in a complex, a complex aside (its
-    // members set its size), resized by its handles or by Width and Height, as on SBGN-ML maps; the label, the fill, the
+    // resizing and Properties on a CellDesigner map (propFmt, create.js): a species resized by its handles or by Width and
+    // Height, as on SBGN-ML maps (a complex's member by its handles only, a complex with members as a holder: roomy, core.js); the label, the fill, the
     // border width and multimer (the species' homodimer, 2 when ticked) written by cd_make. No border colour (CellDesigner's
     // species have none); a degraded species keeps its look and its id as its name. Set as default not yet: the colours of
     // new species come from the palette's list
@@ -519,7 +519,11 @@
       sizeRec = null; render(); paint(); changed();
     }
     var cdLook = [];   // [alias id, file, its look]
-    var PF_CD = { sizable: cdSpecies, size: cdSetSize, def: false,
+    function cdSizable(i) {   // a species, a complex's member too (the complex grows round it)
+      var n = nodes2[i], u = n.up != null ? nodes2[n.up] : null;
+      return cdSpecies(i) || (!!u && u.shape.kind === 'Complex' && n.el.getAttribute('yfiles.foldertype') !== 'group');
+    }
+    var PF_CD = { sizable: cdSizable, size: cdSetSize, def: false,
       rx: { of: cdRxOf, set: cdReversible },   // a reaction's Reversible (propRx, create.js)
       node: function (i) { return cdSpecies(i) ? i : -1; },
       off: function (k, i) { return k === 'line' || (/^(label|fill|multimer)$/.test(k) && pNow.cls === 'DEGRADED'); },   // pNow: look's, read just before

@@ -933,6 +933,21 @@
       var w = /[lr]/.test(s) ? size(b[2] + (/l/.test(s) ? -dx : dx)) : b[2], h = /[tb]/.test(s) ? size(b[3] + (/t/.test(s) ? -dy : dy)) : b[3];
       return [/l/.test(s) ? b[0] + b[2] - w : b[0], /t/.test(s) ? b[1] + b[3] - h : b[1], w, h];
     }
+    // a node that holds others (a compartment; a complex with members, the only other holder a format part makes
+    // resizable): resized as a holder, its parts drawn by liveDraw
+    function holds(i) { return !!nodes2[i].comp || nodes2[i].kids.length > 0; }
+    // a complex resized by its handles: the sides dragged (s) held where its members still fit, with its Insets and labels
+    // as grown() holds a member, never further out than where they started (b0: members closer than the Insets in another
+    // tool's file keep their room); the members stay where they are
+    function roomy(i, b, s, b0) {
+      var n = nodes2[i], x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+      n.kids.forEach(function (k) { var e = extOf(k, boxOf(k)); x0 = Math.min(x0, e[0] - n.ins[0]); y0 = Math.min(y0, e[1] - n.ins[1] - n.lab.t); x1 = Math.max(x1, e[2] + n.ins[2]); y1 = Math.max(y1, e[3] + n.ins[3] + n.lab.b); });
+      if (x0 === Infinity) return b;
+      var L = b[0], T = b[1], R = b[0] + b[2], B = b[1] + b[3];
+      if (/l/.test(s)) L = Math.min(L, Math.max(x0, b0[0])); if (/r/.test(s)) R = Math.max(R, Math.min(x1, b0[0] + b0[2]));
+      if (/t/.test(s)) T = Math.min(T, Math.max(y0, b0[1])); if (/b/.test(s)) B = Math.max(B, Math.min(y1, b0[1] + b0[3]));
+      return [L, T, R - L, B - T];
+    }
     function pt(pi) { var p = points[pi], o = mv && mv.p.has(pi); return [num(p, 'x') + (o ? mv.dx : 0), num(p, 'y') + (o ? mv.dy : 0)]; }
     // the grey guides of a bend point moved by the keys (as in a drag, to see when a segment is level or
     // upright): one bend point selected alone, a segment drawn while it is exactly level or upright; no snapping, the
@@ -2851,9 +2866,9 @@
         else if (drag.rs && !drag.rs.go && Math.hypot(e.clientX - drag.rs.cx, e.clientY - drag.rs.cy) < 4) return;   // not a resize yet: a click with a jitter changes nothing
         else if (drag.rs) {
           var seed = {}, rc = drag.rs.c; drag.rs.go = true;
-          seed[rc] = nodes2[rc].comp ? resized(drag, P, gridSet.snap && !e.altKey && !e.ctrlKey) : sized(drag, P, e.altKey || e.ctrlKey);
+          seed[rc] = nodes2[rc].comp ? resized(drag, P, gridSet.snap && !e.altKey && !e.ctrlKey) : holds(rc) ? roomy(rc, sized(drag, P, e.altKey || e.ctrlKey), drag.rs.s, drag.rs.b0) : sized(drag, P, e.altKey || e.ctrlKey);
           liveFit(seed);
-          if (!nodes2[rc].comp) sizeLive(rc, seed[rc]);
+          if (!holds(rc)) sizeLive(rc, seed[rc]);
         }
         else if (drag.grab && Math.hypot(e.clientX - drag.grab.sx, e.clientY - drag.grab.sy) < 4) return;   // not a drag yet
         else {
@@ -2924,15 +2939,16 @@
         else paint();
         return;
       }
-      if (d.rs) {   // a compartment resized: its box set; in Full what no longer overlaps it let go, what it now covers taken in, past its holder's edge it leaves it (regroup); in Layout its holder grows (grown)
+      if (d.rs) {   // a compartment or a complex resized: its box set; in Full what no longer overlaps it let go, what it now covers taken in, past its holder's edge it leaves it (regroup); in Layout its holder grows (grown)
         var nb = liveC && liveC[d.rs.c];
         if (!nb || nb.every(function (v, j) { return Math.abs(v - d.rs.b0[j]) < 0.01; })) { liveOff(); sizeOff(); paint(); return; }
-        if (!nodes2[d.rs.c].comp) { setSize(d.rs.c, nb); return; }   // a node resized by its handles (create.js, the format's part)
+        if (!holds(d.rs.c)) { setSize(d.rs.c, nb); return; }   // a node resized by its handles (create.js, the format's part)
         var rc = d.rs.c, rid = nodes2[rc].id, b0r = d.rs.b0, one = {}; remember(false);
         one[rc] = nb; setBoxes(one);
+        var pf = propFmt(); if (pf && pf.ends) pf.ends(rid, b0r, nb);   // the format's part: its line ends at the box scaled with it (SBGN-ML)
         var before = boxesBefore(function (k) { return nodes2[k].id === rid ? b0r : boxOf(k); });
         var B0r = function (k) { return before[nodes2[k].id] || boxOf(k); }, doneR = function () { render(); paint(); changed(); }, ri = nodes2.findIndex(function (n) { return n.id === rid; });
-        if (!full()) { setBoxes(grown([ri], boxOf, B0r, function () { return false; })); refit([rid]); doneR(); return; }
+        if (!full() || !nodes2[ri].comp) { setBoxes(grown([ri], boxOf, B0r, function () { return false; })); refit([rid]); doneR(); return; }   // a complex: its members kept (roomy), its holders grown
         settle(regroup('box', new Set([ri]), boxOf, B0r), { moving: [rid] }, doneR, function (why) { text = unpush(); parse(); liveOff(); paint(); warn(why); });
         return;
       }
