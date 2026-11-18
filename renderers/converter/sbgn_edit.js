@@ -1080,10 +1080,10 @@
   }
   // a new glyph's fill where the map has no glyph of its kind (never left transparent; one with glyphs of its kind none
   // of which is filled gets none, drawn white as they are): the viewer's Default colour scheme, an activity's by its
-  // unit's kind; processes, gates, submaps none. The master of these colours for the editor; the viewer keeps its own
+  // unit's kind; a submap white as the other entities; processes and gates none. The master of these colours for the editor; the viewer keeps its own
   // copy as SCHEMES.default in _includes/atlas-app.html (compartment, complex, protein, metabolite, ..., white), kept the same
   var FILL = { macromolecule: '#C8D8EB', 'simple chemical': '#DBEBDB', compartment: '#F7F6F3', complex: '#FFFFFF', 'nucleic acid feature': '#FFFFFF',
-               'unspecified entity': '#FFFFFF', 'perturbing agent': '#FFFFFF', phenotype: '#FFFFFF' };
+               'unspecified entity': '#FFFFFF', 'perturbing agent': '#FFFFFF', phenotype: '#FFFFFF', submap: '#FFFFFF' };
   function fillFor(cls, unit) { return FILL[cls === 'biological activity' ? actCls(unit) : (cls || '').replace(/ multimer$/, '')] || null; }
   function defaults(t, opt, cls, unit) {   // unit: an activity's, for its fill
     cls = cls || 'macromolecule';
@@ -1185,6 +1185,11 @@
   // the map's glyphs of its class use; else a style made for it, with the attributes of its old style it does not set
   // (font family, text colour), its colours in the map's colour definitions; a style left naming nothing taken out. Returns
   // the render extension's text when it is new and the map an empty <map/> (write() puts it in with the glyphs made)
+  function carried(old) {   // the attributes a glyph's old styles give that a look does not set (font family, text colour)
+    var at = {};
+    old.forEach(function (st) { if (st.g) Array.prototype.forEach.call(st.g.attributes, function (a) { if (!/^(fill|stroke|stroke-width|font-size)$/.test(a.localName || a.name) && !/^xmlns/.test(a.name)) at[a.name] = a.value; }); });
+    return at;
+  }
   function restyle0(S, T, St, looks, pre) {
     if (!looks.size) return;
     var lists = new Map(), made = {}, order = [], used = {};
@@ -1201,24 +1206,37 @@
         (x.font === o.font || (o.fresh && x.font == null)) && x.ids.every(function (i) { return !!S.arc[i] === arc; }); });   // arcs' styles and glyphs' apart
       cand.sort(function (a, b) { return (b.font === o.font) - (a.font === o.font) || cnt(b, o.cls) - cnt(a, o.cls); });
       if (cand[0]) { lists.set(cand[0], (lists.get(cand[0]) || cand[0].ids.slice()).concat(id)); return; }
-      var key = [o.fill, o.line, o.width, o.font, o.fresh ? '' : old.map(function (x) { return St.indexOf(x); }).join(',')].join('\u0000');
+      var key = [o.fill, o.line, o.width, o.font, o.fresh ? '' : JSON.stringify(carried(old))].join('\u0000');   // the same look and the same attributes kept: one style
       if (!made[key]) { made[key] = { o: o, old: o.fresh ? [] : old, ids: [] }; order.push(made[key]); }
       made[key].ids.push(id);
     });
     lists.forEach(function (ids, st) { if (ids.length) T.set(st.el, st.idName, ids.join(' ')); else T.cut(st.el); });   // a style left naming nothing taken out
-    if (!order.length) return;
-    var lsEl = first('listOfStyles'), lcEl = first('listOfColorDefinitions'), defs = St.defs, mapEl = kids(S.doc.documentElement, 'map')[0];
+    var lsEl = first('listOfStyles'), lcEl = first('listOfColorDefinitions'), defs = St.defs, mapEl = kids(S.doc.documentElement, 'map')[0], newRefs = {};
+    // a colour definition the change left unused taken out (one a style used before, named by no style or other element
+    // after it), so the file keeps no leftovers; one unused before stays as the file had it
+    var tidy = function () {
+      if (!lcEl) return;
+      var refs = function (el, into) { Array.prototype.forEach.call(el.getElementsByTagName('*'), function (e) { Array.prototype.forEach.call(e.attributes, function (a) { if (a.value in defs) into[a.value] = 1; }); }); };
+      var before = {}, after = Object.assign({}, newRefs), gone = new Set();
+      St.forEach(function (st) { refs(st.el, before); var l = lists.get(st); if (l && !l.length) gone.add(st.el); else refs(st.el, after); });
+      Array.prototype.forEach.call(all, function (e) {   // any other element naming a colour (a background, a text colour)
+        if (e.localName === 'colorDefinition' || e.localName === 'style') return;
+        for (var u = e.parentNode; u; u = u.parentNode) if (u.localName === 'style' || u.localName === 'listOfColorDefinitions') return;
+        Array.prototype.forEach.call(e.attributes, function (a) { if (a.value in defs) after[a.value] = 1; });
+      });
+      kids(lcEl, 'colorDefinition').forEach(function (d) { var i = av(d, 'id'); if (before[i] && !after[i]) T.cut(d); });
+    };
+    if (!order.length) { tidy(); return; }
     var rp = lsEl && lsEl.prefix ? lsEl.prefix + ':' : '', ap = St.some(function (x) { return x.idName.indexOf(':') > 0; }) ? rp : '', bi = lsEl ? T.indent(lsEl) : T.indent(mapEl) + '      ', colours = '', styles = '';
     var cid = function (v) {   // a colour's id in the map's definitions, one added when it has none
       if (!lcEl && lsEl) return v;   // a map whose styles give their colours as values
-      for (var k in defs) if (defs[k] && defs[k].toUpperCase().replace(/^(#[0-9A-F]{6})FF$/, '$1') === v) return k;
+      for (var k in defs) if (defs[k] && defs[k].toUpperCase().replace(/^(#[0-9A-F]{6})FF$/, '$1') === v) { newRefs[k] = 1; return k; }
       var i = fresh('color_e'); defs[i] = v;
       colours += '\n' + bi + '  <' + rp + 'colorDefinition ' + ap + 'id="' + i + '" ' + ap + 'value="' + v.toLowerCase() + '"/>';
       return i;
     };
     order.forEach(function (m) {
-      var o = m.o, at = {};
-      m.old.forEach(function (st) { if (st.g) Array.prototype.forEach.call(st.g.attributes, function (a) { if (!/^(fill|stroke|stroke-width|font-size)$/.test(a.localName || a.name) && !/^xmlns/.test(a.name)) at[a.name] = a.value; }); });
+      var o = m.o, at = carried(m.old);
       at[ap + 'stroke'] = cid(o.line || '#000000');
       if (o.fill) at[ap + 'fill'] = cid(o.fill);
       if (o.width != null) at[ap + 'stroke-width'] = num(o.width);   // a line's width only where its style gave one
@@ -1232,6 +1250,7 @@
       var e = T.t.lastIndexOf('</', T.end(el) - 1), ls = T.t.lastIndexOf('\n', e - 1);
       T.ed.push(/^\s*$/.test(T.t.slice(ls + 1, e)) ? [ls, ls, xml] : [e, e, xml + '\n' + T.indent(el)]);
     };
+    tidy();
     if (lsEl) { if (colours) into(lcEl, colours); into(lsEl, styles); return; }
     var i0 = T.indent(mapEl) + '  ', R = 'http://www.sbml.org/sbml/level3/version1/render/version1';
     if (lcEl) {   // colour definitions but no styles yet: a list of styles beside them

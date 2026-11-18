@@ -392,7 +392,7 @@
     // kind with a kept look its fill, border and width, the rest as they are; Confetti every entity, complexes too, a pastel
     // of its own, one after another (compartments as they are). Every line black, under Confetti a colour of its own
     // (confettiLine); processes, gates and the other glyphs their border black. One parse (sbgn_edit.restyleAll)
-    var SB_FILLED = /^(macromolecule|simple chemical|nucleic acid feature|unspecified entity|perturbing agent|phenotype|complex|compartment|biological activity|perturbation)( multimer)?$/;
+    var SB_FILLED = /^(macromolecule|simple chemical|nucleic acid feature|unspecified entity|perturbing agent|phenotype|complex|compartment|submap|biological activity|perturbation)( multimer)?$/;
     function sbRecolour(mode) {
       if (mode === 'file' || !palOn()) return;
       var cls = sbClasses(), acts = sbJs.activities(text), kept = mode === 'custom' ? defsKept() : {}, hues = [], M = {};
