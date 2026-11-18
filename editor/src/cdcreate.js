@@ -651,9 +651,9 @@
     function cdRename(id, v) { cdApply(function (t) { return cdMk.rename(t, id, v); }, [id]); }
 
     // resizing and Properties on a CellDesigner map (propFmt, create.js): a species resized by its handles or by Width and
-    // Height, as on SBGN-ML maps (a complex's member by its handles only, a complex with members as a holder: roomy, core.js); the label, the fill, the
+    // Height, as on SBGN-ML maps (a complex's member too, the complex growing round it; a complex with members as a holder: roomy, core.js); the label, the fill, the
     // border width and multimer (the species' homodimer, 2 when ticked) written by cd_make. No border colour (CellDesigner's
-    // species have none); a degraded species keeps its look and its id as its name. A complex (not a member) and a
+    // species have none); a degraded species keeps its look and its id as its name. A complex (a member one too) and a
     // compartment have Properties too: Width, Height and Fill (a compartment's colour, its band and lines drawn from it), a
     // complex its border width; Set as default (cdDef) for species only
     function cdSpecies(i) { return cdRole(i) === 'epn' && nodes2[i].el.getAttribute('yfiles.foldertype') !== 'group'; }
@@ -673,12 +673,9 @@
       if (cdLineMemo[0] !== id || cdLineMemo[1] !== cd.now) { var c = null; try { c = cdMk.lineColour(cd.now, id); } catch (e) { c = null; } cdLineMemo = [id, cd.now, c]; }
       return cdLineMemo[2];
     }
-    function cdSizable(i) {   // a species, a complex's member too (the complex grows round it), a complex, a compartment
-      var n = nodes2[i], u = n.up != null ? nodes2[n.up] : null;
-      return cdProp(i) || (!!u && u.shape.kind === 'Complex' && n.el.getAttribute('yfiles.foldertype') !== 'group');
-    }
-    function cdProp(i) { return cdSpecies(i) || nodes2[i].comp || (cdRole(i) === 'epn' && nodes2[i].shape.kind === 'Complex'); }   // what Properties is for: a species, a complex (not a member), a compartment
-    var PF_CD = { sizable: cdSizable, size: cdSetSize, def: cdDef,
+    function cdMember(i) { var n = nodes2[i]; return n.up != null && nodes2[n.up].shape.kind === 'Complex'; }   // a complex's member (a complex inside one too)
+    function cdProp(i) { return cdSpecies(i) || cdMember(i) || nodes2[i].comp || (cdRole(i) === 'epn' && nodes2[i].shape.kind === 'Complex'); }   // what Properties and resizing are for: a species, a member (its complex growing round it), a complex, a compartment
+    var PF_CD = { sizable: cdProp, size: cdSetSize, def: cdDef,
       rx: { of: cdRxOf, set: cdReversible },   // a reaction's Reversible (propRx, create.js)
       // a line's colour (edgeShow, edgeSet): a modifier's, an added reactant's or product's own, else its reaction's (a
       // reduced notation's line, a main line); a gate's lines none (cd_make.lineColour null), no ports as offsets

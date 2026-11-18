@@ -898,7 +898,7 @@
     // Name by members: a complex named by its members' names joined by colons (A:B, CellDesigner's usual name for
     // a complex), in reading order (rows from the top, each from the left); a member complex with no name gives its own
     // members' names. Offered with Repack complex (core.js) on every map that draws complexes with their members, in Layout
-    // and Full editing alike; greyed only when the complex already has that name (or its members show no name); members' names as drawn
+    // and Full editing alike; greyed only when the complex already has that name; members' names as drawn
     function membersName(c) {
       var ms = [], rows = [], mid = function (k, d) { var b = boxOf(k); return b[d] + b[d + 2] / 2; };
       nodes2.forEach(function (n, k) { if (n.up === c) ms.push(k); });
@@ -913,7 +913,7 @@
       var c = complexHere(member);
       if (c == null || afSbgn || afKind()) return null;   // not in an Activity Flow view, where members are not drawn
       var v = membersName(c), id = nodes2[c].id, go = function () { setName(id, v); };
-      go.same = !v || v === nameNow(c) || !cd && (!sbJs || sb && !sbJs.nameable(src(), id));   // greyed, so the item stays where it is found
+      go.same = v === nameNow(c) || !cd && (!sbJs || sb && !sbJs.nameable(src(), id));   // greyed only when already so named (or the file cannot take a name), so the item stays where it is found
       return go;
     };
     // a double click on a named entity, or on one of its state variables or units of information, opens its text
