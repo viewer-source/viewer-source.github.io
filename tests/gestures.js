@@ -46,8 +46,10 @@ var URL0 = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysi
     var e0 = await tf(), sawBand = false;
     await page.mouse.move(v[0] + 40, v[1] + 40); await page.mouse.down(); await page.mouse.move(cx, cy, { steps: 6 });
     sawBand = !!(await page.$('#m2-edit-layer .m2-ed-band'));
+    var bandFill = sawBand && await page.$eval('#m2-edit-layer .m2-ed-band', function (e) { return getComputedStyle(e).fill; });
     await page.mouse.move(cx + 200, cy + 150, { steps: 6 }); await page.mouse.up(); await page.waitForTimeout(300);
     ok('edit mode: a drag draws the area band', sawBand);
+    ok('edit mode: the band an outline only, no fill, as in view mode', bandFill === 'none', bandFill);
     ok('edit mode: a drag leaves the map still', (await tf()) === e0, e0 + ' -> ' + (await tf()));
     ok('edit mode: the viewer area stays hidden', await page.$eval('#m2-area', function (e) { return e.style.display !== 'block'; }));
     var sel = await page.$$eval('#m2-edit-layer .m2-ed-handle, #m2-edit-layer [class*="m2-ed-sel"]', function (l) { return l.length; });
