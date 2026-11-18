@@ -124,7 +124,7 @@
       return { ids: nodes2.map(function (n) { return n.id; }), boxes: nodes2.map(function (n) { return all[n.ag]; }), x0: fr.x0, y0: fr.y0 };
     }
     // the frame of the picture against the file saved (kept with the edited drawing, the start of the next editing): a
-    // CellDesigner drawing is in the file's places, which already hold a shift out of negative places, so 0, 0; the
+    // CellDesigner drawing is in the file's places, which already hold a shift (out of negative places, or the canvas fit), so 0, 0; the
     // editor's own frame (x0, y0) is that shift less (else back in edit mode the map jumps by the shift)
     function picX0() { return cd ? 0 : x0; }
     function picY0() { return cd ? 0 : y0; }
@@ -1118,8 +1118,8 @@
       return (cd ? cdpy() : yr()).then(function (p) {
         var r;
         if (cd) {   // the moves written into the CellDesigner file, drawn, and the GraphML made of it again
-          var dm = drawMemo && drawMemo.cd && drawMemo.base === cd.base && drawMemo.text === text ? drawMemo : null;
-          var q = dm ? dm.q : p.draw(cd.base, text);
+          var dm = drawMemo && drawMemo.cd && drawMemo.base === cd.base && drawMemo.text === text && !undo.length ? drawMemo : null;   // drawn ahead unfitted, as the map before any change
+          var q = dm ? dm.q : cdDraw(cd.base, text);
           if (t !== ticket) return;
           cd.now = q[1]; r = [q[0], []]; cdBase = { now: q[1], text: q[2] };   // what the live drawing of a move starts from
           if (q[2] !== text && !drag) {   // the same map, its new bend points (a glyph moved) now its own
@@ -1493,7 +1493,7 @@
         return waitFor(m);
       }).then(function () {
         if (!still()) throw 0;
-        if (cdm) dm = { cd: true, base: p.t, text: g, q: cdJs.draw(p.t, g) };
+        if (cdm) dm = { cd: true, base: p.t, text: g, q: cdDraw(p.t, g, false) };
         else { var y = window.yrender.render(d2, { classes: true, groups: true, sbgn: sbMap(m) }); dm = { cd: false, text: g2, r: [y.svg, y.errors] }; }   // the renderer only reads the document
         p.memo = dm;
         return waitFor(m);
@@ -2356,7 +2356,7 @@
           // arcs, the labels) stays on top, as yEd shows a group selected
           var el = document.createElementNS('http://www.w3.org/2000/svg', 'path');
           el.setAttribute('class', 'm2-ed-dark'); el.setAttribute('d', shapeD(i, true));
-          // a CellDesigner drawing is in the file's places, which a shift out of negative places (cd_edit.place) puts
+          // a CellDesigner drawing is in the file's places, which a shift (out of negative places or the fit, cd_edit.place) puts
           // -x0, -y0 from the editor's (the frame's two translates cancel inside the picture): the fill follows them
           // (else after a node moved past the canvas edge the fill shows at another place)
           // and a node moved by the keys has its new place in the file and its group still shifted by the keys' sum
@@ -2694,11 +2694,9 @@
     // the whole map's tools of the Edit window in the right-click menu too, on empty map space:
     // Snap map to grid, Repack all complexes (every complex, whatever is selected), and the
     // Show grid and Snap to grid switches, a check beside a switch that is on; each the same code as its button
-    // and after Repack all complexes the whole-map items a format's own part adds (mapTools: functions giving [label, go] or nothing)
     // and Repack complex, in the object's menu of a complex (a right click inside it) or of a member, above Select all of
     // this kind: the outermost complex round it (outerComplex), alone; above it Name by members for the innermost
     // complex there (create.js)
-    var mapTools = [];
     var ownMenus = [];   // a format's part: functions telling a point that has its own right-click menu (a state variable), where no complex item is offered
     function complexHere(member) {   // the innermost complex round the right click, or null; member: asked by the object's menu, so not on empty space
       if (!on || V.current !== map || !text || !rclick || (member && (emptyClick() || ownMenus.some(function (f) { return f(rclick); })))) return null;
@@ -2716,10 +2714,8 @@
     window.m2EditMapItems = function () {
       if (!emptyClick()) return null;
       var tick = function (v) { return v ? '<span class="m2-cx-key" aria-hidden="true">\u2713</span>' : ''; };
-      var own = [];
-      mapTools.forEach(function (f) { var q = f(); if (q) own.push(q); });
-      return [['Snap map to grid', snapMap], ['Repack all complexes', function () { pack([]); }]].concat(own,
-        [['Show grid', gridShow, tick(gridSet.shown), gridSet.shown], ['Snap to grid', gridSnap, tick(gridSet.snap), gridSet.snap]]);
+      return [['Snap map to grid', snapMap], ['Repack all complexes', function () { pack([]); }],
+        ['Show grid', gridShow, tick(gridSet.shown), gridSet.shown], ['Snap to grid', gridSnap, tick(gridSet.snap), gridSet.snap]];
     };
     // a bend point put where the right click was on a line (as
     // CellDesigner's right click Add Anchor Point): the same new point a drag on the line makes, left

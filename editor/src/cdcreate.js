@@ -120,7 +120,7 @@
       keyFlush();   // a run of arrow keys settled first (else a nudge then Delete within 150 ms loses the nudge)
       var N = cdNow(), now = N.t;   // a move not drawn yet is in the file too
       var t2;
-      try { t2 = fn(now); } catch (err) { warn(String(err && err.message || err).replace(/\.?$/, '.')); return false; }
+      try { t2 = fn(now, N.sh); } catch (err) { warn(String(err && err.message || err).replace(/\.?$/, '.')); return false; }
       if (t2 && t2.text != null) t2 = t2.text;
       if (!t2 || t2 === now) return false;
       remember(false);
@@ -220,17 +220,21 @@
     function cdMake(P, kind) {
       var cls = cdKind(kind);
       if (!cls || CD_GATE[kind]) return;
-      // in the file's places (the editor's are those less a shift out of negative places still pending, x0, y0), snapped
-      // there, as the file's nodes are on its grid; placed where it is dropped, also past the canvas's edge: drawing it
-      // shifts the map out of negative places (cd_edit.place) and the frame follows, as after a move, so nothing moves on screen
-      var s = cdSize(cls), e = cdComp(cls) ? 0 : 6 * (cdCopies(cls) - 1), X = P[0] - x0 - s[0] / 2, Y2 = P[1] - y0 - s[1] / 2;   // centred and snapped by the whole box, a multimer's copies included
-      if (gridSet.snap) { X += toGrid(X + s[0] / 2, gridSet.step); Y2 += toGrid(Y2 + s[1] / 2, gridSet.step); }
-      var b = [+fmt(X), +fmt(Y2), s[0] - e, s[1] - e];   // the front one: homodimer adds the copies
+      // in the file's places, those of the drawing cdApply hands over (the editor's plus that drawing's shift, sh: out of
+      // negative places or the canvas fit), snapped there, as the file's nodes are on its grid; placed where it is dropped,
+      // also past the canvas's edge: drawing it shifts the map (cd_edit.place) and the frame follows, as after a move, so
+      // nothing moves on screen
+      var s = cdSize(cls), e = cdComp(cls) ? 0 : 6 * (cdCopies(cls) - 1);
+      var boxAt = function (sh) {   // centred and snapped by the whole box, a multimer's copies included
+        var X = P[0] + sh[0] - s[0] / 2, Y2 = P[1] + sh[1] - s[1] / 2;
+        if (gridSet.snap) { X += toGrid(X + s[0] / 2, gridSet.step); Y2 += toGrid(Y2 + s[1] / 2, gridSet.step); }
+        return [+fmt(X), +fmt(Y2), s[0] - e, s[1] - e];   // the front one: homodimer adds the copies
+      };
       // a species placed on a complex is its member (an included species, cd_make), the complex packed round it in the same
       // undo step; a phenotype or a degraded species not (CellDesigner keeps neither in a complex)
       var cx = !cdComp(cls) && !/^(PHENOTYPE|DEGRADED)$/.test(cls) ? cdComplexAt(P) : null, made = null;
-      var ok = cdApply(function (t) {
-        var r = cdComp(cls) ? cdMk.compartment(t, { name: '', box: b, oval: cls === 'OVAL' }) : cdMk.species(t, { cls: cls, name: '', box: b, complex: cx, colour: cdColour(t, cls) });
+      var ok = cdApply(function (t, sh) {
+        var b = boxAt(sh), r = cdComp(cls) ? cdMk.compartment(t, { name: '', box: b, oval: cls === 'OVAL' }) : cdMk.species(t, { cls: cls, name: '', box: b, complex: cx, colour: cdColour(t, cls) });
         made = r.alias; return cdComp(cls) ? r.text : cdKeptLook(r.text, r.alias, cls);
       }, function () { return [made]; });
       if (ok && cx) joinPack([cx]);

@@ -31,8 +31,8 @@
       if (liveOrig && liveOrig[i]) liveBack(liveOrig[i]);
       if (liveOrig) delete liveOrig[i];
     }
-    // the picture's frame: a CellDesigner picture is in the file's places, which a shift out of negative places
-    // (cd_edit.place) puts x0, y0 from the editor's (the frame's two translates cancel inside the picture); a GraphML
+    // the picture's frame: a CellDesigner picture is in the file's places, which a shift (out of negative places or the canvas
+    // fit, cd_edit.place) puts x0, y0 from the editor's (the frame's two translates cancel inside the picture); a GraphML
     // picture is in the editor's own. Everything put into the picture during a move (the selection's fill, the live
     // reactions, the holders growing) is placed through it, the one place this is reckoned
     function picOff() { return cd ? [x0, y0] : [0, 0]; }
