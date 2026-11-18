@@ -47,6 +47,17 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#acly-celld
   var rc = await rows();
   ok('a compartment: Label, Width, Height, Fill colour', JSON.stringify(rc) === JSON.stringify(['label', 'w', 'h', 'fill']), JSON.stringify(rc));
   ok('its fill shown', (await page.$eval('#m2-ed-fill', function (f) { return f.value; })) === '#cccc00');
+  var mid = function () { return page.$eval('#m2-img [data-n="' + comp + '"]', function (g) {   // its name's centre and its own, on screen
+    var tx = g.querySelector('text'), r = g.getBoundingClientRect(), q = tx.getBoundingClientRect(); return [q.left + q.width / 2, r.left + r.width / 2, q.top - r.top]; }); };
+  var lab = await page.$eval('#m2-ed-label', function (f) { return f.value; }), m0 = await mid();
+  ok('its name shown in Label, as drawn', /^c\d+$/.test(lab), lab);
+  ok('its name at the top middle', Math.abs(m0[0] - m0[1]) < 2 && m0[2] < 20, JSON.stringify(m0));
+  await type('label', 'Endoplasmic reticulum'); var m1 = await mid();
+  ok('renamed: still at the top middle', Math.abs(m1[0] - m1[1]) < 2, JSON.stringify(m1));
+  await select(comp); await type('w', '300'); var m2 = await mid();
+  ok('resized: still at the top middle', Math.abs(m2[0] - m2[1]) < 2, JSON.stringify(m2));
+  await page.keyboard.press('Escape'); await page.keyboard.press('Control+z'); await page.waitForTimeout(1200); await page.keyboard.press('Control+z'); await page.waitForTimeout(1200);
+  await select(comp);
   await type('fill', '#3366cc');
   ok('its colour written', /<celldesigner:paint color="ff3366cc"/.test(aliasOf(await now(), comp)));
   ok('drawn in the new colour', /#3366cc/i.test(await page.$eval('#m2-img [data-n="' + comp + '"]', function (g) { return g.innerHTML; })));

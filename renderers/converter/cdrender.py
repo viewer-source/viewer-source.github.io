@@ -149,6 +149,12 @@ def leave(poly, P, Q):
     return P if best is None else (P[0] + best * (Q[0] - P[0]), P[1] + best * (Q[1] - P[1]))
 
 
+def name_left(box, name):
+    # the left of a compartment's name (its namePoint x) at the top middle of box: its widest line centred
+    w = max(width(l, 12) for l in plain_name(name or '').replace('_br_', '\n').split('\n'))
+    return box[0] + box[2] / 2 - w / 2
+
+
 class Drawing:
     def __init__(self, path):
         r = etree.parse(path).getroot()

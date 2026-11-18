@@ -62,6 +62,7 @@
   var KEEP = /^celldesigner:listOf(CompartmentAliases|ComplexSpeciesAliases|SpeciesAliases|Proteins|Genes|RNAs|AntisenseRNAs)$/;
   var DOWN = '-1.5707963267948966', LINE = '<celldesigner:line width="1.0" color="ff000000"/>';
   // a name as the converter writes it (cd_name, cdrender's NAME), a line break as CellDesigner's _br_
+  function unesc(s) { return s.replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&'); }   // an attribute's text as the XML parser reads it
   function cdName(s) { s = String(s).replace(/\r?\n/g, '_br_'); cdr.NAME.forEach(function (n) { s = s.split(n[0]).join(n[1]); }); return s; }
   function esc(s) { return py.escape(s).replace(/"/g, '&quot;'); }
   function fail(s) { throw new Error(s); }
@@ -232,9 +233,9 @@
     var b = (o.box || [0, 0].concat(COMP.size)).map(F), cid = next(t, 'c'), aid = next(t, 'ca'), name = esc(cdName(o.name || cid));
     if (!(b[2] > 0 && b[3] > 0)) fail('A compartment needs a width and a height.');
     var out = holder(t, b), pc = out ? out.compartment : 'default', moved = [];
-    // the name where the converter writes it (6 in, on the baseline 12.5 below the top); on an oval, 0.4 of the width in,
-    // where the oval's inner line is below the top's band; CellDesigner's yellow
-    var nx = o.oval ? b[0] + 0.4 * b[2] : b[0] + 6;
+    // the name at the top middle (cdrender.nameLeft; 12.5 below the top, as the converter writes it), on an oval too;
+    // CellDesigner's yellow
+    var nx = cdr.nameLeft(b, cdName(o.name || cid));
     t = add(t, CD + 'listOfCompartmentAliases', '<celldesigner:compartmentAlias id="' + aid + '" compartment="' + cid + '">\n<celldesigner:class>' + (o.oval ? 'OVAL' : 'SQUARE') + '</celldesigner:class>\n' +
       '<celldesigner:bounds x="' + num(b[0]) + '" y="' + num(b[1]) + '" w="' + num(b[2]) + '" h="' + num(b[3]) + '"/>\n<celldesigner:namePoint x="' + num(nx) +
       '" y="' + num(b[1] + 12.5) + '"/>\n<celldesigner:doubleLine thickness="' + num(COMP.thickness) + '" outerWidth="' + num(COMP.outer) + '" innerWidth="' + num(COMP.inner) + '"/>\n<celldesigner:paint color="' + COMP.colour + '" scheme="Color"/>\n' +
@@ -340,7 +341,13 @@
       var sp = span(t, open), s = span(t, '<celldesigner:name>', sp[0], sp[1]);
       if (s) t = put(t, s[0], s[1], '<celldesigner:name>' + nm + '</celldesigner:name>');
     };
-    if (A.kind === 'compartmentAlias') { set('<compartment(?=\\s)[^>]*\\sid="' + q(A.compartment) + '"'); return t; }
+    if (A.kind === 'compartmentAlias') {   // a name at the top middle kept there (cdrender.nameLeft), one placed elsewhere left
+      var C0 = span(t, '<compartment(?=\\s)[^>]*\\sid="' + q(A.compartment) + '"'), was = unesc(at(head(t, C0), 'name') || A.compartment);
+      var np = span(t, '<celldesigner:namePoint ', A.sp[0], A.sp[1]), nx0 = np && F(at(head(t, np), 'x'));
+      set('<compartment(?=\\s)[^>]*\\sid="' + q(A.compartment) + '"');
+      if (np && A.box && Math.abs(nx0 - cdr.nameLeft(A.box, was)) < 1) t = attrs(t, span(t, '<celldesigner:namePoint ', alias(t, id).sp[0], alias(t, id).sp[1])[0], [['x', num(cdr.nameLeft(A.box, cdName(name)))]]);
+      return t;
+    }
     if (A.cls === 'DEGRADED') fail('A degraded species keeps its id as its name.');
     var S = A.s, old = S.name;
     if (!S.ref) { set((S.inc ? '<celldesigner:species' : '<species') + '(?=\\s)[^>]*\\sid="' + q(S.id) + '"'); return t; }

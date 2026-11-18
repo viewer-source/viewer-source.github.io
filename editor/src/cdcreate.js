@@ -609,9 +609,9 @@
     }, true);
     // the name as typed: CellDesigner's file keeps it escaped, a line break as _br_ and Greek letters spelled (cd_make.cdName);
     // a species not named yet carries its id (CellDesigner's way), shown as no name
-    function cdNameOf(id) {
+    function cdNameOf(id, shown) {   // shown: the name as drawn (Properties), else '' for one still named after its id (typed in place)
       var A = cdMk.aliasInfo(cd.now, id), s = A.name || '';
-      if (s === A.id) return '';
+      if (s === A.id && !shown) return '';
       s = s.replace(/&#x([0-9a-f]+);/gi, function (m, h) { return String.fromCodePoint(parseInt(h, 16)); }).replace(/&#(\d+);/g, function (m, d) { return String.fromCodePoint(+d); })
         .replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
       return window.cdrender.plainName(s).replace(/_br_/g, ' ');
@@ -662,7 +662,7 @@
         var id = nodes2[i].id;
         if (cdLook[0] !== id || cdLook[1] !== cd.now) {
           var L = null;
-          try { L = cdMk.look(cd.now, id); L = { label: cdNameOf(id), fill: L.fill, line: '#000000', width: L.width, multimer: L.multimer, cls: L.cls }; } catch (e) { L = null; }
+          try { L = cdMk.look(cd.now, id); L = { label: cdNameOf(id, true), fill: L.fill, line: '#000000', width: L.width, multimer: L.multimer, cls: L.cls }; } catch (e) { L = null; }
           cdLook = [id, cd.now, L];
         }
         return cdLook[2] && Object.assign({}, cdLook[2]);

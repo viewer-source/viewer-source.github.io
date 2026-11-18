@@ -308,15 +308,23 @@
     var dl = find(a, 'cd:doubleLine');
     var t = dl ? F(get(dl, 'thickness', 12)) : 12, ow = dl ? F(get(dl, 'outerWidth', 2)) : 2, iw = dl ? F(get(dl, 'innerWidth', 1)) : 1;
     self.out.push(compartmentShape(x, y, w, h, t, ow, iw, colour(get(find(a, 'cd:paint'), 'color'))[0], text(find(a, 'cd:class')) === 'OVAL'));
-    var np = find(a, 'cd:namePoint');
-    if (np) self.nameLines(has(self.cnames, get(a, 'compartment')) ? self.cnames[get(a, 'compartment')] : '').forEach(function (line, k) {
-      self.text(line, F(get(np, 'x')) + (x - x0), F(get(np, 'y')) + (y - y0) + 15.5 + 14 * k, 12, 'start');
+    var np = find(a, 'cd:namePoint'), nm = has(self.cnames, get(a, 'compartment')) ? self.cnames[get(a, 'compartment')] : '';
+    // a name at the top middle of its bounds stays at the top middle of a live box (cd_edit's place() keeps it so)
+    var nx = np && box && Math.abs(F(get(np, 'x')) - nameLeft([x0, y0, F(get(b, 'w')), F(get(b, 'h'))], nm)) < 1 ? nameLeft(box, nm) : np && F(get(np, 'x')) + (x - x0);
+    if (np) self.nameLines(nm).forEach(function (line, k) {
+      self.text(line, nx, F(get(np, 'y')) + (y - y0) + 15.5 + 14 * k, 12, 'start');
     });
   };
   D.text = function (s, x, y, size, anchor, family, extra) {
     if (size === undefined) size = 12;
     this.out.push('<text x="' + fmt(x) + '" y="' + fmt(y) + '" font-family="' + (family || FONT) + '" font-size="' + fmt(size) + '" text-anchor="' + (anchor || 'middle') + '"' + (extra || '') + '>' + escape(s) + '</text>');
   };
+  // the left of a compartment's name (its namePoint x, where the text starts) that puts it at the top middle of box: its
+  // widest line centred (the name drawn at 12, as D.compartment draws it)
+  function nameLeft(box, name) {
+    var w = Math.max.apply(null, plainName(name || '').split('_br_').join('\n').split('\n').map(function (l) { return width(l, 12); }));
+    return box[0] + box[2] / 2 - w / 2;
+  }
   D.nameLines = function (name) { return plainName(name || '').split('_br_').join('\n').split('\n'); };
   D.species = function () {
     var self = this, depth = new Map();
@@ -755,7 +763,7 @@
     return [svg, { aliases: aliases, reactions: reactions }];
   }
   var api = { render: render, renderHits: renderHits, Drawing: Drawing, py: py, xml: xml, SQUARE: SQUARE, ANCHOR: ANCHOR, fromFrame: fromFrame, toFrame: toFrame,
-    editPoints: editPoints, unit: unit, onBorder: onBorder, width: width, target: target, plainName: plainName, NAME: NAME, GATE: GATE, ROLE: ROLE, ANCHOR: ANCHOR, anchorAt: anchorAt, frontBox: frontBox, compartmentShape: compartmentShape };   // GATE: the editor's palette checks its signs against it   // NAME: cd_make.js writes names
+    editPoints: editPoints, unit: unit, onBorder: onBorder, width: width, target: target, plainName: plainName, NAME: NAME, GATE: GATE, ROLE: ROLE, ANCHOR: ANCHOR, anchorAt: anchorAt, frontBox: frontBox, compartmentShape: compartmentShape, nameLeft: nameLeft };   // GATE: the editor's palette checks its signs against it   // NAME: cd_make.js writes names
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.cdrender = api;
 
   if (typeof require !== 'undefined' && typeof module !== 'undefined' && require.main === module) {   // node cdrender.js map.xml out.svg
