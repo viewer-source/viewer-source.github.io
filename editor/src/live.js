@@ -21,7 +21,7 @@
     function liveFit(seed) {
       liveC = seed || null;
       var ks = seed ? Object.keys(seed).map(Number).filter(function (i) { return !full() || !nodes2[i].comp; }) : mv && drag ? tops(mv.n, drag.alone) : [];
-      var nb = ks.length ? grown(ks, bx, boxOf, function (k) { return !!(mv && mv.n.has(k)); }) : {};
+      var nb = ks.length ? grown(ks, bx, boxOf, function (k) { return !!(mv && mv.n.has(k)); }, drag && drag.away) : {};
       liveC = Object.assign({}, seed || {}, nb);
       if (!Object.keys(liveC).length) liveC = null;
       liveDraw(seed ? Object.keys(seed).map(Number).filter(function (i) { return !holds(i); }) : []);

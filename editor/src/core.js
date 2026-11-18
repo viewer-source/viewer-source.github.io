@@ -473,7 +473,7 @@
       lay = new Promise(function (res, rej) {
         if (window.layout) return res(window.layout);
         var s = document.createElement('script');
-        s.src = V.renderers + 'layout/layout.js' + V.build; s.onload = function () { res(window.layout); }; s.onerror = function () { rej('layout tools not found'); };
+        s.src = V.renderers + 'layout/layout.js' + V.build; s.onload = function () { res(window.layout); window.dispatchEvent(new Event('m2-layout')); }; s.onerror = function () { rej('layout tools not found'); };
         document.head.appendChild(s);
       });
       lay.catch(function (e) { lay = null; warn('The layout tools did not load: ' + e); });
@@ -712,22 +712,25 @@
     // complex grows to hold its member with its padding and labels (cxRoom); a compartment to keep PAD from its inner line round an inside member (as close as it was, where it was
     // closer), an edge member
     // crossing its border by one unit, nothing for one already fully outside; what grows grows its own holder in turn the
-    // same way; never smaller
-    function grown(ks, B, B0, moving) {
+    // same way; never smaller. away: a drag's furthest moves so far ({ x0, x1, y0, y1 }, the least and most dx and dy);
+    // a moving member whose room on a side reached the padding during the drag (moved away from a closer place) takes the
+    // padding there again, the closer room it started with dropped
+    function grown(ks, B, B0, moving, away) {
       var nb = {}, box = function (k) { return nb[k] || B(k); };
       var hold = function (k) {
         var p = nodes2[k].up;
         if (p == null || moving(p)) return;
         var n = nodes2[p], c = box(p), b = box(k), w, e = extOf(k, b);
         var s0 = B0(k), c0 = B0(p), e0 = extOf(k, s0);
+        var far = away && moving(k) ? [away.x1, away.y1, -away.x0, -away.y0] : [0, 0, 0, 0];   // how far it went from each side
         if (n.shape.kind === 'Complex') {   // its padding, as close as the member was where it was closer (as a compartment's)
           var g0 = [e0[0] - c0[0], e0[1] - c0[1], c0[0] + c0[2] - e0[2], c0[1] + c0[3] - e0[3]];
-          var rm = cxRoom(n).map(function (v, j) { return Math.min(v, Math.max(g0[j], 0)); });
+          var rm = cxRoom(n).map(function (v, j) { return g0[j] + far[j] >= v ? v : Math.min(v, Math.max(g0[j], 0)); });
           w = [e[0] - rm[0], e[1] - rm[1], e[2] + rm[2], e[3] + rm[3]];
         }
         else if (inBox(s0, c0)) {   // inside: PAD from its inner line (as close as it was, where it already was closer: another tool's file)
           var io = [cd ? n.ins[0] : 0, (cd ? n.ins[1] : 0) + n.lab.t, cd ? n.ins[2] : 0, (cd ? n.ins[3] : 0) + n.lab.b];
-          var PAD = pads().comp, pad = [e0[0] - c0[0], e0[1] - c0[1], c0[0] + c0[2] - e0[2], c0[1] + c0[3] - e0[3]].map(function (v, j) { return Math.min(PAD, v - io[j]) + io[j]; });
+          var PAD = pads().comp, pad = [e0[0] - c0[0], e0[1] - c0[1], c0[0] + c0[2] - e0[2], c0[1] + c0[3] - e0[3]].map(function (v, j) { return (v - io[j] + far[j] >= PAD ? PAD : Math.min(PAD, v - io[j])) + io[j]; });
           w = [e[0] - pad[0], e[1] - pad[1], e[2] + pad[2], e[3] + pad[3]];
         } else if (overlap(s0, c0)) w = [b[0] + b[2] - 1, b[1] + b[3] - 1, b[0] + 1, b[1] + 1];   // on the edge: kept crossing it
         else return;   // fully outside already (another tool's file): as it is
@@ -846,7 +849,7 @@
     // the new holders written into the GraphML (sbgn_edit.moveInto, the master of moving a GraphML node into another), the
     // map read again with the selection kept (by id: moveInto may reorder what a group's graph holds); then a glyph
     // dropped on a complex put into it (arg.join, the ids moved: joinPlan, create.js) and the holders grown round what
-    // moved (arg.grow: the ids grown round, arg.before: every node's box before, by id, arg.moving: the ids that moved);
+    // moved (arg.grow: the ids grown round, arg.before: every node's box before, by id, arg.moving: the ids that moved, arg.away: the drag's furthest moves, grown);
     // all in the undo step taken before. A CellDesigner file that cannot hold the change (cd_edit.nestCheck, a species
     // dropped on a complex) is not changed: refused(why). An undo while it waits stops it
     // a compartment that partly overlaps another of its holder is
@@ -886,7 +889,7 @@
         if (arg.grow && arg.grow.length) {
           var idx = {}, mvd = {}; nodes2.forEach(function (n, i) { idx[n.id] = i; }); (arg.moving || []).forEach(function (id) { mvd[id] = 1; });
           var gb = grown(arg.grow.map(function (id) { return idx[id]; }).filter(function (i) { return i != null; }), boxOf,
-            function (k) { return (arg.before && arg.before[nodes2[k].id]) || boxOf(k); }, function (k) { return !!mvd[nodes2[k].id]; });
+            function (k) { return (arg.before && arg.before[nodes2[k].id]) || boxOf(k); }, function (k) { return !!mvd[nodes2[k].id]; }, arg.away);
           Object.keys(gb || {}).forEach(function (k) { if (nodes2[+k]) grew.push(nodes2[+k].id); });
           setBoxes(gb);
         }
@@ -2539,7 +2542,7 @@
       V.view.setPointerCapture(e.pointerId); V.view.focus({ preventScroll: true });
       drag = { x: P[0], y: P[1], dx: 0, dy: 0, p: h.p != null && selP.indexOf(h.p) >= 0 ? h.p : null, guides: [],
                n: h.n != null && selN.indexOf(h.n) >= 0 ? h.n : null, e: h.e != null && selE.indexOf(h.e) >= 0 ? h.e : null, keepE: keepE,
-               sx0: e.clientX, sy0: e.clientY, alone: alone };
+               sx0: e.clientX, sy0: e.clientY, alone: alone, away: { x0: 0, x1: 0, y0: 0, y1: 0 } };
       // an arc grabbed anywhere and dragged makes a new bend point there (as yEd); a click selects it
       if (h.e != null && !e.shiftKey) drag.grab = { k: h.e, P: P, sx: e.clientX, sy: e.clientY };
       mv = moving(alone);
@@ -2937,6 +2940,7 @@
           if (drag.alone && !full()) tether(drag);
           else if (!drag.alone && drag.n != null) { var ke = keepEdge(mv.n, drag.dx, drag.dy); if (ke[0] !== drag.dx || ke[1] !== drag.dy) held(true); drag.dx = ke[0]; drag.dy = ke[1]; }
           mv.dx = drag.dx; mv.dy = drag.dy; shift();
+          var aw = drag.away; if (aw) aw.x0 = Math.min(aw.x0, drag.dx), aw.x1 = Math.max(aw.x1, drag.dx), aw.y0 = Math.min(aw.y0, drag.dy), aw.y1 = Math.max(aw.y1, drag.dy);
           if (mv.n.size && liveFit() && !drag.alone && drag.n != null) held(false);   // the holders round it grow with it (grown)
         }
         paint();
@@ -3015,7 +3019,7 @@
       var movedNow = sets ? movedIds(sets) : [];   // by id: the map is read again below
       var fitAfter = function () {   // what holds what settled again (Full: regroup), a glyph dropped on a complex put into it (joinPlan, create.js), the holders round what moved grown (grown), in the same undo step
         var B0 = function (k) { var b = boxOf(k); return sets.n.has(k) ? [b[0] - d.dx, b[1] - d.dy, b[2], b[3]] : b; };   // the boxes before the drag
-        settle(full() ? regroup(d.alone ? 'alone' : 'plain', sets.n, boxOf, B0) : new Map(), { join: full() ? movedNow : null, grow: tops(sets.n, d.alone).map(function (k) { return nodes2[k].id; }), before: boxesBefore(B0), moving: movedNow },
+        settle(full() ? regroup(d.alone ? 'alone' : 'plain', sets.n, boxOf, B0) : new Map(), { join: full() ? movedNow : null, grow: tops(sets.n, d.alone).map(function (k) { return nodes2[k].id; }), before: boxesBefore(B0), moving: movedNow, away: d.away },
           function () { render(); changed(); }, function (why) { text = unpush(); parse(); unshift(); paint(); warn(why); });   // a CellDesigner file that cannot hold it: not moved
       };
       if (d.made != null && Math.abs(d.dx) < 0.01 && Math.abs(d.dy) < 0.01) {   // a new bend dragged back to where it was made (a snap may leave a hair): none made
