@@ -39,7 +39,7 @@
       ['UNKNOWN_TRANSITION', 'Unknown transition', CD_LINE + '<g transform="translate(-2.5 -1.5)">' + CD_Q + '</g>' + CD_HEAD]];
     // a line joined to a reaction that is already there, as CellDesigner's Add Reactant and Add Product: its main line
     // dotted, the added line meeting it (no arrowhead) or leaving it (with the reaction's arrowhead)
-    var CD_DOTS = '<path d="M1.5 18h21" class="in" stroke-dasharray="1.2 1.8"/>';
+    var CD_DOTS = '<path d="M1.5 18h21" class="in" stroke-dasharray="1.4 3.5"/>';   // 5 dashes, both ends a dash, the join (x 11) on one; gaps wide for the round ends (+.65 each) so it reads dashed at 21 px
     var CD_ADD = [['ADD_REACTANT', 'Add reactant (from a species onto a reaction; onto a logic gate, a new input)', CD_DOTS + '<path d="M3.5 4.5L11 18"/>'],
       ['ADD_PRODUCT', 'Add product (from a reaction to a species)', CD_DOTS + '<path d="M11 18l6-9"/><path d="M20.5 4l-.6 6.6-5.2-3.4z" fill="currentColor"/>']];
     // a modifier points down onto a reaction, as in CellDesigner's toolbar. The same signs draw reduced notation: with the
