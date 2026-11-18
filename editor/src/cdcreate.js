@@ -151,11 +151,12 @@
     // every CellDesigner map): the file's (the colour most species of the class already have on the map, else
     // CellDesigner's; the one when none is kept), CellDesigner's own (cd_make LOOK), the viewer's Default scheme (Settings,
     // Map colours) by the class's role, or none (white, as CellDesigner has no unfilled species)
-    var CD_COL_KEY = 'atlas-edit-cd-colours', CD_COLS = [['file', 'From file', 'New species in the colour most species of their class have on this map'], ['cd', 'CellDesigner', 'New species in CellDesigner\u2019s own colours'], ['default', 'Default', 'New species in the viewer\u2019s Default colours'], ['none', 'No colours', 'New species white']];
-    function cdCols() { return keptChoice(CD_COL_KEY, ['file', 'cd', 'default', 'none']); }
+    var CD_COL_KEY = 'atlas-edit-cd-colours', CD_COLS = [['file', 'From file', 'New species in the colour most species of their class have on this map'], ['cd', 'CellDesigner', 'New species in CellDesigner\u2019s own colours'], ['default', 'Default', 'New species in the viewer\u2019s Default colours'], ['none', 'No colours', 'New species white'], ['custom', 'Custom', 'New species in the colours kept by Set as default; From file for a class with none']];
+    function cdCols() { return keptChoice(CD_COL_KEY, ['file', 'cd', 'default', 'none', 'custom']); }
     function cdColour(t, cls) { return cdColourIn(cdCols(), t, cls); }   // eight hex digits for cd_make, or null for CellDesigner's own
     function cdColourIn(m, t, cls) {
       if (m === 'none') return 'ffffffff';
+      if (m === 'custom') { var k = cdKept()[cls]; if (k && k.fill) return 'ff' + k.fill.slice(1).toLowerCase(); m = 'file'; }   // a class with none kept: From file
       if (m === 'file') return t ? cdMk.classColour(t, cls) : null;   // no file yet: the ghost before the map is loaded
       var c = m === 'default' && V.schemeFill && window.cdrender ? V.schemeFill('default', window.cdrender.ROLE[cls] || 'white') : null;
       return c ? 'ff' + c.toLowerCase() : null;
@@ -168,10 +169,10 @@
     function cdSquares(mode) {
       var sq = function (x, t) { return '<i style="background:#' + x.slice(2) + '" title="' + t + '"></i>'; }, h;
       if (mode === 'none') h = sq('ffffffff', 'every species, #FFFFFF');
-      else if (mode !== 'file') {
+      else if (mode !== 'file') {   // Custom: the classes' colours as new ones get them (kept, else the map's, else CellDesigner's)
         var seen = {};
         h = CD_SQ.map(function (q) {
-          var x = (mode === 'cd' ? null : cdColourIn(mode, null, q[0])) || cdMk.LOOK[q[0]][2];
+          var x = (mode === 'cd' ? null : cdColourIn(mode, mode === 'custom' && cd ? cd.now : null, q[0])) || cdMk.LOOK[q[0]][2];
           if (seen[x]) { seen[x].push(q[1]); return null; }
           seen[x] = [q[1]]; return x;
         }).filter(Boolean).map(function (x) { return sq(x, seen[x].join(', ') + ', #' + x.slice(2).toUpperCase()); }).join('');
@@ -183,19 +184,51 @@
       return '<span class="m2-cs-sw">' + h + '</span>';
     }
     function cdColsRow() { return palDrop({ key: 'cols', label: 'Colours', title: 'Colours of new species', list: CD_COLS, get: cdCols, set: function (v) { keepChoice(CD_COL_KEY, v, 'file'); }, sq: cdSquares }); }
-    function cdSize(cls) { return cdComp(cls) ? [300, 200] : (palStyle() === 'file' && cls !== 'COMPLEX' && cd && cdMk.classSize(cd.now, cls)) || cdMk.LOOK[cls].slice(0, 2); }   // Style: From file, the size most species of that class have on the map; else, or none there, CellDesigner's
+    // Style: From file, the size most species of that class have on the map; Custom, the size kept by Set as default (From
+    // file for a class with none); else, or none there, CellDesigner's
+    function cdSize(cls) {
+      if (cdComp(cls)) return [300, 200];
+      var st = palStyle(), k = st === 'custom' ? cdKept()[cls] : null;
+      if (k && k.w > 0 && k.h > 0) return [k.w, k.h];   // a multimer's whole box, its copies included (cdCopies)
+      return (st !== 'default' && cls !== 'COMPLEX' && cd && cdMk.classSize(cd.now, cls)) || cdMk.LOOK[cls].slice(0, 2);
+    }
+    // Set as default on a CellDesigner map (PF_CD.def, the button in create.js): the species' size, fill, border width and
+    // multimer kept by its class in this browser for every CellDesigner map (atlas-edit-cd-defaults, apart from SBGN-ML's
+    // kinds), and Style and Colours switched to Custom: Style Custom takes the size and multimer, Colours Custom the fill
+    // and border width, as on SBGN-ML maps
+    var CD_DEF_KEY = 'atlas-edit-cd-defaults';
+    function cdKept() { return looksKept(CD_DEF_KEY); }
+    function cdDef(i) {
+      var id = nodes2[i].id, L, n, all = cdKept();
+      try { L = cdMk.look(cd.now, id); n = cdMk.aliasInfo(cd.now, id).homodimer || 1; } catch (e) { return; }   // the file behind the map read (an undo not drawn yet)
+      var b = boxOf(i);
+      all[L.cls] = { w: b[2], h: b[3], width: L.width, multimer: n > 1, copies: n };
+      if (L.fill && L.cls !== 'DEGRADED') all[L.cls].fill = L.fill;   // a degraded species keeps CellDesigner's look
+      if (!keepLook(CD_DEF_KEY, all)) return;
+      keepChoice(STYLE_KEY, 'custom', 'file'); keepChoice(CD_COL_KEY, 'custom', 'file'); styleRow(); cdColsRow();
+    }
+    // the copies of a new species of that class: the multimer kept, under Style Custom; its box (cdSize) holds them all, the
+    // front one 6 smaller for each copy behind it (cdrender frontBox; cd_make.homodimer grows the box back)
+    function cdCopies(cls) { var k = palStyle() === 'custom' && cls !== 'DEGRADED' ? cdKept()[cls] : null; return k && k.multimer && k.w > 0 ? Math.max(2, k.copies || 2) : 1; }
+    function cdKeptLook(t, alias, cls) {   // a new species given the border width and multimer kept for its class, under Custom
+      var k = cdKept()[cls], n = cdCopies(cls);
+      if (!k || cls === 'DEGRADED') return t;
+      if (cdCols() === 'custom' && k.width > 0 && k.width !== 1) t = cdMk.restyle(t, alias, { width: k.width });
+      if (n > 1) t = cdMk.homodimer(t, alias, n);
+      return t;
+    }
     function cdMake(P, kind) {
       var cls = cdKind(kind);
       if (!cls || CD_GATE[kind]) return;
-      var s = cdSize(cls), X = P[0] - s[0] / 2, Y2 = P[1] - s[1] / 2;
+      var s = cdSize(cls), e = cdComp(cls) ? 0 : 6 * (cdCopies(cls) - 1), X = P[0] - s[0] / 2, Y2 = P[1] - s[1] / 2;   // centred and snapped by the whole box, a multimer's copies included
       if (gridSet.snap) { X += toGrid(X + s[0] / 2, gridSet.step); Y2 += toGrid(Y2 + s[1] / 2, gridSet.step); }
-      var b = [+fmt(Math.max(0, X)), +fmt(Math.max(0, Y2)), s[0], s[1]];   // never left of or above the canvas's corner (CellDesigner draws from 0, 0)
+      var b = [+fmt(Math.max(0, X)), +fmt(Math.max(0, Y2)), s[0] - e, s[1] - e];   // the front one: homodimer adds the copies   // never left of or above the canvas's corner (CellDesigner draws from 0, 0)
       // a species placed on a complex is its member (an included species, cd_make), the complex packed round it in the same
       // undo step; a phenotype or a degraded species not (CellDesigner keeps neither in a complex)
       var cx = !cdComp(cls) && !/^(PHENOTYPE|DEGRADED)$/.test(cls) ? cdComplexAt(P) : null, made = null;
       var ok = cdApply(function (t) {
         var r = cdComp(cls) ? cdMk.compartment(t, { name: '', box: b, oval: cls === 'OVAL' }) : cdMk.species(t, { cls: cls, name: '', box: b, complex: cx, colour: cdColour(t, cls) });
-        made = r.alias; return r.text;
+        made = r.alias; return cdComp(cls) ? r.text : cdKeptLook(r.text, r.alias, cls);
       }, function () { return [made]; });
       if (ok && cx) joinPack([cx]);
     }
@@ -588,8 +621,7 @@
     // resizing and Properties on a CellDesigner map (propFmt, create.js): a species resized by its handles or by Width and
     // Height, as on SBGN-ML maps (a complex's member by its handles only, a complex with members as a holder: roomy, core.js); the label, the fill, the
     // border width and multimer (the species' homodimer, 2 when ticked) written by cd_make. No border colour (CellDesigner's
-    // species have none); a degraded species keeps its look and its id as its name. Set as default not yet: the colours of
-    // new species come from the palette's list
+    // species have none); a degraded species keeps its look and its id as its name. Set as default: cdDef
     function cdSpecies(i) { return cdRole(i) === 'epn' && nodes2[i].el.getAttribute('yfiles.foldertype') !== 'group'; }
     function cdSetSize(pairs) {   // each node given its box, one undo step with the compartments round them grown to hold them (written back by cd_edit)
       var ids = [], was = {}, one = {};
@@ -606,7 +638,7 @@
       var n = nodes2[i], u = n.up != null ? nodes2[n.up] : null;
       return cdSpecies(i) || (!!u && u.shape.kind === 'Complex' && n.el.getAttribute('yfiles.foldertype') !== 'group');
     }
-    var PF_CD = { sizable: cdSizable, size: cdSetSize, def: false,
+    var PF_CD = { sizable: cdSizable, size: cdSetSize, def: cdDef,
       rx: { of: cdRxOf, set: cdReversible },   // a reaction's Reversible (propRx, create.js)
       node: function (i) { return cdSpecies(i) ? i : -1; },
       off: function (k, i) { return k === 'line' || (/^(label|fill|multimer)$/.test(k) && pNow.cls === 'DEGRADED'); },   // pNow: look's, read just before
@@ -632,7 +664,8 @@
     // as cdrender draws it once dropped (D.shape, outline: RNA slanted by its height, a protein's corners 5, a complex's
     // cut 5, a degraded circle 3/8 of the width with its stroke), so nothing changes shape on the drop
     function cdGhost(kind) {
-      var cls = cdKind(kind), s = cdSize(cls), w = s[0], h = s[1], col = cdComp(cls) ? 'none' : '#' + (cdColour(cd && cd.now, cls) || cdMk.LOOK[cls][2]).slice(2), ink = ' fill="' + col + '" stroke="#000" stroke-width="1"';
+      var cls = cdKind(kind), s = cdSize(cls), n = cdComp(cls) ? 1 : cdCopies(cls), e = 6 * (n - 1), w = s[0] - e, h = s[1] - e, k = cdCols() === 'custom' && cdKept()[cls],   // a kept multimer: its front one, the copies behind (as dropped)
+        col = cdComp(cls) ? 'none' : '#' + (cdColour(cd && cd.now, cls) || cdMk.LOOK[cls][2]).slice(2), ink = ' fill="' + col + '" stroke="#000" stroke-width="' + (k && k.width > 0 && cls !== 'DEGRADED' ? k.width : 1) + '"';
       var shape = {
         PROTEIN: '<rect width="' + w + '" height="' + h + '" rx="5"' + ink + '/>', GENE: '<rect width="' + w + '" height="' + h + '"' + ink + '/>',
         RNA: '<path d="M' + h + ' 0H' + w + 'L' + (w - h) + ' ' + h + 'H0z"' + ink + '/>', SIMPLE_MOLECULE: '<ellipse cx="' + w / 2 + '" cy="' + h / 2 + '" rx="' + w / 2 + '" ry="' + h / 2 + '"' + ink + '/>',
@@ -643,5 +676,6 @@
         COMPARTMENT: '<rect width="' + w + '" height="' + h + '" rx="10" fill="none" stroke="#000" stroke-width="2"/><rect x="6" y="6" width="' + (w - 12) + '" height="' + (h - 12) + '" rx="6" fill="none" stroke="#000"/>',
         OVAL: '<ellipse cx="' + w / 2 + '" cy="' + h / 2 + '" rx="' + w / 2 + '" ry="' + h / 2 + '" fill="none" stroke="#000" stroke-width="2"/><ellipse cx="' + w / 2 + '" cy="' + h / 2 + '" rx="' + (w / 2 - 6) + '" ry="' + (h / 2 - 6) + '" fill="none" stroke="#000"/>'
       }[cls];
-      return { w: w, h: h, svg: '<svg width="100%" height="100%" viewBox="0 0 ' + w + ' ' + h + '" overflow="visible">' + shape + '</svg>' };
+      for (var j = n - 1, back = ''; j > 0; j--) back += '<g transform="translate(' + 6 * j + ' ' + 6 * j + ')">' + shape + '</g>';
+      return { w: s[0], h: s[1], svg: '<svg width="100%" height="100%" viewBox="0 0 ' + s[0] + ' ' + s[1] + '" overflow="visible">' + (back || '') + shape + '</svg>' };
     }

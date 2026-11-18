@@ -3,12 +3,18 @@
 // under a line below the palette while nothing is selected (Properties in their place otherwise), From file chosen; the list
 // opened in place and closed by a choice; a process and a macromolecule placed take the map's sizes; Style Default gives
 // the built-in ones; the map's fill under From file; Colours No colours leaves a new glyph unfilled; Custom takes what Set as default kept, as it is, and Set as default
-// switches both rows to it (a CellDesigner map, with no Set as default, reads a kept Custom as From file). Nothing is saved (no token). No script error.
-//   node tests/palette-style.js [base address]
-var { chromium } = require('playwright');
-var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
+// switches both rows to it; on a CellDesigner map the same with its own kept looks (by species class) and its own Colours.
+// Nothing is saved (no token). No script error.
+//   node tests/palette-style.js [base address] [viewer folder: its editor served in place of the page's]
+var { chromium } = require('playwright'), fs = require('fs'), path = require('path');
+var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local = process.argv[3];
 (async function () {
   var b = await chromium.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], bad = 0;
+  if (local) {   // the editor as Jekyll builds it (editor.js with its sources put in), from a working tree
+    var ed = fs.readFileSync(path.join(local, 'editor/editor.js'), 'utf8').replace(/^---[\s\S]*?---\n/, '')
+      .replace(/\{% include_relative (src\/[\w.]+) %\}/g, function (m, f) { return fs.readFileSync(path.join(local, 'editor', f), 'utf8'); });
+    await page.route('**/editor/editor.js*', function (r) { r.fulfill({ status: 200, contentType: 'application/javascript', body: ed }); });
+  }
   page.on('pageerror', function (e) { errs.push(e.message); });
   var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more ? '  ' + more : '')); };
   var ids = function () { return page.$$eval('#m2-img [data-n]', function (l) { return l.map(function (x) { return x.getAttribute('data-n'); }); }); };
@@ -24,7 +30,7 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
   var pick = async function (row, name) { await page.keyboard.press('Escape'); await page.mouse.click(1350, 880); await page.waitForTimeout(300); await page.click('#m2-editwin .m2-ed-pmap tr[data-k="' + row + '"] .m2-ed-pdd'); await page.waitForTimeout(200); await page.click('#m2-editwin .m2-ed-plist button:has-text("' + name + '")'); await page.waitForTimeout(200); };
   var sbBox = function (id) { return page.evaluate(function (id) { var d = new DOMParser().parseFromString(window.m2EditNow().text, 'application/xml'), g = Array.from(d.getElementsByTagName('glyph')).filter(function (x) { return x.getAttribute('id') === id; })[0], bb = g && Array.from(g.children).filter(function (c) { return c.localName === 'bbox'; })[0]; return bb ? [+bb.getAttribute('w'), +bb.getAttribute('h')] : null; }, id); };
   var sbFill = function (id) { return page.evaluate(function (id) { var t = window.m2EditNow().text; return Array.from(new DOMParser().parseFromString(t, 'application/xml').getElementsByTagName('*')).filter(function (e) { return e.localName === 'style' && (' ' + (Array.from(e.attributes).filter(function (a) { return a.localName === 'idList'; }).map(function (a) { return a.value; })[0] || '') + ' ').indexOf(' ' + id + ' ') >= 0; }).map(function (e) { var g = e.firstElementChild, f = g && Array.from(g.attributes).filter(function (a) { return a.localName === 'fill'; })[0]; return f && f.value; }).filter(Boolean).pop() || null; }, id); };
-  await page.goto(base, { waitUntil: 'load' }); await page.evaluate(function () { ['atlas-edit-style', 'atlas-edit-sb-colours', 'atlas-edit-cd-colours'].forEach(function (k) { localStorage.removeItem(k); }); });
+  await page.goto(base, { waitUntil: 'load' }); await page.evaluate(function () { ['atlas-edit-style', 'atlas-edit-sb-colours', 'atlas-edit-cd-colours', 'atlas-edit-defaults', 'atlas-edit-cd-defaults'].forEach(function (k) { localStorage.removeItem(k); }); });
   await start('testing-glycolysis-sbgn', 'process');
   var R = await last();
   ok('SBGN-ML: two rows under a line below the palette, From file chosen', R.length === 2 && /^Style: From file/.test(R[0]) && /^Colours: From file/.test(R[1]), JSON.stringify(R));
@@ -61,17 +67,38 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
   ok('Set as default keeps the node as it is (80 by 40, #C2D4ED)', kept.w === 80 && kept.h === 40 && String(kept.fill).toUpperCase() === '#C2D4ED', JSON.stringify(kept));
   ok('and switches both rows to Custom', JSON.stringify(await rows()) === JSON.stringify(['Style: Custom', 'Colours: Custom']), JSON.stringify(await rows()));
   await start('glycolysis-celldesigner', 'cd:PROTEIN');
+  var cdLook = function (id) { return page.evaluate(function (id) { var t = window.m2EditNow().text, L = window.cd_make.look(t, id), A = window.cd_make.aliasInfo(t, id); return { w: A.box[2], h: A.box[3], fill: L.fill, width: L.width, multimer: L.multimer }; }, id); };
   R = await last();
-  ok('CellDesigner: the same two rows, From file (a kept Custom read as From file, no Set as default there)', R.length === 2 && /^Style: From file/.test(R[0]) && /^Colours: From file/.test(R[1]), JSON.stringify(R));
+  ok('CellDesigner: the same two rows, Style Custom (shared) and its own Colours From file', R.length === 2 && /^Style: Custom/.test(R[0]) && /^Colours: From file/.test(R[1]), JSON.stringify(R));
   await page.click('#m2-editwin .m2-ed-pmap tr[data-k="cols"] .m2-ed-pdd'); await page.waitForTimeout(200);
   var items = await page.$$eval('#m2-editwin .m2-ed-plist button', function (l) { return l.map(function (x) { return x.querySelector('span').textContent; }); });
   await page.click('#m2-editwin .m2-ed-plist button:has-text("From file")'); await page.waitForTimeout(200);
-  ok('the list opens in place under its row and closes on a choice', items.length === 4 && !(await page.$('#m2-editwin .m2-ed-plist')));
-  ok('its colour menu: From file, CellDesigner, Default, No colours', JSON.stringify(items) === JSON.stringify(['From file', 'CellDesigner', 'Default', 'No colours']), JSON.stringify(items));
+  ok('the list opens in place under its row and closes on a choice', items.length === 5 && !(await page.$('#m2-editwin .m2-ed-plist')));
+  ok('its colour menu: From file, CellDesigner, Default, No colours, Custom', JSON.stringify(items) === JSON.stringify(['From file', 'CellDesigner', 'Default', 'No colours', 'Custom']), JSON.stringify(items));
+  var c1 = await made('cd:PROTEIN', 700, 450), L1 = await cdLook(c1);
+  ok('a protein placed, none kept for proteins: the map’s size (Custom reads as From file)', L1.w > 0 && L1.h > 0, JSON.stringify(L1));
+  var sel = async function (id) { await page.mouse.click.apply(page.mouse, await page.$eval('#m2-img [data-n="' + id + '"]', function (g) { var r = g.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; })); await page.waitForTimeout(400); };
+  var put = async function (k, v) { await page.fill('#m2-ed-' + k, v); await page.press('#m2-ed-' + k, 'Enter'); await page.waitForTimeout(500); };
+  await sel(c1); await put('w', '120'); await put('h', '60'); await put('fill', '#abcdef'); await put('width', '3'); await page.check('#m2-ed-multimer'); await page.waitForTimeout(500);
+  ok('Set as default shown in its Properties', await page.$eval('#m2-editwin .m2-ed-pdef', function (x) { return !x.hidden && !!x.offsetParent; }));
+  await page.click('#m2-editwin .m2-ed-pdef'); await page.waitForTimeout(300); await page.keyboard.press('Escape'); await page.mouse.click(1350, 880); await page.waitForTimeout(400);
+  var ck = await page.evaluate(function () { return JSON.parse(localStorage.getItem('atlas-edit-cd-defaults')).PROTEIN; });
+  ok('Set as default keeps the protein as it is (126 by 66 with its second copy, #abcdef, border 3, multimer)', ck.w === 126 && ck.h === 66 && ck.fill === '#abcdef' && ck.width === 3 && ck.multimer === true, JSON.stringify(ck));
+  ok('and switches both rows to Custom', JSON.stringify(await rows()) === JSON.stringify(['Style: Custom', 'Colours: Custom']), JSON.stringify(await rows()));
+  var c2 = await made('cd:PROTEIN', 700, 650), L2 = await cdLook(c2);
+  ok('the next protein comes so', L2.w === 126 && L2.h === 66 && L2.fill === '#abcdef' && L2.width === 3 && L2.multimer === true, JSON.stringify(L2));
+  var g1 = await made('cd:GENE', 500, 650), G1 = await cdLook(g1);
+  ok('a gene, none kept for genes: From file, no border or multimer from the protein', G1.fill !== '#abcdef' && G1.width === 1 && !G1.multimer, JSON.stringify(G1));
+  await pick('cols', 'From file');
+  var c3 = await made('cd:PROTEIN', 500, 450), L3 = await cdLook(c3);
+  ok('Colours From file, Style Custom: the kept size and multimer, the map’s colour and border', L3.w === 126 && L3.h === 66 && L3.fill !== '#abcdef' && L3.width === 1 && L3.multimer === true, JSON.stringify(L3));
+  await page.evaluate(function () { var a = JSON.parse(localStorage.getItem('atlas-edit-cd-defaults')); a.PROTEIN.copies = 3; a.PROTEIN.w = 132; a.PROTEIN.h = 72; localStorage.setItem('atlas-edit-cd-defaults', JSON.stringify(a)); });
+  var c4 = await made('cd:PROTEIN', 900, 450), L4 = await page.evaluate(function (id) { var A = window.cd_make.aliasInfo(window.m2EditNow().text, id); return { box: A.box, n: A.homodimer }; }, c4);
+  ok('a multimer of 3 kept: the same box and count, centred where clicked', L4.box[2] === 132 && L4.box[3] === 72 && L4.n === 3, JSON.stringify(L4));
   await pick('style', 'From file');
   await start('testing-glycolysis-sbgn', 'process');
-  ok('Style From file chosen on a CellDesigner map is the SBGN-ML map’s too', JSON.stringify(await rows()) === JSON.stringify(['Style: From file', 'Colours: Custom']), JSON.stringify(await rows()));
-  await page.evaluate(function () { ['atlas-edit-style', 'atlas-edit-sb-colours', 'atlas-edit-defaults'].forEach(function (k) { localStorage.removeItem(k); }); });
+  ok('Style From file chosen on a CellDesigner map is the SBGN-ML map’s too, its Colours its own', JSON.stringify(await rows()) === JSON.stringify(['Style: From file', 'Colours: Custom']), JSON.stringify(await rows()));
+  await page.evaluate(function () { ['atlas-edit-style', 'atlas-edit-sb-colours', 'atlas-edit-cd-colours', 'atlas-edit-defaults', 'atlas-edit-cd-defaults'].forEach(function (k) { localStorage.removeItem(k); }); });
   ok('no script error', !errs.length, errs.join(' | '));
   await b.close(); process.exit(bad ? 1 : 0);
 })();

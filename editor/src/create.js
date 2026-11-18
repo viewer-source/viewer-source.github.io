@@ -299,12 +299,11 @@
     function keepChoice(key, v, first) { try { if (v === first) localStorage.removeItem(key); else localStorage.setItem(key, v); } catch (e) {} }
     // Style, the sizes of new nodes, for every map with a palette, kept in this browser: the size most nodes of that kind
     // have on the map (sbgn_edit.defaults, cd_make.classSize; the built-in size where it has none), or the built-in sizes
-    // Custom (custom: a format whose Properties have Set as default): the size kept by Set as default for that kind,
-    // From file for a kind with none; elsewhere a kept Custom reads as From file
-    var STYLE_KEY = 'atlas-edit-style', STYLES = [['file', 'From file', 'New nodes the size most nodes of their kind have on this map'], ['default', 'Default', 'New nodes at the editor\u2019s own sizes']],
-      STYLES_C = STYLES.concat([['custom', 'Custom', 'New nodes the size kept by Set as default; From file for a kind with none']]);
-    function palStyle(custom) { var v = keptChoice(STYLE_KEY, ['file', 'default', 'custom']); return v === 'custom' && !custom ? 'file' : v; }
-    function styleRow(custom) { return palDrop({ key: 'style', label: 'Style', title: 'Sizes of new nodes', list: custom ? STYLES_C : STYLES, get: function () { return palStyle(custom); }, set: function (v) { keepChoice(STYLE_KEY, v, 'file'); } }); }
+    // Custom: the size kept by Set as default for that kind (each format keeps its own: atlas-edit-defaults,
+    // atlas-edit-cd-defaults), From file for a kind with none
+    var STYLE_KEY = 'atlas-edit-style', STYLES = [['file', 'From file', 'New nodes the size most nodes of their kind have on this map'], ['default', 'Default', 'New nodes at the editor\u2019s own sizes'], ['custom', 'Custom', 'New nodes the size kept by Set as default; From file for a kind with none']];
+    function palStyle() { return keptChoice(STYLE_KEY, ['file', 'default', 'custom']); }
+    function styleRow() { return palDrop({ key: 'style', label: 'Style', title: 'Sizes of new nodes', list: STYLES, get: palStyle, set: function (v) { keepChoice(STYLE_KEY, v, 'file'); } }); }
     // Colours on SBGN-ML maps, kept in this browser: the map's own (sbgn_edit.defaults: the fill most glyphs of the
     // kind have; the Default colours for a kind the map lacks), the viewer's Default colours, or none
     var SB_COL_KEY = 'atlas-edit-sb-colours', SB_COLS = [['file', 'From file', 'New glyphs in the colour most glyphs of their kind have on this map'], ['default', 'Default', 'New glyphs in the viewer\u2019s Default colours'], ['none', 'No colours', 'New glyphs unfilled'], ['custom', 'Custom', 'New glyphs in the colours kept by Set as default; From file for a kind with none']];
@@ -325,7 +324,7 @@
       var k = palKey();
       var lang = palLangNow(), look = palLookNow();
       var pn = pal.querySelector('.m2-ed-pnot'); pn.hidden = false; pn.style.display = '';   // hidden on a CellDesigner map (cdFill)
-      styleRow(true); sbColsRow();   // the map's choices for new glyphs (pmap); a CellDesigner map shows the same rows with its own (cdFill)
+      styleRow(); sbColsRow();   // the map's choices for new glyphs (pmap); a CellDesigner map shows the same rows with its own (cdFill)
       Array.prototype.forEach.call(pal.querySelectorAll('[data-lang]'), function (b) { b.setAttribute('aria-pressed', String(b.dataset.lang === lang)); });
       Array.prototype.forEach.call(pal.querySelectorAll('[data-look]'), function (b) { b.setAttribute('aria-checked', String(b.dataset.look === look)); });
       pal.querySelector('.m2-ed-plook').hidden = !palViews();
@@ -1464,7 +1463,7 @@
       return true;
     }
     function sbEnds(id, o, box) { var t2 = sbJs.scaleEnds(text, id, o, box); if (t2 !== text) { text = t2; parse(); } }   // a complex's line ends after its box was set (dragEnd, core.js)
-    var PF_SB = { sizable: sbSizable, size: sbSetSize, node: sbNode, set: sbSet, def: true, ends: sbEnds,
+    var PF_SB = { sizable: sbSizable, size: sbSetSize, node: sbNode, set: sbSet, def: sbDef, ends: sbEnds,
       line: { colour: function (el) { return sbJs.lineOf(el); }, recolour: function (t, id, c) { return sbJs.recolour(t, id, c); } },   // a line's colour (edgeShow, edgeSet)
       off: function (k, i) { return k === 'multimer' && isAct(i); },   // an activity is no multimer
       look: function (i) { var o = sbJs.lookOf(realizerOf(nodes2[i].el)); return { label: nameOf(i), fill: o.fill ? o.fill.slice(0, 7).toLowerCase() : '', line: (o.line || '#000000').slice(0, 7).toLowerCase(), width: o.width, multimer: o.multimer }; } };
@@ -1535,7 +1534,8 @@
     // for every map (atlas-edit-defaults), and Style and Colours switched to Custom: Style Custom takes the size and
     // multimer, Colours Custom the fill, border colour and width; a kind with none kept takes From file
     var DEF_KEY = 'atlas-edit-defaults';
-    function defsKept() { try { return JSON.parse(localStorage.getItem(DEF_KEY) || '{}') || {}; } catch (e) { return {}; } }
+    function looksKept(key) { try { return JSON.parse(localStorage.getItem(key) || '{}') || {}; } catch (e) { return {}; } }   // the looks kept by Set as default, by kind (a format's own key)
+    function defsKept() { return looksKept(DEF_KEY); }
     function defOf(cls) {   // the look a new glyph of that kind gets: the map's (sbgn_edit.defaults), or the one set as default
       cls = baseKind(cls);
       var kind0 = cls;
@@ -1547,7 +1547,7 @@
       var u = cls !== 'biological activity' && palKind() === 'af' ? sbJs.unitFor(kind0) : null;
       if (u != null) { k = kept[lookKey('biological activity', u)]; var DA = sbJs.defaults(src(), null, 'biological activity', u); D.fill = DA.fill; D.fallback = DA.fallback; if (DA.w !== DA.w0 || DA.h !== DA.h0) { D.w = DA.w; D.h = DA.h; } }   // and its size, where the map's activities of that kind share one
       if (k && !(k.w > 0)) k = null;   // a look kept before sizes were kept as they are
-      var st = palStyle(true), cm = sbCols();
+      var st = palStyle(), cm = sbCols();
       if (st === 'default') { D.w = D.w0; D.h = D.h0; }   // Style: Default, the built-in sizes (at the map's scale)
       else if (st === 'custom' && k) {
         if (k.w > 0 && k.h > 0) { D.w = k.w; D.h = k.h; }
@@ -1564,11 +1564,16 @@
       if (V.scheme === 'none' && D.fallback && !kc) D.fill = null;   // Settings' No colours: only the Default colours dropped (no fill in the file, drawn white as the file is: yrender), the map's own fill and a look set as default kept
       return D;
     }
+    // Set as default asks the format's part (propFmt().def: sbDef here, cdDef in cdcreate.js), which keeps the look and
+    // switches its rows to Custom
     props.querySelector('.m2-ed-pdef').addEventListener('click', function () {
-      var i = propNode();
-      if (i < 0 || !propFmt().def) return;
+      var i = propNode(), pf = propFmt();
+      if (i >= 0 && pf.def) pf.def(i);
+    });
+    function keepLook(key, all) { try { localStorage.setItem(key, JSON.stringify(all)); return true; } catch (e) { warn('The default could not be kept in this browser.'); return false; } }
+    function sbDef(i) {
       var o = sbJs.lookOf(realizerOf(nodes2[i].el)), b = boxOf(i), all = defsKept();
       all[kindOf(i)] = { w: b[2], h: b[3], fill: o.fill, line: o.line, width: o.width, multimer: o.multimer };   // as it is, no share of another size
-      try { localStorage.setItem(DEF_KEY, JSON.stringify(all)); } catch (e) { warn('The default could not be kept in this browser.'); return; }
-      keepChoice(STYLE_KEY, 'custom', 'file'); keepChoice(SB_COL_KEY, 'custom', 'file'); styleRow(true); sbColsRow();
-    });
+      if (!keepLook(DEF_KEY, all)) return;
+      keepChoice(STYLE_KEY, 'custom', 'file'); keepChoice(SB_COL_KEY, 'custom', 'file'); styleRow(); sbColsRow();
+    }
