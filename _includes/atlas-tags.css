@@ -28,8 +28,8 @@
   /* image error: red, the map's images could not be drawn from its current GraphML
      (a site's image build) */
   .m2-draft.m2-error { color: var(--m2-error); border-color: var(--m2-error); }
-  /* the map's format: one letter, almost unseen, left of its name: C for CellDesigner, S for SBGN-ML,
-     none for GraphML, the default; from the map's first download. The list's
+  /* the map's format: two letters, almost unseen, left of its name: CD for CellDesigner, SB for SBGN-ML,
+     YE for GraphML (yEd); from the map's first download. The list's
      box reaches 10 px into the panel's margin so it fits beside the group's indent and nothing in the list moves. A map
      in no group, or the list on narrow windows, has no room for it and shows none */
   @media (min-width: 941px) { #m2-list { margin-left: -10px; padding-left: 10px; } }

@@ -943,7 +943,7 @@ page, so its styles keep the base they were made on).
     'copy': ['<span class="m2-draft m2-copy"><span>copy</span></span>', 'Copy of the official map, for comparison']
   };
   // the map's format beside its name, by its first download
-  var FORMATS = { 'CellDesigner': 'C', 'SBGN-ML': 'S' };   // GraphML, the default, has none
+  var FORMATS = { 'CellDesigner': 'CD', 'SBGN-ML': 'SB', 'GraphML': 'YE' };   // YE: yEd's GraphML
   function formatOf(m) { return FORMATS[((m.downloads || [])[0] || {}).label]; }
   // Settings' File format tags, Hidden (the default: few readers mix formats, the tags clutter the list) or Shown,
   // kept in the browser
