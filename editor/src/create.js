@@ -1242,15 +1242,16 @@
       dirty = true; quiet(); render(); paint(); changed();
     }
     function linkPaint(out) {   // the line being drawn (paint, core.js): from its node's centre to the pointer, the node that would take it lit
-      cdGateMarks(out);   // a CellDesigner gate's inputs clicked so far (cdcreate.js)
+      cdGateMarks(out); cdOverMarks(out);   // a CellDesigner gate's inputs clicked so far, Add product's join under the pointer (cdcreate.js)
       if (!link || !link.moved || link.at !== text) return;
       var A = bx(link.from), C = [A[0] + A[2] / 2, A[1] + A[3] / 2], no = !!(link.how && link.how.no);
       // drawn behind its nodes, as the line after the drop: from where it leaves its node's shape outline, none while the
       // pointer is still inside it, and over a node that would take it up to where it meets that node's outline
       var P = link.P, inFrom = inRim(rimOf(link.from, A), [P[0] - C[0], P[1] - C[1]]), S = inFrom ? null : cutShape(link.from, C, P, A);
       if (S && link.to >= 0 && link.to !== link.from) P = cutShape(link.to, P, S, bx(link.to));
-      if (cd && S) { var E = cdLiveEnds(S, P, C); S = E[0]; P = E[1]; }   // an added reactant's or product's join (cdcreate.js)
-      if (cd) cdLinkMarks(out);   // CellDesigner's marks (cdcreate.js)
+      var E = cd && S ? cdLiveEnds(S, P, C) : null;   // an added reactant's or product's join (cdcreate.js)
+      if (E) { S = E[0]; P = E[1]; }
+      if (cd) cdLinkMarks(out, E);   // CellDesigner's marks (cdcreate.js)
       else if (link.how && !no) out.push('<g transform="translate(' + f1(V.tx - x0 * V.z) + ',' + f1(V.ty - y0 * V.z) + ') scale(' + V.z + ')"><path class="m2-ed-dark" d="' + shapeD(link.to) + '"/></g>');
       if (S) out.push('<path class="m2-ed-live" stroke-width="' + f1(Math.max(1, V.z)) + '"' + (no ? ' stroke-dasharray="4 3"' : '') + ' d="M' + f1(sx(S[0])) + ' ' + f1(sy(S[1])) + 'L' + f1(sx(P[0])) + ' ' + f1(sy(P[1])) + '"/>');
     }

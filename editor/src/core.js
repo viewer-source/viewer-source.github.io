@@ -1893,13 +1893,13 @@
       return d + 'L' + P(pts[pts.length - 1]);
     }
     // the lines lit by the selection (the arcs selected; on a CellDesigner map the whole reaction of a main line or glyph
-    // selected) and the glyphs lit with them
+    // selected, an added reactant or product alone, as CellDesigner selects them) and the glyphs lit with them
     var MAIN = /^(.*)\|(a|b|r\d+|p\d+)$/;
     function lit() {
       var hlE = new Set(selE), glyphs = new Set();
       if (cd) {
         var rx = new Set();
-        selE.forEach(function (k) { var m = edges2[k].id.match(MAIN); if (m) rx.add(m[1]); });
+        selE.forEach(function (k) { var m = edges2[k].id.match(/^(.*)\|[ab]$/); if (m) rx.add(m[1]); });
         selN.forEach(function (i) { var m = nodes2[i].id.match(/^(.*)\|proc$/); if (m) rx.add(m[1]); });
         if (rx.size) {
           edges2.forEach(function (e, k) { var m = e.id.match(MAIN); if (m && rx.has(m[1])) hlE.add(k); });
@@ -1919,7 +1919,7 @@
       // a line selected alone: its ends taken anywhere within the square their four marks cover (the end pressed before
       // first), so a press a little off an end never falls on the node and begins a new line from it; the line's own
       // bend point under the press keeps the press
-      var R = 6 / V.z, L = lit(), best = null, dB = R, ps = partSel(), wide = !selN.length && !selP.length, hp = wide && L.e.length && hit(P);
+      var R = 6 / V.z, L = lit(), best = null, dB = R, ps = partSel(), wide = !selN.length && !selP.length, hp = wide && L.e.size && hit(P);
       L.e.forEach(function (k) {
         var e = edges2[k];
         if (e.s == null || e.t == null || !e.path) return;
@@ -2261,7 +2261,7 @@
       // an arc selected (as yEd): black squares on its bend points and on its two ports, where it starts
       // and ends (often in the middle of a node); and drawn blue (below). On a CellDesigner map a
       // reaction is one item, as in CellDesigner: a click on its main line (reactant to glyph to
-      // product), its glyph or an added reactant or product lights them all up; a modifier stays on its own
+      // product) or its glyph lights it all up; an added reactant or product, or a modifier, stays on its own
       var L = lit(), hlE = L.e, glyphs = L.g, main = MAIN;
       // a line selected is drawn blue itself, in CellDesigner's selection blue, on GraphML and CellDesigner maps alike
       // (no blue band under the line): its
@@ -2289,7 +2289,8 @@
         var all = ports(k, pk0), grouped = cd && main.test(e.id);   // a reaction's own lines: no squares in its glyph
         var pj = !drag && part && part.k === k && !selN.length && !selP.length ? (part.port ? (part.port.end ? all.length - 1 : 0) : e.pts.indexOf(part.p) + 1) : -1;
         all.forEach(function (q, j) {
-          if (grouped && ((j === 0 && glyphs.has(e.s)) || (j === all.length - 1 && glyphs.has(e.t)))) return;
+          var sqAt = function (n) { return glyphs.has(n) || /\|proc$/.test(nodes2[n].id); };   // an end at the reaction's square stays (portAt): no square drawn there
+          if (grouped && ((j === 0 && sqAt(e.s)) || (j === all.length - 1 && sqAt(e.t)))) return;
           if (j === pj) return;   // the part the keys move: its four squares alone (below)
           if (drag && drag.port && drag.port.to && drag.port.k === k && j === (drag.port.end ? all.length - 1 : 0)) return;   // the end dragged: its landing marks alone (below)
           over.push('<rect class="m2-ed-bend"' + sw(0.5) + ' x="' + f1(sx(q[0]) - sq() / 2) + '" y="' + f1(sy(q[1]) - sq() / 2) + '" width="' + f1(sq()) + '" height="' + f1(sq()) + '"/>');

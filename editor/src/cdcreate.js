@@ -268,15 +268,37 @@
       var k = cdHover ? nodes2.findIndex(function (n) { return n.id === cdHover.id; }) : -1;
       if (k >= 0 && cdGateOk(k)) cdLand(out, k, cdGateLand0(k, cdHover.P));
     }
-    function cdLinkMarks(out) {   // a line drawn by a drag on a CellDesigner map: its start picked, the node it would land on
+    function cdLinkMarks(out, E) {   // a line drawn by a drag on a CellDesigner map: its start picked, the node it would land on (E: the live line's ends)
       var add = cdAdd(), no = link.how && link.how.no;
       var rx = !add || no ? -1 : cdRole(link.from) === 'proc' ? link.from : link.to >= 0 && cdRole(link.to) === 'proc' ? link.to : -1;
       if (rx >= 0) cdMainLine(out, rx);   // a reactant or product being added: the reaction it joins, its main line in blue
-      if (add === 'p') {   // from a reaction: its square's handles, the product's join in magenta
+      if (add === 'p') {   // from a reaction: the product's join in magenta (the reaction itself not picked), an arrowhead at the line's end
         var J = cdJoin(link.from, false);
-        out.push(cdHandles(link.from, 'm2-ed-pickh') + cdDot(J || cdCentre(link.from), 'm2-ed-pickh'));
+        out.push(cdDot(J || cdCentre(link.from), 'm2-ed-pickh'));
+        if (E && !no) out.push(cdHead(E[0], E[1]));
       } else cdPicked(out, link.from);
       if (link.to >= 0 && link.how && !no) cdLand(out, link.to, link.how.land);
+    }
+    function cdHead(S, T) {   // a product's arrowhead at T, as cdrender's (15 long, 10 wide)
+      var L = Math.hypot(T[0] - S[0], T[1] - S[1]);
+      if (L < 1e-6) return '';
+      var u = [(T[0] - S[0]) / L, (T[1] - S[1]) / L], n = [-u[1], u[0]], at = function (a, c) { return f1(sx(T[0] - a * u[0] + c * n[0])) + ' ' + f1(sy(T[1] - a * u[1] + c * n[1])); };
+      return '<path class="m2-ed-head" d="M' + at(0, 0) + 'L' + at(15, 5) + 'L' + at(15, -5) + 'Z"/>';
+    }
+    // Add product picked: the join a press would start from, shown while the pointer is over a reaction's square or near
+    // its main line (cdLineAt), so the drag starts there without aiming at the square
+    var cdOver = null;   // the square's id (a re-parse, an undo, renumbers nodes2)
+    V.view.addEventListener('pointermove', function (e) {
+      var on_ = cdPal() && cdAdd() === 'p' && !e.buttons && !link, i = on_ ? linkEnd(at(e), -1) : -1, id = i >= 0 && cdRole(i) === 'proc' ? nodes2[i].id : null;
+      if (id !== cdOver) { cdOver = id; paint(); }
+    });
+    V.view.addEventListener('pointerleave', function () { if (cdOver) { cdOver = null; paint(); } });
+    function cdOverMarks(out) {
+      var i = cdOver && cdPal() && !link && cdAdd() === 'p' ? nodes2.findIndex(function (n) { return n.id === cdOver; }) : -1;
+      if (i < 0) { cdOver = null; return; }
+      cdMainLine(out, i);
+      var J = cdJoin(i, false);
+      if (J) out.push(cdDot(J, 'm2-ed-pickh'));
     }
     // Add reactant and Add product (CellDesigner's Add Reactant and Add Product): a line joined to a reaction already
     // there. The reaction is taken by its square or its main line: an added reactant joins at 3/8 of the square's
@@ -321,7 +343,7 @@
     function cdLiveEnds(S, P, C) {
       var h = link.how, ok = h && !h.no, J;
       if (ok && h.part === 'reactant' && h.land && h.land.Q) { J = h.land.Q; return [cutShape(link.from, C, J, bx(link.from)), J]; }
-      if (ok && h.part === 'product' && (J = cdJoin(link.from, false))) return [J, h.land && h.land.Q ? cutShape(link.to, h.land.Q, J, bx(link.to)) : P];
+      if ((ok ? h.part === 'product' : !h && cdAdd() === 'p') && (J = cdJoin(link.from, false))) return [J, ok && h.land && h.land.Q ? cutShape(link.to, h.land.Q, J, bx(link.to)) : P];   // over nothing yet: from the join to the pointer
       return [S, P];
     }
     // the map clicked with a CellDesigner sign in hand (palUp, create.js)

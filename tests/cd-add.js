@@ -61,11 +61,29 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#acly-celld
   var sm = (await page.$$eval('#m2-img [data-n]', function (l) { return l.map(function (x) { return x.getAttribute('data-n'); }); })).filter(function (i) { return ids0.indexOf(i) < 0; })[0];
   await page.keyboard.press('Escape'); await sign('cd:ADD_PRODUCT');
   var from = await along('re_n3|b', 0.6);
-  mid = await drag(from, await at(sm), async function () { if (shots) await page.screenshot({ path: path.join(shots, 'cd-add-product.png') }); return page.$$eval('#m2-edit-layer .m2-ed-rxline', function (l) { return l.length; }); });
-  ok('the main line lit while drawing a product', mid === 2);
+  await page.mouse.move(from[0] + 2, from[1] + 2); await page.waitForTimeout(200);
+  var dot = await page.$$eval('#m2-edit-layer .m2-ed-pickh', function (l) { return l.map(function (x) { var r = x.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }); });
+  ok('Add product over the main line: its join shown before the press', dot.length === 1 && near(dot[0], Jp, 2), JSON.stringify(dot));
+  mid = await drag(from, await at(sm), async function () {
+    if (shots) await page.screenshot({ path: path.join(shots, 'cd-add-product.png') });
+    return { lit: await page.$$eval('#m2-edit-layer .m2-ed-rxline', function (l) { return l.length; }), head: await page.$$eval('#m2-edit-layer .m2-ed-head', function (l) { return l.length; }), handles: await page.$$eval('#m2-edit-layer .m2-ed-pickh', function (l) { return l.length; }) };
+  });
+  ok('the main line lit while drawing a product, an arrowhead on the line, the square not picked', mid.lit === 2 && mid.head === 1 && mid.handles === 1, JSON.stringify(mid));
   var e2 = await es(), add2 = e2.filter(function (i) { return e1.indexOf(i) < 0; });
   ok('an added product made from the main line', add2.length === 1 && add2[0] === 're_n3|p3', add2.join(' '));
   if (add2[0]) ok('it leaves at the products’ join', near(await along(add2[0], 0), Jp, 2));
+  var blue = await page.$$eval('#m2-img .m2-ed-blue', function (l) { return l.map(function (x) { var g = x.closest('[data-e]'); return g ? g.getAttribute('data-e') : x.getAttribute('data-n') || x.tagName; }).join(' '); });
+  ok('the new product alone lit, not its reaction', blue === 're_n3|p3', blue);
+  // a click on an added reactant selects it alone; a click on the main line the whole reaction
+  var blueOf = function () { return page.$$eval('#m2-img .m2-ed-blue', function (l) { return l.map(function (x) { var g = x.closest('[data-e]'); return g ? g.getAttribute('data-e') : x.getAttribute('data-n') || x.tagName; }).sort().join(' '); }); };
+  await page.keyboard.press('Escape'); await page.keyboard.press('Escape');
+  var c0 = await along('re_n3|r0', 0.5); await page.mouse.click(c0[0], c0[1]); await page.waitForTimeout(400);
+  ok('a click on an added reactant selects it alone', (await blueOf()) === 're_n3|r0', await blueOf());
+  ok('its one end square at the species, none at the join', (await page.$$eval('#m2-edit-layer .m2-ed-bend', function (l) { return l.length; })) === 1);
+  var c1 = await along('re_n3|a', 0.3); await page.mouse.click(c1[0], c1[1]); await page.waitForTimeout(400);
+  var all = (await blueOf()).split(' ');
+  ok('a click on the main line lights the whole reaction', all.indexOf('re_n3|r0') >= 0 && all.indexOf('re_n3|p3') >= 0 && all.indexOf('re_n3|b') >= 0, all.join(' '));
+  await page.keyboard.press('Escape');
   // an added product from the square itself
   ids0 = await page.$$eval('#m2-img [data-n]', function (l) { return l.map(function (x) { return x.getAttribute('data-n'); }); });
   await page.keyboard.press('Escape'); await sign('cd:SIMPLE_MOLECULE'); await page.mouse.click(1250, 760); await page.waitForTimeout(800);
