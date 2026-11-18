@@ -887,6 +887,7 @@
     }
     // a name written as typing writes it (typeIn): a CellDesigner map's into its file (cdcreate.js), an SBGN-ML map's label
     function nameNow(i) { return (cd ? cdNameOf(nodes2[i].id) : nameOf(i)).replace(/[\r\n]+/g, ' ').trim(); }   // a name as one line (a CellDesigner one from its file, cdcreate.js)
+    function shownName(i) { return (cd ? cdNameOf(nodes2[i].id, true) : nameOf(i)).replace(/[\r\n]+/g, ' ').trim(); }   // the name as drawn: a CellDesigner member still named after its id gives that id
     function setName(id, v) {
       if (cd) { cdRename(id, v); return; }
       if (!sbJs || sb && !sbJs.nameable(src(), id)) return;   // a GraphML map's label written as it stands (no SBGN-ML class to ask)
@@ -897,7 +898,7 @@
     // Name by members: a complex named by its members' names joined by colons (A:B, CellDesigner's usual name for
     // a complex), in reading order (rows from the top, each from the left); a member complex with no name gives its own
     // members' names. Offered with Repack complex (core.js) on every map that draws complexes with their members, in Layout
-    // and Full editing alike; greyed only when the complex already has that name (or its members give no name)
+    // and Full editing alike; greyed only when the complex already has that name (or its members show no name); members' names as drawn
     function membersName(c) {
       var ms = [], rows = [], mid = function (k, d) { var b = boxOf(k); return b[d] + b[d + 2] / 2; };
       nodes2.forEach(function (n, k) { if (n.up === c) ms.push(k); });
@@ -906,7 +907,7 @@
         if (r && mid(k, 1) - mid(r[0], 1) <= boxOf(r[0])[3] / 2) r.push(k); else rows.push([k]);
       });
       return [].concat.apply([], rows.map(function (r) { return r.sort(function (a, b) { return mid(a, 0) - mid(b, 0); }); }))
-        .map(function (k) { return nameNow(k) || (nodes2[k].shape.kind === 'Complex' ? membersName(k) : ''); }).filter(function (s) { return s; }).join(':');
+        .map(function (k) { return shownName(k) || (nodes2[k].shape.kind === 'Complex' ? membersName(k) : ''); }).filter(function (s) { return s; }).join(':');
     }
     window.m2EditNameHere = function (member) {
       var c = complexHere(member);
