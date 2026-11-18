@@ -664,13 +664,13 @@
       }, ports: false },
       node: function (i) { return cdProp(i) ? i : -1; },
       off: function (k, i) {   // pNow: look's, read just before; a compartment no border width or multimer, a complex no multimer
-        return k === 'line' || (/^(label|fill|multimer)$/.test(k) && pNow.cls === 'DEGRADED') || (/^(width|multimer|def)$/.test(k) && pNow.cls === 'COMPARTMENT') || (/^(multimer|def)$/.test(k) && pNow.cls === 'COMPLEX');
+        return k === 'line' || (/^(mem|outer|inner)$/.test(k) && pNow.cls !== 'COMPARTMENT') || (/^(label|fill|multimer)$/.test(k) && pNow.cls === 'DEGRADED') || (/^(width|multimer|def)$/.test(k) && pNow.cls === 'COMPARTMENT') || (/^(multimer|def)$/.test(k) && pNow.cls === 'COMPLEX');
       },
       look: function (i) {   // null while the file is behind the map read (an undo not drawn yet); read once per node and file (it runs with every paint)
         var id = nodes2[i].id;
         if (cdLook[0] !== id || cdLook[1] !== cd.now) {
           var L = null;
-          try { L = cdMk.look(cd.now, id); L = { label: cdNameOf(id, true), fill: L.fill, line: '#000000', width: L.width, multimer: L.multimer, cls: L.cls }; } catch (e) { L = null; }
+          try { L = cdMk.look(cd.now, id); L = { label: cdNameOf(id, true), fill: L.fill, line: '#000000', width: L.width, multimer: L.multimer, cls: L.cls, mem: L.mem, outer: L.outer, inner: L.inner }; } catch (e) { L = null; }
           cdLook = [id, cd.now, L];
         }
         return cdLook[2] && Object.assign({}, cdLook[2]);
@@ -679,10 +679,33 @@
         var ids = is.map(function (i) { return nodes2[i].id; }), all = function (f) { return cdApply(function (t) { ids.forEach(function (id) { t = f(t, id); }); return t; }, ids); };
         if (k === 'label') return all(function (t, id) { return cdMk.rename(t, id, v.replace(/[\r\n]+/g, ' ')); });
         if (k === 'multimer') return all(function (t, id) { return !v ? cdMk.homodimer(t, id, 1) : cdMk.aliasInfo(t, id).homodimer > 1 ? t : cdMk.homodimer(t, id, 2); });   // a count above 2 kept
-        if (k === 'width') { var x = parseFloat(v); return x > 0 && x <= 20 && all(function (t, id) { return cdMk.restyle(t, id, { width: x }); }); }
+        if (k === 'width') { var x = parseFloat(v); return isFinite(x) && all(function (t, id) { return cdMk.restyle(t, id, { width: Math.min(Math.max(x, 0.25), 20) }); }); }   // outside 0.25 to 20: the nearest, silently
         if (k === 'fill') { var c = hex(v); return !!c && all(function (t, id) { return cdMk.restyle(t, id, { fill: c }); }); }
+        if (/^(mem|outer|inner)$/.test(k)) return cdDouble(k, parseFloat(v), ids);
         return false;
       } };
+    // a compartment's double line in Properties: Membrane (its thickness), Outer line and Inner line (their widths), after
+    // Border width. A number outside the limits is set, without a word, to the nearest allowed (as a graph editor's
+    // fields): CellDesigner's (thickness 2 at least, inner line 1 at least, outer line at least the inner + 1, else it
+    // refuses the file's values), the viewer's above (an outer line 20), and a thickness leaving room inside the box (half its
+    // smaller side less 3). All three written each time, so a file already outside them comes back inside
+    propRows([['mem', 'Membrane', 'num', ' min="2" max="100"', 'Membrane thickness: the band between the two lines, 2 at least'],
+      ['outer', 'Outer line', 'num', ' min="2" max="20"', 'Outer line width, at least the inner line + 1'],
+      ['inner', 'Inner line', 'num', ' min="1" max="19"', 'Inner line width, 1 at least']]);
+    function cdDouble(k, x, ids) {
+      if (!isFinite(x)) return false;
+      var clamp = function (v, a, b) { return Math.min(Math.max(v, a), b); };
+      return cdApply(function (t) {
+        ids.forEach(function (id) {
+          var L = cdMk.look(t, id), b = cdMk.aliasInfo(t, id).box, o = { mem: L.mem, outer: L.outer, inner: L.inner };
+          o[k] = x;
+          o.mem = clamp(o.mem, 2, b ? Math.max(2, Math.min(b[2], b[3]) / 2 - 3) : 100);
+          o.outer = clamp(o.outer, 2, 20); o.inner = clamp(o.inner, 1, o.outer - 1);   // the outer line kept, the inner one fitted under it
+          t = cdMk.restyle(t, id, o);
+        });
+        return t;
+      }, ids);   // nothing written (the values already there): the field shows them again
+    }
 
     // a sign dragged from the palette: CellDesigner's shape at its size following the pointer (create.js palDrag), drawn
     // as cdrender draws it once dropped (D.shape, outline: RNA slanted by its height, a protein's corners 5, a complex's

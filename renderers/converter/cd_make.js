@@ -968,7 +968,10 @@
   // width (singleLine) and multimer (its species' homodimer count above 1), all from the usual view
   function look(t, id) {
     var C = alias(t, id);
-    if (C.kind === 'compartmentAlias') { var cp = /<celldesigner:paint color="([0-9a-fA-F]{8})"/.exec(t.slice(C.sp[0], C.sp[1])); return { fill: cp ? '#' + cp[1].slice(2).toLowerCase() : '', width: 1, multimer: false, cls: 'COMPARTMENT' }; }
+    if (C.kind === 'compartmentAlias') {   // its colour and its double line (membrane thickness, outer and inner line widths; CellDesigner's 12, 2, 1 where absent)
+      var cs = t.slice(C.sp[0], C.sp[1]), cp = /<celldesigner:paint color="([0-9a-fA-F]{8})"/.exec(cs), dl = /<celldesigner:doubleLine\s[^>]*>/.exec(cs), da = function (k, d) { var m = dl && new RegExp('\\s' + k + '="([^"]*)"').exec(dl[0]); return m ? F(m[1]) : d; };
+      return { fill: cp ? '#' + cp[1].slice(2).toLowerCase() : '', width: 1, multimer: false, cls: 'COMPARTMENT', mem: da('thickness', 12), outer: da('outerWidth', 2), inner: da('innerWidth', 1) };
+    }
     var A = entity(t, id), u = span(t, '<celldesigner:usualView>', A.sp[0], A.sp[1]), seg = u ? t.slice(u[0], u[1]) : '';
     var p = /<celldesigner:paint color="([0-9a-fA-F]{8})"/.exec(seg), w = /<celldesigner:singleLine width="([^"]*)"/.exec(seg), h = inState(t, A.species, '<celldesigner:homodimer>');
     return { fill: p ? '#' + p[1].slice(2).toLowerCase() : '', width: w ? F(w[1]) : 1, multimer: h ? +/>(\d+)</.exec(t.slice(h[0], h[1]))[1] > 1 : false, cls: A.cls };
@@ -976,8 +979,22 @@
   // the fill (#rrggbb, written opaque) and the border width of one species alias, in its usual view; the brief view kept
   function restyle(t, id, o) {
     var C = alias(t, id);
-    if (C.kind === 'compartmentAlias') {   // its colour only (CellDesigner's paint, the band and the lines drawn from it)
+    if (C.kind === 'compartmentAlias') {   // its colour (CellDesigner's paint, the band and the lines drawn from it) and its double line
       if (o.width != null) fail('A compartment keeps its two lines.');
+      if (o.mem != null || o.outer != null || o.inner != null) {   // CellDesigner's limits: thickness 2 at least, inner above 0, outer at least inner + 1
+        var L = look(t, id), mem = o.mem != null ? o.mem : L.mem, ow = o.outer != null ? o.outer : L.outer, iw = o.inner != null ? o.inner : L.inner;
+        if (!(mem >= 2)) fail('A membrane is 2 thick at least.');
+        if (!(iw > 0) || !(ow >= iw + 1)) fail('The outer line is at least the inner line + 1.');
+        var ds = span(t, '<celldesigner:doubleLine', C.sp[0], C.sp[1]), kv = [['thickness', num(mem)], ['outerWidth', num(ow)], ['innerWidth', num(iw)]];
+        if (ds) t = attrs(t, ds[0], kv);
+        else {   // none written: one after the namePoint (else the bounds), as CellDesigner orders them
+          var bs = span(t, '<celldesigner:namePoint ', C.sp[0], C.sp[1]) || span(t, '<celldesigner:bounds ', C.sp[0], C.sp[1]);
+          if (!bs) fail('No bounds on ' + id + '.');
+          var e = t.indexOf('>', bs[0]) + 1;
+          t = put(t, e, e, '\n<celldesigner:doubleLine ' + kv.map(function (q) { return q[0] + '="' + q[1] + '"'; }).join(' ') + '/>');
+        }
+        C = alias(t, id);
+      }
       if (o.fill == null) return t;
       if (!/^#[0-9a-fA-F]{6}$/.test(o.fill)) fail('A fill is a colour #rrggbb.');
       var cs = span(t, '<celldesigner:paint ', C.sp[0], C.sp[1]);

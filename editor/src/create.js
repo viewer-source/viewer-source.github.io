@@ -1329,6 +1329,7 @@
     // its handles resize it (holderSize). Grid size is beside the Grid and Snap switches (core.js)
     var ROWS = [['label', 'Label', 'text'], ['w', 'Width', 'num'], ['h', 'Height', 'num'], ['fill', 'Fill colour', 'colour'],
       ['line', 'Border colour', 'colour'], ['width', 'Border width', 'num'], ['multimer', 'Multimer', 'check']];
+    // a row: [key, name, kind, its input's limits, its title]; a format's part may add its own rows (propRows)
     var props = document.createElement('div');
     props.className = 'm2-ed-props'; props.hidden = true;
     // a line's rows (yEd's Properties View for an edge): its colour, its two ports as offsets from its glyph's centre
@@ -1339,9 +1340,9 @@
     function table(rows, cls) { return '<table class="m2-ed-ptab' + cls + '">' + rows.map(function (r) {
       var id = 'm2-ed-' + r[0], f = r[2] === 'check' ? '<input type="checkbox" id="' + id + '">'
         : r[2] === 'colour' ? '<span class="m2-ed-pc"><input type="color" tabindex="-1" aria-label="' + r[1] + ', picker"><input type="text" id="' + id + '" spellcheck="false" autocomplete="off"' + (r[0] === 'fill' ? ' placeholder="none"' : '') + '></span>'
-        : r[2] === 'num' ? '<input type="number" id="' + id + '" step="any"' + (r[0] === 'width' ? ' min="0.25" max="20"' : /^[st][xy]$/.test(r[0]) ? '' : ' min="4" max="5000"') + '>'
+        : r[2] === 'num' ? '<input type="number" id="' + id + '" step="any"' + (r[3] || (r[0] === 'width' ? ' min="0.25" max="20"' : /^[st][xy]$/.test(r[0]) ? '' : ' min="1" max="5000"')) + '>'
         : '<input type="text" id="' + id + '" spellcheck="false" autocomplete="off">';
-      return '<tr data-k="' + r[0] + '"><th><label for="' + id + '">' + r[1] + '</label></th><td>' + f + '</td></tr>';
+      return '<tr data-k="' + r[0] + '"' + (r[4] ? ' title="' + r[4] + '"' : '') + '><th><label for="' + id + '">' + r[1] + '</label></th><td>' + f + '</td></tr>';
     }).join('') + '</table>'; }
     props.innerHTML = '<p>Properties</p>' + table(ROWS, ' m2-ed-pnode') + table(EROWS, ' m2-ed-pedge') + table(RROWS, ' m2-ed-prx') +
       '<button type="button" class="m2-ed-pdef" title="The next ones of this kind made from the palette take these">Set as default</button>';
@@ -1369,6 +1370,7 @@
       var c = sbClasses()[nodes2[i].id] || '';
       if (k === 'label') return !sbJs.NAMED.test(c);
       if (k === 'multimer') return !sbJs.MULTI.test(c.replace(/ multimer$/, ''));
+      if (EXTRA.indexOf(k) >= 0) return true;   // another format's own rows (propRows)
       if (k === 'def') return !/^(macromolecule|simple chemical)( multimer)?$|^biological activity$/.test(c);
       return false;
     }
@@ -1415,7 +1417,7 @@
       if (!pNow) { props.hidden = true; return; }
       Array.prototype.forEach.call(props.querySelectorAll('.m2-ed-pnode tr[data-k]'), function (tr) { tr.hidden = (/^[wh]$/.test(tr.dataset.k) && !sizable(i)) || pf.off(tr.dataset.k, i); });
       props.querySelector('.m2-ed-pdef').hidden = !pf.def || pf.off('def', i);   // the part may keep it from a kind (CellDesigner: species only)
-      pNow.w = r2(b[2]); pNow.h = r2(b[3]); pNow.width = r2(pNow.width);
+      pNow.w = r2(b[2]); pNow.h = r2(b[3]); ROWS.forEach(function (r) { if (r[2] === 'num' && pNow[r[0]] != null) pNow[r[0]] = r2(pNow[r[0]]); });
       ROWS.forEach(function (r) {
         var f = field(r[0]);
         if (!all && document.activeElement === f) return;
@@ -1432,7 +1434,7 @@
     var mLook = [null, null, null];   // [nodes, their looks, the file read]
     function propsMany(ns, all, r2) {
       var pf = propFmt(), key = ns.join(','), now = cd ? cd.now : text;
-      if (mLook[0] !== key || mLook[2] !== now) mLook = [key, ns.map(function (i) { var L = pf.look(i), b = bx(i); if (L) { L.w = r2(b[2]); L.h = r2(b[3]); L.width = r2(L.width); } return L; }), now];
+      if (mLook[0] !== key || mLook[2] !== now) mLook = [key, ns.map(function (i) { var L = pf.look(i), b = bx(i); if (L) { L.w = r2(b[2]); L.h = r2(b[3]); ROWS.forEach(function (r) { if (r[2] === 'num' && L[r[0]] != null) L[r[0]] = r2(L[r[0]]); }); } return L; }), now];
       var Ls = mLook[1];
       if (Ls.some(function (L) { return !L; })) { props.hidden = true; return; }
       props.hidden = false;
@@ -1456,7 +1458,8 @@
       inp.addEventListener('change', function () {
         var ns = propNodes(), v = parseFloat(inp.value);
         if (!ns.length || !ns.every(sizable)) return;
-        if (!(v >= 4 && v <= 5000)) { propsShow(true); return; }
+        if (!isFinite(v)) { propsShow(true); return; }
+        v = Math.min(Math.max(v, 1), 5000);   // outside 1 to 5000: the nearest, silently (a graph editor's fields; a compartment 30 below)
         var pairs = ns.map(function (i) {
           var b = boxOf(i), w = nodes2[i].comp ? Math.max(v, 30) : v, nb = b.slice(); nb[2 + k] = w; nb[k] = b[k] + b[2 + k] / 2 - w / 2;   // its centre kept; a compartment 30 at least (as its handles: room for its two lines)
           if (holds(i) && !nodes2[i].comp) nb = roomy(i, nb, k ? 'tb' : 'lr', b);   // a complex never smaller than its members need, as its handles
@@ -1491,7 +1494,7 @@
       ids.forEach(function (id) {
         if (k === 'label') t2 = sbJs.label(t2, id, v.replace(/[\r\n]+/g, ' '));
         else if (k === 'multimer') t2 = sbJs.multimer(t2, id, v);   // a count, if any, stays the unit of information typed (N:3)
-        else if (k === 'width') { var x = parseFloat(v); if (x > 0 && x <= 20) t2 = sbJs.restyle(t2, id, { width: x }); }
+        else if (k === 'width') { var x = parseFloat(v); if (isFinite(x)) t2 = sbJs.restyle(t2, id, { width: Math.min(Math.max(x, 0.25), 20) }); }   // outside 0.25 to 20: the nearest, silently
         else {
           var c = hex(v), o = {};
           if (c !== null && !(c === '' && k === 'line')) { o[k] = c === '#000000' && k === 'line' ? null : c || null; t2 = sbJs.restyle(t2, id, o); }
@@ -1574,12 +1577,22 @@
       f.addEventListener('change', function () { edgeSet(r[0]); });
       if (r[2] === 'colour') f.previousElementSibling.addEventListener('change', function (e) { f.value = e.target.value; edgeSet(r[0]); });
     });
-    ROWS.forEach(function (r) {
-      if (r[2] === 'num' && r[0] !== 'width') return;   // Width and Height: above
+    function propListen(r) {
+      if (/^[wh]$/.test(r[0])) return;   // Width and Height: above
       var f = field(r[0]);
       f.addEventListener('change', function () { propSet(r[0]); });
       if (r[2] === 'colour') f.previousElementSibling.addEventListener('change', function (e) { f.value = e.target.value; propSet(r[0]); });
-    });
+    }
+    ROWS.forEach(propListen);
+    // a format's part adds rows of its own after Border width (its off() hides them where they do not apply; other parts' off() by EXTRA)
+    var EXTRA = [];
+    function propRows(rows) {
+      var at = props.querySelector('.m2-ed-pnode tr[data-k="width"]'), tmp = document.createElement('div');
+      tmp.innerHTML = table(rows, '');
+      Array.prototype.slice.call(tmp.querySelectorAll('tr')).reverse().forEach(function (tr) { at.insertAdjacentElement('afterend', tr); });
+      var k = ROWS.findIndex(function (r) { return r[0] === 'width'; });
+      rows.forEach(function (r, j) { ROWS.splice(k + 1 + j, 0, r); EXTRA.push(r[0]); propListen(r); });
+    }
     props.addEventListener('keydown', function (e) {   // Enter keeps the value, Esc takes it back; the map's keys stay out of the fields
       if (e.key === 'Enter') { e.target.blur(); e.preventDefault(); }
       else if (e.key === 'Escape') { propsShow(true); e.target.blur(); e.preventDefault(); }   // the value put back first, so leaving the field changes nothing

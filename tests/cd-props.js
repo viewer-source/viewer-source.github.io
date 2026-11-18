@@ -1,6 +1,7 @@
 // Compartments and complexes on a CellDesigner map (editor/src/cdcreate.js, cd_make.js): a compartment's sign dragged from
 // the palette drawn as the map draws it (its colour, 12 between its lines), placed 160 by 160; Properties for a complex
-// (Width, Height, Fill, Border width; no Multimer) and for a compartment (Width, Height, Fill), each value written into the
+// (Width, Height, Fill, Border width; no Multimer) and for a compartment (Width, Height, Fill, Membrane, Outer line, Inner
+// line: its double line, a number under CellDesigner's limits set to the nearest allowed, silently), each value written into the
 // file and undone; a modifier's Line colour and a reaction's (no ports' rows), written and drawn, the reaction's added
 // reactants and products keeping their own. Nothing is saved (no token). No script error.
 //   node tests/cd-props.js [address] [viewer folder: its editor and renderers served in place of the page's]
@@ -46,7 +47,30 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#acly-celld
   // Properties of the compartment
   await select(comp);
   var rc = await rows();
-  ok('a compartment: Label, Width, Height, Fill colour', JSON.stringify(rc) === JSON.stringify(['label', 'w', 'h', 'fill']), JSON.stringify(rc));
+  ok('a compartment: Label, Width, Height, Fill colour, Membrane, Outer line, Inner line', JSON.stringify(rc) === JSON.stringify(['label', 'w', 'h', 'fill', 'mem', 'outer', 'inner']), JSON.stringify(rc));
+  var fv = function (k) { return page.$eval('#m2-ed-' + k, function (f) { return f.value; }); };
+  var dl = function (t) { var m = /<celldesigner:doubleLine [^>]*>/.exec(aliasOf(t, comp)); return m ? m[0] : ''; };
+  ok('its double line shown: 12, 2, 1', (await fv('mem')) === '12' && (await fv('outer')) === '2' && (await fv('inner')) === '1');
+  await type('mem', '24');
+  ok('Membrane 24 written', /thickness="24\.0" outerWidth="2\.0" innerWidth="1\.0"/.test(dl(await now())), dl(await now()));
+  ok('drawn 24 between its lines', /<rect x="[\d.]+" y="[\d.]+" width="112" height="112"/.test(await page.$eval('#m2-img [data-n="' + comp + '"]', function (g) { return g.innerHTML; })));
+  await select(comp); await type('mem', '0.1');
+  ok('Membrane 0.1 set to 2', /thickness="2\.0"/.test(dl(await now())) && (await fv('mem')) === '2', dl(await now()));
+  await select(comp); await type('outer', '0.5');
+  ok('Outer line 0.5 with inner 1 kept at 2', /outerWidth="2\.0"/.test(dl(await now())) && (await fv('outer')) === '2', dl(await now()));
+  await select(comp); await type('inner', '3');
+  ok('Inner line 3 with outer 2 kept at 1', /innerWidth="1\.0"/.test(dl(await now())) && (await fv('inner')) === '1', dl(await now()));
+  await select(comp); await type('mem', '200');
+  ok('Membrane 200 on a 160 box set to 77, room left inside', /thickness="77\.0"/.test(dl(await now())), dl(await now()));
+  await select(comp); await type('mem', '2');
+  await select(comp); await type('outer', '5'); await select(comp); await type('inner', '3');
+  ok('Outer line 5, Inner line 3 written', /outerWidth="5\.0" innerWidth="3\.0"/.test(dl(await now())), dl(await now()));
+  for (var u = 0; u < 6; u++) { await page.keyboard.press('Escape'); await page.keyboard.press('Control+z'); await page.waitForTimeout(1200); }
+  await select(comp); await type('w', '0');
+  ok('Width 0 on a compartment set to 30, silently', /w="30\.0" h="160\.0"/.test(aliasOf(await now(), comp)), aliasOf(await now(), comp).slice(0, 300));
+  await page.keyboard.press('Escape'); await page.keyboard.press('Control+z'); await page.waitForTimeout(1200);
+  ok('undone: 12, 2, 1 again', /thickness="12\.0" outerWidth="2\.0" innerWidth="1\.0"/.test(dl(await now())), dl(await now()));
+  await select(comp);
   ok('its fill shown', (await page.$eval('#m2-ed-fill', function (f) { return f.value; })) === '#cccc00');
   var mid = function () { return page.$eval('#m2-img [data-n="' + comp + '"]', function (g) {   // its name's centre and its own, on screen
     var tx = g.querySelector('text'), r = g.getBoundingClientRect(), q = tx.getBoundingClientRect(); return [q.left + q.width / 2, r.left + r.width / 2, q.top - r.top]; }); };
@@ -82,6 +106,9 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#acly-celld
   ok('its height written', /h="200\.0"/.test(aliasOf(await now(), cx)), aliasOf(await now(), cx).slice(0, 300));
   await select(cx); await type('width', '3');
   ok('its border width written', /<celldesigner:singleLine width="3\.0"/.test(aliasOf(await now(), cx)));
+  await select(cx); await type('width', '0');
+  ok('Border width 0 set to 0.25, silently', /<celldesigner:singleLine width="0\.25"/.test(aliasOf(await now(), cx)), aliasOf(await now(), cx).slice(0, 400));
+  await select(cx); await type('width', '3');
 
   // a member put in the complex, then the complex typed narrower than its member: it stops where the member still fits
   await page.keyboard.press('Escape'); await page.click('#m2-editwin button[data-make="cd:PROTEIN"]');
