@@ -521,9 +521,9 @@
       joins.forEach(function (q) { joinBeside(q[0], q[1]); });
       var sel = selN.map(function (i) { return nodes2[i].id; }), done = [];
       if (cd) {
-        var t = cdJs.draw(cd.base, text)[1];
+        var N = cdNow(), t = N.t;
         joins.forEach(function (q) { try { t = cdMk.join(t, q[0], q[1]); done.push(q[1]); } catch (err) { warn(String(err && err.message || err)); } });
-        if (done.length) { cd.base = t; text = cdGraphml(t); }
+        if (done.length) cdRebuild(t, N.sh);
       } else joins.forEach(function (q) { try { text = sbJs.join(text, q[0], q[1], { checked: true }); done.push(q[1]); } catch (err) { warn('A glyph could not be put into the complex.'); } });
       if (!done.length) return done;
       parse(); dirty = true;

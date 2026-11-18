@@ -2,11 +2,16 @@
 // map space after Repack all complexes, absent on a GraphML map; chosen, the file's canvas fitted (content's top left 40 to 56
 // from the corner, 40 past its right and bottom), a node kept where it was on screen, undo and redo keeping it there too.
 // Nothing is saved (no token). No script error.
-//   node tests/cd-fit-live.js [base address]
-var { chromium } = require('playwright');
-var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
+//   node tests/cd-fit-live.js [base address] [viewer folder: its editor served in place of the page's]
+var { chromium } = require('playwright'), fs = require('fs'), path = require('path');
+var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local = process.argv[3];
 (async function () {
   var b = await chromium.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], bad = 0;
+  if (local) {
+    var ed = fs.readFileSync(path.join(local, 'editor/editor.js'), 'utf8').replace(/^---[\s\S]*?---\n/, '')
+      .replace(/\{% include_relative (src\/[\w.]+) %\}/g, function (m, f) { return fs.readFileSync(path.join(local, 'editor', f), 'utf8'); });
+    await page.route('**/editor/editor.js*', function (r) { r.fulfill({ status: 200, contentType: 'application/javascript', body: ed }); });
+  }
   page.on('pageerror', function (e) { errs.push(e.message); });
   var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more ? '  ' + more : '')); };
   var start = async function (h) {

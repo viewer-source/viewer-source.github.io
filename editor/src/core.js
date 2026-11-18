@@ -870,10 +870,10 @@
       // the GraphML made again from the file
       var cdLeave = function () {
         if (!cd || !cdMk || !moves.some(function (m) { try { return !!cdMk.aliasInfo(cd.now, m[0]).complex; } catch (err) { return false; } })) return;
-        var t = cdJs.draw(cd.base, text)[1], t0 = t, sel = selN.map(function (i) { return nodes2[i].id; });
+        var N = cdNow(), t = N.t, t0 = t, sel = selN.map(function (i) { return nodes2[i].id; });
         moves.forEach(function (m) { try { if (cdMk.aliasInfo(t, m[0]).complex) t = cdMk.leave(t, m[0], m[1]); } catch (err) { warn(String(err && err.message || err)); } });
         if (t === t0) return;
-        cd.base = t; text = cdGraphml(t); parse(); dirty = true;
+        cdRebuild(t, N.sh); parse(); dirty = true;
         var ix = {}; nodes2.forEach(function (n, i) { ix[n.id] = i; });
         selN = sel.filter(function (id) { return ix[id] != null; }).map(function (id) { return ix[id]; });
       };
@@ -1065,13 +1065,22 @@
       return t;
     }
     function sizeOf(d) { if (d.g != null) return d.g.length + d.b.length; if (d.pg) return sizeOf(d.pg) + sizeOf(d.pb); return typeof d === 'string' ? d.length : d.at ? d.lines.reduce(function (k, l) { return k + l.length + 8; }, 0) : d.mid.length; }
+    // the editor's places shifted as a whole (a map moved out of negative places, a CellDesigner file made again in its own
+    // places): shiftSum the sum of those shifts; the frame (x0, y0) moves with them, so nothing moves on screen. Each undo step
+    // keeps the sum it was taken at (stack.rb beside the stack), and taking a step back puts the frame where that step's
+    // places are drawn where they were, so an undo or redo across a shift never moves the map
+    var shiftSum = [0, 0], tookShift = null;
+    function rebase(dx, dy) { shiftSum = [shiftSum[0] + dx, shiftSum[1] + dy]; x0 += dx; y0 += dy; }
     function step(stack, t) {   // t whole on top; the old top a change from it
-      var top = stack.length - 1;
+      var top = stack.length - 1, rs = stack.rb || (stack.rb = []);
+      if (rs.length !== stack.length) rs = stack.rb = stack.map(function () { return null; });   // never expected: steps without a frame are taken as they are
+      rs.push(shiftSum);
       if (top >= 0) { var o = stack[top]; stack[top] = typeof t === 'string' && typeof o === 'string' ? delta(t, o) : t.g != null && o.g != null ? { pg: delta(t.g, o.g), pb: delta(t.b, o.b) } : o; }
       stack.push(t);
-      for (var k = 0, i = stack.length - 1; i >= 0; i--) { k += sizeOf(stack[i]); if (k > 40e6 || stack.length - i > 200) { stack.splice(0, i + 1); break; } }   // 200 steps or 40 million characters
+      for (var k = 0, i = stack.length - 1; i >= 0; i--) { k += sizeOf(stack[i]); if (k > 40e6 || stack.length - i > 200) { stack.splice(0, i + 1); rs.splice(0, i + 1); break; } }   // 200 steps or 40 million characters
     }
     function take(stack) {   // the top, whole; the one below made whole in its place
+      tookShift = stack.rb && stack.rb.length === stack.length ? stack.rb.pop() : null;
       var t = stack.pop(), top = stack.length - 1;
       if (top >= 0) stack[top] = rebuild(stack[top], t);
       return t;
@@ -1081,7 +1090,8 @@
     // two kept apart, { g, b }, each as its own change below the top (as one string a step on the 2 MB mast
     // cell map kept 1.7 MB)
     function undoText() { return cd ? { g: text, b: cd.base } : text; }
-    function fromUndo(t) {   // the GraphML of a step, its file put back where the step kept one
+    function fromUndo(t) {   // the GraphML of a step, its file put back where the step kept one, its frame as it was
+      if (tookShift) { x0 += tookShift[0] - shiftSum[0]; y0 += tookShift[1] - shiftSum[1]; shiftSum = tookShift; tookShift = null; }
       if (typeof t === 'string') return t;
       if (cd) cd.base = t.b;
       return t.g;
@@ -1092,14 +1102,13 @@
       if (!(merge && now - nudgeAt < 800)) { step(undo, undoText()); redo = []; }
       nudgeAt = merge ? now : 0;
     }
-    var backHooks = [];   // a format's own part told of each undo or redo step: f(the step left, the step taken), before the redraw
     function back(from, to) {
       if (!from.length) return;
       var t;
-      try { t = take(from); } catch (e) { from.length = 0; warn('Undo history lost: ' + e + '.'); return; }
+      try { t = take(from); } catch (e) { from.length = 0; from.rb = []; tookShift = null; warn('Undo history lost: ' + e + '.'); return; }
       clearTimeout(timer); keyDue = null; keyRun = null;   // the keys' run undone: nothing settled on top of it
       var was = undoText();
-      step(to, was); text = fromUndo(t); backHooks.forEach(function (f) { f(was, t); }); nudgeAt = 0; cdGate = null; sbBack = true; parse(); selN = []; selP = []; selE = []; part = null; dirty = true; render(); paint(); changed();
+      step(to, was); text = fromUndo(t); nudgeAt = 0; cdGate = null; sbBack = true; parse(); selN = []; selP = []; selE = []; part = null; dirty = true; render(); paint(); changed();
     }
 
     // the drawing: the renderer in the browser; the map keeps its place on screen when the drawing's edges change
@@ -1123,7 +1132,7 @@
           // shifted: the editor's places moved, so its frame moves with them and nothing moves on screen (taken for a new
           // frame of the drawing, the shift would make the map jump right and down, out of sight on some maps)
           var sh = !drag && noNegative();
-          if (sh) { parse(); x0 += sh[0]; y0 += sh[1]; }
+          if (sh) { parse(); rebase(sh[0], sh[1]); }
           r = drawMemo && !drawMemo.cd && drawMemo.text === text && !afSbgn ? drawMemo.r : drawGraphml(text);   // the read-ahead drawing is never in the SBGN AF view
         }
         if (t !== ticket) return;

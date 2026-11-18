@@ -53,6 +53,17 @@
     // a CellDesigner file made into the editor's GraphML once per text (read ahead while the map is shown, then at the
     // switch and for the click data the same text again): the last few kept
     var cdMemo = [];
+    // the file as drawn now (a move not drawn yet put in) with the shift out of negative places that drawing holds: the
+    // drawing on screen when it is of this GraphML, else drawn here (x0 may still belong to an older drawing)
+    function cdShift(svg) { var m = /<g transform="translate\(([-\d.]+),([-\d.]+)\)">/.exec(svg || ''); return m ? [+m[1], +m[2]] : [0, 0]; }
+    function cdNow() {
+      if (lastFor && lastFor[0] === text && lastFor[1] === cd.now) return { t: cd.now, sh: cdShift(lastSvg) };
+      var q = cdJs.draw(cd.base, text);
+      return { t: q[1], sh: cdShift(q[0]) };
+    }
+    // a changed file made the map's base, its GraphML made again (the caller parses it): that GraphML is in the drawn file's
+    // places, so the editor's places move by the drawing's shift, and the frame with them (rebase): nothing moves on screen
+    function cdRebuild(t, sh) { cd.base = t; text = cdGraphml(t); rebase(sh[0], sh[1]); }
     function cdGraphml(t) {
       var g = cdKnown(t);
       if (g) return g;
@@ -301,28 +312,14 @@
     }
     // Resize canvas, in the right-click menu on empty map space: the canvas (modelDisplay) fitted round the map with MARGIN
     // to spare on every side, everything moved by whole grid blocks so its top left lies 40 to 56 from the corner
-    // (cd_edit.place's fit); one undo step. The editor's frame moves with the shift, so nothing moves on screen, also on
-    // its undo and redo (fits: [key of the file before, of the file after, shift, map]). Fitted from the file as drawn now and
-    // its own GraphML: the editor's GraphML is in the frame before a pending shift out of negative places, which the file
-    // drawn already holds, so free texts would be shifted twice
-    var fits = [];
-    function fitKey(t) { var i = t.indexOf('<celldesigner:modelDisplay '), b = /<celldesigner:bounds [^>]*>/.exec(t); return t.length + '|' + t.slice(i, t.indexOf('>', i)) + '|' + (b ? b[0] : ''); }
+    // (cd_edit.place's fit); one undo step. The editor's places move with the shift (rebase), so nothing moves on screen,
+    // also on its undo and redo. Fitted from the file as drawn now and its own GraphML
     function cdFit() {
-      var sh = null, before = fitKey(cd.base);
+      var sh = null;
       if (!cdApply(function (now) { var r = cdJs.place(now, cdGraphml(now), { fit: true }); sh = r[1]; return r[0]; })) return;
-      fits.unshift([before, fitKey(cd.base), sh, map]); fits.length = Math.min(fits.length, 10);
-      x0 += sh[0]; y0 += sh[1];
+      rebase(sh[0], sh[1]);
     }
     mapTools.push(function () { return cd && cdJs ? ['Resize canvas', cdFit] : null; });
-    backHooks.push(function (was, t) {
-      if (!cd || !was || !t || typeof t === 'string') return;
-      var a = fitKey(was.b), z = fitKey(t.b);
-      fits.some(function (f) {
-        var k = f[3] !== map ? 0 : a === f[1] && z === f[0] ? -1 : a === f[0] && z === f[1] ? 1 : 0;
-        if (k) { x0 += k * f[2][0]; y0 += k * f[2][1]; }
-        return k !== 0;
-      });
-    });
     // the CellDesigner side loaded in the background a few seconds after the page has shown a CellDesigner map where the
     // Edit tab is (two small JavaScript files, so opening for editing does not wait on them)
     function cdMap(m) { var d = m && m.downloads && m.downloads[0]; return !!(d && d.label === 'CellDesigner'); }
