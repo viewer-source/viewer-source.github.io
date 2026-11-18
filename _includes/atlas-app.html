@@ -3077,6 +3077,12 @@ page, so its styles keep the base they were made on).
       if (unbendAll) item(box, 'Remove all bend points', unbendAll);   // a removal: under the map's tools
       // the editing items at the top, one separator below them, then the general ones
       if (unbend || bend || turn || main || mac || packHere || del || unbendAll || whole) sep(box);
+      // over an item (a molecule in view mode, anything the editor's right click is on) its own items only: the page's
+      // and the whole map's items are for empty map space
+      if ((n || ed && window.m2EditOnObject && window.m2EditOnObject()) && box.querySelector('button')) {
+        while (box.lastChild && box.lastChild.classList.contains('m2-sep')) box.removeChild(box.lastChild);
+        return box;
+      }
       // its shortcut beside it, as Apple's and Windows' menus write it; case-blind: Chrome, Edge, Brave and Arc on a Mac
       // give the platform as "macOS", which /Mac/ missed, so only Safari showed ⌘E
       var key = '<span class="m2-cx-key">' + (/mac|iphone|ipad|ipod/i.test((navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || navigator.userAgent) ? '\u2318E' : 'Ctrl+E') + '</span>';

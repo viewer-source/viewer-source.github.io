@@ -2586,6 +2586,7 @@
     // removing them all and rerouting by hand is quicker than one by one): the right-click menu's Remove all bend points,
     // on empty map space while editing (a right click on a bend point means that bend point; inside a
     // compartment counts as empty); one undo step
+    window.m2EditOnObject = function () { return !!(on && V.current === map && text && rclick) && !emptyClick(); };   // the right click on an item (a node, a line, inside a complex), so its menu holds that item's items only
     window.m2EditAllBends = function () {
       if (!points.length || !emptyClick()) return null;
       return function () { unbend(points.map(function (p, i) { return i; })); };
