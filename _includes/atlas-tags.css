@@ -28,12 +28,12 @@
   /* image error: red, the map's images could not be drawn from its current GraphML
      (a site's image build) */
   .m2-draft.m2-error { color: var(--m2-error); border-color: var(--m2-error); }
-  /* the map's format: two capitals at 8 px, almost unseen, left of its name: CD for CellDesigner, SB for SBGN-ML,
+  /* the map's format: two capitals, grey and smaller than the name, centred on its line, left of it: CD for CellDesigner, SB for SBGN-ML,
      YE for GraphML (yEd); from the map's first download. The list's
      box reaches 10 px into the panel's margin so it fits beside the group's indent and nothing in the list moves. A map
      in no group, or the list on narrow windows, has no room for it and shows none */
   @media (min-width: 941px) { #m2-list { margin-left: -10px; padding-left: 10px; } }
   .m2-item.m2-map { position: relative; }
-  .m2-fmt { position: absolute; right: 100%; bottom: 5px; margin-right: 4px; font: 300 8px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif; color: #c4c4c4; white-space: nowrap; pointer-events: none; }
+  .m2-fmt { position: absolute; right: 100%; top: 50%; transform: translateY(-50%); margin-right: 4px; font: 400 9px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif; color: #999; white-space: nowrap; pointer-events: none; }
   .m2-map:not(.m2-sub) .m2-fmt { display: none; }
   @media (max-width: 940px) { .m2-fmt { display: none; } }
