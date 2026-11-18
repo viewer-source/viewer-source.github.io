@@ -1,7 +1,7 @@
 // The map's Style and Colours rows under the palette (palDrop, editor/src/create.js) on a page with the editor, by default
 // the styles page: on the Testing Glycolysis SBGN-ML map (its processes 10 by 10) and CellDesigner map, the two rows
 // under a line below the palette while nothing is selected (Properties in their place otherwise), From file chosen; the list
-// opened in place and closed by a choice; a process and a macromolecule placed take the map's sizes; Style Default gives
+// a small window under its field (above it with no room below) and closed by a choice; a process and a macromolecule placed take the map's sizes; Style Default gives
 // the built-in ones; the map's fill under From file; Colours No colours leaves a new glyph unfilled; Custom takes what Set as default kept, as it is, and Set as default
 // switches both rows to it; on a CellDesigner map the same with its own kept looks (by species class) and its own Colours.
 // Nothing is saved (no token). No script error.
@@ -27,7 +27,7 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local =
   var last = function () { return page.evaluate(function () { var m = document.querySelector('#m2-editwin .m2-ed-pmap'), p = document.querySelector('#m2-editwin .m2-ed-palette'); return m && m.offsetParent && p.compareDocumentPosition(m) & 4 && getComputedStyle(p).borderBottomStyle === 'solid' ? Array.from(m.querySelectorAll('tr[data-k]')).map(function (x) { return x.firstChild.textContent + ': ' + x.querySelector('.m2-ed-pdd').textContent; }) : []; }); };
   var hiddenWhileSelected = async function (id) { await page.mouse.click.apply(page.mouse, await page.$eval('#m2-img [data-n="' + id + '"]', function (g) { var r = g.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; })); await page.waitForTimeout(300); var v = await page.$eval('#m2-editwin .m2-ed-pmap', function (m) { return !m.offsetParent; }); await page.keyboard.press('Escape'); await page.mouse.click(1350, 880); await page.waitForTimeout(300); return v; };
   var made = async function (k, x, y) { var a = await ids(); await page.click('#m2-editwin button[data-make="' + k + '"]'); await page.mouse.click(x, y); await page.waitForTimeout(900); await page.keyboard.press('Escape'); return (await ids()).filter(function (i) { return a.indexOf(i) < 0; })[0]; };
-  var pick = async function (row, name) { await page.keyboard.press('Escape'); await page.mouse.click(1350, 880); await page.waitForTimeout(300); await page.click('#m2-editwin .m2-ed-pmap tr[data-k="' + row + '"] .m2-ed-pdd'); await page.waitForTimeout(200); await page.click('#m2-editwin .m2-ed-plist button:has-text("' + name + '")'); await page.waitForTimeout(200); };
+  var pick = async function (row, name) { await page.keyboard.press('Escape'); await page.mouse.click(1350, 880); await page.waitForTimeout(300); await page.click('#m2-editwin .m2-ed-pmap tr[data-k="' + row + '"] .m2-ed-pdd'); await page.waitForTimeout(200); await page.click('body > .m2-ed-pdl button:has-text("' + name + '")'); await page.waitForTimeout(200); };
   var sbBox = function (id) { return page.evaluate(function (id) { var d = new DOMParser().parseFromString(window.m2EditNow().text, 'application/xml'), g = Array.from(d.getElementsByTagName('glyph')).filter(function (x) { return x.getAttribute('id') === id; })[0], bb = g && Array.from(g.children).filter(function (c) { return c.localName === 'bbox'; })[0]; return bb ? [+bb.getAttribute('w'), +bb.getAttribute('h')] : null; }, id); };
   var sbFill = function (id) { return page.evaluate(function (id) { var t = window.m2EditNow().text; return Array.from(new DOMParser().parseFromString(t, 'application/xml').getElementsByTagName('*')).filter(function (e) { return e.localName === 'style' && (' ' + (Array.from(e.attributes).filter(function (a) { return a.localName === 'idList'; }).map(function (a) { return a.value; })[0] || '') + ' ').indexOf(' ' + id + ' ') >= 0; }).map(function (e) { var g = e.firstElementChild, f = g && Array.from(g.attributes).filter(function (a) { return a.localName === 'fill'; })[0]; return f && f.value; }).filter(Boolean).pop() || null; }, id); };
   await page.goto(base, { waitUntil: 'load' }); await page.evaluate(function () { ['atlas-edit-style', 'atlas-edit-sb-colours', 'atlas-edit-cd-colours', 'atlas-edit-defaults', 'atlas-edit-cd-defaults'].forEach(function (k) { localStorage.removeItem(k); }); });
@@ -41,7 +41,7 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local =
   ok('Properties in their place while a node is selected', await hiddenWhileSelected(m));
   ok('hidden while a process is selected too', await hiddenWhileSelected(p));
   await page.click('#m2-editwin button[data-make="macromolecule"]'); await page.click('#m2-editwin .m2-ed-pmap tr[data-k="cols"] .m2-ed-pdd'); await page.waitForTimeout(200); await page.keyboard.press('Escape'); await page.waitForTimeout(200);
-  ok('Escape closes the list and keeps the tool in hand', !(await page.$('#m2-editwin .m2-ed-plist')) && (await page.$eval('#m2-editwin button[data-make="macromolecule"]', function (b) { return b.getAttribute('aria-pressed'); })) === 'true');
+  ok('Escape closes the list and keeps the tool in hand', !(await page.$('body > .m2-ed-pdl')) && (await page.$eval('#m2-editwin button[data-make="macromolecule"]', function (b) { return b.getAttribute('aria-pressed'); })) === 'true');
   await page.keyboard.press('Escape');
   await pick('style', 'Default');
   var p2 = await made('process', 760, 450);
@@ -71,9 +71,20 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local =
   R = await last();
   ok('CellDesigner: the same two rows, Style Custom (shared) and its own Colours From file', R.length === 2 && /^Style: Custom/.test(R[0]) && /^Colours: From file/.test(R[1]), JSON.stringify(R));
   await page.click('#m2-editwin .m2-ed-pmap tr[data-k="cols"] .m2-ed-pdd'); await page.waitForTimeout(200);
-  var items = await page.$$eval('#m2-editwin .m2-ed-plist button', function (l) { return l.map(function (x) { return x.querySelector('span').textContent; }); });
-  await page.click('#m2-editwin .m2-ed-plist button:has-text("From file")'); await page.waitForTimeout(200);
-  ok('the list opens in place under its row and closes on a choice', items.length === 5 && !(await page.$('#m2-editwin .m2-ed-plist')));
+  var items = await page.$$eval('body > .m2-ed-pdl button', function (l) { return l.map(function (x) { return x.querySelector('span').textContent; }); });
+  var place = function () { return page.evaluate(function () { var f = document.querySelector('#m2-editwin .m2-ed-pmap tr[data-k="cols"] .m2-ed-pdd').getBoundingClientRect(), w = document.querySelector('body > .m2-ed-pdl').getBoundingClientRect(); return { below: w.top >= f.bottom, above: w.bottom <= f.top, wide: w.width >= f.width - 1, left: Math.abs(w.left - f.left) < 1, inside: w.bottom <= innerHeight && w.top >= 0 }; }); };
+  var P = await place();
+  ok('the list a window under its field, at least its width, its left edge on the field\u2019s', P.below && P.wide && P.left, JSON.stringify(P));
+  await page.click('body > .m2-ed-pdl button:has-text("From file")'); await page.waitForTimeout(200);
+  ok('the list opens as a window by its field and closes on a choice', items.length === 5 && !(await page.$('body > .m2-ed-pdl')));
+  var fb = await page.$eval('#m2-editwin .m2-ed-pmap tr[data-k="cols"] .m2-ed-pdd', function (f) { return f.getBoundingClientRect().bottom; });
+  await page.setViewportSize({ width: 1400, height: Math.ceil(fb) + 40 }); await page.waitForTimeout(300);
+  await page.click('#m2-editwin .m2-ed-pmap tr[data-k="cols"] .m2-ed-pdd'); await page.waitForTimeout(200);
+  P = await place();
+  ok('with no room below, the list opens above its field, inside the window', P.above && P.inside, JSON.stringify(P));
+  await page.keyboard.press('Escape'); await page.waitForTimeout(150);
+  ok('Escape closes it', !(await page.$('body > .m2-ed-pdl')));
+  await page.setViewportSize({ width: 1400, height: 900 }); await page.waitForTimeout(300);
   ok('its colour menu: From file, CellDesigner, Default, No colours, Custom', JSON.stringify(items) === JSON.stringify(['From file', 'CellDesigner', 'Default', 'No colours', 'Custom']), JSON.stringify(items));
   var c1 = await made('cd:PROTEIN', 700, 450), L1 = await cdLook(c1);
   ok('a protein placed, none kept for proteins: the map’s size (Custom reads as From file)', L1.w > 0 && L1.h > 0, JSON.stringify(L1));

@@ -349,11 +349,10 @@ page, so its styles keep the base they were made on).
   #m2-editwin .m2-ed-pmap .m2-ed-pdd:hover:not(:disabled), #m2-editwin .m2-ed-pmap .m2-ed-pdd[aria-expanded="true"] { border-color: #70757a; background: var(--m2-bg); color: var(--m2-text); }   /* a field, not a button: no accent */
   #m2-editwin .m2-ed-pmap .m2-ed-pdd span { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   #m2-editwin .m2-ed-pmap .m2-ed-pdd svg { flex: none; width: 10px; height: 6px; color: #80868b; }
-  #m2-editwin .m2-ed-plist td { padding: 0 0 4px; }   /* the field's list, in place under its row */
-  #m2-editwin .m2-ed-plist button { display: flex; align-items: center; gap: 6px; width: 100%; box-sizing: border-box; margin: 0; padding: 3px 4px; border: 0; border-radius: 4px; background: none; color: var(--m2-text); font: inherit; text-align: left; cursor: pointer; }
-  #m2-editwin .m2-ed-plist button span:first-child { flex: 1 1 auto; }
-  #m2-editwin .m2-ed-plist button:hover, #m2-editwin .m2-ed-plist button:focus-visible { background: var(--m2-accent); color: var(--m2-on-accent); outline: none; }   /* as the right-click menu's items */
-  #m2-editwin .m2-ed-plist button[aria-selected="true"] { font-weight: 500; }
+  .m2-cx.m2-ed-pdl { min-width: 0; max-width: 320px; font-size: 12px; line-height: 16px; }   /* the field's list (palDrop, create.js): a small window under or above its field, the right-click menu's look at the field's size */
+  .m2-cx.m2-ed-pdl button { padding: 3px 8px; }
+  .m2-cx.m2-ed-pdl button span:first-child { flex: 1 1 auto; }
+  .m2-cx.m2-ed-pdl button[aria-selected="true"] { font-weight: 500; }
   .m2-cs-sw { display: flex; flex-direction: row-reverse; flex: none; gap: 2px; }   /* five at most, the first at the right; in the lists only */
   .m2-cs-sw i { width: 12px; height: 12px; border-radius: 2px; border: 1px solid #0002; box-sizing: border-box; }
   /* Change identity's list (core.js kindWindow: species, modulations, reactions): a submenu beside its item, the menu's look,

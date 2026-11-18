@@ -252,18 +252,32 @@
     }
     // the map's own choices for new nodes (Style, Colours) in a block of their own under the palette (pmap), shown where
     // Properties is while nothing is selected: rows as Properties' (the name, then a field with its arrow), the field's
-    // list opened in place under its row and closed by a choice, Escape or a press elsewhere. Rows in the order made.
+    // list a small window of its own over the page, as a graph editor's drop-down: the field's width at least, under the
+    // field, above it where the window has no room below; closed by a choice, Escape, a press elsewhere, a scroll or a
+    // resize. Rows in the order made.
     // o: { key, label, title, list: [[id, name, title]], get(), set(id), sq(id): the choice's squares as HTML, or none }
     var pmap = document.createElement('div'); pmap.className = 'm2-ed-pmap'; pmap.hidden = true;
     pmap.innerHTML = '<table class="m2-ed-ptab"></table>';
-    var ddOpen = null;   // the list's row while open
+    var ddOpen = null;   // the open list's window (_r: its row, _t and _list: the map and choices it was made from)
     function ddClose() {
       if (!ddOpen) return;
-      ddOpen.previousElementSibling.querySelector('.m2-ed-pdd').setAttribute('aria-expanded', 'false');
+      ddOpen._r.querySelector('.m2-ed-pdd').setAttribute('aria-expanded', 'false');
       ddOpen.remove(); ddOpen = null;
     }
-    document.addEventListener('pointerdown', function (e) { if (ddOpen && !pmap.contains(e.target)) ddClose(); }, true);
-    document.addEventListener('keydown', function (e) { if (ddOpen && e.key === 'Escape') { e.stopImmediatePropagation(); ddClose(); } }, true);   // Escape closes the list only (not also the tool in hand: their listeners come later)
+    document.addEventListener('pointerdown', function (e) { if (ddOpen && !ddOpen.contains(e.target) && !ddOpen._r.contains(e.target)) ddClose(); }, true);
+    // the list's keys, before the editor's own (arrows would also move the selection): up and down walk the choices,
+    // Enter or Space choose (the focused button's own click), Escape closes the list only; another key closes it and goes on
+    document.addEventListener('keydown', function (e) {
+      if (!ddOpen || e.key === 'Enter' || e.key === ' ' || e.key === 'Tab' || /^(Shift|Control|Alt|Meta)$/.test(e.key)) return;
+      if (!/^(ArrowDown|ArrowUp|Escape)$/.test(e.key)) { ddClose(); return; }
+      e.stopImmediatePropagation(); e.preventDefault();
+      if (e.key === 'Escape') { ddClose(); return; }
+      var list = Array.prototype.slice.call(ddOpen.querySelectorAll('button')), i = list.indexOf(document.activeElement), d = e.key === 'ArrowDown' ? 1 : -1;
+      if (i < 0) i = list.findIndex(function (b) { return b.getAttribute('aria-selected') === 'true'; });
+      list[i < 0 ? (d > 0 ? 0 : list.length - 1) : (i + d + list.length) % list.length].focus();
+    }, true);
+    window.addEventListener('resize', ddClose);
+    document.addEventListener('scroll', function (e) { if (ddOpen && !ddOpen.contains(e.target)) ddClose(); }, true);
     function palDrop(o) {
       var r = pmap.querySelector('tr[data-k="' + o.key + '"]');
       if (!r) {
@@ -271,24 +285,34 @@
         r.innerHTML = '<th></th><td><button type="button" class="m2-ed-pdd" aria-haspopup="listbox" aria-expanded="false"><span></span><svg viewBox="0 0 10 6" aria-hidden="true"><path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.4"/></svg></button></td>';
         var bx = r.querySelector('button');
         bx.addEventListener('click', function (e) {
-          e.stopPropagation(); bx.blur();   // the editor's keys work at once
-          var was = ddOpen && ddOpen.previousElementSibling === r; ddClose();
+          e.stopPropagation();
+          var was = ddOpen && ddOpen._r === r, keys = e.detail === 0; ddClose(); bx.blur();   // the editor's keys work at once
           if (was) return;
-          var q = r._o, m = q.get(), lr = document.createElement('tr'), td = document.createElement('td');
-          lr.className = 'm2-ed-plist'; td.colSpan = 2; td.setAttribute('role', 'listbox'); lr.appendChild(td);
+          var q = r._o, m = q.get(), box = document.createElement('div');
+          box.className = 'm2-cx m2-ed-pdl'; box.setAttribute('role', 'listbox'); box.setAttribute('aria-label', q.label);
           q.list.forEach(function (c) {
             var b = document.createElement('button'); b.type = 'button'; b.setAttribute('role', 'option'); b.setAttribute('aria-selected', String(c[0] === m));
             b.title = c[2];
             b.innerHTML = '<span>' + c[1] + '</span>' + (q.sq ? q.sq(c[0]) : '');
             b.addEventListener('click', function (ev) { ev.stopPropagation(); ddClose(); q.set(c[0]); palDrop(q); });
-            td.appendChild(b);
+            box.appendChild(b);
           });
-          r.insertAdjacentElement('afterend', lr); ddOpen = lr; lr._t = src(); lr._list = q.list; bx.setAttribute('aria-expanded', 'true');   // the map and choices it was made from
+          document.body.appendChild(box);
+          // under the field, its left edge on the field's and at least its width; above it where the window has no room
+          // below and more above; inside the window. The page's own zoom: a fixed box is placed in its units
+          var f = bx.getBoundingClientRect(), k = box.getBoundingClientRect().width / box.offsetWidth || 1;
+          box.style.minWidth = f.width / k + 'px';
+          var w = box.offsetWidth * k, h = box.offsetHeight * k, below = window.innerHeight - 4 - f.bottom, above = f.top - 4;
+          var y = h + 2 * k <= below || below >= above ? f.bottom + 2 * k : f.top - 2 * k - h;
+          box.style.left = Math.max(4, Math.min(f.left, window.innerWidth - 4 - w)) / k + 'px';
+          box.style.top = Math.max(4, Math.min(y, window.innerHeight - 4 - h)) / k + 'px';
+          ddOpen = box; box._r = r; box._t = src(); box._list = q.list; bx.setAttribute('aria-expanded', 'true');
+          if (keys) { var s = box.querySelector('[aria-selected="true"]') || box.firstChild; s.focus(); }   // opened by Enter or Space: the keys walk the list
         });
         pmap.firstChild.appendChild(r);
       }
       r._o = o;
-      if (ddOpen && ddOpen.previousElementSibling === r && (ddOpen._t !== src() || ddOpen._list !== o.list)) ddClose();   // the map changed (an edit, an undo, another format): its squares and choices would be stale
+      if (ddOpen && ddOpen._r === r && (ddOpen._t !== src() || ddOpen._list !== o.list)) ddClose();   // the map changed (an edit, an undo, another format): its squares and choices would be stale
       var th = r.firstChild, f = r.querySelector('.m2-ed-pdd'), cur = o.get(), v = o.list.filter(function (c) { return c[0] === cur; })[0][1];
       if (th.textContent !== o.label) th.textContent = o.label;
       if (f.title !== o.title) { f.title = o.title; f.setAttribute('aria-label', o.label + ', ' + o.title); }
