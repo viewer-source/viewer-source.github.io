@@ -48,7 +48,7 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#acly-celld
   for (var u2 = 0; u2 < 3; u2++) { await page.keyboard.press('Control+y'); await page.waitForTimeout(800); }
   ok('redo gives them back', (await es()).some(function (i) { return i.indexOf(rid + '|') === 0; }) && (await ids()).indexOf(cx) >= 0);
   await sign('cd:G_AND'); await page.mouse.click.apply(page.mouse, await at(r)); await page.waitForTimeout(200); await page.mouse.click.apply(page.mouse, await at(g)); await page.waitForTimeout(200);
-  ok('the gate asks for its target', /square/.test(await status()));
+  ok('the gate\'s inputs taken with nothing said', (await status()) === '');
   await page.mouse.click.apply(page.mouse, await at(rid + '|proc')); await page.waitForTimeout(900);
   ok('an AND gate made on the reaction', (await ids()).indexOf(rid + '|g0') >= 0);
   var q = await made('cd:PROTEIN', 1320, 330); await sign('cd:INHIBITION'); e0 = await es(); await drag(await at(q), await at(rid + '|proc'));

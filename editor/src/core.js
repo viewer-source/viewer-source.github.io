@@ -2471,7 +2471,7 @@
     // selected moves it (with Shift by itself, out of its container: regroup); Shift with a drag from anywhere else,
     // inside a compartment too, adds an area to the selection; a right click opens the viewer's menu, as outside edit mode
     V.view.addEventListener('pointerdown', function (e) {
-      keyGuides = null; unhint(); keyFlush();
+      keyGuides = null; keyFlush();
       tap = null;
       if (!editing(e)) return;
       var P0 = at(e);
@@ -2887,20 +2887,6 @@
     }
     // Shift with a drag in Layout editing: a compartment's member may go onto the edge, never fully out:
     // the drag held where each one moved still overlaps its compartment by one unit (one outside from the start: free)
-    // a plain drag held at a border (so Shift is made visible): said once per drag in the status line, in
-    // the usual grey, gone at the next press or key. inward: an edge member held from slipping inside
-    var hintOn = false;
-    function held(inward) {
-      if (!drag || drag.hinted || drag.n == null) return;
-      var n = nodes2[drag.n];
-      if (n.up == null || !nodes2[n.up].comp || n.comp || inComplex(drag.n) || (!full() && n.kids.length)) return;   // only where Shift would change it (not a compartment pushing its holder, nor a complex's member)
-      // an edge member held crossing the border: Shift only takes it outside, in Full editing
-      var s0 = boxOf(drag.n), c = boxOf(n.up), edge = overlap(s0, c) && !inBox(s0, c);
-      if (edge && !inward && !full()) return;
-      drag.hinted = true; hintOn = true;
-      note(inward ? 'Hold Shift to place it inside.' : edge ? 'Hold Shift to place it outside.' : full() ? 'Hold Shift to place it on the edge or outside.' : 'Hold Shift to place it on the edge.');
-    }
-    function unhint() { if (hintOn) { hintOn = false; quiet(); } }
     function tether(d) {
       mv.n.forEach(function (i) {
         var p = nodes2[i].up, s0 = boxOf(i);
@@ -2943,10 +2929,9 @@
           else if (drag.n != null && !e.altKey && !e.ctrlKey) snapNode(drag);
           if (gridSet.snap && !e.altKey && !e.ctrlKey) onGrid(drag);
           if (drag.alone && !full()) tether(drag);
-          else if (!drag.alone && drag.n != null) { var ke = keepEdge(mv.n, drag.dx, drag.dy); if (ke[0] !== drag.dx || ke[1] !== drag.dy) held(true); drag.dx = ke[0]; drag.dy = ke[1]; }
+          else if (!drag.alone && drag.n != null) { var ke = keepEdge(mv.n, drag.dx, drag.dy); drag.dx = ke[0]; drag.dy = ke[1]; }
           mv.dx = drag.dx; mv.dy = drag.dy; shift();
           var aw = drag.away; if (aw) aw.x0 = Math.min(aw.x0, drag.dx), aw.x1 = Math.max(aw.x1, drag.dx), aw.y0 = Math.min(aw.y0, drag.dy), aw.y1 = Math.max(aw.y1, drag.dy);
-          if (mv.n.size && liveFit() && !drag.alone && drag.n != null) held(false);   // the holders round it grow with it (grown)
         }
         paint();
         return;
@@ -3080,7 +3065,6 @@
     // the keys: arrows move the selection by 1 (Shift: 10), Ctrl or Cmd with Z undoes, with S saves; Esc clears
     document.addEventListener('keydown', function (e) {
       if (!text) return;
-      unhint();
       var mod = e.ctrlKey || e.metaKey, k = /^Key[A-Z]$/.test(e.code || '') ? e.code.slice(3).toLowerCase() : e.key.toLowerCase();   // letters by their place on the keyboard, so Z, Y, S, A work in any layout
       if (mod && k === 's') { e.preventDefault(); save(); return; }
       if (!on || V.current !== map || /input|textarea|select/i.test(document.activeElement.tagName)) return;

@@ -246,17 +246,14 @@
     function cdGateClick(P) {
       var kind = CD_GATE[tool.kind], i = linkEnd(P, -1), r = i >= 0 ? cdRole(i) : null;
       if (!cdGate || cdGate.kind !== kind) cdGate = { kind: kind, inputs: [] };
-      var need = cdMk.NEED[kind], name = CD_NAME['G_' + kind];
+      var need = cdMk.NEED[kind];
       if (cdGate.inputs.length < need) {
-        if (r !== 'epn') { warn(name + ': click ' + (cdGate.inputs.length ? 'its second input' : 'an input') + ', a species.'); return; }
-        if (cdGate.inputs.indexOf(nodes2[i].id) >= 0) { warn(name + ': that species is an input already.'); return; }
+        if (r !== 'epn' || cdGate.inputs.indexOf(nodes2[i].id) >= 0) return;   // a click the gate cannot take does nothing: the marks show what it can (cdGateOk)
         cdGate.inputs.push(nodes2[i].id);
-        note(name + (cdGate.inputs.length < need ? ': now its second input.' : ': now the reaction’s square, or the target species (reduced notation).'));
         paint();
         return;
       }
-      if (r !== 'proc' && r !== 'epn') { warn(name + ': click the reaction’s square, or the target species.'); return; }
-      if (r === 'epn' && cdStrict()) { warn(name + ': a gate between species is reduced notation, unticked in the palette; click a reaction’s square.'); return; }
+      if (r !== 'proc' && (r !== 'epn' || cdStrict())) return;   // the same: a species only in reduced notation
       var g = cdGate, target = r === 'proc' ? cdRid(i) : nodes2[i].id, out = null, L = cdGateLand(i, P) || {};   // where its line out lands, as shown
       // refused (the status line says why), the inputs clicked stay for another target
       if (!cdApply(function (t) { var q = cdMk.gate(t, { kind: g.kind, inputs: g.inputs, target: target, spot: L.spot, toAt: L.at }); out = q.gate; return q.text; },
