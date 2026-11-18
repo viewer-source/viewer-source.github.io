@@ -352,7 +352,14 @@
       }
       return hues;
     }
-    function confettiPick(hues) {   // the hue farthest from those given (the earliest on a tie), added to them; its colour
+    function confettiPick(hues) { return confettiHex(confettiHue(hues)); }   // a node's pastel, its hue added to hues
+    // a line's colour of the same hues, darker and stronger so a thin line reads on white (HSL 70%, 42%: the colour test
+    // maps' lines)
+    function confettiLine(hues) {
+      var h = confettiHue(hues), s = .7, l = .42, f = function (n) { var k = (n + h / 30) % 12, a = s * Math.min(l, 1 - l); return l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1)); };
+      return '#' + [f(0), f(8), f(4)].map(function (v) { return ('0' + Math.round(v * 255).toString(16)).slice(-2); }).join('');
+    }
+    function confettiHue(hues) {   // the hue farthest from those given (the earliest on a tie), added to them
       var best = 0, far = -1;
       for (var k = 0; k < 64; k++) {
         var h = k * 137.508 % 360, near = hues.reduce(function (n, u) { var a = Math.abs(h - u) % 360; return Math.min(n, a, 360 - a); }, 360);
@@ -360,7 +367,7 @@
       }
       if (far < 1e-6) best = hues.length % 64 * 137.508 % 360;   // all 64 taken: round them again, so a large map is not one colour
       hues.push(best);
-      return confettiHex(best);
+      return best;
     }
     function confettiSquares() { return '<span class="m2-cs-sw">' + [0, 1, 2, 3, 4].map(function (k) { var x = confettiHex(k * 137.508 % 360); return '<i style="background:' + x + '" title="' + x.toUpperCase() + '"></i>'; }).join('') + '</span>'; }
     // Colours on SBGN-ML maps, kept in this browser: the map's own (sbgn_edit.defaults: the fill most glyphs of the
@@ -383,14 +390,15 @@
     // a choice of Colours recolours the whole map, one undo step: every entity, complex and compartment its fill by the
     // choice (its border black), as a new one of its kind would get it (defOf); From file leaves the map as it is; Custom a
     // kind with a kept look its fill, border and width, the rest as they are; Confetti every entity, complexes too, a pastel
-    // of its own, one after another (compartments as they are). Lines keep their colours. One parse (sbgn_edit.restyleAll)
+    // of its own, one after another (compartments as they are). Every line black, under Confetti a colour of its own
+    // (confettiLine); processes, gates and the other glyphs their border black. One parse (sbgn_edit.restyleAll)
     var SB_FILLED = /^(macromolecule|simple chemical|nucleic acid feature|unspecified entity|perturbing agent|phenotype|complex|compartment|biological activity|perturbation)( multimer)?$/;
     function sbRecolour(mode) {
       if (mode === 'file' || !palOn()) return;
       var cls = sbClasses(), acts = sbJs.activities(text), kept = mode === 'custom' ? defsKept() : {}, hues = [], M = {};
       nodes2.forEach(function (n) {
         var c = cls[n.id] || '';
-        if (!SB_FILLED.test(c)) return;
+        if (!SB_FILLED.test(c)) { if (sbJs.LOOKS.test(c) && mode !== 'custom') M[n.id] = { line: null }; return; }
         var base = c.replace(/ multimer$/, ''), u = acts[n.id], o;
         var ff = sbJs.fillFor(u != null ? 'biological activity' : base, u);
         if (mode === 'default') o = { fill: ff, line: null };
@@ -399,7 +407,7 @@
         else { if (!ff || base === 'compartment') return; o = { fill: confettiPick(hues).toUpperCase(), line: null }; }   // Confetti
         M[n.id] = o;
       });
-      var t2 = sbJs.restyleAll(text, M);
+      var lh = [], t2 = sbJs.restyleAll(text, M, null, mode === 'custom' ? null : function () { return mode === 'confetti' ? confettiLine(lh).toUpperCase() : null; });
       if (t2 === text) return;
       remember(false); text = t2; made([]);
     }
@@ -1317,6 +1325,7 @@
           t2 = sbJs.connect(t2, ids[1], pid, ib, 'production', o);
         }
       } catch (err) { warn('The arc could not be made: ' + (err && err.message || err) + '.'); return; }
+      if (sbCols() === 'confetti') ids.forEach(function (id) { t2 = sbJs.recolour(t2, id, confettiLine(confettiHues(t2)).toUpperCase()); });   // a new line a colour of its own, as the map's
       if (t2 === text) return;
       remember(false); text = t2;
       parse(); selN = []; selP = []; part = null;

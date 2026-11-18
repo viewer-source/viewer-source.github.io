@@ -1157,10 +1157,12 @@
     setLook(T, G, id, o);
     return T.text();
   }
-  //   restyleAll(g, { id: o }) -> g with each node's look set, one parse for them all (a whole map recoloured)
-  function restyleAll(t, M, opt) {
+  //   restyleAll(g, { id: o }, opt, lines) -> g with each node's look set and, with lines (edge id -> #rrggbb or null for
+  //   black, or a function of the edge id), each edge's colour; one parse for them all (a whole map recoloured)
+  function restyleAll(t, M, opt, lines) {
     var G = gml(t, opt), T = new Tags(t, G.doc);
     Object.keys(M).forEach(function (id) { if (G.node[id]) setLook(T, G, id, M[id]); });
+    if (lines) Object.keys(G.edge).forEach(function (id) { var c = typeof lines === 'function' ? lines(id) : lines[id]; if (c !== undefined) setLine(T, G.edge[id].el, c); });
     return T.text();
   }
   // a line's colour (Properties): in the GraphML its y:LineStyle color, as graphml.write draws Arc.line; in the SBGN-ML

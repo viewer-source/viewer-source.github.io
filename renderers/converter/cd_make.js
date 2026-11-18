@@ -1030,8 +1030,9 @@
   }
   // every species and compartment alias recoloured in one pass (a whole map): fn(cls, id) gives its fill (#rrggbb, written
   // opaque) or null to leave it; cls 'COMPARTMENT' for a compartment; a degraded species keeps CellDesigner's look. Only the
-  // paint of the usual view (a compartment's own paint) changes
-  function recolourAll(t, fn) {
+  // paint of the usual view (a compartment's own paint) changes. lineFn(k), when given, the colour of the k-th line of the
+  // reactions in file order (each celldesigner:line: a main line, an added reactant's or product's, a modifier's, a gate's)
+  function recolourAll(t, fn, lineFn) {
     var kind = {}, put = [], m, re = /<(species|celldesigner:species)(?=\s)[^>]*\sid="([^"]+)"[\s\S]*?<\/\1>/g;
     while ((m = re.exec(t))) { var c = /<celldesigner:class>([^<]*)</.exec(m[0]); if (c) kind[m[2]] = c[1]; }
     re = /<celldesigner:(speciesAlias|complexSpeciesAlias|compartmentAlias)(?=\s)([^>]*)>[\s\S]*?<\/celldesigner:\1>/g;
@@ -1045,6 +1046,19 @@
       if (!p) continue;
       var off = comp ? p.index : p.index + p[0].length - p[1].length, i = m.index + off + '<celldesigner:paint color="'.length;
       put.push([i, 'ff' + col.slice(1).toLowerCase()]);
+    }
+    if (lineFn) {
+      var lists = [], k = 0, rl = /<reaction(?=\s)[\s\S]*?<\/reaction>/g, r;
+      while ((r = rl.exec(t))) lists.push([r.index, r[0]]);
+      lists.forEach(function (R) {
+        var lr = /<celldesigner:line (?=[^>]*\scolor=")[^>]*?\scolor="([0-9a-fA-F]{8})"/g, L;
+        while ((L = lr.exec(R[1]))) {
+          var c2 = lineFn(k++);
+          if (!c2) continue;
+          if (!/^#[0-9a-fA-F]{6}$/.test(c2)) fail('A line colour is a colour #rrggbb.');
+          put.push([R[0] + L.index + L[0].length - 9, 'ff' + c2.slice(1).toLowerCase()]);
+        }
+      });
     }
     put.sort(function (a, b) { return b[0] - a[0]; });
     put.forEach(function (q) { t = t.slice(0, q[0]) + q[1] + t.slice(q[0] + 8); });
