@@ -11,7 +11,7 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#acly-celld
 (async function () {
   var b = await chromium.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], bad = 0;
   page.on('pageerror', function (e) { errs.push(e.message); });
-  var ok = function (what, v) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what); };
+  var ok = function (what, v, why) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (v || !why ? '' : ' ' + why)); };
   var ids = function () { return page.$$eval('#m2-img [data-n]', function (l) { return l.map(function (x) { return x.getAttribute('data-n'); }); }); };
   var es = function () { return page.$$eval('#m2-img [data-e]', function (l) { return Array.from(new Set(l.map(function (x) { return x.getAttribute('data-e'); }))); }); };
   var at = function (id) { return page.$eval('#m2-img [data-n="' + id + '"]', function (g) { var r = g.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }); };
@@ -22,7 +22,8 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#acly-celld
   var line = async function (A, B, k) {   // a line drawn with its sign picked in the palette
     await page.keyboard.press('Escape'); await sign(k); await drag(A, B); await page.keyboard.press('Escape');
   };
-  var menu = async function (P) { await page.mouse.click(P[0], P[1], { button: 'right' }); await page.waitForTimeout(300); return page.$$eval('.m2-cx button', function (l) { return l.map(function (x) { return x.textContent; }); }); };
+  var menu = async function (P) { for (var n = 0; n < 2 && (await page.$('.m2-cx')); n++) await page.keyboard.press('Escape');   // a list open beside a menu: Escape closes the list, then the menu
+    await page.mouse.click(P[0], P[1], { button: 'right' }); await page.waitForTimeout(300); return page.$$eval('.m2-cx button', function (l) { return l.map(function (x) { return x.textContent; }); }); };
   var start = async function (u) {
     await page.goto(u, { waitUntil: 'load' }); await page.waitForSelector('.m2-ri[data-win="edit"]', { timeout: 30000 });
     if (!(await page.$('#m2-editwin button[data-make="cd:PROTEIN"]:visible'))) await page.click('.m2-ri[data-win="edit"]');
