@@ -37,6 +37,11 @@
     var CD_RX = [['STATE_TRANSITION', 'State transition', CD_LINE + CD_HEAD],
       ['KNOWN_TRANSITION_OMITTED', 'Known transition omitted', CD_LINE + '<path d="M6.5 16l2.5-8M10 16l2.5-8" class="in"/>' + CD_HEAD],
       ['UNKNOWN_TRANSITION', 'Unknown transition', CD_LINE + '<g transform="translate(-2.5 -1.5)">' + CD_Q + '</g>' + CD_HEAD]];
+    // a line joined to a reaction that is already there, as CellDesigner's Add Reactant and Add Product: its main line
+    // dotted, the added line meeting it (no arrowhead) or leaving it (with the reaction's arrowhead)
+    var CD_DOTS = '<path d="M1.5 18h21" class="in" stroke-dasharray="1.2 1.8"/>';
+    var CD_ADD = [['ADD_REACTANT', 'Add reactant (from a species onto a reaction; onto a logic gate, a new input)', CD_DOTS + '<path d="M3.5 4.5L11 18"/>'],
+      ['ADD_PRODUCT', 'Add product (from a reaction to a species)', CD_DOTS + '<path d="M11 18l6-9"/><path d="M20.5 4l-.6 6.6-5.2-3.4z" fill="currentColor"/>']];
     // a modifier points down onto a reaction, as in CellDesigner's toolbar. The same signs draw reduced notation: with the
     // Reduced notation tick box ticked, a modifier's sign dragged from species to species makes CellDesigner's reduced
     // notation type for it (CD_RED), written as such in the file; catalysis has none in CellDesigner
@@ -52,14 +57,14 @@
     var CD_RED = [['NEGATIVE_INFLUENCE', 'INHIBITION'], ['REDUCED_PHYSICAL_STIMULATION', 'PHYSICAL_STIMULATION'], ['REDUCED_MODULATION', 'MODULATION'], ['REDUCED_TRIGGER', 'TRIGGER']];
     var RED_OF = {}; CD_RED.forEach(function (q) { RED_OF[q[1]] = q[0]; });   // a modifier's type -> its reduced notation type
     var CD_NAME = {};   // CellDesigner's names, for the menus and the status line (a gate's by G_ and its kind: UNKNOWN is a species too)
-    CD_SP.concat(CD_RX, CD_MOD).forEach(function (q) { CD_NAME[q[0]] = q[1].replace(/ \(.*\)$/, ''); });
+    CD_SP.concat(CD_RX, CD_ADD, CD_MOD).forEach(function (q) { CD_NAME[q[0]] = q[1].replace(/ \(.*\)$/, ''); });
     CD_RED.forEach(function (q) { CD_NAME[q[0]] = CD_NAME[q[1]]; });
     CD_GATES.forEach(function (q) { CD_NAME['G_' + q[0]] = q[1]; });
     var cdK = function (q) { return ['cd:' + q[0], q[1], q[2]]; };   // the tool kinds, apart from the SBGN palette's
     function palCd() {   // the set: nodes, the gates, the lines last (as the SBGN palette); three blocks in the one list: species, gates, lines
-      return [['Species', CD_SP.map(cdK)], ['Logic gates', CD_GATES.map(function (q) { return ['cd:G_' + q[0], q[1], q[2]]; }), true], ['Reactions', CD_RX.map(cdK), true], ['Modifiers', CD_MOD.map(cdK)]];
+      return [['Species', CD_SP.map(cdK)], ['Logic gates', CD_GATES.map(function (q) { return ['cd:G_' + q[0], q[1], q[2]]; }), true], ['Reactions', CD_RX.concat(CD_ADD).map(cdK), true], ['Modifiers', CD_MOD.map(cdK)]];
     }
-    CD_RX.concat(CD_MOD).forEach(function (q) { ARCS['cd:' + q[0]] = 1; });   // the signs that draw a line (arcTool)
+    CD_RX.concat(CD_ADD, CD_MOD).forEach(function (q) { ARCS['cd:' + q[0]] = 1; });   // the signs that draw a line (arcTool)
     var CD_GATE = {}; CD_GATES.forEach(function (q) { CD_GATE['cd:G_' + q[0]] = q[0]; });   // tool kind -> gate kind
     function cdKind(k) { return k && k.indexOf('cd:') === 0 ? k.slice(3) : null; }
 
@@ -264,15 +269,67 @@
       if (k >= 0 && cdGateOk(k)) cdLand(out, k, cdGateLand0(k, cdHover.P));
     }
     function cdLinkMarks(out) {   // a line drawn by a drag on a CellDesigner map: its start picked, the node it would land on
-      cdPicked(out, link.from);
-      if (link.to >= 0 && link.how && !link.how.no) cdLand(out, link.to, link.how.land);
+      var add = cdAdd(), no = link.how && link.how.no;
+      var rx = !add || no ? -1 : cdRole(link.from) === 'proc' ? link.from : link.to >= 0 && cdRole(link.to) === 'proc' ? link.to : -1;
+      if (rx >= 0) cdMainLine(out, rx);   // a reactant or product being added: the reaction it joins, its main line in blue
+      if (add === 'p') {   // from a reaction: its square's handles, the product's join in magenta
+        var J = cdJoin(link.from, false);
+        out.push(cdHandles(link.from, 'm2-ed-pickh') + cdDot(J || cdCentre(link.from), 'm2-ed-pickh'));
+      } else cdPicked(out, link.from);
+      if (link.to >= 0 && link.how && !no) cdLand(out, link.to, link.how.land);
+    }
+    // Add reactant and Add product (CellDesigner's Add Reactant and Add Product): a line joined to a reaction already
+    // there. The reaction is taken by its square or its main line: an added reactant joins at 3/8 of the square's
+    // segment, an added product leaves at 5/8 (cdrender linksAndModifiers, cd_edit)
+    function cdAdd() { var k = tool && cdKind(tool.kind); return k === 'ADD_REACTANT' ? 'r' : k === 'ADD_PRODUCT' ? 'p' : null; }
+    function cdStartOk(i) {   // whether a line may start from node i with the sign picked (linkDown, create.js)
+      var r = cdRole(i), add = cdAdd();
+      return r !== 'gate' && (add === 'r' ? r === 'epn' : add === 'p' ? r === 'proc' : true);
+    }
+    function cdMain(i) {   // the main line of the reaction whose square is node i: the edges into and out of its square
+      return edges2.map(function (e, k) { return (e.t === i && /\|a$/.test(e.id)) || (e.s === i && /\|b$/.test(e.id)) ? k : -1; }).filter(function (k) { return k >= 0; });
+    }
+    function cdJoin(i, into) {   // where an added reactant (into) or product meets the main line, in the map's units; null when unknown
+      var ka = edges2.findIndex(function (e) { return e.t === i && /\|a$/.test(e.id); });
+      if (ka < 0) return null;
+      var p = ports(ka), A = p[p.length - 2], C = p[p.length - 1];
+      if (p.length === 2 && edges2[ka].s != null) A = cutShape(edges2[ka].s, A, C, bx(edges2[ka].s));   // no bend: the segment starts at the reactant's outline
+      var t = into ? 0.75 : 1.25;   // 3/8 and 5/8 of the segment, the square at its middle
+      return [A[0] + t * (C[0] - A[0]), A[1] + t * (C[1] - A[1])];
+    }
+    function cdMainLine(out, i) {
+      cdMain(i).forEach(function (k) {
+        var p = line(k);
+        if (p) out.push('<path class="m2-ed-rxline" stroke-width="' + f1(Math.max(1.5, 1.5 * V.z)) + '" d="M' + p.map(function (q) { return f1(sx(q[0])) + ' ' + f1(sy(q[1])); }).join('L') + '"/>');
+      });
+    }
+    // with Add reactant or Add product picked, a press or a release near a reaction's main line takes its square (linkEnd,
+    // create.js, when no node is under P): within 5 pixels of the line, as a click takes a line (hit, core.js)
+    function cdLineAt(P, not) {
+      if (!cdAdd()) return -1;
+      var R = 5 / V.z, best = -1, bd = Infinity;
+      edges2.forEach(function (e, k) {
+        var i = /\|a$/.test(e.id) ? e.t : /\|b$/.test(e.id) ? e.s : null;
+        if (i == null || i === not || cdRole(i) !== 'proc') return;
+        var p = line(k);
+        for (var j = 1; p && j < p.length; j++) { var d = near(P, p[j - 1], p[j]); if (d <= R && d < bd) { bd = d; best = i; } }
+      });
+      return best;
+    }
+    // the line being drawn (linkPaint, create.js; C: its start node's centre): an added reactant from where the line to
+    // its join leaves the species, to the join; an added product from its join to the place it would take on the species
+    function cdLiveEnds(S, P, C) {
+      var h = link.how, ok = h && !h.no, J;
+      if (ok && h.part === 'reactant' && h.land && h.land.Q) { J = h.land.Q; return [cutShape(link.from, C, J, bx(link.from)), J]; }
+      if (ok && h.part === 'product' && (J = cdJoin(link.from, false))) return [J, h.land && h.land.Q ? cutShape(link.to, h.land.Q, J, bx(link.to)) : P];
+      return [S, P];
     }
     // the map clicked with a CellDesigner sign in hand (palUp, create.js)
     function cdClick(P) { if (CD_GATE[tool.kind]) cdGateClick(P); else cdMake(P, tool.kind); }
 
     // a line drawn by a drag from a node with a line's sign picked (create.js linkDown, linkHow, linkMake). A reaction
-    // sign: species to species that reaction, a species onto a square an added reactant, a square to a species an added
-    // product, a species onto a gate a new input. A
+    // sign: species to species that reaction. Add reactant: a species onto a reaction an added reactant, onto a gate a new
+    // input. Add product: a reaction to a species an added product. A
     // modifier picked: a species onto a square, or species to species its reduced notation type (the tick box ticked)
     // what a line from a to b makes (cdHow0), with where its end would land when let go at P (land: { Q, at, spot },
     // shown by cdLand and written by cdLink)
@@ -297,6 +354,7 @@
         best.all = all;
         return best;
       }
+      if (how.part === 'reactant' && cdRole(i) === 'proc') { var J = cdJoin(i, true); return J ? { Q: J, all: [J] } : { Q: C }; }   // an added reactant: its join on the main line
       var N = how.rx || how.red || how.part === 'product' ? nodePlaces(i) : null;   // a species' 16 places (celldesigner.js)
       if (!N) return { Q: C };
       N.forEach(function (o) { near([C[0] + o[0], C[1] + o[1]], { at: o[2] }); });
@@ -309,16 +367,19 @@
       if (b < 0) return null;
       var ra = cdRole(a), rb = cdRole(b), want = tool && ARCS[tool.kind] ? cdKind(tool.kind) : null;
       var isRx = want && CD_RX.some(function (q) { return q[0] === want; }), isMod = want && cdMk.MODS.indexOf(want) >= 0;
+      var add = want === 'ADD_REACTANT' ? 'r' : want === 'ADD_PRODUCT' ? 'p' : null;
       if (!rb) return { no: 'A line joins species, a reaction’s square or a logic gate: never a compartment or a complex’s member.' };
       if (ra === 'gate') return { no: 'A logic gate has one line out, made with the gate.' };
       if (rb === 'gate') {
         if (ra !== 'epn') return { no: 'A logic gate’s inputs are species.' };
-        return isMod ? { no: 'A line onto a logic gate adds an input: a reaction’s sign picked, not a modifier’s.' } : { gate: true };
+        return add === 'r' ? { gate: true } : { no: 'A new input of a logic gate is drawn with Add reactant.' };
       }
       if (ra === 'proc' && rb === 'proc') return { no: 'A line does not join two reactions.' };
-      if (ra === 'proc') return isMod ? { no: 'A ' + CD_NAME[want].toLowerCase() + ' goes from a species.' } : { part: 'product' };
+      if (add === 'r') return ra === 'epn' && rb === 'proc' ? { part: 'reactant' } : { no: 'Add reactant goes from a species onto a reaction (its square or its main line) or onto a logic gate.' };
+      if (add === 'p') return ra === 'proc' && rb === 'epn' ? { part: 'product' } : { no: 'Add product goes from a reaction (its square or its main line) to a species.' };
+      if (ra === 'proc') return isMod ? { no: 'A ' + CD_NAME[want].toLowerCase() + ' goes from a species.' } : { no: 'A product added to a reaction is drawn with Add product.' };
       if (rb === 'proc') {
-        return isRx ? { part: 'reactant' } : { mod: want || 'CATALYSIS' };
+        return isRx ? { no: 'A reactant added to a reaction is drawn with Add reactant; a reaction’s sign makes a new reaction between two species.' } : { mod: want || 'CATALYSIS' };
       }
       if (isMod) {   // between species: its reduced notation type, with the tick box ticked
         if (!RED_OF[want]) return { no: 'CellDesigner has no catalysis between species: it ends on a reaction’s square (between species, physical stimulation).' };

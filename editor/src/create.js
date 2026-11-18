@@ -1112,7 +1112,7 @@
         if (i === not || !r || P[0] < b[0] - R || P[0] > b[0] + b[2] + R || P[1] < b[1] - R || P[1] > b[1] + b[3] + R) return;
         if (b[2] * b[3] < ba) { ba = b[2] * b[3]; best = i; }
       });
-      return best;
+      return best < 0 && cd ? cdLineAt(P, not) : best;   // a CellDesigner reaction taken by its main line (cdcreate.js)
     }
     var downs = new Set();   // the pointers down on the map: a second finger (a pinch) never begins a line
     window.addEventListener('pointerdown', function (e) { downs.add(e.pointerId); }, true);   // before the map's own (core.js stops the press it takes)
@@ -1122,9 +1122,10 @@
     function linkDown(e, P, h) {   // a press on a node with an arc's sign picked: a line begun there
       if (!(palOn() || cdPal()) || e.shiftKey || downs.size > 1 || link) return false;
       if (!arcTool()) return false;   // no sign picked: a drag on a node moves the map (or what is selected)
+      if (h.n == null && !h.glyph && !(cd && cdAdd())) return false;   // a press on a line or a bend point selects it, but for CellDesigner's Add reactant and Add product
       var i = linkEnd(P, -1);
       if (i < 0) return false;
-      if (cd && cdRole(i) === 'gate') return false;   // a CellDesigner gate's one line out is made with it: a drag moves the gate
+      if (cd && !cdStartOk(i)) return false;   // a CellDesigner gate's one line out is made with it: a drag moves the gate; Add reactant and Add product from their own ends only
       e.stopImmediatePropagation(); e.preventDefault();
       V.view.setPointerCapture(e.pointerId); V.view.focus({ preventScroll: true });
       link = { from: i, pid: e.pointerId, x: e.clientX, y: e.clientY, moved: false, to: -1, P: P, how: null, at: text };
@@ -1248,6 +1249,7 @@
       // pointer is still inside it, and over a node that would take it up to where it meets that node's outline
       var P = link.P, inFrom = inRim(rimOf(link.from, A), [P[0] - C[0], P[1] - C[1]]), S = inFrom ? null : cutShape(link.from, C, P, A);
       if (S && link.to >= 0 && link.to !== link.from) P = cutShape(link.to, P, S, bx(link.to));
+      if (cd && S) { var E = cdLiveEnds(S, P, C); S = E[0]; P = E[1]; }   // an added reactant's or product's join (cdcreate.js)
       if (cd) cdLinkMarks(out);   // CellDesigner's marks (cdcreate.js)
       else if (link.how && !no) out.push('<g transform="translate(' + f1(V.tx - x0 * V.z) + ',' + f1(V.ty - y0 * V.z) + ') scale(' + V.z + ')"><path class="m2-ed-dark" d="' + shapeD(link.to) + '"/></g>');
       if (S) out.push('<path class="m2-ed-live" stroke-width="' + f1(Math.max(1, V.z)) + '"' + (no ? ' stroke-dasharray="4 3"' : '') + ' d="M' + f1(sx(S[0])) + ' ' + f1(sy(S[1])) + 'L' + f1(sx(P[0])) + ' ' + f1(sy(P[1])) + '"/>');
