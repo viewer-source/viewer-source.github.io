@@ -420,7 +420,7 @@ page, so its styles keep the base they were made on).
     box-sizing: border-box; padding: 14px 18px 16px; background: var(--m2-bg); color: var(--m2-text-soft); border: 1px solid var(--m2-line); border-radius: 8px; box-shadow: 0 6px 24px #0003; font-size: 13px; line-height: 1.45; }
   #m2-tips[hidden] { display: none; }
   #m2-setwin .m2-set-help { margin-top: 14px; }
-  #m2-setwin #m2-set-tips { flex: 1 1 100%; width: 100%; white-space: nowrap; }
+  #m2-setwin .m2-set-help .m2-set-row #m2-set-tips { grid-column: 1 / -1; }
   #m2-tips h3 { margin: 0 32px 8px 0; font-size: 16px; font-weight: normal; color: var(--m2-text); }
   #m2-tips h4 { margin: 14px 0 4px; font-size: 13px; font-weight: 600; color: var(--m2-text); }
   #m2-tips table { width: 100%; border-collapse: collapse; }
