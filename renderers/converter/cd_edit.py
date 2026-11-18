@@ -218,7 +218,7 @@ def labels(d, i, b):
     if cls == 'COMPLEX':
         fe = a.find('cd:font', NS)
         z = float(fe.get('size')) if fe is not None and fe.get('size') else 12.0
-        s += '<y:NodeLabel modelName="internal" modelPosition="t" height="%r">%s</y:NodeLabel>' % (
+        s += '<y:NodeLabel modelName="internal" modelPosition="b" height="%r">%s</y:NodeLabel>' % (
             z * 7 / 6 * len(d.name_lines(name)), escape(' '.join(d.name_lines(name)) or ' '))
     for m in marks(d, i):
         s += '<y:NodeLabel iconData="cdmark" x="%r" y="%r" width="%r" height="%r"/>' % (m[0] - b[0], m[1] - b[1], m[2], m[3])
