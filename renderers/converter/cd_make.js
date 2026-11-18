@@ -235,11 +235,11 @@
     if (!(b[2] > 0 && b[3] > 0)) fail('A compartment needs a width and a height.');
     var out = holder(t, b), pc = out ? out.compartment : 'default', moved = [];
     // the name at the top middle (cdrender.nameLeft; 12.5 below the top, as the converter writes it), on an oval too;
-    // CellDesigner's yellow
+    // its colour o.colour (eight hex digits), else CellDesigner's yellow
     var nx = cdr.nameLeft(b, cdName(o.name || cid));
     t = add(t, CD + 'listOfCompartmentAliases', '<celldesigner:compartmentAlias id="' + aid + '" compartment="' + cid + '">\n<celldesigner:class>' + (o.oval ? 'OVAL' : 'SQUARE') + '</celldesigner:class>\n' +
       '<celldesigner:bounds x="' + num(b[0]) + '" y="' + num(b[1]) + '" w="' + num(b[2]) + '" h="' + num(b[3]) + '"/>\n<celldesigner:namePoint x="' + num(nx) +
-      '" y="' + num(b[1] + 12.5) + '"/>\n<celldesigner:doubleLine thickness="' + num(COMP.thickness) + '" outerWidth="' + num(COMP.outer) + '" innerWidth="' + num(COMP.inner) + '"/>\n<celldesigner:paint color="' + COMP.colour + '" scheme="Color"/>\n' +
+      '" y="' + num(b[1] + 12.5) + '"/>\n<celldesigner:doubleLine thickness="' + num(COMP.thickness) + '" outerWidth="' + num(COMP.outer) + '" innerWidth="' + num(COMP.inner) + '"/>\n<celldesigner:paint color="' + (o.colour || COMP.colour) + '" scheme="Color"/>\n' +
       '<celldesigner:info state="empty" angle="' + DOWN + '"/>\n</celldesigner:compartmentAlias>', 0, t.length, t.indexOf(EXT));
     t = add(t, 'listOfCompartments', '<compartment metaid="' + cid + '" id="' + cid + '" name="' + name + '" size="1" units="volume" outside="' + (out ? out.compartment : 'default') +
       '">\n<annotation>\n<celldesigner:extension>\n<celldesigner:name>' + name + '</celldesigner:name>\n</celldesigner:extension>\n</annotation>\n</compartment>', 0, t.length);
@@ -951,6 +951,15 @@
     }
     return cc.n[cls] ? cc.n[cls].best : null;
   }
+  // the colour most compartments on the map have (eight hex digits, small letters), or null: none with a colour
+  function compartmentColour(t) {
+    var n = {}, best = null, m, re = /<celldesigner:compartmentAlias(?=\s)[\s\S]*?<\/celldesigner:compartmentAlias>/g;
+    while ((m = re.exec(t))) {
+      var p = /<celldesigner:paint color="([0-9a-fA-F]{8})"/.exec(m[0]), c = p && p[1].toLowerCase();
+      if (c) { n[c] = (n[c] || 0) + 1; if (!best || n[c] > n[best]) best = c; }
+    }
+    return best;
+  }
   // the size most species of a class have on the map ([w, h], the same pass), or null: none of that class, or no size
   // shared by two of them while there are several (complexes, sized to their members, mostly differ)
   function classSize(t, cls) {
@@ -1044,7 +1053,7 @@
     var hd = A.s && /<celldesigner:homodimer>(\d+)</.exec(t.slice(A.s.sp[0], A.s.sp[1]));
     return { kind: A.kind, cls: A.cls || null, id: A.species || A.compartment, name: A.s ? A.s.name : C ? at(head(t, C), 'name') : null, complex: A.complex, box: A.box, homodimer: hd ? +hd[1] : 1 };
   }
-  var api = { LOOK: LOOK, COMP: COMP, lineColour: lineColour, recolourLine: recolourLine, PROCESS: PROCESS, REDUCED: REDUCED, sbgn: sbgn, MODS: MODS, NEED: NEED, about: about, aliasInfo: aliasInfo, classColour: classColour, classColours: classColours, classSize: classSize, empty: empty, species: newSpecies, compartment: compartment, rename: rename, retype: retype, remove: remove, reaction: reaction, reduced: reduced,
+  var api = { LOOK: LOOK, COMP: COMP, lineColour: lineColour, recolourLine: recolourLine, PROCESS: PROCESS, REDUCED: REDUCED, sbgn: sbgn, MODS: MODS, NEED: NEED, about: about, aliasInfo: aliasInfo, classColour: classColour, compartmentColour: compartmentColour, classColours: classColours, classSize: classSize, empty: empty, species: newSpecies, compartment: compartment, rename: rename, retype: retype, remove: remove, reaction: reaction, reduced: reduced,
     reactant: reactant, product: product, modifier: modifier, reactionType: reactionType, reversible: reversible, modifierType: modifierType, removeLine: removeLine,
     gate: gate, gateInput: gateInput, gateInputRemove: gateInputRemove, gateType: gateType, residue: residue, residueState: residueState,
     residueRemove: residueRemove, structural: structural, info: info, homodimer: homodimer, look: look, restyle: restyle, cdName: cdName, joinable: joinable, join: join, leave: leave };

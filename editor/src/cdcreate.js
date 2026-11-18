@@ -147,19 +147,26 @@
     function cdComplexAt(P) { var i = innermost(P, function (n) { return n.shape.kind === 'Complex'; }); return i >= 0 ? nodes2[i].id : null; }   // the innermost complex under P, its alias
 
     // a species or compartment placed: centred where clicked or dropped (on the grid with Snap), at CellDesigner's own size
-    // the colours of new species (Colours under the palette, palDrop in create.js, kept in this browser for
-    // every CellDesigner map): the file's (the colour most species of the class already have on the map, else
-    // CellDesigner's; the one when none is kept), CellDesigner's own (cd_make LOOK), the viewer's Default scheme (Settings,
-    // Map colours) by the class's role, or none (white, as CellDesigner has no unfilled species)
-    var CD_COL_KEY = 'atlas-edit-cd-colours', CD_COLS = [['file', 'From file', 'New species in the colour most species of their class have on this map'], ['cd', 'CellDesigner', 'New species in CellDesigner\u2019s own colours'], ['default', 'Default', 'New species in the viewer\u2019s Default colours'], ['none', 'No colours', 'New species white'], ['custom', 'Custom', 'New species in the colours kept by Set as default; From file for a class with none'], ['confetti', 'Confetti', 'Every new species a pastel of its own, far from the colours already on the map']];
+    // the colours of new species and compartments (Colours under the palette, palDrop in create.js, kept in this browser
+    // for every CellDesigner map): the file's (the colour most species of the class, or most compartments, already have on
+    // the map; the Default one for a class the map has none of; the choice when none is kept), CellDesigner's own (cd_make
+    // LOOK and COMP), the viewer's Default scheme (Settings, Map colours) by the class's role, or none (white, as
+    // CellDesigner has no unfilled species), or Confetti (a pastel of its own, create.js confettiFill)
+    var CD_COL_KEY = 'atlas-edit-cd-colours', CD_COLS = [['file', 'From file', 'New species and compartments in the colour most of their class have on this map, Default for a class it has none of'], ['cd', 'CellDesigner', 'New species and compartments in CellDesigner\u2019s own colours'], ['default', 'Default', 'New species and compartments in the viewer\u2019s Default colours'], ['none', 'No colours', 'New species and compartments white'], ['custom', 'Custom', 'New species in the colours kept by Set as default; From file for a class with none'], ['confetti', 'Confetti', 'Every new species a pastel of its own, far from the colours already on the map; compartments as From file']];
+    // the Default compartment's paint, the official maps': cdrender draws a compartment's band at a quarter of its colour,
+    // so this shows as the Default scheme's compartment (#F7F6F3, sbgn_edit FILL; tests/cd-colours-default.js checks the two agree)
+    var CD_COMP_DEFAULT = 'ffdfdbce';
     function cdCols() { return keptChoice(CD_COL_KEY, ['file', 'cd', 'default', 'none', 'custom', 'confetti']); }
     function cdColour(t, cls) { return cdColourIn(cdCols(), t, cls); }   // eight hex digits for cd_make, or null for CellDesigner's own
     function cdColourIn(m, t, cls) {
+      var comp = cdComp(cls);
       if (m === 'none') return 'ffffffff';
-      if (m === 'confetti') { if (cls !== 'DEGRADED') return 'ff' + confettiFill(t).slice(1); m = 'file'; }   // create.js (no file yet: the first hue); a degraded species as From file
-      if (m === 'custom') { var k = cdKept()[cls]; if (k && k.fill) return 'ff' + k.fill.slice(1).toLowerCase(); m = 'file'; }   // a class with none kept: From file
-      if (m === 'file') return t ? cdMk.classColour(t, cls) : null;   // no file yet: the ghost before the map is loaded
-      var c = m === 'default' && V.schemeFill && window.cdrender ? V.schemeFill('default', window.cdrender.ROLE[cls] || 'white') : null;
+      if (m === 'confetti') { if (cls !== 'DEGRADED' && !comp) return 'ff' + confettiFill(t).slice(1); m = 'file'; }   // create.js (no file yet: the first hue); a degraded species or a compartment as From file
+      if (m === 'custom') { var k = !comp && cdKept()[cls]; if (k && k.fill) return 'ff' + k.fill.slice(1).toLowerCase(); m = 'file'; }   // a class with none kept: From file
+      if (m === 'file') { var f = t ? (comp ? cdMk.compartmentColour(t) : cdMk.classColour(t, cls)) : null; if (f) return f; m = 'default'; }   // none of that class on the map (or no file yet): Default
+      if (m === 'cd') return comp ? cdMk.COMP.colour : null;
+      if (comp) return CD_COMP_DEFAULT;
+      var c = V.schemeFill && window.cdrender ? V.schemeFill('default', window.cdrender.ROLE[cls] || 'white') : null;
       return c ? 'ff' + c.toLowerCase() : null;
     }
     // the squares of a choice in its list (the field shows its name only: bright colours there would draw the eye from the
@@ -171,7 +178,7 @@
       var sq = function (x, t) { return '<i style="background:#' + x.slice(2) + '" title="' + t + '"></i>'; }, h;
       if (mode === 'confetti') return confettiSquares();
       if (mode === 'none') h = sq('ffffffff', 'every species, #FFFFFF');
-      else if (mode !== 'file') {   // Custom: the classes' colours as new ones get them (kept, else the map's, else CellDesigner's)
+      else if (mode !== 'file') {   // Custom: the classes' colours as new ones get them (kept, else the map's, else Default's)
         var seen = {};
         h = CD_SQ.map(function (q) {
           var x = (mode === 'cd' ? null : cdColourIn(mode, mode === 'custom' && cd ? cd.now : null, q[0])) || cdMk.LOOK[q[0]][2];
@@ -185,7 +192,7 @@
       }
       return '<span class="m2-cs-sw">' + h + '</span>';
     }
-    function cdColsRow() { return palDrop({ key: 'cols', label: 'Colours', title: 'Colours of new species', list: CD_COLS, get: cdCols, set: function (v) { keepChoice(CD_COL_KEY, v, 'file'); }, sq: cdSquares }); }
+    function cdColsRow() { return palDrop({ key: 'cols', label: 'Colours', title: 'Colours of new species and compartments', list: CD_COLS, get: cdCols, set: function (v) { keepChoice(CD_COL_KEY, v, 'file'); }, sq: cdSquares }); }
     // Style: From file, the size most species of that class have on the map; Custom, the size kept by Set as default (From
     // file for a class with none); else, or none there, CellDesigner's
     function cdSize(cls) {
@@ -236,7 +243,7 @@
       // undo step; a phenotype or a degraded species not (CellDesigner keeps neither in a complex)
       var cx = !cdComp(cls) && !/^(PHENOTYPE|DEGRADED)$/.test(cls) ? cdComplexAt(P) : null, made = null;
       var ok = cdApply(function (t, sh) {
-        var b = boxAt(sh), r = cdComp(cls) ? cdMk.compartment(t, { name: '', box: b, oval: cls === 'OVAL' }) : cdMk.species(t, { cls: cls, name: '', box: b, complex: cx, colour: cdColour(t, cls) });
+        var b = boxAt(sh), r = cdComp(cls) ? cdMk.compartment(t, { name: '', box: b, oval: cls === 'OVAL', colour: cdColour(t, cls) }) : cdMk.species(t, { cls: cls, name: '', box: b, complex: cx, colour: cdColour(t, cls) });
         made = r.alias; return cdComp(cls) ? r.text : cdKeptLook(r.text, r.alias, cls);
       }, function () { return [made]; });
       if (ok && cx) joinPack([cx]);
@@ -709,9 +716,9 @@
     // a sign dragged from the palette: CellDesigner's shape at its size following the pointer (create.js palDrag), drawn
     // as cdrender draws it once dropped (D.shape, outline: RNA slanted by its height, a protein's corners 5, a complex's
     // cut 5, a degraded circle 3/8 of the width with its stroke), so nothing changes shape on the drop
-    function cdCompGhost(w, h, oval) {   // a new compartment as cdrender draws it (cd_make's COMP: CellDesigner's colour, lines and band)
+    function cdCompGhost(w, h, oval) {   // a new compartment as cdrender draws it (cd_make's COMP: its lines and band; its colour by Colours)
       var C = cdMk.COMP;
-      return window.cdrender.compartmentShape(0, 0, w, h, C.thickness, C.outer, C.inner, '#' + C.colour.slice(2), oval);
+      return window.cdrender.compartmentShape(0, 0, w, h, C.thickness, C.outer, C.inner, '#' + (cdColour(cd && cd.now, 'COMPARTMENT') || C.colour).slice(2), oval);
     }
     function cdGhost(kind) {
       var cls = cdKind(kind), s = cdSize(cls), n = cdComp(cls) ? 1 : cdCopies(cls), e = 6 * (n - 1), w = s[0] - e, h = s[1] - e, k = cdCols() === 'custom' && cdKept()[cls],   // a kept multimer: its front one, the copies behind (as dropped)
