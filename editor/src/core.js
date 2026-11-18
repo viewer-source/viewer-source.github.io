@@ -947,8 +947,8 @@
         if (!overlap(q, b)) return;
         x0 = Math.min(x0, q[0] + q[2] - 1); y0 = Math.min(y0, q[1] + q[3] - 1); x1 = Math.max(x1, q[0] + 1); y1 = Math.max(y1, q[1] + 1);
       });
-      if (x1 - x0 < 20) { if (/l/.test(s)) x0 = x1 - 20; else x1 = x0 + 20; }
-      if (y1 - y0 < 20) { if (/t/.test(s)) y0 = y1 - 20; else y1 = y0 + 20; }
+      if (x1 - x0 < 30) { if (/l/.test(s)) x0 = x1 - 30; else x1 = x0 + 30; }   // 30 at least: room for a CellDesigner compartment's two lines (12 apart on each side)
+      if (y1 - y0 < 30) { if (/t/.test(s)) y0 = y1 - 30; else y1 = y0 + 30; }
       return [x0, y0, x1 - x0, y1 - y0];
     }
     function sized(d, P, free) {   // the box of a node resized by its handles (not a compartment): the sides dragged move, the
@@ -2973,6 +2973,18 @@
       else { selN = hs.n != null ? [ki] : []; selP = hs.p != null ? [ki] : []; selE = hs.e != null ? [ki] : []; }
       paint();
     }
+    // a compartment or a complex given a new box (its handles dragged, or Width and Height typed): in Full what no longer
+    // overlaps it let go, what it now covers taken in, past its holder's edge it leaves it (regroup); in Layout its holder
+    // grows (grown); a complex keeps its members (roomy, applied before)
+    function holderSize(rc, nb, b0r) {
+      var rid = nodes2[rc].id, one = {}; remember(false);
+      one[rc] = nb; setBoxes(one);
+      var pf = propFmt(); if (pf && pf.ends) pf.ends(rid, b0r, nb);   // the format's part: its line ends at the box scaled with it (SBGN-ML)
+      var before = boxesBefore(function (k) { return nodes2[k].id === rid ? b0r : boxOf(k); });
+      var B0r = function (k) { return before[nodes2[k].id] || boxOf(k); }, doneR = function () { render(); paint(); changed(); }, ri = nodes2.findIndex(function (n) { return n.id === rid; });
+      if (!full() || !nodes2[ri].comp) { setBoxes(grown([ri], boxOf, B0r, function () { return false; })); refit([rid]); doneR(); return; }   // a complex: its members kept (roomy), its holders grown
+      settle(regroup('box', new Set([ri]), boxOf, B0r), { moving: [rid] }, doneR, function (why) { text = unpush(); parse(); liveOff(); paint(); warn(why); });
+    }
     function dragEnd(e) {   // the end of a drag of the selection, a port or a resize
       var d = drag; drag = null; var sets = mv; mv = null;   // the moved groups and live arcs stay until the map is drawn again
       if (!d.port && !d.rs) frozen = true;   // the copies too: the file now has the new places, the picture not yet
@@ -2987,13 +2999,7 @@
         var nb = liveC && liveC[d.rs.c];
         if (!nb || nb.every(function (v, j) { return Math.abs(v - d.rs.b0[j]) < 0.01; })) { liveOff(); sizeOff(); paint(); return; }
         if (!holds(d.rs.c)) { setSize(d.rs.c, nb); return; }   // a node resized by its handles (create.js, the format's part)
-        var rc = d.rs.c, rid = nodes2[rc].id, b0r = d.rs.b0, one = {}; remember(false);
-        one[rc] = nb; setBoxes(one);
-        var pf = propFmt(); if (pf && pf.ends) pf.ends(rid, b0r, nb);   // the format's part: its line ends at the box scaled with it (SBGN-ML)
-        var before = boxesBefore(function (k) { return nodes2[k].id === rid ? b0r : boxOf(k); });
-        var B0r = function (k) { return before[nodes2[k].id] || boxOf(k); }, doneR = function () { render(); paint(); changed(); }, ri = nodes2.findIndex(function (n) { return n.id === rid; });
-        if (!full() || !nodes2[ri].comp) { setBoxes(grown([ri], boxOf, B0r, function () { return false; })); refit([rid]); doneR(); return; }   // a complex: its members kept (roomy), its holders grown
-        settle(regroup('box', new Set([ri]), boxOf, B0r), { moving: [rid] }, doneR, function (why) { text = unpush(); parse(); liveOff(); paint(); warn(why); });
+        holderSize(d.rs.c, nb, d.rs.b0);
         return;
       }
       var movedNow = sets ? movedIds(sets) : [];   // by id: the map is read again below

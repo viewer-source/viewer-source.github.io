@@ -187,7 +187,7 @@
     // Style: From file, the size most species of that class have on the map; Custom, the size kept by Set as default (From
     // file for a class with none); else, or none there, CellDesigner's
     function cdSize(cls) {
-      if (cdComp(cls)) return [300, 200];
+      if (cdComp(cls)) return cdMk.COMP.size.slice();
       var st = palStyle(), k = st === 'custom' ? cdKept()[cls] : null;
       if (k && k.w > 0 && k.h > 0) return [k.w, k.h];   // a multimer's whole box, its copies included (cdCopies)
       return (st !== 'default' && cls !== 'COMPLEX' && cd && cdMk.classSize(cd.now, cls)) || cdMk.LOOK[cls].slice(0, 2);
@@ -621,7 +621,9 @@
     // resizing and Properties on a CellDesigner map (propFmt, create.js): a species resized by its handles or by Width and
     // Height, as on SBGN-ML maps (a complex's member by its handles only, a complex with members as a holder: roomy, core.js); the label, the fill, the
     // border width and multimer (the species' homodimer, 2 when ticked) written by cd_make. No border colour (CellDesigner's
-    // species have none); a degraded species keeps its look and its id as its name. Set as default: cdDef
+    // species have none); a degraded species keeps its look and its id as its name. A complex (not a member) and a
+    // compartment have Properties too: Width, Height and Fill (a compartment's colour, its band and lines drawn from it), a
+    // complex its border width; Set as default (cdDef) for species only
     function cdSpecies(i) { return cdRole(i) === 'epn' && nodes2[i].el.getAttribute('yfiles.foldertype') !== 'group'; }
     function cdSetSize(pairs) {   // each node given its box, one undo step with the compartments round them grown to hold them (written back by cd_edit)
       var ids = [], was = {}, one = {};
@@ -633,15 +635,29 @@
       selN = []; nodes2.forEach(function (n, k) { if (ids.indexOf(n.id) >= 0) selN.push(k); });
       sizeRec = null; render(); paint(); changed();
     }
-    var cdLook = [];   // [alias id, file, its look]
-    function cdSizable(i) {   // a species, a complex's member too (the complex grows round it)
-      var n = nodes2[i], u = n.up != null ? nodes2[n.up] : null;
-      return cdSpecies(i) || (!!u && u.shape.kind === 'Complex' && n.el.getAttribute('yfiles.foldertype') !== 'group');
+    var cdLook = [], cdLineMemo = [null, null, null];   // [alias id, file, its look]; [line id, file, its colour]
+    function cdLineColour(k) {   // read once per line and file (it runs with every paint)
+      var id = edges2[k].id;
+      if (cdLineMemo[0] !== id || cdLineMemo[1] !== cd.now) { var c = null; try { c = cdMk.lineColour(cd.now, id); } catch (e) { c = null; } cdLineMemo = [id, cd.now, c]; }
+      return cdLineMemo[2];
     }
+    function cdSizable(i) {   // a species, a complex's member too (the complex grows round it), a complex, a compartment
+      var n = nodes2[i], u = n.up != null ? nodes2[n.up] : null;
+      return cdProp(i) || (!!u && u.shape.kind === 'Complex' && n.el.getAttribute('yfiles.foldertype') !== 'group');
+    }
+    function cdProp(i) { return cdSpecies(i) || nodes2[i].comp || (cdRole(i) === 'epn' && nodes2[i].shape.kind === 'Complex'); }   // what Properties is for: a species, a complex (not a member), a compartment
     var PF_CD = { sizable: cdSizable, size: cdSetSize, def: cdDef,
       rx: { of: cdRxOf, set: cdReversible },   // a reaction's Reversible (propRx, create.js)
-      node: function (i) { return cdSpecies(i) ? i : -1; },
-      off: function (k, i) { return k === 'line' || (/^(label|fill|multimer)$/.test(k) && pNow.cls === 'DEGRADED'); },   // pNow: look's, read just before
+      // a line's colour (edgeShow, edgeSet): a modifier's, an added reactant's or product's own, else its reaction's (a
+      // reduced notation's line, a main line); a gate's lines none (cd_make.lineColour null), no ports as offsets
+      line: { colour: cdLineColour, set: function (k, c) {   // the line, or its whole reaction, selected again
+        var id = edges2[k].id, keep = /\|m\d+$/.test(id) ? id : id.replace(/\|[^|]*$/, '');
+        return cdApply(function (t) { return cdMk.recolourLine(t, id, c || '#000000'); }, [], [keep]);
+      }, ports: false },
+      node: function (i) { return cdProp(i) ? i : -1; },
+      off: function (k, i) {   // pNow: look's, read just before; a compartment no border width or multimer, a complex no multimer
+        return k === 'line' || (/^(label|fill|multimer)$/.test(k) && pNow.cls === 'DEGRADED') || (/^(width|multimer|def)$/.test(k) && pNow.cls === 'COMPARTMENT') || (/^(multimer|def)$/.test(k) && pNow.cls === 'COMPLEX');
+      },
       look: function (i) {   // null while the file is behind the map read (an undo not drawn yet); read once per node and file (it runs with every paint)
         var id = nodes2[i].id;
         if (cdLook[0] !== id || cdLook[1] !== cd.now) {
@@ -663,6 +679,10 @@
     // a sign dragged from the palette: CellDesigner's shape at its size following the pointer (create.js palDrag), drawn
     // as cdrender draws it once dropped (D.shape, outline: RNA slanted by its height, a protein's corners 5, a complex's
     // cut 5, a degraded circle 3/8 of the width with its stroke), so nothing changes shape on the drop
+    function cdCompGhost(w, h, oval) {   // a new compartment as cdrender draws it (cd_make's COMP: CellDesigner's colour, lines and band)
+      var C = cdMk.COMP;
+      return window.cdrender.compartmentShape(0, 0, w, h, C.thickness, C.outer, C.inner, '#' + C.colour.slice(2), oval);
+    }
     function cdGhost(kind) {
       var cls = cdKind(kind), s = cdSize(cls), n = cdComp(cls) ? 1 : cdCopies(cls), e = 6 * (n - 1), w = s[0] - e, h = s[1] - e, k = cdCols() === 'custom' && cdKept()[cls],   // a kept multimer: its front one, the copies behind (as dropped)
         col = cdComp(cls) ? 'none' : '#' + (cdColour(cd && cd.now, cls) || cdMk.LOOK[cls][2]).slice(2), ink = ' fill="' + col + '" stroke="#000" stroke-width="' + (k && k.width > 0 && cls !== 'DEGRADED' ? k.width : 1) + '"';
@@ -673,8 +693,7 @@
         PHENOTYPE: '<path d="M' + h / 2 + ' 0H' + (w - h / 2) + 'L' + w + ' ' + h / 2 + 'L' + (w - h / 2) + ' ' + h + 'H' + h / 2 + 'L0 ' + h / 2 + 'z"' + ink + '/>',
         DEGRADED: '<circle cx="' + w / 2 + '" cy="' + h / 2 + '" r="' + w * 3 / 8 + '"' + ink + '/><path d="M' + w * 0.7 + ' 0L' + w * 0.3 + ' ' + h + '" stroke="#000"/>',
         COMPLEX: '<path d="M5 0H' + (w - 5) + 'L' + w + ' 5V' + (h - 5) + 'L' + (w - 5) + ' ' + h + 'H5L0 ' + (h - 5) + 'V5z"' + ink + ' stroke-width="2"/>',
-        COMPARTMENT: '<rect width="' + w + '" height="' + h + '" rx="10" fill="none" stroke="#000" stroke-width="2"/><rect x="6" y="6" width="' + (w - 12) + '" height="' + (h - 12) + '" rx="6" fill="none" stroke="#000"/>',
-        OVAL: '<ellipse cx="' + w / 2 + '" cy="' + h / 2 + '" rx="' + w / 2 + '" ry="' + h / 2 + '" fill="none" stroke="#000" stroke-width="2"/><ellipse cx="' + w / 2 + '" cy="' + h / 2 + '" rx="' + (w / 2 - 6) + '" ry="' + (h / 2 - 6) + '" fill="none" stroke="#000"/>'
+        COMPARTMENT: cdCompGhost(w, h, false), OVAL: cdCompGhost(w, h, true)
       }[cls];
       for (var j = n - 1, back = ''; j > 0; j--) back += '<g transform="translate(' + 6 * j + ' ' + 6 * j + ')">' + shape + '</g>';
       return { w: s[0], h: s[1], svg: '<svg width="100%" height="100%" viewBox="0 0 ' + s[0] + ' ' + s[1] + '" overflow="visible">' + (back || '') + shape + '</svg>' };

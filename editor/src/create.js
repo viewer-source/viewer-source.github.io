@@ -1366,6 +1366,8 @@
         props.querySelector('.m2-ed-prx').hidden = false;
         var fr = field('rev');
         if (all || document.activeElement !== fr) fr.checked = rx.on;
+        var rk = lineOfRx();   // and its Line colour, the whole reaction's
+        if (rk >= 0) { props.querySelector('.m2-ed-pedge').hidden = false; edgeShow(rk, all, r2); }
         return;
       }
       Array.prototype.forEach.call(props.querySelectorAll('.m2-mixed'), function (tr) { tr.classList.remove('m2-mixed'); });
@@ -1379,7 +1381,7 @@
       pNow = pf.look(i);
       if (!pNow) { props.hidden = true; return; }
       Array.prototype.forEach.call(props.querySelectorAll('.m2-ed-pnode tr[data-k]'), function (tr) { tr.hidden = (/^[wh]$/.test(tr.dataset.k) && !sizable(i)) || pf.off(tr.dataset.k, i); });
-      props.querySelector('.m2-ed-pdef').hidden = !pf.def;
+      props.querySelector('.m2-ed-pdef').hidden = !pf.def || pf.off('def', i);   // the part may keep it from a kind (CellDesigner: species only)
       pNow.w = r2(b[2]); pNow.h = r2(b[3]); pNow.width = r2(pNow.width);
       ROWS.forEach(function (r) {
         var f = field(r[0]);
@@ -1405,7 +1407,7 @@
       props.querySelector('.m2-ed-pdef').hidden = true;
       ROWS.forEach(function (r) {
         var tr = props.querySelector('.m2-ed-pnode tr[data-k="' + r[0] + '"]'), f = field(r[0]);
-        tr.hidden = r[0] === 'label' || ns.some(function (i, j) { pNow = Ls[j]; return (/^[wh]$/.test(r[0]) && !sizable(i)) || pf.off(r[0], i); });
+        tr.hidden = r[0] === 'label' || ns.some(function (i, j) { pNow = Ls[j]; return (/^[wh]$/.test(r[0]) && (!sizable(i) || holds(i))) || pf.off(r[0], i); });   // a holder's size alone (holderSize)
         if (tr.hidden || (!all && document.activeElement === f)) return;
         var vs = Ls.map(function (L) { return r[2] === 'check' ? !!L[r[0]] : String(L[r[0]] == null ? '' : L[r[0]]); }), one = vs.every(function (v) { return v === vs[0]; });
         tr.classList.toggle('m2-mixed', !one);
@@ -1423,10 +1425,14 @@
         if (!ns.length || !ns.every(sizable)) return;
         if (!(v >= 4 && v <= 5000)) { propsShow(true); return; }
         var pairs = ns.map(function (i) {
-          var b = boxOf(i), nb = b.slice(); nb[2 + k] = v; nb[k] = b[k] + b[2 + k] / 2 - v / 2;   // its centre kept
+          var b = boxOf(i), w = nodes2[i].comp ? Math.max(v, 30) : v, nb = b.slice(); nb[2 + k] = w; nb[k] = b[k] + b[2 + k] / 2 - w / 2;   // its centre kept; a compartment 30 at least (as its handles: room for its two lines)
+          if (holds(i) && !nodes2[i].comp) nb = roomy(i, nb, k ? 'tb' : 'lr', b);   // a complex never smaller than its members need, as its handles
           return [i, nb];
-        }).filter(function (q) { return Math.abs(v - boxOf(q[0])[2 + k]) >= 0.005; });
+        }).filter(function (q) { return Math.abs(q[1][2 + k] - boxOf(q[0])[2 + k]) >= 0.005; });
         if (!pairs.length) { propsShow(true); return; }
+        // a holder (a compartment, a complex with members) as its handles resize it: what it holds kept, let go or taken in
+        // (holderSize, core.js); alone, so each its own step
+        if (pairs.length === 1 && holds(pairs[0][0])) { var h = pairs[0]; keepSel(function () { holderSize(h[0], h[1].map(function (x) { return +fmt(x); }), boxOf(h[0])); }); return; }
         keepSel(function () { setSizes(pairs); });
       });
     });
@@ -1464,7 +1470,7 @@
     }
     function sbEnds(id, o, box) { var t2 = sbJs.scaleEnds(text, id, o, box); if (t2 !== text) { text = t2; parse(); } }   // a complex's line ends after its box was set (dragEnd, core.js)
     var PF_SB = { sizable: sbSizable, size: sbSetSize, node: sbNode, set: sbSet, def: sbDef, ends: sbEnds,
-      line: { colour: function (el) { return sbJs.lineOf(el); }, recolour: function (t, id, c) { return sbJs.recolour(t, id, c); } },   // a line's colour (edgeShow, edgeSet)
+      line: { colour: sbLineColour, set: sbLineSet, ports: true },   // a line's colour and its ports' rows (edgeShow, edgeSet)
       off: function (k, i) { return k === 'multimer' && isAct(i); },   // an activity is no multimer
       look: function (i) { var o = sbJs.lookOf(realizerOf(nodes2[i].el)); return { label: nameOf(i), fill: o.fill ? o.fill.slice(0, 7).toLowerCase() : '', line: (o.line || '#000000').slice(0, 7).toLowerCase(), width: o.width, multimer: o.multimer }; } };
     // a line's Properties, one line selected on a map whose format's part has a line's answers (PF_SB.line): Line colour
@@ -1478,16 +1484,35 @@
       var r = propRx();
       if (!r || !propFmt().rx.set(r.rid, e.target.checked)) propsShow(true);   // not written: the box shows the file again
     });
-    function propEdge() { var f = propFmt(); return f && f.line && selE.length === 1 && !selN.length && !selP.length && !svSel && edges2[selE[0]] && edges2[selE[0]].path ? selE[0] : -1; }
+    // a line selected alone that its format's part gives Properties (PF_SB.line, PF_CD.line: a colour it reads, null when
+    // it has none of its own)
+    function propEdge() {
+      var f = propFmt(), k = selE[0];
+      return f && f.line && selE.length === 1 && !selN.length && !selP.length && !svSel && edges2[k] && edges2[k].path && f.line.colour(k) != null ? k : -1;
+    }
+    function lineOfRx() {   // a line of the one reaction selected (Properties' reaction rows) whose colour is the reaction's, else -1
+      var r = propRx(), f = propFmt();
+      if (!r || !f.line) return -1;
+      var k = edges2.findIndex(function (q) { return q.id.indexOf(r.rid + '|') === 0 && !/\|m\d+$/.test(q.id); });
+      return k >= 0 && f.line.colour(k) != null ? k : -1;
+    }
+    function sbLineColour(k) { var el = edges2[k].path.parentNode; while (el && el.localName !== 'edge') el = el.parentNode; return sbJs.lineOf(el) || '#000000'; }
+    function sbLineSet(k, c) {   // c '#rrggbb', null for black (yEd's default, no colour written); false when nothing changed
+      var id = edges2[k].id, t2 = sbJs.recolour(text, id, c);
+      if (t2 === text) return false;
+      remember(false); text = t2; parse(); selE = []; edges2.forEach(function (q, j) { if (q.id === id) selE = [j]; });
+      dirty = true; render(); paint(); changed();
+      return true;
+    }
     function atHub(k, end) { var e = edges2[k], n = end ? e.t : e.s; return n == null || !!nodes2[n].hub; }
     function edgeShow(k, all, r2) {
       props.querySelector('.m2-ed-pdef').hidden = true;
-      var e = edges2[k], el = e.path.parentNode;
-      while (el && el.localName !== 'edge') el = el.parentNode;
-      var now = { ecol: (propFmt().line.colour(el) || '#000000').slice(0, 7).toLowerCase() };
+      var e = edges2[k], pl = propFmt().line;
+      var now = { ecol: (pl.colour(k) || '#000000').slice(0, 7).toLowerCase() };
       ['sx', 'sy', 'tx', 'ty'].forEach(function (a) { now[a] = r2(num(e.path, a) || 0); });
       EROWS.forEach(function (r) {
         var f = field(r[0]);
+        f.closest('tr').hidden = r[2] === 'num' && !pl.ports;   // the ports as offsets: yEd's, not every format's
         if (r[2] === 'num') f.disabled = atHub(k, r[0].charAt(0) === 't');
         if (!all && document.activeElement === f) return;
         if (f.value !== now[r[0]]) f.value = now[r[0]];
@@ -1498,14 +1523,11 @@
     function edgeSet(key) {   // one undo step; a field left unchanged or not a number puts the value back
       var f = field(key), k = edges2.findIndex(function (q) { return q.id === eFor; }), pf = propFmt();
       if (k < 0 || !pf || !pf.line) return;
-      var e = edges2[k], id = e.id;
+      var e = edges2[k];
       if (key === 'ecol') {
         var c = hex(f.value);
         if (c === null) { propsShow(true); return; }
-        var t2 = pf.line.recolour(text, id, c === '' || c === '#000000' ? null : c);
-        if (t2 === text) { propsShow(true); return; }
-        remember(false); text = t2; parse(); selE = []; edges2.forEach(function (q, j) { if (q.id === id) selE = [j]; });
-        dirty = true; render(); paint(); changed();
+        if (!pf.line.set(k, c === '' || c === '#000000' ? null : c)) propsShow(true);
         return;
       }
       var end = key.charAt(0) === 't', v = parseFloat(f.value), a = end ? ['tx', 'ty'] : ['sx', 'sy'];
@@ -1515,7 +1537,7 @@
     }
     EROWS.forEach(function (r) {
       var f = field(r[0]);
-      [f, f.previousElementSibling].filter(Boolean).forEach(function (x) { x.addEventListener('focus', function () { var k = propEdge(); eFor = k < 0 ? null : edges2[k].id; }); });
+      [f, f.previousElementSibling].filter(Boolean).forEach(function (x) { x.addEventListener('focus', function () { var k = propEdge(); if (k < 0) k = lineOfRx(); eFor = k < 0 ? null : edges2[k].id; }); });
       f.addEventListener('change', function () { edgeSet(r[0]); });
       if (r[2] === 'colour') f.previousElementSibling.addEventListener('change', function (e) { f.value = e.target.value; edgeSet(r[0]); });
     });

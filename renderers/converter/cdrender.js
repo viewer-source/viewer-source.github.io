@@ -278,6 +278,17 @@
   }
   var D = Drawing.prototype;
   D.al = function (i) { if (!this.alias.has(i)) throw new Error('KeyError: ' + i); return this.alias.get(i); };
+  // a compartment's two lines and the band between them, its colour at a quarter (a light colour's lines in black): the
+  // map's drawing and the editor's sign dragged from the palette, so a compartment keeps its look on the drop
+  function compartmentShape(x, y, w, h, t, ow, iw, fill, oval) {
+    var rgb = [1, 3, 5].map(function (k) { return parseInt(fill.slice(k, k + 2), 16); }), ink = Math.min.apply(null, rgb) > 230 ? '#000' : fill;
+    if (oval) return ['<ellipse cx="' + fmt(x + w / 2) + '" cy="' + fmt(y + h / 2) + '" rx="' + fmt(w / 2 - t / 2) + '" ry="' + fmt(h / 2 - t / 2) + '" fill="none" stroke="' + fill + '" stroke-opacity="0.25" stroke-width="' + fmt(t) + '"/>',
+      '<ellipse cx="' + fmt(x + w / 2) + '" cy="' + fmt(y + h / 2) + '" rx="' + fmt(w / 2) + '" ry="' + fmt(h / 2) + '" fill="none" stroke="' + ink + '" stroke-width="' + fmt(ow) + '"/>',
+      '<ellipse cx="' + fmt(x + w / 2) + '" cy="' + fmt(y + h / 2) + '" rx="' + fmt(w / 2 - t) + '" ry="' + fmt(h / 2 - t) + '" fill="none" stroke="' + ink + '" stroke-width="' + fmt(iw) + '"/>'].join('\n');
+    return ['<path d="' + rrect(x, y, w, h, 20) + ' ' + rrect(x + t, y + t, w - 2 * t, h - 2 * t, 14) + '" fill="' + fill + '" fill-opacity="0.25" fill-rule="evenodd"/>',
+      '<rect x="' + fmt(x) + '" y="' + fmt(y) + '" width="' + fmt(w) + '" height="' + fmt(h) + '" rx="20" fill="none" stroke="' + ink + '" stroke-width="' + fmt(ow) + '"/>',
+      '<rect x="' + fmt(x + t) + '" y="' + fmt(y + t) + '" width="' + fmt(w - 2 * t) + '" height="' + fmt(h - 2 * t) + '" rx="14" fill="none" stroke="' + ink + '" stroke-width="' + fmt(iw) + '"/>'].join('\n');
+  }
   D.compartments = function () {
     var self = this, cs = findall(this.ext, 'cd:listOfCompartmentAliases/cd:compartmentAlias');
     var key = function (a) { var b = find(a, 'cd:bounds'); return -F(get(b, 'w')) * F(get(b, 'h')); };
@@ -296,17 +307,7 @@
     var x = box ? box[0] : x0, y = box ? box[1] : y0, w = box ? box[2] : F(get(b, 'w')), h = box ? box[3] : F(get(b, 'h'));
     var dl = find(a, 'cd:doubleLine');
     var t = dl ? F(get(dl, 'thickness', 12)) : 12, ow = dl ? F(get(dl, 'outerWidth', 2)) : 2, iw = dl ? F(get(dl, 'innerWidth', 1)) : 1;
-    var fill = colour(get(find(a, 'cd:paint'), 'color'))[0];
-    var rgb = [1, 3, 5].map(function (k) { return parseInt(fill.slice(k, k + 2), 16); }), ink = Math.min.apply(null, rgb) > 230 ? '#000' : fill;
-    if (text(find(a, 'cd:class')) === 'OVAL') {
-      self.out.push('<ellipse cx="' + fmt(x + w / 2) + '" cy="' + fmt(y + h / 2) + '" rx="' + fmt(w / 2 - t / 2) + '" ry="' + fmt(h / 2 - t / 2) + '" fill="none" stroke="' + fill + '" stroke-opacity="0.25" stroke-width="' + fmt(t) + '"/>');
-      self.out.push('<ellipse cx="' + fmt(x + w / 2) + '" cy="' + fmt(y + h / 2) + '" rx="' + fmt(w / 2) + '" ry="' + fmt(h / 2) + '" fill="none" stroke="' + ink + '" stroke-width="' + fmt(ow) + '"/>');
-      self.out.push('<ellipse cx="' + fmt(x + w / 2) + '" cy="' + fmt(y + h / 2) + '" rx="' + fmt(w / 2 - t) + '" ry="' + fmt(h / 2 - t) + '" fill="none" stroke="' + ink + '" stroke-width="' + fmt(iw) + '"/>');
-    } else {
-      self.out.push('<path d="' + rrect(x, y, w, h, 20) + ' ' + rrect(x + t, y + t, w - 2 * t, h - 2 * t, 14) + '" fill="' + fill + '" fill-opacity="0.25" fill-rule="evenodd"/>');
-      self.out.push('<rect x="' + fmt(x) + '" y="' + fmt(y) + '" width="' + fmt(w) + '" height="' + fmt(h) + '" rx="20" fill="none" stroke="' + ink + '" stroke-width="' + fmt(ow) + '"/>');
-      self.out.push('<rect x="' + fmt(x + t) + '" y="' + fmt(y + t) + '" width="' + fmt(w - 2 * t) + '" height="' + fmt(h - 2 * t) + '" rx="14" fill="none" stroke="' + ink + '" stroke-width="' + fmt(iw) + '"/>');
-    }
+    self.out.push(compartmentShape(x, y, w, h, t, ow, iw, colour(get(find(a, 'cd:paint'), 'color'))[0], text(find(a, 'cd:class')) === 'OVAL'));
     var np = find(a, 'cd:namePoint');
     if (np) self.nameLines(has(self.cnames, get(a, 'compartment')) ? self.cnames[get(a, 'compartment')] : '').forEach(function (line, k) {
       self.text(line, F(get(np, 'x')) + (x - x0), F(get(np, 'y')) + (y - y0) + 15.5 + 14 * k, 12, 'start');
@@ -665,7 +666,7 @@
         var bends = editPoints(get(l, 'editPoints') || findtext(l, 'cd:editPoints', '')).map(function (p) { return into ? fromFrame(O, J, p) : fromFrame(J, O, p); });
         var seq = [O].concat(into ? bends : bends.slice().reverse(), [J]);
         seq[0] = self.clip(i, O, Oo[1], seq[1]);
-        var lc = find(l, 'cd:line'), lcol = lc ? colour(get(lc, 'color'))[0] : col;
+        var lcol = col;   // an added reactant or product in its reaction's colour (a colour of its own in the file not drawn: one colour per reaction)
         if (into) self.path(seq, lcol, wd, dash, true, false);
         else {
           seq = seq.reverse();
@@ -754,7 +755,7 @@
     return [svg, { aliases: aliases, reactions: reactions }];
   }
   var api = { render: render, renderHits: renderHits, Drawing: Drawing, py: py, xml: xml, SQUARE: SQUARE, ANCHOR: ANCHOR, fromFrame: fromFrame, toFrame: toFrame,
-    editPoints: editPoints, unit: unit, onBorder: onBorder, width: width, target: target, plainName: plainName, NAME: NAME, GATE: GATE, ROLE: ROLE, ANCHOR: ANCHOR, anchorAt: anchorAt, frontBox: frontBox };   // GATE: the editor's palette checks its signs against it   // NAME: cd_make.js writes names
+    editPoints: editPoints, unit: unit, onBorder: onBorder, width: width, target: target, plainName: plainName, NAME: NAME, GATE: GATE, ROLE: ROLE, ANCHOR: ANCHOR, anchorAt: anchorAt, frontBox: frontBox, compartmentShape: compartmentShape };   // GATE: the editor's palette checks its signs against it   // NAME: cd_make.js writes names
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.cdrender = api;
 
   if (typeof require !== 'undefined' && typeof module !== 'undefined' && require.main === module) {   // node cdrender.js map.xml out.svg

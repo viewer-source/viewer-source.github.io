@@ -33,6 +33,8 @@
   // an RNA and a phenotype 80 by 40, a protein's size (CellDesigner's own is 80 by 30)
   var LOOK = { PROTEIN: [80, 40, 'ffccffcc'], GENE: [80, 40, 'ffffff66'], RNA: [80, 40, 'ff66ff66'], SIMPLE_MOLECULE: [40, 40, 'ffccff66'],
     UNKNOWN: [70, 25, 'ffcccccc'], PHENOTYPE: [80, 40, 'ffcc99ff'], DEGRADED: [30, 30, 'ffffcccc'], COMPLEX: [100, 120, 'fff7f7f7'] };
+  // a new compartment: its size, CellDesigner's yellow, its two lines (outer, inner) and the band between them
+  var COMP = { size: [160, 160], colour: 'ffcccc00', thickness: 12, outer: 2, inner: 1 };
   // classes with a reference: its element, the species' element naming it, its list, id prefix, type. The protein kinds
   // (receptor, ion channel, truncated) share proteins, told apart by type, and carry residues
   var PROT = ['protein', 'proteinReference', 'listOfProteins', 'pr'];
@@ -227,7 +229,7 @@
   }
   function compartments(t) { return all(t, '<celldesigner:compartmentAlias ', [0, t.length]).map(function (c) { return alias(t, at(c.tag, 'id')); }); }
   function compartment(t, o) {
-    var b = (o.box || [0, 0, 300, 200]).map(F), cid = next(t, 'c'), aid = next(t, 'ca'), name = esc(cdName(o.name || cid));
+    var b = (o.box || [0, 0].concat(COMP.size)).map(F), cid = next(t, 'c'), aid = next(t, 'ca'), name = esc(cdName(o.name || cid));
     if (!(b[2] > 0 && b[3] > 0)) fail('A compartment needs a width and a height.');
     var out = holder(t, b), pc = out ? out.compartment : 'default', moved = [];
     // the name where the converter writes it (6 in, on the baseline 12.5 below the top); on an oval, 0.4 of the width in,
@@ -235,7 +237,7 @@
     var nx = o.oval ? b[0] + 0.4 * b[2] : b[0] + 6;
     t = add(t, CD + 'listOfCompartmentAliases', '<celldesigner:compartmentAlias id="' + aid + '" compartment="' + cid + '">\n<celldesigner:class>' + (o.oval ? 'OVAL' : 'SQUARE') + '</celldesigner:class>\n' +
       '<celldesigner:bounds x="' + num(b[0]) + '" y="' + num(b[1]) + '" w="' + num(b[2]) + '" h="' + num(b[3]) + '"/>\n<celldesigner:namePoint x="' + num(nx) +
-      '" y="' + num(b[1] + 12.5) + '"/>\n<celldesigner:doubleLine thickness="12.0" outerWidth="2.0" innerWidth="1.0"/>\n<celldesigner:paint color="ffcccc00" scheme="Color"/>\n' +
+      '" y="' + num(b[1] + 12.5) + '"/>\n<celldesigner:doubleLine thickness="' + num(COMP.thickness) + '" outerWidth="' + num(COMP.outer) + '" innerWidth="' + num(COMP.inner) + '"/>\n<celldesigner:paint color="' + COMP.colour + '" scheme="Color"/>\n' +
       '<celldesigner:info state="empty" angle="' + DOWN + '"/>\n</celldesigner:compartmentAlias>', 0, t.length, t.indexOf(EXT));
     t = add(t, 'listOfCompartments', '<compartment metaid="' + cid + '" id="' + cid + '" name="' + name + '" size="1" units="volume" outside="' + (out ? out.compartment : 'default') +
       '">\n<annotation>\n<celldesigner:extension>\n<celldesigner:name>' + name + '</celldesigner:name>\n</celldesigner:extension>\n</annotation>\n</compartment>', 0, t.length);
@@ -958,12 +960,23 @@
   // a species alias's look as Properties shows it (with its class): its fill (#rrggbb, CellDesigner's paint without the alpha), border
   // width (singleLine) and multimer (its species' homodimer count above 1), all from the usual view
   function look(t, id) {
+    var C = alias(t, id);
+    if (C.kind === 'compartmentAlias') { var cp = /<celldesigner:paint color="([0-9a-fA-F]{8})"/.exec(t.slice(C.sp[0], C.sp[1])); return { fill: cp ? '#' + cp[1].slice(2).toLowerCase() : '', width: 1, multimer: false, cls: 'COMPARTMENT' }; }
     var A = entity(t, id), u = span(t, '<celldesigner:usualView>', A.sp[0], A.sp[1]), seg = u ? t.slice(u[0], u[1]) : '';
     var p = /<celldesigner:paint color="([0-9a-fA-F]{8})"/.exec(seg), w = /<celldesigner:singleLine width="([^"]*)"/.exec(seg), h = inState(t, A.species, '<celldesigner:homodimer>');
     return { fill: p ? '#' + p[1].slice(2).toLowerCase() : '', width: w ? F(w[1]) : 1, multimer: h ? +/>(\d+)</.exec(t.slice(h[0], h[1]))[1] > 1 : false, cls: A.cls };
   }
   // the fill (#rrggbb, written opaque) and the border width of one species alias, in its usual view; the brief view kept
   function restyle(t, id, o) {
+    var C = alias(t, id);
+    if (C.kind === 'compartmentAlias') {   // its colour only (CellDesigner's paint, the band and the lines drawn from it)
+      if (o.width != null) fail('A compartment keeps its two lines.');
+      if (o.fill == null) return t;
+      if (!/^#[0-9a-fA-F]{6}$/.test(o.fill)) fail('A fill is a colour #rrggbb.');
+      var cs = span(t, '<celldesigner:paint ', C.sp[0], C.sp[1]);
+      if (!cs) fail('No colour on ' + id + '.');
+      return attrs(t, cs[0], [['color', 'ff' + o.fill.slice(1).toLowerCase()]]);
+    }
     var A = entity(t, id);
     if (A.cls === 'DEGRADED' && o.fill != null) fail('A degraded species keeps CellDesigner\u2019s look.');
     var set = function (open, k, v) {
@@ -981,12 +994,36 @@
     }
     return t;
   }
+  // a line's colour (#rrggbb): a modifier's own line (rid|mN), else its reaction's, one colour for the whole reaction (its
+  // main line, a reduced notation's line, added reactants and products: cdrender draws them all in it). A logic gate's
+  // lines, its inputs included, are drawn in the reaction's colour: none of their own (null from lineColour)
+  function lineAt(t, eid) {
+    var m = /^(.*)\|(a|b|i\d+|m\d+|r\d+|p\d+)$/.exec(eid);
+    if (!m) return null;
+    var R = parts(t, m[1]), k = m[2][0], n = +m[2].slice(1), own = k === 'm' ? R.mods[n] : null;
+    if (k === 'm' && (!own || isGate(own) || owner(R, n) !== null)) return null;
+    if (own) return span(t, '<celldesigner:line ', own.sp[0], own.sp[1]);
+    var skip = ['listOfModification', 'listOfReactantLinks', 'listOfProductLinks', 'listOfGateMember'].map(function (l) { return span(t, '<celldesigner:' + l + '>', R.x[0], R.x[1]); }).filter(Boolean);
+    return all(t, '<celldesigner:line ', R.x).map(function (L) { return L.sp; }).filter(function (L) { return !skip.some(function (q) { return L[0] >= q[0] && L[0] < q[1]; }); })[0] || null;
+  }
+  function lineColour(t, eid) { var L = lineAt(t, eid), c = L && at(head(t, L), 'color'); return L ? '#' + (c && /^[0-9a-fA-F]{8}$/.test(c) ? c.slice(2).toLowerCase() : '000000') : null; }
+  function recolourLine(t, eid, c) {   // c #rrggbb, written opaque
+    if (!/^#[0-9a-fA-F]{6}$/.test(c || '')) fail('A line colour is a colour #rrggbb.');
+    var L = lineAt(t, eid), col = 'ff' + c.slice(1).toLowerCase();
+    if (!L) fail('A logic gate\u2019s lines take their reaction\u2019s colour.');
+    t = attrs(t, L[0], [['color', col]]);
+    if (/\|m\d+$/.test(eid)) return t;
+    // the whole reaction: its added reactants' and products' lines too, so CellDesigner shows it in one colour as well
+    var R = parts(t, eid.replace(/\|[^|]*$/, ''));
+    R.rl.concat(R.pl).map(function (l) { return l.sp; }).sort(function (p, r) { return r[0] - p[0]; }).forEach(function (sp) { var s2 = span(t, '<celldesigner:line ', sp[0], sp[1]); if (s2) t = attrs(t, s2[0], [['color', col]]); });
+    return t;
+  }
   function aliasInfo(t, id) {
     var A = alias(t, id), C = A.kind === 'compartmentAlias' ? span(t, '<compartment(?=\\s)[^>]*\\sid="' + q(A.compartment) + '"') : null;
     var hd = A.s && /<celldesigner:homodimer>(\d+)</.exec(t.slice(A.s.sp[0], A.s.sp[1]));
     return { kind: A.kind, cls: A.cls || null, id: A.species || A.compartment, name: A.s ? A.s.name : C ? at(head(t, C), 'name') : null, complex: A.complex, box: A.box, homodimer: hd ? +hd[1] : 1 };
   }
-  var api = { LOOK: LOOK, PROCESS: PROCESS, REDUCED: REDUCED, sbgn: sbgn, MODS: MODS, NEED: NEED, about: about, aliasInfo: aliasInfo, classColour: classColour, classColours: classColours, classSize: classSize, empty: empty, species: newSpecies, compartment: compartment, rename: rename, retype: retype, remove: remove, reaction: reaction, reduced: reduced,
+  var api = { LOOK: LOOK, COMP: COMP, lineColour: lineColour, recolourLine: recolourLine, PROCESS: PROCESS, REDUCED: REDUCED, sbgn: sbgn, MODS: MODS, NEED: NEED, about: about, aliasInfo: aliasInfo, classColour: classColour, classColours: classColours, classSize: classSize, empty: empty, species: newSpecies, compartment: compartment, rename: rename, retype: retype, remove: remove, reaction: reaction, reduced: reduced,
     reactant: reactant, product: product, modifier: modifier, reactionType: reactionType, reversible: reversible, modifierType: modifierType, removeLine: removeLine,
     gate: gate, gateInput: gateInput, gateInputRemove: gateInputRemove, gateType: gateType, residue: residue, residueState: residueState,
     residueRemove: residueRemove, structural: structural, info: info, homodimer: homodimer, look: look, restyle: restyle, cdName: cdName, joinable: joinable, join: join, leave: leave };
