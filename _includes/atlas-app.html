@@ -1331,7 +1331,7 @@ page, so its styles keep the base they were made on).
   [['m2-set-pad-comp', 'comp', 12], ['m2-set-pad-cx', 'cx', 'repack']].forEach(function (q) {
     var sel = document.getElementById(q[0]), now = padsGet()[q[1]], steps = q[1] === 'cx' ? ['repack'].concat(CX_STEPS) : PAD_STEPS;
     steps.forEach(function (v) {
-      var o = document.createElement('option'); o.value = String(v); o.textContent = v === 'repack' ? 'as Repack' : String(v); sel.appendChild(o);
+      var o = document.createElement('option'); o.value = String(v); o.textContent = v === 'repack' ? 'as repack' : String(v); sel.appendChild(o);
     });
     sel.value = String(now == null || steps.indexOf(now) < 0 ? q[2] : now);
     sel.addEventListener('change', function () {
