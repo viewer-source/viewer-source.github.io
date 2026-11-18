@@ -30,6 +30,18 @@ var URL0 = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysi
     ok('Copy names: one name per line', txt.split('\n').length >= 1 && txt.length > 0, JSON.stringify(txt.slice(0, 80)));
     console.log('      names: ' + txt.split('\n').slice(0, 6).join(', '));
   } else ok('Copy names offered (a map with names inside the area)', false, menu.join(' | '));
+  for (var kind of ['PNG', 'SVG']) {
+    await page.mouse.click(cx, cy, { button: 'right' }); await page.waitForTimeout(300);
+    if (!(await page.$('.m2-cx button:has-text("Copy image as ' + kind + '")'))) { console.log('      (no Copy image as ' + kind + ' here)'); await page.keyboard.press('Escape'); continue; }
+    await page.click('.m2-cx button:has-text("Copy image as ' + kind + '")'); await page.waitForTimeout(2500);
+    var got = await page.evaluate(async function (kind) {
+      var items = await navigator.clipboard.read(), it = items[0], t = it.types;
+      if (kind === 'PNG') { var bl = await it.getType('image/png'), bm = await createImageBitmap(bl); return t.join(',') + ' ' + bm.width + 'x' + bm.height; }
+      var tx = await (await it.getType(t.indexOf('image/svg+xml') >= 0 ? 'image/svg+xml' : 'text/plain')).text(); return t.join(',') + ' ' + (tx.match(/<svg\b[^>]*>/) || [''])[0].slice(0, 400);
+    }, kind).catch(function (e) { return 'error ' + e.message; });
+    console.log('      ' + kind + ': ' + got);
+    ok('Copy image as ' + kind + ' of the area', kind === 'PNG' ? /image\/png (\d+)x(\d+)/.test(got) && +got.match(/ (\d+)x/)[1] > 300 : /viewBox="[-\d.]+ [-\d.]+ [\d.]+ [\d.]+"/.test(got), got);
+  }
   await page.keyboard.press('Escape'); await page.waitForTimeout(100);
   await page.mouse.click(v[0] + 30, v[1] + v[3] - 40); await page.waitForTimeout(200);
   ok('a click clears the area', await page.$eval('#m2-area', function (e) { return e.style.display === 'none'; }));
@@ -46,7 +58,7 @@ var URL0 = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysi
   await page.mouse.move(cx, cy); await page.keyboard.press('Space'); await page.waitForTimeout(200);
   ok('Space alone over the map: the page does not step down', (await page.evaluate(function () { return window.scrollY; })) === 0);
   // edit mode
-  if (await page.$('.m2-ri[data-win="edit"]')) {
+  if (await page.$('.m2-ri[data-win="edit"]:visible')) {
     await page.click('.m2-ri[data-win="edit"]'); await page.waitForTimeout(2500);
     var e0 = await tf(), sawBand = false;
     await page.mouse.move(v[0] + 40, v[1] + 40); await page.mouse.down(); await page.mouse.move(cx, cy, { steps: 6 });
