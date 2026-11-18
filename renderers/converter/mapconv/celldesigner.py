@@ -463,7 +463,7 @@ def write(diagram, ann, layout='straight'):
         if notes(d.data):  # the family's name, its members' sites (SBML notes, before the annotation)
             h = etree.SubElement(etree.SubElement(s, 'notes'), '{%s}html' % XH, nsmap={None: XH})
             etree.SubElement(etree.SubElement(h, '{%s}head' % XH), '{%s}title' % XH)
-            etree.SubElement(h, '{%s}body' % XH).text = '\n'.join(notes(d.data))
+            etree.SubElement(h, '{%s}body' % XH).text = ''.join(l + '\n' for l in notes(d.data))   # each line ended, as CellDesigner saves it
         an = etree.SubElement(s, 'annotation'); x = sub(an, 'extension')
         sub(x, 'positionToCompartment', 'inside')
         identity(x, i)
@@ -604,11 +604,17 @@ def write(diagram, ann, layout='straight'):
             for m in inp:
                 ref(lr_, 'speciesReference', m)
             ref(etree.SubElement(rx, 'listOfProducts'), 'speciesReference', e.target)
+    # a species' catalysed reactions in the order the reactions are written, as CellDesigner saves them
+    order = {rx.get('id'): k for k, rx in enumerate(lr)}
+    for lc in sbml.iter('{%s}listOfCatalyzedReactions' % CD):
+        lc[:] = sorted(lc, key=lambda c: order.get(c.get('reaction'), len(order)))
     # written as CellDesigner writes it (no indentation, double-quoted declaration),
     # so a file opened and saved in CellDesigner can be compared line by line
     report.say('summary', '%s: %d species, %d proteins, %d reactions' % (diagram.name, len(ents), len(prot), len(lr)))
     xml = '<?xml version="1.0" encoding="UTF-8"?>\n' + etree.tostring(sbml, encoding='UTF-8', pretty_print=True).decode('utf-8')
-    return '\n'.join(l.lstrip() for l in xml.split('\n'))
+    # an RDF after text in a member's notes is mixed content, which lxml leaves on one line: one element per line, as
+    # CellDesigner saves it
+    return '\n'.join(l.replace('><', '>\n<') if '<rdf:RDF ' in l and '</rdf:RDF>' in l else l for l in (l.lstrip() for l in xml.split('\n')))
 
 
 # --- reading a CellDesigner file into the map model (rules: docs/CD-TO-SBGN.md)
