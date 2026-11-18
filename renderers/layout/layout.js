@@ -118,7 +118,13 @@
   function isComplex(n) { return get(n, 'yfiles.foldertype') === 'group' && (get(realizer(n), 'configuration') || '').indexOf('omplex') >= 0; }
   function labelXY(l, w, h) {
     var mp = descendant(l, YNS, 'SmartNodeLabelModelParameter');
-    if (!mp) return get(l, 'x') === null ? null : [F(get(l, 'x')), F(get(l, 'y'))];
+    if (!mp) {   // an internal label at its model position, as yEd puts it on loading
+      if (get(l, 'x') === null) return null;
+      if (get(l, 'modelName') !== 'internal') return [F(get(l, 'x')), F(get(l, 'y'))];
+      var lw0 = F(get(l, 'width')), lh0 = F(get(l, 'height')), pos = get(l, 'modelPosition') || 'c', bd = F(get(l, 'borderDistance') || '0');
+      var hz = 'lr'.indexOf(pos.slice(-1)) >= 0 ? pos.slice(-1) : 'c', vt = 'tb'.indexOf(pos.charAt(0)) >= 0 ? pos.charAt(0) : 'c';
+      return [{ l: bd, r: w - lw0 - bd, c: (w - lw0) / 2 }[hz], { t: bd, b: h - lh0 - bd, c: (h - lh0) / 2 }[vt]];
+    }
     var f = function (a) { return F(get(mp, a)); }, lw = F(get(l, 'width')), lh = F(get(l, 'height'));
     return [w / 2 + f('nodeRatioX') * w - f('labelRatioX') * lw + f('offsetX') - lw / 2, h / 2 + f('nodeRatioY') * h - f('labelRatioY') * lh + f('offsetY') - lh / 2];
   }

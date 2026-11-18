@@ -1,4 +1,4 @@
-# Copy of the layout skill's complex_pack.py at 06a42e8; its master is in the skill, never edited here.
+# Copy of the layout skill's complex_pack.py at 1fd47e7; its master is in the skill, never edited here.
 # Complex packing and the group fit (SKILL.md section 5, Group bounds; section 3, Complex packing).
 #   python3 complex_pack.py <in.graphml> <out.graphml>   packs every complex, then fits all groups
 #   from complex_pack import fit_insets                  fit_insets(root) ends every build that
@@ -65,10 +65,19 @@ def is_complex(n):
 def label_xy(l, w, h):
     # a label's top left relative to its node (w x h) as yEd draws it: from its smart label model
     # when it has one (yEd ignores the stored x and y then; SREBP "processed form" was stored centred
-    # and drawn 12 px off), else the stored x and y; None for a label with neither
+    # and drawn 12 px off); an internal label at its model position inside the node, as yEd puts it
+    # on loading (a complex packed smaller keeps its name inside, its stored place left behind);
+    # else the stored x and y; None for a label with neither
     mp = l.find('.//y:SmartNodeLabelModelParameter', NS)
     if mp is None:
-        return None if l.get('x') is None else (float(l.get('x')), float(l.get('y')))
+        if l.get('x') is None:
+            return None
+        if l.get('modelName') != 'internal':
+            return float(l.get('x')), float(l.get('y'))
+        lw, lh = float(l.get('width')), float(l.get('height'))
+        pos, bd = l.get('modelPosition') or 'c', float(l.get('borderDistance') or 0)
+        hz, vt = pos[-1] if pos[-1] in 'lr' else 'c', pos[0] if pos[0] in 'tb' else 'c'
+        return ({'l': bd, 'r': w - lw - bd, 'c': (w - lw) / 2}[hz], {'t': bd, 'b': h - lh - bd, 'c': (h - lh) / 2}[vt])
     f = lambda a: float(mp.get(a)); lw, lh = float(l.get('width')), float(l.get('height'))
     return (w / 2 + f('nodeRatioX') * w - f('labelRatioX') * lw + f('offsetX') - lw / 2,
             h / 2 + f('nodeRatioY') * h - f('labelRatioY') * lh + f('offsetY') - lh / 2)
