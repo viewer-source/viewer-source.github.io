@@ -1800,7 +1800,29 @@ page, so its styles keep the base they were made on).
   // the open window or its cross closes it (the list's width 0, as its separator does), another icon opens its window
   // railMark runs from setListWidth before this point is reached at load, so its names live inside it (a var here is
   // still undefined then, and the page stops with a TypeError)
-  var win = 'list';
+  var win = reloaded() ? 'edit' : 'list';
+  // Edit mode kept over a reload of this tab: the open Edit window, the map, its place and zoom,
+  // written as the page goes while the Edit window is open, read back only when the page is reloaded (a new tab, a link
+  // or the way back opens as before); sessionStorage, this tab's own. The editor keeps its own part (core.js: the moves
+  // not saved yet, the selection). A function, as railMark runs before the vars here are set
+  function reloaded() {
+    if (reloaded.r !== undefined) return reloaded.r;
+    var r = null;
+    try {
+      var nav = performance.getEntriesByType('navigation')[0];
+      if (nav && nav.type === 'reload') r = JSON.parse(sessionStorage.getItem('atlas-reload') || 'null');
+      sessionStorage.removeItem('atlas-reload');
+    } catch (e) { r = null; }
+    reloaded.r = r && r.path === location.pathname && r.map && (r.map === location.hash.slice(1) || !location.hash) ? r : null;   // no map in the address: the one route() opens
+    return reloaded.r;
+  }
+  addEventListener('pagehide', function () {
+    try {
+      if (chosen && grid.classList.contains('m2-win-edit') && !grid.classList.contains('m2-list-shut'))
+        sessionStorage.setItem('atlas-reload', JSON.stringify({ path: location.pathname, map: chosen.id, z: z, tx: tx, ty: ty, bz: bz, moved: moved }));
+      else sessionStorage.removeItem('atlas-reload');
+    } catch (e) {}
+  });
   // the icons' place: the row on top (--m2-icon-row), unless the reader chose the left column in Settings
   // (--m2-bar-choice); either way the row's tabs and behaviour (class m2-bar-tabs). Functions, not vars: railMark runs
   // before this point at load
@@ -1810,7 +1832,7 @@ page, so its styles keep the base they were made on).
   function railMark() {
     var WIN_NAMES = { list: 'Maps', search: 'Search', info: 'Info', dl: 'Downloads', ext: 'Open in', set: 'Settings', edit: 'Edit' };
     var g = document.querySelector('.m2'), on = setting('icons'), open = !g.classList.contains('m2-list-shut');
-    var w = win || 'list';
+    var w = win || (reloaded() ? 'edit' : 'list');
     g.classList.toggle('m2-icons-on', on);
     // the icon row: the icons at the top of the list's panel (moved back when a style without it is chosen)
     var row = rowOn(), rail = document.getElementById('m2-rail'), nav = g.querySelector('.m2-nav');
@@ -2742,13 +2764,17 @@ page, so its styles keep the base they were made on).
     document.title = m.title + ' – {{ include.name }}';
     img.style.visibility = 'hidden';  // only if the new picture is not there yet
     (kp ? Promise.resolve(kp.pic) : get(m.image + ver(m))).then(function (pic) {
-      if (current !== m || !pic) return;
+      if (current !== m) return;
+      if (!pic) { ed.pictured(true); return; }   // no picture: the Edit window waiting for it goes on (the editor draws its own)
       if (pic !== img) { img.removeAttribute('id'); pic.id = 'm2-img'; pic.alt = m.title; img.replaceWith(pic); img = pic; }
       img.style.visibility = '';
       draw();
       m2Shown();   // the first map in: the page shown whole
+      ed.pictured();   // the Edit window waiting for this picture (a reload in edit mode): editing starts on it
     });
-    if (keep) draw(); else if (mode === 'fit') fit(); else standard();
+    var rv = reloaded();
+    if (rv && !rv.done && m.id === rv.map) { rv.done = true; z = rv.z * rv.bz / bz; tx = rv.tx; ty = rv.ty; moved = rv.moved !== false; panelPlaced(); draw(); }   // reloaded while editing: where it was
+    else if (keep) draw(); else if (mode === 'fit') fit(); else standard();
     loadNodes(m); // after the view, so that a search result can centre its node
     var dl = document.getElementById('m2-downloads');
     dl.innerHTML = '';
@@ -3428,12 +3454,13 @@ page, so its styles keep the base they were made on).
       var s = document.createElement('script');
       s.src = EDITOR + 'editor.js' + BUILD;
       s.onload = function () { editor = window.m2Editor(V); own = editor.own; draftsShown(); var mine = function () { ownIn = true; refreshMine(); }; own.read().then(mine, mine); editorWait.splice(0).forEach(function (f) { f(); }); };
-      s.onerror = function () { editorAsked = false; ownIn = true; if (!chosen && siteList) route(); };
+      s.onerror = function () { editorAsked = false; ownIn = true; if (win === 'edit') { win = 'list'; railMark(); } if (!chosen && siteList) route(); };
       document.head.appendChild(s);
     }, 0);
   }
   var ed = { paint: function () { if (editor) editor.paint(); }, away: function () { if (editor) editor.away(); },
              leaving: function (m) { if (editor) editor.leaving(m); }, left: function (m) { if (editor) editor.left(m); },
+             pictured: function (failed) { if (editor && editor.pictured) editor.pictured(failed); },
              keep: keep, boxes: boxes };
 })();
 </script>

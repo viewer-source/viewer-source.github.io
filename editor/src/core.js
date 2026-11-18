@@ -18,6 +18,14 @@
     var on = false, map = null;    // editing, and the map object shown while editing
     var text = '', name = '', handle = null, dirty = false;
     var unsaved = {};   // by map id: a site map left with moves not saved on GitHub { id, name, site, text }; its sha read from site when used
+    // the selection kept over a reload of this tab, applied when editing of the same map starts again
+    var reSel = (function () {
+      try {
+        var nav = performance.getEntriesByType('navigation')[0], r = JSON.parse(sessionStorage.getItem('atlas-edit-sel') || 'null');
+        sessionStorage.removeItem('atlas-edit-sel');
+        return nav && nav.type === 'reload' && r && r.path === location.pathname ? r : null;
+      } catch (e) { return null; }
+    })();
     var doc = null, geos = [], points = [], nodes2 = [], edges2 = [];
     var docText = null;            // the text doc was read from (kept by a move, which changes both alike): the renderer reuses doc then
     var x0 = 0, y0 = 0;            // where the drawing's top left is in yEd units
@@ -1189,6 +1197,11 @@
       if (site) { site.base = site.pending && site.pub != null ? site.pub : t0; site.fromDraft = t0 !== site.base; }   // no token: the site's text, a draft on top of it
       if (site && site.pending && canFolder && V.folderName()) folderCheck();
       stuck = false; dirty = false; undo = []; redo = []; cdGate = null; selN = []; selP = []; selE = [];
+      if (reSel && V.chosen && reSel.map === V.chosen.id) {   // reloaded while editing this map: its selection back
+        nodes2.forEach(function (n, i) { if (reSel.n.indexOf(n.id) >= 0) selN.push(i); });
+        edges2.forEach(function (a, i) { if (reSel.e.indexOf(a.id) >= 0) selE.push(i); });
+      }
+      reSel = null;
       map = { id: 'edit', title: openTitle || n, width: 0, height: 0, scale: 1, downloads: [], colours: true };   // drawn with the role classes (graphml.js, V.recolour): Settings' Map colours offered while editing
       if (same) {   // editing starts on the picture as it is: no redraw, the map stays where it is
         map.width = same.width; map.height = same.height; map.scale = same.scale; x0 = same.x0; y0 = same.y0;
@@ -1298,7 +1311,7 @@
       // for maps that cannot be edited); its window gives way to the Maps list when the tab goes
       var off = !on && !(dirty && !site) && !g;
       V.grid.classList.toggle('m2-edit-off', off);
-      if (off && V.win === 'edit') { V.win = 'list'; V.railMark(); }
+      if (off && V.win === 'edit' && V.current) { V.win = 'list'; V.railMark(); }   // no map yet (the page just loaded, reloaded in edit mode): nothing to judge
     }
     function graphmlOf(m) {   // a map drawn from its own file, GraphML, CellDesigner or SBGN-ML with an editBase: that file is first in its downloads
       var d = m && m.downloads && m.downloads[0];
@@ -1705,8 +1718,11 @@
     function lateItem(it) { var out = [it]; out.late = true; return out; }   // a rarely used right-click item: after the common ones, above Delete
     // the Edit tab starts editing the map shown at once; a map that
     // cannot be edited says why
-    function shown() {   // the Edit window open on a map: edit it, or say why not (also when another map is chosen)
+    var picWait = false;   // the Edit window open before the map's picture is in (a reload in edit mode): started once it is
+    function shown(any) {   // the Edit window open on a map: edit it, or say why not (also when another map is chosen); any: its picture failed
       if (!V.grid.classList.contains('m2-win-edit') || on) return;
+      if (!any && V.img && V.img.style.visibility === 'hidden') { picWait = true; return; }   // editing starts on the picture as it is shown
+      picWait = false;
       if (text && dirty && !site) return resume();
       if (graphmlOf(V.current)) return editShown();
       buttons();
@@ -1735,6 +1751,12 @@
       if (V.chosen) V.put(V.chosen, true); else stop();   // at the same place and zoom: nothing jumps
     }
     window.addEventListener('beforeunload', function (e) { if (dirty) { if (saveTimer) push(); e.preventDefault(); e.returnValue = ''; } });
+    addEventListener('pagehide', function () {
+      try {
+        if (on && V.chosen) sessionStorage.setItem('atlas-edit-sel', JSON.stringify({ path: location.pathname, map: V.chosen.id,
+          n: selN.map(function (i) { return nodes2[i] && nodes2[i].id; }).filter(Boolean), e: selE.map(function (i) { return edges2[i] && edges2[i].id; }).filter(Boolean) }));
+      } catch (e) {}
+    });
 
     // on screen: the selection as yEd shows it, over the drawing: a node
     // selected in a light grey with eight small black handles; an arc selected with black squares on its bend points and

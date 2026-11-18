@@ -16,5 +16,6 @@ window.m2Editor = function (V) {
     buttons();
     aheadSoon();
     syncFolder();   // the reader's folder read for My maps, when the browser still allows it
-    return { paint: paint, away: away, unkeep: unkeep, chooseFolder: chooseFolder, own: own, hasToken: function () { return !!(repo() && token()); }, leaving: function (m) { if (on && m !== map) stop(); }, left: function (m) { if (on && m !== map) stop(); buttons(); setTimeout(shown, 0); warmUp(); aheadSoon(); } };
+    if (V.current) setTimeout(shown, 0);   // the Edit window already open (a reload in edit mode, or opened while this loaded): editing starts
+    return { paint: paint, away: away, unkeep: unkeep, chooseFolder: chooseFolder, own: own, hasToken: function () { return !!(repo() && token()); }, leaving: function (m) { if (on && m !== map) stop(); }, left: function (m) { if (on && m !== map) stop(); buttons(); setTimeout(shown, 0); warmUp(); aheadSoon(); }, pictured: function (failed) { if (picWait) shown(!!failed); } };
 };
