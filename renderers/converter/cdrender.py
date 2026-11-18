@@ -478,10 +478,9 @@ class Drawing:
         if kind == 'stimulation':
             self.lines.append('<polygon points="%s" fill="#fff" stroke="#000"/>' % pts([T, at(8, 4), at(8, -4)]))
             return at(8, 0)
-        if kind == 'stimulation-reduced':  # a black triangle, white inside
-            self.lines.append('<polygon points="%s" fill="#000"/>' % pts([T, at(15, 5), at(15, -5)]))
-            self.lines.append('<polygon points="%s" fill="#fff"/>' % pts([at(4.8, 0), at(12, 2), at(12, -2)]))
-            return at(15, 0)
+        if kind == 'stimulation-reduced':  # SBGN's open triangle, as yrender's white_delta
+            self.lines.append('<polygon points="%s" fill="#fff" stroke="#000"/>' % pts([T, at(16, 6), at(16, -6)]))
+            return at(16, 0)
         if kind == 'trigger':
             self.lines.append('<polygon points="%s" fill="#fff" stroke="#000"/>' % pts([T, at(15, 5), at(15, -5)]))
             self.lines.append('<line x1="%s" y1="%s" x2="%s" y2="%s" stroke="#000"/>' % (*map(fmt, at(20, 4.5)), *map(fmt, at(20, -4.5))))

@@ -2084,10 +2084,11 @@
       if (V.level !== 'full') return false;
       var e = edges2[k], a = e.arr, other = end ? e.s : e.t, r = roleOf(i), ro = roleOf(other);
       var hub = function (x) { return x === 'proc' || x === 'gate'; };
-      if (cd) {   // a reaction's end at a species, to another species or complex (no member, no compartment, no glyph or gate, none the reaction has already)
+      if (cd) {   // a reaction's end at a species, to another species or complex (no member, no compartment, no glyph or gate, none
+        // the reaction has already); its other end at a species or at the reaction's glyph, never a gate's line (cd_edit rewire)
         var nd = nodes2[i], here = end ? e.t : e.s, proc = function (x) { return /\|(proc|g\d*)$/.test(nodes2[x].id); }, rid = e.id.slice(0, e.id.lastIndexOf('|') + 1);
         if (edges2.some(function (f) { return f.id.indexOf(rid) === 0 && (f.s === i || f.t === i); })) return false;
-        return !proc(here) && !proc(end ? e.s : e.t) && !proc(i) && !nd.comp && !(nd.up != null && !nodes2[nd.up].comp);
+        return !proc(here) && !/\|g\d*$/.test(nodes2[end ? e.s : e.t].id) && !proc(i) && !nd.comp && !(nd.up != null && !nodes2[nd.up].comp);
       }
       if (i === other || !r || a[0] !== 'none') return false;
       if (a[1] === 'none') {   // the arrowhead-less line: its hub end at a process or gate, its other end at an entity (or a gate into a gate)

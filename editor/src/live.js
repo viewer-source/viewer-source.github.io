@@ -207,7 +207,8 @@
     function liveLines(out) {
       var pk0 = drag && drag.port && drag.port.to ? drag.port : null, lk = new Set(live || []);
       var away = pk0 && (pk0.n2 != null || pk0.free);   // an end going to another node: its line follows as a copy (a CellDesigner glyph keeps its place until the drop)
-      if (pk0) { if (!away) liveFmt().glyphs(new Set(), new Set(), null, pk0); (live || []).forEach(function (k) { lk.add(k); }); lk.add(pk0.k); }
+      // away, the glyph back at rest (a turn it took while the end was still at its node would no longer meet the lines)
+      if (pk0) { liveFmt().glyphs(new Set(), new Set(), null, away ? null : pk0); (live || []).forEach(function (k) { lk.add(k); }); lk.add(pk0.k); }
       if (gE) { if (!frozen) { if (lk.size) { if (away || !liveFmt().lines(lk, pk0)) fullLines(lk, pk0); } else dropCopies(); } }
       else lk.forEach(function (k) {
         var pts = line(k, null, null, pk0);

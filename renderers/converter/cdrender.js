@@ -493,10 +493,9 @@
     var line = function (p, q) { return '<line x1="' + fmt(p[0]) + '" y1="' + fmt(p[1]) + '" x2="' + fmt(q[0]) + '" y2="' + fmt(q[1]) + '" stroke="#000"/>'; };
     if (kind === 'production') { L.push('<polygon points="' + pts([T, at(15, 5), at(15, -5)]) + '" fill="#000"/>'); return at(14, 0); }
     if (kind === 'stimulation') { L.push('<polygon points="' + pts([T, at(8, 4), at(8, -4)]) + '" fill="#fff" stroke="#000"/>'); return at(8, 0); }
-    if (kind === 'stimulation-reduced') {
-      L.push('<polygon points="' + pts([T, at(15, 5), at(15, -5)]) + '" fill="#000"/>');
-      L.push('<polygon points="' + pts([at(4.8, 0), at(12, 2), at(12, -2)]) + '" fill="#fff"/>');
-      return at(15, 0);
+    if (kind === 'stimulation-reduced') {   // SBGN's open triangle, as yrender's white_delta
+      L.push('<polygon points="' + pts([T, at(16, 6), at(16, -6)]) + '" fill="#fff" stroke="#000"/>');
+      return at(16, 0);
     }
     if (kind === 'trigger') {
       L.push('<polygon points="' + pts([T, at(15, 5), at(15, -5)]) + '" fill="#fff" stroke="#000"/>');
