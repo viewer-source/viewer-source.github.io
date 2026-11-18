@@ -357,10 +357,10 @@
     // a map's name typed in place (any map):
     // a double-click on it or Rename map in the list's menu; the reader's maps in their record (title), the site's with a
     // token in their maps/<id>.md (topic, the name the list shows; the title too where it was the same), shown at once
-    // while the site's list still has the old name. Maps whose name the build takes from elsewhere (the SBGN-ML groups) are
-    // not renamed
+    // while the site's list still has the old name. Maps whose name the build takes from elsewhere (the SBGN-ML groups,
+    // their edited copies under maps/sbgn-ml/) are not renamed; an SBGN-ML map with a page of its own (maps/<id>.sbgn) is
     var renamed = {};   // site map id -> { was, to }: the list's name before and the one given here
-    function canRename(m, gh) { return !!m && !m.shownAs && (m.mine ? !!mine[m.id] && !mine[m.id].site : !!gh && !/-sbgn(ml)?$|^external-/.test(m.id)); }
+    function canRename(m, gh) { return !!m && !m.shownAs && (m.mine ? !!mine[m.id] && !mine[m.id].site : !!gh && !/^maps\/sbgn-ml\//.test(m.editPath || '')); }
     function siteNamed(list) {   // the names given here over the site's list (copies: the site's own entries untouched)
       return list.map(function (m) {
         var n = renamed[m.id];
