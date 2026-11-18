@@ -590,8 +590,9 @@ page, so its styles keep the base they were made on).
      (set in the script), and its lower edge
      can be dragged down to the whole window without the header; with --m2-separators by the
      separator under it instead of the grip in its corner */
-  #m2-view { position: relative; width: 100%; height: 504px; min-height: 300px; max-height: calc(100vh / var(--zoom, 1) - var(--m2-below-view, 56px)); resize: vertical; overflow: hidden; box-sizing: border-box; border: 1px solid var(--m2-frame); border-radius: var(--m2-radius); background: var(--m2-bg); cursor: grab; touch-action: none; user-select: none; }
+  #m2-view { position: relative; width: 100%; height: 504px; min-height: 300px; max-height: calc(100vh / var(--zoom, 1) - var(--m2-below-view, 56px)); resize: vertical; overflow: hidden; box-sizing: border-box; border: 1px solid var(--m2-frame); border-radius: var(--m2-radius); background: var(--m2-bg); cursor: default; touch-action: none; user-select: none; }
   #m2-view.m2-drag { cursor: grabbing; }
+  #m2-area { position: absolute; left: 0; top: 0; display: none; box-sizing: border-box; border: 1px solid #80868b; background: rgba(95, 99, 104, .07); pointer-events: none; }
   /* full screen: the map alone, the annotation over its right side */
   #m2-view:fullscreen { width: 100vw; height: 100vh !important; max-height: none; border: 0; border-radius: 0; resize: none; }
   #m2-view:-webkit-full-screen { width: 100vw; height: 100vh !important; max-height: none; border: 0; border-radius: 0; resize: none; }
@@ -768,6 +769,7 @@ page, so its styles keep the base they were made on).
 <div id="m2-view" tabindex="0">
 <img id="m2-img" alt="">
 <svg id="m2-edit-layer" aria-hidden="true"></svg>
+<div id="m2-area" aria-hidden="true"></div>
 <svg id="m2-pin" viewBox="0 0 24 32" aria-hidden="true"><path d="M12 31C12 31 2 18.5 2 11.5a10 10 0 0 1 20 0C22 18.5 12 31 12 31z" style="fill: var(--m2-accent)"/><circle cx="12" cy="11.5" r="3.6" fill="#fff"/></svg>
 <div class="m2-ctrl">
 <span id="m2-zoom"></span>
@@ -1170,6 +1172,7 @@ page, so its styles keep the base they were made on).
     img.style.height = s.h * z + 'px';
     img.style.transform = 'translate(' + tx + 'px,' + ty + 'px)';
     drawPin();
+    drawArea();
     if (ed) ed.paint();
     document.getElementById('m2-zoom').textContent = Math.round(z / (STANDARD * SIZE) * 100) + '%';
   }
@@ -1511,14 +1514,28 @@ page, so its styles keep the base they were made on).
   function pz() { return view.currentCSSZoom || 1; }
   // a behaviour a style turns on: --m2-<name>: 1 (read each time, so a style chosen later counts)
   function setting(name) { return getComputedStyle(document.documentElement).getPropertyValue('--m2-' + name).trim() === '1'; }
-  // the same over the list's column and the icons (Shift held moves the whole
-  // page): Shift with the wheel scrolls the page, not the list inside
+  // Space held with two fingers or the wheel scrolls the page from anywhere over the viewer (the map takes most of the
+  // screen, so the text under it is otherwise reached only from the edges). Space alone over the map does not also step
+  // the page down; in a field it stays a space
+  var spaceHeld = false, overView = false;
+  view.addEventListener('pointerenter', function () { overView = true; });
+  view.addEventListener('pointerleave', function () { overView = false; });
+  document.addEventListener('keydown', function (e) {
+    if (e.code !== 'Space' && e.key !== ' ') return;
+    var a = document.activeElement;
+    if (a && (/input|textarea|select/i.test(a.tagName) || a.isContentEditable)) return;
+    spaceHeld = true;
+    if (overView && (!a || a === document.body || a === view)) e.preventDefault();
+  }, true);
+  document.addEventListener('keyup', function (e) { if (e.code === 'Space' || e.key === ' ') spaceHeld = false; }, true);
+  window.addEventListener('blur', function () { spaceHeld = false; });
+  function pageBy(e) { var d = e.deltaY || e.deltaX; window.scrollBy(0, e.deltaMode === 1 ? d * 16 : e.deltaMode === 2 ? d * window.innerHeight : d); }
+  // the same over the list's column and the icons: Space with the wheel scrolls the page, not the list inside
   document.querySelectorAll('.m2-nav, #m2-rail').forEach(function (el) {
     el.addEventListener('wheel', function (e) {
-      if (!e.shiftKey || e.ctrlKey || e.metaKey) return;
+      if (!spaceHeld || e.ctrlKey || e.metaKey) return;
       e.preventDefault();
-      var d = e.deltaY || e.deltaX;
-      window.scrollBy(0, e.deltaMode === 1 ? d * 16 : e.deltaMode === 2 ? d * window.innerHeight : d);
+      pageBy(e);
     }, { passive: false });
   });
   view.addEventListener('wheel', function (e) {
@@ -1529,17 +1546,16 @@ page, so its styles keep the base they were made on).
     // (sent as the wheel with Ctrl) and the zoom buttons still zoom
     if (!e.ctrlKey && !e.metaKey && r.height > window.innerHeight + 1) return;
     e.preventDefault();
-    // Shift with the wheel scrolls the page from anywhere over the map (the map takes most of the
-    // screen, so the text under it was reached only from the edges); browsers send Shift with the wheel as a sideways
-    // scroll, so either direction is taken as the page's
-    if (e.shiftKey && !e.ctrlKey && !e.metaKey) { var d = e.deltaY || e.deltaX; window.scrollBy(0, e.deltaMode === 1 ? d * 16 : e.deltaMode === 2 ? d * window.innerHeight : d); return; }
+    if (spaceHeld && !e.ctrlKey && !e.metaKey) { pageBy(e); return; }
     // two-finger scrolling (and a mouse wheel, which a browser does not tell apart) moves the map, in any direction, in
     // the viewer and the editor alike: a map is read at one zoom and moved around at it, and a swipe touches nothing on
     // the map, so it never moves an item or starts a line by a missed aim. A pinch (the wheel with Ctrl) and Ctrl or Cmd
-    // with the wheel zoom
+    // with the wheel zoom. Shift turns it sideways, as a mouse's wheel turns only up and down (some systems send Shift
+    // with the wheel as a sideways scroll already)
     if (!e.ctrlKey && !e.metaKey) {
       var ux = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? r.width : 1, uy = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? r.height : 1;
-      tx -= e.deltaX * ux / pz(); ty -= e.deltaY * uy / pz();
+      var ddx = e.shiftKey ? e.deltaX || e.deltaY : e.deltaX, ddy = e.shiftKey ? 0 : e.deltaY;
+      tx -= ddx * ux / pz(); ty -= ddy * uy / pz();
       moved = true; draw();
       return;
     }
@@ -1564,17 +1580,37 @@ page, so its styles keep the base they were made on).
   });
   view.addEventListener('gestureend', function (e) { if (gest != null) e.preventDefault(); gest = null; });
   // no zoom on a double click (a double click opens the name field)
-  // drag with one pointer, pinch with two
-  var pts = {}, last = null, press = null;
+  // a finger: drag with one, pinch with two. A mouse or trackpad: a drag selects an area (two fingers move the map, the
+  // wheel handler above), kept as the area the right-click menu copies; a click picks
+  var pts = {}, last = null, press = null, vband = null, area = null;
+  var areaEl = document.getElementById('m2-area');
+  function toPic(cx, cy) { var r = view.getBoundingClientRect(), k = scaleOf(current); return [((cx - r.left) / pz() - tx) / z * k, ((cy - r.top) / pz() - ty) / z * k]; }
+  function drawArea() {
+    if (!areaEl) return;   // a draw before the pointer code has run
+    if (!area || !current || area.map !== current.id) { areaEl.style.display = 'none'; return; }
+    var k = scaleOf(current);
+    areaEl.style.display = 'block';
+    areaEl.style.width = area.w / k * z + 'px'; areaEl.style.height = area.h / k * z + 'px';
+    areaEl.style.transform = 'translate(' + (tx + area.x / k * z) + 'px,' + (ty + area.y / k * z) + 'px)';
+  }
+  function clearArea() { if (area) { area = null; drawArea(); } }
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && area) clearArea(); });
   view.addEventListener('pointerdown', function (e) {
     if (e.target.closest('.m2-ctrl')) return;
     // the left button only: a right press (a two-finger click or Ctrl with a click on a Mac) opens the context menu,
     // which swallows the release, and the map then followed the pointer everywhere (a sticky hand)
-    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    if (e.pointerType === 'mouse' && (e.button !== 0 || e.ctrlKey)) return;
     // leave the lower right corner to the browser's resize handle (not there with the separators)
     var r = view.getBoundingClientRect();
     if (!setting('separators') && e.clientX > r.right - 18 && e.clientY > r.bottom - 18) return;
     if (e.target.closest('.m2-info')) return;
+    if (e.pointerType === 'mouse') {
+      if (grid.classList.contains('m2-editing') || !current) return;   // the editor selects its own way
+      view.setPointerCapture(e.pointerId);
+      var p0 = toPic(e.clientX, e.clientY);
+      vband = { id: e.pointerId, cx: e.clientX, cy: e.clientY, x: p0[0], y: p0[1], on: false };
+      return;
+    }
     view.setPointerCapture(e.pointerId);
     pts[e.pointerId] = [e.clientX, e.clientY];
     press = Object.keys(pts).length === 1 ? [e.clientX, e.clientY] : null;
@@ -1582,12 +1618,22 @@ page, so its styles keep the base they were made on).
     view.classList.add('m2-drag');
   });
   function drop(e) {   // a pointer whose release never came: it no longer drags the map
+    if (vband && vband.id === e.pointerId) { vband = null; return; }
     if (!pts[e.pointerId]) return;
     delete pts[e.pointerId]; press = null; last = null;
     if (!Object.keys(pts).length) view.classList.remove('m2-drag');
   }
   view.addEventListener('lostpointercapture', drop);
   view.addEventListener('pointermove', function (e) {
+    if (vband && vband.id === e.pointerId) {
+      if (!e.buttons) { vband = null; return; }
+      if (!vband.on && Math.hypot(e.clientX - vband.cx, e.clientY - vband.cy) < 5) return;
+      vband.on = true;
+      var p = toPic(e.clientX, e.clientY);
+      area = { map: current.id, x: Math.min(vband.x, p[0]), y: Math.min(vband.y, p[1]), w: Math.abs(p[0] - vband.x), h: Math.abs(p[1] - vband.y) };
+      drawArea();
+      return;
+    }
     if (!pts[e.pointerId]) return;
     if (e.pointerType === 'mouse' && !e.buttons) return drop(e);   // no button held: the drag is over
     var prev = pts[e.pointerId];
@@ -1606,6 +1652,12 @@ page, so its styles keep the base they were made on).
     }
   });
   function release(e) {
+    if (vband && vband.id === e.pointerId) {   // a click with no drag: picks, and the area goes
+      var vb = vband; vband = null;
+      if (!vb.on && e.type === 'pointerup') { var rr = view.getBoundingClientRect(); clearArea(); pick((e.clientX - rr.left) / pz(), (e.clientY - rr.top) / pz()); }
+      else if (area && (area.w < 1 || area.h < 1)) clearArea();
+      return;
+    }
     // a press without a drag is a click on the map
     if (e.type === 'pointerup' && press && pts[e.pointerId] && Math.hypot(e.clientX - press[0], e.clientY - press[1]) < 5) {
       var r = view.getBoundingClientRect();
@@ -3114,6 +3166,8 @@ page, so its styles keep the base they were made on).
       var m = ed && chosen ? chosen : current, box = el('div', 'm2-cx'), n = ed ? null : nodeAt(vx, vy), url = {};   // in edit mode the site's map, with its files
       box.setAttribute('role', 'menu');
       (m.downloads || []).forEach(function (d) { url[d.label] = d.url; });
+      var a = !ed && area && area.map === m.id && area, k0 = scaleOf(m), ax = (vx - tx) / z * k0, ay = (vy - ty) / z * k0;
+      if (a && ax >= a.x && ax <= a.x + a.w && ay >= a.y && ay <= a.y + a.h) return areaMenu(box, m, url, a);   // inside the area selected: its own items
       if (n) {   // a molecule, a complex or a reaction: its name first
         var name = n.label || '';
         box.appendChild(el('div', 'm2-cx-head', (n.members ? 'Protein family' : (KIND[n['class']] || n['class'])) + (name ? ': ' + name : '')));
@@ -3189,6 +3243,56 @@ page, so its styles keep the base they were made on).
       if (!m.imageError && svgOf(m, url)) item(box, 'Copy image as SVG', function (r) { copySvg(m, url, r, sh); });
       while (box.lastChild && box.lastChild.classList.contains('m2-sep')) box.removeChild(box.lastChild);
       return box;
+    }
+    // the area selected (a drag on the map): what lies fully inside it, and its piece of the image
+    function inArea(a) {
+      return (nodes || []).filter(function (q) { var b = q.box; return !q.reaction && b[0] >= a.x && b[1] >= a.y && b[0] + b[2] <= a.x + a.w && b[1] + b[3] <= a.y + a.h; })
+        .sort(function (p, q) { return p.box[1] - q.box[1] || p.box[0] - q.box[0]; });
+    }
+    function areaMenu(box, m, url, a) {
+      var sh = shown(m), names = [];
+      inArea(a).forEach(function (q) { var t = (q.label || '').trim(); if (t && names.indexOf(t) < 0) names.push(t); });
+      box.appendChild(el('div', 'm2-cx-head', 'Selected area'));
+      if (names.length) item(box, 'Copy names', function (r) { copyText(names.join('\n'), r); });
+      if (!m.imageError) item(box, 'Copy image as PNG', function (r) {
+        if (!navigator.clipboard || !window.ClipboardItem) return say('This browser cannot copy images', r.left, r.top);
+        navigator.clipboard.write([new ClipboardItem({ 'image/png': areaPng(m, url, sh, a) })])
+          .then(function () { say('Image copied', r.left, r.top); }, function () { say('Not copied', r.left, r.top); });
+      });
+      if (!m.imageError && (svgOf(m, url) || (sh && sh.svg))) item(box, 'Copy image as SVG', function (r) {
+        var text = (sh && sh.svg ? Promise.resolve(sh.svg) : fetch(svgOf(m, url)).then(function (x) { if (!x.ok) throw x.status; return x.text(); }))
+          .then(function (t) { return cropSvg(t, m, a); });
+        var plain = function () { return text.then(function (t) { return navigator.clipboard.writeText(t); }); };
+        var go = window.ClipboardItem && ClipboardItem.supports && ClipboardItem.supports('image/svg+xml')
+          ? navigator.clipboard.write([new ClipboardItem({
+              'image/svg+xml': text.then(function (t) { return new Blob([t], { type: 'image/svg+xml' }); }),
+              'text/plain': text.then(function (t) { return new Blob([t], { type: 'text/plain' }); }) })]).catch(plain)
+          : navigator.clipboard ? plain() : Promise.reject();
+        go.then(function () { say('Image copied', r.left, r.top); }, function () { say('Not copied', r.left, r.top); });
+      });
+      return box;
+    }
+    // the map's PNG (as Copy image as PNG makes it) cut to the area, at the same scale
+    function areaPng(m, url, sh, a) {
+      return pngOf(m, url, sh).then(function (b) { return createImageBitmap(b); }).then(function (bm) {
+        var k = bm.width / m.width, c = document.createElement('canvas');
+        c.width = Math.max(1, Math.round(a.w * k)); c.height = Math.max(1, Math.round(a.h * k));
+        var g = c.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c.width, c.height);
+        g.drawImage(bm, a.x * k, a.y * k, a.w * k, a.h * k, 0, 0, c.width, c.height);
+        return new Promise(function (res, rej) { c.toBlob(function (x) { if (x) res(x); else rej(); }, 'image/png'); });
+      });
+    }
+    // the map's SVG with its view box and size set to the area (in the picture's pixels, as the map is drawn)
+    function cropSvg(t, m, a) {
+      var hm = t.match(/<svg\b[^>]*>/);
+      if (!hm) return t;
+      var h = hm[0], vb = h.match(/\sviewBox="([^"]+)"/), W = parseFloat((h.match(/\swidth="([\d.]+)/) || [])[1]), H = parseFloat((h.match(/\sheight="([\d.]+)/) || [])[1]);
+      var v = vb ? vb[1].trim().split(/[\s,]+/).map(Number) : [0, 0, W, H];
+      if (v.length !== 4 || v.some(isNaN)) return t;
+      var fx = v[2] / m.width, fy = v[3] / m.height, r2 = function (q) { return Math.round(q * 100) / 100; };
+      var nv = [v[0] + a.x * fx, v[1] + a.y * fy, a.w * fx, a.h * fy].map(r2).join(' ');
+      var nh = h.replace(/\s(viewBox|width|height)="[^"]*"/g, '').replace(/^<svg/, '<svg width="' + r2(a.w) + '" height="' + r2(a.h) + '" viewBox="' + nv + '"');
+      return t.replace(h, nh);
     }
     function show(cx, cy, ed) {
       close();
