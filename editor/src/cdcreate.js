@@ -341,7 +341,9 @@
         out.push(cdDot(J || cdCentre(link.from), 'm2-ed-pickh'));
         if (E && !no) out.push(cdHead(E[0], E[1]));
       } else cdPicked(out, link.from);
-      if (link.to >= 0 && link.how && !no) cdLand(out, link.to, link.how.land);
+      if (link.to < 0 || !link.how || no) return;
+      if (rx === link.to) out.push(landMarks([], (link.how.land && link.how.land.Q) || cdCentre(link.to)));   // an added reactant joins the main line, not the square: its join only, no box or handles on the square
+      else cdLand(out, link.to, link.how.land);
     }
     function cdHead(S, T) {   // a product's arrowhead at T, as cdrender's (15 long, 10 wide)
       var L = Math.hypot(T[0] - S[0], T[1] - S[1]);

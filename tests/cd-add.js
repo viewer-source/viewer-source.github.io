@@ -1,6 +1,6 @@
 // Add reactant and Add product on a CellDesigner map (editor/src/cdcreate.js), by default the styles page on the ACLY demo
 // map: the two signs in the palette; while an added reactant is drawn onto a reaction, the blue place at its join on the
-// main line where the file's added reactants already join, and the reaction's main line lit; the reactant added, ending
+// main line where the file's added reactants already join, and the reaction's main line lit, no box or handles on its square; the reactant added, ending
 // there; an added product drawn from a point of the main line (not the square) to a new species, leaving at the
 // products' join; a reaction sign onto a square and Add reactant between two species refused. Nothing is saved.
 //   node tests/cd-add.js [address] [viewer folder: its editor served in place of the page's] [screenshot folder]
@@ -48,10 +48,11 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#acly-celld
   await page.keyboard.press('Escape'); await sign('cd:ADD_REACTANT');
   var mid = await drag(await at(nw), await at('re_n3|proc'), async function () {
     if (shots) await page.screenshot({ path: path.join(shots, 'cd-add-reactant.png') });
-    return { port: await port(), lit: await page.$$eval('#m2-edit-layer .m2-ed-rxline', function (l) { return l.length; }) };
+    return { port: await port(), lit: await page.$$eval('#m2-edit-layer .m2-ed-rxline', function (l) { return l.length; }), box: await page.$$eval('#m2-edit-layer .m2-ed-landbox, #m2-edit-layer .m2-ed-landh', function (l) { return l.length; }) };
   });
   ok('the blue place at the reactants’ join', near(mid.port[0], J0, 2), JSON.stringify([mid.port[0], J0]));
   ok('the main line lit while drawing', mid.lit === 2);
+  ok('no box or handles on the reaction’s square', mid.box === 0, String(mid.box));
   var e1 = await es(), add1 = e1.filter(function (i) { return e0.indexOf(i) < 0; });
   ok('an added reactant made', add1.length === 1 && add1[0] === 're_n3|r2', add1.join(' '));
   if (add1[0]) ok('it ends at the join', near(await along(add1[0], 1), J0, 2));
