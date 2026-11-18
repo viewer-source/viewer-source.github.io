@@ -7,9 +7,9 @@ from . import report
 from .layout import PROCESSES, centre, compartment_of, decorations, unbent
 
 
-def adjust(diagram, layout):
-    # the map, its boxes as Newt keeps them (a process's port stubs only in advanced)
-    return for_newt(placed(diagram), layout != 'straight')
+def adjust(diagram):
+    # the map, its boxes as Newt keeps them
+    return for_newt(placed(diagram))
 
 
 def leaving(d, p, q, at_border, gap=3):
@@ -55,7 +55,7 @@ def placed(diagram):
 NEWT_PAD, PORTS = 30, 12
 
 
-def for_newt(diagram, ports=True):
+def for_newt(diagram):
     # compartments as Newt keeps them: Newt keeps a compartment's box only when
     # its contents (state variables, units, a complex's padding, a process's port stubs) stay
     # NEWT_PAD inside every edge, else it wraps the contents and edges aligned in the source drift
@@ -87,7 +87,7 @@ def for_newt(diagram, ports=True):
                 continue
             # a process or gate with its ports; an inner compartment only inside the outer one
             e = -NEWT_PAD if d.kind == 'Compartment' else \
-                PORTS * ports if d.kind in ('Operator',) + PROCESSES else 0
+                PORTS if d.kind in ('Operator',) + PROCESSES else 0
             states, units = decorations(d)
             for (x, y, w, h), e in [(d.box, e)] + [(b, 0) for b in states + [b for _, b in units]]:
                 for k, v in enumerate((x - e, y - e, x + w + e, y + h + e)):

@@ -669,26 +669,6 @@ def border_point(a):
 
 
 
-def straight(m):
-    # the map for straight SBGN-ML: CellDesigner's bends placed the process
-    # square, and the arcs go straight, so each process midway between its main reactant and
-    # product: its first consumption and first product (read() writes the main line first), or of
-    # a reversible process (products only) its first two products
-    ins, outs = {}, {}
-    for a in m.arcs:
-        if a.head is None and m.nodes[a.target].kind in PROCESSES:
-            ins.setdefault(a.target, []).append(a.source)
-        elif a.head == 'production':
-            outs.setdefault(a.source, []).append(a.target)
-    cen = lambda i: (m.nodes[i].box[0] + m.nodes[i].box[2] / 2, m.nodes[i].box[1] + m.nodes[i].box[3] / 2)
-    for p, o in outs.items():
-        e = ins.get(p, [])[:1] + o
-        if len(e) > 1:
-            (ax, ay), (bx, by), (x, y, w, h) = cen(e[0]), cen(e[1]), m.nodes[p].box
-            m.nodes[p].box = ((ax + bx - w) / 2, (ay + by - h) / 2, w, h)
-    return m
-
-
 def points(s):
     return [tuple(float(v) for v in q.split(',')) for q in (s or '').split()]
 

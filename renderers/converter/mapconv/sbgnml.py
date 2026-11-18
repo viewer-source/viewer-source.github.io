@@ -3,7 +3,7 @@
 # GraphML. Colours as the SBML render extension on the map (the spec's Appendix B), annotation
 # as RDF in each glyph's extension with identifiers.org links in Newt's form (db:id).
 # read() at the end goes the other way, also for Newt's .nwt (SBGN-ML with its settings).
-import collections, math, copy, os, re
+import math, copy, os, re
 from lxml import etree
 from . import report
 from .annotation import from_graphml, from_notes, notes, to_properties
@@ -108,16 +108,16 @@ def note(el, lines):  # lines as the element's notes (xhtml)
     etree.SubElement(h, '{%s}body' % XH).text = '\n'.join(lines)
 
 
-def write(diagram, layout='advanced', newt=False):
-    # layout 'straight': every arc straight from centre to centre (no bends, no
-    # yEd ports, no process ports), the necessary minimum, improved by hand in Newt; 'advanced':
-    # the drawing of the source kept (bends, arcs at yEd ports), the arcs of logic gates straight
-    # (yEd's bend where the inputs meet lies past the gate's port: the line turns back, iNOS)
+REACH = 20  # px beyond a process's or gate's box: a bend there that only imitates its antenna joins the antenna
+
+
+def write(diagram, newt=False):
+    # the drawing of the source kept (bends, arcs at yEd ports), processes and gates with their antennas;
     # newt: the map adjusted as Newt needs it (newt_layout); without it the
     # SBGN-ML of the source, its compartments as drawn
     diagram = without_delays(shifted(diagram), 'SBGN Process Description')
     if newt:
-        diagram = newt_layout.adjust(diagram, layout)
+        diagram = newt_layout.adjust(diagram)
     N = diagram.nodes
     ids = {i: xml_id(i) for i in N}
     ann = from_graphml(diagram)
@@ -128,17 +128,11 @@ def write(diagram, layout='advanced', newt=False):
 
     # arcs in SBGN's direction: a consumption runs from the entity to the process (yEd maps
     # also draw it the other way), a logic arc from the entity into its gate
-    # straight: an arc that shares its two ends with another keeps the source's bends, as Newt
-    # curves two straight arcs between the same glyphs apart (iNOS: IFNGR consumed by the process
-    # it stimulates)
-    pairs = collections.Counter(frozenset((a.source, a.target)) for a in diagram.arcs)
     arcs = []
     for a in diagram.arcs:
         s, t, pts, s_at, t_at = a.source, a.target, list(a.points), a.source_at, a.target_at
-        if layout == 'straight' and pairs[frozenset((s, t))] == 1 or s in ops or t in ops:
-            pts = []
-        given = (s_at, t_at)  # the ends as the map gives them: a port kept (below), gates' arcs drawn straight all the same
-        if layout == 'straight' or s in ops or t in ops:
+        given = (s_at, t_at)  # the ends as the map gives them: a process's port kept (below); a gate's arcs end at its antennas
+        if s in ops or t in ops:
             s_at, t_at = (0.0, 0.0), (0.0, 0.0)
         if a.head is None:
             if s in hubs - eq and t not in hubs:
@@ -149,8 +143,8 @@ def write(diagram, layout='advanced', newt=False):
             if cls is None:
                 report.say('left out', 'arc %s: no SBGN arc for %s, left out' % (a.id, a.head)); continue
         if N[s].kind == 'Phenotype' and N[s].data.get('SBGN class') != 'perturbing agent':  # a perturbing agent, a submap or neither: not guessed
-            report.say('left out', 'arc %s: leaves phenotype %s (%s), no SBGN Process Description equivalent, left out'
-                       % (a.id, s, N[s].labels[0] if N[s].labels else '')); continue
+            report.say('warning', 'arc %s: leaves phenotype %s (%s), kept, though SBGN Process Description gives a phenotype no outgoing arc'
+                       % (a.id, s, N[s].labels[0] if N[s].labels else ''))
         if a.tail:
             report.say('left out', 'arc %s: its arrow at the source has no place in SBGN-ML, dropped' % a.id)
         arcs.append((a, cls, s, t, pts, s_at, t_at, given))
@@ -193,8 +187,6 @@ def write(diagram, layout='advanced', newt=False):
         one = (cx - k * r, cy) if horizontal else (cx, cy - k * r)
         two = (cx + k * r, cy) if horizontal else (cx, cy + k * r)
         ports[p] = ('horizontal' if horizontal else 'vertical', one, two)
-    if layout == 'straight':  # no ports: every arc runs from centre to centre
-        ports = {}
 
     root = etree.Element(S + 'sbgn', nsmap={None: NS})
     # language, not version: libsbgn's schema lists no PD version after 1.3
@@ -323,6 +315,7 @@ def write(diagram, layout='advanced', newt=False):
         return {i for i, d in N.items() if d.kind != 'Compartment' and i not in ends and (d.parent is None or N[d.parent].kind == 'Compartment')
                 and d.box[0] < max(xs) and min(xs) < d.box[0] + d.box[2] and d.box[1] < max(ys) and min(ys) < d.box[1] + d.box[3]
                 and any(cuts(p, q, d.box) for p, q in zip(line, line[1:]))}
+    side = []  # arcs that meet a process from the side: they turn at its antenna
     for a, cls, s, t, pts, s_at, t_at, _ in arcs:
         if ids[s] not in made or ids[t] not in made:
             continue
@@ -347,14 +340,21 @@ def write(diagram, layout='advanced', newt=False):
             p1 = (centre(N[t])[0] + t_at[0], centre(N[t])[1] + t_at[1]) if any(t_at) else border(N[t], prv)
             if newt and any(t_at) and t not in hubs:
                 pts = pts + newt_layout.leaving(N[t], p1, prv, border(N[t], prv))
-        # advanced, plain: every bend the source draws (the SBGN-ML looks exactly as its
-        # GraphML), only a bend exactly on the line between its neighbours left out. For Newt and straight, key bends
-        # only: a bend stays if leaving it out moves the line by more than 20 px (layout.bends, as
-        # for CellDesigner), or the line without it runs through a node it does not run through now; then a bend on or
-        # near (5 px) the straight line between its neighbours is left out (the bends that placed the process in
-        # CellDesigner, and the 3 px stubs at its ports, are not needed)
+        # a bend near a process or gate that imitates its antenna, or lies behind its tip, joins the antenna
+        if s in ports:
+            pts = antenna(N[s], p0, pts)
+        if t in ports and tgt.endswith('.1'):
+            pts = antenna(N[t], p1, pts[::-1])[::-1]
+        for hub, end, q in ((s, p0, pts[0] if pts else p1), (t, p1, pts[-1] if pts else p0)):
+            if hub in ports and hub not in ops and (hub == s or tgt.endswith('.1')) and sideways(N[hub], end, q):
+                side.append(a.id)
+        # plain: every bend the source draws (the SBGN-ML looks as its GraphML), only a bend exactly on the line
+        # between its neighbours left out. For Newt, key bends only: a bend stays if leaving it out moves the line by
+        # more than 20 px (layout.bends, as for CellDesigner), or the line without it runs through a node it does not
+        # run through now; then a bend on or near (5 px) the straight line between its neighbours is left out (the
+        # bends that placed the process in CellDesigner, and the 3 px stubs at its ports, are not needed)
         line = [p0] + pts + [p1]
-        if layout == 'advanced' and not newt:
+        if not newt:
             pts = unbent(line, 0.5)[1:-1]
         else:
             key = [p0] + bends(line) + [p1]
@@ -370,7 +370,33 @@ def write(diagram, layout='advanced', newt=False):
         for q in pts:
             etree.SubElement(e, S + 'next', x=repr(float(q[0])), y=repr(float(q[1])))
         etree.SubElement(e, S + 'end', x=repr(float(p1[0])), y=repr(float(p1[1])))
+    if side:
+        report.say('changed', '%d arc%s meet%s a process from the side and turn%s at its antenna: %s'
+                   % (len(side), 's' * (len(side) > 1), '' if len(side) > 1 else 's', '' if len(side) > 1 else 's', ', '.join(dict.fromkeys(side))))
     return etree.tostring(root, pretty_print=True, xml_declaration=True, encoding='UTF-8').decode('utf-8')
+
+
+def antenna(d, tip, pts):
+    # pts from the antenna's tip outward without the bends near the glyph (REACH beyond its box) at or behind the
+    # tip: inside the antenna's reach they drew it, or the turn of the inputs into a gate (iNOS), which the antenna
+    # now draws; a bend past the tip is a corner of the line and stays
+    (cx, cy), half = centre(d), max(d.box[2], d.box[3]) / 2
+    ux, uy = tip[0] - cx, tip[1] - cy
+    r = math.hypot(ux, uy)
+    while pts and r:
+        vx, vy = pts[0][0] - cx, pts[0][1] - cy
+        if math.hypot(vx, vy) > half + REACH or (ux * vx + uy * vy) / r > r + 0.5:
+            break
+        pts = pts[1:]
+    return pts
+
+
+def sideways(d, tip, q):
+    # whether the line from the antenna's tip to q turns more than 45 degrees off the antenna
+    (cx, cy) = centre(d)
+    ux, uy, vx, vy = tip[0] - cx, tip[1] - cy, q[0] - tip[0], q[1] - tip[1]
+    n = math.hypot(ux, uy) * math.hypot(vx, vy)
+    return n > 0 and (ux * vx + uy * vy) / n < math.sqrt(0.5)
 
 
 def text_of(el):  # an element's notes as plain text

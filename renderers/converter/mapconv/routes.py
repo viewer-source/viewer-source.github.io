@@ -1,10 +1,9 @@
 # Which files each input gives, as on the Converter page, for the page, the command line and the
 # reference files alike. outputs() lists them; each file is made only when asked (made()).
 #   GraphML: CellDesigner in its four layouts (celldesigner.LAYOUTS: straight, straight & bends,
-#            advanced, as drawn); SBGN-ML, straight and advanced, also each for Newt
-#            (newt_layout); GraphML (corrected) for a map drawn
+#            advanced, as drawn); SBGN-ML, also for Newt (newt_layout); GraphML (corrected) for a map drawn
 #            with other shapes; GraphML (marked) when it breaks a rule (the problems left out)
-#   CellDesigner: GraphML and SBGN-ML, straight and advanced, SBGN-ML also each for Newt
+#   CellDesigner: GraphML, straight and advanced; SBGN-ML, also for Newt
 #   SBGN-ML, Newt: GraphML; CellDesigner in its four layouts
 #   CellDesigner, SBGN-ML, Newt: also GraphML (standard sizes) for a map drawn at another scale,
 #            or for every map when standard (style.standard)
@@ -50,9 +49,9 @@ def standardised(read, program, asked):
 
 def outputs(path, standard=False):
     ext = path.lower().rsplit('.', 1)[-1]
-    # SBGN-ML straight and advanced, then each for Newt; read(layout) -> the map
-    sbgn = lambda read: [Output('-%s%s.sbgn' % (l, '-newt' * n), 'SBGN-ML (%s%s)' % (l, ', for Newt' * n),
-                                lambda l=l, n=n: sbgnml.write(read(l), l, n)) for n in (False, True) for l in LAYOUTS]
+    # SBGN-ML, then for Newt; read() -> the map
+    sbgn = lambda read: [Output('.sbgn', 'SBGN-ML', lambda: sbgnml.write(read())),
+                         Output('-newt.sbgn', 'SBGN-ML (for Newt)', lambda: sbgnml.write(read(), True))]
     std = lambda read, program: Output('-standard.graphml', 'GraphML (standard sizes)', lambda: standardised(read, program, standard))
     name = {'straight': 'straight', 'bends': 'straight & bends', 'advanced': 'advanced', 'drawn': 'as drawn'}
     cds = lambda read: [Output('-%s.xml' % l, 'CellDesigner (%s)' % name[l],
@@ -72,7 +71,7 @@ def outputs(path, standard=False):
             for line in rules.lines(m, found):
                 report.say('problem', line)
             return rules.mark(path, found)
-        out = cds(read) + sbgn(lambda l: read()) + \
+        out = cds(read) + sbgn(read) + \
               [Output('-corrected.graphml', 'GraphML (corrected)', lambda: graphml.corrected(read()))] + \
               ([Output('-standard.graphml', 'GraphML (standard sizes)', lambda: graphml.write(style.standardise(read()), soft=True))] if standard else [])
         return out + ([Output('-marked.graphml', 'GraphML (marked)', marked, red=True)] if found else [])
@@ -80,6 +79,6 @@ def outputs(path, standard=False):
         cd = lambda l: at_centres(aligned(celldesigner.read(path))) if l == 'straight' else aligned(celldesigner.read(path))
         return [Output('-%s.graphml' % l, 'GraphML (%s)' % l, lambda l=l: graphml.write(cd(l))) for l in LAYOUTS] + \
                [std(lambda: celldesigner.read(path), 'CellDesigner')] + \
-               sbgn(lambda l: celldesigner.straight(cd(l)) if l == 'straight' else cd(l))
+               sbgn(lambda: cd('advanced'))
     return [Output('.graphml', 'GraphML', lambda: graphml.write(sbgnml.read(path))), std(lambda: sbgnml.read(path), 'Newt')] + \
            cds(lambda: sbgnml.read(path))

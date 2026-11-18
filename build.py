@@ -283,9 +283,9 @@ def sbgn_map(src, mid, fm, body):
             print('warning: %s: the converter\'s SBGN-ML shown instead' % os.path.relpath(mine, ROOT))
     if not d:
         outs = routes.outputs(src)   # a map the converter cannot read gives one route that says why
-        out = next((o for o in outs if o.ending == '-advanced.sbgn'), outs[0])
+        out = next((o for o in outs if o.ending == '.sbgn'), outs[0])
         text, said = routes.made(out)
-        if not text or out.ending != '-advanced.sbgn':
+        if not text or out.ending != '.sbgn':
             print('warning: %s not written as SBGN-ML, left out: %s' % (mid, '; '.join(t for _, t in said[-1:]) or 'no route'))
             return None, []
         with open(path, 'w', encoding='utf-8') as f:
