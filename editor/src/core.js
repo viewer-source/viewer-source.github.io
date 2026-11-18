@@ -1619,7 +1619,9 @@
     // text); any key, a click outside, a scroll or a resize close it
     var kwBox = null;
     function kwClose() { if (kwBox) { kwBox.remove(); kwBox = null; } }
-    function kindWindow(r, items) {
+    // the right-click menu stays under the window until a kind is chosen (done closes it), as a submenu; Escape, the
+    // close sign or a key close the window alone
+    function kindWindow(r, items, done) {
       kwClose();
       var t0 = text, m0 = map;
       kwBox = document.createElement('div'); kwBox.className = 'm2-cx m2-ci'; kwBox.setAttribute('role', 'dialog'); kwBox.setAttribute('aria-label', 'Change identity');
@@ -1629,13 +1631,15 @@
         var b = document.createElement('button'); b.type = 'button';
         b.setAttribute('role', 'menuitemradio'); b.setAttribute('aria-checked', String(!!q.own)); b.disabled = !!q.own;
         b.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true">' + q.sign + '</svg><span>' + q.name + '</span>';
-        b.addEventListener('click', function (e) { e.stopPropagation(); kwClose(); if (on && V.current === m0 && text === t0) q.go(); });
+        b.addEventListener('click', function (e) { e.stopPropagation(); kwClose(); if (done) done(); if (on && V.current === m0 && text === t0) q.go(); });
         kwBox.lastChild.appendChild(b);
       });
       document.body.appendChild(kwBox);
       var k = kwBox.getBoundingClientRect().width / kwBox.offsetWidth || 1, w = kwBox.offsetWidth * k, h = kwBox.offsetHeight * k;   // the page's own zoom: a fixed box is placed in its units
       kwBox.style.left = Math.max(4, Math.min(r.left, window.innerWidth - 4 - w)) / k + 'px'; kwBox.style.top = Math.max(4, Math.min(r.top, window.innerHeight - 4 - h)) / k + 'px';
+      return kwBox;
     }
+    function subItem(f) { f.sub = true; return f; }   // a right-click item that opens a window over the menu (the viewer keeps the menu)
     document.addEventListener('pointerdown', function (e) { if (kwBox && !kwBox.contains(e.target)) kwClose(); }, true);
     document.addEventListener('keydown', function (e) { if (!kwBox) return; if (e.key === 'Escape') { e.stopPropagation(); e.preventDefault(); } kwClose(); }, true);   // Escape closes the window only
     window.addEventListener('resize', kwClose);

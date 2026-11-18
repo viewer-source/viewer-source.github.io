@@ -2892,8 +2892,8 @@ page, so its styles keep the base they were made on).
   // shortcuts to what the tabs and buttons already do, never the only way to it (phones have no right click);
   // Shift with the right click gives the browser's own menu; the same in edit mode, View mode in place of Edit mode
   (function () {
-    var menu = null, note = null;
-    function close() { if (menu) { menu.remove(); menu = null; } }
+    var menu = null, note = null, sub = null;   // sub: a window an item opened over the menu (the editor's Change identity), the menu kept under it until a choice
+    function close() { if (menu) { menu.remove(); menu = null; } sub = null; }
     function say(text, x, y) {
       if (note) note.remove();
       note = el('div', 'm2-cx-note', text); note.style.left = x / pz() + 'px'; note.style.top = y / pz() + 'px';
@@ -2912,7 +2912,7 @@ page, so its styles keep the base they were made on).
     function item(box, text, act, icon) {
       var b = el('button', null, text); b.type = 'button';
       if (icon) b.insertAdjacentHTML('beforeend', icon);
-      b.addEventListener('click', function (e) { e.stopPropagation(); var r = b.getBoundingClientRect(); close(); act(r); });
+      b.addEventListener('click', function (e) { e.stopPropagation(); var r = b.getBoundingClientRect(); if (act.sub) { sub = act(r, close) || null; return; } close(); act(r); });
       box.appendChild(b); return b;
     }
     function link(box, text, href, download) {
@@ -3131,9 +3131,9 @@ page, so its styles keep the base they were made on).
       e.preventDefault();
       show(e.clientX, e.clientY, grid.classList.contains('m2-editing'));
     });
-    document.addEventListener('pointerdown', function (e) { if (menu && !menu.contains(e.target)) close(); }, true);
+    document.addEventListener('pointerdown', function (e) { if (menu && !menu.contains(e.target) && !(sub && sub.isConnected && sub.contains(e.target))) close(); }, true);
     document.addEventListener('keydown', function (e) {
-      if (!menu) return;
+      if (!menu || (sub && sub.isConnected)) return;   // a window over the menu takes the keys first (Escape closes it alone)
       if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close(); return; }
       if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
       e.preventDefault();

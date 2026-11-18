@@ -412,7 +412,7 @@
         if (r === 'proc') return cdRxItems(cdRid(i));
         var A = cdMk.aliasInfo(cd.now, id);
         if (!A.cls || A.cls === 'COMPLEX') return null;
-        out.push(['Change identity\u2026', function (r) { cdIdentity(id, r); }]);
+        out.push(['Change identity\u2026', subItem(function (r, done) { return cdIdentity(id, r, done); })]);
         // after it, the species' homodimer, as Properties' Multimer (2 when made, 1 back)
         if (A.cls !== 'DEGRADED') out.push([A.homodimer > 1 ? 'Make monomer' : 'Make multimer', function () { cdApply(function (t) { return cdMk.homodimer(t, id, A.homodimer > 1 ? 1 : 2); }, [id]); }]);
         out.late = true;   // rarely used: after the common items, above Delete
@@ -436,19 +436,19 @@
     // Change identity (core.js kindWindow): a species' kinds, the palette's signs and names, no complex or compartment (a
     // complex and a single species are not changed into one another), none a complex cannot hold for its member (phenotype,
     // degraded); a click retypes it (cd_make.retype, its colour following the scheme), one undo step
-    function cdIdentity(id, r) {
+    function cdIdentity(id, r, done) {
       var A = cdMk.aliasInfo(cd.now, id);
-      if (!A.cls) return;
-      kindWindow(r, CD_SP.filter(function (q) { return q[0] !== 'COMPLEX' && !cdComp(q[0]) && !(A.complex && /^(PHENOTYPE|DEGRADED)$/.test(q[0])); }).map(function (q) {
+      if (!A.cls) return null;
+      return kindWindow(r, CD_SP.filter(function (q) { return q[0] !== 'COMPLEX' && !cdComp(q[0]) && !(A.complex && /^(PHENOTYPE|DEGRADED)$/.test(q[0])); }).map(function (q) {
         return { name: q[1], sign: q[2], own: q[0] === A.cls, go: function () { cdApply(function (t) { return cdMk.retype(t, id, q[0], { from: cdColour(t, A.cls), to: cdColour(t, q[0]) }); }, [id]); } };
-      }));
+      }), done);
     }
     // a modulation's kinds (a modifier on a reaction: the five; reduced notation between species: its four, no catalysis),
     // each by the modifier's sign and name; set: [[type, modifier type]], go(type) writes it
     function cdModIdentity(set, was, go) {
-      return lateItem(['Change identity\u2026', function (r) {
-        kindWindow(r, set.map(function (q) { var s = CD_MOD.filter(function (m) { return m[0] === q[1]; })[0]; return { name: CD_NAME[q[1]], sign: s[2], own: q[0] === was, go: function () { go(q[0]); } }; }));
-      }]);
+      return lateItem(['Change identity\u2026', subItem(function (r, done) {
+        return kindWindow(r, set.map(function (q) { var s = CD_MOD.filter(function (m) { return m[0] === q[1]; })[0]; return { name: CD_NAME[q[1]], sign: s[2], own: q[0] === was, go: function () { go(q[0]); } }; }), done);
+      })]);
     }
     var CD_MODS = CD_MOD.map(function (q) { return [q[0], q[0]]; });   // a modifier's types, each its own sign
     function cdRxItems(rid) {   // a reaction's other types: a process's among the three; reduced notation (a modulation) by Change identity
@@ -456,9 +456,9 @@
       if (cdMk.REDUCED.indexOf(ab.type) >= 0) return cdModIdentity(CD_RED, ab.type, function (k) { cdApply(function (t) { return cdMk.reactionType(t, rid, k); }, [], [rid]); });
       if (ab.reversible === null) return null;
       // its other types by Change identity (core.js kindWindow), as a species' and a modifier's; then reversible or not
-      var out = set ? [['Change identity\u2026', function (r) {
-        kindWindow(r, set.map(function (q) { return { name: q[1], sign: q[2], own: q[0] === ab.type, go: function () { cdApply(function (t) { return cdMk.reactionType(t, rid, q[0]); }, [], [rid]); } }; }));
-      }]] : [];
+      var out = set ? [['Change identity\u2026', subItem(function (r, done) {
+        return kindWindow(r, set.map(function (q) { return { name: q[1], sign: q[2], own: q[0] === ab.type, go: function () { cdApply(function (t) { return cdMk.reactionType(t, rid, q[0]); }, [], [rid]); } }; }), done);
+      })]] : [];
       out.push([ab.reversible ? 'Make irreversible' : 'Make reversible', function () { cdReversible(rid, !ab.reversible); }]);
       out.late = true;   // rarely used: after the common items, above Delete
       return out;
