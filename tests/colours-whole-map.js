@@ -12,6 +12,7 @@ async function run(b, map, kind) {
     var ed = fs.readFileSync(path.join(local, 'editor/editor.js'), 'utf8').replace(/^---[\s\S]*?---\n/, '')
       .replace(/\{% include_relative (src\/[\w.]+) %\}/g, function (m, f) { return fs.readFileSync(path.join(local, 'editor', f), 'utf8'); });
     await page.route('**/editor/editor.js*', function (r) { r.fulfill({ status: 200, contentType: 'application/javascript', body: ed }); });
+    await page.route(/\/renderers\/converter\/(sbgn_edit|cd_make)\.js/, function (r) { var f = /(sbgn_edit|cd_make)\.js/.exec(r.request().url())[0]; r.fulfill({ status: 200, contentType: 'application/javascript', body: fs.readFileSync(path.join(local, 'renderers/converter', f), 'utf8') }); });
   }
   page.on('pageerror', function (e) { errs.push(e.message); });
   await page.goto(base + '#' + map, { waitUntil: 'load' });
@@ -29,7 +30,7 @@ async function run(b, map, kind) {
   var t0 = await text(), f0 = await fills();
   ok(kind + ': proteins drawn', (f0.protein || []).length > 5, JSON.stringify(Object.keys(f0)));
   await pick('Default'); var f = await fills();
-  ok(kind + ': Default, every protein #c8d8eb', f.protein.every(function (x) { return x === '#c8d8eb'; }), Array.from(new Set(f.protein)).join(' '));
+  ok(kind + ': Default, every protein #c8d8eb', (f.protein || []).length > 0 && f.protein.every(function (x) { return x === '#c8d8eb'; }), Array.from(new Set(f.protein)).join(' '));
   ok(kind + ': Default, every metabolite #dbebdb', (f.metabolite || []).every(function (x) { return x === '#dbebdb'; }), Array.from(new Set(f.metabolite || [])).join(' '));
   ok(kind + ': the file changed', (await text()) !== t0);
   await page.keyboard.press('Control+z'); await page.waitForTimeout(2500);

@@ -196,26 +196,19 @@
     // a choice of Colours recolours the whole map, one undo step (cdApply): every species and compartment its colour by the
     // choice, as a new one of its class would get it (cdColourIn, from the map as it was); From file leaves the map as it
     // is; Custom a class with a kept fill, the rest as they are; Confetti every species a pastel of its own, one after
-    // another (compartments as they are); a degraded species keeps CellDesigner's look. Lines keep their colours
+    // another (compartments as they are); a degraded species keeps CellDesigner's look. Lines keep their colours. One pass
+    // (cd_make.recolourAll); a class CellDesigner's own colours do not know (a receptor, an ion) as it is under CellDesigner
     function cdRecolour(mode) {
       if (mode === 'file' || !cd) return;
       cdApply(function (t0) {
-        var t = t0, hues = [], kept = mode === 'custom' ? cdKept() : null, re = /<celldesigner:(?:speciesAlias|complexSpeciesAlias|compartmentAlias)\s[^>]*?\bid="([^"]+)"/g, m, ids = [];
-        while ((m = re.exec(t0))) ids.push(m[1]);
-        ids.forEach(function (id) {
-          var L; try { L = cdMk.look(t0, id); } catch (e) { return; }
-          var cls = L.cls, comp = cdComp(cls), c;
-          if (cls === 'DEGRADED') return;
-          if (mode === 'confetti') { if (comp) return; c = confettiPick(hues); }
-          else if (mode === 'custom') { var k = !comp && kept[cls]; if (!k || !k.fill) return; c = k.fill; }
-          else {
-            var x = cdColourIn(mode, t0, cls) || (cdMk.LOOK[cls] || [])[2];
-            if (!x) return;
-            c = '#' + x.slice(2);
-          }
-          try { t = cdMk.restyle(t, id, { fill: c.toLowerCase() }); } catch (e) { if (!(e && e.refused)) throw e; }
+        var hues = [], kept = mode === 'custom' ? cdKept() : null;
+        return cdMk.recolourAll(t0, function (cls) {
+          var comp = cdComp(cls);
+          if (mode === 'confetti') return comp ? null : confettiPick(hues);
+          if (mode === 'custom') { var k = !comp && kept[cls]; return k && k.fill || null; }
+          var x = cdColourIn(mode, t0, cls) || (cdMk.LOOK[cls] || [])[2];
+          return x ? '#' + x.slice(2) : null;
         });
-        return t;
       }, []);
     }
     // Style: From file, the size most species of that class have on the map; Custom, the size kept by Set as default (From

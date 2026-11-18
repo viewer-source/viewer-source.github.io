@@ -1028,6 +1028,28 @@
     }
     return t;
   }
+  // every species and compartment alias recoloured in one pass (a whole map): fn(cls, id) gives its fill (#rrggbb, written
+  // opaque) or null to leave it; cls 'COMPARTMENT' for a compartment; a degraded species keeps CellDesigner's look. Only the
+  // paint of the usual view (a compartment's own paint) changes
+  function recolourAll(t, fn) {
+    var kind = {}, put = [], m, re = /<(species|celldesigner:species)(?=\s)[^>]*\sid="([^"]+)"[\s\S]*?<\/\1>/g;
+    while ((m = re.exec(t))) { var c = /<celldesigner:class>([^<]*)</.exec(m[0]); if (c) kind[m[2]] = c[1]; }
+    re = /<celldesigner:(speciesAlias|complexSpeciesAlias|compartmentAlias)(?=\s)([^>]*)>[\s\S]*?<\/celldesigner:\1>/g;
+    while ((m = re.exec(t))) {
+      var id = at(m[0], 'id'), comp = m[1] === 'compartmentAlias', cls = comp ? 'COMPARTMENT' : kind[at(m[0], 'species')];
+      if (!cls || cls === 'DEGRADED') continue;
+      var col = fn(cls, id);
+      if (!col) continue;
+      if (!/^#[0-9a-fA-F]{6}$/.test(col)) fail('A fill is a colour #rrggbb.');
+      var p = comp ? /<celldesigner:paint color="[0-9a-fA-F]{8}"/.exec(m[0]) : /<celldesigner:usualView>[\s\S]*?(<celldesigner:paint color="[0-9a-fA-F]{8}")/.exec(m[0]);
+      if (!p) continue;
+      var off = comp ? p.index : p.index + p[0].length - p[1].length, i = m.index + off + '<celldesigner:paint color="'.length;
+      put.push([i, 'ff' + col.slice(1).toLowerCase()]);
+    }
+    put.sort(function (a, b) { return b[0] - a[0]; });
+    put.forEach(function (q) { t = t.slice(0, q[0]) + q[1] + t.slice(q[0] + 8); });
+    return t;
+  }
   // a line's colour (#rrggbb): a modifier's (rid|mN), an added reactant's or product's (rid|rN, rid|pN) its own line, as
   // CellDesigner keeps one for each; else its reaction's (its main line, a reduced notation's line). A logic gate's lines,
   // its inputs included, are drawn in the reaction's colour: none of their own (null from lineColour)
@@ -1056,6 +1078,6 @@
   var api = { LOOK: LOOK, COMP: COMP, lineColour: lineColour, recolourLine: recolourLine, PROCESS: PROCESS, REDUCED: REDUCED, sbgn: sbgn, MODS: MODS, NEED: NEED, about: about, aliasInfo: aliasInfo, classColour: classColour, compartmentColour: compartmentColour, classColours: classColours, classSize: classSize, empty: empty, species: newSpecies, compartment: compartment, rename: rename, retype: retype, remove: remove, reaction: reaction, reduced: reduced,
     reactant: reactant, product: product, modifier: modifier, reactionType: reactionType, reversible: reversible, modifierType: modifierType, removeLine: removeLine,
     gate: gate, gateInput: gateInput, gateInputRemove: gateInputRemove, gateType: gateType, residue: residue, residueState: residueState,
-    residueRemove: residueRemove, structural: structural, info: info, homodimer: homodimer, look: look, restyle: restyle, cdName: cdName, joinable: joinable, join: join, leave: leave };
+    residueRemove: residueRemove, structural: structural, info: info, homodimer: homodimer, look: look, restyle: restyle, recolourAll: recolourAll, cdName: cdName, joinable: joinable, join: join, leave: leave };
   if (node) module.exports = api; else root.cd_make = api;
 })(typeof window !== 'undefined' ? window : globalThis);

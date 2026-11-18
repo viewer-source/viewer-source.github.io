@@ -1157,6 +1157,12 @@
     setLook(T, G, id, o);
     return T.text();
   }
+  //   restyleAll(g, { id: o }) -> g with each node's look set, one parse for them all (a whole map recoloured)
+  function restyleAll(t, M, opt) {
+    var G = gml(t, opt), T = new Tags(t, G.doc);
+    Object.keys(M).forEach(function (id) { if (G.node[id]) setLook(T, G, id, M[id]); });
+    return T.text();
+  }
   // a line's colour (Properties): in the GraphML its y:LineStyle color, as graphml.write draws Arc.line; in the SBGN-ML
   // file a style naming the arc, its stroke the colour (sbgnml.read's Arc.line). null: black, the default
   function lineOf(e) {   // an edge of the editor's GraphML (its parsed element)
@@ -2122,7 +2128,7 @@
     return t;
   }
 
-  var api = { LOOKS: LOOKS, NAMED: NAMED, MULTI: MULTI, graphml: graphml, write: write, join: join, joinable: joinable, nameAt: nameAt, namePlaces: namePlaces, stack: stack, restack: restack, stackMoves: stackMoves, NAME_PLACES: NAME_PLACES, defaults: defaults, add: add, lookOf: lookOf, restyle: restyle, lineOf: lineOf, recolour: recolour, label: label, state: state, stateValue: stateValue, stateMove: stateMove, stateDelete: stateDelete,
+  var api = { LOOKS: LOOKS, NAMED: NAMED, MULTI: MULTI, graphml: graphml, write: write, join: join, joinable: joinable, nameAt: nameAt, namePlaces: namePlaces, stack: stack, restack: restack, stackMoves: stackMoves, NAME_PLACES: NAME_PLACES, defaults: defaults, add: add, lookOf: lookOf, restyle: restyle, restyleAll: restyleAll, lineOf: lineOf, recolour: recolour, label: label, state: state, stateValue: stateValue, stateMove: stateMove, stateDelete: stateDelete,
               unit: unit, unitValue: unitValue, unitDelete: unitDelete, multimer: multimer, classOf: classOf, MAKE: MAKE, kind: kind, PROCESSES: ['process'].concat(Object.keys(SIGN)), SIGN: SIGN, remove: remove, resize: resize, scaleEnds: scaleEnds, gone: gone, nameable: nameable,
               moveInto: moveInto, connect: connect, arcRemove: arcRemove, arcKind: arcKind, GATE: GATE, ARROW: ARROW, MODULATIONS: ['stimulation', 'catalysis', 'inhibition', 'necessary stimulation', 'modulation'],
               activity: activity, activities: activities, proteinBoxes: proteinBoxes, afUnitBox: afUnitBox, afUnitFont: afUnitFont, isAf: isAf, mapKind: mapKind, unitFor: unitFor, fillFor: fillFor, AF_ARC: AF_ARC, UNITS: Object.keys(UNIT_CLS).filter(function (u) { return u && u !== 'perturbation'; }), unitClass: actCls };

@@ -358,6 +358,7 @@
         var h = k * 137.508 % 360, near = hues.reduce(function (n, u) { var a = Math.abs(h - u) % 360; return Math.min(n, a, 360 - a); }, 360);
         if (near > far + 1e-9) { far = near; best = h; }
       }
+      if (far < 1e-6) best = hues.length % 64 * 137.508 % 360;   // all 64 taken: round them again, so a large map is not one colour
       hues.push(best);
       return confettiHex(best);
     }
@@ -380,24 +381,25 @@
     }
     function sbColsRow() { return palDrop({ key: 'cols', label: 'Colours', title: 'Colours of the map and of new glyphs', list: SB_COLS, get: sbCols, set: function (v) { keepChoice(SB_COL_KEY, v, 'file'); sbRecolour(v); }, sq: sbSquares }); }
     // a choice of Colours recolours the whole map, one undo step: every entity, complex and compartment its fill by the
-    // choice (its border black), as a new one of its kind would get it; From file leaves the map as it is; Custom a kind
-    // with a kept look, the rest as they are; Confetti every entity a pastel of its own, one after another (compartments
-    // and complexes as they are). Lines keep their colours
+    // choice (its border black), as a new one of its kind would get it (defOf); From file leaves the map as it is; Custom a
+    // kind with a kept look its fill, border and width, the rest as they are; Confetti every entity, complexes too, a pastel
+    // of its own, one after another (compartments as they are). Lines keep their colours. One parse (sbgn_edit.restyleAll)
     var SB_FILLED = /^(macromolecule|simple chemical|nucleic acid feature|unspecified entity|perturbing agent|phenotype|complex|compartment|biological activity|perturbation)( multimer)?$/;
     function sbRecolour(mode) {
       if (mode === 'file' || !palOn()) return;
-      var cls = sbClasses(), acts = sbJs.activities(text), kept = mode === 'custom' ? defsKept() : {}, hues = [], t2 = text;
+      var cls = sbClasses(), acts = sbJs.activities(text), kept = mode === 'custom' ? defsKept() : {}, hues = [], M = {};
       nodes2.forEach(function (n) {
         var c = cls[n.id] || '';
         if (!SB_FILLED.test(c)) return;
         var base = c.replace(/ multimer$/, ''), u = acts[n.id], o;
-        if (mode === 'default') o = { fill: sbJs.fillFor(u != null ? 'biological activity' : base, u) || '#FFFFFF', line: null };
+        var ff = sbJs.fillFor(u != null ? 'biological activity' : base, u);
+        if (mode === 'default') o = { fill: ff, line: null };
         else if (mode === 'none') o = { fill: null, line: null };
-        else if (mode === 'custom') { var k = kept[lookKey(base, u)]; if (!k || !k.fill) return; o = { fill: k.fill }; }
-        else if (mode === 'confetti') { if (!sbJs.fillFor(u != null ? 'biological activity' : base, u) || /^(compartment|complex)$/.test(base)) return; o = { fill: confettiPick(hues).toUpperCase(), line: null }; }
-        else return;
-        t2 = sbJs.restyle(t2, n.id, o);
+        else if (mode === 'custom') { var k = kept[lookKey(base, u)]; if (!k) return; o = {}; ['fill', 'line', 'width'].forEach(function (q) { if (q in k) o[q] = k[q]; }); }
+        else { if (!ff || base === 'compartment') return; o = { fill: confettiPick(hues).toUpperCase(), line: null }; }   // Confetti
+        M[n.id] = o;
       });
+      var t2 = sbJs.restyleAll(text, M);
       if (t2 === text) return;
       remember(false); text = t2; made([]);
     }
