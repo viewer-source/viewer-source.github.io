@@ -81,7 +81,7 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#acly-celld
   var k2 = await ci(); await page.keyboard.press('Escape'); await page.waitForTimeout(200);
   ok('the species menu has one Change identity, above Delete, Delete the last of its items', l1.indexOf('Change identity\u25B6') >= 0 && l1.indexOf('Change identity\u25B6') < l1.indexOf('Delete') && l1.indexOf('Select all of this kind') < l1.indexOf('Delete') && !l1.some(function (t) { return /^Make (protein|gene|rna|simple|unknown|phenotype|degraded)/i.test(t); }));
   ok('its window lists the seven kinds, the own checked, and retypes', k1.length === 7 && k1[0] === 'Protein*' && k2.indexOf('Gene*') >= 0 && k2.indexOf('Protein') >= 0);
-  ok('Escape closes the window', !(await page.$('.m2-ci')));
+  ok('Escape closes the list', !(await page.$('.m2-ci')));
   await menu(await at(p)); await page.click('.m2-cx button:has-text("Change identity")').catch(function () {}); await page.waitForTimeout(300);
   var k3 = !!(await page.$('.m2-ci')); await page.keyboard.press('Control+z'); await page.waitForTimeout(800);
   ok('any other key closes it too (an undo), and the retype is one undo step', k3 && !(await page.$('.m2-ci')) && (await menu(await at(p)), await page.click('.m2-cx button:has-text("Change identity")').catch(function () {}), await page.waitForTimeout(300), (await ci())[0] === 'Protein*'));

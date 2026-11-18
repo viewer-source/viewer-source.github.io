@@ -1668,17 +1668,20 @@
     }
     function subItem(f) { f.sub = true; return f; }   // a right-click item that opens its list beside the menu (the viewer keeps the menu)
     document.addEventListener('pointerdown', function (e) { if (kwBox && !kwBox.contains(e.target) && !(kwBy && kwBy.by && kwBy.by.contains(e.target))) kwClose(); }, true);
-    document.addEventListener('keydown', function (e) {   // the list's keys: up and down walk its kinds, Enter or Space choose
-      if (!kwBox) return;
-      if (e.key === 'Enter' || e.key === ' ') return;
-      e.stopPropagation(); e.preventDefault();
+    // the list's keys, before the editor's own (arrows would also move the selection): up and down walk its kinds, Enter
+    // or Space choose, Escape or the left arrow close it; another key closes it and goes on
+    document.addEventListener('keydown', function (e) {
+      if (!kwBox || e.key === 'Enter' || e.key === ' ' || /^(Shift|Control|Alt|Meta)$/.test(e.key)) return;
+      if (!/^(ArrowDown|ArrowUp|ArrowLeft|ArrowRight|Escape)$/.test(e.key)) { kwClose(); return; }
+      e.stopImmediatePropagation(); e.preventDefault();
+      if (e.key === 'ArrowRight') return;
       if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
         var list = Array.prototype.slice.call(kwBox.querySelectorAll('button:not(:disabled)')), i = list.indexOf(document.activeElement), d = e.key === 'ArrowDown' ? 1 : -1;
         if (list.length) list[i < 0 ? (d > 0 ? 0 : list.length - 1) : (i + d + list.length) % list.length].focus();
         return;
       }
-      kwClose(e.key === 'Escape' || e.key === 'ArrowLeft');
-    }, true);   // Escape closes the list only
+      kwClose(true);
+    }, true);
     window.addEventListener('resize', kwClose);
     document.addEventListener('scroll', function (e) { if (kwBox && !kwBox.contains(e.target)) kwClose(); }, true);
     function lateItem(it) { var out = [it]; out.late = true; return out; }   // a rarely used right-click item: after the common ones, above Delete

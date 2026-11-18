@@ -702,10 +702,6 @@ page, so its styles keep the base they were made on).
   .m2-cx:not(.m2-cx-still) button:hover .m2-cx-key, .m2-cx button:focus-visible .m2-cx-key { color: inherit; }
   .m2-cx .m2-sep { border-top: 1px solid var(--m2-line); margin: 4px 0; }
   .m2-cx .m2-cx-head { padding: 4px 12px; color: var(--m2-muted, #5f6368); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .m2-cx .m2-cx-sub { position: relative; }
-  .m2-cx .m2-cx-sub > .m2-cx { display: none; position: absolute; top: -5px; left: 100%; }
-  .m2-cx .m2-cx-sub.m2-cx-left > .m2-cx { left: auto; right: 100%; }
-  .m2-cx .m2-cx-sub.m2-cx-open > .m2-cx { display: block; }
   .m2-cx-note { position: fixed; z-index: 51; padding: 4px 10px; font-size: 13px; background: var(--m2-text); color: var(--m2-bg); border-radius: var(--m2-radius-button); pointer-events: none; }
 </style>
 {% unless include.look == "version1" %}<style>
@@ -2888,7 +2884,7 @@ page, so its styles keep the base they were made on).
   // shortcuts to what the tabs and buttons already do, never the only way to it (phones have no right click);
   // Shift with the right click gives the browser's own menu; the same in edit mode, View mode in place of Edit mode
   (function () {
-    var menu = null, note = null, sub = null;   // sub: a window an item opened over the menu (the editor's Change identity), the menu kept under it until a choice
+    var menu = null, note = null, sub = null;   // sub: the list a submenu item opened beside the menu (the editor's Change identity)
     function close() { if (sub && sub.isConnected && sub.m2close) sub.m2close(); if (menu) { menu.remove(); menu = null; } sub = null; clearTimeout(subT); }
     // an item whose action opens a list of its own (act.sub, the editor's Change identity) is a submenu: an arrow at its
     // right, its list beside the menu, opened by hovering, a click, Enter or the right arrow; hovering another item
@@ -2932,12 +2928,14 @@ page, so its styles keep the base they were made on).
           if (b.disabled || box.classList.contains('m2-cx-still') || (sub && sub.isConnected && sub.m2by === b && !subT)) return;
           clearTimeout(subT); subT = setTimeout(function () { subT = 0; if (b.isConnected) subOpen(b, act, false); }, 120);
         });
+        b.addEventListener('pointerleave', function () { if (!(sub && sub.isConnected && sub.m2by === b)) { clearTimeout(subT); subT = 0; } });   // passed over, not opened
         box.appendChild(w); return b;
       }
       b.addEventListener('click', function (e) { e.stopPropagation(); var r = b.getBoundingClientRect(); close(); act(r); });
       b.addEventListener('pointerenter', function () {   // another item: the open list closed after a pause
+        clearTimeout(subT); subT = 0;
         if (!sub || !sub.isConnected) return;
-        clearTimeout(subT); subT = setTimeout(function () { subT = 0; if (sub && sub.isConnected && sub.m2close) sub.m2close(); }, 300);
+        subT = setTimeout(function () { subT = 0; if (sub && sub.isConnected && sub.m2close) sub.m2close(); }, 300);
       });
       box.appendChild(b); return b;
     }
@@ -3069,7 +3067,7 @@ page, so its styles keep the base they were made on).
         }
         sep(box);
       }
-      // one layer, no submenus: the shortcuts aimed for on the page; the map's view, colours, link and
+      // one layer, save the editor's Change identity list: the shortcuts aimed for on the page; the map's view, colours, link and
       // the other files stay in the viewer's own buttons and tabs
       var eb = document.querySelector('#m2-rail .m2-ri[data-win="edit"]');
       var unbend = ed && window.m2EditBend && window.m2EditBend();   // a bend point under the pointer while editing
@@ -3159,12 +3157,12 @@ page, so its styles keep the base they were made on).
     });
     document.addEventListener('pointerdown', function (e) { if (menu && !menu.contains(e.target) && !(sub && sub.isConnected && sub.contains(e.target))) close(); }, true);
     document.addEventListener('keydown', function (e) {
-      if (!menu || (sub && sub.isConnected)) return;   // a window over the menu takes the keys first (Escape closes it alone)
-      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close(); return; }
+      if (!menu || (sub && sub.isConnected)) return;   // an open list takes the keys first (Escape closes it alone)
+      if (e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); close(); return; }
       var at = document.activeElement;
-      if (e.key === 'ArrowRight' && at && menu.contains(at) && at.getAttribute('aria-haspopup')) { e.preventDefault(); e.stopPropagation(); at.click(); return; }
+      if (e.key === 'ArrowRight' && at && menu.contains(at) && at.getAttribute('aria-haspopup')) { e.preventDefault(); e.stopImmediatePropagation(); at.click(); return; }
       if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
-      e.preventDefault();
+      e.preventDefault(); e.stopImmediatePropagation();   // not also moving the editor's selection
       var a = document.activeElement, level = a && menu.contains(a) ? a.closest('.m2-cx') : menu;
       var list = Array.prototype.slice.call(level.querySelectorAll(':scope > button, :scope > a, :scope > .m2-cx-sub > button'));
       var i = list.indexOf(a), d = e.key === 'ArrowDown' ? 1 : -1;
