@@ -261,18 +261,21 @@
     var ddOpen = null;   // the open list's window (_r: its row, _t and _list: the map and choices it was made from)
     function ddClose() {
       if (!ddOpen) return;
-      ddOpen._r.querySelector('.m2-ed-pdd').setAttribute('aria-expanded', 'false');
+      var f = ddOpen._r.querySelector('.m2-ed-pdd'), back = ddOpen._keys && ddOpen.contains(document.activeElement);
+      f.setAttribute('aria-expanded', 'false');
       ddOpen.remove(); ddOpen = null;
+      if (back) f.focus();   // opened by the keys: the focus back on its field
     }
     document.addEventListener('pointerdown', function (e) { if (ddOpen && !ddOpen.contains(e.target) && !ddOpen._r.contains(e.target)) ddClose(); }, true);
     // the list's keys, before the editor's own (arrows would also move the selection): up and down walk the choices,
-    // Enter or Space choose (the focused button's own click), Escape closes the list only; another key closes it and goes on
+    // Enter or Space choose (the focused button's own click), Escape closes the list only; another key (Tab too) closes it and goes on
     document.addEventListener('keydown', function (e) {
-      if (!ddOpen || e.key === 'Enter' || e.key === ' ' || e.key === 'Tab' || /^(Shift|Control|Alt|Meta)$/.test(e.key)) return;
+      if (!ddOpen || e.key === 'Enter' || e.key === ' ' || /^(Shift|Control|Alt|Meta)$/.test(e.key)) return;
       if (!/^(ArrowDown|ArrowUp|Escape)$/.test(e.key)) { ddClose(); return; }
       e.stopImmediatePropagation(); e.preventDefault();
       if (e.key === 'Escape') { ddClose(); return; }
-      var list = Array.prototype.slice.call(ddOpen.querySelectorAll('button')), i = list.indexOf(document.activeElement), d = e.key === 'ArrowDown' ? 1 : -1;
+      var list = Array.prototype.slice.call(ddOpen.querySelectorAll('button')); if (!list.length) return;
+      var i = list.indexOf(document.activeElement), d = e.key === 'ArrowDown' ? 1 : -1;
       if (i < 0) i = list.findIndex(function (b) { return b.getAttribute('aria-selected') === 'true'; });
       list[i < 0 ? (d > 0 ? 0 : list.length - 1) : (i + d + list.length) % list.length].focus();
     }, true);
@@ -294,7 +297,7 @@
             var b = document.createElement('button'); b.type = 'button'; b.setAttribute('role', 'option'); b.setAttribute('aria-selected', String(c[0] === m));
             b.title = c[2];
             b.innerHTML = '<span>' + c[1] + '</span>' + (q.sq ? q.sq(c[0]) : '');
-            b.addEventListener('click', function (ev) { ev.stopPropagation(); ddClose(); q.set(c[0]); palDrop(q); });
+            b.addEventListener('click', function (ev) { ev.stopPropagation(); var same = box._t === src(); ddClose(); if (same) { q.set(c[0]); palDrop(q); } });   // the map it was opened on
             box.appendChild(b);
           });
           document.body.appendChild(box);
@@ -306,8 +309,8 @@
           var y = h + 2 * k <= below || below >= above ? f.bottom + 2 * k : f.top - 2 * k - h;
           box.style.left = Math.max(4, Math.min(f.left, window.innerWidth - 4 - w)) / k + 'px';
           box.style.top = Math.max(4, Math.min(y, window.innerHeight - 4 - h)) / k + 'px';
-          ddOpen = box; box._r = r; box._t = src(); box._list = q.list; bx.setAttribute('aria-expanded', 'true');
-          if (keys) { var s = box.querySelector('[aria-selected="true"]') || box.firstChild; s.focus(); }   // opened by Enter or Space: the keys walk the list
+          ddOpen = box; box._r = r; box._t = src(); box._list = q.list; box._keys = keys; bx.setAttribute('aria-expanded', 'true');
+          if (keys) { var s = box.querySelector('[aria-selected="true"]') || box.firstChild; if (s) s.focus(); }   // opened by Enter or Space (detail 0: no pointer): the keys walk the list
         });
         pmap.firstChild.appendChild(r);
       }
