@@ -258,6 +258,12 @@ class Drawing:
             if GROUPS:
                 self.out.append('</g>')
 
+    def name_top(self, i, y, z):
+        # a complex's name at the top middle where its members leave it room (the name's band and 6 under it, as the
+        # layout skill packs a name at the top, half a unit spared), else at the bottom (the files give no place for it)
+        top = min([A[1][1] for A in self.alias.values() if A[2].get('complexSpeciesAlias') == i] or [float('inf')])
+        return top - y >= z * 7 / 6 + 6 - 0.5
+
     def node(self, i):
         cls, (x, y, w, h), a, name, si = self.alias[i]
         f = self.f
@@ -288,7 +294,8 @@ class Drawing:
             for k, line in enumerate(lines):
                 self.text(line, mid, cy + z / 3 + z * 7 / 6 * k, size=z, extra=' class="t-%s"' % ROLE.get(cls, 'white') if CLASSES else '')
         else:
-            self.text(' '.join(self.name_lines(name)), x + fw / 2, y + fh - z * 7 / 12, size=z, extra=' class="t-complex"' if CLASSES else '')
+            ny = y + z * 7 / 6 if self.name_top(i, y, z) else y + fh - z * 7 / 12
+            self.text(' '.join(self.name_lines(name)), x + fw / 2, ny, size=z, extra=' class="t-complex"' if CLASSES else '')
 
     def shape(self, cls, b, fill, alpha, dash):
         x, y, w, h = b

@@ -153,7 +153,7 @@
     var A = d.alias.get(i), cls = A[0], a = A[2], name = A[3], s = '';
     if (cls === 'COMPLEX') {
       var fe = find(a, 'cd:font'), z = fe && get(fe, 'size') ? F(get(fe, 'size')) : 12.0, nl = d.nameLines(name);
-      s += '<y:NodeLabel modelName="internal" modelPosition="b" height="' + repr(z * 7 / 6 * nl.length) + '">' + escape(nl.join(' ') || ' ') + '</y:NodeLabel>';
+      s += '<y:NodeLabel modelName="internal" modelPosition="t" height="' + repr(z * 7 / 6 * nl.length) + '">' + escape(nl.join(' ') || ' ') + '</y:NodeLabel>';
     }
     marks(d, i).forEach(function (m) { s += '<y:NodeLabel iconData="cdmark" x="' + repr(m[0] - b[0]) + '" y="' + repr(m[1] - b[1]) + '" width="' + repr(m[2]) + '" height="' + repr(m[3]) + '"/>'; });
     return s;

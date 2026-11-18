@@ -242,22 +242,23 @@
       kids(realizer(k), YNS, 'NodeLabel').forEach(function (l) { if (state.has(get(l, 'iconData')) && labelXY(l, kw, kh)) tops.push(labelXY(l, kw, kh)[1]); });
       cs.push([cx, cy, [e[0] - cx, e[1] - cy, e[2] - cx, e[3] - cy], Math.min.apply(null, tops) - kh / 2, kw, kh]);
     });
+    var labH = function (side) { return maxOr0(kids(realizer(n), YNS, 'NodeLabel').filter(function (l) {
+      return get(l, 'modelName') === 'internal' && get(l, 'visible') !== 'false' && (get(l, 'modelPosition') || '').slice(0, 1) === side && strip(leadText(l));
+    }).map(function (l) { return F(get(l, 'height')); })); };
+    var name = labH('b'), nameT = labH('t'), topM = nameT ? nameT + NAMED : TOP;   // a name inside at the bottom: NAMED under the members; at the top: NAMED above them, the name above that
     var xs, wn, ys, hn;
     if (ks.some(scaffold)) {
       var x0 = Math.min.apply(null, cs.map(function (c) { return c[0] + c[2][0]; }));
       var y0 = Math.min.apply(null, cs.map(function (c) { return c[1] + Math.min(c[2][1], c[3]); }));
       xs = cs.map(function (c) { return c[0] - x0 + LEFT; }); wn = Math.max.apply(null, cs.map(function (c) { return c[0] + c[2][2]; })) - x0 + LEFT;
-      ys = cs.map(function (c) { return c[1] - y0 + TOP; }); hn = Math.max.apply(null, cs.map(function (c) { return c[1] + c[2][3]; })) - y0 + TOP;
+      ys = cs.map(function (c) { return c[1] - y0 + topM; }); hn = Math.max.apply(null, cs.map(function (c) { return c[1] + c[2][3]; })) - y0 + topM;
     } else {
       var px = placed(cs.map(function (c) { return [c[0], [c[2][0], c[2][2]], [c[1] + c[2][1], c[1] + c[2][3]], c[2][0], c[4] / 2]; }), LEFT);
       xs = px[0]; wn = px[1];
       var wide = new Set(); ks.forEach(function (k, i) { if (isComplex(k)) wide.add(i); });
-      var py = placed(cs.map(function (c) { return [c[1], [c[2][1], c[2][3]], [c[0] + c[2][0], c[0] + c[2][2]], c[3], c[5] / 2]; }), TOP, wide);
+      var py = placed(cs.map(function (c) { return [c[1], [c[2][1], c[2][3]], [c[0] + c[2][0], c[0] + c[2][2]], c[3], c[5] / 2]; }), topM, wide);
       ys = py[0]; hn = py[1];
     }
-    var name = maxOr0(kids(realizer(n), YNS, 'NodeLabel').filter(function (l) {
-      return get(l, 'modelName') === 'internal' && get(l, 'visible') !== 'false' && (get(l, 'modelPosition') || '').slice(0, 1) === 'b' && strip(leadText(l));
-    }).map(function (l) { return F(get(l, 'height')); }));
     wn = wn + RIGHT; hn = hn + (name ? NAMED + name : BOTTOM);   // a name shown inside: its label NAMED under the members
     var nx = x + w / 2 - wn / 2, ny = y + h / 2 - hn / 2;
     ks.forEach(function (k, i) { shift(k, nx + xs[i] - cs[i][0], ny + ys[i] - cs[i][1]); });
@@ -266,7 +267,7 @@
     if (!rs) throw new Error('TypeError: NoneType is not iterable');
     rs.forEach(function (r) {
       var ins = kid(r, YNS, 'Insets');
-      INSETS.forEach(function (q) { var v = q[0] === 'bottom' && name ? NAMED : q[1]; ins.setAttribute(q[0], String(v)); ins.setAttribute(q[0] + 'F', R(v)); });
+      INSETS.forEach(function (q) { var v = (q[0] === 'bottom' && name) || (q[0] === 'top' && nameT) ? NAMED : q[1]; ins.setAttribute(q[0], String(v)); ins.setAttribute(q[0] + 'F', R(v)); });
     });
   }
   function pack(rootEl) {

@@ -684,7 +684,7 @@
     }
     function cxRoom(n) {   // [left, top, right, bottom] from complex n's members (what they draw) to its box
       var p = pads().cx, R = window.layout && window.layout.room;
-      if (p === 'repack' && R) return [R.left, R.top + n.lab.t, R.right, n.lab.b ? R.named + n.lab.b : R.bottom];
+      if (p === 'repack' && R) return [R.left, n.lab.t ? R.named + n.lab.t : R.top, R.right, n.lab.b ? R.named + n.lab.b : R.bottom];   // a name inside: NAMED between it and the members, as Pack
       if (p === 'repack') p = 12;
       return [p, p + n.lab.t, p, p + n.lab.b];
     }

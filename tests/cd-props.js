@@ -12,6 +12,7 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#acly-celld
     var ed = fs.readFileSync(path.join(local, 'editor/editor.js'), 'utf8').replace(/^---[\s\S]*?---\n/, '')
       .replace(/\{% include_relative (src\/[\w.]+) %\}/g, function (m, f) { return fs.readFileSync(path.join(local, 'editor', f), 'utf8'); });
     await page.route('**/editor/editor.js*', function (r) { r.fulfill({ status: 200, contentType: 'application/javascript', body: ed }); });
+    await page.route('**/renderers/layout/layout.js*', function (r) { r.fulfill({ status: 200, contentType: 'application/javascript', body: fs.readFileSync(path.join(local, 'renderers/layout/layout.js'), 'utf8') }); });
     await page.route('**/renderers/converter/*.js*', function (r) { r.fulfill({ status: 200, contentType: 'application/javascript', body: fs.readFileSync(path.join(local, 'renderers/converter', new URL(r.request().url()).pathname.split('/').pop()), 'utf8') }); });
   }
   page.on('pageerror', function (e) { errs.push(e.message); });
@@ -90,6 +91,11 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#acly-celld
   await select(cx); await type('w', '10');
   var bw = function (t, id) { var m = new RegExp('<celldesigner:(?:complexSpeciesAlias|speciesAlias) id="' + id + '"[\\s\\S]*?<celldesigner:bounds [^>]*w="([\\d.]+)"').exec(t); return m ? +m[1] : null; };
   var tx2 = await now(), mem = new RegExp('<celldesigner:speciesAlias id="([^"]+)"[^>]*complexSpeciesAlias="' + cx + '"').exec(tx2);
+  var cn = await page.evaluate(function (a) {   // the complex's name: centre to the box's, its top to the box's top, its bottom to the member's top
+    var g = document.querySelector('#m2-img [data-n="' + a[0] + '"]'), t = g.querySelector('text'), r = g.getBoundingClientRect(), q = t.getBoundingClientRect();
+    var m = document.querySelector('#m2-img [data-n="' + a[1] + '"]').getBoundingClientRect();
+    return [q.left + q.width / 2 - (r.left + r.width / 2), q.top - r.top, m.top - q.bottom]; }, [cx, mem ? mem[1] : '']);
+  ok('a complex with a member: its name at the top middle, above the member', Math.abs(cn[0]) < 2 && cn[1] < 10 && cn[2] > 0, JSON.stringify(cn));
   ok('a complex typed narrower than its member stops round it', !!mem && bw(tx2, cx) >= bw(tx2, mem[1]), mem && bw(tx2, cx) + ' ' + bw(tx2, mem[1]));
 
   // a modifier's line and a reaction's main line: Line colour alone, written into its own line, drawn in it

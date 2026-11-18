@@ -1,4 +1,4 @@
-# Copy of the layout skill's complex_pack.py at 1fd47e7; its master is in the skill, never edited here.
+# Copy of the layout skill's complex_pack.py at 1e83c45; its master is in the skill, never edited here.
 # Complex packing and the group fit (SKILL.md section 5, Group bounds; section 3, Complex packing).
 #   python3 complex_pack.py <in.graphml> <out.graphml>   packs every complex, then fits all groups
 #   from complex_pack import fit_insets                  fit_insets(root) ends every build that
@@ -7,7 +7,8 @@
 # 16 px from the top (yEd's Insets 12 + its 4 px group label; N:2 and units of information of a
 # first-row member sit in it) and 16 px from the bottom (mirroring the top, and room for the name
 # CellDesigner and MINERVA write there; a name shown inside at the bottom: its label 6 px under the
-# members, NAMED, in place of the 16, its text then about 9 px clear as members are 8), counting state variables, units of information, names wider
+# members, NAMED, in place of the 16, its text then about 9 px clear as members are 8; a name shown at the top: NAMED
+# above the members, the name above that, in place of the top's 16), counting state variables, units of information, names wider
 # than the node and a multimer's second outline; 10 px between a member and an inner complex one
 # above the other (the complex's thin outline reads as glued at 8). Exact on every complex: no grid inside complexes
 # (it made the bottom and right margins grow by up to 8 px). Members keep their arrangement: those
@@ -237,18 +238,21 @@ def pack_one(n, state):
         cs.append((cx, cy, (e[0] - cx, e[1] - cy, e[2] - cx, e[3] - cy), top, kw, kh))
     # N:2 and units of information above a member of the first row sit in the top margin;
     # a state variable there (not allowed, SKILL.md section 3) still counts
+    # a name yEd shows inside at the bottom (every complex of the osteoarthritis blocks) sits
+    # NAMED under the members in place of the bottom margin, as yEd draws it (room); one at the top (a CellDesigner
+    # complex's, the viewer's drawing) NAMED above them in place of the top margin, the name's height above that
+    name, name_t = (max([float(l.get('height')) for l in realizer(n).findall('y:NodeLabel', NS) if l.get('modelName') == 'internal'
+                         and l.get('visible') != 'false' and (l.get('modelPosition') or '')[:1] == side and (l.text or '').strip()] or [0.0])
+                    for side in 'bt')
+    top_m = name_t + NAMED if name_t else TOP
     if any(scaffold(k) for k in kids):  # partners keep the rows where they dock on the scaffold: fitted, not packed
         x0, y0 = min(cx + o[0] for cx, _, o, *_ in cs), min(cy + min(o[1], t) for cx, cy, o, t, *_ in cs)
         xs = [cx - x0 + LEFT for cx, *_ in cs]; wn = max(cx + o[2] for cx, _, o, *_ in cs) - x0 + LEFT
-        ys = [cy - y0 + TOP for _, cy, *_ in cs]; hn = max(cy + o[3] for _, cy, o, *_ in cs) - y0 + TOP
+        ys = [cy - y0 + top_m for _, cy, *_ in cs]; hn = max(cy + o[3] for _, cy, o, *_ in cs) - y0 + top_m
     else:
         xs, wn = placed([(cx, (o[0], o[2]), (cy + o[1], cy + o[3]), o[0], kw / 2) for cx, cy, o, _, kw, _ in cs], LEFT)
-        ys, hn = placed([(cy, (o[1], o[3]), (cx + o[0], cx + o[2]), top, kh / 2) for cx, cy, o, top, _, kh in cs], TOP,
+        ys, hn = placed([(cy, (o[1], o[3]), (cx + o[0], cx + o[2]), top, kh / 2) for cx, cy, o, top, _, kh in cs], top_m,
                     {i for i, k in enumerate(kids) if is_complex(k)})
-    # a name yEd shows inside at the bottom (every complex of the osteoarthritis blocks) sits
-    # NAMED under the members in place of the bottom margin, as yEd draws it (room)
-    name = max([float(l.get('height')) for l in realizer(n).findall('y:NodeLabel', NS) if l.get('modelName') == 'internal'
-                and l.get('visible') != 'false' and (l.get('modelPosition') or '')[:1] == 'b' and (l.text or '').strip()] or [0.0])
     wn, hn = wn + RIGHT, hn + (NAMED + name if name else BOTTOM)
     nx, ny = x + w / 2 - wn / 2, y + h / 2 - hn / 2
     for k, (cx, cy, *_), ax, ay in zip(kids, cs, xs, ys):
@@ -257,7 +261,7 @@ def pack_one(n, state):
     for r in n.find('g:data/y:ProxyAutoBoundsNode/y:Realizers', NS):
         i = r.find('y:Insets', NS)
         for side, v in INSETS:
-            v = NAMED if side == 'bottom' and name else v  # yEd draws the name under the bottom Insets
+            v = NAMED if (side == 'bottom' and name) or (side == 'top' and name_t) else v  # yEd draws the name beyond the Insets
             i.set(side, str(int(v))); i.set(side + 'F', repr(float(v)))
 
 
