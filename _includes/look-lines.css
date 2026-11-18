@@ -38,6 +38,10 @@ html .m2-list-shut #m2-split { left: 0; }   /* with the list out of sight, its s
    the map column (the line belongs to the map column) */
 html .m2-info:not(.m2-over) { margin-left: 0; width: var(--m2-info-w, 240px); box-sizing: border-box; padding: 12px 16px; }
 html .m2:has(.m2-info:not(.m2-over):not(:empty)):not(.m2-info-shut) .m2-main { border-right: 1px solid var(--m2-frame); }
+/* the Edit panel on the right: the list's padding, its line on its left, down the map column; its separator on that line */
+html #m2-epanel { padding: 12px 12px 0; border-left: 1px solid var(--m2-frame); align-self: stretch; }
+html #m2-split-e { left: -4px; }
+html .m2.m2-edit-right.m2-win-edit:not(.m2-edit-off):not(.m2-info-shut) .m2-main { border-right: 0; }   /* the panel's own line only */
 /* the zoom buttons over the map filled in the accent under the pointer, white sign */
 html .m2-ctrl button:hover { background: var(--m2-accent); border-color: var(--m2-accent); color: var(--m2-on-accent, #fff); }
 /* wide windows: the page moves as one, the list and the panel still scrolling inside; the list's line

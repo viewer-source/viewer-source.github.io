@@ -1327,7 +1327,9 @@
       // for maps that cannot be edited); its window gives way to the Maps list when the tab goes
       var off = !on && !(dirty && !site) && !g;
       V.grid.classList.toggle('m2-edit-off', off);
-      if (off && V.win === 'edit' && V.current) { V.win = 'list'; V.railMark(); }   // no map yet (the page just loaded, reloaded in edit mode): nothing to judge
+      // no map yet (the page just loaded, reloaded in edit mode): nothing to judge; another map chosen while editing:
+      // judged once it is shown (left); the Edit panel on the right stays open, hidden, until a map that can be edited
+      if (off && V.win === 'edit' && V.current && !switching && !V.editRight) { V.win = 'list'; V.railMark(); }
     }
     function graphmlOf(m) {   // a map drawn from its own file, GraphML, CellDesigner or SBGN-ML with an editBase: that file is first in its downloads
       var d = m && m.downloads && m.downloads[0];
@@ -1735,6 +1737,7 @@
     // the Edit tab starts editing the map shown at once; a map that
     // cannot be edited says why
     var picWait = false;   // the Edit window open before the map's picture is in (a reload in edit mode): started once it is
+    var switching = false;   // editing ends because another map was chosen (leaving): the Edit window stays
     function shown(any) {   // the Edit window open on a map: edit it, or say why not (also when another map is chosen); any: its picture failed
       if (!V.grid.classList.contains('m2-win-edit') || on) return;
       if (!any && V.img && V.img.style.visibility === 'hidden') { picWait = true; return; }   // editing starts on the picture as it is shown
