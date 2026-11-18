@@ -151,11 +151,12 @@
     // every CellDesigner map): the file's (the colour most species of the class already have on the map, else
     // CellDesigner's; the one when none is kept), CellDesigner's own (cd_make LOOK), the viewer's Default scheme (Settings,
     // Map colours) by the class's role, or none (white, as CellDesigner has no unfilled species)
-    var CD_COL_KEY = 'atlas-edit-cd-colours', CD_COLS = [['file', 'From file', 'New species in the colour most species of their class have on this map'], ['cd', 'CellDesigner', 'New species in CellDesigner\u2019s own colours'], ['default', 'Default', 'New species in the viewer\u2019s Default colours'], ['none', 'No colours', 'New species white'], ['custom', 'Custom', 'New species in the colours kept by Set as default; From file for a class with none']];
-    function cdCols() { return keptChoice(CD_COL_KEY, ['file', 'cd', 'default', 'none', 'custom']); }
+    var CD_COL_KEY = 'atlas-edit-cd-colours', CD_COLS = [['file', 'From file', 'New species in the colour most species of their class have on this map'], ['cd', 'CellDesigner', 'New species in CellDesigner\u2019s own colours'], ['default', 'Default', 'New species in the viewer\u2019s Default colours'], ['none', 'No colours', 'New species white'], ['custom', 'Custom', 'New species in the colours kept by Set as default; From file for a class with none'], ['confetti', 'Confetti', 'Every new species a pastel of its own, far from the colours already on the map']];
+    function cdCols() { return keptChoice(CD_COL_KEY, ['file', 'cd', 'default', 'none', 'custom', 'confetti']); }
     function cdColour(t, cls) { return cdColourIn(cdCols(), t, cls); }   // eight hex digits for cd_make, or null for CellDesigner's own
     function cdColourIn(m, t, cls) {
       if (m === 'none') return 'ffffffff';
+      if (m === 'confetti') { if (cls !== 'DEGRADED') return 'ff' + confettiFill(t).slice(1); m = 'file'; }   // create.js (no file yet: the first hue); a degraded species as From file
       if (m === 'custom') { var k = cdKept()[cls]; if (k && k.fill) return 'ff' + k.fill.slice(1).toLowerCase(); m = 'file'; }   // a class with none kept: From file
       if (m === 'file') return t ? cdMk.classColour(t, cls) : null;   // no file yet: the ghost before the map is loaded
       var c = m === 'default' && V.schemeFill && window.cdrender ? V.schemeFill('default', window.cdrender.ROLE[cls] || 'white') : null;
@@ -168,6 +169,7 @@
     var CD_SQ = [['PROTEIN', 'protein'], ['SIMPLE_MOLECULE', 'simple molecule'], ['PHENOTYPE', 'phenotype'], ['GENE', 'gene'], ['RNA', 'RNA']];
     function cdSquares(mode) {
       var sq = function (x, t) { return '<i style="background:#' + x.slice(2) + '" title="' + t + '"></i>'; }, h;
+      if (mode === 'confetti') return confettiSquares();
       if (mode === 'none') h = sq('ffffffff', 'every species, #FFFFFF');
       else if (mode !== 'file') {   // Custom: the classes' colours as new ones get them (kept, else the map's, else CellDesigner's)
         var seen = {};

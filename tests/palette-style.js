@@ -76,7 +76,7 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local =
   var P = await place();
   ok('the list a window under its field, at least its width, its left edge on the field\u2019s', P.below && P.wide && P.left, JSON.stringify(P));
   await page.click('body > .m2-ed-pdl button:has-text("From file")'); await page.waitForTimeout(200);
-  ok('the list opens as a window by its field and closes on a choice', items.length === 5 && !(await page.$('body > .m2-ed-pdl')));
+  ok('the list opens as a window by its field and closes on a choice', items.length === 6 && !(await page.$('body > .m2-ed-pdl')));
   var fb = await page.$eval('#m2-editwin .m2-ed-pmap tr[data-k="cols"] .m2-ed-pdd', function (f) { return f.getBoundingClientRect().bottom; });
   await page.setViewportSize({ width: 1400, height: Math.ceil(fb) + 40 }); await page.waitForTimeout(300);
   await page.click('#m2-editwin .m2-ed-pmap tr[data-k="cols"] .m2-ed-pdd'); await page.waitForTimeout(200);
@@ -85,7 +85,7 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local =
   await page.keyboard.press('Escape'); await page.waitForTimeout(150);
   ok('Escape closes it', !(await page.$('body > .m2-ed-pdl')));
   await page.setViewportSize({ width: 1400, height: 900 }); await page.waitForTimeout(300);
-  ok('its colour menu: From file, CellDesigner, Default, No colours, Custom', JSON.stringify(items) === JSON.stringify(['From file', 'CellDesigner', 'Default', 'No colours', 'Custom']), JSON.stringify(items));
+  ok('its colour menu: From file, CellDesigner, Default, No colours, Custom, Confetti', JSON.stringify(items) === JSON.stringify(['From file', 'CellDesigner', 'Default', 'No colours', 'Custom', 'Confetti']), JSON.stringify(items));
   var c1 = await made('cd:PROTEIN', 700, 450), L1 = await cdLook(c1);
   ok('a protein placed, none kept for proteins: the map’s size (Custom reads as From file)', L1.w > 0 && L1.h > 0, JSON.stringify(L1));
   var sel = async function (id) { await page.mouse.click.apply(page.mouse, await page.$eval('#m2-img [data-n="' + id + '"]', function (g) { var r = g.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; })); await page.waitForTimeout(400); };
