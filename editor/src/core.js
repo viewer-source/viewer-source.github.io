@@ -1915,17 +1915,19 @@
     }
     function placesOf(pp) {   // the places an end may take at node pp.n (portOn's choice), as offsets from its centre; null on the ports' grid (any point of it)
       if (nodes2[pp.n].hub && !(MODS.test(edges2[pp.k].arr[1]) && pp.end) && window.yrender && hubPorts()[nodes2[pp.n].id]) return null;   // a process's or gate's own port: the one place
-      return procSpots(pp) || hubSides(pp) || (gridPorts() ? null : fivePlaces(pp.n));
+      var N = nodePlaces(pp.n);
+      return procSpots(pp) || hubSides(pp) || (N && [[0, 0]].concat(N)) || (gridPorts() ? null : fivePlaces(pp.n));
     }
     function fivePlaces(n) { var b = bx(n); return [[0, 0], [0, -b[3] / 2], [0, b[3] / 2], [-b[2] / 2, 0], [b[2] / 2, 0]]; }   // the centre and the sides' middles
-    function spot(pp, P, free) {   // the end's place on its node as an offset from its centre: a glyph's six, the ports' grid (free: anywhere, gridSpot), else the nearest of five
-      var b = bx(pp.n), c = [b[0] + b[2] / 2, b[1] + b[3] / 2], S = procSpots(pp) || hubSides(pp), F = null;
+    function spot(pp, P, free) {   // the end's place on its node as an offset from its centre: a glyph's six, the ports' grid (free: anywhere, gridSpot), else the nearest of the node's places (nodePlaces) or five
+      var b = bx(pp.n), c = [b[0] + b[2] / 2, b[1] + b[3] / 2], S = procSpots(pp) || hubSides(pp), N = S ? null : nodePlaces(pp.n), F = null;
       if (!S && gridPorts()) return gridSpot(pp.n, [P[0] - c[0], P[1] - c[1]], free);
+      if (N && nodeCentre(pp.n, P)) return [0, 0];
       // at a glyph a tie (a drop on its centre) goes to the side facing the modifier: the point
       // before the end weighs in a little
       if (S) { var all = ports(pp.k); F = all[all.length - 2]; }
       var cost = function (o) { var q = [c[0] + o[0], c[1] + o[1]]; return Math.hypot(q[0] - P[0], q[1] - P[1]) + (F ? 1e-3 * Math.hypot(q[0] - F[0], q[1] - F[1]) : 0); };
-      return (S || fivePlaces(pp.n)).reduce(function (m, o) { return cost(o) < cost(m) ? o : m; });
+      return (S || N || fivePlaces(pp.n)).reduce(function (m, o) { return cost(o) < cost(m) ? o : m; });
     }
     // ---- ports on a grid (where the format's part says so: gridPorts), as offsets from the node's centre ----
     // Inside the shape a grid of PG from the centre. On the outline the port stays on it, and the coordinate on the grid
@@ -2937,13 +2939,13 @@
     V.view.addEventListener('pointerup', release, true);
     V.view.addEventListener('pointercancel', release, true);
 
-    // an end of a line moved by the keys, as a drag sets it: round a glyph to its next place; on the ports' grid
-    // (portStep); else among the node's five places, from the centre to the side the arrow points to, from a side the
+    // an end of a line moved by the keys, as a drag sets it: round a glyph or a node's fixed places (nodePlaces) to the next
+    // place; on the ports' grid (portStep); else among the node's five places, from the centre to the side the arrow points to, from a side the
     // opposite arrow back to the centre, another to its side
     function portKey(pp, d, fine) {
       if (pp.hub) return;   // at a process's or gate's port: it goes with the process
       var e = edges2[pp.k], a = pp.end ? ['tx', 'ty'] : ['sx', 'sy'], b = bx(pp.n), u = [Math.sign(d[0]), Math.sign(d[1])];
-      var off = [num(e.path, a[0]) || 0, num(e.path, a[1]) || 0], S = procSpots(pp) || hubSides(pp);
+      var off = [num(e.path, a[0]) || 0, num(e.path, a[1]) || 0], G = procSpots(pp) || hubSides(pp), N = G ? null : nodePlaces(pp.n), S = G || (N && [[0, 0]].concat(N));
       if (!S && gridPorts()) {   // plain arrows a step of PG, Shift 1; the same key again goes on round the outline the same way
         var rn = pp.run, go = rn && rn.u + '' === u + '' && Math.abs(rn.to[0] - off[0]) < 0.01 && Math.abs(rn.to[1] - off[1]) < 0.01 ? rn.di : null;   // the run lives on the pressed end: a new press, undo or Esc ends it
         var g2 = portStep(pp.n, off, u, fine ? 1 : PG, go);
@@ -2952,10 +2954,12 @@
         return;
       }
       var c = [b[0] + b[2] / 2, b[1] + b[3] / 2], o = spot(pp, [c[0] + off[0], c[1] + off[1]]), s = [Math.sign(o[0]), Math.sign(o[1])];
-      if (S) {   // round a glyph: the next of its six places the arrow points to
-        var best = null, bs = 0.3;
+      if (S) {   // round a glyph: the place the arrow points to most nearly; among a node's places (nodePlaces) the nearest
+        // within 60 degrees of the arrow, nearer and straighter first, so the arrows walk round its outline place by place
+        var best = null, bs = G ? 0.3 : -Infinity;
         S.forEach(function (q) {
-          var v = [q[0] - o[0], q[1] - o[1]], L = Math.hypot(v[0], v[1]), sc = L > 0.01 ? (v[0] * u[0] + v[1] * u[1]) / L - L / 1000 : -1;
+          var v = [q[0] - o[0], q[1] - o[1]], L = Math.hypot(v[0], v[1]), cs = L > 0.01 ? (v[0] * u[0] + v[1] * u[1]) / L : -1;
+          var sc = G ? cs - L / 1000 : cs >= 0.5 ? -L / cs : -Infinity;
           if (sc > bs) { bs = sc; best = q; }
         });
         if (best) setPort({ k: pp.k, end: pp.end, n: pp.n, to: best }, true);

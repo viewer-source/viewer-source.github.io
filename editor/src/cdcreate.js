@@ -297,12 +297,11 @@
         best.all = all;
         return best;
       }
-      var cl = (how.rx || how.red || how.part === 'product') && cdRole(i) === 'epn' && window.cdrender && window.cdrender.anchorAt ? cdClsOf(nodes2[i].id) : null;
-      if (!cl) return { Q: C };
-      var f = window.cdrender.frontBox(b, cl[1]);   // a multimer's places on its front copy, as cdrender draws the line (D.front)
-      Object.keys(window.cdrender.ANCHOR).forEach(function (k) { near(window.cdrender.anchorAt(cl[0], f, k), { at: k }); });
+      var N = how.rx || how.red || how.part === 'product' ? nodePlaces(i) : null;   // a species' 16 places (celldesigner.js)
+      if (!N) return { Q: C };
+      N.forEach(function (o) { near([C[0] + o[0], C[1] + o[1]], { at: o[2] }); });
       all.push(C);
-      if (Math.max(Math.abs(P[0] - C[0]) / (b[2] / 2 || 1), Math.abs(P[1] - C[1]) / (b[3] / 2 || 1)) < 0.5) return { Q: C, all: all };   // the middle half: the centre
+      if (nodeCentre(i, P)) return { Q: C, all: all };
       best.all = all;
       return best;
     }

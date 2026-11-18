@@ -15,6 +15,20 @@
     // a line's end on a node: on a grid inside the shape and along its outline (core.js, gridPorts), or at one of the node's
     // places only, as a CellDesigner file keeps a species' line
     function gridPorts() { return !cd; }
+    // the places a line's end takes on node n where the format fixes them, as offsets from its centre with the place's
+    // name third: on a CellDesigner species its 16 (cdrender anchorAt, on a multimer's front copy as the line is drawn),
+    // which cd_edit writes as that place; the centre apart (nodeCentre). A dragged end (core.js spot) and a new line
+    // (cdcreate.js cdPort) land alike. null elsewhere
+    function nodePlaces(n) {
+      var R = window.cdrender, cl = cd && R && R.anchorAt && cdRole(n) === 'epn' ? cdClsOf(nodes2[n].id) : null;
+      if (!cl) return null;
+      var b = bx(n), C = [b[0] + b[2] / 2, b[1] + b[3] / 2], f = R.frontBox(b, cl[1]);
+      return Object.keys(R.ANCHOR).map(function (k) { var A = R.anchorAt(cl[0], f, k); return [A[0] - C[0], A[1] - C[1], k]; });
+    }
+    function nodeCentre(n, P) {   // whether an end at P on such a node takes its centre: P in the middle half of its box
+      var b = bx(n);
+      return Math.max(Math.abs(P[0] - b[0] - b[2] / 2) / (b[2] / 2 || 1), Math.abs(P[1] - b[1] - b[3] / 2) / (b[3] / 2 || 1)) < 0.5;
+    }
     // a process glyph not moved itself stays midway on its segment of the main line wherever that goes (cd_edit), so
     // while a drag or the keys move a segment's end it follows at once (not only on
     // release): procs, each glyph with its two main arcs; liveG, the glyphs' shifts until the map is drawn again
