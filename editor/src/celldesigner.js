@@ -67,7 +67,7 @@
         if (pp && pp.to && edges2[pp.k] === e && (pp.end ? 't' : 's') === a[0]) return pp.to[a[1] === 'x' ? 0 : 1];
         return e.path ? parseFloat(e.path.getAttribute(a)) || 0 : 0;
       };
-      var S = B(ea.s), T = B(eb.t);
+      var S = B(pp && pp.n2 != null && edges2[pp.k] === ea && !pp.end ? pp.n2 : ea.s), T = B(pp && pp.n2 != null && edges2[pp.k] === eb && pp.end ? pp.n2 : eb.t);   // an end over another node at that node
       var all = [[S[0] + S[2] / 2 + o(ea, 'sx'), S[1] + S[3] / 2 + o(ea, 'sy')]].concat(ea.pts.map(P), eb.pts.map(P),
         [[T[0] + T[2] / 2 + o(eb, 'tx'), T[1] + T[3] / 2 + o(eb, 'ty')]]);
       var k = ea.pts.length, n = all.length - 1, a = all[k], b = all[k + 1];
@@ -192,7 +192,14 @@
         if (!m || !rids.has(m[1])) return;
         [e.s, e.t].forEach(function (i) { if (i != null && !/\|proc$/.test(nodes2[i].id)) boxes.set(nodes2[i].id, toPic(bx(i))); });
       });
-      var list = Array.from(rids), out = S.frame(boxes, bends, paths, list);
+      // an end over another node: the reaction written with it there, as the drop writes it (cd_edit rewire)
+      var ends = null;
+      if (pp && pp.to && pp.n2 != null && rids.has((edges2[pp.k].id.match(RXE) || [])[1])) {
+        var ep = edges2[pp.k];
+        ends = new Map([[ep.id, [nodes2[pp.end ? ep.s : pp.n2].id, nodes2[pp.end ? pp.n2 : ep.t].id]]]);
+        boxes.set(nodes2[pp.n2].id, toPic(bx(pp.n2)));
+      }
+      var list = Array.from(rids), out = S.frame(boxes, bends, paths, list, ends);
       if (list.some(function (r) { return !out[r]; })) return false;
       dropCopies();
       list.forEach(function (rid) {

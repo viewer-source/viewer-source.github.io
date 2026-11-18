@@ -1,7 +1,8 @@
 // cd_edit.live() against cd_edit.draw(): the editor's live drawing of a move (each reaction the move touches, drawn by the
 // drop's own code) must be the same text as the drawing made after the drop, reaction by reaction. For every CellDesigner
 // map: three made-up moves of nodes, bend points and line ends (as tests/cd-compare.js makes them), every reaction drawn
-// live, its halo and lines found as they are in draw()'s picture.
+// live, its halo and lines found as they are in draw()'s picture; and line ends moved to another species (as
+// tests/cd-reconnect.js picks them), drawn live with the new end as the drop draws them.
 //   node tests/cd-live.js [CellDesigner files or folders ...]   (default: maps/)
 var fs = require('fs'), path = require('path');
 var here = path.join(__dirname, '..'), DP = require('@xmldom/xmldom').DOMParser;
@@ -36,7 +37,24 @@ function moved(g, seed) {   // the GraphML as the editor leaves it after some mo
   pick(all(r, YNS, 'Path'), 2).forEach(function (p) { p.setAttribute('sx', '0.0'); p.setAttribute('sy', '-20.0'); });
   return new (require('@xmldom/xmldom').XMLSerializer)().serializeToString(doc);
 }
-var same = 0, diff = 0, skipped = 0, bad = [];
+function kinds(g) {   // the species a line's end may move to (no glyph, gate, compartment or complex member), the edges by id
+  var d = new DP().parseFromString(g, 'application/xml'), N = {}, E = {};
+  all(d, GNS, 'node').forEach(function (n) {
+    var up = n.parentNode && n.parentNode.parentNode, grp = n.getAttribute('yfiles.foldertype') === 'group';
+    var rs = grp && all(n, YNS, 'Realizers')[0], r0 = rs && Array.prototype.filter.call(rs.childNodes, function (c) { return c.nodeType === 1; })[0];
+    N[n.getAttribute('id')] = { complex: !!(r0 && r0.localName === 'GenericGroupNode'), comp: grp && !(r0 && r0.localName === 'GenericGroupNode'), up: up && up.localName === 'node' ? up.getAttribute('id') : null };
+  });
+  all(d, GNS, 'edge').forEach(function (e) { E[e.getAttribute('id')] = [e.getAttribute('source'), e.getAttribute('target')]; });
+  var ok = function (id) { var n = N[id]; return n && !/\|(proc|g\d*)$/.test(id) && !n.comp && !(n.up && N[n.up] && N[n.up].complex); };
+  return { ok: ok, N: N, E: E };
+}
+function setEnd(g, eid, j, to, port) {   // edge eid's end j (0 source, 1 target) on node to at offset port, as the editor's reconnect
+  var doc = new DP().parseFromString(g, 'application/xml'), e = all(doc.documentElement, GNS, 'edge').filter(function (x) { return x.getAttribute('id') === eid; })[0];
+  e.setAttribute(j ? 'target' : 'source', to);
+  var pa = all(e, YNS, 'Path')[0]; pa.setAttribute(j ? 'tx' : 'sx', port[0]); pa.setAttribute(j ? 'ty' : 'sy', port[1]);
+  return new (require('@xmldom/xmldom').XMLSerializer)().serializeToString(doc);
+}
+var same = 0, diff = 0, skipped = 0, bad = [], recon = 0;
 files.forEach(function (f) {
   var t = fs.readFileSync(f, 'utf8'), g;
   try { g = ed.graphml(t, null, opt); } catch (e) { return; }
@@ -62,6 +80,32 @@ files.forEach(function (f) {
     });
   });
 });
-console.log(files.length + ' maps: ' + same + ' reactions drawn live the same as after the drop, ' + diff + ' different, ' + skipped + ' not drawn live (or the map shifted)');
+// line ends moved to another species: the reaction drawn live with the new end, against the drop's drawing
+files.forEach(function (f) {
+  var t = fs.readFileSync(f, 'utf8'), g;
+  try { g = ed.graphml(t, null, opt); } catch (e) { return; }
+  var K = kinds(g), targets = Object.keys(K.N).filter(K.ok), base = read(g);
+  [[/\|a$/, 0], [/\|b$/, 1], [/\|m\d+$/, 0], [/\|r\d+$/, 0], [/\|p\d+$/, 1]].forEach(function (k, ki) {
+    var eid = Object.keys(K.E).filter(function (e) { return k[0].test(e) && K.ok(K.E[e][k[1]]) && !/\|g\d*$/.test(K.E[e][1 - k[1]]); })[0];
+    if (!eid) return;
+    var rid = eid.slice(0, eid.lastIndexOf('|')), inRx = [];
+    Object.keys(K.E).forEach(function (e) { if (e.indexOf(rid + '|') === 0) inRx = inRx.concat(K.E[e]); });
+    var free = targets.filter(function (x) { return inRx.indexOf(x) < 0; }), to = free[ki * 3 % Math.max(1, free.length)];
+    if (!to) return;
+    var mg = setEnd(g, eid, k[1], to, ki % 2 ? ['0.0', '0.0'] : ['0.0', '-10.0']), q;
+    try { q = ed.draw(t, mg, opt); } catch (e) { return; }
+    if (/<g transform="translate\(0,0\)"><g transform/.test(q[0])) { skipped++; return; }
+    var D = new cdr.Drawing(q[1], { classes: true, groups: true, DOMParser: DP }); D.svg();
+    var now = read(mg), ends = new Map([[eid, K.E[eid].map(function (x, j) { return j === k[1] ? to : x; })]]);
+    var S = ed.live(t, g, opt), out = S.frame(new Map(), now[1], now[2], [rid], ends);
+    S.errors.forEach(function (e) { diff++; if (bad.length < 10) bad.push(path.basename(f) + ' end of ' + eid + ' failed: ' + e); });
+    var o = out[rid];
+    if (!o) { skipped++; return; }
+    recon++;
+    if (D.halo.join('\n').indexOf(o.halo) >= 0 && D.lines.join('\n').indexOf(o.lines) >= 0) same++;
+    else { diff++; if (bad.length < 10) bad.push(path.basename(f) + ' end of ' + eid + ' to ' + to); }
+  });
+});
+console.log(files.length + ' maps: ' + same + ' reactions drawn live the same as after the drop (' + recon + ' with an end moved to another species), ' + diff + ' different, ' + skipped + ' not drawn live (or the map shifted)');
 if (bad.length) console.log('different: ' + bad.join(', '));
 process.exit(diff ? 1 : 0);

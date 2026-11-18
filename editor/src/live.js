@@ -206,10 +206,11 @@
     // editor's own drawing is in the page, plain lines into out. Returns the port being dragged, if any
     function liveLines(out) {
       var pk0 = drag && drag.port && drag.port.to ? drag.port : null, lk = new Set(live || []);
-      var away = pk0 && (pk0.n2 != null || pk0.free);   // an end going to another node: its line follows as a copy (a CellDesigner glyph keeps its place until the drop)
-      // away, the glyph back at rest (a turn it took while the end was still at its node would no longer meet the lines)
-      if (pk0) { liveFmt().glyphs(new Set(), new Set(), null, away ? null : pk0); (live || []).forEach(function (k) { lk.add(k); }); lk.add(pk0.k); }
-      if (gE) { if (!frozen) { if (lk.size) { if (away || !liveFmt().lines(lk, pk0)) fullLines(lk, pk0); } else dropCopies(); } }
+      // an end over another node is drawn as the drop will draw it (a format's lines() with the new end); an end over
+      // nothing follows as a copy, its glyph following its segment as at its node (one straight reaction, no kink)
+      var free = pk0 && pk0.free;
+      if (pk0) { liveFmt().glyphs(new Set(), new Set(), null, pk0); (live || []).forEach(function (k) { lk.add(k); }); lk.add(pk0.k); }
+      if (gE) { if (!frozen) { if (lk.size) { if (free || !liveFmt().lines(lk, pk0)) fullLines(lk, pk0); } else dropCopies(); } }
       else lk.forEach(function (k) {
         var pts = line(k, null, null, pk0);
         if (pts) out.push('<path class="m2-ed-live" stroke-width="' + f1(V.z) + '" d="' + livePath(pts, edges2[k].smooth) + '"/>');

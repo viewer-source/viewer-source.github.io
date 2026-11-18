@@ -856,7 +856,9 @@
     };
     return {
       errors: errors,   // reactions that failed (drawn the old way by the editor; the test fails on any)
-      frame: function (boxes, bends, paths, rids) {
+      // ends: the lines whose end is over another node, by edge id [source, target] (the GraphML's ends), written into the
+      // reaction first as the drop's rewire() writes them, so the line is drawn as it will be after the drop
+      frame: function (boxes, bends, paths, rids, ends) {
         var nw = new Map(), B = new Map(rd[2]), P = new Map(rd[3]), out = {};
         // the boxes as place() takes them to write the lines (nw), and as it writes them into the file (six decimals),
         // which the drawing after the drop reads (fl)
@@ -875,6 +877,9 @@
           var sl = slice(rid);
           if (!olds[rid] || !sl) { out[rid] = null; return; }
           try {
+            var mine = new Map();
+            if (ends) ends.forEach(function (v, k) { if (k.indexOf(rid + '|') === 0) mine.set(k, v); });
+            if (mine.size) { var o1 = {}; o1[rid] = olds[rid]; sl = rewire(d, sl, mine, o1); }
             // the reaction read afresh each frame (ports() writes a moved line end into the elements it reads), as at rest
             put(old);
             var rx0 = first(sl), o = lines(d, rx0), T = new Text(sl);
