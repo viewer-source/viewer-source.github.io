@@ -2445,7 +2445,7 @@
         if (!(P[0] >= b[0] && P[0] <= b[0] + b[2] && P[1] >= b[1] && P[1] <= b[1] + b[3])) return;
         var h = { n: i, area: b[2] * b[3] };
         // a process glyph is not an item of its own (in CellDesigner it is not selectable, part of
-        // the link): a click on it is a click on its reaction's main line, no node handles; a drag on it moves the map
+        // the link): a click on it is a click on its reaction's main line, no node handles; a drag on it selects an area
         var gm = cd && n.id.match(/^(.*)\|proc$/);
         if (gm) { var ga = edges2.findIndex(function (q) { return q.id === gm[1] + '|a'; }); if (ga >= 0 && !best) best = { e: ga, glyph: true, area: 0 }; return; }
         if (afSbgn && inComplex(i)) return;   // the SBGN AF view: a complex's members not drawn, the complex taken whole
