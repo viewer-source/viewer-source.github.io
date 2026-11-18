@@ -1206,7 +1206,7 @@
         (x.font === o.font || (o.fresh && x.font == null)) && x.ids.every(function (i) { return !!S.arc[i] === arc; }); });   // arcs' styles and glyphs' apart
       cand.sort(function (a, b) { return (b.font === o.font) - (a.font === o.font) || cnt(b, o.cls) - cnt(a, o.cls); });
       if (cand[0]) { lists.set(cand[0], (lists.get(cand[0]) || cand[0].ids.slice()).concat(id)); return; }
-      var key = [o.fill, o.line, o.width, o.font, o.fresh ? '' : JSON.stringify(carried(old))].join('\u0000');   // the same look and the same attributes kept: one style
+      var key = [arc, o.fill, o.line, o.width, o.font, JSON.stringify(carried(o.fresh ? [] : old))].join('\u0000');   // arcs' styles and glyphs' apart   // the same look and the same attributes kept: one style
       if (!made[key]) { made[key] = { o: o, old: o.fresh ? [] : old, ids: [] }; order.push(made[key]); }
       made[key].ids.push(id);
     });
@@ -1216,13 +1216,14 @@
     // after it), so the file keeps no leftovers; one unused before stays as the file had it
     var tidy = function () {
       if (!lcEl) return;
-      var refs = function (el, into) { Array.prototype.forEach.call(el.getElementsByTagName('*'), function (e) { Array.prototype.forEach.call(e.attributes, function (a) { if (a.value in defs) into[a.value] = 1; }); }); };
-      var before = {}, after = Object.assign({}, newRefs), gone = new Set();
-      St.forEach(function (st) { refs(st.el, before); var l = lists.get(st); if (l && !l.length) gone.add(st.el); else refs(st.el, after); });
+      var isDef = function (v) { return Object.prototype.hasOwnProperty.call(defs, v); };
+      var refs = function (el, into) { Array.prototype.forEach.call(el.getElementsByTagName('*'), function (e) { Array.prototype.forEach.call(e.attributes, function (a) { if (isDef(a.value)) into[a.value] = 1; }); }); };
+      var before = {}, after = Object.assign({}, newRefs);
+      St.forEach(function (st) { refs(st.el, before); var l = lists.get(st); if (!l || l.length) refs(st.el, after); });   // a style cut names nothing after
       Array.prototype.forEach.call(all, function (e) {   // any other element naming a colour (a background, a text colour)
         if (e.localName === 'colorDefinition' || e.localName === 'style') return;
         for (var u = e.parentNode; u; u = u.parentNode) if (u.localName === 'style' || u.localName === 'listOfColorDefinitions') return;
-        Array.prototype.forEach.call(e.attributes, function (a) { if (a.value in defs) after[a.value] = 1; });
+        Array.prototype.forEach.call(e.attributes, function (a) { if (isDef(a.value)) after[a.value] = 1; });
       });
       kids(lcEl, 'colorDefinition').forEach(function (d) { var i = av(d, 'id'); if (before[i] && !after[i]) T.cut(d); });
     };
