@@ -814,7 +814,7 @@
     }
     // Name complex from members: a complex named by its members' names joined by colons (A:B, CellDesigner's usual name for
     // a complex), in reading order (rows from the top, each from the left); a member complex with no name gives its own
-    // members' names. Offered with Repack complex (core.js), not when the name would be empty or is already that
+    // members' names. Offered with Repack complex (core.js), not when the name would be empty; greyed when it is already that
     function membersName(c) {
       var ms = [], rows = [], mid = function (k, d) { var b = boxOf(k); return b[d] + b[d + 2] / 2; };
       nodes2.forEach(function (n, k) { if (n.up === c) ms.push(k); });
@@ -829,9 +829,10 @@
       var c = complexHere(member);
       if (c == null || !(cd ? cdPal() : palOn()) || afSbgn || afKind()) return null;   // not in an Activity Flow view, where members are not drawn
       var v = membersName(c);
-      if (!v || v === nameNow(c) || !cd && !sbJs.nameable(src(), nodes2[c].id)) return null;
-      var id = nodes2[c].id;
-      return function () { setName(id, v); };
+      if (!v || !cd && !sbJs.nameable(src(), nodes2[c].id)) return null;
+      var id = nodes2[c].id, go = function () { setName(id, v); };
+      go.same = v === nameNow(c);   // already so named: shown greyed, so the item stays where it is found
+      return go;
     };
     // a double click on a named entity, or on one of its state variables or units of information, opens its text
     V.view.addEventListener('dblclick', function (e) {
