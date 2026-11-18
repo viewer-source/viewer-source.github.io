@@ -340,7 +340,8 @@
       var s = .55, l = .82, f = function (n) { var k = (n + h / 30) % 12, a = s * Math.min(l, 1 - l); return l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1)); };
       return '#' + [f(0), f(8), f(4)].map(function (v) { return ('0' + Math.round(v * 255).toString(16)).slice(-2); }).join('');
     }
-    function confettiFill(text) {   // the next confetti colour, #rrggbb, for the map's text (any format: #rrggbb, #rrggbbaa, CellDesigner's ARGB)
+    function confettiFill(text) { return confettiPick(confettiHues(text)); }   // the next confetti colour, #rrggbb, for the map's text (any format: #rrggbb, #rrggbbaa, CellDesigner's ARGB)
+    function confettiHues(text) {   // the clearly coloured hues in a text
       var hues = [], re = /(?:#|color="[0-9a-fA-F]{2})([0-9a-fA-F]{6})(?:[0-9a-fA-F]{2})?\b/g, m;
       while ((m = re.exec(String(text || '')))) {
         var r = parseInt(m[1].slice(0, 2), 16) / 255, g = parseInt(m[1].slice(2, 4), 16) / 255, b = parseInt(m[1].slice(4, 6), 16) / 255;
@@ -349,17 +350,21 @@
         var H = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
         hues.push((H * 60 + 360) % 360);
       }
+      return hues;
+    }
+    function confettiPick(hues) {   // the hue farthest from those given (the earliest on a tie), added to them; its colour
       var best = 0, far = -1;
       for (var k = 0; k < 64; k++) {
         var h = k * 137.508 % 360, near = hues.reduce(function (n, u) { var a = Math.abs(h - u) % 360; return Math.min(n, a, 360 - a); }, 360);
         if (near > far + 1e-9) { far = near; best = h; }
       }
+      hues.push(best);
       return confettiHex(best);
     }
     function confettiSquares() { return '<span class="m2-cs-sw">' + [0, 1, 2, 3, 4].map(function (k) { var x = confettiHex(k * 137.508 % 360); return '<i style="background:' + x + '" title="' + x.toUpperCase() + '"></i>'; }).join('') + '</span>'; }
     // Colours on SBGN-ML maps, kept in this browser: the map's own (sbgn_edit.defaults: the fill most glyphs of the
     // kind have; the Default colours for a kind the map lacks), the viewer's Default colours, none, or Confetti
-    var SB_COL_KEY = 'atlas-edit-sb-colours', SB_COLS = [['file', 'From file', 'New glyphs in the colour most glyphs of their kind have on this map'], ['default', 'Default', 'New glyphs in the viewer\u2019s Default colours'], ['none', 'No colours', 'New glyphs unfilled'], ['custom', 'Custom', 'New glyphs in the colours kept by Set as default; From file for a kind with none'], ['confetti', 'Confetti', 'Every new glyph a pastel of its own, far from the colours already on the map']];
+    var SB_COL_KEY = 'atlas-edit-sb-colours', SB_COLS = [['file', 'From file', 'The map as it is; new glyphs in the colour most glyphs of their kind have on it'], ['default', 'Default', 'The whole map and new glyphs in the viewer\u2019s Default colours'], ['none', 'No colours', 'The whole map and new glyphs unfilled'], ['custom', 'Custom', 'The whole map and new glyphs in the colours kept by Set as default; a kind with none as it is'], ['confetti', 'Confetti', 'Every glyph of the map, and every new one, a pastel of its own']];
     function sbCols() { return keptChoice(SB_COL_KEY, ['file', 'default', 'none', 'custom', 'confetti']); }
     var SB_SQ = ['macromolecule', 'simple chemical', 'nucleic acid feature', 'phenotype', 'compartment'];
     function sbSquares(mode) {   // five at most, the first at the right (row-reverse), each colour once
@@ -373,7 +378,29 @@
       });
       return '<span class="m2-cs-sw">' + h + '</span>';
     }
-    function sbColsRow() { return palDrop({ key: 'cols', label: 'Colours', title: 'Colours of new glyphs', list: SB_COLS, get: sbCols, set: function (v) { keepChoice(SB_COL_KEY, v, 'file'); }, sq: sbSquares }); }
+    function sbColsRow() { return palDrop({ key: 'cols', label: 'Colours', title: 'Colours of the map and of new glyphs', list: SB_COLS, get: sbCols, set: function (v) { keepChoice(SB_COL_KEY, v, 'file'); sbRecolour(v); }, sq: sbSquares }); }
+    // a choice of Colours recolours the whole map, one undo step: every entity, complex and compartment its fill by the
+    // choice (its border black), as a new one of its kind would get it; From file leaves the map as it is; Custom a kind
+    // with a kept look, the rest as they are; Confetti every entity a pastel of its own, one after another (compartments
+    // and complexes as they are). Lines keep their colours
+    var SB_FILLED = /^(macromolecule|simple chemical|nucleic acid feature|unspecified entity|perturbing agent|phenotype|complex|compartment|biological activity|perturbation)( multimer)?$/;
+    function sbRecolour(mode) {
+      if (mode === 'file' || !palOn()) return;
+      var cls = sbClasses(), acts = sbJs.activities(text), kept = mode === 'custom' ? defsKept() : {}, hues = [], t2 = text;
+      nodes2.forEach(function (n) {
+        var c = cls[n.id] || '';
+        if (!SB_FILLED.test(c)) return;
+        var base = c.replace(/ multimer$/, ''), u = acts[n.id], o;
+        if (mode === 'default') o = { fill: sbJs.fillFor(u != null ? 'biological activity' : base, u) || '#FFFFFF', line: null };
+        else if (mode === 'none') o = { fill: null, line: null };
+        else if (mode === 'custom') { var k = kept[lookKey(base, u)]; if (!k || !k.fill) return; o = { fill: k.fill }; }
+        else if (mode === 'confetti') { if (!sbJs.fillFor(u != null ? 'biological activity' : base, u) || /^(compartment|complex)$/.test(base)) return; o = { fill: confettiPick(hues).toUpperCase(), line: null }; }
+        else return;
+        t2 = sbJs.restyle(t2, n.id, o);
+      });
+      if (t2 === text) return;
+      remember(false); text = t2; made([]);
+    }
     function palFill() {   // the signs of the set chosen; the tabs and the look marked
       var k = palKey();
       var lang = palLangNow(), look = palLookNow();

@@ -152,7 +152,7 @@
     // the map; the Default one for a class the map has none of; the choice when none is kept), CellDesigner's own (cd_make
     // LOOK and COMP), the viewer's Default scheme (Settings, Map colours) by the class's role, or none (white, as
     // CellDesigner has no unfilled species), or Confetti (a pastel of its own, create.js confettiFill)
-    var CD_COL_KEY = 'atlas-edit-cd-colours', CD_COLS = [['file', 'From file', 'New species and compartments in the colour most of their class have on this map, Default for a class it has none of'], ['cd', 'CellDesigner', 'New species and compartments in CellDesigner\u2019s own colours'], ['default', 'Default', 'New species and compartments in the viewer\u2019s Default colours'], ['none', 'No colours', 'New species and compartments white'], ['custom', 'Custom', 'New species in the colours kept by Set as default; From file for a class with none'], ['confetti', 'Confetti', 'Every new species a pastel of its own, far from the colours already on the map; compartments as From file']];
+    var CD_COL_KEY = 'atlas-edit-cd-colours', CD_COLS = [['file', 'From file', 'The map as it is; new species and compartments in the colour most of their class have on it, Default for a class it has none of'], ['cd', 'CellDesigner', 'The whole map and new species and compartments in CellDesigner\u2019s own colours'], ['default', 'Default', 'The whole map and new species and compartments in the viewer\u2019s Default colours'], ['none', 'No colours', 'The whole map and new species and compartments white'], ['custom', 'Custom', 'The whole map and new species in the colours kept by Set as default; a class with none as it is'], ['confetti', 'Confetti', 'Every species of the map, and every new one, a pastel of its own; compartments as they are']];
     // the Default compartment's paint, the official maps': cdrender draws a compartment's band at a quarter of its colour,
     // so this shows as the Default scheme's compartment (#F7F6F3, sbgn_edit FILL; tests/cd-colours-default.js checks the two agree)
     var CD_COMP_DEFAULT = 'ffdfdbce';
@@ -192,7 +192,32 @@
       }
       return '<span class="m2-cs-sw">' + h + '</span>';
     }
-    function cdColsRow() { return palDrop({ key: 'cols', label: 'Colours', title: 'Colours of new species and compartments', list: CD_COLS, get: cdCols, set: function (v) { keepChoice(CD_COL_KEY, v, 'file'); }, sq: cdSquares }); }
+    function cdColsRow() { return palDrop({ key: 'cols', label: 'Colours', title: 'Colours of the map and of new species and compartments', list: CD_COLS, get: cdCols, set: function (v) { keepChoice(CD_COL_KEY, v, 'file'); cdRecolour(v); }, sq: cdSquares }); }
+    // a choice of Colours recolours the whole map, one undo step (cdApply): every species and compartment its colour by the
+    // choice, as a new one of its class would get it (cdColourIn, from the map as it was); From file leaves the map as it
+    // is; Custom a class with a kept fill, the rest as they are; Confetti every species a pastel of its own, one after
+    // another (compartments as they are); a degraded species keeps CellDesigner's look. Lines keep their colours
+    function cdRecolour(mode) {
+      if (mode === 'file' || !cd) return;
+      cdApply(function (t0) {
+        var t = t0, hues = [], kept = mode === 'custom' ? cdKept() : null, re = /<celldesigner:(?:speciesAlias|complexSpeciesAlias|compartmentAlias)\s[^>]*?\bid="([^"]+)"/g, m, ids = [];
+        while ((m = re.exec(t0))) ids.push(m[1]);
+        ids.forEach(function (id) {
+          var L; try { L = cdMk.look(t0, id); } catch (e) { return; }
+          var cls = L.cls, comp = cdComp(cls), c;
+          if (cls === 'DEGRADED') return;
+          if (mode === 'confetti') { if (comp) return; c = confettiPick(hues); }
+          else if (mode === 'custom') { var k = !comp && kept[cls]; if (!k || !k.fill) return; c = k.fill; }
+          else {
+            var x = cdColourIn(mode, t0, cls) || (cdMk.LOOK[cls] || [])[2];
+            if (!x) return;
+            c = '#' + x.slice(2);
+          }
+          try { t = cdMk.restyle(t, id, { fill: c.toLowerCase() }); } catch (e) { if (!(e && e.refused)) throw e; }
+        });
+        return t;
+      }, []);
+    }
     // Style: From file, the size most species of that class have on the map; Custom, the size kept by Set as default (From
     // file for a class with none); else, or none there, CellDesigner's
     function cdSize(cls) {
