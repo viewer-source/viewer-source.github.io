@@ -1031,7 +1031,7 @@
   // every species and compartment alias recoloured in one pass (a whole map): fn(cls, id) gives its fill (#rrggbb, written
   // opaque) or null to leave it; cls 'COMPARTMENT' for a compartment; a degraded species keeps CellDesigner's look. Only the
   // paint of the usual view (a compartment's own paint) changes. lineFn(k), when given, the colour of the k-th line of the
-  // reactions in file order (each celldesigner:line: a main line, an added reactant's or product's, a modifier's, a gate's)
+  // reactions in file order (each celldesigner:line: a main line, an added reactant's or product's, a modifier's; not a gate's)
   function recolourAll(t, fn, lineFn) {
     var kind = {}, put = [], m, re = /<(species|celldesigner:species)(?=\s)[^>]*\sid="([^"]+)"[\s\S]*?<\/\1>/g;
     while ((m = re.exec(t))) { var c = /<celldesigner:class>([^<]*)</.exec(m[0]); if (c) kind[m[2]] = c[1]; }
@@ -1050,9 +1050,14 @@
     if (lineFn) {
       var lists = [], k = 0, rl = /<reaction(?=\s)[\s\S]*?<\/reaction>/g, r;
       while ((r = rl.exec(t))) lists.push([r.index, r[0]]);
-      lists.forEach(function (R) {
-        var lr = /<celldesigner:line (?=[^>]*\scolor=")[^>]*?\scolor="([0-9a-fA-F]{8})"/g, L;
+      lists.forEach(function (R) {   // a logic gate's lines left out: drawn in their reaction's colour (lineAt)
+        var P = null, skip = [];
+        try { P = parts(t, at(R[1], 'id')); } catch (e) {}   // a reaction parts() cannot read: none left out
+        if (P) { skip = P.gm.map(function (g) { return g.sp; }); P.mods.forEach(function (m, n) { if (isGate(m) || owner(P, n) !== null) skip.push(m.sp); }); }
+        var lr = /<celldesigner:line(?=\s[^>]*\bcolor=")[^>]*?\bcolor="([0-9a-fA-F]{8})"/g, L;
         while ((L = lr.exec(R[1]))) {
+          var pos = R[0] + L.index;
+          if (skip.some(function (q) { return pos >= q[0] && pos < q[1]; })) continue;
           var c2 = lineFn(k++);
           if (!c2) continue;
           if (!/^#[0-9a-fA-F]{6}$/.test(c2)) fail('A line colour is a colour #rrggbb.');
