@@ -98,7 +98,7 @@ CellDesigner reactions (Make main reactant or product); SBGN-ML maps; how this d
   <li><b>With a GitHub token</b> for the site, pasted once in the Edit window: each change is saved to the site's data
   repository by itself a few seconds after the last move, and the site's build is started; the site shows it about two
   minutes later. The token needs Contents read and write on the data repository and Actions read and write on the
-  site's repository.</li>
+  site's repository. Your own maps are saved there too, and no folder on your computer is used.</li>
   <li><b>Without a token</b>: changes are kept in this browser only, and lost if its site data is cleared. Choose a
   folder on your computer (Chrome, Edge) and each change is also written there as the map's file.</li>
 </ul>
@@ -107,10 +107,11 @@ CellDesigner reactions (Make main reactant or product); SBGN-ML maps; how this d
 <h2 id="own">10. Your own maps</h2>
 <p>Where the Edit tab is, a right click on the list offers New SBGN-ML map, New CellDesigner map, Add map from file and
 Add group. Either New map opens an empty map of that format at once in the Edit window, with that format's palette, named
-Unnamed map, in the group clicked or at the top of the list; it is
-kept in this browser and your folder, also with a token. Add map from file takes a GraphML or CellDesigner file from
-your computer, shown and edited as any map; a file dropped on the page is added too. Without a token it stays in this
-browser (and your folder); with one it goes to the site. A double-click on a map of yours, or Rename map, names it in
+Unnamed map, in the group clicked or at the top of the list. Add map from file takes a GraphML or CellDesigner file, or
+an SBGN-ML file made here, from your computer, shown and edited as any map. A file dropped on the page is added too.
+With a token every map of yours goes to the site at once and each change is saved there. Until the site's build has
+drawn it, the map is shown from this browser and can be edited all the same. A map made before the token was connected
+goes to the site when the page next opens with it. Without a token your maps stay in this browser and in your folder. A double-click on a map of yours, or Rename map, names it in
 place; with a token the site's maps are renamed the same way. Groups are one level: a group holds maps, never other
 groups.</p>
 

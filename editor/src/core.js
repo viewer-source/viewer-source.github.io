@@ -160,41 +160,10 @@
       for (var i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000));
       return btoa(s);
     }
-    // a reader's map added to the site (with a token, Add map saves it on GitHub): the
-    // file as maps/<id>.graphml or .xml and its maps/<id>.md (title from the file's name, group, order) in one commit on
-    // main, so the build makes it a map of the site; the id from the file's name, made unique among maps/. A branch moved
-    // meanwhile (another page or tab saving): built again on the newest main, three tries
-    function toSite(name, text, group, order) {
-      if (!(repo() && token())) return Promise.reject(new Error('not connected to GitHub'));
-      var ext = /\.graphml$/i.test(name) ? '.graphml' : '.xml', base = name.replace(/\.(graphml|xml)$/i, ''),
-          slug = (base.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'map').replace(/-(sbgn|sbgnml)$|^external-/, function (x) { return x === 'external-' ? 'map-external-' : x + '-map'; });   // the build's own ids end or start so
-      var head = text.slice(0, 5000);
-      if (ext === '.graphml' ? head.indexOf('yworks.com') < 0 : !(/<sbml[\s>]/.test(head) && text.indexOf('celldesigner') >= 0))
-        return Promise.reject(new Error(ext === '.graphml' ? 'not a yEd GraphML file' : 'not a CellDesigner file'));
-      base = base.replace(/["\\]/g, '');   // the build reads the front matter's quotes plainly
-      var md = '---\ntitle: ' + JSON.stringify(base) + '\ntopic: ' + JSON.stringify(base) + '\ngroup: ' + JSON.stringify(group || '') + '\norder: ' + (order | 0) + '\n---\n';
-      var j = function (r) { return r.ok ? r.json() : r.json().then(function (d) { var e = new Error(d && d.message || 'GitHub ' + r.status); e.status = r.status; throw e; }); };
-      var post = function (path, body, method) { return api(path, { method: method || 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(j); };
-      var listing = api('/contents/maps?ref=main').then(j).then(function (d) { var o = {}; d.forEach(function (f) { o[f.name.replace(/\.[^.]+$/, '')] = 1; }); return o; });
-      return listing.then(function (taken) {
-        var id = slug; for (var k = 2; taken[id]; k++) id = slug + '-' + k;
-        return Promise.all([post('/git/blobs', { content: b64(text), encoding: 'base64' }), post('/git/blobs', { content: b64(md), encoding: 'base64' })]).then(function (b) {
-          var tries = 0;
-          var go = function () {
-            return api('/git/ref/heads/main').then(j).then(function (ref) {
-              return api('/git/commits/' + ref.object.sha).then(j).then(function (c) {
-                return post('/git/trees', { base_tree: c.tree.sha, tree: [{ path: 'maps/' + id + ext, mode: '100644', type: 'blob', sha: b[0].sha }, { path: 'maps/' + id + '.md', mode: '100644', type: 'blob', sha: b[1].sha }] });
-              }).then(function (t) { return post('/git/commits', { message: 'Map added in the viewer: ' + id + ext, tree: t.sha, parents: [ref.object.sha] }); })
-                .then(function (c) { return post('/git/refs/heads/main', { sha: c.sha }, 'PATCH'); });
-            }).catch(function (e) { if (e.status === 422 && ++tries < 3) return go(); throw e; });
-          };
-          return go().then(function () { ghDir = null; return { id: id }; });   // the listing read again next time
-        });
-      });
-    }
     function changed() {   // after every move, undo or redo: the site's map is saved a few seconds after the last one
       sbFollow();   // a move that turned an SBGN-ML file: the GraphML made again from it (sbgn.js)
       if (site && site.pending) { localFor = site; clearTimeout(localTimer); localTimer = setTimeout(local, 800); localBox(); return; }   // no token: kept in this browser
+      if (site && site.mine) { localFor = site; clearTimeout(localTimer); localTimer = setTimeout(local, 800); }   // a reader's map saved on GitHub: its record follows too, so no move waits on GitHub alone
       if (!site || !token() || stuck) return;
       note('Saving in a moment...');   // the save messages kept during development, warnings in red beside them
       clearTimeout(saveTimer); saveTimer = setTimeout(push, AUTOSAVE);
@@ -217,8 +186,9 @@
               if (V.kept && V.kept.id === target.id) V.kept.sha = target.sha;
               var sm = V.byId[target.id];
               if (sm) target.v = V.ver(sm);   // the site's version still without this move
+              if (target.mine) savedMine(target, body);   // a reader's map on its way to the site: its record shown until the build is of this save
               var ks = lastFor && lastFor[2] === target.id && !lastFor[3] ? lastSvg : null;   // this map's drawing only, never the map edited before
-              if (ks && site === target && src() === body) {
+              if (ks && site === target && src() === body && !target.mine) {
                 var all = V.stored();
                 var one = {}; one[target.id] = all[target.id] = { v: target.v, sha: target.sha, svg: ks, text: body, file: name, width: map.width, height: map.height, x0: picX0(), y0: picY0(), at: Date.now(), ref: siteRef, cur: nowRef() };
                 // the browser's storage full (a few large maps): the other maps' files left out first (their downloads after a
@@ -249,8 +219,8 @@
           });
         })
         .catch(function (e) { warn('Not saved: no connection (' + e.message + '). The next move tries again.'); })
-        .then(function () { if (saving !== mine) return; saving = null; if (saveAgain) { saveAgain = false; if (dirty) return push(); } });
-      var mine = saving;
+        .then(function () { if (saving !== ours) return; saving = null; if (saveAgain) { saveAgain = false; if (dirty) return push(); } });
+      var ours = saving;
       return saving;
     }
     // no token (the first layer): the map's file as edited and its drawing kept in this browser
@@ -271,11 +241,15 @@
       var own = lastFor && lastFor[2] === s.id && !lastFor[3] ? lastSvg : null;
       var pic = function () { return own ? Promise.resolve({ svg: own, width: at.width, height: at.height }) : drawText(t, sb && !s.mine ? sb.g0 : null); };   // a site map's SBGN-ML drawn from the build's GraphML, as the site draws it
       var fail = function (e) { if (site === s) warn('Not kept in this browser: ' + String(e && e.message ? e.message : e).replace(/\.$/, '') + '. Download the map to keep your changes.'); };
-      if (s.mine) {   // a reader's own map: the map itself changed, in this browser and its folder (no draft)
-        if (!mine[s.id] || mine[s.id].site) return;   // gone from this browser meanwhile (to the site): nothing to keep
+      if (s.mine) {   // a reader's own map: the map itself changed, in this browser and its folder (no draft), and on GitHub with a token
+        if (!mine[s.id]) return;   // gone from this browser meanwhile: nothing to keep
         toFolder(s.id, name, t);
-        pic().then(function (d) { return minePut(Object.assign({}, mine[s.id], { text: t, svg: d.svg, width: d.width, height: d.height, at: Date.now() })); })
-          .then(function () { if (site === s && src() === t) dirty = false; if (!on || site !== s) V.refreshMine(); })
+        pic().then(function (d) { if (mine[s.id]) return minePut(Object.assign({}, mine[s.id], { text: t, svg: d.svg, width: d.width, height: d.height, at: Date.now() })); })
+          .then(function () {
+            if (s.pending && site === s && src() === t) dirty = false;   // saved on GitHub: dirty is the save's to clear
+            if (s.pending && repo() && token() && mine[s.id]) toGh(s);   // not saving on GitHub yet: sent, or its place there taken up
+            if (!on || site !== s) V.refreshMine();
+          })
           .catch(fail);
         return;
       }
@@ -314,7 +288,7 @@
       return dir.getFileHandle(nm).then(function () { return freeName(dir, file, n + 1); }, function () { return nm; });
     }
     function toFolder(id, file, t, ours) {   // one at a time, in the order asked; the last argument: write only into a file this page wrote before
-      if (!canFolder || !V.folderName() || !file) return fq;
+      if (!canFolder || !V.folderName() || !file || (repo() && token())) return fq;   // connected: GitHub is the only place saved to
       fq = fq.then(function () {
         return folder().then(function (f) {
           if (!f) return;
@@ -367,7 +341,7 @@
     // since by another program (yEd, CellDesigner) is read again; the files written here for the site's maps are left
     // out, a map taken off the list stays off
     function syncFolder() {
-      if (!canFolder || !V.folderName()) return Promise.resolve();
+      if (!canFolder || !V.folderName() || (repo() && token())) return Promise.resolve();   // connected: the folder not used
       var news = false;
       var all = function (dir) {
         var it = dir.values(), out = [];
@@ -424,7 +398,7 @@
     // text 1 the first time in this browser and Choose a folder (Chrome, Edge) or
     // Download the map with text 2 (other browsers); the folder allowed, text 3; the folder to allow again, text 4 and Allow
     function localBox() {
-      var b = box.querySelector('#m2-ed-local'), show = !!(on && site && site.pending && (undo.length || site.fromDraft));
+      var b = box.querySelector('#m2-ed-local'), show = !!(on && site && site.pending && (undo.length || site.fromDraft) && !(repo() && token()));   // connected: no folder offered
       b.hidden = !show;
       if (!show) return;
       if (!b.dataset.seen) {
@@ -1579,8 +1553,20 @@
       var notLoaded = function (e) { if (tk === opening) warn('Cannot edit ' + m.title + ': its file did not load (' + e + ').'); };
       var fromSite = function (s) { return published.then(function (t) { return go(t, s); }).catch(notLoaded); };
       quiet();
-      if (m.mine && mine[m.id] && mine[m.id].site) { warn('Cannot edit ' + m.title + ' yet: the site is building it (a few minutes).'); return; }   // its moves would be lost when the site's map takes its place
-      if (m.mine) return fromSite({ path: null, sha: null, pending: true, mine: true });   // a reader's own map: kept in this browser and its folder
+      var w = m.mine && mine[m.id];
+      if (w && w.site && !w.path) { warn('Cannot edit ' + m.title + ' yet: the site is building it (a few minutes).'); return; }   // sent by an older version: its file's sha not known
+      if (w && w.site && repo() && token()) {   // on its way to the site: edited and saved there, the record kept beside (after a send of its changes under way)
+        return Promise.resolve(upRun).then(function () {
+          var w2 = mine[m.id];
+          if (tk !== opening || !w2) return;
+          return fromSite({ path: w2.path, sha: w2.sha, saved: w2.saved, mine: true }).then(function () {
+            if (tk === opening && on && site && site.mine && site.id === m.id && src() !== site.saved) { dirty = true; changed(); }   // moves not on GitHub yet: saved now
+          });
+        });
+      }
+      if (m.mine) return fromSite({ path: null, sha: null, pending: true, mine: true }).then(function () {   // a reader's own map: in this browser (and its folder with no token), its changes sent once connected
+        if (tk === opening && on && site && site.mine && site.pending && repo() && token()) toGh(site);   // connected: sent to GitHub now
+      });
       if (!repo()) return fromSite(null);
       if (!token()) return fromSite({ path: path, sha: null, pending: true });
       p.gh.then(function (g) {
@@ -1623,6 +1609,8 @@
       api('').then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); }).then(function (d) {
         if (!d.permissions || !d.permissions.push) throw 'it cannot write to ' + repo();
         box.querySelector('#m2-ed-gh-token').value = '';
+        upAll();   // the reader's maps kept in this browser go to GitHub
+        if (on && site && site.mine) { buttons(); quiet(); if (site.pending) toGh(site); return; }   // a reader's map edited: sent (or its save taken up), then saved there
         var moved = dirty || !!(site && site.pending && src() !== site.pub);   // moves kept in the browser count too
         if (on && site) {   // connected while editing: go on from the repository's version, keeping the moves made
           var keep = text;

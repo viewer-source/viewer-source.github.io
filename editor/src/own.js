@@ -42,7 +42,8 @@
     // The reader's own maps (the third layer): maps a reader adds (a file
     // chosen with Add map in the list's right-click menu or dropped on the page, or one in their folder), drawn in this browser by the editor's
     // renderers and edited as any map, only where the Edit tab is. Kept in IndexedDB (store mine: { id, title, file, text,
-    // svg, width, height, at, hidden, group }) and, with a folder, as their files in it. Taken off the list = hidden only:
+    // svg, width, height, at, hidden, group; on the site with a token: site, path, sha, saved, siteTitle) and, with a
+    // folder and no token, as their files in it. Taken off the list = hidden only:
     // the record and the file stay, the same file added again brings it back. Example maps (the site's)
     // hidden by a setting while the reader has maps of their own
     var MINE_KEY = 'atlas-mine', mine = {}, mineURLs = {};
@@ -228,8 +229,8 @@
     // Make a copy, in the list's menu: a new map named Copy of <name> (as in Google Docs), in the same group right under
     // the original, opened at once with its name field open to rename it. Of a reader's own map, or of the site's
     // GraphML or CellDesigner map as it is now (the edits this page holds, else GitHub's version, else the site's);
-    // with a token a copy of a site map goes to the site, as Add map does (named there by its file; renamed once built)
-    function canCopy(m) { return !!m && !m.shownAs && (m.mine ? !!mine[m.id] && !mine[m.id].site : !!graphmlOf(m) && !sbMap(m)); }
+    // with a token every copy goes to the site, as Add map does (an SBGN-ML one only made here)
+    function canCopy(m) { return !!m && !m.shownAs && (m.mine ? !!mine[m.id] : !!graphmlOf(m) && (!sbMap(m) || /^maps\/[^/]+\.sbgn$/.test(m.editPath || ''))); }   // an SBGN-ML map of the site's own, not one of its groups'
     function freeTitle(t) {   // a name no map in the list has: (1), (2), ... after it, whatever the format (a file's format is not its name)
       var titles = mineShown().map(function (r) { return r.title; }).concat((V.siteList || []).map(function (m) { return m.topic || m.title; })), f = t;
       for (var k = 1; titles.indexOf(f) >= 0; k++) f = t + ' (' + k + ')';
@@ -255,15 +256,16 @@
       if (naming) naming(true);
       var m = V.byId[id]; if (!m || !canCopy(m)) return;
       var r0 = m.mine ? mine[id] : null, title = freeTitle('Copy of ' + (r0 ? r0.title : m.topic || m.title)), group = m.group || '', next = after(id);   // next: read before the copy is in the list
-      var ext = r0 ? (r0.file.match(/\.[^.]+$/) || ['.xml'])[0] : cdMap(m) ? '.xml' : '.graphml';
+      var ext = r0 ? (r0.file.match(/\.[^.]+$/) || ['.xml'])[0] : cdMap(m) ? '.xml' : sbMap(m) ? '.sbgn' : '.graphml';
       var file = freeFile(title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') + ext);
-      var gh = !!(repo() && token()) && !m.mine;
+      var gh = !!(repo() && token());
       return mineIn.then(function () { return textNow(m); }).then(function (t) {
+        if (gh) { ext = siteExt(t); if (!ext) throw new Error(siteWhy(t)); }
         var made = r0 && t === r0.text ? Promise.resolve({ svg: r0.svg, width: r0.width, height: r0.height }) : drawText(t);
         return made.then(function (d) {
           var r = { id: newId(), title: title, file: file, text: t, svg: d.svg, width: d.width, height: d.height, at: Date.now(), src: textHash(t), hidden: false, group: group };
           if (!gh) return minePut(r).then(function () { toFolder(r.id, r.file, r.text); return r; });
-          return toSite(title + ext, t, group, siteOrder(group)).then(function (s) { r.site = s.id; return minePut(r).then(function () { return r; }); });
+          return toSite(title, ext, t, group, siteOrder(group)).then(function (s) { return minePut(onSite(r, s, title)).then(function () { return r; }); });
         });
       }).then(function (r) {
         put(r.id, group, next);
@@ -297,22 +299,28 @@
       if (sbm) { e.editBase = emptyBase(); e.editPath = r.file; }   // made here (New map): edited as a site's SBGN-ML map, from the empty base (sbgn.js)
       return e;
     }
-    // with a token a map added goes to the site (toSite, core.js): until the site's build has it, it is shown from this
-    // browser as a reader's map with `site` (its id there), dropped once the site lists that id (arrived: the old id to
-    // the site's, so the map shown follows). Remove map on a site map (with a token) hides it in this browser only, its
+    // with a token a map added goes to the site (toSite): until the site's build has it, it is shown from this
+    // browser as a reader's map with `site` (its id there), dropped once the site lists that id built from its last save
+    // (withMine; arrived: the old id to the site's, so the map shown follows). Remove map on a site map (with a token) hides it in this browser only, its
     // file staying on GitHub (deleting it there is not handled here); Show removed maps brings them back
     var HIDDEN_KEY = 'atlas-hidden-maps';
     function siteHidden() { try { var a = JSON.parse(localStorage.getItem(HIDDEN_KEY) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
     function siteHide(ids) { try { if (ids.length) localStorage.setItem(HIDDEN_KEY, JSON.stringify(ids)); else localStorage.removeItem(HIDDEN_KEY); } catch (e) {} V.refreshMine(); }
+    // A map on its way to the site stays the reader's until the build is of its last save (the entry's src, the file's
+    // blob sha) and nothing of it waits: not while it is edited, not with moves GitHub does not have yet (then
+    // the site's entry is left out meanwhile); an hour on, the build is taken as it is
     function withMine(list) {
-      var ids = {}; list.forEach(function (m) { ids[m.id] = 1; });
+      var ids = {}, held = {}; list.forEach(function (m) { ids[m.id] = m; });
       Object.keys(mine).forEach(function (k) {
-        var r = mine[k];
-        if (!r.site || !ids[r.site]) return;
+        var r = mine[k], s = r.site && ids[r.site];
+        if (!s) return;
+        var waits = (on && site && site.id === k) || (r.saved != null && r.text !== r.saved);
+        if (waits || (r.sha && s.src && s.src !== r.sha && Date.now() - r.at < 3600000)) { held[r.site] = 1; return; }
         V.arrived[k] = r.site; delete mine[k]; delete mineURLs[k]; mineFlag();
         V.draftDo('readwrite', function (st) { return st.delete(k); }, 'mine').catch(function () {});
+        if (location.hash.slice(1) === k) setTimeout(function () { if (location.hash.slice(1) === k && V.byId[r.site]) V.go(r.site); }, 0);   // shown: the site's map in its place
       });
-      list = siteNamed(list);
+      list = siteNamed(list.filter(function (m) { return !held[m.id]; }));
       var hid = siteHidden();
       if (hid.length) list = list.filter(function (m) { return hid.indexOf(m.id) < 0; });
       var own = mineShown().sort(function (a, b) { return a.title.localeCompare(b.title); }).map(mineEntry);
@@ -325,14 +333,17 @@
     // New map, made in place: an empty SBGN-ML map of the reader's, Process Description, named Unnamed map (2, 3, ... while taken), in
     // the group right-clicked or at the top, opened at once in the Edit window with the palette, nothing asked (no name
     // needed to start, as in Google Docs; a double-click names it).
-    // Kept as any map of theirs (this browser, their folder), also with a token: the site's build takes no SBGN-ML map of
-    // its own. Its map id (NEW_ID, sbgn.js) marks the file as made here (madeHere, sbgn.js), so the folder and Add map from file
+    // With a token it goes to GitHub at once (toSite) and every change is saved there; else kept as any map of theirs
+    // (this browser, their folder). Its map id (NEW_ID, sbgn.js) marks the file as made here (madeHere, sbgn.js), so the folder and Add map from file
     // take it back; an SBGN-ML file of another editor is not taken (it may hold what the empty base cannot draw)
     function newId() { return 'mine-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
     // A CellDesigner map too: the reader picks the
     // format in the menu, New SBGN-ML map or New CellDesigner map; an empty CellDesigner file as cd_make writes one, edited
     // with the CellDesigner palette (cdcreate.js)
+    var making = false;
     function newMap(group, fmt) {
+      if (making) return Promise.resolve();   // one at a time: a second click meanwhile would take the same name
+      making = true;
       var titles = mineShown().map(function (r) { return r.title; }).concat((V.siteList || []).map(function (m) { return m.topic || m.title; }));
       var files = Object.keys(mine).map(function (k) { return mine[k].file; });
       var title = 'Unnamed map', file;
@@ -342,7 +353,8 @@
       return mineIn.then(function () { return fmt === 'cd' ? cdpy().then(function () { text = cdMk.empty({ id: 'untitled' }); }) : null; })
         .then(function () { return drawText(text); }).then(function (d) {
         var r = { id: newId(), title: title, file: file, text: text, svg: d.svg, width: d.width, height: d.height, at: Date.now(), src: textHash(text), hidden: false, group: group || '' };
-        return minePut(r).then(function () {
+        var up = repo() && token() ? toSite(title, ext, text, r.group, siteOrder(r.group)).then(function (s) { onSite(r, s, title); }, function () {}) : null;   // not sent: the editor says so and tries again
+        return Promise.resolve(up).then(function () { return minePut(r); }).then(function () {
           toFolder(r.id, r.file, r.text);
           V.refreshMine(); V.go(r.id);
           var tries = 0;
@@ -352,7 +364,8 @@
             if (++tries < 100 && location.hash === '#' + r.id) setTimeout(edit, 50);   // not once another map is chosen
           })();
         });
-      }).catch(function (e) { alert('The new map was not made: ' + (e && e.message ? e.message : e)); });
+      }).catch(function (e) { alert('The new map was not made: ' + (e && e.message ? e.message : e)); })
+        .then(function () { making = false; });
     }
     // a map's name typed in place (any map):
     // a double-click on it or Rename map in the list's menu; the reader's maps in their record (title), the site's with a
@@ -360,7 +373,7 @@
     // while the site's list still has the old name. Maps whose name the build takes from elsewhere (the SBGN-ML groups,
     // their edited copies under maps/sbgn-ml/) are not renamed; an SBGN-ML map with a page of its own (maps/<id>.sbgn) is
     var renamed = {};   // site map id -> { was, to }: the list's name before and the one given here
-    function canRename(m, gh) { return !!m && !m.shownAs && (m.mine ? !!mine[m.id] && !mine[m.id].site : !!gh && !/^maps\/sbgn-ml\//.test(m.editPath || '')); }
+    function canRename(m, gh) { return !!m && !m.shownAs && (m.mine ? !!mine[m.id] && (!mine[m.id].site || !!gh) : !!gh && !/^maps\/sbgn-ml\//.test(m.editPath || '')); }   // one on its way to the site: in its page there too
     function siteNamed(list) {   // the names given here over the site's list (copies: the site's own entries untouched)
       return list.map(function (m) {
         var n = renamed[m.id];
@@ -377,7 +390,14 @@
       inPlace(b, { cls: 'm2-group-edit m2-map-edit' + (b.classList.contains('m2-sub') ? ' m2-sub' : ''), max: 120, value: shown, label: 'Name of the map',
         end: function (v) {
           if (!v || v === shown) return;
-          if (m.mine) { var r = mine[id]; r.title = v; minePut(r).catch(function () {}); }
+          if (m.mine) {
+            var r = mine[id]; r.title = v; minePut(r).catch(function () {});
+            if (r.site) {   // its page on the site too, the list's name over the site's until the build has it
+              var sid = r.site, was0 = renamed[sid] ? renamed[sid].was : r.siteTitle || shown;
+              renamed[sid] = { was: was0, to: v };
+              toSiteName(sid, shown, v).catch(function (e) { delete renamed[sid]; alert(shown + ' was not renamed on the site: ' + (e && e.message ? e.message : e)); });
+            }
+          }
           else {
             var was = renamed[id] ? renamed[id].was : shown;
             renamed[id] = { was: was, to: v };
@@ -429,6 +449,7 @@
       var r = { id: old ? old.id : newId(), title: old ? old.title : freeTitle(name.replace(/\.(graphml|xml|sbgn)$/i, '')),
         file: old ? old.file : name, text: back ? old.text : text, svg: back ? old.svg : d.svg, width: back ? old.width : d.width, height: back ? old.height : d.height,
         at: back ? old.at : Date.now(), src: old ? old.src || (id ? undefined : h) : h, hidden: false, group: group !== undefined ? group : old && old.group || '' };
+      if (old && old.site) ['site', 'path', 'sha', 'saved', 'siteTitle'].forEach(function (k) { r[k] = old[k]; });   // on GitHub already: its file there, its new text sent once connected
       return minePut(r).then(function () { return r; });
     }
     function addFiles(list, group) {   // a reader's files, drawn and kept; group: Add map or a drop on a group of theirs
@@ -438,12 +459,13 @@
       return picked.reduce(function (p, f) {
         return p.then(function () { return f.text(); }).then(function (t) {
           if (isSb(t) && !madeHere(t)) throw new Error('an SBGN-ML file from another editor cannot be added yet, only one made here with New map');
-          if (repo() && token() && !isSb(t)) return drawText(t).then(function (d) {   // with a token: to the site, shown from here until built (a map made here stays the reader's: the build takes no SBGN-ML map of its own)
-            var base = f.name.replace(/\.(graphml|xml)$/i, ''), ext = f.name.slice(base.length), title = freeTitle(base);   // the site's map named so too (toSite takes its title from the name)
-            return toSite(title + ext, t, group, siteOrder(group)).then(function (s) {
+          if (repo() && token()) return drawText(t).then(function (d) {   // with a token: to the site, shown from here until built
+            var ext = siteExt(t), title = freeTitle(f.name.replace(/\.(graphml|xml|sbgn)$/i, ''));   // the site's map named so too (toSite takes its title from the name)
+            if (!ext) throw new Error(siteWhy(t));
+            return toSite(title, ext, t, group, siteOrder(group)).then(function (s) {
               var r = { id: newId(), title: title, file: f.name,
-                text: t, svg: d.svg, width: d.width, height: d.height, at: Date.now(), hidden: false, group: group || '', site: s.id };
-              return minePut(r).then(function () { last = r.id; });
+                text: t, svg: d.svg, width: d.width, height: d.height, at: Date.now(), hidden: false, group: group || '' };
+              return minePut(onSite(r, s, title)).then(function () { last = r.id; });
             });
           });
           return drawText(t).then(function (d) { return mineAdd(f.name, t, d, null, group || undefined); }).then(function (r) { last = r.id; return toFolder(r.id, r.file, r.text); });
@@ -461,6 +483,127 @@
       var t = e.target.closest && e.target.closest('#m2-list [data-group]'), g = t && t.dataset.group;
       addFiles(e.dataTransfer.files, ownGroup(g) ? g : '');
     });
+    // With a token GitHub is where the reader's maps are kept: a map made or added goes there at once (toSite), and a
+    // map of theirs still only in this browser (made before connecting, or its sending failed) is sent when the page
+    // opens connected, when a token is connected, and when it is edited. Its record keeps the site's id, the file's
+    // path and sha, and the text GitHub has (saved), so editing saves there (core.js push) and withMine knows when the
+    // build has it. The file kinds the site's build takes: a yEd GraphML, a CellDesigner file, an SBGN-ML map made here
+    function siteExt(t) { return isCd(t) ? '.xml' : isSb(t) ? (madeHere(t) ? '.sbgn' : null) : /yworks\.com/.test(t.slice(0, 5000)) ? '.graphml' : null; }
+    function siteWhy(t) { return isSb(t) ? 'an SBGN-ML file from another editor cannot go to the site yet, only one made here with New map' : 'not a yEd GraphML or CellDesigner file'; }
+    function onSite(r, s, title) { r.site = s.id; r.path = s.path; r.sha = s.sha; r.saved = s.text; r.siteTitle = title; return r; }
+    // a reader's map put on the site (ext from siteExt: only what the build takes, any other file would stop it): the
+    // file as maps/<id><ext> and its maps/<id>.md (title, group, order) in one commit on main, so the build makes it a
+    // map of the site; the id from the title, made unique among maps/, read again on each try (a commit of another page or
+    // tab meanwhile: done again on the newest main, three tries). Gives the id, the file's path, its blob sha (the build's
+    // src once it has drawn this very file) and the text sent
+    function toSite(title, ext, text, group, order) {
+      if (!(repo() && token())) return Promise.reject(new Error('not connected to GitHub'));
+      var base = title.replace(/["\\]/g, ''),   // the build reads the front matter's quotes plainly
+          slug = (base.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'map').replace(/-(sbgn|sbgnml)$|^external-/, function (x) { return x === 'external-' ? 'map-external-' : x + '-map'; });   // the build's own ids end or start so
+      var md = '---\ntitle: ' + JSON.stringify(base) + '\ntopic: ' + JSON.stringify(base) + '\ngroup: ' + JSON.stringify(group || '') + '\norder: ' + (order | 0) + '\n---\n';
+      var j = function (r) { return r.ok ? r.json() : r.json().then(function (d) { var e = new Error(d && d.message || 'GitHub ' + r.status); e.status = r.status; throw e; }); };
+      var post = function (path, body, method) { return api(path, { method: method || 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(j); };
+      return Promise.all([post('/git/blobs', { content: b64(text), encoding: 'base64' }), post('/git/blobs', { content: b64(md), encoding: 'base64' })]).then(function (b) {
+        var tries = 0, id;
+        var go = function () {
+          return api('/contents/maps?ref=main').then(j).then(function (d) {
+            var taken = {}; d.forEach(function (f) { taken[f.name.replace(/\.[^.]+$/, '')] = 1; });
+            id = slug; for (var k = 2; taken[id]; k++) id = slug + '-' + k;
+            return api('/git/ref/heads/main').then(j);
+          }).then(function (ref) {
+            return api('/git/commits/' + ref.object.sha).then(j).then(function (c) {
+              return post('/git/trees', { base_tree: c.tree.sha, tree: [{ path: 'maps/' + id + ext, mode: '100644', type: 'blob', sha: b[0].sha }, { path: 'maps/' + id + '.md', mode: '100644', type: 'blob', sha: b[1].sha }] });
+            }).then(function (t) { return post('/git/commits', { message: 'Map added in the viewer: ' + id + ext, tree: t.sha, parents: [ref.object.sha] }); })
+              .then(function (c) { return post('/git/refs/heads/main', { sha: c.sha }, 'PATCH'); });
+          }).catch(function (e) { if (e.status === 422 && ++tries < 3) return go(); throw e; });
+        };
+        return go().then(function () { ghDir = null; return { id: id, path: 'maps/' + id + ext, sha: b[0].sha, text: text }; });   // the listing read again next time
+      });
+    }
+    // one map of the reader's to GitHub; its record then, or null (gone or hidden). One send per map at a time, and one
+    // at a time across this site's tabs (the record read again inside the lock: another tab may have sent it)
+    var upping = {};
+    function oneAtATime(f) { return navigator.locks && navigator.locks.request ? navigator.locks.request('atlas-own-to-site', f) : f(); }
+    function upOne(id) {
+      if (upping[id]) return upping[id];
+      var p = upping[id] = oneAtATime(function () {
+        return V.draftDo('readonly', function (st) { return st.get(id); }, 'mine').then(function (stored) {
+          if (stored && stored.site && mine[id] && !mine[id].site) mine[id] = Object.assign({}, mine[id], ['site', 'path', 'sha', 'saved', 'siteTitle'].reduce(function (o, k) { o[k] = stored[k]; return o; }, {}));
+          var r = mine[id];
+          if (!r || r.hidden) return null;
+          if (r.site) return r;
+          var ext = siteExt(r.text), title = r.title.replace(/\.(graphml|xml|sbgn)$/i, '');
+          if (!ext) throw new Error(siteWhy(r.text));
+          return toSite(title, ext, r.text, r.group || '', siteOrder(r.group || '')).then(function (s) {
+            if (!mine[id]) return null;
+            var n = onSite(Object.assign({}, mine[id]), s, title);
+            if (n.title !== title) {   // renamed while it was sent: its page there too
+              renamed[s.id] = { was: title, to: n.title };
+              toSiteName(s.id, title, n.title).catch(function () { delete renamed[s.id]; });
+            }
+            return minePut(n).then(function () { return n; });
+          });
+        });
+      });
+      p.then(function () { delete upping[id]; }, function () { delete upping[id]; });
+      return p;
+    }
+    function savedMine(s, t) {   // a save on GitHub of a reader's map on its way to the site: its sha and text learnt
+      var r = mine[s.id];
+      if (r && r.site) minePut(Object.assign({}, r, { sha: s.sha, saved: t })).catch(function () {});
+    }
+    function toGh(s) {   // the reader's map edited, not saving on GitHub yet: sent (or its place there taken up), then saved there
+      if (!mine[s.id]) return Promise.resolve();
+      return upOne(s.id).then(function (n) {
+        if (!n || !n.path) return;   // gone, or sent by an older version (its file's sha not known)
+        if (site !== s || !on || !(repo() && token())) { if (n.text !== n.saved) upAll(); return; }   // left meanwhile: its last changes sent all the same
+        s.pending = false; s.path = n.path; s.sha = n.sha; s.saved = n.saved;
+        localBox(); V.refreshMine();
+        if (src() !== n.saved) { dirty = true; changed(); }
+      }, function (e) {
+        if (site === s) warn('Not on GitHub: ' + String(e && e.message ? e.message : e).replace(/\.$/, '') + '. This map is kept in this browser only; it is sent again after the next change.');
+      });
+    }
+    // every map of the reader's not on GitHub, or with changes GitHub does not have (a save that failed, a disconnect,
+    // a file changed in the folder meanwhile), sent one after another once the site's list is in (a map's order is
+    // after its group's last); what went said in grey, what did not in red
+    var upRun = null;
+    function upAll() {
+      if (!(repo() && token())) return Promise.resolve();
+      if (upRun) return upRun;
+      var went = [], failed = [], fail = function (r) { return function (e) { failed.push(r.title + ' (' + (e && e.message ? e.message : e) + ')'); }; };
+      var listIn = function (n) { return V.siteList || !n ? Promise.resolve() : new Promise(function (res) { setTimeout(res, 500); }).then(function () { return listIn(n - 1); }); };
+      return (upRun = mineIn.then(function () { return listIn(60); }).then(function () {
+        return Object.keys(mine).reduce(function (q, id) {
+          return q.then(function () {
+            var r = mine[id];
+            if (!r || r.hidden || (on && site && site.id === id)) return;   // the map edited: its own way (toGh, push)
+            if (!r.site) return upOne(id).then(function (n) { if (n) went.push(n.title); }, fail(r));
+            if (r.path && r.saved != null && r.text !== r.saved) return putMine(r).then(function () { went.push(r.title); }, fail(r));
+          });
+        }, Promise.resolve());
+      }).then(function () {
+        upRun = null;
+        if (went.length || failed.length) V.refreshMine();
+        if (failed.length) warn('Not on GitHub, kept in this browser only: ' + failed.join(', ') + '.');
+        else if (went.length) note('Saved on GitHub: ' + went.join(', ') + '.');
+      }));
+    }
+    // a reader's map's changes GitHub does not have, saved on the sha last known; refused as older (its last save
+    // learnt by no record, a tab closed meanwhile): GitHub's file read, and if it is already this text only its sha is
+    // learnt, else a file changed there since is left and said
+    function putMine(r) {
+      var t = r.text, learn = function (sha) { var n = mine[r.id]; if (n) return minePut(Object.assign({}, n, { sha: sha, saved: t })); };
+      return api('/contents/' + r.path, { method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: 'Moved in the viewer: ' + r.path.split('/').pop(), content: b64(t), sha: r.sha || undefined, branch: 'main' }) })
+        .then(function (q) {
+          if (q.ok) return q.json().then(function (d) { return learn(d.content.sha); });
+          if (q.status !== 409 && q.status !== 422) throw new Error('GitHub ' + q.status);
+          return Promise.all([api('/contents/' + r.path + '?ref=main').then(function (x) { return x.json(); }),
+            api('/contents/' + r.path + '?ref=main', { headers: { Accept: 'application/vnd.github.raw' } }).then(function (x) { return x.text(); })])
+            .then(function (f) { if (f[1] !== t) throw new Error('changed on GitHub since'); return learn(f[0].sha); });
+        });
+    }
     // what the viewer asks of this part (the list's entries and groups, a map's record)
     var own = {
       read: function () { return mineIn; },
@@ -468,3 +611,4 @@
       withMine: withMine, isGroup: ownGroup, movable: movable, moveTo: moveTo, rename: renameGroup, renameMap: renameMap, canRename: canRename, newMap: newMap, shown: mineShown, examplesHidden: examplesHidden, examplesHide: examplesHide, listItems: listItems,
       rec: function (id) { return mine[id] || null; }, naming: function () { return !!naming; }
     };
+    mineIn.then(upAll);   // connected: the reader's maps kept in this browser go to GitHub
