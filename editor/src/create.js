@@ -584,10 +584,10 @@
       if (k < 0 && P && palOn()) {   // a modulation under the pointer: Change identity, its kinds
         var h = hit(P), ed = h && h.e != null && h.p == null ? edges2[h.e] : null, now = ed && Object.keys(MODK).filter(function (c) { return sbJs.ARROW[c] === ed.arr[1]; })[0];
         var afN = afKind();   // an AF map (the map, not the tab): its influences by AF's names, no catalysis there
-        if (now) return lateItem(['Change identity\u2026', subItem(function (r, done) {   // its kinds by Change identity (core.js kindWindow), the palette's signs
+        if (now) return lateItem(['Change identity', subItem(function (r, done) {   // its kinds by Change identity (core.js kindWindow), the palette's names
           return kindWindow(r, PAL_PD[4][1].filter(function (q) { return MODK[q[0]] && !(q[0] === 'catalysis' && (afN || roleOf(ed.t) === 'pheno')); }).map(function (q) {
             var c = q[0], af = afN && sbJs.AF_ARC[c];
-            return { name: af ? af[0].toUpperCase() + af.slice(1) : q[1], sign: q[2], own: c === now, go: function () {
+            return { name: af ? af[0].toUpperCase() + af.slice(1) : q[1], own: c === now, go: function () {
               var t2 = sbJs.arcKind(text, ed.id, c);
               if (t2 === text) return;
               remember(false); text = t2; parse(); selN = []; selP = []; part = null;
@@ -637,12 +637,12 @@
                 ['Add unit of information ct:gene', function () { makeUnit(nid, 'ct:gene'); }]];
       }
       var pc = k >= 0 && nodes2[k].shape.kind === 'Process' ? sbJs.classOf(src(), nodes2[k].id) : '';
-      if (sbJs.PROCESSES.indexOf(pc) >= 0) {   // its kinds by Change identity, the palette's signs (not an association or dissociation of a file)
+      if (sbJs.PROCESSES.indexOf(pc) >= 0) {   // its kinds by Change identity, the palette's names (not an association or dissociation of a file)
         var pid = nodes2[k].id, psigns = PAL_PD.filter(function (g) { return g[0] === 'Process nodes'; })[0][1];
-        return lateItem(['Change identity\u2026', subItem(function (r, done) {
+        return lateItem(['Change identity', subItem(function (r, done) {
           return kindWindow(r, sbJs.PROCESSES.map(function (c) {
             var q = psigns.filter(function (s) { return s[0] === c; })[0];
-            return q && { name: q[1], sign: q[2], own: c === pc, go: function () { var t2 = sbJs.kind(text, pid, c); if (t2 === text) return; remember(false); text = t2; made(pid); } };
+            return q && { name: q[1], own: c === pc, go: function () { var t2 = sbJs.kind(text, pid, c); if (t2 === text) return; remember(false); text = t2; made(pid); } };
           }).filter(Boolean), done);
         })]);
       }

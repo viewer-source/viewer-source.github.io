@@ -356,15 +356,10 @@ page, so its styles keep the base they were made on).
   #m2-editwin .m2-ed-plist button[aria-selected="true"] { font-weight: 500; }
   .m2-cs-sw { display: flex; flex-direction: row-reverse; flex: none; gap: 2px; }   /* five at most, the first at the right; in the lists only */
   .m2-cs-sw i { width: 12px; height: 12px; border-radius: 2px; border: 1px solid #0002; box-sizing: border-box; }
-  /* Change identity's small window (core.js kindWindow: species, modulations): the right-click menu's look, a title with a close sign, each
-     kind with its palette sign, the species' own kind greyed out */
-  .m2-cx.m2-ci { min-width: 0; font-size: 13px; }
-  .m2-ci .m2-ci-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 0 4px 4px 12px; color: var(--m2-muted, #5f6368); }
-  .m2-cx.m2-ci .m2-ci-x { width: 22px; height: 22px; padding: 4px; justify-content: center; border-radius: var(--m2-radius-button); color: #80868b; }
-  .m2-cx.m2-ci:not(.m2-cx-still) .m2-ci-x:hover, .m2-cx.m2-ci .m2-ci-x:focus-visible { background: #f1f3f4; color: #80868b; }
-  .m2-ci .m2-ci-x svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; }
-  .m2-cx.m2-ci [role="menu"] button { justify-content: flex-start; gap: 8px; padding: 3px 12px; }
-  .m2-cx.m2-ci [role="menu"] svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.37; }
+  /* Change identity's list (core.js kindWindow: species, modulations, reactions): a submenu beside its item, the menu's look,
+     each kind by its name, the own kind greyed out */
+  .m2-cx.m2-ci { min-width: 0; }
+  .m2-cx.m2-ci button { justify-content: flex-start; }
   .m2-cx.m2-ci button[aria-checked="true"], .m2-cx.m2-ci:not(.m2-cx-still) button[aria-checked="true"]:hover { color: #bdc1c6; background: none; }   /* the own kind: greyed, not a choice */
   /* the circled i beside Connecting arcs (an info glyph): a sign button
      opening How to edit at its section; no shade under the pointer or open. Small and light:
@@ -701,7 +696,8 @@ page, so its styles keep the base they were made on).
   .m2-cx:not(.m2-cx-still) button:hover, .m2-cx:not(.m2-cx-still) a:hover, .m2-cx button:focus-visible, .m2-cx a:focus-visible, .m2-cx .m2-cx-open > button { background: var(--m2-accent); color: var(--m2-on-accent); outline: none; }
   .m2-cx svg { width: 13px; height: 13px; flex: none; }
   .m2-cx button:disabled, .m2-cx:not(.m2-cx-still) button:disabled:hover { color: var(--m2-muted, #5f6368); cursor: default; background: none; }
-  .m2-cx .m2-cx-arrow { font-size: 10px; flex: none; }
+  .m2-cx .m2-cx-arrow { font-size: 8px; flex: none; color: var(--m2-muted, #5f6368); }
+  .m2-cx:not(.m2-cx-still) button:hover .m2-cx-arrow, .m2-cx button:focus-visible .m2-cx-arrow, .m2-cx .m2-cx-open > button .m2-cx-arrow { color: inherit; }
   .m2-cx .m2-cx-key { flex: none; font-size: 12px; color: var(--m2-muted, #5f6368); }
   .m2-cx:not(.m2-cx-still) button:hover .m2-cx-key, .m2-cx button:focus-visible .m2-cx-key { color: inherit; }
   .m2-cx .m2-sep { border-top: 1px solid var(--m2-line); margin: 4px 0; }
@@ -2893,7 +2889,22 @@ page, so its styles keep the base they were made on).
   // Shift with the right click gives the browser's own menu; the same in edit mode, View mode in place of Edit mode
   (function () {
     var menu = null, note = null, sub = null;   // sub: a window an item opened over the menu (the editor's Change identity), the menu kept under it until a choice
-    function close() { if (menu) { menu.remove(); menu = null; } sub = null; }
+    function close() { if (sub && sub.isConnected && sub.m2close) sub.m2close(); if (menu) { menu.remove(); menu = null; } sub = null; clearTimeout(subT); }
+    // an item whose action opens a list of its own (act.sub, the editor's Change identity) is a submenu: an arrow at its
+    // right, its list beside the menu, opened by hovering, a click, Enter or the right arrow; hovering another item
+    // closes it after a short pause, so a pointer crossing that item on its way to the list keeps it
+    var subT = 0;
+    function subOpen(b, act, keys) {
+      clearTimeout(subT); subT = 0;
+      if (sub && sub.isConnected && sub.m2by === b) { if (keys) sub.m2first(); return; }
+      if (sub && sub.isConnected && sub.m2close) sub.m2close();
+      var r = b.getBoundingClientRect(), m = b.closest('.m2-cx').getBoundingClientRect(), w = b.parentNode;
+      w.classList.add('m2-cx-open'); b.setAttribute('aria-expanded', 'true');
+      sub = act({ left: r.left, right: r.right, top: r.top, bottom: r.bottom, mleft: m.left, mright: m.right, by: b,
+        shut: function () { w.classList.remove('m2-cx-open'); b.setAttribute('aria-expanded', 'false'); } }, close) || null;
+      if (sub) { sub.m2by = b; sub.addEventListener('pointerenter', function () { clearTimeout(subT); subT = 0; }); if (keys) sub.m2first(); }
+      else { w.classList.remove('m2-cx-open'); b.setAttribute('aria-expanded', 'false'); }
+    }
     function say(text, x, y) {
       if (note) note.remove();
       note = el('div', 'm2-cx-note', text); note.style.left = x / pz() + 'px'; note.style.top = y / pz() + 'px';
@@ -2912,7 +2923,22 @@ page, so its styles keep the base they were made on).
     function item(box, text, act, icon) {
       var b = el('button', null, text); b.type = 'button';
       if (icon) b.insertAdjacentHTML('beforeend', icon);
-      b.addEventListener('click', function (e) { e.stopPropagation(); var r = b.getBoundingClientRect(); if (act.sub) { sub = act(r, close) || null; return; } close(); act(r); });
+      if (act.sub) {
+        var w = el('div', 'm2-cx-sub'); w.appendChild(b);
+        b.setAttribute('aria-haspopup', 'menu'); b.setAttribute('aria-expanded', 'false');
+        b.insertAdjacentHTML('beforeend', '<span class="m2-cx-arrow" aria-hidden="true">\u25B6</span>');
+        b.addEventListener('click', function (e) { e.stopPropagation(); subOpen(b, act, e.detail === 0); });   // detail 0: Enter or Space
+        b.addEventListener('pointermove', function () {   // a move, not an enter: the menu's first moves come before it lights items
+          if (b.disabled || box.classList.contains('m2-cx-still') || (sub && sub.isConnected && sub.m2by === b && !subT)) return;
+          clearTimeout(subT); subT = setTimeout(function () { subT = 0; if (b.isConnected) subOpen(b, act, false); }, 120);
+        });
+        box.appendChild(w); return b;
+      }
+      b.addEventListener('click', function (e) { e.stopPropagation(); var r = b.getBoundingClientRect(); close(); act(r); });
+      b.addEventListener('pointerenter', function () {   // another item: the open list closed after a pause
+        if (!sub || !sub.isConnected) return;
+        clearTimeout(subT); subT = setTimeout(function () { subT = 0; if (sub && sub.isConnected && sub.m2close) sub.m2close(); }, 300);
+      });
       box.appendChild(b); return b;
     }
     function link(box, text, href, download) {
@@ -3135,6 +3161,8 @@ page, so its styles keep the base they were made on).
     document.addEventListener('keydown', function (e) {
       if (!menu || (sub && sub.isConnected)) return;   // a window over the menu takes the keys first (Escape closes it alone)
       if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close(); return; }
+      var at = document.activeElement;
+      if (e.key === 'ArrowRight' && at && menu.contains(at) && at.getAttribute('aria-haspopup')) { e.preventDefault(); e.stopPropagation(); at.click(); return; }
       if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
       e.preventDefault();
       var a = document.activeElement, level = a && menu.contains(a) ? a.closest('.m2-cx') : menu;

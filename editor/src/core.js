@@ -1613,35 +1613,57 @@
     document.addEventListener('keydown', function (e) { if (gsMenu && e.key === 'Escape') { e.preventDefault(); gsClose(); } }, true);   // marked done: Escape closes the menu only
     window.addEventListener('resize', gsClose);
     gridButtons();
-    // Change identity's small window, for any format's part: where the menu item was, a title with a close sign, each kind
-    // with its sign ({ name, sign, own, go }), the own kind greyed and not a choice. A click runs go() only while the
-    // editor is still on the same map and its text is unchanged since it opened (every format's change passes through
-    // text); any key, a click outside, a scroll or a resize close it
-    var kwBox = null;
-    function kwClose() { if (kwBox) { kwBox.remove(); kwBox = null; } }
-    // the right-click menu stays under the window until a kind is chosen (done closes it), as a submenu; Escape, the
-    // close sign or a key close the window alone
+    // Change identity's list, for any format's part: a submenu beside its menu item (r from the viewer's menu: the item's
+    // box, the menu's sides mleft and mright, by the item, shut to call on closing), each kind by its name ({ name, own,
+    // go }), the own kind greyed and not a choice. A click runs go() only while the editor is still on the same map
+    // and its text is unchanged since it opened (every format's change passes through text). The menu stays until a kind
+    // is chosen (done closes it); Escape or the left arrow close the list alone, back on its item; another key, a click
+    // outside, a scroll or a resize close it
+    var kwBox = null, kwBy = null;
+    function kwClose(back) {
+      if (!kwBox) return;
+      var b = kwBox; kwBox = null; b.remove();
+      if (kwBy && kwBy.shut) kwBy.shut();
+      if (back && kwBy && kwBy.by && kwBy.by.isConnected) kwBy.by.focus();
+      kwBy = null;
+    }
     function kindWindow(r, items, done) {
       kwClose();
       var t0 = text, m0 = map;
-      kwBox = document.createElement('div'); kwBox.className = 'm2-cx m2-ci'; kwBox.setAttribute('role', 'dialog'); kwBox.setAttribute('aria-label', 'Change identity');
-      kwBox.innerHTML = '<div class="m2-ci-head"><span>Change identity</span><button type="button" class="m2-ci-x" title="Close" aria-label="Close"><svg viewBox="0 0 14 14" aria-hidden="true"><path d="M3 3l8 8M11 3l-8 8"/></svg></button></div><div role="menu"></div>';
-      kwBox.querySelector('.m2-ci-x').addEventListener('click', function (e) { e.stopPropagation(); kwClose(); });
+      kwBox = document.createElement('div'); kwBox.className = 'm2-cx m2-ci'; kwBox.setAttribute('role', 'menu'); kwBox.setAttribute('aria-label', 'Change identity'); kwBy = r;
       items.forEach(function (q) {
         var b = document.createElement('button'); b.type = 'button';
         b.setAttribute('role', 'menuitemradio'); b.setAttribute('aria-checked', String(!!q.own)); b.disabled = !!q.own;
-        b.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true">' + q.sign + '</svg><span>' + q.name + '</span>';
+        b.textContent = q.name;
         b.addEventListener('click', function (e) { e.stopPropagation(); kwClose(); if (done) done(); if (on && V.current === m0 && text === t0) q.go(); });
-        kwBox.lastChild.appendChild(b);
+        kwBox.appendChild(b);
       });
       document.body.appendChild(kwBox);
-      var k = kwBox.getBoundingClientRect().width / kwBox.offsetWidth || 1, w = kwBox.offsetWidth * k, h = kwBox.offsetHeight * k;   // the page's own zoom: a fixed box is placed in its units
-      kwBox.style.left = Math.max(4, Math.min(r.left, window.innerWidth - 4 - w)) / k + 'px'; kwBox.style.top = Math.max(4, Math.min(r.top, window.innerHeight - 4 - h)) / k + 'px';
+      // beside the menu, its first kind level with the item (the list's top padding and border above it), on the left
+      // where the right has no room; inside the window. The page's own zoom: a fixed box is placed in its units
+      var k = kwBox.getBoundingClientRect().width / kwBox.offsetWidth || 1, w = kwBox.offsetWidth * k, h = kwBox.offsetHeight * k;
+      var first = kwBox.firstChild, lift = first ? first.getBoundingClientRect().top - kwBox.getBoundingClientRect().top : 0;
+      var mr = r.mright != null ? r.mright : r.right, ml = r.mleft != null ? r.mleft : r.left;
+      var x = mr - 2 * k + w <= window.innerWidth - 4 ? mr - 2 * k : ml + 2 * k - w >= 4 ? ml + 2 * k - w : window.innerWidth - 4 - w;
+      kwBox.style.left = Math.max(4, x) / k + 'px'; kwBox.style.top = Math.max(4, Math.min(r.top - lift, window.innerHeight - 4 - h)) / k + 'px';
+      var box = kwBox;
+      kwBox.m2close = function () { if (kwBox === box) kwClose(); };
+      kwBox.m2first = function () { var f = box.querySelector('button:not(:disabled)'); if (f) f.focus(); };
       return kwBox;
     }
-    function subItem(f) { f.sub = true; return f; }   // a right-click item that opens a window over the menu (the viewer keeps the menu)
-    document.addEventListener('pointerdown', function (e) { if (kwBox && !kwBox.contains(e.target)) kwClose(); }, true);
-    document.addEventListener('keydown', function (e) { if (!kwBox) return; if (e.key === 'Escape') { e.stopPropagation(); e.preventDefault(); } kwClose(); }, true);   // Escape closes the window only
+    function subItem(f) { f.sub = true; return f; }   // a right-click item that opens its list beside the menu (the viewer keeps the menu)
+    document.addEventListener('pointerdown', function (e) { if (kwBox && !kwBox.contains(e.target) && !(kwBy && kwBy.by && kwBy.by.contains(e.target))) kwClose(); }, true);
+    document.addEventListener('keydown', function (e) {   // the list's keys: up and down walk its kinds, Enter or Space choose
+      if (!kwBox) return;
+      if (e.key === 'Enter' || e.key === ' ') return;
+      e.stopPropagation(); e.preventDefault();
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        var list = Array.prototype.slice.call(kwBox.querySelectorAll('button:not(:disabled)')), i = list.indexOf(document.activeElement), d = e.key === 'ArrowDown' ? 1 : -1;
+        if (list.length) list[i < 0 ? (d > 0 ? 0 : list.length - 1) : (i + d + list.length) % list.length].focus();
+        return;
+      }
+      kwClose(e.key === 'Escape' || e.key === 'ArrowLeft');
+    }, true);   // Escape closes the list only
     window.addEventListener('resize', kwClose);
     document.addEventListener('scroll', function (e) { if (kwBox && !kwBox.contains(e.target)) kwClose(); }, true);
     function lateItem(it) { var out = [it]; out.late = true; return out; }   // a rarely used right-click item: after the common ones, above Delete
