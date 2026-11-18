@@ -73,7 +73,7 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
         var l = await menu([x, y]);
         if (l.length && l.indexOf('Select all of this kind') < 0 && l.indexOf('Delete') >= 0 && l.indexOf('Snap map to grid') < 0) svMenu = l;
       }
-      svOk = !!svMenu && svMenu.indexOf('Repack complex') < 0 && svMenu.indexOf('Name complex from members') < 0;
+      svOk = !!svMenu && svMenu.indexOf('Repack complex') < 0 && svMenu.indexOf('Name by members') < 0;
     }
   }
   ok('glycolysis-sbgn: a state variable on a member, its own menu without complex items', svOk, JSON.stringify([mem, svMenu]));

@@ -3065,7 +3065,7 @@ page, so its styles keep the base they were made on).
       if (mac && mac.late) mac.forEach(function (q) { item(box, q[0], q[1]); });
       var packHere = ed && !unbend && window.m2EditPackHere && window.m2EditPackHere(true);   // on a member of a complex: that complex repacked alone
       var nameHere = ed && !unbend && window.m2EditNameHere && window.m2EditNameHere(true);   // and named by its members, above it
-      if (nameHere) item(box, 'Name complex from members', nameHere).disabled = !!nameHere.same;   // greyed when the complex is already so named
+      if (nameHere) item(box, 'Name by members', nameHere).disabled = !!nameHere.same;   // greyed when the complex is already so named
       if (packHere) item(box, 'Repack complex', packHere);
       if (mac && mac.tail) mac.tail.forEach(function (q) { item(box, q[0], q[1]); });
       if (del) { if (box.lastChild && box.lastChild.tagName === 'BUTTON') sep(box); item(box, 'Delete', del); }

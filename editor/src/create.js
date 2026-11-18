@@ -812,7 +812,7 @@
       if (t2 === text) return;
       remember(false); text = t2; parse(); dirty = true; quiet(); render(); paint(); changed();
     }
-    // Name complex from members: a complex named by its members' names joined by colons (A:B, CellDesigner's usual name for
+    // Name by members: a complex named by its members' names joined by colons (A:B, CellDesigner's usual name for
     // a complex), in reading order (rows from the top, each from the left); a member complex with no name gives its own
     // members' names. Offered with Repack complex (core.js), not when the name would be empty; greyed when it is already that
     function membersName(c) {

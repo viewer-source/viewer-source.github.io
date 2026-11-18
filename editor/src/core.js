@@ -2602,7 +2602,7 @@
     // Show grid and Snap to grid switches, a check beside a switch that is on; each the same code as its button
     // and after Repack all complexes the whole-map items a format's own part adds (mapTools: functions giving [label, go] or nothing)
     // and Repack complex, in the object's menu of a complex (a right click inside it) or of a member, above Select all of
-    // this kind: the outermost complex round it (outerComplex), alone; above it Name complex from members for the innermost
+    // this kind: the outermost complex round it (outerComplex), alone; above it Name by members for the innermost
     // complex there (create.js)
     var mapTools = [];
     var ownMenus = [];   // a format's part: functions telling a point that has its own right-click menu (a state variable), where no complex item is offered
