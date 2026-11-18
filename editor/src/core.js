@@ -2935,6 +2935,7 @@
           else if (!drag.alone && drag.n != null) { var ke = keepEdge(mv.n, drag.dx, drag.dy); drag.dx = ke[0]; drag.dy = ke[1]; }
           mv.dx = drag.dx; mv.dy = drag.dy; shift();
           var aw = drag.away; if (aw) aw.x0 = Math.min(aw.x0, drag.dx), aw.x1 = Math.max(aw.x1, drag.dx), aw.y0 = Math.min(aw.y0, drag.dy), aw.y1 = Math.max(aw.y1, drag.dy);
+          if (mv.n.size) liveFit();   // the holders round it grow with it (grown)
         }
         paint();
         return;
