@@ -1307,11 +1307,20 @@ page, so its styles keep the base they were made on).
     var k = (typeof view !== 'undefined' && view && view.currentCSSZoom) || 1;
     return document.documentElement.clientWidth >= (lw + 600 + ew + 32) * k;
   }
+  // Chosen while editing (Settings opened from the Edit window on the left, setFromEdit, or the panel open on the right),
+  // editing moves with the panel: Right opens the panel on the right and the left panel shows the list; Left puts the
+  // Edit window in the list's place
+  var setFromEdit = false;
   document.querySelectorAll('#m2-set-eside button').forEach(function (b) {
     b.addEventListener('click', function () {
       if (b.dataset.eside === eSide()) return;
-      try { if (b.dataset.eside === 'right') localStorage.setItem('atlas-edit-side', 'right'); else localStorage.removeItem('atlas-edit-side'); } catch (e) {}
+      var toRight = b.dataset.eside === 'right', editing = toRight ? setFromEdit : eRight() && eRight.open;
+      try { if (toRight) localStorage.setItem('atlas-edit-side', 'right'); else localStorage.removeItem('atlas-edit-side'); } catch (e) {}
+      setFromEdit = false;
+      if (editing && toRight && eRight()) win = 'list';
       railMark(); showSettings(); window.dispatchEvent(new Event('resize'));
+      var eb = document.querySelector('#m2-rail .m2-ri[data-win="edit"]');
+      if (editing && eb && eb.offsetParent && (!toRight || eRight())) eb.click();   // the editor starts as from its tab
     });
   });
   // the icons on top or on the left (Settings),
@@ -2092,6 +2101,7 @@ page, so its styles keep the base they were made on).
       if (b.dataset.win === 'ovl') return;   // Overlays signs: no window, Overlays are not implemented
       if (b.dataset.win === 'leg') { legBtn = b; legend(!document.getElementById('m2-legend').classList.contains('m2-open')); return; }
       if (b.dataset.win === 'edit' && eRight()) { eRight.open = !eRight.open; railMark(); window.dispatchEvent(new Event('resize')); return; }   // the panel on the right opened or closed; the left panel stays
+      setFromEdit = b.dataset.win === 'set' && win === 'edit' && !grid.classList.contains('m2-list-shut');   // Settings opened from the Edit window (Edit panel, below)
       // annotations on the left cover the window: an icon closes them and shows its window
       if (grid.classList.contains('m2-info-left-open') || grid.classList.contains('m2-info-tab')) { closeInfo(); if (!grid.classList.contains('m2-list-shut')) { win = b.dataset.win; railMark(); window.dispatchEvent(new Event('resize')); return; } }
       var open = !grid.classList.contains('m2-list-shut');
