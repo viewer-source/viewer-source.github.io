@@ -29,8 +29,8 @@ var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : '
   };
   var pick = async function (sel, name) { await page.click(sel); await page.waitForTimeout(200); await page.click('body > .m2-ed-pdl button:has-text("' + name + '")'); await page.waitForTimeout(2500); };
   ok('Triacylglycerol (CellDesigner), its own colours: Original', (await val(F)) === 'Original', await val(F));
-  await pick(F, 'Mist and sage'); await pick(S, 'Default');
-  ok('Triacylglycerol: Default chosen', (await val(F)) === 'Mist and sage' && (await val(S)) === 'Default');
+  await pick(F, 'Mist and sage'); await pick(S, 'Standard sizes');
+  ok('Triacylglycerol: Default chosen', (await val(F)) === 'Mist and sage' && (await val(S)) === 'Standard sizes');
   await open('colour-test');
   ok('Glycolysis colour test (CellDesigner): Confetti, read from its colours', (await val(F)) === 'Confetti', await val(F));
   ok('Glycolysis colour test: Style From map, not triacylglycerol’s', (await val(S)) === 'From map', await val(S));
@@ -43,7 +43,7 @@ var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : '
   await page.keyboard.press('Control+z'); await page.waitForTimeout(2500);
   ok('SREBP (SBGN-ML): the recolour undone, Original again', (await val(F)) === 'Original', await val(F));
   await open('tag-celldesigner');
-  ok('Triacylglycerol (CellDesigner) again: its Default back', (await val(F)) === 'Mist and sage' && (await val(S)) === 'Default', (await val(F)) + ', ' + (await val(S)));
+  ok('Triacylglycerol (CellDesigner) again: its Default back', (await val(F)) === 'Mist and sage' && (await val(S)) === 'Standard sizes', (await val(F)) + ', ' + (await val(S)));
   await page.evaluate(function () { localStorage.removeItem('atlas-edit-map-choices'); });
   await open('colour-test'); await open('tag-celldesigner');
   ok('Triacylglycerol (CellDesigner), its choice forgotten: Default, read from its colours', (await val(F)) === 'Mist and sage', await val(F));

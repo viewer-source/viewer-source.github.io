@@ -44,7 +44,7 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local =
   await page.click('#m2-editwin button[data-make="macromolecule"]'); await page.click('#m2-editwin .m2-ed-pmap tr[data-k="cols"] .m2-ed-pdd'); await page.waitForTimeout(200); await page.keyboard.press('Escape'); await page.waitForTimeout(200);
   ok('Escape closes the list and keeps the tool in hand', !(await page.$('body > .m2-ed-pdl')) && (await page.$eval('#m2-editwin button[data-make="macromolecule"]', function (b) { return b.getAttribute('aria-pressed'); })) === 'true');
   await page.keyboard.press('Escape');
-  await pick('style', 'Default');
+  await pick('style', 'Standard sizes');
   var p2 = await made('process', 760, 450);
   ok('Style Default: the built-in process 18 by 18', JSON.stringify(await sbBox(p2)) === '[18,18]', JSON.stringify(await sbBox(p2)));
   await pick('cols', 'No colours');

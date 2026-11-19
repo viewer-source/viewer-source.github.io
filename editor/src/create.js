@@ -392,7 +392,7 @@
     // have on the map (sbgn_edit.defaults, cd_make.classSize; the built-in size where it has none), or the built-in sizes
     // Custom: the size kept by Set as default for that kind (each format keeps its own: atlas-edit-defaults,
     // atlas-edit-cd-defaults), From map for a kind with none
-    var STYLES = [['file', 'From map', 'New nodes the size most nodes of their kind have on this map'], ['default', 'Default', 'New nodes at the editor\u2019s own sizes'], ['custom', 'Custom default', 'New nodes the size kept by Set as default; From map for a kind with none']];
+    var STYLES = [['file', 'From map', 'New nodes the size most nodes of their kind have on this map'], ['default', 'Standard sizes', 'New nodes at the standard sizes: CellDesigner\u2019s own on a CellDesigner map, the editor\u2019s on others'], ['custom', 'Custom default', 'New nodes the size kept by Set as default; From map for a kind with none']];
     function palStyle() { return mapChoice('style', ['file', 'default', 'custom']) || 'file'; }
     function styleRow() { return palDrop({ key: 'style', label: 'Style', title: 'Sizes of new nodes', list: STYLES, get: palStyle, set: function (v) { keepMapChoice('style', v); } }); }
     // Confetti, a choice of both palettes' Colours: every new entity a pastel of its own, whatever its kind (processes,
