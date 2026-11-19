@@ -37,7 +37,7 @@ var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : '
   await page.evaluate(function () { localStorage.clear(); });
   await page.reload({ waitUntil: 'load' }); await open();
   var p0 = await paint();
-  await pick('Default');
+  await pick('Mist and sage');
   ok('First change: the full text about this browser', await shown('#m2-ed-l1'));
   ok('First change: no short reminder yet', !(await shown('#m2-ed-l5')));
   await page.reload({ waitUntil: 'load' }); await open();

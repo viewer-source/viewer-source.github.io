@@ -37,7 +37,7 @@ var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : '
     await open(map);
     ok(kind + ': opens on Original', (await val()) === 'Original', await val());
     var p0 = await paint();
-    await pick('Default'); var p1 = await paint();
+    await pick('Mist and sage'); var p1 = await paint();
     ok(kind + ': Default recolours', p1 !== p0);
     await pick('Confetti');
     await open('colour-test'); await open(map);
@@ -47,7 +47,7 @@ var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : '
     ok(kind + ': Original shown', (await val()) === 'Original', await val());
     await page.keyboard.press('Control+z'); await page.waitForTimeout(2500);
     ok(kind + ': one undo, Confetti again', (await val()) === 'Confetti', await val());
-    await pick('Default'); await pick('Original');   // after the undo the map was not in its own colours: the record kept, not taken again
+    await pick('Mist and sage'); await pick('Original');   // after the undo the map was not in its own colours: the record kept, not taken again
     ok(kind + ': Original after an undo and Default, the drawing as it was', (await paint()) === p0);
     await pick('Confetti');
     // a protein added under Confetti, then Original: the others back, the new one kept and counted

@@ -392,7 +392,7 @@
     // have on the map (sbgn_edit.defaults, cd_make.classSize; the built-in size where it has none), or the built-in sizes
     // Custom: the size kept by Set as default for that kind (each format keeps its own: atlas-edit-defaults,
     // atlas-edit-cd-defaults), From map for a kind with none
-    var STYLES = [['file', 'From map', 'New nodes the size most nodes of their kind have on this map'], ['default', 'Default', 'New nodes at the editor\u2019s own sizes'], ['custom', 'Custom', 'New nodes the size kept by Set as default; From map for a kind with none']];
+    var STYLES = [['file', 'From map', 'New nodes the size most nodes of their kind have on this map'], ['default', 'Default', 'New nodes at the editor\u2019s own sizes'], ['custom', 'Custom default', 'New nodes the size kept by Set as default; From map for a kind with none']];
     function palStyle() { return mapChoice('style', ['file', 'default', 'custom']) || 'file'; }
     function styleRow() { return palDrop({ key: 'style', label: 'Style', title: 'Sizes of new nodes', list: STYLES, get: palStyle, set: function (v) { keepMapChoice('style', v); } }); }
     // Confetti, a choice of both palettes' Colours: every new entity a pastel of its own, whatever its kind (processes,
@@ -441,7 +441,7 @@
     function confettiSquares() { return '<span class="m2-cs-sw">' + [0, 1, 2, 3, 4].map(function (k) { var x = confettiHex(k * 137.508 % 360); return '<i style="background:' + x + '" title="' + x.toUpperCase() + '"></i>'; }).join('') + '</span>'; }
     // Colours on SBGN-ML maps, kept per map or read from it (mapCols): the map's own (sbgn_edit.defaults: the fill most glyphs of the
     // kind have; the Default colours for a kind the map lacks), the viewer's Default colours, none, or Confetti
-    var SB_COLS = [['file', 'Original', 'The map\u2019s own colours, as they were before another choice; new glyphs in the colour most glyphs of their kind have on it'], ['default', 'Default', 'The whole map and new glyphs in the viewer\u2019s Default colours'], ['none', 'No colours', 'The whole map and new glyphs unfilled'], ['custom', 'Custom', 'The whole map and new glyphs in the colours kept by Set as default; a kind with none as it is'], ['confetti', 'Confetti', 'Every glyph of the map, and every new one, a pastel of its own']];
+    var SB_COLS = [['file', 'Original', 'The map\u2019s own colours, as they were before another choice; new glyphs in the colour most glyphs of their kind have on it'], ['default', 'Mist and sage', 'The whole map and new glyphs in the viewer\u2019s starting colours: a pale blue for proteins, a pale green for small molecules'], ['none', 'No colours', 'The whole map and new glyphs unfilled'], ['custom', 'Custom default', 'The whole map and new glyphs in the colours kept by Set as default; a kind with none as it is'], ['confetti', 'Confetti', 'Every glyph of the map, and every new one, a pastel of its own']];
     function sbCols() { return mapCols(['file', 'none', 'default', 'confetti', 'custom'], sbIs); }
     var SB_SQ = ['macromolecule', 'simple chemical', 'nucleic acid feature', 'phenotype', 'compartment'];
     function sbSquares(mode) {   // five at most, the first at the right (row-reverse), each colour once

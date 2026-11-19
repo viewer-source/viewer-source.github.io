@@ -30,8 +30,8 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local =
   await page.waitForSelector('#m2-editwin button[data-make="cd:PROTEIN"]', { state: 'visible', timeout: 30000 }); await page.waitForTimeout(1500);
   var S = await squares(); await page.keyboard.press('Escape'); await page.waitForTimeout(200);
   var CD = /CCFFCC|CCFF66|CC99FF|FFFF66|66FF66/i;
-  ok('Default squares: no CellDesigner colour', S.Default && !CD.test(S.Default), S.Default);
-  ok('Custom squares (none kept): no CellDesigner colour', S.Custom && !CD.test(S.Custom), S.Custom);
+  ok('Mist and sage squares: no CellDesigner colour', S['Mist and sage'] && !CD.test(S['Mist and sage']), S['Mist and sage']);
+  ok('Custom default squares (none kept): no CellDesigner colour', S['Custom default'] && !CD.test(S['Custom default']), S['Custom default']);
   ok('CellDesigner squares: its own', CD.test(S.CellDesigner || ''), S.CellDesigner);
   // From map (the choice when none is kept)
   var pr = await made('cd:PROTEIN', 700, 820), ph = await made('cd:PHENOTYPE', 820, 820), gn = await made('cd:GENE', 940, 820), rn = await made('cd:RNA', 1060, 820), cp = await made('cd:COMPARTMENT', 1180, 760);
@@ -47,7 +47,7 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local =
   var ph2 = await made('cd:PHENOTYPE', 820, 700), cp2 = await made('cd:COMPARTMENT', 1180, 560);
   ok('CellDesigner: a phenotype in its own purple', await paint(ph2) === 'ffcc99ff', await paint(ph2));
   ok('a compartment in its own yellow', await paint(cp2) === 'ffcccc00', await paint(cp2));
-  await pick('Default');
+  await pick('Mist and sage');
   var cp3 = await made('cd:COMPARTMENT', 1180, 360), sm = await made('cd:SIMPLE_MOLECULE', 700, 700);
   ok('Default: a compartment #DFDBCE', await paint(cp3) === 'ffdfdbce', await paint(cp3));
   // the Default compartment drawn at a quarter (cdrender) is the Default scheme's compartment (SCHEMES in the page)

@@ -54,7 +54,7 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local =
   await pick('style', 'From map'); await pick('cols', 'From map');
   // Custom: Set as default keeps the node's look as it is and switches both rows to Custom; a kind with none kept takes From map
   await page.evaluate(function () { localStorage.setItem('atlas-edit-defaults', JSON.stringify({ macromolecule: { w: 120, h: 60, fill: '#123456' }, complex: { w: 300, h: 300, fill: '#ABCDEF' }, 'simple chemical': { wr: 2, hr: 2, fill: '#FEDCBA' } })); });
-  await pick('style', 'Custom'); await pick('cols', 'Custom');
+  await pick('style', 'Custom default'); await pick('cols', 'Custom default');
   var m3 = await made('macromolecule', 1000, 650), p3 = await made('process', 820, 450);
   ok('Custom: a macromolecule at the kept 120 by 60, not a share of another size', JSON.stringify(await sbBox(m3)) === '[120,60]', JSON.stringify(await sbBox(m3)));
   ok('and the kept fill #123456', String(await sbFill(m3)).toUpperCase() === '#123456', String(await sbFill(m3)));
@@ -86,7 +86,7 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local =
   await page.keyboard.press('Escape'); await page.waitForTimeout(150);
   ok('Escape closes it', !(await page.$('body > .m2-ed-pdl')));
   await page.setViewportSize({ width: 1400, height: 900 }); await page.waitForTimeout(300);
-  ok('its colour menu: From map, CellDesigner, Default, No colours, Custom, Confetti', JSON.stringify(items) === JSON.stringify(['From map', 'CellDesigner', 'Default', 'No colours', 'Custom', 'Confetti']), JSON.stringify(items));
+  ok('its colour menu: Original, CellDesigner, Mist and sage, No colours, Custom default, Confetti', JSON.stringify(items) === JSON.stringify(['Original', 'CellDesigner', 'Mist and sage', 'No colours', 'Custom default', 'Confetti']), JSON.stringify(items));
   var c1 = await made('cd:PROTEIN', 700, 450), L1 = await cdLook(c1);
   ok('a protein placed, none kept for proteins: the map’s size (Custom reads as From map)', L1.w > 0 && L1.h > 0, JSON.stringify(L1));
   var sel = async function (id) { await page.mouse.click.apply(page.mouse, await page.$eval('#m2-img [data-n="' + id + '"]', function (g) { var r = g.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; })); await page.waitForTimeout(400); };

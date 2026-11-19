@@ -77,7 +77,7 @@ var pick = async function (page, name) { await page.click(F); await page.waitFor
   ok('Second computer: Original puts back the first computer’s own colours', (await paint(B.page)) === p0);
   ok('Second computer: Original shown', (await val(B.page)) === 'Original', await val(B.page));
   var n0 = recPuts;
-  await pick(B.page, 'Default'); await B.page.waitForTimeout(2000);
+  await pick(B.page, 'Mist and sage'); await B.page.waitForTimeout(2000);
   ok('Second computer: the same colours not written to GitHub again', recPuts === n0, (recPuts - n0) + ' writes');
   await B.page.evaluate(function () { localStorage.removeItem('atlas-edit-originals'); });   // as if this browser had lost its record
   await pick(B.page, 'Original');

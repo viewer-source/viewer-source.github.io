@@ -34,7 +34,7 @@ async function run(b, map, kind, protein, link) {
   var pick = async function (name) { await page.click('#m2-editwin .m2-ed-pmap tr[data-k="cols"] .m2-ed-pdd'); await page.waitForTimeout(200); await page.click('body > .m2-ed-pdl button:has-text("' + name + '")'); await page.waitForTimeout(2500); };
   var t0 = await text(), f0 = await fills();
   ok(kind + ': proteins drawn', (f0.protein || []).length > 5, JSON.stringify(Object.keys(f0)));
-  await pick('Default'); var f = await fills();
+  await pick('Mist and sage'); var f = await fills();
   ok(kind + ': Default, every protein #c8d8eb', (f.protein || []).length > 0 && f.protein.every(function (x) { return x === '#c8d8eb'; }), Array.from(new Set(f.protein)).join(' '));
   ok(kind + ': Default, every metabolite #dbebdb', (f.metabolite || []).every(function (x) { return x === '#dbebdb'; }), Array.from(new Set(f.metabolite || [])).join(' '));
   var sd = await strokes(); delete sd['#dfdbce'];   // a CellDesigner compartment's lines drawn in its Default paint
