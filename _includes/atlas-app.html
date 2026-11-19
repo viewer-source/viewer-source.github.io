@@ -2915,6 +2915,23 @@ page, so its styles keep the base they were made on).
     else go(e.m);
   }
   var binOpen = false;   // Deleted's heading: closed on every page load
+  // the list's scroll kept over a reload of this tab, any mode: the builds after the reload put it back where it was
+  // (no scroll to the chosen map) until the reader moves the list or another map is shown
+  var listTop = (function () {
+    var r = null;
+    try {
+      var nav = performance.getEntriesByType('navigation')[0];
+      if (nav && nav.type === 'reload') r = JSON.parse(sessionStorage.getItem('atlas-list-top') || 'null');
+      sessionStorage.removeItem('atlas-list-top');
+    } catch (e) { r = null; }
+    return r && r.path === location.pathname && typeof r.top === 'number' ? r : null;
+  })();
+  addEventListener('pagehide', function () {
+    try { sessionStorage.setItem('atlas-list-top', JSON.stringify({ path: location.pathname, map: (chosen || current || {}).id || null, top: document.getElementById('m2-list').scrollTop })); } catch (e) {}
+  });
+  ['wheel', 'pointerdown', 'touchstart', 'keydown'].forEach(function (t) {
+    document.getElementById('m2-list').addEventListener(t, function () { listTop = null; }, { passive: true });
+  });
   function buildList(filter, still) {   // still: a heading opened or closed, the list kept where it is (no scroll to the chosen map)
     if (own && own.naming()) return;   // a name being typed in the list (own.js inPlace): built again when it is kept or left
     var ghNow = !!editor && editor.hasToken();   // with a token the site's maps are renamed too (own.canRename)
@@ -3070,6 +3087,8 @@ page, so its styles keep the base they were made on).
     // keep the chosen map visible when the list scrolls, with about one and a half items in sight above and below it,
     // so moving up or down the list shows where it goes next
     box.scrollTop = keep;
+    if (listTop && (!listTop.map || (chosen || current || {}).id === listTop.map) && !q) { box.scrollTop = listTop.top; return; }
+    if (listTop && (chosen || current)) listTop = null;   // another map shown: the list follows it again
     var on = box.querySelector('.m2-on');
     if (on && !still && box.scrollHeight > box.clientHeight) {
       // the page's CSS zoom: getBoundingClientRect is in zoomed pixels, scrollTop and offsetHeight in the box's own
