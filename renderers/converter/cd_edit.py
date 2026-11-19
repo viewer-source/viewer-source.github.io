@@ -834,8 +834,9 @@ def place(text, gtext):
                 # a name at one of the nine places (cdrender.name_point) kept at its place in the new box
                 dl = re.search(r'<celldesigner:doubleLine\s(?:[^>]*\s)?thickness="([^"]*)"', T.t[s[0]:s[1]])
                 th = float(dl.group(1)) if dl else 12
-                pl = cdrender.name_place_of(b, cname, th, (float(m['x']), float(m['y'])))
-                at = pl and cdrender.name_point(n, cname, th, pl)
+                ov = '<celldesigner:class>OVAL<' in T.t[s[0]:s[1]]
+                pl = cdrender.name_place_of(b, cname, th, (float(m['x']), float(m['y'])), ov, True)
+                at = pl and cdrender.name_point(n, cname, th, pl, ov)
                 mid = not pl and abs(float(m['x']) - cdrender.name_left(b, cname)) < 1
                 if at:
                     T.attrs(npt[0], {'x': num(at[0]), 'y': num(at[1])})

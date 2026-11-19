@@ -45,6 +45,20 @@ check(M.namePlace(r0.text, r0.alias) === 't' && np(r0.text, r0.alias)[1] === 52.
   });
 });
 
+// an oval: every place inside its inner ellipse (the name's box corners too)
+C.NAME_PLACES.forEach(function (p) {
+  var r = M.compartment(M.empty({}), { name: 'Cytosol', box: [40, 40, 300, 200], oval: true }), t = M.nameAt(r.text, r.alias, p), q = np(t, r.alias), w = C.width('Cytosol', 12);
+  var inE = function (x, y) { return Math.pow((x - 190) / (150 - 12), 2) + Math.pow((y - 140) / (100 - 12), 2) <= 1.0001; };
+  check(M.namePlace(t, r.alias) === p, 'oval ' + p + ': read back');
+  check(p.length < 2 || [[q[0], q[1]], [q[0] + w, q[1]], [q[0], q[1] + 23], [q[0] + w, q[1] + 23]].every(function (c) { return inE(c[0], c[1]); }), 'oval ' + p + ': inside the inner ellipse');
+});
+
+// a box too short to tell top, centre and bottom apart: a resize leaves the name as it is (moved with the corner)
+var r2 = M.compartment(M.empty({}), { name: 'Cytosol', box: [40, 40, 300, 48] }), t2 = M.nameAt(r2.text, r2.alias, 'b'), q2 = np(t2, r2.alias);
+var g2 = E.graphml(t2, null, { DOMParser: DP }).replace(/(<node id="ca1"[\s\S]*?<y:Geometry )x="[^"]*" y="[^"]*" width="[^"]*" height="[^"]*"/, '$1x="40.0" y="40.0" width="300.0" height="200.0"');
+var t2b = E.place(t2, g2, { DOMParser: DP })[0];
+check(np(t2b, r2.alias)[1] === q2[1], 'a short box: the name left where it was on a resize');
+
 // a name elsewhere stays where it is, moved with the box's corner
 var r1 = M.compartment(M.empty({}), { name: 'Cytosol', box: [40, 40, 300, 200] }), t1 = r1.text.replace(/namePoint x="[^"]*" y="[^"]*"/, 'namePoint x="150.0" y="150.0"');
 check(M.namePlace(t1, r1.alias) === '', 'elsewhere read as none');

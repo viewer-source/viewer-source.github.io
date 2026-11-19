@@ -311,7 +311,7 @@
     var np = find(a, 'cd:namePoint'), nm = has(self.cnames, get(a, 'compartment')) ? self.cnames[get(a, 'compartment')] : '';
     // a name at the top middle of its bounds stays at the top middle of a live box (cd_edit's place() keeps it so)
     // a name at one of the nine places stays there in a live box; one at the top middle by an older rule stays centred
-    var b0 = [x0, y0, F(get(b, 'w')), F(get(b, 'h'))], pl = np && box && namePlaceOf(b0, nm, t, [F(get(np, 'x')), F(get(np, 'y'))]), at = pl && namePoint(box, nm, t, pl);
+    var b0 = [x0, y0, F(get(b, 'w')), F(get(b, 'h'))], oval = text(find(a, 'cd:class')) === 'OVAL', pl = np && box && namePlaceOf(b0, nm, t, [F(get(np, 'x')), F(get(np, 'y'))], oval, true), at = pl && namePoint(box, nm, t, pl, oval);
     var nx = at ? at[0] : np && box && Math.abs(F(get(np, 'x')) - nameLeft(b0, nm)) < 1 ? nameLeft(box, nm) : np && F(get(np, 'x')) + (x - x0);
     var ny = at ? at[1] : np && F(get(np, 'y')) + (y - y0);
     if (np) self.nameLines(nm).forEach(function (line, k) {
@@ -331,19 +331,26 @@
   // a compartment's name at one of nine places in box (NAME_PLACES: top left, top, top right, left, centre, right,
   // bottom left, bottom, bottom right), as CellDesigner 4.4 leaves a name dragged to an edge: its box (the widest line,
   // 23 high and 14 more a line) the membrane's thickness + 5 from a side and + 0.5 from the top and bottom (17 and 12.5
-  // at its default 12), centred otherwise; the namePoint is the box's top left
+  // at its default 12), centred otherwise; on an oval a corner's box has its outer corner on the inner ellipse, at 45
+  // degrees from the centre. The namePoint is the box's top left, to 0.1 (CellDesigner writes halves)
   var NAME_PLACES = ['tl', 't', 'tr', 'l', 'c', 'r', 'bl', 'b', 'br'];
-  function namePoint(box, name, th, p) {
+  function namePoint(box, name, th, p, oval) {
     var ls = plainName(name || '').split('_br_').join('\n').split('\n'), w = Math.max.apply(null, ls.map(function (l) { return width(l, 12); })), h = 23 + 14 * (ls.length - 1);
-    var c = p.slice(-1), r = p.charAt(0);
-    var x = c === 'l' ? box[0] + th + 5 : c === 'r' ? box[0] + box[2] - th - 5 - w : box[0] + box[2] / 2 - w / 2;
-    var y = r === 't' ? box[1] + th + 0.5 : r === 'b' ? box[1] + box[3] - th - 0.5 - h : box[1] + box[3] / 2 - h / 2;
-    return [x, y];
+    var c = p.slice(-1), r = p.charAt(0), x, y;
+    if (oval && p.length === 2) {
+      var cx = box[0] + box[2] / 2, cy = box[1] + box[3] / 2, a = Math.max(box[2] / 2 - th, 0) / Math.SQRT2, e = Math.max(box[3] / 2 - th, 0) / Math.SQRT2;
+      x = c === 'l' ? cx - a : cx + a - w; y = r === 't' ? cy - e : cy + e - h;
+    } else {
+      x = c === 'l' ? box[0] + th + 5 : c === 'r' ? box[0] + box[2] - th - 5 - w : box[0] + box[2] / 2 - w / 2;
+      y = r === 't' ? box[1] + th + 0.5 : r === 'b' ? box[1] + box[3] - th - 0.5 - h : box[1] + box[3] / 2 - h / 2;
+    }
+    return [Math.round(x * 10) / 10, Math.round(y * 10) / 10];
   }
-  // which of the nine places a namePoint is at (within 1 on each axis), else null
-  function namePlaceOf(box, name, th, np) {
-    for (var k = 0; k < NAME_PLACES.length; k++) { var q = namePoint(box, name, th, NAME_PLACES[k]); if (Math.abs(q[0] - np[0]) < 1 && Math.abs(q[1] - np[1]) < 1) return NAME_PLACES[k]; }
-    return null;
+  // which of the nine places a namePoint is at (within 1 on each axis), else null; one: null also where two or more
+  // places meet there (a box too short or narrow to tell them apart), so a move or resize keeps the name as it is
+  function namePlaceOf(box, name, th, np, oval, one) {
+    var hit = NAME_PLACES.filter(function (p) { var q = namePoint(box, name, th, p, oval); return Math.abs(q[0] - np[0]) < 1 && Math.abs(q[1] - np[1]) < 1; });
+    return hit.length && !(one && hit.length > 1) ? hit[0] : null;
   }
   D.nameLines = function (name) { return plainName(name || '').split('_br_').join('\n').split('\n'); };
   D.species = function () {

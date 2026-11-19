@@ -158,24 +158,29 @@ def name_left(box, name):
 NAME_PLACES = ['tl', 't', 'tr', 'l', 'c', 'r', 'bl', 'b', 'br']
 
 
-def name_point(box, name, th, p):
+def name_point(box, name, th, p, oval=False):
     # a compartment's name at one of nine places in box (cdrender.js namePoint): its box the membrane's thickness + 5
-    # from a side and + 0.5 from the top and bottom, centred otherwise; the namePoint is its top left
+    # from a side and + 0.5 from the top and bottom, centred otherwise; on an oval a corner's box has its outer corner on
+    # the inner ellipse at 45 degrees; the namePoint is its top left, to 0.1
     ls = plain_name(name or '').replace('_br_', '\n').split('\n')
     w, h = max(width(l, 12) for l in ls), 23 + 14 * (len(ls) - 1)
     c, r = p[-1], p[0]
-    x = box[0] + th + 5 if c == 'l' else box[0] + box[2] - th - 5 - w if c == 'r' else box[0] + box[2] / 2 - w / 2
-    y = box[1] + th + 0.5 if r == 't' else box[1] + box[3] - th - 0.5 - h if r == 'b' else box[1] + box[3] / 2 - h / 2
-    return x, y
+    if oval and len(p) == 2:
+        cx, cy = box[0] + box[2] / 2, box[1] + box[3] / 2
+        a, e = max(box[2] / 2 - th, 0) / math.sqrt(2), max(box[3] / 2 - th, 0) / math.sqrt(2)
+        x = cx - a if c == 'l' else cx + a - w
+        y = cy - e if r == 't' else cy + e - h
+    else:
+        x = box[0] + th + 5 if c == 'l' else box[0] + box[2] - th - 5 - w if c == 'r' else box[0] + box[2] / 2 - w / 2
+        y = box[1] + th + 0.5 if r == 't' else box[1] + box[3] - th - 0.5 - h if r == 'b' else box[1] + box[3] / 2 - h / 2
+    return math.floor(x * 10 + 0.5) / 10, math.floor(y * 10 + 0.5) / 10
 
 
-def name_place_of(box, name, th, np_):
-    # which of the nine places a namePoint is at (within 1 on each axis), else None
-    for p in NAME_PLACES:
-        q = name_point(box, name, th, p)
-        if abs(q[0] - np_[0]) < 1 and abs(q[1] - np_[1]) < 1:
-            return p
-    return None
+def name_place_of(box, name, th, np_, oval=False, one=False):
+    # which of the nine places a namePoint is at (within 1 on each axis), else None; one: None also where two or more
+    # places meet there, so a move or resize keeps the name as it is
+    hit = [p for p in NAME_PLACES if abs(name_point(box, name, th, p, oval)[0] - np_[0]) < 1 and abs(name_point(box, name, th, p, oval)[1] - np_[1]) < 1]
+    return hit[0] if hit and not (one and len(hit) > 1) else None
 
 
 class Drawing:

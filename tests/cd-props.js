@@ -60,12 +60,16 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#acly-celld
   ok('Name place Top for a new compartment', (await fv('nameAt')) === 't');
   await page.selectOption('#m2-ed-nameAt', 'br'); await page.waitForTimeout(1200);
   var tb = await now(), bb = bnd(tb), pb = npt(tb);
-  ok('Name place Bottom right written', !!pb && Math.abs(bb[1] + bb[3] - 12.5 - 23 - pb[1]) < 0.01 && pb[0] > bb[0] + bb[2] / 2, JSON.stringify([bb, pb]));
+  ok('Name place Bottom right written', !!pb && Math.abs(bb[1] + bb[3] - 12.5 - 23 - pb[1]) < 0.06 && pb[0] > bb[0] + bb[2] / 2, JSON.stringify([bb, pb]));
+  await page.keyboard.press('Control+z'); await page.waitForTimeout(1200);   // the choice made, the keys reach the map at once (no Escape)
+  ok('Name place undone by the keys straight after the choice', npt(await now())[1] < bb[1] + bb[3] / 2);
+  await page.keyboard.press('Control+y'); await page.waitForTimeout(1200);
+  ok('and redone', Math.abs(npt(await now())[1] - pb[1]) < 0.01);
   var nb = await page.$eval('#m2-img [data-n="' + comp + '"] text', function (x) { var r = x.getBoundingClientRect(), o = x.closest('[data-n]').getBoundingClientRect(); return [o.right - r.right, o.bottom - r.bottom]; });
   ok('drawn at the bottom right, inside', nb[0] > 0 && nb[0] < 40 && nb[1] > 0 && nb[1] < 40, JSON.stringify(nb));
   await select(comp); ok('Name place shows Bottom right', (await fv('nameAt')) === 'br');
   await type('mem', '30'); var p30 = npt(await now()), b30 = bnd(await now());
-  ok('the name follows a membrane of 30', Math.abs(b30[1] + b30[3] - 30.5 - 23 - p30[1]) < 0.01, JSON.stringify([b30, p30]));
+  ok('the name follows a membrane of 30', Math.abs(b30[1] + b30[3] - 30.5 - 23 - p30[1]) < 0.06, JSON.stringify([b30, p30]));
   for (var u0 = 0; u0 < 2; u0++) { await page.keyboard.press('Escape'); await page.keyboard.press('Control+z'); await page.waitForTimeout(1200); }
   await select(comp); ok('undone: Top again', (await fv('nameAt')) === 't' && /thickness="12\.0"/.test(dl(await now())));
   await type('mem', '24');

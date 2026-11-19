@@ -742,7 +742,7 @@
         if (k === 'width') { var x = parseFloat(v); return isFinite(x) && all(function (t, id) { return cdMk.restyle(t, id, { width: Math.min(Math.max(x, 0.25), 20) }); }); }   // outside 0.25 to 20: the nearest, silently
         if (k === 'fill') { var c = hex(v); return !!c && all(function (t, id) { return cdMk.restyle(t, id, { fill: c }); }); }
         if (/^(mem|outer|inner)$/.test(k)) return cdDouble(k, parseFloat(v), ids);
-        if (k === 'nameAt') return !!v && all(function (t, id) { return cdMk.nameAt(t, id, v); });
+        if (k === 'nameAt') return /^[tcblr]{1,2}$/.test(v) && all(function (t, id) { return cdMk.nameAt(t, id, v); });
         return false;
       } };
     // a compartment's double line in Properties: Membrane (its thickness), Outer line and Inner line (their widths), after

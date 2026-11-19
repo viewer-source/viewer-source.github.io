@@ -704,7 +704,7 @@
           var cname = (cn ? cn[1] : cid || '').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
           // a name at one of the nine places (cdrender.namePoint) kept at its place in the new box
           var dl = /<celldesigner:doubleLine\s(?:[^>]*\s)?thickness="([^"]*)"/.exec(T.t.slice(s[0], s[1])), th = dl ? F(dl[1]) : 12;
-          var pl = cdr.namePlaceOf(b, cname, th, [F(mv.x), F(mv.y)]), at = pl && cdr.namePoint(n, cname, th, pl);
+          var ov = /<celldesigner:class>OVAL</.test(T.t.slice(s[0], s[1])), pl = cdr.namePlaceOf(b, cname, th, [F(mv.x), F(mv.y)], ov, true), at = pl && cdr.namePoint(n, cname, th, pl, ov);
           var mid = !pl && Math.abs(F(mv.x) - cdr.nameLeft(b, cname)) < 1;
           if (at) T.attrs(npt[0], [['x', num(at[0])], ['y', num(at[1])]]);
           else if (mid || Math.abs(n[0] - b[0]) >= 1e-3 || Math.abs(n[1] - b[1]) >= 1e-3)
