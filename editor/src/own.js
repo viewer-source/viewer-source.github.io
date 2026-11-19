@@ -971,11 +971,12 @@
     function ghJson(r) { return r.ok ? r.json() : r.json().catch(function () { return {}; }).then(function (d) { var e = new Error(d && d.message || 'GitHub ' + r.status); e.status = r.status; throw e; }); }
     // maps/<id>.md's front matter changed by edit({ get, set, drop }) in one commit, the closing line and the body as they were
     // One page write at a time from this page: two at once on main refuse each other (409, the branch moved), as several
-    // maps restored together did; a write still refused (another tab, an editor save) is read and tried again, four times
+    // maps restored together did; a write still refused (another tab, an editor save) is read and tried up to three times
+    // more; a write that never answers holds the next ones 30 s at most
     var siteQ = Promise.resolve();
     function siteFront(id, edit, message) {
       var p = siteQ.then(function () { return frontWrite(id, edit, message, 0); });
-      siteQ = p.catch(function () {});
+      siteQ = Promise.race([p.catch(function () {}), new Promise(function (ok) { setTimeout(ok, 30000); })]);
       return p;
     }
     function frontWrite(id, edit, message, tries) {
