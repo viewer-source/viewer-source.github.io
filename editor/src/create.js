@@ -1034,6 +1034,7 @@
       if (q) { e.stopImmediatePropagation(); typeIn(nodes2[q[0]].id, q[1]); return; }
       var g = nameHit(P, function (n) { return sbJs.nameable(base, n.id); });   // a group's name where it is drawn (a complex's too)
       if (g >= 0 && (i < 0 || nodes2[i].el.getAttribute('yfiles.foldertype') === 'group')) i = g;
+      if (i < 0 && !afSbgn && !afKind()) i = innermost(P, function (n) { return n.shape.kind === 'Complex' && sbJs.nameable(base, n.id); });   // anywhere on a complex off its members: its name, typed where it is drawn
       if (i >= 0) { e.stopImmediatePropagation(); typeIn(nodes2[i].id, null); }
     }, true);
     function svAt(P) {   // the state variable or unit of information under P: [node, j] (it may stand out of its node)
