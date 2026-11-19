@@ -2543,11 +2543,18 @@
         // area added to the selection; Shift with a click (no move) adds or takes out what is under it (release)
         e.stopImmediatePropagation(); e.preventDefault();
         V.view.setPointerCapture(e.pointerId); V.view.focus({ preventScroll: true });
-        band = { x: P[0], y: P[1], x2: P[0], y2: P[1], h: h, cx: e.clientX, cy: e.clientY }; paint(); return;
+        band = { x: P[0], y: P[1], x2: P[0], y2: P[1], h: h, add: true, cx: e.clientX, cy: e.clientY }; paint(); return;
       }
       // empty space or an item not selected: a drag moves the map (the viewer's, mouse, trackpad and finger alike), a
       // click is taken on release (selects, or on empty space clears)
-      var tapped = function () { tap = { h: h, shift: e.shiftKey, x: e.clientX, y: e.clientY }; V.view.focus({ preventScroll: true }); };
+      var tapped = function () {
+        if (e.pointerType === 'mouse' && !V.grab) {   // Settings, Gestures, Drag moves the map unticked: a drag selects an area in place of the selection
+          e.stopImmediatePropagation(); e.preventDefault();
+          V.view.setPointerCapture(e.pointerId); V.view.focus({ preventScroll: true });
+          band = { x: P[0], y: P[1], x2: P[0], y2: P[1], h: h, add: false, cx: e.clientX, cy: e.clientY }; paint(); return;
+        }
+        tap = { h: h, shift: e.shiftKey, x: e.clientX, y: e.clientY }; V.view.focus({ preventScroll: true });
+      };
       if (!h) return tapped();
       if (!alone && linkDown(e, P, h)) return;   // an arc's sign picked: a drag from an entity or a process draws it (create.js; a press off a node only where the format's part says the line stands for its process)
       if (h.glyph) return tapped();   // a glyph is not dragged: a drag on it moves the map, a click selects its reaction
@@ -2982,7 +2989,8 @@
       e.stopImmediatePropagation();
       if (band) {
         var bd = band; band = null;
-        if (e.type === 'pointerup' && Math.hypot(e.clientX - bd.cx, e.clientY - bd.cy) < 5) { click({ h: bd.h, shift: true }); return; }   // a click with Shift: adds or takes out
+        if (e.type === 'pointerup' && Math.hypot(e.clientX - bd.cx, e.clientY - bd.cy) < 5) { click({ h: bd.h, shift: bd.add }); return; }   // a click (with Shift: adds or takes out)
+        if (!bd.add) { selN = []; selP = []; selE = []; }
         var a = [Math.min(bd.x, bd.x2), Math.min(bd.y, bd.y2)], c = [Math.max(bd.x, bd.x2), Math.max(bd.y, bd.y2)];
         nodes2.forEach(function (n, i) { var b = boxOf(i); if (cd && /\|proc$/.test(n.id)) return; if (b[0] >= a[0] && b[1] >= a[1] && b[0] + b[2] <= c[0] && b[1] + b[3] <= c[1] && selN.indexOf(i) < 0) selN.push(i); });
         points.forEach(function (p, i) { var X = num(p, 'x'), Y2 = num(p, 'y'); if (X >= a[0] && Y2 >= a[1] && X <= c[0] && Y2 <= c[1] && selP.indexOf(i) < 0) selP.push(i); });
