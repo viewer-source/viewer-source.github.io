@@ -336,23 +336,39 @@
       try { localStorage.setItem(CHOICE_KEY, JSON.stringify(all)); } catch (e) {}
     }
     // Original, Colours' first choice: the map's own colours. Taken (the format's colours(), by element) when another
-    // choice is made while the map is in its own colours, kept per map in this browser, and put back by Original, each
+    // choice is made while the map is in its own colours, kept per map in this browser and with the map on GitHub
+    // (own.js origPut), and put back by Original, each
     // element the record knows; one added since keeps its colour, and the map as it then is is its own again (taken at
     // the next choice). New glyphs under Original: the colour most of their kind have on the map
     var ORIG_KEY = 'atlas-edit-originals';
     function origAll() { try { return JSON.parse(localStorage.getItem(ORIG_KEY)) || {}; } catch (e) { return {}; } }
+    function origKeep(id, r) { var all = origAll(); all[id] = r; try { localStorage.setItem(ORIG_KEY, JSON.stringify(all)); return true; } catch (e) { return false; } }
+    var pickSeq = 0;
     function colsPick(v, cur, take, back, recolour) {   // a choice of Colours on the map (cur: the one it shows): take its own colours, put them back, or recolour
-      var id = palId(), all = origAll();
+      var id = palId(), seq = ++pickSeq;
       if (v === 'file') {
-        var r = id && all[id];
-        keepMapChoice('cols', 'file');
-        if (!r) { if (cur !== 'file') note('Original: no colours of this map kept in this browser; the map stays as it is.'); return; }
-        var added = back(r);
-        if (added) note('Original: ' + added + ' element' + (added > 1 ? 's' : '') + ' added since ' + (added > 1 ? 'keep their' : 'keeps its') + ' colour.');
+        if (!id) { keepMapChoice('cols', 'file'); return; }
+        var mine0 = origAll()[id] || null, s0 = site;
+        origGh().then(function (g) {
+          if (seq !== pickSeq || !on || site !== s0 || palId() !== id) return;   // another choice, map or Done meanwhile
+          var r = g && (!mine0 || (g.at || 0) > (mine0.at || 0)) ? g : mine0;
+          if (r && r !== mine0) origKeep(id, Object.assign({}, r, { sent: 1 }));   // GitHub's newer (another computer): kept here too, so the field reads it, as GitHub has it
+          keepMapChoice('cols', 'file');   // only now: a choice made while GitHub was asked still saw the map's scheme (no record taken from it)
+          if (!r) { if (cur !== 'file') note('Original: no colours of this map kept; the map stays as it is.'); paint(); return; }
+          var added = back(r);
+          if (added) note('Original: ' + added + ' element' + (added > 1 ? 's' : '') + ' added since ' + (added > 1 ? 'keep their' : 'keeps its') + ' colour.');
+          paint();
+        });
         return;
       }
       if (id && cur === 'file') {   // the map in its own colours, as the field shows (after an undo too)
-        all[id] = take(); try { localStorage.setItem(ORIG_KEY, JSON.stringify(all)); } catch (e) { warn('The map\u2019s own colours could not be kept in this browser.'); } }
+        var r = take(), was = origAll()[id], bare = function (o) { return JSON.stringify(Object.assign({}, o, { at: 0, sent: 0 })); };
+        var same = !!was && bare(was) === bare(r);
+        r.at = same ? was.at : Date.now();
+        if (same && was.sent) r.sent = was.sent;
+        if (!origKeep(id, r)) warn('The map\u2019s own colours could not be kept in this browser.');
+        if (!r.sent) origPut(r, function () { var all = origAll(); if (all[id] && all[id].at === r.at) { all[id].sent = 1; origKeep(id, all[id]); } });   // GitHub once per change of the colours (own.js)
+      }
       keepMapChoice('cols', v); recolour(v);
     }
     // the map's Colours: the choice kept for it while the map still shows it (Custom always); else the first

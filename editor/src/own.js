@@ -676,7 +676,31 @@
       }
       V.refreshMine();
     }
-    function siteErase(ids) {   // every file of these site maps (maps/<id>.*, maps/extra/<id>/) in one commit on main, three tries
+    // Original's record (create.js colsPick) kept with the map on GitHub too, while the page is connected and the map is
+    // there: maps/colours/<its GitHub id>.json in the data repository (the site's build reads no such folder; written with
+    // gh, so no build is started), found by another computer; a reader's own map by the id it has on GitHub, none while
+    // it waits to be sent. siteErase takes it with the map
+    function origGhId() {
+      if (!site || site.pending || !(repo() && token())) return null;
+      if (site.mine) { var r = mine[site.id]; return r && r.site || null; }
+      return site.id || null;
+    }
+    function origPut(rec, sent) {   // sent(): called once GitHub has it
+      var gid = origGhId(), body = JSON.stringify(Object.assign({}, rec, { sent: undefined }));
+      if (!gid) return;
+      var p = repo() + '/contents/maps/colours/' + encodeURIComponent(gid) + '.json';
+      var put = function (again) {
+        return gh(p + '?ref=main').then(function (q) { return q.ok ? q.json() : {}; }).then(function (d) {
+          return gh(p, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: 'Colours kept in the viewer: ' + gid, content: b64(body), sha: d.sha || undefined, branch: 'main' }) });
+        }).then(function (q) { if (q.ok) return sent(); if ((q.status === 409 || q.status === 422) && !again) return put(true); throw q.status; });   // a write meanwhile: once more on the new sha
+      };
+      put(false).catch(function (e) { warn('The map\u2019s own colours were kept in this browser only (GitHub ' + (e && e.message || e) + ').'); });
+    }
+    function origGh() {   // the record on GitHub, or null (none, not connected, offline)
+      var gid = origGhId();
+      return gid ? gh(repo() + '/contents/maps/colours/' + encodeURIComponent(gid) + '.json?ref=main', { headers: { Accept: 'application/vnd.github.raw' } }).then(function (q) { return q.ok ? q.json() : null; }).catch(function () { return null; }) : Promise.resolve(null);
+    }
+    function siteErase(ids) {   // every file of these site maps (maps/<id>.*, maps/extra/<id>/, maps/colours/<id>.json) in one commit on main, three tries
       var tries = 0, post = ghPost;
       var go = function () {
         return api('/contents/maps?ref=main').then(ghJson).then(function (d) {
@@ -685,7 +709,10 @@
             x.forEach(function (f) { if (f.type === 'file' && ids.some(function (id) { return f.name === id.replace(/-graphml$/, '') + '-sbgn.sbgn'; })) paths.push(f.path); });
           }) : Promise.resolve();
           var extras = d.some(function (f) { return f.type === 'dir' && f.name === 'extra'; }) ? api('/contents/maps/extra?ref=main').then(ghJson) : Promise.resolve([]);
-          return twins.then(function () { return extras; }).then(function (x) {
+          var kept = d.some(function (f) { return f.type === 'dir' && f.name === 'colours'; }) ? api('/contents/maps/colours?ref=main').then(ghJson).then(function (x) {   // a map's own colours kept (create.js origPut)
+            x.forEach(function (f) { if (f.type === 'file' && ids.indexOf(f.name.replace(/\.json$/, '')) >= 0) paths.push(f.path); });
+          }) : Promise.resolve();
+          return twins.then(function () { return kept; }).then(function () { return extras; }).then(function (x) {
             return Promise.all(x.filter(function (f) { return f.type === 'dir' && ids.indexOf(f.name) >= 0; }).map(function (f) { return api('/contents/' + f.path + '?ref=main').then(ghJson); }));
           }).then(function (ds) { ds.forEach(function (fs) { fs.forEach(function (f) { if (f.type === 'file') paths.push(f.path); }); }); return paths; });
         }).then(function (paths) {
