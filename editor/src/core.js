@@ -161,6 +161,7 @@
       return btoa(s);
     }
     function changed() {   // after every move, undo or redo: the site's map is saved a few seconds after the last one
+      edits++;
       sbFollow();   // a move that turned an SBGN-ML file: the GraphML made again from it (sbgn.js)
       if (site && site.pending) { localFor = site; clearTimeout(localTimer); localTimer = setTimeout(local, 800); localBox(); return; }   // no token: kept in this browser
       if (site && site.mine) { localFor = site; clearTimeout(localTimer); localTimer = setTimeout(local, 800); }   // a reader's map saved on GitHub: its record follows too, so no move waits on GitHub alone
@@ -495,7 +496,9 @@
       if (!on || V.current !== map || !text) return;   // same: part of the change just made (its undo step)
       if (!same) quiet();
       var uAt = undo.length, uTop = undo[uAt - 1];   // the step it belongs to (render may write the same text in other numbers first)
+      var m0 = map;
       Promise.all([layout(), sbpy()]).then(function (q) {
+        if (!on || map !== m0) return;   // the map left meanwhile
         if (same && (undo.length !== uAt || undo[uAt - 1] !== uTop)) return;   // undone or another change meanwhile
         // the layout tools grow a compartment round all it holds, which would take an edge member inside: what crosses a
         // compartment's border is taken out of it for the run and put back after, its compartment then grown only so far
@@ -1113,6 +1116,45 @@
       return t.g;
     }
     function unpush() { return fromUndo(take(undo)); }   // the text before the step just taken, which is taken back
+    // undo and redo kept per map for the page's life: a map left keeps its history (hist, by the list's map id), given
+    // back when it is opened again with its file as it was left (src), else dropped, so a step never lands on a file
+    // changed elsewhere (GitHub, the folder, Restore example maps). All kept histories together at most 40 million
+    // characters, the oldest let go first; the map being edited keeps its own limit (step). An SBGN-ML step holds only
+    // the GraphML, the file being written from the file as opened (sb.base), so that file is kept and given back too
+    var hist = {}, histKey = null, openKey = null, histLast = null, edits = 0;   // edits: changes, undos and redos since this map was opened (its history may be older)
+    function histKeep() {
+      if (!histKey) return;
+      var id = histKey; histKey = null; delete hist[id]; histLast = null;
+      if (undo.length || redo.length) {
+        var h = hist[id] = { undo: undo, redo: redo, u: undoText(), src: src(), shift: shiftSum, sbBase: sb && sb.base, size: 0 };
+        h.size = sizeOf(h.u) + h.src.length + h.undo.concat(h.redo).reduce(function (k, d) { return k + sizeOf(d); }, 0);
+        histLast = { id: id, h: h, site: site };
+        var ids = Object.keys(hist), sum = ids.reduce(function (k, i) { return k + hist[i].size; }, 0);
+        for (var i = 0; sum > 40e6 && i < ids.length; i++) { sum -= hist[ids[i]].size; delete hist[ids[i]]; }   // oldest first (insertion order)
+      }
+      undo = []; redo = [];   // the kept stacks are no longer the editor's (a late layout step, Back to a file)
+    }
+    function histLate() {   // a redraw that ended after the map was left (a CellDesigner file follows a move once drawn): the kept history as drawn
+      var L = histLast;
+      if (!on && L && L.site === site && hist[L.id] === L.h) { L.h.src = src(); L.h.u = undoText(); L.h.shift = shiftSum; }
+    }
+    function histBack() {   // Back to a file with moves not saved: its history taken up again
+      var L = histLast;
+      if (!L || hist[L.id] !== L.h) return;
+      delete hist[L.id]; histKey = L.id; histLast = null; undo = L.h.undo; redo = L.h.redo;
+    }
+    function histTake(t, g0) {   // in begin: the history of the map opened, if its file is as it was left; t: the file opened, g0: its GraphML
+      var id = openKey && openKey.tk === opening ? openKey.id : null, h = id && hist[id];
+      openKey = null; histKey = id;
+      if (!h || h.src !== t) return;   // a file not as left: its history stays until this map is left again (a newer read may match)
+      delete hist[id]; histLast = null;
+      try {
+        if (h.sbBase && sb) sb.base = h.sbBase;
+        var g = fromUndo(h.u);   // the editor's own text and file as they were (a CellDesigner map's GraphML and base)
+        if (g !== text) { text = g; parse(); }
+        undo = h.undo; redo = h.redo; shiftSum = h.shift;
+      } catch (e) { undo = []; redo = []; if (text !== g0) { text = g0; parse(); } }
+    }
     function remember(merge) {   // the text before a change, for undo; nudges in a row are one step
       var now = Date.now();
       if (!(merge && now - nudgeAt < 800)) { step(undo, undoText()); redo = []; }
@@ -1157,6 +1199,7 @@
         var svg = r[0]; lastSvg = svg; lastFor = [text, cd ? cd.now : null, site && site.id, afSbgn];   // [3]: drawn in the SBGN AF view, never kept, saved or downloaded (graphml.js)
         if (!on && site && V.kept && V.kept.id === site.id && V.kept.text != null) { V.kept.text = src(); V.kept.svg = svg; }   // left before this redraw ended: the kept file and drawing as drawn
         if (!on && site && unsaved[site.id] && unsaved[site.id].site === site) unsaved[site.id].text = src();   // the same for moves not saved
+        histLate();
         var m = svg.match(/<g transform="translate\(([-\d.]+),([-\d.]+)\)">/);
         var w = svg.match(/ width="([\d.]+)" height="([\d.]+)"/);
         var nx = -parseFloat(m[1]), ny = -parseFloat(m[2]), first = !map.width;
@@ -1222,6 +1265,8 @@
       if (site) { site.base = site.pending && site.pub != null ? site.pub : t0; site.fromDraft = t0 !== site.base; }   // no token: the site's text, a draft on top of it
       if (site && site.pending && canFolder && V.folderName()) folderCheck();
       stuck = false; dirty = false; undo = []; redo = []; cdGate = null; selN = []; selP = []; selE = [];
+      histTake(t, g);
+      edits = 0;
       if (reSel && V.chosen && reSel.map === V.chosen.id) {   // reloaded while editing this map: its selection back
         nodes2.forEach(function (n, i) { if (reSel.n.indexOf(n.id) >= 0) selN.push(i); });
         edges2.forEach(function (a, i) { if (reSel.e.indexOf(a.id) >= 0) selE.push(i); });
@@ -1238,7 +1283,7 @@
       V.grid.classList.add('m2-editing');
       buttons();
       gN = gE = null; mv = live = null; liveG = null; copies = []; frozen = false; cdBase = null;
-      if (same && same.text === t) { (cd ? cdpy() : yr()).then(function () { if (on && V.current === map && !undo.length && !gN) render(); }); paint(); quiet(); shownWhole(); return; }
+      if (same && same.text === t) { (cd ? cdpy() : yr()).then(function () { if (on && V.current === map && !edits && !gN) render(); }); paint(); quiet(); shownWhole(); return; }
       quiet();
       render();
       shownWhole();
@@ -1248,6 +1293,7 @@
       if (typing) typing.done(true);   // a name being typed kept on its own map first (create.js)
       if (!on) return;
       if (saveTimer) push();   // a move still waiting is saved now
+      histKeep();   // its undo and redo kept for when it is opened again
       var kpic = V.img;
       if (afSbgn && !cd) {   // the SBGN AF view stays in the editor: the map left drawn plainly, for the viewer and what is kept
         afSbgn = false;
@@ -1562,6 +1608,7 @@
       if (dirty && !site && !confirm(name + ' has moves not saved. Edit this map instead?')) return;
       if (saveTimer) push();
       var tk = ++opening;
+      openKey = { tk: tk, id: m.id };
       var p = ahead(m), file = m.mine ? m.file : p.file, path = p.path;
       editPre = p;   // kept on leaving (keepAhead)
       // the picture on screen is the site's drawing of its published file: its frame (size and the offset of yEd's
@@ -1635,7 +1682,7 @@
         if (!d || d.sha === g.sha || !on || site !== s0) return;
         learnt(p.path, d.sha);
         if (bank[p.id] === p) forget(p.id);
-        if (!undo.length && !dirty) { on = false; editMap(m); }   // the site's map, not the editor's own (V.current is that now)
+        if (!edits && !dirty) { on = false; editMap(m); }   // the site's map, not the editor's own (V.current is that now)
       }).catch(function () {});
     }
     // the token: pasted once, checked against the repository, kept in this browser only (localStorage)
@@ -1779,7 +1826,7 @@
     box.querySelector('#m2-ed-redo').addEventListener('click', function () { if (on) back(redo, undo); });
     box.querySelector('#m2-ed-stop').addEventListener('click', function () { V.win = 'list'; V.railMark(); if (V.chosen) V.put(V.chosen); else stop(); });
     function resume() {   // back to a file from the computer with moves not saved
-      V.current = map; on = true; V.grid.classList.add('m2-editing'); buttons();
+      V.current = map; on = true; V.grid.classList.add('m2-editing'); buttons(); histBack();
       document.getElementById('m2-title').textContent = map.title;
       x0 = y0 = 0; map.width = 0; render();
     }

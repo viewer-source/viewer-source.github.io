@@ -1280,7 +1280,7 @@
     window.addEventListener('pointerdown', function (e) {   // where the last press was: the list, else elsewhere (a menu keeps it as it was)
       var t = e.target.closest ? e.target : e.target.parentElement;
       if (t && t.closest('.m2-cx')) return;
-      listLast = !!(t && t.closest('#m2-list'));
+      listLast = !!(t && t.closest('#m2-list')) && !(V.grid.classList.contains('m2-editing') && t.closest('.m2-map'));   // a map chosen while editing: the keys to that map's undo, until the list itself changes (listDid)
     }, true);
     window.addEventListener('keydown', function (e) {
       if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
