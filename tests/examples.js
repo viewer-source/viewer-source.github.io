@@ -80,7 +80,7 @@ var EX = /^(glycolysis|srebp|acly|tag)-(graphml|celldesigner|sbgn)$/;   // the e
     if (rest === '/git/commits' && meth === 'POST') { var d0 = JSON.parse(r.postData()); trees['c:' + (commits + 1)] = trees[d0.tree]; return json(201, { sha: 'c' + (commits + 1) }); }
     if (rest === '/git/refs/heads/main' && meth === 'PATCH' && refuse) return json(403, { message: 'test: refused' });
     if (rest === '/git/refs/heads/main' && meth === 'PATCH') {
-      commits++; (trees['c:' + commits] || []).forEach(function (e) { if (e.sha === null) delete files[e.path]; else files[e.path] = blobs[e.sha]; });
+      commits++; (trees['c:' + commits] || []).forEach(function (e) { if (e.sha === null) delete files[e.path]; else files[e.path] = e.content != null ? e.content : blobs[e.sha]; });
       return json(200, {});
     }
     var c = rest.match(/^\/contents\/(.+)$/);

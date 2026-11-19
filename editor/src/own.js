@@ -223,8 +223,8 @@
     // GraphML or CellDesigner map as it is now (the edits this page holds, else GitHub's version, else the site's);
     // with a token every copy goes to the site, as Add map does (an SBGN-ML one only made here)
     function canCopy(m) { return !!m && !m.shownAs && (m.mine ? !!mine[m.id] : !!graphmlOf(m) && (!sbMap(m) || /^maps\/[^/]+\.sbgn$/.test(m.editPath || ''))); }   // an SBGN-ML map of the site's own, not one of its groups'
-    function freeTitle(t) {   // a name no map in the list has: (1), (2), ... after it, whatever the format (a file's format is not its name)
-      var titles = liveTitles(), f = t;
+    function freeTitle(t, also) {   // a name no map in the list has (nor one of also): (1), (2), ... after it, whatever the format (a file's format is not its name)
+      var titles = liveTitles().concat(also || []), f = t;
       for (var k = 1; titles.indexOf(f) >= 0; k++) f = t + ' (' + k + ')';
       return f;
     }
@@ -534,23 +534,29 @@
     function addFiles(list, group) {   // a reader's files, drawn and kept; group: Add map or a drop on a group of theirs
       list = Array.prototype.slice.call(list);   // the picker's list empties when it is reset
       var picked = list.filter(function (f) { return /\.(graphml|xml|sbgn)$/i.test(f.name); });
-      var MAX = 15, over = repo() && token() && picked.length > MAX ? picked.splice(MAX) : [];   // with a token each map is a commit: GitHub refuses more than about 80 writes a minute
-      var last = null, failed = over.map(function (f) { return f.name + ': more than ' + MAX + ' files at once with GitHub, add it again'; }), order = repo() && token() ? siteOrder(group) : 0;   // one after another; on the site each after the one before (the site's list is read again only after the build)
+      var gh = repo() && token(), last = null, failed = [], out = [];   // with a token: all drawn first, then sent in one commit
+      var why = function (f) { return function (e) { failed.push(f.name + ': ' + (e && e.message ? e.message : e)); }; };
       return picked.reduce(function (p, f) {
         return p.then(function () { return f.text(); }).then(function (t) {
           if (isSb(t) && !madeHere(t)) throw new Error('an SBGN-ML file from another editor cannot be added yet, only one made here with New map');
-          if (repo() && token()) return drawText(t).then(function (d) {   // with a token: to the site, shown from here until built
-            var ext = siteExt(t), title = freeTitle(f.name.replace(/\.(graphml|xml|sbgn)$/i, ''));   // the site's map named so too (toSite takes its title from the name)
+          if (gh) return drawText(t).then(function (d) {   // with a token: to the site, shown from here until built
+            var ext = siteExt(t), title = freeTitle(f.name.replace(/\.(graphml|xml|sbgn)$/i, ''), out.map(function (o) { return o.title; }));
             if (!ext) throw new Error(siteWhy(t));
-            return toSite(title, ext, t, group, order++).then(function (s) {
-              var r = { id: newId(), title: title, file: f.name,
-                text: t, svg: d.svg, width: d.width, height: d.height, at: Date.now(), hidden: false, group: group || '' };
-              return minePut(onSite(r, s, title)).then(function () { last = r.id; });
-            });
+            out.push({ f: f, d: d, t: t, ext: ext, title: title });
           });
           return drawText(t).then(function (d) { return mineAdd(f.name, t, d, null, group || undefined); }).then(function (r) { last = r.id; return toFolder(r.id, r.file, r.text); });
-        }).catch(function (e) { failed.push(f.name + ': ' + (e && e.message ? e.message : e)); });
+        }).catch(why(f));
       }, Promise.resolve()).then(function () {
+        if (!out.length) return;
+        var order = siteOrder(group);
+        return toSiteMany(out.map(function (o) { return { title: o.title, ext: o.ext, text: o.t, group: group, order: order++ }; })).then(function (ss) {
+          return out.reduce(function (p, o, i) {   // a part GitHub refused said, the parts sent kept
+            if (ss[i].err) { why(o.f)(ss[i].err); return p; }
+            var r = { id: newId(), title: o.title, file: o.f.name, text: o.t, svg: o.d.svg, width: o.d.width, height: o.d.height, at: Date.now(), hidden: false, group: group || '' };
+            return p.then(function () { return minePut(onSite(r, ss[i], o.title)); }).then(function () { last = r.id; });
+          }, Promise.resolve());
+        });
+      }).then(function () {
         V.refreshMine(); if (last) V.go(last);
         if (failed.length) alert((failed.length === 1 ? 'Not added, ' : failed.length + ' files not added:\n') + failed.join('\n'));
       });
@@ -574,34 +580,58 @@
     function siteExt(t) { return isCd(t) ? '.xml' : isSb(t) ? (madeHere(t) ? '.sbgn' : null) : /yworks\.com/.test(t.slice(0, 5000)) ? '.graphml' : null; }
     function siteWhy(t) { return isSb(t) ? 'an SBGN-ML file from another editor cannot go to the site yet, only one made here with New map' : 'not a yEd GraphML or CellDesigner file'; }
     function onSite(r, s, title) { r.site = s.id; r.path = s.path; r.sha = s.sha; r.saved = s.text; r.siteTitle = title; return r; }
-    // a reader's map put on the site (ext from siteExt: only what the build takes, any other file would stop it): the
-    // file as maps/<id><ext> and its maps/<id>.md (title, group, order) in one commit on main, so the build makes it a
-    // map of the site; the id from the title, made unique among maps/, read again on each try (a commit of another page or
-    // tab meanwhile: done again on the newest main, three tries). Gives the id, the file's path, its blob sha (the build's
-    // src once it has drawn this very file) and the text sent
-    function toSite(title, ext, text, group, order) {
+    // readers' maps put on the site (ext from siteExt: only what the build takes, any other file would stop it): each
+    // file as maps/<id><ext> and its maps/<id>.md (title, group, order), all in one commit on main (the files' text in
+    // the tree: three writes and one build for any number), so the build makes them maps of the site; ids from the
+    // titles, made unique among maps/ and the ids sent before in the same call, read again on each try (a commit of
+    // another page or tab meanwhile: done again on the newest main, three tries). More than BULK of text, or a tree
+    // GitHub refuses (too large), is sent as two halves, one after the other. Gives per map the id, the file's path, its
+    // blob sha (the build's src once it has drawn this very file) and the text, or { err } for a part not sent
+    var BULK = 20e6;
+    function toSiteMany(items) {
       if (!(repo() && token())) return Promise.reject(new Error('not connected to GitHub'));
-      var base = title.replace(/["\\]/g, ''),   // the build reads the front matter's quotes plainly
-          slug = (base.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'map').replace(/-(sbgn|sbgnml)$|^external-/, function (x) { return x === 'external-' ? 'map-external-' : x + '-map'; });   // the build's own ids end or start so
-      var md = '---\ntitle: ' + JSON.stringify(base) + '\ntopic: ' + JSON.stringify(base) + '\ngroup: ' + JSON.stringify(group || '') + '\norder: ' + (order | 0) + '\n---\n';
-      var j = ghJson, post = ghPost;
-      return Promise.all([post('/git/blobs', { content: b64(text), encoding: 'base64' }), post('/git/blobs', { content: b64(md), encoding: 'base64' })]).then(function (b) {
-        var tries = 0, id;
+      var j = ghJson, post = ghPost, used = {};
+      var slugOf = function (base) { return (base.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'map').replace(/-(sbgn|sbgnml)$|^external-/, function (x) { return x === 'external-' ? 'map-external-' : x + '-map'; }); };   // the build's own ids end or start so
+      var mdOf = function (base, it) { return '---\ntitle: ' + JSON.stringify(base) + '\ntopic: ' + JSON.stringify(base) + '\ngroup: ' + JSON.stringify(it.group || '') + '\norder: ' + (it.order | 0) + '\n---\n'; };
+      var halves = function (part) {
+        var h = Math.ceil(part.length / 2);
+        return send(part.slice(0, h)).then(function (a) { return send(part.slice(h)).then(function (b) { return a.concat(b); }); });
+      };
+      var send = function (part) {
+        if (part.length > 1 && part.reduce(function (n, it) { return n + it.text.length; }, 0) > BULK) return halves(part);
+        var tries = 0;
         var go = function () {
+          var ids;
           return api('/contents/maps?ref=main').then(j).then(function (d) {
-            var taken = {}; d.forEach(function (f) { taken[f.name.replace(/\.[^.]+$/, '')] = 1; });
-            id = slug; for (var k = 2; taken[id]; k++) id = slug + '-' + k;
+            var taken = Object.assign({}, used); d.forEach(function (f) { taken[f.name.replace(/\.[^.]+$/, '')] = 1; });
+            ids = part.map(function (it) { var s = slugOf(it.title), id = s; for (var k = 2; taken[id]; k++) id = s + '-' + k; taken[id] = 1; return id; });
             return api('/git/ref/heads/main').then(j);
           }).then(function (ref) {
             return api('/git/commits/' + ref.object.sha).then(j).then(function (c) {
-              return post('/git/trees', { base_tree: c.tree.sha, tree: [{ path: 'maps/' + id + ext, mode: '100644', type: 'blob', sha: b[0].sha }, { path: 'maps/' + id + '.md', mode: '100644', type: 'blob', sha: b[1].sha }] });
-            }).then(function (t) { return post('/git/commits', { message: 'Map added in the viewer: ' + id + ext, tree: t.sha, parents: [ref.object.sha] }); })
+              var t = [];
+              part.forEach(function (it, i) {
+                var base = it.title.replace(/["\\]/g, '');   // the build reads the front matter's quotes plainly
+                t.push({ path: 'maps/' + ids[i] + it.ext, mode: '100644', type: 'blob', content: it.text }, { path: 'maps/' + ids[i] + '.md', mode: '100644', type: 'blob', content: mdOf(base, it) });
+              });
+              return post('/git/trees', { base_tree: c.tree.sha, tree: t }).catch(function (e) { e.tree = true; throw e; });
+            }).then(function (t) { return post('/git/commits', { message: part.length === 1 ? 'Map added in the viewer: ' + ids[0] + part[0].ext : part.length + ' maps added in the viewer', tree: t.sha, parents: [ref.object.sha] }); })
               .then(function (c) { return post('/git/refs/heads/main', { sha: c.sha }, 'PATCH'); });
-          }).catch(function (e) { if (e.status === 422 && ++tries < 3) return go(); throw e; });
+          }).then(function () { return ids; }).catch(function (e) {
+            if (e.tree && part.length > 1 && e.status !== 401 && e.status !== 403) throw Object.assign(e, { split: true });
+            if (e.status === 422 && ++tries < 3) return go();
+            throw e;
+          });
         };
-        return go().then(function () { ghDir = null; delete hiddenGone[id]; binClear(id); return { id: id, path: 'maps/' + id + ext, sha: b[0].sha, text: text }; });   // the listing read again next time; an id deleted forever before, taken again: a map of its own
-      });
+        return Promise.all(part.map(function (it) { return blobSha(it.text); })).then(function (shas) {
+          return go().then(function (ids) {
+            ghDir = null;
+            return ids.map(function (id, i) { used[id] = 1; delete hiddenGone[id]; binClear(id); return { id: id, path: 'maps/' + id + part[i].ext, sha: shas[i], text: part[i].text }; });   // the listing read again next time; an id deleted forever before, taken again: a map of its own
+          }, function (e) { return e.split ? halves(part) : part.map(function () { return { err: e }; }); });
+        });
+      };
+      return send(items);
     }
+    function toSite(title, ext, text, group, order) { return toSiteMany([{ title: title, ext: ext, text: text, group: group, order: order }]).then(function (a) { if (a[0].err) throw a[0].err; return a[0]; }); }
     // one map of the reader's to GitHub; its record then, or null (gone or hidden). One send per map at a time, and one
     // at a time across this site's tabs (the record read again inside the lock: another tab may have sent it)
     var upping = {};
