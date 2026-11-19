@@ -180,7 +180,7 @@
       var B = g.box, w = B[2], h = B[3], to = function (el, k, v) { if (el.getAttribute(k) !== v) T.set(el, k, v); };
       ['x', 'y', 'width', 'height'].forEach(function (k, j) { to(n.geo, k, repr(B[j])); });
       var gc = g.el.getAttribute('class') || '';
-      if (LOOKS.test(gc)) setLook(T, G, id, fileLook(St, id, gc));   // the file's look (a draft, a build of an older converter): what its styles state, else the converter's template
+      var nw = LOOKS.test(gc) ? setLook(T, G, id, fileLook(St, id, gc), B) : null;   // nw: the name's width at the file's font, where it differs   // the file's look (a draft, a build of an older converter): what its styles state, else the converter's template
       // what graphml.write works out from the box: the state variables' places (their ratios read from the file as
       // sbgnml.read reads them), the units of information spread evenly along the top (graphml.write, whatever the
       // file's places), a compartment's name where the file has it. Counted by kind: one deleted in the editor is cut
@@ -205,7 +205,7 @@
       if (g.el.getAttribute('class') === 'compartment') {
         var l = labs.filter(function (x) { return !x.getAttribute('iconData'); })[0], lab = kid(g.el, 'label'), lb = lab && kid(lab, 'bbox');
         if (!l) return;
-        var lw = F(l.getAttribute('width'));
+        var lw = nw != null ? nw : F(l.getAttribute('width'));
         if (!lb) { to(l, 'x', repr((w - lw) / 2)); to(l, 'y', '0.0'); return; }
         var lx = F(lb.getAttribute('x')) - B[0], ly = F(lb.getAttribute('y')) - B[1], np = namePlace(lx, ly, lw, F(l.getAttribute('height')), w, h);
         to(l, 'x', repr(lx)); to(l, 'y', repr(ly));
@@ -536,11 +536,14 @@
     });
     // the look set in the editor's properties: fill, border colour and width
     var St = styles(S), looks = new Map();   // glyph id -> the look wanted, where it is not the file's
+    var mf = null, mapFont = function () { return mf != null ? mf : (mf = Math.round(14 * scaleOf(S) + 0.01)); };   // the converter's font for a glyph whose file states none
     Object.keys(S.glyph).forEach(function (id) {
       var cls = S.glyph[id].el.getAttribute('class') || '';
       if (!G.node[id] || !LOOKS.test(cls)) return;   // the glyphs the editor restyles
       var want = lookG(G, id), have = fileLook(St, id, cls);
-      if (want.fill !== have.fill || want.line !== have.line || want.width !== have.width) looks.set(id, { fill: want.fill, line: want.line, width: want.width, font: have.font, cls: cls });
+      // the name's font: written where it differs from the file's (a file stating none drawn at the map's, graphml.write)
+      var font = NAMED.test(cls) && want.font != null && want.font !== (have.font != null ? have.font : mapFont()) ? want.font : have.font;
+      if (want.fill !== have.fill || want.line !== have.line || want.width !== have.width || font !== have.font) looks.set(id, { fill: want.fill, line: want.line, width: want.width, font: font, cls: cls });
     });
     Object.keys(S.arc).forEach(function (id) {   // a line's colour: the rest of its style (width, a fill some tools give) kept
       if (!G.edge[id]) return;
@@ -568,7 +571,8 @@
         iconsOf(id).map(function (q, k) { return svXml(id, k, q, n.box, ind0 + '  '); }).join('') +
         fu.map(function (q, k) { return uiXml(id, k, q[0], uBox(q[0], n.box, k, fu.length), ind0 + '  '); }).join('')) + '\n' + ind0 + '</' + pre + 'glyph>';
       if (cls === 'compartment') front += xml; else fresh += xml;   // a compartment before the glyphs, as the editor draws it under them
-      if (lk.fill || lk.line || lk.width !== 1) looks.set(id, { fill: lk.fill, line: lk.line, width: lk.width, font: L.main ? F(L.main.getAttribute('fontSize')) : null, cls: cls, fresh: true });
+      var lf = L.main ? F(L.main.getAttribute('fontSize')) || 12 : null, own = lf != null && NAMED.test(cls) && lf !== mapFont();   // a font of its own, not the map's
+      if (lk.fill || lk.line || lk.width !== 1 || own) looks.set(id, { fill: lk.fill, line: lk.line, width: lk.width, font: L.main ? lf : null, cls: cls, fresh: true });
     });
     var ext = restyle0(S, T, St, looks, pre);   // a render extension written for an empty <map/>: put into it below
     if (front && tops.length) { var f0 = T.at.get(tops[0])[0]; T.ed.push([f0, f0, front.replace(/^\n\s*/, '') + '\n' + T.indent(tops[0])]); }
@@ -1085,12 +1089,21 @@
   var FILL = { macromolecule: '#C8D8EB', 'simple chemical': '#DBEBDB', compartment: '#F7F6F3', complex: '#FFFFFF', 'nucleic acid feature': '#FFFFFF',
                'unspecified entity': '#FFFFFF', 'perturbing agent': '#FFFFFF', phenotype: '#FFFFFF', submap: '#FFFFFF' };
   function fillFor(cls, unit) { return FILL[cls === 'biological activity' ? actCls(unit) : (cls || '').replace(/ multimer$/, '')] || null; }
-  function defaults(t, opt, cls, unit) {   // unit: an activity's, for its fill
-    cls = cls || 'macromolecule';
-    var S = sbgn(t, opt), hs = [], best = null, n = 0, same = {};
-    Object.keys(S.glyph).forEach(function (id) {   // a protein's activity is a protein to the converter (sbgnml.ACTIVITY)
+  function scaleOf(S) {   // the map's scale from its proteins, as style.scale_of (a protein's activity is a protein to the converter, sbgnml.ACTIVITY)
+    var hs = [];
+    Object.keys(S.glyph).forEach(function (id) {
       var c = S.glyph[id].el.getAttribute('class');
       if (c === 'macromolecule' || (c === 'biological activity' && actCls(fileUnit(S.glyph[id].el)) === 'macromolecule')) hs.push(S.glyph[id].box[3]);
+    });
+    hs.sort(function (a, b) { return a - b; });
+    var m = hs.length ? (hs.length % 2 ? hs[(hs.length - 1) / 2] : (hs[hs.length / 2 - 1] + hs[hs.length / 2]) / 2) : 40, s = m / 40;
+    return s > 1.2 || s < 1 / 1.2 ? s : 1;
+  }
+  function defaults(t, opt, cls, unit) {   // unit: an activity's, for its fill
+    cls = cls || 'macromolecule';
+    var S = sbgn(t, opt), best = null, n = 0, same = {};
+    Object.keys(S.glyph).forEach(function (id) {
+      var c = S.glyph[id].el.getAttribute('class');
       // the same kind: a multimer counts as its kind, an activity only as one of the same unit kind (so a metabolite
       // activity does not take the protein activities' fill)
       if ((c || '').replace(/ multimer$/, '') === cls && (c !== 'biological activity' || unit === undefined || actCls(fileUnit(S.glyph[id].el)) === actCls(unit))) same[id] = 1;
@@ -1104,9 +1117,7 @@
       if (PROC.test(cls) ? PROC.test(c) : same[id]) { all++; cnt[k] = (cnt[k] || 0) + 1; if (!top || cnt[k] > cnt[top]) top = k; }
     });
     var own = top && (cnt[top] > 1 || all === 1) ? top.split(',').map(Number) : null;
-    hs.sort(function (a, b) { return a - b; });
-    var m = hs.length ? (hs.length % 2 ? hs[(hs.length - 1) / 2] : (hs[hs.length / 2 - 1] + hs[hs.length / 2]) / 2) : 40, s = m / 40;   // the map's scale from its proteins, as style.scale_of
-    if (!(s > 1.2 || s < 1 / 1.2)) s = 1;
+    var s = scaleOf(S);
     var filled = false;   // a glyph of that kind with a fill: a map whose glyphs of that kind have none (CaMKII) gets none
     styles(S).forEach(function (st) { var k = st.ids.filter(function (i) { return same[i]; }).length; if (st.fill && k) filled = true; if (st.fill && st.plain && k > n) { n = k; best = st; } });
     var sz = SIZE[cls] || SIZE.macromolecule, fallback = !best && (filled || !Object.keys(same).length);   // the Default colours only on a map with no glyph of that kind (a New map)
@@ -1120,9 +1131,10 @@
   // black border and a width of 1 are the defaults, a compartment's 2). LOOKS: every glyph Properties restyles
   var LOOKS = /^(macromolecule|simple chemical|nucleic acid feature|complex)( multimer)?$|^(biological activity|unspecified entity|perturbing agent|perturbation|phenotype|submap|source and sink|compartment|process|omitted process|uncertain process|association|dissociation|and|or|not|equivalence|delay)$/;
   function lookG(G, id) { return lookOf(G.node[id].geo.parentNode); }
-  function lookOf(r) {   // a node's realizer: its fill, border colour (null: black) and width, drawn as a multimer
+  function lookOf(r) {   // a node's realizer: its fill, border colour (null: black) and width, drawn as a multimer, its name's font size (null: no name label)
     var fl = kid(r, 'Fill'), bs = kid(r, 'BorderStyle'), line = ((bs && bs.getAttribute('color')) || '#000000').toUpperCase();
-    return { fill: fl && fl.getAttribute('hasColor') !== 'false' && fl.getAttribute('color') ? fl.getAttribute('color').toUpperCase() : null,
+    var lab = kids(r, 'NodeLabel').filter(function (l) { return !l.getAttribute('iconData'); })[0];
+    return { font: lab ? F(lab.getAttribute('fontSize')) || 12 : null, fill: fl && fl.getAttribute('hasColor') !== 'false' && fl.getAttribute('color') ? fl.getAttribute('color').toUpperCase() : null,
              line: line === '#000000' ? null : line, width: bs && bs.getAttribute('width') ? F(bs.getAttribute('width')) : 1,
              multimer: kids(kid(r, 'StyleProperties') || r, 'Property').some(function (q) { return q.getAttribute('name') === 'com.yworks.sbgn.style.mcount' && q.getAttribute('value') !== '1'; }) };
   }
@@ -1139,7 +1151,7 @@
     return o;
   }
   // the node's look in the GraphML set to o (fill, line, width: those given)
-  function setLook(T, G, id, o) {
+  function setLook(T, G, id, o, keep) {   // keep: setFont's; returns the name's new width where its font changed
     var n = G.node[id], r = n.geo.parentNode, fl = kid(r, 'Fill'), bs = kid(r, 'BorderStyle'), now = lookG(G, id);
     if ('fill' in o && o.fill !== now.fill && fl) {   // as graphml.write writes it: color first, or hasColor last
       var fs0 = T.at.get(fl), tr = fl.getAttribute('transparent') || 'false';
@@ -1147,9 +1159,29 @@
     }
     if ('line' in o && o.line !== now.line && bs) T.set(bs, 'color', o.line || '#000000');
     if ('width' in o && o.width !== now.width && bs) T.set(bs, 'width', repr(o.width));
+    if (o.font != null && now.font != null && o.font !== now.font) return setFont(T, G, id, o.font, keep);
   }
-  //   lookOf(realizer) -> { fill, line, width, multimer } of a node of the editor's GraphML (its parsed realizer)
-  //   restyle(g, id, o) -> g with the node's look set to o (any of fill, line, width)
+  // the name's font size in the GraphML, its label box measured again for it (as label() and graphml.write's _label);
+  // a group's other realizers (folded in yEd) the same size
+  // keep: graphml()'s box of the node (the DOM still has the old one): a compartment's name left where it is (graphml()
+  // places it from the file, with the width returned); returns
+  // the label's new width, else null
+  function setFont(T, G, id, fs, keep) {
+    var n = G.node[id], L = labelsOf(G, id).main;
+    if (!L) return null;
+    var w = (keep || n.box)[2], h = (keep || n.box)[3], b = labelBox(ownText(L), w, h, fs / 14), inner = L.getAttribute('modelName') === 'internal', z = repr(fs).replace(/\.0$/, '');
+    var at = [['width', b[0]], ['height', b[1]]];
+    if (!inner) at.push(['x', b[2]], ['y', b[3]]);
+    else if (cfgOf(L.parentNode) === 'Complex') at.push(['x', (w - b[0]) / 2], ['y', L.getAttribute('modelPosition') === 'b' ? h - b[1] : (h - b[1]) / 2]);   // as graphml.write: centred, on the bottom edge with members
+    else if (!keep && Math.abs(F(L.getAttribute('x')) + F(L.getAttribute('width')) / 2 - w / 2) < 0.5) at.push(['x', (w - b[0]) / 2]);   // a compartment's centred name stays centred
+    T.set(L, 'fontSize', z);
+    at.forEach(function (q) { T.set(L, q[0], repr(q[1])); });
+    var rs = L.parentNode.parentNode;
+    if (rs && rs.localName === 'Realizers') kids(rs).forEach(function (r) { var l2 = r !== L.parentNode && kid(r, 'NodeLabel'); if (l2) T.set(l2, 'fontSize', z); });
+    return b[0];
+  }
+  //   lookOf(realizer) -> { fill, line, width, multimer, font } of a node of the editor's GraphML (its parsed realizer)
+  //   restyle(g, id, o) -> g with the node's look set to o (any of fill, line, width, font: its name's size)
   function restyle(t, id, o, opt) {
     var G = gml(t, opt);
     if (!G.node[id]) return t;

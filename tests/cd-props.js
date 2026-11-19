@@ -1,6 +1,6 @@
 // Compartments and complexes on a CellDesigner map (editor/src/cdcreate.js, cd_make.js): a compartment's sign dragged from
 // the palette drawn as the map draws it (its colour, 12 between its lines), placed 160 by 160; Properties for a complex
-// (Width, Height, Fill, Border width; no Multimer) and for a compartment (Width, Height, Fill, Membrane, Outer line, Inner
+// (Width, Height, Fill, Border width, Font size, written whole; no Multimer) and for a compartment (Width, Height, Fill, Membrane, Outer line, Inner
 // line: its double line, a number under CellDesigner's limits set to the nearest allowed, silently), its name dragged to one of nine places, each value written into the
 // file and undone; a modifier's Line colour and a reaction's (no ports' rows), written and drawn, the reaction's added
 // reactants and products keeping their own. Nothing is saved (no token). No script error.
@@ -123,8 +123,12 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#acly-celld
   ok('a complex dropped', /^csa/.test(cx || ''));
   await select(cx);
   var rx = await rows();
-  ok('a complex: Label, Width, Height, Fill colour, Border width', JSON.stringify(rx) === JSON.stringify(['label', 'w', 'h', 'fill', 'width']), JSON.stringify(rx));
-  await type('fill', '#ffffff');
+  ok('a complex: Label, Font size, Width, Height, Fill colour, Border width', JSON.stringify(rx) === JSON.stringify(['label', 'font', 'w', 'h', 'fill', 'width']), JSON.stringify(rx));
+  await type('font', '17.6');
+  ok('its font size written, a whole number', /<celldesigner:font size="18"\/>/.test(aliasOf(await now(), cx)), aliasOf(await now(), cx).slice(0, 400));
+  await page.keyboard.press('Control+z'); await page.waitForTimeout(800);
+  ok('its font size undone', /<celldesigner:font size="12"\/>/.test(aliasOf(await now(), cx)), aliasOf(await now(), cx).slice(0, 400));
+  await select(cx); await type('fill', '#ffffff');
   ok('its fill written white', /<celldesigner:paint color="ffffffff"/.test(aliasOf(await now(), cx)));
   await select(cx); await type('h', '200');
   ok('its height written', /h="200\.0"/.test(aliasOf(await now(), cx)), aliasOf(await now(), cx).slice(0, 300));

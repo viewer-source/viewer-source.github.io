@@ -1,6 +1,6 @@
 // sbgn_edit's restyle (the editor's Properties) on SBGN-ML files of every render-extension shape, against the
 // converter: a macromolecule made on an empty <map/>, and a file's own macromolecule (a compartment, a complex with a member, a process) given a fill, a border colour and a
-// width, in a file with no extension, with an extension holding other things, with colour definitions but no styles, with
+// width (and a name's font size 20), in a file with no extension, with an extension holding other things, with colour definitions but no styles, with
 // the glyph named in two styles (the font family of the first kept), with libsbgn's prefixed attributes. Checks: the
 // converter reads the look written; graphml(s2, conv(s)) is conv(s2) byte for byte (drawn the same for the glyph made); write(s2, conv(s2)) is s2.
 //   node tests/sbgn-restyle.js [python]
@@ -35,7 +35,7 @@ var base = conv(cases.map(function (c) { return c[1]; })), s2s = [], bad = 0;
 cases.forEach(function (c, k) {
   var g = base[k], g2;
   if (c[0] === 'an empty map') g2 = se.add(g, { id: 'm1', cls: 'macromolecule', label: 'M', box: [10, 10, 80, 40], fill: '#FFCC00', line: '#AA0000', width: 2.5, font: 14 }, opt);
-  else g2 = se.restyle(g, 'g1', { fill: '#FFCC00', line: '#AA0000', width: 2.5 }, opt);
+  else g2 = se.restyle(g, 'g1', Object.assign({ fill: '#FFCC00', line: '#AA0000', width: 2.5 }, c[0] === 'a process' ? {} : { font: 20 }), opt);   // a name's font size (a process has no name)
   s2s.push(se.write(c[1], g2, opt));
 });
 var after = conv(s2s);
@@ -46,6 +46,8 @@ cases.forEach(function (c, k) {
     var doc = new DP().parseFromString(c2, 'application/xml'), n = Array.prototype.filter.call(doc.getElementsByTagName('node'), function (x) { return x.getAttribute('id') === id; })[0];
     var fl = n && n.getElementsByTagName('y:Fill')[0], bs = n && n.getElementsByTagName('y:BorderStyle')[0];
     if (!fl || fl.getAttribute('color') !== '#FFCC00' || bs.getAttribute('color') !== '#AA0000' || bs.getAttribute('width') !== '2.5') why.push('the converter reads another look');
+    var nl = n && n.getElementsByTagName('y:NodeLabel')[0];
+    if (!/^(a process|an empty map)$/.test(c[0]) && (!nl || nl.getAttribute('fontSize') !== '20')) why.push('the converter reads another font size (' + (nl && nl.getAttribute('fontSize')) + ')');
     var re = se.graphml(s2, base[k], opt);   // a glyph made is drawn the same (made()); a restyled one byte for byte
     if (c[0] === 'an empty map' ? draw(re) !== draw(c2) : re !== c2) why.push('graphml(s2, conv(s)) is not conv(s2)');
     if (se.write(s2, c2, opt) !== s2) why.push('write(s2, conv(s2)) is not s2');

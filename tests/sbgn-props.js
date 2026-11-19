@@ -44,7 +44,9 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysis
   ok('a complex with members and a process found', !!CX && !!PR, CX + ' ' + PR);
   await select(CX, [0.5, 0.97]);
   var rc = await rows();
-  ok('a complex: Label, Width, Height, Fill colour, Border colour, Border width', JSON.stringify(rc) === JSON.stringify(['label', 'w', 'h', 'fill', 'line', 'width']), JSON.stringify(rc));
+  ok('a complex: Label, Font size, Width, Height, Fill colour, Border colour, Border width', JSON.stringify(rc) === JSON.stringify(['label', 'font', 'w', 'h', 'fill', 'line', 'width']), JSON.stringify(rc));
+  await type('font', '20');
+  ok('its font size written into its style', has(await now(), CX, 'font-size', '20'), styled(await now(), CX));
   await type('fill', '#ffeedd');
   ok('its fill written into its style', has(await now(), CX, 'fill', '#FFEEDD'), styled(await now(), CX));
   await select(CX, [0.5, 0.97]); await type('line', '#cc0000');
@@ -69,7 +71,7 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysis
   if (comp) {
     await select(comp, [0.02, 0.5]);
     var rr = await rows();
-    ok('a compartment: Label, Width, Height, Fill colour, Border colour, Border width', JSON.stringify(rr) === JSON.stringify(['label', 'w', 'h', 'fill', 'line', 'width']), JSON.stringify(rr));
+    ok('a compartment: Label, Font size, Width, Height, Fill colour, Border colour, Border width', JSON.stringify(rr) === JSON.stringify(['label', 'font', 'w', 'h', 'fill', 'line', 'width']), JSON.stringify(rr));
     await type('fill', '#eef4ff');
     ok('its fill written', has(await now(), comp, 'fill', '#EEF4FF'), styled(await now(), comp));
   }

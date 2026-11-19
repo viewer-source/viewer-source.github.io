@@ -265,7 +265,7 @@
       var id = nodes2[i].id, L, n, all = cdKept();
       try { L = cdMk.look(cd.now, id); n = cdMk.aliasInfo(cd.now, id).homodimer || 1; } catch (e) { return; }   // the file behind the map read (an undo not drawn yet)
       var b = boxOf(i);
-      all[L.cls] = { w: b[2], h: b[3], width: L.width, multimer: n > 1, copies: n };
+      all[L.cls] = { w: b[2], h: b[3], width: L.width, multimer: n > 1, copies: n, font: L.font };
       if (L.fill && L.cls !== 'DEGRADED') all[L.cls].fill = L.fill;   // a degraded species keeps CellDesigner's look
       if (!keepLook(CD_DEF_KEY, all)) return;
       keepMapChoice('style', 'custom'); keepMapChoice('cols', 'custom'); styleRow(); cdColsRow();
@@ -273,11 +273,12 @@
     // the copies of a new species of that class: the multimer kept, under Style Custom; its box (cdSize) holds them all, the
     // front one 6 smaller for each copy behind it (cdrender frontBox; cd_make.homodimer grows the box back)
     function cdCopies(cls) { var k = palStyle() === 'custom' && cls !== 'DEGRADED' ? cdKept()[cls] : null; return k && k.multimer && k.w > 0 ? Math.max(2, k.copies || 2) : 1; }
-    function cdKeptLook(t, alias, cls) {   // a new species given the border width and multimer kept for its class, under Custom
+    function cdKeptLook(t, alias, cls) {   // a new species given the border width, multimer and font size kept for its class, under Custom
       var k = cdKept()[cls], n = cdCopies(cls);
       if (!k || cls === 'DEGRADED') return t;
       if (cdCols() === 'custom' && k.width > 0 && k.width !== 1) t = cdMk.restyle(t, alias, { width: k.width });
       if (n > 1) t = cdMk.homodimer(t, alias, n);
+      if (palStyle() === 'custom' && k.font > 0 && k.font !== 12) t = cdMk.restyle(t, alias, { font: k.font });   // its name's size with the size (Style)
       return t;
     }
     function cdMake(P, kind) {
@@ -798,14 +799,14 @@
         return cdApply(function (t) { return cdMk.recolourLine(t, id, c || '#000000'); }, [], [keep]);
       }, ports: false },
       node: function (i) { return cdProp(i) ? i : -1; },
-      off: function (k, i) {   // pNow: look's, read just before; a compartment no border width or multimer, a complex no multimer
-        return k === 'line' || (/^(mem|outer|inner)$/.test(k) && pNow.cls !== 'COMPARTMENT') || (/^(label|fill|multimer)$/.test(k) && pNow.cls === 'DEGRADED') || (/^(width|multimer|def)$/.test(k) && pNow.cls === 'COMPARTMENT') || (/^(multimer|def)$/.test(k) && pNow.cls === 'COMPLEX');
+      off: function (k, i) {   // pNow: look's, read just before; a compartment no border width, multimer or font size (CellDesigner keeps none for its name), a complex no multimer
+        return k === 'line' || (/^(mem|outer|inner)$/.test(k) && pNow.cls !== 'COMPARTMENT') || (/^(label|font|fill|multimer)$/.test(k) && pNow.cls === 'DEGRADED') || (/^(width|multimer|def|font)$/.test(k) && pNow.cls === 'COMPARTMENT') || (/^(multimer|def)$/.test(k) && pNow.cls === 'COMPLEX');
       },
       look: function (i) {   // null while the file is behind the map read (an undo not drawn yet); read once per node and file (it runs with every paint)
         var id = nodes2[i].id;
         if (cdLook[0] !== id || cdLook[1] !== cd.now) {
           var L = null;
-          try { L = cdMk.look(cd.now, id); L = { label: cdNameOf(id, true), fill: L.fill, line: '#000000', width: L.width, multimer: L.multimer, cls: L.cls, mem: L.mem, outer: L.outer, inner: L.inner }; } catch (e) { L = null; }
+          try { L = cdMk.look(cd.now, id); L = { label: cdNameOf(id, true), font: L.font, fill: L.fill, line: '#000000', width: L.width, multimer: L.multimer, cls: L.cls, mem: L.mem, outer: L.outer, inner: L.inner }; } catch (e) { L = null; }
           cdLook = [id, cd.now, L];
         }
         return cdLook[2] && Object.assign({}, cdLook[2]);
@@ -815,6 +816,7 @@
         if (k === 'label') return all(function (t, id) { return cdMk.rename(t, id, v.replace(/[\r\n]+/g, ' ')); });
         if (k === 'multimer') return all(function (t, id) { return !v ? cdMk.homodimer(t, id, 1) : cdMk.aliasInfo(t, id).homodimer > 1 ? t : cdMk.homodimer(t, id, 2); });   // a count above 2 kept
         if (k === 'width') { var x = parseFloat(v); return isFinite(x) && all(function (t, id) { return cdMk.restyle(t, id, { width: Math.min(Math.max(x, 0.25), 20) }); }); }   // outside 0.25 to 20: the nearest, silently
+        if (k === 'font') { var z = parseFloat(v); return isFinite(z) && all(function (t, id) { return cdMk.restyle(t, id, { font: Math.min(Math.max(Math.round(z), 1), 200) }); }); }   // whole numbers (CellDesigner's), 1 to 200: the nearest, silently
         if (k === 'fill') { var c = hex(v); return !!c && all(function (t, id) { return cdMk.restyle(t, id, { fill: c }); }); }
         if (/^(mem|outer|inner)$/.test(k)) return cdDouble(k, parseFloat(v), ids);
         return false;

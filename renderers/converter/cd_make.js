@@ -1014,9 +1014,10 @@
     }
     var A = entity(t, id), u = span(t, '<celldesigner:usualView>', A.sp[0], A.sp[1]), seg = u ? t.slice(u[0], u[1]) : '';
     var p = /<celldesigner:paint color="([0-9a-fA-F]{8})"/.exec(seg), w = /<celldesigner:singleLine width="([^"]*)"/.exec(seg), h = inState(t, A.species, '<celldesigner:homodimer>');
-    return { fill: p ? '#' + p[1].slice(2).toLowerCase() : '', width: w ? F(w[1]) : 1, multimer: h ? +/>(\d+)</.exec(t.slice(h[0], h[1]))[1] > 1 : false, cls: A.cls };
+    var fe = span(t, '<celldesigner:font ', A.sp[0], A.sp[1]), fz = fe && /\ssize="([^"]*)"/.exec(t.slice(fe[0], fe[1]));
+    return { fill: p ? '#' + p[1].slice(2).toLowerCase() : '', width: w ? F(w[1]) : 1, multimer: h ? +/>(\d+)</.exec(t.slice(h[0], h[1]))[1] > 1 : false, cls: A.cls, font: fz ? F(fz[1]) : 12 };   // its name's size, CellDesigner's 12 where absent
   }
-  // the fill (#rrggbb, written opaque) and the border width of one species alias, in its usual view; the brief view kept
+  // the fill (#rrggbb, written opaque) and the border width of one species alias, in its usual view (the brief view kept), and its font size
   function restyle(t, id, o) {
     var C = alias(t, id);
     if (C.kind === 'compartmentAlias') {   // its colour (CellDesigner's paint, the band and the lines drawn from it) and its double line
@@ -1056,6 +1057,18 @@
     if (o.width != null) {
       if (!(o.width > 0 && o.width <= 20)) refuse('A border width is above 0 and 20 at most.');
       set('<celldesigner:singleLine ', 'width', num(o.width));
+    }
+    if (o.font != null) {   // the name's size: the alias's font (CellDesigner keeps no font family), one after the bounds where none is written
+      if (!(o.font >= 1 && o.font <= 200)) refuse('A font size is 1 to 200.');
+      var z = String(Math.round(o.font));   // a whole number, as CellDesigner writes and reads it
+      var B = alias(t, id), fs = span(t, '<celldesigner:font ', B.sp[0], B.sp[1]);
+      if (fs) t = attrs(t, fs[0], [['size', z]]);
+      else {
+        var bs = span(t, '<celldesigner:bounds ', B.sp[0], B.sp[1]);
+        if (!bs) fail('No bounds on ' + id + '.');
+        var e = t.indexOf('>', bs[0]) + 1;
+        t = put(t, e, e, '\n<celldesigner:font size="' + z + '"/>');
+      }
     }
     return t;
   }

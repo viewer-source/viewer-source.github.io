@@ -1514,7 +1514,7 @@
     // Shown for any glyph selected that sbgn_edit restyles (LOOKS), its rows by its class (sbOff); Width and Height for a
     // member of a complex too (Pack keeps member sizes), not for a process or gate (their antennas), a holder's typed as
     // its handles resize it (holderSize). Grid size is beside the Grid and Snap switches (core.js)
-    var ROWS = [['label', 'Label', 'text'], ['w', 'Width', 'num'], ['h', 'Height', 'num'], ['fill', 'Fill colour', 'colour'],
+    var ROWS = [['label', 'Label', 'text'], ['font', 'Font size', 'num', ' min="1" max="200"', 'The name\u2019s size'], ['w', 'Width', 'num'], ['h', 'Height', 'num'], ['fill', 'Fill colour', 'colour'],
       ['line', 'Border colour', 'colour'], ['width', 'Border width', 'num'], ['multimer', 'Multimer', 'check']];
     // a row: [key, name, kind (text, num, colour, check), its input's limits, its title]; a format's part may add its own rows (propRows)
     var props = document.createElement('div');
@@ -1555,7 +1555,7 @@
     // the rows a glyph has by its class: Label where sbgn_edit keeps a name (NAMED), Multimer where it writes one (MULTI); Set as default for the kinds the palette makes in a kept look
     function sbOff(k, i) {
       var c = sbClasses()[nodes2[i].id] || '';
-      if (k === 'label') return !sbJs.NAMED.test(c);
+      if (k === 'label' || k === 'font') return !sbJs.NAMED.test(c);   // a font size where there is a name
       if (k === 'multimer') return !sbJs.MULTI.test(c.replace(/ multimer$/, ''));
       if (EXTRA.indexOf(k) >= 0) return true;   // another format's own rows (propRows)
       if (k === 'def') return !/^(macromolecule|simple chemical)( multimer)?$|^biological activity$/.test(c);
@@ -1664,7 +1664,7 @@
       if (/^[0-9a-f]{3}$/i.test(v)) v = v.replace(/./g, '$&$&');
       return /^[0-9a-f]{6}$/i.test(v) ? '#' + v.toUpperCase() : v ? null : '';
     }
-    function propSet(k) {   // the label, a colour, the border width or multimer, from its field (the format's part writes it), to every node it is for
+    function propSet(k) {   // the label, its font size, a colour, the border width or multimer, from its field (the format's part writes it), to every node it is for
       var ns = propNodes();
       if (!ns.length) return;
       var f = field(k), v = k === 'multimer' ? f.checked : f.value;
@@ -1682,6 +1682,7 @@
         if (k === 'label') t2 = sbJs.label(t2, id, v.replace(/[\r\n]+/g, ' '));
         else if (k === 'multimer') t2 = sbJs.multimer(t2, id, v);   // a count, if any, stays the unit of information typed (N:3)
         else if (k === 'width') { var x = parseFloat(v); if (isFinite(x)) t2 = sbJs.restyle(t2, id, { width: Math.min(Math.max(x, 0.25), 20) }); }   // outside 0.25 to 20: the nearest, silently
+        else if (k === 'font') { var z = parseFloat(v); if (isFinite(z)) t2 = sbJs.restyle(t2, id, { font: Math.min(Math.max(Math.round(z * 2) / 2, 1), 200) }); }   // in halves, 1 to 200: the nearest, silently
         else {
           var c = hex(v), o = {};
           if (c !== null && !(c === '' && k === 'line')) { o[k] = c === '#000000' && k === 'line' ? null : c || null; t2 = sbJs.restyle(t2, id, o); }
@@ -1695,7 +1696,7 @@
     var PF_SB = { sizable: sbSizable, size: sbSetSize, node: sbNode, set: sbSet, def: sbDef, ends: sbEnds,
       line: { colour: sbLineColour, set: sbLineSet, ports: true },   // a line's colour and its ports' rows (edgeShow, edgeSet)
       off: sbOff,
-      look: function (i) { var o = sbJs.lookOf(realizerOf(nodes2[i].el)); return { label: nameOf(i), fill: o.fill ? o.fill.slice(0, 7).toLowerCase() : '', line: (o.line || '#000000').slice(0, 7).toLowerCase(), width: o.width, multimer: o.multimer }; } };
+      look: function (i) { var o = sbJs.lookOf(realizerOf(nodes2[i].el)); return { label: nameOf(i), font: o.font, fill: o.fill ? o.fill.slice(0, 7).toLowerCase() : '', line: (o.line || '#000000').slice(0, 7).toLowerCase(), width: o.width, multimer: o.multimer }; } };
     // a line's Properties, one line selected on a map whose format's part has a line's answers (PF_SB.line): Line colour
     // and its ports as yEd gives them, offsets from its glyph's centre (sx, sy at the source, tx, ty at the target), set
     // as a dragged end sets them (setPorts). An end at a process's or gate's port goes with it: shown, not typed.
@@ -1807,6 +1808,7 @@
       else if (st === 'custom' && k) {
         if (k.w > 0 && k.h > 0) { D.w = k.w; D.h = k.h; }
         if ('multimer' in k) D.multimer = k.multimer;
+        if (k.font > 0) D.font = k.font;   // its name's size with the size
       }
       var kc = cm === 'custom' && !!k;   // Colours: Custom, the look kept
       if (kc) ['fill', 'line', 'width'].forEach(function (q) { if (q in k) D[q] = k[q]; });
@@ -1828,7 +1830,7 @@
     function keepLook(key, all) { try { localStorage.setItem(key, JSON.stringify(all)); return true; } catch (e) { warn('The default could not be kept in this browser.'); return false; } }
     function sbDef(i) {
       var o = sbJs.lookOf(realizerOf(nodes2[i].el)), b = boxOf(i), all = defsKept();
-      all[kindOf(i)] = { w: b[2], h: b[3], fill: o.fill, line: o.line, width: o.width, multimer: o.multimer };   // as it is, no share of another size
+      all[kindOf(i)] = { w: b[2], h: b[3], fill: o.fill, line: o.line, width: o.width, multimer: o.multimer, font: o.font };   // as it is, no share of another size
       if (!keepLook(DEF_KEY, all)) return;
       keepMapChoice('style', 'custom'); keepMapChoice('cols', 'custom'); styleRow(); sbColsRow();
     }
