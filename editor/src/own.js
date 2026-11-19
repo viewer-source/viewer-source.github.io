@@ -137,11 +137,12 @@
         end: function (v) {
           v = clean(v);
           if (!v || v === was || taken(v)) return;
-          siteGroupRename(was, v);
-          listDid(function () { siteGroupRename(v, was); V.refreshMine(); }, function () { siteGroupRename(was, v); V.refreshMine(); });
+          var ex = (V.siteList || []).filter(function (m) { return m.example; }).map(function (m) { return m.id; });   // examples it holds lose the mark; an undo gives it back
+          var fwd = siteGroupRename(was, v);
+          listDid(function () { return fwd.then(function () { return siteGroupRename(v, was, ex); }); }, function () { return siteGroupRename(was, v); });
         } });
     }
-    function siteGroupRename(was, v) {   // a site group renamed: kept in this browser, with a token its maps' pages in one commit
+    function siteGroupRename(was, v, ex) {   // a site group renamed: kept in this browser, with a token its maps' pages in one commit (ex: ids marked example again)
       var gh = !!(repo() && token()), pages = [];
       (V.siteList || []).forEach(function (m) {   // every map of the group, also one in Deleted or hidden as an example
         var g = V.movedOf(m.id); if (g === null) g = m.group || '';
@@ -152,9 +153,10 @@
       Object.keys(mine).forEach(function (k) { var r = mine[k]; if (r.group === was) { r.group = v; minePut(r).catch(function () {}); } });
       V.regroupRename(was, v);   // the reader's order of groups and of the maps in it, and maps moved into it
       if (V.closed[was]) { V.closed[v] = true; delete V.closed[was]; V.saveClosed(); }
-      if (pages.length) siteGroupTo(pages, v).catch(function (e) { alert(was + ' was not renamed on the site: ' + (e && e.message ? e.message : e) + '. The new name is kept in this browser only.'); });
+      V.refreshMine();
+      return pages.length ? siteGroupTo(pages, v, ex).catch(function (e) { alert(was + ' was not renamed on the site: ' + (e && e.message ? e.message : e) + '. The new name is kept in this browser only.'); }) : Promise.resolve();
     }
-    function siteGroupTo(ids, g) {   // maps/<id>.md of every map given: group g, example: dropped; one commit on the pages as
+    function siteGroupTo(ids, g, ex) {   // maps/<id>.md of every map given: group g, example: dropped; one commit on the pages as
       // the commit read has them (a page gone meanwhile left out), three tries
       var tries = 0, post = ghPost;
       var go = function () {
@@ -165,6 +167,7 @@
               var md = textOf(d.content), fm = /^---(\r?\n)([\s\S]*?)\r?\n---/.exec(md);
               if (!fm) return null;
               var head = fm[2].replace(/^group:[^\r\n]*/m, 'group: ' + JSON.stringify(g)).replace(/^example:.*(\r?\n|$)/m, '').replace(/\r?\n$/, '');
+              if ((ex || []).indexOf(id) >= 0) head += fm[1] + 'example: true';
               if (!/^group:/m.test(head)) head += fm[1] + 'group: ' + JSON.stringify(g);
               return { path: 'maps/' + id + '.md', mode: '100644', type: 'blob', content: '---' + fm[1] + head + md.slice(3 + fm[1].length + fm[2].length) };
             });
@@ -363,19 +366,20 @@
         if (r.site) {   // its page on the site too, the list's name over the site's until the build has it
           var sid = r.site, was0 = renamed[sid] ? renamed[sid].was : r.siteTitle || shown;
           renamed[sid] = { was: was0, to: v };
-          toSiteName(sid, shown, v).catch(function (e) { delete renamed[sid]; alert(shown + ' was not renamed on the site: ' + (e && e.message ? e.message : e)); });
+          var sent = toSiteName(sid, shown, v).catch(function (e) { delete renamed[sid]; alert(shown + ' was not renamed on the site: ' + (e && e.message ? e.message : e)); });
         }
         if (V.current && V.current.id === m.id) {   // the map on screen, and the editor's own name of it
           document.getElementById('m2-title').textContent = v;
           if (map && map.id === m.id) map.title = v;
         }
+        return sent;
       } else if (local) {
         renamed[m.id] = { was: renamed[m.id] ? renamed[m.id].was : (V.siteList || []).filter(function (x) { return x.id === m.id; }).map(function (x) { return x.topic; })[0] || shown, to: v, local: true };
         namedSave();
       } else {
         var was = renamed[m.id] ? renamed[m.id].was : shown;
         renamed[m.id] = { was: was, to: v };
-        toSiteName(m.id, shown, v).catch(function (e) { delete renamed[m.id]; V.refreshMine(); alert(shown + ' was not renamed: ' + (e && e.message ? e.message : e)); });
+        return toSiteName(m.id, shown, v).catch(function (e) { delete renamed[m.id]; V.refreshMine(); alert(shown + ' was not renamed: ' + (e && e.message ? e.message : e)); });
       }
     }
     function freeFile(name) {   // a file name no map of the reader's has (-2, -3, ... before the extension)
@@ -1046,13 +1050,14 @@
         r.hidden = false; delete r.deleted; if (to) r.title = to;
         minePut(r).catch(function () {});
         folderMove(m.id, false);
-        if (r.site && repo() && token()) siteBin(r.site, false, to).catch(say);
+        var sent = r.site && repo() && token() ? siteBin(r.site, false, to).catch(say) : null;
       } else {
         var before = renamed[m.id];
         if (to) renamed[m.id] = { was: before ? before.was : name, to: to };
-        siteBin(m.id, false, to).catch(function (e) { if (before) renamed[m.id] = before; else delete renamed[m.id]; say(e); });
+        sent = siteBin(m.id, false, to).catch(function (e) { if (before) renamed[m.id] = before; else delete renamed[m.id]; say(e); });
       }
       V.refreshMine();
+      return Promise.resolve(sent);   // the list's undo waits for it
     }
     // the group SBGN-ML's maps (build.py sbgn_map: <name>-sbgn, edited at maps/sbgn-ml/<name>-sbgn.sbgn) are their GraphML
     // map's twins, with no page of their own: in Deleted with it, restored and deleted forever with it
@@ -1211,59 +1216,66 @@
     // where the last press was (or the last change came from), else to the map being edited (core.js); outside editing
     // always to the list. Delete forever is not undone (as emptying the Bin). One step at a time, after the change before
     var listPast = [], listAhead = [], listLast = false, listStepping = Promise.resolve();
-    function listDid(undo, redo) { listPast.push({ undo: undo, redo: redo }); if (listPast.length > 100) listPast.shift(); listAhead = []; listLast = true; }
+    function listDid(undo, redo, e) { listPast.push(e || { undo: undo, redo: redo }); if (listPast.length > 100) listPast.shift(); listAhead = []; listLast = true; }
     function listStep(back) {
       listStepping = listStepping.then(function () {
         var s = (back ? listPast : listAhead).pop();
         if (!s) return;
         (back ? listAhead : listPast).push(s);
-        return Promise.resolve(back ? s.undo() : s.redo()).catch(function () {}).then(function () { V.refreshMine(); });
+        return new Promise(function (ok) { ok(back ? s.undo() : s.redo()); }).catch(function () {}).then(function () { V.refreshMine(); });   // a throw never stops the steps after it
       });
     }
     function listCur(id, site) { return V.byId[id] || (site && V.byId[site]) || null; }   // a reader's map once the site's build took its place
     function listKey(m) { return { id: m.id, site: mine[m.id] ? mine[m.id].site || null : null }; }
     function leaveIf(ks) {   // the map being edited is not deleted: editing ends first (the Maps tab)
       if (!V.grid.classList.contains('m2-editing') || !V.chosen || !ks.some(function (k) { var c = listCur(k.id, k.site); return c && c.id === V.chosen.id; })) return;
-      var t = document.querySelector('#m2-rail .m2-ri[data-win="list"]'); if (t) t.click();
+      V.win = 'list'; V.railMark(); if (V.chosen) V.put(V.chosen); else stop();   // as the Edit window's stop, also with the Edit panel on the right
     }
     function binKeys(ks) { leaveIf(ks); var ms = ks.map(function (k) { return listCur(k.id, k.site); }).filter(function (m) { return m && !m.binned; }); return ms.length ? binMany(ms) : null; }
-    function restoreKeys(ks) { ks.forEach(function (k) { var m = listCur(k.id, k.site); if (m && m.binned) restore(m); }); }
+    function restoreKeys(ks) { return Promise.all(ks.map(function (k) { var m = listCur(k.id, k.site); return m && m.binned ? restore(m) : null; })); }
     function binU(ms, many) {
       var ks = ms.map(listKey), fwd = Promise.resolve(many ? binMany(ms) : bin(ms[0]));
-      listDid(function () { return fwd.then(function () { restoreKeys(ks); }); }, function () { return binKeys(ks); });
+      listDid(function () { return fwd.then(function () { return restoreKeys(ks); }); }, function () { return binKeys(ks); });
       return fwd;
     }
-    function restoreU(m) { var ks = [listKey(m)]; restore(m); listDid(function () { return binKeys(ks); }, function () { restoreKeys(ks); }); }
+    function restoreU(m) { var ks = [listKey(parentOf(m))], fwd = restore(m); listDid(function () { return fwd.then(function () { return binKeys(ks); }); }, function () { return restoreKeys(ks); }); }   // a twin by its GraphML map, as restore
     function listMade(run) {   // a new map, a copy or files added: undone into Deleted, as Finder's undo of a copy
-      return mineIn.then(function () {
-        var had = Object.assign({}, mine);
+      var ks = [], e = { undo: function () { return fwd.then(function () { return binKeys(ks); }); }, redo: function () { return restoreKeys(ks); } };
+      var fwd = mineIn.then(function () {
+        var had = {}; Object.keys(mine).forEach(function (id) { had[id] = !mine[id].hidden; });   // a deleted map brought back by its file counts as made
         return Promise.resolve(run()).then(function () {
-          var ks = Object.keys(mine).filter(function (id) { return !had[id] && !mine[id].hidden; }).map(function (id) { return { id: id, site: mine[id].site || null }; });
-          if (ks.length) listDid(function () { return binKeys(ks); }, function () { restoreKeys(ks); });
+          Object.keys(mine).forEach(function (id) { if (!had[id] && !mine[id].hidden) ks.push(listKey(mine[id])); });
+          if (!ks.length) listPast.splice(listPast.indexOf(e) >>> 0, 1);   // nothing made: no step left behind
         });
       });
+      listDid(e.undo, e.redo, e);   // in the steps at once, so an undo meanwhile waits for it
+      return fwd;
     }
     function moveU(ids, g, before) {   // a move by Move to or by dragging: each map back to its group, its page as it was, its name, the order
-      var o = V.orderNow(), gh = !!(repo() && token());
+      var o = V.orderNow(), o2 = null, gh = !!(repo() && token());
       var was = ids.map(function (id) {
         var m = V.byId[id], s = (V.siteList || []).filter(function (x) { return x.id === id; })[0];
-        return { id: id, g: m ? m.group || '' : '', name: m ? mapName(m) : '', mv: V.movedOf(id), s: !mine[id] && s, page: !mine[id] && !!m && gh && canRename(m, true) && !ownGroup(g || ''), local: !mine[id] && !(m && canRename(m, gh) && !ownGroup(g || '')) };
+        return { id: id, g: m ? m.group || '' : '', name: m ? mapName(m) : '', mv: V.movedOf(id), s: !mine[id] && s, page: !mine[id] && !!m && gh && canRename(m, true) && !ownGroup(g || '') };
       });
-      return (ids.length > 1 ? moveMany(ids, g, before) : moveTo(ids[0], g, before)).then(function () {
-        var o2 = V.orderNow();
-        listDid(function () {
+      var fwd = (ids.length > 1 ? moveMany(ids, g, before) : moveTo(ids[0], g, before)).then(function () { o2 = V.orderNow(); });
+      listDid(function () {
+        return fwd.then(function () {
           return was.reduce(function (p, w) {
             return p.then(function () {
               var m = V.byId[w.id]; if (!m) return;
               if (!w.s) return moveTo(w.id, w.g);
               V.setMoved(w.id, w.mv);   // a site map: where this browser had it
-              if (w.page && (m.group || '') !== w.g) return siteFront(w.id, function (f) {   // its page as it was: group, order, example
-                f.set('group', JSON.stringify(w.s.group || '')); if (w.s.order) f.set('order', String(w.s.order)); if (w.s.example) f.set('example', 'true');
+              if (w.page && (m.group || '') !== w.g) return siteFront(w.id, function (f) {   // its page as before: the group it was in (the site's own where that was the reader's), order, example
+                f.set('group', JSON.stringify((ownGroup(w.g) ? w.s.group || '' : w.g).replace(/["\\]/g, ''))); if (w.s.order) f.set('order', String(w.s.order)); if (w.s.example) f.set('example', 'true');
               }, 'Map moved back in the viewer').catch(function () {});
-            }).then(function () { var m = V.byId[w.id]; if (m && mapName(m) !== w.name) nameTo(m, w.name, w.local); });
+            }).then(function () {   // its name back, where the move gave it one: in this browser if that one is kept here
+              var m = V.byId[w.id], n = renamed[w.id];
+              if (m && mapName(m) !== w.name) return nameTo(m, w.name, !mine[w.id] && (n ? !!n.local : !gh));
+            });
           }, Promise.resolve()).then(function () { V.orderPut(o); });
-        }, function () { return moveMany(ids, g, before).then(function () { V.orderPut(o2); }); });
-      });
+        });
+      }, function () { return moveMany(ids, g, before).then(function () { if (o2) V.orderPut(o2); }); });
+      return fwd;
     }
     function removeU(name) {   // Remove group: back with its maps, the site maps moved into it, its place and order
       var gs = mineGroups().slice(), at = gs.indexOf(name), o = V.orderNow(), shut = !!V.closed[name];
@@ -1284,7 +1296,7 @@
     }, true);
     window.addEventListener('keydown', function (e) {
       if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
-      var k = /^Key[A-Z]$/.test(e.code || '') ? e.code.slice(3).toLowerCase() : e.key.toLowerCase();
+      var k = /^[a-z]$/i.test(e.key) ? e.key.toLowerCase() : /^Key[A-Z]$/.test(e.code || '') ? e.code.slice(3).toLowerCase() : '';   // the letter typed (Z on a German keyboard too), else its place
       if (k !== 'z' && k !== 'y') return;
       var a = document.activeElement;
       if (naming || (a && (/input|textarea|select/i.test(a.tagName) || a.isContentEditable))) return;   // a field's own undo

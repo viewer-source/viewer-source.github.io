@@ -2602,6 +2602,7 @@ page, so its styles keep the base they were made on).
   var orderKey = 'atlas-order:' + location.pathname, order = {};
   try { order = JSON.parse(localStorage.getItem(orderKey) || '{}') || {}; } catch (e) { order = {}; }
   function saveOrder() { try { localStorage.setItem(orderKey, JSON.stringify(order)); } catch (e) {} }
+  function orderNow() { return JSON.stringify(order); }
   function orderPut(t) { order = JSON.parse(t); saveOrder(); maps = arrange(maps); buildList(document.getElementById('m2-search').value); }   // an order taken back (the list's undo)
   // A site map put in another group (own.js moveTo), kept in this browser per page ({ id: group }) whatever the
   // reordering mode; dropped once the site's list gives the map that group (a move written to the site, built)
@@ -2822,8 +2823,8 @@ page, so its styles keep the base they were made on).
       if (!press.on) {
         if (Math.abs(e.clientY - press.y) < 5) return;
         press.on = true; moving = press.what;
-        var all = moving.map && picked.length > 1 && picked.indexOf(moving.map) >= 0;   // a selection dragged: every map of it shown moving alike, none apart
-        (all ? pickRows().filter(function (r) { return picked.indexOf(r.dataset.id) >= 0; }) : [press.row]).forEach(function (r) { r.classList.add('m2-moving'); });
+        var all = moving.any && picked.length > 1 && picked.indexOf(moving.map) >= 0;   // a selection dragged: every map of it that moves shown moving alike, none apart (as drop takes them)
+        (all ? pickRows().filter(function (r) { return picked.indexOf(r.dataset.id) >= 0 && own.movable(byId[r.dataset.id]); }) : [press.row]).forEach(function (r) { r.classList.add('m2-moving'); });
         document.body.classList.add('m2-dragging');
       }
       e.preventDefault();
@@ -3839,7 +3840,7 @@ page, so its styles keep the base they were made on).
     arrived: { get: function () { return arrived; } },
     siteGroupOf: { get: function () { return siteGroupOf; } },
     placeMap: { get: function () { return placeMap; } },
-    orderNow: { get: function () { return function () { return JSON.stringify(order); }; } },
+    orderNow: { get: function () { return orderNow; } },
     orderPut: { get: function () { return orderPut; } },
     setMoved: { get: function () { return setMoved; } },
     movedOf: { get: function () { return movedOf; } },

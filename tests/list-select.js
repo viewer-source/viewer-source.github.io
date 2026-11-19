@@ -92,7 +92,7 @@ function viewerHunks() {
   await page.mouse.up(); await page.waitForTimeout(1500);
   var a9 = await names(), f3 = a9.split(',').slice(0, 3).join(',');
   ok('9. the three selected dragged together', f3 === 'sel-b,sel-c,sel-d', a9.split(',').slice(0, 5).join());
-  await page.mouse.click(10, 10); await page.keyboard.press(mod + '+z'); await page.waitForTimeout(1500);
+  await page.keyboard.press(mod + '+z'); await page.waitForTimeout(1500);
   ok('9. Cmd+Z: the order as it was', (await names()) === n9, (await names()).split(',').slice(0, 5).join());
   // 7. a map not selected dragged: the box, nothing moved (another map shown first)
   await page.click('#m2-list .m2-map:not(.m2-binned):not(:has(.m2-name:text-is("sel-a"))) >> nth=0'); await page.waitForTimeout(1500);
