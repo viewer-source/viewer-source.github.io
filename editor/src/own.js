@@ -1,7 +1,7 @@
     // ---------- the reader's own storage (editor/src/own.js) ----------
     // What a reader without a GitHub token keeps (three layers: this browser, a folder on the computer,
     // GitHub): the drafts' writes, the folder's record, and the reader's own maps with their groups, the list's right-click
-    // menu, Add map (to the site with a token), the drop and the site's maps hidden in this browser. Moved out of the
+    // menu, Add map (to the site with a token), the drop, Delete map and Deleted. Moved out of the
     // viewer, so a page without the Edit tab loads none of it; the viewer keeps the
     // database's opening (V.draftDo, one place for its version), the drafts' read, the folder's name, the list's refresh
     // and the maps arrived on the site (V.arrived), and asks this part for the reader's maps (own, below).
@@ -43,8 +43,8 @@
     // chosen with Add map in the list's right-click menu or dropped on the page, or one in their folder), drawn in this browser by the editor's
     // renderers and edited as any map, only where the Edit tab is. Kept in IndexedDB (store mine: { id, title, file, text,
     // svg, width, height, at, hidden, group; on the site with a token: site, path, sha, saved, siteTitle) and, with a
-    // folder and no token, as their files in it. Taken off the list = hidden only:
-    // the record and the file stay, the same file added again brings it back. Example maps (the site's)
+    // folder and no token, as their files in it. Delete map puts one in Deleted (hidden, with deleted: the time; below),
+    // the same file added again brings it back. Example maps (the site's)
     // hidden by a setting while the reader has maps of their own
     var MINE_KEY = 'atlas-mine', mine = {}, mineURLs = {};
     function mineFlag() { try { if (Object.keys(mine).length) localStorage.setItem(MINE_KEY, '1'); else localStorage.removeItem(MINE_KEY); } catch (e) {} }
@@ -149,7 +149,7 @@
     }
     // the right-click menu over the list, where the Edit tab is: on a map Rename map, Make a copy, Move to, or on a group
     // of theirs Rename group, first; then New SBGN-ML map, New CellDesigner map, Add map from file (into the group
-    // clicked, if it is the reader's or with a token the site's, else at the top), Add group; Remove map or Remove group
+    // clicked, if it is the reader's or with a token the site's, else at the top), Add group; Delete map or Remove group
     // last of all (items.last). The viewer asks for them (listItems) and shows the menu, its own entries (Open all groups, ...) between
     var addTo = '';
     function listItems(e) {
@@ -159,7 +159,11 @@
       var into = m ? m.group || '' : tg && (ownGroup(tg) || V.siteGroupOf(tg) || t.classList.contains('m2-empty')) ? tg : '';   // a new map: into the group clicked, whoever's it is
       var items = [['New SBGN-ML map', function () { newMap(into); }], ['New CellDesigner map', function () { newMap(into, 'cd'); }], ['Add map from file', function () { addTo = g; picker.click(); }], ['Add group', function () { renameGroup(null); }]];
       var editing = V.grid.classList.contains('m2-editing') && V.current && V.current.id === (m && m.id);
-      // on a map: Rename map, Make a copy, Move to, at the top; Remove map last of all, under a line of its own, away
+      // Deleted (as a mailbox's or the Mac's Bin): on a map in it Restore, then Delete forever last; on its heading
+      // Delete all forever. Nothing else there (a deleted map is not renamed, copied, moved or edited)
+      if (m && m.binned) { var bi = [['Restore', function () { restore(m); }]]; bi.last = [['Delete forever', function () { erase([m]); }]]; return bi; }
+      if (t && t.dataset.bin) { var bh = []; bh.last = [['Delete all forever', function () { erase(V.maps.filter(function (x) { return x.binned; })); }]]; return bh; }
+      // on a map: Rename map, Make a copy, Move to, at the top; Delete map last of all, under a line of its own, away
       // from the others (as the map's menu: not while it is edited)
       var mapItems = [], x = e.clientX, y = e.clientY;
       if (m && canRename(m, gh)) mapItems.push(['Rename map', function () { renameMap(m.id); }]);
@@ -168,11 +172,9 @@
       // the clicked map's or group's own items first, as file lists keep them; the new maps and groups under a line
       if (mapItems.length) items = mapItems.concat([null], items);
       if (onGroup) items = [['Rename group', function () { renameGroup(g); }], null].concat(items);
-      if (siteHidden().length) items.push(null, ['Show removed maps', function () { siteHide([]); }]);
-      // items.last: put by the viewer under its own entries too, so Remove map is the menu's last line
-      if (onGroup) items.last = [['Remove group', function () { removeGroup(g); }]];   // a removal: last, as Remove map
-      if (m && m.mine && !editing) items.last = [['Remove map', function () { mineHide(m.id); }]];
-      else if (m && gh && !editing) items.last = [['Remove map', function () { siteHide(siteHidden().concat([m.id])); }]];
+      // items.last: put by the viewer under its own entries too, so Delete map is the menu's last line
+      if (onGroup) items.last = [['Remove group', function () { removeGroup(g); }]];   // a removal: last, as Delete map
+      if (m && !editing && canRename(m, gh)) items.last = [['Delete map', function () { bin(m); }]];   // one on the site already: with a token, its page there too
       return items;
     }
     // a reader's own map moved to another group, theirs or the site's ('': no group, at the top of the list): by Move to
@@ -202,18 +204,7 @@
       put(id, g, before);
     }
     function toSiteGroup(id, g) {   // maps/<id>.md: its group and its order (after the group's last); one commit
-      var path = '/contents/maps/' + encodeURIComponent(id) + '.md', q = JSON.stringify(g.replace(/["\\]/g, ''));
-      return api(path + '?ref=main').then(function (r) { if (!r.ok) { var e = new Error(r.status === 404 ? 'it has no page of its own' : 'GitHub ' + r.status); e.noPage = r.status === 404; throw e; } return r.json(); })
-        .then(function (d) {
-          var md = new TextDecoder().decode(Uint8Array.from(atob(d.content.replace(/\n/g, '')), function (c) { return c.charCodeAt(0); }));
-          var fm = /^---(\r?\n)([\s\S]*?)\r?\n---/.exec(md);   // the front matter only, in the file's line ends
-          if (!fm) throw new Error('its page has no front matter');
-          var nl = fm[1], head = fm[2];
-          var set = function (k, v) { var re = new RegExp('^' + k + ':.*$', 'm'); head = re.test(head) ? head.replace(re, function () { return k + ': ' + v; }) : k + ': ' + v + nl + head; };
-          set('group', q); set('order', String(siteOrder(g)));
-          md = '---' + nl + head + fm[0].slice(3 + nl.length + fm[2].length) + md.slice(fm[0].length);   // its closing line and the body as they were
-          return api(path, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: 'Map moved in the viewer: ' + id, content: b64(md), sha: d.sha, branch: 'main' }) });
-        }).then(function (r) { if (!r.ok) throw new Error('GitHub ' + r.status); });
+      return siteFront(id, function (f) { f.set('group', JSON.stringify(g.replace(/["\\]/g, ''))); f.set('order', String(siteOrder(g))); }, 'Map moved in the viewer');
     }
     function put(id, g, before) {   // a map into the reader's order of group g, the group opened so the map stays in sight
       if (g && V.closed[g]) { delete V.closed[g]; V.saveClosed(); }
@@ -232,7 +223,7 @@
     // with a token every copy goes to the site, as Add map does (an SBGN-ML one only made here)
     function canCopy(m) { return !!m && !m.shownAs && (m.mine ? !!mine[m.id] : !!graphmlOf(m) && (!sbMap(m) || /^maps\/[^/]+\.sbgn$/.test(m.editPath || ''))); }   // an SBGN-ML map of the site's own, not one of its groups'
     function freeTitle(t) {   // a name no map in the list has: (1), (2), ... after it, whatever the format (a file's format is not its name)
-      var titles = mineShown().map(function (r) { return r.title; }).concat((V.siteList || []).map(function (m) { return m.topic || m.title; })), f = t;
+      var titles = liveTitles(), f = t;
       for (var k = 1; titles.indexOf(f) >= 0; k++) f = t + ' (' + k + ')';
       return f;
     }
@@ -301,11 +292,11 @@
     }
     // with a token a map added goes to the site (toSite): until the site's build has it, it is shown from this
     // browser as a reader's map with `site` (its id there), dropped once the site lists that id built from its last save
-    // (withMine; arrived: the old id to the site's, so the map shown follows). Remove map on a site map (with a token) hides it in this browser only, its
-    // file staying on GitHub (deleting it there is not handled here); Show removed maps brings them back
+    // (withMine; arrived: the old id to the site's, so the map shown follows). atlas-hidden-maps: the site's maps an older
+    // version's Remove map hid in this browser only; read until they are moved into Deleted (binMigrate)
     var HIDDEN_KEY = 'atlas-hidden-maps';
+    function hiddenSet(ids) { try { if (ids.length) localStorage.setItem(HIDDEN_KEY, JSON.stringify(ids)); else localStorage.removeItem(HIDDEN_KEY); } catch (e) {} }
     function siteHidden() { try { var a = JSON.parse(localStorage.getItem(HIDDEN_KEY) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
-    function siteHide(ids) { try { if (ids.length) localStorage.setItem(HIDDEN_KEY, JSON.stringify(ids)); else localStorage.removeItem(HIDDEN_KEY); } catch (e) {} V.refreshMine(); }
     // A map on its way to the site stays the reader's until the build is of its last save (the entry's src, the file's
     // blob sha) and nothing of it waits: not while it is edited, not with moves GitHub does not have yet (then
     // the site's entry is left out meanwhile); an hour on, the build is taken as it is
@@ -321,10 +312,18 @@
         if (location.hash.slice(1) === k) setTimeout(function () { if (location.hash.slice(1) === k && V.byId[r.site]) V.go(r.site); }, 0);   // shown: the site's map in its place
       });
       list = siteNamed(list.filter(function (m) { return !held[m.id]; }));
-      var hid = siteHidden();
-      if (hid.length) list = list.filter(function (m) { return hid.indexOf(m.id) < 0; });
+      var hid = siteHidden(), gh = !!(repo() && token()), pend = binPending(), n0 = Object.keys(pend).length, binned = [];
+      list = list.filter(function (m) {
+        if (hiddenGone[m.id]) return false;   // deleted forever here, the build not run since
+        var d = binState(m, pend);
+        if (!d && hid.indexOf(m.id) < 0) return true;
+        if (gh) binned.push(Object.assign({}, m, { binned: d ? Date.parse(d) || Date.now() : Date.now() }));   // deleted: seen in Deleted with a token, else not at all
+        return false;
+      });
+      if (Object.keys(pend).length !== n0) binPendingSet(pend);   // entries the build has now let go
       var own = mineShown().sort(function (a, b) { return a.title.localeCompare(b.title); }).map(mineEntry);
-      return own.concat(own.length && examplesHidden() ? [] : list);
+      Object.keys(mine).forEach(function (k) { var r = mine[k]; if (r.hidden) binned.push(Object.assign(mineEntry(r), { binned: r.deleted || r.at })); });
+      return own.concat(own.length && examplesHidden() ? [] : list, binned);
     }
     function examplesHide(hide) {   // Hide example maps or Show example maps, in the list's right-click menu
       try { if (hide) localStorage.setItem('atlas-examples', 'hidden'); else localStorage.removeItem('atlas-examples'); } catch (e) {}
@@ -344,8 +343,8 @@
     function newMap(group, fmt) {
       if (making) return Promise.resolve();   // one at a time: a second click meanwhile would take the same name
       making = true;
-      var titles = mineShown().map(function (r) { return r.title; }).concat((V.siteList || []).map(function (m) { return m.topic || m.title; }));
-      var files = Object.keys(mine).map(function (k) { return mine[k].file; });
+      var titles = liveTitles();
+      var files = mineShown().map(function (r) { return r.file; });   // a deleted map's file name free too (in a folder its file is in Deleted/)
       var title = 'Unnamed map', file;
       var ext = fmt === 'cd' ? '.xml' : '.sbgn', text;
       for (var k = 2; titles.indexOf(title) >= 0 || files.indexOf(file = title.toLowerCase().replace(/ /g, '-') + ext) >= 0; k++) title = 'Unnamed map ' + k;
@@ -410,22 +409,12 @@
         } });
     }
     function toSiteName(id, was, v) {   // maps/<id>.md: its topic, and its title where it was the same; one commit
-      var path = '/contents/maps/' + encodeURIComponent(id) + '.md', q = JSON.stringify(v.replace(/["\\]/g, ''));   // the build reads the front matter's quotes plainly
-      return api(path + '?ref=main').then(function (r) { if (!r.ok) throw new Error(r.status === 404 ? 'its name does not come from a page of its own' : 'GitHub ' + r.status); return r.json(); })
-        .then(function (d) {
-          var md = new TextDecoder().decode(Uint8Array.from(atob(d.content.replace(/\n/g, '')), function (c) { return c.charCodeAt(0); }));
-          var line = function (k) { var x = md.match(new RegExp('^' + k + ': (.*)$', 'm')); return x ? x[1].replace(/^"(.*)"$/, '$1') : null; };
-          if (line('topic') === null) throw new Error('its page has no topic line');
-          if (line('title') === line('topic')) md = md.replace(/^title: .*$/m, function () { return 'title: ' + q; });   // a function: $' or $& in a name stay text
-          md = md.replace(/^topic: .*$/m, function () { return 'topic: ' + q; });
-          return api(path, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: 'Map renamed in the viewer: ' + id, content: b64(md), sha: d.sha, branch: 'main' }) });
-        }).then(function (r) { if (!r.ok) throw new Error('GitHub ' + r.status); });
-    }
-    function mineHide(id) {   // off the list, kept
-      var r = mine[id]; if (!r) return;
-      r.hidden = true; minePut(r).catch(function () {});
-      if (r.site) try { localStorage.setItem(HIDDEN_KEY, JSON.stringify(siteHidden().concat([r.site]))); } catch (e) {}   // the site's map, once built, hidden too
-      V.refreshMine();
+      var q = JSON.stringify(v.replace(/["\\]/g, ''));   // the build reads the front matter's quotes plainly
+      return siteFront(id, function (f) {
+        if (f.get('topic') === null) throw new Error('its page has no topic line');
+        if (f.get('title') === f.get('topic')) f.set('title', q);
+        f.set('topic', q);
+      }, 'Map renamed in the viewer');
     }
     // one way to make or update a reader's map, for files added here and found in their folder (the editor): by its id,
     // else by its file's name and content: the same file again, as
@@ -450,7 +439,7 @@
         file: old ? old.file : name, text: back ? old.text : text, svg: back ? old.svg : d.svg, width: back ? old.width : d.width, height: back ? old.height : d.height,
         at: back ? old.at : Date.now(), src: old ? old.src || (id ? undefined : h) : h, hidden: false, group: group !== undefined ? group : old && old.group || '' };
       if (old && old.site) ['site', 'path', 'sha', 'saved', 'siteTitle'].forEach(function (k) { r[k] = old[k]; });   // on GitHub already: its file there, its new text sent once connected
-      return minePut(r).then(function () { return r; });
+      return minePut(r).then(function () { return old && old.hidden ? folderMove(r.id, false) : null; }).then(function () { return r; });   // out of Deleted: its folder file too
     }
     function addFiles(list, group) {   // a reader's files, drawn and kept; group: Add map or a drop on a group of theirs
       list = Array.prototype.slice.call(list);   // the picker's list empties when it is reset
@@ -501,8 +490,7 @@
       var base = title.replace(/["\\]/g, ''),   // the build reads the front matter's quotes plainly
           slug = (base.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'map').replace(/-(sbgn|sbgnml)$|^external-/, function (x) { return x === 'external-' ? 'map-external-' : x + '-map'; });   // the build's own ids end or start so
       var md = '---\ntitle: ' + JSON.stringify(base) + '\ntopic: ' + JSON.stringify(base) + '\ngroup: ' + JSON.stringify(group || '') + '\norder: ' + (order | 0) + '\n---\n';
-      var j = function (r) { return r.ok ? r.json() : r.json().then(function (d) { var e = new Error(d && d.message || 'GitHub ' + r.status); e.status = r.status; throw e; }); };
-      var post = function (path, body, method) { return api(path, { method: method || 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(j); };
+      var j = ghJson, post = ghPost;
       return Promise.all([post('/git/blobs', { content: b64(text), encoding: 'base64' }), post('/git/blobs', { content: b64(md), encoding: 'base64' })]).then(function (b) {
         var tries = 0, id;
         var go = function () {
@@ -517,7 +505,7 @@
               .then(function (c) { return post('/git/refs/heads/main', { sha: c.sha }, 'PATCH'); });
           }).catch(function (e) { if (e.status === 422 && ++tries < 3) return go(); throw e; });
         };
-        return go().then(function () { ghDir = null; return { id: id, path: 'maps/' + id + ext, sha: b[0].sha, text: text }; });   // the listing read again next time
+        return go().then(function () { ghDir = null; delete hiddenGone[id]; binClear(id); return { id: id, path: 'maps/' + id + ext, sha: b[0].sha, text: text }; });   // the listing read again next time; an id deleted forever before, taken again: a map of its own
       });
     }
     // one map of the reader's to GitHub; its record then, or null (gone or hidden). One send per map at a time, and one
@@ -537,6 +525,7 @@
           return toSite(title, ext, r.text, r.group || '', siteOrder(r.group || '')).then(function (s) {
             if (!mine[id]) return null;
             var n = onSite(Object.assign({}, mine[id]), s, title);
+            if (n.hidden) siteBin(s.id, true).catch(function () {});   // deleted while it was sent: its page there too
             if (n.title !== title) {   // renamed while it was sent: its page there too
               renamed[s.id] = { was: title, to: n.title };
               toSiteName(s.id, title, n.title).catch(function () { delete renamed[s.id]; });
@@ -604,6 +593,196 @@
             .then(function (f) { if (f[1] !== t) throw new Error('changed on GitHub since'); return learn(f[0].sha); });
         });
     }
+    // ---------- Delete map, Deleted, Restore, Delete forever ----------
+    // (as a mailbox's or the Mac's Bin). Delete map, the last line of the list's
+    // menu on a reader's map or, with a token, on a site map with a page of its own, puts the map in Deleted: a group of
+    // its own at the end of the list, closed on every page load, seen only by a reader with a token (site maps) or in
+    // their own browser (their maps). A deleted map keeps its name and group, gives up its name (a new map may take it:
+    // liveTitles) and is not edited. Restore puts it back into its group, as "<name> (1)" when its name is taken by then;
+    // Delete forever takes it out for good: a reader's record and its folder file, a site map's files in one commit (git
+    // history still has them). A site map's state is its page's front matter (deleted: <date>, ISO in UTC), kept here
+    // meanwhile (atlas-bin-pending: id -> [the date, '' for restored; when]) until the build has it, at most an hour
+    // (another device or tab may have changed it since)
+    var BIN_KEY = 'atlas-bin-pending';
+    function binPending() { try { var o = JSON.parse(localStorage.getItem(BIN_KEY) || '{}'); return o && typeof o === 'object' && !Array.isArray(o) ? o : {}; } catch (e) { return {}; } }
+    function binPendingSet(o) { try { if (Object.keys(o).length) localStorage.setItem(BIN_KEY, JSON.stringify(o)); else localStorage.removeItem(BIN_KEY); } catch (e) {} }
+    function binState(m, pend) {   // a site map's date in Deleted, '' if not; what this page did wins until the build has it (then let go)
+      var p = pend[m.id];
+      if (!Array.isArray(p) || (m.deleted || '') === p[0] || Date.now() - p[1] > 3600000) { delete pend[m.id]; return m.deleted || ''; }
+      return p[0];
+    }
+    function binClear(id) { var p = binPending(); if (id in p) { delete p[id]; binPendingSet(p); } }
+    function liveTitles() {   // the names taken: maps not in Deleted
+      var pend = binPending(), hid = siteHidden();
+      return mineShown().map(function (r) { return r.title; }).concat((V.siteList || []).filter(function (m) { return !binState(m, pend) && hid.indexOf(m.id) < 0; })
+        .map(function (m) { var n = renamed[m.id]; return n && m.topic === n.was ? n.to : m.topic || m.title; }));
+    }
+    function ghPost(path, body, method) { return api(path, { method: method || 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(ghJson); }
+    function ghJson(r) { return r.ok ? r.json() : r.json().catch(function () { return {}; }).then(function (d) { var e = new Error(d && d.message || 'GitHub ' + r.status); e.status = r.status; throw e; }); }
+    // maps/<id>.md's front matter changed by edit({ get, set, drop }) in one commit, the closing line and the body as they were
+    function siteFront(id, edit, message) {
+      var path = '/contents/maps/' + encodeURIComponent(id) + '.md';
+      return api(path + '?ref=main').then(function (r) { if (!r.ok) { var e = new Error(r.status === 404 ? 'it has no page of its own' : 'GitHub ' + r.status); e.noPage = r.status === 404; throw e; } return r.json(); })
+        .then(function (d) {
+          var md = new TextDecoder().decode(Uint8Array.from(atob(d.content.replace(/\n/g, '')), function (c) { return c.charCodeAt(0); }));
+          var fm = /^---(\r?\n)([\s\S]*?)\r?\n---/.exec(md);   // the front matter only, in the file's line ends
+          if (!fm) throw new Error('its page has no front matter');
+          var nl = fm[1], head = fm[2];
+          edit({
+            get: function (k) { var x = head.match(new RegExp('^' + k + ':[ \\t]*([^\\r\\n]*)', 'm')); return x ? x[1].replace(/^"(.*)"$/, '$1') : null; },
+            set: function (k, v) { var re = new RegExp('^' + k + ':[^\\r\\n]*', 'm'); head = re.test(head) ? head.replace(re, function () { return k + ': ' + v; }) : head + nl + k + ': ' + v; },
+            drop: function (k) { head = head.replace(new RegExp('^' + k + ':.*(\\r?\\n|$)', 'm'), '').replace(/\r?\n$/, ''); }
+          });
+          md = '---' + nl + head + fm[0].slice(3 + nl.length + fm[2].length) + md.slice(fm[0].length);
+          return api(path, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: message + ': ' + id, content: b64(md), sha: d.sha, branch: 'main' }) });
+        }).then(function (r) { if (!r.ok) throw new Error('GitHub ' + r.status); });
+    }
+    function siteBin(id, on, topic) {   // a site map into Deleted (on) or out of it (its new name, when its own was taken)
+      var pend = binPending(), was = pend[id], date = new Date().toISOString().slice(0, 19) + 'Z';
+      pend[id] = [on ? date : '', Date.now()]; binPendingSet(pend);
+      return siteFront(id, function (f) {
+        if (on) f.set('deleted', JSON.stringify(date));
+        else {
+          f.drop('deleted');
+          if (topic) { var q = JSON.stringify(topic.replace(/["\\]/g, '')); if (f.get('title') === f.get('topic')) f.set('title', q); f.set('topic', q); }
+        }
+      }, on ? 'Map deleted in the viewer' : 'Map restored in the viewer').catch(function (e) {
+        var p = binPending(); if (was === undefined) delete p[id]; else p[id] = was; binPendingSet(p);
+        V.refreshMine(); throw e;
+      });
+    }
+    function bin(m) {
+      var say = function (e) { alert((m.mine ? m.title : m.topic) + ' was not deleted: ' + (e && e.message ? e.message : e)); };
+      if (m.mine) {
+        var r = mine[m.id]; if (!r) return;
+        r.hidden = true; r.deleted = Date.now(); minePut(r).catch(function () {});
+        folderMove(m.id, true);
+        if (r.site && repo() && token()) siteBin(r.site, true).catch(say);   // on the site already: its page there too
+      } else siteBin(m.id, true).catch(say);
+      V.refreshMine();
+    }
+    function restore(m) {
+      var name = m.mine ? m.title : m.topic, taken = liveTitles().indexOf(name) >= 0, to = taken ? freeTitle(name) : null;
+      var say = function (e) { alert(name + ' was not restored: ' + (e && e.message ? e.message : e)); };
+      if (m.mine) {
+        var r = mine[m.id]; if (!r) return;
+        r.hidden = false; delete r.deleted; if (to) r.title = to;
+        minePut(r).catch(function () {});
+        folderMove(m.id, false);
+        if (r.site && repo() && token()) siteBin(r.site, false, to).catch(say);
+      } else {
+        if (to) renamed[m.id] = { was: name, to: to };
+        siteBin(m.id, false, to).catch(function (e) { delete renamed[m.id]; say(e); });
+      }
+      V.refreshMine();
+    }
+    function siteErase(ids) {   // every file of these site maps (maps/<id>.*, maps/extra/<id>/) in one commit on main, three tries
+      var tries = 0, post = ghPost;
+      var go = function () {
+        return api('/contents/maps?ref=main').then(ghJson).then(function (d) {
+          var paths = d.filter(function (f) { return f.type === 'file' && ids.indexOf(f.name.replace(/\.[^.]+$/, '')) >= 0; }).map(function (f) { return f.path; });
+          var twins = d.some(function (f) { return f.type === 'dir' && f.name === 'sbgn-ml'; }) ? api('/contents/maps/sbgn-ml?ref=main').then(ghJson).then(function (x) {   // a GraphML map's SBGN-ML twin, edited (build.py sbgn_map)
+            x.forEach(function (f) { if (f.type === 'file' && ids.some(function (id) { return f.name === id.replace(/-graphml$/, '') + '-sbgn.sbgn'; })) paths.push(f.path); });
+          }) : Promise.resolve();
+          var extras = d.some(function (f) { return f.type === 'dir' && f.name === 'extra'; }) ? api('/contents/maps/extra?ref=main').then(ghJson) : Promise.resolve([]);
+          return twins.then(function () { return extras; }).then(function (x) {
+            return Promise.all(x.filter(function (f) { return f.type === 'dir' && ids.indexOf(f.name) >= 0; }).map(function (f) { return api('/contents/' + f.path + '?ref=main').then(ghJson); }));
+          }).then(function (ds) { ds.forEach(function (fs) { fs.forEach(function (f) { if (f.type === 'file') paths.push(f.path); }); }); return paths; });
+        }).then(function (paths) {
+          if (!paths.length) return;
+          return api('/git/ref/heads/main').then(ghJson).then(function (ref) {
+            return api('/git/commits/' + ref.object.sha).then(ghJson).then(function (c) {
+              return post('/git/trees', { base_tree: c.tree.sha, tree: paths.map(function (p) { return { path: p, mode: '100644', type: 'blob', sha: null }; }) });
+            }).then(function (t) { return post('/git/commits', { message: 'Deleted forever in the viewer: ' + ids.join(', '), tree: t.sha, parents: [ref.object.sha] }); })
+              .then(function (c) { return post('/git/refs/heads/main', { sha: c.sha }, 'PATCH'); });
+          });
+        }).catch(function (e) { if (e.status === 422 && ++tries < 3) return go(); throw e; });
+      };
+      return go().then(function () { ghDir = null; });
+    }
+    // A reader without a token who keeps their maps in a folder: a map deleted moves its file into the folder's Deleted/, Restore moves it back (beside a file
+    // of the same name: -2, ...), Delete forever removes it there. The folder's scan reads the folder's own files only,
+    // so nothing in Deleted/ comes back as a map. Connected, the folder is not used (GitHub is where the maps are)
+    var BIN_DIR = 'Deleted';
+    function folderMove(id, toBin) {
+      if (repo() && token()) return Promise.resolve();
+      return folder().then(function (f) {
+        if (!f || !f.files[id]) return;
+        var w = f.files[id], inBin = w.name.indexOf(BIN_DIR + '/') === 0, nm = inBin ? w.name.slice(BIN_DIR.length + 1) : w.name;
+        if (inBin === toBin) return;
+        return f.dir.queryPermission({ mode: 'readwrite' }).then(function (p) {
+          if (p !== 'granted') return;
+          return f.dir.getDirectoryHandle(BIN_DIR, { create: true }).then(function (bd) {
+            var from = toBin ? f.dir : bd, to = toBin ? bd : f.dir, h2;
+            return from.getFileHandle(nm).then(function (h) { return h.getFile(); }).then(function (fl) {
+              return to.getFileHandle(nm).then(function () { return freeName(to, nm, 2); }, function () { return nm; }).then(function (nm2) {
+                return to.getFileHandle(nm2, { create: true }).then(function (x) { h2 = x; return x.createWritable(); })
+                  .then(function (wr) { return wr.write(fl).then(function () { return wr.close(); }); })
+                  .then(function () { return h2.getFile(); })
+                  .then(function (nf) { return from.removeEntry(nm).then(function () { return folderFile(id, { name: (toBin ? BIN_DIR + '/' : '') + nm2, mod: nf.lastModified, size: nf.size }); }); });
+              });
+            });
+          });
+        });
+      }).catch(function (e) { warn('Not moved in the folder: ' + String(e && e.message ? e.message : e).replace(/\.$/, '') + '.'); });
+    }
+    function folderErase(id) {   // a reader's map's file in their folder (or its Deleted/); its entry kept if the file stays (the folder's scan then leaves it)
+      return folder().then(function (f) {
+        if (!f || !f.files[id]) return;
+        var nm = f.files[id].name, inBin = nm.indexOf(BIN_DIR + '/') === 0;
+        return f.dir.queryPermission({ mode: 'readwrite' }).then(function (p) {
+          if (p !== 'granted') return;
+          return (inBin ? f.dir.getDirectoryHandle(BIN_DIR) : Promise.resolve(f.dir)).then(function (d) { return d.removeEntry(inBin ? nm.slice(BIN_DIR.length + 1) : nm); })
+            .catch(function (e) { if (!e || e.name !== 'NotFoundError') throw e; }).then(function () {
+            return V.draftDo('readwrite', function (st) { var q = st.get('files'); q.onsuccess = function () { var r = q.result || {}; delete r[id]; st.put(r, 'files'); }; return q; }, 'folder');
+          });
+        });
+      }).catch(function () {});
+    }
+    var hiddenGone = {};   // site maps let go here (the build still lists them until it runs again)
+    function erase(ms) {
+      ms = ms.filter(Boolean); if (!ms.length) return;
+      var n = ms.length, what = n === 1 ? (ms[0].mine ? ms[0].title : ms[0].topic) : n + ' maps';
+      if (!confirm('Delete ' + what + ' forever? This cannot be undone.')) return;
+      var site = [], gh = !!(repo() && token());
+      ms.forEach(function (m) {
+        if (m.mine) {
+          var r = mine[m.id]; if (!r) return;
+          if (r.site && gh) site.push(r.site);   // on the site already (Delete map is offered on it only with a token)
+          var u = mineURLs[m.id]; if (u) { letGo(u.svg); letGo(u.text); }
+          delete mine[m.id]; delete mineURLs[m.id]; mineFlag();
+          V.draftDo('readwrite', function (st) { return st.delete(m.id); }, 'mine').catch(function () {});
+          folderErase(m.id);
+        } else site.push(m.id);
+      });
+      if (!site.length) return V.refreshMine();
+      site.forEach(function (id) { hiddenGone[id] = 1; binClear(id); delete renamed[id]; draftDrop(id); });
+      V.refreshMine();
+      siteErase(site).then(function () {
+        hiddenSet(siteHidden().filter(function (id) { return site.indexOf(id) < 0; }));
+      }, function (e) {
+        site.forEach(function (id) { delete hiddenGone[id]; });
+        V.refreshMine();
+        alert('Not deleted forever on GitHub: ' + (e && e.message ? e.message : e) + '. The map stays in Deleted.');
+      });
+    }
+    // the site's maps an older version hid in this browser (Remove map) moved into Deleted once, with a token
+    function binMigrate() {
+      var hid = siteHidden();
+      if (!hid.length || !(repo() && token()) || !V.siteList) return;
+      var ids = {}; V.siteList.forEach(function (m) { ids[m.id] = m; });
+      var left = [];   // not moved (GitHub refused): kept hidden, tried again next time; a map with no page of its own comes back to the list
+      return hid.reduce(function (q, id) {
+        return q.then(function () {
+          var m = ids[id];
+          if (!m || m.deleted || !canRename(m, true)) return;
+          return siteBin(id, true).catch(function () { left.push(id); });
+        });
+      }, Promise.resolve()).then(function () {
+        hiddenSet(left);
+        V.refreshMine();
+      });
+    }
     // what the viewer asks of this part (the list's entries and groups, a map's record)
     var own = {
       read: function () { return mineIn; },
@@ -611,4 +790,4 @@
       withMine: withMine, isGroup: ownGroup, movable: movable, moveTo: moveTo, rename: renameGroup, renameMap: renameMap, canRename: canRename, newMap: newMap, shown: mineShown, examplesHidden: examplesHidden, examplesHide: examplesHide, listItems: listItems,
       rec: function (id) { return mine[id] || null; }, naming: function () { return !!naming; }
     };
-    mineIn.then(upAll);   // connected: the reader's maps kept in this browser go to GitHub
+    mineIn.then(upAll).then(binMigrate);   // connected: the reader's maps kept in this browser go to GitHub

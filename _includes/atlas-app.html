@@ -588,6 +588,9 @@ page, so its styles keep the base they were made on).
      triangles use instead: open url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 12 12%22%3E%3Cpath d=%22M1.5 3.5h9L6 9z%22 fill=%22%23888%22/%3E%3C/svg%3E'),
      closed url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 12 12%22%3E%3Cpath d=%22M3.5 1.5v9L9 6z%22 fill=%22%23888%22/%3E%3C/svg%3E') */
   .m2-group::before { content: ''; float: right; width: 12px; height: 12px; margin-top: 3px; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' fill='none' stroke='%23b4b4b4' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat center / 12px; }
+  .m2-bin-line { border-top: 1px solid var(--m2-line); margin: 10px 0 0; }
+  .m2-binned .m2-name { color: var(--m2-muted); }
+  .m2-binned .m2-when { margin-left: 6px; font-size: 12px; color: var(--m2-muted); }
   .m2-group.m2-shut::before { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M4 2l4 4-4 4' fill='none' stroke='%23b4b4b4' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
   .m2-drug { width: 16px; height: 16px; margin-left: 5px; vertical-align: -3px; }
 {% include atlas-tags.css %}
@@ -1449,7 +1452,8 @@ page, so its styles keep the base they were made on).
     if (e.shiftKey || e.target.closest('input')) return;
     // the editor's entries first (where the Edit tab is), then, under a line, what changes how the list looks
     var items = own && own.listItems ? own.listItems(e) : [], view = [], names = listGroups(), last = items.last || [];
-    if (names.length && !document.getElementById('m2-search').value) {   // while searching every group shows open
+    var inBin = !!e.target.closest('.m2-binned, .m2-bin');   // Deleted: its own items only (Restore, Delete forever)
+    if (names.length && !inBin && !document.getElementById('m2-search').value) {   // while searching every group shows open
       var shut = names.filter(function (n) { return closed[n]; }).length, all = function (c) {
         return function () { names.forEach(function (n) { closed[n] = c; }); saveClosed(); buildList(document.getElementById('m2-search').value); };
       };
@@ -1458,15 +1462,15 @@ page, so its styles keep the base they were made on).
     // Hide or Show example maps (the site's), while the reader has maps of their own, and the file format tags, where a map
     // in the list has one (here rather than in Settings, so the change is seen at once
     // in the list)
-    if (own && own.examplesHide && own.shown().length) {
+    if (own && own.examplesHide && own.shown().length && !inBin) {
       var hid = own.examplesHidden();
       view.push([hid ? 'Show example maps' : 'Hide example maps', function () { own.examplesHide(!hid); }]);
     }
-    if (maps && maps.some(formatOf)) view.push([FORMATS_OFF ? 'Show file format tags' : 'Hide file format tags', function () { setFormats(!FORMATS_OFF); }]);
+    if (maps && maps.some(formatOf) && !inBin) view.push([FORMATS_OFF ? 'Show file format tags' : 'Hide file format tags', function () { setFormats(!FORMATS_OFF); }]);
     if (items.length && view.length) items.push(null);
     items = items.concat(view);
     if (items.length && last.length) items.push(null);
-    items = items.concat(last);   // the editor's last entries (Remove map) under everything else
+    items = items.concat(last);   // the editor's last entries (Delete map, Delete forever) under everything else
     if (!items.length) return;
     e.preventDefault();
     listMenu(e.clientX, e.clientY, items);
@@ -2017,7 +2021,8 @@ page, so its styles keep the base they were made on).
     // Info is about the whole project, briefly, as MINERVA's (brief, on the whole project,
     // not the map): its name, its description, how many maps; the map's name and text stay under the map
     var pc = document.getElementById('m2-info-count');
-    if (pc && typeof maps !== 'undefined' && maps && maps.length) pc.textContent = maps.length + (maps.length === 1 ? ' map' : ' maps');
+    var nm = typeof maps !== 'undefined' && maps ? maps.filter(function (m) { return !m.binned; }).length : 0;   // Deleted not counted
+    if (pc && nm) pc.textContent = nm + (nm === 1 ? ' map' : ' maps');
     var t = document.getElementById('m2-wintitle'); if (t) t.textContent = WIN_NAMES[w];
     document.querySelectorAll('#m2-rail .m2-ri').forEach(function (b) { b.classList.toggle('m2-open', on && ((open && b.dataset.win === w) || (right && edOn && b.dataset.win === 'edit'))); });
   }
@@ -2523,7 +2528,7 @@ page, so its styles keep the base they were made on).
     return names;
   }
   function groupNames() {  // every group in the reader's order, empty ones included
-    var site = siteGroups(maps.filter(function (m) { return !m.mine; })), known = order.groups || [];
+    var site = siteGroups(maps.filter(function (m) { return !m.mine && !m.binned; })), known = order.groups || [];
     var rank = function (g) { var k = known.indexOf(g); return k < 0 ? 1e6 + site.indexOf(g) : k; };
     return site.slice().sort(function (a, b) { return rank(a) - rank(b); });
   }
@@ -2613,10 +2618,10 @@ page, so its styles keep the base they were made on).
   // A reader's own map (moving.any) goes to any group: the rows are every map, a group's No maps yet and the headings; a
   // place before a heading is the end of the group above it
   function dropPlace(y) {
-    var sel = moving.any ? '#m2-list .m2-map, #m2-list .m2-empty[data-group], #m2-list .m2-group:not(.m2-link-group)' :
+    var sel = moving.any ? '#m2-list .m2-map:not(.m2-binned), #m2-list .m2-empty[data-group], #m2-list .m2-group:not(.m2-link-group):not(.m2-bin)' :
       moving.map ? '#m2-list .m2-map[data-group="' + CSS.escape(moving.group) + '"]' : '#m2-list .m2-group';
     var rows = Array.prototype.slice.call(document.querySelectorAll(sel)).filter(function (r) {   // a site group with no map yet takes none of the reader's (as Move to)
-      return !moving.any || !r.classList.contains('m2-group') || own.isGroup(r.dataset.group) || maps.some(function (m) { return !m.mine && m.group === r.dataset.group; });
+      return !moving.any || !r.classList.contains('m2-group') || own.isGroup(r.dataset.group) || maps.some(function (m) { return !m.mine && !m.binned && m.group === r.dataset.group; });
     });
     for (var i = 0; i < rows.length; i++) { var r = rows[i].getBoundingClientRect(); if (y < r.top + r.height / 2) return { row: rows[i], rows: rows }; }
     return { row: null, rows: rows };
@@ -2765,6 +2770,7 @@ page, so its styles keep the base they were made on).
     if (current && current.id === e.m) { focusNode(); buildList(document.getElementById('m2-search').value); }
     else go(e.m);
   }
+  var binOpen = false;   // Deleted's heading: closed on every page load
   function buildList(filter) {
     if (own && own.naming()) return;   // a name being typed in the list (own.js inPlace): built again when it is kept or left
     var ghNow = !!editor && editor.hasToken();   // with a token the site's maps are renamed too (own.canRename)
@@ -2774,7 +2780,8 @@ page, so its styles keep the base they were made on).
     var q = (filter || '').trim();
     if (q) loadIndex();
     // a search matches the list name, the full title or the group name
-    var shown = maps.filter(function (m) { return !q || matchMap(q, m); });
+    var live = maps.filter(function (m) { return !m.binned; });   // Deleted drawn apart, at the end
+    var shown = live.filter(function (m) { return !q || matchMap(q, m); });
     var mols = q ? findMols(q) : [];
     var group = null;
     function heading(name, shut) {
@@ -2800,7 +2807,7 @@ page, so its styles keep the base they were made on).
     function emptyGroups(upTo) {  // the empty groups before upTo (undefined: all left)
       for (; ni < names.length && names[ni] !== upTo; ni++) {
         var name = names[ni];
-        if (!name || maps.some(function (m) { return (m.group || '') === name; })) continue;
+        if (!name || live.some(function (m) { return (m.group || '') === name; })) continue;
         heading(name, closed[name]);
         if (!closed[name]) box.appendChild(el('div', 'm2-empty', 'No maps yet'));
       }
@@ -2811,7 +2818,7 @@ page, so its styles keep the base they were made on).
     function ownEmpty(upTo) {   // those before upTo (undefined: all left)
       for (; gi < gs.length && gs[gi] !== upTo; gi++) {
         var name = gs[gi];
-        if (maps.some(function (m) { return m.group === name; })) continue;
+        if (live.some(function (m) { return m.group === name; })) continue;
         heading(name, closed[name]);
         if (!closed[name]) { var e = el('div', 'm2-empty m2-mine', 'No maps yet'); e.setAttribute('data-group', name); box.appendChild(e); }
       }
@@ -2855,6 +2862,26 @@ page, so its styles keep the base they were made on).
     });
     if (!ownDone) ownEmpty();
     emptyGroups();
+    // Deleted (own.js: Delete map, Restore, Delete forever): under a line after every group, closed on each page load
+    // (binOpen is never kept), its count in the heading; a date beside a name another deleted map has too
+    var bin = q ? [] : maps.filter(function (m) { return m.binned; });
+    if (bin.length) {
+      box.appendChild(el('div', 'm2-bin-line'));
+      var bh = el('button', 'm2-group m2-bin' + (binOpen ? '' : ' m2-shut'), 'Deleted (' + bin.length + ')');
+      bh.type = 'button'; bh.setAttribute('data-bin', '1');
+      bh.addEventListener('click', function () { binOpen = !binOpen; buildList(document.getElementById('m2-search').value); });
+      box.appendChild(bh);
+      if (binOpen) bin.forEach(function (m) {
+        var when = new Date(m.binned).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
+        var b = el('button', 'm2-item m2-map m2-sub m2-binned' + (m === (chosen || current) ? ' m2-on' : ''));
+        b.appendChild(el('span', 'm2-name', label(m)));
+        if (bin.some(function (x) { return x !== m && label(x) === label(m); })) b.appendChild(el('span', 'm2-when', when));
+        b.type = 'button'; b.setAttribute('data-id', m.id);
+        b.title = label(m) + ', deleted ' + when + '. Right-click to restore';
+        b.addEventListener('click', function () { go(m.id); });
+        box.appendChild(b);
+      });
+    }
     // the links after the maps, in their groups (a group folds as any other); a search matches their names
     var hitLinks = links.filter(function (l) { return !q || matchMap(q, l); });
     linkGroups(hitLinks).forEach(function (name) {
@@ -2878,6 +2905,7 @@ page, so its styles keep the base they were made on).
       if (g.name !== g.label) t.appendChild(el('span', 'm2-why', ' ' + g.name));
       box.appendChild(t);
       g.hits.forEach(function (e) {
+        if (byId[e.m] && byId[e.m].binned) return;   // a deleted map's places: not offered
         var on = lastHit === e.k + '|' + e.m && chosen && chosen.id === e.m;
         var b = el('button', 'm2-item m2-hit m2-sub' + (on ? ' m2-on' : ''), label(byId[e.m]));
         b.type = 'button';
@@ -3053,10 +3081,12 @@ page, so its styles keep the base they were made on).
     siteList = list;
     list = list.map(asSource);
     regroupPrune(list);
-    var gh = own ? own.here() : [], a = arrange(regroup(own ? own.withMine(list) : list));   // site maps moved to another group (regroup), then the reader's order
+    var gh = own ? own.here() : [], a = arrange(regroup(own ? own.withMine(list) : list.filter(function (m) { return !m.deleted; })));   // a deleted map (its page's deleted:) only in the editor's Deleted   // site maps moved to another group (regroup), then the reader's order
+    var bin = a.filter(function (m) { return m.binned; }).sort(function (x, y) { return y.binned - x.binned; });   // Deleted (own.js): last, the latest first
+    a = a.filter(function (m) { return !m.binned; });
     var rank = function (m) { return m.group ? gh.indexOf(m.group) + 1 : 0; }, first = function (m) { return m.group ? rank(m) > 0 : !!m.mine || m.siteGroup != null; };   // the reader's groups (a site map moved into one too) and the ungrouped maps they made or moved there
     maps = a.filter(first).sort(function (x, y) { return rank(x) - rank(y); })
-      .concat(a.filter(function (m) { return !first(m); }));   // the reader's maps first: those in no group at the top, then their groups in the order made; one in a site group (added there, or their group the site has now) stands in it, after its maps
+      .concat(a.filter(function (m) { return !first(m); }), bin);   // the reader's maps first: those in no group at the top, then their groups in the order made; one in a site group (added there, or their group the site has now) stands in it, after its maps
     byId = {}; topics = [];
     railMark(); // the map count in the Info window
     maps.forEach(function (m) {
@@ -3356,7 +3386,7 @@ page, so its styles keep the base they were made on).
       if (ed) item(box, 'Switch to viewer', function () { tab('list'); }, key);   // leaving the Edit window ends editing
       else if (eb && eb.offsetParent) item(box, 'Switch to edit', function () { tab('edit'); }, key);
       if (own) { item(box, 'New SBGN-ML map', function () { own.newMap(m && m.group || ''); }); item(box, 'New CellDesigner map', function () { own.newMap(m && m.group || '', 'cd'); }); }   // the editor's (own.js), into this map's group, in the format chosen
-      // no Remove map here: it is in the list's right-click menu only
+      // no Delete map here: it is in the list's right-click menu only
       if (document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen)
         item(box, isPageFull() ? 'Exit full screen' : 'Full screen with tools', pageFull);
       var src = (m.shownAs ? ['SBGN-ML'] : m.legend === 'celldesigner' ? ['CellDesigner', 'GraphML'] : ['GraphML', 'CellDesigner', 'SBGN-ML']).filter(function (l) { return url[l]; })[0];   // the format the map is drawn from

@@ -293,6 +293,7 @@
         return folder().then(function (f) {
           if (!f) return;
           var w = f.files[id];
+          if (w && w.name.indexOf('/') >= 0) w = null;   // its file in Deleted/ (own.js folderMove): written anew beside the others
           if (ours && !w) return;
           return f.dir.queryPermission({ mode: 'readwrite' }).then(function (p) {
             folderOk = p === 'granted';
@@ -339,7 +340,7 @@
     }
     // the folder as the list (My maps): the GraphML and CellDesigner files a reader put there, and SBGN-ML ones made here (New map), are added, one changed
     // since by another program (yEd, CellDesigner) is read again; the files written here for the site's maps are left
-    // out, a map taken off the list stays off
+    // out, a map in Deleted stays there (its file in the folder's Deleted/, not read)
     function syncFolder() {
       if (!canFolder || !V.folderName() || (repo() && token())) return Promise.resolve();   // connected: the folder not used
       var news = false;
@@ -1294,7 +1295,7 @@
       box.querySelector('#m2-ed-back').hidden = on || !text;
       box.querySelector('#m2-ed-back').textContent = 'Back to ' + name;
       box.querySelector('#m2-ed-stop').hidden = !on;
-      var g = graphmlOf(V.current);
+      var g = V.current && V.current.binned ? null : graphmlOf(V.current);   // a map in Deleted is not edited
       box.querySelector('#m2-ed-this').hidden = on || !g;
       // the Edit tab only on a map that can be edited, or while a file is being edited (no edit icon
       // for maps that cannot be edited); its window gives way to the Maps list when the tab goes

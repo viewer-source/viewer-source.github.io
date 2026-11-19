@@ -12,7 +12,8 @@
 # Each map's entry says which legend the Legend window opens on: legend sbgn for a GraphML map, celldesigner for a
 #   CellDesigner one. images/legend/celldesigner-legend.svg is a fixed file: the full CellDesigner legend's drawing,
 #   made with the workbench's legend maps (only on the Metabolism Regulation Atlas, not in the demo).
-# maps/<id>.md gives the entry: front matter title, group, order (and topic), its body the text under the map; with
+# maps/<id>.md gives the entry: front matter title, group, order (and topic), its body the text under the map;
+#   deleted: <date> puts the map in the list's Deleted (the viewer's Delete map, its group kept for Restore); with
 #   newt: true a Newt link opens the map's SBGN-ML on the demo, minerva: <address> a MINERVA link.
 # SBGN-ML (shown the same way as GraphML): a map whose maps/extra/<id>/ has an
 #   .sbgn file gets that file drawn as well, read by the converter (renderers/converter/mapconv: sbgnml.read, the file's
@@ -297,7 +298,8 @@ def sbgn_map(src, mid, fm, body):
     d['file'] = '/downloads/' + os.path.basename(path)
     d['src'] = blob_sha(path)   # the kept drawing waits for the build of its save
     d['edit_path'], d['edit_base'] = 'maps/sbgn-ml/%s.sbgn' % sid, '/atlas-data/%s.graphml' % sid
-    return (sid, entry_of(fm['title'], 'SBGN-ML', fm['order'] + 100, d, topic=fm['topic']), body), search_entries(sid, nodes)
+    more = {'deleted': fm['deleted']} if fm.get('deleted') else {}   # in Deleted with its GraphML map
+    return (sid, entry_of(fm['title'], 'SBGN-ML', fm['order'] + 100, d, topic=fm['topic'], **more), body), search_entries(sid, nodes)
 
 
 def examples(lang='pd'):
@@ -426,6 +428,8 @@ def main():
                             {'label': 'SVG', 'url': '/downloads/%s.svg' % mid}]}
         if d.get('shapes'):
             fm['shapes'] = True
+        if meta.get('deleted'):
+            fm['deleted'] = meta['deleted']
         fm['downloads'] += extra(mid, meta)
         sb = sorted(glob.glob(os.path.join(ROOT, 'maps', 'extra', mid, '*.sbgn')))
         if sb:
@@ -459,7 +463,8 @@ def main():
         d['edit_path'], d['edit_base'] = 'maps/%s.sbgn' % mid, '/atlas-data/%s.graphml' % mid
         search += search_entries(mid, nodes)
         title = meta.get('title', mid)
-        write_entry(mid, entry_of(title, meta.get('group', ''), int(meta.get('order', 0)), d, topic=meta.get('topic', title)), body)
+        write_entry(mid, entry_of(title, meta.get('group', ''), int(meta.get('order', 0)), d, topic=meta.get('topic', title),
+                                  **({'deleted': meta['deleted']} if meta.get('deleted') else {})), body)
         print('%s: SBGN-ML, %d clickable' % (mid, len(nodes)))
     for f in sorted(glob.glob(os.path.join(ROOT, 'maps', 'sbgn-ml', '*.sbgn'))):   # an edited copy whose GraphML map went
         if os.path.basename(f)[:-5] not in sids:
