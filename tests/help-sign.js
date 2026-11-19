@@ -19,7 +19,7 @@ var URL0 = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysi
   ok('a second click closes it', !(await shown('m2-tips')));
   await page.click(sign); await page.keyboard.press('Escape'); await page.waitForTimeout(200);
   ok('Esc closes it', !(await shown('m2-tips')));
-  await page.click(sign); await page.mouse.click(700, 500); await page.waitForTimeout(200);
+  await page.click(sign); await page.mouse.click(1385, 885); await page.waitForTimeout(200);
   ok('a click elsewhere closes it', !(await shown('m2-tips')));
   await page.keyboard.press('?'); await page.waitForTimeout(200);
   ok('the ? key still opens it', await shown('m2-tips'));
