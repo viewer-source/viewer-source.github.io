@@ -79,9 +79,11 @@
       return mineGroups().filter(function (g) { return site.indexOf(g) < 0; });
     }
     function ownGroup(name) { return !!name && groupsHere.indexOf(name) >= 0; }
-    function mineValid(v, was) {
-      return v === was || !((V.siteList || []).some(function (m) { return m.group === v; }) || mineGroups().indexOf(v) >= 0 || V.listGroups().indexOf(v) >= 0);   // a site group renamed here too
+    function sameName(a, b) { return String(a).toLowerCase() === String(b).toLowerCase(); }   // as a Mac: case kept as typed, never told apart
+    function groupTaken(v, was) {   // another group of this name, the site's or the reader's, whatever the case
+      return !sameName(v, was || '') && (V.siteList || []).map(function (m) { return m.group || ''; }).concat(mineGroups(), V.listGroups()).some(function (g) { return g && sameName(g, v); });
     }
+    function mineValid(v, was) { return v === was || !groupTaken(v, was); }
     // a name typed in place in the list, one way for groups and maps (inPlace): the field where the line was; Enter or a click elsewhere keeps it, Esc leaves it; o.bad(v) gives why a name is
     // refused (the field red, kept open). The list is not built again while it is open (V.naming, the viewer's
     // buildList), so a save or a folder scan meanwhile never drops what is being typed
@@ -129,7 +131,7 @@
       var at = document.getElementById('m2-list').querySelector('.m2-group:not(.m2-mine):not(.m2-bin)[data-group="' + CSS.escape(was) + '"]');
       if (!at) return;
       var clean = function (v) { return (v || '').replace(/["\\]/g, '').trim(); };   // as the pages' front matter holds it
-      var taken = function (v) { return v !== was && (V.listGroups().indexOf(v) >= 0 || mineGroups().indexOf(v) >= 0); };
+      var taken = function (v) { return v !== was && groupTaken(v, was); };
       inPlace(at, { cls: 'm2-group-edit', max: 60, value: was, label: 'Name of the group',
         bad: function (v) { v = clean(v); return v && taken(v) ? 'A group of this name is in the list already' : ''; },
         end: function (v) {
@@ -283,12 +285,12 @@
       } else return Promise.resolve();
       put(id, g, before);
       // into another group where its name is taken for its format: renamed "<name> (1)", Finder's Keep both, once the move
-      // is written. A site map is renamed only on the site (with a token, into one of the site's groups); without a token
-      // its move is this browser's alone and the two names stay
+      // is written. A site map's new name goes where its move went: its page with a token into one of the site's groups,
+      // else this browser (no token, a group of the reader's own, a map with no page), so no group ever shows two
       var moved = !!m && g !== (m.group || ''), n = m && mapName(m);
-      var keep = moved && nameTaken(n, g, fmtOf(m), id, m.tab) && (r ? true : canRename(m, !!(repo() && token())) && !ownGroup(g));
+      var keep = moved && nameTaken(n, g, fmtOf(m), id, m.tab), local = !r && !(canRename(m, !!(repo() && token())) && !ownGroup(g));
       return Promise.resolve(sent).then(function (ok) {
-        if (keep && ok !== false) { nameTo(V.byId[id] || m, freeTitle(n, g, fmtOf(m), null, id, m.tab)); V.refreshMine(); }
+        if (keep) { nameTo(V.byId[id] || m, freeTitle(n, g, fmtOf(m), null, id, m.tab), local || ok === false); V.refreshMine(); }
       });
     }
     function moveMany(ids, g, before) {   // several maps selected, one after another (each a commit with a token), in their order
@@ -329,20 +331,18 @@
     function bare(v) { return String(v || '').replace(/["\\]/g, '').trim(); }   // as a site page keeps a name
     function nameTaken(name, group, fmt, id, tab) {   // another map of this name (and tab, as the list shows them) and format in the group, Deleted left out
       var key = bare(name) + (tab ? ' (' + tab + ')' : ''), seen = {};
-      var all = (V.maps || []).concat(examplesHidden() ? siteNamed((V.siteList || []).filter(function (m) { return m.example; })).map(function (m) {   // examples hidden from the list
-        var g = V.movedOf(m.id); return g === null ? m : Object.assign({}, m, { group: g });
-      }) : []).concat(mineShown().map(function (r) { return { id: r.id, mine: true, title: r.title, group: r.group || '', downloads: [{ label: fmtOfText(r.text) }] }; }));   // records not in the list yet
+      var all = (V.maps || []).concat(mineShown().map(function (r) { return { id: r.id, mine: true, title: r.title, group: r.group || '', downloads: [{ label: fmtOfText(r.text) }] }; }));   // records not in the list yet
       return all.some(function (m) {
         if (seen[m.id]) return false; seen[m.id] = 1;
-        return m.id !== id && !m.binned && !m.deleted && (m.group || '') === (group || '') && fmtOf(m) === fmt && bare(mapName(m)) + (m.tab ? ' (' + m.tab + ')' : '') === key;
+        return m.id !== id && !m.binned && !m.deleted && (m.group || '') === (group || '') && fmtOf(m) === fmt && sameName(bare(mapName(m)) + (m.tab ? ' (' + m.tab + ')' : ''), key);
       });
     }
     function freeTitle(t, group, fmt, also, id, tab) {   // t, else t (1), t (2), ... free in the group for that format (nor one of also)
       var f = t;
-      for (var k = 1; nameTaken(f, group, fmt, id, tab) || (also || []).indexOf(f) >= 0; k++) f = t + ' (' + k + ')';
+      for (var k = 1; nameTaken(f, group, fmt, id, tab) || (also || []).some(function (a) { return sameName(a, f); }); k++) f = t + ' (' + k + ')';
       return f;
     }
-    function nameTo(m, v) {   // a map's name set: the reader's record (and its page, once on the site), or a site map's page
+    function nameTo(m, v, local) {   // a map's name set: the reader's record (and its page, once on the site), a site map's page, or with local this browser's name of it
       var shown = mapName(m);
       if (!v || v === shown) return;
       if (m.mine) {
@@ -357,6 +357,9 @@
           document.getElementById('m2-title').textContent = v;
           if (map && map.id === m.id) map.title = v;
         }
+      } else if (local) {
+        renamed[m.id] = { was: renamed[m.id] ? renamed[m.id].was : (V.siteList || []).filter(function (x) { return x.id === m.id; }).map(function (x) { return x.topic; })[0] || shown, to: v, local: true };
+        namedSave();
       } else {
         var was = renamed[m.id] ? renamed[m.id].was : shown;
         renamed[m.id] = { was: was, to: v };
@@ -405,7 +408,7 @@
       var ms = V.maps, i = ms.findIndex(function (x) { return x.id === id; });
       return i >= 0 && ms[i + 1] && (ms[i + 1].group || '') === (ms[i].group || '') ? ms[i + 1].id : null;
     }
-    function examplesHidden() { try { return localStorage.getItem('atlas-examples') === 'hidden'; } catch (e) { return false; } }
+    try { localStorage.removeItem('atlas-examples'); } catch (e) {}   // the choice of hiding example maps, removed: the maps shown again
     function letGo(url) {   // an old version's address let go once nothing on the page uses it (a link or picture shown, the map on screen)
       setTimeout(function () {
         var used = (V.current && (V.current.image === url || (V.current.downloads || []).some(function (d) { return d.url === url; }))) ||
@@ -452,20 +455,18 @@
       list = list.filter(function (m) {
         if (hiddenGone[m.id]) return false;   // deleted forever here, the build not run since
         var d = binState(twinBase(m) ? parentOf(m) : m, pend);   // a twin as its GraphML map
-        if (!d && hid.indexOf(m.id) < 0) return true;
+        if (!d && (!gh || hid.indexOf(m.id) < 0)) return true;   // an older version's hiding: without a token no longer hides (a map is kept or deleted), with one it is in Deleted until moved there (binMigrate)
         if (gh) binned.push(Object.assign({}, m, { binned: d ? Date.parse(d) || Date.now() : Date.now() }));   // deleted: seen in Deleted with a token, else not at all
         return false;
       });
       if (Object.keys(pend).length !== n0) binPendingSet(pend);   // entries the build has now let go
       var own = mineShown().sort(function (a, b) { return a.title.localeCompare(b.title); }).map(mineEntry);
       Object.keys(mine).forEach(function (k) { var r = mine[k]; if (r.hidden) binned.push(Object.assign(mineEntry(r), { binned: r.deleted || r.at })); });
-      var shown = own.concat(list);
-      if (examplesHidden() && shown.some(function (m) { return !m.example; })) shown = shown.filter(function (m) { return !m.example; });
-      return shown.concat(binned);
+      return own.concat(list, binned);
     }
     // Example maps: the site's maps whose pages say example: true (and the SBGN-ML twins of those in the group GraphML);
-    // every other map is the reader's, whoever or whatever made it. Hide example maps (the list's menu, Settings' List)
-    // leaves them out while the list has others to show (examplesMixed). Restore example maps puts them back as the
+    // every other map is the reader's, whoever or whatever made it. They are never hidden (a map is kept or
+    // deleted, as in Finder; hiding them was removed). Restore example maps puts them back as the
     // site's backup keeps them: the data repository's examples/, the same paths as in maps/. With a token one commit
     // copies it over maps/ (an example deleted, even forever, comes back) and drops their edited SBGN-ML copies
     // (maps/sbgn-ml/<name>-sbgn.sbgn), so the build writes those again from the GraphML maps; in this browser, with or
@@ -477,10 +478,6 @@
       api('/contents/examples?ref=main').then(function (r) { exBackup = r.ok; }, function () { exBackup = null; });
     }
     function exampleIds() { return (V.siteList || []).filter(function (m) { return m.example; }).map(function (m) { return m.id; }); }
-    function examplesMixed() {   // the list has examples and other maps shown (as withMine leaves them)
-      var l = V.siteList || [], pend = binPending(), hid = siteHidden();
-      return l.some(function (m) { return m.example; }) && (mineShown().length > 0 || l.some(function (m) { return !m.example && !hiddenGone[m.id] && !binState(m, pend) && hid.indexOf(m.id) < 0; }));
-    }
     function canRestoreExamples() {
       if (V.grid.classList.contains('m2-editing') && V.chosen && V.chosen.example) return false;   // its moves would be saved over the restored file (while editing, current is the editor's own)
       backupKnown();
@@ -515,6 +512,7 @@
         if (gh && deleted[id]) pend[id] = ['', Date.now()]; else delete pend[id];   // in Deleted on the build still: out of it until the build has the restore
         unkeep(id).catch(function () {}); delete hiddenGone[id]; delete renamed[id]; V.setMoved(id, null);
       });
+      namedSave();
       binPendingSet(pend);
       if (V.kept && all.indexOf(V.kept.id) >= 0) V.dropKept();
       var m = V.current && V.byId[V.current.id];
@@ -580,10 +578,6 @@
       };
       return go();
     }
-    function examplesHide(hide) {   // Hide example maps or Show example maps, in the list's right-click menu
-      try { if (hide) localStorage.setItem('atlas-examples', 'hidden'); else localStorage.removeItem('atlas-examples'); } catch (e) {}
-      V.refreshMine();
-    }
     // New map, made in place: an empty SBGN-ML map of the reader's, Process Description, named Unnamed map (2, 3, ... while taken), in
     // the group right-clicked or at the top, opened at once in the Edit window with the palette, nothing asked (no name
     // needed to start, as in Google Docs; a double-click names it).
@@ -629,12 +623,20 @@
     // while the site's list still has the old name. Maps whose name the build takes from elsewhere (the SBGN-ML groups,
     // their edited copies under maps/sbgn-ml/) are not renamed; an SBGN-ML map with a page of its own (maps/<id>.sbgn) is
     var renamed = {};   // site map id -> { was, to }: the list's name before and the one given here
+    // a site map's name given in this browser only (local: no token, or a clash in a group of the reader's own, where the
+    // site's page is not the place): kept per page as the moves are, until the site's own name of it changes
+    var NAMED_KEY = 'atlas-named:' + location.pathname;
+    try { var nk = JSON.parse(localStorage.getItem(NAMED_KEY) || '{}'); Object.keys(nk).forEach(function (id) { renamed[id] = Object.assign({ local: true }, nk[id]); }); } catch (e) {}
+    function namedSave() {
+      var o = {}; Object.keys(renamed).forEach(function (id) { if (renamed[id].local) o[id] = { was: renamed[id].was, to: renamed[id].to }; });
+      try { if (Object.keys(o).length) localStorage.setItem(NAMED_KEY, JSON.stringify(o)); else localStorage.removeItem(NAMED_KEY); } catch (e) {}
+    }
     function canRename(m, gh) { return !!m && !m.shownAs && (m.mine ? !!mine[m.id] && (!mine[m.id].site || !!gh) : !!gh && !/^maps\/sbgn-ml\//.test(m.editPath || '')); }   // one on its way to the site: in its page there too
     function siteNamed(list) {   // the names given here over the site's list (copies: the site's own entries untouched)
       return list.map(function (m) {
         var n = renamed[m.id];
         if (!n) return m;
-        if (m.topic === n.to) { delete renamed[m.id]; return m; }   // the build has it
+        if (m.topic === n.to || (n.local && m.topic !== n.was)) { delete renamed[m.id]; if (n.local) namedSave(); return m; }   // the build has it, or the site renamed it since
         return m.topic === n.was ? Object.assign({}, m, { topic: n.to }) : m;
       });
     }
@@ -680,11 +682,59 @@
       if (old && old.site) ['site', 'path', 'sha', 'saved', 'siteTitle'].forEach(function (k) { r[k] = old[k]; });   // on GitHub already: its file there, its new text sent once connected
       return minePut(r).then(function () { return old && old.hidden ? folderMove(r.id, false) : null; }).then(function () { return r; });   // out of Deleted: its folder file too
     }
+    // Files being added, shown at once in the list where they will stand (addPaint, after every list built): each file a
+    // grey row with a small spinner after the group's maps, the group's heading counting adding k of n; a row goes when
+    // its map is in the list (without a token one after another, with one all at once after the commit); a file not
+    // added stays a red row with its reason until clicked. Shown only once adding takes longer than ADD_AFTER, so a
+    // quick pick never flashes. Not while searching, nor under a closed group (the count stays on its heading)
+    var adding = [], ADD_AFTER = 300;   // { group, rows: [{ name, f, why }], n, done, shown }
+    function addPaint() {
+      var box = document.getElementById('m2-list');
+      if (!box) return;
+      Array.prototype.forEach.call(box.querySelectorAll('.m2-wait, .m2-pend-n'), function (x) { x.remove(); });
+      Array.prototype.forEach.call(box.querySelectorAll('.m2-empty[hidden]'), function (x) { x.hidden = false; });   // only addPaint hides them
+      adding = adding.filter(function (b) { return b.rows.length || b.done < b.n; });
+      if (document.getElementById('m2-search').value.trim()) return;
+      var count = {};
+      adding.forEach(function (b) { if (b.shown && b.done < b.n) { var c = count[b.group] = count[b.group] || [0, 0]; c[0] += b.done; c[1] += b.n; } });
+      adding.forEach(function (b) {
+        if (!b.shown) return;
+        var g = b.group, head = g ? box.querySelector('.m2-group:not(.m2-link-group)[data-group="' + CSS.escape(g) + '"]') : null;
+        if (g && !head) return;   // its heading being renamed: back at the next list
+        if (head && count[g] && !head.querySelector('.m2-pend-n')) head.appendChild(Object.assign(document.createElement('span'), { className: 'm2-pend-n', textContent: 'adding ' + count[g][0] + ' of ' + count[g][1] }));
+        if (head && head.classList.contains('m2-shut')) return;
+        var maps = box.querySelectorAll('.m2-map:not(.m2-binned)[data-group="' + CSS.escape(g) + '"]' + (g ? '' : '.m2-mine'));
+        var at = box.querySelectorAll('.m2-wait[data-group="' + CSS.escape(g) + '"]'), empty = g && box.querySelector('.m2-empty[data-group="' + CSS.escape(g) + '"]');
+        at = at.length ? at[at.length - 1] : maps.length ? maps[maps.length - 1] : empty || head;
+        if (empty) empty.hidden = true;
+        b.rows.forEach(function (r) {
+          var row = document.createElement('div');
+          row.className = 'm2-item m2-wait' + (g ? ' m2-sub' : '') + (r.why ? ' m2-wait-bad' : '');
+          row.setAttribute('data-group', g);   // a file dropped on it goes into its group
+          row.title = r.why ? r.name + ' was not added: ' + r.why + ' (click to dismiss)' : 'Adding ' + r.name;
+          if (!r.why) row.appendChild(Object.assign(document.createElement('span'), { className: 'm2-spin' }));
+          row.appendChild(Object.assign(document.createElement('span'), { className: 'm2-name', textContent: r.name.replace(/\.(graphml|xml|sbgn)$/i, '') }));
+          if (r.why) {
+            row.appendChild(Object.assign(document.createElement('span'), { className: 'm2-wait-why', textContent: r.why }));
+            row.addEventListener('click', function () { var i = b.rows.indexOf(r); if (i >= 0) b.rows.splice(i, 1); addPaint(); });
+          }
+          if (at) at.after(row); else box.insertBefore(row, box.firstChild);   // in no group and none of theirs yet: the list's top
+          at = row;
+        });
+      });
+    }
     function addFiles(list, group) {   // a reader's files, drawn and kept; group: Add map or a drop on a group of theirs
       list = Array.prototype.slice.call(list);   // the picker's list empties when it is reset
       var picked = list.filter(function (f) { return /\.(graphml|xml|sbgn)$/i.test(f.name); });
-      var gh = repo() && token(), last = null, failed = [], out = [];   // with a token: all drawn first, then sent in one commit
-      var why = function (f) { return function (e) { failed.push(f.name + ': ' + (e && e.message ? e.message : e)); }; };
+      if (!picked.length) return Promise.resolve();
+      var gh = repo() && token(), last = null, out = [];   // with a token: all drawn first, then sent in one commit
+      var b = { group: group || '', rows: picked.map(function (f) { return { name: f.name, f: f }; }), n: picked.length, done: 0, shown: false };
+      adding.push(b);
+      if (group && V.closed[group]) { delete V.closed[group]; V.saveClosed(); }
+      var timer = setTimeout(function () { b.shown = true; V.refreshMine(); }, ADD_AFTER);
+      var rowOf = function (f) { return b.rows.filter(function (r) { return r.f === f; })[0]; };
+      var gone = function (f) { var r = rowOf(f); if (r) b.rows.splice(b.rows.indexOf(r), 1); };
+      var why = function (f, e) { var r = rowOf(f), w = e && e.message ? e.message : String(e); if (r) r.why = w; else b.rows.push({ name: f.name, f: f, why: w }); };
       return picked.reduce(function (p, f) {
         return p.then(function () { return f.text(); }).then(function (t) {
           if (isSb(t) && !madeHere(t)) throw new Error('an SBGN-ML file from another editor cannot be added yet, only one made here with New map');
@@ -692,23 +742,31 @@
             var ext = siteExt(t), title = freeTitle(f.name.replace(/\.(graphml|xml|sbgn)$/i, ''), group || '', fmtOfText(t), out.filter(function (o) { return fmtOfText(o.t) === fmtOfText(t); }).map(function (o) { return o.title; }));
             if (!ext) throw new Error(siteWhy(t));
             out.push({ f: f, d: d, t: t, ext: ext, title: title });
+            b.done++; if (b.shown) addPaint();
           });
-          return drawText(t).then(function (d) { return mineAdd(f.name, t, d, null, group || undefined); }).then(function (r) { last = r.id; return toFolder(r.id, r.file, r.text); });
-        }).catch(why(f));
+          return drawText(t).then(function (d) { return mineAdd(f.name, t, d, null, group || undefined); }).then(function (r) {
+            last = r.id; gone(f); b.done++; if (b.shown) V.refreshMine();   // the map in the list, its row gone
+            return toFolder(r.id, r.file, r.text).catch(function (e) { why(f, new Error('kept in this browser, not in the folder: ' + (e && e.message ? e.message : e))); });
+          });
+        }).catch(function (e) { why(f, e); b.done++; });
       }, Promise.resolve()).then(function () {
         if (!out.length) return;
         var order = siteOrder(group);
         return toSiteMany(out.map(function (o) { return { title: o.title, ext: o.ext, text: o.t, group: group, order: order++ }; })).then(function (ss) {
           return out.reduce(function (p, o, i) {   // a part GitHub refused said, the parts sent kept
-            if (ss[i].err) { why(o.f)(ss[i].err); return p; }
+            if (ss[i].err) { why(o.f, ss[i].err); return p; }
             var r = { id: newId(), title: o.title, file: o.f.name, text: o.t, svg: o.d.svg, width: o.d.width, height: o.d.height, at: Date.now(), hidden: false, group: group || '' };
-            return p.then(function () { return minePut(onSite(r, ss[i], o.title)); }).then(function () { last = r.id; });
+            return p.then(function () { return minePut(onSite(r, ss[i], o.title)); }).then(function () { last = r.id; gone(o.f); }, function (e) { why(o.f, e); });
           }, Promise.resolve());
-        });
-      }).then(function () {
+        }).catch(function (e) { out.forEach(function (o) { if (rowOf(o.f) && !rowOf(o.f).why) why(o.f, e); }); });
+      }).then(fin, function (e) { b.rows.forEach(function (r) { if (!r.why) r.why = e && e.message ? e.message : String(e); }); fin(); });
+      function fin() {
+        clearTimeout(timer);
+        b.done = b.n;
+        b.rows = b.rows.filter(function (r) { return r.why; });   // only what was not added stays, in red
+        b.shown = b.rows.length > 0;
         V.refreshMine(); if (last) V.go(last);
-        if (failed.length) alert((failed.length === 1 ? 'Not added, ' : failed.length + ' files not added:\n') + failed.join('\n'));
-      });
+      }
     }
     var picker = document.createElement('input');
     picker.type = 'file'; picker.multiple = true; picker.accept = '.graphml,.xml,.sbgn'; picker.hidden = true;
@@ -1103,6 +1161,7 @@
       });
       if (!site.length) return V.refreshMine();
       site.forEach(function (id) { hiddenGone[id] = 1; binClear(id); delete renamed[id]; draftDrop(id); });
+      namedSave();
       V.refreshMine();
       siteErase(site).then(function () {
         hiddenSet(siteHidden().filter(function (id) { return site.indexOf(id) < 0; }));
@@ -1133,7 +1192,7 @@
     var own = {
       read: function () { return mineIn; },
       here: function () { return (groupsHere = mineGroupsHere()); }, groups: function () { return groupsHere; }, order: mineGroups,   // order: every group the reader made, on the site or not, in their order
-      withMine: withMine, isGroup: ownGroup, movable: movable, moveTo: moveTo, moveMany: moveMany, rename: renameGroup, canRenameGroup: canRenameGroup, renameMap: renameMap, canRename: canRename, newMap: newMap, shown: mineShown, examplesHidden: examplesHidden, examplesHide: examplesHide, examplesMixed: examplesMixed, listItems: listItems,
+      withMine: withMine, addPaint: addPaint, isGroup: ownGroup, movable: movable, moveTo: moveTo, moveMany: moveMany, rename: renameGroup, canRenameGroup: canRenameGroup, renameMap: renameMap, canRename: canRename, newMap: newMap, shown: mineShown, listItems: listItems,
       rec: function (id) { return mine[id] || null; }, naming: function () { return !!naming; }
     };
     mineIn.then(upAll).then(binMigrate);   // connected: the reader's maps kept in this browser go to GitHub

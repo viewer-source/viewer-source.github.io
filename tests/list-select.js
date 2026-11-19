@@ -2,7 +2,8 @@
 //   1. Cmd with a click adds a map, the map shown no longer lit alone; again takes it out.
 //   2. Shift with a click: every map from the last one clicked. 3. A drag beside the names: the box takes the maps.
 //   4. Right click on the selection: Move N maps to..., Delete N maps; Delete N maps puts them in Deleted.
-//   5. Esc ends a selection. 6. A map dragged by its name, no Shift: moved, the drop line straight.
+//   5. Esc ends a selection. 6. A selected map dragged, no Shift: moved, the drop line straight.
+//   7. A map not selected is never grabbed: a drag from it draws the box, the order unchanged.
 //   node tests/list-select.js [base address] [--local]
 // --local: the editor and the viewer of the working tree routed into the live page (run styles/update.sh first)
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path'), cp = require('child_process');
@@ -67,15 +68,26 @@ function viewerHunks() {
   await page.click('.m2-cx button:text-is("Delete 3 maps")'); await page.waitForTimeout(1500);
   var bin = await page.$eval('#m2-list .m2-bin', function (h) { return h.textContent; }).catch(function () { return ''; });
   ok('4. Delete 3 maps: in Deleted', /Deleted \(3\)/.test(bin) && !(await page.$(row('sel-b'))), bin);
-  // 6. a map dragged by its name, no Shift: sel-a below the next map
   var ids = function () { return page.$$eval('#m2-list .m2-map:not(.m2-binned)', function (l) { return l.map(function (x) { return x.dataset.id; }); }); };
+  // 7. a map not selected dragged: the box, nothing moved (another map shown first)
+  await page.click('#m2-list .m2-map:not(.m2-binned):not(:has(.m2-name:text-is("sel-a"))) >> nth=0'); await page.waitForTimeout(1500);
+  var before7 = await ids(), n7 = await (await page.$(row('sel-a') + ' .m2-name')).boundingBox(), r7 = await (await page.$('#m2-list .m2-map:not(.m2-binned) >> nth=2')).boundingBox();
+  ok('7. sel-a not selected before the drag', (await lit()).split(',').indexOf('sel-a') < 0, await lit());
+  await page.mouse.move(n7.x + 5, n7.y + n7.height / 2); await page.mouse.down();
+  await page.mouse.move(n7.x + 5, r7.y + r7.height * 0.8, { steps: 8 });
+  var marq7 = !!(await page.$('.m2-marq')); await page.mouse.up(); await page.waitForTimeout(800);
+  ok('7. a map not selected dragged: the box, no grab', marq7 && (await ids()).join() === before7.join(), await lit());
+  await page.keyboard.press('Escape'); await page.waitForTimeout(300);
+  // 6. a selected map dragged, no Shift: sel-a below the next map
+  await page.click(row('sel-a')); await page.waitForTimeout(800);
   var before = await ids(), na = await (await page.$(row('sel-a') + ' .m2-name')).boundingBox(), r2 = await (await page.$('#m2-list .m2-map:not(.m2-binned) >> nth=2')).boundingBox();
   await page.mouse.move(na.x + 5, na.y + na.height / 2); await page.mouse.down();
   await page.mouse.move(na.x + 5, r2.y + r2.height * 0.8, { steps: 8 });
   var line = await page.evaluate(function () { var d = document.querySelector('.m2-drop, .m2-drop-after'); if (!d) return null; var s = getComputedStyle(d, d.classList.contains('m2-drop') ? '::before' : '::after'); return s.height + ' ' + getComputedStyle(d).boxShadow; });
   await page.mouse.up(); await page.waitForTimeout(800);
   var after = await ids();
-  ok('6. dragged by its name without Shift: moved', after.indexOf(before[0]) > 0 && after.length === before.length, before.slice(0, 3).join() + ' -> ' + after.slice(0, 3).join());
+  var ia = await page.$eval(row('sel-a'), function (x) { return x.dataset.id; });
+  ok('6. selected, dragged without Shift: moved', after.indexOf(ia) !== before.indexOf(ia) && after.length === before.length, before.slice(0, 3).join() + ' -> ' + after.slice(0, 3).join());
   ok('6. the drop line straight (2px, no shadow)', !!line && Math.abs(parseFloat(line) - 2) < 0.05 && / none$/.test(line), line);
   ok('no script errors', !errs.length, errs.join(' | '));
   await b.close();

@@ -6,6 +6,9 @@
 //   4. Move to a group holding the name in that format: the moved map becomes "<name> (1)".
 //   5. Restore from Deleted where the group has the name in that format by then: "<name> (1)"; Make a copy twice:
 //      Copy of <name>, Copy of <name> (1).
+//   6. No token: a site map moved into a group holding its name and format: "<name> (1)" kept in this browser, also
+//      after a reload, as its move is.
+//   7. Case as on a Mac: a name differing only in case is taken; a map renamed to its own name in other case is fine.
 //   node tests/names.js [base address] [--local]
 // --local: the editor and the viewer of the working tree routed into the live page (run styles/update.sh first)
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path'), cp = require('child_process');
@@ -95,6 +98,31 @@ function viewerHunks() {
   await menu('#m2-list .m2-map[data-id="' + a2 + '"]', 'Make a copy'); await page.keyboard.press('Escape'); await page.waitForTimeout(500);
   var copies = await page.$$eval('#m2-list .m2-map:not(.m2-binned) .m2-name', function (l) { return l.map(function (x) { return x.textContent; }).filter(function (t) { return /^Copy of Unnamed map 2/.test(t); }); });
   ok('5. Make a copy twice: Copy of <name>, Copy of <name> (1)', copies.indexOf('Copy of Unnamed map 2') >= 0 && copies.indexOf('Copy of Unnamed map 2 (1)') >= 0, copies.join(' | '));
+
+  // 6. a site map, no token
+  await menu('#m2-list .m2-map[data-id="acly-graphml"]', 'Make a copy'); await page.keyboard.press('Escape'); await page.waitForTimeout(800);
+  var cp6 = await page.evaluate(function () { var b = Array.prototype.slice.call(document.querySelectorAll('#m2-list .m2-map')).filter(function (x) { return /^Copy of Acetyl-CoA synthesis/.test(x.querySelector('.m2-name').textContent); })[0]; return b && b.dataset.id; });
+  await page.click('#m2-list .m2-map[data-id="' + cp6 + '"]', { button: 'right' }); await page.waitForTimeout(300);
+  await page.click('.m2-cx button:text-is("Move to...")'); await page.waitForTimeout(400);
+  await page.click('.m2-cx button:text-is("AsthmaMap")'); await page.waitForTimeout(1500);
+  await menu('#m2-list .m2-map[data-id="' + cp6 + '"]', 'Rename map');
+  await page.fill('#m2-list input.m2-map-edit', 'Acetyl-CoA synthesis'); await page.keyboard.press('Enter'); await page.waitForTimeout(800);
+  ok('6. a map of the reader\'s named Acetyl-CoA synthesis (GraphML) in AsthmaMap', JSON.stringify(await row(cp6)) === JSON.stringify(['Acetyl-CoA synthesis', '.graphml', 'AsthmaMap']), JSON.stringify(await row(cp6)));
+  await page.click('#m2-list .m2-map[data-id="acly-graphml"]', { button: 'right' }); await page.waitForTimeout(300);
+  await page.click('.m2-cx button:text-is("Move to...")'); await page.waitForTimeout(400);
+  await page.click('.m2-cx button:text-is("AsthmaMap")'); await page.waitForTimeout(1500);
+  ok('6. the site map moved there without a token: Acetyl-CoA synthesis (1)', JSON.stringify(await row('acly-graphml')) === JSON.stringify(['Acetyl-CoA synthesis (1)', '.graphml', 'AsthmaMap']), JSON.stringify(await row('acly-graphml')));
+  await page.reload({ waitUntil: 'load' }); await page.waitForTimeout(4000); await list();
+  ok('6. after a reload too', JSON.stringify(await row('acly-graphml')) === JSON.stringify(['Acetyl-CoA synthesis (1)', '.graphml', 'AsthmaMap']), JSON.stringify(await row('acly-graphml')));
+
+  // 7. case
+  await menu('#m2-list .m2-map[data-id="' + cp6 + '"]', 'Rename map');
+  await page.fill('#m2-list input.m2-map-edit', 'ACETYL-COA SYNTHESIS (1)'); await page.keyboard.press('Enter'); await page.waitForTimeout(400);
+  ok('7. a name taken in other case: refused', await page.$eval('#m2-list input.m2-map-edit', function (f) { return f.classList.contains('m2-bad'); }).catch(function () { return false; }));
+  await page.keyboard.press('Escape'); await page.waitForTimeout(400);
+  await menu('#m2-list .m2-map[data-id="' + cp6 + '"]', 'Rename map');
+  await page.fill('#m2-list input.m2-map-edit', 'acetyl-CoA synthesis'); await page.keyboard.press('Enter'); await page.waitForTimeout(800);
+  ok('7. its own name in other case: kept as typed', ((await row(cp6)) || [])[0] === 'acetyl-CoA synthesis', JSON.stringify(await row(cp6)));
 
   ok('no script errors', errs.length === 0, errs.join(' | '));
   await b.close();

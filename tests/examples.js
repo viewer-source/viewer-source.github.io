@@ -1,8 +1,7 @@
 // Example maps: the site's maps marked example: true (and their SBGN-ML twins), every other map the reader's.
 // GitHub is played by this script (page.route on api.github.com, a repository held in memory); the list's examples
 // are marked in index.json here as the build marks them.
-//   1. No token, no maps of one's own, the site having other maps: Hide example maps offered; it leaves out the
-//      examples (the twins too) and keeps the rest; Show example maps brings them back.
+//   1. No token: no Hide example maps (removed: a map is kept or deleted); Restore example maps offered.
 //   2. No token: Restore example maps lets go this browser's moves and Deleted marks of examples.
 //   3. With a token: Restore example maps writes examples/ over maps/ in one commit and drops the examples' edited
 //      SBGN-ML copies, leaving other maps' files alone; an example the build lists as deleted leaves Deleted at once.
@@ -114,18 +113,14 @@ var EX = /^(glycolysis|srebp|acly|tag)-(graphml|celldesigner|sbgn)$/;   // the e
   var load = async function (h) { await page.goto(base + '#' + (h || 'acly-graphml'), { waitUntil: 'load' }); await page.reload({ waitUntil: 'load' });
     await page.waitForSelector('.m2-ri[data-win="edit"]', { state: 'attached', timeout: 30000 }); await page.waitForTimeout(3000); };
 
-  // 1. Hide and Show example maps
+  // 1. no hiding offered
   await load(); await list();
   var all = await ids(), ex = all.filter(function (i) { return EX.test(i); });
   ok('1. the list has examples and other maps', ex.length >= 8 && all.length > ex.length, ex.length + ' of ' + all.length);
   var t = await items('#m2-list .m2-map >> nth=0');
-  ok('1. Hide example maps offered with no maps of one\'s own', t.indexOf('Hide example maps') >= 0, t.join(' | '));
+  ok('1. no Hide example maps', t.indexOf('Hide example maps') < 0 && t.indexOf('Show example maps') < 0, t.join(' | '));
   ok('1. Restore example maps offered, at the end of the new maps\' items', t.indexOf('Restore example maps') === t.indexOf('Add group') + 1, t.join(' | '));
-  await menu('#m2-list .m2-map >> nth=0', 'Hide example maps');
-  var now = await ids();
-  ok('1. hidden: no example left (twins too), every other map kept', !now.some(function (i) { return EX.test(i); }) && now.length === all.length - ex.length, now.length + ' of ' + all.length);
-  await menu('#m2-list .m2-map >> nth=0', 'Show example maps');
-  ok('1. shown again', (await ids()).length === all.length);
+  ok('1. no Example maps tick box in Settings', !(await page.$('#m2-set-examples')));
 
   // 2. No token: this browser's changes to examples let go
   await page.evaluate(function () {
@@ -133,7 +128,7 @@ var EX = /^(glycolysis|srebp|acly|tag)-(graphml|celldesigner|sbgn)$/;   // the e
     localStorage.setItem('atlas-hidden-maps', JSON.stringify(['tag-celldesigner', 'aspirin-celldesigner']));
   });
   await load(); await list();
-  ok('2. before: a hidden example out of the list', (await ids()).indexOf('tag-celldesigner') < 0);
+  ok('2. an older version\'s hiding hides nothing now', (await ids()).indexOf('tag-celldesigner') >= 0);
   await menu('#m2-list .m2-map >> nth=0', 'Restore example maps');
   var st = await page.evaluate(function () { return [localStorage.getItem('atlas-moved:' + location.pathname), localStorage.getItem('atlas-hidden-maps')]; });
   ok('2. examples\' move and hiding let go, the others\' kept', st[0] === '{"aspirin-graphml":"Testing"}' && st[1] === '["aspirin-celldesigner"]', st.join(' | '));
