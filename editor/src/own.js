@@ -44,8 +44,8 @@
     // renderers and edited as any map, only where the Edit tab is. Kept in IndexedDB (store mine: { id, title, file, text,
     // svg, width, height, at, hidden, group; on the site with a token: site, path, sha, saved, siteTitle) and, with a
     // folder and no token, as their files in it. Delete map puts one in Deleted (hidden, with deleted: the time; below),
-    // the same file added again brings it back. Example maps (the site's)
-    // hidden by a setting while the reader has maps of their own
+    // the same file added again brings it back. Example maps: the site's maps marked example: true in their pages
+    // (below, exampleIds), every other map being the reader's, however it was made
     var MINE_KEY = 'atlas-mine', mine = {}, mineURLs = {};
     function mineFlag() { try { if (Object.keys(mine).length) localStorage.setItem(MINE_KEY, '1'); else localStorage.removeItem(MINE_KEY); } catch (e) {} }
     var mineIn = (function () {
@@ -158,7 +158,8 @@
       var g = m ? (m.mine || gh ? m.group || '' : '') : tg && (ownGroup(tg) || gh) ? tg : '', onGroup = t && !m && ownGroup(g);
       var into = m ? m.group || '' : tg && (ownGroup(tg) || V.siteGroupOf(tg) || t.classList.contains('m2-empty')) ? tg : '';   // a new map: into the group clicked, whoever's it is
       var items = [['New SBGN-ML map', function () { newMap(into); }], ['New CellDesigner map', function () { newMap(into, 'cd'); }], ['Add map from file', function () { addTo = g; picker.click(); }], ['Add group', function () { renameGroup(null); }]];
-      var editing = V.grid.classList.contains('m2-editing') && V.current && V.current.id === (m && m.id);
+      if (canRestoreExamples()) items.push(['Restore example maps', restoreExamples]);   // maps back into the list, rarely: the group's end
+      var editing = V.grid.classList.contains('m2-editing') && V.chosen && V.chosen.id === (m && m.id);   // while editing, current is the editor's own
       // Deleted (as a mailbox's or the Mac's Bin): on a map in it Restore, then Delete forever last; on its heading
       // Delete all forever. Nothing else there (a deleted map is not renamed, copied, moved or edited)
       if (m && m.binned) { var bi = [['Restore', function () { restore(m); }]]; bi.last = [['Delete forever', function () { erase([m]); }]]; return bi; }
@@ -323,7 +324,81 @@
       if (Object.keys(pend).length !== n0) binPendingSet(pend);   // entries the build has now let go
       var own = mineShown().sort(function (a, b) { return a.title.localeCompare(b.title); }).map(mineEntry);
       Object.keys(mine).forEach(function (k) { var r = mine[k]; if (r.hidden) binned.push(Object.assign(mineEntry(r), { binned: r.deleted || r.at })); });
-      return own.concat(own.length && examplesHidden() ? [] : list, binned);
+      var shown = own.concat(list);
+      if (examplesHidden() && shown.some(function (m) { return !m.example; })) shown = shown.filter(function (m) { return !m.example; });
+      return shown.concat(binned);
+    }
+    // Example maps: the site's maps whose pages say example: true (and the SBGN-ML twins of those in the group GraphML);
+    // every other map is the reader's, whoever or whatever made it. Hide example maps (the list's menu, Settings' List)
+    // leaves them out while the list has others to show (examplesMixed). Restore example maps puts them back as the
+    // site's backup keeps them: the data repository's examples/, the same paths as in maps/. With a token one commit
+    // copies it over maps/ (an example deleted, even forever, comes back) and drops their edited SBGN-ML copies
+    // (maps/sbgn-ml/<name>-sbgn.sbgn), so the build writes those again from the GraphML maps; in this browser, with or
+    // without a token, their drafts, Deleted marks, moves to other groups and names given meanwhile are let go
+    var exBackup = null;   // with a token: whether the data repository has examples/, asked once
+    function backupKnown() {
+      if (exBackup !== null || !(repo() && token())) return;
+      exBackup = false;
+      api('/contents/examples?ref=main').then(function (r) { exBackup = r.ok; }, function () { exBackup = null; });
+    }
+    function exampleIds() { return (V.siteList || []).filter(function (m) { return m.example; }).map(function (m) { return m.id; }); }
+    function examplesMixed() {   // the list has examples and other maps shown (as withMine leaves them)
+      var l = V.siteList || [], pend = binPending(), hid = siteHidden();
+      return l.some(function (m) { return m.example; }) && (mineShown().length > 0 || l.some(function (m) { return !m.example && !hiddenGone[m.id] && !binState(m, pend) && hid.indexOf(m.id) < 0; }));
+    }
+    function canRestoreExamples() {
+      if (V.grid.classList.contains('m2-editing') && V.chosen && V.chosen.example) return false;   // its moves would be saved over the restored file (while editing, current is the editor's own)
+      backupKnown();
+      return exampleIds().length > 0 || (exBackup === true && !!(repo() && token()));
+    }
+    function restoreExamples() {
+      var gh = !!(repo() && token());
+      if (!confirm(gh ? 'Restore example maps? They go back to the saved set on GitHub: changes made to them, their moves and their deletions are undone. Maps of your own stay as they are.'
+                      : 'Restore example maps? Changes made to them in this browser are let go. Maps of your own stay as they are.')) return;
+      (gh ? examplesToSite() : Promise.resolve([])).then(function (ids) {
+        var all = exampleIds().concat(ids);
+        all = all.concat(all.filter(function (id) { return /-graphml$/.test(id); }).map(function (id) { return id.replace(/-graphml$/, '') + '-sbgn'; }));
+        var pend = binPending(), was = {};
+        (V.siteList || []).forEach(function (m) { was[m.id] = m.deleted; });
+        all.forEach(function (id) {
+          if (gh && was[id]) pend[id] = ['', Date.now()]; else delete pend[id];   // in Deleted on the build still: out of it until the build has the restore
+          unkeep(id).catch(function () {}); delete hiddenGone[id]; delete renamed[id]; V.setMoved(id, null);
+        });
+        binPendingSet(pend);
+        if (V.kept && all.indexOf(V.kept.id) >= 0) V.dropKept();
+        var m = V.current && V.byId[V.current.id];
+        if (m && all.indexOf(m.id) >= 0 && !V.grid.classList.contains('m2-editing')) V.put(m, true);   // shown: as the site has it
+        hiddenSet(siteHidden().filter(function (id) { return all.indexOf(id) < 0; }));   // an older version's hiding
+        V.refreshMine();
+      }).catch(function (e) { alert('The example maps were not restored: ' + (e && e.message ? e.message : e)); });
+    }
+    function examplesToSite() {   // examples/ over maps/ in one commit on main, three tries; the ids restored
+      var tries = 0, post = ghPost;
+      var go = function () {
+        return api('/git/ref/heads/main').then(ghJson).then(function (ref) {
+          return api('/git/commits/' + ref.object.sha).then(ghJson).then(function (c) {
+            return api('/git/trees/' + c.tree.sha).then(ghJson).then(function (root) {
+              var ex = root.tree.filter(function (f) { return f.path === 'examples' && f.type === 'tree'; })[0];
+              if (!ex) throw new Error('this site keeps no example maps to restore');
+              return Promise.all([api('/git/trees/' + ex.sha + '?recursive=1').then(ghJson), api('/contents/maps/sbgn-ml?ref=main').then(function (r) { return r.ok ? r.json() : []; })]);
+            }).then(function (x) {
+              if (x[0].truncated) throw new Error('the saved set is too large to read at once');
+              var blobs = x[0].tree.filter(function (f) { return f.type === 'blob' && /^maps\//.test(f.path); });
+              var ids = blobs.filter(function (f) { return /^maps\/[^/]+\.md$/.test(f.path); }).map(function (f) { return f.path.slice(5, -3); });
+              if (!ids.length) throw new Error('the saved set is empty');
+              var twins = ids.map(function (id) { return id.replace(/-graphml$/, '') + '-sbgn.sbgn'; });
+              var gone = (Array.isArray(x[1]) ? x[1] : []).filter(function (f) { return f.type === 'file' && twins.indexOf(f.name) >= 0; });
+              var tree = blobs.map(function (f) { return { path: f.path, mode: f.mode, type: 'blob', sha: f.sha }; })
+                .concat(gone.map(function (f) { return { path: f.path, mode: '100644', type: 'blob', sha: null }; }));
+              return post('/git/trees', { base_tree: c.tree.sha, tree: tree })
+                .then(function (t) { return post('/git/commits', { message: 'Example maps restored in the viewer', tree: t.sha, parents: [ref.object.sha] }); })
+                .then(function (n) { return post('/git/refs/heads/main', { sha: n.sha }, 'PATCH'); })
+                .then(function () { ghDir = null; return ids; });
+            });
+          });
+        }).catch(function (e) { if (e.status === 422 && ++tries < 3) return go(); throw e; });
+      };
+      return go();
     }
     function examplesHide(hide) {   // Hide example maps or Show example maps, in the list's right-click menu
       try { if (hide) localStorage.setItem('atlas-examples', 'hidden'); else localStorage.removeItem('atlas-examples'); } catch (e) {}
@@ -814,7 +889,7 @@
     var own = {
       read: function () { return mineIn; },
       here: function () { return (groupsHere = mineGroupsHere()); }, groups: function () { return groupsHere; },
-      withMine: withMine, isGroup: ownGroup, movable: movable, moveTo: moveTo, rename: renameGroup, renameMap: renameMap, canRename: canRename, newMap: newMap, shown: mineShown, examplesHidden: examplesHidden, examplesHide: examplesHide, listItems: listItems,
+      withMine: withMine, isGroup: ownGroup, movable: movable, moveTo: moveTo, rename: renameGroup, renameMap: renameMap, canRename: canRename, newMap: newMap, shown: mineShown, examplesHidden: examplesHidden, examplesHide: examplesHide, examplesMixed: examplesMixed, listItems: listItems,
       rec: function (id) { return mine[id] || null; }, naming: function () { return !!naming; }
     };
     mineIn.then(upAll).then(binMigrate);   // connected: the reader's maps kept in this browser go to GitHub

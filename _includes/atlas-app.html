@@ -1407,9 +1407,9 @@ page, so its styles keep the base they were made on).
     document.getElementById('m2-set-size-v').textContent = Math.round(SIZE * 100) + '%';
   }
   // Settings' List (in Settings, where every choice can be found, phones included; also in the
-  // list's right-click menu): Example maps while the reader has maps of their own, File format tags where a map has one
+  // list's right-click menu): Example maps while the list has examples and other maps, File format tags where a map has one
   function listRow() {
-    var ex = !!(own && own.examplesHide && own.shown().length), fm = !!(maps && maps.some(formatOf));
+    var ex = !!(own && own.examplesMixed && own.examplesMixed()), fm = !!(maps && maps.some(formatOf));
     var vis = function (sel, on) { var b = document.querySelector(sel); if (b) b.style.display = on ? '' : 'none'; };
     vis('.m2-set-list', ex || fm); vis('.m2-set-examples', ex); vis('.m2-set-formats', fm);
     document.getElementById('m2-set-examples').checked = !(own && own.examplesHidden && own.examplesHidden());
@@ -1459,10 +1459,9 @@ page, so its styles keep the base they were made on).
       };
       view.push(['Open all groups', all(false), shut === 0], ['Close all groups', all(true), shut === names.length]);
     }
-    // Hide or Show example maps (the site's), while the reader has maps of their own, and the file format tags, where a map
-    // in the list has one (here rather than in Settings, so the change is seen at once
-    // in the list)
-    if (own && own.examplesHide && own.shown().length && !inBin) {
+    // Hide or Show example maps (the site's marked so), while the list has examples and other maps, and the file format
+    // tags, where a map in the list has one (here rather than in Settings, so the change is seen at once in the list)
+    if (own && own.examplesMixed && own.examplesMixed() && !inBin) {
       var hid = own.examplesHidden();
       view.push([hid ? 'Show example maps' : 'Hide example maps', function () { own.examplesHide(!hid); }]);
     }

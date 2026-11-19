@@ -13,7 +13,9 @@
 #   CellDesigner one. images/legend/celldesigner-legend.svg is a fixed file: the full CellDesigner legend's drawing,
 #   made with the workbench's legend maps (only on the Metabolism Regulation Atlas, not in the demo).
 # maps/<id>.md gives the entry: front matter title, group, order (and topic), its body the text under the map;
-#   deleted: <date> puts the map in the list's Deleted (the viewer's Delete map, its group kept for Restore); with
+#   deleted: <date> puts the map in the list's Deleted (the viewer's Delete map, its group kept for Restore);
+#   example: true marks one of the site's example maps (the list's Hide example maps leaves them out; every other map is
+#   the reader's, however it was made; its SBGN-ML twin below is an example with it); with
 #   newt: true a Newt link opens the map's SBGN-ML on the demo, minerva: <address> a MINERVA link.
 # SBGN-ML (shown the same way as GraphML): a map whose maps/extra/<id>/ has an
 #   .sbgn file gets that file drawn as well, read by the converter (renderers/converter/mapconv: sbgnml.read, the file's
@@ -298,7 +300,7 @@ def sbgn_map(src, mid, fm, body):
     d['file'] = '/downloads/' + os.path.basename(path)
     d['src'] = blob_sha(path)   # the kept drawing waits for the build of its save
     d['edit_path'], d['edit_base'] = 'maps/sbgn-ml/%s.sbgn' % sid, '/atlas-data/%s.graphml' % sid
-    more = {'deleted': fm['deleted']} if fm.get('deleted') else {}   # in Deleted with its GraphML map
+    more = {k: fm[k] for k in ('deleted', 'example') if fm.get(k)}   # in Deleted, and an example, with its GraphML map
     return (sid, entry_of(fm['title'], 'SBGN-ML', fm['order'] + 100, d, topic=fm['topic'], **more), body), search_entries(sid, nodes)
 
 
@@ -430,6 +432,8 @@ def main():
             fm['shapes'] = True
         if meta.get('deleted'):
             fm['deleted'] = meta['deleted']
+        if meta.get('example') == 'true':
+            fm['example'] = True
         fm['downloads'] += extra(mid, meta)
         sb = sorted(glob.glob(os.path.join(ROOT, 'maps', 'extra', mid, '*.sbgn')))
         if sb:
