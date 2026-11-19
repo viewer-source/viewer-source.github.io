@@ -1434,8 +1434,18 @@ page, so its styles keep the base they were made on).
   // Open all groups and Close all groups, Hide or Show example maps and file format tags, in the list's right-click menu (in Settings they would change a
   // list not in sight), on every page whose list has groups, after the
   // editor's own entries where the Edit tab is; the one matching the list's state greyed. Shift with the right click,
-  // a field, or a list with no groups and no editor keeps the browser's menu
-  document.getElementById('m2-list').addEventListener('contextmenu', function (e) {
+  // a field, or a list with no groups and no editor keeps the browser's menu. The same menu on the empty column under
+  // the list, down to the page's end (a short list, its groups closed, leaves most of the column empty), as on the
+  // list's own empty space; only beside the map and while the list is in sight
+  var listNav = document.querySelector('.m2-nav'), listWide = window.matchMedia('(min-width: 941px)');
+  function underList(e) {
+    var list = document.getElementById('m2-list'), n = listNav.getBoundingClientRect();
+    if (!listWide.matches || !list.offsetParent || e.clientX < n.left || e.clientX > n.right || e.clientY < list.getBoundingClientRect().bottom) return false;
+    if (e.target !== listNav && listNav.contains(e.target)) return false;   // another window's own content in the column
+    return !e.target.closest('.m2-main, .m2-info, #m2-epanel, #m2-rail, .m2-cx, a, button, input, select, textarea');
+  }
+  document.addEventListener('contextmenu', function (e) {
+    if (!document.getElementById('m2-list').contains(e.target) && !underList(e)) return;
     if (e.shiftKey || e.target.closest('input')) return;
     // the editor's entries first (where the Edit tab is), then, under a line, what changes how the list looks
     var items = own && own.listItems ? own.listItems(e) : [], view = [], names = listGroups(), last = items.last || [];
