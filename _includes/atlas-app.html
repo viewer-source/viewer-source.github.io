@@ -52,7 +52,8 @@ page, so its styles keep the base they were made on).
     --m2-grip: transparent;      /* the three dots on the separator beside the list: none in the viewer's own look */
     --m2-grip-h: transparent;    /* the dots on the one under the map window: none */
     /* behaviours, on: the separators in place of the corner grip, a second click on a molecule
-       closing its panel, dragging in the list only with Shift held; 0 turns one off */
+       closing its panel, dragging in the list only with Shift held (where the Edit tab is, a map pressed on its name too);
+       0 turns one off */
     --m2-separators: 1;
     --m2-click-closes: 1;
     --m2-drag-shift: 1;
@@ -573,6 +574,9 @@ page, so its styles keep the base they were made on).
   /* a group or a map dragged into another place : faint while it moves, a line
      where it goes */
   .m2-moving { opacity: 0.4; }
+  /* the selection box drawn over the list (several maps selected), as Finder's */
+  body.m2-boxing { user-select: none; -webkit-user-select: none; }
+  .m2-marq { position: fixed; z-index: 30; border: 1px solid #9aa0a6; background: rgba(154, 160, 166, 0.12); pointer-events: none; }
   /* a row that can be dragged: no text selection or page scroll by touch while it moves */
   .m2-grab { touch-action: none; user-select: none; -webkit-user-select: none; }
   /* with --m2-drag-shift: the rows can be dragged only with Shift held, which shows it */
@@ -581,8 +585,11 @@ page, so its styles keep the base they were made on).
   body.m2-dragging, body.m2-dragging * { cursor: grabbing !important; user-select: none; }
   /* development mode: a group with no map yet */
   .m2-empty { font-size: 14px; color: var(--m2-faint); padding: 2px 4px; margin-left: 14px; }
-  .m2-drop { box-shadow: 0 -2px 0 var(--m2-accent); }
-  .m2-drop-after { box-shadow: 0 2px 0 var(--m2-accent); }
+  /* a straight line where the row goes, in the gap between rows (a shadow followed the row's rounded corners) */
+  .m2-drop, .m2-drop-after { position: relative; }
+  .m2-drop::before, .m2-drop-after::after { content: ''; position: absolute; left: 0; right: 0; height: 2px; background: var(--m2-accent); pointer-events: none; }
+  .m2-drop::before { top: -2px; }
+  .m2-drop-after::after { bottom: -2px; }
   .m2-group:focus { outline: none; }
   /* open / closed sign at the right end of a group name: chevrons. For filled
      triangles use instead: open url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 12 12%22%3E%3Cpath d=%22M1.5 3.5h9L6 9z%22 fill=%22%23888%22/%3E%3C/svg%3E'),
@@ -1571,6 +1578,7 @@ page, so its styles keep the base they were made on).
   window.addEventListener('blur', function () { spaceHeld = false; });
   // Gestures and keys: every move and key of the viewer and its editor in one window, the main ones first, then the rest
   // and the reasons; opened from Settings or by ? outside editing (the editor's ? opens its own help)
+  var MAC = /mac/i.test(navigator.platform);
   var tipsBox = null, MOD = /mac|iphone|ipad|ipod/i.test((navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || navigator.userAgent) ? 'Cmd' : 'Ctrl';
   function tipsBuild() {
     var e = function (t) { return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;'); };
@@ -2612,7 +2620,8 @@ page, so its styles keep the base they were made on).
   // in the development mode (include ... mode="development"), or with drag=true (a page that wants it in the
   // presentation mode, the styles page): a published site's viewer stays a fixed list for reading the maps
   // groups and maps reordered by dragging: in development mode, and in presentation mode with drag=true on the include
-  // (the styles page). Only with Shift held (so a click or a scroll never moves a row by accident)
+  // (the styles page). Only with Shift held (so a click or a scroll never moves a row by accident); where the Edit tab
+  // is, also a map pressed on its name, a selected map or a group's heading, with a mouse, as in Finder
   var ARRANGE = DEV || {% if include.drag %}true{% else %}false{% endif %};
   if (!ARRANGE) order = {};
   // Dragging with the pointer (mouse, pen or finger), not the browser's drag and drop: a list row is a button, and
@@ -2625,14 +2634,84 @@ page, so its styles keep the base they were made on).
     document.addEventListener('keydown', shiftOn); document.addEventListener('keyup', shiftOn);
     window.addEventListener('blur', function () { document.body.classList.remove('m2-shift'); });
   }
+  // Several maps selected in the list, as in Finder (where the Edit tab is, the only place with actions for them): Cmd
+  // or Ctrl with a click adds or takes out one, Shift with a click every map from the last one clicked, a drag that
+  // starts in the list beside the names (a name pressed drags its map, movable) draws a box over the maps it takes (Cmd or Ctrl held: added to the
+  // selection). picked is the selection while it holds any map but the map shown alone, in the list's order; empty,
+  // the map shown is the selection. A plain click, a map opened (go) or Esc ends it. The editor's list menu and the Delete key
+  // act on it (own.js); a selected map dragged takes the others with it (drop)
+  var picked = [], pickFrom = null;
+  function pickRows() { return Array.prototype.slice.call(document.querySelectorAll('#m2-list .m2-map:not(.m2-binned)')); }
+  function pickShown() { var c = chosen || current; return c ? c.id : null; }
+  function inPick(id) { return picked.length ? picked.indexOf(id) >= 0 : id === pickShown(); }
+  function pickSet(ids) {   // in the list's order; the rows lit at once, no list made again
+    var order = pickRows().map(function (b) { return b.dataset.id; });
+    picked = order.filter(function (id) { return ids.indexOf(id) >= 0; });
+    pickRows().forEach(function (b) { b.classList.toggle('m2-on', inPick(b.dataset.id)); });
+  }
+  function pickClick(id, e) {
+    var now = picked.length ? picked : [pickShown()].filter(Boolean);
+    if (e.shiftKey) {
+      var ids = pickRows().map(function (b) { return b.dataset.id; }), z = ids.indexOf(id);
+      var a = ids.indexOf(now.indexOf(pickFrom) >= 0 ? pickFrom : now[now.length - 1]);   // from the last map added, if still selected
+      if (a < 0) a = z;
+      var range = ids.slice(Math.min(a, z), Math.max(a, z) + 1);
+      pickSet(e.metaKey || e.ctrlKey ? now.concat(range) : range);
+    } else {
+      if (now.indexOf(id) >= 0) return pickSet(now.filter(function (x) { return x !== id; }));
+      pickFrom = id;   // a Shift click reaches from the last map added
+      pickSet(now.concat([id]));
+    }
+  }
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && picked.length && !e.defaultPrevented && !document.querySelector('.m2-cx')) { pickSet([]); }
+  });
+  (function () {   // the selection box
+    var box = document.getElementById('m2-list'), at = null, marq = null, base = [];
+    box.addEventListener('pointerdown', function (e) {
+      if (!own || press || e.button !== 0 || e.pointerType !== 'mouse' || e.shiftKey || (e.ctrlKey && MAC)) return;   // press: a row being dragged (movable)
+      if (e.target === box && e.offsetX >= box.clientWidth) return;   // the list's scrollbar
+      var row = e.target.closest('.m2-map, .m2-group, input');
+      if (row && (row.tagName === 'INPUT' || row.classList.contains('m2-binned') || row.classList.contains('m2-group'))) return;
+      at = { x: e.clientX, y: e.clientY, id: e.pointerId, top: box.scrollTop, add: e.metaKey || e.ctrlKey };
+    });
+    document.addEventListener('pointermove', function (e) {
+      if (!at || e.pointerId !== at.id) return;
+      if (!marq) {
+        if (Math.abs(e.clientX - at.x) + Math.abs(e.clientY - at.y) < 6) return;
+        base = at.add ? (picked.length ? picked.slice() : [pickShown()].filter(Boolean)) : [];
+        marq = el('div', 'm2-marq'); document.body.appendChild(marq); document.body.classList.add('m2-boxing');
+        at.rows = pickRows().map(function (b) { var q = b.getBoundingClientRect(); return { id: b.dataset.id, l: q.left, r: q.right, t: q.top + box.scrollTop, b: q.bottom + box.scrollTop }; });   // measured once, in the list's scroll
+      }
+      if (e.pointerType === 'mouse' && !e.buttons) return end(e);   // released outside the window
+      e.preventDefault();
+      var r = box.getBoundingClientRect();
+      if (e.clientY < r.top + 16) box.scrollTop -= 12; else if (e.clientY > r.bottom - 16) box.scrollTop += 12;
+      var y0 = at.y - (box.scrollTop - at.top), x1 = Math.min(at.x, e.clientX), x2 = Math.max(at.x, e.clientX), y1 = Math.min(y0, e.clientY), y2 = Math.max(y0, e.clientY), z = pz();
+      Object.assign(marq.style, { left: x1 / z + 'px', top: y1 / z + 'px', width: (x2 - x1) / z + 'px', height: (y2 - y1) / z + 'px' });
+      var st = box.scrollTop, hit = at.rows.filter(function (q) { return q.b - st > y1 && q.t - st < y2 && q.r > x1 && q.l < x2; }).map(function (q) { return q.id; });
+      pickSet(base.concat(hit.filter(function (id) { return base.indexOf(id) < 0; })));
+    });
+    function end(e) {
+      if (!at || e.pointerId !== at.id) return;
+      at = null;
+      if (!marq) return;   // a click
+      marq.remove(); marq = null; document.body.classList.remove('m2-boxing');
+      swallow = true; setTimeout(function () { swallow = false; }, 0);   // the click that follows the release
+    }
+    document.addEventListener('pointerup', end);
+    document.addEventListener('pointercancel', end);
+  })();
   function movable(b, what) {
     if (!ARRANGE || document.getElementById('m2-search').value.trim()) return;
     b.classList.add('m2-grab');
-    var shift = setting('drag-shift');
-    if (what.group && !what.map) b.title = shift ? 'Click to open or close, Shift and drag to move the group' : 'Click to open or close, drag to move the group';
-    else if (shift) b.title = what.any ? 'Shift and drag to move the map' : 'Shift and drag to move the map in its group';
+    if (what.group && !what.map) b.title = 'Click to open or close, drag to move the group';
     b.addEventListener('pointerdown', function (e) {
-      if (e.button !== 0 || (setting('drag-shift') && !e.shiftKey)) return;
+      // where the Edit tab is, as in Finder: a map pressed on its name (or selected) or a group's heading is dragged as it
+      // is, with a mouse; a press beside the names starts the selection box; Shift with a drag as before
+      if (e.button !== 0 || (e.ctrlKey && MAC)) return;   // Ctrl with a click on a Mac is a right click: its release never comes
+      var onName = !!own && e.pointerType === 'mouse' && (!what.map || !!e.target.closest('.m2-name, .m2-fmt') || inPick(what.map));
+      if (!e.shiftKey && !onName && (setting('drag-shift') || (own && what.map))) return;   // beside a name: the selection box
       if (!DEV && !setting('drag-shift')) return; // drag=true in presentation mode: only for a style with Shift dragging
       press = { what: what, row: b, y: e.clientY, id: e.pointerId, on: false };
     });
@@ -2679,7 +2758,9 @@ page, so its styles keep the base they were made on).
           else if (at.classList.contains('m2-group')) to = prev ? prev.getAttribute('data-group') || '' : '';   // above a heading: the group above it
           else { to = at.getAttribute('data-group') || ''; before = at.classList.contains('m2-map') ? at.getAttribute('data-id') : null; }
         }
-        if (before === moving.map) return;
+        var ids = picked.length > 1 && picked.indexOf(moving.map) >= 0 ? picked.filter(function (id) { return own.movable(byId[id]); }) : [moving.map];
+        if (ids.indexOf(before) >= 0) return;
+        if (ids.length > 1) { picked = []; return own.moveMany(ids, to, before); }   // the selected maps together, in the list's order
         return own.moveTo(moving.map, to, before);   // the record's group, the order, and the list made again with the reader's maps first
       } else if (moving.map) {
         var ids = maps.filter(function (m) { return (m.group || '') === moving.group; }).map(function (m) { return m.id; });
@@ -2701,6 +2782,7 @@ page, so its styles keep the base they were made on).
     }
     document.addEventListener('pointermove', function (e) {
       if (!press || e.pointerId !== press.id) return;
+      if (e.pointerType === 'mouse' && !e.buttons) return end(e);   // released outside the window, or a release never sent
       if (!press.on) {
         if (Math.abs(e.clientY - press.y) < 5) return;
         press.on = true; moving = press.what;
@@ -2863,7 +2945,7 @@ page, so its styles keep the base they were made on).
         heading(group, shut);
       }
       if (shut) return;
-      var b = el('button', 'm2-item m2-map' + (m.mine ? ' m2-mine' : '') + (m.group ? ' m2-sub' : '') + (m.tag === 'draft-ext' ? ' m2-ext' : '') + (m.source ? ' m2-src-' + m.source : '') + (m === (chosen || current) ? ' m2-on' : ''));
+      var b = el('button', 'm2-item m2-map' + (m.mine ? ' m2-mine' : '') + (m.group ? ' m2-sub' : '') + (m.tag === 'draft-ext' ? ' m2-ext' : '') + (m.source ? ' m2-src-' + m.source : '') + (picked.length ? (picked.indexOf(m.id) >= 0 ? ' m2-on' : '') : m === (chosen || current) ? ' m2-on' : ''));
       var fmt = !FORMATS_OFF && formatOf(m);
       if (fmt) b.appendChild(el('span', 'm2-fmt', fmt));
       b.appendChild(el('span', 'm2-name', label(m)));
@@ -2879,7 +2961,8 @@ page, so its styles keep the base they were made on).
       var named = !!own && own.canRename(m, ghNow);   // a map whose name can be changed here (own.js): a double-click on it
       if (named) tips.push('Double-click to rename');
       b.title = tips.join(', ');
-      b.addEventListener('click', function () {
+      b.addEventListener('click', function (e) {
+        if (own && (e.metaKey || e.ctrlKey || e.shiftKey)) return pickClick(m.id, e);   // several maps selected, as in Finder
         // as a group's double-click (heading): the list is built again after the first click, so the second lands on a new button
         if (twice('m:' + m.id) && named) return own.renameMap(m.id);
         go(m.id);
@@ -2888,6 +2971,7 @@ page, so its styles keep the base they were made on).
     });
     if (!ownDone) ownEmpty();
     emptyGroups();
+    if (picked.length) { var inSight = pickRows().map(function (b) { return b.dataset.id; }); picked = picked.filter(function (id) { return inSight.indexOf(id) >= 0; }); }   // a group closed, a search: the selection is what is seen
     // Deleted (own.js: Delete map, Restore, Delete forever): under a line after every group, closed on each page load
     // (binOpen is never kept), its count in the heading; a date beside a name another deleted map has too
     var bin = q ? [] : maps.filter(function (m) { return m.binned; });
@@ -3073,6 +3157,7 @@ page, so its styles keep the base they were made on).
   // the list and the arrow keys route at once, not on the browser's hashchange, which comes a moment later: so a
   // second click or key press always starts from the map just chosen
   function go(id) {
+    picked = []; pickFrom = id;   // a map opened: the list's selection is that map again (also when it is shown already)
     if (location.hash.slice(1) !== id) location.hash = id;
     route();
   }
@@ -3091,6 +3176,7 @@ page, so its styles keep the base they were made on).
     if (e && e.type === 'hashchange' && m === chosen) return; // already routed by go() or an arrow key
     if (!pending) lastHit = null; // chosen from the map list, not a search result
     if (closed[m.group]) { closed[m.group] = false; saveClosed(); } // the chosen map's group is always open
+    if (m !== chosen) { picked = []; pickFrom = m.id; }   // another map shown (arrow keys, back, forward): the list's selection is that map
     chosen = m;
     show(m);
     buildList(document.getElementById('m2-search').value);
@@ -3706,6 +3792,8 @@ page, so its styles keep the base they were made on).
     draftsIn: { get: function () { return draftsIn; } },
     draftsDone: { get: function () { return function () { return draftsDone; }; } },
     refreshMine: { get: function () { return refreshMine; } },
+    picked: { get: function () { return function () { return picked.length ? picked.slice() : [pickShown()].filter(Boolean); }; } },   // the list's selection (several maps), else the map shown
+    pickSet: { get: function () { return pickSet; } },
     draftDo: { get: function () { return draftDo; } },
     dropKept: { get: function () { return dropKept; } },
     draftIds: { get: function () { return draftIds; } },
