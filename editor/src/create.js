@@ -1066,9 +1066,10 @@
       if (cdNameDown(e, P, h)) return true;   // a CellDesigner compartment's name dragged by itself (cdcreate.js)
       var q = palOn() && !tool ? svAt(P) : null;
       if (!q || e.shiftKey || (h && h.p != null)) { if (svSel) { svSel = null; paint(); } return false; }   // Shift or a bend point there: the core's
-      e.stopImmediatePropagation();
       V.view.focus({ preventScroll: true });
       var again = !!svSel && svSel.id === nodes2[q[0]].id && svSel.j === q[1];
+      if (!again) { svDrag = { pick: q, x: e.clientX, y: e.clientY }; return true; }   // not selected: a drag goes on to move the map, a click selects it on release
+      e.stopImmediatePropagation();
       selN = []; selP = []; selE = []; part = null;
       svSel = { id: nodes2[q[0]].id, j: q[1] };
       svDrag = { i: q[0], again: again, x: e.clientX, y: e.clientY, to: null, r: null, fixed: svList(q[0])[q[1]][3] === UI };   // a unit of information stays where the converter puts it
@@ -1116,10 +1117,11 @@
       });
     }
     window.addEventListener('pointermove', function (e) {
+      if (svDrag && svDrag.pick) { if (!e.buttons || Math.hypot(e.clientX - svDrag.x, e.clientY - svDrag.y) >= 5) svDrag = null; return; }   // the map moved: no click
       if (!svDrag || !svSel) return;
       if (!e.buttons) { svUp(); return; }   // released outside the window: no sticky hand
       if (!svDrag.to && Math.hypot(e.clientX - svDrag.x, e.clientY - svDrag.y) < 4) return;
-      if (svDrag.fixed || !svDrag.again) { svDrag.moved = true; return; }   // a unit of information is not dragged, nor one not selected before the press; a drag on it is no click
+      if (svDrag.fixed) { svDrag.moved = true; return; }   // a unit of information is not dragged; a drag on it is no click
       var i = svDrag.i, b = boxOf(i), r = border(i, at(e)), q = svList(i)[svSel.j];
       if (!svDrag.parts) svDrag.parts = svParts(i, q);   // the state variable itself moves, as other items on the map, no copy
       svDrag.r = r; svDrag.to = [b[0] + (0.5 + r[0]) * b[2], b[1] + (0.5 + r[1]) * b[3]];
@@ -1128,9 +1130,13 @@
       paint();
     }, true);
     window.addEventListener('pointerup', svUp, true);   // capture: the core's own handlers may stop the release on the map
-    function svUp() {
+    function svUp(e) {
       var d = svDrag; svDrag = null;
       if (!d) return;
+      if (d.pick) {   // a click on one not selected: selected now, the viewer's release (a pick) not run
+        if (e && e.stopImmediatePropagation) e.stopImmediatePropagation();
+        selN = []; selP = []; selE = []; part = null; svSel = { id: nodes2[d.pick[0]].id, j: d.pick[1] }; paint(); return;
+      }
       if (d.r && svSel) { remember(false); text = sbJs.stateMove(text, svSel.id, svList(d.i)[svSel.j][4], d.r[0], d.r[1]); parse(); dirty = true; render(); paint(); changed(); }
       else if (d.again && !d.moved && svSel) typeIn(svSel.id, svSel.j);   // a click on it selected: its text
     }

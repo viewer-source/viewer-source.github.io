@@ -2491,7 +2491,7 @@
       return best || group;
     }
     function editing(e) { return on && V.current === map && !e.target.closest('.m2-ctrl, .m2-info, .m2-ed-type'); }   // a press in the name box is the box's
-    var rpan = null, tap = null;
+    var tap = null;
     // edit mode is view mode plus the selection (the same gestures as in view mode):
     // two-finger scrolling moves the map, a pinch zooms (the viewer's wheel handler); a drag on empty
     // space or on an item not selected moves the map, as in the viewer; a click selects (on empty space: clears the
@@ -2522,7 +2522,7 @@
       // an edge of a compartment, or a handle of one selected: a drag resizes it (compartments are
       // containers, resized by hand by dragging their edge); a bend point or a node there comes first
       var rz = !e.shiftKey && edgeAt(P);
-      if (rz && h && (h.p != null || (h.n != null && !nodes2[h.n].comp && selN.indexOf(rz.c) < 0))) rz = null;
+      if (rz && h && h.p != null) rz = null;
       if (rz) {
         e.stopImmediatePropagation(); e.preventDefault();
         V.view.setPointerCapture(e.pointerId); V.view.focus({ preventScroll: true });
@@ -2539,7 +2539,7 @@
         // area added to the selection; Shift with a click (no move) adds or takes out what is under it (release)
         e.stopImmediatePropagation(); e.preventDefault();
         V.view.setPointerCapture(e.pointerId); V.view.focus({ preventScroll: true });
-        band = { x: P[0], y: P[1], x2: P[0], y2: P[1], add: true, h: h, cx: e.clientX, cy: e.clientY }; paint(); return;
+        band = { x: P[0], y: P[1], x2: P[0], y2: P[1], h: h, cx: e.clientX, cy: e.clientY }; paint(); return;
       }
       // empty space or an item not selected: a drag moves the map (the viewer's, mouse, trackpad and finger alike), a
       // click is taken on release (selects, or on empty space clears)
@@ -2561,7 +2561,7 @@
       // a bend point alone is selected only by an area or Shift with a click
       if (!there && h.p != null && !keepE) {
         var ak = edges2.findIndex(function (q) { return q.pts.indexOf(h.p) >= 0; });
-        if (ak >= 0) { selN = []; selP = []; selE = [ak]; paint(); return; }
+        if (ak >= 0) { h = { e: ak }; return tapped(); }   // taken on release as a click on the line; a drag moves the map
       }
       // the first click selects, a drag moves only what is selected already (as yEd: the first click
       // selects an item, the second drags it)
@@ -2922,12 +2922,7 @@
     }
     V.view.addEventListener('pointermove', function (e) {
       if (linkMove(e)) return;   // an arc being drawn (create.js)
-      if (rpan) {
-        e.stopImmediatePropagation();
-        if (e.pointerType === 'mouse' && !e.buttons) { rpan = null; V.view.classList.remove('m2-drag'); return; }
-        V.tx += (e.clientX - rpan[0]) / V.pz(); V.ty += (e.clientY - rpan[1]) / V.pz(); rpan = [e.clientX, e.clientY]; V.moved = true; V.draw();
-        return;
-      }
+      if (tap && Math.hypot(e.clientX - tap.x, e.clientY - tap.y) >= 5) tap = null;   // a drag of the map, no click even if it comes back
       if ((drag || band) && e.pointerType === 'mouse' && !e.buttons) return release(e);   // its release never came
       if (drag || band) {
         e.stopImmediatePropagation();
@@ -2964,7 +2959,7 @@
       if (on && V.current === map && !e.buttons) {   // the move sign only over what a drag would move
         var PP = at(e);
         var hh = e.shiftKey ? null : hit(PP), ez = !e.shiftKey && edgeAt(PP);
-        if (ez && hh && (hh.p != null || (hh.n != null && !nodes2[hh.n].comp && selN.indexOf(ez.c) < 0))) ez = null;
+        if (ez && hh && hh.p != null) ez = null;
         if (ez) { V.view.style.cursor = resizeCursor(ez.s); return; }
         var sel = hh && ((hh.p != null ? selP.indexOf(hh.p) : hh.e != null ? selE.indexOf(hh.e) : selN.indexOf(hh.n)) >= 0 ||
           (hh.p != null && selE.some(function (q) { return edges2[q].pts.indexOf(hh.p) >= 0; })));
@@ -2974,7 +2969,6 @@
     function release(e) {
       if (palUp(e)) return;
       if (linkUp(e)) return;   // an arc drawn (create.js); a click on its node goes on to select it
-      if (rpan) { rpan = null; V.view.classList.remove('m2-drag'); e.stopImmediatePropagation(); return; }
       var t = tap; tap = null;
       if (t && e.type === 'pointerup' && Math.hypot(e.clientX - t.x, e.clientY - t.y) < 5) {   // a click, not a drag of the map
         e.stopImmediatePropagation();   // the viewer's release would open the annotation (its own pointer ends with the capture)
@@ -2984,8 +2978,7 @@
       e.stopImmediatePropagation();
       if (band) {
         var bd = band; band = null;
-        if (e.type === 'pointerup' && Math.hypot(e.clientX - bd.cx, e.clientY - bd.cy) < 5) { click({ h: bd.h, shift: bd.add }); return; }   // a click (with Shift: adds or takes out)
-        if (!bd.add) { selN = []; selP = []; selE = []; }
+        if (e.type === 'pointerup' && Math.hypot(e.clientX - bd.cx, e.clientY - bd.cy) < 5) { click({ h: bd.h, shift: true }); return; }   // a click with Shift: adds or takes out
         var a = [Math.min(bd.x, bd.x2), Math.min(bd.y, bd.y2)], c = [Math.max(bd.x, bd.x2), Math.max(bd.y, bd.y2)];
         nodes2.forEach(function (n, i) { var b = boxOf(i); if (cd && /\|proc$/.test(n.id)) return; if (b[0] >= a[0] && b[1] >= a[1] && b[0] + b[2] <= c[0] && b[1] + b[3] <= c[1] && selN.indexOf(i) < 0) selN.push(i); });
         points.forEach(function (p, i) { var X = num(p, 'x'), Y2 = num(p, 'y'); if (X >= a[0] && Y2 >= a[1] && X <= c[0] && Y2 <= c[1] && selP.indexOf(i) < 0) selP.push(i); });

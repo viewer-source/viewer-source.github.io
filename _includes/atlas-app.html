@@ -1584,6 +1584,7 @@ page, so its styles keep the base they were made on).
         ['Click, then drag', 'an item is selected first, then moved'],
         ['Drag on empty space or an item not selected', 'moves the map, as outside editing'],
         ['Shift + click, Shift + drag', 'adds an item or an area to the selection; Shift + click takes an item out'],
+        ['Shift + drag on what is selected', 'moves it by itself, out of what holds it'],
         ['Arrow keys', 'move what is selected by 1, with Shift by 10'],
         [MOD + ' + Z, ' + MOD + ' + Y', 'undo, redo'],
         ['Delete', 'remove what is selected, where it can be removed']]) +
@@ -1694,7 +1695,7 @@ page, so its styles keep the base they were made on).
     // leave the lower right corner to the browser's resize handle (not there with the separators)
     var r = view.getBoundingClientRect();
     if (!setting('separators') && e.clientX > r.right - 18 && e.clientY > r.bottom - 18) return;
-    if (e.target.closest('.m2-info')) return;
+    if (e.target.closest('.m2-info, .m2-ed-type')) return;   // the panel; a name being typed in the editor
     if (e.pointerType === 'mouse' && e.shiftKey) {
       if (grid.classList.contains('m2-editing') || !current) return;   // the editor selects its own way
       view.setPointerCapture(e.pointerId);
@@ -1730,6 +1731,7 @@ page, so its styles keep the base they were made on).
     var prev = pts[e.pointerId];
     pts[e.pointerId] = [e.clientX, e.clientY];
     var ids = Object.keys(pts);
+    if (press && Math.hypot(e.clientX - press[0], e.clientY - press[1]) >= 5) press = null;   // a drag, no click even if it comes back
     if (ids.length === 1) {
       tx += (e.clientX - prev[0]) / pz();
       ty += (e.clientY - prev[1]) / pz();
