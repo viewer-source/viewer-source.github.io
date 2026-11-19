@@ -639,7 +639,7 @@
     var seq = [G].concat(gbend.map(function (p) { return fromFrame(G, B, p); }), [B]), L = seq.length;
     seq[L - 1] = B = this.clip(pa, B, Bb[1], seq[L - 2]);
     var u = unit(B[0] - seq[L - 2][0], B[1] - seq[L - 2][1]);
-    var stop = this.head(GATE_HEAD[get(top[0], 'modificationType')] || 'stimulation', B, u);
+    var ot = get(top[0], 'modificationType'), stop = this.head(GATE_HEAD[ot] || REDUCED_HEAD[ot] || 'stimulation', B, u);
     var u0 = unit(seq[1][0] - G[0], seq[1][1] - G[1]);
     this.open(this.cur + '|a');
     this.path([[G[0] + 6 * u0[0], G[1] + 6 * u0[1]]].concat(seq.slice(1, -1), [stop]), col, wd, false, false, true);
