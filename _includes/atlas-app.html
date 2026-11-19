@@ -1620,7 +1620,7 @@ page, so its styles keep the base they were made on).
     tipsBox = document.createElement('div');
     tipsBox.id = 'm2-tips'; tipsBox.setAttribute('role', 'dialog'); tipsBox.setAttribute('aria-label', 'Gestures and keys'); tipsBox.hidden = true;
     tipsBox.innerHTML = '<button type="button" class="m2-tips-x" aria-label="Close">×</button><h3>Gestures and keys</h3>' +
-      '<h4>Main</h4>' + table(['', 'Trackpad', 'Mouse', 'Touch screen'], [
+      '<h4>Main</h4>' + table(['Action', 'Trackpad', 'Mouse', 'Touch screen'], [
         ['Move the map', (GRAB ? 'Drag, or two' : 'Two') + ' fingers in any direction', (GRAB ? 'Drag, or wheel' : 'Wheel') + '; Shift + wheel for sideways', 'One finger'],
         ['Zoom', 'Pinch, or ' + MOD + ' + two fingers', MOD + ' + wheel', 'Pinch'],
         ['Select an item', 'Click', 'Click', 'Tap'],
