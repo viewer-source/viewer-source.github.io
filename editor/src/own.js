@@ -275,16 +275,20 @@
           // (its name never written to the site, where it would merge with theirs); the build's own maps (no page) here only
           if (repo() && token() && canRename(m, true) && !ownGroup(g)) g = g.replace(/["\\]/g, '');
           V.setMoved(id, g);
-          if (repo() && token() && canRename(m, true) && !ownGroup(g)) sent = toSiteGroup(id, g, k).catch(function (e) {
+          if (repo() && token() && canRename(m, true) && !ownGroup(g)) sent = toSiteGroup(id, g, k).then(function () { return true; }, function (e) {
             if (!e || !e.noPage) alert((m.topic || m.title) + ' was not moved on the site: ' + (e && e.message ? e.message : e) + '. The move is kept in this browser only.');
+            return false;
           });
         }
       } else return Promise.resolve();
       put(id, g, before);
-      // its name taken in that group for its format: renamed "<name> (1)", Finder's Keep both, once the move is written
-      var n = m && mapName(m), keep = m && nameTaken(n, g, fmtOf(m), id) && canRename(m, !!(repo() && token()));
-      return Promise.resolve(sent).then(function () {
-        if (keep) { nameTo(V.byId[id] || m, freeTitle(n, g, fmtOf(m), null, id)); V.refreshMine(); }
+      // into another group where its name is taken for its format: renamed "<name> (1)", Finder's Keep both, once the move
+      // is written. A site map is renamed only on the site (with a token, into one of the site's groups); without a token
+      // its move is this browser's alone and the two names stay
+      var moved = !!m && g !== (m.group || ''), n = m && mapName(m);
+      var keep = moved && nameTaken(n, g, fmtOf(m), id, m.tab) && (r ? true : canRename(m, !!(repo() && token())) && !ownGroup(g));
+      return Promise.resolve(sent).then(function (ok) {
+        if (keep && ok !== false) { nameTo(V.byId[id] || m, freeTitle(n, g, fmtOf(m), null, id, m.tab)); V.refreshMine(); }
       });
     }
     function moveMany(ids, g, before) {   // several maps selected, one after another (each a commit with a token), in their order
@@ -319,16 +323,23 @@
     // Names as in Finder, the format being the extension the list shows: two maps may share a name unless they are in
     // the same group and of the same format. A name taken there is refused when typed (Rename map); a name the viewer
     // makes (Make a copy, New map, Add map from file), or a clash a move or a Restore brings, takes (1), (2), ... after it
-    var EXT_FMT = { '.xml': 'CellDesigner', '.sbgn': 'SBGN-ML', '.graphml': 'GraphML' };
-    function fmtOf(m) { return ((m.downloads || [])[0] || {}).label || ''; }
-    function fmtOfText(t) { return /<sbml[\s>]/.test(t.slice(0, 3000)) && t.indexOf('celldesigner') >= 0 ? 'CellDesigner' : isSb(t) ? 'SBGN-ML' : 'GraphML'; }
+    function fmtOf(m) { return (((m.site || m).downloads || [])[0] || {}).label || ''; }   // its own file's, also while Source shows its SBGN-ML
+    function fmtOfText(t) { return isCd(t) ? 'CellDesigner' : isSb(t) ? 'SBGN-ML' : 'GraphML'; }
     function mapName(m) { return m.mine ? m.title : m.topic || m.title; }
-    function nameTaken(name, group, fmt, id) {   // another map of this name and format in the group, Deleted left out
-      return (V.maps || []).some(function (m) { return m.id !== id && !m.binned && (m.group || '') === (group || '') && fmtOf(m) === fmt && mapName(m) === name; });
+    function bare(v) { return String(v || '').replace(/["\\]/g, '').trim(); }   // as a site page keeps a name
+    function nameTaken(name, group, fmt, id, tab) {   // another map of this name (and tab, as the list shows them) and format in the group, Deleted left out
+      var key = bare(name) + (tab ? ' (' + tab + ')' : ''), seen = {};
+      var all = (V.maps || []).concat(examplesHidden() ? siteNamed((V.siteList || []).filter(function (m) { return m.example; })).map(function (m) {   // examples hidden from the list
+        var g = V.movedOf(m.id); return g === null ? m : Object.assign({}, m, { group: g });
+      }) : []).concat(mineShown().map(function (r) { return { id: r.id, mine: true, title: r.title, group: r.group || '', downloads: [{ label: fmtOfText(r.text) }] }; }));   // records not in the list yet
+      return all.some(function (m) {
+        if (seen[m.id]) return false; seen[m.id] = 1;
+        return m.id !== id && !m.binned && !m.deleted && (m.group || '') === (group || '') && fmtOf(m) === fmt && bare(mapName(m)) + (m.tab ? ' (' + m.tab + ')' : '') === key;
+      });
     }
-    function freeTitle(t, group, fmt, also, id) {   // t, else t (1), t (2), ... free in the group for that format (nor one of also)
+    function freeTitle(t, group, fmt, also, id, tab) {   // t, else t (1), t (2), ... free in the group for that format (nor one of also)
       var f = t;
-      for (var k = 1; nameTaken(f, group, fmt, id) || (also || []).indexOf(f) >= 0; k++) f = t + ' (' + k + ')';
+      for (var k = 1; nameTaken(f, group, fmt, id, tab) || (also || []).indexOf(f) >= 0; k++) f = t + ' (' + k + ')';
       return f;
     }
     function nameTo(m, v) {   // a map's name set: the reader's record (and its page, once on the site), or a site map's page
@@ -408,7 +419,7 @@
         if (u) { letGo(u.svg); letGo(u.text); }
         u = mineURLs[r.id] = { at: r.at, svg: URL.createObjectURL(new Blob([r.svg], { type: 'image/svg+xml' })), text: URL.createObjectURL(new Blob([r.text], { type: 'application/xml' })) };
       }
-      var cdm = /<sbml[\s>]/.test(r.text.slice(0, 3000)) && r.text.indexOf('celldesigner') >= 0, sbm = !cdm && isSb(r.text);
+      var cdm = isCd(r.text), sbm = !cdm && isSb(r.text);
       var e = { id: r.id, title: r.title, group: r.group && (groupsHere.indexOf(r.group) >= 0 || V.siteGroupOf(r.group)) ? r.group : '', topic: r.id, mine: true, file: r.file, width: r.width, height: r.height, v: String(r.at),
         image: u.svg, colours: true, legend: cdm ? 'celldesigner' : 'sbgn', downloads: [{ label: cdm ? 'CellDesigner' : sbm ? 'SBGN-ML' : 'GraphML', url: u.text }] };
       // colours: its picture drawn with the role classes (drawText, core.js), so Settings' Map colours (File, Default) apply
@@ -633,8 +644,8 @@
       if (!m || !b || !canRename(m, repo() && token())) return;
       var shown = m.mine ? m.title : m.topic;
       inPlace(b, { cls: 'm2-group-edit m2-map-edit' + (b.classList.contains('m2-sub') ? ' m2-sub' : ''), max: 120, value: shown, label: 'Name of the map',
-        bad: function (v) { return v && v !== shown && nameTaken(v, m.group, fmtOf(m), id) ? 'A map of this name and format is in this group already' : ''; },
-        end: function (v) { if (v && !nameTaken(v, m.group, fmtOf(m), id)) nameTo(m, v); } });
+        bad: function (v) { return v && v !== shown && nameTaken(v, m.group, fmtOf(m), id, m.tab) ? 'A map of this name and format is in this group already' : ''; },
+        end: function (v) { if (v && !nameTaken(v, m.group, fmtOf(m), id, m.tab)) nameTo(m, v); } });
     }
     function toSiteName(id, was, v) {   // maps/<id>.md: its topic, and its title where it was the same; one commit
       var q = JSON.stringify(v.replace(/["\\]/g, ''));   // the build reads the front matter's quotes plainly
@@ -879,7 +890,7 @@
     function ghPost(path, body, method) { return api(path, { method: method || 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(ghJson); }
     function ghJson(r) { return r.ok ? r.json() : r.json().catch(function () { return {}; }).then(function (d) { var e = new Error(d && d.message || 'GitHub ' + r.status); e.status = r.status; throw e; }); }
     // maps/<id>.md's front matter changed by edit({ get, set, drop }) in one commit, the closing line and the body as they were
-    function siteFront(id, edit, message) {
+    function siteFront(id, edit, message, again) {
       var path = '/contents/maps/' + encodeURIComponent(id) + '.md';
       return api(path + '?ref=main').then(function (r) { if (!r.ok) { var e = new Error(r.status === 404 ? 'it has no page of its own' : 'GitHub ' + r.status); e.noPage = r.status === 404; throw e; } return r.json(); })
         .then(function (d) {
@@ -894,7 +905,10 @@
           });
           md = '---' + nl + head + fm[0].slice(3 + nl.length + fm[2].length) + md.slice(fm[0].length);
           return api(path, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: message + ': ' + id, content: b64(md), sha: d.sha, branch: 'main' }) });
-        }).then(function (r) { if (!r.ok) throw new Error('GitHub ' + r.status); });
+        }).then(function (r) {
+          if ((r.status === 409 || r.status === 422) && !again) return siteFront(id, edit, message, true);   // read again: another write came first
+          if (!r.ok) throw new Error('GitHub ' + r.status);
+        });
     }
     function siteBin(id, on, topic) {   // a site map into Deleted (on) or out of it (its new name, when its own was taken)
       var pend = binPending(), was = pend[id], date = new Date().toISOString().slice(0, 19) + 'Z';
@@ -950,7 +964,7 @@
     }
     function restore(m) {   // back into its group under its own name, or "<name> (1)" where the group has it in the same format
       m = parentOf(m);
-      var name = mapName(m), to = nameTaken(name, m.group, fmtOf(m), m.id) ? freeTitle(name, m.group, fmtOf(m), null, m.id) : null;
+      var name = mapName(m), to = nameTaken(name, m.group, fmtOf(m), m.id, m.tab) ? freeTitle(name, m.group, fmtOf(m), null, m.id, m.tab) : null;
       var say = function (e) { alert((m.mine ? m.title : m.topic) + ' was not restored: ' + (e && e.message ? e.message : e)); };
       if (m.mine) {
         var r = mine[m.id]; if (!r) return;
@@ -959,8 +973,9 @@
         folderMove(m.id, false);
         if (r.site && repo() && token()) siteBin(r.site, false, to).catch(say);
       } else {
-        if (to) renamed[m.id] = { was: name, to: to };
-        siteBin(m.id, false, to).catch(function (e) { delete renamed[m.id]; say(e); });
+        var before = renamed[m.id];
+        if (to) renamed[m.id] = { was: before ? before.was : name, to: to };
+        siteBin(m.id, false, to).catch(function (e) { if (before) renamed[m.id] = before; else delete renamed[m.id]; say(e); });
       }
       V.refreshMine();
     }
@@ -972,7 +987,7 @@
       var b = twinBase(m), l = V.siteList || [];
       if (!b) return m;
       var p = l.filter(function (x) { return x.id === b + '-graphml'; })[0] || l.filter(function (x) { return x.id === b; })[0];
-      return p ? Object.assign({}, p, { binned: m.binned }) : m;
+      return p ? Object.assign({}, V.byId[p.id] || siteNamed([p])[0], { binned: m.binned }) : m;   // as the list has it: moved, renamed
     }
     // Original's record (create.js colsPick) kept with the map on GitHub too, while the page is connected and the map is
     // there: maps/colours/<its GitHub id>.json in the data repository (the site's build reads no such folder; written with
