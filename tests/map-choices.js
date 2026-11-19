@@ -15,8 +15,8 @@ var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : '
     await page.route(/\/renderers\/converter\/(sbgn_edit|cd_make)\.js/, function (r) { var f = /(sbgn_edit|cd_make)\.js/.exec(r.request().url())[0]; r.fulfill({ status: 200, contentType: 'application/javascript', body: fs.readFileSync(path.join(local, 'renderers/converter', f), 'utf8') }); });
   }
   page.on('pageerror', function (e) { errs.push(e.message); });
-  await page.goto(base + '#srebp-celldesigner', { waitUntil: 'load' });
-  await page.evaluate(function () { ['atlas-edit-map-choices', 'atlas-edit-defaults', 'atlas-edit-cd-defaults'].forEach(function (k) { localStorage.removeItem(k); }); });
+  await page.goto(base + '#tag-celldesigner', { waitUntil: 'load' });
+  await page.evaluate(function () { ['atlas-edit-map-choices', 'atlas-edit-originals', 'atlas-edit-defaults', 'atlas-edit-cd-defaults'].forEach(function (k) { localStorage.removeItem(k); }); });
   await page.waitForSelector('.m2-ri[data-win="edit"]', { timeout: 30000 });
   await page.click('.m2-ri[data-win="edit"]');
   var F = '#m2-editwin .m2-ed-pmap tr[data-k="cols"] .m2-ed-pdd', S = '#m2-editwin .m2-ed-pmap tr[data-k="style"] .m2-ed-pdd';
@@ -28,25 +28,25 @@ var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : '
     await page.waitForTimeout(3000);
   };
   var pick = async function (sel, name) { await page.click(sel); await page.waitForTimeout(200); await page.click('body > .m2-ed-pdl button:has-text("' + name + '")'); await page.waitForTimeout(2500); };
-  ok('SREBP (CellDesigner), its own colours: From map', (await val(F)) === 'From map', await val(F));
+  ok('Triacylglycerol (CellDesigner), its own colours: Original', (await val(F)) === 'Original', await val(F));
   await pick(F, 'Default'); await pick(S, 'Default');
-  ok('SREBP: Default chosen', (await val(F)) === 'Default' && (await val(S)) === 'Default');
+  ok('Triacylglycerol: Default chosen', (await val(F)) === 'Default' && (await val(S)) === 'Default');
   await open('colour-test');
   ok('Glycolysis colour test (CellDesigner): Confetti, read from its colours', (await val(F)) === 'Confetti', await val(F));
-  ok('Glycolysis colour test: Style From map, not SREBP’s', (await val(S)) === 'From map', await val(S));
+  ok('Glycolysis colour test: Style From map, not triacylglycerol’s', (await val(S)) === 'From map', await val(S));
   await open('colour-glycolysis-sbgn');
   ok('Glycolysis colour test (SBGN-ML): Confetti', (await val(F)) === 'Confetti', await val(F));
   await open('srebp-sbgn');
-  ok('SREBP (SBGN-ML), not chosen: From map', (await val(F)) === 'From map', await val(F));
+  ok('SREBP (SBGN-ML), not chosen: Original', (await val(F)) === 'Original', await val(F));
   await pick(F, 'No colours');
   ok('SREBP (SBGN-ML): No colours chosen', (await val(F)) === 'No colours');
   await page.keyboard.press('Control+z'); await page.waitForTimeout(2500);
-  ok('SREBP (SBGN-ML): the recolour undone, From map again', (await val(F)) === 'From map', await val(F));
-  await open('srebp-celldesigner');
-  ok('SREBP (CellDesigner) again: its Default back', (await val(F)) === 'Default' && (await val(S)) === 'Default', (await val(F)) + ', ' + (await val(S)));
+  ok('SREBP (SBGN-ML): the recolour undone, Original again', (await val(F)) === 'Original', await val(F));
+  await open('tag-celldesigner');
+  ok('Triacylglycerol (CellDesigner) again: its Default back', (await val(F)) === 'Default' && (await val(S)) === 'Default', (await val(F)) + ', ' + (await val(S)));
   await page.evaluate(function () { localStorage.removeItem('atlas-edit-map-choices'); });
-  await open('colour-test'); await open('srebp-celldesigner');
-  ok('SREBP (CellDesigner), its choice forgotten: Default, read from its colours', (await val(F)) === 'Default', await val(F));
+  await open('colour-test'); await open('tag-celldesigner');
+  ok('Triacylglycerol (CellDesigner), its choice forgotten: Default, read from its colours', (await val(F)) === 'Default', await val(F));
   // a new, empty map: nothing to read, the choice made stands and a glyph placed takes it
   if (!(await page.$('#m2-list .m2-map:visible'))) await page.click('.m2-ri[data-win="list"]');
   await page.waitForSelector('#m2-list .m2-map', { state: 'visible', timeout: 30000 });

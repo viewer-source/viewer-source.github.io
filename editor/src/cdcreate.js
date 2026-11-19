@@ -152,14 +152,21 @@
     // the map; the Default one for a class the map has none of; the choice when none is kept), CellDesigner's own (cd_make
     // LOOK and COMP), the viewer's Default scheme (Settings, Map colours) by the class's role, or none (white, as
     // CellDesigner has no unfilled species), or Confetti (a pastel of its own, create.js confettiFill)
-    var CD_COLS = [['file', 'From map', 'The map as it is; new species and compartments in the colour most of their class have on it, Default for a class it has none of'], ['cd', 'CellDesigner', 'The whole map and new species and compartments in CellDesigner\u2019s own colours'], ['default', 'Default', 'The whole map and new species and compartments in the viewer\u2019s Default colours'], ['none', 'No colours', 'The whole map and new species and compartments white'], ['custom', 'Custom', 'The whole map and new species in the colours kept by Set as default; a class with none as it is'], ['confetti', 'Confetti', 'Every species of the map, and every new one, a pastel of its own; compartments as they are']];
+    var CD_COLS = [['file', 'Original', 'The map\u2019s own colours, as they were before another choice; new species and compartments in the colour most of their class have on it, Default for a class it has none of'], ['cd', 'CellDesigner', 'The whole map and new species and compartments in CellDesigner\u2019s own colours'], ['default', 'Default', 'The whole map and new species and compartments in the viewer\u2019s Default colours'], ['none', 'No colours', 'The whole map and new species and compartments white'], ['custom', 'Custom', 'The whole map and new species in the colours kept by Set as default; a class with none as it is'], ['confetti', 'Confetti', 'Every species of the map, and every new one, a pastel of its own; compartments as they are']];
     // the Default compartment's paint, the official maps': cdrender draws a compartment's band at a quarter of its colour,
     // so this shows as the Default scheme's compartment (#F7F6F3, sbgn_edit FILL; tests/cd-colours-default.js checks the two agree)
     var CD_COMP_DEFAULT = 'ffdfdbce';
     function cdCols() { return mapCols(['file', 'none', 'cd', 'default', 'confetti', 'custom'], cdIs); }
-    function cdIs(mode) {   // the map's species coloured as the choice colours them (cdFills), or each a confetti pastel; null: no species to read (cd_make.classColours, one pass kept per text)
+    function cdIs(mode) {   // the map's species coloured as the choice colours them (cdFills), or each a confetti pastel, or as kept for Original; null: no species to read or nothing kept (cd_make.classColours, one pass kept per text)
       var t = cd && cd.now;
       if (!t || !cdMk) return false;
+      if (mode === 'file') {   // Original: every element the record knows in its kept colour
+        var r = origAll()[palId()];
+        if (!r) return null;
+        var now = cdMk.colours(t), same = function (a, b2) { return a == null || b2 == null || String(a).toLowerCase() === String(b2).toLowerCase(); };
+        return Object.keys(r.fill || {}).every(function (id) { return same(now.fill[id], r.fill[id]); }) &&
+          Object.keys(r.line || {}).every(function (id) { var a = now.line[id] || {}; return Object.keys(r.line[id]).every(function (q) { return same(a[q], r.line[id][q]); }); });
+      }
       var n = cdMk.classColours(t), cols = [];
       Object.keys(n).forEach(function (cls) { if (cls !== 'DEGRADED') cols = cols.concat(Object.keys(n[cls])); });
       if (!cols.length) return null;
@@ -182,7 +189,7 @@
     }
     // the squares of a choice in its list (the field shows its name only: bright colours there would draw the eye from the
     // map), five at most, the first at the right (row-reverse). CellDesigner and Default, fixed sets: the protein's, simple
-    // molecule's, phenotype's, gene's and RNA's colours, each once; No colours one white. From map: the five colours most
+    // molecule's, phenotype's, gene's and RNA's colours, each once; No colours one white. Original: the five colours most
     // species on the map have, the most used first, from the map as it is now (classColours keeps its last answer)
     var CD_SQ = [['PROTEIN', 'protein'], ['SIMPLE_MOLECULE', 'simple molecule'], ['PHENOTYPE', 'phenotype'], ['GENE', 'gene'], ['RNA', 'RNA']];
     function cdSquares(mode) {
@@ -203,10 +210,21 @@
       }
       return '<span class="m2-cs-sw">' + h + '</span>';
     }
-    function cdColsRow() { return palDrop({ key: 'cols', label: 'Colours', title: 'Colours of the map and of new species and compartments', list: CD_COLS, get: cdCols, set: function (v) { keepMapChoice('cols', v); cdRecolour(v); }, sq: cdSquares }); }
+    function cdColsRow() { return palDrop({ key: 'cols', label: 'Colours', title: 'Colours of the map and of new species and compartments', list: CD_COLS, get: cdCols, set: function (v) { colsPick(v, cdCols(), function () { return cdMk.colours(cdNow().t); }, cdOriginal, cdRecolour); }, sq: cdSquares }); }
+    function cdOriginal(r) {   // the colours kept put back (cdApply, one undo step): each alias's fill and each line (by its place, cd_make.lineKey) the record knows and the map now has otherwise; the others as they are
+      var added = 0, F = r.fill || {}, L = r.line || {};
+      cdApply(function (t0) {
+        var now = cdMk.colours(t0);
+        added = Object.keys(now.fill).filter(function (id) { return !(id in F); }).length;
+        Object.keys(now.line).forEach(function (rid) { Object.keys(now.line[rid]).forEach(function (q) { if (!(L[rid] && q in L[rid])) added++; }); });
+        return cdMk.recolourAll(t0, function (cls, id) { return id in F && F[id] !== now.fill[id] ? F[id] : null; },
+          function (k, rid, q) { var a = L[rid]; return a && q in a && a[q] !== (now.line[rid] || {})[q] ? a[q] : null; });
+      }, []);
+      return added;
+    }
     // a choice of Colours recolours the whole map, one undo step (cdApply): every species and compartment its colour by the
-    // choice, as a new one of its class would get it (cdColourIn, from the map as it was); From map leaves the map as it
-    // is; Custom a class with a kept fill, the rest as they are; Confetti every species a pastel of its own, one after
+    // choice, as a new one of its class would get it (cdColourIn, from the map as it was); Original puts back the map's own
+    // (colsPick); Custom a class with a kept fill, the rest as they are; Confetti every species a pastel of its own, one after
     // another (compartments as they are); a degraded species keeps CellDesigner's look. Every line black, under Confetti a
     // colour of its own (create.js confettiLine); Custom leaves the lines. One pass
     // (cd_make.recolourAll); a class CellDesigner's own colours do not know (a receptor, an ion) as it is under CellDesigner

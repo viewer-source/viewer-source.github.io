@@ -335,9 +335,29 @@
       (all[id] = all[id] || {})[what] = v;
       try { localStorage.setItem(CHOICE_KEY, JSON.stringify(all)); } catch (e) {}
     }
-    // the map's Colours: the choice kept for it while the map still shows it (From map and Custom always); else the first
+    // Original, Colours' first choice: the map's own colours. Taken (the format's colours(), by element) when another
+    // choice is made while the map is in its own colours, kept per map in this browser, and put back by Original, each
+    // element the record knows; one added since keeps its colour, and the map as it then is is its own again (taken at
+    // the next choice). New glyphs under Original: the colour most of their kind have on the map
+    var ORIG_KEY = 'atlas-edit-originals';
+    function origAll() { try { return JSON.parse(localStorage.getItem(ORIG_KEY)) || {}; } catch (e) { return {}; } }
+    function colsPick(v, cur, take, back, recolour) {   // a choice of Colours on the map (cur: the one it shows): take its own colours, put them back, or recolour
+      var id = palId(), all = origAll();
+      if (v === 'file') {
+        var r = id && all[id];
+        keepMapChoice('cols', 'file');
+        if (!r) { if (cur !== 'file') note('Original: no colours of this map kept in this browser; the map stays as it is.'); return; }
+        var added = back(r);
+        if (added) note('Original: ' + added + ' element' + (added > 1 ? 's' : '') + ' added since ' + (added > 1 ? 'keep their' : 'keeps its') + ' colour.');
+        return;
+      }
+      if (id && cur === 'file') {   // the map in its own colours, as the field shows (after an undo too)
+        all[id] = take(); try { localStorage.setItem(ORIG_KEY, JSON.stringify(all)); } catch (e) { warn('The map\u2019s own colours could not be kept in this browser.'); } }
+      keepMapChoice('cols', v); recolour(v);
+    }
+    // the map's Colours: the choice kept for it while the map still shows it (Custom always); else the first
     // of ids the map shows (is: every filled glyph as that choice colours it, its lines apart; Confetti every one a confetti
-    // pastel), else From map. So a map recoloured elsewhere, or a recolour undone, shows what the map now is. Read once per
+    // pastel), else Original. So a map recoloured elsewhere, or a recolour undone, shows what the map now is. Read once per
     // change of the map
     // is(m): true, false, or null where the map has nothing to read (an empty map: a kept choice stands, none is read).
     // An SBGN-ML map's moves and resizes change no colour: read again only when more than places changed (sbgn.js GEO)
@@ -346,7 +366,7 @@
       if (M.id === id && M.t === text && M.b === b) return M.v;
       var key = cd ? null : text.replace(GEO, '');
       if (M.id === id && !cd && M.key === key) { M.t = text; return M.v; }
-      var k = mapChoice('cols', ids), v = k === 'file' || k === 'custom' || (k && is(k) !== false) ? k : null;
+      var k = mapChoice('cols', ids), v = k === 'custom' || (k && is(k) !== false) ? k : null;   // Original while the map has its kept colours (or none were kept)
       if (!v) ids.some(function (m) { return m !== 'file' && m !== 'custom' && is(m) === true && (v = m); });
       choiceMemo = { id: id, t: text, b: b, key: key, v: v || 'file' };
       return choiceMemo.v;
@@ -404,7 +424,7 @@
     function confettiSquares() { return '<span class="m2-cs-sw">' + [0, 1, 2, 3, 4].map(function (k) { var x = confettiHex(k * 137.508 % 360); return '<i style="background:' + x + '" title="' + x.toUpperCase() + '"></i>'; }).join('') + '</span>'; }
     // Colours on SBGN-ML maps, kept per map or read from it (mapCols): the map's own (sbgn_edit.defaults: the fill most glyphs of the
     // kind have; the Default colours for a kind the map lacks), the viewer's Default colours, none, or Confetti
-    var SB_COLS = [['file', 'From map', 'The map as it is; new glyphs in the colour most glyphs of their kind have on it'], ['default', 'Default', 'The whole map and new glyphs in the viewer\u2019s Default colours'], ['none', 'No colours', 'The whole map and new glyphs unfilled'], ['custom', 'Custom', 'The whole map and new glyphs in the colours kept by Set as default; a kind with none as it is'], ['confetti', 'Confetti', 'Every glyph of the map, and every new one, a pastel of its own']];
+    var SB_COLS = [['file', 'Original', 'The map\u2019s own colours, as they were before another choice; new glyphs in the colour most glyphs of their kind have on it'], ['default', 'Default', 'The whole map and new glyphs in the viewer\u2019s Default colours'], ['none', 'No colours', 'The whole map and new glyphs unfilled'], ['custom', 'Custom', 'The whole map and new glyphs in the colours kept by Set as default; a kind with none as it is'], ['confetti', 'Confetti', 'Every glyph of the map, and every new one, a pastel of its own']];
     function sbCols() { return mapCols(['file', 'none', 'default', 'confetti', 'custom'], sbIs); }
     var SB_SQ = ['macromolecule', 'simple chemical', 'nucleic acid feature', 'phenotype', 'compartment'];
     function sbSquares(mode) {   // five at most, the first at the right (row-reverse), each colour once
@@ -418,9 +438,17 @@
       });
       return '<span class="m2-cs-sw">' + h + '</span>';
     }
-    function sbColsRow() { return palDrop({ key: 'cols', label: 'Colours', title: 'Colours of the map and of new glyphs', list: SB_COLS, get: sbCols, set: function (v) { keepMapChoice('cols', v); sbRecolour(v); }, sq: sbSquares }); }
+    function sbColsRow() { return palDrop({ key: 'cols', label: 'Colours', title: 'Colours of the map and of new glyphs', list: SB_COLS, get: sbCols, set: function (v) { colsPick(v, sbCols(), function () { return sbJs.colours(text); }, sbOriginal, sbRecolour); }, sq: sbSquares }); }
+    function sbOriginal(r) {   // the colours kept put back: each node's fill and border, each line's, those the record knows
+      var now = sbJs.colours(text), M = {}, added = 0;
+      Object.keys(now.node).forEach(function (id) { var o = r.node && r.node[id], a = now.node[id]; if (!o) added++; else if (o.fill !== a.fill || o.line !== a.line) M[id] = { fill: o.fill, line: o.line }; });
+      Object.keys(now.edge).forEach(function (id) { if (!r.edge || !(id in r.edge)) added++; });
+      var t2 = sbJs.restyleAll(text, M, null, function (id) { return r.edge && id in r.edge && r.edge[id] !== now.edge[id] ? r.edge[id] : undefined; });
+      if (t2 !== text) { remember(false); text = t2; made([]); }
+      return added;
+    }
     // a choice of Colours recolours the whole map, one undo step: every entity, complex and compartment its fill by the
-    // choice (its border black), as a new one of its kind would get it (defOf); From map leaves the map as it is; Custom a
+    // choice (its border black), as a new one of its kind would get it (defOf); Original puts back the map's own (colsPick); Custom a
     // kind with a kept look its fill, border and width, the rest as they are; Confetti every entity, complexes too, a pastel
     // of its own, one after another (compartments as they are). Every line black, under Confetti a colour of its own
     // (confettiLine); processes, gates and the other glyphs their border black. One parse (sbgn_edit.restyleAll)
@@ -442,8 +470,15 @@
       });
       return P;
     }
-    function sbIs(mode) {   // the map's glyphs filled as the choice fills them (Confetti: each a confetti pastel); null: none to read
+    function sbIs(mode) {   // the map's glyphs filled as the choice fills them (Confetti: each a confetti pastel; Original: as kept); null: none to read
       if (!palOn()) return false;
+      if (mode === 'file') {
+        var r = origAll()[palId()];
+        if (!r) return null;
+        var now = sbJs.colours(text);
+        return Object.keys(r.node || {}).every(function (id) { var a = now.node[id], o = r.node[id]; return !a || (a.fill === o.fill && a.line === o.line); }) &&
+          Object.keys(r.edge || {}).every(function (id) { return !(id in now.edge) || now.edge[id] === r.edge[id]; });
+      }
       var P = sbPlan(mode, false).filter(function (q) { return 'fill' in q[1]; });
       if (!P.length) return null;
       return P.every(function (q) {

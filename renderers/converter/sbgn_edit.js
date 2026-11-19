@@ -1172,6 +1172,14 @@
     return c === '#000000' ? null : c;
   }
   function setLine(T, e, c) { var ls = e.getElementsByTagNameNS(YNS, 'LineStyle')[0]; if (ls && lineOf(e) !== c) T.set(ls, 'color', c || '#000000'); }
+  //   colours(g) -> { node: { id: { fill, line } }, edge: { id: c } }: every node's fill and border colour and every edge's
+  //   colour as they are (lookOf, lineOf; null: none, black), in one parse; restyleAll puts them back
+  function colours(t, opt) {
+    var G = gml(t, opt), o = { node: {}, edge: {} };
+    G.ids.forEach(function (id) { var L = lookG(G, id); o.node[id] = { fill: L.fill, line: L.line }; });
+    Object.keys(G.edge).forEach(function (id) { o.edge[id] = lineOf(G.edge[id].el); });
+    return o;
+  }
   //   recolour(g, id, c) -> g with the edge's colour set to c (#RRGGBB, null for black)
   function recolour(t, id, c, opt) {
     var G = gml(t, opt), e = G.edge[id];
@@ -2150,7 +2158,7 @@
     return t;
   }
 
-  var api = { LOOKS: LOOKS, NAMED: NAMED, MULTI: MULTI, graphml: graphml, write: write, join: join, joinable: joinable, nameAt: nameAt, namePlaces: namePlaces, stack: stack, restack: restack, stackMoves: stackMoves, NAME_PLACES: NAME_PLACES, defaults: defaults, add: add, lookOf: lookOf, restyle: restyle, restyleAll: restyleAll, lineOf: lineOf, recolour: recolour, label: label, state: state, stateValue: stateValue, stateMove: stateMove, stateDelete: stateDelete,
+  var api = { LOOKS: LOOKS, NAMED: NAMED, MULTI: MULTI, graphml: graphml, write: write, join: join, joinable: joinable, nameAt: nameAt, namePlaces: namePlaces, stack: stack, restack: restack, stackMoves: stackMoves, NAME_PLACES: NAME_PLACES, defaults: defaults, add: add, lookOf: lookOf, restyle: restyle, restyleAll: restyleAll, colours: colours, lineOf: lineOf, recolour: recolour, label: label, state: state, stateValue: stateValue, stateMove: stateMove, stateDelete: stateDelete,
               unit: unit, unitValue: unitValue, unitDelete: unitDelete, multimer: multimer, classOf: classOf, MAKE: MAKE, kind: kind, PROCESSES: ['process'].concat(Object.keys(SIGN)), SIGN: SIGN, remove: remove, resize: resize, scaleEnds: scaleEnds, gone: gone, nameable: nameable,
               moveInto: moveInto, connect: connect, arcRemove: arcRemove, arcKind: arcKind, GATE: GATE, ARROW: ARROW, MODULATIONS: ['stimulation', 'catalysis', 'inhibition', 'necessary stimulation', 'modulation'],
               activity: activity, activities: activities, proteinBoxes: proteinBoxes, afUnitBox: afUnitBox, afUnitFont: afUnitFont, isAf: isAf, mapKind: mapKind, unitFor: unitFor, fillFor: fillFor, AF_ARC: AF_ARC, UNITS: Object.keys(UNIT_CLS).filter(function (u) { return u && u !== 'perturbation'; }), unitClass: actCls };

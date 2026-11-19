@@ -1030,8 +1030,10 @@
   }
   // every species and compartment alias recoloured in one pass (a whole map): fn(cls, id) gives its fill (#rrggbb, written
   // opaque) or null to leave it; cls 'COMPARTMENT' for a compartment; a degraded species keeps CellDesigner's look. Only the
-  // paint of the usual view (a compartment's own paint) changes. lineFn(k), when given, the colour of the k-th line of the
-  // reactions in file order (each celldesigner:line: a main line, an added reactant's or product's, a modifier's; not a gate's)
+  // paint of the usual view (a compartment's own paint) changes. lineFn(k, rid, key), when given, the colour of the k-th line
+  // of the reactions in file order (each celldesigner:line: a main line, an added reactant's or product's, a modifier's; not
+  // a gate's), key its place in reaction rid (lineKey). A colour is #rrggbb (written opaque) or CellDesigner's eight digits
+  // (aarrggbb, as colours() gives them), written as they are
   function recolourAll(t, fn, lineFn) {
     var kind = {}, put = [], m, re = /<(species|celldesigner:species)(?=\s)[^>]*\sid="([^"]+)"[\s\S]*?<\/\1>/g;
     while ((m = re.exec(t))) { var c = /<celldesigner:class>([^<]*)</.exec(m[0]); if (c) kind[m[2]] = c[1]; }
@@ -1041,11 +1043,11 @@
       if (!cls || cls === 'DEGRADED') continue;
       var col = fn(cls, id);
       if (!col) continue;
-      if (!/^#[0-9a-fA-F]{6}$/.test(col)) fail('A fill is a colour #rrggbb.');
+      if (!/^(#[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(col)) fail('A fill is a colour #rrggbb.');
       var p = comp ? /<celldesigner:paint color="[0-9a-fA-F]{8}"/.exec(m[0]) : /<celldesigner:usualView>[\s\S]*?(<celldesigner:paint color="[0-9a-fA-F]{8}")/.exec(m[0]);
       if (!p) continue;
       var off = comp ? p.index : p.index + p[0].length - p[1].length, i = m.index + off + '<celldesigner:paint color="'.length;
-      put.push([i, 'ff' + col.slice(1).toLowerCase()]);
+      put.push([i, col.length === 8 ? col : 'ff' + col.slice(1).toLowerCase()]);
     }
     if (lineFn) {
       var lists = [], k = 0, rl = /<reaction(?=\s)[\s\S]*?<\/reaction>/g, r;
@@ -1054,20 +1056,52 @@
         var P = null, skip = [];
         try { P = parts(t, at(R[1], 'id')); } catch (e) {}   // a reaction parts() cannot read: none left out
         if (P) { skip = P.gm.map(function (g) { return g.sp; }); P.mods.forEach(function (m, n) { if (isGate(m) || owner(P, n) !== null) skip.push(m.sp); }); }
-        var lr = /<celldesigner:line(?=\s[^>]*\bcolor=")[^>]*?\bcolor="([0-9a-fA-F]{8})"/g, L;
+        var lr = /<celldesigner:line(?=\s[^>]*\bcolor=")[^>]*?\bcolor="([0-9a-fA-F]{8})"/g, L, rid = at(R[1], 'id'), key = lineKey(R[1]);
         while ((L = lr.exec(R[1]))) {
-          var pos = R[0] + L.index;
+          var pos = R[0] + L.index, kk = key(L.index);
           if (skip.some(function (q) { return pos >= q[0] && pos < q[1]; })) continue;
-          var c2 = lineFn(k++);
+          var c2 = lineFn(k++, rid, kk);
           if (!c2) continue;
-          if (!/^#[0-9a-fA-F]{6}$/.test(c2)) fail('A line colour is a colour #rrggbb.');
-          put.push([R[0] + L.index + L[0].length - 9, 'ff' + c2.slice(1).toLowerCase()]);
+          if (!/^(#[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(c2)) fail('A line colour is a colour #rrggbb.');
+          put.push([R[0] + L.index + L[0].length - 9, c2.length === 8 ? c2 : 'ff' + c2.slice(1).toLowerCase()]);
         }
       });
     }
     put.sort(function (a, b) { return b[0] - a[0]; });
     put.forEach(function (q) { t = t.slice(0, q[0]) + q[1] + t.slice(q[0] + 8); });
     return t;
+  }
+  // the place of each line in a reaction's text, from its offset: 'r:<alias>' an added reactant's, 'p:<alias>' an added
+  // product's, 'm:<type>:<aliases>' a modifier's, 'main' the reaction's own; '#n' after a place met again. A place does not
+  // shift when another line is added or taken out
+  function lineKey(rt) {
+    var sp = [], m, re = /<celldesigner:(reactantLink|productLink|modification)(?=\s)([^>]*)>[\s\S]*?<\/celldesigner:\1>/g, seen = {};
+    while ((m = re.exec(rt))) sp.push([m.index, m.index + m[0].length, m[1] === 'modification' ? 'm:' + at(m[0], 'type') + ':' + at(m[0], 'aliases') : (m[1] === 'reactantLink' ? 'r:' : 'p:') + at(m[0], 'alias')]);
+    return function (i) {
+      var q = sp.filter(function (s2) { return i >= s2[0] && i < s2[1]; })[0], k = q ? q[2] : 'main';
+      seen[k] = (seen[k] || 0) + 1;
+      return seen[k] > 1 ? k + '#' + seen[k] : k;
+    };
+  }
+  // every alias's fill and every reaction's line colours as written (CellDesigner's eight digits, aarrggbb), in one pass:
+  // { fill: { alias: c }, line: { reaction: { place: c } } } (lineKey); a degraded species left out, as recolourAll leaves it
+  function colours(t) {
+    var kind = {}, o = { fill: {}, line: {} }, m, re = /<(species|celldesigner:species)(?=\s)[^>]*\sid="([^"]+)"[\s\S]*?<\/\1>/g;
+    while ((m = re.exec(t))) { var c = /<celldesigner:class>([^<]*)</.exec(m[0]); if (c) kind[m[2]] = c[1]; }
+    re = /<celldesigner:(speciesAlias|complexSpeciesAlias|compartmentAlias)(?=\s)([^>]*)>[\s\S]*?<\/celldesigner:\1>/g;
+    while ((m = re.exec(t))) {
+      var comp = m[1] === 'compartmentAlias';
+      if (!comp && (kind[at(m[0], 'species')] || 'DEGRADED') === 'DEGRADED') continue;
+      var p = comp ? /<celldesigner:paint color="([0-9a-fA-F]{8})"/.exec(m[0]) : /<celldesigner:usualView>[\s\S]*?<celldesigner:paint color="([0-9a-fA-F]{8})"/.exec(m[0]);
+      if (p) o.fill[at(m[0], 'id')] = p[1];
+    }
+    var rl = /<reaction(?=\s)[\s\S]*?<\/reaction>/g, r, L;
+    while ((r = rl.exec(t))) {
+      var lr = /<celldesigner:line(?=\s[^>]*\bcolor=")[^>]*?\bcolor="([0-9a-fA-F]{8})"/g, cs = {}, n = 0, key = lineKey(r[0]);
+      while ((L = lr.exec(r[0]))) { cs[key(L.index)] = L[1]; n++; }
+      if (n) o.line[at(r[0], 'id')] = cs;
+    }
+    return o;
   }
   // a line's colour (#rrggbb): a modifier's (rid|mN), an added reactant's or product's (rid|rN, rid|pN) its own line, as
   // CellDesigner keeps one for each; else its reaction's (its main line, a reduced notation's line). A logic gate's lines,
@@ -1097,6 +1131,6 @@
   var api = { LOOK: LOOK, COMP: COMP, lineColour: lineColour, recolourLine: recolourLine, PROCESS: PROCESS, REDUCED: REDUCED, sbgn: sbgn, MODS: MODS, NEED: NEED, about: about, aliasInfo: aliasInfo, classColour: classColour, compartmentColour: compartmentColour, classColours: classColours, classSize: classSize, empty: empty, species: newSpecies, compartment: compartment, rename: rename, retype: retype, remove: remove, reaction: reaction, reduced: reduced,
     reactant: reactant, product: product, modifier: modifier, reactionType: reactionType, reversible: reversible, modifierType: modifierType, removeLine: removeLine,
     gate: gate, gateInput: gateInput, gateInputRemove: gateInputRemove, gateType: gateType, residue: residue, residueState: residueState,
-    residueRemove: residueRemove, structural: structural, info: info, homodimer: homodimer, look: look, restyle: restyle, recolourAll: recolourAll, cdName: cdName, joinable: joinable, join: join, leave: leave };
+    residueRemove: residueRemove, structural: structural, info: info, homodimer: homodimer, look: look, restyle: restyle, recolourAll: recolourAll, colours: colours, cdName: cdName, joinable: joinable, join: join, leave: leave };
   if (node) module.exports = api; else root.cd_make = api;
 })(typeof window !== 'undefined' ? window : globalThis);
