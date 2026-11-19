@@ -6,6 +6,8 @@
 //      listing it as deleted keeps it there; Restore drops the line; Delete forever removes its files in one commit.
 //   3. The same site map deleted, the page opened without a token: not in the list at all.
 //   4. An older version's hidden site map (atlas-hidden-maps) moved into Deleted once with a token.
+//   5. The Delete key (and Backspace, the Mac's delete key) on the map shown: into Deleted, the next map shown; not while
+//      editing, not on a map that cannot be deleted (a site map without a token).
 //   node tests/deleted.js [base address] [--local]
 // --local: the editor and the viewer of the working tree routed into the live page (the styles copy's changes since
 // REV, default HEAD; run styles/update.sh first), as tests/edit-reload.js
@@ -160,6 +162,28 @@ function viewerHunks() {
   await page.evaluate(function () { localStorage.setItem('atlas-edit-token', 'test-token'); localStorage.setItem('atlas-hidden-maps', '["glycolysis-graphml"]'); });
   await load('f001-glycolysis'); await page.waitForTimeout(4000);
   ok('4. the hidden map marked deleted on its page, the old key gone', /^deleted: /m.test(files['maps/glycolysis-graphml.md']) && !(await page.evaluate(function () { return localStorage.getItem('atlas-hidden-maps'); })), files['maps/glycolysis-graphml.md']);
+
+  // 5. the Delete key
+  await page.evaluate(function () { localStorage.removeItem('atlas-edit-token'); localStorage.removeItem('atlas-bin-pending'); });
+  await load('f001-glycolysis'); await list();
+  await menu('#m2-list .m2-map >> nth=0', 'New SBGN-ML map'); await page.waitForTimeout(1500);
+  var k1 = await hash();
+  await page.keyboard.press('Delete'); await page.waitForTimeout(800);
+  ok('5. Delete while editing: the map kept', (await ids()).indexOf(k1) >= 0 || !(await binned()).length);
+  await page.keyboard.press('Escape'); await page.click('.m2-ri[data-win="edit"]').catch(function () {}); await page.waitForTimeout(1500);
+  await page.click('.m2-ri[data-win="list"]').catch(function () {}); await page.waitForTimeout(800);
+  var editing = await page.evaluate(function () { return !!document.querySelector('.m2-editing'); });
+  if (editing) { await page.keyboard.press('e'); await page.waitForTimeout(1500); await list(); }
+  await page.click('#m2-list .m2-map[data-id="' + k1 + '"]'); await page.waitForTimeout(1500);
+  var before = await ids(), at = before.indexOf(k1);
+  await page.keyboard.press('Delete'); await page.waitForTimeout(1500);
+  ok('5. Delete on the map shown: in Deleted, out of the list', (await ids()).indexOf(k1) < 0 && /Deleted \(\d+\)/.test(await head()), await head());
+  ok('5. the next map shown', (await hash()) === before[at + 1] || (await hash()) === before[at - 1], await hash());
+  var k2 = await hash();
+  await page.keyboard.press('Backspace'); await page.waitForTimeout(1500);
+  ok('5. Backspace on a site map without a token: kept', (await ids()).indexOf(k2) >= 0 && (await hash()) === k2);
+  await openBin();
+  await menu('#m2-list .m2-binned[data-id="' + k1 + '"]', 'Delete forever');
 
   ok('no script errors', errs.length === 0, errs.join(' | '));
   await b.close();

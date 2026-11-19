@@ -741,6 +741,21 @@
         V.refreshMine(); throw e;
       });
     }
+    // The Delete key (on a Mac the delete key, Backspace) on the map shown, outside edit mode, with the list in sight: Delete map,
+    // as the list's menu offers it; the next map in the list shown first (the one before at the list's end), as a
+    // mailbox goes on to the next message. Not in a field, a menu, a name being given, or on a map in Deleted
+    document.addEventListener('keydown', function (e) {
+      if ((e.key !== 'Delete' && e.key !== 'Backspace') || e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+      if (naming || document.querySelector('.m2-cx') || V.grid.classList.contains('m2-editing')) return;
+      if (e.target.closest && e.target.closest('input, select, textarea, [contenteditable]')) return;
+      var list = document.getElementById('m2-list'), m = V.chosen && V.byId[V.chosen.id];
+      if (!list || !list.offsetParent || !m || m.binned || !canRename(m, !!(repo() && token()))) return;
+      e.preventDefault();
+      var items = Array.prototype.slice.call(list.querySelectorAll('.m2-map:not(.m2-binned)')), i = items.findIndex(function (b) { return b.dataset.id === m.id; });
+      var next = i < 0 ? null : items[i + 1] || items[i - 1];
+      if (next) V.go(next.dataset.id);
+      bin(m);
+    });
     function bin(m) {
       var say = function (e) { alert((m.mine ? m.title : m.topic) + ' was not deleted: ' + (e && e.message ? e.message : e)); };
       if (m.mine) {
