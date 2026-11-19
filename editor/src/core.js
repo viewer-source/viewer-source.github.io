@@ -942,7 +942,7 @@
       var T = 5 / V.z, best = handleAt(P);
       if (best) return best;
       nodes2.forEach(function (n, i) {
-        if (!n.comp) return;
+        if (!n.comp || selN.indexOf(i) < 0) return;   // a compartment selected first: a drag that moves the map never resizes one
         var b = bx(i);
         if (P[0] < b[0] - T || P[0] > b[0] + b[2] + T || P[1] < b[1] - T || P[1] > b[1] + b[3] + T) return;
         var s = (Math.abs(P[0] - b[0]) <= T ? 'l' : Math.abs(P[0] - b[0] - b[2]) <= T ? 'r' : '') + (Math.abs(P[1] - b[1]) <= T ? 't' : Math.abs(P[1] - b[1] - b[3]) <= T ? 'b' : '');
@@ -2444,7 +2444,7 @@
     }
 
     // the pointer: a press on a node, an arc or a bend point selects it and moves it (an arc: its bends), Shift adds to
-    // the selection; a drag from anywhere but the selection selects an area (with Shift: added to the selection), as in the viewer
+    // the selection; a drag from anywhere but the selection moves the map, with Shift selects an area (added to the selection), as in the viewer
     function at(e) {
       var r = V.view.getBoundingClientRect(), vx = (e.clientX - r.left) / V.pz(), vy = (e.clientY - r.top) / V.pz();
       return [(vx - V.tx) / V.z + x0, (vy - V.ty) / V.z + y0];
@@ -2473,7 +2473,7 @@
         if (!(P[0] >= b[0] && P[0] <= b[0] + b[2] && P[1] >= b[1] && P[1] <= b[1] + b[3])) return;
         var h = { n: i, area: b[2] * b[3] };
         // a process glyph is not an item of its own (in CellDesigner it is not selectable, part of
-        // the link): a click on it is a click on its reaction's main line, no node handles; a drag on it selects an area
+        // the link): a click on it is a click on its reaction's main line, no node handles; a drag on it moves the map
         var gm = cd && n.id.match(/^(.*)\|proc$/);
         if (gm) { var ga = edges2.findIndex(function (q) { return q.id === gm[1] + '|a'; }); if (ga >= 0 && !best) best = { e: ga, glyph: true, area: 0 }; return; }
         if (afSbgn && inComplex(i)) return;   // the SBGN AF view: a complex's members not drawn, the complex taken whole
@@ -2494,10 +2494,10 @@
     var rpan = null, tap = null;
     // edit mode is view mode plus the selection (the same gestures as in view mode):
     // two-finger scrolling moves the map, a pinch zooms (the viewer's wheel handler); a drag on empty
-    // space or on an item not selected selects an area, as in the viewer (a finger on a touch screen moves the map); a
-    // click selects (on empty space: clears the selection; Shift with a click adds or takes out); a drag on what is
-    // selected moves it (with Shift by itself, out of its container: regroup); Shift with a drag from anywhere else,
-    // inside a compartment too, adds an area to the selection; a right click opens the viewer's menu, as outside edit mode
+    // space or on an item not selected moves the map, as in the viewer; a click selects (on empty space: clears the
+    // selection; Shift with a click adds or takes out); a drag on what is selected moves it (with Shift by itself, out
+    // of its container: regroup); Shift with a drag from anywhere else, inside a compartment too, selects an area, added
+    // to the selection; a right click opens the viewer's menu, as outside edit mode
     V.view.addEventListener('pointerdown', function (e) {
       keyGuides = null; keyFlush();
       tap = null;
@@ -2541,17 +2541,12 @@
         V.view.setPointerCapture(e.pointerId); V.view.focus({ preventScroll: true });
         band = { x: P[0], y: P[1], x2: P[0], y2: P[1], add: true, h: h, cx: e.clientX, cy: e.clientY }; paint(); return;
       }
-      // empty space or an item not selected: a drag selects an area in place of the selection, a click is taken on
-      // release (selects, or on empty space clears); a finger's drag moves the map (the viewer's)
-      var tapped = function () {
-        if (e.pointerType !== 'mouse') { tap = { h: h, shift: e.shiftKey, x: e.clientX, y: e.clientY }; V.view.focus({ preventScroll: true }); return; }
-        e.stopImmediatePropagation(); e.preventDefault();
-        V.view.setPointerCapture(e.pointerId); V.view.focus({ preventScroll: true });
-        band = { x: P[0], y: P[1], x2: P[0], y2: P[1], add: false, h: h, cx: e.clientX, cy: e.clientY }; paint();
-      };
+      // empty space or an item not selected: a drag moves the map (the viewer's, mouse, trackpad and finger alike), a
+      // click is taken on release (selects, or on empty space clears)
+      var tapped = function () { tap = { h: h, shift: e.shiftKey, x: e.clientX, y: e.clientY }; V.view.focus({ preventScroll: true }); };
       if (!h) return tapped();
       if (!alone && linkDown(e, P, h)) return;   // an arc's sign picked: a drag from an entity or a process draws it (create.js; a press off a node only where the format's part says the line stands for its process)
-      if (h.glyph) return tapped();   // a glyph is not dragged: a drag on it selects an area, a click selects its reaction
+      if (h.glyph) return tapped();   // a glyph is not dragged: a drag on it moves the map, a click selects its reaction
       var list = h.p != null ? selP : h.e != null ? selE : selN, k = h.p != null ? h.p : h.e != null ? h.e : h.n, there = list.indexOf(k) >= 0;
       // a bend point of an arc selected is a part of that connector: dragged at once, as its ends, the arc staying
       // selected after (as yEd does for connectors: the whole connector selected, its

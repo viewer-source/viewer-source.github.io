@@ -677,7 +677,7 @@
         if (!n.comp || b[2] * b[3] >= area || P[0] < b[0] || P[1] < b[1] || P[0] > b[0] + b[2] || P[1] > b[1] + b[3]) return;   // its name is inside its box
         if (textsOf(i, null, res = res || svIcons()).some(function (el) { var r = el.getBoundingClientRect(); return e.clientX >= r.left - pad && e.clientX <= r.right + pad && e.clientY >= r.top - pad && e.clientY <= r.bottom + pad; })) { k = i; area = b[2] * b[3]; }
       });
-      if (k < 0) return false;
+      if (k < 0 || selN.indexOf(k) < 0) return false;   // the compartment selected first: a drag on the name of one not selected moves the map
       try { info = cdMk.nameInfo(cdNow().t, nodes2[k].id); } catch (err) { info = null; }
       if (!info) return false;
       e.stopImmediatePropagation(); e.preventDefault();

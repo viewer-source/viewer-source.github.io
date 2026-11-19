@@ -1,5 +1,5 @@
-// Gestures on the live page (book Gestures): a mouse or trackpad drag selects an area and never moves the map, in view
-// and edit mode; the area's right-click menu zooms to it or copies it as PNG; a click clears it; Shift with the wheel moves the map
+// Gestures on the live page (book Gestures): a mouse or trackpad drag moves the map and Shift with a drag selects an
+// area, in view and edit mode; the area's right-click menu zooms to it or copies it as PNG; a click clears it; Shift with the wheel moves the map
 // sideways only; Space held with the wheel scrolls the page and leaves the map still.
 //   node tests/gestures.js [page address]
 var { chromium } = require('playwright');
@@ -17,9 +17,14 @@ var URL0 = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysi
   var tf = function () { return page.$eval('#m2-img', function (i) { return i.style.transform; }); };
   var v = await page.$eval('#m2-view', function (e) { var r = e.getBoundingClientRect(); return [r.left, r.top, r.width, r.height]; });
   var cx = v[0] + v[2] / 2, cy = v[1] + v[3] / 2;
-  var t0 = await tf();
+  var g0 = await tf();
   await page.mouse.move(cx - 150, cy - 120); await page.mouse.down(); await page.mouse.move(cx + 150, cy + 120, { steps: 10 }); await page.mouse.up();
-  ok('view mode: a drag leaves the map still', (await tf()) === t0, t0 + ' -> ' + (await tf()));
+  ok('view mode: a drag moves the map', (await tf()) !== g0, g0 + ' -> ' + (await tf()));
+  ok('view mode: a drag draws no area', await page.$eval('#m2-area', function (e) { return e.style.display !== 'block'; }));
+  var t0 = await tf();
+  var shiftDrag = async function (x1, y1, x2, y2) { await page.keyboard.down('Shift'); await page.mouse.move(x1, y1); await page.mouse.down(); await page.mouse.move(x2, y2, { steps: 10 }); await page.mouse.up(); await page.keyboard.up('Shift'); };
+  await shiftDrag(cx - 150, cy - 120, cx + 150, cy + 120);
+  ok('view mode: Shift with a drag leaves the map still', (await tf()) === t0, t0 + ' -> ' + (await tf()));
   ok('view mode: the area shows', await page.$eval('#m2-area', function (e) { return e.style.display === 'block' && e.offsetWidth > 250; }));
   ok('view mode: the area is an outline only, no fill', await page.$eval('#m2-area', function (e) { var b = getComputedStyle(e).backgroundColor; return b === 'rgba(0, 0, 0, 0)' || b === 'transparent'; }));
   await page.mouse.click(cx, cy, { button: 'right' }); await page.waitForTimeout(300);
@@ -38,7 +43,7 @@ var URL0 = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysi
   // the area's middle now at the middle of the free part of the window: the picture point under the window's centre
   var mid = await page.evaluate(function () { var v = document.getElementById('m2-view').getBoundingClientRect(); return [v.left, v.top, v.width, v.height]; });
   console.log('      area width ' + Math.round(ar[2]) + ' px, view ' + Math.round(mid[2]) + ' px');
-  await page.mouse.move(cx - 150, cy - 120); await page.mouse.down(); await page.mouse.move(cx + 150, cy + 120, { steps: 10 }); await page.mouse.up();
+  await shiftDrag(cx - 150, cy - 120, cx + 150, cy + 120);
   await page.keyboard.press('Escape'); await page.waitForTimeout(100);
   await page.mouse.click(v[0] + 30, v[1] + v[3] - 40); await page.waitForTimeout(200);
   ok('a click clears the area', await page.$eval('#m2-area', function (e) { return e.style.display === 'none'; }));
@@ -57,14 +62,21 @@ var URL0 = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysi
   // edit mode
   if (await page.$('.m2-ri[data-win="edit"]:visible')) {
     await page.click('.m2-ri[data-win="edit"]'); await page.waitForTimeout(2500);
+    var m0 = await tf();
+    await page.mouse.move(v[0] + 40, v[1] + 40); await page.mouse.down(); await page.mouse.move(cx, cy, { steps: 6 });
+    var noBand = !(await page.$('#m2-edit-layer .m2-ed-band'));
+    await page.mouse.up(); await page.waitForTimeout(300);
+    ok('edit mode: a drag moves the map, no band', noBand && (await tf()) !== m0, m0 + ' -> ' + (await tf()));
+    ok('edit mode: a drag selects nothing', (await page.$$eval('#m2-edit-layer .m2-ed-handle', function (l) { return l.length; })) === 0);
     var e0 = await tf(), sawBand = false;
+    await page.keyboard.down('Shift');
     await page.mouse.move(v[0] + 40, v[1] + 40); await page.mouse.down(); await page.mouse.move(cx, cy, { steps: 6 });
     sawBand = !!(await page.$('#m2-edit-layer .m2-ed-band'));
     var bandFill = sawBand && await page.$eval('#m2-edit-layer .m2-ed-band', function (e) { return getComputedStyle(e).fill; });
-    await page.mouse.move(cx + 200, cy + 150, { steps: 6 }); await page.mouse.up(); await page.waitForTimeout(300);
-    ok('edit mode: a drag draws the area band', sawBand);
+    await page.mouse.move(cx + 200, cy + 150, { steps: 6 }); await page.mouse.up(); await page.keyboard.up('Shift'); await page.waitForTimeout(300);
+    ok('edit mode: Shift with a drag draws the area band', sawBand);
     ok('edit mode: the band an outline only, no fill, as in view mode', bandFill === 'none', bandFill);
-    ok('edit mode: a drag leaves the map still', (await tf()) === e0, e0 + ' -> ' + (await tf()));
+    ok('edit mode: Shift with a drag leaves the map still', (await tf()) === e0, e0 + ' -> ' + (await tf()));
     ok('edit mode: the viewer area stays hidden', await page.$eval('#m2-area', function (e) { return e.style.display !== 'block'; }));
     var sel = await page.$$eval('#m2-edit-layer .m2-ed-handle, #m2-edit-layer [class*="m2-ed-sel"]', function (l) { return l.length; });
     ok('edit mode: something selected by the area', sel > 0, 'marks ' + sel);

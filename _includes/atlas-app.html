@@ -1565,10 +1565,10 @@ page, so its styles keep the base they were made on).
     tipsBox.id = 'm2-tips'; tipsBox.setAttribute('role', 'dialog'); tipsBox.setAttribute('aria-label', 'Gestures and keys'); tipsBox.hidden = true;
     tipsBox.innerHTML = '<button type="button" class="m2-tips-x" aria-label="Close">×</button><h3>Gestures and keys</h3>' +
       '<h4>Main</h4>' + table(['', 'Trackpad', 'Mouse', 'Touch screen'], [
-        ['Move the map', 'Two fingers, any direction', 'Wheel; Shift + wheel for sideways', 'One finger'],
+        ['Move the map', 'Drag, or two fingers in any direction', 'Drag, or wheel; Shift + wheel for sideways', 'One finger'],
         ['Zoom', 'Pinch, or ' + MOD + ' + two fingers', MOD + ' + wheel', 'Pinch'],
         ['Select an item', 'Click', 'Click', 'Tap'],
-        ['Select an area', 'Drag', 'Drag', '-'],
+        ['Select an area', 'Shift + drag', 'Shift + drag', '-'],
         ['Open the menu', 'Two-finger click', 'Right click', '-'],
         ['Scroll the page', 'Space + two fingers', 'Space + wheel', 'One finger outside the map']]) +
       '<h4>More</h4>' + table(null, [
@@ -1582,15 +1582,14 @@ page, so its styles keep the base they were made on).
         ['?', 'this window (while editing: the editor’s help)']]) +
       '<h4>While editing</h4>' + table(null, [
         ['Click, then drag', 'an item is selected first, then moved'],
-        ['Drag on empty space or an item not selected', 'selects an area in place of the selection'],
-        ['Shift + click, Shift + drag', 'adds to the selection, or takes out'],
+        ['Drag on empty space or an item not selected', 'moves the map, as outside editing'],
+        ['Shift + click, Shift + drag', 'adds an item or an area to the selection; Shift + click takes an item out'],
         ['Arrow keys', 'move what is selected by 1, with Shift by 10'],
         [MOD + ' + Z, ' + MOD + ' + Y', 'undo, redo'],
         ['Delete', 'remove what is selected, where it can be removed']]) +
       '<h4>Why</h4>' + list([
-        'A pathway map is read at the zoom where its labels are readable and moved around at that zoom, so the easiest gesture, two fingers, moves the map, and zoom has the pinch.',
-        'One way to move the map: two fingers move it in one continuous stroke, a drag only in short repeated steps. With a single way, the hand keeps the more comfortable one.',
-        'A drag touches the map, so it selects and never moves the map: a drag that lands on an item does nothing unexpected. Two fingers touch nothing.',
+        'A pathway map is read at the zoom where its labels are readable and moved around at that zoom, so two fingers move the map, and zoom has the pinch.',
+        'A drag moves the map, as in web map viewers, and two fingers move it too, in one continuous stroke. Nothing on the map is changed by a drag that was meant to move it: while editing, an item is selected first and only then moved.',
         'A browser cannot tell a mouse wheel from a two-finger swipe, so the wheel moves the map as two fingers do, and ' + MOD + ' turns either into zoom.',
         'The viewer and its editor are one tool: every gesture means the same in both, and editing only adds to it.']);
     document.body.appendChild(tipsBox);
@@ -1658,8 +1657,9 @@ page, so its styles keep the base they were made on).
   });
   view.addEventListener('gestureend', function (e) { if (gest != null) e.preventDefault(); gest = null; });
   // no zoom on a double click (a double click opens the name field)
-  // a finger: drag with one, pinch with two. A mouse or trackpad: a drag selects an area (two fingers move the map, the
-  // wheel handler above), outlined until Esc or a click, its right-click menu Zoom to area and Copy image as PNG; a click picks
+  // a drag moves the map (one finger, a mouse or a trackpad), two fingers pinch; two fingers on a trackpad move it too
+  // (the wheel handler above). Shift with a drag of a mouse or trackpad selects an area, outlined until Esc or a click,
+  // its right-click menu Zoom to area and Copy image as PNG; a click picks
   var pts = {}, last = null, press = null, vband = null, area = null;
   var areaEl = document.getElementById('m2-area');
   function toPic(cx, cy) { var r = view.getBoundingClientRect(), k = scaleOf(current); return [((cx - r.left) / pz() - tx) / z * k, ((cy - r.top) / pz() - ty) / z * k]; }
@@ -1695,7 +1695,7 @@ page, so its styles keep the base they were made on).
     var r = view.getBoundingClientRect();
     if (!setting('separators') && e.clientX > r.right - 18 && e.clientY > r.bottom - 18) return;
     if (e.target.closest('.m2-info')) return;
-    if (e.pointerType === 'mouse') {
+    if (e.pointerType === 'mouse' && e.shiftKey) {
       if (grid.classList.contains('m2-editing') || !current) return;   // the editor selects its own way
       view.setPointerCapture(e.pointerId);
       var p0 = toPic(e.clientX, e.clientY);
@@ -1726,6 +1726,7 @@ page, so its styles keep the base they were made on).
       return;
     }
     if (!pts[e.pointerId]) return;
+    if (e.pointerType === 'mouse' && !e.buttons) return drop(e);   // its release never came: no sticky hand
     var prev = pts[e.pointerId];
     pts[e.pointerId] = [e.clientX, e.clientY];
     var ids = Object.keys(pts);
@@ -1751,7 +1752,7 @@ page, so its styles keep the base they were made on).
     // a press without a drag is a click on the map
     if (e.type === 'pointerup' && press && pts[e.pointerId] && Math.hypot(e.clientX - press[0], e.clientY - press[1]) < 5) {
       var r = view.getBoundingClientRect();
-      pick((e.clientX - r.left) / pz(), (e.clientY - r.top) / pz());
+      clearArea(); pick((e.clientX - r.left) / pz(), (e.clientY - r.top) / pz());
     }
     press = null;
     delete pts[e.pointerId];

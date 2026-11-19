@@ -1119,7 +1119,7 @@
       if (!svDrag || !svSel) return;
       if (!e.buttons) { svUp(); return; }   // released outside the window: no sticky hand
       if (!svDrag.to && Math.hypot(e.clientX - svDrag.x, e.clientY - svDrag.y) < 4) return;
-      if (svDrag.fixed) { svDrag.moved = true; return; }   // a unit of information is not dragged; a drag on it is no click
+      if (svDrag.fixed || !svDrag.again) { svDrag.moved = true; return; }   // a unit of information is not dragged, nor one not selected before the press; a drag on it is no click
       var i = svDrag.i, b = boxOf(i), r = border(i, at(e)), q = svList(i)[svSel.j];
       if (!svDrag.parts) svDrag.parts = svParts(i, q);   // the state variable itself moves, as other items on the map, no copy
       svDrag.r = r; svDrag.to = [b[0] + (0.5 + r[0]) * b[2], b[1] + (0.5 + r[1]) * b[3]];
