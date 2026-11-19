@@ -414,7 +414,7 @@ page, so its styles keep the base they were made on).
     box-sizing: border-box; padding: 12px 14px 10px; background: var(--m2-bg); border: 1px solid var(--m2-line); border-radius: var(--m2-radius-button);
     box-shadow: 0 2px 8px rgba(0, 0, 0, .12); font-size: 13px; line-height: 1.45; color: var(--m2-text-soft); }
   #m2-ed-help-box[hidden] { display: none; }
-  /* Gestures and keys (the ? at the end of the icons, or the ? key): a large window at the top of the page, over everything; Esc, × or a click elsewhere close it */
+  /* Gestures and keys (the ? at the end of the icons, or the ? key): a large window beside the left panel, level with the ? (tipsPlace), over everything; Esc, × or a click elsewhere close it */
   #m2-tips { position: fixed; z-index: 70; top: 16px; left: 50%; transform: translateX(-50%); width: 760px; max-width: calc(100vw - 32px); max-height: calc(100vh - 32px); overflow: auto;
     box-sizing: border-box; padding: 14px 18px 16px; background: var(--m2-bg); color: var(--m2-text-soft); border: 1px solid var(--m2-line); border-radius: 8px; box-shadow: 0 6px 24px #0003; font-size: 13px; line-height: 1.45; }
   #m2-tips[hidden] { display: none; }
@@ -1656,6 +1656,18 @@ page, so its styles keep the base they were made on).
   function tips(show) {
     if (!tipsBox) tipsBuild();
     tipsBox.hidden = !(show === undefined ? tipsBox.hidden : show);
+    if (!tipsBox.hidden) tipsPlace();
+  }
+  // beside the left panel, level with the ? sign; where the page has no room on the right, pushed back inside it
+  function tipsPlace() {
+    var sign = document.querySelector('#m2-rail .m2-ri[data-win="help"]');
+    if (!sign || !sign.offsetParent) { tipsBox.style.left = tipsBox.style.top = tipsBox.style.transform = ''; return; }
+    var k = pz(), edge = 0;
+    ['m2-rail', 'm2-nav'].forEach(function (c) { var el = document.getElementById(c) || document.querySelector('.' + c); if (el && el.offsetParent) edge = Math.max(edge, el.getBoundingClientRect().right); });
+    var w = tipsBox.offsetWidth * k, h = tipsBox.offsetHeight * k, left = edge + 12, top = sign.getBoundingClientRect().top;
+    if (left + w > innerWidth - 16) left = Math.max(16, innerWidth - 16 - w);
+    tipsBox.style.transform = 'none';
+    tipsBox.style.left = left / k + 'px'; tipsBox.style.top = Math.max(16, Math.min(top, innerHeight - 16 - h)) / k + 'px';
   }
   // the ? sign does what the ? key does: this window, or while editing the editor's help (its own "?" clicked, so
   // the two stay one action); a help open at the press is closed by the editor's own pointerdown, so the click leaves it shut

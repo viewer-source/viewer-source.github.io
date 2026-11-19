@@ -1,4 +1,4 @@
-// The ? sign at the end of the icons does what the ? key does: Gestures and keys outside editing (a second click, Esc or
+// The ? sign at the end of the icons does what the ? key does: Gestures and keys outside editing, beside the left panel, (a second click, Esc or
 // a click elsewhere closes it), the editor's own help while editing; Settings has no Gestures and keys button.
 //   node tests/help-sign.js [page address]
 var { chromium } = require('playwright');
@@ -15,6 +15,8 @@ var URL0 = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysi
   ok('the sign is shown, after Info', await page.evaluate(function (s) { var h = document.querySelector(s), i = document.querySelector('#m2-rail .m2-ri[data-win="info"]'); return !!(h && h.offsetParent && i && (i.compareDocumentPosition(h) & 4)); }, sign));
   await page.click(sign); await page.waitForTimeout(300);
   ok('a click opens Gestures and keys', await shown('m2-tips'));
+  var at = await page.evaluate(function (s) { var t = document.getElementById('m2-tips').getBoundingClientRect(), g = document.querySelector(s).getBoundingClientRect(), n = document.querySelector('.m2-nav').getBoundingClientRect(); return { left: t.left, top: t.top, nav: n.right, sign: g.top }; }, sign);
+  ok('beside the left panel, level with the sign', at.left >= at.nav && at.left - at.nav < 40 && Math.abs(at.top - at.sign) < 2);
   await page.click(sign); await page.waitForTimeout(300);
   ok('a second click closes it', !(await shown('m2-tips')));
   await page.click(sign); await page.keyboard.press('Escape'); await page.waitForTimeout(200);
