@@ -653,19 +653,10 @@ page, so its styles keep the base they were made on).
   /* the buttons of the site: one colour for all, in the style of the Converter's grey button:
      white, grey edge and text (#777), filled in the blue of the chosen
      map in the list on hover, white text. Order by use:
-     GraphML, CellDesigner, SBGN-ML, SBML, Images (PNG, SVG in a menu), Data (the annotation
+     the map's own file (GraphML, CellDesigner or SBGN-ML), PNG, SVG, Data (the annotation
      table), then Newt and MINERVA, all at the same spacing */
-  #m2-downloads > a, #m2-downloads summary { display: inline-block; font-size: 14px; line-height: 20px; padding: 4px 10px; margin: 4px 4px 0 0; color: var(--m2-button); background: var(--m2-bg); border: 1px solid var(--m2-button); border-radius: var(--m2-radius-button); text-decoration: none; cursor: pointer; }
-  #m2-downloads > a:hover, #m2-downloads summary:hover, #m2-downloads details[open] summary { background: var(--m2-accent); border-color: var(--m2-accent); color: var(--m2-on-accent); }
-  #m2-downloads details { display: inline-block; position: relative; }
-  #m2-downloads summary { list-style: none; }
-  #m2-downloads summary::-webkit-details-marker { display: none; }
-  #m2-downloads .m2-caret { margin-left: 4px; font-size: 11px; }
-  #m2-downloads .m2-list { position: absolute; z-index: 5; left: 0; top: 34px; min-width: 110px; background: var(--m2-bg); border: 1px solid var(--m2-line); border-radius: var(--m2-radius-button); box-shadow: 0 2px 8px rgba(0, 0, 0, .12); padding: 4px 0; }
-  #m2-downloads .m2-up .m2-list { top: auto; bottom: 30px; }
-  /* the menu items in the font of the button (Images) */
-  #m2-downloads .m2-list a { display: block; font-size: 14px; line-height: 20px; padding: 4px 12px; color: var(--m2-button); text-decoration: none; }
-  #m2-downloads .m2-list a:hover { background: var(--m2-accent); color: var(--m2-on-accent); }
+  #m2-downloads > a { display: inline-block; font-size: 14px; line-height: 20px; padding: 4px 10px; margin: 4px 4px 0 0; color: var(--m2-button); background: var(--m2-bg); border: 1px solid var(--m2-button); border-radius: var(--m2-radius-button); text-decoration: none; cursor: pointer; }
+  #m2-downloads > a:hover { background: var(--m2-accent); border-color: var(--m2-accent); color: var(--m2-on-accent); }
   /* the online viewers open another site: the usual external-link icon */
   #m2-downloads a.m2-ext svg { width: 13px; height: 13px; margin-left: 5px; vertical-align: -1px; }
   /* a file: the download icon (tray and arrow) after its name, as on the Converter page */
@@ -960,6 +951,8 @@ page, so its styles keep the base they were made on).
   // the map's format as its file's extension after its name, as Finder shows it, by its first download; not part of the
   // name (renaming never touches it). Two maps of one group may share a name only in different formats (own.js)
   var FORMATS = { 'CellDesigner': '.xml', 'SBGN-ML': '.sbgn', 'GraphML': '.graphml' };
+  // a map's own file: its first download (build.py, own.js; shown from its SBGN-ML, that file), when it is a map format
+  function ownFile(m) { var d = (m.downloads || [])[0]; return d && /^(GraphML|CellDesigner|SBGN-ML)$/.test(d.label) ? d : null; }
   function formatOf(m) { return FORMATS[(((m.site || m).downloads || [])[0] || {}).label]; }   // its own file's, also while Source shows its SBGN-ML
   // Settings' File extensions, Shown (the default: the extension tells same-named maps apart) or Hidden, kept in the browser
   var FORMATS_OFF = (function () { try { localStorage.removeItem('atlas-format-tags'); return localStorage.getItem('atlas-format-ext') === 'hidden'; } catch (e) { return false; } })();
@@ -1129,22 +1122,13 @@ page, so its styles keep the base they were made on).
   document.addEventListener('click', function (e) {
     if (!menuDl.contains(e.target) || e.target.closest('#m2-menu-list a:not(.m2-bad)')) menuDlOpen(false);
   });
-  // the menu holds what the download row holds, built from it: files, the images one by one, then the outside viewers
+  // the menu holds what the download row holds, built from it: files and images, then the outside viewers
   // part (the icon column's windows): 'files' leaves out the outside viewers, 'ext' takes only them, so no link shows twice
   function fillMenu(dl, into, part) {
     var menuList = into || document.getElementById('m2-menu-list');
     menuList.innerHTML = '';
     var ext = false;
     Array.prototype.forEach.call(dl.children, function (c) {
-      if (c.tagName === 'DETAILS') {
-        if (part === 'ext') return;
-        c.querySelectorAll('.m2-list a').forEach(function (a) {
-          var b = el('a', null, 'Image ' + a.textContent);
-          b.href = a.href; b.setAttribute('download', ''); b.insertAdjacentHTML('beforeend', DL_ICON);
-          menuList.appendChild(b);
-        });
-        return;
-      }
       if (c.tagName !== 'A') return;
       if (part && (part === 'ext') !== c.classList.contains('m2-ext')) return;
       if (c.classList.contains('m2-ext') && !ext) { ext = true; if (menuList.children.length) menuList.appendChild(el('div', into ? 'm2-sep m2-x' : 'm2-sep')); }
@@ -1157,20 +1141,6 @@ page, so its styles keep the base they were made on).
     if (!into) menuDl.style.display = menuList.children.length ? '' : 'none';
   }
 
-  document.addEventListener('click', function (e) {
-    document.querySelectorAll('#m2-downloads details[open]').forEach(function (d) {
-      if (!d.contains(e.target) || e.target.closest('.m2-list a')) d.open = false;
-    });
-  });
-  // a menu opens upwards when there is no room for it below in the window
-  // (toggle does not bubble: caught on its way down)
-  document.addEventListener('toggle', function (e) {
-    var d = e.target;
-    if (!d.open || !d.closest || !d.closest('#m2-downloads')) return;
-    d.classList.remove('m2-up');
-    var r = d.querySelector('.m2-list').getBoundingClientRect();
-    if (r.bottom > window.innerHeight && d.getBoundingClientRect().top > r.height) d.classList.add('m2-up');
-  }, true);
 
   function el(tag, cls, text) {
     var e = document.createElement(tag);
@@ -1469,9 +1439,10 @@ page, so its styles keep the base they were made on).
   // Open all groups and Close all groups, and file extensions, in the list's right-click menu (in Settings they would change a
   // list not in sight), on every page whose list has groups, after the
   // editor's own entries where the Edit tab is; the one matching the list's state greyed. Shift with the right click,
-  // a field, or a list with no groups and no editor keeps the browser's menu. The same menu on the empty column under
+  // a field, or a list with no groups, no editor and no map's downloads under the pointer keeps the browser's menu. The same menu on the empty column under
   // the list, down to the page's end (a short list, its groups closed, leaves most of the column empty), as on the
   // list's own empty space; only beside the map and while the list is in sight
+  var mapDownloads = null;   // a map's download items, set by the map's right-click menu below (used by the list's too)
   var listNav = document.querySelector('.m2-nav'), listWide = window.matchMedia('(min-width: 941px)');
   function underList(e) {
     var list = document.getElementById('m2-list'), n = listNav.getBoundingClientRect();
@@ -1485,6 +1456,14 @@ page, so its styles keep the base they were made on).
     // the editor's entries first (where the Edit tab is), then, under a line, what changes how the list looks
     var items = own && own.listItems ? own.listItems(e) : [], view = [], names = listGroups(), last = items.last || [];
     var inBin = !!e.target.closest('.m2-binned, .m2-bin');   // Deleted: its own items only (Restore, Delete forever)
+    // on one map (not several selected, not in Deleted) its downloads, as the map's own menu has them: among the map's
+    // own items (Rename map, Make a copy, Move to...), after them
+    var row = e.target.closest('.m2-map'), dm = row && !inBin && byId[row.dataset.id];
+    if (dm && mapDownloads && !(picked.length > 1 && picked.indexOf(dm.id) >= 0)) {
+      var rect = { left: e.clientX, top: e.clientY }, dls = mapDownloads(dm).map(function (d) { return [d[0], function () { d[1](rect); }]; });
+      var at = items.mapItems || 0;   // where the editor's map items end
+      if (dls.length) items.splice.apply(items, [at, 0].concat(dls, at || !items.length ? [] : [null]));
+    }
     if (names.length && !inBin && !document.getElementById('m2-search').value) {   // while searching every group shows open
       var shut = names.filter(function (n) { return closed[n]; }).length, all = function (c) {
         return function () { names.forEach(function (n) { closed[n] = c; }); saveClosed(); buildList(document.getElementById('m2-search').value, true); };
@@ -3174,10 +3153,12 @@ page, so its styles keep the base they were made on).
       a.insertAdjacentHTML('beforeend', DL_ICON);
       return a;
     };
-    ['GraphML', 'CellDesigner', 'SBGN-ML', 'SBML'].forEach(function (l) {
-      if (url[l]) dl.appendChild(file(l, url[l]));
-    });
-    var images = ['PNG', 'SVG'].filter(function (l) { return url[l]; });
+    // the map's own file only: the other formats the build made are conversions, not offered until the viewer converts
+    // what is on screen
+    var own1 = ownFile(m);
+    if (own1) dl.appendChild(file(own1.label, own1.url));
+    // PNG and SVG: one the site has no file for is made from the picture here (data-make), as the menus make it
+    var images = ['PNG', 'SVG'].filter(function (l) { return url[l] || l === 'PNG' && (url.SVG || m.image) || l === 'SVG' && /\.svg(\?|$)/.test(m.image || ''); });
     if (m.imageError) {  // the old images do not show the current GraphML: no download
       var why = 'Images not made from the current GraphML. The drawing tool stopped at: ' + m.imageError;
       var bad = el('a', 'm2-dl m2-bad', 'Images');
@@ -3190,12 +3171,10 @@ page, so its styles keep the base they were made on).
         dl.appendChild(el('div', null, why)).id = 'm2-imgnote';
       });
       dl.appendChild(bad);
-    } else if (images.length) {  // PNG and SVG in one menu
-      var menu = el('details'), sum = el('summary', 'm2-dl', 'Images'), list = el('div', 'm2-list');
-      sum.insertAdjacentHTML('beforeend', DL_ICON); sum.insertAdjacentHTML('beforeend', '<span class="m2-caret">▾</span>');
-      images.forEach(function (l) { var a = el('a', null, l); a.href = url[l]; a.setAttribute('download', ''); list.appendChild(a); });
-      menu.appendChild(sum); menu.appendChild(list); dl.appendChild(menu);
-    }
+    } else images.forEach(function (l) {
+      var a = dl.appendChild(file(l, url[l] || '#'));
+      if (!url[l]) { a.removeAttribute('download'); a.setAttribute('data-make', l.toLowerCase()); }
+    });
     if (url.Annotation) dl.appendChild(file('Data', url.Annotation, null, 'Annotation table (CSV)'));
     if (url.References) dl.appendChild(file('References', url.References, null, 'References per process (CSV)'));
     ['Newt', 'MINERVA'].forEach(function (l) {
@@ -3430,18 +3409,20 @@ page, so its styles keep the base they were made on).
       if (k && current && current.id === m.id && (k.text || k.svg)) return { text: k.text, file: k.file, svg: k.svg };
       var r = m.mine && own && own.rec(m.id);
       if (r) return { text: r.text, file: r.file, svg: r.svg };   // a reader's own map, under its own name
+      // another map than the one on screen (the list's menu): its draft, or the drawing kept until its build, read only
+      var d = editorAsked && !hasToken() && drafts[m.id] || stored()[m.id];
+      if (d && (d === drafts[m.id] || behind(m, d) && Date.now() - d.at <= 3600000) && (d.text || d.svg)) return { text: d.text || null, file: d.file, svg: d.svg };
       return null;
     }
     // the Downloads tab and the download row the same, consistent: a
-    // click on the map's source file, its SVG or its PNG gives them as on screen; the other files (the other format,
-    // SBGN-ML, SBML, the tables) stay the site's, made by its build
+    // click on the map's own file, its SVG or its PNG gives them as on screen; the tables stay the site's, made by its build
     document.addEventListener('click', function (e) {
       var a = e.target.closest && e.target.closest('#m2-downloads a[download], #m2-dlwin a[download], #m2-menu-list a[download]');
       var m = grid.classList.contains('m2-editing') && chosen ? chosen : current, sh = a && m && shown(m);
       if (!sh) return;
       var url = {}, f = fileName(a.getAttribute('href'));
       (m.downloads || []).forEach(function (d) { url[d.label] = d.url; });
-      if (sh.text && sh.file && (f === fileName(sh.file) || f === fileName((m.downloads || [])[0] && m.downloads[0].url))) { e.preventDefault(); return saveBlob(new Blob([sh.text], { type: 'application/xml' }), f); }   // the map's source file (an SBGN-ML map's edited copy keeps the file's own name)
+      if (sh.text && sh.file && (f === fileName(sh.file) || f === fileName((m.downloads || [])[0] && m.downloads[0].url))) { e.preventDefault(); return saveBlob(new Blob([sh.text], { type: 'application/xml' }), /^blob:/.test(a.getAttribute('href')) ? fileName(sh.file) : f); }   // the map's source file (an SBGN-ML map's edited copy keeps the file's own name)
       if (!sh.svg || m.imageError) return;
       if (f === fileName(svgOf(m, url))) { e.preventDefault(); return saveImage(m, url, 'svg', null, sh); }
       if (f === fileName(url.PNG)) { e.preventDefault(); saveImage(m, url, 'png', a.getBoundingClientRect(), sh); }
@@ -3474,10 +3455,30 @@ page, so its styles keep the base they were made on).
         : navigator.clipboard ? plain() : Promise.reject();
       go.then(function () { say('Image copied', r.left, r.top); }, function () { say('Not copied', r.left, r.top); });
     }
+    // a map's downloads, the same in the map's menu and the list's, as the download row: its own file (as on screen where
+    // it is not the site's: its file under the name the editor read it by), then its images, PNG and SVG, the site's own when it has them, else as
+    // the copies make them. [label, action(rect)]
+    mapDownloads = function (m) {
+      var url = {}, out = [], sh = shown(m), own1 = ownFile(m);
+      (m.downloads || []).forEach(function (d) { url[d.label] = d.url; });
+      if (sh && sh.text && sh.file) out.push(['Download ' + fileKind(sh), function () { saveBlob(new Blob([sh.text], { type: 'application/xml' }), fileName(sh.file)); }]);
+      else if (own1) out.push([own1.label === 'CellDesigner' ? 'Download CellDesigner XML' : 'Download ' + own1.label, function () { saveAs(own1.url, fileName(own1.url)); }]);
+      if (!m.imageError && (url.PNG || url.SVG || m.image)) out.push(['Download PNG', function (r) { saveImage(m, url, 'png', r, sh); }]);
+      if (!m.imageError && (svgOf(m, url) || sh && sh.svg)) out.push(['Download SVG', function (r) { saveImage(m, url, 'svg', r, sh); }]);
+      return out;
+    };
+    // the row's and the Downloads window's PNG or SVG with no file of the site's: made here, as the menus make them
+    document.addEventListener('click', function (e) {
+      var a = e.target.closest && e.target.closest('a[data-make]'), m = grid.classList.contains('m2-editing') && chosen ? chosen : current, url = {};
+      if (!a || !m) return;
+      e.preventDefault();
+      (m.downloads || []).forEach(function (d) { url[d.label] = d.url; });
+      saveImage(m, url, a.getAttribute('data-make'), a.getBoundingClientRect(), shown(m));
+    });
     // a download of the map's image: the site's file by its link, else made here (the PNG drawn as Copy image as PNG draws it)
     function saveImage(m, url, ext, r, sh) {
       var href = ext === 'svg' ? svgOf(m, url) : url.PNG;
-      var name = fileName(href) || (m.id || 'map') + '.' + ext;
+      var name = (href && !/^blob:/.test(href) && fileName(href)) || ((sh && sh.file ? fileName(sh.file).replace(/\.[^.]*$/, '') : '') || m.id || 'map') + '.' + ext;
       if (sh && sh.svg && ext === 'svg') return saveBlob(new Blob([sh.svg], { type: 'image/svg+xml' }), name);
       if (href && !(sh && sh.svg)) return saveAs(href, name);
       pngOf(m, url, sh).then(function (b) { saveBlob(b, name); },
@@ -3561,13 +3562,8 @@ page, so its styles keep the base they were made on).
       // no Delete map here: it is in the list's right-click menu only
       if (document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen)
         item(box, isPageFull() ? 'Exit full screen' : 'Full screen with tools', pageFull);
-      var src = (m.shownAs ? ['SBGN-ML'] : m.legend === 'celldesigner' ? ['CellDesigner', 'GraphML'] : ['GraphML', 'CellDesigner', 'SBGN-ML']).filter(function (l) { return url[l]; })[0];   // the format the map is drawn from
-      var sh = shown(m);   // what is on screen, where it is not the site's: its file under the name the editor read it by
-      if (sh && sh.text && sh.file) item(box, 'Download ' + fileKind(sh), function () { saveBlob(new Blob([sh.text], { type: 'application/xml' }), fileName(sh.file)); });
-      else if (src) link(box, src === 'CellDesigner' ? 'Download CellDesigner XML' : 'Download ' + src, url[src], true);
-      // the images as files: the site's own when it has them, else as the copies make them
-      if (!m.imageError && svgOf(m, url)) item(box, 'Download SVG', function (r) { saveImage(m, url, 'svg', r, sh); });
-      if (!m.imageError && (url.PNG || url.SVG || m.image)) item(box, 'Download PNG', function (r) { saveImage(m, url, 'png', r, sh); });
+      var sh = shown(m);
+      mapDownloads(m).forEach(function (d) { item(box, d[0], d[1]); });
       ['Newt', 'MINERVA'].forEach(function (l) { if (url[l]) link(box, 'Open in ' + l, url[l]); });
       if (!m.imageError) item(box, 'Copy image as PNG', function (r) { copyPicture(m, url, r, sh); });
       if (!m.imageError && svgOf(m, url)) item(box, 'Copy image as SVG', function (r) { copySvg(m, url, r, sh); });

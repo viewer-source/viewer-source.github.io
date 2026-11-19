@@ -266,6 +266,7 @@
       if (m && movable(m) && V.listGroups().length) mapItems.push(['Move to...', function () { moveMenu(m, x, y); }]);
       // the clicked map's or group's own items first, as file lists keep them; the new maps and groups under a line
       if (mapItems.length) items = mapItems.concat([null], items);
+      items.mapItems = mapItems.length;   // the viewer puts the map's downloads after them
       var siteG = t && !m && tg && !ownGroup(tg) && !t.dataset.bin && canRenameGroup(tg) ? tg : null;   // a site group: renamed too
       if (onGroup || siteG) items = [['Rename group', function () { renameGroup(siteG || g); }], null].concat(items);
       // items.last: put by the viewer under its own entries too, so Delete map is the menu's last line
