@@ -1,7 +1,7 @@
 // Compartments and complexes on a CellDesigner map (editor/src/cdcreate.js, cd_make.js): a compartment's sign dragged from
 // the palette drawn as the map draws it (its colour, 12 between its lines), placed 160 by 160; Properties for a complex
 // (Width, Height, Fill, Border width; no Multimer) and for a compartment (Width, Height, Fill, Membrane, Outer line, Inner
-// line: its double line, a number under CellDesigner's limits set to the nearest allowed, silently; Name place, one of nine), each value written into the
+// line: its double line, a number under CellDesigner's limits set to the nearest allowed, silently), its name dragged to one of nine places, each value written into the
 // file and undone; a modifier's Line colour and a reaction's (no ports' rows), written and drawn, the reaction's added
 // reactants and products keeping their own. Nothing is saved (no token). No script error.
 //   node tests/cd-props.js [address] [viewer folder: its editor and renderers served in place of the page's]
@@ -49,29 +49,30 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#acly-celld
   // Properties of the compartment
   await select(comp);
   var rc = await rows();
-  ok('a compartment: Label, Width, Height, Fill colour, Membrane, Outer line, Inner line, Name place', JSON.stringify(rc) === JSON.stringify(['label', 'w', 'h', 'fill', 'mem', 'outer', 'inner', 'nameAt']), JSON.stringify(rc));
+  ok('a compartment: Label, Width, Height, Fill colour, Membrane, Outer line, Inner line', JSON.stringify(rc) === JSON.stringify(['label', 'w', 'h', 'fill', 'mem', 'outer', 'inner']), JSON.stringify(rc));
   var fv = function (k) { return page.$eval('#m2-ed-' + k, function (f) { return f.value; }); };
   var dl = function (t) { var m = /<celldesigner:doubleLine [^>]*>/.exec(aliasOf(t, comp)); return m ? m[0] : ''; };
   ok('its double line shown: 12, 2, 1', (await fv('mem')) === '12' && (await fv('outer')) === '2' && (await fv('inner')) === '1');
-  // Name place: Top for a new compartment; Bottom right written by the rule (the membrane + 5 from the right, + 0.5 from
-  // the bottom line) and drawn there; the name following a new membrane; undone
+  // its name dragged by itself to the bottom right: it lands at that place (the membrane + 5 from the right, + 0.5 from
+  // the bottom line), one undo step; a press with no move selects the compartment
   var npt = function (t) { var m = /namePoint x="([^"]*)" y="([^"]*)"/.exec(aliasOf(t, comp)); return m ? [parseFloat(m[1]), parseFloat(m[2])] : null; };
   var bnd = function (t) { var m = /bounds x="([^"]*)" y="([^"]*)" w="([^"]*)" h="([^"]*)"/.exec(aliasOf(t, comp)); return m.slice(1).map(parseFloat); };
-  ok('Name place Top for a new compartment', (await fv('nameAt')) === 't');
-  await page.selectOption('#m2-ed-nameAt', 'br'); await page.waitForTimeout(1200);
+  var nameAt = function () { return page.$eval('#m2-img [data-n="' + comp + '"] text', function (x) { var r = x.getBoundingClientRect(), o = x.closest('[data-n]').getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2, o.right, o.bottom, o.left, o.top]; }); };
+  await page.keyboard.press('Escape'); await page.waitForTimeout(300);
+  var na = await nameAt(), t0n = npt(await now());
+  await page.mouse.move(na[0], na[1]); await page.mouse.down(); await page.mouse.move(na[0] + 20, na[1] + 30, { steps: 4 }); await page.mouse.move(na[2] - 30, na[3] - 15, { steps: 8 }); await page.mouse.up(); await page.waitForTimeout(1500);
   var tb = await now(), bb = bnd(tb), pb = npt(tb);
-  ok('Name place Bottom right written', !!pb && Math.abs(bb[1] + bb[3] - 12.5 - 23 - pb[1]) < 0.06 && pb[0] > bb[0] + bb[2] / 2, JSON.stringify([bb, pb]));
-  await page.keyboard.press('Control+z'); await page.waitForTimeout(1200);   // the choice made, the keys reach the map at once (no Escape)
-  ok('Name place undone by the keys straight after the choice', npt(await now())[1] < bb[1] + bb[3] / 2);
-  await page.keyboard.press('Control+y'); await page.waitForTimeout(1200);
-  ok('and redone', Math.abs(npt(await now())[1] - pb[1]) < 0.01);
-  var nb = await page.$eval('#m2-img [data-n="' + comp + '"] text', function (x) { var r = x.getBoundingClientRect(), o = x.closest('[data-n]').getBoundingClientRect(); return [o.right - r.right, o.bottom - r.bottom]; });
-  ok('drawn at the bottom right, inside', nb[0] > 0 && nb[0] < 40 && nb[1] > 0 && nb[1] < 40, JSON.stringify(nb));
-  await select(comp); ok('Name place shows Bottom right', (await fv('nameAt')) === 'br');
+  ok('the name dragged to the bottom right lands there', !!pb && Math.abs(bb[1] + bb[3] - 12.5 - 23 - pb[1]) < 0.06 && pb[0] > bb[0] + bb[2] / 2, JSON.stringify([bb, pb]));
+  var nb = await nameAt();
+  ok('drawn at the bottom right, inside', nb[2] - nb[0] > 0 && nb[2] - nb[0] < 60 && nb[3] - nb[1] > 0 && nb[3] - nb[1] < 40, JSON.stringify(nb));
   await type('mem', '30'); var p30 = npt(await now()), b30 = bnd(await now());
   ok('the name follows a membrane of 30', Math.abs(b30[1] + b30[3] - 30.5 - 23 - p30[1]) < 0.06, JSON.stringify([b30, p30]));
   for (var u0 = 0; u0 < 2; u0++) { await page.keyboard.press('Escape'); await page.keyboard.press('Control+z'); await page.waitForTimeout(1200); }
-  await select(comp); ok('undone: Top again', (await fv('nameAt')) === 't' && /thickness="12\.0"/.test(dl(await now())));
+  ok('undone: the name at the top again', JSON.stringify(npt(await now())) === JSON.stringify(t0n) && /thickness="12\.0"/.test(dl(await now())), JSON.stringify([npt(await now()), t0n]));
+  await page.keyboard.press('Escape'); na = await nameAt();
+  await page.mouse.click(na[0], na[1]); await page.waitForTimeout(500);
+  ok('a click on the name selects the compartment', JSON.stringify(await rows()) === JSON.stringify(['label', 'w', 'h', 'fill', 'mem', 'outer', 'inner']) && JSON.stringify(npt(await now())) === JSON.stringify(t0n));
+  await select(comp);
   await type('mem', '24');
   ok('Membrane 24 written', /thickness="24\.0" outerWidth="2\.0" innerWidth="1\.0"/.test(dl(await now())), dl(await now()));
   ok('drawn 24 between its lines', /<rect x="[\d.]+" y="[\d.]+" width="112" height="112"/.test(await page.$eval('#m2-img [data-n="' + comp + '"]', function (g) { return g.innerHTML; })));

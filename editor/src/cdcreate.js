@@ -663,6 +663,49 @@
       if (cdRxSeen[0] !== key) { var ab = null; try { ab = cdMk.about(cd.now, rid); } catch (e) { ab = null; } cdRxSeen = [key, ab ? ab.reversible : null]; }
       return cdRxSeen[1] === null ? null : { rid: rid, on: cdRxSeen[1] };
     }
+    // a compartment's name dragged by itself (its drawn text pressed, in Full editing): it follows the pointer from one
+    // of nine places to the next (cdrender NAME_PLACES, namePoint: just inside the inner line), the nearest to where the
+    // name would be, and is written there on release (cd_make.nameAt, one undo step); a press with no move selects the
+    // compartment, as a click on it does, and a double click still opens the name. Reached through svDown (create.js),
+    // which the core asks before a node is pressed
+    var cdNm = null;
+    function cdNameDown(e, P, h) {
+      if (!cdPal() || tool || e.shiftKey || (h && (h.p != null || h.e != null || (h.n != null && !nodes2[h.n].comp)))) return false;   // a bend point, a line or a species over the name: theirs
+      var k = -1, area = Infinity, info = null, pad = 3;   // the innermost compartment whose drawn name is under the pointer (one still named by its id too)
+      nodes2.forEach(function (n, i) {
+        var b = boxOf(i);
+        if (!n.comp || b[2] * b[3] >= area) return;
+        if (textsOf(i, null).some(function (el) { var r = el.getBoundingClientRect(); return e.clientX >= r.left - pad && e.clientX <= r.right + pad && e.clientY >= r.top - pad && e.clientY <= r.bottom + pad; })) { k = i; area = b[2] * b[3]; }
+      });
+      if (k < 0) return false;
+      try { info = cdMk.nameInfo(cdNow().t, nodes2[k].id); } catch (err) { info = null; }
+      if (!info) return false;
+      e.stopImmediatePropagation(); e.preventDefault();
+      V.view.setPointerCapture(e.pointerId); V.view.focus({ preventScroll: true });
+      cdNm = { k: k, id: nodes2[k].id, info: info, P: P, x: e.clientX, y: e.clientY, p: null, parts: null };
+      return true;
+    }
+    window.addEventListener('pointermove', function (e) {
+      var d = cdNm;
+      if (!d) return;
+      if (!e.buttons) { cdNameUp(); return; }   // released outside the window: no sticky hand
+      if (!d.p && Math.hypot(e.clientX - d.x, e.clientY - d.y) < 4) return;
+      var Q = at(e), I = d.info, want = [I.np[0] + Q[0] - d.P[0], I.np[1] + Q[1] - d.P[1]], best = null, bd = Infinity;
+      window.cdrender.NAME_PLACES.forEach(function (p) { var q = window.cdrender.namePoint(I.box, I.name, I.th, p, I.oval), dd = Math.hypot(q[0] - want[0], q[1] - want[1]); if (dd < bd) { bd = dd; best = [p, q]; } });
+      if (!d.parts) d.parts = textsOf(d.k, null);   // the name's own text, moved as it is (no copy)
+      d.p = best[0];
+      var dx = best[1][0] - I.np[0], dy = best[1][1] - I.np[1];
+      d.parts.forEach(function (el) { if (dx || dy) el.setAttribute('transform', 'translate(' + f1(dx) + ' ' + f1(dy) + ')'); else el.removeAttribute('transform'); });
+    }, true);
+    window.addEventListener('pointerup', cdNameUp, true);
+    function cdNameUp() {
+      var d = cdNm; cdNm = null;
+      if (!d) return;
+      if (d.p && cdApply(function (t) { return cdMk.nameAt(t, d.id, d.p); }, [d.id])) return;
+      (d.parts || []).forEach(function (el) { el.removeAttribute('transform'); });
+      var k = nodes2.findIndex(function (n) { return n.id === d.id; });
+      selN = k >= 0 ? [k] : []; selP = []; selE = []; part = null; paint();
+    }
     // a name typed in place (a double click on a species, a complex's member included, on a complex's or a compartment's
     // drawn name, or a complex's bottom band or a compartment's top one; typeIn in create.js), written by cd_make.rename;
     // a degraded species has none
@@ -724,13 +767,13 @@
       }, ports: false },
       node: function (i) { return cdProp(i) ? i : -1; },
       off: function (k, i) {   // pNow: look's, read just before; a compartment no border width or multimer, a complex no multimer
-        return k === 'line' || (/^(mem|outer|inner|nameAt)$/.test(k) && pNow.cls !== 'COMPARTMENT') || (/^(label|fill|multimer)$/.test(k) && pNow.cls === 'DEGRADED') || (/^(width|multimer|def)$/.test(k) && pNow.cls === 'COMPARTMENT') || (/^(multimer|def)$/.test(k) && pNow.cls === 'COMPLEX');
+        return k === 'line' || (/^(mem|outer|inner)$/.test(k) && pNow.cls !== 'COMPARTMENT') || (/^(label|fill|multimer)$/.test(k) && pNow.cls === 'DEGRADED') || (/^(width|multimer|def)$/.test(k) && pNow.cls === 'COMPARTMENT') || (/^(multimer|def)$/.test(k) && pNow.cls === 'COMPLEX');
       },
       look: function (i) {   // null while the file is behind the map read (an undo not drawn yet); read once per node and file (it runs with every paint)
         var id = nodes2[i].id;
         if (cdLook[0] !== id || cdLook[1] !== cd.now) {
           var L = null;
-          try { L = cdMk.look(cd.now, id); L = { label: cdNameOf(id, true), fill: L.fill, line: '#000000', width: L.width, multimer: L.multimer, cls: L.cls, mem: L.mem, outer: L.outer, inner: L.inner, nameAt: L.place }; } catch (e) { L = null; }
+          try { L = cdMk.look(cd.now, id); L = { label: cdNameOf(id, true), fill: L.fill, line: '#000000', width: L.width, multimer: L.multimer, cls: L.cls, mem: L.mem, outer: L.outer, inner: L.inner }; } catch (e) { L = null; }
           cdLook = [id, cd.now, L];
         }
         return cdLook[2] && Object.assign({}, cdLook[2]);
@@ -742,7 +785,6 @@
         if (k === 'width') { var x = parseFloat(v); return isFinite(x) && all(function (t, id) { return cdMk.restyle(t, id, { width: Math.min(Math.max(x, 0.25), 20) }); }); }   // outside 0.25 to 20: the nearest, silently
         if (k === 'fill') { var c = hex(v); return !!c && all(function (t, id) { return cdMk.restyle(t, id, { fill: c }); }); }
         if (/^(mem|outer|inner)$/.test(k)) return cdDouble(k, parseFloat(v), ids);
-        if (k === 'nameAt') return /^[tcblr]{1,2}$/.test(v) && all(function (t, id) { return cdMk.nameAt(t, id, v); });
         return false;
       } };
     // a compartment's double line in Properties: Membrane (its thickness), Outer line and Inner line (their widths), after
@@ -753,10 +795,6 @@
     propRows([['mem', 'Membrane', 'num', ' min="2" max="100"', 'Membrane thickness: the band between the two lines, 2 at least'],
       ['outer', 'Outer line', 'num', ' min="2" max="20"', 'Outer line width, at least the inner line + 1'],
       ['inner', 'Inner line', 'num', ' min="1" max="19"', 'Inner line width, 1 at least']]);
-    // a compartment's name at one of nine places just inside its inner line (cd_make.nameAt, cdrender.namePoint), kept
-    // there through a rename, a move, a resize and a new membrane; a name the file has elsewhere shows Elsewhere and stays
-    propRows([['nameAt', 'Name place', 'sel', [['', 'Elsewhere', true], ['tl', 'Top left'], ['t', 'Top'], ['tr', 'Top right'], ['l', 'Left'], ['c', 'Centre'],
-      ['r', 'Right'], ['bl', 'Bottom left'], ['b', 'Bottom'], ['br', 'Bottom right']], 'Where the compartment\u2019s name is']]);
     function cdDouble(k, x, ids) {
       if (!isFinite(x)) return false;
       var clamp = function (v, a, b) { return Math.min(Math.max(v, a), b); };

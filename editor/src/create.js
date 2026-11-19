@@ -1063,6 +1063,7 @@
     // a press on a state variable (called by the core's press before nodes, the state variable being on
     // top): a click on it selects it, also over its macromolecule, selected or not; true when it takes the press
     function svDown(e, P, h) {
+      if (cdNameDown(e, P, h)) return true;   // a CellDesigner compartment's name dragged by itself (cdcreate.js)
       var q = palOn() && !tool ? svAt(P) : null;
       if (!q || e.shiftKey || (h && h.p != null)) { if (svSel) { svSel = null; paint(); } return false; }   // Shift or a bend point there: the core's
       e.stopImmediatePropagation();
@@ -1494,7 +1495,7 @@
     // its handles resize it (holderSize). Grid size is beside the Grid and Snap switches (core.js)
     var ROWS = [['label', 'Label', 'text'], ['w', 'Width', 'num'], ['h', 'Height', 'num'], ['fill', 'Fill colour', 'colour'],
       ['line', 'Border colour', 'colour'], ['width', 'Border width', 'num'], ['multimer', 'Multimer', 'check']];
-    // a row: [key, name, kind (text, num, colour, check, sel), its input's limits (sel: its options), its title]; a format's part may add its own rows (propRows)
+    // a row: [key, name, kind (text, num, colour, check), its input's limits, its title]; a format's part may add its own rows (propRows)
     var props = document.createElement('div');
     props.className = 'm2-ed-props'; props.hidden = true;
     // a line's rows (yEd's Properties View for an edge): its colour, its two ports as offsets from its glyph's centre
@@ -1505,7 +1506,6 @@
     function table(rows, cls) { return '<table class="m2-ed-ptab' + cls + '">' + rows.map(function (r) {
       var id = 'm2-ed-' + r[0], f = r[2] === 'check' ? '<input type="checkbox" id="' + id + '">'
         : r[2] === 'colour' ? '<span class="m2-ed-pc"><input type="color" tabindex="-1" aria-label="' + r[1] + ', picker"><input type="text" id="' + id + '" spellcheck="false" autocomplete="off"' + (r[0] === 'fill' ? ' placeholder="none"' : '') + '></span>'
-        : r[2] === 'sel' ? '<select id="' + id + '"><option value="~" disabled hidden></option>' + r[3].map(function (o) { return '<option value="' + o[0] + '"' + (o[2] ? ' disabled hidden' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>'   // r[3]: [value, name, shown only when it is the value]
         : r[2] === 'num' ? '<input type="number" id="' + id + '" step="any"' + (r[3] || (r[0] === 'width' ? ' min="0.25" max="20"' : /^[st][xy]$/.test(r[0]) ? '' : ' min="1" max="5000"')) + '>'
         : '<input type="text" id="' + id + '" spellcheck="false" autocomplete="off">';
       return '<tr data-k="' + r[0] + '"' + (r[4] ? ' title="' + r[4] + '"' : '') + '><th><label for="' + id + '">' + r[1] + '</label></th><td>' + f + '</td></tr>';
@@ -1573,7 +1573,7 @@
       }
       Array.prototype.forEach.call(props.querySelectorAll('.m2-mixed'), function (tr) { tr.classList.remove('m2-mixed'); });
       props.querySelector('#m2-ed-multimer').indeterminate = false;
-      ROWS.forEach(function (r) { if (r[2] !== 'check' && r[2] !== 'sel') field(r[0]).placeholder = r[0] === 'fill' ? 'none' : ''; });
+      ROWS.forEach(function (r) { if (r[2] !== 'check') field(r[0]).placeholder = r[0] === 'fill' ? 'none' : ''; });
       props.hidden = i < 0 && k < 0;   // only with its node or line: nothing selected, no Properties
       if (props.hidden) return;
       props.querySelector('.m2-ed-pnode').hidden = i < 0; props.querySelector('.m2-ed-pedge').hidden = i >= 0;
@@ -1613,9 +1613,9 @@
         var vs = Ls.map(function (L) { return r[2] === 'check' ? !!L[r[0]] : String(L[r[0]] == null ? '' : L[r[0]]); }), one = vs.every(function (v) { return v === vs[0]; });
         tr.classList.toggle('m2-mixed', !one);
         if (r[2] === 'check') { f.indeterminate = !one; f.checked = one && vs[0]; return; }
-        var v = one ? vs[0] : r[2] === 'sel' ? '~' : '';   // a choice that differs: its blank option
+        var v = one ? vs[0] : '';
         if (f.value !== v) f.value = v;
-        if (r[2] !== 'sel') f.placeholder = one && r[0] === 'fill' ? 'none' : '';
+        f.placeholder = one && r[0] === 'fill' ? 'none' : '';
         var pk = f.previousElementSibling;
         if (r[2] === 'colour' && one && document.activeElement !== pk) pk.value = v || '#ffffff';
       });
@@ -1746,7 +1746,7 @@
     function propListen(r) {
       if (/^[wh]$/.test(r[0])) return;   // Width and Height: above
       var f = field(r[0]);
-      f.addEventListener('change', function () { propSet(r[0]); if (r[2] === 'sel') f.blur(); });   // a choice made: the keys back to the map (undo)
+      f.addEventListener('change', function () { propSet(r[0]); });
       if (r[2] === 'colour') f.previousElementSibling.addEventListener('change', function (e) { f.value = e.target.value; propSet(r[0]); });
     }
     ROWS.forEach(propListen);

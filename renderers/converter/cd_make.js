@@ -11,7 +11,7 @@
 //   species(t, { cls, name, box, compartment, complex }) -> { text, alias, species }   (compartment left out: the one round its box)
 //   compartment(t, { name, box, oval }) -> { text, alias, compartment }   oval: CellDesigner's OVAL class, else SQUARE
 //   rename(t, alias, name), retype(t, alias, cls), remove(t, [alias, ...]) -> text
-//   namePlace(t, alias, one) -> one of cdrender's NAME_PLACES or ''; nameAt(t, alias, place) -> text   (a compartment's name)
+//   namePlace(t, alias, one) -> one of cdrender's NAME_PLACES or ''; nameAt(t, alias, place) -> text; nameInfo(t, alias)   (a compartment's name)
 //   reaction(t, { type, from, to }), reduced(t, { type, from, to }) -> { text, reaction }
 //   reactant(t, rid, alias), product(t, rid, alias), modifier(t, rid, alias, type) -> { text, part }   (part: r<n>, p<n>, m<n>)
 //   reactionType(t, rid, type), reversible(t, rid, on), modifierType(t, rid, n, type), removeLine(t, rid, part?) -> text
@@ -343,6 +343,13 @@
     if (!np) return '';
     var tag = head(t, np);
     return cdr.namePlaceOf(A.box, compName(t, A), compThick(t, A), [F(at(tag, 'x')), F(at(tag, 'y'))], compOval(t, A), one) || '';
+  }
+  // what a compartment's name is placed by: its box, name (as the file has it), membrane, oval or not, namePoint; null when it has none
+  function nameInfo(t, id) {
+    var A = alias(t, id), np = A.kind === 'compartmentAlias' && A.box && span(t, '<celldesigner:namePoint ', A.sp[0], A.sp[1]);
+    if (!np) return null;
+    var tag = head(t, np);
+    return { box: A.box, name: compName(t, A), th: compThick(t, A), oval: compOval(t, A), np: [F(at(tag, 'x')), F(at(tag, 'y'))] };
   }
   // the name put at place p (one of cdrender's NAME_PLACES); a namePoint written after the bounds where the file has none
   function nameAt(t, id, p) {
@@ -1154,7 +1161,7 @@
     var hd = A.s && /<celldesigner:homodimer>(\d+)</.exec(t.slice(A.s.sp[0], A.s.sp[1]));
     return { kind: A.kind, cls: A.cls || null, id: A.species || A.compartment, name: A.s ? A.s.name : C ? at(head(t, C), 'name') : null, complex: A.complex, box: A.box, homodimer: hd ? +hd[1] : 1 };
   }
-  var api = { LOOK: LOOK, COMP: COMP, lineColour: lineColour, recolourLine: recolourLine, PROCESS: PROCESS, REDUCED: REDUCED, sbgn: sbgn, MODS: MODS, NEED: NEED, about: about, aliasInfo: aliasInfo, classColour: classColour, compartmentColour: compartmentColour, classColours: classColours, classSize: classSize, empty: empty, species: newSpecies, compartment: compartment, rename: rename, namePlace: namePlace, nameAt: nameAt, retype: retype, remove: remove, reaction: reaction, reduced: reduced,
+  var api = { LOOK: LOOK, COMP: COMP, lineColour: lineColour, recolourLine: recolourLine, PROCESS: PROCESS, REDUCED: REDUCED, sbgn: sbgn, MODS: MODS, NEED: NEED, about: about, aliasInfo: aliasInfo, classColour: classColour, compartmentColour: compartmentColour, classColours: classColours, classSize: classSize, empty: empty, species: newSpecies, compartment: compartment, rename: rename, namePlace: namePlace, nameAt: nameAt, nameInfo: nameInfo, retype: retype, remove: remove, reaction: reaction, reduced: reduced,
     reactant: reactant, product: product, modifier: modifier, reactionType: reactionType, reversible: reversible, modifierType: modifierType, removeLine: removeLine,
     gate: gate, gateInput: gateInput, gateInputRemove: gateInputRemove, gateType: gateType, residue: residue, residueState: residueState,
     residueRemove: residueRemove, structural: structural, info: info, homodimer: homodimer, look: look, restyle: restyle, recolourAll: recolourAll, colours: colours, cdName: cdName, joinable: joinable, join: join, leave: leave };
