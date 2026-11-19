@@ -1494,7 +1494,7 @@
     // its handles resize it (holderSize). Grid size is beside the Grid and Snap switches (core.js)
     var ROWS = [['label', 'Label', 'text'], ['w', 'Width', 'num'], ['h', 'Height', 'num'], ['fill', 'Fill colour', 'colour'],
       ['line', 'Border colour', 'colour'], ['width', 'Border width', 'num'], ['multimer', 'Multimer', 'check']];
-    // a row: [key, name, kind, its input's limits, its title]; a format's part may add its own rows (propRows)
+    // a row: [key, name, kind (text, num, colour, check, sel), its input's limits (sel: its options), its title]; a format's part may add its own rows (propRows)
     var props = document.createElement('div');
     props.className = 'm2-ed-props'; props.hidden = true;
     // a line's rows (yEd's Properties View for an edge): its colour, its two ports as offsets from its glyph's centre
@@ -1505,6 +1505,7 @@
     function table(rows, cls) { return '<table class="m2-ed-ptab' + cls + '">' + rows.map(function (r) {
       var id = 'm2-ed-' + r[0], f = r[2] === 'check' ? '<input type="checkbox" id="' + id + '">'
         : r[2] === 'colour' ? '<span class="m2-ed-pc"><input type="color" tabindex="-1" aria-label="' + r[1] + ', picker"><input type="text" id="' + id + '" spellcheck="false" autocomplete="off"' + (r[0] === 'fill' ? ' placeholder="none"' : '') + '></span>'
+        : r[2] === 'sel' ? '<select id="' + id + '">' + r[3].map(function (o) { return '<option value="' + o[0] + '"' + (o[2] ? ' disabled hidden' : '') + '>' + o[1] + '</option>'; }).join('') + '</select>'   // r[3]: [value, name, shown only when it is the value]
         : r[2] === 'num' ? '<input type="number" id="' + id + '" step="any"' + (r[3] || (r[0] === 'width' ? ' min="0.25" max="20"' : /^[st][xy]$/.test(r[0]) ? '' : ' min="1" max="5000"')) + '>'
         : '<input type="text" id="' + id + '" spellcheck="false" autocomplete="off">';
       return '<tr data-k="' + r[0] + '"' + (r[4] ? ' title="' + r[4] + '"' : '') + '><th><label for="' + id + '">' + r[1] + '</label></th><td>' + f + '</td></tr>';
@@ -1749,13 +1750,13 @@
       if (r[2] === 'colour') f.previousElementSibling.addEventListener('change', function (e) { f.value = e.target.value; propSet(r[0]); });
     }
     ROWS.forEach(propListen);
-    // a format's part adds rows of its own after Border width (its off() hides them where they do not apply; other parts' off() by EXTRA)
+    // a format's part adds rows of its own after Border width, each call after the rows added before (its off() hides them where they do not apply; other parts' off() by EXTRA)
     var EXTRA = [];
     function propRows(rows) {
-      var at = props.querySelector('.m2-ed-pnode tr[data-k="width"]'), tmp = document.createElement('div');
+      var last = EXTRA.length ? EXTRA[EXTRA.length - 1] : 'width', at = props.querySelector('.m2-ed-pnode tr[data-k="' + last + '"]'), tmp = document.createElement('div');   // after the rows added before
       tmp.innerHTML = table(rows, '');
       Array.prototype.slice.call(tmp.querySelectorAll('tr')).reverse().forEach(function (tr) { at.insertAdjacentElement('afterend', tr); });
-      var k = ROWS.findIndex(function (r) { return r[0] === 'width'; });
+      var k = ROWS.findIndex(function (r) { return r[0] === last; });
       rows.forEach(function (r, j) { ROWS.splice(k + 1 + j, 0, r); EXTRA.push(r[0]); propListen(r); });
     }
     props.addEventListener('keydown', function (e) {   // Enter keeps the value, Esc takes it back; the map's keys stay out of the fields

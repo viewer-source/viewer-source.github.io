@@ -694,7 +694,7 @@
           T.attrs(ip[0], ['x', 'y'].map(function (k, j) { return [k, j]; }).filter(function (q) { return Math.abs((n[q[1]] - pn[q[1]]) - (b[q[1]] - pb[q[1]])) >= 1e-3; }).map(function (q) { return [q[0], num(n[q[1]] - pn[q[1]])]; }));
       }
       if (comps.has(i)) {
-        // its name moved with its corner; a name at the top middle (cdrender.nameLeft) kept there, the box resized too
+        // its name moved with its corner; a name at one of the nine places, or at the top middle (cdrender.nameLeft), kept there, the box resized too
         var npt = T.span('<celldesigner:namePoint ', s[0], s[1]);
         if (npt && n.some(function (v, j) { return Math.abs(v - b[j]) >= 1e-3; })) {
           var mv = {}, re2 = /\s([xy])="([^"]*)"/g, m2, seg2 = T.t.slice(npt[0], npt[1]);
@@ -702,8 +702,12 @@
           var ctag = T.t.slice(s[0], T.t.indexOf('>', s[0])), cid = (/\scompartment="([^"]*)"/.exec(ctag) || [])[1];
           var cs = cid && T.span('<compartment(?=\\s)[^>]*\\sid="' + reEscape(cid) + '"'), cn = cs && /\sname="([^"]*)"/.exec(T.t.slice(cs[0], T.t.indexOf('>', cs[0])));
           var cname = (cn ? cn[1] : cid || '').replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
-          var mid = Math.abs(F(mv.x) - cdr.nameLeft(b, cname)) < 1;
-          if (mid || Math.abs(n[0] - b[0]) >= 1e-3 || Math.abs(n[1] - b[1]) >= 1e-3)
+          // a name at one of the nine places (cdrender.namePoint) kept at its place in the new box
+          var dl = /<celldesigner:doubleLine\s(?:[^>]*\s)?thickness="([^"]*)"/.exec(T.t.slice(s[0], s[1])), th = dl ? F(dl[1]) : 12;
+          var pl = cdr.namePlaceOf(b, cname, th, [F(mv.x), F(mv.y)]), at = pl && cdr.namePoint(n, cname, th, pl);
+          var mid = !pl && Math.abs(F(mv.x) - cdr.nameLeft(b, cname)) < 1;
+          if (at) T.attrs(npt[0], [['x', num(at[0])], ['y', num(at[1])]]);
+          else if (mid || Math.abs(n[0] - b[0]) >= 1e-3 || Math.abs(n[1] - b[1]) >= 1e-3)
             T.attrs(npt[0], [['x', num(mid ? cdr.nameLeft(n, cname) : F(mv.x) + n[0] - b[0])], ['y', num(F(mv.y) + n[1] - b[1])]]);
         }
       }

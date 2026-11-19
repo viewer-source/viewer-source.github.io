@@ -310,9 +310,12 @@
     self.out.push(compartmentShape(x, y, w, h, t, ow, iw, colour(get(find(a, 'cd:paint'), 'color'))[0], text(find(a, 'cd:class')) === 'OVAL'));
     var np = find(a, 'cd:namePoint'), nm = has(self.cnames, get(a, 'compartment')) ? self.cnames[get(a, 'compartment')] : '';
     // a name at the top middle of its bounds stays at the top middle of a live box (cd_edit's place() keeps it so)
-    var nx = np && box && Math.abs(F(get(np, 'x')) - nameLeft([x0, y0, F(get(b, 'w')), F(get(b, 'h'))], nm)) < 1 ? nameLeft(box, nm) : np && F(get(np, 'x')) + (x - x0);
+    // a name at one of the nine places stays there in a live box; one at the top middle by an older rule stays centred
+    var b0 = [x0, y0, F(get(b, 'w')), F(get(b, 'h'))], pl = np && box && namePlaceOf(b0, nm, t, [F(get(np, 'x')), F(get(np, 'y'))]), at = pl && namePoint(box, nm, t, pl);
+    var nx = at ? at[0] : np && box && Math.abs(F(get(np, 'x')) - nameLeft(b0, nm)) < 1 ? nameLeft(box, nm) : np && F(get(np, 'x')) + (x - x0);
+    var ny = at ? at[1] : np && F(get(np, 'y')) + (y - y0);
     if (np) self.nameLines(nm).forEach(function (line, k) {
-      self.text(line, nx, F(get(np, 'y')) + (y - y0) + 15.5 + 14 * k, 12, 'start');
+      self.text(line, nx, ny + 15.5 + 14 * k, 12, 'start');
     });
   };
   D.text = function (s, x, y, size, anchor, family, extra) {
@@ -324,6 +327,23 @@
   function nameLeft(box, name) {
     var w = Math.max.apply(null, plainName(name || '').split('_br_').join('\n').split('\n').map(function (l) { return width(l, 12); }));
     return box[0] + box[2] / 2 - w / 2;
+  }
+  // a compartment's name at one of nine places in box (NAME_PLACES: top left, top, top right, left, centre, right,
+  // bottom left, bottom, bottom right), as CellDesigner 4.4 leaves a name dragged to an edge: its box (the widest line,
+  // 23 high and 14 more a line) the membrane's thickness + 5 from a side and + 0.5 from the top and bottom (17 and 12.5
+  // at its default 12), centred otherwise; the namePoint is the box's top left
+  var NAME_PLACES = ['tl', 't', 'tr', 'l', 'c', 'r', 'bl', 'b', 'br'];
+  function namePoint(box, name, th, p) {
+    var ls = plainName(name || '').split('_br_').join('\n').split('\n'), w = Math.max.apply(null, ls.map(function (l) { return width(l, 12); })), h = 23 + 14 * (ls.length - 1);
+    var c = p.slice(-1), r = p.charAt(0);
+    var x = c === 'l' ? box[0] + th + 5 : c === 'r' ? box[0] + box[2] - th - 5 - w : box[0] + box[2] / 2 - w / 2;
+    var y = r === 't' ? box[1] + th + 0.5 : r === 'b' ? box[1] + box[3] - th - 0.5 - h : box[1] + box[3] / 2 - h / 2;
+    return [x, y];
+  }
+  // which of the nine places a namePoint is at (within 1 on each axis), else null
+  function namePlaceOf(box, name, th, np) {
+    for (var k = 0; k < NAME_PLACES.length; k++) { var q = namePoint(box, name, th, NAME_PLACES[k]); if (Math.abs(q[0] - np[0]) < 1 && Math.abs(q[1] - np[1]) < 1) return NAME_PLACES[k]; }
+    return null;
   }
   D.nameLines = function (name) { return plainName(name || '').split('_br_').join('\n').split('\n'); };
   D.species = function () {
@@ -763,7 +783,7 @@
     return [svg, { aliases: aliases, reactions: reactions }];
   }
   var api = { render: render, renderHits: renderHits, Drawing: Drawing, py: py, xml: xml, SQUARE: SQUARE, ANCHOR: ANCHOR, fromFrame: fromFrame, toFrame: toFrame,
-    editPoints: editPoints, unit: unit, onBorder: onBorder, width: width, target: target, plainName: plainName, NAME: NAME, GATE: GATE, ROLE: ROLE, ANCHOR: ANCHOR, anchorAt: anchorAt, frontBox: frontBox, compartmentShape: compartmentShape, nameLeft: nameLeft };   // GATE: the editor's palette checks its signs against it   // NAME: cd_make.js writes names
+    editPoints: editPoints, unit: unit, onBorder: onBorder, width: width, target: target, plainName: plainName, NAME: NAME, GATE: GATE, ROLE: ROLE, ANCHOR: ANCHOR, anchorAt: anchorAt, frontBox: frontBox, compartmentShape: compartmentShape, nameLeft: nameLeft, NAME_PLACES: NAME_PLACES, namePoint: namePoint, namePlaceOf: namePlaceOf };   // GATE: the editor's palette checks its signs against it   // NAME: cd_make.js writes names
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.cdrender = api;
 
   if (typeof require !== 'undefined' && typeof module !== 'undefined' && require.main === module) {   // node cdrender.js map.xml out.svg

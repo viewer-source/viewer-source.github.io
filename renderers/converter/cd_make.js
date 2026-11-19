@@ -11,6 +11,7 @@
 //   species(t, { cls, name, box, compartment, complex }) -> { text, alias, species }   (compartment left out: the one round its box)
 //   compartment(t, { name, box, oval }) -> { text, alias, compartment }   oval: CellDesigner's OVAL class, else SQUARE
 //   rename(t, alias, name), retype(t, alias, cls), remove(t, [alias, ...]) -> text
+//   namePlace(t, alias) -> one of cdrender's NAME_PLACES or ''; nameAt(t, alias, place) -> text   (a compartment's name)
 //   reaction(t, { type, from, to }), reduced(t, { type, from, to }) -> { text, reaction }
 //   reactant(t, rid, alias), product(t, rid, alias), modifier(t, rid, alias, type) -> { text, part }   (part: r<n>, p<n>, m<n>)
 //   reactionType(t, rid, type), reversible(t, rid, on), modifierType(t, rid, n, type), removeLine(t, rid, part?) -> text
@@ -234,12 +235,12 @@
     var b = (o.box || [0, 0].concat(COMP.size)).map(F), cid = next(t, 'c'), aid = next(t, 'ca'), name = esc(cdName(o.name || cid));
     if (!(b[2] > 0 && b[3] > 0)) fail('A compartment needs a width and a height.');
     var out = holder(t, b), pc = out ? out.compartment : 'default', moved = [];
-    // the name at the top middle (cdrender.nameLeft; 12.5 below the top, as the converter writes it), on an oval too;
-    // its colour o.colour (eight hex digits), else CellDesigner's yellow
-    var nx = cdr.nameLeft(b, cdName(o.name || cid));
+    // the name at the top middle (cdrender.namePoint: the membrane + 0.5 below the top, 12.5 as the converter writes
+    // it), on an oval too; its colour o.colour (eight hex digits), else CellDesigner's yellow
+    var npt = cdr.namePoint(b, cdName(o.name || cid), COMP.thickness, 't'), nx = npt[0];
     t = add(t, CD + 'listOfCompartmentAliases', '<celldesigner:compartmentAlias id="' + aid + '" compartment="' + cid + '">\n<celldesigner:class>' + (o.oval ? 'OVAL' : 'SQUARE') + '</celldesigner:class>\n' +
       '<celldesigner:bounds x="' + num(b[0]) + '" y="' + num(b[1]) + '" w="' + num(b[2]) + '" h="' + num(b[3]) + '"/>\n<celldesigner:namePoint x="' + num(nx) +
-      '" y="' + num(b[1] + 12.5) + '"/>\n<celldesigner:doubleLine thickness="' + num(COMP.thickness) + '" outerWidth="' + num(COMP.outer) + '" innerWidth="' + num(COMP.inner) + '"/>\n<celldesigner:paint color="' + (o.colour || COMP.colour) + '" scheme="Color"/>\n' +
+      '" y="' + num(npt[1]) + '"/>\n<celldesigner:doubleLine thickness="' + num(COMP.thickness) + '" outerWidth="' + num(COMP.outer) + '" innerWidth="' + num(COMP.inner) + '"/>\n<celldesigner:paint color="' + (o.colour || COMP.colour) + '" scheme="Color"/>\n' +
       '<celldesigner:info state="empty" angle="' + DOWN + '"/>\n</celldesigner:compartmentAlias>', 0, t.length, t.indexOf(EXT));
     t = add(t, 'listOfCompartments', '<compartment metaid="' + cid + '" id="' + cid + '" name="' + name + '" size="1" units="volume" outside="' + (out ? out.compartment : 'default') +
       '">\n<annotation>\n<celldesigner:extension>\n<celldesigner:name>' + name + '</celldesigner:name>\n</celldesigner:extension>\n</annotation>\n</compartment>', 0, t.length);
@@ -331,6 +332,28 @@
   }
   function noResidues(t, sid) { var l = inState(t, sid, '<celldesigner:listOfModifications>'); return l ? drop(t, l, [CD + 'state']) : t; }   // its residues' states
 
+  // a compartment's name place (cdrender.namePoint): its name as the file has it, its membrane's thickness (12 where
+  // absent), the place its namePoint is at (one of NAME_PLACES) or '' when elsewhere
+  function compName(t, A) { var C0 = span(t, '<compartment(?=\\s)[^>]*\\sid="' + q(A.compartment) + '"'); return unesc(at(head(t, C0), 'name') || A.compartment); }
+  function compThick(t, A) { var m = /<celldesigner:doubleLine\s(?:[^>]*\s)?thickness="([^"]*)"/.exec(t.slice(A.sp[0], A.sp[1])); return m ? F(m[1]) : 12; }
+  function namePlace(t, id) {
+    var A = alias(t, id), np = A.kind === 'compartmentAlias' && A.box && span(t, '<celldesigner:namePoint ', A.sp[0], A.sp[1]);
+    if (!np) return '';
+    var tag = head(t, np);
+    return cdr.namePlaceOf(A.box, compName(t, A), compThick(t, A), [F(at(tag, 'x')), F(at(tag, 'y'))]) || '';
+  }
+  // the name put at place p (one of cdrender's NAME_PLACES); a namePoint written after the bounds where the file has none
+  function nameAt(t, id, p) {
+    var A = alias(t, id);
+    if (A.kind !== 'compartmentAlias') refuse('Only a compartment\u2019s name has a place.');
+    if (cdr.NAME_PLACES.indexOf(p) < 0) fail('No name place ' + p + '.');
+    if (!A.box) fail('No bounds on ' + id + '.');
+    var xy = cdr.namePoint(A.box, compName(t, A), compThick(t, A), p), np = span(t, '<celldesigner:namePoint ', A.sp[0], A.sp[1]);
+    if (np) return attrs(t, np[0], [['x', num(xy[0])], ['y', num(xy[1])]]);
+    var bs = span(t, '<celldesigner:bounds ', A.sp[0], A.sp[1]), e = t.indexOf('>', bs[0]) + 1;
+    return put(t, e, e, '\n<celldesigner:namePoint x="' + num(xy[0]) + '" y="' + num(xy[1]) + '"/>');
+  }
+
   // a name written where CellDesigner keeps it: a compartment's name and its extension's copy; a species' name and its
   // identity's (classes without a reference). A protein, gene or RNA, with every species of its reference that had the
   // old name (CellDesigner keeps a species' name as its reference's): onto the reference of the new name when there is
@@ -342,10 +365,10 @@
       var sp = span(t, open), s = span(t, '<celldesigner:name>', sp[0], sp[1]);
       if (s) t = put(t, s[0], s[1], '<celldesigner:name>' + nm + '</celldesigner:name>');
     };
-    if (A.kind === 'compartmentAlias') {   // a name at the top middle kept there (cdrender.nameLeft), one placed elsewhere left
-      var C0 = span(t, '<compartment(?=\\s)[^>]*\\sid="' + q(A.compartment) + '"'), was = unesc(at(head(t, C0), 'name') || A.compartment);
-      var np = span(t, '<celldesigner:namePoint ', A.sp[0], A.sp[1]), nx0 = np && F(at(head(t, np), 'x'));
+    if (A.kind === 'compartmentAlias') {   // a name at one of the nine places, or at the top middle (cdrender.nameLeft), kept there; one placed elsewhere left
+      var pl = namePlace(t, id), was = compName(t, A), np = span(t, '<celldesigner:namePoint ', A.sp[0], A.sp[1]), nx0 = np && F(at(head(t, np), 'x'));
       set('<compartment(?=\\s)[^>]*\\sid="' + q(A.compartment) + '"');
+      if (pl) return nameAt(t, id, pl);
       if (np && A.box && Math.abs(nx0 - cdr.nameLeft(A.box, was)) < 1) t = attrs(t, span(t, '<celldesigner:namePoint ', alias(t, id).sp[0], alias(t, id).sp[1])[0], [['x', num(cdr.nameLeft(A.box, cdName(name)))]]);
       return t;
     }
@@ -980,7 +1003,7 @@
     var C = alias(t, id);
     if (C.kind === 'compartmentAlias') {   // its colour and its double line (membrane thickness, outer and inner line widths; CellDesigner's 12, 2, 1 where absent)
       var cs = t.slice(C.sp[0], C.sp[1]), cp = /<celldesigner:paint color="([0-9a-fA-F]{8})"/.exec(cs), dl = /<celldesigner:doubleLine\s[^>]*>/.exec(cs), da = function (k, d) { var m = dl && new RegExp('\\s' + k + '="([^"]*)"').exec(dl[0]); return m ? F(m[1]) : d; };
-      return { fill: cp ? '#' + cp[1].slice(2).toLowerCase() : '', width: 1, multimer: false, cls: 'COMPARTMENT', mem: da('thickness', 12), outer: da('outerWidth', 2), inner: da('innerWidth', 1) };
+      return { fill: cp ? '#' + cp[1].slice(2).toLowerCase() : '', width: 1, multimer: false, cls: 'COMPARTMENT', mem: da('thickness', 12), outer: da('outerWidth', 2), inner: da('innerWidth', 1), place: namePlace(t, id) };
     }
     var A = entity(t, id), u = span(t, '<celldesigner:usualView>', A.sp[0], A.sp[1]), seg = u ? t.slice(u[0], u[1]) : '';
     var p = /<celldesigner:paint color="([0-9a-fA-F]{8})"/.exec(seg), w = /<celldesigner:singleLine width="([^"]*)"/.exec(seg), h = inState(t, A.species, '<celldesigner:homodimer>');
@@ -995,7 +1018,7 @@
         var L = look(t, id), mem = o.mem != null ? o.mem : L.mem, ow = o.outer != null ? o.outer : L.outer, iw = o.inner != null ? o.inner : L.inner;
         if (!(mem >= 2)) refuse('A membrane is 2 thick at least.');
         if (!(iw > 0) || !(ow >= iw + 1)) refuse('The outer line is at least the inner line + 1.');
-        var ds = span(t, '<celldesigner:doubleLine', C.sp[0], C.sp[1]), kv = [['thickness', num(mem)], ['outerWidth', num(ow)], ['innerWidth', num(iw)]];
+        var pl0 = namePlace(t, id), ds = span(t, '<celldesigner:doubleLine', C.sp[0], C.sp[1]), kv = [['thickness', num(mem)], ['outerWidth', num(ow)], ['innerWidth', num(iw)]];
         if (ds) t = attrs(t, ds[0], kv);
         else {   // none written: one after the namePoint (else the bounds), as CellDesigner orders them
           var bs = span(t, '<celldesigner:namePoint ', C.sp[0], C.sp[1]) || span(t, '<celldesigner:bounds ', C.sp[0], C.sp[1]);
@@ -1003,6 +1026,7 @@
           var e = t.indexOf('>', bs[0]) + 1;
           t = put(t, e, e, '\n<celldesigner:doubleLine ' + kv.map(function (q) { return q[0] + '="' + q[1] + '"'; }).join(' ') + '/>');
         }
+        if (pl0) t = nameAt(t, id, pl0);   // a name at one of the nine places follows the membrane
         C = alias(t, id);
       }
       if (o.fill == null) return t;
@@ -1128,7 +1152,7 @@
     var hd = A.s && /<celldesigner:homodimer>(\d+)</.exec(t.slice(A.s.sp[0], A.s.sp[1]));
     return { kind: A.kind, cls: A.cls || null, id: A.species || A.compartment, name: A.s ? A.s.name : C ? at(head(t, C), 'name') : null, complex: A.complex, box: A.box, homodimer: hd ? +hd[1] : 1 };
   }
-  var api = { LOOK: LOOK, COMP: COMP, lineColour: lineColour, recolourLine: recolourLine, PROCESS: PROCESS, REDUCED: REDUCED, sbgn: sbgn, MODS: MODS, NEED: NEED, about: about, aliasInfo: aliasInfo, classColour: classColour, compartmentColour: compartmentColour, classColours: classColours, classSize: classSize, empty: empty, species: newSpecies, compartment: compartment, rename: rename, retype: retype, remove: remove, reaction: reaction, reduced: reduced,
+  var api = { LOOK: LOOK, COMP: COMP, lineColour: lineColour, recolourLine: recolourLine, PROCESS: PROCESS, REDUCED: REDUCED, sbgn: sbgn, MODS: MODS, NEED: NEED, about: about, aliasInfo: aliasInfo, classColour: classColour, compartmentColour: compartmentColour, classColours: classColours, classSize: classSize, empty: empty, species: newSpecies, compartment: compartment, rename: rename, namePlace: namePlace, nameAt: nameAt, retype: retype, remove: remove, reaction: reaction, reduced: reduced,
     reactant: reactant, product: product, modifier: modifier, reactionType: reactionType, reversible: reversible, modifierType: modifierType, removeLine: removeLine,
     gate: gate, gateInput: gateInput, gateInputRemove: gateInputRemove, gateType: gateType, residue: residue, residueState: residueState,
     residueRemove: residueRemove, structural: structural, info: info, homodimer: homodimer, look: look, restyle: restyle, recolourAll: recolourAll, colours: colours, cdName: cdName, joinable: joinable, join: join, leave: leave };

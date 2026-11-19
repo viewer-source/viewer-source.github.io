@@ -724,13 +724,13 @@
       }, ports: false },
       node: function (i) { return cdProp(i) ? i : -1; },
       off: function (k, i) {   // pNow: look's, read just before; a compartment no border width or multimer, a complex no multimer
-        return k === 'line' || (/^(mem|outer|inner)$/.test(k) && pNow.cls !== 'COMPARTMENT') || (/^(label|fill|multimer)$/.test(k) && pNow.cls === 'DEGRADED') || (/^(width|multimer|def)$/.test(k) && pNow.cls === 'COMPARTMENT') || (/^(multimer|def)$/.test(k) && pNow.cls === 'COMPLEX');
+        return k === 'line' || (/^(mem|outer|inner|nameAt)$/.test(k) && pNow.cls !== 'COMPARTMENT') || (/^(label|fill|multimer)$/.test(k) && pNow.cls === 'DEGRADED') || (/^(width|multimer|def)$/.test(k) && pNow.cls === 'COMPARTMENT') || (/^(multimer|def)$/.test(k) && pNow.cls === 'COMPLEX');
       },
       look: function (i) {   // null while the file is behind the map read (an undo not drawn yet); read once per node and file (it runs with every paint)
         var id = nodes2[i].id;
         if (cdLook[0] !== id || cdLook[1] !== cd.now) {
           var L = null;
-          try { L = cdMk.look(cd.now, id); L = { label: cdNameOf(id, true), fill: L.fill, line: '#000000', width: L.width, multimer: L.multimer, cls: L.cls, mem: L.mem, outer: L.outer, inner: L.inner }; } catch (e) { L = null; }
+          try { L = cdMk.look(cd.now, id); L = { label: cdNameOf(id, true), fill: L.fill, line: '#000000', width: L.width, multimer: L.multimer, cls: L.cls, mem: L.mem, outer: L.outer, inner: L.inner, nameAt: L.place }; } catch (e) { L = null; }
           cdLook = [id, cd.now, L];
         }
         return cdLook[2] && Object.assign({}, cdLook[2]);
@@ -742,6 +742,7 @@
         if (k === 'width') { var x = parseFloat(v); return isFinite(x) && all(function (t, id) { return cdMk.restyle(t, id, { width: Math.min(Math.max(x, 0.25), 20) }); }); }   // outside 0.25 to 20: the nearest, silently
         if (k === 'fill') { var c = hex(v); return !!c && all(function (t, id) { return cdMk.restyle(t, id, { fill: c }); }); }
         if (/^(mem|outer|inner)$/.test(k)) return cdDouble(k, parseFloat(v), ids);
+        if (k === 'nameAt') return !!v && all(function (t, id) { return cdMk.nameAt(t, id, v); });
         return false;
       } };
     // a compartment's double line in Properties: Membrane (its thickness), Outer line and Inner line (their widths), after
@@ -752,6 +753,10 @@
     propRows([['mem', 'Membrane', 'num', ' min="2" max="100"', 'Membrane thickness: the band between the two lines, 2 at least'],
       ['outer', 'Outer line', 'num', ' min="2" max="20"', 'Outer line width, at least the inner line + 1'],
       ['inner', 'Inner line', 'num', ' min="1" max="19"', 'Inner line width, 1 at least']]);
+    // a compartment's name at one of nine places just inside its inner line (cd_make.nameAt, cdrender.namePoint), kept
+    // there through a rename, a move, a resize and a new membrane; a name the file has elsewhere shows Elsewhere and stays
+    propRows([['nameAt', 'Name place', 'sel', [['', 'Elsewhere', true], ['tl', 'Top left'], ['t', 'Top'], ['tr', 'Top right'], ['l', 'Left'], ['c', 'Centre'],
+      ['r', 'Right'], ['bl', 'Bottom left'], ['b', 'Bottom'], ['br', 'Bottom right']], 'Where the compartment\u2019s name is']]);
     function cdDouble(k, x, ids) {
       if (!isFinite(x)) return false;
       var clamp = function (v, a, b) { return Math.min(Math.max(v, a), b); };

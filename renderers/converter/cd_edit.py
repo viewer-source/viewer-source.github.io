@@ -823,7 +823,7 @@ def place(text, gtext):
             if abs(v['x'] - (b[0] - pb[0])) < 1e-3 and abs(v['y'] - (b[1] - pb[1])) < 1e-3:
                 T.attrs(ip[0], {k: num(n[j] - pn[j]) for j, k in enumerate('xy') if abs((n[j] - pn[j]) - (b[j] - pb[j])) >= 1e-3})
         if i in comps:
-            # its name moved with its corner; a name at the top middle (cdrender.name_left) kept there, the box resized too
+            # its name moved with its corner; a name at one of the nine places, or at the top middle (cdrender.name_left), kept there, the box resized too
             npt = T.span(r'<celldesigner:namePoint ', s[0], s[1])
             if npt and any(abs(v - b[j]) >= 1e-3 for j, v in enumerate(n)):
                 m = dict(re.findall(r'\s([xy])="([^"]*)"', T.t[npt[0]:npt[1]]))
@@ -831,8 +831,15 @@ def place(text, gtext):
                 cs = cid and T.span(r'<compartment(?=\s)[^>]*\sid="' + re.escape(cid) + '"')
                 cn = cs and re.search(r'\sname="([^"]*)"', T.t[cs[0]:T.t.index('>', cs[0])])
                 cname = unescape(cn.group(1) if cn else cid or '', {'&quot;': '"', '&apos;': "'"})
-                mid = abs(float(m['x']) - cdrender.name_left(b, cname)) < 1
-                if mid or abs(n[0] - b[0]) >= 1e-3 or abs(n[1] - b[1]) >= 1e-3:
+                # a name at one of the nine places (cdrender.name_point) kept at its place in the new box
+                dl = re.search(r'<celldesigner:doubleLine\s(?:[^>]*\s)?thickness="([^"]*)"', T.t[s[0]:s[1]])
+                th = float(dl.group(1)) if dl else 12
+                pl = cdrender.name_place_of(b, cname, th, (float(m['x']), float(m['y'])))
+                at = pl and cdrender.name_point(n, cname, th, pl)
+                mid = not pl and abs(float(m['x']) - cdrender.name_left(b, cname)) < 1
+                if at:
+                    T.attrs(npt[0], {'x': num(at[0]), 'y': num(at[1])})
+                elif mid or abs(n[0] - b[0]) >= 1e-3 or abs(n[1] - b[1]) >= 1e-3:
                     T.attrs(npt[0], {'x': num(cdrender.name_left(n, cname) if mid else float(m['x']) + n[0] - b[0]), 'y': num(float(m['y']) + n[1] - b[1])})
     # what holds what as the editor set it, freely: an alias or a complex the GraphML
     # puts into another compartment, or none, gets that compartment as its compartmentAlias (none: the attribute taken off)
