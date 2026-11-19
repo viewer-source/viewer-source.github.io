@@ -534,7 +534,8 @@
     function addFiles(list, group) {   // a reader's files, drawn and kept; group: Add map or a drop on a group of theirs
       list = Array.prototype.slice.call(list);   // the picker's list empties when it is reset
       var picked = list.filter(function (f) { return /\.(graphml|xml|sbgn)$/i.test(f.name); });
-      var last = null, failed = [], order = repo() && token() ? siteOrder(group) : 0;   // one after another; on the site each after the one before (the site's list is read again only after the build)
+      var MAX = 15, over = repo() && token() && picked.length > MAX ? picked.splice(MAX) : [];   // with a token each map is a commit: GitHub refuses more than about 80 writes a minute
+      var last = null, failed = over.map(function (f) { return f.name + ': more than ' + MAX + ' files at once with GitHub, add it again'; }), order = repo() && token() ? siteOrder(group) : 0;   // one after another; on the site each after the one before (the site's list is read again only after the build)
       return picked.reduce(function (p, f) {
         return p.then(function () { return f.text(); }).then(function (t) {
           if (isSb(t) && !madeHere(t)) throw new Error('an SBGN-ML file from another editor cannot be added yet, only one made here with New map');
