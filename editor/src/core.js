@@ -2548,7 +2548,7 @@
       // empty space or an item not selected: a drag moves the map (the viewer's, mouse, trackpad and finger alike), a
       // click is taken on release (selects, or on empty space clears)
       var tapped = function () {
-        if (e.pointerType === 'mouse' && !V.grab) {   // Settings, Gestures, Drag moves the map unticked: a drag selects an area in place of the selection
+        if (e.pointerType === 'mouse' && !V.grab) {   // Settings, Gestures, Drag selects an area ticked: a drag selects an area in place of the selection
           e.stopImmediatePropagation(); e.preventDefault();
           V.view.setPointerCapture(e.pointerId); V.view.focus({ preventScroll: true });
           band = { x: P[0], y: P[1], x2: P[0], y2: P[1], h: h, add: false, cx: e.clientX, cy: e.clientY }; paint(); return;

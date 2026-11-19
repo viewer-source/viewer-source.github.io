@@ -83,15 +83,19 @@ var URL0 = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysi
     var sel = await page.$$eval('#m2-edit-layer .m2-ed-handle, #m2-edit-layer [class*="m2-ed-sel"]', function (l) { return l.length; });
     ok('edit mode: something selected by the area', sel > 0, 'marks ' + sel);
   } else console.log('      (no Edit tab on this page)');
-  // Settings, Gestures: Drag moves the map unticked; a drag then selects an area in both modes; ticked again, back
+  // Settings, Gestures: Drag selects an area ticked; a drag then selects an area in both modes; unticked again, back
   var p2 = await (await b.newContext({ viewport: { width: 1400, height: 900 } })).newPage();
   p2.on('pageerror', function (e) { errs.push(e.message); });
   await p2.goto(URL0, { waitUntil: 'load' });
   await p2.waitForFunction(function () { var i = document.getElementById('m2-img'); return i && i.style.width; }, null, { timeout: 30000 }); await p2.waitForTimeout(2500);
   await p2.click('.m2-ri[data-win="set"]'); await p2.waitForTimeout(300);
-  ok('Settings: Drag moves the map ticked at first, no Default or Recommended buttons', await p2.evaluate(function () { return document.getElementById('m2-set-grab').checked && !document.getElementById('m2-set-gest'); }));
+  ok('Settings: Drag selects an area unticked at first, marked Recommended, no Default or Recommended buttons', await p2.evaluate(function () { var r = document.querySelector('#m2-setwin .m2-set-rec'); return !document.getElementById('m2-set-grab').checked && !document.getElementById('m2-set-gest') && r && r.textContent === 'Recommended'; }));
+  await p2.click('#m2-setwin .m2-set-itip'); await p2.waitForTimeout(150);
+  ok('Settings: the circled i shows why under the line, the tick box unchanged', await p2.evaluate(function () { var t = document.querySelector('#m2-setwin .m2-set-itext'); return !t.hidden && /continuous stroke/.test(t.textContent) && !document.getElementById('m2-set-grab').checked; }));
+  await p2.click('#m2-setwin .m2-set-itip'); await p2.waitForTimeout(150);
+  ok('Settings: a second click hides it', await p2.$eval('#m2-setwin .m2-set-itext', function (t) { return t.hidden; }));
   await p2.click('#m2-set-grab'); await p2.waitForTimeout(200);
-  ok('Unticked: kept', await p2.evaluate(function () { return !document.getElementById('m2-set-grab').checked && localStorage.getItem('atlas-drag-moves') === 'off'; }));
+  ok('Ticked: kept', await p2.evaluate(function () { return document.getElementById('m2-set-grab').checked && localStorage.getItem('atlas-drag-moves') === 'off'; }));
   var tf2 = function () { return p2.$eval('#m2-img', function (i) { return i.style.transform; }); }, w0 = await tf2();
   await p2.mouse.move(cx - 150, cy - 120); await p2.mouse.down(); await p2.mouse.move(cx + 150, cy + 120, { steps: 10 }); await p2.mouse.up();
   ok('Recommended, view mode: a drag selects an area, the map still', (await tf2()) === w0 && await p2.$eval('#m2-area', function (e) { return e.style.display === 'block'; }));
@@ -105,7 +109,7 @@ var URL0 = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysi
     await p2.click('.m2-ri[data-win="set"]'); await p2.waitForTimeout(300);
   }
   await p2.click('#m2-set-grab'); await p2.waitForTimeout(200);
-  ok('Ticked again, the key gone', await p2.evaluate(function () { return document.getElementById('m2-set-grab').checked && localStorage.getItem('atlas-drag-moves') === null; }));
+  ok('Unticked again, the key gone', await p2.evaluate(function () { return !document.getElementById('m2-set-grab').checked && localStorage.getItem('atlas-drag-moves') === null; }));
   ok('no script errors', !errs.length, errs.join(' | '));
   await b.close();
   console.log(bad ? bad + ' wrong' : 'all ok');
