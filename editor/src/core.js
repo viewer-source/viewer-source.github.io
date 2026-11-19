@@ -26,6 +26,9 @@
         return nav && nav.type === 'reload' && r && r.path === location.pathname ? r : null;
       } catch (e) { return null; }
     })();
+    // GitHub's version of that map as last saved (path, sha, text), so editing starts again without waiting for GitHub;
+    // recheck reads GitHub just after, as after any start with a token
+    var reGh = reSel && reSel.gh && reSel.gh.path && reSel.gh.sha && typeof reSel.gh.text === 'string' ? reSel.gh : null;
     var doc = null, geos = [], points = [], nodes2 = [], edges2 = [];
     var docText = null;            // the text doc was read from (kept by a move, which changes both alike): the renderer reuses doc then
     var x0 = 0, y0 = 0;            // where the drawing's top left is in yEd units
@@ -1271,7 +1274,7 @@
         nodes2.forEach(function (n, i) { if (reSel.n.indexOf(n.id) >= 0) selN.push(i); });
         edges2.forEach(function (a, i) { if (reSel.e.indexOf(a.id) >= 0) selE.push(i); });
       }
-      reSel = null;
+      reSel = null; reGh = null;   // used by this start or not at all
       map = { id: 'edit', title: openTitle || n, width: 0, height: 0, scale: 1, downloads: [], colours: true };   // drawn with the role classes (graphml.js, V.recolour): Settings' Map colours offered while editing
       if (same) {   // editing starts on the picture as it is: no redraw, the map stays where it is
         map.width = same.width; map.height = same.height; map.scale = same.scale; x0 = same.x0; y0 = same.y0;
@@ -1333,14 +1336,18 @@
     // edited is kept as that map's read-ahead: the site's files as read before, the repository's version as this page
     // last saved it (its sha from GitHub's answer, once a save under way is done), and the editor's own drawing of it.
     // Not when a move is not saved or saving stopped. The check of GitHub just after the switch (recheck) stays
+    function ghKnown(s) {   // GitHub's version of a site map as last saved (sha and text), never moves not saved; null when not known
+      return stuck || !s || !s.sha || (dirty && site === s) ? null : { sha: s.sha, text: s.saved || s.base };
+    }
     function keepAhead() {
       var s = site, m = s && s.id ? V.byId[s.id] : null, old = editPre;
       if (!m || !old || stuck || s.pending || old.key !== preKey(m)) return false;
       var p = { key: old.key, id: old.id, path: old.path, file: old.file, img: old.img, sitePub: old.sitePub, siteFrame: old.siteFrame, base: old.base, kept: s };
       // the version as saved once a save under way is done; a save that did not go through: GitHub read afresh
       p.gh = (saving || Promise.resolve()).then(function () {
-        if (stuck || !s.sha || (dirty && site === s)) throw 'not saved';
-        return { sha: s.sha, text: s.saved || s.base };
+        var k = ghKnown(s);
+        if (!k) throw 'not saved';
+        return k;
       }).catch(function () { return ghRead(p.path); });
       p.gh.catch(function () { if (bank[p.id] === p) forget(p.id); });
       p.sitePub.catch(function () {});
@@ -1458,6 +1465,7 @@
     }
     function ghFor(path, sitePub) {
       if (!(repo() && token())) return Promise.resolve(undefined);
+      if (reGh && reGh.path === path) { var r0 = reGh; reGh = null; return Promise.resolve({ sha: r0.sha, text: r0.text }); }
       var L = ghList();
       return L.p.then(function (d) {
         if (!d || !window.crypto || !crypto.subtle) return ghRead(path);
@@ -1845,8 +1853,14 @@
     window.addEventListener('beforeunload', function (e) { if (dirty) { if (saveTimer) push(); e.preventDefault(); e.returnValue = ''; } });
     addEventListener('pagehide', function () {
       try {
-        if (on && V.chosen) sessionStorage.setItem('atlas-edit-sel', JSON.stringify({ path: location.pathname, map: V.chosen.id,
-          n: selN.map(function (i) { return nodes2[i] && nodes2[i].id; }).filter(Boolean), e: selE.map(function (i) { return edges2[i] && edges2[i].id; }).filter(Boolean) }));
+        if (!(on && V.chosen)) return;
+        var rec = { path: location.pathname, map: V.chosen.id,
+          n: selN.map(function (i) { return nodes2[i] && nodes2[i].id; }).filter(Boolean), e: selE.map(function (i) { return edges2[i] && edges2[i].id; }).filter(Boolean) };
+        var put = function (r) { sessionStorage.setItem('atlas-edit-sel', JSON.stringify(r)); };
+        // a site map on GitHub: its version there as last saved; none while a save is waiting or under way (its sha not known yet)
+        var k = site && site.path && !site.mine && !site.pending && !saving && !saveTimer ? ghKnown(site) : null;
+        if (!k || typeof k.text !== 'string') return put(rec);
+        try { put(Object.assign({ gh: { path: site.path, sha: k.sha, text: k.text } }, rec)); } catch (e) { put(rec); }   // too large for this tab's storage: the selection alone
       } catch (e) {}
     });
 
