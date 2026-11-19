@@ -480,7 +480,7 @@ page, so its styles keep the base they were made on).
   #m2-edit-layer .m2-ed-snapline { fill: none; stroke: #c0c0c0; stroke-width: 1; }
   #m2-edit-layer .m2-ed-mark { fill: none; stroke: #c0c0c0; stroke-width: 1; }
   #m2-edit-layer .m2-ed-ghost { fill: none; stroke: #9aa0a6; stroke-width: 1; stroke-dasharray: 3 2; }
-  #m2-edit-layer .m2-ed-band { fill: none; stroke: #6b7075; stroke-width: 1; stroke-dasharray: 6 4; }   /* the area being selected: a dashed grey outline, no fill */
+  #m2-edit-layer .m2-ed-band { fill: none; stroke: #6b7075; stroke-width: 1; }   /* the area being selected: a solid grey outline, no fill */
   .m2-editing #m2-view { cursor: default; }
   /* while editing, a node moved past the picture's edge stays in sight until the map is drawn again (else
      a compartment is cut off at the old right edge) */
@@ -617,7 +617,7 @@ page, so its styles keep the base they were made on).
      separator under it instead of the grip in its corner */
   #m2-view { position: relative; width: 100%; height: 504px; min-height: 300px; max-height: calc(100vh / var(--zoom, 1) - var(--m2-below-view, 56px)); resize: vertical; overflow: hidden; box-sizing: border-box; border: 1px solid var(--m2-frame); border-radius: var(--m2-radius); background: var(--m2-bg); cursor: default; touch-action: none; user-select: none; }
   #m2-view.m2-drag { cursor: grabbing; }
-  #m2-area { position: absolute; left: 0; top: 0; display: none; box-sizing: border-box; border: 0; background: linear-gradient(90deg, #6b7075 6px, transparent 0) top left / 10px 1px repeat-x, linear-gradient(90deg, #6b7075 6px, transparent 0) bottom left / 10px 1px repeat-x, linear-gradient(180deg, #6b7075 6px, transparent 0) top left / 1px 10px repeat-y, linear-gradient(180deg, #6b7075 6px, transparent 0) top right / 1px 10px repeat-y; pointer-events: none; }   /* as the editor's area being selected */
+  #m2-area { position: absolute; left: 0; top: 0; display: none; box-sizing: border-box; border: 1px solid #6b7075; background: none; pointer-events: none; }   /* as the editor's area being selected */
   /* full screen: the map alone, the annotation over its right side */
   #m2-view:fullscreen { width: 100vw; height: 100vh !important; max-height: none; border: 0; border-radius: 0; resize: none; }
   #m2-view:-webkit-full-screen { width: 100vw; height: 100vh !important; max-height: none; border: 0; border-radius: 0; resize: none; }
