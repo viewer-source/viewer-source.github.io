@@ -8,6 +8,8 @@
 //      SBGN-ML copies, leaving other maps' files alone; an example the build lists as deleted leaves Deleted at once.
 //   4. Not offered while an example is edited.
 //   5. Shown restored at once, before GitHub answers; GitHub refusing the commit puts the list back as it was.
+//   6. A site group renamed (Rename group, a double-click): its maps' pages in one commit, examples among them the
+//      reader's; Restore example maps then keeps them under new ids and brings the examples back beside them.
 //   node tests/examples.js [base address] [--local]
 // --local: the editor and the viewer of the working tree routed into the live page (run styles/update.sh first)
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path'), cp = require('child_process'), crypto = require('crypto');
@@ -80,9 +82,11 @@ var EX = /^(glycolysis|srebp|acly|tag)-(graphml|celldesigner|sbgn)$/;   // the e
     if (rest === '/git/commits' && meth === 'POST') { var d0 = JSON.parse(r.postData()); trees['c:' + (commits + 1)] = trees[d0.tree]; return json(201, { sha: 'c' + (commits + 1) }); }
     if (rest === '/git/refs/heads/main' && meth === 'PATCH' && refuse) return json(403, { message: 'test: refused' });
     if (rest === '/git/refs/heads/main' && meth === 'PATCH') {
-      commits++; (trees['c:' + commits] || []).forEach(function (e) { if (e.sha === null) delete files[e.path]; else files[e.path] = e.content != null ? e.content : blobs[e.sha]; });
+      commits++; (trees['c:' + commits] || []).forEach(function (e) { if (e.sha === null) delete files[e.path]; else if (e.content != null) put(e.path, e.content); else files[e.path] = blobs[e.sha]; });
       return json(200, {});
     }
+    var bl = rest.match(/^\/git\/blobs\/([0-9a-f]{40})$/);
+    if (bl && meth === 'GET') return blobs[bl[1]] == null ? json(404, {}) : json(200, { content: Buffer.from(blobs[bl[1]]).toString('base64') });
     var c = rest.match(/^\/contents\/(.+)$/);
     if (c && meth === 'GET') {
       var p = c[1], under = Object.keys(files).filter(function (f) { return f.indexOf(p + '/') === 0; });
@@ -175,6 +179,24 @@ var EX = /^(glycolysis|srebp|acly|tag)-(graphml|celldesigner|sbgn)$/;   // the e
   await page.waitForTimeout(16000);   // two slow tree reads, one after the other
   ok('5. GitHub refused: said, and the example back in Deleted', alerts.some(function (a) { return /not restored/.test(a); }) && (await ids()).indexOf('srebp-celldesigner') < 0, alerts.join(' | '));
   slow = 0; refuse = false;
+
+  // 6. a site group renamed, then the examples restored
+  await page.evaluate(function () { localStorage.removeItem('atlas-edit-side'); });
+  await load(); await list();
+  var inG = await page.evaluate(function () { return Array.prototype.slice.call(document.querySelectorAll('#m2-list .m2-map[data-id$="-graphml"]')).map(function (b) { return b.dataset.id; }); });
+  inG.forEach(function (id) { if (!files['maps/' + id + '.md'] || id === 'glycolysis-graphml') put('maps/' + id + '.md', '---\ntitle: "' + id + '"\ngroup: "GraphML"\norder: 1\n' + (EX.test(id) ? 'example: true\n' : '') + '---\nText.\n'); });
+  put('maps/glycolysis-graphml.graphml', '<graphml mine/>'); put('maps/extra/glycolysis-graphml/glycolysis-graphml.png', 'my png');
+  var t6 = await items('#m2-list .m2-group[data-group="GraphML"]');
+  ok('6. Rename group offered on a site group', t6[0] === 'Rename group', t6.join(' | '));
+  var c6 = commits;
+  await page.click('#m2-list .m2-group[data-group="GraphML"]'); await page.waitForTimeout(100); await page.click('#m2-list .m2-group[data-group="GraphML"]'); await page.waitForTimeout(400);
+  ok('6. a double-click opens the name in place', !!(await page.$('#m2-list input.m2-group-edit')));
+  await page.fill('#m2-list input.m2-group-edit', 'My GraphML'); await page.keyboard.press('Enter'); await page.waitForTimeout(2500);
+  ok('6. one commit, every page of the group renamed, the example the reader\'s now', commits === c6 + 1 && /group: "My GraphML"/.test(files['maps/glycolysis-graphml.md']) && !/example:/.test(files['maps/glycolysis-graphml.md']) && /Text\.\n$/.test(files['maps/glycolysis-graphml.md']), commits - c6 + ' ' + JSON.stringify(files['maps/glycolysis-graphml.md']));
+  ok('6. the list shows the group under its new name at once', !!(await page.$('#m2-list .m2-group[data-group="My GraphML"]')) && !(await page.$('#m2-list .m2-group[data-group="GraphML"]')));
+  await menu('#m2-list .m2-map >> nth=0', 'Restore example maps'); await page.waitForTimeout(2500);
+  ok('6. restored: the reader\'s map kept under a new id with its files', files['maps/glycolysis-2-graphml.graphml'] === '<graphml mine/>' && /My GraphML/.test(files['maps/glycolysis-2-graphml.md'] || '') && files['maps/extra/glycolysis-2-graphml/glycolysis-2-graphml.png'] === 'my png', Object.keys(files).filter(function (f) { return /glycolysis-2/.test(f); }).join(' '));
+  ok('6. the example back beside it, from the backup', files['maps/glycolysis-graphml.graphml'] === '<graphml official/>' && /group: "GraphML"/.test(files['maps/glycolysis-graphml.md']) && files['maps/extra/glycolysis-graphml/glycolysis-graphml.png'] === 'png');
 
   ok('no script errors', errs.length === 0, errs.join(' | '));
   await b.close();

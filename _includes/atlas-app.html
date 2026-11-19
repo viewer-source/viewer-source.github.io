@@ -2808,12 +2808,14 @@ page, so its styles keep the base they were made on).
       g.type = 'button';
       g.setAttribute('data-group', name);
       var mg = !!own && own.isGroup(name);
-      if (mg) { g.classList.add('m2-mine'); g.title = 'Double-click to rename'; }   // the reader's group: in the order made, not dragged
+      var rn = !!own && own.canRenameGroup && own.canRenameGroup(name);   // any group, the site's too, where the Edit tab is
+      if (mg) g.classList.add('m2-mine');   // the reader's group: in the order made, not dragged
       else movable(g, { group: name });
+      if (rn) g.title = 'Double-click to rename';
       g.addEventListener('click', function () {
-        // a double-click on the reader's group: the list is built again after each click, so the second click lands on a
-        // new heading; it undoes the first's open or close and renames
-        var dbl = mg && twice('g:' + name);
+        // a double-click on a group: the list is built again after each click, so the second click lands on a new
+        // heading; it undoes the first's open or close and renames
+        var dbl = rn && twice('g:' + name);
         closed[name] = !closed[name];
         saveClosed();
         buildList(document.getElementById('m2-search').value, true);

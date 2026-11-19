@@ -80,7 +80,7 @@
     }
     function ownGroup(name) { return !!name && groupsHere.indexOf(name) >= 0; }
     function mineValid(v, was) {
-      return v === was || !((V.siteList || []).some(function (m) { return m.group === v; }) || mineGroups().indexOf(v) >= 0);
+      return v === was || !((V.siteList || []).some(function (m) { return m.group === v; }) || mineGroups().indexOf(v) >= 0 || V.listGroups().indexOf(v) >= 0);   // a site group renamed here too
     }
     // a name typed in place in the list, one way for groups and maps (inPlace): the field where the line was; Enter or a click elsewhere keeps it, Esc leaves it; o.bad(v) gives why a name is
     // refused (the field red, kept open). The list is not built again while it is open (V.naming, the viewer's
@@ -118,7 +118,56 @@
     // a group's name: Rename group, a double-click on its name, or a new group (Add group): made at once as New group,
     // first of the reader's groups, its name then typed in place as a rename; a new group left empty or with Esc is not
     // made; a name already taken is refused
+    // A site group renamed (the same field, a double-click or Rename group): every map shown in it moves to the new name,
+    // kept in this browser at once (V.setMoved); with a token its maps' pages get the new group in one commit, and an
+    // example among them becomes the reader's (example: dropped; Restore example maps then brings the examples back
+    // beside it, examplesToSite). Maps with no page of their own (the group SBGN-ML, the external ones) are renamed in
+    // this browser only, as their group comes from the build
+    function canRenameGroup(name) { return !!name && (ownGroup(name) || V.listGroups().indexOf(name) >= 0); }
+    function renameSiteGroup(was) {
+      var at = document.getElementById('m2-list').querySelector('.m2-group:not(.m2-mine):not(.m2-bin)[data-group="' + CSS.escape(was) + '"]');
+      if (!at) return;
+      inPlace(at, { cls: 'm2-group-edit', max: 60, value: was, label: 'Name of the group',
+        bad: function (v) { return v && v !== was && V.listGroups().indexOf(v) >= 0 ? 'A group of this name is in the list already' : ''; },
+        end: function (v) {
+          if (!v || v === was || V.listGroups().indexOf(v) >= 0) return;
+          v = v.replace(/["\\]/g, '');
+          var gh = !!(repo() && token()), pages = [];
+          (V.maps || []).forEach(function (m) {
+            if ((m.group || '') !== was || m.binned) return;
+            if (m.mine) { var r = mine[m.id]; if (r) { r.group = v; minePut(r).catch(function () {}); } return; }
+            V.setMoved(m.id, v);
+            if (gh && canRename(m, true)) pages.push(m.id);
+          });
+          if (V.closed[was]) { V.closed[v] = true; delete V.closed[was]; V.saveClosed(); }
+          if (pages.length) siteGroupTo(pages, v).catch(function (e) { alert(was + ' was not renamed on the site: ' + (e && e.message ? e.message : e) + '. The new name is kept in this browser only.'); });
+        } });
+    }
+    function siteGroupTo(ids, g) {   // maps/<id>.md of every map given: group g, example: dropped; one commit, three tries
+      var tries = 0, post = ghPost;
+      var go = function () {
+        return Promise.all(ids.map(function (id) {
+          return api('/contents/maps/' + encodeURIComponent(id) + '.md?ref=main').then(ghJson).then(function (d) {
+            var md = new TextDecoder().decode(Uint8Array.from(atob(d.content.replace(/\n/g, '')), function (c) { return c.charCodeAt(0); }));
+            var fm = /^---(\r?\n)([\s\S]*?)\r?\n---/.exec(md);
+            if (!fm) return null;
+            var head = fm[2].replace(/^group:[^\r\n]*/m, 'group: ' + JSON.stringify(g)).replace(/^example:.*(\r?\n|$)/m, '').replace(/\r?\n$/, '');
+            if (!/^group:/m.test(head)) head += fm[1] + 'group: ' + JSON.stringify(g);
+            return { path: 'maps/' + id + '.md', mode: '100644', type: 'blob', content: '---' + fm[1] + head + md.slice(3 + fm[1].length + fm[2].length) };
+          });
+        })).then(function (tree) {
+          tree = tree.filter(Boolean);
+          return api('/git/ref/heads/main').then(ghJson).then(function (ref) {
+            return api('/git/commits/' + ref.object.sha).then(ghJson).then(function (c) { return post('/git/trees', { base_tree: c.tree.sha, tree: tree }); })
+              .then(function (t) { return post('/git/commits', { message: 'Group renamed in the viewer: ' + g, tree: t.sha, parents: [ref.object.sha] }); })
+              .then(function (n) { return post('/git/refs/heads/main', { sha: n.sha }, 'PATCH'); });
+          });
+        }).catch(function (e) { if (e.status === 422 && ++tries < 3) return go(); throw e; });
+      };
+      return go();
+    }
     function renameGroup(was) {
+      if (was && !ownGroup(was)) return renameSiteGroup(was);
       if (naming) naming(true);   // the open field ends first: it rebuilds the list, so the line is looked up after it
       var box = document.getElementById('m2-list'), at = null, fresh = null;
       if (!was) {
@@ -182,7 +231,8 @@
       if (m && movable(m) && V.listGroups().length) mapItems.push(['Move to...', function () { moveMenu(m, x, y); }]);
       // the clicked map's or group's own items first, as file lists keep them; the new maps and groups under a line
       if (mapItems.length) items = mapItems.concat([null], items);
-      if (onGroup) items = [['Rename group', function () { renameGroup(g); }], null].concat(items);
+      var siteG = t && !m && tg && !ownGroup(tg) && !t.dataset.bin && canRenameGroup(tg) ? tg : null;   // a site group: renamed too
+      if (onGroup || siteG) items = [['Rename group', function () { renameGroup(siteG || g); }], null].concat(items);
       // items.last: put by the viewer under its own entries too, so Delete map is the menu's last line
       if (onGroup) items.last = [['Remove group', function () { removeGroup(g); }]];   // a removal: last, as Delete map
       if (m && !editing && canRename(m, gh)) items.last = [['Delete map', function () { bin(m); }]];   // one on the site already: with a token, its page there too
@@ -215,7 +265,7 @@
       put(id, g, before);
     }
     function toSiteGroup(id, g) {   // maps/<id>.md: its group and its order (after the group's last); one commit
-      return siteFront(id, function (f) { f.set('group', JSON.stringify(g.replace(/["\\]/g, ''))); f.set('order', String(siteOrder(g))); }, 'Map moved in the viewer');
+      return siteFront(id, function (f) { f.set('group', JSON.stringify(g.replace(/["\\]/g, ''))); f.set('order', String(siteOrder(g))); f.drop('example'); }, 'Map moved in the viewer');   // moved out of its group: the reader's
     }
     function put(id, g, before) {   // a map into the reader's order of group g, the group opened so the map stays in sight
       if (g && V.closed[g]) { delete V.closed[g]; V.saveClosed(); }
@@ -397,28 +447,56 @@
       hiddenSet(siteHidden().filter(function (id) { return all.indexOf(id) < 0; }));   // an older version's hiding
       V.refreshMine();
     }
-    function examplesToSite() {   // examples/ over maps/ in one commit on main, three tries; the ids restored
+    // examples/ over maps/ in one commit on main, three tries; the ids restored. An example the reader has made their own
+    // (its page no longer says example: true: its group renamed, or the map moved to another group) is kept: its files
+    // (maps/<id>.*, maps/extra/<id>/, its edited SBGN-ML twin, its Original record) go to a new id first, <name>-2-<format>,
+    // and the example comes back beside it in its own group. One whose page still says example: true is renewed
+    function examplesToSite() {
       var tries = 0, post = ghPost;
       var go = function () {
         return api('/git/ref/heads/main').then(ghJson).then(function (ref) {
           return api('/git/commits/' + ref.object.sha).then(ghJson).then(function (c) {
             return api('/git/trees/' + c.tree.sha).then(ghJson).then(function (root) {
-              var ex = root.tree.filter(function (f) { return f.path === 'examples' && f.type === 'tree'; })[0];
-              if (!ex) throw new Error('this site keeps no example maps to restore');
-              return Promise.all([api('/git/trees/' + ex.sha + '?recursive=1').then(ghJson), api('/contents/maps/sbgn-ml?ref=main').then(function (r) { return r.ok ? r.json() : []; })]);
+              var at = function (n) { return root.tree.filter(function (f) { return f.path === n && f.type === 'tree'; })[0]; };
+              if (!at('examples')) throw new Error('this site keeps no example maps to restore');
+              return Promise.all([api('/git/trees/' + at('examples').sha + '?recursive=1').then(ghJson),
+                at('maps') ? api('/git/trees/' + at('maps').sha + '?recursive=1').then(ghJson) : { tree: [] }]);
             }).then(function (x) {
-              if (x[0].truncated) throw new Error('the saved set is too large to read at once');
+              if (x[0].truncated || x[1].truncated) throw new Error('the maps are too many to read at once');
               var blobs = x[0].tree.filter(function (f) { return f.type === 'blob' && /^maps\//.test(f.path); });
               var ids = blobs.filter(function (f) { return /^maps\/[^/]+\.md$/.test(f.path); }).map(function (f) { return f.path.slice(5, -3); });
               if (!ids.length) throw new Error('the saved set is empty');
-              var twins = ids.map(function (id) { return id.replace(/-graphml$/, '') + '-sbgn.sbgn'; });
-              var gone = (Array.isArray(x[1]) ? x[1] : []).filter(function (f) { return f.type === 'file' && twins.indexOf(f.name) >= 0; });
-              var tree = blobs.map(function (f) { return { path: f.path, mode: f.mode, type: 'blob', sha: f.sha }; })
-                .concat(gone.map(function (f) { return { path: f.path, mode: '100644', type: 'blob', sha: null }; }));
-              return post('/git/trees', { base_tree: c.tree.sha, tree: tree })
-                .then(function (t) { return post('/git/commits', { message: 'Example maps restored in the viewer', tree: t.sha, parents: [ref.object.sha] }); })
-                .then(function (n) { return post('/git/refs/heads/main', { sha: n.sha }, 'PATCH'); })
-                .then(function () { ghDir = null; return ids; });
+              var now = x[1].tree.filter(function (f) { return f.type === 'blob'; }), shaOf = {};   // paths under maps/
+              now.forEach(function (f) { shaOf[f.path] = f.sha; });
+              var saved = {}; blobs.forEach(function (f) { saved[f.path.slice(5)] = f.sha; });
+              var changed = ids.filter(function (id) { return shaOf[id + '.md'] && shaOf[id + '.md'] !== saved[id + '.md']; });
+              return Promise.all(changed.map(function (id) {   // a changed page: still an example, or the reader's now
+                return api('/git/blobs/' + shaOf[id + '.md']).then(ghJson).then(function (b) {
+                  var md = new TextDecoder().decode(Uint8Array.from(atob(b.content.replace(/\n/g, '')), function (ch) { return ch.charCodeAt(0); }));
+                  return /^example:[ \t]*true[ \t]*\r?$/m.test(md) ? null : id;
+                });
+              })).then(function (taken) {
+                taken = taken.filter(Boolean);
+                var tree = [], twin = function (id) { return 'sbgn-ml/' + id.replace(/-graphml$/, '') + '-sbgn.sbgn'; };
+                var put = function (path, sha) { tree.push({ path: 'maps/' + path, mode: '100644', type: 'blob', sha: sha }); };
+                taken.forEach(function (id) {
+                  var k = 2, nid; do { nid = id.replace(/(-graphml|-celldesigner)?$/, '-' + k++ + '$1'); } while (now.some(function (f) { return f.path.indexOf(nid + '.') === 0 || f.path.indexOf('extra/' + nid + '/') === 0; }));
+                  now.forEach(function (f) {
+                    var to = f.path.indexOf(id + '.') === 0 ? nid + f.path.slice(id.length)
+                      : f.path.indexOf('extra/' + id + '/') === 0 ? 'extra/' + nid + '/' + f.path.slice(id.length + 7).split(id).join(nid)
+                      : f.path === twin(id) ? twin(nid) : f.path === 'colours/' + id + '.json' ? 'colours/' + nid + '.json' : null;
+                    if (!to) return;
+                    put(to, f.sha);
+                    if (!saved[f.path]) put(f.path, null);   // what the backup does not hold again goes with it
+                  });
+                });
+                blobs.forEach(function (f) { put(f.path.slice(5), f.sha); });
+                ids.forEach(function (id) { if (shaOf[twin(id)] && taken.indexOf(id) < 0) put(twin(id), null); });   // a renewed example's edited twin: written again by the build
+                return post('/git/trees', { base_tree: c.tree.sha, tree: tree })
+                  .then(function (t) { return post('/git/commits', { message: 'Example maps restored in the viewer' + (taken.length ? '; kept as the reader\'s: ' + taken.join(', ') : ''), tree: t.sha, parents: [ref.object.sha] }); })
+                  .then(function (n) { return post('/git/refs/heads/main', { sha: n.sha }, 'PATCH'); })
+                  .then(function () { ghDir = null; return ids; });
+              });
             });
           });
         }).catch(function (e) { if (e.status === 422 && ++tries < 3) return go(); throw e; });
@@ -975,7 +1053,7 @@
     var own = {
       read: function () { return mineIn; },
       here: function () { return (groupsHere = mineGroupsHere()); }, groups: function () { return groupsHere; }, order: mineGroups,   // order: every group the reader made, on the site or not, in their order
-      withMine: withMine, isGroup: ownGroup, movable: movable, moveTo: moveTo, rename: renameGroup, renameMap: renameMap, canRename: canRename, newMap: newMap, shown: mineShown, examplesHidden: examplesHidden, examplesHide: examplesHide, examplesMixed: examplesMixed, listItems: listItems,
+      withMine: withMine, isGroup: ownGroup, movable: movable, moveTo: moveTo, rename: renameGroup, canRenameGroup: canRenameGroup, renameMap: renameMap, canRename: canRename, newMap: newMap, shown: mineShown, examplesHidden: examplesHidden, examplesHide: examplesHide, examplesMixed: examplesMixed, listItems: listItems,
       rec: function (id) { return mine[id] || null; }, naming: function () { return !!naming; }
     };
     mineIn.then(upAll).then(binMigrate);   // connected: the reader's maps kept in this browser go to GitHub
