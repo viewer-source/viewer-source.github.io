@@ -1344,7 +1344,8 @@
     function linkHow(a, b, P) {
       if (cd) return cdHow(a, b, P);   // a CellDesigner map's (cdcreate.js), with where its end lands
       if (b < 0) return null;
-      var ra = roleOf(a), rb = roleOf(b), want = arcTool() === 'line' ? null : arcTool(), eqA = !!nodes2[a].eq, eqB = !!nodes2[b].eq;
+      var ra = roleOf(a), rb = roleOf(b), want = arcTool(), eqA = !!nodes2[a].eq, eqB = !!nodes2[b].eq;
+      if (want === 'line') want = null;   // the Line sign: its kind from the ends
       var has = function (s, t, head) { return edges2.some(function (q) { return q.s === s && q.t === t && q.arr[1] === head; }); };
       var ok = function (cls) { return has(a, b, sbJs.ARROW[cls]) ? { no: 'This ' + cls + ' is there already.' } : { cls: cls }; };
       var outs = function (g) { return edges2.filter(function (q) { return q.s === g; }).length; }, ins = function (g) { return edges2.filter(function (q) { return q.t === g; }).length; };
@@ -1399,7 +1400,7 @@
     function usual(b, dflt) {
       var rb = roleOf(b), kind = {}, n = {}, best = dflt, most = 0;
       Object.keys(MODK).forEach(function (k) { if (k !== 'catalysis' || rb === 'proc') kind[sbJs.ARROW[k]] = k; });
-      edges2.forEach(function (q) { var k = kind[q.arr[1]]; if (k && roleOf(q.t) === rb) n[k] = (n[k] || 0) + 1; });
+      edges2.forEach(function (q) { var k = kind[q.arr[1]]; if (k && q.t != null && roleOf(q.t) === rb) n[k] = (n[k] || 0) + 1; });
       PAL_PD[4][1].forEach(function (q) { if (n[q[0]] > most) { most = n[q[0]]; best = q[0]; } });
       return best;
     }

@@ -61,7 +61,7 @@
     var CD_RED = [['NEGATIVE_INFLUENCE', 'INHIBITION'], ['REDUCED_PHYSICAL_STIMULATION', 'PHYSICAL_STIMULATION'], ['REDUCED_MODULATION', 'MODULATION'], ['REDUCED_TRIGGER', 'TRIGGER']];
     var RED_OF = {}; CD_RED.forEach(function (q) { RED_OF[q[1]] = q[0]; });   // a modifier's type -> its reduced notation type
     var CD_NAME = {};   // CellDesigner's names, for the menus and the status line (a gate's by G_ and its kind: UNKNOWN is a species too)
-    CD_SP.concat([CD_LINE_SIGN], CD_RX, CD_ADD, CD_MOD).forEach(function (q) { CD_NAME[q[0]] = q[1].replace(/ \(.*\)$/, ''); });
+    CD_SP.concat(CD_RX, CD_ADD, CD_MOD).forEach(function (q) { CD_NAME[q[0]] = q[1].replace(/ \(.*\)$/, ''); });
     CD_RED.forEach(function (q) { CD_NAME[q[0]] = CD_NAME[q[1]]; });
     CD_GATES.forEach(function (q) { CD_NAME['G_' + q[0]] = q[1]; });
     var cdK = function (q) { return ['cd:' + q[0], q[1], q[2]]; };   // the tool kinds, apart from the SBGN palette's
@@ -374,7 +374,7 @@
       var add = cdAdd(), no = link.how && link.how.no, part = !no && link.how && link.how.part;
       var rx = !(add || part) || no ? -1 : cdRole(link.from) === 'proc' ? link.from : link.to >= 0 && cdRole(link.to) === 'proc' ? link.to : -1;
       if (rx >= 0) cdMainLine(out, rx);   // a reactant or product being added: the reaction it joins, its main line in blue
-      if (add === 'p') {   // from a reaction: the product's join in magenta (the reaction itself not picked); no arrowhead until it is made, as every live line
+      if (cdFromJoin()) {   // from a reaction: the product's join in magenta (the reaction itself not picked); no arrowhead until it is made, as every live line
         var J = cdJoin(link.from, false);
         out.push(cdDot(J || cdCentre(link.from), 'm2-ed-pickh'));
       } else cdPicked(out, link.from);
@@ -401,6 +401,7 @@
     // there. The reaction is taken by its square or its main line: an added reactant joins at 3/8 of the square's
     // segment, an added product leaves at 5/8 (cdrender linksAndModifiers, cd_edit)
     function cdAdd() { var k = tool && cdKind(tool.kind); return k === 'ADD_REACTANT' ? 'r' : k === 'ADD_PRODUCT' ? 'p' : null; }
+    function cdFromJoin() { return cdAdd() === 'p' || (!!tool && tool.kind === 'cd:LINE' && cdRole(link.from) === 'proc'); }   // a line from a reaction: an added product, from its join
     function cdOnLine() { return !!cdAdd() || (!!tool && tool.kind === 'cd:LINE'); }   // the signs a reaction's main line takes (cdLineAt)
     function cdStartOk(i) {   // whether a line may start from node i with the sign picked (linkDown, create.js)
       var r = cdRole(i), add = cdAdd();
@@ -441,7 +442,7 @@
     function cdLiveEnds(S, P, C) {
       var h = link.how, ok = h && !h.no, J;
       if (ok && h.part === 'reactant' && h.land && h.land.Q) { J = h.land.Q; return [cutShape(link.from, C, J, bx(link.from)), J]; }
-      if ((ok ? h.part === 'product' : !h && cdAdd() === 'p') && (J = cdJoin(link.from, false))) return [J, ok && h.land && h.land.Q ? cutShape(link.to, h.land.Q, J, bx(link.to)) : P];   // over nothing yet: from the join to the pointer
+      if ((ok ? h.part === 'product' : !h && cdFromJoin()) && (J = cdJoin(link.from, false))) return [J, ok && h.land && h.land.Q ? cutShape(link.to, h.land.Q, J, bx(link.to)) : P];   // over nothing yet: from the join to the pointer
       return [S, P];
     }
     // the map clicked with a CellDesigner sign in hand (palUp, create.js)
@@ -510,23 +511,30 @@
       }
       return { rx: want || 'STATE_TRANSITION' };
     }
+    // a line let go at P on reaction i: on its square (linkEnd's box test, the same margin), not on its main line (cdLineAt)
     function onSquare(i, P) { var b = bx(i), R = 4 / V.z; return !P || (P[0] >= b[0] - R && P[0] <= b[0] + b[2] + R && P[1] >= b[1] - R && P[1] <= b[1] + b[3] + R); }
     // the modifier the Line sign makes on reaction i: the one most used on the map, ties in the palette's order; on a map
     // with none, a catalysis on a reaction with a simple molecule or ion among its reactants, else a physical stimulation
+    var cdUsualMemo = [null, null, {}];   // the file read, its most used modifier, the metabolic test per reaction: once per file, not per pointer move
     function cdUsual(i) {
-      var n = {}, best = null, most = 0, m, re = /<celldesigner:modification\b[^>]*?\btype="([A-Z_]+)"/g;
-      while ((m = re.exec(cd.base))) n[m[1]] = (n[m[1]] || 0) + 1;
-      CD_MOD.forEach(function (q) { if (n[q[0]] > most) { most = n[q[0]]; best = q[0]; } });
-      return best || (cdMetabolic(cdRid(i)) ? 'CATALYSIS' : 'PHYSICAL_STIMULATION');
+      if (cdUsualMemo[0] !== cd.now) {
+        var n = {}, best = null, most = 0, m, re = /<celldesigner:modification\b[^>]*?\btype="([A-Z_]+)"/g;
+        while ((m = re.exec(cd.now))) n[m[1]] = (n[m[1]] || 0) + 1;
+        CD_MOD.forEach(function (q) { if (n[q[0]] > most) { most = n[q[0]]; best = q[0]; } });
+        cdUsualMemo = [cd.now, best, {}];
+      }
+      var rid = cdRid(i), met = cdUsualMemo[2];
+      if (!(rid in met)) met[rid] = cdMetabolic(rid);
+      return cdUsualMemo[1] || (met[rid] ? 'CATALYSIS' : 'PHYSICAL_STIMULATION');
     }
     function cdMetabolic(rid) {
       var esc = function (x) { return x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); };
-      var r = cd.base.match(new RegExp('<reaction\\b[^>]*\\bid="' + esc(rid) + '"[\\s\\S]*?</reaction>'));
+      var r = cd.now.match(new RegExp('<reaction\\b[^>]*\\bid="' + esc(rid) + '"[\\s\\S]*?</reaction>'));
       if (!r) return false;
       var ids = [], m, re = /<celldesigner:(?:baseReactant\b[^>]*?\bspecies|reactantLink\b[^>]*?\breactant)="([^"]+)"/g;
       while ((m = re.exec(r[0]))) ids.push(m[1]);
       return ids.some(function (s) {
-        var sp = cd.base.match(new RegExp('<species\\b[^>]*\\bid="' + esc(s) + '"[\\s\\S]*?</species>'));
+        var sp = cd.now.match(new RegExp('<species\\b[^>]*\\bid="' + esc(s) + '"[\\s\\S]*?</species>'));
         return sp && /<celldesigner:class>(SIMPLE_MOLECULE|ION)</.test(sp[0]);
       });
     }
