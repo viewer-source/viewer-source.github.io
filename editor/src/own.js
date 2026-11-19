@@ -352,9 +352,7 @@
       return exampleIds().length > 0 || (exBackup === true && !!(repo() && token()));
     }
     function restoreExamples() {
-      var gh = !!(repo() && token());
-      if (!confirm(gh ? 'Restore example maps? They go back to the saved set on GitHub: changes made to them, their moves and their deletions are undone. Maps of your own stay as they are.'
-                      : 'Restore example maps? Changes made to them in this browser are let go. Maps of your own stay as they are.')) return;
+      var gh = !!(repo() && token());   // nothing asked: the examples' earlier versions stay in the data repository's history
       // shown restored at once; with a token GitHub's commit follows, and if it fails the list goes back as it was
       var was = { pend: binPending(), hidden: siteHidden(), moved: {}, renamed: {}, gone: {} };
       var ids = exampleIds();
