@@ -970,7 +970,15 @@
     function ghPost(path, body, method) { return api(path, { method: method || 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(ghJson); }
     function ghJson(r) { return r.ok ? r.json() : r.json().catch(function () { return {}; }).then(function (d) { var e = new Error(d && d.message || 'GitHub ' + r.status); e.status = r.status; throw e; }); }
     // maps/<id>.md's front matter changed by edit({ get, set, drop }) in one commit, the closing line and the body as they were
-    function siteFront(id, edit, message, again) {
+    // One page write at a time from this page: two at once on main refuse each other (409, the branch moved), as several
+    // maps restored together did; a write still refused (another tab, an editor save) is read and tried again, four times
+    var siteQ = Promise.resolve();
+    function siteFront(id, edit, message) {
+      var p = siteQ.then(function () { return frontWrite(id, edit, message, 0); });
+      siteQ = p.catch(function () {});
+      return p;
+    }
+    function frontWrite(id, edit, message, tries) {
       var path = '/contents/maps/' + encodeURIComponent(id) + '.md';
       return api(path + '?ref=main').then(function (r) { if (!r.ok) { var e = new Error(r.status === 404 ? 'it has no page of its own' : 'GitHub ' + r.status); e.noPage = r.status === 404; throw e; } return r.json(); })
         .then(function (d) {
@@ -986,7 +994,7 @@
           md = '---' + nl + head + fm[0].slice(3 + nl.length + fm[2].length) + md.slice(fm[0].length);
           return api(path, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: message + ': ' + id, content: b64(md), sha: d.sha, branch: 'main' }) });
         }).then(function (r) {
-          if ((r.status === 409 || r.status === 422) && !again) return siteFront(id, edit, message, true);   // read again: another write came first
+          if ((r.status === 409 || r.status === 422) && tries < 3) return new Promise(function (ok) { setTimeout(ok, 500 * (tries + 1)); }).then(function () { return frontWrite(id, edit, message, tries + 1); });   // read again: another write came first
           if (!r.ok) throw new Error('GitHub ' + r.status);
         });
     }

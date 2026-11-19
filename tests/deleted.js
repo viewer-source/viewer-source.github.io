@@ -50,6 +50,8 @@ function viewerHunks() {
   files['maps/' + SID + '.graphml'] = '<graphml/>';
   files['maps/' + SID + '.md'] = '---\ntitle: "Copy of Glycolysis"\ntopic: "Copy of Glycolysis"\ngroup: "Testing"\norder: 3\n---\nIts text.\n';
   files['maps/glycolysis-graphml.md'] = '---\ntitle: "Glycolysis"\ntopic: "Glycolysis"\ngroup: "GraphML"\norder: 1\n---\n';
+  files['maps/glycogen-muscle-graphml.md'] = '---\ntitle: "Glycogen metabolism (muscle)"\ntopic: "Glycogen metabolism (muscle)"\ngroup: "GraphML"\norder: 3\n---\n';
+  files['maps/glycogen-liver-graphml.md'] = '---\ntitle: "Glycogen metabolism (liver)"\ntopic: "Glycogen metabolism (liver)"\ngroup: "GraphML"\norder: 4\n---\n';
   await page.route('https://api.github.com/**', async function (route) {
     var r = route.request(), u = new URL(r.url()), m = u.pathname.match(/^\/repos\/[^/]+\/[^/]+(\/.*)?$/), rest = m ? m[1] || '' : '', meth = r.method();
     var json = function (s, o) { return route.fulfill({ status: s, contentType: 'application/json', body: JSON.stringify(o) }); };
@@ -70,6 +72,8 @@ function viewerHunks() {
     if (c && meth === 'PUT') {
       var p = decodeURIComponent(c[1]), d = JSON.parse(r.postData());
       puts.push(p);
+      if (inFlight) { refused++; return json(409, { message: 'test: another write on main' }); }   // as GitHub: two writes on one branch at once, one refused
+      inFlight = true; await new Promise(function (ok) { setTimeout(ok, 300); }); inFlight = false;
       if (files[p] != null && d.sha !== gitSha(files[p])) return json(409, { message: 'test: sha does not match' });
       files[p] = Buffer.from(d.content, 'base64').toString('utf8');
       return json(200, { content: { sha: gitSha(files[p]) } });
@@ -82,6 +86,7 @@ function viewerHunks() {
     return json(404, { message: 'Not Found' });
   });
   var built = {};   // id -> the deleted date the build would list
+  var inFlight = false, refused = 0;
   await page.route('**/index.json*', async function (route) {
     var res = await route.fetch(), list = JSON.parse(await res.text());
     list.forEach(function (m) { m.deleted = built[m.id] || ''; });   // the site's own deletions left out, so the test starts the same
@@ -153,6 +158,20 @@ function viewerHunks() {
   var c0 = commits;
   await menu('#m2-list .m2-binned[data-id="' + SID + '"]', 'Delete forever'); await page.waitForTimeout(1500);
   ok('2. deleted forever: its files gone in one commit', commits === c0 + 1 && files['maps/' + SID + '.md'] == null && files['maps/' + SID + '.graphml'] == null && (await binned()).indexOf(SID) < 0, Object.keys(files).join(' '));
+
+  // 2b. three site maps deleted together, then Cmd+Z: all three back, no message (their pages written one after another)
+  var three = ['glycolysis-graphml', 'glycogen-muscle-graphml', 'glycogen-liver-graphml'].filter(function (id) { return files['maps/' + id + '.md'] != null; });
+  var alerts2 = []; page.on('dialog', function (d) { if (d.type() === 'alert') alerts2.push(d.message()); });
+  await load(three[0]); await list();
+  await page.click('#m2-list .m2-map[data-id="' + three[0] + '"]'); await page.waitForTimeout(500);
+  for (var t3 = 1; t3 < three.length; t3++) { await page.click('#m2-list .m2-map[data-id="' + three[t3] + '"]', { modifiers: [process.platform === 'darwin' ? 'Meta' : 'Control'] }); await page.waitForTimeout(200); }
+  await page.click('#m2-list .m2-map[data-id="' + three[0] + '"]', { button: 'right' }); await page.waitForTimeout(300);
+  await page.evaluate(function () { Array.prototype.filter.call(document.querySelectorAll('.m2-cx button'), function (x) { return /^Delete \d+ maps$/.test(x.textContent); })[0].click(); }); await page.waitForTimeout(4000);
+  var del3 = three.filter(function (id) { return /^deleted:/m.test(files['maps/' + id + '.md']); }).length;
+  await page.click('#m2-list .m2-map:not(.m2-binned) >> nth=0'); await page.waitForTimeout(800);
+  await page.keyboard.press((process.platform === 'darwin' ? 'Meta' : 'Control') + '+z'); await page.waitForTimeout(6000);
+  var back3 = three.filter(function (id) { return !/^deleted:/m.test(files['maps/' + id + '.md']); }).length;
+  ok('2b. ' + three.length + ' site maps deleted together, Cmd+Z: all back, no message', three.length === 3 && del3 === 3 && back3 === 3 && !alerts2.length, del3 + ' deleted, ' + back3 + ' back, refused and tried again ' + refused + ', ' + alerts2.join(' | '));
 
   // 3. without a token a deleted site map is not listed
   built['glycolysis-graphml'] = built['glycolysis-sbgn'] = '2026-11-19T10:00:00Z';
