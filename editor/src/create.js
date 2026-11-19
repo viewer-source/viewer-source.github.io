@@ -154,10 +154,6 @@
       return { lang: af ? 'af' : 'pd', look: af ? 'sbgn' : 'rn', strict: false };
     }
     function palKeep() { var all = palStore(), id = palId(); if (!id) return; all[id] = palSet; try { localStorage.setItem(PAL_KEY, JSON.stringify(all)); } catch (e) {} }
-    // one list by default, as yEd's palette, the groups' signs one after another (grouping is of little use to experienced
-    // curators, and the Edit window scrolls less); Settings' Grouped palette tick box puts
-    // the group names back (atlas-app.html)
-    function palGrouped() { try { return localStorage.getItem('atlas-edit-palette-groups') === 'on'; } catch (e) { return false; } }
     function palSign(q) {
       return '<button type="button" data-make="' + q[0] + '" title="' + q[1] + (ARCS[q[0]] ? ': picked, a drag from one node to another draws it (click: once; double click: several)' : CD_GATE[q[0]] ? ': click its inputs, then the reaction\u2019s square or the target species (click: once; double click: several)' : ' (click: once; double click: several)') + '" aria-label="' + q[1] + '" aria-pressed="false">' +
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">' + q[2] + '</svg></button>';
@@ -166,15 +162,9 @@
     // as a few small groups with no names; kept while the blocks cost no row more than the plain list would at the panel's
     // width and at every width up to its usual one (palBlocks), else the plain list, so a narrowed panel stays compact
     function palSigns(set) {
-      if (!palGrouped()) {
-        var blocks = [];
-        set.forEach(function (s, i) { if (!i || s[2]) blocks.push(0); blocks[blocks.length - 1] += s[1].length; });
-        return '<div class="m2-ed-prow" data-blocks="' + blocks.join(',') + '">' + set.map(function (s, i) { return (i && s[2] ? '<span class="m2-ed-pbr" aria-hidden="true"></span>' : '') + s[1].map(palSign).join(''); }).join('') + '</div>';
-      }
-      return set.map(function (s) {
-      var info = s[0] === 'Connecting arcs' || s[0] === 'Arcs' ? ' <button type="button" class="m2-ed-pinfo" aria-label="How arcs are drawn" title="How arcs are drawn"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true"><circle cx="8" cy="8" r="7.2" stroke-width="1.1"/><path d="M8 7.3v4.2" stroke-width="1.8" stroke-linecap="round"/><circle cx="8" cy="4.6" r="1.2" fill="currentColor" stroke="none"/></svg></button>' : '';
-      return '<p>' + s[0] + info + '</p><div class="m2-ed-prow">' + s[1].map(palSign).join('') + '</div>';
-      }).join('');
+      var blocks = [];
+      set.forEach(function (s, i) { if (!i || s[2]) blocks.push(0); blocks[blocks.length - 1] += s[1].length; });
+      return '<div class="m2-ed-prow" data-blocks="' + blocks.join(',') + '">' + set.map(function (s, i) { return (i && s[2] ? '<span class="m2-ed-pbr" aria-hidden="true"></span>' : '') + s[1].map(palSign).join(''); }).join('') + '</div>';
     }
     // the notation, PD or AF, and with AF its look, as sign buttons in one row (icons that stay pressed,
     // so nothing in the Edit window draws the eye): PD and AF as letters at
@@ -531,8 +521,6 @@
       palShown = k;
       if (tool && !palOk(tool.kind)) tool = null;   // a sign in hand that this set lacks (e.g. a delay kept after the map turned PD)
       palSignsEl.innerHTML = palSigns(PALS[k]); palBlocks();
-      var pi = palSignsEl.querySelector('.m2-ed-pinfo');
-      if (pi) pi.addEventListener('click', function (e) { e.stopPropagation(); help(true, 'Connecting arcs'); });
     }
     function palLook() {   // the map drawn in the SBGN view while AF's SBGN view is chosen and the map has no process (graphml.js afSbgn)
       var want = palOn() && palLookNow() === 'sbgn';
@@ -591,7 +579,6 @@
       if (b) palTake(b.dataset.make, true);
     });
     document.addEventListener('click', function (e) { if (e.target.closest && e.target.closest('#m2-set-edit')) setTimeout(palShow, 0); }, true);   // Settings, Editing changed
-    document.getElementById('m2-set-palette').addEventListener('change', function () { setTimeout(function () { palShown = null; palShow(); }, 0); });   // Settings, Grouped palette: the signs made again
     document.addEventListener('keydown', function (e) { if (tool && e.key === 'Escape') palTake(null); }, true);
 
     // the map clicked with something in hand: a press only noted, so a drag still moves the map; the click is taken on release

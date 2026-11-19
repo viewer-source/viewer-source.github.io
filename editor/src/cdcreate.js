@@ -86,7 +86,7 @@
       if (hyc.checked !== !strict) hyc.checked = !strict;
       cdInfo(hy, true);
       styleRow(); cdColsRow();
-      var k = 'cd' + (strict ? 'S' : '') + (palGrouped() ? 'G' : '');
+      var k = 'cd' + (strict ? 'S' : '');
       if (palShown === k) return;
       palShown = k;
       palSignsEl.innerHTML = palSigns(palCd()); palBlocks();
