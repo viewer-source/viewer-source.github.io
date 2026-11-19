@@ -257,7 +257,7 @@
         return made.then(function (d) {
           var r = { id: newId(), title: title, file: file, text: t, svg: d.svg, width: d.width, height: d.height, at: Date.now(), src: textHash(t), hidden: false, group: group };
           if (!gh) return minePut(r).then(function () { toFolder(r.id, r.file, r.text); return r; });
-          return toSite(title, ext, t, group, siteOrder(group)).then(function (s) { return minePut(onSite(r, s, title)).then(function () { return r; }); });
+          return toSite(title, ext, t, group, order++).then(function (s) { return minePut(onSite(r, s, title)).then(function () { return r; }); });
         });
       }).then(function (r) {
         put(r.id, group, next);
@@ -533,26 +533,29 @@
     }
     function addFiles(list, group) {   // a reader's files, drawn and kept; group: Add map or a drop on a group of theirs
       list = Array.prototype.slice.call(list);   // the picker's list empties when it is reset
-      var picked = Array.prototype.filter.call(list, function (f) { return /\.(graphml|xml|sbgn)$/i.test(f.name); }).slice(0, 1);   // one map at a time (no bulk additions)
-      var last = null;
+      var picked = list.filter(function (f) { return /\.(graphml|xml|sbgn)$/i.test(f.name); });
+      var last = null, failed = [], order = repo() && token() ? siteOrder(group) : 0;   // one after another; on the site each after the one before (the site's list is read again only after the build)
       return picked.reduce(function (p, f) {
         return p.then(function () { return f.text(); }).then(function (t) {
           if (isSb(t) && !madeHere(t)) throw new Error('an SBGN-ML file from another editor cannot be added yet, only one made here with New map');
           if (repo() && token()) return drawText(t).then(function (d) {   // with a token: to the site, shown from here until built
             var ext = siteExt(t), title = freeTitle(f.name.replace(/\.(graphml|xml|sbgn)$/i, ''));   // the site's map named so too (toSite takes its title from the name)
             if (!ext) throw new Error(siteWhy(t));
-            return toSite(title, ext, t, group, siteOrder(group)).then(function (s) {
+            return toSite(title, ext, t, group, order++).then(function (s) {
               var r = { id: newId(), title: title, file: f.name,
                 text: t, svg: d.svg, width: d.width, height: d.height, at: Date.now(), hidden: false, group: group || '' };
               return minePut(onSite(r, s, title)).then(function () { last = r.id; });
             });
           });
           return drawText(t).then(function (d) { return mineAdd(f.name, t, d, null, group || undefined); }).then(function (r) { last = r.id; return toFolder(r.id, r.file, r.text); });
-        }).catch(function (e) { alert(f.name + ' was not added: ' + (e && e.message ? e.message : e)); });
-      }, Promise.resolve()).then(function () { V.refreshMine(); if (last) V.go(last); });
+        }).catch(function (e) { failed.push(f.name + ': ' + (e && e.message ? e.message : e)); });
+      }, Promise.resolve()).then(function () {
+        V.refreshMine(); if (last) V.go(last);
+        if (failed.length) alert((failed.length === 1 ? 'Not added, ' : failed.length + ' files not added:\n') + failed.join('\n'));
+      });
     }
     var picker = document.createElement('input');
-    picker.type = 'file'; picker.multiple = false; picker.accept = '.graphml,.xml,.sbgn'; picker.hidden = true;
+    picker.type = 'file'; picker.multiple = true; picker.accept = '.graphml,.xml,.sbgn'; picker.hidden = true;
     picker.addEventListener('change', function () { addFiles(picker.files, addTo); picker.value = ''; });
     document.body.appendChild(picker);
     document.addEventListener('dragover', function (e) { if (e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types, 'Files') >= 0) e.preventDefault(); });
