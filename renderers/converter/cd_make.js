@@ -339,10 +339,8 @@
   function compThick(t, A) { var m = /<celldesigner:doubleLine\s(?:[^>]*\s)?thickness="([^"]*)"/.exec(t.slice(A.sp[0], A.sp[1])); return m ? F(m[1]) : 12; }
   function compOval(t, A) { return /<celldesigner:class>OVAL</.test(t.slice(A.sp[0], A.sp[1])); }
   function namePlace(t, id, one) {
-    var A = alias(t, id), np = A.kind === 'compartmentAlias' && A.box && span(t, '<celldesigner:namePoint ', A.sp[0], A.sp[1]);
-    if (!np) return '';
-    var tag = head(t, np);
-    return cdr.namePlaceOf(A.box, compName(t, A), compThick(t, A), [F(at(tag, 'x')), F(at(tag, 'y'))], compOval(t, A), one) || '';
+    var I = nameInfo(t, id);
+    return I ? cdr.namePlaceOf(I.box, I.name, I.th, I.np, I.oval, one) || '' : '';
   }
   // what a compartment's name is placed by: its box, name (as the file has it), membrane, oval or not, namePoint; null when it has none
   function nameInfo(t, id) {
@@ -1012,7 +1010,7 @@
     var C = alias(t, id);
     if (C.kind === 'compartmentAlias') {   // its colour and its double line (membrane thickness, outer and inner line widths; CellDesigner's 12, 2, 1 where absent)
       var cs = t.slice(C.sp[0], C.sp[1]), cp = /<celldesigner:paint color="([0-9a-fA-F]{8})"/.exec(cs), dl = /<celldesigner:doubleLine\s[^>]*>/.exec(cs), da = function (k, d) { var m = dl && new RegExp('\\s' + k + '="([^"]*)"').exec(dl[0]); return m ? F(m[1]) : d; };
-      return { fill: cp ? '#' + cp[1].slice(2).toLowerCase() : '', width: 1, multimer: false, cls: 'COMPARTMENT', mem: da('thickness', 12), outer: da('outerWidth', 2), inner: da('innerWidth', 1), place: namePlace(t, id) };
+      return { fill: cp ? '#' + cp[1].slice(2).toLowerCase() : '', width: 1, multimer: false, cls: 'COMPARTMENT', mem: da('thickness', 12), outer: da('outerWidth', 2), inner: da('innerWidth', 1) };
     }
     var A = entity(t, id), u = span(t, '<celldesigner:usualView>', A.sp[0], A.sp[1]), seg = u ? t.slice(u[0], u[1]) : '';
     var p = /<celldesigner:paint color="([0-9a-fA-F]{8})"/.exec(seg), w = /<celldesigner:singleLine width="([^"]*)"/.exec(seg), h = inState(t, A.species, '<celldesigner:homodimer>');

@@ -670,24 +670,24 @@
     // which the core asks before a node is pressed
     var cdNm = null;
     function cdNameDown(e, P, h) {
-      if (!cdPal() || tool || e.shiftKey || (h && (h.p != null || h.e != null || (h.n != null && !nodes2[h.n].comp)))) return false;   // a bend point, a line or a species over the name: theirs
-      var k = -1, area = Infinity, info = null, pad = 3;   // the innermost compartment whose drawn name is under the pointer (one still named by its id too)
+      if (!cdPal() || tool || e.shiftKey || e.pointerType !== 'mouse' || edgeAt(P) || (h && (h.p != null || h.e != null || (h.n != null && !nodes2[h.n].comp)))) return false;   // a finger moves the map; a compartment's edge, a bend point, a line or a species over the name: theirs
+      var k = -1, area = Infinity, info = null, pad = 3, res = null;   // the innermost compartment whose drawn name is under the pointer (one still named by its id too)
       nodes2.forEach(function (n, i) {
         var b = boxOf(i);
-        if (!n.comp || b[2] * b[3] >= area) return;
-        if (textsOf(i, null).some(function (el) { var r = el.getBoundingClientRect(); return e.clientX >= r.left - pad && e.clientX <= r.right + pad && e.clientY >= r.top - pad && e.clientY <= r.bottom + pad; })) { k = i; area = b[2] * b[3]; }
+        if (!n.comp || b[2] * b[3] >= area || P[0] < b[0] || P[1] < b[1] || P[0] > b[0] + b[2] || P[1] > b[1] + b[3]) return;   // its name is inside its box
+        if (textsOf(i, null, res = res || svIcons()).some(function (el) { var r = el.getBoundingClientRect(); return e.clientX >= r.left - pad && e.clientX <= r.right + pad && e.clientY >= r.top - pad && e.clientY <= r.bottom + pad; })) { k = i; area = b[2] * b[3]; }
       });
       if (k < 0) return false;
       try { info = cdMk.nameInfo(cdNow().t, nodes2[k].id); } catch (err) { info = null; }
       if (!info) return false;
       e.stopImmediatePropagation(); e.preventDefault();
       V.view.setPointerCapture(e.pointerId); V.view.focus({ preventScroll: true });
-      cdNm = { k: k, id: nodes2[k].id, info: info, P: P, x: e.clientX, y: e.clientY, p: null, parts: null };
+      cdNm = { k: k, id: nodes2[k].id, info: info, P: P, x: e.clientX, y: e.clientY, p: null, parts: null, pid: e.pointerId };
       return true;
     }
     window.addEventListener('pointermove', function (e) {
       var d = cdNm;
-      if (!d) return;
+      if (!d || e.pointerId !== d.pid) return;
       if (!e.buttons) { cdNameUp(); return; }   // released outside the window: no sticky hand
       if (!d.p && Math.hypot(e.clientX - d.x, e.clientY - d.y) < 4) return;
       var Q = at(e), I = d.info, want = [I.np[0] + Q[0] - d.P[0], I.np[1] + Q[1] - d.P[1]], best = null, bd = Infinity;
@@ -697,10 +697,12 @@
       var dx = best[1][0] - I.np[0], dy = best[1][1] - I.np[1];
       d.parts.forEach(function (el) { if (dx || dy) el.setAttribute('transform', 'translate(' + f1(dx) + ' ' + f1(dy) + ')'); else el.removeAttribute('transform'); });
     }, true);
-    window.addEventListener('pointerup', cdNameUp, true);
-    function cdNameUp() {
+    window.addEventListener('pointerup', function (e) { if (cdNm && e.pointerId === cdNm.pid) cdNameUp(); }, true);
+    window.addEventListener('pointercancel', function (e) { if (cdNm && e.pointerId === cdNm.pid) cdNameUp(true); }, true);   // a drag taken away: nothing written
+    function cdNameUp(cancel) {
       var d = cdNm; cdNm = null;
       if (!d) return;
+      if (cancel) { (d.parts || []).forEach(function (el) { el.removeAttribute('transform'); }); return; }
       if (d.p && cdApply(function (t) { return cdMk.nameAt(t, d.id, d.p); }, [d.id])) return;
       (d.parts || []).forEach(function (el) { el.removeAttribute('transform'); });
       var k = nodes2.findIndex(function (n) { return n.id === d.id; });
