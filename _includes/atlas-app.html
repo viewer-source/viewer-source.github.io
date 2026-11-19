@@ -425,8 +425,6 @@ page, so its styles keep the base they were made on).
   #m2-tips th { text-align: left; font-weight: 600; color: var(--m2-text); padding: 3px 10px 3px 0; border-bottom: 1px solid var(--m2-line); }
   #m2-tips td { vertical-align: top; padding: 3px 10px 3px 0; border-bottom: 1px solid var(--m2-line); }
   #m2-tips td:first-child { color: var(--m2-text); white-space: nowrap; }
-  #m2-tips ul { margin: 0; padding: 0 0 0 16px; }
-  #m2-tips li { margin: 0 0 3px; }
   #m2-tips .m2-tips-x { position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; padding: 0; border: 0; background: none; color: var(--m2-muted); font-size: 20px; line-height: 28px; cursor: pointer; }
   #m2-ed-help-box h4 { margin: 10px 0 3px; font-size: 13px; font-weight: normal; color: var(--m2-text); }
   #m2-ed-help-box p { margin: 0 24px 4px 0; }
@@ -1618,14 +1616,12 @@ page, so its styles keep the base they were made on).
     if (overApp && !typing()) e.preventDefault();
   }, true);
   window.addEventListener('blur', function () { spaceHeld = false; });
-  // Gestures and keys: every move and key of the viewer and its editor in one window, the main ones first, then the rest
-  // and the reasons; opened by the ? at the end of the icons or the ? key outside editing (while editing both open the editor's own help)
+  // Gestures and keys: every move and key of the viewer and its editor in one window, the main ones first, then the rest; opened by the ? at the end of the icons or the ? key outside editing (while editing both open the editor's own help)
   var MAC = /mac/i.test(navigator.platform);
   var tipsBox = null, MOD = /mac|iphone|ipad|ipod/i.test((navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || navigator.userAgent) ? 'Cmd' : 'Ctrl';
   function tipsBuild() {
     var e = function (t) { return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;'); };
     var table = function (head, rows) { return '<table>' + (head ? '<tr>' + head.map(function (h) { return '<th>' + e(h) + '</th>'; }).join('') + '</tr>' : '') + rows.map(function (r) { return '<tr>' + r.map(function (c) { return '<td>' + e(c) + '</td>'; }).join('') + '</tr>'; }).join('') + '</table>'; };
-    var list = function (l) { return '<ul>' + l.map(function (x) { return '<li>' + e(x) + '</li>'; }).join('') + '</ul>'; };
     tipsBox = document.createElement('div');
     tipsBox.id = 'm2-tips'; tipsBox.setAttribute('role', 'dialog'); tipsBox.setAttribute('aria-label', 'Gestures and keys'); tipsBox.hidden = true;
     tipsBox.innerHTML = '<button type="button" class="m2-tips-x" aria-label="Close">×</button><h3>Gestures and keys</h3>' +
@@ -1653,14 +1649,7 @@ page, so its styles keep the base they were made on).
         ['Shift + drag on what is selected', 'moves it by itself, out of what holds it'],
         ['Arrow keys', 'move what is selected by 1, with Shift by 10'],
         [MOD + ' + Z, ' + MOD + ' + Y', 'undo, redo'],
-        ['Delete', 'remove what is selected, where it can be removed']]) +
-      '<h4>Why</h4>' + list([
-        'A pathway map is read at the zoom where its labels are readable and moved around at that zoom, so two fingers move the map, and zoom has the pinch.',
-        GRAB ? 'A drag moves the map, as in web map viewers, and two fingers move it too, in one continuous stroke. Nothing on the map is changed by a drag that was meant to move it: while editing, an item is selected first and only then moved.'
-          : 'Recommended set: two fingers are the one way to move the map, in one continuous stroke, and a drag selects an area, so a drag never lands on something it could change.',
-        'Settings, Gestures, Drag selects an area: unticked by default; ticked, the recommended set.',
-        'A browser cannot tell a mouse wheel from a two-finger swipe, so the wheel moves the map as two fingers do, and ' + MOD + ' turns either into zoom.',
-        'The viewer and its editor are one tool: every gesture means the same in both, and editing only adds to it.']);
+        ['Delete', 'remove what is selected, where it can be removed']]);
     document.body.appendChild(tipsBox);
     tipsBox.querySelector('.m2-tips-x').addEventListener('click', function () { tips(false); });
   }
