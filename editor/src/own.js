@@ -82,8 +82,7 @@
     function mineValid(v, was) {
       return v === was || !((V.siteList || []).some(function (m) { return m.group === v; }) || mineGroups().indexOf(v) >= 0);
     }
-    // a name typed in place in the list, one way for groups and maps (inPlace): the field where the line was (a new
-    // group's under the reader's last); Enter or a click elsewhere keeps it, Esc leaves it; o.bad(v) gives why a name is
+    // a name typed in place in the list, one way for groups and maps (inPlace): the field where the line was; Enter or a click elsewhere keeps it, Esc leaves it; o.bad(v) gives why a name is
     // refused (the field red, kept open). The list is not built again while it is open (V.naming, the viewer's
     // buildList), so a save or a folder scan meanwhile never drops what is being typed
     var naming = null;
@@ -92,7 +91,7 @@
       var f = document.createElement('input'), done = false;
       f.type = 'text'; f.className = o.cls; f.maxLength = o.max; f.value = o.value; f.placeholder = o.label;
       f.setAttribute('aria-label', o.label);
-      if (at) at.replaceWith(f); else o.put(f);
+      at.replaceWith(f);
       f.scrollIntoView({ block: 'nearest' });
       f.focus(); f.select();
       var end = naming = function (keep) {
@@ -116,16 +115,27 @@
         else end(true);   // a press elsewhere (a map) gets its click before the list is built again
       });
     }
-    // a group's name: Rename group, a double-click on its name, or a new group (Add group), under the reader's last group;
-    // a new group left empty or with Esc is not made; a name already taken is refused
+    // a group's name: Rename group, a double-click on its name, or a new group (Add group): made at once as New group,
+    // first of the reader's groups, its name then typed in place as a rename; a new group left empty or with Esc is not
+    // made; a name already taken is refused
     function renameGroup(was) {
       if (naming) naming(true);   // the open field ends first: it rebuilds the list, so the line is looked up after it
-      var box = document.getElementById('m2-list'), at = null;
-      if (was && !(at = box.querySelector('.m2-group.m2-mine[data-group="' + CSS.escape(was) + '"]'))) return;
+      var box = document.getElementById('m2-list'), at = null, fresh = null;
+      if (!was) {
+        fresh = was = 'New group';
+        for (var k = 2; !mineValid(was); k++) was = fresh + ' ' + k;
+        fresh = was;
+        mineGroupsSet([was].concat(mineGroups()));
+        V.refreshMine();
+      }
+      if (!(at = box.querySelector('.m2-group.m2-mine[data-group="' + CSS.escape(was) + '"]'))) {   // not in sight (a search): no new group left behind
+        if (fresh) { mineGroupsSet(mineGroups().filter(function (g) { return g !== fresh; })); V.refreshMine(); }
+        return;
+      }
       inPlace(at, { cls: 'm2-group-edit', max: 60, value: was || '', label: 'Name of the group',
-        put: function (f) { var own = box.querySelectorAll('.m2-mine'), last = own[own.length - 1]; if (last) last.after(f); else box.insertBefore(f, box.firstChild); },
         bad: function (v) { return v && !mineValid(v, was) ? 'A group of this name is in the list already' : ''; },
         end: function (v) {
+          if (fresh && (!v || !mineValid(v, was))) return mineGroupsSet(mineGroups().filter(function (g) { return g !== fresh; }));
           if (!v || v === was || !mineValid(v, was)) return;
           var gs = mineGroups();
           if (was && gs.indexOf(was) >= 0) {
@@ -133,7 +143,7 @@
             Object.keys(mine).forEach(function (k) { var r = mine[k]; if (r.group === was) { r.group = v; minePut(r).catch(function () {}); } });
             V.regroupRename(was, v);   // site maps moved into it follow
             if (V.closed[was]) { V.closed[v] = true; delete V.closed[was]; V.saveClosed(); }
-          } else if (!was) gs.push(v);
+          }
           mineGroupsSet(gs);
         } });
     }
