@@ -1449,7 +1449,7 @@
       if (S && link.to >= 0 && link.to !== link.from) P = cutShape(link.to, P, S, bx(link.to));
       var E = cd && S ? cdLiveEnds(S, P, C) : null;   // an added reactant's or product's join (cdcreate.js)
       if (E) { S = E[0]; P = E[1]; }
-      if (cd) cdLinkMarks(out, E);   // CellDesigner's marks (cdcreate.js)
+      if (cd) cdLinkMarks(out);   // CellDesigner's marks (cdcreate.js)
       else if (link.how && !no) out.push('<g transform="translate(' + f1(V.tx - x0 * V.z) + ',' + f1(V.ty - y0 * V.z) + ') scale(' + V.z + ')"><path class="m2-ed-dark" d="' + shapeD(link.to) + '"/></g>');
       if (S) out.push('<path class="m2-ed-live" stroke-width="' + f1(Math.max(1, V.z)) + '"' + (no ? ' stroke-dasharray="4 3"' : '') + ' d="M' + f1(sx(S[0])) + ' ' + f1(sy(S[1])) + 'L' + f1(sx(P[0])) + ' ' + f1(sy(P[1])) + '"/>');
     }

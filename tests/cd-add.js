@@ -69,7 +69,7 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#acly-celld
     if (shots) await page.screenshot({ path: path.join(shots, 'cd-add-product.png') });
     return { lit: await page.$$eval('#m2-edit-layer .m2-ed-rxline', function (l) { return l.length; }), head: await page.$$eval('#m2-edit-layer .m2-ed-head', function (l) { return l.length; }), handles: await page.$$eval('#m2-edit-layer .m2-ed-pickh', function (l) { return l.length; }) };
   });
-  ok('the main line lit while drawing a product, an arrowhead on the line, the square not picked', mid.lit === 2 && mid.head === 1 && mid.handles === 1, JSON.stringify(mid));
+  ok('the main line lit while drawing a product, no arrowhead until it is made, the square not picked', mid.lit === 2 && mid.head === 0 && mid.handles === 1, JSON.stringify(mid));
   var e2 = await es(), add2 = e2.filter(function (i) { return e1.indexOf(i) < 0; });
   ok('an added product made from the main line', add2.length === 1 && add2[0] === 're_n3|p3', add2.join(' '));
   if (add2[0]) ok('it leaves at the products’ join', near(await along(add2[0], 0), Jp, 2));

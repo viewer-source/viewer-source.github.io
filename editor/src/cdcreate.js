@@ -368,24 +368,17 @@
       var k = cdHover ? nodes2.findIndex(function (n) { return n.id === cdHover.id; }) : -1;
       if (k >= 0 && cdGateOk(k)) cdLand(out, k, cdGateLand0(k, cdHover.P));
     }
-    function cdLinkMarks(out, E) {   // a line drawn by a drag on a CellDesigner map: its start picked, the node it would land on (E: the live line's ends)
+    function cdLinkMarks(out) {   // a line drawn by a drag on a CellDesigner map: its start picked, the node it would land on
       var add = cdAdd(), no = link.how && link.how.no;
       var rx = !add || no ? -1 : cdRole(link.from) === 'proc' ? link.from : link.to >= 0 && cdRole(link.to) === 'proc' ? link.to : -1;
       if (rx >= 0) cdMainLine(out, rx);   // a reactant or product being added: the reaction it joins, its main line in blue
-      if (add === 'p') {   // from a reaction: the product's join in magenta (the reaction itself not picked), an arrowhead at the line's end
+      if (add === 'p') {   // from a reaction: the product's join in magenta (the reaction itself not picked); no arrowhead until it is made, as every live line
         var J = cdJoin(link.from, false);
         out.push(cdDot(J || cdCentre(link.from), 'm2-ed-pickh'));
-        if (E && !no) out.push(cdHead(E[0], E[1]));
       } else cdPicked(out, link.from);
       if (link.to < 0 || !link.how || no) return;
       if (rx === link.to) out.push(landMarks([], (link.how.land && link.how.land.Q) || cdCentre(link.to)));   // an added reactant joins the main line, not the square: its join only, no box or handles on the square
       else cdLand(out, link.to, link.how.land);
-    }
-    function cdHead(S, T) {   // a product's arrowhead at T, as cdrender's (15 long, 10 wide)
-      var L = Math.hypot(T[0] - S[0], T[1] - S[1]);
-      if (L < 1e-6) return '';
-      var u = [(T[0] - S[0]) / L, (T[1] - S[1]) / L], n = [-u[1], u[0]], at = function (a, c) { return f1(sx(T[0] - a * u[0] + c * n[0])) + ' ' + f1(sy(T[1] - a * u[1] + c * n[1])); };
-      return '<path class="m2-ed-head" d="M' + at(0, 0) + 'L' + at(15, 5) + 'L' + at(15, -5) + 'Z"/>';
     }
     // Add product picked: the join a press would start from, shown while the pointer is over a reaction's square or near
     // its main line (cdLineAt), so the drag starts there without aiming at the square
