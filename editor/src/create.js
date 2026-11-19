@@ -56,7 +56,10 @@
         ['not', 'NOT', '<circle cx="12" cy="12" r="10"/><text x="12" y="14.7" text-anchor="middle" font-size="7.4" letter-spacing="-.1">NOT</text>'],
         ['equivalence', 'Equivalence', '<circle cx="12" cy="12" r="10"/><path d="M7.5 8.8h9M7.5 12h9M7.5 15.2h9" class="in"/>']]],
       // arcs: drawn by a drag from a node with the arc's sign picked
-      ['Connecting arcs', [['consumption', 'Consumption / logic arc', '<path d="M3 12h18"/>'],
+      // the plain line first: its kind from where it ends (linkHow with no kind picked), drawn as a free curve so it is
+      // never read as the consumption's straight line
+      ['Connecting arcs', [['line', 'Line (its kind from where it ends)', '<path d="M3 16c5-9 13 1 18-8"/>'],
+        ['consumption', 'Consumption / logic arc', '<path d="M3 12h18"/>'],
         ['production', 'Production', '<path d="M3 12h11"/><path d="M13 7.5l8 4.5-8 4.5z" fill="currentColor"/>'],
         // the modulations, by use: catalysis, the most used, first; modulation, the least used, last
         ['catalysis', 'Catalysis', '<path d="M3 12h12"/><circle cx="18" cy="12" r="3"/>'],
@@ -131,12 +134,12 @@
         ['Activity nodes', [sbgnLook ? first : [first[0], first[1], PD_SIGN.macromolecule]].concat(sbgnLook ? ACT_REST : ACT_REST_CD, [PHENO, PERT])],
         OTHER,
         ['Logical operators', GATES_PD.concat([DELAY])],
-        ['Arcs', INFL.map(function (x) { var q = ARC_PD[x[0]]; return [q[0], sbgnLook || x[0] === 'necessary stimulation' ? x[1] : q[1] + ' (' + x[1].toLowerCase() + ')', q[2]]; }).concat([LOGIC])]
+        ['Arcs', [ARC_PD.line].concat(INFL.map(function (x) { var q = ARC_PD[x[0]]; return [q[0], sbgnLook || x[0] === 'necessary stimulation' ? x[1] : q[1] + ' (' + x[1].toLowerCase() + ')', q[2]]; }), [LOGIC])]
       ];
     }
     var PALS = { pd: PAL_PD, rn: palAf(false), sbgn: palAf(true), rnP: palAf(false, true), sbgnP: palAf(true, true) };
     var ARCS = {}, MODK = {};   // the signs that draw an arc, not a glyph (Connecting arcs, Modulating arcs), and among them the modulations
-    PAL_PD[4][1].forEach(function (q) { ARCS[q[0]] = 1; if (!/^(consumption|production)$/.test(q[0])) MODK[q[0]] = 1; });   // sbgn_edit loads later
+    PAL_PD[4][1].forEach(function (q) { ARCS[q[0]] = 1; if (!/^(line|consumption|production)$/.test(q[0])) MODK[q[0]] = 1; });   // sbgn_edit loads later
     ARCS['logic arc'] = 1;
     function arcTool() { return tool && ARCS[tool.kind] ? tool.kind : null; }
     var tool = null;   // { kind, sticky } in hand
@@ -1320,7 +1323,7 @@
     function linkDown(e, P, h) {   // a press on a node with an arc's sign picked: a line begun there
       if (!(palOn() || cdPal()) || e.shiftKey || downs.size > 1 || link) return false;
       if (!arcTool()) return false;   // no sign picked: a drag on a node moves the map (or what is selected)
-      if (h.n == null && !h.glyph && !(cd && cdAdd())) return false;   // a press on a line or a bend point selects it, but for CellDesigner's Add reactant and Add product
+      if (h.n == null && !h.glyph && !(cd && cdOnLine())) return false;   // a press on a line or a bend point selects it, but for CellDesigner's Add reactant, Add product and Line
       var i = linkEnd(P, -1);
       if (i < 0) return false;
       if (cd && !cdStartOk(i)) return false;   // a CellDesigner gate's one line out is made with it: a drag moves the gate; Add reactant and Add product from their own ends only
@@ -1331,16 +1334,17 @@
       return true;
     }
     // what a line from node a to node b makes: { cls }, { pair }, { no: the reason }, or null over nothing. P: where it is
-    // let go. With no sign picked (not reached since lines need a sign: kept for a start without one): an entity
+    // let go. With the Line sign (no kind picked): an entity
     // into a process a consumption, or a modulation when it lands on a side off the antennas of a process that has them;
     // a process to an entity a production; two entities a process between them; into a gate a logic arc (from an entity,
     // or a gate into a gate), out of a gate a stimulation (to a process or a phenotype), out of an equivalence a logic
-    // arc to its entity; an entity to a phenotype a stimulation. The modulation guessed is a stimulation, or a catalysis
-    // from a macromolecule or complex onto a process that consumes a simple chemical (a metabolic step)
+    // arc to its entity; an entity to a phenotype a modulation. A modulation guessed is the one most used on the map for
+    // that kind of end (usual), on a map with none a catalysis onto a process that consumes a simple chemical (a metabolic
+    // step), else a stimulation
     function linkHow(a, b, P) {
       if (cd) return cdHow(a, b, P);   // a CellDesigner map's (cdcreate.js), with where its end lands
       if (b < 0) return null;
-      var ra = roleOf(a), rb = roleOf(b), want = arcTool(), eqA = !!nodes2[a].eq, eqB = !!nodes2[b].eq;
+      var ra = roleOf(a), rb = roleOf(b), want = arcTool() === 'line' ? null : arcTool(), eqA = !!nodes2[a].eq, eqB = !!nodes2[b].eq;
       var has = function (s, t, head) { return edges2.some(function (q) { return q.s === s && q.t === t && q.arr[1] === head; }); };
       var ok = function (cls) { return has(a, b, sbJs.ARROW[cls]) ? { no: 'This ' + cls + ' is there already.' } : { cls: cls }; };
       var outs = function (g) { return edges2.filter(function (q) { return q.s === g; }).length; }, ins = function (g) { return edges2.filter(function (q) { return q.t === g; }).length; };
@@ -1350,11 +1354,11 @@
       if (rb === 'gate' && (word(b) === '\u03c4' || word(b).toUpperCase() === 'NOT') && ins(b)) return { no: 'A ' + (word(b) === '\u03c4' ? 'delay' : 'NOT gate') + ' has one input, and this one has it.' };
       var af = palLangNow() === 'af';   // Activity Flow: influences join two activities, and leave a gate for one
       if (af) {
-        if (ra === 'epn' && rb === 'epn') return want && !MODK[want] ? { no: 'Activity Flow joins activities by an influence.' } : ok(want || 'stimulation');
-        if (ra === 'gate' && !eqA && rb === 'epn') return want && !MODK[want] ? { no: 'A logic gate\u2019s output is an influence.' } : ok(want || 'stimulation');
+        if (ra === 'epn' && rb === 'epn') return want && !MODK[want] ? { no: 'Activity Flow joins activities by an influence.' } : ok(want || usual(b, 'stimulation'));
+        if (ra === 'gate' && !eqA && rb === 'epn') return want && !MODK[want] ? { no: 'A logic gate\u2019s output is an influence.' } : ok(want || usual(b, 'stimulation'));
       } else if (hybOn()) {   // Hybrid: a modulation picked may end on an entity (two entities with no sign still get a process between them)
         if (ra === 'epn' && rb === 'epn' && want && MODK[want]) return want === 'catalysis' ? { no: 'A catalysis ends on a process.' } : ok(want);
-        if (ra === 'gate' && !eqA && rb === 'epn' && (!want || MODK[want])) return want === 'catalysis' ? { no: 'A catalysis ends on a process.' } : ok(want || 'stimulation');
+        if (ra === 'gate' && !eqA && rb === 'epn' && (!want || MODK[want])) return want === 'catalysis' ? { no: 'A catalysis ends on a process.' } : ok(want || usual(b, 'stimulation'));
       }
       if (want === 'logic arc' && rb !== 'gate' && !(eqA && rb === 'epn')) return { no: 'A logic arc goes into a logic gate.' };
       if (want === 'catalysis' && rb === 'pheno') return { no: 'A catalysis ends on a process; a phenotype takes a stimulation, inhibition or modulation.' };   // as the converter's rules
@@ -1372,11 +1376,11 @@
         if ((want === 'logic arc' || want === 'consumption') && eqA) return rb === 'epn' ? ok('logic arc') : { no: 'An equivalence\u2019s line goes to an entity.' };
         if (want) return { no: 'A ' + want + ' does not leave a logic gate: its output is a modulation (a stimulation, unless another is picked).' };
         if (eqA) return rb === 'epn' ? ok('logic arc') : { no: 'An equivalence’s line goes to an entity.' };
-        return rb === 'epn' ? { no: 'A logic gate’s output goes to a process, a phenotype or another gate (Reduced notation is unticked in the palette).' } : ok('stimulation');
+        return rb === 'epn' ? { no: 'A logic gate’s output goes to a process, a phenotype or another gate (Reduced notation is unticked in the palette).' } : ok(usual(b, 'stimulation'));
       }
       if (rb === 'pheno') {
         if (ra !== 'epn' || want) return { no: 'A phenotype is modulated by an entity or a logic gate (a stimulation, unless another modulation is picked).' };
-        return ok('stimulation');
+        return ok(usual(b, 'stimulation'));
       }
       if (ra === 'proc' && rb === 'proc') return { no: 'An arc goes from an entity into a process (a consumption) or from a process to an entity (a production), not between two processes.' };
       // two entities (a shortcut): a process made between them, with Consumption or Production picked
@@ -1385,10 +1389,19 @@
       if (want && want !== cls) return { no: want === 'consumption' ? 'A consumption goes from an entity into a process.' : 'A production goes from a process to an entity.' };
       if (!want && cls === 'consumption' && P && offAxis(b, P)) {   // landed on a side off the antennas: a modulation
         var n = nodes2[a], sub = edges2.some(function (q) { return q.t === b && q.arr[1] === 'none' && nodes2[q.s].shape.kind === 'SimpleChemical'; });
-        return ok(sub && (/^(Macromolecule|Complex)$/.test(n.shape.kind) || n.kids.length > 0) ? 'catalysis' : 'stimulation');
+        return ok(usual(b, sub && (/^(Macromolecule|Complex)$/.test(n.shape.kind) || n.kids.length > 0) ? 'catalysis' : 'stimulation'));
       }
       if (has(a, b, cls === 'production' ? 'delta' : 'none')) return { no: 'This ' + cls + ' is there already.' };
       return { cls: cls };
+    }
+    // the modulation a line with no kind picked gets: the one most used on the map into nodes of b's role (catalysis only
+    // into processes), ties in the palette's order, else `dflt` (a map with none yet)
+    function usual(b, dflt) {
+      var rb = roleOf(b), kind = {}, n = {}, best = dflt, most = 0;
+      Object.keys(MODK).forEach(function (k) { if (k !== 'catalysis' || rb === 'proc') kind[sbJs.ARROW[k]] = k; });
+      edges2.forEach(function (q) { var k = kind[q.arr[1]]; if (k && roleOf(q.t) === rb) n[k] = (n[k] || 0) + 1; });
+      PAL_PD[4][1].forEach(function (q) { if (n[q[0]] > most) { most = n[q[0]]; best = q[0]; } });
+      return best;
     }
     function offAxis(i, P) {   // P on a side off the antennas of process i, one with a consumption or production (a bare one has no axis yet)
       var id = nodes2[i].id, H = window.yrender && hubPorts()[id], b = bx(i), c = [b[0] + b[2] / 2, b[1] + b[3] / 2];

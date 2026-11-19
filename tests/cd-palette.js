@@ -30,7 +30,7 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#acly-celld
     await page.waitForSelector('#m2-editwin button[data-make="cd:PROTEIN"]', { state: 'visible', timeout: 30000 }); await page.waitForTimeout(1500);
   };
   await start(url);
-  ok('24 CellDesigner signs, no PD and AF', (await page.$$eval('#m2-editwin .m2-ed-psigns button', function (l) { return l.filter(function (x) { return x.offsetParent; }).length; })) === 24 && !(await page.$('#m2-editwin button[data-lang="pd"]:visible')));
+  ok('25 CellDesigner signs, no PD and AF', (await page.$$eval('#m2-editwin .m2-ed-psigns button', function (l) { return l.filter(function (x) { return x.offsetParent; }).length; })) === 25 && !(await page.$('#m2-editwin button[data-lang="pd"]:visible')));
   var p = await made('cd:PROTEIN', 1150, 250), m = await made('cd:SIMPLE_MOLECULE', 1150, 420), r = await made('cd:RNA', 1000, 180), g = await made('cd:GENE', 1300, 180);
   var c = await made('cd:COMPARTMENT', 900, 790);
   ok('species and a compartment placed by clicks', !!(p && m && r && g && c));
