@@ -91,14 +91,14 @@
       palShown = k;
       palSignsEl.innerHTML = palSigns(palCd()); palBlocks();
     }
-    // the tick box's title and circled i on a CellDesigner map say what it does there (the SBGN text speaks of
+    // the tick box's title and circled i's text on a CellDesigner map say what it does there (the SBGN text speaks of
     // hybrid maps and SBGN-ML files); palFill puts the SBGN ones back
     var CD_INFO = 'Lets the modifiers\u2019 signs (inhibition, physical stimulation, modulation, trigger) join two species directly, written as CellDesigner\u2019s reduced notation, and allows a logic gate between species. Unticked: reactions and their modifiers only. CellDesigner\u2019s positive influence (an open arrowhead, not an SBGN sign) is made a physical stimulation when a map is opened.';
     function cdInfo(hy, on_) {
-      var lab = hy.querySelector('label'), ti = hy.querySelector('.m2-ed-ptip'), tx = hy.querySelector('.m2-ed-ptext');
-      if (!lab.dataset.sbgn) { lab.dataset.sbgn = lab.title; tx.dataset.sbgn = tx.textContent; }
-      var v = on_ ? CD_INFO : tx.dataset.sbgn;
-      if (tx.textContent !== v) { lab.title = on_ ? 'Ticked (the default): the reduced notation signs shown' : lab.dataset.sbgn; ti.title = v; tx.textContent = v; }
+      var lab = hy.querySelector('label'), ti = hy.querySelector('.m2-ed-ptip');
+      if (!lab.dataset.sbgn) { lab.dataset.sbgn = lab.title; ti.dataset.sbgn = ti.dataset.info; }
+      var v = on_ ? CD_INFO : ti.dataset.sbgn;
+      if (ti.dataset.info !== v) { lab.title = on_ ? 'Ticked (the default): the reduced notation signs shown' : lab.dataset.sbgn; ti.dataset.info = v; }
     }
     function cdCheck() {   // the palette's kinds against cd_make's and cdrender's, once loaded: a drift said in the console
       var g = window.cdrender && window.cdrender.GATE, miss = CD_SP.filter(function (q) { return !cdComp(q[0]) && !cdMk.LOOK[q[0]]; }).map(function (q) { return q[0]; })

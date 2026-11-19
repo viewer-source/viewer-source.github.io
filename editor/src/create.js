@@ -195,7 +195,7 @@
     function palLookNow() { return palViews() && palSet.look === 'sbgn' ? 'sbgn' : 'rn'; }
     function palBtn(attr, title, sign) { return '<button type="button" ' + attr + ' title="' + title + '" aria-label="' + title + '" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">' + sign + '</svg></button>'; }
     function palView(look, name, title) { return '<button type="button" role="radio" data-look="' + look + '" title="' + title + '" aria-label="' + title + '" aria-checked="false"><span class="m2-ed-radio" aria-hidden="true"></span>' + name + '</button>'; }
-    // the circled i beside the views and the tick boxes: its text in the title, and shown under the line by a click, hidden by the next (phones have no hover)
+    // the circled i beside the views and the tick boxes: its text in data-info, shown in the page's info window (.m2-itip, atlas-app.html)
     var INFO = {
       strict: 'Corresponds to CellDesigner\'s Reduced Notation: stimulation, inhibition, necessary stimulation and modulation may also end on entities, which makes a hybrid map. Such links are outside the SBGN Process Description specification, and some tools may not read or save the SBGN-ML file correctly.',
       rn: 'Corresponds to CellDesigner\'s Reduced Notation palette, which enables an Activity Flow type of representation.',
@@ -203,8 +203,7 @@
       prot: 'When ticked, shows the auxiliary unit on protein activities. An activity with no auxiliary unit is by default a protein activity.'
     };
     function palTip(line, name, t) {
-      return '<div class="m2-ed-pline">' + line + '<button type="button" class="m2-ed-pinfo m2-ed-ptip" aria-label="About ' + name + '" title="' + t + '" aria-expanded="false"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true"><circle cx="8" cy="8" r="7.2" stroke-width="1.1"/><path d="M8 7.3v4.2" stroke-width="1.8" stroke-linecap="round"/><circle cx="8" cy="4.6" r="1.2" fill="currentColor" stroke="none"/></svg></button></div>' +
-        '<div class="m2-ed-ptext" hidden>' + t + '</div>';
+      return '<div class="m2-ed-pline">' + line + '<button type="button" class="m2-ed-pinfo m2-ed-ptip m2-itip" aria-label="About ' + name + '" title="About ' + name + '" data-info="' + t + '" aria-expanded="false"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true"><circle cx="8" cy="8" r="7.2" stroke-width="1.1"/><path d="M8 7.3v4.2" stroke-width="1.8" stroke-linecap="round"/><circle cx="8" cy="4.6" r="1.2" fill="currentColor" stroke="none"/></svg></button></div>';
     }
     pal.innerHTML = '<div class="m2-ed-prow m2-ed-pnot" role="group" aria-label="Notation">' +
       palBtn('data-lang="pd"', 'Process Description', '<text x="12" y="17.3" text-anchor="middle" font-size="15">PD</text>') +
@@ -535,8 +534,6 @@
     }
     function palOk(kind) { return PALS[palKey()].some(function (s) { return s[1].some(function (q) { return q[0] === kind; }); }); }
     pal.addEventListener('click', function (e) {
-      var ti = e.target.closest('.m2-ed-ptip');
-      if (ti) { var tx = ti.parentNode.nextElementSibling, open = tx.hidden; tx.hidden = !open; ti.setAttribute('aria-expanded', String(open)); ti.blur(); return; }
       var b = e.target.closest('button[data-lang], button[data-look]');
       if (b && !b.disabled) palPick(b.dataset.lang, b.dataset.look);
     });
