@@ -335,9 +335,9 @@
       (all[id] = all[id] || {})[what] = v;
       try { localStorage.setItem(CHOICE_KEY, JSON.stringify(all)); } catch (e) {}
     }
-    // the map's Colours: the choice kept for it while the map still shows it (From file and Custom always); else the first
+    // the map's Colours: the choice kept for it while the map still shows it (From map and Custom always); else the first
     // of ids the map shows (is: every filled glyph as that choice colours it, its lines apart; Confetti every one a confetti
-    // pastel), else From file. So a map recoloured elsewhere, or a recolour undone, shows what the map now is. Read once per
+    // pastel), else From map. So a map recoloured elsewhere, or a recolour undone, shows what the map now is. Read once per
     // change of the map
     // is(m): true, false, or null where the map has nothing to read (an empty map: a kept choice stands, none is read).
     // An SBGN-ML map's moves and resizes change no colour: read again only when more than places changed (sbgn.js GEO)
@@ -354,12 +354,12 @@
     // Style, the sizes of new nodes, kept per map (mapChoice): the size most nodes of that kind
     // have on the map (sbgn_edit.defaults, cd_make.classSize; the built-in size where it has none), or the built-in sizes
     // Custom: the size kept by Set as default for that kind (each format keeps its own: atlas-edit-defaults,
-    // atlas-edit-cd-defaults), From file for a kind with none
-    var STYLES = [['file', 'From file', 'New nodes the size most nodes of their kind have on this map'], ['default', 'Default', 'New nodes at the editor\u2019s own sizes'], ['custom', 'Custom', 'New nodes the size kept by Set as default; From file for a kind with none']];
+    // atlas-edit-cd-defaults), From map for a kind with none
+    var STYLES = [['file', 'From map', 'New nodes the size most nodes of their kind have on this map'], ['default', 'Default', 'New nodes at the editor\u2019s own sizes'], ['custom', 'Custom', 'New nodes the size kept by Set as default; From map for a kind with none']];
     function palStyle() { return mapChoice('style', ['file', 'default', 'custom']) || 'file'; }
     function styleRow() { return palDrop({ key: 'style', label: 'Style', title: 'Sizes of new nodes', list: STYLES, get: palStyle, set: function (v) { keepMapChoice('style', v); } }); }
     // Confetti, a choice of both palettes' Colours: every new entity a pastel of its own, whatever its kind (processes,
-    // gates, empty sets and compartments keep From file's look). The hues are the golden-angle sequence (k times 137.508
+    // gates, empty sets and compartments keep From map's look). The hues are the golden-angle sequence (k times 137.508
     // degrees), HSL saturation 55% and lightness 82%, so black text reads on each; of the first 64 hues, the one farthest
     // from every clearly coloured hue already on the map (chroma above 0.08, so near-white and near-black tints count for
     // none), the earliest on a tie. The same map gives the same colour; to a reader it looks random
@@ -404,7 +404,7 @@
     function confettiSquares() { return '<span class="m2-cs-sw">' + [0, 1, 2, 3, 4].map(function (k) { var x = confettiHex(k * 137.508 % 360); return '<i style="background:' + x + '" title="' + x.toUpperCase() + '"></i>'; }).join('') + '</span>'; }
     // Colours on SBGN-ML maps, kept per map or read from it (mapCols): the map's own (sbgn_edit.defaults: the fill most glyphs of the
     // kind have; the Default colours for a kind the map lacks), the viewer's Default colours, none, or Confetti
-    var SB_COLS = [['file', 'From file', 'The map as it is; new glyphs in the colour most glyphs of their kind have on it'], ['default', 'Default', 'The whole map and new glyphs in the viewer\u2019s Default colours'], ['none', 'No colours', 'The whole map and new glyphs unfilled'], ['custom', 'Custom', 'The whole map and new glyphs in the colours kept by Set as default; a kind with none as it is'], ['confetti', 'Confetti', 'Every glyph of the map, and every new one, a pastel of its own']];
+    var SB_COLS = [['file', 'From map', 'The map as it is; new glyphs in the colour most glyphs of their kind have on it'], ['default', 'Default', 'The whole map and new glyphs in the viewer\u2019s Default colours'], ['none', 'No colours', 'The whole map and new glyphs unfilled'], ['custom', 'Custom', 'The whole map and new glyphs in the colours kept by Set as default; a kind with none as it is'], ['confetti', 'Confetti', 'Every glyph of the map, and every new one, a pastel of its own']];
     function sbCols() { return mapCols(['file', 'none', 'default', 'confetti', 'custom'], sbIs); }
     var SB_SQ = ['macromolecule', 'simple chemical', 'nucleic acid feature', 'phenotype', 'compartment'];
     function sbSquares(mode) {   // five at most, the first at the right (row-reverse), each colour once
@@ -420,7 +420,7 @@
     }
     function sbColsRow() { return palDrop({ key: 'cols', label: 'Colours', title: 'Colours of the map and of new glyphs', list: SB_COLS, get: sbCols, set: function (v) { keepMapChoice('cols', v); sbRecolour(v); }, sq: sbSquares }); }
     // a choice of Colours recolours the whole map, one undo step: every entity, complex and compartment its fill by the
-    // choice (its border black), as a new one of its kind would get it (defOf); From file leaves the map as it is; Custom a
+    // choice (its border black), as a new one of its kind would get it (defOf); From map leaves the map as it is; Custom a
     // kind with a kept look its fill, border and width, the rest as they are; Confetti every entity, complexes too, a pastel
     // of its own, one after another (compartments as they are). Every line black, under Confetti a colour of its own
     // (confettiLine); processes, gates and the other glyphs their border black. One parse (sbgn_edit.restyleAll)
@@ -1713,7 +1713,7 @@
     });
     // Set as default (Newt's): this node's size, colours, border and multimer kept as they are, by kind, in this browser
     // for every map (atlas-edit-defaults), and Style and Colours switched to Custom: Style Custom takes the size and
-    // multimer, Colours Custom the fill, border colour and width; a kind with none kept takes From file
+    // multimer, Colours Custom the fill, border colour and width; a kind with none kept takes From map
     var DEF_KEY = 'atlas-edit-defaults';
     function looksKept(key) { try { return JSON.parse(localStorage.getItem(key) || '{}') || {}; } catch (e) { return {}; } }   // the looks kept by Set as default, by kind (a format's own key)
     function defsKept() { return looksKept(DEF_KEY); }

@@ -1,7 +1,7 @@
 // Colours under the CellDesigner palette (editor/src/cdcreate.js cdColourIn) on the Glycogen muscle CellDesigner map, which
-// has proteins, simple molecules, complexes and compartments but no phenotype, gene or RNA: From file gives the map's
+// has proteins, simple molecules, complexes and compartments but no phenotype, gene or RNA: From map gives the map's
 // colour for a class it has and the Default colour for one it has none of (never CellDesigner's own); a new compartment
-// takes the map's compartment colour under From file, the Default one (#DFDBCE, drawn at a quarter as #F7F6F3) under
+// takes the map's compartment colour under From map, the Default one (#DFDBCE, drawn at a quarter as #F7F6F3) under
 // Default, CellDesigner's yellow under CellDesigner, white under No colours; the squares of Default and Custom show no
 // CellDesigner colour. Nothing is saved (no token). No script error.
 //   node tests/cd-colours-default.js [base address] [viewer folder: its editor and converter scripts served in place of the page's]
@@ -33,16 +33,16 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local =
   ok('Default squares: no CellDesigner colour', S.Default && !CD.test(S.Default), S.Default);
   ok('Custom squares (none kept): no CellDesigner colour', S.Custom && !CD.test(S.Custom), S.Custom);
   ok('CellDesigner squares: its own', CD.test(S.CellDesigner || ''), S.CellDesigner);
-  // From file (the choice when none is kept)
+  // From map (the choice when none is kept)
   var pr = await made('cd:PROTEIN', 700, 820), ph = await made('cd:PHENOTYPE', 820, 820), gn = await made('cd:GENE', 940, 820), rn = await made('cd:RNA', 1060, 820), cp = await made('cd:COMPARTMENT', 1180, 760);
-  ok('From file: a protein in the map’s blue', await paint(pr) === 'ffc8d8eb', await paint(pr));
-  ok('From file, none on the map: a phenotype white (Default)', await paint(ph) === 'ffffffff', await paint(ph));
+  ok('From map: a protein in the map’s blue', await paint(pr) === 'ffc8d8eb', await paint(pr));
+  ok('From map, none on the map: a phenotype white (Default)', await paint(ph) === 'ffffffff', await paint(ph));
   ok('a gene white', await paint(gn) === 'ffffffff', await paint(gn));
   ok('an RNA white', await paint(rn) === 'ffffffff', await paint(rn));
   ok('a compartment in the map’s compartment colour', await paint(cp) === 'ffdfdbce', await paint(cp));
-  // the map's compartments are the Default colour here, so From file's own reading is checked on the map's text recoloured
+  // the map's compartments are the Default colour here, so From map's own reading is checked on the map's text recoloured
   var own = await page.evaluate(function () { return window.cd_make.compartmentColour(window.m2EditNow().text.replace(/(<celldesigner:compartmentAlias [\s\S]*?<celldesigner:paint color=")[0-9a-fA-F]{8}/g, '$1FF123456')); });
-  ok('From file reads the map’s compartment colour (recoloured: ff123456)', own === 'ff123456', own);
+  ok('From map reads the map’s compartment colour (recoloured: ff123456)', own === 'ff123456', own);
   await pick('CellDesigner');
   var ph2 = await made('cd:PHENOTYPE', 820, 700), cp2 = await made('cd:COMPARTMENT', 1180, 560);
   ok('CellDesigner: a phenotype in its own purple', await paint(ph2) === 'ffcc99ff', await paint(ph2));

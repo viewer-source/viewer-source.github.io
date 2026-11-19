@@ -49,7 +49,7 @@ async function run(b, map, sign, kind) {
   var light = fills.every(function (x) { var c = [1, 3, 5].map(function (k) { return parseInt(x.substr(k, 2), 16) / 255; }); return Math.abs((Math.max.apply(0, c) + Math.min.apply(0, c)) / 2 - .82) < .01; });
   ok(kind + ': each a pastel at lightness 82%', light, fills.join(' '));
   ok(kind + ': the three apart', new Set(fills).size === 3, fills.join(' '));
-  if (kind === 'SBGN-ML') {   // a process keeps From file's look: no pastel
+  if (kind === 'SBGN-ML') {   // a process keeps From map's look: no pastel
     var b4 = await page.$$eval('#m2-img [data-n]', function (l) { return l.map(function (x) { return x.getAttribute('data-n'); }); });
     await page.click('#m2-editwin button[data-make="process"]'); await page.mouse.click(1050, 800); await page.waitForTimeout(1000); await page.keyboard.press('Escape');
     var pid = (await page.$$eval('#m2-img [data-n]', function (l) { return l.map(function (x) { return x.getAttribute('data-n'); }); })).filter(function (x) { return b4.indexOf(x) < 0; })[0];
