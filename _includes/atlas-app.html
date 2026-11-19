@@ -3424,7 +3424,6 @@ page, so its styles keep the base they were made on).
     }
     // the area selected (a drag on the map): zoom to it, or its piece of the picture
     function areaMenu(box, m, url, a) {
-      box.appendChild(el('div', 'm2-cx-head', 'Selected area'));
       item(box, 'Zoom to area', function () { zoomToArea(a); });
       if (!m.imageError) item(box, 'Copy image as PNG', function (r) { copyPicture(m, url, r, shown(m), a); });
       return box;

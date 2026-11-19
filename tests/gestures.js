@@ -29,7 +29,7 @@ var URL0 = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysi
   ok('view mode: the area is an outline only, no fill', await page.$eval('#m2-area', function (e) { var b = getComputedStyle(e).backgroundColor; return b === 'rgba(0, 0, 0, 0)' || b === 'transparent'; }));
   await page.mouse.click(cx, cy, { button: 'right' }); await page.waitForTimeout(300);
   var menu = await page.$$eval('.m2-cx button, .m2-cx .m2-cx-head', function (l) { return l.map(function (x) { return x.textContent.trim(); }); });
-  ok('right click inside: the area menu, Zoom to area and Copy image as PNG only', menu.join('|') === 'Selected area|Zoom to area|Copy image as PNG', menu.join(' | '));
+  ok('right click inside: the area menu, Zoom to area and Copy image as PNG only', menu.join('|') === 'Zoom to area|Copy image as PNG', menu.join(' | '));
   await page.click('.m2-cx button:has-text("Copy image as PNG")'); await page.waitForTimeout(2500);
   var got = await page.evaluate(async function () {
     var it = (await navigator.clipboard.read())[0], bm = await createImageBitmap(await it.getType('image/png')); return bm.width + 'x' + bm.height;
