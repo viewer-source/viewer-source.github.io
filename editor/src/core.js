@@ -307,12 +307,46 @@
               return f.dir.getFileHandle(nm2, { create: true }).then(function (x) { h = x; return h.createWritable(); })
                 .then(function (wr) { return wr.write(t).then(function () { return wr.close(); }); })
                 .then(function () { return h.getFile(); })
-                .then(function (fl) { return folderFile(id, { name: nm2, mod: fl.lastModified, size: fl.size }); });
+                .then(function (fl) { return folderFile(id, { name: nm2, mod: fl.lastModified, size: fl.size }); })
+                .then(function () {   // a new file: no record left under its name, and the map's own one (taken before) beside it
+                  if (w && w.name === nm2) return;
+                  return origFolderDrop(f, nm2).then(function () { var r = origAll()[id]; if (r && (r.fill || r.node)) return origWrite(f, nm2, r); });
+                });
             });
           });
         });
       }).catch(function (e) { if (e && (e.name === 'NotFoundError' || e.name === 'NotAllowedError')) lost(e); else warn('Not saved to the folder: ' + String(e && e.message ? e.message : e).replace(/\.$/, '') + '.'); });
       return fq;
+    }
+    // Original's record (create.js colsPick) beside the maps in the folder too, in its hidden .viewer/colours/<file>.json
+    // (a name starting with a dot: hidden in Finder and the Explorer, never read by other programs), so it outlives the
+    // browser's site data. By the map's file name there: written with the map's first file (a record taken before), taken
+    // out when a new file takes a name (a record left by a map deleted or moved), deleted with the map, moved with its
+    // file back from Deleted/ (own.js); a file renamed elsewhere does not carry it (Original then starts from the map)
+    function origFolderDir(f, make) { return f.dir.getDirectoryHandle('.viewer', { create: make }).then(function (d) { return d.getDirectoryHandle('colours', { create: make }); }); }
+    function origFolderName(id, f) { var w = f && f.files[id]; return w && w.name.indexOf('/') < 0 ? w.name : null; }
+    function origWrite(f, nm, rec) {
+      return origFolderDir(f, true).then(function (d) { return d.getFileHandle(nm + '.json', { create: true }); }).then(function (h) { return h.createWritable(); })
+        .then(function (w) { return w.write(JSON.stringify(Object.assign({}, rec, { sent: undefined }))).then(function () { return w.close(); }); });
+    }
+    function origFolderDrop(f, nm) { return origFolderDir(f, false).then(function (d) { return d.removeEntry(nm + '.json'); }).catch(function () {}); }   // none there: nothing to do
+    function origRead(f, nm) {   // a record, or null (none, unreadable, not a record)
+      return origFolderDir(f, false).then(function (d) { return d.getFileHandle(nm + '.json'); }).then(function (h) { return h.getFile(); }).then(function (fl) { return fl.text(); })
+        .then(function (t) { var r = JSON.parse(t); return r && typeof r === 'object' && !Array.isArray(r) && (r.fill || r.node) ? r : null; }).catch(function () { return null; });
+    }
+    function origToFolder(id, rec) {
+      if (!canFolder || !V.folderName() || (repo() && token())) return;   // connected: GitHub has it
+      fq = fq.then(function () {
+        return folder().then(function (f) {
+          var nm = origFolderName(id, f);
+          if (!nm) return;   // the map not in the folder yet: written with its first file (toFolder)
+          return f.dir.queryPermission({ mode: 'readwrite' }).then(function (p) { if (p === 'granted') return origWrite(f, nm, rec); });
+        });
+      }).catch(function (e) { if (e && (e.name === 'NotFoundError' || e.name === 'NotAllowedError')) lost(e); else warn('The map\u2019s own colours were not kept in the folder: ' + String(e && e.message ? e.message : e).replace(/\.$/, '') + '.'); });
+    }
+    function origFromFolder(id) {   // the record in the folder, or null
+      if (!canFolder || !V.folderName() || (repo() && token())) return Promise.resolve(null);
+      return folder().then(function (f) { var nm = origFolderName(id, f); return nm ? origRead(f, nm) : null; }).catch(function () { return null; });
     }
     function allToFolder() {   // every map kept in this browser, once a folder is chosen or allowed again
       var d = V.drafts;
@@ -408,6 +442,9 @@
       }
       var first = b.dataset.seen === 'now', fn = canFolder ? V.folderName() : '', q = function (k) { return b.querySelector(k); };
       q('#m2-ed-l1').hidden = !first || !!fn;
+      var l5 = q('#m2-ed-l5');   // after the first time: one short line stays while nothing outside this browser keeps the map
+      if (l5) l5.hidden = first || !!fn;   // none in a page older than this editor (a cached page)
+      if (l5) l5.textContent = canFolder ? 'Kept in this browser only: choose a folder so your maps cannot be lost.' : 'Kept in this browser only: download the map so it cannot be lost.';
       q('#m2-ed-l2').hidden = !first || canFolder;
       q('#m2-ed-local-dl').hidden = canFolder;
       q('#m2-ed-l-folder').hidden = !canFolder || !!fn;

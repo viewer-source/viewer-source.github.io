@@ -821,7 +821,11 @@
                 return to.getFileHandle(nm2, { create: true }).then(function (x) { h2 = x; return x.createWritable(); })
                   .then(function (wr) { return wr.write(fl).then(function () { return wr.close(); }); })
                   .then(function () { return h2.getFile(); })
-                  .then(function (nf) { return from.removeEntry(nm).then(function () { return folderFile(id, { name: (toBin ? BIN_DIR + '/' : '') + nm2, mod: nf.lastModified, size: nf.size }); }); });
+                  .then(function (nf) { return from.removeEntry(nm).then(function () { return folderFile(id, { name: (toBin ? BIN_DIR + '/' : '') + nm2, mod: nf.lastModified, size: nf.size }); }); })
+                  .then(function () {   // back from Deleted/ under another name: Original's record follows (core.js origRead); one under the new name taken out
+                    if (toBin || nm2 === nm) return;
+                    return origRead(f, nm).then(function (r) { return origFolderDrop(f, nm2).then(function () { return r && origWrite(f, nm2, r).then(function () { return origFolderDrop(f, nm); }); }); });
+                  });
               });
             });
           });
@@ -836,6 +840,8 @@
           if (p !== 'granted') return;
           return (inBin ? f.dir.getDirectoryHandle(BIN_DIR) : Promise.resolve(f.dir)).then(function (d) { return d.removeEntry(inBin ? nm.slice(BIN_DIR.length + 1) : nm); })
             .catch(function (e) { if (!e || e.name !== 'NotFoundError') throw e; }).then(function () {
+            return origFolderDrop(f, inBin ? nm.slice(BIN_DIR.length + 1) : nm);   // Original's record with it (core.js)
+          }).then(function () {
             return V.draftDo('readwrite', function (st) { var q = st.get('files'); q.onsuccess = function () { var r = q.result || {}; delete r[id]; st.put(r, 'files'); }; return q; }, 'folder');
           });
         });

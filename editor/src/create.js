@@ -337,7 +337,7 @@
     }
     // Original, Colours' first choice: the map's own colours. Taken (the format's colours(), by element) when another
     // choice is made while the map is in its own colours, kept per map in this browser and with the map on GitHub
-    // (own.js origPut), and put back by Original, each
+    // (own.js origPut) or in the folder (core.js origToFolder), and put back by Original, each
     // element the record knows; one added since keeps its colour, and the map as it then is is its own again (taken at
     // the next choice). New glyphs under Original: the colour most of their kind have on the map
     var ORIG_KEY = 'atlas-edit-originals';
@@ -349,10 +349,10 @@
       if (v === 'file') {
         if (!id) { keepMapChoice('cols', 'file'); return; }
         var mine0 = origAll()[id] || null, s0 = site;
-        origGh().then(function (g) {
+        Promise.all([origGh(), origFromFolder(id)]).then(function (o) {
           if (seq !== pickSeq || !on || site !== s0 || palId() !== id) return;   // another choice, map or Done meanwhile
-          var r = g && (!mine0 || (g.at || 0) > (mine0.at || 0)) ? g : mine0;
-          if (r && r !== mine0) origKeep(id, Object.assign({}, r, { sent: 1 }));   // GitHub's newer (another computer): kept here too, so the field reads it, as GitHub has it
+          var r = [o[0], o[1]].reduce(function (a, x) { return x && typeof x === 'object' && (x.fill || x.node) && (!a || (x.at || 0) > (a.at || 0)) ? x : a; }, mine0);   // the newest: GitHub's, the folder's or this browser's
+          if (r && r !== mine0) origKeep(id, Object.assign({}, r, { sent: r === o[0] ? 1 : undefined }));   // kept here too, so the field reads it
           keepMapChoice('cols', 'file');   // only now: a choice made while GitHub was asked still saw the map's scheme (no record taken from it)
           if (!r) { if (cur !== 'file') note('Original: no colours of this map kept; the map stays as it is.'); paint(); return; }
           var added = back(r);
@@ -367,6 +367,7 @@
         r.at = same ? was.at : Date.now();
         if (same && was.sent) r.sent = was.sent;
         if (!origKeep(id, r)) warn('The map\u2019s own colours could not be kept in this browser.');
+        origToFolder(id, r);   // without a token, the folder's hidden .viewer/ (core.js); a map not in the folder yet gets it with its first file
         if (!r.sent) origPut(r, function () { var all = origAll(); if (all[id] && all[id].at === r.at) { all[id].sent = 1; origKeep(id, all[id]); } });   // GitHub once per change of the colours (own.js)
       }
       keepMapChoice('cols', v); recolour(v);
