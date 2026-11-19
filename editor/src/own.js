@@ -125,39 +125,46 @@
     // this browser only, as their group comes from the build
     function canRenameGroup(name) { return !!name && (ownGroup(name) || V.listGroups().indexOf(name) >= 0); }
     function renameSiteGroup(was) {
+      if (naming) naming(true);   // the open field ends first: it rebuilds the list, so the heading is looked up after it
       var at = document.getElementById('m2-list').querySelector('.m2-group:not(.m2-mine):not(.m2-bin)[data-group="' + CSS.escape(was) + '"]');
       if (!at) return;
+      var clean = function (v) { return (v || '').replace(/["\\]/g, '').trim(); };   // as the pages' front matter holds it
+      var taken = function (v) { return v !== was && (V.listGroups().indexOf(v) >= 0 || mineGroups().indexOf(v) >= 0); };
       inPlace(at, { cls: 'm2-group-edit', max: 60, value: was, label: 'Name of the group',
-        bad: function (v) { return v && v !== was && V.listGroups().indexOf(v) >= 0 ? 'A group of this name is in the list already' : ''; },
+        bad: function (v) { v = clean(v); return v && taken(v) ? 'A group of this name is in the list already' : ''; },
         end: function (v) {
-          if (!v || v === was || V.listGroups().indexOf(v) >= 0) return;
-          v = v.replace(/["\\]/g, '');
+          v = clean(v);
+          if (!v || v === was || taken(v)) return;
           var gh = !!(repo() && token()), pages = [];
-          (V.maps || []).forEach(function (m) {
-            if ((m.group || '') !== was || m.binned) return;
-            if (m.mine) { var r = mine[m.id]; if (r) { r.group = v; minePut(r).catch(function () {}); } return; }
+          (V.siteList || []).forEach(function (m) {   // every map of the group, also one in Deleted or hidden as an example
+            var g = V.movedOf(m.id); if (g === null) g = m.group || '';
+            if (g !== was) return;
             V.setMoved(m.id, v);
             if (gh && canRename(m, true)) pages.push(m.id);
           });
+          Object.keys(mine).forEach(function (k) { var r = mine[k]; if (r.group === was) { r.group = v; minePut(r).catch(function () {}); } });
+          V.regroupRename(was, v);   // the reader's order of groups and of the maps in it, and maps moved into it
           if (V.closed[was]) { V.closed[v] = true; delete V.closed[was]; V.saveClosed(); }
           if (pages.length) siteGroupTo(pages, v).catch(function (e) { alert(was + ' was not renamed on the site: ' + (e && e.message ? e.message : e) + '. The new name is kept in this browser only.'); });
         } });
     }
-    function siteGroupTo(ids, g) {   // maps/<id>.md of every map given: group g, example: dropped; one commit, three tries
+    function siteGroupTo(ids, g) {   // maps/<id>.md of every map given: group g, example: dropped; one commit on the pages as
+      // the commit read has them (a page gone meanwhile left out), three tries
       var tries = 0, post = ghPost;
       var go = function () {
-        return Promise.all(ids.map(function (id) {
-          return api('/contents/maps/' + encodeURIComponent(id) + '.md?ref=main').then(ghJson).then(function (d) {
-            var md = new TextDecoder().decode(Uint8Array.from(atob(d.content.replace(/\n/g, '')), function (c) { return c.charCodeAt(0); }));
-            var fm = /^---(\r?\n)([\s\S]*?)\r?\n---/.exec(md);
-            if (!fm) return null;
-            var head = fm[2].replace(/^group:[^\r\n]*/m, 'group: ' + JSON.stringify(g)).replace(/^example:.*(\r?\n|$)/m, '').replace(/\r?\n$/, '');
-            if (!/^group:/m.test(head)) head += fm[1] + 'group: ' + JSON.stringify(g);
-            return { path: 'maps/' + id + '.md', mode: '100644', type: 'blob', content: '---' + fm[1] + head + md.slice(3 + fm[1].length + fm[2].length) };
-          });
-        })).then(function (tree) {
-          tree = tree.filter(Boolean);
-          return api('/git/ref/heads/main').then(ghJson).then(function (ref) {
+        return api('/git/ref/heads/main').then(ghJson).then(function (ref) {
+          return Promise.all(ids.map(function (id) {
+            return api('/contents/maps/' + encodeURIComponent(id) + '.md?ref=' + ref.object.sha).then(function (r) { return r.status === 404 ? null : ghJson(r); }).then(function (d) {
+              if (!d) return null;
+              var md = textOf(d.content), fm = /^---(\r?\n)([\s\S]*?)\r?\n---/.exec(md);
+              if (!fm) return null;
+              var head = fm[2].replace(/^group:[^\r\n]*/m, 'group: ' + JSON.stringify(g)).replace(/^example:.*(\r?\n|$)/m, '').replace(/\r?\n$/, '');
+              if (!/^group:/m.test(head)) head += fm[1] + 'group: ' + JSON.stringify(g);
+              return { path: 'maps/' + id + '.md', mode: '100644', type: 'blob', content: '---' + fm[1] + head + md.slice(3 + fm[1].length + fm[2].length) };
+            });
+          })).then(function (tree) {
+            tree = tree.filter(Boolean);
+            if (!tree.length) return;
             return api('/git/commits/' + ref.object.sha).then(ghJson).then(function (c) { return post('/git/trees', { base_tree: c.tree.sha, tree: tree }); })
               .then(function (t) { return post('/git/commits', { message: 'Group renamed in the viewer: ' + g, tree: t.sha, parents: [ref.object.sha] }); })
               .then(function (n) { return post('/git/refs/heads/main', { sha: n.sha }, 'PATCH'); });
@@ -433,7 +440,7 @@
       });
     }
     function examplesHere(ids, gh) {   // this browser's changes to these examples (and their SBGN-ML twins) let go, the list drawn again
-      var all = ids.concat(ids.filter(function (id) { return /-graphml$/.test(id); }).map(function (id) { return id.replace(/-graphml$/, '') + '-sbgn'; }));
+      var all = ids.concat(ids.filter(function (id) { return /-graphml$/.test(id); }).map(twinOf));
       var pend = binPending(), deleted = {};
       (V.siteList || []).forEach(function (m) { deleted[m.id] = m.deleted; });
       all.forEach(function (id) {
@@ -472,19 +479,21 @@
               var changed = ids.filter(function (id) { return shaOf[id + '.md'] && shaOf[id + '.md'] !== saved[id + '.md']; });
               return Promise.all(changed.map(function (id) {   // a changed page: still an example, or the reader's now
                 return api('/git/blobs/' + shaOf[id + '.md']).then(ghJson).then(function (b) {
-                  var md = new TextDecoder().decode(Uint8Array.from(atob(b.content.replace(/\n/g, '')), function (ch) { return ch.charCodeAt(0); }));
-                  return /^example:[ \t]*true[ \t]*\r?$/m.test(md) ? null : id;
+                  var md = textOf(b.content);
+                  return /^example:[ \t]*"?true"?[ \t]*\r?$/m.test(md) ? null : id;
                 });
               })).then(function (taken) {
                 taken = taken.filter(Boolean);
-                var tree = [], twin = function (id) { return 'sbgn-ml/' + id.replace(/-graphml$/, '') + '-sbgn.sbgn'; };
+                var tree = [], twin = function (id) { return 'sbgn-ml/' + twinOf(id) + '.sbgn'; };
                 var put = function (path, sha) { tree.push({ path: 'maps/' + path, mode: '100644', type: 'blob', sha: sha }); };
                 taken.forEach(function (id) {
-                  var k = 2, nid; do { nid = id.replace(/(-graphml|-celldesigner)?$/, '-' + k++ + '$1'); } while (now.some(function (f) { return f.path.indexOf(nid + '.') === 0 || f.path.indexOf('extra/' + nid + '/') === 0; }));
+                  var used = function (n) { return now.some(function (f) { return f.path.indexOf(n + '.') === 0 || f.path.indexOf('extra/' + n + '/') === 0 || f.path === twin(n) || f.path === 'colours/' + n + '.json' || f.path === 'colours/' + twinOf(n) + '.json' || f.path.indexOf(twinOf(n) + '.') === 0; }); };
+                  var k = 2, nid; do { nid = id.replace(/(-graphml|-celldesigner)?$/, '-' + k++ + '$1'); } while (used(nid));
                   now.forEach(function (f) {
                     var to = f.path.indexOf(id + '.') === 0 ? nid + f.path.slice(id.length)
                       : f.path.indexOf('extra/' + id + '/') === 0 ? 'extra/' + nid + '/' + f.path.slice(id.length + 7).split(id).join(nid)
-                      : f.path === twin(id) ? twin(nid) : f.path === 'colours/' + id + '.json' ? 'colours/' + nid + '.json' : null;
+                      : f.path === twin(id) ? twin(nid) : f.path === 'colours/' + id + '.json' ? 'colours/' + nid + '.json'
+                      : f.path === 'colours/' + twinOf(id) + '.json' && /-graphml$/.test(id) ? 'colours/' + twinOf(nid) + '.json' : null;
                     if (!to) return;
                     put(to, f.sha);
                     if (!saved[f.path]) put(f.path, null);   // what the backup does not hold again goes with it
@@ -829,6 +838,7 @@
       return mineShown().map(function (r) { return r.title; }).concat((V.siteList || []).filter(function (m) { return !binState(m, pend) && hid.indexOf(m.id) < 0; })
         .map(function (m) { var n = renamed[m.id]; return n && m.topic === n.was ? n.to : m.topic || m.title; }));
     }
+    function textOf(b64) { return new TextDecoder().decode(Uint8Array.from(atob(b64.replace(/\n/g, '')), function (c) { return c.charCodeAt(0); })); }   // GitHub's base64 content as text
     function ghPost(path, body, method) { return api(path, { method: method || 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(ghJson); }
     function ghJson(r) { return r.ok ? r.json() : r.json().catch(function () { return {}; }).then(function (d) { var e = new Error(d && d.message || 'GitHub ' + r.status); e.status = r.status; throw e; }); }
     // maps/<id>.md's front matter changed by edit({ get, set, drop }) in one commit, the closing line and the body as they were
@@ -836,7 +846,7 @@
       var path = '/contents/maps/' + encodeURIComponent(id) + '.md';
       return api(path + '?ref=main').then(function (r) { if (!r.ok) { var e = new Error(r.status === 404 ? 'it has no page of its own' : 'GitHub ' + r.status); e.noPage = r.status === 404; throw e; } return r.json(); })
         .then(function (d) {
-          var md = new TextDecoder().decode(Uint8Array.from(atob(d.content.replace(/\n/g, '')), function (c) { return c.charCodeAt(0); }));
+          var md = textOf(d.content);
           var fm = /^---(\r?\n)([\s\S]*?)\r?\n---/.exec(md);   // the front matter only, in the file's line ends
           if (!fm) throw new Error('its page has no front matter');
           var nl = fm[1], head = fm[2];
@@ -902,6 +912,7 @@
     }
     // the group SBGN-ML's maps (build.py sbgn_map: <name>-sbgn, edited at maps/sbgn-ml/<name>-sbgn.sbgn) are their GraphML
     // map's twins, with no page of their own: in Deleted with it, restored and deleted forever with it
+    function twinOf(id) { return id.replace(/-graphml$/, '') + '-sbgn'; }   // a GraphML map's SBGN-ML twin (build.py sbgn_map)
     function twinBase(m) { return m && !m.mine && /^maps\/sbgn-ml\/[^/]+-sbgn\.sbgn$/.test(m.editPath || '') ? m.id.replace(/-sbgn$/, '') : null; }
     function parentOf(m) {
       var b = twinBase(m), l = V.siteList || [];

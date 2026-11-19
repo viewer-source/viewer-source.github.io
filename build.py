@@ -23,7 +23,8 @@
 #   atlas-data/<id>-sbgnml.json, named in the entry's sbgn; the viewer shows it when Settings' Source is SBGN-ML.
 # maps/<id>.sbgn with its maps/<id>.md: an SBGN-ML map of its own in the group its entry names, drawn from the file as
 #   above and edited in place (edit_path maps/<id>.sbgn).
-# The group SBGN-ML (the converter's output from GraphML): every map of the group GraphML written as
+# The group SBGN-ML (the converter's output from GraphML): every map of the group GraphML, or whose page says twin: true
+#   (an example GraphML map, so a renamed group keeps its twins), written as
 #   SBGN-ML by the converter's copy (advanced: the drawing kept, nothing adjusted for Newt) into downloads/<name>-sbgn.sbgn
 #   and drawn back from that file as above, a map of its own with the GraphML map's title and text, so the formats stand
 #   side by side and any difference from the GraphML drawing is a bug to fix (reader, writer or yrender). Edited in the
@@ -445,9 +446,10 @@ def main():
                 del fm['sbgn']
         entries = [(mid, fm, body)]
         sid = re.sub(r'-graphml$', '', mid) + '-sbgn'
-        if ext == '.graphml' and fm['group'] == 'GraphML' and sid in sids:   # foo and foo-graphml: one SBGN-ML id, one edited copy
+        twinned = ext == '.graphml' and (fm['group'] == 'GraphML' or meta.get('twin') == 'true')   # twin: true keeps it out of the group too
+        if twinned and sid in sids:   # foo and foo-graphml: one SBGN-ML id, one edited copy
             print('warning: %s left out of the group SBGN-ML: %s is taken' % (mid, sid))
-        elif ext == '.graphml' and fm['group'] == 'GraphML':
+        elif twinned:
             sids.add(sid)
             own, found = sbgn_map(src, mid, fm, body)
             entries += [own] if own else []

@@ -2575,8 +2575,13 @@ page, so its styles keep the base they were made on).
       return Object.assign({}, m, { group: regrouped[m.id], siteGroup: m.group || '' });
     });
   }
-  function regroupRename(from, to) {   // a reader's group renamed (to) or removed (null: its site maps back to their own groups)
+  function regroupRename(from, to) {   // a group renamed (to) or a reader's group removed (null: its site maps back to their own groups)
     Object.keys(regrouped).forEach(function (id) { if (regrouped[id] === from) setMoved(id, to); });
+    if (to === null) return;
+    var gs = order.groups || [], k = gs.indexOf(from), ms = order.maps || {};   // the reader's order kept under the new name
+    if (k >= 0) gs[k] = to;
+    if (ms[from]) { ms[to] = ms[from]; delete ms[from]; }
+    if (k >= 0 || ms[to]) saveOrder();
   }
   function regroupPrune(list) {   // entries of maps no longer on the site let go
     var ids = {}; list.forEach(function (m) { ids[m.id] = 1; });

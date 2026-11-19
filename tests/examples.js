@@ -186,16 +186,25 @@ var EX = /^(glycolysis|srebp|acly|tag)-(graphml|celldesigner|sbgn)$/;   // the e
   var inG = await page.evaluate(function () { return Array.prototype.slice.call(document.querySelectorAll('#m2-list .m2-map[data-id$="-graphml"]')).map(function (b) { return b.dataset.id; }); });
   inG.forEach(function (id) { if (!files['maps/' + id + '.md'] || id === 'glycolysis-graphml') put('maps/' + id + '.md', '---\ntitle: "' + id + '"\ngroup: "GraphML"\norder: 1\n' + (EX.test(id) ? 'example: true\n' : '') + '---\nText.\n'); });
   put('maps/glycolysis-graphml.graphml', '<graphml mine/>'); put('maps/extra/glycolysis-graphml/glycolysis-graphml.png', 'my png');
+  put('maps/sbgn-ml/glycolysis-sbgn.sbgn', '<sbgn my twin/>'); put('maps/colours/glycolysis-graphml.json', '{"mine":1}');
+  put('maps/colours/glycolysis-2-graphml.json', '{"stray":1}');   // -2 taken by a stray file: -3
   var t6 = await items('#m2-list .m2-group[data-group="GraphML"]');
   ok('6. Rename group offered on a site group', t6[0] === 'Rename group', t6.join(' | '));
   var c6 = commits;
+  await menu('#m2-list .m2-map[data-id="glycolysis-graphml"]', 'Rename map');   // a name field open, then Rename group
+  await page.click('#m2-list .m2-group[data-group="GraphML"]', { button: 'right' }); await page.waitForTimeout(300);
+  await page.click('.m2-cx button:text-is("Rename group")'); await page.waitForTimeout(500);
+  ok('6. Rename group with another name field open: its own field', (await page.$$('#m2-list input')).length === 1 && !!(await page.$('#m2-list input.m2-group-edit')));
+  await page.fill('#m2-list input.m2-group-edit', '""'); await page.keyboard.press('Enter'); await page.waitForTimeout(800);
+  ok('6. a name of quotes only: nothing renamed', commits === c6 && !!(await page.$('#m2-list .m2-group[data-group="GraphML"]')));
   await page.click('#m2-list .m2-group[data-group="GraphML"]'); await page.waitForTimeout(100); await page.click('#m2-list .m2-group[data-group="GraphML"]'); await page.waitForTimeout(400);
   ok('6. a double-click opens the name in place', !!(await page.$('#m2-list input.m2-group-edit')));
   await page.fill('#m2-list input.m2-group-edit', 'My GraphML'); await page.keyboard.press('Enter'); await page.waitForTimeout(2500);
   ok('6. one commit, every page of the group renamed, the example the reader\'s now', commits === c6 + 1 && /group: "My GraphML"/.test(files['maps/glycolysis-graphml.md']) && !/example:/.test(files['maps/glycolysis-graphml.md']) && /Text\.\n$/.test(files['maps/glycolysis-graphml.md']), commits - c6 + ' ' + JSON.stringify(files['maps/glycolysis-graphml.md']));
   ok('6. the list shows the group under its new name at once', !!(await page.$('#m2-list .m2-group[data-group="My GraphML"]')) && !(await page.$('#m2-list .m2-group[data-group="GraphML"]')));
   await menu('#m2-list .m2-map >> nth=0', 'Restore example maps'); await page.waitForTimeout(2500);
-  ok('6. restored: the reader\'s map kept under a new id with its files', files['maps/glycolysis-2-graphml.graphml'] === '<graphml mine/>' && /My GraphML/.test(files['maps/glycolysis-2-graphml.md'] || '') && files['maps/extra/glycolysis-2-graphml/glycolysis-2-graphml.png'] === 'my png', Object.keys(files).filter(function (f) { return /glycolysis-2/.test(f); }).join(' '));
+  ok('6. restored: the reader\'s map kept under a new id with its files (-2 taken: -3)', files['maps/glycolysis-3-graphml.graphml'] === '<graphml mine/>' && /My GraphML/.test(files['maps/glycolysis-3-graphml.md'] || '') && files['maps/extra/glycolysis-3-graphml/glycolysis-3-graphml.png'] === 'my png' && files['maps/sbgn-ml/glycolysis-3-sbgn.sbgn'] === '<sbgn my twin/>' && files['maps/colours/glycolysis-3-graphml.json'] === '{"mine":1}' && files['maps/colours/glycolysis-2-graphml.json'] === '{"stray":1}', Object.keys(files).filter(function (f) { return /glycolysis-[23]/.test(f); }).join(' '));
+  ok('6. the example\'s own twin and colours not left at the old id', files['maps/sbgn-ml/glycolysis-sbgn.sbgn'] == null && files['maps/colours/glycolysis-graphml.json'] == null);
   ok('6. the example back beside it, from the backup', files['maps/glycolysis-graphml.graphml'] === '<graphml official/>' && /group: "GraphML"/.test(files['maps/glycolysis-graphml.md']) && files['maps/extra/glycolysis-graphml/glycolysis-graphml.png'] === 'png');
 
   ok('no script errors', errs.length === 0, errs.join(' | '));
