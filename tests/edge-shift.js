@@ -54,7 +54,7 @@ async function sbgn(page, ok) {   // a node moved past the edge on an SBGN-ML ma
   }
   async function move(id, dx, dy, tag) {
     var r0 = await box('sa_n1'), p = await box(id); var g = [p[0]+3, p[1]+p[3]/2];
-    await page.keyboard.press('Escape');
+    await page.keyboard.press('Escape'); await page.mouse.click(g[0], g[1]); await page.waitForTimeout(300);   // selected first: a drag on a node not selected moves the map
     await page.mouse.move(g[0], g[1]); await page.mouse.down(); await page.mouse.move(g[0]+dx/2, g[1]+dy/2, {steps:5}); await page.mouse.move(g[0]+dx, g[1]+dy, {steps:5});
     await page.mouse.up(); await page.waitForTimeout(2500);
     var r1 = await box('sa_n1'), q = await box(id);
