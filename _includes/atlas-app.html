@@ -1606,7 +1606,8 @@ page, so its styles keep the base they were made on).
         ['+ and − keys, or buttons', 'zoom out and in'],
         ['0, or Fit and Read', 'the whole map or reading size'],
         ['E, or ' + MOD + ' + E', 'switch between viewing and editing'],
-        ['?', 'this window (while editing: the editor’s help)']]) +
+        ['?', 'this window (while editing: the editor’s help)']].concat(own ? [
+        [MOD + ' + Z, ' + MOD + ' + Shift + Z in the list', 'undo, redo the list’s last change: a move, Delete, Restore, a name, a group, a new map (while editing: after a click in the list)']] : [])) +
       '<h4>While editing</h4>' + table(null, [
         ['Click, then drag', 'an item is selected first, then moved'],
         ['Drag on empty space or an item not selected', GRAB ? 'moves the map, as outside editing' : 'selects an area in place of the selection'],
@@ -2572,6 +2573,7 @@ page, so its styles keep the base they were made on).
   var orderKey = 'atlas-order:' + location.pathname, order = {};
   try { order = JSON.parse(localStorage.getItem(orderKey) || '{}') || {}; } catch (e) { order = {}; }
   function saveOrder() { try { localStorage.setItem(orderKey, JSON.stringify(order)); } catch (e) {} }
+  function orderPut(t) { order = JSON.parse(t); saveOrder(); maps = arrange(maps); buildList(document.getElementById('m2-search').value); }   // an order taken back (the list's undo)
   // A site map put in another group (own.js moveTo), kept in this browser per page ({ id: group }) whatever the
   // reordering mode; dropped once the site's list gives the map that group (a move written to the site, built)
   var regroupKey = 'atlas-moved:' + location.pathname, regrouped = {};
@@ -2753,7 +2755,7 @@ page, so its styles keep the base they were made on).
       if (y < r.top + 24) box.scrollTop -= 12; else if (y > r.bottom - 24) box.scrollTop += 12;
     }
     function drop(y) {
-      var d = dropPlace(y);
+      var d = dropPlace(y), was = JSON.stringify(order);
       if (moving.any) {
         var at = d.row || d.rows[d.rows.length - 1], to = '', before = null;
         if (at) {
@@ -2783,6 +2785,7 @@ page, so its styles keep the base they were made on).
       }
       saveOrder();
       maps = arrange(maps);
+      if (own && own.did) { var now = JSON.stringify(order); own.did(function () { orderPut(was); }, function () { orderPut(now); }); }   // the list's undo (own.js)
     }
     document.addEventListener('pointermove', function (e) {
       if (!press || e.pointerId !== press.id) return;
@@ -2790,7 +2793,9 @@ page, so its styles keep the base they were made on).
       if (!press.on) {
         if (Math.abs(e.clientY - press.y) < 5) return;
         press.on = true; moving = press.what;
-        press.row.classList.add('m2-moving'); document.body.classList.add('m2-dragging');
+        var all = moving.map && picked.length > 1 && picked.indexOf(moving.map) >= 0;   // a selection dragged: every map of it shown moving alike, none apart
+        (all ? pickRows().filter(function (r) { return picked.indexOf(r.dataset.id) >= 0; }) : [press.row]).forEach(function (r) { r.classList.add('m2-moving'); });
+        document.body.classList.add('m2-dragging');
       }
       e.preventDefault();
       mark(e.clientY);
@@ -3805,6 +3810,8 @@ page, so its styles keep the base they were made on).
     arrived: { get: function () { return arrived; } },
     siteGroupOf: { get: function () { return siteGroupOf; } },
     placeMap: { get: function () { return placeMap; } },
+    orderNow: { get: function () { return function () { return JSON.stringify(order); }; } },
+    orderPut: { get: function () { return orderPut; } },
     setMoved: { get: function () { return setMoved; } },
     movedOf: { get: function () { return movedOf; } },
     regroupRename: { get: function () { return regroupRename; } },

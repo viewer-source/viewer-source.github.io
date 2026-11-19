@@ -137,18 +137,22 @@
         end: function (v) {
           v = clean(v);
           if (!v || v === was || taken(v)) return;
-          var gh = !!(repo() && token()), pages = [];
-          (V.siteList || []).forEach(function (m) {   // every map of the group, also one in Deleted or hidden as an example
-            var g = V.movedOf(m.id); if (g === null) g = m.group || '';
-            if (g !== was) return;
-            V.setMoved(m.id, v);
-            if (gh && canRename(m, true)) pages.push(m.id);
-          });
-          Object.keys(mine).forEach(function (k) { var r = mine[k]; if (r.group === was) { r.group = v; minePut(r).catch(function () {}); } });
-          V.regroupRename(was, v);   // the reader's order of groups and of the maps in it, and maps moved into it
-          if (V.closed[was]) { V.closed[v] = true; delete V.closed[was]; V.saveClosed(); }
-          if (pages.length) siteGroupTo(pages, v).catch(function (e) { alert(was + ' was not renamed on the site: ' + (e && e.message ? e.message : e) + '. The new name is kept in this browser only.'); });
+          siteGroupRename(was, v);
+          listDid(function () { siteGroupRename(v, was); V.refreshMine(); }, function () { siteGroupRename(was, v); V.refreshMine(); });
         } });
+    }
+    function siteGroupRename(was, v) {   // a site group renamed: kept in this browser, with a token its maps' pages in one commit
+      var gh = !!(repo() && token()), pages = [];
+      (V.siteList || []).forEach(function (m) {   // every map of the group, also one in Deleted or hidden as an example
+        var g = V.movedOf(m.id); if (g === null) g = m.group || '';
+        if (g !== was) return;
+        V.setMoved(m.id, v);
+        if (gh && canRename(m, true)) pages.push(m.id);
+      });
+      Object.keys(mine).forEach(function (k) { var r = mine[k]; if (r.group === was) { r.group = v; minePut(r).catch(function () {}); } });
+      V.regroupRename(was, v);   // the reader's order of groups and of the maps in it, and maps moved into it
+      if (V.closed[was]) { V.closed[v] = true; delete V.closed[was]; V.saveClosed(); }
+      if (pages.length) siteGroupTo(pages, v).catch(function (e) { alert(was + ' was not renamed on the site: ' + (e && e.message ? e.message : e) + '. The new name is kept in this browser only.'); });
     }
     function siteGroupTo(ids, g) {   // maps/<id>.md of every map given: group g, example: dropped; one commit on the pages as
       // the commit read has them (a page gone meanwhile left out), three tries
@@ -194,17 +198,25 @@
         bad: function (v) { return v && !mineValid(v, was) ? 'A group of this name is in the list already' : ''; },
         end: function (v) {
           if (fresh && (!v || !mineValid(v, was))) return mineGroupsSet(mineGroups().filter(function (g) { return g !== fresh; }));
-          if (!v || v === was || !mineValid(v, was)) return;
-          var gs = mineGroups();
-          if (was && gs.indexOf(was) >= 0) {
-            gs[gs.indexOf(was)] = v;
-            Object.keys(mine).forEach(function (k) { var r = mine[k]; if (r.group === was) { r.group = v; minePut(r).catch(function () {}); } });
-            V.regroupRename(was, v);   // site maps moved into it follow
-            if (V.closed[was]) { V.closed[v] = true; delete V.closed[was]; V.saveClosed(); }
+          if (!v || v === was || !mineValid(v, was)) {   // a new group kept under the name it was made with
+            if (fresh) listDid(function () { removeGroup(fresh); }, function () { groupBack(fresh, 0); });
+            return;
           }
-          mineGroupsSet(gs);
+          ownGroupTo(was, v);
+          if (fresh) listDid(function () { removeGroup(v); }, function () { groupBack(v, 0); });
+          else listDid(function () { ownGroupTo(v, was); V.refreshMine(); }, function () { ownGroupTo(was, v); V.refreshMine(); });
         } });
     }
+    function ownGroupTo(was, v) {   // a group of the reader's renamed: its maps, site maps moved into it, its order and whether it is closed follow
+      var gs = mineGroups(), k = gs.indexOf(was);
+      if (k < 0) return;
+      gs[k] = v;
+      Object.keys(mine).forEach(function (id) { var r = mine[id]; if (r.group === was) { r.group = v; minePut(r).catch(function () {}); } });
+      V.regroupRename(was, v);
+      if (V.closed[was]) { V.closed[v] = true; delete V.closed[was]; V.saveClosed(); }
+      mineGroupsSet(gs);
+    }
+    function groupBack(name, at) { var gs = mineGroups().filter(function (g) { return g !== name; }); gs.splice(Math.min(at, gs.length), 0, name); mineGroupsSet(gs); V.refreshMine(); }
     var pressed = false;
     document.addEventListener('pointerdown', function () { pressed = true; }, true);
     document.addEventListener('pointerup', function () { setTimeout(function () { pressed = false; }, 0); }, true);
@@ -225,12 +237,12 @@
       var gh = !!(repo() && token()), tg = t && !t.classList.contains('m2-link-group') && t.dataset.group;   // with a token a site group takes maps too
       var g = m ? (m.mine || gh ? m.group || '' : '') : tg && (ownGroup(tg) || gh) ? tg : '', onGroup = t && !m && ownGroup(g);
       var into = m ? m.group || '' : tg && (ownGroup(tg) || V.siteGroupOf(tg) || t.classList.contains('m2-empty')) ? tg : '';   // a new map: into the group clicked, whoever's it is
-      var items = [['New SBGN-ML map', function () { newMap(into); }], ['New CellDesigner map', function () { newMap(into, 'cd'); }], ['Add map from file', function () { addTo = g; picker.click(); }], ['Add group', function () { renameGroup(null); }]];
+      var items = [['New SBGN-ML map', function () { listMade(function () { return newMap(into); }); }], ['New CellDesigner map', function () { listMade(function () { return newMap(into, 'cd'); }); }], ['Add map from file', function () { addTo = g; picker.click(); }], ['Add group', function () { renameGroup(null); }]];
       if (canRestoreExamples()) items.push(['Restore example maps', restoreExamples]);   // maps back into the list, rarely: the group's end
       var editing = V.grid.classList.contains('m2-editing') && V.chosen && V.chosen.id === (m && m.id);   // while editing, current is the editor's own
       // Deleted (as a mailbox's or the Mac's Bin): on a map in it Restore, then Delete forever last; on its heading
       // Delete all forever. Nothing else there (a deleted map is not renamed, copied, moved or edited)
-      if (m && m.binned) { var bi = [['Restore', function () { restore(m); }]]; bi.last = [['Delete forever', function () { erase([m]); }]]; return bi; }
+      if (m && m.binned) { var bi = [['Restore', function () { restoreU(m); }]]; bi.last = [['Delete forever', function () { erase([m]); }]]; return bi; }
       if (t && t.dataset.bin) { var bh = []; bh.last = [['Delete all forever', function () { erase(V.maps.filter(function (x) { return x.binned; })); }]]; return bh; }
       // on a map: Rename map, Make a copy, Move to, at the top; Delete map last of all, under a line of its own, away
       // from the others (as the map's menu: not while it is edited)
@@ -243,19 +255,19 @@
         var ms = sel.map(function (id) { return V.byId[id]; }).filter(Boolean), mv = ms.filter(movable), del = ms.filter(function (x) { return canRename(x, gh) && !(V.grid.classList.contains('m2-editing') && V.chosen && V.chosen.id === x.id); });
         if (mv.length && V.listGroups().length) mapItems.push(['Move ' + mv.length + ' maps to...', function () { moveMenuMany(mv, x, y); }]);
         items = mapItems.length ? mapItems.concat([null], items) : items;
-        if (del.length) items.last = [['Delete ' + del.length + ' maps', function () { binMany(del); }]];
+        if (del.length) items.last = [['Delete ' + del.length + ' maps', function () { binU(del, true); }]];
         return items;
       }
       if (m && canRename(m, gh)) mapItems.push(['Rename map', function () { renameMap(m.id); }]);
-      if (m && canCopy(m)) mapItems.push(['Make a copy', function () { copyMap(m.id); }]);
+      if (m && canCopy(m)) mapItems.push(['Make a copy', function () { listMade(function () { return copyMap(m.id); }); }]);
       if (m && movable(m) && V.listGroups().length) mapItems.push(['Move to...', function () { moveMenu(m, x, y); }]);
       // the clicked map's or group's own items first, as file lists keep them; the new maps and groups under a line
       if (mapItems.length) items = mapItems.concat([null], items);
       var siteG = t && !m && tg && !ownGroup(tg) && !t.dataset.bin && canRenameGroup(tg) ? tg : null;   // a site group: renamed too
       if (onGroup || siteG) items = [['Rename group', function () { renameGroup(siteG || g); }], null].concat(items);
       // items.last: put by the viewer under its own entries too, so Delete map is the menu's last line
-      if (onGroup) items.last = [['Remove group', function () { removeGroup(g); }]];   // a removal: last, as Delete map
-      if (m && !editing && canRename(m, gh)) items.last = [['Delete map', function () { bin(m); }]];   // one on the site already: with a token, its page there too
+      if (onGroup) items.last = [['Remove group', function () { removeU(g); }]];   // a removal: last, as Delete map
+      if (m && !editing && canRename(m, gh)) items.last = [['Delete map', function () { binU([m]); }]];   // one on the site already: with a token, its page there too
       return items;
     }
     // a reader's own map moved to another group, theirs or the site's ('': no group, at the top of the list): by Move to
@@ -306,15 +318,15 @@
     function moveMenuMany(ms, x, y) {   // the groups several maps can go to, in the list's order
       var site = (V.siteList || []).map(function (s) { return s.group; }), ids = ms.map(function (m) { return m.id; });
       var gs = V.listGroups().filter(function (n) { return n && (ownGroup(n) || site.indexOf(n) >= 0); });
-      V.listMenu(x, y, [['No group', function () { V.pickSet([]); moveMany(ids, ''); }], null].concat(gs.map(function (n) {
-        return [n, function () { V.pickSet([]); moveMany(ids, n); }];
+      V.listMenu(x, y, [['No group', function () { V.pickSet([]); moveU(ids, ''); }], null].concat(gs.map(function (n) {
+        return [n, function () { V.pickSet([]); moveU(ids, n); }];
       })));
     }
     function moveMenu(m, x, y) {   // the groups the map can go to, in the list's order; its own greyed
       var site = (V.siteList || []).map(function (s) { return s.group; });
       var gs = V.listGroups().filter(function (n) { return n && (ownGroup(n) || site.indexOf(n) >= 0); });
-      V.listMenu(x, y, [['No group', function () { moveTo(m.id, ''); }, !m.group], null].concat(gs.map(function (n) {
-        return [n, function () { moveTo(m.id, n); }, n === m.group];
+      V.listMenu(x, y, [['No group', function () { moveU([m.id], ''); }, !m.group], null].concat(gs.map(function (n) {
+        return [n, function () { moveU([m.id], n); }, n === m.group];
       })));
     }
     // Make a copy, in the list's menu: a new map named Copy of <name> (as in Google Docs), in the same group right under
@@ -647,7 +659,12 @@
       var shown = m.mine ? m.title : m.topic;
       inPlace(b, { cls: 'm2-group-edit m2-map-edit' + (b.classList.contains('m2-sub') ? ' m2-sub' : ''), max: 120, value: shown, label: 'Name of the map',
         bad: function (v) { return v && v !== shown && nameTaken(v, m.group, fmtOf(m), id, m.tab) ? 'A map of this name and format is in this group already' : ''; },
-        end: function (v) { if (v && !nameTaken(v, m.group, fmtOf(m), id, m.tab)) nameTo(m, v); } });
+        end: function (v) {
+          if (!v || v === shown || nameTaken(v, m.group, fmtOf(m), id, m.tab)) return;
+          var site = m.mine && mine[id] ? mine[id].site : null;
+          nameTo(m, v);
+          listDid(function () { var c = listCur(id, site); if (c) nameTo(c, shown); }, function () { var c = listCur(id, site); if (c) nameTo(c, v); });
+        } });
     }
     function toSiteName(id, was, v) {   // maps/<id>.md: its topic, and its title where it was the same; one commit
       var q = JSON.stringify(v.replace(/["\\]/g, ''));   // the build reads the front matter's quotes plainly
@@ -770,14 +787,14 @@
     }
     var picker = document.createElement('input');
     picker.type = 'file'; picker.multiple = true; picker.accept = '.graphml,.xml,.sbgn'; picker.hidden = true;
-    picker.addEventListener('change', function () { addFiles(picker.files, addTo); picker.value = ''; });
+    picker.addEventListener('change', function () { var l = Array.prototype.slice.call(picker.files), to = addTo; listMade(function () { return addFiles(l, to); }); picker.value = ''; });
     document.body.appendChild(picker);
     document.addEventListener('dragover', function (e) { if (e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types, 'Files') >= 0) e.preventDefault(); });
     document.addEventListener('drop', function (e) {   // a file dropped on a group of the reader's goes into it, elsewhere to the top
       if (!e.dataTransfer || !e.dataTransfer.files.length) return;
       e.preventDefault();
       var t = e.target.closest && e.target.closest('#m2-list [data-group]'), g = t && t.dataset.group;
-      addFiles(e.dataTransfer.files, ownGroup(g) ? g : '');
+      var l = Array.prototype.slice.call(e.dataTransfer.files); listMade(function () { return addFiles(l, ownGroup(g) ? g : ''); });
     });
     // With a token GitHub is where the reader's maps are kept: a map made or added goes there at once (toSite), and a
     // map of theirs still only in this browser (made before connecting, or its sending failed) is sent when the page
@@ -992,7 +1009,7 @@
       var list = document.getElementById('m2-list'), m = V.chosen && V.byId[V.chosen.id], sel = V.picked();
       if ((sel.length > 1 || (sel.length === 1 && (!m || sel[0] !== m.id))) && list && list.offsetParent) {   // maps selected in the list (not the one shown alone): those that can be deleted
         var ms = sel.map(function (id) { return V.byId[id]; }).filter(function (x) { return x && !x.binned && canRename(x, !!(repo() && token())); });
-        if (ms.length) { e.preventDefault(); binMany(ms); }
+        if (ms.length) { e.preventDefault(); binU(ms, true); }
         return;
       }
       if (!list || !list.offsetParent || !m || m.binned || !canRename(m, !!(repo() && token()))) return;
@@ -1000,7 +1017,7 @@
       var items = Array.prototype.slice.call(list.querySelectorAll('.m2-map:not(.m2-binned)')), i = items.findIndex(function (b) { return b.dataset.id === m.id; });
       var next = i < 0 ? null : items[i + 1] || items[i - 1];
       if (next) V.go(next.dataset.id);
-      bin(m);
+      binU([m]);
     });
     function bin(m) {
       var say = function (e) { alert((m.mine ? m.title : m.topic) + ' was not deleted: ' + (e && e.message ? e.message : e)); }, sent = null;
@@ -1188,11 +1205,99 @@
         V.refreshMine();
       });
     }
+    // Undo in the list (Cmd or Ctrl with Z, Shift with it or Y redoes), as Finder's Edit > Undo: every change the list
+    // makes, each by the same functions taken back (a move, Delete and Restore, a name, a group made, renamed or removed,
+    // a new map, a copy or files added, put in Deleted), the order dragged as it was. The keys go to the list while it is
+    // where the last press was (or the last change came from), else to the map being edited (core.js); outside editing
+    // always to the list. Delete forever is not undone (as emptying the Bin). One step at a time, after the change before
+    var listPast = [], listAhead = [], listLast = false, listStepping = Promise.resolve();
+    function listDid(undo, redo) { listPast.push({ undo: undo, redo: redo }); if (listPast.length > 100) listPast.shift(); listAhead = []; listLast = true; }
+    function listStep(back) {
+      listStepping = listStepping.then(function () {
+        var s = (back ? listPast : listAhead).pop();
+        if (!s) return;
+        (back ? listAhead : listPast).push(s);
+        return Promise.resolve(back ? s.undo() : s.redo()).catch(function () {}).then(function () { V.refreshMine(); });
+      });
+    }
+    function listCur(id, site) { return V.byId[id] || (site && V.byId[site]) || null; }   // a reader's map once the site's build took its place
+    function listKey(m) { return { id: m.id, site: mine[m.id] ? mine[m.id].site || null : null }; }
+    function leaveIf(ks) {   // the map being edited is not deleted: editing ends first (the Maps tab)
+      if (!V.grid.classList.contains('m2-editing') || !V.chosen || !ks.some(function (k) { var c = listCur(k.id, k.site); return c && c.id === V.chosen.id; })) return;
+      var t = document.querySelector('#m2-rail .m2-ri[data-win="list"]'); if (t) t.click();
+    }
+    function binKeys(ks) { leaveIf(ks); var ms = ks.map(function (k) { return listCur(k.id, k.site); }).filter(function (m) { return m && !m.binned; }); return ms.length ? binMany(ms) : null; }
+    function restoreKeys(ks) { ks.forEach(function (k) { var m = listCur(k.id, k.site); if (m && m.binned) restore(m); }); }
+    function binU(ms, many) {
+      var ks = ms.map(listKey), fwd = Promise.resolve(many ? binMany(ms) : bin(ms[0]));
+      listDid(function () { return fwd.then(function () { restoreKeys(ks); }); }, function () { return binKeys(ks); });
+      return fwd;
+    }
+    function restoreU(m) { var ks = [listKey(m)]; restore(m); listDid(function () { return binKeys(ks); }, function () { restoreKeys(ks); }); }
+    function listMade(run) {   // a new map, a copy or files added: undone into Deleted, as Finder's undo of a copy
+      return mineIn.then(function () {
+        var had = Object.assign({}, mine);
+        return Promise.resolve(run()).then(function () {
+          var ks = Object.keys(mine).filter(function (id) { return !had[id] && !mine[id].hidden; }).map(function (id) { return { id: id, site: mine[id].site || null }; });
+          if (ks.length) listDid(function () { return binKeys(ks); }, function () { restoreKeys(ks); });
+        });
+      });
+    }
+    function moveU(ids, g, before) {   // a move by Move to or by dragging: each map back to its group, its page as it was, its name, the order
+      var o = V.orderNow(), gh = !!(repo() && token());
+      var was = ids.map(function (id) {
+        var m = V.byId[id], s = (V.siteList || []).filter(function (x) { return x.id === id; })[0];
+        return { id: id, g: m ? m.group || '' : '', name: m ? mapName(m) : '', mv: V.movedOf(id), s: !mine[id] && s, page: !mine[id] && !!m && gh && canRename(m, true) && !ownGroup(g || ''), local: !mine[id] && !(m && canRename(m, gh) && !ownGroup(g || '')) };
+      });
+      return (ids.length > 1 ? moveMany(ids, g, before) : moveTo(ids[0], g, before)).then(function () {
+        var o2 = V.orderNow();
+        listDid(function () {
+          return was.reduce(function (p, w) {
+            return p.then(function () {
+              var m = V.byId[w.id]; if (!m) return;
+              if (!w.s) return moveTo(w.id, w.g);
+              V.setMoved(w.id, w.mv);   // a site map: where this browser had it
+              if (w.page && (m.group || '') !== w.g) return siteFront(w.id, function (f) {   // its page as it was: group, order, example
+                f.set('group', JSON.stringify(w.s.group || '')); if (w.s.order) f.set('order', String(w.s.order)); if (w.s.example) f.set('example', 'true');
+              }, 'Map moved back in the viewer').catch(function () {});
+            }).then(function () { var m = V.byId[w.id]; if (m && mapName(m) !== w.name) nameTo(m, w.name, w.local); });
+          }, Promise.resolve()).then(function () { V.orderPut(o); });
+        }, function () { return moveMany(ids, g, before).then(function () { V.orderPut(o2); }); });
+      });
+    }
+    function removeU(name) {   // Remove group: back with its maps, the site maps moved into it, its place and order
+      var gs = mineGroups().slice(), at = gs.indexOf(name), o = V.orderNow(), shut = !!V.closed[name];
+      var recs = Object.keys(mine).filter(function (id) { return mine[id].group === name; });
+      var moved = (V.siteList || []).filter(function (m) { return V.movedOf(m.id) === name; }).map(function (m) { return m.id; });
+      removeGroup(name);
+      listDid(function () {
+        recs.forEach(function (id) { var r = mine[id]; if (r) { r.group = name; minePut(r).catch(function () {}); } });
+        moved.forEach(function (id) { V.setMoved(id, name); });
+        if (shut) { V.closed[name] = true; V.saveClosed(); }
+        groupBack(name, at); V.orderPut(o);
+      }, function () { removeGroup(name); });
+    }
+    window.addEventListener('pointerdown', function (e) {   // where the last press was: the list, else elsewhere (a menu keeps it as it was)
+      var t = e.target.closest ? e.target : e.target.parentElement;
+      if (t && t.closest('.m2-cx')) return;
+      listLast = !!(t && t.closest('#m2-list'));
+    }, true);
+    window.addEventListener('keydown', function (e) {
+      if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+      var k = /^Key[A-Z]$/.test(e.code || '') ? e.code.slice(3).toLowerCase() : e.key.toLowerCase();
+      if (k !== 'z' && k !== 'y') return;
+      var a = document.activeElement;
+      if (naming || (a && (/input|textarea|select/i.test(a.tagName) || a.isContentEditable))) return;   // a field's own undo
+      var list = document.getElementById('m2-list');
+      if (!list || !list.offsetParent || (V.grid.classList.contains('m2-editing') && !listLast)) return;   // the map's undo (core.js)
+      e.preventDefault(); e.stopImmediatePropagation();
+      listStep(k === 'z' && !e.shiftKey);
+    }, true);
     // what the viewer asks of this part (the list's entries and groups, a map's record)
     var own = {
       read: function () { return mineIn; },
       here: function () { return (groupsHere = mineGroupsHere()); }, groups: function () { return groupsHere; }, order: mineGroups,   // order: every group the reader made, on the site or not, in their order
-      withMine: withMine, addPaint: addPaint, isGroup: ownGroup, movable: movable, moveTo: moveTo, moveMany: moveMany, rename: renameGroup, canRenameGroup: canRenameGroup, renameMap: renameMap, canRename: canRename, newMap: newMap, shown: mineShown, listItems: listItems,
+      withMine: withMine, addPaint: addPaint, isGroup: ownGroup, movable: movable, moveTo: function (id, g, before) { return moveU([id], g, before); }, moveMany: moveU, did: listDid, rename: renameGroup, canRenameGroup: canRenameGroup, renameMap: renameMap, canRename: canRename, newMap: function (g, f) { return listMade(function () { return newMap(g, f); }); }, shown: mineShown, listItems: listItems,
       rec: function (id) { return mine[id] || null; }, naming: function () { return !!naming; }
     };
     mineIn.then(upAll).then(binMigrate);   // connected: the reader's maps kept in this browser go to GitHub

@@ -4,6 +4,8 @@
 //   4. Right click on the selection: Move N maps to..., Delete N maps; Delete N maps puts them in Deleted.
 //   5. Esc ends a selection. 6. A selected map dragged, no Shift: moved, the drop line straight.
 //   7. A map not selected is never grabbed: a drag from it draws the box, the order unchanged.
+//   8. Cmd with Z undoes Delete 3 maps, with Shift redoes. 9. Three selected, one dragged: all three go, all three faded
+//      while dragged, none apart; Cmd with Z: the order as it was.
 //   node tests/list-select.js [base address] [--local]
 // --local: the editor and the viewer of the working tree routed into the live page (run styles/update.sh first)
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path'), cp = require('child_process');
@@ -69,6 +71,29 @@ function viewerHunks() {
   var bin = await page.$eval('#m2-list .m2-bin', function (h) { return h.textContent; }).catch(function () { return ''; });
   ok('4. Delete 3 maps: in Deleted', /Deleted \(3\)/.test(bin) && !(await page.$(row('sel-b'))), bin);
   var ids = function () { return page.$$eval('#m2-list .m2-map:not(.m2-binned)', function (l) { return l.map(function (x) { return x.dataset.id; }); }); };
+  var names = function () { return page.$$eval('#m2-list .m2-map:not(.m2-binned) .m2-name', function (l) { return l.map(function (x) { return x.textContent; }).join(','); }); };
+  // 8. Cmd with Z: Delete 3 maps undone, the three back; Shift too: deleted again; Z: back
+  await page.click(row('sel-a')); await page.waitForTimeout(500);
+  await page.keyboard.press(mod + '+z'); await page.waitForTimeout(1500);
+  ok('8. Cmd+Z: the deleted maps back', !!(await page.$(row('sel-b'))) && !!(await page.$(row('sel-d'))));
+  await page.keyboard.press(mod + '+Shift+z'); await page.waitForTimeout(1500);
+  ok('8. Cmd+Shift+Z: deleted again', !(await page.$(row('sel-b'))));
+  await page.keyboard.press(mod + '+z'); await page.waitForTimeout(1500);
+  ok('8. Cmd+Z again: back', !!(await page.$(row('sel-c'))));
+  // 9. three maps selected by the box, one of them dragged: all three go, together; Cmd+Z: the order as it was
+  var rb9 = await (await page.$(row('sel-b'))).boundingBox(), rd9 = await (await page.$(row('sel-d'))).boundingBox();
+  await page.mouse.move(rb9.x + rb9.width - 6, rb9.y + 4); await page.mouse.down();
+  await page.mouse.move(rb9.x + rb9.width - 20, rd9.y + 8, { steps: 6 }); await page.mouse.up(); await page.waitForTimeout(300);
+  var n9 = await names(), nc = await (await page.$(row('sel-c') + ' .m2-name')).boundingBox(), top9 = await (await page.$('#m2-list .m2-map:not(.m2-binned) >> nth=0')).boundingBox();
+  await page.mouse.move(nc.x + 5, nc.y + nc.height / 2); await page.mouse.down();
+  await page.mouse.move(nc.x + 5, top9.y + 2, { steps: 10 });
+  var fade9 = await page.$$eval('#m2-list .m2-moving .m2-name', function (l) { return l.map(function (x) { return x.textContent; }).join(','); });
+  ok('9. every selected map shown moving, none apart', fade9 === 'sel-b,sel-c,sel-d', fade9);
+  await page.mouse.up(); await page.waitForTimeout(1500);
+  var a9 = await names(), f3 = a9.split(',').slice(0, 3).join(',');
+  ok('9. the three selected dragged together', f3 === 'sel-b,sel-c,sel-d', a9.split(',').slice(0, 5).join());
+  await page.mouse.click(10, 10); await page.keyboard.press(mod + '+z'); await page.waitForTimeout(1500);
+  ok('9. Cmd+Z: the order as it was', (await names()) === n9, (await names()).split(',').slice(0, 5).join());
   // 7. a map not selected dragged: the box, nothing moved (another map shown first)
   await page.click('#m2-list .m2-map:not(.m2-binned):not(:has(.m2-name:text-is("sel-a"))) >> nth=0'); await page.waitForTimeout(1500);
   var before7 = await ids(), n7 = await (await page.$(row('sel-a') + ' .m2-name')).boundingBox(), r7 = await (await page.$('#m2-list .m2-map:not(.m2-binned) >> nth=2')).boundingBox();
