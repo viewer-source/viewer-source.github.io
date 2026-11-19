@@ -257,7 +257,7 @@
         return made.then(function (d) {
           var r = { id: newId(), title: title, file: file, text: t, svg: d.svg, width: d.width, height: d.height, at: Date.now(), src: textHash(t), hidden: false, group: group };
           if (!gh) return minePut(r).then(function () { toFolder(r.id, r.file, r.text); return r; });
-          return toSite(title, ext, t, group, order++).then(function (s) { return minePut(onSite(r, s, title)).then(function () { return r; }); });
+          return toSite(title, ext, t, group, siteOrder(group)).then(function (s) { return minePut(onSite(r, s, title)).then(function () { return r; }); });
         });
       }).then(function (r) {
         put(r.id, group, next);
