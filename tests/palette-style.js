@@ -30,7 +30,7 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local =
   var pick = async function (row, name) { await page.keyboard.press('Escape'); await page.mouse.click(1350, 880); await page.waitForTimeout(300); await page.click('#m2-editwin .m2-ed-pmap tr[data-k="' + row + '"] .m2-ed-pdd'); await page.waitForTimeout(200); await page.click('body > .m2-ed-pdl button:has-text("' + name + '")'); await page.waitForTimeout(200); };
   var sbBox = function (id) { return page.evaluate(function (id) { var d = new DOMParser().parseFromString(window.m2EditNow().text, 'application/xml'), g = Array.from(d.getElementsByTagName('glyph')).filter(function (x) { return x.getAttribute('id') === id; })[0], bb = g && Array.from(g.children).filter(function (c) { return c.localName === 'bbox'; })[0]; return bb ? [+bb.getAttribute('w'), +bb.getAttribute('h')] : null; }, id); };
   var sbFill = function (id) { return page.evaluate(function (id) { var t = window.m2EditNow().text; return Array.from(new DOMParser().parseFromString(t, 'application/xml').getElementsByTagName('*')).filter(function (e) { return e.localName === 'style' && (' ' + (Array.from(e.attributes).filter(function (a) { return a.localName === 'idList'; }).map(function (a) { return a.value; })[0] || '') + ' ').indexOf(' ' + id + ' ') >= 0; }).map(function (e) { var g = e.firstElementChild, f = g && Array.from(g.attributes).filter(function (a) { return a.localName === 'fill'; })[0]; return f && f.value; }).filter(Boolean).pop() || null; }, id); };
-  await page.goto(base, { waitUntil: 'load' }); await page.evaluate(function () { ['atlas-edit-style', 'atlas-edit-sb-colours', 'atlas-edit-cd-colours', 'atlas-edit-defaults', 'atlas-edit-cd-defaults'].forEach(function (k) { localStorage.removeItem(k); }); });
+  await page.goto(base, { waitUntil: 'load' }); await page.evaluate(function () { ['atlas-edit-map-choices', 'atlas-edit-defaults', 'atlas-edit-cd-defaults'].forEach(function (k) { localStorage.removeItem(k); }); });
   await start('testing-glycolysis-sbgn', 'process');
   var R = await last();
   ok('SBGN-ML: two rows under a line below the palette, From file chosen', R.length === 2 && /^Style: From file/.test(R[0]) && /^Colours: From file/.test(R[1]), JSON.stringify(R));
@@ -109,7 +109,7 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local =
   await pick('style', 'From file');
   await start('testing-glycolysis-sbgn', 'process');
   ok('Style From file chosen on a CellDesigner map is the SBGN-ML map’s too, its Colours its own', JSON.stringify(await rows()) === JSON.stringify(['Style: From file', 'Colours: Custom']), JSON.stringify(await rows()));
-  await page.evaluate(function () { ['atlas-edit-style', 'atlas-edit-sb-colours', 'atlas-edit-cd-colours', 'atlas-edit-defaults', 'atlas-edit-cd-defaults'].forEach(function (k) { localStorage.removeItem(k); }); });
+  await page.evaluate(function () { ['atlas-edit-map-choices', 'atlas-edit-defaults', 'atlas-edit-cd-defaults'].forEach(function (k) { localStorage.removeItem(k); }); });
   ok('no script error', !errs.length, errs.join(' | '));
   await b.close(); process.exit(bad ? 1 : 0);
 })();

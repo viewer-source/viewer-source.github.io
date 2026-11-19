@@ -322,15 +322,42 @@
       if (f.firstChild.textContent !== v) f.firstChild.textContent = v;   // written only when changed (every paint comes here)
       return r;
     }
-    function keptChoice(key, ids) { var v = null; try { v = localStorage.getItem(key); } catch (e) {} return ids.indexOf(v) >= 0 ? v : ids[0]; }   // the first: the one when none is kept
-    function keepChoice(key, v, first) { try { if (v === first) localStorage.removeItem(key); else localStorage.setItem(key, v); } catch (e) {} }
-    // Style, the sizes of new nodes, for every map with a palette, kept in this browser: the size most nodes of that kind
+    // Style and Colours belong to the map: kept per map in this browser (map -> { style, cols }), as the palette's set is
+    // (PAL_KEY), so another map opened shows its own. Colours a map was given no choice on are read from the map (mapCols)
+    var CHOICE_KEY = 'atlas-edit-map-choices', choiceMemo = {};
+    try { ['atlas-edit-style', 'atlas-edit-sb-colours', 'atlas-edit-cd-colours'].forEach(function (k) { localStorage.removeItem(k); }); } catch (e) {}   // the earlier choices for every map at once
+    function choicesKept() { try { return JSON.parse(localStorage.getItem(CHOICE_KEY)) || {}; } catch (e) { return {}; } }
+    function mapChoice(what, ids) { var id = palId(), k = id && choicesKept()[id], v = k && k[what]; return ids.indexOf(v) >= 0 ? v : null; }
+    function keepMapChoice(what, v) {
+      var all = choicesKept(), id = palId();
+      choiceMemo = {};
+      if (!id) return;
+      (all[id] = all[id] || {})[what] = v;
+      try { localStorage.setItem(CHOICE_KEY, JSON.stringify(all)); } catch (e) {}
+    }
+    // the map's Colours: the choice kept for it while the map still shows it (From file and Custom always); else the first
+    // of ids the map shows (is: every filled glyph as that choice colours it, its lines apart; Confetti every one a confetti
+    // pastel), else From file. So a map recoloured elsewhere, or a recolour undone, shows what the map now is. Read once per
+    // change of the map
+    // is(m): true, false, or null where the map has nothing to read (an empty map: a kept choice stands, none is read).
+    // An SBGN-ML map's moves and resizes change no colour: read again only when more than places changed (sbgn.js GEO)
+    function mapCols(ids, is) {
+      var id = palId(), b = cd ? cd.now : null, M = choiceMemo;
+      if (M.id === id && M.t === text && M.b === b) return M.v;
+      var key = cd ? null : text.replace(GEO, '');
+      if (M.id === id && !cd && M.key === key) { M.t = text; return M.v; }
+      var k = mapChoice('cols', ids), v = k === 'file' || k === 'custom' || (k && is(k) !== false) ? k : null;
+      if (!v) ids.some(function (m) { return m !== 'file' && m !== 'custom' && is(m) === true && (v = m); });
+      choiceMemo = { id: id, t: text, b: b, key: key, v: v || 'file' };
+      return choiceMemo.v;
+    }
+    // Style, the sizes of new nodes, kept per map (mapChoice): the size most nodes of that kind
     // have on the map (sbgn_edit.defaults, cd_make.classSize; the built-in size where it has none), or the built-in sizes
     // Custom: the size kept by Set as default for that kind (each format keeps its own: atlas-edit-defaults,
     // atlas-edit-cd-defaults), From file for a kind with none
-    var STYLE_KEY = 'atlas-edit-style', STYLES = [['file', 'From file', 'New nodes the size most nodes of their kind have on this map'], ['default', 'Default', 'New nodes at the editor\u2019s own sizes'], ['custom', 'Custom', 'New nodes the size kept by Set as default; From file for a kind with none']];
-    function palStyle() { return keptChoice(STYLE_KEY, ['file', 'default', 'custom']); }
-    function styleRow() { return palDrop({ key: 'style', label: 'Style', title: 'Sizes of new nodes', list: STYLES, get: palStyle, set: function (v) { keepChoice(STYLE_KEY, v, 'file'); } }); }
+    var STYLES = [['file', 'From file', 'New nodes the size most nodes of their kind have on this map'], ['default', 'Default', 'New nodes at the editor\u2019s own sizes'], ['custom', 'Custom', 'New nodes the size kept by Set as default; From file for a kind with none']];
+    function palStyle() { return mapChoice('style', ['file', 'default', 'custom']) || 'file'; }
+    function styleRow() { return palDrop({ key: 'style', label: 'Style', title: 'Sizes of new nodes', list: STYLES, get: palStyle, set: function (v) { keepMapChoice('style', v); } }); }
     // Confetti, a choice of both palettes' Colours: every new entity a pastel of its own, whatever its kind (processes,
     // gates, empty sets and compartments keep From file's look). The hues are the golden-angle sequence (k times 137.508
     // degrees), HSL saturation 55% and lightness 82%, so black text reads on each; of the first 64 hues, the one farthest
@@ -369,11 +396,16 @@
       hues.push(best);
       return best;
     }
+    var CONF = null;
+    function confettiOne(hex) {   // a colour (#rrggbb) one of Confetti's pastels
+      if (!CONF) { CONF = {}; for (var k = 0; k < 64; k++) CONF[confettiHex(k * 137.508 % 360).toUpperCase()] = 1; }
+      return !!hex && CONF[String(hex).slice(0, 7).toUpperCase()] === 1;
+    }
     function confettiSquares() { return '<span class="m2-cs-sw">' + [0, 1, 2, 3, 4].map(function (k) { var x = confettiHex(k * 137.508 % 360); return '<i style="background:' + x + '" title="' + x.toUpperCase() + '"></i>'; }).join('') + '</span>'; }
-    // Colours on SBGN-ML maps, kept in this browser: the map's own (sbgn_edit.defaults: the fill most glyphs of the
+    // Colours on SBGN-ML maps, kept per map or read from it (mapCols): the map's own (sbgn_edit.defaults: the fill most glyphs of the
     // kind have; the Default colours for a kind the map lacks), the viewer's Default colours, none, or Confetti
-    var SB_COL_KEY = 'atlas-edit-sb-colours', SB_COLS = [['file', 'From file', 'The map as it is; new glyphs in the colour most glyphs of their kind have on it'], ['default', 'Default', 'The whole map and new glyphs in the viewer\u2019s Default colours'], ['none', 'No colours', 'The whole map and new glyphs unfilled'], ['custom', 'Custom', 'The whole map and new glyphs in the colours kept by Set as default; a kind with none as it is'], ['confetti', 'Confetti', 'Every glyph of the map, and every new one, a pastel of its own']];
-    function sbCols() { return keptChoice(SB_COL_KEY, ['file', 'default', 'none', 'custom', 'confetti']); }
+    var SB_COLS = [['file', 'From file', 'The map as it is; new glyphs in the colour most glyphs of their kind have on it'], ['default', 'Default', 'The whole map and new glyphs in the viewer\u2019s Default colours'], ['none', 'No colours', 'The whole map and new glyphs unfilled'], ['custom', 'Custom', 'The whole map and new glyphs in the colours kept by Set as default; a kind with none as it is'], ['confetti', 'Confetti', 'Every glyph of the map, and every new one, a pastel of its own']];
+    function sbCols() { return mapCols(['file', 'none', 'default', 'confetti', 'custom'], sbIs); }
     var SB_SQ = ['macromolecule', 'simple chemical', 'nucleic acid feature', 'phenotype', 'compartment'];
     function sbSquares(mode) {   // five at most, the first at the right (row-reverse), each colour once
       if (mode === 'confetti') return confettiSquares();
@@ -386,27 +418,43 @@
       });
       return '<span class="m2-cs-sw">' + h + '</span>';
     }
-    function sbColsRow() { return palDrop({ key: 'cols', label: 'Colours', title: 'Colours of the map and of new glyphs', list: SB_COLS, get: sbCols, set: function (v) { keepChoice(SB_COL_KEY, v, 'file'); sbRecolour(v); }, sq: sbSquares }); }
+    function sbColsRow() { return palDrop({ key: 'cols', label: 'Colours', title: 'Colours of the map and of new glyphs', list: SB_COLS, get: sbCols, set: function (v) { keepMapChoice('cols', v); sbRecolour(v); }, sq: sbSquares }); }
     // a choice of Colours recolours the whole map, one undo step: every entity, complex and compartment its fill by the
     // choice (its border black), as a new one of its kind would get it (defOf); From file leaves the map as it is; Custom a
     // kind with a kept look its fill, border and width, the rest as they are; Confetti every entity, complexes too, a pastel
     // of its own, one after another (compartments as they are). Every line black, under Confetti a colour of its own
     // (confettiLine); processes, gates and the other glyphs their border black. One parse (sbgn_edit.restyleAll)
     var SB_FILLED = /^(macromolecule|simple chemical|nucleic acid feature|unspecified entity|perturbing agent|phenotype|complex|compartment|submap|biological activity|perturbation)( multimer)?$/;
-    function sbRecolour(mode) {
-      if (mode === 'file' || !palOn()) return;
-      var cls = sbClasses(), acts = sbJs.activities(text), kept = mode === 'custom' ? defsKept() : {}, hues = [], M = {};
-      nodes2.forEach(function (n) {
+    var sbActMemo = [null, {}];
+    function sbPlan(mode, pick) {   // [[node index, its look], ...] under a choice of Colours, as sbRecolour sets them (pick: Confetti's colours picked)
+      if (sbActMemo[0] !== text) sbActMemo = [text, sbJs.activities(text)];   // one parse per change of the map (sbIs asks for each choice)
+      var cls = sbClasses(), acts = sbActMemo[1], kept = mode === 'custom' ? defsKept() : {}, hues = [], P = [];
+      nodes2.forEach(function (n, i) {
         var c = cls[n.id] || '';
-        if (!SB_FILLED.test(c)) { if (sbJs.LOOKS.test(c) && mode !== 'custom') M[n.id] = { line: null }; return; }
+        if (!SB_FILLED.test(c)) { if (sbJs.LOOKS.test(c) && mode !== 'custom') P.push([i, { line: null }]); return; }
         var base = c.replace(/ multimer$/, ''), u = acts[n.id], o;
         var ff = sbJs.fillFor(u != null ? 'biological activity' : base, u);
         if (mode === 'default') o = { fill: ff, line: null };
         else if (mode === 'none') o = { fill: null, line: null };
         else if (mode === 'custom') { var k = kept[lookKey(base, u)]; if (!k) return; o = {}; ['fill', 'line', 'width'].forEach(function (q) { if (q in k) o[q] = k[q]; }); }
-        else { if (!ff || base === 'compartment') return; o = { fill: confettiPick(hues).toUpperCase(), line: null }; }   // Confetti
-        M[n.id] = o;
+        else { if (!ff || base === 'compartment') return; o = { fill: pick ? confettiPick(hues).toUpperCase() : true, line: null }; }   // Confetti (fill true: filled, no colour picked)
+        P.push([i, o]);
       });
+      return P;
+    }
+    function sbIs(mode) {   // the map's glyphs filled as the choice fills them (Confetti: each a confetti pastel); null: none to read
+      if (!palOn()) return false;
+      var P = sbPlan(mode, false).filter(function (q) { return 'fill' in q[1]; });
+      if (!P.length) return null;
+      return P.every(function (q) {
+        var f = sbJs.lookOf(realizerOf(nodes2[q[0]].el)).fill;
+        return mode === 'confetti' ? confettiOne(f) : (f ? f.slice(0, 7).toUpperCase() : null) === (q[1].fill ? q[1].fill.toUpperCase() : null);
+      });
+    }
+    function sbRecolour(mode) {
+      if (mode === 'file' || !palOn()) return;
+      var M = {};
+      sbPlan(mode, true).forEach(function (q) { M[nodes2[q[0]].id] = q[1]; });
       var lh = [], t2 = sbJs.restyleAll(text, M, null, mode === 'custom' ? null : function () { return mode === 'confetti' ? confettiLine(lh).toUpperCase() : null; });
       if (t2 === text) return;
       remember(false); text = t2; made([]);
@@ -1708,5 +1756,5 @@
       var o = sbJs.lookOf(realizerOf(nodes2[i].el)), b = boxOf(i), all = defsKept();
       all[kindOf(i)] = { w: b[2], h: b[3], fill: o.fill, line: o.line, width: o.width, multimer: o.multimer };   // as it is, no share of another size
       if (!keepLook(DEF_KEY, all)) return;
-      keepChoice(STYLE_KEY, 'custom', 'file'); keepChoice(SB_COL_KEY, 'custom', 'file'); styleRow(); sbColsRow();
+      keepMapChoice('style', 'custom'); keepMapChoice('cols', 'custom'); styleRow(); sbColsRow();
     }

@@ -16,7 +16,7 @@ async function run(b, map, kind, protein, link) {
   }
   page.on('pageerror', function (e) { errs.push(e.message); });
   await page.goto(base + '#' + map, { waitUntil: 'load' });
-  await page.evaluate(function () { localStorage.removeItem('atlas-edit-sb-colours'); localStorage.removeItem('atlas-edit-cd-colours'); });
+  await page.evaluate(function () { localStorage.removeItem('atlas-edit-map-choices'); });
   await page.waitForSelector('.m2-ri[data-win="edit"]', { timeout: 30000 });
   await page.click('.m2-ri[data-win="edit"]');
   await page.waitForSelector('#m2-editwin .m2-ed-pmap tr[data-k="cols"] .m2-ed-pdd', { state: 'visible', timeout: 30000 }); await page.waitForTimeout(2000);

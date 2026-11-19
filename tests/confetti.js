@@ -17,7 +17,7 @@ async function run(b, map, sign, kind) {
   }
   page.on('pageerror', function (e) { errs.push(e.message); });
   await page.goto(base + '#' + map, { waitUntil: 'load' });
-  await page.evaluate(function () { localStorage.removeItem('atlas-edit-sb-colours'); localStorage.removeItem('atlas-edit-cd-colours'); });
+  await page.evaluate(function () { localStorage.removeItem('atlas-edit-map-choices'); });
   await page.waitForSelector('.m2-ri[data-win="edit"]', { timeout: 30000 });
   if (!(await page.$('#m2-editwin button[data-make="' + sign + '"]:visible'))) await page.click('.m2-ri[data-win="edit"]');
   await page.waitForSelector('#m2-editwin button[data-make="' + sign + '"]', { state: 'visible', timeout: 30000 }); await page.waitForTimeout(1500);

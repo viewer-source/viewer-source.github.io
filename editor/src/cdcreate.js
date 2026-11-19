@@ -147,16 +147,27 @@
     function cdComplexAt(P) { var i = innermost(P, function (n) { return n.shape.kind === 'Complex'; }); return i >= 0 ? nodes2[i].id : null; }   // the innermost complex under P, its alias
 
     // a species or compartment placed: centred where clicked or dropped (on the grid with Snap), at CellDesigner's own size
-    // the colours of new species and compartments (Colours under the palette, palDrop in create.js, kept in this browser
-    // for every CellDesigner map): the file's (the colour most species of the class, or most compartments, already have on
+    // the colours of new species and compartments (Colours under the palette, palDrop in create.js, kept per map or read
+    // from it, create.js mapCols): the file's (the colour most species of the class, or most compartments, already have on
     // the map; the Default one for a class the map has none of; the choice when none is kept), CellDesigner's own (cd_make
     // LOOK and COMP), the viewer's Default scheme (Settings, Map colours) by the class's role, or none (white, as
     // CellDesigner has no unfilled species), or Confetti (a pastel of its own, create.js confettiFill)
-    var CD_COL_KEY = 'atlas-edit-cd-colours', CD_COLS = [['file', 'From file', 'The map as it is; new species and compartments in the colour most of their class have on it, Default for a class it has none of'], ['cd', 'CellDesigner', 'The whole map and new species and compartments in CellDesigner\u2019s own colours'], ['default', 'Default', 'The whole map and new species and compartments in the viewer\u2019s Default colours'], ['none', 'No colours', 'The whole map and new species and compartments white'], ['custom', 'Custom', 'The whole map and new species in the colours kept by Set as default; a class with none as it is'], ['confetti', 'Confetti', 'Every species of the map, and every new one, a pastel of its own; compartments as they are']];
+    var CD_COLS = [['file', 'From file', 'The map as it is; new species and compartments in the colour most of their class have on it, Default for a class it has none of'], ['cd', 'CellDesigner', 'The whole map and new species and compartments in CellDesigner\u2019s own colours'], ['default', 'Default', 'The whole map and new species and compartments in the viewer\u2019s Default colours'], ['none', 'No colours', 'The whole map and new species and compartments white'], ['custom', 'Custom', 'The whole map and new species in the colours kept by Set as default; a class with none as it is'], ['confetti', 'Confetti', 'Every species of the map, and every new one, a pastel of its own; compartments as they are']];
     // the Default compartment's paint, the official maps': cdrender draws a compartment's band at a quarter of its colour,
     // so this shows as the Default scheme's compartment (#F7F6F3, sbgn_edit FILL; tests/cd-colours-default.js checks the two agree)
     var CD_COMP_DEFAULT = 'ffdfdbce';
-    function cdCols() { return keptChoice(CD_COL_KEY, ['file', 'cd', 'default', 'none', 'custom', 'confetti']); }
+    function cdCols() { return mapCols(['file', 'none', 'cd', 'default', 'confetti', 'custom'], cdIs); }
+    function cdIs(mode) {   // the map's species coloured as the choice colours them (cdFills), or each a confetti pastel; null: no species to read (cd_make.classColours, one pass kept per text)
+      var t = cd && cd.now;
+      if (!t || !cdMk) return false;
+      var n = cdMk.classColours(t), cols = [];
+      Object.keys(n).forEach(function (cls) { if (cls !== 'DEGRADED') cols = cols.concat(Object.keys(n[cls])); });
+      if (!cols.length) return null;
+      if (mode === 'confetti') return cols.every(function (c) { return confettiOne('#' + c.slice(2)); });
+      var fn = cdFills(mode, t), read = 0;   // under these choices a class's fill depends on its class only; a class the choice leaves as it is not read
+      var all = Object.keys(n).every(function (cls) { var x = cls === 'DEGRADED' ? null : fn(cls); if (x) read++; return !x || Object.keys(n[cls]).every(function (c) { return c.slice(2) === x.slice(1).toLowerCase(); }); });
+      return read ? all : null;
+    }
     function cdColour(t, cls) { return cdColourIn(cdCols(), t, cls); }   // eight hex digits for cd_make, or null for CellDesigner's own
     function cdColourIn(m, t, cls) {
       var comp = cdComp(cls);
@@ -192,7 +203,7 @@
       }
       return '<span class="m2-cs-sw">' + h + '</span>';
     }
-    function cdColsRow() { return palDrop({ key: 'cols', label: 'Colours', title: 'Colours of the map and of new species and compartments', list: CD_COLS, get: cdCols, set: function (v) { keepChoice(CD_COL_KEY, v, 'file'); cdRecolour(v); }, sq: cdSquares }); }
+    function cdColsRow() { return palDrop({ key: 'cols', label: 'Colours', title: 'Colours of the map and of new species and compartments', list: CD_COLS, get: cdCols, set: function (v) { keepMapChoice('cols', v); cdRecolour(v); }, sq: cdSquares }); }
     // a choice of Colours recolours the whole map, one undo step (cdApply): every species and compartment its colour by the
     // choice, as a new one of its class would get it (cdColourIn, from the map as it was); From file leaves the map as it
     // is; Custom a class with a kept fill, the rest as they are; Confetti every species a pastel of its own, one after
@@ -202,15 +213,19 @@
     function cdRecolour(mode) {
       if (mode === 'file' || !cd) return;
       cdApply(function (t0) {
-        var hues = [], lh = [], kept = mode === 'custom' ? cdKept() : null;
-        return cdMk.recolourAll(t0, function (cls) {
-          var comp = cdComp(cls);
-          if (mode === 'confetti') return comp ? null : confettiPick(hues);
-          if (mode === 'custom') { var k = !comp && kept[cls]; return k && k.fill || null; }
-          var x = cdColourIn(mode, t0, cls) || (cdMk.LOOK[cls] || [])[2];
-          return x ? '#' + x.slice(2) : null;
-        }, mode === 'custom' ? null : function () { return mode === 'confetti' ? confettiLine(lh) : '#000000'; });
+        var lh = [];
+        return cdMk.recolourAll(t0, cdFills(mode, t0), mode === 'custom' ? null : function () { return mode === 'confetti' ? confettiLine(lh) : '#000000'; });
       }, []);
+    }
+    function cdFills(mode, t0) {   // cd_make.recolourAll's fn under a choice: a class's fill (#rrggbb), or null to leave it
+      var hues = [], kept = mode === 'custom' ? cdKept() : null;
+      return function (cls) {
+        var comp = cdComp(cls);
+        if (mode === 'confetti') return comp ? null : confettiPick(hues);
+        if (mode === 'custom') { var k = !comp && kept[cls]; return k && k.fill || null; }
+        var x = cdColourIn(mode, t0, cls) || (cdMk.LOOK[cls] || [])[2];
+        return x ? '#' + x.slice(2) : null;
+      };
     }
     // Style: From file, the size most species of that class have on the map; Custom, the size kept by Set as default (From
     // file for a class with none); else, or none there, CellDesigner's
@@ -233,7 +248,7 @@
       all[L.cls] = { w: b[2], h: b[3], width: L.width, multimer: n > 1, copies: n };
       if (L.fill && L.cls !== 'DEGRADED') all[L.cls].fill = L.fill;   // a degraded species keeps CellDesigner's look
       if (!keepLook(CD_DEF_KEY, all)) return;
-      keepChoice(STYLE_KEY, 'custom', 'file'); keepChoice(CD_COL_KEY, 'custom', 'file'); styleRow(); cdColsRow();
+      keepMapChoice('style', 'custom'); keepMapChoice('cols', 'custom'); styleRow(); cdColsRow();
     }
     // the copies of a new species of that class: the multimer kept, under Style Custom; its box (cdSize) holds them all, the
     // front one 6 smaller for each copy behind it (cdrender frontBox; cd_make.homodimer grows the box back)

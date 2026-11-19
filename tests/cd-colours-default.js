@@ -24,7 +24,7 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local =
   var pick = async function (name) { await page.keyboard.press('Escape'); await page.mouse.click(1350, 880); await page.waitForTimeout(300); await page.click('#m2-editwin .m2-ed-pmap tr[data-k="cols"] .m2-ed-pdd'); await page.waitForTimeout(200); await page.click('body > .m2-ed-pdl button:has-text("' + name + '")'); await page.waitForTimeout(200); };
   var paint = function (id) { return page.evaluate(function (id) { var t = window.m2EditNow().text, i = t.indexOf(' id="' + id + '"'), e = t.indexOf('</celldesigner:', i), m = /<celldesigner:paint color="([0-9a-fA-F]{8})"/.exec(t.slice(i, t.indexOf('Alias>', e) + 6)); return m ? m[1].toLowerCase() : null; }, id); };
   var squares = function () { return page.evaluate(async function () { document.querySelector('#m2-editwin .m2-ed-pmap tr[data-k="cols"] .m2-ed-pdd').click(); await new Promise(function (r) { setTimeout(r, 200); }); var o = {}; document.querySelectorAll('body > .m2-ed-pdl button').forEach(function (x) { o[x.querySelector('span').textContent] = Array.from(x.querySelectorAll('i')).map(function (i) { return i.title; }).join(' | '); }); document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })); return o; }); };
-  await page.goto(base, { waitUntil: 'load' }); await page.evaluate(function () { ['atlas-edit-cd-colours', 'atlas-edit-cd-defaults'].forEach(function (k) { localStorage.removeItem(k); }); });
+  await page.goto(base, { waitUntil: 'load' }); await page.evaluate(function () { ['atlas-edit-map-choices', 'atlas-edit-cd-defaults'].forEach(function (k) { localStorage.removeItem(k); }); });
   await page.goto(base + '#glycogen-muscle-celldesigner', { waitUntil: 'load' }); await page.waitForSelector('.m2-ri[data-win="edit"]', { timeout: 30000 });
   if (!(await page.$('#m2-editwin button[data-make="cd:PROTEIN"]:visible'))) await page.click('.m2-ri[data-win="edit"]');
   await page.waitForSelector('#m2-editwin button[data-make="cd:PROTEIN"]', { state: 'visible', timeout: 30000 }); await page.waitForTimeout(1500);
@@ -58,7 +58,7 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local =
   var cp4 = await made('cd:COMPARTMENT', 1180, 200);
   ok('No colours: a compartment white', await paint(cp4) === 'ffffffff', await paint(cp4));
   ok('no script error', !errs.length, errs.join(' / '));
-  await page.evaluate(function () { localStorage.removeItem('atlas-edit-cd-colours'); });
+  await page.evaluate(function () { localStorage.removeItem('atlas-edit-map-choices'); });
   await b.close();
   console.log(bad ? bad + ' wrong' : 'all ok');
   process.exit(bad ? 1 : 0);
