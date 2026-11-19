@@ -736,15 +736,13 @@
       selN = k >= 0 ? [k] : []; selP = []; selE = []; part = null; paint();
     }
     // a name typed in place (a double click on a species, a complex's member included, on a complex's or a compartment's
-    // drawn name, anywhere on a complex off its members, or a compartment's top band; typeIn in create.js), written by cd_make.rename;
+    // drawn name, or anywhere on a complex or a compartment off what it holds; typeIn in create.js), written by cd_make.rename;
     // a degraded species has none
     V.view.addEventListener('dblclick', function (e) {
       if (!cdPal() || !editing(e)) return;
       if (tool || Date.now() - placedAt < 600) { e.stopImmediatePropagation(); return; }
       var named = function (n, k) { return cdRole(k) === 'epn' || n.comp || (n.up != null && nodes2[n.up].shape.kind === 'Complex'); };
-      var P = at(e), i = innermost(P, function (n, k) { return named(n, k) && n.el.getAttribute('yfiles.foldertype') !== 'group'; });
-      if (i < 0) i = nameHit(P, named);
-      if (i < 0) i = innermost(P, function (n, k) { return named(n, k) && (!n.comp || P[1] - boxOf(k)[1] <= 24 && !nameBox(k)); });   // anywhere on a complex off its members; a compartment by its top band, only with no name drawn
+      var P = at(e), i = nameAt(P, named);   // create.js: a species, a member, else a group's drawn name or the group round P; a line, a process or a gate nothing
       if (i < 0) return;
       var A = cdMk.aliasInfo(cd.now, nodes2[i].id);
       if (A.cls === 'DEGRADED') return;

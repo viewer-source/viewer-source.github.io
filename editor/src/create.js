@@ -1027,19 +1027,30 @@
       go.same = v === nameNow(c) || !cd && (!sbJs || sb && !sbJs.nameable(src(), id));   // greyed only when already so named (or the file cannot take a name), so the item stays where it is found
       return go;
     };
-    // a double click on a named entity, or on one of its state variables or units of information, opens its text
+    // a double click on a named entity, or on one of its state variables or units of information, opens its text; on a
+    // complex or a compartment anywhere off what it holds (a double click has no other use), the field at its drawn name.
+    // Without the palette (GraphML maps, Layout editing) groups only: their names, as Name by members, on every map
     V.view.addEventListener('dblclick', function (e) {
-      if (!palOn() || !editing(e)) return;
+      if (!editing(e) || cd && cdPal()) return;   // a CellDesigner map in Full editing: cdcreate.js
       if (tool || Date.now() - placedAt < 600) { e.stopImmediatePropagation(); return; }   // the clicks of a placing: no box
-      var base = src(), P = at(e), q = svAt(P), i = innermost(P, function (n, k) {   // a compartment by its top band, where its name is (inside it the double click stays the map's)
-        return (n.el.getAttribute('yfiles.foldertype') !== 'group' || (n.comp && P[1] - boxOf(k)[1] <= 24 && !nameBox(k))) && sbJs.nameable(base, n.id);
-      });
+      var full = palOn(), base = src(), P = at(e), q = full ? svAt(P) : null;
+      var ok = function (n) { return cd ? !!cdMk : !!sbJs && (!sb || sbJs.nameable(base, n.id)); };   // the file can take the name (setName)
+      var grp = function (n) { return n.el.getAttribute('yfiles.foldertype') === 'group'; };
+      var nameable = function (n) { return (n.comp || n.shape.kind === 'Complex' && !afSbgn && !afKind() || full && !grp(n)) && ok(n); };
       if (q) { e.stopImmediatePropagation(); typeIn(nodes2[q[0]].id, q[1]); return; }
-      var g = nameHit(P, function (n) { return sbJs.nameable(base, n.id); });   // a group's name where it is drawn (a complex's too)
-      if (g >= 0 && (i < 0 || nodes2[i].el.getAttribute('yfiles.foldertype') === 'group')) i = g;
-      if (i < 0 && !afSbgn && !afKind()) i = innermost(P, function (n) { return n.shape.kind === 'Complex' && sbJs.nameable(base, n.id); });   // anywhere on a complex off its members: its name, typed where it is drawn
+      var i = nameAt(P, nameable);
       if (i >= 0) { e.stopImmediatePropagation(); typeIn(nodes2[i].id, null); }
     }, true);
+    // what a double click at P names, by the selection's own hit (core.js): a node that is no holder names itself or, when it
+    // cannot be named here (a member in Layout editing, a process, a gate), nothing; a line or a bend point nothing; else a
+    // group's drawn name under P, else the holder round P (a complex or a compartment off what it holds); -1 for none
+    function nameAt(P, test) {
+      var h = hit(P) || {}, n = h.n != null ? nodes2[h.n] : null, holder = !!n && (n.kids.length > 0 || !!n.comp) && !(afSbgn && n.shape.kind === 'Complex');
+      if (n && !holder) return test(n, h.n) ? h.n : -1;
+      var g = nameHit(P, test);
+      if (g >= 0) return g;
+      return n && test(n, h.n) ? h.n : -1;
+    }
     function svAt(P) {   // the state variable or unit of information under P: [node, j] (it may stand out of its node)
       if (afSbgn || afKind()) return null;   // not drawn in the SBGN AF view; an activity's unit text is set from its right-click menu, never clicked, moved or typed
       var res = svIcons(), found = null, pad = 3 / V.z, acts = sb && palKind() === 'hybrid' ? sbJs.activities(text) : null;   // a hybrid map's activities keep their units as on an AF map
