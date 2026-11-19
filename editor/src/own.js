@@ -974,7 +974,7 @@
     // what the viewer asks of this part (the list's entries and groups, a map's record)
     var own = {
       read: function () { return mineIn; },
-      here: function () { return (groupsHere = mineGroupsHere()); }, groups: function () { return groupsHere; },
+      here: function () { return (groupsHere = mineGroupsHere()); }, groups: function () { return groupsHere; }, order: mineGroups,   // order: every group the reader made, on the site or not, in their order
       withMine: withMine, isGroup: ownGroup, movable: movable, moveTo: moveTo, rename: renameGroup, renameMap: renameMap, canRename: canRename, newMap: newMap, shown: mineShown, examplesHidden: examplesHidden, examplesHide: examplesHide, examplesMixed: examplesMixed, listItems: listItems,
       rec: function (id) { return mine[id] || null; }, naming: function () { return !!naming; }
     };

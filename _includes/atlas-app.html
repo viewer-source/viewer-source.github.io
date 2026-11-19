@@ -3100,7 +3100,7 @@ page, so its styles keep the base they were made on).
     siteList = list;
     list = list.map(asSource);
     regroupPrune(list);
-    var gh = own ? own.here() : [], a = arrange(regroup(own ? own.withMine(list) : list.filter(function (m) { return !m.deleted; })));   // a deleted map (its page's deleted:) only in the editor's Deleted   // site maps moved to another group (regroup), then the reader's order
+    var gh = own ? (own.here(), own.order()) : [], a = arrange(regroup(own ? own.withMine(list) : list.filter(function (m) { return !m.deleted; })));   // a deleted map (its page's deleted:) only in the editor's Deleted   // site maps moved to another group (regroup), then the reader's order   // gh: every group the reader made, so one keeps its place once its maps are on the site
     var bin = a.filter(function (m) { return m.binned; }).sort(function (x, y) { return y.binned - x.binned; });   // Deleted (own.js): last, the latest first
     a = a.filter(function (m) { return !m.binned; });
     var rank = function (m) { return m.group ? gh.indexOf(m.group) + 1 : 0; }, first = function (m) { return m.group ? rank(m) > 0 : !!m.mine || m.siteGroup != null; };   // the reader's groups (a site map moved into one too) and the ungrouped maps they made or moved there
