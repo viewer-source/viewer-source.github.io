@@ -316,7 +316,7 @@
       var hid = siteHidden(), gh = !!(repo() && token()), pend = binPending(), n0 = Object.keys(pend).length, binned = [];
       list = list.filter(function (m) {
         if (hiddenGone[m.id]) return false;   // deleted forever here, the build not run since
-        var d = binState(m, pend);
+        var d = binState(twinBase(m) ? parentOf(m) : m, pend);   // a twin as its GraphML map
         if (!d && hid.indexOf(m.id) < 0) return true;
         if (gh) binned.push(Object.assign({}, m, { binned: d ? Date.parse(d) || Date.now() : Date.now() }));   // deleted: seen in Deleted with a token, else not at all
         return false;
@@ -800,20 +800,26 @@
       } else siteBin(m.id, true).catch(say);
       V.refreshMine();
     }
-    function restore(m) {
-      var name = m.mine ? m.title : m.topic, taken = liveTitles().indexOf(name) >= 0, to = taken ? freeTitle(name) : null;
-      var say = function (e) { alert(name + ' was not restored: ' + (e && e.message ? e.message : e)); };
+    function restore(m) {   // back into its group under its own name, whatever other maps are called
+      m = parentOf(m);
+      var say = function (e) { alert((m.mine ? m.title : m.topic) + ' was not restored: ' + (e && e.message ? e.message : e)); };
       if (m.mine) {
         var r = mine[m.id]; if (!r) return;
-        r.hidden = false; delete r.deleted; if (to) r.title = to;
+        r.hidden = false; delete r.deleted;
         minePut(r).catch(function () {});
         folderMove(m.id, false);
-        if (r.site && repo() && token()) siteBin(r.site, false, to).catch(say);
-      } else {
-        if (to) renamed[m.id] = { was: name, to: to };
-        siteBin(m.id, false, to).catch(function (e) { delete renamed[m.id]; say(e); });
-      }
+        if (r.site && repo() && token()) siteBin(r.site, false).catch(say);
+      } else siteBin(m.id, false).catch(say);
       V.refreshMine();
+    }
+    // the group SBGN-ML's maps (build.py sbgn_map: <name>-sbgn, edited at maps/sbgn-ml/<name>-sbgn.sbgn) are their GraphML
+    // map's twins, with no page of their own: in Deleted with it, restored and deleted forever with it
+    function twinBase(m) { return m && !m.mine && /^maps\/sbgn-ml\/[^/]+-sbgn\.sbgn$/.test(m.editPath || '') ? m.id.replace(/-sbgn$/, '') : null; }
+    function parentOf(m) {
+      var b = twinBase(m), l = V.siteList || [];
+      if (!b) return m;
+      var p = l.filter(function (x) { return x.id === b + '-graphml'; })[0] || l.filter(function (x) { return x.id === b; })[0];
+      return p ? Object.assign({}, p, { binned: m.binned }) : m;
     }
     // Original's record (create.js colsPick) kept with the map on GitHub too, while the page is connected and the map is
     // there: maps/colours/<its GitHub id>.json in the data repository (the site's build reads no such folder; written with
@@ -913,7 +919,7 @@
     }
     var hiddenGone = {};   // site maps let go here (the build still lists them until it runs again)
     function erase(ms) {
-      ms = ms.filter(Boolean); if (!ms.length) return;
+      ms = ms.filter(Boolean).map(parentOf).filter(function (m, i, a) { return a.findIndex(function (x) { return x.id === m.id; }) === i; }); if (!ms.length) return;
       var n = ms.length, what = n === 1 ? (ms[0].mine ? ms[0].title : ms[0].topic) : n + ' maps';
       if (!confirm('Delete ' + what + ' forever? This cannot be undone.')) return;
       var site = [], gh = !!(repo() && token());

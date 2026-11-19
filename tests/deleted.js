@@ -1,13 +1,16 @@
 // Delete map, Deleted, Restore, Delete forever. GitHub is played by this script
 // (page.route on api.github.com, a repository held in memory).
 //   1. No token, a reader's map: Delete map puts it in Deleted (closed, its count), out of the list, no Edit tab on it;
-//      its name free for a new map; Restore with the name taken gives "<name> (1)"; Delete forever takes the record out.
+//      its name free for a new map; Restore keeps its own name, also when another map has it; Delete forever takes the
+//      record out.
 //   2. With a token, a site map: Delete map writes deleted: into its page and shows it in Deleted at once; the build
 //      listing it as deleted keeps it there; Restore drops the line; Delete forever removes its files in one commit.
 //   3. The same site map deleted, the page opened without a token: not in the list at all.
+//   3b. A GraphML map in Deleted with its SBGN-ML twin (no page of its own): Restore on the twin restores the GraphML map.
 //   4. An older version's hidden site map (atlas-hidden-maps) moved into Deleted once with a token.
 //   5. The Delete key (and Backspace, the Mac's delete key) on the map shown: into Deleted, the next map shown; not while
 //      editing, not on a map that cannot be deleted (a site map without a token).
+//   6. A heading opened or closed (Deleted, a group) keeps the list where it is, the map shown far above.
 //   node tests/deleted.js [base address] [--local]
 // --local: the editor and the viewer of the working tree routed into the live page (the styles copy's changes since
 // REV, default HEAD; run styles/update.sh first), as tests/edit-reload.js
@@ -81,7 +84,7 @@ function viewerHunks() {
   var built = {};   // id -> the deleted date the build would list
   await page.route('**/index.json*', async function (route) {
     var res = await route.fetch(), list = JSON.parse(await res.text());
-    list.forEach(function (m) { if (built[m.id]) m.deleted = built[m.id]; });
+    list.forEach(function (m) { m.deleted = built[m.id] || ''; });   // the site's own deletions left out, so the test starts the same
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(list) });
   });
   var ids = function () { return page.$$eval('#m2-list .m2-map:not(.m2-binned)', function (l) { return l.map(function (x) { return x.dataset.id; }); }); };
@@ -120,7 +123,7 @@ function viewerHunks() {
   ok('1. its name free: the new map is Unnamed map', (await title(id1b)) === 'Unnamed map', await title(id1b));
   await openBin();
   await menu('#m2-list .m2-binned[data-id="' + id1 + '"]', 'Restore');
-  ok('1. restored with the name taken: Unnamed map (1)', (await title(id1)) === 'Unnamed map (1)' && !(await head()), (await title(id1)) + ' | ' + (await head()));
+  ok('1. restored under its own name, though another map has it', (await title(id1)) === 'Unnamed map' && !(await head()), (await title(id1)) + ' | ' + (await head()));
   await menu('#m2-list .m2-map[data-id="' + id1 + '"]', 'Delete map');
   await openBin();
   await menu('#m2-list .m2-binned[data-id="' + id1 + '"]', 'Delete forever');
@@ -158,6 +161,18 @@ function viewerHunks() {
   ok('3. no token: a deleted site map not listed, no Deleted', (await ids()).indexOf('glycolysis-graphml') < 0 && (await ids()).indexOf('glycolysis-sbgn') < 0 && !(await head()), await head());
   delete built['glycolysis-graphml']; delete built['glycolysis-sbgn'];
 
+  // 3b. the twin restored through its GraphML map
+  await page.evaluate(function () { localStorage.setItem('atlas-edit-token', 'test-token'); });
+  files['maps/glycolysis-graphml.md'] = '---\ntitle: "Glycolysis"\ntopic: "Glycolysis"\ngroup: "GraphML"\norder: 1\ndeleted: "2026-11-19T10:00:00Z"\n---\n';
+  built['glycolysis-graphml'] = built['glycolysis-sbgn'] = '2026-11-19T10:00:00Z';
+  await load('f001-glycolysis'); await list(); await openBin();
+  var alerts3 = []; page.on('dialog', function (d) { if (d.type() === 'alert') alerts3.push(d.message()); });
+  await menu('#m2-list .m2-binned[data-id="glycolysis-sbgn"]', 'Restore');
+  ok('3b. Restore on the twin: no message, the GraphML map\'s page restored under its own name', !alerts3.length && !/deleted:/.test(files['maps/glycolysis-graphml.md']) && /topic: "Glycolysis"\n/.test(files['maps/glycolysis-graphml.md']), alerts3.join(' | ') + ' ' + JSON.stringify(files['maps/glycolysis-graphml.md']));
+  ok('3b. both out of Deleted at once', (await ids()).indexOf('glycolysis-graphml') >= 0 && (await ids()).indexOf('glycolysis-sbgn') >= 0);
+  delete built['glycolysis-graphml']; delete built['glycolysis-sbgn'];
+  files['maps/glycolysis-graphml.md'] = '---\ntitle: "Glycolysis"\ntopic: "Glycolysis"\ngroup: "GraphML"\norder: 1\n---\n';
+
   // 4. an older version's hidden map moved into Deleted
   await page.evaluate(function () { localStorage.setItem('atlas-edit-token', 'test-token'); localStorage.setItem('atlas-hidden-maps', '["glycolysis-graphml"]'); });
   await load('f001-glycolysis'); await page.waitForTimeout(4000);
@@ -182,6 +197,18 @@ function viewerHunks() {
   var k2 = await hash();
   await page.keyboard.press('Backspace'); await page.waitForTimeout(1500);
   ok('5. Backspace on a site map without a token: kept', (await ids()).indexOf(k2) >= 0 && (await hash()) === k2);
+  // 6. the list kept where it is
+  await page.click('#m2-list .m2-map:not(.m2-binned) >> nth=0'); await page.waitForTimeout(1500);
+  var still = async function (sel) {
+    var top = await page.$eval('#m2-list', function (b) { b.scrollTop = b.scrollHeight; return b.scrollTop; });
+    await page.waitForTimeout(300);
+    await page.click(sel); await page.waitForTimeout(800);
+    return [top, await page.$eval('#m2-list', function (b) { return b.scrollTop; })];
+  };
+  var s6 = await still('#m2-list .m2-bin');
+  ok('6. Deleted opened or closed at the list\'s end: the list not moved', s6[0] > 200 && Math.abs(s6[1] - s6[0]) < 2, s6.join(' -> '));
+  var s7 = await still('#m2-list .m2-group:not(.m2-bin) >> nth=-1');
+  ok('6. the last group opened or closed: the list not moved (or only as far as a shorter list must)', s7[0] > 200 && (Math.abs(s7[1] - s7[0]) < 2 || await page.$eval('#m2-list', function (b) { return Math.abs(b.scrollTop - (b.scrollHeight - b.clientHeight)) < 2; })), s7.join(' -> '));
   await openBin();
   await menu('#m2-list .m2-binned[data-id="' + k1 + '"]', 'Delete forever');
 
