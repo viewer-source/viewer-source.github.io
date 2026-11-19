@@ -536,7 +536,8 @@ page, so its styles keep the base they were made on).
   #m2-setwin .m2-set-tick-rec input { margin-top: calc((1lh - 15px) / 2); }
   #m2-setwin .m2-set-itip, #m2-setwin .m2-set-itip:hover { display: inline; padding: 0; border: 0; background: none; color: #80868b; font: inherit; line-height: 1; vertical-align: -0.125em; cursor: pointer; }
   #m2-setwin .m2-set-itip svg { display: block; width: 1em; height: 1em; }
-  #m2-setwin .m2-set-pad select { width: auto; min-width: 56px; font: inherit; padding: 1px 2px; border: 1px solid var(--m2-button, #ccc); border-radius: var(--m2-radius-button, 3px); background: transparent; color: var(--m2-text); }
+  #m2-setwin .m2-set-pad select { width: 5.5em; min-width: 56px;   /* one width, so the two boxes line up on the right */
+    font: inherit; padding: 1px 2px; border: 1px solid var(--m2-button, #ccc); border-radius: var(--m2-radius-button, 3px); background: transparent; color: var(--m2-text); }
   #m2-setwin .m2-set-pad select:focus { outline: none; }   /* no focus ring: a choice is made and the list closes, nothing stays marked */
   /* the two-choice rows (Association, Source, Annotations, Icons) as equal buttons, the same width in every row (a
      unified look, as segmented controls keep their segments equal: Apple HIG, Primer) */
