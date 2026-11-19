@@ -25,12 +25,14 @@
       // CellDesigner's oval compartment (class OVAL), its two lines as the square one's
       ['OVAL', 'Oval compartment', '<ellipse cx="12" cy="12" rx="10.5" ry="8.5"/><ellipse class="thin" cx="12" cy="12" rx="7.5" ry="5.5"/>']];
     function cdComp(cls) { return cls === 'COMPARTMENT' || cls === 'OVAL'; }   // the two compartment kinds of the palette
-    // gates: the circle with its sign, two input lines above and the output line below; the signs centred in the circle
+    // gates: the circle with its sign, the input lines above (one for NOT, which takes one input) and the output line
+    // below; the signs centred in the circle
     // (the bar and ! drawn, not letters, so they sit in its middle); the fourth item is cdrender's GATE sign, for cdCheck
     var CD_Q = '<path d="M9.8 10.2a2.2 2.2 0 1 1 3.2 2c-.7.4-1 .8-1 1.6" class="in"/><circle class="dot" cx="12" cy="16.4" r=".8"/>';
     var CD_GATES = [['AND', 'AND gate', '<text x="12" y="16.2" text-anchor="middle" font-size="9">&amp;</text>', '&amp;'], ['OR', 'OR gate', '<path d="M12 9.5v7" class="in"/>', '|'],
       ['NOT', 'NOT gate', '<path d="M12 9.6v4.6" class="in"/><circle class="dot" cx="12" cy="16.6" r=".8"/>', '!'], ['UNKNOWN', 'Unknown gate', '<g transform="translate(0 .7)">' + CD_Q + '</g>', '?']].map(function (q) {
-      return [q[0], q[1], '<circle cx="12" cy="13" r="6.5"/><path d="M3 4l4.4 4.4M21 4l-4.4 4.4M12 19.5V23"/>' + q[2], q[3]];
+      var ins = q[0] === 'NOT' ? 'M12 1v5.5' : 'M3 4l4.4 4.4M21 4l-4.4 4.4';
+      return [q[0], q[1], '<circle cx="12" cy="13" r="6.5"/><path d="' + ins + 'M12 19.5V23"/>' + q[2], q[3]];
     });
     // a reaction: the bare arrow with CellDesigner's filled head, the omitted one crossed by two slashes, the unknown one by ?
     var CD_LINE = '<path d="M1.5 12h15"/>', CD_HEAD = '<path d="M16 8.5l6.5 3.5-6.5 3.5z" fill="currentColor"/>';
