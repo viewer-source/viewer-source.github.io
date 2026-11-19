@@ -281,7 +281,11 @@
         }
       } else return Promise.resolve();
       put(id, g, before);
-      return Promise.resolve(sent);
+      // its name taken in that group for its format: renamed "<name> (1)", Finder's Keep both, once the move is written
+      var n = m && mapName(m), keep = m && nameTaken(n, g, fmtOf(m), id) && canRename(m, !!(repo() && token()));
+      return Promise.resolve(sent).then(function () {
+        if (keep) { nameTo(V.byId[id] || m, freeTitle(n, g, fmtOf(m), null, id)); V.refreshMine(); }
+      });
     }
     function moveMany(ids, g, before) {   // several maps selected, one after another (each a commit with a token), in their order
       return ids.reduce(function (p, id, k) { return p.then(function () { return moveTo(id, g, before, k); }); }, Promise.resolve());
@@ -312,10 +316,41 @@
     // GraphML or CellDesigner map as it is now (the edits this page holds, else GitHub's version, else the site's);
     // with a token every copy goes to the site, as Add map does (an SBGN-ML one only made here)
     function canCopy(m) { return !!m && !m.shownAs && (m.mine ? !!mine[m.id] : !!graphmlOf(m) && (!sbMap(m) || /^maps\/[^/]+\.sbgn$/.test(m.editPath || ''))); }   // an SBGN-ML map of the site's own, not one of its groups'
-    function freeTitle(t, also) {   // a name no map in the list has (nor one of also): (1), (2), ... after it, whatever the format (a file's format is not its name)
-      var titles = liveTitles().concat(also || []), f = t;
-      for (var k = 1; titles.indexOf(f) >= 0; k++) f = t + ' (' + k + ')';
+    // Names as in Finder, the format being the extension the list shows: two maps may share a name unless they are in
+    // the same group and of the same format. A name taken there is refused when typed (Rename map); a name the viewer
+    // makes (Make a copy, New map, Add map from file), or a clash a move or a Restore brings, takes (1), (2), ... after it
+    var EXT_FMT = { '.xml': 'CellDesigner', '.sbgn': 'SBGN-ML', '.graphml': 'GraphML' };
+    function fmtOf(m) { return ((m.downloads || [])[0] || {}).label || ''; }
+    function fmtOfText(t) { return /<sbml[\s>]/.test(t.slice(0, 3000)) && t.indexOf('celldesigner') >= 0 ? 'CellDesigner' : isSb(t) ? 'SBGN-ML' : 'GraphML'; }
+    function mapName(m) { return m.mine ? m.title : m.topic || m.title; }
+    function nameTaken(name, group, fmt, id) {   // another map of this name and format in the group, Deleted left out
+      return (V.maps || []).some(function (m) { return m.id !== id && !m.binned && (m.group || '') === (group || '') && fmtOf(m) === fmt && mapName(m) === name; });
+    }
+    function freeTitle(t, group, fmt, also, id) {   // t, else t (1), t (2), ... free in the group for that format (nor one of also)
+      var f = t;
+      for (var k = 1; nameTaken(f, group, fmt, id) || (also || []).indexOf(f) >= 0; k++) f = t + ' (' + k + ')';
       return f;
+    }
+    function nameTo(m, v) {   // a map's name set: the reader's record (and its page, once on the site), or a site map's page
+      var shown = mapName(m);
+      if (!v || v === shown) return;
+      if (m.mine) {
+        var r = mine[m.id]; if (!r) return;
+        r.title = v; minePut(r).catch(function () {});
+        if (r.site) {   // its page on the site too, the list's name over the site's until the build has it
+          var sid = r.site, was0 = renamed[sid] ? renamed[sid].was : r.siteTitle || shown;
+          renamed[sid] = { was: was0, to: v };
+          toSiteName(sid, shown, v).catch(function (e) { delete renamed[sid]; alert(shown + ' was not renamed on the site: ' + (e && e.message ? e.message : e)); });
+        }
+        if (V.current && V.current.id === m.id) {   // the map on screen, and the editor's own name of it
+          document.getElementById('m2-title').textContent = v;
+          if (map && map.id === m.id) map.title = v;
+        }
+      } else {
+        var was = renamed[m.id] ? renamed[m.id].was : shown;
+        renamed[m.id] = { was: was, to: v };
+        toSiteName(m.id, shown, v).catch(function (e) { delete renamed[m.id]; V.refreshMine(); alert(shown + ' was not renamed: ' + (e && e.message ? e.message : e)); });
+      }
     }
     function freeFile(name) {   // a file name no map of the reader's has (-2, -3, ... before the extension)
       var files = Object.keys(mine).map(function (k) { return mine[k].file; }), ext = (name.match(/\.[^.]+$/) || [''])[0], base = name.slice(0, name.length - ext.length), f = name;
@@ -336,7 +371,7 @@
     function copyMap(id) {
       if (naming) naming(true);
       var m = V.byId[id]; if (!m || !canCopy(m)) return;
-      var r0 = m.mine ? mine[id] : null, title = freeTitle('Copy of ' + (r0 ? r0.title : m.topic || m.title)), group = m.group || '', next = after(id);   // next: read before the copy is in the list
+      var r0 = m.mine ? mine[id] : null, group = m.group || '', title = freeTitle('Copy of ' + (r0 ? r0.title : m.topic || m.title), group, fmtOf(m)), next = after(id);   // next: read before the copy is in the list
       var ext = r0 ? (r0.file.match(/\.[^.]+$/) || ['.xml'])[0] : cdMap(m) ? '.xml' : sbMap(m) ? '.sbgn' : '.graphml';
       var file = freeFile(title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') + ext);
       var gh = !!(repo() && token());
@@ -552,11 +587,13 @@
     function newMap(group, fmt) {
       if (making) return Promise.resolve();   // one at a time: a second click meanwhile would take the same name
       making = true;
-      var titles = liveTitles();
+      var F = fmt === 'cd' ? 'CellDesigner' : 'SBGN-ML';
       var files = mineShown().map(function (r) { return r.file; });   // a deleted map's file name free too (in a folder its file is in Deleted/)
       var title = 'Unnamed map', file;
       var ext = fmt === 'cd' ? '.xml' : '.sbgn', text;
-      for (var k = 2; titles.indexOf(title) >= 0 || files.indexOf(file = title.toLowerCase().replace(/ /g, '-') + ext) >= 0; k++) title = 'Unnamed map ' + k;
+      for (var k = 2; nameTaken(title, group, F); k++) title = 'Unnamed map ' + k;
+      file = title.toLowerCase().replace(/ /g, '-') + ext;
+      for (k = 2; files.indexOf(file) >= 0; k++) file = title.toLowerCase().replace(/ /g, '-') + '-' + k + ext;   // the file's name apart from the map's: unique among all the reader's
       if (fmt !== 'cd') text = '<?xml version="1.0" encoding="UTF-8"?>\n<sbgn xmlns="http://sbgn.org/libsbgn/0.3">\n  <map id="' + NEW_ID + '" language="process description">\n  </map>\n</sbgn>\n';
       return mineIn.then(function () { return fmt === 'cd' ? cdpy().then(function () { text = cdMk.empty({ id: 'untitled' }); }) : null; })
         .then(function () { return drawText(text); }).then(function (d) {
@@ -596,26 +633,8 @@
       if (!m || !b || !canRename(m, repo() && token())) return;
       var shown = m.mine ? m.title : m.topic;
       inPlace(b, { cls: 'm2-group-edit m2-map-edit' + (b.classList.contains('m2-sub') ? ' m2-sub' : ''), max: 120, value: shown, label: 'Name of the map',
-        end: function (v) {
-          if (!v || v === shown) return;
-          if (m.mine) {
-            var r = mine[id]; r.title = v; minePut(r).catch(function () {});
-            if (r.site) {   // its page on the site too, the list's name over the site's until the build has it
-              var sid = r.site, was0 = renamed[sid] ? renamed[sid].was : r.siteTitle || shown;
-              renamed[sid] = { was: was0, to: v };
-              toSiteName(sid, shown, v).catch(function (e) { delete renamed[sid]; alert(shown + ' was not renamed on the site: ' + (e && e.message ? e.message : e)); });
-            }
-          }
-          else {
-            var was = renamed[id] ? renamed[id].was : shown;
-            renamed[id] = { was: was, to: v };
-            toSiteName(id, shown, v).catch(function (e) { delete renamed[id]; V.refreshMine(); alert(shown + ' was not renamed: ' + (e && e.message ? e.message : e)); });
-          }
-          if (m.mine && V.current && V.current.id === id) {   // the map on screen, and the editor's own name of it
-            document.getElementById('m2-title').textContent = v;
-            if (map && map.id === id) map.title = v;
-          }
-        } });
+        bad: function (v) { return v && v !== shown && nameTaken(v, m.group, fmtOf(m), id) ? 'A map of this name and format is in this group already' : ''; },
+        end: function (v) { if (v && !nameTaken(v, m.group, fmtOf(m), id)) nameTo(m, v); } });
     }
     function toSiteName(id, was, v) {   // maps/<id>.md: its topic, and its title where it was the same; one commit
       var q = JSON.stringify(v.replace(/["\\]/g, ''));   // the build reads the front matter's quotes plainly
@@ -644,7 +663,7 @@
     function mineAdd(name, text, d, id, group) {   // group: the reader's group it was added into (undefined: where it was, else at the top)
       var h = textHash(text), old = id ? mine[id] : mineMatch(name, text, h);
       var back = !id && old && old.text !== text && old.src === h;   // the file as first added, the map since edited: the edits kept (an older map, matched by name alone, takes the new file)
-      var r = { id: old ? old.id : newId(), title: old ? old.title : freeTitle(name.replace(/\.(graphml|xml|sbgn)$/i, '')),
+      var r = { id: old ? old.id : newId(), title: old ? old.title : freeTitle(name.replace(/\.(graphml|xml|sbgn)$/i, ''), group || '', fmtOfText(text)),
         file: old ? old.file : name, text: back ? old.text : text, svg: back ? old.svg : d.svg, width: back ? old.width : d.width, height: back ? old.height : d.height,
         at: back ? old.at : Date.now(), src: old ? old.src || (id ? undefined : h) : h, hidden: false, group: group !== undefined ? group : old && old.group || '' };
       if (old && old.site) ['site', 'path', 'sha', 'saved', 'siteTitle'].forEach(function (k) { r[k] = old[k]; });   // on GitHub already: its file there, its new text sent once connected
@@ -659,7 +678,7 @@
         return p.then(function () { return f.text(); }).then(function (t) {
           if (isSb(t) && !madeHere(t)) throw new Error('an SBGN-ML file from another editor cannot be added yet, only one made here with New map');
           if (gh) return drawText(t).then(function (d) {   // with a token: to the site, shown from here until built
-            var ext = siteExt(t), title = freeTitle(f.name.replace(/\.(graphml|xml|sbgn)$/i, ''), out.map(function (o) { return o.title; }));
+            var ext = siteExt(t), title = freeTitle(f.name.replace(/\.(graphml|xml|sbgn)$/i, ''), group || '', fmtOfText(t), out.filter(function (o) { return fmtOfText(o.t) === fmtOfText(t); }).map(function (o) { return o.title; }));
             if (!ext) throw new Error(siteWhy(t));
             out.push({ f: f, d: d, t: t, ext: ext, title: title });
           });
@@ -841,7 +860,8 @@
     // menu on a reader's map or, with a token, on a site map with a page of its own, puts the map in Deleted: a group of
     // its own at the end of the list, closed on every page load, seen only by a reader with a token (site maps) or in
     // their own browser (their maps). A deleted map keeps its name and group, gives up its name (a new map may take it:
-    // liveTitles) and is not edited. Restore puts it back into its group, as "<name> (1)" when its name is taken by then;
+    // nameTaken leaves Deleted out) and is not edited. Restore puts it back into its group, as "<name> (1)" when its group
+    // has that name in its format by then (as Finder);
     // Delete forever takes it out for good: a reader's record and its folder file, a site map's files in one commit (git
     // history still has them). A site map's state is its page's front matter (deleted: <date>, ISO in UTC), kept here
     // meanwhile (atlas-bin-pending: id -> [the date, '' for restored; when]) until the build has it, at most an hour
@@ -855,11 +875,6 @@
       return p[0];
     }
     function binClear(id) { var p = binPending(); if (id in p) { delete p[id]; binPendingSet(p); } }
-    function liveTitles() {   // the names taken: maps not in Deleted
-      var pend = binPending(), hid = siteHidden();
-      return mineShown().map(function (r) { return r.title; }).concat((V.siteList || []).filter(function (m) { return !binState(m, pend) && hid.indexOf(m.id) < 0; })
-        .map(function (m) { var n = renamed[m.id]; return n && m.topic === n.was ? n.to : m.topic || m.title; }));
-    }
     function textOf(b64) { return new TextDecoder().decode(Uint8Array.from(atob(b64.replace(/\n/g, '')), function (c) { return c.charCodeAt(0); })); }   // GitHub's base64 content as text
     function ghPost(path, body, method) { return api(path, { method: method || 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(ghJson); }
     function ghJson(r) { return r.ok ? r.json() : r.json().catch(function () { return {}; }).then(function (d) { var e = new Error(d && d.message || 'GitHub ' + r.status); e.status = r.status; throw e; }); }
@@ -933,16 +948,20 @@
       if (next && V.chosen && ids.indexOf(V.chosen.id) >= 0) V.go(next);
       return ms.reduce(function (p, m) { return p.then(function () { return bin(m); }); }, Promise.resolve());
     }
-    function restore(m) {   // back into its group under its own name, whatever other maps are called
+    function restore(m) {   // back into its group under its own name, or "<name> (1)" where the group has it in the same format
       m = parentOf(m);
+      var name = mapName(m), to = nameTaken(name, m.group, fmtOf(m), m.id) ? freeTitle(name, m.group, fmtOf(m), null, m.id) : null;
       var say = function (e) { alert((m.mine ? m.title : m.topic) + ' was not restored: ' + (e && e.message ? e.message : e)); };
       if (m.mine) {
         var r = mine[m.id]; if (!r) return;
-        r.hidden = false; delete r.deleted;
+        r.hidden = false; delete r.deleted; if (to) r.title = to;
         minePut(r).catch(function () {});
         folderMove(m.id, false);
-        if (r.site && repo() && token()) siteBin(r.site, false).catch(say);
-      } else siteBin(m.id, false).catch(say);
+        if (r.site && repo() && token()) siteBin(r.site, false, to).catch(say);
+      } else {
+        if (to) renamed[m.id] = { was: name, to: to };
+        siteBin(m.id, false, to).catch(function (e) { delete renamed[m.id]; say(e); });
+      }
       V.refreshMine();
     }
     // the group SBGN-ML's maps (build.py sbgn_map: <name>-sbgn, edited at maps/sbgn-ml/<name>-sbgn.sbgn) are their GraphML

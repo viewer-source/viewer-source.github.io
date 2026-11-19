@@ -1,8 +1,8 @@
 // Delete map, Deleted, Restore, Delete forever. GitHub is played by this script
 // (page.route on api.github.com, a repository held in memory).
 //   1. No token, a reader's map: Delete map puts it in Deleted (closed, its count), out of the list, no Edit tab on it;
-//      its name free for a new map; Restore keeps its own name, also when another map has it; Delete forever takes the
-//      record out.
+//      its name free for a new map; Restore keeps its own name unless its group has it in that format by then ("(1)", as
+//      Finder; tests/names.js); Delete forever takes the record out.
 //   2. With a token, a site map: Delete map writes deleted: into its page and shows it in Deleted at once; the build
 //      listing it as deleted keeps it there; Restore drops the line; Delete forever removes its files in one commit.
 //   3. The same site map deleted, the page opened without a token: not in the list at all.
@@ -123,7 +123,7 @@ function viewerHunks() {
   ok('1. its name free: the new map is Unnamed map', (await title(id1b)) === 'Unnamed map', await title(id1b));
   await openBin();
   await menu('#m2-list .m2-binned[data-id="' + id1 + '"]', 'Restore');
-  ok('1. restored under its own name, though another map has it', (await title(id1)) === 'Unnamed map' && !(await head()), (await title(id1)) + ' | ' + (await head()));
+  ok('1. restored where its group has the name in its format by then: Unnamed map (1), as Finder', (await title(id1)) === 'Unnamed map (1)' && !(await head()), (await title(id1)) + ' | ' + (await head()));
   await menu('#m2-list .m2-map[data-id="' + id1 + '"]', 'Delete map');
   await openBin();
   await menu('#m2-list .m2-binned[data-id="' + id1 + '"]', 'Delete forever');
