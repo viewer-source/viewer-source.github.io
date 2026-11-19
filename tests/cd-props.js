@@ -60,6 +60,7 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#acly-celld
   var nameAt = function () { return page.$eval('#m2-img [data-n="' + comp + '"] text', function (x) { var r = x.getBoundingClientRect(), o = x.closest('[data-n]').getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2, o.right, o.bottom, o.left, o.top]; }); };
   await page.keyboard.press('Escape'); await page.waitForTimeout(300);
   var na = await nameAt(), t0n = npt(await now());
+  await page.mouse.click(na[0], na[1]); await page.waitForTimeout(400);   // the compartment selected first: a drag on the name of one not selected moves the map
   await page.mouse.move(na[0], na[1]); await page.mouse.down(); await page.mouse.move(na[0] + 20, na[1] + 30, { steps: 4 }); await page.mouse.move(na[2] - 30, na[3] - 15, { steps: 8 }); await page.mouse.up(); await page.waitForTimeout(1500);
   var tb = await now(), bb = bnd(tb), pb = npt(tb);
   ok('the name dragged to the bottom right lands there', !!pb && Math.abs(bb[1] + bb[3] - 12.5 - 23 - pb[1]) < 0.06 && pb[0] > bb[0] + bb[2] / 2, JSON.stringify([bb, pb]));

@@ -938,11 +938,11 @@
       });
       return best;
     }
-    function edgeAt(P) {
+    function edgeAt(P, any) {   // any: a compartment not selected too (a click on its border selects it)
       var T = 5 / V.z, best = handleAt(P);
       if (best) return best;
       nodes2.forEach(function (n, i) {
-        if (!n.comp || selN.indexOf(i) < 0) return;   // a compartment selected first: a drag that moves the map never resizes one
+        if (!n.comp || (!any && selN.indexOf(i) < 0)) return;   // a compartment selected first: a drag that moves the map never resizes one
         var b = bx(i);
         if (P[0] < b[0] - T || P[0] > b[0] + b[2] + T || P[1] < b[1] - T || P[1] > b[1] + b[3] + T) return;
         var s = (Math.abs(P[0] - b[0]) <= T ? 'l' : Math.abs(P[0] - b[0] - b[2]) <= T ? 'r' : '') + (Math.abs(P[1] - b[1]) <= T ? 't' : Math.abs(P[1] - b[1] - b[3]) <= T ? 'b' : '');
@@ -2523,6 +2523,10 @@
       // containers, resized by hand by dragging their edge); a bend point or a node there comes first
       var rz = !e.shiftKey && edgeAt(P);
       if (rz && h && h.p != null) rz = null;
+      if (!rz && !e.shiftKey) {   // the border of a compartment not selected: a click there selects it, a drag moves the map
+        var ez0 = edgeAt(P, true);
+        if (ez0 && (!h || (h.p == null && h.e == null && h.n != null && nodes2[h.n].comp))) h = { n: ez0.c };
+      }
       if (rz) {
         e.stopImmediatePropagation(); e.preventDefault();
         V.view.setPointerCapture(e.pointerId); V.view.focus({ preventScroll: true });

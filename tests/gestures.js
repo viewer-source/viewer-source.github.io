@@ -69,6 +69,7 @@ var URL0 = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysi
     ok('edit mode: a drag moves the map, no band', noBand && (await tf()) !== m0, m0 + ' -> ' + (await tf()));
     ok('edit mode: a drag selects nothing', (await page.$$eval('#m2-edit-layer .m2-ed-handle', function (l) { return l.length; })) === 0);
     await page.mouse.move(cx, cy); await page.mouse.down(); await page.mouse.move(v[0] + 40, v[1] + 40, { steps: 6 }); await page.mouse.up(); await page.waitForTimeout(300);   // the map back where it was
+    await page.mouse.move(cx, cy); await page.keyboard.press('0'); await page.waitForTimeout(600);   // the whole map, so the area holds whole nodes
     var e0 = await tf(), sawBand = false;
     await page.keyboard.down('Shift');
     await page.mouse.move(v[0] + 40, v[1] + 40); await page.mouse.down(); await page.mouse.move(cx, cy, { steps: 6 });
