@@ -1,6 +1,6 @@
 // Settings, Editing, Edit panel chosen while editing: editing moves with the panel. From the Edit window on the left,
 // Settings, Right: the panel on the right open and editing, the list on the left. Then Settings, Left: the Edit window
-// in the list's place, still editing. GitHub played by the script.
+// in the list's place, still editing, the map not moved (also after a change to it). GitHub played by the script.
 //   node tests/edit-side-switch.js <base address> <clone of the site's data repository> [--local]
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path'), cp = require('child_process');
 var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
@@ -24,7 +24,7 @@ function viewerHunks() {   // [old, new] pieces of the viewer's file changed sin
   return out;
 }
 (async function () {
-  var b0 = await chromium.launch(), ctx = await b0.newContext({ viewport: { width: 1400, height: 900 } }), page = await ctx.newPage();
+  var b0 = await chromium.launch(), ctx = await b0.newContext({ viewport: { width: 1440, height: 760 } }), page = await ctx.newPage();
   var errs = [], dialogs = [], bad = 0;
   page.on('pageerror', function (e) { errs.push(e.message); });
   page.on('dialog', function (d) { dialogs.push(d.type()); d.accept().catch(function () {}); });
@@ -73,6 +73,12 @@ function viewerHunks() {   // [old, new] pieces of the viewer's file changed sin
   await page.click('.m2-ri[data-win="edit"]'); await waitEdit(); await page.waitForTimeout(1000);
   var s0 = await st();
   ok('editing on the left', s0.editing && s0.edwin, JSON.stringify(s0));
+  var pos = function () { return page.evaluate(function () { var r = document.getElementById('m2-img').getBoundingClientRect(); return Math.round(r.left) + ',' + Math.round(r.top); }); };
+  var c0 = await page.$$eval('#m2-img [data-n]', function (l) { for (var g of l) { var r = g.getBoundingClientRect(); if (r.width > 20 && r.width < 200 && r.left > 300 && r.top > 100 && r.right < 1400 && r.bottom < 740) return [r.left + r.width / 2, r.top + r.height / 2]; } return null; });
+  await page.mouse.click(c0[0], c0[1]); await page.waitForTimeout(400);
+  for (var q = 0; q < 3; q++) { await page.keyboard.press('Shift+ArrowRight'); await page.waitForTimeout(150); }
+  await page.waitForTimeout(6000);   // a change, saved: the viewer then shows the edited drawing
+  var p0 = await pos();
   await page.click('.m2-ri[data-win="set"]'); await page.waitForTimeout(800);
   await page.click('#m2-set-eside button[data-eside="right"]'); await waitEdit(); await page.waitForTimeout(2000);
   var a = await st();
@@ -82,6 +88,7 @@ function viewerHunks() {   // [old, new] pieces of the viewer's file changed sin
   await page.click('#m2-set-eside button[data-eside="left"]'); await waitEdit(); await page.waitForTimeout(2000);
   var c = await st();
   ok('Left: still editing, the Edit window in the list\'s place', c.editing && !c.right && c.edwin, JSON.stringify(c));
+  ok('the map not moved through Right and back to Left', (await pos()) === p0, p0 + ' then ' + (await pos()));
   await page.click('.m2-ri[data-win="list"]'); await page.waitForTimeout(800);
   await page.click('.m2-ri[data-win="set"]'); await page.waitForTimeout(800);
   await page.click('#m2-set-eside button[data-eside="right"]'); await page.waitForTimeout(2000);

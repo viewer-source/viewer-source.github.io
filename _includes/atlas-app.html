@@ -1286,9 +1286,10 @@ page, so its styles keep the base they were made on).
       try { if (toRight) localStorage.setItem('atlas-edit-side', 'right'); else localStorage.removeItem('atlas-edit-side'); } catch (e) {}
       setFromEdit = false;
       if (editing && toRight && eRight()) win = 'list';
+      if (editing && !toRight) win = 'edit';   // editing goes on, the Edit window moved into the list's place: never stopped and started again (the map would move)
       railMark(); showSettings(); window.dispatchEvent(new Event('resize'));
       var eb = document.querySelector('#m2-rail .m2-ri[data-win="edit"]');
-      if (editing && eb && eb.offsetParent && (!toRight || eRight())) eb.click();   // the editor starts as from its tab
+      if (editing && toRight && eRight() && eb && eb.offsetParent) eb.click();   // Settings on the left had ended editing: it starts as from its tab
     });
   });
   // the icons on top or on the left (Settings),
