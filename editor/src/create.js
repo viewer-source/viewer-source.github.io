@@ -56,10 +56,7 @@
         ['not', 'NOT', '<circle cx="12" cy="12" r="10"/><text x="12" y="14.7" text-anchor="middle" font-size="7.4" letter-spacing="-.1">NOT</text>'],
         ['equivalence', 'Equivalence', '<circle cx="12" cy="12" r="10"/><path d="M7.5 8.8h9M7.5 12h9M7.5 15.2h9" class="in"/>']]],
       // arcs: drawn by a drag from a node with the arc's sign picked
-      // the plain line first: its kind from where it ends (linkHow with no kind picked), drawn as a free curve so it is
-      // never read as the consumption's straight line
-      ['Connecting arcs', [['line', 'Line (its kind from where it ends)', '<path d="M3 16c5-9 13 1 18-8"/>'],
-        ['consumption', 'Consumption / logic arc', '<path d="M3 12h18"/>'],
+      ['Connecting arcs', [['consumption', 'Consumption / logic arc', '<path d="M3 12h18"/>'],
         ['production', 'Production', '<path d="M3 12h11"/><path d="M13 7.5l8 4.5-8 4.5z" fill="currentColor"/>'],
         // the modulations, by use: catalysis, the most used, first; modulation, the least used, last
         ['catalysis', 'Catalysis', '<path d="M3 12h12"/><circle cx="18" cy="12" r="3"/>'],
@@ -134,12 +131,12 @@
         ['Activity nodes', [sbgnLook ? first : [first[0], first[1], PD_SIGN.macromolecule]].concat(sbgnLook ? ACT_REST : ACT_REST_CD, [PHENO, PERT])],
         OTHER,
         ['Logical operators', GATES_PD.concat([DELAY])],
-        ['Arcs', [ARC_PD.line].concat(INFL.map(function (x) { var q = ARC_PD[x[0]]; return [q[0], sbgnLook || x[0] === 'necessary stimulation' ? x[1] : q[1] + ' (' + x[1].toLowerCase() + ')', q[2]]; }), [LOGIC])]
+        ['Arcs', INFL.map(function (x) { var q = ARC_PD[x[0]]; return [q[0], sbgnLook || x[0] === 'necessary stimulation' ? x[1] : q[1] + ' (' + x[1].toLowerCase() + ')', q[2]]; }).concat([LOGIC])]
       ];
     }
     var PALS = { pd: PAL_PD, rn: palAf(false), sbgn: palAf(true), rnP: palAf(false, true), sbgnP: palAf(true, true) };
     var ARCS = {}, MODK = {};   // the signs that draw an arc, not a glyph (Connecting arcs, Modulating arcs), and among them the modulations
-    PAL_PD[4][1].forEach(function (q) { ARCS[q[0]] = 1; if (!/^(line|consumption|production)$/.test(q[0])) MODK[q[0]] = 1; });   // sbgn_edit loads later
+    PAL_PD[4][1].forEach(function (q) { ARCS[q[0]] = 1; if (!/^(consumption|production)$/.test(q[0])) MODK[q[0]] = 1; });   // sbgn_edit loads later
     ARCS['logic arc'] = 1;
     function arcTool() { return tool && ARCS[tool.kind] ? tool.kind : null; }
     var tool = null;   // { kind, sticky } in hand
@@ -1334,7 +1331,7 @@
     function linkDown(e, P, h) {   // a press on a node with an arc's sign picked: a line begun there
       if (!(palOn() || cdPal()) || e.shiftKey || downs.size > 1 || link) return false;
       if (!arcTool()) return false;   // no sign picked: a drag on a node moves the map (or what is selected)
-      if (h.n == null && !h.glyph && !(cd && cdOnLine())) return false;   // a press on a line or a bend point selects it, but for CellDesigner's Add reactant, Add product and Line
+      if (h.n == null && !h.glyph && !(cd && cdOnLine())) return false;   // a press on a line or a bend point selects it, but for CellDesigner's Add reactant, Add product and a line's sign kept in hand
       var i = linkEnd(P, -1);
       if (i < 0) return false;
       if (cd && !cdStartOk(i)) return false;   // a CellDesigner gate's one line out is made with it: a drag moves the gate; Add reactant and Add product from their own ends only
@@ -1345,18 +1342,25 @@
       return true;
     }
     // what a line from node a to node b makes: { cls }, { pair }, { no: the reason }, or null over nothing. P: where it is
-    // let go. With the Line sign (no kind picked): an entity
+    // let go. With no kind picked (linkHow, a sign that does not fit the ends): an entity
     // into a process a consumption, or a modulation when it lands on a side off the antennas of a process that has them;
     // a process to an entity a production; two entities a process between them; into a gate a logic arc (from an entity,
     // or a gate into a gate), out of a gate a stimulation (to a process or a phenotype), out of an equivalence a logic
     // arc to its entity; an entity to a phenotype a modulation. A modulation guessed is the one most used on the map for
     // that kind of end (usual), on a map with none a catalysis onto a process that consumes a simple chemical (a metabolic
     // step), else a stimulation
+    // An arc's sign kept in hand (a double click) draws forgivingly: the kind picked where it fits the two ends, else the
+    // kind the ends give (no kind picked), silently; never a process made between two entities for a modulation picked
+    // (that would say one is turned into the other). A sign taken for one line (a click) makes that kind or nothing
     function linkHow(a, b, P) {
       if (cd) return cdHow(a, b, P);   // a CellDesigner map's (cdcreate.js), with where its end lands
+      var want = arcTool(), h = linkKind(a, b, P, want), g;
+      if (h && h.no && want && tool.sticky && (g = linkKind(a, b, P, null)) && !g.no && !(g.pair && MODK[want])) return g;
+      return h;
+    }
+    function linkKind(a, b, P, want) {
       if (b < 0) return null;
-      var ra = roleOf(a), rb = roleOf(b), want = arcTool(), eqA = !!nodes2[a].eq, eqB = !!nodes2[b].eq;
-      if (want === 'line') want = null;   // the Line sign: its kind from the ends
+      var ra = roleOf(a), rb = roleOf(b), eqA = !!nodes2[a].eq, eqB = !!nodes2[b].eq;
       var has = function (s, t, head) { return edges2.some(function (q) { return q.s === s && q.t === t && q.arr[1] === head; }); };
       var ok = function (cls) { return has(a, b, sbJs.ARROW[cls]) ? { no: 'This ' + cls + ' is there already.' } : { cls: cls }; };
       var outs = function (g) { return edges2.filter(function (q) { return q.s === g; }).length; }, ins = function (g) { return edges2.filter(function (q) { return q.t === g; }).length; };

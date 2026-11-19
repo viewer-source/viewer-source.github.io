@@ -36,8 +36,6 @@
     });
     // a reaction: the bare arrow with CellDesigner's filled head, the omitted one crossed by two slashes, the unknown one by ?
     var CD_LINE = '<path d="M1.5 12h15"/>', CD_HEAD = '<path d="M16 8.5l6.5 3.5-6.5 3.5z" fill="currentColor"/>';
-    // the plain line, first of the lines: its kind from where it ends (cdHow0 with LINE), a free curve as the SBGN palette's
-    var CD_LINE_SIGN = ['LINE', 'Line (its kind from where it ends)', '<path d="M3 16c5-9 13 1 18-8"/>'];
     var CD_RX = [['STATE_TRANSITION', 'State transition', CD_LINE + CD_HEAD],
       ['KNOWN_TRANSITION_OMITTED', 'Known transition omitted', CD_LINE + '<path d="M6.5 16l2.5-8M10 16l2.5-8" class="in"/>' + CD_HEAD],
       ['UNKNOWN_TRANSITION', 'Unknown transition', CD_LINE + '<g transform="translate(-2.5 -1.5)">' + CD_Q + '</g>' + CD_HEAD]];
@@ -66,9 +64,9 @@
     CD_GATES.forEach(function (q) { CD_NAME['G_' + q[0]] = q[1]; });
     var cdK = function (q) { return ['cd:' + q[0], q[1], q[2]]; };   // the tool kinds, apart from the SBGN palette's
     function palCd() {   // the set: nodes, the gates, the lines last (as the SBGN palette); three blocks in the one list: species, gates, lines
-      return [['Species', CD_SP.map(cdK)], ['Logic gates', CD_GATES.map(function (q) { return ['cd:G_' + q[0], q[1], q[2]]; }), true], ['Reactions', [CD_LINE_SIGN].concat(CD_RX, CD_ADD).map(cdK), true], ['Modifiers', CD_MOD.map(cdK)]];
+      return [['Species', CD_SP.map(cdK)], ['Logic gates', CD_GATES.map(function (q) { return ['cd:G_' + q[0], q[1], q[2]]; }), true], ['Reactions', CD_RX.concat(CD_ADD).map(cdK), true], ['Modifiers', CD_MOD.map(cdK)]];
     }
-    [CD_LINE_SIGN].concat(CD_RX, CD_ADD, CD_MOD).forEach(function (q) { ARCS['cd:' + q[0]] = 1; });   // the signs that draw a line (arcTool)
+    CD_RX.concat(CD_ADD, CD_MOD).forEach(function (q) { ARCS['cd:' + q[0]] = 1; });   // the signs that draw a line (arcTool)
     var CD_GATE = {}; CD_GATES.forEach(function (q) { CD_GATE['cd:G_' + q[0]] = q[0]; });   // tool kind -> gate kind
     function cdKind(k) { return k && k.indexOf('cd:') === 0 ? k.slice(3) : null; }
 
@@ -401,11 +399,12 @@
     // there. The reaction is taken by its square or its main line: an added reactant joins at 3/8 of the square's
     // segment, an added product leaves at 5/8 (cdrender linksAndModifiers, cd_edit)
     function cdAdd() { var k = tool && cdKind(tool.kind); return k === 'ADD_REACTANT' ? 'r' : k === 'ADD_PRODUCT' ? 'p' : null; }
-    function cdFromJoin() { return cdAdd() === 'p' || (!!tool && tool.kind === 'cd:LINE' && cdRole(link.from) === 'proc'); }   // a line from a reaction: an added product, from its join
-    function cdOnLine() { return !!cdAdd() || (!!tool && tool.kind === 'cd:LINE'); }   // the signs a reaction's main line takes (cdLineAt)
+    function cdFree() { return !!tool && !!ARCS[tool.kind] && tool.sticky; }   // a line's sign kept in hand: forgiving drawing (cdHow0)
+    function cdFromJoin() { return cdAdd() === 'p' || (cdFree() && cdRole(link.from) === 'proc'); }   // a line from a reaction: an added product, from its join
+    function cdOnLine() { return !!cdAdd() || cdFree(); }   // a press on a reaction's main line starts a line (cdLineAt)
     function cdStartOk(i) {   // whether a line may start from node i with the sign picked (linkDown, create.js)
       var r = cdRole(i), add = cdAdd();
-      return r !== 'gate' && (add === 'r' ? r === 'epn' : add === 'p' ? r === 'proc' : true);
+      return r !== 'gate' && (cdFree() || (add === 'r' ? r === 'epn' : add === 'p' ? r === 'proc' : true));
     }
     function cdMain(i) {   // the main line of the reaction whose square is node i: the edges into and out of its square
       return edges2.map(function (e, k) { return (e.t === i && /\|a$/.test(e.id)) || (e.s === i && /\|b$/.test(e.id)) ? k : -1; }).filter(function (k) { return k >= 0; });
@@ -484,10 +483,16 @@
       best.all = all;
       return best;
     }
+    // a line's sign kept in hand draws forgivingly (as linkHow): the kind picked where it fits, else the kind the ends
+    // give, silently; never a new reaction for a modifier picked between two species (Reduced notation unticked)
     function cdHow0(a, b, P) {
+      var want = tool && ARCS[tool.kind] ? cdKind(tool.kind) : null, h = cdKind0(a, b, P, want), g;
+      if (h && h.no && want && tool.sticky && (g = cdKind0(a, b, P, null)) && !g.no && !(g.rx && cdMk.MODS.indexOf(want) >= 0)) return g;
+      return h;
+    }
+    function cdKind0(a, b, P, want) {
       if (b < 0) return null;
-      var ra = cdRole(a), rb = cdRole(b), want = tool && ARCS[tool.kind] ? cdKind(tool.kind) : null, line = want === 'LINE';
-      if (line) want = null;
+      var ra = cdRole(a), rb = cdRole(b), line = !want;   // no kind picked: the ends give it
       var isRx = want && CD_RX.some(function (q) { return q[0] === want; }), isMod = want && cdMk.MODS.indexOf(want) >= 0;
       var add = want === 'ADD_REACTANT' ? 'r' : want === 'ADD_PRODUCT' ? 'p' : null;
       if (!rb) return { no: 'A line joins species, a reaction’s square or a logic gate: never a compartment or a complex’s member.' };
