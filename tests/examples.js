@@ -7,6 +7,7 @@
 //   3. With a token: Restore example maps writes examples/ over maps/ in one commit and drops the examples' edited
 //      SBGN-ML copies, leaving other maps' files alone; an example the build lists as deleted leaves Deleted at once.
 //   4. Not offered while an example is edited.
+//   5. Shown restored at once, before GitHub answers; GitHub refusing the commit puts the list back as it was.
 //   node tests/examples.js [base address] [--local]
 // --local: the editor and the viewer of the working tree routed into the live page (run styles/update.sh first)
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path'), cp = require('child_process'), crypto = require('crypto');
@@ -41,7 +42,7 @@ var EX = /^(glycolysis|srebp|acly|tag)-(graphml|celldesigner|sbgn)$/;   // the e
       r.fulfill({ response: res, body: t, headers: Object.assign({}, res.headers(), { 'content-type': 'text/html; charset=utf-8' }) });
     });
   }
-  var files = {}, blobs = {}, trees = {}, commits = 0;
+  var files = {}, blobs = {}, trees = {}, commits = 0, slow = 0, refuse = false;
   var put = function (p, t) { files[p] = t; blobs[gitSha(t)] = t; };
   put('maps/glycolysis-graphml.graphml', '<graphml edited/>'); put('maps/glycolysis-graphml.md', '---\ntitle: "Glycolysis"\ngroup: "Testing"\norder: 1\nexample: true\n---\n');
   put('maps/sbgn-ml/glycolysis-sbgn.sbgn', '<sbgn edited/>'); put('maps/sbgn-ml/unnamed-sbgn.sbgn', '<sbgn other/>');
@@ -69,6 +70,7 @@ var EX = /^(glycolysis|srebp|acly|tag)-(graphml|celldesigner|sbgn)$/;   // the e
     if (rest === '/git/ref/heads/main') return json(200, { object: { sha: 'c' + commits } });
     if (/^\/git\/commits\/c\d+$/.test(rest)) return json(200, { tree: { sha: 'tree:' } });
     var tg = rest.match(/^\/git\/trees\/(tree:.*)$/);
+    if (tg && meth === 'GET' && slow) await new Promise(function (res) { setTimeout(res, slow); });
     if (tg && meth === 'GET') return json(200, { tree: treeOf(tg[1].slice(5), u.searchParams.get('recursive') === '1'), truncated: false });
     if (rest === '/git/trees' && meth === 'POST') {
       var tr = JSON.parse(r.postData()).tree, id = 'n' + Object.keys(trees).length;
@@ -76,6 +78,7 @@ var EX = /^(glycolysis|srebp|acly|tag)-(graphml|celldesigner|sbgn)$/;   // the e
       trees[id] = tr; return json(201, { sha: id });
     }
     if (rest === '/git/commits' && meth === 'POST') { var d0 = JSON.parse(r.postData()); trees['c:' + (commits + 1)] = trees[d0.tree]; return json(201, { sha: 'c' + (commits + 1) }); }
+    if (rest === '/git/refs/heads/main' && meth === 'PATCH' && refuse) return json(403, { message: 'test: refused' });
     if (rest === '/git/refs/heads/main' && meth === 'PATCH') {
       commits++; (trees['c:' + commits] || []).forEach(function (e) { if (e.sha === null) delete files[e.path]; else files[e.path] = blobs[e.sha]; });
       return json(200, {});
@@ -157,6 +160,21 @@ var EX = /^(glycolysis|srebp|acly|tag)-(graphml|celldesigner|sbgn)$/;   // the e
   ok('4. editing an example: Restore example maps not offered', t4.length > 0 && t4.indexOf('Restore example maps') < 0, t4.join(' | '));
   var t5 = await items('#m2-list .m2-map[data-id="acly-graphml"]');
   ok('4. the map edited offers no Delete map', t5.indexOf('Delete map') < 0, t5.join(' | '));
+
+  // 5. at once, and back on a refusal
+  await page.evaluate(function () { localStorage.setItem('atlas-edit-side', 'left'); });
+  built['srebp-celldesigner'] = '2026-11-19T10:00:00Z';
+  slow = 6000; refuse = true;
+  var alerts = [];
+  page.on('dialog', function (d) { if (d.type() === 'alert') alerts.push(d.message()); });
+  await load(); await list();
+  ok('5. before: the deleted example out of the list', (await ids()).indexOf('srebp-celldesigner') < 0);
+  await page.click('#m2-list .m2-map >> nth=0', { button: 'right' }); await page.waitForTimeout(300);
+  await page.click('.m2-cx button:text-is("Restore example maps")'); await page.waitForTimeout(800);
+  ok('5. within a second, GitHub not answered yet: the example back in the list', (await ids()).indexOf('srebp-celldesigner') >= 0);
+  await page.waitForTimeout(16000);   // two slow tree reads, one after the other
+  ok('5. GitHub refused: said, and the example back in Deleted', alerts.some(function (a) { return /not restored/.test(a); }) && (await ids()).indexOf('srebp-celldesigner') < 0, alerts.join(' | '));
+  slow = 0; refuse = false;
 
   ok('no script errors', errs.length === 0, errs.join(' | '));
   await b.close();

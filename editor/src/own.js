@@ -355,22 +355,39 @@
       var gh = !!(repo() && token());
       if (!confirm(gh ? 'Restore example maps? They go back to the saved set on GitHub: changes made to them, their moves and their deletions are undone. Maps of your own stay as they are.'
                       : 'Restore example maps? Changes made to them in this browser are let go. Maps of your own stay as they are.')) return;
-      (gh ? examplesToSite() : Promise.resolve([])).then(function (ids) {
-        var all = exampleIds().concat(ids);
-        all = all.concat(all.filter(function (id) { return /-graphml$/.test(id); }).map(function (id) { return id.replace(/-graphml$/, '') + '-sbgn'; }));
-        var pend = binPending(), was = {};
-        (V.siteList || []).forEach(function (m) { was[m.id] = m.deleted; });
-        all.forEach(function (id) {
-          if (gh && was[id]) pend[id] = ['', Date.now()]; else delete pend[id];   // in Deleted on the build still: out of it until the build has the restore
-          unkeep(id).catch(function () {}); delete hiddenGone[id]; delete renamed[id]; V.setMoved(id, null);
+      // shown restored at once; with a token GitHub's commit follows, and if it fails the list goes back as it was
+      var was = { pend: binPending(), hidden: siteHidden(), moved: {}, renamed: {}, gone: {} };
+      var ids = exampleIds();
+      ids.forEach(function (id) { was.moved[id] = V.movedOf(id); was.renamed[id] = renamed[id]; was.gone[id] = hiddenGone[id]; });
+      examplesHere(ids, gh);
+      if (!gh) return;
+      examplesToSite().then(function (all) {
+        examplesHere(all.filter(function (id) { return ids.indexOf(id) < 0; }), gh);   // deleted forever before: shown once the build has them
+      }).catch(function (e) {
+        binPendingSet(was.pend); hiddenSet(was.hidden);
+        ids.forEach(function (id) {
+          if (was.moved[id] !== null) V.setMoved(id, was.moved[id]);
+          if (was.renamed[id]) renamed[id] = was.renamed[id];
+          if (was.gone[id]) hiddenGone[id] = was.gone[id];
         });
-        binPendingSet(pend);
-        if (V.kept && all.indexOf(V.kept.id) >= 0) V.dropKept();
-        var m = V.current && V.byId[V.current.id];
-        if (m && all.indexOf(m.id) >= 0 && !V.grid.classList.contains('m2-editing')) V.put(m, true);   // shown: as the site has it
-        hiddenSet(siteHidden().filter(function (id) { return all.indexOf(id) < 0; }));   // an older version's hiding
         V.refreshMine();
-      }).catch(function (e) { alert('The example maps were not restored: ' + (e && e.message ? e.message : e)); });
+        alert('The example maps were not restored: ' + (e && e.message ? e.message : e));
+      });
+    }
+    function examplesHere(ids, gh) {   // this browser's changes to these examples (and their SBGN-ML twins) let go, the list drawn again
+      var all = ids.concat(ids.filter(function (id) { return /-graphml$/.test(id); }).map(function (id) { return id.replace(/-graphml$/, '') + '-sbgn'; }));
+      var pend = binPending(), deleted = {};
+      (V.siteList || []).forEach(function (m) { deleted[m.id] = m.deleted; });
+      all.forEach(function (id) {
+        if (gh && deleted[id]) pend[id] = ['', Date.now()]; else delete pend[id];   // in Deleted on the build still: out of it until the build has the restore
+        unkeep(id).catch(function () {}); delete hiddenGone[id]; delete renamed[id]; V.setMoved(id, null);
+      });
+      binPendingSet(pend);
+      if (V.kept && all.indexOf(V.kept.id) >= 0) V.dropKept();
+      var m = V.current && V.byId[V.current.id];
+      if (m && all.indexOf(m.id) >= 0 && !V.grid.classList.contains('m2-editing')) V.put(m, true);   // shown: as the site has it
+      hiddenSet(siteHidden().filter(function (id) { return all.indexOf(id) < 0; }));   // an older version's hiding
+      V.refreshMine();
     }
     function examplesToSite() {   // examples/ over maps/ in one commit on main, three tries; the ids restored
       var tries = 0, post = ghPost;
