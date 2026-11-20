@@ -226,7 +226,7 @@ picture and one set of click data, so the viewer in the browser never knows whic
 for the layout, loaded only where the Edit tab is, draws with the same renderers in the browser and saves the map's
 own file back, which the build then draws again. This page shows the parts and where each lives. How to use it: <a href="/guide/">Guide</a>.</p>
 
-<p class="ca-upd">Updated 2026-11-16, with the live drawing of a move as its own module (live.js).</p>
+<p class="ca-upd">Updated 2026-11-20, with the group SBML with layout as an optional module of the build (sbml_group.py).</p>
 
 <h2>State</h2>
 
@@ -248,6 +248,7 @@ own file back, which the build then draws again. This page shows the parts and w
   <tr class="ca-group"><td colspan="2">Build, run on GitHub</td></tr>
   <tr><td><code>build.py</code></td><td>Turns <code>maps/</code> into <code>downloads/</code>, <code>atlas-data/</code> and <code>_maps/</code>. A map's entry carries a hash of its picture, click data and text, so an open page fetches a map again only when it changed.</td></tr>
   <tr><td><code>renderers/render.js</code></td><td>Started once per build; answers one drawing per line of JSON, from yrender.js or cdrender.js.</td></tr>
+  <tr><td><code>sbml_group.py</code></td><td>An optional part of the build: the group SBML with layout, the SBML files of <code>test-maps/sbml/</code> drawn from their own layout by the converter's SBML reader and the yEd renderer, view only. <code>build.py</code> takes it only when the file is there, so the viewer without SBML is the same files without this one and the reader.</td></tr>
   <tr><td><code>databases.py</code></td><td>What the panel shows beyond the file's identifiers: names, function, location, cross-references from UniProt, HGNC and ChEBI, citations from PubMed. Each identifier fetched once into <code>cache/</code>; <code>cache/overrides.json</code> by hand beats a fetched value.</td></tr>
   <tr><td><code>index.json</code></td><td>The map list, written by Jekyll from the entries in <code>_maps/</code>.</td></tr>
 

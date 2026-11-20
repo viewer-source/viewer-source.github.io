@@ -39,8 +39,8 @@
 #   to maps/sbgn-ml/pd/<its path>, which is then drawn in its place (downloaded from downloads/<id>.sbgn or .nwt), the
 #   file in test-maps/ staying unchanged; atlas-data/<id>.graphml, the converter's GraphML of the file drawn, is what
 #   the editor edits it as (entry's edit_base; edit_path, where it saves).
-# The group SBML with layout: the SBML files of test-maps/sbml/ with sources.tsv, drawn from their own layout by the
-#   converter (sbml.read) and yrender as SBGN-ML is, view only (sbml_examples).
+# Optional groups, each in a module of its own beside this file, taken when it is there (removing the module and its
+#   reader removes the group): sbml_group.py, the group SBML with layout.
 # maps/extra/<id>/ (optional): more files for a map's download row, copied to downloads/ under their own names and
 #   labelled by ending (.graphml GraphML, .xml CellDesigner, .sbgn SBGN-ML, -sbml.xml SBML, .png PNG, .csv Annotation):
 #   the full set of the official site, for every map; a CellDesigner map gets the official GraphML, a GraphML map the official CellDesigner file.
@@ -296,16 +296,15 @@ def drawn(name, nodes, extra=b''):
                 **({'shapes': True} if 'class="sbgn-generic"' in text else {}))   # association or dissociation drawn
 
 
-def sbgnml(src, name, body, keep=False, sbml=False):
-    # the SBGN-ML file through the converter to GraphML, then drawn and read as a GraphML map into downloads/<name>.svg:
-    # the drawing (drawn()) and its click data. A file the converter or the renderer cannot take is said and left out,
-    # never stopping the build of the other maps. keep: the GraphML kept as atlas-data/<name>.graphml, the file the
-    # editor edits the map as (renderers/converter/sbgn_edit.js). sbml: an SBML file with its layout, read by the
-    # converter's sbml.read the same way (view only)
+def converted(src, name, body, keep=False, reader=None):
+    # a file the converter reads (its SBGN-ML reader, or the reader given) through GraphML, then drawn and read as a
+    # GraphML map into downloads/<name>.svg: the drawing (drawn()) and its click data. A file the converter or the
+    # renderer cannot take is said and left out, never stopping the build of the other maps. keep: the GraphML kept as
+    # atlas-data/<name>.graphml, the file the editor edits the map as (renderers/converter/sbgn_edit.js)
     import contextlib, io, tempfile
     from mapconv import graphml as writer, report
-    from mapconv import sbml as sbml_reader, sbgnml as sbgn_reader
-    reader = sbml_reader if sbml else sbgn_reader
+    if reader is None:
+        from mapconv import sbgnml as reader
     tmp = None
     try:
         with report.collect(), contextlib.redirect_stdout(io.StringIO()):
@@ -336,7 +335,7 @@ def sbgn_map(src, mid, fm, body):
     note = 'Edited in the viewer: drawn from its edited copy, no longer written from the GraphML map.\n\n'
     d = None
     if os.path.exists(mine):
-        d, nodes = sbgnml(mine, sid, note + body, keep=True)
+        d, nodes = converted(mine, sid, note + body, keep=True)
         if d:
             shutil.copy(mine, path)
             body = note + body
@@ -351,7 +350,7 @@ def sbgn_map(src, mid, fm, body):
             return None, []
         with open(path, 'w', encoding='utf-8') as f:
             f.write(text)
-        d, nodes = sbgnml(path, sid, body, keep=True)
+        d, nodes = converted(path, sid, body, keep=True)
         if not d:
             os.unlink(path)   # no entry, so no file left behind
             return None, []
@@ -389,12 +388,12 @@ def examples(lang='pd'):
         body = 'From %s (%s), `%s`, %s. %s' % (r['source'], r['repository'], r['path_in_source'], r['licence'],
                                                'Edited in the viewer; the original is in test-maps/.' if edited else 'Unchanged, drawn from its own file.')
         src_file = mine if edited else os.path.join(base, rel)
-        d, nodes = sbgnml(src_file, sid, body, keep=True)
+        d, nodes = converted(src_file, sid, body, keep=True)
         if not d and edited:   # an edited copy that cannot be drawn: the file drawn instead, so the map stays (and can be edited again)
             print('warning: %s not drawn, the file in test-maps/ shown instead' % os.path.relpath(mine, ROOT))
             edited, src_file = False, os.path.join(base, rel)
             body = body.replace('Edited in the viewer; the original is in test-maps/.', 'Unchanged, drawn from its own file.')
-            d, nodes = sbgnml(src_file, sid, body, keep=True)
+            d, nodes = converted(src_file, sid, body, keep=True)
         if not d:
             continue
         if edited:
@@ -409,29 +408,16 @@ def examples(lang='pd'):
     return out
 
 
-def sbml_examples():
-    # the group SBML with layout: the SBML files of test-maps/sbml/ (other people's and tools' files, unchanged), each
-    # drawn from its file's own layout by the converter's sbml.read and yrender, view only (no edit_path); its text the
-    # source, address and licence from sources.tsv. A file without a layout or without species glyphs is said and left out.
-    import csv
-    base = os.path.join(ROOT, 'test-maps', 'sbml')
-    if not os.path.exists(os.path.join(base, 'sources.tsv')):
+def optional(module):
+    # an optional group's maps: [(id, entry, search entries, text)], none when its module is not there
+    import importlib
+    try:
+        group = importlib.import_module(module)
+    except ModuleNotFoundError as e:
+        if e.name != module:
+            raise
         return []
-    rows = [r for r in csv.DictReader(open(os.path.join(base, 'sources.tsv'), encoding='utf-8'), delimiter='\t')
-            if r['file'].endswith(('.sbml', '.xml'))]
-    out = []
-    for k, r in enumerate(rows):
-        sid = 'sbml-' + re.sub(r'[^a-z0-9]+', '-', os.path.splitext(r['file'])[0].lower()).strip('-')
-        db.current = sid
-        body = 'From %s (%s), %s. Unchanged, drawn from its own layout.' % (r['source'], r['url'], r['licence'])
-        d, nodes = sbgnml(os.path.join(base, r['file']), sid, body, sbml=True)
-        if not d:
-            continue
-        d['file'] = '/test-maps/sbml/' + r['file']
-        e = entry_of(os.path.splitext(r['file'])[0], 'SBML with layout', 2000 + k, d)
-        e['downloads'][0]['label'] = 'SBML'
-        out.append((sid, e, search_entries(sid, nodes), body))
-    return out
+    return group.maps(sys.modules[__name__])
 
 
 def entry_of(title, group, order, d, **more):
@@ -520,7 +506,7 @@ def main():
         fm['downloads'] += extra(mid, meta)
         sb = sorted(glob.glob(os.path.join(ROOT, 'maps', 'extra', mid, '*.sbgn')))
         if sb:
-            fm['sbgn'], found = sbgnml(sb[0], mid + '-sbgnml', body)
+            fm['sbgn'], found = converted(sb[0], mid + '-sbgnml', body)
             search += [dict(e, s=1) for e in search_entries(mid, found)]
             if fm['sbgn']:
                 fm['sbgn']['file'] = '/downloads/' + os.path.basename(sb[0])   # copied there by extra()
@@ -543,7 +529,7 @@ def main():
         mid = os.path.basename(f)[:-5]
         db.current = mid
         meta, body = entry(mid)
-        d, nodes = sbgnml(f, mid, body, keep=True)
+        d, nodes = converted(f, mid, body, keep=True)
         if not d:
             continue
         shutil.copy(f, os.path.join(ROOT, 'downloads', mid + '.sbgn'))
@@ -557,7 +543,7 @@ def main():
     for f in sorted(glob.glob(os.path.join(ROOT, 'maps', 'sbgn-ml', '*.sbgn'))):   # an edited copy whose GraphML map went
         if os.path.basename(f)[:-5] not in sids:
             print('warning: %s belongs to no map of the group GraphML, not drawn' % os.path.relpath(f, ROOT))
-    for sid, e, found, body in examples() + examples('af') + sbml_examples():
+    for sid, e, found, body in examples() + examples('af') + optional('sbml_group'):
         search += found
         write_entry(sid, e, body)
         print('%s: %s' % (sid, e['group']))
