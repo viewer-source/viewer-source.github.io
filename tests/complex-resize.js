@@ -1,8 +1,10 @@
 // Resizing a complex and a complex's member by their handles on the live page (by default the styles page), on Glycolysis
 // SBGN-ML and CellDesigner: a complex with members selected, its bottom right handle dragged in, never grows; dragged out it grows, its members
 // staying where they are; dragged far in, it stops where its members still fit; a member's handle dragged out grows the
-// member and its complex round it; undo takes each back. Boxes read from the selection's handles. Nothing is saved
-// (no token). No script error.
+// member and its complex round it; Repack complex then keeps the member's new size and packs the complex round it
+// again; undo takes each back. Boxes read from the selection's handles. Each map opened
+// on a page of its own (about:blank first: a hash change keeps the old map's state). Nothing is saved (no token). No
+// script error.
 //   node tests/complex-resize.js [base address] [viewer folder: its editor and edit renderers served in place of the page's]
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path');
 var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local = process.argv[3];
@@ -30,7 +32,7 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local =
   var memberBox = function (id) { return page.evaluate(function (id) { var g = document.querySelector('#m2-img [data-n="' + id + '"]'); if (!g) return null; var r = g.getBoundingClientRect(); return [r.left, r.top, r.right, r.bottom]; }, id); };
   var near = function (a, c, t) { return !!a && !!c && a.every(function (v, j) { return Math.abs(v - c[j]) <= (t || 1.5); }); };
   for (var h of ['glycolysis-sbgn', 'glycolysis-celldesigner']) {
-    await page.goto(base + '#' + h, { waitUntil: 'load' }); await page.waitForSelector('.m2-ri[data-win="edit"]', { timeout: 30000 });
+    await page.goto('about:blank'); await page.goto(base + '#' + h, { waitUntil: 'load' }); await page.waitForSelector('.m2-ri[data-win="edit"]', { timeout: 60000 });
     await page.waitForTimeout(2500); if (!(await page.$('#m2-editwin:visible'))) await page.click('.m2-ri[data-win="edit"]'); await page.waitForTimeout(5000);   // edit mode kept over a reload: not toggled off
     var spot = await page.evaluate(function () {   // a complex on screen, a point inside it on no member, one member
       var all = Array.prototype.slice.call(document.querySelectorAll('#m2-img [data-n]')), rs = all.map(function (g) { return [g, g.getBoundingClientRect()]; });
@@ -78,7 +80,16 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local =
     var k1 = await select(spot.member), c1 = await select(spot.empty);
     ok(h + ': the member larger', !!k1 && k1.box[2] - k1.box[0] > k0.box[2] - k0.box[0] + 15 && k1.box[3] - k1.box[1] > k0.box[3] - k0.box[1] + 10, JSON.stringify([k0.box, k1 && k1.box]));
     ok(h + ': the complex grown round it', !!c1 && !!k1 && c1.box[2] >= k1.box[2] && c1.box[3] >= k1.box[3] && (c1.box[2] > c0.box[2] + 1 || c1.box[3] > c0.box[3] + 1), JSON.stringify([c0.box, c1 && c1.box, k1 && k1.box]));
+    // Repack complex (its right-click menu, inside it on empty space): the member's size kept, the complex fitted round it
+    await page.keyboard.press('Escape'); await page.mouse.click(spot.empty[0], spot.empty[1], { button: 'right' }); await page.waitForTimeout(400);
+    var rp = await page.$('.m2-cx button:text-is("Repack complex")');
+    ok(h + ': Repack complex offered', !!rp);
+    if (rp) { await rp.click(); await page.waitForTimeout(2500); }
+    var kr = await select(spot.member), cr = await select(spot.empty), wd = function (q) { return [q.box[2] - q.box[0], q.box[3] - q.box[1]]; };
+    ok(h + ': repacked, the member keeps its new size', !!kr && near(wd(kr), wd(k1)), JSON.stringify([k1 && wd(k1), kr && wd(kr)]));
+    ok(h + ': repacked, the complex round its members', !!cr && !!kr && cr.box[0] <= kr.box[0] && cr.box[1] <= kr.box[1] && cr.box[2] >= kr.box[2] && cr.box[3] >= kr.box[3], JSON.stringify([c1 && c1.box, cr && cr.box, kr && kr.box]));
     await page.keyboard.press('Escape');
+    if (rp) { await page.keyboard.press('Control+z'); await page.waitForTimeout(2000); }
     await page.keyboard.press('Control+z'); await page.waitForTimeout(2000);
     var k2 = await select(spot.member);
     ok(h + ': undo, the member as it was', !!k2 && near(k2.box, k0.box), JSON.stringify([k0.box, k2 && k2.box]));

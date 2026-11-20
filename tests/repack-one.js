@@ -1,7 +1,7 @@
-// Repack complex on the live page (by default the styles page), on Glycolysis (GraphML and CellDesigner): a right click inside a
+// Repack complex on the live page (by default the styles page), on Glycolysis (GraphML, CellDesigner and SBGN-ML): a right click inside a
 // complex on empty space offers Repack complex and none of the whole map's tools (grid, Repack all complexes); on a member, Repack complex in its own menu;
 // on empty map space outside every complex, no Repack complex. Chosen after a member is moved out of place, only that
-// complex's members move back. On an SBGN-ML map, a state variable added to a member has its own menu, without Repack complex.
+// complex's members move back, nothing outside it moves, and one undo takes the repack back. On an SBGN-ML map, a state variable added to a member has its own menu, without Repack complex.
 // Nothing is saved (no token). No script error.
 //   node tests/repack-one.js [base address]
 var { chromium } = require('playwright');
@@ -11,9 +11,14 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
   page.on('pageerror', function (e) { errs.push(e.message); });
   var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more ? '  ' + more : '')); };
   var menu = async function (P) { await page.keyboard.press('Escape'); await page.mouse.click(P[0], P[1], { button: 'right' }); await page.waitForTimeout(300); return page.$$eval('.m2-cx button', function (l) { return l.map(function (x) { return x.textContent; }); }); };
-  for (var h of ['glycolysis-graphml', 'glycolysis-celldesigner']) {
-    await page.goto(base + '#' + h, { waitUntil: 'load' }); await page.waitForSelector('.m2-ri[data-win="edit"]', { timeout: 30000 });
-    await page.click('.m2-ri[data-win="edit"]'); await page.waitForTimeout(4000);
+  var open = async function (h) {   // a page of its own (not a hash change), edit mode kept over a reload: not toggled off
+    await page.goto('about:blank'); await page.goto(base + '#' + h, { waitUntil: 'load' }); await page.waitForSelector('.m2-ri[data-win="edit"]', { timeout: 60000 });
+    await page.waitForTimeout(2500); if (!(await page.$('#m2-editwin:visible'))) await page.click('.m2-ri[data-win="edit"]');
+    await page.waitForSelector('#m2-editwin', { state: 'visible', timeout: 30000 }); await page.waitForTimeout(4000);
+  };
+  var boxes = function () { return page.$$eval('#m2-img [data-n]', function (l) { var o = {}; l.forEach(function (g) { var r = g.getBoundingClientRect(); o[g.getAttribute('data-n')] = [r.left, r.top, r.right, r.bottom].map(function (v) { return Math.round(v * 10) / 10; }); }); return o; }); };
+  for (var h of ['glycolysis-graphml', 'glycolysis-celldesigner', 'glycolysis-sbgn']) {
+    await open(h);
     // a complex on screen: a [data-n] holding others; a point inside it on no member, and a member's centre
     var spot = await page.evaluate(function () {
       var all = Array.prototype.slice.call(document.querySelectorAll('#m2-img [data-n]')), rs = all.map(function (g) { return [g, g.getBoundingClientRect()]; });
@@ -51,12 +56,18 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
     await page.keyboard.press('Escape');
     var l4 = await menu(spot.empty);
     if (l4.indexOf('Repack complex') >= 0) { await page.click('.m2-cx button:text-is("Repack complex")'); await page.waitForTimeout(3000); }
-    var t2 = await page.evaluate(function () { return window.m2EditNow().text; });
+    var t2 = await page.evaluate(function () { return window.m2EditNow().text; }), B2 = await boxes();
     ok(h + ': moved, then chosen, the complex repacked', t1 !== t0 && t2 !== t1, JSON.stringify([t1 !== t0, t2 !== t1]));
+    await page.mouse.click(10, 880); await page.keyboard.press('Control+z'); await page.waitForTimeout(2000);
+    var B1 = await boxes(), C = B1[spot.id], moved = Object.keys(B1).filter(function (k) {   // outside the complex: drawn where it was
+      var r = B1[k], inC = C && r[0] >= C[0] - 1 && r[1] >= C[1] - 1 && r[2] <= C[2] + 1 && r[3] <= C[3] + 1;
+      return !inC && k !== spot.id && B2[k] && B2[k].some(function (v, j) { return Math.abs(v - r[j]) > 0.5; });
+    });
+    ok(h + ': nothing outside the complex moved', !moved.length, JSON.stringify(moved.slice(0, 5)));
+    ok(h + ': one undo, the file as before the repack', (await page.evaluate(function () { return window.m2EditNow().text; })) === t1);
   }
   // SBGN-ML: a state variable on a complex member, its own menu only
-  await page.goto(base + '#glycolysis-sbgn', { waitUntil: 'load' }); await page.waitForSelector('.m2-ri[data-win="edit"]', { timeout: 30000 });
-  await page.click('.m2-ri[data-win="edit"]'); await page.waitForTimeout(4000);
+  await open('glycolysis-sbgn');
   var mem = await page.evaluate(function () {
     var rs = Array.prototype.slice.call(document.querySelectorAll('#m2-img [data-n]')).map(function (g) { return g.getBoundingClientRect(); });
     var inside = function (a, c) { return a.left >= c.left - 0.5 && a.top >= c.top - 0.5 && a.right <= c.right + 0.5 && a.bottom <= c.bottom + 0.5; };
@@ -78,5 +89,7 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
   }
   ok('glycolysis-sbgn: a state variable on a member, its own menu without complex items', svOk, JSON.stringify([mem, svMenu]));
   ok('no script error', !errs.length, errs.join(' | '));
-  await b.close(); process.exit(bad ? 1 : 0);
+  await b.close();
+  console.log(bad ? bad + ' wrong' : 'all ok');
+  process.exit(bad ? 1 : 0);
 })();
