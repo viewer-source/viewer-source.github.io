@@ -183,15 +183,17 @@
       var all = Object.keys(n).every(function (cls) { var x = cls === 'DEGRADED' ? null : fn(cls); if (x) read++; return !x || Object.keys(n[cls]).every(function (c) { return c.slice(2) === x.slice(1).toLowerCase(); }); });
       return read ? all : null;
     }
+    var CD_UNKNOWN = 'ffdddddd';   // a light grey for Unknown under Default and No colours (CellDesigner's own is cccccc)
     function cdColour(t, cls) { return cdColourIn(cdCols(), t, cls); }   // eight hex digits for cd_make, or null for CellDesigner's own
     function cdColourIn(m, t, cls) {
       var comp = cdComp(cls);
-      if (m === 'none') return 'ffffffff';
+      if (m === 'none') return cls === 'UNKNOWN' ? CD_UNKNOWN : 'ffffffff';   // Unknown is drawn with no outline: a white one would not show
       if (m === 'confetti') { if (cls !== 'DEGRADED' && !comp) return 'ff' + confettiFill(t).slice(1); m = 'file'; }   // create.js (no file yet: the first hue); a degraded species or a compartment as From map
       if (m === 'custom') { var k = !comp && cdKept()[cls]; if (k && k.fill) return 'ff' + k.fill.slice(1).toLowerCase(); m = 'file'; }   // a class with none kept: From map
       if (m === 'file') { var f = t ? (comp ? cdMk.compartmentColour(t) : cdMk.classColour(t, cls)) : null; if (f) return f; m = 'default'; }   // none of that class on the map (or no file yet): Default
       if (m === 'cd') return comp ? cdMk.COMP.colour : null;
       if (comp) return CD_COMP_DEFAULT;
+      if (cls === 'UNKNOWN') return CD_UNKNOWN;   // Default (also a map with none of its own): no outline, so not white
       var c = V.schemeFill && window.cdrender ? V.schemeFill('default', window.cdrender.ROLE[cls] || 'white') : null;
       return c ? 'ff' + c.toLowerCase() : null;
     }
@@ -203,7 +205,7 @@
     function cdSquares(mode) {
       var sq = function (x, t) { return '<i style="background:#' + x.slice(2) + '" title="' + t + '"></i>'; }, h;
       if (mode === 'confetti') return confettiSquares();
-      if (mode === 'none') h = sq('ffffffff', 'every species, #FFFFFF');
+      if (mode === 'none') h = sq('ffffffff', 'every species, #FFFFFF; Unknown, drawn with no outline, #DDDDDD');
       else if (mode !== 'file') {   // Custom: the classes' colours as new ones get them (kept, else the map's, else Default's)
         var seen = {};
         h = CD_SQ.map(function (q) {
@@ -1259,8 +1261,8 @@
       line: { colour: cdLineColour, set: function (k, c) { return cdLineTo(k, function (t, id) { return cdMk.recolourLine(t, id, c || '#000000'); }); },
         width: function (k) { return cdLineRead(k)[3]; }, setWidth: function (k, w) { return cdLineTo(k, function (t, id) { return cdMk.rewidthLine(t, id, w); }); }, ports: false },
       node: function (i) { return cdProp(i) ? i : -1; },
-      off: function (k, i) {   // pNow: look's, read just before; a compartment no border width, multimer or font size (CellDesigner keeps none for its name), a complex no multimer
-        return k === 'line' || (k === 'ss' && /^(COMPARTMENT|DEGRADED)$/.test(pNow.cls)) || (/^(mem|outer|inner)$/.test(k) && pNow.cls !== 'COMPARTMENT') || (/^(label|font|fill|multimer)$/.test(k) && pNow.cls === 'DEGRADED') || (/^(width|multimer|def|font)$/.test(k) && pNow.cls === 'COMPARTMENT') || (/^(multimer|def)$/.test(k) && pNow.cls === 'COMPLEX');
+      off: function (k, i) {   // pNow: look's, read just before; a compartment no border width, multimer or font size (CellDesigner keeps none for its name), a complex no multimer, an Unknown no border width
+        return k === 'line' || (k === 'ss' && /^(COMPARTMENT|DEGRADED)$/.test(pNow.cls)) || (/^(mem|outer|inner)$/.test(k) && pNow.cls !== 'COMPARTMENT') || (/^(label|font|fill|multimer)$/.test(k) && pNow.cls === 'DEGRADED') || (/^(width|multimer|def|font)$/.test(k) && pNow.cls === 'COMPARTMENT') || (/^(multimer|def)$/.test(k) && pNow.cls === 'COMPLEX') || (k === 'width' && pNow.cls === 'UNKNOWN');   // an Unknown has no outline in CellDesigner, so no border width
       },
       look: function (i) {   // null while the file is behind the map read (an undo not drawn yet); read once per node and file (it runs with every paint)
         var id = nodes2[i].id;

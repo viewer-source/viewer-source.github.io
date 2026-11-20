@@ -155,7 +155,7 @@
     }
     // the site's build, started a few seconds after the last write (one build for a run of saves; GitHub keeps
     // only the newest waiting run), at once when the page is left; a token that may not start it (Actions write on
-    // <owner>.github.io) is said with every save message, as the site then shows the edits only at its next build
+    // <owner>.github.io) is said in red at every save, as the site then shows the edits only at its next build
     var buildTimer = null, buildRefused = 0;
     function dispatchBuild(keep) {
       var o = owner();
@@ -176,7 +176,7 @@
       if (site && site.pending) { localFor = site; clearTimeout(localTimer); localTimer = setTimeout(local, 800); localBox(); return; }   // no token: kept in this browser
       if (site && site.mine) { localFor = site; clearTimeout(localTimer); localTimer = setTimeout(local, 800); }   // a reader's map saved on GitHub: its record follows too, so no move waits on GitHub alone
       if (!site || !token() || stuck) return;
-      note('Saving in a moment...');   // the save messages kept during development, warnings in red beside them
+      note();
       clearTimeout(saveTimer); saveTimer = setTimeout(push, AUTOSAVE);
     }
     function push(again) {
@@ -185,7 +185,7 @@
       if (saving) { saveAgain = true; return saving; }
       if (drawing) { saveTimer = setTimeout(push, 300); return Promise.resolve(); }   // the last move not yet in the file
       var target = site, body = src();
-      note('Saving...');
+      note();
       saving = api('/contents/' + target.path, { method: 'PUT', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: 'Moved in the viewer: ' + target.path.split('/').pop(), content: b64(body), sha: target.sha || undefined, branch: 'main' }) })
         .then(function (r) {
@@ -210,7 +210,7 @@
               if (site === target && src() === body) dirty = false;
               var uk = unsaved[target.id];
               if (uk && uk.site === target && (uk.text === body || (site === target && !dirty))) delete unsaved[target.id];
-              note('Saved. In about 2 minutes it is on the site, and this page updates by itself.');   // no clock time
+              note();
             } else if (r.status === 409 || r.status === 422) {
               // GitHub also refuses a save when its branch moved meanwhile (another page or tab saved meanwhile,
               // so the move would be 'Not saved'): the file as it is there now is read, and if it is
@@ -482,7 +482,7 @@
     // the status line says only what went wrong, in red: nothing while things work (no save messages, no save time or
     // mark by the title: when and how a map is saved is the system's concern). A warning stays until the next thing that works.
     function warn(t) { status.textContent = t; status.classList.add('m2-ed-warn'); }
-    function note(t) { if (buildRefused) return warn(t + ' ' + buildNote()); quiet(); }   // a step that worked: nothing said, a warning before it cleared
+    function note() { if (buildRefused) return warn(buildNote()); quiet(); }   // a step that worked: nothing said, a warning before it cleared; a build refused stays said
     function quiet() { status.textContent = ''; status.classList.remove('m2-ed-warn'); }
 
     // the layout skill's tools: its own code, copied into renderers/layout/ and run here as it is, on the
@@ -1218,7 +1218,7 @@
           pic.querySelectorAll('[data-e]').forEach(function (g) { var k = g.getAttribute('data-e'); (gE[k] = gE[k] || []).push(g); });
           if (cd) cdSessionSoon();
           if (first) V.fit(); else V.draw();
-          if (!r[1].length && !saveTimer && !saving && !dirty) { if (takenIn) note(takenIn); else quiet(); takenIn = null; }
+          if (!r[1].length && !saveTimer && !saving && !dirty) { if (takenIn) warn(takenIn); else quiet(); takenIn = null; }   // the file changed by opening it: said in red, as a change the reader did not make
         })();
       }).catch(function (e) { if (t === ticket) { drawing = false; warn('Not drawn: ' + (e && e.message ? e.message.split('\n').slice(-2).join(' ') : e)); } });
     }
@@ -1669,7 +1669,7 @@
         delete unsaved[m.id];
         if (u && (g ? g.sha : null) === usha) return go(u.text, g ? { path: path, sha: g.sha, saved: g.text } : { path: path, sha: null }).then(function () {
           if (tk !== opening) return;
-          dirty = true; changed(); note('The moves not saved before are back; saving them now.');
+          dirty = true; changed(); note();
         }, notLoaded);
         var gone = function () { if (tk === opening && u) warn('The moves not saved before could not be taken up: the map changed on GitHub meanwhile. This is its version there.'); };
         if (!g && sbMap(m)) return published.then(function (t) { return go(t, { path: path, sha: null }); }).then(gone).catch(notLoaded);   // an SBGN-ML map with no edited copy yet: the first save makes it

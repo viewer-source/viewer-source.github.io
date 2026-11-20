@@ -941,7 +941,7 @@
         upRun = null;
         if (went.length || failed.length) V.refreshMine();
         if (failed.length) warn('Not on GitHub, kept in this browser only: ' + failed.join(', ') + '.');
-        else if (went.length) note('Saved on GitHub: ' + went.join(', ') + '.');
+        else if (went.length) note();
       }));
     }
     // a reader's map's changes GitHub does not have, saved on the sha last known; refused as older (its last save

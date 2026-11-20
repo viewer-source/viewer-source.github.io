@@ -344,9 +344,8 @@
           var r = [o[0], o[1]].reduce(function (a, x) { return x && typeof x === 'object' && (x.fill || x.node) && (!a || (x.at || 0) > (a.at || 0)) ? x : a; }, mine0);   // the newest: GitHub's, the folder's or this browser's
           if (r && r !== mine0) origKeep(id, Object.assign({}, r, { sent: r === o[0] ? 1 : undefined }));   // kept here too, so the field reads it
           keepMapChoice('cols', 'file');   // only now: a choice made while GitHub was asked still saw the map's scheme (no record taken from it)
-          if (!r) { if (cur !== 'file') note('Original: no colours of this map kept; the map stays as it is.'); paint(); return; }
-          var added = back(r);
-          if (added) note('Original: ' + added + ' element' + (added > 1 ? 's' : '') + ' added since ' + (added > 1 ? 'keep their' : 'keeps its') + ' colour.');
+          if (!r) { paint(); return; }   // no colours of this map kept: the map stays as it is, nothing said
+          back(r);
           paint();
         });
         return;

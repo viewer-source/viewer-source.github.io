@@ -2341,7 +2341,7 @@ page, so its styles keep the base they were made on).
   view.addEventListener('pointerup', release);
   view.addEventListener('pointercancel', release);
   document.addEventListener('keydown', function (e) {   // with the map shown, wherever the focus is, as E and S; not while typing, with a menu open or with a modifier (the browser's own zoom)
-    if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || !current || typingText() || document.querySelector('.m2-cx')) return;
+    if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || !current || typingText() || /select/i.test((document.activeElement || {}).tagName || '') || document.querySelector('.m2-cx')) return;
     var c = centre();
     if (e.key === '+' || e.key === '=') zoomAt(z * 1.25, c[0], c[1]);
     else if (e.key === '-') zoomAt(z / 1.25, c[0], c[1]);
@@ -4491,8 +4491,8 @@ page, so its styles keep the base they were made on).
     refreshMine: { get: function () { return refreshMine; } },
     picked: { get: function () { return function () { return picked.length ? picked.slice() : [pickShown()].filter(Boolean); }; } },   // the list's selection (several maps), else the map shown
     pickSet: { get: function () { return pickSet; } },
-    pickedGroup: { get: function () { return function () { return pickedGroup; }; } },
-    mapSelected: { get: function () { return function () { return !!(area || sel || lit); }; } },   // an area, an item or a line selected on the map shown (view mode)   // the group selected by its heading, else null
+    pickedGroup: { get: function () { return function () { return pickedGroup; }; } },   // the group selected by its heading, else null
+    mapSelected: { get: function () { return function () { return !!((area && current && area.map === current.id) || sel || lit); }; } },   // an area, an item or a line selected on the map shown (view mode)   // the group selected by its heading, else null
     draftDo: { get: function () { return draftDo; } },
     dropKept: { get: function () { return dropKept; } },
     draftIds: { get: function () { return draftIds; } },

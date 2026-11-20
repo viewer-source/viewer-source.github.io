@@ -53,7 +53,7 @@ var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : '
     // a protein added under Confetti, then Original: the others back, the new one kept and counted
     await page.click('#m2-editwin button[data-make="' + protein + '"]'); await page.mouse.click(1250, 820); await page.waitForTimeout(1200); await page.keyboard.press('Escape'); await page.waitForTimeout(500);
     await pick('Original');
-    ok(kind + ': an element added since counted', /Original: 1 element added since keeps its colour/.test(await status()), (await status()).slice(0, 200));
+    ok(kind + ': an element added since: nothing said', (await status()) === '', (await status()).slice(0, 200));
   }
   await run('tag-celldesigner', 'CellDesigner', 'cd:PROTEIN');
   await run('srebp-sbgn', 'SBGN-ML', 'macromolecule');
