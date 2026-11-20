@@ -932,7 +932,7 @@
       if (au0 != null) { var B0 = sbJs.afUnitBox(b, au0, sv[0] || 'x'); at0 = [B0[0] + 1, B0[1] + 1, B0[2] - 2, B0[3] - 2]; }
       var inp = document.createElement('input'), before = !sv ? (cd ? cdNameOf(id) : nameOf(i)) : sv[0], m0 = map;   // a CellDesigner name from its file (cdcreate.js)
       inp.type = 'text'; inp.className = 'm2-ed-type'; inp.value = before; inp.spellcheck = false;
-      inp.setAttribute('aria-label', !sv ? 'Name' : unit ? 'Unit of information' : sv[3] === SS ? 'Structural state' : cd ? 'Site' : 'State variable (value, or value@site)');
+      inp.setAttribute('aria-label', !sv ? 'Name' : unit ? 'Unit of information' : 'State variable (value, or value@site)');
       // the drawn text hidden while typing, the field itself transparent (a filled field cut the shape's
       // rounded corners); before the editor's own drawing is in the page, the field in the glyph's fill. Whether the
       // drawing is there, not whether it has text: an empty glyph has no text to hide and would still get the filled box
@@ -941,7 +941,7 @@
       inp.style.background = gN && gN[nodes2[i].id] ? 'transparent' : !sv && fl && fl.getAttribute('hasColor') !== 'false' && fl.getAttribute('color') ? fl.getAttribute('color').slice(0, 7) : '#fff';
       inp.style.color = lab && lab.getAttribute('textColor') || '#000';
       if (cd && cdPend && sv && !sv[0]) { inp.style.background = '#fff'; inp.style.border = '1px solid #000'; }   // a CellDesigner icon not in the file yet: nothing drawn under the field
-      var grow = unit || (!!sv && (sv[3] === SS || cd));   // a structural state, and a CellDesigner residue's site name, grow too
+      var grow = unit;
       // an SBGN-ML map's state variable or unit of information: the field is the icon itself while typed (white, its outline,
       // a state variable's round ends), sized at every key as sbgn_edit sizes it on Enter (svIcon), the drawn icon hidden
       var own = !!sv && !cd && au0 == null, ik = own ? sv[2][1] / (unit ? 16 : 18) : 1;
@@ -970,7 +970,7 @@
           if (!typing || typing.inp !== inp) return;
           typing = null; inp.remove(); hid.forEach(function (el) { el.style.visibility = ''; });
           var v = inp.value.replace(/[\r\n]+/g, ' ');
-          if (cd && sv) { if (keep && on && map === m0 && (v !== before || cdPend)) cdSvType(id, sv, v.trim()); else if (cdPend) { cdPend = null; paint(); } return; }   // a CellDesigner map's (cdcreate.js)
+          if (cd && sv) { if (keep && on && map === m0 && (v !== before || cdPend)) cdSvType(id, v.trim()); else if (cdPend) { cdPend = null; paint(); } return; }   // a CellDesigner map's (cdcreate.js)
           if (sv && !unit) v = v.replace(/@+$/, '');   // P@ is P (a site needs a name)
           if (unit) v = v.trim();   // a unit of only spaces is none
           if (fresh && (!keep || !v) && on && map === m0) { var t0 = undo.length ? unpush() : text; if (t0 !== text) { text = t0; parse(); dirty = true; quiet(); render(); paint(); changed(); } return; }
@@ -1162,7 +1162,7 @@
         selN = []; selP = []; selE = []; part = null; svSel = { id: nodes2[d.pick[0]].id, j: d.pick[1] }; paint(); return;
       }
       if (d.r && svSel) svMove(d.i, svSel.j, d.r);
-      else if (d.again && !d.moved && svSel) typeIn(svSel.id, svSel.j);   // a click on it selected: its text
+      else if (d.again && !d.moved && svSel) (cd ? cdSvOpen : typeIn)(svSel.id, svSel.j);   // a click on it selected: its text (a CellDesigner residue's or structural state's window, cdcreate.js)
     }
     function svMove(i, j, r) {   // the state variable j of node i written at the place r (a CellDesigner map's: cdcreate.js)
       if (cd) { cdSvMove(i, j, r); return; }

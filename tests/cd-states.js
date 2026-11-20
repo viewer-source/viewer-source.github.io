@@ -1,10 +1,12 @@
 // State variables and units of information on a CellDesigner map (editor/src/cdcreate.js through create.js's svList,
-// svAt, typeIn): on a protein made from the palette, the right-click menu's Add state variable (an empty residue,
-// selected), its site typed in place by a double click (Y705), the residue's own menu (Change state and Delete, no species
-// items), its state picked from Change state's list, the site retyped with the state kept, the residue dragged round the border to the right (its angle written), Add structural state and
-// Add unit of information typed at once (active, N:2), the unit's own menu (Change unit: CellDesigner's prefixes with
-// their labels), a label its prefix does not have refused, N and free input, the residue deleted by the Delete key and undone. Nothing is
-// saved (no token). No script error.
+// svAt, typeIn): on a protein made from the palette, the right-click menu's Add state variable (an empty residue and its
+// window: Site, then Modification from CellDesigner's list), Y705 phosphorylated, Enter closing it; a double click opens
+// it again, Esc drops a site typed; the residue's own menu (Edit and Delete), Edit's modification written at once; the
+// residue dragged round the border to the right; Add structural state (its window, a text) at the top middle of a
+// monomer, moved to the bottom by Add unit of information (N:2); Open chosen in its window, undone; on a multimer a new
+// structural state at the bottom; the unit's own menu (Change unit: CellDesigner's prefixes with their labels), a label
+// its prefix does not have refused, N and free input; the residue deleted by the Delete key and undone. Nothing is saved (no token). No
+// script error.
 //   node tests/cd-states.js [address] [viewer folder: its editor and renderers served in place of the page's]
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path');
 var url = process.argv[2] || 'https://viewer-source.github.io/styles/#acly-celldesigner', local = process.argv[3];
@@ -26,7 +28,7 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#acly-celld
     await page.mouse.click(P[0], P[1], { button: 'right' }); await page.waitForTimeout(300); return page.$$eval('.m2-cx button', function (l) { return l.map(function (x) { return x.textContent; }); }); };
   var pick = async function (label) { await page.click('.m2-cx button:text-is("' + label + '")'); await page.waitForTimeout(800); };
   var type = async function (v) { await page.waitForSelector('input.m2-ed-type', { timeout: 3000 }); await page.fill('input.m2-ed-type', v); await page.press('input.m2-ed-type', 'Enter'); await page.waitForTimeout(900); };
-  var protein = function (t, sid) { var m = new RegExp('<species [^>]*id="' + sid + '"[\\s\\S]*?<celldesigner:proteinReference>([^<]*)<').exec(t); if (!m) return ''; var p = new RegExp('<celldesigner:protein [^>]*id="' + m[1] + '"[\\s\\S]*?(/>|</celldesigner:protein>)').exec(t); return p ? p[0] : ''; };
+  var protein = function (t, sid) { var m = new RegExp('<species [^>]*id="' + sid + '"[\\s\\S]*?<celldesigner:proteinReference>([^<]*)<').exec(t); if (!m) return ''; var p = new RegExp('<celldesigner:protein [^>]*id="' + m[1] + '"([^>]*/>|[\\s\\S]*?</celldesigner:protein>)').exec(t); return p ? p[0] : ''; };
   var speciesOf = function (t, alias) { var m = new RegExp('<celldesigner:speciesAlias id="' + alias + '" species="([^"]*)"').exec(t); return m ? m[1] : ''; };
   var speciesText = function (t, sid) { var m = new RegExp('<species [^>]*id="' + sid + '"[\\s\\S]*?</species>').exec(t); return m ? m[0] : ''; };
   var aliasText = function (t, a) { var m = new RegExp('<celldesigner:speciesAlias id="' + a + '"[\\s\\S]*?</celldesigner:speciesAlias>').exec(t); return m ? m[0] : ''; };
@@ -45,22 +47,30 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#acly-celld
   await pick('Add state variable');
   t = await now();
   ok('an empty residue on the protein, its state empty on the species', /<celldesigner:modificationResidue [^>]*id="rs\d+"/.test(protein(t, sid)) && /<celldesigner:modification residue="rs\d+" state="empty"\/>/.test(speciesText(t, sid)), protein(t, sid));
-  await page.mouse.dblclick(L[0], L[1]); await type('Y705');
+  ok('its window open at once, Site first, then Modification', !!(await page.$('.m2-cdsv')) && (await page.$$eval('.m2-cdsv label span', function (l) { return l.map(function (x) { return x.textContent; }).join('|'); })) === 'Site|Modification');
+  await page.fill('.m2-cdsv input', 'Y705'); await page.selectOption('.m2-cdsv select', 'phosphorylated'); await page.waitForTimeout(600);
+  await page.press('.m2-cdsv input', 'Enter'); await page.waitForTimeout(900);
   t = await now();
-  ok('the site typed: Y705, the state left empty', / name="Y705"/.test(protein(t, sid)) && /state="empty"/.test(speciesText(t, sid)), protein(t, sid));
+  ok('Y705, phosphorylated: written, the window closed by Enter', / name="Y705"/.test(protein(t, sid)) && /state="phosphorylated"/.test(speciesText(t, sid)) && !(await page.$('.m2-cdsv')), protein(t, sid));
+  await page.mouse.dblclick(L[0], L[1]); await page.waitForSelector('.m2-cdsv', { timeout: 3000 });
+  ok('a double click opens its window with its site and modification', (await page.$eval('.m2-cdsv input', function (x) { return x.value; })) === 'Y705' && (await page.$eval('.m2-cdsv select', function (x) { return x.value; })) === 'phosphorylated');
+  ok('only CellDesigner\'s modifications offered', (await page.$$eval('.m2-cdsv option', function (l) { return l.length; })) >= 13 && !(await page.$('input.m2-ed-type')));
+  await page.fill('.m2-cdsv input', 'Y999'); await page.keyboard.press('Escape'); await page.waitForTimeout(400);
+  ok('Esc closes it, the site typed not kept', (await now()) === t && !(await page.$('.m2-cdsv')));
   items = await menu(L);
-  ok('the residue\'s own menu: Change state and Delete, no species items', items.some(function (x) { return /^Change state/.test(x); }) && items.indexOf('Delete') >= 0 && items.indexOf('Change identity') < 0 && items.indexOf('Add state variable') < 0, items.join('|'));
+  ok('the residue\'s own menu: Edit, Change state and Delete, no species items', items.indexOf('Edit') === 0 && items.some(function (x) { return /^Change state/.test(x); }) && items.indexOf('Delete') >= 0 && items.indexOf('Change identity') < 0 && items.indexOf('Add state variable') < 0, items.join('|'));
   var items2 = await menu([L[0] - 5, L[1]]);
   ok('over the residue\'s outer half, out of the protein: its own menu, no map items', items2.join('|') === items.join('|'), items2.join('|'));
-  await menu(L);
-  await page.click('.m2-cx button:text-is("Change state")'); await page.waitForTimeout(300);
-  await page.click('.m2-ci button:text-is("Ubiquitinated (Ub)")'); await page.waitForTimeout(900);
+  await menu(L); await pick('Edit');
+  await page.selectOption('.m2-cdsv select', 'ubiquitinated'); await page.waitForTimeout(900);
   t = await now();
-  ok('Change state: ubiquitinated, the site kept', /state="ubiquitinated"/.test(speciesText(t, sid)) && / name="Y705"/.test(protein(t, sid)));
+  ok('Edit, Ubiquitinated chosen: written at once, the site kept', /state="ubiquitinated"/.test(speciesText(t, sid)) && / name="Y705"/.test(protein(t, sid)));
+  await page.mouse.click(5, 450); await page.waitForTimeout(300);
+  ok('a click outside closes it', !(await page.$('.m2-cdsv')));
   await page.keyboard.press('Escape');
-  await page.mouse.dblclick(L[0], L[1]); await page.waitForSelector('input.m2-ed-type', { timeout: 3000 });
-  ok('the field holds the site only', (await page.$eval('input.m2-ed-type', function (x) { return x.value; })) === 'Y705');
-  await page.fill('input.m2-ed-type', 'Y701'); await page.press('input.m2-ed-type', 'Enter'); await page.waitForTimeout(900);
+  await page.mouse.dblclick(L[0], L[1]); await page.waitForSelector('.m2-cdsv', { timeout: 3000 });
+  ok('Site holds the site only', (await page.$eval('.m2-cdsv input', function (x) { return x.value; })) === 'Y705');
+  await page.fill('.m2-cdsv input', 'Y701'); await page.press('.m2-cdsv input', 'Enter'); await page.waitForTimeout(900);
   t = await now();
   ok('the site retyped: Y701, the state kept', / name="Y701"/.test(protein(t, sid)) && /state="ubiquitinated"/.test(speciesText(t, sid)));
   await page.keyboard.press('Escape');
@@ -70,19 +80,50 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#acly-celld
   var ang = /<celldesigner:modificationResidue angle="([^"]*)"/.exec(protein(t, sid));
   ok('dragged to the right side\'s middle: its angle 0', ang && Math.abs(+ang[1]) < 0.01, ang && ang[1]);
   await page.keyboard.press('Escape');
-  await menu(C); await pick('Add structural state'); await type('active');
+  var t0 = await now();
+  await menu(C); await pick('Add state variable'); await page.keyboard.press('Escape'); await page.waitForTimeout(900);
+  ok('Add state variable, then Esc with nothing chosen: taken back', (await now()) === t0 && !(await page.$('.m2-cdsv')));
+  await menu(C); await pick('Add state variable'); await page.keyboard.type('T2'); await page.keyboard.press('Enter'); await page.waitForTimeout(900);
+  ok('a second residue, T2', / name="T2"/.test(protein(await now(), sid)));
+  await page.mouse.dblclick(T[0], T[1]); await page.waitForSelector('.m2-cdsv', { timeout: 3000 });
+  ok('the first residue\'s window: Y701', (await page.$eval('.m2-cdsv input', function (x) { return x.value; })) === 'Y701');
+  for (var tb = 0; tb < 3; tb++) await page.keyboard.press('Tab');
+  await page.waitForTimeout(300);
+  ok('Tab stays in the window', !!(await page.evaluate(function () { return document.activeElement && document.activeElement.closest('.m2-cdsv'); })));
+  await page.keyboard.press('Escape');
+  await menu(C); await pick('Add structural state');
+  ok('Add structural state: its window, Text chosen, its field ready', (await page.$eval('.m2-cdsv select', function (x) { return x.value; })) === '' && (await page.evaluate(function () { return document.activeElement && document.activeElement.closest('.m2-cdsv') && document.activeElement.tagName; })) === 'INPUT');
+  await page.keyboard.type('active'); await page.keyboard.press('Enter'); await page.waitForTimeout(900);
   t = await now();
   var sa = /<celldesigner:structuralState angle="([^"]*)"/.exec(aliasText(t, p));
-  ok('Add structural state typed at once: active, at the bottom middle (the top is the unit\'s)', /<celldesigner:structuralState structuralState="active"\/>/.test(speciesText(t, sid)) && sa && Math.abs(+sa[1] - 3 * Math.PI / 2) < 0.01, sa && sa[1]);
+  ok('active, at the top middle (a monomer, no unit of information, no multimer of it on the map)', /<celldesigner:structuralState structuralState="active"\/>/.test(speciesText(t, sid)) && sa && Math.abs(+sa[1] - Math.PI / 2) < 0.01, sa && sa[1]);
   items = await menu(C);
   ok('no second Add structural state', items.indexOf('Add structural state') < 0 && items.indexOf('Add unit of information') >= 0, items.join('|'));
   await pick('Add unit of information'); await type('N:2');
   t = await now();
-  ok('Add unit of information typed at once: N:2', /<celldesigner:info state="open" prefix="N" label="2"/.test(aliasText(t, p)), aliasText(t, p).slice(-300));
-  await page.mouse.dblclick(R[0] + R[2] / 2, R[1] + R[3] - 1); await page.waitForSelector('input.m2-ed-type', { timeout: 3000 });
-  ok('the structural state still reached by a double click', (await page.$eval('input.m2-ed-type', function (x) { return x.value; })) === 'active');
+  sa = /<celldesigner:structuralState angle="([^"]*)"/.exec(aliasText(t, p));
+  ok('Add unit of information typed at once: N:2; the structural state moved to the bottom middle', /<celldesigner:info state="open" prefix="N" label="2"/.test(aliasText(t, p)) && sa && Math.abs(+sa[1] - 3 * Math.PI / 2) < 0.01, sa && sa[1]);
+  await page.mouse.dblclick(R[0] + R[2] / 2, R[1] + R[3] - 1); await page.waitForSelector('.m2-cdsv', { timeout: 3000 });
+  ok('the structural state\'s window by a double click: Text, active', (await page.$eval('.m2-cdsv select', function (x) { return x.value; })) === '' && (await page.$eval('.m2-cdsv input', function (x) { return x.value; })) === 'active');
+  await page.selectOption('.m2-cdsv select', 'open'); await page.waitForTimeout(900);
+  ok('Open chosen: written at once', /structuralState="open"/.test(speciesText(await now(), sid)));
+  await page.selectOption('.m2-cdsv select', ''); await page.waitForTimeout(300);
+  ok('Text chosen: the field shows open', (await page.$eval('.m2-cdsv input', function (x) { return x.value; })) === 'open');
+  await page.mouse.click(5, 450); await page.waitForTimeout(600);
+  ok('left with nothing typed: the structural state kept', /structuralState="open"/.test(speciesText(await now(), sid)));
   await page.keyboard.press('Escape'); await page.waitForTimeout(300);
-  ok('Esc leaves it as it was', (await now()) === t);
+  await page.keyboard.press('Control+z'); await page.waitForTimeout(900);
+  ok('undo gives active back', (await now()) === t);
+  var a1 = await ids(); await page.click('#m2-editwin button[data-make="cd:PROTEIN"]'); await page.mouse.click(1150, 520); await page.waitForTimeout(900);
+  var p2 = (await ids()).filter(function (i) { return a1.indexOf(i) < 0; })[0];
+  await page.keyboard.press('Escape');
+  var R2 = await rect(p2), C2 = [R2[0] + R2[2] / 2, R2[1] + R2[3] / 2];
+  await menu(C2); await pick('Make multimer');
+  await menu(C2); await pick('Add structural state'); await page.keyboard.type('x'); await page.keyboard.press('Enter'); await page.waitForTimeout(900);
+  sa = /<celldesigner:structuralState angle="([^"]*)"/.exec(aliasText(await now(), p2));
+  ok('on a multimer: at the bottom middle (its count takes the top)', sa && Math.abs(+sa[1] - 3 * Math.PI / 2) < 0.01, sa && sa[1]);
+  for (var u = 0; u < 3; u++) { await page.keyboard.press('Control+z'); await page.waitForTimeout(700); }
+  ok('undone back to the first protein\'s state', (await now()) === t);
   items = await menu(C);
   ok('no second unit of information offered', items.indexOf('Add unit of information') < 0, items.join('|'));
   await page.keyboard.press('Escape'); await page.keyboard.press('Escape');
@@ -111,7 +152,7 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#acly-celld
   var t1 = await now();
   await page.mouse.click(T[0], T[1]); await page.waitForTimeout(300); await page.keyboard.press('Delete'); await page.waitForTimeout(900);
   t = await now();
-  ok('the residue selected and deleted by the Delete key, the structural state kept', !/modificationResidue/.test(protein(t, sid)) && !/<celldesigner:modification residue=/.test(speciesText(t, sid)) && /structuralState="active"/.test(speciesText(t, sid)));
+  ok('the residue selected and deleted by the Delete key (T2 stays), the structural state kept', !/name="Y701"/.test(protein(t, sid)) && / name="T2"/.test(protein(t, sid)) && /structuralState="active"/.test(speciesText(t, sid)));
   await page.keyboard.press('Control+z'); await page.waitForTimeout(900);
   ok('undo gives it back', (await now()) === t1);
   ok('no script error', !errs.length, errs.join(' / '));

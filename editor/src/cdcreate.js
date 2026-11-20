@@ -638,7 +638,7 @@
         if (A.cls === 'COMPLEX') return out.length ? out : null;
         out.push(['Change identity', subItem(function (r, done) { return cdIdentity(id, r, done); })]);
         // after it, the species' homodimer, as Properties' Multimer (2 when made, 1 back)
-        if (A.cls !== 'DEGRADED') out.push([A.homodimer > 1 ? 'Make monomer' : 'Make multimer', function () { cdApply(function (t) { return cdMk.homodimer(t, id, A.homodimer > 1 ? 1 : 2); }, [id]); }]);
+        if (A.cls !== 'DEGRADED') out.push([A.homodimer > 1 ? 'Make monomer' : 'Make multimer', function () { cdApply(function (t) { return A.homodimer > 1 ? cdMk.homodimer(t, id, 1) : cdTopClear(cdMk.homodimer(t, id, 2), id, true); }, [id]); }]);
         out.late = true;   // rarely used: after the common items, above Delete
         return out;
       }
@@ -755,7 +755,7 @@
       if (tool || Date.now() - placedAt < 600) { e.stopImmediatePropagation(); return; }
       var named = function (n, k) { return cdRole(k) === 'epn' || n.comp || (n.up != null && nodes2[n.up].shape.kind === 'Complex'); };
       var P = at(e), sq = svAt(P);
-      if (sq) { e.stopImmediatePropagation(); typeIn(nodes2[sq[0]].id, sq[1]); return; }   // a state variable's or unit's text (create.js)
+      if (sq) { e.stopImmediatePropagation(); cdSvOpen(nodes2[sq[0]].id, sq[1]); return; }   // a residue's or the structural state's window, a unit's text
       var i = nameAt(P, named);   // create.js: a species, a member, else a group's drawn name or the group round P; a line, a process or a gate nothing
       if (i < 0) return;
       var A = cdMk.aliasInfo(cd.now, nodes2[i].id);
@@ -773,25 +773,29 @@
     }
     function cdRename(id, v) { cdApply(function (t) { return cdMk.rename(t, id, v); }, [id]); }
 
-    // state variables and units of information on a CellDesigner map, as on SBGN-ML maps (create.js svList, svAt, typeIn,
-    // svDown): a click selects one, a double click or a click on it selected types its text in place, a drag or the arrow
-    // keys move it round the border, Delete removes it. CellDesigner's three kinds: a residue (a state variable: a site
-    // of a protein, its state picked from CellDesigner's fixed list by Change state, its site name typed, Y705), the
-    // structural state (one free text per species, an ellipse) and the unit of information
-    // (one free text per alias, at the top middle, not moved). A residue belongs to the protein: its site and place are
-    // the protein's, on every species of it; its state is this species'. Written by cd_make (residue, residueState,
-    // residueName, residueMove, residueRemove, structural, structuralMove, info), one undo step each
+    // state variables and units of information on a CellDesigner map, as on SBGN-ML maps (create.js svList, svAt, svDown):
+    // a click selects one, a drag or the arrow keys move it round the border, Delete removes it. CellDesigner's three
+    // kinds: a residue (a state variable: a site of a protein, its modification from CellDesigner's fixed list), the
+    // structural state (one per species, an ellipse: open, closed or a free text) and the unit of information (one free
+    // text per alias, at the top middle, not moved). A residue and the structural state are edited in a small window
+    // (cdSvWin) opened by a double click, a click on one selected or Edit in its menu, never typed on the shape, so a
+    // modification comes only from the list and the file always opens in CellDesigner; a unit of information is typed in
+    // place (typeIn). A residue belongs to the protein: its site and place are the protein's, on every species of it; its
+    // modification is this species'. Written by cd_make (residue, residueState, residueName, residueMove, residueRemove,
+    // structural, structuralMove, info), one undo step each
     var SS = 'StructuralState';
-    var cdFeatMemo = {};   // per alias and file: cd_make.features (read by svAt on a press and svMarks while one is selected)
+    var cdFeatMemo = {};   // per alias and file: cd_make.features (read by svAt on a press and svMarks while one is selected); of
+    // cd.base, the file as written last (cd.now follows once drawn; a move of a node changes no feature)
     function cdFeat(id) {
-      var t = cd.now;
+      var t = cd.base;
       if (cdFeatMemo.t !== t) cdFeatMemo = { t: t };
       if (!(id in cdFeatMemo)) { try { cdFeatMemo[id] = cdMk.features(t, id); } catch (e) { cdFeatMemo[id] = null; } }
       return cdFeatMemo[id];
     }
     function cdFront(i, f) { var b = boxOf(i), s = 6 * ((f && f.homodimer || 1) - 1); return [b[0], b[1], b[2] - s, b[3] - s]; }   // the front copy of a multimer (cdrender frontBox)
-    var cdPend = null;   // { id, kind }: a structural state or unit of information being typed for the first time (not in the file until typed)
+    var cdPend = null;   // { id, kind, angle }: a structural state or unit of information shown before it is in the file (written once it has a value)
     function cdSym(st) { return st == null ? '' : st in window.cdrender.SYMBOL ? window.cdrender.SYMBOL[st] : st; }
+    function cdStateName(s) { return s === 'empty' ? 'Empty' : s[0].toUpperCase() + s.slice(1) + (cdSym(s) && cdSym(s) !== s ? ' (' + cdSym(s) + ')' : ''); }
     // the icons shown on node i, as create.js svList gives them: [text, centre, size, kind, index among its kind]
     function cdSvList(i) {
       var n = nodes2[i];
@@ -800,17 +804,52 @@
       var f = cdFeat(n.id);
       if (!f) return [];
       var b = cdFront(i, f), on = window.cdrender.onBorder, out = [];
-      f.residues.forEach(function (r, k) { out.push([r.name, on(b, r.angle), [16, 16], SV, k]); });   // a residue's text: its site name (its state from Change state's list)
-      var st = f.structural || (cdPend && cdPend.id === n.id && cdPend.kind === SS ? { text: '', angle: cdFreeAngle(f) } : null);
+      f.residues.forEach(function (r, k) { out.push([r.name, on(b, r.angle), [16, 16], SV, k]); });   // a residue's text: its site name (its modification in its window)
+      var st = f.structural || (cdPend && cdPend.id === n.id && cdPend.kind === SS ? { text: '', angle: cdPend.angle } : null);
       if (st) out.push([st.text, on(b, st.angle), [2 * Math.trunc(window.cdrender.width(st.text, 10) / 2 + 12), 16], SS, 0]);
       if (f.info || (cdPend && cdPend.id === n.id && cdPend.kind === UI)) out.push([f.info ? f.info.text : '', [b[0] + b[2] / 2, b[1]], [70, 16], UI, 0]);
       return out;
     }
-    // a new structural state's place: the bottom middle, else the first side or corner no residue takes (never the top
-    // middle, where the unit of information is drawn)
-    function cdFreeAngle(f) {
+    // a new structural state's place: the top middle while the top is free, that is the species has no unit of
+    // information and its kind (its class and name) is a multimer nowhere on the map (a multimer's N:n is drawn at the
+    // top); else the bottom middle, the long side of the ellipse along the shape; else the first side or corner no
+    // residue takes. Moved afterwards as a residue is
+    var cdTop = Math.PI / 2;
+    function cdNear(a, b) { var P = Math.PI; return Math.abs(((a - b) % (2 * P) + 3 * P) % (2 * P) - P) < 0.3; }
+    function cdBottom(f) {
       var P = Math.PI;
-      return [3 * P / 2, 0, P, 7 * P / 4, 5 * P / 4, P / 4, 3 * P / 4].filter(function (a) { return !f.residues.some(function (r) { var d = Math.abs(((r.angle - a) % (2 * P) + 3 * P) % (2 * P) - P); return d < 0.3; }); })[0] || 3 * P / 2;
+      return [3 * P / 2, 0, P, 7 * P / 4, 5 * P / 4, P / 4, 3 * P / 4].filter(function (a) { return !f.residues.some(function (r) { return cdNear(r.angle, a); }); })[0] || 3 * P / 2;
+    }
+    var cdMultiMemo = [null, null];   // [file, { class and name: true }]: the multimers on the map, read in one pass per file
+    function cdKindKey(sp) { var cl = /<celldesigner:class>([^<]*)</.exec(sp), nm = / name="([^"]*)"/.exec(sp); return cl && nm ? cl[1] + '\u0001' + nm[1] : null; }
+    function cdMultis(t) {
+      if (cdMultiMemo[0] !== t) {
+        var out = {}, re = /<species [^>]*>[\s\S]*?<\/species>/g, m;
+        while ((m = re.exec(t))) { var hd = /<celldesigner:homodimer>(\d+)</.exec(m[0]), key = hd && +hd[1] > 1 && cdKindKey(m[0]); if (key) out[key] = true; }
+        cdMultiMemo = [t, out];
+      }
+      return cdMultiMemo[1];
+    }
+    function cdTopFree(t, id, f) {
+      if (f.info || f.residues.some(function (r) { return cdNear(r.angle, cdTop); })) return false;
+      var sp = new RegExp('<species [^>]*id="' + cdMk.aliasInfo(t, id).id + '"[^>]*>[\\s\\S]*?</species>').exec(t), key = sp && cdKindKey(sp[0]);
+      return !(key && cdMultis(t)[key]);
+    }
+    function cdFreeAngle(t, id) { var f = cdMk.features(t, id); return cdTopFree(t, id, f) ? cdTop : cdBottom(f); }
+    // the copies (aliases) of node id's species in the file t, id first
+    function cdCopiesOf(t, id) {
+      var sid = cdMk.aliasInfo(t, id).id, out = [id], re = new RegExp('<celldesigner:(?:complexS|s)peciesAlias id="([^"]*)" species="' + sid + '"', 'g'), m;
+      while ((m = re.exec(t))) if (m[1] !== id) out.push(m[1]);
+      return out;
+    }
+    // the top made free for a unit of information (on that copy) or a multimer's count (on every copy of the species): a
+    // structural state at a copy's top middle moved to its bottom place
+    function cdTopClear(t, id, all) {
+      (all ? cdCopiesOf(t, id) : [id]).forEach(function (a) {
+        var f = cdMk.features(t, a);
+        if (f.structural && cdNear(f.structural.angle, cdTop)) t = cdMk.structuralMove(t, a, cdBottom(f));
+      });
+      return t;
     }
     // the angle of a place on node i's border ([rx, ry] of its front copy, create.js border and svBox), as CellDesigner
     // keeps it: onBorder's inverse, 0 the right, pi/2 the top
@@ -833,36 +872,144 @@
       if (!q) return false;
       return cdApply(function (t) { return q[3] === SV ? cdMk.residueRemove(t, id, q[4]) : q[3] === SS ? cdMk.structural(t, id, null) : cdMk.info(t, id, null); }, [id]);
     }
-    // the text typed into icon q of node id (typeIn, create.js); a pending one written for the first time
-    function cdSvType(id, q, v) {
+    // the unit of information's text typed in place (typeIn, create.js), as CellDesigner's Edit Information window takes it
+    // (cd_make infoUnit: a label its prefix lacks said, nothing written); a pending one written for the first time, the
+    // top made free for it
+    function cdSvType(id, v) {
       var pend = cdPend; cdPend = null;
-      if (q[3] === SV) {
-        var site = v.replace(/^@+/, '').trim();   // the site only (S15; @S15 as drawn elsewhere taken too); its state stays
-        if (site !== cdFeat(id).residues[q[4]].name) cdApply(function (t) { return cdMk.residueName(t, id, q[4], site); }, []);
-      } else if (q[3] === SS) {
-        var fa = pend ? cdFreeAngle(cdFeat(id)) : null;
-        cdApply(function (t) { t = cdMk.structural(t, id, v || null, true); return fa != null && v ? cdMk.structuralMove(t, id, fa) : t; }, [id]);
-      }
-      else {
-        var u = v.trim() ? cdMk.infoUnit(v) : null;
-        if (u && u.bad) { note(u.bad); paint(); return; }   // said, as a residue's state: CellDesigner's window offers only these
-        cdApply(function (t) { return cdMk.info(t, id, v || null, true); }, []);   // nothing left selected, as a residue's state
-      }
+      var u = v ? cdMk.infoUnit(v) : null;
+      if (u && u.bad) { note(u.bad); paint(); return; }
+      cdApply(function (t) { t = cdMk.info(t, id, v || null, true); return v ? cdTopClear(t, id, false) : t; }, []);   // nothing left selected
       if (pend) paint();
     }
-    // a structural state or unit of information added: its text typed at once where it will be (nothing written until
-    // it has text); a residue added empty at CellDesigner's first free place, selected, as a state variable on SBGN-ML maps
+    // a double click, a click on one selected or Edit in its menu: a residue's or the structural state's window, a unit
+    // of information's text in place
+    function cdSvOpen(id, j) {
+      var i = nodes2.findIndex(function (n) { return n.id === id; }), q = i < 0 ? null : cdSvList(i)[j];
+      if (!q) return;
+      if (q[3] === UI) { typeIn(id, j); return; }
+      cdSvWin(id, q[3], q[4]);
+    }
+    // the window of a residue (Site, then Modification, the order of CellDesigner's Change identity: its residues, then
+    // their modification) or of the structural state (State: open, closed or a text; then the text): beside it over the
+    // map, the right-click menu's look. A choice is written at once, a text when Enter is pressed or the field is left,
+    // each one undo step. Beside the node, on its right where there is room. Enter, Esc or a click outside close it. Kept as typing (create.js), so a zoom or a pan moves it
+    // and another map, leaving editing or another field closes it (its text kept)
+    function cdSvWin(id, kind, k, fresh) {   // fresh: a residue just added (Esc takes it back)
+      if (typing) typing.done(true);
+      var m0 = map, res = kind === SV;
+      var feat = function () { try { return cdMk.features(cd.base, id); } catch (e) { return null; } };   // the file as just written (cd.now follows once drawn)
+      var f = feat();
+      if (!f || (res && !f.residues[k])) return;
+      var box = document.createElement('div');
+      box.className = 'm2-cx m2-cdsv'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-label', res ? 'Residue' : 'Structural state');
+      box.innerHTML = res
+        ? '<label><span>Site</span><input type="text" spellcheck="false" placeholder="S314"></label><label><span>Modification</span><select></select></label>'
+          + '<p>The site is the protein\u2019s: every copy of it shows it.</p>'
+        : '<label><span>State</span><select><option value="open">Open</option><option value="closed">Closed</option><option value="">Text</option></select></label>'
+          + '<label class="m2-cdsv-text"><span>Text</span><input type="text" spellcheck="false"></label><button type="button">Remove</button>';
+      var inp = box.querySelector('input'), sel = box.querySelector('select'), row = box.querySelector('.m2-cdsv-text');
+      if (res) cdMk.STATES.forEach(function (s) { sel.appendChild(new Option(cdStateName(s), s)); });
+      var rid = res ? f.residues[k].id : null, wrote = false;   // the residue by its id: another one removed or an undo moves its index
+      var pendOf = function () { return cdPend && cdPend.id === id && cdPend.kind === SS ? cdPend : null; };
+      if (res) { inp.value = f.residues[k].name || ''; sel.value = f.residues[k].state || 'empty'; }
+      else {
+        var now = f.structural ? f.structural.text : '';
+        sel.value = /^(open|closed)$/.test(now) ? now : '';
+        inp.value = sel.value ? '' : now;
+        row.hidden = !!sel.value;
+      }
+      var T;
+      var live = function () { return typing === T && on && map === m0; };
+      var kNow = function () { var g = feat(); return g ? g.residues.findIndex(function (r) { return r.id === rid; }) : -1; };
+      var jOf = function () {   // its index among the node's icons (cdSvList: the residues, then the structural state); -1 when gone
+        var g = feat();
+        return !g ? -1 : res ? kNow() : g.structural || pendOf() ? g.residues.length : -1;
+      };
+      var write = function (fn) {
+        if (!live()) return;
+        if (res && (k = kNow()) < 0) { T.done(false); return; }   // removed meanwhile: nothing written
+        if (cdApply(fn, [])) wrote = true;
+        var j = jOf();
+        if (j < 0 && !pendOf()) { T.done(false); return; }   // gone (removed): the window with it
+        svSel = j < 0 ? null : { id: id, j: j }; paint();
+      };
+      var site = function () {   // the site as typed, when it differs
+        var kk = kNow(), r = kk < 0 ? null : feat().residues[kk], v = inp.value.trim();
+        if (r && v !== (r.name || '')) write(function (t) { return cdMk.residueName(t, id, k, v); });
+      };
+      var put = function (v) {   // the structural state's text written (a new one on every copy, each at its own free place), or none
+        var pend = pendOf();
+        if (v) {
+          write(function (t) {
+            var at = pend ? cdCopiesOf(t, id).map(function (a) { return [a, a === id ? pend.angle : cdFreeAngle(t, a)]; }) : [];
+            t = cdMk.structural(t, id, v, true);
+            at.forEach(function (q) { t = cdMk.structuralMove(t, q[0], q[1]); });
+            return t;
+          });
+          if (pend && cdPend === pend) cdPend = null;
+        }
+        else if (!pend) write(function (t) { return cdMk.structural(t, id, null); });
+      };
+      var commit = function () { if (res) site(); else if (!sel.value) { var v = inp.value.trim(), st = (feat() || {}).structural; if (v !== (st ? st.text : '') || (v && pendOf())) put(v); } };
+      var place = function () {
+        var i = nodes2.findIndex(function (n) { return n.id === id; }), j = jOf(), q = i < 0 || j < 0 ? null : cdSvList(i)[j];
+        if (i < 0 || !box.isConnected) return;
+        if (!q || q[3] !== kind) { var b = boxOf(i); q = [0, [b[0] + b[2] / 2, b[1] + b[3] / 2], [b[2], 0]]; }   // not drawn yet: beside its node
+        var vr = V.view.getBoundingClientRect(), z = box.getBoundingClientRect().width / box.offsetWidth || 1, w = box.offsetWidth * z, ht = box.offsetHeight * z;
+        var nb = boxOf(i), x1 = Math.max(nb[0] + nb[2], q[1][0] + q[2][0] / 2), x0 = Math.min(nb[0], q[1][0] - q[2][0] / 2);   // beside the node and its icon, never over them
+        var right = vr.left + sx(x1) * z + 10 * z, left = vr.left + sx(x0) * z - 10 * z - w, top = vr.top + sy(q[1][1]) * z - ht / 2;
+        var x = right + w <= window.innerWidth - 4 ? right : left >= 4 ? left : window.innerWidth - 4 - w;
+        box.style.left = Math.max(4, x) / z + 'px'; box.style.top = Math.max(4, Math.min(top, window.innerHeight - 4 - ht)) / z + 'px';
+      };
+      var outside = function (e) { if (!box.contains(e.target)) T.done(true); };
+      T = typing = { inp: inp, place: place, done: function (keep) {
+        if (typing !== T) return;
+        if (keep) commit();
+        typing = null; box.remove(); document.removeEventListener('pointerdown', outside, true);
+        if (pendOf()) cdPend = null;
+        if (!keep && fresh && !wrote && on && map === m0 && undo.length) { text = unpush(); parse(); dirty = true; svSel = null; render(); changed(); }   // a residue just added, nothing chosen: taken back
+        paint();
+      } };
+      sel.addEventListener('change', function () {
+        if (res) { var s = sel.value; write(function (t) { return cdMk.residueState(t, id, k, s); }); return; }
+        row.hidden = !!sel.value;
+        if (sel.value) put(sel.value); else { var g = feat(); inp.value = g && g.structural ? g.structural.text : ''; inp.focus(); inp.select(); }   // Text: from what is there, written once changed
+      });
+      inp.addEventListener('change', commit);
+      if (!res) box.querySelector('button').addEventListener('click', function () { if (pendOf()) T.done(false); else put(null); });
+      box.addEventListener('keydown', function (e) {
+        e.stopPropagation();
+        if (e.key === 'Escape') { e.preventDefault(); T.done(false); V.view.focus({ preventScroll: true }); }
+        else if (e.key === 'Enter' && e.target.tagName !== 'BUTTON') { e.preventDefault(); T.done(true); V.view.focus({ preventScroll: true }); }
+      });
+      box.addEventListener('pointerdown', function (e) { e.stopPropagation(); });
+      box.addEventListener('keydown', function (e) {   // Tab and Shift+Tab go round the window's own fields, so no key reaches the map under it
+        if (e.key !== 'Tab') return;
+        var fs = Array.prototype.filter.call(box.querySelectorAll('input, select, button'), function (x) { return !x.closest('[hidden]'); }), at = fs.indexOf(document.activeElement);
+        e.preventDefault(); fs[(at + (e.shiftKey ? -1 : 1) + fs.length) % fs.length].focus();
+      });
+      document.body.appendChild(box);
+      document.addEventListener('pointerdown', outside, true);
+      var j0 = jOf();
+      svSel = j0 < 0 ? null : { id: id, j: j0 }; paint(); place();
+      setTimeout(function () { var fo = res ? (inp.value ? sel : inp) : (sel.value ? sel : inp); if (typing === T) fo.focus(); }, 0);
+    }
+    // added from the species' menu: a residue empty at CellDesigner's first free place and a structural state at its
+    // place (cdFreeAngle), each with its window; a unit of information typed at once at the top middle (nothing written
+    // until it has a value)
     function cdSvAdd(id, kind) {
       var i = nodes2.findIndex(function (n) { return n.id === id; });
       if (i < 0) return;
+      if (typing) typing.done(true);   // a field still open written first, so it does not take this one's place
       if (kind === SV) {
         var k = null;
         if (!cdApply(function (t) { var o = cdMk.residue(t, id, { state: 'empty' }); k = o.residue; return o.text; }, [])) return;
-        svSel = { id: id, j: k }; paint();
+        cdSvWin(id, SV, k, true);
         return;
       }
-      if (typing) typing.done(true);   // a field still open written first, so it does not take this one's place
-      cdPend = { id: id, kind: kind };
+      cdPend = kind === SS ? { id: id, kind: SS, angle: cdFreeAngle(cd.base, id) } : { id: id, kind: UI };
+      if (kind === SS) { cdSvWin(id, SS, 0); return; }
       var j = cdSvList(i).map(function (q) { return q[3]; }).indexOf(kind);
       if (j < 0) { cdPend = null; return; }
       typeIn(id, j);
@@ -877,20 +1024,24 @@
       if (!f.info) out.push(['Add unit of information', function () { cdSvAdd(id, UI); }]);
       return out;
     }
-    // the right-click menu over a residue: its state from CellDesigner's list (Change state, as Change identity's window);
-    // over a unit of information: Change unit, CellDesigner's prefixes with their labels (its Edit Information window),
-    // then N and any other text typed in place
+    // the right-click menu over a residue (Edit: its window; Change state: its modification from CellDesigner's list, as
+    // Change identity's window), the structural state (Edit) or the unit of information (Change unit: CellDesigner's
+    // prefixes with their labels, its Edit Information window, then N and any other text typed in place); then the
+    // viewer's Delete
     function cdSvOwnItems(q) {
       var i = q[0], it = cdSvList(i)[q[1]], id = nodes2[i].id;
-      if (it && it[3] === UI) return cdUnitItems(id, q[1]);
-      if (!it || it[3] !== SV) return null;
+      if (!it) return null;
+      if (it[3] === UI) return cdUnitItems(id, q[1]);
+      var out = [['Edit', function () { cdSvOpen(id, q[1]); }]];
+      if (it[3] !== SV) return out;
       var now = cdFeat(id).residues[it[4]].state || 'empty';
-      return [['Change state', subItem(function (r, done) {
+      out.push(['Change state', subItem(function (r, done) {
         return kindWindow(r, cdMk.STATES.map(function (s) {
-          return { name: s === 'empty' ? 'Empty' : s[0].toUpperCase() + s.slice(1) + (cdSym(s) && cdSym(s) !== s ? ' (' + cdSym(s) + ')' : ''), own: s === now,
+          return { name: cdStateName(s), own: s === now,
             go: function () { cdApply(function (t) { return cdMk.residueState(t, id, it[4], s); }, []); svSel = { id: id, j: q[1] }; paint(); } };
         }), done);
-      })]];
+      })]);
+      return out;
     }
     function cdUnitItems(id, j) {
       var f = cdFeat(id), now = f && f.info ? f.info.prefix + ':' + f.info.label : '', list = [];   // as the file holds it: free input mt:prot is not mt's prot
@@ -951,7 +1102,7 @@
       set: function (k, v, is) {   // every node of is given the value, one undo step
         var ids = is.map(function (i) { return nodes2[i].id; }), all = function (f) { return cdApply(function (t) { ids.forEach(function (id) { t = f(t, id); }); return t; }, ids); };
         if (k === 'label') return all(function (t, id) { return cdMk.rename(t, id, v.replace(/[\r\n]+/g, ' ')); });
-        if (k === 'multimer') return all(function (t, id) { return !v ? cdMk.homodimer(t, id, 1) : cdMk.aliasInfo(t, id).homodimer > 1 ? t : cdMk.homodimer(t, id, 2); });   // a count above 2 kept
+        if (k === 'multimer') return all(function (t, id) { return !v ? cdMk.homodimer(t, id, 1) : cdMk.aliasInfo(t, id).homodimer > 1 ? t : cdTopClear(cdMk.homodimer(t, id, 2), id, true); });   // a count above 2 kept; the top made free for N:2
         if (k === 'width') { var x = parseFloat(v); return isFinite(x) && all(function (t, id) { return cdMk.restyle(t, id, { width: Math.min(Math.max(x, 0.25), 20) }); }); }   // outside 0.25 to 20: the nearest, silently
         if (k === 'font') { var z = parseFloat(v); return isFinite(z) && all(function (t, id) { return cdMk.restyle(t, id, { font: Math.min(Math.max(Math.round(z), 1), 200) }); }); }   // whole numbers (CellDesigner's), 1 to 200: the nearest, silently
         if (k === 'fill') { var c = hex(v); return !!c && all(function (t, id) { return cdMk.restyle(t, id, { fill: c }); }); }

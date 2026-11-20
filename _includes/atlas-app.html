@@ -373,6 +373,13 @@ page, so its styles keep the base they were made on).
      each kind by its name, the own kind greyed out */
   .m2-cx.m2-ci { min-width: 0; }
   .m2-cx.m2-ci button { justify-content: flex-start; }
+  .m2-cx.m2-cdsv { min-width: 0; width: 280px; max-width: none; padding: 8px 10px; font-size: 13px; line-height: 18px; }   /* a CellDesigner residue's or structural state's window (cdSvWin, cdcreate.js) */
+  .m2-cdsv label { display: flex; align-items: center; gap: 8px; margin: 0 0 6px; }
+  .m2-cdsv label[hidden] { display: none; }
+  .m2-cdsv label span { flex: 0 0 88px; color: var(--m2-text-soft); }
+  .m2-cdsv input, .m2-cdsv select { flex: 1 1 auto; min-width: 0; font: inherit; padding: 2px 4px; border: 1px solid var(--m2-line); border-radius: 4px; background: var(--m2-bg); color: inherit; }
+  .m2-cdsv p { margin: 2px 0 0; font-size: 12px; line-height: 16px; color: var(--m2-text-soft); }
+  .m2-cdsv button { font: inherit; padding: 2px 10px; margin-top: 2px; }
   .m2-cx.m2-ci button[aria-checked="true"], .m2-cx.m2-ci:not(.m2-cx-still) button[aria-checked="true"]:hover { color: #bdc1c6; background: none; }   /* the own kind: greyed, not a choice */
   /* the circled i beside Connecting arcs (an info glyph): a sign button
      opening How to edit at its section; no shade under the pointer or open. Small and light:
