@@ -986,14 +986,17 @@
     // maps/<id>.md's front matter changed by edit({ get, set, drop }) in one commit, the closing line and the body as they were
     // One page write at a time from this page: two at once on main refuse each other (409, the branch moved), as several
     // maps restored together did; a write still refused (another tab, an editor save) is read and tried up to three times
-    // more; a write that never answers holds the next ones 30 s at most
+    // more; a write that never answers holds the next ones 30 s at most from its start
     var siteQ = Promise.resolve();
     function siteFront(id, edit, message) {
       V.pageSent(id, '');   // held from the moment it is asked for, also while it waits behind other writes
-      var p = siteQ.then(function () { return frontWrite(id, edit, message, 0); })
+      var prev = siteQ, p = prev.then(function () { return frontWrite(id, edit, message, 0); })
         .then(function (at) { V.pageSent(id, at); }, function (e) { V.pageSent(id, null); throw e; });   // held until a build of this write
-      siteQ = Promise.race([p.catch(function () {}), new Promise(function (ok) { setTimeout(ok, 30000); })]);
+      siteQ = queueNext(prev, p);
       return p;
+    }
+    function queueNext(prev, p) {   // the next write waits for this one, at most 30 s counted from when this one starts
+      return prev.then(function () { return Promise.race([p.catch(function () {}), new Promise(function (ok) { setTimeout(ok, 30000); })]); });
     }
     function frontWrite(id, edit, message, tries) {
       var path = '/contents/maps/' + encodeURIComponent(id) + '.md', at = new Date().toISOString();   // written: when this page last wrote it (the viewer waits for a build that new, V.pageBehind)
@@ -1063,7 +1066,7 @@
       return w.p;
     }
     function pagelessWrite(w, on) {
-      var ids = w.ids, p = siteQ.then(function () {
+      var ids = w.ids, prev = siteQ, p = prev.then(function () {
         var at = new Date().toISOString();   // written: the viewer waits for a build that new
         return binFileWrite(function (o) { ids.forEach(function (id) { if (on) o[id] = { deleted: w.date, written: at }; else delete o[id]; }); },
           (on ? 'Deleted in the viewer: ' : 'Restored in the viewer: ') + ids.join(', '), 0).then(function () { return at; });
@@ -1072,7 +1075,7 @@
         var q = binPending(); ids.forEach(function (id) { if (w.was[id] === undefined) delete q[id]; else q[id] = w.was[id]; }); binPendingSet(q);
         V.refreshMine(); throw e;
       });
-      siteQ = Promise.race([p.catch(function () {}), new Promise(function (ok) { setTimeout(ok, 30000); })]);
+      siteQ = queueNext(prev, p);
       return p;
     }
     // Delete group (any group in sight): its maps into Deleted, as Delete map; Deleted shows maps only, and each keeps its
@@ -1116,13 +1119,18 @@
       return fwd;
     }
     // The Delete key (on a Mac the delete key, Backspace) on the map shown, outside edit mode, with the list in sight: Delete map,
-    // as the list's menu offers it; the next map in the list shown first (the one before at the list's end), as a
+    // as the list's menu offers it (on a group selected by its heading Delete group, on maps selected Delete N maps); the next map in the list shown first (the one before at the list's end), as a
     // mailbox goes on to the next message. Not in a field, a menu, a name being given, or on a map in Deleted
     document.addEventListener('keydown', function (e) {
       if ((e.key !== 'Delete' && e.key !== 'Backspace') || e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
       if (naming || document.querySelector('.m2-cx') || V.grid.classList.contains('m2-editing')) return;
       if (e.target.closest && e.target.closest('input, select, textarea, [contenteditable]')) return;
-      var list = document.getElementById('m2-list'), m = V.chosen && V.byId[V.chosen.id], sel = V.picked();
+      var list = document.getElementById('m2-list'), m = V.chosen && V.byId[V.chosen.id], sel = V.picked(), pg = V.pickedGroup();
+      if (pg !== null && list && list.offsetParent) {   // a group selected by its heading: Delete group, as its menu offers it
+        var gm = groupMaps(pg, !!(repo() && token()));
+        V.pickSet([]);   // a group renamed or removed since: nothing to delete there, the map shown as before
+        if (gm.length || (ownGroup(pg) && !inGroup(pg).length)) { e.preventDefault(); deleteGroupU(pg, gm); return; }
+      }
       if ((sel.length > 1 || (sel.length === 1 && (!m || sel[0] !== m.id))) && list && list.offsetParent) {   // maps selected in the list (not the one shown alone): those that can be deleted
         var ms = sel.map(function (id) { return V.byId[id]; }).filter(function (x) { return x && !x.binned && canDelete(x, !!(repo() && token())); });
         if (ms.length) { e.preventDefault(); binU(ms, true); }
@@ -1135,7 +1143,7 @@
       if (next) V.go(next.dataset.id);
       binU([m]);
     });
-    function bin(m) {
+    function bin(m, quiet) {   // quiet: the list drawn again by the caller, once for several
       var say = function (e) { alert((m.mine ? m.title : m.topic) + ' was not deleted: ' + (e && e.message ? e.message : e)); }, sent = null;
       if (m.mine) {
         var r = mine[m.id]; if (!r) return;
@@ -1143,17 +1151,18 @@
         folderMove(m.id, true);
         sent = r.site && repo() && token() ? siteBin(r.site, true).catch(say) : null;   // on the site already: its page there too
       } else sent = siteBin(m.id, true).catch(say);
-      V.refreshMine();
+      if (!quiet) V.refreshMine();
       return Promise.resolve(sent);
     }
-    function binMany(ms) {   // several maps selected into Deleted, one after another (each a commit with a token); the map after them shown
+    function binMany(ms) {   // several maps into Deleted, all shown there at once; with a token their commits follow one at a time (siteFront's queue); the map after them shown
       var ids = ms.map(function (m) { return m.id; }), rows = Array.prototype.slice.call(document.querySelectorAll('#m2-list .m2-map:not(.m2-binned)')).map(function (b) { return b.dataset.id; });
       var lastAt = Math.max.apply(null, ids.map(function (id) { return rows.indexOf(id); })), next = rows.slice(lastAt + 1).concat(rows.slice(0, lastAt).reverse()).filter(function (id) { return ids.indexOf(id) < 0; })[0];
       V.pickSet([]);
       if (next && V.chosen && ids.indexOf(V.chosen.id) >= 0) V.go(next);
       ms = ms.filter(function (m) { var b = twinBase(m); return !b || !ms.some(function (x) { return x.id === b + '-graphml' || x.id === b; }); });   // a twin goes with its GraphML map
-      var together = Promise.all(ms.filter(pageless).map(bin));   // the build's own maps in one write
-      return ms.filter(function (m) { return !pageless(m); }).reduce(function (p, m) { return p.then(function () { return bin(m); }); }, together);
+      var all = Promise.all(ms.map(function (m) { return bin(m, true); }));   // the build's own maps (pageless) in one write
+      V.refreshMine();
+      return all;
     }
     function restore(m) {   // back into its group under its own name, or "<name> (1)" where the group has it in the same format
       m = parentOf(m);

@@ -579,6 +579,7 @@ page, so its styles keep the base they were made on).
   /* a group name opens or closes its maps; all groups start open, then as the reader left them */
   .m2-group { display: block; width: 100%; text-align: left; font: inherit; font-size: 14px; font-weight: 400; color: var(--m2-text); background: none; border: 0; padding: 2px 5px 2px 0; margin-top: 6px; cursor: pointer; }
   .m2-group:first-child { margin-top: 0; }
+  .m2-group.m2-on { background: var(--m2-accent); color: var(--m2-on-accent); }   /* a group selected by Shift or Cmd with a click (pickGroup) */
   /* a group or a map dragged into another place : faint while it moves, a line
      where it goes */
   .m2-moving { opacity: 0.4; }
@@ -2107,7 +2108,8 @@ page, so its styles keep the base they were made on).
         ['E, or ' + MOD + ' + E', 'switch between viewing and editing'],
         ['?, or the ? sign at the end of the icons', 'this window (while editing: the editor’s help)'],
         [MOD + ' + Z, ' + MOD + ' + Shift + Z', 'undo, redo the last change of a setting: Settings, the grid, the palette’s choices']].concat(own ? [
-        [MOD + ' + Z, ' + MOD + ' + Shift + Z in the list', 'undo, redo the list’s last change: a move, Delete, Restore, a name, a group, a new map (while editing: after a click in the list)']] : [])) +
+        [MOD + ' + Z, ' + MOD + ' + Shift + Z in the list', 'undo, redo the list’s last change: a move, Delete, Restore, a name, a group, a new map (while editing: after a click in the list)'],
+        ['Shift or ' + MOD + ' + click on a group’s name', 'selects the group, not opened or closed; Delete then deletes it, as Delete group']] : [])) +
       '<h4>While editing</h4>' + table(null, [
         ['Click, then drag', 'an item is selected first, then moved'],
         ['Drag on empty space or an item not selected', GRAB ? 'moves the map, as outside editing' : 'selects an area in place of the selection'],
@@ -3243,13 +3245,22 @@ page, so its styles keep the base they were made on).
   // selection). picked is the selection while it holds any map but the map shown alone, in the list's order; empty,
   // the map shown is the selection. A plain click, a map opened (go) or Esc ends it. The editor's list menu and the Delete key
   // act on it (own.js); a selected map dragged takes the others with it (drop)
-  var picked = [], pickFrom = null;
+  // Shift or Cmd (Ctrl) with a click on a group's heading selects the group, its heading lit with its maps (pickGroup); the
+  // Delete key then deletes the group, as the list's Delete group (own.js). Any other selection ends it
+  var picked = [], pickFrom = null, pickedGroup = null;
+  function pickGroup(name) {
+    pickSet(maps.filter(function (m) { return !m.binned && (m.group || '') === name; }).map(function (m) { return m.id; }));
+    pickedGroup = name; groupLit();
+  }
+  function groupOff() { if (pickedGroup !== null) { pickedGroup = null; groupLit(); } }   // any other selection ends the group's
+  function groupLit() { Array.prototype.forEach.call(document.querySelectorAll('#m2-list .m2-group'), function (h) { h.classList.toggle('m2-on', pickedGroup !== null && h.getAttribute('data-group') === pickedGroup && !h.classList.contains('m2-bin')); }); }
   function pickRows() { return Array.prototype.slice.call(document.querySelectorAll('#m2-list .m2-map:not(.m2-binned)')); }
   function pickShown() { var c = chosen || current; return c ? c.id : null; }
   function inPick(id) { return picked.length ? picked.indexOf(id) >= 0 : id === pickShown(); }
   function pickSet(ids) {   // in the list's order; the rows lit at once, no list made again
     var order = pickRows().map(function (b) { return b.dataset.id; });
     picked = order.filter(function (id) { return ids.indexOf(id) >= 0; });
+    groupOff();
     pickRows().forEach(function (b) { b.classList.toggle('m2-on', inPick(b.dataset.id)); });
   }
   function pickClick(id, e) {
@@ -3267,7 +3278,7 @@ page, so its styles keep the base they were made on).
     }
   }
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape' && picked.length && !e.defaultPrevented && !document.querySelector('.m2-cx')) { pickSet([]); }
+    if (e.key === 'Escape' && (picked.length || pickedGroup !== null) && !e.defaultPrevented && !document.querySelector('.m2-cx')) { pickSet([]); }
   });
   (function () {   // the selection box
     var box = document.getElementById('m2-list'), at = null, marq = null, base = [];
@@ -3363,7 +3374,7 @@ page, so its styles keep the base they were made on).
         }
         var ids = picked.length > 1 && picked.indexOf(moving.map) >= 0 ? picked.filter(function (id) { return own.movable(byId[id]); }) : [moving.map];
         if (ids.indexOf(before) >= 0) return;
-        if (ids.length > 1) { picked = []; return own.moveMany(ids, to, before); }   // the selected maps together, in the list's order
+        if (ids.length > 1) { picked = []; groupOff(); return own.moveMany(ids, to, before); }   // the selected maps together, in the list's order
         return own.moveTo(moving.map, to, before);   // the record's group, the order, and the list made again with the reader's maps first
       } else if (moving.map) {
         var ids = maps.filter(function (m) { return (m.group || '') === moving.group; }).map(function (m) { return m.id; });
@@ -3522,7 +3533,10 @@ page, so its styles keep the base they were made on).
       if (mg) g.classList.add('m2-mine');   // the reader's group: in the order made, not dragged
       else movable(g, { group: name });
       if (rn) g.title = 'Double-click to rename';
-      g.addEventListener('click', function () {
+      if (pickedGroup === name) g.classList.add('m2-on');
+      g.addEventListener('click', function (e) {
+        if (own && (e.shiftKey || e.metaKey || e.ctrlKey)) return pickGroup(name);   // the group selected, not opened or closed
+        groupOff();
         // a double-click on a group: the list is built again after each click, so the second click lands on a new
         // heading; it undoes the first's open or close and renames
         var dbl = rn && twice('g:' + name);
@@ -3785,7 +3799,7 @@ page, so its styles keep the base they were made on).
   // the list and the arrow keys route at once, not on the browser's hashchange, which comes a moment later: so a
   // second click or key press always starts from the map just chosen
   function go(id) {
-    picked = []; pickFrom = id;   // a map opened: the list's selection is that map again (also when it is shown already)
+    picked = []; groupOff(); pickFrom = id;   // a map opened: the list's selection is that map again (also when it is shown already)
     if (location.hash.slice(1) !== id) location.hash = id;
     route();
   }
@@ -3804,7 +3818,7 @@ page, so its styles keep the base they were made on).
     if (e && e.type === 'hashchange' && m === chosen) return; // already routed by go() or an arrow key
     if (!pending) lastHit = null; // chosen from the map list, not a search result
     if (closed[m.group]) { closed[m.group] = false; saveClosed(); } // the chosen map's group is always open
-    if (m !== chosen) { picked = []; pickFrom = m.id; }   // another map shown (arrow keys, back, forward): the list's selection is that map
+    if (m !== chosen) { picked = []; groupOff(); pickFrom = m.id; }   // another map shown (arrow keys, back, forward): the list's selection is that map
     chosen = m;
     show(m);
     buildList(document.getElementById('m2-search').value);
@@ -4445,6 +4459,7 @@ page, so its styles keep the base they were made on).
     refreshMine: { get: function () { return refreshMine; } },
     picked: { get: function () { return function () { return picked.length ? picked.slice() : [pickShown()].filter(Boolean); }; } },   // the list's selection (several maps), else the map shown
     pickSet: { get: function () { return pickSet; } },
+    pickedGroup: { get: function () { return function () { return pickedGroup; }; } },   // the group selected by its heading, else null
     draftDo: { get: function () { return draftDo; } },
     dropKept: { get: function () { return dropKept; } },
     draftIds: { get: function () { return draftIds; } },

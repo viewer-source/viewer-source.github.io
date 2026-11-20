@@ -9,6 +9,7 @@
 //      it; Cmd+Z after Delete group brings both back.
 //   5. Delete group on a group of the build's own maps: one write to maps/deleted.json, one for its undo.
 //   6. A GraphML map and its twin selected and deleted together: the twin goes with it, no line of its own.
+//   7. Shift-click on a group's heading selects it; Esc lets it go; the Delete key deletes it, all shown in Deleted at once; Cmd+Z.
 //   node tests/delete-group.js [base address] [--local]
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path'), cp = require('child_process'), crypto = require('crypto');
 var base = process.argv[2] && process.argv[2][0] !== '-' ? process.argv[2] : 'https://viewer-source.github.io/styles/';
@@ -194,6 +195,30 @@ function viewerHunks() {
   await page.evaluate(function () { Array.prototype.filter.call(document.querySelectorAll('.m2-cx button'), function (x) { return /^Delete \d+ maps$/.test(x.textContent); })[0].click(); }); await page.waitForTimeout(2500);
   ok('6. the twin not written on its own, the GraphML map\'s page deleted', !binFile()[GT] && /deleted:/.test(files['maps/pdh-graphml.md'] || ''), files['maps/deleted.json']);
   await page.keyboard.press(mod + '+z'); await page.waitForTimeout(2500);
+
+  // 7. Shift with a click on a group's heading selects the group (not opened or closed); Esc lets it go; the Delete key
+  //    deletes it, every map shown in Deleted at once while the pages' writes follow one at a time; Cmd+Z brings it back
+  var AM = ['asthmamap-mast-cell-celldesigner', 'asthmamap-mast-cell-graphml'], AH = '#m2-list .m2-group[data-group="AsthmaMap"]';
+  await load(); await list();
+  var lit = function () { return page.$eval(AH, function (h) { return h.classList.contains('m2-on') + ' ' + h.classList.contains('m2-shut'); }).catch(function () { return 'none'; }); };
+  var was7 = await lit();
+  await page.click(AH, { modifiers: ['Shift'] }); await page.waitForTimeout(200);
+  ok('7. Shift-click on the heading: the group selected, not opened or closed', (await lit()) === 'true ' + was7.split(' ')[1], was7 + ' -> ' + await lit());
+  await page.keyboard.press('Escape'); await page.waitForTimeout(200);
+  ok('7. Esc: the group no longer selected', /^false/.test(await lit()), await lit());
+  await page.click(AH, { modifiers: ['Shift'] }); await page.waitForTimeout(200);
+  await page.click('#m2-list .m2-map[data-group="GraphML"] >> nth=0'); await page.waitForTimeout(500);
+  ok('7. a map opened: the group no longer selected (Delete would be the map\'s)', /^false/.test(await lit()), await lit());
+  await page.click(AH, { modifiers: ['Shift'] }); await page.waitForTimeout(200);
+  var n7 = function (h) { return +((h.match(/\((\d+)\)/) || [])[1] || 0); }, h7 = await head(), p7 = puts.length;
+  await page.keyboard.press('Delete'); await page.waitForTimeout(150);
+  var h7b = await head(), w7 = AM.filter(function (id) { return /deleted:/.test(files['maps/' + id + '.md']); }).length;
+  ok('7. Delete key: the group gone, Deleted 2 more at once (pages written meanwhile: ' + w7 + ')', (await groups()).indexOf('AsthmaMap') < 0 && n7(h7b) === n7(h7) + 2 && w7 < 2, h7 + ' -> ' + h7b);
+  await page.waitForTimeout(3000);
+  ok('7. both pages say deleted:', AM.every(function (id) { return /deleted:/.test(files['maps/' + id + '.md']); }), puts.slice(p7).join(', '));
+  await page.click('#m2-list .m2-map:not(.m2-binned) >> nth=0'); await page.waitForTimeout(300);
+  await page.keyboard.press(mod + '+z'); await page.waitForTimeout(3000);
+  ok('7. Cmd+Z: AsthmaMap back with both maps', (await groups()).indexOf('AsthmaMap') >= 0 && AM.every(function (id) { return !/deleted:/.test(files['maps/' + id + '.md']); }), (await groups()).join(', '));
 
   ok('no page errors', !errs.length, errs.join(' | '));
   console.log(bad ? bad + ' WRONG' : 'all ok');
