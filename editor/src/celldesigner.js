@@ -54,11 +54,11 @@
     // switch and for the click data the same text again): the last few kept
     var cdMemo = [];
     // once the map has changed (an undo step taken), every drawing fits the canvas round the content (cd_edit.place's fit:
-    // the content's top left 40 to 56 from the corner, the canvas MARGIN past its right and bottom), so the file saved, its
+    // the content's top left 40 to 40 + the block (gridBlock) from the corner, the canvas MARGIN past its right and bottom), so the file saved, its
     // downloads and the site's picture never carry a canvas larger than the map; the shift moves the frame with it
     // (render, cdRebuild). Unchanged, the file draws as itself: opening it, or every change undone, saves nothing and
     // leaves the picture's frame as the site's. fit given: the read-ahead, before editing
-    function cdDraw(t, g, fit) { return cdJs.draw(t, g, { fit: fit == null ? undo.length > 0 : fit }); }
+    function cdDraw(t, g, fit) { return cdJs.draw(t, g, { fit: fit == null ? undo.length > 0 : fit, block: gridBlock() }); }
     // the file as drawn now (a move not drawn yet put in) with the shift (out of negative places, or the fit) that drawing holds: the
     // drawing on screen when it is of this GraphML, else drawn here (x0 may still belong to an older drawing)
     function cdShift(svg) { var m = /<g transform="translate\(([-\d.]+),([-\d.]+)\)">/.exec(svg || ''); return m ? [+m[1], +m[2]] : [0, 0]; }

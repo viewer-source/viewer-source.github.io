@@ -122,7 +122,7 @@
     }
     // no negative places (negative coordinates are invalid in CellDesigner, so corrected in every format):
     // a map moved past the left or the top edge is shifted right or down, each on its own, by whole blocks of the grid
-    // (16, so a map on the grid stays on it) to start at 40 or a little more; the drawing stays where it is on screen
+    // (gridBlock, 16 on a grid of 8, so a map on the grid stays on it) to start at 40 or a little more; the drawing stays where it is on screen
     // (the renderer's frame follows). A GraphML here; a CellDesigner file in cd_edit.place
     // the same shift worked out ahead from a document alone (read ahead while the map is shown): the text it gives,
     // or the text itself when nothing moves; were it ever to differ from noNegative's, the drawing made ahead is simply
@@ -138,7 +138,7 @@
         mx = Math.min(mx, num(g, 'x')); my = Math.min(my, num(g, 'y'));
       });
       Array.prototype.forEach.call(d.getElementsByTagNameNS(Y, 'Point'), function (p) { mx = Math.min(mx, num(p, 'x')); my = Math.min(my, num(p, 'y')); });
-      var block = function (m) { return m < 0 ? Math.ceil((40 - m) / 16) * 16 : 0; }, sx = block(mx), sy = block(my);
+      var B = gridBlock(), block = function (m) { return m < 0 ? Math.ceil((40 - m) / B) * B : 0; }, sx = block(mx), sy = block(my);
       if (!sx && !sy) return t;
       return t.replace(re, function (tag) { return shiftTag(tag, sx, sy); });
     }
@@ -152,7 +152,7 @@
       var mx = Infinity, my = Infinity, re = /<y:(?:Geometry|Point)\s[^>]*>/g;
       nodes2.forEach(function (n, i) { var b = boxOf(i); mx = Math.min(mx, b[0]); my = Math.min(my, b[1]); });
       points.forEach(function (p) { mx = Math.min(mx, num(p, 'x')); my = Math.min(my, num(p, 'y')); });
-      var block = function (m) { return m < 0 ? Math.ceil((40 - m) / 16) * 16 : 0; }, sx = block(mx), sy = block(my);
+      var B = gridBlock(), block = function (m) { return m < 0 ? Math.ceil((40 - m) / B) * B : 0; }, sx = block(mx), sy = block(my);
       if (!sx && !sy) return null;
       text = text.replace(re, function (tag) { return shiftTag(tag, sx, sy); });
       return [sx, sy];

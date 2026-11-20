@@ -70,6 +70,9 @@
     var GRID_KEY = 'atlas-edit-grid';
     var STEP0 = 8, stepOk = function (v) { return v >= 1 && v <= 100 ? Math.round(v) : STEP0; };
     var gridSet = (function () { try { var g = JSON.parse(localStorage.getItem(GRID_KEY) || '{}'); return { shown: g.shown !== false, snap: g.snap === true, step: stepOk(+g.step) }; } catch (e) { return { shown: true, snap: false, step: STEP0 }; } })();
+    // the shift out of negative places (graphml.js, cd_edit.place) in whole blocks of the grid: the smallest even number of
+    // steps that is 16 or more (16 on 4 and 8), so a map on the grid stays on it, its stronger lines too
+    function gridBlock() { var s = gridSet.step; return 2 * s * Math.ceil(8 / s); }
     function gridKeep() { try { localStorage.setItem(GRID_KEY, JSON.stringify(gridSet)); } catch (e) {} }
     function gridButtons() {
       box.querySelector('#m2-ed-grid').setAttribute('aria-pressed', String(gridSet.shown));   // the switches in the tools row
@@ -512,7 +515,7 @@
           if (p != null && nodes2[p].comp && !cdOwn(k) && overlap(boxOf(k), boxOf(p)) && !inBox(boxOf(k), boxOf(p))) out.push([n.id, nodes2[p].id]);
         });
         out.forEach(function (m) { t1 = N.moveInto(t1, [[m[0], null]]); });
-        var r = L.tidy(t1, what, ids || [], !!cd);
+        var r = L.tidy(t1, what, ids || [], !!cd, { grid: gridSet.step });   // Snap map to grid on Grid size
         if (r[1] < 0) return;   // nothing it applies to: nothing said
         if (!r[1]) return;   // nothing to change: nothing said
         var t2 = r[0];
@@ -1179,7 +1182,7 @@
       return (cd ? cdpy() : yr()).then(function (p) {
         var r;
         if (cd) {   // the moves written into the CellDesigner file, drawn, and the GraphML made of it again
-          var dm = drawMemo && drawMemo.cd && drawMemo.base === cd.base && drawMemo.text === text && !undo.length ? drawMemo : null;   // drawn ahead unfitted, as the map before any change
+          var dm = drawMemo && drawMemo.cd && drawMemo.base === cd.base && drawMemo.text === text && drawMemo.block === gridBlock() && !undo.length ? drawMemo : null;   // drawn ahead unfitted, as the map before any change, on this Grid size's block
           var q = dm ? dm.q : cdDraw(cd.base, text);
           if (t !== ticket) return;
           cd.now = q[1]; r = [q[0], []]; cdBase = { now: q[1], text: q[2] };   // what the live drawing of a move starts from
@@ -1565,7 +1568,7 @@
         return waitFor(m);
       }).then(function () {
         if (!still()) throw 0;
-        if (cdm) dm = { cd: true, base: p.t, text: g, q: cdDraw(p.t, g, false) };
+        if (cdm) dm = { cd: true, base: p.t, text: g, q: cdDraw(p.t, g, false), block: gridBlock() };
         else { var y = window.yrender.render(d2, { classes: true, groups: true, sbgn: sbMap(m) }); dm = { cd: false, text: g2, r: [y.svg, y.errors] }; }   // the renderer only reads the document
         p.memo = dm;
         return waitFor(m);

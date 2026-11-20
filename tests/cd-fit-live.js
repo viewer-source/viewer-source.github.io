@@ -1,6 +1,6 @@
 // The canvas fitted by itself on Glycolysis (CellDesigner), on the live page (by default the styles page): no Resize canvas
 // in the right-click menu; after a node is nudged, the file's canvas fits the content (its top left 40 to 56 from the
-// corner, the canvas 40 past its right and bottom), a node kept where it was on screen; a compartment dropped far right
+// corner on the default Grid size 8, block 16, the test browser storing none; the canvas 40 past its right and bottom), a node kept where it was on screen; a compartment dropped far right
 // grows the canvas, deleting it shrinks the canvas back; undo and redo keep the map still. Nothing is saved (no token).
 // No script error.
 //   node tests/cd-fit-live.js [base address] [viewer folder: its editor served in place of the page's]

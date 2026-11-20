@@ -647,7 +647,8 @@
     boxes.forEach(function (b) { xs.push(b[0]); ys.push(b[1]); });
     bends.forEach(function (ps) { ps.forEach(function (p) { xs.push(p[0]); ys.push(p[1]); }); });
     // opt.fit (JavaScript only): the canvas fitted round the map, what is drawn moved by whole grid blocks so its top
-    // left lies MARGIN to MARGIN + 16 from the corner, the canvas MARGIN past its right and bottom (free texts counted too)
+    // left lies MARGIN to MARGIN + the block from the corner, the canvas MARGIN past its right and bottom (free texts counted too);
+    // opt.block (JavaScript only): the block (16 by default, the editor's on its Grid size), so a map on the grid stays on it
     var fit = !!(opt && opt.fit), lyB = [];
     if (fit) {
       var lyS = /<celldesigner:listOfLayers>[\s\S]*?<\/celldesigner:listOfLayers>/.exec(t), reB = /<celldesigner:bounds ([^>]*)>/g, mB;
@@ -659,7 +660,7 @@
       }
       lyB.forEach(function (b) { xs.push(b[0]); ys.push(b[1]); });
     }
-    var block = function (m) { return fit ? Math.ceil((MARGIN - m) / 16) * 16.0 || 0.0 : m < 0 ? Math.ceil((MARGIN - m) / 16) * 16.0 : 0.0; };
+    var B = opt && opt.block > 0 ? +opt.block : 16.0, block = function (m) { return fit ? Math.ceil((MARGIN - m) / B) * B || 0.0 : m < 0 ? Math.ceil((MARGIN - m) / B) * B : 0.0; };
     var mn = function (a) { return a.reduce(function (p, v) { return v < p ? v : p; }, Infinity); };
     var sh = [xs.length ? block(mn(xs)) : 0.0, ys.length ? block(mn(ys)) : 0.0], shifted = sh[0] !== 0 || sh[1] !== 0;
     if (shifted) {
