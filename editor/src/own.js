@@ -313,9 +313,10 @@
       var top = before === true, run = top ? ids.slice().reverse() : ids;   // first in the group: the last put first, so they keep their order
       return run.reduce(function (p, id) { return p.then(function () { return moveTo(id, g, before, ids.indexOf(id), ids.length); }); }, Promise.resolve());
     }
+    var pageWas = {};   // a page's order as the last move found it (moveU's undo puts it back; the build's may lag)
     function toSiteGroup(id, g, k, top) {   // maps/<id>.md: its group and its order (after the group's last, k after it; top: n maps before its first); one commit
       var at = top ? siteFirst(g) - top + (k | 0) : siteOrder(g) + (k | 0);
-      return siteFront(id, function (f) { f.set('group', JSON.stringify(g.replace(/["\\]/g, ''))); f.set('order', String(at)); f.drop('example'); }, 'Map moved in the viewer');   // moved out of its group: the reader's
+      return siteFront(id, function (f) { pageWas[id] = { order: f.get('order') }; f.set('group', JSON.stringify(g.replace(/["\\]/g, ''))); f.set('order', String(at)); f.drop('example'); }, 'Map moved in the viewer');   // moved out of its group: the reader's
     }
     function put(id, g, before) {   // a map into the reader's order of group g, the group opened so the map stays in sight
       if (g && V.closed[g]) { delete V.closed[g]; V.saveClosed(); }
@@ -1274,7 +1275,7 @@
         var m = V.byId[id], s = (V.siteList || []).filter(function (x) { return x.id === id; })[0];
         return { id: id, g: m ? m.group || '' : '', name: m ? mapName(m) : '', mv: V.movedOf(id), s: !mine[id] && s, page: !mine[id] && !!m && gh && canRename(m, true) && !ownGroup(g || '') };
       });
-      var fwd = (ids.length > 1 ? moveMany(ids, g, before) : moveTo(ids[0], g, before)).then(function () { o2 = V.orderNow(); });
+      var fwd = (ids.length > 1 ? moveMany(ids, g, before) : moveTo(ids[0], g, before)).then(function () { was.forEach(function (w) { w.pw = pageWas[w.id]; delete pageWas[w.id]; }); o2 = V.orderNow(); });
       listDid(function () {
         return fwd.then(function () {
           return was.reduce(function (p, w) {
@@ -1283,7 +1284,7 @@
               if (!w.s) return moveTo(w.id, w.g);
               V.setMoved(w.id, w.page ? w.g : w.mv);   // a site map: where this browser had it (its page written back: there until a build of that write)
               if (w.page && (m.group || '') !== w.g) return siteFront(w.id, function (f) {   // its page as before: the group it was in (the site's own where that was the reader's), order, example
-                f.set('group', JSON.stringify((ownGroup(w.g) ? w.s.group || '' : w.g).replace(/["\\]/g, ''))); if (w.s.order != null) f.set('order', String(w.s.order)); if (w.s.example) f.set('example', 'true');
+                f.set('group', JSON.stringify((ownGroup(w.g) ? w.s.group || '' : w.g).replace(/["\\]/g, ''))); var o = w.pw && w.pw.order != null ? w.pw.order : w.s.order; if (o != null) f.set('order', String(o)); if (w.s.example) f.set('example', 'true');
               }, 'Map moved back in the viewer').catch(function () {});
             }).then(function () {   // its name back, where the move gave it one: in this browser if that one is kept here
               var m = V.byId[w.id], n = renamed[w.id];

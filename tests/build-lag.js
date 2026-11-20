@@ -82,12 +82,13 @@ function viewerHunks() {
     return json(404, { message: 'Not Found' });
   });
   var built = { deleted: '', group: 'Testing', written: '' };   // the build the site serves for SID
-  var inFlight = false, refused = 0, refuseNext = false;
+  var inFlight = false, refused = 0, refuseNext = false, served = [];
   var snap = function () { var w, t = files['maps/' + SID + '.md'], d = t.match(/^deleted: "(.*)"$/m), g = t.match(/^group: "(.*)"$/m); w = t.match(/^written: "(.*)"$/m); return { deleted: d ? d[1] : '', group: g ? g[1] : '', written: w ? w[1] : '' }; };
   await page.route('**/index.json*', async function (route) {
     var res = await route.fetch(), list = JSON.parse(await res.text());
     list.forEach(function (m) { m.deleted = ''; if (m.id === SID) Object.assign(m, built); });
     if (!list.some(function (m) { return m.id === SID; })) { var g = list.filter(function (m) { return /graphml$/.test(m.id); })[0]; list.push(Object.assign({}, g, { id: SID, title: 'Copy of Glycolysis', topic: 'Copy of Glycolysis', example: false }, built)); }
+    served = list;
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(list) });
   });
   var ids = function () { return page.$$eval('#m2-list .m2-map:not(.m2-binned)', function (l) { return l.map(function (x) { return x.dataset.id; }); }); };
@@ -123,7 +124,8 @@ function viewerHunks() {
   var gl = await page.$$eval('#m2-list .m2-map[data-group="GraphML"]', function (l) { return l.map(function (x) { return x.dataset.id; }); });
   ok('3. Move to...: first in the group', gl[0] === SID, gl.slice(0, 3).join());
   var o3 = +files['maps/' + SID + '.md'].match(/^order: (-?\d+)$/m)[1];
-  ok('3. its page\'s order before the group\'s first', b3.group === 'GraphML' && o3 < 1, 'order ' + o3);
+  var min3 = Math.min.apply(null, served.filter(function (m) { return m.group === 'GraphML' && m.id !== SID; }).map(function (m) { return m.order || 0; }));
+  ok('3. its page\'s order before the group\'s first', b3.group === 'GraphML' && o3 < min3, 'order ' + o3 + ', the group\'s first ' + min3);
   await moveTo('CellDesigner');
   var b4 = snap();
   built = { deleted: '', group: 'CellDesigner', written: '' }; await load();
