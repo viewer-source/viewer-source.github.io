@@ -387,7 +387,7 @@ class Drawing:
             px, py = on_border(b, ang)
             label = st.get('structuralState')  # an ellipse 12 wider than its 10 px text on each side
             self.out.append('<ellipse cx="%s" cy="%s" rx="%d" ry="8" fill="#fff" stroke="#000"/>' % (fmt(px), fmt(py), int(width(label, 10) / 2 + 12)))
-            self.text(label, px, py + 3, size=10)
+            self.text(label, px, py + 3, size=9)  # drawn at 9 (CellDesigner 4.4 PDF); the ellipse is sized from the text width at 10
         info = f(a, 'cd:info')
         if front and info is not None and info.get('state') == 'open':
             label = ' %s:%s ' % (info.get('prefix'), info.get('label')) if info.get('prefix') != 'free input' else ' %s ' % info.get('label')

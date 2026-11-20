@@ -445,7 +445,7 @@
     findall(si, 'cd:state/cd:listOfStructuralStates/cd:structuralState').forEach(function (st) {
       var sa = find(a, 'cd:structuralState'), ang = sa ? F(get(sa, 'angle')) : -Math.PI / 2, p = onBorder(b, ang), label = get(st, 'structuralState');
       self.out.push('<ellipse cx="' + fmt(p[0]) + '" cy="' + fmt(p[1]) + '" rx="' + Math.trunc(width(label, 10) / 2 + 12) + '" ry="8" fill="#fff" stroke="#000"/>');
-      self.text(label, p[0], p[1] + 3, 10);
+      self.text(label, p[0], p[1] + 3, 9);  // drawn at 9 (CellDesigner 4.4 PDF); the ellipse is sized from the text width at 10
     });
     var info = find(a, 'cd:info');
     if (front && info && get(info, 'state') === 'open') {
