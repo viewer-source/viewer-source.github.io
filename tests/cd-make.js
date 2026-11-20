@@ -164,14 +164,27 @@ step('residue', function (x) { return mk.residue(x, A.a, { name: 'S15', state: '
 step('second residue', function (x) { return mk.residue(x, A.a, { state: 'ubiquitinated' }); }, {});
 step('residue on another species of the protein', function (x) { return mk.residueState(x, A.a2, 0, 'acetylated'); }, {});
 step('residue state', function (x) { return mk.residueState(x, A.a, 1, 'empty'); }, {});
+step('residue named', function (x) { return mk.residueName(x, A.a, 1, 'K48'); }, {});
+step('residue name removed', function (x) { return mk.residueName(x, A.a, 1, ''); }, {});
+step('residue moved', function (x) { return mk.residueMove(x, A.a, 0, Math.PI / 2); }, {});
+(function () {
+  var f = mk.features(t, A.a), g = mk.features(t, A.a2);
+  if (!f.protein || f.residues.length !== 2 || f.residues[0].name !== 'S15' || f.residues[0].state !== 'phosphorylated' || f.residues[1].name !== '' || f.residues[1].state !== 'empty' || Math.abs(f.residues[0].angle - Math.PI / 2) > 1e-9)
+    fault('features: residues read as ' + JSON.stringify(f.residues));
+  if (g.residues[0].state !== 'acetylated' || g.residues[1].state !== null) fault('features: the other species\' states read as ' + JSON.stringify(g.residues));
+  if (mk.features(t, A.GENE).protein) fault('features: a gene read as a protein');
+})();
 refused('a residue state outside the list', function () { mk.residue(t, A.a, { state: 'oxidised' }); }, /no residue state oxidised/);
 refused('a residue on a gene', function () { mk.residue(t, A.GENE, { state: 'phosphorylated' }); }, /Residues belong to proteins; this is a gene\./);
 step('structural state', function (x) { return mk.structural(x, A.b, 'active'); }, {});
 refused('a second structural state', function () { mk.structural(t, A.b, 'cAMP'); }, /already has a structural state/);
 step('structural state replaced', function (x) { return mk.structural(x, A.b, 'cAMP', true); }, {});
+step('structural state moved', function (x) { return mk.structuralMove(x, A.b, 0); }, {});
+(function () { var f = mk.features(t, A.b); if (!f.structural || f.structural.text !== 'cAMP' || f.structural.angle !== 0) fault('features: structural state read as ' + JSON.stringify(f.structural)); })();
 step('unit of information', function (x) { return mk.info(x, A.GENE, 'ct:gene'); }, {});
 refused('a second unit of information', function () { mk.info(t, A.GENE, 'free text'); }, /already has a unit of information/);
 step('unit of information, free text', function (x) { return mk.info(x, A.c, 'free text & more'); }, {});
+(function () { var f = mk.features(t, A.c), g = mk.features(t, A.GENE); if (!f.info || f.info.text !== 'free text & more' || !g.info || g.info.text !== 'ct:gene') fault('features: units read as ' + JSON.stringify([f.info, g.info])); })();
 step('multimer 2', function (x) { return mk.homodimer(x, A.d, 2); }, {});
 step('multimer 3', function (x) { return mk.homodimer(x, A.d, 3); }, {});
 // renames and retypes
@@ -298,7 +311,7 @@ maps.forEach(function (f) {
   var t0 = fs.readFileSync(path.join(here, 'maps', f), 'utf8'), tag = f.replace('-celldesigner.xml', ''), c = 'map ' + tag, x = t0;
   var al = (t0.match(/<celldesigner:speciesAlias [^>]*>/g) || []).map(function (s) { return { id: /\sid="([^"]*)"/.exec(s)[1], cx: /complexSpeciesAlias=/.test(s), ca: (/compartmentAlias="([^"]*)"/.exec(s) || [])[1] }; })
     .filter(function (q) { return !q.cx; });
-  var nameOf = function (q) { var s = /\sspecies="([^"]*)"/.exec(t0.match(new RegExp('<celldesigner:speciesAlias(?=\\s)[^>]*\\sid="' + q.id + '"[^>]*>'))[0])[1]; return /<species [^>]*\sname="([^"]*)"/.exec(t0.match(new RegExp('<species(?=\\s)[^>]*\\sid="' + s + '"[^>]*>'))[0])[1]; };
+  var nameOf = function (q) { var s = /\sspecies="([^"]*)"/.exec(t0.match(new RegExp('<celldesigner:speciesAlias(?=\\s)[^>]*\\sid="' + q.id + '"[^>]*>'))[0])[1]; return (/<species [^>]*\sname="([^"]*)"/.exec(t0.match(new RegExp('<species(?=\\s)[^>]*\\sid="' + s + '"[^>]*>'))[0]) || [0, ''])[1]; };   // a species with no name (older files): ''
   // an existing species whose name the editor's encoding gives back as written
   var X = al.filter(function (q) { var n = nameOf(q); return t0.split('name="' + n + '"').length <= 3 && !/<celldesigner:class>DEGRADED</.test(t0.slice(t0.indexOf('name="' + n + '"'), t0.indexOf('name="' + n + '"') + 400)) && mk.cdName(cdr.plainName(unxml(n))) === unxml(n) && !/[&<>"]/.test(unxml(n)); })[0], Y = al.filter(function (q) { return q !== X; })[0];
   if (!X || !Y) { fault(tag + ': no species to work with'); return; }

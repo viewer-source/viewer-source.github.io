@@ -2784,6 +2784,7 @@
     };
     function emptyClick() {   // the right click on empty map space (inside a compartment counts as empty, inside a complex not: the complex's own items there) of the map being edited
       if (!on || V.current !== map || !text || !rclick) return false;
+      if (ownMenus.some(function (f) { return f(rclick); })) return false;   // a state variable standing out of its node: its own menu, not the map's
       var h = hit(rclick);
       return !h || (h.n != null && nodes2[h.n].kids.length > 0 && nodes2[h.n].shape.kind !== 'Complex');
     }

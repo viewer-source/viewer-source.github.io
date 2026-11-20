@@ -19,6 +19,7 @@
 //   gateInput(t, gate, alias) -> { text, part } (part null between entities); gateInputRemove(t, gate, alias), gateType(t, gate, { kind, output }) -> text
 //   residue(t, alias, { name, state }) -> { text, residue }; residueState(t, alias, n, state), residueRemove(t, alias, n) -> text
 //   structural(t, alias, text|null, replace), info(t, alias, text|null, replace), homodimer(t, alias, n) -> text
+//   residueName(t, alias, n, name), residueMove(t, alias, n, angle), structuralMove(t, alias, angle) -> text; features(t, alias) -> { protein, residues, structural, info, homodimer }
 //   joinable(t, alias, cx) -> '' or why not; join(t, alias, cx), leave(t, alias, ca|null) -> text   (complex membership)
 //   about(t, rid) -> { type, mods, modAliases, gate, inputs, gates, rl, pl }; aliasInfo(t, alias) -> { kind, cls, id, name, complex, box }   (for the editor's menus)
 //   (in Node the XML parser is @xmldom/xmldom, in the browser its own; cdrender.js and cd_edit.js load first)
@@ -854,6 +855,55 @@
     var e = A.sp[1] - ('</celldesigner:' + A.kind + '>').length;
     return u ? put(t, e, e, el + '\n') : t;
   }
+  // a residue's site name, on the protein's reference (every species of the protein shows it); empty: no name
+  function residueName(t, id, n, name) {
+    var r = residueAt(t, id, n), tag = r[2].tag;
+    if (name && at(tag, 'name') == null && / side="/.test(tag)) return put(t, r[2].sp[0], r[2].sp[0] + tag.length, tag.replace(' side="', ' name="' + esc(name) + '" side="'));   // before side, where CellDesigner writes it
+    return attrs(t, r[2].sp[0], [['name', name ? esc(name) : null]]);
+  }
+  // a residue's place: its angle on the protein's reference (CellDesigner keeps it there, so every species of the
+  // protein shows it at that place), in radians, 0 the right, pi/2 the top
+  function residueMove(t, id, n, angle) {
+    var r = residueAt(t, id, n);
+    return attrs(t, r[2].sp[0], [['angle', repr(F(angle))]]);
+  }
+  // the structural state's place on this alias (its angle, as residues'); written where the alias has none
+  function structuralMove(t, id, angle) {
+    var A = entity(t, id), s = span(t, '<celldesigner:structuralState ', A.sp[0], A.sp[1]);
+    if (s) return attrs(t, s[0], [['angle', repr(F(angle))]]);
+    var u = t.indexOf('<celldesigner:usualView>', A.sp[0]);
+    if (u < 0 || u > A.sp[1]) fail('No view on ' + id + ' to place its structural state.');
+    return put(t, u, u, '<celldesigner:structuralState angle="' + repr(F(angle)) + '"/>\n');
+  }
+  // what an alias carries, for the editor: its residues (a protein's: every residue of the protein, in the reference's
+  // order, each with its state on this species), its structural state, its unit of information; texts as typed
+  function features(t, id) {
+    var A = alias(t, id), out = { protein: false, residues: [], structural: null, info: null, homodimer: 1 };
+    if (!A.species) return out;
+    var S = A.s, st = span(t, '<celldesigner:state>', S.sp[0], S.sp[1]), body = st ? t.slice(st[0], st[1]) : '', m;
+    var hd = /<celldesigner:homodimer>(\d+)</.exec(body);
+    if (hd) out.homodimer = +hd[1];
+    if (REF[A.cls] && REF[A.cls][0] === 'protein' && S.ref && reference(t, S.ref)) {
+      out.protein = true;
+      var states = {}, re = /<celldesigner:modification\s[^>]*>/g;
+      while ((m = re.exec(body))) states[at(m[0], 'residue')] = at(m[0], 'state');
+      residues(t, A).forEach(function (r) {
+        var rid = at(r.tag, 'id'), nm = at(r.tag, 'name');
+        out.residues.push({ id: rid, name: nm == null ? '' : unesc(nm), angle: F(at(r.tag, 'angle') || 0), state: states[rid] || null });
+      });
+    }
+    var ss = /<celldesigner:structuralState\s[^>]*structuralState="([^"]*)"/.exec(body);
+    if (ss) {
+      var sa = span(t, '<celldesigner:structuralState ', A.sp[0], A.sp[1]);
+      out.structural = { text: unesc(ss[1]), angle: sa ? F(at(head(t, sa), 'angle')) : -Math.PI / 2 };
+    }
+    var inf = span(t, '<celldesigner:info ', A.sp[0], A.sp[1]), it = inf && head(t, inf);
+    if (it && at(it, 'state') === 'open') {
+      var pre = unesc(at(it, 'prefix') || ''), lab = unesc(at(it, 'label') || '');
+      out.info = { text: pre && pre !== 'free input' ? pre + ':' + lab : lab };
+    }
+    return out;
+  }
   // a multimer of n (1: none): homodimer n on the species, and every alias of it grown 6 a unit so its front shape keeps
   // its size (cdrender's and CellDesigner's front: the box less 6 per unit beyond one)
   function homodimer(t, id, n) {
@@ -1175,6 +1225,6 @@
   var api = { LOOK: LOOK, COMP: COMP, lineColour: lineColour, recolourLine: recolourLine, PROCESS: PROCESS, REDUCED: REDUCED, sbgn: sbgn, MODS: MODS, NEED: NEED, about: about, aliasInfo: aliasInfo, classColour: classColour, compartmentColour: compartmentColour, classColours: classColours, classSize: classSize, empty: empty, species: newSpecies, compartment: compartment, rename: rename, namePlace: namePlace, nameAt: nameAt, nameInfo: nameInfo, retype: retype, remove: remove, reaction: reaction, reduced: reduced,
     reactant: reactant, product: product, modifier: modifier, reactionType: reactionType, reversible: reversible, modifierType: modifierType, removeLine: removeLine,
     gate: gate, gateInput: gateInput, gateInputRemove: gateInputRemove, gateType: gateType, residue: residue, residueState: residueState,
-    residueRemove: residueRemove, structural: structural, info: info, homodimer: homodimer, look: look, restyle: restyle, recolourAll: recolourAll, colours: colours, cdName: cdName, joinable: joinable, join: join, leave: leave };
+    residueRemove: residueRemove, residueName: residueName, residueMove: residueMove, structuralMove: structuralMove, features: features, STATES: STATES, structural: structural, info: info, homodimer: homodimer, look: look, restyle: restyle, recolourAll: recolourAll, colours: colours, cdName: cdName, joinable: joinable, join: join, leave: leave };
   if (node) module.exports = api; else root.cd_make = api;
 })(typeof window !== 'undefined' ? window : globalThis);

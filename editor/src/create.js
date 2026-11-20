@@ -720,7 +720,7 @@
     // so the corners, the middles, the quarters and the points between; the arrow keys move it by single units (below)
     var PLACES = (function () { var out = [], k; for (k = -4; k <= 4; k++) { out.push([k / 8, -0.5], [k / 8, 0.5]); if (Math.abs(k) < 4) out.push([-0.5, k / 8], [0.5, k / 8]); } return out; })();
     function border(i, P) {   // the place nearest P
-      var b = boxOf(i), best = null, d0 = Infinity;
+      var b = svBox(i), best = null, d0 = Infinity;
       PLACES.forEach(function (q) { var d = Math.hypot(b[0] + (0.5 + q[0]) * b[2] - P[0], b[1] + (0.5 + q[1]) * b[3] - P[1]); if (d < d0) { d0 = d; best = q; } });
       return best.slice();
     }
@@ -731,10 +731,10 @@
     // Select all of this kind, at the end of the right-click menu over a node: every node of the map of its kind selected
     // (SBGN-ML: its class, a multimer with its plain kind; CellDesigner: its species class, or compartment; GraphML: its
     // shape), so Properties sets them together
-    ownMenus.push(function (P) { return sb && svAt(P); });   // a state variable or unit of information: its own menu only
+    ownMenus.push(function (P) { return (sb || cdPal()) && svAt(P); });   // a state variable or unit of information: its own menu only
     window.m2EditNodeItems = function () {
       var it = nodeItems(), h = rclick && on && V.current === map ? hit(rclick) : null, i = h && h.n != null && h.p == null ? h.n : -1;
-      if (i < 0 || (sb && svAt(rclick)) || kindKey(i) == null) return it;   // not over a state variable or unit (its own menu)
+      if (i < 0 || ((sb || cdPal()) && svAt(rclick)) || kindKey(i) == null) return it;   // not over a state variable or unit (its own menu)
       it = it || [];
       it.tail = [['Select all of this kind', function () { selectKind(i); }]];   // the object's last item before Delete
       return it;
@@ -877,7 +877,7 @@
     }
     // a node's icons: its state variables and units of information (yEd's names), as one list in the order the node has
     // them (state variables first); svSel's j counts in that list, sbgn_edit counts each kind on its own (q[4])
-    var SV = 'StateVariable', UI = 'UnitOfInformation';
+    var SV = 'StateVariable', UI = 'UnitOfInformation', SS = 'StructuralState';   // SS: CellDesigner's structural state (cdcreate.js)
     function svIcons() {   // the map's icons of both kinds: id -> [kind, text]
       var res = {};
       Array.prototype.forEach.call(doc.getElementsByTagNameNS(Y, 'Resource'), function (q) {
@@ -888,6 +888,7 @@
     }
     function ownText(l) { var t = ''; for (var c = l.firstChild; c; c = c.nextSibling) if (c.nodeType === 3 || c.nodeType === 4) t += c.nodeValue; return t; }
     function svList(i, res) {   // the icons shown on node i: [text, centre in yEd units, size, kind, index among its kind]; res: svIcons(), read once by a caller going through many nodes
+      if (cd) return cdSvList(i);   // a CellDesigner map's, from its file (cdcreate.js)
       var r = realizerOf(nodes2[i].el), b = boxOf(i), out = [], n = {};
       res = res || svIcons();
       if (r) Array.prototype.forEach.call(r.children, function (l) {
@@ -931,7 +932,7 @@
       if (au0 != null) { var B0 = sbJs.afUnitBox(b, au0, sv[0] || 'x'); at0 = [B0[0] + 1, B0[1] + 1, B0[2] - 2, B0[3] - 2]; }
       var inp = document.createElement('input'), before = !sv ? (cd ? cdNameOf(id) : nameOf(i)) : sv[0], m0 = map;   // a CellDesigner name from its file (cdcreate.js)
       inp.type = 'text'; inp.className = 'm2-ed-type'; inp.value = before; inp.spellcheck = false;
-      inp.setAttribute('aria-label', !sv ? 'Name' : unit ? 'Unit of information' : 'State variable (value, or value@site)');
+      inp.setAttribute('aria-label', !sv ? 'Name' : unit ? 'Unit of information' : sv[3] === SS ? 'Structural state' : 'State variable (value, or value@site)');
       // the drawn text hidden while typing, the field itself transparent (a filled field cut the shape's
       // rounded corners); before the editor's own drawing is in the page, the field in the glyph's fill. Whether the
       // drawing is there, not whether it has text: an empty glyph has no text to hide and would still get the filled box
@@ -939,17 +940,19 @@
       hid.forEach(function (el) { el.style.visibility = 'hidden'; });
       inp.style.background = gN && gN[nodes2[i].id] ? 'transparent' : !sv && fl && fl.getAttribute('hasColor') !== 'false' && fl.getAttribute('color') ? fl.getAttribute('color').slice(0, 7) : '#fff';
       inp.style.color = lab && lab.getAttribute('textColor') || '#000';
+      if (cd && cdPend && sv && !sv[0]) { inp.style.background = '#fff'; inp.style.border = '1px solid #000'; }   // a CellDesigner icon not in the file yet: nothing drawn under the field
+      var grow = unit || (!!sv && sv[3] === SS);   // a structural state grows too (cdrender: its text and 12 a side)
       var place = function () {   // at the glyph in the map's units: again after every zoom or pan (paint), so a pinch keeps it on its glyph
         var st = inp.style;
-        if (unit) {   // a unit of information grows with its text round its centre, as the converter sizes it (5.4 a character, 8 more)
-          var cx = at0[0] + at0[2] / 2, uw = Math.max(at0[2], Math.ceil(inp.value.length * 5.4 + 8) + 4);
+        if (grow) {   // a unit of information grows with its text round its centre, as the converter sizes it (5.4 a character, 8 more)
+          var cx = at0[0] + at0[2] / 2, uw = Math.max(at0[2], Math.ceil(inp.value.length * 5.4 + (unit ? 8 : 24)) + 4);
           at0[0] = cx - uw / 2; at0[2] = uw;
         }
         st.left = sx(at0[0]) + 'px'; st.top = sy(at0[1]) + 'px'; st.width = at0[2] * V.z + 'px'; st.height = at0[3] * V.z + 'px'; st.fontSize = fs * V.z + 'px';
         if (sv && !unit) st.borderRadius = at0[3] * V.z / 2 + 'px';
         if (padL != null) { st.textAlign = 'left'; st.paddingLeft = padL * V.z + 'px'; }
       };
-      if (unit) inp.addEventListener('input', place);
+      if (grow) inp.addEventListener('input', place);
       place();
       V.view.appendChild(inp);
       typing = {
@@ -957,6 +960,7 @@
           if (!typing || typing.inp !== inp) return;
           typing = null; inp.remove(); hid.forEach(function (el) { el.style.visibility = ''; });
           var v = inp.value.replace(/[\r\n]+/g, ' ');
+          if (cd && sv) { if (keep && on && map === m0 && (v !== before || cdPend)) cdSvType(id, sv, unit || sv[3] !== SV ? v.trim() : v.replace(/@+$/, '')); else if (cdPend) { cdPend = null; paint(); } return; }   // a CellDesigner map's (cdcreate.js)
           if (sv && !unit) v = v.replace(/@+$/, '');   // P@ is P (a site needs a name)
           if (unit) v = v.trim();   // a unit of only spaces is none
           if (fresh && (!keep || !v) && on && map === m0) { var t0 = undo.length ? unpush() : text; if (t0 !== text) { text = t0; parse(); dirty = true; quiet(); render(); paint(); changed(); } return; }
@@ -1034,10 +1038,11 @@
       return n && test(n, h.n) ? h.n : -1;
     }
     function svAt(P) {   // the state variable or unit of information under P: [node, j] (it may stand out of its node)
-      if (afSbgn || afKind()) return null;   // not drawn in the SBGN AF view; an activity's unit text is set from its right-click menu, never clicked, moved or typed
-      var res = svIcons(), found = null, pad = 3 / V.z, acts = sb && palKind() === 'hybrid' ? sbJs.activities(text) : null;   // a hybrid map's activities keep their units as on an AF map
+      if (cd) { if (!cdPal()) return null; } else if (afSbgn || afKind()) return null;   // not drawn in the SBGN AF view; an activity's unit text is set from its right-click menu, never clicked, moved or typed
+      var res = cd ? null : svIcons(), found = null, pad = 3 / V.z, acts = sb && palKind() === 'hybrid' ? sbJs.activities(text) : null;   // a hybrid map's activities keep their units as on an AF map
       nodes2.forEach(function (n, k) {
-        if (n.shape.kind !== 'Macromolecule' && n.shape.kind !== 'NucleicAcidFeature' || (acts && acts[n.id] != null)) return;
+        if (!cd && (n.shape.kind !== 'Macromolecule' && n.shape.kind !== 'NucleicAcidFeature' || (acts && acts[n.id] != null))) return;
+        if (cd) { var b = boxOf(k); if (P[0] < b[0] - 80 || P[0] > b[0] + b[2] + 80 || P[1] < b[1] - 12 || P[1] > b[1] + b[3] + 12) return; }   // far from its box: its file not read (a structural state's ellipse may reach out wide)
         svList(k, res).forEach(function (q, j) { if (Math.abs(P[0] - q[1][0]) <= q[2][0] / 2 + pad && Math.abs(P[1] - q[1][1]) <= q[2][1] / 2 + pad) found = [k, j]; });
       });
       return found;
@@ -1047,11 +1052,13 @@
     // to the nearest of its places (PLACES) only, its own drawing following; the arrow keys move it by single units; a click on it selected opens its text; Delete or the right-click menu
     // deletes it
     var svSel = null, svDrag = null, svKey = null;   // svSel: { id, j }; svKey: a move by the arrow keys under way
+    function svOn() { return palOn() || cdPal(); }   // state variables edited: SBGN-ML maps (Full) and CellDesigner maps (cdcreate.js)
+    function svBox(i) { return cd ? cdFront(i, cdFeat(nodes2[i].id)) : boxOf(i); }   // the box its state variables sit round: a CellDesigner multimer's front copy
     function svNode() { if (!svSel) return -1; var i = nodes2.findIndex(function (n) { return n.id === svSel.id; }); return i >= 0 && svList(i)[svSel.j] ? i : -1; }
     function svMarks(over) {   // four black squares at the corners of the state variable selected (paint, core.js)
       if (typing) typing.place();   // the text field follows a zoom or a pan
       var i = svNode();
-      if (i < 0 || !palOn()) { svSel = null; return; }
+      if (i < 0 || !svOn()) { svSel = null; return; }
       var q = svList(i)[svSel.j], c = svDrag && svDrag.to ? svDrag.to : svKey ? svKey.to : q[1], hs = Math.max(2, HANDLE * V.z);
       [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(function (d) {
         over.push('<rect class="m2-ed-handle" x="' + f1(sx(c[0] + d[0] * q[2][0] / 2) - hs / 2) + '" y="' + f1(sy(c[1] + d[1] * q[2][1] / 2) - hs / 2) + '" width="' + f1(hs) + '" height="' + f1(hs) + '"/>');
@@ -1061,7 +1068,7 @@
     // top): a click on it selects it, also over its macromolecule, selected or not; true when it takes the press
     function svDown(e, P, h) {
       if (cdNameDown(e, P, h)) return true;   // a CellDesigner compartment's name dragged by itself (cdcreate.js)
-      var q = palOn() && !tool ? svAt(P) : null;
+      var q = svOn() && !tool ? svAt(P) : null;
       if (!q || e.shiftKey || (h && h.p != null)) { if (svSel) { svSel = null; paint(); } return false; }   // Shift or a bend point there: the core's
       V.view.focus({ preventScroll: true });
       var again = !!svSel && svSel.id === nodes2[q[0]].id && svSel.j === q[1];
@@ -1119,7 +1126,7 @@
       if (!e.buttons) { svUp(); return; }   // released outside the window: no sticky hand
       if (!svDrag.to && Math.hypot(e.clientX - svDrag.x, e.clientY - svDrag.y) < 4) return;
       if (svDrag.fixed) { svDrag.moved = true; return; }   // a unit of information is not dragged; a drag on it is no click
-      var i = svDrag.i, b = boxOf(i), r = border(i, at(e)), q = svList(i)[svSel.j];
+      var i = svDrag.i, b = svBox(i), r = border(i, at(e)), q = svList(i)[svSel.j];
       if (!svDrag.parts) svDrag.parts = svParts(i, q);   // the state variable itself moves, as other items on the map, no copy
       svDrag.r = r; svDrag.to = [b[0] + (0.5 + r[0]) * b[2], b[1] + (0.5 + r[1]) * b[3]];
       var dx = svDrag.to[0] - q[1][0], dy = svDrag.to[1] - q[1][1];
@@ -1134,12 +1141,17 @@
         if (e && e.stopImmediatePropagation) e.stopImmediatePropagation();
         selN = []; selP = []; selE = []; part = null; svSel = { id: nodes2[d.pick[0]].id, j: d.pick[1] }; paint(); return;
       }
-      if (d.r && svSel) { remember(false); text = sbJs.stateMove(text, svSel.id, svList(d.i)[svSel.j][4], d.r[0], d.r[1]); parse(); dirty = true; render(); paint(); changed(); }
+      if (d.r && svSel) svMove(d.i, svSel.j, d.r);
       else if (d.again && !d.moved && svSel) typeIn(svSel.id, svSel.j);   // a click on it selected: its text
+    }
+    function svMove(i, j, r) {   // the state variable j of node i written at the place r (a CellDesigner map's: cdcreate.js)
+      if (cd) { cdSvMove(i, j, r); return; }
+      remember(false); text = sbJs.stateMove(text, nodes2[i].id, svList(i)[j][4], r[0], r[1]); parse(); dirty = true; render(); paint(); changed();
     }
     function svDelete() {
       var i = svNode();
       if (i < 0) return false;
+      if (cd) { var j = svSel.j; svSel = null; return cdSvDelete(i, j); }
       var q = svList(i)[svSel.j];
       remember(false); text = (q[3] === UI ? sbJs.unitDelete : sbJs.stateDelete)(text, svSel.id, q[4], { sbgn: sb.base }); svSel = null;
       parse(); dirty = true; render(); paint(); changed();
@@ -1187,11 +1199,11 @@
     }
     document.addEventListener('keydown', function (e) {
       var d = KEYS[e.key];
-      if (!d || !svSel || !palOn() || e.ctrlKey || e.metaKey || e.altKey || /input|textarea|select/i.test(document.activeElement.tagName)) return;
+      if (!d || !svSel || !svOn() || e.ctrlKey || e.metaKey || e.altKey || /input|textarea|select/i.test(document.activeElement.tagName)) return;
       var i = svNode();
       if (i < 0 || svList(i)[svSel.j][3] === UI) return;   // a unit of information: not moved
       e.preventDefault(); e.stopImmediatePropagation();
-      var b = boxOf(i), q = svList(i)[svSel.j];
+      var b = svBox(i), q = svList(i)[svSel.j];
       if (!svKey) svKey = { i: i, t: toT(b, [(q[1][0] - b[0]) / b[2] - 0.5, (q[1][1] - b[1]) / b[3] - 0.5]), c0: q[1], parts: svParts(i, q) };
       if (!e.repeat || svKey.key !== e.key) { svKey.key = e.key; svKey.dir = keyDir(b, ((svKey.t % perim(b)) + perim(b)) % perim(b), d); }
       svKey.t += svKey.dir * (e.shiftKey ? 10 : 1);
@@ -1206,13 +1218,14 @@
       if (!KEYS[e.key] || !svKey) return;
       var k = svKey; svKey = null;
       if (!k.r || !svSel) return;
-      remember(false); text = sbJs.stateMove(text, svSel.id, svList(k.i)[svSel.j][4], k.r[0], k.r[1]); parse(); dirty = true; render(); paint(); changed();
+      svMove(k.i, svSel.j, k.r);
     }, true);
     document.addEventListener('keydown', function (e) {   // Esc, undo, redo and select all leave no state variable selected
       if (svSel && (e.key === 'Escape' || ((e.ctrlKey || e.metaKey) && /^[zya]$/i.test(e.key)))) { svSel = null; paint(); }
     }, true);
     document.addEventListener('keydown', function (e) {
-      if ((e.key !== 'Delete' && e.key !== 'Backspace') || !palOn() || /input|textarea|select/i.test(document.activeElement.tagName)) return;
+      if ((e.key !== 'Delete' && e.key !== 'Backspace') || !svOn() || /input|textarea|select/i.test(document.activeElement.tagName)) return;
+      if (cd) { if (svDelete()) { e.preventDefault(); e.stopImmediatePropagation(); } return; }   // the rest of a CellDesigner map's: cdcreate.js
       if (svDelete() || (!selP.length && (selN.length || selE.length) && nodesDelete(selN, selE))) { e.preventDefault(); e.stopImmediatePropagation(); }
     }, true);
     window.m2EditDelete = function () {   // the right-click menu's Delete over a state variable, a unit of information, a macromolecule or a simple chemical
