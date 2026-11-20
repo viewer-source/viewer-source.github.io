@@ -6,7 +6,8 @@
 //   3. The site's build listing the map: kept from this browser while its src is of an older save or while it is
 //      edited, the site's entry not shown twice; once the build is of the last save, the site's map takes its place.
 //   4. Sending refused: said in red in the Edit window; the next change sends it.
-//   5. New CellDesigner map with a token: committed at once.
+//   5. New CellDesigner map with a token: committed at once, no folder offered, a protein placed saved to its file;
+//      5b. Make a copy of it: the copy committed at once.
 //   6. Disconnected while editing: the moves kept in this browser; the page opened connected again sends them.
 //   node tests/own-to-github.js [base address] [viewer folder: its editor served in place of the page's]
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path'), crypto = require('crypto');
@@ -79,6 +80,7 @@ var gitSha = function (t) { var b = Buffer.from(t, 'utf8'); return crypto.create
   var make = async function (x, y) { await page.click('#m2-editwin button[data-make="macromolecule"]'); await page.mouse.click(x, y); await page.waitForTimeout(900); await page.keyboard.press('Escape'); };
   var edit = async function () { if (!(await page.$('#m2-editwin button[data-make="macromolecule"]:visible'))) await page.click('.m2-ri[data-win="edit"]'); await palette(); };
   var refresh = async function () { await page.evaluate(function () { document.dispatchEvent(new Event('visibilitychange')); }); await page.waitForTimeout(2500); };
+  var edit5 = async function () { if (!(await page.$('#m2-editwin button[data-make="cd:PROTEIN"]:visible'))) await page.click('.m2-ri[data-win="edit"]'); await page.waitForSelector('#m2-editwin button[data-make="cd:PROTEIN"]', { state: 'visible', timeout: 30000 }); await page.waitForTimeout(1000); };
   var hash = function () { return page.evaluate(function () { return location.hash.slice(1); }); };
 
   // 1. made without a token, sent once a token is in
@@ -138,6 +140,20 @@ var gitSha = function (t) { var b = Buffer.from(t, 'utf8'); return crypto.create
   await listMenu('New CellDesigner map'); await page.waitForTimeout(2000);
   var id5 = await hash(), r5 = (await recs()).filter(function (r) { return r.id === id5; })[0];
   ok('5. New CellDesigner map with a token: committed at once', commits === c0 + 1 && r5 && /\.xml$/.test(r5.path || '') && /celldesigner/.test(files[r5.path] || ''), JSON.stringify(r5 && r5.path));
+
+  await edit5();
+  ok('5. Choose a folder not offered on it either', !(await page.$('#m2-ed-l-folder:visible')) && !(await page.$('#m2-ed-local:visible')));
+  var n5 = puts.length, nc5 = commits;
+  await page.click('#m2-editwin button[data-make="cd:PROTEIN"]'); await page.mouse.click(800, 400); await page.waitForTimeout(900); await page.keyboard.press('Escape'); await page.waitForTimeout(5000);
+  r5 = (await recs()).filter(function (r) { return r.id === id5; })[0];
+  ok('5. a protein placed is saved to its file on GitHub', (puts.length > n5 || commits > nc5) && /class>PROTEIN<|"PROTEIN"/.test(files[r5.path] || '') && r5.sha === gitSha(files[r5.path]), puts.slice(n5).join(' ') + ' | ' + (await status()));
+  // 5b. Make a copy of it with a token: the copy committed at once
+  await page.click('.m2-ri[data-win="list"]'); await page.waitForTimeout(800);
+  c0 = commits;
+  await page.click('#m2-list .m2-map[data-id="' + id5 + '"]', { button: 'right' }); await page.waitForTimeout(300);
+  await page.click('.m2-cx button:text-is("Make a copy")'); await page.waitForTimeout(3000);
+  var id5c = await hash(), r5c = (await recs()).filter(function (r) { return r.id === id5c; })[0];
+  ok('5b. Make a copy with a token: the copy committed at once, as the original is now', id5c !== id5 && commits > c0 && r5c && r5c.site && /\.xml$/.test(r5c.path || '') && /PROTEIN/.test(files[r5c.path] || ''), id5c + ' ' + JSON.stringify(r5c && [r5c.site, r5c.path]));
 
   // 6. disconnected while editing: the moves kept in this browser, sent when the page opens connected again
   await page.goto(base + '#' + id4, { waitUntil: 'load' }); await page.waitForSelector('.m2-ri[data-win="edit"]', { timeout: 30000 }); await page.waitForTimeout(2500);

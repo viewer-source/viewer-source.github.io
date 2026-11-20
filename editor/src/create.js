@@ -471,7 +471,8 @@
         var ff = sbJs.fillFor(u != null ? 'biological activity' : base, u);
         if (mode === 'default') o = { fill: ff, line: null };
         else if (mode === 'none') o = { fill: null, line: null };
-        else if (mode === 'custom') { var k = kept[lookKey(base, u)]; if (!k) return; o = {}; ['fill', 'line', 'width'].forEach(function (q) { if (q in k) o[q] = k[q]; }); }
+        // Custom: a look kept the old way (a share of a size, no w) left out, as defOf
+        else if (mode === 'custom') { var k = kept[lookKey(base, u)]; if (!k || !(k.w > 0)) return; o = {}; ['fill', 'line', 'width'].forEach(function (q) { if (q in k) o[q] = k[q]; }); }
         else { if (!ff || base === 'compartment') return; o = { fill: pick ? confettiPick(hues).toUpperCase() : true, line: null }; }   // Confetti (fill true: filled, no colour picked)
         P.push([i, o]);
       });
