@@ -18,8 +18,8 @@
 //   gate(t, { kind, inputs, target, output }) -> { text, reaction, gate, at }   (gate: '<rid>|m<n>' on a reaction, '<rid>' between entities)
 //   gateInput(t, gate, alias) -> { text, part } (part null between entities); gateInputRemove(t, gate, alias), gateType(t, gate, { kind, output }) -> text
 //   residue(t, alias, { name, state }) -> { text, residue }; residueState(t, alias, n, state), residueRemove(t, alias, n) -> text
-//   structural(t, alias, text|null, replace), info(t, alias, text|null, replace), homodimer(t, alias, n) -> text
-//   residueName(t, alias, n, name), residueMove(t, alias, n, angle), structuralMove(t, alias, angle) -> text; features(t, alias) -> { protein, residues, structural, info, homodimer }
+//   structural(t, alias, text|null, replace), info(t, alias, text|null, replace), homodimer(t, alias, n) -> text; infoUnit(text) -> [prefix, label] | { bad }; INFO
+//   residueName(t, alias, n, name), residueMove(t, alias, n, angle), structuralMove(t, alias, angle) -> text; features(t, alias) -> { protein, residues, structural, info: { text, prefix, label }, homodimer }
 //   joinable(t, alias, cx) -> '' or why not; join(t, alias, cx), leave(t, alias, ca|null) -> text   (complex membership)
 //   about(t, rid) -> { type, mods, modAliases, gate, inputs, gates, rl, pl }; aliasInfo(t, alias) -> { kind, cls, id, name, complex, box }   (for the editor's menus)
 //   (in Node the XML parser is @xmldom/xmldom, in the browser its own; cdrender.js and cd_edit.js load first)
@@ -843,11 +843,26 @@
     });
     return t;
   }
-  // the one unit of information of an alias, as the converter writes it (cd_info): ct:gene as prefix ct, N:4 as prefix N,
-  // any other text as "free input"; removed, written empty where the file writes empty ones, else taken out
+  // CellDesigner's units of information (its Edit Information window, 4.4.2): a prefix from a fixed list, each of pc, mt
+  // and ct with its own fixed labels, N with any label, "free input" any text alone
+  var INFO = { pc: ['T', 'V', 'pH'], mt: ['ion', 'rad', 'rna', 'dna', 'prot', 'psac'], ct: ['gene', 'tss', 'coding', 'grr', 'mRNA'] };
+  // a unit as typed, pc:T or ct:mRNA (prefix and label in any case), N:4 (n:4), else free input: [prefix, label]; { bad: why }
+  // for a prefix of CellDesigner's with a label it does not have
+  function infoUnit(txt) {
+    var m = /^\s*([^:\s]+)\s*:\s*(.*?)\s*$/.exec(txt), p = m && m[1].toLowerCase();
+    if (m && INFO[p]) {
+      var lab = INFO[p].filter(function (l) { return l.toLowerCase() === m[2].toLowerCase(); })[0];
+      return lab ? [p, lab] : { bad: 'CellDesigner\'s ' + p + ' takes ' + INFO[p].join(', ') + '.' };
+    }
+    if (m && p === 'n' && m[2]) return ['N', m[2]];
+    return ['free input', txt.trim()];
+  }
+  // the one unit of information of an alias, written as CellDesigner's window writes it (infoUnit); removed, written
+  // empty where the file writes empty ones, else taken out
   function info(t, id, txt, replace) {
     var A = alias(t, id), s = span(t, '<celldesigner:info ', A.sp[0], A.sp[1]), angle = s ? at(head(t, s), 'angle') : DOWN;
-    var u = txt == null || txt === '' ? null : /^ct:/.test(txt) ? ['ct', txt.slice(3)] : /^N:\d+$/.test(txt) ? ['N', txt.slice(2)] : ['free input', txt];
+    var u = txt == null || !String(txt).trim() ? null : infoUnit(String(txt));
+    if (u && u.bad) refuse(u.bad);
     if (u && s && at(head(t, s), 'state') === 'open' && !replace) refuse('This entity already has a unit of information; CellDesigner keeps one.');
     var el = '<celldesigner:info state="' + (u ? 'open" prefix="' + esc(u[0]) + '" label="' + esc(u[1]) : 'empty') + '" angle="' + angle + '"/>';
     if (!u && s) return /<celldesigner:info state="empty"/.test(t.slice(0, s[0]) + t.slice(s[1])) ? put(t, s[0], s[1], el) : cut(t, s);
@@ -900,7 +915,7 @@
     var inf = span(t, '<celldesigner:info ', A.sp[0], A.sp[1]), it = inf && head(t, inf);
     if (it && at(it, 'state') === 'open') {
       var pre = unesc(at(it, 'prefix') || ''), lab = unesc(at(it, 'label') || '');
-      out.info = { text: pre && pre !== 'free input' ? pre + ':' + lab : lab };
+      out.info = { text: pre && pre !== 'free input' ? pre + ':' + lab : lab, prefix: pre || 'free input', label: lab };
     }
     return out;
   }
@@ -1225,6 +1240,6 @@
   var api = { LOOK: LOOK, COMP: COMP, lineColour: lineColour, recolourLine: recolourLine, PROCESS: PROCESS, REDUCED: REDUCED, sbgn: sbgn, MODS: MODS, NEED: NEED, about: about, aliasInfo: aliasInfo, classColour: classColour, compartmentColour: compartmentColour, classColours: classColours, classSize: classSize, empty: empty, species: newSpecies, compartment: compartment, rename: rename, namePlace: namePlace, nameAt: nameAt, nameInfo: nameInfo, retype: retype, remove: remove, reaction: reaction, reduced: reduced,
     reactant: reactant, product: product, modifier: modifier, reactionType: reactionType, reversible: reversible, modifierType: modifierType, removeLine: removeLine,
     gate: gate, gateInput: gateInput, gateInputRemove: gateInputRemove, gateType: gateType, residue: residue, residueState: residueState,
-    residueRemove: residueRemove, residueName: residueName, residueMove: residueMove, structuralMove: structuralMove, features: features, STATES: STATES, structural: structural, info: info, homodimer: homodimer, look: look, restyle: restyle, recolourAll: recolourAll, colours: colours, cdName: cdName, joinable: joinable, join: join, leave: leave };
+    residueRemove: residueRemove, residueName: residueName, residueMove: residueMove, structuralMove: structuralMove, features: features, STATES: STATES, structural: structural, info: info, infoUnit: infoUnit, INFO: INFO, homodimer: homodimer, look: look, restyle: restyle, recolourAll: recolourAll, colours: colours, cdName: cdName, joinable: joinable, join: join, leave: leave };
   if (node) module.exports = api; else root.cd_make = api;
 })(typeof window !== 'undefined' ? window : globalThis);

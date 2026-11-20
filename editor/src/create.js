@@ -904,7 +904,7 @@
       return l ? ownText(l) : '';
     }
     // a name (j null), or the j-th icon's text (a state variable's value, a unit of information), typed in a box over the
-    // map; Enter or leaving it keeps it, Esc not (a unit's text free: N:3, mt:prot, ct:mRNA)
+    // map; Enter or leaving it keeps it, Esc not (an SBGN-ML unit's text free: N:3, mt:prot, ct:mRNA; a CellDesigner unit's checked by cdcreate.js cdSvType)
     var typing = null;
     function typeIn(id, j, fresh) {   // fresh: the unit was made for this typing, deleted again when nothing is kept
       if (typing) typing.done(true);

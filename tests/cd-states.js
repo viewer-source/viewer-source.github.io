@@ -2,7 +2,8 @@
 // svAt, typeIn): on a protein made from the palette, the right-click menu's Add state variable (an empty residue,
 // selected), its site typed in place by a double click (Y705), the residue's own menu (Change state and Delete, no species
 // items), its state picked from Change state's list, the site retyped with the state kept, the residue dragged round the border to the right (its angle written), Add structural state and
-// Add unit of information typed at once (active, N:2), the residue deleted by the Delete key and undone. Nothing is
+// Add unit of information typed at once (active, N:2), the unit's own menu (Change unit: CellDesigner's prefixes with
+// their labels), a label its prefix does not have refused, N and free input, the residue deleted by the Delete key and undone. Nothing is
 // saved (no token). No script error.
 //   node tests/cd-states.js [address] [viewer folder: its editor and renderers served in place of the page's]
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path');
@@ -85,6 +86,28 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#acly-celld
   items = await menu(C);
   ok('no second unit of information offered', items.indexOf('Add unit of information') < 0, items.join('|'));
   await page.keyboard.press('Escape'); await page.keyboard.press('Escape');
+  // the unit of information as CellDesigner's Edit Information window: its prefixes with their labels, N, free input
+  var U = [R[0] + R[2] / 2, R[1] + 1], unit = function (t) { var m = /<celldesigner:info state="open" prefix="([^"]*)" label="([^"]*)"/.exec(aliasText(t, p)); return m ? m[1] + '|' + m[2] : ''; };
+  items = await menu(U);
+  ok('the unit\'s own menu: Change unit and Delete', items.some(function (x) { return /^Change unit/.test(x); }) && items.indexOf('Delete') >= 0 && items.indexOf('Change identity') < 0, items.join('|'));
+  await page.click('.m2-cx button:has-text("Change unit")'); await page.waitForTimeout(400);
+  var kinds = await page.$$eval('.m2-ci button', function (l) { return l.map(function (x) { return x.textContent; }); });
+  ok('Change unit lists CellDesigner\'s 14 prefixed labels, then N or free text', kinds.length === 15 && kinds[0] === 'pc:T' && kinds.indexOf('mt:psac') >= 0 && kinds[13] === 'ct:mRNA' && /N or free text/.test(kinds[14]), kinds.join('|'));
+  await page.click('.m2-ci button:text-is("ct:mRNA")'); await page.waitForTimeout(800);
+  ok('ct:mRNA picked: prefix ct, label mRNA', unit(await now()) === 'ct|mRNA', unit(await now()));
+  await page.keyboard.press('Escape');
+  var typeUnit = async function (v) { await page.mouse.dblclick(U[0], U[1]); await type(v); };
+  t = await now(); await typeUnit('pc:X');
+  ok('pc:X refused with pc\'s labels, the file unchanged', /pc takes T, V, pH/.test(await status()) && (await now()) === t, await status());
+  await page.keyboard.press('Escape'); await typeUnit('PC:ph');
+  ok('PC:ph written as CellDesigner\'s pc and pH', unit(await now()) === 'pc|pH', unit(await now()));
+  await page.keyboard.press('Escape'); await typeUnit('N:ten');
+  ok('N takes any label', unit(await now()) === 'N|ten', unit(await now()));
+  await page.keyboard.press('Escape'); await typeUnit('Ca2+:bound');
+  ok('any other text as free input', unit(await now()) === 'free input|Ca2+:bound', unit(await now()));
+  await page.keyboard.press('Escape'); await typeUnit('N:2');
+  ok('N:2 again', unit(await now()) === 'N|2', unit(await now()));
+  await page.keyboard.press('Escape'); await page.mouse.click(R[0] - 60, R[1] - 60); await page.waitForTimeout(300);
   var t1 = await now();
   await page.mouse.click(T[0], T[1]); await page.waitForTimeout(300); await page.keyboard.press('Delete'); await page.waitForTimeout(900);
   t = await now();

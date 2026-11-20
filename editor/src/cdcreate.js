@@ -843,7 +843,11 @@
         var fa = pend ? cdFreeAngle(cdFeat(id)) : null;
         cdApply(function (t) { t = cdMk.structural(t, id, v || null, true); return fa != null && v ? cdMk.structuralMove(t, id, fa) : t; }, [id]);
       }
-      else cdApply(function (t) { return cdMk.info(t, id, v || null, true); }, [id]);
+      else {
+        var u = v.trim() ? cdMk.infoUnit(v) : null;
+        if (u && u.bad) { note(u.bad); paint(); return; }   // said, as a residue's state: CellDesigner's window offers only these
+        cdApply(function (t) { return cdMk.info(t, id, v || null, true); }, []);   // nothing left selected, as a residue's state
+      }
       if (pend) paint();
     }
     // a structural state or unit of information added: its text typed at once where it will be (nothing written until
@@ -873,9 +877,12 @@
       if (!f.info) out.push(['Add unit of information', function () { cdSvAdd(id, UI); }]);
       return out;
     }
-    // the right-click menu over a residue: its state from CellDesigner's list (Change state, as Change identity's window)
+    // the right-click menu over a residue: its state from CellDesigner's list (Change state, as Change identity's window);
+    // over a unit of information: Change unit, CellDesigner's prefixes with their labels (its Edit Information window),
+    // then N and any other text typed in place
     function cdSvOwnItems(q) {
       var i = q[0], it = cdSvList(i)[q[1]], id = nodes2[i].id;
+      if (it && it[3] === UI) return cdUnitItems(id, q[1]);
       if (!it || it[3] !== SV) return null;
       var now = cdFeat(id).residues[it[4]].state || 'empty';
       return [['Change state', subItem(function (r, done) {
@@ -883,6 +890,15 @@
           return { name: s === 'empty' ? 'Empty' : s[0].toUpperCase() + s.slice(1) + (cdSym(s) && cdSym(s) !== s ? ' (' + cdSym(s) + ')' : ''), own: s === now,
             go: function () { cdApply(function (t) { return cdMk.residueState(t, id, it[4], s); }, []); svSel = { id: id, j: q[1] }; paint(); } };
         }), done);
+      })]];
+    }
+    function cdUnitItems(id, j) {
+      var f = cdFeat(id), now = f && f.info ? f.info.prefix + ':' + f.info.label : '', list = [];   // as the file holds it: free input mt:prot is not mt's prot
+      Object.keys(cdMk.INFO).forEach(function (p) { cdMk.INFO[p].forEach(function (l) { list.push(p + ':' + l); }); });
+      return [['Change unit', subItem(function (r, done) {
+        return kindWindow(r, list.map(function (u) {
+          return { name: u, own: u === now, go: function () { cdApply(function (t) { return cdMk.info(t, id, u, true); }, []); svSel = { id: id, j: j }; paint(); } };
+        }).concat([{ name: 'N or free text\u2026', go: function () { typeIn(id, j); } }]), done);
       })]];
     }
 
