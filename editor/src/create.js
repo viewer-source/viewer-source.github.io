@@ -942,13 +942,23 @@
       inp.style.color = lab && lab.getAttribute('textColor') || '#000';
       if (cd && cdPend && sv && !sv[0]) { inp.style.background = '#fff'; inp.style.border = '1px solid #000'; }   // a CellDesigner icon not in the file yet: nothing drawn under the field
       var grow = unit || (!!sv && sv[3] === SS);   // a structural state grows too (cdrender: its text and 12 a side)
+      // an SBGN-ML map's state variable or unit of information: the field is the icon itself while typed (white, its outline,
+      // a state variable's round ends), sized at every key as sbgn_edit sizes it on Enter (svIcon), the drawn icon hidden
+      var own = !!sv && !cd && au0 == null, ik = own ? sv[2][1] / (unit ? 16 : 18) : 1;
+      if (own) {
+        grow = true; fs = 10 * ik; at0 = [sv[1][0] - sv[2][0] / 2, sv[1][1] - sv[2][1] / 2, sv[2][0], sv[2][1]];
+        inp.style.background = '#fff'; inp.style.boxSizing = 'border-box'; inp.style.padding = '0';
+        shapesOf(i, j).forEach(function (el) { el.style.visibility = 'hidden'; hid.push(el); });
+      }
       var place = function () {   // at the glyph in the map's units: again after every zoom or pan (paint), so a pinch keeps it on its glyph
-        var st = inp.style;
+        var st = inp.style, n = inp.value.length;
         if (grow) {   // a unit of information grows with its text round its centre, as the converter sizes it (5.4 a character, 8 more)
-          var cx = at0[0] + at0[2] / 2, uw = Math.max(at0[2], Math.ceil(inp.value.length * 5.4 + (unit ? 8 : 24)) + 4);
+          var cx = at0[0] + at0[2] / 2, uw = !own ? Math.max(at0[2], Math.ceil(n * 5.4 + (unit ? 8 : 24)) + 4)
+            : unit ? Math.ceil(Math.max(n, 3) * 5.4 * ik + 8 * ik) : n <= 2 ? 18 * ik : Math.ceil(n * 5.4 * ik + 12 * ik);
           at0[0] = cx - uw / 2; at0[2] = uw;
         }
         st.left = sx(at0[0]) + 'px'; st.top = sy(at0[1]) + 'px'; st.width = at0[2] * V.z + 'px'; st.height = at0[3] * V.z + 'px'; st.fontSize = fs * V.z + 'px';
+        if (own) st.border = V.z + 'px solid #000';
         if (sv && !unit) st.borderRadius = at0[3] * V.z / 2 + 'px';
         if (padL != null) { st.textAlign = 'left'; st.paddingLeft = padL * V.z + 'px'; }
       };
@@ -1090,6 +1100,16 @@
         if (t.closest('[data-n]') !== g) return false;   // a member's own drawing, if nested, is not this node's text
         var b = t.getBoundingClientRect();
         return j == null ? !svs.some(function (q) { return inside(b, rect(q)); }) : inside(b, rect(svs[j]));
+      });
+    }
+    function shapesOf(i, j) {   // the drawn outline and fill of node i's j-th icon (its text: textsOf)
+      var g = gN && gN[nodes2[i].id], q = g && svList(i)[j];
+      if (!q) return [];
+      var r = V.view.getBoundingClientRect(), k = V.pz(), L = r.left + sx(q[1][0] - q[2][0] / 2) * k, T = r.top + sy(q[1][1] - q[2][1] / 2) * k, W = q[2][0] * V.z * k, H = q[2][1] * V.z * k;
+      return Array.prototype.filter.call(g.querySelectorAll('path, rect, ellipse, circle, polygon'), function (el) {
+        if (el.closest('[data-n]') !== g) return false;
+        var b = el.getBoundingClientRect();
+        return Math.abs(b.left - L) < 3 && Math.abs(b.top - T) < 3 && Math.abs(b.width - W) < 4 && Math.abs(b.height - H) < 4;
       });
     }
     function nameBox(i, res) {   // the drawn name of node i as a box in the map's units [x, y, w, h], null when none is drawn (texts not in its name, a CellDesigner state or count, left out)
