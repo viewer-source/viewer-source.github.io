@@ -678,6 +678,11 @@ page, so its styles keep the base they were made on).
   /* annotation of the clicked protein or metabolite: in the right column, or
      on narrower windows over the right side of the map */
   /* a map pin, as in MINERVA, with its tip on the clicked node; it keeps its size at every zoom */
+  /* the lines a click lights (lit, drawLit): a soft marker band under them, the map's own lines kept over it (multiply) */
+  #m2-hl { position: absolute; left: 0; top: 0; pointer-events: none; overflow: visible; mix-blend-mode: multiply; display: none; }
+  #m2-hl path { fill: none; stroke: #8db4f0; stroke-opacity: .7; stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke; }
+  #m2-hl circle { fill: #8db4f0; fill-opacity: .7; }
+  .m2-editing #m2-hl { display: none !important; }
   #m2-pin { position: absolute; left: 0; top: 0; width: 24px; height: 32px; margin: -32px 0 0 -12px; pointer-events: none; display: none; filter: drop-shadow(0 1px 1px #0005); }
   .m2-info { grid-column: 3; font-size: 14px; line-height: 1.45; color: var(--m2-text-soft); max-height: calc(100vh / var(--zoom, 1) - 140px); overflow-y: auto; overflow-wrap: anywhere; }
   .m2-info.m2-over { position: absolute; z-index: 2; top: 36px; right: 8px; bottom: 8px; width: min(260px, 70%); max-height: none; padding: 10px 12px; background: var(--m2-bg); border: 1px solid var(--m2-line); border-radius: var(--m2-radius); box-shadow: 0 2px 8px #0002; cursor: auto; user-select: text; }
@@ -802,6 +807,7 @@ page, so its styles keep the base they were made on).
 <div class="m2-main">
 <div id="m2-view" tabindex="0">
 <img id="m2-img" alt="">
+<svg id="m2-hl" aria-hidden="true"></svg>
 <svg id="m2-edit-layer" aria-hidden="true"></svg>
 <div id="m2-area" aria-hidden="true"></div>
 <svg id="m2-pin" viewBox="0 0 24 32" aria-hidden="true"><path d="M12 31C12 31 2 18.5 2 11.5a10 10 0 0 1 20 0C22 18.5 12 31 12 31z" style="fill: var(--m2-accent)"/><circle cx="12" cy="11.5" r="3.6" fill="#fff"/></svg>
@@ -1168,6 +1174,7 @@ page, so its styles keep the base they were made on).
     img.style.height = s.h * z + 'px';
     img.style.transform = 'translate(' + tx + 'px,' + ty + 'px)';
     drawPin();
+    drawLit();
     drawArea();
     if (ed) ed.paint();
     document.getElementById('m2-zoom').textContent = Math.round(z / (STANDARD * SIZE) * 100) + '%';
@@ -1613,6 +1620,8 @@ page, so its styles keep the base they were made on).
         ['Open the menu', 'Two-finger click', 'Right click', '-'],
         ['Scroll the page', 'Space + two fingers', 'Space + wheel', 'One finger outside the map']]) +
       '<h4>More</h4>' + table(null, [
+        ['Click on a line', 'lights that line alone, to follow it; click it again, Esc or empty space to let go'],
+        ['Click on a process', 'lights the process and all its lines'],
         ['Shift + two fingers', 'move the map sideways only'],
         ['Right click inside an area', 'Zoom to area, or Copy image as PNG of that part'],
         ['Esc, or a click', 'ends the area'],
@@ -2206,6 +2215,9 @@ page, so its styles keep the base they were made on).
   // smallest box under the pointer (a protein rather than its complex).
   var info = document.getElementById('m2-info'), pin = document.getElementById('m2-pin');
   var nodes = null, sel = null, member = -1; // member: the family member shown, -1 for the cards
+  // the click data's lines (build.py, LINES): each {d, r}, r the key of its process, whose node in nodes has the same r;
+  // lit: what a click lit, {line} (one line alone) or {proc} (a process node: its glyph and every line with its r)
+  var lines = null, lit = null, hl = document.getElementById('m2-hl');
   // set by the separator beside the panel: brings a panel the reader dragged out of sight back, so a click on an
   // item of the map shows its annotation even then
   var reopenInfo = function () {};
@@ -2307,11 +2319,55 @@ page, so its styles keep the base they were made on).
     if (window.MutationObserver) new MutationObserver(place).observe(info, { childList: true });
   })();
   function loadNodes(m) {
-    nodes = null; sel = null; renderInfo(); drawPin();
+    nodes = null; sel = null; lines = null; lit = null; renderInfo(); drawPin(); drawLit();
     if (!m.annotation) return;
     var done = function (list) { if (current === m) { nodes = list; renderInfo(); focusNode(); } };
     var kp = ed && !m.shownAs ? ed.keep(m) : null;   // a map just edited: the boxes of the moved nodes where they are drawn now
-    get(m.annotation + ver(m)).then(function (d) { if (d) done(kp ? ed.boxes(kp, d.nodes) : d.nodes); });
+    // its lines only once the site's build has drawn the map as it is (an edited drawing's lines are not in the data)
+    get(m.annotation + ver(m)).then(function (d) { if (d) { if (current === m && !kp) lines = (d.lines || []).map(polys); done(kp ? ed.boxes(kp, d.nodes) : d.nodes); } });
+  }
+  // a line's path as its polylines (the curves' control points as corners: near enough to find it under the pointer)
+  function polys(l) {
+    var out = [], cur = null;
+    (l.d.match(/[MLQCZ]|-?[\d.]+(?:e-?\d+)?/gi) || []).forEach(function (t) {
+      if (t === 'M') out.push(cur = []);
+      else if (/^[-\d.]/.test(t) && cur) { if (cur.length && cur[cur.length - 1].length === 1) cur[cur.length - 1].push(+t); else cur.push([+t]); }
+    });
+    return { d: l.d, r: l.r, p: out };
+  }
+  // the line nearest to x, y within tol (picture pixels), or null
+  function lineAt(x, y, tol) {
+    var best = null, bd = tol;
+    (lines || []).forEach(function (l) {
+      l.p.forEach(function (q) {
+        for (var i = 1; i < q.length; i++) {
+          var ax = q[i - 1][0], ay = q[i - 1][1], dx = q[i][0] - ax, dy = q[i][1] - ay, L = dx * dx + dy * dy;
+          var t = L ? Math.max(0, Math.min(1, ((x - ax) * dx + (y - ay) * dy) / L)) : 0;
+          var d = Math.hypot(x - ax - t * dx, y - ay - t * dy);
+          if (d <= bd) { bd = d; best = l; }
+        }
+      });
+    });
+    return best;
+  }
+  // the band under what is lit, in the picture's pixels, placed and sized as the picture: 6 screen pixels wide,
+  // a process's glyph a disc of 9
+  var litHtml = null;   // what the band holds, made once per lit; a move or zoom only places it
+  function drawLit() {
+    if (!lit || !current || document.querySelector('.m2-editing')) { hl.style.display = 'none'; hl.innerHTML = ''; litHtml = null; return; }
+    var k = scaleOf(current), s = size(current);
+    hl.setAttribute('viewBox', '0 0 ' + current.width + ' ' + current.height);
+    hl.style.width = s.w * z + 'px'; hl.style.height = s.h * z + 'px';
+    hl.style.transform = 'translate(' + tx + 'px,' + ty + 'px)';
+    hl.style.display = 'block';
+    if (litHtml !== lit) {
+      var on = lit.line ? [lit.line] : lines.filter(function (l) { return l.r === lit.proc.r; }), html = '';
+      on.forEach(function (l) { html += '<path d="' + l.d + '" stroke-width="6"/>'; });
+      if (lit.proc) { var b = lit.proc.box; html += '<circle cx="' + (b[0] + b[2] / 2) + '" cy="' + (b[1] + b[3] / 2) + '"/>'; }
+      hl.innerHTML = html; litHtml = lit;
+    }
+    var c = hl.querySelector('circle');
+    if (c) c.setAttribute('r', 9 * k / z);
   }
   function pick(vx, vy) {
     if (!nodes) return;
@@ -2320,7 +2376,18 @@ page, so its styles keep the base they were made on).
       var b = n.box;
       if (x >= b[0] && x <= b[0] + b[2] && y >= b[1] && y <= b[1] + b[3] && (!best || b[2] * b[3] < best.box[2] * best.box[3])) best = n;
     });
+    // a line under the pointer (6 screen pixels) lights alone, unless a molecule is there (a complex lets its lines
+    // through); a process lights with every line it has; a second click on the same lets go
+    var line = (!best || best['class'] === 'Complex') ? lineAt(x, y, 6 * k / z) : null;
+    if (line) {
+      lit = lit && lit.line === line ? null : { line: line };
+      sel = null; member = -1;
+      renderInfo(); clearOfCard(); drawPin(); drawLit();
+      return;
+    }
     sel = setting('click-closes') && best === sel ? null : best; // with --m2-click-closes a second click unselects
+    lit = sel && sel.reaction && sel.r && lines ? { proc: sel } : null;
+    drawLit();
     member = -1;
     renderInfo();
     if (sel) reopenInfo();
@@ -2341,7 +2408,7 @@ page, so its styles keep the base they were made on).
     var right = tx + (b[0] + b[2]) / k * z, edge = (r.left - v.left) / z0 - 16;
     if (right > edge) { tx -= right - edge; draw(); }
   }
-  function closeInfo() { sel = null; renderInfo(); drawPin(); }
+  function closeInfo() { sel = null; if (lit && lit.proc) lit = null; renderInfo(); drawPin(); drawLit(); }
   // a search result chosen: its node is selected and centred at reading size
   var pending = null; // {map, node}: to select once the map's nodes are loaded
   function focusNode() {
@@ -2349,7 +2416,7 @@ page, so its styles keep the base they were made on).
     var n = nodes[pending.node];
     pending = null;
     if (!n) return;
-    sel = n; member = -1;
+    sel = n; member = -1; lit = null;
     var k = scaleOf(current), b = n.box;
     z = STANDARD * SIZE / bz;
     tx = centre()[0] - (b[0] + b[2] / 2) / k * z;
@@ -2386,11 +2453,12 @@ page, so its styles keep the base they were made on).
   }, true);
   // Esc closes the annotation too; in a family member's record it first returns to the cards
   document.addEventListener('keydown', function (e) {
-    if (e.key !== 'Escape' || !sel) return;
+    if (e.key !== 'Escape' || !(sel || lit) || document.querySelector('.m2-editing')) return;
+    if (!sel) { lit = null; drawLit(); return; }
     if (sel.members && member >= 0) { member = -1; renderInfo(); } else closeInfo();
   });
   function drawPin() {
-    if (!sel || !current) { pin.style.display = 'none'; return; }
+    if (!sel || !current || (lit && lit.proc)) { pin.style.display = 'none'; return; }   // a lit process shows its band
     var k = scaleOf(current), b = sel.box;
     pin.style.display = 'block';
     pin.style.transform = 'translate(' + (tx + (b[0] + b[2] / 2) / k * z) + 'px,' + (ty + (b[1] + b[3] / 2) / k * z) + 'px)';

@@ -104,7 +104,7 @@ sitemap: false
   <text class="ca-sub" x="615" y="108" text-anchor="middle">&lt;id&gt;.svg, the map files</text>
   <rect class="ca-fmt" x="535" y="132" width="160" height="50" rx="6"/>
   <text class="ca-name" x="615" y="153" text-anchor="middle">atlas-data/&lt;id&gt;.json</text>
-  <text class="ca-sub" x="615" y="170" text-anchor="middle">click data: boxes, names</text>
+  <text class="ca-sub" x="615" y="170" text-anchor="middle">click data: boxes, names, lines</text>
   <rect class="ca-fmt" x="535" y="194" width="160" height="50" rx="6"/>
   <text class="ca-name" x="615" y="215" text-anchor="middle">search.json</text>
   <text class="ca-sub" x="615" y="232" text-anchor="middle">the search index of all maps</text>
@@ -232,7 +232,7 @@ own file back, which the build then draws again. This page shows the parts and w
 
 <table class="ca-table">
   <tr><th>Part</th><th>State</th></tr>
-  <tr><td>Build</td><td><code>build.py</code> draws every map in <code>maps/</code> through the JavaScript renderers under Node, writes the click data, the search index and each map's entry. Run by the workflow Build atlas on each release and after each save, with the maps read from the site's private data repository; what it makes is published, never committed.</td></tr>
+  <tr><td>Build</td><td><code>build.py</code> draws every map in <code>maps/</code> through the JavaScript renderers under Node, writes the click data (each molecule's box and annotation, each process, and each line's path with its process, read from the editor's drawing of the map so a click lights one line or a process with all its lines), the search index and each map's entry. Run by the workflow Build atlas on each release and after each save, with the maps read from the site's private data repository; what it makes is published, never committed.</td></tr>
   <tr><td>Renderers</td><td>yrender (GraphML) and cdrender (CellDesigner), JavaScript the master, each with a Python twin kept byte for byte equal. SBGN-ML is read by the converter's copy into GraphML and drawn by yrender.</td></tr>
   <tr><td>Viewer</td><td>One file, <code>_includes/atlas-app.html</code>, style and script in ten sections. Its look in two small CSS files.</td></tr>
   <tr><td>Editor</td><td>Layout editing on all three formats: moves, bend points, ports, compartments, Grid, Snap, Pack, undo. With Editing on Full, SBGN-ML and CellDesigner maps are edited in full: a palette of glyphs, arcs, logic gates, a line's end moved to another node. Eight source files joined into <code>editor/editor.js</code>, <code>core.js</code> the largest.</td></tr>

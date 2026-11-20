@@ -60,12 +60,13 @@ import subprocess  # noqa: E402
 _node = None
 
 
-def render(kind, src, sbgn=False):   # sbgn: a GraphML made from an SBGN-ML file (its glyphs with no fill drawn white)
+def render(kind, src, sbgn=False, groups=False):   # sbgn: a GraphML made from an SBGN-ML file (its glyphs with no fill drawn white)
     global _node
     if _node is None:
         _node = subprocess.Popen(['node', os.path.join(ROOT, 'renderers', 'render.js')], stdin=subprocess.PIPE,
                                  stdout=subprocess.PIPE, text=True, encoding='utf-8', bufsize=1)
-    _node.stdin.write(json.dumps(dict({'kind': kind, 'src': src}, **({'sbgn': True} if sbgn else {}))) + '\n'); _node.stdin.flush()
+    job = dict({'kind': kind, 'src': src}, **({'sbgn': True} if sbgn else {}), **({'groups': True} if groups else {}))
+    _node.stdin.write(json.dumps(job) + '\n'); _node.stdin.flush()
     line = _node.stdout.readline()
     if not line:   # the renderer is gone: stop the build, never a map after another left out quietly
         sys.exit('the renderer stopped (node %s)' % _node.poll())
@@ -73,6 +74,46 @@ def render(kind, src, sbgn=False):   # sbgn: a GraphML made from an SBGN-ML file
     if 'error' in r:
         raise SystemExit('%s: %s' % (src, r['error']))
     return r
+
+
+# ---------- lines a click lights ----------
+# Each drawn line of a map in its click data, so the viewer lights the one clicked, or every line of a process clicked:
+# 'lines': [{'d': path in the picture's pixels, 'r': its process's key}], 'r' left out for a line joined to no process;
+# a process's entry in 'nodes' carries the same 'r'. Read from the editor's drawing of the map (render.js groups), where
+# each line is a group of its own (data-e): its stroked parts (an inhibition's bar too), not a filled arrowhead or a
+# circle. A CellDesigner main line is two lines, reactant and product side. Kept per picture until drawn()
+# writes the click data beside it.
+LINES = {}
+PAIR = re.compile(r'(-?\d+(?:\.\d+)?(?:e-?\d+)?) (-?\d+(?:\.\d+)?(?:e-?\d+)?)')   # an x and y of a path
+
+
+def lines_of(svg, key):
+    # key(data-e) -> the process's key or None; the last group of a name is the line itself (cdrender draws a white
+    # halo under each line first, with the same name)
+    root, out = etree.fromstring(svg.encode()), {}
+    for g in root.iter('{http://www.w3.org/2000/svg}g'):
+        e = g.get('data-e')
+        if e is None:
+            continue
+        dx = dy = 0.0
+        for a in g.iterancestors():
+            m = re.match(r'translate\((-?[\d.]+),\s*(-?[\d.]+)\)', a.get('transform') or '')
+            if m:
+                dx, dy = dx + float(m.group(1)), dy + float(m.group(2))
+        ds = []
+        for el in g:
+            tag = etree.QName(el).localname
+            if tag == 'polyline':
+                d = 'M' + ' L'.join(el.get('points').split())
+            elif tag == 'path' and el.get('fill') == 'none':
+                d = el.get('d')
+            else:
+                continue
+            ds.append(PAIR.sub(lambda m: '%s %s' % (round(float(m.group(1)) + dx, 1), round(float(m.group(2)) + dy, 1)),
+                               d.replace(',', ' ')))
+        if ds:
+            out[e] = dict({'d': ' '.join(ds)}, **({'r': key(e)} if key(e) else {}))
+    return list(out.values())
 
 
 def floats(v):   # the click data's numbers as the Python renderer gave them (12.0, not 12, in the JSON written)
@@ -98,9 +139,12 @@ def graphml(src, out_svg, sbgn=False):
     root = etree.parse(src).getroot()
     keys = {k.get('id'): k.get('attr.name') for k in root.findall(GN + 'key') if k.get('for') == 'node'}
     label = {n.get('id'): first_label(realizer(n)) for n in root.iter(GN + 'node')}
+    kind_of = {n.get('id'): ((realizer(n).get('configuration') or '') if realizer(n) is not None else '').replace('com.yworks.sbgn.', '')
+               for n in root.iter(GN + 'node')}
+    named = lambda i: kind_of.get(i) not in ('EmptySet', 'Operator') and label.get(i)   # a molecule's name, not a sink's or gate's
     arrow = lambda e: next((a.get('target', 'none') for a in e.iter(YN + 'Arrows')), 'none')
     arcs = [(e.get('source'), e.get('target'), arrow(e)) for e in root.iter(GN + 'edge')]
-    nodes = []
+    nodes, procs = [], set()
     for n in root.iter(GN + 'node'):
         data = {keys.get(d.get('key')): (d.text or '').strip() for d in n.findall(GN + 'data') if d.get('key') in keys}
         gn = realizer(n)
@@ -109,14 +153,14 @@ def graphml(src, out_svg, sbgn=False):
         kind = (gn.get('configuration') or '').replace('com.yworks.sbgn.', '')
         geo = gn.find(YN + 'Geometry')
         x, y, w, h = (float(geo.get(a)) for a in ('x', 'y', 'width', 'height'))
-        if kind in PROCESSES:
-            if data.get('References'):
-                nid = n.get('id')
-                nodes.append(process(kind, [x + tx + w / 2, y + ty + h / 2],
-                                     [label[s] for s, t, a in arcs if t == nid and a == 'none'],
-                                     [label[t] for s, t, a in arcs if s == nid],
-                                     [label[s] for s, t, a in arcs if t == nid and a != 'none'],
-                                     db.references(data['References'])))
+        if kind in PROCESSES:   # every process clickable, its lines lit; with references also cited in the panel
+            nid = n.get('id')
+            procs.add(nid)
+            nodes.append(process(kind, [x + tx + w / 2, y + ty + h / 2],
+                                 [label[s] for s, t, a in arcs if t == nid and a == 'none' and named(s)],
+                                 [label[t] for s, t, a in arcs if s == nid and named(t)],
+                                 [label[s] for s, t, a in arcs if t == nid and a != 'none' and named(s)],
+                                 db.references(data['References']) if data.get('References') else [], nid))
             continue
         own = {f: data[f] for f in FIELDS if data.get(f)}
         if not own:
@@ -131,6 +175,11 @@ def graphml(src, out_svg, sbgn=False):
         if members:
             node['members'] = members
         nodes.append(node)
+    # a line's process: the one at either end, or for a gate's input the process the gate leads to
+    ends = {e.get('id'): (e.get('source'), e.get('target')) for e in root.iter(GN + 'edge')}
+    gate_to = {s: t for s, t, a in arcs if kind_of.get(s) == 'Operator' and t in procs}
+    LINES[out_svg] = lines_of(render('yed', src, sbgn, groups=True)['svg'],
+                              lambda e: next((gate_to.get(p, p) for p in ends.get(e, ()) if p in procs or p in gate_to), None))
     return nodes
 
 
@@ -141,10 +190,10 @@ def record(own):
     return db.record(own)
 
 
-def process(kind, at, ins, outs, by, refs):
-    # a process glyph is small: a click a little outside it still finds it
+def process(kind, at, ins, outs, by, refs, key):
+    # a process glyph is small: a click a little outside it still finds it; key: its lines' 'r' (LINES)
     return {'label': '', 'class': kind, 'box': [round(at[0] - 12, 1), round(at[1] - 12, 1), 24, 24], 'props': [],
-            'reaction': {'in': ins, 'out': outs, 'by': by}, 'references': refs}
+            'reaction': {'in': ins, 'out': outs, 'by': by}, 'references': refs, 'r': key}
 
 
 # ---------- CellDesigner ----------
@@ -202,22 +251,25 @@ def celldesigner(src, out_svg):
               'props': species[a['species']]['props']}
              for a in hits['aliases'] if species.get(a['species'], {}).get('props')]
     alias_name = {a['id']: species.get(a['species'], {}).get('label', '') for a in hits['aliases']}
+    sinks = {sp['label'] for sp in species.values() if sp['class'] == 'SourceAndSink'}
     sp_name = lambda e: species.get(e.get('species') or e.get('reactant') or e.get('product') or '', {}).get('label') \
         or alias_name.get(e.get('alias'), '')
     for rx in model.iter(S + 'reaction'):
         x = rx.find(S + 'annotation/' + C + 'extension')
         refs = db.references(' '.join(ns + ':' + i for ns, i in miriam(rx) if ns in ('pubmed', 'doi')))
         at = hits['reactions'].get(rx.get('id'), {}).get('at')
-        if x is None or not refs or not at:
+        if x is None or not at:
             continue
         ins = [sp_name(e) for e in x.iterfind(C + 'baseReactants/' + C + 'baseReactant')] + \
               [sp_name(e) for e in x.iterfind(C + 'listOfReactantLinks/' + C + 'reactantLink')]
         outs = [sp_name(e) for e in x.iterfind(C + 'baseProducts/' + C + 'baseProduct')] + \
                [sp_name(e) for e in x.iterfind(C + 'listOfProductLinks/' + C + 'productLink')]
+        ins, outs = [v for v in ins if v not in sinks], [v for v in outs if v not in sinks]   # a degraded species has no name
         by = [' and '.join(alias_name.get(a, '') for a in (m.get('aliases') or '').split(','))
               for m in x.iterfind(C + 'listOfModification/' + C + 'modification')
               if not (m.get('type') or '').startswith('BOOLEAN_LOGIC_GATE')]
-        nodes.append(process('Process', at, ins, outs, by, refs))
+        nodes.append(process('Process', at, ins, outs, by, refs, rx.get('id')))
+    LINES[out_svg] = lines_of(render('cd', src, groups=True)['svg'], lambda e: e.split('|')[0])
     return nodes
 
 
@@ -234,7 +286,7 @@ def drawn(name, nodes, extra=b''):
     # the click data of a drawing written beside its SVG; its size and its version (picture, click data and extra)
     svg = os.path.join(ROOT, 'downloads', name + '.svg')
     ann = os.path.join(ROOT, 'atlas-data', name + '.json')
-    json.dump({'nodes': nodes}, open(ann, 'w', encoding='utf-8'), ensure_ascii=False, separators=(',', ':'))
+    json.dump({'nodes': nodes, 'lines': LINES.pop(svg, [])}, open(ann, 'w', encoding='utf-8'), ensure_ascii=False, separators=(',', ':'))
     text = open(svg, encoding='utf-8').read()
     w, h = (int(float(v)) for v in re.search(r'<svg[^>]* width="([\d.]+)" height="([\d.]+)"', text).groups())
     v = hashlib.sha1(open(svg, 'rb').read() + open(ann, 'rb').read() + extra).hexdigest()[:10]
