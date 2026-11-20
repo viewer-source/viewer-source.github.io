@@ -9,7 +9,7 @@ var WIDE = 520, NODE = 'ADCY';
 async function shot(browser, wide, win) {
   var page = await browser.newPage({ viewport: { width: 1400, height: 900 } });
   if (wide) await page.addInitScript(function (w) { localStorage.setItem('atlas-list-width:' + location.pathname, String(w)); }, WIDE);
-  await page.goto(url, { waitUntil: 'load' }); await page.waitForSelector('#m2-view svg', { timeout: 30000 });
+  await page.goto(url, { waitUntil: 'load' }); await page.waitForSelector('#m2-img', { state: 'attached', timeout: 30000 });
   if (css) await page.addStyleTag({ content: fs.readFileSync(css, 'utf8') });
   await page.click('.m2-ri[data-win="' + win + '"]');
   if (win === 'edit') {
