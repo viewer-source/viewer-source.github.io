@@ -1,6 +1,5 @@
-// Every ? opens Gestures and keys, beside the left panel, in view and edit mode alike: the sign at the end of the icons, the editor's ?
-// in its tools and the ? key (a second click, Esc or a click elsewhere closes it); the editor's text help stays shut; Settings has no
-// Gestures and keys button.
+// The ? sign at the end of the icons does what the ? key does: Gestures and keys outside editing, beside the left panel, (a second click, Esc or
+// a click elsewhere closes it), the editor's own help while editing; Settings has no Gestures and keys button.
 //   node tests/help-sign.js [page address]
 var { chromium } = require('playwright');
 var URL0 = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysis-sbgn';
@@ -31,18 +30,15 @@ var URL0 = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysi
   await page.keyboard.press('e');
   await page.waitForSelector('.m2-editing', { timeout: 15000 }); await page.waitForTimeout(1500);
   await page.click(sign); await page.waitForTimeout(300);
-  ok('while editing, the sign opens Gestures and keys', await shown('m2-tips'));
-  ok('while editing, the editor\'s help stays shut', !(await shown('m2-ed-help-box')));
+  ok('while editing, the editor\'s help opens', await shown('m2-ed-help-box'));
+  ok('while editing, Gestures and keys stays shut', !(await shown('m2-tips')));
+  ok('the editor\'s help is the short one: While editing and Less obvious, 19 rows with a Maps column', await page.evaluate(function () {
+    var h = document.getElementById('m2-ed-help-box'), t = h.querySelectorAll('table'), hs = [].map.call(h.querySelectorAll('h4'), function (x) { return x.textContent; });
+    return hs.join('|') === 'While editing|Less obvious' && t.length === 2 && t[1].querySelectorAll('tr').length === 20 && /Maps/.test(t[1].rows[0].textContent);
+  }));
+  ok('as wide as Gestures and keys', await page.evaluate(function () { return Math.abs(document.getElementById('m2-ed-help-box').offsetWidth - 760) < 2; }));
   await page.click(sign); await page.waitForTimeout(300);
-  ok('a second click closes it', !(await shown('m2-tips')));
-  await page.click('#m2-ed-help'); await page.waitForTimeout(300);
-  ok('the editor\'s ? opens Gestures and keys too', (await shown('m2-tips')) && !(await shown('m2-ed-help-box')));
-  await page.keyboard.press('Escape'); await page.waitForTimeout(200);
-  await page.mouse.click(1385, 885); await page.waitForTimeout(200);
-  await page.keyboard.press('?'); await page.waitForTimeout(300);
-  ok('the ? key while editing opens Gestures and keys', (await shown('m2-tips')) && !(await shown('m2-ed-help-box')));
-  await page.keyboard.press('Escape'); await page.waitForTimeout(200);
-  ok('Esc closes it while editing', !(await shown('m2-tips')));
+  ok('a second click closes the editor\'s help', !(await shown('m2-ed-help-box')));
   ok('no page errors', !errs.length); if (errs.length) console.log(errs.join('\n'));
   await b.close(); console.log(bad ? bad + ' WRONG' : 'all ok'); process.exit(bad ? 1 : 0);
 })();

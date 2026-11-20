@@ -421,8 +421,8 @@ page, so its styles keep the base they were made on).
   /* How to edit (kept out of the window: the long how-to took the room the tools need): the "?" after the tools opens it as
      a popover over the map's left edge, built by the editor from one list (editor/src/help.js) */
   #m2-ed-help-box { position: fixed; z-index: 60; width: 760px; max-width: calc(100vw - 32px); max-height: calc(100vh - 32px); overflow: auto;
-    box-sizing: border-box; padding: 12px 14px 10px; background: var(--m2-bg); border: 1px solid var(--m2-line); border-radius: var(--m2-radius-button);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, .12); font-size: 13px; line-height: 1.45; color: var(--m2-text-soft); }
+    box-sizing: border-box; padding: 14px 18px 16px; background: var(--m2-bg); border: 1px solid var(--m2-line); border-radius: 8px;
+    box-shadow: 0 6px 24px #0003; font-size: 13px; line-height: 1.45; color: var(--m2-text-soft); }   /* the look of Gestures and keys */
   #m2-ed-help-box[hidden] { display: none; }
   /* Gestures and keys (the ? at the end of the icons, or the ? key): a large window beside the left panel, level with the ? (tipsPlace), over everything; Esc, × or a click elsewhere close it */
   #m2-tips { position: fixed; z-index: 70; top: 16px; left: 50%; transform: translateX(-50%); width: 760px; max-width: calc(100vw - 32px); max-height: calc(100vh - 32px); overflow: auto;
@@ -436,13 +436,12 @@ page, so its styles keep the base they were made on).
   #m2-tips td { vertical-align: top; padding: 3px 10px 3px 0; border-bottom: 1px solid var(--m2-line); }
   #m2-tips td:first-child { color: var(--m2-text); white-space: nowrap; }
   #m2-tips .m2-tips-x { position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; padding: 0; border: 0; background: none; color: var(--m2-muted); font-size: 20px; line-height: 28px; cursor: pointer; }
-  #m2-ed-help-box h4 { margin: 10px 0 3px; font-size: 13px; font-weight: normal; color: var(--m2-text); }
-  #m2-ed-help-box p { margin: 0 24px 4px 0; }
-  #m2-ed-help-box ul { margin: 0; padding: 0 0 0 16px; }
-  #m2-ed-help-box li { margin: 0 0 2px; }
-  #m2-ed-help-box dl { display: grid; grid-template-columns: max-content 1fr; gap: 2px 10px; margin: 0; }
-  #m2-ed-help-box dt { color: var(--m2-text); }
-  #m2-ed-help-box dd { margin: 0; }
+  #m2-ed-help-box h3 { margin: 0 32px 8px 0; font-size: 16px; font-weight: normal; color: var(--m2-text); }
+  #m2-ed-help-box h4 { margin: 14px 0 4px; font-size: 13px; font-weight: 600; color: var(--m2-text); }
+  #m2-ed-help-box table { width: 100%; border-collapse: collapse; }
+  #m2-ed-help-box th { text-align: left; font-weight: 600; color: var(--m2-text); padding: 3px 10px 3px 0; border-bottom: 1px solid var(--m2-line); }
+  #m2-ed-help-box td { vertical-align: top; padding: 3px 10px 3px 0; border-bottom: 1px solid var(--m2-line); }
+  #m2-ed-help-box td:first-child { color: var(--m2-text); }
   #m2-ed-help-box .m2-ed-help-x { position: absolute; top: 6px; right: 6px; width: 24px; height: 24px; padding: 0; border: 0; background: none;
     color: var(--m2-muted); font-size: 18px; line-height: 24px; cursor: pointer; }   /* the tabs' size and line (one line width for every sign) */
   #m2-editwin .m2-ed-sep { flex: none; width: 1px; height: 20px; margin: 0 6px; background: var(--m2-frame); }
@@ -1680,7 +1679,7 @@ page, so its styles keep the base they were made on).
     if (overApp && !typing()) e.preventDefault();
   }, true);
   window.addEventListener('blur', function () { spaceHeld = false; });
-  // Gestures and keys: every move and key of the viewer and its editor in one window, the main ones first, then the rest; opened by the ? at the end of the icons, the editor's ? or the ? key, in view and edit mode alike
+  // Gestures and keys: every move and key of the viewer and its editor in one window, the main ones first, then the rest; opened by the ? at the end of the icons or the ? key outside editing (while editing both open the editor's own help)
   var MAC = /mac/i.test(navigator.platform);
   var tipsBox = null, MOD = /mac|iphone|ipad|ipod/i.test((navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || navigator.userAgent) ? 'Cmd' : 'Ctrl';
   function tipsBuild() {
@@ -1706,7 +1705,7 @@ page, so its styles keep the base they were made on).
         ['+ and − keys, or buttons', 'zoom out and in'],
         ['0, or Fit and Read', 'the whole map or reading size'],
         ['E, or ' + MOD + ' + E', 'switch between viewing and editing'],
-        ['the ? sign at the end of the icons, or ?', 'this window, in view and edit mode alike'],
+        ['?, or the ? sign at the end of the icons', 'this window (while editing: the editor’s help)'],
         [MOD + ' + Z, ' + MOD + ' + Shift + Z', 'undo, redo the last change of a setting: Settings, the grid, the palette’s choices']].concat(own ? [
         [MOD + ' + Z, ' + MOD + ' + Shift + Z in the list', 'undo, redo the list’s last change: a move, Delete, Restore, a name, a group, a new map (while editing: after a click in the list)']] : [])) +
       '<h4>While editing</h4>' + table(null, [
@@ -1736,15 +1735,21 @@ page, so its styles keep the base they were made on).
     tipsBox.style.transform = 'none';
     tipsBox.style.left = left / k + 'px'; tipsBox.style.top = Math.max(16, Math.min(top, innerHeight - 16 - h)) / k + 'px';
   }
-  // every ? opens this one window, in view and edit mode alike: the sign, the editor's "?" in its tools (taken before
-  // its own listener, so the editor's text help stays shut) and the ? key
-  var helpSign = function (e) { return e.target.closest && e.target.closest('#m2-rail .m2-ri[data-win="help"], #m2-ed-help'); };
-  document.addEventListener('click', function (e) { if (helpSign(e)) { e.stopPropagation(); tips(); } }, true);
+  // the ? sign does what the ? key does: this window, or while editing the editor's help (its own "?" clicked, so
+  // the two stay one action); a help open at the press is closed by the editor's own pointerdown, so the click leaves it shut
+  var helpSign = function (e) { return e.target.closest && e.target.closest('#m2-rail .m2-ri[data-win="help"]'); }, edHelpWasOpen = false;
+  document.addEventListener('pointerdown', function (e) { if (helpSign(e)) { var h = document.getElementById('m2-ed-help-box'); edHelpWasOpen = !!(h && !h.hidden); } }, true);
+  document.addEventListener('click', function (e) {
+    if (!helpSign(e)) return;
+    var ed = document.querySelector('.m2-editing') && document.getElementById('m2-ed-help');
+    if (ed) { if (!edHelpWasOpen && !ed.disabled) ed.click(); return; }
+    tips();
+  });
   document.addEventListener('pointerdown', function (e) { if (tipsBox && !tipsBox.hidden && !tipsBox.contains(e.target) && !helpSign(e)) tips(false); }, true);
   document.addEventListener('keydown', function (e) {
     if (tipsBox && !tipsBox.hidden && e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); tips(false); return; }
-    if (e.key !== '?' || e.ctrlKey || e.metaKey || e.altKey || typing()) return;
-    e.preventDefault(); e.stopImmediatePropagation(); tips();
+    if (e.key !== '?' || e.ctrlKey || e.metaKey || e.altKey || typing() || document.querySelector('.m2-editing')) return;
+    e.preventDefault(); tips();
   }, true);
   function pageBy(e) { var d = e.deltaY || e.deltaX; window.scrollBy(0, e.deltaMode === 1 ? d * 16 : e.deltaMode === 2 ? d * window.innerHeight : d); }
   // the same over the list's column and the icons: Space with the wheel scrolls the page, not the list inside
