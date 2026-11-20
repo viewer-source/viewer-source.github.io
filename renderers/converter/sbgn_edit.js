@@ -225,6 +225,8 @@
       var g = S.glyph[id], n = G.node[id];
       if (!g) return;
       if (g.el.getAttribute('class') === 'submap') { var sc = afL ? 'Phenotype' : 'Submap', sr = n.geo.parentNode; if (sr.localName === 'GenericNode' && cfgOf(sr) !== sc) T.set(sr, 'configuration', 'com.yworks.sbgn.' + sc); }
+      var ec = (g.el.getAttribute('class') || '').replace(/ multimer$/, ''), er = n.geo.parentNode;   // an entity made another (entityKind): its shape the file's class
+      if (ENTITY.test(ec) && ENTITY.test(classOfCfg(cfgOf(er)) || '') && cfgOf(er) !== MAKE[ec]) T.set(er, 'configuration', 'com.yworks.sbgn.' + MAKE[ec]);
       var B = g.box, w = B[2], h = B[3], to = function (el, k, v) { if (el.getAttribute(k) !== v) T.set(el, k, v); };
       ['x', 'y', 'width', 'height'].forEach(function (k, j) { to(n.geo, k, repr(B[j])); });
       var gc = g.el.getAttribute('class') || '';
@@ -423,7 +425,7 @@
       if (want != null && g.el.getAttribute('class') === 'biological activity' && (want !== fileUnit(g.el) || (af && actText(G, id) !== fileUText(g.el)))) aChanged[id] = want;
     });
     // units of information changed in the editor (one added, deleted or retyped): all of the glyph's written again where
-    // the converter draws them, spread evenly along the top (layout.decorations); untouched ones stay as the file has them
+    // the GraphML has them (uBoxAt, layout.decorations' size); untouched ones stay as the file has them
     var uChanged = {};
     Object.keys(S.glyph).forEach(function (id) {
       var g = S.glyph[id];
@@ -560,8 +562,10 @@
       }
       // made a multimer or a single macromolecule again: the class, where the converter would read the
       // file otherwise (a multimer with N:1 reads as one unit: left as it is)
-      var base = cls.replace(/ multimer$/, ''), multi = isMulti(G, id);
-      if (MULTI.test(base) && multi !== drawnMulti(cls, iconsOf(id, 'UnitOfInformation').map(function (q) { return q[0]; }))) T.set(g.el, 'class', base + (multi ? ' multimer' : ''));   // judged by the units as now typed
+      // an entity made another (entityKind): its class from the GraphML's shape, a multimer kept where the new class has one
+      var b0 = cls.replace(/ multimer$/, ''), cf = classOfCfg(cfgOf(n.geo.parentNode)) || '', base = ENTITY.test(b0) && ENTITY.test(cf) ? cf : b0, multi = isMulti(G, id);
+      var nowCls = MULTI.test(base) && (base !== b0 || multi !== drawnMulti(cls, iconsOf(id, 'UnitOfInformation').map(function (q) { return q[0]; }))) ? base + (multi ? ' multimer' : '') : base !== b0 ? base : null;   // judged by the units as now typed
+      if (nowCls && nowCls !== cls) T.set(g.el, 'class', nowCls);
       var have = kids(g.el, 'glyph').filter(function (c) { return c.getAttribute('class') === 'state variable'; }), more = '';
       var icons = iconsOf(id), hu = unitsOf(g.el), ui = iconsOf(id, 'UnitOfInformation'), cutEls = [];
       have.slice(icons.length).forEach(function (c) { T.cut(c); cutEls.push(c); });   // deleted in the editor
@@ -1471,6 +1475,18 @@
     return sp ? kids(sp, 'Property').filter(function (p) { return p.getAttribute('name') === 'com.yworks.sbgn.style.mcount'; })[0] || null : null;
   }
   function isMulti(G, id) { var p = mcountOf(G, id); return !!p && p.getAttribute('value') !== '1'; }
+  // an entity made another: macromolecule, simple chemical, nucleic acid feature or unspecified entity, as a
+  // CellDesigner species' class is changed; its box, name, icons and lines kept, its multimer dropped where the new
+  // class has none; write() writes the class
+  var ENTITY = /^(macromolecule|simple chemical|nucleic acid feature|unspecified entity)$/;
+  function entityKind(t, id, cls, opt) {
+    var G = gml(t, opt), n = G.node[id], r = n && n.geo.parentNode;
+    if (!r || !ENTITY.test(cls) || !ENTITY.test(classOfCfg(cfgOf(r)) || '') || cfgOf(r) === MAKE[cls]) return t;
+    var T = new Tags(t, G.doc), p = !MULTI.test(cls) && mcountOf(G, id);
+    T.set(r, 'configuration', 'com.yworks.sbgn.' + MAKE[cls]);
+    if (p) T.cut(p);
+    return T.text();
+  }
   function multimer(t, id, on, opt) {
     var G = gml(t, opt), n = G.node[id];
     if (!n || isMulti(G, id) === !!on) return t;
@@ -2322,7 +2338,7 @@
     return t;
   }
 
-  var api = { unique: unique, LOOKS: LOOKS, NAMED: NAMED, MULTI: MULTI, graphml: graphml, write: write, join: join, joinable: joinable, nameAt: nameAt, namePlaces: namePlaces, stack: stack, restack: restack, stackMoves: stackMoves, NAME_PLACES: NAME_PLACES, defaults: defaults, add: add, lookOf: lookOf, restyle: restyle, restyleAll: restyleAll, colours: colours, lineOf: lineOf, recolour: recolour, widthOf: widthOf, rewidth: rewidth, label: label, state: state, stateValue: stateValue, stateMove: stateMove, unitMove: unitMove, stateDelete: stateDelete,
+  var api = { unique: unique, LOOKS: LOOKS, NAMED: NAMED, MULTI: MULTI, graphml: graphml, write: write, join: join, joinable: joinable, nameAt: nameAt, namePlaces: namePlaces, stack: stack, restack: restack, stackMoves: stackMoves, NAME_PLACES: NAME_PLACES, defaults: defaults, add: add, lookOf: lookOf, restyle: restyle, restyleAll: restyleAll, colours: colours, lineOf: lineOf, recolour: recolour, widthOf: widthOf, rewidth: rewidth, label: label, state: state, stateValue: stateValue, stateMove: stateMove, unitMove: unitMove, entityKind: entityKind, ENTITIES: ['macromolecule', 'simple chemical', 'nucleic acid feature', 'unspecified entity'], stateDelete: stateDelete,
               unit: unit, unitValue: unitValue, unitDelete: unitDelete, multimer: multimer, classOf: classOf, MAKE: MAKE, kind: kind, PROCESSES: ['process'].concat(Object.keys(SIGN)), SIGN: SIGN, remove: remove, resize: resize, scaleEnds: scaleEnds, gone: gone, nameable: nameable,
               moveInto: moveInto, connect: connect, reversible: reversible, reversibility: reversibility, arcRemove: arcRemove, arcKind: arcKind, GATE: GATE, ARROW: ARROW, MODULATIONS: ['stimulation', 'catalysis', 'inhibition', 'necessary stimulation', 'modulation'],
               activity: activity, activities: activities, proteinBoxes: proteinBoxes, afUnitBox: afUnitBox, afUnitFont: afUnitFont, isAf: isAf, mapKind: mapKind, unitFor: unitFor, fillFor: fillFor, AF_ARC: AF_ARC, UNITS: Object.keys(UNIT_CLS).filter(function (u) { return u && u !== 'perturbation'; }), unitClass: actCls,

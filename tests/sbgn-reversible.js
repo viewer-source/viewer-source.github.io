@@ -3,7 +3,8 @@
 // consumption into a production leaving from the process's port in (none left, the productions one more each), the file
 // read back by the converter's rules (each production's source the process or its port); Make irreversible then gives
 // the consumptions back, the same count; one undo step each; the saved file unchanged after both (no other arc, glyph or
-// port moved, the turned productions written from the process's port in). No script error.
+// port moved, the turned productions written from the process's port in); Properties' Reversible tick box on a process
+// selected alone, both ways, undone. No script error.
 //   node tests/sbgn-reversible.js [address] [viewer folder: its editor and renderers served in place of the page's]
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path'), { DOMParser } = require('@xmldom/xmldom');
 var url = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysis-sbgn', local = process.argv[3];
@@ -74,6 +75,26 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysis
     if (++done >= 3) break;
   }
   ok('three processes tried', done === 3, done);
+  // Properties' Reversible tick box: a process selected alone shows it under its own rows, unticked; ticked, the process
+  // is reversible (no consumption left); unticked again, as before; one undo step each
+  var tp = null, t3 = await now();
+  for (var q of procs) if (arcs(t3, q)[0]) { tp = q; break; }
+  if (tp) {
+    await esc();
+    var R = await page.$eval('#m2-img [data-n="' + tp + '"]', function (g) { var r = g.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; });
+    await page.mouse.click(R[0], R[1]); await page.waitForTimeout(500);
+    var box = function () { return page.evaluate(function () { var f = document.getElementById('m2-ed-rev'), t = f && f.closest('table'); return f && t && !t.hidden && f.offsetParent ? f.checked : null; }); };
+    var rowsShown = await page.$$eval('.m2-ed-pnode tr[data-k]', function (l) { return l.filter(function (r) { return !r.hidden && !r.closest('[hidden]'); }).length; });
+    ok(tp + ': selected alone, Properties shows Reversible, unticked, under its own rows', (await box()) === false && rowsShown > 0, (await box()) + ' ' + rowsShown);
+    var c0 = arcs(t3, tp);
+    await page.click('#m2-ed-rev'); await page.waitForTimeout(1000);
+    var c1 = arcs(await now(), tp);
+    ok(tp + ': ticked: reversible in the file, the box ticked, the process still selected', c1[0] === 0 && c1[1] === c0[0] + c0[1] && (await box()) === true, JSON.stringify([c0, c1]) + ' ' + (await box()));
+    await page.click('#m2-ed-rev'); await page.waitForTimeout(1000);
+    ok(tp + ': unticked: as before', JSON.stringify(arcs(await now(), tp)) === JSON.stringify(c0) && (await box()) === false);
+    await page.keyboard.press('Control+z'); await page.waitForTimeout(900); await page.keyboard.press('Control+z'); await page.waitForTimeout(900);
+    ok(tp + ': two undos: the file as it was', (await now()) === t3);
+  } else ok('a process for the tick box', false);
   ok('no script error', errs.length === 0, errs.join(' | '));
   await b.close();
   console.log(bad ? bad + ' wrong' : 'all ok'); process.exit(bad ? 1 : 0);

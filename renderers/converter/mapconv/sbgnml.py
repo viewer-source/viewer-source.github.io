@@ -537,7 +537,7 @@ def read(path):
         for p in g.findall(S + 'port'):
             port[p.get('id')] = i
             at_port[p.get('id')] = (float(p.get('x')), float(p.get('y')))
-        states, units, unit_at = [], [], {}
+        states, units, unit_at = [], [], []
         for c in g.findall(S + 'glyph'):
             cb = c.find(S + 'bbox')
             if c.get('class') == 'state variable':
@@ -546,9 +546,8 @@ def read(path):
                 cx, cy = float(cb.get('x')) + float(cb.get('w')) / 2, float(cb.get('y')) + float(cb.get('h')) / 2
                 states.append((v + ('@' + var if var else ''), (cx - x - w / 2) / w, (cy - y - h / 2) / h))
             elif c.get('class') == 'unit of information' and (text(c) or cls != 'biological activity'):
-                units.append(text(c))
-                if cb is not None and w and h:  # its place on the border, as a state variable's
-                    unit_at[text(c)] = ((float(cb.get('x')) + float(cb.get('w')) / 2 - x - w / 2) / w, (float(cb.get('y')) + float(cb.get('h')) / 2 - y - h / 2) / h)
+                units.append(text(c))  # with its place on the border, as a state variable's
+                unit_at.append(((float(cb.get('x')) + float(cb.get('w')) / 2 - x - w / 2) / w, (float(cb.get('y')) + float(cb.get('h')) / 2 - y - h / 2) / h) if cb is not None and w and h else None)
         n = [int(u[2:]) for u in units if re.fullmatch(r'N:\d+', u)]
         lab = g.find(S + 'label')
         lb = lab.find(S + 'bbox') if lab is not None else None

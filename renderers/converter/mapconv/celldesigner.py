@@ -350,8 +350,9 @@ def write(diagram, ann, layout='straight'):
         if us:  # one per alias: <info state="open" prefix="ct" label="gene"/> (angle as in the old files)
             prefix, lab = cd_info(us[0])
             sub(a, 'info', state='open', prefix=prefix, label=lab, angle='-1.5707963267948966')
-            at = d.unit_at.get(us[0])
-            if at and abs(at[1] + 0.5) > 1e-6:  # placed off the top in its file: CellDesigner's angle for another side not known yet
+            k = d.units.index(us[0]) if us[0] in d.units else -1
+            at = d.unit_at[k] if 0 <= k < len(d.unit_at) else None
+            if at:  # placed in its file away from its slot: CellDesigner's angle for another place not known yet
                 report.say('changed', '%s: unit of information %s placed at the top (CellDesigner\'s default)' % (label[i], us[0]))
             if us[1:]: report.say('left out', '%s: units of information %s left out (CellDesigner keeps one)' % (label[i], ', '.join(us[1:])))
         else:
@@ -717,10 +718,21 @@ def read(path):
                     for s in xs(ext, 'cd:listOfIncludedSpecies/cd:species')})
     def note(s):  # the text of a species' notes, its RDF left aside
         return ''.join(t for q in ('s:notes/xh:html/xh:body', 'cd:notes/xh:html/xh:body') for b in xs(s, q) for t in b.xpath('text()'))
-    residues = {}
+    # a residue belongs to the protein: CellDesigner draws every residue on every species of it, empty where the
+    # species sets no state. Entries of one name and type (a file with one per species) count as one protein: their
+    # residues joined, matched by site name, an unnamed one by its angle. kin: protein id -> its joined residues
+    # [(angle, site)]; residues: (protein id, residue id) -> (its place in that list, its own angle)
+    residues, kin, joined = {}, {}, {}
     for p in xs(ext, 'cd:listOfProteins/cd:protein'):
+        rs = joined.setdefault((p.get('name'), p.get('type') or 'GENERIC'), [])
+        kin[p.get('id')] = rs
         for m in xs(p, 'cd:listOfModificationResidues/cd:modificationResidue'):
-            residues[p.get('id'), m.get('id')] = (float(m.get('angle', 0)), m.get('name'))
+            ang, site = float(m.get('angle', 0)), m.get('name')
+            turn = lambda a: (a - ang + math.pi) % (2 * math.pi) - math.pi
+            k = next((k for k, (a, n) in enumerate(rs) if (n == site if site else not n and abs(turn(a)) < 0.01)), None)
+            if k is None:
+                k = len(rs); rs.append((ang, site))
+            residues[p.get('id'), m.get('id')] = (k, ang)
     INV = {v: k for k, v in STATE.items()}
     other = {}  # database -> species whose identifiers in it are left out
     aliases = list(xs(ext, 'cd:listOfComplexSpeciesAliases/cd:complexSpeciesAlias')) + \
@@ -737,10 +749,16 @@ def read(path):
             box = box[:2] + (box[2] - 6 * (n - 2), box[3] - 6 * (n - 2))
         states = []
         pref = f(si, 'cd:proteinReference')
+        pid = pref.text if pref is not None else None
+        rs, own = kin.get(pid, []), []  # the species' states in its own order, then the protein's other residues, empty
         for m in xs(si, 'cd:state/cd:listOfModifications/cd:modification'):
-            ang, site = residues.get((pref.text if pref is not None else None, m.get('residue')), (0.0, None))
+            k, ang = residues.get((pid, m.get('residue')), (None, 0))
+            if k is None or k in own: continue
+            own.append(k)
             sym = '' if m.get('state') == 'empty' else INV.get(m.get('state'), m.get('state'))
-            states.append((sym + ('@' + site if site else ''),) + border_point(ang))
+            states.append((sym + ('@' + rs[k][1] if rs[k][1] else ''),) + border_point(ang))
+        for k, (ang, site) in enumerate(rs):
+            if k not in own: states.append((('@' + site if site else ''),) + border_point(ang))
         for st in xs(si, 'cd:state/cd:listOfStructuralStates/cd:structuralState'):
             sa = f(a, 'cd:structuralState')
             states.append((st.get('structuralState'),) + border_point(float(sa.get('angle')) if sa is not None else math.pi / 2))

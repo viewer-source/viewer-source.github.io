@@ -40,17 +40,20 @@ def decorations(d):
 
 def unit_places(d, own=None):
     # a node's units of information (N:x added for a multimer beyond 2) with their places (rx, ry): where the file put
-    # them (own, else d.unit_at), the others spread evenly along the top, each in its slot among all
+    # them (own, else d.unit_at, by index), the others spread evenly along the top, each in its slot among all
     own = d.unit_at if own is None else own
     units = d.units + (['N:%d' % d.count] if d.count > 2 and not any(re.fullmatch(r'N:\d+', u) for u in d.units) else [])
-    return [(u,) + tuple(own.get(u, ((k + 1) / (len(units) + 1) - 0.5, -0.5))) for k, u in enumerate(units)]
+    return [(u,) + tuple((own[k] if k < len(own) else None) or ((k + 1) / (len(units) + 1) - 0.5, -0.5)) for k, u in enumerate(units)]
 
 
 def own_places(d):
     # the places a reader found (d.unit_at) less those that are the default slot, so a file read and written again
     # keeps its default units unplaced
-    slot = {u: (rx, ry) for u, rx, ry in unit_places(d, {})}
-    return {u: p for u, p in d.unit_at.items() if u in slot and (abs(p[0] - slot[u][0]) > 1e-6 or abs(p[1] - slot[u][1]) > 1e-6)}
+    slot = [(rx, ry) for _, rx, ry in unit_places(d, [])]
+    out = [p if p and k < len(slot) and (abs(p[0] - slot[k][0]) > 1e-6 or abs(p[1] - slot[k][1]) > 1e-6) else None for k, p in enumerate(d.unit_at)]
+    while out and out[-1] is None:
+        out.pop()
+    return out
 
 
 def main_lines(diagram, box, ents, origin=(0, 0)):

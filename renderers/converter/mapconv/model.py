@@ -20,7 +20,7 @@ class Node:
     weight: float = None  # a compartment's outline width, where the file gives one (yEd, SBGN-ML), kept on conversion
     states: list = field(default_factory=list)  # state variables: (text, rx, ry), place as offset from the centre in node widths and heights
     units: list = field(default_factory=list)   # units of information: ct:gene, N:4, ...
-    unit_at: dict = field(default_factory=dict)  # a unit's place where the file gives one: text -> (rx, ry) as a state's
+    unit_at: list = field(default_factory=list)  # each unit's place where the file gives one, by its index in units: (rx, ry) as a state's, None
     count: int = 1     # multimer: number of units (2 when drawn as a multimer without N:x)
     label_at: tuple = None  # compartment: top left of its name, relative to the box
     data: dict = field(default_factory=dict)  # yEd node data by name: url, annotation (HGNC symbol, UniProt, ...)

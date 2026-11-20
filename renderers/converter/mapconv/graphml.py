@@ -144,7 +144,7 @@ def read(path):
             fill=fill.get('color') if fill is not None else None,
             line=line if kind == 'Compartment' and line != '#000000' else None,
             weight=float(border.get('width')) if kind == 'Compartment' and border is not None and border.get('width') else None,
-            states=states(gn, res), units=us, unit_at={u: at for u, at in ua if at}, count=count(gn, us),
+            states=states(gn, res), units=us, unit_at=[at for _, at in ua], count=count(gn, us),
             label_at=(float(l.get('x')), float(l.get('y'))) if (kind == 'Compartment' or outline) and l is not None else None,
             data={names[x.get('key')]: x.text.strip() for x in n.findall('g:data', NS)
                   if x.get('key') in names and (x.text or '').strip()},
