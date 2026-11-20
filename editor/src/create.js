@@ -47,7 +47,10 @@
       // the card's one-sign sections (Container Nodes, Encapsulation Node) joined, as Newt's Other nodes (no
       // group of a single sign)
       ['Other nodes', [['compartment', 'Compartment', '<rect x="1.5" y="3" width="21" height="18" rx="4.5" stroke-width="2.2"/>'],
-        ['submap', 'Submap', '<rect x="1.5" y="4" width="21" height="16"/>']]],
+        ['submap', 'Submap', '<rect x="1.5" y="4" width="21" height="16"/>'],
+        // a tag: dropped on a submap's border it is that submap's terminal, sliding along it; elsewhere a free tag. Only
+        // with Settings, Editing, CellDesigner compatible unticked (CellDesigner has neither; compat())
+        ['tag', 'Tag', '<path d="M1.5 7h15l6 5-6 5h-15z"/>']]],
       // logic gates (with SBGN's equivalence operator), a
       // circle with its word or sign, made bare as a process, its antennas grown by its arcs; marks inside a sign are class
       // 'in', a dot class 'dot', letters plain <text>: their weight is the Edit window's one rule (atlas-app.html, Sign weights)
@@ -208,7 +211,8 @@
     }
     pal.innerHTML = '<div class="m2-ed-prow m2-ed-pnot" role="group" aria-label="Notation">' +
       palBtn('data-lang="pd"', 'Process Description', '<text x="12" y="17.3" text-anchor="middle" font-size="15">PD</text>') +
-      palBtn('data-lang="af"', 'Activity Flow', '<text x="12" y="17.3" text-anchor="middle" font-size="15">AF</text>') + '</div>' +
+      palBtn('data-lang="af"', 'Activity Flow', '<text x="12" y="17.3" text-anchor="middle" font-size="15">AF</text>') +
+      '<span class="m2-ed-pext" title="Settings, Editing, CellDesigner compatible is unticked: the palette offers SBGN glyphs CellDesigner cannot hold (tags, submap terminals)">SBGN extended</span></div>' +
       // AF's two views as named round choices under the tabs (icons there would read as
       // glyphs to drag onto the map), shown only where the views apply (palViews)
       '<div class="m2-ed-plook" role="radiogroup" aria-label="Activity Flow view">' +
@@ -229,6 +233,12 @@
     }
     if (window.ResizeObserver) new ResizeObserver(palBlocks).observe(palSignsEl);
     function palKey() { return palLangNow() === 'pd' ? 'pd' : palLookNow() + (protOn ? 'P' : ''); }
+    // Settings, Editing, CellDesigner compatible (kept in this browser, atlas-app.html): ticked, the palette offers only
+    // what CellDesigner can hold; unticked, SBGN extended adds the tag (and the submap's terminals). What a map already
+    // holds is never changed by it
+    var EXTENDED = { tag: 1 };
+    function compat() { try { return localStorage.getItem('atlas-cd-compatible') === 'on'; } catch (e) { return false; } }
+    function palSet0(set) { return compat() ? set.map(function (g) { return [g[0], g[1].filter(function (q) { return !EXTENDED[q[0]]; }), g[2]]; }) : set; }
     // the tick box's state lives in the file: on opening, ticked when the map's protein activities all
     // carry the protein's unit, unticked when none or some do; read again after every change where they all agree (an
     // undo of the tick included), kept where they are mixed or there are none, so new protein activities follow it
@@ -517,10 +527,11 @@
       pb.hidden = !palViews();   // only on an Activity Flow map or an empty one (proteinBoxes leaves a map turned PD as it is)
       if (!pb.hidden) { var pf = protFile(); if (pf != null) protOn = pf; k = palKey(); }
       if (pbc.checked !== protOn) pbc.checked = protOn;
-      if (palShown === k) return;
-      palShown = k;
+      pal.querySelector('.m2-ed-pext').hidden = compat();
+      if (palShown === k + compat()) return;
+      palShown = k + compat();
       if (tool && !palOk(tool.kind)) tool = null;   // a sign in hand that this set lacks (e.g. a delay kept after the map turned PD)
-      palSignsEl.innerHTML = palSigns(PALS[k]); palBlocks();
+      palSignsEl.innerHTML = palSigns(palSet0(PALS[k])); palBlocks();
     }
     function palLook() {   // the map drawn in the SBGN view while AF's SBGN view is chosen and the map has no process (graphml.js afSbgn)
       var want = palOn() && palLookNow() === 'sbgn';
@@ -533,7 +544,7 @@
       if (tool && !palOk(tool.kind)) tool = null;
       palKeep(); palFill(); palShow();   // palShow sets the look
     }
-    function palOk(kind) { return PALS[palKey()].some(function (s) { return s[1].some(function (q) { return q[0] === kind; }); }); }
+    function palOk(kind) { return palSet0(PALS[palKey()]).some(function (s) { return s[1].some(function (q) { return q[0] === kind; }); }); }
     pal.addEventListener('click', function (e) {
       var b = e.target.closest('button[data-lang], button[data-look]');
       if (b && !b.disabled) palDid([PAL_KEY], function () { palPick(b.dataset.lang, b.dataset.look); });
@@ -580,7 +591,7 @@
       var b = e.target.closest('button[data-make]');
       if (b) palTake(b.dataset.make, true);
     });
-    document.addEventListener('click', function (e) { if (e.target.closest && e.target.closest('#m2-set-edit')) setTimeout(palShow, 0); }, true);   // Settings, Editing changed
+    document.addEventListener('click', function (e) { if (e.target.closest && e.target.closest('#m2-set-edit, #m2-set-cdc')) setTimeout(palShow, 0); }, true);   // Settings, Editing changed
     document.addEventListener('keydown', function (e) { if (tool && e.key === 'Escape') palTake(null); }, true);
 
     // the map clicked with something in hand: a press only noted, so a drag still moves the map; the click is taken on release
@@ -686,13 +697,82 @@
     }
     // the complexes that took a member packed, in the same undo step (Pack's own code, layTool)
     function joinPack(cids) { if (cids.length) layTool('pack', cids, true); }
+    // a submap's terminals: tags on its border (yEd's Tag, a top-level node as the submap: neither holds the other), each
+    // moving with its submap as what a group holds (inside); sub: the submap a tag belongs to. A tag the file calls a
+    // terminal (node property SBGN class) touching a submap, or one inside a submap's box meeting one of its sides (a yEd
+    // file, the converter's rule); the nearest submap
+    // (core.js parseFix); the converter's graphml.terminals is the master of the rule
+    function terminals() {
+      var subs = [], key = null;
+      nodes2.forEach(function (n, i) { n.sub = null; if (n.shape.kind === 'Submap') subs.push(i); });
+      if (!subs.length) return;
+      Array.prototype.forEach.call(doc.getElementsByTagNameNS(G, 'key'), function (k) { if (k.getAttribute('attr.name') === 'SBGN class' && k.getAttribute('for') === 'node') key = k.getAttribute('id'); });
+      nodes2.forEach(function (n, i) {
+        if (n.shape.kind !== 'Tag') return;
+        var d = key && Array.prototype.filter.call(n.el.childNodes, function (c) { return c.localName === 'data' && c.getAttribute('key') === key; })[0];
+        var marked = !!d && d.textContent.trim() === 'terminal', b = boxOf(i), best = -1, bd = Infinity;
+        subs.forEach(function (j) {
+          var q = boxOf(j), touch = b[0] <= q[0] + q[2] + 1 && q[0] <= b[0] + b[2] + 1 && b[1] <= q[1] + q[3] + 1 && q[1] <= b[1] + b[3] + 1;
+          var side = q[0] - 1 <= b[0] && b[0] + b[2] <= q[0] + q[2] + 1 && q[1] - 1 <= b[1] && b[1] + b[3] <= q[1] + q[3] + 1 &&
+            Math.min(Math.abs(b[0] - q[0]), Math.abs(b[0] + b[2] - q[0] - q[2]), Math.abs(b[1] - q[1]), Math.abs(b[1] + b[3] - q[1] - q[3])) <= 1;
+          if (!(marked ? touch : side)) return;
+          var dd = Math.hypot(b[0] + b[2] / 2 - q[0] - q[2] / 2, b[1] + b[3] / 2 - q[1] - q[3] / 2);
+          if (dd < bd) { bd = dd; best = j; }
+        });
+        if (best >= 0) { n.sub = best; nodes2[best].inside.push(i); }
+      });
+    }
+    parseFix.push(terminals);
+    // a submap's terminal: on its border, sliding along it (as units of information along a glyph); its point out of the
+    // submap, so its way is the side it is on (up, down, left, right), long across the side (a tag's two sizes swapped
+    // between a left or right side and the top or bottom). subAt: the submap whose border passes within d of P
+    function subAt(P, d) {
+      var best = -1, bd = Infinity;
+      nodes2.forEach(function (n, j) {
+        if (n.shape.kind !== 'Submap') return;
+        var q = boxOf(j), ins = P[0] >= q[0] && P[0] <= q[0] + q[2] && P[1] >= q[1] && P[1] <= q[1] + q[3];
+        var e = ins ? Math.min(P[0] - q[0], q[0] + q[2] - P[0], P[1] - q[1], q[1] + q[3] - P[1]) : Math.hypot(Math.max(q[0] - P[0], 0, P[0] - q[0] - q[2]), Math.max(q[1] - P[1], 0, P[1] - q[1] - q[3]));
+        if (e <= d && e < bd) { bd = e; best = j; }
+      });
+      return best;
+    }
+    function onBorder(b, q) {   // [its box on submap q's nearest side, inside and touching it, its way]
+      var c = [b[0] + b[2] / 2, b[1] + b[3] / 2], L = Math.max(b[2], b[3]), S = Math.min(b[2], b[3]);
+      var oy = Math.max(q[1] - c[1], 0, c[1] - q[1] - q[3]), ox = Math.max(q[0] - c[0], 0, c[0] - q[0] - q[2]);   // the side nearest its centre, as a segment
+      var d = [Math.hypot(c[0] - q[0], oy), Math.hypot(q[0] + q[2] - c[0], oy), Math.hypot(ox, c[1] - q[1]), Math.hypot(ox, q[1] + q[3] - c[1])], k = d.indexOf(Math.min.apply(null, d));
+      var clamp = function (v, lo, hi) { return Math.max(lo, Math.min(v, Math.max(lo, hi))); };
+      if (k < 2) { var y = clamp(c[1] - S / 2, q[1], q[1] + q[3] - S); return [[k ? q[0] + q[2] - L : q[0], y, L, S], k ? 'right' : 'left']; }
+      var x = clamp(c[0] - S / 2, q[0], q[0] + q[2] - S);
+      return [[x, k === 3 ? q[1] + q[3] - L : q[1], S, L], k === 3 ? 'down' : 'up'];
+    }
+    // after a move (core.js fixMoved) or a submap resized: each terminal back onto its submap's border, its way by its side
+    function termsFix(list) {
+      if (!sbJs || !sbJs.way) return;
+      var nb = {}, ways = [];
+      list.forEach(function (i) {
+        var s = nodes2[i] && nodes2[i].sub;
+        if (s == null) return;
+        var b = boxOf(i), on = onBorder(b, boxOf(s));
+        if (on[0].some(function (v, j) { return Math.abs(v - b[j]) > 0.001; })) nb[i] = on[0];
+        ways.push([nodes2[i].id, on[1]]);
+      });
+      if (Object.keys(nb).length) setBoxes(nb);
+      var t2 = text;
+      ways.forEach(function (q) { t2 = sbJs.way(t2, q[0], q[1]); });
+      if (t2 !== text) { text = t2; parse(); dirty = true; }
+    }
+    moveFix.push(function (set) {   // a terminal moved without its submap slides along it
+      var list = []; set.forEach(function (i) { if (nodes2[i].sub != null && !set.has(nodes2[i].sub)) list.push(i); });
+      termsFix(list);
+    });
     function makeEntity(P, cls) {
       var units = PRESET[cls] ? PRESET[cls][1] : null; cls = baseKind(cls);
       var act = ACT_UNIT[cls], D = defOf(cls), w = D.w, h = D.h, X = P[0] - w / 2, Y2 = P[1] - h / 2;   // act: an activity's unit
       if (gridSet.snap) { X += toGrid(X + w / 2, gridSet.step); Y2 += toGrid(Y2 + h / 2, gridSet.step); }   // its centre on the grid, as a drag puts it
       var bx0 = [+fmt(X), +fmt(Y2), w, h], c = holder(bx0, function () { return false; }, boxOf), id = freeId('glyph_'), onCx = innermost(P, function (n) { return n.shape.kind === 'Complex'; }) >= 0;   // c: the innermost compartment holding its box
-      var t2;
-      try { t2 = sbJs.add(text, { id: id, cls: act != null ? sbJs.unitClass(act) : cls, activity: act, label: '', box: bx0, parent: c != null ? nodes2[c].id : null, fill: D.fill, line: D.line, width: D.width, multimer: D.multimer, font: D.font, units: units || undefined }); }
+      var t2, way = null, sm = cls === 'tag' ? subAt(P, Math.max(w, h) / 2) : -1;
+      if (cls === 'tag') { var on = sm >= 0 ? onBorder([X, Y2, w, h], boxOf(sm)) : null; way = on ? on[1] : 'right'; if (on) { bx0 = on[0].map(function (v) { return +fmt(v); }); c = nodes2[sm].up; } }   // its box onto the submap's side, pointing out, held where its submap is
+      try { t2 = sbJs.add(text, { id: id, cls: act != null ? sbJs.unitClass(act) : cls, activity: act, label: '', box: bx0, parent: c != null ? nodes2[c].id : null, fill: D.fill, line: D.line, width: D.width, multimer: D.multimer, font: D.font, units: units || undefined, way: way }); if (sm >= 0) t2 = sbJs.terminal(t2, id, true); }
       catch (err) { warn('The ' + (act != null ? 'activity' : cls) + ' could not be added: ' + (err && err.message || err) + '.'); return; }
       remember(false); text = t2;
       if (cls === 'compartment') {   // what it covers taken in, in the same undo step
@@ -1442,6 +1522,7 @@
     }
     function nodesDelete(list, arcs) {   // the glyphs the palette makes, an empty compartment too, deleted with every line at them,
       // and the lines selected with them (one undo step, as cdDelete on a CellDesigner map)
+      list = list.concat(nodes2.map(function (n, k) { return n.sub != null && list.indexOf(n.sub) >= 0 && list.indexOf(k) < 0 ? k : -1; }).filter(function (k) { return k >= 0; }));   // a submap's terminals go with it (as Newt)
       var ids = list.filter(function (i) { return isMade(nodes2[i]) || emptyComp(nodes2[i]); }).map(function (i) { return nodes2[i].id; });
       var eids = (arcs || []).map(function (k) { return edges2[k] && edges2[k].id; }).filter(Boolean);
       if (!ids.length && !eids.length) return false;
@@ -1680,6 +1761,11 @@
       var has = function (s, t, head) { return edges2.some(function (q) { return q.s === s && q.t === t && q.arr[1] === head; }); };
       var ok = function (cls) { return has(a, b, sbJs.ARROW[cls]) ? { no: 'This ' + cls + ' is there already.' } : { cls: cls }; };
       var outs = function (g) { return edges2.filter(function (q) { return q.s === g; }).length; }, ins = function (g) { return edges2.filter(function (q) { return q.t === g; }).length; };
+      if (ra === 'tag' || rb === 'tag') {   // a tag (or terminal) and the entity it stands for: an equivalence arc, a plain line (sbgn_edit.connect writes it from the entity)
+        var why = 'A tag is joined to an entity by an equivalence arc.';
+        if ((ra === 'tag' ? rb : ra) !== 'epn' || (want && want !== 'consumption' && want !== 'logic arc')) return { no: why };
+        return has(a, b, 'none') || has(b, a, 'none') ? { no: 'This equivalence arc is there already.' } : { cls: 'equivalence arc' };
+      }
       if (ra === 'pheno') return { no: 'Nothing leaves a phenotype: it is modulated by an entity or a logic gate.' };
       if (ra === 'gate' && outs(a)) return { no: 'A logic gate has one line out, and this one has it.' };   // SBGN PD; the converter's rules for the equivalence
       var word = function (i) { var l = nodes2[i].el.getElementsByTagNameNS(Y, 'NodeLabel')[0]; return l ? l.textContent.trim() : ''; };   // a gate's word as drawn (a made one is not in the file yet)
@@ -1825,11 +1911,22 @@
       return !!n.comp || (isMade(n) && n.shape.kind !== 'Process' && n.shape.kind !== 'Operator');   // a compartment too (holderSize); a process or gate keeps its size (its antennas)
     }
     function sbSetSize(pairs) {   // each node given its box, one undo step with the compartments round them grown to hold them
-      var ids = [], was = {}, t2 = text;
+      var ids = [], was = {}, t2 = text, tids = [];   // tids: the terminals of a submap resized, kept on its sides (termsFix)
+      pairs.forEach(function (q) {
+        var b0 = boxOf(q[0]), b1 = q[1];
+        nodes2.forEach(function (n, k) {
+          if (n.sub !== q[0]) return;
+          var b = boxOf(k), rx = b0[2] ? (b[0] + b[2] / 2 - b0[0]) / b0[2] : 0.5, ry = b0[3] ? (b[1] + b[3] / 2 - b0[1]) / b0[3] : 0.5;   // its place scaled with the box
+          t2 = sbJs.resize(t2, n.id, [b1[0] + rx * b1[2] - b[2] / 2, b1[1] + ry * b1[3] - b[3] / 2, b[2], b[3]]);
+          tids.push(n.id);
+        });
+      });
       try { pairs.forEach(function (q) { var id = nodes2[q[0]].id; ids.push(id); was[id] = boxOf(q[0]); t2 = sbJs.resize(t2, id, q[1]); }); }
       catch (err) { warn('Not resized: ' + (err && err.message || err) + '.'); liveOff(); sizeOff(); paint(); return; }
       if (t2 === text) { liveOff(); sizeOff(); paint(); return; }
       remember(false); text = t2; parse(); dirty = true;
+      nodes2.forEach(function (n) { if (n.sub != null && ids.indexOf(n.id) >= 0) tids.push(n.id); });   // a terminal resized itself: kept on its side
+      if (tids.length) termsFix(nodes2.map(function (n, k) { return tids.indexOf(n.id) >= 0 ? k : -1; }).filter(function (k) { return k >= 0; }));
       selN = []; nodes2.forEach(function (n, k) { if (ids.indexOf(n.id) >= 0) selN.push(k); });
       var ks = selN.slice();   // their holders grown round them as round a drag (grown)
       if (ks.length) setBoxes(grown(ks, boxOf, function (k) { return was[nodes2[k].id] || boxOf(k); }, function () { return false; }));
@@ -1858,6 +1955,7 @@
     var RROWS = [['rev', 'Reversible', 'check'], ['cin', 'Reactant cardinality', 'card'], ['cout', 'Product cardinality', 'card']];   // the main reactant's and product's numbers where the part has them (PF_CD.rx.counts)
     function table(rows, cls) { return '<table class="m2-ed-ptab' + cls + '">' + rows.map(function (r) {
       var id = 'm2-ed-' + r[0], f = r[2] === 'check' ? '<input type="checkbox" id="' + id + '">'
+        : r[2] === 'select' ? '<select id="' + id + '">' + r[3].map(function (o) { return '<option value="' + o + '">' + o.charAt(0).toUpperCase() + o.slice(1) + '</option>'; }).join('') + '</select>'
         : r[2] === 'colour' ? '<span class="m2-ed-pc"><input type="color" tabindex="-1" aria-label="' + r[1] + ', picker"><input type="text" id="' + id + '" spellcheck="false" autocomplete="off"' + (r[0] === 'fill' ? ' placeholder="none"' : '') + '></span>'
         : r[2] === 'num' ? '<input type="number" id="' + id + '" step="any"' + (r[3] || (r[0] === 'width' ? ' min="0.25" max="20"' : /^[st][xy]$/.test(r[0]) ? '' : ' min="1" max="5000"')) + '>'
         : r[2] === 'card' ? '<input type="text" inputmode="decimal" class="m2-ed-card" id="' + id + '" placeholder="1" spellcheck="false" autocomplete="off">'
@@ -1882,12 +1980,16 @@
       var a = selN.map(function (i) { return f.node(i); });
       return selN.length === 1 ? (a[0] >= 0 ? a : []) : a.filter(function (i) { return i >= 0; });
     }
-    function sbNode(i) {   // a glyph Properties restyles (sbgn_edit LOOKS: entities, complexes, compartments, processes, gates; its class read from the file once per selection and change)
-      return sbJs.LOOKS.test(sbClasses()[nodes2[i].id] || '') ? i : -1;
+    function sbNode(i) {   // a glyph Properties restyles (sbgn_edit LOOKS: entities, complexes, compartments, processes, gates; its class read from the file once per selection and change), and a tag
+      var c = sbClasses()[nodes2[i].id] || '';
+      return sbJs.LOOKS.test(c) || TAGS.test(c) ? i : -1;
     }
+    var TAGS = /^(tag|terminal)$/;   // a tag's rows: Label, Width, Height, Orientation (a terminal's shown, set by its side)
     // the rows a glyph has by its class: Label where sbgn_edit keeps a name (NAMED), Multimer where it writes one (MULTI); Set as default for the kinds the palette makes in a kept look
     function sbOff(k, i) {
       var c = sbClasses()[nodes2[i].id] || '';
+      if (k === 'way') return !TAGS.test(c);
+      if (TAGS.test(c)) return !/^(label|w|h)$/.test(k);
       if (k === 'label' || k === 'font') return !sbJs.NAMED.test(c);   // a font size where there is a name
       if (k === 'multimer') return !sbJs.MULTI.test(c.replace(/ multimer$/, ''));
       if (EXTRA.indexOf(k) >= 0) return true;   // another format's own rows (propRows)
@@ -2018,6 +2120,7 @@
         else if (k === 'multimer') t2 = sbJs.multimer(t2, id, v);   // a count, if any, stays the unit of information typed (N:3)
         else if (k === 'width') { var x = parseFloat(v); if (isFinite(x)) t2 = sbJs.restyle(t2, id, { width: Math.min(Math.max(x, 0.25), 20) }); }   // outside 0.25 to 20: the nearest, silently
         else if (k === 'font') { var z = parseFloat(v); if (isFinite(z)) t2 = sbJs.restyle(t2, id, { font: Math.min(Math.max(Math.round(z * 2) / 2, 1), 200) }); }   // in halves, 1 to 200: the nearest, silently
+        else if (k === 'way') { if (is.every(function (i) { return nodes2[i].id !== id || nodes2[i].sub == null; })) t2 = sbJs.way(t2, id, v); }   // a free tag turned (a terminal's follows its side)
         else {
           var c = hex(v), o = {};
           if (c !== null && !(c === '' && k === 'line')) { o[k] = c === '#000000' && k === 'line' ? null : c || null; t2 = sbJs.restyle(t2, id, o); }
@@ -2060,7 +2163,11 @@
       line: { colour: sbLineColour, set: sbLineSet, width: function (k) { return sbJs.widthOf(sbEdgeEl(k)); }, setWidth: sbLineWidth, ports: true,   // a line's colour, width and its ports' rows (edgeShow, edgeSet)
         count: sbCount, setCount: function (k, v) { return sbLineTo(k, sbJs.recount(text, edges2[k].id, v)); } },   // a consumption's or production's cardinality
       off: sbOff,
-      look: function (i) { var o = sbJs.lookOf(realizerOf(nodes2[i].el)); return { label: nameOf(i), font: o.font, fill: o.fill ? o.fill.slice(0, 7).toLowerCase() : '', line: (o.line || '#000000').slice(0, 7).toLowerCase(), width: o.width, multimer: o.multimer }; } };
+      look: function (i) {
+        var r = realizerOf(nodes2[i].el), o = sbJs.lookOf(r), wf = field('way');
+        if (wf) { wf.disabled = nodes2[i].sub != null; wf.title = wf.disabled ? 'A terminal points out of its submap, set by the side it sits on' : ''; }
+        return { label: nameOf(i), font: o.font, fill: o.fill ? o.fill.slice(0, 7).toLowerCase() : '', line: (o.line || '#000000').slice(0, 7).toLowerCase(), width: o.width, multimer: o.multimer, way: (sbJs.wayOfR && sbJs.wayOfR(r)) || 'right' };
+      } };
     // a line's Properties, one line selected on a map whose format's part has a line's answers (PF_SB.line): Line colour
     // and its ports as yEd gives them, offsets from its glyph's centre (sx, sy at the source, tx, ty at the target), set
     // as a dragged end sets them (setPorts). An end at a process's or gate's port goes with it: shown, not typed.
@@ -2183,6 +2290,7 @@
       var k = ROWS.findIndex(function (r) { return r[0] === last; });
       rows.forEach(function (r, j) { ROWS.splice(k + 1 + j, 0, r); EXTRA.push(r[0]); propListen(r); });
     }
+    propRows([['way', 'Orientation', 'select', ['right', 'left', 'up', 'down']]]);   // a tag's (sbOff)
     props.addEventListener('keydown', function (e) {   // Enter keeps the value, Esc takes it back; the map's keys stay out of the fields
       if (e.key === 'Enter') { e.target.blur(); e.preventDefault(); }
       else if (e.key === 'Escape') { propsShow(true); e.target.blur(); e.preventDefault(); }   // the value put back first, so leaving the field changes nothing

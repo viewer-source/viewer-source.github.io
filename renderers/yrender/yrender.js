@@ -10,10 +10,10 @@
   var G = 'http://graphml.graphdrawing.org/xmlns', Y = 'http://www.yworks.com/xml/graphml';
   var MARGIN = 15, SBGN = 'com.yworks.sbgn.';
   var NODE_STYLES = new Set(['Macromolecule', 'SimpleChemical', 'Complex', 'Process', 'EmptySet', 'Operator', 'Phenotype', 'Submap',
-    'NucleicAcidFeature', 'StateVariable', 'UnitOfInformation', 'UnspecifiedEntity', 'PerturbingAgent']);
+    'NucleicAcidFeature', 'StateVariable', 'UnitOfInformation', 'UnspecifiedEntity', 'PerturbingAgent', 'Tag']);
   var SHAPES = new Set(['rectangle', 'roundrectangle']);
   var HUBS = new Set(['Process', 'Operator']), ANTENNA = 0.5, ANTENNA_MIN = 9, EQUIV = '\u2261';   // ports: yrender.py's header
-  var STYLE_PROPS = new Set(['radius', 'radiusX', 'radiusY', 'mcount']);
+  var STYLE_PROPS = new Set(['radius', 'radiusX', 'radiusY', 'mcount', 'inverse', 'orientation']);
   var ARROWS = new Set(['none', 'delta', 'white_delta', 'white_circle', 'white_delta_bar', 't_shape', 'white_diamond']);
   var AIR = { white_circle: 2, t_shape: 2 }, AIR_MAX = 16;   // px of white each head keeps off the outline: yrender.py's header
   var FONTS = {
@@ -262,8 +262,26 @@
     if (kind === 'UnspecifiedEntity') return oval(x, y, w, h);
     if (kind === 'Phenotype') return hexagon(x, y, w, h);
     if (kind === 'PerturbingAgent') return hexagon(x, y, w, h, true);
+    if (kind === 'Tag') return tagShape(x, y, w, h, tagWay(props));
     if (kind === 'roundrectangle') return roundRect(x, y, w, h, 4, false);
     return rect(x, y, w, h);
+  }
+  // a tag (SBGN's tag and a submap's terminal): a box with a point on one side, the point as deep as half the box across
+  // it, so its angle stays when the box is resized (yEd's way); yEd's two ways, plain to the right and inverse to the left,
+  // and orientation up or down beside them (SBGN-ML's four; yrender.py's tag_way)
+  function tagWay(props) {
+    var o = pget(props, 'orientation', '');
+    return o === 'up' || o === 'down' || o === 'left' || o === 'right' ? o : pget(props, 'inverse', 'false') === 'true' ? 'left' : 'right';
+  }
+  function tagShape(x, y, w, h, way) {
+    if (way === 'left' || way === 'right') {
+      var a = Math.min(h / 2, w), m = y + h / 2;
+      return way === 'right' ? [['M', x, y], ['L', x + w - a, y], ['L', x + w, m], ['L', x + w - a, y + h], ['L', x, y + h], ['Z']]
+        : [['M', x + a, y], ['L', x + w, y], ['L', x + w, y + h], ['L', x + a, y + h], ['L', x, m], ['Z']];
+    }
+    var b = Math.min(w / 2, h), c = x + w / 2;
+    return way === 'down' ? [['M', x, y], ['L', x + w, y], ['L', x + w, y + h - b], ['L', c, y + h], ['L', x, y + h - b], ['Z']]
+      : [['M', c, y], ['L', x + w, y + b], ['L', x + w, y + h], ['L', x, y + h], ['L', x, y + b], ['Z']];
   }
   function paintLayer(node) {   // yrender.py's paint_layer
     var cx = kids(node, G, 'data').some(function (dd) { var all = [dd].concat(Array.prototype.slice.call(dd.getElementsByTagName('*'))); return all.some(function (c) { return get(c, 'configuration') === SBGN + 'Complex'; }); });

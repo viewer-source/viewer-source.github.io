@@ -215,16 +215,16 @@
       T.cut(G.node[id].el);
     });
     // a submap as sbgnml.read reads it by the file's language (else a file turned PD draws it as AF's phenotype):
-    // under Activity Flow a phenotype, the arcs at its terminals at it; else yEd's Submap, the arcs at its terminals left out
-    var afL = afLang(t), term = function (x) { return !!S.glyph[x] && S.glyph[x].el.getAttribute('class') === 'terminal'; };
+    // under Activity Flow a phenotype, the arcs at its terminals at it; else yEd's Submap with its terminals, tags on its border
+    var afL = afLang(t);
     Object.keys(G.edge).forEach(function (id) {   // at a glyph deleted, or deleted itself (every edge of the converter's is an arc of the file)
-      var a = S.arc[id];
-      if (!a || (!afL && (term(a.getAttribute('source')) || term(a.getAttribute('target'))))) T.cut(G.edge[id].el);
+      if (!S.arc[id]) T.cut(G.edge[id].el);
     });
     Object.keys(G.node).forEach(function (id) {
       var g = S.glyph[id], n = G.node[id];
       if (!g) return;
       if (g.el.getAttribute('class') === 'submap') { var sc = afL ? 'Phenotype' : 'Submap', sr = n.geo.parentNode; if (sr.localName === 'GenericNode' && cfgOf(sr) !== sc) T.set(sr, 'configuration', 'com.yworks.sbgn.' + sc); }
+      if (/^(tag|terminal)$/.test(g.el.getAttribute('class') || '')) setWay(T, n.geo.parentNode, fileWay(g.el));   // its orientation as the file has it
       var ec = (g.el.getAttribute('class') || '').replace(/ multimer$/, ''), er = n.geo.parentNode;   // an entity made another (entityKind): its shape the file's class
       if (ENTITY.test(ec) && ENTITY.test(classOfCfg(cfgOf(er)) || '') && cfgOf(er) !== MAKE[ec]) T.set(er, 'configuration', 'com.yworks.sbgn.' + MAKE[ec]);
       var B = g.box, w = B[2], h = B[3], to = function (el, k, v) { if (el.getAttribute(k) !== v) T.set(el, k, v); };
@@ -311,12 +311,14 @@
       var g = S.glyph[id], cls = g.el.getAttribute('class') || '', name = nameIn(g.el);
       var au = cls === 'biological activity' ? fileUnit(g.el) : null;   // an activity: its unit
       if (!G.node[id]) {
-        var base = au != null ? actCls(au) : cls === 'perturbation' ? 'perturbing agent' : cls.replace(/ multimer$/, ''), dk = au != null ? cls : base;   // AF's perturbation: yEd's perturbing agent
-        if (!MAKE[base] || (g.el.parentNode.localName !== 'map' && !inCx(g.el)) || perf[id]) return;   // a member of a complex: made beside it, then nested (nestG)
+        var base = au != null ? actCls(au) : cls === 'perturbation' ? 'perturbing agent' : cls === 'terminal' ? 'tag' : cls.replace(/ multimer$/, ''), dk = au != null ? cls : base;   // AF's perturbation: yEd's perturbing agent; a terminal: a tag
+        if (cls === 'terminal' && (afLang(t) || g.el.parentNode.getAttribute('class') !== 'submap')) return;   // under AF the converter draws none
+        if (!MAKE[base] || (g.el.parentNode.localName !== 'map' && !inCx(g.el) && cls !== 'terminal') || perf[id]) return;   // a member of a complex: made beside it, then nested (nestG)
         St = St || styles(S); D = D || {}; D[dk] = D[dk] || defaults(t, opt, dk);
         var lk = fileLook(St, id, base), cref = g.el.getAttribute('compartmentRef');
         out = add(out, { id: id, cls: base, activity: au, label: name, box: g.box, parent: cref && S.glyph[cref] ? cref : null, fill: lk.fill, line: lk.line, width: lk.width, font: lk.font || D[dk].font,
-                         states: svOf(g), units: unitsOf(g.el).map(unitText), multimer: fileMulti(g.el) }, opt);
+                         states: svOf(g), units: unitsOf(g.el).map(unitText), multimer: fileMulti(g.el), way: base === 'tag' ? fileWay(g.el) : null }, opt);
+        if (cls === 'terminal') { Hfor = null; out = terminal(out, id, true, opt); }
         var nlb = cls === 'compartment' && kid(g.el, 'label') && kid(kid(g.el, 'label'), 'bbox');
         if (nlb) {   // its name where the file has it (namePlace), as graphml() reads a compartment of the base
           var NG = gml(out, opt), nl = labelsOf(NG, id).main;
@@ -725,8 +727,28 @@
       var want = lineOf(G.edge[id].el), ww = widthOf(G.edge[id].el), have = fileLook(St, id), w = St.some(function (st) { return st.plain && st.has.width && st.ids.indexOf(id) >= 0; });
       if (want !== have.line || ww !== have.width) looks.set(id, { fill: have.fill, line: want, width: ww !== 1 || w ? ww : null, font: have.font, cls: 'arc' });   // black and 1 with nothing else: only out of its styles; 1 written where its style gave a width (Newt's own default is 1.25)
     });
+    Object.keys(S.glyph).forEach(function (id) {   // a tag or terminal turned in the editor: its orientation
+      var el = S.glyph[id].el;
+      if (G.node[id] && /^(tag|terminal)$/.test(el.getAttribute('class') || '') && isTag(G, id) && fileWay(el) !== wayOf(G.node[id].geo.parentNode)) T.set(el, 'orientation', wayOf(G.node[id].geo.parentNode));
+    });
     var mapEl = kids(S.doc.documentElement, 'map')[0], tops = kids(mapEl, 'glyph'), last = tops[tops.length - 1];
     var ind0 = last ? T.indent(last) : T.indent(mapEl) + '  ', fresh = '', front = '', made = {};
+    // terminals made in the editor: inside their submap (subNode), the file's one or one made in this pass (termXml, written
+    // with it below), after what it holds
+    var termXml = {}, termOf = {};
+    G.ids.forEach(function (id) {
+      if (S.glyph[id] || !isTerm(G, id)) return;
+      var sm = subNode(G, id);
+      if (!sm || (S.glyph[sm] && S.glyph[sm].el.getAttribute('class') !== 'submap')) return;
+      termOf[id] = sm;
+      var L0 = labelsOf(G, id), tn = L0.main ? ownText(L0.main) : '', si = S.glyph[sm] ? T.indent(S.glyph[sm].bbox) : ind0 + '  ';
+      var xml = '<' + pre + 'glyph class="terminal" id="' + esc(id) + '" orientation="' + wayOf(G.node[id].geo.parentNode) + '">' + (tn ? '\n' + si + '  <' + pre + 'label text="' + esc(tn) + '"/>' : '') +
+        '\n' + si + '  ' + bboxXml(G.node[id].box) + '\n' + si + '</' + pre + 'glyph>';
+      if (S.glyph[sm]) { var se = T.t.lastIndexOf('</', T.end(S.glyph[sm].el) - 1); T.ed.push([se, se, '  ' + xml + '\n' + T.indent(S.glyph[sm].el)]); }
+      else termXml[sm] = (termXml[sm] || '') + '\n' + si + xml;
+      var lk = lookG(G, id), lf = L0.main ? F(L0.main.getAttribute('fontSize')) || 12 : null, own = lf != null && lf !== mapFont();   // its look, as a glyph made below
+      if (lk.fill || lk.line || lk.width !== 1 || own) looks.set(id, { fill: lk.fill, line: lk.line, width: lk.width, font: L0.main ? lf : null, cls: 'terminal', fresh: true });
+    });
     G.ids.forEach(function (id) {
       if (S.glyph[id] || S.port[id] || S.arc[id] || id.indexOf('|') >= 0) return;
       var n = G.node[id], cls = classOfR(n.geo.parentNode), act = af ? afUnitOf(G, id) : null;
@@ -734,17 +756,18 @@
       if (af && act == null && !n.el.getAttribute('yfiles.foldertype') && unitFor(cls) != null) act = unitFor(cls);   // a plain entity made: under AF its activity (a protein's with no unit)
       if (act != null) cls = 'biological activity';   // on an Activity Flow map (elsewhere written as its entity)
       if (af && cls === 'perturbing agent') cls = 'perturbation';   // AF's name for it
+      if (termOf[id]) { made[id] = 1; return; }   // a terminal: written with its submap (termXml)
       made[id] = 1;
       var up = n.el.parentNode; while (up && up.localName !== 'node') up = up.parentNode;
       var uid = up && up.getAttribute('id'), cref = uid && (S.glyph[uid] ? S.glyph[uid].el.getAttribute('class') === 'compartment' : !!G.node[uid] && cfgOf(G.node[uid].geo.parentNode) === 'Compartment') ? uid : null;   // a compartment of the file or made with it
       var L = labelsOf(G, id), name = L.main && !PROC.test(cls) ? ownText(L.main) : '', lk = lookG(G, id);   // a process's sign is its class, no label
       if (GATES.test(cls)) name = /^(equivalence|delay)$/.test(cls) ? '' : GATE[cls];   // a gate's label as sbgnml.write writes it (none on the equivalence, the spec 2.9.4, nor on a delay: its class says it)
       var fu = iconsOf(id, 'UnitOfInformation');
-      var xml = '\n' + ind0 + '<' + pre + 'glyph class="' + cls + (isMulti(G, id) && MULTI.test(cls) ? ' multimer' : '') + '" id="' + esc(id) + '"' + (cref ? ' compartmentRef="' + esc(cref) + '"' : '') + '>' +
+      var xml = '\n' + ind0 + '<' + pre + 'glyph class="' + cls + (isMulti(G, id) && MULTI.test(cls) ? ' multimer' : '') + '" id="' + esc(id) + '"' + (cref ? ' compartmentRef="' + esc(cref) + '"' : '') + (cls === 'tag' ? ' orientation="' + wayOf(n.geo.parentNode) + '"' : '') + '>' +
         (name ? '\n' + ind0 + '  <' + pre + 'label text="' + esc(name) + '"' + (cls === 'compartment' && labelBbox(id) ? '>\n' + ind0 + '    ' + labelBbox(id) + '\n' + ind0 + '  </' + pre + 'label>' : '/>') : '') + '\n' + ind0 + '  ' + bboxXml(n.box) +
         (act != null ? (act || (fu[0] && fu[0][0]) ? actUnitXml(id, act, n.box, ind0 + '  ', null, fu[0] ? fu[0][0] : '') : '') :   // under AF no state variables, one unit with its text
         iconsOf(id).map(function (q, k) { return svXml(id, k, q, n.box, ind0 + '  '); }).join('') +
-        fu.map(function (q, k) { return uiXml(id, k, q[0], uBoxAt(q[0], n.box, q[1], q[2]), ind0 + '  '); }).join('')) + '\n' + ind0 + '</' + pre + 'glyph>';
+        fu.map(function (q, k) { return uiXml(id, k, q[0], uBoxAt(q[0], n.box, q[1], q[2]), ind0 + '  '); }).join('')) + (termXml[id] || '') + '\n' + ind0 + '</' + pre + 'glyph>';
       if (cls === 'compartment') front += xml; else fresh += xml;   // a compartment before the glyphs, as the editor draws it under them
       var lf = L.main ? F(L.main.getAttribute('fontSize')) || 12 : null, own = lf != null && NAMED.test(cls) && lf !== mapFont();   // a font of its own, not the map's
       if (lk.fill || lk.line || lk.width !== 1 || own) looks.set(id, { fill: lk.fill, line: lk.line, width: lk.width, font: L.main ? lf : null, cls: cls, fresh: true });
@@ -1045,7 +1068,9 @@
                // bare as a process is, its ports written by its first arc
                and: 'Operator', or: 'Operator', not: 'Operator', equivalence: 'Operator',
                // Activity Flow's delay (the palette's AF tab): yEd's Operator labelled tau (graphml.DELAY), drawn as the equivalence
-               delay: 'Operator' };
+               delay: 'Operator',
+               // a tag, and a submap's terminal (the node property SBGN class terminal): yEd's Tag, its point by its way
+               tag: 'Tag' };
   var SIGN = { 'omitted process': '\\\\', 'uncertain process': '?' }, PROC = /^(process|omitted process|uncertain process)$/;
   var GATE = { and: 'AND', or: 'OR', not: 'NOT', equivalence: '\u2261', delay: '\u03c4' }, GATES = /^(and|or|not|equivalence|delay)$/;   // sbgnml.OPERATORS
   // sizes at the map's scale: the converter's standard ones (style.py) where it has them, else on the 8 grid near the
@@ -1054,7 +1079,7 @@
                'perturbing agent': [80, 40], 'source and sink': [32, 32], phenotype: [120, 40], submap: [120, 64], compartment: [400, 320],
                process: [18, 18], 'omitted process': [18, 18], 'uncertain process': [18, 18],   // a process: the yEd maps' 18
                and: [30, 30], or: [30, 30], not: [30, 30], equivalence: [30, 30], delay: [30, 30],   // a gate: the yEd maps' 30 (yed.graphml's Operator)
-               'biological activity': [80, 40] };   // every activity a protein's size, whatever its unit: 80 by 40
+               'biological activity': [80, 40], tag: [60, 30] };   // every activity a protein's size, whatever its unit: 80 by 40; a tag yEd's palette's 60 by 30
   function cfgOf(r) { return r.localName === 'GroupNode' ? 'Compartment' : (r.getAttribute('configuration') || '').replace('com.yworks.sbgn.', ''); }
   function classOfCfg(cfg) { var c = null; Object.keys(MAKE).forEach(function (k) { if (!c && MAKE[k] === cfg) c = k; }); return c; }
   function classOfR(r) {   // the class a realizer of the editor's GraphML stands for: a process's by its sign
@@ -1064,7 +1089,66 @@
     if (cfg === 'Operator') return Object.keys(GATE).filter(function (k) { return GATE[k] === t || GATE[k] === t.toUpperCase(); })[0] || null;   // tau as it is (its upper case is another letter)
     return Object.keys(SIGN).filter(function (k) { return SIGN[k] === t; })[0] || 'process';
   }
-  var NAMED = /^(macromolecule|simple chemical|nucleic acid feature|unspecified entity|perturbing agent|phenotype|complex|submap|compartment)( multimer)?$|^(biological activity|perturbation)$/;   // names kept in step both ways
+  // a tag's or terminal's way (its point): SBGN-ML's orientation (horizontal, its default, to the right); in the GraphML
+  // yEd's two, plain to the right and the style property inverse to the left, and orientation up or down (graphml.write)
+  var WAYS = /^(left|right|up|down)$/;
+  function fileWay(el) { var o = el.getAttribute('orientation') || ''; return WAYS.test(o) ? o : 'right'; }
+  function wayOf(r) {
+    var p = {};
+    kids(kid(r, 'StyleProperties') || r, 'Property').forEach(function (q) { p[(q.getAttribute('name') || '').replace('com.yworks.sbgn.style.', '')] = q.getAttribute('value'); });
+    return WAYS.test(p.orientation || '') ? p.orientation : p.inverse === 'true' ? 'left' : 'right';
+  }
+  function wayXml(w) {
+    return w === 'right' ? '' : '<y:StyleProperties>\n            ' + (w === 'left' ? '<y:Property class="java.lang.Boolean" name="com.yworks.sbgn.style.inverse" value="true"/>'
+      : '<y:Property class="java.lang.String" name="com.yworks.sbgn.style.orientation" value="' + w + '"/>') + '\n          </y:StyleProperties>\n';
+  }
+  function setWay(T, r, w) {   // a Tag's realizer pointing that way; other style properties a yEd file gave kept
+    if (wayOf(r) === w) return;
+    var sp = kid(r, 'StyleProperties'), ps = sp ? kids(sp, 'Property') : [], mine = function (q) { return /\.style\.(inverse|orientation)$/.test(q.getAttribute('name') || ''); };
+    if (sp && ps.some(function (q) { return !mine(q); })) {   // its own properties stay: only the way's taken out and put in
+      ps.filter(mine).forEach(function (q) { T.cut(q); });
+      var m = wayXml(w).match(/<y:Property[^>]*\/>/), e1 = T.t.lastIndexOf('</', T.end(sp) - 1);
+      if (m) T.ed.push([e1, e1, '  ' + m[0] + '\n' + T.indent(sp)]);
+      return;
+    }
+    if (sp) T.cut(sp);
+    var e = T.t.lastIndexOf('</', T.end(r) - 1);
+    if (w !== 'right') T.ed.push([e, e, '  ' + wayXml(w) + T.indent(r)]);
+  }
+  function isTag(G, id) { return !!G.node[id] && cfgOf(G.node[id].geo.parentNode) === 'Tag'; }
+  function isTerm(G, id) { var d = isTag(G, id) && propEl(G, id, 'SBGN class'); return !!d && ownText(d).trim() === 'terminal'; }
+  //   way(g, id, w) -> g with the tag pointing w (left, right, up, down); terminal(g, id, on) -> g with the tag a submap's
+  //   terminal (on its border) or a free tag again
+  function way(t, id, w, opt) {
+    var G = gml(t, opt);
+    if (!isTag(G, id) || !WAYS.test(w)) return t;
+    var T = new Tags(t, G.doc); setWay(T, G.node[id].geo.parentNode, w); return T.text();
+  }
+  // a terminal's node right after its submap's node and the terminals it has, as the converter reads a submap's
+  // terminals after it (the file holds them inside the submap's glyph); the submap: the one its box touches, the nearest
+  function subNode(G, id) {
+    var b = G.node[id].box, best = null, bd = Infinity;
+    G.ids.forEach(function (k) {
+      var q = G.node[k].box;
+      if (cfgOf(G.node[k].geo.parentNode) !== 'Submap' || b[0] > q[0] + q[2] + 1 || q[0] > b[0] + b[2] + 1 || b[1] > q[1] + q[3] + 1 || q[1] > b[1] + b[3] + 1) return;
+      var d = Math.hypot(b[0] + b[2] / 2 - q[0] - q[2] / 2, b[1] + b[3] / 2 - q[1] - q[3] / 2);
+      if (d < bd) { bd = d; best = k; }
+    });
+    return best;
+  }
+  function termPlace(t, id, opt) {
+    var G = gml(t, opt), sm = subNode(G, id);
+    if (!sm) return t;
+    var after = sm, sib = kids(G.node[sm].el.parentNode, 'node').map(function (n) { return n.getAttribute('id'); });
+    for (var j = sib.indexOf(sm) + 1; j < sib.length && sib[j] !== id && isTerm(G, sib[j]) && subNode(G, sib[j]) === sm; j++) after = sib[j];
+    if (sib[sib.indexOf(after) + 1] === id) return t;
+    var at = nodeAt(t, id), end = elEnd(t, 'node', at), nl = t.lastIndexOf('\n', at - 1), from = nl >= 0 && /^[ \t]*$/.test(t.slice(nl + 1, at)) ? nl : at, block = t.slice(at, end);
+    t = t.slice(0, from) + t.slice(end);
+    var a = nodeAt(t, after), ae = elEnd(t, 'node', a), al = t.lastIndexOf('\n', a - 1), ind = al >= 0 && /^[ \t]*$/.test(t.slice(al + 1, a)) ? t.slice(al + 1, a) : '';
+    return t.slice(0, ae) + (ind ? '\n' + ind : '') + block + t.slice(ae);
+  }
+  function terminal(t, id, on, opt) { t = setProps(t, id, { 'SBGN class': on ? 'terminal' : null }, opt); return on ? termPlace(t, id, opt) : t; }
+  var NAMED = /^(macromolecule|simple chemical|nucleic acid feature|unspecified entity|perturbing agent|phenotype|complex|submap|compartment)( multimer)?$|^(biological activity|perturbation|tag|terminal)$/;   // names kept in step both ways
   function ownText(el) { var t = ''; for (var c = el.firstChild; c; c = c.nextSibling) if (c.nodeType === 3 || c.nodeType === 4) t += c.nodeValue; return t; }
   function labelBox(text, w, h, k) {   // graphml._label: the label's box estimated and centred
     var lines = text ? text.split('\n') : [], n = 0;
@@ -1167,6 +1251,7 @@
         '<y:ModelParameter><y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/></y:ModelParameter></y:NodeLabel>';
     } else label = mainLabel(o.label || '', w, h, fs);
     var round = o.cls === 'macromolecule' || o.cls === 'nucleic acid feature';   // the templates with yEd's radius 10
+    if (o.cls === 'tag' && o.way && o.way !== 'right') return nodeXml(Object.assign({}, o, { way: null })).replace('        </y:GenericNode>', '          ' + wayXml(o.way) + '        </y:GenericNode>');
     return '<node id="' + esc(o.id) + '"><data key="ng">\n        <y:GenericNode configuration="com.yworks.sbgn.' + MAKE[o.cls] + '">\n' +
       '          <y:Geometry height="' + repr(h) + '" width="' + repr(w) + '" x="' + repr(o.box[0]) + '" y="' + repr(o.box[1]) + '"/>\n' +
       '          ' + fill + '\n          ' + border + '\n          ' + label +
@@ -1719,7 +1804,7 @@
   // bare process gets its two ports and its orientation then), and graphml() makes the edge again from the file.
   // graphml.py's ARROW (its master), by SBGN class
   var ARROW = { consumption: 'none', production: 'delta', catalysis: 'white_circle', inhibition: 't_shape', modulation: 'white_diamond',
-                stimulation: 'white_delta', 'necessary stimulation': 'white_delta_bar', 'logic arc': 'none' };
+                stimulation: 'white_delta', 'necessary stimulation': 'white_delta_bar', 'logic arc': 'none', 'equivalence arc': 'none' };
   // Activity Flow's influences, drawn with the arrowheads of the modulations they read as (sbgnml.HEAD); after them, so
   // an arrowhead reads back as the PD class (headClass), named again by AF_ARC where the map is Activity Flow
   var AF_ARC = { stimulation: 'positive influence', inhibition: 'negative influence', modulation: 'unknown influence' }, PD_ARC = {};
@@ -1795,6 +1880,7 @@
   function connect(t, id, s, tg, cls, opt) {
     var G = gml(t, opt);
     if (!G.node[s] || !G.node[tg] || !ARROW[cls]) return t;
+    if (ARROW[cls] === 'none' && isTag(G, s) && !isTag(G, tg)) { var sw = s; s = tg; tg = sw; }   // a line at a tag: an equivalence arc, from the entity
     var off = [0, 0, 0, 0], cfg = function (x) { return G.node[x].geo.parentNode.getAttribute('configuration') || ''; };
     var hub = function (x) { return /\.(Process|Operator)$/.test(cfg(x)); };
     var S = opt && opt.sbgn ? (sLast[0] === opt.sbgn ? sLast[1] : (sLast = [opt.sbgn, sbgn(opt.sbgn, opt)])[1]) : null;   // read once for the arcs of one step (only read, never edited)
@@ -1912,6 +1998,7 @@
     var h = headOf(e);
     if (h !== 'none') return headClass(h);
     var tc = S && S.glyph[e.t] ? S.glyph[e.t].el.getAttribute('class') || '' : '', sc = S && S.glyph[e.s] ? S.glyph[e.s].el.getAttribute('class') || '' : '';
+    if (/^(tag|terminal)$/.test(tc) || /^(tag|terminal)$/.test(sc) || isTag(G, e.t) || isTag(G, e.s)) return 'equivalence arc';   // a line at a tag
     return GATES.test(tc) || sc === 'equivalence' ? 'logic arc' : 'consumption';   // into a gate, or out of an equivalence to its entity
   }
   function headClass(h) { return h === 'none' ? null : Object.keys(ARROW).filter(function (k) { return ARROW[k] === h; })[0] || null; }
@@ -2447,6 +2534,7 @@
               unit: unit, unitValue: unitValue, unitDelete: unitDelete, multimer: multimer, classOf: classOf, MAKE: MAKE, kind: kind, PROCESSES: ['process'].concat(Object.keys(SIGN)), SIGN: SIGN, remove: remove, resize: resize, scaleEnds: scaleEnds, gone: gone, nameable: nameable,
               moveInto: moveInto, connect: connect, reversible: reversible, reversibility: reversibility, arcRemove: arcRemove, arcKind: arcKind, GATE: GATE, ARROW: ARROW, MODULATIONS: ['stimulation', 'catalysis', 'inhibition', 'necessary stimulation', 'modulation'],
               activity: activity, activities: activities, proteinBoxes: proteinBoxes, afUnitBox: afUnitBox, afUnitFont: afUnitFont, isAf: isAf, mapKind: mapKind, unitFor: unitFor, fillFor: fillFor, AF_ARC: AF_ARC, UNITS: Object.keys(UNIT_CLS).filter(function (u) { return u && u !== 'perturbation'; }), unitClass: actCls,
+              way: way, wayOfR: function (r) { return cfgOf(r) === 'Tag' ? wayOf(r) : null; }, wayOf: function (t, id, opt) { var G = gml(t, opt); return isTag(G, id) ? wayOf(G.node[id].geo.parentNode) : null; }, terminal: terminal,
               countOf: countOf, recount: recount, Tags: Tags, repr: repr, num: num };   // Tags, repr and num serve sbml_edit.js too
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.sbgn_edit = api;
 })(typeof self !== 'undefined' ? self : this);

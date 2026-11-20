@@ -66,12 +66,12 @@ MARGIN = 15
 SBGN = 'com.yworks.sbgn.'
 NODE_STYLES = {'Macromolecule', 'SimpleChemical', 'Complex', 'Process', 'EmptySet', 'Operator',
                'Phenotype', 'Submap', 'NucleicAcidFeature', 'StateVariable', 'UnitOfInformation',
-               'UnspecifiedEntity', 'PerturbingAgent'}
+               'UnspecifiedEntity', 'PerturbingAgent', 'Tag'}
 SHAPES = {'rectangle', 'roundrectangle'}
 HUBS = {'Process', 'Operator'}
 EQUIV = '\u2261'  # the equivalence operator's label in yEd's SBGN palette
 ANTENNA, ANTENNA_MIN = 0.5, 9
-STYLE_PROPS = {'radius', 'radiusX', 'radiusY', 'mcount'}
+STYLE_PROPS = {'radius', 'radiusX', 'radiusY', 'mcount', 'inverse', 'orientation'}
 ARROWS = {'none', 'delta', 'white_delta', 'white_circle', 'white_delta_bar', 't_shape', 'white_diamond'}
 AIR, AIR_MAX = {'white_circle': 2, 't_shape': 2}, 16  # px of white each head keeps off the outline (the header, arrows)
 FONTS = {  # ascent and line height / font size as yEd measured them; fallbacks for systems without the font
@@ -283,6 +283,25 @@ def style_props(r):
     return p
 
 
+def tag_way(props):  # yrender.js's tagWay: yEd's plain (right) and inverse (left), and orientation up, down, left, right
+    o = props.get('orientation', '')
+    if o in ('up', 'down', 'left', 'right'):
+        return o
+    return 'left' if props.get('inverse', 'false') == 'true' else 'right'
+
+
+def tag_shape(x, y, w, h, way):  # a box with a point half as deep as the box across it, so the angle stays on resize
+    if way in ('left', 'right'):
+        a, m = min(h / 2, w), y + h / 2
+        if way == 'right':
+            return [('M', x, y), ('L', x + w - a, y), ('L', x + w, m), ('L', x + w - a, y + h), ('L', x, y + h), ('Z',)]
+        return [('M', x + a, y), ('L', x + w, y), ('L', x + w, y + h), ('L', x + a, y + h), ('L', x, m), ('Z',)]
+    b, c = min(w / 2, h), x + w / 2
+    if way == 'down':
+        return [('M', x, y), ('L', x + w, y), ('L', x + w, y + h - b), ('L', c, y + h), ('L', x, y + h - b), ('Z',)]
+    return [('M', c, y), ('L', x + w, y + b), ('L', x + w, y + h), ('L', x, y + h), ('L', x, y + b), ('Z',)]
+
+
 def outline(kind, x, y, w, h, props):
     if kind == 'Macromolecule': return round_rect(x, y, w, h, float(props.get('radius', 12)))
     if kind in ('SimpleChemical', 'StateVariable'): return round_rect(x, y, w, h, min(w, h) / 2, quad=False)
@@ -292,6 +311,7 @@ def outline(kind, x, y, w, h, props):
     if kind == 'UnspecifiedEntity': return oval(x, y, w, h)
     if kind == 'Phenotype': return hexagon(x, y, w, h)
     if kind == 'PerturbingAgent': return hexagon(x, y, w, h, inward=True)
+    if kind == 'Tag': return tag_shape(x, y, w, h, tag_way(props))
     if kind == 'roundrectangle': return round_rect(x, y, w, h, 4, quad=False)
     return rect(x, y, w, h)  # Process, Submap, UnitOfInformation, rectangle
 

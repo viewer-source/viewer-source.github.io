@@ -561,6 +561,8 @@ def in_order(lay):
 def write(diagram):
     from .biology import label
     from .annotation import uses_links
+    from .graphml import without_tags
+    diagram = without_tags(diagram, 'SBML core')
     N, bio = diagram.nodes, diagram.biology
     G, L, R = '{%s}' % sbgnml.NS, '{%s}' % LAYOUT, '{%s}' % sbgnml.RENDER
     sb = etree.fromstring(sbgnml.write(diagram).encode('utf-8'))

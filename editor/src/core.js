@@ -591,6 +591,7 @@
         });
       });
       nodes2.forEach(function (n, i) { n.kids.forEach(function (c) { nodes2[c].up = i; }); });
+      parseFix.forEach(function (f) { f(); });
       var byId = {}; nodes2.forEach(function (n, i) { byId[n.id] = i; });
       var pi = new Map(); points.forEach(function (p, i) { pi.set(p, i); });
       edges2 = Array.prototype.slice.call(doc.getElementsByTagNameNS(G, 'edge')).map(function (e) {
@@ -632,6 +633,10 @@
       else { var sh = r.getElementsByTagNameNS(Y, 'Shape')[0]; kind = sh ? sh.getAttribute('type') : 'rectangle'; }
       return { kind: kind, props: props };
     }
+    // after a move of nodes (a drag, the keys): each function given the nodes moved (their indices) puts what it keeps in
+    // place (a terminal back onto its submap's border, create.js), in the same undo step
+    var moveFix = [], parseFix = [];   // parseFix: after the nodes are read, a format's part adds what moves with what (create.js terminals)
+    function fixMoved(set) { moveFix.forEach(function (f) { f(set); }); }
     function num(el, a) { return parseFloat(el.getAttribute(a)); }
     function boxOf(i) { var g = geos[nodes2[i].ag]; return [num(g, 'x'), num(g, 'y'), num(g, 'width'), num(g, 'height')]; }
     function fmt(v) { return String(Math.round(v * 1000) / 1000); }
@@ -653,7 +658,7 @@
       // a process glyph never moves by itself (as in CellDesigner, where a process
       // cannot be moved itself): it stays midway on its segment, which moves by its anchor (bend) points and its ends; it goes only with
       // a group that holds its whole reaction
-      selN.forEach(function (i) { if (!(cd && /\|proc$/.test(nodes2[i].id))) all.add(i); if (!alone) nodes2[i].inside.forEach(function (c) { all.add(c); }); });
+      selN.forEach(function (i) { if (!(cd && /\|proc$/.test(nodes2[i].id))) all.add(i); nodes2[i].inside.forEach(function (c) { if (!alone || nodes2[c].sub === i) all.add(c); }); });   // a submap's terminals go with it even alone
       var ps = new Set(selP);
       selE.forEach(function (k) { edges2[k].pts.forEach(function (p) { ps.add(p); }); });
       edges2.forEach(function (e) { if (all.has(e.s) && all.has(e.t)) e.pts.forEach(function (p) { ps.add(p); }); });
@@ -2260,11 +2265,11 @@
     // reaction's participant in every place the file keeps it
     var EPN = /^(Macromolecule|SimpleChemical|Complex|NucleicAcidFeature|UnspecifiedEntity|EmptySet|PerturbingAgent)$/;
     var MODS = /^(white_circle|white_delta|white_delta_bar|t_shape|crows_foot_one|white_diamond)$/;
-    function roleOf(i) {   // 'epn', 'proc', 'gate', 'pheno', or null (a compartment, a member inside a complex, a decoration)
+    function roleOf(i) {   // 'epn', 'proc', 'gate', 'pheno', 'tag' (a tag or a submap's terminal), or null (a compartment, a member inside a complex, a decoration)
       var n = nodes2[i];
       if (n.comp || (n.up != null && !nodes2[n.up].comp)) return null;
       if (n.hub) return n.shape.kind === 'Operator' ? 'gate' : 'proc';
-      return EPN.test(n.shape.kind) ? 'epn' : n.shape.kind === 'Phenotype' ? 'pheno' : null;
+      return EPN.test(n.shape.kind) ? 'epn' : n.shape.kind === 'Phenotype' ? 'pheno' : n.shape.kind === 'Tag' ? 'tag' : null;
     }
     function takes0(k, end, i) {   // whether node i can take that end of arc k (its own node aside)
       // moving an end to another node changes the network: full editing only (Settings, Editing)
@@ -3126,7 +3131,7 @@
         paint(); return;
       }
       if (d.made != null) { move(d.dx, d.dy); fitAfter(); }   // one step for undo: made and moved
-      else if (d.dx || d.dy) { remember(false); move(d.dx, d.dy, sets); if (d.keepE) { selE = d.keepE; selP = []; } fitAfter(); }   // what the drag showed moving (with Shift, the selection by itself)
+      else if (d.dx || d.dy) { remember(false); move(d.dx, d.dy, sets); fixMoved(sets.n); if (d.keepE) { selE = d.keepE; selP = []; } fitAfter(); }   // what the drag showed moving (with Shift, the selection by itself)
       else { unshift(); if (d.keepE) { selE = d.keepE; selP = []; } }   // a click with a slight jitter: nothing moved, nothing stays hidden (else a smooth bend
       // turns sharp: the arcs drawn as plain lines while waiting for a redraw that a move of zero never asks for)
       paint();
@@ -3206,6 +3211,7 @@
         keyDue = null;
         var run = keyRun || [0, 0]; keyRun = null;
         var set = new Set(nodes2.map(function (n, i) { return kids.indexOf(n.id) >= 0 ? i : -1; }).filter(function (i) { return i >= 0; }));
+        fixMoved(set);
         var B0 = function (k) { var b = boxOf(k); return set.has(k) ? [b[0] - run[0], b[1] - run[1], b[2], b[3]] : b; };
         settle(full() ? regroup('plain', set, boxOf, B0) : new Map(), { grow: tops(set, false).map(function (k) { return nodes2[k].id; }), before: boxesBefore(B0), moving: kids }, function () { render(); paint(); },
           function () { text = unpush(); parse(); keyed = null; render(); paint(); });   // refused (checked at each key already): taken back, nothing said
