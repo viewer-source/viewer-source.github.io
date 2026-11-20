@@ -1,8 +1,7 @@
 // State variables and units of information on a CellDesigner map (editor/src/cdcreate.js through create.js's svList,
 // svAt, typeIn): on a protein made from the palette, the right-click menu's Add state variable (an empty residue,
-// selected), its text typed in place by a double click (P@Y705: phosphorylated at the site Y705), a state CellDesigner
-// does not have refused with the reason, the residue's own menu (Change state and Delete, no species items), its state
-// changed from Change state's list, the residue dragged round the border to the right (its angle written), Add structural state and
+// selected), its site typed in place by a double click (Y705), the residue's own menu (Change state and Delete, no species
+// items), its state picked from Change state's list, the site retyped with the state kept, the residue dragged round the border to the right (its angle written), Add structural state and
 // Add unit of information typed at once (active, N:2), the residue deleted by the Delete key and undone. Nothing is
 // saved (no token). No script error.
 //   node tests/cd-states.js [address] [viewer folder: its editor and renderers served in place of the page's]
@@ -45,11 +44,9 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#acly-celld
   await pick('Add state variable');
   t = await now();
   ok('an empty residue on the protein, its state empty on the species', /<celldesigner:modificationResidue [^>]*id="rs\d+"/.test(protein(t, sid)) && /<celldesigner:modification residue="rs\d+" state="empty"\/>/.test(speciesText(t, sid)), protein(t, sid));
-  await page.mouse.dblclick(L[0], L[1]); await type('P@Y705');
+  await page.mouse.dblclick(L[0], L[1]); await type('Y705');
   t = await now();
-  ok('P@Y705 typed: phosphorylated at the site Y705', / name="Y705"/.test(protein(t, sid)) && /state="phosphorylated"/.test(speciesText(t, sid)), protein(t, sid));
-  await page.mouse.dblclick(L[0], L[1]); await type('zz@Y705');
-  ok('a state CellDesigner does not have refused with the reason, the file unchanged', /no residue state zz/.test(await status()) && (await now()) === t, await status());
+  ok('the site typed: Y705, the state left empty', / name="Y705"/.test(protein(t, sid)) && /state="empty"/.test(speciesText(t, sid)), protein(t, sid));
   items = await menu(L);
   ok('the residue\'s own menu: Change state and Delete, no species items', items.some(function (x) { return /^Change state/.test(x); }) && items.indexOf('Delete') >= 0 && items.indexOf('Change identity') < 0 && items.indexOf('Add state variable') < 0, items.join('|'));
   var items2 = await menu([L[0] - 5, L[1]]);
@@ -59,6 +56,12 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#acly-celld
   await page.click('.m2-ci button:text-is("Ubiquitinated (Ub)")'); await page.waitForTimeout(900);
   t = await now();
   ok('Change state: ubiquitinated, the site kept', /state="ubiquitinated"/.test(speciesText(t, sid)) && / name="Y705"/.test(protein(t, sid)));
+  await page.keyboard.press('Escape');
+  await page.mouse.dblclick(L[0], L[1]); await page.waitForSelector('input.m2-ed-type', { timeout: 3000 });
+  ok('the field holds the site only', (await page.$eval('input.m2-ed-type', function (x) { return x.value; })) === 'Y705');
+  await page.fill('input.m2-ed-type', 'Y701'); await page.press('input.m2-ed-type', 'Enter'); await page.waitForTimeout(900);
+  t = await now();
+  ok('the site retyped: Y701, the state kept', / name="Y701"/.test(protein(t, sid)) && /state="ubiquitinated"/.test(speciesText(t, sid)));
   await page.keyboard.press('Escape');
   await page.mouse.click(L[0], L[1]); await page.waitForTimeout(300);   // selected
   await page.mouse.move(L[0], L[1]); await page.mouse.down(); await page.mouse.move(L[0] + 10, L[1] - 10, { steps: 3 }); await page.mouse.move(T[0], T[1], { steps: 8 }); await page.mouse.up(); await page.waitForTimeout(900);

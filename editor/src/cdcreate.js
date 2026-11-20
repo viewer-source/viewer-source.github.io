@@ -776,8 +776,8 @@
     // state variables and units of information on a CellDesigner map, as on SBGN-ML maps (create.js svList, svAt, typeIn,
     // svDown): a click selects one, a double click or a click on it selected types its text in place, a drag or the arrow
     // keys move it round the border, Delete removes it. CellDesigner's three kinds: a residue (a state variable: a site
-    // of a protein, its state from CellDesigner's fixed list, typed as its symbol or name, P or phosphorylated, with
-    // @ and the site, P@Y705), the structural state (one free text per species, an ellipse) and the unit of information
+    // of a protein, its state picked from CellDesigner's fixed list by Change state, its site name typed, Y705), the
+    // structural state (one free text per species, an ellipse) and the unit of information
     // (one free text per alias, at the top middle, not moved). A residue belongs to the protein: its site and place are
     // the protein's, on every species of it; its state is this species'. Written by cd_make (residue, residueState,
     // residueName, residueMove, residueRemove, structural, structuralMove, info), one undo step each
@@ -800,7 +800,7 @@
       var f = cdFeat(n.id);
       if (!f) return [];
       var b = cdFront(i, f), on = window.cdrender.onBorder, out = [];
-      f.residues.forEach(function (r, k) { out.push([cdSym(r.state) + (r.name ? '@' + r.name : ''), on(b, r.angle), [16, 16], SV, k]); });
+      f.residues.forEach(function (r, k) { out.push([r.name, on(b, r.angle), [16, 16], SV, k]); });   // a residue's text: its site name (its state from Change state's list)
       var st = f.structural || (cdPend && cdPend.id === n.id && cdPend.kind === SS ? { text: '', angle: cdFreeAngle(f) } : null);
       if (st) out.push([st.text, on(b, st.angle), [2 * Math.trunc(window.cdrender.width(st.text, 10) / 2 + 12), 16], SS, 0]);
       if (f.info || (cdPend && cdPend.id === n.id && cdPend.kind === UI)) out.push([f.info ? f.info.text : '', [b[0] + b[2] / 2, b[1]], [70, 16], UI, 0]);
@@ -833,24 +833,12 @@
       if (!q) return false;
       return cdApply(function (t) { return q[3] === SV ? cdMk.residueRemove(t, id, q[4]) : q[3] === SS ? cdMk.structural(t, id, null) : cdMk.info(t, id, null); }, [id]);
     }
-    // a residue's state as typed: its symbol or its name, any case; '' empty; null when CellDesigner has none such
-    function cdState(v) {
-      var w = v.trim().toLowerCase(), S = window.cdrender.SYMBOL, hit = null;
-      if (!w) return 'empty';
-      cdMk.STATES.forEach(function (s) { if (hit == null && (s === w || String(S[s] || '').toLowerCase() === w)) hit = s; });
-      return hit;
-    }
     // the text typed into icon q of node id (typeIn, create.js); a pending one written for the first time
     function cdSvType(id, q, v) {
       var pend = cdPend; cdPend = null;
       if (q[3] === SV) {
-        var at_ = v.indexOf('@'), st = cdState(at_ < 0 ? v : v.slice(0, at_)), site = at_ < 0 ? '' : v.slice(at_ + 1).trim();
-        var was = cdFeat(id).residues[q[4]];
-        if (st == null) { note('CellDesigner has no residue state ' + v.slice(0, at_ < 0 ? v.length : at_).trim() + '; it takes ' + cdMk.STATES.filter(function (s) { return s !== 'empty'; }).map(function (s) { return cdSym(s) ? cdSym(s) + ' (' + s + ')' : s; }).join(', ') + '.'); paint(); return; }
-        cdApply(function (t) {   // only what changed: a residue with no state on this species keeps none while it stays empty
-          if (st !== (was.state || 'empty')) t = cdMk.residueState(t, id, q[4], st);
-          return site !== was.name ? cdMk.residueName(t, id, q[4], site) : t;
-        }, []);
+        var site = v.replace(/^@+/, '').trim();   // the site only (S15; @S15 as drawn elsewhere taken too); its state stays
+        if (site !== cdFeat(id).residues[q[4]].name) cdApply(function (t) { return cdMk.residueName(t, id, q[4], site); }, []);
       } else if (q[3] === SS) {
         var fa = pend ? cdFreeAngle(cdFeat(id)) : null;
         cdApply(function (t) { t = cdMk.structural(t, id, v || null, true); return fa != null && v ? cdMk.structuralMove(t, id, fa) : t; }, [id]);
