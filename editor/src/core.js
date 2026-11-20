@@ -2267,7 +2267,7 @@
       if (n.hub) return n.shape.kind === 'Operator' ? 'gate' : 'proc';
       return EPN.test(n.shape.kind) ? 'epn' : n.shape.kind === 'Phenotype' ? 'pheno' : null;
     }
-    function takes(k, end, i) {   // whether node i can take that end of arc k (its own node aside)
+    function takes0(k, end, i) {   // whether node i can take that end of arc k (its own node aside)
       // moving an end to another node changes the network: full editing only (Settings, Editing)
       if (V.level !== 'full') return false;
       var e = edges2[k], a = e.arr, other = end ? e.s : e.t, r = roleOf(i), ro = roleOf(other);
@@ -2289,6 +2289,12 @@
       // notation one (Hybrid) to an entity too, as the palette makes them (linkHow), never a catalysis
       if (MODS.test(a[1])) return end ? r === 'proc' || r === 'pheno' || (r === 'epn' && a[1] !== 'white_circle' && (roleOf(e.t) === 'epn' || palLangNow() === 'af' || hybOn())) : r === 'epn' || r === 'gate';
       return false;
+    }
+    function takes(k, end, i) {   // takes0, and SBGN PD's table for the line as it would be (pdLimit)
+      if (!takes0(k, end, i)) return false;
+      if (cd) return true;
+      var e = edges2[k], s = end ? e.s : i, t = end ? i : e.t, a = e.arr[1];
+      return !pdLimit(s, t, a === 'delta' ? 'production' : a === 'white_circle' ? 'catalysis' : a === 'none' ? (roleOf(t) === 'proc' ? 'consumption' : 'logic arc') : 'modulation');
     }
     function takerAt(pp, P) {   // the innermost node under P that can take the end, or its own node; null over nothing that can
       var R = 4 / V.z, best = null, ba = Infinity;

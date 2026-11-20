@@ -760,7 +760,7 @@
         var h = hit(P), ed = h && h.e != null && h.p == null ? edges2[h.e] : null, now = ed && Object.keys(MODK).filter(function (c) { return sbJs.ARROW[c] === ed.arr[1]; })[0];
         var afN = afKind();   // an AF map (the map, not the tab): its influences by AF's names, no catalysis there
         if (now) return lateItem(['Change identity', subItem(function (r, done) {   // its kinds by Change identity (core.js kindWindow), the palette's names
-          return kindWindow(r, PAL_PD[4][1].filter(function (q) { return MODK[q[0]] && !(q[0] === 'catalysis' && (afN || roleOf(ed.t) === 'pheno')); }).map(function (q) {
+          return kindWindow(r, PAL_PD[4][1].filter(function (q) { return MODK[q[0]] && !(q[0] === 'catalysis' && (afN || roleOf(ed.t) === 'epn' || pdLimit(ed.s, ed.t, 'catalysis'))); }).map(function (q) {
             var c = q[0], af = afN && sbJs.AF_ARC[c];
             return { name: af ? af[0].toUpperCase() + af.slice(1) : q[1], own: c === now, go: function () {
               var t2 = sbJs.arcKind(text, ed.id, c);
@@ -1582,7 +1582,23 @@
       if (h && h.no && want && tool.sticky && (g = linkKind(a, b, P, null)) && !g.no && !(g.pair && MODK[want])) return g;
       return h;
     }
+    // SBGN PD's connectivity table (3.4.1) for what the roles alone do not tell: an empty set is only consumed or
+    // produced, a perturbing agent only starts a modulation (modulation, stimulation, inhibition, necessary
+    // stimulation), a nucleic acid feature is no catalyst. cls: the arc's class, 'pair' for a process made between two
+    // entities (s consumed, t produced). A reason, or null; Activity Flow and CellDesigner maps have rules of their own
+    function pdLimit(s, t, cls) {
+      if (cd || palLangNow() !== 'pd' || s < 0 || t < 0) return null;
+      var ks = nodes2[s].shape.kind, kt = nodes2[t].shape.kind, flux = cls === 'pair' || cls === 'consumption' || cls === 'production';
+      if ((ks === 'EmptySet' && !(cls === 'pair' || cls === 'consumption')) || (kt === 'EmptySet' && !(cls === 'pair' || cls === 'production'))) return 'An empty set is only consumed or produced.';
+      if ((ks === 'PerturbingAgent' && (flux || cls === 'catalysis' || cls === 'logic arc')) || kt === 'PerturbingAgent') return 'A perturbing agent only starts a modulation, stimulation, inhibition or necessary stimulation.';
+      if (cls === 'catalysis' && ks === 'NucleicAcidFeature') return 'A nucleic acid feature is no catalyst.';
+      return null;
+    }
     function linkKind(a, b, P, want) {
+      var r = linkKind0(a, b, P, want), m = r && !r.no && pdLimit(a, b, r.pair ? 'pair' : r.cls);
+      return m ? { no: m } : r;
+    }
+    function linkKind0(a, b, P, want) {
       if (b < 0) return null;
       var ra = roleOf(a), rb = roleOf(b), eqA = !!nodes2[a].eq, eqB = !!nodes2[b].eq;
       var has = function (s, t, head) { return edges2.some(function (q) { return q.s === s && q.t === t && q.arr[1] === head; }); };
@@ -1601,7 +1617,6 @@
         if (ra === 'gate' && !eqA && rb === 'epn' && (!want || MODK[want])) return want === 'catalysis' ? { no: 'A catalysis ends on a process.' } : ok(want || usual(b, 'stimulation'));
       }
       if (want === 'logic arc' && rb !== 'gate' && !(eqA && rb === 'epn')) return { no: 'A logic arc goes into a logic gate.' };
-      if (want === 'catalysis' && rb === 'pheno') return { no: 'A catalysis ends on a process; a phenotype takes a stimulation, inhibition or modulation.' };   // as the converter's rules
       if (want && MODK[want]) {   // a modulation picked: from an entity or a gate to a process or a phenotype
         if ((ra === 'epn' || (ra === 'gate' && !eqA)) && (rb === 'proc' || rb === 'pheno')) return ok(want);
         return { no: 'A ' + want + ' goes from an entity or a logic gate to a process or a phenotype' + ((ra === 'epn' || ra === 'gate') && rb === 'epn' && palLangNow() === 'pd' && !hybOn() ? ' (Reduced notation is unticked in the palette).' : '.') };
