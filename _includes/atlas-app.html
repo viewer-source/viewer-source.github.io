@@ -759,7 +759,7 @@ page, so its styles keep the base they were made on).
   .m2-cx .m2-sep { border-top: 1px solid var(--m2-line); margin: 4px 0; }
   .m2-cx .m2-cx-head { padding: 4px 12px; color: var(--m2-muted, #5f6368); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   /* Settings, Menus: the window arranging the right-click menus (menuEdit) */
-  #m2-setwin .m2-set-menus { margin: 0 0 14px; }
+  #m2-setwin .m2-set-menus { margin: 14px 0 0; }
   #m2-setwin .m2-set-row.m2-set-one { grid-template-columns: 1fr; }
   .m2-me-veil { position: fixed; inset: 0; z-index: 1000; background: rgba(0, 0, 0, .25); display: flex; align-items: center; justify-content: center; }
   .m2-me { width: min(1040px, calc(100vw - 32px)); height: min(680px, calc(100vh - 32px)); display: flex; flex-direction: column; background: var(--m2-bg); color: var(--m2-text); border: 1px solid var(--m2-line); border-radius: 8px; box-shadow: 0 8px 32px rgba(0, 0, 0, .18); font-size: 14px; overflow: hidden; }
@@ -772,7 +772,11 @@ page, so its styles keep the base they were made on).
   .m2-me-pickmenu { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 4px 16px; border: 0; background: none; font: inherit; font-size: 13px; color: var(--m2-text); text-align: left; cursor: pointer; }
   .m2-me-pickmenu:hover { background: #f1f3f4; }
   .m2-me-pickmenu.m2-on { background: var(--m2-accent); color: var(--m2-on-accent); }
-  .m2-me-dot { font-size: 8px; margin-left: 8px; }
+  .m2-me-dot { font-size: 8px; margin-right: 6px; }
+  .m2-me-mname { display: flex; flex-direction: column; min-width: 0; }
+  .m2-me-mhead, .m2-me-n { font-size: 11px; color: var(--m2-muted); }
+  .m2-me-n { flex: none; margin-left: 8px; display: flex; align-items: center; }
+  .m2-me-pickmenu.m2-on .m2-me-mhead, .m2-me-pickmenu.m2-on .m2-me-n { color: inherit; opacity: .85; }
   .m2-me-stage { flex: 1; display: flex; gap: 32px; padding: 16px 20px; overflow: auto; min-width: 0; }
   .m2-me-main { flex: none; width: 240px; }
   .m2-me-stack { flex: 1; min-width: 0; }
@@ -1595,10 +1599,10 @@ page, so its styles keep the base they were made on).
     { id: 'edit-modulation', head: 'Map, edit mode', name: 'Modulation', items: ['Add bend point', 'Change identity', '|', 'Delete'] },
     { id: 'edit-process', head: 'Map, edit mode', name: 'Process or reaction', items: ['Turn process or logic gate', 'Change identity', 'Make reversible or irreversible', 'Select all of this kind', '|', 'Delete'] },
     { id: 'edit-gate', head: 'Map, edit mode', name: 'Logic gate', items: ['Turn process or logic gate', 'Make <another kind>', 'Select all of this kind', '|', 'Delete'] },
-    { id: 'edit-macromolecule', cd: false, head: 'Map, edit mode', name: 'Macromolecule (SBGN-ML)', items: ['Add state variable', 'Add unit of information', 'Make multimer or monomer', 'Name by members', 'Repack complex', 'Select all of this kind', '|', 'Delete'] },
+    { id: 'edit-macromolecule', cd: false, head: 'Map, edit mode', name: 'Macromolecule (SBGN-ML)', items: ['Add state variable', 'Add unit of information', 'Change identity', 'Make multimer or monomer', 'Name by members', 'Repack complex', 'Select all of this kind', '|', 'Delete'] },
     { id: 'edit-naf', cd: false, head: 'Map, edit mode', name: 'Nucleic acid feature (SBGN-ML)', items: ['Add unit of information', 'Add unit of information ct:mRNA or ct:gene', 'Name by members', 'Repack complex', 'Select all of this kind', '|', 'Delete'] },
     { id: 'edit-af', cd: false, head: 'Map, edit mode', name: 'Activity (Activity Flow)', items: ['Make <another kind>', 'Remove unit of information', 'Add or edit unit of information text', 'Unit of information ct:mRNA or ct:gene', 'Remove unit of information text', 'Name by members', 'Repack complex', 'Select all of this kind', '|', 'Delete'] },
-    { id: 'edit-glyph', head: 'Map, edit mode', name: 'Other node, complex', items: ['Name by members', 'Repack complex', 'Select all of this kind', '|', 'Delete'] },
+    { id: 'edit-glyph', head: 'Map, edit mode', name: 'Other node, complex', items: ['Change identity', 'Name by members', 'Repack complex', 'Select all of this kind', '|', 'Delete'] },
     { id: 'edit-sv', cd: false, head: 'Map, edit mode', name: 'State variable or unit of information (SBGN-ML)', items: ['Delete'] },
     { id: 'edit-cd-species', cd: true, head: 'Map, edit mode', name: 'Species (CellDesigner)', items: ['Add state variable', 'Add structural state', 'Add unit of information', 'Change identity', 'Make multimer or monomer', 'Name by members', 'Repack complex', 'Select all of this kind', '|', 'Delete'] },
     { id: 'edit-cd-residue', cd: true, head: 'Map, edit mode', name: 'Residue (CellDesigner)', items: ['Edit', 'Change state', '|', 'Delete'] },
@@ -1703,12 +1707,16 @@ page, so its styles keep the base they were made on).
   // on the right, the other menus holding the item chosen, as a stack of cards, that item lit across each card so its
   // place shows on every card's visible edge
   var menuEd = null;
+  function menuCount(id) { return menuDefault(id).filter(function (k) { return k !== '|'; }).length; }
+  function menuLongest() {   // the window's list of menus: the longest first, as they need a look most; the code's order among equals
+    return MENUS.map(function (q, i) { return [q, i]; }).sort(function (a, b) { return menuCount(b[0].id) - menuCount(a[0].id) || a[1] - b[1]; }).map(function (x) { return x[0]; });
+  }
   function menuEdit() {
     if (menuEd) return;
     var veil = el('div', 'm2-me-veil'), w = el('div', 'm2-me');
     w.setAttribute('role', 'dialog'); w.setAttribute('aria-modal', 'true'); w.setAttribute('aria-label', 'Right-click menus');
     veil.appendChild(w); document.body.appendChild(veil);
-    menuEd = { veil: veil, w: w, id: MENUS[0].id, key: null, last: null, back: document.activeElement };
+    menuEd = { veil: veil, w: w, id: menuLongest()[0].id, key: null, last: null, back: document.activeElement };
     veil.addEventListener('pointerdown', function (e) { if (e.target === veil && !document.querySelector('.m2-me-rowmenu')) menuEditClose(); });
     window.addEventListener('keydown', menuEditKey, true);   // the window's capture: before the page's own keys (E, S, arrows, Delete)
     menuEditDraw();
@@ -1729,6 +1737,20 @@ page, so its styles keep the base they were made on).
       e.preventDefault();
       var o = menuNow(menuEd.id), at = o.indexOf(menuEd.key), to = at + (e.key === 'ArrowUp' ? -1 : 1);
       if (at >= 0 && to >= 0 && to < o.length) { o.splice(at, 1); o.splice(to, 0, menuEd.key); menuMove(menuEd.id, o, menuEd.key); }
+      return;
+    }
+    if (!r && !e.altKey && !e.ctrlKey && !e.metaKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {   // through the list: the chosen menu's items when one is chosen, else the menus
+      e.preventDefault();
+      var dn = e.key === 'ArrowDown';
+      if (menuEd.key) {
+        var ks = menuNow(menuEd.id).filter(function (k) { return k !== '|'; }), j = ks.indexOf(menuEd.key) + (dn ? 1 : -1);
+        if (j >= 0 && j < ks.length) { menuEd.key = ks[j]; menuEd.last = null; menuEditDraw(); }
+      } else {
+        var nv = menuLongest(), mi = nv.findIndex(function (q) { return q.id === menuEd.id; }) + (dn ? 1 : -1);
+        if (mi >= 0 && mi < nv.length) { menuEd.id = nv[mi].id; menuEd.last = null; menuEditDraw(); }
+      }
+      var p = w.querySelector(menuEd.key ? '.m2-me-main .m2-me-pick' : '.m2-me-nav .m2-on');
+      if (p) p.scrollIntoView({ block: 'nearest' });
       return;
     }
     var box = r || w, bs = Array.prototype.slice.call(box.querySelectorAll('button:not(:disabled)')), i = bs.indexOf(document.activeElement);
@@ -1784,11 +1806,13 @@ page, so its styles keep the base they were made on).
     top.appendChild(el('span', 'm2-me-title', 'Right-click menus'));
     var x = el('button', 'm2-me-x', '×'); x.type = 'button'; x.setAttribute('aria-label', 'Close'); x.title = 'Close (Esc)';
     x.addEventListener('click', menuEditClose); top.appendChild(x); w.appendChild(top);
-    var body = el('div', 'm2-me-body'), nav = el('div', 'm2-me-nav'), head = '';
-    MENUS.forEach(function (q) {
-      if (q.head !== head) { head = q.head; nav.appendChild(el('p', 'm2-me-h', head)); }
-      var b = el('button', 'm2-me-pickmenu' + (q.id === e.id ? ' m2-on' : ''), q.name); b.type = 'button';
-      if (s[q.id]) { b.appendChild(el('span', 'm2-me-dot', '●')); b.title = 'Arranged'; }
+    var body = el('div', 'm2-me-body'), nav = el('div', 'm2-me-nav');
+    nav.appendChild(el('p', 'm2-me-h', 'Longest first'));
+    menuLongest().forEach(function (q) {
+      var b = el('button', 'm2-me-pickmenu' + (q.id === e.id ? ' m2-on' : '')), t = el('span', 'm2-me-mname', q.name), n = el('span', 'm2-me-n', String(menuCount(q.id)));
+      b.type = 'button'; b.dataset.id = q.id; t.appendChild(el('span', 'm2-me-mhead', q.head)); b.appendChild(t);
+      if (s[q.id]) { n.insertBefore(el('span', 'm2-me-dot', '●'), n.firstChild); b.title = 'Arranged'; }
+      b.appendChild(n);
       b.addEventListener('click', function () { e.id = q.id; e.last = null; if (e.key && menuNow(q.id, s).indexOf(e.key) < 0) e.key = null; menuEditDraw(); });
       nav.appendChild(b);
     });
@@ -1813,7 +1837,7 @@ page, so its styles keep the base they were made on).
       say.textContent = 'Moved in ' + e.last.n + (e.last.n > 1 ? ' other menus' : ' other menu') + ' too.';
       var h = el('button', 'm2-me-btn', 'Here only'); h.type = 'button'; h.title = 'Take the move back from the other menus';
       h.addEventListener('click', menuHereOnly); say.appendChild(h);
-    } else say.textContent = 'Drag an item or a line, or Alt with an arrow key. Right-click for lines.';
+    } else say.textContent = 'Arrow keys go through the list. Drag an item or a line, or Alt with an arrow key, to move it. Right-click for lines.';
     foot.appendChild(say);
     [['Reset this menu', function () { menuChange(function (st) { delete st[e.id]; }); }, !s[e.id]],
      ['Reset all menus', function () { menuChange(function (st) { Object.keys(st).forEach(function (k) { delete st[k]; }); }); }, !Object.keys(s).length],
@@ -1907,13 +1931,14 @@ page, so its styles keep the base they were made on).
     if (menuRowOut) { document.removeEventListener('pointerdown', menuRowOut, true); menuRowOut = null; }
   }
   window.m2Menus = { list: MENUS, key: menuKey, which: menuWhich, arrange: menuArrange };   // for the checks (tests/menus.js)
-  (function () {   // Settings' row
-    var gest = document.querySelector('#m2-setwin .m2-set-gest');
-    if (!gest) return;
+  (function () {   // Settings' row, last (before Private maps' Sign out where a site has one)
+    var win = document.getElementById('m2-setwin');
+    if (!win) return;
     var row = el('div', 'm2-set-menus'), r1 = el('div', 'm2-set-row m2-set-one'), b = el('button', null, 'Edit right-click menus');
     b.type = 'button'; b.id = 'm2-set-menus'; b.title = 'Arrange the items and lines of every right-click menu';
     row.appendChild(el('p', 'm2-set-k', 'Menus')); r1.appendChild(b); row.appendChild(r1);
-    gest.parentNode.insertBefore(row, gest.nextSibling);
+    var out = document.getElementById('m2-signout');
+    win.insertBefore(row, out ? out.closest('#m2-setwin > div') : null);
     b.addEventListener('click', menuEdit);
   })();
   // Open all groups and Close all groups, and file extensions, in the list's right-click menu (in Settings they would change a

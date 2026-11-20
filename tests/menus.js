@@ -103,8 +103,26 @@ function viewerHunks() {
   await page.click('.m2-ri[data-win="set"]'); await page.waitForTimeout(400);
   ok('3. Settings has Edit right-click menus', await page.isVisible('#m2-set-menus'));
   await page.click('#m2-set-menus'); await page.waitForTimeout(400);
-  ok('3. the window opens with every menu listed', (await page.$$('.m2-me-pickmenu')).length === list.length);
-  await page.click('.m2-me-pickmenu:text-is("Macromolecule (SBGN-ML)")'); await page.waitForTimeout(200);
+  ok('3. the window opens with every menu listed', (await page.$$('.m2-me-pickmenu')).length === list.length, (await page.$$('.m2-me-pickmenu')).length + ' ' + errs.join(' | '));
+  ok('3. Menus is the last of Settings', await page.evaluate(function () { var w = document.getElementById('m2-setwin'), l = w.lastElementChild; return l.classList.contains('m2-set-menus') || (!!l.querySelector('#m2-signout') && l.previousElementSibling.classList.contains('m2-set-menus')); }));
+  var counts = await page.$$eval('.m2-me-pickmenu .m2-me-n', function (l) { return l.map(function (n) { return +n.textContent.replace(/\D/g, ''); }); });
+  ok('3. the menus longest first', counts.every(function (c, i) { return !i || counts[i - 1] >= c; }) && await page.evaluate(function () { return document.querySelector('.m2-me-pickmenu').classList.contains('m2-on'); }), counts.join(' '));
+  var ids0 = await page.$$eval('.m2-me-pickmenu', function (l) { return l.map(function (x) { return x.dataset.id; }); });
+  await page.keyboard.press('ArrowDown'); await page.keyboard.press('ArrowDown'); await page.waitForTimeout(200);
+  ok('3. no item chosen: the arrow keys go through the menus', await page.getAttribute('.m2-me-pickmenu.m2-on', 'data-id') === ids0[2]);
+  await page.keyboard.press('ArrowUp'); await page.waitForTimeout(200);
+  ok('3. and back up', await page.getAttribute('.m2-me-pickmenu.m2-on', 'data-id') === ids0[1]);
+  await page.click('.m2-me-pickmenu[data-id="edit-macromolecule"]'); await page.waitForTimeout(200);
+  var its = await page.$$eval('.m2-me-main .m2-me-row', function (l) { return l.map(function (r) { return r.dataset.k; }); });
+  await page.click('.m2-me-main .m2-me-row >> nth=0'); await page.waitForTimeout(200);
+  for (var ak = 0; ak < its.length + 2; ak++) await page.keyboard.press('ArrowDown');
+  await page.waitForTimeout(200);
+  ok('3. an item chosen: the down arrow goes through the items, over the line, to the last', await page.textContent('.m2-me-main .m2-me-pick') === its[its.length - 1], its.join(' / '));
+  await page.keyboard.press('ArrowUp'); await page.waitForTimeout(200);
+  ok('3. the up arrow one back', await page.textContent('.m2-me-main .m2-me-pick') === its[its.length - 2]);
+  ok('3. the arrow keys change no order', await page.evaluate(function () { return localStorage.getItem('atlas-menus'); }) === null);
+  await page.click('.m2-me-main .m2-me-pick'); await page.waitForTimeout(200);   // chosen again: let go
+  await page.click('.m2-me-pickmenu[data-id="edit-macromolecule"]'); await page.waitForTimeout(200);
   await page.click('.m2-me-main .m2-me-row:text-is("Delete")'); await page.waitForTimeout(200);
   var cards = (await page.$$('.m2-me-deck .m2-me-mini')).length;
   ok('3. Delete chosen: the other menus holding it as cards', cards >= 8, cards + ' cards');
@@ -141,7 +159,7 @@ function viewerHunks() {
   stored = await page.evaluate(function () { return localStorage.getItem('atlas-menus'); });
   ok('3. Reset all menus: nothing kept', stored === null, String(stored));
   // a real drag: Select all of this kind dragged above Add state variable
-  await page.click('.m2-me-pickmenu:text-is("Macromolecule (SBGN-ML)")'); await page.waitForTimeout(200);
+  await page.click('.m2-me-pickmenu[data-id="edit-macromolecule"]'); await page.waitForTimeout(200);
   var src = await (await page.$('.m2-me-main .m2-me-row:text-is("Select all of this kind")')).boundingBox(), dst = await (await page.$('.m2-me-main .m2-me-row:text-is("Add state variable")')).boundingBox();
   await page.mouse.move(src.x + 40, src.y + src.height / 2); await page.mouse.down();
   for (var st = 1; st <= 8; st++) await page.mouse.move(src.x + 40, src.y + src.height / 2 + (dst.y + 3 - src.y - src.height / 2) * st / 8);
@@ -156,7 +174,7 @@ function viewerHunks() {
   await page.click('.m2-me-foot button:text-is("Reset all menus")'); await page.waitForTimeout(300);
   ok('3. Reset all menus: no Here only left', !(await page.$('.m2-me-say button')));
   // a move next to a line stays in its group in the other menus: Download PNG moved to the top of the page's items
-  await page.click('.m2-me-pickmenu >> nth=18'); await page.waitForTimeout(200);   // Map, edit mode: Empty map space
+  await page.click('.m2-me-pickmenu[data-id="edit-empty"]'); await page.waitForTimeout(200);   // Map, edit mode: Empty map space
   var name = await page.textContent('.m2-me-main .m2-me-name');
   var o = await page.$$eval('.m2-me-main .m2-me-row, .m2-me-main .m2-me-line', function (l) { return l.map(function (r) { return r.dataset.k; }); });
   var to = o.indexOf('Switch to viewer or edit');
