@@ -1287,7 +1287,7 @@
       e.stopImmediatePropagation();
       selN = []; selP = []; selE = []; part = null;
       svSel = { id: nodes2[q[0]].id, j: q[1] };
-      svDrag = { i: q[0], again: again, x: e.clientX, y: e.clientY, to: null, r: null, fixed: svList(q[0])[q[1]][3] === UI };   // a unit of information stays where the converter puts it
+      svDrag = { i: q[0], again: again, x: e.clientX, y: e.clientY, to: null, r: null, fixed: !!cd && svList(q[0])[q[1]][3] === UI };   // a CellDesigner unit of information stays at the top (its angle's convention not known)
       paint();
       return true;
     }
@@ -1346,7 +1346,7 @@
       if (!svDrag || !svSel) return;
       if (!e.buttons) { svUp(); return; }   // released outside the window: no sticky hand
       if (!svDrag.to && Math.hypot(e.clientX - svDrag.x, e.clientY - svDrag.y) < 4) return;
-      if (svDrag.fixed) { svDrag.moved = true; return; }   // a unit of information is not dragged; a drag on it is no click
+      if (svDrag.fixed) { svDrag.moved = true; return; }   // a drag on it is no click
       var i = svDrag.i, b = svBox(i), r = border(i, at(e)), q = svList(i)[svSel.j];
       if (!svDrag.parts) svDrag.parts = svParts(i, q);   // the state variable itself moves, as other items on the map, no copy
       svDrag.r = r; svDrag.to = [b[0] + (0.5 + r[0]) * b[2], b[1] + (0.5 + r[1]) * b[3]];
@@ -1368,7 +1368,7 @@
     function svMove(i, j, r) {   // the state variable j of node i written at the place r (a CellDesigner map's: cdcreate.js)
       if (cd) { cdSvMove(i, j, r); return; }
       var q = svList(i)[j], share = q[3] === SV ? svShareMove(i, q, svR(i, q), r) : null;   // the copies too
-      remember(false); text = sbJs.stateMove(text, nodes2[i].id, q[4], r[0], r[1]); parse();
+      remember(false); text = (q[3] === UI ? sbJs.unitMove : sbJs.stateMove)(text, nodes2[i].id, q[4], r[0], r[1]); parse();
       if (share) share();
       dirty = true; render(); paint(); changed();
     }
@@ -1427,7 +1427,7 @@
       var d = KEYS[e.key];
       if (!d || !svSel || !svOn() || e.ctrlKey || e.metaKey || e.altKey || /input|textarea|select/i.test(document.activeElement.tagName)) return;
       var i = svNode();
-      if (i < 0 || svList(i)[svSel.j][3] === UI) return;   // a unit of information: not moved
+      if (i < 0 || (cd && svList(i)[svSel.j][3] === UI)) return;   // a CellDesigner unit of information: not moved
       e.preventDefault(); e.stopImmediatePropagation();
       var b = svBox(i), q = svList(i)[svSel.j];
       if (!svKey) svKey = { i: i, t: toT(b, [(q[1][0] - b[0]) / b[2] - 0.5, (q[1][1] - b[1]) / b[3] - 0.5]), c0: q[1], parts: svParts(i, q) };

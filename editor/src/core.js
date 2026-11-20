@@ -1235,10 +1235,12 @@
         return sbpy().then(function () {
           if (tk !== opening) return;
           if (!g0) throw 'its GraphML did not load';
+          var t0 = t, ed0 = edOf(t);
+          if (ed0.unique) t = ed0.unique(t, g0);   // two glyphs of one id: the later renamed as the build's GraphML has it, written at the next save
           var g = sbGraphml(t, g0);
           var sb1 = { base: t, g0: g0 };
           sbLast = [g, edOf(t).write(t, g), sb1];   // a file whose moves could not be written back is said now, not at the first save; kept for src()
-          sb = sb1; begin(g, t, n, h, s, same);
+          sb = sb1; begin(g, t, n, h, s, same, t0);
         })
           .catch(function (e) { if (tk === opening) warn('Cannot edit ' + n + ': ' + e); });
       }

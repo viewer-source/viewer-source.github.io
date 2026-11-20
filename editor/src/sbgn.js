@@ -46,7 +46,7 @@
     var sbMemo = [];   // [SBGN-ML text, the GraphML it was made from, its GraphML], the last few: one text gives another GraphML from another base (else the empty base's would be served for the build's)
     function sbGraphml(t, base) {
       for (var i = 0; i < sbMemo.length; i++) if (sbMemo[i][0] === t && sbMemo[i][1] === base) return sbMemo[i][2];
-      var g = edOf(t).graphml(t, base);
+      var ed = edOf(t), g = ed.graphml(ed.unique ? ed.unique(t, base) : t, base);   // two glyphs of one id read as the build reads them (read-ahead, the site's reference)
       sbRemember(t, g, base);
       return g;
     }

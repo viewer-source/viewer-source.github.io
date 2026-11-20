@@ -31,9 +31,26 @@ def decorations(d):
     for txt, rx, ry in d.states:
         sw = 15.0 if len(txt) <= 2 else 45.0  # as yEd's icons on the atlas maps
         states.append((cx + rx * w - sw / 2, cy + ry * h - 7.5, sw, 15.0))
+    units = []
+    for u, rx, ry in unit_places(d):
+        uw = max(3, len(u)) * 7.0  # at least N:2's width, as graphml.write
+        units.append((u, (cx + rx * w - uw / 2, cy + ry * h - 7.5, uw, 15.0)))
+    return states, units
+
+
+def unit_places(d, own=None):
+    # a node's units of information (N:x added for a multimer beyond 2) with their places (rx, ry): where the file put
+    # them (own, else d.unit_at), the others spread evenly along the top, each in its slot among all
+    own = d.unit_at if own is None else own
     units = d.units + (['N:%d' % d.count] if d.count > 2 and not any(re.fullmatch(r'N:\d+', u) for u in d.units) else [])
-    uw = [max(3, len(u)) * 7.0 for u in units]  # at least N:2's width, as graphml.write
-    return states, [(u, (x + (k + 1) / (len(units) + 1) * w - uw[k] / 2, y - 7.5, uw[k], 15.0)) for k, u in enumerate(units)]
+    return [(u,) + tuple(own.get(u, ((k + 1) / (len(units) + 1) - 0.5, -0.5))) for k, u in enumerate(units)]
+
+
+def own_places(d):
+    # the places a reader found (d.unit_at) less those that are the default slot, so a file read and written again
+    # keeps its default units unplaced
+    slot = {u: (rx, ry) for u, rx, ry in unit_places(d, {})}
+    return {u: p for u, p in d.unit_at.items() if u in slot and (abs(p[0] - slot[u][0]) > 1e-6 or abs(p[1] - slot[u][1]) > 1e-6)}
 
 
 def main_lines(diagram, box, ents, origin=(0, 0)):

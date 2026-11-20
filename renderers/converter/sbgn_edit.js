@@ -14,6 +14,8 @@
 //     port's place; a glyph with ports in the GraphML but none in the file gets them (<port> after its bbox, its id
 //     with .1 for the consumptions, .2 for the products, the arcs pointed at them), so a turned process keeps its turn.
 //   tests/sbgn-edit.js checks both ways against the converter on every SBGN-ML map of the demo.
+//   unique(sbgnText, baseGraphml, opt) -> sbgnText with a glyph whose id an earlier glyph has renamed as sbgnml.read
+//     reads it, arcs at the ends baseGraphml gives them (tests/sbgn-unique.js).
 // Glyphs the converter leaves out (tags, terminals, clone markers have no box) and arcs to them are not moved.
 (function (root) {
   'use strict';
@@ -105,6 +107,52 @@
     return S;
   }
   function xy(el) { return el ? [F(el.getAttribute('x')), F(el.getAttribute('y'))] : null; }
+  // A glyph whose id an earlier glyph of the map has is given <id>_<k> (k from 2, the first id not in the map: glyphs,
+  // ports, arcs), as sbgnml.read reads it (unique_ids); each arc naming such an id takes the end the build's GraphML g0
+  // gave it (sbgnml.read chose by where the arc's end lies), and a render style listing the id lists the new one too.
+  // The file made valid when it is opened for editing, under the ids of g0. A file without such ids is returned as it is.
+  function unique(t, g0, opt) {
+    var re = /<(?:[\w.-]+:)?glyph\b[^>]*?\sid\s*=\s*(["'])([^"']*)\1/g, m, seen0 = {}, dup = false;
+    while ((m = re.exec(t)) && !dup) { dup = !!seen0[m[2]]; seen0[m[2]] = 1; }
+    if (!dup) return t;
+    var doc = new (DP(opt))().parseFromString(t.replace(/^﻿/, ''), 'application/xml');
+    if (doc.getElementsByTagName('parsererror').length) return t;
+    var map = kids(doc.documentElement, 'map')[0];
+    if (!map) return t;
+    var all = Array.prototype.slice.call(map.getElementsByTagName('*')), taken = {}, seen = {}, shared = {}, made = [];
+    all.forEach(function (e) { if (e.getAttribute('id')) taken[e.getAttribute('id')] = 1; });
+    all.forEach(function (g) {
+      if (g.localName !== 'glyph') return;
+      var i = g.getAttribute('id');
+      if (!seen[i]) { seen[i] = 1; return; }
+      var k = seen[i] + 1; while (taken[i + '_' + k]) k++;
+      seen[i] = k; taken[i + '_' + k] = 1; made.push([g, i, i + '_' + k]);
+      (shared[i] = shared[i] || [i]).push(i + '_' + k);
+    });
+    if (!made.length) return t;
+    var T = new Tags(t, doc);
+    made.forEach(function (q) { T.set(q[0], 'id', q[2]); });
+    all.forEach(function (st) {   // the renamed glyph keeps the style of its id (sbgnml.read styles both by the file's id)
+      if (st.localName !== 'style' || !st.getAttribute('idList')) return;
+      var l = st.getAttribute('idList').split(/\s+/), add = made.filter(function (q) { return l.indexOf(q[1]) >= 0; }).map(function (q) { return q[2]; });
+      if (add.length) T.set(st, 'idList', l.concat(add).join(' '));
+    });
+    var ends = {}, k2 = {};   // arc id -> the ends of g0's edges of that id, in order (two arcs of one id matched by their order)
+    if (g0) Array.prototype.forEach.call(new (DP(opt))().parseFromString(g0, 'application/xml').getElementsByTagNameNS(GNS, 'edge'), function (e) {
+      (ends[e.getAttribute('id')] = ends[e.getAttribute('id')] || []).push({ s: e.getAttribute('source'), t: e.getAttribute('target') });
+    });
+    all.forEach(function (a) {
+      if (a.localName !== 'arc') return;
+      var id = a.getAttribute('id'), j = k2[id] = (k2[id] || 0) + 1, e = (ends[id] || [])[j - 1];
+      if (!e) return;   // not drawn: as it was
+      [['source', e.s], ['target', e.t]].forEach(function (q) {
+        var r = a.getAttribute(q[0]);
+        if (shared[r] && q[1] !== r && shared[r].indexOf(q[1]) >= 0) T.set(a, q[0], q[1]);
+      });
+    });
+    return T.text();
+  }
+
   function centre(b) { return [b[0] + b[2] / 2, b[1] + b[3] / 2]; }
   function boxCut(b, aim) {   // where the line from the box's centre toward aim leaves the box
     var c = centre(b), u = [aim[0] - c[0], aim[1] - c[1]];
@@ -181,9 +229,9 @@
       ['x', 'y', 'width', 'height'].forEach(function (k, j) { to(n.geo, k, repr(B[j])); });
       var gc = g.el.getAttribute('class') || '';
       var nw = LOOKS.test(gc) ? setLook(T, G, id, fileLook(St, id, gc), B) : null;   // nw: the name's width at the file's font, where it differs   // the file's look (a draft, a build of an older converter): what its styles state, else the converter's template
-      // what graphml.write works out from the box: the state variables' places (their ratios read from the file as
-      // sbgnml.read reads them), the units of information spread evenly along the top (graphml.write, whatever the
-      // file's places), a compartment's name where the file has it. Counted by kind: one deleted in the editor is cut
+      // what graphml.write works out from the box: the state variables' and units of information's places (their ratios
+      // read from the file as sbgnml.read reads them; a unit without a box spread along the top), a compartment's name
+      // where the file has it. Counted by kind: one deleted in the editor is cut
       var r = n.geo.parentNode, labs = kids(r, 'NodeLabel'), icons = labs.filter(function (l) { return l.getAttribute('iconData'); });
       var states = kids(g.el, 'glyph').filter(function (c) { return c.getAttribute('class') === 'state variable'; }), units = unitsOf(g.el), js = 0, ju = 0;
       var R = G.R || (G.R = resources(G));
@@ -197,7 +245,12 @@
           to(p, 'nodeRatioX', repr(rx)); to(p, 'nodeRatioY', repr(ry));
         } else if (kind === 'UnitOfInformation') {
           if ((j = ju++) >= units.length) { T.cut(l); return; }
-          rx = uRatio(j, units.length); ry = -0.5;
+          var ub = kid(units[j], 'bbox');   // where the file places it, as sbgnml.read reads it; else spread along the top
+          rx = uRatio(j, units.length); ry = -0.5;   // its slot, kept where the file's place is the slot (layout.own_places)
+          if (ub && w && h) {
+            var ux = (F(ub.getAttribute('x')) + F(ub.getAttribute('w')) / 2 - B[0] - w / 2) / w, uy = (F(ub.getAttribute('y')) + F(ub.getAttribute('h')) / 2 - B[1] - h / 2) / h;
+            if (Math.abs(ux - rx) > 1e-6 || Math.abs(uy - ry) > 1e-6) { rx = ux; ry = uy; }
+          }
           to(p, 'nodeRatioX', repr(rx)); to(p, 'nodeRatioY', repr(ry));
         } else { rx = F(p.getAttribute('nodeRatioX')); ry = F(p.getAttribute('nodeRatioY')); }
         to(l, 'x', repr((0.5 + rx) * w - F(l.getAttribute('width')) / 2)); to(l, 'y', repr((0.5 + ry) * h - F(l.getAttribute('height')) / 2));
@@ -385,7 +438,7 @@
     };
     // the glyphs: their boxes, and what they carry mapped from the old box to the new (centres scaled with the box,
     // a label kept at its place from the top left)
-    var svMoved = new Set();   // state variables the editor moved along their glyph's border: placed below, not mapped here
+    var svMoved = new Set(), uMovedTo = new Map();   // state variables and units the editor moved along their glyph's border: placed below, not mapped here
     Object.keys(S.glyph).forEach(function (id) {
       var g = S.glyph[id], n = G.node[id];
       if (!n || !NAMED.test(g.el.getAttribute('class') || '')) return;
@@ -395,6 +448,14 @@
         if (!cb) return;
         var rx = (F(cb.getAttribute('x')) + F(cb.getAttribute('w')) / 2 - B[0] - B[2] / 2) / B[2], ry = (F(cb.getAttribute('y')) + F(cb.getAttribute('h')) / 2 - B[1] - B[3] / 2) / B[3];
         if (!close(rx, q[1]) || !close(ry, q[2])) svMoved.add(cb);
+      });
+      if (uChanged[id]) return;   // units written whole below
+      var hu = unitsOf(g.el);
+      iconsOf(id, 'UnitOfInformation').forEach(function (q, j) {   // a unit moved along the border: the same
+        var cb = hu[j] && kid(hu[j], 'bbox'), B = g.box;
+        if (!cb) return;
+        var rx = (F(cb.getAttribute('x')) + F(cb.getAttribute('w')) / 2 - B[0] - B[2] / 2) / B[2], ry = (F(cb.getAttribute('y')) + F(cb.getAttribute('h')) / 2 - B[1] - B[3] / 2) / B[3];
+        if (!close(rx, q[1]) || !close(ry, q[2])) { svMoved.add(cb); uMovedTo.set(cb, q); }
       });
     });
     // a compartment's name put in another of its six places in the editor (nameAt), or its compartment resized: its bbox
@@ -508,7 +569,7 @@
       if (uChanged[id]) {   // units of information: their text, all placed as the converter draws them, new ones written
         hu.slice(ui.length).forEach(function (c) { T.cut(c); cutEls.push(c); });
         ui.forEach(function (q, k) {
-          var ub = uBox(q[0], n.box, k, ui.length);
+          var ub = uBoxAt(q[0], n.box, q[1], q[2]);
           if (k >= hu.length) { moreU += uiXml(id, k, q[0], ub, T.indent(g.bbox)); return; }
           var cb2 = kid(hu[k], 'bbox'), lab2 = kid(hu[k], 'label');
           if (unitText(hu[k]) !== q[0]) {
@@ -520,6 +581,10 @@
           if (!close(F(cb2.getAttribute('h')), ub[3])) T.set(cb2, 'h', num(ub[3]));
         });
       }
+      hu.forEach(function (c) {   // a unit moved along the border: its box centred there, its size kept
+        var cb = kid(c, 'bbox'), q = cb && uMovedTo.get(cb);
+        if (q) setXY(cb, [n.box[0] + (0.5 + q[1]) * n.box[2] - F(cb.getAttribute('w')) / 2, n.box[1] + (0.5 + q[2]) * n.box[3] - F(cb.getAttribute('h')) / 2]);
+      });
       icons.forEach(function (q, j) {
         if (j >= have.length) { more += svXml(id, j, q, n.box, T.indent(g.bbox)); return; }
         var cb = kid(have[j], 'bbox');
@@ -570,7 +635,7 @@
         (name ? '\n' + ind0 + '  <' + pre + 'label text="' + esc(name) + '"' + (cls === 'compartment' && labelBbox(id) ? '>\n' + ind0 + '    ' + labelBbox(id) + '\n' + ind0 + '  </' + pre + 'label>' : '/>') : '') + '\n' + ind0 + '  ' + bboxXml(n.box) +
         (act != null ? (act || (fu[0] && fu[0][0]) ? actUnitXml(id, act, n.box, ind0 + '  ', null, fu[0] ? fu[0][0] : '') : '') :   // under AF no state variables, one unit with its text
         iconsOf(id).map(function (q, k) { return svXml(id, k, q, n.box, ind0 + '  '); }).join('') +
-        fu.map(function (q, k) { return uiXml(id, k, q[0], uBox(q[0], n.box, k, fu.length), ind0 + '  '); }).join('')) + '\n' + ind0 + '</' + pre + 'glyph>';
+        fu.map(function (q, k) { return uiXml(id, k, q[0], uBoxAt(q[0], n.box, q[1], q[2]), ind0 + '  '); }).join('')) + '\n' + ind0 + '</' + pre + 'glyph>';
       if (cls === 'compartment') front += xml; else fresh += xml;   // a compartment before the glyphs, as the editor draws it under them
       var lf = L.main ? F(L.main.getAttribute('fontSize')) || 12 : null, own = lf != null && NAMED.test(cls) && lf !== mapFont();   // a font of its own, not the map's
       if (lk.fill || lk.line || lk.width !== 1 || own) looks.set(id, { fill: lk.fill, line: lk.line, width: lk.width, font: L.main ? lf : null, cls: cls, fresh: true });
@@ -1357,8 +1422,8 @@
     return T.text();
   }
   function svLabel(G, id, j, kind) { var L = G.node[id] && labelsOf(G, id); return L ? (L.icons.filter(function (x) { return x[1].kind === (kind || 'StateVariable'); })[j] || [])[0] : null; }
-  function stateMove(t, id, j, rx, ry, opt) {   // the j-th state variable moved to rx, ry on its node's border (the editor's GraphML)
-    var G = gml(t, opt), l = svLabel(G, id, j);
+  function stateMove(t, id, j, rx, ry, opt, kind) {   // the j-th state variable (kind UnitOfInformation: unit) moved to rx, ry on its node's border (the editor's GraphML)
+    var G = gml(t, opt), l = svLabel(G, id, j, kind);
     if (!l) return t;
     var T = new Tags(t, G.doc), p = l.getElementsByTagNameNS(YNS, 'SmartNodeLabelModelParameter')[0], b = G.node[id].box;
     T.set(p, 'nodeRatioX', repr(rx)); T.set(p, 'nodeRatioY', repr(ry));
@@ -1377,13 +1442,13 @@
     var left = g ? (unit ? unitsOf(g.el) : kids(g.el, 'glyph').filter(function (c) { return c.getAttribute('class') === 'state variable'; })).filter(function (c) { return del.indexOf(c.getAttribute('id')) < 0; }) : [];
     return j < left.length && left[j].getAttribute('id') ? goneMark(t, [left[j].getAttribute('id')]) : t;
   }
-  // units of information (free text): spread evenly along the top as
-  // graphml.write places them, (k + 1) / (n + 1) of the width, again whenever one is added or deleted
+  // units of information (free text) on the top edge: spread evenly along it as graphml.write places them,
+  // (k + 1) / (n + 1) of the width, again whenever one is added or deleted; a unit moved to another side stays there
   function uRatio(k, n) { return (k + 1) / (n + 1) - 0.5; }
   function respace(t, id, opt) {
     var G = gml(t, opt), n = G.node[id], L = n && labelsOf(G, id);
     if (!L) return t;
-    var us = L.icons.filter(function (q) { return q[1].kind === 'UnitOfInformation'; }), T = new Tags(t, G.doc), b = n.box;
+    var us = L.icons.filter(function (q) { var p = q[0].getElementsByTagNameNS(YNS, 'SmartNodeLabelModelParameter')[0]; return q[1].kind === 'UnitOfInformation' && p && Math.abs(F(p.getAttribute('nodeRatioY')) + 0.5) < 1e-6; }), T = new Tags(t, G.doc), b = n.box;
     us.forEach(function (q, k) {
       var l = q[0], p = l.getElementsByTagNameNS(YNS, 'SmartNodeLabelModelParameter')[0], rx = uRatio(k, us.length), set = function (el, a, v) { if (el.getAttribute(a) !== v) T.set(el, a, v); };
       set(p, 'nodeRatioX', repr(rx)); set(p, 'nodeRatioY', repr(-0.5));
@@ -1397,6 +1462,7 @@
   }
   function unitValue(t, id, j, value, opt) { return withText(stateValue(t, id, j, value, opt, 'UnitOfInformation'), id, value, opt); }
   function unitDelete(t, id, j, opt) { return stateDelete(t, id, j, opt, 'UnitOfInformation'); }
+  function unitMove(t, id, j, rx, ry, opt) { return stateMove(t, id, j, rx, ry, opt, 'UnitOfInformation'); }
   // a multimer (Make multimer, Make macromolecule): yEd's two shapes, mcount 2 (graphml.write); the
   // count, if any, is a unit of information the reader types (N:3)
   var MCOUNT = '<y:Property class="java.lang.Integer" name="com.yworks.sbgn.style.mcount" value="2"/>', MULTI = /^(macromolecule|simple chemical|nucleic acid feature)$/;
@@ -1428,7 +1494,7 @@
     var n = units.filter(function (u) { return /^N:\d+$/.test(u); })[0];
     return (n ? parseInt(n.slice(2), 10) : 2) > 1;
   }
-  function uBox(txt, b, k, n) { var uw = Math.max(3, txt.length) * 7; return [b[0] + (k + 1) / (n + 1) * b[2] - uw / 2, b[1] - 7.5, uw, 15]; }   // layout.decorations
+  function uBoxAt(txt, b, rx, ry) { var uw = Math.max(3, txt.length) * 7; return [b[0] + (0.5 + rx) * b[2] - uw / 2, b[1] + (0.5 + ry) * b[3] - 7.5, uw, 15]; }   // layout.decorations
   // a node's box set (a macromolecule or a simple chemical resized by its handles or its size typed):
   // the box written, its name kept centred, its state variables at their places on the border (yEd's ratios), and the
   // ends of its lines that are off its centre moved with the box in proportion, so a port on the border stays on it;
@@ -2256,7 +2322,7 @@
     return t;
   }
 
-  var api = { LOOKS: LOOKS, NAMED: NAMED, MULTI: MULTI, graphml: graphml, write: write, join: join, joinable: joinable, nameAt: nameAt, namePlaces: namePlaces, stack: stack, restack: restack, stackMoves: stackMoves, NAME_PLACES: NAME_PLACES, defaults: defaults, add: add, lookOf: lookOf, restyle: restyle, restyleAll: restyleAll, colours: colours, lineOf: lineOf, recolour: recolour, widthOf: widthOf, rewidth: rewidth, label: label, state: state, stateValue: stateValue, stateMove: stateMove, stateDelete: stateDelete,
+  var api = { unique: unique, LOOKS: LOOKS, NAMED: NAMED, MULTI: MULTI, graphml: graphml, write: write, join: join, joinable: joinable, nameAt: nameAt, namePlaces: namePlaces, stack: stack, restack: restack, stackMoves: stackMoves, NAME_PLACES: NAME_PLACES, defaults: defaults, add: add, lookOf: lookOf, restyle: restyle, restyleAll: restyleAll, colours: colours, lineOf: lineOf, recolour: recolour, widthOf: widthOf, rewidth: rewidth, label: label, state: state, stateValue: stateValue, stateMove: stateMove, unitMove: unitMove, stateDelete: stateDelete,
               unit: unit, unitValue: unitValue, unitDelete: unitDelete, multimer: multimer, classOf: classOf, MAKE: MAKE, kind: kind, PROCESSES: ['process'].concat(Object.keys(SIGN)), SIGN: SIGN, remove: remove, resize: resize, scaleEnds: scaleEnds, gone: gone, nameable: nameable,
               moveInto: moveInto, connect: connect, reversible: reversible, reversibility: reversibility, arcRemove: arcRemove, arcKind: arcKind, GATE: GATE, ARROW: ARROW, MODULATIONS: ['stimulation', 'catalysis', 'inhibition', 'necessary stimulation', 'modulation'],
               activity: activity, activities: activities, proteinBoxes: proteinBoxes, afUnitBox: afUnitBox, afUnitFont: afUnitFont, isAf: isAf, mapKind: mapKind, unitFor: unitFor, fillFor: fillFor, AF_ARC: AF_ARC, UNITS: Object.keys(UNIT_CLS).filter(function (u) { return u && u !== 'perturbation'; }), unitClass: actCls,

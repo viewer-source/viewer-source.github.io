@@ -5,6 +5,7 @@ from lxml import etree
 from . import report
 from .model import Map, Node, Arc
 from .style import scale_of
+from .layout import own_places, unit_places
 
 NS = {'g': 'http://graphml.graphdrawing.org/xmlns', 'y': 'http://www.yworks.com/xml/graphml'}
 Y = '{%s}' % NS['y']
@@ -58,17 +59,19 @@ def states(gn, res):
 
 
 def units(gn, res):
-    # units of information (ct:gene, ct:mRNA, N:4): icons, or a second, boxed label (iNOS ASL: "N:4")
+    # units of information (ct:gene, ct:mRNA, N:4): icons, or a second, boxed label (iNOS ASL: "N:4"); with the
+    # icon's place on the border (rx, ry), None for a boxed label
     out = []
     for l in gn.findall('y:NodeLabel', NS)[1:]:
         if (l.text or '').strip() and not l.get('iconData'):
-            out.append(l.text.strip()); continue
+            out.append((l.text.strip(), None)); continue
         r = res.get(l.get('iconData'))
         # a plain box (iNOS) or yEd's SBGN unit of information glyph (ACLY ct:gene, ct:mRNA)
         if r is None or (r.find('.//y:ShapeNode', NS) is None and
                          r.find('.//y:GenericNode[@configuration="com.yworks.sbgn.UnitOfInformation"]', NS) is None):
             continue
-        out.append(text(r))
+        p = l.find('.//y:SmartNodeLabelModelParameter', NS)
+        out.append((text(r), (float(p.get('nodeRatioX')), float(p.get('nodeRatioY'))) if p is not None else None))
     return out
 
 
@@ -112,7 +115,8 @@ def read(path):
         labs = gn.findall('y:NodeLabel', NS)
         fill = gn.find('y:Fill', NS)
         p = n.getparent().getparent()
-        us = units(gn, res)
+        ua = units(gn, res)
+        us = [u for u, _ in ua]
         # a compartment's name: the first label with text
         l = next((l for l in labs if (l.text or '').strip()), None)
         border = gn.find('y:BorderStyle', NS)
@@ -140,7 +144,7 @@ def read(path):
             fill=fill.get('color') if fill is not None else None,
             line=line if kind == 'Compartment' and line != '#000000' else None,
             weight=float(border.get('width')) if kind == 'Compartment' and border is not None and border.get('width') else None,
-            states=states(gn, res), units=us, count=count(gn, us),
+            states=states(gn, res), units=us, unit_at={u: at for u, at in ua if at}, count=count(gn, us),
             label_at=(float(l.get('x')), float(l.get('y'))) if (kind == 'Compartment' or outline) and l is not None else None,
             data={names[x.get('key')]: x.text.strip() for x in n.findall('g:data', NS)
                   if x.get('key') in names and (x.text or '').strip()},
@@ -170,6 +174,8 @@ def read(path):
                         source_at=(float(yp.get('sx')), float(yp.get('sy'))),
                         target_at=(float(yp.get('tx')), float(yp.get('ty'))),
                         dashed=pl.find('y:LineStyle', NS).get('type') != 'line'))
+    for d in nodes.values():
+        d.unit_at = own_places(d)
     return Map(name=os.path.basename(path).rsplit('.', 1)[0], nodes=nodes, arcs=arcs)
 
 
@@ -317,9 +323,8 @@ def write(diagram, soft=False):
             if sp is None:  # the simple chemical template has none (a multimer Ca2+, O2)
                 sp = etree.SubElement(gn, Y + 'StyleProperties')
             etree.SubElement(sp, Y + 'Property', {'class': 'java.lang.Integer', 'name': 'com.yworks.sbgn.style.mcount', 'value': '2'})
-        units = d.units + (['N:%d' % d.count] if d.count > 2 and not any(re.fullmatch(r'N:\d+', u) for u in d.units) else [])
         icons = [('StateVariable', txt, rx, ry) for txt, rx, ry in d.states]
-        icons += [('UnitOfInformation', u, (k + 1) / (len(units) + 1) - 0.5, -0.5) for k, u in enumerate(units)]
+        icons += [('UnitOfInformation', u, rx, ry) for u, rx, ry in unit_places(d)]
         for kind, txt, rx, ry in icons:
             il = copy.deepcopy(icon); il.set('iconData', resource(kind, txt, d.small))
             p = il.find('.//y:SmartNodeLabelModelParameter', NS)

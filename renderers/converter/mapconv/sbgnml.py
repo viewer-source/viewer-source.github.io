@@ -7,7 +7,7 @@ import math, copy, os, re
 from lxml import etree
 from . import report
 from .annotation import from_graphml, from_notes, notes, to_properties
-from .layout import bends, centre, compartment_of, decorations, unbent
+from .layout import bends, centre, compartment_of, decorations, own_places, unbent
 from . import newt_layout
 from .graphml import DELAY, EQUIV, LINE, CHAR, without_delays
 from .model import Map, Node, Arc
@@ -455,6 +455,36 @@ def colour(c, defs):
     return v[:7] if len(v) == 9 and v.endswith('FF') else v
 
 
+def unique_ids(m):
+    """Glyph element -> the id it is read under: a glyph whose id an earlier glyph already has gets <id>_<k>
+    (k from 2, the first id not in the map: glyphs, ports, arcs), so two glyphs of one id are both kept. sbgn_edit.js
+    unique() gives the same ids and takes each arc's ends from the build's GraphML."""
+    els = list(m.iter(S + 'glyph'))
+    taken, seen, out = {e.get('id') for e in m.iter() if isinstance(e.tag, str) and e.get('id')}, {}, {}  # ports and arcs too
+    for g in els:
+        i = g.get('id')
+        if i in seen:
+            k = seen[i] + 1
+            while '%s_%d' % (i, k) in taken:
+                k += 1
+            seen[i] = k
+            out[g] = '%s_%d' % (i, k)
+            taken.add(out[g])
+        else:
+            seen[i] = 1
+    return out
+
+
+def nearest(boxes, p, hub):
+    """Of glyphs sharing an id, the one an arc's end p meets: the nearest outline, on a tie the kind the arc's end
+    takes (hub: a process or gate). boxes: (id, (x, y, w, h), is_hub)."""
+    def far(b):
+        x, y, w, h = b
+        dx, dy = max(x - p[0], 0, p[0] - x - w), max(y - p[1], 0, p[1] - y - h)
+        return math.hypot(dx, dy) if dx or dy else -min(p[0] - x, x + w - p[0], p[1] - y, y + h - p[1])
+    return min(boxes, key=lambda c: (round(abs(far(c[1])), 3) if p else 0, c[2] != hub))[0]
+
+
 def read(path):
     root = etree.parse(path, etree.XMLParser(remove_comments=True, remove_pis=True)).getroot()  # a comment among a glyph's children is no element
     for e in root.iter(etree.Element):  # libsbgn 0.1 and 0.2 files: the same elements in an older namespace
@@ -478,8 +508,13 @@ def read(path):
         lab = g.find(S + 'label')
         return lab.get('text', '') if lab is not None else ''
 
+    new_id = unique_ids(m)
+    shared = {g.get('id') for g in new_id}
+    same = {}  # an id two glyphs share -> the ids they are read under
+
     def glyph(g, parent):
-        cls, i = g.get('class'), g.get('id')
+        cls, oid = g.get('class'), g.get('id')
+        i = new_id.get(g, oid)
         x, y, w, h = (float(g.find(S + 'bbox').get(k)) for k in 'xywh')
         base = cls[:-len(' multimer')] if cls.endswith(' multimer') else cls
         kind = 'Operator' if cls in OPERATORS else KIND.get(base)
@@ -491,7 +526,7 @@ def read(path):
             activities.add(i)
             if re.search(r'\sactivity\s*$', text(g), re.I):  # the node is the molecule: "SHC activity" is SHC
                 g.find(S + 'label').set('text', re.sub(r'\s+activity\s*$', '', text(g), flags=re.I))
-                renamed.append(g.get('id'))
+                renamed.append(i)
         if af and cls == 'submap':  # a phenotype with the submap's name, no terminals or tags
             kind = 'Phenotype'
             for c in g.findall(S + 'glyph'):
@@ -502,7 +537,7 @@ def read(path):
         for p in g.findall(S + 'port'):
             port[p.get('id')] = i
             at_port[p.get('id')] = (float(p.get('x')), float(p.get('y')))
-        states, units = [], []
+        states, units, unit_at = [], [], {}
         for c in g.findall(S + 'glyph'):
             cb = c.find(S + 'bbox')
             if c.get('class') == 'state variable':
@@ -512,6 +547,8 @@ def read(path):
                 states.append((v + ('@' + var if var else ''), (cx - x - w / 2) / w, (cy - y - h / 2) / h))
             elif c.get('class') == 'unit of information' and (text(c) or cls != 'biological activity'):
                 units.append(text(c))
+                if cb is not None and w and h:  # its place on the border, as a state variable's
+                    unit_at[text(c)] = ((float(cb.get('x')) + float(cb.get('w')) / 2 - x - w / 2) / w, (float(cb.get('y')) + float(cb.get('h')) / 2 - y - h / 2) / h)
         n = [int(u[2:]) for u in units if re.fullmatch(r'N:\d+', u)]
         lab = g.find(S + 'label')
         lb = lab.find(S + 'bbox') if lab is not None else None
@@ -532,14 +569,16 @@ def read(path):
             data['SBGN class'] = cls
             if unit:
                 data['SBGN unit'] = unit
+        if oid in shared:
+            same.setdefault(oid, []).append(i)
         nodes[i] = Node(id=i, kind=kind, box=(x, y, w, h), parent=parent,
                         labels=[OPERATORS[cls]] if kind == 'Operator' else [text(g)],
-                        fill=colour(fill.get(i), defs), line=colour(line.get(i), defs),
-                        weight=weight.get(i),
-                        states=states, units=units,
+                        fill=colour(fill.get(oid), defs), line=colour(line.get(oid), defs),
+                        weight=weight.get(oid),
+                        states=states, units=units, unit_at=unit_at,
                         count=(n[0] if n else 2) if cls.endswith(' multimer') else 1,
                         label_at=(float(lb.get('x')) - x, float(lb.get('y')) - y) if kind == 'Compartment' and lb is not None else None,
-                        data=data, font=font.get(i),
+                        data=data, font=font.get(oid),
                         small=next((font[c.get('id')] for c in g.findall(S + 'glyph') if c.get('id') in font and
                                     c.get('class') in ('state variable', 'unit of information')), None))
         if g.find(S + 'clone') is not None:
@@ -554,7 +593,15 @@ def read(path):
     head = dict(HEAD, **{'equivalence arc': None})  # a plain line (AF; PD too: to a submap)
     for a in m.findall(S + 'arc'):
         cls = a.get('class')
-        s, t = (port.get(a.get(k), a.get(k)) for k in ('source', 'target'))
+        e0, e1 = (a.find(S + k) for k in ('start', 'end'))
+        def end(k, e, hub):  # an id two glyphs share: the one this end meets
+            r = a.get(k)
+            if r in port or r not in same:
+                return port.get(r, r)
+            return same[r][0] if len(same[r]) == 1 else nearest([(c, nodes[c].box, nodes[c].kind in PROCESSES + ('Operator',)) for c in same[r]],
+                           (float(e.get('x')), float(e.get('y'))) if e is not None else None, hub)
+        s = end('source', e0, cls == 'production')
+        t = end('target', e1, cls not in ('production', 'equivalence arc'))
         if cls == 'performance arc' and t in activities and s in nodes and s not in activities:
             performers.setdefault(t, []).append((s, a.get('id'))); continue
         if cls not in head or s not in nodes or t not in nodes:
@@ -583,4 +630,6 @@ def read(path):
         report.say('changed', '"activity" cut from the label of: %s' % ', '.join(kept))
     for what, ids in skipped.items():
         report.say('left out', '%s: %d left out (%s)' % (what, len(ids), ', '.join(ids[:5]) + (' ...' if len(ids) > 5 else '')))
+    for d in nodes.values():
+        d.unit_at = own_places(d)
     return Map(name=os.path.basename(path).rsplit('.', 1)[0], nodes=nodes, arcs=arcs)
