@@ -3,9 +3,9 @@
 // window: Site, then Modification from CellDesigner's list), Y705 phosphorylated, Enter closing it; a double click opens
 // it again, Esc drops a site typed; the residue's own menu (Edit and Delete), Edit's modification written at once; the
 // residue dragged round the border to the right; Add structural state (its window, a text) at the top middle of a
-// monomer, moved to the bottom by Add unit of information (N:2); Open chosen in its window, undone; on a multimer a new
-// structural state at the bottom; the unit's own menu (Change unit: CellDesigner's prefixes with their labels), a label
-// its prefix does not have refused, N and free input; the residue deleted by the Delete key and undone. Nothing is saved (no token). No
+// monomer, moved to the bottom by Add unit of information (N:2, chosen in its window); Open chosen in its window, undone; on a multimer a new
+// structural state at the bottom; the unit's window (CellDesigner's Edit Information: Prefix, then Label as a list for
+// pc, mt and ct, a text for N and free input) and its own menu (Edit, Change unit); the residue deleted by the Delete key and undone. Nothing is saved (no token). No
 // script error.
 //   node tests/cd-states.js [address] [viewer folder: its editor and renderers served in place of the page's]
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path');
@@ -99,10 +99,15 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#acly-celld
   ok('active, at the top middle (a monomer, no unit of information, no multimer of it on the map)', /<celldesigner:structuralState structuralState="active"\/>/.test(speciesText(t, sid)) && sa && Math.abs(+sa[1] - Math.PI / 2) < 0.01, sa && sa[1]);
   items = await menu(C);
   ok('no second Add structural state', items.indexOf('Add structural state') < 0 && items.indexOf('Add unit of information') >= 0, items.join('|'));
-  await pick('Add unit of information'); await type('N:2');
+  await pick('Add unit of information'); await page.waitForSelector('.m2-cdsv', { timeout: 3000 });
+  ok('Add unit of information: its window, Prefix and Label, pc and T shown, nothing written yet', (await page.$$eval('.m2-cdsv label:not([hidden]) span', function (l) { return l.map(function (x) { return x.textContent; }).join('|'); })) === 'Prefix|Label'
+    && (await page.$eval('.m2-cdsv select', function (x) { return x.value; })) === 'pc' && !/<celldesigner:info state="open"/.test(aliasText(await now(), p)));
+  await page.selectOption('.m2-cdsv select', 'N'); await page.waitForTimeout(300);
+  ok('N chosen: a text field for the label', !!(await page.$('.m2-cdsv label:not([hidden]) input')));
+  await page.fill('.m2-cdsv input', '2'); await page.press('.m2-cdsv input', 'Enter'); await page.waitForTimeout(900);
   t = await now();
   sa = /<celldesigner:structuralState angle="([^"]*)"/.exec(aliasText(t, p));
-  ok('Add unit of information typed at once: N:2; the structural state moved to the bottom middle', /<celldesigner:info state="open" prefix="N" label="2"/.test(aliasText(t, p)) && sa && Math.abs(+sa[1] - 3 * Math.PI / 2) < 0.01, sa && sa[1]);
+  ok('Add unit of information N:2 from its window; the structural state moved to the bottom middle', /<celldesigner:info state="open" prefix="N" label="2"/.test(aliasText(t, p)) && sa && Math.abs(+sa[1] - 3 * Math.PI / 2) < 0.01, sa && sa[1]);
   await page.mouse.dblclick(R[0] + R[2] / 2, R[1] + R[3] - 1); await page.waitForSelector('.m2-cdsv', { timeout: 3000 });
   ok('the structural state\'s window by a double click: Text, active', (await page.$eval('.m2-cdsv select', function (x) { return x.value; })) === '' && (await page.$eval('.m2-cdsv input', function (x) { return x.value; })) === 'active');
   await page.selectOption('.m2-cdsv select', 'open'); await page.waitForTimeout(900);
@@ -130,23 +135,31 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#acly-celld
   // the unit of information as CellDesigner's Edit Information window: its prefixes with their labels, N, free input
   var U = [R[0] + R[2] / 2, R[1] + 1], unit = function (t) { var m = /<celldesigner:info state="open" prefix="([^"]*)" label="([^"]*)"/.exec(aliasText(t, p)); return m ? m[1] + '|' + m[2] : ''; };
   items = await menu(U);
-  ok('the unit\'s own menu: Change unit and Delete', items.some(function (x) { return /^Change unit/.test(x); }) && items.indexOf('Delete') >= 0 && items.indexOf('Change identity') < 0, items.join('|'));
+  ok('the unit\'s own menu: Edit, Change unit and Delete', items[0] === 'Edit' && items.some(function (x) { return /^Change unit/.test(x); }) && items.indexOf('Delete') >= 0 && items.indexOf('Change identity') < 0, items.join('|'));
   await page.click('.m2-cx button:has-text("Change unit")'); await page.waitForTimeout(400);
   var kinds = await page.$$eval('.m2-ci button', function (l) { return l.map(function (x) { return x.textContent; }); });
-  ok('Change unit lists CellDesigner\'s 14 prefixed labels, then N or free text', kinds.length === 15 && kinds[0] === 'pc:T' && kinds.indexOf('mt:psac') >= 0 && kinds[13] === 'ct:mRNA' && /N or free text/.test(kinds[14]), kinds.join('|'));
+  ok('Change unit lists CellDesigner\'s 14 prefixed labels', kinds.length === 14 && kinds[0] === 'pc:T' && kinds.indexOf('mt:psac') >= 0 && kinds[13] === 'ct:mRNA', kinds.join('|'));
   await page.click('.m2-ci button:text-is("ct:mRNA")'); await page.waitForTimeout(800);
   ok('ct:mRNA picked: prefix ct, label mRNA', unit(await now()) === 'ct|mRNA', unit(await now()));
   await page.keyboard.press('Escape');
-  var typeUnit = async function (v) { await page.mouse.dblclick(U[0], U[1]); await type(v); };
-  t = await now(); await typeUnit('pc:X');
-  ok('pc:X refused with pc\'s labels, the file unchanged', /pc takes T, V, pH/.test(await status()) && (await now()) === t, await status());
-  await page.keyboard.press('Escape'); await typeUnit('PC:ph');
-  ok('PC:ph written as CellDesigner\'s pc and pH', unit(await now()) === 'pc|pH', unit(await now()));
-  await page.keyboard.press('Escape'); await typeUnit('N:ten');
-  ok('N takes any label', unit(await now()) === 'N|ten', unit(await now()));
-  await page.keyboard.press('Escape'); await typeUnit('Ca2+:bound');
-  ok('any other text as free input', unit(await now()) === 'free input|Ca2+:bound', unit(await now()));
-  await page.keyboard.press('Escape'); await typeUnit('N:2');
+  await page.mouse.dblclick(U[0], U[1]); await page.waitForSelector('.m2-cdsv', { timeout: 3000 });
+  ok('a double click opens its window: ct, mRNA', (await page.$eval('.m2-cdsv select', function (x) { return x.value; })) === 'ct' && (await page.$eval('.m2-cdsv-list select', function (x) { return x.value; })) === 'mRNA');
+  var opts = await page.$eval('.m2-cdsv select', function (x) { return Array.prototype.map.call(x.options, function (o) { return o.value; }).join('|'); });
+  ok('Prefix offers pc, mt, ct, N, free input', opts === 'pc|mt|ct|N|free input', opts);
+  var tb = await now(); await page.selectOption('.m2-cdsv select', 'N'); await page.waitForTimeout(300); await page.selectOption('.m2-cdsv select', 'ct'); await page.waitForTimeout(600);
+  ok('to N and back to ct with nothing typed: mRNA kept, nothing written', (await now()) === tb && (await page.$eval('.m2-cdsv-list select', function (x) { return x.value; })) === 'mRNA');
+  await page.selectOption('.m2-cdsv select', 'mt'); await page.waitForTimeout(800);
+  var mts = await page.$eval('.m2-cdsv-list select', function (x) { return Array.prototype.map.call(x.options, function (o) { return o.value; }).join('|'); });
+  ok('mt chosen: its labels listed, its first written at once', mts === 'ion|rad|rna|dna|prot|psac' && unit(await now()) === 'mt|ion', mts + ' ' + unit(await now()));
+  await page.selectOption('.m2-cdsv-list select', 'prot'); await page.waitForTimeout(800);
+  ok('prot chosen: mt:prot', unit(await now()) === 'mt|prot', unit(await now()));
+  await page.selectOption('.m2-cdsv select', 'free input'); await page.waitForTimeout(300);
+  await page.fill('.m2-cdsv input', 'pc:X'); await page.press('.m2-cdsv input', 'Enter'); await page.waitForTimeout(900);
+  ok('free input takes any text, pc:X too', unit(await now()) === 'free input|pc:X', unit(await now()));
+  await page.mouse.dblclick(U[0], U[1]); await page.waitForSelector('.m2-cdsv', { timeout: 3000 });
+  ok('reopened: free input, its text', (await page.$eval('.m2-cdsv select', function (x) { return x.value; })) === 'free input' && (await page.$eval('.m2-cdsv input', function (x) { return x.value; })) === 'pc:X');
+  await page.selectOption('.m2-cdsv select', 'N'); await page.waitForTimeout(300);
+  await page.fill('.m2-cdsv input', '2'); await page.press('.m2-cdsv input', 'Enter'); await page.waitForTimeout(900);
   ok('N:2 again', unit(await now()) === 'N|2', unit(await now()));
   await page.keyboard.press('Escape'); await page.mouse.click(R[0] - 60, R[1] - 60); await page.waitForTimeout(300);
   var t1 = await now();

@@ -904,7 +904,7 @@
       return l ? ownText(l) : '';
     }
     // a name (j null), or the j-th icon's text (a state variable's value, a unit of information), typed in a box over the
-    // map; Enter or leaving it keeps it, Esc not (an SBGN-ML unit's text free: N:3, mt:prot, ct:mRNA; a CellDesigner unit's checked by cdcreate.js cdSvType)
+    // map; Enter or leaving it keeps it, Esc not (a unit's text free: N:3, mt:prot, ct:mRNA; a CellDesigner map's icons have windows of their own, cdcreate.js cdSvWin)
     var typing = null;
     function typeIn(id, j, fresh) {   // fresh: the unit was made for this typing, deleted again when nothing is kept
       if (typing) typing.done(true);
@@ -940,7 +940,6 @@
       hid.forEach(function (el) { el.style.visibility = 'hidden'; });
       inp.style.background = gN && gN[nodes2[i].id] ? 'transparent' : !sv && fl && fl.getAttribute('hasColor') !== 'false' && fl.getAttribute('color') ? fl.getAttribute('color').slice(0, 7) : '#fff';
       inp.style.color = lab && lab.getAttribute('textColor') || '#000';
-      if (cd && cdPend && sv && !sv[0]) { inp.style.background = '#fff'; inp.style.border = '1px solid #000'; }   // a CellDesigner icon not in the file yet: nothing drawn under the field
       var grow = unit;
       // an SBGN-ML map's state variable or unit of information: the field is the icon itself while typed (white, its outline,
       // a state variable's round ends), sized at every key as sbgn_edit sizes it on Enter (svIcon), the drawn icon hidden
@@ -970,13 +969,11 @@
           if (!typing || typing.inp !== inp) return;
           typing = null; inp.remove(); hid.forEach(function (el) { el.style.visibility = ''; });
           var v = inp.value.replace(/[\r\n]+/g, ' ');
-          if (cd && sv) { if (keep && on && map === m0 && (v !== before || cdPend)) cdSvType(id, v.trim()); else if (cdPend) { cdPend = null; paint(); } return; }   // a CellDesigner map's (cdcreate.js)
           if (sv && !unit) v = v.replace(/@+$/, '');   // P@ is P (a site needs a name)
           if (unit) v = v.trim();   // a unit of only spaces is none
           if (fresh && (!keep || !v) && on && map === m0) { var t0 = undo.length ? unpush() : text; if (t0 !== text) { text = t0; parse(); dirty = true; quiet(); render(); paint(); changed(); } return; }
           if (!keep || v === before.replace(/[\r\n]+/g, ' ') || !on || map !== m0 ) return;   // a name on several lines, untouched, kept as it was (the box shows it on one)
           if (!sv) { setName(id, v); return; }
-          if (cd) return;
           var t2 = unit ? sbJs.unitValue(text, id, sv[4], v) : sbJs.stateValue(text, id, sv[4], v);
           if (t2 === text) return;
           if (!fresh) remember(false);   // a unit made for this typing: one step with its making (its step is taken back when nothing is kept, above)
@@ -1162,7 +1159,7 @@
         selN = []; selP = []; selE = []; part = null; svSel = { id: nodes2[d.pick[0]].id, j: d.pick[1] }; paint(); return;
       }
       if (d.r && svSel) svMove(d.i, svSel.j, d.r);
-      else if (d.again && !d.moved && svSel) (cd ? cdSvOpen : typeIn)(svSel.id, svSel.j);   // a click on it selected: its text (a CellDesigner residue's or structural state's window, cdcreate.js)
+      else if (d.again && !d.moved && svSel) (cd ? cdSvOpen : typeIn)(svSel.id, svSel.j);   // a click on it selected: its text (a CellDesigner map's: its window, cdcreate.js)
     }
     function svMove(i, j, r) {   // the state variable j of node i written at the place r (a CellDesigner map's: cdcreate.js)
       if (cd) { cdSvMove(i, j, r); return; }

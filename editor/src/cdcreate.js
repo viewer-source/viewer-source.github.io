@@ -755,7 +755,7 @@
       if (tool || Date.now() - placedAt < 600) { e.stopImmediatePropagation(); return; }
       var named = function (n, k) { return cdRole(k) === 'epn' || n.comp || (n.up != null && nodes2[n.up].shape.kind === 'Complex'); };
       var P = at(e), sq = svAt(P);
-      if (sq) { e.stopImmediatePropagation(); cdSvOpen(nodes2[sq[0]].id, sq[1]); return; }   // a residue's or the structural state's window, a unit's text
+      if (sq) { e.stopImmediatePropagation(); cdSvOpen(nodes2[sq[0]].id, sq[1]); return; }   // a residue's, the structural state's or the unit's window
       var i = nameAt(P, named);   // create.js: a species, a member, else a group's drawn name or the group round P; a line, a process or a gate nothing
       if (i < 0) return;
       var A = cdMk.aliasInfo(cd.now, nodes2[i].id);
@@ -777,10 +777,9 @@
     // a click selects one, a drag or the arrow keys move it round the border, Delete removes it. CellDesigner's three
     // kinds: a residue (a state variable: a site of a protein, its modification from CellDesigner's fixed list), the
     // structural state (one per species, an ellipse: open, closed or a free text) and the unit of information (one free
-    // text per alias, at the top middle, not moved). A residue and the structural state are edited in a small window
-    // (cdSvWin) opened by a double click, a click on one selected or Edit in its menu, never typed on the shape, so a
-    // modification comes only from the list and the file always opens in CellDesigner; a unit of information is typed in
-    // place (typeIn). A residue belongs to the protein: its site and place are the protein's, on every species of it; its
+    // text per alias, at the top middle, not moved). Each is edited in a small window (cdSvWin) opened by a double click,
+    // a click on one selected or Edit in its menu, never typed on the shape, so a modification or a unit's prefix and
+    // label come only from CellDesigner's lists and the file always opens in CellDesigner. A residue belongs to the protein: its site and place are the protein's, on every species of it; its
     // modification is this species'. Written by cd_make (residue, residueState, residueName, residueMove, residueRemove,
     // structural, structuralMove, info), one undo step each
     var SS = 'StructuralState';
@@ -872,47 +871,53 @@
       if (!q) return false;
       return cdApply(function (t) { return q[3] === SV ? cdMk.residueRemove(t, id, q[4]) : q[3] === SS ? cdMk.structural(t, id, null) : cdMk.info(t, id, null); }, [id]);
     }
-    // the unit of information's text typed in place (typeIn, create.js), as CellDesigner's Edit Information window takes it
-    // (cd_make infoUnit: a label its prefix lacks said, nothing written); a pending one written for the first time, the
-    // top made free for it
-    function cdSvType(id, v) {
-      var pend = cdPend; cdPend = null;
-      var u = v ? cdMk.infoUnit(v) : null;
-      if (u && u.bad) { note(u.bad); paint(); return; }
-      cdApply(function (t) { t = cdMk.info(t, id, v || null, true); return v ? cdTopClear(t, id, false) : t; }, []);   // nothing left selected
-      if (pend) paint();
-    }
-    // a double click, a click on one selected or Edit in its menu: a residue's or the structural state's window, a unit
-    // of information's text in place
+    // a double click, a click on one selected or Edit in its menu: the window of a residue, the structural state or the
+    // unit of information
     function cdSvOpen(id, j) {
       var i = nodes2.findIndex(function (n) { return n.id === id; }), q = i < 0 ? null : cdSvList(i)[j];
       if (!q) return;
-      if (q[3] === UI) { typeIn(id, j); return; }
       cdSvWin(id, q[3], q[4]);
     }
     // the window of a residue (Site, then Modification, the order of CellDesigner's Change identity: its residues, then
-    // their modification) or of the structural state (State: open, closed or a text; then the text): beside it over the
+    // their modification), of the structural state (State: open, closed or a text; then the text) or of the unit of
+    // information (CellDesigner's Edit Information: Prefix pc, mt, ct, N or free input, then Label, a list for pc, mt and
+    // ct, a text for N and free input; a new one shows CellDesigner's first, pc and T): beside it over the
     // map, the right-click menu's look. A choice is written at once, a text when Enter is pressed or the field is left,
     // each one undo step. Beside the node, on its right where there is room. Enter, Esc or a click outside close it. Kept as typing (create.js), so a zoom or a pan moves it
     // and another map, leaving editing or another field closes it (its text kept)
     function cdSvWin(id, kind, k, fresh) {   // fresh: a residue just added (Esc takes it back)
       if (typing) typing.done(true);
-      var m0 = map, res = kind === SV;
+      var m0 = map, res = kind === SV, ui = kind === UI;
       var feat = function () { try { return cdMk.features(cd.base, id); } catch (e) { return null; } };   // the file as just written (cd.now follows once drawn)
       var f = feat();
       if (!f || (res && !f.residues[k])) return;
       var box = document.createElement('div');
-      box.className = 'm2-cx m2-cdsv'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-label', res ? 'Residue' : 'Structural state');
-      box.innerHTML = res
+      box.className = 'm2-cx m2-cdsv'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-label', res ? 'Residue' : ui ? 'Unit of information' : 'Structural state');
+      box.innerHTML = ui
+        ? '<label><span>Prefix</span><select></select></label><label class="m2-cdsv-list"><span>Label</span><select></select></label>'
+          + '<label class="m2-cdsv-text"><span>Label</span><input type="text" spellcheck="false"></label><button type="button">Remove</button>'
+        : res
         ? '<label><span>Site</span><input type="text" spellcheck="false" placeholder="S314"></label><label><span>Modification</span><select></select></label>'
           + '<p>The site is the protein\u2019s: every copy of it shows it.</p>'
         : '<label><span>State</span><select><option value="open">Open</option><option value="closed">Closed</option><option value="">Text</option></select></label>'
           + '<label class="m2-cdsv-text"><span>Text</span><input type="text" spellcheck="false"></label><button type="button">Remove</button>';
       var inp = box.querySelector('input'), sel = box.querySelector('select'), row = box.querySelector('.m2-cdsv-text');
+      var lrow = box.querySelector('.m2-cdsv-list'), lab = lrow && lrow.querySelector('select');
+      var fixed = function () { return !!cdMk.INFO[sel.value]; };   // a unit's prefix with a list of labels (pc, mt, ct)
+      var labels = function () {   // a unit's Label row for its prefix: the list, else the text field
+        lab.textContent = '';
+        (cdMk.INFO[sel.value] || []).forEach(function (l) { lab.appendChild(new Option(l, l)); });
+        lrow.hidden = !fixed(); row.hidden = fixed();
+      };
       if (res) cdMk.STATES.forEach(function (s) { sel.appendChild(new Option(cdStateName(s), s)); });
       var rid = res ? f.residues[k].id : null, wrote = false;   // the residue by its id: another one removed or an undo moves its index
-      var pendOf = function () { return cdPend && cdPend.id === id && cdPend.kind === SS ? cdPend : null; };
-      if (res) { inp.value = f.residues[k].name || ''; sel.value = f.residues[k].state || 'empty'; }
+      var pendOf = function () { return cdPend && cdPend.id === id && cdPend.kind === kind ? cdPend : null; };
+      if (ui) {
+        Object.keys(cdMk.INFO).concat(['N', 'free input']).forEach(function (p) { sel.appendChild(new Option(p, p)); });
+        sel.value = f.info ? f.info.prefix : 'pc'; labels();
+        if (fixed()) lab.value = f.info ? f.info.label : lab.options[0].value; else inp.value = f.info ? f.info.label : '';
+      }
+      else if (res) { inp.value = f.residues[k].name || ''; sel.value = f.residues[k].state || 'empty'; }
       else {
         var now = f.structural ? f.structural.text : '';
         sel.value = /^(open|closed)$/.test(now) ? now : '';
@@ -924,7 +929,7 @@
       var kNow = function () { var g = feat(); return g ? g.residues.findIndex(function (r) { return r.id === rid; }) : -1; };
       var jOf = function () {   // its index among the node's icons (cdSvList: the residues, then the structural state); -1 when gone
         var g = feat();
-        return !g ? -1 : res ? kNow() : g.structural || pendOf() ? g.residues.length : -1;
+        return !g ? -1 : res ? kNow() : ui ? (g.info || pendOf() ? g.residues.length + (g.structural ? 1 : 0) : -1) : g.structural || pendOf() ? g.residues.length : -1;
       };
       var write = function (fn) {
         if (!live()) return;
@@ -951,7 +956,20 @@
         }
         else if (!pend) write(function (t) { return cdMk.structural(t, id, null); });
       };
-      var commit = function () { if (res) site(); else if (!sel.value) { var v = inp.value.trim(), st = (feat() || {}).structural; if (v !== (st ? st.text : '') || (v && pendOf())) put(v); } };
+      var unit = function (q) {   // the unit written as chosen ([prefix, label]; null: none), the top made free for it
+        var pend = pendOf();
+        if (!q) { if (!pend) write(function (t) { return cdMk.info(t, id, null); }); return; }
+        write(function (t) { return cdTopClear(cdMk.info(t, id, q, true), id, false); });
+        if (pend && cdPend === pend) cdPend = null;
+      };
+      var chosen = function () { return [sel.value, fixed() ? lab.value : inp.value.trim()]; };
+      var commit = function () {
+        if (ui) {   // a typed label (N, free input) when it differs; a new unit as shown, pc and T unless changed
+          var g = (feat() || {}).info, q = chosen();
+          if (q[1] && (pendOf() || !g || g.prefix !== q[0] || g.label !== q[1])) unit(q);
+          return;
+        }
+        if (res) site(); else if (!sel.value) { var v = inp.value.trim(), st = (feat() || {}).structural; if (v !== (st ? st.text : '') || (v && pendOf())) put(v); } };
       var place = function () {
         var i = nodes2.findIndex(function (n) { return n.id === id; }), j = jOf(), q = i < 0 || j < 0 ? null : cdSvList(i)[j];
         if (i < 0 || !box.isConnected) return;
@@ -972,12 +990,20 @@
         paint();
       } };
       sel.addEventListener('change', function () {
+        if (ui) {   // a prefix with a list: its first label written at once; N or free input: the label typed, written on Enter
+          var g = (feat() || {}).info, typed = inp.value.trim(), was = typed || (g && !cdMk.INFO[g.prefix] ? g.label : '');
+          labels();
+          if (g && g.prefix === sel.value) { if (fixed()) lab.value = g.label; else inp.value = g.label; return; }   // back to its own prefix: as it is, nothing written
+          if (fixed()) unit(chosen()); else { inp.value = was; inp.focus(); inp.select(); if (was) unit(chosen()); }
+          return;
+        }
         if (res) { var s = sel.value; write(function (t) { return cdMk.residueState(t, id, k, s); }); return; }
         row.hidden = !!sel.value;
         if (sel.value) put(sel.value); else { var g = feat(); inp.value = g && g.structural ? g.structural.text : ''; inp.focus(); inp.select(); }   // Text: from what is there, written once changed
       });
       inp.addEventListener('change', commit);
-      if (!res) box.querySelector('button').addEventListener('click', function () { if (pendOf()) T.done(false); else put(null); });
+      if (ui) lab.addEventListener('change', function () { unit(chosen()); });
+      if (!res) box.querySelector('button').addEventListener('click', function () { if (pendOf()) T.done(false); else if (ui) unit(null); else put(null); });
       box.addEventListener('keydown', function (e) {
         e.stopPropagation();
         if (e.key === 'Escape') { e.preventDefault(); T.done(false); V.view.focus({ preventScroll: true }); }
@@ -993,11 +1019,10 @@
       document.addEventListener('pointerdown', outside, true);
       var j0 = jOf();
       svSel = j0 < 0 ? null : { id: id, j: j0 }; paint(); place();
-      setTimeout(function () { var fo = res ? (inp.value ? sel : inp) : (sel.value ? sel : inp); if (typing === T) fo.focus(); }, 0);
+      setTimeout(function () { var fo = ui ? (fixed() ? sel : inp) : res ? (inp.value ? sel : inp) : (sel.value ? sel : inp); if (typing === T) fo.focus(); }, 0);
     }
-    // added from the species' menu: a residue empty at CellDesigner's first free place and a structural state at its
-    // place (cdFreeAngle), each with its window; a unit of information typed at once at the top middle (nothing written
-    // until it has a value)
+    // added from the species' menu: a residue empty at CellDesigner's first free place, a structural state at its place
+    // (cdFreeAngle) and a unit of information at the top middle, each with its window (the last two written once chosen)
     function cdSvAdd(id, kind) {
       var i = nodes2.findIndex(function (n) { return n.id === id; });
       if (i < 0) return;
@@ -1009,10 +1034,7 @@
         return;
       }
       cdPend = kind === SS ? { id: id, kind: SS, angle: cdFreeAngle(cd.base, id) } : { id: id, kind: UI };
-      if (kind === SS) { cdSvWin(id, SS, 0); return; }
-      var j = cdSvList(i).map(function (q) { return q[3]; }).indexOf(kind);
-      if (j < 0) { cdPend = null; return; }
-      typeIn(id, j);
+      cdSvWin(id, kind, 0);
     }
     // the right-click items over a species or a complex: Add state variable (a protein's residue), Add structural state,
     // Add unit of information, each while the species can take one more
@@ -1025,14 +1047,13 @@
       return out;
     }
     // the right-click menu over a residue (Edit: its window; Change state: its modification from CellDesigner's list, as
-    // Change identity's window), the structural state (Edit) or the unit of information (Change unit: CellDesigner's
-    // prefixes with their labels, its Edit Information window, then N and any other text typed in place); then the
-    // viewer's Delete
+    // Change identity's window), the structural state (Edit) or the unit of information (Edit; Change unit: CellDesigner's
+    // prefixes with their labels, N and free input in its window); then the viewer's Delete
     function cdSvOwnItems(q) {
       var i = q[0], it = cdSvList(i)[q[1]], id = nodes2[i].id;
       if (!it) return null;
-      if (it[3] === UI) return cdUnitItems(id, q[1]);
       var out = [['Edit', function () { cdSvOpen(id, q[1]); }]];
+      if (it[3] === UI) return out.concat(cdUnitItems(id, q[1]));
       if (it[3] !== SV) return out;
       var now = cdFeat(id).residues[it[4]].state || 'empty';
       out.push(['Change state', subItem(function (r, done) {
@@ -1045,11 +1066,11 @@
     }
     function cdUnitItems(id, j) {
       var f = cdFeat(id), now = f && f.info ? f.info.prefix + ':' + f.info.label : '', list = [];   // as the file holds it: free input mt:prot is not mt's prot
-      Object.keys(cdMk.INFO).forEach(function (p) { cdMk.INFO[p].forEach(function (l) { list.push(p + ':' + l); }); });
+      Object.keys(cdMk.INFO).forEach(function (p) { cdMk.INFO[p].forEach(function (l) { list.push([p, l]); }); });
       return [['Change unit', subItem(function (r, done) {
         return kindWindow(r, list.map(function (u) {
-          return { name: u, own: u === now, go: function () { cdApply(function (t) { return cdMk.info(t, id, u, true); }, []); svSel = { id: id, j: j }; paint(); } };
-        }).concat([{ name: 'N or free text\u2026', go: function () { typeIn(id, j); } }]), done);
+          return { name: u.join(':'), own: u.join(':') === now, go: function () { cdApply(function (t) { return cdMk.info(t, id, u, true); }, []); svSel = { id: id, j: j }; paint(); } };
+        }), done);
       })]];
     }
 

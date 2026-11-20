@@ -18,7 +18,7 @@
 //   gate(t, { kind, inputs, target, output }) -> { text, reaction, gate, at }   (gate: '<rid>|m<n>' on a reaction, '<rid>' between entities)
 //   gateInput(t, gate, alias) -> { text, part } (part null between entities); gateInputRemove(t, gate, alias), gateType(t, gate, { kind, output }) -> text
 //   residue(t, alias, { name, state }) -> { text, residue }; residueState(t, alias, n, state), residueRemove(t, alias, n) -> text
-//   structural(t, alias, text|null, replace), info(t, alias, text|null, replace), homodimer(t, alias, n) -> text; infoUnit(text) -> [prefix, label] | { bad }; INFO
+//   structural(t, alias, text|null, replace), info(t, alias, text|[prefix, label]|null, replace), homodimer(t, alias, n) -> text; infoUnit(text) -> [prefix, label] | { bad }; INFO
 //   residueName(t, alias, n, name), residueMove(t, alias, n, angle), structuralMove(t, alias, angle) -> text; features(t, alias) -> { protein, residues, structural, info: { text, prefix, label }, homodimer }
 //   joinable(t, alias, cx) -> '' or why not; join(t, alias, cx), leave(t, alias, ca|null) -> text   (complex membership)
 //   about(t, rid) -> { type, mods, modAliases, gate, inputs, gates, rl, pl }; aliasInfo(t, alias) -> { kind, cls, id, name, complex, box }   (for the editor's menus)
@@ -846,7 +846,8 @@
   // CellDesigner's units of information (its Edit Information window, 4.4.2): a prefix from a fixed list, each of pc, mt
   // and ct with its own fixed labels, N with any label, "free input" any text alone
   var INFO = { pc: ['T', 'V', 'pH'], mt: ['ion', 'rad', 'rna', 'dna', 'prot', 'psac'], ct: ['gene', 'tss', 'coding', 'grr', 'mRNA'] };
-  // a unit as typed, pc:T or ct:mRNA (prefix and label in any case), N:4 (n:4), else free input: [prefix, label]; { bad: why }
+  // a unit given as text (scripts, tests; the editor's window gives [prefix, label]): pc:T or ct:mRNA (prefix and label in
+  // any case), N:4 (n:4), else free input: [prefix, label]; { bad: why }
   // for a prefix of CellDesigner's with a label it does not have
   function infoUnit(txt) {
     var m = /^\s*([^:\s]+)\s*:\s*(.*?)\s*$/.exec(txt), p = m && m[1].toLowerCase();
@@ -857,11 +858,19 @@
     if (m && p === 'n' && m[2]) return ['N', m[2]];
     return ['free input', txt.trim()];
   }
-  // the one unit of information of an alias, written as CellDesigner's window writes it (infoUnit); removed, written
+  // a prefix and label as CellDesigner's window offers them: pc, mt and ct with a label of their own, N and free input
+  // with any label; { bad: why } otherwise, null when the label is empty
+  function infoPair(q) {
+    var p = q[0], l = String(q[1] == null ? '' : q[1]).trim();
+    if (INFO[p]) return INFO[p].indexOf(l) >= 0 ? [p, l] : { bad: 'CellDesigner\'s ' + p + ' takes ' + INFO[p].join(', ') + '.' };
+    if (p !== 'N' && p !== 'free input') return { bad: 'CellDesigner has no prefix ' + p + '.' };
+    return l ? [p, l] : null;
+  }
+  // the one unit of information of an alias, written as CellDesigner's window writes it (infoUnit, infoPair); removed, written
   // empty where the file writes empty ones, else taken out
   function info(t, id, txt, replace) {
     var A = alias(t, id), s = span(t, '<celldesigner:info ', A.sp[0], A.sp[1]), angle = s ? at(head(t, s), 'angle') : DOWN;
-    var u = txt == null || !String(txt).trim() ? null : infoUnit(String(txt));
+    var u = Array.isArray(txt) ? infoPair(txt) : txt == null || !String(txt).trim() ? null : infoUnit(String(txt));   // [prefix, label] as chosen in a window, or text as typed
     if (u && u.bad) refuse(u.bad);
     if (u && s && at(head(t, s), 'state') === 'open' && !replace) refuse('This entity already has a unit of information; CellDesigner keeps one.');
     var el = '<celldesigner:info state="' + (u ? 'open" prefix="' + esc(u[0]) + '" label="' + esc(u[1]) : 'empty') + '" angle="' + angle + '"/>';
