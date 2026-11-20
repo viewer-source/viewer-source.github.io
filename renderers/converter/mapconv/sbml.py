@@ -9,6 +9,7 @@ from lxml import etree
 from . import report, sbgnml
 from .annotation import to_properties
 from .model import Map, Node, Arc
+from .layout import count_text
 from .sbgnml import colour, urn
 
 RDF = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#'
@@ -561,8 +562,6 @@ def in_order(lay):
 def write(diagram):
     from .biology import label
     from .annotation import uses_links
-    from .graphml import without_tags
-    diagram = without_tags(diagram, 'SBML core')
     N, bio = diagram.nodes, diagram.biology
     G, L, R = '{%s}' % sbgnml.NS, '{%s}' % LAYOUT, '{%s}' % sbgnml.RENDER
     sb = etree.fromstring(sbgnml.write(diagram).encode('utf-8'))
@@ -642,6 +641,12 @@ def write(diagram):
             return [(x, NEGATED[c] if n else c, chain + [a]) for x, n, chain in inputs(s, cls(s) == 'not')]
         return []
 
+    def stoich(a):
+        # a reactant's or product's stoichiometry: its arc's cardinality where a number, else 1
+        lab = next((c.find(G + 'label') for c in a.findall(G + 'glyph') if c.get('class') == 'cardinality'), None)
+        n = count_text(lab.get('text')) if lab is not None else None
+        return n if n not in (None, '?') else '1'
+
     # reactions: one per process glyph with a reactant or product
     procs, skipped, gated = [], [], []
     for p in (g for g in glyphs if cls(g) in PROCESS_SBO):
@@ -675,7 +680,7 @@ def write(diagram):
                 if term:
                     E(le, 'modifierSpeciesReference', id=ref, species=ent(g), sboTerm='SBO:' + term)
                 else:
-                    E(le, 'speciesReference', id=ref, species=ent(g), stoichiometry='1', constant='true')
+                    E(le, 'speciesReference', id=ref, species=ent(g), stoichiometry=stoich(chain[0]), constant='true')
                 refs.append((ref, g, role, chain, c))
         procs.append((p, r, refs))
     if skipped:

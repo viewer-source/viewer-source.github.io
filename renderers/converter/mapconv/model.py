@@ -30,7 +30,6 @@ class Node:
     species: str = None  # the entity the file says the glyph draws (CellDesigner species), if it says one
     font: float = None  # its label's font size, where the file gives one (yEd, CellDesigner, Newt), kept on conversion
     small: float = None  # its state variables' and units' font size, where the file gives one (yEd, Newt)
-    way: str = None  # a tag's or terminal's point: left, right, up or down (SBGN-ML's orientation; yEd's Tag right, inverse left)
 
 
 @dataclass

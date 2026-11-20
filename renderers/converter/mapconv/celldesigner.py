@@ -47,7 +47,7 @@ from . import cd_layout, cd_tidy, report
 from .cd_layout import ANCHOR, SQUARE, anchor_point, from_frame, square_point, to_frame
 from .layout import count_text, exit_point, visible
 from .annotation import from_notes, from_references, notes, references, to_properties
-from .graphml import EQUIV, without_delays, without_tags
+from .graphml import EQUIV, without_delays
 from .model import Map, Node, Arc
 
 CD = 'http://www.sbml.org/2001/ns/celldesigner'
@@ -184,7 +184,7 @@ def write(diagram, ann, layout='straight'):
     # its process glyph; cd_tidy.py); 'drawn' (as drawn): no node moved, process glyphs and ports held
     # where the input has them by edit points, for round trips between editors
     advanced = layout != 'straight'
-    diagram = opened_ors(without_delays(without_tags(diagram, 'CellDesigner'), 'CellDesigner'))
+    diagram = opened_ors(without_delays(diagram, 'CellDesigner'))
     eq = [i for i, d in diagram.nodes.items() if d.kind == 'Operator' and d.labels[:1] == [EQUIV]]
     if eq:  # CellDesigner has no equivalence operator: its unknown gate, the line out a dashed stimulation
         report.say('changed', 'equivalence operator written as CellDesigner\'s unknown gate ? (%s)' % ', '.join(eq))

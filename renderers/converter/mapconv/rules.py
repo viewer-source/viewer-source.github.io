@@ -37,7 +37,7 @@ def problems(m):
     for i, d in N.items():
         if d.kind in ('StateVariable', 'UnitOfInformation'):
             out.append((i, 'a %s drawn as a node of its own: make it a label of its entity' % d.kind)); continue
-        if i not in ents | procs | ops | groups and d.kind not in ('Compartment', 'Tag'):
+        if i not in ents | procs | ops | groups and d.kind != 'Compartment':
             out.append((i, 'not an SBGN glyph (%s)' % d.kind)); continue
         if d.kind == 'SimpleChemical' and any(t.split('@')[0] for t, _, _ in d.states):
             out.append((i, 'a simple chemical carries no state variable'))
@@ -55,7 +55,7 @@ def problems(m):
     # a smaller node laid on an entity it does not belong to, its centre on the entity's border
     # or inside it: a shape in place of a state variable (two nodes touching are layout)
     flagged = {i for i, _ in out}
-    for a in (i for i in N if i not in groups and i not in flagged and N[i].kind != 'Tag'):  # a terminal lies on its submap
+    for a in (i for i in N if i not in groups and i not in flagged):
         x, y, w, h = N[a].box
         for b in ents - groups:
             bx, by, bw, bh = N[b].box
@@ -76,13 +76,7 @@ def problems(m):
             why = 'an arrow outside the SBGN palette (%s)' % h[6:]
         elif h is None:  # consumption, or a logic arc into an operator: drawn either way
             pair = {s, t}
-            tags = sum(N[x].kind == 'Tag' for x in pair)
-            if tags == 2:
-                why = 'a line between two tags: an equivalence arc joins an entity and a tag'
-            elif tags == 1:
-                if not pair & epn:
-                    why = 'a tag is joined to an entity by an equivalence arc'
-            elif s in epn and t in epn:  # an Activity Flow equivalence arc (to a submap) read into yEd
+            if s in epn and t in epn:  # an Activity Flow equivalence arc (to a submap) read into yEd
                 why = 'a plain line between two entities (an equivalence arc) has no CellDesigner or SBGN PD form'
             elif not (pair & procs and pair & epn) and not (pair & ops and pair & (epn | ops)):
                 why = 'a plain line must join an entity and a process (or a logic gate)'

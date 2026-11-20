@@ -9,7 +9,7 @@ from . import report
 from .annotation import from_graphml, from_notes, notes, to_properties
 from .layout import bends, border, centre, compartment_of, count_box, count_text, decorations, own_places, unbent
 from . import newt_layout
-from .graphml import DELAY, EQUIV, LINE, CHAR, touches, without_delays
+from .graphml import DELAY, EQUIV, LINE, CHAR, without_delays
 from .model import Map, Node, Arc
 
 NS = 'http://sbgn.org/libsbgn/0.3'
@@ -23,7 +23,7 @@ CLASS = {'Macromolecule': 'macromolecule', 'SimpleChemical': 'simple chemical', 
          'UnspecifiedEntity': 'unspecified entity', 'Complex': 'complex',
          'Phenotype': 'phenotype', 'SourceAndSink': 'source and sink', 'EmptySet': 'source and sink',
          'Submap': 'submap', 'Compartment': 'compartment', 'Process': 'process', 'OmittedProcess': 'omitted process',
-         'UncertainProcess': 'uncertain process', 'Tag': 'tag'}
+         'UncertainProcess': 'uncertain process'}
 MULTIMER = ('Macromolecule', 'SimpleChemical', 'NucleicAcidFeature', 'Complex')
 PROCESSES = ('Process', 'OmittedProcess', 'UncertainProcess')
 OPERATORS = {'and': 'AND', 'or': 'OR', 'not': 'NOT', 'equivalence': EQUIV, 'delay': DELAY}  # SBGN class -> yEd label (delay: Activity Flow)
@@ -129,12 +129,6 @@ def write(diagram, newt=False):
     for a in diagram.arcs:
         s, t, pts, s_at, t_at = a.source, a.target, list(a.points), a.source_at, a.target_at
         given = (s_at, t_at)  # the ends as the map gives them: a process's or gate's port kept (below)
-        if a.head is None and N[s].kind == 'Tag' and N[t].kind == 'Tag':
-            report.say('left out', 'arc %s: a line between two tags has no SBGN form, left out' % a.id); continue
-        if a.head is None and (N[s].kind == 'Tag') != (N[t].kind == 'Tag'):  # a tag's line: an equivalence arc, from the entity
-            if N[s].kind == 'Tag':
-                s, t, pts, s_at, t_at, given = t, s, pts[::-1], t_at, s_at, given[::-1]
-            arcs.append((a, 'equivalence arc', s, t, pts, s_at, t_at, given)); continue
         if a.head is None:
             if s in hubs - eq and t not in hubs:
                 s, t, pts, s_at, t_at, given = t, s, pts[::-1], t_at, s_at, given[::-1]
@@ -225,7 +219,7 @@ def write(diagram, newt=False):
                 g.set('font-size', '%g' % size)
 
     def annotate(g, i, d):
-        if d.kind not in CLASS or d.kind in PROCESSES or d.kind == 'Tag':
+        if d.kind not in CLASS or d.kind in PROCESSES:
             return
         if notes(d.data):  # the family's name, its members' sites
             note(g, notes(d.data))
@@ -255,18 +249,14 @@ def write(diagram, newt=False):
             cls = CLASS[d.kind] + (' multimer' if d.count > 1 and d.kind in MULTIMER else '')
             if DRAWN_AS.get(d.data.get('SBGN class')) == d.kind:   # only on the glyph it belongs to (changed in yEd: dropped)
                 cls = d.data['SBGN class']
-            if i in term:
-                cls = 'terminal'
         else:
             report.say('left out', 'node %s: no SBGN glyph for %s, left out' % (i, d.kind)); return
         g = etree.SubElement(parent, S + 'glyph', {'class': cls, 'id': ids[i]})
-        q = None if i in term else compartment_of(N, i)
+        q = compartment_of(N, i)
         if q and (d.parent is None or N[d.parent].kind != 'Complex'):  # a compartment's: the one around it
             g.set('compartmentRef', ids[q])
         if i in ports:
             g.set('orientation', ports[i][0])
-        if d.kind == 'Tag':
-            g.set('orientation', d.way or 'right')
         annotate(g, i, d)
         name = '' if d.kind in PROCESSES or not d.labels else d.labels[0]  # a second label is a unit (N:2)
         if d.kind != 'Operator' and name:
@@ -290,28 +280,16 @@ def write(diagram, newt=False):
             bbox(ui, *box)
         for j in kids.get(i, []) if d.kind == 'Complex' else []:
             glyph(g, j)
-        for j in (k for k, s in term.items() if s == i):
-            glyph(g, j)
         if i in ports:
             for k, (px, py) in enumerate(ports[i][1:]):
                 etree.SubElement(g, S + 'port', id='%s.%d' % (ids[i], k + 1), x=repr(float(px)), y=repr(float(py)))
 
-    # a terminal: a tag the file says is one, its submap the one whose border it touches (yEd keeps both at the top level)
-    subs = [i for i, d in N.items() if d.kind == 'Submap']
-    term = {}
-    for i, d in N.items():
-        if d.kind == 'Tag' and d.data.get('SBGN class') == 'terminal':
-            near = [j for j in subs if touches(d.box, N[j].box)]
-            if near:
-                term[i] = min(near, key=lambda j: math.dist(centre(d), centre(N[j])))
-            else:
-                report.say('warning', 'terminal %s: on no submap, written as a tag' % i)
     kids = {}
     for i, d in N.items():
         kids.setdefault(d.parent if d.parent in N else None, []).append(i)
     # compartments first, outer before inner (drawn under the rest), then every node outside a complex
     depth = lambda i: 0 if compartment_of(N, i) is None else 1 + depth(compartment_of(N, i))
-    order = sorted((i for i, d in N.items() if (d.parent is None or N[d.parent].kind != 'Complex') and i not in term),
+    order = sorted((i for i, d in N.items() if d.parent is None or N[d.parent].kind != 'Complex'),
                    key=lambda i: (N[i].kind != 'Compartment', depth(i) if N[i].kind == 'Compartment' else 0))
     for i in order:
         glyph(m, i)
@@ -560,9 +538,7 @@ def read(path):
             for c in g.findall(S + 'glyph'):
                 if c.get('class') == 'terminal':
                     port[c.get('id')] = i
-        if cls == 'terminal' and not af:  # a submap's terminal: a tag on its border, yEd's way (a top-level node)
-            kind = 'Tag'
-        if kind is None:  # annotation and the other glyphs the atlas maps do not draw
+        if kind is None:  # tag, annotation and the other glyphs the atlas maps do not draw
             skipped.setdefault(cls, []).append(i); return
         for p in g.findall(S + 'port'):
             port[p.get('id')] = i
@@ -610,10 +586,6 @@ def read(path):
                         data=data, font=font.get(oid),
                         small=next((font[c.get('id')] for c in g.findall(S + 'glyph') if c.get('id') in font and
                                     c.get('class') in ('state variable', 'unit of information')), None))
-        if kind == 'Tag':  # SBGN-ML's orientation, horizontal (its default) pointing right
-            nodes[i].way = g.get('orientation') if g.get('orientation') in ('left', 'right', 'up', 'down') else 'right'
-            if cls == 'terminal':
-                data['SBGN class'] = 'terminal'
         if g.find(S + 'clone') is not None:
             skipped.setdefault('clone marker', []).append(i)
         for c in g.findall(S + 'glyph'):
