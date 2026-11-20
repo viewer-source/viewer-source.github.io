@@ -864,40 +864,98 @@
     }
     // Icons that never touch (notes/state-crowding.md; the CellDesigner copy: cdcreate.js cdRoom, cd_make placesFor): a
     // node's state variables and units of information keep 2 px between their boxes. A new or changed one takes the first
-    // free place of svPlaces, worked out from the node's size; with none free the node grows about its centre (svGrowStep)
-    // and the places are worked out again. Nothing else moves, but a state variable a unit of information now meets.
-    // Never when a map is opened or saved
-    // the places by size, as [rx, ry]: along each side every step (20: an 18 icon and a 2 gap) from its middle, as many as
-    // fit before the corners, and the corners; the order of the places most used (the bottom from the middle outwards, right first, the sides'
-    // middles, the bottom corners, the top corners, the top, the sides' other places, lower first). On 80 by 40 the corners,
-    // the middles and the bottom's quarters
+    // free place of svPlaces, worked out from the node's size; with none free the node grows about its centre (svGrowStep),
+    // the state variables on a grown side spread again (iconSpread), and the places are worked out again. Nothing else
+    // moves, but those state variables and one a unit of information now meets. Never when a map is opened or saved
+    // the places by size, as [rx, ry]: inside each side as many as fit a step apart (20: an 18 icon and a 2 gap), spread
+    // evenly (sideSlots), and the corners; the order of the places most used (the bottom from the middle outwards, right
+    // first, the sides' middles, the bottom corners, the top corners, the top, the sides' other places, lower first). On 80
+    // by 40 the corners, the middles and the bottom's and top's quarters; on 100 by 50 four places along the bottom
     function svPlaces(w, h, step) {
-      var S = step || 20, along = function (half) { var o = [0]; for (var d = S; d < half - 1e-6; d += S) o.push(d, -d); return o; };
-      var bx = along(w / 2), sy = along(h / 2).slice(1), out = [];
+      var S = step || 20, bx = sideSlots(w, S), sy = sideSlots(h, S), out = [];
+      var near = sy.length ? sy.filter(function (d) { return Math.abs(Math.abs(d) - Math.abs(sy[0])) < 1e-6; }) : [0];
       bx.forEach(function (d) { out.push([d / w, 0.5]); });
-      out.push([0.5, 0], [-0.5, 0], [0.5, 0.5], [-0.5, 0.5], [0.5, -0.5], [-0.5, -0.5]);
+      near.forEach(function (d) { out.push([0.5, d / h], [-0.5, d / h]); });
+      out.push([0.5, 0.5], [-0.5, 0.5], [0.5, -0.5], [-0.5, -0.5]);
       bx.forEach(function (d) { out.push([d / w, -0.5]); });
-      sy.forEach(function (d, k) { if (k % 2 === 0) out.push([0.5, d / h], [-0.5, d / h], [0.5, -d / h], [-0.5, -d / h]); });
+      sy.slice(near.length).forEach(function (d) { out.push([0.5, d / h], [-0.5, d / h]); });
+      return out;
+    }
+    // the places inside a side L long, as distances from its middle: as many as fit S apart between its corners, spread
+    // evenly (L / S - 1 of them), nearest the middle first (the positive one, right or lower, before its twin); the
+    // CellDesigner copy: cd_make placesFor's slots
+    function sideSlots(L, S) {
+      var n = Math.max(0, Math.floor(L / S + 1e-9) - 1), o = [];
+      for (var j = 1; j <= n; j++) o.push(Math.round((-L / 2 + j * L / (n + 1)) * 1e6) / 1e6);
+      return o.sort(function (a, b) { return Math.abs(a) - Math.abs(b) || b - a; });
+    }
+    // a point p on the border of a box w0 by h0 (from its centre, y down) on the box grown to w by h, at its distance from
+    // the middle of its side (a corner stays a corner); off the border in proportion
+    function iconKeep(p, w0, h0, w, h) {
+      var x = p[0], y = p[1], onX = Math.abs(Math.abs(x) - w0 / 2) < 0.5, onY = Math.abs(Math.abs(y) - h0 / 2) < 0.5, sx = x < 0 ? -1 : 1, sy = y < 0 ? -1 : 1;
+      if (onX && onY) return [sx * w / 2, sy * h / 2];
+      if (onY) return [x, sy * h / 2];
+      if (onX) return [sx * w / 2, y];
+      return [x * w / w0, y * h / h0];
+    }
+    // icons in order at kept distances p (sorted) given places on their side (sorted, as many or more): the places, in
+    // order, that move them least; on a tie the outer places taken and, of two as near the middle, the left one, so the
+    // place left free is the one svPlaces offers first (nearest the middle, right before left)
+    function spreadOn(slots, p) {
+      var n = slots.length, m = p.length, C = [], W = [];
+      var cost = function (d, x) { return Math.abs(d - x) - 1e-3 * Math.abs(d) - (d < 0 ? 1e-6 : 0); };
+      for (var j = 0; j <= m; j++) { C.push([]); W.push([]); for (var k = 0; k <= n; k++) C[j].push(j === 0 ? 0 : Infinity); }
+      for (j = 1; j <= m; j++) for (k = j; k <= n; k++) {
+        var take = C[j - 1][k - 1] + cost(slots[k - 1], p[j - 1]), skip = C[j][k - 1];
+        if (take <= skip) { C[j][k] = take; W[j][k] = 1; } else { C[j][k] = skip; W[j][k] = 0; }
+      }
+      var out = [];
+      for (j = m, k = n; j > 0; k--) if (W[j][k] === 1) { out.unshift(slots[k - 1]); j--; }
+      return out;
+    }
+    // icons moved with their glyph grown from w0 by h0 to w by h, as points from the box's centre (y down); the one master,
+    // cdcreate.js cdOn calls it (and iconKeep). mv: { p, s } the icons that may move; fixed: { p, s } the others, already on the new box.
+    // Each kept at its distance from the middle of its side (a corner stays a corner); on a side whose length changed its
+    // icons are spread again over that side's places (sideSlots), in their order, each as little as can be (spreadOn),
+    // so the glyph grows in even steps (notes/state-crowding.md, Steadier growth); a side whose icons would then
+    // meet one another or another icon is kept as it was
+    function iconSpread(mv, fixed, w0, h0, w, h, S) {
+      var meet = function (a, sa, c, sc) { return Math.abs(a[0] - c[0]) < (sa[0] + sc[0]) / 2 + 2 - 1e-6 && Math.abs(a[1] - c[1]) < (sa[1] + sc[1]) / 2 + 2 - 1e-6; };
+      var sides = { b: [], r: [], l: [], t: [] }, out = mv.map(function (q) { return iconKeep(q.p, w0, h0, w, h); });
+      mv.forEach(function (q, k) {
+        var onX = Math.abs(Math.abs(q.p[0]) - w0 / 2) < 0.5, onY = Math.abs(Math.abs(q.p[1]) - h0 / 2) < 0.5;
+        if (onY && !onX) sides[q.p[1] > 0 ? 'b' : 't'].push(k); else if (onX && !onY) sides[q.p[0] > 0 ? 'r' : 'l'].push(k);
+      });
+      ['b', 'r', 'l', 't'].forEach(function (sd) {
+        var ks = sides[sd], hz = sd === 'b' || sd === 't', L = hz ? w : h;
+        if (!ks.length || Math.abs(L - (hz ? w0 : h0)) < 1e-6) return;
+        var at = function (d) { return hz ? [d, sd === 'b' ? h / 2 : -h / 2] : [sd === 'r' ? w / 2 : -w / 2, d]; };
+        var o = fixed.concat(mv.map(function (q, k) { return ks.indexOf(k) < 0 ? { p: out[k], s: q.s } : null; }).filter(Boolean));
+        var slots = sideSlots(L, S).filter(function (d) { return !o.some(function (f) { return meet(at(d), [S - 2, S - 2], f.p, f.s); }); });
+        if (slots.length < ks.length) return;
+        var ord = ks.slice().sort(function (a, b) { return hz ? mv[a].p[0] - mv[b].p[0] : mv[a].p[1] - mv[b].p[1]; });
+        var res = spreadOn(slots.slice().sort(function (a, b) { return a - b; }), ord.map(function (k) { return hz ? out[k][0] : out[k][1]; })).map(at);
+        var ok = ord.every(function (k, j) { return !o.some(function (f) { return meet(res[j], mv[k].s, f.p, f.s); }) && ord.every(function (k2, j2) { return j2 === j || !meet(res[j], mv[k].s, res[j2], mv[k2].s); }); });
+        if (ok) ord.forEach(function (k, j) { out[k] = res[j]; });
+      });
       return out;
     }
     function svPt(b, r) { return [b[0] + (0.5 + r[0]) * b[2], b[1] + (0.5 + r[1]) * b[3]]; }
-    // a point p on box b's border put on box g (b grown) where it stays at its distance from the middle of its side: an
-    // icon keeps its place while its glyph grows round it (a corner stays a corner); the CellDesigner copy: cdcreate.js cdKeep
-    function svKeep(p, b, g) {
-      var cx = b[0] + b[2] / 2, cy = b[1] + b[3] / 2, gx = g[0] + g[2] / 2, gy = g[1] + g[3] / 2, dx = p[0] - cx, dy = p[1] - cy;
-      var onX = Math.abs(Math.abs(dx) - b[2] / 2) < 0.5, onY = Math.abs(Math.abs(dy) - b[3] / 2) < 0.5, sx = dx < 0 ? -1 : 1, sy = dy < 0 ? -1 : 1;
-      if (onX && onY) return [gx + sx * g[2] / 2, gy + sy * g[3] / 2];
-      if (onY) return [gx + dx, gy + sy * g[3] / 2];
-      if (onX) return [gx + sx * g[2] / 2, gy + dy];
-      return [gx + dx * g[2] / b[2], gy + dy * g[3] / b[3]];
+    // node i's icons (svIconsOn) on box b, the node grown from b0: its state variables moved as iconSpread moves them, its
+    // units of information at their ratios (sbgn_edit keeps them so)
+    function svMoved(i, ic, b0, b, S) {
+      if (b === b0) return ic;
+      var rel = function (B, r) { return [r[0] * B[2], r[1] * B[3]]; }, sv = ic.filter(function (q) { return q.k === SV; });
+      var at = iconSpread(sv.map(function (q) { return { p: rel(b0, q.r), s: q.s }; }), ic.filter(function (q) { return q.k !== SV; }).map(function (q) { return { p: rel(b, q.r), s: q.s }; }), b0[2], b0[3], b[2], b[3], S || svStep(i));
+      return ic.map(function (q) { var k = sv.indexOf(q); return k < 0 ? q : { r: [at[k][0] / b[2], at[k][1] / b[3]], s: q.s, k: q.k, n: q.n }; });
     }
-    function svRatio(p, g) { return [(p[0] - g[0]) / g[2] - 0.5, (p[1] - g[1]) / g[3] - 0.5]; }
-    // node id grown to box nb: its state variables kept where they are (svKeep, their ratios written again); its units
-    // of information keep their places too (sbgn_edit keeps their ratios)
-    function svGrowTo(id, nb) {
-      var i = nodes2.findIndex(function (n) { return n.id === id; }), b = boxOf(i), ic = svIconsOn(i);
+    function svStep(i) { return Math.max(20, 18 * svK(i) + 2); }   // a place's width: an icon and the 2 px gap
+    // node id grown to box nb: its state variables moved as svMoved moves them (their ratios written again); its units of
+    // information keep their places too (sbgn_edit keeps their ratios)
+    function svGrowTo(id, nb, skip) {   // skip(icon): left out, as svRoom left it out (it moves next)
+      var i = nodes2.findIndex(function (n) { return n.id === id; }), b = boxOf(i), ic = svMoved(i, svIconsOn(i).filter(function (q) { return !skip || !skip(q); }), b, nb);
       text = sbJs.resize(text, id, nb);
-      ic.forEach(function (q) { if (q.k === SV) { var r = svRatio(svKeep(svPt(b, q.r), b, nb), nb); text = sbJs.stateMove(text, id, q.n, r[0], r[1]); } });
+      ic.forEach(function (q) { if (q.k === SV) text = sbJs.stateMove(text, id, q.n, q.r[0], q.r[1]); });
       parse();
     }
     function svIconsOn(i) {   // node i's icons as ratios of its box (sbgn_edit keeps them so through a resize): { r, s, k: kind, n: index among its kind }
@@ -905,11 +963,10 @@
       return svList(i).map(function (q) { return { r: [(q[1][0] - b[0]) / b[2] - 0.5, (q[1][1] - b[1]) / b[3] - 0.5], s: q[2], k: q[3], n: q[4] }; });
     }
     function svClash(c, s, b, icons) { return icons.some(function (q) { var p = svPt(b, q.r); return Math.abs(c[0] - p[0]) < (s[0] + q.s[0]) / 2 + 2 - 1e-6 && Math.abs(c[1] - p[1]) < (s[1] + q.s[1]) / 2 + 2 - 1e-6; }); }
-    // the next size tried, as cdcreate.js cdGrowStep: the width +20 up to 1.5 times its kind's (80: 100, 120), then the
-    // height +20 up to 1.5 times, then the width +40 with no cap
-    function svGrowStep(b, base) {
-      var W = 1.5 * base[0], H = 1.5 * base[1], w = b[2], h = b[3];
-      if (w < W - 1e-6) w = Math.min(w + 20, W); else if (h < H - 1e-6) h = Math.min(h + 20, H); else w += 40;
+    // the next size tried, as cdcreate.js cdGrowStep: one place's width (S) wider and higher in its kind's proportion (80
+    // by 40: 100 by 50, 120 by 60, ...), about its centre, so the glyph keeps its kind's shape and grows in even steps
+    function svGrowStep(b, base, S) {
+      var w = b[2] + S, h = b[3] + S * base[1] / base[0];
       return [b[0] - (w - b[2]) / 2, b[1] - (h - b[3]) / 2, w, h];
     }
     function svBase(i) {
@@ -919,12 +976,12 @@
     }
     // a free place for an icon of size s on node i: { box: grown (null: as it is), r }; skip(icon): not counted
     function svRoom(i, s, skip) {
-      var b0 = boxOf(i), b = b0, base = svBase(i), ic0 = svIconsOn(i).filter(function (q) { return !skip || !skip(q); }), c;
+      var b0 = boxOf(i), b = b0, base = svBase(i), S = svStep(i), ic0 = svIconsOn(i).filter(function (q) { return !skip || !skip(q); }), c;
       for (var g = 0; g < 80; g++) {
-        var ic = ic0.map(function (q) { return q.k === SV ? { r: svRatio(svKeep(svPt(b0, q.r), b0, b), b), s: q.s, k: q.k, n: q.n } : q; });   // on the size tried: state variables kept where they are, units spread
+        var ic = svMoved(i, ic0, b0, b, S);   // on the size tried: state variables spread as they will be, units at their ratios
         c = svPlaces(b[2], b[3], Math.max(20, s[1] + 2));
         for (var j = 0; j < c.length; j++) if (!svClash(svPt(b, c[j]), s, b, ic)) return { box: b === b0 ? null : b, r: c[j] };
-        b = svGrowStep(b, base);
+        b = svGrowStep(b, base, S);
       }
       return { box: b === b0 ? null : b, r: c[0] };
     }
@@ -947,8 +1004,8 @@
         var b2 = boxOf(i), ic2 = svIconsOn(i), us2 = ic2.filter(function (q) { return q.k === UI; });
         var hit = ic2.filter(function (q) { return q.k === SV && (j != null ? q.n === j && svClash(svPt(b2, q.r), q.s, b2, ic2.filter(function (o) { return o !== q; })) : svClash(svPt(b2, q.r), q.s, b2, us2)); })[0];   // a state variable typed: that one alone; a unit changed: those it meets (a file's own overlaps stay)
         if (!hit) break;
-        var r = svRoom(i, hit.s, function (o) { return o.k === SV && o.n === hit.n; });
-        if (r.box) { svGrowTo(id, r.box); grew = true; }
+        var sk = function (o) { return o.k === SV && o.n === hit.n; }, r = svRoom(i, hit.s, sk);
+        if (r.box) { svGrowTo(id, r.box, sk); grew = true; }
         text = sbJs.stateMove(text, id, hit.n, r.r[0], r.r[1]); parse(); i = nodes2.findIndex(function (n) { return n.id === id; });
       }
       return grew;
@@ -1009,10 +1066,10 @@
     function svAddTo(c, r, txt) {   // a state variable txt on copy c at place r (the copy grown a few steps to free it), else its first free place
       var k = svIdx(c);
       if (k < 0) return;
-      var s = svSize(k, txt), b0 = boxOf(k), b = b0, base = svBase(k), ic0 = svIconsOn(k), at = null;
+      var s = svSize(k, txt), b0 = boxOf(k), b = b0, base = svBase(k), S = svStep(k), ic0 = svIconsOn(k), at = null;
       for (var g = 0; g < 6 && !at; g++) {
-        var ic = ic0.map(function (q) { return q.k === SV ? { r: svRatio(svKeep(svPt(b0, q.r), b0, b), b), s: q.s, k: q.k, n: q.n } : q; });
-        if (!svClash(svPt(b, r), s, b, ic)) at = { box: b === b0 ? null : b, r: r }; else b = svGrowStep(b, base);
+        var ic = svMoved(k, ic0, b0, b, S);
+        if (!svClash(svPt(b, r), s, b, ic)) at = { box: b === b0 ? null : b, r: r }; else b = svGrowStep(b, base, S);
       }
       if (!at) at = svRoom(k, s, null);
       if (at.box) svGrowTo(c, at.box);
@@ -1453,7 +1510,7 @@
     document.addEventListener('keydown', function (e) {
       if ((e.key !== 'Delete' && e.key !== 'Backspace') || !svOn() || /input|textarea|select/i.test(document.activeElement.tagName)) return;
       if (cd) { if (svDelete()) { e.preventDefault(); e.stopImmediatePropagation(); } return; }   // the rest of a CellDesigner map's: cdcreate.js
-      if (svDelete() || (!selP.length && (selN.length || selE.length) && nodesDelete(selN, selE))) { e.preventDefault(); e.stopImmediatePropagation(); }
+      if (svDelete() || ((selN.length || (selE.length && !selP.length)) && nodesDelete(selN, selP.length ? [] : selE))) { e.preventDefault(); e.stopImmediatePropagation(); }   // an area's bend points go with their lines, as the menu's Delete; bend points alone are core.js's
     }, true);
     window.m2EditDelete = function () {   // the right-click menu's Delete over a state variable, a unit of information, a macromolecule or a simple chemical
       if (cdPal()) return cdDeleteItem();   // a CellDesigner map's (cdcreate.js)

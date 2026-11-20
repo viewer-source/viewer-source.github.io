@@ -1,8 +1,8 @@
 // Icons that never touch (notes/state-crowding.md), on the live page, SBGN-ML and CellDesigner: a protein made from the
 // palette; a unit of information (and on CellDesigner a structural state), then 20 state variables; another protein with
 // 14 state variables, then a unit of information. After each step no two icons closer than 2 px, every icon on its
-// glyph's border, the glyph grown only in the steps of the design (width +20 up to 1.5 times, then height +20 up to 1.5
-// times, then width +40), never smaller; one undo takes back the icon and the growth together. No script error.
+// glyph's border, the glyph grown only in the steps of the design (width +20 and height in its kind's proportion, 80 by 40:
+// +10), at most one step per state variable added, never smaller; one undo takes back the icon and the growth together. No script error.
 //   node tests/states-crowd.js [base address] [viewer folder: its editor and renderers served in place of the page's]
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path');
 var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local = process.argv[3];
@@ -62,16 +62,16 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local =
     });
     return [gap, on];
   };
-  var stepOk = function (a, z, W0, H0) {   // z is a's size or one step of the design from it (or several)
+  var stepOk = function (a, z, W0, H0) {   // how many steps of the design z is from a (-1: none of them)
     var w = a[2], h = a[3];
     for (var k = 0; k < 6; k++) {
-      if (Math.abs(w - z[2]) < 0.6 && Math.abs(h - z[3]) < 0.6) return true;
-      if (w < 1.5 * W0 - 0.5) w = Math.min(w + 20, 1.5 * W0); else if (h < 1.5 * H0 - 0.5) h = Math.min(h + 20, 1.5 * H0); else w += 40;
+      if (Math.abs(w - z[2]) < 0.6 && Math.abs(h - z[3]) < 0.6) return k;
+      w += 20; h += 20 * H0 / W0;
     }
-    return false;
+    return -1;
   };
   var run = async function (label, id, cd, adds) {   // adds: the menu items in turn ([item, typed text or null])
-    var S0 = await state(id, cd), W0 = S0.box[2], H0 = S0.box[3], prev = S0, worst = Infinity, offB = 0, steps = true, n0 = S0.icons.length, lost = 0;
+    var S0 = await state(id, cd), W0 = S0.box[2], H0 = S0.box[3], prev = S0, most = 0, worst = Infinity, offB = 0, steps = true, n0 = S0.icons.length, lost = 0;
     for (var k = 0; k < adds.length; k++) {
       var R = await rect(id), C = [R[0] + R[2] / 2, R[1] + R[3] / 2];
       if (!(await menuPick(C, adds[k][0]))) { ok(label + ': ' + adds[k][0] + ' offered (step ' + (k + 1) + ')', false); break; }
@@ -83,7 +83,7 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local =
       await esc();
       var S = await state(id, cd), A = apart(S);
       worst = Math.min(worst, A[0]); if (!A[1]) offB++;
-      if (!stepOk(prev.box, S.box, W0, H0)) steps = false;
+      var st = stepOk(prev.box, S.box, W0, H0); if (st < 0) steps = false; else if (st > most && adds[k][0] === 'Add state variable') most = st;   // a unit that moves several state variables off the top may take more
       if (S.icons.length !== prev.icons.length + 1) lost++;
       prev = S;
     }
@@ -91,6 +91,7 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local =
     ok(label + ': no two icons closer than 2 px', worst >= 2 - 0.01, 'closest ' + worst.toFixed(2));
     ok(label + ': every icon on the border', offB === 0, offB + ' steps with one off');
     ok(label + ': grown only in the design’s steps, never smaller', steps, JSON.stringify(prev.box));
+    ok(label + ': at most one step per state variable added (' + most + ')', most <= 1);
     if (process.env.SHOW) console.log(JSON.stringify(prev));
     ok(label + ': grown past the first steps (' + prev.box[2] + ' by ' + prev.box[3] + ')', prev.box[2] > W0 && prev.box[3] > H0);
     await page.keyboard.press(process.platform === 'darwin' ? 'Meta+z' : 'Control+z'); await page.waitForTimeout(900);

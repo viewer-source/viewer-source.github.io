@@ -609,7 +609,7 @@
     }
     document.addEventListener('keydown', function (e) {
       if ((e.key !== 'Delete' && e.key !== 'Backspace') || !cdPal() || /input|textarea|select/i.test(document.activeElement.tagName)) return;
-      if ((selN.length || selE.length) && !selP.length && cdDelete(selN, selE)) { e.preventDefault(); e.stopImmediatePropagation(); }
+      if ((selN.length || (selE.length && !selP.length)) && cdDelete(selN, selE)) { e.preventDefault(); e.stopImmediatePropagation(); }   // an area's bend points go with their lines, as the menu's Delete
     }, true);
     function cdDeleteItem() {   // the right-click menu's Delete over a state variable, a unit of information, a node or a line
       if (!rclick) return null;
@@ -819,21 +819,11 @@
     // state and the unit of information (or a multimer's count, drawn at the top) keep 2 px between their boxes. A new or
     // changed one takes the first free place of cd_make.placesFor, worked out from the species' size (the bottom from the
     // middle outwards, the sides' middles, the corners, the top, the sides' other places); with none free the species
-    // grows about its centre (cdGrowStep) and the places are worked out again. Nothing else moves; never when a map is
-    // opened or saved.
+    // grows about its centre (cdGrowStep), the residues on a grown side spread again (cdOn), and the places are worked out
+    // again. Nothing else moves; never when a map is opened or saved.
     var cdTop = Math.PI / 2;
     function cdRx(txt) { return Math.trunc(window.cdrender.width(txt || '', 10) / 2 + 12); }   // a structural state's half width (cdrender)
     function cdFrontOf(t, a, box) { var I = cdMk.aliasInfo(t, a), b = box || I.box, s = 6 * ((I.homodimer || 1) - 1); return [b[0], b[1], b[2] - s, b[3] - s]; }   // cdFront from the file (box: a size tried)
-    // a point p on box F's border put on box G (F grown) where it stays at its distance from the middle of its side: an
-    // icon keeps its place while the species grows round it (a corner stays a corner); the SBGN-ML copy: create.js svKeep
-    function cdKeep(p, F, G) {
-      var cx = F[0] + F[2] / 2, cy = F[1] + F[3] / 2, gx = G[0] + G[2] / 2, gy = G[1] + G[3] / 2, dx = p[0] - cx, dy = p[1] - cy;
-      var onX = Math.abs(Math.abs(dx) - F[2] / 2) < 0.5, onY = Math.abs(Math.abs(dy) - F[3] / 2) < 0.5, sx = dx < 0 ? -1 : 1, sy = dy < 0 ? -1 : 1;
-      if (onX && onY) return [gx + sx * G[2] / 2, gy + sy * G[3] / 2];
-      if (onY) return [gx + dx, gy + sy * G[3] / 2];
-      if (onX) return [gx + sx * G[2] / 2, gy + dy];
-      return [gx + dx * G[2] / F[2], gy + dy * G[3] / F[3]];
-    }
     function cdAngleOn(p, F) { return cdMk.ratioAngle([(p[0] - F[0]) / F[2] - 0.5, (p[1] - F[1]) / F[3] - 0.5]); }
     // the icons on alias a of the file t, read once per action: { ang: its angle (null: the unit or count at the top), s:
     // size, k: kind, n: index among its kind }; cdOn puts them on a box
@@ -844,26 +834,30 @@
       if (f.info || cdMultiTop(t, a)) out.push({ ang: null, s: [70, 16], k: UI, n: 0 });
       return out;
     }
-    // the icons put on front box F: drawn by their angles (keep false: as CellDesigner draws them on any box), or kept
-    // where they are on F0 while it grows to F (cdKeep); each with its centre c
+    // the icons put on front box F: drawn by their angles (as CellDesigner draws them on any box), or, the species grown
+    // from F0 to F, the residues moved as create.js iconSpread moves them (spread again on a grown side), the structural
+    // state kept at its distance from the middle of its side (iconKeep), the unit or count at the top; each with its centre c
     function cdOn(ic, F, F0) {
-      var on = window.cdrender.onBorder;
-      return ic.map(function (q) { return { c: q.ang == null ? [F[0] + F[2] / 2, F[1]] : F0 ? cdKeep(on(F0, q.ang), F0, F) : on(F, q.ang), s: q.s, k: q.k, n: q.n }; });
+      var on = window.cdrender.onBorder, top = function (B) { return [B[0] + B[2] / 2, B[1]]; };
+      if (!F0) return ic.map(function (q) { return { c: q.ang == null ? top(F) : on(F, q.ang), s: q.s, k: q.k, n: q.n }; });
+      var rel = function (B, p) { return [p[0] - B[0] - B[2] / 2, p[1] - B[1] - B[3] / 2]; }, abs = function (p) { return [p[0] + F[0] + F[2] / 2, p[1] + F[1] + F[3] / 2]; };
+      var rs = ic.filter(function (q) { return q.k === SV; }), os = ic.filter(function (q) { return q.k !== SV; });
+      var oP = os.map(function (q) { return q.ang == null ? rel(F, top(F)) : iconKeep(rel(F0, on(F0, q.ang)), F0[2], F0[3], F[2], F[3]); });
+      var rP = iconSpread(rs.map(function (q) { return { p: rel(F0, on(F0, q.ang)), s: q.s }; }), os.map(function (q, k) { return { p: oP[k], s: q.s }; }), F0[2], F0[3], F[2], F[3], 20);
+      return ic.map(function (q) { var k = rs.indexOf(q); return { c: abs(k < 0 ? oP[os.indexOf(q)] : rP[k]), s: q.s, k: q.k, n: q.n }; });
     }
     function cdIcons(t, a, F) { return cdOn(cdIcons0(t, a), F || cdFrontOf(t, a)); }
     function cdClash(c, s, icons) {   // an icon s wide and high at c meets one of icons (2 px apart; 1e-6: a place built 2 px off a box stays free)
       return icons.some(function (q) { return Math.abs(c[0] - q.c[0]) < (s[0] + q.s[0]) / 2 + 2 - 1e-6 && Math.abs(c[1] - q.c[1]) < (s[1] + q.s[1]) / 2 + 2 - 1e-6; });
     }
     function cdPairs(ic) { var n = 0; ic.forEach(function (q, k) { ic.slice(k + 1).forEach(function (o) { if (cdClash(q.c, q.s, [o])) n++; }); }); return n; }   // icons that meet, counted in pairs
-    // the next size tried (about the centre): the width +20 up to 1.5 times its kind's (CellDesigner's 80 for a protein:
-    // 100, 120), then the height +20 up to 1.5 times, then the width +40 with no cap; a species already larger than a step
-    // needs skips it. base: the kind's size with a multimer's 6 a copy, so the front copy, where the places are, takes the steps
+    // the next size tried, as create.js svGrowStep: 20 (a place's width) wider and higher in the kind's proportion
+    // (CellDesigner's 80 by 40 for a protein: 100 by 50, 120 by 60, ...), about the centre. base: the kind's size
     function cdGrowStep(b, base) {
-      var W = 1.5 * base[0], H = 1.5 * base[1], w = b[2], h = b[3];
-      if (w < W - 1e-6) w = Math.min(w + 20, W); else if (h < H - 1e-6) h = Math.min(h + 20, H); else w += 40;
+      var w = b[2] + 20, h = b[3] + 20 * base[1] / base[0];
       return [b[0] - (w - b[2]) / 2, b[1] - (h - b[3]) / 2, w, h];
     }
-    function cdKindSize(t, a) { var I = cdMk.aliasInfo(t, a), L = cdMk.LOOK[I.cls], s = 6 * ((I.homodimer || 1) - 1); return L ? [L[0] + s / 1.5, L[1] + s / 1.5] : [I.box[2], I.box[3]]; }   // 1.5 * (L + s / 1.5) = 1.5 L + s: the front at 1.5 L
+    function cdKindSize(t, a) { var I = cdMk.aliasInfo(t, a), L = cdMk.LOOK[I.cls]; return L ? [L[0], L[1]] : [I.box[2], I.box[3]]; }   // its proportion for cdGrowStep
     // a free place for an icon of size s on alias a: { box: the alias's box grown to make it (null: as it is), angle: on
     // that box }; first(F): angles tried before the order (the place kept, the top), skip(icon): icons not counted;
     // also(angle): true where the angle is taken elsewhere (a residue's place on the protein's other copies)
@@ -883,15 +877,17 @@
       if (cdGrew && !cdGrew[a]) { var i = nodes2.findIndex(function (n) { return n.id === a; }); if (i >= 0) cdGrew[a] = boxOf(i); }
       return cdMk.bounds(t, a, box);
     }
-    // alias a grown to box, its residues and structural state kept where they are (cdKeep: their angles written again);
+    // alias a grown to box, its residues and structural state moved as cdOn moves them (their angles written again);
     // the residues' new angles are the protein's, so the other copies are given room after (cdFitOthers)
-    function cdGrow(t, a, box) {
+    function cdGrow(t, a, box, skip) {   // skip(icon): left out, as cdRoom left it out (it moves next)
       if (!box) return t;
-      var t0 = t, on = window.cdrender.onBorder, F0 = cdFrontOf(t, a), F = cdFrontOf(t, a, box), f = cdMk.features(t, a);
-      f.residues.forEach(function (r, k) { t = cdMk.residueMove(t, a, k, cdAngleOn(cdKeep(on(F0, r.angle), F0, F), F)); });
-      if (f.structural) t = cdMk.structuralMove(t, a, cdAngleOn(cdKeep(on(F0, f.structural.angle), F0, F), F));
+      var t0 = t, F0 = cdFrontOf(t, a), F = cdFrontOf(t, a, box), ic = cdOn(cdIcons0(t, a).filter(function (q) { return !skip || !skip(q); }), F, F0), any = false;
+      ic.forEach(function (q) {
+        if (q.k === SV) { t = cdMk.residueMove(t, a, q.n, cdAngleOn(q.c, F)); any = true; }
+        else if (q.k === SS) t = cdMk.structuralMove(t, a, cdAngleOn(q.c, F));
+      });
       t = cdGrowBounds(t, a, box);
-      return f.residues.length ? cdFitOthers(t0, t, a) : t;
+      return any ? cdFitOthers(t0, t, a) : t;
     }
     // the protein's other copies (every species naming it shows its residues, at the same angles) after id's residues
     // changed from t0 to t: a copy where more icons meet than before grows (its bounds; the icons by angle) until no more
@@ -927,8 +923,8 @@
     // a residue k moved off what it meets on alias id (a unit of information come to the top): the first free place, the
     // others' room after it
     function cdResidueRoom(t, id, k) {
-      var r = cdRoom(t, id, [16, 16], null, function (q) { return q.k === SV && q.n === k; }, cdOthersTop(t, id));
-      t = cdGrow(t, id, r.box);
+      var sk = function (q) { return q.k === SV && q.n === k; }, r = cdRoom(t, id, [16, 16], null, sk, cdOthersTop(t, id));
+      t = cdGrow(t, id, r.box, sk);
       return cdFitOthers(t, cdMk.residueMove(t, id, k, r.angle), id);
     }
     // a structural state's places tried first: the angle kept (keep), else the top middle and, with a unit of information
@@ -952,7 +948,7 @@
         var s = [2 * cdRx(v), 16], skip = function (q) { return q.k === SS; }, r = null;
         if (was[a] != null) r = cdRoom(t, a, s, function () { return [was[a]]; }, skip);
         if (!r || r.box || r.angle !== was[a]) r = cdRoom(t, a, s, cdSsFirst(v), skip);   // not where it was: the top first, as a new one
-        t = cdMk.structuralMove(cdGrow(t, a, r.box), a, r.angle);
+        t = cdMk.structuralMove(cdGrow(t, a, r.box, skip), a, r.angle);
       });
       return t;
     }
@@ -994,7 +990,7 @@
           var ic = cdIcons(t, a), u = ic.filter(function (q) { return q.k === UI; });
           var hit = ic.filter(function (q) { return q.k !== UI && cdClash(q.c, q.s, u); })[0];
           if (!hit) break;
-          if (hit.k === SS) { var s = cdMk.features(t, a).structural, r = cdRoom(t, a, hit.s, cdSsFirst(s.text), function (q) { return q.k === SS; }); t = cdMk.structuralMove(cdGrow(t, a, r.box), a, r.angle); }
+          if (hit.k === SS) { var s = cdMk.features(t, a).structural, r = cdRoom(t, a, hit.s, cdSsFirst(s.text), function (q) { return q.k === SS; }); t = cdMk.structuralMove(cdGrow(t, a, r.box, function (q) { return q.k === SS; }), a, r.angle); }
           else t = cdResidueRoom(t, a, hit.n);
         }
       });

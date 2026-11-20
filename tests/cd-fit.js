@@ -18,7 +18,14 @@ function aliasBounds(t) {   // every alias's bounds, by id
   while ((m = re.exec(t))) { var v = {}; m[2].replace(/\b([xywh])="([^"]*)"/g, function (_, k, x) { v[k] = parseFloat(x); }); o[m[1]] = v; }
   return o;
 }
-function editPoints(t) { var o = [], re = /<reaction [^>]*\bid="([^"]*)"[\s\S]*?<celldesigner:editPoints>([^<]*)</g, m; while ((m = re.exec(t))) o.push(m[1] + ':' + m[2]); return o.join('|'); }
+function editPoints(t) {   // per reaction; a logic gate reaction's points are the gate's own place on the canvas (moved with the map), left out
+  var o = [];
+  t.split(/<reaction /).slice(1).forEach(function (r) {
+    var id = /\bid="([^"]*)"/.exec(r), e = /<celldesigner:editPoints>([^<]*)</.exec(r.split('</reaction>')[0]);
+    if (id && e && !/<celldesigner:reactionType>BOOLEAN_LOGIC_GATE</.test(r.split('</reaction>')[0])) o.push(id[1] + ':' + e[1]);
+  });
+  return o.join('|');
+}
 var ok = 0, bad = [];
 files.forEach(function (f) {
   var t = fs.readFileSync(f, 'utf8'), name = path.relative(process.cwd(), f);

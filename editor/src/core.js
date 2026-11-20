@@ -479,11 +479,10 @@
       box.querySelector('#m2-ed-gh-off').hidden = show || !token() || !repo();
     }
 
-    // the status line says only what went wrong, in red (no progress notes beyond the save messages,
-    // note(), kept during development; no save time or mark by the title either: when and how a map is saved is the system's concern). A
-    // warning stays until the next thing that works.
+    // the status line says only what went wrong, in red: nothing while things work (no save messages, no save time or
+    // mark by the title: when and how a map is saved is the system's concern). A warning stays until the next thing that works.
     function warn(t) { status.textContent = t; status.classList.add('m2-ed-warn'); }
-    function note(t) { if (buildRefused) return warn(t + ' ' + buildNote()); status.textContent = t; status.classList.remove('m2-ed-warn'); }   // a save message, in the usual grey
+    function note(t) { if (buildRefused) return warn(t + ' ' + buildNote()); quiet(); }   // a step that worked: nothing said, a warning before it cleared
     function quiet() { status.textContent = ''; status.classList.remove('m2-ed-warn'); }
 
     // the layout skill's tools: its own code, copied into renderers/layout/ and run here as it is, on the

@@ -782,19 +782,24 @@
     return A;
   }
   var OPEN = /<celldesigner:protein [^>]*[^/]>\s+<\/celldesigner:protein>/;   // a protein with no residues written open
-  // the places for a new icon on a species' (front) box w by h, by size (notes/state-crowding.md): along each side every
-  // 20 from its middle (a 16 circle and a 4 gap; step: more for larger icons), as many as fit before the corners, and
-  // the corners; in the order of the places most used on CellDesigner maps: the bottom from
-  // the middle outwards (right first), the sides' middles, the bottom corners, the top corners, the top from the middle
-  // outwards, the sides' other places (lower first). The editor's create.js svPlaces is the SBGN-ML copy (as
-  // [rx, ry]); here as CellDesigner's angles (0 the right, pi/2 the top: cdrender.onBorder's inverse)
+  // the places for a new icon on a species' (front) box w by h, by size (notes/state-crowding.md): inside each side as
+  // many as fit a step apart (20: a 16 circle and a 4 gap; step: more for larger icons), spread evenly, and the corners;
+  // in the order of the places most used on CellDesigner maps: the bottom from the middle outwards (right first), the
+  // sides' middles, the bottom corners, the top corners, the top from the middle outwards, the sides' other places
+  // (lower first). The editor's create.js svPlaces (and sideSlots for slots) is the SBGN-ML copy (as [rx, ry]); here as CellDesigner's angles (0
+  // the right, pi/2 the top: cdrender.onBorder's inverse)
   function placesFor(w, h, step) {
-    var S = step || 20, along = function (half) { var o = [0]; for (var d = S; d < half - 1e-6; d += S) o.push(d, -d); return o; };
-    var bx = along(w / 2), sy = along(h / 2).slice(1), out = [];
+    var S = step || 20, slots = function (L) {
+      var n = Math.max(0, Math.floor(L / S + 1e-9) - 1), o = [];
+      for (var j = 1; j <= n; j++) o.push(Math.round((-L / 2 + j * L / (n + 1)) * 1e6) / 1e6);
+      return o.sort(function (a, b) { return Math.abs(a) - Math.abs(b) || b - a; });
+    };
+    var bx = slots(w), sy = slots(h), out = [], near = sy.length ? sy.filter(function (d) { return Math.abs(Math.abs(d) - Math.abs(sy[0])) < 1e-6; }) : [0];
     bx.forEach(function (d) { out.push([d / w, 0.5]); });
-    out.push([0.5, 0], [-0.5, 0], [0.5, 0.5], [-0.5, 0.5], [0.5, -0.5], [-0.5, -0.5]);
+    near.forEach(function (d) { out.push([0.5, d / h], [-0.5, d / h]); });
+    out.push([0.5, 0.5], [-0.5, 0.5], [0.5, -0.5], [-0.5, -0.5]);
     bx.forEach(function (d) { out.push([d / w, -0.5]); });
-    sy.forEach(function (d, k) { if (k % 2 === 0) out.push([0.5, d / h], [-0.5, d / h], [0.5, -d / h], [-0.5, -d / h]); });
+    sy.slice(near.length).forEach(function (d) { out.push([0.5, d / h], [-0.5, d / h]); });
     return out.map(ratioAngle);
   }
   function ratioAngle(r) {   // [rx, ry] on the border (y down) as CellDesigner's angle (the editor's cdAngle, onBorder's inverse)

@@ -1137,6 +1137,7 @@
         return;
       }
       if (!list || !list.offsetParent || !m || m.binned || !canDelete(m, !!(repo() && token()))) return;
+      if (V.mapSelected && V.mapSelected()) return;   // something selected on the map: the key is not for the whole map (Esc first)
       e.preventDefault();
       var items = Array.prototype.slice.call(list.querySelectorAll('.m2-map:not(.m2-binned)')), i = items.findIndex(function (b) { return b.dataset.id === m.id; });
       var next = i < 0 ? null : items[i + 1] || items[i - 1];

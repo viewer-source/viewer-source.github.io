@@ -2128,13 +2128,17 @@ page, so its styles keep the base they were made on).
         ['Right click inside an area', 'Zoom to area, or Copy image as PNG of that part'],
         ['Esc, or a click', 'ends the area'],
         ['Shift + right click', 'the browser’s own menu'],
-        ['+ and − keys, or buttons', 'zoom out and in'],
+        ['+ and − keys, or the buttons', 'zoom in and out'],
         ['0, or Fit and Read', 'the whole map or reading size'],
         ['E, or ' + MOD + ' + E', 'switch between viewing and editing'],
         ['?, or the ? sign at the end of the icons', 'this window (while editing: the editor’s help)'],
-        [MOD + ' + Z, ' + MOD + ' + Shift + Z', 'undo, redo the last change of a setting: Settings, the grid, the palette’s choices']].concat(own ? [
+        [MOD + ' + Z, ' + MOD + ' + Shift + Z or ' + MOD + ' + Y', 'undo, redo the last change of a setting: Settings, the grid, the palette’s choices'],
+        ['Arrow keys', 'the next or the previous map in the list'],
+        ['S', 'the map’s own file or its SBGN-ML (Settings, Source)'],
+        ['Esc', 'clears the selection, closes a window or a menu']].concat(own ? [
         [MOD + ' + Z, ' + MOD + ' + Shift + Z in the list', 'undo, redo the list’s last change: a move, Delete, Restore, a name, a group, a new map (while editing: after a click in the list)'],
-        ['Shift or ' + MOD + ' + click on a group’s name', 'selects the group, not opened or closed; Delete then deletes it, as Delete group']] : [])) +
+        ['Shift or ' + MOD + ' + click on a group’s name', 'selects the group, not opened or closed; Delete then deletes it, as Delete group'],
+        ['Delete', 'with the list in sight and nothing selected on the map: puts the map shown in Deleted and shows the next one']] : [])) +
       '<h4>While editing</h4>' + table(null, [
         ['Click, then drag', 'an item is selected first, then moved'],
         ['Drag on empty space or an item not selected', GRAB ? 'moves the map, as outside editing' : 'selects an area in place of the selection'],
@@ -2142,7 +2146,9 @@ page, so its styles keep the base they were made on).
         ['Shift + drag on what is selected', 'moves it by itself, out of what holds it'],
         ['Arrow keys', 'move what is selected by 1, with Shift by 10'],
         [MOD + ' + Z, ' + MOD + ' + Shift + Z or ' + MOD + ' + Y', 'undo, redo the last change, of the map or of a setting'],
-        ['Delete', 'remove what is selected, where it can be removed']]);
+        ['Delete', 'remove what is selected, where it can be removed'],
+        [MOD + ' + A', 'select all'],
+        [MOD + ' + S', 'save at once']]);
     document.body.appendChild(tipsBox);
     tipsBox.querySelector('.m2-tips-x').addEventListener('click', function () { tips(false); });
   }
@@ -2334,7 +2340,8 @@ page, so its styles keep the base they were made on).
   }
   view.addEventListener('pointerup', release);
   view.addEventListener('pointercancel', release);
-  view.addEventListener('keydown', function (e) {
+  document.addEventListener('keydown', function (e) {   // with the map shown, wherever the focus is, as E and S; not while typing, with a menu open or with a modifier (the browser's own zoom)
+    if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || !current || typingText() || document.querySelector('.m2-cx')) return;
     var c = centre();
     if (e.key === '+' || e.key === '=') zoomAt(z * 1.25, c[0], c[1]);
     else if (e.key === '-') zoomAt(z / 1.25, c[0], c[1]);
@@ -4168,7 +4175,7 @@ page, so its styles keep the base they were made on).
       if (nameHere) item(box, 'Name by members', nameHere).disabled = !!nameHere.same;   // greyed when the complex is already so named
       if (packHere) item(box, 'Repack complex', packHere);
       if (mac && mac.tail) mac.tail.forEach(function (q) { item(box, q[0], q[1]); });
-      if (del) { if (box.lastChild && !box.lastChild.classList.contains('m2-sep')) sep(box); item(box, 'Delete', del); }   // the line also after a submenu item
+      if (del) { if (box.lastChild && !box.lastChild.classList.contains('m2-sep')) sep(box); item(box, 'Delete', del, '<span class="m2-cx-key">' + (/mac|iphone|ipad|ipod/i.test((navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || navigator.userAgent) ? '\u232B' : 'Del') + '</span>'); }   // the line also after a submenu item; its key beside it, as Switch to edit's
       var whole = ed && window.m2EditMapItems && window.m2EditMapItems();   // the whole map's tools and the grid switches, on empty map space
       if (whole && whole.length && box.lastChild && !box.lastChild.classList.contains('m2-sep')) sep(box);   // a compartment's own items above: a line between
       (whole || []).forEach(function (q) {
@@ -4484,7 +4491,8 @@ page, so its styles keep the base they were made on).
     refreshMine: { get: function () { return refreshMine; } },
     picked: { get: function () { return function () { return picked.length ? picked.slice() : [pickShown()].filter(Boolean); }; } },   // the list's selection (several maps), else the map shown
     pickSet: { get: function () { return pickSet; } },
-    pickedGroup: { get: function () { return function () { return pickedGroup; }; } },   // the group selected by its heading, else null
+    pickedGroup: { get: function () { return function () { return pickedGroup; }; } },
+    mapSelected: { get: function () { return function () { return !!(area || sel || lit); }; } },   // an area, an item or a line selected on the map shown (view mode)   // the group selected by its heading, else null
     draftDo: { get: function () { return draftDo; } },
     dropKept: { get: function () { return dropKept; } },
     draftIds: { get: function () { return draftIds; } },
