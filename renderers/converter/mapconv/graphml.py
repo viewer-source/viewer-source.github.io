@@ -103,11 +103,34 @@ def ovals(nodes):
             d.parent = min(around, key=lambda o: o.box[2] * o.box[3]).id
 
 
+def touches(b, c):  # boxes b and c overlap or meet within a pixel (a terminal and its submap)
+    return b[0] <= c[0] + c[2] + 1 and c[0] <= b[0] + b[2] + 1 and b[1] <= c[1] + c[3] + 1 and c[1] <= b[1] + b[3] + 1
+
+
+def terminals(nodes, subs):
+    # a tag on a submap's border is its terminal (yEd keeps both at the top level): one the file calls a terminal and
+    # touching the submap, or one inside the submap's box meeting one of its sides; the submap then stays a submap.
+    # The viewer's editor has its copy (core.js terminals)
+    def on_side(b, c):  # b inside c, meeting a side within a pixel
+        inside = c[0] - 1 <= b[0] and b[0] + b[2] <= c[0] + c[2] + 1 and c[1] - 1 <= b[1] and b[1] + b[3] <= c[1] + c[3] + 1
+        return inside and min(abs(b[0] - c[0]), abs(b[0] + b[2] - c[0] - c[2]), abs(b[1] - c[1]), abs(b[1] + b[3] - c[1] - c[3])) <= 1
+    for d in nodes.values():
+        if d.kind != 'Tag':
+            continue
+        near = [s for s in subs if (touches if d.data.get('SBGN class') == 'terminal' else on_side)(d.box, nodes[s].box)]
+        s = min(near, key=lambda s: math.dist(centre(d), centre(nodes[s]))) if near else None  # the nearest (core.js terminals the same)
+        if s:
+            d.data['SBGN class'] = 'terminal'
+            nodes[s].kind = 'Submap'
+        elif d.data.get('SBGN class') == 'terminal':
+            del d.data['SBGN class']
+
+
 def read(path):
     root = etree.parse(path).getroot()
     res = {r.get('id'): r for r in root.iter(Y + 'Resource')}
     names = {k.get('id'): k.get('attr.name') for k in root.findall('g:key', NS) if k.get('for') == 'node' and k.get('attr.name')}
-    nodes = {}
+    nodes, subs = {}, set()
     for n in root.iter('{%s}node' % NS['g']):
         gn = realizer(n)
         kind = kind_of(n, gn)
@@ -129,8 +152,9 @@ def read(path):
                          if (x.text or '').strip()), None)
         if kind == 'Process' and l is not None:
             kind = PROCESS_LABEL.get(l.text.strip(), kind)
-        if kind == 'Submap':  # the atlas maps' phenotype, as in CellDesigner (SREBP's two submap glyphs)
+        if kind == 'Submap':  # the atlas maps' phenotype, as in CellDesigner (SREBP's two submap glyphs), unless it has terminals (below)
             kind = 'Phenotype'
+            subs.add(n.get('id'))
         agent = kind == 'PerturbingAgent'   # yEd's own glyph: the atlas maps' phenotype, its SBGN class kept
         if agent:
             kind = 'Phenotype'
@@ -151,12 +175,16 @@ def read(path):
             dashed=border is not None and border.get('type') != 'line',
             font=float(l.get('fontSize')) if l is not None and l.get('fontSize') else None,  # kept on conversion
             small=next((float(f) for f in map(small, labs[1:]) if f), None))
+        if kind == 'Tag':  # yEd's two ways (plain right, inverse left), the orientation property for up and down
+            sp = {q.get('name').replace('com.yworks.sbgn.style.', ''): q.get('value') for q in gn.findall('y:StyleProperties/y:Property', NS)}
+            nodes[n.get('id')].way = sp.get('orientation') or ('left' if sp.get('inverse') == 'true' else 'right')
         cls = nodes[n.get('id')].data
         if agent:
             cls['SBGN class'] = 'perturbing agent'
         elif cls.get('SBGN class') == 'perturbing agent':  # the glyph changed in yEd: its shape decides
             del cls['SBGN class']
     ovals(nodes)
+    terminals(nodes, subs)
     for d in nodes.values():
         if d.kind != 'Compartment':
             d.label_at = None
@@ -204,6 +232,16 @@ def without_delays(m, form):
         ins = [a.target if a.source == d else a.source for a in m.arcs if d in (a.source, a.target) and a not in outs]
         arcs += [replace(o, id='%s_%s' % (o.id, i), source=i, points=[], source_at=(0.0, 0.0)) for o in outs for i in ins]
     return replace(m, nodes={i: d for i, d in m.nodes.items() if i not in ds}, arcs=arcs)
+
+
+def without_tags(m, form):
+    # for a format with no tag (CellDesigner, SBML core): the tags and terminals and their equivalence arcs left out
+    ts = {i for i, d in m.nodes.items() if d.kind == 'Tag'}
+    if not ts:
+        return m
+    report.say('left out', 'tag: %d left out, no %s form (%s)' % (len(ts), form, ', '.join(sorted(ts))))
+    return replace(m, nodes={i: d for i, d in m.nodes.items() if i not in ts},
+                   arcs=[a for a in m.arcs if a.source not in ts and a.target not in ts])
 
 
 LINE, CHAR = 16.5, 9.5  # a label line's height and a character's width at font size 14 (the atlas maps)
@@ -328,6 +366,10 @@ def write(diagram, soft=False):
             if sp is None:  # the simple chemical template has none (a multimer Ca2+, O2)
                 sp = etree.SubElement(gn, Y + 'StyleProperties')
             etree.SubElement(sp, Y + 'Property', {'class': 'java.lang.Integer', 'name': 'com.yworks.sbgn.style.mcount', 'value': '2'})
+        if d.kind == 'Tag' and d.way in ('left', 'up', 'down'):  # yEd draws inverse to the left; up and down kept for yrender
+            sp = etree.SubElement(gn, Y + 'StyleProperties')
+            etree.SubElement(sp, Y + 'Property', {'class': 'java.lang.Boolean', 'name': 'com.yworks.sbgn.style.inverse', 'value': 'true'} if d.way == 'left'
+                             else {'class': 'java.lang.String', 'name': 'com.yworks.sbgn.style.orientation', 'value': d.way})
         icons = [('StateVariable', txt, rx, ry) for txt, rx, ry in d.states]
         icons += [('UnitOfInformation', u, rx, ry) for u, rx, ry in unit_places(d)]
         for kind, txt, rx, ry in icons:
