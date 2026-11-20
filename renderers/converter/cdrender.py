@@ -250,11 +250,13 @@ class Drawing:
             self.out.append('<ellipse cx="%s" cy="%s" rx="%s" ry="%s" fill="none" stroke="%s" stroke-width="%s"/>' % (fmt(x + w / 2), fmt(y + h / 2), fmt(w / 2 - t), fmt(h / 2 - t), ink, fmt(iw)))
         else:
             # the band between the two lines in the compartment's colour, at a quarter (CellDesigner's
-            # opacity 0.498 on a fill-opacity 0.498)
+            # opacity 0.498 on a fill-opacity 0.498); the inner corners concentric with the outer ones (radius 20 less
+            # the thickness), so the band keeps its width round the corners
+            ri = max(20 - t, 0)
             self.out.append('<path d="%s %s" fill="%s" fill-opacity="0.25" fill-rule="evenodd"/>'
-                            % (rrect(x, y, w, h, 20), rrect(x + t, y + t, w - 2 * t, h - 2 * t, 14), fill))
+                            % (rrect(x, y, w, h, 20), rrect(x + t, y + t, w - 2 * t, h - 2 * t, ri), fill))
             self.out.append('<rect x="%s" y="%s" width="%s" height="%s" rx="20" fill="none" stroke="%s" stroke-width="%s"/>' % (fmt(x), fmt(y), fmt(w), fmt(h), ink, fmt(ow)))
-            self.out.append('<rect x="%s" y="%s" width="%s" height="%s" rx="14" fill="none" stroke="%s" stroke-width="%s"/>' % (fmt(x + t), fmt(y + t), fmt(w - 2 * t), fmt(h - 2 * t), ink, fmt(iw)))
+            self.out.append('<rect x="%s" y="%s" width="%s" height="%s" rx="%s" fill="none" stroke="%s" stroke-width="%s"/>' % (fmt(x + t), fmt(y + t), fmt(w - 2 * t), fmt(h - 2 * t), fmt(ri), ink, fmt(iw)))
         np_ = self.f(a, 'cd:namePoint')
         if np_ is not None:
             for k, line in enumerate(self.name_lines(self.cnames.get(a.get('compartment'), ''))):

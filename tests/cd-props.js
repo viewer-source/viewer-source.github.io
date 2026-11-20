@@ -39,12 +39,12 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#acly-celld
   // a new compartment's colour follows Colours (its Default paint #dfdbce; CellDesigner's yellow #cccc00 under CellDesigner)
   var COL = /#(dfdbce|cccc00)/i;
   ok('the dragged compartment drawn in its colour with its band', COL.test(ghost) && /fill-rule="evenodd"/.test(ghost), ghost.slice(0, 300));
-  ok('12 between its two lines, as on the map', /<rect x="12" y="12" width="136" height="136" rx="14"/.test(ghost), ghost.slice(0, 600));
+  ok('12 between its two lines, as on the map', /<rect x="12" y="12" width="136" height="136" rx="8"/.test(ghost), ghost.slice(0, 600));
   await page.mouse.up(); await page.waitForTimeout(1200);
   var comp = (await ids()).filter(function (i) { return before.indexOf(i) < 0; })[0], t = await now(), A = aliasOf(t, comp);
   ok('a compartment dropped, 160 by 160', /^ca/.test(comp || '') && /w="160\.0" h="160\.0"/.test(A), A.slice(0, 300));
   var drawn = await page.$eval('#m2-img [data-n="' + comp + '"]', function (g) { return g.innerHTML; });
-  ok('drawn on the map as its ghost was', (COL.exec(drawn) || [])[1] === (COL.exec(ghost) || [])[1] && /rx="14"/.test(drawn));
+  ok('drawn on the map as its ghost was', (COL.exec(drawn) || [])[1] === (COL.exec(ghost) || [])[1] && /rx="8"/.test(drawn));
 
   // Properties of the compartment
   await select(comp);

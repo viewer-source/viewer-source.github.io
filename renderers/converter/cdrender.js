@@ -285,9 +285,10 @@
     if (oval) return ['<ellipse cx="' + fmt(x + w / 2) + '" cy="' + fmt(y + h / 2) + '" rx="' + fmt(w / 2 - t / 2) + '" ry="' + fmt(h / 2 - t / 2) + '" fill="none" stroke="' + fill + '" stroke-opacity="0.25" stroke-width="' + fmt(t) + '"/>',
       '<ellipse cx="' + fmt(x + w / 2) + '" cy="' + fmt(y + h / 2) + '" rx="' + fmt(w / 2) + '" ry="' + fmt(h / 2) + '" fill="none" stroke="' + ink + '" stroke-width="' + fmt(ow) + '"/>',
       '<ellipse cx="' + fmt(x + w / 2) + '" cy="' + fmt(y + h / 2) + '" rx="' + fmt(w / 2 - t) + '" ry="' + fmt(h / 2 - t) + '" fill="none" stroke="' + ink + '" stroke-width="' + fmt(iw) + '"/>'].join('\n');
-    return ['<path d="' + rrect(x, y, w, h, 20) + ' ' + rrect(x + t, y + t, w - 2 * t, h - 2 * t, 14) + '" fill="' + fill + '" fill-opacity="0.25" fill-rule="evenodd"/>',
+    var ri = Math.max(20 - t, 0);   // inner corners concentric with the outer ones
+    return ['<path d="' + rrect(x, y, w, h, 20) + ' ' + rrect(x + t, y + t, w - 2 * t, h - 2 * t, ri) + '" fill="' + fill + '" fill-opacity="0.25" fill-rule="evenodd"/>',
       '<rect x="' + fmt(x) + '" y="' + fmt(y) + '" width="' + fmt(w) + '" height="' + fmt(h) + '" rx="20" fill="none" stroke="' + ink + '" stroke-width="' + fmt(ow) + '"/>',
-      '<rect x="' + fmt(x + t) + '" y="' + fmt(y + t) + '" width="' + fmt(w - 2 * t) + '" height="' + fmt(h - 2 * t) + '" rx="14" fill="none" stroke="' + ink + '" stroke-width="' + fmt(iw) + '"/>'].join('\n');
+      '<rect x="' + fmt(x + t) + '" y="' + fmt(y + t) + '" width="' + fmt(w - 2 * t) + '" height="' + fmt(h - 2 * t) + '" rx="' + fmt(ri) + '" fill="none" stroke="' + ink + '" stroke-width="' + fmt(iw) + '"/>'].join('\n');
   }
   D.compartments = function () {
     var self = this, cs = findall(this.ext, 'cd:listOfCompartmentAliases/cd:compartmentAlias');
