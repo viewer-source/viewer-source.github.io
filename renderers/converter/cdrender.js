@@ -418,22 +418,26 @@
     var pref = find(si, 'cd:proteinReference'), mods = new Map();
     findall(si, 'cd:state/cd:listOfModifications/cd:modification').forEach(function (m) { mods.set(get(m, 'residue'), m); });
     var pid = pref ? text(pref) : null;
-    var siteName = function (site, px, py) {
+    // a residue's name inside the shape, as CellDesigner 4.4 draws it (its PDF of residues all round four proteins): at
+    // the same angle on the outline 9 in, 2 more in from a side the circle sits on, its middle level with that point;
+    // left-aligned left of the middle, right-aligned right of it, centred in the middle
+    var siteName = function (site, ang) {
       if (!site || !front) return;
-      var tw = width(site, 10), tx = px + (px <= x + 1 ? 11 : px >= x + w - 1 ? -11 : 0), ty = py + (py < y + h / 2 ? 11 : -11);
-      tx = Math.min(Math.max(tx, x + 2 + tw / 2), x + w - 2 - tw / 2);
-      self.text(site, tx, ty + 3.5, 10);
+      var e = 1e-6, o = onBorder(b, ang), fx = w ? (o[0] - x) / w - 0.5 : 0, fy = h ? (o[1] - y) / h - 0.5 : 0;
+      var p = onBorder([x + 9, y + 9, Math.max(w - 18, 0), Math.max(h - 18, 0)], ang);
+      var tx = p[0] + (fx <= -0.5 + e ? 2 : fx >= 0.5 - e ? -2 : 0), ty = p[1] + (fy <= -0.5 + e ? 2 : fy >= 0.5 - e ? -2 : 0);
+      self.text(site, tx, ty + 3.5, 10, fx < -e ? 'start' : fx > e ? 'end' : 'middle');
     };
     this.residues.forEach(function (r) {
       if (r[2] === pid && !mods.has(r[3])) {
         var p = onBorder(b, r[0]);
         self.out.push('<circle cx="' + fmt(p[0]) + '" cy="' + fmt(p[1]) + '" r="8" fill="#fff" stroke="#000"/>');
-        siteName(r[1], p[0], p[1]);
+        siteName(r[1], r[0]);
       }
     });
     mods.forEach(function (m) {
       var r = self.residues.get(pid + '\u0001' + get(m, 'residue')) || [0.0, null], p = onBorder(b, r[0]);
-      siteName(r[1], p[0], p[1]);
+      siteName(r[1], r[0]);
       self.out.push('<circle cx="' + fmt(p[0]) + '" cy="' + fmt(p[1]) + '" r="8" fill="#fff" stroke="#000"/>');
       var sym = has(SYMBOL, get(m, 'state')) ? SYMBOL[get(m, 'state')] : get(m, 'state');
       if (sym) self.text(sym, p[0], p[1] + 3.5, 9, 'middle', 'sans-serif');

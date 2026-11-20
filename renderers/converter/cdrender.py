@@ -354,24 +354,29 @@ class Drawing:
         mods = {m.get('residue'): m for m in si.iterfind('cd:state/cd:listOfModifications/cd:modification', NS)}
         pid = pref.text if pref is not None else None
         # CellDesigner draws every residue of the protein, an empty circle where the species gives no state
-        def site_name(site, px, py):  # a residue's name inside the shape, 11 in from its circle, kept inside (MAPT cleavage PDF)
+        # a residue's name inside the shape, as CellDesigner 4.4 draws it (its PDF of residues all round four proteins):
+        # at the same angle on the outline 9 in, 2 more in from a side the circle sits on, its middle level with that
+        # point; left-aligned left of the middle, right-aligned right of it, centred in the middle
+        def site_name(site, ang):
             if not site or not front:
                 return
-            tw = width(site, 10)
-            # toward the centre: below a circle in the upper half, above one in the lower half
-            tx = px + (11 if px <= x + 1 else -11 if px >= x + w - 1 else 0)
-            ty = py + (11 if py < y + h / 2 else -11)
-            tx = min(max(tx, x + 2 + tw / 2), x + w - 2 - tw / 2)
-            self.text(site, tx, ty + 3.5, size=10)
+            e = 1e-6
+            o = on_border(b, ang)
+            fx = (o[0] - x) / w - 0.5 if w else 0
+            fy = (o[1] - y) / h - 0.5 if h else 0
+            p = on_border([x + 9, y + 9, max(w - 18, 0), max(h - 18, 0)], ang)
+            tx = p[0] + (2 if fx <= -0.5 + e else -2 if fx >= 0.5 - e else 0)
+            ty = p[1] + (2 if fy <= -0.5 + e else -2 if fy >= 0.5 - e else 0)
+            self.text(site, tx, ty + 3.5, size=10, anchor='start' if fx < -e else 'end' if fx > e else 'middle')
         for (p_, r_), (ang, site) in self.residues.items():
             if p_ == pid and r_ not in mods:
                 px, py = on_border(b, ang)
                 self.out.append('<circle cx="%s" cy="%s" r="8" fill="#fff" stroke="#000"/>' % (fmt(px), fmt(py)))
-                site_name(site, px, py)
+                site_name(site, ang)
         for m in mods.values():
             ang, site = self.residues.get((pid, m.get('residue')), (0.0, None))
             px, py = on_border(b, ang)
-            site_name(site, px, py)
+            site_name(site, ang)
             self.out.append('<circle cx="%s" cy="%s" r="8" fill="#fff" stroke="#000"/>' % (fmt(px), fmt(py)))
             sym = SYMBOL.get(m.get('state'), m.get('state'))
             if sym:
