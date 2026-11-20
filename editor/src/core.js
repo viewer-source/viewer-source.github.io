@@ -2294,7 +2294,7 @@
       if (!takes0(k, end, i)) return false;
       if (cd) return true;
       var e = edges2[k], s = end ? e.s : i, t = end ? i : e.t, a = e.arr[1];
-      return !pdLimit(s, t, a === 'delta' ? 'production' : a === 'white_circle' ? 'catalysis' : a === 'none' ? (roleOf(t) === 'proc' ? 'consumption' : 'logic arc') : 'modulation');
+      return !pdLimit(s, t, a === 'delta' ? 'production' : a === 'white_circle' ? 'catalysis' : a === 'none' ? (roleOf(t) === 'proc' ? 'consumption' : 'logic arc') : 'modulation') && !moveLimit(k, end, i);
     }
     function takerAt(pp, P) {   // the innermost node under P that can take the end, or its own node; null over nothing that can
       var R = 4 / V.z, best = null, ba = Infinity;

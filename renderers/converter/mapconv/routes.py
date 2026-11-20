@@ -9,6 +9,7 @@
 #            or for every map when standard (style.standard)
 #   GraphML: GraphML (standard sizes) only when standard
 #   GraphML, CellDesigner, SBGN-ML, Newt: SBML with layout (sbml.write: the SBGN-ML's drawing, the map's biology)
+#   GraphML, SBGN-ML, Newt, an Activity Flow map: SBML-qual with layout (sbml.write_qual: its Boolean model, drawn)
 import contextlib, io
 from dataclasses import dataclass
 from . import annotation, celldesigner, graphml, report, rules, sbgnml, sbml, style
@@ -54,6 +55,7 @@ def outputs(path, standard=False):
     sbgn = lambda read: [Output('.sbgn', 'SBGN-ML', lambda: sbgnml.write(read())),
                          Output('-newt.sbgn', 'SBGN-ML (for Newt)', lambda: sbgnml.write(read(), True))]
     sb = lambda read: Output('.sbml', 'SBML', lambda: sbml.write(read()))
+    qual = lambda read: Output('-qual.sbml', 'SBML-qual', lambda: sbml.write_qual(read()))  # None for a PD map
     std = lambda read, program: Output('-standard.graphml', 'GraphML (standard sizes)', lambda: standardised(read, program, standard))
     name = {'straight': 'straight', 'bends': 'straight & bends', 'advanced': 'advanced', 'drawn': 'as drawn'}
     cds = lambda read: [Output('-%s.xml' % l, 'CellDesigner (%s)' % name[l],
@@ -73,7 +75,7 @@ def outputs(path, standard=False):
             for line in rules.lines(m, found):
                 report.say('problem', line)
             return rules.mark(path, found)
-        out = cds(read) + sbgn(read) + [sb(read)] + \
+        out = cds(read) + sbgn(read) + [sb(read), qual(read)] + \
               [Output('-corrected.graphml', 'GraphML (corrected)', lambda: graphml.corrected(read()))] + \
               ([Output('-standard.graphml', 'GraphML (standard sizes)', lambda: graphml.write(style.standardise(read()), soft=True))] if standard else [])
         return out + ([Output('-marked.graphml', 'GraphML (marked)', marked, red=True)] if found else [])
@@ -83,4 +85,4 @@ def outputs(path, standard=False):
                [std(lambda: celldesigner.read(path), 'CellDesigner')] + \
                sbgn(lambda: cd('advanced')) + [sb(lambda: cd('advanced'))]
     return [Output('.graphml', 'GraphML', lambda: graphml.write(sbgnml.read(path))), std(lambda: sbgnml.read(path), 'Newt')] + \
-           cds(lambda: sbgnml.read(path)) + [sb(lambda: sbgnml.read(path))]
+           cds(lambda: sbgnml.read(path)) + [sb(lambda: sbgnml.read(path)), qual(lambda: sbgnml.read(path))]

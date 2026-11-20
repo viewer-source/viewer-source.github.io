@@ -18,6 +18,7 @@ RDF = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#'
 XH = 'http://www.w3.org/1999/xhtml'
 BQBIOL = 'http://biomodels.net/biology-qualifiers/'
 S, R = '{%s}' % NS, '{%s}' % RENDER
+OLD_RENDER = '{http://projects.eml.org/bcb/sbml/render'  # the render extension before SBML Level 3 (libSBGN's 0.2 examples)
 CLASS = {'Macromolecule': 'macromolecule', 'SimpleChemical': 'simple chemical', 'NucleicAcidFeature': 'nucleic acid feature',
          'UnspecifiedEntity': 'unspecified entity', 'Complex': 'complex',
          'Phenotype': 'phenotype', 'SourceAndSink': 'source and sink', 'EmptySet': 'source and sink',
@@ -490,12 +491,22 @@ def read(path):
     for e in root.iter(etree.Element):  # libsbgn 0.1 and 0.2 files: the same elements in an older namespace
         if e.tag.startswith('{http://sbgn.org/libsbgn/'):
             e.tag = S + etree.QName(e).localname
+        elif e.tag.startswith(OLD_RENDER):  # the render extension's earlier namespace (SBML Layout's render level 2): the same elements
+            e.tag = R + etree.QName(e).localname
+            for a in [a for a in e.attrib if a.startswith(OLD_RENDER)]:
+                e.set(etree.QName(a).localname, e.attrib.pop(a))
         if e.tag.startswith(R):  # render attributes written with the namespace's prefix (ns1:idList, ns1:fill: libsbgn's
             for a in [a for a in e.attrib if a.startswith(R)]:  # Java writer) read as the plain ones
                 e.set(a[len(R):], e.attrib.pop(a))
     m = root.find(S + 'map')
     af = m.get('language') == 'activity flow'
     defs = {c.get('id'): c.get('value') for c in m.iter(R + 'colorDefinition')}
+    for gr in (x for k in ('linearGradient', 'radialGradient') for x in m.iter(R + k)):  # a gradient: its middle colour,
+        cs = [defs.get(s.get('stop-color'), s.get('stop-color')) or '' for s in gr.findall(R + 'stop')]  # halfway from first to last stop
+        cs = [c[1:9] for c in cs if re.fullmatch(r'#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?', c)]
+        if cs:
+            a, b = (c if len(c) == 8 else c + 'ff' for c in (cs[0], cs[-1]))
+            defs[gr.get('id')] = '#' + ''.join('%02X' % round((int(a[k:k + 2], 16) + int(b[k:k + 2], 16)) / 2) for k in range(0, 8, 2))
     def style(a, f=str):  # glyph id -> one render attribute of its style, where the style gives it
         return {i: f(st.find(R + 'g').get(a)) for st in m.iter(R + 'style') if st.find(R + 'g') is not None
                 and st.find(R + 'g').get(a) for i in (st.get('idList') or '').split()}

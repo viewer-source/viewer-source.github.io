@@ -147,11 +147,49 @@ def signs(t):
 INFLUENCE = {'positive': 'stimulation', 'negative': 'inhibition'}  # Activity Flow's influences (sbgnml.HEAD); else modulation
 
 
-def transitions(model, acts, arcs, skipped):
-    # SBML-qual transitions as Activity Flow influences, drawn straight from each input's box to each output's: the sign
-    # from the input, else from the function terms (signs)
+GATE = {'AND', 'OR', 'NOT', 'τ'}  # a gate glyph's text, the map's Operator label (graphml.DELAY: τ)
+ENDHEAD = {'head_stimulation': 'stimulation', 'head_inhibition': 'inhibition', 'head_necessary_stimulation': 'trigger',
+           'head_modulation': 'modulation'}  # sbml.render's line endings
+QUAL_HEAD = {'activator': 'stimulation', 'inhibitor': 'inhibition'}
+
+
+def qual_lines(model, lay, nodes, arcs, glyphs_of):
+    # a transition drawn as lines (a general glyph naming it, its reference glyphs: sbml.write_qual): each line from its
+    # glyph to the glyph its curve ends at, among the transition's outputs and the gates (its own source too: a node
+    # regulating itself), its bends kept, its head from its style's line ending, else from its role; a line into a gate
+    # a logic arc. The transitions read so
+    heads = {i: attr(kid(st, 'g'), 'endHead') for st in all_(lay, 'style') for i in (attr(st, 'idList') or '').split()}
+    outs = {attr(t, 'id'): [g for o in all_(t, 'output') for g in glyphs_of.get(attr(o, 'qualitativeSpecies'), [])]
+            for t in all_(model, 'transition')}
+    gates = [n for n in nodes.values() if n.kind == 'Operator']
+    drawn = set()
+    for g in all_(lay, 'generalGlyph'):
+        tr = attr(g, 'reference')
+        if tr not in outs:
+            continue
+        for rf in all_(g, 'referenceGlyph'):
+            src, line = attr(rf, 'glyph'), points(rf)
+            if src not in nodes or len(line) < 2:
+                continue
+            x, y = line[-1]
+            near = lambda n: max(n.box[0] - x, x - n.box[0] - n.box[2], 0) ** 2 + max(n.box[1] - y, y - n.box[1] - n.box[3], 0) ** 2
+            t = min([nodes[i] for i in outs[tr] if i in nodes] + [n for n in gates if n.id != src], key=near, default=None)
+            if t is None:
+                continue
+            head = ENDHEAD.get(heads.get(attr(rf, 'id'))) or \
+                (None if t.kind == 'Operator' else QUAL_HEAD.get((attr(rf, 'role') or '').lower(), 'modulation'))
+            arcs.append(Arc(id=attr(rf, 'id'), source=src, target=t.id, head=head, points=line[1:-1]))
+            drawn.add(tr)
+    return drawn
+
+
+def transitions(model, acts, arcs, skipped, drawn=()):
+    # SBML-qual transitions not drawn as lines as Activity Flow influences, drawn straight from each input's box to each
+    # output's: the sign from the input, else from the function terms (signs)
     for t in all_(model, 'transition'):
         tid = attr(t, 'id')
+        if tid in drawn:
+            continue
         outs = [attr(o, 'qualitativeSpecies') for o in all_(t, 'output')]
         ins = [(attr(x, 'qualitativeSpecies'), attr(x, 'sign')) for x in all_(t, 'input')]
         read = signs(t)
@@ -208,11 +246,12 @@ def read(path):
         hold = [n for n in comps if n.box[0] <= cx <= n.box[0] + n.box[2] and n.box[1] <= cy <= n.box[1] + n.box[3]]
         return min(hold, key=lambda n: n.box[2] * n.box[3]).id if hold else None
 
-    acts = {}  # a qualitative species' id -> its glyph's id
+    acts, glyphs_of = {}, defaultdict(list)  # a qualitative species' id -> its (first) glyph's id, all its glyphs' ids
 
     def activity(g, q, b):  # an SBML-qual species drawn as an Activity Flow activity (as sbgnml.read draws one)
         i = attr(g, 'id')
         acts.setdefault(attr(q, 'id'), i)
+        glyphs_of[attr(q, 'id')].append(i)
         nodes[i] = Node(id=i, kind='Macromolecule', box=b, parent=inside(b),
                         labels=[(text.get(i) if text.get(i) != 'unset' else None) or attr(q, 'name') or attr(q, 'id')],
                         data=dict(annotations(q), **{'SBGN class': 'biological activity'}))
@@ -245,15 +284,20 @@ def read(path):
         nodes[i] = Node(id=i, kind=kind, box=b, units=units, parent=inside(b), species=s.get('id') if s is not None else None,
                         labels=['' if kind == 'EmptySet' else ((text.get(i) if text.get(i) != 'unset' else None) or (s.get('name') or s.get('id') if s is not None else ''))],
                         data=annotations(s) if s is not None else {})
+    gates = set()
     for g in all_(lay, 'generalGlyph'):  # SBML-qual's boxes (CaSQ, bioLQM): one general glyph per qualitative species
-        q = qsp.get(attr(g, 'reference'))
-        if q is not None and box(g) is not None:
+        i, q = attr(g, 'id'), qsp.get(attr(g, 'reference'))
+        if text.get(i) in GATE and box(g) is not None:  # a logic gate drawn as such (sbml.write_qual)
+            nodes[i] = Node(id=i, kind='Operator', box=box(g), parent=inside(box(g)), labels=[text[i]])
+            gates.add(attr(g, 'reference'))
+        elif q is not None and box(g) is not None:
             activity(g, q, box(g))
     if qsp:
-        gone = [i for i in qsp if i not in acts]
+        gone = [i for i in qsp if i not in acts and i not in gates]
         if gone:
             skipped.setdefault('qualitative species without a box', []).extend(gone)
-        transitions(model, acts, arcs, skipped)
+        drawn = qual_lines(model, lay, nodes, arcs, glyphs_of)
+        transitions(model, acts, arcs, skipped, drawn)
     if not any(n.kind != 'Compartment' for n in nodes.values()):
         raise ValueError('no species glyph in its layout: nothing to draw')
     cx = [n for n in nodes.values() if n.kind == 'Complex']
@@ -396,9 +440,89 @@ def sid(s, used):
     return out
 
 
+def num_text(v):
+    # a coordinate as written: a file's own text kept, a number as Python writes it
+    return v if isinstance(v, str) else str(v) if isinstance(v, int) else repr(float(v))
+
+
+def compartments(model, nodes, bio, used, needed=False):
+    # one compartment per compartment name (biology keys entities by it), 'default' for entities outside any (or when
+    # needed): name -> id
+    from .biology import label
+    ids = {}
+    for i, d in nodes.items():
+        if d.kind == 'Compartment' and label(d) not in ids:
+            ids[label(d)] = sid('c_' + (label(d) or i), used)
+    if needed or any(e.key[0] not in ids for e in bio.entities.values()):
+        ids.setdefault('default', sid('default', used))
+    if ids:
+        lc = etree.SubElement(model, 'listOfCompartments')
+        for name, c in ids.items():
+            el = etree.SubElement(lc, 'compartment', id=c, spatialDimensions='3', size='1', constant='true')
+            if name:
+                el.set('name', name)
+    return ids
+
+
+def annotate(el, data, links, used):
+    # a glyph's own MIRIAM identifiers as RDF (bqbiol:is, or hasVersion for a family's members), with a metaid
+    from .annotation import of_node
+    ann = of_node(data, links)
+    uris = sbgnml.identifiers(ann[1]) if ann else []
+    if not uris:
+        return
+    el.set('metaid', sid('meta_' + el.get('id', el.get('{%s}id' % QUAL, 'x')), used))
+    rdf = etree.SubElement(etree.SubElement(el, 'annotation'), '{%s}RDF' % RDF, nsmap={'rdf': RDF, 'bqbiol': sbgnml.BQBIOL})
+    desc = etree.SubElement(rdf, '{%s}Description' % RDF, {'{%s}about' % RDF: '#' + el.get('metaid')})
+    bag = etree.SubElement(etree.SubElement(desc, '{%s}%s' % (sbgnml.BQBIOL, 'hasVersion' if ann[0] else 'is')), '{%s}Bag' % RDF)
+    for u in uris:
+        etree.SubElement(bag, '{%s}li' % RDF, {'{%s}resource' % RDF: u})
+
+
+def lay_el(parent, tag, **a):
+    L = '{%s}' % LAYOUT
+    return etree.SubElement(parent, L + tag, {L + k: str(v) for k, v in a.items()})
+
+
+def lay_box(parent, b):
+    # a Layout bounding box from (x, y, w, h)
+    bb = lay_el(parent, 'boundingBox')
+    lay_el(bb, 'position', x=num_text(b[0]), y=num_text(b[1]))
+    lay_el(bb, 'dimensions', width=num_text(b[2]), height=num_text(b[3]))
+
+
+def lay_curve(parent, line):
+    # a Layout curve through the points, one line segment each
+    segs = lay_el(lay_el(parent, 'curve'), 'listOfCurveSegments')
+    for p0, p1 in zip(line, line[1:]):
+        sg = lay_el(segs, 'curveSegment'); sg.set('{%s}type' % XSI, 'LineSegment')
+        lay_el(sg, 'start', x=repr(float(p0[0])), y=repr(float(p0[1]))); lay_el(sg, 'end', x=repr(float(p1[0])), y=repr(float(p1[1])))
+
+
+def lay_texts(lay, texts, used):
+    # a text glyph per (layout glyph id, text, box, font size, a compartment's): a compartment's name in a strip along its
+    # top. The text glyphs' (id, font size), for their styles
+    out = []
+    texts = [x for x in texts if x[1]]
+    if texts:
+        lt = lay_el(lay, 'listOfTextGlyphs')
+        for g, text, b, font, top in texts:
+            t = lay_el(lt, 'textGlyph', id=sid('tg_' + g, used), graphicalObject=g, text=text)
+            lay_box(t, (b[0], b[1], b[2], '24' if top else b[3]))
+            out.append((t.get('{%s}id' % LAYOUT), font))
+    return out
+
+
+def in_order(lay):
+    # a layout's lists in the order libSBML writes them
+    for name in LAYOUT_ORDER:
+        for c in [c for c in lay if etree.QName(c).localname == name]:
+            lay.append(c)
+
+
 def write(diagram):
     from .biology import label
-    from .annotation import of_node, uses_links
+    from .annotation import uses_links
     N, bio = diagram.nodes, diagram.biology
     G, L, R = '{%s}' % sbgnml.NS, '{%s}' % LAYOUT, '{%s}' % sbgnml.RENDER
     sb = etree.fromstring(sbgnml.write(diagram).encode('utf-8'))
@@ -423,19 +547,7 @@ def write(diagram):
     root.set(L + 'required', 'false'); root.set(R + 'required', 'false')
     model = etree.SubElement(root, 'model', id=sid(diagram.name or 'map', used), name=diagram.name or 'map')
 
-    # compartments: one per compartment name (biology keys entities by it), 'default' for entities outside any
-    comp_ids = {}
-    for i, d in N.items():
-        if d.kind == 'Compartment' and label(d) not in comp_ids:
-            comp_ids[label(d)] = sid('c_' + (label(d) or i), used)
-    if any(e.key[0] not in comp_ids for e in bio.entities.values()):
-        comp_ids.setdefault('default', sid('default', used))
-    if comp_ids:
-        lc = E(model, 'listOfCompartments')
-        for name, c in comp_ids.items():
-            el = E(lc, 'compartment', id=c, spatialDimensions='3', size='1', constant='true')
-            if name:
-                el.set('name', name)
+    comp_ids = compartments(model, N, bio, used)
 
     # species: one per entity; a source or sink drawn several times is several species (SBGN never clones the empty set)
     species_of, lost = {}, []  # glyph node id -> species id
@@ -460,17 +572,7 @@ def write(diagram):
                 body = etree.SubElement(etree.SubElement(el, 'notes'), '{%s}body' % sbgnml.XH, nsmap={None: sbgnml.XH})
                 for line in notes:
                     etree.SubElement(body, '{%s}p' % sbgnml.XH).text = line
-            ann = of_node(d.data, links)  # this entity's own glyph: two entities of one name keep their own identifiers
-            uris = sbgnml.identifiers(ann[1]) if ann else []
-            if uris:
-                el.set('metaid', sid('meta_' + s, used))
-                rdf = etree.SubElement(etree.SubElement(el, 'annotation'), '{%s}RDF' % RDF,
-                                       nsmap={'rdf': RDF, 'bqbiol': sbgnml.BQBIOL})
-                desc = etree.SubElement(rdf, '{%s}Description' % RDF, {'{%s}about' % RDF: '#' + el.get('metaid')})
-                bag = etree.SubElement(etree.SubElement(desc, '{%s}%s' % (sbgnml.BQBIOL, 'hasVersion' if ann[0] else 'is')),
-                                       '{%s}Bag' % RDF)
-                for u in uris:
-                    etree.SubElement(bag, '{%s}li' % RDF, {'{%s}resource' % RDF: u})
+            annotate(el, d.data, links, used)  # this entity's own glyph: two entities of one name keep their own identifiers
             for g in gs:
                 species_of[g] = s
     if lost:
@@ -554,24 +656,18 @@ def write(diagram):
     # the layout: the SBGN-ML drawing glyph by glyph
     lay = etree.SubElement(etree.SubElement(model, L + 'listOfLayouts'), L + 'layout')
     lay.set(L + 'id', sid('layout', used))
-    LE = lambda parent, tag, **a: etree.SubElement(parent, L + tag, {L + k: str(v) for k, v in a.items()})
+    LE = lay_el
     boxes = [b for b in sb.iter(G + 'bbox')]
     LE(lay, 'dimensions', width=repr(max([float(b.get('x')) + float(b.get('w')) for b in boxes] or [0]) + 20),
        height=repr(max([float(b.get('y')) + float(b.get('h')) for b in boxes] or [0]) + 20))
 
-    def bbox(parent, g, h=None):
-        b = glyphs[g].find(G + 'bbox') if g else None
-        bb = LE(parent, 'boundingBox')
-        LE(bb, 'position', x=b.get('x') if g else 0, y=b.get('y') if g else 0)
-        LE(bb, 'dimensions', width=b.get('w') if g else 0, height=h or (b.get('h') if g else 0))
+    def bbox(parent, g):
+        b = glyphs[g].find(G + 'bbox')
+        lay_box(parent, (b.get('x'), b.get('y'), b.get('w'), b.get('h')))
 
     def curve(parent, chain, back=False):
         line = [q for a in chain for q in pts[a]]
-        line = [q for k, q in enumerate(line) if not k or q != line[k - 1]][::-1 if back else 1]
-        segs = LE(LE(parent, 'curve'), 'listOfCurveSegments')
-        for p0, p1 in zip(line, line[1:]):
-            sg = LE(segs, 'curveSegment'); sg.set('{%s}type' % XSI, 'LineSegment')
-            LE(sg, 'start', x=repr(p0[0]), y=repr(p0[1])); LE(sg, 'end', x=repr(p1[0]), y=repr(p1[1]))
+        lay_curve(parent, [q for k, q in enumerate(line) if not k or q != line[k - 1]][::-1 if back else 1])
 
     gid, texts = {}, []  # SBGN-ML glyph -> layout glyph id; (layout glyph id, text, SBGN-ML glyph, a compartment's)
     lines = defaultdict(list)  # (SBGN-ML arc class, colour) -> the layout ids of its curves; ('process', None): reaction glyphs
@@ -617,20 +713,15 @@ def write(diagram):
             texts.append((gid[g], cls(g).upper(), g, False))
         for x, c, chain, t in loose:
             gg = LE(lag, 'generalGlyph', id=sid('gi_' + chain[-1].get('id'), used), reference=ent(x))
-            bbox(gg, None)
+            lay_box(gg, (0, 0, 0, 0))
             rf = LE(LE(gg, 'listOfReferenceGlyphs'), 'referenceGlyph', id=sid('rf_' + chain[-1].get('id'), used), glyph=gid[t],
                     reference=ent(t), role=ROLE[c])
             curve(rf, chain)
             lines[c, colour_of.get(chain[0].get('id'))].append(rf.get(L + 'id'))
-    texts = [x for x in texts if x[1]]
-    if texts:
-        lt = LE(lay, 'listOfTextGlyphs')
-        for k, (g, text, sg, top) in enumerate(texts):
-            t = LE(lt, 'textGlyph', id=sid('tg_' + g, used), graphicalObject=g, text=text)
-            bbox(t, sg, h='24' if top else None)  # a compartment's name: a strip along its top
-            texts[k] = (t.get(L + 'id'), N[node_of[sg]].font if node_of.get(sg) else None)
-    render(lay, glyphs, gid, {g: N[node_of[g]] for g in gid if g in node_of and cls(g) not in PROCESS_SBO}, lines, texts, used)
-    lay[:] = sorted(lay, key=lambda c: LAYOUT_ORDER.index(etree.QName(c).localname))
+    texts = lay_texts(lay, [(g, text, (lambda b: (b.get('x'), b.get('y'), b.get('w'), b.get('h')))(glyphs[sg].find(G + 'bbox')),
+                             N[node_of[sg]].font if node_of.get(sg) else None, top) for g, text, sg, top in texts], used)
+    render(lay, [(gid[g], N[node_of[g]], cls(g)) for g in gid if g in node_of and cls(g) not in PROCESS_SBO], lines, texts, used)
+    in_order(lay)
     return etree.tostring(root, pretty_print=True, xml_declaration=True, encoding='UTF-8').decode('utf-8')
 
 
@@ -647,15 +738,14 @@ HEADS_R = {
 }
 
 
-def render(lay, glyphs, gid, nodes, lines, texts, used):
+def render(lay, shapes, lines, texts, used):
     # Render: every box a style (its fill, outline colour and width, a shape by its SBGN class), every line a style with
     # its head, every label a style with its font size; every attribute written, as Render fixes no defaults
     # (specifications/bergmann-2018.md) and a strict reader draws an unstyled line as nothing
     R, L, X = '{%s}' % sbgnml.RENDER, '{%s}' % LAYOUT, '{%s}' % XSI
-    boxes = defaultdict(list)
-    for g, d in nodes.items():
-        c = glyphs[g].get('class')
-        boxes[d.fill or '#FFFFFF', d.line or '#000000', d.weight or 1, SHAPE.get(c, 'rectangle'), RADIUS.get(c, '0')].append(gid[g])
+    boxes = defaultdict(list)  # shapes: (layout id, the map's node, its SBGN class)
+    for lid, d, c in shapes:
+        boxes[d.fill or '#FFFFFF', d.line or '#000000', d.weight or 1, SHAPE.get(c, 'rectangle'), RADIUS.get(c, '0')].append(lid)
     fonts = defaultdict(list)
     for t, size in texts:
         fonts[size or 10].append(t)
@@ -701,3 +791,245 @@ def render(lay, glyphs, gid, nodes, lines, texts, used):
     for size, ids in fonts.items():
         style('text', ids, stroke='#000000', font_family='sans-serif', font_size='%g' % size, text_anchor='middle',
               vtext_anchor='middle')
+
+
+# Writing SBML-qual: an Activity Flow map as a logical model (the qual package, specifications/chaouiya-2015.md) with its
+# drawing in Layout and Render. One qualitative species per activity (maxLevel 1), one transition per activity that has
+# influences in, its rule by the Activity Flow to Boolean rules (pd2af-converter rules B1, B5, B6): on when any positive
+# influence is on, every necessary stimulation is on and no negative influence is on; a node with negative influences
+# only is on unless one of them is; logic gates as drawn (AND, OR, NOT, gates on gates); a delay a variable of its own
+# that copies its input; a node with no influence in an input (constant). An unknown influence is drawn and listed as
+# an input of sign unknown, not in the rule. The rules in docs/SBML.md, SBML-qual.
+QUAL = 'http://www.sbml.org/sbml/level3/version1/qual/version1'
+MATHML = 'http://www.w3.org/1998/Math/MathML'
+SIGN = {'stimulation': 'positive', 'catalysis': 'positive', 'trigger': 'positive', 'inhibition': 'negative',
+        'modulation': 'unknown'}
+AF_CLASS = {'stimulation': 'stimulation', 'catalysis': 'stimulation', 'trigger': 'necessary stimulation',
+            'inhibition': 'inhibition', 'modulation': 'modulation', None: 'logic arc'}
+QUAL_ROLE = {'stimulation': 'activator', 'necessary stimulation': 'activator', 'inhibition': 'inhibitor',
+             'modulation': 'modifier', 'logic arc': 'modifier'}
+
+
+def bnet(f):
+    # a rule as text, in the .bnet notation (& | ! 1), for the transition's notes and the messages
+    if f[0] == 'var':
+        return f[1]
+    if f[0] == 'true':
+        return '1'
+    if f[0] == 'not':
+        x = bnet(f[1])
+        return '!' + (x if f[1][0] in ('var', 'true') else '(%s)' % x)
+    return (' & ' if f[0] == 'and' else ' | ').join(bnet(x) if x[0] in ('var', 'true', 'not') or x[0] == f[0] else '(%s)' % bnet(x)
+                                                     for x in f[1])
+
+
+def mathml(parent, f):
+    M = '{%s}' % MATHML
+    if f[0] == 'var':  # the level compared with 1: qual asks for a boolean, never a bare level (3.6.5)
+        a = etree.SubElement(parent, M + 'apply')
+        etree.SubElement(a, M + 'eq'); etree.SubElement(a, M + 'ci').text = f[1]
+        etree.SubElement(a, M + 'cn', type='integer').text = '1'
+    elif f[0] == 'true':
+        etree.SubElement(parent, M + 'true')
+    else:
+        a = etree.SubElement(parent, M + 'apply')
+        etree.SubElement(a, M + f[0])
+        for x in ([f[1]] if f[0] == 'not' else f[1]):
+            mathml(a, x)
+
+
+def write_qual(diagram):
+    from .biology import label, PROCESSES
+    from .graphml import DELAY
+    from .layout import centre
+    from .annotation import uses_links
+    # an Activity Flow map: no process glyph, and influences between activities (a map of entities and plain lines
+    # alone, a Process Description fragment, gives none). A Process Description map's Boolean model comes from its
+    # Activity Flow (PD to AF first)
+    if any(d.kind in PROCESSES for d in diagram.nodes.values()) or not any(a.head in SIGN for a in diagram.arcs):
+        return None
+    m = sbgnml.shifted(diagram)
+    N, bio = m.nodes, m.biology
+    L, R, Q = '{%s}' % LAYOUT, '{%s}' % sbgnml.RENDER, '{%s}' % QUAL
+    used, links, said = set(), uses_links(m), []
+    root = etree.Element('{%s}sbml' % CORE, nsmap={None: CORE, 'qual': QUAL, 'layout': LAYOUT, 'render': sbgnml.RENDER,
+                                                     'xsi': XSI}, level='3', version='1')
+    root.set(Q + 'required', 'true'); root.set(L + 'required', 'false'); root.set(R + 'required', 'false')
+    model = etree.SubElement(root, 'model', id=sid(m.name or 'map', used), name=m.name or 'map')
+    QE = lambda parent, tag, **a: etree.SubElement(parent, Q + tag, {Q + k: str(v) for k, v in a.items()})
+    comp_ids = compartments(model, N, bio, used, needed=True)
+
+    into, out_of = defaultdict(list), defaultdict(list)
+    for a in m.arcs:
+        into[a.target].append(a); out_of[a.source].append(a)
+    ops = {i for i, d in N.items() if d.kind == 'Operator'}
+    gate = lambda i: 'delay' if (N[i].labels or [''])[0] == DELAY else (N[i].labels or [''])[0].upper()
+    qs = {e.id: sid(label(N[e.glyphs[0]]) or N[e.glyphs[0]].kind, used) for e in bio.entities.values()}
+    var = lambda i: qs[bio.glyph[i]]
+    delays = {}  # a delay gate -> the node that copies its input
+    for i in (i for i in ops if gate(i) == 'delay'):
+        src = [b.source for b in into[i] if b.source in bio.glyph]
+        delays[i] = sid('delay_' + (var(src[0]) if src else i), used)
+
+    def term(i, seen=()):
+        # what a glyph stands for in a rule: an activity's level, or a gate's function of its inputs (every line into
+        # a gate is an input, whatever its head)
+        if i in bio.glyph:
+            return ('var', var(i))
+        if i not in ops or i in seen:
+            return None
+        if i in delays:
+            return ('var', delays[i])
+        ins = [t for b in into[i] for t in [term(b.source, seen + (i,))] if t]
+        k = gate(i)
+        if not ins:
+            said.append('%s gate without an input, left out' % k)
+            return None
+        if k == 'NOT':
+            if len(ins) > 1:
+                said.append('NOT gate with %d inputs read as NOT of their OR' % len(ins))
+            return ('not', ins[0] if len(ins) == 1 else ('or', ins))
+        if k in ('AND', 'OR'):
+            return (k.lower(), ins) if len(ins) > 1 else ins[0]
+        said.append('%s gate: no Boolean meaning, left out' % k)
+        return None
+
+    def polarity(f, neg=False, out=None):
+        # each variable of a rule with its sign: positive, negative, or dual where it appears both ways
+        out = {} if out is None else out
+        if f[0] == 'var':
+            v = 'negative' if neg else 'positive'
+            out[f[1]] = v if out.get(f[1], v) == v else 'dual'
+        elif f[0] in ('and', 'or', 'not'):
+            for x in ([f[1]] if f[0] == 'not' else f[1]):
+                polarity(x, neg != (f[0] == 'not'), out)
+        return out
+
+    rules, unknown_of, unknown = {}, {}, []
+    for e in bio.entities.values():
+        arcs = [a for g in e.glyphs for a in into[g]]
+        kind = lambda a: a.head if a.head in SIGN else 'stimulation' if a.head is None and a.source in ops else None
+        terms = lambda h: [t for a in arcs if kind(a) in h for t in [term(a.source)] if t]
+        pos, nec, neg, unk = terms(('stimulation', 'catalysis')), terms(('trigger',)), terms(('inhibition',)), terms(('modulation',))
+        v = qs[e.id]
+        if unk:
+            unknown.append(label(N[e.glyphs[0]]))
+            unknown_of[v] = unk
+        if pos or nec or neg:
+            parts = ([('or', pos) if len(pos) > 1 else pos[0]] if pos else []) + nec + [('not', x) for x in neg]
+            rules[v] = ('and', parts) if len(parts) > 1 else parts[0]
+        elif unk:
+            rules[v] = ('var', v)  # unknown influences only: the node keeps its level, as an input does
+    for i, v in delays.items():
+        ins = [t for b in into[i] for t in [term(b.source)] if t]
+        if ins:
+            rules[v] = ins[0] if len(ins) == 1 else ('or', ins)
+        else:
+            said.append('delay without an input, left out')
+
+    lq = QE(model, 'listOfQualitativeSpecies')
+    for e in bio.entities.values():
+        d = N[e.glyphs[0]]
+        el = QE(lq, 'qualitativeSpecies', id=qs[e.id], compartment=comp_ids.get(e.key[0], comp_ids['default']),
+                constant='false' if qs[e.id] in rules else 'true', maxLevel=1)
+        if label(d):
+            el.set(Q + 'name', label(d))
+        annotate(el, d.data, links, used)
+    for i, v in delays.items():
+        src = [b.source for b in into[i] if b.source in bio.glyph]
+        QE(lq, 'qualitativeSpecies', id=v, name='delay of %s' % label(N[src[0]]) if src else 'delay', compartment=comp_ids['default'],
+           constant='false' if v in rules else 'true', maxLevel=1)
+
+    transition_of = {}
+    if rules:
+        lt = QE(model, 'listOfTransitions')
+        for v, f in rules.items():
+            t = transition_of[v] = sid('tr_' + v, used)
+            el = QE(lt, 'transition', id=t)
+            body = etree.SubElement(etree.SubElement(el, 'notes'), '{%s}body' % sbgnml.XH, nsmap={None: sbgnml.XH})
+            etree.SubElement(body, '{%s}p' % sbgnml.XH).text = '%s = %s' % (v, bnet(f))
+            ins = polarity(f)
+            for x in unknown_of.get(v, []):
+                for k in polarity(x):
+                    ins.setdefault(k, 'unknown')
+            li = QE(el, 'listOfInputs')
+            for x, sg in ins.items():
+                QE(li, 'input', id=sid('in_%s_%s' % (v, x), used), qualitativeSpecies=x, transitionEffect='none', sign=sg,
+                   thresholdLevel=1)
+            QE(QE(el, 'listOfOutputs'), 'output', id=sid('out_%s' % v, used), qualitativeSpecies=v, transitionEffect='assignmentLevel')
+            lf = QE(el, 'listOfFunctionTerms')
+            mathml(etree.SubElement(QE(lf, 'functionTerm', resultLevel=1), '{%s}math' % MATHML, nsmap={None: MATHML}), f)
+            QE(lf, 'defaultTerm', resultLevel=0)
+    if unknown:
+        report.say('changed', 'unknown influences drawn and listed as inputs of sign unknown, not in the rule of: %s'
+                   % ', '.join(sorted(set(unknown))))
+    for line in sorted(set(said)):
+        report.say('left out' if 'left out' in line else 'changed', line)
+    n = len(qs) + len(delays)
+    report.say('summary', '%d nodes, %d rules, %d inputs' % (n, len(rules), n - len(rules)))
+
+    # the drawing: activities and gates as general glyphs (an activity's glyph names its qualitative species, as CaSQ
+    # and bioLQM write them), each transition a general glyph whose reference glyphs are its lines, as drawn
+    lay = etree.SubElement(etree.SubElement(model, L + 'listOfLayouts'), L + 'layout')
+    lay.set(L + 'id', sid('layout', used))
+    lay_el(lay, 'dimensions', width=repr(max(d.box[0] + d.box[2] for d in N.values()) + 20),
+           height=repr(max(d.box[1] + d.box[3] for d in N.values()) + 20))
+    gid, texts, shapes, lines = {}, [], [], defaultdict(list)
+    comps = [i for i, d in N.items() if d.kind == 'Compartment']
+    if comps:
+        lcg = lay_el(lay, 'listOfCompartmentGlyphs')
+        for i in comps:
+            gid[i] = sid('cg_' + i, used)
+            lay_box(lay_el(lcg, 'compartmentGlyph', id=gid[i], compartment=comp_ids[label(N[i])]), N[i].box)
+            texts.append((gid[i], label(N[i]), N[i].box, N[i].font, True))
+            shapes.append((gid[i], N[i], 'compartment'))
+    lag = lay_el(lay, 'listOfAdditionalGraphicalObjects')
+    for i, d in N.items():
+        if i in bio.glyph or i in ops:
+            gid[i] = sid(('qg_' if i in bio.glyph else 'og_') + i, used)
+            ref = var(i) if i in bio.glyph else delays.get(i)
+            lay_box(lay_el(lag, 'generalGlyph', id=gid[i], **({'reference': ref} if ref else {})), d.box)
+            texts.append((gid[i], label(d) if i in bio.glyph else ('τ' if i in delays else gate(i)), d.box, d.font, False))
+            shapes.append((gid[i], d, 'and' if i in ops else 'macromolecule' if d.kind == 'Macromolecule' else d.kind.lower()))
+
+    def owner(a):
+        # the transition a line belongs to: its target's, else the first transition found through the gates it feeds
+        todo, seen = [a.target], set()
+        while todo:
+            t = todo.pop(0)
+            tr = transition_of.get(var(t)) if t in bio.glyph else transition_of.get(delays.get(t))
+            if tr:
+                return tr
+            if t in ops and t not in seen and t not in delays:
+                seen.add(t)
+                todo += [b.target for b in out_of[t]]
+        return None
+    hub, left = {}, 0
+    for a in m.arcs:
+        t = owner(a)
+        if t is None or a.source not in gid or a.target not in gid or a.source in comps or a.target in comps:
+            left += 1
+            continue
+        if t not in hub:
+            hub[t] = lay_el(lag, 'generalGlyph', id=sid('trg_' + t, used), reference=t)
+            lay_box(hub[t], (0, 0, 0, 0))
+            lay_el(hub[t], 'listOfReferenceGlyphs')
+        c = AF_CLASS.get(a.head, 'logic arc') if a.target in ops or a.head is not None else 'stimulation'
+        rf = lay_el(hub[t].find(L + 'listOfReferenceGlyphs'), 'referenceGlyph', id=sid('rf_' + a.id, used), glyph=gid[a.source],
+                    role=QUAL_ROLE[c], **({'reference': var(a.source)} if a.source in bio.glyph else {}))
+        s_, t_ = N[a.source], N[a.target]
+        nxt = a.points[0] if a.points else centre(t_)
+        prv = a.points[-1] if a.points else centre(s_)
+        p0 = (centre(s_)[0] + a.source_at[0], centre(s_)[1] + a.source_at[1]) if any(a.source_at) else sbgnml.border(s_, nxt)
+        p1 = (centre(t_)[0] + a.target_at[0], centre(t_)[1] + a.target_at[1]) if any(a.target_at) else sbgnml.border(t_, prv)
+        lay_curve(rf, [p0] + list(a.points) + [p1])
+        lines[c, a.line].append(rf.get(L + 'id'))
+    if left:
+        report.say('left out', '%d lines not drawn: they carry no rule (to or from a compartment, or into a gate that leads '
+                   'to none)' % left)
+    if not len(lag):
+        lay.remove(lag)
+    texts = lay_texts(lay, texts, used)
+    render(lay, shapes, lines, texts, used)
+    in_order(lay)
+    return etree.tostring(root, pretty_print=True, xml_declaration=True, encoding='UTF-8').decode('utf-8')

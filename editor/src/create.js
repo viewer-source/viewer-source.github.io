@@ -1592,6 +1592,25 @@
       if ((ks === 'EmptySet' && !(cls === 'pair' || cls === 'consumption')) || (kt === 'EmptySet' && !(cls === 'pair' || cls === 'production'))) return 'An empty set is only consumed or produced.';
       if ((ks === 'PerturbingAgent' && (flux || cls === 'catalysis' || cls === 'logic arc')) || kt === 'PerturbingAgent') return 'A perturbing agent only starts a modulation, stimulation, inhibition or necessary stimulation.';
       if (cls === 'catalysis' && ks === 'NucleicAcidFeature') return 'A nucleic acid feature is no catalyst.';
+      if (cls === 'consumption' && roleOf(t) === 'proc') {   // a reversible process has productions on both sides, no consumption (3.5.2.5)
+        var rv = sbJs.reversibility(text, nodes2[t].id, { sbgn: src() });
+        if (rv && rv.rev) return 'A reversible process has productions on both sides.';
+      }
+      return null;
+    }
+    // an end of line k dragged onto node i (core.js takes): what drawing the line would refuse (linkKind's counts and its
+    // equivalence rules), so a drag never makes what drawing does not. A reason, or null; Activity Flow and CellDesigner
+    // maps have rules of their own
+    function moveLimit(k, end, i) {
+      if (cd || palLangNow() !== 'pd') return null;
+      var e = edges2[k], s = end ? e.s : i, t = end ? i : e.t, a = e.arr[1];
+      var others = function (g, into) { return edges2.filter(function (q, j) { return j !== k && (into ? q.t === g : q.s === g); }).length; };
+      var word = function (g) { var l = nodes2[g].el.getElementsByTagNameNS(Y, 'NodeLabel')[0]; return l ? l.textContent.trim().toUpperCase() : ''; };
+      if (a === 'none' && roleOf(s) === 'proc') return 'A consumption goes from an entity into a process.';   // a headless line leaving a process
+      if (!end && roleOf(s) === 'gate' && others(s, false)) return 'A logic gate has one line out, and this one has it.';
+      if (end && roleOf(t) === 'gate' && /^(NOT|\u03c4)$/.test(word(t)) && others(t, true)) return 'This gate has one input, and it has it.';
+      if (MODS.test(a) && nodes2[s].eq) return 'An equivalence\u2019s line goes to an entity.';
+      if (a === 'none' && roleOf(s) === 'gate' && roleOf(t) === 'gate' && (nodes2[s].eq || nodes2[t].eq)) return 'An equivalence joins entities only.';
       return null;
     }
     function linkKind(a, b, P, want) {
