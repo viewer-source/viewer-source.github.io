@@ -110,11 +110,19 @@ def units_of_information(d):
     return [u for u in d.units if not re.fullmatch(r'N:\d+', u)]
 
 
+# CellDesigner's units of information (its Edit Information window, 4.4.2): pc, mt and ct each with labels of its own, N
+# with any label, "free input" any text
+INFO = {'pc': ('T', 'V', 'pH'), 'mt': ('ion', 'rad', 'rna', 'dna', 'prot', 'psac'), 'ct': ('gene', 'tss', 'coding', 'grr', 'mRNA')}
+
+
 def cd_info(u):
-    # a unit of information as CellDesigner's info (prefix, label): ct:gene as prefix ct, a multimer's
-    # N:4 as prefix N (AsthmaMap's files: homodimer 2 with N:4), any other text as "free input", as
+    # a unit of information as CellDesigner's info (prefix, label): pc:T, mt:prot, ct:gene (prefix and label in any
+    # case) as that prefix with its label as CellDesigner spells it, a multimer's N:4 (or n:4) as prefix N (AsthmaMap's
+    # files: homodimer 2 with N:4), any other text, a label the prefix lacks included (ct:asRNA), as "free input", as
     # CellDesigner saves a free-text unit
-    return ('ct', u[3:]) if u.startswith('ct:') else ('N', u[2:]) if re.fullmatch(r'N:\d+', u) else ('free input', u)
+    p, sep, lab = (x.strip() for x in u.partition(':'))
+    own = [l for l in INFO.get(p.lower(), ()) if sep and l.lower() == lab.lower()]
+    return (p.lower(), own[0]) if own else ('N', lab) if sep and p in ('N', 'n') and lab else ('free input', u)
 
 
 def cd_class(d):
