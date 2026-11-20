@@ -833,11 +833,48 @@
     if (STATES.indexOf(state) < 0) refuse('CellDesigner has no residue state ' + state + '.');
     var used = rs.map(function (r) { return F(at(r.tag, 'angle')); });
     var ang = o.angle != null ? o.angle : placesFor(A.box ? A.box[2] : 80, A.box ? A.box[3] : 40).filter(function (a) { return !used.some(function (u) { return Math.abs(((u - a) % (2 * Math.PI) + 3 * Math.PI) % (2 * Math.PI) - Math.PI) < 0.3; }); })[0];
-    var rid = next(t, 'rs'), p = reference(t, A.s.ref), el = '<celldesigner:modificationResidue angle="' + repr(ang === undefined ? 3 * Math.PI / 2 : ang) + '" id="' + rid + '"' +
-      (o.name ? ' name="' + esc(o.name) + '"' : '') + ' side="none"/>';
-    if (t[p[1] - 2] === '/') t = put(t, p[1] - 2, p[1], '>' + (OPEN.test(t) ? '' : '\n') + list(t, CD + 'listOfModificationResidues', el) + '\n</celldesigner:protein>');
-    else t = add(t, CD + 'listOfModificationResidues', el, p[0], p[1], p[1] - '</celldesigner:protein>'.length);
+    var rid = next(t, 'rs');
+    t = putResidue(t, A.s.ref, '<celldesigner:modificationResidue angle="' + repr(ang === undefined ? 3 * Math.PI / 2 : ang) + '" id="' + rid + '"' +
+      (o.name ? ' name="' + esc(o.name) + '"' : '') + ' side="none"/>');
     return { text: setState(t, A.species, rid, state), residue: rs.length };
+  }
+  function putResidue(t, ref, el) {   // a modificationResidue element added last on the protein ref
+    var p = reference(t, ref);
+    if (t[p[1] - 2] === '/') return put(t, p[1] - 2, p[1], '>' + (OPEN.test(t) ? '' : '\n') + list(t, CD + 'listOfModificationResidues', el) + '\n</celldesigner:protein>');
+    return add(t, CD + 'listOfModificationResidues', el, p[0], p[1], p[1] - '</celldesigner:protein>'.length);
+  }
+  // once a variable, always a variable: the other protein entries of id's name and type (CellDesigner keeps one per
+  // protein; a converted or older file may hold one per species) joined into id's, so its residues are on every species
+  // of that name. Their residues are added after id's own (whose order, and so their indices, stay), matched by site
+  // name, an unnamed one by its angle; their species name id's protein, their residues' states renamed to match; the
+  // entries left unused go. Not a protein: t as it is
+  function joinKin(t, id) {
+    var A = entity(t, id);
+    if (!REF[A.cls] || REF[A.cls][0] !== 'protein' || !A.s.ref) return t;
+    var me = A.s.ref, P = head(t, reference(t, me)), name = at(P, 'name'), type = at(P, 'type') || 'GENERIC', l = span(t, '<' + CD + 'listOfProteins[\\s>/]');
+    var kin = l ? all(t, '<celldesigner:protein(?=\\s)[^>]*\\sname="' + q(name) + '"', l).map(function (e) { return e.tag; })
+      .filter(function (g) { return (at(g, 'type') || 'GENERIC') === type && at(g, 'id') !== me; }).map(function (g) { return at(g, 'id'); }) : [];
+    var turn = function (a) { return ((a % (2 * Math.PI)) + 3 * Math.PI) % (2 * Math.PI) - Math.PI; };
+    kin.forEach(function (ref) {
+      var map = {};
+      all(t, '<celldesigner:modificationResidue ', reference(t, ref)).forEach(function (r) {
+        var nm = at(r.tag, 'name'), ang = F(at(r.tag, 'angle')), hit = all(t, '<celldesigner:modificationResidue ', reference(t, me)).filter(function (m) {
+          return nm ? at(m.tag, 'name') === nm : !at(m.tag, 'name') && Math.abs(turn(F(at(m.tag, 'angle')) - ang)) < 0.01;
+        })[0];
+        if (hit) { map[at(r.tag, 'id')] = at(hit.tag, 'id'); return; }
+        var rid = next(t, 'rs');
+        map[at(r.tag, 'id')] = rid;
+        t = putResidue(t, me, r.tag.replace(/\sid="[^"]*"/, ' id="' + rid + '"').replace(/>$/, '/>').replace(/\/\/>$/, '/>'));
+      });
+      users(t, ref).forEach(function (sid) {
+        var S = species(t, sid), s = span(t, '<celldesigner:' + REF[S.cls][1] + '>', S.sp[0], S.sp[1]);
+        t = put(t, s[0], s[1], '<celldesigner:' + REF[S.cls][1] + '>' + me + '</celldesigner:' + REF[S.cls][1] + '>');
+        var m = inState(t, sid, '<celldesigner:listOfModifications>');
+        if (m) t = put(t, m[0], m[1], t.slice(m[0], m[1]).replace(/(\sresidue=")([^"]*)"/g, function (x, a, v) { return a + (map[v] || v) + '"'; }));
+      });
+      t = unused(t, ref);
+    });
+    return t;
   }
   function setState(t, sid, rid, state) {
     var m = inState(t, sid, '<celldesigner:modification(?=\\s)[^>]*\\sresidue="' + q(rid) + '"');
@@ -1299,6 +1336,6 @@
   var api = { LOOK: LOOK, COMP: COMP, lineColour: lineColour, recolourLine: recolourLine, lineWidth: lineWidth, rewidthLine: rewidthLine, PROCESS: PROCESS, REDUCED: REDUCED, sbgn: sbgn, MODS: MODS, NEED: NEED, about: about, aliasInfo: aliasInfo, classColour: classColour, compartmentColour: compartmentColour, classColours: classColours, classSize: classSize, empty: empty, species: newSpecies, compartment: compartment, rename: rename, namePlace: namePlace, nameAt: nameAt, nameInfo: nameInfo, retype: retype, remove: remove, reaction: reaction, reduced: reduced,
     reactant: reactant, product: product, modifier: modifier, reactionType: reactionType, reversible: reversible, modifierType: modifierType, removeLine: removeLine,
     gate: gate, gateInput: gateInput, gateInputRemove: gateInputRemove, gateType: gateType, residue: residue, residueState: residueState,
-    residueRemove: residueRemove, residueName: residueName, residueMove: residueMove, structuralMove: structuralMove, features: features, STATES: STATES, placesFor: placesFor, ratioAngle: ratioAngle, bounds: bounds, proteinAliases: proteinAliases, structural: structural, info: info, infoUnit: infoUnit, INFO: INFO, homodimer: homodimer, look: look, restyle: restyle, recolourAll: recolourAll, colours: colours, cdName: cdName, joinable: joinable, join: join, leave: leave };
+    residueRemove: residueRemove, residueName: residueName, residueMove: residueMove, structuralMove: structuralMove, features: features, STATES: STATES, placesFor: placesFor, ratioAngle: ratioAngle, bounds: bounds, proteinAliases: proteinAliases, joinKin: joinKin, structural: structural, info: info, infoUnit: infoUnit, INFO: INFO, homodimer: homodimer, look: look, restyle: restyle, recolourAll: recolourAll, colours: colours, cdName: cdName, joinable: joinable, join: join, leave: leave };
   if (node) module.exports = api; else root.cd_make = api;
 })(typeof window !== 'undefined' ? window : globalThis);

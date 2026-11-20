@@ -786,7 +786,8 @@
     // text per alias, at the top middle, not moved). Each is edited in a small window (cdSvWin) opened by a double click,
     // a click on one selected or Edit in its menu, never typed on the shape, so a modification or a unit's prefix and
     // label come only from CellDesigner's lists and the file always opens in CellDesigner. A residue belongs to the protein: its site and place are the protein's, on every species of it; its
-    // modification is this species'. Written by cd_make (residue, residueState, residueName, residueMove, residueRemove,
+    // modification is this species'. Once a variable, always a variable: before a residue changes, the protein's other
+    // entries of the same name and type (a converted file's one per species) are joined into one (cd_make.joinKin). Written by cd_make (residue, residueState, residueName, residueMove, residueRemove,
     // structural, structuralMove, info), one undo step each
     var SS = 'StructuralState';
     var cdFeatMemo = {};   // per alias and file: cd_make.features (read by svAt on a press and svMarks while one is selected); of
@@ -917,6 +918,7 @@
     // a new residue on alias id at its first free place (the alias grown where none is), then room for it on the other
     // aliases of the protein: { text, residue: its index }
     function cdResidueNew(t, id) {
+      t = cdMk.joinKin(t, id);   // the protein's other entries of its name joined first (cd_make.joinKin)
       var r = cdRoom(t, id, [16, 16], null, null, cdOthersTop(t, id));
       t = cdGrow(t, id, r.box);
       var o = cdMk.residue(t, id, { state: 'empty', angle: r.angle });
@@ -1004,14 +1006,14 @@
     function cdSvMove(i, j, r) {   // the icon j of node i moved to the place r: its angle written (a unit of information stays)
       var q = cdSvList(i)[j], id = nodes2[i].id;
       if (!q || q[3] === UI) return false;
-      var a = cdAngle(i, r), ok = cdApply(function (t) { return q[3] === SV ? cdMk.residueMove(t, id, q[4], a) : cdMk.structuralMove(t, id, a); }, []);
+      var a = cdAngle(i, r), ok = cdApply(function (t) { return q[3] === SV ? cdMk.residueMove(cdMk.joinKin(t, id), id, q[4], a) : cdMk.structuralMove(t, id, a); }, []);
       svSel = { id: id, j: j }; paint();
       return ok;
     }
     function cdSvDelete(i, j) {
       var q = cdSvList(i)[j], id = nodes2[i].id;
       if (!q) return false;
-      return cdApply(function (t) { return q[3] === SV ? cdMk.residueRemove(t, id, q[4]) : q[3] === SS ? cdMk.structural(t, id, null) : cdMk.info(t, id, null); }, [id]);
+      return cdApply(function (t) { return q[3] === SV ? cdMk.residueRemove(cdMk.joinKin(t, id), id, q[4]) : q[3] === SS ? cdMk.structural(t, id, null) : cdMk.info(t, id, null); }, [id]);
     }
     // a double click, a click on one selected or Edit in its menu: the window of a residue, the structural state or the
     // unit of information
@@ -1091,7 +1093,7 @@
       };
       var site = function () {   // the site as typed, when it differs
         var kk = kNow(), r = kk < 0 ? null : feat().residues[kk], v = inp.value.trim();
-        if (r && v !== (r.name || '')) write(function (t) { return cdMk.residueName(t, id, k, v); });
+        if (r && v !== (r.name || '')) write(function (t) { return cdMk.residueName(cdMk.joinKin(t, id), id, k, v); });
       };
       var put = function (v) {   // the structural state's text written (a new one on every copy, each at its own free place), or none
         var pend = pendOf();
@@ -1143,7 +1145,7 @@
           if (fixed()) unit(chosen()); else { inp.value = was; inp.focus(); if (was) unit(chosen()); }
           return;
         }
-        if (res) { var s = sel.value; write(function (t) { return cdMk.residueState(t, id, k, s); }); return; }
+        if (res) { var s = sel.value; write(function (t) { return cdMk.residueState(cdMk.joinKin(t, id), id, k, s); }); return; }
         row.hidden = !!sel.value;
         if (sel.value) put(sel.value); else { var g = feat(); inp.value = g && g.structural ? g.structural.text : ''; inp.focus(); }   // Text: from what is there, written once changed
       });
@@ -1209,7 +1211,7 @@
       out.push(['Change state', subItem(function (r, done) {
         return kindWindow(r, cdMk.STATES.map(function (s) {
           return { name: s, own: s === now,
-            go: function () { cdApply(function (t) { return cdMk.residueState(t, id, it[4], s); }, []); svSel = { id: id, j: q[1] }; paint(); } };
+            go: function () { cdApply(function (t) { return cdMk.residueState(cdMk.joinKin(t, id), id, it[4], s); }, []); svSel = { id: id, j: q[1] }; paint(); } };
         }), done);
       })]);
       return out;

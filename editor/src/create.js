@@ -967,9 +967,92 @@
       remember(false);
       if (room.box) svGrowTo(id, room.box);
       text = sbJs.state(text, id, '', room.r[0], room.r[1]);
-      if (room.box) { parse(); svHold(id, was); }
+      parse();
+      if (room.box) svHold(id, was);
+      svCopies(id).forEach(function (c) { svAddTo(c, room.r, ''); });   // on every copy at the same place (svCopies)
       made(id);
       selN = []; svSel = { id: id, j: j }; paint();
+    }
+    // Once a variable, always a variable (as a CellDesigner residue belongs to the protein and shows on every species of
+    // it): a state variable belongs to the entity, so every macromolecule of the same name (complex members included)
+    // has it, at the same place of its border; its value stays each glyph's own. Made, its variable named or renamed,
+    // moved and deleted on every copy in the same undo step; a glyph named as others takes their state variables. A copy's
+    // own is found by the variable's name, an unnamed one by its place (svTwin); SBGN-ML maps only. The place taken on a copy: the copy grows
+    // a few steps to free it, else the copy's first free place (svRoom); a move to a place taken there leaves the copy's
+    // where it was. Process Description maps only (Activity Flow has no state variables)
+    function svVar(s) { var a = (s || '').indexOf('@'); return a < 0 ? '' : s.slice(a + 1).trim(); }   // value@variable: the variable
+    function svVal(s) { var a = (s || '').indexOf('@'); return a < 0 ? s || '' : s.slice(0, a); }
+    function svIdx(id) { return nodes2.findIndex(function (n) { return n.id === id; }); }
+    function svOnly(i) { return svList(i).filter(function (q) { return q[3] === SV; }); }
+    function svR(i, q) { var b = boxOf(i); return [(q[1][0] - b[0]) / b[2] - 0.5, (q[1][1] - b[1]) / b[3] - 0.5]; }
+    function svNm(i) { return nameOf(i).replace(/\s+/g, ' ').trim(); }
+    function svCopies(id) {   // the other macromolecules named as node id (an SBGN-ML map's, Process Description): their ids
+      var i = svIdx(id);
+      if (cd || !sb || afSbgn || afKind() || i < 0 || nodes2[i].shape.kind !== 'Macromolecule' || !svNm(i)) return [];
+      var nm = svNm(i);
+      return nodes2.filter(function (n, k) { return k !== i && n.shape.kind === 'Macromolecule' && svNm(k) === nm; }).map(function (n) { return n.id; });
+    }
+    // copy c's state variable answering one with text txt at place r: by its variable's name; an unnamed one at the same
+    // place; for an empty one (txt ''), else the copy's empty one nearest r (one made with it where its place was taken).
+    // Never by order alone, so a copy's own value-only state variable is never taken for another; -1 for none
+    function svTwin(c, txt, r) {
+      var k = svIdx(c);
+      if (k < 0) return -1;
+      var svs = svOnly(k), v = svVar(txt), d = function (q) { var p = svR(k, q); return Math.abs(p[0] - r[0]) + Math.abs(p[1] - r[1]); };
+      var hit = v ? svs.filter(function (q) { return svVar(q[0]) === v; })[0]
+        : svs.filter(function (q) { return !svVar(q[0]) && d(q) < 0.04; })[0]
+          || (!txt ? svs.filter(function (q) { return !q[0]; }).sort(function (a, b) { return d(a) - d(b); })[0] : null);
+      return hit ? hit[4] : -1;
+    }
+    function svSize(i, txt) { var k = svK(i), n = (txt || '').length; return [n <= 2 ? 18 * k : Math.ceil(n * 5.4 * k + 12 * k), 18 * k]; }   // as sbgn_edit sizes it (svIcon)
+    function svAddTo(c, r, txt) {   // a state variable txt on copy c at place r (the copy grown a few steps to free it), else its first free place
+      var k = svIdx(c);
+      if (k < 0) return;
+      var s = svSize(k, txt), b0 = boxOf(k), b = b0, base = svBase(k), ic0 = svIconsOn(k), at = null;
+      for (var g = 0; g < 6 && !at; g++) {
+        var ic = ic0.map(function (q) { return q.k === SV ? { r: svRatio(svKeep(svPt(b0, q.r), b0, b), b), s: q.s, k: q.k, n: q.n } : q; });
+        if (!svClash(svPt(b, r), s, b, ic)) at = { box: b === b0 ? null : b, r: r }; else b = svGrowStep(b, base);
+      }
+      if (!at) at = svRoom(k, s, null);
+      if (at.box) svGrowTo(c, at.box);
+      text = sbJs.state(text, c, txt, at.r[0], at.r[1]); parse();
+      if (at.box) svHold(c, b0);
+    }
+    // after state variable n of node id was typed from was to now (at place r0 before): its variable named or renamed on
+    // every copy (their values kept), added where a copy has none; a copy that has the new variable already keeps that
+    // one, its twin dropped when empty (else left, its value its own)
+    function svShareText(id, was, r0, n, now) {
+      var ov = svVar(was), nv = svVar(now), i = svIdx(id), q = i >= 0 ? svOnly(i)[n] : null, r = q ? svR(i, q) : r0;
+      if (!ov && !nv) return;   // a value alone: each glyph's own
+      svCopies(id).forEach(function (c) {
+        var m = svTwin(c, was, r0), has = nv ? svTwin(c, now, r) : -1;
+        if (m >= 0 && ov !== nv) {
+          var k = svIdx(c), wb = boxOf(k), cur = svOnly(k)[m][0];
+          if (has >= 0 && has !== m) { if (!cur) { text = sbJs.stateDelete(text, c, m, { sbgn: sb.base }); parse(); } return; }
+          text = sbJs.stateValue(text, c, m, svVal(cur) + (nv ? '@' + nv : '')); parse();
+          if (svSettle(c, m)) svHold(c, wb);
+        } else if (m < 0 && nv && has < 0) svAddTo(c, r, '@' + nv);
+      });
+    }
+    // state variable q of node i (at r0) taken to place r, or deleted (r null), on every copy
+    function svShareMove(i, q, r0, r) {
+      var ws = svCopies(nodes2[i].id).map(function (c) { return [c, svTwin(c, q[0], r0)]; }).filter(function (w) { return w[1] >= 0; });
+      return function () {
+        ws.forEach(function (w) {
+          var k = svIdx(w[0]);
+          if (k < 0) return;
+          if (!r) { text = sbJs.stateDelete(text, w[0], w[1], { sbgn: sb.base }); return; }
+          var b = boxOf(k), ic = svIconsOn(k), me = ic.filter(function (o) { return o.k === SV && o.n === w[1]; })[0];
+          if (me && !svClash(svPt(b, r), me.s, b, ic.filter(function (o) { return o !== me; }))) text = sbJs.stateMove(text, w[0], w[1], r[0], r[1]);
+        });
+        parse();
+      };
+    }
+    function svJoin(id) {   // node id named as other macromolecules: theirs added where it has none (the copy with most as the model)
+      var i = svIdx(id), cs = svCopies(id).map(svIdx).sort(function (a, b) { return svOnly(b).length - svOnly(a).length; });
+      if (i < 0 || !cs.length) return;
+      var k = cs[0], want = svOnly(k).map(function (q) { return [svVar(q[0]), svR(k, q)]; });   // read before anything is added
+      want.forEach(function (w) { if (svTwin(id, w[0] ? '@' + w[0] : 'x', w[1]) < 0) svAddTo(id, w[1], w[0] ? '@' + w[0] : ''); });   // an unnamed one matched by its place only
     }
     // an empty unit of information, as with state variables (made at once, its text added by a double
     // click): N:2's box (the converter's smallest), the last on the top, selected; room made for it (svSettle)
@@ -1045,6 +1128,7 @@
       } else at0 = !sv ? [b[0] + inset, b[1] + inset, b[2] - 2 * inset, b[3] - 2 * inset] : [sv[1][0] - sv[2][0] / 2 + 1, sv[1][1] - sv[2][1] / 2 + 1, sv[2][0] - 2, sv[2][1] - 2];
       var au0 = unit && afSbgn ? sbJs.activities(text)[id] : null;   // an activity's unit in the SBGN AF view: typed where it is drawn (afUnitBox)
       if (au0 != null) { var B0 = sbJs.afUnitBox(b, au0, sv[0] || 'x'); at0 = [B0[0] + 1, B0[1] + 1, B0[2] - 2, B0[3] - 2]; }
+      var r0 = sv && !cd ? svR(i, sv) : null;   // for the copies (svShareText)
       var inp = document.createElement('input'), before = !sv ? (cd ? cdNameOf(id) : nameOf(i)) : sv[0], m0 = map;   // a CellDesigner name from its file (cdcreate.js)
       inp.type = 'text'; inp.className = 'm2-ed-type'; inp.value = before; inp.spellcheck = false;
       inp.setAttribute('aria-label', !sv ? 'Name' : unit ? 'Unit of information' : 'State variable (value, or value@site)');
@@ -1096,6 +1180,7 @@
           if (!fresh) remember(false);   // a unit made for this typing: one step with its making (its step is taken back when nothing is kept, above)
           text = t2; parse();
           if (au0 == null) { var ix = nodes2.findIndex(function (n) { return n.id === id; }), was = ix >= 0 ? boxOf(ix) : null; if (was && svSettle(id, unit ? null : sv[4])) svHold(id, was); }   // a wider icon given room (notes/state-crowding.md)
+          if (au0 == null && !unit) svShareText(id, sv[0], r0, sv[4], v);   // its variable on every copy
           dirty = true; quiet(); render(); paint(); changed();
         }, inp: inp, place: place
       };
@@ -1116,7 +1201,7 @@
       if (!sbJs || sb && !edOf(src()).nameable(src(), id)) return;   // a GraphML map's label written as it stands (no SBGN-ML class to ask)
       var t2 = sbJs.label(text, id, v);
       if (t2 === text) return;
-      remember(false); text = t2; parse(); dirty = true; quiet(); render(); paint(); changed();
+      remember(false); text = t2; parse(); svJoin(id); dirty = true; quiet(); render(); paint(); changed();
     }
     // Name by members: a complex named by its members' names joined by colons (A:B, CellDesigner's usual name for
     // a complex), in reading order (rows from the top, each from the left); a member complex with no name gives its own
@@ -1282,15 +1367,20 @@
     }
     function svMove(i, j, r) {   // the state variable j of node i written at the place r (a CellDesigner map's: cdcreate.js)
       if (cd) { cdSvMove(i, j, r); return; }
-      remember(false); text = sbJs.stateMove(text, nodes2[i].id, svList(i)[j][4], r[0], r[1]); parse(); dirty = true; render(); paint(); changed();
+      var q = svList(i)[j], share = q[3] === SV ? svShareMove(i, q, svR(i, q), r) : null;   // the copies too
+      remember(false); text = sbJs.stateMove(text, nodes2[i].id, q[4], r[0], r[1]); parse();
+      if (share) share();
+      dirty = true; render(); paint(); changed();
     }
     function svDelete() {
       var i = svNode();
       if (i < 0) return false;
       if (cd) { var j = svSel.j; svSel = null; return cdSvDelete(i, j); }
       var q = svList(i)[svSel.j];
+      var share = q[3] === SV ? svShareMove(i, q, svR(i, q), null) : null;   // the copies too
       remember(false); text = (q[3] === UI ? sbJs.unitDelete : sbJs.stateDelete)(text, svSel.id, q[4], { sbgn: sb.base }); svSel = null;
-      parse(); dirty = true; render(); paint(); changed();
+      parse();
+      if (share) share(); dirty = true; render(); paint(); changed();
       return true;
     }
     function nodesDelete(list, arcs) {   // the glyphs the palette makes, an empty compartment too, deleted with every line at them,
