@@ -302,6 +302,33 @@ def paint_layer(node):  # 0 a compartment (a group not a complex), 1 a complex, 
     return 0 if node.find(G + 'graph') is not None else 2
 
 
+def name_under(node, r, x, y, w, h):
+    # a complex's name kept at its bottom inside (modelPosition b): where its members leave it no room there (a member's box,
+    # with a name of its own drawn under it, meeting the name's box), the name goes just under the outline, so it stays
+    # readable; its box as label_place gives it, moved, else None
+    if r is None or r.get('configuration') != SBGN + 'Complex':
+        return None
+    lab = next((l for l in r.findall(Y + 'NodeLabel') if l.get('modelName') == 'internal' and (l.get('modelPosition') or '').startswith('b')
+                and l.get('visible') != 'false' and not l.get('iconData') and ''.join(l.itertext()).strip()), None)
+    box = label_place(lab, x, y, w, h) if lab is not None else None
+    if box is None:
+        return None
+    lx, ly, lw, lh = box
+    sub = node.find(G + 'graph')
+    for c in (sub.findall(G + 'node') if sub is not None else []):
+        cr = realizer(c)
+        g = cr.find(Y + 'Geometry') if cr is not None else None
+        if g is None:
+            continue
+        cx, cy, cw, ch = (float(g.get(a)) for a in ('x', 'y', 'width', 'height'))
+        below = name_under(c, cr, cx, cy, cw, ch)
+        if below:
+            ch += below[3]
+        if cx < lx + lw and lx < cx + cw and cy < ly + lh and ly < cy + ch:
+            return lx, y + h, lw, lh
+    return None
+
+
 def realizer(node):
     data = [c for dd in node.findall(G + 'data') for c in dd if isinstance(c.tag, str) and c.tag.startswith(Y)]
     for r in data:
@@ -548,10 +575,13 @@ class Map:
             # the generic square white as every process (Newt fills an association dark grey)
             s = f'<g class="sbgn-{sc}">{c}</g><g class="sbgn-generic" display="none">' + ''.join(shape_svg(o, '#FFFFFF', stroke, rl) for o in outlines) + '</g>'
         aux = []   # the outlines of its state variables and units of information (visual_end)
+        under = name_under(node, r, x, y, w, h)   # a complex's name with no room inside: under it
         for lab in r.findall(Y + 'NodeLabel'):
             if lab.get('visible') == 'false':
                 continue
             box = label_place(lab, x, y, w, h)
+            if under and box and box[1] < y + h and lab.get('modelName') == 'internal' and (lab.get('modelPosition') or '').startswith('b') and not lab.get('iconData'):
+                box = under
             if box is None:
                 if lab.get('iconData') or ''.join(lab.itertext()).strip():
                     refuse(where, 'label without a position')
