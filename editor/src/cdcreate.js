@@ -109,9 +109,11 @@
     }
     pal.querySelector('.m2-ed-pstrict input').addEventListener('change', function (e) {   // on a CellDesigner map: kept per map, modifiers' signs between species allowed or not
       if (!cdPal()) return;
-      var all = palStore(), id = palId();
-      cdStrictMemo = [id, !e.target.checked];
-      if (id) { all[id] = { lang: 'pd', look: 'rn', strict: !e.target.checked }; try { localStorage.setItem(PAL_KEY, JSON.stringify(all)); } catch (er) {} }
+      palDid([PAL_KEY], function () {
+        var all = palStore(), id = palId();
+        cdStrictMemo = [id, !e.target.checked];
+        if (id) { all[id] = { lang: 'pd', look: 'rn', strict: !e.target.checked }; try { localStorage.setItem(PAL_KEY, JSON.stringify(all)); } catch (er) {} }
+      });
       palShown = null; palShow();
     });
 

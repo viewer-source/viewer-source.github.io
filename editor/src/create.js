@@ -384,7 +384,7 @@
     // atlas-edit-cd-defaults), From map for a kind with none
     var STYLES = [['file', 'From map', 'New nodes the size most nodes of their kind have on this map'], ['default', 'Standard sizes', 'New nodes at the standard sizes: CellDesigner\u2019s own on a CellDesigner map, the editor\u2019s on others'], ['custom', 'Custom default', 'New nodes the size kept by Set as default; From map for a kind with none']];
     function palStyle() { return mapChoice('style', ['file', 'default', 'custom']) || 'file'; }
-    function styleRow() { return palDrop({ key: 'style', label: 'Style', title: 'Sizes of new nodes', list: STYLES, get: palStyle, set: function (v) { keepMapChoice('style', v); } }); }
+    function styleRow() { return palDrop({ key: 'style', label: 'Style', title: 'Sizes of new nodes', list: STYLES, get: palStyle, set: function (v) { palDid([CHOICE_KEY], function () { keepMapChoice('style', v); }); } }); }
     // Confetti, a choice of both palettes' Colours: every new entity a pastel of its own, whatever its kind (processes,
     // gates, empty sets and compartments keep From map's look). The hues are the golden-angle sequence (k times 137.508
     // degrees), HSL saturation 55% and lightness 82%, so black text reads on each; of the first 64 hues, the one farthest
@@ -536,9 +536,9 @@
     function palOk(kind) { return PALS[palKey()].some(function (s) { return s[1].some(function (q) { return q[0] === kind; }); }); }
     pal.addEventListener('click', function (e) {
       var b = e.target.closest('button[data-lang], button[data-look]');
-      if (b && !b.disabled) palPick(b.dataset.lang, b.dataset.look);
+      if (b && !b.disabled) palDid([PAL_KEY], function () { palPick(b.dataset.lang, b.dataset.look); });
     });
-    pal.querySelector('.m2-ed-pstrict input').addEventListener('change', function (e) { e.target.blur(); if (cdPal()) return; palSet.strict = !e.target.checked; palKeep(); });   // a CellDesigner map's own: cdcreate.js   // blurred: the editor's keys (undo) work at once
+    pal.querySelector('.m2-ed-pstrict input').addEventListener('change', function (e) { e.target.blur(); if (cdPal()) return; palDid([PAL_KEY], function () { palSet.strict = !e.target.checked; palKeep(); }); });   // a CellDesigner map's own: cdcreate.js   // blurred: the editor's keys (undo) work at once
     pal.querySelector('.m2-ed-pprot input').addEventListener('change', function (e) {   // every protein activity given the box or not, one undo step
       protOn = e.target.checked; e.target.blur();   // the editor's keys (undo) work at once, not the tick box's
       var t2 = palOn() ? sbJs.proteinBoxes(text, protOn) : text;
@@ -546,6 +546,10 @@
       palShow(); paint();
     });
     var palMap = null;
+    // the palette's choices kept in this browser (its set, Strict, Style, Set as default) undone as settings (V.lsDid):
+    // the map's own entry put back (KEY#id), the others' left as they are, then read again here for the map open
+    function palAgain() { palMap = null; cdStrictMemo = [null, false]; choiceMemo = {}; if (on) { palSync(); palShown = null; palShow(); paint(); } }
+    function palDid(keys, act) { var id = palId(), was = V.lsSnap(keys.map(function (k) { return k === PAL_KEY || k === CHOICE_KEY ? (id ? k + '#' + id : k) : k; })); act(); V.lsDid(was, palAgain); }
     function palSync() { var id = palId(); if (id !== palMap) { palMap = id; palSet = palFor(); protOn = protFile() === true; palShown = null; palFill(); } }   // only when the map changes (palShow runs on every paint)
     box.querySelector('.m2-ed-tools').insertAdjacentElement('afterend', pal);
     function palOn() { return on && V.current === map && !!sb && !!sbJs && V.level === 'full'; }
@@ -1857,7 +1861,7 @@
     // switches its rows to Custom
     props.querySelector('.m2-ed-pdef').addEventListener('click', function () {
       var i = propNode(), pf = propFmt();
-      if (i >= 0 && pf.def) pf.def(i);
+      if (i >= 0 && pf.def) palDid([DEF_KEY, CD_DEF_KEY, CHOICE_KEY], function () { pf.def(i); });
     });
     function keepLook(key, all) { try { localStorage.setItem(key, JSON.stringify(all)); return true; } catch (e) { warn('The default could not be kept in this browser.'); return false; } }
     function sbDef(i) {

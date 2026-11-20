@@ -1096,16 +1096,19 @@
     // places are drawn where they were, so an undo or redo across a shift never moves the map
     var shiftSum = [0, 0], tookShift = null;
     function rebase(dx, dy) { shiftSum = [shiftSum[0] + dx, shiftSum[1] + dy]; x0 += dx; y0 += dy; }
-    function step(stack, t) {   // t whole on top; the old top a change from it
-      var top = stack.length - 1, rs = stack.rb || (stack.rb = []);
+    // each step also keeps when it was taken (stack.ts, V.tick), so the keys undo a setting and a map's step in the order made
+    function step(stack, t, fresh) {   // t whole on top; the old top a change from it; fresh: a new change (remember), not an undo or redo
+      var top = stack.length - 1, rs = stack.rb || (stack.rb = []), ts = stack.ts || (stack.ts = []);
       if (rs.length !== stack.length) rs = stack.rb = stack.map(function () { return null; });   // never expected: steps without a frame are taken as they are
-      rs.push(shiftSum);
+      if (ts.length !== stack.length) ts = stack.ts = stack.map(function () { return 0; });
+      rs.push(shiftSum); ts.push(V.tick(fresh));
       if (top >= 0) { var o = stack[top]; stack[top] = typeof t === 'string' && typeof o === 'string' ? delta(t, o) : t.g != null && o.g != null ? { pg: delta(t.g, o.g), pb: delta(t.b, o.b) } : o; }
       stack.push(t);
-      for (var k = 0, i = stack.length - 1; i >= 0; i--) { k += sizeOf(stack[i]); if (k > 40e6 || stack.length - i > 200) { stack.splice(0, i + 1); rs.splice(0, i + 1); break; } }   // 200 steps or 40 million characters
+      for (var k = 0, i = stack.length - 1; i >= 0; i--) { k += sizeOf(stack[i]); if (k > 40e6 || stack.length - i > 200) { stack.splice(0, i + 1); rs.splice(0, i + 1); ts.splice(0, i + 1); break; } }   // 200 steps or 40 million characters
     }
     function take(stack) {   // the top, whole; the one below made whole in its place
       tookShift = stack.rb && stack.rb.length === stack.length ? stack.rb.pop() : null;
+      if (stack.ts && stack.ts.length === stack.length) stack.ts.pop();
       var t = stack.pop(), top = stack.length - 1;
       if (top >= 0) stack[top] = rebuild(stack[top], t);
       return t;
@@ -1163,13 +1166,15 @@
     }
     function remember(merge) {   // the text before a change, for undo; nudges in a row are one step
       var now = Date.now();
-      if (!(merge && now - nudgeAt < 800)) { step(undo, undoText()); redo = []; }
+      if (!(merge && now - nudgeAt < 800)) { step(undo, undoText(), true); redo = []; }
+      else if (undo.ts && undo.ts.length === undo.length && undo.length) undo.ts[undo.ts.length - 1] = V.tick(true);   // merged: the step dated by its last nudge
       nudgeAt = merge ? now : 0;
     }
+    function mapTop(back) { var s = back ? undo : redo; return on && V.current === map && s.length && s.ts && s.ts.length === s.length ? s.ts[s.ts.length - 1] : 0; }   // when the map's next undo (or redo) was taken; 0: none
     function back(from, to) {
       if (!from.length) return;
       var t;
-      try { t = take(from); } catch (e) { from.length = 0; from.rb = []; tookShift = null; warn('Undo history lost: ' + e + '.'); return; }
+      try { t = take(from); } catch (e) { from.length = 0; from.rb = []; from.ts = []; tookShift = null; warn('Undo history lost: ' + e + '.'); return; }
       clearTimeout(timer); keyDue = null; keyRun = null;   // the keys' run undone: nothing settled on top of it
       var was = undoText();
       step(to, was); text = fromUndo(t); nudgeAt = 0; cdGate = null; sbBack = true; parse(); selN = []; selP = []; selE = []; part = null; dirty = true; render(); paint(); changed();
@@ -1732,13 +1737,15 @@
       buttons(); quiet();
     });
     box.querySelector('#m2-ed-this').addEventListener('click', editShown);
-    function gridShow() { gridSet.shown = !gridSet.shown; gridKeep(); gridButtons(); paint(); }
-    function gridSnap() { gridSet.snap = !gridSet.snap; gridKeep(); gridButtons(); }
+    function gridPut(g) { Object.assign(gridSet, { shown: g.shown, snap: g.snap, step: g.step }); gridKeep(); inGrid.value = String(gridSet.step); gridButtons(); paint(); }   // an undo or redo of Grid, Snap or Grid size
+    function gridDid(was) { V.setDid(gridPut, was, { shown: gridSet.shown, snap: gridSet.snap, step: gridSet.step }); }
+    function gridShow() { var was = Object.assign({}, gridSet); gridSet.shown = !gridSet.shown; gridKeep(); gridButtons(); paint(); gridDid(was); }
+    function gridSnap() { var was = Object.assign({}, gridSet); gridSet.snap = !gridSet.snap; gridKeep(); gridButtons(); gridDid(was); }
     box.querySelector('#m2-ed-grid').addEventListener('click', gridShow);
     box.querySelector('#m2-ed-snap').addEventListener('click', gridSnap);
     var inGrid = box.querySelector('#m2-ed-gsize');
     inGrid.value = String(gridSet.step);
-    inGrid.addEventListener('change', function () { gridSet.step = stepOk(parseFloat(inGrid.value)); gridKeep(); inGrid.value = String(gridSet.step); paint(); });
+    inGrid.addEventListener('change', function () { var was = Object.assign({}, gridSet); gridSet.step = stepOk(parseFloat(inGrid.value)); gridKeep(); inGrid.value = String(gridSet.step); paint(); gridDid(was); });
     inGrid.addEventListener('keydown', function (e) { e.stopPropagation(); if (e.key === 'Enter' || e.key === 'Escape') { if (e.key === 'Escape') inGrid.value = String(gridSet.step); inGrid.blur(); } });
     var gsMenu = null;
     function gsClose() { if (gsMenu) { gsMenu.remove(); gsMenu = null; } }
@@ -1833,8 +1840,8 @@
     }
     document.querySelectorAll('#m2-rail .m2-ri[data-win="edit"]').forEach(function (b) { b.addEventListener('click', shown); });
     box.querySelector('#m2-ed-save').addEventListener('click', save);
-    box.querySelector('#m2-ed-undo').addEventListener('click', function () { if (on) back(undo, redo); });
-    box.querySelector('#m2-ed-redo').addEventListener('click', function () { if (on) back(redo, undo); });
+    box.querySelector('#m2-ed-undo').addEventListener('click', function () { if (on && !V.setFirst(true, mapTop(true))) back(undo, redo); });   // a setting changed after the map's last step first, as the keys
+    box.querySelector('#m2-ed-redo').addEventListener('click', function () { if (on && !V.setFirst(false, mapTop(false))) back(redo, undo); });
     box.querySelector('#m2-ed-stop').addEventListener('click', function () { V.win = 'list'; V.railMark(); if (V.chosen) V.put(V.chosen); else stop(); });
     function resume() {   // back to a file from the computer with moves not saved
       V.current = map; on = true; V.grid.classList.add('m2-editing'); buttons(); histBack();
@@ -3159,9 +3166,10 @@
     // the keys: arrows move the selection by 1 (Shift: 10), Ctrl or Cmd with Z undoes, with S saves; Esc clears
     document.addEventListener('keydown', function (e) {
       if (!text) return;
-      var mod = e.ctrlKey || e.metaKey, k = /^Key[A-Z]$/.test(e.code || '') ? e.code.slice(3).toLowerCase() : e.key.toLowerCase();   // letters by their place on the keyboard, so Z, Y, S, A work in any layout
+      var mod = e.ctrlKey || e.metaKey, k = V.letter(e) || (e.key || '').toLowerCase();   // the letter typed, else its place on the keyboard, so Z, Y, S, A work in any layout
       if (mod && k === 's') { e.preventDefault(); save(); return; }
-      if (!on || V.current !== map || /input|textarea|select/i.test(document.activeElement.tagName)) return;
+      if (!on || V.current !== map || V.typing()) return;
+      if (/input|select/i.test(document.activeElement.tagName) && !(mod && (k === 'z' || k === 'y'))) return;   // a tick box or a list: only the undo keys pass (own.js chose the map's)
       if ((mod && k === 'a') || e.key === 'Escape') keyFlush();   // the selection changes: the keys' run ends
       if (mod && k === 'a') {   // select all, as yEd: every node and line; a CellDesigner glyph is no item of its own
         e.preventDefault(); part = null; keyGuides = null; selP = [];
@@ -3169,8 +3177,7 @@
         selE = edges2.map(function (x, k2) { return k2; });
         paint(); return;
       }
-      if (mod && k === 'z') { e.preventDefault(); if (e.shiftKey) back(redo, undo); else back(undo, redo); return; }
-      if (mod && k === 'y') { e.preventDefault(); back(redo, undo); return; }
+      if (mod && (k === 'z' || k === 'y')) { e.preventDefault(); if (k === 'z' && !e.shiftKey) back(undo, redo); else back(redo, undo); return; }   // a newer setting was taken by own.js first
       // Escape does one thing: a window, menu, list, help box, tool or line in hand closed first (their own listeners), the selection after
       if (e.key === 'Escape') { if (e.defaultPrevented || ddOpen || tool || link || (helpBox && !helpBox.hidden)) return; selN = []; selP = []; selE = []; part = null; keyGuides = null; paint(); return; }
       if ((e.key === 'Delete' || e.key === 'Backspace') && selP.length && !selN.length) { e.preventDefault(); unbend(selP); return; }

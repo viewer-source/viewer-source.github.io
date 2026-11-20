@@ -1226,12 +1226,13 @@
     // where the last press was (or the last change came from), else to the map being edited (core.js); outside editing
     // always to the list. Delete forever is not undone (as emptying the Bin). One step at a time, after the change before
     var listPast = [], listAhead = [], listLast = false, listStepping = Promise.resolve();
-    function listDid(undo, redo, e) { listPast.push(e || { undo: undo, redo: redo }); if (listPast.length > 100) listPast.shift(); listAhead = []; listLast = true; }
+    function listDid(undo, redo, e) { e = e || { undo: undo, redo: redo }; e.at = V.tick(true); listPast.push(e); if (listPast.length > 100) listPast.shift(); listAhead = []; listLast = true; }
+    function listTop(back) { var s = back ? listPast : listAhead; return s.length ? s[s.length - 1].at || 0 : 0; }   // when the list's next undo (or redo) was taken (V.tick)
     function listStep(back) {
+      var s = (back ? listPast : listAhead).pop();   // taken at the press, so the next press (and a setting's) sees the step after it
+      if (!s) return;
+      s.at = V.tick(); (back ? listAhead : listPast).push(s);
       listStepping = listStepping.then(function () {
-        var s = (back ? listPast : listAhead).pop();
-        if (!s) return;
-        (back ? listAhead : listPast).push(s);
         return new Promise(function (ok) { ok(back ? s.undo() : s.redo()); }).catch(function () {}).then(function () { V.refreshMine(); });   // a throw never stops the steps after it
       });
     }
@@ -1306,14 +1307,15 @@
     }, true);
     window.addEventListener('keydown', function (e) {
       if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
-      var k = /^[a-z]$/i.test(e.key) ? e.key.toLowerCase() : /^Key[A-Z]$/.test(e.code || '') ? e.code.slice(3).toLowerCase() : '';   // the letter typed (Z on a German keyboard too), else its place
+      var k = V.letter(e);
       if (k !== 'z' && k !== 'y') return;
-      var a = document.activeElement;
-      if (naming || (a && (/input|textarea|select/i.test(a.tagName) || a.isContentEditable))) return;   // a field's own undo
-      var list = document.getElementById('m2-list');
-      if (!list || !list.offsetParent || (V.grid.classList.contains('m2-editing') && !listLast)) return;   // the map's undo (core.js)
+      if (naming || V.typing()) return;   // a field's own undo
+      var list = document.getElementById('m2-list'), bk = k === 'z' && !e.shiftKey;
+      var toList = !!(list && list.offsetParent) && !(V.grid.classList.contains('m2-editing') && !listLast);
+      if (V.setFirst(bk, toList ? listTop(bk) : mapTop(bk))) { e.preventDefault(); e.stopImmediatePropagation(); return; }   // a setting changed after the list's or the map's step: undone first (V.setDid)
+      if (!toList) return;   // the map's undo (core.js)
       e.preventDefault(); e.stopImmediatePropagation();
-      listStep(k === 'z' && !e.shiftKey);
+      listStep(bk);
     }, true);
     // what the viewer asks of this part (the list's entries and groups, a map's record)
     var own = {
