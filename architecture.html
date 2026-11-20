@@ -226,7 +226,7 @@ picture and one set of click data, so the viewer in the browser never knows whic
 for the layout, loaded only where the Edit tab is, draws with the same renderers in the browser and saves the map's
 own file back, which the build then draws again. This page shows the parts and where each lives. How to use it: <a href="/guide/">Guide</a>.</p>
 
-<p class="ca-upd">Updated 2026-11-20, with the group SBML with layout as an optional module of the build (sbml_group.py).</p>
+<p class="ca-upd">Updated 2026-11-20, with SBML with a layout: the optional group (sbml_group.py) and its layout editing (sbml_edit.js).</p>
 
 <h2>State</h2>
 
@@ -258,6 +258,7 @@ own file back, which the build then draws again. This page shows the parts and w
   <tr><td><code>converter/cd_edit.js</code></td><td>A CellDesigner file as GraphML for the editor, and the moves written back into the CellDesigner text: only the numbers that change. Reaction rules as CellDesigner's own model (main line, process square, added reactants at 3/8 and 5/8).</td></tr>
   <tr><td><code>converter/cd_make.js</code></td><td>What the CellDesigner palette makes and changes, written into the CellDesigner text as CellDesigner 4.4 saves it: species, compartments, reactions, modifiers, reduced notation, gates placed where CellDesigner places them, residues, renames, retypes, removals; the rest of the file byte for byte. JavaScript only; tests/cd-make.js checks it against the converter's reading.</td></tr>
   <tr><td><code>converter/sbgn_edit.js</code></td><td>The same for SBGN-ML: its GraphML from the build's, and the moves written back into the SBGN-ML text.</td></tr>
+  <tr><td><code>converter/sbml_edit.js</code></td><td>The same for SBML with a layout, for the layout alone (a map whose entry says <code>layoutOnly</code>): its GraphML from the build's, and the moves written back into the SBML text, only the numbers that change (glyph positions, a compartment's size, labels with their glyphs, a reaction's curve with its process, a line's ends and bend points). Uses <code>sbgn_edit.js</code>'s text editing.</td></tr>
   <tr><td><code>converter/mapconv/</code></td><td>The converter's package (copy): reads SBGN-ML into GraphML for the build, gives cdrender four helpers.</td></tr>
   <tr><td><code>layout/layout.js</code></td><td>The layout skill's Pack and Snap, and <code>tidy</code>, which writes back only the attributes they change.</td></tr>
 

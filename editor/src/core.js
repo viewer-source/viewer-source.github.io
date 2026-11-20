@@ -1245,14 +1245,14 @@
       if (typing) typing.done(true);
       if (localTimer) local(true);   // the last move of the map before kept first, before cd and text change
       var tk = opening;
-      if (isSb(t)) {   // an SBGN-ML map: the GraphML of its text, made from the build's (g0, read with the map)
+      if (viaGraphml(t)) {   // an SBGN-ML map (or SBML, layout only): the GraphML of its text, made from the build's (g0, read with the map)
         cd = null; quiet();
         return sbpy().then(function () {
           if (tk !== opening) return;
           if (!g0) throw 'its GraphML did not load';
           var g = sbGraphml(t, g0);
           var sb1 = { base: t, g0: g0 };
-          sbLast = [g, sbJs.write(t, g), sb1];   // a file whose moves could not be written back is said now, not at the first save; kept for src()
+          sbLast = [g, edOf(t).write(t, g), sb1];   // a file whose moves could not be written back is said now, not at the first save; kept for src()
           sb = sb1; begin(g, t, n, h, s, same);
         })
           .catch(function (e) { if (tk === opening) warn('Cannot edit ' + n + ': ' + e); });
@@ -1407,9 +1407,9 @@
       // judged once it is shown (left); the Edit panel on the right stays open, hidden, until a map that can be edited
       if (off && V.win === 'edit' && V.current && !switching && !V.editRight) { V.win = 'list'; V.railMark(); }
     }
-    function graphmlOf(m) {   // a map drawn from its own file, GraphML, CellDesigner or SBGN-ML with an editBase: that file is first in its downloads
+    function graphmlOf(m) {   // a map drawn from its own file, GraphML, CellDesigner, or a file with an editBase (SBGN-ML, SBML): that file is first in its downloads
       var d = m && m.downloads && m.downloads[0];
-      return d && (d.label === 'GraphML' || d.label === 'CellDesigner' || (d.label === 'SBGN-ML' && sbMap(m))) ? d.url : null;
+      return d && (d.label === 'GraphML' || d.label === 'CellDesigner' || sbMap(m)) ? d.url : null;
     }
 
     function save() {
@@ -1649,7 +1649,7 @@
           return Promise.resolve(p.base || null).then(function (b) { if (tk === opening) return start(t, file, null, s, same, b); }).then(function () {
             openTitle = null;
             if (tk !== opening) return;
-            siteRef = r[3] ? baseOf(isCd(r[2]) && cdJs ? cdGraphml(r[2]) : sb && isSb(r[2]) ? sbGraphml(r[2], sb.g0) : r[2], r[3]) : null;
+            siteRef = r[3] ? baseOf(isCd(r[2]) && cdJs ? cdGraphml(r[2]) : sb && viaGraphml(r[2]) ? sbGraphml(r[2], sb.g0) : r[2], r[3]) : null;
             map.title = m.title; document.getElementById('m2-title').textContent = m.title;
           });
         });

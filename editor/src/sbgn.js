@@ -18,15 +18,23 @@
     var NEW_ID = 'viewer-new-map';
     function madeHere(t) { return new RegExp('<map\\s[^>]*id="' + NEW_ID + '"').test(t.slice(0, 3000)); }
     function isSb(t) { return /<([\w.-]+:)?sbgn[\s>]/.test(t.slice(0, 3000)); }
+    // an SBML file with a layout, edited the same way, layout only, through renderers/converter/sbml_edit.js (the map's
+    // entry has layoutOnly); edOf: the converter part for a text, sbml_edit for SBML, sbgn_edit for the rest
+    function isSbml(t) { t = t || ''; return /<sbml[\s>]/.test(t.slice(0, 3000)) && t.indexOf('listOfLayouts') >= 0 && t.slice(0, 200000).indexOf('celldesigner') < 0; }
+    function viaGraphml(t) { return isSb(t) || isSbml(t); }
+    function edOf(t) { return isSbml(t) && window.sbml_edit ? window.sbml_edit : sbJs; }
     function sbMap(m) { return !!(m && !m.shownAs && (m.site || m).editBase); }   // shown from another file (Settings' Source): not this one
-    function sbpy() {   // sbgn_edit.js, then the yEd renderer
-      if (sbp) return sbp;
-      sbp = new Promise(function (res, rej) {
-        if (window.sbgn_edit) return res();
+    function sbScript(name) {
+      return new Promise(function (res, rej) {
+        if (window[name]) return res();
         var s = document.createElement('script');
-        s.src = V.renderers + 'converter/sbgn_edit.js' + V.build; s.onload = res; s.onerror = function () { rej('sbgn_edit not found'); };
+        s.src = V.renderers + 'converter/' + name + '.js' + V.build; s.onload = res; s.onerror = function () { rej(name + ' not found'); };
         document.head.appendChild(s);
-      }).then(yr).then(function () { sbJs = window.sbgn_edit; return sbJs; });
+      });
+    }
+    function sbpy() {   // sbgn_edit.js, sbml_edit.js (which uses it), then the yEd renderer
+      if (sbp) return sbp;
+      sbp = sbScript('sbgn_edit').then(function () { return sbScript('sbml_edit'); }).then(yr).then(function () { sbJs = window.sbgn_edit; return sbJs; });
       sbp.catch(function (e) { sbp = null; warn('The SBGN-ML side did not load: ' + e); });
       return sbp;
     }
@@ -38,7 +46,7 @@
     var sbMemo = [];   // [SBGN-ML text, the GraphML it was made from, its GraphML], the last few: one text gives another GraphML from another base (else the empty base's would be served for the build's)
     function sbGraphml(t, base) {
       for (var i = 0; i < sbMemo.length; i++) if (sbMemo[i][0] === t && sbMemo[i][1] === base) return sbMemo[i][2];
-      var g = sbJs.graphml(t, base);
+      var g = edOf(t).graphml(t, base);
       sbRemember(t, g, base);
       return g;
     }
@@ -46,7 +54,7 @@
     var sbLast = null;   // [GraphML, its SBGN-ML text]: the moves written once per text
     function sbNow() {   // a write that fails is said, and the last text written stands (never the file without its moves silently)
       if (!sbLast || sbLast[0] !== text || sbLast[2] !== sb) {
-        try { sbLast = [text, sbJs.write(sb.base, text), sb]; }
+        try { sbLast = [text, edOf(sb.base).write(sb.base, text), sb]; }
         catch (e) { warn('The moves could not be written into the SBGN-ML file: ' + (e && e.message || e) + '. The last version written is kept.'); return sbLast && sbLast[2] === sb ? sbLast[1] : sb.base; }
       }
       return sbLast[1];
@@ -67,7 +75,7 @@
       var s = src();
       sbK.text = text; sbK.key = text.replace(GEO, '');
       sbK.bad = !(sbLast && sbLast[0] === text && sbLast[2] === sb);
-      if (!sbK.bad) { sbK.kind = sbJs.mapKind(s); sbK.af = sbJs.isAf(s); }
+      if (!sbK.bad) { sbK.kind = edOf(s).mapKind(s); sbK.af = edOf(s).isAf(s); }
     }
     function sbKind(how) {   // how: 'follow' (a change made here), 'back' (undo, redo), none (a paint: reads only)
       if (!sb || !sbJs) return 'empty';
@@ -81,7 +89,7 @@
       else if (how === 'follow' && sbK.g !== sbK.af) {
         var g, key = text.replace(GEO, '');
         if (sbK.failed === key) return sbK.kind;   // a rebuild that failed: neither tried nor said again until the file's content changes (moves alone do not)
-        try { g = sbJs.graphml(src(), text); }
+        try { g = edOf(src()).graphml(src(), text); }
         catch (e) { sbK.failed = key; warn('The map could not be read again after it turned ' + (sbK.af ? 'Activity Flow' : 'Process Description') + ': ' + (e && e.message || e) + '.'); return sbK.kind; }
         text = g; sbRead();
         if (!sbK.bad) sbK.g = sbK.af;

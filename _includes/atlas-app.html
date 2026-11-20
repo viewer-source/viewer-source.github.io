@@ -1388,7 +1388,7 @@ page, so its styles keep the base they were made on).
   // keeps the editor to layout (edit="layout") or the page has no Edit tab
   var EDIT_CAP = '{{ include.edit | default: "full" }}', EDIT_FULL = true;   // EDIT_CAP: the include's edit= (the editor's ceiling)
   try { EDIT_FULL = localStorage.getItem('atlas-edit-level') !== 'layout'; } catch (e) {}
-  function editLevel() { return EDIT_CAP !== 'layout' && EDIT_FULL ? 'full' : 'layout'; }
+  function editLevel() { return EDIT_CAP !== 'layout' && EDIT_FULL && !(current && (current.site || current).layoutOnly) ? 'full' : 'layout'; }   // a map whose entry says layoutOnly (SBML) is edited for its layout alone
   function editRow() {
     var r = document.querySelector('.m2-set-edit');
     if (r) r.style.display = EDIT_CAP !== 'layout' && setting('edit') ? '' : 'none';   // the style has the Edit tab

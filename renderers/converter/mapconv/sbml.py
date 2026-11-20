@@ -27,6 +27,8 @@ MODIFIER = {'0000013': 'catalysis', '0000020': 'inhibition', '0000459': 'stimula
             '0000171': 'trigger', '0000169': 'inhibition',
             'modifier': 'modulation', 'activator': 'stimulation', 'inhibitor': 'inhibition'}
 PROCESS = 24  # px, a process glyph's side where the reaction glyph gives only a point or a large box
+POINT = (60.0, 30.0)  # px, a species given as a point drawn at this size round it
+SINK = 20  # px, the least side of a source or sink, drawn as a circle round its glyph's centre (COPASI gives a point, 1 by 1)
 
 
 def kids(el, name):
@@ -60,9 +62,9 @@ def box(g):
     if b is None:
         return None
     p, d = kid(b, 'position'), kid(b, 'dimensions')
-    if p is None or d is None:
+    if p is None:
         return None
-    f = lambda e, k: float(attr(e, k) or 0)
+    f = lambda e, k: float(attr(e, k) or 0)  # no dimensions: a point (MonaLisa's Petri net places)
     return f(p, 'x'), f(p, 'y'), f(d, 'width'), f(d, 'height')
 
 
@@ -121,6 +123,49 @@ def num(v):
         return None
 
 
+def signs(t):
+    # a transition's inputs read from its function terms where the inputs give no sign: id -> 'positive', 'negative' or
+    # 'dual', by what each is compared with where the result is reached (= 0 or < 1: negative; = 1 or more: positive)
+    out = {}
+    for ft in all_(t, 'functionTerm'):
+        for a in all_(ft, 'apply'):
+            c = [x for x in a if isinstance(x.tag, str)]
+            if len(c) != 3 or etree.QName(c[0]).localname not in ('eq', 'geq', 'gt', 'lt', 'leq'):
+                continue
+            ci = next((x.text.strip() for x in c[1:] if etree.QName(x).localname == 'ci' and x.text), None)
+            cn = next((num(x.text) for x in c[1:] if etree.QName(x).localname == 'cn'), None)
+            if ci is None or cn is None:
+                continue
+            op = etree.QName(c[0]).localname
+            neg = (op == 'eq' and cn == 0) or (op in ('lt', 'leq') and cn <= 1)
+            v = 'negative' if neg else 'positive'
+            out[ci] = v if out.get(ci, v) == v else 'dual'
+    return out
+
+
+INFLUENCE = {'positive': 'stimulation', 'negative': 'inhibition'}  # Activity Flow's influences (sbgnml.HEAD); else modulation
+
+
+def transitions(model, acts, arcs, skipped):
+    # SBML-qual transitions as Activity Flow influences, drawn straight from each input's box to each output's: the sign
+    # from the input, else from the function terms (signs)
+    for t in all_(model, 'transition'):
+        tid = attr(t, 'id')
+        outs = [attr(o, 'qualitativeSpecies') for o in all_(t, 'output')]
+        ins = [(attr(x, 'qualitativeSpecies'), attr(x, 'sign')) for x in all_(t, 'input')]
+        read = signs(t)
+        if not ins:
+            ins = [(i, None) for i in read]
+        k = 0
+        for q, sign in ins:
+            for o in outs:
+                if q not in acts or o not in acts:
+                    skipped.setdefault('influence to or from a species without a box', []).append(tid); continue
+                arcs.append(Arc(id='%s.%d' % (tid, k), source=acts[q], target=acts[o],
+                                head=INFLUENCE.get(sign if sign in INFLUENCE else read.get(q), 'modulation')))
+                k += 1
+
+
 def read(path):
     root = etree.parse(path).getroot()
     model = kid(root, 'model')
@@ -134,6 +179,7 @@ def read(path):
     comp = {e.get('id'): e for e in all_(model, 'compartment')}
     meta = {e.get('metaid'): e for e in model.iter(etree.Element) if e.get('metaid')}
     rx = {e.get('id'): e for e in all_(model, 'reaction')}
+    qsp = {attr(e, 'id'): e for e in all_(model, 'qualitativeSpecies')}  # SBML-qual: activities, drawn as Activity Flow
     refs = {}  # reaction id -> [(role, species, SBO term, the reference's id)]
     for i, r in rx.items():
         for lst, role in (('listOfReactants', 'substrate'), ('listOfProducts', 'product'), ('listOfModifiers', 'modifier')):
@@ -142,10 +188,10 @@ def read(path):
     text = {}  # glyph id -> its text glyph's text
     for t in all_(lay, 'textGlyph'):
         g, o = attr(t, 'graphicalObject'), attr(t, 'originOfText')
-        e = next((d[o] for d in (sp, comp, rx) if o in d), None)
+        e = next((d[o] for d in (sp, comp, rx, qsp) if o in d), None)
         v = attr(t, 'text') or (e.get('name') or e.get('id') if e is not None else None)
         if g and v and g not in text:
-            text[g] = v
+            text[g] = v  # 'unset': COPASI's text for a glyph it has no name for
     nodes, arcs, skipped = {}, [], {}
     for g in all_(lay, 'compartmentGlyph'):
         b, c = box(g), comp.get(attr(g, 'compartment'))
@@ -161,21 +207,54 @@ def read(path):
         hold = [n for n in comps if n.box[0] <= cx <= n.box[0] + n.box[2] and n.box[1] <= cy <= n.box[1] + n.box[3]]
         return min(hold, key=lambda n: n.box[2] * n.box[3]).id if hold else None
 
+    acts = {}  # a qualitative species' id -> its glyph's id
+
+    def activity(g, q, b):  # an SBML-qual species drawn as an Activity Flow activity (as sbgnml.read draws one)
+        i = attr(g, 'id')
+        acts.setdefault(attr(q, 'id'), i)
+        nodes[i] = Node(id=i, kind='Macromolecule', box=b, parent=inside(b),
+                        labels=[(text.get(i) if text.get(i) != 'unset' else None) or attr(q, 'name') or attr(q, 'id')],
+                        data=dict(annotations(q), **{'SBGN class': 'biological activity'}))
+
     for g in all_(lay, 'speciesGlyph'):
         i, ref = attr(g, 'id'), attr(g, 'species')
+        if ref in qsp:  # a qualitative species given a species glyph (Path2Models)
+            if box(g) is None:
+                skipped.setdefault('species glyph without a box', []).append(i)
+            else:
+                activity(g, qsp[ref], box(g))
+            continue
         s = sp.get(ref) if ref else meta.get(attr(g, 'metaidRef'))
         b = box(g)
         if b is None:
             skipped.setdefault('species glyph without a box', []).append(i); continue
-        if s is None:
+        named = ref or attr(g, 'metaidRef')
+        sink = s is None and not named and text.get(i, 'unset') == 'unset'  # no species, no text: a source or sink (COPASI)
+        if s is None and not sink:
             skipped.setdefault('species glyph naming no species of the model (drawn as an unspecified entity)', []).append(i)
         k = SPECIES.get(sbo(s) if s is not None else '', 'UnspecifiedEntity')
         kind, units = (k, []) if isinstance(k, str) else (k[0], [k[1]])
+        if not sink and (b[2] < 1 or b[3] < 1):  # a point: a glyph of the usual size round it
+            b = (b[0] - POINT[0] / 2, b[1] - POINT[1] / 2) + POINT
+        if sink:
+            kind, units = 'EmptySet', []
+            if b[2] != b[3] or b[2] < SINK:  # a circle of its own size round the glyph's centre, never a stretched one
+                d = max(SINK, min(b[2], b[3]))
+                b = (b[0] + b[2] / 2 - d / 2, b[1] + b[3] / 2 - d / 2, d, d)
         nodes[i] = Node(id=i, kind=kind, box=b, units=units, parent=inside(b), species=s.get('id') if s is not None else None,
-                        labels=['' if kind == 'EmptySet' else (text.get(i) or (s.get('name') or s.get('id') if s is not None else ''))],
+                        labels=['' if kind == 'EmptySet' else ((text.get(i) if text.get(i) != 'unset' else None) or (s.get('name') or s.get('id') if s is not None else ''))],
                         data=annotations(s) if s is not None else {})
+    for g in all_(lay, 'generalGlyph'):  # SBML-qual's boxes (CaSQ, bioLQM): one general glyph per qualitative species
+        q = qsp.get(attr(g, 'reference'))
+        if q is not None and box(g) is not None:
+            activity(g, q, box(g))
+    if qsp:
+        gone = [i for i in qsp if i not in acts]
+        if gone:
+            skipped.setdefault('qualitative species without a box', []).extend(gone)
+        transitions(model, acts, arcs, skipped)
     if not any(n.kind != 'Compartment' for n in nodes.values()):
-        raise ValueError('no species glyph in its layout (SBML-qual boxes are general glyphs, not read yet)')
+        raise ValueError('no species glyph in its layout: nothing to draw')
     cx = [n for n in nodes.values() if n.kind == 'Complex']
     for n in nodes.values():  # a glyph lying within a complex's box is its member (MINERVA draws members as species glyphs)
         x, y, w, h = n.box
@@ -183,15 +262,24 @@ def read(path):
                 and y + h <= c.box[1] + c.box[3] and c.box[2] * c.box[3] > w * h]
         if n.kind != 'Compartment' and hold:
             n.parent = min(hold, key=lambda c: c.box[2] * c.box[3]).id
+    drawn_as = {}  # a species' id -> its first glyph
+    for n in nodes.values():
+        if n.species:
+            drawn_as.setdefault(n.species, n.id)
     for g in all_(lay, 'reactionGlyph'):
         i, r = attr(g, 'id'), rx.get(attr(g, 'reaction'))
         pts, b = points(g), box(g)
+        ends = [nodes[t] for t in (attr(e, 'speciesGlyph') for e in all_(g, 'speciesReferenceGlyph')) if t in nodes]
         if pts:  # the reaction's own curve: the process at its middle
             x, y = (pts[0][0] + pts[-1][0]) / 2, (pts[0][1] + pts[-1][1]) / 2
         elif b is not None and (b[2] or b[3]):
             x, y = b[0] + b[2] / 2, b[1] + b[3] / 2
-        elif b is not None:
+        elif b is not None and (b[0] or b[1]):
             x, y = b[0], b[1]
+        elif ends:  # no place in the file (a box of 0 by 0 at 0, 0): the middle of the glyphs it joins
+            x = sum(n.box[0] + n.box[2] / 2 for n in ends) / len(ends)
+            y = sum(n.box[1] + n.box[3] / 2 for n in ends) / len(ends)
+            skipped.setdefault('reaction glyph without a place (drawn amid its species)', []).append(i)
         else:
             skipped.setdefault('reaction glyph without a place (its lines with it)', []).append(i); continue
         side = min(b[2], b[3]) if b is not None and 8 <= min(b[2], b[3]) <= 40 else PROCESS
@@ -199,6 +287,15 @@ def read(path):
         nodes[i] = Node(id=i, kind=kind, box=(x - side / 2, y - side / 2, side, side), labels=[''],
                         data=dict(annotations(r) if r is not None else {}, **({'SBGN class': cls} if cls else {})))
         used = []
+        if not all_(g, 'speciesReferenceGlyph'):  # a reaction glyph with no lines (MonaLisa): its reaction's, drawn straight
+            for k, (role, spc, term, _) in enumerate(refs.get(attr(g, 'reaction'), [])):
+                t = drawn_as.get(spc)
+                if t is None:
+                    skipped.setdefault('line to a species with no glyph', []).append('%s.%d' % (i, k)); continue
+                head = 'production' if role == 'product' else None if role == 'substrate' else \
+                    MODIFIER.get(term) if term in MODIFIER and term != '0000019' else 'modulation'
+                s_, t_ = (i, t) if role == 'product' else (t, i)
+                arcs.append(Arc(id='%s.%d' % (i, k), source=s_, target=t_, head=head))
         for k, rg in enumerate(all_(g, 'speciesReferenceGlyph')):
             t, aid = attr(rg, 'speciesGlyph'), attr(rg, 'id') or '%s.%d' % (i, k)
             if not t:
@@ -247,7 +344,8 @@ def read(path):
         c = colour(st.get('stroke'), defs)
         a.line = c if c not in (None, '#000000') else None
     for g in all_(lay, 'generalGlyph'):
-        skipped.setdefault('general glyph', []).append(attr(g, 'id'))
+        if attr(g, 'id') not in nodes:
+            skipped.setdefault('general glyph', []).append(attr(g, 'id'))
     drawn = {g for g in (attr(e, 'reaction') for e in all_(lay, 'reactionGlyph'))}
     gone = [r for r in rx if r not in drawn]
     if gone:
