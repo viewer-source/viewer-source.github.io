@@ -68,7 +68,7 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#acly-celld
   await page.fill('.m2-cdsv input', 'Y999'); await page.keyboard.press('Escape'); await page.waitForTimeout(400);
   ok('Esc closes it, the site typed not kept', (await now()) === t && !(await page.$('.m2-cdsv')));
   items = await menu(B);
-  ok('the residue\'s own menu: Edit, Change state and Delete, no species items', items.indexOf('Edit') === 0 && items.some(function (x) { return /^Change state/.test(x); }) && items.indexOf('Delete') >= 0 && items.indexOf('Change identity') < 0 && items.indexOf('Add state variable') < 0, items.join('|'));
+  ok('the residue\'s own menu: Edit, Change state and Delete, no species items', items.indexOf('Edit') === 0 && items.some(function (x) { return /^Change state/.test(x); }) && items.some(function (x) { return /^Delete/.test(x); }) && items.indexOf('Change identity') < 0 && items.indexOf('Add state variable') < 0, items.join('|'));
   var items2 = await menu([B[0] - 5, B[1]]);
   ok('over the residue\'s outer half, out of the protein: its own menu, no map items', items2.join('|') === items.join('|'), items2.join('|'));
   await menu(B); await pick('Edit');
@@ -146,7 +146,7 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#acly-celld
   // the unit of information as CellDesigner's Edit Information window: its prefixes with their labels, N, free input
   var U = [R[0] + R[2] / 2, R[1] + 1], unit = function (t) { var m = /<celldesigner:info state="open" prefix="([^"]*)" label="([^"]*)"/.exec(aliasText(t, p)); return m ? m[1] + '|' + m[2] : ''; };
   items = await menu(U);
-  ok('the unit\'s own menu: Edit, Change unit and Delete', items[0] === 'Edit' && items.some(function (x) { return /^Change unit/.test(x); }) && items.indexOf('Delete') >= 0 && items.indexOf('Change identity') < 0, items.join('|'));
+  ok('the unit\'s own menu: Edit, Change unit and Delete', items[0] === 'Edit' && items.some(function (x) { return /^Change unit/.test(x); }) && items.some(function (x) { return /^Delete/.test(x); }) && items.indexOf('Change identity') < 0, items.join('|'));
   await page.click('.m2-cx button:has-text("Change unit")'); await page.waitForTimeout(400);
   var kinds = await page.$$eval('.m2-ci button', function (l) { return l.map(function (x) { return x.textContent; }); });
   ok('Change unit lists CellDesigner\'s 14 prefixed labels', kinds.length === 14 && kinds[0] === 'pc:T' && kinds.indexOf('mt:psac') >= 0 && kinds[13] === 'ct:mRNA', kinds.join('|'));
