@@ -456,7 +456,7 @@ def colour(c, defs):
 
 
 def read(path):
-    root = etree.parse(path).getroot()
+    root = etree.parse(path, etree.XMLParser(remove_comments=True, remove_pis=True)).getroot()  # a comment among a glyph's children is no element
     for e in root.iter(etree.Element):  # libsbgn 0.1 and 0.2 files: the same elements in an older namespace
         if e.tag.startswith('{http://sbgn.org/libsbgn/'):
             e.tag = S + etree.QName(e).localname
