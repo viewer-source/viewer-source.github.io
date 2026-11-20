@@ -1536,7 +1536,7 @@ page, so its styles keep the base they were made on).
     if (e.shiftKey || e.target.closest('input')) return;
     // the editor's entries first (where the Edit tab is), then, under a line, what changes how the list looks
     var items = own && own.listItems ? own.listItems(e) : [], view = [], names = listGroups(), last = items.last || [];
-    var inBin = !!e.target.closest('.m2-binned, .m2-bin');   // Deleted: its own items only (Restore, Delete forever)
+    var inBin = !!e.target.closest('.m2-binned, .m2-bin, .m2-bin-empty');   // Deleted: its own items only (Restore, Delete forever)
     // on one map (not several selected, not in Deleted) its downloads, as the map's own menu has them: among the map's
     // own items (Rename map, Make a copy, Move to...), after them
     var row = e.target.closest('.m2-map'), dm = row && !inBin && byId[row.dataset.id];
@@ -1557,7 +1557,7 @@ page, so its styles keep the base they were made on).
     items = items.concat(view);
     if (items.length && last.length) items.push(null);
     items = items.concat(last);   // the editor's last entries (Delete map, Delete forever) under everything else
-    if (!items.length) return;
+    if (!items.length) { if (inBin) e.preventDefault(); return; }   // an empty Deleted: no menu, not the browser's either
     e.preventDefault();
     listMenu(e.clientX, e.clientY, items);
   });
@@ -2925,7 +2925,7 @@ page, so its styles keep the base they were made on).
   // place before a heading is the end of the group above it
   function dropPlace(y) {
     var sel = moving.any ? '#m2-list .m2-map:not(.m2-binned), #m2-list .m2-empty[data-group], #m2-list .m2-group:not(.m2-link-group):not(.m2-bin)' :
-      moving.map ? '#m2-list .m2-map[data-group="' + CSS.escape(moving.group) + '"]' : '#m2-list .m2-group';
+      moving.map ? '#m2-list .m2-map[data-group="' + CSS.escape(moving.group) + '"]' : '#m2-list .m2-group:not(.m2-bin)';
     var rows = Array.prototype.slice.call(document.querySelectorAll(sel)).filter(function (r) {   // a site group with no map yet takes none of the reader's (as Move to)
       return !moving.any || !r.classList.contains('m2-group') || own.isGroup(r.dataset.group) || maps.some(function (m) { return !m.mine && !m.binned && m.group === r.dataset.group; });
     });
@@ -2944,7 +2944,7 @@ page, so its styles keep the base they were made on).
       else if (d.rows.length) {
         // after the last group: under the list's last row; after the last map of a group: under it
         var last = d.rows[d.rows.length - 1];
-        if (!moving.map) { var all = box.querySelectorAll('.m2-group, .m2-map, .m2-empty'); last = all[all.length - 1]; }
+        if (!moving.map) { var all = box.querySelectorAll('.m2-group:not(.m2-bin), .m2-map:not(.m2-binned), .m2-empty:not(.m2-bin-empty)'); last = all[all.length - 1]; }   // Deleted is no place to drop
         last.classList.add('m2-drop-after');
       }
       // near the top or bottom edge the list scrolls along
@@ -3197,9 +3197,10 @@ page, so its styles keep the base they were made on).
     if (own && own.addPaint) own.addPaint();   // files being added: their rows where they will stand
     if (picked.length) { var inSight = pickRows().map(function (b) { return b.dataset.id; }); picked = picked.filter(function (id) { return inSight.indexOf(id) >= 0; }); }   // a group closed, a search: the selection is what is seen
     // Deleted (own.js: Delete map, Restore, Delete forever): under a line after every group, closed on each page load
-    // (binOpen is never kept), its count in the heading; a date beside a name another deleted map has too
+    // (binOpen is never kept), its count in the heading; a date beside a name another deleted map has too. Shown
+    // whenever the editor is there, empty too (Deleted (0)), so where a deleted map goes is always in sight
     var bin = q ? [] : maps.filter(function (m) { return m.binned; });
-    if (bin.length) {
+    if (own && !q) {
       box.appendChild(el('div', 'm2-bin-line'));
       var bh = el('button', 'm2-group m2-bin' + (binOpen ? '' : ' m2-shut'), 'Deleted (' + bin.length + ')');
       bh.type = 'button'; bh.setAttribute('data-bin', '1');
@@ -3215,6 +3216,7 @@ page, so its styles keep the base they were made on).
         b.addEventListener('click', function () { go(m.id); });
         box.appendChild(b);
       });
+      if (binOpen && !bin.length) { var be = el('div', 'm2-empty m2-bin-empty', 'No deleted maps'); be.setAttribute('data-bin', '1'); box.appendChild(be); }   // its menu is the heading's
     }
     // the links after the maps, in their groups (a group folds as any other); a search matches their names
     var hitLinks = links.filter(function (l) { return !q || matchMap(q, l); });

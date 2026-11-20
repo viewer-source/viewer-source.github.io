@@ -14,6 +14,9 @@
 #   made with the workbench's legend maps (only on the Metabolism Regulation Atlas, not in the demo).
 # maps/<id>.md gives the entry: front matter title, group, order (and topic), its body the text under the map;
 #   deleted: <date> puts the map in the list's Deleted (the viewer's Delete map, its group kept for Restore);
+#   maps/deleted.json does the same for the maps made here with no page of their own (an SBGN-ML twin, an external
+#   example): id -> {"deleted": <date>, "written": <when>}; "deleted": "forever" leaves the map out (the viewer's Delete
+#   map and Delete forever on them; Restore example maps takes the examples' entries out);
 #   example: true marks one of the site's example maps (the list's Hide example maps leaves them out; every other map is
 #   the reader's, however it was made; its SBGN-ML twin below is an example with it); with
 #   newt: true a Newt link opens the map's SBGN-ML on the demo, minerva: <address> a MINERVA link.
@@ -429,6 +432,31 @@ def entry_of(title, group, order, d, **more):
                 **({'shapes': True} if d.get('shapes') else {}), **{k: d[k] for k in ('src', 'edit_path', 'edit_base') if k in d}, **more)
 
 
+BINNED = None
+
+
+def binned(eid, e):
+    # maps/deleted.json's word on a map with no page of its own (every such entry passes here, marked pageless): its
+    # entry in Deleted (deleted, written), or None when deleted forever
+    global BINNED
+    if BINNED is None:
+        try:
+            BINNED = json.load(open(os.path.join(ROOT, 'maps', 'deleted.json'), encoding='utf-8'))
+        except (OSError, ValueError):
+            BINNED = {}
+    r = BINNED.get(eid) if isinstance(BINNED, dict) else None
+    e = dict(e, pageless=True)   # the viewer keeps its Deleted state in maps/deleted.json, not in a page
+    if not isinstance(r, dict):
+        return e
+    if r.get('deleted') == 'forever':
+        return None
+    if r.get('written'):
+        e['written'] = r['written']
+    if r.get('deleted'):   # deleted on its own: its own date, so it stays in Deleted when its GraphML map is restored
+        e['deleted'] = r['deleted']
+    return e
+
+
 def write_entry(eid, e, body):
     with open(os.path.join(ROOT, '_maps', eid + '.md'), 'w', encoding='utf-8') as f:
         f.write('---\n' + ''.join('%s: %s\n' % (k, json.dumps(v, ensure_ascii=False)) for k, v in e.items()) + '---\n' + body + '\n')
@@ -517,11 +545,14 @@ def main():
         twinned = ext == '.graphml' and (fm['group'] == 'GraphML' or meta.get('twin') == 'true')   # twin: true keeps it out of the group too
         if twinned and sid in sids:   # foo and foo-graphml: one SBGN-ML id, one edited copy
             print('warning: %s left out of the group SBGN-ML: %s is taken' % (mid, sid))
+        elif twinned and binned(sid, {}) is None:   # its twin deleted forever: not written again
+            sids.add(sid)
         elif twinned:
             sids.add(sid)
             own, found = sbgn_map(src, mid, fm, body)
-            entries += [own] if own else []
-            search += found
+            if own:
+                entries.append((own[0], binned(own[0], own[1]), own[2]))
+                search += found
         for eid, e, text in entries:
             write_entry(eid, e, text)
         print('%s: %s, %d clickable' % (mid, 'yEd' if ext == '.graphml' else 'CellDesigner', len(nodes)))
@@ -544,6 +575,9 @@ def main():
         if os.path.basename(f)[:-5] not in sids:
             print('warning: %s belongs to no map of the group GraphML, not drawn' % os.path.relpath(f, ROOT))
     for sid, e, found, body in examples() + examples('af') + optional('sbml_group'):
+        e = binned(sid, e)
+        if e is None:
+            continue
         search += found
         write_entry(sid, e, body)
         print('%s: %s' % (sid, e['group']))

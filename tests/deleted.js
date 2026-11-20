@@ -89,7 +89,7 @@ function viewerHunks() {
   var inFlight = false, refused = 0, refuseNext = false;   // refuseNext: the next write refused once, as when another tab wrote first
   await page.route('**/index.json*', async function (route) {
     var res = await route.fetch(), list = JSON.parse(await res.text());
-    list.forEach(function (m) { m.deleted = built[m.id] || ''; });   // the site's own deletions left out, so the test starts the same
+    list.forEach(function (m) { m.deleted = built[m.id] || ''; if (/^maps\/.+\//.test(m.editPath || '')) m.pageless = true; });   // as build.py marks the maps it makes with no page   // the site's own deletions left out, so the test starts the same
     list.forEach(function (m) { var t = files['maps/' + m.id + '.md'], w = t && t.match(/^written: "(.*)"$/m); if (t != null) m.written = w ? w[1] : ''; });   // as build.py: the page's written: (the viewer waits for a build that new)
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(list) });
   });
@@ -129,11 +129,11 @@ function viewerHunks() {
   ok('1. its name free: the new map is Unnamed map', (await title(id1b)) === 'Unnamed map', await title(id1b));
   await openBin();
   await menu('#m2-list .m2-binned[data-id="' + id1 + '"]', 'Restore');
-  ok('1. restored where its group has the name in its format by then: Unnamed map (1), as Finder', (await title(id1)) === 'Unnamed map (1)' && !(await head()), (await title(id1)) + ' | ' + (await head()));
+  ok('1. restored where its group has the name in its format by then: Unnamed map (1), as Finder; Deleted (0) stays', (await title(id1)) === 'Unnamed map (1)' && /^Deleted \(0\) /.test(await head()), (await title(id1)) + ' | ' + (await head()));
   await menu('#m2-list .m2-map[data-id="' + id1 + '"]', 'Delete map');
   await openBin();
   await menu('#m2-list .m2-binned[data-id="' + id1 + '"]', 'Delete forever');
-  ok('1. deleted forever: its record gone, Deleted gone', !(await recs()).some(function (r) { return r.id === id1; }) && !(await head()), await head());
+  ok('1. deleted forever: its record gone, Deleted (0) stays', !(await recs()).some(function (r) { return r.id === id1; }) && /^Deleted \(0\) /.test(await head()), await head());
 
   // 2. a site map with a token
   await page.evaluate(function () { localStorage.setItem('atlas-edit-token', 'test-token'); });
@@ -179,7 +179,7 @@ function viewerHunks() {
   built['glycolysis-graphml'] = built['glycolysis-sbgn'] = '2026-11-19T10:00:00Z';
   await page.evaluate(function () { localStorage.removeItem('atlas-edit-token'); });
   await load('f001-glycolysis'); await list();
-  ok('3. no token: a deleted site map not listed, no Deleted', (await ids()).indexOf('glycolysis-graphml') < 0 && (await ids()).indexOf('glycolysis-sbgn') < 0 && !(await head()), await head());
+  ok('3. no token: a deleted site map not listed, Deleted (0)', (await ids()).indexOf('glycolysis-graphml') < 0 && (await ids()).indexOf('glycolysis-sbgn') < 0 && /^Deleted \(0\) /.test(await head()), await head());
   delete built['glycolysis-graphml']; delete built['glycolysis-sbgn'];
 
   // 3b. the twin restored through its GraphML map

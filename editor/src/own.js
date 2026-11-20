@@ -232,7 +232,7 @@
     }
     // the right-click menu over the list, where the Edit tab is: on a map Rename map, Make a copy, Move to, or on a group
     // of theirs Rename group, first; then New SBGN-ML map, New CellDesigner map, Add map from file (into the group
-    // clicked, if it is the reader's or with a token the site's, else at the top), Add group; Delete map or Remove group
+    // clicked, if it is the reader's or with a token the site's, else at the top), Add group; Delete map, or Remove group and Delete group
     // last of all (items.last). The viewer asks for them (listItems) and shows the menu, its own entries (Open all groups, ...) between
     var addTo = '';
     function listItems(e) {
@@ -246,7 +246,7 @@
       // Deleted (as a mailbox's or the Mac's Bin): on a map in it Restore, then Delete forever last; on its heading
       // Delete all forever. Nothing else there (a deleted map is not renamed, copied, moved or edited)
       if (m && m.binned) { var bi = [['Restore', function () { restoreU(m); }]]; bi.last = [['Delete forever', function () { erase([m]); }]]; return bi; }
-      if (t && t.dataset.bin) { var bh = []; bh.last = [['Delete all forever', function () { erase(V.maps.filter(function (x) { return x.binned; })); }]]; return bh; }
+      if (t && t.dataset.bin) { var bh = [], gone = V.maps.filter(function (x) { return x.binned; }); if (gone.length) bh.last = [['Delete all forever', function () { erase(gone); }]]; return bh; }   // an empty Deleted: nothing to delete
       // on a map: Rename map, Make a copy, Move to, at the top; Delete map last of all, under a line of its own, away
       // from the others (as the map's menu: not while it is edited)
       var mapItems = [], x = e.clientX, y = e.clientY;
@@ -255,7 +255,7 @@
       var sel = V.picked();
       if (m && sel.indexOf(m.id) < 0) V.pickSet([]);   // a map outside the selection: the selection is that map
       else if (m && sel.length > 1) {
-        var ms = sel.map(function (id) { return V.byId[id]; }).filter(Boolean), mv = ms.filter(movable), del = ms.filter(function (x) { return canRename(x, gh) && !(V.grid.classList.contains('m2-editing') && V.chosen && V.chosen.id === x.id); });
+        var ms = sel.map(function (id) { return V.byId[id]; }).filter(Boolean), mv = ms.filter(movable), del = ms.filter(function (x) { return canDelete(x, gh) && !(V.grid.classList.contains('m2-editing') && V.chosen && V.chosen.id === x.id); });
         if (mv.length && V.listGroups().length) mapItems.push(['Move ' + mv.length + ' maps to...', function () { moveMenuMany(mv, x, y); }]);
         items = mapItems.length ? mapItems.concat([null], items) : items;
         if (del.length) items.last = [['Delete ' + del.length + ' maps', function () { binU(del, true); }]];
@@ -271,7 +271,9 @@
       if (onGroup || siteG) items = [['Rename group', function () { renameGroup(siteG || g); }], null].concat(items);
       // items.last: put by the viewer under its own entries too, so Delete map is the menu's last line
       if (onGroup) items.last = [['Remove group', function () { removeU(g); }]];   // a removal: last, as Delete map
-      if (m && !editing && canRename(m, gh)) items.last = [['Delete map', function () { binU([m]); }]];   // one on the site already: with a token, its page there too
+      var dg = t && !m && tg && !t.dataset.bin ? groupMaps(tg, gh) : null;   // Delete group: its maps into Deleted, each remembering its group
+      if (dg && (dg.length || (onGroup && !inGroup(tg).length))) (items.last = items.last || []).push(['Delete group', function () { deleteGroupU(tg, dg); }]);
+      if (m && !editing && canDelete(m, gh)) items.last = [['Delete map', function () { binU([m]); }]];   // one on the site already: with a token, its page there too
       return items;
     }
     // a reader's own map moved to another group, theirs or the site's ('': no group, at the top of the list): by Move to
@@ -474,7 +476,7 @@
       var hid = siteHidden(), gh = !!(repo() && token()), pend = binPending(), n0 = Object.keys(pend).length, binned = [];
       list = list.filter(function (m) {
         if (hiddenGone[m.id]) return false;   // deleted forever here, the build not run since
-        var tb = twinBase(m), d = binState(tb ? ids[tb + '-graphml'] || ids[tb] || parentOf(m) : m, pend);   // a twin as its GraphML map, as this list has it
+        var tb = twinBase(m), tp = tb && (ids[tb + '-graphml'] || ids[tb]), d = tp && m.deleted && m.deleted === tp.deleted ? binState(tp, pend) : (tp && binState(tp, pend)) || binState(m, pend);   // a twin in Deleted with its GraphML map (the build gives it the same date), or on its own
         if (!d && (!gh || hid.indexOf(m.id) < 0)) return true;   // an older version's hiding: without a token no longer hides (a map is kept or deleted), with one it is in Deleted until moved there (binMigrate)
         if (gh) binned.push(Object.assign({}, m, { binned: d ? Date.parse(d) || Date.now() : Date.now() }));   // deleted: seen in Deleted with a token, else not at all
         return false;
@@ -512,7 +514,7 @@
       examplesHere(ids, gh);
       if (!gh) return;
       examplesToSite().then(function (all) {
-        examplesHere(all.filter(function (id) { return ids.indexOf(id) < 0; }), gh);   // deleted forever before: shown once the build has them
+        examplesHere(all.filter(function (id) { return ids.indexOf(id) < 0; }), gh);   // deleted forever before (or with no page of their own): shown once the build has them
       }).catch(function (e) {
         binPendingSet(was.pend); hiddenSet(was.hidden);
         ids.forEach(function (id) {
@@ -587,10 +589,17 @@
                 });
                 blobs.forEach(function (f) { put(f.path.slice(5), f.sha); });
                 ids.forEach(function (id) { if (shaOf[twin(id)] && taken.indexOf(id) < 0) put(twin(id), null); });   // a renewed example's edited twin: written again by the build
-                return post('/git/trees', { base_tree: c.tree.sha, tree: tree })
+                // maps with no page of their own deleted (maps/deleted.json): the examples' twins and the external examples back
+                var back = [], binRead = shaOf['deleted.json'] ? api('/git/blobs/' + shaOf['deleted.json']).then(ghJson) : Promise.resolve(null);
+                return binRead.then(function (b) {
+                  if (!b) return;
+                  var o = binFileRead(b), twins = ids.map(twinOf);   // a taken example comes back too, at its own id, with its twin
+                  Object.keys(o).forEach(function (id) { if (/^external-/.test(id) || twins.indexOf(id) >= 0) { delete o[id]; back.push(id); } });
+                  if (back.length) tree.push({ path: BIN_FILE, mode: '100644', type: 'blob', content: binFileText(o) });
+                }).then(function () { return post('/git/trees', { base_tree: c.tree.sha, tree: tree }); })
                   .then(function (t) { return post('/git/commits', { message: 'Example maps restored in the viewer' + (taken.length ? '; kept as the reader\'s: ' + taken.join(', ') : ''), tree: t.sha, parents: [ref.object.sha] }); })
                   .then(function (n) { return post('/git/refs/heads/main', { sha: n.sha }, 'PATCH'); })
-                  .then(function () { ghDir = null; return ids; });
+                  .then(function () { ghDir = null; return ids.concat(back); });
               });
             });
           });
@@ -651,6 +660,7 @@
       var o = {}; Object.keys(renamed).forEach(function (id) { if (renamed[id].local) o[id] = { was: renamed[id].was, to: renamed[id].to }; });
       try { if (Object.keys(o).length) localStorage.setItem(NAMED_KEY, JSON.stringify(o)); else localStorage.removeItem(NAMED_KEY); } catch (e) {}
     }
+    function canDelete(m, gh) { return !!m && !m.shownAs && (m.mine ? !!mine[m.id] && (!mine[m.id].site || !!gh) : !!gh); }   // every map in sight, with a token the site's too (one with no page of its own: maps/deleted.json)
     function canRename(m, gh) { return !!m && !m.shownAs && (m.mine ? !!mine[m.id] && (!mine[m.id].site || !!gh) : !!gh && !/^maps\/sbgn-ml\//.test(m.editPath || '')); }   // one on its way to the site: in its page there too
     function siteNamed(list) {   // the names given here over the site's list (copies: the site's own entries untouched)
       return list.map(function (m) {
@@ -951,7 +961,7 @@
     }
     // ---------- Delete map, Deleted, Restore, Delete forever ----------
     // (as a mailbox's or the Mac's Bin). Delete map, the last line of the list's
-    // menu on a reader's map or, with a token, on a site map with a page of its own, puts the map in Deleted: a group of
+    // menu on a reader's map or, with a token, on any site map (one with no page of its own: maps/deleted.json), puts the map in Deleted: a group of
     // its own at the end of the list, closed on every page load, seen only by a reader with a token (site maps) or in
     // their own browser (their maps). A deleted map keeps its name and group, gives up its name (a new map may take it:
     // nameTaken leaves Deleted out) and is not edited. Restore puts it back into its group, as "<name> (1)" when its group
@@ -1008,6 +1018,7 @@
         });
     }
     function siteBin(id, on, topic) {   // a site map into Deleted (on) or out of it (its new name, when its own was taken)
+      if (pageless((V.siteList || []).filter(function (x) { return x.id === id; })[0])) return pagelessBin(id, on);   // its line in maps/deleted.json
       var pend = binPending(), was = pend[id], date = new Date().toISOString().slice(0, 19) + 'Z';
       pend[id] = [on ? date : '', Date.now()]; binPendingSet(pend);
       return siteFront(id, function (f) {
@@ -1021,6 +1032,89 @@
         V.refreshMine(); throw e;
       });
     }
+    // A map the build makes with no page of its own (an SBGN-ML twin, an external example, an SBML group's map: its entry
+    // says pageless) keeps its Deleted state in maps/deleted.json (id -> { deleted: <date> or "forever", written: <when> }),
+    // which build.py reads; a restored map's line goes. Written one write at a time, as the pages, read again when GitHub
+    // refuses it; the maps asked for in one go (Delete group, its undo) in one write
+    var BIN_FILE = 'maps/deleted.json';
+    function pageless(m) { return !!m && !m.mine && !!m.pageless; }
+    function binFileRead(d) { try { var o = d && d.content ? JSON.parse(textOf(d.content)) : {}; return o && typeof o === 'object' && !Array.isArray(o) ? o : {}; } catch (e) { return {}; } }
+    function binFileText(o) { return JSON.stringify(o, null, 1) + '\n'; }
+    function binFileGet(ref) { return api('/contents/' + BIN_FILE + '?ref=' + (ref || 'main')).then(function (r) { return r.status === 404 ? {} : ghJson(r); }); }
+    function binFileWrite(edit, message, tries) {
+      return binFileGet().then(function (d) {
+        var o = binFileRead(d); edit(o);
+        return api('/contents/' + BIN_FILE, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: message, content: b64(binFileText(o)), sha: d.sha || undefined, branch: 'main' }) });
+      }).then(function (r) {
+        if ((r.status === 409 || r.status === 422) && tries < 3) return new Promise(function (ok) { setTimeout(ok, 500 * (tries + 1)); }).then(function () { return binFileWrite(edit, message, tries + 1); });
+        if (!r.ok) throw new Error('GitHub ' + r.status);
+      });
+    }
+    var pbWait = {};   // 'on' and 'off': the maps asked for in this turn of the page, written together
+    function pagelessBin(id, on) {
+      var k = on ? 'on' : 'off', w = pbWait[k], pend = binPending();
+      if (!w) {
+        w = pbWait[k] = { ids: [], was: {}, date: new Date().toISOString().slice(0, 19) + 'Z' };
+        w.p = new Promise(function (ok) { setTimeout(ok, 0); }).then(function () { delete pbWait[k]; return pagelessWrite(w, on); });
+      }
+      if (w.ids.indexOf(id) < 0) { w.ids.push(id); w.was[id] = pend[id]; }
+      pend[id] = [on ? w.date : '', Date.now()]; binPendingSet(pend);   // shown at once; the build's word once it has the write
+      V.pageSent(id, '');
+      return w.p;
+    }
+    function pagelessWrite(w, on) {
+      var ids = w.ids, p = siteQ.then(function () {
+        var at = new Date().toISOString();   // written: the viewer waits for a build that new
+        return binFileWrite(function (o) { ids.forEach(function (id) { if (on) o[id] = { deleted: w.date, written: at }; else delete o[id]; }); },
+          (on ? 'Deleted in the viewer: ' : 'Restored in the viewer: ') + ids.join(', '), 0).then(function () { return at; });
+      }).then(function (at) { ids.forEach(function (id) { V.pageSent(id, on ? at : null); }); return at; }, function (e) {   // restored: no line left to wait for
+        ids.forEach(function (id) { V.pageSent(id, null); });
+        var q = binPending(); ids.forEach(function (id) { if (w.was[id] === undefined) delete q[id]; else q[id] = w.was[id]; }); binPendingSet(q);
+        V.refreshMine(); throw e;
+      });
+      siteQ = Promise.race([p.catch(function () {}), new Promise(function (ok) { setTimeout(ok, 30000); })]);
+      return p;
+    }
+    // Delete group (any group in sight): its maps into Deleted, as Delete map; Deleted shows maps only, and each keeps its
+    // group, so Restore puts it back there. A group of the reader's goes from the list once its maps are in Deleted (its
+    // place kept in atlas-groups-gone) and comes back with the first map restored into it, or with an undo; a site group
+    // is its maps' and comes back with them. A map being edited stays, and with it the group. While searching, the
+    // group's maps in sight only (the selection is what is seen)
+    var GONE_KEY = 'atlas-groups-gone';
+    function goneRead() { try { var o = JSON.parse(localStorage.getItem(GONE_KEY) || '{}'); return o && typeof o === 'object' && !Array.isArray(o) ? o : {}; } catch (e) { return {}; } }
+    function goneSet(name, at) { var o = goneRead(); if (at === null) delete o[name]; else o[name] = at; try { if (Object.keys(o).length) localStorage.setItem(GONE_KEY, JSON.stringify(o)); else localStorage.removeItem(GONE_KEY); } catch (e) {} }
+    function goneBack(name) {   // a group of the reader's deleted with its maps: back in its place (Restore of one of them)
+      var o = goneRead();
+      if (!name || !(name in o)) return;
+      goneSet(name, null);
+      if (mineGroups().indexOf(name) < 0) groupBack(name, o[name]);
+    }
+    function groupGo(name) {   // a group of the reader's out of the list, its place kept
+      var at = mineGroups().indexOf(name);
+      if (at < 0) return;
+      goneSet(name, at); mineGroupsSet(mineGroups().filter(function (g) { return g !== name; }));
+      if (V.closed[name]) { delete V.closed[name]; V.saveClosed(); }
+      V.refreshMine();
+    }
+    function inGroup(name) { return V.maps.filter(function (m) { return !m.binned && (m.group || '') === name; }); }
+    function groupMaps(name, gh) {
+      var editing = V.grid.classList.contains('m2-editing') && V.chosen, q = (document.getElementById('m2-search') || {}).value;
+      var seen = q ? Array.prototype.map.call(document.querySelectorAll('#m2-list .m2-map:not(.m2-binned)'), function (b) { return b.dataset.id; }) : null;
+      return inGroup(name).filter(function (m) { return canDelete(m, gh) && !(editing && V.chosen.id === m.id) && (!seen || seen.indexOf(m.id) >= 0); });
+    }
+    function deleteGroupU(name, ms) {
+      var own = ownGroup(name), at = mineGroups().indexOf(name), shut = !!V.closed[name], ks = ms.map(listKey);
+      var empty = function () { return own && !inGroup(name).length; };
+      var go = function () { return Promise.resolve(ms.length ? binMany(ms) : null).then(function () { if (empty()) { if (ms.length) groupGo(name); else removeGroup(name); } }); };   // the group goes once nothing is left in it (a map refused stays, with its group)
+      var fwd = go();
+      listDid(function () {
+        return fwd.then(function () {
+          if (own && mineGroups().indexOf(name) < 0) { goneSet(name, null); groupBack(name, at); if (shut) { V.closed[name] = true; V.saveClosed(); } }
+          return restoreKeys(ks);
+        });
+      }, function () { fwd = Promise.resolve(ks.length ? binKeys(ks) : null).then(function () { if (empty()) { if (ks.length) groupGo(name); else removeGroup(name); } }); return fwd; });
+      return fwd;
+    }
     // The Delete key (on a Mac the delete key, Backspace) on the map shown, outside edit mode, with the list in sight: Delete map,
     // as the list's menu offers it; the next map in the list shown first (the one before at the list's end), as a
     // mailbox goes on to the next message. Not in a field, a menu, a name being given, or on a map in Deleted
@@ -1030,11 +1124,11 @@
       if (e.target.closest && e.target.closest('input, select, textarea, [contenteditable]')) return;
       var list = document.getElementById('m2-list'), m = V.chosen && V.byId[V.chosen.id], sel = V.picked();
       if ((sel.length > 1 || (sel.length === 1 && (!m || sel[0] !== m.id))) && list && list.offsetParent) {   // maps selected in the list (not the one shown alone): those that can be deleted
-        var ms = sel.map(function (id) { return V.byId[id]; }).filter(function (x) { return x && !x.binned && canRename(x, !!(repo() && token())); });
+        var ms = sel.map(function (id) { return V.byId[id]; }).filter(function (x) { return x && !x.binned && canDelete(x, !!(repo() && token())); });
         if (ms.length) { e.preventDefault(); binU(ms, true); }
         return;
       }
-      if (!list || !list.offsetParent || !m || m.binned || !canRename(m, !!(repo() && token()))) return;
+      if (!list || !list.offsetParent || !m || m.binned || !canDelete(m, !!(repo() && token()))) return;
       e.preventDefault();
       var items = Array.prototype.slice.call(list.querySelectorAll('.m2-map:not(.m2-binned)')), i = items.findIndex(function (b) { return b.dataset.id === m.id; });
       var next = i < 0 ? null : items[i + 1] || items[i - 1];
@@ -1057,10 +1151,13 @@
       var lastAt = Math.max.apply(null, ids.map(function (id) { return rows.indexOf(id); })), next = rows.slice(lastAt + 1).concat(rows.slice(0, lastAt).reverse()).filter(function (id) { return ids.indexOf(id) < 0; })[0];
       V.pickSet([]);
       if (next && V.chosen && ids.indexOf(V.chosen.id) >= 0) V.go(next);
-      return ms.reduce(function (p, m) { return p.then(function () { return bin(m); }); }, Promise.resolve());
+      ms = ms.filter(function (m) { var b = twinBase(m); return !b || !ms.some(function (x) { return x.id === b + '-graphml' || x.id === b; }); });   // a twin goes with its GraphML map
+      var together = Promise.all(ms.filter(pageless).map(bin));   // the build's own maps in one write
+      return ms.filter(function (m) { return !pageless(m); }).reduce(function (p, m) { return p.then(function () { return bin(m); }); }, together);
     }
     function restore(m) {   // back into its group under its own name, or "<name> (1)" where the group has it in the same format
       m = parentOf(m);
+      goneBack(m.mine ? (mine[m.id] || {}).group : V.movedOf(m.id) || m.group);   // its group of the reader's, deleted with it (the record keeps it, the list shows none while it is gone): back first, so the name is looked up there
       var name = mapName(m), to = nameTaken(name, m.group, fmtOf(m), m.id, m.tab) ? freeTitle(name, m.group, fmtOf(m), null, m.id, m.tab) : null;
       var say = function (e) { alert((m.mine ? m.title : m.topic) + ' was not restored: ' + (e && e.message ? e.message : e)); };
       if (m.mine) {
@@ -1071,6 +1168,7 @@
         var sent = r.site && repo() && token() ? siteBin(r.site, false, to).catch(say) : null;
       } else {
         var before = renamed[m.id];
+        if (pageless(m)) to = null;   // no page to hold another name: back under its own
         if (to) renamed[m.id] = { was: before ? before.was : name, to: to };
         sent = siteBin(m.id, false, to).catch(function (e) { if (before) renamed[m.id] = before; else delete renamed[m.id]; say(e); });
       }
@@ -1078,14 +1176,16 @@
       return Promise.resolve(sent);   // the list's undo waits for it
     }
     // the group SBGN-ML's maps (build.py sbgn_map: <name>-sbgn, edited at maps/sbgn-ml/<name>-sbgn.sbgn) are their GraphML
-    // map's twins, with no page of their own: in Deleted with it, restored and deleted forever with it
+    // map's twins, with no page of their own: in Deleted with it, restored and deleted forever with it; a twin deleted on
+    // its own goes alone (maps/deleted.json)
     function twinOf(id) { return id.replace(/-graphml$/, '') + '-sbgn'; }   // a GraphML map's SBGN-ML twin (build.py sbgn_map)
     function twinBase(m) { return m && !m.mine && /^maps\/sbgn-ml\/[^/]+-sbgn\.sbgn$/.test(m.editPath || '') ? m.id.replace(/-sbgn$/, '') : null; }
     function parentOf(m) {
       var b = twinBase(m), l = V.siteList || [];
       if (!b) return m;
       var p = l.filter(function (x) { return x.id === b + '-graphml'; })[0] || l.filter(function (x) { return x.id === b; })[0];
-      return p ? Object.assign({}, V.byId[p.id] || siteNamed([p])[0], { binned: m.binned }) : m;   // as the list has it: moved, renamed
+      var pm = p && V.byId[p.id];
+      return pm && pm.binned ? Object.assign({}, pm, { binned: m.binned }) : m;   // in Deleted with its GraphML map: restored and deleted forever with it; deleted alone: alone
     }
     // Original's record (create.js colsPick) kept with the map on GitHub too, while the page is connected and the map is
     // there: maps/colours/<its GitHub id>.json in the data repository (the site's build reads no such folder; written with
@@ -1111,8 +1211,9 @@
       var gid = origGhId();
       return gid ? gh(repo() + '/contents/maps/colours/' + encodeURIComponent(gid) + '.json?ref=main', { headers: { Accept: 'application/vnd.github.raw' } }).then(function (q) { return q.ok ? q.json() : null; }).catch(function () { return null; }) : Promise.resolve(null);
     }
-    function siteErase(ids) {   // every file of these site maps (maps/<id>.*, maps/extra/<id>/, maps/colours/<id>.json) in one commit on main, three tries
-      var tries = 0, post = ghPost;
+    function siteErase(ids, gone) {   // every file of these site maps (maps/<id>.*, maps/extra/<id>/, maps/colours/<id>.json) in one commit on main, three tries;
+      // gone: those with no page of their own ({ id, path: its edit_path }), their edited copies out and maps/deleted.json saying forever
+      var tries = 0, post = ghPost; gone = gone || [];
       var go = function () {
         return api('/contents/maps?ref=main').then(ghJson).then(function (d) {
           var paths = d.filter(function (f) { return f.type === 'file' && ids.indexOf(f.name.replace(/\.[^.]+$/, '')) >= 0; }).map(function (f) { return f.path; });
@@ -1127,10 +1228,29 @@
             return Promise.all(x.filter(function (f) { return f.type === 'dir' && ids.indexOf(f.name) >= 0; }).map(function (f) { return api('/contents/' + f.path + '?ref=main').then(ghJson); }));
           }).then(function (ds) { ds.forEach(function (fs) { fs.forEach(function (f) { if (f.type === 'file') paths.push(f.path); }); }); return paths; });
         }).then(function (paths) {
-          if (!paths.length) return;
+          var tree = paths.map(function (p) { return { path: p, mode: '100644', type: 'blob', sha: null }; });
+          if (!gone.length) return tree;
+          var dirs = {}; gone.forEach(function (g) { var d = g.path.replace(/\/[^/]*$/, ''); (dirs[d] = dirs[d] || []).push(g.path); });
+          return Promise.all(Object.keys(dirs).map(function (d) {   // an edited copy only where there is one
+            return api('/contents/' + d + '?ref=main').then(function (r) { return r.ok ? r.json() : []; }).then(function (fs) {
+              (Array.isArray(fs) ? fs : []).forEach(function (f) { if (f.type === 'file' && dirs[d].indexOf(f.path) >= 0) tree.push({ path: f.path, mode: '100644', type: 'blob', sha: null }); });
+            });
+          })).then(function () { return tree; });
+        }).then(function (tree) {
           return api('/git/ref/heads/main').then(ghJson).then(function (ref) {
+            // maps/deleted.json as this commit has it (a write meanwhile refuses the commit, which is then made again):
+            // forever for the build's own maps, no line left for a map erased with a page (nor for its twin)
+            return binFileGet(ref.object.sha).then(function (d) {
+              var o = binFileRead(d), was = binFileText(o), at = new Date().toISOString();
+              ids.forEach(function (id) { delete o[id]; if (/-graphml$/.test(id)) delete o[twinOf(id)]; });
+              gone.forEach(function (g) { o[g.id] = { deleted: 'forever', written: at }; });
+              if (binFileText(o) !== was) tree.push({ path: BIN_FILE, mode: '100644', type: 'blob', content: binFileText(o) });
+              return ref;
+            });
+          }).then(function (ref) {
+            if (!tree.length) return;
             return api('/git/commits/' + ref.object.sha).then(ghJson).then(function (c) {
-              return post('/git/trees', { base_tree: c.tree.sha, tree: paths.map(function (p) { return { path: p, mode: '100644', type: 'blob', sha: null }; }) });
+              return post('/git/trees', { base_tree: c.tree.sha, tree: tree });
             }).then(function (t) { return post('/git/commits', { message: 'Deleted forever in the viewer: ' + ids.join(', '), tree: t.sha, parents: [ref.object.sha] }); })
               .then(function (c) { return post('/git/refs/heads/main', { sha: c.sha }, 'PATCH'); });
           });
@@ -1188,7 +1308,7 @@
       ms = ms.filter(Boolean).map(parentOf).filter(function (m, i, a) { return a.findIndex(function (x) { return x.id === m.id; }) === i; }); if (!ms.length) return;
       var n = ms.length, what = n === 1 ? (ms[0].mine ? ms[0].title : ms[0].topic) : n + ' maps';
       if (!confirm('Delete ' + what + ' forever? This cannot be undone.')) return;
-      var site = [], gh = !!(repo() && token());
+      var site = [], gone = [], gh = !!(repo() && token());
       ms.forEach(function (m) {
         if (m.mine) {
           var r = mine[m.id]; if (!r) return;
@@ -1197,13 +1317,13 @@
           delete mine[m.id]; delete mineURLs[m.id]; mineFlag();
           V.draftDo('readwrite', function (st) { return st.delete(m.id); }, 'mine').catch(function () {});
           folderErase(m.id);
-        } else site.push(m.id);
+        } else { site.push(m.id); if (pageless(m)) gone.push({ id: m.id, path: m.editPath }); }
       });
       if (!site.length) return V.refreshMine();
       site.forEach(function (id) { hiddenGone[id] = 1; binClear(id); delete renamed[id]; draftDrop(id); });
       namedSave();
       V.refreshMine();
-      siteErase(site).then(function () {
+      siteErase(site, gone).then(function () {
         hiddenSet(siteHidden().filter(function (id) { return site.indexOf(id) < 0; }));
       }, function (e) {
         site.forEach(function (id) { delete hiddenGone[id]; });
@@ -1216,11 +1336,11 @@
       var hid = siteHidden();
       if (!hid.length || !(repo() && token()) || !V.siteList) return;
       var ids = {}; V.siteList.forEach(function (m) { ids[m.id] = m; });
-      var left = [];   // not moved (GitHub refused): kept hidden, tried again next time; a map with no page of its own comes back to the list
+      var left = [];   // not moved (GitHub refused): kept hidden, tried again next time
       return hid.reduce(function (q, id) {
         return q.then(function () {
           var m = ids[id];
-          if (!m || m.deleted || !canRename(m, true)) return;
+          if (!m || m.deleted || !canDelete(m, true)) return;
           return siteBin(id, true).catch(function () { left.push(id); });
         });
       }, Promise.resolve()).then(function () {
@@ -1257,7 +1377,10 @@
       listDid(function () { return fwd.then(function () { return restoreKeys(ks); }); }, function () { return binKeys(ks); });
       return fwd;
     }
-    function restoreU(m) { var ks = [listKey(parentOf(m))], fwd = restore(m); listDid(function () { return fwd.then(function () { return binKeys(ks); }); }, function () { return restoreKeys(ks); }); }   // a twin by its GraphML map, as restore
+    function restoreU(m) {   // a twin by its GraphML map, as restore; a group of the reader's it brought back goes again with its undo
+      var ks = [listKey(parentOf(m))], had = mineGroups().slice(), fwd = restore(m), made = mineGroups().filter(function (g) { return had.indexOf(g) < 0; })[0];
+      listDid(function () { return fwd.then(function () { return binKeys(ks); }).then(function () { if (made && !inGroup(made).length) groupGo(made); }); }, function () { return restoreKeys(ks); });
+    }
     function listMade(run) {   // a new map, a copy or files added: undone into Deleted, as Finder's undo of a copy
       var ks = [], e = { undo: function () { return fwd.then(function () { return binKeys(ks); }); }, redo: function () { return restoreKeys(ks); } };
       var fwd = mineIn.then(function () {
