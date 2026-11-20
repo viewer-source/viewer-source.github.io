@@ -2802,7 +2802,7 @@ page, so its styles keep the base they were made on).
   // presentation mode, the styles page): a published site's viewer stays a fixed list for reading the maps
   // groups and maps reordered by dragging: in development mode, and in presentation mode with drag=true on the include
   // (the styles page). Only with Shift held (so a click or a scroll never moves a row by accident); where the Edit tab
-  // is, also a selected map or a group's heading, with a mouse: a map not selected is never grabbed, a press on it starts the selection box
+  // is, also a map pressed on its name, a selected map or a group's heading, with a mouse: a press beside the names starts the selection box
   var ARRANGE = DEV || {% if include.drag %}true{% else %}false{% endif %};
   if (!ARRANGE) order = {};
   // Dragging with the pointer (mouse, pen or finger), not the browser's drag and drop: a list row is a button, and
@@ -2817,7 +2817,7 @@ page, so its styles keep the base they were made on).
   }
   // Several maps selected in the list, as in Finder (where the Edit tab is, the only place with actions for them): Cmd
   // or Ctrl with a click adds or takes out one, Shift with a click every map from the last one clicked, a drag that
-  // starts in the list on a map not selected or beside the names (a selected map pressed drags the selection, movable) draws a box over the maps it takes (Cmd or Ctrl held: added to the
+  // starts in the list beside the names (a map pressed on its name drags it, a selected map the selection: movable) draws a box over the maps it takes (Cmd or Ctrl held: added to the
   // selection). picked is the selection while it holds any map but the map shown alone, in the list's order; empty,
   // the map shown is the selection. A plain click, a map opened (go) or Esc ends it. The editor's list menu and the Delete key
   // act on it (own.js); a selected map dragged takes the others with it (drop)
@@ -2888,11 +2888,11 @@ page, so its styles keep the base they were made on).
     b.classList.add('m2-grab');
     if (what.group && !what.map) b.title = 'Click to open or close, drag to move the group';
     b.addEventListener('pointerdown', function (e) {
-      // where the Edit tab is: a selected map (the map shown when nothing else is) or a group's heading is dragged as it
-      // is, with a mouse; a press on a map not selected starts the selection box, as a drag on the map selects first; Shift with a drag as before
+      // where the Edit tab is, as in Finder: a map pressed on its name (or selected) or a group's heading is dragged as it
+      // is, with a mouse; a press beside the names starts the selection box; Shift with a drag as before
       if (e.button !== 0 || (e.ctrlKey && MAC)) return;   // Ctrl with a click on a Mac is a right click: its release never comes
-      var grab = !!own && e.pointerType === 'mouse' && (!what.map || inPick(what.map));
-      if (!e.shiftKey && !grab && (setting('drag-shift') || (own && what.map))) return;   // a map not selected: the selection box
+      var grab = !!own && e.pointerType === 'mouse' && (!what.map || !!e.target.closest('.m2-name, .m2-fx') || inPick(what.map));
+      if (!e.shiftKey && !grab && (setting('drag-shift') || (own && what.map))) return;   // beside a name: the selection box
       if (!DEV && !setting('drag-shift')) return; // drag=true in presentation mode: only for a style with Shift dragging
       press = { what: what, row: b, y: e.clientY, id: e.pointerId, on: false };
     });

@@ -3,7 +3,8 @@
 //   2. Shift with a click: every map from the last one clicked. 3. A drag beside the names: the box takes the maps.
 //   4. Right click on the selection: Move N maps to..., Delete N maps; Delete N maps puts them in Deleted.
 //   5. Esc ends a selection. 6. A selected map dragged, no Shift: moved, the drop line straight.
-//   7. A map not selected is never grabbed: a drag from it draws the box, the order unchanged.
+//   7. A map not selected pressed on its name is dragged, as in Finder (no box), and moved; Cmd with Z puts it back.
+//   10. A site map not selected, dragged by its name onto another group's map: in that group.
 //   8. Cmd with Z undoes Delete 3 maps, with Shift redoes. 9. Three selected, one dragged: all three go, all three faded
 //      while dragged, none apart; Cmd with Z: the order as it was.
 //   node tests/list-select.js [base address] [--local]
@@ -94,15 +95,34 @@ function viewerHunks() {
   ok('9. the three selected dragged together', f3 === 'sel-b,sel-c,sel-d', a9.split(',').slice(0, 5).join());
   await page.keyboard.press(mod + '+z'); await page.waitForTimeout(1500);
   ok('9. Cmd+Z: the order as it was', (await names()) === n9, (await names()).split(',').slice(0, 5).join());
-  // 7. a map not selected dragged: the box, nothing moved (another map shown first)
+  // 7. a map not selected dragged by its name: grabbed, no box, moved (another map shown first)
   await page.click('#m2-list .m2-map:not(.m2-binned):not(:has(.m2-name:text-is("sel-a"))) >> nth=0'); await page.waitForTimeout(1500);
   var before7 = await ids(), n7 = await (await page.$(row('sel-a') + ' .m2-name')).boundingBox(), r7 = await (await page.$('#m2-list .m2-map:not(.m2-binned) >> nth=2')).boundingBox();
   ok('7. sel-a not selected before the drag', (await lit()).split(',').indexOf('sel-a') < 0, await lit());
   await page.mouse.move(n7.x + 5, n7.y + n7.height / 2); await page.mouse.down();
   await page.mouse.move(n7.x + 5, r7.y + r7.height * 0.8, { steps: 8 });
-  var marq7 = !!(await page.$('.m2-marq')); await page.mouse.up(); await page.waitForTimeout(800);
-  ok('7. a map not selected dragged: the box, no grab', marq7 && (await ids()).join() === before7.join(), await lit());
+  var marq7 = !!(await page.$('.m2-marq')), grab7 = await page.evaluate(function () { return document.body.classList.contains('m2-dragging'); });
+  await page.mouse.up(); await page.waitForTimeout(1200);
+  ok('7. a map not selected dragged by its name: grabbed, no box', grab7 && !marq7, 'box ' + marq7);
+  ok('7. and moved', (await ids()).join() !== before7.join());
+  await page.keyboard.press(mod + '+z'); await page.waitForTimeout(1500);
+  ok('7. Cmd+Z: back in its place', (await ids()).join() === before7.join());
   await page.keyboard.press('Escape'); await page.waitForTimeout(300);
+  // 10. a site map not selected, dragged by its name onto a map of another group: in that group
+  var site = await page.$$eval('#m2-list .m2-map:not(.m2-binned):not(.m2-mine)', function (l) { return l.map(function (x) { return [x.dataset.id, x.dataset.group]; }); });
+  var g0 = site[0][1], other = site.filter(function (x) { return x[1] && x[1] !== g0; }), mover = other[0];
+  await page.$eval('#m2-list', function (x) { x.scrollTop = 0; });
+  var tgt = await (await page.$('#m2-list .m2-map[data-id="' + site[1][0] + '"]')).boundingBox();
+  var src = await page.$('#m2-list .m2-map[data-id="' + mover[0] + '"] .m2-name'); await src.scrollIntoViewIfNeeded();
+  var sb = await src.boundingBox(); tgt = await (await page.$('#m2-list .m2-map[data-id="' + site[1][0] + '"]')).boundingBox();
+  if (tgt && tgt.y > 0) {
+    await page.mouse.move(sb.x + 5, sb.y + sb.height / 2); await page.mouse.down();
+    await page.mouse.move(sb.x + 5, tgt.y + tgt.height * 0.3, { steps: 12 }); await page.mouse.up(); await page.waitForTimeout(1500);
+    var g10 = await page.$eval('#m2-list .m2-map[data-id="' + mover[0] + '"]', function (x) { return x.dataset.group; });
+    ok('10. a site map dragged by its name into another group', g10 === site[1][1], mover[1] + ' -> ' + g10);
+    await page.keyboard.press(mod + '+z'); await page.waitForTimeout(1500);
+    ok('10. Cmd+Z: back in its group', (await page.$eval('#m2-list .m2-map[data-id="' + mover[0] + '"]', function (x) { return x.dataset.group; })) === mover[1]);
+  } else ok('10. the two groups in sight together', false);
   // 6. a selected map dragged, no Shift: sel-a below the next map
   await page.click(row('sel-a')); await page.waitForTimeout(800);
   var before = await ids(), na = await (await page.$(row('sel-a') + ' .m2-name')).boundingBox(), r2 = await (await page.$('#m2-list .m2-map:not(.m2-binned) >> nth=2')).boundingBox();
