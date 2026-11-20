@@ -90,6 +90,7 @@ function viewerHunks() {
   await page.route('**/index.json*', async function (route) {
     var res = await route.fetch(), list = JSON.parse(await res.text());
     list.forEach(function (m) { m.deleted = built[m.id] || ''; });   // the site's own deletions left out, so the test starts the same
+    list.forEach(function (m) { var t = files['maps/' + m.id + '.md'], w = t && t.match(/^written: "(.*)"$/m); if (t != null) m.written = w ? w[1] : ''; });   // as build.py: the page's written: (the viewer waits for a build that new)
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(list) });
   });
   var ids = function () { return page.$$eval('#m2-list .m2-map:not(.m2-binned)', function (l) { return l.map(function (x) { return x.dataset.id; }); }); };

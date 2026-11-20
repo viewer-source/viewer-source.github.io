@@ -965,7 +965,8 @@
     function binPendingSet(o) { try { if (Object.keys(o).length) localStorage.setItem(BIN_KEY, JSON.stringify(o)); else localStorage.removeItem(BIN_KEY); } catch (e) {} }
     function binState(m, pend) {   // a site map's date in Deleted, '' if not; what this page did wins until the build has it (then let go)
       var p = pend[m.id];
-      if (!Array.isArray(p) || ((m.deleted || '') === p[0] && !V.pageBehind(m)) || Date.now() - p[1] > 3600000) { delete pend[m.id]; return m.deleted || ''; }   // an earlier build that agrees settles nothing
+      var since = Array.isArray(p) && m.written && m.written >= new Date(p[1]).toISOString();   // a build of this write or a later one (another tab's, another device's): the build's word
+      if (!Array.isArray(p) || since || ((m.deleted || '') === p[0] && !V.pageBehind(m)) || Date.now() - p[1] > 3600000) { delete pend[m.id]; return m.deleted || ''; }   // an earlier build that agrees settles nothing
       return p[0];
     }
     function binClear(id) { var p = binPending(); if (id in p) { delete p[id]; binPendingSet(p); } }
