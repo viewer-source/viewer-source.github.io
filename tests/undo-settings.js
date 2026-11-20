@@ -163,6 +163,69 @@ function viewerHunks() {   // [old, new] pieces of the styles page's viewer chan
     await page.click('#m2-set-edit'); await page.waitForTimeout(300);
     await key(); ok('Cmd+Z: Layout only as it was', (await page.$eval('#m2-set-edit', function (x) { return x.checked; })) === lay0);
   }
+  // Map size (a slider: one step from its start to where it is let go), Source (its buttons and the S key), shapes
+  var lsIs = async function (k, v, what) { ok(what, (await ls(k)) === v, String(await ls(k))); };
+  var sz0 = await ls('atlas-map-size');
+  await page.focus('#m2-set-size'); await page.keyboard.press('ArrowRight'); await page.waitForTimeout(400);   // one key, one step
+  await page.mouse.click(700, 880); await page.waitForTimeout(200);
+  ok('Map size changed', (await ls('atlas-map-size')) !== sz0);
+  await key(); await lsIs('atlas-map-size', sz0, 'Cmd+Z: Map size back');
+  var sbId = process.env.SBMAP || 'glycolysis-celldesigner';
+  await page.goto(base + '#' + sbId, { waitUntil: 'load' }); await settle();
+  await page.click('.m2-ri[data-win="set"]'); await page.waitForTimeout(800);
+  if (await page.$eval('.m2-set-source', function (x) { return x.style.display !== 'none'; }).catch(function () { return false; })) {
+    var src0 = await ls('atlas-map-source');
+    await page.keyboard.press('KeyS'); await page.waitForTimeout(1500);
+    ok('S: the other source', (await ls('atlas-map-source')) !== src0);
+    await key(); await page.waitForTimeout(1500); await lsIs('atlas-map-source', src0, 'Cmd+Z: Source back');
+    await key(true); await page.waitForTimeout(1500); ok('Cmd+Shift+Z: the other source again', (await ls('atlas-map-source')) !== src0);
+    if (await page.$eval('.m2-set-shapes', function (x) { return x.style.display !== 'none'; }).catch(function () { return false; })) {
+      var sh0b = await ls('atlas-sbgn-shapes'), other = sh0b === 'process' ? 'specific' : 'process';
+      await page.$eval('#m2-set-shapes button[data-shapes="' + other + '"]', function (x) { x.click(); }); await page.waitForTimeout(1200);
+      ok('Shapes changed', (await ls('atlas-sbgn-shapes')) !== sh0b);
+      await key(); await page.waitForTimeout(1200); await lsIs('atlas-sbgn-shapes', sh0b, 'Cmd+Z: Shapes back');
+    } else console.log('-     Shapes not offered on ' + sbId);
+    await key(); await page.waitForTimeout(1500); await lsIs('atlas-map-source', src0, 'Cmd+Z: Source back once more');
+  } else ok('Source offered on ' + sbId, false);
+
+  console.log('-- the palette on an SBGN-ML map (PD or AF, Style, Set as default), Complexes');
+  var pm = process.env.PALMAP || 'testing-glycolysis-sbgn';
+  await page.evaluate(function () { localStorage.setItem('atlas-edit-side', 'right'); });
+  await page.goto(base + '#' + pm, { waitUntil: 'load' }); await page.reload({ waitUntil: 'load' }); await settle();
+  if (!(await page.evaluate(function () { return document.querySelector('.m2').classList.contains('m2-editing'); }))) { await page.click('.m2-ri[data-win="edit"]'); }
+  await waitEdit();
+  var entry = async function (k) { return page.evaluate(function (a) { var o = JSON.parse(localStorage.getItem(a[0]) || '{}'); var ks = Object.keys(o).filter(function (x) { return x.indexOf(a[1]) >= 0; }); return ks.length ? JSON.stringify(o[ks[0]]) : null; }, [k, pm.replace(/-sbgn$/, '')]); };
+  var pal0 = await entry('atlas-edit-palette');
+  var lang0 = await page.$eval('.m2-ed-palette button[data-lang="pd"]', function (b) { return b.getAttribute('aria-pressed') || b.className; });
+  await page.click('.m2-ed-palette button[data-lang="af"]'); await page.waitForTimeout(500);
+  ok('AF chosen', (await entry('atlas-edit-palette')) !== pal0 && /"af"/.test(await entry('atlas-edit-palette')), await entry('atlas-edit-palette'));
+  await page.mouse.click(700, 880); await page.waitForTimeout(200);
+  await key(); ok('Cmd+Z: PD again', (await entry('atlas-edit-palette')) === pal0 || /"pd"/.test(await entry('atlas-edit-palette') || '"pd"'), await entry('atlas-edit-palette'));
+  await key(true); ok('Cmd+Shift+Z: AF again', /"af"/.test(await entry('atlas-edit-palette') || ''));
+  await key(); ok('Cmd+Z: PD', !/"af"/.test(await entry('atlas-edit-palette') || ''));
+  var st0 = await entry('atlas-edit-map-choices');
+  var dd = await page.$('tr[data-k="style"] .m2-ed-pdd');
+  if (dd) {
+    await dd.click(); await page.waitForTimeout(300);
+    await page.click('.m2-ed-pdl button:has-text("Standard sizes")'); await page.waitForTimeout(400);
+    ok('Style: Standard sizes', /"style":"default"/.test(await entry('atlas-edit-map-choices') || ''), await entry('atlas-edit-map-choices'));
+    await key(); ok('Cmd+Z: Style back', !/"style":"default"/.test(await entry('atlas-edit-map-choices') || ''), await entry('atlas-edit-map-choices'));
+    await key(true); ok('Cmd+Shift+Z: Standard sizes again', /"style":"default"/.test(await entry('atlas-edit-map-choices') || ''));
+    await key();
+  } else ok('Style row shown', false);
+  var def0 = await ls('atlas-edit-defaults'), ch0 = await entry('atlas-edit-map-choices');
+  await page.keyboard.press('Escape'); await pickNode();
+  var pdef = await page.$('.m2-ed-pdef');
+  if (pdef && await pdef.isVisible()) {
+    await pdef.click(); await page.waitForTimeout(500);
+    ok('Set as default: a look kept, Style Custom', (await ls('atlas-edit-defaults')) !== def0 && /"style":"custom"/.test(await entry('atlas-edit-map-choices') || ''));
+    await page.mouse.click(700, 880); await page.waitForTimeout(200);
+    await key(); ok('Cmd+Z: the look and the choices as they were', (await ls('atlas-edit-defaults')) === def0 && (await entry('atlas-edit-map-choices')) === ch0, String(await ls('atlas-edit-defaults')));
+  } else ok('Set as default shown for a selected node', false);
+  await page.click('.m2-ri[data-win="set"]'); await page.waitForTimeout(800);
+  await page.selectOption('#m2-set-pad-cx', '16'); await page.waitForTimeout(300);
+  ok('Paddings: Complexes 16', JSON.parse((await ls('atlas-edit-padding')) || '{}').cx === 16);
+  await key(); ok('Cmd+Z: Complexes back', JSON.parse((await ls('atlas-edit-padding')) || '{}').cx == null && (await page.$eval('#m2-set-pad-cx', function (x) { return x.value; })) === 'repack');
   ok('no page errors', !errs.length, errs.join(' | '));
   await b.close();
   console.log(bad ? bad + ' WRONG' : 'all ok');
