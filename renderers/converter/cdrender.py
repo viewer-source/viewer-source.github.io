@@ -69,6 +69,21 @@ def unit(dx, dy):
     return dx / L, dy / L
 
 
+def counts(rx):
+    # a reactant's or product's stoichiometry other than 1 (SBGN's cardinality), by ('r' or 'p', its alias)
+    out = {}
+    for lst, k in (('s:listOfReactants', 'r'), ('s:listOfProducts', 'p')):
+        for sr in rx.iterfind(lst + '/s:speciesReference', NS):
+            v, a = sr.get('stoichiometry'), sr.findtext('s:annotation/cd:extension/cd:alias', None, NS)
+            try:
+                n = float(v)
+            except (TypeError, ValueError):
+                continue
+            if a is not None and n > 0 and n != 1 and math.isfinite(n):
+                out[(k, a)] = str(int(n)) if n == int(n) else repr(n)  # as the converter's count_text writes it (2.50: 2.5)
+    return out
+
+
 def ellipse(x, y, w, h, n=48):
     return [(x + w / 2 * (1 + math.cos(2 * math.pi * i / n)), y + h / 2 * (1 + math.sin(2 * math.pi * i / n))) for i in range(n)]
 
@@ -553,6 +568,20 @@ class Drawing:
             except Exception as e:  # a reaction this drawing cannot place is left out, said on stderr
                 print('%s: %s' % (rx.get('id'), e), file=sys.stderr)
 
+    def count(self, t, P, Q, head=False):
+        # a cardinality (the converter's layout.count_box): a box beside the line from the entity's visual end P toward
+        # Q, a long side along it, above it or right of a line near upright
+        ux, uy = unit(Q[0] - P[0], Q[1] - P[1])
+        nx, ny = -uy, ux
+        if (nx < 0) if abs(ny) < 0.2 else (ny > 0):
+            nx, ny = -nx, -ny
+        w, h = 6.0 * len(t) + 6, 13.0
+        a, b = 4 + abs(ux) * w / 2 + abs(uy) * h / 2 + (16 if head else 0), 1 + abs(nx) * w / 2 + abs(ny) * h / 2  # past an arrowhead
+        cx, cy = P[0] + ux * a + nx * b, P[1] + uy * a + ny * b
+        self.lines.append('<rect x="%s" y="%s" width="%s" height="%s" fill="#fff" stroke="#000" stroke-width="0.8"/>'
+                          '<text x="%s" y="%s" font-family="%s" font-size="9" text-anchor="middle">%s</text>'
+                          % (fmt(cx - w / 2), fmt(cy - h / 2), fmt(w), fmt(h), fmt(cx), fmt(cy + 3.2), FONT, escape(t)))
+
     def reaction(self, rx):
         f = self.f
         x = f(rx, 's:annotation/cd:extension')
@@ -600,6 +629,7 @@ class Drawing:
         fl = unit(Q[0] - P[0], Q[1] - P[1])
         self.ends(line, ra, pa)
         reversible = rx.get('reversible') != 'false'
+        nums = counts(rx)
         # the main line: reactant to product, the head at the product (and the reactant if reversible)
         u = unit(line[-1][0] - line[-2][0], line[-1][1] - line[-2][1])
         if GROUPS:  # split at the process glyph, each half with its own head
@@ -608,13 +638,17 @@ class Drawing:
             if reversible:
                 half[0] = self.head('production', line[0], unit(line[0][0] - line[1][0], line[0][1] - line[1][1]))
             self.path(half, col, width, dash, end_node=False)
+            if ('r', ra) in nums:
+                self.count(nums[('r', ra)], line[0], line[1], reversible)
             self.close()
             self.open(self.cur + '|b')
             half = [sq] + line[k + 1:]
             half[-1] = self.head('production', line[-1], u)
             self.path(half, col, width, dash, start_node=False)
+            if ('p', pa) in nums:
+                self.count(nums[('p', pa)], line[-1], line[-2], True)
             self.close()
-            self.links_and_modifiers(x, P, Q, sq, fl, col, width, dash, typ)
+            self.links_and_modifiers(x, P, Q, sq, fl, col, width, dash, typ, nums)
             return
         main = list(line)
         main[-1] = self.head('production', line[-1], u)
@@ -622,7 +656,10 @@ class Drawing:
             v = unit(line[0][0] - line[1][0], line[0][1] - line[1][1])
             main[0] = self.head('production', line[0], v)
         self.path(main, col, width, dash)
-        self.links_and_modifiers(x, P, Q, sq, fl, col, width, dash, typ)
+        for k_, a_, P_, Q_, h_ in (('r', ra, line[0], line[1], reversible), ('p', pa, line[-1], line[-2], True)):
+            if (k_, a_) in nums:
+                self.count(nums[(k_, a_)], P_, Q_, h_)
+        self.links_and_modifiers(x, P, Q, sq, fl, col, width, dash, typ, nums)
 
     def branched(self, rx, x, typ, br, bp, ep, q, col, width):
         # two entities binding into one (heterodimer association) or one coming apart into two (dissociation):
@@ -724,7 +761,7 @@ class Drawing:
             fmt(G[0]), fmt(G[1]), '' if GROUPS else '\n', fmt(G[0]), fmt(G[1] + 4), GATE.get(t.rsplit('_', 1)[1], '?'))
         return '<g data-n="%s">%s</g>' % (escape(id_), g) if GROUPS else g
 
-    def links_and_modifiers(self, x, P, Q, sq, fl, col, width, dash, typ=None):
+    def links_and_modifiers(self, x, P, Q, sq, fl, col, width, dash, typ=None, nums=None):
         f = self.f
         # added reactants and products join the square's segment at 3/8 and 5/8 of its ends' anchors
         joins = [(P[0] + t * (Q[0] - P[0]), P[1] + t * (Q[1] - P[1])) for t in (0.375, 0.625)]
@@ -744,11 +781,15 @@ class Drawing:
                 lwd = float(lc.get('width', width)) if lc is not None else width
                 if into:
                     self.path(seq, lcol, lwd, dash, end_node=False)
+                    if nums and ('r', i) in nums:
+                        self.count(nums[('r', i)], seq[0], seq[1])
                 else:
                     seq = seq[::-1]
                     w_ = unit(seq[-1][0] - seq[-2][0], seq[-1][1] - seq[-2][1])
                     stop = self.head('production', seq[-1], w_)
                     self.path(seq[:-1] + [stop], lcol, lwd, dash, start_node=False)
+                    if nums and ('p', i) in nums:
+                        self.count(nums[('p', i)], seq[-1], seq[-2], True)
                 self.close()
         # modifiers end at the point of the square targetLineIndex names
         gate_inputs = set()

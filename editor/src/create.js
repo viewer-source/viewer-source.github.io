@@ -1850,14 +1850,17 @@
     var props = document.createElement('div');
     props.className = 'm2-ed-props'; props.hidden = true;
     // a line's rows (yEd's Properties View for an edge): its colour and width, its two ports as offsets from its glyph's centre
-    var EROWS = [['ecol', 'Line colour', 'colour'], ['ewid', 'Line width', 'num', ' min="0.25" max="20"'], ['sx', 'Source port X', 'num'], ['sy', 'Source port Y', 'num'],
+    // and a consumption's or production's Cardinality (SBGN's, CellDesigner's stoichiometry; empty: 1, none shown)
+    // (a text field: a file's ? is shown as it is; typed, a number above 0 up to 1000)
+    var EROWS = [['ecol', 'Line colour', 'colour'], ['ewid', 'Line width', 'num', ' min="0.25" max="20"'], ['card', 'Cardinality', 'card'], ['sx', 'Source port X', 'num'], ['sy', 'Source port Y', 'num'],
       ['tx', 'Target port X', 'num'], ['ty', 'Target port Y', 'num']];
     // a reaction's rows, one reaction selected on a map whose format's part has a reaction's answers (PF_CD.rx)
-    var RROWS = [['rev', 'Reversible', 'check']];
+    var RROWS = [['rev', 'Reversible', 'check'], ['cin', 'Reactant cardinality', 'card'], ['cout', 'Product cardinality', 'card']];   // the main reactant's and product's numbers where the part has them (PF_CD.rx.counts)
     function table(rows, cls) { return '<table class="m2-ed-ptab' + cls + '">' + rows.map(function (r) {
       var id = 'm2-ed-' + r[0], f = r[2] === 'check' ? '<input type="checkbox" id="' + id + '">'
         : r[2] === 'colour' ? '<span class="m2-ed-pc"><input type="color" tabindex="-1" aria-label="' + r[1] + ', picker"><input type="text" id="' + id + '" spellcheck="false" autocomplete="off"' + (r[0] === 'fill' ? ' placeholder="none"' : '') + '></span>'
         : r[2] === 'num' ? '<input type="number" id="' + id + '" step="any"' + (r[3] || (r[0] === 'width' ? ' min="0.25" max="20"' : /^[st][xy]$/.test(r[0]) ? '' : ' min="1" max="5000"')) + '>'
+        : r[2] === 'card' ? '<input type="text" inputmode="decimal" class="m2-ed-card" id="' + id + '" placeholder="1" spellcheck="false" autocomplete="off">'
         : '<input type="text" id="' + id + '" spellcheck="false" autocomplete="off">';
       return '<tr data-k="' + r[0] + '"' + (r[4] ? ' title="' + r[4] + '"' : '') + '><th><label for="' + id + '">' + r[1] + '</label></th><td>' + f + '</td></tr>';
     }).join('') + '</table>'; }
@@ -1918,8 +1921,9 @@
         props.querySelector('.m2-ed-prx').hidden = false;
         var fr = field('rev');
         if (all || document.activeElement !== fr) fr.checked = rx.on;
+        rxCounts(rx, all);
         var rk = lineOfRx();   // and its Line colour, the whole reaction's
-        if (rk >= 0) { props.querySelector('.m2-ed-pedge').hidden = false; edgeShow(rk, all, r2); }
+        if (rk >= 0) { props.querySelector('.m2-ed-pedge').hidden = false; edgeShow(rk, all, r2, true); }
         return;
       }
       Array.prototype.forEach.call(props.querySelectorAll('.m2-mixed'), function (tr) { tr.classList.remove('m2-mixed'); });
@@ -1934,7 +1938,7 @@
       if (!pNow) { props.hidden = true; return; }
       Array.prototype.forEach.call(props.querySelectorAll('.m2-ed-pnode tr[data-k]'), function (tr) { tr.hidden = (/^[wh]$/.test(tr.dataset.k) && !sizable(i)) || pf.off(tr.dataset.k, i); });
       props.querySelector('.m2-ed-pdef').hidden = !pf.def || pf.off('def', i);   // the part may keep it from a kind (CellDesigner: species only)
-      if (rx) { props.querySelector('.m2-ed-prx').hidden = false; var fr2 = field('rev'); if (all || document.activeElement !== fr2) fr2.checked = rx.on; }   // an SBGN-ML process: Reversible after its own rows
+      if (rx) { props.querySelector('.m2-ed-prx').hidden = false; var fr2 = field('rev'); if (all || document.activeElement !== fr2) fr2.checked = rx.on; rxCounts(rx, all); }   // an SBGN-ML process: Reversible after its own rows
       pNow.w = r2(b[2]); pNow.h = r2(b[3]); ROWS.forEach(function (r) { if (r[2] === 'num' && pNow[r[0]] != null) pNow[r[0]] = r2(pNow[r[0]]); });
       ROWS.forEach(function (r) {
         var f = field(r[0]);
@@ -2053,7 +2057,8 @@
     }
     var PF_SB = { sizable: sbSizable, size: sbSetSize, node: sbNode, set: sbSet, def: sbDef, ends: sbEnds,
       rx: { of: sbRxOf, set: function (pid, on) { return sbReversible(pid, on, true); }, withNode: true },
-      line: { colour: sbLineColour, set: sbLineSet, width: function (k) { return sbJs.widthOf(sbEdgeEl(k)); }, setWidth: sbLineWidth, ports: true },   // a line's colour, width and its ports' rows (edgeShow, edgeSet)
+      line: { colour: sbLineColour, set: sbLineSet, width: function (k) { return sbJs.widthOf(sbEdgeEl(k)); }, setWidth: sbLineWidth, ports: true,   // a line's colour, width and its ports' rows (edgeShow, edgeSet)
+        count: sbCount, setCount: function (k, v) { return sbLineTo(k, sbJs.recount(text, edges2[k].id, v)); } },   // a consumption's or production's cardinality
       off: sbOff,
       look: function (i) { var o = sbJs.lookOf(realizerOf(nodes2[i].el)); return { label: nameOf(i), font: o.font, fill: o.fill ? o.fill.slice(0, 7).toLowerCase() : '', line: (o.line || '#000000').slice(0, 7).toLowerCase(), width: o.width, multimer: o.multimer }; } };
     // a line's Properties, one line selected on a map whose format's part has a line's answers (PF_SB.line): Line colour
@@ -2062,6 +2067,24 @@
     // A field applies to the line it was typed for (eFor), also when another line was clicked before it was left
     var eFor = null;
     function propRx() { var f = propFmt(); return f && f.rx ? f.rx.of() : null; }   // the reaction Properties is for ({ rid, on }), else null
+    function rxCounts(rx, all) {   // a reaction's main reactant's and product's Cardinality rows, where its part reads them
+      var c = propFmt().rx.counts ? propFmt().rx.counts(rx.rid) : null;
+      ['cin', 'cout'].forEach(function (key, j) {
+        var f = field(key);
+        f.closest('tr').hidden = !c || c[j] === undefined;
+        if (c && c[j] !== undefined && (all || document.activeElement !== f) && f.value !== c[j]) f.value = c[j];
+      });
+    }
+    function cardOf(f) {   // a Cardinality typed: '' for none (1), a number above 0 in hundredths, null for anything else
+      var v = f.value.trim(), n = parseFloat(v);
+      return v === '' ? '' : n > 0 && n <= 1000 ? String(Math.round(n * 100) / 100) : null;
+    }
+    ['cin', 'cout'].forEach(function (key, j) {
+      field(key).addEventListener('change', function (e) {
+        var r = propRx(), pf = propFmt(), v = cardOf(e.target);
+        if (!r || !pf.rx.setCount || v === null || !pf.rx.setCount(r.rid, j, v)) propsShow(true);   // not written: the field shows the file again
+      });
+    });
     field('rev').addEventListener('change', function (e) {
       e.target.blur();   // the editor's keys (undo) work at once
       var r = propRx();
@@ -2079,6 +2102,12 @@
       var k = edges2.findIndex(function (q) { return q.id.indexOf(r.rid + '|') === 0 && !/\|[mrp]\d+$/.test(q.id); });   // not a line with its own colour
       return k >= 0 && f.line.colour(k) != null ? k : -1;
     }
+    var sbCountMemo = [null, null, null];   // [line id, text, its cardinality]: read once per line and text (Properties runs with every paint)
+    function sbCount(k) {
+      var id = edges2[k].id;
+      if (sbCountMemo[0] !== id || sbCountMemo[1] !== text) { var c; try { c = sbJs.countOf(text, id); } catch (e) { c = undefined; } sbCountMemo = [id, text, c]; }
+      return sbCountMemo[2];
+    }
     function sbEdgeEl(k) { var el = edges2[k].path.parentNode; while (el && el.localName !== 'edge') el = el.parentNode; return el; }
     function sbLineColour(k) { return sbJs.lineOf(sbEdgeEl(k)) || '#000000'; }
     function sbLineSet(k, c) { return sbLineTo(k, sbJs.recolour(text, edges2[k].id, c)); }   // c '#rrggbb', null for black (yEd's default, no colour written); false when nothing changed
@@ -2091,15 +2120,15 @@
       return true;
     }
     function atHub(k, end) { var e = edges2[k], n = end ? e.t : e.s; return n == null || !!nodes2[n].hub; }
-    function edgeShow(k, all, r2) {
+    function edgeShow(k, all, r2, rxLine) {   // rxLine: the line of a whole reaction selected (its colour, not one participant's number)
       props.querySelector('.m2-ed-pdef').hidden = true;
-      var e = edges2[k], pl = propFmt().line;
-      var now = { ecol: (pl.colour(k) || '#000000').slice(0, 7).toLowerCase(), ewid: r2(pl.width(k)) };
+      var e = edges2[k], pl = propFmt().line, card = !rxLine && pl.count ? pl.count(k) : undefined;
+      var now = { ecol: (pl.colour(k) || '#000000').slice(0, 7).toLowerCase(), ewid: r2(pl.width(k)), card: card || '' };
       ['sx', 'sy', 'tx', 'ty'].forEach(function (a) { now[a] = r2(num(e.path, a) || 0); });
       EROWS.forEach(function (r) {
         var f = field(r[0]);
         var port = /^[st][xy]$/.test(r[0]);
-        f.closest('tr').hidden = port && !pl.ports;   // the ports as offsets: yEd's, not every format's
+        f.closest('tr').hidden = (port && !pl.ports) || (r[0] === 'card' && card === undefined);   // the ports as offsets: yEd's, not every format's; a number only on a consumption or production
         if (port) f.disabled = atHub(k, r[0].charAt(0) === 't');
         if (!all && document.activeElement === f) return;
         if (f.value !== now[r[0]]) f.value = now[r[0]];
@@ -2115,6 +2144,11 @@
         var c = hex(f.value);
         if (c === null) { propsShow(true); return; }
         if (!pf.line.set(k, c === '' || c === '#000000' ? null : c)) propsShow(true);
+        return;
+      }
+      if (key === 'card') {   // empty or 1: none; not a number above 0: the field shows the file again
+        var v = cardOf(f);
+        if (v === null || !pf.line.setCount || !pf.line.setCount(k, v)) propsShow(true);
         return;
       }
       if (key === 'ewid') {   // outside 0.25 to 20: the nearest, silently (as Border width)

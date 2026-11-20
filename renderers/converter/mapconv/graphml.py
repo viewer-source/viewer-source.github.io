@@ -5,7 +5,7 @@ from lxml import etree
 from . import report
 from .model import Map, Node, Arc
 from .style import scale_of
-from .layout import own_places, unit_places
+from .layout import CARD, PROCESSES, border, centre, count_box, count_text, flux, own_places, unit_places
 
 NS = {'g': 'http://graphml.graphdrawing.org/xmlns', 'y': 'http://www.yworks.com/xml/graphml'}
 Y = '{%s}' % NS['y']
@@ -173,7 +173,11 @@ def read(path):
                         points=[(float(q.get('x')), float(q.get('y'))) for q in yp.findall('y:Point', NS)],
                         source_at=(float(yp.get('sx')), float(yp.get('sy'))),
                         target_at=(float(yp.get('tx')), float(yp.get('ty'))),
-                        dashed=pl.find('y:LineStyle', NS).get('type') != 'line'))
+                        dashed=pl.find('y:LineStyle', NS).get('type') != 'line',
+                        count=next((t for t in ((l.text or '') for l in pl.findall('y:EdgeLabel', NS)) if CARD.match(t)), None)))
+    for a in arcs:  # a number on a consumption or production line is its cardinality
+        if a.count:
+            a.count = count_text(a.count) if a.source in nodes and a.target in nodes and flux(nodes, a) else None
     for d in nodes.values():
         d.unit_at = own_places(d)
     return Map(name=os.path.basename(path).rsplit('.', 1)[0], nodes=nodes, arcs=arcs)
@@ -230,6 +234,7 @@ def write(diagram, soft=False):
     tpl = {n.get('id'): n for n in t.iter(G + 'node')}
     icon = tpl['IconLabel'].find('.//y:NodeLabel', NS)
     arc = next(t.iter(G + 'edge'))
+    card = next(e for e in t.iter(G + 'edge') if e.get('id') == 'Cardinality').find('.//y:EdgeLabel', NS)
     res_tpl = {r.get('id'): r for r in t.iter(Y + 'Resource')}
     N = diagram.nodes
     names = list(dict.fromkeys(k for d in N.values() for k in d.data))
@@ -360,6 +365,16 @@ def write(diagram, soft=False):
         if a.weight: pl.find('y:LineStyle', NS).set('width', repr(float(a.weight)))
         pl.find('y:Arrows', NS).set('target', ARROW[a.head] if a.head else 'none')
         pl.find('y:Arrows', NS).set('source', 'delta' if a.tail else 'none')
+        if a.count and flux(N, a):  # yEd's label at the entity's end (tail or head), placed as count_box
+            x, y, w, h = count_box(N, a, a.count)
+            s_ = border(N[a.source], a.points[0] if a.points else centre(N[a.target])) if not any(a.source_at) else \
+                (centre(N[a.source])[0] + a.source_at[0], centre(N[a.source])[1] + a.source_at[1])
+            lb = copy.deepcopy(card)
+            lb.text = a.count
+            for k, v in (('x', x - s_[0]), ('y', y - s_[1]), ('width', w), ('height', h)):
+                lb.set(k, repr(float(v)))
+            lb.set('fontSize', '9'); lb.set('modelPosition', 'tail' if N[a.source].kind not in PROCESSES else 'head')
+            pl.insert(list(pl).index(pl.find('y:BendStyle', NS)) + 1, lb)
         if soft:  # soft bends on a map from yEd; from CellDesigner or Newt as they draw them, sharp
             pl.find('y:BendStyle', NS).set('smoothed', 'true')
         g.append(e)

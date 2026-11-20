@@ -376,11 +376,116 @@
       A.push([id, E[0], E[1], o, head, pts]);
     });
     if (A.length) out = edgesIn(out, H, A);
-    return out;
+    return countsIn(out, S, opt);
+  }
+
+  // ---------- cardinality (the converter's D37): an arc's cardinality glyph in the file, its number as a label on the
+  // edge in the GraphML, placed as layout.count_box and graphml.write place it (the same arithmetic, so the same digits)
+  var CARD = /^\s*(\d+(\.\d+)?|\?)\s*$/;
+  var LAB = ['<y:EdgeLabel alignment="center" backgroundColor="#FFFFFF" configuration="AutoFlippingLabel" distance="2.0" fontFamily="Dialog" fontSize="9" fontStyle="plain" height="',
+    '" horizontalTextPosition="center" iconTextGap="4" lineColor="#000000" modelName="six_pos" modelPosition="', '" preferredPlacement="anywhere" ratio="0.5" textColor="#000000" verticalTextPosition="bottom" visible="true" width="',
+    '" x="', '" xml:space="preserve" y="', '">', '<y:PreferredPlacementDescriptor angle="0.0" angleOffsetOnRightSide="0" angleReference="absolute" angleRotationOnRightSide="co" distance="-1.0" frozen="true" placement="anywhere" side="anywhere" sideReference="relative_to_edge_flow"/></y:EdgeLabel>'];
+  function countText(v) {   // layout.count_text: ?, or a number as Python writes it (2, not 2.0; 2.5); anything else null
+    var m = CARD.exec(v == null ? '' : String(v));
+    if (!m) return null;
+    if (m[1] === '?') return '?';
+    var n = Number(m[1]);
+    return n === Math.floor(n) ? String(n) : repr(n);
+  }
+  function arcCard(a) { return kids(a, 'glyph').filter(function (c) { return c.getAttribute('class') === 'cardinality'; })[0] || null; }
+  function arcCount(a) { var g = arcCard(a), l = g && kid(g, 'label'); return l ? countText(l.getAttribute('text')) : null; }
+  function edgeLab(e) { return Array.prototype.filter.call(e.getElementsByTagNameNS(YNS, 'EdgeLabel'), function (l) { return CARD.test(ownText(l)); })[0] || null; }
+  function isProcN(G, id) { var n = G.node[id]; return !!n && cfgOf(n.geo.parentNode) === 'Process'; }
+  function fluxE(G, e) {   // layout.flux on the GraphML: a plain line at a process (either way) or a production out of one
+    var ar = e.el.getElementsByTagNameNS(YNS, 'Arrows')[0], hd = ar ? ar.getAttribute('target') : 'none', s = isProcN(G, e.s), t = isProcN(G, e.t);
+    return !!G.node[e.s] && !!G.node[e.t] && (((hd === 'none' || !hd) && s !== t) || (hd === 'delta' && s && !t));
+  }
+  function centreOf(b) { return [b[0] + b[2] / 2, b[1] + b[3] / 2]; }
+  function borderOf(b, p) {   // sbgnml.border: where the line from the box's centre to p leaves it
+    var c = centreOf(b), dx = p[0] - c[0], dy = p[1] - c[1];
+    if (!dx && !dy) return c;
+    var t = Math.min(dx ? b[2] / 2 / Math.abs(dx) : Infinity, dy ? b[3] / 2 / Math.abs(dy) : Infinity);
+    return [c[0] + t * dx, c[1] + t * dy];
+  }
+  function countBox(G, e, text) {   // layout.count_box: beside the line near its entity, above it, right of a line near upright
+    var first = !isProcN(G, e.s), E = G.node[first ? e.s : e.t].box, Hc = centreOf(G.node[first ? e.t : e.s].box), ar = e.el.getElementsByTagNameNS(YNS, 'Arrows')[0];
+    var at = first ? e.off.slice(0, 2) : e.off.slice(2), hub = first ? e.off.slice(2) : e.off.slice(0, 2), pts = first ? e.pts : e.pts.slice().reverse();
+    var nxt = pts.length ? pts[0] : [Hc[0] + hub[0], Hc[1] + hub[1]], Ec = centreOf(E);
+    var p0 = at[0] || at[1] ? [Ec[0] + at[0], Ec[1] + at[1]] : borderOf(E, nxt);
+    var dx = nxt[0] - p0[0], dy = nxt[1] - p0[1], L = Math.sqrt(dx * dx + dy * dy) || 1, ux = dx / L, uy = dy / L, nx = -uy, ny = ux;
+    if (Math.abs(ny) < 0.2 ? nx < 0 : ny > 0) { nx = -nx; ny = -ny; }
+    var w = 6 * text.length + 6, h = 13, along = 4 + Math.abs(ux) * w / 2 + Math.abs(uy) * h / 2 + (ar && ar.getAttribute('target') === 'delta' ? 16 : 0), side = 1 + Math.abs(nx) * w / 2 + Math.abs(ny) * h / 2;
+    var cx = p0[0] + ux * along + nx * side, cy = p0[1] + uy * along + ny * side;
+    return [cx - w / 2, cy - h / 2, w, h];
+  }
+  function labXml(G, e, text) {   // graphml.write's label: its place from where the line leaves its source
+    var b = countBox(G, e, text), S = G.node[e.s].box, Sc = centreOf(S);
+    var s0 = e.off[0] || e.off[1] ? [Sc[0] + e.off[0], Sc[1] + e.off[1]] : borderOf(S, e.pts.length ? e.pts[0] : centreOf(G.node[e.t].box));
+    return LAB[0] + repr(b[3]) + LAB[1] + (isProcN(G, e.s) ? 'head' : 'tail') + LAB[2] + repr(b[2]) + LAB[3] + repr(b[0] - s0[0]) + LAB[4] + repr(b[1] - s0[1]) + LAB[5] + esc(text) + LAB[6];
+  }
+  function countSet(T, G, e, want) {   // the edge's label made, changed or taken out (as lxml writes it: before the </y:PolyLineEdge>)
+    var have = edgeLab(e.el), x = want ? labXml(G, e, want) : '';
+    if (have) { var s0 = T.at.get(have)[0], s1 = T.end(have); if (T.t.slice(s0, s1) !== x) T.ed.push([s0, s1, x]); return; }
+    if (!want) return;
+    var pl = e.el.getElementsByTagNameNS(YNS, 'PolyLineEdge')[0] || e.path.parentNode, end = T.end(pl), close = T.t.lastIndexOf('</', end);
+    T.ed.push([close, close, x]);
+  }
+  function countsIn(t, S, opt) {   // graphml(): every edge's label as its arc's cardinality (the converter's GraphML)
+    if (t.indexOf('<y:EdgeLabel') < 0 && !Object.keys(S.arc).some(function (k) { return arcCard(S.arc[k]); })) return t;
+    var G = gml(t, opt), T = new Tags(t, G.doc);
+    Object.keys(G.edge).forEach(function (id) {
+      var a = S.arc[id], e = G.edge[id];
+      if (!a || !/^(consumption|production)$/.test(a.getAttribute('class') || '')) { if (edgeLab(e.el) && a) countSet(T, G, e, null); return; }
+      countSet(T, G, e, fluxE(G, e) ? arcCount(a) : null);
+    });
+    return T.text();
+  }
+  //   countOf(g, id) -> the number on the line (its cardinality: '' for none), undefined for a line that takes none
+  //   recount(g, id, v) -> g with the line's number v ('' or null: none)
+  function countOf(t, id, opt) {
+    var G = gml(t, opt), e = G.edge[id];
+    if (!e || !fluxE(G, e)) return undefined;
+    var l = edgeLab(e.el);
+    return l ? countText(ownText(l)) : '';
+  }
+  function recount(t, id, v, opt) {
+    var G = gml(t, opt), e = G.edge[id], want = countText(v);
+    if (!e || !fluxE(G, e)) return t;
+    var T = new Tags(t, G.doc);
+    countSet(T, G, e, want === '1' ? null : want);
+    return T.text();
+  }
+  // write(): every arc's cardinality glyph as the GraphML's label says, the rest byte for byte; a glyph whose arc this save
+  // moved (start, next or end changed from the file t0) placed again beside it
+  function countsOut(t, gtext, opt, t0) {
+    if (gtext.indexOf('<y:EdgeLabel') < 0 && !/class="cardinality"/.test(t)) return t;
+    var G = gml(gtext, opt), S = sbgn(t, opt), T = new Tags(t, S.doc), ids = {}, S0 = t0 && t0 !== t ? sbgn(t0, opt) : null;
+    var route = function (a) { return a ? kids(a).filter(function (c) { return /^(start|next|end)$/.test(c.localName); }).map(function (c) { return c.getAttribute('x') + ',' + c.getAttribute('y'); }).join(' ') : null; };
+    Array.prototype.forEach.call(S.doc.getElementsByTagName('*'), function (el) { var i = el.getAttribute && el.getAttribute('id'); if (i) ids[i] = 1; });
+    Object.keys(S.arc).forEach(function (id) {
+      var a = S.arc[id], e = G.edge[id];
+      if (!e || !/^(consumption|production)$/.test(a.getAttribute('class') || '')) return;
+      var l = fluxE(G, e) && edgeLab(e.el), want = l ? countText(ownText(l)) : null, g = arcCard(a), have = arcCount(a);
+      if (want === have && (!g || !S0 || !want || route(S0.arc[id]) === route(a))) return;
+      if (!want) { T.cut(g); return; }
+      var b = countBox(G, e, want);
+      if (g) {
+        if (kid(g, 'label')) { if (have !== want) T.set(kid(g, 'label'), 'text', want); }
+        else { var at0 = kid(g, 'bbox') ? T.at.get(kid(g, 'bbox'))[0] : T.end(g) - '</glyph>'.length; T.ed.push([at0, at0, '<label text="' + esc(want) + '"/>']); }
+        if (kid(g, 'bbox') && S0 && route(S0.arc[id]) !== route(a)) ['x', 'y', 'w', 'h'].forEach(function (k, j) { T.set(kid(g, 'bbox'), k, num(b[j])); });
+        return;
+      }
+      var at = kids(a).filter(function (c) { return /^(glyph|port|start)$/.test(c.localName); })[0], gid = id + '_card', k = 2;   // (b above)
+      while (ids[gid]) gid = id + '_card' + k++;
+      var x = '<glyph class="cardinality" id="' + esc(gid) + '"><label text="' + esc(want) + '"/><bbox x="' + num(b[0]) + '" y="' + num(b[1]) + '" w="' + num(b[2]) + '" h="' + num(b[3]) + '"/></glyph>';
+      if (at) { var p = T.at.get(at)[0]; T.ed.push([p, p, x + '\n' + T.indent(at)]); }
+      else { var e1 = T.end(a), c1 = T.t.lastIndexOf('</', e1); T.ed.push([c1, c1, x]); }
+    });
+    return T.text();
   }
 
   // ---------- back into the SBGN-ML text ----------
-  function write(t, gtext, opt) { return nest(write0(t, gtext, opt), gtext, opt, t); }
+  function write(t, gtext, opt) { return countsOut(nest(write0(t, gtext, opt), gtext, opt, t), gtext, opt, t); }
   function write0(t, gtext, opt) {
     var dropped = {}, was = gone(gtext), t0 = t;   // dropped: glyphs one of whose units of information was deleted; was: ids never given again (the comment stays with the GraphML)
     var own = mapKind(t);   // the file's own kind before the glyphs deleted in the editor go (else the last process deleted leaves the map PD)
@@ -2342,6 +2447,6 @@
               unit: unit, unitValue: unitValue, unitDelete: unitDelete, multimer: multimer, classOf: classOf, MAKE: MAKE, kind: kind, PROCESSES: ['process'].concat(Object.keys(SIGN)), SIGN: SIGN, remove: remove, resize: resize, scaleEnds: scaleEnds, gone: gone, nameable: nameable,
               moveInto: moveInto, connect: connect, reversible: reversible, reversibility: reversibility, arcRemove: arcRemove, arcKind: arcKind, GATE: GATE, ARROW: ARROW, MODULATIONS: ['stimulation', 'catalysis', 'inhibition', 'necessary stimulation', 'modulation'],
               activity: activity, activities: activities, proteinBoxes: proteinBoxes, afUnitBox: afUnitBox, afUnitFont: afUnitFont, isAf: isAf, mapKind: mapKind, unitFor: unitFor, fillFor: fillFor, AF_ARC: AF_ARC, UNITS: Object.keys(UNIT_CLS).filter(function (u) { return u && u !== 'perturbation'; }), unitClass: actCls,
-              Tags: Tags, repr: repr, num: num };   // Tags, repr and num serve sbml_edit.js too
+              countOf: countOf, recount: recount, Tags: Tags, repr: repr, num: num };   // Tags, repr and num serve sbml_edit.js too
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.sbgn_edit = api;
 })(typeof self !== 'undefined' ? self : this);

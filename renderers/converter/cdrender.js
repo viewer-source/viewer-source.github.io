@@ -178,6 +178,17 @@
   function pts(p) { return p.map(function (q) { return fmt(q[0]) + ',' + fmt(q[1]); }).join(' '); }
   function editPoints(s) { return (s || '').split(/\s+/).filter(function (q) { return q; }).map(function (q) { return q.split(',').map(F); }); }
   function unit(dx, dy) { var L = hypot(dx, dy) || 1; return [dx / L, dy / L]; }
+  function counts(rx) {   // a reactant's or product's stoichiometry other than 1 (SBGN's cardinality), by r: or p: and its alias (cdrender.py's counts)
+    var out = {};
+    [['s:listOfReactants', 'r'], ['s:listOfProducts', 'p']].forEach(function (lk) {
+      findall(rx, lk[0] + '/s:speciesReference').forEach(function (sr) {
+        var v = get(sr, 'stoichiometry'), a = findtext(sr, 's:annotation/cd:extension/cd:alias', null), n = v === null ? NaN : Number(v);
+        if (v === null || String(v).trim() === '' || !isFinite(n) || a === null || !(n > 0) || n === 1) return;
+        out[lk[1] + ':' + a] = String(n);   // as the converter's count_text writes it (2.50: 2.5)
+      });
+    });
+    return out;
+  }
   function ellipse(x, y, w, h, n) {
     n = n || 48; var o = [];
     for (var i = 0; i < n; i++) o.push([x + w / 2 * (1 + Math.cos(2 * Math.PI * i / n)), y + h / 2 * (1 + Math.sin(2 * Math.PI * i / n))]);
@@ -558,6 +569,14 @@
   };
   var REDUCED_HEAD = { PHYSICAL_STIMULATION: 'stimulation-reduced', REDUCED_PHYSICAL_STIMULATION: 'stimulation-reduced', NEGATIVE_INFLUENCE: 'inhibition',
     REDUCED_MODULATION: 'modulation', REDUCED_TRIGGER: 'trigger', POSITIVE_INFLUENCE: 'production', CATALYSIS: 'catalysis', INHIBITION: 'inhibition' };
+  D.count = function (t, P, Q, head) {   // a cardinality (the converter's layout.count_box): a box beside the line from the entity's visual end P toward Q (cdrender.py's count)
+    var u = unit(Q[0] - P[0], Q[1] - P[1]), nx = -u[1], ny = u[0];
+    if (Math.abs(ny) < 0.2 ? nx < 0 : ny > 0) { nx = -nx; ny = -ny; }
+    var w = 6 * t.length + 6, h = 13, a = 4 + Math.abs(u[0]) * w / 2 + Math.abs(u[1]) * h / 2 + (head ? 16 : 0), b = 1 + Math.abs(nx) * w / 2 + Math.abs(ny) * h / 2;
+    var cx = P[0] + u[0] * a + nx * b, cy = P[1] + u[1] * a + ny * b;
+    this.lines.push('<rect x="' + fmt(cx - w / 2) + '" y="' + fmt(cy - h / 2) + '" width="' + fmt(w) + '" height="' + fmt(h) + '" fill="#fff" stroke="#000" stroke-width="0.8"/>' +
+      '<text x="' + fmt(cx) + '" y="' + fmt(cy + 3.2) + '" font-family="' + FONT + '" font-size="9" text-anchor="middle">' + escape(t) + '</text>');
+  };
   D.reaction = function (rx) {
     var x = find(rx, 's:annotation/cd:extension'), typ = text(find(x, 'cd:reactionType'));
     var br = findall(x, 'cd:baseReactants/cd:baseReactant'), bp = findall(x, 'cd:baseProducts/cd:baseProduct');
@@ -593,27 +612,31 @@
     k = Math.min(k, L - 2);
     var P = line[k], Q = line[k + 1], sq = [(P[0] + Q[0]) / 2, (P[1] + Q[1]) / 2], fl = unit(Q[0] - P[0], Q[1] - P[1]);
     this.ends(line, ra, pa);
-    var reversible = get(rx, 'reversible') !== 'false';
+    var reversible = get(rx, 'reversible') !== 'false', nums = counts(rx);
     u = unit(line[L - 1][0] - line[L - 2][0], line[L - 1][1] - line[L - 2][1]);
     if (this.GROUPS) {
       this.open(this.cur + '|a');
       var half = line.slice(0, k + 1).concat([sq]);
       if (reversible) half[0] = this.head('production', line[0], unit(line[0][0] - line[1][0], line[0][1] - line[1][1]));
       this.path(half, col, wd, dash, true, false);
+      if (nums.hasOwnProperty('r:' + ra)) this.count(nums['r:' + ra], line[0], line[1], reversible);
       this.close();
       this.open(this.cur + '|b');
       half = [sq].concat(line.slice(k + 1));
       half[half.length - 1] = this.head('production', line[L - 1], u);
       this.path(half, col, wd, dash, false, true);
+      if (nums.hasOwnProperty('p:' + pa)) this.count(nums['p:' + pa], line[L - 1], line[L - 2], true);
       this.close();
-      this.linksAndModifiers(x, P, Q, sq, fl, col, wd, dash, typ);
+      this.linksAndModifiers(x, P, Q, sq, fl, col, wd, dash, typ, nums);
       return;
     }
     var main = line.slice();
     main[L - 1] = this.head('production', line[L - 1], u);
     if (reversible) main[0] = this.head('production', line[0], unit(line[0][0] - line[1][0], line[0][1] - line[1][1]));
     this.path(main, col, wd, dash);
-    this.linksAndModifiers(x, P, Q, sq, fl, col, wd, dash, typ);
+    if (nums.hasOwnProperty('r:' + ra)) this.count(nums['r:' + ra], line[0], line[1], reversible);
+    if (nums.hasOwnProperty('p:' + pa)) this.count(nums['p:' + pa], line[L - 1], line[L - 2], true);
+    this.linksAndModifiers(x, P, Q, sq, fl, col, wd, dash, typ, nums);
   };
   D.branched = function (rx, x, typ, br, bp, ep, q, col, wd) {
     var self = this, ends = br.concat(bp);
@@ -693,7 +716,7 @@
     var tli = (get(m, 'targetLineIndex') || '-1,2').split(',')[1], k = I(tli), spot = has(SQUARE, k) ? SQUARE[k] : SQUARE[3];
     return [sq[0] + 5 * (spot[0] * fl[0] - spot[1] * fl[1]), sq[1] + 5 * (spot[0] * fl[1] + spot[1] * fl[0])];
   }
-  D.linksAndModifiers = function (x, P, Q, sq, fl, col, wd, dash, typ) {
+  D.linksAndModifiers = function (x, P, Q, sq, fl, col, wd, dash, typ, nums) {
     var self = this;
     var joins = [0.375, 0.625].map(function (t) { return [P[0] + t * (Q[0] - P[0]), P[1] + t * (Q[1] - P[1])]; });
     [['cd:listOfReactantLinks/cd:reactantLink', true], ['cd:listOfProductLinks/cd:productLink', false]].forEach(function (tg) {
@@ -707,12 +730,16 @@
         var seq = [O].concat(into ? bends : bends.slice().reverse(), [J]);
         seq[0] = self.clip(i, O, Oo[1], seq[1]);
         var lc = find(l, 'cd:line'), lcol = lc ? colour(get(lc, 'color'))[0] : col, lwd = lc ? F(get(lc, 'width', wd)) : wd;   // an added reactant or product in its own colour and width, as CellDesigner keeps one for each
-        if (into) self.path(seq, lcol, lwd, dash, true, false);
-        else {
+        var nk = (into ? 'r:' : 'p:') + i;
+        if (into) {
+          self.path(seq, lcol, lwd, dash, true, false);
+          if (nums && nums.hasOwnProperty(nk)) self.count(nums[nk], seq[0], seq[1]);
+        } else {
           seq = seq.reverse();
           var L = seq.length, w_ = unit(seq[L - 1][0] - seq[L - 2][0], seq[L - 1][1] - seq[L - 2][1]);
           var stop = self.head('production', seq[L - 1], w_);
           self.path(seq.slice(0, -1).concat([stop]), lcol, lwd, dash, false, true);
+          if (nums && nums.hasOwnProperty(nk)) self.count(nums[nk], seq[L - 1], seq[L - 2], true);
         }
         self.close();
       });

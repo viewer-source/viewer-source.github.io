@@ -1248,6 +1248,12 @@
       return cdLineMemo;
     }
     function cdLineColour(k) { return cdLineRead(k)[2]; }
+    var cdCountMemo = {};   // a line's cardinality by its id, for one file (Properties runs with every paint)
+    function cdCount(id) {
+      if (cdCountMemo.now !== cd.now) cdCountMemo = { now: cd.now };
+      if (!(id in cdCountMemo)) { var c; try { c = cdMk.stoichiometry(cd.now, id); } catch (e) { c = undefined; } cdCountMemo[id] = c; }
+      return cdCountMemo[id];
+    }
     function cdMember(i) { var n = nodes2[i]; return n.up != null && nodes2[n.up].shape.kind === 'Complex'; }   // a complex's member (a complex inside one too)
     function cdProp(i) { return cdSpecies(i) || cdMember(i) || nodes2[i].comp || (cdRole(i) === 'epn' && nodes2[i].shape.kind === 'Complex'); }   // what Properties and resizing are for: a species, a member (its complex growing round it), a complex, a compartment
     function cdLineTo(k, f) {   // the line, or its whole reaction, changed by f and selected again
@@ -1255,11 +1261,15 @@
       return cdApply(function (t) { return f(t, id); }, [], [keep]);
     }
     var PF_CD = { sizable: cdProp, size: cdSetSize, def: cdDef,
-      rx: { of: cdRxOf, set: cdReversible },   // a reaction's Reversible (propRx, create.js)
+      rx: { of: cdRxOf, set: cdReversible,   // a reaction's Reversible (propRx, create.js)
+        counts: function (rid) { return [cdCount(rid + '|a'), cdCount(rid + '|b')]; },   // its main reactant's and product's numbers (rxCounts)
+        setCount: function (rid, j, v) { return cdApply(function (t) { return cdMk.restoich(t, rid + (j ? '|b' : '|a'), v); }, [], [rid]); } },
       // a line's colour and width (edgeShow, edgeSet): a modifier's, an added reactant's or product's own, else its
       // reaction's (a reduced notation's line, a main line); a gate's lines none (cd_make.lineColour null), no ports as offsets
       line: { colour: cdLineColour, set: function (k, c) { return cdLineTo(k, function (t, id) { return cdMk.recolourLine(t, id, c || '#000000'); }); },
-        width: function (k) { return cdLineRead(k)[3]; }, setWidth: function (k, w) { return cdLineTo(k, function (t, id) { return cdMk.rewidthLine(t, id, w); }); }, ports: false },
+        width: function (k) { return cdLineRead(k)[3]; }, setWidth: function (k, w) { return cdLineTo(k, function (t, id) { return cdMk.rewidthLine(t, id, w); }); }, ports: false,
+        count: function (k) { return /\|[rp]\d+$/.test(edges2[k].id) ? cdCount(edges2[k].id) : undefined; },   // an added reactant's or product's own number (the main ones are the reaction's rows)
+        setCount: function (k, v) { return cdLineTo(k, function (t, id) { return cdMk.restoich(t, id, v); }); } },
       node: function (i) { return cdProp(i) ? i : -1; },
       off: function (k, i) {   // pNow: look's, read just before; a compartment no border width, multimer or font size (CellDesigner keeps none for its name), a complex no multimer, an Unknown no border width
         return k === 'line' || (k === 'ss' && /^(COMPARTMENT|DEGRADED)$/.test(pNow.cls)) || (/^(mem|outer|inner)$/.test(k) && pNow.cls !== 'COMPARTMENT') || (/^(label|font|fill|multimer)$/.test(k) && pNow.cls === 'DEGRADED') || (/^(width|multimer|def|font)$/.test(k) && pNow.cls === 'COMPARTMENT') || (/^(multimer|def)$/.test(k) && pNow.cls === 'COMPLEX') || (k === 'width' && pNow.cls === 'UNKNOWN');   // an Unknown has no outline in CellDesigner, so no border width

@@ -1325,6 +1325,29 @@
     if (!L) refuse('A logic gate\u2019s lines take their reaction\u2019s colour.');
     return attrs(t, L[0], [['color', col]]);   // that line alone: the reaction's leaves its added reactants and products their own
   }
+  // a reactant's or product's number (SBGN's cardinality), the stoichiometry of its speciesReference in the reaction's
+  // SBML lists, by the line's id: rid|a the main reactant, rid|b the main product, rid|rN, rid|pN an added one; written
+  // only when it is not 1, as CellDesigner writes it (null: a line that has none)
+  function stoichRef(t, eid) {
+    var m = /^(.*)\|(a|b|r\d+|p\d+)$/.exec(eid || ''), R;
+    if (!m) return null;
+    try { R = parts(t, m[1]); } catch (e) { return null; }
+    if (FULL.indexOf(R.type) < 0 || R.br.length !== 1 || R.bp.length !== 1) return null;
+    var k = m[2][0], P = k === 'a' ? R.br[0] : k === 'b' ? R.bp[0] : (k === 'r' ? R.rl : R.pl)[+m[2].slice(1)];
+    var lst = P && span(t, k === 'a' || k === 'r' ? '<listOfReactants>' : '<listOfProducts>', R.rs[0], R.rs[1]), al = P && at(P.tag, 'alias');
+    return (lst && all(t, '<speciesReference[\\s>/]', lst).filter(function (r) { return t.slice(r.sp[0], r.sp[1]).indexOf('<celldesigner:alias>' + al + '</celldesigner:alias>') >= 0; })[0]) || null;
+  }
+  function stoichiometry(t, eid) {   // '' for 1, the number as written otherwise; undefined for a line that has none
+    var r = stoichRef(t, eid), v = r && at(r.tag, 'stoichiometry'), n = Number(v);
+    return !r ? undefined : v == null || n === 1 ? '' : isFinite(n) ? String(n) : v;   // as cdrender draws it (2.50: 2.5)
+  }
+  function restoich(t, eid, v) {   // v a number above 0 ('' or 1: none written)
+    var r = stoichRef(t, eid), n = v === '' || v == null ? 1 : Number(v);
+    if (!r) refuse('Only a reactant\u2019s or product\u2019s line has a cardinality.');
+    if (!(n > 0) || !isFinite(n)) fail('A cardinality is a number above 0.');
+    if (stoichiometry(t, eid) === (n === 1 ? '' : String(n))) return t;
+    return attrs(t, r.sp[0], [['stoichiometry', n === 1 ? null : String(n)]]);
+  }
   function lineWidth(t, eid) { var L = lineAt(t, eid), w = L && parseFloat(at(head(t, L), 'width')); return L ? (w > 0 ? w : 1) : null; }   // the same line as lineColour's
   function rewidthLine(t, eid, w) {   // w a number, written as CellDesigner writes it (1.0)
     if (!(w > 0)) fail('A line width is a number above 0.');
@@ -1338,7 +1361,7 @@
     var hd = A.s && /<celldesigner:homodimer>(\d+)</.exec(t.slice(A.s.sp[0], A.s.sp[1]));
     return { kind: A.kind, cls: A.cls || null, id: A.species || A.compartment, name: A.s ? A.s.name : C ? at(head(t, C), 'name') : null, complex: A.complex, box: A.box, homodimer: hd ? +hd[1] : 1 };
   }
-  var api = { LOOK: LOOK, COMP: COMP, lineColour: lineColour, recolourLine: recolourLine, lineWidth: lineWidth, rewidthLine: rewidthLine, PROCESS: PROCESS, REDUCED: REDUCED, sbgn: sbgn, MODS: MODS, NEED: NEED, about: about, aliasInfo: aliasInfo, classColour: classColour, compartmentColour: compartmentColour, classColours: classColours, classSize: classSize, empty: empty, species: newSpecies, compartment: compartment, rename: rename, namePlace: namePlace, nameAt: nameAt, nameInfo: nameInfo, retype: retype, remove: remove, reaction: reaction, reduced: reduced,
+  var api = { LOOK: LOOK, COMP: COMP, lineColour: lineColour, recolourLine: recolourLine, lineWidth: lineWidth, rewidthLine: rewidthLine, stoichiometry: stoichiometry, restoich: restoich, PROCESS: PROCESS, REDUCED: REDUCED, sbgn: sbgn, MODS: MODS, NEED: NEED, about: about, aliasInfo: aliasInfo, classColour: classColour, compartmentColour: compartmentColour, classColours: classColours, classSize: classSize, empty: empty, species: newSpecies, compartment: compartment, rename: rename, namePlace: namePlace, nameAt: nameAt, nameInfo: nameInfo, retype: retype, remove: remove, reaction: reaction, reduced: reduced,
     reactant: reactant, product: product, modifier: modifier, reactionType: reactionType, reversible: reversible, modifierType: modifierType, removeLine: removeLine,
     gate: gate, gateInput: gateInput, gateInputRemove: gateInputRemove, gateType: gateType, residue: residue, residueState: residueState,
     residueRemove: residueRemove, residueName: residueName, residueMove: residueMove, structuralMove: structuralMove, features: features, STATES: STATES, placesFor: placesFor, ratioAngle: ratioAngle, bounds: bounds, proteinAliases: proteinAliases, joinKin: joinKin, structural: structural, info: info, infoUnit: infoUnit, INFO: INFO, homodimer: homodimer, look: look, restyle: restyle, recolourAll: recolourAll, colours: colours, cdName: cdName, joinable: joinable, join: join, leave: leave };

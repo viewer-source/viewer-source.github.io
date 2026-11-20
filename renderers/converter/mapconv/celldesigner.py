@@ -45,7 +45,7 @@ from struct import pack, unpack
 from lxml import etree
 from . import cd_layout, cd_tidy, report
 from .cd_layout import ANCHOR, SQUARE, anchor_point, from_frame, square_point, to_frame
-from .layout import exit_point, visible
+from .layout import count_text, exit_point, visible
 from .annotation import from_notes, from_references, notes, references, to_properties
 from .graphml import EQUIV, without_delays
 from .model import Map, Node, Arc
@@ -491,9 +491,14 @@ def write(diagram, ann, layout='straight'):
         return UNKNOWN.get(t, t)
     lr = etree.SubElement(model, 'listOfReactions')
     n_ref = [0]
-    def ref(parent, tag, i):
+    def ref(parent, tag, i, count=None):
         n_ref[0] += 1
         r = etree.SubElement(parent, tag, metaid='SR%d' % n_ref[0], species=spec(i))
+        try:  # a cardinality other than 1 as the reactant's or product's stoichiometry (CellDesigner holds numbers only)
+            if count and float(count) != 1:
+                r.set('stoichiometry', count)
+        except ValueError:
+            pass
         sub(sub(etree.SubElement(r, 'annotation'), 'extension'), 'alias', 'sa_' + sid(i))
     def line(k, n=1, **a):  # connect scheme with n segments
         ld = sub(sub(k, 'connectScheme', connectPolicy='direct', **a), 'listOfLineDirection')
@@ -556,9 +561,9 @@ def write(diagram, ann, layout='straight'):
                     line(k)
                     sub(k, 'line', width='1.0', color='ff000000')
         lr_ = etree.SubElement(rx, 'listOfReactants')
-        for e in ins: ref(lr_, 'speciesReference', e.source)
+        for e in ins: ref(lr_, 'speciesReference', e.source, e.count)
         lp_ = etree.SubElement(rx, 'listOfProducts')
-        for e in outs: ref(lp_, 'speciesReference', e.target)
+        for e in outs: ref(lp_, 'speciesReference', e.target, e.count)
         if mods or gates:
             lm_ = etree.SubElement(rx, 'listOfModifiers')
             for e in mods: ref(lm_, 'modifierSpeciesReference', e.source)
@@ -898,11 +903,15 @@ def read(path):
         nodes[rid] = Node(id=rid, kind=PROCESS.get(typ, 'Process'), box=(sq[0] - S / 2, sq[1] - S / 2, S, S), labels=[''],
                           data={'References': refs(rx)} if refs(rx) else {})
         reversible = rx.get('reversible') != 'false'
+        stoich = {(sr.findtext('s:annotation/cd:extension/cd:alias', None, ns), lst == 'Reactants'): count_text(sr.get('stoichiometry'))
+                  for lst in ('Reactants', 'Products') for sr in xs(rx, 's:listOf%s/s:speciesReference' % lst)}
+        stoich = {k: v for k, v in stoich.items() if v not in (None, '1', '?')}  # a reactant's or product's number other than 1
         def flow(alias, into, pts=(), at=(0.0, 0.0)):  # a consumption arc into the process, or a production arc out of it
+            n = stoich.get((alias, into))
             if into and not reversible:
-                arcs.append(Arc(id='%s_%s' % (rid, alias), source=alias, target=rid, points=list(pts), source_at=at))
+                arcs.append(Arc(id='%s_%s' % (rid, alias), source=alias, target=rid, points=list(pts), source_at=at, count=n))
             else:
-                arcs.append(Arc(id='%s_%s' % (rid, alias), source=rid, target=alias, head='production', points=list(pts), target_at=at))
+                arcs.append(Arc(id='%s_%s' % (rid, alias), source=rid, target=alias, head='production', points=list(pts), target_at=at, count=n))
         for alias, into, bends, at in lines:
             flow(alias, into, bends, at)
         for tag, into in (('cd:listOfReactantLinks/cd:reactantLink', True), ('cd:listOfProductLinks/cd:productLink', False)):

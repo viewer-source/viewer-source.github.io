@@ -7,7 +7,7 @@ import math, copy, os, re
 from lxml import etree
 from . import report
 from .annotation import from_graphml, from_notes, notes, to_properties
-from .layout import bends, centre, compartment_of, decorations, own_places, unbent
+from .layout import bends, border, centre, compartment_of, count_box, count_text, decorations, own_places, unbent
 from . import newt_layout
 from .graphml import DELAY, EQUIV, LINE, CHAR, without_delays
 from .model import Map, Node, Arc
@@ -42,16 +42,6 @@ def identifiers(urns):
 def xml_id(i):
     # yEd's nested ids (n0::n1) are not XML ids
     return re.sub(r'[^\w.-]', '_', i if re.match(r'[A-Za-z_]', i) else '_' + i)
-
-
-def border(d, p):
-    # where the line from the node's centre to p leaves its box
-    (cx, cy), (w, h) = centre(d), d.box[2:]
-    dx, dy = p[0] - cx, p[1] - cy
-    if not dx and not dy:
-        return cx, cy
-    t = min(w / 2 / abs(dx) if dx else float('inf'), h / 2 / abs(dy) if dy else float('inf'))
-    return cx + t * dx, cy + t * dy
 
 
 def at(d, ref, p, q, port=None):
@@ -367,6 +357,11 @@ def write(diagram, newt=False):
         e = etree.SubElement(m, S + 'arc', {'class': cls, 'id': xml_id(a.id), 'source': src, 'target': tgt})
         if a.dashed:  # SBGN PD has no unknown arc: kept in its notes
             note(e, [UNKNOWN])
+        if a.count and cls in ('consumption', 'production'):  # its cardinality, a glyph of the arc beside it
+            x, y, w, h = count_box(N, a, a.count)
+            c = etree.SubElement(e, S + 'glyph', {'class': 'cardinality', 'id': xml_id(a.id) + '_card'})
+            etree.SubElement(c, S + 'label', text=a.count)
+            etree.SubElement(c, S + 'bbox', x=repr(float(x)), y=repr(float(y)), w=repr(float(w)), h=repr(float(h)))
         etree.SubElement(e, S + 'start', x=repr(float(p0[0])), y=repr(float(p0[1])))
         for q in pts:
             etree.SubElement(e, S + 'next', x=repr(float(q[0])), y=repr(float(q[1])))
@@ -620,7 +615,9 @@ def read(path):
         flux = cls in ('consumption', 'logic arc')  # a port where an arc starts (a product, a gate's output) is kept, where
         # it ends only for these: a modifier aimed at a port ends on the glyph
         ends = [(float(e.get('x')), float(e.get('y'))) if e is not None else None for e in (a.find(S + 'start'), a.find(S + 'end'))]
+        card = next((g.find(S + 'label') for g in a.findall(S + 'glyph') if g.get('class') == 'cardinality'), None)
         arcs.append(Arc(id=a.get('id'), source=s, target=t, head=head[cls], dashed=UNKNOWN in text_of(a), points=pts,
+                        count=count_text(card.get('text')) if card is not None and cls in ('consumption', 'production') else None,
                         line=colour(line.get(a.get('id')), defs), weight=weight.get(a.get('id')) if weight.get(a.get('id'), 1) != 1 else None,
                         source_at=at(nodes[s], a.get('source'), ends[0], (pts or ends[1:])[0], at_port.get(a.get('source'))),
                         target_at=at(nodes[t], a.get('target'), ends[1], (pts[-1:] or ends[:1])[0], flux and at_port.get(a.get('target')))))

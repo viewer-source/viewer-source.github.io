@@ -15,6 +15,65 @@ def centre(d):
     return x + w / 2, y + h / 2
 
 
+def border(d, p):
+    # where the line from the node's centre to p leaves its box
+    (cx, cy), (w, h) = centre(d), d.box[2:]
+    dx, dy = p[0] - cx, p[1] - cy
+    if not dx and not dy:
+        return cx, cy
+    t = min(w / 2 / abs(dx) if dx else float('inf'), h / 2 / abs(dy) if dy else float('inf'))
+    return cx + t * dx, cy + t * dy
+
+
+
+COUNT_H = 13.0  # a cardinality's box: 13 high, 6 px a character and 3 each side; 1 px off the line, 4 px from the entity
+# (and 16 more past a product's arrowhead)
+
+
+def count_box(N, a, text):
+    # where an arc's cardinality is drawn (SBGN PD 2.7.1: a box with a long side along the line): beside the line, near
+    # the end at its entity, above it, or right of a line near upright
+    first = N[a.source].kind not in PROCESSES  # the entity at the source (a consumption drawn either way)
+    ent, hub = (a.source, a.target) if first else (a.target, a.source)
+    at, pts = (a.source_at, list(a.points)) if first else (a.target_at, list(a.points)[::-1])
+    hub_at = a.target_at if first else a.source_at
+    E, Hc = N[ent], centre(N[hub])
+    nxt = pts[0] if pts else (Hc[0] + hub_at[0], Hc[1] + hub_at[1])
+    p0 = (centre(E)[0] + at[0], centre(E)[1] + at[1]) if any(at) else border(E, nxt)
+    dx, dy = nxt[0] - p0[0], nxt[1] - p0[1]
+    L = math.sqrt(dx * dx + dy * dy) or 1.0  # sqrt, not hypot: the viewer's JavaScript gives the same last digit
+    ux, uy = dx / L, dy / L
+    nx, ny = -uy, ux
+    if (nx < 0) if abs(ny) < 0.2 else (ny > 0):  # the normal on the upper side, or the right of a line near upright
+        nx, ny = -nx, -ny
+    w, h = 6.0 * len(text) + 6, COUNT_H
+    along = 4 + abs(ux) * w / 2 + abs(uy) * h / 2 + (16 if a.head == 'production' else 0)  # past a product's arrowhead
+    side = 1 + abs(nx) * w / 2 + abs(ny) * h / 2
+    cx, cy = p0[0] + ux * along + nx * side, p0[1] + uy * along + ny * side
+    return (cx - w / 2, cy - h / 2, w, h)
+
+
+CARD = re.compile(r'^\s*(\d+(\.\d+)?|\?)\s*$')  # a cardinality: a number or ? (anything else is none)
+
+
+def count_text(v):
+    # a cardinality as written: ?, or a number (1, not 1.0; 2.5); anything else None
+    m = CARD.match(v or '')
+    if not m:
+        return None
+    if m.group(1) == '?':
+        return '?'
+    f = float(m.group(1))
+    return str(int(f)) if f == int(f) else repr(f)
+
+
+def flux(N, a):
+    # a consumption (a plain line at a process, either way, as biology reads it) or production (out of one) arc: the
+    # arcs a cardinality belongs to
+    s, t = N[a.source].kind in PROCESSES, N[a.target].kind in PROCESSES
+    return (a.head is None and s != t) or (a.head == 'production' and s and not t)
+
+
 def compartment_of(N, i):
     # a node's enclosing compartment
     q = N[i].parent
