@@ -782,16 +782,18 @@
     return A;
   }
   var OPEN = /<celldesigner:protein [^>]*[^/]>\s+<\/celldesigner:protein>/;   // a protein with no residues written open
+  var RESIDUE_PLACES = [270, 292.5, 247.5, 0, 180, 315, 225, 45, 135, 90, 67.5, 112.5, 337.5, 202.5, 22.5, 157.5].map(function (d) { return d * Math.PI / 180; });
   function residues(t, A) { return all(t, '<celldesigner:modificationResidue ', reference(t, A.s.ref)); }
-  // a residue on the protein's reference (its sites belong to the protein, shared by all its species) at the first
-  // free place of CellDesigner's default (left) and the corners, the top middle left for a unit of information; its state
-  // on this species
+  // a residue on the protein's reference (its sites belong to the protein, shared by all its species) at o.angle, else
+  // at the first place of RESIDUE_PLACES no residue takes (the editor's create.js ORDER as angles: the bottom middle, its
+  // quarters, the sides' middles, the bottom corners, the top corners, the top, the sides' quarters); its state on
+  // this species
   function residue(t, id, o) {
     var A = protein(t, id), state = o.state || 'empty', rs = residues(t, A);
     if (STATES.indexOf(state) < 0) refuse('CellDesigner has no residue state ' + state + '.');
-    var used = rs.map(function (r) { return F(at(r.tag, 'angle')); }), P = Math.PI;
-    var ang = [P, 0, 3 * P / 4, P / 4, 5 * P / 4, 7 * P / 4, 3 * P / 2].filter(function (a) { return !used.some(function (u) { return Math.abs(u - a) < 0.3; }); })[0];
-    var rid = next(t, 'rs'), p = reference(t, A.s.ref), el = '<celldesigner:modificationResidue angle="' + repr(ang === undefined ? P : ang) + '" id="' + rid + '"' +
+    var used = rs.map(function (r) { return F(at(r.tag, 'angle')); });
+    var ang = o.angle != null ? o.angle : RESIDUE_PLACES.filter(function (a) { return !used.some(function (u) { return Math.abs(((u - a) % (2 * Math.PI) + 3 * Math.PI) % (2 * Math.PI) - Math.PI) < 0.3; }); })[0];
+    var rid = next(t, 'rs'), p = reference(t, A.s.ref), el = '<celldesigner:modificationResidue angle="' + repr(ang === undefined ? RESIDUE_PLACES[0] : ang) + '" id="' + rid + '"' +
       (o.name ? ' name="' + esc(o.name) + '"' : '') + ' side="none"/>';
     if (t[p[1] - 2] === '/') t = put(t, p[1] - 2, p[1], '>' + (OPEN.test(t) ? '' : '\n') + list(t, CD + 'listOfModificationResidues', el) + '\n</celldesigner:protein>');
     else t = add(t, CD + 'listOfModificationResidues', el, p[0], p[1], p[1] - '</celldesigner:protein>'.length);
