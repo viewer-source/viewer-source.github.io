@@ -316,7 +316,7 @@ class Drawing:
             for k, line in enumerate(lines):
                 self.text(line, mid, cy + z / 3 + z * 7 / 6 * k, size=z, extra=' class="t-%s"' % ROLE.get(cls, 'white') if CLASSES else '')
         else:
-            self.text(' '.join(self.name_lines(name)), x + fw / 2, y + fh - z * 7 / 12, size=z, extra=' class="t-complex"' if CLASSES else '')
+            self.text(' '.join(self.name_lines(name)), x + fw / 2, y + fh - 7, size=z, extra=' class="t-complex"' if CLASSES else '')
 
     def shape(self, cls, b, fill, alpha, dash):
         x, y, w, h = b
