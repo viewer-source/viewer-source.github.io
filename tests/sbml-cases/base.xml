@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<sbml xmlns="http://www.sbml.org/sbml/level3/version1/core" xmlns:layout="http://www.sbml.org/sbml/level3/version1/layout/version1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" level="3" version="1" layout:required="false">
+  <model id="m">
+    <listOfCompartments><compartment id="c" constant="true"/></listOfCompartments>
+    <listOfSpecies><species id="A" compartment="c" hasOnlySubstanceUnits="false" boundaryCondition="false" constant="false"/><species id="B" compartment="c" hasOnlySubstanceUnits="false" boundaryCondition="false" constant="false"/></listOfSpecies>
+    <listOfReactions><reaction id="R" reversible="false"><listOfReactants><speciesReference id="rA" species="A" constant="true"/></listOfReactants><listOfProducts><speciesReference id="rB" species="B" constant="true"/></listOfProducts></reaction></listOfReactions>
+    <layout:listOfLayouts><layout:layout layout:id="L"><layout:dimensions layout:width="600" layout:height="400"/>
+      <layout:listOfCompartmentGlyphs><layout:compartmentGlyph layout:id="cg" layout:compartment="c"><layout:boundingBox><layout:position layout:x="0" layout:y="0"/><layout:dimensions layout:width="500" layout:height="300"/></layout:boundingBox></layout:compartmentGlyph></layout:listOfCompartmentGlyphs>
+      <layout:listOfSpeciesGlyphs>
+        <layout:speciesGlyph layout:id="gA" layout:species="A"><layout:boundingBox><layout:position layout:x="0" layout:y="100"/><layout:dimensions layout:width="60" layout:height="30"/></layout:boundingBox></layout:speciesGlyph>
+        <layout:speciesGlyph layout:id="gB" layout:species="B"><layout:boundingBox><layout:position layout:x="300" layout:y="100"/><layout:dimensions layout:width="60" layout:height="30"/></layout:boundingBox></layout:speciesGlyph>
+      </layout:listOfSpeciesGlyphs>
+      <layout:listOfReactionGlyphs><layout:reactionGlyph layout:id="gR" layout:reaction="R"><layout:boundingBox><layout:position layout:x="190" layout:y="105"/><layout:dimensions layout:width="20" layout:height="20"/></layout:boundingBox><layout:curve><layout:listOfCurveSegments><layout:curveSegment xsi:type="LineSegment"><layout:start layout:x="190" layout:y="115"/><layout:end layout:x="210" layout:y="115"/></layout:curveSegment></layout:listOfCurveSegments></layout:curve><layout:listOfSpeciesReferenceGlyphs>
+        <layout:speciesReferenceGlyph layout:id="lA" layout:speciesReference="rA" layout:speciesGlyph="gA" layout:role="substrate"><layout:curve><layout:listOfCurveSegments><layout:curveSegment xsi:type="CubicBezier"><layout:start layout:x="60" layout:y="115"/><layout:end layout:x="100" layout:y="60"/><layout:basePoint1 layout:x="70" layout:y="90"/><layout:basePoint2 layout:x="90" layout:y="70"/></layout:curveSegment><layout:curveSegment xsi:type="CubicBezier"><layout:start layout:x="100" layout:y="60"/><layout:end layout:x="190" layout:y="115"/><layout:basePoint1 layout:x="110" layout:y="50"/><layout:basePoint2 layout:x="180" layout:y="100"/></layout:curveSegment></layout:listOfCurveSegments></layout:curve></layout:speciesReferenceGlyph>
+        <layout:speciesReferenceGlyph layout:id="lB" layout:speciesReference="rB" layout:speciesGlyph="gB" layout:role="product"><layout:curve><layout:listOfCurveSegments><layout:curveSegment xsi:type="LineSegment"><layout:start layout:x="210" layout:y="115"/><layout:end layout:x="300" layout:y="115"/></layout:curveSegment></layout:listOfCurveSegments></layout:curve></layout:speciesReferenceGlyph>
+      </layout:listOfSpeciesReferenceGlyphs></layout:reactionGlyph></layout:listOfReactionGlyphs>
+      <layout:listOfTextGlyphs><layout:textGlyph layout:id="tc" layout:graphicalObject="cg" layout:text="cell"><layout:boundingBox><layout:position layout:x="10" layout:y="10"/><layout:dimensions layout:width="40" layout:height="15"/></layout:boundingBox></layout:textGlyph></layout:listOfTextGlyphs>
+    </layout:layout></layout:listOfLayouts>
+  </model>
+</sbml>

@@ -34,7 +34,7 @@
     }
     function sbpy() {   // sbgn_edit.js, sbml_edit.js (which uses it), then the yEd renderer
       if (sbp) return sbp;
-      sbp = sbScript('sbgn_edit').then(function () { return sbScript('sbml_edit'); }).then(yr).then(function () { sbJs = window.sbgn_edit; return sbJs; });
+      sbp = sbScript('sbgn_edit').then(function () { return sbScript('sbml_edit').catch(function () {}); }).then(yr)   // a copy without sbml_edit keeps SBGN-ML.then(function () { sbJs = window.sbgn_edit; return sbJs; });
       sbp.catch(function (e) { sbp = null; warn('The SBGN-ML side did not load: ' + e); });
       return sbp;
     }

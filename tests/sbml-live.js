@@ -8,7 +8,7 @@
 // 4. no script error.
 //   node tests/sbml-live.js [base address]
 var { chromium } = require('playwright');
-var base = process.argv[2] || 'https://viewer-source.github.io/';
+var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
 var MAPS = ['sbml-biomodels-biomd0000000899-ota2015', 'sbml-biomodels-biomd0000000786-lipniacki2004',
   'sbml-biomodels-model2101150001-corral2021', 'sbml-minerva-glycolysis-cardiac'];
 (async function () {

@@ -69,7 +69,7 @@ fs.readdirSync(dir).filter(function (f) { return /\.(sbml|xml)$/.test(f); }).sor
     bad = bad.concat(diffGeo(geo(back), geo(E.graphml(t2, g0, opt)), (more ? 'bend added, ' : '') + 'graphml()'));
     var strip = function (s) { return s.replace(/-?\d+(\.\d+)?([eE][-+]?\d+)?/g, '#'); };
     var put = /<([\w.-]+:)?boundingBox><([\w.-]+:)?position [^>]*\/><([\w.-]+:)?dimensions [^>]*\/><\/([\w.-]+:)?boundingBox>/g;   // a point put in for a reaction with no box
-    if (!more && strip(t2.replace(put, '')) !== strip(t)) bad.push('the file changed beyond numbers');
+    if (!more && strip(t2.replace(put, '')) !== strip(t.replace(put, ''))) bad.push('the file changed beyond numbers');
   });
   fails += bad.length ? 1 : 0;
   console.log((bad.length ? 'FAIL  ' : 'ok    ') + f + (bad.length ? '\n  ' + bad.slice(0, 6).join('\n  ') + (bad.length > 6 ? '\n  ... ' + (bad.length - 6) + ' more' : '') : ''));

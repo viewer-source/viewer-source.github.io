@@ -1000,7 +1000,7 @@
     function shownName(i) { return (cd ? cdNameOf(nodes2[i].id, true) : nameOf(i)).replace(/[\r\n]+/g, ' ').trim(); }   // the name as drawn: a CellDesigner member still named after its id gives that id
     function setName(id, v) {
       if (cd) { cdRename(id, v); return; }
-      if (!sbJs || sb && !sbJs.nameable(src(), id)) return;   // a GraphML map's label written as it stands (no SBGN-ML class to ask)
+      if (!sbJs || sb && !edOf(src()).nameable(src(), id)) return;   // a GraphML map's label written as it stands (no SBGN-ML class to ask)
       var t2 = sbJs.label(text, id, v);
       if (t2 === text) return;
       remember(false); text = t2; parse(); dirty = true; quiet(); render(); paint(); changed();
@@ -1023,7 +1023,7 @@
       var c = complexHere(member);
       if (c == null || afSbgn || afKind()) return null;   // not in an Activity Flow view, where members are not drawn
       var v = membersName(c), id = nodes2[c].id, go = function () { setName(id, v); };
-      go.same = v === nameNow(c) || !cd && (!sbJs || sb && !sbJs.nameable(src(), id));   // greyed only when already so named (or the file cannot take a name), so the item stays where it is found
+      go.same = v === nameNow(c) || !cd && (!sbJs || sb && !edOf(src()).nameable(src(), id));   // greyed only when already so named (or the file cannot take a name), so the item stays where it is found
       return go;
     };
     // a double click on a named entity, or on one of its state variables or units of information, opens its text; on a

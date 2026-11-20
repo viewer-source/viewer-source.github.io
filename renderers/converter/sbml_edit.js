@@ -47,6 +47,8 @@
     ['compartmentGlyph', 'speciesGlyph', 'generalGlyph', 'reactionGlyph', 'textGlyph', 'speciesReferenceGlyph'].forEach(function (k) {
       all(lay, k).forEach(function (g) { var i = av(g, 'id'); if (i) by[i] = g; });
     });
+    by._text = {};   // a glyph's first text glyph's own text (the reader's label, where it is one)
+    all(lay, 'textGlyph').forEach(function (t) { var o = av(t, 'graphicalObject'), v = av(t, 'text'); if (o && !(o in by._text)) by._text[o] = v || (av(t, 'originOfText') ? 'named' : ''); });
     return { lay: lay, by: by };
   }
   function boxEl(g) { var b = kid(g, 'boundingBox'); return b ? { b: b, p: kid(b, 'position'), d: kid(b, 'dimensions') } : null; }
@@ -83,7 +85,15 @@
       return [c.reduce(function (a, p) { return a + p[0]; }, 0) / c.length, c.reduce(function (a, p) { return a + p[1]; }, 0) / c.length];
     }
     var bb = box(g);
-    return bb && centre(bb);
+    if (!bb) return null;
+    if (ln(g) === 'speciesGlyph' && (bb[2] < 1 || bb[3] < 1) && !sink(g, by)) return [bb[0], bb[1]];   // a point: the reader centres its glyph on it
+    return centre(bb);
+  }
+  // a species glyph the reader draws as a source or sink: it names no species and no text but COPASI's 'unset' names it
+  function sink(g, by) {
+    if (av(g, 'species') || av(g, 'metaidRef')) return false;
+    var t = by._text && by._text[av(g, 'id')];
+    return !t || t === 'unset';
   }
 
   // ---------- the editor's GraphML ----------
@@ -123,9 +133,10 @@
       if (!r || ln(r) !== 'speciesReferenceGlyph') return;
       var e = G.edges[id], pts = curve(r).pts;
       if (pts.length < 2) return;
-      var s = L.by[e.s], sc = s && placeOf(s, L.by);
+      var sp = av(r, 'speciesGlyph'), s = L.by[sp], sc = s && placeOf(s, L.by);
       if (sc && Math.hypot(pts[pts.length - 1][0] - sc[0], pts[pts.length - 1][1] - sc[1]) < Math.hypot(pts[0][0] - sc[0], pts[0][1] - sc[1])) pts = pts.slice().reverse();
-      var inner = pts.slice(1, -1);
+      var inner = pts.slice(1, -1);   // from the species; a line that leaves the process (a product) runs the other way
+      if (e.s !== sp) inner.reverse();
       if (inner.length === e.pts.length && inner.every(function (p, k) { return same(p, e.pts[k]); })) return;
       var pt = inner.map(function (p) { return '<y:Point x="' + repr(p[0]) + '" y="' + repr(p[1]) + '"/>'; }).join('');
       var re = new RegExp('(<edge id="' + reId(id) + '"[^>]*>[\\s\\S]*?)<y:Path ([^>]*?)(?:/>|>[\\s\\S]*?</y:Path>)');
@@ -140,7 +151,8 @@
     var put = new Map();   // a point element -> its new x and y, set once (a curve may hold one element in two roles)
     function setXY(e, x, y) { if (e) put.set(e, [x, y]); }
     function shift(e, v) { if (e && (v[0] || v[1]) && !put.has(e)) put.set(e, [F(av(e, 'x')) + v[0], F(av(e, 'y')) + v[1]]); }
-    function shiftCurve(g, v) { curve(g).segs.forEach(function (s) { kids(s).forEach(function (p) { shift(p, v); }); }); }
+    var POINTS = { start: 1, end: 1, basePoint1: 1, basePoint2: 1 };
+    function shiftCurve(g, v) { curve(g).segs.forEach(function (s) { kids(s).forEach(function (p) { if (POINTS[ln(p)]) shift(p, v); }); }); }
     // nodes: each glyph by its centre's move; a compartment by its box
     Object.keys(L.by).forEach(function (id) {
       var g = L.by[id], k = ln(g), nb = G.nodes[id];
@@ -149,7 +161,7 @@
       if (k === 'compartmentGlyph') {
         var b = box(g);
         if (!b || !e.d) return;
-        d[id] = [nb[0] + nb[2] / 2 - (b[0] + b[2] / 2), nb[1] + nb[3] / 2 - (b[1] + b[3] / 2)];
+        d[id] = [nb[0] - b[0], nb[1] - b[1]];   // its labels go with its corner, so a resize to the right or down leaves them
         setXY(e.p, nb[0], nb[1]);
         if (Math.abs(F(av(e.d, 'width')) - nb[2]) >= 1e-6) { T.set(e.d, an(e.d, 'width'), num(nb[2])); moved = true; }
         if (Math.abs(F(av(e.d, 'height')) - nb[3]) >= 1e-6) { T.set(e.d, an(e.d, 'height'), num(nb[3])); moved = true; }
@@ -166,8 +178,9 @@
         if (same(mid, gc)) return;
         if (e && e.p) setXY(e.p, gc[0], gc[1]);
         else {   // no box at all: a point given as one, after the glyph's start tag (the Layout package allows a reaction glyph either)
-          var pre = g.nodeName.indexOf(':') >= 0 ? g.nodeName.split(':')[0] + ':' : '', ap = (an(g, 'id') || 'id').replace(/id$/, ''), at = T.at.get(g);
-          T.ed.push([at[1], at[1], '<' + pre + 'boundingBox><' + pre + 'position ' + ap + 'x="' + num(gc[0]) + '" ' + ap + 'y="' + num(gc[1]) + '"/><' + pre + 'dimensions ' + ap + 'width="0" ' + ap + 'height="0"/></' + pre + 'boundingBox>']);
+          var pre = g.nodeName.indexOf(':') >= 0 ? g.nodeName.split(':')[0] + ':' : '', ap = (an(g, 'id') || 'id').replace(/id$/, '');
+          var heads = kids(g).filter(function (c) { return ln(c) === 'notes' || ln(c) === 'annotation'; }), at = heads.length ? T.end(heads[heads.length - 1]) : T.at.get(g)[1];   // after notes and annotation, as SBML orders them
+          T.ed.push([at, at, '<' + pre + 'boundingBox><' + pre + 'position ' + ap + 'x="' + num(gc[0]) + '" ' + ap + 'y="' + num(gc[1]) + '"/><' + pre + 'dimensions ' + ap + 'width="0" ' + ap + 'height="0"/></' + pre + 'boundingBox>']);
           moved = true;
         }
         return;
@@ -203,13 +216,21 @@
           cv.els[0].forEach(function (p) { shift(p, dA); });
           cv.els[n - 1].forEach(function (p) { shift(p, dB); });
           shift(kid(segs[0], 'basePoint1'), dA); shift(kid(segs[segs.length - 1], 'basePoint2'), dB);
-          inner.forEach(function (p, k) { if (!same(bends[k], p)) cv.els[k + 1].forEach(function (e) { setXY(e, bends[k][0], bends[k][1]); }); });
+          inner.forEach(function (p, k) {
+            if (same(bends[k], p)) return;
+            var v = [bends[k][0] - p[0], bends[k][1] - p[1]];
+            cv.els[k + 1].forEach(function (e) {   // the bend, and the control point beside it in each segment it ends or starts
+              setXY(e, bends[k][0], bends[k][1]);
+              shift(kid(e.parentNode, ln(e) === 'end' ? 'basePoint2' : 'basePoint1'), v);
+            });
+          });
           return;
         }
         // another number of bend points: straight segments through them
         var a = [first[0] + dA[0], first[1] + dA[1]], z = [last[0] + dB[0], last[1] + dB[1]], line = [a].concat(bends, [z]);
         var tag = segs[0].nodeName, pre = tag.indexOf(':') >= 0 ? tag.split(':')[0] + ':' : '', ap = (an(kid(segs[0], 'start'), 'x') || 'x').replace(/x$/, '');
         var xsi = an(segs[0], 'type') || 'xsi:type', ind = T.indent(segs[0]), body = '';
+        if (!an(segs[0], 'type')) xsi = 'xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type';   // the file's segments name no type: its prefix declared on each
         for (var s = 0; s + 1 < line.length; s++)
           body += '\n' + ind + '<' + tag + ' ' + xsi + '="LineSegment"><' + pre + 'start ' + ap + 'x="' + num(line[s][0]) + '" ' + ap + 'y="' + num(line[s][1]) + '"/><' + pre + 'end ' + ap + 'x="' + num(line[s + 1][0]) + '" ' + ap + 'y="' + num(line[s + 1][1]) + '"/></' + tag + '>';
         segs.forEach(function (sg) { kids(sg).forEach(function (p) { put.delete(p); }); });
@@ -226,8 +247,8 @@
   }
   function isAf(t) { return /<(\w+:)?listOfQualitativeSpecies[\s>]/.test(t || ''); }
   function mapKind(t) { return isAf(t) ? 'af' : 'pd'; }
-  function isSbml(t) { return /<sbml[\s>]/.test((t || '').slice(0, 3000)) && /listOfLayouts/.test(t || '') && !/celldesigner/.test((t || '').slice(0, 200000)); }
+  function nameable() { return false; }   // layout only: no name is written
 
-  var api = { graphml: graphml, write: write, isAf: isAf, mapKind: mapKind, isSbml: isSbml };
+  var api = { graphml: graphml, write: write, isAf: isAf, mapKind: mapKind, nameable: nameable };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.sbml_edit = api;
 })(typeof self !== 'undefined' ? self : this);
