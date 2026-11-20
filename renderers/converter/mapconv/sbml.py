@@ -93,8 +93,8 @@ def annotations(el):
 
 
 def styles(model, lay):
-    # Render: glyph id or glyph type -> its style's fill, stroke, stroke-width and font-size (the style's group, else
-    # its first shape), with the colour definitions; the layout's own styles over the global ones
+    # Render: glyph id or glyph type -> its style's fill, stroke, stroke-width and font-size, from its first shape
+    # where the shape sets them (what is drawn), else from the style's group; the layout's own styles over the global ones
     defs, by_id, by_type = {}, {}, {}
     glob = [e for e in all_(model, 'listOfGlobalRenderInformation')]
     local = [e for e in all_(lay, 'listOfRenderInformation')]
@@ -105,7 +105,7 @@ def styles(model, lay):
             if g is None:
                 continue
             shape = next((c for c in g if isinstance(c.tag, str)), None)
-            v = {k: attr(g, k) or attr(shape, k) for k in ('fill', 'stroke', 'stroke-width', 'font-size')}
+            v = {k: attr(shape, k) or attr(g, k) for k in ('fill', 'stroke', 'stroke-width', 'font-size')}  # a shape's own over its group's
             v = {k: x for k, x in v.items() if x}
             for i in (attr(st, 'idList') or '').split():
                 by_id[i] = v
