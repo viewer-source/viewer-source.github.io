@@ -5,7 +5,7 @@
 # adapter's drawing made with tidy (process glyph placed only for a modifier straight across). Every
 # move is in the messages; a node moves only if it stays in its compartment and overlaps nothing.
 from . import layout, report
-from .cd_layout import descendants
+from .cd_layout import anchor_point, descendants
 
 # Main lines only slightly off the vertical or horizontal (a hand edit of glycolysis: the
 # PKA complexes and PKA cat put on one vertical line by hand). Across all maps the slightly-off
@@ -100,8 +100,9 @@ def tidy(diagram, drawing, ents, members, label):
             said_move(j, d * (ax == 0), d * (ax == 1), why)
 
     # a main line yEd draws level into a larger node off its centre (an end point beside the
-    # centre): CellDesigner aims at the centre, so the other end moves onto its centre line
-    # (hand edits of iNOS: CaM moved 25 px for CaM -> CaM:iNOS)
+    # centre): the other end moves into line with where CellDesigner's line meets that node, its centre
+    # or the place the end takes (cd_layout.draw; a side's middle is on the centre line), so the line is
+    # level (hand edits of iNOS: CaM moved 25 px for CaM -> CaM:iNOS); a line already meeting it, nothing
     fls = {p: fl for p, fl in drawing.lines().items() if fl}
     ends = [(fl[0][0].source, fl[1][0].target) for fl in fls.values()]
     for p, (ins, outs, mods, gates, reversible, c) in fls.items():
@@ -111,10 +112,18 @@ def tidy(diagram, drawing, ents, members, label):
             [(cen(q_)[0] + outs[0].target_at[0], cen(q_)[1] + outs[0].target_at[1])]
         for ax in (0, 1):
             if max(q[ax] for q in pts) - min(q[ax] for q in pts) < 1 and abs(cen(r_)[ax] - cen(q_)[ax]) > 0.5:
-                if abs(ins[0].source_at[ax]) < 0.5 <= abs(outs[0].target_at[ax]):
-                    shift(r_, ax, cen(q_)[ax] - cen(r_)[ax], ends, 'onto the centre line of %s' % (label[q_] or q_))
-                elif abs(outs[0].target_at[ax]) < 0.5 <= abs(ins[0].source_at[ax]):
-                    shift(q_, ax, cen(r_)[ax] - cen(q_)[ax], ends, 'onto the centre line of %s' % (label[r_] or r_))
+                for big, at, other in ((q_, outs[0].target_at, r_), (r_, ins[0].source_at, q_)):
+                    if abs(at[ax]) >= 0.5 and abs((ins[0].source_at, outs[0].target_at)[big == r_][ax]) < 0.5:
+                        pt = lambda i, a: anchor_point(drawing.front[i], a, N[i].kind == 'SimpleChemical', N[i].kind == 'Phenotype')[ax] if a else cen(i)[ax]
+                        a = drawing.anchored(big, at, c)
+                        t = pt(big, a)
+                        # other's own end may take a place too (a metabolite's, where its name is not)
+                        oat = (ins[0].source_at, outs[0].target_at)[big == r_]
+                        d = t - pt(other, drawing.anchored(other, oat, c))
+                        if abs(d) >= 0.5:
+                            shift(other, ax, d, ends, ('in line with %s\'s place %s' % (label[big] or big, a)) if a and abs(t - cen(big)[ax]) >= 0.5
+                                  else 'onto the centre line of %s' % (label[big] or big))
+                        break
 
     # modifiers onto their (midway) square: a small move so the arc meets the square straight
     # (hand edits of the full set: 23 such moves). Only a move of at most ALIGN px along

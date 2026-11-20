@@ -180,7 +180,7 @@ def write(diagram, ann, layout='straight'):
     # one of LAYOUTS: 'straight', the simplest fallback (straight lines between
     # centres, process glyphs midway); 'bends' (straight & bends), the fallback: also the input's key
     # bends, anchors and modifier routes (F022 BCAA v04); 'advanced', the main file: that, with the
-    # tidy moves (main lines straightened, an end onto a larger node's centre line, a modifier onto
+    # tidy moves (main lines straightened, an end in line with where its line meets a larger node, a modifier onto
     # its process glyph; cd_tidy.py); 'drawn' (as drawn): no node moved, process glyphs and ports held
     # where the input has them by edit points, for round trips between editors
     advanced = layout != 'straight'

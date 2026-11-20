@@ -126,6 +126,7 @@ class Drawing:
     end: object     # (main line, arc, its start, several regulators) -> the point of the square it ends at
     yed: object     # yEd points -> the same points in this frame
     placed: dict    # (process, end) -> (entity, place, how far the line's end moved from the input's port, px)
+    anchored: object  # (entity, its input port, the line's next point) -> the place a main line's end takes, or None
 
 
 def draw(diagram, ents, members, label, advanced, held=False):
@@ -179,6 +180,10 @@ def draw(diagram, ents, members, label, advanced, held=False):
         if math.dist(pt(a), (cen(i)[0] + u, cen(i)[1] + v)) >= math.hypot(u, v):
             return None
         return {'E': 'ESE', 'W': 'WSW'}.get(a, a) if N[i].kind == 'SimpleChemical' else a
+
+    def anchored(i, at, T):  # as geometry gives a main line's end a place (advanced, not twins)
+        a = nearest(i, at) or (meet(cen(i), T, None) if N[i].kind == 'SimpleChemical' else None)
+        return a if a and off_line(i, a, T) else None
 
     def level(e, c):
         # a modifier arc that reaches the process at c straight across in yEd (5 px), in line with
@@ -401,7 +406,7 @@ def draw(diagram, ents, members, label, advanced, held=False):
         return i, M, T, at, pts
 
     end = lambda g, e, M, many: attach(g, target(g, e, M, many))
-    return Drawing(box, front, size, cen, lines, geometry, modifier, side, end, yed, placed)
+    return Drawing(box, front, size, cen, lines, geometry, modifier, side, end, yed, placed, anchored)
 
 
 def say_places(drawing, label):
