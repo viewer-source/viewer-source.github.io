@@ -1,13 +1,14 @@
 # Read SBML with its Layout (Level 3 package, or the Level 2 annotation of the same elements) into the map model,
 # drawn as the file places it: compartment and species glyphs as boxes, a reaction glyph as a process, its species
 # reference glyphs as arcs. Glyph kinds come from SBO terms (SBO below); a species without one is an unspecified
-# entity. Read only; the rules in docs/SBML.md.
+# entity. Colours, outlines and font sizes from Render styles where the file has them. Read only; the rules in
+# docs/SBML.md.
 import os, re
 from lxml import etree
 from . import report
 from .annotation import to_properties
 from .model import Map, Node, Arc
-from .sbgnml import urn
+from .sbgnml import colour, urn
 
 RDF = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#'
 # species SBO term -> the map's glyph (SBGN PD), with a unit of information where SBGN draws one
@@ -72,7 +73,7 @@ def points(g):
     pts = []
     for s in segs:
         for e in (kid(s, 'start'), kid(s, 'end')):
-            if e is not None:
+            if e is not None and num(attr(e, 'x')) is not None and num(attr(e, 'y')) is not None:
                 p = (float(attr(e, 'x')), float(attr(e, 'y')))
                 if not pts or abs(pts[-1][0] - p[0]) > .01 or abs(pts[-1][1] - p[1]) > .01:
                     pts.append(p)
@@ -91,10 +92,33 @@ def annotations(el):
     return data
 
 
-def is_sbml(text):
-    # an SBML file this reader draws: SBML with a layout, not CellDesigner's own (celldesigner.read)
-    head = text[:200000]
-    return '<sbml' in head and 'listOfLayouts' in text and 'celldesigner' not in head
+def styles(model, lay):
+    # Render: glyph id or glyph type -> its style's fill, stroke, stroke-width and font-size (the style's group, else
+    # its first shape), with the colour definitions; the layout's own styles over the global ones
+    defs, by_id, by_type = {}, {}, {}
+    glob = [e for e in all_(model, 'listOfGlobalRenderInformation')]
+    local = [e for e in all_(lay, 'listOfRenderInformation')]
+    for ri in glob + local:
+        defs.update({attr(c, 'id'): attr(c, 'value') for c in all_(ri, 'colorDefinition')})
+        for st in all_(ri, 'style'):
+            g = kid(st, 'g')
+            if g is None:
+                continue
+            shape = next((c for c in g if isinstance(c.tag, str)), None)
+            v = {k: attr(g, k) or attr(shape, k) for k in ('fill', 'stroke', 'stroke-width', 'font-size')}
+            v = {k: x for k, x in v.items() if x}
+            for i in (attr(st, 'idList') or '').split():
+                by_id[i] = v
+            for t in (attr(st, 'typeList') or '').split():
+                by_type[t.upper()] = v
+    return defs, by_id, by_type
+
+
+def num(v):
+    try:
+        return float(v)
+    except (TypeError, ValueError):
+        return None
 
 
 def read(path):
@@ -108,13 +132,13 @@ def read(path):
         report.say('left out', 'layouts after the first: %d' % (len(layouts) - 1))
     sp = {e.get('id'): e for e in all_(model, 'species')}
     comp = {e.get('id'): e for e in all_(model, 'compartment')}
-    refs = {}  # a speciesReference's id -> (role, species, SBO term)
-    for r in all_(model, 'reaction'):
+    meta = {e.get('metaid'): e for e in model.iter(etree.Element) if e.get('metaid')}
+    rx = {e.get('id'): e for e in all_(model, 'reaction')}
+    refs = {}  # reaction id -> [(role, species, SBO term, the reference's id)]
+    for i, r in rx.items():
         for lst, role in (('listOfReactants', 'substrate'), ('listOfProducts', 'product'), ('listOfModifiers', 'modifier')):
             for s in (kids(kid(r, lst), 'speciesReference') + kids(kid(r, lst), 'modifierSpeciesReference')) if kid(r, lst) is not None else []:
-                if s.get('id'):
-                    refs[s.get('id')] = (role, s.get('species'), sbo(s))
-    rx = {e.get('id'): e for e in all_(model, 'reaction')}
+                refs.setdefault(i, []).append((role, s.get('species'), sbo(s), s.get('id')))
     text = {}  # glyph id -> its text glyph's text
     for t in all_(lay, 'textGlyph'):
         g, o = attr(t, 'graphicalObject'), attr(t, 'originOfText')
@@ -138,13 +162,16 @@ def read(path):
         return min(hold, key=lambda n: n.box[2] * n.box[3]).id if hold else None
 
     for g in all_(lay, 'speciesGlyph'):
-        i, s = attr(g, 'id'), sp.get(attr(g, 'species'))
+        i, ref = attr(g, 'id'), attr(g, 'species')
+        s = sp.get(ref) if ref else meta.get(attr(g, 'metaidRef'))
         b = box(g)
         if b is None:
             skipped.setdefault('species glyph without a box', []).append(i); continue
+        if s is None:
+            skipped.setdefault('species glyph naming no species of the model (drawn as an unspecified entity)', []).append(i)
         k = SPECIES.get(sbo(s) if s is not None else '', 'UnspecifiedEntity')
         kind, units = (k, []) if isinstance(k, str) else (k[0], [k[1]])
-        nodes[i] = Node(id=i, kind=kind, box=b, units=units, parent=inside(b), species=attr(g, 'species'),
+        nodes[i] = Node(id=i, kind=kind, box=b, units=units, parent=inside(b), species=s.get('id') if s is not None else None,
                         labels=['' if kind == 'EmptySet' else (text.get(i) or (s.get('name') or s.get('id') if s is not None else ''))],
                         data=annotations(s) if s is not None else {})
     if not any(n.kind != 'Compartment' for n in nodes.values()):
@@ -166,25 +193,59 @@ def read(path):
         elif b is not None:
             x, y = b[0], b[1]
         else:
-            skipped.setdefault('reaction glyph without a place', []).append(i); continue
+            skipped.setdefault('reaction glyph without a place (its lines with it)', []).append(i); continue
         side = min(b[2], b[3]) if b is not None and 8 <= min(b[2], b[3]) <= 40 else PROCESS
         kind, cls = REACTION.get(sbo(r) if r is not None else '', ('Process', None))
         nodes[i] = Node(id=i, kind=kind, box=(x - side / 2, y - side / 2, side, side), labels=[''],
                         data=dict(annotations(r) if r is not None else {}, **({'SBGN class': cls} if cls else {})))
+        used = []
         for k, rg in enumerate(all_(g, 'speciesReferenceGlyph')):
-            t = attr(rg, 'speciesGlyph')
-            ref = refs.get(attr(rg, 'speciesReference'))
-            role = (attr(rg, 'role') or (ref[0] if ref else '')).lower()
+            t, aid = attr(rg, 'speciesGlyph'), attr(rg, 'id') or '%s.%d' % (i, k)
+            if not t:
+                skipped.setdefault('line naming no species glyph', []).append(aid); continue
             if t not in nodes:
-                skipped.setdefault('arc to a glyph left out', []).append(attr(rg, 'id') or i); continue
-            line = points(rg)  # from the reaction to the species, as the Layout specification draws it
+                skipped.setdefault('line to a glyph left out', []).append(aid); continue
+            # its species reference: by id, else by the species its glyph draws
+            # (a species in two roles of one reaction: its glyphs take the references in their order, each once)
+            mine = refs.get(attr(g, 'reaction'), [])
+            hit = [e for e in mine if e[3] and e[3] == attr(rg, 'speciesReference')] or \
+                  [e for e in mine if e[1] == nodes[t].species and e not in used] or \
+                  [e for e in mine if e[1] == nodes[t].species]
+            ref = hit[0] if hit else None
+            used.append(ref)
+            role = (attr(rg, 'role') or (ref[0] if ref else '')).lower()
+            line = points(rg)
+            if len(line) > 1:  # the curve set to run from the species: the specification leaves its direction open
+                (cx, cy), d = (nodes[t].box[0] + nodes[t].box[2] / 2, nodes[t].box[1] + nodes[t].box[3] / 2), lambda p: (p[0] - cx) ** 2 + (p[1] - cy) ** 2
+                if d(line[-1]) < d(line[0]):
+                    line = line[::-1]
+            inner = line[1:-1]
             if role in ('substrate', 'sidesubstrate'):
-                arcs.append(Arc(id=attr(rg, 'id') or '%s.%d' % (i, k), source=t, target=i, points=line[::-1][1:-1]))
+                arcs.append(Arc(id=aid, source=t, target=i, points=inner))
             elif role in ('product', 'sideproduct'):
-                arcs.append(Arc(id=attr(rg, 'id') or '%s.%d' % (i, k), source=i, target=t, head='production', points=line[1:-1]))
+                arcs.append(Arc(id=aid, source=i, target=t, head='production', points=inner[::-1]))
             else:
-                head = MODIFIER.get(ref[2] if ref and ref[2] in MODIFIER else role, 'modulation')
-                arcs.append(Arc(id=attr(rg, 'id') or '%s.%d' % (i, k), source=t, target=i, head=head, points=line[::-1][1:-1]))
+                term = ref[2] if ref else ''
+                head = MODIFIER.get(term) if term in MODIFIER and term != '0000019' else MODIFIER.get(role, 'modulation')
+                arcs.append(Arc(id=aid, source=t, target=i, head=head, points=inner))
+    defs, by_id, by_type = styles(model, lay)
+    kinds = {'Compartment': 'COMPARTMENTGLYPH'}
+    for n in nodes.values():
+        st = by_id.get(n.id) or by_type.get(kinds.get(n.kind, 'REACTIONGLYPH' if n.kind.endswith('Process') else 'SPECIESGLYPH')) or by_type.get('ANY') or {}
+        if n.kind not in ('Process', 'OmittedProcess', 'UncertainProcess', 'EmptySet'):
+            n.fill = colour(st.get('fill'), defs)
+        if n.kind == 'Compartment':
+            c = colour(st.get('stroke'), defs)
+            n.line = c if c not in (None, '#000000') else None
+            n.weight = num(st.get('stroke-width'))
+    for t in all_(lay, 'textGlyph'):  # a label's font size from its text glyph's style
+        g, st = attr(t, 'graphicalObject'), by_id.get(attr(t, 'id')) or by_type.get('TEXTGLYPH') or {}
+        if g in nodes and num(st.get('font-size')):
+            nodes[g].font = num(st.get('font-size'))
+    for a in arcs:
+        st = by_id.get(a.id) or by_type.get('SPECIESREFERENCEGLYPH') or {}
+        c = colour(st.get('stroke'), defs)
+        a.line = c if c not in (None, '#000000') else None
     for g in all_(lay, 'generalGlyph'):
         skipped.setdefault('general glyph', []).append(attr(g, 'id'))
     drawn = {g for g in (attr(e, 'reaction') for e in all_(lay, 'reactionGlyph'))}
