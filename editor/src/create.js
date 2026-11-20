@@ -814,12 +814,26 @@
       var pc = k >= 0 && nodes2[k].shape.kind === 'Process' ? sbJs.classOf(src(), nodes2[k].id) : '';
       if (sbJs.PROCESSES.indexOf(pc) >= 0) {   // its kinds by Change identity, the palette's names (not an association or dissociation of a file)
         var pid = nodes2[k].id, psigns = PAL_PD.filter(function (g) { return g[0] === 'Process nodes'; })[0][1];
-        return lateItem(['Change identity', subItem(function (r, done) {
+        var pit = lateItem(['Change identity', subItem(function (r, done) {
           return kindWindow(r, sbJs.PROCESSES.map(function (c) {
             var q = psigns.filter(function (s) { return s[0] === c; })[0];
             return q && { name: q[1], own: c === pc, go: function () { var t2 = sbJs.kind(text, pid, c); if (t2 === text) return; remember(false); text = t2; made(pid); } };
           }).filter(Boolean), done);
         })]);
+        // Make reversible or Make irreversible, after Change identity, as on CellDesigner reactions: its consumptions
+        // turned into productions from the same port (productions on both sides, SBGN's reversible process), or those on
+        // the port-in side turned back (sbgn_edit.reversible); one undo step, the turned lines selected
+        var rv = sbJs.reversibility(text, pid, { sbgn: src() });
+        if (rv && (rv.can || rv.rev)) pit.push([rv.rev ? 'Make irreversible' : 'Make reversible', function () {
+          var on = !rv.rev, n = on ? rv.can : rv.rev, ids = [];
+          for (var j = 0; j < n; j++) ids.push(freeId('arc_', ids));
+          var t2 = sbJs.reversible(text, pid, on, ids, { sbgn: src() });
+          if (t2 === text) return;
+          remember(false); text = t2; parse(); selN = []; selP = []; part = null;
+          selE = edges2.map(function (e2, q) { return ids.indexOf(e2.id) >= 0 ? q : -1; }).filter(function (q) { return q >= 0; });
+          dirty = true; quiet(); render(); paint(); changed();
+        }]);
+        return pit;
       }
       // a compartment's name in one of its six places (never in the middle):
       // over a named compartment and nothing else, the places it is not in (sbgn_edit.nameAt)

@@ -76,7 +76,7 @@ files.forEach(function (f, i) {
   var first3 = /<edge id="mk_a7"[\s\S]*?sx="([^"]*)" sy="([^"]*)"/.exec(g2);
   g2 = se.connect(g2, 'mk_a8', 'mk_m4', 'mk_p3', 'consumption', so);
   var then3 = /<edge id="mk_a7"[\s\S]*?sx="([^"]*)" sy="([^"]*)"/.exec(g2);
-  if (!(+first3[1] < 0 && +first3[2] === 0 && +then3[1] === 0 && +then3[2] > 0)) throw new Error('second link not re-guessed: ' + first3.slice(1) + ' then ' + then3.slice(1));
+  if (!(+first3[1] < 0 && Math.abs(+first3[2]) < 1e-6 && Math.abs(+then3[1]) < 1e-6 && +then3[2] > 0)) throw new Error('second link not re-guessed: ' + first3.slice(1) + ' then ' + then3.slice(1));
   // two productions keep the first guess (re-guessed from the centre to their mean, they would turn across the flow)
   g2 = se.add(g2, { id: 'mk_m6', cls: 'macromolecule', label: 'East', box: r3([right + 1350 - M.w / 2, top + 400, M.w, M.h]), fill: M.fill, font: M.font }, opt);
   g2 = se.add(g2, { id: 'mk_m7', cls: 'macromolecule', label: 'West', box: r3([right + 1050 - M.w / 2, top + 410, M.w, M.h]), fill: M.fill, font: M.font }, opt);

@@ -668,10 +668,18 @@
           // the arc named the glyph: now the port its glyph's other consumptions (products) use, else a port made
           var have = kids(S.glyph[s.gid].el, 'port').map(function (x) { return x.getAttribute('id'); }), other = use[s.gid + '\u0000' + (3 - no)];
           var pid = use[s.gid + '\u0000' + no] || (have.length >= 2 ? have.filter(function (x) { return x !== other; })[other ? 0 : no - 1] : null);
+          var proc = !GATES.test(S.glyph[s.gid].el.getAttribute('class') || ''), d2 = function (Q) { return Q ? Math.hypot(Q[0] - P[0], Q[1] - P[1]) : Infinity; };
+          if (no === 2 && proc && have.length >= 2) {   // a production of a reversible process leaves from the nearer port (the converter's sbgnml.write)
+            var now = function (x) { return portAt[x] || (map[s.gid] ? map[s.gid](xy(S.port[x])) : xy(S.port[x])); };
+            var near = have.slice().sort(function (x, y) { return d2(now(x)) - d2(now(y)); })[0];
+            if (near !== pid && d2(now(near)) + 0.5 < d2(now(pid))) pid = near;
+          }
           if (pid) { ref[j0] = pid; portAt[pid] = portAt[pid] || P; }
           else {
-            (newPorts[s.gid] = newPorts[s.gid] || {})[no] = newPorts[s.gid][no] || P;
-            ref[j0] = newId(s.gid, no);
+            var np = newPorts[s.gid] = newPorts[s.gid] || {}, k = no;
+            if (no === 2 && proc && np[2] && d2(np[2]) > 0.5 && (!np[1] || d2(np[1]) <= 0.5)) k = 1;   // a bare process's second production, on the other side: its port in
+            np[k] = np[k] || P;
+            ref[j0] = newId(s.gid, k);
           }
         }
         setXY(el, P);
@@ -1663,6 +1671,51 @@
     });
     return T.text();
   }
+  // a process made reversible (Make reversible, as on CellDesigner reactions): each consumption turned into a production
+  // leaving from the same port (the line reversed: its ends, its bend points, its colour and width kept), so the process
+  // has productions on both sides, as SBGN draws a reversible process (only with a production already: else the reaction
+  // would be drawn backwards); made irreversible: the productions on the port-in side (the file's port .1 where it has
+  // its own ports) turned back into consumptions (at least one production stays). Lines between entities only, never
+  // a gate's. The new arcs carry the line's colour, width and dash, not the file arc's notes or annotation. ids: one new edge id for each arc turned (the
+  // old ids marked deleted for write()). reversibility(g, id) -> null for no process, else { can: the consumptions
+  // Make reversible would turn, rev: the productions on the port-in side Make irreversible would turn back }
+  function revSides(G, pid, opt) {   // [consumptions, productions on the port-in side, productions]
+    var n = G.node[pid], c = centre(n.box), es = Object.keys(G.edge).map(function (k) { return G.edge[k]; });
+    var ent = function (x) { return G.node[x] && !/\.(Process|Operator)$/.test(G.node[x].geo.parentNode.getAttribute('configuration') || ''); };   // an entity, not a gate or another process
+    var cons = es.filter(function (e) { return e.t === pid && headOf(e) === 'none' && ent(e.s); });
+    var prods = es.filter(function (e) { return e.s === pid && headOf(e) === ARROW.production && ent(e.t); });
+    if (!prods.length) return [[], [], prods];   // no production: turning its consumptions would draw the reaction backwards
+    if (cons.length || prods.length < 2) return [cons, [], prods];
+    var dir = function (e) { return Math.abs(e.off[0]) > 1e-9 || Math.abs(e.off[1]) > 1e-9 ? [e.off[0], e.off[1]] : (function (f) { return [f[0] - c[0], f[1] - c[1]]; })(e.pts.length ? e.pts[0] : centre(G.node[e.t].box)); };
+    var S = opt && opt.sbgn ? sbgn(opt.sbgn, opt) : null, f = S && S.glyph[pid], fp = f ? kids(f.el, 'port') : [], pin;
+    if (fp.length >= 2) { var fc = centre(f.box), q1 = xy(fp[0]); pin = [q1[0] - fc[0], q1[1] - fc[1]]; }   // the file's own ports: its first (.1) is in, SBGN-ML's way
+    else { var pp = hubPorts(G, pid, null, true, S); pin = pp[0] || (function (d) { return [-d[0], -d[1]]; })(dir(prods[0])); }
+    var ins = prods.filter(function (e) { var d = dir(e); return d[0] * pin[0] + d[1] * pin[1] > 0; });
+    return [cons, ins.length < prods.length ? ins : [], prods];
+  }
+  function reversibility(t, pid, opt) {
+    var G = gml(t, opt);
+    if (!G.node[pid] || !/\.Process$/.test(G.node[pid].geo.parentNode.getAttribute('configuration') || '')) return null;
+    var r = revSides(G, pid, opt);
+    return { can: r[0].length, rev: r[1].length };   // how many arcs each way would turn
+  }
+  function reversible(t, pid, on, ids, opt) {
+    var G = gml(t, opt);
+    if (!G.node[pid]) return t;
+    var r = revSides(G, pid, opt), turn = on ? r[0] : r[1];
+    if (!turn.length || ids.length < turn.length) return t;
+    var looks = turn.map(function (e) { var ls = e.el.getElementsByTagNameNS(YNS, 'LineStyle')[0]; return ls ? [ls.getAttribute('color') || '#000000', ls.getAttribute('width') || '1.0', ls.getAttribute('type') || 'line'] : null; });
+    var list = turn.map(function (e, k) { return [ids[k], e.t, e.s, [e.off[2], e.off[3], e.off[0], e.off[1]], on ? ARROW.production : 'none', e.pts.slice().reverse()]; });
+    t = arcRemove(t, turn.map(function (e) { return e.el.getAttribute('id'); }), opt);
+    t = edgesIn(t, gml(t, opt), list);
+    list.forEach(function (q, k) {   // the line's own colour and width, as before
+      var L = looks[k];
+      if (!L || (L[0].toUpperCase() === '#000000' && F(L[1]) === 1 && L[2] === 'line')) return;
+      var at = t.indexOf('<edge id="' + esc(q[0]) + '"'), ls = at >= 0 ? t.indexOf('<y:LineStyle ', at) : -1, end = ls >= 0 ? t.indexOf('>', ls) + 1 : -1;
+      if (end > 0) t = t.slice(0, ls) + '<y:LineStyle color="' + esc(L[0]) + '" type="' + esc(L[2]) + '" width="' + esc(L[1]) + '"/>' + t.slice(end);
+    });
+    return t;
+  }
   function arcRemove(t, ids, opt) {   // arcs deleted in the editor's GraphML; their ids kept for write()
     var G = gml(t, opt), T = new Tags(t, G.doc), del = [];
     ids.forEach(function (id) { if (G.edge[id]) { del.push(id); T.cut(G.edge[id].el); } });
@@ -2205,7 +2258,7 @@
 
   var api = { LOOKS: LOOKS, NAMED: NAMED, MULTI: MULTI, graphml: graphml, write: write, join: join, joinable: joinable, nameAt: nameAt, namePlaces: namePlaces, stack: stack, restack: restack, stackMoves: stackMoves, NAME_PLACES: NAME_PLACES, defaults: defaults, add: add, lookOf: lookOf, restyle: restyle, restyleAll: restyleAll, colours: colours, lineOf: lineOf, recolour: recolour, widthOf: widthOf, rewidth: rewidth, label: label, state: state, stateValue: stateValue, stateMove: stateMove, stateDelete: stateDelete,
               unit: unit, unitValue: unitValue, unitDelete: unitDelete, multimer: multimer, classOf: classOf, MAKE: MAKE, kind: kind, PROCESSES: ['process'].concat(Object.keys(SIGN)), SIGN: SIGN, remove: remove, resize: resize, scaleEnds: scaleEnds, gone: gone, nameable: nameable,
-              moveInto: moveInto, connect: connect, arcRemove: arcRemove, arcKind: arcKind, GATE: GATE, ARROW: ARROW, MODULATIONS: ['stimulation', 'catalysis', 'inhibition', 'necessary stimulation', 'modulation'],
+              moveInto: moveInto, connect: connect, reversible: reversible, reversibility: reversibility, arcRemove: arcRemove, arcKind: arcKind, GATE: GATE, ARROW: ARROW, MODULATIONS: ['stimulation', 'catalysis', 'inhibition', 'necessary stimulation', 'modulation'],
               activity: activity, activities: activities, proteinBoxes: proteinBoxes, afUnitBox: afUnitBox, afUnitFont: afUnitFont, isAf: isAf, mapKind: mapKind, unitFor: unitFor, fillFor: fillFor, AF_ARC: AF_ARC, UNITS: Object.keys(UNIT_CLS).filter(function (u) { return u && u !== 'perturbation'; }), unitClass: actCls,
               Tags: Tags, repr: repr, num: num };   // Tags, repr and num serve sbml_edit.js too
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.sbgn_edit = api;

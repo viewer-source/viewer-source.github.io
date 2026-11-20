@@ -31,7 +31,7 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local =
   var near = function (a, c, t) { return !!a && !!c && a.every(function (v, j) { return Math.abs(v - c[j]) <= (t || 1.5); }); };
   for (var h of ['glycolysis-sbgn', 'glycolysis-celldesigner']) {
     await page.goto(base + '#' + h, { waitUntil: 'load' }); await page.waitForSelector('.m2-ri[data-win="edit"]', { timeout: 30000 });
-    await page.click('.m2-ri[data-win="edit"]'); await page.waitForTimeout(5000);
+    await page.waitForTimeout(2500); if (!(await page.$('#m2-editwin:visible'))) await page.click('.m2-ri[data-win="edit"]'); await page.waitForTimeout(5000);   // edit mode kept over a reload: not toggled off
     var spot = await page.evaluate(function () {   // a complex on screen, a point inside it on no member, one member
       var all = Array.prototype.slice.call(document.querySelectorAll('#m2-img [data-n]')), rs = all.map(function (g) { return [g, g.getBoundingClientRect()]; });
       var inside = function (a, c) { return a.left >= c.left - 0.5 && a.top >= c.top - 0.5 && a.right <= c.right + 0.5 && a.bottom <= c.bottom + 0.5; };
