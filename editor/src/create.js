@@ -1555,8 +1555,8 @@
     // a row: [key, name, kind (text, num, colour, check), its input's limits, its title]; a format's part may add its own rows (propRows)
     var props = document.createElement('div');
     props.className = 'm2-ed-props'; props.hidden = true;
-    // a line's rows (yEd's Properties View for an edge): its colour, its two ports as offsets from its glyph's centre
-    var EROWS = [['ecol', 'Line colour', 'colour'], ['sx', 'Source port X', 'num'], ['sy', 'Source port Y', 'num'],
+    // a line's rows (yEd's Properties View for an edge): its colour and width, its two ports as offsets from its glyph's centre
+    var EROWS = [['ecol', 'Line colour', 'colour'], ['ewid', 'Line width', 'num', ' min="0.25" max="20"'], ['sx', 'Source port X', 'num'], ['sy', 'Source port Y', 'num'],
       ['tx', 'Target port X', 'num'], ['ty', 'Target port Y', 'num']];
     // a reaction's rows, one reaction selected on a map whose format's part has a reaction's answers (PF_CD.rx)
     var RROWS = [['rev', 'Reversible', 'check']];
@@ -1730,7 +1730,7 @@
     }
     function sbEnds(id, o, box) { var t2 = sbJs.scaleEnds(text, id, o, box); if (t2 !== text) { text = t2; parse(); } }   // a complex's line ends after its box was set (dragEnd, core.js)
     var PF_SB = { sizable: sbSizable, size: sbSetSize, node: sbNode, set: sbSet, def: sbDef, ends: sbEnds,
-      line: { colour: sbLineColour, set: sbLineSet, ports: true },   // a line's colour and its ports' rows (edgeShow, edgeSet)
+      line: { colour: sbLineColour, set: sbLineSet, width: function (k) { return sbJs.widthOf(sbEdgeEl(k)); }, setWidth: sbLineWidth, ports: true },   // a line's colour, width and its ports' rows (edgeShow, edgeSet)
       off: sbOff,
       look: function (i) { var o = sbJs.lookOf(realizerOf(nodes2[i].el)); return { label: nameOf(i), font: o.font, fill: o.fill ? o.fill.slice(0, 7).toLowerCase() : '', line: (o.line || '#000000').slice(0, 7).toLowerCase(), width: o.width, multimer: o.multimer }; } };
     // a line's Properties, one line selected on a map whose format's part has a line's answers (PF_SB.line): Line colour
@@ -1756,9 +1756,12 @@
       var k = edges2.findIndex(function (q) { return q.id.indexOf(r.rid + '|') === 0 && !/\|[mrp]\d+$/.test(q.id); });   // not a line with its own colour
       return k >= 0 && f.line.colour(k) != null ? k : -1;
     }
-    function sbLineColour(k) { var el = edges2[k].path.parentNode; while (el && el.localName !== 'edge') el = el.parentNode; return sbJs.lineOf(el) || '#000000'; }
-    function sbLineSet(k, c) {   // c '#rrggbb', null for black (yEd's default, no colour written); false when nothing changed
-      var id = edges2[k].id, t2 = sbJs.recolour(text, id, c);
+    function sbEdgeEl(k) { var el = edges2[k].path.parentNode; while (el && el.localName !== 'edge') el = el.parentNode; return el; }
+    function sbLineColour(k) { return sbJs.lineOf(sbEdgeEl(k)) || '#000000'; }
+    function sbLineSet(k, c) { return sbLineTo(k, sbJs.recolour(text, edges2[k].id, c)); }   // c '#rrggbb', null for black (yEd's default, no colour written); false when nothing changed
+    function sbLineWidth(k, w) { return sbLineTo(k, sbJs.rewidth(text, edges2[k].id, w)); }   // w 1 the default
+    function sbLineTo(k, t2) {   // the line's text changed: one undo step, the line selected again
+      var id = edges2[k].id;
       if (t2 === text) return false;
       remember(false); text = t2; parse(); selE = []; edges2.forEach(function (q, j) { if (q.id === id) selE = [j]; });
       dirty = true; render(); paint(); changed();
@@ -1768,12 +1771,13 @@
     function edgeShow(k, all, r2) {
       props.querySelector('.m2-ed-pdef').hidden = true;
       var e = edges2[k], pl = propFmt().line;
-      var now = { ecol: (pl.colour(k) || '#000000').slice(0, 7).toLowerCase() };
+      var now = { ecol: (pl.colour(k) || '#000000').slice(0, 7).toLowerCase(), ewid: r2(pl.width(k)) };
       ['sx', 'sy', 'tx', 'ty'].forEach(function (a) { now[a] = r2(num(e.path, a) || 0); });
       EROWS.forEach(function (r) {
         var f = field(r[0]);
-        f.closest('tr').hidden = r[2] === 'num' && !pl.ports;   // the ports as offsets: yEd's, not every format's
-        if (r[2] === 'num') f.disabled = atHub(k, r[0].charAt(0) === 't');
+        var port = /^[st][xy]$/.test(r[0]);
+        f.closest('tr').hidden = port && !pl.ports;   // the ports as offsets: yEd's, not every format's
+        if (port) f.disabled = atHub(k, r[0].charAt(0) === 't');
         if (!all && document.activeElement === f) return;
         if (f.value !== now[r[0]]) f.value = now[r[0]];
         var pk = f.previousElementSibling;
@@ -1788,6 +1792,11 @@
         var c = hex(f.value);
         if (c === null) { propsShow(true); return; }
         if (!pf.line.set(k, c === '' || c === '#000000' ? null : c)) propsShow(true);
+        return;
+      }
+      if (key === 'ewid') {   // outside 0.25 to 20: the nearest, silently (as Border width)
+        var w = parseFloat(f.value);
+        if (!isFinite(w) || !pf.line.setWidth(k, Math.round(Math.min(Math.max(w, 0.25), 20) * 100) / 100)) propsShow(true);   // in hundredths, as shown and written
         return;
       }
       var end = key.charAt(0) === 't', v = parseFloat(f.value), a = end ? ['tx', 'ty'] : ['sx', 'sy'];

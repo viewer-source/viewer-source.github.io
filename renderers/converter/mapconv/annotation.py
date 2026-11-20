@@ -19,23 +19,33 @@ def miriam(p):
     return out
 
 
+def uses_links(diagram):
+    # a map without identifier properties (not annotated): its node links to ChEBI and UniProt are read instead
+    return not any(d.data.get(k) for d in diagram.nodes.values() for k in ('ChEBI', 'HGNC symbol', 'Member annotation'))
+
+
+def of_node(p, links=False):
+    # (family, [urn]) of one node's properties, None without any
+    if p.get('Member annotation'):
+        return True, [u for m in json.loads(p['Member annotation']) for u in miriam(dict(m['props']))]
+    if p.get('ChEBI') or p.get('HGNC symbol'):
+        return False, miriam(p)
+    if links:
+        for pat, urns in LINK:
+            hit = re.search(pat, p.get('url', ''))
+            if hit:
+                return False, urns(hit.group(1))
+    return None
+
+
 def from_graphml(diagram):
-    out = {}
-    links = not any(d.data.get(k) for d in diagram.nodes.values() for k in ('ChEBI', 'HGNC symbol', 'Member annotation'))
+    out, links = {}, uses_links(diagram)
     for d in diagram.nodes.values():
         lab = ' '.join(d.labels[0].split()) if d.labels else ''
-        if not lab or lab in out:
-            continue
-        p = d.data
-        if p.get('Member annotation'):
-            out[lab] = (True, [u for m in json.loads(p['Member annotation']) for u in miriam(dict(m['props']))])
-        elif p.get('ChEBI') or p.get('HGNC symbol'):
-            out[lab] = (False, miriam(p))
-        elif links:
-            for pat, urns in LINK:
-                hit = re.search(pat, p.get('url', ''))
-                if hit:
-                    out[lab] = (False, urns(hit.group(1))); break
+        if lab and lab not in out:
+            a = of_node(d.data, links)
+            if a:
+                out[lab] = a
     return out
 
 

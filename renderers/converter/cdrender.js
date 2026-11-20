@@ -706,13 +706,13 @@
         var bends = editPoints(get(l, 'editPoints') || findtext(l, 'cd:editPoints', '')).map(function (p) { return into ? fromFrame(O, J, p) : fromFrame(J, O, p); });
         var seq = [O].concat(into ? bends : bends.slice().reverse(), [J]);
         seq[0] = self.clip(i, O, Oo[1], seq[1]);
-        var lc = find(l, 'cd:line'), lcol = lc ? colour(get(lc, 'color'))[0] : col;   // an added reactant or product in its own colour, as CellDesigner keeps one for each
-        if (into) self.path(seq, lcol, wd, dash, true, false);
+        var lc = find(l, 'cd:line'), lcol = lc ? colour(get(lc, 'color'))[0] : col, lwd = lc ? F(get(lc, 'width', wd)) : wd;   // an added reactant or product in its own colour and width, as CellDesigner keeps one for each
+        if (into) self.path(seq, lcol, lwd, dash, true, false);
         else {
           seq = seq.reverse();
           var L = seq.length, w_ = unit(seq[L - 1][0] - seq[L - 2][0], seq[L - 1][1] - seq[L - 2][1]);
           var stop = self.head('production', seq[L - 1], w_);
-          self.path(seq.slice(0, -1).concat([stop]), lcol, wd, dash, false, true);
+          self.path(seq.slice(0, -1).concat([stop]), lcol, lwd, dash, false, true);
         }
         self.close();
       });
@@ -756,7 +756,7 @@
       u = unit(seq[seq.length - 1][0] - seq[seq.length - 2][0], seq[seq.length - 1][1] - seq[seq.length - 2][1]);
       stop = self.head(HEADS[t] || 'stimulation', T, u);
       var mc = find(m, 'cd:line');
-      self.path(seq.slice(0, -1).concat([stop]), mc ? colour(get(mc, 'color'))[0] : col, wd, t.indexOf('UNKNOWN') === 0, true, false);
+      self.path(seq.slice(0, -1).concat([stop]), mc ? colour(get(mc, 'color'))[0] : col, mc ? F(get(mc, 'width', wd)) : wd, t.indexOf('UNKNOWN') === 0, true, false);
       self.close();
     });
     var ang = Math.atan2(fl[1], fl[0]) * 180 / Math.PI;

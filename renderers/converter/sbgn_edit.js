@@ -215,7 +215,8 @@
     Object.keys(G.edge).forEach(function (id) {
       var a = S.arc[id], e = G.edge[id];
       if (!a) return;
-      setLine(T, e.el, fileLook(St, id).line);   // the file's colour (a draft, a build of an older converter)
+      var fl = fileLook(St, id);
+      setLine(T, e.el, fl.line); setWidth(T, e.el, fl.width);   // the file's colour and width (a draft, a build of an older converter)
       var E = ends(S, a), pts = E[4], want = ARROW[a.getAttribute('class')], ar = e.el.getElementsByTagNameNS(YNS, 'Arrows')[0];
       if (want != null && ar && ar.getAttribute('target') !== want) T.set(ar, 'target', want);   // an id used again by another arc (else a draft reopened over an old build keeps the old arrowhead)
       [['source', 's', 0], ['target', 't', 1]].forEach(function (q) {   // an end moved to another glyph in the editor: that glyph
@@ -545,10 +546,10 @@
       var font = NAMED.test(cls) && want.font != null && want.font !== (have.font != null ? have.font : mapFont()) ? want.font : have.font;
       if (want.fill !== have.fill || want.line !== have.line || want.width !== have.width || font !== have.font) looks.set(id, { fill: want.fill, line: want.line, width: want.width, font: font, cls: cls });
     });
-    Object.keys(S.arc).forEach(function (id) {   // a line's colour: the rest of its style (width, a fill some tools give) kept
+    Object.keys(S.arc).forEach(function (id) {   // a line's colour and width: the rest of its style (a fill some tools give) kept
       if (!G.edge[id]) return;
-      var want = lineOf(G.edge[id].el), have = fileLook(St, id), w = St.some(function (st) { return st.plain && st.has.width && st.ids.indexOf(id) >= 0; });
-      if (want !== have.line) looks.set(id, { fill: have.fill, line: want, width: w ? have.width : null, font: have.font, cls: 'arc' });   // black with nothing else: only out of its styles
+      var want = lineOf(G.edge[id].el), ww = widthOf(G.edge[id].el), have = fileLook(St, id), w = St.some(function (st) { return st.plain && st.has.width && st.ids.indexOf(id) >= 0; });
+      if (want !== have.line || ww !== have.width) looks.set(id, { fill: have.fill, line: want, width: ww !== 1 || w ? ww : null, font: have.font, cls: 'arc' });   // black and 1 with nothing else: only out of its styles; 1 written where its style gave a width (Newt's own default is 1.25)
     });
     var mapEl = kids(S.doc.documentElement, 'map')[0], tops = kids(mapEl, 'glyph'), last = tops[tops.length - 1];
     var ind0 = last ? T.indent(last) : T.indent(mapEl) + '  ', fresh = '', front = '', made = {};
@@ -1204,6 +1205,10 @@
     return c === '#000000' ? null : c;
   }
   function setLine(T, e, c) { var ls = e.getElementsByTagNameNS(YNS, 'LineStyle')[0]; if (ls && lineOf(e) !== c) T.set(ls, 'color', c || '#000000'); }
+  // a line's width (Properties): its y:LineStyle width, as graphml.write draws Arc.weight; in the SBGN-ML file the
+  // stroke-width of a style naming the arc (sbgnml.read's Arc.weight). 1 the default
+  function widthOf(e) { var ls = e.getElementsByTagNameNS(YNS, 'LineStyle')[0]; return (ls && F(ls.getAttribute('width'))) || 1; }
+  function setWidth(T, e, w) { var ls = e.getElementsByTagNameNS(YNS, 'LineStyle')[0]; if (ls && widthOf(e) !== w) T.set(ls, 'width', repr(w)); }
   //   colours(g) -> { node: { id: { fill, line } }, edge: { id: c } }: every node's fill and border colour and every edge's
   //   colour as they are (lookOf, lineOf; null: none, black), in one parse; restyleAll puts them back
   function colours(t, opt) {
@@ -1218,6 +1223,14 @@
     if (!e) return t;
     var T = new Tags(t, G.doc);
     setLine(T, e.el, c);
+    return T.text();
+  }
+  //   rewidth(g, id, w) -> g with the edge's width set to w (1 the default)
+  function rewidth(t, id, w, opt) {
+    var G = gml(t, opt), e = G.edge[id];
+    if (!e) return t;
+    var T = new Tags(t, G.doc);
+    setWidth(T, e.el, w);
     return T.text();
   }
   // the looks wanted put into the file's render styles: each glyph out of the styles naming it, into a plain style of its
@@ -2190,7 +2203,7 @@
     return t;
   }
 
-  var api = { LOOKS: LOOKS, NAMED: NAMED, MULTI: MULTI, graphml: graphml, write: write, join: join, joinable: joinable, nameAt: nameAt, namePlaces: namePlaces, stack: stack, restack: restack, stackMoves: stackMoves, NAME_PLACES: NAME_PLACES, defaults: defaults, add: add, lookOf: lookOf, restyle: restyle, restyleAll: restyleAll, colours: colours, lineOf: lineOf, recolour: recolour, label: label, state: state, stateValue: stateValue, stateMove: stateMove, stateDelete: stateDelete,
+  var api = { LOOKS: LOOKS, NAMED: NAMED, MULTI: MULTI, graphml: graphml, write: write, join: join, joinable: joinable, nameAt: nameAt, namePlaces: namePlaces, stack: stack, restack: restack, stackMoves: stackMoves, NAME_PLACES: NAME_PLACES, defaults: defaults, add: add, lookOf: lookOf, restyle: restyle, restyleAll: restyleAll, colours: colours, lineOf: lineOf, recolour: recolour, widthOf: widthOf, rewidth: rewidth, label: label, state: state, stateValue: stateValue, stateMove: stateMove, stateDelete: stateDelete,
               unit: unit, unitValue: unitValue, unitDelete: unitDelete, multimer: multimer, classOf: classOf, MAKE: MAKE, kind: kind, PROCESSES: ['process'].concat(Object.keys(SIGN)), SIGN: SIGN, remove: remove, resize: resize, scaleEnds: scaleEnds, gone: gone, nameable: nameable,
               moveInto: moveInto, connect: connect, arcRemove: arcRemove, arcKind: arcKind, GATE: GATE, ARROW: ARROW, MODULATIONS: ['stimulation', 'catalysis', 'inhibition', 'necessary stimulation', 'modulation'],
               activity: activity, activities: activities, proteinBoxes: proteinBoxes, afUnitBox: afUnitBox, afUnitFont: afUnitFont, isAf: isAf, mapKind: mapKind, unitFor: unitFor, fillFor: fillFor, AF_ARC: AF_ARC, UNITS: Object.keys(UNIT_CLS).filter(function (u) { return u && u !== 'perturbation'; }), unitClass: actCls,

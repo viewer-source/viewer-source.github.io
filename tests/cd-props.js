@@ -166,14 +166,14 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#acly-celld
     await page.mouse.click.apply(page.mouse, await lineAt(L)); await page.waitForTimeout(500);
     var er = await erows();
     var rev = await page.$eval('.m2-ed-prx', function (x) { return !x.hidden; });
-    ok(L + (L === mod ? ': Line colour alone' : ': Reversible and Line colour'), JSON.stringify(er) === JSON.stringify(['ecol']) && rev === (L !== mod), JSON.stringify(er) + ' ' + rev);
+    ok(L + (L === mod ? ': Line colour and width alone' : ': Reversible, Line colour and width'), JSON.stringify(er) === JSON.stringify(['ecol', 'ewid']) && rev === (L !== mod), JSON.stringify(er) + ' ' + rev);
     var links = function (t) { var r = new RegExp('<reaction [^>]*id="' + L.split('|')[0] + '"[\\s\\S]*?</reaction>').exec(t)[0]; return (r.match(/<celldesigner:(reactantLink|productLink) [\s\S]*?<\/celldesigner:\1>/g) || []).join(''); }, links0 = links(await now());
     await type('ecol', '#ff0000');
     var tx = await now(), rid = L.split('|')[0], rx = new RegExp('<reaction [^>]*id="' + rid + '"[\\s\\S]*?</reaction>').exec(tx)[0];
     var mseg = /<celldesigner:modification [\s\S]*?<\/celldesigner:modification>/.exec(rx), lmain = rx.replace(/<celldesigner:listOfModification>[\s\S]*?<\/celldesigner:listOfModification>/, '');
     ok(L + ': its own line written red', L === mod ? /color="ffff0000"/.test(mseg ? mseg[0] : '') && !/color="ffff0000"/.test(lmain) : /<celldesigner:line [^>]*color="ffff0000"/.test(lmain) && links(tx) === links0, rx.slice(0, 1500));   // its added reactants and products keep their own
     ok(L + ': drawn red', /#ff0000/i.test(await drawnIn(L)));
-    ok(L + ': still selected', (await erows()).length === 1);
+    ok(L + ': still selected', (await erows()).length === 2);
     if (L === main) ok(L + ': the whole reaction red, its other half too', /#ff0000/i.test(await drawnIn(rid + '|b')));
   }
 

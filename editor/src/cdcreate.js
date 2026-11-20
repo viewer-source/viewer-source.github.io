@@ -1129,22 +1129,25 @@
       selN = []; nodes2.forEach(function (n, k) { if (ids.indexOf(n.id) >= 0) selN.push(k); });
       sizeRec = null; render(); paint(); changed();
     }
-    var cdLook = [], cdLineMemo = [null, null, null];   // [alias id, file, its look]; [line id, file, its colour]
-    function cdLineColour(k) {   // read once per line and file (it runs with every paint)
+    var cdLook = [], cdLineMemo = [null, null, null, null];   // [alias id, file, its look]; [line id, file, its colour, its width]
+    function cdLineRead(k) {   // read once per line and file (it runs with every paint)
       var id = edges2[k].id;
-      if (cdLineMemo[0] !== id || cdLineMemo[1] !== cd.now) { var c = null; try { c = cdMk.lineColour(cd.now, id); } catch (e) { c = null; } cdLineMemo = [id, cd.now, c]; }
-      return cdLineMemo[2];
+      if (cdLineMemo[0] !== id || cdLineMemo[1] !== cd.now) { var c = null, w = null; try { c = cdMk.lineColour(cd.now, id); w = cdMk.lineWidth(cd.now, id); } catch (e) { c = w = null; } cdLineMemo = [id, cd.now, c, w]; }
+      return cdLineMemo;
     }
+    function cdLineColour(k) { return cdLineRead(k)[2]; }
     function cdMember(i) { var n = nodes2[i]; return n.up != null && nodes2[n.up].shape.kind === 'Complex'; }   // a complex's member (a complex inside one too)
     function cdProp(i) { return cdSpecies(i) || cdMember(i) || nodes2[i].comp || (cdRole(i) === 'epn' && nodes2[i].shape.kind === 'Complex'); }   // what Properties and resizing are for: a species, a member (its complex growing round it), a complex, a compartment
+    function cdLineTo(k, f) {   // the line, or its whole reaction, changed by f and selected again
+      var id = edges2[k].id, keep = /\|[mrp]\d+$/.test(id) ? id : id.replace(/\|[^|]*$/, '');
+      return cdApply(function (t) { return f(t, id); }, [], [keep]);
+    }
     var PF_CD = { sizable: cdProp, size: cdSetSize, def: cdDef,
       rx: { of: cdRxOf, set: cdReversible },   // a reaction's Reversible (propRx, create.js)
-      // a line's colour (edgeShow, edgeSet): a modifier's, an added reactant's or product's own, else its reaction's (a
-      // reduced notation's line, a main line); a gate's lines none (cd_make.lineColour null), no ports as offsets
-      line: { colour: cdLineColour, set: function (k, c) {   // the line, or its whole reaction, selected again
-        var id = edges2[k].id, keep = /\|[mrp]\d+$/.test(id) ? id : id.replace(/\|[^|]*$/, '');
-        return cdApply(function (t) { return cdMk.recolourLine(t, id, c || '#000000'); }, [], [keep]);
-      }, ports: false },
+      // a line's colour and width (edgeShow, edgeSet): a modifier's, an added reactant's or product's own, else its
+      // reaction's (a reduced notation's line, a main line); a gate's lines none (cd_make.lineColour null), no ports as offsets
+      line: { colour: cdLineColour, set: function (k, c) { return cdLineTo(k, function (t, id) { return cdMk.recolourLine(t, id, c || '#000000'); }); },
+        width: function (k) { return cdLineRead(k)[3]; }, setWidth: function (k, w) { return cdLineTo(k, function (t, id) { return cdMk.rewidthLine(t, id, w); }); }, ports: false },
       node: function (i) { return cdProp(i) ? i : -1; },
       off: function (k, i) {   // pNow: look's, read just before; a compartment no border width, multimer or font size (CellDesigner keeps none for its name), a complex no multimer
         return k === 'line' || (/^(mem|outer|inner)$/.test(k) && pNow.cls !== 'COMPARTMENT') || (/^(label|font|fill|multimer)$/.test(k) && pNow.cls === 'DEGRADED') || (/^(width|multimer|def|font)$/.test(k) && pNow.cls === 'COMPARTMENT') || (/^(multimer|def)$/.test(k) && pNow.cls === 'COMPLEX');

@@ -1,8 +1,9 @@
-// A line's Properties on SBGN-ML maps (the full editor): an arc given a colour and its source port moved, as the editor
-// sets them on its GraphML (recolour, the y:Path's sx and sy), then s2 = write(s, g2), the SBGN-ML file saved. Checks:
-//   1. the converter reads s2 back with that colour and that port (its GraphML of s2);
-//   2. graphml(s2, conv(s)) carries the colour (a draft reopened over a build that predates it);
-//   3. write(s2, conv(s2)) is s2 (the written file is stable); the colour set back to black leaves no colour.
+// A line's Properties on SBGN-ML maps (the full editor): an arc given a colour and a width and its source port moved, as
+// the editor sets them on its GraphML (recolour, rewidth, the y:Path's sx and sy), then s2 = write(s, g2), the SBGN-ML file saved. Checks:
+//   1. the converter reads s2 back with that colour, width and port (its GraphML of s2);
+//   2. graphml(s2, conv(s)) carries the colour and width (a draft reopened over a build that predates it);
+//   3. write(s2, conv(s2)) is s2 (the written file is stable); the colour set back to black and the width to 1 leave
+//      neither (the file's own width, Newt's 1.25, given back to the line).
 //   node tests/sbgn-line.js [python] SBGN-ML files ...
 var path = require('path'), cp = require('child_process'), here = path.join(__dirname, '..');
 var se = require(path.join(here, 'renderers/converter/sbgn_edit.js')), DP = require('@xmldom/xmldom').DOMParser, opt = { DOMParser: DP }, fs = require('fs');
@@ -27,11 +28,12 @@ args.forEach(function (f) {
   var free = !!e; e = e || es[0];
   if (!e) { console.log('skip', path.basename(f)); return; }
   n++;
-  var id = e.getAttribute('id'), g2 = se.recolour(g, id, '#CC3300', opt), p = path0(e), want = [7.5, -4];
+  var id = e.getAttribute('id'), w0 = se.widthOf(e), g2 = se.rewidth(se.recolour(g, id, '#CC3300', opt), id, 2.5, opt), p = path0(e), want = [7.5, -4];
   if (free) g2 = g2.replace(new RegExp('(<edge\\b[^>]*\\sid="' + id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '"[\\s\\S]*?<y:Path\\b)[^>]*?(\\/?>)'), function (m, a, b) {
     return a + ' sx="' + want[0] + '" sy="' + want[1] + '" tx="' + p.getAttribute('tx') + '" ty="' + p.getAttribute('ty') + '"' + b; });
   var s2 = se.write(s, g2, opt), c2 = conv([s2])[0], E2 = edge(c2, id), err = [];
   if (!E2 || se.lineOf(E2) !== '#CC3300') err.push('colour not read back: ' + (E2 && se.lineOf(E2)));
+  if (!E2 || se.widthOf(E2) !== 2.5) err.push('width not read back: ' + (E2 && se.widthOf(E2)));
   if (free && E2) { var q = path0(E2); if (Math.abs(+q.getAttribute('sx') - want[0]) > 0.01 || Math.abs(+q.getAttribute('sy') - want[1]) > 0.01) {
     // a start within 1.5 of the line from the glyph's centre toward the next point is read as aimed at the centre (sbgnml.at),
     // drawn the same: only another place is a failure
@@ -43,10 +45,12 @@ args.forEach(function (f) {
   } }
   var E3 = edge(se.graphml(s2, g, opt), id);
   if (!E3 || se.lineOf(E3) !== '#CC3300') err.push('graphml() over the old build lost the colour');
+  if (!E3 || se.widthOf(E3) !== 2.5) err.push('graphml() over the old build lost the width');
   if (se.write(s2, c2, opt) !== s2) err.push('write not stable');
-  var s3 = se.write(s2, se.recolour(c2, id, null, opt), opt), E4 = edge(conv([s3])[0], id);
+  var s3 = se.write(s2, se.rewidth(se.recolour(c2, id, null, opt), id, w0, opt), opt), E4 = edge(conv([s3])[0], id);
   if (!E4 || se.lineOf(E4) !== null) err.push('black not back: ' + (E4 && se.lineOf(E4)));
-  console.log((err.length ? 'FAIL ' : 'ok   ') + path.basename(f) + ' ' + id + (free ? ' (colour, port)' : ' (colour)') + (err.length ? ': ' + err.join('; ') : ''));
+  if (!E4 || se.widthOf(E4) !== w0) err.push('width ' + w0 + ' not back: ' + (E4 && se.widthOf(E4)));
+  console.log((err.length ? 'FAIL ' : 'ok   ') + path.basename(f) + ' ' + id + (free ? ' (colour, width, port)' : ' (colour, width)') + (err.length ? ': ' + err.join('; ') : ''));
   bad += err.length ? 1 : 0;
 });
 // an arc in one red style with a glyph, set back to black: the glyph keeps its red border, the arc leaves the style,

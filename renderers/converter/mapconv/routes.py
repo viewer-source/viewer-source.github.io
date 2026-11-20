@@ -8,9 +8,10 @@
 #   CellDesigner, SBGN-ML, Newt: also GraphML (standard sizes) for a map drawn at another scale,
 #            or for every map when standard (style.standard)
 #   GraphML: GraphML (standard sizes) only when standard
+#   GraphML, CellDesigner, SBGN-ML, Newt: SBML with layout (sbml.write: the SBGN-ML's drawing, the map's biology)
 import contextlib, io
 from dataclasses import dataclass
-from . import annotation, celldesigner, graphml, report, rules, sbgnml, style
+from . import annotation, celldesigner, graphml, report, rules, sbgnml, sbml, style
 from .layout import aligned, at_centres
 
 LAYOUTS = ('straight', 'advanced')
@@ -52,6 +53,7 @@ def outputs(path, standard=False):
     # SBGN-ML, then for Newt; read() -> the map
     sbgn = lambda read: [Output('.sbgn', 'SBGN-ML', lambda: sbgnml.write(read())),
                          Output('-newt.sbgn', 'SBGN-ML (for Newt)', lambda: sbgnml.write(read(), True))]
+    sb = lambda read: Output('.sbml', 'SBML', lambda: sbml.write(read()))
     std = lambda read, program: Output('-standard.graphml', 'GraphML (standard sizes)', lambda: standardised(read, program, standard))
     name = {'straight': 'straight', 'bends': 'straight & bends', 'advanced': 'advanced', 'drawn': 'as drawn'}
     cds = lambda read: [Output('-%s.xml' % l, 'CellDesigner (%s)' % name[l],
@@ -71,7 +73,7 @@ def outputs(path, standard=False):
             for line in rules.lines(m, found):
                 report.say('problem', line)
             return rules.mark(path, found)
-        out = cds(read) + sbgn(read) + \
+        out = cds(read) + sbgn(read) + [sb(read)] + \
               [Output('-corrected.graphml', 'GraphML (corrected)', lambda: graphml.corrected(read()))] + \
               ([Output('-standard.graphml', 'GraphML (standard sizes)', lambda: graphml.write(style.standardise(read()), soft=True))] if standard else [])
         return out + ([Output('-marked.graphml', 'GraphML (marked)', marked, red=True)] if found else [])
@@ -79,6 +81,6 @@ def outputs(path, standard=False):
         cd = lambda l: at_centres(aligned(celldesigner.read(path))) if l == 'straight' else aligned(celldesigner.read(path))
         return [Output('-%s.graphml' % l, 'GraphML (%s)' % l, lambda l=l: graphml.write(cd(l))) for l in LAYOUTS] + \
                [std(lambda: celldesigner.read(path), 'CellDesigner')] + \
-               sbgn(lambda: cd('advanced'))
+               sbgn(lambda: cd('advanced')) + [sb(lambda: cd('advanced'))]
     return [Output('.graphml', 'GraphML', lambda: graphml.write(sbgnml.read(path))), std(lambda: sbgnml.read(path), 'Newt')] + \
-           cds(lambda: sbgnml.read(path))
+           cds(lambda: sbgnml.read(path)) + [sb(lambda: sbgnml.read(path))]

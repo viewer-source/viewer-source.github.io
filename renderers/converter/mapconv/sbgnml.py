@@ -32,6 +32,12 @@ ARC = {'production': 'production', 'catalysis': 'catalysis', 'inhibition': 'inhi
 DB = {'obo.chebi': 'CHEBI', 'hgnc': 'hgnc', 'hgnc.symbol': 'hgnc.symbol', 'uniprot': 'uniprot'}
 
 
+def identifiers(urns):
+    # MIRIAM URNs as identifiers.org links in Newt's form (db:id), those of the databases in DB
+    return ['http://identifiers.org/%s:%s' % (DB[db], x.replace('%3A', ':').replace('CHEBI:', ''))
+            for db, _, x in (u[len('urn:miriam:'):].rpartition(':') for u in urns) if db in DB]
+
+
 def xml_id(i):
     # yEd's nested ids (n0::n1) are not XML ids
     return re.sub(r'[^\w.-]', '_', i if re.match(r'[A-Za-z_]', i) else '_' + i)
@@ -194,21 +200,21 @@ def write(diagram, newt=False):
     fills = {}
     for i, d in N.items():
         if d.fill or d.line or d.font or d.weight:
-            fills.setdefault((d.fill.lower() if d.fill else None, d.line and d.line.lower(), d.font, d.weight), []).append(ids[i])
+            fills.setdefault((d.fill.lower() if d.fill else None, d.line and d.line.lower(), d.font, d.weight, False), []).append(ids[i])
         if d.small:
             n = len(decorations(d)[1])
-            fills.setdefault((None, None, d.small, None), []).extend(['%s_sv%d' % (ids[i], k) for k in range(len(d.states))] +
+            fills.setdefault((None, None, d.small, None, False), []).extend(['%s_sv%d' % (ids[i], k) for k in range(len(d.states))] +
                                                          ['%s_ui%d' % (ids[i], k) for k in range(n)])
-    for a, *_ in arcs:  # an arc's colour: a style naming the arc, its stroke the colour
-        if a.line:
-            fills.setdefault((None, a.line.lower(), None, None), []).append(xml_id(a.id))
+    for a, *_ in arcs:  # an arc's colour and width: a style naming the arc (arcs' styles and glyphs' apart)
+        if a.line or a.weight:
+            fills.setdefault((None, a.line and a.line.lower(), None, a.weight, True), []).append(xml_id(a.id))
     if fills:
         ri = etree.SubElement(etree.SubElement(m, S + 'extension'), R + 'renderInformation', nsmap={None: RENDER},
                               id='renderInformation')
         cd = etree.SubElement(ri, R + 'listOfColorDefinitions')
         etree.SubElement(cd, R + 'colorDefinition', id='black', value='#000000')
         st = etree.SubElement(ri, R + 'listOfStyles')
-        for k, ((f, line, size, weight), members) in enumerate(fills.items()):
+        for k, ((f, line, size, weight, _), members) in enumerate(fills.items()):
             s = etree.SubElement(st, R + 'style', id='style_%d' % k, idList=' '.join(members))
             g = etree.SubElement(s, R + 'g', stroke='black')
             if f:
@@ -230,11 +236,7 @@ def write(diagram, newt=False):
         if lab not in ann:
             return
         family, urns = ann[lab]
-        uris = []
-        for u in urns:
-            db, _, x = u[len('urn:miriam:'):].rpartition(':')
-            if db in DB:
-                uris.append('http://identifiers.org/%s:%s' % (DB[db], x.replace('%3A', ':').replace('CHEBI:', '')))
+        uris = identifiers(urns)
         if not uris:
             return
         e = etree.SubElement(g, S + 'extension')
@@ -562,7 +564,7 @@ def read(path):
         # it ends only for these: a modifier aimed at a port ends on the glyph
         ends = [(float(e.get('x')), float(e.get('y'))) if e is not None else None for e in (a.find(S + 'start'), a.find(S + 'end'))]
         arcs.append(Arc(id=a.get('id'), source=s, target=t, head=head[cls], dashed=UNKNOWN in text_of(a), points=pts,
-                        line=colour(line.get(a.get('id')), defs),
+                        line=colour(line.get(a.get('id')), defs), weight=weight.get(a.get('id')) if weight.get(a.get('id'), 1) != 1 else None,
                         source_at=at(nodes[s], a.get('source'), ends[0], (pts or ends[1:])[0], at_port.get(a.get('source'))),
                         target_at=at(nodes[t], a.get('target'), ends[1], (pts[-1:] or ends[:1])[0], flux and at_port.get(a.get('target')))))
     for t, ps in performers.items():

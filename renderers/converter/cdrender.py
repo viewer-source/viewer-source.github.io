@@ -183,6 +183,13 @@ def name_place_of(box, name, th, np_, oval=False, one=False):
     return hit[0] if hit and not (one and len(hit) > 1) else None
 
 
+# a reduced notation's head by its type; a gate reaction's by its modificationType, else as a reduced type's
+REDUCED_HEAD = {'PHYSICAL_STIMULATION': 'stimulation-reduced', 'REDUCED_PHYSICAL_STIMULATION': 'stimulation-reduced',
+                'NEGATIVE_INFLUENCE': 'inhibition', 'REDUCED_MODULATION': 'modulation', 'REDUCED_TRIGGER': 'trigger',
+                'POSITIVE_INFLUENCE': 'production', 'CATALYSIS': 'catalysis', 'INHIBITION': 'inhibition'}
+GATE_HEAD = {'CATALYSIS': 'catalysis', 'INHIBITION': 'inhibition', 'TRIGGER': 'trigger', 'MODULATION': 'modulation',
+             'PHYSICAL_STIMULATION': 'stimulation'}
+
 class Drawing:
     def __init__(self, path):
         r = etree.parse(path).getroot()
@@ -578,9 +585,7 @@ class Drawing:
         dash = {'TRANSCRIPTION': '10,4,2,4,2,4', 'TRANSLATION': '10,3,2,3'}.get(typ, dash)
         if reduced:  # an arc between the entities, its head by type
             self.ends(line, ra, pa)
-            kind = {'PHYSICAL_STIMULATION': 'stimulation-reduced', 'REDUCED_PHYSICAL_STIMULATION': 'stimulation-reduced',
-                    'NEGATIVE_INFLUENCE': 'inhibition', 'REDUCED_MODULATION': 'modulation', 'REDUCED_TRIGGER': 'trigger',
-                    'POSITIVE_INFLUENCE': 'production', 'CATALYSIS': 'catalysis', 'INHIBITION': 'inhibition'}.get(typ.replace('UNKNOWN_', ''), 'production')
+            kind = REDUCED_HEAD.get(typ.replace('UNKNOWN_', ''), 'production')
             u = unit(line[-1][0] - line[-2][0], line[-1][1] - line[-2][1])
             self.open(self.cur + '|a')
             stop = self.head(kind, line[-1], u)
@@ -702,8 +707,8 @@ class Drawing:
         seq = [G] + [from_frame(G, B, p) for p in gbend] + [B]
         seq[-1] = B = self.clip(pa, B, anc, seq[-2])
         u = unit(B[0] - seq[-2][0], B[1] - seq[-2][1])
-        kind = {'CATALYSIS': 'catalysis', 'INHIBITION': 'inhibition', 'TRIGGER': 'trigger', 'MODULATION': 'modulation',
-                'PHYSICAL_STIMULATION': 'stimulation'}.get(top[0].get('modificationType'), 'stimulation')
+        ot = top[0].get('modificationType')
+        kind = GATE_HEAD.get(ot) or REDUCED_HEAD.get(ot) or 'stimulation'
         stop = self.head(kind, B, u)
         u0 = unit(seq[1][0] - G[0], seq[1][1] - G[1])
         self.open('%s|a' % self.cur)
@@ -735,14 +740,15 @@ class Drawing:
                 seq = [O] + (bends if into else bends[::-1]) + [J]
                 seq[0] = self.clip(i, O, anc, seq[1])
                 lc = f(l, 'cd:line')
-                lcol = colour(lc.get('color'))[0] if lc is not None else col  # its own colour, as CellDesigner keeps one for each
+                lcol = colour(lc.get('color'))[0] if lc is not None else col  # its own colour and width, as CellDesigner keeps one for each
+                lwd = float(lc.get('width', width)) if lc is not None else width
                 if into:
-                    self.path(seq, lcol, width, dash, end_node=False)
+                    self.path(seq, lcol, lwd, dash, end_node=False)
                 else:
                     seq = seq[::-1]
                     w_ = unit(seq[-1][0] - seq[-2][0], seq[-1][1] - seq[-2][1])
                     stop = self.head('production', seq[-1], w_)
-                    self.path(seq[:-1] + [stop], lcol, width, dash, start_node=False)
+                    self.path(seq[:-1] + [stop], lcol, lwd, dash, start_node=False)
                 self.close()
         # modifiers end at the point of the square targetLineIndex names
         gate_inputs = set()
@@ -801,7 +807,7 @@ class Drawing:
             u = unit(seq[-1][0] - seq[-2][0], seq[-1][1] - seq[-2][1])
             stop = self.head(HEADS.get(t, 'stimulation'), T, u)
             mc = f(m, 'cd:line')
-            self.path(seq[:-1] + [stop], colour(mc.get('color'))[0] if mc is not None else col, width, t.startswith('UNKNOWN'), end_node=False)
+            self.path(seq[:-1] + [stop], colour(mc.get('color'))[0] if mc is not None else col, float(mc.get('width', width)) if mc is not None else width, t.startswith('UNKNOWN'), end_node=False)
             self.close()
         # the process glyph: a 10 px square along the line, over the lines
         ang = math.degrees(math.atan2(fl[1], fl[0]))
