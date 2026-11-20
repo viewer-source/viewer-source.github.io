@@ -21,10 +21,11 @@ var MAPS = ['sbml-biomodels-biomd0000000899-ota2015', 'sbml-biomodels-biomd00000
     console.log('-- ' + id);
     await page.goto(base + '#' + id, { waitUntil: 'load' });
     await page.waitForSelector('.m2-ri[data-win="edit"]', { timeout: 30000 }); await page.waitForTimeout(2500);
-    var orig = await page.evaluate(function (id) {
-      var m = (window.m2Maps || []).find(function (x) { return x.id === id; });
-      var u = document.querySelector('.m2-dl a[href*="test-maps/sbml/"], #m2-dlwin a[href*="test-maps/sbml/"]');
-      return u ? fetch(u.href).then(function (r) { return r.text(); }) : null;
+    var orig = await page.evaluate(function (id) {   // the file the site publishes for the map, from its entry
+      return fetch('/index.json?r=' + Math.random()).then(function (r) { return r.json(); }).then(function (l) {
+        var m = l.find(function (x) { return x.id === id; });
+        return m ? fetch(m.downloads[0].url).then(function (r) { return r.text(); }) : null;
+      });
     }, id);
     if (!(await page.evaluate(function () { return document.querySelector('.m2').classList.contains('m2-editing'); }))) await page.click('.m2-ri[data-win="edit"]');
     await page.waitForFunction(function () { return !!(window.m2EditNow && window.m2EditNow()); }, null, { timeout: 60000 }).catch(function () {});

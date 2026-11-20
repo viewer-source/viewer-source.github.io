@@ -1287,7 +1287,8 @@
         edges2.forEach(function (a, i) { if (reSel.e.indexOf(a.id) >= 0) selE.push(i); });
       }
       reSel = null; reGh = null;   // used by this start or not at all
-      map = { id: 'edit', title: openTitle || n, width: 0, height: 0, scale: 1, downloads: [], colours: true };   // drawn with the role classes (graphml.js, V.recolour): Settings' Map colours offered while editing
+      map = { id: 'edit', title: openTitle || n, width: 0, height: 0, scale: 1, downloads: [], colours: true,   // drawn with the role classes (graphml.js, V.recolour): Settings' Map colours offered while editing
+        layoutOnly: !!(V.chosen && (V.chosen.site || V.chosen).layoutOnly) };   // the map's own limit kept while editing (V.level)
       if (same) {   // editing starts on the picture as it is: no redraw, the map stays where it is
         map.width = same.width; map.height = same.height; map.scale = same.scale; x0 = same.x0; y0 = same.y0;
       }
