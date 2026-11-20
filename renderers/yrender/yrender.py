@@ -637,6 +637,10 @@ class Map:
     def hub_ports(self):
         # the two ports of every process and gate (the header's ports), their sticks put beside the glyph
         ins, outs, given, near, lead = {}, {}, {}, {}, {}  # near: (hub, 'in' or 'out') -> the nodes whose arcs use that port
+        wide = {}  # (hub, 'in' or 'out') -> the widest arc at that port, its stick drawn as wide
+        def widen(k, w):
+            if not wide.get(k, 0) >= w:
+                wide[k] = w
         for item in self.order:
             if item[0] != 'e':
                 continue
@@ -646,14 +650,18 @@ class Map:
             path = pl.find(Y + 'Path')
             bends = [(float(q.get('x')), float(q.get('y'))) for q in path.findall(Y + 'Point')]
             at_s, at_t = self.ends(e, pl.find(Y + 'Arrows'))
+            ls = pl.find(Y + 'LineStyle')
+            ew = float((ls.get('width') if ls is not None else None) or 1)
             if at_t == 'in':
                 ins.setdefault(t, []).append(bends[-1] if bends else self.mid(s))
                 self.given(given, t, 'in', path, 'tx', 'ty')
                 near.setdefault((t, 'in'), []).append(s)
+                widen((t, 'in'), ew)
             if at_s:
                 (ins if at_s == 'in' else outs).setdefault(s, []).append(bends[0] if bends else self.mid(t))
+                widen((s, at_s), ew)
                 if at_s == 'out':
-                    lead.setdefault(s, []).append(bends + [self.mid(t)])  # its points, for the stick it leaves from
+                    lead.setdefault(s, []).append((bends + [self.mid(t)], ew))  # its points, for the stick it leaves from
                 self.given(given, s, at_s, path, 'sx', 'sy')
                 near.setdefault((s, at_s), []).append(t)
         def mean(q):  # added in order (not sum(), which compensates since Python 3.12): as yrender.js adds
@@ -694,7 +702,9 @@ class Map:
             if not I and not O:  # no arcs: a bare glyph, its antennas grown by its first arc
                 continue
             st = n['stroke']
-            col, wa = (st[0], f' stroke-width="{num(st[1])}"' if st[1] != 1 else '') if st else ('#000000', '')
+            col, bw = (st[0], st[1]) if st else ('#000000', 1)
+            # a stick as wide as its widest arc, never thinner than the glyph's border
+            w1 = max(bw, wide.get((nid, 'in'), 0) if I else 0); w2 = max(bw, wide.get((nid, 'out'), 0) if I else 0)
             e1, e2 = clip(one, (cx, cy), n['polys']), clip(two, (cx, cy), n['polys'])
             n_in, n_out = near.get((nid, 'in'), []), near.get((nid, 'out'), [])
             # a stick only where an arc is attached (the second grows only when another
@@ -702,21 +712,24 @@ class Map:
             # (reversible), each leaving arc on the nearer port, as edge_svg puts it
             use1, use2 = bool(I), bool(O) and bool(I)
             if not I:
-                for q in lead.get(nid, []):
+                for q, lw in lead.get(nid, []):
                     q = next(p for p in q if p is q[-1] or not self.on_stick(nid, p))  # bends on a stick left out first, as edge_svg
                     if math.dist(two, q) <= math.dist(one, q):
-                        use2 = True
+                        use2 = True; w2 = max(w2, lw)
                     else:
-                        use1 = True
-            d = ''
+                        use1 = True; w1 = max(w1, lw)
+            s1 = s2 = ''
             if use1:
                 d1 = self.stick_end(nid, e1, one, n_in + ([] if I else n_out))  # reversible: a leaving arc may take either
-                d += f'M{num(d1[0])} {num(d1[1])} L{num(e1[0])} {num(e1[1])}'
+                s1 = f'M{num(d1[0])} {num(d1[1])} L{num(e1[0])} {num(e1[1])}'
             if use2:
                 d2 = self.stick_end(nid, e2, two, n_out)
-                d += f'{" " if d else ""}M{num(e2[0])} {num(e2[1])} L{num(d2[0])} {num(d2[1])}'
-            # two sticks, not one line under the glyph: a glyph without fill (SBGN-ML's) would show it through
-            ant = f'<path d="{d}" fill="none"{ink("stroke", col)}{wa}/>'
+                s2 = f'M{num(e2[0])} {num(e2[1])} L{num(d2[0])} {num(d2[1])}'
+            def stick(d, w):
+                return f'<path d="{d}" fill="none"{ink("stroke", col)}{f" stroke-width={chr(34)}{num(w)}{chr(34)}" if w != 1 else ""}/>'
+            # two sticks, not one line under the glyph: a glyph without fill (SBGN-ML's) would show it through;
+            # one path when both are alike
+            ant = stick(s1 + (' ' if s1 and s2 else '') + s2, w1 if use1 else w2) if not (use1 and use2) or w1 == w2 else stick(s1, w1) + stick(s2, w2)
             # inside the node's own group when a caller puts each node in one (the editor's way), so it moves with it
             n['svg'] = re.sub(r'^(<g data-n="[^"]*">)', lambda m: m.group(1) + ant, n['svg']) if n['svg'].startswith('<g data-n="') else ant + n['svg']
             self.boxes += [(q[0], q[1], 0, 0) for q, u in ((one, use1), (two, use2)) if u]

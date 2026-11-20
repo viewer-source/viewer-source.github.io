@@ -1,5 +1,5 @@
 // Line width in a line's Properties (create.js edgeSet; sbgn_edit rewidth, cd_make rewidthLine): on the styles page, an
-// SBGN-ML arc on Testing Glycolysis and a CellDesigner modifier and main line on Glycolysis each typed 3: written into
+// SBGN-ML arc on Testing Glycolysis, an arc at a process with its stick (antenna) drawn as wide, and a CellDesigner modifier and main line on Glycolysis each typed 3: written into
 // the file (SBGN-ML: the stroke-width of a style naming the arc; CellDesigner: its celldesigner:line width), drawn 3
 // wide, shown in the field; 50 typed sets 20 (the limit, silently); undo puts the file back as it was. Nothing is saved
 // (no token). No script error.
@@ -15,6 +15,7 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local =
       .replace(/\{% include_relative (src\/[\w.]+) %\}/g, function (m, f) { return fs.readFileSync(path.join(local, 'editor', f), 'utf8'); });
     await page.route('**/editor/editor.js*', function (r) { r.fulfill({ status: 200, contentType: 'application/javascript', body: ed }); });
     await page.route('**/renderers/layout/layout.js*', function (r) { r.fulfill({ status: 200, contentType: 'application/javascript', body: fs.readFileSync(path.join(local, 'renderers/layout/layout.js'), 'utf8') }); });
+    await page.route('**/renderers/yrender/yrender.js*', function (r) { r.fulfill({ status: 200, contentType: 'application/javascript', body: fs.readFileSync(path.join(local, 'renderers/yrender/yrender.js'), 'utf8') }); });
     await page.route('**/renderers/converter/*.js*', function (r) { r.fulfill({ status: 200, contentType: 'application/javascript', body: fs.readFileSync(path.join(local, 'renderers/converter', new URL(r.request().url()).pathname.split('/').pop()), 'utf8') }); });
   }
   var now = function () { return page.evaluate(function () { return window.m2EditNow().text; }); };
@@ -54,6 +55,28 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local =
   ok('SBGN-ML: 50 typed sets 20', /stroke-width="20"/.test(st(await now())), st(await now()));
   await undo(); await undo();
   ok('SBGN-ML: undone twice, the file as it was', (await now()) === t0);
+
+  // SBGN-ML: an arc at a process, its stick (antenna) as wide as the arc, the other stick as it was
+  var at = await page.evaluate(function () {   // a consumption or production arc whose process is drawn with its sticks
+    var t = window.m2EditNow().text, d = new DOMParser().parseFromString(t, 'text/xml'), cls = {}, best = null;
+    Array.prototype.forEach.call(d.getElementsByTagNameNS('*', 'glyph'), function (g) { cls[g.getAttribute('id')] = g.getAttribute('class'); });
+    Array.prototype.forEach.call(d.getElementsByTagNameNS('*', 'arc'), function (a) {
+      var c = a.getAttribute('class'), s = (a.getAttribute('source') || '').split('.')[0], tg = (a.getAttribute('target') || '').split('.')[0];
+      var p = c === 'production' ? s : c === 'consumption' ? tg : null, el = document.querySelector('#m2-img [data-e="' + a.getAttribute('id') + '"] path');
+      if (p && cls[p] === 'process' && el && document.querySelector('#m2-img [data-n="' + p + '"] > path[fill="none"]') && (!best || el.getTotalLength() > best[2])) best = [a.getAttribute('id'), p, el.getTotalLength()];
+    });
+    return best; });
+  ok('SBGN-ML: an arc at a process found', !!at);
+  if (at) {
+    var sticks = function () { return page.$$eval('#m2-img [data-n="' + at[1] + '"] > path[fill="none"]', function (l) { return l.map(function (x) { return [x.getAttribute('d').split('M').length - 1, x.getAttribute('stroke-width') || '1']; }); }); };
+    var s0 = await sticks();
+    await pick(at[0]); await type('ewid', '3');
+    var s1 = await sticks(), w3 = s1.filter(function (x) { return x[1] === '3'; });
+    ok('SBGN-ML: the arc\'s stick drawn 3 wide', w3.length === 1 && w3[0][0] === 1, JSON.stringify(s1));
+    ok('SBGN-ML: the other stick as it was', s1.some(function (x) { return x[1] === s0[0][1]; }) || s0[0][0] === 1, JSON.stringify(s0) + ' ' + JSON.stringify(s1));
+    await undo();
+    ok('SBGN-ML: undone, the sticks as they were', JSON.stringify(await sticks()) === JSON.stringify(s0), JSON.stringify(await sticks()));
+  }
 
   // CellDesigner: a modifier's line and a reaction's main line
   await open('glycolysis-celldesigner', 'cd:PROTEIN');

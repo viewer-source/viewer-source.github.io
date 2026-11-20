@@ -437,15 +437,17 @@
   YMap.prototype.hubPorts = function () {
     var self = this, ins = Object.create(null), outs = Object.create(null), given = Object.create(null), near = Object.create(null), lead = Object.create(null);
     var add = function (m, k, p) { (m[k] = m[k] || []).push(p); };
+    var wide = Object.create(null), widen = function (k, w) { if (!(wide[k] >= w)) wide[k] = w; };   // the widest arc at a port, its stick drawn as wide
     this.order.forEach(function (item) {
       if (item[0] !== 'e') return;
       var e = item[1][0], pl = polyline(e), s = get(e, 'source'), t = get(e, 'target');
       if (!pl || !has(self.nodes, s) || !has(self.nodes, t)) return;
       var path = kid(pl, Y, 'Path');
       var bends = kids(path, Y, 'Point').map(function (q) { return [pyFloat(get(q, 'x')), pyFloat(get(q, 'y'))]; });
-      var at = self.ends(e, kid(pl, Y, 'Arrows'));
-      if (at[1] === 'in') { add(ins, t, bends.length ? bends[bends.length - 1] : self.mid(s)); self.given(given, t, 'in', path, 'tx', 'ty'); add(near, t + '\u0000in', s); }
-      if (at[0] === 'out') add(lead, s, bends.concat([self.mid(t)]));   // its points, for the stick it leaves from
+      var at = self.ends(e, kid(pl, Y, 'Arrows')), ew = pyFloat(get(kid(pl, Y, 'LineStyle'), 'width') || 1);
+      if (at[1] === 'in') { add(ins, t, bends.length ? bends[bends.length - 1] : self.mid(s)); self.given(given, t, 'in', path, 'tx', 'ty'); add(near, t + '\u0000in', s); widen(t + '\u0000in', ew); }
+      if (at[0] === 'in') widen(s + '\u0000in', ew);
+      if (at[0] === 'out') { var L0 = bends.concat([self.mid(t)]); L0.w = ew; add(lead, s, L0); widen(s + '\u0000out', ew); }   // its points, for the stick it leaves from
       if (at[0]) { add(at[0] === 'in' ? ins : outs, s, bends.length ? bends[0] : self.mid(t)); self.given(given, s, at[0], path, 'sx', 'sy'); add(near, s + '\u0000' + at[0], t); }
     });
     var mean = function (q) {
@@ -477,7 +479,8 @@
       }
       self.ports[nid] = [one, two, nid in ins];
       if (!I.length && !O.length) return;   // no arcs: a bare glyph, its antennas grown by its first arc, in the direction it needs
-      var st = n.stroke, col = st ? st[0] : '#000000', wa = st && st[1] !== 1 ? ' stroke-width="' + num(st[1]) + '"' : '';
+      var st = n.stroke, col = st ? st[0] : '#000000', bw = st ? st[1] : 1;
+      var w1 = Math.max(bw, I.length ? wide[nid + '\u0000in'] || 0 : 0), w2 = Math.max(bw, I.length ? wide[nid + '\u0000out'] || 0 : 0);   // a stick as wide as its widest arc, never thinner than the glyph's border
       var e1 = clip(one, [cx, cy], n.polys), e2 = clip(two, [cx, cy], n.polys);
       var nIn = near[nid + '\u0000in'] || [], nOut = near[nid + '\u0000out'] || [];
       // a stick only where an arc is attached (yrender.py's hub_ports): nothing coming in, each leaving arc on the nearer port
@@ -486,12 +489,13 @@
         var j = 0;
         while (j < L.length - 1 && self.onStick(nid, L[j])) j++;   // bends on a stick left out first, as the edge's drawing does
         var q = L[j];
-        if (dist(two, q) <= dist(one, q)) use2 = true; else use1 = true;
+        if (dist(two, q) <= dist(one, q)) { use2 = true; w2 = Math.max(w2, L.w); } else { use1 = true; w1 = Math.max(w1, L.w); }
       });
-      var d = '', d1, d2;
-      if (use1) { d1 = self.stickEnd(nid, e1, one, I.length ? nIn : nIn.concat(nOut)); d += 'M' + num(d1[0]) + ' ' + num(d1[1]) + ' L' + num(e1[0]) + ' ' + num(e1[1]); }   // reversible: either
-      if (use2) { d2 = self.stickEnd(nid, e2, two, nOut); d += (d ? ' ' : '') + 'M' + num(e2[0]) + ' ' + num(e2[1]) + ' L' + num(d2[0]) + ' ' + num(d2[1]); }
-      var ant = '<path d="' + d + '" fill="none"' + ink('stroke', col) + wa + '/>';
+      var d = '', d1, d2, s1 = '', s2 = '';
+      if (use1) { d1 = self.stickEnd(nid, e1, one, I.length ? nIn : nIn.concat(nOut)); s1 = 'M' + num(d1[0]) + ' ' + num(d1[1]) + ' L' + num(e1[0]) + ' ' + num(e1[1]); }   // reversible: either
+      if (use2) { d2 = self.stickEnd(nid, e2, two, nOut); s2 = 'M' + num(e2[0]) + ' ' + num(e2[1]) + ' L' + num(d2[0]) + ' ' + num(d2[1]); }
+      var stick = function (d, w) { return '<path d="' + d + '" fill="none"' + ink('stroke', col) + (w !== 1 ? ' stroke-width="' + num(w) + '"' : '') + '/>'; };
+      var ant = !use1 || !use2 || w1 === w2 ? stick(s1 + (s1 && s2 ? ' ' : '') + s2, use1 ? w1 : w2) : stick(s1, w1) + stick(s2, w2);   // one path when both sticks are alike
       n.svg = self.groups ? n.svg.replace(/^(<g data-n="[^"]*">)/, function (m) { return m + ant; }) : ant + n.svg;
       if (use1) self.boxes.push([one[0], one[1], 0, 0]);
       if (use2) self.boxes.push([two[0], two[1], 0, 0]);
