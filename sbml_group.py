@@ -5,6 +5,8 @@
 # editor saves its edited copy to maps/sbml/<the file's name>, which is then drawn in its place (downloaded from
 # downloads/<id>.<ending>), the file in test-maps/ unchanged; atlas-data/<id>.graphml, the converter's GraphML of the
 # file drawn, is what the editor edits it as. A file without a layout or without species glyphs is said and left out.
+# Files listed to compare with them (an SBGN-ML or CellDesigner file of the same map) are drawn beside them as their own
+# format is drawn, view only.
 # Removing this file and the reader leaves the viewer without SBML.
 import csv, os, re, shutil
 
@@ -15,11 +17,16 @@ def maps(build):
     if not os.path.exists(os.path.join(base, 'sources.tsv')):
         return []
     rows = [r for r in csv.DictReader(open(os.path.join(base, 'sources.tsv'), encoding='utf-8'), delimiter='\t')
-            if r['file'].endswith(('.sbml', '.xml'))]
+            if r['file'].endswith(('.sbml', '.xml', '.sbgn'))]
     out = []
     for k, r in enumerate(rows):
         sid = 'sbml-' + re.sub(r'[^a-z0-9]+', '-', os.path.splitext(r['file'])[0].lower()).strip('-')
         build.db.current = sid
+        f = os.path.join(base, r['file'])
+        if r['file'].endswith('.sbgn') or r['packages'] == 'celldesigner':   # a file to compare with, as sources.tsv says
+            got = compare(build, f, sid + '-' + r['file'].rsplit('.', 1)[1], 'From %s (%s), %s. Unchanged, beside its SBML to compare.' % (r['source'], r['url'], r['licence']), 2000 + k)
+            out += [got] if got else []
+            continue
         mine = os.path.join(build.ROOT, 'maps', 'sbml', r['file'])   # its edited copy, where the editor saved one
         edited = os.path.exists(mine)
         body = 'From %s (%s), %s. %s' % (r['source'], r['url'], r['licence'], 'Edited in the viewer; the original is in test-maps/.' if edited else 'Unchanged, drawn from its own layout.')
@@ -43,3 +50,25 @@ def maps(build):
         e['downloads'][0]['label'] = 'SBML'
         out.append((sid, e, build.search_entries(sid, nodes), body))
     return out
+
+
+def compare(build, f, sid, body, order):
+    # an SBGN-ML or CellDesigner file listed beside an SBML one, drawn as its format is drawn on the site, view only
+    name = os.path.splitext(os.path.basename(f))[0]
+    if f.endswith('.sbgn'):
+        d, nodes = build.converted(f, sid, body)
+        if not d:
+            return None
+        label, legend = 'SBGN-ML', 'sbgn'
+    else:
+        try:
+            nodes = build.celldesigner(f, os.path.join(build.ROOT, 'downloads', sid + '.svg'))
+        except Exception as e:
+            print('warning: %s not drawn, left out: %s' % (os.path.relpath(f, build.ROOT), e))
+            return None
+        d = build.drawn(sid, nodes, body.encode())
+        label, legend = 'CellDesigner', 'celldesigner'
+    d['file'] = '/test-maps/sbml/' + os.path.basename(f)
+    e = build.entry_of(name, 'SBML with layout', order, d, legend=legend)
+    e['downloads'][0]['label'] = label
+    return sid, e, build.search_entries(sid, nodes), body

@@ -965,9 +965,9 @@ page, so its styles keep the base they were made on).
   };
   // the map's format as its file's extension after its name, as Finder shows it, by its first download; not part of the
   // name (renaming never touches it). Two maps of one group may share a name only in different formats (own.js)
-  var FORMATS = { 'CellDesigner': '.xml', 'SBGN-ML': '.sbgn', 'GraphML': '.graphml' };
+  var FORMATS = { 'CellDesigner': '.xml', 'SBGN-ML': '.sbgn', 'GraphML': '.graphml', 'SBML': '.sbml' };
   // a map's own file: its first download (build.py, own.js; shown from its SBGN-ML, that file), when it is a map format
-  function ownFile(m) { var d = (m.downloads || [])[0]; return d && /^(GraphML|CellDesigner|SBGN-ML)$/.test(d.label) ? d : null; }
+  function ownFile(m) { var d = (m.downloads || [])[0]; return d && /^(GraphML|CellDesigner|SBGN-ML|SBML)$/.test(d.label) ? d : null; }
   function formatOf(m) { return FORMATS[(((m.site || m).downloads || [])[0] || {}).label]; }   // its own file's, also while Source shows its SBGN-ML
   // Settings' File extensions, Shown (the default: the extension tells same-named maps apart) or Hidden, kept in the browser
   var FORMATS_OFF = (function () { try { localStorage.removeItem('atlas-format-tags'); return localStorage.getItem('atlas-format-ext') === 'hidden'; } catch (e) { return false; } })();
