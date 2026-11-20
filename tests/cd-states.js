@@ -5,7 +5,7 @@
 // the residue's own menu (Edit, Change state, Delete), Edit's modification written at once; the residue (at the bottom middle, the first place) dragged round
 // the border to the right; Add structural state typed in its ellipse at the top middle of a monomer, moved to the bottom
 // by Add unit of information (N:2, chosen in its window); Open chosen in its window, undone; on a multimer a new
-// structural state at the bottom; the unit's window (CellDesigner's Edit Information: Prefix, then Label as a list for
+// structural state at the bottom, a residue added then clear of it; the unit's window (CellDesigner's Edit Information: Prefix, then Label as a list for
 // pc, mt and ct, a text for N and free input) and its own menu (Edit, Change unit); the residue deleted by the Delete key and undone. Nothing is saved (no token). No
 // script error.
 //   node tests/cd-states.js [address] [viewer folder: its editor and renderers served in place of the page's]
@@ -135,7 +135,10 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#acly-celld
   await menu(C2); await pick('Add structural state'); await page.keyboard.type('x'); await page.keyboard.press('Enter'); await page.waitForTimeout(900);
   sa = /<celldesigner:structuralState angle="([^"]*)"/.exec(aliasText(await now(), p2));
   ok('on a multimer: at the bottom middle (its count takes the top)', sa && Math.abs(+sa[1] - 3 * Math.PI / 2) < 0.01, sa && sa[1]);
-  for (var u = 0; u < 3; u++) { await page.keyboard.press('Control+z'); await page.waitForTimeout(700); }
+  await menu(C2); await pick('Add state variable');
+  var ra = /<celldesigner:modificationResidue angle="([^"]*)"/.exec(protein(await now(), speciesOf(await now(), p2)));
+  ok('a residue then clear of that structural state: the bottom quarters too near it, so the right middle', ra && Math.abs(+ra[1]) < 0.01, ra && ra[1]);
+  for (var u = 0; u < 4; u++) { await page.keyboard.press('Control+z'); await page.waitForTimeout(700); }
   ok('undone back to the first protein\'s state', (await now()) === t);
   items = await menu(C);
   ok('no second unit of information offered', items.indexOf('Add unit of information') < 0, items.join('|'));

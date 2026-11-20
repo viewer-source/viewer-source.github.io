@@ -806,7 +806,7 @@
       var b = cdFront(i, f), on = window.cdrender.onBorder, out = [];
       f.residues.forEach(function (r, k) { out.push([r.name, on(b, r.angle), [16, 16], SV, k]); });   // a residue's text: its site name (its modification in its window)
       var st = f.structural || (cdPend && cdPend.id === n.id && cdPend.kind === SS ? { text: '', angle: cdPend.angle } : null);
-      if (st) out.push([st.text, on(b, st.angle), [2 * Math.trunc(window.cdrender.width(st.text, 10) / 2 + 12), 16], SS, 0]);
+      if (st) out.push([st.text, on(b, st.angle), [2 * cdRx(st.text), 16], SS, 0]);
       if (f.info || (cdPend && cdPend.id === n.id && cdPend.kind === UI)) out.push([f.info ? f.info.text : '', [b[0] + b[2] / 2, b[1]], [70, 16], UI, 0]);
       return out;
     }
@@ -815,22 +815,23 @@
     // top middle and quarters, the sides' quarters; the top kept for the unit of information and the structural state.
     // A place is free when the icon's box there (2 px apart) meets no icon of the species: residues, structural state,
     // unit of information (or a multimer's count, drawn at the top, when the species' kind is a multimer on the map)
-    var cdTop = Math.PI / 2, CD_ORDER = [270, 292.5, 247.5, 0, 180, 315, 225, 45, 135, 90, 67.5, 112.5, 337.5, 202.5, 22.5, 157.5].map(function (d) { return d * Math.PI / 180; });
-    function cdNear(a, b) { var P = Math.PI; return Math.abs(((a - b) % (2 * P) + 3 * P) % (2 * P) - P) < 0.3; }
+    var cdTop = Math.PI / 2;
+    function cdOrder() { return cdMk.RESIDUE_PLACES; }   // cd_make's, the one CellDesigner copy of ORDER (loaded later)
     function cdRx(txt) { return Math.trunc(window.cdrender.width(txt || '', 10) / 2 + 12); }   // a structural state's half width (cdrender)
-    // the first free place for an icon w wide on alias id of the file t: [angle] candidates in order, the structural
-    // state left out of the icons (it is the one placed, or there is none)
-    function cdPlace(t, id, w, cands) {
+    // the first free place for an icon w wide on alias id of the file t: [angle] candidates in order; the structural
+    // state counted only when a residue is placed (else it is the one placed)
+    function cdPlace(t, id, w, cands, ss) {
       var i = nodes2.findIndex(function (n) { return n.id === id; }), f = cdMk.features(t, id);
       if (i < 0) return cands[0];
       var b = cdFront(i, f), on = window.cdrender.onBorder, boxes = f.residues.map(function (r) { return [on(b, r.angle), 16]; });
+      if (ss && f.structural) boxes.push([on(b, f.structural.angle), 2 * cdRx(f.structural.text)]);
       if (f.info || cdMultiTop(t, id)) boxes.push([[b[0] + b[2] / 2, b[1]], 70]);
       return cands.filter(function (a) {
         var p = on(b, a);
-        return !boxes.some(function (q) { return Math.abs(p[0] - q[0][0]) < (w + q[1]) / 2 + 2 && Math.abs(p[1] - q[0][1]) < 18; });
+        return !boxes.some(function (q) { return Math.abs(p[0] - q[0][0]) < (w + q[1]) / 2 + 2 - 1e-6 && Math.abs(p[1] - q[0][1]) < 18; });   // 1e-6: a place built 2 px off a box stays free after the trip through the angle
       })[0];
     }
-    function cdResidueAngle(t, id) { var a = cdPlace(t, id, 16, CD_ORDER); return a === undefined ? CD_ORDER[0] : a; }
+    function cdResidueAngle(t, id) { var a = cdPlace(t, id, 16, cdOrder(), true); return a === undefined ? cdOrder()[0] : a; }
     // a structural state's place: the top middle; with a unit of information (or a count) at the top, beside it when
     // both fit on the top side, else the first free place of the order
     function cdSsAngle(t, id, txt) {
@@ -841,8 +842,8 @@
           if (Math.abs(dx) + rx <= b[2] / 2) c.push(H - dx / b[2] * H);
         });
       }
-      var a = cdPlace(t, id, 2 * rx, c.concat(CD_ORDER));
-      return a === undefined ? CD_ORDER[0] : a;
+      var a = cdPlace(t, id, 2 * rx, c.concat(cdOrder()));
+      return a === undefined ? cdOrder()[0] : a;
     }
     var cdMultiMemo = [null, null];   // [file, { class and name: true }]: the multimers on the map, read in one pass per file
     function cdKindKey(sp) { var cl = /<celldesigner:class>([^<]*)</.exec(sp), nm = / name="([^"]*)"/.exec(sp); return cl && nm ? cl[1] + '\u0001' + nm[1] : null; }
@@ -865,11 +866,11 @@
       return out;
     }
     // the top made free for a unit of information (on that copy) or a multimer's count (on every copy of the species): a
-    // structural state at a copy's top middle moved to its bottom place
+    // structural state on a copy's top side that the unit's box now meets moved by cdSsAngle; one clear of it stays
     function cdTopClear(t, id, all) {
       (all ? cdCopiesOf(t, id) : [id]).forEach(function (a) {
-        var f = cdMk.features(t, a);
-        if (f.structural && cdNear(f.structural.angle, cdTop)) t = cdMk.structuralMove(t, a, cdSsAngle(t, a, f.structural.text));
+        var f = cdMk.features(t, a), s = f.structural;
+        if (s && Math.abs(Math.sin(s.angle) - 1) < 0.3 && cdPlace(t, a, 2 * cdRx(s.text), [s.angle]) === undefined) t = cdMk.structuralMove(t, a, cdSsAngle(t, a, s.text));
       });
       return t;
     }
@@ -910,7 +911,7 @@
       paint();
     }
     function cdSsNew(t, id, v, angle) {
-      var at = cdCopiesOf(t, id).map(function (a) { return [a, a === id ? angle : cdSsAngle(t, a, v)]; });
+      var at = cdCopiesOf(t, id).map(function (a) { return [a, a === id && cdPlace(t, a, 2 * cdRx(v), [angle]) !== undefined ? angle : cdSsAngle(t, a, v)]; });   // the place shown kept while the text typed still fits there
       t = cdMk.structural(t, id, v, true);
       at.forEach(function (q) { t = cdMk.structuralMove(t, q[0], q[1]); });
       return t;
