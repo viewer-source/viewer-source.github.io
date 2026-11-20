@@ -6,7 +6,7 @@
 set -e
 src="$1/mapconv"; dst="$(dirname "$0")/mapconv"
 files="annotation.py biology.py cd_layout.py cd_tidy.py celldesigner.py conjugates.json graphml.py layout.py model.py
-newt_layout.py report.py routes.py rules.py sbgnml.py style.py yed.graphml"
+newt_layout.py report.py routes.py rules.py sbgnml.py sbml.py style.py yed.graphml"
 for f in $files; do [ -f "$src/$f" ] || { echo "$src/$f missing: nothing copied"; exit 1; }; done
 for f in $files; do cp "$src/$f" "$dst/$f"; done
 d=$(git -C "$1" diff --quiet HEAD -- mapconv || echo -dirty)
