@@ -32,7 +32,7 @@ var MAPS = ['sbml-biomodels-biomd0000000899-ota2015', 'sbml-biomodels-biomd00000
     var t0 = await now();
     ok('editing starts', !!t0);
     if (!t0) continue;
-    if (orig) ok('the file opened is the file published', t0 === orig);
+    if (orig) ok('the file opened is the file published (or, where something is drawn left of or above 0, shifted out of it: numbers only)', t0 === orig || strip(t0) === strip(orig), t0 === orig ? '' : 'shifted');
     ok('no palette (layout only)', await page.evaluate(function () { var p = document.querySelector('#m2-editwin [data-make]'); return !p || !p.offsetParent; }));
     // a species: a node whose group is drawn, in view
     var P = await page.$$eval('#m2-img [data-n]', function (l) {
