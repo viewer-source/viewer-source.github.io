@@ -782,18 +782,58 @@
     return A;
   }
   var OPEN = /<celldesigner:protein [^>]*[^/]>\s+<\/celldesigner:protein>/;   // a protein with no residues written open
-  var RESIDUE_PLACES = [270, 292.5, 247.5, 0, 180, 315, 225, 45, 135, 90, 67.5, 112.5, 337.5, 202.5, 22.5, 157.5].map(function (d) { return d * Math.PI / 180; });
+  // the places for a new icon on a species' (front) box w by h, by size (notes/state-crowding.md): along each side every
+  // 20 from its middle (a 16 circle and a 4 gap; step: more for larger icons), as many as fit before the corners, and
+  // the corners; in the order of the places most used on CellDesigner maps: the bottom from
+  // the middle outwards (right first), the sides' middles, the bottom corners, the top corners, the top from the middle
+  // outwards, the sides' other places (lower first). The editor's create.js svPlaces is the SBGN-ML copy (as
+  // [rx, ry]); here as CellDesigner's angles (0 the right, pi/2 the top: cdrender.onBorder's inverse)
+  function placesFor(w, h, step) {
+    var S = step || 20, along = function (half) { var o = [0]; for (var d = S; d < half - 1e-6; d += S) o.push(d, -d); return o; };
+    var bx = along(w / 2), sy = along(h / 2).slice(1), out = [];
+    bx.forEach(function (d) { out.push([d / w, 0.5]); });
+    out.push([0.5, 0], [-0.5, 0], [0.5, 0.5], [-0.5, 0.5], [0.5, -0.5], [-0.5, -0.5]);
+    bx.forEach(function (d) { out.push([d / w, -0.5]); });
+    sy.forEach(function (d, k) { if (k % 2 === 0) out.push([0.5, d / h], [-0.5, d / h], [0.5, -d / h], [-0.5, -d / h]); });
+    return out.map(ratioAngle);
+  }
+  function ratioAngle(r) {   // [rx, ry] on the border (y down) as CellDesigner's angle (the editor's cdAngle, onBorder's inverse)
+    var fx = Math.max(-0.5, Math.min(0.5, r[0])), fy = Math.max(-0.5, Math.min(0.5, r[1])), H = Math.PI / 2;
+    var d = [0.5 - fx, fy + 0.5, fx + 0.5, 0.5 - fy], m = Math.min.apply(null, d), a;
+    if (m === d[0]) a = -fy * H; else if (m === d[1]) a = H - fx * H; else if (m === d[2]) a = Math.PI + fy * H; else a = 3 * H + fx * H;
+    a = ((a % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+    return Math.round(a * 1e6) / 1e6;
+  }
+  // an alias's box set (x, y, w, h), as homodimer() writes a multimer's: its bounds and its usualView's boxSize; its
+  // icons are kept by angle, its lines' ports by place, so they follow
+  function bounds(t, id, b) {
+    var B = alias(t, id), s = span(t, '<celldesigner:bounds ', B.sp[0], B.sp[1]);
+    if (!s) fail('No bounds on ' + id + '.');
+    t = attrs(t, s[0], [['x', num(b[0])], ['y', num(b[1])], ['w', num(b[2])], ['h', num(b[3])]]);
+    B = alias(t, id);
+    var u = span(t, '<celldesigner:usualView>', B.sp[0]), bs = u && u[0] < B.sp[1] && span(t, '<celldesigner:boxSize ', u[0], u[1]);
+    if (bs) t = attrs(t, bs[0], [['width', num(b[2])], ['height', num(b[3])]]);
+    return t;
+  }
+  // every alias that shows this protein's residues: the aliases of every species naming its reference
+  function proteinAliases(t, id) {
+    var A = alias(t, id);
+    if (!A.s || !A.s.ref) return [id];
+    var out = [];
+    users(t, A.s.ref).forEach(function (sid) { aliasesOf(t, sid).forEach(function (a) { if (out.indexOf(a) < 0) out.push(a); }); });
+    return out.length ? out : [id];
+  }
   function residues(t, A) { return all(t, '<celldesigner:modificationResidue ', reference(t, A.s.ref)); }
   // a residue on the protein's reference (its sites belong to the protein, shared by all its species) at o.angle, else
-  // at the first place of RESIDUE_PLACES no residue takes (the editor's create.js ORDER as angles: the bottom middle, its
-  // quarters, the sides' middles, the bottom corners, the top corners, the top, the sides' quarters); its state on
-  // this species
+  // a residue on the protein's reference (its sites belong to the protein, shared by all its species) at o.angle, else
+  // at the first place of placesFor on this alias's size no residue takes (by angle alone; the editor gives o.angle, its
+  // free test by boxes, cdcreate.js cdRoom); its state on this species
   function residue(t, id, o) {
     var A = protein(t, id), state = o.state || 'empty', rs = residues(t, A);
     if (STATES.indexOf(state) < 0) refuse('CellDesigner has no residue state ' + state + '.');
     var used = rs.map(function (r) { return F(at(r.tag, 'angle')); });
-    var ang = o.angle != null ? o.angle : RESIDUE_PLACES.filter(function (a) { return !used.some(function (u) { return Math.abs(((u - a) % (2 * Math.PI) + 3 * Math.PI) % (2 * Math.PI) - Math.PI) < 0.3; }); })[0];
-    var rid = next(t, 'rs'), p = reference(t, A.s.ref), el = '<celldesigner:modificationResidue angle="' + repr(ang === undefined ? RESIDUE_PLACES[0] : ang) + '" id="' + rid + '"' +
+    var ang = o.angle != null ? o.angle : placesFor(A.box ? A.box[2] : 80, A.box ? A.box[3] : 40).filter(function (a) { return !used.some(function (u) { return Math.abs(((u - a) % (2 * Math.PI) + 3 * Math.PI) % (2 * Math.PI) - Math.PI) < 0.3; }); })[0];
+    var rid = next(t, 'rs'), p = reference(t, A.s.ref), el = '<celldesigner:modificationResidue angle="' + repr(ang === undefined ? 3 * Math.PI / 2 : ang) + '" id="' + rid + '"' +
       (o.name ? ' name="' + esc(o.name) + '"' : '') + ' side="none"/>';
     if (t[p[1] - 2] === '/') t = put(t, p[1] - 2, p[1], '>' + (OPEN.test(t) ? '' : '\n') + list(t, CD + 'listOfModificationResidues', el) + '\n</celldesigner:protein>');
     else t = add(t, CD + 'listOfModificationResidues', el, p[0], p[1], p[1] - '</celldesigner:protein>'.length);
@@ -1259,6 +1299,6 @@
   var api = { LOOK: LOOK, COMP: COMP, lineColour: lineColour, recolourLine: recolourLine, lineWidth: lineWidth, rewidthLine: rewidthLine, PROCESS: PROCESS, REDUCED: REDUCED, sbgn: sbgn, MODS: MODS, NEED: NEED, about: about, aliasInfo: aliasInfo, classColour: classColour, compartmentColour: compartmentColour, classColours: classColours, classSize: classSize, empty: empty, species: newSpecies, compartment: compartment, rename: rename, namePlace: namePlace, nameAt: nameAt, nameInfo: nameInfo, retype: retype, remove: remove, reaction: reaction, reduced: reduced,
     reactant: reactant, product: product, modifier: modifier, reactionType: reactionType, reversible: reversible, modifierType: modifierType, removeLine: removeLine,
     gate: gate, gateInput: gateInput, gateInputRemove: gateInputRemove, gateType: gateType, residue: residue, residueState: residueState,
-    residueRemove: residueRemove, residueName: residueName, residueMove: residueMove, structuralMove: structuralMove, features: features, STATES: STATES, RESIDUE_PLACES: RESIDUE_PLACES, structural: structural, info: info, infoUnit: infoUnit, INFO: INFO, homodimer: homodimer, look: look, restyle: restyle, recolourAll: recolourAll, colours: colours, cdName: cdName, joinable: joinable, join: join, leave: leave };
+    residueRemove: residueRemove, residueName: residueName, residueMove: residueMove, structuralMove: structuralMove, features: features, STATES: STATES, placesFor: placesFor, ratioAngle: ratioAngle, bounds: bounds, proteinAliases: proteinAliases, structural: structural, info: info, infoUnit: infoUnit, INFO: INFO, homodimer: homodimer, look: look, restyle: restyle, recolourAll: recolourAll, colours: colours, cdName: cdName, joinable: joinable, join: join, leave: leave };
   if (node) module.exports = api; else root.cd_make = api;
 })(typeof window !== 'undefined' ? window : globalThis);

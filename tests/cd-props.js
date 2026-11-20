@@ -123,7 +123,25 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#acly-celld
   ok('a complex dropped', /^csa/.test(cx || ''));
   await select(cx);
   var rx = await rows();
-  ok('a complex: Label, Font size, Width, Height, Fill colour, Border width', JSON.stringify(rx) === JSON.stringify(['label', 'font', 'w', 'h', 'fill', 'width']), JSON.stringify(rx));
+  ok('a complex: Label, Font size, Width, Height, Fill colour, Border width, Structural state', JSON.stringify(rx) === JSON.stringify(['label', 'font', 'w', 'h', 'fill', 'width', 'ss']), JSON.stringify(rx));
+  // the structural state as one row (notes/cd-residues.md, point 4): typed, written on the species with its place on the
+  // alias; changed; emptied, removed; each one undo step
+  var spOf = function (t, a) { var m = new RegExp('<celldesigner:complexSpeciesAlias id="' + a + '" species="([^"]*)"').exec(t), s = m && new RegExp('<species [^>]*id="' + m[1] + '"[\\s\\S]*?</species>').exec(t); return s ? s[0] : ''; };
+  await type('ss', 'open');
+  ok('Structural state typed: written on the species, placed on the alias', /structuralState="open"/.test(spOf(await now(), cx)) && /<celldesigner:structuralState angle=/.test(aliasOf(await now(), cx)), spOf(await now(), cx).slice(0, 600));
+  ok('Structural state shown in its row', (await page.$eval('#m2-ed-ss', function (f) { return f.value; })) === 'open');
+  var selectLow = async function (id) {   // a click in its middle (an empty complex), off the structural state that stands out of its box
+    await page.keyboard.press('Escape');
+    var P = await page.$eval('#m2-img [data-n="' + id + '"]', function (g) { var r = g.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; });   // its middle: the state may stand out at any side
+    await page.mouse.click(P[0], P[1]); await page.waitForTimeout(500);
+  };
+  await selectLow(cx); await type('ss', 'a much longer state text');
+  ok('Structural state changed', /structuralState="a much longer state text"/.test(spOf(await now(), cx)));
+  await selectLow(cx); await type('ss', '');
+  ok('Structural state emptied: removed', !/structuralState=/.test(spOf(await now(), cx)));
+  for (var u = 0; u < 3; u++) { await page.keyboard.press('Control+z'); await page.waitForTimeout(800); }
+  ok('the three undone, one step each', !/structuralState=/.test(spOf(await now(), cx)));
+  await select(cx);
   await type('font', '17.6');
   ok('its font size written, a whole number', /<celldesigner:font size="18"\/>/.test(aliasOf(await now(), cx)), aliasOf(await now(), cx).slice(0, 400));
   await page.keyboard.press('Control+z'); await page.waitForTimeout(800);

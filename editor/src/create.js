@@ -715,11 +715,7 @@
     function macroAt(P) { var i = madeAt(P); return i >= 0 && nodes2[i].shape.kind === 'Macromolecule' ? i : -1; }
     // the places a state variable sits on its node's border, as [rx, ry], as ports:
     // the corners, each side's middle and the points between them; never marked, a drag always lands on the nearest.
-    // ORDER is how new ones fill them, the most used first, from the bottom (the top is for the
-    // unit of information): the bottom's middle, right and left of it, the sides' middles, the bottom corners, the top
-    // corners, then the top and the sides' other places
-    var ORDER = [[0, 0.5], [0.25, 0.5], [-0.25, 0.5], [0.5, 0], [-0.5, 0], [0.5, 0.5], [-0.5, 0.5], [0.5, -0.5], [-0.5, -0.5],
-      [0, -0.5], [0.25, -0.5], [-0.25, -0.5], [0.5, 0.25], [-0.5, 0.25], [0.5, -0.25], [-0.5, -0.25]];
+    // new ones fill them by svPlaces (worked out from the node's size, below)
     // a drag lands on the nearest of more places: each side cut in eighths,
     // so the corners, the middles, the quarters and the points between; the arrow keys move it by single units (below)
     var PLACES = (function () { var out = [], k; for (k = -4; k <= 4; k++) { out.push([k / 8, -0.5], [k / 8, 0.5]); if (Math.abs(k) < 4) out.push([-0.5, k / 8], [0.5, k / 8]); } return out; })();
@@ -852,25 +848,126 @@
       var r = realizerOf(nodes2[i].el), sp = r && Array.prototype.filter.call(r.children, function (c) { return c.localName === 'StyleProperties'; })[0];
       return !!sp && Array.prototype.some.call(sp.children, function (c) { return c.getAttribute('name') === 'com.yworks.sbgn.style.mcount' && c.getAttribute('value') !== '1'; });
     }
-    function makeState(P) {   // an empty state variable on the first free place in ORDER (anywhere on the shape, from the bottom), selected to be dragged
+    // Icons that never touch (notes/state-crowding.md; the CellDesigner copy: cdcreate.js cdRoom, cd_make placesFor): a
+    // node's state variables and units of information keep 2 px between their boxes. A new or changed one takes the first
+    // free place of svPlaces, worked out from the node's size; with none free the node grows about its centre (svGrowStep)
+    // and the places are worked out again. Nothing else moves, but a state variable a unit of information now meets.
+    // Never when a map is opened or saved
+    // the places by size, as [rx, ry]: along each side every step (20: an 18 icon and a 2 gap) from its middle, as many as
+    // fit before the corners, and the corners; the order of the places most used (the bottom from the middle outwards, right first, the sides'
+    // middles, the bottom corners, the top corners, the top, the sides' other places, lower first). On 80 by 40 the corners,
+    // the middles and the bottom's quarters
+    function svPlaces(w, h, step) {
+      var S = step || 20, along = function (half) { var o = [0]; for (var d = S; d < half - 1e-6; d += S) o.push(d, -d); return o; };
+      var bx = along(w / 2), sy = along(h / 2).slice(1), out = [];
+      bx.forEach(function (d) { out.push([d / w, 0.5]); });
+      out.push([0.5, 0], [-0.5, 0], [0.5, 0.5], [-0.5, 0.5], [0.5, -0.5], [-0.5, -0.5]);
+      bx.forEach(function (d) { out.push([d / w, -0.5]); });
+      sy.forEach(function (d, k) { if (k % 2 === 0) out.push([0.5, d / h], [-0.5, d / h], [0.5, -d / h], [-0.5, -d / h]); });
+      return out;
+    }
+    function svPt(b, r) { return [b[0] + (0.5 + r[0]) * b[2], b[1] + (0.5 + r[1]) * b[3]]; }
+    // a point p on box b's border put on box g (b grown) where it stays at its distance from the middle of its side: an
+    // icon keeps its place while its glyph grows round it (a corner stays a corner); the CellDesigner copy: cdcreate.js cdKeep
+    function svKeep(p, b, g) {
+      var cx = b[0] + b[2] / 2, cy = b[1] + b[3] / 2, gx = g[0] + g[2] / 2, gy = g[1] + g[3] / 2, dx = p[0] - cx, dy = p[1] - cy;
+      var onX = Math.abs(Math.abs(dx) - b[2] / 2) < 0.5, onY = Math.abs(Math.abs(dy) - b[3] / 2) < 0.5, sx = dx < 0 ? -1 : 1, sy = dy < 0 ? -1 : 1;
+      if (onX && onY) return [gx + sx * g[2] / 2, gy + sy * g[3] / 2];
+      if (onY) return [gx + dx, gy + sy * g[3] / 2];
+      if (onX) return [gx + sx * g[2] / 2, gy + dy];
+      return [gx + dx * g[2] / b[2], gy + dy * g[3] / b[3]];
+    }
+    function svRatio(p, g) { return [(p[0] - g[0]) / g[2] - 0.5, (p[1] - g[1]) / g[3] - 0.5]; }
+    // node id grown to box nb: its state variables kept where they are (svKeep, their ratios written again); its units
+    // of information stay spread along the top (sbgn_edit keeps their ratios)
+    function svGrowTo(id, nb) {
+      var i = nodes2.findIndex(function (n) { return n.id === id; }), b = boxOf(i), ic = svIconsOn(i);
+      text = sbJs.resize(text, id, nb);
+      ic.forEach(function (q) { if (q.k === SV) { var r = svRatio(svKeep(svPt(b, q.r), b, nb), nb); text = sbJs.stateMove(text, id, q.n, r[0], r[1]); } });
+      parse();
+    }
+    function svIconsOn(i) {   // node i's icons as ratios of its box (sbgn_edit keeps them so through a resize): { r, s, k: kind, n: index among its kind }
+      var b = boxOf(i);
+      return svList(i).map(function (q) { return { r: [(q[1][0] - b[0]) / b[2] - 0.5, (q[1][1] - b[1]) / b[3] - 0.5], s: q[2], k: q[3], n: q[4] }; });
+    }
+    function svClash(c, s, b, icons) { return icons.some(function (q) { var p = svPt(b, q.r); return Math.abs(c[0] - p[0]) < (s[0] + q.s[0]) / 2 + 2 - 1e-6 && Math.abs(c[1] - p[1]) < (s[1] + q.s[1]) / 2 + 2 - 1e-6; }); }
+    // the next size tried, as cdcreate.js cdGrowStep: the width +20 up to 1.5 times its kind's (80: 100, 120), then the
+    // height +20 up to 1.5 times, then the width +40 with no cap
+    function svGrowStep(b, base) {
+      var W = 1.5 * base[0], H = 1.5 * base[1], w = b[2], h = b[3];
+      if (w < W - 1e-6) w = Math.min(w + 20, W); else if (h < H - 1e-6) h = Math.min(h + 20, H); else w += 40;
+      return [b[0] - (w - b[2]) / 2, b[1] - (h - b[3]) / 2, w, h];
+    }
+    function svBase(i) {
+      var c = ((sbClasses()[nodes2[i].id] || '').replace(/ multimer$/, '')) || 'macromolecule', b = boxOf(i);
+      try { var D = defOf(c); if (D && D.w && D.h) return [D.w, D.h]; } catch (e) { /* its own size */ }
+      return [b[2], b[3]];
+    }
+    // a free place for an icon of size s on node i: { box: grown (null: as it is), r }; skip(icon): not counted
+    function svRoom(i, s, skip) {
+      var b0 = boxOf(i), b = b0, base = svBase(i), ic0 = svIconsOn(i).filter(function (q) { return !skip || !skip(q); }), c;
+      for (var g = 0; g < 80; g++) {
+        var ic = ic0.map(function (q) { return q.k === SV ? { r: svRatio(svKeep(svPt(b0, q.r), b0, b), b), s: q.s, k: q.k, n: q.n } : q; });   // on the size tried: state variables kept where they are, units spread
+        c = svPlaces(b[2], b[3], Math.max(20, s[1] + 2));
+        for (var j = 0; j < c.length; j++) if (!svClash(svPt(b, c[j]), s, b, ic)) return { box: b === b0 ? null : b, r: c[j] };
+        b = svGrowStep(b, base);
+      }
+      return { box: b === b0 ? null : b, r: c[0] };
+    }
+    function svK(i) { var q = svList(i).filter(function (x) { return x[3] === SV; })[0]; return q ? q[2][1] / 18 : 1; }   // the node's icons' scale (a Newt map's own font)
+    // after node id's icons changed (a unit added or typed, a state variable j typed): units of information apart from one
+    // another (the node grown in width, the units spread along its top), then state variable j if it meets an icon, or
+    // (a unit changed, j null) every state variable a unit meets, moved to its first free place (the node grown where none
+    // is); the text changed in place, one undo step with the change; true when it grew (its holders grown by svHold)
+    function svSettle(id, j) {
+      var i = nodes2.findIndex(function (n) { return n.id === id; });
+      if (i < 0) return false;
+      var grew = false, base = svBase(i);
+      for (var g = 0; g < 80; g++) {
+        var b = boxOf(i), ic = svIconsOn(i), us = ic.filter(function (q) { return q.k === UI; });
+        if (!us.some(function (u, k) { return svClash(svPt(b, u.r), u.s, b, us.slice(k + 1)); })) break;
+        svGrowTo(id, [b[0] - 10, b[1], b[2] + 20, b[3]]);   // units side by side along the top: only width parts them grew = true; i = nodes2.findIndex(function (n) { return n.id === id; });
+      }
+      for (var h = 0; h < 80; h++) {
+        var b2 = boxOf(i), ic2 = svIconsOn(i), us2 = ic2.filter(function (q) { return q.k === UI; });
+        var hit = ic2.filter(function (q) { return q.k === SV && (j != null ? q.n === j && svClash(svPt(b2, q.r), q.s, b2, ic2.filter(function (o) { return o !== q; })) : svClash(svPt(b2, q.r), q.s, b2, us2)); })[0];   // a state variable typed: that one alone; a unit changed: those it meets (a file's own overlaps stay)
+        if (!hit) break;
+        var r = svRoom(i, hit.s, function (o) { return o.k === SV && o.n === hit.n; });
+        if (r.box) { svGrowTo(id, r.box); grew = true; }
+        text = sbJs.stateMove(text, id, hit.n, r.r[0], r.r[1]); parse(); i = nodes2.findIndex(function (n) { return n.id === id; });
+      }
+      return grew;
+    }
+    // node id grown from box was: what holds it grown round it, as sbSetSize does (one undo step with the change)
+    function svHold(id, was) {
+      var k = nodes2.findIndex(function (n) { return n.id === id; });
+      if (k < 0) return;
+      setBoxes(grown([k], boxOf, function (q) { return q === k ? was : boxOf(q); }, function () { return false; }));
+      refit([id]);
+    }
+    function makeState(P) {   // an empty state variable on the first free place (svRoom: anywhere on the shape, from the bottom; the glyph grown where none is), selected to be dragged
       var i = macroAt(P);
       if (i < 0) return;
-      var b = boxOf(i), have = svList(i), r = ORDER.filter(function (q) {
-        return !have.some(function (h) { return Math.hypot(b[0] + (0.5 + q[0]) * b[2] - h[1][0], b[1] + (0.5 + q[1]) * b[3] - h[1][1]) < Math.max(18, h[2][0]); });
-      })[0] || ORDER[0];
-      var id = nodes2[i].id, j = have.filter(function (h) { return h[3] === SV; }).length;   // after the state variables, before the units
-      remember(false); text = sbJs.state(text, id, '', r[0], r[1]); made(id);
+      var k = svK(i), room = svRoom(i, [18 * k, 18 * k], null), was = boxOf(i);
+      var id = nodes2[i].id, j = svList(i).filter(function (h) { return h[3] === SV; }).length;   // after the state variables, before the units
+      remember(false);
+      if (room.box) svGrowTo(id, room.box);
+      text = sbJs.state(text, id, '', room.r[0], room.r[1]);
+      if (room.box) { parse(); svHold(id, was); }
+      made(id);
       selN = []; svSel = { id: id, j: j }; paint();
     }
     // an empty unit of information, as with state variables (made at once, its text added by a double
-    // click): N:2's box (the converter's smallest), the last on the top, selected
+    // click): N:2's box (the converter's smallest), the last on the top, selected; room made for it (svSettle)
     function makeUnit(id, value) {   // value: a unit with its text (ct:mRNA), else an empty one
       var i = nodes2.findIndex(function (n) { return n.id === id; });
       if (i < 0) return;
-      var j = svList(i).length;   // the units come last in the node's list
+      var j = svList(i).length, was = boxOf(i);   // the units come last in the node's list
       var t2 = sbJs.unit(text, id, value || '');
       if (t2 === text) return;
-      remember(false); text = t2; made(id);
+      remember(false); text = t2;
+      if (!afSbgn) { parse(); if (svSettle(id, null)) svHold(id, was); }
+      made(id);
       selN = []; svSel = { id: id, j: j }; paint();
     }
     function made(id) {   // the text changed by a palette action: read again, the node (or nodes: an array) selected, drawn, saved
@@ -983,7 +1080,9 @@
           var t2 = unit ? sbJs.unitValue(text, id, sv[4], v) : sbJs.stateValue(text, id, sv[4], v);
           if (t2 === text) return;
           if (!fresh) remember(false);   // a unit made for this typing: one step with its making (its step is taken back when nothing is kept, above)
-          text = t2; parse(); dirty = true; quiet(); render(); paint(); changed();
+          text = t2; parse();
+          if (au0 == null) { var ix = nodes2.findIndex(function (n) { return n.id === id; }), was = ix >= 0 ? boxOf(ix) : null; if (was && svSettle(id, unit ? null : sv[4])) svHold(id, was); }   // a wider icon given room (notes/state-crowding.md)
+          dirty = true; quiet(); render(); paint(); changed();
         }, inp: inp, place: place
       };
       inp.addEventListener('keydown', function (e) {
