@@ -420,12 +420,12 @@ page, so its styles keep the base they were made on).
   #m2-view .m2-ed-type { position: absolute; z-index: 5; box-sizing: border-box; margin: 0; padding: 0; border: 0; border-radius: 0; background: #fff; color: #000; text-align: center; font-family: Dialog, Arial, Helvetica, sans-serif; outline: none; box-shadow: none; }   /* the text edited in place, in the glyph's own colours (create.js), no frame */
   /* How to edit (kept out of the window: the long how-to took the room the tools need): the "?" after the tools opens it as
      a popover over the map's left edge, built by the editor from one list (editor/src/help.js) */
-  #m2-ed-help-box { position: fixed; z-index: 60; width: 760px; max-width: calc(100vw - 32px); max-height: calc(100vh - 32px); overflow: auto;
+  #m2-ed-help-box { position: fixed; z-index: 60; width: 760px; max-width: calc(100vw - 32px); max-height: calc(100vh - 32px); overflow: auto; overscroll-behavior: contain;
     box-sizing: border-box; padding: 14px 18px 16px; background: var(--m2-bg); border: 1px solid var(--m2-line); border-radius: 8px;
     box-shadow: 0 6px 24px #0003; font-size: 13px; line-height: 1.45; color: var(--m2-text-soft); }   /* the look of Gestures and keys */
   #m2-ed-help-box[hidden] { display: none; }
   /* Gestures and keys (the ? at the end of the icons, or the ? key): a large window beside the left panel, level with the ? (tipsPlace), over everything; Esc, × or a click elsewhere close it */
-  #m2-tips { position: fixed; z-index: 70; top: 16px; left: 50%; transform: translateX(-50%); width: 760px; max-width: calc(100vw - 32px); max-height: calc(100vh - 32px); overflow: auto;
+  #m2-tips { position: fixed; z-index: 70; top: 16px; left: 50%; transform: translateX(-50%); width: 760px; max-width: calc(100vw - 32px); max-height: calc(100vh - 32px); overflow: auto; overscroll-behavior: contain;
     box-sizing: border-box; padding: 14px 18px 16px; background: var(--m2-bg); color: var(--m2-text-soft); border: 1px solid var(--m2-line); border-radius: 8px; box-shadow: 0 6px 24px #0003; font-size: 13px; line-height: 1.45; }
   #m2-tips[hidden] { display: none; }
   #m2-setwin .m2-set-gest { margin: 14px 0 4px; }

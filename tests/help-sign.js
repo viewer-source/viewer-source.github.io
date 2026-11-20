@@ -37,6 +37,14 @@ var URL0 = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysi
     return hs.join('|') === 'While editing|Less obvious' && t.length === 2 && t[1].querySelectorAll('tr').length === 20 && /Maps/.test(t[1].rows[0].textContent);
   }));
   ok('as wide as Gestures and keys', await page.evaluate(function () { return Math.abs(document.getElementById('m2-ed-help-box').offsetWidth - 760) < 2; }));
+  var hb = await page.evaluate(function () { var r = document.getElementById('m2-ed-help-box').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; });
+  await page.mouse.move(hb.x, hb.y);
+  var y0 = await page.evaluate(function () { return window.scrollY; });
+  for (var i = 0; i < 12; i++) { await page.mouse.wheel(0, 400); await page.waitForTimeout(60); }
+  await page.waitForTimeout(300);
+  ok('scrolling the editor\'s help to its end leaves the page where it was', await page.evaluate(function (y0) {
+    var h = document.getElementById('m2-ed-help-box'); return window.scrollY === y0 && h.scrollTop + h.clientHeight >= h.scrollHeight - 2;
+  }, y0));
   await page.click(sign); await page.waitForTimeout(300);
   ok('a second click closes the editor\'s help', !(await shown('m2-ed-help-box')));
   ok('no page errors', !errs.length); if (errs.length) console.log(errs.join('\n'));
