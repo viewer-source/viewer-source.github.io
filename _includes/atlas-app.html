@@ -757,6 +757,41 @@ page, so its styles keep the base they were made on).
   .m2-cx:not(.m2-cx-still) button:hover .m2-cx-key, .m2-cx button:focus-visible .m2-cx-key { color: inherit; }
   .m2-cx .m2-sep { border-top: 1px solid var(--m2-line); margin: 4px 0; }
   .m2-cx .m2-cx-head { padding: 4px 12px; color: var(--m2-muted, #5f6368); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  /* Settings, Menus: the window arranging the right-click menus (menuEdit) */
+  #m2-setwin .m2-set-menus { margin: 0 0 14px; }
+  #m2-setwin .m2-set-row.m2-set-one { grid-template-columns: 1fr; }
+  .m2-me-veil { position: fixed; inset: 0; z-index: 1000; background: rgba(0, 0, 0, .25); display: flex; align-items: center; justify-content: center; }
+  .m2-me { width: min(1040px, calc(100vw - 32px)); height: min(680px, calc(100vh - 32px)); display: flex; flex-direction: column; background: var(--m2-bg); color: var(--m2-text); border: 1px solid var(--m2-line); border-radius: 8px; box-shadow: 0 8px 32px rgba(0, 0, 0, .18); font-size: 14px; overflow: hidden; }
+  .m2-me-top { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; border-bottom: 1px solid var(--m2-line); }
+  .m2-me-title { font-weight: 500; }
+  .m2-me-x { border: 0; background: none; font-size: 20px; line-height: 1; color: var(--m2-muted); cursor: pointer; padding: 2px 6px; }
+  .m2-me-body { flex: 1; display: flex; min-height: 0; }
+  .m2-me-nav { width: 240px; flex: none; overflow-y: auto; border-right: 1px solid var(--m2-line); padding: 6px 0; }
+  .m2-me-h { margin: 10px 16px 4px; font-size: 12px; color: var(--m2-muted); }
+  .m2-me-pickmenu { display: flex; justify-content: space-between; align-items: center; width: 100%; padding: 4px 16px; border: 0; background: none; font: inherit; font-size: 13px; color: var(--m2-text); text-align: left; cursor: pointer; }
+  .m2-me-pickmenu:hover { background: #f1f3f4; }
+  .m2-me-pickmenu.m2-on { background: var(--m2-accent); color: var(--m2-on-accent); }
+  .m2-me-dot { font-size: 8px; margin-left: 8px; }
+  .m2-me-stage { flex: 1; display: flex; gap: 32px; padding: 16px 20px; overflow: auto; min-width: 0; }
+  .m2-me-main { flex: none; width: 240px; }
+  .m2-me-stack { flex: 1; min-width: 0; }
+  .m2-me-name { margin: 0 0 10px; font-size: 12px; color: var(--m2-muted); }
+  .m2-cx.m2-me-card { position: relative; z-index: auto; max-width: none; width: 240px; box-sizing: border-box; }
+  .m2-me-row { padding: 4px 12px; cursor: grab; user-select: none; -webkit-user-select: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; touch-action: none; }
+  .m2-me-main .m2-me-row:hover { background: #f1f3f4; }
+  .m2-me-row.m2-me-pick, .m2-me-main .m2-me-row.m2-me-pick:hover { background: var(--m2-accent); color: var(--m2-on-accent); }
+  .m2-cx .m2-sep.m2-me-line { margin: 0; padding: 4px 0; border: 0; background: linear-gradient(var(--m2-line), var(--m2-line)) center / 100% 1px no-repeat; cursor: grab; touch-action: none; }
+  .m2-me-drag { box-shadow: 0 2px 8px rgba(0, 0, 0, .2); cursor: grabbing; position: relative; z-index: 1; background: var(--m2-bg); }
+  .m2-me-deck { position: relative; }
+  .m2-cx.m2-me-mini { position: absolute; width: 200px; box-sizing: border-box; cursor: pointer; transition: transform .12s; font-size: 13px; }
+  .m2-cx.m2-me-mini .m2-me-row { cursor: pointer; padding: 3px 10px; }
+  .m2-cx.m2-me-mini:hover { transform: translateY(-6px); z-index: 500 !important; }
+  .m2-me-foot { display: flex; align-items: center; gap: 8px; padding: 10px 16px; border-top: 1px solid var(--m2-line); }
+  .m2-me-say { flex: 1; display: flex; align-items: center; gap: 10px; color: var(--m2-muted); font-size: 13px; }
+  .m2-me-btn { font: inherit; font-size: 13px; padding: 4px 10px; border: 1px solid var(--m2-line); border-radius: var(--m2-radius-button); background: var(--m2-bg); color: var(--m2-text); cursor: pointer; }
+  .m2-me-btn:hover:not(:disabled) { background: var(--m2-accent); border-color: var(--m2-accent); color: var(--m2-on-accent); }
+  .m2-me-btn:disabled { color: #bdc1c6; cursor: default; }
+  @media (max-width: 700px) { .m2-me-body, .m2-me-stage { flex-direction: column; } .m2-me-nav { width: auto; max-height: 30%; border-right: 0; border-bottom: 1px solid var(--m2-line); } }
   .m2-cx-note { position: fixed; z-index: 51; padding: 4px 10px; font-size: 13px; background: var(--m2-text); color: var(--m2-bg); border-radius: var(--m2-radius-button); pointer-events: none; }
 </style>
 {% unless include.look == "version1" %}<style>
@@ -1517,6 +1552,369 @@ page, so its styles keep the base they were made on).
     ls.forEach(function (l) { if (l.group && gs.indexOf(l.group) < 0) gs.push(l.group); });
     return gs;
   }
+  // ---------- right-click menus in the reader's own order (Settings, Menus, Edit right-click menus) ----------
+  // Every menu is built as before; a menu the reader has arranged is then put in that order by menuArrange, its buttons
+  // moved, never rebuilt, so each keeps its action. A menu not arranged is left exactly as built. An item is known by
+  // its label (menuKey joins a label's forms: Make multimer and Make monomer are one item), a menu by where it opens and,
+  // over an object while editing, by the items it holds (menuWhich). MENUS lists every menu with its items in the order
+  // the code builds them, '|' for a line; tests/menus.js right-clicks the demo maps and compares. Kept in this browser
+  // under atlas-menus as { menu id: [keys and '|'] }; MENU_SHIPPED is the order a release gives every reader (empty: the
+  // code's own). No item is hidden or removed here: only the order and the lines change.
+  var MENU_KEY = 'atlas-menus', MENU_SHIPPED = {};
+  var MENU_SAME = [
+    [/^Switch to (viewer|edit)$/, 'Switch to viewer or edit'],
+    [/^(Full screen with tools|Exit full screen)$/, 'Full screen with tools'],
+    [/^Download (PNG|SVG)$/, ''],
+    [/^Download /, 'Download <its format>'],
+    [/^Turn (process|logic gate)$/, 'Turn process or logic gate'],
+    [/^Make main (reactant|product)$/, 'Make main reactant or product'],
+    [/^Make (multimer|monomer|macromolecule)$/, 'Make multimer or monomer'],
+    [/^Make (reversible|irreversible)$/, 'Make reversible or irreversible'],
+    [/^Make a copy$/, ''],
+    [/^Make /, 'Make <another kind>'],
+    [/^Name at /, 'Name at <place>'],
+    [/^Move (\d+ maps )?to\.\.\.$/, 'Move to...'],
+    [/^Delete (\d+ maps|map)$/, 'Delete map'],
+    [/^(Show|Hide) file extensions$/, 'Show or hide file extensions'],
+    [/^Add unit of information ct:/, 'Add unit of information ct:mRNA or ct:gene'],
+    [/^(Add|Edit) unit of information text$/, 'Add or edit unit of information text'],
+    [/^Unit of information ct:/, 'Unit of information ct:mRNA or ct:gene']
+  ];
+  var MENU_PAGE = ['Switch to viewer or edit', 'New SBGN-ML map', 'New CellDesigner map', 'Full screen with tools', 'Download <its format>', 'Download PNG', 'Download SVG', 'Open in Newt', 'Open in MINERVA', 'Copy image as PNG', 'Copy image as SVG'];
+  var MENU_MAPTOOLS = ['Snap map to grid', 'Repack all complexes', 'Show grid', 'Snap to grid', 'Remove all bend points'];
+  var MENU_LISTNEW = ['New SBGN-ML map', 'New CellDesigner map', 'Add map from file', 'Add group', 'Restore example maps'];
+  var MENU_LISTVIEW = ['Open all groups', 'Close all groups', 'Show or hide file extensions'];
+  var MENUS = [
+    { id: 'view-object', head: 'Map, view mode', name: 'Molecule, complex or reaction', items: ['Show annotation', 'Copy name', 'Find in all maps'] },
+    { id: 'view-area', head: 'Map, view mode', name: 'Area selected by a drag', items: ['Zoom to area', 'Copy image as PNG'] },
+    { id: 'view-empty', head: 'Map, view mode', name: 'Empty map space', items: MENU_PAGE },
+    { id: 'edit-bend', head: 'Map, edit mode', name: 'Bend point', items: ['Remove bend point', 'Make main reactant or product'] },
+    { id: 'edit-line', head: 'Map, edit mode', name: 'Line', items: ['Add bend point', '|', 'Delete'] },
+    { id: 'edit-cd-line', cd: true, head: 'Map, edit mode', name: 'Reaction line (CellDesigner)', items: ['Add bend point', 'Make main reactant or product', 'Change identity', 'Make reversible or irreversible', '|', 'Delete'] },
+    { id: 'edit-modulation', head: 'Map, edit mode', name: 'Modulation', items: ['Add bend point', 'Change identity', '|', 'Delete'] },
+    { id: 'edit-process', head: 'Map, edit mode', name: 'Process or reaction', items: ['Turn process or logic gate', 'Change identity', 'Make reversible or irreversible', 'Select all of this kind', '|', 'Delete'] },
+    { id: 'edit-gate', head: 'Map, edit mode', name: 'Logic gate', items: ['Turn process or logic gate', 'Make <another kind>', 'Select all of this kind', '|', 'Delete'] },
+    { id: 'edit-macromolecule', cd: false, head: 'Map, edit mode', name: 'Macromolecule (SBGN-ML)', items: ['Add state variable', 'Add unit of information', 'Make multimer or monomer', 'Name by members', 'Repack complex', 'Select all of this kind', '|', 'Delete'] },
+    { id: 'edit-naf', cd: false, head: 'Map, edit mode', name: 'Nucleic acid feature (SBGN-ML)', items: ['Add unit of information', 'Add unit of information ct:mRNA or ct:gene', 'Name by members', 'Repack complex', 'Select all of this kind', '|', 'Delete'] },
+    { id: 'edit-af', cd: false, head: 'Map, edit mode', name: 'Activity (Activity Flow)', items: ['Make <another kind>', 'Remove unit of information', 'Add or edit unit of information text', 'Unit of information ct:mRNA or ct:gene', 'Remove unit of information text', 'Name by members', 'Repack complex', 'Select all of this kind', '|', 'Delete'] },
+    { id: 'edit-glyph', head: 'Map, edit mode', name: 'Other node, complex', items: ['Name by members', 'Repack complex', 'Select all of this kind', '|', 'Delete'] },
+    { id: 'edit-sv', cd: false, head: 'Map, edit mode', name: 'State variable or unit of information (SBGN-ML)', items: ['Delete'] },
+    { id: 'edit-cd-species', cd: true, head: 'Map, edit mode', name: 'Species (CellDesigner)', items: ['Add state variable', 'Add structural state', 'Add unit of information', 'Change identity', 'Make multimer or monomer', 'Name by members', 'Repack complex', 'Select all of this kind', '|', 'Delete'] },
+    { id: 'edit-cd-residue', cd: true, head: 'Map, edit mode', name: 'Residue (CellDesigner)', items: ['Edit', 'Change state', '|', 'Delete'] },
+    { id: 'edit-cd-unit', cd: true, head: 'Map, edit mode', name: 'Unit of information or structural state (CellDesigner)', items: ['Edit', 'Change unit', '|', 'Delete'] },
+    { id: 'edit-compartment', head: 'Map, edit mode', name: 'Inside a compartment', items: ['Name at <place>', 'Bring forward', 'Send backward', 'Select all of this kind', '|', 'Delete', '|'].concat(MENU_MAPTOOLS, '|', MENU_PAGE) },
+    { id: 'edit-empty', head: 'Map, edit mode', name: 'Empty map space', items: MENU_MAPTOOLS.concat('|', MENU_PAGE) },
+    { id: 'list-map', head: 'Map list', name: 'One map', items: ['Rename map', 'Make a copy', 'Move to...', 'Download <its format>', 'Download PNG', 'Download SVG', '|'].concat(MENU_LISTNEW, '|', MENU_LISTVIEW, '|', 'Delete map') },
+    { id: 'list-several', head: 'Map list', name: 'Several maps selected', items: ['Move to...', '|'].concat(MENU_LISTNEW, '|', MENU_LISTVIEW, '|', 'Delete map') },
+    { id: 'list-group', head: 'Map list', name: 'A group\'s heading', items: ['Rename group', '|'].concat(MENU_LISTNEW, '|', MENU_LISTVIEW, '|', 'Remove group', 'Delete group') },
+    { id: 'list-empty', head: 'Map list', name: 'Empty list space', items: MENU_LISTNEW.concat('|', MENU_LISTVIEW) },
+    { id: 'list-deleted-map', head: 'Map list', name: 'A map in Deleted', items: ['Restore', '|', 'Delete forever'] },
+    { id: 'list-deleted-head', head: 'Map list', name: 'Deleted\'s heading', items: ['Delete all forever'] }
+  ];
+  function menuById(id) { for (var i = 0; i < MENUS.length; i++) if (MENUS[i].id === id) return MENUS[i]; return null; }
+  function menuStore() { try { return JSON.parse(localStorage.getItem(MENU_KEY) || '{}') || {}; } catch (e) { return {}; } }
+  function menuDefault(id) { var m = menuById(id); return m ? m.items.slice() : []; }
+  function menuNow(id, s) {   // the order kept, with items the code has dropped since left out and those it has added since put beside their neighbour
+    var def = menuDefault(id), got = (s || menuStore())[id] || MENU_SHIPPED[id];
+    if (!got) return def;
+    var o = got.filter(function (k) { return k === '|' || def.indexOf(k) >= 0; });
+    def.forEach(function (k) { if (k !== '|' && o.indexOf(k) < 0) o.splice(Math.ceil(menuPlace(o, def, k)), 0, k); });
+    return menuTidy(o);
+  }
+  function menuTidy(o) {   // no line first, last or twice
+    var out = [];
+    o.forEach(function (k) { if (k !== '|' || (out.length && out[out.length - 1] !== '|')) out.push(k); });
+    while (out[out.length - 1] === '|') out.pop();
+    return out;
+  }
+  function menuAny() { return Object.keys(menuStore()).length + Object.keys(MENU_SHIPPED).length > 0; }
+  function menuSave(s) {   // a menu back in the code's order is no arrangement: left as built
+    Object.keys(s).forEach(function (id) { if (!MENU_SHIPPED[id] && JSON.stringify(menuTidy(s[id])) === JSON.stringify(menuDefault(id))) delete s[id]; });
+    try { if (Object.keys(s).length) localStorage.setItem(MENU_KEY, JSON.stringify(s)); else localStorage.removeItem(MENU_KEY); } catch (e) {}
+  }
+  function menuLabel(n) {
+    var b = n.classList.contains('m2-cx-sub') ? n.querySelector('button') : n;
+    for (var c = b && b.firstChild; c; c = c.nextSibling) if (c.nodeType === 3 && c.nodeValue.trim()) return c.nodeValue.trim();
+    return '';
+  }
+  function menuKey(t) {
+    for (var i = 0; i < MENU_SAME.length; i++) if (MENU_SAME[i][0].test(t)) return MENU_SAME[i][1] || t;
+    return t;
+  }
+  function menuRows(box) { return Array.prototype.filter.call(box.children, function (n) { return !n.classList.contains('m2-sep') && !n.classList.contains('m2-cx-head'); }); }
+  function menuWhich(box, ed, cd) {   // the map's menu: which of MENUS it is (cd: a CellDesigner map); null where none holds every item shown, so it stays as built
+    var keys = menuRows(box).map(function (n) { return menuKey(menuLabel(n)); });
+    if (keys.indexOf('Zoom to area') >= 0) return 'view-area';
+    if (!ed) return box.querySelector('.m2-cx-head') ? 'view-object' : 'view-empty';
+    if (keys.indexOf('Switch to viewer or edit') >= 0) return keys.every(function (k) { return menuDefault('edit-empty').indexOf(k) >= 0; }) ? 'edit-empty' : 'edit-compartment';
+    var best = null, bs = null;
+    MENUS.forEach(function (m) {   // the edit menu holding most of the items shown, then the smallest; on a tie the later, more general one
+      if (m.head !== 'Map, edit mode' || m.id === 'edit-empty' || (m.cd !== undefined && m.cd !== !!cd)) return;
+      var have = keys.filter(function (k) { return m.items.indexOf(k) >= 0; }).length, sc = [have === keys.length ? 1 : 0, have, -m.items.filter(function (k) { return k !== '|'; }).length];
+      if (!bs || sc[0] > bs[0] || (sc[0] === bs[0] && (sc[1] > bs[1] || (sc[1] === bs[1] && sc[2] >= bs[2])))) { best = m.id; bs = sc; }
+    });
+    return bs && bs[0] ? best : null;
+  }
+  function menuPlace(order, def, k) {   // an item's place in an arrangement; one it does not name goes after its neighbour in the code's order
+    var i = order.indexOf(k), d = def.indexOf(k), j;
+    if (i >= 0) return i;
+    if (d < 0) return null;
+    for (j = d - 1; j >= 0; j--) if (def[j] !== '|' && order.indexOf(def[j]) >= 0) return order.indexOf(def[j]) + 0.5;
+    for (j = d + 1; j < def.length; j++) if (def[j] !== '|' && order.indexOf(def[j]) >= 0) return order.indexOf(def[j]) - 0.5;
+    return order.length;
+  }
+  function menuArrange(box, id) {
+    var s = menuStore();
+    if (!id || !(s[id] || MENU_SHIPPED[id])) return box;
+    var order = menuNow(id, s), def = menuDefault(id), rows = [], prev = -1;
+    Array.prototype.slice.call(box.children).forEach(function (n) {
+      if (n.classList.contains('m2-cx-head')) return;
+      n.remove();
+      if (n.classList.contains('m2-sep')) return;
+      var p = menuPlace(order, def, menuKey(menuLabel(n)));
+      if (p === null) p = prev + 0.001;   // an item no list knows: beside the one built before it
+      rows.push({ n: n, p: p, i: rows.length }); prev = p;
+    });
+    rows.sort(function (a, b) { return a.p - b.p || a.i - b.i; });
+    var last = null;
+    rows.forEach(function (r) {
+      if (last !== null) for (var j = Math.floor(last) + 1; j < r.p; j++) if (order[j] === '|') { box.appendChild(el('div', 'm2-sep')); break; }
+      box.appendChild(r.n); last = r.p;
+    });
+    return box;
+  }
+  // an item moved in one menu, put the same way in another menu holding it: first or last there when it went first or
+  // last, else beside its nearest neighbour there on its own side of any line (after the one before it, else before the
+  // one after it), so it stays in its group
+  function menuRelink(order, k, other) {
+    var o = other.filter(function (x) { return x !== k; }), i = order.indexOf(k), near = function (d) {
+      for (var j = i + d, cut = false; j >= 0 && j < order.length; j += d) { if (order[j] === '|') cut = true; else if (o.indexOf(order[j]) >= 0) return { at: o.indexOf(order[j]), cut: cut }; }
+      return null;
+    };
+    if (i === 0) return menuTidy([k].concat(o));
+    if (i === order.length - 1) return menuTidy(o.concat(k));
+    var a = near(-1), b = near(1), pick = a && !a.cut ? [a, 1] : b && !b.cut ? [b, 0] : a ? [a, 1] : b ? [b, 0] : null;
+    if (!pick) return other;
+    o.splice(pick[0].at + pick[1], 0, k);
+    return menuTidy(o);
+  }
+  // ----- the window: the menus on the left, the one chosen in the middle as it looks while working, its rows dragged;
+  // on the right, the other menus holding the item chosen, as a stack of cards, that item lit across each card so its
+  // place shows on every card's visible edge
+  var menuEd = null;
+  function menuEdit() {
+    if (menuEd) return;
+    var veil = el('div', 'm2-me-veil'), w = el('div', 'm2-me');
+    w.setAttribute('role', 'dialog'); w.setAttribute('aria-modal', 'true'); w.setAttribute('aria-label', 'Right-click menus');
+    veil.appendChild(w); document.body.appendChild(veil);
+    menuEd = { veil: veil, w: w, id: MENUS[0].id, key: null, last: null, back: document.activeElement };
+    veil.addEventListener('pointerdown', function (e) { if (e.target === veil && !document.querySelector('.m2-me-rowmenu')) menuEditClose(); });
+    window.addEventListener('keydown', menuEditKey, true);   // the window's capture: before the page's own keys (E, S, arrows, Delete)
+    menuEditDraw();
+  }
+  function menuEditClose() {
+    if (!menuEd) return;
+    var back = menuEd.back;
+    menuRowClose(); menuEd.veil.remove(); menuEd = null;
+    window.removeEventListener('keydown', menuEditKey, true);
+    if (back && back.isConnected && back.focus) back.focus();
+  }
+  function menuEditKey(e) {   // while the window is open the page behind takes no keys; Esc closes the row menu, else the window
+    var r = document.querySelector('.m2-me-rowmenu'), w = menuEd.w;
+    if (e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); if (r) menuRowClose(); else menuEditClose(); return; }
+    if ((e.ctrlKey || e.metaKey) && !e.altKey && /^Key[ZY]$/.test(e.code || '')) return;   // undo and redo, as for every setting
+    e.stopImmediatePropagation();
+    if (e.altKey && !r && menuEd.key && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {   // the chosen item one place up or down, by the keys
+      e.preventDefault();
+      var o = menuNow(menuEd.id), at = o.indexOf(menuEd.key), to = at + (e.key === 'ArrowUp' ? -1 : 1);
+      if (at >= 0 && to >= 0 && to < o.length) { o.splice(at, 1); o.splice(to, 0, menuEd.key); menuMove(menuEd.id, o, menuEd.key); }
+      return;
+    }
+    var box = r || w, bs = Array.prototype.slice.call(box.querySelectorAll('button:not(:disabled)')), i = bs.indexOf(document.activeElement);
+    if (e.key === 'Tab' || (r && (e.key === 'ArrowDown' || e.key === 'ArrowUp'))) {   // round inside the window, or the row menu
+      e.preventDefault();
+      if (bs.length) bs[i < 0 ? 0 : (i + (e.shiftKey || e.key === 'ArrowUp' ? -1 : 1) + bs.length) % bs.length].focus();
+    }
+  }
+  function menuChange(fn) {   // one undo step for the whole change, the window drawn again after it and after its undo
+    var before = lsSnap([MENU_KEY]), s = menuStore();
+    if (menuEd) menuEd.last = null;   // a move sets it again
+    fn(s); menuSave(s);
+    lsDid(before, function () { if (menuEd) { menuEd.last = null; menuEditDraw(); } });
+    if (menuEd) menuEditDraw();
+  }
+  function menuMove(id, order, k) {   // the menu in its new order; an item moved, also in every other menu holding it
+    menuChange(function (s) {
+      s[id] = menuTidy(order);
+      var was = {}, n = 0;
+      var list = function (q) { return q.head === 'Map list'; }, here = menuById(id);
+      if (k && k !== '|') MENUS.forEach(function (m) {
+        if (m.id === id || list(m) !== list(here)) return;   // the map's menus and the list's apart
+        var o = menuNow(m.id, s);
+        if (o.indexOf(k) < 0) return;
+        var nw = menuRelink(s[id], k, o);
+        if (JSON.stringify(nw) === JSON.stringify(o)) return;
+        was[m.id] = s[m.id] ? s[m.id].slice() : null; s[m.id] = nw; n++;
+      });
+      menuEd.last = n ? { key: k, was: was, n: n } : null;
+      if (k && k !== '|') menuEd.key = k;
+    });
+  }
+  function menuHereOnly() {
+    var last = menuEd && menuEd.last;
+    if (!last) return;
+    menuChange(function (s) { Object.keys(last.was).forEach(function (id) { if (last.was[id]) s[id] = last.was[id]; else delete s[id]; }); });
+  }
+  function menuCard(id, pick, mini, s) {   // a menu drawn with the right-click menu's own look
+    var c = el('div', 'm2-cx m2-me-card' + (mini ? ' m2-me-mini' : ''));
+    if (mini) c.appendChild(el('div', 'm2-cx-head', menuById(id).name));
+    menuNow(id, s).forEach(function (k, i) {
+      var r = k === '|' ? el('div', 'm2-sep m2-me-line') : el('div', 'm2-me-row' + (k === pick ? ' m2-me-pick' : ''), k);
+      r.dataset.k = k; r.dataset.i = i;
+      c.appendChild(r);
+    });
+    return c;
+  }
+  function menuEditDraw() {
+    var e = menuEd, w = e.w, s = menuStore(), m = menuById(e.id), had = w.contains(document.activeElement);
+    menuRowClose();
+    w.innerHTML = '';
+    var top = el('div', 'm2-me-top');
+    top.appendChild(el('span', 'm2-me-title', 'Right-click menus'));
+    var x = el('button', 'm2-me-x', '×'); x.type = 'button'; x.setAttribute('aria-label', 'Close'); x.title = 'Close (Esc)';
+    x.addEventListener('click', menuEditClose); top.appendChild(x); w.appendChild(top);
+    var body = el('div', 'm2-me-body'), nav = el('div', 'm2-me-nav'), head = '';
+    MENUS.forEach(function (q) {
+      if (q.head !== head) { head = q.head; nav.appendChild(el('p', 'm2-me-h', head)); }
+      var b = el('button', 'm2-me-pickmenu' + (q.id === e.id ? ' m2-on' : ''), q.name); b.type = 'button';
+      if (s[q.id]) { b.appendChild(el('span', 'm2-me-dot', '●')); b.title = 'Arranged'; }
+      b.addEventListener('click', function () { e.id = q.id; e.last = null; if (e.key && menuNow(q.id, s).indexOf(e.key) < 0) e.key = null; menuEditDraw(); });
+      nav.appendChild(b);
+    });
+    var stage = el('div', 'm2-me-stage'), main = el('div', 'm2-me-main');
+    main.appendChild(el('p', 'm2-me-name', m.head + ': ' + m.name));
+    var card = menuCard(e.id, e.key, false, s);
+    main.appendChild(card); menuDrag(card);
+    var stack = el('div', 'm2-me-stack'), others = e.key ? MENUS.filter(function (q) { return q.id !== e.id && menuNow(q.id, s).indexOf(e.key) >= 0; }) : [];
+    stack.appendChild(el('p', 'm2-me-name', e.key ? (others.length ? others.length + (others.length > 1 ? ' other menus hold ' : ' other menu holds ') + e.key : 'No other menu holds ' + e.key) : 'Click an item to see the other menus holding it'));
+    var deck = el('div', 'm2-me-deck');
+    others.forEach(function (q, i) {
+      var c = menuCard(q.id, e.key, true, s);
+      c.style.zIndex = String(others.length - i); c.title = q.head + ': ' + q.name;
+      c.addEventListener('click', function () { e.id = q.id; e.last = null; menuEditDraw(); });
+      deck.appendChild(c);
+    });
+    stack.appendChild(deck);
+    stage.appendChild(main); stage.appendChild(stack);
+    body.appendChild(nav); body.appendChild(stage); w.appendChild(body);
+    var foot = el('div', 'm2-me-foot'), say = el('span', 'm2-me-say');
+    if (e.last) {
+      say.textContent = 'Moved in ' + e.last.n + (e.last.n > 1 ? ' other menus' : ' other menu') + ' too.';
+      var h = el('button', 'm2-me-btn', 'Here only'); h.type = 'button'; h.title = 'Take the move back from the other menus';
+      h.addEventListener('click', menuHereOnly); say.appendChild(h);
+    } else say.textContent = 'Drag an item or a line, or Alt with an arrow key. Right-click for lines.';
+    foot.appendChild(say);
+    [['Reset this menu', function () { menuChange(function (st) { delete st[e.id]; }); }, !s[e.id]],
+     ['Reset all menus', function () { menuChange(function (st) { Object.keys(st).forEach(function (k) { delete st[k]; }); }); }, !Object.keys(s).length],
+     ['Copy arrangement', function (b) { menuCopy(b); }, !Object.keys(s).length]].forEach(function (q) {
+      var b = el('button', 'm2-me-btn', q[0]); b.type = 'button'; b.disabled = q[2];
+      b.addEventListener('click', function () { q[1](b); }); foot.appendChild(b);
+    });
+    w.appendChild(foot);
+    if (had || !w.contains(document.activeElement)) { var f = nav.querySelector('.m2-on'); if (f) f.focus({ preventScroll: true }); }   // the keys stay in the window after it is drawn again
+    // the cards behind one another to the right, each a step further, the step shrinking to fit
+    var n = deck.children.length, cw = n ? deck.children[0].offsetWidth : 0, room = deck.clientWidth - cw, step = n > 1 ? Math.max(14, Math.min(56, room / (n - 1))) : 0;
+    var tall = Math.max.apply(null, [0].concat(Array.prototype.map.call(deck.children, function (c) { return c.offsetHeight; })));   // one height, so a card in front covers all but the edge of those behind
+    Array.prototype.forEach.call(deck.children, function (c, i) { c.style.left = i * step + 'px'; c.style.top = '0'; c.style.height = tall + 'px'; });   // level tops: a bar at one height means one place in every menu
+    deck.style.height = (n ? tall + 12 : 0) + 'px';
+  }
+  function menuCopy(b) {
+    var t = JSON.stringify(menuStore(), null, 1);
+    (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function () { b.textContent = 'Copied'; }, function () { b.textContent = 'Not copied'; });
+    setTimeout(function () { if (b.isConnected) b.textContent = 'Copy arrangement'; }, 1400);
+  }
+  function menuOrderOf(card) { return Array.prototype.map.call(card.querySelectorAll('.m2-me-row, .m2-me-line'), function (r) { return r.dataset.k; }); }
+  function menuDrag(card) {   // a row pressed and moved: dragged, the others making room as it passes their middles; a click chooses it
+    card.addEventListener('pointerdown', function (ev) {
+      var r = ev.target.closest('.m2-me-row, .m2-me-line');
+      if (!r || ev.button !== 0 || ev.ctrlKey) return;   // Ctrl with a click on a Mac: the row menu (contextmenu), not a drag
+      ev.preventDefault();
+      var y0 = ev.clientY, moved = false, from = menuOrderOf(card).join('\n');
+      function move(m) {
+        if (!moved && Math.abs(m.clientY - y0) < 4) return;
+        moved = true; r.classList.add('m2-me-drag');
+        var rows = Array.prototype.filter.call(card.querySelectorAll('.m2-me-row, .m2-me-line'), function (x) { return x !== r; });
+        var before = null;
+        for (var i = 0; i < rows.length; i++) { var b = rows[i].getBoundingClientRect(); if (m.clientY < b.top + b.height / 2) { before = rows[i]; break; } }
+        if (before) { if (r.nextSibling !== before) card.insertBefore(r, before); } else if (card.lastChild !== r) card.appendChild(r);
+      }
+      function up() {
+        document.removeEventListener('pointermove', move, true); document.removeEventListener('pointerup', up, true); document.removeEventListener('pointercancel', up, true);
+        r.classList.remove('m2-me-drag');
+        var k = r.dataset.k;
+        if (!moved) { if (k !== '|') { menuEd.key = menuEd.key === k ? null : k; menuEd.last = null; menuEditDraw(); } return; }
+        var o = menuOrderOf(card);
+        if (o.join('\n') !== from) menuMove(menuEd.id, o, k);
+      }
+      document.addEventListener('pointermove', move, true); document.addEventListener('pointerup', up, true); document.addEventListener('pointercancel', up, true);   // the document's: the row itself moves in the menu
+    });
+    card.addEventListener('contextmenu', function (ev) {
+      var r = ev.target.closest('.m2-me-row, .m2-me-line');
+      ev.preventDefault();
+      if (r) menuRowMenu(r, ev.clientX, ev.clientY);
+    });
+  }
+  function menuRowMenu(r, x, y) {   // a row's own right-click menu: lines and quick places
+    menuRowClose();
+    var id = menuEd.id, o = menuNow(id), i = +r.dataset.i, k = r.dataset.k, box = el('div', 'm2-cx m2-me-rowmenu');
+    box.setAttribute('role', 'menu');
+    var put = menuMove.bind(null, id);
+    var without = o.slice(0, i).concat(o.slice(i + 1)), items = [];
+    if (k === '|') items.push(['Remove line', function () { put(without, null); }]);
+    else {
+      items.push(['Add line above', function () { put(o.slice(0, i).concat('|', o.slice(i)), null); }, i === 0 || o[i - 1] === '|']);
+      items.push(['Add line below', function () { put(o.slice(0, i + 1).concat('|', o.slice(i + 1)), null); }, i === o.length - 1 || o[i + 1] === '|']);
+      [[i - 1, 'above'], [i + 1, 'below']].forEach(function (q) { var j = q[0]; if (o[j] === '|') items.push(['Remove line ' + q[1], function () { put(o.slice(0, j).concat(o.slice(j + 1)), null); }]); });
+      items.push(null);
+      items.push(['Move to top', function () { put([k].concat(without), k); }, i === 0]);
+      items.push(['Move to bottom', function () { put(without.concat(k), k); }, i === o.length - 1]);
+      // Put back: after the item before it in the code's order, among those this arrangement holds
+      var def = menuDefault(id), back = without.slice(), d = def.indexOf(k), at = 0;
+      for (var j = d - 1; j >= 0; j--) if (def[j] !== '|' && back.indexOf(def[j]) >= 0) { at = back.indexOf(def[j]) + 1; break; }
+      back.splice(at, 0, k);
+      items.push(['Put back', function () { put(back, k); }, d < 0 || JSON.stringify(back) === JSON.stringify(o)]);
+    }
+    items.forEach(function (q) {
+      if (!q) return box.appendChild(el('div', 'm2-sep'));
+      var b = el('button', null, q[0]); b.type = 'button'; b.disabled = !!q[2];
+      b.addEventListener('click', function () { menuRowClose(); q[1](); });
+      box.appendChild(b);
+    });
+    var k0 = pz();
+    box.style.left = x / k0 + 'px'; box.style.top = y / k0 + 'px'; box.style.zIndex = '1002';
+    document.body.appendChild(box);
+    var b0 = box.getBoundingClientRect();
+    if (b0.right > innerWidth - 4) box.style.left = Math.max(4, x - b0.width) / k0 + 'px';
+    if (b0.bottom > innerHeight - 4) box.style.top = Math.max(4, innerHeight - 4 - b0.height) / k0 + 'px';
+    menuRowOut = function (e) { if (!box.contains(e.target)) { e.stopPropagation(); menuRowClose(); } };   // a click elsewhere closes the row menu alone
+    document.addEventListener('pointerdown', menuRowOut, true);
+    var f = box.querySelector('button:not(:disabled)'); if (f) f.focus();
+  }
+  var menuRowOut = null;
+  function menuRowClose() {
+    var r = document.querySelector('.m2-me-rowmenu'); if (r) r.remove();
+    if (menuRowOut) { document.removeEventListener('pointerdown', menuRowOut, true); menuRowOut = null; }
+  }
+  window.m2Menus = { list: MENUS, key: menuKey, which: menuWhich, arrange: menuArrange };   // for the checks (tests/menus.js)
+  (function () {   // Settings' row
+    var gest = document.querySelector('#m2-setwin .m2-set-gest');
+    if (!gest) return;
+    var row = el('div', 'm2-set-menus'), r1 = el('div', 'm2-set-row m2-set-one'), b = el('button', null, 'Edit right-click menus');
+    b.type = 'button'; b.id = 'm2-set-menus'; b.title = 'Arrange the items and lines of every right-click menu';
+    row.appendChild(el('p', 'm2-set-k', 'Menus')); r1.appendChild(b); row.appendChild(r1);
+    gest.parentNode.insertBefore(row, gest.nextSibling);
+    b.addEventListener('click', menuEdit);
+  })();
   // Open all groups and Close all groups, and file extensions, in the list's right-click menu (in Settings they would change a
   // list not in sight), on every page whose list has groups, after the
   // editor's own entries where the Edit tab is; the one matching the list's state greyed. Shift with the right click,
@@ -1559,9 +1957,10 @@ page, so its styles keep the base they were made on).
     items = items.concat(last);   // the editor's last entries (Delete map, Delete forever) under everything else
     if (!items.length) { if (inBin) e.preventDefault(); return; }   // an empty Deleted: no menu, not the browser's either
     e.preventDefault();
-    listMenu(e.clientX, e.clientY, items);
+    var lid = inBin ? (row ? 'list-deleted-map' : 'list-deleted-head') : row ? (picked.length > 1 && picked.indexOf(row.dataset.id) >= 0 ? 'list-several' : 'list-map') : e.target.closest('.m2-group') ? 'list-group' : 'list-empty';   // which of the list's menus, for the reader's order (menuArrange)
+    listMenu(e.clientX, e.clientY, items, lid);
   });
-  function listMenu(x, y, items) {   // [name, action, greyed] or null for a line
+  function listMenu(x, y, items, lid) {   // [name, action, greyed] or null for a line
     var box = el('div', 'm2-cx');
     box.setAttribute('role', 'menu');
     var close = function () {
@@ -1582,6 +1981,7 @@ page, so its styles keep the base they were made on).
       b.addEventListener('click', function () { close(); it[1](); });
       box.appendChild(b);
     });
+    menuArrange(box, lid);
     box.classList.add('m2-cx-still');   // no item lit under a pointer that has not moved, as the map's menu
     box.addEventListener('pointermove', function moved(ev) {
       if (Math.abs(ev.clientX - x) + Math.abs(ev.clientY - y) < 3) return;
@@ -3729,8 +4129,9 @@ page, so its styles keep the base they were made on).
       if (nameHere) item(box, 'Name by members', nameHere).disabled = !!nameHere.same;   // greyed when the complex is already so named
       if (packHere) item(box, 'Repack complex', packHere);
       if (mac && mac.tail) mac.tail.forEach(function (q) { item(box, q[0], q[1]); });
-      if (del) { if (box.lastChild && box.lastChild.tagName === 'BUTTON') sep(box); item(box, 'Delete', del); }
+      if (del) { if (box.lastChild && !box.lastChild.classList.contains('m2-sep')) sep(box); item(box, 'Delete', del); }   // the line also after a submenu item
       var whole = ed && window.m2EditMapItems && window.m2EditMapItems();   // the whole map's tools and the grid switches, on empty map space
+      if (whole && whole.length && box.lastChild && !box.lastChild.classList.contains('m2-sep')) sep(box);   // a compartment's own items above: a line between
       (whole || []).forEach(function (q) {
         var b = item(box, q[0], q[1], q[2]);
         if (q.length > 3) { b.setAttribute('role', 'menuitemcheckbox'); b.setAttribute('aria-checked', String(!!q[3])); }
@@ -3795,6 +4196,7 @@ page, so its styles keep the base they were made on).
       close();
       var r = view.getBoundingClientRect();
       menu = build((cx - r.left) / pz(), (cy - r.top) / pz(), ed);
+      if (menuAny()) { var mm = ed && chosen ? chosen : current; menuArrange(menu, menuWhich(menu, ed, !!mm && formatOf(mm) === '.xml')); }   // in the reader's order, where arranged (Settings, Menus)
       // no item lit under a pointer that has not moved (a menu moved up off the window's edge opened
       // with Remove all bend points lit, as if chosen): the highlight follows the pointer from its first move
       menu.classList.add('m2-cx-still');
