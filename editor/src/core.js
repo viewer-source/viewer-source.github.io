@@ -666,8 +666,10 @@
     // (crossing the border, a membrane protein half out), read from geometry when a drag starts; a plain drag or the keys
     // (Layout and Full) keep that: an inside member pushed against the border grows the compartment, keeping PAD from its
     // inner line; an edge member moves freely along and across the edge, the compartment growing only to keep it crossing,
-    // and dragged inward it stops while it still crosses (keepEdge); a member another tool left fully outside is left as
-    // it is. With Shift (to move a node without its content, breaking the connection) a node
+    // and dragged inward it goes fully inside freely; the state read at drag start holds until release, so in one drag it
+    // may cross the whole compartment and still come out on the far edge; released fully inside it is an inside member
+    // (back onto the edge only with Shift); a member
+    // another tool left fully outside is left as it is. With Shift (to move a node without its content, breaking the connection) a node
     // moves by itself and changes its state: dropped crossing the border it is on the edge, fully inside it is inside, and
     // in Full only, fully outside, it leaves for the innermost compartment holding its whole box, or none; in Layout the
     // drag is held where it still overlaps (tether) and nothing grows. A compartment or complex moved with Shift (Full)
@@ -713,23 +715,6 @@
       if (p === 'repack' && R) return [R.left, R.top + n.lab.t, R.right, n.lab.b ? R.named + n.lab.b : R.bottom];
       if (p === 'repack') p = 12;
       return [p, p + n.lab.t, p, p + n.lab.b];
-    }
-    // a plain drag or the keys keep an edge member crossing the border (dragged inward it stops while
-    // its box still crosses the border): the move [dx, dy] of the nodes in set corrected, by the least, where one that
-    // crossed its compartment's border would come fully inside
-    function keepEdge(set, dx, dy) {
-      set.forEach(function (i) {
-        var p = nodes2[i].up;
-        if (p == null || set.has(p) || !nodes2[p].comp) return;
-        var s0 = boxOf(i), c = boxOf(p);
-        if (!overlap(s0, c) || inBox(s0, c)) return;
-        var b = [s0[0] + dx, s0[1] + dy, s0[2], s0[3]];
-        if (!inBox(b, c)) return;
-        var fix = [[c[0] - 1 - b[0], 0], [c[0] + c[2] + 1 - b[0] - b[2], 0], [0, c[1] - 1 - b[1]], [0, c[1] + c[3] + 1 - b[1] - b[3]]]
-          .sort(function (u, v) { return Math.abs(u[0] + u[1]) - Math.abs(v[0] + v[1]); })[0];
-        dx += fix[0]; dy += fix[1];
-      });
-      return [dx, dy];
     }
     // the holders grown round a change of places: node -> its new box. ks: the nodes moved (tops) or the one resized; B:
     // the boxes now, B0: before; moving(k): k moves with them. Measured by what each node draws round its box (extOf). A
@@ -3036,7 +3021,6 @@
           else if (drag.n != null && !e.altKey && !e.ctrlKey) snapNode(drag);
           if (gridSet.snap && !e.altKey && !e.ctrlKey) onGrid(drag);
           if (drag.alone && !full()) tether(drag);
-          else if (!drag.alone && drag.n != null) { var ke = keepEdge(mv.n, drag.dx, drag.dy); drag.dx = ke[0]; drag.dy = ke[1]; }
           mv.dx = drag.dx; mv.dy = drag.dy; shift();
           var aw = drag.away; if (aw) aw.x0 = Math.min(aw.x0, drag.dx), aw.x1 = Math.max(aw.x1, drag.dx), aw.y0 = Math.min(aw.y0, drag.dy), aw.y1 = Math.max(aw.y1, drag.dy);
           if (mv.n.size) liveFit();   // the holders round it grow with it (grown)
@@ -3199,7 +3183,6 @@
       var ks = pt0 ? { n: new Set(), p: new Set([pt0.p]), dx: 0, dy: 0 } : moving();
       var bp = pt0 ? pt0.p : selP.length === 1 && !selN.length && !selE.length ? selP[0] : null;
       if (bp != null) d = keyAlign(bp, d, ks.p);
-      if (ks.n.size) d = keepEdge(ks.n, d[0], d[1]);   // an edge member stays crossing the border
       if (ks.n.size && cd && full() && cdJs && cdJs.nestCheck) {   // a move the CellDesigner file cannot hold refused at once, not after the run (a jump back)
         var r0 = keyRun || [0, 0], dd = d, Bk = function (k) { var b = boxOf(k); return ks.n.has(k) ? [b[0] + dd[0], b[1] + dd[1], b[2], b[3]] : b; };
         var mvs = []; regroup('plain', ks.n, Bk, function (k) { var b = boxOf(k); return ks.n.has(k) ? [b[0] - r0[0], b[1] - r0[1], b[2], b[3]] : b; }).forEach(function (t2, i) { mvs.push([nodes2[i].id, t2 == null ? null : nodes2[t2].id]); });

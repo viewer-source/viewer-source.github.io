@@ -17,8 +17,7 @@
 //     nudged inside its holder stays (overlapping compartments: no switching); a Shift drag of a member keeps it until it
 //     is fully out; a compartment moved by itself lets go only what no longer overlaps it; one moved plain over free glyphs takes them in, only what it newly covers; one moved past its
 //     holder's edge stays in it (its holder grows), one resized past it leaves it and holds what it now covers; what
-//     grows (grown: PAD round an inside member, an edge member kept crossing) and an edge member held crossing
-//     (keepEdge).
+//     grows (grown: PAD round an inside member, an edge member kept crossing, one dragged inward nothing).
 //   node tests/membership.js [python]   (default: python3)
 var fs = require('fs'), path = require('path'), cp = require('child_process');
 var here = path.join(__dirname, '..'), se = require(path.join(here, 'renderers/converter/sbgn_edit.js')), ed = require(path.join(here, 'renderers/converter/cd_edit.js'));
@@ -202,7 +201,7 @@ var core = fs.readFileSync(path.join(here, 'editor/src/core.js'), 'utf8');
 function lift(name) { var i = core.indexOf('    function ' + name + '('); if (i < 0) throw new Error('no ' + name + ' in core.js'); var j = core.indexOf('\n    function ', i + 10), k = core.indexOf('\n    //', i + 10); return core.slice(i, Math.min(j < 0 ? 1e9 : j, k < 0 ? 1e9 : k)); }
 // the paddings as Settings keeps them (core.js pads): compartments 1 here, as these cases were set, complexes As Repack
 var PADS = 'var PAD_KEY = "k", localStorage = { getItem: function () { return JSON.stringify({ comp: 1, cx: "repack" }); } };\n';
-var CODE = PADS + ['pads', 'cxRoom', 'inBox', 'overlap', 'under', 'notIn', 'cdOwn', 'holder', 'regroup', 'inComplex', 'grown', 'keepEdge', 'tops', 'extOf'].map(lift).join('\n');
+var CODE = PADS + ['pads', 'cxRoom', 'inBox', 'overlap', 'under', 'notIn', 'cdOwn', 'holder', 'regroup', 'inComplex', 'grown', 'tops', 'extOf'].map(lift).join('\n');
 var LAY = require(path.join(here, 'renderers/layout/layout.js'));   // extOf's layout.extent
 function editorOf(g, cd) {   // the editor's nodes2 (up, kids, inside, comp, hub, shape), as parse() reads them
   var d = new DP().parseFromString(g, 'application/xml'), N = [], byEl = new Map();
@@ -230,7 +229,7 @@ function editorOf(g, cd) {   // the editor's nodes2 (up, kids, inside, comp, hub
   });
   N.forEach(function (n, i) { n.kids.forEach(function (c) { N[c].up = i; }); });
   var boxOf = function (i) { return N[i].box.slice(); };
-  var api = new Function('nodes2', 'boxOf', 'cd', 'window', CODE + '\nreturn { regroup: regroup, under: under, grown: grown, keepEdge: keepEdge };')(N, boxOf, cd, { layout: LAY });
+  var api = new Function('nodes2', 'boxOf', 'cd', 'window', CODE + '\nreturn { regroup: regroup, under: under, grown: grown };')(N, boxOf, cd, { layout: LAY });
   api.N = N; api.boxOf = boxOf;
   return api;
 }
@@ -283,7 +282,7 @@ function tiny() {
   var r = function (id, nb) { var i = I(id); return [new Set([i]), function (k) { return k === i ? nb : B(k); }]; };
   q = r('C', [0, 0, 200, 300]); check('compartment resized smaller: what no longer overlaps it leaves (b), what still does stays (a)', E.regroup('box', q[0], q[1], B), { b: null });
   q = r('C', [0, 0, 600, 300]); check('compartment resized over f: takes it in', E.regroup('box', q[0], q[1], B), { f: 'C' });
-  // growing (grown) and the edge kept (keepEdge)
+  // growing (grown)
   var gw = function (what, ids, dx, dy, want) {
     rn++;
     var set = new Set(ids.map(I)), Bn = function (k) { var b = B(k); return set.has(k) ? [b[0] + dx, b[1] + dy, b[2], b[3]] : b; };
@@ -291,20 +290,19 @@ function tiny() {
     Object.keys(nb).forEach(function (k) { o[N[k].id] = nb[k].map(function (v) { return Math.round(v * 1000) / 1000; }); });
     if (JSON.stringify(o) !== JSON.stringify(want)) fail('grows: ' + what, JSON.stringify(o) + ' wanted ' + JSON.stringify(want));
   };
-  gw('an inside member pushed past the border: PAD (1) kept', ['a'], -25, 0, { C: [-6, 0, 406, 300] });
+  gw('an inside member pushed past the border: PAD (12, the default) kept', ['a'], -25, 0, { C: [-17, 0, 417, 300] });
   gw('an inside member moved inside: nothing grows', ['a'], 0, 5, {});
   gw('an edge member dragged off: the compartment grows to keep it crossing by one unit', ['b'], 100, 0, { C: [0, 0, 451, 300] });
   gw('an edge member moved along the edge: nothing grows', ['b'], 10, 30, {});
   gw('a free glyph: nothing', ['f'], 10, 0, {});
-  rn++; var ke = E.keepEdge(new Set([I('b')]), -60, 0);
-  if (JSON.stringify(ke) !== '[-29,0]') fail('edge kept: an edge member dragged inward stops while it still crosses', JSON.stringify(ke));
-  rn++; ke = E.keepEdge(new Set([I('a')]), -10, 0);
-  if (JSON.stringify(ke) !== '[-10,0]') fail('edge kept: an inside member is not held', JSON.stringify(ke));
+  gw('an edge member dragged fully inside: nothing grows (it is inside from then on)', ['b'], -60, 0, {});
+  gw('an edge member dragged in one drag across the compartment and out past its far side: still on the edge, the compartment grows to keep it crossing', ['b'], -440, 0, { C: [-11, 0, 411, 300] });
+  q = mv(['b'], -60, 0); check('edge member dragged plain fully inside: stays in its compartment', E.regroup('plain', q[0], q[1], B), {});
   // rule 2: inside D, a small compartment S; moved past D's edge it stays (D grows), resized past it it leaves, holding what it now covers
   var E2 = editorOf(tiny().replace('<node id="e">', '<node id="S" yfiles.foldertype="group"><data key="d6"><y:ProxyAutoBoundsNode><y:Realizers active="0"><y:GroupNode><y:Geometry x="800" y="200" width="60" height="60"/></y:GroupNode></y:Realizers></y:ProxyAutoBoundsNode></data><graph edgedefault="directed" id="S:"/></node><node id="e">'), false);
   N = E2.N; B = E2.boxOf; E = E2;
   q = mv(['S'], 80, 0); check('rule 2: compartment moved past its holder\'s edge stays', E.regroup('plain', q[0], q[1], B), {});
-  gw('rule 2: ... and its holder grows (PAD)', ['S'], 80, 0, { D: [600, 0, 341, 300] });
+  gw('rule 2: ... and its holder grows (PAD)', ['S'], 80, 0, { D: [600, 0, 352, 300] });
   q = r('S', [550, -20, 400, 340]); check('rule 2: compartment resized past its holder\'s edge leaves it, holding what it now covers', E.regroup('box', q[0], q[1], B), { S: null, D: 'S' });
 })();
 // yEd's own box after a push: a compartment's member pushed 20 past the border on
