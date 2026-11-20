@@ -401,7 +401,7 @@
     this.url = new Set(Object.keys(keys).filter(function (k) { return keys[k][1] === 'url'; }));
     this.cls = new Set(Object.keys(keys).filter(function (k) { return keys[k][1] === 'SBGN class'; }));
     this.nodes = {}; this.order = []; this.boxes = [];
-    this.readGraph(kid(this.root, G, 'graph'), true, 'page');
+    this.readGraph(kid(this.root, G, 'graph'), 'page');
     this.ports = {};
     this.hubPorts();
   }
@@ -517,13 +517,13 @@
     for (var i = 0; i < dds.length; i++) if (this.cls.has(get(dds[i], 'key'))) return pyStrip(leadText(dds[i]));
     return '';
   };
-  YMap.prototype.readGraph = function (graph, top, parent) {   // compartments, then complexes, then the rest (yrender.py's read_graph)
+  YMap.prototype.readGraph = function (graph, parent) {   // compartments, then complexes, then the rest (yrender.py's read_graph)
     var self = this, nodes = elems(graph).filter(function (el) { return el.namespaceURI === G && el.localName === 'node'; });
     nodes = nodes.map(function (el, i) { return [paintLayer(el), i, el]; }).sort(function (a, b) { return a[0] - b[0] || a[1] - b[1]; }).map(function (q) { return q[2]; });
     var k = 0;
     elems(graph).forEach(function (el) {
       if (el.namespaceURI !== G) return;
-      if (el.localName === 'node') { el = nodes[k++]; self.readNode(el, parent); if (top) self.order.push(['block']); }
+      if (el.localName === 'node') { el = nodes[k++]; self.readNode(el, parent); }
       else if (el.localName === 'edge') {
         self.order.push(['e', [el, parent]]);
         iter(el, Y, ['Point']).forEach(function (q) { self.boxes.push([pyFloat(get(q, 'x')), pyFloat(get(q, 'y')), 0, 0]); });
@@ -579,7 +579,7 @@
     if (sub) {
       var st = kid(r, Y, 'State');
       if (st && get(st, 'closed') === 'true') refuse(where, 'closed group');
-      else this.readGraph(sub, false, fill ? rl : parent);
+      else this.readGraph(sub, fill ? rl : parent);
     }
   };
   YMap.prototype.edgeSvg = function (e, parent) {
@@ -690,15 +690,12 @@
     var mx = function (f) { return xs.reduce(function (a, g) { return Math.max(a, f(g)); }, -Infinity); };
     var x0 = Math.floor(mn(function (g) { return g[0]; })) - MARGIN, y0 = Math.floor(mn(function (g) { return g[1]; })) - MARGIN;
     var x1 = Math.ceil(mx(function (g) { return g[0] + g[2]; })) + MARGIN, y1 = Math.ceil(mx(function (g) { return g[1] + g[3]; })) + MARGIN;
-    var W = x1 - x0, H = y1 - y0, body = [], pending = [], painted = new Set();
-    this.order.forEach(function (item) {
-      if (item[0] === 'n') { body.push(self.nodes[item[1]].svg); painted.add(item[1]); }
-      else if (item[0] === 'e') pending.push(item[1]);
-      else pending.slice().forEach(function (e) {
-        if (painted.has(get(e[0], 'source')) && painted.has(get(e[0], 'target'))) { body.push(self.edgeSvg(e[0], e[1])); pending.splice(pending.indexOf(e), 1); }
-      });
+    var W = x1 - x0, H = y1 - y0, body = [], edges = [];
+    this.order.forEach(function (item) {   // every node, then every edge over them (SBGN PD 4.2.2: an edge crossing a node is drawn on top)
+      if (item[0] === 'n') body.push(self.nodes[item[1]].svg);
+      else if (item[0] === 'e') edges.push(item[1]);
     });
-    pending.forEach(function (e) { body.push(self.edgeSvg(e[0], e[1])); });
+    edges.forEach(function (e) { body.push(self.edgeSvg(e[0], e[1])); });
     var int = function (v) { return String(v === 0 ? 0 : v); };
     return '<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="' + int(W) + '" height="' + int(H) +
       '" viewBox="0 0 ' + int(W) + ' ' + int(H) + '" stroke-linecap="butt" stroke-miterlimit="10">\n<g transform="translate(' + int(-x0) + ',' + int(-y0) + ')">\n' +

@@ -50,8 +50,8 @@
 #    (checked against a yEd export: same shapes)
 #  - edge labels: placed from the edge's first point (anchor and up vector when rotated,
 #    turned half round when upside down)
-#  - the image spans the nodes and their labels; edges are painted after the top-level
-#    block (a group with its members, or a node) that holds their later end
+#  - the image spans the nodes and their labels; edges are painted after every node, so an edge crossing a node
+#    is drawn over it (SBGN PD 4.2.2; yEd's export paints each after the top-level block holding its later end)
 # --roles (the website's /colours/ page): every fill gets the class c-<role> of the node it draws
 # (ROLE below; label boxes, units of information, state variables and white arrow heads c-white),
 # every text t-<role> of the fill it sits on (t-page outside any node), in place of their colours;
@@ -479,9 +479,9 @@ class Map:
         self.url = {k for k, v in keys.items() if v[1] == 'url'}
         self.cls = {k for k, v in keys.items() if v[1] == 'SBGN class'}
         self.nodes = {}   # id -> dict(geo, polys, svg)
-        self.order = []   # paint order: ('n', id), ('e', element), ('block',)
+        self.order = []   # paint order: ('n', id), ('e', element)
         self.boxes = []   # nodes, node labels and edge bends: the image spans them
-        self.read_graph(self.root.find(G + 'graph'), top=True)
+        self.read_graph(self.root.find(G + 'graph'))
         self.ports = {}   # hub id -> (port one, port two, has arcs coming in)
         self.hub_ports()
 
@@ -494,7 +494,7 @@ class Map:
     def sbgn_class(self, el):
         return next(((dd.text or '').strip() for dd in el.findall(G + 'data') if dd.get('key') in self.cls), '')
 
-    def read_graph(self, graph, top=False, parent='page'):
+    def read_graph(self, graph, parent='page'):
         # nodes depth first, groups before their members; parent: the role of the group they are in.
         # Among the nodes of one graph, compartments (any group but a complex) first, complexes next, the rest last, each
         # kind in the file's order, so a compartment lies under everything in its graph and a complex under the glyphs
@@ -505,8 +505,6 @@ class Map:
             if el.tag == G + 'node':
                 el = next(nodes)
                 self.read_node(el, parent)
-                if top:
-                    self.order.append(('block',))
             elif el.tag == G + 'edge':
                 self.order.append(('e', (el, parent)))
                 # bends outside every node (links routed in lanes below a cell) count for the image, else they would be cut off
@@ -849,17 +847,13 @@ class Map:
         x1 = math.ceil(max(g[0] + g[2] for g in xs)) + MARGIN
         y1 = math.ceil(max(g[1] + g[3] for g in xs)) + MARGIN
         W, H = x1 - x0, y1 - y0
-        body, pending, painted = [], [], set()
-        for item in self.order:
+        body, edges = [], []
+        for item in self.order:  # every node, then every edge over them (SBGN PD 4.2.2: an edge crossing a node is drawn on top)
             if item[0] == 'n':
-                body.append(self.nodes[item[1]]['svg']); painted.add(item[1])
+                body.append(self.nodes[item[1]]['svg'])
             elif item[0] == 'e':
-                pending.append(item[1])
-            elif item[0] == 'block':
-                for e in list(pending):
-                    if e[0].get('source') in painted and e[0].get('target') in painted:
-                        body.append(self.edge_svg(*e)); pending.remove(e)
-        for e in pending:
+                edges.append(item[1])
+        for e in edges:
             body.append(self.edge_svg(*e))
         return (f'<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg"'
                 f' xmlns:xlink="http://www.w3.org/1999/xlink" width="{W}" height="{H}" viewBox="0 0 {W} {H}"'
