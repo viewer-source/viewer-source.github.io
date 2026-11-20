@@ -125,6 +125,7 @@ class Drawing:
     side: object    # (main line, point) -> the side of the square facing the point
     end: object     # (main line, arc, its start, several regulators) -> the point of the square it ends at
     yed: object     # yEd points -> the same points in this frame
+    placed: dict    # (process, end) -> (entity, place, how far the line's end moved from the input's port, px)
 
 
 def draw(diagram, ents, members, label, advanced, held=False):
@@ -152,6 +153,22 @@ def draw(diagram, ents, members, label, advanced, held=False):
     def off_line(i, a, T):  # anchor a of entity i moves its line to T by more than 2 px
         A, C = anchor_point(box[i], a, N[i].kind == 'SimpleChemical', N[i].kind == 'Phenotype'), cen(i)
         return abs((T[0] - C[0]) * (A[1] - C[1]) - (T[1] - C[1]) * (A[0] - C[0])) / (math.dist(C, T) or 1) > 2
+
+    def port(i, at):  # where an arc meets entity i in the input, scaled to its box here
+        return (cen(i)[0] + at[0] * box[i][2] / N[i].box[2], cen(i)[1] + at[1] * box[i][3] / N[i].box[3])
+
+    placed = {}
+
+    def placed_at(key, i, a, P, at, toward):
+        # a line's end on entity i, for the report: at place a (point P), or at its centre (a None), the line on
+        # towards the point toward; how far that end moved from the input's port (a place: the distance; the
+        # centre: how far the port lies off the line). An input aiming at the centre moved nothing, nor a metabolite
+        # circle's place where its name is not (CellDesigner's convention there, not the input's port)
+        Y, C = port(i, at), cen(i)
+        if math.hypot(*at) <= 0.5 or N[i].kind == 'SimpleChemical': d = 0.0
+        elif a: d = math.dist(P, Y)
+        else: d = abs((toward[0] - C[0]) * (Y[1] - C[1]) - (toward[1] - C[1]) * (Y[0] - C[0])) / (math.dist(C, toward) or 1)
+        placed[key] = (i, a, d)
 
     def nearest(i, at):
         # the anchor nearest to where an arc meets entity i (scaled to its box here), if nearer than
@@ -223,41 +240,34 @@ def draw(diagram, ents, members, label, advanced, held=False):
             # line's own axis removed)
             ra = ra if ra and off_line(r_, ra, (rb + [c])[0]) else None
             qa = qa if qa and off_line(q_, qa, (qb[::-1] + [c])[0]) else None
-        # advanced: a main line yEd draws level into a larger node beside its centre (iNOS: CaM ->
-        # CaM:iNOS, 25 px off): CellDesigner aims at the centre, so an edit point on the line just
-        # outside that node (EDGE), the line on to the centre from there (in place
-        # of moving the other end: a point under the node showed the line running to its centre).
-        # The way back drops it (layout.visible)
-        under = None
-        if held and not twin and not rb + qb:
-            ps = [(cen(r_)[0] + ins[0].source_at[0], cen(r_)[1] + ins[0].source_at[1])] + yed(ins[0].points + outs[0].points) + \
-                [c, (cen(q_)[0] + outs[0].target_at[0], cen(q_)[1] + outs[0].target_at[1])]
-            for ax in (0, 1):
-                if max(q[ax] for q in ps) - min(q[ax] for q in ps) < 1 and abs(cen(r_)[ax] - cen(q_)[ax]) > 0.5:
-                    for i, at, o, other in ((q_, outs[0].target_at, ins[0].source_at, r_), (r_, ins[0].source_at, outs[0].target_at, q_)):
-                        v = cen(other)[1 - ax]  # the line runs along the other axis, from that side
-                        x, w = box[i][1 - ax], box[i][3 - ax]
-                        H = tuple(cen(other)[ax] if a == ax else (x - EDGE if v < x else x + w + EDGE) for a in (0, 1))
-                        if abs(o[ax]) < 0.5 and abs(at[ax]) > SHIFT and box[i][ax] < H[ax] < box[i][ax] + box[i][ax + 2]:
-                            under = (i, H)
-            if under:
-                ra, qa = (None, qa) if under[0] == r_ else (ra, None)
         A = anchor_point(front[r_] if ra else box[r_], ra, N[r_].kind == 'SimpleChemical', N[r_].kind == 'Phenotype')
         B = anchor_point(front[q_] if qa else box[q_], qa, N[q_].kind == 'SimpleChemical', N[q_].kind == 'Phenotype')
         # edit points: one long L (both layouts); in the advanced layout else the route's bends
         pts, k, corner = rb + qb, len(rb), False
-        # a line that leaves a metabolite circle below its centre (meet: where the name is not) keeps its
-        # first bend in line with that point, as a modifier does (a hand edit of
-        # phosphoinositides: PI(3,4)P2 -> PI4P, a 7 px jog where yEd's bend stayed at the centre's height)
-        for j, (i, a, P) in ((0, (r_, ra, A)), (-1, (q_, qa, B))):
-            if pts and a and N[i].kind == 'SimpleChemical':
-                q, C = pts[j], cen(i)
-                ax = 1 if abs(q[0] - C[0]) >= abs(q[1] - C[1]) else 0  # the axis the leg keeps
-                if abs(q[ax] - C[ax]) < 1:
-                    pts[j] = (q[0], P[1]) if ax else (P[0], q[1])
-        if under:
-            pts, k = [under[1]], int(under[0] == r_)
-        bend = (layout.corner(A, B, wr) if wr else layout.corner(B, A, wq)) if bool(wr) != bool(wq) and not twin and not under else None
+        # a line's end at a CellDesigner place: its first bend moves on the leg's axis into line with that place, so a
+        # leg straight in the input stays straight (no point added for it); on a metabolite circle also a leg the input
+        # drew from the centre's height (meet: where the name is not; a hand edit of phosphoinositides: PI(3,4)P2 ->
+        # PI4P, a 7 px jog where yEd's bend stayed at the centre's height)
+        for j, (i, a, P, at) in ((0, (r_, ra, A, ins[0].source_at)), (-1, (q_, qa, B, outs[0].target_at))):
+            if pts and a:
+                q, C, Y = pts[j], cen(i), port(i, at)
+                ax = 1 if abs(q[0] - Y[0]) >= abs(q[1] - Y[1]) else 0  # the axis the leg keeps, from the port
+                if not (abs(q[ax] - Y[ax]) < 1 or N[i].kind == 'SimpleChemical' and abs(q[ax] - C[ax]) < 1):
+                    continue
+                if N[i].kind == 'SimpleChemical' and abs(q[ax] - C[ax]) < 1:
+                    ax = 1 if abs(q[0] - C[0]) >= abs(q[1] - C[1]) else 0
+                # the segment after that bend (to the next bend, else the process) gets no more slant, and a leg there
+                # keeps its way and stays a leg (EPS): else the bend stays, the end leg tilts
+                Q = (q[0], P[1]) if ax else (P[0], q[1])
+                n_ = pts[j + 1] if j == 0 and len(pts) > 1 else pts[j - 1] if j == -1 and len(pts) > 1 else c
+                slant = lambda a: min(abs(n_[0] - a[0]), abs(n_[1] - a[1]))
+                if slant(Q) > slant(q) + 1:
+                    continue
+                if n_ is not c and abs(n_[1 - ax] - q[1 - ax]) < 1 and \
+                        ((n_[ax] - Q[ax]) * (n_[ax] - q[ax]) <= 0 or abs(n_[ax] - Q[ax]) < layout.EPS):
+                    continue
+                pts[j] = Q
+        bend = (layout.corner(A, B, wr) if wr else layout.corner(B, A, wq)) if bool(wr) != bool(wq) and not twin else None
         if bend and (not pts or len(pts) == 1 and math.dist(bend, pts[0]) < layout.EPS):  # else a slanting leg (PD02)
             corner = min(math.hypot(bend[0] - P[0], bend[1] - P[1]) for P in (A, B)) >= layout.EPS
             pts, k = ([bend], 1 if wr else 0) if corner else ([], 0)  # else the ends are already in line
@@ -299,23 +309,20 @@ def draw(diagram, ents, members, label, advanced, held=False):
                     split = [(u - h, 0.0), (u + h, 0.0)] if not pts else \
                         [to_frame(A, B, (sq[0] + t * f[0], sq[1] + t * f[1])) for t in (-h * L, h * L)]
                     ep, k = ep[:k] + split + ep[k:], k + 1
+        if not twin:  # twins: quarter points chosen for the pair, not from the input's ports
+            placed_at((p, 'r'), r_, ra, A, ins[0].source_at, run[1]); placed_at((p, 'q'), q_, qa, B, outs[0].target_at, run[-2])
         return dict(r=r_, q=q_, ra=ra, qa=qa, A=A, B=B, ep=ep, k=k, sq=sq, f=f)
 
     def side(g, pt):  # the side of the square facing a point: 2 left of the flow, 3 right
         f, sq = g['f'], g['sq']
         return 2 if f[0] * (pt[1] - sq[1]) - f[1] * (pt[0] - sq[0]) < 0 else 3
 
-    def lane(m, M, T, e):
+    def lane(M, T, e):
         # advanced layout: the edit points of a modifier arc from M to T as yEd draws it, or
         # None for a straight arc from the centre
         pts = yed(e.points)
         if not pts:
-            if layout.off((M[0] + e.source_at[0], M[1] + e.source_at[1]), M, T) <= 2:
-                return None  # the yEd arc runs as from the centre
-            # an off-centre start at the square's height: straight across, from just outside the node
-            x, y, w, h = box[m]
-            return layout.unbent([M, (x + w + 1 if T[0] > M[0] else x - 1, T[1]), T])[1:-1] \
-                if abs(M[1] + e.source_at[1] - T[1]) <= 5 else None
+            return None  # straight: from the centre, or from its CellDesigner place (modifier)
         # the yEd bends, each segment made horizontal or vertical, the last one ending on the square
         chain = [M] + pts
         for i in range(1, len(chain)):
@@ -362,14 +369,14 @@ def draw(diagram, ents, members, label, advanced, held=False):
         # the far side, its arrowhead hidden)
         i = target(g, e, (yed(e.points)[-1] if advanced and e.points else M), many)
         T = attach(g, i)  # the arc's end on the square (the bends of a hand edit of glycolysis)
-        # a slanting straight arc from the border of another entity: that anchor (as read
-        # back); one that runs across at the process's height takes a lane (below)
+        # a straight arc from off the centre of another entity: the nearest CellDesigner place (as read
+        # back), never a point added outside the node to keep its line level
         at = advanced and not e.points and N[m].kind != 'SimpleChemical' and nearest(m, e.source_at)
-        if at and off_line(m, at, T) and abs(M[1] + e.source_at[1] - cen(p)[1]) > 5:
+        if at and off_line(m, at, T):
             M = anchor_point(front[m], at, hexagon=N[m].kind == 'Phenotype')
         else:
             at = None
-        pts = advanced and not at and lane(m, M, T, e)
+        pts = advanced and lane(M, T, e)
         if advanced and N[m].kind == 'SimpleChemical':
             # it leaves the circle where the name is not (meet), its first bend in line with that point
             at = meet(M, pts[0] if pts else T)
@@ -390,10 +397,26 @@ def draw(diagram, ents, members, label, advanced, held=False):
             if bend and min(math.hypot(bend[0] - P[0], bend[1] - P[1]) for P in (M, T)) < layout.EPS:
                 bend = None
             pts = [bend] if bend else []
+        placed_at((p, id(e)), m, at, M, e.source_at, (pts or [T])[0])
         return i, M, T, at, pts
 
     end = lambda g, e, M, many: attach(g, target(g, e, M, many))
-    return Drawing(box, front, size, cen, lines, geometry, modifier, side, end, yed)
+    return Drawing(box, front, size, cen, lines, geometry, modifier, side, end, yed, placed)
+
+
+def say_places(drawing, label):
+    # per entity, where the CellDesigner file differs from the input at its line ends: places two lines
+    # share (CellDesigner's own way when a side has more lines than places) and ends moved more than 5 px
+    by = {}
+    for i, a, d in drawing.placed.values():
+        by.setdefault(i, []).append((a, d))
+    for i, ps in sorted(by.items()):
+        shared = sorted(a for a in set(a for a, _ in ps if a) if sum(b == a for b, _ in ps) > 1)
+        far = max(d for _, d in ps)
+        if shared or far > 5:
+            report.say('changed', '%s: line ends at CellDesigner\'s places or centre%s%s' % (label.get(i) or i,
+                       ', shared: ' + ', '.join('%s by %d' % (a, sum(b == a for b, _ in ps)) for a in shared) if shared else '',
+                       ', moved up to %.0f px from the input' % far if far > 5 else ''))
 
 
 def descendants(i, members):

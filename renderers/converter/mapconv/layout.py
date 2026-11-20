@@ -201,7 +201,7 @@ def visible(m):
     # inside its source, and at its end inside its target, are not seen: left out, the arc's port
     # where the line leaves or enters the node when the line from the port would differ (a process
     # or operator keeps its port). A bend at most NEAR px outside an entity counts as under it: where
-    # the line meets the border, as the converter's no-move file writes a port (cd_layout.EDGE).
+    # the line meets the border, as the converter's no-move file wrote a port before its places (cd_layout.EDGE).
     # Then the bends on the straight line between their neighbours, from the ports
     def inside(q, d):
         b, e = d.box, 0.0 if d.kind in fixed else NEAR

@@ -562,6 +562,7 @@ def write(diagram, ann, layout='straight'):
                 for m in gate_in[e.source]: ref(lm_, 'modifierSpeciesReference', m)
         left = [e for e in E if p in (e.source, e.target) and e.id not in {f.id for f in ins + outs + mods + gates}]
         if left: report.say('left out', 'process %s: edges not converted: %s' % (p, ', '.join(e.id for e in left)))
+    cd_layout.say_places(drawing, label)
     # arcs between two entities (no process: reduced notation, e.g. a stimulation of a phenotype)
     for e in E:
         if e.source in ents and e.target in ents and e.head in REDUCED:
