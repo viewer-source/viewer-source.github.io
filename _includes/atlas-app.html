@@ -378,7 +378,10 @@ page, so its styles keep the base they were made on).
   .m2-cdsv label[hidden] { display: none; }
   .m2-cdsv label span { flex: 0 0 88px; color: var(--m2-text-soft); }
   .m2-cdsv input, .m2-cdsv select { flex: 1 1 auto; min-width: 0; font: inherit; padding: 2px 4px; border: 1px solid var(--m2-line); border-radius: 4px; background: var(--m2-bg); color: inherit; }
-  .m2-cdsv p { margin: 2px 0 0; font-size: 12px; line-height: 16px; color: var(--m2-text-soft); }
+  .m2-cdsv, .m2-cdsv:focus, .m2-cdsv input:focus, .m2-cdsv select:focus, .m2-cdsv button:focus { outline: none; box-shadow: none; }   /* quiet: no focus ring or highlight */
+  .m2-cdsv input:focus, .m2-cdsv select:focus { border-color: #888; }
+  .m2-cdsv ::selection { background: #ddd; color: inherit; }
+  .m2-cx.m2-cdsv button:hover, .m2-cx.m2-cdsv button:focus-visible { background: #eee; color: inherit; }   /* Remove: grey, not the menus' accent */
   .m2-cdsv button { font: inherit; padding: 2px 10px; margin-top: 2px; }
   .m2-cx.m2-ci button[aria-checked="true"], .m2-cx.m2-ci:not(.m2-cx-still) button[aria-checked="true"]:hover { color: #bdc1c6; background: none; }   /* the own kind: greyed, not a choice */
   /* the circled i beside Connecting arcs (an info glyph): a sign button

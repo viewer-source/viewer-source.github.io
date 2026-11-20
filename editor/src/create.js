@@ -940,7 +940,8 @@
       hid.forEach(function (el) { el.style.visibility = 'hidden'; });
       inp.style.background = gN && gN[nodes2[i].id] ? 'transparent' : !sv && fl && fl.getAttribute('hasColor') !== 'false' && fl.getAttribute('color') ? fl.getAttribute('color').slice(0, 7) : '#fff';
       inp.style.color = lab && lab.getAttribute('textColor') || '#000';
-      var grow = unit;
+      if (cd && cdPend && sv && !sv[0]) { inp.style.background = '#fff'; inp.style.border = '1px solid #000'; }   // a CellDesigner icon not in the file yet: nothing drawn under the field
+      var grow = unit || (!!sv && sv[3] === SS);   // a new CellDesigner structural state grows too (cdrender: its text and 12 a side)
       // an SBGN-ML map's state variable or unit of information: the field is the icon itself while typed (white, its outline,
       // a state variable's round ends), sized at every key as sbgn_edit sizes it on Enter (svIcon), the drawn icon hidden
       var own = !!sv && !cd && au0 == null, ik = own ? sv[2][1] / (unit ? 16 : 18) : 1;
@@ -969,6 +970,7 @@
           if (!typing || typing.inp !== inp) return;
           typing = null; inp.remove(); hid.forEach(function (el) { el.style.visibility = ''; });
           var v = inp.value.replace(/[\r\n]+/g, ' ');
+          if (cd && sv) { if (keep && on && map === m0) cdSsTyped(id, v.trim()); else if (cdPend) { cdPend = null; paint(); } return; }   // a CellDesigner map's new structural state (cdcreate.js)
           if (sv && !unit) v = v.replace(/@+$/, '');   // P@ is P (a site needs a name)
           if (unit) v = v.trim();   // a unit of only spaces is none
           if (fresh && (!keep || !v) && on && map === m0) { var t0 = undo.length ? unpush() : text; if (t0 !== text) { text = t0; parse(); dirty = true; quiet(); render(); paint(); changed(); } return; }
