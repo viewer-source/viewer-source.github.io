@@ -59,10 +59,10 @@
     var siteRef = null;   // { boxes (per node, yEd units, as in the site's version), x0, y0 (its drawing's frame) }
     // the grid: two settings, kept in this browser: the grid shown or hidden (shown by default, it
     // also says the map is being edited), snapping to it on or off (off by default; guides come first). The steps are the
-    // layout rules' by default (the layout skill, Grid): node centres on 8 px, bend points on half of it, every second
+    // layout rules' by default (the layout skill, Grid): node centres on 8 px, bend points on the line step (lineStep), every second
     // line drawn stronger. The demo's maps are mostly not on any grid: a snapped drag moves a node onto it.
     // Grid size (near the Grid and Snap switches; multiples of 8 by default, 4 or another step where wanted):
-    // one setting for the grid drawn, the snapping of nodes, bend points (half of it) and
+    // one setting for the grid drawn, the snapping of nodes, bend points (the line step) and
     // compartment edges, and the widths and heights a node resized by its handles takes (Alt or Ctrl held, any size); a
     // field under the switches, any whole number from 1 to 100 typed, its arrow opening 4, 8, 16, 32 and 64 (the
     // browser's datalist shows only the options starting with the value
@@ -73,6 +73,10 @@
     // the shift out of negative places (graphml.js, cd_edit.place) in whole blocks of the grid: the smallest even number of
     // steps that is 16 or more (16 on 4 and 8), so a map on the grid stays on it, its stronger lines too
     function gridBlock() { var s = gridSet.step; return 2 * s * Math.ceil(8 / s); }
+    // the line grid, never drawn: ports (offsets from a node's centre) and bend points step on it. Half of Grid size, halved
+    // again while above 8 (so a shape keeps enough places on a coarse grid), the grid itself when odd; it divides Grid
+    // size, so with node centres on the grid a port and the bend points of its line meet on one lattice
+    function lineStep() { var s = gridSet.step; if (s % 2) return s; s /= 2; while (s > 8 && s % 2 === 0) s /= 2; return s; }
     function gridKeep() { try { localStorage.setItem(GRID_KEY, JSON.stringify(gridSet)); } catch (e) {} }
     function gridButtons() {
       box.querySelector('#m2-ed-grid').setAttribute('aria-pressed', String(gridSet.shown));   // the switches in the tools row
@@ -515,7 +519,7 @@
           if (p != null && nodes2[p].comp && !cdOwn(k) && overlap(boxOf(k), boxOf(p)) && !inBox(boxOf(k), boxOf(p))) out.push([n.id, nodes2[p].id]);
         });
         out.forEach(function (m) { t1 = N.moveInto(t1, [[m[0], null]]); });
-        var r = L.tidy(t1, what, ids || [], !!cd, { grid: gridSet.step });   // Snap map to grid on Grid size
+        var r = L.tidy(t1, what, ids || [], !!cd, { grid: gridSet.step, route: lineStep() });   // Snap map to grid on Grid size, bend points on the line step
         if (r[1] < 0) return;   // nothing it applies to: nothing said
         if (!r[1]) return;   // nothing to change: nothing said
         var t2 = r[0];
@@ -2112,12 +2116,12 @@
     function placesOf(pp) {   // the places an end may take at node pp.n (portOn's choice), as offsets from its centre; null on the ports' grid (any point of it)
       if (nodes2[pp.n].hub && !(MODS.test(edges2[pp.k].arr[1]) && pp.end) && window.yrender && hubPorts()[nodes2[pp.n].id]) return null;   // a process's or gate's own port: the one place
       var N = nodePlaces(pp.n);
-      return procSpots(pp) || hubSides(pp) || (N && [[0, 0]].concat(N)) || (gridPorts() ? null : fivePlaces(pp.n));
+      return procSpots(pp) || hubSides(pp) || (N && [[0, 0]].concat(N)) || (lineGrid() ? null : fivePlaces(pp.n));
     }
     function fivePlaces(n) { var b = bx(n); return [[0, 0], [0, -b[3] / 2], [0, b[3] / 2], [-b[2] / 2, 0], [b[2] / 2, 0]]; }   // the centre and the sides' middles
     function spot(pp, P, free) {   // the end's place on its node as an offset from its centre: a glyph's six, the ports' grid (free: anywhere, gridSpot), else the nearest of the node's places (nodePlaces) or five
       var b = bx(pp.n), c = [b[0] + b[2] / 2, b[1] + b[3] / 2], S = procSpots(pp) || hubSides(pp), N = S ? null : nodePlaces(pp.n), F = null;
-      if (!S && gridPorts()) return gridSpot(pp.n, [P[0] - c[0], P[1] - c[1]], free);
+      if (!S && lineGrid()) return gridSpot(pp.n, [P[0] - c[0], P[1] - c[1]], free);
       if (N && nodeCentre(pp.n, P)) return [0, 0];
       // at a glyph a tie (a drop on its centre) goes to the side facing the modifier: the point
       // before the end weighs in a little
@@ -2125,12 +2129,12 @@
       var cost = function (o) { var q = [c[0] + o[0], c[1] + o[1]]; return Math.hypot(q[0] - P[0], q[1] - P[1]) + (F ? 1e-3 * Math.hypot(q[0] - F[0], q[1] - F[1]) : 0); };
       return (S || N || fivePlaces(pp.n)).reduce(function (m, o) { return cost(o) < cost(m) ? o : m; });
     }
-    // ---- ports on a grid (where the format's part says so: gridPorts), as offsets from the node's centre ----
-    // Inside the shape a grid of PG from the centre. On the outline the port stays on it, and the coordinate on the grid
+    // ---- ports on the line grid (where the format's part says so: lineGrid), as offsets from the node's centre ----
+    // Inside the shape a grid of the line step (lineStep) from the centre. On the outline the port stays on it, and the coordinate on the grid
     // is the axis the outline runs closer to there (x on a top or bottom side, y on a left or right side; on a curve
     // switching where it runs at 45 degrees); the other is read from the outline. A run of one axis ends at that switch or
     // at a corner. The outline is the drawn one (outlineD), flattened into a polygon with the 45 degree points kept.
-    var PG = 8, rimMemo = new Map();
+    var rimMemo = new Map();
     function rim(n) { return rimOf(n, bx(n)); }   // node n's outline round its centre, a closed polygon
     function rimOf(n, b) {   // the same at box b
       var sh = drawnShape(n), key = sh.kind + JSON.stringify(sh.props) + '|' + b[2] + '|' + b[3], R = rimMemo.get(key);
@@ -2243,14 +2247,14 @@
       var R = rim(n), loc = onRim(R, q), inn = inRim(R, q);
       if (free) return dec2(inn ? q : loc.pt);
       if (inn && loc.d > 3 / V.z) {   // inside: the nearest grid point inside the shape (the rounded one may lie outside, near a curve)
-        var x0 = Math.floor(q[0] / PG) * PG, y0 = Math.floor(q[1] / PG) * PG, best = null, bd = Infinity;
+        var PG = lineStep(), x0 = Math.floor(q[0] / PG) * PG, y0 = Math.floor(q[1] / PG) * PG, best = null, bd = Infinity;
         [0, PG].forEach(function (dx) { [0, PG].forEach(function (dy) {
           var g = [x0 + dx, y0 + dy], d = Math.hypot(g[0] - q[0], g[1] - q[1]);
           if (d < bd && inRim(R, g) && onRim(R, g).d > 0.05) { bd = d; best = g; }
         }); });
         if (best) return best;
       }
-      var p = loc.pt, j = loc.j, w = [R[(j + 1) % R.length][0] - R[j][0], R[(j + 1) % R.length][1] - R[j][1]], A = keyAx(w), v = Math.round(p[A] / PG) * PG;
+      var PG = lineStep(), p = loc.pt, j = loc.j, w = [R[(j + 1) % R.length][0] - R[j][0], R[(j + 1) % R.length][1] - R[j][1]], A = keyAx(w), v = Math.round(p[A] / PG) * PG;
       if (Math.abs(v - p[A]) < 1e-6) return dec2(p);
       var r = along(R, loc, A, Math.sign(v - p[A]), PG);
       return dec2(r ? r.to : p);
@@ -2317,7 +2321,7 @@
     function aim(pp, P, free) {   // the dragged end's next place: on its own node, on a node that takes it, or free at the pointer (Alt or Ctrl, a process's port, or off the ports' grid)
       var i = takerAt(pp, P), b;
       pp.n2 = null; pp.free = false;
-      if (i == null && !pp.hub && !free && gridPorts()) i = pp.n;   // on the ports' grid, over nothing that takes it: on its own outline, nearest the pointer
+      if (i == null && !pp.hub && !free && lineGrid()) i = pp.n;   // on the ports' grid, over nothing that takes it: on its own outline, nearest the pointer
       if (i === pp.n) { pp.to = pp.hub ? null : spot(pp, P, free); return; }   // an end at a port stays with its process
       if (i != null) { pp.n2 = i; pp.to = portOn(pp, i, P, free); return; }
       b = bx(pp.n); pp.free = true; pp.to = [P[0] - b[0] - b[2] / 2, P[1] - b[1] - b[3] / 2];
@@ -2979,14 +2983,15 @@
         if (gaps.length) mark(gaps, k > 0 && mid(F) > mean / k + 0.5);
       });
     }
-    function onGrid(d) {   // snap to the grid, an axis a guide has not taken: the node pressed by its centre on 8 px, a
-      // bend point (alone, or the first of an arc dragged) on 4 px; Alt or Ctrl held, no snapping
+    function onGrid(d) {   // snap to the grid, an axis a guide has not taken: the node pressed by its centre on Grid size, a
+      // bend point (alone, or the first of an arc dragged) on the line step where the format has a line grid (lineGrid; else
+      // its guides alone); Alt or Ctrl held, no snapping
       var X, Y2, st;
       if (d.n != null) { var b = boxOf(d.n); X = b[0] + b[2] / 2; Y2 = b[1] + b[3] / 2; st = gridSet.step; }
       else {
         var pi = d.p != null ? d.p : d.e != null && edges2[d.e].pts.length ? edges2[d.e].pts[0] : null;
-        if (pi == null) return;
-        X = num(points[pi], 'x'); Y2 = num(points[pi], 'y'); st = gridSet.step / 2;
+        if (pi == null || !lineGrid()) return;
+        X = num(points[pi], 'x'); Y2 = num(points[pi], 'y'); st = lineStep();
       }
       if (!d.gx) d.dx += toGrid(X + d.dx, st);
       if (!d.gy) d.dy += toGrid(Y2 + d.dy, st);
@@ -3141,9 +3146,9 @@
       if (pp.hub) return;   // at a process's or gate's port: it goes with the process
       var e = edges2[pp.k], a = pp.end ? ['tx', 'ty'] : ['sx', 'sy'], b = bx(pp.n), u = [Math.sign(d[0]), Math.sign(d[1])];
       var off = [num(e.path, a[0]) || 0, num(e.path, a[1]) || 0], G = procSpots(pp) || hubSides(pp), N = G ? null : nodePlaces(pp.n), S = G || (N && [[0, 0]].concat(N));
-      if (!S && gridPorts()) {   // plain arrows a step of PG, Shift 1; the same key again goes on round the outline the same way
+      if (!S && lineGrid()) {   // plain arrows a step of the line step, Shift 1; the same key again goes on round the outline the same way
         var rn = pp.run, go = rn && rn.u + '' === u + '' && Math.abs(rn.to[0] - off[0]) < 0.01 && Math.abs(rn.to[1] - off[1]) < 0.01 ? rn.di : null;   // the run lives on the pressed end: a new press, undo or Esc ends it
-        var g2 = portStep(pp.n, off, u, fine ? 1 : PG, go);
+        var g2 = portStep(pp.n, off, u, fine ? 1 : lineStep(), go);
         pp.run = g2 && g2.di != null ? { u: u, di: g2.di, to: g2.to } : null;
         if (g2) setPort({ k: pp.k, end: pp.end, n: pp.n, to: g2.to }, true);
         return;

@@ -1,5 +1,5 @@
 // Grid size beyond 8 (core.js gridBlock): Snap map to grid on a grid of 10 puts node centres outside complexes on 10 (nearly
-// all: a node on a line with another's port keeps it) and bend points on 5; cd_edit.place fitted with a block of 20
+// all: a node on a line with another's port keeps it) and bend points on 5, on 32 with the line step 8 bend points on 8; cd_edit.place fitted with a block of 20
 // or 32 shifts every CellDesigner map by whole blocks and leaves nothing nearer the corner than 40.
 //   node tests/grid-size.js [folder of the demo's maps, acly-graphml.graphml among them]   (default: maps/)
 var fs = require('fs'), path = require('path'), DP = require('@xmldom/xmldom').DOMParser;
@@ -33,4 +33,7 @@ fs.readdirSync(dir).filter(function (f) { return /-celldesigner\.xml$/.test(f); 
   });
 });
 ok('CellDesigner fit on blocks of 20 and 32: ' + cd + ' runs', cd > 0 && !bad);
+var r32 = lay.tidy(t, 'grid', [], false, { grid: 32, route: 8, DOMParser: DP }), d32 = new DP().parseFromString(r32[0], 'application/xml'), p32 = 0, o32 = 0;
+Array.prototype.forEach.call(d32.getElementsByTagName('y:Point'), function (p) { p32++; if (on(+p.getAttribute('x'), 8) && on(+p.getAttribute('y'), 8)) o32++; });
+ok('Snap on 32 with the line step 8: bend points on 8 (' + o32 + ' of ' + p32 + ')', o32 >= p32 * 0.9);
 process.exit(bad ? 1 : 0);

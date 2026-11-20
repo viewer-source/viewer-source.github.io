@@ -12,9 +12,10 @@
     // a node selected darkened under its handles (yEd's way), or the handles alone (CellDesigner's way, on its maps);
     // the targets of a line being drawn or moved stay darkened on every format
     function darkSel() { return !cd; }
-    // a line's end on a node: on a grid inside the shape and along its outline (core.js, gridPorts), or at one of the node's
-    // places only, as a CellDesigner file keeps a species' line
-    function gridPorts() { return !cd; }
+    // the line grid (core.js, lineStep): a line's end on a node on it inside the shape and along its outline, bend points
+    // snapping to it; or none: a line's end at one of the node's places only, as a CellDesigner file keeps a species' line,
+    // places that follow each node's size and so meet no grid, its bend points lined up by the guides alone
+    function lineGrid() { return !cd; }
     // the places a line's end takes on node n where the format fixes them, as offsets from its centre with the place's
     // name third: on a CellDesigner species its 16 (cdrender anchorAt, on a multimer's front copy as the line is drawn),
     // which cd_edit writes as that place; the centre apart (nodeCentre). A dragged end (core.js spot) and a new line

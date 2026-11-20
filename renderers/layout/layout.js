@@ -5,7 +5,7 @@
 // other scripts): a new copy of them (get_layout.sh) is made here too, and the comparison run. The rules and their reasons are in
 // the Python files, function by function, under the same names; comments here are short.
 //   browser: layout.tidy(text, what, ids, keepPorts, opt) -> [new text, how many attributes changed]   (as tidy.tidy;
-//            opt.grid, JavaScript only: Snap map to grid's step, 8 by default as snap_grid.py)
+//            opt.grid and opt.route, JavaScript only: Snap map to grid's steps for nodes and bend points, 8 and 4 by default as snap_grid.py)
 //   node:    require('./layout.js').tidy(text, ..., { DOMParser })
 (function (root) {
   'use strict';
@@ -442,11 +442,11 @@
     centre.forEach(function (c, u) { most = Math.max(most, Math.max(Math.abs(mx.get(u)), Math.abs(my.get(u)))); });
     return most;
   }
-  function snap(rootEl, grid) {   // grid: node centres on it, bend points on half of it (8 by default, the layout rules'
-    var most = 0.0, node = grid > 0 ? grid : 8.0;   // step); how close points count as one line (4, 12) stays the map's own
+  function snap(rootEl, grid, route) {   // grid: node centres on it (8 by default, the layout rules' step); route: bend
+    var most = 0.0, node = grid > 0 ? grid : 8.0, rt = route > 0 ? route : node / 2;   // points on it (half of grid by default); how close points count as one line (4, 12) stays the map's own
     for (var i = 0; i < 4; i++) {
       var before = numbers(rootEl);
-      most = Math.max(most, onePass(rootEl, node, node / 2, 4.0, 12.0));
+      most = Math.max(most, onePass(rootEl, node, rt, 4.0, 12.0));
       if (numbers(rootEl) === before) break;
     }
     return most;
@@ -498,7 +498,7 @@
     var doc = new DP().parseFromString(text, 'application/xml'), rootEl = doc.documentElement;
     var els = [rootEl].concat(Array.prototype.slice.call(rootEl.getElementsByTagName('*')));
     var before = els.map(attrs);
-    if (what === 'grid') snap(rootEl, opt && opt.grid);
+    if (what === 'grid') snap(rootEl, opt && opt.grid, opt && opt.route);
     else if (what === 'fit') fit(rootEl, ids && ids.resize, (ids && ids.moved) || []);
     else pack(rootEl);
     var after = els.map(attrs);

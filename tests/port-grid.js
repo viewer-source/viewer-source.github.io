@@ -2,7 +2,7 @@
 // as they stand and run on a simple molecule (circle r 20) and a protein (80 by 40, corner radius 5, quadratic corners
 // as drawn), with a few other shapes (an octagon complex, an ellipse wider than high, a plain rectangle, an inset
 // protein). Checks the arrow keys inside, on the outline, across it, at a run's end, the same key again going on round the
-// outline, and a drag's snapping. The step here is 5 (PG below); the editor's is set in core.js.
+// outline, and a drag's snapping. The step here is 5 (PG below); the editor's is its line step (lineStep in core.js).
 //   node tests/port-grid.js
 var fs = require('fs'), path = require('path');
 var src = fs.readFileSync(path.join(__dirname, '../editor/src/core.js'), 'utf8');
@@ -12,7 +12,7 @@ function fn(name) {   // a function's text from core.js, by brace matching
   for (; k < src.length; k++) { if (src[k] === '{') d++; else if (src[k] === '}' && --d === 0) break; }
   return src.slice(i, k + 1);
 }
-var V = { z: 1 }, PG = 5, shapes = {};
+var V = { z: 1 }, PG = 5, shapes = {}, lineStep = function () { return PG; };   // the editor's step comes from Grid size (lineStep)
 function rim(n) { var s = shapes[n]; return flatten(outlineD(s.sh, -s.w / 2, -s.h / 2, s.w, s.h)); }
 eval(['rr', 'poly', 'outlineD', 'flatten', 'keyAx', 'gridNext', 'dec2', 'onRim', 'inRim', 'walk', 'along', 'portStep', 'gridSpot'].map(fn).join('\n'));
 shapes.sm = { sh: { kind: 'SimpleChemical', props: {} }, w: 40, h: 40 };
