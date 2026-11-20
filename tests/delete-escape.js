@@ -15,7 +15,8 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
   var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more ? '  ' + more : '')); };
   var start = async function (h, sign) {
     await page.goto(base + '#' + h, { waitUntil: 'load' }); await page.waitForSelector('.m2-ri[data-win="edit"]', { timeout: 30000 });
-    if (!(await page.$('#m2-editwin button[data-make="' + sign + '"]:visible'))) await page.click('.m2-ri[data-win="edit"]');
+    await page.waitForTimeout(2500);   // edit mode kept over a reload comes back by itself: the tab only when it did not
+    if (!(await page.evaluate(function () { return document.querySelector('.m2').classList.contains('m2-editing'); }))) await page.click('.m2-ri[data-win="edit"]');
     await page.waitForSelector('#m2-editwin button[data-make="' + sign + '"]', { state: 'visible', timeout: 30000 }); await page.waitForTimeout(1500);
   };
   var ids = function (sel) { return page.$$eval('#m2-img [' + sel + ']', function (l, sel) { return Array.from(new Set(l.map(function (x) { return x.getAttribute(sel); }))); }, sel); };
