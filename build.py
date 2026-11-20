@@ -492,7 +492,7 @@ def main():
         fm = {'title': meta.get('title', mid), 'topic': meta.get('topic', meta.get('title', mid)), 'tab': '', 'page': '',
               'group': meta.get('group', ''), 'order': int(meta.get('order', 0)), 'kind': 'map', 'draft': False, 'tag': '',
               'image': '/downloads/%s.svg' % mid, 'width': w, 'height': h, 'scale': 1,
-              'annotation': '/atlas-data/%s.json' % mid, 'image_error': '', 'v': v, 'src': sha,
+              'annotation': '/atlas-data/%s.json' % mid, 'image_error': '', 'v': v, 'src': sha, 'written': meta.get('written', ''),   # written: when the viewer last wrote the page (it waits for a build that new)
               'colours': True,  # the picture has the role classes (yrender.js and cdrender.js with classes on)
               'legend': 'sbgn' if ext == '.graphml' else 'celldesigner',  # the legend the Legend window opens on
               'downloads': [{'label': 'GraphML' if ext == '.graphml' else 'CellDesigner', 'url': '/downloads/%s%s' % (mid, ext)},
@@ -537,7 +537,7 @@ def main():
         d['edit_path'], d['edit_base'] = 'maps/%s.sbgn' % mid, '/atlas-data/%s.graphml' % mid
         search += search_entries(mid, nodes)
         title = meta.get('title', mid)
-        write_entry(mid, entry_of(title, meta.get('group', ''), int(meta.get('order', 0)), d, topic=meta.get('topic', title),
+        write_entry(mid, entry_of(title, meta.get('group', ''), int(meta.get('order', 0)), d, topic=meta.get('topic', title), written=meta.get('written', ''),
                                   **({'deleted': meta['deleted']} if meta.get('deleted') else {})), body)
         print('%s: SBGN-ML, %d clickable' % (mid, len(nodes)))
     for f in sorted(glob.glob(os.path.join(ROOT, 'maps', 'sbgn-ml', '*.sbgn'))):   # an edited copy whose GraphML map went

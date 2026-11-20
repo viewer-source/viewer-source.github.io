@@ -151,7 +151,7 @@ function viewerHunks() {
   ok('2. the build listing it deleted: still in Deleted, nothing pending', (await binned()).indexOf(SID) >= 0 && !(await page.evaluate(function () { return localStorage.getItem('atlas-bin-pending'); })));
   await menu('#m2-list .m2-binned[data-id="' + SID + '"]', 'Restore');
   md = files['maps/' + SID + '.md'];
-  ok('2. restored: the line dropped, the page as before', md === '---\ntitle: "Copy of Glycolysis"\ntopic: "Copy of Glycolysis"\ngroup: "Testing"\norder: 3\n---\nIts text.\n' && (await ids()).indexOf(SID) >= 0, JSON.stringify(md));
+  ok('2. restored: the line dropped, the page as before (but its written: time)', md.replace(/^written: .*\n/m, '') === '---\ntitle: "Copy of Glycolysis"\ntopic: "Copy of Glycolysis"\ngroup: "Testing"\norder: 3\n---\nIts text.\n' && (await ids()).indexOf(SID) >= 0, JSON.stringify(md));
   delete built[SID];
   await menu('#m2-list .m2-map[data-id="' + SID + '"]', 'Delete map');
   await openBin();

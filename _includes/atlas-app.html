@@ -2757,10 +2757,32 @@ page, so its styles keep the base they were made on).
     if (g === null) delete regrouped[id]; else regrouped[id] = g;
     try { if (Object.keys(regrouped).length) localStorage.setItem(regroupKey, JSON.stringify(regrouped)); else localStorage.removeItem(regroupKey); } catch (e) {}
   }
+  // A site map's page written from here (own.js siteFront: a move, Delete, Restore, a name) stamps written: <time> in it;
+  // kept per page ({ id: [that time, '' while the write runs; when] }) until the site's build is of that write or a later
+  // one (its entry's written), an hour at most: an earlier build, even one that agrees with this browser (a restore gives
+  // the page as it was before the delete), settles nothing, as builds lag and overlap
+  var sentKey = 'atlas-page-sent:' + location.pathname;
+  function sentRead() { try { var o = JSON.parse(localStorage.getItem(sentKey) || '{}'); return o && typeof o === 'object' ? o : {}; } catch (e) { return {}; } }   // read each time: another tab writes it too
+  function pageSent(id, at) {   // '' as the write is asked for, its time once GitHub has it, null: let go (failed, or the build has it)
+    var sent = sentRead();
+    if (at === null) delete sent[id]; else sent[id] = [at, Date.now()];
+    try { if (Object.keys(sent).length) localStorage.setItem(sentKey, JSON.stringify(sent)); else localStorage.removeItem(sentKey); } catch (e) {}
+  }
+  function pageBehind(m) {   // the site's build not yet of this page's last write from here (a build that lists no written: as before)
+    var p = sentRead()[m.id];
+    if (!p) return false;
+    if (m.written === undefined || (p[0] && m.written >= p[0]) || Date.now() - p[1] > 3600000) { pageSent(m.id, null); return false; }
+    return true;
+  }
+  function sentPrune(list) {   // every record the build has caught up with let go, and those of maps no longer on the site
+    var sent = sentRead(), ids = {}; list.forEach(function (m) { ids[m.id] = m; });
+    Object.keys(sent).forEach(function (id) { if (!ids[id]) pageSent(id, null); else pageBehind(ids[id]); });
+  }
+  function sentAny() { return Object.keys(sentRead()).length > 0 || Object.keys(regrouped).length > 0; }
   function regroup(list) {
     return list.map(function (m) {
       if (m.mine || !Object.prototype.hasOwnProperty.call(regrouped, m.id)) return m;
-      if ((m.group || '') === regrouped[m.id]) { setMoved(m.id, null); return m; }   // the site has it there now
+      if ((m.group || '') === regrouped[m.id] && !pageBehind(m)) { setMoved(m.id, null); return m; }   // the site has it there now
       return Object.assign({}, m, { group: regrouped[m.id], siteGroup: m.group || '' });
     });
   }
@@ -2793,7 +2815,7 @@ page, so its styles keep the base they were made on).
     order.maps = order.maps || {};
     Object.keys(order.maps).forEach(function (g) { order.maps[g] = order.maps[g].filter(function (x) { return x !== id; }); });
     var ids = maps.filter(function (m) { return (m.group || '') === group && m.id !== id; }).map(function (m) { return m.id; });
-    var i = before ? ids.indexOf(before) : -1;
+    var i = before === true ? 0 : before ? ids.indexOf(before) : -1;   // true: first in the group (Move to)
     ids.splice(i < 0 ? ids.length : i, 0, id);
     order.maps[group] = ids;
     saveOrder();   // the list is made again by the caller (own.js put: refreshMine)
@@ -3397,6 +3419,7 @@ page, so its styles keep the base they were made on).
     siteList = list;
     list = list.map(asSource);
     regroupPrune(list);
+    sentPrune(list);
     var gh = own ? (own.here(), own.order()) : [], a = arrange(regroup(own ? own.withMine(list) : list.filter(function (m) { return !m.deleted; })));   // a deleted map (its page's deleted:) only in the editor's Deleted   // site maps moved to another group (regroup), then the reader's order   // gh: every group the reader made, so one keeps its place once its maps are on the site
     var bin = a.filter(function (m) { return m.binned; }).sort(function (x, y) { return y.binned - x.binned; });   // Deleted (own.js): last, the latest first
     a = a.filter(function (m) { return !m.binned; });
@@ -3416,7 +3439,8 @@ page, so its styles keep the base they were made on).
 
   // ---------- new maps without a reload ----------
   // The list is asked for again every 30 s while the page is in view and whenever it comes back into view
-  // ('no-cache': the browser checks with the server, a short 'not modified' when nothing changed). A map added since
+  // ('no-cache': the browser checks with the server, a short 'not modified' when nothing changed; while a write of this page
+  // waits for its build, ?t past the CDN's copy, fetched whole). A map added since
   // the page opened appears in the list and loads in the background; the map on screen, if it changed, is swapped
   // for its new version in place, so a new map or module shows without reloading the page
   var listText = '';
@@ -3442,7 +3466,7 @@ page, so its styles keep the base they were made on).
   }
   function check() {
     if (document.visibilityState !== 'visible') return;
-    fetch('{{ include.index | relative_url }}', { cache: 'no-cache' }).then(function (r) { return r.ok ? r.text() : null; })
+    fetch('{{ include.index | relative_url }}' + (sentAny() ? '?t=' + Date.now() : ''), { cache: 'no-cache' }).then(function (r) { return r.ok ? r.text() : null; })   // ?t: past a CDN copy older than this page's own writes, only while one waits for its build
       .then(function (text) {
         if (!text || text === listText) return;
         var first = !listText;
@@ -4027,6 +4051,8 @@ page, so its styles keep the base they were made on).
     orderPut: { get: function () { return orderPut; } },
     setMoved: { get: function () { return setMoved; } },
     movedOf: { get: function () { return movedOf; } },
+    pageSent: { get: function () { return pageSent; } },
+    pageBehind: { get: function () { return pageBehind; } },
     regroupRename: { get: function () { return regroupRename; } },
     listMenu: { get: function () { return listMenu; } },
     listGroups: { get: function () { return listGroups; } },

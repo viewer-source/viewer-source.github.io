@@ -283,7 +283,7 @@
       if (!m || m.shownAs) return false;
       var r = m.mine && mine[m.id]; return m.mine ? !!r && !r.site : true;
     }
-    function moveTo(id, g, before, k) {   // k: its place among several maps moved together (their order on the site)
+    function moveTo(id, g, before, k, many) {   // k: its place among `many` maps moved together (their order on the site); before true: first in the group (Move to)
       g = g || '';
       var m = V.byId[id], r = mine[id], sent = null;
       if (r) { r.group = g; minePut(r).catch(function () {}); }
@@ -293,7 +293,7 @@
           // (its name never written to the site, where it would merge with theirs); the build's own maps (no page) here only
           if (repo() && token() && canRename(m, true) && !ownGroup(g)) g = g.replace(/["\\]/g, '');
           V.setMoved(id, g);
-          if (repo() && token() && canRename(m, true) && !ownGroup(g)) sent = toSiteGroup(id, g, k).then(function () { return true; }, function (e) {
+          if (repo() && token() && canRename(m, true) && !ownGroup(g)) sent = toSiteGroup(id, g, k, before === true ? many || 1 : 0).then(function () { return true; }, function (e) {
             if (!e || !e.noPage) alert((m.topic || m.title) + ' was not moved on the site: ' + (e && e.message ? e.message : e) + '. The move is kept in this browser only.');
             return false;
           });
@@ -310,10 +310,12 @@
       });
     }
     function moveMany(ids, g, before) {   // several maps selected, one after another (each a commit with a token), in their order
-      return ids.reduce(function (p, id, k) { return p.then(function () { return moveTo(id, g, before, k); }); }, Promise.resolve());
+      var top = before === true, run = top ? ids.slice().reverse() : ids;   // first in the group: the last put first, so they keep their order
+      return run.reduce(function (p, id) { return p.then(function () { return moveTo(id, g, before, ids.indexOf(id), ids.length); }); }, Promise.resolve());
     }
-    function toSiteGroup(id, g, k) {   // maps/<id>.md: its group and its order (after the group's last, k after it); one commit
-      return siteFront(id, function (f) { f.set('group', JSON.stringify(g.replace(/["\\]/g, ''))); f.set('order', String(siteOrder(g) + (k | 0))); f.drop('example'); }, 'Map moved in the viewer');   // moved out of its group: the reader's
+    function toSiteGroup(id, g, k, top) {   // maps/<id>.md: its group and its order (after the group's last, k after it; top: n maps before its first); one commit
+      var at = top ? siteFirst(g) - top + (k | 0) : siteOrder(g) + (k | 0);
+      return siteFront(id, function (f) { f.set('group', JSON.stringify(g.replace(/["\\]/g, ''))); f.set('order', String(at)); f.drop('example'); }, 'Map moved in the viewer');   // moved out of its group: the reader's
     }
     function put(id, g, before) {   // a map into the reader's order of group g, the group opened so the map stays in sight
       if (g && V.closed[g]) { delete V.closed[g]; V.saveClosed(); }
@@ -322,19 +324,19 @@
     function moveMenuMany(ms, x, y) {   // the groups several maps can go to, in the list's order
       var site = (V.siteList || []).map(function (s) { return s.group; }), ids = ms.map(function (m) { return m.id; });
       var gs = V.listGroups().filter(function (n) { return n && (ownGroup(n) || site.indexOf(n) >= 0); });
-      V.listMenu(x, y, [['No group', function () { V.pickSet([]); moveU(ids, ''); }], null].concat(gs.map(function (n) {
-        return [n, function () { V.pickSet([]); moveU(ids, n); }];
+      V.listMenu(x, y, [['No group', function () { V.pickSet([]); moveU(ids, '', true); }], null].concat(gs.map(function (n) {
+        return [n, function () { V.pickSet([]); moveU(ids, n, true); }];
       })));
     }
     function moveMenu(m, x, y) {   // the groups the map can go to, in the list's order; its own greyed
       var site = (V.siteList || []).map(function (s) { return s.group; });
       var gs = V.listGroups().filter(function (n) { return n && (ownGroup(n) || site.indexOf(n) >= 0); });
-      V.listMenu(x, y, [['No group', function () { moveU([m.id], ''); }, !m.group], null].concat(gs.map(function (n) {
-        return [n, function () { moveU([m.id], n); }, n === m.group];
+      V.listMenu(x, y, [['No group', function () { moveU([m.id], '', true); }, !m.group], null].concat(gs.map(function (n) {
+        return [n, function () { moveU([m.id], n, true); }, n === m.group];
       })));
     }
     // Make a copy, in the list's menu: a new map named Copy of <name> (as in Google Docs), in the same group right under
-    // the original, opened at once with its name field open to rename it. Of a reader's own map, or of the site's
+    // the original, opened at once (no name field: one command at a time, as Finder's Duplicate). Of a reader's own map, or of the site's
     // GraphML or CellDesigner map as it is now (the edits this page holds, else GitHub's version, else the site's);
     // with a token every copy goes to the site, as Add map does (an SBGN-ML one only made here)
     function canCopy(m) { return !!m && !m.shownAs && (m.mine ? !!mine[m.id] : !!graphmlOf(m) && (!sbMap(m) || /^maps\/[^/]+\.sbgn$/.test(m.editPath || ''))); }   // an SBGN-ML map of the site's own, not one of its groups'
@@ -417,9 +419,9 @@
       }).then(function (r) {
         put(r.id, group, next);
         V.go(r.id);
-        if (!naming) setTimeout(function () { renameMap(r.id); }, 0);   // its name field open, the text selected (a copy on its way to the site is named by its file)
       }).catch(function (e) { alert('No copy was made: ' + (e && e.message ? e.message : e)); });
     }
+    function siteFirst(group) { var os = (V.siteList || []).filter(function (s) { return s.group === group; }).map(function (s) { return s.order || 0; }); return os.length ? Math.min.apply(null, os) : 1; }   // the group's first on the site
     function siteOrder(group) { return (V.siteList || []).reduce(function (a, s) { return (!group || s.group === group) ? Math.max(a, s.order || 0) : a; }, 0) + 1; }   // after the group's last on the site
     function after(id) {   // the map after id in its group, so a copy lands right under the original
       var ms = V.maps, i = ms.findIndex(function (x) { return x.id === id; });
@@ -471,7 +473,7 @@
       var hid = siteHidden(), gh = !!(repo() && token()), pend = binPending(), n0 = Object.keys(pend).length, binned = [];
       list = list.filter(function (m) {
         if (hiddenGone[m.id]) return false;   // deleted forever here, the build not run since
-        var d = binState(twinBase(m) ? parentOf(m) : m, pend);   // a twin as its GraphML map
+        var tb = twinBase(m), d = binState(tb ? ids[tb + '-graphml'] || ids[tb] || parentOf(m) : m, pend);   // a twin as its GraphML map, as this list has it
         if (!d && (!gh || hid.indexOf(m.id) < 0)) return true;   // an older version's hiding: without a token no longer hides (a map is kept or deleted), with one it is in Deleted until moved there (binMigrate)
         if (gh) binned.push(Object.assign({}, m, { binned: d ? Date.parse(d) || Date.now() : Date.now() }));   // deleted: seen in Deleted with a token, else not at all
         return false;
@@ -653,7 +655,7 @@
       return list.map(function (m) {
         var n = renamed[m.id];
         if (!n) return m;
-        if (m.topic === n.to || (n.local && m.topic !== n.was)) { delete renamed[m.id]; if (n.local) namedSave(); return m; }   // the build has it, or the site renamed it since
+        if ((m.topic === n.to && !V.pageBehind(m)) || (n.local && m.topic !== n.was)) { delete renamed[m.id]; if (n.local) namedSave(); return m; }   // the build has it, or the site renamed it since
         return m.topic === n.was ? Object.assign({}, m, { topic: n.to }) : m;
       });
     }
@@ -962,7 +964,7 @@
     function binPendingSet(o) { try { if (Object.keys(o).length) localStorage.setItem(BIN_KEY, JSON.stringify(o)); else localStorage.removeItem(BIN_KEY); } catch (e) {} }
     function binState(m, pend) {   // a site map's date in Deleted, '' if not; what this page did wins until the build has it (then let go)
       var p = pend[m.id];
-      if (!Array.isArray(p) || (m.deleted || '') === p[0] || Date.now() - p[1] > 3600000) { delete pend[m.id]; return m.deleted || ''; }
+      if (!Array.isArray(p) || ((m.deleted || '') === p[0] && !V.pageBehind(m)) || Date.now() - p[1] > 3600000) { delete pend[m.id]; return m.deleted || ''; }   // an earlier build that agrees settles nothing
       return p[0];
     }
     function binClear(id) { var p = binPending(); if (id in p) { delete p[id]; binPendingSet(p); } }
@@ -975,12 +977,14 @@
     // more; a write that never answers holds the next ones 30 s at most
     var siteQ = Promise.resolve();
     function siteFront(id, edit, message) {
-      var p = siteQ.then(function () { return frontWrite(id, edit, message, 0); });
+      V.pageSent(id, '');   // held from the moment it is asked for, also while it waits behind other writes
+      var p = siteQ.then(function () { return frontWrite(id, edit, message, 0); })
+        .then(function (at) { V.pageSent(id, at); }, function (e) { V.pageSent(id, null); throw e; });   // held until a build of this write
       siteQ = Promise.race([p.catch(function () {}), new Promise(function (ok) { setTimeout(ok, 30000); })]);
       return p;
     }
     function frontWrite(id, edit, message, tries) {
-      var path = '/contents/maps/' + encodeURIComponent(id) + '.md';
+      var path = '/contents/maps/' + encodeURIComponent(id) + '.md', at = new Date().toISOString();   // written: when this page last wrote it (the viewer waits for a build that new, V.pageBehind)
       return api(path + '?ref=main').then(function (r) { if (!r.ok) { var e = new Error(r.status === 404 ? 'it has no page of its own' : 'GitHub ' + r.status); e.noPage = r.status === 404; throw e; } return r.json(); })
         .then(function (d) {
           var md = textOf(d.content);
@@ -992,11 +996,13 @@
             set: function (k, v) { var re = new RegExp('^' + k + ':[^\\r\\n]*', 'm'); head = re.test(head) ? head.replace(re, function () { return k + ': ' + v; }) : head + nl + k + ': ' + v; },
             drop: function (k) { head = head.replace(new RegExp('^' + k + ':.*(\\r?\\n|$)', 'm'), '').replace(/\r?\n$/, ''); }
           });
+          head = /^written:/m.test(head) ? head.replace(/^written:[^\r\n]*/m, function () { return 'written: ' + JSON.stringify(at); }) : head + nl + 'written: ' + JSON.stringify(at);
           md = '---' + nl + head + fm[0].slice(3 + nl.length + fm[2].length) + md.slice(fm[0].length);
           return api(path, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: message + ': ' + id, content: b64(md), sha: d.sha, branch: 'main' }) });
         }).then(function (r) {
           if ((r.status === 409 || r.status === 422) && tries < 3) return new Promise(function (ok) { setTimeout(ok, 500 * (tries + 1)); }).then(function () { return frontWrite(id, edit, message, tries + 1); });   // read again: another write came first
           if (!r.ok) throw new Error('GitHub ' + r.status);
+          return at;
         });
     }
     function siteBin(id, on, topic) {   // a site map into Deleted (on) or out of it (its new name, when its own was taken)
@@ -1275,9 +1281,9 @@
             return p.then(function () {
               var m = V.byId[w.id]; if (!m) return;
               if (!w.s) return moveTo(w.id, w.g);
-              V.setMoved(w.id, w.mv);   // a site map: where this browser had it
+              V.setMoved(w.id, w.page ? w.g : w.mv);   // a site map: where this browser had it (its page written back: there until a build of that write)
               if (w.page && (m.group || '') !== w.g) return siteFront(w.id, function (f) {   // its page as before: the group it was in (the site's own where that was the reader's), order, example
-                f.set('group', JSON.stringify((ownGroup(w.g) ? w.s.group || '' : w.g).replace(/["\\]/g, ''))); if (w.s.order) f.set('order', String(w.s.order)); if (w.s.example) f.set('example', 'true');
+                f.set('group', JSON.stringify((ownGroup(w.g) ? w.s.group || '' : w.g).replace(/["\\]/g, ''))); if (w.s.order != null) f.set('order', String(w.s.order)); if (w.s.example) f.set('example', 'true');
               }, 'Map moved back in the viewer').catch(function () {});
             }).then(function () {   // its name back, where the move gave it one: in this browser if that one is kept here
               var m = V.byId[w.id], n = renamed[w.id];
