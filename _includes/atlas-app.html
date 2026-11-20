@@ -1680,7 +1680,7 @@ page, so its styles keep the base they were made on).
     if (overApp && !typing()) e.preventDefault();
   }, true);
   window.addEventListener('blur', function () { spaceHeld = false; });
-  // Gestures and keys: every move and key of the viewer and its editor in one window, the main ones first, then the rest; opened by the ? at the end of the icons or the ? key outside editing (while editing both open the editor's own help)
+  // Gestures and keys: every move and key of the viewer and its editor in one window, the main ones first, then the rest; opened by the ? at the end of the icons, in view and edit mode alike, or the ? key outside editing (while editing the key opens the editor's own help)
   var MAC = /mac/i.test(navigator.platform);
   var tipsBox = null, MOD = /mac|iphone|ipad|ipod/i.test((navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || navigator.userAgent) ? 'Cmd' : 'Ctrl';
   function tipsBuild() {
@@ -1706,7 +1706,7 @@ page, so its styles keep the base they were made on).
         ['+ and − keys, or buttons', 'zoom out and in'],
         ['0, or Fit and Read', 'the whole map or reading size'],
         ['E, or ' + MOD + ' + E', 'switch between viewing and editing'],
-        ['?, or the ? sign at the end of the icons', 'this window (while editing: the editor’s help)'],
+        ['the ? sign at the end of the icons, or ?', 'this window (while editing, the ? key: the editor’s help)'],
         [MOD + ' + Z, ' + MOD + ' + Shift + Z', 'undo, redo the last change of a setting: Settings, the grid, the palette’s choices']].concat(own ? [
         [MOD + ' + Z, ' + MOD + ' + Shift + Z in the list', 'undo, redo the list’s last change: a move, Delete, Restore, a name, a group, a new map (while editing: after a click in the list)']] : [])) +
       '<h4>While editing</h4>' + table(null, [
@@ -1736,16 +1736,9 @@ page, so its styles keep the base they were made on).
     tipsBox.style.transform = 'none';
     tipsBox.style.left = left / k + 'px'; tipsBox.style.top = Math.max(16, Math.min(top, innerHeight - 16 - h)) / k + 'px';
   }
-  // the ? sign does what the ? key does: this window, or while editing the editor's help (its own "?" clicked, so
-  // the two stay one action); a help open at the press is closed by the editor's own pointerdown, so the click leaves it shut
-  var helpSign = function (e) { return e.target.closest && e.target.closest('#m2-rail .m2-ri[data-win="help"]'); }, edHelpWasOpen = false;
-  document.addEventListener('pointerdown', function (e) { if (helpSign(e)) { var h = document.getElementById('m2-ed-help-box'); edHelpWasOpen = !!(h && !h.hidden); } }, true);
-  document.addEventListener('click', function (e) {
-    if (!helpSign(e)) return;
-    var ed = document.querySelector('.m2-editing') && document.getElementById('m2-ed-help');
-    if (ed) { if (!edHelpWasOpen && !ed.disabled) ed.click(); return; }
-    tips();
-  });
+  // the ? sign opens this window in view and edit mode alike; the editor's help keeps its own "?" in the tools
+  var helpSign = function (e) { return e.target.closest && e.target.closest('#m2-rail .m2-ri[data-win="help"]'); };
+  document.addEventListener('click', function (e) { if (helpSign(e)) tips(); });
   document.addEventListener('pointerdown', function (e) { if (tipsBox && !tipsBox.hidden && !tipsBox.contains(e.target) && !helpSign(e)) tips(false); }, true);
   document.addEventListener('keydown', function (e) {
     if (tipsBox && !tipsBox.hidden && e.key === 'Escape') { e.preventDefault(); e.stopImmediatePropagation(); tips(false); return; }

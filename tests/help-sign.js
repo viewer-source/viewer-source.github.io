@@ -1,5 +1,5 @@
-// The ? sign at the end of the icons does what the ? key does: Gestures and keys outside editing, beside the left panel, (a second click, Esc or
-// a click elsewhere closes it), the editor's own help while editing; Settings has no Gestures and keys button.
+// The ? sign at the end of the icons opens Gestures and keys, beside the left panel, in view and edit mode alike (a second click, Esc or
+// a click elsewhere closes it); the ? key while editing opens the editor's own help; Settings has no Gestures and keys button.
 //   node tests/help-sign.js [page address]
 var { chromium } = require('playwright');
 var URL0 = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysis-sbgn';
@@ -30,10 +30,15 @@ var URL0 = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysi
   await page.keyboard.press('e');
   await page.waitForSelector('.m2-editing', { timeout: 15000 }); await page.waitForTimeout(1500);
   await page.click(sign); await page.waitForTimeout(300);
-  ok('while editing, the editor\'s help opens', await shown('m2-ed-help-box'));
-  ok('while editing, Gestures and keys stays shut', !(await shown('m2-tips')));
+  ok('while editing, the sign opens Gestures and keys', await shown('m2-tips'));
+  ok('while editing, the editor\'s help stays shut', !(await shown('m2-ed-help-box')));
   await page.click(sign); await page.waitForTimeout(300);
-  ok('a second click closes the editor\'s help', !(await shown('m2-ed-help-box')));
+  ok('a second click closes it', !(await shown('m2-tips')));
+  await page.click('#m2-ed-help'); await page.waitForTimeout(300);
+  ok('the editor\'s own ? still opens its help', await shown('m2-ed-help-box'));
+  await page.click(sign); await page.waitForTimeout(300);
+  ok('the sign over it: Gestures and keys, the editor\'s help closed', (await shown('m2-tips')) && !(await shown('m2-ed-help-box')));
+  await page.keyboard.press('Escape');
   ok('no page errors', !errs.length); if (errs.length) console.log(errs.join('\n'));
   await b.close(); console.log(bad ? bad + ' WRONG' : 'all ok'); process.exit(bad ? 1 : 0);
 })();
