@@ -407,7 +407,7 @@ def write(diagram, soft=False):
         if a.weight: pl.find('y:LineStyle', NS).set('width', repr(float(a.weight)))
         pl.find('y:Arrows', NS).set('target', ARROW[a.head] if a.head else 'none')
         pl.find('y:Arrows', NS).set('source', 'delta' if a.tail else 'none')
-        if a.count and flux(N, a):  # yEd's label at the entity's end (tail or head), placed as count_box
+        if a.count and flux(N, a):  # yEd's label at the line's middle, placed as count_box, in light grey
             x, y, w, h = count_box(N, a, a.count)
             s_ = border(N[a.source], a.points[0] if a.points else centre(N[a.target])) if not any(a.source_at) else \
                 (centre(N[a.source])[0] + a.source_at[0], centre(N[a.source])[1] + a.source_at[1])
@@ -415,7 +415,6 @@ def write(diagram, soft=False):
             lb.text = a.count
             for k, v in (('x', x - s_[0]), ('y', y - s_[1]), ('width', w), ('height', h)):
                 lb.set(k, repr(float(v)))
-            lb.set('fontSize', '9'); lb.set('modelPosition', 'tail' if N[a.source].kind not in PROCESSES else 'head')
             pl.insert(list(pl).index(pl.find('y:BendStyle', NS)) + 1, lb)
         if soft:  # soft bends on a map from yEd; from CellDesigner or Newt as they draw them, sharp
             pl.find('y:BendStyle', NS).set('smoothed', 'true')

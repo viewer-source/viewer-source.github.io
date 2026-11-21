@@ -26,30 +26,38 @@ def border(d, p):
 
 
 
-COUNT_H = 13.0  # a cardinality's box: 13 high, 6 px a character and 3 each side; 1 px off the line, 4 px from the entity
-# (and 16 more past a product's arrowhead)
+COUNT_H = 11.0  # a cardinality's box: 11 high, 5 px a character and 3 each side, 1 px off the line
 
 
 def count_box(N, a, text):
-    # where an arc's cardinality is drawn (SBGN PD 2.7.1: a box with a long side along the line): beside the line, near
-    # the end at its entity, above it, or right of a line near upright
+    # where an arc's cardinality is drawn (SBGN PD 2.7.1: a box with a long side along the line): beside the middle of
+    # the line by its length, from where it leaves its entity to where it meets its process, above it (right of a line
+    # near upright)
     first = N[a.source].kind not in PROCESSES  # the entity at the source (a consumption drawn either way)
     ent, hub = (a.source, a.target) if first else (a.target, a.source)
     at, pts = (a.source_at, list(a.points)) if first else (a.target_at, list(a.points)[::-1])
     hub_at = a.target_at if first else a.source_at
-    E, Hc = N[ent], centre(N[hub])
+    E, Hb, Hc = N[ent], N[hub], centre(N[hub])
     nxt = pts[0] if pts else (Hc[0] + hub_at[0], Hc[1] + hub_at[1])
     p0 = (centre(E)[0] + at[0], centre(E)[1] + at[1]) if any(at) else border(E, nxt)
-    dx, dy = nxt[0] - p0[0], nxt[1] - p0[1]
-    L = math.sqrt(dx * dx + dy * dy) or 1.0  # sqrt, not hypot: the viewer's JavaScript gives the same last digit
-    ux, uy = dx / L, dy / L
+    p1 = (Hc[0] + hub_at[0], Hc[1] + hub_at[1]) if any(hub_at) else border(Hb, pts[-1] if pts else p0)
+    line = [p0] + pts + [p1]
+    lens = [math.sqrt((q[0] - p[0]) * (q[0] - p[0]) + (q[1] - p[1]) * (q[1] - p[1])) for p, q in zip(line, line[1:])]
+    half, k = sum(lens) / 2, 0  # sqrt, not hypot: the viewer's JavaScript gives the same last digit
+    while k < len(lens) - 1 and half > lens[k]:
+        half -= lens[k]
+        k += 1
+    L = lens[k] or 1.0
+    ux, uy = (line[k + 1][0] - line[k][0]) / L, (line[k + 1][1] - line[k][1]) / L
+    if not lens[k]:
+        ux, uy = 1.0, 0.0
+    mx, my = line[k][0] + ux * half, line[k][1] + uy * half
     nx, ny = -uy, ux
     if (nx < 0) if abs(ny) < 0.2 else (ny > 0):  # the normal on the upper side, or the right of a line near upright
         nx, ny = -nx, -ny
-    w, h = 6.0 * len(text) + 6, COUNT_H
-    along = 4 + abs(ux) * w / 2 + abs(uy) * h / 2 + (16 if a.head == 'production' else 0)  # past a product's arrowhead
+    w, h = 5.0 * len(text) + 6, COUNT_H
     side = 1 + abs(nx) * w / 2 + abs(ny) * h / 2
-    cx, cy = p0[0] + ux * along + nx * side, p0[1] + uy * along + ny * side
+    cx, cy = mx + nx * side, my + ny * side
     return (cx - w / 2, cy - h / 2, w, h)
 
 

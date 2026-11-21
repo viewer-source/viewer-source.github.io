@@ -1,8 +1,8 @@
 // Cardinality in a line's Properties (create.js edgeSet, rxCounts; sbgn_edit recount, cd_make restoich): on the styles
 // page, an SBGN-ML consumption and production on Testing Glycolysis each typed 2 (written as the arc's cardinality glyph,
 // drawn on the line, shown), 1 typed (taken out), 3 typed; no row on a modulation; a CellDesigner added reactant's or
-// product's line typed 2 (its speciesReference's stoichiometry, drawn), a reaction's Reactant and Product cardinality
-// (its main ones) typed 4 and 0.5, -1 refused; nothing else in either file changed (on CellDesigner after the first change's canvas fit); undo puts each file back.
+// product's line typed 2 (its speciesReference's stoichiometry, drawn), a reaction's Cardinality rows (one per reactant and
+// product, named) typed 4 and 0.5, -1 refused, 1 writing nothing; nothing else in either file changed (on CellDesigner after the first change's canvas fit); undo puts each file back.
 // Nothing is saved (no token). No script error.
 //   node tests/cardinality.js [base address] [viewer folder: its editor and renderers served in place of the page's]
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path');
@@ -73,16 +73,22 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local =
   ok(link + ': written as its stoichiometry 2', (await st(link)) === '2', await st(link));
   ok(link + ': drawn 2', (await drawn(link)).indexOf('2') >= 0, JSON.stringify(await drawn(link)));
   await pick(main);
-  ok(rid + ': Reactant and Product cardinality shown, empty', (await shown('cin')) === '' && (await shown('cout')) === '' && (await shown('card')) === null, [await shown('cin'), await shown('cout'), await shown('card')].join());
-  await type('cin', '4');
+  var rows = await page.$$eval('.m2-ed-pcard input[data-line]', function (l) { return l.filter(function (f) { return !f.closest('[hidden]'); }).map(function (f) { return f.dataset.line; }); });
+  var nlinks = all.filter(function (e) { return e.indexOf(rid + '|r') === 0 || e.indexOf(rid + '|p') === 0; }).length;
+  ok(rid + ': one Cardinality row per reactant and product (' + (nlinks + 2) + '), named, the line row hidden', rows.length === nlinks + 2 && rows.indexOf(rid + '|a') === 0 && (await shown('card')) === null, JSON.stringify(rows));
+  ok(rid + ': the added one set before shows 2', await page.$eval('.m2-ed-pcard input[data-line="' + link + '"]', function (f) { return f.value; }) === '2');
+  var tc = async function (line, v) { var sel = '.m2-ed-pcard input[data-line="' + line + '"]'; await page.fill(sel, v); await page.press(sel, 'Enter'); await page.waitForTimeout(1200); };
+  await tc(rid + '|a', '4');
   ok(rid + ': the main reactant written 4', (await st(rid + '|a')) === '4', await st(rid + '|a'));
   ok(rid + ': drawn 4 on its half', (await drawn(rid + '|a')).indexOf('4') >= 0, JSON.stringify(await drawn(rid + '|a')));
-  await type('cout', '0.5');
+  await tc(rid + '|b', '0.5');
   ok(rid + ': the main product written 0.5', (await st(rid + '|b')) === '0.5', await st(rid + '|b'));
-  await type('cout', '-1');
-  ok(rid + ': not above 0, nothing written', (await st(rid + '|b')) === '0.5' && (await shown('cout')) === '0.5', await shown('cout'));
+  await tc(rid + '|b', '-1');
+  ok(rid + ': not above 0, nothing written', (await st(rid + '|b')) === '0.5');
+  await tc(rid + '|b', '1');
+  ok(rid + ': 1 writes nothing', (await st(rid + '|b')) === '');
   ok('CellDesigner: only stoichiometry attributes added since the first change (which fits the canvas)', (await now()).replace(/ stoichiometry="[^"]*"/g, '') === cFit.replace(/ stoichiometry="[^"]*"/g, ''));
-  for (var v = 0; v < 3; v++) await undo();
+  for (var v = 0; v < 4; v++) await undo();
   ok('CellDesigner: undone, the file as it was', (await now()) === c0);
   ok('no script error', !errs.length, errs.join(' | '));
   await b.close();

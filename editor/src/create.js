@@ -2036,11 +2036,12 @@
     props.className = 'm2-ed-props'; props.hidden = true;
     // a line's rows (yEd's Properties View for an edge): its colour and width, its two ports as offsets from its glyph's centre
     // and a consumption's or production's Cardinality (SBGN's, CellDesigner's stoichiometry; empty: 1, none shown)
-    // (a text field: a file's ? is shown as it is; typed, a number above 0 up to 1000)
+    // (a text field: a file's ? is shown as it is; typed, a number above 0 up to 1000; empty shows the default 1 in grey,
+    // which the file holds by writing nothing)
     var EROWS = [['ecol', 'Line colour', 'colour'], ['ewid', 'Line width', 'num', ' min="0.25" max="20"'], ['sx', 'Source port X', 'num'], ['sy', 'Source port Y', 'num'],
       ['tx', 'Target port X', 'num'], ['ty', 'Target port Y', 'num'], ['card', 'Cardinality', 'card']]   // Cardinality last;
     // a reaction's rows, one reaction selected on a map whose format's part has a reaction's answers (PF_CD.rx)
-    var RROWS = [['rev', 'Reversible', 'check'], ['cin', 'Reactant cardinality', 'card'], ['cout', 'Product cardinality', 'card']];   // the main reactant's and product's numbers where the part has them (PF_CD.rx.counts)
+    var RROWS = [['rev', 'Reversible', 'check']];
     function table(rows, cls) { return '<table class="m2-ed-ptab' + cls + '">' + rows.map(function (r) {
       var id = 'm2-ed-' + r[0], f = r[2] === 'check' ? '<input type="checkbox" id="' + id + '">'
         : r[2] === 'select' ? '<select id="' + id + '">' + r[3].map(function (o) { return '<option value="' + o + '">' + o + '</option>'; }).join('') + '</select>'
@@ -2050,7 +2051,7 @@
         : '<input type="text" id="' + id + '" spellcheck="false" autocomplete="off">';
       return '<tr data-k="' + r[0] + '"' + (r[4] ? ' title="' + r[4] + '"' : '') + '><th><label for="' + id + '">' + r[1] + '</label></th><td>' + f + '</td></tr>';
     }).join('') + '</table>'; }
-    props.innerHTML = '<p>Properties</p>' + table(ROWS, ' m2-ed-pnode') + table(EROWS, ' m2-ed-pedge') + table(RROWS, ' m2-ed-prx') +
+    props.innerHTML = '<p>Properties</p>' + table(ROWS, ' m2-ed-pnode') + table(EROWS, ' m2-ed-pedge') + table(RROWS, ' m2-ed-prx') + '<table class="m2-ed-ptab m2-ed-pcard" hidden></table>' +
       '<button type="button" class="m2-ed-pdef" title="The next ones of this kind made from the palette take these">Set as default</button>';
     pal.insertAdjacentElement('afterend', props);
     props.insertAdjacentElement('afterend', pmap);
@@ -2102,7 +2103,7 @@
     }
     function propsShow(all) {   // all: every field shown again, the one focused too (Esc)
       var i = propNode(), k = propEdge(), r2 = function (v) { return String(Math.round(v * 100) / 100); }, ns = propNodes();
-      props.querySelector('.m2-ed-prx').hidden = true;
+      props.querySelector('.m2-ed-prx').hidden = true; pcard.hidden = true;
       if (ns.length > 1 || (ns.length && selN.length > 1)) return propsMany(ns, all, r2);
       var rx = propRx();
       if (rx && !propFmt().rx.withNode) {   // one reaction: its Reversible tick box alone (a CellDesigner reaction; an SBGN-ML process shows it under its own rows, below)
@@ -2262,23 +2263,31 @@
     // A field applies to the line it was typed for (eFor), also when another line was clicked before it was left
     var eFor = null;
     function propRx() { var f = propFmt(); return f && f.rx ? f.rx.of() : null; }   // the reaction Properties is for ({ rid, on }), else null
-    function rxCounts(rx, all) {   // a reaction's main reactant's and product's Cardinality rows, where its part reads them
-      var c = propFmt().rx.counts ? propFmt().rx.counts(rx.rid) : null;
-      ['cin', 'cout'].forEach(function (key, j) {
-        var f = field(key);
-        f.closest('tr').hidden = !c || c[j] === undefined;
-        if (c && c[j] !== undefined && (all || document.activeElement !== f) && f.value !== c[j]) f.value = c[j];
-      });
+    // a reaction's Cardinality, one row per reactant and product by its name (a whole reaction selected: its main line
+    // selects all of it), where its part lists them (PF_CD.rx.counts: [{ line, name, value }])
+    var pcard = props.querySelector('.m2-ed-pcard'), pcardKey = null;
+    function rxCounts(rx, all) {
+      var c = rx && propFmt().rx.counts ? propFmt().rx.counts(rx.rid) : [];
+      pcard.hidden = !c.length;
+      if (!c.length) return;
+      var key = rx.rid + '\u0000' + c.map(function (p) { return p.line + '\u0001' + p.name; }).join('\u0000');
+      if (key !== pcardKey) {
+        pcardKey = key;
+        pcard.innerHTML = '<tr><th colspan="2">Cardinality</th></tr>' + c.map(function (p) {
+          return '<tr><th><label for="m2-ed-pc-' + escAttr(p.line) + '">' + escHtml(p.name) + '</label></th><td><input type="text" inputmode="decimal" class="m2-ed-card" id="m2-ed-pc-' + escAttr(p.line) + '" data-line="' + escAttr(p.line) + '" placeholder="1" spellcheck="false" autocomplete="off"></td></tr>';
+        }).join('');
+      }
+      c.forEach(function (p) { var f = pcard.querySelector('[data-line="' + p.line.replace(/"/g, '\\"') + '"]'); if (f && (all || document.activeElement !== f) && f.value !== p.value) f.value = p.value; });
     }
+    function escHtml(v) { return String(v).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+    function escAttr(v) { return escHtml(v).replace(/"/g, '&quot;'); }
     function cardOf(f) {   // a Cardinality typed: '' for none (1), a number above 0 in hundredths, null for anything else
       var v = f.value.trim(), n = parseFloat(v);
       return v === '' ? '' : n > 0 && n <= 1000 ? String(Math.round(n * 100) / 100) : null;
     }
-    ['cin', 'cout'].forEach(function (key, j) {
-      field(key).addEventListener('change', function (e) {
-        var r = propRx(), pf = propFmt(), v = cardOf(e.target);
-        if (!r || !pf.rx.setCount || v === null || !pf.rx.setCount(r.rid, j, v)) propsShow(true);   // not written: the field shows the file again
-      });
+    pcard.addEventListener('change', function (e) {
+      var f = e.target, r = propRx(), pf = propFmt(), v = f.dataset && f.dataset.line ? cardOf(f) : null;
+      if (!r || !pf.rx.setCount || v === null || !pf.rx.setCount(r.rid, f.dataset.line, v)) propsShow(true);   // not written: the field shows the file again
     });
     field('rev').addEventListener('change', function (e) {
       e.target.blur();   // the editor's keys (undo) work at once

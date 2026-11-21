@@ -568,18 +568,24 @@ class Drawing:
             except Exception as e:  # a reaction this drawing cannot place is left out, said on stderr
                 print('%s: %s' % (rx.get('id'), e), file=sys.stderr)
 
-    def count(self, t, P, Q, head=False):
-        # a cardinality (the converter's layout.count_box): a box beside the line from the entity's visual end P toward
-        # Q, a long side along it, above it or right of a line near upright
-        ux, uy = unit(Q[0] - P[0], Q[1] - P[1])
+    def count(self, t, line):
+        # a cardinality (the converter's layout.count_box): a box beside the middle of the participant's line (from the
+        # species' visual end to the process), a long side along it, above it or right of a line near upright, light grey
+        lens = [math.sqrt((q[0] - p[0]) * (q[0] - p[0]) + (q[1] - p[1]) * (q[1] - p[1])) for p, q in zip(line, line[1:])]
+        half, k = sum(lens) / 2, 0
+        while k < len(lens) - 1 and half > lens[k]:
+            half -= lens[k]
+            k += 1
+        L = lens[k] or 1.0
+        ux, uy = ((line[k + 1][0] - line[k][0]) / L, (line[k + 1][1] - line[k][1]) / L) if lens[k] else (1.0, 0.0)
         nx, ny = -uy, ux
         if (nx < 0) if abs(ny) < 0.2 else (ny > 0):
             nx, ny = -nx, -ny
-        w, h = 6.0 * len(t) + 6, 13.0
-        a, b = 4 + abs(ux) * w / 2 + abs(uy) * h / 2 + (16 if head else 0), 1 + abs(nx) * w / 2 + abs(ny) * h / 2  # past an arrowhead
-        cx, cy = P[0] + ux * a + nx * b, P[1] + uy * a + ny * b
-        self.lines.append('<rect x="%s" y="%s" width="%s" height="%s" fill="#fff" stroke="#000" stroke-width="0.8"/>'
-                          '<text x="%s" y="%s" font-family="%s" font-size="9" text-anchor="middle">%s</text>'
+        w, h = 5.0 * len(t) + 6, 11.0
+        b = 1 + abs(nx) * w / 2 + abs(ny) * h / 2
+        cx, cy = line[k][0] + ux * half + nx * b, line[k][1] + uy * half + ny * b
+        self.lines.append('<rect x="%s" y="%s" width="%s" height="%s" fill="#fff" stroke="#bdc1c6" stroke-width="0.8"/>'
+                          '<text x="%s" y="%s" font-family="%s" font-size="9" fill="#80868b" text-anchor="middle">%s</text>'
                           % (fmt(cx - w / 2), fmt(cy - h / 2), fmt(w), fmt(h), fmt(cx), fmt(cy + 3.2), FONT, escape(t)))
 
     def reaction(self, rx):
@@ -639,14 +645,14 @@ class Drawing:
                 half[0] = self.head('production', line[0], unit(line[0][0] - line[1][0], line[0][1] - line[1][1]))
             self.path(half, col, width, dash, end_node=False)
             if ('r', ra) in nums:
-                self.count(nums[('r', ra)], line[0], line[1], reversible)
+                self.count(nums[('r', ra)], line[:k + 1] + [sq])
             self.close()
             self.open(self.cur + '|b')
             half = [sq] + line[k + 1:]
             half[-1] = self.head('production', line[-1], u)
             self.path(half, col, width, dash, start_node=False)
             if ('p', pa) in nums:
-                self.count(nums[('p', pa)], line[-1], line[-2], True)
+                self.count(nums[('p', pa)], (line[k + 1:] + [])[::-1] + [sq])
             self.close()
             self.links_and_modifiers(x, P, Q, sq, fl, col, width, dash, typ, nums)
             return
@@ -656,9 +662,9 @@ class Drawing:
             v = unit(line[0][0] - line[1][0], line[0][1] - line[1][1])
             main[0] = self.head('production', line[0], v)
         self.path(main, col, width, dash)
-        for k_, a_, P_, Q_, h_ in (('r', ra, line[0], line[1], reversible), ('p', pa, line[-1], line[-2], True)):
+        for k_, a_, L_ in (('r', ra, line[:k + 1] + [sq]), ('p', pa, line[k + 1:][::-1] + [sq])):
             if (k_, a_) in nums:
-                self.count(nums[(k_, a_)], P_, Q_, h_)
+                self.count(nums[(k_, a_)], L_)
         self.links_and_modifiers(x, P, Q, sq, fl, col, width, dash, typ, nums)
 
     def branched(self, rx, x, typ, br, bp, ep, q, col, width):
@@ -782,14 +788,14 @@ class Drawing:
                 if into:
                     self.path(seq, lcol, lwd, dash, end_node=False)
                     if nums and ('r', i) in nums:
-                        self.count(nums[('r', i)], seq[0], seq[1])
+                        self.count(nums[('r', i)], seq)
                 else:
                     seq = seq[::-1]
                     w_ = unit(seq[-1][0] - seq[-2][0], seq[-1][1] - seq[-2][1])
                     stop = self.head('production', seq[-1], w_)
                     self.path(seq[:-1] + [stop], lcol, lwd, dash, start_node=False)
                     if nums and ('p', i) in nums:
-                        self.count(nums[('p', i)], seq[-1], seq[-2], True)
+                        self.count(nums[('p', i)], seq[::-1])
                 self.close()
         # modifiers end at the point of the square targetLineIndex names
         gate_inputs = set()

@@ -389,7 +389,7 @@
   // edge in the GraphML, placed as layout.count_box and graphml.write place it (the same arithmetic, so the same digits)
   var CARD = /^\s*(\d+(\.\d+)?|\?)\s*$/;
   var LAB = ['<y:EdgeLabel alignment="center" backgroundColor="#FFFFFF" configuration="AutoFlippingLabel" distance="2.0" fontFamily="Dialog" fontSize="9" fontStyle="plain" height="',
-    '" horizontalTextPosition="center" iconTextGap="4" lineColor="#000000" modelName="six_pos" modelPosition="', '" preferredPlacement="anywhere" ratio="0.5" textColor="#000000" verticalTextPosition="bottom" visible="true" width="',
+    '" horizontalTextPosition="center" iconTextGap="4" lineColor="#BDC1C6" modelName="six_pos" modelPosition="', '" preferredPlacement="anywhere" ratio="0.5" textColor="#80868B" verticalTextPosition="bottom" visible="true" width="',
     '" x="', '" xml:space="preserve" y="', '">', '<y:PreferredPlacementDescriptor angle="0.0" angleOffsetOnRightSide="0" angleReference="absolute" angleRotationOnRightSide="co" distance="-1.0" frozen="true" placement="anywhere" side="anywhere" sideReference="relative_to_edge_flow"/></y:EdgeLabel>'];
   function countText(v) {   // layout.count_text: ?, or a number as Python writes it (2, not 2.0; 2.5); anything else null
     var m = CARD.exec(v == null ? '' : String(v));
@@ -413,21 +413,29 @@
     var t = Math.min(dx ? b[2] / 2 / Math.abs(dx) : Infinity, dy ? b[3] / 2 / Math.abs(dy) : Infinity);
     return [c[0] + t * dx, c[1] + t * dy];
   }
-  function countBox(G, e, text) {   // layout.count_box: beside the line near its entity, above it, right of a line near upright
-    var first = !isProcN(G, e.s), E = G.node[first ? e.s : e.t].box, Hc = centreOf(G.node[first ? e.t : e.s].box), ar = e.el.getElementsByTagNameNS(YNS, 'Arrows')[0];
+  function countBox(G, e, text) {   // layout.count_box: beside the middle of the line, above it, right of a line near upright
+    var first = !isProcN(G, e.s), E = G.node[first ? e.s : e.t].box, Hb = G.node[first ? e.t : e.s].box, Hc = centreOf(Hb);
     var at = first ? e.off.slice(0, 2) : e.off.slice(2), hub = first ? e.off.slice(2) : e.off.slice(0, 2), pts = first ? e.pts : e.pts.slice().reverse();
     var nxt = pts.length ? pts[0] : [Hc[0] + hub[0], Hc[1] + hub[1]], Ec = centreOf(E);
     var p0 = at[0] || at[1] ? [Ec[0] + at[0], Ec[1] + at[1]] : borderOf(E, nxt);
-    var dx = nxt[0] - p0[0], dy = nxt[1] - p0[1], L = Math.sqrt(dx * dx + dy * dy) || 1, ux = dx / L, uy = dy / L, nx = -uy, ny = ux;
+    var p1 = hub[0] || hub[1] ? [Hc[0] + hub[0], Hc[1] + hub[1]] : borderOf(Hb, pts.length ? pts[pts.length - 1] : p0);
+    var line = [p0].concat(pts, [p1]), lens = [], tot = 0, k = 0;
+    for (var i = 0; i + 1 < line.length; i++) { var ax = line[i + 1][0] - line[i][0], ay = line[i + 1][1] - line[i][1]; lens.push(Math.sqrt(ax * ax + ay * ay)); }
+    lens.forEach(function (v) { tot += v; });
+    var half = tot / 2;
+    while (k < lens.length - 1 && half > lens[k]) { half -= lens[k]; k++; }
+    var L = lens[k] || 1, ux = (line[k + 1][0] - line[k][0]) / L, uy = (line[k + 1][1] - line[k][1]) / L;
+    if (!lens[k]) { ux = 1; uy = 0; }
+    var mx = line[k][0] + ux * half, my = line[k][1] + uy * half, nx = -uy, ny = ux;
     if (Math.abs(ny) < 0.2 ? nx < 0 : ny > 0) { nx = -nx; ny = -ny; }
-    var w = 6 * text.length + 6, h = 13, along = 4 + Math.abs(ux) * w / 2 + Math.abs(uy) * h / 2 + (ar && ar.getAttribute('target') === 'delta' ? 16 : 0), side = 1 + Math.abs(nx) * w / 2 + Math.abs(ny) * h / 2;
-    var cx = p0[0] + ux * along + nx * side, cy = p0[1] + uy * along + ny * side;
+    var w = 5 * text.length + 6, h = 11, side = 1 + Math.abs(nx) * w / 2 + Math.abs(ny) * h / 2;
+    var cx = mx + nx * side, cy = my + ny * side;
     return [cx - w / 2, cy - h / 2, w, h];
   }
   function labXml(G, e, text) {   // graphml.write's label: its place from where the line leaves its source
     var b = countBox(G, e, text), S = G.node[e.s].box, Sc = centreOf(S);
     var s0 = e.off[0] || e.off[1] ? [Sc[0] + e.off[0], Sc[1] + e.off[1]] : borderOf(S, e.pts.length ? e.pts[0] : centreOf(G.node[e.t].box));
-    return LAB[0] + repr(b[3]) + LAB[1] + (isProcN(G, e.s) ? 'head' : 'tail') + LAB[2] + repr(b[2]) + LAB[3] + repr(b[0] - s0[0]) + LAB[4] + repr(b[1] - s0[1]) + LAB[5] + esc(text) + LAB[6];
+    return LAB[0] + repr(b[3]) + LAB[1] + 'center' + LAB[2] + repr(b[2]) + LAB[3] + repr(b[0] - s0[0]) + LAB[4] + repr(b[1] - s0[1]) + LAB[5] + esc(text) + LAB[6];
   }
   function countSet(T, G, e, want) {   // the edge's label made, changed or taken out (as lxml writes it: before the </y:PolyLineEdge>)
     var have = edgeLab(e.el), x = want ? labXml(G, e, want) : '';

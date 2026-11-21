@@ -569,13 +569,18 @@
   };
   var REDUCED_HEAD = { PHYSICAL_STIMULATION: 'stimulation-reduced', REDUCED_PHYSICAL_STIMULATION: 'stimulation-reduced', NEGATIVE_INFLUENCE: 'inhibition',
     REDUCED_MODULATION: 'modulation', REDUCED_TRIGGER: 'trigger', POSITIVE_INFLUENCE: 'production', CATALYSIS: 'catalysis', INHIBITION: 'inhibition' };
-  D.count = function (t, P, Q, head) {   // a cardinality (the converter's layout.count_box): a box beside the line from the entity's visual end P toward Q (cdrender.py's count)
-    var u = unit(Q[0] - P[0], Q[1] - P[1]), nx = -u[1], ny = u[0];
+  D.count = function (t, line) {   // a cardinality (the converter's layout.count_box): a box beside the middle of the participant's line, light grey (cdrender.py's count)
+    var lens = [], tot = 0, k = 0, i;
+    for (i = 0; i + 1 < line.length; i++) { var ax = line[i + 1][0] - line[i][0], ay = line[i + 1][1] - line[i][1]; lens.push(Math.sqrt(ax * ax + ay * ay)); }
+    for (i = 0; i < lens.length; i++) tot += lens[i];
+    var half = tot / 2;
+    while (k < lens.length - 1 && half > lens[k]) { half -= lens[k]; k++; }
+    var L = lens[k] || 1, ux = lens[k] ? (line[k + 1][0] - line[k][0]) / L : 1, uy = lens[k] ? (line[k + 1][1] - line[k][1]) / L : 0, nx = -uy, ny = ux;
     if (Math.abs(ny) < 0.2 ? nx < 0 : ny > 0) { nx = -nx; ny = -ny; }
-    var w = 6 * t.length + 6, h = 13, a = 4 + Math.abs(u[0]) * w / 2 + Math.abs(u[1]) * h / 2 + (head ? 16 : 0), b = 1 + Math.abs(nx) * w / 2 + Math.abs(ny) * h / 2;
-    var cx = P[0] + u[0] * a + nx * b, cy = P[1] + u[1] * a + ny * b;
-    this.lines.push('<rect x="' + fmt(cx - w / 2) + '" y="' + fmt(cy - h / 2) + '" width="' + fmt(w) + '" height="' + fmt(h) + '" fill="#fff" stroke="#000" stroke-width="0.8"/>' +
-      '<text x="' + fmt(cx) + '" y="' + fmt(cy + 3.2) + '" font-family="' + FONT + '" font-size="9" text-anchor="middle">' + escape(t) + '</text>');
+    var w = 5 * t.length + 6, h = 11, b = 1 + Math.abs(nx) * w / 2 + Math.abs(ny) * h / 2;
+    var cx = line[k][0] + ux * half + nx * b, cy = line[k][1] + uy * half + ny * b;
+    this.lines.push('<rect x="' + fmt(cx - w / 2) + '" y="' + fmt(cy - h / 2) + '" width="' + fmt(w) + '" height="' + fmt(h) + '" fill="#fff" stroke="#bdc1c6" stroke-width="0.8"/>' +
+      '<text x="' + fmt(cx) + '" y="' + fmt(cy + 3.2) + '" font-family="' + FONT + '" font-size="9" fill="#80868b" text-anchor="middle">' + escape(t) + '</text>');
   };
   D.reaction = function (rx) {
     var x = find(rx, 's:annotation/cd:extension'), typ = text(find(x, 'cd:reactionType'));
@@ -619,13 +624,13 @@
       var half = line.slice(0, k + 1).concat([sq]);
       if (reversible) half[0] = this.head('production', line[0], unit(line[0][0] - line[1][0], line[0][1] - line[1][1]));
       this.path(half, col, wd, dash, true, false);
-      if (nums.hasOwnProperty('r:' + ra)) this.count(nums['r:' + ra], line[0], line[1], reversible);
+      if (nums.hasOwnProperty('r:' + ra)) this.count(nums['r:' + ra], line.slice(0, k + 1).concat([sq]));
       this.close();
       this.open(this.cur + '|b');
       half = [sq].concat(line.slice(k + 1));
       half[half.length - 1] = this.head('production', line[L - 1], u);
       this.path(half, col, wd, dash, false, true);
-      if (nums.hasOwnProperty('p:' + pa)) this.count(nums['p:' + pa], line[L - 1], line[L - 2], true);
+      if (nums.hasOwnProperty('p:' + pa)) this.count(nums['p:' + pa], line.slice(k + 1).reverse().concat([sq]));
       this.close();
       this.linksAndModifiers(x, P, Q, sq, fl, col, wd, dash, typ, nums);
       return;
@@ -634,8 +639,8 @@
     main[L - 1] = this.head('production', line[L - 1], u);
     if (reversible) main[0] = this.head('production', line[0], unit(line[0][0] - line[1][0], line[0][1] - line[1][1]));
     this.path(main, col, wd, dash);
-    if (nums.hasOwnProperty('r:' + ra)) this.count(nums['r:' + ra], line[0], line[1], reversible);
-    if (nums.hasOwnProperty('p:' + pa)) this.count(nums['p:' + pa], line[L - 1], line[L - 2], true);
+    if (nums.hasOwnProperty('r:' + ra)) this.count(nums['r:' + ra], line.slice(0, k + 1).concat([sq]));
+    if (nums.hasOwnProperty('p:' + pa)) this.count(nums['p:' + pa], line.slice(k + 1).reverse().concat([sq]));
     this.linksAndModifiers(x, P, Q, sq, fl, col, wd, dash, typ, nums);
   };
   D.branched = function (rx, x, typ, br, bp, ep, q, col, wd) {
@@ -733,13 +738,13 @@
         var nk = (into ? 'r:' : 'p:') + i;
         if (into) {
           self.path(seq, lcol, lwd, dash, true, false);
-          if (nums && nums.hasOwnProperty(nk)) self.count(nums[nk], seq[0], seq[1]);
+          if (nums && nums.hasOwnProperty(nk)) self.count(nums[nk], seq);
         } else {
           seq = seq.reverse();
           var L = seq.length, w_ = unit(seq[L - 1][0] - seq[L - 2][0], seq[L - 1][1] - seq[L - 2][1]);
           var stop = self.head('production', seq[L - 1], w_);
           self.path(seq.slice(0, -1).concat([stop]), lcol, lwd, dash, false, true);
-          if (nums && nums.hasOwnProperty(nk)) self.count(nums[nk], seq[L - 1], seq[L - 2], true);
+          if (nums && nums.hasOwnProperty(nk)) self.count(nums[nk], seq.slice().reverse());
         }
         self.close();
       });

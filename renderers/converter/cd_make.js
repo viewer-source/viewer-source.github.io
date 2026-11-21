@@ -1341,6 +1341,13 @@
     var r = stoichRef(t, eid), v = r && at(r.tag, 'stoichiometry'), n = Number(v);
     return !r ? undefined : v == null || n === 1 ? '' : isFinite(n) ? String(n) : v;   // as cdrender draws it (2.50: 2.5)
   }
+  function participants(t, rid) {   // a reaction's reactants then products, each { line, name, value } (stoichiometry's line ids), [] where it has none
+    var R; try { R = parts(t, rid); } catch (e) { return []; }
+    if (FULL.indexOf(R.type) < 0 || R.br.length !== 1 || R.bp.length !== 1) return [];
+    var one = function (line, P) { var al = at(P.tag, 'alias'), A; try { A = aliasInfo(t, al); } catch (e) { A = null; } return { line: line, name: A && A.name ? cdr.plainName(A.name) : al, value: stoichiometry(t, line) }; };
+    return [one(rid + '|a', R.br[0])].concat(R.rl.map(function (P, n) { return one(rid + '|r' + n, P); }), [one(rid + '|b', R.bp[0])], R.pl.map(function (P, n) { return one(rid + '|p' + n, P); }))
+      .filter(function (p) { return p.value !== undefined; });
+  }
   function restoich(t, eid, v) {   // v a number above 0 ('' or 1: none written)
     var r = stoichRef(t, eid), n = v === '' || v == null ? 1 : Number(v);
     if (!r) refuse('Only a reactant\u2019s or product\u2019s line has a cardinality.');
@@ -1361,7 +1368,7 @@
     var hd = A.s && /<celldesigner:homodimer>(\d+)</.exec(t.slice(A.s.sp[0], A.s.sp[1]));
     return { kind: A.kind, cls: A.cls || null, id: A.species || A.compartment, name: A.s ? A.s.name : C ? at(head(t, C), 'name') : null, complex: A.complex, box: A.box, homodimer: hd ? +hd[1] : 1 };
   }
-  var api = { LOOK: LOOK, COMP: COMP, lineColour: lineColour, recolourLine: recolourLine, lineWidth: lineWidth, rewidthLine: rewidthLine, stoichiometry: stoichiometry, restoich: restoich, PROCESS: PROCESS, REDUCED: REDUCED, sbgn: sbgn, MODS: MODS, NEED: NEED, about: about, aliasInfo: aliasInfo, classColour: classColour, compartmentColour: compartmentColour, classColours: classColours, classSize: classSize, empty: empty, species: newSpecies, compartment: compartment, rename: rename, namePlace: namePlace, nameAt: nameAt, nameInfo: nameInfo, retype: retype, remove: remove, reaction: reaction, reduced: reduced,
+  var api = { LOOK: LOOK, COMP: COMP, lineColour: lineColour, recolourLine: recolourLine, lineWidth: lineWidth, rewidthLine: rewidthLine, stoichiometry: stoichiometry, restoich: restoich, participants: participants, PROCESS: PROCESS, REDUCED: REDUCED, sbgn: sbgn, MODS: MODS, NEED: NEED, about: about, aliasInfo: aliasInfo, classColour: classColour, compartmentColour: compartmentColour, classColours: classColours, classSize: classSize, empty: empty, species: newSpecies, compartment: compartment, rename: rename, namePlace: namePlace, nameAt: nameAt, nameInfo: nameInfo, retype: retype, remove: remove, reaction: reaction, reduced: reduced,
     reactant: reactant, product: product, modifier: modifier, reactionType: reactionType, reversible: reversible, modifierType: modifierType, removeLine: removeLine,
     gate: gate, gateInput: gateInput, gateInputRemove: gateInputRemove, gateType: gateType, residue: residue, residueState: residueState,
     residueRemove: residueRemove, residueName: residueName, residueMove: residueMove, structuralMove: structuralMove, features: features, STATES: STATES, placesFor: placesFor, ratioAngle: ratioAngle, bounds: bounds, proteinAliases: proteinAliases, joinKin: joinKin, structural: structural, info: info, infoUnit: infoUnit, INFO: INFO, homodimer: homodimer, look: look, restyle: restyle, recolourAll: recolourAll, colours: colours, cdName: cdName, joinable: joinable, join: join, leave: leave };

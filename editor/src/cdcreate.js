@@ -1248,6 +1248,11 @@
       return cdLineMemo;
     }
     function cdLineColour(k) { return cdLineRead(k)[2]; }
+    var cdPartsMemo = [null, null, null];   // [reaction, file, its participants]: read once per reaction and file
+    function cdParts(rid) {
+      if (cdPartsMemo[0] !== rid || cdPartsMemo[1] !== cd.now) { var p; try { p = cdMk.participants(cd.now, rid); } catch (e) { p = []; } cdPartsMemo = [rid, cd.now, p]; }
+      return cdPartsMemo[2];
+    }
     var cdCountMemo = {};   // a line's cardinality by its id, for one file (Properties runs with every paint)
     function cdCount(id) {
       if (cdCountMemo.now !== cd.now) cdCountMemo = { now: cd.now };
@@ -1262,8 +1267,8 @@
     }
     var PF_CD = { sizable: cdProp, size: cdSetSize, def: cdDef,
       rx: { of: cdRxOf, set: cdReversible,   // a reaction's Reversible (propRx, create.js)
-        counts: function (rid) { return [cdCount(rid + '|a'), cdCount(rid + '|b')]; },   // its main reactant's and product's numbers (rxCounts)
-        setCount: function (rid, j, v) { return cdApply(function (t) { return cdMk.restoich(t, rid + (j ? '|b' : '|a'), v); }, [], [rid]); } },
+        counts: cdParts,   // its reactants' and products' numbers by name (rxCounts)
+        setCount: function (rid, line, v) { return cdApply(function (t) { return cdMk.restoich(t, line, v); }, [], [rid]); } },
       // a line's colour and width (edgeShow, edgeSet): a modifier's, an added reactant's or product's own, else its
       // reaction's (a reduced notation's line, a main line); a gate's lines none (cd_make.lineColour null), no ports as offsets
       line: { colour: cdLineColour, set: function (k, c) { return cdLineTo(k, function (t, id) { return cdMk.recolourLine(t, id, c || '#000000'); }); },
