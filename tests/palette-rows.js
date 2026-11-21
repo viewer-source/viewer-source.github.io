@@ -41,7 +41,7 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#testing-gl
   }));
   if (!local) ok('not in Settings', !(await page.$('#m2-set-cdc')));   // the page itself: only on the live site
   ok('unticked: Tag offered', !(await ticked()) && await tag());
-  await rows('PD, SBGN extended', 'and', 'consumption');
+  await rows('PD, unticked', 'and', 'consumption');
   await page.click('#m2-editwin .m2-ed-pcdc input'); await page.waitForTimeout(800);
   ok('ticked: no Tag', (await ticked()) && !(await tag()));
   ok('kept in the browser', await page.evaluate(function () { return localStorage.getItem('atlas-cd-compatible') === 'on'; }));
@@ -55,8 +55,8 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#testing-gl
   var dl = function () { return page.isVisible('#m2-editwin button[data-make="delay"]'); }, eq = function () { return page.isVisible('#m2-editwin button[data-make="equivalence"]'); };
   ok('AF, CellDesigner compatible: no delay, the equivalence kept', !(await dl()) && await eq());
   await page.click('#m2-editwin .m2-ed-pcdc input'); await page.waitForTimeout(800);
-  await rows('AF, SBGN extended', 'and', 'stimulation');
-  ok('AF, SBGN extended: the delay offered', await dl());
+  await rows('AF, unticked', 'and', 'stimulation');
+  ok('AF, unticked: the delay offered', await dl());
   await page.click('#m2-editwin button[data-lang="pd"]'); await page.waitForTimeout(800);
   ok('no script error', !errs.length, errs.join(' / '));
   await page.evaluate(function () { localStorage.removeItem('atlas-cd-compatible'); localStorage.removeItem('atlas-edit-palette'); });

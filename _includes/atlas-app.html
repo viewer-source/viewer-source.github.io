@@ -271,7 +271,7 @@ page, so its styles keep the base they were made on).
   /* Edit (--m2-edit: 1): moving nodes and bend points of a yEd GraphML in the map window
      (editor/); its buttons are the Downloads window's, the selection drawn over the map */
   /* Type in the Edit window, one scale: 12 px for every label, value, field, list and note (Grid size, Properties,
-     Orientation, Reduced notation, SBGN extended, Settings choices); 14 px only for the PD and AF tabs and the full-width
+     Orientation, Reduced notation, Settings choices); 14 px only for the PD and AF tabs and the full-width
      action buttons (Choose a folder, Connect). No third size; a new control takes one of the two */
   #m2-editwin { padding: 0 4px; font-size: 14px; line-height: 1.45; color: var(--m2-text-soft);
     max-height: calc(100vh / var(--zoom, 1) - 110px); overflow-y: auto; }   /* scrolls as the list does, its foot level with the map window's (so Properties stays on screen); menus go to the body, not clipped */
@@ -342,7 +342,6 @@ page, so its styles keep the base they were made on).
   /* the notation, PD or AF, and with AF its look: sign buttons in the palette's grid, pressed as the tools are
      (like icons: pressed, they stay pressed) */
   #m2-editwin .m2-ed-pnot { align-items: center; margin: 0 0 6px; }
-  #m2-editwin .m2-ed-pext { margin-left: auto; font-size: 12px; opacity: .65; white-space: nowrap; }   /* SBGN extended: the palette's CellDesigner compatible unticked */
   /* AF's two views (not as icons beside PD and AF, which read as glyphs to drag): two rows of round
      choices under the tabs, the palette's small grey text, the chosen circle filled in the sign grey; no accent */
   #m2-editwin .m2-ed-plook { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; margin: 0 0 8px 4px; }

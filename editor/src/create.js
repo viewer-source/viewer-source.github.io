@@ -206,7 +206,7 @@
       rn: 'Corresponds to CellDesigner\'s Reduced Notation palette, which enables an Activity Flow type of representation.',
       sbgn: 'Follows the SBGN Activity Flow specification. The map is saved as an Activity Flow SBGN-ML file.',
       prot: 'When ticked, shows the auxiliary unit on protein activities. An activity with no auxiliary unit is by default a protein activity.',
-      cdc: 'Keeps maps to what CellDesigner and MINERVA can hold. Untick for SBGN extended: tags, and submaps with terminals on their border. What a map already holds is never changed by it.'
+      cdc: 'Keeps maps to what CellDesigner and MINERVA can hold. Unticked, the palette also offers tags, and submaps with terminals on their border. What a map already holds is never changed by it.'
     };
     function palTip(line, name, t) {
       t = t.replace(/&/g, '&amp;').replace(/"/g, '&quot;');   // into attributes
@@ -215,14 +215,14 @@
     pal.innerHTML = '<div class="m2-ed-prow m2-ed-pnot" role="group" aria-label="Notation">' +
       palBtn('data-lang="pd"', 'Process Description', '<text x="12" y="17.3" text-anchor="middle" font-size="15">PD</text>') +
       palBtn('data-lang="af"', 'Activity Flow', '<text x="12" y="17.3" text-anchor="middle" font-size="15">AF</text>') +
-      '<span class="m2-ed-pext" title="CellDesigner compatible is unticked: the palette offers SBGN glyphs CellDesigner cannot hold (tags, submap terminals)">SBGN extended</span></div>' +
+      '</div>' +
       // AF's two views as named round choices under the tabs (icons there would read as
       // glyphs to drag onto the map), shown only where the views apply (palViews)
       '<div class="m2-ed-plook" role="radiogroup" aria-label="Activity Flow view">' +
       palTip(palView('rn', 'Reduced notation view', 'Reduced notation view: each activity drawn as its entity'), 'Reduced notation view', INFO.rn) +
       palTip(palView('sbgn', 'SBGN AF view', 'SBGN Activity Flow view: each entity drawn as its SBGN activity'), 'SBGN Activity Flow view', INFO.sbgn) + '</div>' +
       '<div class="m2-ed-pblk m2-ed-pprot">' + palTip('<label class="m2-ed-phyb" title="Ticked: every protein activity carries the auxiliary unit of a macromolecule, drawn and saved in the file; unticked: none has it"><input type="checkbox"><span>Protein auxiliary unit</span></label>', 'Protein auxiliary unit', INFO.prot) + '</div>' +
-      '<div class="m2-ed-pblk m2-ed-pcdc">' + palTip('<label class="m2-ed-phyb" title="Ticked: the palette offers only what CellDesigner and MINERVA can hold; unticked: SBGN extended, tags and submaps\u2019 terminals too"><input type="checkbox"><span>CellDesigner compatible</span></label>', 'CellDesigner compatible', INFO.cdc) + '</div>' +
+      '<div class="m2-ed-pblk m2-ed-pcdc">' + palTip('<label class="m2-ed-phyb" title="Ticked: the palette offers only what CellDesigner and MINERVA can hold; unticked: tags and submaps\u2019 terminals too"><input type="checkbox"><span>CellDesigner compatible</span></label>', 'CellDesigner compatible', INFO.cdc) + '</div>' +
       '<div class="m2-ed-pblk m2-ed-pstrict">' + palTip('<label class="m2-ed-phyb" title="Ticked (the default): under PD a modulation may also end on an entity, and a logic gate\u2019s output go to one (CellDesigner\u2019s reduced notation); with a process on the map the file stays Process Description, without one such a link makes it Activity Flow. Unticked: Process Description only"><input type="checkbox"><span>Reduced notation</span></label>', 'Reduced notation', INFO.strict) + '</div>' +
       '<div class="m2-ed-psigns"></div>';
     var palSignsEl = pal.querySelector('.m2-ed-psigns'), palShown = null;
@@ -238,7 +238,7 @@
     if (window.ResizeObserver) new ResizeObserver(palBlocks).observe(palSignsEl);
     function palKey() { return palLangNow() === 'pd' ? 'pd' : palLookNow() + (protOn ? 'P' : ''); }
     // CellDesigner compatible, the palette's tick box above Reduced notation (kept in this browser for every map, undone as
-    // a setting): ticked, the palette offers only what CellDesigner can hold; unticked, SBGN extended adds the tag (and
+    // a setting): ticked, the palette offers only what CellDesigner can hold; unticked, the palette adds the tag (and
     // the submap's terminals) and AF's delay (CellDesigner has no delay, the converter joins its input to its target; the
     // equivalence stays, written as CellDesigner's unknown gate); a missing key reads unticked. What a map already holds is never changed by it. Not shown on
     // a CellDesigner map, whose palette is CellDesigner's own
@@ -534,7 +534,6 @@
       pb.hidden = !palViews();   // only on an Activity Flow map or an empty one (proteinBoxes leaves a map turned PD as it is)
       if (!pb.hidden) { var pf = protFile(); if (pf != null) protOn = pf; k = palKey(); }
       if (pbc.checked !== protOn) pbc.checked = protOn;
-      pal.querySelector('.m2-ed-pext').hidden = compat();
       var cc = pal.querySelector('.m2-ed-pcdc'), ccb = cc.querySelector('input'); cc.hidden = false;   // hidden on a CellDesigner map (cdFill)
       if (ccb.checked !== compat()) ccb.checked = compat();
       if (palShown === k + compat()) return;

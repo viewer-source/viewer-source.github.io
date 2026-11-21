@@ -1,6 +1,6 @@
 // Tags and submap terminals in the editor (create.js makeEntity, termsFix; core.js terminals, fixMoved; sbgn_edit way,
 // terminal), on Testing Glycolysis SBGN-ML, the palette's CellDesigner compatible unticked: the palette's Tag and its
-// SBGN extended mark; a submap made, a tag dropped on its right border becoming its terminal pointing right, one on its
+// mark of the old SBGN extended name gone; a submap made, a tag dropped on its right border becoming its terminal pointing right, one on its
 // bottom border pointing down; a free tag made, turned up in Properties (Orientation), the terminal's Orientation greyed;
 // the right terminal dragged down and out: it slides along the right side; dragged across to the left: it turns left;
 // the submap dragged: its terminals go with it; the submap resized wider: the right terminal stays on its right side; a
@@ -51,7 +51,7 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysis
   await page.click('.m2-ri[data-win="edit"]');
   await page.waitForSelector('#m2-editwin button[data-make="submap"]', { state: 'visible', timeout: 30000 }); await page.waitForTimeout(2000);
   ok('the palette offers Tag', await page.isVisible('#m2-editwin button[data-make="tag"]'));
-  ok('the palette says SBGN extended', await page.isVisible('#m2-editwin .m2-ed-pext'));
+  ok('no SBGN extended mark in the palette', !(await page.$('#m2-editwin .m2-ed-pext')));
   // a submap in empty room at the bottom right
   var sm = await make('submap', 1150, 760); await page.keyboard.press('Escape');
   ok('a submap made', !!sm, errs.join(" / "));
@@ -195,7 +195,7 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysis
   // CellDesigner compatible ticked: no Tag
   await page.evaluate(function () { localStorage.setItem('atlas-cd-compatible', 'on'); });
   await page.click('.m2-ri[data-win="edit"]'); await page.waitForTimeout(300); await page.click('.m2-ri[data-win="edit"]'); await page.waitForTimeout(1500);
-  ok('CellDesigner compatible ticked: no Tag in the palette', !(await page.isVisible('#m2-editwin button[data-make="tag"]')) && !(await page.isVisible('#m2-editwin .m2-ed-pext')));
+  ok('CellDesigner compatible ticked: no Tag in the palette', !(await page.isVisible('#m2-editwin button[data-make="tag"]')));
   ok('the map holds what was made (tags kept)', /class="terminal"/.test(await now()) && !/undefined/.test(await now()));
   ok('no script error', errs.length === 0, errs.join(' | '));
   await page.evaluate(function () { localStorage.removeItem('atlas-cd-compatible'); });
