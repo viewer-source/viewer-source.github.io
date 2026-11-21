@@ -74,10 +74,27 @@ def units(p):
     return [' '.join(x.split()) for x in (p.get('Unit of information') or '').splitlines() if x.strip()]
 
 
-def notes(p):
-    # what MIRIAM cannot hold, as note lines: a family's name ("Family: ERK1/2")
-    # and its members' sites ('MAPK3: P@T202 P@Y204'); the entity's own sites stay in PTM
+def sites(p, states):
+    # the node property PTM's sites (P@S1177) given to the state variables that show only their value, in the order
+    # drawn, each to the first unused site of its value; returns each state's site ('' for none) and the sites no
+    # state variable takes (more sites than circles: kept as a note, PTM)
+    left = (p.get('PTM') or '').split()
+    out = []
+    left = [x for x in left if x not in states]  # the sites a circle shows itself first
+    for txt in states:
+        v, at, var = txt.partition('@')
+        if at:
+            out.append(var); continue
+        k = next((j for j, x in enumerate(left) if v and x.partition('@')[0] == v), None)
+        out.append(left.pop(k).partition('@')[2] if k is not None else '')
+    return out, left
+
+
+def notes(p, undrawn=()):
+    # what MIRIAM cannot hold, as note lines: a family's name ("Family: ERK1/2"), its members' sites
+    # ('MAPK3: P@T202 P@Y204') and the entity's own sites no state variable holds ('PTM: P@Y1189 P@Y1190')
     lines = ['Family: ' + ' '.join(p['Family'].split())] if p.get('Family') else []
+    lines += ['PTM: ' + ' '.join(undrawn)] if undrawn else []
     # units not drawn, on one line: CellDesigner keeps only the first line of a complex member's note
     lines += ['Unit of information: ' + '; '.join(units(p))] if units(p) else []
     for m in json.loads(p.get('Member annotation') or '[]'):
@@ -95,6 +112,8 @@ def from_notes(text, p):
         k, _, v = line.strip().partition(': ')
         if k == 'Family' and v:
             out['Family'] = v
+        if k == 'PTM' and v and all(re.fullmatch(r'[^@\s]*@\S+', x) for x in v.split()):  # sites only, not free text
+            out['PTM'] = '\n'.join(dict.fromkeys((out.get('PTM') or '').split() + v.split()))
         if k == 'Unit of information' and v:
             out['Unit of information'] = '\n'.join(units(out) + [u.strip() for u in v.split('; ') if u.strip()])
         for m in members:

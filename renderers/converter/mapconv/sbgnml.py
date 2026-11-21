@@ -3,10 +3,10 @@
 # GraphML. Colours as the SBML render extension on the map (the spec's Appendix B), annotation
 # as RDF in each glyph's extension with identifiers.org links in Newt's form (db:id).
 # read() at the end goes the other way, also for Newt's .nwt (SBGN-ML with its settings).
-import math, copy, os, re
+import math, copy, os, re, urllib.parse
 from lxml import etree
 from . import report
-from .annotation import from_graphml, from_notes, notes, to_properties
+from .annotation import from_graphml, from_notes, from_references, notes, references, sites, to_properties
 from .layout import bends, border, centre, compartment_of, count_line, count_on, count_place, count_text, decorations, own_places, unbent
 from . import newt_layout
 from .graphml import DELAY, EQUIV, LINE, CHAR, touches, without_delays
@@ -17,6 +17,7 @@ RENDER = 'http://www.sbml.org/sbml/level3/version1/render/version1'
 RDF = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#'
 XH = 'http://www.w3.org/1999/xhtml'
 BQBIOL = 'http://biomodels.net/biology-qualifiers/'
+BQMODEL = 'http://biomodels.net/model-qualifiers/'
 S, R = '{%s}' % NS, '{%s}' % RENDER
 OLD_RENDER = '{http://projects.eml.org/bcb/sbml/render'  # the render extension before SBML Level 3 (libSBGN's 0.2 examples)
 CLASS = {'Macromolecule': 'macromolecule', 'SimpleChemical': 'simple chemical', 'NucleicAcidFeature': 'nucleic acid feature',
@@ -30,13 +31,13 @@ OPERATORS = {'and': 'AND', 'or': 'OR', 'not': 'NOT', 'equivalence': EQUIV, 'dela
 ARC = {'production': 'production', 'catalysis': 'catalysis', 'inhibition': 'inhibition', 'modulation': 'modulation',
        'stimulation': 'stimulation', 'trigger': 'necessary stimulation'}
 # urn:miriam:<db> -> Newt's identifiers.org prefix (annotations-handler.js, dbList)
-DB = {'obo.chebi': 'CHEBI', 'hgnc': 'hgnc', 'hgnc.symbol': 'hgnc.symbol', 'uniprot': 'uniprot'}
+DB = {'obo.chebi': 'CHEBI', 'hgnc': 'hgnc', 'hgnc.symbol': 'hgnc.symbol', 'uniprot': 'uniprot', 'pubmed': 'pubmed', 'doi': 'doi', 'reactome': 'reactome'}
 
 
 def identifiers(urns):
     # MIRIAM URNs as identifiers.org links in Newt's form (db:id), those of the databases in DB
-    return ['http://identifiers.org/%s:%s' % (DB[db], x.replace('%3A', ':').replace('CHEBI:', ''))
-            for db, _, x in (u[len('urn:miriam:'):].rpartition(':') for u in urns) if db in DB]
+    return ['http://identifiers.org/%s:%s' % (DB[db], urllib.parse.quote(re.sub(r'^(CHEBI|HGNC):', '', urllib.parse.unquote(x)), safe=':/()-._~'))
+            for db, _, x in (u[len('urn:miriam:'):].partition(':') for u in urns) if db in DB]
 
 
 def xml_id(i):
@@ -224,25 +225,37 @@ def write(diagram, newt=False):
             if size:
                 g.set('font-size', '%g' % size)
 
-    def annotate(g, i, d):
-        if d.kind not in CLASS or d.kind in PROCESSES or d.kind == 'Tag':
-            return
-        if notes(d.data):  # the family's name, its members' sites
-            note(g, notes(d.data))
-        lab = ' '.join(d.labels[0].split()) if d.labels else ''
-        if lab not in ann:
-            return
-        family, urns = ann[lab]
-        uris = identifiers(urns)
-        if not uris:
-            return
+    def rdf(g, i, bags):  # the glyph's annotation: one Description, a (namespace, qualifier, links) bag each
         e = etree.SubElement(g, S + 'extension')
         r = etree.SubElement(etree.SubElement(e, S + 'annotation', nsmap={None: NS}), '{%s}RDF' % RDF,
-                             nsmap={'rdf': RDF, 'bqbiol': BQBIOL})
+                             nsmap=dict([('rdf', RDF)] + [({BQBIOL: 'bqbiol', BQMODEL: 'bqmodel'}[ns], ns) for ns, _, _ in bags]))
         desc = etree.SubElement(r, '{%s}Description' % RDF, {'{%s}about' % RDF: '#' + ids[i]})
-        bag = etree.SubElement(etree.SubElement(desc, '{%s}%s' % (BQBIOL, 'hasVersion' if family else 'is')), '{%s}Bag' % RDF)
-        for u in uris:
-            etree.SubElement(bag, '{%s}li' % RDF, {'{%s}resource' % RDF: u})
+        for ns, q, uris in bags:
+            bag = etree.SubElement(etree.SubElement(desc, '{%s}%s' % (ns, q)), '{%s}Bag' % RDF)
+            for u in uris:
+                etree.SubElement(bag, '{%s}li' % RDF, {'{%s}resource' % RDF: u})
+
+    def annotate(g, i, d, undrawn):
+        if d.kind not in CLASS or d.kind == 'Tag':
+            return
+        lines = notes(d.data, undrawn) if d.kind not in PROCESSES else []
+        if lines:  # the family's name, its members' sites, its own sites no state variable holds
+            note(g, lines)
+        bags = []
+        lab = ' '.join(d.labels[0].split()) if d.labels else ''
+        if d.kind not in PROCESSES and lab in ann:
+            family, urns = ann[lab]
+            uris = identifiers(urns)
+            if uris:
+                bags.append((BQBIOL, 'hasVersion' if family else 'is', uris))
+        refs = references(d.data.get('References'))  # a process's references (any glyph's), one bag each, as MINERVA holds them
+        uris = identifiers(refs)
+        if len(uris) < len(refs):
+            report.say('left out', '%s: references of databases SBGN-ML links are not written for: %s' % (
+                lab or i, ' '.join(u for u in refs if u.split(':')[2] not in DB)))
+        bags += [(BQMODEL, 'isDescribedBy', [u]) for u in uris]
+        if bags:
+            rdf(g, i, bags)
 
     def glyph(parent, i):
         d = N[i]
@@ -267,7 +280,8 @@ def write(diagram, newt=False):
             g.set('orientation', ports[i][0])
         if d.kind == 'Tag':
             g.set('orientation', d.way or 'right')
-        annotate(g, i, d)
+        site, undrawn = sites(d.data, [t for t, _, _ in d.states])
+        annotate(g, i, d, undrawn)
         name = '' if d.kind in PROCESSES or not d.labels else d.labels[0]  # a second label is a unit (N:2)
         if d.kind != 'Operator' and name:
             lab = etree.SubElement(g, S + 'label', text=name)
@@ -279,10 +293,9 @@ def write(diagram, newt=False):
         bbox(g, x, y, w, h)
         states, units = decorations(d)
         for k, ((txt, _, _), box) in enumerate(zip(d.states, states)):
-            value, _, var = txt.partition('@')
             sv = etree.SubElement(g, S + 'glyph', {'class': 'state variable', 'id': '%s_sv%d' % (ids[i], k)})
-            st = etree.SubElement(sv, S + 'state', value=value)
-            if var: st.set('variable', var)
+            st = etree.SubElement(sv, S + 'state', value=txt.partition('@')[0])
+            if site[k]: st.set('variable', site[k])
             bbox(sv, *box)
         for k, (u, box) in enumerate(units):
             ui = etree.SubElement(g, S + 'glyph', {'class': 'unit of information', 'id': '%s_ui%d' % (ids[i], k)})
@@ -584,12 +597,17 @@ def read(path):
         lb = lab.find(S + 'bbox') if lab is not None else None
         data = {}
         own = [c for c in g if etree.QName(c).localname in ('extension', 'annotation')]  # not a member's
+        refs = []
         for d in (x for c in own for x in c.iter('{%s}Description' % RDF)):
             for q in d:
                 urns = [u for u in (urn(li.get('{%s}resource' % RDF) or '') for li in q.iter('{%s}li' % RDF)) if u]
                 if urns and etree.QName(q).localname in ('is', 'hasVersion'):
                     data.update(to_properties(etree.QName(q).localname == 'hasVersion', urns))
+                if etree.QName(q).localname == 'isDescribedBy':  # a process's references (either qualifier set)
+                    refs += urns
             break  # the glyph's own description
+        if refs:
+            data['References'] = from_references(refs)
         data = from_notes(text_of(g), data)
         if cls in DRAWN_AS:  # drawn as itself, read as the glyph the atlas maps use
             data['SBGN class'] = cls

@@ -10,7 +10,10 @@
 #   without a value), placed at the icon's position on the node border.
 #   Nodes of one protein share a residue by site (S516), wherever the icon
 #   sits; icons without a site share one by place. Site names are not
-#   written: only the symbol in the circle (P, Ac, Me).
+#   written on the residues (CellDesigner draws them over the species' name):
+#   only the symbol in the circle (P, Ac, Me); every site of a species goes
+#   into its notes as one line, PTM: P@S1177 Pa@C26, which CellDesigner keeps
+#   and does not draw (read back by from_notes).
 # - Nucleic acid features: genes, or RNAs when they carry ct:mRNA; one gene or
 #   RNA per label; the ct: unit of information is kept (info prefix "ct").
 # - Source/sink (EmptySet): a DEGRADED species, named after its id.
@@ -450,6 +453,8 @@ def write(diagram, ann, layout='straight'):
         if d.kind != 'Macromolecule' and cls[i] not in nucl:
             sub(si, 'name', name_of(i))
 
+    def ptm(i):   # every site of the entity, its circles' first (value@site), then the property PTM's: the notes' line PTM:
+        return list(dict.fromkeys([t for t, _ in sv.get(i, ()) if t.partition('@')[2]] + (ents[i].data.get('PTM') or '').split()))
     # a source/sink is named after its id, as CellDesigner names a new degraded species (s48)
     name_of = lambda i: spec(i) if cls[i] == 'DEGRADED' else cd_name(label[i])
     XH = 'http://www.w3.org/1999/xhtml'
@@ -465,17 +470,18 @@ def write(diagram, ann, layout='straight'):
             body = etree.SubElement(h, '{%s}body' % XH)
             # the family's name, its members' sites, each line ended: CellDesigner 4.4.2 drops, on saving, the text
             # on the same line as the RDF ('Family: PKA regulatory subunits', carnitine and glycolysis)
-            body.text = ''.join(l + '\n' for l in notes(d.data)) or None
+            body.text = ''.join(l + '\n' for l in notes(d.data, ptm(i))) or None
             miriam(body, spec(i), label[i], abc=True)
             x = sub(s, 'annotation'); sub(x, 'complexSpecies', spec(d.parent))
             identity(x, i)
             continue
         s = etree.SubElement(lsp, 'species', metaid=spec(i), id=spec(i), name=name_of(i),
                              compartment='c_' + sid(comp_of(i)) if comp_of(i) else 'default', initialAmount='0')
-        if notes(d.data):  # the family's name, its members' sites (SBML notes, before the annotation)
+        lines = notes(d.data, ptm(i))
+        if lines:  # the family's name, the sites, its members' sites (SBML notes, before the annotation)
             h = etree.SubElement(etree.SubElement(s, 'notes'), '{%s}html' % XH, nsmap={None: XH})
             etree.SubElement(etree.SubElement(h, '{%s}head' % XH), '{%s}title' % XH)
-            etree.SubElement(h, '{%s}body' % XH).text = ''.join(l + '\n' for l in notes(d.data))   # each line ended, as CellDesigner saves it
+            etree.SubElement(h, '{%s}body' % XH).text = ''.join(l + '\n' for l in lines)   # each line ended, as CellDesigner saves it
         an = etree.SubElement(s, 'annotation'); x = sub(an, 'extension')
         sub(x, 'positionToCompartment', 'inside')
         identity(x, i)
@@ -832,7 +838,7 @@ def read(path):
     for rx in xs(r, 's:model/s:listOfReactions/s:reaction'):
         x = f(rx, 's:annotation/cd:extension')
         typ = f(x, 'cd:reactionType').text
-        rid = rx.get('id')
+        rid = rx.get('id') or rx.get('metaid')  # an id is required by SBML, but VMH's Recon2 has a reaction with only a metaid
         if typ in REDUCED_TYPES or typ == 'BOOLEAN_LOGIC_GATE':
             refs(rx) and unplaced.append(rid)
         br, bp = list(xs(x, 'cd:baseReactants/cd:baseReactant')), list(xs(x, 'cd:baseProducts/cd:baseProduct'))
@@ -910,8 +916,9 @@ def read(path):
             n = stoich.get((alias, into))
             if into and not reversible:
                 arcs.append(Arc(id='%s_%s' % (rid, alias), source=alias, target=rid, points=list(pts), source_at=at, count=n))
-            else:
-                arcs.append(Arc(id='%s_%s' % (rid, alias), source=rid, target=alias, head='production', points=list(pts), target_at=at, count=n))
+            else:  # a reversible reaction's reactant drawn out of the process: its bends from the process on
+                arcs.append(Arc(id='%s_%s' % (rid, alias), source=rid, target=alias, head='production',
+                                points=list(pts)[::-1] if into else list(pts), target_at=at, count=n))
         for alias, into, bends, at in lines:
             flow(alias, into, bends, at)
         for tag, into in (('cd:listOfReactantLinks/cd:reactantLink', True), ('cd:listOfProductLinks/cd:productLink', False)):
