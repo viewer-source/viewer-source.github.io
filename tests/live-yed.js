@@ -5,7 +5,7 @@
 // a product or a reactant dragged turns its process's antennas and moves the port its line leaves from, the process
 // itself dragged, a bend point dragged, the arrow keys. The working tree's editor and renderers routed into the live
 // /styles/ page.
-//   node tests/live-yed.js [viewer folder]   (needs Playwright; run from viewer/)
+//   node tests/live-yed.js [viewer folder]   (needs Playwright; run from viewer/; LIVE=1: the page's own code, not routed)
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path');
 var here = process.argv[2] || path.join(__dirname, '..'), URL = 'https://viewer-source.github.io/styles/#';
 function editor() {   // editor.js joined as Jekyll joins it
@@ -14,8 +14,8 @@ function editor() {   // editor.js joined as Jekyll joins it
 }
 async function open(browser, map) {
   var p = await browser.newPage({ viewport: { width: 1400, height: 900 } }), errs = [];
-  await p.route(/\/styles\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: editor() }); });
-  await p.route(/\/styles\/renderers\/.*\.js/, function (r) {
+  if (!process.env.LIVE) await p.route(/\/styles\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: editor() }); });
+  if (!process.env.LIVE) await p.route(/\/styles\/renderers\/.*\.js/, function (r) {
     var f = /renderers\/(.*\.js)/.exec(r.request().url())[1]; r.fulfill({ contentType: 'application/javascript', body: fs.readFileSync(path.join(here, 'renderers', f), 'utf8') });
   });
   p.on('pageerror', function (e) { errs.push(e.message); });
