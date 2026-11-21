@@ -135,6 +135,7 @@ files.forEach(function (f, i) {
   // a file's consumption whose target is a process moved onto kind9, at its centre
   var cons = (s.match(/<(?:\w+:)?arc [^>]*class="consumption"[^>]*>/g) || []).map(function (a) { return (a.match(/ id="([^"]+)"/) || [])[1]; }).filter(function (id) { return id && new RegExp('<edge id="' + id + '" ').test(g2); })[0];
   if (cons) g2 = g2.replace(new RegExp('(<edge id="' + cons + '" source="[^"]*" target=")[^"]*(")'), '$1kind9$2').replace(new RegExp('(<edge id="' + cons + '"[\\s\\S]*?<y:Path [^>]*?)tx="[^"]*" ty="[^"]*"'), '$1tx="0.0" ty="0.0"');
+  g2 = se.countsPlace(g2, opt);   // every cardinality placed again on its line as it runs now, as the editor does after a change (sbgn.js sbPlace)
   var s2 = se.write(s, g2, opt), p2 = path.join(tmp, i + path.extname(f));
   fs.writeFileSync(p2, s2);
   made.push({ f: f, s: s, g: g, g2: g2, s2: s2, p2: p2, proc: proc, cons: cons, comp: !!comp, mac: mac[0], withSv: withSv, doomed: doomed, svIds: svIds, chem: chem, single: single, multi: multi, sized: sized });

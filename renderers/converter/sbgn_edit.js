@@ -210,19 +210,22 @@
       if (S.glyph[id] || S.port[id] || S.arc[id] || id.indexOf('|') >= 0 || !classOfCfg(cfgOf(G.node[id].geo.parentNode))) return;
       out[id] = 1;
     });
+    // a submap as sbgnml.read reads it by the file's language (else a file turned PD draws it as AF's phenotype):
+    // under Activity Flow a phenotype, the arcs at its terminals at it; else yEd's Submap with its terminals, tags on its border.
+    // A base drawn while the map was PD has the terminals: under AF their nodes go, and their arcs are made again at the submap (below)
+    var afL = afLang(t), afT = {}, cutE = {};
+    if (afL) Object.keys(G.node).forEach(function (id) { var q = S.glyph[id], up = q && q.el.parentNode; if (q && q.el.getAttribute('class') === 'terminal' && up.getAttribute && up.getAttribute('class') === 'submap') out[id] = afT[id] = 1; });
     Object.keys(out).forEach(function (id) {   // only the outermost cut: a glyph deleted with the compartment round it goes with it (two overlapping cuts break the file)
       for (var up = G.node[id].el.parentNode; up && up.nodeType === 1; up = up.parentNode) if (up.localName === 'node' && out[up.getAttribute('id')]) return;
       T.cut(G.node[id].el);
     });
-    // a submap as sbgnml.read reads it by the file's language (else a file turned PD draws it as AF's phenotype):
-    // under Activity Flow a phenotype, the arcs at its terminals at it; else yEd's Submap with its terminals, tags on its border
-    var afL = afLang(t);
     Object.keys(G.edge).forEach(function (id) {   // at a glyph deleted, or deleted itself (every edge of the converter's is an arc of the file)
-      if (!S.arc[id]) T.cut(G.edge[id].el);
+      var e = G.edge[id];
+      if (!S.arc[id] || afT[e.s] || afT[e.t]) { T.cut(e.el); if (S.arc[id]) cutE[id] = 1; }
     });
     Object.keys(G.node).forEach(function (id) {
       var g = S.glyph[id], n = G.node[id];
-      if (!g) return;
+      if (!g || afT[id]) return;
       if (g.el.getAttribute('class') === 'submap') { var sc = afL ? 'Phenotype' : 'Submap', sr = n.geo.parentNode; if (sr.localName === 'GenericNode' && cfgOf(sr) !== sc) T.set(sr, 'configuration', 'com.yworks.sbgn.' + sc); }
       if (/^(tag|terminal)$/.test(g.el.getAttribute('class') || '')) setWay(T, n.geo.parentNode, fileWay(g.el));   // its orientation as the file has it
       var ec = (g.el.getAttribute('class') || '').replace(/ multimer$/, ''), er = n.geo.parentNode;   // an entity made another (entityKind): its shape the file's class
@@ -269,7 +272,7 @@
     });
     Object.keys(G.edge).forEach(function (id) {
       var a = S.arc[id], e = G.edge[id];
-      if (!a) return;
+      if (!a || cutE[id]) return;
       var fl = fileLook(St, id);
       setLine(T, e.el, fl.line); setWidth(T, e.el, fl.width);   // the file's colour and width (a draft, a build of an older converter)
       var E = ends(S, a), pts = E[4], want = ARROW[a.getAttribute('class')], ar = e.el.getElementsByTagNameNS(YNS, 'Arrows')[0];
@@ -287,7 +290,7 @@
       var body = pts.map(function (p) { return '<y:Point x="' + repr(p[0]) + '" y="' + repr(p[1]) + '"/>'; }).join(''), s = T.at.get(e.path);
       T.ed.push([s[1] - (s[2] ? 2 : 1), T.end(e.path), body ? '>' + body + '</y:Path>' : '/>']);
     });
-    var out2 = renest(S, made(S, G, T.text(), t, opt), opt);   // nested as the file says
+    var out2 = renest(S, made(S, G, T.text(), t, opt, cutE), opt);   // nested as the file says
     // an arc whose end is a glyph the base lacks (made in the editor, then given its first arc): the glyph is in the
     // GraphML only now, so the arcs are read again onto it; the rest of a second pass changes nothing
     var late = Object.keys(S.arc).some(function (id) { var E = G.edge[id] && ends(S, S.arc[id]); return !!E && [0, 1].some(function (j) { return !G.node[E[j]] && !!S.glyph[E[j]]; }); });
@@ -295,7 +298,7 @@
     return late && out2 !== base ? graphml(t, out2, opt) : out2;
   }
   // what the editor made or renamed that the base GraphML lacks (a draft reopened before the build has drawn it)
-  function made(S, G, out, t, opt) {
+  function made(S, G, out, t, opt, cutE) {   // cutE: arcs whose edges graphml() took out, made again here (a terminal's under AF)
     var St = null, D = null, H = null, Hfor = null;   // the output read again only after it changed (a reading per glyph freezes a 2 MB map for minutes)
     var svOf = function (g) {   // a glyph's state variables: [text, rx, ry]
       var B = g.box;
@@ -373,8 +376,8 @@
     var A = [], afL = afLang(t), sub = function (x) { var q = S.glyph[x], up = q && q.el.getAttribute('class') === 'terminal' && q.el.parentNode; return up && up.getAttribute && up.getAttribute('class') === 'submap' ? up.getAttribute('id') : x; };
     Object.keys(S.arc).forEach(function (id) {
       var a = S.arc[id], E = ends(S, a), c = a.getAttribute('class'), head = ARROW[c];
-      if (afL && c === 'equivalence arc' && !G.edge[id] && (sub(E[0]) !== E[0] || sub(E[1]) !== E[1])) { head = 'none'; E[0] = sub(E[0]); E[1] = sub(E[1]); }
-      if (G.edge[id] || head == null || !S.glyph[E[0]] || !S.glyph[E[1]]) return;
+      if (afL && (cutE && cutE[id] || (c === 'equivalence arc' && !G.edge[id])) && (sub(E[0]) !== E[0] || sub(E[1]) !== E[1])) { if (c === 'equivalence arc') head = 'none'; E[0] = sub(E[0]); E[1] = sub(E[1]); }   // at a terminal under AF: at its submap (sbgnml.read: the terminals are the submap's ports)
+      if ((G.edge[id] && !(cutE && cutE[id])) || head == null || !S.glyph[E[0]] || !S.glyph[E[1]]) return;
       if (Hfor !== out) { H = gml(out, opt); Hfor = out; }
       if (!H.node[E[0]] || !H.node[E[1]]) return;
       var pts = E[4], o = at(S, E[0], a.getAttribute('source'), E[2], (pts.length ? pts : [E[3]])[0])
@@ -650,6 +653,8 @@
       iconsOf(id, 'UnitOfInformation').forEach(function (q, j) {   // a unit moved along the border: the same
         var cb = hu[j] && kid(hu[j], 'bbox'), B = g.box;
         if (!cb) return;
+        var N = n.box, sized = !close(B[2], N[2]) || !close(B[3], N[3]), ab = af && (sized || aChanged[id] != null) && g.el.getAttribute('class') === 'biological activity' && fileUnit(g.el) ? afUnitBox(N, fileUnit(g.el), unitText(hu[j])) : null;
+        if (ab && close(q[1], (ab[0] + ab[2] / 2 - N[0] - N[2] / 2) / N[2]) && close(q[2], (ab[1] + ab[3] / 2 - N[1] - N[3] / 2) / N[3])) return;   // a resized activity's unit, or one set, at its place (resize and activity() put it at afUnitBox): placed below as such, not moved along the border
         var rx = (F(cb.getAttribute('x')) + F(cb.getAttribute('w')) / 2 - B[0] - B[2] / 2) / B[2], ry = (F(cb.getAttribute('y')) + F(cb.getAttribute('h')) / 2 - B[1] - B[3] / 2) / B[3];
         if (!close(rx, q[1]) || !close(ry, q[2])) { svMoved.add(cb); uMovedTo.set(cb, q); }
       });
@@ -825,7 +830,7 @@
     var termXml = {}, termOf = {};
     G.ids.forEach(function (id) {
       if (S.glyph[id] || !isTerm(G, id)) return;
-      var sm = subNode(G, id);
+      var sm = subNode(G, id, S);
       if (!sm || (S.glyph[sm] && S.glyph[sm].el.getAttribute('class') !== 'submap')) return;
       termOf[id] = sm;
       var L0 = labelsOf(G, id), tn = L0.main ? ownText(L0.main) : '', si = S.glyph[sm] ? T.indent(S.glyph[sm].bbox) : ind0 + '  ';
@@ -1217,11 +1222,13 @@
   }
   // a terminal's node right after its submap's node and the terminals it has, as the converter reads a submap's
   // terminals after it (the file holds them inside the submap's glyph); the submap: the one its box touches, the nearest
-  function subNode(G, id) {
+  // a submap's node: yEd's Submap, or under Activity Flow the phenotype a submap of the file is drawn as (S: the file)
+  function isSub(G, k, S) { var c = cfgOf(G.node[k].geo.parentNode); return c === 'Submap' || (!!S && c === 'Phenotype' && !!S.glyph[k] && S.glyph[k].el.getAttribute('class') === 'submap'); }
+  function subNode(G, id, S) {
     var b = G.node[id].box, best = null, bd = Infinity;
     G.ids.forEach(function (k) {
       var q = G.node[k].box;
-      if (cfgOf(G.node[k].geo.parentNode) !== 'Submap' || b[0] > q[0] + q[2] + 1 || q[0] > b[0] + b[2] + 1 || b[1] > q[1] + q[3] + 1 || q[1] > b[1] + b[3] + 1) return;
+      if (!isSub(G, k, S) || b[0] > q[0] + q[2] + 1 || q[0] > b[0] + b[2] + 1 || b[1] > q[1] + q[3] + 1 || q[1] > b[1] + b[3] + 1) return;
       var d = Math.hypot(b[0] + b[2] / 2 - q[0] - q[2] / 2, b[1] + b[3] / 2 - q[1] - q[3] / 2);
       if (d < bd) { bd = d; best = k; }
     });
@@ -1246,7 +1253,7 @@
       var el = S.glyph[id].el, c = el.getAttribute('class'), up = el.parentNode, inSub = c === 'terminal' && !!up.getAttribute && up.getAttribute('class') === 'submap';
       if (!G.node[id] || !isTag(G, id)) return;
       var term = isTerm(G, id);
-      if ((c === 'tag' && term) || (inSub && (!term || subNode(G, id) !== up.getAttribute('id')))) { T.cut(el); n++; }
+      if ((c === 'tag' && term) || (inSub && (!term || subNode(G, id, S) !== up.getAttribute('id')))) { T.cut(el); n++; }
     });
     return n ? T.text() : t;
   }
@@ -1832,6 +1839,19 @@
       T.set(l, 'y', repr((0.5 + F(p.getAttribute('nodeRatioY'))) * h - F(l.getAttribute('height')) / 2));
     });
     scaleOn(T, G, id, o, box);
+    return (Math.abs(o[2] - w) > 1e-9 || Math.abs(o[3] - h) > 1e-9) && actOf(G, id) ? afIcon(T.text(), id, opt) : T.text();
+  }
+  // an activity's unit icon where write() puts the unit in the file after a resize or a unit set (afUnitBox), so the
+  // GraphML draws as the converter draws the file written
+  function afIcon(t, id, opt) {
+    var G = gml(t, opt), n = G.node[id], act = n ? actOf(G, id) : null;
+    if (!act) return t;
+    var q = labelsOf(G, id).icons.filter(function (x) { return x[1].kind === 'UnitOfInformation'; })[0], l = q && q[0];
+    var p = l && l.getElementsByTagNameNS(YNS, 'SmartNodeLabelModelParameter')[0], B = n.box, ub = p && afUnitBox(B, act, q[1].text || '');
+    if (!ub) return t;
+    var T = new Tags(t, G.doc), rx = (ub[0] + ub[2] / 2 - B[0] - B[2] / 2) / B[2], ry = (ub[1] + ub[3] / 2 - B[1] - B[3] / 2) / B[3];
+    T.set(p, 'nodeRatioX', repr(rx)); T.set(p, 'nodeRatioY', repr(ry));
+    T.set(l, 'x', repr((0.5 + rx) * B[2] - F(l.getAttribute('width')) / 2)); T.set(l, 'y', repr((0.5 + ry) * B[3] - F(l.getAttribute('height')) / 2));
     return T.text();
   }
   // the ends of node id's lines that are off its centre moved with its box (o to box) in proportion, so a port on the
@@ -2241,7 +2261,8 @@
       }
       t = T.text();
     }
-    return setProps(t, id, { 'SBGN class': 'biological activity', 'SBGN unit': unit || null, 'SBGN AF class': null }, opt);
+    var t2 = setProps(t, id, { 'SBGN class': 'biological activity', 'SBGN unit': unit || null, 'SBGN AF class': null }, opt);
+    return was !== (unit || '') ? afIcon(t2, id, opt) : t2;
   }
   // the unit's box (small, at the top right, twice as wide as high for a protein, square for a metabolite): 0.3
   // of the activity's height (12 at 80 by 40), twice as wide, a simple chemical's as wide as high, centred on the top
