@@ -455,9 +455,9 @@ HEAD = {'consumption': None, 'logic arc': None, 'production': 'production', 'cat
 # from, CellDesigner's way. Its unit of information's shape gives the glyph (none: a protein;
 # perturbation: phenotype, as in CellDesigner), its label (the molecule's name) stays a unit, and the
 # node properties SBGN class (biological activity) and SBGN unit (the unit's entity, if any) keep it; the
-# influences are arcs between entities; a delay is an Operator labelled tau; a submap is a phenotype
-# with its name, its terminals and the tags left out; an equivalence arc is a plain line (to a terminal:
-# to the submap). In Newt's hybrid maps (PD and AF) an activity joined to its entity by a performance
+# influences are arcs between entities; a delay is an Operator labelled tau; a submap, its terminals and
+# the tags as in PD (yEd's Submap and Tags; whichever way the file names its language); an equivalence arc
+# is a plain line. In Newt's hybrid maps (PD and AF) an activity joined to its entity by a performance
 # arc is that entity, as in CellDesigner's reduced notation, and "activity" at the end of an activity's
 # label goes
 ACTIVITY = {'macromolecule': 'Macromolecule', 'nucleic acid feature': 'NucleicAcidFeature', 'simple chemical': 'SimpleChemical',
@@ -531,7 +531,6 @@ def read(path):
             for a in [a for a in e.attrib if a.startswith(R)]:  # Java writer) read as the plain ones
                 e.set(a[len(R):], e.attrib.pop(a))
     m = root.find(S + 'map')
-    af = m.get('language') == 'activity flow'
     defs = {c.get('id'): c.get('value') for c in m.iter(R + 'colorDefinition')}
     for gr in (x for k in ('linearGradient', 'radialGradient') for x in m.iter(R + k)):  # a gradient: its middle colour,
         cs = [defs.get(s.get('stop-color'), s.get('stop-color')) or '' for s in gr.findall(R + 'stop')]  # halfway from first to last stop
@@ -570,12 +569,7 @@ def read(path):
             if re.search(r'\sactivity\s*$', text(g), re.I):  # the node is the molecule: "SHC activity" is SHC
                 g.find(S + 'label').set('text', re.sub(r'\s+activity\s*$', '', text(g), flags=re.I))
                 renamed.append(i)
-        if af and cls == 'submap':  # a phenotype with the submap's name, no terminals or tags
-            kind = 'Phenotype'
-            for c in g.findall(S + 'glyph'):
-                if c.get('class') == 'terminal':
-                    port[c.get('id')] = i
-        if cls == 'terminal' and not af:  # a submap's terminal: a tag on its border, yEd's way (a top-level node)
+        if cls == 'terminal':  # a submap's terminal: a tag on its border, yEd's way (a top-level node)
             kind = 'Tag'
         if kind is None:  # annotation and the other glyphs the atlas maps do not draw
             skipped.setdefault(cls, []).append(i); return

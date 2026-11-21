@@ -210,23 +210,19 @@
       if (S.glyph[id] || S.port[id] || S.arc[id] || id.indexOf('|') >= 0 || !classOfCfg(cfgOf(G.node[id].geo.parentNode))) return;
       out[id] = 1;
     });
-    // a submap as sbgnml.read reads it by the file's language (else a file turned PD draws it as AF's phenotype):
-    // under Activity Flow a phenotype, the arcs at its terminals at it; else yEd's Submap with its terminals, tags on its border.
-    // A base drawn while the map was PD has the terminals: under AF their nodes go, and their arcs are made again at the submap (below)
-    var afL = afLang(t), afT = {}, cutE = {};
-    if (afL) Object.keys(G.node).forEach(function (id) { var q = S.glyph[id], up = q && q.el.parentNode; if (q && q.el.getAttribute('class') === 'terminal' && up.getAttribute && up.getAttribute('class') === 'submap') out[id] = afT[id] = 1; });
     Object.keys(out).forEach(function (id) {   // only the outermost cut: a glyph deleted with the compartment round it goes with it (two overlapping cuts break the file)
       for (var up = G.node[id].el.parentNode; up && up.nodeType === 1; up = up.parentNode) if (up.localName === 'node' && out[up.getAttribute('id')]) return;
       T.cut(G.node[id].el);
     });
     Object.keys(G.edge).forEach(function (id) {   // at a glyph deleted, or deleted itself (every edge of the converter's is an arc of the file)
       var e = G.edge[id];
-      if (!S.arc[id] || afT[e.s] || afT[e.t]) { T.cut(e.el); if (S.arc[id]) cutE[id] = 1; }
+      if (!S.arc[id]) T.cut(e.el);
     });
     Object.keys(G.node).forEach(function (id) {
       var g = S.glyph[id], n = G.node[id];
-      if (!g || afT[id]) return;
-      if (g.el.getAttribute('class') === 'submap') { var sc = afL ? 'Phenotype' : 'Submap', sr = n.geo.parentNode; if (sr.localName === 'GenericNode' && cfgOf(sr) !== sc) T.set(sr, 'configuration', 'com.yworks.sbgn.' + sc); }
+      if (!g) return;
+      if (g.el.getAttribute('class') === 'submap') { var sc = 'Submap', sr = n.geo.parentNode;   // yEd's Submap with its terminals, Activity Flow or PD as sbgnml.read
+        if (sr.localName === 'GenericNode' && cfgOf(sr) !== sc) T.set(sr, 'configuration', 'com.yworks.sbgn.' + sc); }
       if (/^(tag|terminal)$/.test(g.el.getAttribute('class') || '')) setWay(T, n.geo.parentNode, fileWay(g.el));   // its orientation as the file has it
       var ec = (g.el.getAttribute('class') || '').replace(/ multimer$/, ''), er = n.geo.parentNode;   // an entity made another (entityKind): its shape the file's class
       if (ENTITY.test(ec) && ENTITY.test(classOfCfg(cfgOf(er)) || '') && cfgOf(er) !== MAKE[ec]) T.set(er, 'configuration', 'com.yworks.sbgn.' + MAKE[ec]);
@@ -272,7 +268,7 @@
     });
     Object.keys(G.edge).forEach(function (id) {
       var a = S.arc[id], e = G.edge[id];
-      if (!a || cutE[id]) return;
+      if (!a) return;
       var fl = fileLook(St, id);
       setLine(T, e.el, fl.line); setWidth(T, e.el, fl.width);   // the file's colour and width (a draft, a build of an older converter)
       var E = ends(S, a), pts = E[4], want = ARROW[a.getAttribute('class')], ar = e.el.getElementsByTagNameNS(YNS, 'Arrows')[0];
@@ -290,7 +286,7 @@
       var body = pts.map(function (p) { return '<y:Point x="' + repr(p[0]) + '" y="' + repr(p[1]) + '"/>'; }).join(''), s = T.at.get(e.path);
       T.ed.push([s[1] - (s[2] ? 2 : 1), T.end(e.path), body ? '>' + body + '</y:Path>' : '/>']);
     });
-    var out2 = renest(S, made(S, G, T.text(), t, opt, cutE), opt);   // nested as the file says
+    var out2 = renest(S, made(S, G, T.text(), t, opt), opt);   // nested as the file says
     // an arc whose end is a glyph the base lacks (made in the editor, then given its first arc): the glyph is in the
     // GraphML only now, so the arcs are read again onto it; the rest of a second pass changes nothing
     var late = Object.keys(S.arc).some(function (id) { var E = G.edge[id] && ends(S, S.arc[id]); return !!E && [0, 1].some(function (j) { return !G.node[E[j]] && !!S.glyph[E[j]]; }); });
@@ -298,7 +294,7 @@
     return late && out2 !== base ? graphml(t, out2, opt) : out2;
   }
   // what the editor made or renamed that the base GraphML lacks (a draft reopened before the build has drawn it)
-  function made(S, G, out, t, opt, cutE) {   // cutE: arcs whose edges graphml() took out, made again here (a terminal's under AF)
+  function made(S, G, out, t, opt) {
     var St = null, D = null, H = null, Hfor = null;   // the output read again only after it changed (a reading per glyph freezes a 2 MB map for minutes)
     var svOf = function (g) {   // a glyph's state variables: [text, rx, ry]
       var B = g.box;
@@ -315,7 +311,7 @@
       var au = cls === 'biological activity' ? fileUnit(g.el) : null;   // an activity: its unit
       if (!G.node[id]) {
         var base = au != null ? actCls(au) : cls === 'perturbation' ? 'perturbing agent' : cls === 'terminal' ? 'tag' : cls.replace(/ multimer$/, ''), dk = au != null ? cls : base;   // AF's perturbation: yEd's perturbing agent; a terminal: a tag
-        if (cls === 'terminal' && (afLang(t) || g.el.parentNode.getAttribute('class') !== 'submap')) return;   // under AF the converter draws none
+        if (cls === 'terminal' && g.el.parentNode.getAttribute('class') !== 'submap') return;
         if (!MAKE[base] || (g.el.parentNode.localName !== 'map' && !inCx(g.el) && cls !== 'terminal') || perf[id]) return;   // a member of a complex: made beside it, then nested (nestG)
         St = St || styles(S); D = D || {}; D[dk] = D[dk] || defaults(t, opt, dk);
         var lk = fileLook(St, id, base), cref = g.el.getAttribute('compartmentRef');
@@ -373,12 +369,10 @@
     });
     if (Object.keys(props).length) out = setPropsAll(out, props, opt);
     // arcs the editor made: their edges, the ends as the converter reads them from the file
-    // and an equivalence arc at a submap's terminal of a file turned Activity Flow (sbgnml.read: at the submap, a plain line)
-    var A = [], afL = afLang(t), sub = function (x) { var q = S.glyph[x], up = q && q.el.getAttribute('class') === 'terminal' && q.el.parentNode; return up && up.getAttribute && up.getAttribute('class') === 'submap' ? up.getAttribute('id') : x; };
+    var A = [];
     Object.keys(S.arc).forEach(function (id) {
       var a = S.arc[id], E = ends(S, a), c = a.getAttribute('class'), head = ARROW[c];
-      if (afL && (cutE && cutE[id] || (c === 'equivalence arc' && !G.edge[id])) && (sub(E[0]) !== E[0] || sub(E[1]) !== E[1])) { if (c === 'equivalence arc') head = 'none'; E[0] = sub(E[0]); E[1] = sub(E[1]); }   // at a terminal under AF: at its submap (sbgnml.read: the terminals are the submap's ports)
-      if ((G.edge[id] && !(cutE && cutE[id])) || head == null || !S.glyph[E[0]] || !S.glyph[E[1]]) return;
+      if (G.edge[id] || head == null || !S.glyph[E[0]] || !S.glyph[E[1]]) return;
       if (Hfor !== out) { H = gml(out, opt); Hfor = out; }
       if (!H.node[E[0]] || !H.node[E[1]]) return;
       var pts = E[4], o = at(S, E[0], a.getAttribute('source'), E[2], (pts.length ? pts : [E[3]])[0])
@@ -2438,7 +2432,6 @@
     }
     return kindOf(cls, arcs, isAf(t), deco);
   }
-  function afLang(t) { var m = (t || '').slice(0, 3000).match(/<(\w+:)?map\b[^>]*>/); return !!m && /\blanguage=["']activity flow["']/.test(m[0]); }   // sbgnml.read's af: the language alone
   function isAf(t) {   // the file says Activity Flow
     var m = (t || '').slice(0, 3000).match(/<(\w+:)?map\b[^>]*>/);
     return !!m && (/\blanguage=["']activity flow["']/.test(m[0]) || /\bversion=["'][^"']*sbgn\.af\./.test(m[0]));
