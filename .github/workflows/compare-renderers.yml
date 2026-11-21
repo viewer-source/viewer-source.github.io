@@ -1,16 +1,25 @@
 # Every test that runs without a browser (tests/run-all.sh, the one list): the JavaScript renderers and their Python
 # twins the same byte for byte on every demo map, layout.js against the layout skill's scripts, the editor's writes
-# into CellDesigner, SBGN-ML and SBML read back by the converter. Runs when any changes, or by hand.
+# into CellDesigner, SBGN-ML and SBML read back by the converter. Runs on every push (each one a release), in four
+# parts at once on four machines (about 5 min), every part to its end even when another fails; a newer push stops an
+# older push's parts. Or by hand.
 name: Compare renderers
 on:
   push:
     branches: [main]
-    paths: ['renderers/**', 'tests/**']
   workflow_dispatch:
 permissions:
   contents: read
 jobs:
   compare:
+    strategy:
+      fail-fast: false
+      matrix:
+        part: [1, 2, 3, 4]
+    name: compare ${{ matrix.part }}
+    concurrency:
+      group: compare-${{ matrix.part }}
+      cancel-in-progress: true
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -26,4 +35,4 @@ jobs:
         with: {node-version: '22'}
       - run: pip install lxml && npm ci
       - run: python3 build.py   # downloads/: the SBGN-ML written from the GraphML maps, which some tests read
-      - run: sh tests/run-all.sh   # every test without a browser, the list kept there
+      - run: sh tests/run-all.sh ${{ matrix.part }}   # one part of every test without a browser, the list kept there
