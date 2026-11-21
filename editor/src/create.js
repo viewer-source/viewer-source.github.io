@@ -1949,8 +1949,8 @@
     // a line's rows (yEd's Properties View for an edge): its colour and width, its two ports as offsets from its glyph's centre
     // and a consumption's or production's Cardinality (SBGN's, CellDesigner's stoichiometry; empty: 1, none shown)
     // (a text field: a file's ? is shown as it is; typed, a number above 0 up to 1000)
-    var EROWS = [['ecol', 'Line colour', 'colour'], ['ewid', 'Line width', 'num', ' min="0.25" max="20"'], ['card', 'Cardinality', 'card'], ['sx', 'Source port X', 'num'], ['sy', 'Source port Y', 'num'],
-      ['tx', 'Target port X', 'num'], ['ty', 'Target port Y', 'num']];
+    var EROWS = [['ecol', 'Line colour', 'colour'], ['ewid', 'Line width', 'num', ' min="0.25" max="20"'], ['sx', 'Source port X', 'num'], ['sy', 'Source port Y', 'num'],
+      ['tx', 'Target port X', 'num'], ['ty', 'Target port Y', 'num'], ['card', 'Cardinality', 'card']]   // Cardinality last;
     // a reaction's rows, one reaction selected on a map whose format's part has a reaction's answers (PF_CD.rx)
     var RROWS = [['rev', 'Reversible', 'check'], ['cin', 'Reactant cardinality', 'card'], ['cout', 'Product cardinality', 'card']];   // the main reactant's and product's numbers where the part has them (PF_CD.rx.counts)
     function table(rows, cls) { return '<table class="m2-ed-ptab' + cls + '">' + rows.map(function (r) {
