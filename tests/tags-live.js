@@ -1,5 +1,5 @@
 // Tags and submap terminals in the editor (create.js makeEntity, termsFix; core.js terminals, fixMoved; sbgn_edit way,
-// terminal), on Testing Glycolysis SBGN-ML, Settings, Editing, CellDesigner compatible unticked: the palette's Tag and its
+// terminal), on Testing Glycolysis SBGN-ML, the palette's CellDesigner compatible unticked: the palette's Tag and its
 // SBGN extended mark; a submap made, a tag dropped on its right border becoming its terminal pointing right, one on its
 // bottom border pointing down; a free tag made, turned up in Properties (Orientation), the terminal's Orientation greyed;
 // the right terminal dragged down and out: it slides along the right side; dragged across to the left: it turns left;
