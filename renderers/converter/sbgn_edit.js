@@ -389,7 +389,7 @@
   // edge in the GraphML, placed as layout.count_box and graphml.write place it (the same arithmetic, so the same digits)
   var CARD = /^\s*(\d+(\.\d+)?|\?)\s*$/;
   var LAB = ['<y:EdgeLabel alignment="center" backgroundColor="#FFFFFF" configuration="AutoFlippingLabel" distance="2.0" fontFamily="Dialog" fontSize="9" fontStyle="plain" height="',
-    '" horizontalTextPosition="center" iconTextGap="4" lineColor="#BDC1C6" modelName="six_pos" modelPosition="', '" preferredPlacement="anywhere" ratio="0.5" textColor="#80868B" verticalTextPosition="bottom" visible="true" width="',
+    '" horizontalTextPosition="center" iconTextGap="4" lineColor="#9AA0A6" modelName="six_pos" modelPosition="', '" preferredPlacement="anywhere" ratio="0.5" textColor="#9AA0A6" verticalTextPosition="bottom" visible="true" width="',
     '" x="', '" xml:space="preserve" y="', '">', '<y:PreferredPlacementDescriptor angle="0.0" angleOffsetOnRightSide="0" angleReference="absolute" angleRotationOnRightSide="co" distance="-1.0" frozen="true" placement="anywhere" side="anywhere" sideReference="relative_to_edge_flow"/></y:EdgeLabel>'];
   function countText(v) {   // layout.count_text: ?, or a number as Python writes it (2, not 2.0; 2.5); anything else null
     var m = CARD.exec(v == null ? '' : String(v));

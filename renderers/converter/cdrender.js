@@ -579,8 +579,8 @@
     if (Math.abs(ny) < 0.2 ? nx < 0 : ny > 0) { nx = -nx; ny = -ny; }
     var w = 5 * t.length + 6, h = 11, b = 1 + Math.abs(nx) * w / 2 + Math.abs(ny) * h / 2;
     var cx = line[k][0] + ux * half + nx * b, cy = line[k][1] + uy * half + ny * b;
-    this.lines.push('<rect x="' + fmt(cx - w / 2) + '" y="' + fmt(cy - h / 2) + '" width="' + fmt(w) + '" height="' + fmt(h) + '" fill="#fff" stroke="#bdc1c6" stroke-width="0.8"/>' +
-      '<text x="' + fmt(cx) + '" y="' + fmt(cy + 3.2) + '" font-family="' + FONT + '" font-size="9" fill="#80868b" text-anchor="middle">' + escape(t) + '</text>');
+    this.lines.push('<rect x="' + fmt(cx - w / 2) + '" y="' + fmt(cy - h / 2) + '" width="' + fmt(w) + '" height="' + fmt(h) + '" fill="#fff" stroke="#9aa0a6" stroke-width="0.8"/>' +
+      '<text x="' + fmt(cx) + '" y="' + fmt(cy + 3.2) + '" font-family="' + FONT + '" font-size="9" fill="#9aa0a6" text-anchor="middle">' + escape(t) + '</text>');
   };
   D.reaction = function (rx) {
     var x = find(rx, 's:annotation/cd:extension'), typ = text(find(x, 'cd:reactionType'));

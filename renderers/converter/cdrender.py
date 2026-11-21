@@ -584,8 +584,8 @@ class Drawing:
         w, h = 5.0 * len(t) + 6, 11.0
         b = 1 + abs(nx) * w / 2 + abs(ny) * h / 2
         cx, cy = line[k][0] + ux * half + nx * b, line[k][1] + uy * half + ny * b
-        self.lines.append('<rect x="%s" y="%s" width="%s" height="%s" fill="#fff" stroke="#bdc1c6" stroke-width="0.8"/>'
-                          '<text x="%s" y="%s" font-family="%s" font-size="9" fill="#80868b" text-anchor="middle">%s</text>'
+        self.lines.append('<rect x="%s" y="%s" width="%s" height="%s" fill="#fff" stroke="#9aa0a6" stroke-width="0.8"/>'
+                          '<text x="%s" y="%s" font-family="%s" font-size="9" fill="#9aa0a6" text-anchor="middle">%s</text>'
                           % (fmt(cx - w / 2), fmt(cy - h / 2), fmt(w), fmt(h), fmt(cx), fmt(cy + 3.2), FONT, escape(t)))
 
     def reaction(self, rx):
