@@ -54,7 +54,7 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysis
   ok('the palette says SBGN extended', await page.isVisible('#m2-editwin .m2-ed-pext'));
   // a submap in empty room at the bottom right
   var sm = await make('submap', 1150, 760); await page.keyboard.press('Escape');
-  ok('a submap made', !!sm);
+  ok('a submap made', !!sm, errs.join(" / "));
   var S = await rect(sm);   // made larger, as submaps on maps are (a tag is 48 by 32)
   await page.mouse.click(S[0] + S[2] / 2, S[1] + S[3] / 2); await page.waitForTimeout(500);
   await page.fill('#m2-ed-w', '240'); await page.press('#m2-ed-w', 'Enter'); await page.waitForTimeout(1200);
@@ -95,7 +95,28 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysis
   // dragged across to the left side: it turns left
   R = await rect(tr); S = await rect(sm);
   await page.mouse.click(R[0] + R[2] / 2, R[1] + R[3] / 2); await page.waitForTimeout(500);
-  await drag([R[0] + R[2] / 2, R[1] + R[3] / 2], [S[0] + 4, R[1] + R[3] / 2]);
+  await page.mouse.move(R[0] + R[2] / 2, R[1] + R[3] / 2); await page.mouse.down(); await page.mouse.move(R[0] + R[2] / 2 - 6, R[1] + R[3] / 2 + 6, { steps: 3 });
+  await page.mouse.move(S[0] + S[2] / 2, S[1] + S[3] / 2 - 10, { steps: 8 }); await page.waitForTimeout(150);   // held in the submap's middle
+  var H = await rect(tr);
+  ok('held in the submap\u2019s middle during the drag, it is drawn on the border', Math.abs(H[0] - S[0]) < 2 || Math.abs(H[0] + H[2] - S[0] - S[2]) < 2 || Math.abs(H[1] - S[1]) < 2 || Math.abs(H[1] + H[3] - S[1] - S[3]) < 2, JSON.stringify([H, S]));
+  await page.mouse.move(S[0] + 4, R[1] + R[3] / 2, { steps: 8 }); await page.waitForTimeout(150);
+  H = await rect(tr);
+  ok('held near the left side, it is drawn there before the release', Math.abs(H[0] - S[0]) < 2 && Math.abs(H[2] - R[2]) < 2, JSON.stringify([H, S, R]));
+  await page.mouse.up(); await page.waitForTimeout(1500);
+  var H2 = await rect(tr);
+  ok('released, it stays where it was drawn', Math.abs(H2[0] - H[0]) < 1.5 && Math.abs(H2[1] - H[1]) < 1.5 && Math.abs(H2[2] - H[2]) < 1.5 && Math.abs(H2[3] - H[3]) < 1.5, JSON.stringify([H, H2]));
+  // held far out of the submap: still on its border; with Shift, free where the pointer is
+  R = await rect(tr);
+  await page.mouse.move(R[0] + R[2] / 2, R[1] + R[3] / 2); await page.mouse.down(); await page.mouse.move(R[0] + R[2] / 2 - 6, R[1] + R[3] / 2 - 6, { steps: 3 });
+  await page.mouse.move(R[0] - 150, R[1] - 120, { steps: 8 }); await page.waitForTimeout(150);
+  H = await rect(tr);
+  ok('held far out of the submap, it stays on its border', H[0] >= S[0] - 2 && H[0] + H[2] <= S[0] + S[2] + 2 && H[1] >= S[1] - 2 && H[1] + H[3] <= S[1] + S[3] + 2, JSON.stringify([H, S]));
+  await page.mouse.move(R[0] + R[2] / 2, R[1] + R[3] / 2, { steps: 8 }); await page.waitForTimeout(150); await page.mouse.up(); await page.waitForTimeout(1500);
+  R = await rect(tr); await page.mouse.click(R[0] + R[2] / 2, R[1] + R[3] / 2); await page.waitForTimeout(500); await page.keyboard.down('Shift'); await page.mouse.move(R[0] + R[2] / 2, R[1] + R[3] / 2); await page.mouse.down(); await page.mouse.move(R[0] + R[2] / 2 - 6, R[1] + R[3] / 2 - 6, { steps: 3 });
+  await page.mouse.move(R[0] - 150, R[1] - 120, { steps: 8 }); await page.waitForTimeout(150);
+  H = await rect(tr);
+  ok('with Shift, it follows the pointer out of the submap', H[0] + H[2] < S[0] - 20, JSON.stringify([H, S]));
+  await page.mouse.move(R[0] + R[2] / 2, R[1] + R[3] / 2, { steps: 8 }); await page.waitForTimeout(150); await page.mouse.up(); await page.keyboard.up('Shift'); await page.waitForTimeout(1500);
   g = glyph(await now(), tr); gs = glyph(await now(), sm);
   ok('dragged to the left side, it points right there, into the submap', !!g && g.way === 'right' && Math.abs(g.box[0] - gs.box[0]) < 0.01, JSON.stringify(g));
   // the submap dragged: its terminals go with it
@@ -125,7 +146,11 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysis
   var tj = await make('tag', 1250, 120); await page.keyboard.press('Escape');
   var J = await rect(tj); S = await rect(sm);
   await page.mouse.click(J[0] + J[2] / 2, J[1] + J[3] / 2); await page.waitForTimeout(500);
-  await drag([J[0] + J[2] / 2, J[1] + J[3] / 2], [S[0] + S[2] * 0.5, S[1] + S[3] * 0.25]);
+  await page.mouse.move(J[0] + J[2] / 2, J[1] + J[3] / 2); await page.mouse.down(); await page.mouse.move(J[0] + J[2] / 2 + 6, J[1] + J[3] / 2 + 6, { steps: 3 });
+  await page.mouse.move(S[0] + S[2] * 0.5, S[1] + S[3] * 0.25, { steps: 10 }); await page.waitForTimeout(150);
+  H = await rect(tj);
+  ok('held inside the submap during the drag, the free tag is drawn on its top side, pointing down', Math.abs(H[1] - S[1]) < 2 && H[3] > H[2], JSON.stringify([H, S]));
+  await page.mouse.up(); await page.waitForTimeout(1500);
   var gj = glyph(await now(), tj), gs2 = glyph(await now(), sm);
   ok('a free tag dragged into a submap becomes its terminal on its top side, pointing down, into it', !!gj && gj.cls === 'terminal' && gj.up === sm && gj.way === 'down' && Math.abs(gj.box[1] - gs2.box[1]) < 0.01, JSON.stringify(gj));
   J = await rect(tj); await page.keyboard.down('Shift');

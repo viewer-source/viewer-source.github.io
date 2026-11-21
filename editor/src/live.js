@@ -13,7 +13,7 @@
     // liveOrig: per holder drawn live, how to put back what the renderer drew (liveRec's record, or a CellDesigner
     // holder's { back, at }: liveBack)
     var liveC = null, liveOrig = null;
-    function bx(i) { if (liveC && liveC[i]) return liveC[i]; var b = boxOf(i);
+    function bx(i) { if (poseNow && poseNow[i]) return poseNow[i].box; if (liveC && liveC[i]) return liveC[i]; var b = boxOf(i);
       if (liveG && liveG[i]) return [b[0] + liveG[i][0], b[1] + liveG[i][1], b[2], b[3]]; return mv && mv.n.has(i) ? [b[0] + mv.dx, b[1] + mv.dy, b[2], b[3]] : b; }
     // the holders round what moves (and round the one resized) grown as on release (grown), drawn at once; seed: the
     // box of the one resized, which grows its holder only in Layout editing (in Full one resized past it leaves it) or
@@ -41,9 +41,11 @@
     function shift() {   // the drag shown on the drawing itself: groups moved, arcs touched hidden (drawn live)
       if (!gN || !mv) return false;
       if (!mv.dx && !mv.dy) { unshift(); return true; }   // back where it started: the arcs drawn as the renderer drew them
+      poseBack();
       var tr = 'translate(' + mv.dx + ' ' + mv.dy + ')';
       mv.n.forEach(function (i) { var g = gN[nodes2[i].id]; if (g) g.setAttribute('transform', tr); });
       live = live || new Set();
+      posed();
       edges2.forEach(function (e, k) {
         var a = mv.n.has(e.s), b = mv.n.has(e.t), some = e.pts.some(function (p) { return mv.p.has(p); });
         var gs = gE[e.id];   // a CellDesigner line has two groups, its halo's and its own
@@ -57,7 +59,43 @@
     function unshift() {   // the drawing as it was: a press that moved nothing leaves nothing hidden or shifted
       if (gN) Object.keys(gN).forEach(function (k) { gN[k].removeAttribute('transform'); });
       if (gE) Object.keys(gE).forEach(function (k) { gE[k].forEach(function (g) { g.removeAttribute('transform'); g.style.display = ''; }); });
-      live = null; liveG = null; liveOff(); dropCopies(); frozen = false;
+      poseBack(); live = null; liveG = null; liveOff(); dropCopies(); frozen = false;
+    }
+    // a node shown during a drag as the release will place it, turned and moved (a submap's terminal held on its border,
+    // its way by its side): each function of livePose(sets, alone, out) puts into out, by node index, { box, way, turn }
+    // (turn: degrees from the way it is drawn); the node's drawing is turned round its centre to that box, its texts kept
+    // upright, its lines drawn live to its ports turned with it (bx, posePort, drawnShape)
+    var livePose = [], poseNow = null, poseText = null;
+    function posed() {
+      var out = {};
+      livePose.forEach(function (f) { f(mv, !!(drag && drag.alone), out); });
+      if (!Object.keys(out).length) return;
+      poseNow = out; poseText = new Map();
+      var o = picOff();
+      Object.keys(out).forEach(function (k) {
+        var i = +k, p = out[k], b = boxOf(i), g = gN[nodes2[i].id];
+        if (!g) return;
+        var c0 = [b[0] + b[2] / 2 - o[0], b[1] + b[3] / 2 - o[1]], c1 = [p.box[0] + p.box[2] / 2 - o[0], p.box[1] + p.box[3] / 2 - o[1]];
+        g.setAttribute('transform', 'translate(' + f1(c1[0]) + ' ' + f1(c1[1]) + ') rotate(' + p.turn + ') translate(' + f1(-c0[0]) + ' ' + f1(-c0[1]) + ')');
+        if (p.turn) g.querySelectorAll('text').forEach(function (el) {   // turned back round the same centre: the label moves as one, its lines stacked as drawn
+          var was = el.getAttribute('transform'); poseText.set(el, was);
+          el.setAttribute('transform', 'rotate(' + (-p.turn) + ' ' + f1(c0[0]) + ' ' + f1(c0[1]) + ')' + (was ? ' ' + was : ''));
+        });
+        edges2.forEach(function (e, j) { if ((e.s === i || e.t === i) && gE && gE[e.id]) { gE[e.id].forEach(function (q) { q.style.display = 'none'; }); live.add(j); } });
+      });
+    }
+    function poseBack() {   // the nodes posed drawn as before (those the move still shifts get their shift again from shift)
+      if (poseText) poseText.forEach(function (v, el) { if (v == null) el.removeAttribute('transform'); else el.setAttribute('transform', v); });
+      if (poseNow && gN) Object.keys(poseNow).forEach(function (k) { var g = gN[nodes2[+k].id]; if (g && !(mv && mv.n.has(+k))) g.removeAttribute('transform'); });
+      poseNow = null; poseText = null;
+    }
+    function posePort(i, off, k) {   // a line's port on node i as its pose places it (else turned with it)
+      var p = poseNow && poseNow[i];
+      if (!p) return off;
+      if (p.ports && p.ports[k]) return p.ports[k];
+      if (!p.turn) return off;
+      var a = p.turn * Math.PI / 180, c = Math.cos(a), s = Math.sin(a);
+      return [off[0] * c - off[1] * s, off[0] * s + off[1] * c];
     }
     function keyShift(ks, dx, dy) {   // the keys' move on the drawing: groups moved by the sum since the last drawing, arcs touched drawn live
       if (!gN) return;

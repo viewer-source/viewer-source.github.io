@@ -1225,7 +1225,7 @@
           var old = V.img.src || '';
           V.img.removeAttribute('id'); pic.id = 'm2-img'; pic.setAttribute('aria-label', map.title); V.img.replaceWith(pic); V.img = pic;
           if (old.indexOf('blob:') === 0) URL.revokeObjectURL(old);
-          gN = {}; gE = {}; live = null; liveC = null; liveOrig = null; sizeRec = null; keyed = null; liveG = null; copies = []; frozen = false;
+          gN = {}; gE = {}; live = null; liveC = null; liveOrig = null; sizeRec = null; keyed = null; liveG = null; poseNow = null; poseText = null; copies = []; frozen = false;
           pic.querySelectorAll('[data-n]').forEach(function (g) { gN[g.getAttribute('data-n')] = g; });
           pic.querySelectorAll('[data-e]').forEach(function (g) { var k = g.getAttribute('data-e'); (gE[k] = gE[k] || []).push(g); });
           if (cd) cdSessionSoon();
@@ -1296,7 +1296,7 @@
       document.getElementById('m2-title').textContent = n;
       V.grid.classList.add('m2-editing');
       buttons();
-      gN = gE = null; mv = live = null; liveG = null; copies = []; frozen = false; cdBase = null;
+      gN = gE = null; mv = live = null; liveG = null; poseNow = null; poseText = null; copies = []; frozen = false; cdBase = null;
       if (same && same.text === t) { (cd ? cdpy() : yr()).then(function () { if (on && V.current === map && !edits && !gN) render(); }); paint(); quiet(); shownWhole(); return; }
       quiet();
       render();
@@ -1951,11 +1951,15 @@
       var b = liveC && liveC[i] ? liveC[i] : still ? boxOf(i) : bx(i), n = nodes2[i];
       // the SBGN AF view draws an activity as a sharp rectangle: its selection and highlights take that shape (else
       // the grey under a selected activity keeps the protein's rounded corners)
-      var sh = drawnShape(i), d = outlineD(sh, b[0], b[1], b[2], b[3]);
+      var sh = drawnShape(i, still), d = outlineD(sh, b[0], b[1], b[2], b[3]);
       if (sh === n.shape && n.shape.props.mcount === '2') d = outlineD(n.shape, b[0] + 6, b[1] + 6, b[2], b[3]) + d;
       return d;
     }
-    function drawnShape(i) { return afSbgn && AF_KINDS.test(nodes2[i].shape.kind) ? { kind: 'Macromolecule', props: { radius: '0' } } : nodes2[i].shape; }
+    function drawnShape(i, still) {   // a node posed during a drag (live.js posed) with its way there, a tag's orientation (still: at rest)
+      var p = !still && poseNow && poseNow[i];
+      if (p && p.way) return { kind: nodes2[i].shape.kind, props: Object.assign({}, nodes2[i].shape.props, { orientation: p.way }) };
+      return afSbgn && AF_KINDS.test(nodes2[i].shape.kind) ? { kind: 'Macromolecule', props: { radius: '0' } } : nodes2[i].shape;
+    }
     function cut(port, outer, b) {   // where the arc from outer to its port inside the box b meets the box's edge
       if (!(port[0] > b[0] && port[0] < b[0] + b[2] && port[1] > b[1] && port[1] < b[1] + b[3])) return port;
       var dx = port[0] - outer[0], dy = port[1] - outer[1], best = 1;
@@ -1980,20 +1984,20 @@
         return pa ? parseFloat(pa.getAttribute(a)) || 0 : 0;
       };
       var so = [o('sx'), o('sy')], to = [o('tx'), o('ty')];
-      if (B === bx) { so = glyphPort(e.s, so, e.id); to = glyphPort(e.t, to, e.id); }
+      if (B === bx) { so = posePort(e.s, glyphPort(e.s, so, e.id), k); to = posePort(e.t, glyphPort(e.t, to, e.id), k); }
       var pts = [[S[0] + S[2] / 2 + so[0], S[1] + S[3] / 2 + so[1]]];
       e.pts.forEach(function (pi) { pts.push(P(pi)); });
       pts.push([T[0] + T[2] / 2 + to[0], T[1] + T[3] / 2 + to[1]]);
-      pts[0] = cutShape(mine && !pp.end && pp.n2 != null ? pp.n2 : e.s, pts[0], pts[1], S);
-      pts[pts.length - 1] = cutShape(mine && pp.end && pp.n2 != null ? pp.n2 : e.t, pts[pts.length - 1], pts[pts.length - 2], T);
+      pts[0] = cutShape(mine && !pp.end && pp.n2 != null ? pp.n2 : e.s, pts[0], pts[1], S, B !== bx);
+      pts[pts.length - 1] = cutShape(mine && pp.end && pp.n2 != null ? pp.n2 : e.t, pts[pts.length - 1], pts[pts.length - 2], T, B !== bx);
       return pts;
     }
     // where the arc from outer to its port inside node n's shape (at box b) first meets the shape outline, as the
     // renderer's visual end (so a line followed live ends where the drawing after the drop ends it, not at the box's
     // edge off a round shape); a port on the outline (within half a unit, as the renderer) counts as inside, so one on the
     // far side is reached where the line first meets the shape, never across it; the port itself when outside
-    function cutShape(n, port, outer, b) {
-      var cx = b[0] + b[2] / 2, cy = b[1] + b[3] / 2, R = rimOf(n, b), q = [port[0] - cx, port[1] - cy];
+    function cutShape(n, port, outer, b, still) {   // still: at rest, a pose left aside
+      var cx = b[0] + b[2] / 2, cy = b[1] + b[3] / 2, R = rimOf(n, b, still), q = [port[0] - cx, port[1] - cy];
       if (!inRim(R, q) && onRim(R, q).d >= 0.5) return port;
       var o = [outer[0] - cx, outer[1] - cy], best = null;
       R.forEach(function (A, i) {
@@ -2142,8 +2146,8 @@
     // at a corner. The outline is the drawn one (outlineD), flattened into a polygon with the 45 degree points kept.
     var rimMemo = new Map();
     function rim(n) { return rimOf(n, bx(n)); }   // node n's outline round its centre, a closed polygon
-    function rimOf(n, b) {   // the same at box b
-      var sh = drawnShape(n), key = sh.kind + JSON.stringify(sh.props) + '|' + b[2] + '|' + b[3], R = rimMemo.get(key);
+    function rimOf(n, b, still) {   // the same at box b
+      var sh = drawnShape(n, still), key = sh.kind + JSON.stringify(sh.props) + '|' + b[2] + '|' + b[3], R = rimMemo.get(key);
       if (!R) { R = flatten(outlineD(sh, -b[2] / 2, -b[3] / 2, b[2], b[3])); if (rimMemo.size > 200) rimMemo.clear(); rimMemo.set(key, R); }
       return R;
     }
@@ -3111,7 +3115,7 @@
       settle(regroup('box', new Set([ri]), boxOf, B0r), { moving: [rid] }, doneR, function () { text = unpush(); parse(); liveOff(); paint(); });   // refused: taken back, nothing said
     }
     function dragEnd(e) {   // the end of a drag of the selection, a port or a resize
-      var d = drag; drag = null; var sets = mv; mv = null;   // the moved groups and live arcs stay until the map is drawn again
+      var d = drag; drag = null; var sets = mv; mv = null; poseNow = null;   // the file holds the pose from here (the drawing keeps it until drawn again)   // the moved groups and live arcs stay until the map is drawn again
       if (!d.port && !d.rs) frozen = true;   // the copies too: the file now has the new places, the picture not yet
       if (d.port) {   // dragged: the port set; a click: that end selected, the line staying lit, for the arrow keys
         if (d.port.n2 != null) reconnect(d.port);

@@ -835,6 +835,38 @@
       edges2.forEach(function (q) { if (q.s != null && q.t != null) [[q.s, q.t], [q.t, q.s]].forEach(function (p) { if (nodes2[p[0]].shape.kind === 'Tag' && (ids.has(nodes2[p[0]].id) || ids.has(nodes2[p[1]].id))) aim.push(nodes2[p[0]].id); }); });
       tagAim(aim);
     });
+    // the same during the drag (live.js livePose): each tag shown where the release puts it, by the rules above: a terminal
+    // held on its submap's border, sliding along it and turning at its corners (with Shift and its centre out of the
+    // submap, with one line, free); a free tag dragged with its centre into a submap on its border; a free tag with one
+    // line facing the line's other end
+    var TURN = { right: 0, down: 90, left: 180, up: 270 };
+    livePose.push(function (sets, alone, out) {
+      if (!sbJs || !sbJs.terminal) return;
+      var moved = function (k) { var b = boxOf(k); return sets.n.has(k) ? [b[0] + sets.dx, b[1] + sets.dy, b[2], b[3]] : b; };
+      var mid = function (b) { return [b[0] + b[2] / 2, b[1] + b[3] / 2]; };
+      nodes2.forEach(function (n, i) {
+        if (n.shape.kind !== 'Tag' || (n.sub != null && sets.n.has(n.sub))) return;   // a terminal going with its submap
+        var es = edges2.map(function (q, k) { return k; }).filter(function (k) { var q = edges2[k]; return (q.s === i || q.t === i) && q.s != null && q.t != null; });
+        var mine = sets.n.has(i);
+        if (!mine && !(n.sub == null && es.length === 1 && sets.n.has(edges2[es[0]].s === i ? edges2[es[0]].t : edges2[es[0]].s))) return;   // nothing it does follows this move
+        var mb = moved(i), on = null, q = null, now = (sbJs.wayOfR && sbJs.wayOfR(realizerOf(n.el))) || 'right';
+        if (mine && n.sub != null) { if (!(alone && !centreIn(mb, boxOf(n.sub)) && es.length <= 1)) q = boxOf(n.sub); }
+        else if (mine && !alone) { var j = subIn(mb, sets.n); if (j >= 0) q = boxOf(j); }
+        if (q) on = onBorder(mb, q);
+        else {   // free, facing its one line's other end (tagAim)
+          if (es.length !== 1) return;
+          var e = edges2[es[0]], oc = mid(moved(e.s === i ? e.t : e.s)), c = mid(mb), dx = oc[0] - c[0], dy = oc[1] - c[1];
+          var way = Math.abs(dx) >= Math.abs(dy) ? (dx >= 0 ? 'right' : 'left') : (dy >= 0 ? 'down' : 'up');
+          on = [!!HORIZ[way] === (mb[2] >= mb[3]) ? mb : [c[0] - mb[3] / 2, c[1] - mb[2] / 2, mb[3], mb[2]], way];   // as tagTurnT: long across its point's direction
+        }
+        var nb = on[0], tip = { right: [nb[2] / 2, 0], left: [-nb[2] / 2, 0], down: [0, nb[3] / 2], up: [0, -nb[3] / 2] }[on[1]], ports = {};
+        es.forEach(function (k) {   // its lines' ports as tagTurnT sets them: a free tag's at its point, a terminal's from inside at its point, from outside at its back
+          var e = edges2[k], oc = mid(moved(e.s === i ? e.t : e.s)), inside = q && oc[0] > q[0] && oc[0] < q[0] + q[2] && oc[1] > q[1] && oc[1] < q[1] + q[3];
+          ports[k] = !q || inside ? tip : [-tip[0], -tip[1]];
+        });
+        out[i] = { box: nb, way: on[1], turn: (TURN[on[1]] - TURN[now] + 360) % 360, ports: ports };
+      });
+    });
     function centreIn(b, q) { var c = [b[0] + b[2] / 2, b[1] + b[3] / 2]; return c[0] >= q[0] && c[0] <= q[0] + q[2] && c[1] >= q[1] && c[1] <= q[1] + q[3]; }
     function subIn(b, not) {   // the innermost submap holding b's centre (not one of the set `not`), else -1
       var j = -1, a = Infinity;
