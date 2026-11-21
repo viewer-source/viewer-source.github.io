@@ -24,6 +24,7 @@ function viewerHunks() {   // [old, new] pieces of the styles copy of the viewer
   var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more ? '  ' + more : '')); };
   if (local) {
     var hunks = viewerHunks();
+    if (!hunks.length) { console.log('--local: no change against ' + (process.env.REV || 'HEAD') + ' to route in (set REV to the commit live now)'); process.exit(2); }
     await page.route(function (u) { return u.href.split('#')[0].split('?')[0] === base; }, async function (r) {
       var res = await r.fetch(), t = await res.text(), miss = 0;
       hunks.forEach(function (h) {
@@ -38,8 +39,8 @@ function viewerHunks() {   // [old, new] pieces of the styles copy of the viewer
       r.fulfill({ response: res, body: t, headers: Object.assign({}, res.headers(), { 'content-type': 'text/html; charset=utf-8' }) });
     });
   }
-  await page.addInitScript(function () {   // the theme at the first frame the browser paints
-    requestAnimationFrame(function () { window.__th0 = document.documentElement.getAttribute('data-theme'); });
+  await page.addInitScript(function () {   // the theme as the viewer's first element is put in the page
+    new MutationObserver(function (m, o) { if (document.querySelector('.m2')) { window.__th0 = document.documentElement.getAttribute('data-theme'); o.disconnect(); } }).observe(document, { childList: true, subtree: true });
   });
   var settle = async function () { await page.waitForSelector('.m2-ri[data-win="set"]', { timeout: 30000 }); await page.waitForTimeout(2500); };
   var openSet = async function () { if (!(await page.$eval('#m2-set-theme', function (x) { return !!x.offsetParent; }))) { await page.click('.m2-ri[data-win="set"]'); await page.waitForTimeout(600); } };
@@ -77,6 +78,7 @@ function viewerHunks() {   // [old, new] pieces of the styles copy of the viewer
   ok('the chosen map in grey #71777c', (await chosenBg()) === GREY, await chosenBg());
   ok('the list\'s column linen', (await bg('.m2-nav')) === LINEN, await bg('.m2-nav'));
   ok('the map window white', (await bg('#m2-view')) === WHITE, await bg('#m2-view'));
+  ok('the annotation panel beside the map linen', (await bg('.m2-info')) === LINEN, await bg('.m2-info'));
   ok('the Theme drop-down white on the linen', (await bg('#m2-set-theme')) === WHITE, await bg('#m2-set-theme'));
   var bl = await blues();
   ok('no accent blue left outside the map', bl.length === 0, bl.slice(0, 5).join(' '));
@@ -95,7 +97,7 @@ function viewerHunks() {   // [old, new] pieces of the styles copy of the viewer
   console.log('-- reload, undo, redo');
   await page.reload({ waitUntil: 'load' }); await settle();
   ok('a reload keeps Linen', (await theme()) === 'linen' && (await bg('.m2-nav')) === LINEN);
-  ok('Linen set before the first frame is painted', (await page.evaluate(function () { return window.__th0; })) === 'linen');
+  ok('Linen set before the viewer is in the page', (await page.evaluate(function () { return window.__th0; })) === 'linen');
   await openSet(); await page.selectOption('#m2-set-theme', 'default'); await page.waitForTimeout(300);
   ok('Default again: the blue back', (await chosenBg()) === BLUE && (await theme()) === null && (await page.evaluate(function () { return localStorage.getItem('atlas-theme'); })) === null);
   await page.mouse.click(5, 880); await page.keyboard.press('Control+KeyZ'); await page.waitForTimeout(400);
@@ -113,6 +115,15 @@ function viewerHunks() {   // [old, new] pieces of the styles copy of the viewer
   var sq = pal ? await pal.evaluate(function (e) { return getComputedStyle(e).backgroundColor; }) : null;
   ok('a palette sign under the pointer: a square darker than the panel', sq && sq !== LINEN && sq !== 'rgba(0, 0, 0, 0)' && sq !== 'rgb(241, 243, 244)', sq);
   ok('the Edit window on the linen column', (await bg('.m2-nav')) === LINEN);
+  await page.evaluate(function () { localStorage.setItem('atlas-edit-side', 'right'); }); await page.reload({ waitUntil: 'load' }); await settle();
+  await page.click('.m2-ri[data-win="edit"]'); await page.waitForTimeout(3500);
+  ok('the Edit panel on the right linen', (await page.$eval('#m2-epanel', function (e) { return !!e.offsetParent; })) && (await bg('#m2-epanel')) === LINEN, await bg('#m2-epanel'));
+
+  console.log('-- a dark style in Linen');
+  await page.goto(base + '?style=default-panel-dark#' + MAP, { waitUntil: 'load' }); await page.waitForTimeout(4000);
+  var tx = await page.evaluate(function () { var e = document.querySelector('.m2-item:not(.m2-on)'); return e && getComputedStyle(e).color; });
+  var lum = tx ? tx.match(/\d+/g).slice(0, 3).reduce(function (a, v) { return a + +v; }, 0) / 3 : 255;
+  ok('the list\'s text dark on the linen', (await bg('.m2-nav')) === LINEN && lum < 100, tx);
   ok('no script errors', errs.length === 0, errs.slice(0, 3).join(' | '));
   await b.close();
   console.log(bad ? bad + ' WRONG' : 'all ok');

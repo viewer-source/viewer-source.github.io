@@ -832,8 +832,8 @@
     var termXml = {}, termOf = {};
     G.ids.forEach(function (id) {
       if (S.glyph[id] || !isTerm(G, id)) return;
-      var sm = subNode(G, id, S);
-      if (!sm || (S.glyph[sm] && S.glyph[sm].el.getAttribute('class') !== 'submap')) return;
+      var sm = termSub(G, id, S);
+      if (!sm) return;
       termOf[id] = sm;
       var L0 = labelsOf(G, id), tn = L0.main ? ownText(L0.main) : '', si = S.glyph[sm] ? T.indent(S.glyph[sm].bbox) : ind0 + '  ';
       var xml = '<' + pre + 'glyph class="terminal" id="' + esc(id) + '" orientation="' + wayOf(G.node[id].geo.parentNode) + '">' + (tn ? '\n' + si + '  <' + pre + 'label text="' + esc(tn) + '"/>' : '') +
@@ -1248,6 +1248,9 @@
     });
     return best;
   }
+  // the submap a terminal goes into: the one its box touches, if the file holds none under another class there; one
+  // rule for retag (what is cut) and write0 (what is written), so the two never disagree and a pass changes nothing
+  function termSub(G, id, S) { var sm = subNode(G, id, S); return sm && !(S.glyph[sm] && S.glyph[sm].el.getAttribute('class') !== 'submap') ? sm : null; }
   function termPlace(t, id, opt) {
     var G = gml(t, opt), sm = subNode(G, id);
     if (!sm) return t;
@@ -1266,8 +1269,11 @@
     Object.keys(S.glyph).forEach(function (id) {
       var el = S.glyph[id].el, c = el.getAttribute('class'), up = el.parentNode, inSub = c === 'terminal' && !!up.getAttribute && up.getAttribute('class') === 'submap';
       if (!G.node[id] || !isTag(G, id)) return;
-      var term = isTerm(G, id);
-      if ((c === 'tag' && term) || (inSub && (!term || subNode(G, id, S) !== up.getAttribute('id')))) { T.cut(el); n++; }
+      var term = isTerm(G, id), sm = term ? termSub(G, id, S) : null;
+      // a terminal with no submap to go to (its submap moved away alone, a tag made a terminal or a new one touching
+      // none) stays where the file has it: cut, it would be written as a free tag, cut again as the GraphML's terminal on
+      // the next pass, and so on without end
+      if (term && sm ? c === 'tag' || (inSub && sm !== up.getAttribute('id')) : inSub && !term) { T.cut(el); n++; }
     });
     return n ? T.text() : t;
   }

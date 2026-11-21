@@ -447,26 +447,14 @@
     function confettiSquares() { return '<span class="m2-cs-sw">' + [0, 1, 2, 3, 4].map(function (k) { var x = confettiHex(k * 137.508 % 360); return '<i style="background:' + x + '" title="' + x.toUpperCase() + '"></i>'; }).join('') + '</span>'; }
     // Colours on SBGN-ML maps, kept per map or read from it (mapCols): the map's own (sbgn_edit.defaults: the fill most glyphs of the
     // kind have; the Default colours for a kind the map lacks), the viewer's Default colours, none, or Confetti
-    // O.L., a choice of both palettes' Colours: a fixed set by kind, read from a CellDesigner map drawn in it (proteins
-    // mauve, small molecules olive, genes a pale yellow green, RNA a sage, complexes a light grey, phenotypes a pale
-    // khaki, compartments green). On SBGN-ML maps a nucleic acid feature takes the RNA's colour and a compartment the
-    // tint its green is drawn at on a CellDesigner map (a quarter on white); a kind it has no colour for as Mist and sage.
-    // The CellDesigner palette reads OL_CD by class (cdcreate.js), this palette OL_SB by kind; lines black
-    var OL_CD = { PROTEIN: 'E7DBE2', RECEPTOR: 'E7DBE2', ION_CHANNEL: 'E7DBE2', TRUNCATED: 'E7DBE2', GENE: 'F2FDE2', RNA: 'CCE2D5', ANTISENSE_RNA: 'CCE2D5',
-                  COMPLEX: 'F7F7F7', PHENOTYPE: 'EBEDDE', SIMPLE_MOLECULE: 'D7D8BA', ION: 'D7D8BA', DRUG: 'D7D8BA', compartment: '66B44D' };
-    var OL_SB = { macromolecule: '#E7DBE2', 'simple chemical': '#D7D8BA', 'nucleic acid feature': '#CCE2D5', complex: '#F7F7F7', phenotype: '#EBEDDE', compartment: '#D9ECD3' };
-    function olFill(cls, unit) {   // O.L.'s fill for an SBGN-ML kind (an activity by its unit's kind), else Mist and sage's
-      var c = (cls === 'biological activity' ? sbJs.unitClass(unit) : cls || '').replace(/ multimer$/, '');
-      return OL_SB[c] || sbJs.fillFor(cls, unit);
-    }
-    var SB_COLS = [['file', 'Original', 'The map\u2019s own colours, as they were before another choice; new glyphs in the colour most glyphs of their kind have on it'], ['default', 'Mist and sage', 'The whole map and new glyphs in the viewer\u2019s starting colours: a pale blue for proteins, a pale green for small molecules'], ['ol', 'O.L.', 'The whole map and new glyphs in a soft set: mauve proteins, olive small molecules, sage nucleic acids, a green tint for compartments'], ['none', 'No colours', 'The whole map and new glyphs unfilled'], ['custom', 'Custom default', 'The whole map and new glyphs in the colours kept by Set as default; a kind with none as it is'], ['confetti', 'Confetti', 'Every glyph of the map, and every new one, a pastel of its own']];
-    function sbCols() { return mapCols(['file', 'none', 'default', 'ol', 'confetti', 'custom'], sbIs); }
+    var SB_COLS = [['file', 'Original', 'The map\u2019s own colours, as they were before another choice; new glyphs in the colour most glyphs of their kind have on it'], ['default', 'Mist and sage', 'The whole map and new glyphs in the viewer\u2019s starting colours: a pale blue for proteins, a pale green for small molecules'], ['none', 'No colours', 'The whole map and new glyphs unfilled'], ['custom', 'Custom default', 'The whole map and new glyphs in the colours kept by Set as default; a kind with none as it is'], ['confetti', 'Confetti', 'Every glyph of the map, and every new one, a pastel of its own']];
+    function sbCols() { return mapCols(['file', 'none', 'default', 'confetti', 'custom'], sbIs); }
     var SB_SQ = ['macromolecule', 'simple chemical', 'nucleic acid feature', 'phenotype', 'compartment'];
     function sbSquares(mode) {   // five at most, the first at the right (row-reverse), each colour once
       if (mode === 'confetti') return confettiSquares();
       var seen = {}, h = '', kept = mode === 'custom' ? defsKept() : {};
       SB_SQ.forEach(function (c) {
-        var k = kept[c], x = mode === 'none' ? '#FFFFFF' : mode === 'default' ? sbJs.fillFor(c) : mode === 'ol' ? olFill(c) : k && k.fill ? k.fill : sbJs.defaults(src(), null, c).fill || '#FFFFFF';
+        var k = kept[c], x = mode === 'none' ? '#FFFFFF' : mode === 'default' ? sbJs.fillFor(c) : k && k.fill ? k.fill : sbJs.defaults(src(), null, c).fill || '#FFFFFF';
         x = String(x).toUpperCase();
         if (seen[x]) return; seen[x] = 1;
         h += '<i style="background:' + x + '" title="' + c + ', ' + x + '"></i>';
@@ -498,7 +486,6 @@
         var base = c.replace(/ multimer$/, ''), u = acts[n.id], o;
         var ff = sbJs.fillFor(u != null ? 'biological activity' : base, u);
         if (mode === 'default') o = { fill: ff, line: null };
-        else if (mode === 'ol') o = { fill: ff ? olFill(u != null ? 'biological activity' : base, u) : null, line: null };   // only what Mist and sage fills
         else if (mode === 'none') o = { fill: null, line: null };
         // Custom: a look kept the old way (a share of a size, no w) left out, as defOf
         else if (mode === 'custom') { var k = kept[lookKey(base, u)]; if (!k || !(k.w > 0)) return; o = {}; ['fill', 'line', 'width'].forEach(function (q) { if (q in k) o[q] = k[q]; }); }
@@ -2636,7 +2623,6 @@
       var kc = cm === 'custom' && !!k;   // Colours: Custom, the look kept
       if (kc) ['fill', 'line', 'width'].forEach(function (q) { if (q in k) D[q] = k[q]; });
       else if (cm === 'default') { D.fill = sbJs.fillFor(u != null ? 'biological activity' : cls, u != null ? u : ACT_UNIT[kind0]); D.line = null; D.fallback = true; }
-      else if (cm === 'ol') { var fo = u != null ? 'biological activity' : cls, uo = u != null ? u : ACT_UNIT[kind0]; D.fill = sbJs.fillFor(fo, uo) ? olFill(fo, uo) : null; D.line = null; D.fallback = false; }
       else if (cm === 'none') { D.fill = null; D.line = null; D.fallback = false; }
       else if (cm === 'confetti' && cls !== 'compartment' && sbJs.fillFor(u != null ? 'biological activity' : cls, u != null ? u : ACT_UNIT[kind0])) { D.fill = confettiFill(src()); D.line = null; D.fallback = false; }   // entities only: FILL has none for processes, gates and empty sets
       // a metabolite's activity is placed square, as tall as the others, in either view (in the reduced
