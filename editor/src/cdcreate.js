@@ -160,11 +160,11 @@
     // the map; the Default one for a class the map has none of; the choice when none is kept), CellDesigner's own (cd_make
     // LOOK and COMP), the viewer's Default scheme (Settings, Map colours) by the class's role, or none (white, as
     // CellDesigner has no unfilled species), or Confetti (a pastel of its own, create.js confettiFill)
-    var CD_COLS = [['file', 'Original', 'The map\u2019s own colours, as they were before another choice; new species and compartments in the colour most of their class have on it, Default for a class it has none of'], ['cd', 'CellDesigner', 'The whole map and new species and compartments in CellDesigner\u2019s own colours'], ['default', 'Mist and sage', 'The whole map and new species and compartments in the viewer\u2019s starting colours: a pale blue for proteins, a pale green for small molecules'], ['none', 'No colours', 'The whole map and new species and compartments white'], ['custom', 'Custom default', 'The whole map and new species in the colours kept by Set as default; a class with none as it is'], ['confetti', 'Confetti', 'Every species of the map, and every new one, a pastel of its own; compartments as they are']];
+    var CD_COLS = [['file', 'Original', 'The map\u2019s own colours, as they were before another choice; new species and compartments in the colour most of their class have on it, Default for a class it has none of'], ['cd', 'CellDesigner', 'The whole map and new species and compartments in CellDesigner\u2019s own colours'], ['default', 'Mist and sage', 'The whole map and new species and compartments in the viewer\u2019s starting colours: a pale blue for proteins, a pale green for small molecules'], ['ol', 'O.L.', 'The whole map and new species and compartments in a soft set: mauve proteins, olive small molecules, sage RNA, green compartments'], ['none', 'No colours', 'The whole map and new species and compartments white'], ['custom', 'Custom default', 'The whole map and new species in the colours kept by Set as default; a class with none as it is'], ['confetti', 'Confetti', 'Every species of the map, and every new one, a pastel of its own; compartments as they are']];
     // the Default compartment's paint, the official maps': cdrender draws a compartment's band at a quarter of its colour,
     // so this shows as the Default scheme's compartment (#F7F6F3, sbgn_edit FILL; tests/cd-colours-default.js checks the two agree)
     var CD_COMP_DEFAULT = 'ffdfdbce';
-    function cdCols() { return mapCols(['file', 'none', 'cd', 'default', 'confetti', 'custom'], cdIs); }
+    function cdCols() { return mapCols(['file', 'none', 'cd', 'default', 'ol', 'confetti', 'custom'], cdIs); }
     function cdIs(mode) {   // the map's species coloured as the choice colours them (cdFills), or each a confetti pastel, or as kept for Original; null: no species to read or nothing kept (cd_make.classColours, one pass kept per text)
       var t = cd && cd.now;
       if (!t || !cdMk) return false;
@@ -191,6 +191,7 @@
       if (m === 'confetti') { if (cls !== 'DEGRADED' && !comp) return 'ff' + confettiFill(t).slice(1); m = 'file'; }   // create.js (no file yet: the first hue); a degraded species or a compartment as From map
       if (m === 'custom') { var k = !comp && cdKept()[cls]; if (k && k.fill) return 'ff' + k.fill.slice(1).toLowerCase(); m = 'file'; }   // a class with none kept: From map
       if (m === 'file') { var f = t ? (comp ? cdMk.compartmentColour(t) : cdMk.classColour(t, cls)) : null; if (f) return f; m = 'default'; }   // none of that class on the map (or no file yet): Default
+      if (m === 'ol') { var o = OL_CD[comp ? 'compartment' : cls]; if (o) return 'ff' + o.toLowerCase(); m = 'default'; }   // create.js; a class it has no colour for as Mist and sage
       if (m === 'cd') return comp ? cdMk.COMP.colour : null;
       if (comp) return CD_COMP_DEFAULT;
       if (cls === 'UNKNOWN') return CD_UNKNOWN;   // Default (also a map with none of its own): no outline, so not white

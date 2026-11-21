@@ -86,7 +86,7 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
   await page.keyboard.press('?'); await page.waitForTimeout(500);
   var tips = await page.$eval('#m2-tips', function (t) { return t.hidden ? '' : t.textContent; }).catch(function () { return ''; });
   ok('5. Gestures and keys: + and - zoom in and out', /zoom in and out/.test(tips) && !/zoom out and in/.test(tips));
-  ok('5. Gestures and keys: S, Esc, Delete, select all, save', /the map’s own file or its SBGN-ML/.test(tips) && /clears the selection/.test(tips) && /puts the map shown in Deleted/.test(tips) && /select all/.test(tips) && /save at once/.test(tips));
+  ok('5. Gestures and keys: S, Esc, Cmd + Delete (Delete alone not), select all, save', /the map’s own file or its SBGN-ML/.test(tips) && /clears the selection/.test(tips) && /Delete alone does not, as in Finder/.test(tips) && /select all/.test(tips) && /save at once/.test(tips));
   await page.keyboard.press('Escape');
 
   ok('no script error', !errs.length, errs.join(' | '));
