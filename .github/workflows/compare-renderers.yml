@@ -1,7 +1,6 @@
-# The JavaScript renderers and their Python twins must give the same, byte for byte: yrender.py and
-# yrender.js on every demo map in the renderer's three ways (tests/yrender-compare.js); tidy.py with the layout skill's
-# complex_pack.py and snap_grid.py and layout.js in every case of tests/layout-compare.js; cdrender.py and cd_edit.py
-# and their .js twins on every demo CellDesigner map (tests/cd-compare.js). Runs when any changes, or by hand.
+# Every test that runs without a browser (tests/run-all.sh, the one list): the JavaScript renderers and their Python
+# twins the same byte for byte on every demo map, layout.js against the layout skill's scripts, the editor's writes
+# into CellDesigner, SBGN-ML and SBML read back by the converter. Runs when any changes, or by hand.
 name: Compare renderers
 on:
   push:
@@ -20,32 +19,11 @@ jobs:
           repository: ${{ github.repository_owner }}/${{ github.repository_owner }}-data
           token: ${{ secrets.DATA_TOKEN }}
           path: .data
-      - run: for d in maps test-maps cache; do [ -d .data/$d ] && cp -r .data/$d .; done; rm -rf .data
+      - run: for d in maps test-maps cache parked; do [ -d .data/$d ] && cp -r .data/$d .; done; rm -rf .data
       - uses: actions/setup-python@v5
         with: {python-version: '3.12'}
       - uses: actions/setup-node@v4
         with: {node-version: '22'}
       - run: pip install lxml && npm ci
       - run: python3 build.py   # downloads/: the SBGN-ML written from the GraphML maps, which some tests read
-      - run: node tests/yrender-compare.js python3
-      - run: node tests/layout-compare.js python3
-      - run: node tests/cd-compare.js python3
-      - run: node tests/cd-live.js
-      - run: node tests/cd-snap-redo.js
-      - run: node tests/cd-fit.js
-      - run: node tests/cd-modifier-spot.js
-      - run: node tests/cd-reconnect.js python3
-      - run: node tests/cd-make-main.js python3
-      - run: node tests/cd-square.js
-      - run: node tests/sbgn-edit.js python3
-      - run: node tests/sbml-edit.js test-maps/sbml && node tests/sbml-edit.js tests/sbml-cases
-      - run: node tests/sbgn-reconnect.js python3
-      - run: node tests/sbgn-create.js python3
-      - run: node tests/sbgn-connect.js python3
-      - run: node tests/sbgn-af.js python3
-      - run: node tests/sbgn-restyle.js python3
-      - run: node tests/sbgn-join.js python3
-      - run: node tests/cd-join.js python3
-      - run: node tests/sbgn-names.js python3
-      - run: node tests/sbgn-stack.js python3
-      - run: node tests/membership.js python3
+      - run: sh tests/run-all.sh   # every test without a browser, the list kept there
