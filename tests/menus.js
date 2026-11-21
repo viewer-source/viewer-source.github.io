@@ -150,7 +150,7 @@ function viewerHunks() {
     window.m2Menus.arrange(box, 'edit-macromolecule');
     return Array.prototype.map.call(box.children, function (c) { return c.classList.contains('m2-sep') ? '|' : c.textContent; }).join(' / ');
   });
-  ok('3. the menu as built put in that order', applied === 'Delete / Add state variable / Add unit of information / | / Make multimer / Select all of this kind', applied);
+  ok('3. the menu as built put in that order', applied === 'Delete / Add state variable / Add unit of information / | / Make multimer / | / Select all of this kind', applied);
   var mod = process.platform === 'darwin' ? 'Meta' : 'Control';
   await page.keyboard.press(mod + '+z'); await page.waitForTimeout(300);
   mo = await page.$$eval('.m2-me-main .m2-me-row, .m2-me-main .m2-me-line', function (l) { return l.map(function (r) { return r.dataset.k; }); });

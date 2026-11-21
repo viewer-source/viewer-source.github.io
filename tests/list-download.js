@@ -1,6 +1,6 @@
 // Downloads in the list's right-click menu, as the map's own menu has them (no token).
 //   1. A site map not shown, right-clicked in the list: Download <its format>, Download PNG, Download SVG after Rename
-//      map, Make a copy, Move to... 2. Each gives a file: the map's own, its PNG, its SVG. 3. The map's menu on empty
+//      map, Make a copy, Move to..., under a line 2. Each gives a file: the map's own, its PNG, its SVG. 3. The map's menu on empty
 //      space has the same three. 4. Several maps selected: no downloads. 5. The Downloads window and the row under the
 //      map: the map's own file, PNG, SVG, no other format. 6. A map edited without a token (a draft), then another map
 //      shown: the list's Download on the edited map gives the edited file, not the site's.
@@ -47,7 +47,7 @@ function viewerHunks() {
   await page.click(row, { button: 'right' }); await page.waitForTimeout(300);
   var m1 = await menu(), dl = m1.filter(function (t) { return /^Download /.test(t); });
   ok('1. ' + id + ': three downloads', dl.length === 3 && /^Download (CellDesigner XML|GraphML|SBGN-ML)$/.test(dl[0]) && dl[1] === 'Download PNG' && dl[2] === 'Download SVG', m1.join(' / '));
-  ok('1. after the map\'s own items, before the line', m1.indexOf(dl[0]) > m1.indexOf('Move to...') && m1[m1.indexOf('Download SVG') + 1] === '|', m1.join(' / '));
+  ok('1. after the map\'s own items, a group of their own between lines', m1.indexOf(dl[0]) > m1.indexOf('Move to...') && m1[m1.indexOf(dl[0]) - 1] === '|' && m1[m1.indexOf('Download SVG') + 1] === '|', m1.join(' / '));
   var got = [];
   for (var i = 0; i < dl.length; i++) {
     if (i) { await page.click(row, { button: 'right' }); await page.waitForTimeout(300); }

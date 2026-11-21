@@ -1624,7 +1624,7 @@ page, so its styles keep the base they were made on).
     [/^(Add|Edit) unit of information text$/, 'Add or edit unit of information text'],
     [/^Unit of information ct:/, 'Unit of information ct:mRNA or ct:gene']
   ];
-  var MENU_PAGE = ['Switch to viewer or edit', 'New SBGN-ML map', 'New CellDesigner map', 'Full screen with tools', 'Download <its format>', 'Download PNG', 'Download SVG', 'Open in Newt', 'Open in MINERVA', 'Copy image as PNG', 'Copy image as SVG'];
+  var MENU_PAGE = ['Switch to viewer or edit', '|', 'New SBGN-ML map', 'New CellDesigner map', '|', 'Full screen with tools', '|', 'Download <its format>', 'Download PNG', 'Download SVG', 'Copy image as PNG', 'Copy image as SVG', '|', 'Open in Newt', 'Open in MINERVA'];
   var MENU_MAPTOOLS = ['Snap map to grid', 'Repack all complexes', 'Show grid', 'Snap to grid', 'Remove all bend points'];
   var MENU_LISTNEW = ['New SBGN-ML map', 'New CellDesigner map', 'Add map from file', 'Add group', 'Restore example maps'];
   var MENU_LISTVIEW = ['Open all groups', 'Close all groups', 'Show or hide file extensions'];
@@ -1636,19 +1636,19 @@ page, so its styles keep the base they were made on).
     { id: 'edit-line', head: 'Map, edit mode', name: 'Line', items: ['Add bend point', '|', 'Delete'] },
     { id: 'edit-cd-line', cd: true, head: 'Map, edit mode', name: 'Reaction line (CellDesigner)', items: ['Add bend point', 'Make main reactant or product', 'Change identity', 'Make reversible or irreversible', '|', 'Delete'] },
     { id: 'edit-modulation', head: 'Map, edit mode', name: 'Modulation', items: ['Add bend point', 'Change identity', '|', 'Delete'] },
-    { id: 'edit-process', head: 'Map, edit mode', name: 'Process or reaction', items: ['Turn process or logic gate', 'Change identity', 'Make reversible or irreversible', 'Select all of this kind', '|', 'Delete'] },
-    { id: 'edit-gate', head: 'Map, edit mode', name: 'Logic gate', items: ['Turn process or logic gate', 'Make <another kind>', 'Select all of this kind', '|', 'Delete'] },
-    { id: 'edit-macromolecule', cd: false, head: 'Map, edit mode', name: 'Macromolecule (SBGN-ML)', items: ['Add state variable', 'Add unit of information', 'Change identity', 'Make multimer or monomer', 'Name by members', 'Repack complex', 'Select all of this kind', '|', 'Delete'] },
-    { id: 'edit-naf', cd: false, head: 'Map, edit mode', name: 'Nucleic acid feature (SBGN-ML)', items: ['Add unit of information', 'Add unit of information ct:mRNA or ct:gene', 'Name by members', 'Repack complex', 'Select all of this kind', '|', 'Delete'] },
-    { id: 'edit-af', cd: false, head: 'Map, edit mode', name: 'Activity (Activity Flow)', items: ['Make <another kind>', 'Remove unit of information', 'Add or edit unit of information text', 'Unit of information ct:mRNA or ct:gene', 'Remove unit of information text', 'Name by members', 'Repack complex', 'Select all of this kind', '|', 'Delete'] },
-    { id: 'edit-glyph', head: 'Map, edit mode', name: 'Other node, complex', items: ['Change identity', 'Name by members', 'Repack complex', 'Select all of this kind', '|', 'Delete'] },
+    { id: 'edit-process', head: 'Map, edit mode', name: 'Process or reaction', items: ['Turn process or logic gate', 'Change identity', 'Make reversible or irreversible', '|', 'Select all of this kind', '|', 'Delete'] },
+    { id: 'edit-gate', head: 'Map, edit mode', name: 'Logic gate', items: ['Turn process or logic gate', 'Make <another kind>', '|', 'Select all of this kind', '|', 'Delete'] },
+    { id: 'edit-macromolecule', cd: false, head: 'Map, edit mode', name: 'Macromolecule (SBGN-ML)', items: ['Add state variable', 'Add unit of information', 'Change identity', 'Make multimer or monomer', 'Name by members', 'Repack complex', '|', 'Select all of this kind', '|', 'Delete'] },
+    { id: 'edit-naf', cd: false, head: 'Map, edit mode', name: 'Nucleic acid feature (SBGN-ML)', items: ['Add unit of information', 'Add unit of information ct:mRNA or ct:gene', 'Name by members', 'Repack complex', '|', 'Select all of this kind', '|', 'Delete'] },
+    { id: 'edit-af', cd: false, head: 'Map, edit mode', name: 'Activity (Activity Flow)', items: ['Make <another kind>', 'Remove unit of information', 'Add or edit unit of information text', 'Unit of information ct:mRNA or ct:gene', 'Remove unit of information text', 'Name by members', 'Repack complex', '|', 'Select all of this kind', '|', 'Delete'] },
+    { id: 'edit-glyph', head: 'Map, edit mode', name: 'Other node, complex', items: ['Change identity', 'Name by members', 'Repack complex', '|', 'Select all of this kind', '|', 'Delete'] },
     { id: 'edit-sv', cd: false, head: 'Map, edit mode', name: 'State variable or unit of information (SBGN-ML)', items: ['Delete'] },
-    { id: 'edit-cd-species', cd: true, head: 'Map, edit mode', name: 'Species (CellDesigner)', items: ['Add state variable', 'Add structural state', 'Add unit of information', 'Change identity', 'Make multimer or monomer', 'Name by members', 'Repack complex', 'Select all of this kind', '|', 'Delete'] },
+    { id: 'edit-cd-species', cd: true, head: 'Map, edit mode', name: 'Species (CellDesigner)', items: ['Add state variable', 'Add structural state', 'Add unit of information', 'Change identity', 'Make multimer or monomer', 'Name by members', 'Repack complex', '|', 'Select all of this kind', '|', 'Delete'] },
     { id: 'edit-cd-residue', cd: true, head: 'Map, edit mode', name: 'Residue (CellDesigner)', items: ['Edit', 'Change state', '|', 'Delete'] },
     { id: 'edit-cd-unit', cd: true, head: 'Map, edit mode', name: 'Unit of information or structural state (CellDesigner)', items: ['Edit', 'Change unit', '|', 'Delete'] },
-    { id: 'edit-compartment', head: 'Map, edit mode', name: 'Inside a compartment', items: ['Name at <place>', 'Bring forward', 'Send backward', 'Select all of this kind', '|', 'Delete', '|'].concat(MENU_MAPTOOLS, '|', MENU_PAGE) },
+    { id: 'edit-compartment', head: 'Map, edit mode', name: 'Inside a compartment', items: ['Name at <place>', 'Bring forward', 'Send backward', '|', 'Select all of this kind', '|', 'Delete', '|'].concat(MENU_MAPTOOLS, '|', MENU_PAGE) },
     { id: 'edit-empty', head: 'Map, edit mode', name: 'Empty map space', items: MENU_MAPTOOLS.concat('|', MENU_PAGE) },
-    { id: 'list-map', head: 'Map list', name: 'One map', items: ['Rename map', 'Make a copy', 'Move to...', 'Download <its format>', 'Download PNG', 'Download SVG', '|'].concat(MENU_LISTNEW, '|', MENU_LISTVIEW, '|', 'Delete map') },
+    { id: 'list-map', head: 'Map list', name: 'One map', items: ['Rename map', 'Make a copy', 'Move to...', '|', 'Download <its format>', 'Download PNG', 'Download SVG', '|'].concat(MENU_LISTNEW, '|', MENU_LISTVIEW, '|', 'Delete map') },
     { id: 'list-several', head: 'Map list', name: 'Several maps selected', items: ['Move to...', '|'].concat(MENU_LISTNEW, '|', MENU_LISTVIEW, '|', 'Delete map') },
     { id: 'list-group', head: 'Map list', name: 'A group\'s heading', items: ['Rename group', '|'].concat(MENU_LISTNEW, '|', MENU_LISTVIEW, '|', 'Remove group', 'Delete group') },
     { id: 'list-empty', head: 'Map list', name: 'Empty list space', items: MENU_LISTNEW.concat('|', MENU_LISTVIEW) },
@@ -2000,13 +2000,13 @@ page, so its styles keep the base they were made on).
     // the editor's entries first (where the Edit tab is), then, under a line, what changes how the list looks
     var items = own && own.listItems ? own.listItems(e) : [], view = [], names = listGroups(), last = items.last || [];
     var inBin = !!e.target.closest('.m2-binned, .m2-bin, .m2-bin-empty');   // Deleted: its own items only (Restore, Delete forever)
-    // on one map (not several selected, not in Deleted) its downloads, as the map's own menu has them: among the map's
-    // own items (Rename map, Make a copy, Move to...), after them
+    // on one map (not several selected, not in Deleted) its downloads, as the map's own menu has them: a group of their
+    // own under the map's own items (Rename map, Make a copy, Move to...), as Finder keeps Copy and Share apart
     var row = e.target.closest('.m2-map'), dm = row && !inBin && byId[row.dataset.id];
     if (dm && mapDownloads && !(picked.length > 1 && picked.indexOf(dm.id) >= 0)) {
       var rect = { left: e.clientX, top: e.clientY }, dls = mapDownloads(dm).map(function (d) { return [d[0], function () { d[1](rect); }]; });
       var at = items.mapItems || 0;   // where the editor's map items end
-      if (dls.length) items.splice.apply(items, [at, 0].concat(dls, at || !items.length ? [] : [null]));
+      if (dls.length) items.splice.apply(items, [at, 0].concat(at ? [null] : [], dls, at || !items.length ? [] : [null]));
     }
     if (names.length && !inBin && !document.getElementById('m2-search').value) {   // while searching every group shows open
       var shut = names.filter(function (n) { return closed[n]; }).length, all = function (c) {
@@ -4236,6 +4236,7 @@ page, so its styles keep the base they were made on).
       var nameHere = ed && !unbend && window.m2EditNameHere && window.m2EditNameHere(true);   // and named by its members, above it
       if (nameHere) item(box, 'Name by members', nameHere).disabled = !!nameHere.same;   // greyed when the complex is already so named
       if (packHere) item(box, 'Repack complex', packHere);
+      if (mac && mac.tail && mac.tail.length && box.lastChild && !box.lastChild.classList.contains('m2-sep')) sep(box);   // selection: a group of its own between changing and Delete
       if (mac && mac.tail) mac.tail.forEach(function (q) { item(box, q[0], q[1]); });
       if (del) { if (box.lastChild && !box.lastChild.classList.contains('m2-sep')) sep(box); item(box, 'Delete', del, '<span class="m2-cx-key">' + (/mac|iphone|ipad|ipod/i.test((navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || navigator.userAgent) ? '\u232B' : 'Del') + '</span>'); }   // the line also after a submenu item; its key beside it, as Switch to edit's
       var whole = ed && window.m2EditMapItems && window.m2EditMapItems();   // the whole map's tools and the grid switches, on empty map space
@@ -4256,17 +4257,24 @@ page, so its styles keep the base they were made on).
       // its shortcut beside it, as Apple's and Windows' menus write it; case-blind: Chrome, Edge, Brave and Arc on a Mac
       // give the platform as "macOS", which /Mac/ missed, so only Safari showed ⌘E
       var key = '<span class="m2-cx-key">' + (/mac|iphone|ipad|ipod/i.test((navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || navigator.userAgent) ? '\u2318E' : 'Ctrl+E') + '</span>';
+      // the page's items in groups, a line between each: mode, new maps, the window, the map's file and picture taken out,
+      // the map opened in another tool
+      var gap = function () { if (box.lastChild && !box.lastChild.classList.contains('m2-sep')) sep(box); };
       if (ed) item(box, 'Switch to viewer', function () { tab('list'); }, key);   // leaving the Edit window ends editing
       else if (eb && eb.offsetParent) item(box, 'Switch to edit', function () { tab('edit'); }, key);
+      gap();
       if (own) { item(box, 'New SBGN-ML map', function () { own.newMap(m && m.group || ''); }); item(box, 'New CellDesigner map', function () { own.newMap(m && m.group || '', 'cd'); }); }   // the editor's (own.js), into this map's group, in the format chosen
       // no Delete map here: it is in the list's right-click menu only
+      gap();
       if (document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen)
         item(box, isPageFull() ? 'Exit full screen' : 'Full screen with tools', pageFull);
+      gap();
       var sh = shown(m);
       mapDownloads(m).forEach(function (d) { item(box, d[0], d[1]); });
-      ['Newt', 'MINERVA'].forEach(function (l) { if (url[l]) link(box, 'Open in ' + l, url[l]); });
       if (!m.imageError) item(box, 'Copy image as PNG', function (r) { copyPicture(m, url, r, sh); });
       if (!m.imageError && svgOf(m, url)) item(box, 'Copy image as SVG', function (r) { copySvg(m, url, r, sh); });
+      gap();
+      ['Newt', 'MINERVA'].forEach(function (l) { if (url[l]) link(box, 'Open in ' + l, url[l]); });
       while (box.lastChild && box.lastChild.classList.contains('m2-sep')) box.removeChild(box.lastChild);
       return box;
     }
