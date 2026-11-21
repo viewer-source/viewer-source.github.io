@@ -64,12 +64,12 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysis
   // a tag on its right border: its terminal, pointing right
   var tr = await make('tag', S[0] + S[2] - 1, S[1] + S[3] / 2); await page.keyboard.press('Escape');
   var t1 = await now(), g = glyph(t1, tr);
-  ok('a tag dropped on the right border is the submap’s terminal pointing right', !!g && g.cls === 'terminal' && g.way === 'right' && g.up === sm, JSON.stringify(g));
+  ok('a tag dropped on the right border is the submap’s terminal pointing left, into it', !!g && g.cls === 'terminal' && g.way === 'left' && g.up === sm, JSON.stringify(g));
   var gs = glyph(t1, sm);
   ok('the terminal sits inside the submap on its right side', !!g && Math.abs(g.box[0] + g.box[2] - gs.box[0] - gs.box[2]) < 0.01, JSON.stringify([g && g.box, gs.box]));
   var tb = await make('tag', S[0] + S[2] / 2, S[1] + S[3] - 1); await page.keyboard.press('Escape');
   g = glyph(await now(), tb);
-  ok('one dropped on the bottom border points down', !!g && g.cls === 'terminal' && g.way === 'down' && g.box[3] > g.box[2], JSON.stringify(g));
+  ok('one dropped on the bottom border points up, into it', !!g && g.cls === 'terminal' && g.way === 'up' && g.box[3] > g.box[2], JSON.stringify(g));
   // a free tag, turned up in Properties
   var tf = await make('tag', 1250, 180); await page.keyboard.press('Escape');
   g = glyph(await now(), tf);
@@ -89,7 +89,7 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysis
   var before = glyph(await now(), tr).box;
   await drag([R[0] + R[2] / 2, R[1] + R[3] / 2], [R[0] + R[2] / 2 + 30, R[1] + R[3] / 2 + 12]);
   g = glyph(await now(), tr); gs = glyph(await now(), sm);
-  ok('dragged off, it slides along the right side (lower, still on it)', !!g && g.box[1] > before[1] + 5 && Math.abs(g.box[0] + g.box[2] - gs.box[0] - gs.box[2]) < 0.01 && g.way === 'right', JSON.stringify([before, g && g.box]));
+  ok('dragged off, it slides along the right side (lower, still on it)', !!g && g.box[1] > before[1] + 5 && Math.abs(g.box[0] + g.box[2] - gs.box[0] - gs.box[2]) < 0.01 && g.way === 'left', JSON.stringify([before, g && g.box]));
   await undo(); g = glyph(await now(), tr);
   ok('one undo puts it back', !!g && JSON.stringify(g.box) === JSON.stringify(before), JSON.stringify(g && g.box));
   // dragged across to the left side: it turns left
@@ -97,7 +97,7 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysis
   await page.mouse.click(R[0] + R[2] / 2, R[1] + R[3] / 2); await page.waitForTimeout(500);
   await drag([R[0] + R[2] / 2, R[1] + R[3] / 2], [S[0] + 4, R[1] + R[3] / 2]);
   g = glyph(await now(), tr); gs = glyph(await now(), sm);
-  ok('dragged to the left side, it points left there', !!g && g.way === 'left' && Math.abs(g.box[0] - gs.box[0]) < 0.01, JSON.stringify(g));
+  ok('dragged to the left side, it points right there, into the submap', !!g && g.way === 'right' && Math.abs(g.box[0] - gs.box[0]) < 0.01, JSON.stringify(g));
   // the submap dragged: its terminals go with it
   var T0 = await now(), a0 = glyph(T0, tr).box, b0 = glyph(T0, tb).box, s0 = glyph(T0, sm).box;
   await page.keyboard.press('Escape'); await page.waitForTimeout(300);
@@ -127,7 +127,7 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysis
   await page.mouse.click(J[0] + J[2] / 2, J[1] + J[3] / 2); await page.waitForTimeout(500);
   await drag([J[0] + J[2] / 2, J[1] + J[3] / 2], [S[0] + S[2] * 0.5, S[1] + S[3] * 0.25]);
   var gj = glyph(await now(), tj), gs2 = glyph(await now(), sm);
-  ok('a free tag dragged into a submap becomes its terminal on its top side, pointing up', !!gj && gj.cls === 'terminal' && gj.up === sm && gj.way === 'up' && Math.abs(gj.box[1] - gs2.box[1]) < 0.01, JSON.stringify(gj));
+  ok('a free tag dragged into a submap becomes its terminal on its top side, pointing down, into it', !!gj && gj.cls === 'terminal' && gj.up === sm && gj.way === 'down' && Math.abs(gj.box[1] - gs2.box[1]) < 0.01, JSON.stringify(gj));
   J = await rect(tj); await page.keyboard.down('Shift');
   await drag([J[0] + J[2] / 2, J[1] + J[3] / 2], [J[0] + J[2] / 2, J[1] - 120]);
   await page.keyboard.up('Shift');
@@ -157,6 +157,15 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysis
   await page.mouse.move(E[0] + E[2] / 2, E[1] + E[3] / 2); await page.mouse.down(); await page.mouse.move(E[0] + E[2] / 2 + 8, E[1] + E[3] / 2 + 20, { steps: 4 });
   await page.mouse.move(F[0] + F[2] / 2, F[1] + F[3] / 2, { steps: 12 }); await page.waitForTimeout(150); await page.mouse.up(); await page.waitForTimeout(1500);
   ok('a second line to a free tag refused', ((await now()).match(/<arc /g) || []).length === nArcs);
+  await page.keyboard.press('Escape'); await page.keyboard.press('Escape');
+  // a line from an entity outside the submap to a terminal: it meets the terminal's flat back, on the border
+  E = await rect(ent); R = await rect(tr);
+  await page.click('#m2-editwin button[data-make="consumption"]');
+  await page.mouse.move(E[0] + E[2] / 2, E[1] + E[3] / 2); await page.mouse.down(); await page.mouse.move(E[0] + E[2] / 2 + 8, E[1] + E[3] / 2 + 20, { steps: 4 });
+  await page.mouse.move(R[0] + R[2] / 2, R[1] + R[3] / 2, { steps: 12 }); await page.waitForTimeout(150); await page.mouse.up(); await page.waitForTimeout(1500);
+  var T4 = await now(), gr = glyph(T4, tr), em = new RegExp('<arc [^>]*target="' + tr + '"[\\s\\S]*?<end x="([^"]*)" y="([^"]*)"').exec(T4);
+  var backP = { left: [gr.box[0] + gr.box[2], gr.box[1] + gr.box[3] / 2], right: [gr.box[0], gr.box[1] + gr.box[3] / 2], up: [gr.box[0] + gr.box[2] / 2, gr.box[1] + gr.box[3]], down: [gr.box[0] + gr.box[2] / 2, gr.box[1]] }[gr.way];
+  ok('a line from outside meets the terminal\u2019s back', !!em && Math.hypot(+em[1] - backP[0], +em[2] - backP[1]) < 1, JSON.stringify([em && [em[1], em[2]], backP, gr]));
   await page.keyboard.press('Escape'); await page.keyboard.press('Escape');
   // CellDesigner compatible ticked: no Tag
   await page.evaluate(function () { localStorage.setItem('atlas-cd-compatible', 'on'); });

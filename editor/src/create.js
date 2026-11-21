@@ -723,8 +723,8 @@
       });
     }
     parseFix.push(terminals);
-    // a submap's terminal: on its border, sliding along it (as units of information along a glyph); its point out of the
-    // submap, so its way is the side it is on (up, down, left, right), long across the side (a tag's two sizes swapped
+    // a submap's terminal: its flat back on its border, sliding along it (as units of information along a glyph), its point
+    // into the submap (SBGN PD's examples), so its way is away from the side it is on, long across the side (a tag's two sizes swapped
     // between a left or right side and the top or bottom). subAt: the submap P lies in, or whose border passes within d of it
     function subAt(P, d) {
       var best = -1, bd = Infinity;
@@ -741,14 +741,14 @@
       var oy = Math.max(q[1] - c[1], 0, c[1] - q[1] - q[3]), ox = Math.max(q[0] - c[0], 0, c[0] - q[0] - q[2]);   // the side nearest its centre, as a segment
       var d = [Math.hypot(c[0] - q[0], oy), Math.hypot(q[0] + q[2] - c[0], oy), Math.hypot(ox, c[1] - q[1]), Math.hypot(ox, q[1] + q[3] - c[1])], k = d.indexOf(Math.min.apply(null, d));
       var clamp = function (v, lo, hi) { return Math.max(lo, Math.min(v, Math.max(lo, hi))); };
-      if (k < 2) { var y = clamp(c[1] - S / 2, q[1], q[1] + q[3] - S); return [[k ? q[0] + q[2] - L : q[0], y, L, S], k ? 'right' : 'left']; }
+      if (k < 2) { var y = clamp(c[1] - S / 2, q[1], q[1] + q[3] - S); return [[k ? q[0] + q[2] - L : q[0], y, L, S], k ? 'left' : 'right']; }
       var x = clamp(c[0] - S / 2, q[0], q[0] + q[2] - S);
-      return [[x, k === 3 ? q[1] + q[3] - L : q[1], S, L], k === 3 ? 'down' : 'up'];
+      return [[x, k === 3 ? q[1] + q[3] - L : q[1], S, L], k === 3 ? 'up' : 'down'];
     }
     // a tag turned spins as a whole (its width and height swapped round its centre between left or right and up or down;
     // placed: its box already set, as onBorder gives it), and its lines end at its two ports, its point and the middle of its
     // flat back: a free tag's one line at its point, which faces the line's other end by itself (tagAim); a terminal's line
-    // from outside its submap at its point, one from inside at its back. Text in, text out, for node i as the map is read now
+    // from outside its submap at its back (on the border), one from inside at its point. Text in, text out, for node i as the map is read now
     var HORIZ = { left: 1, right: 1 };
     function tagTurnT(t, i, way, placed) {
       var n = nodes2[i], id = n.id, b = boxOf(i), now = (sbJs.wayOfR && sbJs.wayOfR(realizerOf(n.el))) || 'right', nb = b;
@@ -760,7 +760,7 @@
       if (!q && es.length !== 1) return t;
       es.forEach(function (e) {
         var end = e.t === i, o = boxOf(end ? e.s : e.t), oc = [o[0] + o[2] / 2, o[1] + o[3] / 2];
-        var p = q && oc[0] > q[0] && oc[0] < q[0] + q[2] && oc[1] > q[1] && oc[1] < q[1] + q[3] ? back : tip;   // from inside its submap: its back
+        var p = !q ? tip : oc[0] > q[0] && oc[0] < q[0] + q[2] && oc[1] > q[1] && oc[1] < q[1] + q[3] ? tip : back;   // a terminal's: from inside its submap its point, from outside its back
         var xid = e.id.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         t = t.replace(new RegExp('(<edge id="' + xid + '"(?:(?!</edge>)[\\s\\S])*?<y:Path)([^>]*?)(/?>)'), function (m, a, at, close) {   // its Path in this edge only; a missing offset added
           [[end ? 'tx' : 'sx', p[0]], [end ? 'ty' : 'sy', p[1]]].forEach(function (k) {
@@ -847,7 +847,7 @@
       var n = nodes2[tg], es = edges2.filter(function (q, j) { return j !== k && (q.s === tg || q.t === tg); });
       if (n.sub == null) return es.length ? 'A tag has one line, and this one has it.' : null;
       var q = boxOf(n.sub), side = function (x) { return centreIn(boxOf(x), q); }, mine = side(o);
-      return es.some(function (e) { return side(e.s === tg ? e.t : e.s) === mine; }) ? 'A terminal has one line from outside its submap, at its point, and one from inside, at its back; this one is taken.' : null;
+      return es.some(function (e) { return side(e.s === tg ? e.t : e.s) === mine; }) ? 'A terminal has one line from outside its submap, at its back, and one from inside, at its point; this one is taken.' : null;
     }
     function makeEntity(P, cls) {
       var units = PRESET[cls] ? PRESET[cls][1] : null; cls = baseKind(cls);
@@ -855,7 +855,7 @@
       if (gridSet.snap) { X += toGrid(X + w / 2, gridSet.step); Y2 += toGrid(Y2 + h / 2, gridSet.step); }   // its centre on the grid, as a drag puts it
       var bx0 = [+fmt(X), +fmt(Y2), w, h], c = holder(bx0, function () { return false; }, boxOf), id = freeId('glyph_'), onCx = innermost(P, function (n) { return n.shape.kind === 'Complex'; }) >= 0;   // c: the innermost compartment holding its box
       var t2, way = null, sm = cls === 'tag' ? subAt(P, Math.max(w, h) / 2) : -1;
-      if (cls === 'tag') { var on = sm >= 0 ? onBorder([X, Y2, w, h], boxOf(sm)) : null; way = on ? on[1] : 'right'; if (!on && bx0[3] > bx0[2]) bx0 = [+fmt(P[0] - h / 2), +fmt(P[1] - w / 2), h, w]; if (on) { bx0 = on[0].map(function (v) { return +fmt(v); }); c = nodes2[sm].up; } }   // its box onto the submap's side, pointing out, held where its submap is
+      if (cls === 'tag') { var on = sm >= 0 ? onBorder([X, Y2, w, h], boxOf(sm)) : null; way = on ? on[1] : 'right'; if (!on && bx0[3] > bx0[2]) bx0 = [+fmt(P[0] - h / 2), +fmt(P[1] - w / 2), h, w]; if (on) { bx0 = on[0].map(function (v) { return +fmt(v); }); c = nodes2[sm].up; } }   // its box onto the submap's side, pointing in, held where its submap is
       try { t2 = sbJs.add(text, { id: id, cls: act != null ? sbJs.unitClass(act) : cls, activity: act, label: '', box: bx0, parent: c != null ? nodes2[c].id : null, fill: D.fill, line: D.line, width: D.width, multimer: D.multimer, font: D.font, units: units || undefined, way: way }); if (sm >= 0) t2 = sbJs.terminal(t2, id, true); }
       catch (err) { warn('The ' + (act != null ? 'activity' : cls) + ' could not be added: ' + (err && err.message || err) + '.'); return; }
       remember(false); text = t2;
@@ -2254,7 +2254,7 @@
       off: sbOff,
       look: function (i) {
         var r = realizerOf(nodes2[i].el), o = sbJs.lookOf(r), wf = field('way');
-        if (wf) { wf.disabled = nodes2[i].sub != null; wf.title = wf.disabled ? 'A terminal points out of its submap, set by the side it sits on' : ''; }
+        if (wf) { wf.disabled = nodes2[i].sub != null; wf.title = wf.disabled ? 'A terminal points into its submap, set by the side it sits on' : ''; }
         return { label: nameOf(i), font: o.font, fill: o.fill ? o.fill.slice(0, 7).toLowerCase() : '', line: (o.line || '#000000').slice(0, 7).toLowerCase(), width: o.width, multimer: o.multimer, way: (sbJs.wayOfR && sbJs.wayOfR(r)) || 'right' };
       } };
     // a line's Properties, one line selected on a map whose format's part has a line's answers (PF_SB.line): Line colour
