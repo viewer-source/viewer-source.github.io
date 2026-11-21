@@ -55,7 +55,7 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysis
   // a submap in empty room at the bottom right
   var sm = await make('submap', 1150, 760); await page.keyboard.press('Escape');
   ok('a submap made', !!sm);
-  var S = await rect(sm);   // made larger, as submaps on maps are (a tag is 60 by 30)
+  var S = await rect(sm);   // made larger, as submaps on maps are (a tag is 48 by 32)
   await page.mouse.click(S[0] + S[2] / 2, S[1] + S[3] / 2); await page.waitForTimeout(500);
   await page.fill('#m2-ed-w', '240'); await page.press('#m2-ed-w', 'Enter'); await page.waitForTimeout(1200);
   await page.fill('#m2-ed-h', '160'); await page.press('#m2-ed-h', 'Enter'); await page.waitForTimeout(1200);

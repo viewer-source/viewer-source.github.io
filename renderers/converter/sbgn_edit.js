@@ -1097,7 +1097,7 @@
                'perturbing agent': [80, 40], 'source and sink': [32, 32], phenotype: [120, 40], submap: [120, 64], compartment: [400, 320],
                process: [18, 18], 'omitted process': [18, 18], 'uncertain process': [18, 18],   // a process: the yEd maps' 18
                and: [30, 30], or: [30, 30], not: [30, 30], equivalence: [30, 30], delay: [30, 30],   // a gate: the yEd maps' 30 (yed.graphml's Operator)
-               'biological activity': [80, 40], tag: [60, 30] };   // every activity a protein's size, whatever its unit: 80 by 40; a tag yEd's palette's 60 by 30
+               'biological activity': [80, 40], tag: [48, 32] };   // every activity a protein's size, whatever its unit: 80 by 40; a tag 48 by 32, near a simple chemical's size
   function cfgOf(r) { return r.localName === 'GroupNode' ? 'Compartment' : (r.getAttribute('configuration') || '').replace('com.yworks.sbgn.', ''); }
   function classOfCfg(cfg) { var c = null; Object.keys(MAKE).forEach(function (k) { if (!c && MAKE[k] === cfg) c = k; }); return c; }
   function classOfR(r) {   // the class a realizer of the editor's GraphML stands for: a process's by its sign
@@ -1395,7 +1395,7 @@
   // unit's kind; a submap white as the other entities; processes and gates none. The master of these colours for the editor; the viewer keeps its own
   // copy as SCHEMES.default in _includes/atlas-app.html (compartment, complex, protein, metabolite, ..., white), kept the same
   var FILL = { macromolecule: '#C8D8EB', 'simple chemical': '#DBEBDB', compartment: '#F7F6F3', complex: '#FFFFFF', 'nucleic acid feature': '#FFFFFF',
-               'unspecified entity': '#FFFFFF', 'perturbing agent': '#FFFFFF', phenotype: '#FFFFFF', submap: '#FFFFFF' };
+               'unspecified entity': '#FFFFFF', 'perturbing agent': '#FFFFFF', phenotype: '#FFFFFF', submap: '#FFFFFF', tag: '#FFFFFF' };   // a tag white as the submap it serves
   function fillFor(cls, unit) { return FILL[cls === 'biological activity' ? actCls(unit) : (cls || '').replace(/ multimer$/, '')] || null; }
   function scaleOf(S) {   // the map's scale from its proteins, as style.scale_of (a protein's activity is a protein to the converter, sbgnml.ACTIVITY)
     var hs = [];
