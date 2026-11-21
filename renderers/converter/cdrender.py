@@ -6,7 +6,7 @@
 #   python3 converter/cdrender.py <map.xml> <out.svg>
 # Twin of cdrender.js beside it, the master; this file stays for the Python tools that use it.
 # A change is made in both in the same commit (tests/cd-compare.js).
-import math, os, sys
+import math, os, re, sys
 from xml.sax.saxutils import escape
 from lxml import etree
 
@@ -206,7 +206,7 @@ GATE_HEAD = {'CATALYSIS': 'catalysis', 'INHIBITION': 'inhibition', 'TRIGGER': 't
              'PHYSICAL_STIMULATION': 'stimulation'}
 
 class Drawing:
-    def __init__(self, path):
+    def __init__(self, path, glyph=None):
         r = etree.parse(path).getroot()
         f = lambda x, q: x.find(q, NS)
         self.f = f
@@ -225,6 +225,15 @@ class Drawing:
                          for p in ext.iterfind('cd:listOfProteins/cd:protein', NS)
                          for m in p.iterfind('cd:listOfModificationResidues/cd:modificationResidue', NS)}
         self.cnames = {c.get('id'): c.get('name') or c.get('id') for c in model.iterfind('s:listOfCompartments/s:compartment', NS)}
+        # a compartment drawn as a picture (MINERVA's glyphs: 'Glyph: glyphs/x.png' in its notes): glyph(path) gives the
+        # picture's address, or None; with no glyph every compartment is drawn as lines
+        self.glyph = {}
+        for c in (model.iterfind('s:listOfCompartments/s:compartment', NS) if glyph else ()):
+            n = f(c, 's:notes')
+            m = re.search(r'Glyph:\s*(\S+)', ''.join(n.itertext())) if n is not None else None
+            href = glyph(m.group(1)) if m else None
+            if href:
+                self.glyph[c.get('id')] = href
         # aliases: id -> (class, box, alias element, species name, identity)
         self.alias = {}
         for a in list(ext.iterfind('cd:listOfComplexSpeciesAliases/cd:complexSpeciesAlias', NS)) + \
@@ -265,7 +274,11 @@ class Drawing:
         rgb = [int(fill[k:k + 2], 16) for k in (1, 3, 5)]
         ink = '#000' if min(rgb) > 230 else fill
         oval = self.f(a, 'cd:class').text == 'OVAL'
-        if oval:
+        pic = self.glyph.get(a.get('compartment'))
+        if pic:
+            self.out.append('<image href="%s" x="%s" y="%s" width="%s" height="%s" preserveAspectRatio="none"/>'
+                            % (escape(pic, {'"': '&quot;'}), fmt(x), fmt(y), fmt(w), fmt(h)))
+        elif oval:
             self.out.append('<ellipse cx="%s" cy="%s" rx="%s" ry="%s" fill="none" stroke="%s" stroke-opacity="0.25" stroke-width="%s"/>'
                             % (fmt(x + w / 2), fmt(y + h / 2), fmt(w / 2 - t / 2), fmt(h / 2 - t / 2), fill, fmt(t)))
             self.out.append('<ellipse cx="%s" cy="%s" rx="%s" ry="%s" fill="none" stroke="%s" stroke-width="%s"/>' % (fmt(x + w / 2), fmt(y + h / 2), fmt(w / 2), fmt(h / 2), ink, fmt(ow)))
@@ -921,14 +934,14 @@ def on_border(b, a):
     return (x + w / 2 + fx * w, y + h / 2 + fy * h)
 
 
-def render(path):
-    return Drawing(path).svg()
+def render(path, glyph=None):
+    return Drawing(path, glyph).svg()
 
 
-def render_hits(path):
+def render_hits(path, glyph=None):
     # the drawing and where its parts are: aliases (id, species, class, box) and reactions (id, lines, square),
     # for a viewer that opens what is clicked (the neuroinflammation site)
-    d = Drawing(path)
+    d = Drawing(path, glyph)
     svg = d.svg()
     aliases = [{'id': i, 'species': a[2].get('species'), 'class': a[0], 'box': [round(v, 1) for v in a[1]]}
                for i, a in d.alias.items()]
