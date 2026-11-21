@@ -2198,7 +2198,19 @@
       selE = edges2.map(function (q, k) { return ids.indexOf(q.id) >= 0 ? k : -1; }).filter(function (k) { return k >= 0; });   // the new arcs selected: Delete takes them back at once
       dirty = true; quiet(); render(); paint(); changed();
     }
-    function linkPaint(out) {   // the line being drawn (paint, core.js): from its node's centre to the pointer, the node that would take it lit
+    // where a line being drawn will be attached on node b, shown by the blue square of landMarks (as a CellDesigner map's
+    // landing, and an end dragged): an entity's centre; a process's or gate's port in for what goes into it (its antenna
+    // tip); a modulation at a process the middle of the side facing its source, off the antennas (sbgn_edit.connect)
+    function linkLand(a, b, cls) {
+      var B = bx(b), c = [B[0] + B[2] / 2, B[1] + B[3] / 2], r = roleOf(b), H = r && /^(proc|gate)$/.test(r) && window.yrender && hubPorts()[nodes2[b].id];
+      if (!r || !/^(proc|gate)$/.test(r)) return c;
+      if ((cls === 'consumption' || cls === 'logic arc') && H && H[0]) return H[0];
+      if (!cls || !MODS.test(sbJs.ARROW[cls]) || r !== 'proc') return c;
+      var A = bx(a), dx = A[0] + A[2] / 2 - c[0], dy = A[1] + A[3] / 2 - c[1];
+      var vert = H && H[0] ? Math.abs(H[0][0] - c[0]) >= Math.abs(H[0][1] - c[1]) : Math.abs(dy) > Math.abs(dx);   // on the top or bottom side
+      return vert ? [c[0], c[1] + (dy >= 0 ? 1 : -1) * B[3] / 2] : [c[0] + (dx >= 0 ? 1 : -1) * B[2] / 2, c[1]];
+    }
+    function linkPaint(out) {   // the line being drawn (paint, core.js): from its node's centre to the pointer, where it would be attached marked
       cdGateMarks(out); cdOverMarks(out);   // a CellDesigner gate's inputs clicked so far, Add product's join under the pointer (cdcreate.js)
       if (!link || !link.moved || link.at !== text) return;
       var A = bx(link.from), C = [A[0] + A[2] / 2, A[1] + A[3] / 2], no = !!(link.how && link.how.no);
@@ -2209,7 +2221,7 @@
       var E = cd && S ? cdLiveEnds(S, P, C) : null;   // an added reactant's or product's join (cdcreate.js)
       if (E) { S = E[0]; P = E[1]; }
       if (cd) cdLinkMarks(out);   // CellDesigner's marks (cdcreate.js)
-      else if (link.how && !no) out.push('<g transform="translate(' + f1(V.tx - x0 * V.z) + ',' + f1(V.ty - y0 * V.z) + ') scale(' + V.z + ')"><path class="m2-ed-dark" d="' + shapeD(link.to) + '"/></g>');
+      else if (link.how && !no && link.to >= 0) out.push(landMarks([], linkLand(link.from, link.to, link.how.cls)));
       if (S) out.push('<path class="m2-ed-live" stroke-width="' + f1(Math.max(1, V.z)) + '"' + (no ? ' stroke-dasharray="4 3"' : '') + ' d="M' + f1(sx(S[0])) + ' ' + f1(sy(S[1])) + 'L' + f1(sx(P[0])) + ' ' + f1(sy(P[1])) + '"/>');
     }
     document.addEventListener('keydown', function (e) { if (link && e.key === 'Escape') { link = null; tap = null; paint(); } }, true);

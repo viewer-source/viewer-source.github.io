@@ -1956,11 +1956,10 @@
       }
       return rr(x, y, w, h, 0);
     }
-    function shapeD(i, still) {   // the outline of node i, a multimer's second outline with it (still: without the drag)
-      var b = liveC && liveC[i] ? liveC[i] : still ? boxOf(i) : bx(i), n = nodes2[i];
-      // the SBGN AF view draws an activity as a sharp rectangle: its selection and highlights take that shape (else
-      // the grey under a selected activity keeps the protein's rounded corners)
-      var sh = drawnShape(i, still), d = outlineD(sh, b[0], b[1], b[2], b[3]);
+    function shapeD(i) {   // the outline of node i as it is drawn now, a multimer's second outline with it
+      var b = liveC && liveC[i] ? liveC[i] : bx(i), n = nodes2[i];
+      // the SBGN AF view draws an activity as a sharp rectangle: its outline takes that shape
+      var sh = drawnShape(i), d = outlineD(sh, b[0], b[1], b[2], b[3]);
       if (sh === n.shape && n.shape.props.mcount === '2') d = outlineD(n.shape, b[0] + 6, b[1] + 6, b[2], b[3]) + d;
       return d;
     }
@@ -2395,7 +2394,7 @@
       }
       gridPaint();
       if (!on || V.current !== map) { overlay.innerHTML = ''; return; }
-      var out = [], over = [], frame = '<g transform="translate(' + f1(V.tx - x0 * V.z) + ',' + f1(V.ty - y0 * V.z) + ') scale(' + V.z + ')">';
+      var out = [], over = [];
       var pk0 = liveLines(out);   // the arcs following a move (live.js)
       // arcs selected, or holding a bend point selected: drawn blue, then their bends as squares on top
       // a bend point selected alone, the arc not highlighted (as yEd): four small black squares round
@@ -2461,7 +2460,6 @@
         over.push(pk.free ? landMarks((procSpots(pk) || hubSides(pk) || []).map(at0), null) + landMarks([], at0(pk.to), 'm2-ed-handle')
           : landMarks((placesOf({ k: pk.k, end: pk.end, n: n0 }) || []).map(at0), at0(pk.to)));
       }
-      if (drag && drag.port && drag.port.n2 != null) out.push(frame + '<path class="m2-ed-dark" d="' + shapeD(drag.port.n2) + '"/></g>');   // the node that takes the end
       if (!drag && keyGuides) keyGuides.forEach(function (g) {
         out.push('<path class="m2-ed-guide"' + gw() + ' d="M' + f1(sx(g[0][0])) + ' ' + f1(sy(g[0][1])) + 'L' + f1(sx(g[1][0])) + ' ' + f1(sy(g[1][1])) + '"/>');
       });
