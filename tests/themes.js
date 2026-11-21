@@ -115,8 +115,8 @@ function viewerHunks() {   // [old, new] pieces of the styles copy of the viewer
   var sq = pal ? await pal.evaluate(function (e) { return getComputedStyle(e).backgroundColor; }) : null;
   ok('a palette sign under the pointer: a square darker than the panel', sq && sq !== LINEN && sq !== 'rgba(0, 0, 0, 0)' && sq !== 'rgb(241, 243, 244)', sq);
   ok('the Edit window on the linen column', (await bg('.m2-nav')) === LINEN);
-  await page.evaluate(function () { localStorage.setItem('atlas-edit-side', 'right'); }); await page.reload({ waitUntil: 'load' }); await settle();
-  await page.click('.m2-ri[data-win="edit"]'); await page.waitForTimeout(3500);
+  await page.click('.m2-ri[data-win="set"]'); await page.waitForTimeout(800);   // Edit panel Right while editing, as a reader does
+  await page.click('#m2-set-eside button[data-eside="right"]'); await page.waitForTimeout(3000);
   ok('the Edit panel on the right linen', (await page.$eval('#m2-epanel', function (e) { return !!e.offsetParent; })) && (await bg('#m2-epanel')) === LINEN, await bg('#m2-epanel'));
 
   console.log('-- a dark style in Linen');
