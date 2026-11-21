@@ -202,7 +202,7 @@
     function palView(look, name, title) { return '<button type="button" role="radio" data-look="' + look + '" title="' + title + '" aria-label="' + title + '" aria-checked="false"><span class="m2-ed-radio" aria-hidden="true"></span>' + name + '</button>'; }
     // the circled i beside the views and the tick boxes: its text in data-info, shown in the page's info window (.m2-itip, atlas-app.html)
     var INFO = {
-      strict: 'Corresponds to CellDesigner\'s Reduced Notation. Stimulation, inhibition, necessary stimulation and modulation may also link entities, phenotypes and submaps. CellDesigner files keep such links, but other SBGN-ML tools may not read them. Unticked, the SBGN Process Description rules alone.',
+      strict: 'Corresponds to CellDesigner\'s Reduced Notation. Stimulation, inhibition, necessary stimulation and modulation may also link entities, phenotypes and submaps. Such maps open in CellDesigner and MINERVA, but other SBGN-ML tools may not read them. Unticked, the SBGN Process Description rules alone.',
       rn: 'Corresponds to CellDesigner\'s Reduced Notation palette, which enables an Activity Flow type of representation.',
       sbgn: 'Follows the SBGN Activity Flow specification. The map is saved as an Activity Flow SBGN-ML file.',
       prot: 'When ticked, shows the auxiliary unit on protein activities. An activity with no auxiliary unit is by default a protein activity.',
