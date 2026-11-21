@@ -270,6 +270,9 @@ page, so its styles keep the base they were made on).
   #m2-dlwin, #m2-extwin { padding: 0 4px; }
   /* Edit (--m2-edit: 1): moving nodes and bend points of a yEd GraphML in the map window
      (editor/); its buttons are the Downloads window's, the selection drawn over the map */
+  /* Type in the Edit window, one scale: 12 px for every label, value, field, list and note (Grid size, Properties,
+     Orientation, Reduced notation, SBGN extended, Settings choices); 14 px only for the PD and AF tabs and the full-width
+     action buttons (Choose a folder, Connect). No third size; a new control takes one of the two */
   #m2-editwin { padding: 0 4px; font-size: 14px; line-height: 1.45; color: var(--m2-text-soft);
     max-height: calc(100vh / var(--zoom, 1) - 110px); overflow-y: auto; }   /* scrolls as the list does, its foot level with the map window's (so Properties stays on screen); menus go to the body, not clipped */
   #m2-editwin button { display: block; width: 100%; box-sizing: border-box; font: inherit; font-size: 14px; line-height: 20px; padding: 4px 10px; margin: 0 0 8px; text-align: left;
@@ -307,14 +310,14 @@ page, so its styles keep the base they were made on).
   #m2-editwin .m2-ed-tools button:hover:not(:disabled), #m2-editwin .m2-ed-palette button:hover:not(:disabled) { background: #f1f3f4; border-color: transparent; color: #80868b; }   /* the one hover of the sign buttons, tools and palette alike */
   #m2-editwin .m2-ed-tools button[aria-pressed="true"], #m2-editwin .m2-ed-tools button[aria-pressed="true"]:hover { background: #f1f3f4; color: #70757a; }   /* on: the grey square, the sign between its usual grey and the first darker one */
   #m2-editwin .m2-ed-tools svg { width: 21px; height: 21px; stroke-width: 1.37; }
-  #m2-editwin .m2-ed-gsize { order: 99; flex: 0 0 100%; display: flex; align-items: center; gap: 6px; margin: 2px 0 0 4px; font-size: 13px; color: #5f6368; white-space: nowrap; }   /* Grid size on its own line at the tools' foot, under the Grid and Snap switches (in the row it broke the signs onto three lines) */
+  #m2-editwin .m2-ed-gsize { order: 99; flex: 0 0 100%; display: flex; align-items: center; gap: 6px; margin: 2px 0 0 4px; font-size: 12px; color: #5f6368; white-space: nowrap; }   /* Grid size on its own line at the tools' foot, under the Grid and Snap switches (in the row it broke the signs onto three lines) */
   #m2-editwin .m2-ed-gsf { display: flex; align-items: center; width: 64px; height: 24px; box-sizing: border-box; border: 1px solid var(--m2-frame); border-radius: 4px; background: #fff; }   /* the field and its arrow, one box (the browser's datalist filtered by the value typed, so it offered 8 alone) */
   #m2-editwin .m2-ed-gsf:focus-within { border-color: #70757a; }
   #m2-editwin .m2-ed-gsf input { flex: 1; min-width: 0; height: 100%; box-sizing: border-box; margin: 0; padding: 0 4px; font: inherit; color: #202124; border: 0; background: none; outline: none; }
   #m2-editwin .m2-ed-gsf button { display: flex; align-items: center; justify-content: center; flex: none; width: 20px; height: 100%; margin: 0; padding: 0; border: 0; border-radius: 0 4px 4px 0; background: none; color: #80868b; cursor: pointer; }
   #m2-editwin .m2-ed-gsf button:hover { background: #f1f3f4; color: #80868b; }
   #m2-editwin .m2-ed-gsf svg { width: 10px; height: 6px; }
-  .m2-cx.m2-gs-menu { min-width: 0; width: 64px; }   /* Grid size's list, the right-click menu's look */
+  .m2-cx.m2-gs-menu { min-width: 0; width: 64px; font-size: 12px; line-height: 16px; }   /* Grid size's list, the right-click menu's look */
   .m2-cx.m2-gs-menu button[aria-checked="true"] { font-weight: 500; }
   #m2-editwin .m2-ed-gsize input:focus { outline: none; }   /* the frame is on .m2-ed-gsf:focus-within */
   /* the palette (the full editor, as yEd's and Newt's): signs under the tools, shown with Settings, Editing on Full; a sign in hand on the
@@ -339,7 +342,7 @@ page, so its styles keep the base they were made on).
   /* the notation, PD or AF, and with AF its look: sign buttons in the palette's grid, pressed as the tools are
      (like icons: pressed, they stay pressed) */
   #m2-editwin .m2-ed-pnot { align-items: center; margin: 0 0 6px; }
-  #m2-editwin .m2-ed-pext { margin-left: auto; font-size: 11px; opacity: .65; white-space: nowrap; }   /* SBGN extended: Settings, CellDesigner compatible unticked */
+  #m2-editwin .m2-ed-pext { margin-left: auto; font-size: 12px; opacity: .65; white-space: nowrap; }   /* SBGN extended: Settings, CellDesigner compatible unticked */
   /* AF's two views (not as icons beside PD and AF, which read as glyphs to drag): two rows of round
      choices under the tabs, the palette's small grey text, the chosen circle filled in the sign grey; no accent */
   #m2-editwin .m2-ed-plook { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; margin: 0 0 8px 4px; }
@@ -420,7 +423,7 @@ page, so its styles keep the base they were made on).
   #m2-editwin .m2-ed-ptab tr.m2-mixed input[type="color"] { background: linear-gradient(to top right, transparent calc(50% - .6px), #9aa0a6 50%, transparent calc(50% + .6px)); }
   #m2-editwin .m2-ed-ptab tr.m2-mixed input[type="color"]::-webkit-color-swatch { background: transparent !important; }
   #m2-editwin .m2-ed-ptab tr.m2-mixed input[type="color"]::-moz-color-swatch { background: transparent !important; }
-  #m2-editwin .m2-ed-props .m2-ed-pdef { display: inline-block; width: auto; margin: 0; padding: 2px 10px; font-size: 13px; }   /* small, as a text button */
+  #m2-editwin .m2-ed-props .m2-ed-pdef { display: inline-block; width: auto; margin: 0; padding: 2px 10px; font-size: 12px; }   /* small, as a text button */
   #m2-editwin .m2-ed-props .m2-ed-pdef[hidden] { display: none; }
   #m2-view .m2-ed-palghost { position: absolute; z-index: 5; pointer-events: none; } #m2-view .m2-ed-palghost svg { display: block; }   /* the future node dragged from the palette, at its size */
   #m2-view .m2-ed-type { position: absolute; z-index: 5; box-sizing: border-box; margin: 0; padding: 0; border: 0; border-radius: 0; background: #fff; color: #000; text-align: center; font-family: Dialog, Arial, Helvetica, sans-serif; outline: none; box-shadow: none; }   /* the text edited in place, in the glyph's own colours (create.js), no frame */
@@ -452,7 +455,7 @@ page, so its styles keep the base they were made on).
     color: var(--m2-muted); font-size: 18px; line-height: 24px; cursor: pointer; }   /* the tabs' size and line (one line width for every sign) */
   #m2-editwin .m2-ed-sep { flex: none; width: 1px; height: 20px; margin: 0 6px; background: var(--m2-frame); }
   #m2-editwin .m2-set-row { display: flex; gap: 6px; margin: 0 0 12px; }
-  #m2-editwin .m2-set-row button { display: inline-block; width: auto; min-width: 46px; margin: 0; font-size: 13px; line-height: 18px; padding: 4px 8px; text-align: center; }
+  #m2-editwin .m2-set-row button { display: inline-block; width: auto; min-width: 46px; margin: 0; font-size: 12px; line-height: 18px; padding: 4px 8px; text-align: center; }
   #m2-editwin .m2-set-row button.m2-on { background: var(--m2-accent); border-color: var(--m2-accent); color: var(--m2-on-accent); }
   #m2-editwin .m2-set-note { font-size: 12px; color: var(--m2-muted); margin: 6px 0 14px; }
   /* Disconnect from GitHub: a quiet line of text at the end, always right under a line, no button look, no hover */
