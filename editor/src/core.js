@@ -636,7 +636,14 @@
     // after a move of nodes (a drag, the keys): each function given the nodes moved (their indices) puts what it keeps in
     // place (a terminal back onto its submap's border, create.js), in the same undo step
     var moveFix = [], parseFix = [];   // parseFix: after the nodes are read, a format's part adds what moves with what (create.js terminals)
-    function fixMoved(set) { moveFix.forEach(function (f) { f(set); }); }
+    function fixMoved(set, alone) {   // alone: moved with Shift. A fix may reorder the nodes (a tag joining a submap): the
+      // moved set and the selection kept by id
+      var ids = [], sel = selN.map(function (i) { return nodes2[i].id; });
+      set.forEach(function (i) { ids.push(nodes2[i].id); });
+      moveFix.forEach(function (f) { f(set, alone); });
+      set.clear(); selN = [];
+      nodes2.forEach(function (n, i) { if (ids.indexOf(n.id) >= 0) set.add(i); if (sel.indexOf(n.id) >= 0) selN.push(i); });
+    }
     function num(el, a) { return parseFloat(el.getAttribute(a)); }
     function boxOf(i) { var g = geos[nodes2[i].ag]; return [num(g, 'x'), num(g, 'y'), num(g, 'width'), num(g, 'height')]; }
     function fmt(v) { return String(Math.round(v * 1000) / 1000); }
@@ -1931,6 +1938,13 @@
       if (k === 'Phenotype') return poly([[x + i, y], [x + w - i, y], [x + w, y + h / 2], [x + w - i, y + h], [x + i, y + h], [x, y + h / 2]]);
       if (k === 'PerturbingAgent') return poly([[x, y], [x + w, y], [x + w - i, y + h / 2], [x + w, y + h], [x, y + h], [x + i, y + h / 2]]);
       if (k === 'roundrectangle') return rr(x, y, w, h, 4, false);
+      if (k === 'Tag') {   // yrender's tagShape: the point 3/8 as deep as the box across it, its way by inverse or orientation
+        var o = pr.orientation, way = /^(left|right|up|down)$/.test(o || '') ? o : pr.inverse === 'true' ? 'left' : 'right', a = Math.min(h * 3 / 8, w), b2 = Math.min(w * 3 / 8, h);
+        if (way === 'right') return poly([[x, y], [x + w - a, y], [x + w, y + h / 2], [x + w - a, y + h], [x, y + h]]);
+        if (way === 'left') return poly([[x + a, y], [x + w, y], [x + w, y + h], [x + a, y + h], [x, y + h / 2]]);
+        if (way === 'down') return poly([[x, y], [x + w, y], [x + w, y + h - b2], [x + w / 2, y + h], [x, y + h - b2]]);
+        return poly([[x + w / 2, y], [x + w, y + b2], [x + w, y + h], [x, y + h], [x, y + b2]]);
+      }
       return rr(x, y, w, h, 0);
     }
     function shapeD(i, still) {   // the outline of node i, a multimer's second outline with it (still: without the drag)
@@ -3131,7 +3145,7 @@
         paint(); return;
       }
       if (d.made != null) { move(d.dx, d.dy); fitAfter(); }   // one step for undo: made and moved
-      else if (d.dx || d.dy) { remember(false); move(d.dx, d.dy, sets); fixMoved(sets.n); if (d.keepE) { selE = d.keepE; selP = []; } fitAfter(); }   // what the drag showed moving (with Shift, the selection by itself)
+      else if (d.dx || d.dy) { remember(false); move(d.dx, d.dy, sets); fixMoved(sets.n, d.alone); if (d.keepE) { selE = d.keepE; selP = []; } fitAfter(); }   // what the drag showed moving (with Shift, the selection by itself)
       else { unshift(); if (d.keepE) { selE = d.keepE; selP = []; } }   // a click with a slight jitter: nothing moved, nothing stays hidden (else a smooth bend
       // turns sharp: the arcs drawn as plain lines while waiting for a redraw that a move of zero never asks for)
       paint();

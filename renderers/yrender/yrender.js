@@ -266,8 +266,8 @@
     if (kind === 'roundrectangle') return roundRect(x, y, w, h, 4, false);
     return rect(x, y, w, h);
   }
-  // a tag (SBGN's tag and a submap's terminal): a box with a point on one side, the point as deep as half the box across
-  // it, so its angle stays when the box is resized (yEd's way); yEd's two ways, plain to the right and inverse to the left,
+  // a tag (SBGN's tag and a submap's terminal): a box with a point on one side, the point 3/8 as deep as the box across
+  // it (Newt's square tag's point), so its angle stays when the box is resized (yEd's way); yEd's two ways, plain to the right and inverse to the left,
   // and orientation up or down beside them (SBGN-ML's four; yrender.py's tag_way)
   function tagWay(props) {
     var o = pget(props, 'orientation', '');
@@ -275,11 +275,11 @@
   }
   function tagShape(x, y, w, h, way) {
     if (way === 'left' || way === 'right') {
-      var a = Math.min(h / 2, w), m = y + h / 2;
+      var a = Math.min(h * 3 / 8, w), m = y + h / 2;
       return way === 'right' ? [['M', x, y], ['L', x + w - a, y], ['L', x + w, m], ['L', x + w - a, y + h], ['L', x, y + h], ['Z']]
         : [['M', x + a, y], ['L', x + w, y], ['L', x + w, y + h], ['L', x + a, y + h], ['L', x, m], ['Z']];
     }
-    var b = Math.min(w / 2, h), c = x + w / 2;
+    var b = Math.min(w * 3 / 8, h), c = x + w / 2;
     return way === 'down' ? [['M', x, y], ['L', x + w, y], ['L', x + w, y + h - b], ['L', c, y + h], ['L', x, y + h - b], ['Z']]
       : [['M', c, y], ['L', x + w, y + b], ['L', x + w, y + h], ['L', x, y + h], ['L', x, y + b], ['Z']];
   }

@@ -290,13 +290,13 @@ def tag_way(props):  # yrender.js's tagWay: yEd's plain (right) and inverse (lef
     return 'left' if props.get('inverse', 'false') == 'true' else 'right'
 
 
-def tag_shape(x, y, w, h, way):  # a box with a point half as deep as the box across it, so the angle stays on resize
+def tag_shape(x, y, w, h, way):  # a box with a point 3/8 as deep as the box across it (Newt's), the angle kept on resize
     if way in ('left', 'right'):
-        a, m = min(h / 2, w), y + h / 2
+        a, m = min(h * 3 / 8, w), y + h / 2
         if way == 'right':
             return [('M', x, y), ('L', x + w - a, y), ('L', x + w, m), ('L', x + w - a, y + h), ('L', x, y + h), ('Z',)]
         return [('M', x + a, y), ('L', x + w, y), ('L', x + w, y + h), ('L', x + a, y + h), ('L', x, m), ('Z',)]
-    b, c = min(w / 2, h), x + w / 2
+    b, c = min(w * 3 / 8, h), x + w / 2
     if way == 'down':
         return [('M', x, y), ('L', x + w, y), ('L', x + w, y + h - b), ('L', c, y + h), ('L', x, y + h - b), ('Z',)]
     return [('M', c, y), ('L', x + w, y + b), ('L', x + w, y + h), ('L', x, y + h), ('L', x, y + b), ('Z',)]

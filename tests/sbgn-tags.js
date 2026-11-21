@@ -19,6 +19,7 @@ var SMALL = '<?xml version="1.0" encoding="UTF-8"?>\n<sbgn xmlns="http://sbgn.or
   '      <glyph class="terminal" id="t1" orientation="left">\n        <label text="RAS"/>\n        <bbox x="180" y="105" w="50" h="30"/>\n      </glyph>\n' +
   '      <glyph class="terminal" id="t2" orientation="right">\n        <label text="ERK"/>\n        <bbox x="310" y="105" w="50" h="30"/>\n      </glyph>\n    </glyph>\n' +
   '    <glyph class="tag" id="tg" orientation="horizontal">\n      <label text="ERK"/>\n      <bbox x="435" y="200" w="50" h="30"/>\n    </glyph>\n' +
+  '    <glyph class="tag" id="tg2">\n      <label text="Z"/>\n      <bbox x="200" y="300" w="50" h="30"/>\n    </glyph>\n' +
   '    <arc class="equivalence arc" id="e1" source="ras" target="t1">\n      <start x="120" y="120"/>\n      <end x="180" y="120"/>\n    </arc>\n' +
   '    <arc class="equivalence arc" id="e2" source="erk" target="t2">\n      <start x="420" y="120"/>\n      <end x="360" y="120"/>\n    </arc>\n' +
   '    <arc class="equivalence arc" id="e3" source="erk" target="tg">\n      <start x="460" y="140"/>\n      <end x="460" y="200"/>\n    </arc>\n  </map>\n</sbgn>\n';
@@ -43,7 +44,7 @@ function glyphs(s) {   // of the first map (the converter reads that one)
   var m = doc(s).getElementsByTagNameNS('*', 'map')[0];
   return Array.prototype.map.call(m.getElementsByTagNameNS('*', 'glyph'), function (g) {
     var b = Array.prototype.filter.call(g.childNodes, function (c) { return c.localName === 'bbox'; })[0], l = Array.prototype.filter.call(g.childNodes, function (c) { return c.localName === 'label'; })[0];
-    return { el: g, id: g.getAttribute('id'), cls: g.getAttribute('class'), way: g.getAttribute('orientation'), up: g.parentNode.getAttribute && g.parentNode.getAttribute('id'),
+    return { el: g, id: g.getAttribute('id'), cls: g.getAttribute('class'), way: g.getAttribute('orientation'), up: g.parentNode.localName === 'glyph' ? g.parentNode.getAttribute('id') : null,
              label: l ? l.getAttribute('text') : '', box: b ? ['x', 'y', 'w', 'h'].map(function (k) { return parseFloat(b.getAttribute(k)); }) : null };
   });
 }
@@ -74,6 +75,10 @@ files.forEach(function (f, i) {
     g2 = se.resize(g2, term.id, onSide ? [tb[0], tb[1] + 10, tb[2], tb[3]] : [tb[0] + 10, tb[1], tb[2], tb[3]], opt);
   }
   if (ent) g2 = se.connect(g2, 'eqA', ent.id, 'tagA', 'equivalence arc', opt);
+  // a free tag of the file joined to the submap (dropped on its top side), its last terminal taken out (Shift)
+  var tag2 = all.filter(function (q) { return q.cls === 'tag'; })[1], terms = all.filter(function (q) { return q.cls === 'terminal' && q.box; }), out = terms.length > 1 ? terms[terms.length - 1] : null;
+  if (tag2 && sub) { g2 = se.resize(g2, tag2.id, [sub.box[0] + 20, sub.box[1], tag2.box[2], tag2.box[3]], opt); g2 = se.way(g2, tag2.id, 'up', opt); g2 = se.terminal(g2, tag2.id, true, opt); }
+  if (out) { g2 = se.resize(g2, out.id, [out.box[0] + 400, out.box[1] + 300, out.box[2], out.box[3]], opt); g2 = se.terminal(g2, out.id, false, opt); }
   // a submap made here with a terminal on it, filled (written with the submap, its look in the file's styles)
   g2 = se.add(g2, { id: 'subN', cls: 'submap', label: 'New', box: [right + 200, 300, 240, 160], font: D.font }, opt);
   g2 = se.add(g2, { id: 'termN', cls: 'tag', label: 'T', box: [right + 200, 360, 60, 30], way: 'left', font: D.font, fill: '#FFCC00' }, opt);
@@ -96,6 +101,8 @@ files.forEach(function (f, i) {
   if (tag && (by[tag.id].way !== 'left' || by[tag.id].label !== 'Renamed tag')) why.push('the turned tag is not left and renamed');
   if (term && JSON.stringify(by[term.id].box) === JSON.stringify(term.box)) why.push('the slid terminal kept its box');
   if (/undefined/.test(s2)) why.push('the file holds undefined');
+  if (tag2 && sub && (!by[tag2.id] || by[tag2.id].cls !== 'terminal' || by[tag2.id].up !== sub.id)) why.push('the joined tag is not written as the submap\'s terminal');
+  if (out && (!by[out.id] || by[out.id].cls !== 'tag' || by[out.id].up)) why.push('the terminal taken out is not written as a free tag ' + JSON.stringify(by[out.id] && [by[out.id].cls, by[out.id].up]));
   if (!by.termN || by.termN.cls !== 'terminal' || by.termN.up !== 'subN' || by.termN.way !== 'left') why.push('the terminal on the new submap is not written inside it');
   if (ent && !arcs(s2).some(function (a) { return a.id === 'eqA' && a.cls === 'equivalence arc' && a.s === ent.id && a.t === 'tagA'; })) why.push('no equivalence arc from the entity to the tag');
   ran++;

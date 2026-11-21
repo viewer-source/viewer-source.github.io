@@ -79,7 +79,7 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysis
   ok('its Orientation can be set', !(await page.isDisabled('#m2-ed-way')));
   await page.selectOption('#m2-ed-way', 'up'); await page.waitForTimeout(1500);
   g = glyph(await now(), tf);
-  ok('turned up from Properties', !!g && g.way === 'up', JSON.stringify(g));
+  ok('turned up from Properties, spinning (taller than wide)', !!g && g.way === 'up' && g.box[3] > g.box[2], JSON.stringify(g));
   await undo(); g = glyph(await now(), tf);
   ok('one undo turns it back', !!g && g.way === 'right', JSON.stringify(g));
   await page.keyboard.press('Escape');
@@ -112,6 +112,30 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysis
   ok('the submap made wider', s2[2] > s1[2] + 70, JSON.stringify(s2));
   ok('its bottom terminal stays on the bottom side, its left one on the left', Math.abs(b2[1] + b2[3] - s2[1] - s2[3]) < 0.01 && Math.abs(a2[0] - s2[0]) < 0.01, JSON.stringify([s2, a2, b2]));
   await page.keyboard.press('Escape');
+  // Orientation as quiet as the other fields: their font, no blue ring when focused, its choices in small letters
+  F = await rect(tf); await page.mouse.click(F[0] + F[2] / 2, F[1] + F[3] / 2); await page.waitForTimeout(600);
+  await page.focus('#m2-ed-way');
+  var look = await page.evaluate(function () {
+    var s = getComputedStyle(document.querySelector('#m2-ed-way')), w = getComputedStyle(document.querySelector('#m2-ed-w'));
+    return { font: s.fontSize === w.fontSize, ring: s.outlineStyle === 'none' || parseFloat(s.outlineWidth) === 0, small: Array.from(document.querySelectorAll('#m2-ed-way option')).every(function (o) { return o.textContent === o.textContent.toLowerCase(); }) };
+  });
+  ok('Orientation in the fields\u2019 font, no ring, small letters', (local ? true : look.font && look.ring) && look.small, JSON.stringify(look));   // the page's styles are the live page's when the editor is served locally
+  await page.keyboard.press('Escape'); await page.keyboard.press('Escape'); await page.waitForTimeout(300);
+  // a free tag dragged into a submap joins it; Shift with a drag takes it out again
+  var tj = await make('tag', 1250, 120); await page.keyboard.press('Escape');
+  var J = await rect(tj); S = await rect(sm);
+  await page.mouse.click(J[0] + J[2] / 2, J[1] + J[3] / 2); await page.waitForTimeout(500);
+  await drag([J[0] + J[2] / 2, J[1] + J[3] / 2], [S[0] + S[2] * 0.5, S[1] + S[3] * 0.25]);
+  var gj = glyph(await now(), tj), gs2 = glyph(await now(), sm);
+  ok('a free tag dragged into a submap becomes its terminal on its top side, pointing up', !!gj && gj.cls === 'terminal' && gj.up === sm && gj.way === 'up' && Math.abs(gj.box[1] - gs2.box[1]) < 0.01, JSON.stringify(gj));
+  J = await rect(tj); await page.keyboard.down('Shift');
+  await drag([J[0] + J[2] / 2, J[1] + J[3] / 2], [J[0] + J[2] / 2, J[1] - 120]);
+  await page.keyboard.up('Shift');
+  gj = glyph(await now(), tj);
+  ok('Shift with a drag takes it out: a free tag again', !!gj && gj.cls === 'tag' && !gj.up, JSON.stringify(gj));
+  await undo(); gj = glyph(await now(), tj);
+  ok('one undo puts it back on the submap', !!gj && gj.cls === 'terminal' && gj.up === sm, JSON.stringify(gj));
+  await page.keyboard.press('Escape');
   // a line from an entity of the map to the free tag: an equivalence arc from the entity
   var ent = await page.evaluate(function () { var t = window.m2EditNow().text, m = /<glyph [^>]*class="macromolecule"[^>]*id="([^"]*)"|<glyph [^>]*id="([^"]*)"[^>]*class="macromolecule"/.exec(t); return m ? m[1] || m[2] : null; });
   var E = await rect(ent); F = await rect(tf);
@@ -120,6 +144,19 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysis
   await page.mouse.move(F[0] + F[2] / 2, F[1] + F[3] / 2, { steps: 12 }); await page.waitForTimeout(150); await page.mouse.up(); await page.waitForTimeout(1500);
   var T3 = await now(), arc = new RegExp('<arc [^>]*class="equivalence arc"[^>]*source="' + ent + '"[^>]*target="' + tf + '"').test(T3) || new RegExp('<arc [^>]*source="' + ent + '"[^>]*target="' + tf + '"[^>]*class="equivalence arc"').test(T3);
   ok('a line from an entity to the tag is an equivalence arc from the entity', arc, (T3.match(/<arc [^>]*class="equivalence arc"[^>]*>/g) || []).slice(-2).join(' '));
+  var gt = glyph(T3, tf), ge = glyph(T3, ent), dxe = ge.box[0] + ge.box[2] / 2 - gt.box[0] - gt.box[2] / 2, dye = ge.box[1] + ge.box[3] / 2 - gt.box[1] - gt.box[3] / 2;
+  var want = Math.abs(dxe) >= Math.abs(dye) ? (dxe >= 0 ? 'right' : 'left') : (dye >= 0 ? 'down' : 'up');
+  ok('the tag turned to face its line\u2019s entity', gt.way === want, JSON.stringify([gt, want]));
+  var endAt = await page.evaluate(function (q) { var t = window.m2EditNow().text, m = new RegExp('<arc [^>]*target="' + q + '"[\\s\\S]*?<end x="([^"]*)" y="([^"]*)"').exec(t); return m ? [+m[1], +m[2]] : null; }, tf);
+  var tipP = { right: [gt.box[0] + gt.box[2], gt.box[1] + gt.box[3] / 2], left: [gt.box[0], gt.box[1] + gt.box[3] / 2], down: [gt.box[0] + gt.box[2] / 2, gt.box[1] + gt.box[3]], up: [gt.box[0] + gt.box[2] / 2, gt.box[1]] }[gt.way];
+  ok('its line ends at the tag\u2019s point', !!endAt && Math.hypot(endAt[0] - tipP[0], endAt[1] - tipP[1]) < 1, JSON.stringify([endAt, tipP]));
+  await page.keyboard.press('Escape'); await page.keyboard.press('Escape');
+  // a second line to the free tag refused (one port)
+  var nArcs = (T3.match(/<arc /g) || []).length; E = await rect(ent); F = await rect(tf);
+  await page.click('#m2-editwin button[data-make="consumption"]');
+  await page.mouse.move(E[0] + E[2] / 2, E[1] + E[3] / 2); await page.mouse.down(); await page.mouse.move(E[0] + E[2] / 2 + 8, E[1] + E[3] / 2 + 20, { steps: 4 });
+  await page.mouse.move(F[0] + F[2] / 2, F[1] + F[3] / 2, { steps: 12 }); await page.waitForTimeout(150); await page.mouse.up(); await page.waitForTimeout(1500);
+  ok('a second line to a free tag refused', ((await now()).match(/<arc /g) || []).length === nArcs);
   await page.keyboard.press('Escape'); await page.keyboard.press('Escape');
   // CellDesigner compatible ticked: no Tag
   await page.evaluate(function () { localStorage.setItem('atlas-cd-compatible', 'on'); });

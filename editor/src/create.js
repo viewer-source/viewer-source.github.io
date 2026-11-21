@@ -50,7 +50,7 @@
         ['submap', 'Submap', '<rect x="1.5" y="4" width="21" height="16"/>'],
         // a tag: dropped on a submap's border it is that submap's terminal, sliding along it; elsewhere a free tag. Only
         // with Settings, Editing, CellDesigner compatible unticked (CellDesigner has neither; compat())
-        ['tag', 'Tag', '<path d="M1.5 7h15l6 5-6 5h-15z"/>']]],
+        ['tag', 'Tag', '<path d="M4 7.5h11.6l3.4 4.5-3.4 4.5H4z"/>']]],
       // logic gates (with SBGN's equivalence operator), a
       // circle with its word or sign, made bare as a process, its antennas grown by its arcs; marks inside a sign are class
       // 'in', a dot class 'dot', letters plain <text>: their weight is the Edit window's one rule (atlas-app.html, Sign weights)
@@ -725,14 +725,14 @@
     parseFix.push(terminals);
     // a submap's terminal: on its border, sliding along it (as units of information along a glyph); its point out of the
     // submap, so its way is the side it is on (up, down, left, right), long across the side (a tag's two sizes swapped
-    // between a left or right side and the top or bottom). subAt: the submap whose border passes within d of P
+    // between a left or right side and the top or bottom). subAt: the submap P lies in, or whose border passes within d of it
     function subAt(P, d) {
       var best = -1, bd = Infinity;
       nodes2.forEach(function (n, j) {
         if (n.shape.kind !== 'Submap') return;
         var q = boxOf(j), ins = P[0] >= q[0] && P[0] <= q[0] + q[2] && P[1] >= q[1] && P[1] <= q[1] + q[3];
-        var e = ins ? Math.min(P[0] - q[0], q[0] + q[2] - P[0], P[1] - q[1], q[1] + q[3] - P[1]) : Math.hypot(Math.max(q[0] - P[0], 0, P[0] - q[0] - q[2]), Math.max(q[1] - P[1], 0, P[1] - q[1] - q[3]));
-        if (e <= d && e < bd) { bd = e; best = j; }
+        var e = ins ? 0 : Math.hypot(Math.max(q[0] - P[0], 0, P[0] - q[0] - q[2]), Math.max(q[1] - P[1], 0, P[1] - q[1] - q[3]));
+        if (e <= d && (e < bd || (e === bd && best >= 0 && q[2] * q[3] < boxOf(best)[2] * boxOf(best)[3]))) { bd = e; best = j; }   // inside several: the innermost
       });
       return best;
     }
@@ -744,6 +744,44 @@
       if (k < 2) { var y = clamp(c[1] - S / 2, q[1], q[1] + q[3] - S); return [[k ? q[0] + q[2] - L : q[0], y, L, S], k ? 'right' : 'left']; }
       var x = clamp(c[0] - S / 2, q[0], q[0] + q[2] - S);
       return [[x, k === 3 ? q[1] + q[3] - L : q[1], S, L], k === 3 ? 'down' : 'up'];
+    }
+    // a tag turned spins as a whole (its width and height swapped round its centre between left or right and up or down;
+    // placed: its box already set, as onBorder gives it), and its lines end at its two ports, its point and the middle of its
+    // flat back: a free tag's one line at its point, which faces the line's other end by itself (tagAim); a terminal's line
+    // from outside its submap at its point, one from inside at its back. Text in, text out, for node i as the map is read now
+    var HORIZ = { left: 1, right: 1 };
+    function tagTurnT(t, i, way, placed) {
+      var n = nodes2[i], id = n.id, b = boxOf(i), now = (sbJs.wayOfR && sbJs.wayOfR(realizerOf(n.el))) || 'right', nb = b;
+      if (!placed && (HORIZ[way] ? b[3] > b[2] : b[2] > b[3])) nb = [b[0] + b[2] / 2 - b[3] / 2, b[1] + b[3] / 2 - b[2] / 2, b[3], b[2]].map(function (v) { return +fmt(v); });   // long across its point's direction
+      if (nb !== b) t = sbJs.resize(t, id, nb);
+      if (way !== now) t = sbJs.way(t, id, way);
+      var tip = { right: [nb[2] / 2, 0], left: [-nb[2] / 2, 0], down: [0, nb[3] / 2], up: [0, -nb[3] / 2] }[way], back = [-tip[0], -tip[1]];
+      var q = n.sub != null ? boxOf(n.sub) : null, es = edges2.filter(function (e) { return e.s === i || e.t === i; });
+      if (!q && es.length !== 1) return t;
+      es.forEach(function (e) {
+        var end = e.t === i, o = boxOf(end ? e.s : e.t), oc = [o[0] + o[2] / 2, o[1] + o[3] / 2];
+        var p = q && oc[0] > q[0] && oc[0] < q[0] + q[2] && oc[1] > q[1] && oc[1] < q[1] + q[3] ? back : tip;   // from inside its submap: its back
+        var xid = e.id.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        t = t.replace(new RegExp('(<edge id="' + xid + '"(?:(?!</edge>)[\\s\\S])*?<y:Path)([^>]*?)(/?>)'), function (m, a, at, close) {   // its Path in this edge only; a missing offset added
+          [[end ? 'tx' : 'sx', p[0]], [end ? 'ty' : 'sy', p[1]]].forEach(function (k) {
+            var v = ' ' + k[0] + '="' + sbJs.repr(k[1]) + '"', re = new RegExp('\\s' + k[0] + '="[^"]*"');
+            at = re.test(at) ? at.replace(re, v) : at + v;
+          });
+          return a + at + close;
+        });
+      });
+      return t;
+    }
+    function tagAim(ids) {   // the free tags among ids with one line: each turned to face the line's other end
+      var t2 = text;
+      nodes2.forEach(function (n, i) {
+        if (ids.indexOf(n.id) < 0 || n.shape.kind !== 'Tag' || n.sub != null) return;
+        var es = edges2.filter(function (q) { return q.s === i || q.t === i; });
+        if (es.length !== 1) return;
+        var o = es[0].s === i ? es[0].t : es[0].s, b = boxOf(i), q = boxOf(o), dx = q[0] + q[2] / 2 - b[0] - b[2] / 2, dy = q[1] + q[3] / 2 - b[1] - b[3] / 2;
+        t2 = tagTurnT(t2, i, Math.abs(dx) >= Math.abs(dy) ? (dx >= 0 ? 'right' : 'left') : (dy >= 0 ? 'down' : 'up'));
+      });
+      if (t2 !== text) { text = t2; parse(); dirty = true; }
     }
     // after a move (core.js fixMoved) or a submap resized: each terminal back onto its submap's border, its way by its side
     function termsFix(list) {
@@ -757,21 +795,67 @@
         ways.push([nodes2[i].id, on[1]]);
       });
       if (Object.keys(nb).length) setBoxes(nb);
-      var t2 = text;
-      ways.forEach(function (q) { t2 = sbJs.way(t2, q[0], q[1]); });
+      var t2 = text, at = {};
+      nodes2.forEach(function (n, k) { at[n.id] = k; });
+      ways.forEach(function (q) { t2 = tagTurnT(t2, at[q[0]], q[1], true); });   // its lines at its ports (its box set above)
       if (t2 !== text) { text = t2; parse(); dirty = true; }
     }
-    moveFix.push(function (set) {   // a terminal moved without its submap slides along it
-      var list = []; set.forEach(function (i) { if (nodes2[i].sub != null && !set.has(nodes2[i].sub)) list.push(i); });
-      termsFix(list);
+    // a tag moved: a terminal moved without its submap slides along it, and with Shift (alone) dropped with its centre out
+    // of the submap it leaves it, a free tag again; a free tag dropped with its centre inside a submap joins it (as a
+    // glyph joins a compartment), its terminal from then on. Shift keeps a free tag free
+    moveFix.push(function (set, alone) {
+      if (!sbJs || !sbJs.terminal) return;
+      var ids = new Set(), keep = new Set(), out = [], join = [];
+      set.forEach(function (i) { ids.add(nodes2[i].id); });   // by id: terminal() reorders the nodes
+      set.forEach(function (i) {
+        var n = nodes2[i];
+        if (n.shape.kind !== 'Tag') return;
+        if (n.sub != null) {
+          if (set.has(n.sub)) return;
+          if (alone && !centreIn(boxOf(i), boxOf(n.sub))) {   // taken out with Shift: a free tag has one line
+            if (linesAt(i) <= 1) { out.push(n.id); return; }
+            warn('A free tag has one line: take one of this terminal\u2019s two lines off first.');
+          }
+          keep.add(n.id); return;
+        }
+        if (alone) return;
+        var j = subIn(boxOf(i), set);
+        if (j >= 0) join.push([i, j]);
+      });
+      var nb = {};
+      join.forEach(function (q) { nb[q[0]] = onBorder(boxOf(q[0]), boxOf(q[1]))[0]; keep.add(nodes2[q[0]].id); });   // onto its side first, so it is the submap's it touches
+      if (join.length) setBoxes(nb);
+      var t2 = text;
+      out.forEach(function (id) { t2 = sbJs.terminal(t2, id, false); });
+      join.forEach(function (q) { t2 = sbJs.terminal(t2, nodes2[q[0]].id, true); });
+      if (t2 !== text) { text = t2; parse(); dirty = true; }
+      termsFix(nodes2.map(function (m, k) { return keep.has(m.id) ? k : -1; }).filter(function (k) { return k >= 0; }));
+      var aim = [];   // the free tags moved, and those whose line's other end moved
+      edges2.forEach(function (q) { if (q.s != null && q.t != null) [[q.s, q.t], [q.t, q.s]].forEach(function (p) { if (nodes2[p[0]].shape.kind === 'Tag' && (ids.has(nodes2[p[0]].id) || ids.has(nodes2[p[1]].id))) aim.push(nodes2[p[0]].id); }); });
+      tagAim(aim);
     });
+    function centreIn(b, q) { var c = [b[0] + b[2] / 2, b[1] + b[3] / 2]; return c[0] >= q[0] && c[0] <= q[0] + q[2] && c[1] >= q[1] && c[1] <= q[1] + q[3]; }
+    function subIn(b, not) {   // the innermost submap holding b's centre (not one of the set `not`), else -1
+      var j = -1, a = Infinity;
+      nodes2.forEach(function (m, k) { var q = boxOf(k); if (m.shape.kind === 'Submap' && !(not && not.has(k)) && centreIn(b, q) && q[2] * q[3] < a) { a = q[2] * q[3]; j = k; } });
+      return j;
+    }
+    function linesAt(i) { return edges2.filter(function (q) { return q.s === i || q.t === i; }).length; }
+    // a line taking a tag's port (drawn, or an end dragged onto it): a free tag one, a terminal one from outside its
+    // submap and one from inside; a reason, or null. o: the line's other end, k: a line not counted (the one moved)
+    function tagRoom(tg, o, k) {
+      var n = nodes2[tg], es = edges2.filter(function (q, j) { return j !== k && (q.s === tg || q.t === tg); });
+      if (n.sub == null) return es.length ? 'A tag has one line, and this one has it.' : null;
+      var q = boxOf(n.sub), side = function (x) { return centreIn(boxOf(x), q); }, mine = side(o);
+      return es.some(function (e) { return side(e.s === tg ? e.t : e.s) === mine; }) ? 'A terminal has one line from outside its submap, at its point, and one from inside, at its back; this one is taken.' : null;
+    }
     function makeEntity(P, cls) {
       var units = PRESET[cls] ? PRESET[cls][1] : null; cls = baseKind(cls);
       var act = ACT_UNIT[cls], D = defOf(cls), w = D.w, h = D.h, X = P[0] - w / 2, Y2 = P[1] - h / 2;   // act: an activity's unit
       if (gridSet.snap) { X += toGrid(X + w / 2, gridSet.step); Y2 += toGrid(Y2 + h / 2, gridSet.step); }   // its centre on the grid, as a drag puts it
       var bx0 = [+fmt(X), +fmt(Y2), w, h], c = holder(bx0, function () { return false; }, boxOf), id = freeId('glyph_'), onCx = innermost(P, function (n) { return n.shape.kind === 'Complex'; }) >= 0;   // c: the innermost compartment holding its box
       var t2, way = null, sm = cls === 'tag' ? subAt(P, Math.max(w, h) / 2) : -1;
-      if (cls === 'tag') { var on = sm >= 0 ? onBorder([X, Y2, w, h], boxOf(sm)) : null; way = on ? on[1] : 'right'; if (on) { bx0 = on[0].map(function (v) { return +fmt(v); }); c = nodes2[sm].up; } }   // its box onto the submap's side, pointing out, held where its submap is
+      if (cls === 'tag') { var on = sm >= 0 ? onBorder([X, Y2, w, h], boxOf(sm)) : null; way = on ? on[1] : 'right'; if (!on && bx0[3] > bx0[2]) bx0 = [+fmt(P[0] - h / 2), +fmt(P[1] - w / 2), h, w]; if (on) { bx0 = on[0].map(function (v) { return +fmt(v); }); c = nodes2[sm].up; } }   // its box onto the submap's side, pointing out, held where its submap is
       try { t2 = sbJs.add(text, { id: id, cls: act != null ? sbJs.unitClass(act) : cls, activity: act, label: '', box: bx0, parent: c != null ? nodes2[c].id : null, fill: D.fill, line: D.line, width: D.width, multimer: D.multimer, font: D.font, units: units || undefined, way: way }); if (sm >= 0) t2 = sbJs.terminal(t2, id, true); }
       catch (err) { warn('The ' + (act != null ? 'activity' : cls) + ' could not be added: ' + (err && err.message || err) + '.'); return; }
       remember(false); text = t2;
@@ -1748,6 +1832,7 @@
       if (!end && roleOf(s) === 'gate' && others(s, false)) return 'A logic gate has one line out, and this one has it.';
       if (end && roleOf(t) === 'gate' && /^(NOT|\u03c4)$/.test(word(t)) && others(t, true)) return 'This gate has one input, and it has it.';
       if (MODS.test(a) && nodes2[s].eq) return 'An equivalence\u2019s line goes to an entity.';
+      if (nodes2[i].shape.kind === 'Tag') return a !== 'none' ? 'A tag is joined to an entity by an equivalence arc.' : tagRoom(i, end ? s : t, k);
       if (a === 'none' && roleOf(s) === 'gate' && roleOf(t) === 'gate' && (nodes2[s].eq || nodes2[t].eq)) return 'An equivalence joins entities only.';
       return null;
     }
@@ -1764,6 +1849,8 @@
       if (ra === 'tag' || rb === 'tag') {   // a tag (or terminal) and the entity it stands for: an equivalence arc, a plain line (sbgn_edit.connect writes it from the entity)
         var why = 'A tag is joined to an entity by an equivalence arc.';
         if ((ra === 'tag' ? rb : ra) !== 'epn' || (want && want !== 'consumption' && want !== 'logic arc')) return { no: why };
+        var room = tagRoom(ra === 'tag' ? a : b, ra === 'tag' ? b : a, -1);
+        if (room) return { no: room };
         return has(a, b, 'none') || has(b, a, 'none') ? { no: 'This equivalence arc is there already.' } : { cls: 'equivalence arc' };
       }
       if (ra === 'pheno') return { no: 'Nothing leaves a phenotype: it is modulated by an entity or a logic gate.' };
@@ -1866,7 +1953,8 @@
       if (sbCols() === 'confetti') ids.forEach(function (id) { t2 = sbJs.recolour(t2, id, confettiLine(confettiHues(t2)).toUpperCase()); });   // a new line a colour of its own, as the map's
       if (t2 === text) return;
       remember(false); text = t2;
-      parse(); selN = []; selP = []; part = null;
+      parse(); tagAim([ia, ib]); termsFix(nodes2.map(function (n, k) { return (n.id === ia || n.id === ib) && n.sub != null ? k : -1; }).filter(function (k) { return k >= 0; }));   // a tag's line at its point, a free tag facing it
+      selN = []; selP = []; part = null;
       selE = edges2.map(function (q, k) { return ids.indexOf(q.id) >= 0 ? k : -1; }).filter(function (k) { return k >= 0; });   // the new arcs selected: Delete takes them back at once
       dirty = true; quiet(); render(); paint(); changed();
     }
@@ -1955,7 +2043,7 @@
     var RROWS = [['rev', 'Reversible', 'check'], ['cin', 'Reactant cardinality', 'card'], ['cout', 'Product cardinality', 'card']];   // the main reactant's and product's numbers where the part has them (PF_CD.rx.counts)
     function table(rows, cls) { return '<table class="m2-ed-ptab' + cls + '">' + rows.map(function (r) {
       var id = 'm2-ed-' + r[0], f = r[2] === 'check' ? '<input type="checkbox" id="' + id + '">'
-        : r[2] === 'select' ? '<select id="' + id + '">' + r[3].map(function (o) { return '<option value="' + o + '">' + o.charAt(0).toUpperCase() + o.slice(1) + '</option>'; }).join('') + '</select>'
+        : r[2] === 'select' ? '<select id="' + id + '">' + r[3].map(function (o) { return '<option value="' + o + '">' + o + '</option>'; }).join('') + '</select>'
         : r[2] === 'colour' ? '<span class="m2-ed-pc"><input type="color" tabindex="-1" aria-label="' + r[1] + ', picker"><input type="text" id="' + id + '" spellcheck="false" autocomplete="off"' + (r[0] === 'fill' ? ' placeholder="none"' : '') + '></span>'
         : r[2] === 'num' ? '<input type="number" id="' + id + '" step="any"' + (r[3] || (r[0] === 'width' ? ' min="0.25" max="20"' : /^[st][xy]$/.test(r[0]) ? '' : ' min="1" max="5000"')) + '>'
         : r[2] === 'card' ? '<input type="text" inputmode="decimal" class="m2-ed-card" id="' + id + '" placeholder="1" spellcheck="false" autocomplete="off">'
@@ -2120,7 +2208,7 @@
         else if (k === 'multimer') t2 = sbJs.multimer(t2, id, v);   // a count, if any, stays the unit of information typed (N:3)
         else if (k === 'width') { var x = parseFloat(v); if (isFinite(x)) t2 = sbJs.restyle(t2, id, { width: Math.min(Math.max(x, 0.25), 20) }); }   // outside 0.25 to 20: the nearest, silently
         else if (k === 'font') { var z = parseFloat(v); if (isFinite(z)) t2 = sbJs.restyle(t2, id, { font: Math.min(Math.max(Math.round(z * 2) / 2, 1), 200) }); }   // in halves, 1 to 200: the nearest, silently
-        else if (k === 'way') { if (is.every(function (i) { return nodes2[i].id !== id || nodes2[i].sub == null; })) t2 = sbJs.way(t2, id, v); }   // a free tag turned (a terminal's follows its side)
+        else if (k === 'way') { var ti = is.filter(function (i) { return nodes2[i].id === id; })[0]; if (ti != null && nodes2[ti].sub == null) t2 = tagTurnT(t2, ti, v); }   // a free tag turned, spinning (a terminal's follows its side)
         else {
           var c = hex(v), o = {};
           if (c !== null && !(c === '' && k === 'line')) { o[k] = c === '#000000' && k === 'line' ? null : c || null; t2 = sbJs.restyle(t2, id, o); }

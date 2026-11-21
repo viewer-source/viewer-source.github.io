@@ -342,6 +342,10 @@
         if (H.node[id] && actOf(H, id) != null) props[id] = { 'SBGN class': agent ? cls : null, 'SBGN AF class': 'biological activity' };
         else if (H.node[id] && agent && /^(perturbing agent|perturbation)$/.test(pv) && pv !== cls) props[id] = { 'SBGN class': cls, 'SBGN unit': null };
       }
+      if (cls === 'tag' || cls === 'terminal') {   // a tag joined to a submap or taken out of one in a draft the base predates
+        if (Hfor !== out) { H = gml(out, opt); Hfor = out; }
+        if (H.node[id] && isTag(H, id) && isTerm(H, id) !== (cls === 'terminal')) out = terminal(out, id, cls === 'terminal', opt);
+      }
       if (PROC.test(cls) || GATES.test(cls)) {   // a process's (a gate's) kind changed in a draft the base predates: its sign
         if (Hfor !== out) { H = gml(out, opt); Hfor = out; }
         if (H.node[id] && classOfR(H.node[id].geo.parentNode) !== cls) out = kind(out, id, cls, opt);
@@ -494,6 +498,8 @@
     var G = gml(gtext, opt), mb = members(drop(t, was, opt, dropped), G, opt);   // what holds what as the GraphML has it
     t = mb[0];
     var S = mb[1] || sbgn(t, opt);
+    var t1 = retag(t, S, G);   // a tag joined to a submap or taken out of one: written again where it now belongs
+    if (t1 !== t) { t = t1; S = sbgn(t, opt); }
     var again = was.filter(function (id) { return !!G.node[id]; });   // a node under the id of one deleted: dropped and made again on every pass (runs out of memory; the editor never gives one)
     if (again.length) throw new Error('a node has the id of one deleted (' + again.join(', ') + ')');
     // what the map is now, the file and the editor's drawing together: where
@@ -744,10 +750,14 @@
       var L0 = labelsOf(G, id), tn = L0.main ? ownText(L0.main) : '', si = S.glyph[sm] ? T.indent(S.glyph[sm].bbox) : ind0 + '  ';
       var xml = '<' + pre + 'glyph class="terminal" id="' + esc(id) + '" orientation="' + wayOf(G.node[id].geo.parentNode) + '">' + (tn ? '\n' + si + '  <' + pre + 'label text="' + esc(tn) + '"/>' : '') +
         '\n' + si + '  ' + bboxXml(G.node[id].box) + '\n' + si + '</' + pre + 'glyph>';
-      if (S.glyph[sm]) { var se = T.t.lastIndexOf('</', T.end(S.glyph[sm].el) - 1); T.ed.push([se, se, '  ' + xml + '\n' + T.indent(S.glyph[sm].el)]); }
-      else termXml[sm] = (termXml[sm] || '') + '\n' + si + xml;
+      termXml[sm] = (termXml[sm] || '') + '\n' + si + xml;   // in the order made (one insertion per submap)
       var lk = lookG(G, id), lf = L0.main ? F(L0.main.getAttribute('fontSize')) || 12 : null, own = lf != null && lf !== mapFont();   // its look, as a glyph made below
       if (lk.fill || lk.line || lk.width !== 1 || own) looks.set(id, { fill: lk.fill, line: lk.line, width: lk.width, font: L0.main ? lf : null, cls: 'terminal', fresh: true });
+    });
+    Object.keys(termXml).forEach(function (sm) {   // into a submap of the file, before its end
+      if (!S.glyph[sm]) return;
+      var el = S.glyph[sm].el, se = T.t.lastIndexOf('</', T.end(el) - 1);
+      T.ed.push([se, se, termXml[sm].replace(/^\n\s*/, '  ') + '\n' + T.indent(el)]);
     });
     G.ids.forEach(function (id) {
       if (S.glyph[id] || S.port[id] || S.arc[id] || id.indexOf('|') >= 0) return;
@@ -1147,7 +1157,29 @@
     var a = nodeAt(t, after), ae = elEnd(t, 'node', a), al = t.lastIndexOf('\n', a - 1), ind = al >= 0 && /^[ \t]*$/.test(t.slice(al + 1, a)) ? t.slice(al + 1, a) : '';
     return t.slice(0, ae) + (ind ? '\n' + ind : '') + block + t.slice(ae);
   }
-  function terminal(t, id, on, opt) { t = setProps(t, id, { 'SBGN class': on ? 'terminal' : null }, opt); return on ? termPlace(t, id, opt) : t; }
+  // write(): a tag the editor made a submap's terminal (or another submap's), or a terminal it took out: taken out of the
+  // file, so it is written as one made (a terminal inside its submap, a tag at the top, each with its class and place)
+  function retag(t, S, G) {
+    var T = new Tags(t, S.doc), n = 0;
+    Object.keys(S.glyph).forEach(function (id) {
+      var el = S.glyph[id].el, c = el.getAttribute('class'), up = el.parentNode, inSub = c === 'terminal' && !!up.getAttribute && up.getAttribute('class') === 'submap';
+      if (!G.node[id] || !isTag(G, id)) return;
+      var term = isTerm(G, id);
+      if ((c === 'tag' && term) || (inSub && (!term || subNode(G, id) !== up.getAttribute('id')))) { T.cut(el); n++; }
+    });
+    return n ? T.text() : t;
+  }
+  // a terminal taken out: its node last among its graph's nodes, as the converter reads a tag written at the end
+  function nodeLast(t, id, opt) {
+    var G = gml(t, opt), n = G.node[id] && G.node[id].el;
+    if (!n) return t;
+    var sib = kids(n.parentNode, 'node'), last = sib[sib.length - 1];
+    if (last === n) return t;
+    var T = new Tags(t, G.doc), s = T.at.get(n), block = t.slice(s[0], T.end(n)), e = T.end(last);
+    T.cut(n); T.ed.push([e, e, '\n' + T.indent(last) + block]);
+    return T.text();
+  }
+  function terminal(t, id, on, opt) { t = setProps(t, id, { 'SBGN class': on ? 'terminal' : null }, opt); return on ? termPlace(t, id, opt) : nodeLast(t, id, opt); }
   var NAMED = /^(macromolecule|simple chemical|nucleic acid feature|unspecified entity|perturbing agent|phenotype|complex|submap|compartment)( multimer)?$|^(biological activity|perturbation|tag|terminal)$/;   // names kept in step both ways
   function ownText(el) { var t = ''; for (var c = el.firstChild; c; c = c.nextSibling) if (c.nodeType === 3 || c.nodeType === 4) t += c.nodeValue; return t; }
   function labelBox(text, w, h, k) {   // graphml._label: the label's box estimated and centred
