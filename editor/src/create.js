@@ -202,7 +202,7 @@
     function palView(look, name, title) { return '<button type="button" role="radio" data-look="' + look + '" title="' + title + '" aria-label="' + title + '" aria-checked="false"><span class="m2-ed-radio" aria-hidden="true"></span>' + name + '</button>'; }
     // the circled i beside the views and the tick boxes: its text in data-info, shown in the page's info window (.m2-itip, atlas-app.html)
     var INFO = {
-      strict: 'Corresponds to CellDesigner\'s Reduced Notation: stimulation, inhibition, necessary stimulation and modulation may also end on entities, which makes a hybrid map. Such links are outside the SBGN Process Description specification, and some tools may not read or save the SBGN-ML file correctly.',
+      strict: 'Corresponds to CellDesigner\'s Reduced Notation: stimulation, inhibition, necessary stimulation and modulation may also end on entities, which makes a hybrid map, and may start at a phenotype or a submap and end on a submap, as CellDesigner\'s phenotype allows. Such links are outside the SBGN Process Description specification, and some tools may not read or save the SBGN-ML file correctly. Unticked, the specification\'s rules alone.',
       rn: 'Corresponds to CellDesigner\'s Reduced Notation palette, which enables an Activity Flow type of representation.',
       sbgn: 'Follows the SBGN Activity Flow specification. The map is saved as an Activity Flow SBGN-ML file.',
       prot: 'When ticked, shows the auxiliary unit on protein activities. An activity with no auxiliary unit is by default a protein activity.',
@@ -1940,10 +1940,10 @@
     // or vertical (sbgn_edit.connect). A sign picked in the palette's Connecting arcs is used as it is, from any node,
     // selected or not; let go on empty space, nothing is made. Delete, or Delete in the right-click menu, removes an arc.
     var link = null;   // { from, x, y, moved, to, P, how }
-    function linkEnd(P, not) {   // the innermost entity, process, gate or phenotype under P (a complex, not its member: roleOf), not node `not`
+    function linkEnd(P, not) {   // the innermost entity, process, gate, phenotype or submap under P (a complex, not its member: roleOf), not node `not`
       var R = 4 / V.z, best = -1, ba = Infinity;
       nodes2.forEach(function (n, i) {
-        var b = boxOf(i), r = cd ? cdRole(i) : roleOf(i);
+        var b = boxOf(i), r = cd ? cdRole(i) : roleOf(i) || (hybOn() && nodes2[i].shape.kind === 'Submap' ? 'sub' : null);   // a submap, with Reduced notation ticked: linkKind0 decides
         if (i === not || !r || P[0] < b[0] - R || P[0] > b[0] + b[2] + R || P[1] < b[1] - R || P[1] > b[1] + b[3] + R) return;
         if (b[2] * b[3] < ba) { ba = b[2] * b[3]; best = i; }
       });
@@ -1994,6 +1994,7 @@
       if ((ks === 'EmptySet' && !(cls === 'pair' || cls === 'consumption')) || (kt === 'EmptySet' && !(cls === 'pair' || cls === 'production'))) return 'An empty set is only consumed or produced.';
       if ((ks === 'PerturbingAgent' && (flux || cls === 'catalysis' || cls === 'logic arc')) || kt === 'PerturbingAgent') return 'A perturbing agent only starts a modulation, stimulation, inhibition or necessary stimulation.';
       if (cls === 'catalysis' && ks === 'NucleicAcidFeature') return 'A nucleic acid feature is no catalyst.';
+      if (cls === 'catalysis' && (ks === 'Phenotype' || ks === 'Submap' || kt === 'Submap')) return 'A catalysis goes from an entity to a process.';
       if (cls === 'consumption' && roleOf(t) === 'proc') {   // a reversible process has productions on both sides, no consumption (3.5.2.5)
         var rv = sbJs.reversibility(text, nodes2[t].id, { sbgn: src() });
         if (rv && rv.rev) return 'A reversible process has productions on both sides.';
@@ -2033,7 +2034,18 @@
         if (room) return { no: room };
         return has(a, b, 'none') || has(b, a, 'none') ? { no: 'This equivalence arc is there already.' } : { cls: 'equivalence arc' };
       }
-      if (ra === 'pheno') return { no: 'Nothing leaves a phenotype: it is modulated by an entity or a logic gate.' };
+      // Reduced notation ticked: a phenotype or a submap starts a modulation as an entity does, and a submap takes one as a
+      // phenotype does (CellDesigner has one glyph for phenotype, submap and perturbing agent, with lines both ways);
+      // unticked, SBGN PD's rules alone
+      var loose = hybOn(), subA = loose && nodes2[a].shape.kind === 'Submap', subB = loose && nodes2[b].shape.kind === 'Submap';
+      if (subB) rb = 'pheno';
+      if (loose && (ra === 'pheno' || subA)) {
+        if ((want && !MODK[want]) || want === 'catalysis') return { no: 'A phenotype or a submap starts a stimulation, inhibition, necessary stimulation or modulation.' };
+        if (rb !== 'proc' && rb !== 'pheno' && rb !== 'epn') return { no: 'A line from a phenotype or a submap goes to a process, an entity, a phenotype or a submap.' };
+        var u = want || usual(b, 'stimulation');
+        return ok(u === 'catalysis' ? 'stimulation' : u);   // the map's usual kind into a process may be catalysis
+      }
+      if (ra === 'pheno') return { no: 'Nothing leaves a phenotype: it is modulated by an entity or a logic gate (Reduced notation is unticked in the palette).' };
       if (ra === 'gate' && outs(a)) return { no: 'A logic gate has one line out, and this one has it.' };   // SBGN PD; the converter's rules for the equivalence
       var word = function (i) { var l = nodes2[i].el.getElementsByTagNameNS(Y, 'NodeLabel')[0]; return l ? l.textContent.trim() : ''; };   // a gate's word as drawn (a made one is not in the file yet)
       if (rb === 'gate' && (word(b) === '\u03c4' || word(b).toUpperCase() === 'NOT') && ins(b)) return { no: 'A ' + (word(b) === '\u03c4' ? 'delay' : 'NOT gate') + ' has one input, and this one has it.' };

@@ -6,7 +6,7 @@
 import math, copy, os, re, urllib.parse
 from lxml import etree
 from . import report
-from .annotation import from_graphml, from_notes, from_references, notes, references, sites, to_properties
+from .annotation import PHENOTYPE_CLASSES, from_graphml, from_notes, from_references, notes, references, sites, to_properties
 from .layout import bends, border, centre, compartment_of, count_line, count_on, count_place, count_text, decorations, own_places, unbent
 from . import newt_layout
 from .graphml import DELAY, EQUIV, LINE, CHAR, touches, without_delays
@@ -144,7 +144,7 @@ def write(diagram, newt=False):
             cls = ARC.get(a.head)
             if cls is None:
                 report.say('left out', 'arc %s: no SBGN arc for %s, left out' % (a.id, a.head)); continue
-        if N[s].kind == 'Phenotype' and N[s].data.get('SBGN class') != 'perturbing agent':  # a perturbing agent, a submap or neither: not guessed
+        if N[s].kind == 'Phenotype' and N[s].data.get('SBGN class') not in PHENOTYPE_CLASSES:  # a perturbing agent, a submap or neither: not guessed
             report.say('warning', 'arc %s: leaves phenotype %s (%s), kept, though SBGN Process Description gives a phenotype no outgoing arc'
                        % (a.id, s, N[s].labels[0] if N[s].labels else ''))
         if a.tail:
@@ -266,7 +266,8 @@ def write(diagram, newt=False):
                 report.say('left out', 'gate %s: label %r is not AND, OR, NOT or %s, left out' % (i, d.labels[:1], EQUIV)); return
         elif d.kind in CLASS:
             cls = CLASS[d.kind] + (' multimer' if d.count > 1 and d.kind in MULTIMER else '')
-            if DRAWN_AS.get(d.data.get('SBGN class')) == d.kind:   # only on the glyph it belongs to (changed in yEd: dropped)
+            if DRAWN_AS.get(d.data.get('SBGN class')) == d.kind or (d.kind == 'Phenotype' and d.data.get('SBGN class') == 'submap'):
+                # only on the glyph it belongs to (changed in yEd: dropped); a submap from CellDesigner's notes: its phenotype
                 cls = d.data['SBGN class']
             if i in term:
                 cls = 'terminal'

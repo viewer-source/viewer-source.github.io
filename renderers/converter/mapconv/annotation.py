@@ -90,6 +90,12 @@ def sites(p, states):
     return out, left
 
 
+# SBGN classes a CellDesigner phenotype stands for, kept there as the note line 'SBGN class: submap' (written and read by
+# the CellDesigner writer and reader only) so a round trip gives them back: CellDesigner has one glyph for phenotype, submap
+# and perturbing agent, and its arcs cannot tell them apart. Arcs leaving them are SBGN's own (no warning)
+PHENOTYPE_CLASSES = ('submap', 'perturbing agent')
+
+
 def notes(p, undrawn=()):
     # what MIRIAM cannot hold, as note lines: a family's name ("Family: ERK1/2"), its members' sites
     # ('MAPK3: P@T202 P@Y204') and the entity's own sites no state variable holds ('PTM: P@Y1189 P@Y1190')

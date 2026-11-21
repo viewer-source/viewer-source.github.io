@@ -49,7 +49,7 @@ from lxml import etree
 from . import cd_layout, cd_tidy, report
 from .cd_layout import ANCHOR, SQUARE, anchor_point, from_frame, square_point, to_frame
 from .layout import count_text, exit_point, visible
-from .annotation import from_notes, from_references, notes, references, to_properties
+from .annotation import PHENOTYPE_CLASSES, from_notes, from_references, notes, references, to_properties
 from .graphml import EQUIV, without_delays, without_tags
 from .model import Map, Node, Arc
 
@@ -453,6 +453,11 @@ def write(diagram, ann, layout='straight'):
         if d.kind != 'Macromolecule' and cls[i] not in nucl:
             sub(si, 'name', name_of(i))
 
+    def facts(d, i):   # the note lines; a phenotype standing for a submap or a perturbing agent says so first
+        c = 'submap' if d.kind == 'Submap' else d.data.get('SBGN class') if d.kind == 'Phenotype' else None
+        c = 'perturbing agent' if c == 'perturbation' else c   # Activity Flow's perturbation: PD's perturbing agent
+        return (['SBGN class: ' + c] if c in PHENOTYPE_CLASSES else []) + notes(d.data, ptm(i))
+
     def ptm(i):   # every site of the entity, its circles' first (value@site), then the property PTM's: the notes' line PTM:
         return list(dict.fromkeys([t for t, _ in sv.get(i, ()) if t.partition('@')[2]] + (ents[i].data.get('PTM') or '').split()))
     # a source/sink is named after its id, as CellDesigner names a new degraded species (s48)
@@ -470,14 +475,14 @@ def write(diagram, ann, layout='straight'):
             body = etree.SubElement(h, '{%s}body' % XH)
             # the family's name, its members' sites, each line ended: CellDesigner 4.4.2 drops, on saving, the text
             # on the same line as the RDF ('Family: PKA regulatory subunits', carnitine and glycolysis)
-            body.text = ''.join(l + '\n' for l in notes(d.data, ptm(i))) or None
+            body.text = ''.join(l + '\n' for l in facts(d, i)) or None
             miriam(body, spec(i), label[i], abc=True)
             x = sub(s, 'annotation'); sub(x, 'complexSpecies', spec(d.parent))
             identity(x, i)
             continue
         s = etree.SubElement(lsp, 'species', metaid=spec(i), id=spec(i), name=name_of(i),
                              compartment='c_' + sid(comp_of(i)) if comp_of(i) else 'default', initialAmount='0')
-        lines = notes(d.data, ptm(i))
+        lines = facts(d, i)
         if lines:  # the family's name, the sites, its members' sites (SBML notes, before the annotation)
             h = etree.SubElement(etree.SubElement(s, 'notes'), '{%s}html' % XH, nsmap={None: XH})
             etree.SubElement(etree.SubElement(h, '{%s}head' % XH), '{%s}title' % XH)
@@ -748,6 +753,9 @@ def read(path):
     other = {}  # database -> species whose identifiers in it are left out
     aliases = list(xs(ext, 'cd:listOfComplexSpeciesAliases/cd:complexSpeciesAlias')) + \
         list(xs(ext, 'cd:listOfSpeciesAliases/cd:speciesAlias'))
+    def props(cls, text, p):   # the notes' properties; on a phenotype, the line SBGN class: (the writer's facts)
+        line = re.search(r'^\s*SBGN class: (.+?)\s*$', text or '', re.M) if cls == 'PHENOTYPE' else None
+        return dict(p, **{'SBGN class': line.group(1)}) if line and line.group(1) in PHENOTYPE_CLASSES else p
     for a in aliases:
         s, si, an = species[a.get('species')]
         cls = f(si, 'cd:class').text
@@ -797,7 +805,7 @@ def read(path):
             id=a.get('id'), kind=kind, box=box, labels=[name(s.get('name')) if cls != 'DEGRADED' else ''],
             parent=a.get('complexSpeciesAlias') or a.get('compartmentAlias'),
             fill=None if cls == 'DRUG' or pv is None else paint(pv.get('color')), border=cls != 'UNKNOWN',
-            states=states, units=units, count=n, data=from_notes(note(s), to_properties(fam, uris) if uris else {}),
+            states=states, units=units, count=n, data=props(cls, note(s), from_notes(note(s), to_properties(fam, uris) if uris else {})),
             dashed=hyp is not None and hyp.text == 'true', species=a.get('species'),
             font=float(font.get('size')) if font is not None and font.get('size') else None)
     # an unlabelled complex in yEd is named after its members in CellDesigner: the name goes

@@ -2308,7 +2308,7 @@
         if (edges2.some(function (f) { return f.id.indexOf(rid) === 0 && (f.s === i || f.t === i); })) return false;
         return !proc(here) && !/\|g\d*$/.test(nodes2[end ? e.s : e.t].id) && !proc(i) && !nd.comp && !(nd.up != null && !nodes2[nd.up].comp);
       }
-      if (i === other || !r || a[0] !== 'none') return false;
+      if (i === other || (!r && !(hybOn() && nodes2[i].shape.kind === 'Submap')) || a[0] !== 'none') return false;
       if (a[1] === 'none') {   // the arrowhead-less line: its hub end at a process or gate, its other end at an entity (or a gate into a gate)
         if (!hub(roleOf(e.s)) && !hub(roleOf(e.t))) return false;   // a plain line between other glyphs (an equivalence arc): not this line
         var h = hub(roleOf(e.t)) ? 1 : 0;
@@ -2317,7 +2317,9 @@
       if (a[1] === 'delta') return hub(roleOf(end ? e.t : e.s)) ? r === 'proc' : r === 'epn';   // a production: from a process to an entity
       // a modulation: from an entity or gate to a process or phenotype; an influence (Activity Flow) or a reduced
       // notation one (Hybrid) to an entity too, as the palette makes them (linkHow), never a catalysis
-      if (MODS.test(a[1])) return end ? r === 'proc' || r === 'pheno' || (r === 'epn' && a[1] !== 'white_circle' && (roleOf(e.t) === 'epn' || palLangNow() === 'af' || hybOn())) : r === 'epn' || r === 'gate';
+      // Reduced notation ticked: a phenotype or a submap also at either end, a catalysis aside (linkKind0)
+      var loose = hybOn() && a[1] !== 'white_circle' && (r === 'pheno' || nodes2[i].shape.kind === 'Submap');
+      if (MODS.test(a[1])) return loose || (end ? r === 'proc' || r === 'pheno' || (r === 'epn' && a[1] !== 'white_circle' && (roleOf(e.t) === 'epn' || palLangNow() === 'af' || hybOn())) : r === 'epn' || r === 'gate');
       return false;
     }
     function takes(k, end, i) {   // takes0, and SBGN PD's table for the line as it would be (pdLimit)
