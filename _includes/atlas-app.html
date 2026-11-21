@@ -94,6 +94,9 @@ page, so its styles keep the base they were made on).
   html[data-theme="linen"] { --m2-accent: #71777c; --m2-on-accent: #fff; --m2-side: #f5f4f1; --m2-soft: #e8e6e1;
     --m2-text: #000; --m2-text-soft: #222; --m2-muted: #666; --m2-faint: #888; --m2-button: #777; --m2-line: #ccc;
     --m2-frame: #ddd; --m2-bg: #fff; --m2-control-bg: #fffffff0; --m2-link: #1c47a9; }
+  html[data-theme="grey"] { --m2-accent: #71777c; --m2-on-accent: #fff; --m2-side: transparent; --m2-soft: #f1f3f4;   /* Linen's grey on white */
+    --m2-text: #000; --m2-text-soft: #222; --m2-muted: #666; --m2-faint: #888; --m2-button: #777; --m2-line: #ccc;
+    --m2-frame: #ddd; --m2-bg: #fff; --m2-control-bg: #fffffff0; --m2-link: #1c47a9; }
   .m2-nav, #m2-epanel, .m2-info:not(.m2-over) { background: var(--m2-side); }
   /* as on the Colours page: the list on the left, the map and its text in
      the middle, and an empty column of the list's width on the right, so the
@@ -665,6 +668,9 @@ page, so its styles keep the base they were made on).
   #m2-area { position: absolute; left: 0; top: 0; display: none; box-sizing: border-box; border: 1.5px solid #9aa0a6; background: none; pointer-events: none; }   /* as the editor's area being selected */
   /* full screen: the map alone, the annotation over its right side */
   #m2-view:fullscreen { width: 100vw; height: 100vh !important; max-height: none; border: 0; border-radius: 0; resize: none; }
+  /* the whole page full screen: the site's top bar goes, the map window takes the screen's height */
+  :root:fullscreen .wrapper-masthead { display: none; }
+  :root:-webkit-full-screen .wrapper-masthead { display: none; }
   #m2-view:-webkit-full-screen { width: 100vw; height: 100vh !important; max-height: none; border: 0; border-radius: 0; resize: none; }
   #m2-full { box-sizing: border-box; width: 21px; height: 21px; min-width: 0; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
   #m2-full svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
@@ -860,6 +866,7 @@ page, so its styles keep the base they were made on).
 <button type="button" class="m2-ri" data-win="ovl" data-opt="o9" title="Overlays (O9: four datasets, one molecule split)" aria-label="Overlays"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><defs><clipPath id="m2-o9c"><rect x="3" y="6" width="18" height="12" rx="3"/></clipPath></defs><g clip-path="url(#m2-o9c)"><rect x="3.0" y="6" width="4.5" height="12" fill="currentColor" fill-opacity="0.2" stroke="none"/><rect x="7.5" y="6" width="4.5" height="12" fill="currentColor" fill-opacity="0.45" stroke="none"/><rect x="12.0" y="6" width="4.5" height="12" fill="currentColor" fill-opacity="0.7" stroke="none"/><rect x="16.5" y="6" width="4.5" height="12" fill="currentColor" fill-opacity="1" stroke="none"/></g></svg></button>
 <button type="button" class="m2-ri" data-win="set" title="Settings" aria-label="Settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
 <button type="button" class="m2-ri" data-win="info" title="Info" aria-label="Info"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 11.4v5.1"/><circle cx="12" cy="7.6" r="1.15" fill="currentColor" stroke="none"/></svg></button>
+<button type="button" class="m2-ri" data-win="full" title="Full screen with tools" aria-label="Full screen with tools"></button>
 <button type="button" class="m2-ri" data-win="help" title="Gestures and keys (?)" aria-label="Gestures and keys"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M9.7 9.4a2.4 2.4 0 0 1 4.65.8c0 1.6-2.35 2.1-2.35 3.4"/><circle cx="12" cy="16.6" r="1.15" fill="currentColor" stroke="none"/></svg></button>
 </div>
 <div class="m2-nav">
@@ -1477,7 +1484,7 @@ page, so its styles keep the base they were made on).
   document.getElementById('m2-set-sites').addEventListener('change', function () { setSites(this.checked); });
   // Theme (Settings, Display): the colours of the panels and buttons (the html[data-theme] blocks in the style above),
   // kept in the browser (atlas-theme, none for Default) and set in the page's head before it is painted
-  var THEMES = [['default', 'Default'], ['linen', 'Linen']];
+  var THEMES = [['default', 'Default'], ['linen', 'Linen'], ['grey', 'Grey']];
   function themeNow() { var v = document.documentElement.getAttribute('data-theme'); return THEMES.some(function (x) { return x[0] === v; }) ? v : 'default'; }
   function setTheme(v) {
     var was = themeNow();
@@ -2684,7 +2691,7 @@ page, so its styles keep the base they were made on).
   }
   document.querySelectorAll('#m2-rail .m2-ri').forEach(function (b) {
     b.addEventListener('click', function () {
-      if (b.dataset.win === 'ovl' || b.dataset.win === 'help') return;   // Overlays signs: no window, Overlays are not implemented; help: its own window (tips)
+      if (b.dataset.win === 'ovl' || b.dataset.win === 'help' || b.dataset.win === 'full') return;   // Overlays signs: no window, Overlays are not implemented; help: its own window (tips); full: the page full screen (pageFull)
       if (b.dataset.win === 'leg') { legBtn = b; legend(!document.getElementById('m2-legend').classList.contains('m2-open')); return; }
       if (b.dataset.win === 'edit' && eRight()) { eRight.open = !eRight.open; railMark(); window.dispatchEvent(new Event('resize')); return; }   // the panel on the right opened or closed; the left panel stays
       setFromEdit = b.dataset.win === 'set' && win === 'edit' && !grid.classList.contains('m2-list-shut');   // Settings opened from the Edit window (Edit panel, below)
@@ -2771,6 +2778,23 @@ page, so its styles keep the base they were made on).
     var de = document.documentElement;
     if (isPageFull()) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
     else if (de.requestFullscreen || de.webkitRequestFullscreen) (de.requestFullscreen || de.webkitRequestFullscreen).call(de);
+  }
+  // the icon column's full screen sign: the whole page with its tools, in and out
+  var pageSign = document.querySelector('#m2-rail .m2-ri[data-win="full"]');
+  function showPageFull() {
+    if (!pageSign) return;
+    var on = isPageFull();
+    pageSign.innerHTML = on ? EXIT_ICON : FULL_ICON;
+    pageSign.title = on ? 'Exit full screen (Esc)' : 'Full screen with tools';
+    pageSign.setAttribute('aria-label', pageSign.title);
+  }
+  if (pageSign) {
+    if (document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen) {
+      showPageFull();
+      pageSign.addEventListener('click', pageFull);
+      document.addEventListener('fullscreenchange', showPageFull);
+      document.addEventListener('webkitfullscreenchange', showPageFull);
+    } else pageSign.style.display = 'none';
   }
   function showFull() {
     var on = isFull();

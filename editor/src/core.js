@@ -642,6 +642,7 @@
     // after a move of nodes (a drag, the keys): each function given the nodes moved (their indices) puts what it keeps in
     // place (a terminal back onto its submap's border, create.js), in the same undo step
     var moveFix = [], parseFix = [];   // parseFix: after the nodes are read, a format's part adds what moves with what (create.js terminals)
+    var keyTake = [];   // an arrow key on the selection taken by a part of its own (create.js: a terminal round its submap): f(d, the key's event) true when taken
     function fixMoved(set, alone) {   // alone: moved with Shift. A fix may reorder the nodes (a tag joining a submap): the
       // moved set and the selection kept by id
       var ids = [], sel = selN.map(function (i) { return nodes2[i].id; });
@@ -2505,9 +2506,10 @@
           var first = g.firstElementChild && g.firstElementChild.localName === 'a' ? g.firstElementChild : g;
           // after the node's own shapes, under its state variables and units of information (not over
           // them): a shape crossing the box's edge and not covering its centre is one of those, whichever
-          // renderer drew it (the shapes are in the file's places: the node's box shifted as the fill)
+          // renderer drew it (the shapes are in the file's places: the node's box at rest shifted as the fill, never its place
+          // during a drag, which the group's own transform gives; else the fill goes under the shape and the shade comes and goes)
           var shapes = Array.prototype.slice.call(first.querySelectorAll(cd ? ':scope > path, :scope > rect, :scope > ellipse, :scope > circle, :scope > polygon' : ':scope > path'));
-          var bL = b[0] - ox, bT = b[1] - oy, bR = bL + b[2], bB = bT + b[3], cX = bL + b[2] / 2, cY = bT + b[3] / 2;
+          var rb = liveC && liveC[i] ? liveC[i] : boxOf(i), bL = rb[0] - ox, bT = rb[1] - oy, bR = bL + rb[2], bB = bT + rb[3], cX = bL + rb[2] / 2, cY = bT + rb[3] / 2;
           var aux = function (s) {
             var q; try { q = s.getBBox(); } catch (e) { return false; }
             var inside = q.x >= bL - 0.5 && q.y >= bT - 0.5 && q.x + q.width <= bR + 0.5 && q.y + q.height <= bB + 0.5;
@@ -3226,6 +3228,7 @@
       var pt0 = partSel();
       if (!selN.length && !selP.length && !pt0) return;
       if (pt0 && pt0.port) { portKey(pt0.port, d, e.shiftKey); return; }
+      if (!pt0 && keyTake.some(function (f) { return f(d, e); })) return;
       var ks = pt0 ? { n: new Set(), p: new Set([pt0.p]), dx: 0, dy: 0 } : moving();
       var bp = pt0 ? pt0.p : selP.length === 1 && !selN.length && !selE.length ? selP[0] : null;
       if (bp != null) d = keyAlign(bp, d, ks.p);

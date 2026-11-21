@@ -759,6 +759,54 @@
       var x = clamp(c[0] - S / 2, q[0], q[0] + q[2] - S);
       return [[x, k === 3 ? q[1] + q[3] - L : q[1], S, L], k === 3 ? 'up' : 'down'];
     }
+    // a terminal already on the side its way says (its back on that side, within the submap along it): kept there, slid back
+    // inside along the side if the submap shrank, else null. At a corner its centre is nearer the other side, which onBorder
+    // would take (a submap resized, a terminal moved by the keys to the end of a side)
+    var SIDE = { right: 0, left: 1, down: 2, up: 3 };   // the side a way points away from: left, right, top, bottom
+    function onSide(b, q, way, any) {   // any: kept on that side wherever it is (a submap resized moves its sides from it)
+      var k = SIDE[way], L = Math.max(b[2], b[3]), S = Math.min(b[2], b[3]), e = 0.5;
+      if (k == null) return null;
+      var clamp = function (v, lo, hi) { return Math.max(lo, Math.min(v, Math.max(lo, hi))); };
+      if (k < 2) {
+        var x = k ? q[0] + q[2] - L : q[0];
+        if (!any && (Math.abs(b[0] - x) > e || b[2] !== L || b[1] < q[1] - e || b[1] + b[3] > q[1] + q[3] + e)) return null;
+        return [[x, clamp(b[1], q[1], q[1] + q[3] - S), L, S], way];
+      }
+      var y = k === 3 ? q[1] + q[3] - L : q[1];
+      if (!any && (Math.abs(b[1] - y) > e || b[3] !== L || b[0] < q[0] - e || b[0] + b[2] > q[0] + q[2] + e)) return null;
+      return [[clamp(b[0], q[0], q[0] + q[2] - S), y, S, L], way];
+    }
+    // the arrow keys move a submap's terminal (selected alone) round its submap's border, as a state variable round its
+    // node: by 1 unit, with Shift by 10, its centre along a track that keeps it whole on each side, turning at the corners
+    // to the next side; the key's direction along the side as keyDir, a key held keeping its first direction round the
+    // corners. Written at each step (one undo step for a run, as the keys' moves)
+    var tKey = null;
+    keyTake.push(function (d, e) {
+      if (!sbJs || !sbJs.way || selN.length !== 1 || selP.length) return false;
+      var i = selN[0], n = nodes2[i];
+      if (!n || n.shape.kind !== 'Tag' || n.sub == null || selE.some(function (k) { return edges2[k].s !== i && edges2[k].t !== i; })) return false;   // alone, or with its own lines
+      var b = boxOf(i), q = boxOf(n.sub), L = Math.max(b[2], b[3]), S = Math.min(b[2], b[3]);
+      var R = [q[0] + S / 2, q[1] + S / 2, Math.max(q[2] - S, 0), Math.max(q[3] - S, 0)], w = R[2], h = R[3], P = 2 * (w + h);
+      if (!P) return true;   // a submap no bigger than the tag: no room to move along (a side shorter than the tag: one place on it)
+      var way = (sbJs.wayOfR && sbJs.wayOfR(realizerOf(n.el))) || onBorder(b, q)[1];
+      var cx = Math.max(R[0], Math.min(b[0] + b[2] / 2, R[0] + w)), cy = Math.max(R[1], Math.min(b[1] + b[3] / 2, R[1] + h));
+      var t = { down: cx - R[0], left: w + cy - R[1], up: w + h + R[0] + w - cx, right: 2 * w + h + R[1] + h - cy }[way];   // its place on the track, clockwise from the top left
+      if (t == null) return false;
+      if (!tKey || tKey.id !== n.id || tKey.key !== e.key || !e.repeat) tKey = { id: n.id, key: e.key, dir: keyDir([0, 0, w, h], t, [Math.sign(d[0]), Math.sign(d[1])]) };
+      t = (((t + tKey.dir * Math.max(Math.abs(d[0]), Math.abs(d[1]))) % P) + P) % P;
+      var nb, nw;
+      if (t < w) { nw = 'down'; nb = [R[0] + t - S / 2, q[1], S, L]; }
+      else if (t < w + h) { nw = 'left'; nb = [q[0] + q[2] - L, R[1] + t - w - S / 2, L, S]; }
+      else if (t < 2 * w + h) { nw = 'up'; nb = [R[0] + w - (t - w - h) - S / 2, q[1] + q[3] - L, S, L]; }
+      else { nw = 'right'; nb = [q[0], R[1] + h - (t - 2 * w - h) - S / 2, L, S]; }
+      var o = {}; o[i] = nb.map(function (v) { return +fmt(v); });
+      var eids = selE.map(function (k) { return edges2[k] && edges2[k].id; });   // by id: the map is read again
+      remember(true); setBoxes(o);
+      var at = -1; nodes2.forEach(function (m, k) { if (m.id === tKey.id) at = k; });
+      if (at >= 0) { var t2 = tagTurnT(text, at, nw, true); if (t2 !== text) { text = t2; parse(); } }
+      dirty = true; selN = at >= 0 ? [at] : []; selE = edges2.map(function (q, k) { return eids.indexOf(q.id) >= 0 ? k : -1; }).filter(function (k) { return k >= 0; }); render(); paint(); changed();
+      return true;
+    });
     // a tag turned spins as a whole (its width and height swapped round its centre between left or right and up or down;
     // placed: its box already set, as onBorder gives it), and its lines end at its two ports, its point and the middle of its
     // flat back: a free tag's one line at its point, which faces the line's other end by itself (tagAim); a terminal's line
@@ -798,13 +846,13 @@
       if (t2 !== text) { text = t2; parse(); dirty = true; }
     }
     // after a move (core.js fixMoved) or a submap resized: each terminal back onto its submap's border, its way by its side
-    function termsFix(list) {
+    function termsFix(list, any) {   // any: each kept on the side it is on (onSide)
       if (!sbJs || !sbJs.way) return;
       var nb = {}, ways = [];
       list.forEach(function (i) {
         var s = nodes2[i] && nodes2[i].sub;
         if (s == null) return;
-        var b = boxOf(i), on = onBorder(b, boxOf(s));
+        var b = boxOf(i), q = boxOf(s), on = onSide(b, q, (sbJs.wayOfR && sbJs.wayOfR(realizerOf(nodes2[i].el))) || '', any) || onBorder(b, q);
         if (on[0].some(function (v, j) { return Math.abs(v - b[j]) > 0.001; })) nb[i] = on[0];
         ways.push([nodes2[i].id, on[1]]);
       });
@@ -865,7 +913,7 @@
         var mb = moved(i), on = null, q = null, now = (sbJs.wayOfR && sbJs.wayOfR(realizerOf(n.el))) || 'right';
         if (mine && n.sub != null) { if (!(alone && !centreIn(mb, boxOf(n.sub)) && es.length <= 1)) q = boxOf(n.sub); }
         else if (mine && !alone) { var j = subIn(mb, sets.n); if (j >= 0) q = boxOf(j); }
-        if (q) on = onBorder(mb, q);
+        if (q) on = (n.sub != null && onSide(mb, q, now)) || onBorder(mb, q);   // as termsFix on release
         else {   // free, facing its one line's other end (tagAim)
           if (es.length !== 1) return;
           var e = edges2[es[0]], oc = mid(moved(e.s === i ? e.t : e.s)), c = mid(mb), dx = oc[0] - c[0], dy = oc[1] - c[1];
@@ -2206,7 +2254,7 @@
       if (t2 === text) { liveOff(); sizeOff(); paint(); return; }
       remember(false); text = t2; parse(); dirty = true;
       nodes2.forEach(function (n) { if (n.sub != null && ids.indexOf(n.id) >= 0) tids.push(n.id); });   // a terminal resized itself: kept on its side
-      if (tids.length) termsFix(nodes2.map(function (n, k) { return tids.indexOf(n.id) >= 0 ? k : -1; }).filter(function (k) { return k >= 0; }));
+      if (tids.length) termsFix(nodes2.map(function (n, k) { return tids.indexOf(n.id) >= 0 ? k : -1; }).filter(function (k) { return k >= 0; }), true);
       selN = []; nodes2.forEach(function (n, k) { if (ids.indexOf(n.id) >= 0) selN.push(k); });
       var ks = selN.slice();   // their holders grown round them as round a drag (grown)
       if (ks.length) setBoxes(grown(ks, boxOf, function (k) { return was[nodes2[k].id] || boxOf(k); }, function () { return false; }));

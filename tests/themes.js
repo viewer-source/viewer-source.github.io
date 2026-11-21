@@ -66,7 +66,7 @@ function viewerHunks() {   // [old, new] pieces of the styles copy of the viewer
   await page.goto(base + '#' + MAP, { waitUntil: 'load' }); await settle(); await openSet();
   console.log('-- Default');
   var opts = await page.$$eval('#m2-set-theme option', function (os) { return os.map(function (o) { return o.textContent; }); });
-  ok('Settings, Display: Theme, a drop-down with Default and Linen', opts.join() === 'Default,Linen', opts.join());
+  ok('Settings, Display: Theme, a drop-down with Default, Linen and Grey', opts.join() === 'Default,Linen,Grey', opts.join());
   ok('Default chosen, no theme on the page', (await page.$eval('#m2-set-theme', function (s) { return s.value; })) === 'default' && (await theme()) === null);
   ok('Default: the chosen map in the accent blue', (await chosenBg()) === BLUE, await chosenBg());
   ok('Default: the list\'s column the page\'s own white', ['rgba(0, 0, 0, 0)', WHITE].indexOf(await bg('.m2-nav')) >= 0, await bg('.m2-nav'));
@@ -93,6 +93,14 @@ function viewerHunks() {   // [old, new] pieces of the styles copy of the viewer
   await page.keyboard.press('Escape'); await page.waitForTimeout(200);
   var svgL = await svg();
   ok('Download SVG the same file in both themes', svgD && svgL && svgD === svgL, svgD ? svgD.length + ' and ' + (svgL || '').length + ' characters' : 'no download');
+
+  console.log('-- Grey');
+  await openSet(); await page.selectOption('#m2-set-theme', 'grey'); await page.waitForTimeout(400);
+  ok('Grey: the chosen map in grey #71777c', (await theme()) === 'grey' && (await chosenBg()) === GREY, await chosenBg());
+  ok('Grey: the panels white', ['rgba(0, 0, 0, 0)', WHITE].indexOf(await bg('.m2-nav')) >= 0 && ['rgba(0, 0, 0, 0)', WHITE].indexOf(await bg('.m2-info')) >= 0, await bg('.m2-nav'));
+  var blG = await blues();
+  ok('Grey: no accent blue left outside the map', blG.length === 0, blG.slice(0, 5).join(' '));
+  await page.selectOption('#m2-set-theme', 'linen'); await page.waitForTimeout(300);
 
   console.log('-- reload, undo, redo');
   await page.reload({ waitUntil: 'load' }); await settle();
