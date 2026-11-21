@@ -762,8 +762,9 @@ page, so its styles keep the base they were made on).
   .m2-cx button:disabled, .m2-cx:not(.m2-cx-still) button:disabled:hover { color: var(--m2-muted, #5f6368); cursor: default; background: none; }
   .m2-cx .m2-cx-arrow { font-size: 8px; flex: none; color: var(--m2-muted, #5f6368); }
   .m2-cx:not(.m2-cx-still) button:hover .m2-cx-arrow, .m2-cx button:focus-visible .m2-cx-arrow, .m2-cx .m2-cx-open > button .m2-cx-arrow { color: inherit; }
-  .m2-cx .m2-cx-key { flex: none; font-size: 12px; color: var(--m2-muted, #5f6368); }
-  .m2-cx:not(.m2-cx-still) button:hover .m2-cx-key, .m2-cx button:focus-visible .m2-cx-key { color: inherit; }
+  .m2-cx .m2-cx-key, .m2-cx button[data-key]::after { flex: none; font-size: 12px; color: var(--m2-muted, #5f6368); }
+  .m2-cx button[data-key]::after { content: attr(data-key); }   /* the list menu's key: drawn, not part of the item's text */
+  .m2-cx:not(.m2-cx-still) button:hover .m2-cx-key, .m2-cx button:focus-visible .m2-cx-key, .m2-cx:not(.m2-cx-still) button:hover::after, .m2-cx button:focus-visible::after { color: inherit; }
   .m2-cx .m2-sep { border-top: 1px solid var(--m2-line); margin: 4px 0; }
   .m2-cx .m2-cx-head { padding: 4px 12px; color: var(--m2-muted, #5f6368); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   /* Settings, Menus: the window arranging the right-click menus (menuEdit) */
@@ -2024,7 +2025,7 @@ page, so its styles keep the base they were made on).
     var lid = inBin ? (row ? 'list-deleted-map' : 'list-deleted-head') : row ? (picked.length > 1 && picked.indexOf(row.dataset.id) >= 0 ? 'list-several' : 'list-map') : e.target.closest('.m2-group') ? 'list-group' : 'list-empty';   // which of the list's menus, for the reader's order (menuArrange)
     listMenu(e.clientX, e.clientY, items, lid);
   });
-  function listMenu(x, y, items, lid) {   // [name, action, greyed] or null for a line
+  function listMenu(x, y, items, lid) {   // [name, action, greyed, key shown beside it] or null for a line
     var box = el('div', 'm2-cx');
     box.setAttribute('role', 'menu');
     var close = function () {
@@ -2042,6 +2043,7 @@ page, so its styles keep the base they were made on).
     items.forEach(function (it) {
       if (!it) return box.appendChild(el('div', 'm2-sep'));
       var b = el('button', null, it[0]); b.type = 'button'; b.disabled = !!it[2];
+      if (it[3]) b.dataset.key = it[3];   // shown by the menu's style beside the name, as the map menu's Delete key
       b.addEventListener('click', function () { close(); it[1](); });
       box.appendChild(b);
     });
@@ -2175,8 +2177,8 @@ page, so its styles keep the base they were made on).
         ['S', 'the map’s own file or its SBGN-ML (Settings, Source)'],
         ['Esc', 'clears the selection, closes a window or a menu']].concat(own ? [
         [MOD + ' + Z, ' + MOD + ' + Shift + Z in the list', 'undo, redo the list’s last change: a move, Delete, Restore, a name, a group, a new map (while editing: after a click in the list)'],
-        ['Shift or ' + MOD + ' + click on a group’s name', 'selects the group, not opened or closed; Delete then deletes it, as Delete group'],
-        ['Delete', 'with the list in sight and nothing selected on the map: puts the map shown in Deleted and shows the next one']] : [])) +
+        ['Shift or ' + MOD + ' + click on a group’s name', 'selects the group, not opened or closed; ' + MOD + ' + Delete then deletes it, as Delete group'],
+        [MOD + ' + Delete', 'with the list in sight and nothing selected on the map: puts the map shown, or the maps selected in the list, in Deleted and shows the next one; Delete alone does not, as in Finder']] : [])) +
       '<h4>While editing</h4>' + table(null, [
         ['Click, then drag', 'an item is selected first, then moved'],
         ['Drag on empty space or an item not selected', GRAB ? 'moves the map, as outside editing' : 'selects an area in place of the selection'],
@@ -3313,10 +3315,10 @@ page, so its styles keep the base they were made on).
   // or Ctrl with a click adds or takes out one, Shift with a click every map from the last one clicked, a drag that
   // starts in the list beside the names (a map pressed on its name drags it, a selected map the selection: movable) draws a box over the maps it takes (Cmd or Ctrl held: added to the
   // selection). picked is the selection while it holds any map but the map shown alone, in the list's order; empty,
-  // the map shown is the selection. A plain click, a map opened (go) or Esc ends it. The editor's list menu and the Delete key
+  // the map shown is the selection. A plain click, a map opened (go) or Esc ends it. The editor's list menu and Cmd+Delete
   // act on it (own.js); a selected map dragged takes the others with it (drop)
   // Shift or Cmd (Ctrl) with a click on a group's heading selects the group, its heading lit with its maps (pickGroup); the
-  // Delete key then deletes the group, as the list's Delete group (own.js). Any other selection ends it
+  // Cmd+Delete then deletes the group, as the list's Delete group (own.js). Any other selection ends it
   var picked = [], pickFrom = null, pickedGroup = null;
   function pickGroup(name) {
     pickSet(maps.filter(function (m) { return !m.binned && (m.group || '') === name; }).map(function (m) { return m.id; }));

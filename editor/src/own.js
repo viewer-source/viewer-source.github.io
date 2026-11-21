@@ -258,7 +258,7 @@
         var ms = sel.map(function (id) { return V.byId[id]; }).filter(Boolean), mv = ms.filter(movable), del = ms.filter(function (x) { return canDelete(x, gh) && !(V.grid.classList.contains('m2-editing') && V.chosen && V.chosen.id === x.id); });
         if (mv.length && V.listGroups().length) mapItems.push(['Move ' + mv.length + ' maps to...', function () { moveMenuMany(mv, x, y); }]);
         items = mapItems.length ? mapItems.concat([null], items) : items;
-        if (del.length) items.last = [['Delete ' + del.length + ' maps', function () { binU(del, true); }]];
+        if (del.length) items.last = [['Delete ' + del.length + ' maps', function () { binU(del, true); }, false, DEL_KEY]];
         return items;
       }
       if (m && canRename(m, gh)) mapItems.push(['Rename map', function () { renameMap(m.id); }]);
@@ -272,8 +272,8 @@
       // items.last: put by the viewer under its own entries too, so Delete map is the menu's last line
       if (onGroup) items.last = [['Remove group', function () { removeU(g); }]];   // a removal: last, as Delete map
       var dg = t && !m && tg && !t.dataset.bin ? groupMaps(tg, gh) : null;   // Delete group: its maps into Deleted, each remembering its group
-      if (dg && (dg.length || (onGroup && !inGroup(tg).length))) (items.last = items.last || []).push(['Delete group', function () { deleteGroupU(tg, dg); }]);
-      if (m && !editing && canDelete(m, gh)) items.last = [['Delete map', function () { binU([m]); }]];   // one on the site already: with a token, its page there too
+      if (dg && (dg.length || (onGroup && !inGroup(tg).length))) (items.last = items.last || []).push(['Delete group', function () { deleteGroupU(tg, dg); }, false, DEL_KEY]);
+      if (m && !editing && canDelete(m, gh)) items.last = [['Delete map', function () { binU([m]); }, false, DEL_KEY]];   // one on the site already: with a token, its page there too
       return items;
     }
     // a reader's own map moved to another group, theirs or the site's ('': no group, at the top of the list): by Move to
@@ -1118,11 +1118,14 @@
       }, function () { fwd = Promise.resolve(ks.length ? binKeys(ks) : null).then(function () { if (empty()) { if (ks.length) groupGo(name); else removeGroup(name); } }); return fwd; });
       return fwd;
     }
-    // The Delete key (on a Mac the delete key, Backspace) on the map shown, outside edit mode, with the list in sight: Delete map,
-    // as the list's menu offers it (on a group selected by its heading Delete group, on maps selected Delete N maps); the next map in the list shown first (the one before at the list's end), as a
-    // mailbox goes on to the next message. Not in a field, a menu, a name being given, or on a map in Deleted
+    // Cmd+Delete (Ctrl+Delete elsewhere; Delete or Backspace, the Mac's delete key) on the map shown, outside edit mode, with the
+    // list in sight: Delete map, as the list's menu offers it (on a group selected by its heading Delete group, on maps selected
+    // Delete N maps); the next map in the list shown first (the one before at the list's end), as a mailbox goes on to the next
+    // message. The key alone does nothing here, as in Finder: in edit mode it removes what is selected, so one key never
+    // means both an object and the whole map. Not in a field, a menu, a name being given, or on a map in Deleted
+    var DEL_KEY = /mac|iphone|ipad|ipod/i.test((navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || navigator.userAgent) ? '\u2318\u232B' : 'Ctrl+Del';
     document.addEventListener('keydown', function (e) {
-      if ((e.key !== 'Delete' && e.key !== 'Backspace') || e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+      if ((e.key !== 'Delete' && e.key !== 'Backspace') || e.defaultPrevented || e.altKey || e.shiftKey || !(e.ctrlKey || e.metaKey)) return;
       if (naming || document.querySelector('.m2-cx') || V.grid.classList.contains('m2-editing')) return;
       if (e.target.closest && e.target.closest('input, select, textarea, [contenteditable]')) return;
       var list = document.getElementById('m2-list'), m = V.chosen && V.byId[V.chosen.id], sel = V.picked(), pg = V.pickedGroup();

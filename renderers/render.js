@@ -15,8 +15,8 @@ var yr = require(path.join(__dirname, 'yrender', 'yrender.js')), cd = require(pa
 var log = function (s) { process.stderr.write(s + '\n'); };
 function glyphs(src) {
   return function (rel) {
-    var f = path.resolve(path.dirname(src), rel);
-    if (!/\.png$/i.test(f) || !fs.existsSync(f)) return null;
+    var dir = path.dirname(path.resolve(src)), f = path.resolve(dir, rel), up = path.relative(dir, f);
+    if (path.isAbsolute(rel) || up.split(path.sep)[0] === '..' || !/\.png$/i.test(f) || !fs.existsSync(f) || !fs.statSync(f).isFile()) return null;   // only a PNG file in the map's own folder
     return 'data:image/png;base64,' + fs.readFileSync(f).toString('base64');
   };
 }

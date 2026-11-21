@@ -1,6 +1,7 @@
 // The functional consistency review's small gaps, on the live page (by default the styles page), no token:
 // 1. View mode: + and - zoom the map shown right after it is picked in the list, with no click on the map.
-// 2. View mode: the Delete key keeps the map shown while an area is selected on it; after Esc it puts the map in Deleted.
+// 2. View mode: Cmd+Delete keeps the map shown while an area is selected on it; after Esc, Delete alone keeps it (as in
+//    Finder) and Cmd+Delete puts it in Deleted.
 // 3. Edit mode: an area over the whole map (nodes and bend points), then the Delete key: the glyphs go, as by the menu.
 // 4. Edit mode: the right-click menu's Delete shows its key; the status line says nothing after a move.
 // 5. Gestures and keys: + and - zoom in and out; S, Esc and Delete listed.
@@ -37,7 +38,8 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
   await page.keyboard.press('-'); await page.waitForTimeout(400);
   ok('1. - zooms back', (await tf()) !== z1);
 
-  // 2. the Delete key with an area on the map: kept; after Esc: in Deleted
+  // 2. Cmd+Delete with an area on the map: kept; after Esc: Delete alone kept, Cmd+Delete in Deleted
+  var MOD = process.platform === 'darwin' ? 'Meta' : 'Control';
   await menu('#m2-list .m2-map[data-id="testing-glycolysis-sbgn"]', 'Make a copy'); await page.waitForTimeout(1500);
   var copy = await hash();
   await view(); await list();
@@ -45,11 +47,13 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
   var B = await mapBox();
   await shiftDrag(B[0] + 40, B[1] + 40, B[0] + 300, B[1] + 260);
   ok('2. an area is selected', await page.$eval('#m2-area', function (e) { return e.style.display === 'block'; }));
-  await page.keyboard.press('Delete'); await page.waitForTimeout(1500);
-  ok('2. Delete with an area: the map kept', (await ids()).indexOf(copy) >= 0 && (await hash()) === copy, await hash());
+  await page.keyboard.press(MOD + '+Delete'); await page.waitForTimeout(1500);
+  ok('2. ' + MOD + '+Delete with an area: the map kept', (await ids()).indexOf(copy) >= 0 && (await hash()) === copy, await hash());
   await page.keyboard.press('Escape'); await page.waitForTimeout(300);
   await page.keyboard.press('Delete'); await page.waitForTimeout(1500);
-  ok('2. after Esc, Delete puts it in Deleted', (await ids()).indexOf(copy) < 0, await hash());
+  ok('2. after Esc, Delete alone: the map kept, as in Finder', (await ids()).indexOf(copy) >= 0 && (await hash()) === copy, await hash());
+  await page.keyboard.press(MOD + '+Delete'); await page.waitForTimeout(1500);
+  ok('2. after Esc, ' + MOD + '+Delete puts it in Deleted', (await ids()).indexOf(copy) < 0, await hash());
 
   // 3 and 4. edit mode on a copy of its own
   await menu('#m2-list .m2-map[data-id="testing-glycolysis-sbgn"]', 'Make a copy'); await page.waitForTimeout(1500);

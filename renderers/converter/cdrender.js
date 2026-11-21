@@ -282,7 +282,7 @@
     // picture's address for that path, or nothing; with no opt.glyph every compartment is drawn as lines
     this.glyph = {};
     if (opt.glyph) findall(model, 's:listOfCompartments/s:compartment').forEach(function (c) {
-      var n = find(c, 's:notes'), m = n && /Glyph:\s*(\S+)/.exec(n.textContent || ''), href = m && opt.glyph(m[1]);
+      var n = find(c, 's:notes'), m = n && /Glyph:\s*(.+?\.png)/i.exec(n.textContent || ''), href = m && opt.glyph(m[1]);
       if (href) self.glyph[get(c, 'id')] = href;
     });
     this.alias = new Map();

@@ -230,7 +230,7 @@ class Drawing:
         self.glyph = {}
         for c in (model.iterfind('s:listOfCompartments/s:compartment', NS) if glyph else ()):
             n = f(c, 's:notes')
-            m = re.search(r'Glyph:\s*(\S+)', ''.join(n.itertext())) if n is not None else None
+            m = re.search(r'Glyph:\s*(.+?\.png)', ''.join(n.itertext()), re.I) if n is not None else None
             href = glyph(m.group(1)) if m else None
             if href:
                 self.glyph[c.get('id')] = href
