@@ -221,8 +221,8 @@
     Object.keys(G.node).forEach(function (id) {
       var g = S.glyph[id], n = G.node[id];
       if (!g) return;
-      if (g.el.getAttribute('class') === 'submap') { var sc = 'Submap', sr = n.geo.parentNode;   // yEd's Submap with its terminals, Activity Flow or PD as sbgnml.read
-        if (sr.localName === 'GenericNode' && cfgOf(sr) !== sc) T.set(sr, 'configuration', 'com.yworks.sbgn.' + sc); }
+      if (g.el.getAttribute('class') === 'submap') { var sr = n.geo.parentNode;   // yEd's Submap with its terminals, Activity Flow or PD as sbgnml.read
+        if (sr.localName === 'GenericNode' && cfgOf(sr) !== 'Submap') T.set(sr, 'configuration', 'com.yworks.sbgn.Submap'); }
       if (/^(tag|terminal)$/.test(g.el.getAttribute('class') || '')) setWay(T, n.geo.parentNode, fileWay(g.el));   // its orientation as the file has it
       var ec = (g.el.getAttribute('class') || '').replace(/ multimer$/, ''), er = n.geo.parentNode;   // an entity made another (entityKind): its shape the file's class
       if (ENTITY.test(ec) && ENTITY.test(classOfCfg(cfgOf(er)) || '') && cfgOf(er) !== MAKE[ec]) T.set(er, 'configuration', 'com.yworks.sbgn.' + MAKE[ec]);
@@ -1230,13 +1230,13 @@
   }
   // a terminal's node right after its submap's node and the terminals it has, as the converter reads a submap's
   // terminals after it (the file holds them inside the submap's glyph); the submap: the one its box touches, the nearest
-  // a submap's node: yEd's Submap, or under Activity Flow the phenotype a submap of the file is drawn as (S: the file)
-  function isSub(G, k, S) { var c = cfgOf(G.node[k].geo.parentNode); return c === 'Submap' || (!!S && c === 'Phenotype' && !!S.glyph[k] && S.glyph[k].el.getAttribute('class') === 'submap'); }
+  // a submap's node: yEd's Submap (graphml() turns an older base's phenotype for a submap into one)
+  function isSub(G, k) { return cfgOf(G.node[k].geo.parentNode) === 'Submap'; }
   function subNode(G, id, S) {
     var b = G.node[id].box, best = null, bd = Infinity;
     G.ids.forEach(function (k) {
       var q = G.node[k].box;
-      if (!isSub(G, k, S) || b[0] > q[0] + q[2] + 1 || q[0] > b[0] + b[2] + 1 || b[1] > q[1] + q[3] + 1 || q[1] > b[1] + b[3] + 1) return;
+      if (!isSub(G, k) || b[0] > q[0] + q[2] + 1 || q[0] > b[0] + b[2] + 1 || b[1] > q[1] + q[3] + 1 || q[1] > b[1] + b[3] + 1) return;
       var d = Math.hypot(b[0] + b[2] / 2 - q[0] - q[2] / 2, b[1] + b[3] / 2 - q[1] - q[3] / 2);
       if (d < bd) { bd = d; best = k; }
     });

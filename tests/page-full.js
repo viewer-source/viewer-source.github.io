@@ -1,15 +1,12 @@
 // The full screen sign in the icon column, before the ?: the whole page full screen with the list, tools and panel,
 // the site's top bar gone and the map window down to the screen's bottom; a second click or Esc back, the bar again.
 //   node tests/page-full.js [page address] [--local]
-// --local: the live page with this working tree's changes to the sign applied to its text, to check before a release.
+// --local: the live page with the change not yet released applied to its text, to check before a release.
 var { chromium } = require('playwright');
 var URL0 = process.argv[2] && process.argv[2][0] !== '-' ? process.argv[2] : 'https://viewer-source.github.io/#glycolysis-sbgn';
 var local = process.argv.indexOf('--local') > 0;
 var LOCAL = [
-  ['  #m2-view:-webkit-full-screen { width: 100vw;', "  :root:fullscreen .wrapper-masthead { display: none; }\n  :root:-webkit-full-screen .wrapper-masthead { display: none; }\n  #m2-view:-webkit-full-screen { width: 100vw;"],
-  ['<button type="button" class="m2-ri" data-win="help"', '<button type="button" class="m2-ri" data-win="full" title="Full screen with tools" aria-label="Full screen with tools"></button>\n<button type="button" class="m2-ri" data-win="help"'],
-  ["b.dataset.win === 'ovl' || b.dataset.win === 'help') return;", "b.dataset.win === 'ovl' || b.dataset.win === 'help' || b.dataset.win === 'full') return;"],
-  ['  function showFull() {', "  var pageSign = document.querySelector('#m2-rail .m2-ri[data-win=\"full\"]');\n  function showPageFull() { if (!pageSign) return; var on = isPageFull(); pageSign.innerHTML = on ? EXIT_ICON : FULL_ICON; pageSign.title = on ? 'Exit full screen (Esc)' : 'Full screen with tools'; pageSign.setAttribute('aria-label', pageSign.title); }\n  if (pageSign) { showPageFull(); pageSign.addEventListener('click', pageFull); document.addEventListener('fullscreenchange', showPageFull); }\n  function showFull() {"]
+  ['pageSign.innerHTML = on ? EXIT_ICON : FULL_ICON;', "pageSign.innerHTML = (on ? EXIT_ICON : FULL_ICON).replace('<svg ', '<svg fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" ');"]
 ];
 (async function () {
   var b = await chromium.launch(), bad = 0, errs = [];
@@ -30,6 +27,10 @@ var LOCAL = [
     return { fs: document.fullscreenElement === document.documentElement, bar: m ? m.getBoundingClientRect().height : -1, top: v.top, bottom: v.bottom, h: innerHeight, title: g && g.title, list: !!document.querySelector('.m2-nav').offsetWidth };
   }, sign); };
   ok('the sign is shown, just before the ?', await page.evaluate(function (s) { var f = document.querySelector(s), h = document.querySelector('#m2-rail .m2-ri[data-win="help"]'); return !!(f && f.offsetParent && f.querySelector('svg') && h && f.nextElementSibling === h); }, sign));
+  ok('drawn as its neighbours: the same colour, line width and no fill as Settings', await page.evaluate(function (s) {
+    var st = function (q) { var p = document.querySelector(q + ' svg path') || document.querySelector(q + ' svg circle'), c = getComputedStyle(p); return [c.stroke, c.strokeWidth, c.fill === 'none' || c.fill === 'rgba(0, 0, 0, 0)' ? 'none' : c.fill].join(); };
+    return st(s) === st('#m2-rail .m2-ri[data-win="set"]');
+  }, sign));
   var a = await at();
   ok('before: the top bar is there', a.bar > 20 && !a.fs, JSON.stringify(a));
   await page.click(sign); await page.waitForTimeout(800);

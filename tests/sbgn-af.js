@@ -191,7 +191,7 @@ expect('a process added to the AF file', W2[3][0], 'process description', { p1: 
 // 6. (1) the last process deleted turns the map back to AF, also in a draft reopened (the
 // file's own kind measured before the deleted glyphs go); (2) a file turned is read again into the editor's GraphML: no
 // activity left marked on a PD map, drawn as the converter draws the file, written back the same, on every AF file of the
-// demo with a process added and deleted (AF_Reference_Card's submap a phenotype only under AF); (3) a PD file of entities
+// demo with a process added and deleted; (3) a PD file of entities
 // and direct links (it reads AF) comes back as it was when saved with no change, and is turned AF at its first change;
 // (4) a reopened draft's perturbing agent turned a perturbation carries the file's class
 var gProc = W2[3][1], back = steps([['the process deleted again (a draft reopened)', W2[3][0], gProc, se.remove(se.graphml(W2[3][0], gProc, opt), ['pr'], opt)],
