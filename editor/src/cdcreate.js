@@ -716,6 +716,49 @@
     // compartment, as a click on it does, and a double click still opens the name. Reached through svDown (create.js),
     // which the core asks before a node is pressed
     var cdNm = null;
+    // a cardinality on a CellDesigner map (create.js cardDown): the file keeps its number (stoichiometry), no place, so it
+    // stays in the middle; a click on its box selects its line, a drag says why it stays, Delete then takes the number out
+    // (an added reactant's or product's; a reaction's own two in Properties' Cardinality rows)
+    var cdCardDrag = null, cdCard = null;
+    function cdCardAt(e) {   // the line whose drawn cardinality (cdrender's count: 11 high, a grey edge) is under the pointer
+      var hit = null;
+      Array.prototype.forEach.call(V.img.querySelectorAll('[data-e] rect[height="11"]'), function (r) {
+        if ((r.getAttribute('stroke') || '').toLowerCase() !== '#9aa0a6') return;
+        var b = r.getBoundingClientRect();
+        if (e.clientX >= b.left - 2 && e.clientX <= b.right + 2 && e.clientY >= b.top - 2 && e.clientY <= b.bottom + 2) hit = r.closest('[data-e]').getAttribute('data-e');
+      });
+      if (hit == null) return -1;
+      var k = edges2.findIndex(function (q) { return q.id === hit; });
+      return k >= 0 ? k : edges2.findIndex(function (q) { return q.id.indexOf(hit + '|') === 0; });   // a reaction's own: its main line, the whole reaction
+    }
+    function cdCardDown(e) {
+      var k = cdCardAt(e);
+      if (k < 0) return false;
+      V.view.focus({ preventScroll: true });
+      if (selE.length === 1 && selE[0] === k) { e.stopImmediatePropagation(); e.preventDefault(); cdCardDrag = { x: e.clientX, y: e.clientY }; return true; }
+      cdCardDrag = { pick: k, x: e.clientX, y: e.clientY }; return true;   // a click selects its line, a drag moves the map
+    }
+    window.addEventListener('pointermove', function (e) {
+      var d = cdCardDrag;
+      if (!d) return;
+      var far = Math.hypot(e.clientX - d.x, e.clientY - d.y);
+      if (d.pick != null) { if (!e.buttons || far >= 5) cdCardDrag = null; return; }
+      if (far >= 4 && !d.said) { d.said = true; warn('CellDesigner keeps no place for a cardinality: it stays in the middle of its line.'); }
+    }, true);
+    window.addEventListener('pointerup', function (e) {
+      var d = cdCardDrag; cdCardDrag = null;
+      if (!d || d.pick == null) return;
+      e.stopImmediatePropagation();
+      selN = []; selP = []; selE = [d.pick]; part = null; cdCard = d.pick; paint();
+    }, true);
+    window.addEventListener('keydown', function (e) {   // Delete: its number out, not the line
+      if (cdCard == null || (e.key !== 'Delete' && e.key !== 'Backspace') || /input|textarea|select/i.test(document.activeElement.tagName)) return;
+      var k = cdCard;
+      if (!cd || selE.length !== 1 || selE[0] !== k || selN.length || selP.length || !edges2[k]) { cdCard = null; return; }
+      e.preventDefault(); e.stopImmediatePropagation();
+      if (/\|[rp]\d+$/.test(edges2[k].id)) { cdCard = null; PF_CD.line.setCount(k, ''); }
+      else warn('A reaction\'s own reactant and product: their numbers are cleared in Properties, Cardinality.');
+    }, true);
     function cdNameDown(e, P, h) {
       if (!cdPal() || tool || e.shiftKey || e.pointerType !== 'mouse' || edgeAt(P) || (h && (h.p != null || h.e != null || (h.n != null && !nodes2[h.n].comp)))) return false;   // a finger moves the map; a compartment's edge, a bend point, a line or a species over the name: theirs
       var k = -1, area = Infinity, info = null, pad = 3, res = null;   // the innermost compartment whose drawn name is under the pointer (one still named by its id too)

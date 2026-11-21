@@ -7,7 +7,7 @@ import math, copy, os, re
 from lxml import etree
 from . import report
 from .annotation import from_graphml, from_notes, notes, to_properties
-from .layout import bends, border, centre, compartment_of, count_box, count_text, decorations, own_places, unbent
+from .layout import bends, border, centre, compartment_of, count_line, count_on, count_place, count_text, decorations, own_places, unbent
 from . import newt_layout
 from .graphml import DELAY, EQUIV, LINE, CHAR, touches, without_delays
 from .model import Map, Node, Arc
@@ -380,7 +380,8 @@ def write(diagram, newt=False):
         if a.dashed:  # SBGN PD has no unknown arc: kept in its notes
             note(e, [UNKNOWN])
         if a.count and cls in ('consumption', 'production'):  # its cardinality, a glyph of the arc beside it
-            x, y, w, h = count_box(N, a, a.count)
+            drawn = [p0] + pts + [p1]  # the line as written, from the entity: a reader measures the place on it
+            x, y, w, h = count_on(drawn[::-1] if N[s].kind in PROCESSES else drawn, a.count, a.count_at)
             c = etree.SubElement(e, S + 'glyph', {'class': 'cardinality', 'id': xml_id(a.id) + '_card'})
             etree.SubElement(c, S + 'label', text=a.count)
             etree.SubElement(c, S + 'bbox', x=repr(float(x)), y=repr(float(y)), w=repr(float(w)), h=repr(float(h)))
@@ -643,12 +644,15 @@ def read(path):
         flux = cls in ('consumption', 'logic arc')  # a port where an arc starts (a product, a gate's output) is kept, where
         # it ends only for these: a modifier aimed at a port ends on the glyph
         ends = [(float(e.get('x')), float(e.get('y'))) if e is not None else None for e in (a.find(S + 'start'), a.find(S + 'end'))]
-        card = next((g.find(S + 'label') for g in a.findall(S + 'glyph') if g.get('class') == 'cardinality'), None)
+        cg = next((g for g in a.findall(S + 'glyph') if g.get('class') == 'cardinality'), None)
+        card, cb = (cg.find(S + 'label'), cg.find(S + 'bbox')) if cg is not None else (None, None)
         arcs.append(Arc(id=a.get('id'), source=s, target=t, head=head[cls], dashed=UNKNOWN in text_of(a), points=pts,
                         count=count_text(card.get('text')) if card is not None and cls in ('consumption', 'production') else None,
                         line=colour(line.get(a.get('id')), defs), weight=weight.get(a.get('id')) if weight.get(a.get('id'), 1) != 1 else None,
                         source_at=at(nodes[s], a.get('source'), ends[0], (pts or ends[1:])[0], at_port.get(a.get('source'))),
                         target_at=at(nodes[t], a.get('target'), ends[1], (pts[-1:] or ends[:1])[0], flux and at_port.get(a.get('target')))))
+        if arcs[-1].count and cb is not None:  # its place along the line, from the box the file gives
+            arcs[-1].count_at = count_place(count_line(nodes, arcs[-1]), [float(cb.get(k, 0)) for k in ('x', 'y', 'w', 'h')])
     for t, ps in performers.items():
         if len(ps) > 1:  # which entity it stands for is not guessed
             skipped.setdefault('performance arc', []).extend(i for _, i in ps); continue

@@ -29,10 +29,8 @@ def border(d, p):
 COUNT_H = 11.0  # a cardinality's box: 11 high, 5 px a character and 3 each side, 1 px off the line
 
 
-def count_box(N, a, text):
-    # where an arc's cardinality is drawn (SBGN PD 2.7.1: a box with a long side along the line): beside the middle of
-    # the line by its length, from where it leaves its entity to where it meets its process, above it (right of a line
-    # near upright)
+def count_line(N, a):
+    # a cardinality's line: from where it leaves its entity to where it meets its process
     first = N[a.source].kind not in PROCESSES  # the entity at the source (a consumption drawn either way)
     ent, hub = (a.source, a.target) if first else (a.target, a.source)
     at, pts = (a.source_at, list(a.points)) if first else (a.target_at, list(a.points)[::-1])
@@ -41,9 +39,28 @@ def count_box(N, a, text):
     nxt = pts[0] if pts else (Hc[0] + hub_at[0], Hc[1] + hub_at[1])
     p0 = (centre(E)[0] + at[0], centre(E)[1] + at[1]) if any(at) else border(E, nxt)
     p1 = (Hc[0] + hub_at[0], Hc[1] + hub_at[1]) if any(hub_at) else border(Hb, pts[-1] if pts else p0)
-    line = [p0] + pts + [p1]
-    lens = [math.sqrt((q[0] - p[0]) * (q[0] - p[0]) + (q[1] - p[1]) * (q[1] - p[1])) for p, q in zip(line, line[1:])]
-    half, k = sum(lens) / 2, 0  # sqrt, not hypot: the viewer's JavaScript gives the same last digit
+    return [p0] + pts + [p1]
+
+
+def _sum(v):
+    # a plain sum in order, as the viewer's JavaScript adds (Python's sum() compensates, from 3.12, and differs in the
+    # last digit)
+    t = 0.0
+    for x in v:
+        t += x
+    return t
+
+
+def _lens(line):
+    return [math.sqrt((q[0] - p[0]) * (q[0] - p[0]) + (q[1] - p[1]) * (q[1] - p[1])) for p, q in zip(line, line[1:])]
+
+
+def count_on(line, text, pos=None):
+    # where a cardinality is drawn (SBGN PD 2.7.1: a box with a long side along the line), 1 px off the line: at pos
+    # (r: how far along from the entity, 0, to the process, 1; s: 1 on the left of that way, -1 on the right), or by
+    # default (None) beside the middle, above it (right of a line near upright)
+    lens = _lens(line)
+    half, k = _sum(lens) * (pos[0] if pos else 0.5), 0  # sqrt, not hypot: the viewer's JavaScript gives the same last digit
     while k < len(lens) - 1 and half > lens[k]:
         half -= lens[k]
         k += 1
@@ -53,12 +70,44 @@ def count_box(N, a, text):
         ux, uy = 1.0, 0.0
     mx, my = line[k][0] + ux * half, line[k][1] + uy * half
     nx, ny = -uy, ux
-    if (nx < 0) if abs(ny) < 0.2 else (ny > 0):  # the normal on the upper side, or the right of a line near upright
+    if (pos[1] < 0) if pos else ((nx < 0) if abs(ny) < 0.2 else (ny > 0)):
         nx, ny = -nx, -ny
     w, h = 5.0 * len(text) + 6, COUNT_H
     side = 1 + abs(nx) * w / 2 + abs(ny) * h / 2
     cx, cy = mx + nx * side, my + ny * side
     return (cx - w / 2, cy - h / 2, w, h)
+
+
+def count_box(N, a, text):
+    # where an arc's cardinality is drawn: at its place (a.count_at), else beside the middle of its line
+    return count_on(count_line(N, a), text, a.count_at)
+
+
+def count_place(line, box):
+    # the place (r, s) of a cardinality's box drawn by its line: its centre's nearest point on the line (the viewer's
+    # countAlong); None for the default place (the middle, on its usual side)
+    lens, P = _lens(line), (box[0] + box[2] / 2, box[1] + box[3] / 2)
+    tot, acc, best = _sum(lens), 0.0, None
+    if not tot:
+        return None
+    for k, L in enumerate(lens):
+        if not L:
+            continue
+        a = line[k]
+        ux, uy = (line[k + 1][0] - a[0]) / L, (line[k + 1][1] - a[1]) / L
+        t = max(0.0, min(L, (P[0] - a[0]) * ux + (P[1] - a[1]) * uy))
+        qx, qy = a[0] + ux * t, a[1] + uy * t
+        d = math.sqrt((P[0] - qx) * (P[0] - qx) + (P[1] - qy) * (P[1] - qy))
+        if best is None or d < best[0]:
+            best = (d, (acc + t) / tot, 1 if (P[0] - qx) * -uy + (P[1] - qy) * ux >= 0 else -1)
+        acc += L
+    r, s = math.floor(best[1] * 10000 + 0.5) / 10000, best[2]  # as the JavaScript's Math.round
+    if abs(r - 0.5) < 0.005:
+        d, u = count_on(line, 'x'), count_on(line, 'x', (0.5, s))
+        if abs(d[0] - u[0]) < 0.01 and abs(d[1] - u[1]) < 0.01:
+            return None
+        r = 0.5
+    return (r, s)
 
 
 CARD = re.compile(r'^\s*(\d+(\.\d+)?|\?)\s*$')  # a cardinality: a number or ? (anything else is none)

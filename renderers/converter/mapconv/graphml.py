@@ -194,6 +194,7 @@ def read(path):
         a = pl.find('y:Arrows', NS)
         head = a.get('target')
         yp = pl.find('y:Path', NS)
+        lab = next((l for l in pl.findall('y:EdgeLabel', NS) if CARD.match(l.text or '')), None)  # a number: its cardinality
         arcs.append(Arc(id=e.get('id'), source=e.get('source'), target=e.get('target'),
                         # another arrow is kept by its yEd name, for the rules to report
                         head=None if head in ('none', None) else HEAD.get(head, 'production' if head == 'delta' else 'arrow ' + head),
@@ -202,7 +203,9 @@ def read(path):
                         source_at=(float(yp.get('sx')), float(yp.get('sy'))),
                         target_at=(float(yp.get('tx')), float(yp.get('ty'))),
                         dashed=pl.find('y:LineStyle', NS).get('type') != 'line',
-                        count=next((t for t in ((l.text or '') for l in pl.findall('y:EdgeLabel', NS)) if CARD.match(t)), None)))
+                        count=lab.text if lab is not None else None))
+        if lab is not None and lab.get('modelPosition') in ('scentr', 'tcentr'):  # a cardinality moved along its line (count_on)
+            arcs[-1].count_at = (float(lab.get('ratio', 0.5)), 1 if lab.get('modelPosition') == 'scentr' else -1)
     for a in arcs:  # a number on a consumption or production line is its cardinality
         if a.count:
             a.count = count_text(a.count) if a.source in nodes and a.target in nodes and flux(nodes, a) else None
@@ -413,6 +416,9 @@ def write(diagram, soft=False):
                 (centre(N[a.source])[0] + a.source_at[0], centre(N[a.source])[1] + a.source_at[1])
             lb = copy.deepcopy(card)
             lb.text = a.count
+            if a.count_at:  # its place along the line (count_on): ratio, and the side as six_pos's scentr or tcentr
+                lb.set('ratio', repr(float(a.count_at[0])))
+                lb.set('modelPosition', 'scentr' if a.count_at[1] > 0 else 'tcentr')
             for k, v in (('x', x - s_[0]), ('y', y - s_[1]), ('width', w), ('height', h)):
                 lb.set(k, repr(float(v)))
             pl.insert(list(pl).index(pl.find('y:BendStyle', NS)) + 1, lb)

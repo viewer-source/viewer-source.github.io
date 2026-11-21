@@ -389,7 +389,7 @@
   // edge in the GraphML, placed as layout.count_box and graphml.write place it (the same arithmetic, so the same digits)
   var CARD = /^\s*(\d+(\.\d+)?|\?)\s*$/;
   var LAB = ['<y:EdgeLabel alignment="center" backgroundColor="#FFFFFF" configuration="AutoFlippingLabel" distance="2.0" fontFamily="Dialog" fontSize="9" fontStyle="plain" height="',
-    '" horizontalTextPosition="center" iconTextGap="4" lineColor="#9AA0A6" modelName="six_pos" modelPosition="', '" preferredPlacement="anywhere" ratio="0.5" textColor="#9AA0A6" verticalTextPosition="bottom" visible="true" width="',
+    '" horizontalTextPosition="center" iconTextGap="4" lineColor="#9AA0A6" modelName="six_pos" modelPosition="', '" preferredPlacement="anywhere" ratio="', '" textColor="#9AA0A6" verticalTextPosition="bottom" visible="true" width="',
     '" x="', '" xml:space="preserve" y="', '">', '<y:PreferredPlacementDescriptor angle="0.0" angleOffsetOnRightSide="0" angleReference="absolute" angleRotationOnRightSide="co" distance="-1.0" frozen="true" placement="anywhere" side="anywhere" sideReference="relative_to_edge_flow"/></y:EdgeLabel>'];
   function countText(v) {   // layout.count_text: ?, or a number as Python writes it (2, not 2.0; 2.5); anything else null
     var m = CARD.exec(v == null ? '' : String(v));
@@ -413,32 +413,69 @@
     var t = Math.min(dx ? b[2] / 2 / Math.abs(dx) : Infinity, dy ? b[3] / 2 / Math.abs(dy) : Infinity);
     return [c[0] + t * dx, c[1] + t * dy];
   }
-  function countBox(G, e, text) {   // layout.count_box: beside the middle of the line, above it, right of a line near upright
+  // a cardinality's place (pos): { r: how far along its line from the entity (0) to the process (1), s: its side, 1 on
+  // the left of that way (the normal -uy, ux), -1 on the right }; null: the middle, above it (right of a line near upright)
+  function countLine(G, e) {   // layout.count_line: the line from where it leaves its entity to where it meets its process
     var first = !isProcN(G, e.s), E = G.node[first ? e.s : e.t].box, Hb = G.node[first ? e.t : e.s].box, Hc = centreOf(Hb);
     var at = first ? e.off.slice(0, 2) : e.off.slice(2), hub = first ? e.off.slice(2) : e.off.slice(0, 2), pts = first ? e.pts : e.pts.slice().reverse();
     var nxt = pts.length ? pts[0] : [Hc[0] + hub[0], Hc[1] + hub[1]], Ec = centreOf(E);
     var p0 = at[0] || at[1] ? [Ec[0] + at[0], Ec[1] + at[1]] : borderOf(E, nxt);
     var p1 = hub[0] || hub[1] ? [Hc[0] + hub[0], Hc[1] + hub[1]] : borderOf(Hb, pts.length ? pts[pts.length - 1] : p0);
-    var line = [p0].concat(pts, [p1]), lens = [], tot = 0, k = 0;
-    for (var i = 0; i + 1 < line.length; i++) { var ax = line[i + 1][0] - line[i][0], ay = line[i + 1][1] - line[i][1]; lens.push(Math.sqrt(ax * ax + ay * ay)); }
+    return [p0].concat(pts, [p1]);
+  }
+  function lineLens(line) { var lens = []; for (var i = 0; i + 1 < line.length; i++) { var ax = line[i + 1][0] - line[i][0], ay = line[i + 1][1] - line[i][1]; lens.push(Math.sqrt(ax * ax + ay * ay)); } return lens; }
+  function countOn(line, text, pos) {   // layout.count_on: the box [x, y, w, h] at pos on the line, a long side along it, 1 px off it
+    var lens = lineLens(line), tot = 0, k = 0;
     lens.forEach(function (v) { tot += v; });
-    var half = tot / 2;
+    var half = tot * (pos ? pos.r : 0.5);
     while (k < lens.length - 1 && half > lens[k]) { half -= lens[k]; k++; }
     var L = lens[k] || 1, ux = (line[k + 1][0] - line[k][0]) / L, uy = (line[k + 1][1] - line[k][1]) / L;
     if (!lens[k]) { ux = 1; uy = 0; }
     var mx = line[k][0] + ux * half, my = line[k][1] + uy * half, nx = -uy, ny = ux;
-    if (Math.abs(ny) < 0.2 ? nx < 0 : ny > 0) { nx = -nx; ny = -ny; }
+    if (pos ? pos.s < 0 : (Math.abs(ny) < 0.2 ? nx < 0 : ny > 0)) { nx = -nx; ny = -ny; }
     var w = 5 * text.length + 6, h = 11, side = 1 + Math.abs(nx) * w / 2 + Math.abs(ny) * h / 2;
     var cx = mx + nx * side, cy = my + ny * side;
     return [cx - w / 2, cy - h / 2, w, h];
   }
-  function labXml(G, e, text) {   // graphml.write's label: its place from where the line leaves its source
-    var b = countBox(G, e, text), S = G.node[e.s].box, Sc = centreOf(S);
-    var s0 = e.off[0] || e.off[1] ? [Sc[0] + e.off[0], Sc[1] + e.off[1]] : borderOf(S, e.pts.length ? e.pts[0] : centreOf(G.node[e.t].box));
-    return LAB[0] + repr(b[3]) + LAB[1] + 'center' + LAB[2] + repr(b[2]) + LAB[3] + repr(b[0] - s0[0]) + LAB[4] + repr(b[1] - s0[1]) + LAB[5] + esc(text) + LAB[6];
+  function countAlong(line, P) {   // layout.count_place's walk: the nearest point of the line to P as [r, s] (unrounded), null for a line of no length
+    var lens = lineLens(line), tot = 0, acc = 0, best = null;
+    lens.forEach(function (v) { tot += v; });
+    if (!tot) return null;
+    for (var k = 0; k < lens.length; k++) {
+      if (!lens[k]) { acc += lens[k]; continue; }
+      var a = line[k], ux = (line[k + 1][0] - a[0]) / lens[k], uy = (line[k + 1][1] - a[1]) / lens[k];
+      var t = Math.max(0, Math.min(lens[k], (P[0] - a[0]) * ux + (P[1] - a[1]) * uy)), qx = a[0] + ux * t, qy = a[1] + uy * t;
+      var d = Math.sqrt((P[0] - qx) * (P[0] - qx) + (P[1] - qy) * (P[1] - qy));
+      if (!best || d < best[0]) best = [d, (acc + t) / tot, (P[0] - qx) * -uy + (P[1] - qy) * ux >= 0 ? 1 : -1];
+      acc += lens[k];
+    }
+    return [best[1], best[2]];
   }
-  function countSet(T, G, e, want) {   // the edge's label made, changed or taken out (as lxml writes it: before the </y:PolyLineEdge>)
-    var have = edgeLab(e.el), x = want ? labXml(G, e, want) : '';
+  function countPlace(line, b) {   // layout.count_place: the pos of a box [x, y, w, h] drawn by its line (null: the middle, its usual side)
+    var q = countAlong(line, centreOf(b));
+    if (!q) return null;
+    var r = Math.round(q[0] * 10000) / 10000;
+    if (Math.abs(r - 0.5) < 0.005) {
+      var d = countOn(line, 'x', null), u = countOn(line, 'x', { r: 0.5, s: q[1] });
+      if (Math.abs(d[0] - u[0]) < 0.01 && Math.abs(d[1] - u[1]) < 0.01) return null;
+      r = 0.5;
+    }
+    return { r: r, s: q[1] };
+  }
+  function bboxOf(g) { var bb = g && kid(g, 'bbox'); return bb ? ['x', 'y', 'w', 'h'].map(function (k) { return parseFloat(bb.getAttribute(k)) || 0; }) : null; }
+  function samePos(a, b) { return (!a && !b) || (!!a && !!b && Math.abs(a.r - b.r) < 0.00005 && a.s === b.s); }
+  function labPos(l) {   // a label's pos: ratio and the six_pos side (scentr left, tcentr right), center the usual place
+    var m = l.getAttribute('modelPosition'), r = parseFloat(l.getAttribute('ratio'));
+    return m === 'scentr' || m === 'tcentr' ? { r: isNaN(r) ? 0.5 : r, s: m === 'scentr' ? 1 : -1 } : null;
+  }
+  function countBox(G, e, text, pos) { return countOn(countLine(G, e), text, pos); }
+  function labXml(G, e, text, pos) {   // graphml.write's label: its place from where the line leaves its source
+    var b = countBox(G, e, text, pos), S = G.node[e.s].box, Sc = centreOf(S);
+    var s0 = e.off[0] || e.off[1] ? [Sc[0] + e.off[0], Sc[1] + e.off[1]] : borderOf(S, e.pts.length ? e.pts[0] : centreOf(G.node[e.t].box));
+    return LAB[0] + repr(b[3]) + LAB[1] + (pos ? (pos.s > 0 ? 'scentr' : 'tcentr') : 'center') + LAB[2] + (pos ? repr(pos.r) : '0.5') + LAB[3] + repr(b[2]) + LAB[4] + repr(b[0] - s0[0]) + LAB[5] + repr(b[1] - s0[1]) + LAB[6] + esc(text) + LAB[7];
+  }
+  function countSet(T, G, e, want, pos) {   // the edge's label made, changed or taken out (as lxml writes it: before the </y:PolyLineEdge>)
+    var have = edgeLab(e.el), x = want ? labXml(G, e, want, pos) : '';
     if (have) { var s0 = T.at.get(have)[0], s1 = T.end(have); if (T.t.slice(s0, s1) !== x) T.ed.push([s0, s1, x]); return; }
     if (!want) return;
     var pl = e.el.getElementsByTagNameNS(YNS, 'PolyLineEdge')[0] || e.path.parentNode, end = T.end(pl), close = T.t.lastIndexOf('</', end);
@@ -450,7 +487,8 @@
     Object.keys(G.edge).forEach(function (id) {
       var a = S.arc[id], e = G.edge[id];
       if (!a || !/^(consumption|production)$/.test(a.getAttribute('class') || '')) { if (edgeLab(e.el) && a) countSet(T, G, e, null); return; }
-      countSet(T, G, e, fluxE(G, e) ? arcCount(a) : null);
+      var bb = bboxOf(arcCard(a)), want = fluxE(G, e) ? arcCount(a) : null;
+      countSet(T, G, e, want, want && bb ? countPlace(countLine(G, e), bb) : null);
     });
     return T.text();
   }
@@ -465,8 +503,40 @@
   function recount(t, id, v, opt) {
     var G = gml(t, opt), e = G.edge[id], want = countText(v);
     if (!e || !fluxE(G, e)) return t;
-    var T = new Tags(t, G.doc);
-    countSet(T, G, e, want === '1' ? null : want);
+    var T = new Tags(t, G.doc), l = edgeLab(e.el);
+    countSet(T, G, e, want === '1' ? null : want, l ? labPos(l) : null);
+    return T.text();
+  }
+  //   countsAt(g) -> { line id: { line (entity to process), text, pos, box } } of every line with a cardinality
+  //   countMove(g, id, pos) -> g with the cardinality at pos (null: the middle)
+  //   countsPlace(g) -> g with every cardinality placed again at its pos on its line as it runs now (after a move)
+  function countsAt(t, opt) {   // every line with a cardinality, by its id (one read of the text)
+    var o = {};
+    if (t.indexOf('<y:EdgeLabel') < 0) return o;
+    var G = gml(t, opt);
+    Object.keys(G.edge).forEach(function (id) {
+      var e = G.edge[id], l = fluxE(G, e) && edgeLab(e.el);
+      if (!l) return;
+      var text = countText(ownText(l)), pos = labPos(l), line = countLine(G, e);
+      o[id] = { line: line, text: text, pos: pos, box: countOn(line, text, pos) };
+    });
+    return o;
+  }
+  function countMove(t, id, pos, opt) {
+    var G = gml(t, opt), e = G.edge[id], l = e && fluxE(G, e) && edgeLab(e.el);
+    if (!l) return t;
+    var T = new Tags(t, G.doc), line = countLine(G, e);
+    if (pos && Math.abs(pos.r - 0.5) < 1e-9) { var d = countOn(line, 'x', null), u = countOn(line, 'x', pos); if (Math.abs(d[0] - u[0]) < 0.01 && Math.abs(d[1] - u[1]) < 0.01) pos = null; }   // the middle on its usual side: the default
+    countSet(T, G, e, countText(ownText(l)), pos);
+    return T.text();
+  }
+  function countsPlace(t, opt) {
+    if (t.indexOf('<y:EdgeLabel') < 0) return t;
+    var G = gml(t, opt), T = new Tags(t, G.doc);
+    Object.keys(G.edge).forEach(function (id) {
+      var e = G.edge[id], l = edgeLab(e.el);
+      if (l && fluxE(G, e)) countSet(T, G, e, countText(ownText(l)), labPos(l));
+    });
     return T.text();
   }
   // write(): every arc's cardinality glyph as the GraphML's label says, the rest byte for byte; a glyph whose arc this save
@@ -480,13 +550,16 @@
       var a = S.arc[id], e = G.edge[id];
       if (!e || !/^(consumption|production)$/.test(a.getAttribute('class') || '')) return;
       var l = fluxE(G, e) && edgeLab(e.el), want = l ? countText(ownText(l)) : null, g = arcCard(a), have = arcCount(a);
-      if (want === have && (!g || !S0 || !want || route(S0.arc[id]) === route(a))) return;
+      var pos = l ? labPos(l) : null, bb = g && kid(g, 'bbox'), line = want ? countLine(G, e) : null;
+      var moved = !!(S0 && g && route(S0.arc[id]) !== route(a));   // its line moved by this save
+      var dragged = !!(want && bb && !moved && !samePos(pos, countPlace(line, bboxOf(g))));   // its place changed here
+      if (want === have && !dragged && (!g || !want || !moved)) return;
       if (!want) { T.cut(g); return; }
-      var b = countBox(G, e, want);
+      var b = countOn(line, want, pos);
       if (g) {
         if (kid(g, 'label')) { if (have !== want) T.set(kid(g, 'label'), 'text', want); }
         else { var at0 = kid(g, 'bbox') ? T.at.get(kid(g, 'bbox'))[0] : T.end(g) - '</glyph>'.length; T.ed.push([at0, at0, '<label text="' + esc(want) + '"/>']); }
-        if (kid(g, 'bbox') && S0 && route(S0.arc[id]) !== route(a)) ['x', 'y', 'w', 'h'].forEach(function (k, j) { T.set(kid(g, 'bbox'), k, num(b[j])); });
+        if (bb && (moved || dragged)) ['x', 'y', 'w', 'h'].forEach(function (k, j) { T.set(bb, k, num(b[j])); });
         return;
       }
       var at = kids(a).filter(function (c) { return /^(glyph|port|start)$/.test(c.localName); })[0], gid = id + '_card', k = 2;   // (b above)
@@ -2575,6 +2648,6 @@
               moveInto: moveInto, connect: connect, reversible: reversible, reversibility: reversibility, arcRemove: arcRemove, arcKind: arcKind, GATE: GATE, ARROW: ARROW, MODULATIONS: ['stimulation', 'catalysis', 'inhibition', 'necessary stimulation', 'modulation'],
               activity: activity, activities: activities, proteinBoxes: proteinBoxes, afUnitBox: afUnitBox, afUnitFont: afUnitFont, isAf: isAf, mapKind: mapKind, unitFor: unitFor, fillFor: fillFor, AF_ARC: AF_ARC, UNITS: Object.keys(UNIT_CLS).filter(function (u) { return u && u !== 'perturbation'; }), unitClass: actCls,
               way: way, wayOfR: function (r) { return cfgOf(r) === 'Tag' ? wayOf(r) : null; }, wayOf: function (t, id, opt) { var G = gml(t, opt); return isTag(G, id) ? wayOf(G.node[id].geo.parentNode) : null; }, terminal: terminal,
-              countOf: countOf, recount: recount, Tags: Tags, repr: repr, num: num };   // Tags, repr and num serve sbml_edit.js too
+              countOf: countOf, recount: recount, countsAt: countsAt, countLens: lineLens, countMove: countMove, countsPlace: countsPlace, countOn: countOn, countAlong: countAlong, Tags: Tags, repr: repr, num: num };   // Tags, repr and num serve sbml_edit.js too
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.sbgn_edit = api;
 })(typeof self !== 'undefined' ? self : this);

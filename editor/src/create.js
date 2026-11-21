@@ -1490,6 +1490,7 @@
     function svNode() { if (!svSel) return -1; var i = nodes2.findIndex(function (n) { return n.id === svSel.id; }); return i >= 0 && svList(i)[svSel.j] ? i : -1; }
     function svMarks(over) {   // four black squares at the corners of the state variable selected (paint, core.js)
       if (typing) typing.place();   // the text field follows a zoom or a pan
+      cardMarks(over);   // a cardinality selected
       var i = svNode();
       if (i < 0 || !svOn()) { svSel = null; return; }
       var q = svList(i)[svSel.j], c = svDrag && svDrag.to ? svDrag.to : svKey ? svKey.to : q[1], hs = Math.max(2, HANDLE * V.z);
@@ -1501,6 +1502,7 @@
     // top): a click on it selects it, also over its macromolecule, selected or not; true when it takes the press
     function svDown(e, P, h) {
       if (cdNameDown(e, P, h)) return true;   // a CellDesigner compartment's name dragged by itself (cdcreate.js)
+      if (cardDown(e, P)) return true;   // a cardinality, over its line and what lies under it
       var q = svOn() && !tool ? svAt(P) : null;
       if (!q || e.shiftKey || (h && h.p != null)) { if (svSel) { svSel = null; paint(); } return false; }   // Shift or a bend point there: the core's
       V.view.focus({ preventScroll: true });
@@ -1605,6 +1607,137 @@
       if (share) share(); dirty = true; render(); paint(); changed();
       return true;
     }
+    // a cardinality (a consumption's or production's number; SBGN-ML maps): a click selects it with its line (Properties
+    // shows the line's rows, Cardinality last), a press on it selected drags it along its line, to the side the pointer is
+    // on, never past its ends (half its box short of them); with Snap a stop every Grid size from the entity's end and at
+    // the middle; the arrow keys move it along its line (an arrow nearer across it: to that side), Snap's step or 1, Shift
+    // 10; Delete takes it out; Esc during a drag puts it back; a click on it selected puts the cursor in Cardinality. Its
+    // place is kept as sbgn_edit's pos (the GraphML label's ratio and side, the SBGN-ML glyph's bbox), drawn again where
+    // its line runs after a move (sbgn.js sbPlace). A CellDesigner map's: cdcreate.js cdCardDown
+    var cardSel = null, cardDrag = null, cardKey = null, cardMemo = [null, null];
+    function cardAll() { if (cardMemo[0] !== text) cardMemo = [text, sb && sbJs && sbJs.countsAt ? sbJs.countsAt(text) : {}]; return cardMemo[1]; }
+    function cardAt(P) {   // the id of the line whose cardinality's box is under P (map units)
+      if (!sb || !sbJs || !sbJs.countsAt || text.indexOf('<y:EdgeLabel') < 0) return null;
+      var o = cardAll(), pad = 2 / V.z, got = null;
+      Object.keys(o).forEach(function (id) { var b = o[id].box; if (P[0] >= b[0] - pad && P[0] <= b[0] + b[2] + pad && P[1] >= b[1] - pad && P[1] <= b[1] + b[3] + pad) got = id; });
+      return got;
+    }
+    function cardK(id) { return edges2.findIndex(function (q) { return q.id === id; }); }
+    function cardOn() { if (!cardSel) return null; var k = cardK(cardSel.id), c = cardAll()[cardSel.id]; if (k < 0 || !c || selE.length !== 1 || selE[0] !== k || selN.length || selP.length) { cardSel = null; return null; } return c; }
+    function cardLen(line) { return sbJs.countLens(line).reduce(function (t, v) { return t + v; }, 0); }
+    function cardClamp(c, r) {   // r kept half the box's length (and 1) off the line's ends, to 4 decimals
+      var tot = cardLen(c.line), m = tot ? (2.5 * c.text.length + 4) / tot : 0.5;
+      r = m >= 0.5 ? 0.5 : Math.max(m, Math.min(1 - m, r));
+      return Math.round(r * 10000) / 10000;
+    }
+    function cardDir(c, r) {   // the line's way (entity to process) at r
+      var L = c.line, lens = sbJs.countLens(L), d = r * cardLen(L);
+      for (var i = 0; i < lens.length; i++) { if ((d <= lens[i] || i === lens.length - 1) && lens[i]) return [(L[i + 1][0] - L[i][0]) / lens[i], (L[i + 1][1] - L[i][1]) / lens[i]]; d -= lens[i]; }
+      return [1, 0];
+    }
+    function cardSide(c) {   // the side it is drawn on now: 1 left of the line's way, -1 right
+      if (c.pos) return c.pos.s;
+      var b = c.box, q = sbJs.countAlong(c.line, [b[0] + b[2] / 2, b[1] + b[3] / 2]);
+      return q ? q[1] : 1;
+    }
+    function cardParts(c) {   // its drawn box and number in the editor's drawing, hidden while it moves
+      var gs = gE && gE[cardSel.id];
+      if (!gs) return [];
+      var r = V.view.getBoundingClientRect(), k = V.pz(), b = c.box, L = r.left + sx(b[0]) * k - 2, T = r.top + sy(b[1]) * k - 2, R = r.left + sx(b[0] + b[2]) * k + 2, B = r.top + sy(b[1] + b[3]) * k + 2, out = [];
+      gs.forEach(function (g) { Array.prototype.forEach.call(g.querySelectorAll('rect, text'), function (el) {
+        var q = el.getBoundingClientRect();
+        if (q.width + q.height > 0 && q.left >= L && q.right <= R && q.top >= T && q.bottom <= B) out.push(el);
+      }); });
+      return out;
+    }
+    function cardShow(parts, on) { parts.forEach(function (el) { el.style.visibility = on ? '' : 'hidden'; }); }
+    function cardMarks(over) {   // the box where it is or goes, with four black squares at its corners (paint, through svMarks)
+      var c = cardOn();
+      if (!c) return;
+      var to = cardDrag && cardDrag.to || cardKey && cardKey.to, b = to ? sbJs.countOn(c.line, c.text, to) : c.box, hs = Math.max(2, HANDLE * V.z);
+      if (to) over.push('<rect x="' + f1(sx(b[0])) + '" y="' + f1(sy(b[1])) + '" width="' + f1(b[2] * V.z) + '" height="' + f1(b[3] * V.z) + '" fill="#fff" stroke="#9aa0a6" stroke-width="' + f1(0.8 * V.z) + '"/>' +
+        '<text x="' + f1(sx(b[0] + b[2] / 2)) + '" y="' + f1(sy(b[1] + b[3] / 2 + 3.2)) + '" font-family="Arial, Helvetica, sans-serif" font-size="' + f1(9 * V.z) + '" fill="#9aa0a6" text-anchor="middle">' + c.text.replace(/&/g, '&amp;').replace(/</g, '&lt;') + '</text>');
+      [[0, 0], [1, 0], [0, 1], [1, 1]].forEach(function (d) {
+        over.push('<rect class="m2-ed-handle" x="' + f1(sx(b[0] + d[0] * b[2]) - hs / 2) + '" y="' + f1(sy(b[1] + d[1] * b[3]) - hs / 2) + '" width="' + f1(hs) + '" height="' + f1(hs) + '"/>');
+      });
+    }
+    function cardDown(e, P) {   // a press on a cardinality (svDown, before state variables): true when it takes the press
+      if (tool || e.shiftKey) return false;
+      if (cd) return cdCardDown(e);   // no place in a CellDesigner file (cdcreate.js)
+      var id = cardAt(P), k = id == null ? -1 : cardK(id);
+      if (k < 0) return false;
+      V.view.focus({ preventScroll: true });
+      if (!(cardOn() && cardSel.id === id)) { cardDrag = { pick: k, id: id, x: e.clientX, y: e.clientY }; return true; }   // not selected: a click selects it on release, a drag moves the map
+      e.stopImmediatePropagation(); e.preventDefault();
+      cardDrag = { id: id, x: e.clientX, y: e.clientY, to: null, c: cardAll()[id] };
+      return true;
+    }
+    function cardTo(c, r, s, free) {   // r on Snap's stops (every Grid size from the entity's end, and the middle) unless free
+      if (gridSet.snap && !free) {
+        var tot = cardLen(c.line), st = gridSet.step / (tot || 1), g = Math.round(r / st) * st;
+        r = Math.abs(r - 0.5) < Math.abs(r - g) ? 0.5 : g;
+      }
+      return { r: cardClamp(c, r), s: s };
+    }
+    window.addEventListener('pointermove', function (e) {
+      var d = cardDrag;
+      if (!d) return;
+      var far = Math.hypot(e.clientX - d.x, e.clientY - d.y);
+      if (d.pick != null) { if (!e.buttons || far >= 5) cardDrag = null; return; }   // the map moved: no click
+      if (!e.buttons) { cardUp(); return; }
+      if (!d.to && far < 4) return;
+      var q = sbJs.countAlong(d.c.line, at(e));
+      if (!q) return;
+      if (!d.parts) { d.parts = cardParts(d.c); cardShow(d.parts, false); }
+      d.to = cardTo(d.c, q[0], q[1], e.altKey || e.ctrlKey);
+      paint();
+    }, true);
+    window.addEventListener('pointerup', cardUp, true);
+    function cardUp(e) {
+      var d = cardDrag; cardDrag = null;
+      if (!d) return;
+      if (d.pick != null) {   // a click: selected, with its line
+        if (e && e.stopImmediatePropagation) e.stopImmediatePropagation();
+        selN = []; selP = []; selE = [d.pick]; part = null; svSel = null; cardSel = { id: d.id }; paint(); return;
+      }
+      if (d.to && cardSel) { cardMove(d.id, d.to); return; }
+      if (d.parts) cardShow(d.parts, true);
+      var f = !d.to && cardOn() && document.getElementById('m2-ed-card');   // a click on it selected: its number typed in Properties
+      if (f && !f.closest('[hidden]')) { f.focus(); f.select(); }
+      paint();
+    }
+    function cardMove(id, pos) {
+      var t2 = sbJs.countMove(text, id, pos);
+      if (t2 === text) { render(); paint(); return; }
+      remember(false); text = t2; parse(); dirty = true; render(); paint(); changed();
+    }
+    window.addEventListener('keydown', function (e) {
+      if (!cardSel || /input|textarea|select/i.test(document.activeElement.tagName) || e.ctrlKey || e.metaKey || e.altKey) return;
+      if (e.key === 'Escape' && cardDrag && cardDrag.to) { if (cardDrag.parts) cardShow(cardDrag.parts, true); cardDrag = null; e.preventDefault(); e.stopImmediatePropagation(); paint(); return; }
+      var c = cardOn();
+      if (!c) return;
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        e.preventDefault(); e.stopImmediatePropagation();
+        var t2 = sbJs.recount(text, cardSel.id, ''); cardSel = null;
+        if (t2 !== text) { remember(false); text = t2; parse(); dirty = true; render(); paint(); changed(); }
+        return;
+      }
+      var d = KEYS[e.key];
+      if (!d) return;
+      e.preventDefault(); e.stopImmediatePropagation();
+      if (!cardKey) cardKey = { id: cardSel.id, at: c.pos ? c.pos.r : 0.5, s: cardSide(c), parts: cardParts(c) };
+      cardShow(cardKey.parts, false);
+      var u = cardDir(c, cardKey.at), a = d[0] * u[0] + d[1] * u[1], n = d[0] * -u[1] + d[1] * u[0], tot = cardLen(c.line) || 1;
+      if (Math.abs(a) >= Math.abs(n)) cardKey.at = cardClamp(c, cardKey.at + Math.sign(a) * (e.shiftKey ? 10 : 1) * (gridSet.snap ? gridSet.step : 1) / tot);
+      else cardKey.s = n > 0 ? 1 : -1;   // nearer across the line: to that side
+      cardKey.to = { r: cardKey.at, s: cardKey.s };
+      paint();
+    }, true);
+    window.addEventListener('keyup', function (e) {
+      if (!KEYS[e.key] || !cardKey) return;
+      var k = cardKey; cardKey = null;
+      if (k.to && cardSel && cardSel.id === k.id) cardMove(k.id, k.to); else { cardShow(k.parts, true); paint(); }
+    }, true);
     function nodesDelete(list, arcs) {   // the glyphs the palette makes, an empty compartment too, deleted with every line at them,
       // and the lines selected with them (one undo step, as cdDelete on a CellDesigner map)
       list = list.concat(nodes2.map(function (n, k) { return n.sub != null && list.indexOf(n.sub) >= 0 && list.indexOf(k) < 0 ? k : -1; }).filter(function (k) { return k >= 0; }));   // a submap's terminals go with it (as Newt)

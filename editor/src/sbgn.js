@@ -69,8 +69,17 @@
     // written (else a unit changed after a process turned the file PD is drawn but never written); a failed write
     // reads nothing from the last file written, and a failed rebuild is tried again at the next change of the file's content
     // (not at a move, else it re-runs and warns after every move)
+    // every cardinality drawn again at its place on its line as the line runs now (sbgn_edit countsPlace), after a change
+    // (sbKind from parse) and after a move (sbFollow); once per text
+    var sbPlaced = null;
+    function sbPlace() {
+      if (!sbJs.countsPlace || text === sbPlaced || text.indexOf('<y:EdgeLabel') < 0) return false;
+      var t2 = sbJs.countsPlace(text), was = text !== t2;
+      text = sbPlaced = t2;
+      return was;
+    }
     var sbK = { sb: null }, sbBack = false;
-    var GEO = /\s(?:x|y|width|height|sx|sy|tx|ty|nodeRatioX|nodeRatioY|labelRatioX|labelRatioY|offsetX|offsetY|borderDistance)="[^"]*"/g;
+    var GEO = /\s(?:x|y|width|height|sx|sy|tx|ty|ratio|modelPosition|nodeRatioX|nodeRatioY|labelRatioX|labelRatioY|offsetX|offsetY|borderDistance)="[^"]*"/g;
     function sbRead() {   // the file written from the GraphML now: its kind and language, none when the write failed
       var s = src();
       sbK.text = text; sbK.key = text.replace(GEO, '');
@@ -79,6 +88,7 @@
     }
     function sbKind(how) {   // how: 'follow' (a change made here), 'back' (undo, redo), none (a paint: reads only)
       if (!sb || !sbJs) return 'empty';
+      if (how) sbPlace();   // a change (parse)
       if (sbK.sb !== sb) sbK = { sb: sb, text: null, key: null, kind: 'empty', af: false, g: null, bad: false };
       if (sbK.text !== text) {
         if (sbK.bad || sbK.key !== text.replace(GEO, '') || (sbK.kind === 'af' && !sbK.af)) sbRead();   // a PD file that reads AF is turned at its first change, a move too
@@ -98,6 +108,7 @@
     }
     function sbFollow() {   // after a move (changed()): a file the move turned (a PD file of direct links), seen at a paint, followed now
       if (!sb || !sbJs || drag || sbK.sb !== sb) return;
+      if (sbPlace()) { parse(); dirty = true; render(); paint(); }   // a line moved: its cardinality with it
       sbKind();
       if (sbK.bad || sbK.g == null || sbK.g === sbK.af || sbK.failed === text.replace(GEO, '')) return;   // a failed rebuild: not again after every move
       parse(); selP = []; selE = []; dirty = true; render(); paint();   // the GraphML made again: its lines in another order

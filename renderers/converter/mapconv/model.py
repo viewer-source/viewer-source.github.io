@@ -47,6 +47,8 @@ class Arc:
     line: str = None  # its colour where not black (#RRGGBB): read from SBGN-ML's render styles only
     weight: float = None  # its width where not 1: read from SBGN-ML's render styles only
     count: str = None  # its cardinality where one is shown (a consumption's or production's): a number, or '?'
+    count_at: tuple = None  # its cardinality's place (r, s): r along its line from the entity (0) to the process (1), s 1 on
+    # the left of that way, -1 on the right; None: beside the middle, above it (layout.count_on)
 
 
 @dataclass
