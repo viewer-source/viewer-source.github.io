@@ -272,7 +272,12 @@
     }
     // the map as the site has it: its text, or every move undone (a map shifted out of negative places never gives the
     // site's text back)
-    function atSite() { return site.pending && (src() === site.pub || (!undo.length && !site.fromDraft)); }
+    // out of editing, the moves are in the kept history (histKeep empties undo): a write still waiting after a quick
+    // leave counts them there, else it would take the map for the site's and drop the draft
+    function atSite() {
+      var L = histLast, n = !on && L && L.site === site && hist[L.id] === L.h ? L.h.undo.length : undo.length;
+      return site.pending && (src() === site.pub || (!n && !site.fromDraft));
+    }
     function unkeep(id) {   // the reader's changes let go (Back to the site's map, a token connected): a write waiting dropped too
       if (localFor && localFor.id === id) { clearTimeout(localTimer); localTimer = null; localFor = null; }
       return draftDrop(id);
@@ -1307,6 +1312,7 @@
       if (typing) typing.done(true);   // a name being typed kept on its own map first (create.js)
       if (!on) return;
       if (saveTimer) push();   // a move still waiting is saved now
+      var moved = undo.length > 0;   // before histKeep, which empties undo
       histKeep();   // its undo and redo kept for when it is opened again
       var kpic = V.img;
       if (afSbgn && !cd) {   // the SBGN AF view stays in the editor: the map left drawn plainly, for the viewer and what is kept
@@ -1314,7 +1320,7 @@
         var pl = drawGraphml(text); lastSvg = pl[0]; lastFor = [text, null, site && site.id, false];
         kpic = new Promise(function (res) { var im = new Image(); im.onload = function () { res(im); }; im.onerror = function () { res(V.img); }; im.src = URL.createObjectURL(new Blob([V.recolour(pl[0])], { type: 'image/svg+xml' })); });
       }
-      if (site && site.id && undo.length)   // not atSite(): a CellDesigner map's text follows a move only once drawn
+      if (site && site.id && moved)   // not atSite(): a CellDesigner map's text follows a move only once drawn
         V.kept = { id: site.id, v: site.v, sha: site.sha, pic: kpic, width: map.width, height: map.height, x0: picX0(), y0: picY0(), text: src(), svg: nowSvg(), file: name, ref: siteRef, cur: nowRef(), draft: !!site.pending && !site.mine, mine: !!site.mine };
       if (helpBox) help(false);
       on = false; drag = null; band = null; V.grid.classList.remove('m2-editing'); paint(); buttons();
