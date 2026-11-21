@@ -24,7 +24,7 @@
     var PRESET = { 'nucleic acid feature ct:gene': ['nucleic acid feature', ['ct:gene']], 'nucleic acid feature ct:mRNA': ['nucleic acid feature', ['ct:mRNA']] };
     function baseKind(k) { return PRESET[k] ? PRESET[k][0] : k; }
     var PAL_PD = [   // groups named as SBGN's PD reference card, ordered
-      // nodes first, the gates, the arcs last;
+      // nodes first, the gates, the arcs last; the gates and the arcs each start a block of the one list (palSigns);
       // each sign fills the 24-unit box as far as the tools' own signs do (as large as the ? beside them)
       ['Entity pool nodes', [['macromolecule', 'Macromolecule', '<rect x="1.5" y="5" width="21" height="14" rx="3.5"/>'],
         ['simple chemical', 'Simple chemical', '<circle cx="12" cy="12" r="7"/>'],   // as tall as the macromolecule's sign
@@ -58,7 +58,7 @@
       ['Logical operators', [['and', 'AND', '<circle cx="12" cy="12" r="10"/><text x="12" y="14.7" text-anchor="middle" font-size="7.4" letter-spacing="-.1">AND</text>'],
         ['or', 'OR', '<circle cx="12" cy="12" r="10"/><text x="12" y="14.9" text-anchor="middle" font-size="8.2">OR</text>'],
         ['not', 'NOT', '<circle cx="12" cy="12" r="10"/><text x="12" y="14.7" text-anchor="middle" font-size="7.4" letter-spacing="-.1">NOT</text>'],
-        ['equivalence', 'Equivalence', '<circle cx="12" cy="12" r="10"/><path d="M7.5 8.8h9M7.5 12h9M7.5 15.2h9" class="in"/>']]],
+        ['equivalence', 'Equivalence', '<circle cx="12" cy="12" r="10"/><path d="M7.5 8.8h9M7.5 12h9M7.5 15.2h9" class="in"/>']], true],
       // arcs: drawn by a drag from a node with the arc's sign picked
       ['Connecting arcs', [['consumption', 'Consumption / logic arc', '<path d="M3 12h18"/>'],
         ['production', 'Production', '<path d="M3 12h11"/><path d="M13 7.5l8 4.5-8 4.5z" fill="currentColor"/>'],
@@ -67,7 +67,7 @@
         ['stimulation', 'Stimulation', '<path d="M3 12h10"/><path d="M13 7.5l8 4.5-8 4.5z"/>'],
         ['inhibition', 'Inhibition', '<path d="M3 12h17M20 6v12"/>'],
         ['necessary stimulation', 'Necessary stimulation', '<path d="M3 12h10M10 7v10"/><path d="M13 7.5l8 4.5-8 4.5z"/>'],
-        ['modulation', 'Modulation', '<path d="M3 12h10"/><path d="M13 12l4-4 4 4-4 4z"/>']]]
+        ['modulation', 'Modulation', '<path d="M3 12h10"/><path d="M13 12l4-4 4 4-4 4z"/>']], true]
     ];
     // Activity Flow (two tabs, PD and AF, and under AF the
     // view, Reduced notation (CellDesigner) or SBGN: one set of rules, two ways of drawing the nodes). A node made in either
@@ -134,8 +134,8 @@
       return [
         ['Activity nodes', [sbgnLook ? first : [first[0], first[1], PD_SIGN.macromolecule]].concat(sbgnLook ? ACT_REST : ACT_REST_CD, [PHENO, PERT])],
         OTHER,
-        ['Logical operators', GATES_PD.concat([DELAY])],
-        ['Arcs', INFL.map(function (x) { var q = ARC_PD[x[0]]; return [q[0], sbgnLook || x[0] === 'necessary stimulation' ? x[1] : q[1] + ' (' + x[1].toLowerCase() + ')', q[2]]; }).concat([LOGIC])]
+        ['Logical operators', GATES_PD.concat([DELAY]), true],
+        ['Arcs', INFL.map(function (x) { var q = ARC_PD[x[0]]; return [q[0], sbgnLook || x[0] === 'necessary stimulation' ? x[1] : q[1] + ' (' + x[1].toLowerCase() + ')', q[2]]; }).concat([LOGIC]), true]
       ];
     }
     var PALS = { pd: PAL_PD, rn: palAf(false), sbgn: palAf(true), rnP: palAf(false, true), sbgnP: palAf(true, true) };
@@ -163,8 +163,9 @@
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">' + q[2] + '</svg></button>';
     }
     // the one list in blocks: a group marked as starting a block (its third item, true) begins a new row, so the list reads
-    // as a few small groups with no names; kept while the blocks cost no row more than the plain list would at the panel's
-    // width and at every width up to its usual one (palBlocks), else the plain list, so a narrowed panel stays compact
+    // as a few small groups with no names; always at the panel's usual width, and on a narrowed panel kept while they cost
+    // no row more than the plain list would at its width and every width below the usual one (palBlocks), else the plain
+    // list, so a narrowed panel stays compact
     function palSigns(set) {
       var blocks = [];
       set.forEach(function (s, i) { if (!i || s[2]) blocks.push(0); blocks[blocks.length - 1] += s[1].length; });
@@ -204,7 +205,8 @@
       strict: 'Corresponds to CellDesigner\'s Reduced Notation: stimulation, inhibition, necessary stimulation and modulation may also end on entities, which makes a hybrid map. Such links are outside the SBGN Process Description specification, and some tools may not read or save the SBGN-ML file correctly.',
       rn: 'Corresponds to CellDesigner\'s Reduced Notation palette, which enables an Activity Flow type of representation.',
       sbgn: 'Follows the SBGN Activity Flow specification. The map is saved as an Activity Flow SBGN-ML file.',
-      prot: 'When ticked, shows the auxiliary unit on protein activities. An activity with no auxiliary unit is by default a protein activity.'
+      prot: 'When ticked, shows the auxiliary unit on protein activities. An activity with no auxiliary unit is by default a protein activity.',
+      cdc: 'Keeps maps to what CellDesigner and MINERVA can hold. Untick for SBGN extended: tags, and submaps with terminals on their border. What a map already holds is never changed by it.'
     };
     function palTip(line, name, t) {
       t = t.replace(/&/g, '&amp;').replace(/"/g, '&quot;');   // into attributes
@@ -213,13 +215,14 @@
     pal.innerHTML = '<div class="m2-ed-prow m2-ed-pnot" role="group" aria-label="Notation">' +
       palBtn('data-lang="pd"', 'Process Description', '<text x="12" y="17.3" text-anchor="middle" font-size="15">PD</text>') +
       palBtn('data-lang="af"', 'Activity Flow', '<text x="12" y="17.3" text-anchor="middle" font-size="15">AF</text>') +
-      '<span class="m2-ed-pext" title="Settings, Editing, CellDesigner compatible is unticked: the palette offers SBGN glyphs CellDesigner cannot hold (tags, submap terminals)">SBGN extended</span></div>' +
+      '<span class="m2-ed-pext" title="CellDesigner compatible is unticked: the palette offers SBGN glyphs CellDesigner cannot hold (tags, submap terminals)">SBGN extended</span></div>' +
       // AF's two views as named round choices under the tabs (icons there would read as
       // glyphs to drag onto the map), shown only where the views apply (palViews)
       '<div class="m2-ed-plook" role="radiogroup" aria-label="Activity Flow view">' +
       palTip(palView('rn', 'Reduced notation view', 'Reduced notation view: each activity drawn as its entity'), 'Reduced notation view', INFO.rn) +
       palTip(palView('sbgn', 'SBGN AF view', 'SBGN Activity Flow view: each entity drawn as its SBGN activity'), 'SBGN Activity Flow view', INFO.sbgn) + '</div>' +
       '<div class="m2-ed-pblk m2-ed-pprot">' + palTip('<label class="m2-ed-phyb" title="Ticked: every protein activity carries the auxiliary unit of a macromolecule, drawn and saved in the file; unticked: none has it"><input type="checkbox"><span>Protein auxiliary unit</span></label>', 'Protein auxiliary unit', INFO.prot) + '</div>' +
+      '<div class="m2-ed-pblk m2-ed-pcdc">' + palTip('<label class="m2-ed-phyb" title="Ticked: the palette offers only what CellDesigner and MINERVA can hold; unticked: SBGN extended, tags and submaps\u2019 terminals too"><input type="checkbox"><span>CellDesigner compatible</span></label>', 'CellDesigner compatible', INFO.cdc) + '</div>' +
       '<div class="m2-ed-pblk m2-ed-pstrict">' + palTip('<label class="m2-ed-phyb" title="Ticked (the default): under PD a modulation may also end on an entity, and a logic gate\u2019s output go to one (CellDesigner\u2019s reduced notation); with a process on the map the file stays Process Description, without one such a link makes it Activity Flow. Unticked: Process Description only"><input type="checkbox"><span>Reduced notation</span></label>', 'Reduced notation', INFO.strict) + '</div>' +
       '<div class="m2-ed-psigns"></div>';
     var palSignsEl = pal.querySelector('.m2-ed-psigns'), palShown = null;
@@ -229,16 +232,19 @@
       var n = row.dataset.blocks.split(',').map(Number), all = n.reduce(function (a, x) { return a + x; }, 0);
       var gap = parseFloat(getComputedStyle(row).columnGap) || 0, step = b.offsetWidth + gap, most = parseFloat(getComputedStyle(pal).maxWidth) || row.clientWidth;
       var cols = Math.max(1, Math.floor((row.clientWidth + gap) / step)), top = Math.max(cols, Math.floor((most + gap) / step)), flat = false;
-      for (var c = cols; c <= top && !flat; c++) flat = n.reduce(function (a, x) { return a + Math.ceil(x / c); }, 0) > Math.ceil(all / c);
+      for (var c = cols; c < top && !flat; c++) flat = n.reduce(function (a, x) { return a + Math.ceil(x / c); }, 0) > Math.ceil(all / c);
       row.classList.toggle('m2-ed-pflat', flat);
     }
     if (window.ResizeObserver) new ResizeObserver(palBlocks).observe(palSignsEl);
     function palKey() { return palLangNow() === 'pd' ? 'pd' : palLookNow() + (protOn ? 'P' : ''); }
-    // Settings, Editing, CellDesigner compatible (kept in this browser, atlas-app.html): ticked, the palette offers only
-    // what CellDesigner can hold; unticked, SBGN extended adds the tag (and the submap's terminals). What a map already
-    // holds is never changed by it
-    var EXTENDED = { tag: 1 };
-    function compat() { try { return localStorage.getItem('atlas-cd-compatible') === 'on'; } catch (e) { return false; } }
+    // CellDesigner compatible, the palette's tick box above Reduced notation (kept in this browser for every map, undone as
+    // a setting): ticked, the palette offers only what CellDesigner can hold; unticked, SBGN extended adds the tag (and
+    // the submap's terminals) and AF's delay (CellDesigner has no delay, the converter joins its input to its target; the
+    // equivalence stays, written as CellDesigner's unknown gate); a missing key reads unticked. What a map already holds is never changed by it. Not shown on
+    // a CellDesigner map, whose palette is CellDesigner's own
+    var EXTENDED = { tag: 1, delay: 1 };
+    var CDC_KEY = 'atlas-cd-compatible';
+    function compat() { try { return localStorage.getItem(CDC_KEY) === 'on'; } catch (e) { return false; } }
     function palSet0(set) { return compat() ? set.map(function (g) { return [g[0], g[1].filter(function (q) { return !EXTENDED[q[0]]; }), g[2]]; }) : set; }
     // the tick box's state lives in the file: on opening, ticked when the map's protein activities all
     // carry the protein's unit, unticked when none or some do; read again after every change where they all agree (an
@@ -529,6 +535,8 @@
       if (!pb.hidden) { var pf = protFile(); if (pf != null) protOn = pf; k = palKey(); }
       if (pbc.checked !== protOn) pbc.checked = protOn;
       pal.querySelector('.m2-ed-pext').hidden = compat();
+      var cc = pal.querySelector('.m2-ed-pcdc'), ccb = cc.querySelector('input'); cc.hidden = false;   // hidden on a CellDesigner map (cdFill)
+      if (ccb.checked !== compat()) ccb.checked = compat();
       if (palShown === k + compat()) return;
       palShown = k + compat();
       if (tool && !palOk(tool.kind)) tool = null;   // a sign in hand that this set lacks (e.g. a delay kept after the map turned PD)
@@ -551,6 +559,12 @@
       if (b && !b.disabled) palDid([PAL_KEY], function () { palPick(b.dataset.lang, b.dataset.look); });
     });
     pal.querySelector('.m2-ed-pstrict input').addEventListener('change', function (e) { e.target.blur(); if (cdPal()) return; palDid([PAL_KEY], function () { palSet.strict = !e.target.checked; palKeep(); }); });   // a CellDesigner map's own: cdcreate.js   // blurred: the editor's keys (undo) work at once
+    pal.querySelector('.m2-ed-pcdc input').addEventListener('change', function (e) {
+      var v = e.target.checked; e.target.blur();   // the editor's keys (undo) work at once
+      palDid([CDC_KEY], function () { try { if (v) localStorage.setItem(CDC_KEY, 'on'); else localStorage.removeItem(CDC_KEY); } catch (er) {} });
+      if (tool && !palOk(tool.kind)) tool = null;   // a tag in hand
+      palShown = null; palShow(); paint();
+    });
     pal.querySelector('.m2-ed-pprot input').addEventListener('change', function (e) {   // every protein activity given the box or not, one undo step
       protOn = e.target.checked; e.target.blur();   // the editor's keys (undo) work at once, not the tick box's
       var t2 = palOn() ? sbJs.proteinBoxes(text, protOn) : text;
@@ -592,7 +606,7 @@
       var b = e.target.closest('button[data-make]');
       if (b) palTake(b.dataset.make, true);
     });
-    document.addEventListener('click', function (e) { if (e.target.closest && e.target.closest('#m2-set-edit, #m2-set-cdc')) setTimeout(palShow, 0); }, true);   // Settings, Editing changed
+    document.addEventListener('click', function (e) { if (e.target.closest && e.target.closest('#m2-set-edit')) setTimeout(palShow, 0); }, true);   // Settings, Editing changed
     document.addEventListener('keydown', function (e) { if (tool && e.key === 'Escape') palTake(null); }, true);
 
     // the map clicked with something in hand: a press only noted, so a drag still moves the map; the click is taken on release
