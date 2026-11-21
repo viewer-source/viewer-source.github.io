@@ -391,7 +391,9 @@ class Drawing:
             p = on_border([x + 9, y + 9, max(w - 18, 0), max(h - 18, 0)], ang)
             tx = p[0] + (2 if fx <= -0.5 + e else -2 if fx >= 0.5 - e else 0)
             ty = p[1] + (2 if fy <= -0.5 + e else -2 if fy >= 0.5 - e else 0)
-            self.text(site, tx, ty + 3.5, size=10, anchor='start' if fx < -e else 'end' if fx > e else 'middle')
+            # hidden unless the viewer's Show sites asks for it (sv-site), as yrender hides a state variable's site
+            self.text(site, tx, ty + 3.5, size=10, anchor='start' if fx < -e else 'end' if fx > e else 'middle',
+                      extra=' class="sv-site" display="none"')
         for (p_, r_), (ang, site) in self.residues.items():
             if p_ == pid and r_ not in mods:
                 px, py = on_border(b, ang)

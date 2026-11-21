@@ -345,7 +345,7 @@
     return s;
   }
   function inset(lab, a) { var v = get(lab, a + 'Inset'); return pyFloat(v || 2); }
-  function textLines(lab, x, y, w, h, where, rl, align) {
+  function textLines(lab, x, y, w, h, where, rl, align, text) {   // text: drawn in place of the label's own
     rl = rl || 'page';
     var fam = get(lab, 'fontFamily'), size = pyFloat(get(lab, 'fontSize'));
     if (!has(FONTS, fam)) { refuse(where, 'unknown font ' + fam); return ''; }
@@ -353,7 +353,7 @@
     if (get(lab, 'underlinedText') === 'true' || pyFloat(get(lab, 'rotationAngle') || 0)) { refuse(where, 'underlined or rotated label'); return ''; }
     align = align || get(lab, 'alignment') || 'center';
     if (align !== 'center' && align !== 'left' && align !== 'right') { refuse(where, 'label alignment ' + align); return ''; }
-    var lines = leadText(lab) ? itertext(lab).split('\n') : [];
+    var lines = text != null ? text.split('\n') : leadText(lab) ? itertext(lab).split('\n') : [];
     while (lines.length && !pyStrip(lines[lines.length - 1]) && lines.length > 1) lines.pop();
     if (!lines.length || !lines.join('')) return '';
     var F = FONTS[fam], asc = F[0] * size, lh = F[1] * size, family = F[2];
@@ -416,14 +416,20 @@
     if (k !== 'StateVariable' && k !== 'UnitOfInformation' && !SHAPES.has(k)) { refuse(where, 'label icon ' + k); return ''; }
     var g = kid(gn, Y, 'Geometry'), iw = pyFloat(get(g, 'width')), ih = pyFloat(get(g, 'height'));
     var ix = x + (w - iw) / 2, iy = y + (h - ih) / 2, fs = checkFillBorder(gn, where);
-    var c = outline(k, ix, iy, iw, ih, new Map());
-    if (aux && (k === 'StateVariable' || k === 'UnitOfInformation')) aux.push(polygon(c));
-    var s = shapeSvg(c, fs[0], fs[1]);
-    kids(gn, Y, 'NodeLabel').forEach(function (il) {
-      if (get(il, 'visible') === 'false' || get(il, 'hasText') === 'false') return;
-      s += textLines(il, ix, iy, iw, ih, where, 'white', 'center');
-    });
-    return s;
+    var labs = kids(gn, Y, 'NodeLabel').filter(function (il) { return get(il, 'visible') !== 'false' && get(il, 'hasText') !== 'false'; });
+    var drawn = function (ix, iw, text, aux) {
+      var c = outline(k, ix, iy, iw, ih, new Map());
+      if (aux && (k === 'StateVariable' || k === 'UnitOfInformation')) aux.push(polygon(c));
+      return shapeSvg(c, fs[0], fs[1]) + labs.map(function (il) { return textLines(il, ix, iy, iw, ih, where, 'white', 'center', text); }).join('');
+    };
+    var lines = k === 'StateVariable' && labs.length === 1 && leadText(labs[0]) ? itertext(labs[0]).split('\n') : [''];
+    while (lines.length > 1 && !pyStrip(lines[lines.length - 1])) lines.pop();   // as textLines drops them
+    if (lines.length > 1 || lines[0].indexOf('@') < 0) return drawn(ix, iw, null, aux);
+    // a state variable with its site (value@site): drawn twice, the site hidden (sv-site, shown by the viewer's Show sites)
+    // and the value alone in a circle sized for it (the editor's svSize), centred where the whole one is (yrender.py's icon_svg)
+    var val = lines[0].split('@')[0], n = val.length, kk = ih / 18;
+    var sw = Math.min(iw, n <= 2 ? 18 * kk : Math.ceil(n * 5.4 * kk + 12 * kk));
+    return '<g class="sv-site" display="none">' + drawn(ix, iw) + '</g><g class="sv-value">' + drawn(ix + (iw - sw) / 2, sw, val, aux) + '</g>';
   }
 
   function YMap(doc, opt) {

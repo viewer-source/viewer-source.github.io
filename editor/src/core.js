@@ -1323,7 +1323,7 @@
         kpic = new Promise(function (res) { var im = new Image(); im.onload = function () { res(im); }; im.onerror = function () { res(V.img); }; im.src = URL.createObjectURL(new Blob([V.recolour(pl[0])], { type: 'image/svg+xml' })); });
       }
       if (site && site.id && moved)   // not atSite(): a CellDesigner map's text follows a move only once drawn
-        V.kept = { id: site.id, v: site.v, sha: site.sha, pic: kpic, width: map.width, height: map.height, x0: picX0(), y0: picY0(), text: src(), svg: nowSvg(), file: name, ref: siteRef, cur: nowRef(), draft: !!site.pending && !site.mine, mine: !!site.mine };
+        V.kept = { sites: V.sites, id: site.id, v: site.v, sha: site.sha, pic: kpic, width: map.width, height: map.height, x0: picX0(), y0: picY0(), text: src(), svg: nowSvg(), file: name, ref: siteRef, cur: nowRef(), draft: !!site.pending && !site.mine, mine: !!site.mine };
       if (helpBox) help(false);
       on = false; drag = null; band = null; V.grid.classList.remove('m2-editing'); paint(); buttons();
       if (site && site.mine && !localTimer) V.refreshMine();   // its last version saved already: the list takes it (else local() does)

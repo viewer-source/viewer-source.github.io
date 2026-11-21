@@ -396,8 +396,8 @@ def shape_svg(cmds, fill, stroke, rl='white'):
     return s
 
 
-def text_lines(lab, x, y, w, h, where, rl='page', align=None):
-    # the label's text in its box (x, y, w, h absolute)
+def text_lines(lab, x, y, w, h, where, rl='page', align=None, text=None):
+    # the label's text in its box (x, y, w, h absolute); text: drawn in place of the label's own
     fam = lab.get('fontFamily'); size = float(lab.get('fontSize'))
     if fam not in FONTS:
         refuse(where, f'unknown font {fam}'); return ''
@@ -408,7 +408,7 @@ def text_lines(lab, x, y, w, h, where, rl='page', align=None):
     align = align or lab.get('alignment') or 'center'
     if align not in ('center', 'left', 'right'):
         refuse(where, f'label alignment {align}'); return ''
-    lines = ''.join(lab.itertext()).split('\n') if lab.text else []
+    lines = text.split('\n') if text is not None else ''.join(lab.itertext()).split('\n') if lab.text else []
     while lines and not lines[-1].strip() and len(lines) > 1:
         lines.pop()
     if not lines or not ''.join(lines):
@@ -504,17 +504,26 @@ def icon_svg(res, lab, x, y, w, h, where, aux=None):
     g = gn.find(Y + 'Geometry'); iw, ih = float(g.get('width')), float(g.get('height'))
     ix, iy = x + (w - iw) / 2, y + (h - ih) / 2
     fill, stroke = check_fill_border(gn, where)
-    c = outline(k, ix, iy, iw, ih, {})
-    if aux is not None and k in ('StateVariable', 'UnitOfInformation'):
-        aux.append(polygon(c))
-    s = shape_svg(c, fill, stroke)
-    for il in gn.findall(Y + 'NodeLabel'):
-        if il.get('visible') == 'false' or il.get('hasText') == 'false':
-            continue
+    labs = [il for il in gn.findall(Y + 'NodeLabel') if il.get('visible') != 'false' and il.get('hasText') != 'false']
+
+    def drawn(ix, iw, text=None, aux=None):
+        c = outline(k, ix, iy, iw, ih, {})
+        if aux is not None and k in ('StateVariable', 'UnitOfInformation'):
+            aux.append(polygon(c))
         # the text centred in the icon, as yEd sizes the label to it: a stored box left wider
         # than the text (P@T456 cut to P) cannot push it out
-        s += text_lines(il, ix, iy, iw, ih, where, 'white', 'center')
-    return s
+        return shape_svg(c, fill, stroke) + ''.join(text_lines(il, ix, iy, iw, ih, where, 'white', 'center', text) for il in labs)
+    lines = ''.join(labs[0].itertext()).split('\n') if k == 'StateVariable' and len(labs) == 1 and labs[0].text else ['']
+    while len(lines) > 1 and not lines[-1].strip():   # as text_lines drops them
+        lines.pop()
+    if len(lines) > 1 or '@' not in lines[0]:
+        return drawn(ix, iw, aux=aux)
+    # a state variable with its site (value@site): drawn twice, the site hidden (sv-site, shown by the viewer's Show sites)
+    # and the value alone in a circle sized for it (the editor's svSize), centred where the whole one is
+    val = lines[0].split('@')[0]
+    n, kk = len(val), ih / 18
+    sw = min(iw, 18 * kk if n <= 2 else math.ceil(n * 5.4 * kk + 12 * kk))
+    return '<g class="sv-site" display="none">' + drawn(ix, iw) + '</g><g class="sv-value">' + drawn(ix + (iw - sw) / 2, sw, val, aux) + '</g>'
 
 
 class Map:

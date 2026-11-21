@@ -1555,6 +1555,7 @@
       var inside = function (b, R) { var cx = b.left + b.width / 2, cy = b.top + b.height / 2; return cx >= R[0] && cx <= R[2] && cy >= R[1] && cy <= R[3]; };
       return Array.prototype.filter.call(g.querySelectorAll('text:not(.m2-af-ut)'), function (t) {   // not an activity's unit text of the SBGN AF view
         if (t.closest('[data-n]') !== g) return false;   // a member's own drawing, if nested, is not this node's text
+        if (!t.getClientRects().length) return false;   // not drawn (a site hidden by Show sites)
         var b = t.getBoundingClientRect();
         return j == null ? !svs.some(function (q) { return inside(b, rect(q)); }) : inside(b, rect(svs[j]));
       });
