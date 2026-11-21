@@ -226,7 +226,7 @@ picture and one set of click data, so the viewer in the browser never knows whic
 for the layout, loaded only where the Edit tab is, draws with the same renderers in the browser and saves the map's
 own file back, which the build then draws again. This page shows the parts and where each lives. How to use it: <a href="/guide/">Guide</a>.</p>
 
-<p class="ca-upd">Updated 2026-11-20, with SBML with a layout: the optional group (sbml_group.py) and its layout editing (sbml_edit.js).</p>
+<p class="ca-upd">Updated 2026-11-21, with the live drawing of a move on GraphML and SBGN-ML maps by the yEd renderer (live(), liveY).</p>
 
 <h2>State</h2>
 
@@ -270,7 +270,7 @@ own file back, which the build then draws again. This page shows the parts and w
 
   <tr class="ca-group"><td colspan="2">Editor, loaded only with the Edit tab</td></tr>
   <tr><td><code>src/core.js</code></td><td>One code for all formats: selection, dragging, guides, grid, undo kept as changes, the read-ahead of every map, saving to GitHub. Changes only the numbers in the file's text; the renderer draws again.</td></tr>
-  <tr><td><code>src/live.js</code></td><td>The live drawing of a move on every format, before the release: what moves shifted on the picture (a drag, the arrow keys), the compartments and complexes growing round it, a node resized by its handles, the lines it touches drawn in full, all placed in the picture's frame (a CellDesigner picture is in the file's places, shifted from the editor's once a move passes the top or left edge). A format with a way of its own gives it through one object (<code>liveCd</code> in celldesigner.js); GraphML and SBGN-ML maps have none. <code>tests/live-drag.js</code> compares the picture during and after a move between two versions of the editor.</td></tr>
+  <tr><td><code>src/live.js</code></td><td>The live drawing of a move on every format, before the release: what moves shifted on the picture (a drag, the arrow keys), the compartments and complexes growing round it, a node resized by its handles, the lines it touches drawn in full, all placed in the picture's frame (a CellDesigner picture is in the file's places, shifted from the editor's once a move passes the top or left edge). A format with a way of its own gives it through one object (<code>liveCd</code> in celldesigner.js, <code>liveY</code> in graphml.js: the lines a move touches and the processes and gates at them drawn by the yEd renderer's <code>live()</code>, as the release will draw them). <code>tests/live-drag.js</code> compares the picture during and after a move between two versions of the editor, <code>tests/live-yed.js</code> the picture during a move on GraphML and SBGN-ML maps with the one after the release.</td></tr>
   <tr><td><code>src/graphml.js</code></td><td>yEd maps: the redraw by yrender.js, the shift out of negative places.</td></tr>
   <tr><td><code>src/celldesigner.js</code></td><td>CellDesigner maps through cd_edit: guides through the process square, and its part of the live drawing (<code>liveCd</code>): the square following its segment, reactions drawn by the drop's own code, compartments and complexes drawn by cdrender while they grow.</td></tr>
   <tr><td><code>src/sbgn.js</code></td><td>SBGN-ML maps through sbgn_edit; saved as an edited copy, the original file left as it is.</td></tr>

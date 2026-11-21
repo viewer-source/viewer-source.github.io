@@ -436,7 +436,7 @@
     kids(this.root, G, 'key').forEach(function (k) { keys[get(k, 'id')] = [get(k, 'for'), get(k, 'attr.name')]; });
     this.url = new Set(Object.keys(keys).filter(function (k) { return keys[k][1] === 'url'; }));
     this.cls = new Set(Object.keys(keys).filter(function (k) { return keys[k][1] === 'SBGN class'; }));
-    this.nodes = {}; this.order = []; this.boxes = [];
+    this.nodes = {}; this.order = []; this.boxes = []; this.els = {};   // els: each node's element and parent's role, for live (JavaScript only)
     this.readGraph(kid(this.root, G, 'graph'), 'page');
     this.ports = {};
     this.hubPorts();
@@ -477,6 +477,7 @@
     Object.keys(this.nodes).forEach(function (nid) {
       var n = self.nodes[nid];
       if (!HUBS.has(n.kind)) return;
+      if (n.bare == null) n.bare = n.svg; else n.svg = n.bare;   // its drawing before the antennas, so live() can work them out again (JavaScript only)
       var x = n.geo[0], y = n.geo[1], w = n.geo[2], h = n.geo[3], cx = x + w / 2, cy = y + h / 2;
       var I = ins[nid] || [], O = outs[nid] || [], vx, vy;
       if (n.kind === 'Operator' && O.length) { var go = mean(O); vx = go[0] - cx; vy = go[1] - cy; }   // a gate faces what it controls
@@ -570,7 +571,7 @@
       }
     });
   };
-  YMap.prototype.readNode = function (node, parent) {
+  YMap.prototype.readNode = function (node, parent, alone) {   // alone: not what it holds (live, JavaScript only)
     var nid = get(node, 'id'), where = 'node ' + nid, r = realizer(node), self = this;
     if (!r) return;
     var k = kindOf(r, where), g = kid(r, Y, 'Geometry');
@@ -613,10 +614,11 @@
     if (url) s = '<a xlink:href="' + esc(url) + '" target="_blank">' + s + '</a>';
     if (this.groups) s = '<g data-n="' + esc(nid) + '">' + s + '</g>';
     var eq = k === 'Operator' && kids(r, Y, 'NodeLabel').some(function (lb) { return pyStrip(itertext(lb)) === EQUIV; });
+    this.els[nid] = [node, parent];
     this.nodes[nid] = { geo: [x, y, w, h], polys: outlines.map(function (c) { return polygon(c); }), aux: aux, svg: s, kind: k, stroke: stroke, eq: eq };
     this.boxes.push([x, y, w, h]);
     this.order.push(['n', nid]);
-    var sub = kid(node, G, 'graph');
+    var sub = !alone && kid(node, G, 'graph');
     if (sub) {
       var st = kid(r, Y, 'State');
       if (st && get(st, 'closed') === 'true') refuse(where, 'closed group');
@@ -807,7 +809,95 @@
     var m = new YMap(doc, opt), svg = m.svg();
     return { svg: svg, errors: errors.slice(), ports: m.ports };   // ports: each process's and gate's two, for the editor (JavaScript only)
   }
-  var api = { render: render, num: num, dist: dist };
+  // the drawing of a move as it goes (JavaScript only, for the editor): the map read once (src: a text or a document,
+  // copied); draw(boxes, paths, ask) puts nodes at other boxes ({ id: [x, y, w, h] }) and arcs through other points
+  // ({ id: { pts: bend points, port: [sx, sy, tx, ty] } }), the rest as read, and gives the arcs asked and the
+  // processes and gates whose drawing changes, with every arc at them, as render() draws them there: { e: { id: svg },
+  // n: { id: svg } }, each in its group; null when the map cannot be drawn. A process moved rigidly with all its arcs
+  // (its nodes and bend points by the same step) is left out: its group, shifted as a whole, is already right
+  function live(src, opt) {
+    opt = opt || {};
+    var setG = function () { errors = []; ROLES = !!opt.roles; CLASSES = !!opt.classes; FROM_SBGN = !!opt.sbgn; };
+    setG();
+    var doc = typeof src === 'string' ? new (root.DOMParser || opt.DOMParser)().parseFromString(src, 'application/xml') : src.cloneNode(true);
+    var m = new YMap(doc, { groups: true });
+    if (errors.length) return null;
+    var no = m.order.length, nb = m.boxes.length, byE = {}, at = {}, svg0 = {}, ports0 = {}, geo0 = {}, pts0 = {};
+    m.order.forEach(function (item) {
+      if (item[0] !== 'e') return;
+      var e = item[1][0], id = get(e, 'id');
+      byE[id] = item[1];
+      [get(e, 'source'), get(e, 'target')].forEach(function (n) { (at[n] = at[n] || []).push(id); });
+    });
+    var hubs = Object.keys(m.nodes).filter(function (n) { return HUBS.has(m.nodes[n].kind); });
+    hubs.forEach(function (n) { svg0[n] = m.nodes[n].svg; ports0[n] = JSON.stringify(m.ports[n] || null); });
+    var base = {};   // each node as read: one only moved (no process or gate, its size kept) is this shifted, not read again
+    Object.keys(m.nodes).forEach(function (n) { geo0[n] = m.nodes[n].geo.slice(); base[n] = m.nodes[n]; });
+    var geoOf = function (n) { var r = realizer(m.els[n][0]); return r && kid(r, Y, 'Geometry'); };
+    var pathOf = function (id) { var pl = polyline(byE[id][0]); return pl && kid(pl, Y, 'Path'); };
+    Object.keys(byE).forEach(function (id) { var p = pathOf(id); pts0[id] = p ? kids(p, Y, 'Point').map(function (q) { return [pyFloat(get(q, 'x')), pyFloat(get(q, 'y'))]; }) : []; });
+    var keptN = {}, keptE = {};   // what draw() changed: the attributes as read, to put back
+    var GA = ['x', 'y', 'width', 'height'], PA = ['sx', 'sy', 'tx', 'ty'];
+    function setAll(el, names, vals) { names.forEach(function (a, i) { el.setAttribute(a, String(vals[i])); }); }
+    function setPath(p, port, pts) {
+      setAll(p, PA, port);
+      kids(p, Y, 'Point').forEach(function (q) { p.removeChild(q); });
+      pts.forEach(function (q) { var e = doc.createElementNS(Y, 'y:Point'); e.setAttribute('x', String(q[0])); e.setAttribute('y', String(q[1])); p.appendChild(e); });
+    }
+    function draw(boxes, paths, ask) {
+      setG();
+      var reread = new Set();
+      Object.keys(keptN).forEach(function (n) { if (!boxes[n]) { setAll(geoOf(n), GA, keptN[n]); delete keptN[n]; reread.add(n); } });
+      Object.keys(boxes).forEach(function (n) {
+        var g = m.els[n] && geoOf(n);
+        if (!g) return;
+        if (!keptN[n]) keptN[n] = GA.map(function (a) { return get(g, a); });
+        setAll(g, GA, boxes[n]); reread.add(n);
+      });
+      Object.keys(keptE).forEach(function (id) { if (!paths[id]) { setPath(pathOf(id), keptE[id][0], keptE[id][1]); delete keptE[id]; } });
+      Object.keys(paths).forEach(function (id) {
+        var p = byE[id] && pathOf(id);
+        if (!p) return;
+        if (!keptE[id]) keptE[id] = [PA.map(function (a) { return get(p, a) || '0'; }), kids(p, Y, 'Point').map(function (q) { return [get(q, 'x'), get(q, 'y')]; })];
+        setPath(p, paths[id].port, paths[id].pts);
+      });
+      var shiftBy = function (P, dx, dy) { return P.map(function (poly) { return poly.map(function (q) { return [q[0] + dx, q[1] + dy]; }); }); };
+      reread.forEach(function (n) {
+        var el = m.els[n], b = boxes[n], N = base[n], g0 = geo0[n];
+        if (!el) return;
+        if (!b && !HUBS.has(N.kind)) { m.nodes[n] = N; return; }
+        if (b && !HUBS.has(N.kind) && b[2] === g0[2] && b[3] === g0[3]) {
+          var dx = b[0] - g0[0], dy = b[1] - g0[1];
+          m.nodes[n] = Object.assign({}, N, { geo: b.slice(), polys: shiftBy(N.polys, dx, dy), aux: shiftBy(N.aux, dx, dy) });
+          return;
+        }
+        m.readNode(el[0], el[1], true);   // alone: what a group holds is given its own box
+      });
+      m.order.length = no;
+      m.ports = {}; m.hubPorts(); m.boxes.length = nb;
+      if (errors.length) return null;
+      var step = function (n) { var g = m.nodes[n].geo, g0 = geo0[n]; return g[2] === g0[2] && g[3] === g0[3] ? [g[0] - g0[0], g[1] - g0[1]] : null; };
+      var same = function (a, b) { return a && b && Math.abs(a[0] - b[0]) < 1e-9 && Math.abs(a[1] - b[1]) < 1e-9; };
+      var rigid = function (n) {   // moved with all its arcs, every node and bend point at them by the same step
+        var d = step(n);
+        return d && (d[0] || d[1]) && (at[n] || []).every(function (id) {
+          var e = byE[id][0], q = paths[id] ? paths[id].pts : pts0[id];
+          return same(step(get(e, 'source')), d) && same(step(get(e, 'target')), d) && q.length === pts0[id].length &&
+            q.every(function (p, i) { return same([p[0] - pts0[id][i][0], p[1] - pts0[id][i][1]], d); });
+        });
+      };
+      var out = { e: {}, n: {} }, E = new Set(ask);
+      hubs.forEach(function (n) {
+        if (m.nodes[n].svg === svg0[n] && JSON.stringify(m.ports[n] || null) === ports0[n] || rigid(n)) return;
+        out.n[n] = m.nodes[n].svg;
+        (at[n] || []).forEach(function (id) { E.add(id); });
+      });
+      E.forEach(function (id) { if (byE[id]) out.e[id] = m.edgeSvg(byE[id][0], byE[id][1]); });
+      return errors.length ? null : out;
+    }
+    return { draw: draw };
+  }
+  var api = { render: render, live: live, num: num, dist: dist };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.yrender = api;
 
   if (typeof require !== 'undefined' && typeof module !== 'undefined' && require.main === module) {   // node yrender.js map.graphml map.svg [--roles] [--classes] [--sbgn]

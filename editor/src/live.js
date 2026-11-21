@@ -4,9 +4,9 @@
     // resized by its handles (sizeLive), the lines it touches drawn in full (liveLines, fullLines), all in the picture's
     // frame (picOff, toPic). A format with a way of its own gives it through liveFmt(): CellDesigner (liveCd, celldesigner.js)
     // its process glyphs following their segments, its reactions drawn by the drop's code and its holders by cdrender;
-    // GraphML and SBGN-ML maps have none (NO_FMT). What is drawn here is put back when the map is drawn again.
-    var NO_FMT = { glyphs: function () {}, lines: function () { return false; }, holders: null };
-    function liveFmt() { return cd ? liveCd : NO_FMT; }
+    // GraphML and SBGN-ML maps (liveY, graphml.js) their arcs and the processes and gates at them drawn by the yEd
+    // renderer. What is drawn here is put back when the map is drawn again.
+    function liveFmt() { return cd ? liveCd : liveY; }
     // compartments are containers: resized by dragging an edge or a handle, and grown by themselves
     // when what they hold is moved past their margin; liveC: their boxes while a drag runs (index in nodes2 -> box),
     // drawn on the picture at once, until the renderer has drawn the map again

@@ -21,6 +21,7 @@
       var A = afSbgn ? afGraphml(t === docText && doc ? doc.cloneNode(true) : new DOMParser().parseFromString(t, 'application/xml')) : null;
       var r = window.yrender.render(A ? A.doc : t === docText && doc ? doc : t, { classes: true, groups: true, sbgn: !!sb });   // sb: an SBGN-ML map (sbgn.js), its glyphs with no fill drawn white
       if (!A) hpMemo = [t, r.ports];   // the processes' ports as drawn, for Turn process and modifier ends (hubPorts); not from the SBGN AF view's changed lines
+      if (!A && on) yAhead(t);
       return [A ? afUnits(r.svg, A.units) : r.svg, r.errors];
     }
     // the SBGN view of an Activity Flow map (the palette's AF tab, SBGN view; only on a map with no
@@ -119,6 +120,72 @@
       }
       out.push(svg.slice(at));
       return out.join('');
+    }
+    // the live drawing of a move on a map the yEd renderer draws (GraphML, SBGN-ML): the arcs it touches, and the
+    // processes and gates whose antennas turn with every arc at them, drawn by the renderer itself as the drop will
+    // draw them (yrender.live: the map of the drawing on screen read once, then the boxes, bend points and ports of what
+    // moves given each frame against it: a drag, and the arrow keys, which write their steps into the text ahead of the
+    // drawing), so a line leaves a process from the port it will have; false (fullLines' copies) for the SBGN view of
+    // an Activity Flow map, an end over another node, or anything the renderer cannot draw
+    var yLive = null;
+    var liveY = { glyphs: function () {}, lines: yLines, holders: null };
+    function svgEl(svg) {   // a group of the renderer's drawing as an element of this page
+      var g = new DOMParser().parseFromString('<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">' + svg + '</svg>', 'image/svg+xml').documentElement.firstElementChild;
+      if (!g) return null;
+      g = document.importNode(g, true);
+      g.removeAttribute('data-e'); g.removeAttribute('data-n'); g.classList.add('m2-ed-copy');
+      return g;
+    }
+    function ySession(t) {   // the renderer's live session of text t, kept until another text is drawn
+      if (yLive && yLive.t === t) return yLive;
+      var ix = {};
+      edges2.forEach(function (e, k) { ix[e.id] = k; });
+      yLive = { t: t, ix: ix, s: window.yrender.live(t === docText && doc ? doc : t, { classes: true, sbgn: !!sb }) };
+      return yLive;
+    }
+    function yAhead(t) {   // made while the browser is idle after a drawing, so the next drag starts at once (0.2 s on the largest map)
+      var go = function () { try { if (on && !mv && !keyed && window.yrender && window.yrender.live && t === text) ySession(t); } catch (x) {} };
+      if (window.requestIdleCallback) requestIdleCallback(go, { timeout: 2000 }); else setTimeout(go, 300);
+    }
+    function yLines(ks, pp) {
+      if (!gE || afSbgn || !lastFor || lastFor[3] || !window.yrender || !window.yrender.live || (pp && pp.n2 != null)) return false;
+      var t = lastFor[0], out;   // the text of the drawing on screen
+      try {
+        if (!ySession(t).s) return false;
+        var boxes = {}, paths = {}, moved = new Set();
+        nodes2.forEach(function (n, i) { var a = bx(i), b = restBox(i); if (a[0] !== b[0] || a[1] !== b[1] || a[2] !== b[2] || a[3] !== b[3]) { boxes[n.id] = a; moved.add(i); } });
+        // every arc with an end or a bend point moving, its points as they are now (an arc whose two ends move is
+        // shifted whole, but may be drawn again with a process at it)
+        edges2.forEach(function (e, k) {
+          var pts = e.pts.map(pt), mine = pp && pp.to && pp.k === k;
+          if (!mine && !ks.has(k)) {
+            if (!moved.has(e.s) && !moved.has(e.t) && !e.pts.some(function (pi, j) { var r = restPt(pi); return r[0] !== pts[j][0] || r[1] !== pts[j][1]; })) return;
+          }
+          var q = ['sx', 'sy', 'tx', 'ty'].map(function (a) { return e.path ? parseFloat(e.path.getAttribute(a)) || 0 : 0; });
+          if (mine) { var j = pp.end ? 2 : 0; q[j] = pp.to[0]; q[j + 1] = pp.to[1]; }
+          paths[e.id] = { pts: pts, port: q };
+        });
+        out = yLive.s.draw(boxes, paths, Array.from(ks, function (k) { return edges2[k].id; }));
+      } catch (x) { out = null; }
+      if (!out) return false;
+      dropCopies();
+      Object.keys(out.n).forEach(function (id) {
+        var g = gN[id], c = svgEl(out.n[id]), tr = g && (g.getAttribute('transform') || '').match(/translate\(([-\d.e]+)[ ,]+([-\d.e]+)\)/);
+        if (!g || !c) return;
+        if (!tr) { g.style.display = 'none'; g.parentNode.insertBefore(c, g.nextSibling); copies.push([c, g, null]); return; }
+        // one that moves itself: its group is shifted and holds the selection's fill, so its drawing is swapped inside
+        // it, the shift taken back
+        c.setAttribute('transform', 'translate(' + -tr[1] + ' ' + -tr[2] + ')');
+        Array.prototype.forEach.call(g.children, function (x) { x.style.display = 'none'; copies.push([document.createComment(''), x, null]); });
+        g.insertBefore(c, g.firstChild); copies.push([c, null, null]);
+      });
+      Object.keys(out.e).forEach(function (id) {
+        var gs = gE[id], c = svgEl(out.e[id]);
+        if (!gs || !c) return;
+        gs.forEach(function (g, j) { g.style.display = 'none'; if (j) copies.push([document.createComment(''), g, yLive.ix[id]]); });
+        gs[0].parentNode.insertBefore(c, gs[0].nextSibling); copies.push([c, gs[0], yLive.ix[id]]);
+      });
+      return true;
     }
     // no negative places (negative coordinates are invalid in CellDesigner, so corrected in every format):
     // a map moved past the left or the top edge is shifted right or down, each on its own, by whole blocks of the grid
