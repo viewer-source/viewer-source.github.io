@@ -2,8 +2,8 @@
 // shade), on Testing Glycolysis SBGN-ML with CellDesigner compatible unticked: a submap made, a tag dropped on its right
 // border (its terminal, pointing left); Up held: it slides up the right side, turns at the top right corner onto the top
 // side (pointing down) and goes on leftwards, never leaving the submap's box; Left on the top side goes left, Right comes
-// back; a run of keys is one undo step; dragged along its side near a corner it is dropped as shown during the drag; a resize of the submap keeps a terminal at a corner on its side. The selection's
-// shade: the terminal's colour while dragged the same as at rest (the shade stays over its fill). No script error.
+// back; a run of keys is one undo step; dragged along its side near a corner it is dropped as shown during the drag; a resize of the submap keeps a terminal at a corner on its side. No grey
+// fill over the terminal selected, at rest or dragged (the handles alone). No script error.
 //   node tests/terminal-keys.js [address] [viewer folder: its editor served in place of the page's]
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path');
 var url = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysis-sbgn', local = process.argv[3];
@@ -36,10 +36,7 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysis
     for (var k = 0; k < n; k++) await page.evaluate(function (key) { document.dispatchEvent(new KeyboardEvent('keydown', { key: key, repeat: true, bubbles: true, cancelable: true })); }, key);
     await page.keyboard.up(key); await page.waitForTimeout(600);
   };
-  var colour = async function (id) {   // the fill's colour in the middle of the glyph, as drawn
-    var r = await rect(id), buf = await page.screenshot({ clip: { x: r[0] + r[2] / 2 - 1, y: r[1] + r[3] / 2 - 1, width: 2, height: 2 } });
-    return buf.toString('base64');
-  };
+  var greys = function () { return page.$$eval('#m2-img .m2-ed-dark', function (l) { return l.length; }); };   // grey fills put over selected nodes
   await page.goto(url, { waitUntil: 'load' });
   await page.evaluate(function () { localStorage.removeItem('atlas-cd-compatible'); localStorage.setItem('atlas-edit-level', 'full'); localStorage.setItem('atlas-drag-moves', 'off'); });
   await page.reload({ waitUntil: 'load' });
@@ -58,15 +55,15 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysis
   ok('the tag is the submap’s terminal on its right side, pointing left', g0 && g0.cls === 'terminal' && g0.way === 'left', JSON.stringify(g0));
   // the shade while dragged: the same colour as at rest
   var T = await rect(tr); await page.mouse.click(T[0] + T[2] / 2, T[1] + T[3] / 2); await page.waitForTimeout(600);
-  var rest = await colour(tr);
+  var rest = await greys();
   T = await rect(tr); var c = [T[0] + T[2] / 2, T[1] + T[3] / 2];
   await page.mouse.move(c[0], c[1]); await page.mouse.down(); await page.mouse.move(c[0], c[1] + 6, { steps: 3 }); await page.mouse.move(c[0], c[1] + 20, { steps: 6 }); await page.waitForTimeout(300);
-  var dragged = await colour(tr);
+  var dragged = await greys();
   await page.mouse.move(c[0] + 200, c[1] + 20, { steps: 6 }); await page.waitForTimeout(300);   // out of the submap: still held on its border
-  var dragged2 = await colour(tr);
+  var dragged2 = await greys();
   await page.mouse.up(); await page.waitForTimeout(1500);
-  ok('the selected terminal keeps its shade while dragged along its side', dragged === rest);
-  ok('and while dragged off its submap (held on its border)', dragged2 === rest);
+  ok('no grey fill over the selected terminal at rest', rest === 0, rest);
+  ok('nor while dragged along its side or off its submap', dragged === 0 && dragged2 === 0, [dragged, dragged2].join());
   ok('after the drag it is on the right side still', glyph(await now(), tr).way === 'left');
   // dragged straight up along its side to just below the top: shown during the drag as it is dropped
   var g1 = glyph(await now(), tr), zoom = (await rect(sm))[2] / s0.box[2];

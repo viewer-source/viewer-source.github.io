@@ -9,9 +9,6 @@
     // by it and the map drawn by cdrender, each part in a group of its own; text is that GraphML, cd.now the file
     var cdp = null, cdJs = null, cdMk = null, cd = null;   // the CellDesigner side loading, once loaded (cd_edit, cd_make), the file edited ({ base, now })
     function isCd(t) { return /<sbml[\s>]/.test(t.slice(0, 3000)) && t.indexOf('celldesigner') >= 0; }
-    // a node selected darkened under its handles (yEd's way), or the handles alone (CellDesigner's way, on its maps);
-    // the targets of a line being drawn or moved stay darkened on every format
-    function darkSel() { return !cd; }
     // the line grid (core.js, lineStep): a line's end on a node on it inside the shape and along its outline, bend points
     // snapping to it; or none: a line's end at one of the node's places only, as a CellDesigner file keeps a species' line,
     // places that follow each node's size and so meet no grid, its bend points lined up by the guides alone
@@ -161,7 +158,7 @@
       var parts = Array.prototype.filter.call(doc.childNodes, function (c) { return c.nodeType === 1; });
       todo.forEach(function (q, k) {
         var i = q[0], g = gN[nodes2[i].id];
-        if (!liveOrig[i]) { var kids = Array.prototype.filter.call(g.childNodes, function (c) { return !(c.classList && c.classList.contains('m2-ed-dark')); }); liveOrig[i] = { back: function () { g.replaceChildren.apply(g, kids); } }; }
+        if (!liveOrig[i]) { var kids = Array.prototype.slice.call(g.childNodes); liveOrig[i] = { back: function () { g.replaceChildren.apply(g, kids); } }; }
         liveOrig[i].at = liveC[i].slice();
         g.replaceChildren.apply(g, Array.prototype.map.call(parts[k].childNodes, function (c) { return document.importNode(c, true); }));
       });

@@ -291,7 +291,7 @@
         var parts = svParts(i, q); parts.forEach(function (el) { seen.add(el); });
         return { parts: parts, r: [(q[1][0] - b[0]) / b[2] - 0.5, (q[1][1] - b[1]) / b[3] - 0.5], c: q[1] };
       });
-      var shapes = [], kids = Array.prototype.filter.call(first.children, function (el) { return !el.classList.contains('m2-ed-dark'); });
+      var shapes = [], kids = Array.prototype.slice.call(first.children);
       for (var k = 0; k < kids.length && kids[k].localName === 'path' && !seen.has(kids[k]); k++) if (/[Zz]\s*$/.test(kids[k].getAttribute('d') || '')) shapes.push(kids[k]);   // the shape first (two for a multimer); an open path among them (a process's or gate's antenna sticks, drawn first) left as it is
       var R = { i: i, b: b, shapes: shapes, svs: svs, texts: kids.filter(function (el) { return el.localName === 'text' && !seen.has(el); }), was: new Map() };
       shapes.concat(R.texts).forEach(function (el) { R.was.set(el, [el.getAttribute('d'), el.getAttribute('transform')]); });

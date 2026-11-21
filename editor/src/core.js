@@ -2391,7 +2391,6 @@
     function paint() {
       palShow();
       if (V.img && V.img.querySelectorAll) {
-        V.img.querySelectorAll('.m2-ed-dark').forEach(function (x) { x.remove(); });
         V.img.querySelectorAll('.m2-ed-blue').forEach(function (x) { x.classList.remove('m2-ed-blue'); });
       }
       gridPaint();
@@ -2484,45 +2483,9 @@
         var head = function (X, Y, s) { return 'M' + f1(X + s * u - v) + ' ' + f1(Y + s * v + u) + 'L' + f1(X) + ' ' + f1(Y) + 'L' + f1(X + s * u + v) + ' ' + f1(Y + s * v - u); };
         out.push('<path class="m2-ed-mark"' + gw() + ' d="' + seg(g) + head(X0, Y0, 1) + head(X1, Y1, -1) + '"/>');
       });
-      // nodes selected: darkened (a group without what it holds, as yEd; not where the format's part says no: darkSel),
-      // and the eight handles round the box
-      var dark = darkSel();
-      selN.forEach(function (i, j) {
-        var n = nodes2[i], b = bx(i), g = gN && gN[n.id];
-        if (!dark) {
-        } else if (g) {   // in the drawing itself, right over the node's own shape: what is drawn after it (its contents, the
-          // arcs, the labels) stays on top, as yEd shows a group selected
-          var el = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-          el.setAttribute('class', 'm2-ed-dark'); el.setAttribute('d', shapeD(i, true));
-          // a CellDesigner drawing is in the file's places, which a shift (out of negative places or the fit, cd_edit.place) puts
-          // -x0, -y0 from the editor's (the frame's two translates cancel inside the picture): the fill follows them
-          // (else after a node moved past the canvas edge the fill shows at another place)
-          // and a node moved by the keys has its new place in the file and its group still shifted by the keys' sum
-          // (and so has a node dragged, from its release until the map is drawn again): the group's shift taken off
-          var tm = !mv && (g.getAttribute('transform') || '').match(/translate\(([-\d.e]+)[ ,]+([-\d.e]+)\)/);
-          var kx = tm ? +tm[1] : 0, ky = tm ? +tm[2] : 0;
-          var po = picOff(), ox = po[0] + kx, oy = po[1] + ky;
-          if (ox || oy) el.setAttribute('transform', 'translate(' + f1(-ox) + ',' + f1(-oy) + ')');
-          var first = g.firstElementChild && g.firstElementChild.localName === 'a' ? g.firstElementChild : g;
-          // after the node's own shapes, under its state variables and units of information (not over
-          // them): a shape crossing the box's edge and not covering its centre is one of those, whichever
-          // renderer drew it (the shapes are in the file's places: the node's box at rest shifted as the fill, never its place
-          // during a drag, which the group's own transform gives; else the fill goes under the shape and the shade comes and goes)
-          var shapes = Array.prototype.slice.call(first.querySelectorAll(cd ? ':scope > path, :scope > rect, :scope > ellipse, :scope > circle, :scope > polygon' : ':scope > path'));
-          var rb = liveC && liveC[i] ? liveC[i] : boxOf(i), bL = rb[0] - ox, bT = rb[1] - oy, bR = bL + rb[2], bB = bT + rb[3], cX = bL + rb[2] / 2, cY = bT + rb[3] / 2;
-          var aux = function (s) {
-            var q; try { q = s.getBBox(); } catch (e) { return false; }
-            var inside = q.x >= bL - 0.5 && q.y >= bT - 0.5 && q.x + q.width <= bR + 0.5 && q.y + q.height <= bB + 0.5;
-            return !inside && !(q.x <= cX && cX <= q.x + q.width && q.y <= cY && cY <= q.y + q.height);
-          };
-          var own = shapes.filter(function (s) { return !aux(s); }), last = own.length ? own[own.length - 1] : null;
-          if (last) last.after(el); else first.prepend(el);
-        } else if (n.kids.length) {   // no drawing of the editor's yet: handles only for a group
-        } else out.push(frame + '<path class="m2-ed-dark" d="' + shapeD(i) + '"/></g>');
-        // the handles in the map's units, so they grow and shrink with the zoom as yEd's: 5 units
-        // wide, their centres 3.3 units outside the box (as measured on yEd)
-        over.push(handleMarks(b, 'm2-ed-handle'));
-      });
+      // nodes selected: the eight handles round the box, in the map's units, so they grow and shrink with the zoom as
+      // yEd's: 5 units wide, their centres 3.3 units outside the box (as measured on yEd); no fill over the node
+      selN.forEach(function (i) { over.push(handleMarks(bx(i), 'm2-ed-handle')); });
       // while a drag runs: a thin grey outline of where it goes (or the area being selected), gone on release
       if (drag && (drag.dx || drag.dy) && !gN) {   // no drawing to move yet: where it goes, as an outline
         var dx = drag.dx, dy = drag.dy, moving = new Set(), ps = new Set(selP);
