@@ -15,7 +15,7 @@
 /* the header: as wide as the viewer, the name where the list's text starts, its line met by the lines down the
    page (a site's own margin under the header would leave a gap) */
 html .wrapper-masthead .container { width: calc(100vw / var(--zoom, 1) - 16px); }
-html .masthead { padding: 6px 0 7px 4px; }
+html .masthead { padding: 6px 4px 7px; }   /* the menu as far from the right edge as the name from the left */
 html .wrapper-masthead { border-bottom: 1px solid var(--m2-frame); margin-bottom: 0; }
 html #main { padding-top: 0; }
 /* the same at the bottom: the lines down the page meet the footer's line; the room
