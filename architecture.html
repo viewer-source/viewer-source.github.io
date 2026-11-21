@@ -226,7 +226,7 @@ picture and one set of click data, so the viewer in the browser never knows whic
 for the layout, loaded only where the Edit tab is, draws with the same renderers in the browser and saves the map's
 own file back, which the build then draws again. This page shows the parts and where each lives. How to use it: <a href="/guide/">Guide</a>.</p>
 
-<p class="ca-upd">Updated 2026-11-21, with the live drawing of a move on GraphML and SBGN-ML maps by the yEd renderer (live(), liveY).</p>
+<p class="ca-upd">Updated 2026-11-21, with which part may use which (before it, the live drawing of a move on GraphML and SBGN-ML maps by the yEd renderer).</p>
 
 <h2>State</h2>
 
@@ -284,6 +284,27 @@ own file back, which the build then draws again. This page shows the parts and w
   <tr><td><code>tests/</code></td><td>Node scripts run by Compare renderers (above).</td></tr>
   <tr><td><code>get_mapconv.sh</code>, <code>get_layout.sh</code></td><td>Take the converter's and the layout skill's code from their masters; never edited here.</td></tr>
 </table>
+
+<h2>Which part may use which</h2>
+
+<p>The parts are in layers: each uses only the layers below it, and is reached from above in one named way. A renderer
+never knows the page, the viewer never knows a format.</p>
+
+<table class="ca-table">
+  <tr><th>Part</th><th>May use</th><th>Reached by</th></tr>
+  <tr><td>Renderers and writers (<code>renderers/</code>)</td><td>Each other, downward only. <code>cd_edit</code> uses <code>cdrender</code>, <code>cd_make</code> uses <code>cdrender</code> and <code>cd_edit</code>, <code>sbml_edit</code> uses <code>sbgn_edit</code>. <code>yrender</code>, <code>sbgn_edit</code> and <code>layout</code> use none. Text in, text out: never the page, the browser's storage or the network, so one file runs in the build under Node and in the browser.</td><td>A global of its own name in the browser (<code>window.yrender</code>, ...), <code>require</code> under Node.</td></tr>
+  <tr><td>Build (<code>build.py</code>, <code>render.js</code>)</td><td><code>render.js</code>: <code>yrender</code> and <code>cdrender</code>. <code>build.py</code>: <code>render.js</code>, the converter (<code>mapconv</code>), <code>databases.py</code>. Never the viewer or the editor.</td><td>The workflow Build atlas.</td></tr>
+  <tr><td>Editor (<code>editor/src/</code>, one scope)</td><td>The renderers and writers, loaded by the editor itself from the page's renderers folder. The viewer only through <code>V</code>, the object the viewer hands it. A format's own rules in that format's part (<code>graphml.js</code>, <code>celldesigner.js</code>, <code>sbgn.js</code>, <code>cdcreate.js</code>). The shared parts (<code>core.js</code>, <code>live.js</code>) ask the format's part, as <code>liveFmt()</code> does.</td><td><code>window.m2Editor(V)</code>, and the object it returns.</td></tr>
+  <tr><td>Viewer (<code>atlas-app.html</code>)</td><td>The editor, through what <code>m2Editor</code> returns. Never a renderer, never a format.</td><td>The include on a site's page.</td></tr>
+</table>
+
+<p>Where the code goes past these lines:</p>
+
+<ul>
+  <li>The viewer's right-click menu calls twelve functions the editor puts on <code>window</code> (<code>m2EditTurn</code>, <code>m2EditDelete</code>, <code>m2EditNodeItems</code>, ...), beside the object <code>m2Editor</code> returns.</li>
+  <li>The viewer reads <code>window.layout.room</code>, the layout tool the editor loads, for the note under Padding, Complexes, when it is there.</li>
+  <li>The shared parts of the editor still ask which format a map is in 100 places (<code>core.js</code> 98, <code>live.js</code> 2). Each release counts them and is refused when a count grows.</li>
+</ul>
 
 <h2>Masters and copies</h2>
 
