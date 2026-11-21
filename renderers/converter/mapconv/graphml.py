@@ -122,6 +122,7 @@ def terminals(nodes, subs):
         if s:
             d.data['SBGN class'] = 'terminal'
             nodes[s].kind = 'Submap'
+            nodes[s].data.pop('SBGN class', None)   # a submap itself, no longer a phenotype standing for one
         elif d.data.get('SBGN class') == 'terminal':
             del d.data['SBGN class']
 
@@ -152,7 +153,8 @@ def read(path):
                          if (x.text or '').strip()), None)
         if kind == 'Process' and l is not None:
             kind = PROCESS_LABEL.get(l.text.strip(), kind)
-        if kind == 'Submap':  # the atlas maps' phenotype, as in CellDesigner (SREBP's two submap glyphs), unless it has terminals (below)
+        submap = kind == 'Submap'   # yEd's own glyph: the phenotype with its SBGN class, as for PerturbingAgent; with terminals a submap (below)
+        if submap:
             kind = 'Phenotype'
             subs.add(n.get('id'))
         agent = kind == 'PerturbingAgent'   # yEd's own glyph: the atlas maps' phenotype, its SBGN class kept
@@ -179,9 +181,11 @@ def read(path):
             sp = {q.get('name').replace('com.yworks.sbgn.style.', ''): q.get('value') for q in gn.findall('y:StyleProperties/y:Property', NS)}
             nodes[n.get('id')].way = sp.get('orientation') or ('left' if sp.get('inverse') == 'true' else 'right')
         cls = nodes[n.get('id')].data
-        if agent:
-            cls['SBGN class'] = 'perturbing agent'
-        elif cls.get('SBGN class') == 'perturbing agent':  # the glyph changed in yEd: its shape decides
+        if submap:
+            cls['SBGN class'] = 'submap'
+        elif agent:   # Activity Flow's perturbation kept as such, else a perturbing agent
+            cls['SBGN class'] = 'perturbation' if cls.get('SBGN class') == 'perturbation' else 'perturbing agent'
+        elif cls.get('SBGN class') in ('perturbing agent', 'perturbation', 'submap'):  # the glyph changed in yEd: its shape decides
             del cls['SBGN class']
     ovals(nodes)
     terminals(nodes, subs)
@@ -317,6 +321,8 @@ def write(diagram, soft=False):
         name = 'ComplexGroup' if group and d.kind == 'Complex' else 'Process' if d.kind in PROCESS_LABEL.values() else d.kind
         if name not in tpl:  # a glyph none of the atlas yEd files has: no template to copy
             missing.setdefault(d.kind, []).append(i); return
+        if d.kind == 'Phenotype' and d.data.get('SBGN class') == 'submap':  # yEd's own glyph for it, as for a perturbing agent
+            name = 'Submap'
         n = copy.deepcopy(tpl[name])
         n.set('id', i)
         if d.kind == 'Phenotype' and d.data.get('SBGN class') in ('perturbing agent', 'perturbation'):  # yEd's own glyph for it (AF's perturbation too)

@@ -110,9 +110,11 @@ def build(m):
     # glyph class: the class, the multimer count, a chain length written in the label (glycogen:
     # glucose (N:n) and (N:n+1): one ChEBI, two entities), a dashed border
     # (hypothetical, a property of the CellDesigner species), and the units of information not drawn (the property
-    # Unit of information: two fragments of one protein, one identifier)
+    # Unit of information: two fragments of one protein, one identifier), and what a phenotype stands for (a submap
+    # and a phenotype with one name stay two, as CellDesigner draws both as its phenotype)
     cls = lambda i: (cd_class(N[i]), N[i].count) + tuple(re.findall(r'\(N:([^)]+)\)\s*$', label(N[i]))) + \
-        (('hypothetical',) if N[i].dashed else ()) + tuple(sorted(hidden_units(N[i].data)))
+        (('hypothetical',) if N[i].dashed else ()) + tuple(sorted(hidden_units(N[i].data))) + \
+        (('submap' if N[i].kind == 'Submap' else N[i].data.get('SBGN class') or '',) if cd_class(N[i]) == 'PHENOTYPE' else ())
     # identities: an identifier, or a label joining the one identifier it is given elsewhere
     ident = {i: own_identity(N[i]) for i in ents if N[i].kind != 'Complex'}
     seen = collections.defaultdict(set)
