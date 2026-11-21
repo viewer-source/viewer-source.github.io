@@ -49,8 +49,9 @@
       ['Other nodes', [['compartment', 'Compartment', '<rect x="1.5" y="3" width="21" height="18" rx="4.5" stroke-width="2.2"/>'],
         ['submap', 'Submap', '<rect x="1.5" y="4" width="21" height="16"/>'],
         // a tag: dropped on a submap's border it is that submap's terminal, sliding along it; elsewhere a free tag. Only
-        // with Settings, Editing, CellDesigner compatible unticked (CellDesigner has neither; compat())
-        ['tag', 'Tag', '<path d="M4 7.5h11.6l3.4 4.5-3.4 4.5H4z"/>']]],
+        // with Settings, Editing, CellDesigner compatible unticked (CellDesigner has neither; compat()); its sign the
+        // macromolecule's box with the phenotype's point
+        ['tag', 'Tag', '<path d="M1.5 5h16.5l4.5 7-4.5 7h-16.5z"/>']]],
       // logic gates (with SBGN's equivalence operator), a
       // circle with its word or sign, made bare as a process, its antennas grown by its arcs; marks inside a sign are class
       // 'in', a dot class 'dot', letters plain <text>: their weight is the Edit window's one rule (atlas-app.html, Sign weights)
