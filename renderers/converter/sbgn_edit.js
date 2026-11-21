@@ -320,7 +320,8 @@
         St = St || styles(S); D = D || {}; D[dk] = D[dk] || defaults(t, opt, dk);
         var lk = fileLook(St, id, base), cref = g.el.getAttribute('compartmentRef');
         out = add(out, { id: id, cls: base, activity: au, label: name, box: g.box, parent: cref && S.glyph[cref] ? cref : null, fill: lk.fill, line: lk.line, width: lk.width, font: lk.font || D[dk].font,
-                         states: svOf(g), units: unitsOf(g.el).map(unitText), multimer: fileMulti(g.el), way: base === 'tag' ? fileWay(g.el) : null }, opt);
+                         states: svOf(g), units: unitsOf(g.el).map(unitText), multimer: fileMulti(g.el), way: base === 'tag' ? fileWay(g.el) : null,
+                         letters: GLT.test(base) ? (lk.font != null ? lk.font : Math.round(14 * scaleOf(S) + 0.01) !== 14 ? Math.round(14 * scaleOf(S) + 0.01) : 12) : null }, opt);   // a gate's letters as graphml.write draws them: the file's, else 12 (the map's font where it is not 14)
         if (cls === 'terminal') { Hfor = null; out = terminal(out, id, true, opt); }
         var nlb = cls === 'compartment' && kid(g.el, 'label') && kid(kid(g.el, 'label'), 'bbox');
         if (nlb) {   // its name where the file has it (namePlace), as graphml() reads a compartment of the base
@@ -806,12 +807,13 @@
     // the look set in the editor's properties: fill, border colour and width
     var St = styles(S), looks = new Map();   // glyph id -> the look wanted, where it is not the file's
     var mf = null, mapFont = function () { return mf != null ? mf : (mf = Math.round(14 * scaleOf(S) + 0.01)); };   // the converter's font for a glyph whose file states none
+    var gateFont = function () { return mapFont() !== 14 ? mapFont() : 12; };   // the converter's letters on a gate whose file states no font (graphml.write: yed.graphml's 12, else the map's)
     Object.keys(S.glyph).forEach(function (id) {
       var cls = S.glyph[id].el.getAttribute('class') || '';
       if (!G.node[id] || !LOOKS.test(cls)) return;   // the glyphs the editor restyles
       var want = lookG(G, id), have = fileLook(St, id, cls);
       // the name's font: written where it differs from the file's (a file stating none drawn at the map's, graphml.write)
-      var font = NAMED.test(cls) && want.font != null && want.font !== (have.font != null ? have.font : mapFont()) ? want.font : have.font;
+      var font = (NAMED.test(cls) || GLT.test(cls)) && want.font != null && want.font !== (have.font != null ? have.font : NAMED.test(cls) ? mapFont() : gateFont()) ? want.font : have.font;   // a name's, or AND, OR and NOT's letters
       if (want.fill !== have.fill || want.line !== have.line || want.width !== have.width || font !== have.font) looks.set(id, { fill: want.fill, line: want.line, width: want.width, font: font, cls: cls });
     });
     Object.keys(S.arc).forEach(function (id) {   // a line's colour and width: the rest of its style (a fill some tools give) kept
@@ -838,7 +840,7 @@
         '\n' + si + '  ' + bboxXml(G.node[id].box) + '\n' + si + '</' + pre + 'glyph>';
       termXml[sm] = (termXml[sm] || '') + '\n' + si + xml;   // in the order made (one insertion per submap)
       var lk = lookG(G, id), lf = L0.main ? F(L0.main.getAttribute('fontSize')) || 12 : null, own = lf != null && lf !== mapFont();   // its look, as a glyph made below
-      if (lk.fill || lk.line || lk.width !== 1 || own) looks.set(id, { fill: lk.fill, line: lk.line, width: lk.width, font: L0.main ? lf : null, cls: 'terminal', fresh: true });
+      if (lk.fill || lk.line || lk.width !== 1 || own) looks.set(id, { fill: lk.fill, line: lk.line, width: lk.width, font: L0.main ? lf : null, cls: 'terminal', fresh: true, own: own });
     });
     Object.keys(termXml).forEach(function (sm) {   // into a submap of the file, before its end
       if (!S.glyph[sm]) return;
@@ -865,8 +867,8 @@
         iconsOf(id).map(function (q, k) { return svXml(id, k, q, n.box, ind0 + '  '); }).join('') +
         fu.map(function (q, k) { return uiXml(id, k, q[0], uBoxAt(q[0], n.box, q[1], q[2]), ind0 + '  '); }).join('')) + (termXml[id] || '') + '\n' + ind0 + '</' + pre + 'glyph>';
       if (cls === 'compartment') front += xml; else fresh += xml;   // a compartment before the glyphs, as the editor draws it under them
-      var lf = L.main ? F(L.main.getAttribute('fontSize')) || 12 : null, own = lf != null && NAMED.test(cls) && lf !== mapFont();   // a font of its own, not the map's
-      if (lk.fill || lk.line || lk.width !== 1 || own) looks.set(id, { fill: lk.fill, line: lk.line, width: lk.width, font: L.main ? lf : null, cls: cls, fresh: true });
+      var lf = L.main ? F(L.main.getAttribute('fontSize')) || 12 : null, own = lf != null && (NAMED.test(cls) ? lf !== mapFont() : GLT.test(cls) && lf !== gateFont());   // a font of its own, not the map's (a gate's letters: not the converter's)
+      if (lk.fill || lk.line || lk.width !== 1 || own) looks.set(id, { fill: lk.fill, line: lk.line, width: lk.width, font: L.main ? lf : null, cls: cls, fresh: true, own: own });
     });
     var ext = restyle0(S, T, St, looks, pre);   // a render extension written for an empty <map/>: put into it below
     if (front && tops.length) { var f0 = T.at.get(tops[0])[0]; T.ed.push([f0, f0, front.replace(/^\n\s*/, '') + '\n' + T.indent(tops[0])]); }
@@ -1173,9 +1175,21 @@
   // templates' (an empty complex 144 by 64, the empty set 32)
   var SIZE = { macromolecule: [80, 40], 'simple chemical': [40, 40], 'nucleic acid feature': [80, 40], 'unspecified entity': [80, 40], complex: [144, 64],
                'perturbing agent': [80, 40], 'source and sink': [32, 32], phenotype: [120, 40], submap: [120, 64], compartment: [400, 320],
-               process: [18, 18], 'omitted process': [18, 18], 'uncertain process': [18, 18],   // a process: the yEd maps' 18
-               and: [30, 30], or: [30, 30], not: [30, 30], equivalence: [30, 30], delay: [30, 30],   // a gate: the yEd maps' 30 (yed.graphml's Operator)
+               process: [20, 20], 'omitted process': [20, 20], 'uncertain process': [20, 20],   // a process: 20, room for its sign (the yEd maps' 18 before)
+               and: [24, 24], or: [24, 24], not: [24, 24], equivalence: [24, 24], delay: [24, 24],   // a gate: 24, its letters 10 (GATE_FONT; the yEd maps' 30 and 12 before)
                'biological activity': [80, 40], tag: [48, 32] };   // every activity a protein's size, whatever its unit: 80 by 40; a tag 48 by 32, near a simple chemical's size
+  // a process's or gate's antenna: ANT px from its box's side to its port (one length whatever the glyph's size), for
+  // ports the editor works out (a bare glyph's first arc, the second arc's guess); a file's own ports and ports set in
+  // Properties (antenna) kept as they are. GATE_FONT: AND, OR and NOT's letters on a new gate at the standard scale
+  var ANT = 10, GATE_FONT = 10, GLT = /^(and|or|not)$/;
+  function antFor(opt, gate) { var a = opt && opt.ant, v = a ? a[gate ? 'gate' : 'process'] : null; return v != null && v >= 1 ? v : ANT; }   // opt.ant: { process, gate }, the editor's choice (Style)
+  function isHub(G, id) { return !!G.node[id] && /\.(Process|Operator)$/.test(G.node[id].geo.parentNode.getAttribute('configuration') || ''); }
+  // the antenna of an end at offset (x, y) from the centre of box b: its length beyond the box along the nearer axis, or
+  // null for an end that is no port (the centre, on a side: a modulation's)
+  function portLen(b, x, y) {
+    var hz = Math.abs(x) >= Math.abs(y), a = Math.abs(hz ? x : y), half = (hz ? b[2] : b[3]) / 2;
+    return a > half + 0.5 && Math.abs(hz ? y : x) <= 0.5 ? a - half : null;
+  }
   function cfgOf(r) { return r.localName === 'GroupNode' ? 'Compartment' : (r.getAttribute('configuration') || '').replace('com.yworks.sbgn.', ''); }
   function classOfCfg(cfg) { var c = null; Object.keys(MAKE).forEach(function (k) { if (!c && MAKE[k] === cfg) c = k; }); return c; }
   function classOfR(r) {   // the class a realizer of the editor's GraphML stands for: a process's by its sign
@@ -1366,7 +1380,7 @@
     } else if (GATES.test(o.cls)) {   // yed.graphml's Operator: AND, OR, NOT at the template's 12 (the map's font where it is not 14), the box at the
       // map's font; the equivalence's sign in Monospaced 18, as graphml.write draws yEd's palette's
       var gt = GATE[o.cls], eq = /^(equivalence|delay)$/.test(o.cls), gb = labelBox(gt, w, h, fs / 14);
-      label = '<y:NodeLabel alignment="center" autoSizePolicy="content" bottomInset="0" fontFamily="' + (eq ? 'Monospaced' : 'Dialog') + '" fontSize="' + (eq ? 18 : fs !== 14 ? fs : 12) + '" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="' + repr(gb[1]) +
+      label = '<y:NodeLabel alignment="center" autoSizePolicy="content" bottomInset="0" fontFamily="' + (eq ? 'Monospaced' : 'Dialog') + '" fontSize="' + (eq ? 18 : o.letters != null ? o.letters : Math.round(GATE_FONT * fs / 14 * 2) / 2) + '" fontStyle="plain" hasBackgroundColor="false" hasLineColor="false" height="' + repr(gb[1]) +
         '" horizontalTextPosition="center" iconTextGap="4" leftInset="0" modelName="custom" rightInset="0" textColor="#000000" topInset="0" verticalTextPosition="center" visible="true" width="' + repr(gb[0]) + '" x="' + repr(gb[2]) + '" xml:space="preserve" y="' + repr(gb[3]) + '" hasText="true">' + esc(gt) + LM +
         '<y:ModelParameter><y:SmartNodeLabelModelParameter labelRatioX="0.0" labelRatioY="0.0" nodeRatioX="0.0" nodeRatioY="0.0" offsetX="0.0" offsetY="0.0" upX="0.0" upY="-1.0"/></y:ModelParameter></y:NodeLabel>';
     } else label = mainLabel(o.label || '', w, h, fs);
@@ -1643,7 +1657,7 @@
       var arc = o.cls === 'arc';
       if (arc && !o.line && !o.fill && o.width == null && !o.font) return;   // a line set back to black: out of the styles that coloured it
       var cand = St.filter(function (x) { return x.plain && x.fill === o.fill && (x.line === '#000000' ? null : x.line) === o.line && (o.width == null ? !x.has.width : (x.has.width ? x.width || 1 : o.cls === 'compartment' ? 2 : 1) === o.width) &&
-        (x.font === o.font || (o.fresh && x.font == null)) && x.ids.every(function (i) { return !!S.arc[i] === arc; }); });   // arcs' styles and glyphs' apart
+        (x.font === o.font || (o.fresh && !o.own && x.font == null)) && x.ids.every(function (i) { return !!S.arc[i] === arc; }); });   // arcs' styles and glyphs' apart
       cand.sort(function (a, b) { return (b.font === o.font) - (a.font === o.font) || cnt(b, o.cls) - cnt(a, o.cls); });
       if (cand[0]) { lists.set(cand[0], (lists.get(cand[0]) || cand[0].ids.slice()).concat(id)); return; }
       var key = [arc, o.fill, o.line, o.width, o.font, JSON.stringify(carried(o.fresh ? [] : old))].join('\u0000');   // arcs' styles and glyphs' apart   // the same look and the same attributes kept: one style
@@ -1829,17 +1843,22 @@
     var G = gml(t, opt), n = G.node[id];
     if (!n) return t;
     var o = n.box, w = box[2], h = box[3], T = new Tags(t, G.doc);
+    boxOn(T, G, id, box);
+    scaleOn(T, G, id, o, box);
+    return (Math.abs(o[2] - w) > 1e-9 || Math.abs(o[3] - h) > 1e-9) && actOf(G, id) ? afIcon(T.text(), id, opt) : T.text();
+  }
+  // node id's box set (geometry, its name centred, its icons at their places); noMain: its name left to setFont
+  function boxOn(T, G, id, box, noMain) {
+    var n = G.node[id], o = n.box, w = box[2], h = box[3];
     ['x', 'y', 'width', 'height'].forEach(function (k, j) { if (Math.abs(o[j] - box[j]) > 1e-9) T.set(n.geo, k, repr(box[j])); });
     var L = labelsOf(G, id);
-    if (L.main) { T.set(L.main, 'x', repr((w - F(L.main.getAttribute('width'))) / 2)); T.set(L.main, 'y', repr((h - F(L.main.getAttribute('height'))) / 2)); }
+    if (L.main && !noMain) { T.set(L.main, 'x', repr((w - F(L.main.getAttribute('width'))) / 2)); T.set(L.main, 'y', repr((h - F(L.main.getAttribute('height'))) / 2)); }
     L.icons.forEach(function (q) {
       var l = q[0], p = l.getElementsByTagNameNS(YNS, 'SmartNodeLabelModelParameter')[0];
       if (!p) return;
       T.set(l, 'x', repr((0.5 + F(p.getAttribute('nodeRatioX'))) * w - F(l.getAttribute('width')) / 2));
       T.set(l, 'y', repr((0.5 + F(p.getAttribute('nodeRatioY'))) * h - F(l.getAttribute('height')) / 2));
     });
-    scaleOn(T, G, id, o, box);
-    return (Math.abs(o[2] - w) > 1e-9 || Math.abs(o[3] - h) > 1e-9) && actOf(G, id) ? afIcon(T.text(), id, opt) : T.text();
   }
   // an activity's unit icon where write() puts the unit in the file after a resize or a unit set (afUnitBox), so the
   // GraphML draws as the converter draws the file written
@@ -1863,8 +1882,8 @@
     scaleOn(T, G, id, o, box);
     return T.text();
   }
-  function scaleOn(T, G, id, o, box) {
-    var w = box[2], h = box[3];
+  function scaleOn(T, G, id, o, box, Lfix) {   // Lfix: a process's or gate's antenna set to that length
+    var w = box[2], h = box[3], hub = isHub(G, id);
     // an end that comes to lie within 1.5 of the line from the centre toward the line's next point is read by the
     // converter as aimed at the centre (sbgnml.at): set so here too, so the editor draws what the file will hold
     var kx = o[2] ? w / o[2] : 1, ky = o[3] ? h / o[3] : 1, c = centre(box);
@@ -1873,18 +1892,103 @@
       var e = G.edge[k];
       [[e.s, 'sx', 'sy', 0], [e.t, 'tx', 'ty', 2]].forEach(function (q) {
         if (q[0] !== id || (!e.off[q[3]] && !e.off[q[3] + 1])) return;
-        var v = [e.off[q[3]] * kx, e.off[q[3] + 1] * ky], j = 2 - q[3];
+        var v = [e.off[q[3]] * kx, e.off[q[3] + 1] * ky], j = 2 - q[3], L = hub ? portLen(o, e.off[q[3]], e.off[q[3] + 1]) : null;
+        if (L != null && Lfix != null) L = Lfix;
+        if (L != null) v = Math.abs(e.off[q[3]]) >= Math.abs(e.off[q[3] + 1]) ? [Math.sign(e.off[q[3]]) * (w / 2 + L), 0] : [0, Math.sign(e.off[q[3] + 1]) * (h / 2 + L)];   // a process's or gate's port: its antenna as long as before (or Lfix)
         var aim = e.pts.length ? e.pts[q[3] ? e.pts.length - 1 : 0] : endAt(q[3] ? e.s : e.t, e.off[j], e.off[j + 1]);
-        if (aim) {
+        if (aim && L == null) {
           var u = [aim[0] - c[0], aim[1] - c[1]], n = Math.hypot(u[0], u[1]);
           if (n && Math.abs(u[0] * v[1] - u[1] * v[0]) / n <= 1.5 && u[0] * v[0] + u[1] * v[1] >= 0) v = [0, 0];
         }
         var r4 = function (x) { return Math.round(x * 10000) / 10000; };   // as write() puts the point in the file: the offset the converter reads back
         if (v[0] || v[1]) v = [r4(c[0] + v[0]) - c[0], r4(c[1] + v[1]) - c[1]];
+        if (Math.abs(v[0] - e.off[q[3]]) < 1e-9 && Math.abs(v[1] - e.off[q[3] + 1]) < 1e-9) return;   // unchanged: as written
         T.set(e.path, q[1], repr(v[0])); T.set(e.path, q[2], repr(v[1]));
       });
     });
   }
+  // the axis yrender gives a process or gate whose arcs give no port (its hub_ports): [in, out] as offsets from its
+  // centre at antenna L, from where its arcs come from and go to; null with no arc
+  function drawnPorts(G, id, b, L) {
+    var c = centre(b), I = [], O = [], aim = function (e, end) { return e.pts.length ? e.pts[end ? e.pts.length - 1 : 0] : G.node[end ? e.s : e.t] ? centre(G.node[end ? e.s : e.t].box) : null; };
+    Object.keys(G.edge).forEach(function (k) {
+      var e = G.edge[k], p;
+      if (e.t === id && headOf(e) === 'none' && (p = aim(e, true))) I.push(p);
+      else if (e.s === id && (p = aim(e, false))) O.push(p);
+    });
+    var mean = function (q) { return [q.reduce(function (s, p) { return s + p[0]; }, 0) / q.length, q.reduce(function (s, p) { return s + p[1]; }, 0) / q.length]; };
+    var spread = function (q, i) { var v = q.map(function (p) { return p[i]; }); return Math.max.apply(null, v) - Math.min.apply(null, v); }, v;
+    if (isGate(G, id) && O.length) { var go = mean(O); v = [go[0] - c[0], go[1] - c[1]]; }
+    else if (I.length) { var a = mean(I), z = O.length ? mean(O) : c; v = [z[0] - a[0], z[1] - a[1]]; }
+    else if (O.length > 1) v = [spread(O, 0), spread(O, 1)];
+    else if (O.length) v = [O[0][0] - c[0], O[0][1] - c[1]];
+    else return null;
+    var hz = Math.abs(v[0]) >= Math.abs(v[1]), k = (hz ? v[0] : v[1]) >= 0 ? 1 : -1, r = (hz ? b[2] : b[3]) / 2 + (L != null ? L : Math.max(0.5 * (hz ? b[2] : b[3]), 9));   // yrender's ANTENNA, ANTENNA_MIN
+    return [hz ? [-k * r, 0] : [0, -k * r], hz ? [k * r, 0] : [0, k * r]];
+  }
+  // the antenna of every process and gate of the map, { id: length }: the longest of its ports beyond its box, read from
+  // its arcs' ends at them, else from the file's own ports (opt.sbgn: arcs read at the centre), else the one yrender
+  // draws from its arcs (drawnPorts); one with no arc left out
+  function antennas(t, opt) {
+    var G = gml(t, opt), S = null, out = {};
+    Object.keys(G.edge).forEach(function (k) {
+      var e = G.edge[k];
+      [[e.s, 0], [e.t, 2]].forEach(function (q) {
+        var id = q[0], L = isHub(G, id) ? portLen(G.node[id].box, e.off[q[1]], e.off[q[1] + 1]) : null;
+        if (L != null && !(out[id] >= L)) out[id] = L;
+      });
+    });
+    G.ids.forEach(function (id) {
+      if (out[id] != null || !isHub(G, id)) return;
+      var b = G.node[id].box, pp = opt && opt.sbgn ? hubPorts(G, id, null, true, S || (S = sbgn(opt.sbgn, opt))) : [null];
+      if (!pp[0]) pp = drawnPorts(G, id, b, null) || [null];
+      var L = pp[0] ? portLen(b, pp[0][0], pp[0][1]) : null;
+      if (L != null) out[id] = L;
+    });
+    Object.keys(out).forEach(function (id) { out[id] = Math.round(out[id] * 100) / 100; });
+    return out;
+  }
+  // processes, gates (and other glyphs) given a box, an antenna and a gate's letters' size in one reading of the text:
+  // items [{ id, box (its new box, or none), ant (the antenna's length, or none: kept), letters (AND, OR, NOT's size, or
+  // none) }]. A resize keeps every antenna as long as it was (scaleOn); a glyph with no port yet (its arcs at the centre)
+  // gets its ports where the file has them, else where yrender draws them (drawnPorts), at the antenna asked: the
+  // consumptions (a gate's inputs) on the port in, what leaves on the port out (on the nearer with nothing coming in, or
+  // with the file's own ports).
+  // write() gives the file's ports these places
+  function fit(t, items, opt) {
+    var G = gml(t, opt), T = new Tags(t, G.doc), S = null;
+    items.forEach(function (it) {
+      var n = G.node[it.id];
+      if (!n) return;
+      var id = it.id, o = n.box, nb = it.box || o, hub = isHub(G, id), moved = nb.some(function (v, j) { return Math.abs(v - o[j]) > 1e-9; });
+      var letters = it.letters != null && GLT.test(classOfR(n.geo.parentNode) || '') && lookG(G, id).font !== it.letters ? it.letters : null;
+      if (moved) boxOn(T, G, id, nb, letters != null);
+      if (letters != null) setFont(T, G, id, letters, nb);
+      var ports = hub && Object.keys(G.edge).some(function (k) { var e = G.edge[k]; return (e.s === id && portLen(o, e.off[0], e.off[1]) != null) || (e.t === id && portLen(o, e.off[2], e.off[3]) != null); });
+      var L = hub && it.ant != null ? Math.max(it.ant, 1) : null;
+      if (moved || (ports && L != null)) scaleOn(T, G, id, o, nb, L);
+      if (!hub || ports || L == null) return;
+      var pp = opt && opt.sbgn ? hubPorts(G, id, null, true, S || (S = sbgn(opt.sbgn, opt))) : [null];
+      var at = function (v) { return Math.abs(v[0]) >= Math.abs(v[1]) ? [Math.sign(v[0]) * (nb[2] / 2 + L), 0] : [0, Math.sign(v[1]) * (nb[3] / 2 + L)]; };
+      var own = !!(pp[0] && pp[1]);
+      pp = own ? [at(pp[0]), at(pp[1])] : drawnPorts(G, id, nb, L);
+      if (!pp) return;
+      var c = centre(nb), r4 = function (v) { return [Math.round((c[0] + v[0]) * 10000) / 10000 - c[0], Math.round((c[1] + v[1]) * 10000) / 10000 - c[1]]; };   // as write() puts the port in the file
+      var ins = Object.keys(G.edge).some(function (k) { var e = G.edge[k]; return e.t === id && headOf(e) === 'none'; });
+      Object.keys(G.edge).forEach(function (k) {
+        var e = G.edge[k], v = null, a = null;
+        if (e.t === id && headOf(e) === 'none' && !e.off[2] && !e.off[3]) { v = pp[0]; a = ['tx', 'ty']; }
+        else if (e.s === id && !e.off[0] && !e.off[1]) {
+          a = ['sx', 'sy']; v = pp[1];
+          if (!ins || own) { var q = e.pts.length ? e.pts[0] : G.node[e.t] && centre(G.node[e.t].box), cc = centre(o); if (q && Math.hypot(cc[0] + pp[0][0] - q[0], cc[1] + pp[0][1] - q[1]) < Math.hypot(cc[0] + pp[1][0] - q[0], cc[1] + pp[1][1] - q[1])) v = pp[0]; }   // nothing coming in, or the file's own ports (a reversible process's products leave from both): the nearer port
+        }
+        if (!v) return;
+        v = r4(v); T.set(e.path, a[0], repr(v[0])); T.set(e.path, a[1], repr(v[1]));
+      });
+    });
+    return T.text();
+  }
+  function antenna(t, id, L, opt) { return fit(t, [{ id: id, ant: L }], opt); }   // every port of process or gate id at antenna L
   function remove(t, ids, opt) {   // nodes deleted in the editor's GraphML, with every line at them; their ids kept for write()
     var G = gml(t, opt), T = new Tags(t, G.doc), del = {};
     ids.forEach(function (id) { if (G.node[id]) { del[id] = 1; T.cut(G.node[id].el); } });
@@ -1962,8 +2066,9 @@
   function headOf(e) { var a = e.el.getElementsByTagNameNS(YNS, 'Arrows')[0]; return a ? a.getAttribute('target') || 'none' : 'none'; }
   // the two ports of a process, from its centre: where its arcs have them (a consumption's end the port in, a production's
   // start the port out; a missing one mirrored), else on the axis toward `toward` (the first arc's other end), as yrender
-  // puts antennas (the nearer of horizontal or vertical, side / 2 + max(side / 2, 9) out); [in, out]
-  function hubPorts(G, pid, toward, asIn, S) {   // S: the SBGN-ML file read, for its ports
+  // puts antennas (the nearer of horizontal or vertical, side / 2 + the antenna out: antFor); [in, out]
+  function isGate(G, id) { return /\.Operator$/.test(G.node[id].geo.parentNode.getAttribute('configuration') || ''); }
+  function hubPorts(G, pid, toward, asIn, S, opt) {   // S: the SBGN-ML file read, for its ports; opt.ant: the antenna for ports worked out
     var n = G.node[pid], b = n.box, c = centre(b), pin = null, pout = null, nz = function (x, y) { return Math.abs(x) > 1e-9 || Math.abs(y) > 1e-9; };
     Object.keys(G.edge).forEach(function (k) {
       var e = G.edge[k], h = headOf(e);
@@ -1984,7 +2089,7 @@
       var dx = toward[0] - c[0], dy = toward[1] - c[1], hz = Math.abs(dx) >= Math.abs(dy);
       // a modulation drawn to the bare process first holds a side: the antennas go along the other axis
       if (heldAxis(G, pid) === hz) hz = !hz;
-      var side = hz ? b[2] : b[3], r = side / 2 + Math.max(side / 2, 9);
+      var side = hz ? b[2] : b[3], r = side / 2 + antFor(opt, isGate(G, pid));
       var p = hz ? [(dx >= 0 ? 1 : -1) * r, 0] : [0, (dy >= 0 ? 1 : -1) * r];
       if (asIn) pin = p; else pout = p;
     }
@@ -2023,9 +2128,9 @@
     [[s, tg, false, cls === 'production' || cls === 'logic arc' || MODS.test(cls)], [tg, s, true, cls === 'consumption' || cls === 'logic arc']].forEach(function (q) {
       var pid = q[0], other = q[1], asIn = q[2];
       if (!q[3] || !hub(pid)) return;
-      var re = !own(pid) ? reguess(t, G, pid, other, asIn) : null;   // a process or gate without the file's own ports
+      var re = !own(pid) ? reguess(t, G, pid, other, asIn, opt) : null;   // a process or gate without the file's own ports
       if (re) { t = re; G = gml(t, opt); }
-      var pp = hubPorts(G, pid, centre(G.node[other].box), asIn, S);
+      var pp = hubPorts(G, pid, centre(G.node[other].box), asIn, S, opt);
       if (asIn) { off[2] = pp[0][0]; off[3] = pp[0][1]; } else { off[0] = pp[1][0]; off[1] = pp[1][1]; }
     });
     if (MODS.test(cls) && /\.Process$/.test(cfg(tg))) {   // a modulation at a process: the middle of a side off the antennas
@@ -2046,7 +2151,7 @@
   // first arc's guess gives (so not turned by hand, nor a file's own placing) is set again along the pull of both ends,
   // from the mean of what goes in to the mean of what comes out, the nearer of horizontal or vertical; the first arc's
   // end moved to its new port. The text with that change, or null when nothing is re-guessed
-  function reguess(t, G, pid, other, asIn) {
+  function reguess(t, G, pid, other, asIn, opt) {
     var gate = /\.Operator$/.test(G.node[pid].geo.parentNode.getAttribute('configuration') || '');   // a gate's output: any arc out of it
     var flux = Object.keys(G.edge).map(function (k) { return G.edge[k]; }).filter(function (e) {
       return (e.t === pid && headOf(e) === 'none') || (e.s === pid && (gate || headOf(e) === 'delta'));
@@ -2059,7 +2164,8 @@
     if (eIn === asIn) return null;   // one in and one out only: two of a kind keep the first guess (else two productions turn across their flow)
     var A = eIn ? far : centre(G.node[other].box), B = eIn ? centre(G.node[other].box) : far, dx = B[0] - A[0], dy = B[1] - A[1];
     if (Math.abs(dx) < 1e-9 && Math.abs(dy) < 1e-9) return null;
-    var hz = Math.abs(dx) >= Math.abs(dy), k = (hz ? dx : dy) >= 0 ? 1 : -1, r = (hz ? b[2] : b[3]) / 2 + Math.max((hz ? b[2] : b[3]) / 2, 9);
+    var Lnow = portLen(b, o[0], o[1]);   // the antenna it has (one set in Properties kept): only the axis is guessed again
+    var hz = Math.abs(dx) >= Math.abs(dy), k = (hz ? dx : dy) >= 0 ? 1 : -1, r = (hz ? b[2] : b[3]) / 2 + (Lnow != null ? Lnow : antFor(opt, gate));
     if (!gate && heldAxis(G, pid) === hz) return null;   // the antennas never onto a side a modulation holds
     var pout = hz ? [k * r, 0] : [0, k * r], want = eIn ? [-pout[0], -pout[1]] : pout;
     want = [Math.round((c[0] + want[0]) * 10000) / 10000 - c[0], Math.round((c[1] + want[1]) * 10000) / 10000 - c[1]];   // as hubPorts rounds
@@ -2072,7 +2178,7 @@
       [[m.t === pid, 2, ['tx', 'ty']], [m.s === pid, 0, ['sx', 'sy']]].forEach(function (q) {
         var x = m.off[q[1]], y = m.off[q[1] + 1];
         if (!q[0] || (Math.abs(x) < 1e-9 && Math.abs(y) < 1e-9)) return;
-        T.set(m.path, q[2][0], repr(-y)); T.set(m.path, q[2][1], repr(x));
+        T.set(m.path, q[2][0], repr(-y * b[2] / b[3])); T.set(m.path, q[2][1], repr(x * b[3] / b[2]));   // on the side it turns to (a glyph not square: scaled to it)
       });
     });
     return T.text();
@@ -2664,7 +2770,7 @@
     return t;
   }
 
-  var api = { unique: unique, LOOKS: LOOKS, NAMED: NAMED, MULTI: MULTI, graphml: graphml, write: write, join: join, joinable: joinable, nameAt: nameAt, namePlaces: namePlaces, stack: stack, restack: restack, stackMoves: stackMoves, NAME_PLACES: NAME_PLACES, defaults: defaults, add: add, lookOf: lookOf, restyle: restyle, restyleAll: restyleAll, colours: colours, lineOf: lineOf, recolour: recolour, widthOf: widthOf, rewidth: rewidth, label: label, state: state, stateValue: stateValue, stateMove: stateMove, unitMove: unitMove, entityKind: entityKind, ENTITIES: ['macromolecule', 'simple chemical', 'nucleic acid feature', 'unspecified entity'], stateDelete: stateDelete,
+  var api = { unique: unique, LOOKS: LOOKS, ANT: ANT, GATE_FONT: GATE_FONT, SIZE: SIZE, antennas: antennas, antenna: antenna, fit: fit, GLT: GLT, NAMED: NAMED, MULTI: MULTI, graphml: graphml, write: write, join: join, joinable: joinable, nameAt: nameAt, namePlaces: namePlaces, stack: stack, restack: restack, stackMoves: stackMoves, NAME_PLACES: NAME_PLACES, defaults: defaults, add: add, lookOf: lookOf, restyle: restyle, restyleAll: restyleAll, colours: colours, lineOf: lineOf, recolour: recolour, widthOf: widthOf, rewidth: rewidth, label: label, state: state, stateValue: stateValue, stateMove: stateMove, unitMove: unitMove, entityKind: entityKind, ENTITIES: ['macromolecule', 'simple chemical', 'nucleic acid feature', 'unspecified entity'], stateDelete: stateDelete,
               unit: unit, unitValue: unitValue, unitDelete: unitDelete, multimer: multimer, classOf: classOf, MAKE: MAKE, kind: kind, PROCESSES: ['process'].concat(Object.keys(SIGN)), SIGN: SIGN, remove: remove, resize: resize, scaleEnds: scaleEnds, gone: gone, nameable: nameable,
               moveInto: moveInto, connect: connect, reversible: reversible, reversibility: reversibility, arcRemove: arcRemove, arcKind: arcKind, GATE: GATE, ARROW: ARROW, MODULATIONS: ['stimulation', 'catalysis', 'inhibition', 'necessary stimulation', 'modulation'],
               activity: activity, activities: activities, proteinBoxes: proteinBoxes, afUnitBox: afUnitBox, afUnitFont: afUnitFont, isAf: isAf, mapKind: mapKind, unitFor: unitFor, fillFor: fillFor, AF_ARC: AF_ARC, UNITS: Object.keys(UNIT_CLS).filter(function (u) { return u && u !== 'perturbation'; }), unitClass: actCls,

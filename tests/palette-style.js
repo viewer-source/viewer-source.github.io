@@ -18,6 +18,8 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local =
     var ed = fs.readFileSync(path.join(local, 'editor/editor.js'), 'utf8').replace(/^---[\s\S]*?---\n/, '')
       .replace(/\{% include_relative (src\/[\w.]+) %\}/g, function (m, f) { return fs.readFileSync(path.join(local, 'editor', f), 'utf8'); });
     await page.route('**/editor/editor.js*', function (r) { r.fulfill({ status: 200, contentType: 'application/javascript', body: ed }); });
+    await page.route('**/renderers/converter/*.js*', function (r) { r.fulfill({ status: 200, contentType: 'application/javascript', body: fs.readFileSync(path.join(local, 'renderers/converter', new URL(r.request().url()).pathname.split('/').pop()), 'utf8') }); });   // and the renderers it calls, of the same tree
+    await page.route('**/renderers/yrender/yrender.js*', function (r) { r.fulfill({ status: 200, contentType: 'application/javascript', body: fs.readFileSync(path.join(local, 'renderers/yrender/yrender.js'), 'utf8') }); });
   }
   page.on('pageerror', function (e) { errs.push(e.message); });
   var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more ? '  ' + more : '')); };
@@ -57,7 +59,7 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local =
   await page.keyboard.press('Escape');
   await pick('style', 'Standard sizes');
   var p2 = await made('process', 760, 450);
-  ok('Style Standard sizes: the built-in process 18 by 18', JSON.stringify(await sbBox(p2)) === '[18,18]', JSON.stringify(await sbBox(p2)));
+  ok('Style Standard sizes: the built-in process 20 by 20', JSON.stringify(await sbBox(p2)) === '[20,20]', JSON.stringify(await sbBox(p2)));
   var t1 = await page.evaluate(function () { return window.m2EditNow().text; });
   await pick('cols', 'No colours');
   ok('Colours No colours: the whole map unfilled', (await fills()).length === 0, (await fills()).join());

@@ -902,7 +902,7 @@
       var bx0 = [+fmt(X), +fmt(Y2), w, h], c = holder(bx0, function () { return false; }, boxOf), id = freeId('glyph_'), onCx = innermost(P, function (n) { return n.shape.kind === 'Complex'; }) >= 0;   // c: the innermost compartment holding its box
       var t2, way = null, sm = cls === 'tag' ? subAt(P, Math.max(w, h) / 2) : -1;
       if (cls === 'tag') { var on = sm >= 0 ? onBorder([X, Y2, w, h], boxOf(sm)) : null; way = on ? on[1] : 'right'; if (!on && bx0[3] > bx0[2]) bx0 = [+fmt(P[0] - h / 2), +fmt(P[1] - w / 2), h, w]; if (on) { bx0 = on[0].map(function (v) { return +fmt(v); }); c = nodes2[sm].up; } }   // its box onto the submap's side, pointing in, held where its submap is
-      try { t2 = sbJs.add(text, { id: id, cls: act != null ? sbJs.unitClass(act) : cls, activity: act, label: '', box: bx0, parent: c != null ? nodes2[c].id : null, fill: D.fill, line: D.line, width: D.width, multimer: D.multimer, font: D.font, units: units || undefined, way: way }); if (sm >= 0) t2 = sbJs.terminal(t2, id, true); }
+      try { t2 = sbJs.add(text, { id: id, cls: act != null ? sbJs.unitClass(act) : cls, activity: act, label: '', box: bx0, parent: c != null ? nodes2[c].id : null, fill: D.fill, line: D.line, width: D.width, multimer: D.multimer, font: D.font, units: units || undefined, way: way, letters: sbJs.GLT.test(cls) ? stdLetters() : null }); if (sm >= 0) t2 = sbJs.terminal(t2, id, true); }
       catch (err) { warn('The ' + (act != null ? 'activity' : cls) + ' could not be added: ' + (err && err.message || err) + '.'); return; }
       remember(false); text = t2;
       if (cls === 'compartment') {   // what it covers taken in, in the same undo step
@@ -2128,7 +2128,7 @@
     }
     function linkMake(a, b, how) {
       if (cd) { cdLink(a, b, how); return; }
-      var ia = nodes2[a].id, ib = nodes2[b].id, t2 = text, ids = [], o = { sbgn: src() };
+      var ia = nodes2[a].id, ib = nodes2[b].id, t2 = text, ids = [], o = { sbgn: src(), ant: antNow() };   // ports worked out at the antenna Style gives
       try {
         if (how.cls) { ids.push(freeId('arc_')); t2 = sbJs.connect(t2, ids[0], ia, ib, how.cls, o); }
         else {   // two entities: a process midway on the grid, a consumption from the first, a production to the second
@@ -2188,7 +2188,7 @@
     }
     function sbSizable(i) {   // a glyph made from the palette, a complex's member too (the complex grows round it), a compartment
       var n = nodes2[i];
-      return !!n.comp || (isMade(n) && n.shape.kind !== 'Process' && n.shape.kind !== 'Operator');   // a compartment too (holderSize); a process or gate keeps its size (its antennas)
+      return !!n.comp || isMade(n);   // a compartment too (holderSize); a process or gate too, its antennas kept as long (sbgn_edit.resize)
     }
     function sbSetSize(pairs) {   // each node given its box, one undo step with the compartments round them grown to hold them
       var ids = [], was = {}, t2 = text, tids = [];   // tids: the terminals of a submap resized, kept on its sides (termsFix)
@@ -2219,7 +2219,7 @@
     // default; state variables and units of information have their own ways on the map, Cloned skipped). A field is
     // applied on Enter or when it is left (Esc puts it back), a colour also when the picker closes; one undo step each.
     // Shown for any glyph selected that sbgn_edit restyles (LOOKS), its rows by its class (sbOff); Width and Height for a
-    // member of a complex too (Pack keeps member sizes), not for a process or gate (their antennas), a holder's typed as
+    // member of a complex too (Pack keeps member sizes), a process or gate too (its antennas kept: sbgn_edit.fit), a holder's typed as
     // its handles resize it (holderSize). Grid size is beside the Grid and Snap switches (core.js)
     var ROWS = [['label', 'Label', 'text'], ['font', 'Font size', 'num', ' min="1" max="200"', 'The name\u2019s size'], ['w', 'Width', 'num'], ['h', 'Height', 'num'], ['fill', 'Fill colour', 'colour'],
       ['line', 'Border colour', 'colour'], ['width', 'Border width', 'num'], ['multimer', 'Multimer', 'check']];
@@ -2244,7 +2244,9 @@
       return '<tr data-k="' + r[0] + '"' + (r[4] ? ' title="' + r[4] + '"' : '') + '><th><label for="' + id + '">' + r[1] + '</label></th><td>' + f + '</td></tr>';
     }).join('') + '</table>'; }
     props.innerHTML = '<p>Properties</p>' + table(ROWS, ' m2-ed-pnode') + table(EROWS, ' m2-ed-pedge') + table(RROWS, ' m2-ed-prx') + '<table class="m2-ed-ptab m2-ed-pcard" hidden></table>' +
-      '<button type="button" class="m2-ed-pdef" title="The next ones of this kind made from the palette take these">Set as default</button>';
+      '<button type="button" class="m2-ed-pdef" title="The next ones of this kind made from the palette take these">Set as default</button>' +
+      '<button type="button" class="m2-ed-pall" title="Every glyph of this kind on the map (every process, or every logic gate) takes this one\u2019s size and antenna">Apply to all of this kind</button>' +
+      '<button type="button" class="m2-ed-pstd" title="The standard size and antenna of processes and logic gates, at the map\u2019s scale (Style, Standard sizes)">Standard size</button>';
     pal.insertAdjacentElement('afterend', props);
     props.insertAdjacentElement('afterend', pmap);
     var inW = props.querySelector('#m2-ed-w'), inH = props.querySelector('#m2-ed-h');
@@ -2273,8 +2275,9 @@
       if (TAGS.test(c)) return !/^(label|w|h)$/.test(k);
       if (k === 'label' || k === 'font') return !sbJs.NAMED.test(c);   // a font size where there is a name
       if (k === 'multimer') return !sbJs.MULTI.test(c.replace(/ multimer$/, ''));
+      if (k === 'ant') return !hubGroup(i) || sbAnts()[nodes2[i].id] == null;   // a process's or gate's antenna, once it has ports
       if (EXTRA.indexOf(k) >= 0) return true;   // another format's own rows (propRows)
-      if (k === 'def') return !/^(macromolecule|simple chemical)( multimer)?$|^biological activity$/.test(c);
+      if (k === 'def') return !/^(macromolecule|simple chemical)( multimer)?$|^biological activity$/.test(c) && !hubGroup(i);
       return false;
     }
     // every glyph's class in the SBGN-ML file as written now, read once per change of the editor's text (src() writes the file)
@@ -2300,7 +2303,7 @@
       var rx = propRx();
       if (rx && !propFmt().rx.withNode) {   // one reaction: its Reversible tick box alone (a CellDesigner reaction; an SBGN-ML process shows it under its own rows, below)
         props.hidden = false;
-        ['.m2-ed-pnode', '.m2-ed-pedge', '.m2-ed-pdef'].forEach(function (c) { props.querySelector(c).hidden = true; });
+        ['.m2-ed-pnode', '.m2-ed-pedge', '.m2-ed-pdef', '.m2-ed-pall', '.m2-ed-pstd'].forEach(function (c) { props.querySelector(c).hidden = true; });
         props.querySelector('.m2-ed-prx').hidden = false;
         var fr = field('rev');
         if (all || document.activeElement !== fr) fr.checked = rx.on;
@@ -2321,6 +2324,7 @@
       if (!pNow) { props.hidden = true; return; }
       Array.prototype.forEach.call(props.querySelectorAll('.m2-ed-pnode tr[data-k]'), function (tr) { tr.hidden = (/^[wh]$/.test(tr.dataset.k) && !sizable(i)) || pf.off(tr.dataset.k, i); });
       props.querySelector('.m2-ed-pdef').hidden = !pf.def || pf.off('def', i);   // the part may keep it from a kind (CellDesigner: species only)
+      props.querySelector('.m2-ed-pall').hidden = props.querySelector('.m2-ed-pstd').hidden = !pf.hub || !pf.hub(i);   // a process or gate (the part's answer: SBGN-ML's hubGroup)
       if (rx) { props.querySelector('.m2-ed-prx').hidden = false; var fr2 = field('rev'); if (all || document.activeElement !== fr2) fr2.checked = rx.on; rxCounts(rx, all); }   // an SBGN-ML process: Reversible after its own rows
       pNow.w = r2(b[2]); pNow.h = r2(b[3]); ROWS.forEach(function (r) { if (r[2] === 'num' && pNow[r[0]] != null) pNow[r[0]] = r2(pNow[r[0]]); });
       ROWS.forEach(function (r) {
@@ -2344,7 +2348,8 @@
       if (Ls.some(function (L) { return !L; })) { props.hidden = true; return; }
       props.hidden = false;
       props.querySelector('.m2-ed-pnode').hidden = false; props.querySelector('.m2-ed-pedge').hidden = true;
-      props.querySelector('.m2-ed-pdef').hidden = true;
+      props.querySelector('.m2-ed-pdef').hidden = props.querySelector('.m2-ed-pall').hidden = true;
+      props.querySelector('.m2-ed-pstd').hidden = !pf.hub || !ns.every(pf.hub);   // several processes or gates: Standard size for all of them
       ROWS.forEach(function (r) {
         var tr = props.querySelector('.m2-ed-pnode tr[data-k="' + r[0] + '"]'), f = field(r[0]);
         tr.hidden = r[0] === 'label' || ns.some(function (i, j) { pNow = Ls[j]; return (/^[wh]$/.test(r[0]) && (!sizable(i) || holds(i))) || pf.off(r[0], i); });   // a holder's size alone (holderSize)
@@ -2396,6 +2401,10 @@
     }
     function sbSet(k, v, is) {   // every node of is given the value, one undo step; true when the text changed
       var ids = is.map(function (i) { return nodes2[i].id; }), t2 = text;
+      if (k === 'ant') {   // 1 to 200: the nearest, silently; the processes and gates of them, in one reading (sbgn_edit.fit)
+        var L = parseFloat(v);
+        return isFinite(L) && fitHubs(is.filter(function (i) { return hubGroup(i); }).map(function (i) { return { id: nodes2[i].id, ant: Math.min(Math.max(L, 1), 200) }; }));
+      }
       ids.forEach(function (id) {
         if (k === 'label') t2 = sbJs.label(t2, id, v.replace(/[\r\n]+/g, ' '));
         else if (k === 'multimer') t2 = sbJs.multimer(t2, id, v);   // a count, if any, stays the unit of information typed (N:3)
@@ -2439,7 +2448,7 @@
       if (sbRxSeen[0] !== key) { var rv = null; try { rv = sbJs.reversibility(text, id, { sbgn: src() }); } catch (e) { rv = null; } sbRxSeen = [key, rv && (rv.can || rv.rev) ? { rid: id, on: rv.rev > 0 } : null]; }
       return sbRxSeen[1];
     }
-    var PF_SB = { sizable: sbSizable, size: sbSetSize, node: sbNode, set: sbSet, def: sbDef, ends: sbEnds,
+    var PF_SB = { sizable: sbSizable, size: sbSetSize, node: sbNode, set: sbSet, def: sbDef, ends: sbEnds, hub: function (i) { return !!hubGroup(i); },
       rx: { of: sbRxOf, set: function (pid, on) { return sbReversible(pid, on, true); }, withNode: true },
       line: { colour: sbLineColour, set: sbLineSet, width: function (k) { return sbJs.widthOf(sbEdgeEl(k)); }, setWidth: sbLineWidth, ports: true,   // a line's colour, width and its ports' rows (edgeShow, edgeSet)
         count: sbCount, setCount: function (k, v) { return sbLineTo(k, sbJs.recount(text, edges2[k].id, v)); } },   // a consumption's or production's cardinality
@@ -2447,7 +2456,8 @@
       look: function (i) {
         var r = realizerOf(nodes2[i].el), o = sbJs.lookOf(r), wf = field('way');
         if (wf) { wf.disabled = nodes2[i].sub != null; wf.title = wf.disabled ? 'A terminal points into its submap, set by the side it sits on' : ''; }
-        return { label: nameOf(i), font: o.font, fill: o.fill ? o.fill.slice(0, 7).toLowerCase() : '', line: (o.line || '#000000').slice(0, 7).toLowerCase(), width: o.width, multimer: o.multimer, way: (sbJs.wayOfR && sbJs.wayOfR(r)) || 'right' };
+        var an = hubGroup(i) ? sbAnts()[nodes2[i].id] : null;   // read only for a process or gate (every antenna in one reading of the text)
+        return { label: nameOf(i), font: o.font, fill: o.fill ? o.fill.slice(0, 7).toLowerCase() : '', line: (o.line || '#000000').slice(0, 7).toLowerCase(), width: o.width, multimer: o.multimer, way: (sbJs.wayOfR && sbJs.wayOfR(r)) || 'right', ant: an == null ? '' : an };
       } };
     // a line's Properties, one line selected on a map whose format's part has a line's answers (PF_SB.line): Line colour
     // and its ports as yEd gives them, offsets from its glyph's centre (sx, sy at the source, tx, ty at the target), set
@@ -2517,7 +2527,7 @@
     }
     function atHub(k, end) { var e = edges2[k], n = end ? e.t : e.s; return n == null || !!nodes2[n].hub; }
     function edgeShow(k, all, r2, rxLine) {   // rxLine: the line of a whole reaction selected (its colour, not one participant's number)
-      props.querySelector('.m2-ed-pdef').hidden = true;
+      props.querySelector('.m2-ed-pdef').hidden = props.querySelector('.m2-ed-pall').hidden = props.querySelector('.m2-ed-pstd').hidden = true;
       var e = edges2[k], pl = propFmt().line, card = !rxLine && pl.count ? pl.count(k) : undefined;
       var now = { ecol: (pl.colour(k) || '#000000').slice(0, 7).toLowerCase(), ewid: r2(pl.width(k)), card: card || '' };
       ['sx', 'sy', 'tx', 'ty'].forEach(function (a) { now[a] = r2(num(e.path, a) || 0); });
@@ -2580,6 +2590,7 @@
       rows.forEach(function (r, j) { ROWS.splice(k + 1 + j, 0, r); EXTRA.push(r[0]); propListen(r); });
     }
     propRows([['way', 'Orientation', 'select', ['right', 'left', 'up', 'down']]]);   // a tag's (sbOff)
+    propRows([['ant', 'Antenna', 'num', ' min="1" max="200"', 'The stick from a process or logic gate to its port, in px from its side']]);   // a process's or gate's (sbOff)
     props.addEventListener('keydown', function (e) {   // Enter keeps the value, Esc takes it back; the map's keys stay out of the fields
       if (e.key === 'Enter') { e.target.blur(); e.preventDefault(); }
       else if (e.key === 'Escape') { propsShow(true); e.target.blur(); e.preventDefault(); }   // the value put back first, so leaving the field changes nothing
@@ -2628,8 +2639,76 @@
     });
     function keepLook(key, all) { try { localStorage.setItem(key, JSON.stringify(all)); return true; } catch (e) { warn('The default could not be kept in this browser.'); return false; } }
     function sbDef(i) {
-      var o = sbJs.lookOf(realizerOf(nodes2[i].el)), b = boxOf(i), all = defsKept();
-      all[kindOf(i)] = { w: b[2], h: b[3], fill: o.fill, line: o.line, width: o.width, multimer: o.multimer, font: o.font };   // as it is, no share of another size
+      var o = sbJs.lookOf(realizerOf(nodes2[i].el)), b = boxOf(i), all = defsKept(), g = hubGroup(i);
+      if (g) HUB_KINDS[g].forEach(function (c) { all[c] = { w: b[2], h: b[3], fill: o.fill, line: o.line, width: o.width, ant: sbAnts()[nodes2[i].id] }; });   // every kind drawn alike (a process's three, the gates), the letters left standard
+      else all[kindOf(i)] = { w: b[2], h: b[3], fill: o.fill, line: o.line, width: o.width, multimer: o.multimer, font: o.font };   // as it is, no share of another size
       if (!keepLook(DEF_KEY, all)) return;
       keepMapChoice('style', 'custom'); keepMapChoice('cols', 'custom'); styleRow(); sbColsRow();
     }
+    // Processes and logic gates as two kinds for sizes and antennas (each drawn alike: Apply to all, Set as default, the
+    // antenna of new arcs): hubGroup, the kind of node i ('process', 'gate' or null); sbAnts, every antenna of the map
+    // (sbgn_edit.antennas), read once per text
+    var HUB_KINDS = { process: ['process', 'omitted process', 'uncertain process'], gate: ['and', 'or', 'not', 'equivalence', 'delay'] };
+    function hubGroup(i) {
+      var c = i != null && nodes2[i] ? sbClasses()[nodes2[i].id] || '' : '';
+      return HUB_KINDS.process.indexOf(c) >= 0 ? 'process' : HUB_KINDS.gate.indexOf(c) >= 0 ? 'gate' : null;
+    }
+    var antMemo = [null, {}];
+    function sbAnts() { if (antMemo[0] !== text) antMemo = [text, sbJs.antennas(text, { sbgn: src() })]; return antMemo[1]; }
+    // the antenna new arcs give a process or gate with no port yet (sbgn_edit.connect's opt.ant), by Style: Standard
+    // sizes the standard (sbgn_edit.ANT), Custom the one kept by Set as default, From map (and Custom with none) the one
+    // most of that kind have on the map, else the standard
+    function antNow() {
+      var st = palStyle(), kept = defsKept(), A = sbAnts(), out = {};
+      Object.keys(HUB_KINDS).forEach(function (g) {
+        var k = kept[HUB_KINDS[g][0]];
+        if (st === 'default') { out[g] = sbJs.ANT * stdScale(); return; }
+        if (st === 'custom' && k && k.ant != null) { out[g] = k.ant; return; }
+        var cnt = {}, top = null;
+        nodes2.forEach(function (n, i) { var L = A[n.id]; if (L == null || hubGroup(i) !== g) return; cnt[L] = (cnt[L] || 0) + 1; if (top == null || cnt[L] > cnt[top]) top = L; });
+        out[g] = top != null ? +top : sbJs.ANT * stdScale();
+      });
+      return out;
+    }
+    // Apply to all of this kind (one process or gate selected): every other of its kind on the map takes its size (each
+    // keeping its centre), its antenna and, a gate, its letters' size; Standard size (one or several selected): each
+    // takes the standard size, antenna and letters at the map's scale. One undo step each, in one reading of the text
+    // (sbgn_edit.fit); the compartments round them grown to hold them, as a resize does
+    function stdScale() { var D = sbJs.defaults(src(), null, 'process'); return D.w0 / sbJs.SIZE.process[0]; }   // the map's scale (sbgn_edit.defaults)
+    function stdLetters() { return Math.round(sbJs.GATE_FONT * stdScale() * 2) / 2; }
+    function fitHubs(items) {
+      if (!items.length) return false;
+      var was = {}; items.forEach(function (it) { var i = nodes2.findIndex(function (n) { return n.id === it.id; }); was[it.id] = boxOf(i); });
+      var t2;
+      try { t2 = sbJs.fit(text, items, { sbgn: src() }); } catch (err) { warn('Not changed: ' + (err && err.message || err) + '.'); return false; }
+      if (t2 === text) return false;
+      var sel = selN.map(function (i) { return nodes2[i].id; });
+      remember(false); text = t2; parse(); dirty = true;
+      selN = []; nodes2.forEach(function (n, k) { if (sel.indexOf(n.id) >= 0) selN.push(k); });
+      var ks = nodes2.map(function (n, k) { return was[n.id] ? k : -1; }).filter(function (k) { return k >= 0; });
+      if (ks.length) setBoxes(grown(ks, boxOf, function (k) { return was[nodes2[k].id] || boxOf(k); }, function () { return false; }));   // their holders grown round them (sbSetSize)
+      refit(Object.keys(was));
+      render(); paint(); changed();
+      return true;
+    }
+    props.querySelector('.m2-ed-pall').addEventListener('click', function () {
+      var i = propNode(), g = i >= 0 ? hubGroup(i) : null;
+      if (!g) return;
+      var b = boxOf(i), ant = sbAnts()[nodes2[i].id], lt = sbJs.GLT.test(sbClasses()[nodes2[i].id] || '') ? sbJs.lookOf(realizerOf(nodes2[i].el)).font : null;
+      var items = nodes2.map(function (n, k) {
+        if (k === i || hubGroup(k) !== g) return null;
+        var o = boxOf(k);
+        return { id: n.id, box: [+fmt(o[0] + o[2] / 2 - b[2] / 2), +fmt(o[1] + o[3] / 2 - b[3] / 2), b[2], b[3]], ant: ant, letters: lt };
+      }).filter(Boolean);
+      if (!keepSel(function () { return fitHubs(items); })) warn('Every one of this kind already has this size and antenna.');
+    });
+    props.querySelector('.m2-ed-pstd').addEventListener('click', function () {
+      var ns = propNodes().filter(function (i) { return hubGroup(i); });
+      if (!ns.length) return;
+      var s = stdScale(), lt = stdLetters();
+      var items = ns.map(function (i) {
+        var gate = hubGroup(i) === 'gate', S = sbJs.SIZE[gate ? 'and' : 'process'], o = boxOf(i), w = S[0] * s, h = S[1] * s;
+        return { id: nodes2[i].id, box: [+fmt(o[0] + o[2] / 2 - w / 2), +fmt(o[1] + o[3] / 2 - h / 2), w, h], ant: sbJs.ANT * s, letters: gate ? lt : null };
+      });
+      if (!keepSel(function () { return fitHubs(items); })) warn('Already at the standard size and antenna.');
+    });

@@ -422,8 +422,8 @@ page, so its styles keep the base they were made on).
   #m2-editwin .m2-ed-ptab tr.m2-mixed input[type="color"] { background: linear-gradient(to top right, transparent calc(50% - .6px), #9aa0a6 50%, transparent calc(50% + .6px)); }
   #m2-editwin .m2-ed-ptab tr.m2-mixed input[type="color"]::-webkit-color-swatch { background: transparent !important; }
   #m2-editwin .m2-ed-ptab tr.m2-mixed input[type="color"]::-moz-color-swatch { background: transparent !important; }
-  #m2-editwin .m2-ed-props .m2-ed-pdef { display: inline-block; width: auto; margin: 0; padding: 2px 10px; font-size: 12px; }   /* small, as a text button */
-  #m2-editwin .m2-ed-props .m2-ed-pdef[hidden] { display: none; }
+  #m2-editwin .m2-ed-props .m2-ed-pdef, #m2-editwin .m2-ed-props .m2-ed-pall, #m2-editwin .m2-ed-props .m2-ed-pstd { display: inline-block; width: auto; margin: 0 0 4px; padding: 2px 10px; font-size: 12px; }   /* small, as a text button */
+  #m2-editwin .m2-ed-props .m2-ed-pdef[hidden], #m2-editwin .m2-ed-props .m2-ed-pall[hidden], #m2-editwin .m2-ed-props .m2-ed-pstd[hidden] { display: none; }
   #m2-view .m2-ed-palghost { position: absolute; z-index: 5; pointer-events: none; } #m2-view .m2-ed-palghost svg { display: block; }   /* the future node dragged from the palette, at its size */
   #m2-view .m2-ed-type { position: absolute; z-index: 5; box-sizing: border-box; margin: 0; padding: 0; border: 0; border-radius: 0; background: #fff; color: #000; text-align: center; font-family: Dialog, Arial, Helvetica, sans-serif; outline: none; box-shadow: none; }   /* the text edited in place, in the glyph's own colours (create.js), no frame */
   /* How to edit (kept out of the window: the long how-to took the room the tools need): the "?" after the tools opens it as

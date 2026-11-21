@@ -1,7 +1,7 @@
 // Properties for every SBGN-ML glyph (create.js sbNode, sbOff; sbgn_edit LOOKS) on Testing Glycolysis SBGN-ML: a complex
 // with members (Label, Width, Height, Fill colour, Border colour, Border width; no Multimer), its fill and border colour
 // written into the file's styles, its width typed narrower than its members stopping round them; a process (Fill
-// colour, Border colour, Border width; no Label, no size), its border colour written; a compartment made from the palette
+// colour, Border colour, Border width, with its Width, Height and Antenna; no Label), its border colour written; a compartment made from the palette
 // (Label, Width, Height and the colours), its fill written. Each read back from the SBGN-ML text the editor would save.
 // Nothing is saved (no token). No script error.
 //   node tests/sbgn-props.js [address] [viewer folder: its editor and renderers served in place of the page's]
@@ -59,7 +59,7 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysis
   // a process
   await select(PR);
   var rp = await rows();
-  ok('a process: Fill colour, Border colour, Border width', JSON.stringify(rp) === JSON.stringify(['fill', 'line', 'width']), JSON.stringify(rp));
+  ok('a process: Width, Height, Fill colour, Border colour, Border width, Antenna', JSON.stringify(rp) === JSON.stringify(['w', 'h', 'fill', 'line', 'width', 'ant']), JSON.stringify(rp));   // its size and antenna: tests/antenna.js
   await type('line', '#0066cc');
   ok('its border colour written', has(await now(), PR, 'stroke', '#0066CC'), styled(await now(), PR));
 

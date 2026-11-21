@@ -2126,7 +2126,10 @@
             else if (P[2]) o = rel(P[1]);
             else { var all = ports(k), nx = all[1]; o = rel(Math.hypot(P[1][0] - nx[0], P[1][1] - nx[1]) <= Math.hypot(P[0][0] - nx[0], P[0][1] - nx[1]) ? P[1] : P[0]); }
           }
-          list.push({ k: k, end: end, to: [-o[1], o[0]] });
+          var L = Math.abs(o[0]) >= Math.abs(o[1]) ? Math.abs(o[0]) - b[2] / 2 : Math.abs(o[1]) - b[3] / 2, port = L > 0.5 && Math.min(Math.abs(o[0]), Math.abs(o[1])) <= 0.5;
+          // turned round the centre and put on the side it turns to: a port at the same antenna, any other end scaled
+          // to the box (a glyph not square keeps an end on its side on a side)
+          list.push({ k: k, end: end, to: port ? (Math.abs(o[0]) >= Math.abs(o[1]) ? [0, Math.sign(o[0]) * (b[3] / 2 + L)] : [-Math.sign(o[1]) * (b[2] / 2 + L), 0]) : [-o[1] * b[2] / b[3], o[0] * b[3] / b[2]] });
         });
       });
       if (list.length) setPorts(list);
