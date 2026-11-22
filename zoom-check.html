@@ -1,0 +1,32 @@
+---
+layout: default
+title: Zoom check
+permalink: /zoom-check/
+sitemap: false
+noindex: true
+---
+
+<!-- How this browser applies the page's zoom (style.scss): the numbers the viewer's sizes rest on, shown on the page
+so they can be read in any browser. -->
+<div id="zc-wide" style="position:absolute;left:0;width:100vw;height:4px;background:#c8d8eb"></div>
+<div id="zc-tall" style="position:absolute;top:0;left:0;width:4px;height:100vh;background:#dbebdb"></div>
+<div id="zc-box" style="width:400px;height:40px;background:#eee"></div>
+<pre id="zc-out" style="font-size:18px;line-height:1.5"></pre>
+<script>
+  (function () {
+    var d = document.documentElement, q = function (id) { return document.getElementById(id); };
+    var r = function (e) { var b = e.getBoundingClientRect(); return Math.round(b.width) + ' x ' + Math.round(b.height); };
+    var box = q('zc-box'), z = getComputedStyle(d).getPropertyValue('--zoom');
+    q('zc-out').textContent = [
+      'window: ' + innerWidth + ' x ' + innerHeight,
+      'html drawn: ' + r(d) + ', clientWidth ' + d.clientWidth,
+      '100vw drawn: ' + r(q('zc-wide')),
+      '100vh drawn: ' + r(q('zc-tall')),
+      'a 400 px box drawn: ' + r(box) + ', offsetWidth ' + box.offsetWidth,
+      'currentCSSZoom: ' + (box.currentCSSZoom === undefined ? 'not there' : box.currentCSSZoom),
+      'zoom (html): ' + getComputedStyle(d).zoom,
+      '--zoom: ' + z,
+      'browser: ' + navigator.userAgent
+    ].join('\n');
+  })();
+</script>
