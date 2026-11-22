@@ -311,7 +311,7 @@
   }
   D.compartments = function () {
     var self = this, cs = findall(this.ext, 'cd:listOfCompartmentAliases/cd:compartmentAlias');
-    var key = function (a) { var b = find(a, 'cd:bounds'); return -F(get(b, 'w')) * F(get(b, 'h')); };
+    var key = function (a) { var b = find(a, 'cd:bounds'); return b ? -F(get(b, 'w')) * F(get(b, 'h')) : 0; };   // a close-up compartment (SQUARE_CLOSEUP_*) has a point, no bounds
     cs = cs.map(function (a) { return [a, key(a)]; }).sort(function (p, q) { return p[1] - q[1]; }).map(function (p) { return p[0]; });
     cs.forEach(function (a) {
       if (!find(a, 'cd:bounds')) return;
