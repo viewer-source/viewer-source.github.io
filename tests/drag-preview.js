@@ -30,8 +30,10 @@ function drawn(p) {
   return p.evaluate(function () {
     var e = document.querySelector('#m2-img [data-n]'), img = e && e.ownerSVGElement, out = [];
     if (!img) return out;
-    img.querySelectorAll('path, polygon, polyline, rect, ellipse, circle').forEach(function (el) {
-      for (var q0 = el; q0 && q0 !== img; q0 = q0.parentNode) if (getComputedStyle(q0).display === 'none' || getComputedStyle(q0).visibility === 'hidden') return;
+    var ov = document.getElementById('m2-edit-layer'), els = Array.prototype.slice.call(img.querySelectorAll('path, polygon, polyline, rect, ellipse, circle'));
+    if (ov) els = els.concat(Array.prototype.slice.call(ov.querySelectorAll('.m2-ed-handle, .m2-ed-bend, .m2-ed-port, .m2-ed-place, .m2-ed-sel')));   // the editor's marks that stay after a drop (handles, bend and port squares); guides show only while dragging
+    els.forEach(function (el) {
+      for (var q0 = el; q0 && q0 !== img && q0 !== ov; q0 = q0.parentNode) if (getComputedStyle(q0).display === 'none' || getComputedStyle(q0).visibility === 'hidden') return;
       var m = el.getScreenCTM(), q = [], pt = function (x, y) { q.push([m.a * x + m.c * y + m.e, m.b * x + m.d * y + m.f]); };
       var n = el.localName, num = function (a) { return parseFloat(el.getAttribute(a) || 0); };
       if (n === 'rect') { var x = num('x'), y = num('y'), w = num('width'), h = num('height'); if (!w || !h) return; pt(x, y); pt(x + w, y + h); }
@@ -78,6 +80,13 @@ async function steps(p, name, P, pts, o) {
   for (var k = 0; k < pts.length; k++) {
     await p.keyboard.press('Escape'); await p.waitForTimeout(150);
     if (o.pick !== false) { await p.mouse.click(P[0], P[1]); await p.waitForTimeout(300); }
+    if (o.line) {   // its line selected too, by Shift with a click on it outside the submap
+      var lp = await p.evaluate(function (id) {
+        var g = document.querySelector('#m2-img [data-e="' + id + '"] path'); if (!g) return null;
+        var L = g.getTotalLength(), q = g.getPointAtLength(L * 0.3), m = g.getScreenCTM(); return [m.a * q.x + m.c * q.y + m.e, m.b * q.x + m.d * q.y + m.f];
+      }, o.line);
+      await p.keyboard.down('Shift'); await p.mouse.click(lp[0], lp[1]); await p.keyboard.up('Shift'); await p.waitForTimeout(300);
+    }
     if (o.shift) await p.keyboard.down('Shift');
     await p.mouse.move(P[0], P[1]); await p.mouse.down();
     await p.mouse.move(P[0] + 5, P[1] + 5, { steps: 2 });
@@ -119,6 +128,17 @@ async function steps(p, name, P, pts, o) {
   // a free tag dragged into the submap: it joins, as a terminal on the side nearest
   var tf = await make(p, 'tag', 1250, 160), F = await rect(p, tf), fc = [F[0] + F[2] / 2, F[1] + F[3] / 2];
   await steps(p, 'free tag dragged into the submap', fc, [[L + S[2] * 0.5, T - 60], [L + S[2] * 0.5, T + S[3] * 0.25], [L + S[2] * 0.85, T + S[3] * 0.5]]);
+  // a terminal on the bottom side near the right corner, dragged round it and up the right side
+  await p.keyboard.press('Escape'); await p.mouse.click(c[0], c[1]); await p.waitForTimeout(300);
+  await p.mouse.move(c[0], c[1]); await p.mouse.down(); await p.mouse.move(c[0] + 5, c[1] + 5, { steps: 2 });
+  await p.mouse.move(Rt + 6, B + 6, { steps: 6 }); await p.mouse.move(Rt - 30, B + 4, { steps: 6 }); await p.mouse.up(); await p.waitForTimeout(1800);
+  var tb = await p.evaluate(function (id) { var m = new RegExp('<glyph [^>]*id="' + id + '"[^>]*>').exec(window.m2EditNow().text); return m && (/orientation="([^"]*)"/.exec(m[0]) || [])[1]; }, tr);
+  ok('set up: the terminal on the bottom side near the right corner, pointing up', tb === 'up', tb);
+  var Rb = await rect(p, tr), cb = [Rb[0] + Rb[2] / 2, Rb[1] + Rb[3] / 2];
+  await steps(p, 'terminal from the bottom side up the right side, from there', cb, [[Rt + 4, B - 6], [Rt + 6, B - 40], [Rt + 6, T + S[3] / 2]]);
+  var le = await p.evaluate(function (id) { var m = new RegExp('<arc [^>]*id="([^"]*)"[^>]*target="' + id + '"|<arc [^>]*target="' + id + '"[^>]*id="([^"]*)"').exec(window.m2EditNow().text); return m && (m[1] || m[2]); }, tr);
+  ok('set up: the terminal\u2019s line found', !!le && !!(await p.$('#m2-img [data-e="' + le + '"]')), le);
+  await steps(p, 'terminal with its line selected, from the bottom side up the right side', cb, [[Rt + 4, B - 6], [Rt + 6, B - 40]], { line: le });
   // the submap resized by its bottom right handle: its terminal on the right side stays on it
   await steps(p, 'submap resized wider and taller', [Rt - 1, B - 1], [[Rt + 30, B + 20], [Rt + 80, B + 50]], { pick: false });
   ok('no script error', !p.errs.length, p.errs.join(' | '));

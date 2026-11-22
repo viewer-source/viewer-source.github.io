@@ -14591,12 +14591,17 @@
     if (e.s == null || e.t == null) return null;
     B = B || bx;
     P = P || pt;
+    var B0 = B;
+    if (B === bx && shared.poseNow) B = function(n) {
+      var q = shared.poseNow[n];
+      return q ? q.box : bx(n);
+    };
     var mine2 = pp && pp.to && pp.k === k, S = B(mine2 && !pp.end && pp.n2 != null ? pp.n2 : e.s), T = B(mine2 && pp.end && pp.n2 != null ? pp.n2 : e.t), pa = e.path, o = function(a) {
       if (mine2 && (pp.end ? "t" : "s") === a[0]) return pp.to[a[1] === "x" ? 0 : 1];
       return pa ? parseFloat(pa.getAttribute(a)) || 0 : 0;
     };
     var so = [o("sx"), o("sy")], to = [o("tx"), o("ty")];
-    if (B === bx) {
+    if (B0 === bx) {
       so = posePort(e.s, glyphPort(e.s, so, e.id), k);
       to = posePort(e.t, glyphPort(e.t, to, e.id), k);
     }
@@ -14605,8 +14610,8 @@
       pts.push(P(pi));
     });
     pts.push([T[0] + T[2] / 2 + to[0], T[1] + T[3] / 2 + to[1]]);
-    pts[0] = cutShape(mine2 && !pp.end && pp.n2 != null ? pp.n2 : e.s, pts[0], pts[1], S, B !== bx);
-    pts[pts.length - 1] = cutShape(mine2 && pp.end && pp.n2 != null ? pp.n2 : e.t, pts[pts.length - 1], pts[pts.length - 2], T, B !== bx);
+    pts[0] = cutShape(mine2 && !pp.end && pp.n2 != null ? pp.n2 : e.s, pts[0], pts[1], S, B0 !== bx);
+    pts[pts.length - 1] = cutShape(mine2 && pp.end && pp.n2 != null ? pp.n2 : e.t, pts[pts.length - 1], pts[pts.length - 2], T, B0 !== bx);
     return pts;
   }
   function cutShape(n, port, outer, b, still) {
@@ -15452,11 +15457,16 @@
     }, true);
   }
   function ports(k, pp) {
-    var e = edges2[k], mine2 = pp && pp.to && pp.k === k, S = bx(mine2 && !pp.end && pp.n2 != null ? pp.n2 : e.s), T = bx(mine2 && pp.end && pp.n2 != null ? pp.n2 : e.t), pa = e.path, o = function(a) {
+    var e = edges2[k], mine2 = pp && pp.to && pp.k === k, ns = mine2 && !pp.end && pp.n2 != null ? pp.n2 : e.s, nt = mine2 && pp.end && pp.n2 != null ? pp.n2 : e.t, pa = e.path, o = function(a) {
       if (mine2 && (pp.end ? "t" : "s") === a[0]) return pp.to[a[1] === "x" ? 0 : 1];
       return pa ? parseFloat(pa.getAttribute(a)) || 0 : 0;
     };
-    return [[S[0] + S[2] / 2 + o("sx"), S[1] + S[3] / 2 + o("sy")]].concat(e.pts.map(pt), [[T[0] + T[2] / 2 + o("tx"), T[1] + T[3] / 2 + o("ty")]]);
+    var box2 = function(n) {
+      var q = shared.poseNow && shared.poseNow[n];
+      return q ? q.box : bx(n);
+    };
+    var S = box2(ns), T = box2(nt), so = posePort(ns, [o("sx"), o("sy")], k), to = posePort(nt, [o("tx"), o("ty")], k);
+    return [[S[0] + S[2] / 2 + so[0], S[1] + S[3] / 2 + so[1]]].concat(e.pts.map(pt), [[T[0] + T[2] / 2 + to[0], T[1] + T[3] / 2 + to[1]]]);
   }
   function snap(d) {
     d.guides = [];
