@@ -543,8 +543,10 @@ class Map:
 
     def link(self, el):
         for dd in el.findall(G + 'data'):
-            if dd.get('key') in self.url and (dd.text or '').strip():
-                return dd.text.strip()
+            u = (dd.text or '').strip()
+            k = re.sub(r'[\t\n\r]', '', u)   # a browser reads java\tscript: as javascript:
+            if dd.get('key') in self.url and u and not (re.match(r'[a-z][a-z0-9+.-]*:', k, re.I) and not re.match(r'(https?|mailto|ftp):', k, re.I)):
+                return u   # a web address or a relative one, never a script
         return None
 
     def sbgn_class(self, el):

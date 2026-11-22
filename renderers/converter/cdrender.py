@@ -333,7 +333,7 @@ class Drawing:
         hd = f(si, 'cd:state/cd:homodimer')
         n = int(hd.text) if hd is not None else 1
         paint = f(a, 'cd:usualView/cd:paint')
-        fill, alpha = colour(paint.get('color') if paint is not None else 'ffffffff')
+        fill, alpha = colour(paint.get('color') if paint is not None else 'ffffffff', '#ffffff')   # a paint that is no colour: white, as none
         hyp = f(si, 'cd:hypothetical')
         dash = ' stroke-dasharray="5,3"' if hyp is not None and hyp.text == 'true' else ''
         sl = f(a, 'cd:usualView/cd:singleLine')  # the border's width (2 on some maps' complexes)

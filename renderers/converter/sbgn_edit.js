@@ -1474,7 +1474,8 @@
   function styles(S) {
     var defs = {};
     Array.prototype.forEach.call(S.doc.getElementsByTagName('*'), function (e) { if (e.localName === 'colorDefinition') defs[av(e, 'id')] = av(e, 'value'); });
-    var colour = function (c) { var v = defs[c] || c; if (!v || v.charAt(0) !== '#') return null; v = v.toUpperCase(); return v.length === 9 && /FF$/.test(v) ? v.slice(0, 7) : v; };
+    var colour = function (c) { var v = defs[c] || c; if (!v || !/^#[0-9A-Fa-f]{3,8}$/.test(v)) return null; v = v.toUpperCase();   // hex only: a file's text never reaches markup
+      return v.length === 9 && /FF$/.test(v) ? v.slice(0, 7) : v; };
     var out = Array.prototype.filter.call(S.doc.getElementsByTagName('*'), function (e) { return e.localName === 'style'; }).map(function (st) {
       var g = kids(st, 'g')[0], a = function (k) { return av(g, k) || null; }, il = anode(st, 'idList');
       return { el: st, g: g, fill: colour(a('fill')), line: colour(a('stroke')), width: a('stroke-width') ? F(a('stroke-width')) : null, font: a('font-size') ? F(a('font-size')) : null,

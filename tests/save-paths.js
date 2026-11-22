@@ -100,8 +100,8 @@ async function github(b) {
   // someone else changed the file
   var other = body[p].replace(/<\/graphml>\s*$/, '<!-- another person -->\n</graphml>\n');
   sha[p] = 'someone-else'; body[p] = other;
-  n0 = puts.length; await h.move(); var t4 = await h.now(); await page.waitForTimeout(6000);
-  ok('refused as changed by someone else: their file kept', body[p] === other && t4 !== other);
+  n0 = puts.length; await h.move(); await page.waitForTimeout(6000);
+  ok('refused as changed by someone else: their file kept', body[p] === other && puts.length === n0 + 1, (puts.length - n0) + ' tries');
   ok('and said', /changed on GitHub since it was opened/.test(await h.status()), await h.status());
   var n1 = puts.length; await h.move(); await page.waitForTimeout(5000);
   ok('after it, nothing more is saved', puts.length === n1, (puts.length - n1) + ' saves');

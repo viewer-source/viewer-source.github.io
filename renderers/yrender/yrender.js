@@ -554,8 +554,8 @@
   YMap.prototype.link = function (el) {
     var dds = kids(el, G, 'data');
     for (var i = 0; i < dds.length; i++) {
-      var t = leadText(dds[i]);
-      if (this.url.has(get(dds[i], 'key')) && pyStrip(t)) return pyStrip(t);
+      var t = leadText(dds[i]), u = pyStrip(t), k = u.replace(/[\t\n\r]/g, '');   // a browser reads java\tscript: as javascript:
+      if (this.url.has(get(dds[i], 'key')) && u && !(/^[a-z][a-z0-9+.-]*:/i.test(k) && !/^(https?|mailto|ftp):/i.test(k))) return u;   // a web address or a relative one, never a script
     }
     return null;
   };

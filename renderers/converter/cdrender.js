@@ -392,7 +392,7 @@
   D.node = function (i) {
     var A = this.alias.get(i), cls = A[0], x = A[1][0], y = A[1][1], w = A[1][2], h = A[1][3], a = A[2], name = A[3], si = A[4], self = this;
     var hd = find(si, 'cd:state/cd:homodimer'), n = hd ? I(text(hd)) : 1;
-    var paint = find(a, 'cd:usualView/cd:paint'), c = colour(paint ? get(paint, 'color') : 'ffffffff'), fill = c[0], alpha = c[1];
+    var paint = find(a, 'cd:usualView/cd:paint'), c = colour(paint ? get(paint, 'color') : 'ffffffff', '#ffffff'), fill = c[0], alpha = c[1];   // a paint that is no colour: white, as none
     var hyp = find(si, 'cd:hypothetical');
     var dash = hyp && text(hyp) === 'true' ? ' stroke-dasharray="5,3"' : '';
     var sl = find(a, 'cd:usualView/cd:singleLine');

@@ -1,8 +1,8 @@
 // Hostile files: the page keeps a write token and draws maps from anywhere, so a map's text must never run as code. A
-// GraphML, a CellDesigner and an SBGN-ML map (Glycolysis of the data repository, in both formats; a small SBGN-ML) carry markup and script in their
+// GraphML (a script as a node's link too), a CellDesigner and an SBGN-ML map (Glycolysis of the data repository, in both formats; a small SBGN-ML) carry markup and script in their
 // labels, colours, font, notes and file names; each is added from the list (no token), shown, opened in the editor
-// and a node of it selected (a file the editor cannot read is refused, said in red). Checked after every step: no payload ran (window.__pwned), no element anywhere in the
-// page carries a payload's event handler or script, the list shows the name as text.
+// and a node of it selected (a file the editor cannot read is refused, said in red), the palette's Colours list opened. Checked after every step: no payload ran (window.__pwned), no element anywhere in the
+// page carries a payload's event handler or script (in any letter case: some paths upper-case a colour), the list shows the name as text.
 // Measured at the same time: what the page needs to run under a Content-Security-Policy. The page is served with a
 // strict policy as Report-Only (nothing blocked), every violation is collected, and the policy the page would need
 // is printed with the counts behind each source. Printed, not checked.
@@ -26,8 +26,10 @@ function graphml() {
   t = t.replace(/(<y:NodeLabel[^>]*>)([^<\s][^<]*)/, function (a, b) { n++; return b + esc(LABEL); });
   t = t.replace(/<y:Fill color="[^"]*"/, function () { n++; return '<y:Fill color="' + esc(COLOUR) + '"'; });
   t = t.replace(/fontFamily="Dialog"/, function () { n++; return 'fontFamily="' + esc(FONT) + '"'; });
+  var uk = /<key attr\.name="url" [^>]*for="node" id="([^"]+)"/.exec(t);   // a link that is a script
+  if (uk) t = t.replace(/(<node [^>]*>)/, function (a) { n++; return a + '<data key="' + uk[1] + '">javascript:window.__pwned=\'url\'</data>'; });
   t = t.replace(/(id|source|target)="n0"/g, function (a, k) { n++; return k + '="' + esc(ID) + '"'; });
-  if (n < 5) throw new Error('GraphML: ' + n + ' payloads placed');
+  if (n < 6) throw new Error('GraphML: ' + n + ' payloads placed');
   return t;
 }
 function celldesigner(ids) {
@@ -71,8 +73,9 @@ function sbgnml() {
     var r = await page.evaluate(function () {
       var hits = [];
       document.querySelectorAll('*').forEach(function (el) {
-        for (var i = 0; i < el.attributes.length; i++) { var a = el.attributes[i]; if (/^on/i.test(a.name) && /__pwned/.test(a.value)) hits.push(el.tagName + ' ' + a.name); }
-        if (el.tagName.toLowerCase() === 'script' && /__pwned/.test(el.textContent)) hits.push('script');
+        for (var i = 0; i < el.attributes.length; i++) { var a = el.attributes[i]; if (/^on/i.test(a.name) && /__pwned/i.test(a.value)) hits.push(el.tagName + ' ' + a.name); }
+        if (el.tagName.toLowerCase() === 'script' && /__pwned/i.test(el.textContent)) hits.push('script');
+        for (var j = 0; j < el.attributes.length; j++) { var h = el.attributes[j]; if (h.localName === 'href' && /^\s*javascript:/i.test(h.value.replace(/[\t\n\r]/g, ''))) hits.push(el.tagName + ' href'); }
       });
       return { ran: window.__pwned || null, hits: hits };
     });
@@ -106,7 +109,9 @@ function sbgnml() {
     var c = await page.$$eval('#m2-img [data-n]', function (l) { for (var g of l) { var r = g.getBoundingClientRect(); if (r.width > 10 && r.left > 300 && r.top > 80 && r.right < 1380 && r.bottom < 880) return [r.left + r.width / 2, r.top + r.height / 2]; } return null; });
     if (c) { await page.mouse.click(c[0], c[1]); await page.waitForTimeout(800); }
     await harmless('edited, a node selected');
-    await page.keyboard.press('Escape');
+    await page.keyboard.press('Escape'); await page.waitForTimeout(300);
+    var cols = await page.$('#m2-editwin .m2-ed-pmap tr[data-k="cols"] .m2-ed-pdd:visible');   // the Colours list, its squares made from the map's own colours
+    if (cols) { await cols.click(); await page.waitForTimeout(600); await harmless('the Colours list open'); await page.keyboard.press('Escape'); }
     await page.click('.m2-ri[data-win="list"]'); await page.waitForTimeout(800);
   }
   ok('no script error', !errs.length, errs.slice(0, 3).join(' | '));
