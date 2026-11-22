@@ -24,6 +24,18 @@ page, so its styles keep the base they were made on).
   setTimeout(window.m2Shown, 1000);
   // the theme (Settings, Display) set before anything is painted, so the page never shows another theme's colours first
   try { var m2Th = localStorage.getItem('atlas-theme'); if (m2Th) document.documentElement.setAttribute('data-theme', m2Th); } catch (e) {}
+  // --zoom (style.scss) undoes the page's zoom for window-based sizes (calc(100vw / var(--zoom))). Engines differ: Chrome
+  // draws 100vw zoomed like everything else, so the stylesheet's 0.9 is right; Safari draws it at the window's full
+  // width, where 0.9 made the page a ninth wider than the window. Measured here against the page's own width, both in
+  // the same units, and set to 1 where 100vw already fills the window
+  (function () {
+    var d = document.documentElement, p = document.createElement('div');
+    p.style.cssText = 'position:absolute;left:0;top:0;width:100vw;height:1px;visibility:hidden;pointer-events:none';
+    d.appendChild(p);
+    var r = p.getBoundingClientRect().width / d.getBoundingClientRect().width;
+    p.remove();
+    if (r > 0.97) d.style.setProperty('--zoom', '1');
+  })();
 </script>
 <style>html.m2-hold body { visibility: hidden; }</style>
 <style>
