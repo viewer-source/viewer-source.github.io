@@ -1,15 +1,15 @@
 // Hostile files: the page keeps a write token and draws maps from anywhere, so a map's text must never run as code. A
-// GraphML, a CellDesigner and an SBGN-ML map (made from small maps of the check files) carry markup and script in their
+// GraphML, a CellDesigner and an SBGN-ML map (Glycolysis of the data repository, in both formats; a small SBGN-ML) carry markup and script in their
 // labels, colours, font, notes and file names; each is added from the list (no token), shown, opened in the editor
 // and a node of it selected (a file the editor cannot read is refused, said in red). Checked after every step: no payload ran (window.__pwned), no element anywhere in the
 // page carries a payload's event handler or script, the list shows the name as text.
 // Measured at the same time: what the page needs to run under a Content-Security-Policy. The page is served with a
 // strict policy as Report-Only (nothing blocked), every violation is collected, and the policy the page would need
 // is printed with the counts behind each source. Printed, not checked.
-//   node tests/hostile-files.js [base address] [viewer folder: its renderers served in place of the page's]
+//   node tests/hostile-files.js <clone of the site's data repository> [base address] [viewer folder: its renderers served in place of the page's]
 var engine = require('playwright')[process.env.BROWSER || 'chromium'], fs = require('fs'), path = require('path');   // BROWSER=webkit or firefox: the same test in another engine
-var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local = process.argv[3], bad = 0;
-var checks = path.join(__dirname, '..', '..', 'notes', 'check-files');
+var data = process.argv[2], base = process.argv[3] || 'https://viewer-source.github.io/styles/', local = process.argv[4], bad = 0;
+if (!data) { console.log('usage: node tests/hostile-files.js <clone of the data repository> [base address] [viewer folder]'); process.exit(2); }
 var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more ? '  ' + more : '')); };
 var esc = function (s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); };
 
@@ -22,20 +22,21 @@ var NOTES = '<html xmlns="http://www.w3.org/1999/xhtml"><head><title/></head><bo
   '<img src="x" onerror="window.__pwned=\'notes-img\'"/></body></html>';
 
 function graphml() {
-  var t = fs.readFileSync(path.join(checks, 'glycolysis-graphml-edited-v01.graphml'), 'utf8'), n = 0;
-  t = t.replace(/(<y:NodeLabel[^>]*>)cAMP/, function (a, b) { n++; return b + esc(LABEL); });
-  t = t.replace(/<y:Fill color="#DBEBDB"/, function () { n++; return '<y:Fill color="' + esc(COLOUR) + '"'; });
+  var t = fs.readFileSync(path.join(data, 'maps', 'glycolysis-graphml.graphml'), 'utf8'), n = 0;
+  t = t.replace(/(<y:NodeLabel[^>]*>)([^<\s][^<]*)/, function (a, b) { n++; return b + esc(LABEL); });
+  t = t.replace(/<y:Fill color="[^"]*"/, function () { n++; return '<y:Fill color="' + esc(COLOUR) + '"'; });
   t = t.replace(/fontFamily="Dialog"/, function () { n++; return 'fontFamily="' + esc(FONT) + '"'; });
   t = t.replace(/(id|source|target)="n0"/g, function (a, k) { n++; return k + '="' + esc(ID) + '"'; });
   if (n < 5) throw new Error('GraphML: ' + n + ' payloads placed');
   return t;
 }
 function celldesigner(ids) {
-  var t = fs.readFileSync(path.join(checks, 'or-gate-one-input-v01.xml'), 'utf8'), n = 0;
-  t = t.replace(/name="S1"/, function () { n++; return 'name="' + esc(LABEL) + '"'; });
-  t = t.replace(/<celldesigner:paint color="ffccffcc"/, function () { n++; return '<celldesigner:paint color="' + esc(COLOUR) + '"'; });
+  var t = fs.readFileSync(path.join(data, 'maps', 'glycolysis-celldesigner.xml'), 'utf8'), n = 0;
+  t = t.replace(/(<species [^>]*name=")[^"]*"/, function (a, b) { n++; return b + esc(LABEL) + '"'; });
+  t = t.replace(/<celldesigner:paint color="[^"]*"/, function () { n++; return '<celldesigner:paint color="' + esc(COLOUR) + '"'; });
   t = t.replace(/(<species [^>]*name="[^"]*"[^>]*>)/, function (a) { n++; return a + '<notes>' + NOTES + '</notes>'; });
-  if (ids) t = t.replace(/"re1"/g, function () { n++; return '"' + esc(ID) + '"'; });
+  var re = ids && /<reaction [^>]*id="([^"]+)"/.exec(t);
+  if (re) t = t.split('"' + re[1] + '"').join('"' + esc(ID) + '"'), n += 2;
   if (n < (ids ? 5 : 3)) throw new Error('CellDesigner: ' + n + ' payloads placed');
   return t;
 }

@@ -7,7 +7,7 @@ var URL0 = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysi
 (async function () {
   var b = await engine.launch(), bad = 0, errs = [];
   var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more && !v ? '  ' + more : '')); };
-  var ctx = await b.newContext({ viewport: { width: 1400, height: 900 }, permissions: ['clipboard-read', 'clipboard-write'] });
+  var ctx = await b.newContext({ viewport: { width: 1400, height: 900 }, permissions: (process.env.BROWSER || 'chromium') === 'chromium' ? ['clipboard-read', 'clipboard-write'] : [] });   // other engines name no such permission
   var page = await ctx.newPage();
   page.on('pageerror', function (e) { errs.push(e.message); });
   await page.goto(URL0, { waitUntil: 'load' });

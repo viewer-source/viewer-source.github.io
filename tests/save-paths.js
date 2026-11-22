@@ -115,6 +115,7 @@ async function github(b) {
 
 async function folder(b) {
   console.log('-- Folder');
+  if ((process.env.BROWSER || 'chromium') !== 'chromium') { console.log('skip  this engine has no folder picker (Safari, Firefox): the page offers Download the map instead'); return; }
   var ctx = await b.newContext({ viewport: { width: 1400, height: 900 } }), page = await ctx.newPage(), errs = [], h = helpers(page);
   page.on('pageerror', function (e) { errs.push(e.message); });
   await page.addInitScript(function () {
