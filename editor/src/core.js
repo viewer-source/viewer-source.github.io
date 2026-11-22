@@ -250,7 +250,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
                   if (f[1] !== (target.saved || target.base)) return conflict(target, body);
                   target.sha = f[0].sha; saving = null; saveAgain = false;
                   return push(true);
-                }).catch(function () { conflict(target, body); });
+                }, function (e) { warn('Not saved: no connection (' + (e && e.message ? e.message : e) + '). The next move tries again.'); });   // GitHub not reached to compare: no clash claimed
             } else if (r.status === 401 || r.status === 403 || r.status === 404) {
               warn('Not saved: the token was refused (' + r.status + '). Connect again with a token that can write to ' + repo() + '.');
               ghForm(true);
@@ -282,7 +282,9 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       // this map's drawing only: the map edited before still drawn while this one's first redraw runs (another map opened
       // at once) is never stored with it; then this text is drawn for it here
       var own = lastFor && lastFor[2] === s.id && !lastFor[3] ? lastSvg : null;
-      var pic = function () { return own ? Promise.resolve({ svg: own, width: at.width, height: at.height }) : drawText(t, shared.sb && !s.mine ? shared.sb.g0 : null); };   // a site map's SBGN-ML drawn from the build's GraphML, as the site draws it
+      // taken now: by the time the check below is done another map may be open (local(true) at opening), the globals its own
+      var nm = name, back = !s.mine && atSite(), g0 = shared.sb && !s.mine ? shared.sb.g0 : null;
+      var pic = function () { return own ? Promise.resolve({ svg: own, width: at.width, height: at.height }) : drawText(t, g0); };   // a site map's SBGN-ML drawn from the build's GraphML, as the site draws it
       var fail = function (e) { if (site === s) warn('Not kept in this browser: ' + String(e && e.message ? e.message : e).replace(/\.$/, '') + '. Download the map to keep your changes.'); };
       // what this browser keeps of the map read afresh first: written by another tab since this page opened it, it is
       // not written over (clashed). One check and write at a time, so this page's own last write is the one compared
@@ -290,11 +292,11 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
         if (s.clashed) return;
         if (k !== s.known) return clashed(s, t, 'in another tab');
         return write();
-      });
+      }).catch(fail);   // never left rejected: every later check and write waits on it
       function write() {
       if (s.mine) {   // a reader's own map: the map itself changed, in this browser and its folder (no draft), and on GitHub with a token
         if (!mine[s.id]) return;   // gone from this browser meanwhile: nothing to keep
-        toFolder(s.id, name, t);
+        toFolder(s.id, nm, t);
         return pic().then(function (d) { if (mine[s.id]) return minePut(Object.assign({}, mine[s.id], { text: t, svg: d.svg, width: d.width, height: d.height, at: Date.now() })).then(function () { s.known = t; }); })
           .then(function () {
             if (s.pending && site === s && src() === t) shared.dirty = false;   // saved on GitHub: dirty is the save's to clear
@@ -303,9 +305,9 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
           })
           .catch(fail);
       }
-      if (atSite()) { shared.dirty = false; localBox(); toFolder(s.id, name, t, true); return draftDrop(s.id).then(function () { s.known = null; }); }   // a file in the folder back to the site's map too
-      toFolder(s.id, name, t);   // layer 2: the same file into the reader's folder, when there is one
-      return pic().then(function (d) { return draftPut(s.id, { file: name, v: s.v, text: t, svg: d.svg, width: d.width, height: d.height, x0: at.x0, y0: at.y0, ref: at.ref, cur: at.cur, at: Date.now() }); })
+      if (back) { if (site === s) { shared.dirty = false; localBox(); } toFolder(s.id, nm, t, true); return draftDrop(s.id).then(function () { s.known = null; }); }   // a file in the folder back to the site's map too
+      toFolder(s.id, nm, t);   // layer 2: the same file into the reader's folder, when there is one
+      return pic().then(function (d) { return draftPut(s.id, { file: nm, v: s.v, text: t, svg: d.svg, width: d.width, height: d.height, x0: at.x0, y0: at.y0, ref: at.ref, cur: at.cur, at: Date.now() }); })
         .then(function () { s.known = t; if (site === s && src() === t) shared.dirty = false; })
         .catch(fail);
       }
@@ -526,9 +528,11 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     box.querySelector('#m2-ed-local-dl').addEventListener('click', function () { if (shared.text) download(); });
     }
     function conflict(s, body) {   // s: the map whose save GitHub refused as changed by someone else; body: the text that save sent
-      s = s || site;
-      stuck = true; forget(s && s.id); if (s) { learnt(s.path, 'changed'); delete unsaved[s.id]; }   // opened again, the map is read afresh from GitHub
-      if (s) clashed(s, body, 'on GitHub');
+      if (site === s) stuck = true;   // a map opened since then saves as before
+      var u = unsaved[s.id];
+      if (u && u.site === s) body = u.text;   // left with moves after that save: those are the reader's version
+      forget(s.id); learnt(s.path, 'changed'); delete unsaved[s.id];   // opened again, the map is read afresh from GitHub
+      clashed(s, body, 'on GitHub');
     }
     // the save clash: map s changed elsewhere since this page opened it (where: on GitHub, in another tab) is left as it
     // is there; the reader's version t is kept as a map of theirs right under it (own.js keepBeside), said, and editing
@@ -558,7 +562,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     var good, caughtAt, srcMap, PASSED;
     function __run46() {   // run at start, in order (__start)
     good = null, caughtAt = 0, srcMap = null;
-    PASSED = /ResizeObserver loop|Failed to fetch|Load failed|NetworkError|access control checks|The operation was aborted|AbortError|^Script error\.?$/;
+    PASSED = /ResizeObserver loop|Failed to fetch|Load failed|NetworkError|network connection was lost|appears to be offline|request timed out|access control checks|The operation was aborted|AbortError|^Script error\.?$/;
     addEventListener('error', function (e) { caught(e.error || e.message, e.filename); });
     addEventListener('unhandledrejection', function (e) { caught(e.reason, ''); });
     }
@@ -570,9 +574,11 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       if (file && file.indexOf(location.origin) !== 0) return;   // a browser extension's script, another site's
       var now = Date.now(), again = now - caughtAt < 1000;
       caughtAt = now;
-      var back = !again && good && good.at === map;
+      // put back only when something is under way or changed since the last change that ended: an error with the map as
+      // it was (a background read, a redraw of that very state failing) leaves it alone, so a redraw that fails never loops
+      var back = !again && good && good.at === map && (drag || band || shared.text !== (typeof good.u === 'string' ? good.u : good.u.g) || undo.length !== good.n);
       if (back) {
-        drag = null; band = null; shared.tap = null;
+        drag = null; band = null; shared.tap = null; drawing = false;
         if (good.n < undo.length) { undo.length = good.n; if (undo.ts) undo.ts.length = Math.min(undo.ts.length, good.n); }
         var g = fromUndo(good.u);
         if (shared.sb && good.sb) shared.sb.base = good.sb;

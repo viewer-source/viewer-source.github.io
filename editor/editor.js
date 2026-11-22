@@ -1293,7 +1293,7 @@
     }).then(function(r) {
       put(r.id, group, next);
       if (made2) made2(r);
-      if (go) V.go(r.id);
+      if (typeof go === "function" ? go() : go) V.go(r.id);
       else V.refreshMine();
       return r;
     });
@@ -1301,8 +1301,20 @@
   function keepBeside(id, t, said) {
     var m = V.byId[id];
     if (!m) return Promise.reject(new Error("the map is no longer in the list"));
+    if (!canCopy(m)) return Promise.reject(new Error("a map of this kind cannot be copied"));
     var r0 = m.mine ? mine[id] : null, was = r0 ? r0.title : m.topic || m.title;
-    return copyOf(m, t, was + " (your version)", on && site && site.id === id, function(r) {
+    var still = function() {
+      return on && site && site.id === id;
+    };
+    return copyOf(m, t, was + " (your version)", still, function(r) {
+      var now = t();
+      if (now !== r.text) {
+        r.text = now;
+        mine[r.id] = r;
+        minePut(r).catch(function() {
+        });
+        if (!(repo() && token())) toFolder(r.id, r.file, now);
+      }
       said(r.title, r.id, was);
     });
   }
@@ -1310,7 +1322,17 @@
     return V.draftDo("readonly", function(st) {
       return st.get(s.id);
     }, s.mine ? "mine" : "maps").then(function(r) {
-      return r ? r.text : null;
+      var k = r ? r.text : null;
+      if (k !== s.known) {
+        if (s.mine) {
+          if (r) mine[s.id] = r;
+        } else if (r) V.drafts[s.id] = r;
+        else if (V.drafts[s.id]) {
+          delete V.drafts[s.id];
+          V.draftIds();
+        }
+      }
+      return k;
     });
   }
   function siteFirst(group) {
@@ -11579,8 +11601,8 @@
             saving = null;
             saveAgain = false;
             return push(true);
-          }).catch(function() {
-            conflict(target, body);
+          }, function(e) {
+            warn("Not saved: no connection (" + (e && e.message ? e.message : e) + "). The next move tries again.");
           });
         } else if (r.status === 401 || r.status === 403 || r.status === 404) {
           warn("Not saved: the token was refused (" + r.status + "). Connect again with a token that can write to " + repo() + ".");
@@ -11620,8 +11642,9 @@
     if (s.clashed) return;
     var t = src(), at2 = { width: map.width, height: map.height, x0: picX0(), y0: picY0(), ref: siteRef, cur: nowRef() };
     var own2 = lastFor && lastFor[2] === s.id && !lastFor[3] ? lastSvg : null;
+    var nm = name, back2 = !s.mine && atSite(), g0 = shared.sb && !s.mine ? shared.sb.g0 : null;
     var pic = function() {
-      return own2 ? Promise.resolve({ svg: own2, width: at2.width, height: at2.height }) : drawText(t, shared.sb && !s.mine ? shared.sb.g0 : null);
+      return own2 ? Promise.resolve({ svg: own2, width: at2.width, height: at2.height }) : drawText(t, g0);
     };
     var fail = function(e) {
       if (site === s) warn("Not kept in this browser: " + String(e && e.message ? e.message : e).replace(/\.$/, "") + ". Download the map to keep your changes.");
@@ -11634,11 +11657,11 @@
       if (s.clashed) return;
       if (k !== s.known) return clashed(s, t, "in another tab");
       return write2();
-    });
+    }).catch(fail);
     function write2() {
       if (s.mine) {
         if (!mine[s.id]) return;
-        toFolder(s.id, name, t);
+        toFolder(s.id, nm, t);
         return pic().then(function(d) {
           if (mine[s.id]) return minePut(Object.assign({}, mine[s.id], { text: t, svg: d.svg, width: d.width, height: d.height, at: Date.now() })).then(function() {
             s.known = t;
@@ -11649,17 +11672,19 @@
           if (!on || site !== s) V.refreshMine();
         }).catch(fail);
       }
-      if (atSite()) {
-        shared.dirty = false;
-        localBox();
-        toFolder(s.id, name, t, true);
+      if (back2) {
+        if (site === s) {
+          shared.dirty = false;
+          localBox();
+        }
+        toFolder(s.id, nm, t, true);
         return draftDrop(s.id).then(function() {
           s.known = null;
         });
       }
-      toFolder(s.id, name, t);
+      toFolder(s.id, nm, t);
       return pic().then(function(d) {
-        return draftPut(s.id, { file: name, v: s.v, text: t, svg: d.svg, width: d.width, height: d.height, x0: at2.x0, y0: at2.y0, ref: at2.ref, cur: at2.cur, at: Date.now() });
+        return draftPut(s.id, { file: nm, v: s.v, text: t, svg: d.svg, width: d.width, height: d.height, x0: at2.x0, y0: at2.y0, ref: at2.ref, cur: at2.cur, at: Date.now() });
       }).then(function() {
         s.known = t;
         if (site === s && src() === t) shared.dirty = false;
@@ -11986,14 +12011,13 @@
     });
   }
   function conflict(s, body) {
-    s = s || site;
-    stuck = true;
-    forget(s && s.id);
-    if (s) {
-      learnt(s.path, "changed");
-      delete unsaved[s.id];
-    }
-    if (s) clashed(s, body, "on GitHub");
+    if (site === s) stuck = true;
+    var u = unsaved[s.id];
+    if (u && u.site === s) body = u.text;
+    forget(s.id);
+    learnt(s.path, "changed");
+    delete unsaved[s.id];
+    clashed(s, body, "on GitHub");
   }
   var openSay;
   function __run452() {
@@ -12021,7 +12045,7 @@
   var PASSED;
   function __run462() {
     good = null, caughtAt = 0, srcMap = null;
-    PASSED = /ResizeObserver loop|Failed to fetch|Load failed|NetworkError|access control checks|The operation was aborted|AbortError|^Script error\.?$/;
+    PASSED = /ResizeObserver loop|Failed to fetch|Load failed|NetworkError|network connection was lost|appears to be offline|request timed out|access control checks|The operation was aborted|AbortError|^Script error\.?$/;
     addEventListener("error", function(e) {
       caught(e.error || e.message, e.filename);
     });
@@ -12042,11 +12066,12 @@
     if (file && file.indexOf(location.origin) !== 0) return;
     var now = Date.now(), again = now - caughtAt < 1e3;
     caughtAt = now;
-    var back2 = !again && good && good.at === map;
+    var back2 = !again && good && good.at === map && (drag || band || shared.text !== (typeof good.u === "string" ? good.u : good.u.g) || undo.length !== good.n);
     if (back2) {
       drag = null;
       band = null;
       shared.tap = null;
+      drawing = false;
       if (good.n < undo.length) {
         undo.length = good.n;
         if (undo.ts) undo.ts.length = Math.min(undo.ts.length, good.n);

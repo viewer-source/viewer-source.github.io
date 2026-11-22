@@ -443,8 +443,8 @@ import { NEW_ID, emptyBase, isSb, madeHere, sbMap } from './sbgn.js';
       return copyOf(m, null, 'Copy of ' + (r0 ? r0.title : m.topic || m.title), true).catch(function (e) { alert('No copy was made: ' + (e && e.message ? e.message : e)); });
     }
     // a map of the reader's made from map m, right under it in its group, in every way maps are kept (GitHub with a token,
-    // else this browser and the folder): its text, t() (no t: m's text now), named name (made free in the group); go: shown
-    // once made, after made(record). Gives the new record
+    // else this browser and the folder): its text, t() (no t: m's text now), named name (made free in the group); go (or
+    // go() once made): shown once made, after made(record). Gives the new record
     function copyOf(m, t, name, go, made) {
       var id = m.id, r0 = m.mine ? mine[id] : null, group = m.group || '', title = freeTitle(name, group, fmtOf(m)), next = after(id);   // next: read before the copy is in the list
       var ext = r0 ? (r0.file.match(/\.[^.]+$/) || ['.xml'])[0] : cdMap(m) ? '.xml' : sbMap(m) ? '.sbgn' : '.graphml';
@@ -461,7 +461,7 @@ import { NEW_ID, emptyBase, isSb, madeHere, sbMap } from './sbgn.js';
       }).then(function (r) {
         put(r.id, group, next);
         if (made) made(r);
-        if (go) V.go(r.id); else V.refreshMine();
+        if (typeof go === 'function' ? go() : go) V.go(r.id); else V.refreshMine();
         return r;
       });
     }
@@ -470,12 +470,25 @@ import { NEW_ID, emptyBase, isSb, madeHere, sbMap } from './sbgn.js';
     // right under it, named '<name> (your version)', and editing goes on there; no merge. Gives the copy's title
     function keepBeside(id, t, said) {   // said(title, id, name): the copy made (its name and list id; the map's name), before it is opened
       var m = V.byId[id]; if (!m) return Promise.reject(new Error('the map is no longer in the list'));
+      if (!canCopy(m)) return Promise.reject(new Error('a map of this kind cannot be copied'));
       var r0 = m.mine ? mine[id] : null, was = r0 ? r0.title : m.topic || m.title;
-      return copyOf(m, t, was + ' (your version)', on && site && site.id === id, function (r) { said(r.title, r.id, was); });
+      var still = function () { return on && site && site.id === id; };   // still being edited once the copy is made: editing goes on there
+      return copyOf(m, t, was + ' (your version)', still, function (r) {
+        var now = t();   // moves made on the map while the copy was drawn and sent: the copy takes them
+        if (now !== r.text) { r.text = now; mine[r.id] = r; minePut(r).catch(function () {}); if (!(repo() && token())) toFolder(r.id, r.file, now); }
+        said(r.title, r.id, was);
+      });
     }
     // what is kept in this browser now for a map edited without GitHub: its draft, or the reader's record (null: none),
     // read afresh, as another tab of the site may have written it since this page opened the map
-    function keptNow(s) { return V.draftDo('readonly', function (st) { return st.get(s.id); }, s.mine ? 'mine' : 'maps').then(function (r) { return r ? r.text : null; }); }
+    // A clash found: this page's copy of the record taken from what was read, so opening the map again shows the newer version
+    function keptNow(s) {
+      return V.draftDo('readonly', function (st) { return st.get(s.id); }, s.mine ? 'mine' : 'maps').then(function (r) {
+        var k = r ? r.text : null;
+        if (k !== s.known) { if (s.mine) { if (r) mine[s.id] = r; } else if (r) V.drafts[s.id] = r; else if (V.drafts[s.id]) { delete V.drafts[s.id]; V.draftIds(); } }
+        return k;
+      });
+    }
     function siteFirst(group) { var os = (V.siteList || []).filter(function (s) { return s.group === group; }).map(function (s) { return s.order || 0; }); return os.length ? Math.min.apply(null, os) : 1; }   // the group's first on the site
     function siteOrder(group) { return (V.siteList || []).reduce(function (a, s) { return (!group || s.group === group) ? Math.max(a, s.order || 0) : a; }, 0) + 1; }   // after the group's last on the site
     function after(id) {   // the map after id in its group, so a copy lands right under the original
