@@ -12035,6 +12035,10 @@
   function caught(err, file) {
     var msg = err && err.message ? err.message : String(err), stack = err && err.stack ? String(err.stack) : "";
     if (!on || PASSED.test(msg) || err && err.name === "AbortError") return;
+    if (!file) {
+      var u = /([a-z][a-z0-9+.-]*:\/\/[^\s()]+?):\d+:\d+/.exec(stack);
+      if (u) file = u[1];
+    }
     if (file && file.indexOf(location.origin) !== 0) return;
     var now = Date.now(), again = now - caughtAt < 1e3;
     caughtAt = now;

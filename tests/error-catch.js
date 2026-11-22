@@ -3,7 +3,7 @@
 // (GraphML; MAP=<id> for another map), no token. A node dragged; on the third step of the drag the page's setAttribute
 // throws once (as a fault in the editor's drawing of the drag would): the status line names the source file and line,
 // that line of the sources calls setAttribute, the map's text is as before the drag, the drag let go, and the next
-// move works. What the browser reports that is no fault of the page (a ResizeObserver loop, a fetch cut off) is passed
+// move works. What the browser reports that is no fault of the page (a ResizeObserver loop, a fetch cut off, an error of a browser extension) is passed
 // by, and nothing is said in view mode.
 //   node tests/error-catch.js [base address] [--local]
 // --local: the editor of the working tree routed into the live page, to check before a release.
@@ -70,9 +70,12 @@ var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : '
     Promise.reject(new TypeError('Failed to fetch'));
     Promise.reject(new TypeError('Load failed'));
     Promise.reject(new TypeError('Fetch API cannot load https://api.github.com/x due to access control checks.'));
+    var ext = new TypeError("Cannot read properties of undefined (reading 'M_ID')");   // a browser extension's promise
+    ext.stack = 'TypeError: ' + ext.message + '\n    at chrome-extension://abcdefgh/200.js:1:2345';
+    Promise.reject(ext);
   });
   await page.waitForTimeout(500);
-  ok('a ResizeObserver loop and fetches cut off are passed by', !(await status()), await status());
+  ok('a ResizeObserver loop, fetches cut off and an extension\u2019s error are passed by', !(await status()), await status());
   await b.close();
   console.log(bad ? bad + ' wrong' : 'all ok');
   process.exit(bad ? 1 : 0);
