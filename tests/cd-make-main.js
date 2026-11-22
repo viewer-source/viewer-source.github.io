@@ -37,12 +37,12 @@ files.forEach(function (f) {
     else refused.push(path.basename(f) + ' ' + id);
   });
 });
-var R = require('./reference.js').open('cd-make-main');
+var R = require('./reference.js').open('cd-make-main', args.length === 0);
 var bad = 0;
 jobs.forEach(function (j, n) {
   var tag = path.basename(j.f) + ' ' + j.link + ' made main', msg = [], out;
   try { out = ed.apply(j.t, j.g1, opt); } catch (e) { msg.push('JavaScript: ' + (e && e.message || e)); }
-  if (out !== undefined && R.check(tag, [j.t, j.g1], out, [j.t]) === 'different') msg.push('not the text kept in the reference set');
+  if (out !== undefined && R.check(tag, [j.t, tag], out, [j.t]) === 'different') msg.push('not the text kept in the reference set');
   if (out !== undefined) {
     new DP({ onError: function (l, m) { if (l !== 'warning') msg.push('XML: ' + m); } }).parseFromString(out, 'application/xml');
     var E0 = edges(j.g0), E1 = edges(ed.graphml(out, null, opt));

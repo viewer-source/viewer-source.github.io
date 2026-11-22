@@ -5,7 +5,7 @@
 //   node tests/yrender-reference.js [GraphML files or folders ...]   (default: maps/)
 var fs = require('fs'), path = require('path');
 var here = path.join(__dirname, '..'), yr = require(path.join(here, 'renderers/yrender/yrender.js'));
-var DP = require('@xmldom/xmldom').DOMParser, R = require('./reference.js').open('yrender');
+var DP = require('@xmldom/xmldom').DOMParser, R = require('./reference.js').open('yrender', process.argv.length <= 2);
 var files = [];
 (process.argv.length > 2 ? process.argv.slice(2) : [path.join(here, 'maps')]).forEach(function walk(p) {
   var st; try { st = fs.statSync(p); } catch (e) { return; }   // a broken link

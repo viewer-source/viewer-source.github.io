@@ -34,6 +34,7 @@ exclude:
   - VERSION
   - build.py
   - maps
+  - reference
   # renderers/ is published for its JavaScript, which the editor runs in the browser; the converter's modules serve the
   # build only, the rules pages are for reading the code
   - renderers/converter/mapconv

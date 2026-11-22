@@ -8,6 +8,10 @@
 //   different   the same input gave another output: a failure, the first differing line printed
 //   changed map the map was saved since its reference was made (edited in the viewer): not checked, not a failure
 //   new         no reference yet (a new map or case): not checked, not a failure
+// What is hashed is only what the test is given, never what the code under test makes of it (a GraphML cd_edit made,
+// a text cd_make wrote): the map's text and the case's own parameters; so a change in the code always shows as
+// different, never as a changed map. A test with no case at all fails (no maps found); kept files no case read any
+// more (a map deleted, a case dropped) are listed, and REF=write on the whole set removes them.
 // Writing a new set is a commit of its own in the data repository, with its reason in the message:
 //   REF=write node tests/<test>.js    writes every case (after a change whose new drawings were read and are right)
 //   REF=new node tests/<test>.js      writes only the new and changed-map cases, never a different one
@@ -62,9 +66,9 @@ function firstDiff(a, b) {   // the first line that differs, with its number, sh
   var x = A[k] || '', y = B[k] || '', c = 0;
   while (c < x.length && x[c] === y[c]) c++;
   var cut = function (s) { return (c > 120 ? '...' : '') + s.slice(Math.max(0, c - 120), c + 180); };
-  return 'line ' + (k + 1) + '\n    kept: ' + cut(x) + '\n    now:  ' + cut(y);
+  return 'line ' + (k + 1) + ' of the kept text\n    kept: ' + cut(x) + '\n    now:  ' + cut(y);
 }
-function open(test) {
+function open(test, whole) {   // whole: the test ran on its default maps (not files named on the command line)
   if (MODE && MODE !== 'write' && MODE !== 'new') throw new Error('REF is write, new or unset, not ' + MODE);
   if (!fs.existsSync(ROOT)) throw new Error('no reference/ beside maps/ (the data repository\'s reference folder)');
   var dir = path.join(ROOT, test), counts = { same: 0, different: 0, 'changed map': 0, new: 0, written: 0, replaced: 0 }, firsts = [];
@@ -74,9 +78,10 @@ function open(test) {
     // besides the code (the map's text, the case's parameters); out: a string, a JSON value or a list of them (its
     // parts); bases: for each part, the text it was made from (the map before an edit), so only what changed is kept
     check: function (key, given, out, bases) {
-      if (seen.has(key)) throw new Error('two cases named ' + key);
-      seen.add(key);
-      var file = path.join(dir, key.replace(/[^\w.-]+/g, '_') + '.txt'), h = hash(text(given)), o = stored(out, bases);
+      var name = key.replace(/[^\w.-]+/g, '_') + '.txt';
+      if (seen.has(name)) throw new Error('two cases kept in one file: ' + key);
+      seen.add(name);
+      var file = path.join(dir, name), h = hash(text(given)), o = stored(out, bases);
       var body = o.length > BIG ? 'sha1 ' + hash(o) : o, kept = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : null;
       var nl = kept === null ? -1 : kept.indexOf('\n'), kh = nl < 0 ? null : kept.slice(0, nl), kb = nl < 0 ? null : kept.slice(nl + 1);
       var kind = kept === null ? 'new' : kh !== 'input ' + h ? 'changed map' : kb === body ? 'same' : 'different';
@@ -93,7 +98,11 @@ function open(test) {
     },
     // the test's last lines; true when nothing differs
     end: function (what) {
-      var stale = counts['changed map'] + counts.new;
+      var stale = counts['changed map'] + counts.new, gone = [];
+      if (whole && fs.existsSync(dir)) gone = fs.readdirSync(dir).filter(function (f) { return !seen.has(f); });
+      if (gone.length && MODE === 'write') gone.forEach(function (f) { fs.unlinkSync(path.join(dir, f)); });
+      if (gone.length) console.log(gone.length + ' kept files no case read' + (MODE === 'write' ? ', removed (REF=write)' : ' (a map deleted or a case dropped; REF=write removes them)') + ': ' + gone.slice(0, 5).join(', ') + (gone.length > 5 ? ', ...' : ''));
+      if (!seen.size) { console.log(what + ': no case at all (no maps found?)'); return false; }
       console.log(what + ' against the reference set: ' + counts.same + ' the same, ' + counts.different + ' different' +
         (stale ? ', ' + counts['changed map'] + ' maps changed since their reference and ' + counts.new + ' new, not checked (REF=new writes them)' : '') +
         (counts.replaced ? ', ' + counts.replaced + ' different and replaced (REF=write)' : '') +

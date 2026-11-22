@@ -7,7 +7,7 @@ var path = require('path');
 var here = path.join(__dirname, '..'), DP = require('@xmldom/xmldom').DOMParser;
 global.DOMParser = DP;
 var M = require(path.join(here, 'renderers/converter/cd_make.js')), E = require(path.join(here, 'renderers/converter/cd_edit.js'));
-var C = require(path.join(here, 'renderers/converter/cdrender.js')), R = require('./reference.js').open('cd-name-places');
+var C = require(path.join(here, 'renderers/converter/cdrender.js')), R = require('./reference.js').open('cd-name-places', true);
 var bad = [], n = 0;
 function check(ok, what) { n++; if (!ok) bad.push(what); }
 function np(t, a) { var m = new RegExp('compartmentAlias id="' + a + '"[\\s\\S]*?namePoint x="([^"]*)" y="([^"]*)"').exec(t); return [parseFloat(m[1]), parseFloat(m[2])]; }
@@ -36,7 +36,7 @@ check(M.namePlace(r0.text, r0.alias) === 't' && np(r0.text, r0.alias)[1] === 52.
     var g = E.graphml(t, null, { DOMParser: DP }).replace(/(<node id="ca1"[\s\S]*?<y:Geometry )x="[^"]*" y="[^"]*" width="[^"]*" height="[^"]*"/, '$1x="52.0" y="30.0" width="380.0" height="150.0"');
     var js = E.place(t, g, { DOMParser: DP })[0];
     check(M.namePlace(js, a) === p, th + ' ' + p + ': kept through a resize');
-    check(R.check(th + ' ' + p + ' resize', [t, g], js, [t]) !== 'different', th + ' ' + p + ': the text kept in the reference set');
+    check(R.check(th + ' ' + p + ' resize', [th, p], js, [t]) !== 'different', th + ' ' + p + ': the text kept in the reference set');
   });
 });
 

@@ -24,7 +24,7 @@
   var FONT_STYLES = { plain: '', bold: ' font-weight="bold"', italic: ' font-style="italic"', bolditalic: ' font-weight="bold" font-style="italic"' };
   var has = function (o, k) { return Object.prototype.hasOwnProperty.call(o, k); };
 
-  var errors = [], ROLES = false, CLASSES = false, FROM_SBGN = false;   // FROM_SBGN: the GraphML made from an SBGN-ML file (opt.sbgn, the build and the editor), FROM_SBGN in rules.md
+  var errors = [], ROLES = false, CLASSES = false, FROM_SBGN = false;   // FROM_SBGN: the GraphML made from an SBGN-ML file (opt.sbgn, the build and the editor), rules.md, At the module level
 
   // ---- numbers as Python writes them ----
   // '%.4f' % v: the exact value of the double rounded to 4 places, an exact half to even (toFixed rounds it up), then
@@ -658,7 +658,7 @@
       var P = this.ports[sId];
       pts[0] = at[0] === 'in' ? P[0] : P[2] || dist(P[1], pts[1]) <= dist(P[0], pts[1]) ? P[1] : P[0];
     }
-    var b, g;   // behind its own nodes, or along the stick from a port inside the other node (edge_svg in rules.md)
+    var b, g;   // behind its own nodes, or along the stick from a port inside the other node (rules.md, Header: an arc goes behind its own nodes)
     if (!at[0]) {
       b = behind(pts, S);
       if (b !== null) pts = b;

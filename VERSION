@@ -4,4 +4,5 @@ renderers/converter/mapconv/, and the database lookups of scripts/make_maps.py a
 (caches in cache/ in place of atlas-data/). From the Eicosanoid Atlas site (eicosanoids/eicosanoids.github.io): _layouts/,
 _includes/meta.html (tab icon links removed), _includes/analytics.html, style.scss, _sass/, index.json.
 From here on this repository is the source of the viewer: it is changed here and copied to the sites.
-renderers/yrender/yrender.py and renderers/converter/cdrender.py are the masters here (the website's copies follow them).
+The renderers' masters are the JavaScript here (renderers/yrender/yrender.js, renderers/converter/cdrender.js); the
+Python files first copied in were retired, and the website's own copies are its own.

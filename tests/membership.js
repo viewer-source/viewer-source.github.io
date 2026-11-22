@@ -23,7 +23,7 @@ var fs = require('fs'), path = require('path'), cp = require('child_process');
 var here = path.join(__dirname, '..'), se = require(path.join(here, 'renderers/converter/sbgn_edit.js')), ed = require(path.join(here, 'renderers/converter/cd_edit.js'));
 var yr = require(path.join(here, 'renderers/yrender/yrender.js'));
 var DP = require('@xmldom/xmldom').DOMParser, opt = { DOMParser: DP };
-var py = process.argv[2] || 'python3', bad = 0, ran = 0, R = require('./reference.js').open('membership');
+var py = process.argv[2] || 'python3', bad = 0, ran = 0, R = require('./reference.js').open('membership', true);
 var GN = 'http://graphml.graphdrawing.org/xmlns', YN = 'http://www.yworks.com/xml/graphml';
 function fail(tag, m) { bad++; console.log('DIFF', tag, '|', m); }
 function xml(t, tag) { var errs = [], d; try { d = new DP({ onError: function (l, m) { if (l !== 'warning') errs.push(m); } }).parseFromString(t.replace(/^\ufeff/, ''), 'application/xml'); } catch (e) { errs.push(e.message); } if (errs.length) fail(tag, 'XML: ' + errs[0]); return d; }
@@ -120,7 +120,7 @@ cfiles.forEach(function (f) {
   }
 });
 cjobs.forEach(function (j) { j.g2 = se.moveInto(j.g, j.moves); });
-function kept(tag, t, g, out) { if (R.check(tag, [t, g], out, [t]) === 'different') fail(tag, 'not the text kept in the reference set'); }
+function kept(tag, t, g, out) { if (R.check(tag, [t, tag], out, [t]) === 'different') fail(tag, 'not the text kept in the reference set'); }
 cjobs.forEach(function (j, n) {
   var tag = path.basename(j.f) + ' ' + j.what + ' ' + j.moves.map(function (m) { return m[0] + ' -> ' + m[1]; }).join(', '), out;
   ran++;

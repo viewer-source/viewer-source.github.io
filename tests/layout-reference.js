@@ -8,7 +8,7 @@
 var fs = require('fs'), path = require('path');
 var here = path.join(__dirname, '..'), lay = require(path.join(here, 'renderers/layout/layout.js'));
 var ed = require(path.join(here, 'renderers/converter/cd_edit.js'));
-var xd = require('@xmldom/xmldom'), DP = xd.DOMParser, XS = xd.XMLSerializer, R = require('./reference.js').open('layout');
+var xd = require('@xmldom/xmldom'), DP = xd.DOMParser, XS = xd.XMLSerializer, R = require('./reference.js').open('layout', process.argv.length <= 2);
 var files = [];
 (process.argv.length > 2 ? process.argv.slice(2) : [path.join(here, 'maps')]).forEach(function walk(p) {
   var st; try { st = fs.statSync(p); } catch (e) { return; }
@@ -54,12 +54,12 @@ function run(text, what, ids, keep) {
 }
 var t0 = Date.now(), n = 0;
 files.forEach(function (f) {
-  var text = fs.readFileSync(f, 'utf8'), keep = false, name = path.relative(here, f);
+  var text = fs.readFileSync(f, 'utf8'), file = text, keep = false, name = path.relative(here, f);   // file: what is hashed (text may become cd_edit's GraphML)
   if (/\.xml$/.test(f)) {
     try { text = ed.graphml(text, null, { DOMParser: DP }); keep = true; } catch (e) { return; }   // not a CellDesigner map the editor can open
   }
-  cases(text).forEach(function (c, k) { n++; R.check(name + ' ' + k + ' ' + c[0], [text, c[0], c[1], keep], run(text, c[0], c[1], keep), [text]); });
-  if (!keep) { var m = moved(text); if (m) { n++; R.check(name + ' moved fit', [m[0], m[1]], run(m[0], 'fit', { moved: [m[1]] }, false), [m[0]]); } }
+  cases(text).forEach(function (c, k) { n++; R.check(name + ' ' + k + ' ' + c[0], [file, k, c[0]], run(text, c[0], c[1], keep), [text]); });
+  if (!keep) { var m = moved(text); if (m) { n++; R.check(name + ' moved fit', [file, 'moved'], run(m[0], 'fit', { moved: [m[1]] }, false), [m[0]]); } }
 });
 var ok = R.end(files.length + ' maps, ' + n + ' runs (' + (Date.now() - t0) + ' ms)');
 process.exit(ok ? 0 : 1);

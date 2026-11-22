@@ -7,7 +7,7 @@
 var fs = require('fs'), path = require('path');
 var here = path.join(__dirname, '..'), cd = require(path.join(here, 'renderers/converter/cdrender.js'));
 var ed = require(path.join(here, 'renderers/converter/cd_edit.js'));
-var xd = require('@xmldom/xmldom'), DP = xd.DOMParser, XS = xd.XMLSerializer, R = require('./reference.js').open('cd');
+var xd = require('@xmldom/xmldom'), DP = xd.DOMParser, XS = xd.XMLSerializer, R = require('./reference.js').open('cd', process.argv.length <= 2);
 var files = [];
 (process.argv.length > 2 ? process.argv.slice(2) : [path.join(here, 'maps')]).forEach(function walk(p) {
   var st; try { st = fs.statSync(p); } catch (e) { return; }
@@ -49,7 +49,7 @@ files.forEach(function (f) {
   if (/^refused: /.test(g)) return;
   [1, 2, 3].forEach(function (seed) {
     var mg = moved(g, seed);
-    R.check(name + ' edit ' + seed, [t, mg], js(function () { return ed.draw(t, mg, o); }), [gd, t, mg]);   // the drawing, the file and its GraphML, each as changed
+    R.check(name + ' edit ' + seed, [t, seed], js(function () { return ed.draw(t, mg, o); }), [gd, t, mg]);   // the drawing, the file and its GraphML, each as changed
   });
 });
 var ok = R.end(files.length + ' CellDesigner maps (' + (Date.now() - t0) + ' ms)');

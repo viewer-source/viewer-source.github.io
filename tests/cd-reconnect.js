@@ -54,12 +54,12 @@ files.forEach(function (f) {
   var a0 = Object.keys(I.E).filter(function (e) { return /\|a$/.test(e) && I.E[e.replace(/a$/, 'b')]; })[0];
   if (a0) { var pb = I.E[a0.replace(/a$/, 'b')][1]; jobs.push({ f: f, t: t, g0: g, kind: 'refused', eid: a0, j: 0, from: I.E[a0][0], to: pb, g1: setEnd(g, a0, 0, pb, ['0.0', '0.0']) }); }
 });
-var R = require('./reference.js').open('cd-reconnect');
+var R = require('./reference.js').open('cd-reconnect', args.length === 0);
 var bad = 0;
 jobs.forEach(function (j, n) {
   var tag = path.basename(j.f) + ' ' + j.kind + ' ' + j.eid + ': ' + j.from + ' -> ' + j.to, msg = [], out;
   try { out = ed.apply(j.t, j.g1, opt); } catch (e) { msg.push('JavaScript: ' + (e && e.message || e)); }
-  if (out !== undefined && R.check(tag, [j.t, j.g1], out, [j.t]) === 'different') msg.push('not the text kept in the reference set');
+  if (out !== undefined && R.check(tag, [j.t, tag], out, [j.t]) === 'different') msg.push('not the text kept in the reference set');
   if (out !== undefined && j.kind === 'refused') {
     var E0 = graph(j.g0).E, E1 = graph(ed.graphml(out, null, opt)).E;   // every line at the nodes it had (only the port of that end may change)
     if (Object.keys(E0).some(function (e) { return !E1[e] || E1[e].join() !== E0[e].join(); })) msg.push('a participant changed');
