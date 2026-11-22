@@ -1,8 +1,9 @@
-// cdrender in JavaScript: the same drawing as cdrender.py byte for byte (tests/cd-compare.js), for the
-// editor in the browser and the viewer's build (renderers/render.js), the master for the viewer's own build and the editor.
-// cdrender.py beside it is its twin for the Python tools elsewhere; a change is made in both in the same commit. With it the four helpers it takes from the converter (cd_layout's ANCHOR, ANGLE,
-// SQUARE, anchor_point, from_frame, to_frame and celldesigner's plain_name), and Python's number writing (py below),
-// shared with cd_edit.js. The rules and their reasons are in cdrender.py under the same names; comments here are short.
+// cdrender, the CellDesigner renderer: the editor in the browser and the viewer's build (renderers/render.js) draw with
+// it. The one master (a Python twin it once had is retired); its drawings on the demo maps are kept in the
+// reference set (tests/cd-reference.js). With it the four helpers it takes from the converter (cd_layout's ANCHOR, ANGLE,
+// SQUARE, anchor_point, from_frame, to_frame and celldesigner's plain_name), and Python's number writing (py below, so
+// its numbers read as the converter's), shared with cd_edit.js. The rules and their reasons are in cdrender-rules.md
+// beside it under the same names (snake_case there); comments here are short.
 //   browser: cdrender.render(text, { classes, groups }) -> svg;  cdrender.renderHits(text, opt) -> [svg, hits]
 //   node:    node renderers/converter/cdrender.js map.xml out.svg   (needs @xmldom/xmldom)
 (function (root) {
@@ -179,7 +180,7 @@
   function pts(p) { return p.map(function (q) { return fmt(q[0]) + ',' + fmt(q[1]); }).join(' '); }
   function editPoints(s) { return (s || '').split(/\s+/).filter(function (q) { return q; }).map(function (q) { return q.split(',').map(F); }); }
   function unit(dx, dy) { var L = hypot(dx, dy) || 1; return [dx / L, dy / L]; }
-  function counts(rx) {   // a reactant's or product's stoichiometry other than 1 (SBGN's cardinality), by r: or p: and its alias (cdrender.py's counts)
+  function counts(rx) {   // a reactant's or product's stoichiometry other than 1 (SBGN's cardinality), by r: or p: and its alias (counts in cdrender-rules.md)
     var out = {};
     [['s:listOfReactants', 'r'], ['s:listOfProducts', 'p']].forEach(function (lk) {
       findall(rx, lk[0] + '/s:speciesReference').forEach(function (sr) {
@@ -208,7 +209,7 @@
     if (cls === 'RECEPTOR') return [[x, y], [x + w / 2, y + h / 5], [x + w, y], [x + w, y + h * 4 / 5], [x + w / 2, y + h], [x, y + h * 4 / 5]];
     return [[x, y], [x + w, y], [x + w, y + h], [x, y + h]];
   }
-  function enter(shapes, Q, P) {   // cdrender.py's enter: the first state variable or unit of information on the way in
+  function enter(shapes, Q, P) {   // enter in cdrender-rules.md: the first state variable or unit of information on the way in
     var dx = P[0] - Q[0], dy = P[1] - Q[1], best = null;
     shapes.forEach(function (s) {
       var t;
@@ -448,7 +449,7 @@
       var e = 1e-6, o = onBorder(b, ang), fx = w ? (o[0] - x) / w - 0.5 : 0, fy = h ? (o[1] - y) / h - 0.5 : 0;
       var p = onBorder([x + 9, y + 9, Math.max(w - 18, 0), Math.max(h - 18, 0)], ang);
       var tx = p[0] + (fx <= -0.5 + e ? 2 : fx >= 0.5 - e ? -2 : 0), ty = p[1] + (fy <= -0.5 + e ? 2 : fy >= 0.5 - e ? -2 : 0);
-      self.text(site, tx, ty + 3.5, 10, fx < -e ? 'start' : fx > e ? 'end' : 'middle', undefined, ' class="sv-site" display="none"');   // hidden unless Show sites (cdrender.py)
+      self.text(site, tx, ty + 3.5, 10, fx < -e ? 'start' : fx > e ? 'end' : 'middle', undefined, ' class="sv-site" display="none"');   // hidden unless Show sites
     };
     this.residues.forEach(function (r) {
       if (r[2] === pid && !mods.has(r[3])) {
@@ -491,7 +492,7 @@
     if (!side || !has(ANCHOR, side)) return [[x + w / 2, y + h / 2], false];
     return [this.at(i, side), true];
   };
-  D.at = function (i, side) { return anchorAt(this.al(i)[0], this.front(i), side); };   // anchor side's point on alias i (cdrender.py's at)
+  D.at = function (i, side) { return anchorAt(this.al(i)[0], this.front(i), side); };   // anchor side's point on alias i (at in cdrender-rules.md)
   function anchorAt(cls, f, side) {   // anchor side's point on a species of class cls drawn in box f (the editor's landing places too)
     var x = f[0], y = f[1], w = f[2], h = f[3];
     if (cls === 'RNA') {
@@ -506,16 +507,16 @@
     if (cls === 'DEGRADED') { x += w / 8; y += h / 8; w *= 3 / 4; h *= 3 / 4; }  // on its drawn circle, 3/4 of the box (AsthmaMap mast cell PDF: no gap)
     return anchorPoint([x, y, w, h], side, ROUND.indexOf(cls) >= 0, cls === 'PHENOTYPE');
   }
-  D.clip = function (i, P, anchored, Q, shapeOnly) {   // the visual end (cdrender.py's clip)
+  D.clip = function (i, P, anchored, Q, shapeOnly) {   // the visual end (clip in cdrender-rules.md)
     if (!anchored) P = leave(outline(this.al(i)[0], this.box(i)), P, Q);
     return shapeOnly ? P : enter(this.extras(i), Q, P);
   };
-  D.ends = function (line, ra, pa) {   // cdrender.py's ends
+  D.ends = function (line, ra, pa) {   // ends in cdrender-rules.md
     var L = line.length, A = line[0], B = line[L - 1], A1 = line[1], B1 = line[L - 2];
     line[0] = enter(this.extras(ra), A1, A);
     line[L - 1] = enter(this.extras(pa), B1, B);
   };
-  D.extras = function (i) {   // cdrender.py's extras
+  D.extras = function (i) {   // extras in cdrender-rules.md
     var A = this.al(i), x = A[1][0], y = A[1][1], w = A[1][2], h = A[1][3], self = this;
     if (!this.extra.has(i)) {
       var a = A[2], si = A[4], hd = find(si, 'cd:state/cd:homodimer'), pref = find(si, 'cd:proteinReference'), pid = pref ? text(pref) : null;
@@ -579,7 +580,7 @@
   };
   var REDUCED_HEAD = { PHYSICAL_STIMULATION: 'stimulation-reduced', REDUCED_PHYSICAL_STIMULATION: 'stimulation-reduced', NEGATIVE_INFLUENCE: 'inhibition',
     REDUCED_MODULATION: 'modulation', REDUCED_TRIGGER: 'trigger', POSITIVE_INFLUENCE: 'production', CATALYSIS: 'catalysis', INHIBITION: 'inhibition' };
-  D.count = function (t, line) {   // a cardinality (the converter's layout.count_box): a box beside the middle of the participant's line, light grey (cdrender.py's count)
+  D.count = function (t, line) {   // a cardinality (the converter's layout.count_box): a box beside the middle of the participant's line, light grey (count in cdrender-rules.md)
     var lens = [], tot = 0, k = 0, i;
     for (i = 0; i + 1 < line.length; i++) { var ax = line[i + 1][0] - line[i][0], ay = line[i + 1][1] - line[i][1]; lens.push(Math.sqrt(ax * ax + ay * ay)); }
     for (i = 0; i < lens.length; i++) tot += lens[i];

@@ -6,7 +6,7 @@
 //     converter's GraphML of s2 nests every node as g2 does; graphml(s2, conv(s)) too (a draft reopened on an older
 //     build); write(s2, conv(s2)) is s2 (stable); yrender draws g2.
 //   CellDesigner (every demo map with a compartment): an alias taken out of its compartment and one put into another,
-//     a compartment put into another; cd_edit.js and cd_edit.py write the same text byte for byte; the alias's
+//     a compartment put into another; cd_edit.js writes the text kept in the reference set (tests/reference.js); the alias's
 //     compartmentAlias and its species' compartment, a compartment's outside, as CellDesigner writes them; the GraphML
 //     made again from it nests the alias as moved. nestCheck lets a complex's member out (cd_make.leave writes it) and refuses one copy of a species drawn
 //     twice in one compartment.
@@ -18,12 +18,12 @@
 //     is fully out; a compartment moved by itself lets go only what no longer overlaps it; one moved plain over free glyphs takes them in, only what it newly covers; one moved past its
 //     holder's edge stays in it (its holder grows), one resized past it leaves it and holds what it now covers; what
 //     grows (grown: PAD round an inside member, an edge member kept crossing, one dragged inward nothing).
-//   node tests/membership.js [python]   (default: python3)
+//   node tests/membership.js [python]   (default: python3; the converter, which reads the SBGN-ML maps)
 var fs = require('fs'), path = require('path'), cp = require('child_process');
 var here = path.join(__dirname, '..'), se = require(path.join(here, 'renderers/converter/sbgn_edit.js')), ed = require(path.join(here, 'renderers/converter/cd_edit.js'));
 var yr = require(path.join(here, 'renderers/yrender/yrender.js'));
 var DP = require('@xmldom/xmldom').DOMParser, opt = { DOMParser: DP };
-var py = process.argv[2] || 'python3', bad = 0, ran = 0;
+var py = process.argv[2] || 'python3', bad = 0, ran = 0, R = require('./reference.js').open('membership');
 var GN = 'http://graphml.graphdrawing.org/xmlns', YN = 'http://www.yworks.com/xml/graphml';
 function fail(tag, m) { bad++; console.log('DIFF', tag, '|', m); }
 function xml(t, tag) { var errs = [], d; try { d = new DP({ onError: function (l, m) { if (l !== 'warning') errs.push(m); } }).parseFromString(t.replace(/^\ufeff/, ''), 'application/xml'); } catch (e) { errs.push(e.message); } if (errs.length) fail(tag, 'XML: ' + errs[0]); return d; }
@@ -120,15 +120,13 @@ cfiles.forEach(function (f) {
   }
 });
 cjobs.forEach(function (j) { j.g2 = se.moveInto(j.g, j.moves); });
-var CDRV = ['import sys, json', 'sys.path[:0] = [' + JSON.stringify(path.join(here, 'renderers/converter')) + ']', 'import cd_edit', 'out = []',
-  'for t, g in json.load(sys.stdin):', '    try: out.append(cd_edit.apply(t, g))', '    except Exception as e: out.append("ERR " + repr(e))', 'json.dump(out, sys.stdout)'].join('\n');
-var cpy = JSON.parse(cp.execFileSync(py, ['-c', CDRV], { input: JSON.stringify(cjobs.map(function (j) { return [j.t, j.g2]; })), maxBuffer: 1 << 30 }).toString());
+function kept(tag, t, g, out) { if (R.check(tag, [t, g], out, [t]) === 'different') fail(tag, 'not the text kept in the reference set'); }
 cjobs.forEach(function (j, n) {
   var tag = path.basename(j.f) + ' ' + j.what + ' ' + j.moves.map(function (m) { return m[0] + ' -> ' + m[1]; }).join(', '), out;
   ran++;
   if (ed.nestCheck(j.t, j.moves, opt)) return fail(tag, 'refused: ' + ed.nestCheck(j.t, j.moves, opt));
   try { out = ed.apply(j.t, j.g2, opt); } catch (e) { return fail(tag, 'JavaScript: ' + (e && e.message || e)); }
-  if (out !== cpy[n]) return fail(tag, 'JavaScript and Python differ' + (/^ERR/.test(cpy[n]) ? ' (' + cpy[n] + ')' : ''));
+  kept(tag, j.t, j.g2, out);
   xml(out, tag);
   var m = j.moves[0], cmpOf = function (ca) { return ca ? new RegExp('<celldesigner:compartmentAlias id="' + ca + '" compartment="([^"]*)"').exec(out)[1] : 'default'; };
   if (j.comp) {
@@ -152,8 +150,8 @@ cjobs.forEach(function (j, n) {
     .filter(function (id) { return tags.some(function (q) { return q.indexOf(' complexSpeciesAlias="' + id + '"') >= 0 && /compartmentAlias="/.test(q); }) && !ed.nestCheck(t, [[id, null]], opt); })[0];
   ran++;
   if (!cx) return fail('mast cell', 'no complex whose members carry a compartmentAlias');
-  var out = ed.apply(t, se.moveInto(g, [[cx, null]]), opt), pyo = JSON.parse(cp.execFileSync(py, ['-c', CDRV], { input: JSON.stringify([[t, se.moveInto(g, [[cx, null]])]]), maxBuffer: 1 << 30 }).toString())[0];
-  if (out !== pyo) fail('mast cell ' + cx + ' out', 'JavaScript and Python differ');
+  var gx = se.moveInto(g, [[cx, null]]), out = ed.apply(t, gx, opt);
+  kept('mast cell ' + cx + ' out', t, gx, out);
   var left = (out.match(/<celldesigner:(?:complexS|s)peciesAlias [^>]*>/g) || []).filter(function (q) { return q.indexOf(' complexSpeciesAlias="' + cx + '"') >= 0 && /compartmentAlias="/.test(q); });
   if (left.length) fail('mast cell ' + cx + ' out', 'a member keeps its old compartmentAlias: ' + left[0]);
 })();
@@ -163,16 +161,15 @@ cjobs.forEach(function (j, n) {
   var geo = function (gt, id) { var m = new RegExp('<node id="' + id + '"[^>]*>[^]*?<y:Geometry ([^>]*)>').exec(gt)[1]; return ['x', 'y', 'width', 'height'].map(function (k) { return +new RegExp(k + '="([^"]*)"').exec(m)[1]; }); };
   var setX = function (gt, id, x) { var i = gt.indexOf('<node id="' + id + '"'), j = gt.indexOf('<y:Geometry ', i), e = gt.indexOf('>', j); return gt.slice(0, j) + gt.slice(j, e).replace(/\sx="[^"]*"/, ' x="' + x + '"') + gt.slice(e); };
   var a = 'sa_n2_n6', c = geo(g, 'ca_n2'), b = geo(g, a), g1 = setX(g, a, c[0] + c[2] - b[2] / 2), pos = function (tt) { return /<species [^>]*id="s_n2_n6"[^]*?<celldesigner:positionToCompartment>([^<]*)</.exec(tt)[1]; };
-  var out = ed.apply(t, g1, opt), out2 = ed.apply(out, setX(ed.graphml(out, null, opt), a, c[0] + 40), opt);
-  var py2 = JSON.parse(cp.execFileSync(py, ['-c', CDRV], { input: JSON.stringify([[t, g1], [out, setX(ed.graphml(out, null, opt), a, c[0] + 40)]]), maxBuffer: 1 << 30 }).toString());
+  var out = ed.apply(t, g1, opt), gb = setX(ed.graphml(out, null, opt), a, c[0] + 40), out2 = ed.apply(out, gb, opt);
   ran += 3;
-  if (out !== py2[0] || out2 !== py2[1]) fail('srebp positionToCompartment', 'JavaScript and Python differ');
+  kept('srebp ' + a + ' across the border', t, g1, out); kept('srebp ' + a + ' back inside', out, gb, out2);
   if (pos(out) !== 'transmembrane') fail('srebp ' + a + ' across the border', 'positionToCompartment ' + pos(out));
   if (pos(out2) !== 'inside') fail('srebp ' + a + ' back inside', 'positionToCompartment ' + pos(out2));
   var g3 = se.moveInto(setX(ed.graphml(out, null, opt), a, c[0] + c[2] + 200), [[a, null]]), out3 = ed.apply(out, g3, opt);   // from the edge out of every compartment
   ran++;
   if (pos(out3) !== 'inside') fail('srebp ' + a + ' out of every compartment', 'positionToCompartment ' + pos(out3));
-  if (out3 !== JSON.parse(cp.execFileSync(py, ['-c', CDRV], { input: JSON.stringify([[out, g3]]), maxBuffer: 1 << 30 }).toString())[0]) fail('srebp ' + a + ' out of every compartment', 'JavaScript and Python differ');
+  kept('srebp ' + a + ' out of every compartment', out, g3, out3);
 })();
 
 // ---------- GraphML ----------
@@ -338,5 +335,6 @@ fs.readdirSync(path.join(here, 'maps')).filter(function (f) { return /\.graphml$
   if (me[2] > cb[0] + cb[2] + 1e-6) fail(f + ' ' + id, 'its drawing sticks out of its compartment after the push');
 });
 console.log(yn + " GraphML pushes checked against yEd's box");
+R.end('CellDesigner writes');
 console.log(ran + rn + ' checks (' + rn + ' of the editor\'s rules): ' + sjobs.length + ' SBGN-ML changes on ' + files.length + ' maps, ' + cjobs.length + ' CellDesigner changes on ' + cfiles.length + ' maps, ' + gn + ' GraphML maps: ' + (bad ? bad + ' wrong' : 'all right'));
 process.exit(bad ? 1 : 0);

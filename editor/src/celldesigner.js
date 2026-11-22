@@ -5,12 +5,12 @@ import { cdCheck, cdClsOf, cdRole } from './cdcreate.js';
 
     // ---------- the CellDesigner part (editor/src/celldesigner.js) ----------
     // A CellDesigner map edited in CellDesigner's own model: the GraphML renderers/converter/cd_edit.js makes of it, the
-    // moves written back into the CellDesigner text by it, the map drawn by cdrender.js (both in JavaScript, the same
-    // text as their Python masters byte for byte, tests/cd-compare.js: no Python in the editor);
+    // moves written back into the CellDesigner text by it, the map drawn by cdrender.js (both in JavaScript, their output
+    // kept in the reference set, tests/cd-reference.js: no Python in the editor);
     // the process glyph that follows its segment, the guides through it, the canvas left out while editing.
 
     // a CellDesigner map, edited with the same tools as a yEd map: as the GraphML that
-    // renderers/converter/cd_edit.js makes of it (cd_edit.py's header says how), the moves written back into the CellDesigner file
+    // renderers/converter/cd_edit.js makes of it (cd_edit-rules.md's header says how), the moves written back into the CellDesigner file
     // by it and the map drawn by cdrender, each part in a group of its own; text is that GraphML, cd.now the file
     var cdp, cdJs, cdMk;
     function __run1() {   // run at start, in order (__start)

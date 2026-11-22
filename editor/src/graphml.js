@@ -7,8 +7,8 @@ import { sbJs } from './sbgn.js';
     // A yEd GraphML drawn again by the viewer's yEd renderer in JavaScript (renderers/yrender/yrender.js), each node and
     // arc in a group of its own; the shift out of negative places; the compartments' outlines following a drag.
 
-    // the yEd renderer in JavaScript (renderers/yrender/yrender.js): the same SVG as yrender.py byte for byte
-    // (tests/yrender-compare.js), so a GraphML map is drawn again with no Python; the editor's way: classes beside the
+    // the yEd renderer in JavaScript (renderers/yrender/yrender.js, its drawings kept in the reference set,
+    // tests/yrender-reference.js), so a GraphML map is drawn again with no Python; the editor's way: classes beside the
     // colours and each node and arc in a group of its own (data-n, data-e)
     var yrp;
     function __run1() {   // run at start, in order (__start)

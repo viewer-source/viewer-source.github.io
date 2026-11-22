@@ -1,14 +1,14 @@
 // Make main: on every CellDesigner map, every reaction with an added reactant or product has it
 // swapped with the main one, as the editor's right-click Make main writes cd_edit's GraphML (the two edges trade their
-// species end, their port there and their bend points). Checked: cd_edit.js and cd_edit.py write the same text byte for
-// byte; the base reactant or product now names the added one's species and alias and the link the old main one's; the
+// species end, their port there and their bend points). Checked: cd_edit.js writes the text kept in the reference set
+// (tests/reference.js); the base reactant or product now names the added one's species and alias and the link the old main one's; the
 // SBML references still list both species; the GraphML made again has the two lines swapped and every other line as
 // before; the text reads as XML.
-//   node tests/cd-make-main.js [python] [CellDesigner files or folders ...]   (default: python3, maps/)
-var fs = require('fs'), path = require('path'), cp = require('child_process');
+//   node tests/cd-make-main.js [CellDesigner files or folders ...]   (default: maps/)
+var fs = require('fs'), path = require('path');
 var here = path.join(__dirname, '..'), ed = require(path.join(here, 'renderers/converter/cd_edit.js'));
 var DP = require('@xmldom/xmldom').DOMParser, opt = { DOMParser: DP };
-var args = process.argv.slice(2), py = args[0] && !/\.xml$|\//.test(args[0]) && !fs.existsSync(args[0]) ? args.shift() : 'python3';
+var args = process.argv.slice(2);
 var files = [];
 (args.length ? args : [path.join(here, 'maps')]).forEach(function walk(p) {
   var st; try { st = fs.statSync(p); } catch (e) { return; }
@@ -37,14 +37,12 @@ files.forEach(function (f) {
     else refused.push(path.basename(f) + ' ' + id);
   });
 });
-var DRIVER = ['import sys, json', 'sys.path[:0] = [' + JSON.stringify(path.join(here, 'renderers/converter')) + ']', 'import cd_edit', 'out = []',
-  'for t, g in json.load(sys.stdin):', '    try: out.append(cd_edit.apply(t, g))', '    except Exception as e: out.append("ERR " + repr(e))', 'json.dump(out, sys.stdout)'].join('\n');
-var pyOut = JSON.parse(cp.execFileSync(py, ['-c', DRIVER], { input: JSON.stringify(jobs.map(function (j) { return [j.t, j.g1]; })), maxBuffer: 1 << 30 }).toString());
+var R = require('./reference.js').open('cd-make-main');
 var bad = 0;
 jobs.forEach(function (j, n) {
   var tag = path.basename(j.f) + ' ' + j.link + ' made main', msg = [], out;
   try { out = ed.apply(j.t, j.g1, opt); } catch (e) { msg.push('JavaScript: ' + (e && e.message || e)); }
-  if (out !== undefined && out !== pyOut[n]) msg.push('JavaScript and Python differ' + (/^ERR/.test(pyOut[n]) ? ' (' + pyOut[n] + ')' : ''));
+  if (out !== undefined && R.check(tag, [j.t, j.g1], out, [j.t]) === 'different') msg.push('not the text kept in the reference set');
   if (out !== undefined) {
     new DP({ onError: function (l, m) { if (l !== 'warning') msg.push('XML: ' + m); } }).parseFromString(out, 'application/xml');
     var E0 = edges(j.g0), E1 = edges(ed.graphml(out, null, opt));
@@ -72,4 +70,5 @@ if (r0 && E0[p0]) {
   if (ed.makeMain(g2, r0) !== null) { bad++; console.log('DIFF makeMain offered on a species that is also a product'); }
 }
 console.log(jobs.length + ' swaps on ' + files.length + ' maps (' + refused.length + ' not offered): ' + (bad ? bad + ' wrong' : 'all right'));
+R.end('written texts');
 process.exit(bad ? 1 : 0);

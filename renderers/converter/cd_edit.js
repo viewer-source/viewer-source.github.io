@@ -1,6 +1,7 @@
-// cd_edit in JavaScript: the same text as cd_edit.py byte for byte (tests/cd-compare.js), so the editor
-// works on a CellDesigner map with no Python; the master for the viewer's own build and the editor. cd_edit.py beside it is its
-// twin; a change is made in both in the same commit. The rules and their reasons are in cd_edit.py under the same names.
+// cd_edit: the editor on a CellDesigner map, through the GraphML it makes of it and the moves written back into the
+// CellDesigner text. The one master (a Python twin it once had is retired); its texts on the demo maps are
+// kept in the reference set (tests/cd-reference.js and the writer tests). The rules and their reasons are in
+// cd_edit-rules.md beside it under the same names (snake_case there).
 //   graphml(cdText, off, opt) -> GraphML text;  place(cdText, graphmlText, opt) -> [CellDesigner text, shift];
 //   draw(cdText, graphmlText, opt) -> [svg, CellDesigner text, GraphML text]   (opt: { DOMParser } in Node)
 (function (root) {
@@ -566,7 +567,7 @@
   function gatesOf(boxes, old, nw) { boxes.forEach(function (b, i) { if (!old.has(i) && GATE_ID.test(i)) nw.set(i, b); }); }   // the gates' nodes, for reaction()
   function apply(t, gtext, opt) { return place(t, gtext, opt)[0]; }
   // one reaction's lines written into T (s: its span), as place does for each (also the editor's live drawing, live():
-  // JavaScript only, it changes no text; cd_edit.py keeps this inside place)
+  // it changes no text; the Python twin kept this inside place)
   // a gate's place now: the centre of its node, if the editor moved it (nw), else where it was
   function gateAt(nw, id, G) { var b = nw.get(id); if (!b) return G; var c = [b[0] + b[2] / 2, b[1] + b[3] / 2]; return near(c, G, 1e-6) ? G : c; }
   // a gate's editPoints: the bends of its line to the target (frame from G to the target), then its place
@@ -832,7 +833,7 @@
     return [T.done(), sh];
   }
   // the aliases inside complex alias cx, nested ones too, that carry a compartmentAlias: [[id, that alias, its tag's name], ...]
-  // (place() and cd_make.js's compartment() set it to their complex's; cd_edit.py's members() its twin)
+  // (place() and cd_make.js's compartment() set it to their complex's; members in cd_edit-rules.md() its twin)
   function carriers(t, cx) {
     var tags = [], re = /<celldesigner:(complexSpeciesAlias|speciesAlias)(?=\s)[^>]*>/g, m, out = [], at = function (tag, k) { var r = new RegExp('\\s' + k + '="([^"]*)"').exec(tag); return r ? r[1] : null; };
     while ((m = re.exec(t))) tags.push([m[0], m[1]]);

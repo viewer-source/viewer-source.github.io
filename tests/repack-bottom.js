@@ -1,5 +1,5 @@
-// The bottom of a named complex after Repack all complexes (layout.js, the packer copied from the layout skill's
-// complex_pack.py): on the styles page, every named complex of Testing Glycolysis (SBGN-ML) ends 24 under what its
+// The bottom of a named complex after Repack all complexes (layout.js, the packer that began as the layout skill's
+// complex_pack-rules.md): on the styles page, every named complex of Testing Glycolysis (SBGN-ML) ends 24 under what its
 // members draw (the name, 18.1 high there, 6 under them; a multimer's copy and a unit of information count as drawn) and
 // every complex of Glycolysis CellDesigner 20 under; on the SBGN-ML map a complex inside another is followed by the next
 // member 8 under it in the file, to that member's unit of information (its name not counted 10 below its new bottom); a named complex's label box lies inside it. Which complexes and members:

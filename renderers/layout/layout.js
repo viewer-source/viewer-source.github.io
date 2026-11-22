@@ -1,11 +1,10 @@
-// The layout tools of the editor in JavaScript: complex_pack.py and snap_grid.py (copies of the layout
-// skill's at 7fc1773) and tidy.py, as one file, giving the same text as the Python byte for byte
-// (tests/layout-compare.js). tidy's master is here (JavaScript the master for the viewer's build and
-// the editor; tidy.py is its twin); complex_pack and snap_grid keep their master in the layout skill (Python, used by its
-// other scripts): a new copy of them (get_layout.sh) is made here too, and the comparison run. The rules and their reasons are in
-// the Python files, function by function, under the same names; comments here are short.
+// The layout tools of the editor: complex packing, snap to grid and tidy, in one file, its own master. It began as the
+// layout skill's complex_pack.py and snap_grid.py (at 7fc1773) with the viewer's tidy.py; since then the
+// viewer's layout and the skill are unlinked, each going its own way (the viewer's rules for sizes may differ).
+// Checked by its reference drawings (tests/layout-reference.js). The rules and their reasons are in complex_pack-rules.md,
+// snap_grid-rules.md and tidy-rules.md beside it, function by function, under the same names; comments here are short.
 //   browser: layout.tidy(text, what, ids, keepPorts, opt) -> [new text, how many attributes changed]   (as tidy.tidy;
-//            opt.grid and opt.route, JavaScript only: Snap map to grid's steps for nodes and bend points, 8 and 4 by default as snap_grid.py)
+//            opt.grid and opt.route, JavaScript only: Snap map to grid's steps for nodes and bend points, 8 and 4 by default as snap_grid-rules.md)
 //   node:    require('./layout.js').tidy(text, ..., { DOMParser })
 (function (root) {
   'use strict';

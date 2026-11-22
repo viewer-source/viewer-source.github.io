@@ -1,15 +1,15 @@
 // cd_edit with a line's end moved to another node, as the editor writes it into cd_edit's GraphML (the edge's source or
 // target, its port at a side or the centre): on every CellDesigner map, for each kind of line that has one (the base
 // reactant, the base product, a modifier, an added reactant, an added product), its end at a species moved to another
-// species alias (never a member inside a complex, never a compartment). Checked: cd_edit.js and cd_edit.py write the
-// same text byte for byte; the reaction now names the new species and alias in the CellDesigner element (a modifier's
+// species alias (never a member inside a complex, never a compartment). Checked: cd_edit.js writes the text kept in the
+// reference set (tests/reference.js); the reaction now names the new species and alias in the CellDesigner element (a modifier's
 // linkTarget too) and in SBML's reference; the GraphML made again from it has the line at the new node and every other
 // line as before; the text reads as XML.
-//   node tests/cd-reconnect.js [python] [CellDesigner files or folders ...]   (default: python3, maps/)
-var fs = require('fs'), path = require('path'), cp = require('child_process');
+//   node tests/cd-reconnect.js [CellDesigner files or folders ...]   (default: maps/)
+var fs = require('fs'), path = require('path');
 var here = path.join(__dirname, '..'), ed = require(path.join(here, 'renderers/converter/cd_edit.js'));
 var DP = require('@xmldom/xmldom').DOMParser, opt = { DOMParser: DP };
-var args = process.argv.slice(2), py = args[0] && !/\.xml$|\//.test(args[0]) && !fs.existsSync(args[0]) ? args.shift() : 'python3';
+var args = process.argv.slice(2);
 var files = [];
 (args.length ? args : [path.join(here, 'maps')]).forEach(function walk(p) {
   var st; try { st = fs.statSync(p); } catch (e) { return; }
@@ -54,14 +54,12 @@ files.forEach(function (f) {
   var a0 = Object.keys(I.E).filter(function (e) { return /\|a$/.test(e) && I.E[e.replace(/a$/, 'b')]; })[0];
   if (a0) { var pb = I.E[a0.replace(/a$/, 'b')][1]; jobs.push({ f: f, t: t, g0: g, kind: 'refused', eid: a0, j: 0, from: I.E[a0][0], to: pb, g1: setEnd(g, a0, 0, pb, ['0.0', '0.0']) }); }
 });
-var DRIVER = ['import sys, json', 'sys.path[:0] = [' + JSON.stringify(path.join(here, 'renderers/converter')) + ']', 'import cd_edit', 'out = []',
-  'for t, g in json.load(sys.stdin):', '    try: out.append(cd_edit.apply(t, g))', '    except Exception as e: out.append("ERR " + repr(e))', 'json.dump(out, sys.stdout)'].join('\n');
-var pyOut = JSON.parse(cp.execFileSync(py, ['-c', DRIVER], { input: JSON.stringify(jobs.map(function (j) { return [j.t, j.g1]; })), maxBuffer: 1 << 30 }).toString());
+var R = require('./reference.js').open('cd-reconnect');
 var bad = 0;
 jobs.forEach(function (j, n) {
   var tag = path.basename(j.f) + ' ' + j.kind + ' ' + j.eid + ': ' + j.from + ' -> ' + j.to, msg = [], out;
   try { out = ed.apply(j.t, j.g1, opt); } catch (e) { msg.push('JavaScript: ' + (e && e.message || e)); }
-  if (out !== undefined && out !== pyOut[n]) msg.push('JavaScript and Python differ' + (/^ERR/.test(pyOut[n]) ? ' (' + pyOut[n] + ')' : ''));
+  if (out !== undefined && R.check(tag, [j.t, j.g1], out, [j.t]) === 'different') msg.push('not the text kept in the reference set');
   if (out !== undefined && j.kind === 'refused') {
     var E0 = graph(j.g0).E, E1 = graph(ed.graphml(out, null, opt)).E;   // every line at the nodes it had (only the port of that end may change)
     if (Object.keys(E0).some(function (e) { return !E1[e] || E1[e].join() !== E0[e].join(); })) msg.push('a participant changed');
@@ -85,4 +83,5 @@ jobs.forEach(function (j, n) {
   if (msg.length) { bad++; console.log('DIFF', tag, '|', msg.slice(0, 4).join(' | ')); } else if (process.env.VERBOSE) console.log('ok  ', tag);
 });
 console.log(jobs.length + ' moves on ' + files.length + ' maps (' + jobs.filter(function (j) { return j.kind === 'refused'; }).length + ' refused, ' + jobs.filter(function (j) { return j.cat; }).length + ' catalyses with their lists): ' + (bad ? bad + ' wrong' : 'all right'));
+R.end('written texts');
 process.exit(bad ? 1 : 0);

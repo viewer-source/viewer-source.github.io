@@ -621,10 +621,9 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     function note() { if (buildRefused) return warn(buildNote()); quiet(); }   // a step that worked: nothing said, a warning before it cleared; a build refused stays said
     function quiet() { status.textContent = ''; status.classList.remove('m2-ed-warn'); }
 
-    // the layout skill's tools: its own code, copied into renderers/layout/ and run here as it is, on the
-    // map's text; only the numbers it changes are written back (tidy.py), so the rest stays byte for byte. One undo step.
-    // in JavaScript (renderers/layout/layout.js: the same text as tidy.py with the skill's complex_pack.py and
-    // snap_grid.py, byte for byte, tests/layout-compare.js), so neither needs Python: layout.tidy(text, what, ids, keepPorts)
+    // the layout tools (renderers/layout/layout.js, its own master since it was unlinked from the layout skill it began
+    // as), run on the map's text; only the numbers they change are written back (tidy), so the rest stays byte for byte.
+    // One undo step. Checked by tests/layout-reference.js: layout.tidy(text, what, ids, keepPorts)
     var lay;
     function __run12() {   // run at start, in order (__start)
     lay = null;
@@ -920,7 +919,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     }
     // yEd draws a group round what it holds with its Insets and BorderInsets (yEd's auto bounds): on a GraphML map the
     // holders of ids (and those round them) get the BorderInsets that make that box the one saved, an Insets lowered
-    // where an inside member now sits closer, as the fit's room() measures it (the layout skill's tidy.py 'fit'); an edge
+    // where an inside member now sits closer, as the fit's room() measures it (layout.js's tidy 'fit'); an edge
     // member is left out (yEd will draw its group round it). CellDesigner and SBGN-ML files
     // keep no insets
     function refit(ids) {
