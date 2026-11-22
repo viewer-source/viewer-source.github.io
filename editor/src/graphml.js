@@ -1,6 +1,6 @@
 import { shared, V } from './state.js';
 import { G, Y, boxOf, doc, docText, edges2, fmt, gE, gN, gridBlock, lastFor, mv, nodes2, num, on, points, pt, realizerOf, warn } from './core.js';
-import { bx, dropCopies, restBox, restPt } from './live.js';
+import { bx, dropCopies, posePort, restBox, restPt } from './live.js';
 import { sbJs } from './sbgn.js';
 
     // ---------- the GraphML part (editor/src/graphml.js) ----------
@@ -166,8 +166,12 @@ import { sbJs } from './sbgn.js';
       var t = lastFor[0], out;   // the text of the drawing on screen
       try {
         if (!ySession(t).s) return false;
-        var boxes = {}, paths = {}, moved = new Set();
-        nodes2.forEach(function (n, i) { var a = bx(i), b = restBox(i); if (a[0] !== b[0] || a[1] !== b[1] || a[2] !== b[2] || a[3] !== b[3]) { boxes[n.id] = a; moved.add(i); } });
+        var boxes = {}, paths = {}, ways = {}, moved = new Set();
+        nodes2.forEach(function (n, i) {   // a node the drag poses at its posed box and way, so its lines end on its outline there
+          var p = shared.poseNow && shared.poseNow[i], a = p ? p.box : bx(i), b = restBox(i);
+          if (p && p.way) ways[n.id] = p.way;
+          if (a[0] !== b[0] || a[1] !== b[1] || a[2] !== b[2] || a[3] !== b[3]) { boxes[n.id] = a; moved.add(i); }
+        });
         // every arc with an end or a bend point moving, its points as they are now (an arc whose two ends move is
         // shifted whole, but may be drawn again with a process at it)
         edges2.forEach(function (e, k) {
@@ -176,10 +180,11 @@ import { sbJs } from './sbgn.js';
             if (!moved.has(e.s) && !moved.has(e.t) && !e.pts.some(function (pi, j) { var r = restPt(pi); return r[0] !== pts[j][0] || r[1] !== pts[j][1]; })) return;
           }
           var q = ['sx', 'sy', 'tx', 'ty'].map(function (a) { return e.path ? parseFloat(e.path.getAttribute(a)) || 0 : 0; });
+          q = posePort(e.s, q.slice(0, 2), k).concat(posePort(e.t, q.slice(2), k));   // a node the drag poses (a terminal turned on its border): its ports where the drop puts them
           if (mine) { var j = pp.end ? 2 : 0; q[j] = pp.to[0]; q[j + 1] = pp.to[1]; }
           paths[e.id] = { pts: pts, port: q };
         });
-        out = yLive.s.draw(boxes, paths, Array.from(ks, function (k) { return edges2[k].id; }));
+        out = yLive.s.draw(boxes, paths, Array.from(ks, function (k) { return edges2[k].id; }), ways);
       } catch (x) { out = null; }
       if (!out) return false;
       dropCopies();

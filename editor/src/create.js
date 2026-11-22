@@ -896,12 +896,10 @@ import { origGh, origPut } from './own.js';
       if (!placed && (HORIZ[way] ? b[3] > b[2] : b[2] > b[3])) nb = [b[0] + b[2] / 2 - b[3] / 2, b[1] + b[3] / 2 - b[2] / 2, b[3], b[2]].map(function (v) { return +fmt(v); });   // long across its point's direction
       if (nb !== b) t = sbJs.resize(t, id, nb);
       if (way !== now) t = sbJs.way(t, id, way);
-      var tip = { right: [nb[2] / 2, 0], left: [-nb[2] / 2, 0], down: [0, nb[3] / 2], up: [0, -nb[3] / 2] }[way], back = [-tip[0], -tip[1]];
       var q = n.sub != null ? boxOf(n.sub) : null, es = edges2.filter(function (e) { return e.s === i || e.t === i; });
       if (!q && es.length !== 1) return t;
       es.forEach(function (e) {
-        var end = e.t === i, o = boxOf(end ? e.s : e.t), oc = [o[0] + o[2] / 2, o[1] + o[3] / 2];
-        var p = !q ? tip : oc[0] > q[0] && oc[0] < q[0] + q[2] && oc[1] > q[1] && oc[1] < q[1] + q[3] ? tip : back;   // a terminal's: from inside its submap its point, from outside its back
+        var end = e.t === i, o = boxOf(end ? e.s : e.t), p = tagEnd(way, nb, q, [o[0] + o[2] / 2, o[1] + o[3] / 2]);
         var xid = e.id.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         t = t.replace(new RegExp('(<edge id="' + xid + '"(?:(?!</edge>)[\\s\\S])*?<y:Path)([^>]*?)(/?>)'), function (m, a, at, close) {   // its Path in this edge only; a missing offset added
           [[end ? 'tx' : 'sx', p[0]], [end ? 'ty' : 'sy', p[1]]].forEach(function (k) {
@@ -912,6 +910,13 @@ import { origGh, origPut } from './own.js';
         });
       });
       return t;
+    }
+    // a line's port on a tag of box b turned way, as an offset from its centre: at its point for a free tag (q null) and
+    // for a terminal's line from inside its submap q (oc: the centre of the line's other end), at its back from outside.
+    // The one rule for the drop (tagTurnT) and the drag (livePose below)
+    function tagEnd(way, b, q, oc) {
+      var tip = { right: [b[2] / 2, 0], left: [-b[2] / 2, 0], down: [0, b[3] / 2], up: [0, -b[3] / 2] }[way];
+      return !q || (oc[0] > q[0] && oc[0] < q[0] + q[2] && oc[1] > q[1] && oc[1] < q[1] + q[3]) ? tip : [-tip[0], -tip[1]];
     }
     function tagAim(ids) {   // the free tags among ids with one line: each turned to face the line's other end
       var t2 = shared.text;
@@ -1001,12 +1006,9 @@ import { origGh, origPut } from './own.js';
           var way = Math.abs(dx) >= Math.abs(dy) ? (dx >= 0 ? 'right' : 'left') : (dy >= 0 ? 'down' : 'up');
           on = [!!HORIZ[way] === (mb[2] >= mb[3]) ? mb : [c[0] - mb[3] / 2, c[1] - mb[2] / 2, mb[3], mb[2]], way];   // as tagTurnT: long across its point's direction
         }
-        var nb = on[0], tip = { right: [nb[2] / 2, 0], left: [-nb[2] / 2, 0], down: [0, nb[3] / 2], up: [0, -nb[3] / 2] }[on[1]], ports = {};
-        es.forEach(function (k) {   // its lines' ports as tagTurnT sets them: a free tag's at its point, a terminal's from inside at its point, from outside at its back
-          var e = edges2[k], oc = mid(moved(e.s === i ? e.t : e.s)), inside = q && oc[0] > q[0] && oc[0] < q[0] + q[2] && oc[1] > q[1] && oc[1] < q[1] + q[3];
-          ports[k] = !q || inside ? tip : [-tip[0], -tip[1]];
-        });
-        out[i] = { box: nb, way: on[1], turn: (TURN[on[1]] - TURN[now] + 360) % 360, ports: ports };
+        var ports = {};
+        es.forEach(function (k) { var e = edges2[k]; ports[k] = tagEnd(on[1], on[0], q, mid(moved(e.s === i ? e.t : e.s))); });   // as tagTurnT sets them
+        out[i] = { box: on[0], way: on[1], turn: (TURN[on[1]] - TURN[now] + 360) % 360, ports: ports };
       });
     });
     }

@@ -817,7 +817,8 @@
   }
   // the drawing of a move as it goes (JavaScript only, for the editor): the map read once (src: a text or a document,
   // copied); draw(boxes, paths, ask) puts nodes at other boxes ({ id: [x, y, w, h] }) and arcs through other points
-  // ({ id: { pts: bend points, port: [sx, sy, tx, ty] } }), the rest as read, and gives the arcs asked and the
+  // ({ id: { pts: bend points, port: [sx, sy, tx, ty] } }) and tags turned another way ({ id: 'up' }, the editor's drag
+  // holding a submap's terminal on another side), the rest as read, and gives the arcs asked and the
   // processes and gates whose drawing changes, with every arc at them, as render() draws them there: { e: { id: svg },
   // n: { id: svg } }, each in its group; null when the map cannot be drawn. A process moved rigidly with all its arcs
   // (its nodes and bend points by the same step) is left out: its group, shifted as a whole, is already right
@@ -842,7 +843,7 @@
     var geoOf = function (n) { var r = realizer(m.els[n][0]); return r && kid(r, Y, 'Geometry'); };
     var pathOf = function (id) { var pl = polyline(byE[id][0]); return pl && kid(pl, Y, 'Path'); };
     Object.keys(byE).forEach(function (id) { var p = pathOf(id); pts0[id] = p ? kids(p, Y, 'Point').map(function (q) { return [pyFloat(get(q, 'x')), pyFloat(get(q, 'y'))]; }) : []; });
-    var keptN = {}, keptE = {};   // what draw() changed: the attributes as read, to put back
+    var keptN = {}, keptE = {}, keptW = {};   // what draw() changed: the attributes as read, to put back
     var GA = ['x', 'y', 'width', 'height'], PA = ['sx', 'sy', 'tx', 'ty'];
     function setAll(el, names, vals) { names.forEach(function (a, i) { el.setAttribute(a, String(vals[i])); }); }
     function setPath(p, port, pts) {
@@ -850,9 +851,28 @@
       kids(p, Y, 'Point').forEach(function (q) { p.removeChild(q); });
       pts.forEach(function (q) { var e = doc.createElementNS(Y, 'y:Point'); e.setAttribute('x', String(q[0])); e.setAttribute('y', String(q[1])); p.appendChild(e); });
     }
-    function draw(boxes, paths, ask) {
+    function draw(boxes, paths, ask, ways) {
       setG();
-      var reread = new Set();
+      var reread = new Set(), OR = SBGN + 'style.orientation';
+      ways = ways || {};
+      Object.keys(keptW).forEach(function (n) {   // a way set before and not now: put back as read
+        var k = keptW[n];
+        if (ways[n] === k.w) return;
+        if (k.sp) k.sp.parentNode.removeChild(k.sp); else if (k.was == null) k.el.parentNode.removeChild(k.el); else k.el.setAttribute('value', k.was);
+        delete keptW[n]; reread.add(n);
+      });
+      Object.keys(ways).forEach(function (n) {
+        if (keptW[n] || !m.els[n]) return;
+        var r = realizer(m.els[n][0]);
+        if (!r) return;
+        var el = iter(r, Y, ['Property']).filter(function (e) { return get(e, 'name') === OR; })[0], was = el ? get(el, 'value') : null, sp = null;
+        if (!el) {
+          var at = kid(r, Y, 'StyleProperties');
+          if (!at) { at = sp = doc.createElementNS(Y, 'y:StyleProperties'); r.appendChild(sp); }
+          el = doc.createElementNS(Y, 'y:Property'); el.setAttribute('name', OR); at.appendChild(el);
+        }
+        el.setAttribute('value', ways[n]); keptW[n] = { w: ways[n], el: el, was: was, sp: sp }; reread.add(n);
+      });
       Object.keys(keptN).forEach(function (n) { if (!boxes[n]) { setAll(geoOf(n), GA, keptN[n]); delete keptN[n]; reread.add(n); } });
       Object.keys(boxes).forEach(function (n) {
         var g = m.els[n] && geoOf(n);
@@ -871,8 +891,8 @@
       reread.forEach(function (n) {
         var el = m.els[n], b = boxes[n], N = base[n], g0 = geo0[n];
         if (!el) return;
-        if (!b && !HUBS.has(N.kind)) { m.nodes[n] = N; return; }
-        if (b && !HUBS.has(N.kind) && b[2] === g0[2] && b[3] === g0[3]) {
+        if (!b && !HUBS.has(N.kind) && !keptW[n]) { m.nodes[n] = N; return; }
+        if (b && !HUBS.has(N.kind) && !keptW[n] && b[2] === g0[2] && b[3] === g0[3]) {
           var dx = b[0] - g0[0], dy = b[1] - g0[1];
           m.nodes[n] = Object.assign({}, N, { geo: b.slice(), polys: shiftBy(N.polys, dx, dy), aux: shiftBy(N.aux, dx, dy) });
           return;

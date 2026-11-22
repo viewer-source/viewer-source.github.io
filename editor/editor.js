@@ -399,9 +399,10 @@
     var t = lastFor[0], out;
     try {
       if (!ySession(t).s) return false;
-      var boxes = {}, paths = {}, moved = /* @__PURE__ */ new Set();
+      var boxes = {}, paths = {}, ways = {}, moved = /* @__PURE__ */ new Set();
       nodes2.forEach(function(n, i) {
-        var a = bx(i), b = restBox(i);
+        var p = shared.poseNow && shared.poseNow[i], a = p ? p.box : bx(i), b = restBox(i);
+        if (p && p.way) ways[n.id] = p.way;
         if (a[0] !== b[0] || a[1] !== b[1] || a[2] !== b[2] || a[3] !== b[3]) {
           boxes[n.id] = a;
           moved.add(i);
@@ -418,6 +419,7 @@
         var q = ["sx", "sy", "tx", "ty"].map(function(a) {
           return e.path ? parseFloat(e.path.getAttribute(a)) || 0 : 0;
         });
+        q = posePort(e.s, q.slice(0, 2), k).concat(posePort(e.t, q.slice(2), k));
         if (mine2) {
           var j = pp.end ? 2 : 0;
           q[j] = pp.to[0];
@@ -427,7 +429,7 @@
       });
       out = yLive.s.draw(boxes, paths, Array.from(ks, function(k) {
         return edges2[k].id;
-      }));
+      }), ways);
     } catch (x) {
       out = null;
     }
@@ -4576,14 +4578,12 @@
     });
     if (nb !== b) t = sbJs.resize(t, id, nb);
     if (way !== now) t = sbJs.way(t, id, way);
-    var tip = { right: [nb[2] / 2, 0], left: [-nb[2] / 2, 0], down: [0, nb[3] / 2], up: [0, -nb[3] / 2] }[way], back2 = [-tip[0], -tip[1]];
     var q = n.sub != null ? boxOf(n.sub) : null, es = edges2.filter(function(e) {
       return e.s === i || e.t === i;
     });
     if (!q && es.length !== 1) return t;
     es.forEach(function(e) {
-      var end = e.t === i, o = boxOf(end ? e.s : e.t), oc = [o[0] + o[2] / 2, o[1] + o[3] / 2];
-      var p = !q ? tip : oc[0] > q[0] && oc[0] < q[0] + q[2] && oc[1] > q[1] && oc[1] < q[1] + q[3] ? tip : back2;
+      var end = e.t === i, o = boxOf(end ? e.s : e.t), p = tagEnd(way, nb, q, [o[0] + o[2] / 2, o[1] + o[3] / 2]);
       var xid = e.id.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       t = t.replace(new RegExp('(<edge id="' + xid + '"(?:(?!</edge>)[\\s\\S])*?<y:Path)([^>]*?)(/?>)'), function(m, a, at2, close) {
         [[end ? "tx" : "sx", p[0]], [end ? "ty" : "sy", p[1]]].forEach(function(k) {
@@ -4594,6 +4594,10 @@
       });
     });
     return t;
+  }
+  function tagEnd(way, b, q, oc) {
+    var tip = { right: [b[2] / 2, 0], left: [-b[2] / 2, 0], down: [0, b[3] / 2], up: [0, -b[3] / 2] }[way];
+    return !q || oc[0] > q[0] && oc[0] < q[0] + q[2] && oc[1] > q[1] && oc[1] < q[1] + q[3] ? tip : [-tip[0], -tip[1]];
   }
   function tagAim(ids) {
     var t2 = shared.text;
@@ -4730,12 +4734,12 @@
           var way = Math.abs(dx) >= Math.abs(dy) ? dx >= 0 ? "right" : "left" : dy >= 0 ? "down" : "up";
           on2 = [!!HORIZ[way] === mb[2] >= mb[3] ? mb : [c[0] - mb[3] / 2, c[1] - mb[2] / 2, mb[3], mb[2]], way];
         }
-        var nb = on2[0], tip = { right: [nb[2] / 2, 0], left: [-nb[2] / 2, 0], down: [0, nb[3] / 2], up: [0, -nb[3] / 2] }[on2[1]], ports2 = {};
+        var ports2 = {};
         es.forEach(function(k) {
-          var e2 = edges2[k], oc2 = mid(moved(e2.s === i ? e2.t : e2.s)), inside = q && oc2[0] > q[0] && oc2[0] < q[0] + q[2] && oc2[1] > q[1] && oc2[1] < q[1] + q[3];
-          ports2[k] = !q || inside ? tip : [-tip[0], -tip[1]];
+          var e2 = edges2[k];
+          ports2[k] = tagEnd(on2[1], on2[0], q, mid(moved(e2.s === i ? e2.t : e2.s)));
         });
-        out[i] = { box: nb, way: on2[1], turn: (TURN[on2[1]] - TURN[now] + 360) % 360, ports: ports2 };
+        out[i] = { box: on2[0], way: on2[1], turn: (TURN[on2[1]] - TURN[now] + 360) % 360, ports: ports2 };
       });
     });
   }
