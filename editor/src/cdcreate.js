@@ -1246,7 +1246,7 @@ import { ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues, confet
         var vr = V.view.getBoundingClientRect(), z = box.getBoundingClientRect().width / box.offsetWidth || 1, w = box.offsetWidth * z, ht = box.offsetHeight * z;
         // the node with its icon, never covered: below it where the window has room, else above, else right, else left
         var nb = boxOf(i), X0 = Math.min(nb[0], q[1][0] - q[2][0] / 2), X1 = Math.max(nb[0] + nb[2], q[1][0] + q[2][0] / 2), Y0 = Math.min(nb[1], q[1][1] - q[2][1] / 2), Y1 = Math.max(nb[1] + nb[3], q[1][1] + q[2][1] / 2);
-        var L = vr.left + sx(X0) * z, R = vr.left + sx(X1) * z, T0 = vr.top + sy(Y0) * z, B = vr.top + sy(Y1) * z, g = 10 * z, W = window.innerWidth, H = window.innerHeight;
+        var L = vr.left + sx(X0) * z, R = vr.left + sx(X1) * z, T0 = vr.top + sy(Y0) * z, B = vr.top + sy(Y1) * z, g = 10 * z, W = V.winW(), H = V.winH();
         var cx = Math.max(4, Math.min((L + R) / 2 - w / 2, W - 4 - w)), cy = Math.max(4, Math.min((T0 + B) / 2 - ht / 2, H - 4 - ht));
         var at = B + g + ht <= H - 4 ? [cx, B + g] : T0 - g - ht >= 4 ? [cx, T0 - g - ht] : R + g + w <= W - 4 ? [R + g, cy] : L - g - w >= 4 ? [L - g - w, cy] : [cx, Math.max(4, H - 4 - ht)];
         box.style.left = at[0] / z + 'px'; box.style.top = at[1] / z + 'px';

@@ -351,10 +351,10 @@ import { origGh, origPut } from './own.js';
           // below and more above; inside the window. The page's own zoom: a fixed box is placed in its units
           var f = bx.getBoundingClientRect(), k = box.getBoundingClientRect().width / box.offsetWidth || 1;
           box.style.minWidth = f.width / k + 'px';
-          var w = box.offsetWidth * k, h = box.offsetHeight * k, below = window.innerHeight - 4 - f.bottom, above = f.top - 4;
+          var w = box.offsetWidth * k, h = box.offsetHeight * k, below = V.winH() - 4 - f.bottom, above = f.top - 4;
           var y = h + 2 * k <= below || below >= above ? f.bottom + 2 * k : f.top - 2 * k - h;
-          box.style.left = Math.max(4, Math.min(f.left, window.innerWidth - 4 - w)) / k + 'px';
-          box.style.top = Math.max(4, Math.min(y, window.innerHeight - 4 - h)) / k + 'px';
+          box.style.left = Math.max(4, Math.min(f.left, V.winW() - 4 - w)) / k + 'px';
+          box.style.top = Math.max(4, Math.min(y, V.winH() - 4 - h)) / k + 'px';
           ddOpen = box; box._r = r; box._t = src(); box._list = q.list; box._keys = keys; bx.setAttribute('aria-expanded', 'true');
           if (keys) { var s = box.querySelector('[aria-selected="true"]') || box.firstChild; if (s) s.focus(); }   // opened by Enter or Space (detail 0: no pointer): the keys walk the list
         });

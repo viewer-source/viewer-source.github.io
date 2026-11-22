@@ -3709,10 +3709,10 @@
         document.body.appendChild(box2);
         var f2 = bx2.getBoundingClientRect(), k = box2.getBoundingClientRect().width / box2.offsetWidth || 1;
         box2.style.minWidth = f2.width / k + "px";
-        var w = box2.offsetWidth * k, h = box2.offsetHeight * k, below = window.innerHeight - 4 - f2.bottom, above = f2.top - 4;
+        var w = box2.offsetWidth * k, h = box2.offsetHeight * k, below = V.winH() - 4 - f2.bottom, above = f2.top - 4;
         var y = h + 2 * k <= below || below >= above ? f2.bottom + 2 * k : f2.top - 2 * k - h;
-        box2.style.left = Math.max(4, Math.min(f2.left, window.innerWidth - 4 - w)) / k + "px";
-        box2.style.top = Math.max(4, Math.min(y, window.innerHeight - 4 - h)) / k + "px";
+        box2.style.left = Math.max(4, Math.min(f2.left, V.winW() - 4 - w)) / k + "px";
+        box2.style.top = Math.max(4, Math.min(y, V.winH() - 4 - h)) / k + "px";
         ddOpen = box2;
         box2._r = r;
         box2._t = src();
@@ -9635,7 +9635,7 @@
       }
       var vr = V.view.getBoundingClientRect(), z = box2.getBoundingClientRect().width / box2.offsetWidth || 1, w = box2.offsetWidth * z, ht = box2.offsetHeight * z;
       var nb = boxOf(i), X0 = Math.min(nb[0], q[1][0] - q[2][0] / 2), X1 = Math.max(nb[0] + nb[2], q[1][0] + q[2][0] / 2), Y0 = Math.min(nb[1], q[1][1] - q[2][1] / 2), Y1 = Math.max(nb[1] + nb[3], q[1][1] + q[2][1] / 2);
-      var L = vr.left + sx(X0) * z, R = vr.left + sx(X1) * z, T0 = vr.top + sy(Y0) * z, B = vr.top + sy(Y1) * z, g = 10 * z, W = window.innerWidth, H = window.innerHeight;
+      var L = vr.left + sx(X0) * z, R = vr.left + sx(X1) * z, T0 = vr.top + sy(Y0) * z, B = vr.top + sy(Y1) * z, g = 10 * z, W = V.winW(), H = V.winH();
       var cx = Math.max(4, Math.min((L + R) / 2 - w / 2, W - 4 - w)), cy = Math.max(4, Math.min((T0 + B) / 2 - ht / 2, H - 4 - ht));
       var at2 = B + g + ht <= H - 4 ? [cx, B + g] : T0 - g - ht >= 4 ? [cx, T0 - g - ht] : R + g + w <= W - 4 ? [R + g, cy] : L - g - w >= 4 ? [L - g - w, cy] : [cx, Math.max(4, H - 4 - ht)];
       box2.style.left = at2[0] / z + "px";
@@ -11161,12 +11161,12 @@
       var b = helpBtn.getBoundingClientRect(), p = V.view.getBoundingClientRect();
       helpBox.hidden = false;
       var k = V.pz(), w = helpBox.offsetWidth * k, h = helpBox.offsetHeight * k, left = Math.max(p.left + 28, b.right + 8), top = b.top;
-      if (left + w > innerWidth - 16) {
-        left = Math.max(16, Math.min(b.right - w, innerWidth - 16 - w));
+      if (left + w > V.winW() - 16) {
+        left = Math.max(16, Math.min(b.right - w, V.winW() - 16 - w));
         top = b.bottom + 6;
       }
       helpBox.style.left = left / k + "px";
-      helpBox.style.top = Math.max(16, Math.min(top, innerHeight - 16 - h)) / k + "px";
+      helpBox.style.top = Math.max(16, Math.min(top, V.winH() - 16 - h)) / k + "px";
       var h4 = at2 && Array.prototype.filter.call(helpBox.querySelectorAll("h4"), function(x) {
         return x.textContent === at2;
       })[0];
@@ -14299,9 +14299,9 @@
     var k = kwBox.getBoundingClientRect().width / kwBox.offsetWidth || 1, w = kwBox.offsetWidth * k, h = kwBox.offsetHeight * k;
     var first = kwBox.firstChild, lift = first ? first.getBoundingClientRect().top - kwBox.getBoundingClientRect().top : 0;
     var mr = r.mright != null ? r.mright : r.right, ml = r.mleft != null ? r.mleft : r.left;
-    var x = mr - 2 * k + w <= window.innerWidth - 4 ? mr - 2 * k : ml + 2 * k - w >= 4 ? ml + 2 * k - w : window.innerWidth - 4 - w;
+    var x = mr - 2 * k + w <= V.winW() - 4 ? mr - 2 * k : ml + 2 * k - w >= 4 ? ml + 2 * k - w : V.winW() - 4 - w;
     kwBox.style.left = Math.max(4, x) / k + "px";
-    kwBox.style.top = Math.max(4, Math.min(r.top - lift, window.innerHeight - 4 - h)) / k + "px";
+    kwBox.style.top = Math.max(4, Math.min(r.top - lift, V.winH() - 4 - h)) / k + "px";
     var box2 = kwBox;
     kwBox.m2close = function() {
       if (kwBox === box2) kwClose();

@@ -2011,8 +2011,8 @@ page, so its styles keep the base they were made on).
     box.style.left = x / k0 + 'px'; box.style.top = y / k0 + 'px'; box.style.zIndex = '1002';
     document.body.appendChild(box);
     var b0 = box.getBoundingClientRect();
-    if (b0.right > innerWidth - 4) box.style.left = Math.max(4, x - b0.width) / k0 + 'px';
-    if (b0.bottom > innerHeight - 4) box.style.top = Math.max(4, innerHeight - 4 - b0.height) / k0 + 'px';
+    if (b0.right > winW() - 4) box.style.left = Math.max(4, x - b0.width) / k0 + 'px';
+    if (b0.bottom > winH() - 4) box.style.top = Math.max(4, winH() - 4 - b0.height) / k0 + 'px';
     menuRowOut = function (e) { if (!box.contains(e.target)) { e.stopPropagation(); menuRowClose(); } };   // a click elsewhere closes the row menu alone
     document.addEventListener('pointerdown', menuRowOut, true);
     var f = box.querySelector('button:not(:disabled)'); if (f) f.focus();
@@ -2108,8 +2108,8 @@ page, so its styles keep the base they were made on).
     });
     document.body.appendChild(box);
     var k = pz();   // a fixed box is placed in the page's zoomed units, the pointer and the window in the screen's
-    box.style.left = Math.max(4, Math.min(x, innerWidth - box.offsetWidth * k - 4)) / k + 'px';
-    box.style.top = Math.max(4, Math.min(y, innerHeight - box.offsetHeight * k - 4)) / k + 'px';
+    box.style.left = Math.max(4, Math.min(x, winW() - box.offsetWidth * k - 4)) / k + 'px';
+    box.style.top = Math.max(4, Math.min(y, winH() - box.offsetHeight * k - 4)) / k + 'px';
     document.addEventListener('pointerdown', out, true); document.addEventListener('keydown', key, true);
     window.addEventListener('blur', close); window.addEventListener('resize', close); document.getElementById('m2-list').addEventListener('wheel', close, { passive: true });
     var f = box.querySelector('button:not(:disabled)'); if (f) f.focus();
@@ -2150,7 +2150,15 @@ page, so its styles keep the base they were made on).
     if (pzM == null && view.offsetWidth) pzM = view.getBoundingClientRect().width / view.offsetWidth;
     return pzM || 1;
   }
-  window.addEventListener('resize', function () { pzM = null; });
+  // the window's size in the units getBoundingClientRect and the pointer give: Chrome gives both in the window's pixels;
+  // Safari before currentCSSZoom gives a zoomed page's boxes in its own, unzoomed pixels while winW() and
+  // winH() stay the window's, so the window measured against a box was a tenth too small (the map window stopped
+  // short of its bottom). The page's drawn width against its clientWidth gives the factor
+  var winS = null;
+  function winK() { if (winS == null) { var d = document.documentElement; winS = d.clientWidth ? d.getBoundingClientRect().width / d.clientWidth : 1; } return winS || 1; }
+  function winW() { return window.innerWidth * winK(); }
+  function winH() { return window.innerHeight * winK(); }
+  window.addEventListener('resize', function () { pzM = null; winS = null; });
   // the info window of every circled i (.m2-itip with data-info), Settings' and the editor's palette's alike: under the
   // sign, above it where the window has no room below, kept inside the window's edges
   var ipop = null, ipopBtn = null;
@@ -2180,7 +2188,7 @@ page, so its styles keep the base they were made on).
     ipop.textContent = b.dataset.info || '';
     document.body.appendChild(ipop); ipopBtn = b; b.setAttribute('aria-expanded', 'true');
     var k = pz(), r = b.getBoundingClientRect(), w = ipop.offsetWidth * k, h = ipop.offsetHeight * k;
-    var x = Math.max(4, Math.min(r.left - 8, innerWidth - w - 4)), y = r.bottom + 4 + h > innerHeight - 4 ? Math.max(4, r.top - 4 - h) : r.bottom + 4;
+    var x = Math.max(4, Math.min(r.left - 8, winW() - w - 4)), y = r.bottom + 4 + h > winH() - 4 ? Math.max(4, r.top - 4 - h) : r.bottom + 4;
     ipop.style.left = x / k + 'px'; ipop.style.top = y / k + 'px';
     document.addEventListener('pointerdown', ipopOut, true); window.addEventListener('keydown', ipopKey, true);
     window.addEventListener('resize', ipopClose); window.addEventListener('blur', ipopClose);
@@ -2265,9 +2273,9 @@ page, so its styles keep the base they were made on).
     var k = pz(), edge = 0;
     ['m2-rail', 'm2-nav'].forEach(function (c) { var el = document.getElementById(c) || document.querySelector('.' + c); if (el && el.offsetParent) edge = Math.max(edge, el.getBoundingClientRect().right); });
     var w = tipsBox.offsetWidth * k, h = tipsBox.offsetHeight * k, left = edge + 12, top = sign.getBoundingClientRect().top;
-    if (left + w > innerWidth - 16) left = Math.max(16, innerWidth - 16 - w);
+    if (left + w > winW() - 16) left = Math.max(16, winW() - 16 - w);
     tipsBox.style.transform = 'none';
-    tipsBox.style.left = left / k + 'px'; tipsBox.style.top = Math.max(16, Math.min(top, innerHeight - 16 - h)) / k + 'px';
+    tipsBox.style.left = left / k + 'px'; tipsBox.style.top = Math.max(16, Math.min(top, winH() - 16 - h)) / k + 'px';
   }
   // the ? sign does what the ? key does: this window, or while editing the editor's help (its own "?" clicked, so
   // the two stay one action); a help open at the press is closed by the editor's own pointerdown, so the click leaves it shut
@@ -2300,7 +2308,7 @@ page, so its styles keep the base they were made on).
     // a map window taller than the browser window (dragged past the bottom edge): the wheel scrolls the page, as the
     // map covers most of it and the page froze; Ctrl or Cmd with the wheel, a pinch on a trackpad
     // (sent as the wheel with Ctrl) and the zoom buttons still zoom
-    if (!e.ctrlKey && !e.metaKey && r.height > window.innerHeight + 1) return;
+    if (!e.ctrlKey && !e.metaKey && r.height > winH() + 1) return;
     e.preventDefault();
     if (spaceHeld && !e.ctrlKey && !e.metaKey) { pageBy(e); return; }
     // two-finger scrolling (and a mouse wheel, which a browser does not tell apart) moves the map, in any direction, in
@@ -2470,8 +2478,8 @@ page, so its styles keep the base they were made on).
     // the height dragged by the reader, from 300 px up to twice the window's height, the page scrolling; nothing under
     // the map is hidden, the download row, the title and the text follow it (the window
     // simply grows)
-    if (userH && setting('separators') && setting('separator-below')) { autoH = view.style.height = Math.round(Math.max(300, Math.min(userH, 2 * window.innerHeight / pz()))) + 'px'; return; }
-    autoH = Math.round(Math.max(300, window.innerHeight / pz() - top - ROW)) + 'px';
+    if (userH && setting('separators') && setting('separator-below')) { autoH = view.style.height = Math.round(Math.max(300, Math.min(userH, 2 * winH() / pz()))) + 'px'; return; }
+    autoH = Math.round(Math.max(300, winH() / pz() - top - ROW)) + 'px';
     view.style.height = autoH;
   }
   viewHeight();
@@ -2490,7 +2498,7 @@ page, so its styles keep the base they were made on).
       var r = view.getBoundingClientRect();
       // the window's bottom edge on the page, kept for this drag when the map ends above it (the snap, below)
       drag = { y: e.clientY + window.scrollY, h: r.height / pz(), moved: false, cy: e.clientY,
-        edge: r.bottom < window.innerHeight - 1 ? (window.innerHeight + window.scrollY - r.top - window.scrollY) / pz() : null };
+        edge: r.bottom < winH() - 1 ? (winH() + window.scrollY - r.top - window.scrollY) / pz() : null };
     });
     // the snap at the end of the screen, with room to move on down: a map that ends
     // above the window's bottom edge, dragged down, stops on that edge (taken from 20 px before it) for this drag; the
@@ -2530,7 +2538,7 @@ page, so its styles keep the base they were made on).
     // window's bottom wherever the page is, so scrolling the page shows more of it, never a gap under it, and never
     // past the end of its column
     var listBottom = getComputedStyle(listBox).position === 'sticky'
-      ? Math.min(window.innerHeight, listBox.parentNode.getBoundingClientRect().bottom) - 8 * pz() : bottom;
+      ? Math.min(winH(), listBox.parentNode.getBoundingClientRect().bottom) - 8 * pz() : bottom;
     listBox.style.maxHeight = Math.max(120, Math.floor((listBottom - listBox.getBoundingClientRect().top) / pz())) + 'px';
     split.style.height = Math.max(0, Math.floor((bottom - split.parentNode.getBoundingClientRect().top) / pz())) + 'px';
     // a floating list window (--m2-nav-float) as tall as the map window
@@ -4403,8 +4411,8 @@ page, so its styles keep the base they were made on).
       menu.style.left = cx / k + 'px'; menu.style.top = cy / k + 'px';
       document.body.appendChild(menu);
       var b = menu.getBoundingClientRect();   // inside the window: moved left or up when it would run over an edge
-      if (b.right > window.innerWidth - 4) menu.style.left = Math.max(4, cx - b.width) / k + 'px';
-      if (b.bottom > window.innerHeight - 4) menu.style.top = Math.max(4, window.innerHeight - 4 - b.height) / k + 'px';
+      if (b.right > winW() - 4) menu.style.left = Math.max(4, cx - b.width) / k + 'px';
+      if (b.bottom > winH() - 4) menu.style.top = Math.max(4, winH() - 4 - b.height) / k + 'px';
     }
     // the same in edit mode (a right click works the same everywhere; the map moves there with two
     // fingers, no right drag), View mode in place of Edit mode
@@ -4628,6 +4636,7 @@ page, so its styles keep the base they were made on).
     chosen: { get: function () { return chosen; } },
     put: { get: function () { return put; } },
     pz: { get: function () { return pz; } },
+    winW: { get: function () { return winW; } }, winH: { get: function () { return winH; } },
     moved: { get: function () { return moved; }, set: function (v) { moved = v; } },
     kept: { get: function () { return kept; }, set: function (v) { kept = v; } },
     stored: { get: function () { return stored; } },

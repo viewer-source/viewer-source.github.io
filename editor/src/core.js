@@ -2001,8 +2001,8 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       var k = kwBox.getBoundingClientRect().width / kwBox.offsetWidth || 1, w = kwBox.offsetWidth * k, h = kwBox.offsetHeight * k;
       var first = kwBox.firstChild, lift = first ? first.getBoundingClientRect().top - kwBox.getBoundingClientRect().top : 0;
       var mr = r.mright != null ? r.mright : r.right, ml = r.mleft != null ? r.mleft : r.left;
-      var x = mr - 2 * k + w <= window.innerWidth - 4 ? mr - 2 * k : ml + 2 * k - w >= 4 ? ml + 2 * k - w : window.innerWidth - 4 - w;
-      kwBox.style.left = Math.max(4, x) / k + 'px'; kwBox.style.top = Math.max(4, Math.min(r.top - lift, window.innerHeight - 4 - h)) / k + 'px';
+      var x = mr - 2 * k + w <= V.winW() - 4 ? mr - 2 * k : ml + 2 * k - w >= 4 ? ml + 2 * k - w : V.winW() - 4 - w;
+      kwBox.style.left = Math.max(4, x) / k + 'px'; kwBox.style.top = Math.max(4, Math.min(r.top - lift, V.winH() - 4 - h)) / k + 'px';
       var box = kwBox;
       kwBox.m2close = function () { if (kwBox === box) kwClose(); };
       kwBox.m2first = function () { var f = box.querySelector('button:not(:disabled)'); if (f) f.focus(); };
