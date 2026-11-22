@@ -17,6 +17,7 @@ t node tests/repack-one.js
 t node tests/repack-bottom.js
 t node tests/cd-fit-live.js
 t node tests/cd-line-own.js
+t node tests/hostile-files.js
 t node tests/save-paths.js https://viewer-source.github.io/styles/ "$1"
 if [ -n "$failed" ]; then echo "Failed:$failed"; exit 1; fi
 echo "All $ran browser tests passed."

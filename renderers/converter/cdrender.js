@@ -89,6 +89,7 @@
     return parseInt(t, 10);
   }
   function escape(s) { return String(s).replace(/&/g, '&amp;').replace(/>/g, '&gt;').replace(/</g, '&lt;'); }
+  function attr(s) { return escape(s).replace(/"/g, '&quot;'); }   // a value between double quotes
   var py = { fixed: fixed, round: round, repr: repr, pmod: pmod, F: F, I: I, escape: escape, hypot: hypot };
 
   // ---- the XML, as the lxml calls of the Python read it ----
@@ -173,7 +174,7 @@
     for (var ch of s) { var c = ch.codePointAt(0); t += c >= 32 && c < 127 ? WIDTHS[c - 32] : 556; }
     return t * size / 1000;
   }
-  function colour(c, dflt) { return c ? ['#' + c.slice(2), parseInt(c.slice(0, 2), 16) / 255] : [dflt || '#000000', 1.0]; }
+  function colour(c, dflt) { return c && /^[0-9a-fA-F]{8}$/.test(c) ? ['#' + c.slice(2), parseInt(c.slice(0, 2), 16) / 255] : [dflt || '#000000', 1.0]; }   // anything but eight hex digits as none: a file's text never reaches an attribute
   function fmt(v) { return fixed(v, 2).replace(/0+$/, '').replace(/\.$/, ''); }
   function pts(p) { return p.map(function (q) { return fmt(q[0]) + ',' + fmt(q[1]); }).join(' '); }
   function editPoints(s) { return (s || '').split(/\s+/).filter(function (q) { return q; }).map(function (q) { return q.split(',').map(F); }); }
@@ -314,7 +315,7 @@
     cs = cs.map(function (a) { return [a, key(a)]; }).sort(function (p, q) { return p[1] - q[1]; }).map(function (p) { return p[0]; });
     cs.forEach(function (a) {
       if (!find(a, 'cd:bounds')) return;
-      if (self.GROUPS) self.out.push('<g data-n="' + escape(get(a, 'id')) + '">');
+      if (self.GROUPS) self.out.push('<g data-n="' + attr(get(a, 'id')) + '">');
       self.compartment(a);
       if (self.GROUPS) self.out.push('</g>');
     });
@@ -383,7 +384,7 @@
     var order = Array.from(this.alias.keys()).map(function (i) { return [i, self.alias.get(i)[0] !== 'COMPLEX' ? 1 : 0, d(i)]; })
       .sort(function (p, q) { return p[1] - q[1] || p[2] - q[2]; }).map(function (p) { return p[0]; });
     order.forEach(function (i) {
-      if (self.GROUPS) self.out.push('<g data-n="' + escape(i) + '">');
+      if (self.GROUPS) self.out.push('<g data-n="' + attr(i) + '">');
       self.node(i);
       if (self.GROUPS) self.out.push('</g>');
     });
@@ -535,7 +536,7 @@
     }
     return out;
   };
-  D.open = function (e) { if (this.GROUPS) { this.lines.push('<g data-e="' + escape(e) + '">'); this.halo.push('<g data-e="' + escape(e) + '">'); } };
+  D.open = function (e) { if (this.GROUPS) { this.lines.push('<g data-e="' + attr(e) + '">'); this.halo.push('<g data-e="' + attr(e) + '">'); } };
   D.close = function () { if (this.GROUPS) { this.lines.push('</g>'); this.halo.push('</g>'); } };
   D.path = function (p, col, wd, dash, startNode, endNode) {
     col = col || '#000'; if (wd === undefined) wd = 1.0; if (startNode === undefined) startNode = true; if (endNode === undefined) endNode = true;
@@ -721,7 +722,7 @@
   D.gate = function (G, t, id) {
     var g = '<circle cx="' + fmt(G[0]) + '" cy="' + fmt(G[1]) + '" r="6" fill="#fff" stroke="#000"/>' + (this.GROUPS ? '' : '\n') +
       '<text x="' + fmt(G[0]) + '" y="' + fmt(G[1] + 4) + '" font-family="sans-serif" font-size="11" text-anchor="middle">' + (GATE[t.slice(t.lastIndexOf('_') + 1)] || '?') + '</text>';
-    return this.GROUPS ? '<g data-n="' + escape(id) + '">' + g + '</g>' : g;
+    return this.GROUPS ? '<g data-n="' + attr(id) + '">' + g + '</g>' : g;
   };
   var HEADS = { CATALYSIS: 'catalysis', UNKNOWN_CATALYSIS: 'catalysis', INHIBITION: 'inhibition', UNKNOWN_INHIBITION: 'inhibition',
     PHYSICAL_STIMULATION: 'stimulation', TRIGGER: 'trigger', MODULATION: 'modulation', TRANSCRIPTIONAL_ACTIVATION: 'stimulation',
@@ -804,7 +805,7 @@
     var glyph = '<rect x="-5" y="-5" width="10" height="10" fill="#fff" stroke="#000" transform="translate(' + fmt(sq[0]) + ',' + fmt(sq[1]) + ') rotate(' + fmt(ang) + ')"/>';
     var mark = { UNKNOWN_TRANSITION: '?', KNOWN_TRANSITION_OMITTED: '//' }[typ];
     if (mark) glyph += '<text x="' + fmt(sq[0]) + '" y="' + fmt(sq[1] + 3) + '" font-family="\'Times New Roman\', serif" font-weight="bold" font-size="10" text-anchor="middle">' + mark + '</text>';
-    this.lines.push(this.GROUPS ? '<g data-n="' + escape(this.cur) + '|proc">' + glyph + '</g>' : glyph);
+    this.lines.push(this.GROUPS ? '<g data-n="' + attr(this.cur) + '|proc">' + glyph + '</g>' : glyph);
     if (this.cur) this.hit(this.cur).at = [round(sq[0], 1), round(sq[1], 1)];
     squares.forEach(function (s) { self.lines.push(s); });
   };

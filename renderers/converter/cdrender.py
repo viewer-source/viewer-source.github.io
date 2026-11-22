@@ -48,8 +48,12 @@ def width(s, size):
     return sum(WIDTHS[ord(c) - 32] if 32 <= ord(c) < 127 else 556 for c in s) * size / 1000
 
 
-def colour(c, default='#000000'):  # aarrggbb -> (#rrggbb, alpha)
-    return ('#' + c[2:], int(c[:2], 16) / 255) if c else (default, 1.0)
+def attr(s):  # a value between double quotes
+    return escape(s, {'"': '&quot;'})
+
+
+def colour(c, default='#000000'):  # aarrggbb -> (#rrggbb, alpha); anything but eight hex digits as none
+    return ('#' + c[2:], int(c[:2], 16) / 255) if c and re.fullmatch(r'[0-9a-fA-F]{8}', c) else (default, 1.0)
 
 
 def fmt(v):
@@ -253,7 +257,7 @@ class Drawing:
             if self.f(a, 'cd:bounds') is None:
                 continue
             if GROUPS:
-                self.out.append('<g data-n="%s">' % escape(a.get('id')))
+                self.out.append('<g data-n="%s">' % attr(a.get('id')))
             self.compartment(a)
             if GROUPS:
                 self.out.append('</g>')
@@ -318,7 +322,7 @@ class Drawing:
         order = sorted(self.alias, key=lambda i: (self.alias[i][0] != 'COMPLEX', d(i)))
         for i in order:
             if GROUPS:
-                self.out.append('<g data-n="%s">' % escape(i))
+                self.out.append('<g data-n="%s">' % attr(i))
             self.node(i)
             if GROUPS:
                 self.out.append('</g>')
@@ -526,7 +530,7 @@ class Drawing:
 
     def open(self, e):  # a group of the editor's (GROUPS) for one line, in the lines and in their halo
         if GROUPS:
-            self.lines.append('<g data-e="%s">' % escape(e)); self.halo.append('<g data-e="%s">' % escape(e))
+            self.lines.append('<g data-e="%s">' % attr(e)); self.halo.append('<g data-e="%s">' % attr(e))
 
     def close(self):
         if GROUPS:
@@ -780,7 +784,7 @@ class Drawing:
         # ('<reaction>|g' between entities, '<reaction>|g<n>' for the reaction's modification n), as cd_edit's GraphML
         g = '<circle cx="%s" cy="%s" r="6" fill="#fff" stroke="#000"/>%s<text x="%s" y="%s" font-family="sans-serif" font-size="11" text-anchor="middle">%s</text>' % (
             fmt(G[0]), fmt(G[1]), '' if GROUPS else '\n', fmt(G[0]), fmt(G[1] + 4), GATE.get(t.rsplit('_', 1)[1], '?'))
-        return '<g data-n="%s">%s</g>' % (escape(id_), g) if GROUPS else g
+        return '<g data-n="%s">%s</g>' % (attr(id_), g) if GROUPS else g
 
     def links_and_modifiers(self, x, P, Q, sq, fl, col, width, dash, typ=None, nums=None):
         f = self.f
@@ -878,7 +882,7 @@ class Drawing:
         mark = {'UNKNOWN_TRANSITION': '?', 'KNOWN_TRANSITION_OMITTED': '//'}.get(typ)
         if mark:  # Times bold 10, upright
             glyph += '<text x="%s" y="%s" font-family="\'Times New Roman\', serif" font-weight="bold" font-size="10" text-anchor="middle">%s</text>' % (fmt(sq[0]), fmt(sq[1] + 3), mark)
-        self.lines.append('<g data-n="%s|proc">%s</g>' % (escape(self.cur), glyph) if GROUPS else glyph)
+        self.lines.append('<g data-n="%s|proc">%s</g>' % (attr(self.cur), glyph) if GROUPS else glyph)
         if self.cur:
             self.hit_reactions.setdefault(self.cur, {'lines': [], 'at': None})['at'] = [round(sq[0], 1), round(sq[1], 1)]
         self.lines.extend(squares)
