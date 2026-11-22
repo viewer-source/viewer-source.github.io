@@ -21,5 +21,7 @@ t node tests/page-width.js
 t node tests/tag-colours.js
 t node tests/hostile-files.js "$1"
 t node tests/save-paths.js https://viewer-source.github.io/styles/ "$1"
+t node tests/save-clash.js https://viewer-source.github.io/styles/ "$1"
+t node tests/error-catch.js
 if [ -n "$failed" ]; then echo "Failed:$failed"; exit 1; fi
 echo "All $ran browser tests passed."
