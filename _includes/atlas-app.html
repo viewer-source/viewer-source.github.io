@@ -1105,7 +1105,7 @@ page, so its styles keep the base they were made on).
   // a map's files carry its content version v (build.py), so a browser fetches a map again only when it changed
   function ver(m) { return m.mine ? '#' + m.v : m.v ? '?v=' + m.v : BUILD; }   // a reader's own map: its blob address takes no query
 
-  // ---------- loading (as on the logo board) ----------
+  // ---------- loading ----------
   // Every file goes through one queue, three at a time: what the reader opens goes to the front, the rest of the
   // maps load quietly behind it, nearest in the list first. A picture is decoded before it is shown.
   var got = {}, queue = [], busy = 0;
