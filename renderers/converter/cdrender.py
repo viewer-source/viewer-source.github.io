@@ -269,8 +269,8 @@ class Drawing:
         ow = float(dl.get('outerWidth', 2)) if dl is not None else 2
         iw = float(dl.get('innerWidth', 1)) if dl is not None else 1
         fill, _ = colour(self.f(a, 'cd:paint').get('color'))
-        # the lines in the compartment's colour, black for a near-white one (CellDesigner's PDF exports of the
-        # neuroinflammation map against the SVG exports of the metabolism maps)
+        # the lines in the compartment's colour, black for a near-white one (CellDesigner's PDF exports compared
+        # with the SVG exports of other maps)
         rgb = [int(fill[k:k + 2], 16) for k in (1, 3, 5)]
         ink = '#000' if min(rgb) > 230 else fill
         oval = self.f(a, 'cd:class').text == 'OVAL'
@@ -332,7 +332,7 @@ class Drawing:
         fill, alpha = colour(paint.get('color') if paint is not None else 'ffffffff')
         hyp = f(si, 'cd:hypothetical')
         dash = ' stroke-dasharray="5,3"' if hyp is not None and hyp.text == 'true' else ''
-        sl = f(a, 'cd:usualView/cd:singleLine')  # the border's width (a complex's 2 in the neuroinflammation map)
+        sl = f(a, 'cd:usualView/cd:singleLine')  # the border's width (2 on some maps' complexes)
         if sl is not None and sl.get('width') and float(sl.get('width')) != 1:
             dash += ' stroke-width="%s"' % fmt(float(sl.get('width')))
         act = f(a, 'cd:activity')
@@ -357,7 +357,7 @@ class Drawing:
 
     def shape(self, cls, b, fill, alpha, dash):
         x, y, w, h = b
-        # an unknown entity has no outline in CellDesigner (the group labels of the neuroinflammation map)
+        # an unknown entity has no outline in CellDesigner (group labels drawn as unknown entities)
         style = 'fill="%s"%s stroke="%s"%s' % (fill, ' fill-opacity="%s"' % fmt(alpha) if alpha < 1 else '', 'none' if cls == 'UNKNOWN' else '#000', dash)
         if CLASSES and fill != 'none':
             style += ' class="c-%s"' % ROLE.get(cls, 'white')
@@ -940,7 +940,7 @@ def render(path, glyph=None):
 
 def render_hits(path, glyph=None):
     # the drawing and where its parts are: aliases (id, species, class, box) and reactions (id, lines, square),
-    # for a viewer that opens what is clicked (the neuroinflammation site)
+    # for a viewer that opens what is clicked
     d = Drawing(path, glyph)
     svg = d.svg()
     aliases = [{'id': i, 'species': a[2].get('species'), 'class': a[0], 'box': [round(v, 1) for v in a[1]]}
