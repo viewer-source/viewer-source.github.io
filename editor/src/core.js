@@ -199,6 +199,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     function changed() {   // after every move, undo or redo: the site's map is saved a few seconds after the last one
       edits++;
       if (openSay) { if (status.textContent === openSay.t) quiet(); openSay = null; }   // the save clash said until the reader's next change
+      goodNow();
       sbFollow();   // a move that turned an SBGN-ML file: the GraphML made again from it (sbgn.js)
       if (site && site.pending) { localFor = site; clearTimeout(localTimer); localTimer = setTimeout(local, 800); localBox(); return; }   // no token: kept in this browser
       if (site && site.mine) { localFor = site; clearTimeout(localTimer); localTimer = setTimeout(local, 800); }   // a reader's map saved on GitHub: its record follows too, so no move waits on GitHub alone
@@ -548,6 +549,58 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       }).catch(function (e) {
         warn('Not saved: ' + n + ' was changed ' + where + ' since you opened it, so it is not overwritten, and your version could not be kept beside it (' + String(e && e.message ? e.message : e).replace(/\.$/, '') + '). Download the map to keep your changes.');
       });
+    }
+    // The error catcher: an error nobody caught while a map is edited (in a gesture, a key, a timer, a promise) is said in
+    // one line with where it happened in the editor's sources (editor.js.map, fetched at the first error), and the map is
+    // put back as it was after the last change that ended (good: its text, how many undo steps), drawn again, any drag
+    // let go. Passed by: what the browser reports that is no fault of the page (a ResizeObserver loop, a fetch cut off by
+    // leaving or a lost connection, another site's script). A second error within a second is said, not undone again
+    var good, caughtAt, srcMap, PASSED;
+    function __run46() {   // run at start, in order (__start)
+    good = null, caughtAt = 0, srcMap = null;
+    PASSED = /ResizeObserver loop|Failed to fetch|Load failed|NetworkError|access control checks|The operation was aborted|AbortError|^Script error\.?$/;
+    addEventListener('error', function (e) { caught(e.error || e.message, e.filename); });
+    addEventListener('unhandledrejection', function (e) { caught(e.reason, ''); });
+    }
+    function goodNow() { good = { u: undoText(), n: undo.length, sb: shared.sb ? shared.sb.base : null, at: map }; }
+    function caught(err, file) {
+      var msg = err && err.message ? err.message : String(err), stack = err && err.stack ? String(err.stack) : '';
+      if (!on || PASSED.test(msg) || (err && err.name === 'AbortError')) return;
+      if (file && file.indexOf(location.origin) !== 0) return;   // a browser extension's script, another site's
+      var now = Date.now(), again = now - caughtAt < 1000;
+      caughtAt = now;
+      var back = !again && good && good.at === map;
+      if (back) {
+        drag = null; band = null; shared.tap = null;
+        if (good.n < undo.length) { undo.length = good.n; if (undo.ts) undo.ts.length = Math.min(undo.ts.length, good.n); }
+        var g = fromUndo(good.u);
+        if (shared.sb && good.sb) shared.sb.base = good.sb;
+        shared.text = g; shared.selN = []; shared.selP = []; shared.selE = []; shared.part = null;
+        try { parse(); render(); paint(); } catch (e) {}
+      }
+      var say = function (at) { if (on) warn('Something went wrong in the editor (' + (at ? at + ': ' : '') + msg.split('\n')[0] + ')' + (back ? '; the map is back as it was after the last change.' : '.')); };
+      where(stack).then(say, function () { say(''); });
+    }
+    function where(stack) {   // the first line of the stack in the editor's or a renderer's code, as file:line of its sources
+      var m = /(https?:\/\/[^\s()]*\/editor\.js)(\?[^:\s()]*)?:(\d+):(\d+)/.exec(stack);
+      if (!m) { var o = /\/([\w.-]+\.js)(\?[^:\s()]*)?:(\d+):\d+/.exec(stack); return Promise.resolve(o ? o[1] + ':' + o[3] : ''); }
+      if (!srcMap) srcMap = fetch(m[1] + '.map' + (m[2] || '')).then(function (q) { if (!q.ok) throw new Error(q.status); return q.json(); });
+      srcMap.catch(function () { srcMap = null; });
+      return srcMap.then(function (sm) { return mapped(sm, +m[3], +m[4]) || 'editor.js:' + m[3]; }, function () { return 'editor.js:' + m[3]; });
+    }
+    function mapped(sm, line, col) {   // a source map's place for a line and column of the built file (both from 1), as file:line
+      var B = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/', lines = sm.mappings.split(';'), f = 0, l = 0, best = null;
+      for (var i = 0; i < line && i < lines.length; i++) {
+        var c = 0;
+        lines[i].split(',').forEach(function (seg) {
+          if (!seg) return;
+          var d = [], v = 0, sh = 0;
+          for (var k = 0; k < seg.length; k++) { var x = B.indexOf(seg[k]); v += (x & 31) << sh; if (x & 32) sh += 5; else { d.push(v & 1 ? -(v >> 1) : v >> 1); v = 0; sh = 0; } }
+          c += d[0];
+          if (d.length > 3) { f += d[1]; l += d[2]; if (i === line - 1 && c <= col - 1) best = [f, l]; }
+        });
+      }
+      return best ? String(sm.sources[best[0]]).split('/').pop() + ':' + (best[1] + 1) : '';
     }
     function ghForm(show) {   // the token field: shown while editing a map of this site with no token
       var f = box.querySelector('#m2-ed-gh');
@@ -1405,7 +1458,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       if (same) {   // editing starts on the picture as it is: no redraw, the map stays where it is
         map.width = same.width; map.height = same.height; map.scale = same.scale; x0 = same.x0; y0 = same.y0;
       }
-      V.current = map; on = true;
+      V.current = map; on = true; goodNow();
       if (shared.cd) plainCanvas();
       V.nodes = null; V.sel = null; V.renderInfo(); V.drawPin();
       document.getElementById('m2-title').textContent = n;
@@ -3396,5 +3449,5 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     }, true);
     }
 
-    export function __start() { __run1(); __run2(); __run3(); __run4(); __run5(); __run6(); __run7(); __run8(); __run9(); __run10(); __run11(); __run12(); __run13(); __run14(); __run15(); __run16(); __run17(); __run18(); __run19(); __run20(); __run21(); __run22(); __run23(); __run24(); __run25(); __run26(); __run27(); __run28(); __run29(); __run30(); __run31(); __run32(); __run33(); __run34(); __run35(); __run36(); __run37(); __run38(); __run39(); __run40(); __run41(); __run42(); __run43(); __run44(); __run45(); }   // the part's statements, in their order
+    export function __start() { __run1(); __run2(); __run3(); __run4(); __run5(); __run6(); __run7(); __run8(); __run9(); __run10(); __run11(); __run12(); __run13(); __run14(); __run15(); __run16(); __run17(); __run18(); __run19(); __run20(); __run21(); __run22(); __run23(); __run24(); __run25(); __run26(); __run27(); __run28(); __run29(); __run30(); __run31(); __run32(); __run33(); __run34(); __run35(); __run36(); __run37(); __run38(); __run39(); __run40(); __run41(); __run42(); __run43(); __run44(); __run45(); __run46(); }   // the part's statements, in their order
     export { G, HANDLE, MODS, Y, ahead, aheadSoon, api, at, away, b64, blobSha, box, boxOf, buttons, cdOwn, changed, chooseFolder, complexHere, cut, cutShape, doc, docText, drag, drawText, edgeAt, edges2, editing, f1, fmt, freeName, full, gE, gN, gh, graphmlOf, gridBlock, gridSet, grown, handleMarks, heldText, hit, holder, holderSize, holds, hubPorts, inComplex, inRim, keyFlush, keyTake, kindWindow, landMarks, lastFor, lastSvg, lateItem, layTool, line, livePath, localBox, map, mapTop, moveFix, mv, name, near, nodes2, note, num, on, origFolderDrop, origFromFolder, origRead, origToFolder, origWrite, outlineD, overlap, ownMenus, paint, parse, parseFix, picWait, points, ports, procPlaces, pt, quiet, rclick, realizerOf, rebase, refit, regroup, remember, render, repo, rimOf, roleOf, roomy, setBoxes, setPort, settle, shapeD, shown, site, spotNo, src, status, stop, subItem, sx, sy, syncFolder, toFolder, toGrid, token, tops, under, undo, unkeep, unpush, warn, x0, y0 };

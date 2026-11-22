@@ -11496,6 +11496,7 @@
       if (status.textContent === openSay.t) quiet();
       openSay = null;
     }
+    goodNow();
     sbFollow();
     if (site && site.pending) {
       localFor = site;
@@ -12001,18 +12002,117 @@
   function sayOpen() {
     if (openSay && site && site.id === openSay.id) warn(openSay.t);
   }
-  function clashed(s, t, where) {
+  function clashed(s, t, where2) {
     if (s.clashed) return;
     s.clashed = true;
     var m0 = V.byId[s.id], n = m0 ? m0.topic || m0.title : name;
     return keepBeside(s.id, function() {
       return on && site === s ? src() : t;
     }, function(title, id, was) {
-      openSay = { id, t: (n = was) + " was changed " + where + " since you opened it, so it is not overwritten: your version is kept beside it as " + title + ", and editing goes on there." };
+      openSay = { id, t: (n = was) + " was changed " + where2 + " since you opened it, so it is not overwritten: your version is kept beside it as " + title + ", and editing goes on there." };
       warn(openSay.t);
     }).catch(function(e) {
-      warn("Not saved: " + n + " was changed " + where + " since you opened it, so it is not overwritten, and your version could not be kept beside it (" + String(e && e.message ? e.message : e).replace(/\.$/, "") + "). Download the map to keep your changes.");
+      warn("Not saved: " + n + " was changed " + where2 + " since you opened it, so it is not overwritten, and your version could not be kept beside it (" + String(e && e.message ? e.message : e).replace(/\.$/, "") + "). Download the map to keep your changes.");
     });
+  }
+  var good;
+  var caughtAt;
+  var srcMap;
+  var PASSED;
+  function __run462() {
+    good = null, caughtAt = 0, srcMap = null;
+    PASSED = /ResizeObserver loop|Failed to fetch|Load failed|NetworkError|access control checks|The operation was aborted|AbortError|^Script error\.?$/;
+    addEventListener("error", function(e) {
+      caught(e.error || e.message, e.filename);
+    });
+    addEventListener("unhandledrejection", function(e) {
+      caught(e.reason, "");
+    });
+  }
+  function goodNow() {
+    good = { u: undoText(), n: undo.length, sb: shared.sb ? shared.sb.base : null, at: map };
+  }
+  function caught(err, file) {
+    var msg = err && err.message ? err.message : String(err), stack = err && err.stack ? String(err.stack) : "";
+    if (!on || PASSED.test(msg) || err && err.name === "AbortError") return;
+    if (file && file.indexOf(location.origin) !== 0) return;
+    var now = Date.now(), again = now - caughtAt < 1e3;
+    caughtAt = now;
+    var back2 = !again && good && good.at === map;
+    if (back2) {
+      drag = null;
+      band = null;
+      shared.tap = null;
+      if (good.n < undo.length) {
+        undo.length = good.n;
+        if (undo.ts) undo.ts.length = Math.min(undo.ts.length, good.n);
+      }
+      var g = fromUndo(good.u);
+      if (shared.sb && good.sb) shared.sb.base = good.sb;
+      shared.text = g;
+      shared.selN = [];
+      shared.selP = [];
+      shared.selE = [];
+      shared.part = null;
+      try {
+        parse();
+        render();
+        paint();
+      } catch (e) {
+      }
+    }
+    var say = function(at2) {
+      if (on) warn("Something went wrong in the editor (" + (at2 ? at2 + ": " : "") + msg.split("\n")[0] + ")" + (back2 ? "; the map is back as it was after the last change." : "."));
+    };
+    where(stack).then(say, function() {
+      say("");
+    });
+  }
+  function where(stack) {
+    var m = /(https?:\/\/[^\s()]*\/editor\.js)(\?[^:\s()]*)?:(\d+):(\d+)/.exec(stack);
+    if (!m) {
+      var o = /\/([\w.-]+\.js)(\?[^:\s()]*)?:(\d+):\d+/.exec(stack);
+      return Promise.resolve(o ? o[1] + ":" + o[3] : "");
+    }
+    if (!srcMap) srcMap = fetch(m[1] + ".map" + (m[2] || "")).then(function(q) {
+      if (!q.ok) throw new Error(q.status);
+      return q.json();
+    });
+    srcMap.catch(function() {
+      srcMap = null;
+    });
+    return srcMap.then(function(sm) {
+      return mapped(sm, +m[3], +m[4]) || "editor.js:" + m[3];
+    }, function() {
+      return "editor.js:" + m[3];
+    });
+  }
+  function mapped(sm, line2, col) {
+    var B = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/", lines = sm.mappings.split(";"), f = 0, l = 0, best = null;
+    for (var i = 0; i < line2 && i < lines.length; i++) {
+      var c = 0;
+      lines[i].split(",").forEach(function(seg) {
+        if (!seg) return;
+        var d = [], v = 0, sh = 0;
+        for (var k = 0; k < seg.length; k++) {
+          var x = B.indexOf(seg[k]);
+          v += (x & 31) << sh;
+          if (x & 32) sh += 5;
+          else {
+            d.push(v & 1 ? -(v >> 1) : v >> 1);
+            v = 0;
+            sh = 0;
+          }
+        }
+        c += d[0];
+        if (d.length > 3) {
+          f += d[1];
+          l += d[2];
+          if (i === line2 - 1 && c <= col - 1) best = [f, l];
+        }
+      });
+    }
+    return best ? String(sm.sources[best[0]]).split("/").pop() + ":" + (best[1] + 1) : "";
   }
   function ghForm(show) {
     var f = box.querySelector("#m2-ed-gh");
@@ -13354,6 +13454,7 @@
     }
     V.current = map;
     on = true;
+    goodNow();
     if (shared.cd) plainCanvas();
     V.nodes = null;
     V.sel = null;
@@ -16290,6 +16391,7 @@
     __run433();
     __run442();
     __run452();
+    __run462();
   }
 
   // editor/src/main.js
