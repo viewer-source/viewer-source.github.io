@@ -7,6 +7,9 @@ on:
       browser:
         description: webkit or firefox
         default: webkit
+      only:
+        description: one test alone (e.g. page-width.js), empty for the whole list
+        default: ''
 permissions:
   contents: read
 jobs:
@@ -23,4 +26,6 @@ jobs:
       - uses: actions/setup-node@v4
         with: {node-version: '22'}
       - run: npm ci && npm i --no-save playwright@1.63.0 && npx playwright install ${{ inputs.browser }}
-      - run: BROWSER=${{ inputs.browser }} sh tests/run-browser.sh .data
+      - run: if [ -n "$ONLY" ]; then BROWSER=${{ inputs.browser }} node "tests/$ONLY"; else BROWSER=${{ inputs.browser }} sh tests/run-browser.sh .data; fi
+        env:
+          ONLY: ${{ inputs.only }}

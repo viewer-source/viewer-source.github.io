@@ -17,6 +17,7 @@ t node tests/repack-one.js
 t node tests/repack-bottom.js
 t node tests/cd-fit-live.js
 t node tests/cd-line-own.js
+t node tests/page-width.js
 t node tests/tag-colours.js
 t node tests/hostile-files.js "$1"
 t node tests/save-paths.js https://viewer-source.github.io/styles/ "$1"
