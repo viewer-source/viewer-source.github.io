@@ -529,6 +529,25 @@ class Text:
             i = self.t.index('>', q.start()) + 1
         return m.start(), i
 
+    def at(self, kind, id_):
+        # where the first reaction, species or alias with this id starts: one pass over the text, made on the first lookup (the
+        # text does not change while edits are collected), so finding all of a large map's reactions costs one reading of
+        # the file, not one per reaction. A reaction is found by its id or its metaid, as rx_open
+        if getattr(self, 'ix', None) is None:
+            self.ix = {}
+            for m in re.finditer(r'<(reaction|species) [^>]*>', self.t):
+                a = re.search(r'\bid="([^"]*)"', m.group(0))
+                b = re.search(r'\bmetaid="([^"]*)"', m.group(0)) if m.group(1) == 'reaction' else None
+                if a and b and b.start() < a.start():
+                    self.ix.setdefault(m.group(1) + ' ' + b.group(1), m.start()); b = None
+                if a:
+                    self.ix.setdefault(m.group(1) + ' ' + a.group(1), m.start())
+                if b:
+                    self.ix.setdefault(m.group(1) + ' ' + b.group(1), m.start())
+            for m in re.finditer(r'<celldesigner:(speciesAlias|complexSpeciesAlias|compartmentAlias) id="([^"]*)"', self.t):   # the aliases, as the patterns that find them
+                self.ix.setdefault(m.group(1) + ' ' + m.group(2), m.start())
+        return self.ix.get(kind + ' ' + id_, 0)
+
     def attrs(self, at, values):
         # the start tag at position at: the given attributes set (added at its end when missing, removed when None)
         end = self.t.index('>', at)
@@ -553,8 +572,17 @@ class Text:
             self.e.append((a, b, new))
 
     def done(self):
-        t = self.t
-        for a, b, new in sorted(self.e, key=lambda q: -q[0]):
+        # edits apart from one another (the usual case): the text joined once from its pieces, in place of one copy of the
+        # whole text per edit; edits that touch or share a start applied one by one as before, last first
+        t, es = self.t, sorted(self.e, key=lambda q: -q[0])
+        if all(i == 0 or q[1] < es[i - 1][0] for i, q in enumerate(es)):
+            out, at = [], len(t)
+            for a, b, new in es:
+                out += [t[b:at], new]
+                at = a
+            out.append(t[:at])
+            return ''.join(reversed(out))
+        for a, b, new in es:
             t = t[:a] + new + t[b:]
         return t
 
@@ -692,7 +720,7 @@ def rewire(d, text, ends, olds):
         todo = [(q[3], q[2], now[i], q[4], q[5]) for i, q in enumerate(every) if now[i] != q[2]]
         if not todo:
             continue
-        s, gone, mine = T.span(rx_open(rid)), [], []
+        s, gone, mine = T.span(rx_open(rid), T.at('reaction', rid)), [], []
         for kind, old, a, n, mel in todo:
             R, so, sn = ROLE[kind], sp(old), sp(a)
             el = nth(T, '<celldesigner:%s ' % kind, s, n)
@@ -743,7 +771,7 @@ def rewire(d, text, ends, olds):
     LIST = '<celldesigner:listOfCatalyzedReactions>'
 
     def listed(sid):
-        s = T.span(r'<species [^>]*\bid="%s"' % re.escape(sid))
+        s = T.span(r'<species [^>]*\bid="%s"' % re.escape(sid), T.at('species', sid))
         l = T.span(LIST, s[0], s[1]) if s else None
         return s, l, re.findall(r'<celldesigner:catalyzed reaction="([^"]*)"/>', T.t[l[0]:l[1]]) if l else []
     lists = {}
@@ -814,7 +842,7 @@ def place(text, gtext):
         if all(abs(n[j] - b[j]) < 1e-3 for j in range(4)):
             continue
         kind = 'compartmentAlias' if i in comps else 'complexSpeciesAlias' if d.alias[i][0] == 'COMPLEX' else 'speciesAlias'
-        s = T.span(r'<celldesigner:%s id="%s"' % (kind, re.escape(i)))
+        s = T.span(r'<celldesigner:%s id="%s"' % (kind, re.escape(i)), T.at(kind, i))
         bt = T.span(r'<celldesigner:bounds ', s[0], s[1])
         T.attrs(bt[0], {k: num(n[j]) for j, k in enumerate('xywh') if abs(n[j] - b[j]) >= 1e-3})
         # a species resized: its usual view's boxSize the same as its bounds (CellDesigner keeps both)
@@ -872,7 +900,8 @@ def place(text, gtext):
         sid = A.get('species')
         if A.get('complexSpeciesAlias') is not None:
             continue
-        s = T.span(r'<celldesigner:%s id="%s"' % ('complexSpeciesAlias' if d.alias[i][0] == 'COMPLEX' else 'speciesAlias', re.escape(i)))
+        ak = 'complexSpeciesAlias' if d.alias[i][0] == 'COMPLEX' else 'speciesAlias'
+        s = T.span(r'<celldesigner:%s id="%s"' % (ak, re.escape(i)), T.at(ak, i))
         T.attrs(s[0], {'compartmentAlias': p})
         ip2 = T.span(r'<celldesigner:innerPosition ', s[0], s[1])   # its offset from the new compartment's corner, as CellDesigner writes it when it reassigns
         if ip2 and p is not None:
@@ -884,11 +913,11 @@ def place(text, gtext):
                     continue
                 mca = M[2].get('compartmentAlias')
                 if mca is not None and mca != p:
-                    T.attrs(T.span(r'<celldesigner:%s id="%s"' % ('complexSpeciesAlias' if M[0] == 'COMPLEX' else 'speciesAlias', re.escape(j)))[0], {'compartmentAlias': p})
+                    T.attrs(T.span(r'<celldesigner:%s id="%s"' % ('complexSpeciesAlias' if M[0] == 'COMPLEX' else 'speciesAlias', re.escape(j)), T.at('complexSpeciesAlias' if M[0] == 'COMPLEX' else 'speciesAlias', j))[0], {'compartmentAlias': p})
                 members(j)
         if d.alias[i][0] == 'COMPLEX':
             members(i)
-        sp = None if sid in sp_done else T.span(r'<species [^>]*\bid="%s"' % re.escape(sid))
+        sp = None if sid in sp_done else T.span(r'<species [^>]*\bid="%s"' % re.escape(sid), T.at('species', sid))
         sp_done.add(sid)
         if sp:
             T.attrs(sp[0], {'compartment': cid(p)})
@@ -910,7 +939,7 @@ def place(text, gtext):
         then = state(old[i], old[p0]) if p0 is not None and p0 in comps else None
         if now is None or (now == then and p0 == p1):
             continue
-        sp = T.span(r'<species [^>]*\bid="%s"' % re.escape(sid))
+        sp = T.span(r'<species [^>]*\bid="%s"' % re.escape(sid), T.at('species', sid))
         pc = re.compile(r'<celldesigner:positionToCompartment>([^<]*)</celldesigner:positionToCompartment>').search(T.t, sp[0], sp[1]) if sp else None
         pos_done.add(sid)
         if pc and pc.group(1) != now:
@@ -929,7 +958,7 @@ def place(text, gtext):
         if not o:
             continue
         rid = o['id']
-        s = T.span(rx_open(rid))
+        s = T.span(rx_open(rid), T.at('reaction', rid))
         o['old'] = old
         ports(d, T, s, o, paths, new)
         if o.get('gate'):
@@ -1037,7 +1066,7 @@ def place(text, gtext):
             v = dict(re.findall(r'\s((?:[se])?[xy])="([^"]*)"', tag))
             # a free text's corner, a free line's two ends
             T.attrs(ly[0] + m.start(), {k: num(float(v[k]) + sh[1 if k.endswith('y') else 0]) for k in ('x', 'y', 'sx', 'sy', 'ex', 'ey') if k in v})
-        own = [T.span(rx_open(rid)) for rid, o in olds.items() if o and (o.get('gate') or o['gates'])]   # written by gate_back and the reactions' own
+        own = [T.span(rx_open(rid), T.at('reaction', rid)) for rid, o in olds.items() if o and (o.get('gate') or o['gates'])]   # written by gate_back and the reactions' own
         for m in re.finditer(r'<celldesigner:(?:GateMember|modification) [^>]*type="BOOLEAN_LOGIC_GATE[^>]*>', T.t):
             if any(a <= m.start() < b for a, b in own):
                 continue

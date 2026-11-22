@@ -379,9 +379,32 @@
 
   function Text(t) { this.t = t; this.e = []; }
   Text.prototype.search = function (src, start, end) {   // re.search(src, t, start, end): the match or null
-    var re = new RegExp(src, 'g'), s = end === undefined || end === null ? this.t : this.t.slice(0, end);
-    re.lastIndex = start || 0;
-    return re.exec(s);
+    // with an end, only the window from start to end is copied (the patterns start with '<' and look nowhere before
+    // their start), never the text before it; without one, the whole text is searched in place
+    var re = new RegExp(src, 'g');
+    start = start || 0;
+    if (end === undefined || end === null) { re.lastIndex = start; return re.exec(this.t); }
+    var m = re.exec(this.t.slice(start, end));
+    if (m) m.index += start;
+    return m;
+  };
+  // where the first reaction, species or alias with an id starts: one pass over the text, made on the first lookup (the text
+  // does not change while edits are collected, done() applies them), so finding all of a large map's reactions costs
+  // one reading of the file, not one per reaction. A reaction is found by its id or its metaid, as rxOpen
+  Text.prototype.at = function (kind, id) {
+    if (!this.ix) {
+      var ix = this.ix = new Map(), re = /<(reaction|species) [^>]*>/g, m;
+      var keep = function (k, v) { if (!ix.has(k)) ix.set(k, v); };
+      while ((m = re.exec(this.t))) {
+        var a = /\bid="([^"]*)"/.exec(m[0]), b = m[1] === 'reaction' ? /\bmetaid="([^"]*)"/.exec(m[0]) : null;
+        if (a && b && b.index < a.index) { keep(m[1] + ' ' + b[1], m.index); b = null; }
+        if (a) keep(m[1] + ' ' + a[1], m.index);
+        if (b) keep(m[1] + ' ' + b[1], m.index);
+      }
+      var al = /<celldesigner:(speciesAlias|complexSpeciesAlias|compartmentAlias) id="([^"]*)"/g;   // the aliases, as the patterns that find them
+      while ((m = al.exec(this.t))) keep(m[1] + ' ' + m[2], m.index);
+    }
+    return this.ix.get(kind + ' ' + id);
   };
   Text.prototype.span = function (open, start, end) {
     var m = this.search(open, start, end);
@@ -414,10 +437,18 @@
   };
   Text.prototype.put = function (a, b, nw) { if (this.t.slice(a, b) !== nw) this.e.push([a, b, nw]); };
   Text.prototype.done = function () {
-    var t = this.t;
-    this.e.map(function (q, i) { return [q, i]; }).sort(function (p, q) { return q[0][0] - p[0][0] || p[1] - q[1]; }).forEach(function (p) {
-      var q = p[0]; t = t.slice(0, q[0]) + q[2] + t.slice(q[1]);
-    });
+    var t = this.t, es = this.e.map(function (q, i) { return [q, i]; }).sort(function (p, q) { return q[0][0] - p[0][0] || p[1] - q[1]; });
+    // edits apart from one another (the usual case): the text joined once from its pieces, in place of one copy of the
+    // whole text per edit (a fitted large map rewrites thousands of places); edits that touch or share a start are
+    // applied one by one as before, last first
+    var apart = es.every(function (p, i) { return i === 0 || p[0][1] < es[i - 1][0][0]; });
+    if (apart) {
+      var out = [], at = t.length;
+      es.forEach(function (p) { var q = p[0]; out.push(t.slice(q[1], at), q[2]); at = q[0]; });
+      out.push(t.slice(0, at));
+      return out.reverse().join('');
+    }
+    es.forEach(function (p) { var q = p[0]; t = t.slice(0, q[0]) + q[2] + t.slice(q[1]); });
     return t;
   };
   function points(oldTokens, oldAbs, newAbs, frameSame, frame) {
@@ -476,7 +507,7 @@
       if (all.some(function (q, i) { return now[i] !== q[2] && !free(i); })) return;
       all.forEach(function (q, i) { if (now[i] !== q[2]) todo.push([q[3], q[2], now[i], q[4], q[5]]); });
       if (!todo.length) return;
-      var s = T.span(rxOpen(rid)), gone = new Set();
+      var s = T.span(rxOpen(rid), T.at('reaction', rid)), gone = new Set();
       todo.forEach(function (q) {
         var R = ROLE[q[0]], old = q[1], a = q[2], so = sp(old), sn = sp(a);
         var el = nth(T, '<celldesigner:' + q[0] + ' ', s, q[3]);
@@ -508,7 +539,7 @@
       });
     });
     // the species' lists of the reactions they catalyse, only where the old species listed it (the file keeps them)
-    var LIST = '<celldesigner:listOfCatalyzedReactions>', spanOf = function (sid) { return T.span('<species [^>]*\\bid="' + reEscape(sid) + '"'); };
+    var LIST = '<celldesigner:listOfCatalyzedReactions>', spanOf = function (sid) { return T.span('<species [^>]*\\bid="' + reEscape(sid) + '"', T.at('species', sid)); };
     var listed = function (sid) {
       var s = spanOf(sid), l = s ? T.span(LIST, s[0], s[1]) : null, re = /<celldesigner:catalyzed reaction="([^"]*)"\/>/g, m, out = [];
       if (l) { var body = T.t.slice(l[0], l[1]); while ((m = re.exec(body))) out.push(m[1]); }
@@ -682,7 +713,7 @@
       var n = nw.get(i);
       if ([0, 1, 2, 3].every(function (j) { return Math.abs(n[j] - b[j]) < 1e-3; })) return;
       var kind = comps.has(i) ? 'compartmentAlias' : d.alias.get(i)[0] === 'COMPLEX' ? 'complexSpeciesAlias' : 'speciesAlias';
-      var s = T.span('<celldesigner:' + kind + ' id="' + reEscape(i) + '"');
+      var s = T.span('<celldesigner:' + kind + ' id="' + reEscape(i) + '"', T.at(kind, i));
       if (!s) throw new Error("TypeError: 'NoneType' object is not subscriptable");
       var bt = T.span('<celldesigner:bounds ', s[0], s[1]);
       T.attrs(bt[0], ['x', 'y', 'w', 'h'].map(function (k, j) { return [k, j]; }).filter(function (q) { return Math.abs(n[q[1]] - b[q[1]]) >= 1e-3; }).map(function (q) { return [q[0], num(n[q[1]])]; }));
@@ -734,14 +765,14 @@
       }
       var A = d.alias.get(i)[2], sid = get(A, 'species');
       if (get(A, 'complexSpeciesAlias') !== null) return;
-      var s = T.span('<celldesigner:' + (d.alias.get(i)[0] === 'COMPLEX' ? 'complexSpeciesAlias' : 'speciesAlias') + ' id="' + reEscape(i) + '"');
+      var ak = d.alias.get(i)[0] === 'COMPLEX' ? 'complexSpeciesAlias' : 'speciesAlias', s = T.span('<celldesigner:' + ak + ' id="' + reEscape(i) + '"', T.at(ak, i));
       T.attrs(s[0], [['compartmentAlias', p]]);
       var ip2 = T.span('<celldesigner:innerPosition ', s[0], s[1]);   // its offset from the new compartment's corner, as CellDesigner writes it when it reassigns
       if (ip2 && p !== null) T.attrs(ip2[0], [['x', num(nw.get(i)[0] - nw.get(p)[0])], ['y', num(nw.get(i)[1] - nw.get(p)[1])]]);
       if (d.alias.get(i)[0] === 'COMPLEX') carriers(T.t, i).forEach(function (q) {   // its members that carry a compartmentAlias (CellDesigner writes their complex's): the new one
-        if (q[1] !== p) T.attrs(T.span('<celldesigner:' + q[2] + ' id="' + reEscape(q[0]) + '"')[0], [['compartmentAlias', p]]);
+        if (q[1] !== p) T.attrs(T.span('<celldesigner:' + q[2] + ' id="' + reEscape(q[0]) + '"', T.at(q[2], q[0]))[0], [['compartmentAlias', p]]);
       });
-      var sp = spDone.has(sid) ? null : T.span('<species [^>]*\\bid="' + reEscape(sid) + '"');
+      var sp = spDone.has(sid) ? null : T.span('<species [^>]*\\bid="' + reEscape(sid) + '"', T.at('species', sid));
       spDone.add(sid);
       if (sp) T.attrs(sp[0], [['compartment', cid(p)]]);
     });
@@ -756,7 +787,7 @@
       if ((p1 !== null && !comps.has(p1)) || (p1 === null && p0 === null) || posDone.has(sid)) return;
       var now = p1 === null ? 'inside' : state(nw.get(i), nw.get(p1)), then = p0 !== null && comps.has(p0) ? state(old.get(i), old.get(p0)) : null;   // out of every compartment: inside the default one
       if (now === null || (now === then && p0 === p1)) return;
-      var sp = T.span('<species [^>]*\\bid="' + reEscape(sid) + '"'), pc = sp ? T.search('<celldesigner:positionToCompartment>([^<]*)</celldesigner:positionToCompartment>', sp[0], sp[1]) : null;
+      var sp = T.span('<species [^>]*\\bid="' + reEscape(sid) + '"', T.at('species', sid)), pc = sp ? T.search('<celldesigner:positionToCompartment>([^<]*)</celldesigner:positionToCompartment>', sp[0], sp[1]) : null;
       posDone.add(sid);
       if (pc && pc[1] !== now) T.put(pc.index + '<celldesigner:positionToCompartment>'.length, pc.index + '<celldesigner:positionToCompartment>'.length + pc[1].length, now);
     });
@@ -775,7 +806,7 @@
       var o = olds[rxid(rx)];
       if (!o) return;
       o.old = old;
-      reaction(d, T, T.span(rxOpen(o.id)), rx, o, bends, paths, nw);
+      reaction(d, T, T.span(rxOpen(o.id), T.at('reaction', o.id)), rx, o, bends, paths, nw);
     });
     if (shifted) {
       var ly = T.span('<celldesigner:listOfLayers>'), seg3 = ly ? T.t.slice(ly[0], ly[1]) : '', re3 = /<celldesigner:bounds /g, m4;
@@ -786,7 +817,7 @@
         T.attrs(ly[0] + m4.index, ['x', 'y', 'sx', 'sy', 'ex', 'ey'].filter(function (k) { return has(v2, k); }).map(function (k) { return [k, num(F(v2[k]) + sh[/y$/.test(k) ? 1 : 0])]; }));
       }
       // the gates reaction() did not write (their reactions not read by lines())
-      var own = rxsAll.filter(function (rx) { var o = olds[rxid(rx)]; return o && (o.gate || o.gates.length); }).map(function (rx) { return T.span(rxOpen(rxid(rx))); });
+      var own = rxsAll.filter(function (rx) { var o = olds[rxid(rx)]; return o && (o.gate || o.gates.length); }).map(function (rx) { return T.span(rxOpen(rxid(rx)), T.at('reaction', rxid(rx))); });
       var re5 = /<celldesigner:(?:GateMember|modification) [^>]*type="BOOLEAN_LOGIC_GATE[^>]*>/g, m6;
       while ((m6 = re5.exec(T.t))) {
         if (own.some(function (q) { return q[0] <= m6.index && m6.index < q[1]; })) continue;
@@ -866,7 +897,7 @@
       return null;
     };
     var slice = function (rid) {
-      if (!has(slices, rid)) { var sp = T0.span(rxOpen(rid)); slices[rid] = sp ? t.slice(sp[0], sp[1]) : null; }
+      if (!has(slices, rid)) { var sp = T0.span(rxOpen(rid), T0.at('reaction', rid)); slices[rid] = sp ? t.slice(sp[0], sp[1]) : null; }
       return slices[rid];
     };
     return {
