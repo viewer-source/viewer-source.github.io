@@ -11,7 +11,7 @@
 //    full said; the site's data cleared, the site's map comes back.
 // What happens to the moves after a refusal as changed is printed, not checked (plan 3 step 1 changes it).
 //   node tests/save-paths.js <base address> <clone of the site's data repository>
-var { chromium } = require('playwright'), fs = require('fs'), path = require('path');
+var engine = require('playwright')[process.env.BROWSER || 'chromium'], fs = require('fs'), path = require('path');   // BROWSER=webkit or firefox: the same test in another engine
 var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
 var data = process.argv[3];
 if (!data) { console.log('usage: node tests/save-paths.js <base address> <clone of the data repository>'); process.exit(2); }
@@ -191,8 +191,10 @@ async function browser(b) {
   ok('the draft before it left as it was', (await draft()) === t1);
   await page.evaluate(function () { window.__full = false; });
   await h.leave();
-  var cdp = await ctx.newCDPSession(page);
-  await cdp.send('Storage.clearDataForOrigin', { origin: new URL(base).origin, storageTypes: 'all' });
+  await page.evaluate(function () {   // the site's data cleared, as the browser's settings do (any engine)
+    localStorage.clear(); sessionStorage.clear();
+    return new Promise(function (res) { var q = indexedDB.deleteDatabase('atlas-edit-drafts'); q.onsuccess = q.onerror = q.onblocked = function () { res(); }; });
+  });
   await page.reload({ waitUntil: 'load' }); await page.waitForTimeout(2500);
   ok("the site's data cleared: no draft shown", await page.$eval('#m2-draft', function (e) { return e.hidden; }).catch(function () { return true; }));
   await h.edit();
@@ -202,7 +204,7 @@ async function browser(b) {
 }
 
 (async function () {
-  var b = await chromium.launch();
+  var b = await engine.launch();
   await github(b); await folder(b); await browser(b);
   await b.close();
   console.log(bad ? bad + ' wrong' : 'all ok');

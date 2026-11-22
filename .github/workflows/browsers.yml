@@ -1,0 +1,26 @@
+# The browser tests (tests/run-browser.sh) in another engine than Chromium, on the live styles page: WebKit, Safari's
+# engine, on macOS by default, or Firefox. Runs by hand only.
+name: Other browsers
+on:
+  workflow_dispatch:
+    inputs:
+      browser:
+        description: webkit or firefox
+        default: webkit
+permissions:
+  contents: read
+jobs:
+  browsers:
+    runs-on: macos-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4   # the maps the save-path test reads, from the site's data repository (as the build)
+        with:
+          repository: ${{ github.repository_owner }}/${{ github.repository_owner }}-data
+          token: ${{ secrets.DATA_TOKEN }}
+          path: .data
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: npm ci && npm i --no-save playwright@1.63.0 && npx playwright install ${{ inputs.browser }}
+      - run: BROWSER=${{ inputs.browser }} sh tests/run-browser.sh .data

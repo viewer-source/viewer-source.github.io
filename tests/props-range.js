@@ -5,11 +5,11 @@
 // bbox and the stroke-width of its style; CellDesigner: the alias's bounds and its singleLine width), shown at the limit
 // in its field, no warning in the Edit window's status line. Nothing is saved (no token). No script error.
 //   node tests/props-range.js [base address]
-var { chromium } = require('playwright');
+var engine = require('playwright')[process.env.BROWSER || 'chromium'];   // BROWSER=webkit or firefox: the same test in another engine
 var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
 var MAPS = [['glycolysis-sbgn', 'macromolecule'], ['glycolysis-celldesigner', 'cd:PROTEIN']];
 (async function () {
-  var b = await chromium.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], bad = 0;
+  var b = await engine.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], bad = 0;
   page.on('pageerror', function (e) { errs.push(e.message); });
   var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more && !v ? '  ' + more : '')); };
   var ids = function () { return page.$$eval('#m2-img [data-n]', function (l) { return l.map(function (x) { return x.getAttribute('data-n'); }); }); };

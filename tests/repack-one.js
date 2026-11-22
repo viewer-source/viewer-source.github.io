@@ -4,10 +4,10 @@
 // complex's members move back, nothing outside it moves, and one undo takes the repack back. On an SBGN-ML map, a state variable added to a member has its own menu, without Repack complex.
 // Nothing is saved (no token). No script error.
 //   node tests/repack-one.js [base address]
-var { chromium } = require('playwright');
+var engine = require('playwright')[process.env.BROWSER || 'chromium'];   // BROWSER=webkit or firefox: the same test in another engine
 var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
 (async function () {
-  var b = await chromium.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], bad = 0;
+  var b = await engine.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], bad = 0;
   page.on('pageerror', function (e) { errs.push(e.message); });
   var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more ? '  ' + more : '')); };
   var menu = async function (P) { await page.keyboard.press('Escape'); await page.mouse.click(P[0], P[1], { button: 'right' }); await page.waitForTimeout(300); return page.$$eval('.m2-cx button', function (l) { return l.map(function (x) { return x.textContent; }); }); };

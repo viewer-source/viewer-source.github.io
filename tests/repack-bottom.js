@@ -6,10 +6,10 @@
 // the file the editor would save (m2EditNow); where they are drawn: each one's drawing on the map (getBBox, map units, its
 // scale checked against the file). Undo puts the file back. Nothing is saved (no token). No script error.
 //   node tests/repack-bottom.js [base address]
-var { chromium } = require('playwright');
+var engine = require('playwright')[process.env.BROWSER || 'chromium'];   // BROWSER=webkit or firefox: the same test in another engine
 var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
 (async function () {
-  var b = await chromium.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], bad = 0;
+  var b = await engine.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], bad = 0;
   page.on('pageerror', function (e) { errs.push(e.message); });
   var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more && !v ? '  ' + more : '')); };
   var now = function () { return page.evaluate(function () { return window.m2EditNow().text; }); };

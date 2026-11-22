@@ -3,10 +3,10 @@
 // CellDesigner compatible ticked (no Tag) and unticked (Tag), under PD and AF; the tick box sits above Reduced notation,
 // is not in Settings, takes the Tag (and AF's delay) out and puts it back, and one undo puts it back as it was. No script error.
 //   node tests/palette-rows.js [address] [viewer folder: its editor served in place of the page's]
-var { chromium } = require('playwright'), fs = require('fs'), path = require('path');
+var engine = require('playwright')[process.env.BROWSER || 'chromium'], fs = require('fs'), path = require('path');   // BROWSER=webkit or firefox: the same test in another engine
 var url = process.argv[2] || 'https://viewer-source.github.io/styles/#testing-glycolysis-sbgn', local = process.argv[3];
 (async function () {
-  var b = await chromium.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], bad = 0;
+  var b = await engine.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], bad = 0;
   if (local) {
     var ed = require('./editor-now.js')(local);
     await page.route('**/editor/editor.js*', function (r) { r.fulfill({ status: 200, contentType: 'application/javascript', body: ed }); });

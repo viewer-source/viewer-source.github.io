@@ -7,7 +7,7 @@
 // strict policy as Report-Only (nothing blocked), every violation is collected, and the policy the page would need
 // is printed with the counts behind each source. Printed, not checked.
 //   node tests/hostile-files.js [base address] [viewer folder: its renderers served in place of the page's]
-var { chromium } = require('playwright'), fs = require('fs'), path = require('path');
+var engine = require('playwright')[process.env.BROWSER || 'chromium'], fs = require('fs'), path = require('path');   // BROWSER=webkit or firefox: the same test in another engine
 var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local = process.argv[3], bad = 0;
 var checks = path.join(__dirname, '..', '..', 'notes', 'check-files');
 var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more ? '  ' + more : '')); };
@@ -51,7 +51,7 @@ function sbgnml() {
 }
 
 (async function () {
-  var b = await chromium.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], said = [];
+  var b = await engine.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], said = [];
   page.on('pageerror', function (e) { errs.push(e.message); });
   if (local) await page.route(/\/renderers\/(converter|yrender)\/[a-z_]+\.js/, function (r) { var f = /\/renderers\/(converter|yrender)\/([a-z_]+\.js)/.exec(r.request().url()); r.fulfill({ status: 200, contentType: 'application/javascript', body: fs.readFileSync(path.join(local, 'renderers', f[1], f[2]), 'utf8') }); });
   page.on('dialog', function (d) { said.push(d.message()); d.accept().catch(function () {}); });

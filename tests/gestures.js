@@ -2,10 +2,10 @@
 // area, in view and edit mode; the area's right-click menu zooms to it or copies it as PNG; a click clears it; Shift with the wheel moves the map
 // sideways only; Space held with the wheel scrolls the page and leaves the map still.
 //   node tests/gestures.js [page address]
-var { chromium } = require('playwright');
+var engine = require('playwright')[process.env.BROWSER || 'chromium'];   // BROWSER=webkit or firefox: the same test in another engine
 var URL0 = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysis-sbgn';
 (async function () {
-  var b = await chromium.launch(), bad = 0, errs = [];
+  var b = await engine.launch(), bad = 0, errs = [];
   var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more && !v ? '  ' + more : '')); };
   var ctx = await b.newContext({ viewport: { width: 1400, height: 900 }, permissions: ['clipboard-read', 'clipboard-write'] });
   var page = await ctx.newPage();
