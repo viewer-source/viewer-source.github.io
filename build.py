@@ -136,7 +136,7 @@ GN, YN = '{http://graphml.graphdrawing.org/xmlns}', '{http://www.yworks.com/xml/
 
 
 def graphml(src, out_svg, sbgn=False):
-    r = render('yed', src, sbgn)
+    r = render('yed', src, sbgn, groups=True)   # the picture is the editor's drawing (render.js), the lines below read from it
     if r['errors']:   # as yrender: a map it cannot draw stops the build, nothing written
         raise SystemExit(f'{src}: cannot draw, nothing written\n  ' + '\n  '.join(r['errors']))
     open(out_svg, 'w', encoding='utf-8').write(r['svg'])
@@ -183,7 +183,7 @@ def graphml(src, out_svg, sbgn=False):
     # a line's process: the one at either end, or for a gate's input the process the gate leads to
     ends = {e.get('id'): (e.get('source'), e.get('target')) for e in root.iter(GN + 'edge')}
     gate_to = {s: t for s, t, a in arcs if kind_of.get(s) == 'Operator' and t in procs}
-    LINES[out_svg] = lines_of(render('yed', src, sbgn, groups=True)['svg'],
+    LINES[out_svg] = lines_of(r['svg'],
                               lambda e: next((gate_to.get(p, p) for p in ends.get(e, ()) if p in procs or p in gate_to), None))
     return nodes
 
@@ -230,7 +230,7 @@ def name(n):
 
 
 def celldesigner(src, out_svg):
-    r = render('cd', src)
+    r = render('cd', src, groups=True)   # the picture is the editor's drawing (render.js), the lines below read from it
     svg, hits = r['svg'], r['hits']
     for a in hits['aliases']:
         a['box'] = floats(a['box'])
@@ -274,7 +274,7 @@ def celldesigner(src, out_svg):
               for m in x.iterfind(C + 'listOfModification/' + C + 'modification')
               if not (m.get('type') or '').startswith('BOOLEAN_LOGIC_GATE')]
         nodes.append(process('Process', at, ins, outs, by, refs, rx.get('id')))
-    LINES[out_svg] = lines_of(render('cd', src, groups=True)['svg'], lambda e: e.split('|')[0])
+    LINES[out_svg] = lines_of(svg, lambda e: e.split('|')[0])
     return nodes
 
 

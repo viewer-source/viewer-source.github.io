@@ -473,7 +473,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, mine,
       var c = isCd(t), s = !c && isSb(t);
       if (!c && !s && !/<graphml[\s>]/.test(t.slice(0, 3000))) return Promise.reject(new Error('not a GraphML, CellDesigner or SBGN-ML file'));
       return (c ? cdpy() : s ? sbpy() : yr()).then(function () {
-        var svg = c ? window.cdrender.render(t, { classes: true }) : window.yrender.render(s ? sbGraphml(t, g0 || EMPTY_BASE) : t, { classes: true, sbgn: s }).svg;
+        var svg = c ? window.cdrender.render(t, { classes: true, groups: true }) : window.yrender.render(s ? sbGraphml(t, g0 || EMPTY_BASE) : t, { classes: true, groups: true, sbgn: s }).svg;   // grouped: the editor's own drawing, taken as it is on entering edit (adopt)
         var w = svg.match(/ width="([\d.]+)" height="([\d.]+)"/);
         if (!w) throw new Error('not a map this viewer can draw');
         return { svg: svg, width: parseFloat(w[1]), height: parseFloat(w[2]) };
@@ -1271,6 +1271,12 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, mine,
         }
         if (t !== ticket) return;
         drawing = false;
+        showDrawing(r);
+      }).catch(function (e) { if (t === ticket) { drawing = false; warn('Not drawn: ' + (e && e.message ? e.message.split('\n').slice(-2).join(' ') : e)); } });
+    }
+    // a drawing put in place of the picture on screen, the map kept where it is: r = [svg, warnings]. From render(),
+    // or from adopt() when the picture on screen is already the editor's drawing of the file opened
+    function showDrawing(r) {
         if (r[1].length) warn('Drawn with warnings: ' + r[1].join('; '));
         var svg = r[0]; lastSvg = svg; lastFor = [shared.text, shared.cd ? shared.cd.now : null, site && site.id, shared.afSbgn];   // [3]: drawn in the SBGN AF view, never kept, saved or downloaded (graphml.js)
         if (!on && site && V.kept && V.kept.id === site.id && V.kept.text != null) { V.kept.text = src(); V.kept.svg = svg; }   // left before this redraw ended: the kept file and drawing as drawn
@@ -1297,7 +1303,13 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, mine,
           if (first) V.fit(); else V.draw();
           if (!r[1].length && !saveTimer && !saving && !shared.dirty) { if (takenIn) warn(takenIn); else quiet(); takenIn = null; }   // the file changed by opening it: said in red, as a change the reader did not make
         })();
-      }).catch(function (e) { if (t === ticket) { drawing = false; warn('Not drawn: ' + (e && e.message ? e.message.split('\n').slice(-2).join(' ') : e)); } });
+    }
+    // entering edit on the picture as it is: the site's build and a reader's own map draw it as the editor does (each node
+    // and line in a group of its own, render.js groups, drawText), so it is taken as the editor's drawing, nothing drawn
+    // again. Any later change is drawn by render() as before
+    function adopt(svg) {
+      ++ticket; drawing = false;   // a redraw under way is let go
+      showDrawing([svg, []]);
     }
     // an opening under way (the files read, a CellDesigner file converted) is dropped when the Edit window is left or
     // another map is opened before it is done (else leaving at once leaves edit mode on, autosave armed)
@@ -1368,7 +1380,12 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, mine,
       V.grid.classList.add('m2-editing');
       buttons();
       gN = gE = null; mv = shared.live = null; shared.liveG = null; shared.poseNow = null; shared.poseText = null; shared.copies = []; shared.frozen = false; shared.cdBase = null;
-      if (same && same.text === t) { (shared.cd ? cdpy() : yr()).then(function () { if (on && V.current === map && !edits && !gN) render(); }); paint(); quiet(); shownWhole(); return; }
+      if (same && same.text === t) {
+        var grouped = same.svg && same.svg.indexOf(' data-n="') >= 0;   // the editor's own drawing of this very file
+        (shared.cd ? cdpy() : yr()).then(function () { if (on && V.current === map && !edits && !gN && !grouped) render(); });   // the renderer loaded quietly for the first change
+        if (grouped) adopt(same.svg);
+        paint(); quiet(); shownWhole(); return;
+      }
       quiet();
       render();
       shownWhole();
@@ -1569,7 +1586,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, mine,
     function frameOf(p) {   // the frame of the site's drawing (its size and the offset of yEd's coordinates), read when wanted
       if (!p.siteFrame) p.siteFrame = fetch(p.img).then(function (r) { return r.text(); }).then(function (svg) {
         var t = svg.match(/<g transform="translate\(([-\d.]+),([-\d.]+)\)">/), w = svg.match(/ width="([\d.]+)" height="([\d.]+)"/);
-        return w ? { width: parseFloat(w[1]), height: parseFloat(w[2]), x0: t ? -parseFloat(t[1]) : 0, y0: t ? -parseFloat(t[2]) : 0, scale: 1 } : null;   // a CellDesigner drawing: no offset
+        return w ? { width: parseFloat(w[1]), height: parseFloat(w[2]), x0: t ? -parseFloat(t[1]) : 0, y0: t ? -parseFloat(t[2]) : 0, scale: 1, svg: svg } : null;   // a CellDesigner drawing: no offset; svg: taken as the editor's drawing when grouped (begin, adopt)
       }).catch(function () { return null; });
       return p.siteFrame;
     }
@@ -1657,14 +1674,22 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, mine,
         p.docs = g2 === g ? [{ text: g, doc: d }] : [{ text: g, doc: d }, { text: g2, doc: d2 }];   // the documents the editor reads its file into
         return waitFor(m);
       }).then(function () {
+        return Promise.all([frameOf(p), p.sitePub]);
+      }).then(function (x) {
         if (!still()) throw 0;
+        // the site's picture already the editor's drawing of the text editing starts from (grouped, render.js): nothing
+        // drawn again, editing takes it as it is (adopt); only its page elements made ahead, and only on a map small
+        // enough for one idle moment (a larger one is put in when editing starts)
+        var fr = x[0];
+        if (fr && fr.svg && fr.svg.indexOf(' data-n="') >= 0 && p.t === x[1]) { dm = { cd: null, text: null, pic: null, own: fr.svg }; p.memo = dm; return waitFor(m); }
         if (cdm) dm = { cd: true, base: p.t, text: g, q: cdDraw(p.t, g, false), block: gridBlock() };
         else { var y = window.yrender.render(d2, { classes: true, groups: true, sbgn: sbMap(m) }); dm = { cd: false, text: g2, r: [y.svg, y.errors] }; }   // the renderer only reads the document
         p.memo = dm;
         return waitFor(m);
       }).then(function () {
         if (!still() || p.memo !== dm) throw 0;
-        dm.rec = V.recolour(cdm ? dm.q[0] : dm.r[0]);   // the drawing as the page's elements, ready to put in
+        if (dm.own && dm.own.length >= 3e6) return;
+        dm.rec = V.recolour(dm.own || (cdm ? dm.q[0] : dm.r[0]));   // the drawing as the page's elements, ready to put in
         dm.pic = document.importNode(new DOMParser().parseFromString(dm.rec, 'image/svg+xml').documentElement, true);
       });
       mine.p.catch(function () { if (p.drawn === mine.p) p.drawn = null; });
@@ -1716,7 +1741,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, mine,
       // coordinates) is read from that SVG, so editing starts on it without a redraw; the moved map is drawn again
       var k = V.keep(m), shownPic = V.img;
       var published = k && k.text ? Promise.resolve(k.text) : p.sitePub;
-      var frame = k ? Promise.resolve({ width: k.width, height: k.height, x0: k.x0, y0: k.y0, scale: 1 }) : frameOf(p);
+      var frame = k ? Promise.resolve({ width: k.width, height: k.height, x0: k.x0, y0: k.y0, scale: 1 }) : frameOf(p);   // a kept drawing is drawn again (its frame carries the canvas fit's shift)
       var go = function (t, s) {
         return Promise.all([published, frame, p.sitePub, frameOf(p)]).then(function (r) {
           if (tk !== opening) return;   // left, or another map opened, meanwhile
@@ -2521,7 +2546,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, mine,
       // Before the editor's drawing is in the page, a thin blue line over the map
       var blueG = function (g) {
         var cs = shared.copies.filter(function (c) { return c[1] === g; });
-        if (cs.length) cs.forEach(function (c) { c[0].classList.add('m2-ed-blue'); }); else g.classList.add('m2-ed-blue');
+        if (cs.length) cs.forEach(function (c) { if (c[0].classList) c[0].classList.add('m2-ed-blue'); }); else g.classList.add('m2-ed-blue');   // a line drawn in more pieces: the pieces after the first stand in as empty comments (graphml.js yLines)
       };
       hlE.forEach(function (k) {
         var gs = gE && gE[edges2[k].id];

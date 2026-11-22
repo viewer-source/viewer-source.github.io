@@ -2,8 +2,9 @@
 // editor): build.py starts this once and asks it, one line of JSON per map, for a drawing; it answers one line each.
 //   {"kind":"yed","src":path,"sbgn":true}  -> {"svg":...,"errors":[...]}   (yrender.js, classes on; sbgn: a GraphML made from SBGN-ML)
 //   {"kind":"cd","src":path}   -> {"svg":...,"hits":{...}}     (cdrender.js, classes on, with the click data)
-//   either with "groups":true  -> {"svg":...}   the editor's drawing, each node and line in a group of its own (data-n,
-//                                                data-e), read by the build for the lines a click lights; never published
+//   either with "groups":true  -> the same, each node and line in a group of its own (data-n, data-e): the published
+//                                 picture is this drawing, which the editor takes as its own on entering edit (no redraw),
+//                                 and the build reads the lines a click lights from it
 //   anything that fails           -> {"error": message}
 // A CellDesigner map whose compartments name a picture in their notes ('Glyph: glyphs/x.png', MINERVA's way) gets the
 // picture drawn in the compartment's box when that file is beside the map, embedded as a data address; without the file
@@ -24,9 +25,9 @@ readline.createInterface({ input: process.stdin }).on('line', function (line) {
   var out;
   try {
     var job = JSON.parse(line), text = fs.readFileSync(job.src, 'utf8');
-    if (job.groups) out = { svg: job.kind === 'yed' ? yr.render(text, { groups: true, sbgn: !!job.sbgn, DOMParser: DP }).svg : cd.render(text, { groups: true, DOMParser: DP, log: log }) };
-    else if (job.kind === 'yed') { var r = yr.render(text, { classes: true, sbgn: !!job.sbgn, DOMParser: DP }); out = { svg: r.svg, errors: r.errors }; }
-    else { var h = cd.renderHits(text, { classes: true, DOMParser: DP, log: log, glyph: glyphs(job.src) }); out = { svg: h[0], hits: h[1] }; }
+    var g = !!job.groups;
+    if (job.kind === 'yed') { var r = yr.render(text, { classes: true, groups: g, sbgn: !!job.sbgn, DOMParser: DP }); out = { svg: r.svg, errors: r.errors }; }
+    else { var h = cd.renderHits(text, { classes: true, groups: g, DOMParser: DP, log: log, glyph: glyphs(job.src) }); out = { svg: h[0], hits: h[1] }; }
   } catch (e) { out = { error: String(e && e.message || e) }; }
   process.stdout.write(JSON.stringify(out) + '\n');
 });

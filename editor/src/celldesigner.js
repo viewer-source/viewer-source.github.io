@@ -158,7 +158,10 @@ import { cdCheck, cdClsOf, cdRole } from './cdcreate.js';
       try { cdLive = { base: shared.cdBase, s: cdJs.live(shared.cdBase.now, shared.cdBase.text) }; } catch (e) { cdLive = null; }
       return cdLive ? cdLive.s : null;
     }
-    function cdSessionSoon() { (window.requestIdleCallback || function (f) { setTimeout(f, 0); })(function () { if (on) cdSession(); }); }
+    function cdSessionSoon() {
+      if (!shared.cdBase && shared.cd) shared.cdBase = { now: shared.cd.now, text: shared.text };   // a drawing taken as it is (adopt): the file opened, its GraphML
+      (window.requestIdleCallback || function (f) { setTimeout(f, 0); })(function () { if (on) cdSession(); });
+    }
     // the compartments and complexes growing round a move (ks, from liveDraw), drawn by cdrender's own code at their live
     // boxes (cd_edit.live's holder) in place of what their groups hold, until the map is drawn again (undraw puts it
     // back); drawn again only when a box changed, all in one parse per frame

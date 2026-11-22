@@ -10280,6 +10280,7 @@
     return cdLive ? cdLive.s : null;
   }
   function cdSessionSoon() {
+    if (!shared.cdBase && shared.cd) shared.cdBase = { now: shared.cd.now, text: shared.text };
     (window.requestIdleCallback || function(f) {
       setTimeout(f, 0);
     })(function() {
@@ -11886,7 +11887,7 @@
     var c = isCd(t), s = !c && isSb(t);
     if (!c && !s && !/<graphml[\s>]/.test(t.slice(0, 3e3))) return Promise.reject(new Error("not a GraphML, CellDesigner or SBGN-ML file"));
     return (c ? cdpy() : s ? sbpy() : yr()).then(function() {
-      var svg = c ? window.cdrender.render(t, { classes: true }) : window.yrender.render(s ? sbGraphml(t, g0 || EMPTY_BASE) : t, { classes: true, sbgn: s }).svg;
+      var svg = c ? window.cdrender.render(t, { classes: true, groups: true }) : window.yrender.render(s ? sbGraphml(t, g0 || EMPTY_BASE) : t, { classes: true, groups: true, sbgn: s }).svg;
       var w = svg.match(/ width="([\d.]+)" height="([\d.]+)"/);
       if (!w) throw new Error("not a map this viewer can draw");
       return { svg, width: parseFloat(w[1]), height: parseFloat(w[2]) };
@@ -13099,74 +13100,82 @@
       }
       if (t !== ticket) return;
       drawing = false;
-      if (r[1].length) warn("Drawn with warnings: " + r[1].join("; "));
-      var svg = r[0];
-      lastSvg = svg;
-      lastFor = [shared.text, shared.cd ? shared.cd.now : null, site && site.id, shared.afSbgn];
-      if (!on && site && V.kept && V.kept.id === site.id && V.kept.text != null) {
-        V.kept.text = src();
-        V.kept.svg = svg;
-      }
-      if (!on && site && unsaved[site.id] && unsaved[site.id].site === site) unsaved[site.id].text = src();
-      histLate();
-      var m = svg.match(/<g transform="translate\(([-\d.]+),([-\d.]+)\)">/);
-      var w = svg.match(/ width="([\d.]+)" height="([\d.]+)"/);
-      var nx = -parseFloat(m[1]), ny = -parseFloat(m[2]), first = !map.width;
-      if (!first) {
-        V.tx += (nx - x0) * V.z;
-        V.ty += (ny - y0) * V.z;
-      }
-      x0 = nx;
-      y0 = ny;
-      map.width = parseFloat(w[1]);
-      map.height = parseFloat(w[2]);
-      (function() {
-        if (V.current !== map) return;
-        var rec = V.recolour(svg), dm2 = drawMemo && drawMemo.pic && drawMemo.rec === rec ? drawMemo : null;
-        var pic = dm2 ? dm2.pic : document.importNode(new DOMParser().parseFromString(rec, "image/svg+xml").documentElement, true);
-        if (dm2) dm2.pic = null;
-        pic.style.visibility = "";
-        var old = V.img.src || "";
-        V.img.removeAttribute("id");
-        pic.id = "m2-img";
-        pic.setAttribute("aria-label", map.title);
-        V.img.replaceWith(pic);
-        V.img = pic;
-        if (old.indexOf("blob:") === 0) URL.revokeObjectURL(old);
-        gN = {};
-        gE = {};
-        shared.live = null;
-        shared.liveC = null;
-        shared.liveOrig = null;
-        shared.sizeRec = null;
-        shared.keyed = null;
-        shared.liveG = null;
-        shared.poseNow = null;
-        shared.poseText = null;
-        shared.copies = [];
-        shared.frozen = false;
-        pic.querySelectorAll("[data-n]").forEach(function(g) {
-          gN[g.getAttribute("data-n")] = g;
-        });
-        pic.querySelectorAll("[data-e]").forEach(function(g) {
-          var k = g.getAttribute("data-e");
-          (gE[k] = gE[k] || []).push(g);
-        });
-        if (shared.cd) cdSessionSoon();
-        if (first) V.fit();
-        else V.draw();
-        if (!r[1].length && !saveTimer && !saving && !shared.dirty) {
-          if (takenIn) warn(takenIn);
-          else quiet();
-          takenIn = null;
-        }
-      })();
+      showDrawing(r);
     }).catch(function(e) {
       if (t === ticket) {
         drawing = false;
         warn("Not drawn: " + (e && e.message ? e.message.split("\n").slice(-2).join(" ") : e));
       }
     });
+  }
+  function showDrawing(r) {
+    if (r[1].length) warn("Drawn with warnings: " + r[1].join("; "));
+    var svg = r[0];
+    lastSvg = svg;
+    lastFor = [shared.text, shared.cd ? shared.cd.now : null, site && site.id, shared.afSbgn];
+    if (!on && site && V.kept && V.kept.id === site.id && V.kept.text != null) {
+      V.kept.text = src();
+      V.kept.svg = svg;
+    }
+    if (!on && site && unsaved[site.id] && unsaved[site.id].site === site) unsaved[site.id].text = src();
+    histLate();
+    var m = svg.match(/<g transform="translate\(([-\d.]+),([-\d.]+)\)">/);
+    var w = svg.match(/ width="([\d.]+)" height="([\d.]+)"/);
+    var nx = -parseFloat(m[1]), ny = -parseFloat(m[2]), first = !map.width;
+    if (!first) {
+      V.tx += (nx - x0) * V.z;
+      V.ty += (ny - y0) * V.z;
+    }
+    x0 = nx;
+    y0 = ny;
+    map.width = parseFloat(w[1]);
+    map.height = parseFloat(w[2]);
+    (function() {
+      if (V.current !== map) return;
+      var rec = V.recolour(svg), dm = drawMemo && drawMemo.pic && drawMemo.rec === rec ? drawMemo : null;
+      var pic = dm ? dm.pic : document.importNode(new DOMParser().parseFromString(rec, "image/svg+xml").documentElement, true);
+      if (dm) dm.pic = null;
+      pic.style.visibility = "";
+      var old = V.img.src || "";
+      V.img.removeAttribute("id");
+      pic.id = "m2-img";
+      pic.setAttribute("aria-label", map.title);
+      V.img.replaceWith(pic);
+      V.img = pic;
+      if (old.indexOf("blob:") === 0) URL.revokeObjectURL(old);
+      gN = {};
+      gE = {};
+      shared.live = null;
+      shared.liveC = null;
+      shared.liveOrig = null;
+      shared.sizeRec = null;
+      shared.keyed = null;
+      shared.liveG = null;
+      shared.poseNow = null;
+      shared.poseText = null;
+      shared.copies = [];
+      shared.frozen = false;
+      pic.querySelectorAll("[data-n]").forEach(function(g) {
+        gN[g.getAttribute("data-n")] = g;
+      });
+      pic.querySelectorAll("[data-e]").forEach(function(g) {
+        var k = g.getAttribute("data-e");
+        (gE[k] = gE[k] || []).push(g);
+      });
+      if (shared.cd) cdSessionSoon();
+      if (first) V.fit();
+      else V.draw();
+      if (!r[1].length && !saveTimer && !saving && !shared.dirty) {
+        if (takenIn) warn(takenIn);
+        else quiet();
+        takenIn = null;
+      }
+    })();
+  }
+  function adopt(svg) {
+    ++ticket;
+    drawing = false;
+    showDrawing([svg, []]);
   }
   var opening;
   function __run194() {
@@ -13293,9 +13302,11 @@
     shared.frozen = false;
     shared.cdBase = null;
     if (same && same.text === t) {
+      var grouped = same.svg && same.svg.indexOf(' data-n="') >= 0;
       (shared.cd ? cdpy() : yr()).then(function() {
-        if (on && V.current === map && !edits && !gN) render();
+        if (on && V.current === map && !edits && !gN && !grouped) render();
       });
+      if (grouped) adopt(same.svg);
       paint();
       quiet();
       shownWhole();
@@ -13578,7 +13589,7 @@
       return r.text();
     }).then(function(svg) {
       var t = svg.match(/<g transform="translate\(([-\d.]+),([-\d.]+)\)">/), w = svg.match(/ width="([\d.]+)" height="([\d.]+)"/);
-      return w ? { width: parseFloat(w[1]), height: parseFloat(w[2]), x0: t ? -parseFloat(t[1]) : 0, y0: t ? -parseFloat(t[2]) : 0, scale: 1 } : null;
+      return w ? { width: parseFloat(w[1]), height: parseFloat(w[2]), x0: t ? -parseFloat(t[1]) : 0, y0: t ? -parseFloat(t[2]) : 0, scale: 1, svg } : null;
     }).catch(function() {
       return null;
     });
@@ -13700,7 +13711,15 @@
       p.docs = g2 === g ? [{ text: g, doc: d }] : [{ text: g, doc: d }, { text: g2, doc: d2 }];
       return waitFor(m);
     }).then(function() {
+      return Promise.all([frameOf(p), p.sitePub]);
+    }).then(function(x) {
       if (!still()) throw 0;
+      var fr = x[0];
+      if (fr && fr.svg && fr.svg.indexOf(' data-n="') >= 0 && p.t === x[1]) {
+        dm = { cd: null, text: null, pic: null, own: fr.svg };
+        p.memo = dm;
+        return waitFor(m);
+      }
       if (cdm) dm = { cd: true, base: p.t, text: g, q: cdDraw(p.t, g, false), block: gridBlock() };
       else {
         var y = window.yrender.render(d2, { classes: true, groups: true, sbgn: sbMap(m) });
@@ -13710,7 +13729,8 @@
       return waitFor(m);
     }).then(function() {
       if (!still() || p.memo !== dm) throw 0;
-      dm.rec = V.recolour(cdm ? dm.q[0] : dm.r[0]);
+      if (dm.own && dm.own.length >= 3e6) return;
+      dm.rec = V.recolour(dm.own || (cdm ? dm.q[0] : dm.r[0]));
       dm.pic = document.importNode(new DOMParser().parseFromString(dm.rec, "image/svg+xml").documentElement, true);
     });
     mine2.p.catch(function() {
@@ -14926,7 +14946,7 @@
         return c2[1] === g;
       });
       if (cs.length) cs.forEach(function(c2) {
-        c2[0].classList.add("m2-ed-blue");
+        if (c2[0].classList) c2[0].classList.add("m2-ed-blue");
       });
       else g.classList.add("m2-ed-blue");
     };
