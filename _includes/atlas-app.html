@@ -1430,7 +1430,7 @@ page, so its styles keep the base they were made on).
   function eRight() {   // and room for the list, the map's least 600 px and the panel, else Left (no page wider than the window)
     if (eSide() !== 'right' || !setting('icons') || !setting('edit') || !window.matchMedia('(min-width: 941px)').matches) return false;
     var g = document.querySelector('.m2'), ew = parseFloat(g && g.style.getPropertyValue('--m2-edit-w')) || 240, lw = typeof listW === 'number' ? listW : 240;
-    var k = (typeof view !== 'undefined' && view && view.currentCSSZoom) || 1;
+    var k = typeof view !== 'undefined' && view ? pz() : 1;
     return document.documentElement.clientWidth >= (lw + 600 + ew + 32) * k;
   }
   // Chosen while editing (Settings opened from the Edit window on the left, setFromEdit, or the panel open on the right),
@@ -2141,8 +2141,16 @@ page, so its styles keep the base they were made on).
   }
   document.getElementById('m2-mode').addEventListener('click', modeButton);
   // pointer positions come in screen pixels; with the site's zoom
-  // (style.scss) the viewer works in its own, zoomed pixels
-  function pz() { return view.currentCSSZoom || 1; }
+  // (style.scss) the viewer works in its own, zoomed pixels. currentCSSZoom where the browser has it, else measured
+  // (the map window's drawn width against its own, once per window size): Safari without it took the zoom for 1, so
+  // the map window stopped a tenth short of the window's bottom
+  var pzM = null;
+  function pz() {
+    if (view.currentCSSZoom) return view.currentCSSZoom;
+    if (pzM == null && view.offsetWidth) pzM = view.getBoundingClientRect().width / view.offsetWidth;
+    return pzM || 1;
+  }
+  window.addEventListener('resize', function () { pzM = null; });
   // the info window of every circled i (.m2-itip with data-info), Settings' and the editor's palette's alike: under the
   // sign, above it where the window has no room below, kept inside the window's edges
   var ipop = null, ipopBtn = null;
