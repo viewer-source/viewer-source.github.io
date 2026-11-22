@@ -31,6 +31,7 @@ t 4 node tests/cd-modifier-spot.js
 t 3 node tests/cd-reconnect.js python3
 t 1 node tests/cd-make-main.js python3
 t 4 node tests/cd-square.js
+t 4 node tests/cd-metaid.js
 t 3 node tests/sbgn-edit.js python3
 t 4 node tests/sbml-edit.js parked/sbml
 t 4 node tests/sbml-edit.js tests/sbml-cases

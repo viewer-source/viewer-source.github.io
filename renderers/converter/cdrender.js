@@ -571,9 +571,9 @@
   D.reactions = function () {
     var self = this;
     findall(this.model, 's:listOfReactions/s:reaction').forEach(function (rx) {
-      self.cur = get(rx, 'id');
+      self.cur = (get(rx, 'id') || get(rx, 'metaid'));
       try { self.reaction(rx); }
-      catch (e) { self.log(get(rx, 'id') + ': ' + e.message); }
+      catch (e) { self.log((get(rx, 'id') || get(rx, 'metaid')) + ': ' + e.message); }
     });
   };
   var REDUCED_HEAD = { PHYSICAL_STIMULATION: 'stimulation-reduced', REDUCED_PHYSICAL_STIMULATION: 'stimulation-reduced', NEGATIVE_INFLUENCE: 'inhibition',

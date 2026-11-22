@@ -577,11 +577,11 @@ class Drawing:
 
     def reactions(self):
         for rx in self.model.iterfind('s:listOfReactions/s:reaction', NS):
-            self.cur = rx.get('id')
+            self.cur = (rx.get('id') or rx.get('metaid'))
             try:
                 self.reaction(rx)
             except Exception as e:  # a reaction this drawing cannot place is left out, said on stderr
-                print('%s: %s' % (rx.get('id'), e), file=sys.stderr)
+                print('%s: %s' % ((rx.get('id') or rx.get('metaid')), e), file=sys.stderr)
 
     def count(self, t, line):
         # a cardinality (the converter's layout.count_box): a box beside the middle of the participant's line (from the

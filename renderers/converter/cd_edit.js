@@ -17,6 +17,10 @@
   var has = function (o, k) { return Object.prototype.hasOwnProperty.call(o, k); };
   function reEscape(s) { return String(s).replace(/[.*+?^${}()|[\]\\\/-]/g, '\\$&'); }
   function DP(opt) { return (opt && opt.DOMParser) || root.DOMParser; }
+  // a reaction's id: one with a metaid and no id (SBML requires one) is read by its metaid, as the converter reads it;
+  // rxOpen finds its start tag in the text by either
+  function rxid(rx) { return get(rx, 'id') || get(rx, 'metaid'); }
+  function rxOpen(rid) { return '<reaction [^>]*\\b(?:meta)?id="' + reEscape(rid) + '"'; }
 
   function drawing(t, opt) { return new cdr.Drawing(t, { DOMParser: DP(opt) }); }
   function num(v) { return repr(round(F(v), 6)); }
@@ -61,7 +65,7 @@
     if (bp.length !== 1 || !top.length || !d.alias.has(get(bp[0], 'alias'))) return null;
     var gp = editPoints(get(top[0], 'editPoints'));
     if (!gp.length) return null;
-    var rid = get(rx, 'id'), G = gp[gp.length - 1], pa = get(bp[0], 'alias'), EB = d.end(bp[0], pa), B = EB[0];
+    var rid = rxid(rx), G = gp[gp.length - 1], pa = get(bp[0], 'alias'), EB = d.end(bp[0], pa), B = EB[0];
     var r = { id: rid, x: x, gate: true, el: top[0], top: gm.indexOf(top[0]), pa: pa, B: B, ancB: EB[1], G: G, bends: gp.slice(0, -1).map(function (p) { return fromFrame(G, B, p); }), ins: [], mods: [], links: [], gates: [], glyph: false };
     gm.forEach(function (g, j) {
       var a = get(g, 'aliases');
@@ -84,7 +88,7 @@
     var EA = d.end(br[0], ra), EB = d.end(bp[0], pa), A = EA[0], B = EB[0];
     var ep = find(x, 'cd:editPoints');
     var bends = editPoints(ep ? text(ep) : '').map(function (p) { return fromFrame(A, B, p); });
-    var r = { id: get(rx, 'id'), x: x, ra: ra, pa: pa, A: A, B: B, ancA: EA[1], ancB: EB[1], bends: bends, glyph: FULL.indexOf(typ) >= 0, mods: [], links: [], gates: [] };
+    var r = { id: rxid(rx), x: x, ra: ra, pa: pa, A: A, B: B, ancA: EA[1], ancB: EB[1], bends: bends, glyph: FULL.indexOf(typ) >= 0, mods: [], links: [], gates: [] };
     if (!r.glyph) return mods.some(isGate) ? null : r;
     var line = cut(d, r, bends), cs = find(x, 'cd:connectScheme');
     var k = Math.min(cs ? I(get(cs, 'rectangleIndex', 0)) : 0, line.length - 2), P = line[k], Q = line[k + 1];
@@ -472,7 +476,7 @@
       if (all.some(function (q, i) { return now[i] !== q[2] && !free(i); })) return;
       all.forEach(function (q, i) { if (now[i] !== q[2]) todo.push([q[3], q[2], now[i], q[4], q[5]]); });
       if (!todo.length) return;
-      var s = T.span('<reaction [^>]*\\bid="' + reEscape(rid) + '"'), gone = new Set();
+      var s = T.span(rxOpen(rid)), gone = new Set();
       todo.forEach(function (q) {
         var R = ROLE[q[0]], old = q[1], a = q[2], so = sp(old), sn = sp(a);
         var el = nth(T, '<celldesigner:' + q[0] + ' ', s, q[3]);
@@ -636,11 +640,11 @@
   }
   function place(t, gtext, opt) {
     var d = drawing(t, opt), rd = read(gtext, opt), rxsAll = findall(d.model, 's:listOfReactions/s:reaction'), olds = {};
-    rxsAll.forEach(function (rx) { olds[get(rx, 'id')] = lines(d, rx); });
+    rxsAll.forEach(function (rx) { olds[rxid(rx)] = lines(d, rx); });
     var t2 = rewire(d, t, rd[4], olds);
     if (t2 !== t) {   // a line's end moved to another node: the participant first, then read again
       t = t2; d = drawing(t, opt); rxsAll = findall(d.model, 's:listOfReactions/s:reaction'); olds = {};
-      rxsAll.forEach(function (rx) { olds[get(rx, 'id')] = lines(d, rx); });
+      rxsAll.forEach(function (rx) { olds[rxid(rx)] = lines(d, rx); });
     }
     var comps = compartments(d), up = tree(d, comps), boxes = rd[0], bends = rd[2], paths = rd[3];
     var xs = [], ys = [];
@@ -768,10 +772,10 @@
       T.attrs(md[0], [['sizeX', far[0], d.W], ['sizeY', far[1], d.H]].filter(function (q) { return q[1] > q[2]; }).map(function (q) { return [q[0], String(Math.ceil(q[1] + 40))]; }));
     d.alias.forEach(function (a, i) { d.alias.set(i, [a[0], nw.get(i), a[2], a[3], a[4]]); });
     rxsAll.forEach(function (rx) {
-      var o = olds[get(rx, 'id')];
+      var o = olds[rxid(rx)];
       if (!o) return;
       o.old = old;
-      reaction(d, T, T.span('<reaction [^>]*\\bid="' + reEscape(o.id) + '"'), rx, o, bends, paths, nw);
+      reaction(d, T, T.span(rxOpen(o.id)), rx, o, bends, paths, nw);
     });
     if (shifted) {
       var ly = T.span('<celldesigner:listOfLayers>'), seg3 = ly ? T.t.slice(ly[0], ly[1]) : '', re3 = /<celldesigner:bounds /g, m4;
@@ -782,7 +786,7 @@
         T.attrs(ly[0] + m4.index, ['x', 'y', 'sx', 'sy', 'ex', 'ey'].filter(function (k) { return has(v2, k); }).map(function (k) { return [k, num(F(v2[k]) + sh[/y$/.test(k) ? 1 : 0])]; }));
       }
       // the gates reaction() did not write (their reactions not read by lines())
-      var own = rxsAll.filter(function (rx) { var o = olds[get(rx, 'id')]; return o && (o.gate || o.gates.length); }).map(function (rx) { return T.span('<reaction [^>]*\\bid="' + reEscape(get(rx, 'id')) + '"'); });
+      var own = rxsAll.filter(function (rx) { var o = olds[rxid(rx)]; return o && (o.gate || o.gates.length); }).map(function (rx) { return T.span(rxOpen(rxid(rx))); });
       var re5 = /<celldesigner:(?:GateMember|modification) [^>]*type="BOOLEAN_LOGIC_GATE[^>]*>/g, m6;
       while ((m6 = re5.exec(T.t))) {
         if (own.some(function (q) { return q[0] <= m6.index && m6.index < q[1]; })) continue;
@@ -854,7 +858,7 @@
     var old = new Map(), alias0 = new Map(), olds = {}, slices = {}, T0 = new Text(t), last = [], errors = [];
     d.alias.forEach(function (a, i) { old.set(i, a[1]); alias0.set(i, a); });
     comps.forEach(function (v, c) { old.set(c, v[0]); });
-    findall(d.model, 's:listOfReactions/s:reaction').forEach(function (rx) { olds[get(rx, 'id')] = lines(d, rx); });
+    findall(d.model, 's:listOfReactions/s:reaction').forEach(function (rx) { olds[rxid(rx)] = lines(d, rx); });
     var open = /<sbml\b[^>]*>/.exec(t)[0];
     var first = function (x) {   // a reaction's text as an element, read in the map's namespaces
       var doc = new (DP(opt))().parseFromString(open + x + '</sbml>', 'application/xml');
@@ -862,7 +866,7 @@
       return null;
     };
     var slice = function (rid) {
-      if (!has(slices, rid)) { var sp = T0.span('<reaction [^>]*\\bid="' + reEscape(rid) + '"'); slices[rid] = sp ? t.slice(sp[0], sp[1]) : null; }
+      if (!has(slices, rid)) { var sp = T0.span(rxOpen(rid)); slices[rid] = sp ? t.slice(sp[0], sp[1]) : null; }
       return slices[rid];
     };
     return {

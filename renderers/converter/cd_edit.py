@@ -41,6 +41,14 @@ SHAPE = {'PROTEIN': 'Macromolecule', 'RECEPTOR': 'Macromolecule', 'ION_CHANNEL':
          'DRUG': 'ellipse', 'UNKNOWN': 'ellipse', 'DEGRADED': 'ellipse'}
 
 
+def rxid(rx):   # a reaction with a metaid and no id (SBML requires one) is read by its metaid, as the converter reads it
+    return rx.get('id') or rx.get('metaid')
+
+
+def rx_open(rid):   # its start tag in the text, by either
+    return r'<reaction [^>]*\b(?:meta)?id="%s"' % re.escape(rid)
+
+
 def drawing(text):
     return cdrender.Drawing(io.BytesIO(text.encode('utf-8')))
 
@@ -91,7 +99,7 @@ def gate_lines(d, rx, x, bp):
         return None
     G, pa = gp[-1], bp[0].get('alias')
     B, ancB = d.end(bp[0], pa)
-    r = {'id': rx.get('id'), 'x': x, 'gate': True, 'el': top[0], 'top': gm.index(top[0]), 'pa': pa, 'B': B, 'ancB': ancB, 'G': G,
+    r = {'id': rxid(rx), 'x': x, 'gate': True, 'el': top[0], 'top': gm.index(top[0]), 'pa': pa, 'B': B, 'ancB': ancB, 'G': G,
          'bends': [from_frame(G, B, p) for p in gp[:-1]], 'ins': [], 'mods': [], 'links': [], 'gates': [], 'glyph': False}
     for j, g in enumerate(gm):
         a_ = g.get('aliases')
@@ -120,7 +128,7 @@ def lines(d, rx):
     B, ancB = d.end(bp[0], pa)
     ep = x.find('cd:editPoints', NS)
     bends = [from_frame(A, B, p) for p in edit_points(ep.text if ep is not None else '')]
-    r = {'id': rx.get('id'), 'x': x, 'ra': ra, 'pa': pa, 'A': A, 'B': B, 'ancA': ancA, 'ancB': ancB, 'bends': bends,
+    r = {'id': rxid(rx), 'x': x, 'ra': ra, 'pa': pa, 'A': A, 'B': B, 'ancA': ancA, 'ancB': ancB, 'bends': bends,
          'glyph': typ in FULL, 'mods': [], 'links': [], 'gates': []}
     if not r['glyph']:
         return None if any(is_gate(m) for m in mods) else r
@@ -684,7 +692,7 @@ def rewire(d, text, ends, olds):
         todo = [(q[3], q[2], now[i], q[4], q[5]) for i, q in enumerate(every) if now[i] != q[2]]
         if not todo:
             continue
-        s, gone, mine = T.span(r'<reaction [^>]*\bid="%s"' % re.escape(rid)), [], []
+        s, gone, mine = T.span(rx_open(rid)), [], []
         for kind, old, a, n, mel in todo:
             R, so, sn = ROLE[kind], sp(old), sp(a)
             el = nth(T, '<celldesigner:%s ' % kind, s, n)
@@ -775,11 +783,11 @@ def place(text, gtext):
     # blocks of the grid (16) to start at the margin (40) or a little more; the canvas grows with it
     d = drawing(text)
     boxes, ups, bends, paths, ends = read(gtext)
-    olds = {rx.get('id'): lines(d, rx) for rx in d.model.iterfind('s:listOfReactions/s:reaction', NS)}
+    olds = {rxid(rx): lines(d, rx) for rx in d.model.iterfind('s:listOfReactions/s:reaction', NS)}
     t2 = rewire(d, text, ends, olds)
     if t2 != text:   # a line's end moved to another node: the participant first, then read again
         text, d = t2, drawing(t2)
-        olds = {rx.get('id'): lines(d, rx) for rx in d.model.iterfind('s:listOfReactions/s:reaction', NS)}
+        olds = {rxid(rx): lines(d, rx) for rx in d.model.iterfind('s:listOfReactions/s:reaction', NS)}
     comps = compartments(d)
     up = tree(d, comps)
     xs = [b[0] for b in boxes.values()] + [p[0] for ps in bends.values() for p in ps]
@@ -917,11 +925,11 @@ def place(text, gtext):
     for i, a in d.alias.items():
         d.alias[i] = (a[0], new[i], a[2], a[3], a[4])
     for rx in d.model.iterfind('s:listOfReactions/s:reaction', NS):
-        o = olds[rx.get('id')]
+        o = olds[rxid(rx)]
         if not o:
             continue
         rid = o['id']
-        s = T.span(r'<reaction [^>]*\bid="%s"' % re.escape(rid))
+        s = T.span(rx_open(rid))
         o['old'] = old
         ports(d, T, s, o, paths, new)
         if o.get('gate'):
@@ -1029,7 +1037,7 @@ def place(text, gtext):
             v = dict(re.findall(r'\s((?:[se])?[xy])="([^"]*)"', tag))
             # a free text's corner, a free line's two ends
             T.attrs(ly[0] + m.start(), {k: num(float(v[k]) + sh[1 if k.endswith('y') else 0]) for k in ('x', 'y', 'sx', 'sy', 'ex', 'ey') if k in v})
-        own = [T.span(r'<reaction [^>]*\bid="%s"' % re.escape(rid)) for rid, o in olds.items() if o and (o.get('gate') or o['gates'])]   # written by gate_back and the reactions' own
+        own = [T.span(rx_open(rid)) for rid, o in olds.items() if o and (o.get('gate') or o['gates'])]   # written by gate_back and the reactions' own
         for m in re.finditer(r'<celldesigner:(?:GateMember|modification) [^>]*type="BOOLEAN_LOGIC_GATE[^>]*>', T.t):
             if any(a <= m.start() < b for a, b in own):
                 continue
