@@ -91,7 +91,7 @@ var URL0 = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysi
   await p2.click('.m2-ri[data-win="set"]'); await p2.waitForTimeout(300);
   ok('Settings: Drag selects an area unticked at first, (recommended) in its name, no Default or Recommended buttons', await p2.evaluate(function () { var l = document.getElementById('m2-set-grab').closest('label'); return !document.getElementById('m2-set-grab').checked && !document.getElementById('m2-set-gest') && /Drag selects an area \(recommended\)/.test(l.textContent); }));
   await p2.click('#m2-setwin .m2-set-itip'); await p2.waitForTimeout(150);
-  ok('Settings: the circled i opens a small window with why, 240 px, the tick box unchanged', await p2.evaluate(function () { var t = document.querySelector('.m2-ipop'); return t && /continuous stroke/.test(t.textContent) && Math.round(t.getBoundingClientRect().width / (document.getElementById('m2-view').currentCSSZoom || 1)) === 240 && !document.getElementById('m2-set-grab').checked; }));
+  ok('Settings: the circled i opens a small window with why, 240 px, the tick box unchanged', await p2.evaluate(function () { var t = document.querySelector('.m2-ipop'); return t && /continuous motion/.test(t.textContent) && Math.round(t.getBoundingClientRect().width / (document.getElementById('m2-view').currentCSSZoom || 1)) === 240 && !document.getElementById('m2-set-grab').checked; }));
   var ipb = await p2.$eval('.m2-ipop', function (t) { var r = t.getBoundingClientRect(); return [r.left + 20, r.top + 10]; });
   await p2.mouse.click(ipb[0], ipb[1]); await p2.waitForTimeout(150);
   ok('Settings: a click inside the window keeps it', !!(await p2.$('.m2-ipop')));

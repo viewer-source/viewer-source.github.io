@@ -15,8 +15,10 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local =
   page.on('pageerror', function (e) { errs.push(e.message); });
   var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more ? '  ' + more : '')); };
   var start = async function (h) {
-    await page.goto(base + '#' + h, { waitUntil: 'load' }); await page.waitForSelector('.m2-ri[data-win="edit"]', { timeout: 30000 });
-    await page.click('.m2-ri[data-win="edit"]'); await page.waitForTimeout(4000);
+    // a page of its own (a hash change alone keeps the Edit window open, and a click on the tab would then close it)
+    await page.goto('about:blank'); await page.goto(base + '#' + h, { waitUntil: 'load' }); await page.waitForSelector('.m2-ri[data-win="edit"]', { timeout: 30000 });
+    await page.waitForTimeout(2500); if (!(await page.$('#m2-editwin:visible'))) await page.click('.m2-ri[data-win="edit"]');
+    await page.waitForSelector('#m2-editwin', { state: 'visible', timeout: 30000 }); await page.waitForTimeout(4000);
   };
   var empty = async function () {   // a point of the map window with nothing under it
     return page.evaluate(function () {

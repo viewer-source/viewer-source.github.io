@@ -39,7 +39,7 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local =
   var put = async function (k, v) { await page.fill('#m2-ed-' + k, v); await page.press('#m2-ed-' + k, 'Enter'); await page.waitForTimeout(700); };
   var line = add[0] + '|' + add[1], main = add[0] + '|a', m0 = await col(main);
   await on(line);
-  ok('the added line clicked alone: Line colour and width alone', JSON.stringify(await shown()) === JSON.stringify(['ecol', 'ewid']), JSON.stringify(await shown()));
+  ok('the added line clicked alone: Line colour and width alone, with its Cardinality', JSON.stringify(await shown()) === JSON.stringify(['ecol', 'ewid', 'card']), JSON.stringify(await shown()));
   ok('it shows its own colour', (await page.inputValue('#m2-ed-ecol')) === (await col(line)), await page.inputValue('#m2-ed-ecol'));
   await put('ecol', '#3456ab');
   ok('written into its own link, the reaction’s kept', (await col(line)) === '#3456ab' && (await col(main)) === m0, (await col(line)) + ' ' + (await col(main)));

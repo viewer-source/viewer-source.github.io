@@ -82,7 +82,7 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
       for (var y = mem[1] - 8; y <= mem[1] + mem[3] + 8 && !svMenu; y += 2) for (var x = mem[0] - 8; x <= mem[0] + mem[2] + 8 && !svMenu; x += 3) {
         if (y > mem[1] + 6 && y < mem[1] + mem[3] - 6 && x > mem[0] + 6 && x < mem[0] + mem[2] - 6) continue;   // the border only
         var l = await menu([x, y]);
-        if (l.length && l.indexOf('Select all of this kind') < 0 && l.indexOf('Delete') >= 0 && l.indexOf('Snap map to grid') < 0) svMenu = l;
+        if (l.length && l.indexOf('Select all of this kind') < 0 && l.some(function (x) { return /^Delete/.test(x); }) && l.indexOf('Snap map to grid') < 0) svMenu = l;
       }
       svOk = !!svMenu && svMenu.indexOf('Repack complex') < 0 && svMenu.indexOf('Name by members') < 0;
     }
