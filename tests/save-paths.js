@@ -9,13 +9,15 @@
 //    said, Choose a folder offered again.
 // 3. This browser's store, no token and no folder: each move kept as a draft and shown again after a reload; the store
 //    full said; the site's data cleared, the site's map comes back.
-// What happens to the moves after a refusal as changed is printed, not checked (plan 3 step 1 changes it).
-//   node tests/save-paths.js <base address> <clone of the site's data repository>
+// What happens to the reader's version after a refusal as changed (kept beside the map): tests/save-clash.js.
+//   node tests/save-paths.js <base address> <clone of the site's data repository> [--local]
+// --local: the editor of the working tree routed into the live page, to check before a release.
 var engine = require('playwright')[process.env.BROWSER || 'chromium'], fs = require('fs'), path = require('path');   // BROWSER=webkit or firefox: the same test in another engine
 var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
 var data = process.argv[3];
 if (!data) { console.log('usage: node tests/save-paths.js <base address> <clone of the data repository>'); process.exit(2); }
-var MAP = 'glycolysis-graphml', bad = 0;
+var MAP = 'glycolysis-graphml', bad = 0, ED = process.argv.indexOf('--local') > 0 ? require('./editor-now.js')(path.join(__dirname, '..')) : null;
+async function routeLocal(c) { if (ED) await c.route(/\/styles\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: ED }); }); }
 var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more ? '  ' + more : '')); };
 var wait = function (ms) { return new Promise(function (r) { setTimeout(r, ms); }); };
 
@@ -46,6 +48,7 @@ async function github(b) {
   console.log('-- GitHub');
   var page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], h = helpers(page);
   page.on('pageerror', function (e) { errs.push(e.message); });
+  await routeLocal(page);
   var sha = {}, puts = [], body = {};
   await page.route('https://api.github.com/**', async function (route) {
     var r = route.request(), u = new URL(r.url()), m = u.pathname.match(/^\/repos\/[^/]+\/[^/]+(\/.*)?$/), rest = m ? m[1] || '' : '';
@@ -102,13 +105,9 @@ async function github(b) {
   sha[p] = 'someone-else'; body[p] = other;
   n0 = puts.length; await h.move(); await page.waitForTimeout(6000);
   ok('refused as changed by someone else: their file kept', body[p] === other && puts.length === n0 + 1, (puts.length - n0) + ' tries');
-  ok('and said', /changed on GitHub since it was opened/.test(await h.status()), await h.status());
-  var n1 = puts.length; await h.move(); await page.waitForTimeout(5000);
-  ok('after it, nothing more is saved', puts.length === n1, (puts.length - n1) + ' saves');
-  var lastMoves = await h.now();
-  await h.leave(); await h.edit(); await page.waitForTimeout(3000);
-  var back = await h.now();
-  console.log('info  today, opened again after that refusal: ' + (back === other ? "the other person's file, the moves since the last save gone" : back === lastMoves ? 'the moves kept' : 'another text'));
+  ok('and said', /changed on GitHub since you opened it/.test(await h.status()), await h.status());
+  await h.move(); await page.waitForTimeout(5000);
+  ok('after it, their file is never written', body[p] === other && puts.filter(function (x) { return x.path === p; }).length === n0 + 1, puts.length + ' saves');
   ok('no script error', !errs.length, errs.join(' | '));
   await page.close();
 }
@@ -118,6 +117,7 @@ async function folder(b) {
   if ((process.env.BROWSER || 'chromium') !== 'chromium') { console.log('skip  this engine has no folder picker (Safari, Firefox): the page offers Download the map instead'); return; }
   var ctx = await b.newContext({ viewport: { width: 1400, height: 900 } }), page = await ctx.newPage(), errs = [], h = helpers(page);
   page.on('pageerror', function (e) { errs.push(e.message); });
+  await routeLocal(ctx);
   await page.addInitScript(function () {
     window.showDirectoryPicker = function () { return navigator.storage.getDirectory().then(function (r) { return r.getDirectoryHandle('maps', { create: true }); }); };
   });
@@ -162,6 +162,7 @@ async function browser(b) {
   console.log('-- This browser');
   var ctx = await b.newContext({ viewport: { width: 1400, height: 900 } }), page = await ctx.newPage(), errs = [], h = helpers(page);
   page.on('pageerror', function (e) { errs.push(e.message); });
+  await routeLocal(ctx);
   await page.addInitScript(function () {   // the store full on demand (window.__full): IndexedDB refuses a draft
     var put = IDBObjectStore.prototype.put;
     IDBObjectStore.prototype.put = function () { if (window.__full && this.name === 'maps') throw new DOMException('test: full', 'QuotaExceededError'); return put.apply(this, arguments); };

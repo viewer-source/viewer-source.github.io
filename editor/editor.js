@@ -1260,25 +1260,31 @@
     if (naming) naming(true);
     var m = V.byId[id];
     if (!m || !canCopy(m)) return;
-    var r0 = m.mine ? mine[id] : null, group = m.group || "", title = freeTitle("Copy of " + (r0 ? r0.title : m.topic || m.title), group, fmtOf(m)), next = after(id);
+    var r0 = m.mine ? mine[id] : null;
+    return copyOf(m, null, "Copy of " + (r0 ? r0.title : m.topic || m.title), true).catch(function(e) {
+      alert("No copy was made: " + (e && e.message ? e.message : e));
+    });
+  }
+  function copyOf(m, t, name2, go, made2) {
+    var id = m.id, r0 = m.mine ? mine[id] : null, group = m.group || "", title = freeTitle(name2, group, fmtOf(m)), next = after(id);
     var ext = r0 ? (r0.file.match(/\.[^.]+$/) || [".xml"])[0] : cdMap(m) ? ".xml" : sbMap(m) ? ".sbgn" : ".graphml";
     var file = freeFile(title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") + ext);
     var gh2 = !!(repo() && token());
     return mineIn.then(function() {
-      return textNow(m);
-    }).then(function(t) {
+      return t ? t() : textNow(m);
+    }).then(function(t2) {
       if (gh2) {
-        ext = siteExt(t);
-        if (!ext) throw new Error(siteWhy(t));
+        ext = siteExt(t2);
+        if (!ext) throw new Error(siteWhy(t2));
       }
-      var made2 = r0 && t === r0.text ? Promise.resolve({ svg: r0.svg, width: r0.width, height: r0.height }) : drawText(t);
-      return made2.then(function(d) {
-        var r = { id: newId(), title, file, text: t, svg: d.svg, width: d.width, height: d.height, at: Date.now(), src: textHash(t), hidden: false, group };
+      var made3 = r0 && t2 === r0.text ? Promise.resolve({ svg: r0.svg, width: r0.width, height: r0.height }) : drawText(t2);
+      return made3.then(function(d) {
+        var r = { id: newId(), title, file, text: t2, svg: d.svg, width: d.width, height: d.height, at: Date.now(), src: textHash(t2), hidden: false, group };
         if (!gh2) return minePut(r).then(function() {
           toFolder(r.id, r.file, r.text);
           return r;
         });
-        return toSite(title, ext, t, group, siteOrder(group)).then(function(s) {
+        return toSite(title, ext, t2, group, siteOrder(group)).then(function(s) {
           return minePut(onSite(r, s, title)).then(function() {
             return r;
           });
@@ -1286,9 +1292,25 @@
       });
     }).then(function(r) {
       put(r.id, group, next);
-      V.go(r.id);
-    }).catch(function(e) {
-      alert("No copy was made: " + (e && e.message ? e.message : e));
+      if (made2) made2(r);
+      if (go) V.go(r.id);
+      else V.refreshMine();
+      return r;
+    });
+  }
+  function keepBeside(id, t, said) {
+    var m = V.byId[id];
+    if (!m) return Promise.reject(new Error("the map is no longer in the list"));
+    var r0 = m.mine ? mine[id] : null, was = r0 ? r0.title : m.topic || m.title;
+    return copyOf(m, t, was + " (your version)", on && site && site.id === id, function(r) {
+      said(r.title, r.id, was);
+    });
+  }
+  function keptNow(s) {
+    return V.draftDo("readonly", function(st) {
+      return st.get(s.id);
+    }, s.mine ? "mine" : "maps").then(function(r) {
+      return r ? r.text : null;
     });
   }
   function siteFirst(group) {
@@ -11470,6 +11492,10 @@
   }
   function changed() {
     edits++;
+    if (openSay) {
+      if (status.textContent === openSay.t) quiet();
+      openSay = null;
+    }
     sbFollow();
     if (site && site.pending) {
       localFor = site;
@@ -11539,7 +11565,7 @@
           if (uk && uk.site === target && (uk.text === body || site === target && !shared.dirty)) delete unsaved[target.id];
           note();
         } else if (r.status === 409 || r.status === 422) {
-          return again ? conflict() : Promise.all([
+          return again ? conflict(target, body) : Promise.all([
             api("/contents/" + target.path + "?ref=main").then(function(q) {
               return q.json();
             }),
@@ -11547,12 +11573,14 @@
               return q.text();
             })
           ]).then(function(f) {
-            if (f[1] !== (target.saved || target.base)) return conflict();
+            if (f[1] !== (target.saved || target.base)) return conflict(target, body);
             target.sha = f[0].sha;
             saving = null;
             saveAgain = false;
             return push(true);
-          }).catch(conflict);
+          }).catch(function() {
+            conflict(target, body);
+          });
         } else if (r.status === 401 || r.status === 403 || r.status === 404) {
           warn("Not saved: the token was refused (" + r.status + "). Connect again with a token that can write to " + repo() + ".");
           ghForm(true);
@@ -11573,8 +11601,9 @@
   }
   var localTimer;
   var localFor;
+  var lq;
   function __run75() {
-    localTimer = null, localFor = null;
+    localTimer = null, localFor = null, lq = Promise.resolve();
   }
   function local(force) {
     clearTimeout(localTimer);
@@ -11587,6 +11616,7 @@
       return;
     }
     localFor = null;
+    if (s.clashed) return;
     var t = src(), at2 = { width: map.width, height: map.height, x0: picX0(), y0: picY0(), ref: siteRef, cur: nowRef() };
     var own2 = lastFor && lastFor[2] === s.id && !lastFor[3] ? lastSvg : null;
     var pic = function() {
@@ -11595,31 +11625,45 @@
     var fail = function(e) {
       if (site === s) warn("Not kept in this browser: " + String(e && e.message ? e.message : e).replace(/\.$/, "") + ". Download the map to keep your changes.");
     };
-    if (s.mine) {
-      if (!mine[s.id]) return;
+    lq = lq.then(function() {
+      return keptNow(s).catch(function() {
+        return s.known;
+      });
+    }).then(function(k) {
+      if (s.clashed) return;
+      if (k !== s.known) return clashed(s, t, "in another tab");
+      return write2();
+    });
+    function write2() {
+      if (s.mine) {
+        if (!mine[s.id]) return;
+        toFolder(s.id, name, t);
+        return pic().then(function(d) {
+          if (mine[s.id]) return minePut(Object.assign({}, mine[s.id], { text: t, svg: d.svg, width: d.width, height: d.height, at: Date.now() })).then(function() {
+            s.known = t;
+          });
+        }).then(function() {
+          if (s.pending && site === s && src() === t) shared.dirty = false;
+          if (s.pending && repo() && token() && mine[s.id]) toGh(s);
+          if (!on || site !== s) V.refreshMine();
+        }).catch(fail);
+      }
+      if (atSite()) {
+        shared.dirty = false;
+        localBox();
+        toFolder(s.id, name, t, true);
+        return draftDrop(s.id).then(function() {
+          s.known = null;
+        });
+      }
       toFolder(s.id, name, t);
-      pic().then(function(d) {
-        if (mine[s.id]) return minePut(Object.assign({}, mine[s.id], { text: t, svg: d.svg, width: d.width, height: d.height, at: Date.now() }));
+      return pic().then(function(d) {
+        return draftPut(s.id, { file: name, v: s.v, text: t, svg: d.svg, width: d.width, height: d.height, x0: at2.x0, y0: at2.y0, ref: at2.ref, cur: at2.cur, at: Date.now() });
       }).then(function() {
-        if (s.pending && site === s && src() === t) shared.dirty = false;
-        if (s.pending && repo() && token() && mine[s.id]) toGh(s);
-        if (!on || site !== s) V.refreshMine();
+        s.known = t;
+        if (site === s && src() === t) shared.dirty = false;
       }).catch(fail);
-      return;
     }
-    if (atSite()) {
-      draftDrop(s.id);
-      shared.dirty = false;
-      localBox();
-      toFolder(s.id, name, t, true);
-      return;
-    }
-    toFolder(s.id, name, t);
-    pic().then(function(d) {
-      return draftPut(s.id, { file: name, v: s.v, text: t, svg: d.svg, width: d.width, height: d.height, x0: at2.x0, y0: at2.y0, ref: at2.ref, cur: at2.cur, at: Date.now() });
-    }).then(function() {
-      if (site === s && src() === t) shared.dirty = false;
-    }).catch(fail);
   }
   var leftMoves;
   function __run84() {
@@ -11940,14 +11984,35 @@
       if (shared.text) download();
     });
   }
-  function conflict() {
+  function conflict(s, body) {
+    s = s || site;
     stuck = true;
-    forget(site && site.id);
-    if (site) {
-      learnt(site.path, "changed");
-      delete unsaved[site.id];
+    forget(s && s.id);
+    if (s) {
+      learnt(s.path, "changed");
+      delete unsaved[s.id];
     }
-    warn("Not saved: the map was changed on GitHub since it was opened, and it is not overwritten. Stop editing and open the map again to go on from that version.");
+    if (s) clashed(s, body, "on GitHub");
+  }
+  var openSay;
+  function __run452() {
+    openSay = null;
+  }
+  function sayOpen() {
+    if (openSay && site && site.id === openSay.id) warn(openSay.t);
+  }
+  function clashed(s, t, where) {
+    if (s.clashed) return;
+    s.clashed = true;
+    var m0 = V.byId[s.id], n = m0 ? m0.topic || m0.title : name;
+    return keepBeside(s.id, function() {
+      return on && site === s ? src() : t;
+    }, function(title, id, was) {
+      openSay = { id, t: (n = was) + " was changed " + where + " since you opened it, so it is not overwritten: your version is kept beside it as " + title + ", and editing goes on there." };
+      warn(openSay.t);
+    }).catch(function(e) {
+      warn("Not saved: " + n + " was changed " + where + " since you opened it, so it is not overwritten, and your version could not be kept beside it (" + String(e && e.message ? e.message : e).replace(/\.$/, "") + "). Download the map to keep your changes.");
+    });
   }
   function ghForm(show) {
     var f = box.querySelector("#m2-ed-gh");
@@ -13167,6 +13232,7 @@
       if (!r[1].length && !saveTimer && !saving && !shared.dirty) {
         if (takenIn) warn(takenIn);
         else quiet();
+        sayOpen();
         takenIn = null;
       }
     })();
@@ -13243,6 +13309,10 @@
       site.base = site.pending && site.pub != null ? site.pub : t0;
       site.fromDraft = t0 !== site.base;
     }
+    if (site) {
+      site.known = site.mine ? mine[site.id] ? mine[site.id].text : null : V.drafts[site.id] ? V.drafts[site.id].text : null;
+      site.clashed = false;
+    }
     if (site && site.pending && canFolder && V.folderName()) folderCheck();
     stuck = false;
     shared.dirty = false;
@@ -13308,10 +13378,12 @@
       if (grouped) adopt(same.svg);
       paint();
       quiet();
+      sayOpen();
       shownWhole();
       return;
     }
     quiet();
+    sayOpen();
     render();
     shownWhole();
   }
@@ -13342,7 +13414,7 @@
         im.src = URL.createObjectURL(new Blob([V.recolour(pl[0])], { type: "image/svg+xml" }));
       });
     }
-    if (site && site.id && moved)
+    if (site && site.id && moved && !site.clashed)
       V.kept = { sites: V.sites, id: site.id, v: site.v, sha: site.sha, pic: kpic, width: map.width, height: map.height, x0: picX0(), y0: picY0(), text: src(), svg: nowSvg(), file: name, ref: siteRef, cur: nowRef(), draft: !!site.pending && !site.mine, mine: !!site.mine };
     if (helpBox) help(false);
     on = false;
@@ -16217,6 +16289,7 @@
     __run423();
     __run433();
     __run442();
+    __run452();
   }
 
   // editor/src/main.js

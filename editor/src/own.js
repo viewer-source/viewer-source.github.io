@@ -439,11 +439,18 @@ import { NEW_ID, emptyBase, isSb, madeHere, sbMap } from './sbgn.js';
     function copyMap(id) {
       if (naming) naming(true);
       var m = V.byId[id]; if (!m || !canCopy(m)) return;
-      var r0 = m.mine ? mine[id] : null, group = m.group || '', title = freeTitle('Copy of ' + (r0 ? r0.title : m.topic || m.title), group, fmtOf(m)), next = after(id);   // next: read before the copy is in the list
+      var r0 = m.mine ? mine[id] : null;
+      return copyOf(m, null, 'Copy of ' + (r0 ? r0.title : m.topic || m.title), true).catch(function (e) { alert('No copy was made: ' + (e && e.message ? e.message : e)); });
+    }
+    // a map of the reader's made from map m, right under it in its group, in every way maps are kept (GitHub with a token,
+    // else this browser and the folder): its text, t() (no t: m's text now), named name (made free in the group); go: shown
+    // once made, after made(record). Gives the new record
+    function copyOf(m, t, name, go, made) {
+      var id = m.id, r0 = m.mine ? mine[id] : null, group = m.group || '', title = freeTitle(name, group, fmtOf(m)), next = after(id);   // next: read before the copy is in the list
       var ext = r0 ? (r0.file.match(/\.[^.]+$/) || ['.xml'])[0] : cdMap(m) ? '.xml' : sbMap(m) ? '.sbgn' : '.graphml';
       var file = freeFile(title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') + ext);
       var gh = !!(repo() && token());
-      return mineIn.then(function () { return textNow(m); }).then(function (t) {
+      return mineIn.then(function () { return t ? t() : textNow(m); }).then(function (t) {
         if (gh) { ext = siteExt(t); if (!ext) throw new Error(siteWhy(t)); }
         var made = r0 && t === r0.text ? Promise.resolve({ svg: r0.svg, width: r0.width, height: r0.height }) : drawText(t);
         return made.then(function (d) {
@@ -453,9 +460,22 @@ import { NEW_ID, emptyBase, isSb, madeHere, sbMap } from './sbgn.js';
         });
       }).then(function (r) {
         put(r.id, group, next);
-        V.go(r.id);
-      }).catch(function (e) { alert('No copy was made: ' + (e && e.message ? e.message : e)); });
+        if (made) made(r);
+        if (go) V.go(r.id); else V.refreshMine();
+        return r;
+      });
     }
+    // The save clash: a map changed elsewhere since this page opened it (on GitHub, or by another tab of the site in
+    // this browser or the folder) is never written over. The reader's version, its text t(), is kept as a map of their own
+    // right under it, named '<name> (your version)', and editing goes on there; no merge. Gives the copy's title
+    function keepBeside(id, t, said) {   // said(title, id, name): the copy made (its name and list id; the map's name), before it is opened
+      var m = V.byId[id]; if (!m) return Promise.reject(new Error('the map is no longer in the list'));
+      var r0 = m.mine ? mine[id] : null, was = r0 ? r0.title : m.topic || m.title;
+      return copyOf(m, t, was + ' (your version)', on && site && site.id === id, function (r) { said(r.title, r.id, was); });
+    }
+    // what is kept in this browser now for a map edited without GitHub: its draft, or the reader's record (null: none),
+    // read afresh, as another tab of the site may have written it since this page opened the map
+    function keptNow(s) { return V.draftDo('readonly', function (st) { return st.get(s.id); }, s.mine ? 'mine' : 'maps').then(function (r) { return r ? r.text : null; }); }
     function siteFirst(group) { var os = (V.siteList || []).filter(function (s) { return s.group === group; }).map(function (s) { return s.order || 0; }); return os.length ? Math.min.apply(null, os) : 1; }   // the group's first on the site
     function siteOrder(group) { return (V.siteList || []).reduce(function (a, s) { return (!group || s.group === group) ? Math.max(a, s.order || 0) : a; }, 0) + 1; }   // after the group's last on the site
     function after(id) {   // the map after id in its group, so a copy lands right under the original
@@ -1562,4 +1582,4 @@ import { NEW_ID, emptyBase, isSb, madeHere, sbMap } from './sbgn.js';
     }   // connected: the reader's maps kept in this browser go to GitHub
 
     export function __start() { __run1(); __run2(); __run3(); __run4(); __run5(); __run6(); __run7(); __run8(); __run9(); __run10(); __run11(); __run12(); __run13(); __run14(); __run15(); __run16(); __run17(); __run18(); __run19(); __run20(); __run21(); __run22(); __run23(); __run24(); __run25(); __run26(); __run27(); __run28(); __run29(); }   // the part's statements, in their order
-    export { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, mine, mineAdd, mineIn, mineMatch, minePut, origGh, origPut, own, savedMine, toGh, upAll, upRun };
+    export { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepBeside, keptNow, mine, mineAdd, mineIn, mineMatch, minePut, origGh, origPut, own, savedMine, toGh, upAll, upRun };

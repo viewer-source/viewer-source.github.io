@@ -5,7 +5,7 @@ import { beyond, cdDraw, cdGraphml, cdJs, cdKnown, cdMap, cdMk, cdNow, cdRebuild
 import { EMPTY_BASE, edOf, isSb, madeHere, sbBase, sbFollow, sbGraphml, sbJs, sbKind, sbMap, sbNow, sbRemember, sbpy, viaGraphml } from './sbgn.js';
 import { ddOpen, hybOn, joinDo, joinPack, joinPlan, link, linkDown, linkMove, linkPaint, linkUp, moveLimit, origAll, palDown, palLangNow, palShow, palUp, pdLimit, propFmt, setSize, sizable, svDown, svMarks, tool } from './create.js';
 import { help, helpBox } from './help.js';
-import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, mine, mineAdd, mineIn, mineMatch, minePut, savedMine, toGh, upAll, upRun } from './own.js';
+import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepBeside, keptNow, mine, mineAdd, mineIn, mineMatch, minePut, savedMine, toGh, upAll, upRun } from './own.js';
 
     // ---------- the editor's shared core (editor/src/core.js) ----------
     // Moves only: nodes and bend points of a map, nudged in the map window. A CellDesigner map is edited as the GraphML
@@ -198,6 +198,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, mine,
     }
     function changed() {   // after every move, undo or redo: the site's map is saved a few seconds after the last one
       edits++;
+      if (openSay) { if (status.textContent === openSay.t) quiet(); openSay = null; }   // the save clash said until the reader's next change
       sbFollow();   // a move that turned an SBGN-ML file: the GraphML made again from it (sbgn.js)
       if (site && site.pending) { localFor = site; clearTimeout(localTimer); localTimer = setTimeout(local, 800); localBox(); return; }   // no token: kept in this browser
       if (site && site.mine) { localFor = site; clearTimeout(localTimer); localTimer = setTimeout(local, 800); }   // a reader's map saved on GitHub: its record follows too, so no move waits on GitHub alone
@@ -242,13 +243,13 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, mine,
               // so the move would be 'Not saved'): the file as it is there now is read, and if it is
               // still what this page last saved, the save goes again on its new sha; only a file changed by someone
               // else stops saving
-              return again ? conflict() : Promise.all([api('/contents/' + target.path + '?ref=main').then(function (q) { return q.json(); }),
+              return again ? conflict(target, body) : Promise.all([api('/contents/' + target.path + '?ref=main').then(function (q) { return q.json(); }),
                 api('/contents/' + target.path + '?ref=main', { headers: { Accept: 'application/vnd.github.raw' } }).then(function (q) { return q.text(); })])
                 .then(function (f) {
-                  if (f[1] !== (target.saved || target.base)) return conflict();
+                  if (f[1] !== (target.saved || target.base)) return conflict(target, body);
                   target.sha = f[0].sha; saving = null; saveAgain = false;
                   return push(true);
-                }).catch(conflict);
+                }).catch(function () { conflict(target, body); });
             } else if (r.status === 401 || r.status === 403 || r.status === 404) {
               warn('Not saved: the token was refused (' + r.status + '). Connect again with a token that can write to ' + repo() + '.');
               ghForm(true);
@@ -264,9 +265,9 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, mine,
     // (draftPut, own.js), a moment after the last move once the move is drawn, so a reload shows it and editing goes on from
     // it; the map back as the site has it (every move undone): let go. force: written now, the drawing as it is (another
     // map is being opened)
-    var localTimer, localFor;
+    var localTimer, localFor, lq;
     function __run7() {   // run at start, in order (__start)
-    localTimer = null, localFor = null;
+    localTimer = null, localFor = null, lq = Promise.resolve();
     }
     function local(force) {
       clearTimeout(localTimer); localTimer = null;
@@ -275,29 +276,38 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, mine,
       var drawn = !drawing && lastFor && lastFor[0] === shared.text && lastFor[1] === (shared.cd ? shared.cd.now : null);
       if (!drawn && !force) { localTimer = setTimeout(local, 300); return; }
       localFor = null;
+      if (s.clashed) return;   // kept beside already (clashed): the map itself is never written by this page again
       var t = src(), at = { width: map.width, height: map.height, x0: picX0(), y0: picY0(), ref: siteRef, cur: nowRef() };
       // this map's drawing only: the map edited before still drawn while this one's first redraw runs (another map opened
       // at once) is never stored with it; then this text is drawn for it here
       var own = lastFor && lastFor[2] === s.id && !lastFor[3] ? lastSvg : null;
       var pic = function () { return own ? Promise.resolve({ svg: own, width: at.width, height: at.height }) : drawText(t, shared.sb && !s.mine ? shared.sb.g0 : null); };   // a site map's SBGN-ML drawn from the build's GraphML, as the site draws it
       var fail = function (e) { if (site === s) warn('Not kept in this browser: ' + String(e && e.message ? e.message : e).replace(/\.$/, '') + '. Download the map to keep your changes.'); };
+      // what this browser keeps of the map read afresh first: written by another tab since this page opened it, it is
+      // not written over (clashed). One check and write at a time, so this page's own last write is the one compared
+      lq = lq.then(function () { return keptNow(s).catch(function () { return s.known; }); }).then(function (k) {
+        if (s.clashed) return;
+        if (k !== s.known) return clashed(s, t, 'in another tab');
+        return write();
+      });
+      function write() {
       if (s.mine) {   // a reader's own map: the map itself changed, in this browser and its folder (no draft), and on GitHub with a token
         if (!mine[s.id]) return;   // gone from this browser meanwhile: nothing to keep
         toFolder(s.id, name, t);
-        pic().then(function (d) { if (mine[s.id]) return minePut(Object.assign({}, mine[s.id], { text: t, svg: d.svg, width: d.width, height: d.height, at: Date.now() })); })
+        return pic().then(function (d) { if (mine[s.id]) return minePut(Object.assign({}, mine[s.id], { text: t, svg: d.svg, width: d.width, height: d.height, at: Date.now() })).then(function () { s.known = t; }); })
           .then(function () {
             if (s.pending && site === s && src() === t) shared.dirty = false;   // saved on GitHub: dirty is the save's to clear
             if (s.pending && repo() && token() && mine[s.id]) toGh(s);   // not saving on GitHub yet: sent, or its place there taken up
             if (!on || site !== s) V.refreshMine();
           })
           .catch(fail);
-        return;
       }
-      if (atSite()) { draftDrop(s.id); shared.dirty = false; localBox(); toFolder(s.id, name, t, true); return; }   // a file in the folder back to the site's map too
+      if (atSite()) { shared.dirty = false; localBox(); toFolder(s.id, name, t, true); return draftDrop(s.id).then(function () { s.known = null; }); }   // a file in the folder back to the site's map too
       toFolder(s.id, name, t);   // layer 2: the same file into the reader's folder, when there is one
-      pic().then(function (d) { return draftPut(s.id, { file: name, v: s.v, text: t, svg: d.svg, width: d.width, height: d.height, x0: at.x0, y0: at.y0, ref: at.ref, cur: at.cur, at: Date.now() }); })
-        .then(function () { if (site === s && src() === t) shared.dirty = false; })
+      return pic().then(function (d) { return draftPut(s.id, { file: name, v: s.v, text: t, svg: d.svg, width: d.width, height: d.height, x0: at.x0, y0: at.y0, ref: at.ref, cur: at.cur, at: Date.now() }); })
+        .then(function () { s.known = t; if (site === s && src() === t) shared.dirty = false; })
         .catch(fail);
+      }
     }
     // the map as the site has it: its text, or every move undone (a map shifted out of negative places never gives the
     // site's text back)
@@ -514,9 +524,30 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, mine,
     function __run11() {   // run at start, in order (__start)
     box.querySelector('#m2-ed-local-dl').addEventListener('click', function () { if (shared.text) download(); });
     }
-    function conflict() {
-      stuck = true; forget(site && site.id); if (site) { learnt(site.path, 'changed'); delete unsaved[site.id]; }   // opened again, the map is read afresh from GitHub
-      warn('Not saved: the map was changed on GitHub since it was opened, and it is not overwritten. Stop editing and open the map again to go on from that version.');
+    function conflict(s, body) {   // s: the map whose save GitHub refused as changed by someone else; body: the text that save sent
+      s = s || site;
+      stuck = true; forget(s && s.id); if (s) { learnt(s.path, 'changed'); delete unsaved[s.id]; }   // opened again, the map is read afresh from GitHub
+      if (s) clashed(s, body, 'on GitHub');
+    }
+    // the save clash: map s changed elsewhere since this page opened it (where: on GitHub, in another tab) is left as it
+    // is there; the reader's version t is kept as a map of theirs right under it (own.js keepBeside), said, and editing
+    // goes on in it. openSay: { id, t }, the same words said again while the copy (its list id) is open for editing,
+    // until the reader's next change
+    var openSay;
+    function __run45() {   // run at start, in order (__start)
+    openSay = null;
+    }
+    function sayOpen() { if (openSay && site && site.id === openSay.id) warn(openSay.t); }
+    function clashed(s, t, where) {   // t: the text last written, taken for the copy unless the map is still being edited (its moves since then too)
+      if (s.clashed) return;
+      s.clashed = true;
+      var m0 = V.byId[s.id], n = m0 ? m0.topic || m0.title : name;
+      return keepBeside(s.id, function () { return on && site === s ? src() : t; }, function (title, id, was) {
+        openSay = { id: id, t: (n = was) + ' was changed ' + where + ' since you opened it, so it is not overwritten: your version is kept beside it as ' + title + ', and editing goes on there.' };
+        warn(openSay.t);
+      }).catch(function (e) {
+        warn('Not saved: ' + n + ' was changed ' + where + ' since you opened it, so it is not overwritten, and your version could not be kept beside it (' + String(e && e.message ? e.message : e).replace(/\.$/, '') + '). Download the map to keep your changes.');
+      });
     }
     function ghForm(show) {   // the token field: shown while editing a map of this site with no token
       var f = box.querySelector('#m2-ed-gh');
@@ -1301,7 +1332,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, mine,
           pic.querySelectorAll('[data-e]').forEach(function (g) { var k = g.getAttribute('data-e'); (gE[k] = gE[k] || []).push(g); });
           if (shared.cd) cdSessionSoon();
           if (first) V.fit(); else V.draw();
-          if (!r[1].length && !saveTimer && !saving && !shared.dirty) { if (takenIn) warn(takenIn); else quiet(); takenIn = null; }   // the file changed by opening it: said in red, as a change the reader did not make
+          if (!r[1].length && !saveTimer && !saving && !shared.dirty) { if (takenIn) warn(takenIn); else quiet(); sayOpen(); takenIn = null; }   // the file changed by opening it: said in red, as a change the reader did not make
         })();
     }
     // entering edit on the picture as it is: the site's build and a reader's own map draw it as the editor does (each node
@@ -1359,6 +1390,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, mine,
       siteRef = null; name = n; handle = h; site = s || null;
       t0 = t0 || t;
       if (site) { site.base = site.pending && site.pub != null ? site.pub : t0; site.fromDraft = t0 !== site.base; }   // no token: the site's text, a draft on top of it
+      if (site) { site.known = site.mine ? (mine[site.id] ? mine[site.id].text : null) : V.drafts[site.id] ? V.drafts[site.id].text : null; site.clashed = false; }   // what this browser kept of the map when it was opened (local: the save clash)
       if (site && site.pending && canFolder && V.folderName()) folderCheck();
       stuck = false; shared.dirty = false; undo = []; shared.redo = []; shared.cdGate = null; shared.selN = []; shared.selP = []; shared.selE = [];
       histTake(t, g);
@@ -1384,9 +1416,9 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, mine,
         var grouped = same.svg && same.svg.indexOf(' data-n="') >= 0;   // the editor's own drawing of this very file
         (shared.cd ? cdpy() : yr()).then(function () { if (on && V.current === map && !edits && !gN && !grouped) render(); });   // the renderer loaded quietly for the first change
         if (grouped) adopt(same.svg);
-        paint(); quiet(); shownWhole(); return;
+        paint(); quiet(); sayOpen(); shownWhole(); return;
       }
-      quiet();
+      quiet(); sayOpen();
       render();
       shownWhole();
     }
@@ -1404,7 +1436,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, mine,
         var pl = drawGraphml(shared.text); lastSvg = pl[0]; lastFor = [shared.text, null, site && site.id, false];
         kpic = new Promise(function (res) { var im = new Image(); im.onload = function () { res(im); }; im.onerror = function () { res(V.img); }; im.src = URL.createObjectURL(new Blob([V.recolour(pl[0])], { type: 'image/svg+xml' })); });
       }
-      if (site && site.id && moved)   // not atSite(): a CellDesigner map's text follows a move only once drawn
+      if (site && site.id && moved && !site.clashed)   // not atSite(): a CellDesigner map's text follows a move only once drawn; a clash's version is kept beside it
         V.kept = { sites: V.sites, id: site.id, v: site.v, sha: site.sha, pic: kpic, width: map.width, height: map.height, x0: picX0(), y0: picY0(), text: src(), svg: nowSvg(), file: name, ref: siteRef, cur: nowRef(), draft: !!site.pending && !site.mine, mine: !!site.mine };
       if (helpBox) help(false);
       on = false; drag = null; band = null; V.grid.classList.remove('m2-editing'); paint(); buttons();
@@ -3364,5 +3396,5 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, mine,
     }, true);
     }
 
-    export function __start() { __run1(); __run2(); __run3(); __run4(); __run5(); __run6(); __run7(); __run8(); __run9(); __run10(); __run11(); __run12(); __run13(); __run14(); __run15(); __run16(); __run17(); __run18(); __run19(); __run20(); __run21(); __run22(); __run23(); __run24(); __run25(); __run26(); __run27(); __run28(); __run29(); __run30(); __run31(); __run32(); __run33(); __run34(); __run35(); __run36(); __run37(); __run38(); __run39(); __run40(); __run41(); __run42(); __run43(); __run44(); }   // the part's statements, in their order
+    export function __start() { __run1(); __run2(); __run3(); __run4(); __run5(); __run6(); __run7(); __run8(); __run9(); __run10(); __run11(); __run12(); __run13(); __run14(); __run15(); __run16(); __run17(); __run18(); __run19(); __run20(); __run21(); __run22(); __run23(); __run24(); __run25(); __run26(); __run27(); __run28(); __run29(); __run30(); __run31(); __run32(); __run33(); __run34(); __run35(); __run36(); __run37(); __run38(); __run39(); __run40(); __run41(); __run42(); __run43(); __run44(); __run45(); }   // the part's statements, in their order
     export { G, HANDLE, MODS, Y, ahead, aheadSoon, api, at, away, b64, blobSha, box, boxOf, buttons, cdOwn, changed, chooseFolder, complexHere, cut, cutShape, doc, docText, drag, drawText, edgeAt, edges2, editing, f1, fmt, freeName, full, gE, gN, gh, graphmlOf, gridBlock, gridSet, grown, handleMarks, heldText, hit, holder, holderSize, holds, hubPorts, inComplex, inRim, keyFlush, keyTake, kindWindow, landMarks, lastFor, lastSvg, lateItem, layTool, line, livePath, localBox, map, mapTop, moveFix, mv, name, near, nodes2, note, num, on, origFolderDrop, origFromFolder, origRead, origToFolder, origWrite, outlineD, overlap, ownMenus, paint, parse, parseFix, picWait, points, ports, procPlaces, pt, quiet, rclick, realizerOf, rebase, refit, regroup, remember, render, repo, rimOf, roleOf, roomy, setBoxes, setPort, settle, shapeD, shown, site, spotNo, src, status, stop, subItem, sx, sy, syncFolder, toFolder, toGrid, token, tops, under, undo, unkeep, unpush, warn, x0, y0 };
