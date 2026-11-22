@@ -530,14 +530,14 @@ import { origGh, origPut } from './own.js';
       if (t2 !== shared.text) { remember(false); shared.text = t2; made([]); }
       return added;
     }
-    // a choice of Colours recolours the whole map, one undo step: every entity, complex and compartment its fill by the
+    // a choice of Colours recolours the whole map, one undo step: every entity, complex, compartment, tag and terminal its fill by the
     // choice (its border black), as a new one of its kind would get it (defOf); Original puts back the map's own (colsPick); Custom a
     // kind with a kept look its fill, border and width, the rest as they are; Confetti every entity, complexes too, a pastel
     // of its own, one after another (compartments as they are). Every line black, under Confetti a colour of its own
     // (confettiLine); processes, gates and the other glyphs their border black. One parse (sbgn_edit.restyleAll)
     var SB_FILLED, sbActMemo;
     function __run19() {   // run at start, in order (__start)
-    SB_FILLED = /^(macromolecule|simple chemical|nucleic acid feature|unspecified entity|perturbing agent|phenotype|complex|compartment|submap|biological activity|perturbation)( multimer)?$/;
+    SB_FILLED = /^(macromolecule|simple chemical|nucleic acid feature|unspecified entity|perturbing agent|phenotype|complex|compartment|submap|biological activity|perturbation|tag|terminal)( multimer)?$/;
     sbActMemo = [null, {}];
     }
     function sbPlan(mode, pick) {   // [[node index, its look], ...] under a choice of Colours, as sbRecolour sets them (pick: Confetti's colours picked)
@@ -547,7 +547,7 @@ import { origGh, origPut } from './own.js';
         var c = cls[n.id] || '';
         if (!SB_FILLED.test(c)) { if (sbJs.LOOKS.test(c) && mode !== 'custom') P.push([i, { line: null }]); return; }
         var base = c.replace(/ multimer$/, ''), u = acts[n.id], o;
-        var ff = sbJs.fillFor(u != null ? 'biological activity' : base, u);
+        var ff = sbJs.fillFor(u != null ? 'biological activity' : base === 'terminal' ? 'tag' : base, u);   // a terminal coloured as a tag
         if (mode === 'default') o = { fill: ff, line: null };
         else if (mode === 'none') o = { fill: null, line: null };
         // Custom: a look kept the old way (a share of a size, no w) left out, as defOf
@@ -2452,19 +2452,18 @@ import { origGh, origPut } from './own.js';
       var a = shared.selN.map(function (i) { return f.node(i); });
       return shared.selN.length === 1 ? (a[0] >= 0 ? a : []) : a.filter(function (i) { return i >= 0; });
     }
-    function sbNode(i) {   // a glyph Properties restyles (sbgn_edit LOOKS: entities, complexes, compartments, processes, gates; its class read from the file once per selection and change), and a tag
-      var c = sbClasses()[nodes2[i].id] || '';
-      return sbJs.LOOKS.test(c) || TAGS.test(c) ? i : -1;
+    function sbNode(i) {   // a glyph Properties restyles (sbgn_edit LOOKS: entities, complexes, compartments, processes, gates, tags and terminals; its class read from the file once per selection and change)
+      return sbJs.LOOKS.test(sbClasses()[nodes2[i].id] || '') ? i : -1;
     }
     var TAGS;
     function __run45() {   // run at start, in order (__start)
     TAGS = /^(tag|terminal)$/;
-    }   // a tag's rows: Label, Width, Height, Orientation (a terminal's shown, set by its side)
+    }   // a tag's rows: Label, Width, Height, Fill colour, Border colour, Border width, Orientation (a terminal's shown, set by its side)
     // the rows a glyph has by its class: Label where sbgn_edit keeps a name (NAMED), Multimer where it writes one (MULTI); Set as default for the kinds the palette makes in a kept look
     function sbOff(k, i) {
       var c = sbClasses()[nodes2[i].id] || '';
       if (k === 'way') return !TAGS.test(c);
-      if (TAGS.test(c)) return !/^(label|w|h)$/.test(k);
+      if (TAGS.test(c)) return !/^(label|w|h|fill|line|width)$/.test(k);
       if (k === 'label' || k === 'font') return !sbJs.NAMED.test(c);   // a font size where there is a name
       if (k === 'multimer') return !sbJs.MULTI.test(c.replace(/ multimer$/, ''));
       if (k === 'ant') return !hubGroup(i) || sbAnts()[nodes2[i].id] == null;   // a process's or gate's antenna, once it has ports

@@ -3968,7 +3968,7 @@
   var SB_FILLED;
   var sbActMemo;
   function __run192() {
-    SB_FILLED = /^(macromolecule|simple chemical|nucleic acid feature|unspecified entity|perturbing agent|phenotype|complex|compartment|submap|biological activity|perturbation)( multimer)?$/;
+    SB_FILLED = /^(macromolecule|simple chemical|nucleic acid feature|unspecified entity|perturbing agent|phenotype|complex|compartment|submap|biological activity|perturbation|tag|terminal)( multimer)?$/;
     sbActMemo = [null, {}];
   }
   function sbPlan(mode, pick) {
@@ -3981,7 +3981,7 @@
         return;
       }
       var base = c.replace(/ multimer$/, ""), u = acts[n.id], o;
-      var ff = sbJs.fillFor(u != null ? "biological activity" : base, u);
+      var ff = sbJs.fillFor(u != null ? "biological activity" : base === "terminal" ? "tag" : base, u);
       if (mode === "default") o = { fill: ff, line: null };
       else if (mode === "none") o = { fill: null, line: null };
       else if (mode === "custom") {
@@ -6941,8 +6941,7 @@
     });
   }
   function sbNode(i) {
-    var c = sbClasses()[nodes2[i].id] || "";
-    return sbJs.LOOKS.test(c) || TAGS.test(c) ? i : -1;
+    return sbJs.LOOKS.test(sbClasses()[nodes2[i].id] || "") ? i : -1;
   }
   var TAGS;
   function __run45() {
@@ -6951,7 +6950,7 @@
   function sbOff(k, i) {
     var c = sbClasses()[nodes2[i].id] || "";
     if (k === "way") return !TAGS.test(c);
-    if (TAGS.test(c)) return !/^(label|w|h)$/.test(k);
+    if (TAGS.test(c)) return !/^(label|w|h|fill|line|width)$/.test(k);
     if (k === "label" || k === "font") return !sbJs.NAMED.test(c);
     if (k === "multimer") return !sbJs.MULTI.test(c.replace(/ multimer$/, ""));
     if (k === "ant") return !hubGroup(i) || sbAnts()[nodes2[i].id] == null;

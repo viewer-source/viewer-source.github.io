@@ -1531,7 +1531,7 @@
   // width (size: resize(); multimer: multimer()). In the GraphML as graphml.write writes them; in the SBGN-ML file in the
   // render extension, read as sbgnml.read reads it (each attribute from the last style naming the glyph that gives it; a
   // black border and a width of 1 are the defaults, a compartment's 2). LOOKS: every glyph Properties restyles
-  var LOOKS = /^(macromolecule|simple chemical|nucleic acid feature|complex)( multimer)?$|^(biological activity|unspecified entity|perturbing agent|perturbation|phenotype|submap|source and sink|compartment|process|omitted process|uncertain process|association|dissociation|and|or|not|equivalence|delay)$/;
+  var LOOKS = /^(macromolecule|simple chemical|nucleic acid feature|complex)( multimer)?$|^(biological activity|unspecified entity|perturbing agent|perturbation|phenotype|submap|source and sink|compartment|process|omitted process|uncertain process|association|dissociation|and|or|not|equivalence|delay|tag|terminal)$/;
   function lookG(G, id) { return lookOf(G.node[id].geo.parentNode); }
   function lookOf(r) {   // a node's realizer: its fill, border colour (null: black) and width, drawn as a multimer, its name's font size (null: no name label)
     var fl = kid(r, 'Fill'), bs = kid(r, 'BorderStyle'), line = ((bs && bs.getAttribute('color')) || '#000000').toUpperCase();
