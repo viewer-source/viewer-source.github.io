@@ -229,7 +229,7 @@ function editorOf(g, cd) {   // the editor's nodes2 (up, kids, inside, comp, hub
   });
   N.forEach(function (n, i) { n.kids.forEach(function (c) { N[c].up = i; }); });
   var boxOf = function (i) { return N[i].box.slice(); };
-  var api = new Function('nodes2', 'boxOf', 'cd', 'window', CODE + '\nreturn { regroup: regroup, under: under, grown: grown };')(N, boxOf, cd, { layout: LAY });
+  var api = new Function('nodes2', 'boxOf', 'shared', 'window', CODE + '\nreturn { regroup: regroup, under: under, grown: grown };')(N, boxOf, { cd: cd }, { layout: LAY });   // cd: the editor's shared.cd (state.js)
   api.N = N; api.boxOf = boxOf;
   return api;
 }
@@ -308,7 +308,7 @@ function tiny() {
 // yEd's own box after a push: a compartment's member pushed 20 past the border on
 // every demo GraphML map, its holders grown (grown) and their Insets and BorderInsets refitted (refit); then yEd's box of
 // the holder, what it holds inside (as layout.js extent() measures it) with its Insets and BorderInsets, is the box saved
-var CODE2 = PADS + 'var text = T0;\n' + ['pads', 'cxRoom', 'inBox', 'overlap', 'under', 'inComplex', 'grown', 'extOf', 'refit', 'insetsOf'].map(lift).join('\n') + '\nfunction parse() { reparse(text); }\nreturn { grown: grown, refit: refit, text: function () { return text; } };';
+var CODE2 = PADS + 'var shared = { text: T0, cd: cd };\n' + ['pads', 'cxRoom', 'inBox', 'overlap', 'under', 'inComplex', 'grown', 'extOf', 'refit', 'insetsOf'].map(lift).join('\n') + '\nfunction parse() { reparse(shared.text); }\nreturn { grown: grown, refit: refit, text: function () { return shared.text; } };';
 var yn = 0;
 fs.readdirSync(path.join(here, 'maps')).filter(function (f) { return /\.graphml$/.test(f); }).forEach(function (f) {
   var g = fs.readFileSync(path.join(here, 'maps', f), 'utf8'), E = editorOf(g, false), N = E.N;

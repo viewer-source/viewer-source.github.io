@@ -11,8 +11,7 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local =
 (async function () {
   var b = await chromium.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], bad = 0;
   if (local) {   // the editor as Jekyll builds it, and the converter's scripts, from a working tree
-    var ed = fs.readFileSync(path.join(local, 'editor/editor.js'), 'utf8').replace(/^---[\s\S]*?---\n/, '')
-      .replace(/\{% include_relative (src\/[\w.]+) %\}/g, function (m, f) { return fs.readFileSync(path.join(local, 'editor', f), 'utf8'); });
+    var ed = require('./editor-now.js')(local);
     await page.route('**/editor/editor.js*', function (r) { r.fulfill({ status: 200, contentType: 'application/javascript', body: ed }); });
     ['cd_make', 'sbgn_edit'].forEach(function (f) {
       page.route('**/renderers/converter/' + f + '.js*', function (r) { r.fulfill({ status: 200, contentType: 'application/javascript', body: fs.readFileSync(path.join(local, 'renderers/converter', f + '.js'), 'utf8') }); });

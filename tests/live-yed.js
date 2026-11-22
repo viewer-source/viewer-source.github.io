@@ -9,8 +9,7 @@
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path');
 var here = process.argv[2] || path.join(__dirname, '..'), URL = 'https://viewer-source.github.io/styles/#';
 function editor() {   // editor.js joined as Jekyll joins it
-  var read = function (f) { return fs.readFileSync(path.join(here, 'editor', f), 'utf8'); };
-  return read('editor.js').replace(/^---[\s\S]*?---\n/, '').replace(/\{% include_relative (\S+) %\}/g, function (m, f) { return read(f); });
+  return require('./editor-now.js')(here);
 }
 async function open(browser, map) {
   var p = await browser.newPage({ viewport: { width: 1400, height: 900 } }), errs = [];

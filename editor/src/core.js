@@ -1,3 +1,12 @@
+import { shared, V } from './state.js';
+import { bx, keyShift, liveFit, liveLines, liveOff, posePort, shift, sizeLive, sizeOff, unshift } from './live.js';
+import { AF_KINDS, drawGraphml, noNegative, shiftedAhead, yr } from './graphml.js';
+import { beyond, cdDraw, cdGraphml, cdJs, cdKnown, cdMap, cdMk, cdNow, cdRebuild, cdRemember, cdSessionSoon, cdpy, glyphArcs, glyphPort, isCd, joinAt, joinGuides, joinSolve, lineGrid, nodeCentre, nodePlaces, plainCanvas } from './celldesigner.js';
+import { EMPTY_BASE, edOf, isSb, madeHere, sbBase, sbFollow, sbGraphml, sbJs, sbKind, sbMap, sbNow, sbRemember, sbpy, viaGraphml } from './sbgn.js';
+import { ddOpen, hybOn, joinDo, joinPack, joinPlan, link, linkDown, linkMove, linkPaint, linkUp, moveLimit, origAll, palDown, palLangNow, palShow, palUp, pdLimit, propFmt, setSize, sizable, svDown, svMarks, tool } from './create.js';
+import { help, helpBox } from './help.js';
+import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, mine, mineAdd, mineIn, mineMatch, minePut, savedMine, toGh, upAll, upRun } from './own.js';
+
     // ---------- the editor's shared core (editor/src/core.js) ----------
     // Moves only: nodes and bend points of a map, nudged in the map window. A CellDesigner map is edited as the GraphML
     // its part makes of it, so selection, dragging, guides, the grid, undo and saving are one code for both formats.
@@ -9,17 +18,22 @@
     // The viewer's own names (the zoom z, the pan tx and ty, the map shown current, its picture img, ...) are read and
     // written through V, the object the viewer hands the editor (the editor in its own files).
 
-    var lastSvg = null, lastFor = null;   // the last drawing and the texts it was drawn from (keepAhead), kept with the save (the kept drawing itself is the viewer's)
-    var Y = 'http://www.yworks.com/xml/graphml', G = 'http://graphml.graphdrawing.org/xmlns';
-    var drawing = false;           // the renderer busy with the last move
-    function src() { return cd ? cd.now : sb ? sbNow() : text; }   // the map's own file as it is now (an SBGN-ML map's with the moves written in)
-    var box = document.getElementById('m2-editwin'), status = document.getElementById('m2-ed-status');
-    var overlay = document.getElementById('m2-edit-layer');
-    var on = false, map = null;    // editing, and the map object shown while editing
-    var text = '', name = '', handle = null, dirty = false;
-    var unsaved = {};   // by map id: a site map left with moves not saved on GitHub { id, name, site, text }; its sha read from site when used
+    var lastSvg, lastFor, Y, G, drawing;
+    function __run1() {   // run at start, in order (__start)
+    lastSvg = null, lastFor = null;   // the last drawing and the texts it was drawn from (keepAhead), kept with the save (the kept drawing itself is the viewer's)
+    Y = 'http://www.yworks.com/xml/graphml', G = 'http://graphml.graphdrawing.org/xmlns';
+    drawing = false;
+    }           // the renderer busy with the last move
+    function src() { return shared.cd ? shared.cd.now : shared.sb ? sbNow() : shared.text; }   // the map's own file as it is now (an SBGN-ML map's with the moves written in)
+    var box, status, overlay, on, map, name, handle, unsaved, reSel, reGh, doc, geos, points, nodes2, edges2, docText, x0, y0, undo, drag, band, ticket, nudgeAt, timer, gN, gE, mv, keyGuides, keyRun, keyDue;
+    function __run2() {   // run at start, in order (__start)
+    box = document.getElementById('m2-editwin'), status = document.getElementById('m2-ed-status');
+    overlay = document.getElementById('m2-edit-layer');
+    on = false, map = null;    // editing, and the map object shown while editing
+    shared.text = '', name = '', handle = null, shared.dirty = false;
+    unsaved = {};   // by map id: a site map left with moves not saved on GitHub { id, name, site, text }; its sha read from site when used
     // the selection kept over a reload of this tab, applied when editing of the same map starts again
-    var reSel = (function () {
+    reSel = (function () {
       try {
         var nav = performance.getEntriesByType('navigation')[0], r = JSON.parse(sessionStorage.getItem('atlas-edit-sel') || 'null');
         sessionStorage.removeItem('atlas-edit-sel');
@@ -28,35 +42,38 @@
     })();
     // GitHub's version of that map as last saved (path, sha, text), so editing starts again without waiting for GitHub;
     // recheck reads GitHub just after, as after any start with a token
-    var reGh = reSel && reSel.gh && reSel.gh.path && reSel.gh.sha && typeof reSel.gh.text === 'string' ? reSel.gh : null;
-    var doc = null, geos = [], points = [], nodes2 = [], edges2 = [];
-    var docText = null;            // the text doc was read from (kept by a move, which changes both alike): the renderer reuses doc then
-    var x0 = 0, y0 = 0;            // where the drawing's top left is in yEd units
-    var selN = [], selP = [], selE = [];   // selected nodes (indices in nodes2), bend points (in points), arcs (in edges2)
-    var undo = [], redo = [], drag = null, band = null, ticket = 0, nudgeAt = 0, timer = null;
+    reGh = reSel && reSel.gh && reSel.gh.path && reSel.gh.sha && typeof reSel.gh.text === 'string' ? reSel.gh : null;
+    doc = null, geos = [], points = [], nodes2 = [], edges2 = [];
+    docText = null;            // the text doc was read from (kept by a move, which changes both alike): the renderer reuses doc then
+    x0 = 0, y0 = 0;            // where the drawing's top left is in yEd units
+    shared.selN = [], shared.selP = [], shared.selE = [];   // selected nodes (indices in nodes2), bend points (in points), arcs (in edges2)
+    undo = [], shared.redo = [], drag = null, band = null, ticket = 0, nudgeAt = 0, timer = null;
     // moving the item itself while it is dragged (in an editor it is already there while it moves):
     // the editor's drawing is put in the page as SVG with each node and arc in a group of its own (gN, gE: by id), so a
     // drag shifts the groups at once; an arc with only one end or some bends moving is hidden and drawn as plain lines
     // following the pointer (live) until the renderer has drawn the map again
-    var gN = null, gE = null, mv = null, live = null;
+    gN = null, gE = null, mv = null, shared.live = null;
     // a move by the arrow keys shown on the drawing at once, as a drag (not only when the key is let go,
     // the drawing waiting for the keys to stop): what the keys moved since the map was last drawn
-    var keyed = null, keyGuides = null, keyRun = null, keyDue = null;   // keyRun: how far the keys moved the selection since what holds what was last settled; keyDue: that settling, waiting for the keys to stop
+    shared.keyed = null, keyGuides = null, keyRun = null, keyDue = null;
+    }   // keyRun: how far the keys moved the selection since what holds what was last settled; keyDue: that settling, waiting for the keys to stop
     function keyFlush() { clearTimeout(timer); if (keyDue) keyDue(); }   // a press or another selection: the keys' run settled now
     function boxesBefore(B0) { var o = {}; nodes2.forEach(function (n, k) { o[n.id] = B0(k); }); return o; }   // every node's box before a change, by id (the map is read again before it is used)
     // the part of a selected line last pressed (a bend point or an end), which the arrow keys move as a drag would (by hand
     // or by keys the same; not every bend point of the line at once):
     // { k: the arc, p: a bend point } or { k, port: { k, end, n } }; a line selected with no part pressed is not moved by
     // the keys, as a drag on the line itself does not move it
-    var part = null;
+    var TOKEN_KEY, AUTOSAVE, site, saveTimer, saving, saveAgain, stuck, siteRef, GRID_KEY, STEP0, stepOk, gridSet;
+    function __run3() {   // run at start, in order (__start)
+    shared.part = null;
     // saving to the site: the maps are in the site's data repository (<owner>/<owner>-data, private), the map's source
     // maps/<file>.graphml; after a write the site's build is started (its workflow in <owner>/<owner>.github.io)
-    var TOKEN_KEY = V.tokenKey, AUTOSAVE = 3000;   // the key is the viewer's (it ignores drafts while a token is in)
-    var site = null;               // { path, sha } of the map being edited, when it is a map of this site
-    var saveTimer = null, saving = null, saveAgain = false, stuck = false;
+    TOKEN_KEY = V.tokenKey, AUTOSAVE = 3000;   // the key is the viewer's (it ignores drafts while a token is in)
+    site = null;               // { path, sha } of the map being edited, when it is a map of this site
+    saveTimer = null, saving = null, saveAgain = false, stuck = false;
     // the click data: the site's boxes of the nodes are those of its own version; the boxes of the
     // nodes moved since follow them, so a click and the search find a molecule where it is drawn now
-    var siteRef = null;   // { boxes (per node, yEd units, as in the site's version), x0, y0 (its drawing's frame) }
+    siteRef = null;   // { boxes (per node, yEd units, as in the site's version), x0, y0 (its drawing's frame) }
     // the grid: two settings, kept in this browser: the grid shown or hidden (shown by default, it
     // also says the map is being edited), snapping to it on or off (off by default; guides come first). The steps are the
     // layout rules' by default (the layout skill, Grid): node centres on 8 px, bend points on the line step (lineStep), every second
@@ -67,9 +84,10 @@
     // field under the switches, any whole number from 1 to 100 typed, its arrow opening 4, 8, 16, 32 and 64 (the
     // browser's datalist shows only the options starting with the value
     // typed, so 8 alone): a list of the page's own in the right-click menu's look, all of them always
-    var GRID_KEY = 'atlas-edit-grid';
-    var STEP0 = 8, stepOk = function (v) { return v >= 1 && v <= 100 ? Math.round(v) : STEP0; };
-    var gridSet = (function () { try { var g = JSON.parse(localStorage.getItem(GRID_KEY) || '{}'); return { shown: g.shown !== false, snap: g.snap === true, step: stepOk(+g.step) }; } catch (e) { return { shown: true, snap: false, step: STEP0 }; } })();
+    GRID_KEY = 'atlas-edit-grid';
+    STEP0 = 8, stepOk = function (v) { return v >= 1 && v <= 100 ? Math.round(v) : STEP0; };
+    gridSet = (function () { try { var g = JSON.parse(localStorage.getItem(GRID_KEY) || '{}'); return { shown: g.shown !== false, snap: g.snap === true, step: stepOk(+g.step) }; } catch (e) { return { shown: true, snap: false, step: STEP0 }; } })();
+    }
     // the shift out of negative places (graphml.js, cd_edit.place) in whole blocks of the grid: the smallest even number of
     // steps that is 16 or more (16 on 4 and 8), so a map on the grid stays on it, its stronger lines too
     function gridBlock() { var s = gridSet.step; return 2 * s * Math.ceil(8 / s); }
@@ -85,7 +103,10 @@
     // the grid one screen pixel wide (2 px is too heavy; 1 CSS px is 2 on a
     // Retina screen, smeared over 3 where a line falls between pixels): drawn on a canvas behind the map at the screen's own
     // pixels, each line on a whole pixel; the tones 7 % and 13 % black
-    var gridCv = null;
+    var gridCv;
+    function __run4() {   // run at start, in order (__start)
+    gridCv = null;
+    }
     function gridPaint() {   // behind the drawing: lines at multiples of the step in yEd units
       var show = on && V.current === map && gridSet.shown;
       if (!show) { if (gridCv) gridCv.style.display = 'none'; return; }
@@ -136,8 +157,8 @@
     // the frame of the picture against the file saved (kept with the edited drawing, the start of the next editing): a
     // CellDesigner drawing is in the file's places, which already hold a shift (out of negative places, or the canvas fit), so 0, 0; the
     // editor's own frame (x0, y0) is that shift less (else back in edit mode the map jumps by the shift)
-    function picX0() { return cd ? 0 : x0; }
-    function picY0() { return cd ? 0 : y0; }
+    function picX0() { return shared.cd ? 0 : x0; }
+    function picY0() { return shared.cd ? 0 : y0; }
     function nowRef() { return { ids: nodes2.map(function (n) { return n.id; }), boxes: nodes2.map(function (n, i) { return boxOf(i); }), x0: x0, y0: y0 }; }   // ids: nodes made since keep their own boxes apart
     function owner() { var h = location.hostname; return /\.github\.io$/.test(h) ? h.split('.')[0] : null; }
     function repo() { var o = owner(); return o ? o + '/' + o + '-data' : null; }
@@ -156,7 +177,10 @@
     // the site's build, started a few seconds after the last write (one build for a run of saves; GitHub keeps
     // only the newest waiting run), at once when the page is left; a token that may not start it (Actions write on
     // <owner>.github.io) is said in red at every save, as the site then shows the edits only at its next build
-    var buildTimer = null, buildRefused = 0;
+    var buildTimer, buildRefused;
+    function __run5() {   // run at start, in order (__start)
+    buildTimer = null, buildRefused = 0;
+    }
     function dispatchBuild(keep) {
       var o = owner();
       return gh(o + '/' + o + '.github.io/actions/workflows/build.yml/dispatches', { method: 'POST', keepalive: !!keep, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ref: 'main' }) })
@@ -164,7 +188,9 @@
     }
     function startBuild() { clearTimeout(buildTimer); buildTimer = setTimeout(function () { buildTimer = null; dispatchBuild(false); }, 4000); }
     function buildNote() { return 'Saved, but the site is not rebuilt (' + buildRefused + '): the token cannot start its build.'; }
+    function __run6() {   // run at start, in order (__start)
     addEventListener('pagehide', function () { if (buildTimer) { clearTimeout(buildTimer); buildTimer = null; dispatchBuild(true); } });
+    }
     function b64(t) {   // UTF-8 text to base64, in pieces (a map is a few hundred KB)
       var u = new TextEncoder().encode(t), s = '';
       for (var i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000));
@@ -181,7 +207,7 @@
     }
     function push(again) {
       clearTimeout(saveTimer); saveTimer = null;
-      if (!site || !dirty || stuck) return Promise.resolve();
+      if (!site || !shared.dirty || stuck) return Promise.resolve();
       if (saving) { saveAgain = true; return saving; }
       if (drawing) { saveTimer = setTimeout(push, 300); return Promise.resolve(); }   // the last move not yet in the file
       var target = site, body = src();
@@ -207,9 +233,9 @@
                 var bare = function (o, keep) { Object.keys(o).forEach(function (k) { if (k !== keep) delete o[k].text; }); return o; };
                 if (!V.store(all) && !V.store(bare(all, target.id)) && !V.store(bare(all)) && !V.store(bare(one))) { all = V.stored(); delete all[target.id]; V.store(all); }
               }
-              if (site === target && src() === body) dirty = false;
+              if (site === target && src() === body) shared.dirty = false;
               var uk = unsaved[target.id];
-              if (uk && uk.site === target && (uk.text === body || (site === target && !dirty))) delete unsaved[target.id];
+              if (uk && uk.site === target && (uk.text === body || (site === target && !shared.dirty))) delete unsaved[target.id];
               note();
             } else if (r.status === 409 || r.status === 422) {
               // GitHub also refuses a save when its branch moved meanwhile (another page or tab saved meanwhile,
@@ -230,7 +256,7 @@
           });
         })
         .catch(function (e) { warn('Not saved: no connection (' + e.message + '). The next move tries again.'); })
-        .then(function () { if (saving !== ours) return; saving = null; if (saveAgain) { saveAgain = false; if (dirty) return push(); } });
+        .then(function () { if (saving !== ours) return; saving = null; if (saveAgain) { saveAgain = false; if (shared.dirty) return push(); } });
       var ours = saving;
       return saving;
     }
@@ -238,43 +264,49 @@
     // (draftPut, own.js), a moment after the last move once the move is drawn, so a reload shows it and editing goes on from
     // it; the map back as the site has it (every move undone): let go. force: written now, the drawing as it is (another
     // map is being opened)
-    var localTimer = null, localFor = null;
+    var localTimer, localFor;
+    function __run7() {   // run at start, in order (__start)
+    localTimer = null, localFor = null;
+    }
     function local(force) {
       clearTimeout(localTimer); localTimer = null;
       var s = localFor;
       if (!s || site !== s) return;
-      var drawn = !drawing && lastFor && lastFor[0] === text && lastFor[1] === (cd ? cd.now : null);
+      var drawn = !drawing && lastFor && lastFor[0] === shared.text && lastFor[1] === (shared.cd ? shared.cd.now : null);
       if (!drawn && !force) { localTimer = setTimeout(local, 300); return; }
       localFor = null;
       var t = src(), at = { width: map.width, height: map.height, x0: picX0(), y0: picY0(), ref: siteRef, cur: nowRef() };
       // this map's drawing only: the map edited before still drawn while this one's first redraw runs (another map opened
       // at once) is never stored with it; then this text is drawn for it here
       var own = lastFor && lastFor[2] === s.id && !lastFor[3] ? lastSvg : null;
-      var pic = function () { return own ? Promise.resolve({ svg: own, width: at.width, height: at.height }) : drawText(t, sb && !s.mine ? sb.g0 : null); };   // a site map's SBGN-ML drawn from the build's GraphML, as the site draws it
+      var pic = function () { return own ? Promise.resolve({ svg: own, width: at.width, height: at.height }) : drawText(t, shared.sb && !s.mine ? shared.sb.g0 : null); };   // a site map's SBGN-ML drawn from the build's GraphML, as the site draws it
       var fail = function (e) { if (site === s) warn('Not kept in this browser: ' + String(e && e.message ? e.message : e).replace(/\.$/, '') + '. Download the map to keep your changes.'); };
       if (s.mine) {   // a reader's own map: the map itself changed, in this browser and its folder (no draft), and on GitHub with a token
         if (!mine[s.id]) return;   // gone from this browser meanwhile: nothing to keep
         toFolder(s.id, name, t);
         pic().then(function (d) { if (mine[s.id]) return minePut(Object.assign({}, mine[s.id], { text: t, svg: d.svg, width: d.width, height: d.height, at: Date.now() })); })
           .then(function () {
-            if (s.pending && site === s && src() === t) dirty = false;   // saved on GitHub: dirty is the save's to clear
+            if (s.pending && site === s && src() === t) shared.dirty = false;   // saved on GitHub: dirty is the save's to clear
             if (s.pending && repo() && token() && mine[s.id]) toGh(s);   // not saving on GitHub yet: sent, or its place there taken up
             if (!on || site !== s) V.refreshMine();
           })
           .catch(fail);
         return;
       }
-      if (atSite()) { draftDrop(s.id); dirty = false; localBox(); toFolder(s.id, name, t, true); return; }   // a file in the folder back to the site's map too
+      if (atSite()) { draftDrop(s.id); shared.dirty = false; localBox(); toFolder(s.id, name, t, true); return; }   // a file in the folder back to the site's map too
       toFolder(s.id, name, t);   // layer 2: the same file into the reader's folder, when there is one
       pic().then(function (d) { return draftPut(s.id, { file: name, v: s.v, text: t, svg: d.svg, width: d.width, height: d.height, x0: at.x0, y0: at.y0, ref: at.ref, cur: at.cur, at: Date.now() }); })
-        .then(function () { if (site === s && src() === t) dirty = false; })
+        .then(function () { if (site === s && src() === t) shared.dirty = false; })
         .catch(fail);
     }
     // the map as the site has it: its text, or every move undone (a map shifted out of negative places never gives the
     // site's text back)
     // out of editing histKeep has emptied undo: a write still waiting after a quick leave counts the moves as they were
     // on leaving (leftMoves, set by stop), else it would take the map for the site's and drop the draft
-    var leftMoves = null;
+    var leftMoves;
+    function __run8() {   // run at start, in order (__start)
+    leftMoves = null;
+    }
     function atSite() {
       var n = !on && leftMoves && leftMoves.site === site ? leftMoves.n : undo.length;
       return site.pending && (src() === site.pub || (!n && !site.fromDraft));
@@ -288,7 +320,10 @@
     // moment after the last move. A file this browser did not write is never overwritten: one there already, or changed
     // since by another program, gets the next free name beside it (acly-2.graphml). After a reload the browser may ask
     // again (Allow), unless it keeps the permission (Chrome 122 and later can). Its record: folder() in own.js
-    var canFolder = 'showDirectoryPicker' in window, folderOk = null, fq = Promise.resolve();   // folderOk null: not known yet (no text 3 or 4)
+    var canFolder, folderOk, fq;
+    function __run9() {   // run at start, in order (__start)
+    canFolder = 'showDirectoryPicker' in window, folderOk = null, fq = Promise.resolve();
+    }   // folderOk null: not known yet (no text 3 or 4)
     function folderCheck() {   // whether the page may write into the folder now (the Edit window's texts follow it)
       folderOk = null; localBox();
       return folder().then(function (f) {
@@ -444,8 +479,10 @@
         return { svg: svg, width: parseFloat(w[1]), height: parseFloat(w[2]) };
       });
     }
+    function __run10() {   // run at start, in order (__start)
     box.querySelector('#m2-ed-l-folder').addEventListener('click', function () { chooseFolder().catch(function () {}); });
     box.querySelector('#m2-ed-l-allow').addEventListener('click', allowFolder);
+    }
     // what the Edit window says while a map of the site is edited with no token, once a move is made: no folder,
     // text 1 the first time in this browser and Choose a folder (Chrome, Edge) or
     // Download the map with text 2 (other browsers); the folder allowed, text 3; the folder to allow again, text 4 and Allow
@@ -474,7 +511,9 @@
       a.href = URL.createObjectURL(new Blob([src()], { type: 'application/xml' })); a.download = name; a.click();
       setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
     }
-    box.querySelector('#m2-ed-local-dl').addEventListener('click', function () { if (text) download(); });
+    function __run11() {   // run at start, in order (__start)
+    box.querySelector('#m2-ed-local-dl').addEventListener('click', function () { if (shared.text) download(); });
+    }
     function conflict() {
       stuck = true; forget(site && site.id); if (site) { learnt(site.path, 'changed'); delete unsaved[site.id]; }   // opened again, the map is read afresh from GitHub
       warn('Not saved: the map was changed on GitHub since it was opened, and it is not overwritten. Stop editing and open the map again to go on from that version.');
@@ -495,7 +534,10 @@
     // map's text; only the numbers it changes are written back (tidy.py), so the rest stays byte for byte. One undo step.
     // in JavaScript (renderers/layout/layout.js: the same text as tidy.py with the skill's complex_pack.py and
     // snap_grid.py, byte for byte, tests/layout-compare.js), so neither needs Python: layout.tidy(text, what, ids, keepPorts)
-    var lay = null;
+    var lay;
+    function __run12() {   // run at start, in order (__start)
+    lay = null;
+    }
     function layout() {
       if (lay) return lay;
       lay = new Promise(function (res, rej) {
@@ -508,7 +550,7 @@
       return lay;
     }
     function layTool(what, ids, same) {   // not tool: create.js's palette sign in hand, of the same scope, replaced it (Snap map to grid and Pack would fail)
-      if (!on || V.current !== map || !text) return;   // same: part of the change just made (its undo step)
+      if (!on || V.current !== map || !shared.text) return;   // same: part of the change just made (its undo step)
       if (!same) quiet();
       var uAt = undo.length, uTop = undo[uAt - 1];   // the step it belongs to (render may write the same text in other numbers first)
       var m0 = map;
@@ -518,21 +560,21 @@
         // the layout tools grow a compartment round all it holds, which would take an edge member inside: what crosses a
         // compartment's border is taken out of it for the run and put back after, its compartment then grown only so far
         // that it crosses again (grown), so every member keeps its place
-        var L = q[0], N = q[1], out = [], t1 = text, before = boxesBefore(boxOf);
+        var L = q[0], N = q[1], out = [], t1 = shared.text, before = boxesBefore(boxOf);
         nodes2.forEach(function (n, k) {
           var p = n.up;
           if (p != null && nodes2[p].comp && !cdOwn(k) && overlap(boxOf(k), boxOf(p)) && !inBox(boxOf(k), boxOf(p))) out.push([n.id, nodes2[p].id]);
         });
         out.forEach(function (m) { t1 = N.moveInto(t1, [[m[0], null]]); });
-        var r = L.tidy(t1, what, ids || [], !!cd, { grid: gridSet.step, route: lineStep() });   // Snap map to grid on Grid size, bend points on the line step
+        var r = L.tidy(t1, what, ids || [], !!shared.cd, { grid: gridSet.step, route: lineStep() });   // Snap map to grid on Grid size, bend points on the line step
         if (r[1] < 0) return;   // nothing it applies to: nothing said
         if (!r[1]) return;   // nothing to change: nothing said
         var t2 = r[0];
         out.slice().reverse().forEach(function (m) { t2 = N.moveInto(t2, [m]); });
         if (!same) remember(false);
-        var keepSel = same ? selN.map(function (i) { return nodes2[i].id; }) : [];
-        text = t2; parse(); selN = []; selP = []; selE = []; dirty = true;
-        if (keepSel.length) nodes2.forEach(function (n, k) { if (keepSel.indexOf(n.id) >= 0) selN.push(k); });
+        var keepSel = same ? shared.selN.map(function (i) { return nodes2[i].id; }) : [];
+        shared.text = t2; parse(); shared.selN = []; shared.selP = []; shared.selE = []; shared.dirty = true;
+        if (keepSel.length) nodes2.forEach(function (n, k) { if (keepSel.indexOf(n.id) >= 0) shared.selN.push(k); });
         if (out.length) {
           var at = {}; nodes2.forEach(function (n, k) { at[n.id] = k; });
           setBoxes(grown(out.map(function (m) { return at[m[0]]; }), boxOf, function (k) { return before[nodes2[k].id] || boxOf(k); }, function () { return false; }));
@@ -545,26 +587,30 @@
     function pack(ids) {
       layTool('pack', ids);
     }
+    function __run13() {   // run at start, in order (__start)
     box.querySelector('#m2-ed-tidy-grid').addEventListener('click', snapMap);
+    }
     function outerComplex(i) {   // the outermost complex round node i (itself included), or null: the layout tools pack a complex inside another
       var c = null;   // with it, and one packed alone would land where the outer's packing puts it, over its neighbours
       for (var u = i; u != null; u = nodes2[u].up) if (nodes2[u].shape.kind === 'Complex') c = u;
       return c;
     }
-    box.querySelector('#m2-ed-tidy-pack').addEventListener('click', function () { pack(selN.map(function (i) { var c = outerComplex(i); return nodes2[c == null ? i : c].id; })); });
+    function __run14() {   // run at start, in order (__start)
+    box.querySelector('#m2-ed-tidy-pack').addEventListener('click', function () { pack(shared.selN.map(function (i) { var c = outerComplex(i); return nodes2[c == null ? i : c].id; })); });
+    }
 
     // the file read: every y:Geometry and y:Point in document order, which is also their order in the text
     function parse() {
-      var how = sbBack ? 'back' : 'follow'; sbBack = false;
-      if (sb) sbKind(how);   // a change that turned an SBGN-ML file: the GraphML made again from it first (sbgn.js)
-      var pd = preDoc.filter(function (x) { return x.text === text; })[0];   // read ahead, each used once
+      var how = shared.sbBack ? 'back' : 'follow'; shared.sbBack = false;
+      if (shared.sb) sbKind(how);   // a change that turned an SBGN-ML file: the GraphML made again from it first (sbgn.js)
+      var pd = preDoc.filter(function (x) { return x.text === shared.text; })[0];   // read ahead, each used once
       preDoc = preDoc.filter(function (x) { return x !== pd; });
-      doc = pd ? pd.doc : new DOMParser().parseFromString(text, 'application/xml');
-      docText = text;
+      doc = pd ? pd.doc : new DOMParser().parseFromString(shared.text, 'application/xml');
+      docText = shared.text;
       if (doc.getElementsByTagName('parsererror').length) throw 'not a readable XML file';
       geos = Array.prototype.slice.call(doc.getElementsByTagNameNS(Y, 'Geometry'));
       points = Array.prototype.slice.call(doc.getElementsByTagNameNS(Y, 'Point'));
-      if ((text.match(/<y:Geometry\s/g) || []).length !== geos.length || (text.match(/<y:Point\s/g) || []).length !== points.length)
+      if ((shared.text.match(/<y:Geometry\s/g) || []).length !== geos.length || (shared.text.match(/<y:Point\s/g) || []).length !== points.length)
         throw 'the file is not written as yEd writes it';
       var owner = function (e, tag) { for (var p = e.parentNode; p; p = p.parentNode) if (p.localName === tag && p.namespaceURI === G) return p; return null; };
       var gi = new Map(), byEl = new Map();
@@ -582,7 +628,7 @@
         var r = realizerOf(n.el), g = r && r.getElementsByTagNameNS(Y, 'Geometry')[0];
         n.ag = g && gi.has(g) ? gi.get(g) : n.geo[0];   // the geometry of the realizer shown (a group open or closed)
         n.shape = r ? shapeOf(r) : { kind: 'rectangle', props: {} };
-        n.hub = !cd && /sbgn\.(Process|Operator)$/.test(r ? r.getAttribute('configuration') || '' : '');   // a process or logic gate: one object with its two ports
+        n.hub = !shared.cd && /sbgn\.(Process|Operator)$/.test(r ? r.getAttribute('configuration') || '' : '');   // a process or logic gate: one object with its two ports
         n.eq = n.hub && n.shape.kind === 'Operator' && Array.prototype.some.call(r.getElementsByTagNameNS(Y, 'NodeLabel'), function (l) { return l.textContent.trim() === '\u2261'; });   // an equivalence gate (yrender's eq)
         n.up = null;
         n.comp = n.el.getAttribute('yfiles.foldertype') === 'group' && !/omplex/.test(r ? r.getAttribute('configuration') || '' : '');
@@ -608,10 +654,10 @@
                  smooth: e.getElementsByTagNameNS(Y, 'QuadCurveEdge').length > 0 || Array.prototype.some.call(e.getElementsByTagNameNS(Y, 'BendStyle'), function (b) { return b.getAttribute('smoothed') === 'true'; }) };
       });
       var byE = {}; edges2.forEach(function (e, k) { byE[e.id] = k; });
-      procs = [];
+      shared.procs = [];
       nodes2.forEach(function (n, i) {
         var m = n.id.match(/^(.*)\|proc$/);
-        if (m && byE[m[1] + '|a'] != null && byE[m[1] + '|b'] != null) procs.push({ g: i, a: byE[m[1] + '|a'], b: byE[m[1] + '|b'] });
+        if (m && byE[m[1] + '|a'] != null && byE[m[1] + '|b'] != null) shared.procs.push({ g: i, a: byE[m[1] + '|a'], b: byE[m[1] + '|b'] });
       });
     }
     function realizerOf(el) {   // the node's own yEd realizer (of a group: the one shown)
@@ -641,15 +687,18 @@
     }
     // after a move of nodes (a drag, the keys): each function given the nodes moved (their indices) puts what it keeps in
     // place (a terminal back onto its submap's border, create.js), in the same undo step
-    var moveFix = [], parseFix = [];   // parseFix: after the nodes are read, a format's part adds what moves with what (create.js terminals)
-    var keyTake = [];   // an arrow key on the selection taken by a part of its own (create.js: a terminal round its submap): f(d, the key's event) true when taken
+    var moveFix, parseFix, keyTake;
+    function __run15() {   // run at start, in order (__start)
+    moveFix = [], parseFix = [];   // parseFix: after the nodes are read, a format's part adds what moves with what (create.js terminals)
+    keyTake = [];
+    }   // an arrow key on the selection taken by a part of its own (create.js: a terminal round its submap): f(d, the key's event) true when taken
     function fixMoved(set, alone) {   // alone: moved with Shift. A fix may reorder the nodes (a tag joining a submap): the
       // moved set and the selection kept by id
-      var ids = [], sel = selN.map(function (i) { return nodes2[i].id; });
+      var ids = [], sel = shared.selN.map(function (i) { return nodes2[i].id; });
       set.forEach(function (i) { ids.push(nodes2[i].id); });
       moveFix.forEach(function (f) { f(set, alone); });
-      set.clear(); selN = [];
-      nodes2.forEach(function (n, i) { if (ids.indexOf(n.id) >= 0) set.add(i); if (sel.indexOf(n.id) >= 0) selN.push(i); });
+      set.clear(); shared.selN = [];
+      nodes2.forEach(function (n, i) { if (ids.indexOf(n.id) >= 0) set.add(i); if (sel.indexOf(n.id) >= 0) shared.selN.push(i); });
     }
     function num(el, a) { return parseFloat(el.getAttribute(a)); }
     function boxOf(i) { var g = geos[nodes2[i].ag]; return [num(g, 'x'), num(g, 'y'), num(g, 'width'), num(g, 'height')]; }
@@ -657,13 +706,13 @@
 
     // the move: new x and y for some y:Geometry and y:Point, written into the text in one pass, the rest untouched
     function write(g, p) {
-      var k = { 'Geometry': -1, 'Point': -1 }, same = docText === text;   // the elements of doc got these numbers already (move)
-      text = text.replace(/<y:(Geometry|Point)\s[^>]*>/g, function (tag, kind) {
+      var k = { 'Geometry': -1, 'Point': -1 }, same = docText === shared.text;   // the elements of doc got these numbers already (move)
+      shared.text = shared.text.replace(/<y:(Geometry|Point)\s[^>]*>/g, function (tag, kind) {
         var i = ++k[kind], v = (kind === 'Geometry' ? g : p)[i];
         if (!v) return tag;
         return tag.replace(/(\sx=")[^"]*"/, '$1' + v[0] + '"').replace(/(\sy=")[^"]*"/, '$1' + v[1] + '"');
       });
-      if (same) docText = text;
+      if (same) docText = shared.text;
     }
     function moving(alone) {   // what a move of the selection moves: nodes (a group with what it holds) and bend points;
       // alone (Shift with a drag, to move a node without its content): the
@@ -672,9 +721,9 @@
       // a process glyph never moves by itself (as in CellDesigner, where a process
       // cannot be moved itself): it stays midway on its segment, which moves by its anchor (bend) points and its ends; it goes only with
       // a group that holds its whole reaction
-      selN.forEach(function (i) { if (!(cd && /\|proc$/.test(nodes2[i].id))) all.add(i); nodes2[i].inside.forEach(function (c) { if (!alone || nodes2[c].sub === i) all.add(c); }); });   // a submap's terminals go with it even alone
-      var ps = new Set(selP);
-      selE.forEach(function (k) { edges2[k].pts.forEach(function (p) { ps.add(p); }); });
+      shared.selN.forEach(function (i) { if (!(shared.cd && /\|proc$/.test(nodes2[i].id))) all.add(i); nodes2[i].inside.forEach(function (c) { if (!alone || nodes2[c].sub === i) all.add(c); }); });   // a submap's terminals go with it even alone
+      var ps = new Set(shared.selP);
+      shared.selE.forEach(function (k) { edges2[k].pts.forEach(function (p) { ps.add(p); }); });
       edges2.forEach(function (e) { if (all.has(e.s) && all.has(e.t)) e.pts.forEach(function (p) { ps.add(p); }); });
       return { n: all, p: ps, dx: 0, dy: 0 };
     }
@@ -706,7 +755,7 @@
     function overlap(b, c) { return b[0] < c[0] + c[2] && c[0] < b[0] + b[2] && b[1] < c[1] + c[3] && c[1] < b[1] + b[3]; }
     function under(i, a) { for (var u = nodes2[i].up; u != null; u = nodes2[u].up) if (u === a) return true; return false; }   // a holds i, at any depth
     function notIn(i) { return function (k) { return k === i || under(k, i); }; }   // neither the node nor what it holds
-    function cdOwn(i) { return !!cd && nodes2[i].id.indexOf('|') >= 0; }   // a CellDesigner process glyph or gate
+    function cdOwn(i) { return !!shared.cd && nodes2[i].id.indexOf('|') >= 0; }   // a CellDesigner process glyph or gate
     function holder(b, not, B) {   // the innermost compartment whose box holds box b fully, none for which not() holds
       var best = null, area = Infinity;
       nodes2.forEach(function (n, k) { if (!n.comp || not(k)) return; var c = B(k); if (inBox(b, c) && c[2] * c[3] < area) { area = c[2] * c[3]; best = k; } });
@@ -722,7 +771,10 @@
     // the membrane, the inset its thickness gives); a value off the steps (an older 10) read as the default; a complex's room
     // its Complex padding: As Repack (layout.js room, what Pack leaves: the sides, top and bottom, or NAMED over a name
     // inside) or a number on every side, the name's own height added (cxRoom)
-    var PAD_KEY = 'atlas-edit-padding';
+    var PAD_KEY;
+    function __run16() {   // run at start, in order (__start)
+    PAD_KEY = 'atlas-edit-padding';
+    }
     function pads() {
       var p = {}; try { p = JSON.parse(localStorage.getItem(PAD_KEY) || '{}') || {}; } catch (e) {}
       var ok = function (v, m) { return typeof v === 'number' && v >= 0 && v <= m && v % 4 === 0; };
@@ -756,7 +808,7 @@
           w = [e[0] - rm[0], e[1] - rm[1], e[2] + rm[2], e[3] + rm[3]];
         }
         else if (inBox(s0, c0)) {   // inside: PAD from its inner line (as close as it was, where it already was closer: another tool's file)
-          var io = [cd ? n.ins[0] : 0, (cd ? n.ins[1] : 0) + n.lab.t, cd ? n.ins[2] : 0, (cd ? n.ins[3] : 0) + n.lab.b];
+          var io = [shared.cd ? n.ins[0] : 0, (shared.cd ? n.ins[1] : 0) + n.lab.t, shared.cd ? n.ins[2] : 0, (shared.cd ? n.ins[3] : 0) + n.lab.b];
           var PAD = pads().comp, pad = [e0[0] - c0[0], e0[1] - c0[1], c0[0] + c0[2] - e0[2], c0[1] + c0[3] - e0[3]].map(function (v, j) { return (v - io[j] + far[j] >= PAD ? PAD : Math.min(PAD, v - io[j])) + io[j]; });
           w = [e[0] - pad[0], e[1] - pad[1], e[2] + pad[2], e[3] + pad[3]];
         } else if (overlap(s0, c0)) w = [b[0] + b[2] - 1, b[1] + b[3] - 1, b[0] + 1, b[1] + 1];   // on the edge: kept crossing it
@@ -781,11 +833,11 @@
     // member is left out (yEd will draw its group round it). CellDesigner and SBGN-ML files
     // keep no insets
     function refit(ids) {
-      if (cd || !ids.length) return;
+      if (shared.cd || !ids.length) return;
       var want = new Set(), at = {};
       nodes2.forEach(function (n, k) { at[n.id] = k; });
       ids.forEach(function (id) { for (var u = at[id]; u != null; u = nodes2[u].up) if (nodes2[u].kids.length && nodes2[u].el.getAttribute('yfiles.foldertype') === 'group') want.add(u); });
-      var t0 = text;
+      var t0 = shared.text;
       want.forEach(function (u) {
         var n = nodes2[u], b = boxOf(u), x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
         n.kids.forEach(function (k) { if (!inBox(boxOf(k), b)) return; var e = extOf(k, boxOf(k)); x0 = Math.min(x0, e[0]); y0 = Math.min(y0, e[1]); x1 = Math.max(x1, e[2]); y1 = Math.max(y1, e[3]); });
@@ -794,13 +846,13 @@
         var ins = n.ins.map(function (v, j) { return need[j] < 0 ? Math.max(v + need[j], 0) : null; }), bins = need.map(function (v) { return Math.max(v, 0); });
         insetsOf(n.id, ins, bins);
       });
-      if (text !== t0) parse();
+      if (shared.text !== t0) parse();
     }
     function insetsOf(id, ins, bins) {   // the y:Insets (null: kept) and y:BorderInsets of node id's realizer shown, written into the text
       var q = id.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/[.*+?^${}()|[\]\\\/]/g, '\\$&');
-      var m = new RegExp('<node(?=[\\s>/])[^>]*?\\sid="' + q + '"').exec(text);
+      var m = new RegExp('<node(?=[\\s>/])[^>]*?\\sid="' + q + '"').exec(shared.text);
       if (!m) return;
-      var rest = text.slice(m.index), own = rest.slice(0, Math.min.apply(null, [rest.search(/<graph(?=[\s>\/])/), rest.indexOf('</node>')].filter(function (k) { return k >= 0; }).concat([rest.length])));
+      var rest = shared.text.slice(m.index), own = rest.slice(0, Math.min.apply(null, [rest.search(/<graph(?=[\s>\/])/), rest.indexOf('</node>')].filter(function (k) { return k >= 0; }).concat([rest.length])));
       var act = /<y:Realizers\s[^>]*active="(\d+)"/.exec(own), k = act ? +act[1] : 0, put = [];
       [['Insets', ins], ['BorderInsets', bins]].forEach(function (q2) {
         var re = new RegExp('<y:' + q2[0] + '\\s[^>]*>', 'g'), x;
@@ -815,18 +867,18 @@
         });
         if (tag !== x[0]) put.push([m.index + x.index, x[0].length, tag]);
       });
-      put.sort(function (a, b) { return b[0] - a[0]; }).forEach(function (q2) { text = text.slice(0, q2[0]) + q2[2] + text.slice(q2[0] + q2[1]); });
+      put.sort(function (a, b) { return b[0] - a[0]; }).forEach(function (q2) { shared.text = shared.text.slice(0, q2[0]) + q2[2] + shared.text.slice(q2[0] + q2[1]); });
     }
     function setBoxes(nb) {   // boxes written into the text (node index -> [x, y, w, h]), the map read again
       var at = {}, i = -1;
       Object.keys(nb).forEach(function (k) { at[nodes2[+k].ag] = nb[k].map(fmt); });
       if (!Object.keys(at).length) return;
-      text = text.replace(/<y:Geometry\s[^>]*>/g, function (tag) {
+      shared.text = shared.text.replace(/<y:Geometry\s[^>]*>/g, function (tag) {
         var v = at[++i];
         if (v) ['x', 'y', 'width', 'height'].forEach(function (a, j) { tag = tag.replace(new RegExp('(\\s' + a + '=")[^"]*"'), '$1' + v[j] + '"'); });
         return tag;
       });
-      parse(); dirty = true;
+      parse(); shared.dirty = true;
     }
     // the new holders after a change of places (Full editing only), node -> its new parent (null: the map itself), only
     // where it changes. how: 'plain' (set: the nodes moved with what they hold), 'alone' (set: the nodes moved by
@@ -882,32 +934,32 @@
     // a compartment that partly overlaps another of its holder is
     // drawn behind it when larger, in front when smaller (sbgn_edit.stack, the order in the file); not on CellDesigner maps
     function stackComps(ids) {   // in Full editing (Layout keeps the file's order), GraphML and SBGN-ML maps (sbgn_edit loaded at the start, begin)
-      if (cd || !full() || !sbJs || !sbJs.stack) return;
-      var t2 = text, at = {};
+      if (shared.cd || !full() || !sbJs || !sbJs.stack) return;
+      var t2 = shared.text, at = {};
       nodes2.forEach(function (n, i) { at[n.id] = i; });
       ids.forEach(function (id) { var i = at[id]; if (i != null && nodes2[i].comp) t2 = sbJs.stack(t2, id); });
-      if (t2 === text) return;
-      var keep = selN.map(function (i) { return nodes2[i].id; }); text = t2; parse(); dirty = true;
-      selN = []; nodes2.forEach(function (n, i) { if (keep.indexOf(n.id) >= 0) selN.push(i); });
+      if (t2 === shared.text) return;
+      var keep = shared.selN.map(function (i) { return nodes2[i].id; }); shared.text = t2; parse(); shared.dirty = true;
+      shared.selN = []; nodes2.forEach(function (n, i) { if (keep.indexOf(n.id) >= 0) shared.selN.push(i); });
     }
     function settle(out, arg, done, refused) {
       var moves = [], at = {};
       nodes2.forEach(function (n, i) { at[n.id] = i; });
       out.forEach(function (t, i) { moves.push([nodes2[i].id, t == null ? null : nodes2[t].id]); });
-      var why = moves.length && cd && cdJs && cdJs.nestCheck ? cdJs.nestCheck(cd.now, moves) : null;
+      var why = moves.length && shared.cd && cdJs && cdJs.nestCheck ? cdJs.nestCheck(shared.cd.now, moves) : null;
       if (why) return refused(why);
       var jp = arg.join && arg.join.length ? joinPlan(arg.join, moves.map(function (m) { return m[0]; })) : { joins: [], why: '' };   // a glyph dropped on a complex: its member (create.js)
       if (jp.why) return refused(jp.why);
       // CellDesigner: a member that left its complex (Shift) made a species of the compartment it went to (cd_make.leave);
       // the GraphML made again from the file
       var cdLeave = function () {
-        if (!cd || !cdMk || !moves.some(function (m) { try { return !!cdMk.aliasInfo(cd.now, m[0]).complex; } catch (err) { return false; } })) return;
-        var N = cdNow(), t = N.t, t0 = t, sel = selN.map(function (i) { return nodes2[i].id; });
+        if (!shared.cd || !cdMk || !moves.some(function (m) { try { return !!cdMk.aliasInfo(shared.cd.now, m[0]).complex; } catch (err) { return false; } })) return;
+        var N = cdNow(), t = N.t, t0 = t, sel = shared.selN.map(function (i) { return nodes2[i].id; });
         moves.forEach(function (m) { try { if (cdMk.aliasInfo(t, m[0]).complex) t = cdMk.leave(t, m[0], m[1]); } catch (err) { warn(String(err && err.message || err)); } });
         if (t === t0) return;
-        cdRebuild(t, N.sh); parse(); dirty = true;
+        cdRebuild(t, N.sh); parse(); shared.dirty = true;
         var ix = {}; nodes2.forEach(function (n, i) { ix[n.id] = i; });
-        selN = sel.filter(function (id) { return ix[id] != null; }).map(function (id) { return ix[id]; });
+        shared.selN = sel.filter(function (id) { return ix[id] != null; }).map(function (id) { return ix[id]; });
       };
       var rest = function () {
         cdLeave();
@@ -925,19 +977,19 @@
         done(); joinPack(cids);   // the complexes that took a member packed, in this undo step
       };
       if (!moves.length) return rest();
-      var t0 = text;
+      var t0 = shared.text;
       sbpy().then(function (N) {
-        if (text !== t0) return;   // changed meanwhile (an undo): nothing written on top of it
-        var t2 = text, left = moves.slice();
+        if (shared.text !== t0) return;   // changed meanwhile (an undo): nothing written on top of it
+        var t2 = shared.text, left = moves.slice();
         for (var r = 0; left.length && r <= moves.length; r++) left = left.filter(function (m) { try { t2 = N.moveInto(t2, [m]); return false; } catch (e) { return true; } });   // one put into another that leaves it later: after it
         if (left.length) { warn('Not regrouped: ' + left.map(function (m) { return m[0]; }).join(', ')); return rest(); }
-        var ids = selN.map(function (i) { return nodes2[i].id; }), es = selE.map(function (k) { return edges2[k].id; });
-        var ps = selP.map(function (pi) { var k = edges2.findIndex(function (e) { return e.pts.indexOf(pi) >= 0; }); return k < 0 ? null : [edges2[k].id, edges2[k].pts.indexOf(pi)]; });
-        text = t2; parse(); dirty = true; part = null;
+        var ids = shared.selN.map(function (i) { return nodes2[i].id; }), es = shared.selE.map(function (k) { return edges2[k].id; });
+        var ps = shared.selP.map(function (pi) { var k = edges2.findIndex(function (e) { return e.pts.indexOf(pi) >= 0; }); return k < 0 ? null : [edges2[k].id, edges2[k].pts.indexOf(pi)]; });
+        shared.text = t2; parse(); shared.dirty = true; shared.part = null;
         var byN = {}, byE = {}; nodes2.forEach(function (n, i) { byN[n.id] = i; }); edges2.forEach(function (e, k) { byE[e.id] = k; });
-        selN = ids.filter(function (id) { return byN[id] != null; }).map(function (id) { return byN[id]; });
-        selE = es.filter(function (id) { return byE[id] != null; }).map(function (id) { return byE[id]; });
-        selP = ps.filter(function (x) { return x && byE[x[0]] != null && edges2[byE[x[0]]].pts[x[1]] != null; }).map(function (x) { return edges2[byE[x[0]]].pts[x[1]]; });
+        shared.selN = ids.filter(function (id) { return byN[id] != null; }).map(function (id) { return byN[id]; });
+        shared.selE = es.filter(function (id) { return byE[id] != null; }).map(function (id) { return byE[id]; });
+        shared.selP = ps.filter(function (x) { return x && byE[x[0]] != null && edges2[byE[x[0]]].pts[x[1]] != null; }).map(function (x) { return edges2[byE[x[0]]].pts[x[1]]; });
         rest();
       }).catch(function (e) { warn('Not regrouped: ' + (e && e.message || e)); rest(); });
     }
@@ -945,7 +997,7 @@
     // resized selected in the full editor (sizable, create.js: the format's part says which): which sides it moves
     function handleAt(P, only) {   // a handle of a compartment or a sizable node selected (only: sizable nodes alone)
       var hs = Math.max(HANDLE / 2, 4 / V.z), best = null;
-      selN.forEach(function (i) {
+      shared.selN.forEach(function (i) {
         if (!(only ? sizable(i) : nodes2[i].comp || sizable(i)) || best) return;
         var b = bx(i), off = 3.3, L = b[0] - off, Tp = b[1] - off, R = b[0] + b[2] + off, B = b[1] + b[3] + off;
         [[L, Tp, 'lt'], [(L + R) / 2, Tp, 't'], [R, Tp, 'rt'], [L, (Tp + B) / 2, 'l'], [R, (Tp + B) / 2, 'r'], [L, B, 'lb'], [(L + R) / 2, B, 'b'], [R, B, 'rb']].forEach(function (q) {
@@ -958,7 +1010,7 @@
       var T = 5 / V.z, best = handleAt(P);
       if (best) return best;
       nodes2.forEach(function (n, i) {
-        if (!n.comp || (!any && selN.indexOf(i) < 0)) return;   // a compartment selected first: a drag that moves the map never resizes one
+        if (!n.comp || (!any && shared.selN.indexOf(i) < 0)) return;   // a compartment selected first: a drag that moves the map never resizes one
         var b = bx(i);
         if (P[0] < b[0] - T || P[0] > b[0] + b[2] + T || P[1] < b[1] - T || P[1] > b[1] + b[3] + T) return;
         var s = (Math.abs(P[0] - b[0]) <= T ? 'l' : Math.abs(P[0] - b[0] - b[2]) <= T ? 'r' : '') + (Math.abs(P[1] - b[1]) <= T ? 't' : Math.abs(P[1] - b[1] - b[3]) <= T ? 'b' : '');
@@ -1011,7 +1063,7 @@
     // upright): one bend point selected alone, a segment drawn while it is exactly level or upright; no snapping, the
     // keys move by whole steps
     function bendGuides(bp) {
-      if (bp == null) { if (selP.length !== 1 || selN.length || selE.length) return null; bp = selP[0]; }
+      if (bp == null) { if (shared.selP.length !== 1 || shared.selN.length || shared.selE.length) return null; bp = shared.selP[0]; }
       var k = -1, j = -1, out = [];
       edges2.forEach(function (e, i) { var at2 = e.pts.indexOf(bp); if (at2 >= 0) { k = i; j = at2 + 1; } });
       if (k < 0 || edges2[k].s == null || edges2[k].t == null) return null;
@@ -1066,7 +1118,7 @@
         p[pi] = v; el.setAttribute('x', v[0]); el.setAttribute('y', v[1]);
       });
       write(g, p);
-      dirty = true;
+      shared.dirty = true;
     }
     // undo and redo keep only what changed (a whole copy of the text per step, up to 200, could reach
     // about 320 MB on the 1.6 MB mast cell GraphML). Each stack's top entry is whole, each entry below a change that
@@ -1101,7 +1153,10 @@
     // places): shiftSum the sum of those shifts; the frame (x0, y0) moves with them, so nothing moves on screen. Each undo step
     // keeps the sum it was taken at (stack.rb beside the stack), and taking a step back puts the frame where that step's
     // places are drawn where they were, so an undo or redo across a shift never moves the map
-    var shiftSum = [0, 0], tookShift = null;
+    var shiftSum, tookShift;
+    function __run17() {   // run at start, in order (__start)
+    shiftSum = [0, 0], tookShift = null;
+    }
     function rebase(dx, dy) { shiftSum = [shiftSum[0] + dx, shiftSum[1] + dy]; x0 += dx; y0 += dy; }
     // each step also keeps when it was taken (stack.ts, V.tick), so the keys undo a setting and a map's step in the order made
     function step(stack, t, fresh) {   // t whole on top; the old top a change from it; fresh: a new change (remember), not an undo or redo
@@ -1124,11 +1179,11 @@
     // deletes changes the file itself, not only the places in the GraphML (cdcreate.js), so undo takes both back. The
     // two kept apart, { g, b }, each as its own change below the top (as one string a step on the 2 MB mast
     // cell map kept 1.7 MB)
-    function undoText() { return cd ? { g: text, b: cd.base } : text; }
+    function undoText() { return shared.cd ? { g: shared.text, b: shared.cd.base } : shared.text; }
     function fromUndo(t) {   // the GraphML of a step, its file put back where the step kept one, its frame as it was
       if (tookShift) { x0 += tookShift[0] - shiftSum[0]; y0 += tookShift[1] - shiftSum[1]; shiftSum = tookShift; tookShift = null; }
       if (typeof t === 'string') return t;
-      if (cd) cd.base = t.b;
+      if (shared.cd) shared.cd.base = t.b;
       return t.g;
     }
     function unpush() { return fromUndo(take(undo)); }   // the text before the step just taken, which is taken back
@@ -1137,18 +1192,21 @@
     // changed elsewhere (GitHub, the folder, Restore example maps). All kept histories together at most 40 million
     // characters, the oldest let go first; the map being edited keeps its own limit (step). An SBGN-ML step holds only
     // the GraphML, the file being written from the file as opened (sb.base), so that file is kept and given back too
-    var hist = {}, histKey = null, openKey = null, histLast = null, edits = 0;   // edits: changes, undos and redos since this map was opened (its history may be older)
+    var hist, histKey, openKey, histLast, edits;
+    function __run18() {   // run at start, in order (__start)
+    hist = {}, histKey = null, openKey = null, histLast = null, edits = 0;
+    }   // edits: changes, undos and redos since this map was opened (its history may be older)
     function histKeep() {
       if (!histKey) return;
       var id = histKey; histKey = null; delete hist[id]; histLast = null;
-      if (undo.length || redo.length) {
-        var h = hist[id] = { undo: undo, redo: redo, u: undoText(), src: src(), shift: shiftSum, sbBase: sb && sb.base, size: 0 };
+      if (undo.length || shared.redo.length) {
+        var h = hist[id] = { undo: undo, redo: shared.redo, u: undoText(), src: src(), shift: shiftSum, sbBase: shared.sb && shared.sb.base, size: 0 };
         h.size = sizeOf(h.u) + h.src.length + h.undo.concat(h.redo).reduce(function (k, d) { return k + sizeOf(d); }, 0);
         histLast = { id: id, h: h, site: site };
         var ids = Object.keys(hist), sum = ids.reduce(function (k, i) { return k + hist[i].size; }, 0);
         for (var i = 0; sum > 40e6 && i < ids.length; i++) { sum -= hist[ids[i]].size; delete hist[ids[i]]; }   // oldest first (insertion order)
       }
-      undo = []; redo = [];   // the kept stacks are no longer the editor's (a late layout step, Back to a file)
+      undo = []; shared.redo = [];   // the kept stacks are no longer the editor's (a late layout step, Back to a file)
     }
     function histLate() {   // a redraw that ended after the map was left (a CellDesigner file follows a move once drawn): the kept history as drawn
       var L = histLast;
@@ -1157,7 +1215,7 @@
     function histBack() {   // Back to a file with moves not saved: its history taken up again
       var L = histLast;
       if (!L || hist[L.id] !== L.h) return;
-      delete hist[L.id]; histKey = L.id; histLast = null; undo = L.h.undo; redo = L.h.redo;
+      delete hist[L.id]; histKey = L.id; histLast = null; undo = L.h.undo; shared.redo = L.h.redo;
     }
     function histTake(t, g0) {   // in begin: the history of the map opened, if its file is as it was left; t: the file opened, g0: its GraphML
       var id = openKey && openKey.tk === opening ? openKey.id : null, h = id && hist[id];
@@ -1165,56 +1223,56 @@
       if (!h || h.src !== t) return;   // a file not as left: its history stays until this map is left again (a newer read may match)
       delete hist[id]; histLast = null;
       try {
-        if (h.sbBase && sb) sb.base = h.sbBase;
+        if (h.sbBase && shared.sb) shared.sb.base = h.sbBase;
         var g = fromUndo(h.u);   // the editor's own text and file as they were (a CellDesigner map's GraphML and base)
-        if (g !== text) { text = g; parse(); }
-        undo = h.undo; redo = h.redo; shiftSum = h.shift;
-      } catch (e) { undo = []; redo = []; if (text !== g0) { text = g0; parse(); } }
+        if (g !== shared.text) { shared.text = g; parse(); }
+        undo = h.undo; shared.redo = h.redo; shiftSum = h.shift;
+      } catch (e) { undo = []; shared.redo = []; if (shared.text !== g0) { shared.text = g0; parse(); } }
     }
     function remember(merge) {   // the text before a change, for undo; nudges in a row are one step
       var now = Date.now();
-      if (!(merge && now - nudgeAt < 800)) { step(undo, undoText(), true); redo = []; }
+      if (!(merge && now - nudgeAt < 800)) { step(undo, undoText(), true); shared.redo = []; }
       else if (undo.ts && undo.ts.length === undo.length && undo.length) undo.ts[undo.ts.length - 1] = V.tick(true);   // merged: the step dated by its last nudge
       nudgeAt = merge ? now : 0;
     }
-    function mapTop(back) { var s = back ? undo : redo; return on && V.current === map && s.length && s.ts && s.ts.length === s.length ? s.ts[s.ts.length - 1] : 0; }   // when the map's next undo (or redo) was taken; 0: none
+    function mapTop(back) { var s = back ? undo : shared.redo; return on && V.current === map && s.length && s.ts && s.ts.length === s.length ? s.ts[s.ts.length - 1] : 0; }   // when the map's next undo (or redo) was taken; 0: none
     function back(from, to) {
       if (!from.length) return;
       var t;
       try { t = take(from); } catch (e) { from.length = 0; from.rb = []; from.ts = []; tookShift = null; warn('Undo history lost: ' + e + '.'); return; }
       clearTimeout(timer); keyDue = null; keyRun = null;   // the keys' run undone: nothing settled on top of it
       var was = undoText();
-      step(to, was); text = fromUndo(t); nudgeAt = 0; cdGate = null; sbBack = true; parse(); selN = []; selP = []; selE = []; part = null; dirty = true; render(); paint(); changed();
+      step(to, was); shared.text = fromUndo(t); nudgeAt = 0; shared.cdGate = null; shared.sbBack = true; parse(); shared.selN = []; shared.selP = []; shared.selE = []; shared.part = null; shared.dirty = true; render(); paint(); changed();
     }
 
     // the drawing: the renderer in the browser; the map keeps its place on screen when the drawing's edges change
     function render() {
       var t = ++ticket;
       drawing = true;
-      return (cd ? cdpy() : yr()).then(function (p) {
+      return (shared.cd ? cdpy() : yr()).then(function (p) {
         var r;
-        if (cd) {   // the moves written into the CellDesigner file, drawn, and the GraphML made of it again
-          var dm = drawMemo && drawMemo.cd && drawMemo.base === cd.base && drawMemo.text === text && drawMemo.block === gridBlock() && !undo.length ? drawMemo : null;   // drawn ahead unfitted, as the map before any change, on this Grid size's block
-          var q = dm ? dm.q : cdDraw(cd.base, text);
+        if (shared.cd) {   // the moves written into the CellDesigner file, drawn, and the GraphML made of it again
+          var dm = drawMemo && drawMemo.cd && drawMemo.base === shared.cd.base && drawMemo.text === shared.text && drawMemo.block === gridBlock() && !undo.length ? drawMemo : null;   // drawn ahead unfitted, as the map before any change, on this Grid size's block
+          var q = dm ? dm.q : cdDraw(shared.cd.base, shared.text);
           if (t !== ticket) return;
-          cd.now = q[1]; r = [q[0], []]; cdBase = { now: q[1], text: q[2] };   // what the live drawing of a move starts from
-          if (q[2] !== text && !drag) {   // the same map, its new bend points (a glyph moved) now its own
-            var ids = selN.map(function (i) { return nodes2[i].id; }), np = points.length;
-            text = q[2]; parse();
-            selN = ids.map(function (id) { return nodes2.findIndex(function (n) { return n.id === id; }); }).filter(function (i) { return i >= 0; });
-            if (points.length !== np) { selP = []; selE = []; }
+          shared.cd.now = q[1]; r = [q[0], []]; shared.cdBase = { now: q[1], text: q[2] };   // what the live drawing of a move starts from
+          if (q[2] !== shared.text && !drag) {   // the same map, its new bend points (a glyph moved) now its own
+            var ids = shared.selN.map(function (i) { return nodes2[i].id; }), np = points.length;
+            shared.text = q[2]; parse();
+            shared.selN = ids.map(function (id) { return nodes2.findIndex(function (n) { return n.id === id; }); }).filter(function (i) { return i >= 0; });
+            if (points.length !== np) { shared.selP = []; shared.selE = []; }
           }
         } else {
           // shifted: the editor's places moved, so its frame moves with them and nothing moves on screen (taken for a new
           // frame of the drawing, the shift would make the map jump right and down, out of sight on some maps)
           var sh = !drag && noNegative();
           if (sh) { parse(); rebase(sh[0], sh[1]); }
-          r = drawMemo && !drawMemo.cd && drawMemo.text === text && !afSbgn ? drawMemo.r : drawGraphml(text);   // the read-ahead drawing is never in the SBGN AF view
+          r = drawMemo && !drawMemo.cd && drawMemo.text === shared.text && !shared.afSbgn ? drawMemo.r : drawGraphml(shared.text);   // the read-ahead drawing is never in the SBGN AF view
         }
         if (t !== ticket) return;
         drawing = false;
         if (r[1].length) warn('Drawn with warnings: ' + r[1].join('; '));
-        var svg = r[0]; lastSvg = svg; lastFor = [text, cd ? cd.now : null, site && site.id, afSbgn];   // [3]: drawn in the SBGN AF view, never kept, saved or downloaded (graphml.js)
+        var svg = r[0]; lastSvg = svg; lastFor = [shared.text, shared.cd ? shared.cd.now : null, site && site.id, shared.afSbgn];   // [3]: drawn in the SBGN AF view, never kept, saved or downloaded (graphml.js)
         if (!on && site && V.kept && V.kept.id === site.id && V.kept.text != null) { V.kept.text = src(); V.kept.svg = svg; }   // left before this redraw ended: the kept file and drawing as drawn
         if (!on && site && unsaved[site.id] && unsaved[site.id].site === site) unsaved[site.id].text = src();   // the same for moves not saved
         histLate();
@@ -1232,24 +1290,27 @@
           var old = V.img.src || '';
           V.img.removeAttribute('id'); pic.id = 'm2-img'; pic.setAttribute('aria-label', map.title); V.img.replaceWith(pic); V.img = pic;
           if (old.indexOf('blob:') === 0) URL.revokeObjectURL(old);
-          gN = {}; gE = {}; live = null; liveC = null; liveOrig = null; sizeRec = null; keyed = null; liveG = null; poseNow = null; poseText = null; copies = []; frozen = false;
+          gN = {}; gE = {}; shared.live = null; shared.liveC = null; shared.liveOrig = null; shared.sizeRec = null; shared.keyed = null; shared.liveG = null; shared.poseNow = null; shared.poseText = null; shared.copies = []; shared.frozen = false;
           pic.querySelectorAll('[data-n]').forEach(function (g) { gN[g.getAttribute('data-n')] = g; });
           pic.querySelectorAll('[data-e]').forEach(function (g) { var k = g.getAttribute('data-e'); (gE[k] = gE[k] || []).push(g); });
-          if (cd) cdSessionSoon();
+          if (shared.cd) cdSessionSoon();
           if (first) V.fit(); else V.draw();
-          if (!r[1].length && !saveTimer && !saving && !dirty) { if (takenIn) warn(takenIn); else quiet(); takenIn = null; }   // the file changed by opening it: said in red, as a change the reader did not make
+          if (!r[1].length && !saveTimer && !saving && !shared.dirty) { if (takenIn) warn(takenIn); else quiet(); takenIn = null; }   // the file changed by opening it: said in red, as a change the reader did not make
         })();
       }).catch(function (e) { if (t === ticket) { drawing = false; warn('Not drawn: ' + (e && e.message ? e.message.split('\n').slice(-2).join(' ') : e)); } });
     }
     // an opening under way (the files read, a CellDesigner file converted) is dropped when the Edit window is left or
     // another map is opened before it is done (else leaving at once leaves edit mode on, autosave armed)
-    var opening = 0;
+    var opening;
+    function __run19() {   // run at start, in order (__start)
+    opening = 0;
+    }
     function start(t, n, h, s, same, g0) {   // a CellDesigner file is first made into the GraphML the editor edits; g0: an SBGN-ML map's GraphML as the build made it
-      if (typing) typing.done(true);
+      if (shared.typing) shared.typing.done(true);
       if (localTimer) local(true);   // the last move of the map before kept first, before cd and text change
       var tk = opening;
       if (viaGraphml(t)) {   // an SBGN-ML map (or SBML, layout only): the GraphML of its text, made from the build's (g0, read with the map)
-        cd = null; quiet();
+        shared.cd = null; quiet();
         return sbpy().then(function () {
           if (tk !== opening) return;
           if (!g0) throw 'its GraphML did not load';
@@ -1257,13 +1318,13 @@
           if (ed0.unique) t = ed0.unique(t, g0);   // two glyphs of one id: the later renamed as the build's GraphML has it, written at the next save
           var g = sbGraphml(t, g0);
           var sb1 = { base: t, g0: g0 };
-          sbLast = [g, edOf(t).write(t, g), sb1];   // a file whose moves could not be written back is said now, not at the first save; kept for src()
-          sb = sb1; begin(g, t, n, h, s, same, t0);
+          shared.sbLast = [g, edOf(t).write(t, g), sb1];   // a file whose moves could not be written back is said now, not at the first save; kept for src()
+          shared.sb = sb1; begin(g, t, n, h, s, same, t0);
         })
           .catch(function (e) { if (tk === opening) warn('Cannot edit ' + n + ': ' + e); });
       }
-      sb = null;
-      if (!isCd(t)) { cd = null; return begin(t, t, n, h, s, same); }
+      shared.sb = null;
+      if (!isCd(t)) { shared.cd = null; return begin(t, t, n, h, s, same); }
       quiet();
       return cdpy().then(function () {
         if (tk !== opening) return;
@@ -1271,25 +1332,28 @@
         // text, written at the next save; the file as it was stays the site's base (what GitHub and the site hold)
         var sg = cdMk ? cdMk.sbgn(t) : { n: 0 }, t0 = t;
         if (sg.n) { t = sg.text; takenIn = sg.n + (sg.n > 1 ? ' positive influences' : ' positive influence') + ' (open arrowhead, not SBGN) made reduced physical stimulation (open triangle).'; }
-        cd = { base: t, now: t }; begin(cdGraphml(t), t, n, h, s, same, t0);
+        shared.cd = { base: t, now: t }; begin(cdGraphml(t), t, n, h, s, same, t0);
       })
         .catch(function (e) { if (tk === opening) warn('Cannot edit ' + n + ': ' + e); });
     }
-    var takenIn = null;   // what the opening changed in the file (cd_make sbgn), said once the map is drawn
+    var takenIn;
+    function __run20() {   // run at start, in order (__start)
+    takenIn = null;
+    }   // what the opening changed in the file (cd_make sbgn), said once the map is drawn
     function begin(g, t, n, h, s, same, t0) {   // same: { width, height, x0, y0, scale } of the picture on screen, drawn from this very file; t0: the file as read, where the opening changed it
       layout();   // its extent() measures what the holders grow round (extOf), at the first move
       sbpy();   // sbgn_edit quietly, on every map: its stacking (stackComps) and moveInto serve GraphML maps too
-      try { text = g; parse(); } catch (e) { warn('Cannot edit ' + n + ': ' + e); return; }
+      try { shared.text = g; parse(); } catch (e) { warn('Cannot edit ' + n + ': ' + e); return; }
       siteRef = null; name = n; handle = h; site = s || null;
       t0 = t0 || t;
       if (site) { site.base = site.pending && site.pub != null ? site.pub : t0; site.fromDraft = t0 !== site.base; }   // no token: the site's text, a draft on top of it
       if (site && site.pending && canFolder && V.folderName()) folderCheck();
-      stuck = false; dirty = false; undo = []; redo = []; cdGate = null; selN = []; selP = []; selE = [];
+      stuck = false; shared.dirty = false; undo = []; shared.redo = []; shared.cdGate = null; shared.selN = []; shared.selP = []; shared.selE = [];
       histTake(t, g);
       edits = 0;
       if (reSel && V.chosen && reSel.map === V.chosen.id) {   // reloaded while editing this map: its selection back
-        nodes2.forEach(function (n, i) { if (reSel.n.indexOf(n.id) >= 0) selN.push(i); });
-        edges2.forEach(function (a, i) { if (reSel.e.indexOf(a.id) >= 0) selE.push(i); });
+        nodes2.forEach(function (n, i) { if (reSel.n.indexOf(n.id) >= 0) shared.selN.push(i); });
+        edges2.forEach(function (a, i) { if (reSel.e.indexOf(a.id) >= 0) shared.selE.push(i); });
       }
       reSel = null; reGh = null;   // used by this start or not at all
       map = { id: 'edit', title: openTitle || n, width: 0, height: 0, scale: 1, downloads: [], colours: true,   // drawn with the role classes (graphml.js, V.recolour): Settings' Map colours offered while editing
@@ -1298,29 +1362,29 @@
         map.width = same.width; map.height = same.height; map.scale = same.scale; x0 = same.x0; y0 = same.y0;
       }
       V.current = map; on = true;
-      if (cd) plainCanvas();
+      if (shared.cd) plainCanvas();
       V.nodes = null; V.sel = null; V.renderInfo(); V.drawPin();
       document.getElementById('m2-title').textContent = n;
       V.grid.classList.add('m2-editing');
       buttons();
-      gN = gE = null; mv = live = null; liveG = null; poseNow = null; poseText = null; copies = []; frozen = false; cdBase = null;
-      if (same && same.text === t) { (cd ? cdpy() : yr()).then(function () { if (on && V.current === map && !edits && !gN) render(); }); paint(); quiet(); shownWhole(); return; }
+      gN = gE = null; mv = shared.live = null; shared.liveG = null; shared.poseNow = null; shared.poseText = null; shared.copies = []; shared.frozen = false; shared.cdBase = null;
+      if (same && same.text === t) { (shared.cd ? cdpy() : yr()).then(function () { if (on && V.current === map && !edits && !gN) render(); }); paint(); quiet(); shownWhole(); return; }
       quiet();
       render();
       shownWhole();
     }
     function shownWhole() { if (window.m2Shown) window.m2Shown(); }   // a reload in edit mode: the page shown once editing has started, in one step
     function stop() {
-      if (typing) typing.done(true);   // a name being typed kept on its own map first (create.js)
+      if (shared.typing) shared.typing.done(true);   // a name being typed kept on its own map first (create.js)
       if (!on) return;
       if (saveTimer) push();   // a move still waiting is saved now
       leftMoves = { site: site, n: undo.length };   // before histKeep, which empties undo
       var moved = undo.length > 0 || edits > 0;   // every move undone counts too: the kept picture follows the text left
       histKeep();   // its undo and redo kept for when it is opened again
       var kpic = V.img;
-      if (afSbgn && !cd) {   // the SBGN AF view stays in the editor: the map left drawn plainly, for the viewer and what is kept
-        afSbgn = false;
-        var pl = drawGraphml(text); lastSvg = pl[0]; lastFor = [text, null, site && site.id, false];
+      if (shared.afSbgn && !shared.cd) {   // the SBGN AF view stays in the editor: the map left drawn plainly, for the viewer and what is kept
+        shared.afSbgn = false;
+        var pl = drawGraphml(shared.text); lastSvg = pl[0]; lastFor = [shared.text, null, site && site.id, false];
         kpic = new Promise(function (res) { var im = new Image(); im.onload = function () { res(im); }; im.onerror = function () { res(V.img); }; im.src = URL.createObjectURL(new Blob([V.recolour(pl[0])], { type: 'image/svg+xml' })); });
       }
       if (site && site.id && moved)   // not atSite(): a CellDesigner map's text follows a move only once drawn
@@ -1328,10 +1392,10 @@
       if (helpBox) help(false);
       on = false; drag = null; band = null; V.grid.classList.remove('m2-editing'); paint(); buttons();
       if (site && site.mine && !localTimer) V.refreshMine();   // its last version saved already: the list takes it (else local() does)
-      if (dirty && !site) warn(name + ' has moves not saved: Back to it, or Save.'); else quiet();
+      if (shared.dirty && !site) warn(name + ' has moves not saved: Back to it, or Save.'); else quiet();
       // a site map whose last save did not go through (no connection, a GitHub error): its file kept in this page, so
       // editing it again starts from it and saves it, and said until then (else going back read GitHub's older version)
-      if (site && site.id && !site.pending && !stuck && dirty && token()) { unsaved[site.id] = { id: site.id, name: name, site: site, text: src() }; leftLater(unsaved[site.id]); }
+      if (site && site.id && !site.pending && !stuck && shared.dirty && token()) { unsaved[site.id] = { id: site.id, name: name, site: site, text: src() }; leftLater(unsaved[site.id]); }
       else leftSay();
       drawMemo = null; preDoc = [];   // what was read ahead for this opening, let go
       if (!keepAhead()) forget(editPre && editPre.id);   // else read afresh (a conflict, a move not saved: the repository may differ)
@@ -1343,7 +1407,7 @@
       if (unsaved[u.id] !== u) return leftSay();
       if (on) return;   // another map opened meanwhile: kept as it is, said when that one is left
       if (drawing || saveTimer || saving) { setTimeout(function () { leftLater(u); }, 300); return; }
-      if (stuck || (site === u.site && !dirty)) { delete unsaved[u.id]; return leftSay(); }
+      if (stuck || (site === u.site && !shared.dirty)) { delete unsaved[u.id]; return leftSay(); }
       if (site === u.site) u.text = src();
       leftSay();
     }
@@ -1357,7 +1421,7 @@
     // last saved it (its sha from GitHub's answer, once a save under way is done), and the editor's own drawing of it.
     // Not when a move is not saved or saving stopped. The check of GitHub just after the switch (recheck) stays
     function ghKnown(s) {   // GitHub's version of a site map as last saved (sha and text), never moves not saved; null when not known
-      return stuck || !s || !s.sha || (dirty && site === s) ? null : { sha: s.sha, text: s.saved || s.base };
+      return stuck || !s || !s.sha || (shared.dirty && site === s) ? null : { sha: s.sha, text: s.saved || s.base };
     }
     function keepAhead() {
       var s = site, m = s && s.id ? V.byId[s.id] : null, old = editPre;
@@ -1374,9 +1438,9 @@
       bank[p.id] = p;
       // the drawing on screen kept with it, only when it is the drawing of the text the next editing starts from: every
       // move in the text drawn, none moving; made ahead now, or once the save under way has written that very text
-      var S = src(), g = text, d0 = doc, el = V.img, svg = lastSvg;
-      if (!(svg && !drawing && !mv && !keyed && !liveC && docText === g && lastFor && !lastFor[3] && lastFor[0] === g && lastFor[1] === (cd ? S : null))) return true;
-      var isCd = !!cd, isSbm = !!sb, sbG0 = sb && sb.g0, make = function () {
+      var S = src(), g = shared.text, d0 = doc, el = V.img, svg = lastSvg;
+      if (!(svg && !drawing && !mv && !shared.keyed && !shared.liveC && docText === g && lastFor && !lastFor[3] && lastFor[0] === g && lastFor[1] === (shared.cd ? S : null))) return true;
+      var isCd = !!shared.cd, isSbm = !!shared.sb, sbG0 = shared.sb && shared.sb.g0, make = function () {
         var dm = isCd ? { cd: true, base: S, text: g, q: [svg, S, g] } : { cd: false, text: g, r: [svg, []] };
         if (isCd) cdRemember(S, g);
         else if (isSbm) sbRemember(S, g, sbG0);   // an SBGN-ML map reopened on the very GraphML it was left with
@@ -1393,7 +1457,7 @@
           dm.pic = document.importNode(new DOMParser().parseFromString(dm.rec, 'image/svg+xml').documentElement, true);
         });
       };
-      if (!dirty && !saving && S === (s.saved || s.base)) make();
+      if (!shared.dirty && !saving && S === (s.saved || s.base)) make();
       else p.gh.then(function (r) { if (r && r.text === S && bank[p.id] === p && !on) make(); }, function () {});
       return true;
     }
@@ -1402,18 +1466,18 @@
       box.querySelector('#m2-ed-save').hidden = !!site;   // a map of the site saves by itself
       ghForm(!!(on && site && !site.mine && !token()));
       localBox();
-      box.querySelector('#m2-ed-back').hidden = on || !text;
+      box.querySelector('#m2-ed-back').hidden = on || !shared.text;
       box.querySelector('#m2-ed-back').textContent = 'Back to ' + name;
       box.querySelector('#m2-ed-stop').hidden = !on;
       var g = V.current && V.current.binned ? null : graphmlOf(V.current);   // a map in Deleted is not edited
       box.querySelector('#m2-ed-this').hidden = on || !g;
       // the Edit tab only on a map that can be edited, or while a file is being edited (no edit icon
       // for maps that cannot be edited); its window gives way to the Maps list when the tab goes
-      var off = !on && !(dirty && !site) && !g;
+      var off = !on && !(shared.dirty && !site) && !g;
       V.grid.classList.toggle('m2-edit-off', off);
       // no map yet (the page just loaded, reloaded in edit mode): nothing to judge; another map chosen while editing:
       // judged once it is shown (left); the Edit panel on the right stays open, hidden, until a map that can be edited
-      if (off && V.win === 'edit' && V.current && !switching && !V.editRight) { V.win = 'list'; V.railMark(); }
+      if (off && V.win === 'edit' && V.current && !shared.switching && !V.editRight) { V.win = 'list'; V.railMark(); }
     }
     function graphmlOf(m) {   // a map drawn from its own file, GraphML, CellDesigner, or a file with an editBase (SBGN-ML, SBML): that file is first in its downloads
       var d = m && m.downloads && m.downloads[0];
@@ -1421,14 +1485,14 @@
     }
 
     function save() {
-      if (!text) return;
+      if (!shared.text) return;
       if (site) { if (site.pending) { if (localTimer) local(); } else if (token()) push(); return; }   // kept in this browser (and the folder), never GitHub
       var blob = new Blob([src()], { type: 'application/xml' });
-      var done = function () { dirty = false; quiet(); };
+      var done = function () { shared.dirty = false; quiet(); };
       var into = function (h) { return h.createWritable().then(function (w) { return w.write(blob).then(function () { return w.close(); }); }).then(done); };
       if (handle) return into(handle).catch(function (e) { warn('Not saved: ' + e.message); });
       if (window.showSaveFilePicker) {
-        return window.showSaveFilePicker({ suggestedName: name, types: [cd ? { description: 'CellDesigner', accept: { 'application/xml': ['.xml'] } } : sb ? { description: 'SBGN-ML', accept: { 'application/xml': ['.sbgn', '.nwt'] } } : { description: 'yEd GraphML', accept: { 'application/xml': ['.graphml'] } }] })
+        return window.showSaveFilePicker({ suggestedName: name, types: [shared.cd ? { description: 'CellDesigner', accept: { 'application/xml': ['.xml'] } } : shared.sb ? { description: 'SBGN-ML', accept: { 'application/xml': ['.sbgn', '.nwt'] } } : { description: 'yEd GraphML', accept: { 'application/xml': ['.graphml'] } }] })
           .then(function (h) { handle = h; name = h.name; return into(h); })
           .catch(function (e) { if (e.name !== 'AbortError') warn('Not saved: ' + e.message); });
       }
@@ -1443,7 +1507,10 @@
     // nearest the map shown first, lowest priority): the files and a CellDesigner map's GraphML for every map that
     // can be edited, one map at a time once the viewer's pictures are in; the editor's drawing (the heavy part, in
     // memory) only for the map shown and its two nearest, dropped for maps further away. One entry per map in bank.
-    var bank = {}, preTimer = null, sweepT = 0, openTitle = null, drawMemo = null, preDoc = [], editPre = null;   // drawMemo, preDoc: the drawing and documents of the map being opened
+    var bank, preTimer, sweepT, openTitle, drawMemo, preDoc, editPre;
+    function __run21() {   // run at start, in order (__start)
+    bank = {}, preTimer = null, sweepT = 0, openTitle = null, drawMemo = null, preDoc = [], editPre = null;
+    }   // drawMemo, preDoc: the drawing and documents of the map being opened
     function preKey(m) { return m.id + '|' + V.ver(m) + '|' + (repo() && token() ? 'gh' : ''); }
     function forget(id) { if (id && bank[id]) delete bank[id]; }
     // the repository's version of a map and its sha (two calls side by side); null: not a map of this repository
@@ -1465,17 +1532,20 @@
     // known: a newer sha this page learnt for a path after asking for the listing (its own save, the check after a
     // switch, a refused save), with when; it outranks a listing asked for before it, so a stale listing never hides a
     // version GitHub already said is newer (else the check after the switch reopens in a loop)
-    var ghDir = null, known = {};
+    var known;
+    function __run22() {   // run at start, in order (__start)
+    shared.ghDir = null, known = {};
+    }
     function ghList() {
-      if (ghDir && Date.now() - ghDir.at < 300000) return ghDir;
-      ghDir = { at: Date.now() };
-      ghDir.p = api('/contents/maps?ref=main').then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
+      if (shared.ghDir && Date.now() - shared.ghDir.at < 300000) return shared.ghDir;
+      shared.ghDir = { at: Date.now() };
+      shared.ghDir.p = api('/contents/maps?ref=main').then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
         if (!Array.isArray(d) || d.length >= 1000) return null;   // GitHub lists at most 1000 files here: then map by map
         var o = {};
         d.forEach(function (f) { o[f.path] = f.sha; });
         return o;
       }).catch(function () { return null; });
-      return ghDir;
+      return shared.ghDir;
     }
     function learnt(path, sha) { known[path] = { sha: sha, at: Date.now() }; }
     function blobSha(t) {   // git's sha of a text, as GitHub gives it
@@ -1503,14 +1573,17 @@
       }).catch(function () { return null; });
       return p.siteFrame;
     }
-    var idle = function () { return new Promise(function (res) { (window.requestIdleCallback || function (f) { setTimeout(f, 0); })(res); }); };
+    var idle, lastInput, mark;
+    function __run23() {   // run at start, in order (__start)
+    idle = function () { return new Promise(function (res) { (window.requestIdleCallback || function (f) { setTimeout(f, 0); })(res); }); };
     // lowest priority (it never competes with anything else): a step for a map other than the
     // one shown waits until the reader has not clicked, scrolled, dragged or typed for 1.5 s, then for an idle moment.
     // A step cannot be stopped once begun (the largest, a big CellDesigner map's conversion, 80-160 ms measured
     // headless), so it starts only while the reader is reading, not moving
-    var lastInput = 0, mark = function () { lastInput = Date.now(); };
+    lastInput = 0, mark = function () { lastInput = Date.now(); };
     ['pointerdown', 'wheel', 'keydown', 'touchstart'].forEach(function (k) { document.addEventListener(k, mark, { capture: true, passive: true }); });
     document.addEventListener('pointermove', function (e) { if (e.buttons) mark(); }, { capture: true, passive: true });
+    }
     function calm() {
       return new Promise(function (res) {
         (function w() { var q = Date.now() - lastInput; if (q >= 1500) idle().then(res); else setTimeout(w, 1500 - q); })();
@@ -1633,7 +1706,7 @@
       var url = graphmlOf(m);
       if (!url) return;
       if (!V.draftsDone()) { V.draftsIn.then(function () { setTimeout(shown, 0); }); return; }   // a draft of this map read first
-      if (dirty && !site && !confirm(name + ' has moves not saved. Edit this map instead?')) return;
+      if (shared.dirty && !site && !confirm(name + ' has moves not saved. Edit this map instead?')) return;
       if (saveTimer) push();
       var tk = ++opening;
       openKey = { tk: tk, id: m.id };
@@ -1657,7 +1730,7 @@
           return Promise.resolve(p.base || null).then(function (b) { if (tk === opening) return start(t, file, null, s, same, b); }).then(function () {
             openTitle = null;
             if (tk !== opening) return;
-            siteRef = r[3] ? baseOf(isCd(r[2]) && cdJs ? cdGraphml(r[2]) : sb && viaGraphml(r[2]) ? sbGraphml(r[2], sb.g0) : r[2], r[3]) : null;
+            siteRef = r[3] ? baseOf(isCd(r[2]) && cdJs ? cdGraphml(r[2]) : shared.sb && viaGraphml(r[2]) ? sbGraphml(r[2], shared.sb.g0) : r[2], r[3]) : null;
             map.title = m.title; document.getElementById('m2-title').textContent = m.title;
           });
         });
@@ -1673,7 +1746,7 @@
           var w2 = mine[m.id];
           if (tk !== opening || !w2) return;
           return fromSite({ path: w2.path, sha: w2.sha, saved: w2.saved, mine: true }).then(function () {
-            if (tk === opening && on && site && site.mine && site.id === m.id && src() !== site.saved) { dirty = true; changed(); }   // moves not on GitHub yet: saved now
+            if (tk === opening && on && site && site.mine && site.id === m.id && src() !== site.saved) { shared.dirty = true; changed(); }   // moves not on GitHub yet: saved now
           });
         });
       }
@@ -1690,7 +1763,7 @@
         delete unsaved[m.id];
         if (u && (g ? g.sha : null) === usha) return go(u.text, g ? { path: path, sha: g.sha, saved: g.text } : { path: path, sha: null }).then(function () {
           if (tk !== opening) return;
-          dirty = true; changed(); note();
+          shared.dirty = true; changed(); note();
         }, notLoaded);
         var gone = function () { if (tk === opening && u) warn('The moves not saved before could not be taken up: the map changed on GitHub meanwhile. This is its version there.'); };
         if (!g && sbMap(m)) return published.then(function (t) { return go(t, { path: path, sha: null }); }).then(gone).catch(notLoaded);   // an SBGN-ML map with no edited copy yet: the first save makes it
@@ -1710,10 +1783,11 @@
         if (!d || d.sha === g.sha || !on || site !== s0) return;
         learnt(p.path, d.sha);
         if (bank[p.id] === p) forget(p.id);
-        if (!edits && !dirty) { on = false; editMap(m); }   // the site's map, not the editor's own (V.current is that now)
+        if (!edits && !shared.dirty) { on = false; editMap(m); }   // the site's map, not the editor's own (V.current is that now)
       }).catch(function () {});
     }
     // the token: pasted once, checked against the repository, kept in this browser only (localStorage)
+    function __run24() {   // run at start, in order (__start)
     box.querySelector('#m2-ed-gh-go').addEventListener('click', function () {
       var v = box.querySelector('#m2-ed-gh-token').value.trim();
       if (!v) return;
@@ -1724,17 +1798,17 @@
         box.querySelector('#m2-ed-gh-token').value = '';
         upAll();   // the reader's maps kept in this browser go to GitHub
         if (on && site && site.mine) { buttons(); quiet(); if (site.pending) toGh(site); return; }   // a reader's map edited: sent (or its save taken up), then saved there
-        var moved = dirty || !!(site && site.pending && src() !== site.pub);   // moves kept in the browser count too
+        var moved = shared.dirty || !!(site && site.pending && src() !== site.pub);   // moves kept in the browser count too
         if (on && site) {   // connected while editing: go on from the repository's version, keeping the moves made
-          var keep = text;
+          var keep = shared.text;
           var s0 = site;   // (s0.base: the text editing started from)
-          Promise.all([api('/contents/' + s0.path + '?ref=main').then(function (r) { return r.status === 404 && sb ? {} : r.json(); }),   // an SBGN-ML map's edited copy not made yet: the first save makes it
-            api('/contents/' + s0.path + '?ref=main', { headers: { Accept: 'application/vnd.github.raw' } }).then(function (r) { return r.status === 404 && sb ? s0.base : r.text(); })])
+          Promise.all([api('/contents/' + s0.path + '?ref=main').then(function (r) { return r.status === 404 && shared.sb ? {} : r.json(); }),   // an SBGN-ML map's edited copy not made yet: the first save makes it
+            api('/contents/' + s0.path + '?ref=main', { headers: { Accept: 'application/vnd.github.raw' } }).then(function (r) { return r.status === 404 && shared.sb ? s0.base : r.text(); })])
             .then(function (f) {
               s0.sha = f[0].sha || null; s0.pending = false; buttons();
               if (f[1] !== s0.base) { stuck = true; warn('Connected, but the map in the repository is newer than the copy opened: moves not saved, nothing overwritten. Stop editing and open the map again.'); return; }
               if (s0.id) unkeep(s0.id);   // GitHub holds the map from now on
-              if (moved) { text = keep; dirty = true; push(); } else quiet();
+              if (moved) { shared.text = keep; shared.dirty = true; push(); } else quiet();
             });
         } else { buttons(); quiet(); }
       }).catch(function (e) {
@@ -1749,18 +1823,24 @@
       buttons(); quiet();
     });
     box.querySelector('#m2-ed-this').addEventListener('click', editShown);
+    }
     function gridPut(g) { Object.assign(gridSet, { shown: g.shown, snap: g.snap, step: g.step }); gridKeep(); inGrid.value = String(gridSet.step); gridButtons(); paint(); }   // an undo or redo of Grid, Snap or Grid size
     function gridDid(was) { V.setDid(gridPut, was, { shown: gridSet.shown, snap: gridSet.snap, step: gridSet.step }); }
     function gridShow() { var was = Object.assign({}, gridSet); gridSet.shown = !gridSet.shown; gridKeep(); gridButtons(); paint(); gridDid(was); }
     function gridSnap() { var was = Object.assign({}, gridSet); gridSet.snap = !gridSet.snap; gridKeep(); gridButtons(); gridDid(was); }
+    var inGrid, gsMenu;
+    function __run25() {   // run at start, in order (__start)
     box.querySelector('#m2-ed-grid').addEventListener('click', gridShow);
     box.querySelector('#m2-ed-snap').addEventListener('click', gridSnap);
-    var inGrid = box.querySelector('#m2-ed-gsize');
+    inGrid = box.querySelector('#m2-ed-gsize');
     inGrid.value = String(gridSet.step);
     inGrid.addEventListener('change', function () { var was = Object.assign({}, gridSet); gridSet.step = stepOk(parseFloat(inGrid.value)); gridKeep(); inGrid.value = String(gridSet.step); paint(); gridDid(was); });
     inGrid.addEventListener('keydown', function (e) { e.stopPropagation(); if (e.key === 'Enter' || e.key === 'Escape') { if (e.key === 'Escape') inGrid.value = String(gridSet.step); inGrid.blur(); } });
-    var gsMenu = null;
+    gsMenu = null;
+    }
     function gsClose() { if (gsMenu) { gsMenu.remove(); gsMenu = null; } }
+    var kwBox, kwBy;
+    function __run26() {   // run at start, in order (__start)
     box.querySelector('#m2-ed-gsdrop').addEventListener('click', function (e) {
       e.stopPropagation();
       if (gsMenu) { gsClose(); return; }
@@ -1785,7 +1865,8 @@
     // and its text is unchanged since it opened (every format's change passes through text). The menu stays until a kind
     // is chosen (done closes it); Escape or the left arrow close the list alone, back on its item; another key, a click
     // outside, a scroll or a resize close it
-    var kwBox = null, kwBy = null;
+    kwBox = null, kwBy = null;
+    }
     function kwClose(back) {
       if (!kwBox) return;
       var b = kwBox; kwBox = null; b.remove();
@@ -1795,13 +1876,13 @@
     }
     function kindWindow(r, items, done) {
       kwClose();
-      var t0 = text, m0 = map;
+      var t0 = shared.text, m0 = map;
       kwBox = document.createElement('div'); kwBox.className = 'm2-cx m2-ci'; kwBox.setAttribute('role', 'menu'); kwBox.setAttribute('aria-label', 'Change identity'); kwBy = r;
       items.forEach(function (q) {
         var b = document.createElement('button'); b.type = 'button';
         b.setAttribute('role', 'menuitemradio'); b.setAttribute('aria-checked', String(!!q.own)); b.disabled = !!q.own;
         b.textContent = q.name;
-        b.addEventListener('click', function (e) { e.stopPropagation(); kwClose(); if (done) done(); if (on && V.current === m0 && text === t0) q.go(); });
+        b.addEventListener('click', function (e) { e.stopPropagation(); kwClose(); if (done) done(); if (on && V.current === m0 && shared.text === t0) q.go(); });
         kwBox.appendChild(b);
       });
       document.body.appendChild(kwBox);
@@ -1818,6 +1899,7 @@
       return kwBox;
     }
     function subItem(f) { f.sub = true; return f; }   // a right-click item that opens its list beside the menu (the viewer keeps the menu)
+    function __run27() {   // run at start, in order (__start)
     document.addEventListener('pointerdown', function (e) { if (kwBox && !kwBox.contains(e.target) && !(kwBy && kwBy.by && kwBy.by.contains(e.target))) kwClose(); }, true);
     // the list's keys, before the editor's own (arrows would also move the selection): up and down walk its kinds, Enter
     // or Space choose, Escape or the left arrow close it; another key closes it and goes on
@@ -1835,32 +1917,40 @@
     }, true);
     window.addEventListener('resize', kwClose);
     document.addEventListener('scroll', function (e) { if (kwBox && !kwBox.contains(e.target)) kwClose(); }, true);
+    }
     function lateItem(it) { var out = [it]; out.late = true; return out; }   // a rarely used right-click item: after the common ones, above Delete
     // the Edit tab starts editing the map shown at once; a map that
     // cannot be edited says why
-    var picWait = false;   // the Edit window open before the map's picture is in (a reload in edit mode): started once it is
-    var switching = false;   // editing ends because another map was chosen (leaving): the Edit window stays
+    var picWait;
+    function __run28() {   // run at start, in order (__start)
+    picWait = false;   // the Edit window open before the map's picture is in (a reload in edit mode): started once it is
+    shared.switching = false;
+    }   // editing ends because another map was chosen (leaving): the Edit window stays
     function shown(any) {   // the Edit window open on a map: edit it, or say why not (also when another map is chosen); any: its picture failed
       if (!V.grid.classList.contains('m2-win-edit') || on) return;
       if (!any && V.img && V.img.style.visibility === 'hidden') { picWait = true; return; }   // editing starts on the picture as it is shown
       picWait = false;
-      if (text && dirty && !site) return resume();
+      if (shared.text && shared.dirty && !site) return resume();
       if (graphmlOf(V.current)) return editShown();
       buttons();
       shownWhole();   // nothing to edit here: nothing more to wait for
 
     }
+    function __run29() {   // run at start, in order (__start)
     document.querySelectorAll('#m2-rail .m2-ri[data-win="edit"]').forEach(function (b) { b.addEventListener('click', shown); });
     box.querySelector('#m2-ed-save').addEventListener('click', save);
-    box.querySelector('#m2-ed-undo').addEventListener('click', function () { if (on && !V.setFirst(true, mapTop(true))) back(undo, redo); });   // a setting changed after the map's last step first, as the keys
-    box.querySelector('#m2-ed-redo').addEventListener('click', function () { if (on && !V.setFirst(false, mapTop(false))) back(redo, undo); });
+    box.querySelector('#m2-ed-undo').addEventListener('click', function () { if (on && !V.setFirst(true, mapTop(true))) back(undo, shared.redo); });   // a setting changed after the map's last step first, as the keys
+    box.querySelector('#m2-ed-redo').addEventListener('click', function () { if (on && !V.setFirst(false, mapTop(false))) back(shared.redo, undo); });
     box.querySelector('#m2-ed-stop').addEventListener('click', function () { V.win = 'list'; V.railMark(); if (V.chosen) V.put(V.chosen); else stop(); });
+    }
     function resume() {   // back to a file from the computer with moves not saved
       V.current = map; on = true; V.grid.classList.add('m2-editing'); buttons(); histBack();
       document.getElementById('m2-title').textContent = map.title;
       x0 = y0 = 0; map.width = 0; render();
     }
+    function __run30() {   // run at start, in order (__start)
     box.querySelector('#m2-ed-back').addEventListener('click', resume);
+    }
     // silent editing (the Edit tab enters editing at once, switching to the list or elsewhere
     // leaves it): no Edit this map or Stop editing; leaving the Edit window, or closing the panel,
     // ends editing and shows the map of the site again (the edited drawing until the site catches up)
@@ -1872,12 +1962,14 @@
       }
       if (V.chosen) V.put(V.chosen, true); else stop();   // at the same place and zoom: nothing jumps
     }
-    window.addEventListener('beforeunload', function (e) { if (dirty) { if (saveTimer) push(); e.preventDefault(); e.returnValue = ''; } });
+    var HANDLE, BEND;
+    function __run31() {   // run at start, in order (__start)
+    window.addEventListener('beforeunload', function (e) { if (shared.dirty) { if (saveTimer) push(); e.preventDefault(); e.returnValue = ''; } });
     addEventListener('pagehide', function () {
       try {
         if (!(on && V.chosen)) return;
         var rec = { path: location.pathname, map: V.chosen.id,
-          n: selN.map(function (i) { return nodes2[i] && nodes2[i].id; }).filter(Boolean), e: selE.map(function (i) { return edges2[i] && edges2[i].id; }).filter(Boolean) };
+          n: shared.selN.map(function (i) { return nodes2[i] && nodes2[i].id; }).filter(Boolean), e: shared.selE.map(function (i) { return edges2[i] && edges2[i].id; }).filter(Boolean) };
         var put = function (r) { sessionStorage.setItem('atlas-edit-sel', JSON.stringify(r)); };
         // a site map on GitHub: its version there as last saved; none while a save is waiting or under way (its sha not known yet)
         var k = site && site.path && !site.mine && !site.pending && !saving && !saveTimer ? ghKnown(site) : null;
@@ -1889,7 +1981,8 @@
     // on screen: the selection as yEd shows it, over the drawing: a node
     // selected in a light grey with eight small black handles; an arc selected with black squares on its bend points and
     // its two ports; nothing else is drawn, so the map at rest with nothing selected looks as the original diagram
-    var HANDLE = 5, BEND = 5;   // sizes of the handles and of the squares on an arc, in the map's units (the same)
+    HANDLE = 5, BEND = 5;
+    }   // sizes of the handles and of the squares on an arc, in the map's units (the same)
     function sq() { return Math.max(2, BEND * V.z); }
     // line widths in the map's units too (zooming in or out keeps the relative size and thickness of
     // every mark, as the handles): as inline style, which wins over the stylesheet's width
@@ -1957,16 +2050,16 @@
       return rr(x, y, w, h, 0);
     }
     function shapeD(i) {   // the outline of node i as it is drawn now, a multimer's second outline with it
-      var b = liveC && liveC[i] ? liveC[i] : bx(i), n = nodes2[i];
+      var b = shared.liveC && shared.liveC[i] ? shared.liveC[i] : bx(i), n = nodes2[i];
       // the SBGN AF view draws an activity as a sharp rectangle: its outline takes that shape
       var sh = drawnShape(i), d = outlineD(sh, b[0], b[1], b[2], b[3]);
       if (sh === n.shape && n.shape.props.mcount === '2') d = outlineD(n.shape, b[0] + 6, b[1] + 6, b[2], b[3]) + d;
       return d;
     }
     function drawnShape(i, still) {   // a node posed during a drag (live.js posed) with its way there, a tag's orientation (still: at rest)
-      var p = !still && poseNow && poseNow[i];
+      var p = !still && shared.poseNow && shared.poseNow[i];
       if (p && p.way) return { kind: nodes2[i].shape.kind, props: Object.assign({}, nodes2[i].shape.props, { orientation: p.way }) };
-      return afSbgn && AF_KINDS.test(nodes2[i].shape.kind) ? { kind: 'Macromolecule', props: { radius: '0' } } : nodes2[i].shape;
+      return shared.afSbgn && AF_KINDS.test(nodes2[i].shape.kind) ? { kind: 'Macromolecule', props: { radius: '0' } } : nodes2[i].shape;
     }
     function cut(port, outer, b) {   // where the arc from outer to its port inside the box b meets the box's edge
       if (!(port[0] > b[0] && port[0] < b[0] + b[2] && port[1] > b[1] && port[1] < b[1] + b[3])) return port;
@@ -2032,13 +2125,16 @@
     }
     // the lines lit by the selection (the arcs selected; on a CellDesigner map the whole reaction of a main line or glyph
     // selected, an added reactant or product alone, as CellDesigner selects them) and the glyphs lit with them
-    var MAIN = /^(.*)\|(a|b|r\d+|p\d+)$/;
+    var MAIN;
+    function __run32() {   // run at start, in order (__start)
+    MAIN = /^(.*)\|(a|b|r\d+|p\d+)$/;
+    }
     function lit() {
-      var hlE = new Set(selE), glyphs = new Set();
-      if (cd) {
+      var hlE = new Set(shared.selE), glyphs = new Set();
+      if (shared.cd) {
         var rx = new Set();
-        selE.forEach(function (k) { var m = edges2[k].id.match(/^(.*)\|[ab]$/); if (m) rx.add(m[1]); });
-        selN.forEach(function (i) { var m = nodes2[i].id.match(/^(.*)\|proc$/); if (m) rx.add(m[1]); });
+        shared.selE.forEach(function (k) { var m = edges2[k].id.match(/^(.*)\|[ab]$/); if (m) rx.add(m[1]); });
+        shared.selN.forEach(function (i) { var m = nodes2[i].id.match(/^(.*)\|proc$/); if (m) rx.add(m[1]); });
         if (rx.size) {
           edges2.forEach(function (e, k) { var m = e.id.match(MAIN); if (m && rx.has(m[1])) hlE.add(k); });
           nodes2.forEach(function (n, i) { var m = n.id.match(/^(.*)\|proc$/); if (m && rx.has(m[1])) glyphs.add(i); });
@@ -2050,24 +2146,24 @@
     // side): an end square of a lit line dragged; it snaps to the nearest of the five, written as the port's offset
     // from the node's centre (yEd's sx, sy or tx, ty); on a CellDesigner map cd_edit makes it CellDesigner's port
     // (none for the centre, N, S, W, E). A process glyph's main lines are not moved this way; a modifier's end there goes round it (procSpots)
-    function partSel() { return part && !selN.length && !selP.length && selE.indexOf(part.k) >= 0 ? part : null; }   // the part of a line selected alone that the keys move (marked)
+    function partSel() { return shared.part && !shared.selN.length && !shared.selP.length && shared.selE.indexOf(shared.part.k) >= 0 ? shared.part : null; }   // the part of a line selected alone that the keys move (marked)
     function markSize() { return Math.max(1.5, 4 * V.z); }   // the four marks round a selected bend point or end, in screen px
     function markReach() { return markSize() + Math.max(1, 2 * V.z) / 2; }   // from their centre to their outer edge
     function portAt(P) {
       // a line selected alone: its ends taken anywhere within the square their four marks cover (the end pressed before
       // first), so a press a little off an end never falls on the node and begins a new line from it; the line's own
       // bend point under the press keeps the press
-      var R = 6 / V.z, L = lit(), best = null, dB = R, ps = partSel(), wide = !selN.length && !selP.length, hp = wide && L.e.size && hit(P);
+      var R = 6 / V.z, L = lit(), best = null, dB = R, ps = partSel(), wide = !shared.selN.length && !shared.selP.length, hp = wide && L.e.size && hit(P);
       L.e.forEach(function (k) {
         var e = edges2[k];
         if (e.s == null || e.t == null || !e.path) return;
         var all = ports(k);
         [[0, e.s], [all.length - 1, e.t]].forEach(function (q, end) {
-          if (cd && /\|proc$/.test(nodes2[q[1]].id) && !procSpots({ k: k, end: end, n: q[1] })) return;   // a glyph's main lines stay
+          if (shared.cd && /\|proc$/.test(nodes2[q[1]].id) && !procSpots({ k: k, end: end, n: q[1] })) return;   // a glyph's main lines stay
           var d = Math.hypot(all[q[0]][0] - P[0], all[q[0]][1] - P[1]), hb = !!hubEnd(k, end), b = hb && bx(q[1]);   // an end at a process's or gate's port goes with the process, or to another node
           if (hb && P[0] >= b[0] && P[0] <= b[0] + b[2] && P[1] >= b[1] && P[1] <= b[1] + b[3]) return;   // a press on the process itself moves the process
           var sq = Math.max(Math.abs(all[q[0]][0] - P[0]), Math.abs(all[q[0]][1] - P[1])) * V.z;
-          if (wide && selE.indexOf(k) >= 0 && !(hp && hp.e === k && hp.p != null) && sq <= markReach() + 2)
+          if (wide && shared.selE.indexOf(k) >= 0 && !(hp && hp.e === k && hp.p != null) && sq <= markReach() + 2)
             d = ps && ps.port && ps.k === k && ps.port.end === end ? 0 : sq / 1e4;   // within the marks' square: before any plain hit, the nearest end
           if (d <= dB) { dB = d; best = { k: k, end: end, n: q[1], to: null, hub: hb }; }
         });
@@ -2080,7 +2176,7 @@
     // for any other end
     function procSpots(pp) { return pp.end && /\|m\d+$/.test(edges2[pp.k].id) ? procPlaces(pp.n) : null; }
     function procPlaces(n) {   // the six places round process glyph n, from its centre (cdcreate.js's landing too); null for any other node
-      var m = cd && nodes2[n].id.match(/^(.*)\|proc$/);
+      var m = shared.cd && nodes2[n].id.match(/^(.*)\|proc$/);
       if (!m) return null;
       var ka = edges2.findIndex(function (e) { return e.id === m[1] + '|a'; });
       if (ka < 0) return null;
@@ -2100,10 +2196,12 @@
       if (end) return e.arr[1] === 'none' ? 'in' : null;
       return !(e.t != null && nodes2[e.t].hub) && e.arr[0] === 'none' && e.arr[1] === 'none' && !nodes2[n].eq ? 'in' : 'out';
     }
-    var hpMemo = null;
+    function __run33() {   // run at start, in order (__start)
+    shared.hpMemo = null;
+    }
     function hubPorts() {   // the ports as the renderer draws them, per node id: [port one, port two, anything coming in]
-      if (!hpMemo || hpMemo[0] !== text) hpMemo = [text, window.yrender.render(docText === text ? doc : text, {}).ports];   // the editor's own drawing sets it (drawGraphml): this only before it
-      return hpMemo[1];
+      if (!shared.hpMemo || shared.hpMemo[0] !== shared.text) shared.hpMemo = [shared.text, window.yrender.render(docText === shared.text ? doc : shared.text, {}).ports];   // the editor's own drawing sets it (drawGraphml): this only before it
+      return shared.hpMemo[1];
     }
     function hubSides(pp) {   // a modifier's places at a process or gate: the middles of the two sides off its antennas
       var n = nodes2[pp.n];
@@ -2155,7 +2253,10 @@
     // is the axis the outline runs closer to there (x on a top or bottom side, y on a left or right side; on a curve
     // switching where it runs at 45 degrees); the other is read from the outline. A run of one axis ends at that switch or
     // at a corner. The outline is the drawn one (outlineD), flattened into a polygon with the 45 degree points kept.
-    var rimMemo = new Map();
+    var rimMemo;
+    function __run34() {   // run at start, in order (__start)
+    rimMemo = new Map();
+    }
     function rim(n) { return rimOf(n, bx(n)); }   // node n's outline round its centre, a closed polygon
     function rimOf(n, b, still) {   // the same at box b
       var sh = drawnShape(n, still), key = sh.kind + JSON.stringify(sh.props) + '|' + b[2] + '|' + b[3], R = rimMemo.get(key);
@@ -2292,8 +2393,11 @@
     // GraphML, SBGN-ML and CellDesigner maps: on a CellDesigner map
     // an end at a species goes to another species or complex, never the process glyph's end, and cd_edit rewrites the
     // reaction's participant in every place the file keeps it
-    var EPN = /^(Macromolecule|SimpleChemical|Complex|NucleicAcidFeature|UnspecifiedEntity|EmptySet|PerturbingAgent)$/;
-    var MODS = /^(white_circle|white_delta|white_delta_bar|t_shape|crows_foot_one|white_diamond)$/;
+    var EPN, MODS;
+    function __run35() {   // run at start, in order (__start)
+    EPN = /^(Macromolecule|SimpleChemical|Complex|NucleicAcidFeature|UnspecifiedEntity|EmptySet|PerturbingAgent)$/;
+    MODS = /^(white_circle|white_delta|white_delta_bar|t_shape|crows_foot_one|white_diamond)$/;
+    }
     function roleOf(i) {   // 'epn', 'proc', 'gate', 'pheno', 'tag' (a tag or a submap's terminal), or null (a compartment, a member inside a complex, a decoration)
       var n = nodes2[i];
       if (n.comp || (n.up != null && !nodes2[n.up].comp)) return null;
@@ -2305,7 +2409,7 @@
       if (V.level !== 'full') return false;
       var e = edges2[k], a = e.arr, other = end ? e.s : e.t, r = roleOf(i), ro = roleOf(other);
       var hub = function (x) { return x === 'proc' || x === 'gate'; };
-      if (cd) {   // a reaction's end at a species, to another species or complex (no member, no compartment, no glyph or gate, none
+      if (shared.cd) {   // a reaction's end at a species, to another species or complex (no member, no compartment, no glyph or gate, none
         // the reaction has already); its other end at a species or at the reaction's glyph, never a gate's line (cd_edit rewire)
         var nd = nodes2[i], here = end ? e.t : e.s, proc = function (x) { return /\|(proc|g\d*)$/.test(nodes2[x].id); }, rid = e.id.slice(0, e.id.lastIndexOf('|') + 1);
         if (edges2.some(function (f) { return f.id.indexOf(rid) === 0 && (f.s === i || f.t === i); })) return false;
@@ -2327,7 +2431,7 @@
     }
     function takes(k, end, i) {   // takes0, and SBGN PD's table for the line as it would be (pdLimit)
       if (!takes0(k, end, i)) return false;
-      if (cd) return true;
+      if (shared.cd) return true;
       var e = edges2[k], s = end ? e.s : i, t = end ? i : e.t, a = e.arr[1];
       return !pdLimit(s, t, a === 'delta' ? 'production' : a === 'white_circle' ? 'catalysis' : a === 'none' ? (roleOf(t) === 'proc' ? 'consumption' : 'logic arc') : 'modulation') && !moveLimit(k, end, i);
     }
@@ -2356,13 +2460,13 @@
       b = bx(pp.n); pp.free = true; pp.to = [P[0] - b[0] - b[2] / 2, P[1] - b[1] - b[3] / 2];
     }
     function reconnect(pp) {   // the end of arc pp.k put on node pp.n2 at offset pp.to, one undo step; the line's end square no longer pressed
-      part = null; frozen = true;   // the copy stays until the map is drawn again (no flash of the old line)
+      shared.part = null; shared.frozen = true;   // the copy stays until the map is drawn again (no flash of the old line)
       setPorts([pp], { k: pp.k, att: pp.end ? 'target' : 'source', id: nodes2[pp.n2].id.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;') });
     }
     function setPort(pp, merge) { setPorts([pp], null, merge); }
     function setPorts(list, re, merge) {   // ends of lines put at their offsets (pp: k, end, to), one undo step (merge: a key's steps in a row one step); re: { k, att, id }, that edge's source or target set too
       var all = Array.prototype.slice.call(doc.getElementsByTagNameNS(Y, 'Path')), by = new Map();
-      if (re && (text.match(/<edge\b[^>]*>/g) || []).length !== edges2.length) { frozen = false; warn('The line could not be moved to another node: the file is not read edge for edge.'); unshift(); paint(); return; }
+      if (re && (shared.text.match(/<edge\b[^>]*>/g) || []).length !== edges2.length) { shared.frozen = false; warn('The line could not be moved to another node: the file is not read edge for edge.'); unshift(); paint(); return; }
       list.forEach(function (pp) {
         var e = edges2[pp.k], a = pp.end ? ['tx', 'ty'] : ['sx', 'sy'], no = spotNo(pp, pp.to), vals = [fmt(pp.to[0]), fmt(pp.to[1])];
         if (no) { a = a.concat('spot'); vals.push(String(no)); }
@@ -2373,10 +2477,10 @@
       if (!by.size) { unshift(); paint(); return; }
       remember(!!merge);
       var c = -1, ce = -1;
-      if (re) text = text.replace(/<edge\b[^>]*>/g, function (tag) {
+      if (re) shared.text = shared.text.replace(/<edge\b[^>]*>/g, function (tag) {
         return ++ce !== re.k ? tag : tag.replace(new RegExp('(\\s' + re.att + '\\s*=\\s*)("[^"]*"|\'[^\']*\')'), function (m, p1) { return p1 + '"' + re.id + '"'; });
       });
-      text = text.replace(/<y:Path\b[^>]*>/g, function (tag) {
+      shared.text = shared.text.replace(/<y:Path\b[^>]*>/g, function (tag) {
         var kv = by.get(++c);
         if (!kv) return tag;
         kv.forEach(function (q) {
@@ -2385,7 +2489,7 @@
         });
         return tag;
       });
-      parse(); dirty = true; render(); paint(); changed();
+      parse(); shared.dirty = true; render(); paint(); changed();
     }
     function paint() {
       palShow();
@@ -2399,8 +2503,8 @@
       // arcs selected, or holding a bend point selected: drawn blue, then their bends as squares on top
       // a bend point selected alone, the arc not highlighted (as yEd): four small black squares round
       // the point, the lines through it seen in the gap between them (measured on yEd: squares 4 units, gap 2 units)
-      selP.forEach(function (pi) {
-        if (selE.some(function (k) { return edges2[k].pts.indexOf(pi) >= 0; })) return;
+      shared.selP.forEach(function (pi) {
+        if (shared.selE.some(function (k) { return edges2[k].pts.indexOf(pi) >= 0; })) return;
         var q = pt(pi), a = markSize(), g = markReach() - a, X = sx(q[0]), Y3 = sy(q[1]);
         [[-1, -1], [1, -1], [-1, 1], [1, 1]].forEach(function (c) {
           over.push('<rect class="m2-ed-bend"' + sw(0.5) + ' x="' + f1(c[0] < 0 ? X - g - a : X + g) + '" y="' + f1(c[1] < 0 ? Y3 - g - a : Y3 + g) + '" width="' + f1(a) + '" height="' + f1(a) + '"/>');
@@ -2416,7 +2520,7 @@
       // own group (a CellDesigner line's, not its white halo's), or the copy following a move; a glyph lit the same.
       // Before the editor's drawing is in the page, a thin blue line over the map
       var blueG = function (g) {
-        var cs = copies.filter(function (c) { return c[1] === g; });
+        var cs = shared.copies.filter(function (c) { return c[1] === g; });
         if (cs.length) cs.forEach(function (c) { c[0].classList.add('m2-ed-blue'); }); else g.classList.add('m2-ed-blue');
       };
       hlE.forEach(function (k) {
@@ -2434,8 +2538,8 @@
       hlE.forEach(function (k) {
         var e = edges2[k];
         if (e.s == null || e.t == null) return;
-        var all = ports(k, pk0), grouped = cd && main.test(e.id);   // a reaction's own lines: no squares in its glyph
-        var pj = !drag && part && part.k === k && !selN.length && !selP.length ? (part.port ? (part.port.end ? all.length - 1 : 0) : e.pts.indexOf(part.p) + 1) : -1;
+        var all = ports(k, pk0), grouped = shared.cd && main.test(e.id);   // a reaction's own lines: no squares in its glyph
+        var pj = !drag && shared.part && shared.part.k === k && !shared.selN.length && !shared.selP.length ? (shared.part.port ? (shared.part.port.end ? all.length - 1 : 0) : e.pts.indexOf(shared.part.p) + 1) : -1;
         all.forEach(function (q, j) {
           var sqAt = function (n) { return glyphs.has(n) || /\|proc$/.test(nodes2[n].id); };   // an end at the reaction's square stays (portAt): no square drawn there
           if (grouped && ((j === 0 && sqAt(e.s)) || (j === all.length - 1 && sqAt(e.t)))) return;
@@ -2483,12 +2587,12 @@
       });
       // nodes selected: the eight handles round the box, in the map's units, so they grow and shrink with the zoom as
       // yEd's: 5 units wide, their centres 3.3 units outside the box (as measured on yEd); no fill over the node
-      selN.forEach(function (i) { over.push(handleMarks(bx(i), 'm2-ed-handle')); });
+      shared.selN.forEach(function (i) { over.push(handleMarks(bx(i), 'm2-ed-handle')); });
       // while a drag runs: a thin grey outline of where it goes (or the area being selected), gone on release
       if (drag && (drag.dx || drag.dy) && !gN) {   // no drawing to move yet: where it goes, as an outline
-        var dx = drag.dx, dy = drag.dy, moving = new Set(), ps = new Set(selP);
-        selN.forEach(function (i) { moving.add(i); nodes2[i].inside.forEach(function (c) { moving.add(c); }); });
-        selE.forEach(function (k) { edges2[k].pts.forEach(function (p) { ps.add(p); }); });
+        var dx = drag.dx, dy = drag.dy, moving = new Set(), ps = new Set(shared.selP);
+        shared.selN.forEach(function (i) { moving.add(i); nodes2[i].inside.forEach(function (c) { moving.add(c); }); });
+        shared.selE.forEach(function (k) { edges2[k].pts.forEach(function (p) { ps.add(p); }); });
         moving.forEach(function (i) {
           var b = boxOf(i);
           over.push('<rect class="m2-ed-ghost" x="' + sx(b[0] + dx) + '" y="' + sy(b[1] + dy) + '" width="' + b[2] * V.z + '" height="' + b[3] * V.z + '"/>');
@@ -2504,7 +2608,7 @@
       }
       // the square marks magenta on a CellDesigner map, as in CellDesigner, so a CellDesigner map is
       // recognised while editing; black on a GraphML map, as in yEd
-      overlay.classList.toggle('m2-ed-cd', !!cd);
+      overlay.classList.toggle('m2-ed-cd', !!shared.cd);
       svMarks(over);   // a state variable selected (create.js)
       linkPaint(out);   // an arc being drawn (create.js)
       overlay.innerHTML = out.concat(over).join('');
@@ -2527,11 +2631,11 @@
       // the arc, see its bends, then click the bend wanted: the arc is the hint), else the nearest (else a nearby bend is
       // taken and the wrong arc dragged)
       var dB = Infinity, ofArc = new Set();
-      selE.forEach(function (k) { edges2[k].pts.forEach(function (q) { ofArc.add(q); }); });
+      shared.selE.forEach(function (k) { edges2[k].pts.forEach(function (q) { ofArc.add(q); }); });
       points.forEach(function (p, i) {
         var dx = Math.abs(num(p, 'x') - P[0]), dy = Math.abs(num(p, 'y') - P[1]);
         if (dx > R || dy > R) return;
-        var d = Math.hypot(dx, dy) - (selP.indexOf(i) >= 0 ? 4 * R : ofArc.has(i) ? 2 * R : 0);
+        var d = Math.hypot(dx, dy) - (shared.selP.indexOf(i) >= 0 ? 4 * R : ofArc.has(i) ? 2 * R : 0);
         if (d < dB) { dB = d; best = { p: i }; }
       });
       if (best) return best;
@@ -2541,11 +2645,11 @@
         var h = { n: i, area: b[2] * b[3] };
         // a process glyph is not an item of its own (in CellDesigner it is not selectable, part of
         // the link): a click on it is a click on its reaction's main line, no node handles; a drag on it moves the map
-        var gm = cd && n.id.match(/^(.*)\|proc$/);
+        var gm = shared.cd && n.id.match(/^(.*)\|proc$/);
         if (gm) { var ga = edges2.findIndex(function (q) { return q.id === gm[1] + '|a'; }); if (ga >= 0 && !best) best = { e: ga, glyph: true, area: 0 }; return; }
-        if (afSbgn && inComplex(i)) return;   // the SBGN AF view: a complex's members not drawn, the complex taken whole
+        if (shared.afSbgn && inComplex(i)) return;   // the SBGN AF view: a complex's members not drawn, the complex taken whole
         // a holder (anything with contents, and a compartment always, empty or not) only where no node or line is hit
-        if ((n.kids.length || n.comp) && !(afSbgn && n.shape.kind === 'Complex')) { if (!group || h.area < group.area) group = h; }
+        if ((n.kids.length || n.comp) && !(shared.afSbgn && n.shape.kind === 'Complex')) { if (!group || h.area < group.area) group = h; }
         else if (!best || h.area < best.area) best = h;
       });
       if (best) return best;
@@ -2558,7 +2662,8 @@
       return best || group;
     }
     function editing(e) { return on && V.current === map && !e.target.closest('.m2-ctrl, .m2-info, .m2-ed-type'); }   // a press in the name box is the box's
-    var tap = null;
+    function __run36() {   // run at start, in order (__start)
+    shared.tap = null;
     // edit mode is view mode plus the selection (the same gestures as in view mode):
     // two-finger scrolling moves the map, a pinch zooms (the viewer's wheel handler); a drag on empty
     // space or on an item not selected moves the map, as in the viewer; a click selects (on empty space: clears the
@@ -2567,7 +2672,7 @@
     // to the selection; a right click opens the viewer's menu, as outside edit mode
     V.view.addEventListener('pointerdown', function (e) {
       keyGuides = null; keyFlush();
-      tap = null;
+      shared.tap = null;
       if (!editing(e)) return;
       var P0 = at(e);
       if (e.button === 2 || (e.button === 0 && e.ctrlKey && /Mac/.test(navigator.platform))) {   // a right click: the viewer's menu
@@ -2583,7 +2688,7 @@
         e.stopImmediatePropagation(); e.preventDefault();
         V.view.setPointerCapture(e.pointerId); V.view.focus({ preventScroll: true });
         drag = { port: pp, x: P[0], y: P[1], dx: 0, dy: 0, cx: e.clientX, cy: e.clientY }; mv = null;
-        part = { k: pp.k, port: pp }; paint(); return;
+        shared.part = { k: pp.k, port: pp }; paint(); return;
       }
       if (!(!e.shiftKey && handleAt(P, true)) && svDown(e, P, h)) return;   // a state variable before its node (create.js); a node's handle over it first
       // an edge of a compartment, or a handle of one selected: a drag resizes it (compartments are
@@ -2597,15 +2702,15 @@
       if (rz) {
         e.stopImmediatePropagation(); e.preventDefault();
         V.view.setPointerCapture(e.pointerId); V.view.focus({ preventScroll: true });
-        selN = [rz.c]; selP = []; selE = [];
+        shared.selN = [rz.c]; shared.selP = []; shared.selE = [];
         drag = { x: P[0], y: P[1], dx: 0, dy: 0, rs: { c: rz.c, s: rz.s, b0: boxOf(rz.c), cx: e.clientX, cy: e.clientY } };
         mv = null; paint(); return;
       }
       // Shift on a node selected: a drag moves the selection by itself, out of what holds it and without what it holds
       // (regroup); a click with no move still takes it out of the selection, as Shift with a click does (release)
       // (in Layout only a member that holds nothing, not in a complex: what holds what never changes there; else a plain drag)
-      var shiftOn = e.shiftKey && !!h && h.n != null && !h.glyph && selN.indexOf(h.n) >= 0;
-      var alone = shiftOn && (full() || selN.every(function (i) { return !nodes2[i].kids.length && !inComplex(i); }));
+      var shiftOn = e.shiftKey && !!h && h.n != null && !h.glyph && shared.selN.indexOf(h.n) >= 0;
+      var alone = shiftOn && (full() || shared.selN.every(function (i) { return !nodes2[i].kids.length && !inComplex(i); }));
       if (e.shiftKey && !shiftOn) {   // Shift with a drag from anywhere but the selection (inside a compartment or a complex too): an
         // area added to the selection; Shift with a click (no move) adds or takes out what is under it (release)
         e.stopImmediatePropagation(); e.preventDefault();
@@ -2620,19 +2725,19 @@
           V.view.setPointerCapture(e.pointerId); V.view.focus({ preventScroll: true });
           band = { x: P[0], y: P[1], x2: P[0], y2: P[1], h: h, add: false, cx: e.clientX, cy: e.clientY }; paint(); return;
         }
-        tap = { h: h, shift: e.shiftKey, x: e.clientX, y: e.clientY }; V.view.focus({ preventScroll: true });
+        shared.tap = { h: h, shift: e.shiftKey, x: e.clientX, y: e.clientY }; V.view.focus({ preventScroll: true });
       };
       if (!h) return tapped();
       if (!alone && linkDown(e, P, h)) return;   // an arc's sign picked: a drag from an entity or a process draws it (create.js; a press off a node only where the format's part says the line stands for its process)
       if (h.glyph) return tapped();   // a glyph is not dragged: a drag on it moves the map, a click selects its reaction
-      var list = h.p != null ? selP : h.e != null ? selE : selN, k = h.p != null ? h.p : h.e != null ? h.e : h.n, there = list.indexOf(k) >= 0;
+      var list = h.p != null ? shared.selP : h.e != null ? shared.selE : shared.selN, k = h.p != null ? h.p : h.e != null ? h.e : h.n, there = list.indexOf(k) >= 0;
       // a bend point of an arc selected is a part of that connector: dragged at once, as its ends, the arc staying
       // selected after (as yEd does for connectors: the whole connector selected, its
       // parts move with the next press); a molecule still needs its first click
       var keepE = null;
-      if (!there && h.p != null && selE.some(function (q) { return edges2[q].pts.indexOf(h.p) >= 0; })) {
-        part = { k: selE.find(function (q) { return edges2[q].pts.indexOf(h.p) >= 0; }), p: h.p };
-        keepE = selE.slice(); selN = []; selE = []; selP = [h.p]; list = selP; there = true;
+      if (!there && h.p != null && shared.selE.some(function (q) { return edges2[q].pts.indexOf(h.p) >= 0; })) {
+        shared.part = { k: shared.selE.find(function (q) { return edges2[q].pts.indexOf(h.p) >= 0; }), p: h.p };
+        keepE = shared.selE.slice(); shared.selN = []; shared.selE = []; shared.selP = [h.p]; list = shared.selP; there = true;
       }
       // a first click on a bend point of a line not selected selects the whole line, as a click anywhere on it (consistent:
       // a line selected first, its bend points then moved with the next press);
@@ -2646,14 +2751,15 @@
       if (!there) return tapped();
       e.stopImmediatePropagation(); e.preventDefault();
       V.view.setPointerCapture(e.pointerId); V.view.focus({ preventScroll: true });
-      drag = { x: P[0], y: P[1], dx: 0, dy: 0, p: h.p != null && selP.indexOf(h.p) >= 0 ? h.p : null, guides: [],
-               n: h.n != null && selN.indexOf(h.n) >= 0 ? h.n : null, e: h.e != null && selE.indexOf(h.e) >= 0 ? h.e : null, keepE: keepE,
+      drag = { x: P[0], y: P[1], dx: 0, dy: 0, p: h.p != null && shared.selP.indexOf(h.p) >= 0 ? h.p : null, guides: [],
+               n: h.n != null && shared.selN.indexOf(h.n) >= 0 ? h.n : null, e: h.e != null && shared.selE.indexOf(h.e) >= 0 ? h.e : null, keepE: keepE,
                sx0: e.clientX, sy0: e.clientY, alone: alone, away: { x0: 0, x1: 0, y0: 0, y1: 0 } };
       // an arc grabbed anywhere and dragged makes a new bend point there (as yEd); a click selects it
       if (h.e != null && !e.shiftKey) drag.grab = { k: h.e, P: P, sx: e.clientX, sy: e.clientY };
       mv = moving(alone);
       paint();
     }, true);
+    }
     // guides for a bend point (as yEd's for an L-shaped bend): the
     // bend pressed snaps when one of its two segments is nearly level or upright, and a segment so lined up is drawn
     // as a thick grey line while the drag runs (both for an L)
@@ -2707,26 +2813,26 @@
       var t = L ? Math.max(0, Math.min(1, ((P[0] - a[0]) * dx + (P[1] - a[1]) * dy) / L)) : 0;
       var Q = [Math.round((a[0] + dx * t) * 1000) / 1000, Math.round((a[1] + dy * t) * 1000) / 1000];
       var tag = '<y:Point x="' + fmt(Q[0]) + '" y="' + fmt(Q[1]) + '"/>', at = j - 1;
-      var nth = function (re, n) { var m, c = -1; re.lastIndex = 0; while ((m = re.exec(text))) if (++c === n) return m; return null; };
-      var indent = function (pos) { var s0 = text.lastIndexOf('\n', pos - 1) + 1, w = text.slice(s0, pos).match(/^[ \t]*/)[0]; return w; };
-      var m, before = text;
+      var nth = function (re, n) { var m, c = -1; re.lastIndex = 0; while ((m = re.exec(shared.text))) if (++c === n) return m; return null; };
+      var indent = function (pos) { var s0 = shared.text.lastIndexOf('\n', pos - 1) + 1, w = shared.text.slice(s0, pos).match(/^[ \t]*/)[0]; return w; };
+      var m, before = shared.text;
       if (at < e.pts.length) {   // before a bend the arc has: on a line of its own, as that one
         m = nth(/<y:Point\s[^>]*>/g, e.pts[at]);
-        text = text.slice(0, m.index) + tag + '\n' + indent(m.index) + text.slice(m.index);
+        shared.text = shared.text.slice(0, m.index) + tag + '\n' + indent(m.index) + shared.text.slice(m.index);
       } else if (e.pts.length) {   // after its last bend
         m = nth(/<y:Point\s[^>]*>/g, e.pts[e.pts.length - 1]);
         var end = m.index + m[0].length;
-        text = text.slice(0, end) + '\n' + indent(m.index) + tag + text.slice(end);
+        shared.text = shared.text.slice(0, end) + '\n' + indent(m.index) + tag + shared.text.slice(end);
       } else {   // its first bend: inside the y:Path, opened if it closes in itself
         var paths = Array.prototype.slice.call(doc.getElementsByTagNameNS(Y, 'Path'));
         m = nth(/<y:Path[\s>\/][^>]*>/g, paths.indexOf(e.path));
         if (!m) return null;
         var w = indent(m.index), end2 = m.index + m[0].length;
-        text = /\/>$/.test(m[0])
-          ? text.slice(0, m.index) + m[0].replace(/\s*\/>$/, '>') + '\n' + w + '  ' + tag + '\n' + w + '</y:Path>' + text.slice(end2)
-          : text.slice(0, end2) + '\n' + w + '  ' + tag + text.slice(end2);
+        shared.text = /\/>$/.test(m[0])
+          ? shared.text.slice(0, m.index) + m[0].replace(/\s*\/>$/, '>') + '\n' + w + '  ' + tag + '\n' + w + '</y:Path>' + shared.text.slice(end2)
+          : shared.text.slice(0, end2) + '\n' + w + '  ' + tag + shared.text.slice(end2);
       }
-      var keep = text; text = before; remember(false); text = keep;
+      var keep = shared.text; shared.text = before; remember(false); shared.text = keep;
       parse();
       return { p: edges2[k].pts[at], at: Q, k: k + 1 };
     }
@@ -2735,30 +2841,34 @@
     // On a CellDesigner map the glyph then sits midway on the segment it is on, as CellDesigner puts it
     function unbend(list) {
       list = list.slice().sort(function (a, b) { return b - a; });   // last first, so the earlier ones keep their place in the text
-      var before = text;
+      var before = shared.text;
       list.forEach(function (pi) {
         var re = /<y:Point\s[^>]*>/g, m, c = -1;
-        while ((m = re.exec(text))) if (++c === pi) break;
+        while ((m = re.exec(shared.text))) if (++c === pi) break;
         if (!m) return;
         var a = m.index, b = m.index + m[0].length;
-        var s0 = text.lastIndexOf('\n', a - 1) + 1;
-        if (/^[ \t]*$/.test(text.slice(s0, a)) && text[b] === '\n') { a = s0; b += 1; }   // on a line of its own: the line goes
-        text = text.slice(0, a) + text.slice(b);
+        var s0 = shared.text.lastIndexOf('\n', a - 1) + 1;
+        if (/^[ \t]*$/.test(shared.text.slice(s0, a)) && shared.text[b] === '\n') { a = s0; b += 1; }   // on a line of its own: the line goes
+        shared.text = shared.text.slice(0, a) + shared.text.slice(b);
       });
-      if (text === before) return false;
-      var keep = text; text = before; remember(false); text = keep;
-      parse(); selN = []; selP = []; selE = []; keyGuides = null; dirty = true;
+      if (shared.text === before) return false;
+      var keep = shared.text; shared.text = before; remember(false); shared.text = keep;
+      parse(); shared.selN = []; shared.selP = []; shared.selE = []; keyGuides = null; shared.dirty = true;
       render(); paint(); changed();
       return true;
     }
-    var rclick = null;   // where the last right click was, for the menu's Remove bend point
+    var rclick;
+    function __run37() {   // run at start, in order (__start)
+    rclick = null;
+    }   // where the last right click was, for the menu's Remove bend point
     // the drawing of the file as it is now, when the renderer has drawn it (not before the first move: the picture is then still the one editing started on)
-    function nowSvg() { return lastFor && !lastFor[3] && lastFor[0] === text && lastFor[1] === (cd ? cd.now : null) ? lastSvg : null; }
+    function nowSvg() { return lastFor && !lastFor[3] && lastFor[0] === shared.text && lastFor[1] === (shared.cd ? shared.cd.now : null) ? lastSvg : null; }
     // while a redraw runs, the last drawing of this map (one move behind for a moment) in place of the site's picture
     function shownSvg() { return nowSvg() || (lastFor && !lastFor[3] && site && lastFor[2] === site.id ? lastSvg : null); }
     // the map being edited as it is now, for the viewer's menu (the download is what is on the screen;
     // else Download CellDesigner XML gives the site's file without the moves just made)
-    window.m2EditNow = function () { return on && site && site.id && text ? { id: site.id, text: src(), svg: shownSvg(), file: name } : null; };
+    function __run38() {   // run at start, in order (__start)
+    window.m2EditNow = function () { return on && site && site.id && shared.text ? { id: site.id, text: src(), svg: shownSvg(), file: name } : null; };
     window.m2EditTurn = function () {   // the right-click menu's Turn process over a process or logic gate
       if (!on || V.current !== map || !rclick || !window.yrender || onOwnMenu()) return null;
       var h = hit(rclick);
@@ -2771,19 +2881,21 @@
     // it with the main one, cd_edit.makeMain on the GraphML (the network stays: layout editing too); place() writes the
     // participants and CellDesigner's process square goes to the middle of the new main line. One undo step.
     window.m2EditMain = function () {
-      if (!on || V.current !== map || !rclick || !cd || !window.cd_edit || onOwnMenu()) return null;
+      if (!on || V.current !== map || !rclick || !shared.cd || !window.cd_edit || onOwnMenu()) return null;
       var h = hit(rclick), k = h && h.e != null && !h.glyph ? h.e : h && h.p != null ? edges2.findIndex(function (e) { return e.pts.indexOf(h.p) >= 0; }) : -1;
       if (k < 0 || !/\|[rp]\d+$/.test(edges2[k].id)) return null;
-      var t2 = window.cd_edit.makeMain(text, edges2[k].id);
+      var t2 = window.cd_edit.makeMain(shared.text, edges2[k].id);
       if (!t2) return null;
       return { label: /\|r\d+$/.test(edges2[k].id) ? 'Make main reactant' : 'Make main product', go: function () {
-        remember(false); text = t2;
-        parse(); selN = []; selP = []; selE = []; keyGuides = null; dirty = true; render(); paint(); changed();
+        remember(false); shared.text = t2;
+        parse(); shared.selN = []; shared.selP = []; shared.selE = []; keyGuides = null; shared.dirty = true; render(); paint(); changed();
       } };
     };
+    }
     // a state variable or unit of information with its own menu under the right click: the line, bend point or
     // process behind it offers nothing there
     function onOwnMenu() { return ownMenus.some(function (f) { return f(rclick); }); }
+    function __run39() {   // run at start, in order (__start)
     window.m2EditBend = function () {
       if (!on || V.current !== map || !rclick || onOwnMenu()) return null;
       var h = hit(rclick);
@@ -2791,8 +2903,9 @@
       var pi = h.p;
       return function () { unbend([pi]); };
     };
+    }
     function emptyClick() {   // the right click on empty map space (inside a compartment counts as empty, inside a complex not: the complex's own items there) of the map being edited
-      if (!on || V.current !== map || !text || !rclick) return false;
+      if (!on || V.current !== map || !shared.text || !rclick) return false;
       if (ownMenus.some(function (f) { return f(rclick); })) return false;   // a state variable standing out of its node: its own menu, not the map's
       var h = hit(rclick);
       return !h || (h.n != null && nodes2[h.n].kids.length > 0 && nodes2[h.n].shape.kind !== 'Complex');
@@ -2801,7 +2914,9 @@
     // removing them all and rerouting by hand is quicker than one by one): the right-click menu's Remove all bend points,
     // on empty map space while editing (a right click on a bend point means that bend point; inside a
     // compartment counts as empty); one undo step
-    window.m2EditOnObject = function () { return !!(on && V.current === map && text && rclick) && !emptyClick(); };   // the right click on an item (a node, a line, inside a complex), so its menu holds that item's items only
+    var ownMenus;
+    function __run40() {   // run at start, in order (__start)
+    window.m2EditOnObject = function () { return !!(on && V.current === map && shared.text && rclick) && !emptyClick(); };   // the right click on an item (a node, a line, inside a complex), so its menu holds that item's items only
     window.m2EditAllBends = function () {
       if (!points.length || !emptyClick()) return null;
       return function () { unbend(points.map(function (p, i) { return i; })); };
@@ -2812,13 +2927,16 @@
     // and Repack complex, in the object's menu of a complex (a right click inside it) or of a member, above Select all of
     // this kind: the outermost complex round it (outerComplex), alone; above it Name by members for the innermost
     // complex there (create.js)
-    var ownMenus = [];   // a format's part: functions telling a point that has its own right-click menu (a state variable), where no complex item is offered
+    ownMenus = [];
+    }   // a format's part: functions telling a point that has its own right-click menu (a state variable), where no complex item is offered
     function complexHere(member) {   // the innermost complex round the right click, or null; member: asked by the object's menu, so not on empty space
-      if (!on || V.current !== map || !text || !rclick || (member && (emptyClick() || ownMenus.some(function (f) { return f(rclick); })))) return null;
+      if (!on || V.current !== map || !shared.text || !rclick || (member && (emptyClick() || ownMenus.some(function (f) { return f(rclick); })))) return null;
       var h = hit(rclick), c = h && h.n != null ? h.n : null;
       while (c != null && nodes2[c].shape.kind !== 'Complex') c = nodes2[c].up;
       return c;
     }
+    var GAP_OUT, CLOSE;
+    function __run41() {   // run at start, in order (__start)
     window.m2EditPackHere = function (member) {
       var c = complexHere(member);
       if (c != null) c = outerComplex(c);
@@ -2844,7 +2962,7 @@
       return function () {
         var nb = bend(k, P);
         if (!nb) return;
-        selN = []; selP = []; selE = [k]; keyGuides = null; dirty = true;
+        shared.selN = []; shared.selP = []; shared.selE = [k]; keyGuides = null; shared.dirty = true;
         render(); paint(); changed();
       };
     };
@@ -2856,8 +2974,9 @@
     // Each axis on its own; 6 px on screen; the smallest correction wins, near ties (1 px) by that order; every reason
     // that holds is shown: thick grey for an arc, a thin line for centres and sides, marks for equal gaps. Ctrl or Alt held,
     // no snapping (yEd: Ctrl). Not handled: the set node to node and node to arc distances (no default in yEd's manual).
-    var GAP_OUT = 12;   // equal gap marks this far beside the nodes (map units)
-    var CLOSE = 40;   // opposite sides snap only within this gap (map units), and lines reach this far past the nodes
+    GAP_OUT = 12;   // equal gap marks this far beside the nodes (map units)
+    CLOSE = 40;
+    }   // opposite sides snap only within this gap (map units), and lines reach this far past the nodes
     function snapNode(d) {
       d.guides = []; d.lines = []; d.marks = []; d.ext = []; d.crosses = [];
       var T = 6 / V.z, b0 = boxOf(d.n), cand = { x: [], y: [] }, moved = mv.n, up = new Set();
@@ -3003,9 +3122,10 @@
         d.dy = Math.max(c[1] - s0[1] - s0[3] + 1, Math.min(c[1] + c[3] - s0[1] - 1, d.dy));
       });
     }
+    function __run42() {   // run at start, in order (__start)
     V.view.addEventListener('pointermove', function (e) {
       if (linkMove(e)) return;   // an arc being drawn (create.js)
-      if (tap && Math.hypot(e.clientX - tap.x, e.clientY - tap.y) >= 5) tap = null;   // a drag of the map, no click even if it comes back
+      if (shared.tap && Math.hypot(e.clientX - shared.tap.x, e.clientY - shared.tap.y) >= 5) shared.tap = null;   // a drag of the map, no click even if it comes back
       if ((drag || band) && e.pointerType === 'mouse' && !e.buttons) return release(e);   // its release never came
       if (drag || band) {
         e.stopImmediatePropagation();
@@ -3022,7 +3142,7 @@
         else if (drag.grab && Math.hypot(e.clientX - drag.grab.sx, e.clientY - drag.grab.sy) < 4) return;   // not a drag yet
         else {
           if (drag.grab) { var nb = bend(drag.grab.k, drag.grab.P); drag.grab = null;
-            if (nb) { drag.x = nb.at[0]; drag.y = nb.at[1]; drag.p = nb.p; drag.e = null; drag.made = drag.made || nb.k; selN = []; selE = []; selP = [nb.p]; mv = moving(); } }
+            if (nb) { drag.x = nb.at[0]; drag.y = nb.at[1]; drag.p = nb.p; drag.e = null; drag.made = drag.made || nb.k; shared.selN = []; shared.selE = []; shared.selP = [nb.p]; mv = moving(); } }
           drag.dx = Math.round(P[0] - drag.x); drag.dy = Math.round(P[1] - drag.y);
           drag.gx = drag.gy = false;
           drag.guides = []; drag.lines = []; drag.marks = []; drag.ext = []; drag.crosses = [];
@@ -3043,15 +3163,16 @@
         var hh = e.shiftKey ? null : hit(PP), ez = !e.shiftKey && edgeAt(PP);
         if (ez && hh && hh.p != null) ez = null;
         if (ez) { V.view.style.cursor = resizeCursor(ez.s); return; }
-        var sel = hh && ((hh.p != null ? selP.indexOf(hh.p) : hh.e != null ? selE.indexOf(hh.e) : selN.indexOf(hh.n)) >= 0 ||
-          (hh.p != null && selE.some(function (q) { return edges2[q].pts.indexOf(hh.p) >= 0; })));
+        var sel = hh && ((hh.p != null ? shared.selP.indexOf(hh.p) : hh.e != null ? shared.selE.indexOf(hh.e) : shared.selN.indexOf(hh.n)) >= 0 ||
+          (hh.p != null && shared.selE.some(function (q) { return edges2[q].pts.indexOf(hh.p) >= 0; })));
         V.view.style.cursor = !hh ? '' : sel ? 'move' : 'pointer';
       }
     }, true);
+    }
     function release(e) {
       if (palUp(e)) return;
       if (linkUp(e)) return;   // an arc drawn (create.js); a click on its node goes on to select it
-      var t = tap; tap = null;
+      var t = shared.tap; shared.tap = null;
       if (t && e.type === 'pointerup' && Math.hypot(e.clientX - t.x, e.clientY - t.y) < 5) {   // a click, not a drag of the map
         e.stopImmediatePropagation();   // the viewer's release would open the annotation (its own pointer ends with the capture)
         click(t); return;
@@ -3061,21 +3182,21 @@
       if (band) {
         var bd = band; band = null;
         if (e.type === 'pointerup' && Math.hypot(e.clientX - bd.cx, e.clientY - bd.cy) < 5) { click({ h: bd.h, shift: bd.add }); return; }   // a click (with Shift: adds or takes out)
-        if (!bd.add) { selN = []; selP = []; selE = []; }
+        if (!bd.add) { shared.selN = []; shared.selP = []; shared.selE = []; }
         var a = [Math.min(bd.x, bd.x2), Math.min(bd.y, bd.y2)], c = [Math.max(bd.x, bd.x2), Math.max(bd.y, bd.y2)];
-        nodes2.forEach(function (n, i) { var b = boxOf(i); if (cd && /\|proc$/.test(n.id)) return; if (b[0] >= a[0] && b[1] >= a[1] && b[0] + b[2] <= c[0] && b[1] + b[3] <= c[1] && selN.indexOf(i) < 0) selN.push(i); });
-        points.forEach(function (p, i) { var X = num(p, 'x'), Y2 = num(p, 'y'); if (X >= a[0] && Y2 >= a[1] && X <= c[0] && Y2 <= c[1] && selP.indexOf(i) < 0) selP.push(i); });
-        part = null; paint(); return;
+        nodes2.forEach(function (n, i) { var b = boxOf(i); if (shared.cd && /\|proc$/.test(n.id)) return; if (b[0] >= a[0] && b[1] >= a[1] && b[0] + b[2] <= c[0] && b[1] + b[3] <= c[1] && shared.selN.indexOf(i) < 0) shared.selN.push(i); });
+        points.forEach(function (p, i) { var X = num(p, 'x'), Y2 = num(p, 'y'); if (X >= a[0] && Y2 >= a[1] && X <= c[0] && Y2 <= c[1] && shared.selP.indexOf(i) < 0) shared.selP.push(i); });
+        shared.part = null; paint(); return;
       }
       dragEnd(e);
     }
     function click(t) {   // a click taken on release: selects, clears, or with Shift adds or takes out
       var hs = t.h;
-      part = null;
-      if (!hs) { if (!t.shift) { selN = []; selP = []; selE = []; } paint(); return; }
-      var li = hs.p != null ? selP : hs.e != null ? selE : selN, ki = hs.p != null ? hs.p : hs.e != null ? hs.e : hs.n;
+      shared.part = null;
+      if (!hs) { if (!t.shift) { shared.selN = []; shared.selP = []; shared.selE = []; } paint(); return; }
+      var li = hs.p != null ? shared.selP : hs.e != null ? shared.selE : shared.selN, ki = hs.p != null ? hs.p : hs.e != null ? hs.e : hs.n;
       if (t.shift) { if (li.indexOf(ki) >= 0) li.splice(li.indexOf(ki), 1); else li.push(ki); }
-      else { selN = hs.n != null ? [ki] : []; selP = hs.p != null ? [ki] : []; selE = hs.e != null ? [ki] : []; }
+      else { shared.selN = hs.n != null ? [ki] : []; shared.selP = hs.p != null ? [ki] : []; shared.selE = hs.e != null ? [ki] : []; }
       paint();
     }
     // a compartment or a complex given a new box (its handles dragged, or Width and Height typed): in Full what no longer
@@ -3088,11 +3209,11 @@
       var before = boxesBefore(function (k) { return nodes2[k].id === rid ? b0r : boxOf(k); });
       var B0r = function (k) { return before[nodes2[k].id] || boxOf(k); }, doneR = function () { render(); paint(); changed(); }, ri = nodes2.findIndex(function (n) { return n.id === rid; });
       if (!full() || !nodes2[ri].comp) { setBoxes(grown([ri], boxOf, B0r, function () { return false; })); refit([rid]); doneR(); return; }   // a complex: its members kept (roomy), its holders grown
-      settle(regroup('box', new Set([ri]), boxOf, B0r), { moving: [rid] }, doneR, function () { text = unpush(); parse(); liveOff(); paint(); });   // refused: taken back, nothing said
+      settle(regroup('box', new Set([ri]), boxOf, B0r), { moving: [rid] }, doneR, function () { shared.text = unpush(); parse(); liveOff(); paint(); });   // refused: taken back, nothing said
     }
     function dragEnd(e) {   // the end of a drag of the selection, a port or a resize
-      var d = drag; drag = null; var sets = mv; mv = null; poseNow = null;   // the file holds the pose from here (the drawing keeps it until drawn again)   // the moved groups and live arcs stay until the map is drawn again
-      if (!d.port && !d.rs) frozen = true;   // the copies too: the file now has the new places, the picture not yet
+      var d = drag; drag = null; var sets = mv; mv = null; shared.poseNow = null;   // the file holds the pose from here (the drawing keeps it until drawn again)   // the moved groups and live arcs stay until the map is drawn again
+      if (!d.port && !d.rs) shared.frozen = true;   // the copies too: the file now has the new places, the picture not yet
       if (d.port) {   // dragged: the port set; a click: that end selected, the line staying lit, for the arrow keys
         if (d.port.n2 != null) reconnect(d.port);
         else if (d.port.free || (d.port.moved && !d.port.to) || (d.port.hub && !d.port.to)) { unshift(); paint(); }   // over nothing that takes it, or on its own process: back where it was (a click there keeps the line)
@@ -3101,7 +3222,7 @@
         return;
       }
       if (d.rs) {   // a compartment or a complex resized: its box set; in Full what no longer overlaps it let go, what it now covers taken in, past its holder's edge it leaves it (regroup); in Layout its holder grows (grown)
-        var nb = liveC && liveC[d.rs.c];
+        var nb = shared.liveC && shared.liveC[d.rs.c];
         if (!nb || nb.every(function (v, j) { return Math.abs(v - d.rs.b0[j]) < 0.01; })) { liveOff(); sizeOff(); paint(); return; }
         if (!holds(d.rs.c)) { setSize(d.rs.c, nb); return; }   // a node resized by its handles (create.js, the format's part)
         holderSize(d.rs.c, nb, d.rs.b0);
@@ -3111,27 +3232,29 @@
       var fitAfter = function () {   // what holds what settled again (Full: regroup), a glyph dropped on a complex put into it (joinPlan, create.js), the holders round what moved grown (grown), in the same undo step
         var B0 = function (k) { var b = boxOf(k); return sets.n.has(k) ? [b[0] - d.dx, b[1] - d.dy, b[2], b[3]] : b; };   // the boxes before the drag
         settle(full() ? regroup(d.alone ? 'alone' : 'plain', sets.n, boxOf, B0) : new Map(), { join: full() ? movedNow : null, grow: tops(sets.n, d.alone).map(function (k) { return nodes2[k].id; }), before: boxesBefore(B0), moving: movedNow, away: d.away },
-          function () { render(); changed(); }, function () { text = unpush(); parse(); unshift(); paint(); });   // a CellDesigner file that cannot hold it: not moved, nothing said
+          function () { render(); changed(); }, function () { shared.text = unpush(); parse(); unshift(); paint(); });   // a CellDesigner file that cannot hold it: not moved, nothing said
       };
       if (d.made != null && Math.abs(d.dx) < 0.01 && Math.abs(d.dy) < 0.01) {   // a new bend dragged back to where it was made (a snap may leave a hair): none made
-        text = unpush(); parse(); selP = []; selE = [d.made - 1]; unshift(); paint(); return;
+        shared.text = unpush(); parse(); shared.selP = []; shared.selE = [d.made - 1]; unshift(); paint(); return;
       }
       // a second click on what is selected, with no drag (under 4 px on screen): it is deselected;
       // a bend point of an arc selected keeps its arc
       if (d.made == null && !d.keepE && d.sx0 != null && e.type === 'pointerup' && Math.hypot(e.clientX - d.sx0, e.clientY - d.sy0) < 4) {
         unshift();
         var out1 = function (list, k) { var j = list.indexOf(k); if (k != null && j >= 0) list.splice(j, 1); };
-        if (d.p != null) out1(selP, d.p); else if (d.e != null) out1(selE, d.e); else out1(selN, d.n);
+        if (d.p != null) out1(shared.selP, d.p); else if (d.e != null) out1(shared.selE, d.e); else out1(shared.selN, d.n);
         paint(); return;
       }
       if (d.made != null) { move(d.dx, d.dy); fitAfter(); }   // one step for undo: made and moved
-      else if (d.dx || d.dy) { remember(false); move(d.dx, d.dy, sets); fixMoved(sets.n, d.alone); if (d.keepE) { selE = d.keepE; selP = []; } fitAfter(); }   // what the drag showed moving (with Shift, the selection by itself)
-      else { unshift(); if (d.keepE) { selE = d.keepE; selP = []; } }   // a click with a slight jitter: nothing moved, nothing stays hidden (else a smooth bend
+      else if (d.dx || d.dy) { remember(false); move(d.dx, d.dy, sets); fixMoved(sets.n, d.alone); if (d.keepE) { shared.selE = d.keepE; shared.selP = []; } fitAfter(); }   // what the drag showed moving (with Shift, the selection by itself)
+      else { unshift(); if (d.keepE) { shared.selE = d.keepE; shared.selP = []; } }   // a click with a slight jitter: nothing moved, nothing stays hidden (else a smooth bend
       // turns sharp: the arcs drawn as plain lines while waiting for a redraw that a move of zero never asks for)
       paint();
     }
+    function __run43() {   // run at start, in order (__start)
     V.view.addEventListener('pointerup', release, true);
     V.view.addEventListener('pointercancel', release, true);
+    }
 
     // an end of a line moved by the keys, as a drag sets it: round a glyph or a node's fixed places (nodePlaces) to the next
     // place; on the ports' grid (portStep); else among the node's five places, from the centre to the side the arrow points to, from a side the
@@ -3163,40 +3286,41 @@
       setPort({ k: pp.k, end: pp.end, n: pp.n, to: to }, true);
     }
     // the keys: arrows move the selection by 1 (Shift: 10), Ctrl or Cmd with Z undoes, with S saves; Esc clears
+    function __run44() {   // run at start, in order (__start)
     document.addEventListener('keydown', function (e) {
-      if (!text) return;
+      if (!shared.text) return;
       var mod = e.ctrlKey || e.metaKey, k = V.letter(e) || (e.key || '').toLowerCase();   // the letter typed, else its place on the keyboard, so Z, Y, S, A work in any layout
       if (mod && k === 's') { e.preventDefault(); save(); return; }
       if (!on || V.current !== map || V.typing()) return;
       if (/input|select/i.test(document.activeElement.tagName) && !(mod && (k === 'z' || k === 'y'))) return;   // a tick box or a list: only the undo keys pass (own.js chose the map's)
       if ((mod && k === 'a') || e.key === 'Escape') keyFlush();   // the selection changes: the keys' run ends
       if (mod && k === 'a') {   // select all, as yEd: every node and line; a CellDesigner glyph is no item of its own
-        e.preventDefault(); part = null; keyGuides = null; selP = [];
-        selN = nodes2.map(function (n, i) { return i; }).filter(function (i) { return !(cd && /\|proc$/.test(nodes2[i].id)); });
-        selE = edges2.map(function (x, k2) { return k2; });
+        e.preventDefault(); shared.part = null; keyGuides = null; shared.selP = [];
+        shared.selN = nodes2.map(function (n, i) { return i; }).filter(function (i) { return !(shared.cd && /\|proc$/.test(nodes2[i].id)); });
+        shared.selE = edges2.map(function (x, k2) { return k2; });
         paint(); return;
       }
-      if (mod && (k === 'z' || k === 'y')) { e.preventDefault(); if (k === 'z' && !e.shiftKey) back(undo, redo); else back(redo, undo); return; }   // a newer setting was taken by own.js first
+      if (mod && (k === 'z' || k === 'y')) { e.preventDefault(); if (k === 'z' && !e.shiftKey) back(undo, shared.redo); else back(shared.redo, undo); return; }   // a newer setting was taken by own.js first
       // Escape does one thing: a window, menu, list, help box, tool or line in hand closed first (their own listeners), the selection after
-      if (e.key === 'Escape') { if (e.defaultPrevented || ddOpen || tool || link || (helpBox && !helpBox.hidden)) return; selN = []; selP = []; selE = []; part = null; keyGuides = null; paint(); return; }
-      if ((e.key === 'Delete' || e.key === 'Backspace') && selP.length && !selN.length) { e.preventDefault(); unbend(selP); return; }
+      if (e.key === 'Escape') { if (e.defaultPrevented || ddOpen || tool || link || (helpBox && !helpBox.hidden)) return; shared.selN = []; shared.selP = []; shared.selE = []; shared.part = null; keyGuides = null; paint(); return; }
+      if ((e.key === 'Delete' || e.key === 'Backspace') && shared.selP.length && !shared.selN.length) { e.preventDefault(); unbend(shared.selP); return; }
       var step = e.shiftKey ? 10 : 1, d = { arrowleft: [-step, 0], arrowright: [step, 0], arrowup: [0, -step], arrowdown: [0, step] }[k];
       if (!d) return;
       e.preventDefault(); e.stopPropagation();   // while editing the arrows never step to another map
-      if (!selN.length && !selP.length && !selE.length) return;
+      if (!shared.selN.length && !shared.selP.length && !shared.selE.length) return;
       // a line selected alone: only its part last pressed moves, as by hand (a bend point, or an end stepped among the
       // node's five places); none pressed, nothing moves
       var pt0 = partSel();
-      if (!selN.length && !selP.length && !pt0) return;
+      if (!shared.selN.length && !shared.selP.length && !pt0) return;
       if (pt0 && pt0.port) { portKey(pt0.port, d, e.shiftKey); return; }
       if (!pt0 && keyTake.some(function (f) { return f(d, e); })) return;
       var ks = pt0 ? { n: new Set(), p: new Set([pt0.p]), dx: 0, dy: 0 } : moving();
-      var bp = pt0 ? pt0.p : selP.length === 1 && !selN.length && !selE.length ? selP[0] : null;
+      var bp = pt0 ? pt0.p : shared.selP.length === 1 && !shared.selN.length && !shared.selE.length ? shared.selP[0] : null;
       if (bp != null) d = keyAlign(bp, d, ks.p);
-      if (ks.n.size && cd && full() && cdJs && cdJs.nestCheck) {   // a move the CellDesigner file cannot hold refused at once, not after the run (a jump back)
+      if (ks.n.size && shared.cd && full() && cdJs && cdJs.nestCheck) {   // a move the CellDesigner file cannot hold refused at once, not after the run (a jump back)
         var r0 = keyRun || [0, 0], dd = d, Bk = function (k) { var b = boxOf(k); return ks.n.has(k) ? [b[0] + dd[0], b[1] + dd[1], b[2], b[3]] : b; };
         var mvs = []; regroup('plain', ks.n, Bk, function (k) { var b = boxOf(k); return ks.n.has(k) ? [b[0] - r0[0], b[1] - r0[1], b[2], b[3]] : b; }).forEach(function (t2, i) { mvs.push([nodes2[i].id, t2 == null ? null : nodes2[t2].id]); });
-        var whyK = mvs.length ? cdJs.nestCheck(cd.now, mvs) : null;
+        var whyK = mvs.length ? cdJs.nestCheck(shared.cd.now, mvs) : null;
         if (whyK) return;   // refused: nothing moves, nothing said
       }
       remember(true); move(d[0], d[1], ks); keyShift(ks, d[0], d[1]); keyGuides = bp != null ? bendGuides(bp) : null; paint();
@@ -3209,7 +3333,11 @@
         fixMoved(set);
         var B0 = function (k) { var b = boxOf(k); return set.has(k) ? [b[0] - run[0], b[1] - run[1], b[2], b[3]] : b; };
         settle(full() ? regroup('plain', set, boxOf, B0) : new Map(), { grow: tops(set, false).map(function (k) { return nodes2[k].id; }), before: boxesBefore(B0), moving: kids }, function () { render(); paint(); },
-          function () { text = unpush(); parse(); keyed = null; render(); paint(); });   // refused (checked at each key already): taken back, nothing said
+          function () { shared.text = unpush(); parse(); shared.keyed = null; render(); paint(); });   // refused (checked at each key already): taken back, nothing said
       };
       clearTimeout(timer); timer = setTimeout(function () { if (keyDue) keyDue(); }, 150); changed();
     }, true);
+    }
+
+    export function __start() { __run1(); __run2(); __run3(); __run4(); __run5(); __run6(); __run7(); __run8(); __run9(); __run10(); __run11(); __run12(); __run13(); __run14(); __run15(); __run16(); __run17(); __run18(); __run19(); __run20(); __run21(); __run22(); __run23(); __run24(); __run25(); __run26(); __run27(); __run28(); __run29(); __run30(); __run31(); __run32(); __run33(); __run34(); __run35(); __run36(); __run37(); __run38(); __run39(); __run40(); __run41(); __run42(); __run43(); __run44(); }   // the part's statements, in their order
+    export { G, HANDLE, MODS, Y, ahead, aheadSoon, api, at, away, b64, blobSha, box, boxOf, buttons, cdOwn, changed, chooseFolder, complexHere, cut, cutShape, doc, docText, drag, drawText, edgeAt, edges2, editing, f1, fmt, freeName, full, gE, gN, gh, graphmlOf, gridBlock, gridSet, grown, handleMarks, heldText, hit, holder, holderSize, holds, hubPorts, inComplex, inRim, keyFlush, keyTake, kindWindow, landMarks, lastFor, lastSvg, lateItem, layTool, line, livePath, localBox, map, mapTop, moveFix, mv, name, near, nodes2, note, num, on, origFolderDrop, origFromFolder, origRead, origToFolder, origWrite, outlineD, overlap, ownMenus, paint, parse, parseFix, picWait, points, ports, procPlaces, pt, quiet, rclick, realizerOf, rebase, refit, regroup, remember, render, repo, rimOf, roleOf, roomy, setBoxes, setPort, settle, shapeD, shown, site, spotNo, src, status, stop, subItem, sx, sy, syncFolder, toFolder, toGrid, token, tops, under, undo, unkeep, unpush, warn, x0, y0 };

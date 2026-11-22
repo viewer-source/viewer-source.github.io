@@ -10,8 +10,7 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
 var data = process.argv[3], local = process.argv.indexOf('--local') > 0, here = path.join(__dirname, '..');
 if (!data) { console.log('usage: node tests/undo-settings.js <base address> <clone of the data repository> [--local]'); process.exit(2); }
 function editorNow() {   // editor.js joined as Jekyll joins it
-  var read = function (f) { return fs.readFileSync(path.join(here, 'editor', f), 'utf8'); };
-  return read('editor.js').replace(/^---[\s\S]*?---\n/, '').replace(/\{% include_relative (\S+) %\}/g, function (m, f) { return read(f); });
+  return require('./editor-now.js')(here);
 }
 function viewerHunks() {   // [old, new] pieces of the styles page's viewer changed since REV (default HEAD), for the live page's text
   var d = cp.execFileSync('git', ['diff', '-U2', process.env.REV || 'HEAD', '--', '../styles/_includes/atlas-app.html'], { cwd: here, maxBuffer: 1 << 26 }).toString();

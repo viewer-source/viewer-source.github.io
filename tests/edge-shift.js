@@ -28,7 +28,7 @@ async function sbgn(page, ok) {   // a node moved past the edge on an SBGN-ML ma
 (async function () {
   var b = await chromium.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } });
   if (local) {
-    var ed = fs.readFileSync(path.join(local, 'editor/editor.js'), 'utf8').replace(/^---[\s\S]*?---\n/, '').replace(/\{% include_relative (src\/[\w.]+) %\}/g, (m, f) => fs.readFileSync(path.join(local, 'editor', f), 'utf8'));
+    var ed = require('./editor-now.js')(local);
     await page.route('**/editor/editor.js*', r => r.fulfill({ status: 200, contentType: 'application/javascript', body: ed }));
   }
   page.on('pageerror', e => console.log('ERR', e.message));

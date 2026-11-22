@@ -4425,7 +4425,7 @@ page, so its styles keep the base they were made on).
   })();
   // ---------- the editor (--m2-edit: 1) ----------
   // Its code is in editor/ (out of the viewer's file, loaded only where the Edit tab is): the shared core,
-  // a GraphML part and a CellDesigner part, built by Jekyll into editor/editor.js, loaded once the style turns the Edit
+  // a GraphML part and a CellDesigner part, modules bundled into editor/editor.js (editor/build.js), loaded once the style turns the Edit
   // tab on (editorLoad, from the windows' code); a site or style without it loads nothing. edit="layout" on the include
   // keeps the editor to the layout tools (moves, bend points, compartments, Grid, Snap, Pack), for a site that should
   // not offer drawing; 'full' (the default) adds drawing. Here only what the viewer

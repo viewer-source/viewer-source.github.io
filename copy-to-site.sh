@@ -5,6 +5,8 @@
 set -e
 site=$1
 here=$(dirname "$0")
+# the editor built from its sources first, so a stale editor.js is never copied (needs npm ci in the viewer folder)
+if [ -f "$here/editor/build.js" ]; then (cd "$here" && node -e "require.resolve('esbuild')" 2>/dev/null && node editor/build.js >/dev/null) || echo "note: editor/editor.js copied as it is (no esbuild here: npm ci in the viewer folder)"; fi
 cp "$here/_includes/atlas-app.html" "$here/_includes/atlas-tags.css" "$here/_includes/look-lines.css" "$here/_includes/look-view.css" "$site/_includes/"
 rm -f "$site/_includes/atlas-edit.js"   # the editor's older single file, from before editor/
 rm -rf "$site/editor" && cp -r "$here/editor" "$site/editor"   # the editor, loaded by the viewer only where --m2-edit is on

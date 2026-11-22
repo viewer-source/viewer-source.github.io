@@ -1,3 +1,9 @@
+import { shared, V } from './state.js';
+import { boxOf, drag, edges2, f1, full, gE, gN, grown, holds, line, livePath, mv, nodes2, num, outlineD, points, tops, x0, y0 } from './core.js';
+import { liveY } from './graphml.js';
+import { liveCd } from './celldesigner.js';
+import { svList, svParts } from './create.js';
+
     // ---------- the live drawing of a move (editor/src/live.js) ----------
     // What a drag, a held arrow key, a dragged port or a resize shows before the release, on every format: the groups of
     // what moves shifted (shift, keyShift, unshift), the holders growing round it (liveFit, liveDraw, liveRec), a node
@@ -6,52 +12,54 @@
     // its process glyphs following their segments, its reactions drawn by the drop's code and its holders by cdrender;
     // GraphML and SBGN-ML maps (liveY, graphml.js) their arcs and the processes and gates at them drawn by the yEd
     // renderer. What is drawn here is put back when the map is drawn again.
-    function liveFmt() { return cd ? liveCd : liveY; }
+    function liveFmt() { return shared.cd ? liveCd : liveY; }
     // compartments are containers: resized by dragging an edge or a handle, and grown by themselves
     // when what they hold is moved past their margin; liveC: their boxes while a drag runs (index in nodes2 -> box),
     // drawn on the picture at once, until the renderer has drawn the map again
     // liveOrig: per holder drawn live, how to put back what the renderer drew (liveRec's record, or a CellDesigner
     // holder's { back, at }: liveBack)
-    var liveC = null, liveOrig = null;
-    function bx(i) { if (poseNow && poseNow[i]) return poseNow[i].box; if (liveC && liveC[i]) return liveC[i]; var b = boxOf(i);
-      if (liveG && liveG[i]) return [b[0] + liveG[i][0], b[1] + liveG[i][1], b[2], b[3]]; return mv && mv.n.has(i) ? [b[0] + mv.dx, b[1] + mv.dy, b[2], b[3]] : b; }
+    function __run1() {   // run at start, in order (__start)
+    shared.liveC = null, shared.liveOrig = null;
+    }
+    function bx(i) { if (shared.poseNow && shared.poseNow[i]) return shared.poseNow[i].box; if (shared.liveC && shared.liveC[i]) return shared.liveC[i]; var b = boxOf(i);
+      if (shared.liveG && shared.liveG[i]) return [b[0] + shared.liveG[i][0], b[1] + shared.liveG[i][1], b[2], b[3]]; return mv && mv.n.has(i) ? [b[0] + mv.dx, b[1] + mv.dy, b[2], b[3]] : b; }
     // the holders round what moves (and round the one resized) grown as on release (grown), drawn at once; seed: the
     // box of the one resized, which grows its holder only in Layout editing (in Full one resized past it leaves it) or
     // when it is no compartment (a macromolecule resized by its handles)
     function liveFit(seed) {
-      liveC = seed || null;
+      shared.liveC = seed || null;
       var ks = seed ? Object.keys(seed).map(Number).filter(function (i) { return !full() || !nodes2[i].comp; }) : mv && drag ? tops(mv.n, drag.alone) : [];
       var nb = ks.length ? grown(ks, bx, boxOf, function (k) { return !!(mv && mv.n.has(k)); }, drag && drag.away) : {};
-      liveC = Object.assign({}, seed || {}, nb);
-      if (!Object.keys(liveC).length) liveC = null;
+      shared.liveC = Object.assign({}, seed || {}, nb);
+      if (!Object.keys(shared.liveC).length) shared.liveC = null;
       liveDraw(seed ? Object.keys(seed).map(Number).filter(function (i) { return !holds(i); }) : []);
       return Object.keys(nb).some(function (k) { return nodes2[+k].comp; });   // a compartment grows round what moves
     }
     function undraw(i) {   // a holder drawn as the renderer drew it again
-      if (liveOrig && liveOrig[i]) liveBack(liveOrig[i]);
-      if (liveOrig) delete liveOrig[i];
+      if (shared.liveOrig && shared.liveOrig[i]) liveBack(shared.liveOrig[i]);
+      if (shared.liveOrig) delete shared.liveOrig[i];
     }
     // the picture's frame: a CellDesigner picture is in the file's places, which a shift (out of negative places or the canvas
     // fit, cd_edit.place) puts x0, y0 from the editor's (the frame's two translates cancel inside the picture); a GraphML
     // picture is in the editor's own. Everything put into the picture during a move (the selection's fill, the live
     // reactions, the holders growing) is placed through it, the one place this is reckoned
-    function picOff() { return cd ? [x0, y0] : [0, 0]; }
+    function picOff() { return shared.cd ? [x0, y0] : [0, 0]; }
     function toPic(b) { var o = picOff(); return b.length > 2 ? [b[0] - o[0], b[1] - o[1], b[2], b[3]] : [b[0] - o[0], b[1] - o[1]]; }
-    function liveOff() { liveC = null; if (liveOrig) Object.keys(liveOrig).forEach(function (i) { undraw(+i); }); liveOrig = null; }
+    function liveOff() { shared.liveC = null; if (shared.liveOrig) Object.keys(shared.liveOrig).forEach(function (i) { undraw(+i); }); shared.liveOrig = null; }
     function shift() {   // the drag shown on the drawing itself: groups moved, arcs touched hidden (drawn live)
       if (!gN || !mv) return false;
       if (!mv.dx && !mv.dy) { unshift(); return true; }   // back where it started: the arcs drawn as the renderer drew them
       poseBack();
       var tr = 'translate(' + mv.dx + ' ' + mv.dy + ')';
       mv.n.forEach(function (i) { var g = gN[nodes2[i].id]; if (g) g.setAttribute('transform', tr); });
-      live = live || new Set();
+      shared.live = shared.live || new Set();
       posed();
       edges2.forEach(function (e, k) {
         var a = mv.n.has(e.s), b = mv.n.has(e.t), some = e.pts.some(function (p) { return mv.p.has(p); });
         var gs = gE[e.id];   // a CellDesigner line has two groups, its halo's and its own
         if (!gs || !(a || b || some)) return;
         if (a && b) gs.forEach(function (g) { g.setAttribute('transform', tr); });
-        else { gs.forEach(function (g) { g.style.display = 'none'; }); live.add(k); }
+        else { gs.forEach(function (g) { g.style.display = 'none'; }); shared.live.add(k); }
       });
       liveFmt().glyphs(mv.n, mv.p, null);
       return true;
@@ -59,18 +67,21 @@
     function unshift() {   // the drawing as it was: a press that moved nothing leaves nothing hidden or shifted
       if (gN) Object.keys(gN).forEach(function (k) { gN[k].removeAttribute('transform'); });
       if (gE) Object.keys(gE).forEach(function (k) { gE[k].forEach(function (g) { g.removeAttribute('transform'); g.style.display = ''; }); });
-      poseBack(); live = null; liveG = null; liveOff(); dropCopies(); frozen = false;
+      poseBack(); shared.live = null; shared.liveG = null; liveOff(); dropCopies(); shared.frozen = false;
     }
     // a node shown during a drag as the release will place it, turned and moved (a submap's terminal held on its border,
     // its way by its side): each function of livePose(sets, alone, out) puts into out, by node index, { box, way, turn }
     // (turn: degrees from the way it is drawn); the node's drawing is turned round its centre to that box, its texts kept
     // upright, its lines drawn live to its ports turned with it (bx, posePort, drawnShape)
-    var livePose = [], poseNow = null, poseText = null;
+    var livePose;
+    function __run2() {   // run at start, in order (__start)
+    livePose = [], shared.poseNow = null, shared.poseText = null;
+    }
     function posed() {
       var out = {};
       livePose.forEach(function (f) { f(mv, !!(drag && drag.alone), out); });
       if (!Object.keys(out).length) return;
-      poseNow = out; poseText = new Map();
+      shared.poseNow = out; shared.poseText = new Map();
       var o = picOff();
       Object.keys(out).forEach(function (k) {
         var i = +k, p = out[k], b = boxOf(i), g = gN[nodes2[i].id];
@@ -78,19 +89,19 @@
         var c0 = [b[0] + b[2] / 2 - o[0], b[1] + b[3] / 2 - o[1]], c1 = [p.box[0] + p.box[2] / 2 - o[0], p.box[1] + p.box[3] / 2 - o[1]];
         g.setAttribute('transform', 'translate(' + f1(c1[0]) + ' ' + f1(c1[1]) + ') rotate(' + p.turn + ') translate(' + f1(-c0[0]) + ' ' + f1(-c0[1]) + ')');
         if (p.turn) g.querySelectorAll('text').forEach(function (el) {   // turned back round the same centre: the label moves as one, its lines stacked as drawn
-          var was = el.getAttribute('transform'); poseText.set(el, was);
+          var was = el.getAttribute('transform'); shared.poseText.set(el, was);
           el.setAttribute('transform', 'rotate(' + (-p.turn) + ' ' + f1(c0[0]) + ' ' + f1(c0[1]) + ')' + (was ? ' ' + was : ''));
         });
-        edges2.forEach(function (e, j) { if ((e.s === i || e.t === i) && gE && gE[e.id]) { gE[e.id].forEach(function (q) { q.style.display = 'none'; }); live.add(j); } });
+        edges2.forEach(function (e, j) { if ((e.s === i || e.t === i) && gE && gE[e.id]) { gE[e.id].forEach(function (q) { q.style.display = 'none'; }); shared.live.add(j); } });
       });
     }
     function poseBack() {   // the nodes posed drawn as before (those the move still shifts get their shift again from shift)
-      if (poseText) poseText.forEach(function (v, el) { if (v == null) el.removeAttribute('transform'); else el.setAttribute('transform', v); });
-      if (poseNow && gN) Object.keys(poseNow).forEach(function (k) { var g = gN[nodes2[+k].id]; if (g && !(mv && mv.n.has(+k))) g.removeAttribute('transform'); });
-      poseNow = null; poseText = null;
+      if (shared.poseText) shared.poseText.forEach(function (v, el) { if (v == null) el.removeAttribute('transform'); else el.setAttribute('transform', v); });
+      if (shared.poseNow && gN) Object.keys(shared.poseNow).forEach(function (k) { var g = gN[nodes2[+k].id]; if (g && !(mv && mv.n.has(+k))) g.removeAttribute('transform'); });
+      shared.poseNow = null; shared.poseText = null;
     }
     function posePort(i, off, k) {   // a line's port on node i as its pose places it (else turned with it)
-      var p = poseNow && poseNow[i];
+      var p = shared.poseNow && shared.poseNow[i];
       if (!p) return off;
       if (p.ports && p.ports[k]) return p.ports[k];
       if (!p.turn) return off;
@@ -99,29 +110,31 @@
     }
     function keyShift(ks, dx, dy) {   // the keys' move on the drawing: groups moved by the sum since the last drawing, arcs touched drawn live
       if (!gN) return;
-      keyed = keyed || { n: new Set(), p: new Set(), dx: 0, dy: 0 };
-      frozen = false; keyed.dx += dx; keyed.dy += dy; ks.n.forEach(function (i) { keyed.n.add(i); }); ks.p.forEach(function (i) { keyed.p.add(i); });
-      var tr = 'translate(' + keyed.dx + ' ' + keyed.dy + ')';
-      keyed.n.forEach(function (i) { var g = gN[nodes2[i].id]; if (g) g.setAttribute('transform', tr); });
-      live = live || new Set();
+      shared.keyed = shared.keyed || { n: new Set(), p: new Set(), dx: 0, dy: 0 };
+      shared.frozen = false; shared.keyed.dx += dx; shared.keyed.dy += dy; ks.n.forEach(function (i) { shared.keyed.n.add(i); }); ks.p.forEach(function (i) { shared.keyed.p.add(i); });
+      var tr = 'translate(' + shared.keyed.dx + ' ' + shared.keyed.dy + ')';
+      shared.keyed.n.forEach(function (i) { var g = gN[nodes2[i].id]; if (g) g.setAttribute('transform', tr); });
+      shared.live = shared.live || new Set();
       edges2.forEach(function (e, k) {
         var a = ks.n.has(e.s), b = ks.n.has(e.t), some = e.pts.some(function (p) { return ks.p.has(p); });
         var gs = gE[e.id];
         if (!gs || !(a || b || some)) return;
-        gs.forEach(function (g) { g.style.display = 'none'; }); live.add(k);   // the file has the new places: drawn from them
+        gs.forEach(function (g) { g.style.display = 'none'; }); shared.live.add(k);   // the file has the new places: drawn from them
       });
-      liveFmt().glyphs(keyed.n, keyed.p, [keyed.dx, keyed.dy]);
+      liveFmt().glyphs(shared.keyed.n, shared.keyed.p, [shared.keyed.dx, shared.keyed.dy]);
     }
     // the arcs following a move drawn in full, so a drag feels natural:
     // each a copy of the renderer's own group of that arc, so it keeps its colour, width and
     // dashes; its line goes through the new places, and what is drawn at an end (arrowhead, circle, bar) is carried to
     // that end, turned as the end's segment turned. The originals are hidden; the copies go when the map is drawn again
-    var copies = [], frozen = false;
-    function restBox(i) { var b = boxOf(i), k = keyed && keyed.n.has(i); return k ? [b[0] - keyed.dx, b[1] - keyed.dy, b[2], b[3]] : b; }
-    function restPt(pi) { var p = points[pi], k = keyed && keyed.p && keyed.p.has(pi); return [num(p, 'x') - (k ? keyed.dx : 0), num(p, 'y') - (k ? keyed.dy : 0)]; }
+    function __run3() {   // run at start, in order (__start)
+    shared.copies = [], shared.frozen = false;
+    }
+    function restBox(i) { var b = boxOf(i), k = shared.keyed && shared.keyed.n.has(i); return k ? [b[0] - shared.keyed.dx, b[1] - shared.keyed.dy, b[2], b[3]] : b; }
+    function restPt(pi) { var p = points[pi], k = shared.keyed && shared.keyed.p && shared.keyed.p.has(pi); return [num(p, 'x') - (k ? shared.keyed.dx : 0), num(p, 'y') - (k ? shared.keyed.dy : 0)]; }
     function dropCopies() {   // the copies taken away, an original shown again unless its arc still follows a move
-      copies.forEach(function (c) { c[0].remove(); if (c[1] && !(live && live.has(c[2]))) c[1].style.display = ''; });
-      copies = [];
+      shared.copies.forEach(function (c) { c[0].remove(); if (c[1] && !(shared.live && shared.live.has(c[2]))) c[1].style.display = ''; });
+      shared.copies = [];
     }
     // a point of the old drawing of an arc taken to the new one: it goes with the segment it lies nearest to, at the
     // same side distance; along it, within 15 units of a segment's end it keeps its distance from that end (arrowheads,
@@ -223,7 +236,7 @@
           g.style.display = 'none';
           var c = g.cloneNode(true);
           c.removeAttribute('data-e'); c.style.display = ''; c.classList.add('m2-ed-copy');
-          g.parentNode.insertBefore(c, g.nextSibling); copies.push([c, g, k]);
+          g.parentNode.insertBefore(c, g.nextSibling); shared.copies.push([c, g, k]);
           c.querySelectorAll('*').forEach(function (el) {
             var nm = el.localName;
             if ((nm === 'polyline' || nm === 'polygon') && !el.getAttribute('transform')) el.setAttribute('points', pair(el.getAttribute('points') || '', nm === 'polygon'));
@@ -243,12 +256,12 @@
     // CellDesigner reaction by the drop's code), else copies of the renderer's groups (fullLines); before the
     // editor's own drawing is in the page, plain lines into out. Returns the port being dragged, if any
     function liveLines(out) {
-      var pk0 = drag && drag.port && drag.port.to ? drag.port : null, lk = new Set(live || []);
+      var pk0 = drag && drag.port && drag.port.to ? drag.port : null, lk = new Set(shared.live || []);
       // an end over another node is drawn as the drop will draw it (a format's lines() with the new end); an end over
       // nothing follows as a copy, its glyph following its segment as at its node (one straight reaction, no kink)
       var free = pk0 && pk0.free;
-      if (pk0) { liveFmt().glyphs(new Set(), new Set(), null, pk0); (live || []).forEach(function (k) { lk.add(k); }); lk.add(pk0.k); }
-      if (gE) { if (!frozen) { if (lk.size) { if (free || !liveFmt().lines(lk, pk0)) fullLines(lk, pk0); } else dropCopies(); } }
+      if (pk0) { liveFmt().glyphs(new Set(), new Set(), null, pk0); (shared.live || []).forEach(function (k) { lk.add(k); }); lk.add(pk0.k); }
+      if (gE) { if (!shared.frozen) { if (lk.size) { if (free || !liveFmt().lines(lk, pk0)) fullLines(lk, pk0); } else dropCopies(); } }
       else lk.forEach(function (k) {
         var pts = line(k, null, null, pk0);
         if (pts) out.push('<path class="m2-ed-live" stroke-width="' + f1(V.z) + '" d="' + livePath(pts, edges2[k].smooth) + '"/>');
@@ -261,23 +274,25 @@
     // CellDesigner: drawn by cdrender's own code (its holders, liveFmt)
     function liveDraw(skip) {
       if (!gN) return;
-      if (liveOrig) Object.keys(liveOrig).forEach(function (i) { if (!liveC || !liveC[i]) undraw(+i); });
-      if (!liveC) return;
-      liveOrig = liveOrig || {};
+      if (shared.liveOrig) Object.keys(shared.liveOrig).forEach(function (i) { if (!shared.liveC || !shared.liveC[i]) undraw(+i); });
+      if (!shared.liveC) return;
+      shared.liveOrig = shared.liveOrig || {};
       skip = skip || [];
       // a holder whose group still carries the keys' shift (its file box already moved, the map not drawn again) is left
       // as it is: drawn at its live box inside that shift it would show moved twice
-      var ks = Object.keys(liveC).map(Number).filter(function (i) {
+      var ks = Object.keys(shared.liveC).map(Number).filter(function (i) {
         var n = nodes2[i], g = gN[n.id];
-        return g && skip.indexOf(i) < 0 && (n.comp || n.shape.kind === 'Complex') && (liveOrig[i] || !g.getAttribute('transform'));
+        return g && skip.indexOf(i) < 0 && (n.comp || n.shape.kind === 'Complex') && (shared.liveOrig[i] || !g.getAttribute('transform'));
       });
       if (liveFmt().holders) { liveFmt().holders(ks); return; }
       ks.forEach(function (i) {
-        if (!liveOrig[i]) liveOrig[i] = liveRec(i);
-        if (liveOrig[i]) livePut(liveOrig[i], liveC[i]);
+        if (!shared.liveOrig[i]) shared.liveOrig[i] = liveRec(i);
+        if (shared.liveOrig[i]) livePut(shared.liveOrig[i], shared.liveC[i]);
       });
     }
-    var sizeRec = null;   // the node drawn live while it is resized: its parts and how they were
+    function __run4() {   // run at start, in order (__start)
+    shared.sizeRec = null;
+    }   // the node drawn live while it is resized: its parts and how they were
     // a node drawn at another box during a drag, on the picture itself until the renderer draws the map again: a node
     // resized by its handles (sizeLive) and the holders growing round a move (liveDraw) alike. liveRec(i) reads what node
     // i draws: its shape (two for a multimer), its state variables and units of information (kept at their place on its
@@ -321,11 +336,14 @@
     }
     function sizeLive(i, nb) {   // a format's own drawing where it has one (liveFmt's size: (i, box, record) -> record), else the parts reshaped
       var own = liveFmt().size;
-      if (!sizeRec || sizeRec.i !== i) { sizeOff(); sizeRec = own ? own(i, null, null) : liveRec(i); }
-      if (sizeRec) { if (own) own(i, nb, sizeRec); else livePut(sizeRec, nb); }
+      if (!shared.sizeRec || shared.sizeRec.i !== i) { sizeOff(); shared.sizeRec = own ? own(i, null, null) : liveRec(i); }
+      if (shared.sizeRec) { if (own) own(i, nb, shared.sizeRec); else livePut(shared.sizeRec, nb); }
     }
     function sizeOff() {   // the node drawn as the renderer drew it
-      if (!sizeRec) return;
-      liveBack(sizeRec);
-      sizeRec = null;
+      if (!shared.sizeRec) return;
+      liveBack(shared.sizeRec);
+      shared.sizeRec = null;
     }
+
+    export function __start() { __run1(); __run2(); __run3(); __run4(); }   // the part's statements, in their order
+    export { bx, dropCopies, keyShift, liveFit, liveLines, liveOff, livePose, picOff, posePort, restBox, restPt, shift, sizeLive, sizeOff, toPic, unshift };

@@ -1,3 +1,8 @@
+import { shared, V } from './state.js';
+import { G, Y, boxOf, doc, docText, edges2, fmt, gE, gN, gridBlock, lastFor, mv, nodes2, num, on, points, pt, realizerOf, warn } from './core.js';
+import { bx, dropCopies, restBox, restPt } from './live.js';
+import { sbJs } from './sbgn.js';
+
     // ---------- the GraphML part (editor/src/graphml.js) ----------
     // A yEd GraphML drawn again by the viewer's yEd renderer in JavaScript (renderers/yrender/yrender.js), each node and
     // arc in a group of its own; the shift out of negative places; the compartments' outlines following a drag.
@@ -5,7 +10,10 @@
     // the yEd renderer in JavaScript (renderers/yrender/yrender.js): the same SVG as yrender.py byte for byte
     // (tests/yrender-compare.js), so a GraphML map is drawn again with no Python; the editor's way: classes beside the
     // colours and each node and arc in a group of its own (data-n, data-e)
-    var yrp = null;
+    var yrp;
+    function __run1() {   // run at start, in order (__start)
+    yrp = null;
+    }
     function yr() {
       if (yrp) return yrp;
       yrp = new Promise(function (res, rej) {
@@ -18,9 +26,9 @@
       return yrp;
     }
     function drawGraphml(t) {   // the document the editor read is drawn when it is still this text (no second reading)
-      var A = afSbgn ? afGraphml(t === docText && doc ? doc.cloneNode(true) : new DOMParser().parseFromString(t, 'application/xml')) : null;
-      var r = window.yrender.render(A ? A.doc : t === docText && doc ? doc : t, { classes: true, groups: true, sbgn: !!sb });   // sb: an SBGN-ML map (sbgn.js), its glyphs with no fill drawn white
-      if (!A) hpMemo = [t, r.ports];   // the processes' ports as drawn, for Turn process and modifier ends (hubPorts); not from the SBGN AF view's changed lines
+      var A = shared.afSbgn ? afGraphml(t === docText && doc ? doc.cloneNode(true) : new DOMParser().parseFromString(t, 'application/xml')) : null;
+      var r = window.yrender.render(A ? A.doc : t === docText && doc ? doc : t, { classes: true, groups: true, sbgn: !!shared.sb });   // sb: an SBGN-ML map (sbgn.js), its glyphs with no fill drawn white
+      if (!A) shared.hpMemo = [t, r.ports];   // the processes' ports as drawn, for Turn process and modifier ends (hubPorts); not from the SBGN AF view's changed lines
       if (!A && on) yAhead(t);
       return [A ? afUnits(r.svg, A.units) : r.svg, r.errors];
     }
@@ -32,8 +40,11 @@
     // itself); its state variables and units of information and a complex's members not drawn (never deleted:
     // the file keeps them, Reduced notation shows them again), a line to a member drawn to its complex. The drawing
     // only: the editor's GraphML and the file stay as they are
-    var afSbgn = false;
-    var AF_KINDS = /^(Macromolecule|SimpleChemical|NucleicAcidFeature|UnspecifiedEntity|Complex)$/;
+    var AF_KINDS;
+    function __run2() {   // run at start, in order (__start)
+    shared.afSbgn = false;
+    AF_KINDS = /^(Macromolecule|SimpleChemical|NucleicAcidFeature|UnspecifiedEntity|Complex)$/;
+    }
     function afGraphml(d) {   // d: a document of its own, changed in place
       var units = [], up = {}, keys = {};
       Array.prototype.forEach.call(d.getElementsByTagNameNS(G, 'key'), function (k) { if (k.getAttribute('for') === 'node') keys[k.getAttribute('id')] = k.getAttribute('attr.name'); });
@@ -127,8 +138,11 @@
     // moves given each frame against it: a drag, and the arrow keys, which write their steps into the text ahead of the
     // drawing), so a line leaves a process from the port it will have; false (fullLines' copies) for the SBGN view of
     // an Activity Flow map, an end over another node, or anything the renderer cannot draw
-    var yLive = null;
-    var liveY = { glyphs: function () {}, lines: yLines, holders: null };
+    var yLive, liveY;
+    function __run3() {   // run at start, in order (__start)
+    yLive = null;
+    liveY = { glyphs: function () {}, lines: yLines, holders: null };
+    }
     function svgEl(svg) {   // a group of the renderer's drawing as an element of this page
       var g = new DOMParser().parseFromString('<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">' + svg + '</svg>', 'image/svg+xml').documentElement.firstElementChild;
       if (!g) return null;
@@ -140,15 +154,15 @@
       if (yLive && yLive.t === t) return yLive;
       var ix = {};
       edges2.forEach(function (e, k) { ix[e.id] = k; });
-      yLive = { t: t, ix: ix, s: window.yrender.live(t === docText && doc ? doc : t, { classes: true, sbgn: !!sb }) };
+      yLive = { t: t, ix: ix, s: window.yrender.live(t === docText && doc ? doc : t, { classes: true, sbgn: !!shared.sb }) };
       return yLive;
     }
     function yAhead(t) {   // made while the browser is idle after a drawing, so the next drag starts at once (0.2 s on the largest map)
-      var go = function () { try { if (on && !mv && !keyed && window.yrender && window.yrender.live && t === text) ySession(t); } catch (x) {} };
+      var go = function () { try { if (on && !mv && !shared.keyed && window.yrender && window.yrender.live && t === shared.text) ySession(t); } catch (x) {} };
       if (window.requestIdleCallback) requestIdleCallback(go, { timeout: 2000 }); else setTimeout(go, 300);
     }
     function yLines(ks, pp) {
-      if (!gE || afSbgn || !lastFor || lastFor[3] || !window.yrender || !window.yrender.live || (pp && pp.n2 != null)) return false;
+      if (!gE || shared.afSbgn || !lastFor || lastFor[3] || !window.yrender || !window.yrender.live || (pp && pp.n2 != null)) return false;
       var t = lastFor[0], out;   // the text of the drawing on screen
       try {
         if (!ySession(t).s) return false;
@@ -172,18 +186,18 @@
       Object.keys(out.n).forEach(function (id) {
         var g = gN[id], c = svgEl(out.n[id]), tr = g && (g.getAttribute('transform') || '').match(/translate\(([-\d.e]+)[ ,]+([-\d.e]+)\)/);
         if (!g || !c) return;
-        if (!tr) { g.style.display = 'none'; g.parentNode.insertBefore(c, g.nextSibling); copies.push([c, g, null]); return; }
+        if (!tr) { g.style.display = 'none'; g.parentNode.insertBefore(c, g.nextSibling); shared.copies.push([c, g, null]); return; }
         // one that moves itself: its group is shifted and holds the selection's fill, so its drawing is swapped inside
         // it, the shift taken back
         c.setAttribute('transform', 'translate(' + -tr[1] + ' ' + -tr[2] + ')');
-        Array.prototype.forEach.call(g.children, function (x) { x.style.display = 'none'; copies.push([document.createComment(''), x, null]); });
-        g.insertBefore(c, g.firstChild); copies.push([c, null, null]);
+        Array.prototype.forEach.call(g.children, function (x) { x.style.display = 'none'; shared.copies.push([document.createComment(''), x, null]); });
+        g.insertBefore(c, g.firstChild); shared.copies.push([c, null, null]);
       });
       Object.keys(out.e).forEach(function (id) {
         var gs = gE[id], c = svgEl(out.e[id]);
         if (!gs || !c) return;
-        gs.forEach(function (g, j) { g.style.display = 'none'; if (j) copies.push([document.createComment(''), g, yLive.ix[id]]); });
-        gs[0].parentNode.insertBefore(c, gs[0].nextSibling); copies.push([c, gs[0], yLive.ix[id]]);
+        gs.forEach(function (g, j) { g.style.display = 'none'; if (j) shared.copies.push([document.createComment(''), g, yLive.ix[id]]); });
+        gs[0].parentNode.insertBefore(c, gs[0].nextSibling); shared.copies.push([c, gs[0], yLive.ix[id]]);
       });
       return true;
     }
@@ -221,6 +235,9 @@
       points.forEach(function (p) { mx = Math.min(mx, num(p, 'x')); my = Math.min(my, num(p, 'y')); });
       var B = gridBlock(), block = function (m) { return m < 0 ? Math.ceil((40 - m) / B) * B : 0; }, sx = block(mx), sy = block(my);
       if (!sx && !sy) return null;
-      text = text.replace(re, function (tag) { return shiftTag(tag, sx, sy); });
+      shared.text = shared.text.replace(re, function (tag) { return shiftTag(tag, sx, sy); });
       return [sx, sy];
     }
+
+    export function __start() { __run1(); __run2(); __run3(); }   // the part's statements, in their order
+    export { AF_KINDS, drawGraphml, liveY, noNegative, shiftedAhead, yr };

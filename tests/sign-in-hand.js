@@ -10,8 +10,7 @@ var { chromium } = require('playwright'), fs = require('fs'), path = require('pa
 var local = process.argv[2], base = process.argv[3] || 'https://viewer-source.github.io/styles/';
 (async function () {
   var b = await chromium.launch(), page, errs = [], bad = 0;
-  var ed = local && fs.readFileSync(path.join(local, 'editor/editor.js'), 'utf8').replace(/^---[\s\S]*?---\n/, '')
-    .replace(/\{% include_relative (src\/[\w.]+) %\}/g, function (m, f) { return fs.readFileSync(path.join(local, 'editor', f), 'utf8'); });
+  var ed = local && require('./editor-now.js')(local);
   var fresh = async function () {   // a page of its own for each map (the one before is left in edit mode)
     page = await b.newPage({ viewport: { width: 1400, height: 900 } });
     if (ed) await page.route('**/editor/editor.js*', function (r) { r.fulfill({ status: 200, contentType: 'application/javascript', body: ed }); });

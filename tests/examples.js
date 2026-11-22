@@ -16,8 +16,7 @@ var base = process.argv[2] && process.argv[2][0] !== '-' ? process.argv[2] : 'ht
 var local = process.argv.indexOf('--local') > 0, here = path.join(__dirname, '..');
 var gitSha = function (t) { var b = Buffer.from(t, 'utf8'); return crypto.createHash('sha1').update(Buffer.concat([Buffer.from('blob ' + b.length + '\0'), b])).digest('hex'); };
 function editorNow() {
-  var read = function (f) { return fs.readFileSync(path.join(here, 'editor', f), 'utf8'); };
-  return read('editor.js').replace(/^---[\s\S]*?---\n/, '').replace(/\{% include_relative (\S+) %\}/g, function (m, f) { return read(f); });
+  return require('./editor-now.js')(here);
 }
 function viewerHunks() {
   var d = cp.execFileSync('git', ['diff', '-U2', process.env.REV || 'HEAD', '--', '../styles/_includes/atlas-app.html'], { cwd: here, maxBuffer: 1 << 26 }).toString();

@@ -1,3 +1,9 @@
+import { shared, V } from './state.js';
+import { at, boxOf, changed, cutShape, edgeAt, edges2, editing, f1, fmt, gridSet, grown, handleMarks, hit, keyFlush, kindWindow, landMarks, lateItem, line, map, near, nodes2, on, paint, parse, ports, procPlaces, quiet, rclick, remember, render, setBoxes, shapeD, subItem, sx, sy, toGrid, warn, x0, y0 } from './core.js';
+import { bx, liveOff, sizeOff } from './live.js';
+import { cdJs, cdMk, cdNow, cdRebuild, nodeCentre, nodePlaces } from './celldesigner.js';
+import { ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues, confettiLine, confettiOne, confettiPick, confettiSquares, hex, iconKeep, iconSpread, innermost, joinPack, keepLook, keepMapChoice, link, linkEnd, looksKept, mapCols, nameAt, origAll, pNow, pal, palBlocks, palDid, palDrop, palId, palShow, palSigns, palSignsEl, palStore, palStyle, palTake, placedAt, propRows, styleRow, svAt, svDelete, svIcons, textsOf, tool, typeIn } from './create.js';
+
     // ---------- the CellDesigner palette (editor/src/cdcreate.js) ----------
     // The CellDesigner palette, writing the CellDesigner file directly: on a CellDesigner map with Settings, Editing on Full, the Edit
     // window's palette offers CellDesigner's own set, SBGN-suited only: species, logic gates, reactions,
@@ -12,7 +18,9 @@
     // well because the palette is drawn before those files load; cdCheck() compares them once they have
     // each sign drawn as CellDesigner's own toolbar draws it, in the palette's weights (atlas-app.html, Sign weights); a
     // species' shape in the proportions CellDesigner gives it on the map where those cannot change (RNA's slant at 45 degrees)
-    var CD_SP = [['PROTEIN', 'Protein', '<rect x="1.5" y="5" width="21" height="14" rx="3.5"/>'],
+    var CD_SP;
+    function __run1() {   // run at start, in order (__start)
+    CD_SP = [['PROTEIN', 'Protein', '<rect x="1.5" y="5" width="21" height="14" rx="3.5"/>'],
       ['GENE', 'Gene', '<rect x="1.5" y="6" width="21" height="12"/>'],
       ['RNA', 'RNA', '<path d="M11.5 7h11l-10 10h-11z"/>'],
       ['SIMPLE_MOLECULE', 'Simple molecule', '<circle cx="12" cy="12" r="7"/>'],
@@ -24,30 +32,33 @@
       ['COMPARTMENT', 'Compartment', '<rect x="1.5" y="3.5" width="21" height="17" rx="6"/><rect class="thin" x="4.5" y="6.5" width="15" height="11" rx="3.5"/>'],
       // CellDesigner's oval compartment (class OVAL), its two lines as the square one's
       ['OVAL', 'Oval compartment', '<ellipse cx="12" cy="12" rx="10.5" ry="8.5"/><ellipse class="thin" cx="12" cy="12" rx="7.5" ry="5.5"/>']];
+    }
     function cdComp(cls) { return cls === 'COMPARTMENT' || cls === 'OVAL'; }   // the two compartment kinds of the palette
     // gates: the circle with its sign, the input lines above (one for NOT, which takes one input) and the output line
     // below; the signs centred in the circle
     // (the bar and ! drawn, not letters, so they sit in its middle); the fourth item is cdrender's GATE sign, for cdCheck
-    var CD_Q = '<path d="M9.8 10.2a2.2 2.2 0 1 1 3.2 2c-.7.4-1 .8-1 1.6" class="in"/><circle class="dot" cx="12" cy="16.4" r=".8"/>';
-    var CD_GATES = [['AND', 'AND gate', '<text x="12" y="16.2" text-anchor="middle" font-size="9">&amp;</text>', '&amp;'], ['OR', 'OR gate', '<path d="M12 9.5v7" class="in"/>', '|'],
+    var CD_Q, CD_GATES, CD_LINE, CD_HEAD, CD_RX, CD_DOTS, CD_ADD, CD_MOD, CD_RED, RED_OF, CD_NAME, cdK;
+    function __run2() {   // run at start, in order (__start)
+    CD_Q = '<path d="M9.8 10.2a2.2 2.2 0 1 1 3.2 2c-.7.4-1 .8-1 1.6" class="in"/><circle class="dot" cx="12" cy="16.4" r=".8"/>';
+    CD_GATES = [['AND', 'AND gate', '<text x="12" y="16.2" text-anchor="middle" font-size="9">&amp;</text>', '&amp;'], ['OR', 'OR gate', '<path d="M12 9.5v7" class="in"/>', '|'],
       ['NOT', 'NOT gate', '<path d="M12 9.6v4.6" class="in"/><circle class="dot" cx="12" cy="16.6" r=".8"/>', '!'], ['UNKNOWN', 'Unknown gate', '<g transform="translate(0 .7)">' + CD_Q + '</g>', '?']].map(function (q) {
       var ins = q[0] === 'NOT' ? 'M12 1v5.5' : 'M3 4l4.4 4.4M21 4l-4.4 4.4';
       return [q[0], q[1], '<circle cx="12" cy="13" r="6.5"/><path d="' + ins + 'M12 19.5V23"/>' + q[2], q[3]];
     });
     // a reaction: the bare arrow with CellDesigner's filled head, the omitted one crossed by two slashes, the unknown one by ?
-    var CD_LINE = '<path d="M1.5 12h15"/>', CD_HEAD = '<path d="M16 8.5l6.5 3.5-6.5 3.5z" fill="currentColor"/>';
-    var CD_RX = [['STATE_TRANSITION', 'State transition', CD_LINE + CD_HEAD],
+    CD_LINE = '<path d="M1.5 12h15"/>', CD_HEAD = '<path d="M16 8.5l6.5 3.5-6.5 3.5z" fill="currentColor"/>';
+    CD_RX = [['STATE_TRANSITION', 'State transition', CD_LINE + CD_HEAD],
       ['KNOWN_TRANSITION_OMITTED', 'Known transition omitted', CD_LINE + '<path d="M6.5 16l2.5-8M10 16l2.5-8" class="in"/>' + CD_HEAD],
       ['UNKNOWN_TRANSITION', 'Unknown transition', CD_LINE + '<g transform="translate(-2.5 -1.5)">' + CD_Q + '</g>' + CD_HEAD]];
     // a line joined to a reaction that is already there, as CellDesigner's Add Reactant and Add Product: its main line
     // dotted, the added line meeting it (no arrowhead) or leaving it (with the reaction's arrowhead)
-    var CD_DOTS = '<path d="M1.5 18h21" class="in" stroke-dasharray="1.4 3.5"/>';   // 5 dashes, both ends a dash, the join (x 11) on one; gaps wide for the round ends (+.65 each) so it reads dashed at 21 px
-    var CD_ADD = [['ADD_REACTANT', 'Add reactant (from a species onto a reaction; onto a logic gate, a new input)', CD_DOTS + '<path d="M3.5 4.5L11 18"/>'],
+    CD_DOTS = '<path d="M1.5 18h21" class="in" stroke-dasharray="1.4 3.5"/>';   // 5 dashes, both ends a dash, the join (x 11) on one; gaps wide for the round ends (+.65 each) so it reads dashed at 21 px
+    CD_ADD = [['ADD_REACTANT', 'Add reactant (from a species onto a reaction; onto a logic gate, a new input)', CD_DOTS + '<path d="M3.5 4.5L11 18"/>'],
       ['ADD_PRODUCT', 'Add product (from a reaction to a species)', CD_DOTS + '<path d="M11 18l6-9"/><path d="M20.5 4l-.6 6.6-5.2-3.4z" fill="currentColor"/>']];
     // a modifier points down onto a reaction, as in CellDesigner's toolbar. The same signs draw reduced notation: with the
     // Reduced notation tick box ticked, a modifier's sign dragged from species to species makes CellDesigner's reduced
     // notation type for it (CD_RED), written as such in the file; catalysis has none in CellDesigner
-    var CD_MOD = [['CATALYSIS', 'Catalysis', '<path d="M12 1.5v14"/><circle cx="12" cy="18.5" r="3"/>'],
+    CD_MOD = [['CATALYSIS', 'Catalysis', '<path d="M12 1.5v14"/><circle cx="12" cy="18.5" r="3"/>'],
       ['INHIBITION', 'Inhibition', '<path d="M12 1.5v19M7 20.5h10"/>'],
       ['PHYSICAL_STIMULATION', 'Physical stimulation', '<path d="M12 1.5v12.5M7.5 14h9l-4.5 7.5z"/>'],
       ['MODULATION', 'Modulation', '<path d="M12 1.5v11M12 12.5l3.5 4.5-3.5 4.5-3.5-4.5z"/>'],
@@ -56,27 +67,33 @@
     });
     // reduced notation's types, each named as the modifier whose sign draws it (no positive influence: CellDesigner's open
     // arrowhead is not SBGN's, the file's taken in as the open triangle, cd_make sbgn)
-    var CD_RED = [['NEGATIVE_INFLUENCE', 'INHIBITION'], ['REDUCED_PHYSICAL_STIMULATION', 'PHYSICAL_STIMULATION'], ['REDUCED_MODULATION', 'MODULATION'], ['REDUCED_TRIGGER', 'TRIGGER']];
-    var RED_OF = {}; CD_RED.forEach(function (q) { RED_OF[q[1]] = q[0]; });   // a modifier's type -> its reduced notation type
-    var CD_NAME = {};   // CellDesigner's names, for the menus and the status line (a gate's by G_ and its kind: UNKNOWN is a species too)
+    CD_RED = [['NEGATIVE_INFLUENCE', 'INHIBITION'], ['REDUCED_PHYSICAL_STIMULATION', 'PHYSICAL_STIMULATION'], ['REDUCED_MODULATION', 'MODULATION'], ['REDUCED_TRIGGER', 'TRIGGER']];
+    RED_OF = {}; CD_RED.forEach(function (q) { RED_OF[q[1]] = q[0]; });   // a modifier's type -> its reduced notation type
+    CD_NAME = {};   // CellDesigner's names, for the menus and the status line (a gate's by G_ and its kind: UNKNOWN is a species too)
     CD_SP.concat(CD_RX, CD_ADD, CD_MOD).forEach(function (q) { CD_NAME[q[0]] = q[1].replace(/ \(.*\)$/, ''); });
     CD_RED.forEach(function (q) { CD_NAME[q[0]] = CD_NAME[q[1]]; });
     CD_GATES.forEach(function (q) { CD_NAME['G_' + q[0]] = q[1]; });
-    var cdK = function (q) { return ['cd:' + q[0], q[1], q[2]]; };   // the tool kinds, apart from the SBGN palette's
+    cdK = function (q) { return ['cd:' + q[0], q[1], q[2]]; };
+    }   // the tool kinds, apart from the SBGN palette's
     function palCd() {   // the set: nodes, the gates, the lines last (as the SBGN palette); three blocks in the one list: species, gates, lines
       return [['Species', CD_SP.map(cdK)], ['Logic gates', CD_GATES.map(function (q) { return ['cd:G_' + q[0], q[1], q[2]]; }), true], ['Reactions', CD_RX.concat(CD_ADD).map(cdK), true], ['Modifiers', CD_MOD.map(cdK)]];
     }
+    var CD_GATE;
+    function __run3() {   // run at start, in order (__start)
     CD_RX.concat(CD_ADD, CD_MOD).forEach(function (q) { ARCS['cd:' + q[0]] = 1; });   // the signs that draw a line (arcTool)
-    var CD_GATE = {}; CD_GATES.forEach(function (q) { CD_GATE['cd:G_' + q[0]] = q[0]; });   // tool kind -> gate kind
+    CD_GATE = {}; CD_GATES.forEach(function (q) { CD_GATE['cd:G_' + q[0]] = q[0]; });
+    }   // tool kind -> gate kind
     function cdKind(k) { return k && k.indexOf('cd:') === 0 ? k.slice(3) : null; }
 
     // the palette shown on a CellDesigner map (palShow, create.js)
-    function cdPal() { return on && V.current === map && !!cd && !!cdJs && !!cdMk && V.level === 'full'; }
-    var cdStrictMemo = [null, false];   // read from this browser once per map, not on every paint
+    function cdPal() { return on && V.current === map && !!shared.cd && !!cdJs && !!cdMk && V.level === 'full'; }
+    function __run4() {   // run at start, in order (__start)
+    shared.cdStrictMemo = [null, false];
+    }   // read from this browser once per map, not on every paint
     function cdStrict() {   // the Reduced notation tick box, per map as on SBGN-ML maps (unticked: no reduced notation)
       var id = palId();
-      if (cdStrictMemo[0] !== id) { var k = palStore()[id]; cdStrictMemo = [id, !!(k && k.strict === true)]; }
-      return cdStrictMemo[1];
+      if (shared.cdStrictMemo[0] !== id) { var k = palStore()[id]; shared.cdStrictMemo = [id, !!(k && k.strict === true)]; }
+      return shared.cdStrictMemo[1];
     }
     function cdFill() {
       ['.m2-ed-pnot', '.m2-ed-plook', '.m2-ed-pprot', '.m2-ed-pcdc'].forEach(function (c) { pal.querySelector(c).hidden = true; });   // no PD and AF on a CellDesigner map
@@ -87,13 +104,16 @@
       cdInfo(hy, true);
       styleRow(); cdColsRow();
       var k = 'cd' + (strict ? 'S' : '');
-      if (palShown === k) return;
-      palShown = k;
+      if (shared.palShown === k) return;
+      shared.palShown = k;
       palSignsEl.innerHTML = palSigns(palCd()); palBlocks();
     }
     // the tick box's title and circled i's text on a CellDesigner map say what it does there (the SBGN text speaks of
     // hybrid maps and SBGN-ML files); palFill puts the SBGN ones back
-    var CD_INFO = 'Lets the modifiers\u2019 signs (inhibition, physical stimulation, modulation, trigger) join two species directly, written as CellDesigner\u2019s reduced notation, and allows a logic gate between species. Unticked: reactions and their modifiers only. CellDesigner\u2019s positive influence (an open arrowhead, not an SBGN sign) is made a physical stimulation when a map is opened.';
+    var CD_INFO;
+    function __run5() {   // run at start, in order (__start)
+    CD_INFO = 'Lets the modifiers\u2019 signs (inhibition, physical stimulation, modulation, trigger) join two species directly, written as CellDesigner\u2019s reduced notation, and allows a logic gate between species. Unticked: reactions and their modifiers only. CellDesigner\u2019s positive influence (an open arrowhead, not an SBGN sign) is made a physical stimulation when a map is opened.';
+    }
     function cdInfo(hy, on_) {
       var lab = hy.querySelector('label'), ti = hy.querySelector('.m2-ed-ptip');
       if (!lab.dataset.sbgn) { lab.dataset.sbgn = lab.title; ti.dataset.sbgn = ti.dataset.info; }
@@ -107,15 +127,17 @@
       if (miss.length) console.error('The CellDesigner palette offers kinds cd_make lacks: ' + miss.join(', '));
       if (g) CD_GATES.forEach(function (q) { var v = g[q[0]]; if (v && q[3] !== v) console.error('The palette\u2019s ' + q[1] + ' sign differs from cdrender\u2019s ' + v); });
     }
+    function __run6() {   // run at start, in order (__start)
     pal.querySelector('.m2-ed-pstrict input').addEventListener('change', function (e) {   // on a CellDesigner map: kept per map, modifiers' signs between species allowed or not
       if (!cdPal()) return;
       palDid([PAL_KEY], function () {
         var all = palStore(), id = palId();
-        cdStrictMemo = [id, !e.target.checked];
+        shared.cdStrictMemo = [id, !e.target.checked];
         if (id) { all[id] = { lang: 'pd', look: 'rn', strict: !e.target.checked }; try { localStorage.setItem(PAL_KEY, JSON.stringify(all)); } catch (er) {} }
       });
-      palShown = null; palShow();
+      shared.palShown = null; palShow();
     });
+    }
 
     // a change made by the palette: the new CellDesigner text the file, the editor's GraphML made again from it, one undo
     // step; sel the node ids, selLines the line ids (a reaction's id: its main line) selected after it, either a function
@@ -133,12 +155,12 @@
       cdRebuild(t2, N.sh); parse();
       var gk = nodes2.map(function (n, k) { return grew[n.id] ? k : -1; }).filter(function (k) { return k >= 0; });   // species grown for an icon: what holds them grown round them (as cdSetSize)
       if (gk.length) setBoxes(grown(gk, boxOf, function (k) { return grew[nodes2[k].id] || boxOf(k); }, function () { return false; }));
-      selN = []; selP = []; selE = []; part = null;
+      shared.selN = []; shared.selP = []; shared.selE = []; shared.part = null;
       if (typeof sel === 'function') sel = sel();
       if (typeof selLines === 'function') selLines = selLines();
-      (sel || []).forEach(function (id) { nodes2.forEach(function (n, i) { if (n.id === id) selN.push(i); }); });
-      (selLines || []).forEach(function (id) { edges2.forEach(function (q, k) { if (q.id === id || q.id === id + '|a' || q.id === id + '|b') selE.push(k); }); });
-      dirty = true; quiet(); render(); paint(); changed();
+      (sel || []).forEach(function (id) { nodes2.forEach(function (n, i) { if (n.id === id) shared.selN.push(i); }); });
+      (selLines || []).forEach(function (id) { edges2.forEach(function (q, k) { if (q.id === id || q.id === id + '|a' || q.id === id + '|b') shared.selE.push(k); }); });
+      shared.dirty = true; quiet(); render(); paint(); changed();
       return true;
     }
     // what a node is on a CellDesigner map: 'epn' a species (not a complex's member), 'proc' a reaction's square, 'gate' a
@@ -160,13 +182,16 @@
     // the map; the Default one for a class the map has none of; the choice when none is kept), CellDesigner's own (cd_make
     // LOOK and COMP), the viewer's Default scheme (Settings, Map colours) by the class's role, or none (white, as
     // CellDesigner has no unfilled species), or Confetti (a pastel of its own, create.js confettiFill)
-    var CD_COLS = [['file', 'Original', 'The map\u2019s own colours, as they were before another choice; new species and compartments in the colour most of their class have on it, Default for a class it has none of'], ['cd', 'CellDesigner', 'The whole map and new species and compartments in CellDesigner\u2019s own colours'], ['default', 'Mist and sage', 'The whole map and new species and compartments in the viewer\u2019s starting colours: a pale blue for proteins, a pale green for small molecules'], ['none', 'No colours', 'The whole map and new species and compartments white'], ['custom', 'Custom default', 'The whole map and new species in the colours kept by Set as default; a class with none as it is'], ['confetti', 'Confetti', 'Every species of the map, and every new one, a pastel of its own; compartments as they are']];
+    var CD_COLS, CD_COMP_DEFAULT;
+    function __run7() {   // run at start, in order (__start)
+    CD_COLS = [['file', 'Original', 'The map\u2019s own colours, as they were before another choice; new species and compartments in the colour most of their class have on it, Default for a class it has none of'], ['cd', 'CellDesigner', 'The whole map and new species and compartments in CellDesigner\u2019s own colours'], ['default', 'Mist and sage', 'The whole map and new species and compartments in the viewer\u2019s starting colours: a pale blue for proteins, a pale green for small molecules'], ['none', 'No colours', 'The whole map and new species and compartments white'], ['custom', 'Custom default', 'The whole map and new species in the colours kept by Set as default; a class with none as it is'], ['confetti', 'Confetti', 'Every species of the map, and every new one, a pastel of its own; compartments as they are']];
     // the Default compartment's paint, the official maps': cdrender draws a compartment's band at a quarter of its colour,
     // so this shows as the Default scheme's compartment (#F7F6F3, sbgn_edit FILL; tests/cd-colours-default.js checks the two agree)
-    var CD_COMP_DEFAULT = 'ffdfdbce';
+    CD_COMP_DEFAULT = 'ffdfdbce';
+    }
     function cdCols() { return mapCols(['file', 'none', 'cd', 'default', 'confetti', 'custom'], cdIs); }
     function cdIs(mode) {   // the map's species coloured as the choice colours them (cdFills), or each a confetti pastel, or as kept for Original; null: no species to read or nothing kept (cd_make.classColours, one pass kept per text)
-      var t = cd && cd.now;
+      var t = shared.cd && shared.cd.now;
       if (!t || !cdMk) return false;
       if (mode === 'file') {   // Original: every element the record knows in its kept colour
         var r = origAll()[palId()];
@@ -183,7 +208,10 @@
       var all = Object.keys(n).every(function (cls) { var x = cls === 'DEGRADED' ? null : fn(cls); if (x) read++; return !x || Object.keys(n[cls]).every(function (c) { return c.slice(2) === x.slice(1).toLowerCase(); }); });
       return read ? all : null;
     }
-    var CD_UNKNOWN = 'ffdddddd';   // a light grey for Unknown under Default and No colours (CellDesigner's own is cccccc)
+    var CD_UNKNOWN;
+    function __run8() {   // run at start, in order (__start)
+    CD_UNKNOWN = 'ffdddddd';
+    }   // a light grey for Unknown under Default and No colours (CellDesigner's own is cccccc)
     function cdColour(t, cls) { return cdColourIn(cdCols(), t, cls); }   // eight hex digits for cd_make, or null for CellDesigner's own
     function cdColourIn(m, t, cls) {
       var comp = cdComp(cls);
@@ -201,7 +229,10 @@
     // map), five at most, the first at the right (row-reverse). CellDesigner and Default, fixed sets: the protein's, simple
     // molecule's, phenotype's, gene's and RNA's colours, each once; No colours one white. Original: the five colours most
     // species on the map have, the most used first, from the map as it is now (classColours keeps its last answer)
-    var CD_SQ = [['PROTEIN', 'protein'], ['SIMPLE_MOLECULE', 'simple molecule'], ['PHENOTYPE', 'phenotype'], ['GENE', 'gene'], ['RNA', 'RNA']];
+    var CD_SQ;
+    function __run9() {   // run at start, in order (__start)
+    CD_SQ = [['PROTEIN', 'protein'], ['SIMPLE_MOLECULE', 'simple molecule'], ['PHENOTYPE', 'phenotype'], ['GENE', 'gene'], ['RNA', 'RNA']];
+    }
     function cdSquares(mode) {
       var sq = function (x, t) { return '<i style="background:#' + x.slice(2) + '" title="' + t + '"></i>'; }, h;
       if (mode === 'confetti') return confettiSquares();
@@ -209,12 +240,12 @@
       else if (mode !== 'file') {   // Custom: the classes' colours as new ones get them (kept, else the map's, else Default's)
         var seen = {};
         h = CD_SQ.map(function (q) {
-          var x = (mode === 'cd' ? null : cdColourIn(mode, mode === 'custom' && cd ? cd.now : null, q[0])) || cdMk.LOOK[q[0]][2];
+          var x = (mode === 'cd' ? null : cdColourIn(mode, mode === 'custom' && shared.cd ? shared.cd.now : null, q[0])) || cdMk.LOOK[q[0]][2];
           if (seen[x]) { seen[x].push(q[1]); return null; }
           seen[x] = [q[1]]; return x;
         }).filter(Boolean).map(function (x) { return sq(x, seen[x].join(', ') + ', #' + x.slice(2).toUpperCase()); }).join('');
       } else {
-        var n = cd && cd.now ? cdMk.classColours(cd.now) : {}, w = {}, order = [];
+        var n = shared.cd && shared.cd.now ? cdMk.classColours(shared.cd.now) : {}, w = {}, order = [];
         Object.keys(n).forEach(function (cls) { Object.keys(n[cls]).forEach(function (col) { if (!(col in w)) { w[col] = 0; order.push(col); } w[col] += n[cls][col]; }); });
         h = order.slice().sort(function (a, b) { return w[b] - w[a] || order.indexOf(a) - order.indexOf(b); }).slice(0, 5).map(function (x) { return sq(x, '#' + x.slice(2).toUpperCase() + ', ' + w[x] + ' species'); }).join('');
       }
@@ -239,7 +270,7 @@
     // colour of its own (create.js confettiLine); Custom leaves the lines. One pass
     // (cd_make.recolourAll); a class CellDesigner's own colours do not know (a receptor, an ion) as it is under CellDesigner
     function cdRecolour(mode) {
-      if (mode === 'file' || !cd) return;
+      if (mode === 'file' || !shared.cd) return;
       cdApply(function (t0) {
         var lh = [];
         return cdMk.recolourAll(t0, cdFills(mode, t0), mode === 'custom' ? null : function () { return mode === 'confetti' ? confettiLine(lh) : '#000000'; });
@@ -261,17 +292,20 @@
       if (cdComp(cls)) return cdMk.COMP.size.slice();
       var st = palStyle(), k = st === 'custom' ? cdKept()[cls] : null;
       if (k && k.w > 0 && k.h > 0) return [k.w, k.h];   // a multimer's whole box, its copies included (cdCopies)
-      return (st !== 'default' && cls !== 'COMPLEX' && cd && cdMk.classSize(cd.now, cls)) || cdMk.LOOK[cls].slice(0, 2);
+      return (st !== 'default' && cls !== 'COMPLEX' && shared.cd && cdMk.classSize(shared.cd.now, cls)) || cdMk.LOOK[cls].slice(0, 2);
     }
     // Set as default on a CellDesigner map (PF_CD.def, the button in create.js): the species' size, fill, border width and
     // multimer kept by its class in this browser for every CellDesigner map (atlas-edit-cd-defaults, apart from SBGN-ML's
     // kinds), and Style and Colours switched to Custom: Style Custom takes the size and multimer, Colours Custom the fill
     // and border width, as on SBGN-ML maps
-    var CD_DEF_KEY = 'atlas-edit-cd-defaults';
+    var CD_DEF_KEY;
+    function __run10() {   // run at start, in order (__start)
+    CD_DEF_KEY = 'atlas-edit-cd-defaults';
+    }
     function cdKept() { return looksKept(CD_DEF_KEY); }
     function cdDef(i) {
       var id = nodes2[i].id, L, n, all = cdKept();
-      try { L = cdMk.look(cd.now, id); n = cdMk.aliasInfo(cd.now, id).homodimer || 1; } catch (e) { return; }   // the file behind the map read (an undo not drawn yet)
+      try { L = cdMk.look(shared.cd.now, id); n = cdMk.aliasInfo(shared.cd.now, id).homodimer || 1; } catch (e) { return; }   // the file behind the map read (an undo not drawn yet)
       var b = boxOf(i);
       all[L.cls] = { w: b[2], h: b[3], width: L.width, multimer: n > 1, copies: n, font: L.font };
       if (L.fill && L.cls !== 'DEGRADED') all[L.cls].fill = L.fill;   // a degraded species keeps CellDesigner's look
@@ -314,30 +348,35 @@
 
     // a gate by three clicks: its inputs (two for AND and OR, one for NOT and the unknown gate), then
     // the reaction's square, or the target entity in reduced notation; the inputs marked as they are clicked
-    var cdGate = null;   // { kind, inputs: [node ids] }
+    function __run11() {   // run at start, in order (__start)
+    shared.cdGate = null;
+    }   // { kind, inputs: [node ids] }
     function cdGateClick(P) {
       var kind = CD_GATE[tool.kind], i = linkEnd(P, -1), r = i >= 0 ? cdRole(i) : null;
-      if (!cdGate || cdGate.kind !== kind) cdGate = { kind: kind, inputs: [] };
+      if (!shared.cdGate || shared.cdGate.kind !== kind) shared.cdGate = { kind: kind, inputs: [] };
       var need = cdMk.NEED[kind];
-      if (cdGate.inputs.length < need) {
-        if (r !== 'epn' || cdGate.inputs.indexOf(nodes2[i].id) >= 0) return;   // a click the gate cannot take does nothing: the marks show what it can (cdGateOk)
-        cdGate.inputs.push(nodes2[i].id);
+      if (shared.cdGate.inputs.length < need) {
+        if (r !== 'epn' || shared.cdGate.inputs.indexOf(nodes2[i].id) >= 0) return;   // a click the gate cannot take does nothing: the marks show what it can (cdGateOk)
+        shared.cdGate.inputs.push(nodes2[i].id);
         paint();
         return;
       }
       if (r !== 'proc' && (r !== 'epn' || cdStrict())) return;   // the same: a species only in reduced notation
-      var g = cdGate, target = r === 'proc' ? cdRid(i) : nodes2[i].id, out = null, L = cdGateLand(i, P) || {};   // where its line out lands, as shown
+      var g = shared.cdGate, target = r === 'proc' ? cdRid(i) : nodes2[i].id, out = null, L = cdGateLand(i, P) || {};   // where its line out lands, as shown
       // refused (nothing said), the inputs clicked stay for another target
       if (!cdApply(function (t) { var q = cdMk.gate(t, { kind: g.kind, inputs: g.inputs, target: target, spot: L.spot, toAt: L.at }); out = q.gate; return q.text; },
         function () { return [/\|m\d+$/.test(out) ? out.replace(/\|m(\d+)$/, '|g$1') : out + '|g']; })) return;   // the gate selected: Delete takes it back
-      cdGate = null;
+      shared.cdGate = null;
       if (tool && !tool.sticky) palTake(null);
     }
     // Marks while a CellDesigner line is made, as CellDesigner shows them: what is picked (a gate's inputs clicked so far)
     // as selected, its outline and handles in magenta with a magenta dot at the port its line takes (the centre); the node
     // the next click or the line's end would land on with a dashed box, grey handles and a blue square at the port it
     // would take. In the map's units, so they follow the zoom as the other marks
-    var cdHover = null;   // { id, P }: the node a gate's next click would take, under the pointer at P
+    var cdHover;
+    function __run12() {   // run at start, in order (__start)
+    cdHover = null;
+    }   // { id, P }: the node a gate's next click would take, under the pointer at P
     function cdHandles(i, cls) { return handleMarks(bx(i), cls); }
     function cdDot(Q, cls) { var d = Math.max(3, 4 * V.z); return '<rect class="' + cls + '" x="' + f1(sx(Q[0]) - d / 2) + '" y="' + f1(sy(Q[1]) - d / 2) + '" width="' + f1(d) + '" height="' + f1(d) + '"/>'; }
     function cdCentre(i) { var b = bx(i); return [b[0] + b[2] / 2, b[1] + b[3] / 2]; }
@@ -352,7 +391,7 @@
     }
     function cdGateOk(i) {   // whether a gate's next click would take node i
       if (i < 0) return false;
-      var r = cdRole(i), need = cdMk.NEED[CD_GATE[tool.kind]], got = cdGate && cdGate.kind === CD_GATE[tool.kind] ? cdGate.inputs : [];
+      var r = cdRole(i), need = cdMk.NEED[CD_GATE[tool.kind]], got = shared.cdGate && shared.cdGate.kind === CD_GATE[tool.kind] ? shared.cdGate.inputs : [];
       if (got.length < need) return r === 'epn' && got.indexOf(nodes2[i].id) < 0;
       return r === 'proc' || (r === 'epn' && !cdStrict());
     }
@@ -360,6 +399,7 @@
       var r = cdRole(i);
       return r === 'proc' ? cdPort(i, P, { mod: true }) : r === 'epn' ? cdPort(i, P, { red: true }) : null;
     }
+    function __run13() {   // run at start, in order (__start)
     V.view.addEventListener('pointermove', function (e) {
       var on_ = cdPal() && tool && CD_GATE[tool.kind] && !e.buttons, P = on_ ? at(e) : null, i = on_ ? linkEnd(P, -1) : -1;
       if (on_ && !cdGateOk(i)) i = -1;
@@ -368,12 +408,15 @@
       var q = function (x) { if (!x) return ''; var k = nodes2.findIndex(function (n) { return n.id === x.id; }), L = k >= 0 && cdGateLand0(k, x.P); return x.id + (L ? (L.at || '') + (L.spot || '') : ''); };
       if (q(was) !== q(h)) paint();   // only when the node or its blue place changes
     });
-    function cdGateLand0(k, P) { var need = cdMk.NEED[CD_GATE[tool.kind]], got = cdGate && cdGate.kind === CD_GATE[tool.kind] ? cdGate.inputs.length : 0; return got >= need ? cdGateLand(k, P) : null; }
+    }
+    function cdGateLand0(k, P) { var need = cdMk.NEED[CD_GATE[tool.kind]], got = shared.cdGate && shared.cdGate.kind === CD_GATE[tool.kind] ? shared.cdGate.inputs.length : 0; return got >= need ? cdGateLand(k, P) : null; }
+    function __run14() {   // run at start, in order (__start)
     V.view.addEventListener('pointerleave', function () { if (cdHover) { cdHover = null; paint(); } });
+    }
     function cdGateMarks(out) {   // a gate being made by clicks (paint, core.js through linkPaint): its inputs picked, the next click's node
-      if (!tool || !CD_GATE[tool.kind] || !cdPal()) { cdGate = null; cdHover = null; return; }
-      if (cdGate && CD_GATE[tool.kind] !== cdGate.kind) cdGate = null;
-      if (cdGate) cdGate.inputs.forEach(function (id) { var i = nodes2.findIndex(function (n) { return n.id === id; }); if (i >= 0) cdPicked(out, i); });
+      if (!tool || !CD_GATE[tool.kind] || !cdPal()) { shared.cdGate = null; cdHover = null; return; }
+      if (shared.cdGate && CD_GATE[tool.kind] !== shared.cdGate.kind) shared.cdGate = null;
+      if (shared.cdGate) shared.cdGate.inputs.forEach(function (id) { var i = nodes2.findIndex(function (n) { return n.id === id; }); if (i >= 0) cdPicked(out, i); });
       var k = cdHover ? nodes2.findIndex(function (n) { return n.id === cdHover.id; }) : -1;
       if (k >= 0 && cdGateOk(k)) cdLand(out, k, cdGateLand0(k, cdHover.P));
     }
@@ -391,12 +434,15 @@
     }
     // Add product picked: the join a press would start from, shown while the pointer is over a reaction's square or near
     // its main line (cdLineAt), so the drag starts there without aiming at the square
-    var cdOver = null;   // the square's id (a re-parse, an undo, renumbers nodes2)
+    var cdOver;
+    function __run15() {   // run at start, in order (__start)
+    cdOver = null;   // the square's id (a re-parse, an undo, renumbers nodes2)
     V.view.addEventListener('pointermove', function (e) {
       var on_ = cdPal() && cdAdd() === 'p' && !e.buttons && !link, i = on_ ? linkEnd(at(e), -1) : -1, id = i >= 0 && cdRole(i) === 'proc' ? nodes2[i].id : null;
       if (id !== cdOver) { cdOver = id; paint(); }
     });
     V.view.addEventListener('pointerleave', function () { if (cdOver) { cdOver = null; paint(); } });
+    }
     function cdOverMarks(out) {
       var i = cdOver && cdPal() && !link && cdAdd() === 'p' ? nodes2.findIndex(function (n) { return n.id === cdOver; }) : -1;
       if (i < 0) { cdOver = null; return; }
@@ -467,10 +513,13 @@
     // product: one of CellDesigner's 16 places (cdrender anchorAt, its one master), the nearest to P, or the centre while
     // P is in the middle half of the box. A reaction's square, for a modifier: the nearest of its six places, turned with
     // the main line (cdrender SQUARE's order, 2 to 7). Anything else: the centre
-    var cdClsMemo = [null, {}];
+    var cdClsMemo;
+    function __run16() {   // run at start, in order (__start)
+    cdClsMemo = [null, {}];
+    }
     function cdClsOf(id) {
-      if (cdClsMemo[0] !== cd.now) cdClsMemo = [cd.now, {}];
-      if (!(id in cdClsMemo[1])) { try { var A = cdMk.aliasInfo(cd.now, id); cdClsMemo[1][id] = A.cls && [A.cls, A.homodimer || 1]; } catch (e) { cdClsMemo[1][id] = null; } }
+      if (cdClsMemo[0] !== shared.cd.now) cdClsMemo = [shared.cd.now, {}];
+      if (!(id in cdClsMemo[1])) { try { var A = cdMk.aliasInfo(shared.cd.now, id); cdClsMemo[1][id] = A.cls && [A.cls, A.homodimer || 1]; } catch (e) { cdClsMemo[1][id] = null; } }
       return cdClsMemo[1][id];
     }
     function cdPort(i, P, how) {   // all: every place offered, for the marks (cdLand)
@@ -529,13 +578,16 @@
     function onSquare(i, P) { var b = bx(i), R = 4 / V.z; return !P || (P[0] >= b[0] - R && P[0] <= b[0] + b[2] + R && P[1] >= b[1] - R && P[1] <= b[1] + b[3] + R); }
     // the modifier the Line sign makes on reaction i: the one most used on the map, ties in the palette's order; on a map
     // with none, a catalysis on a reaction with a simple molecule or ion among its reactants, else a physical stimulation
-    var cdUsualMemo = [null, null, {}];   // the file read, its most used modifier, the metabolic test per reaction: once per file, not per pointer move
+    var cdUsualMemo;
+    function __run17() {   // run at start, in order (__start)
+    cdUsualMemo = [null, null, {}];
+    }   // the file read, its most used modifier, the metabolic test per reaction: once per file, not per pointer move
     function cdUsual(i) {
-      if (cdUsualMemo[0] !== cd.now) {
+      if (cdUsualMemo[0] !== shared.cd.now) {
         var n = {}, best = null, most = 0, m, re = /<celldesigner:modification\b[^>]*?\btype="([A-Z_]+)"/g;
-        while ((m = re.exec(cd.now))) n[m[1]] = (n[m[1]] || 0) + 1;
+        while ((m = re.exec(shared.cd.now))) n[m[1]] = (n[m[1]] || 0) + 1;
         CD_MOD.forEach(function (q) { if (n[q[0]] > most) { most = n[q[0]]; best = q[0]; } });
-        cdUsualMemo = [cd.now, best, {}];
+        cdUsualMemo = [shared.cd.now, best, {}];
       }
       var rid = cdRid(i), met = cdUsualMemo[2];
       if (!(rid in met)) met[rid] = cdMetabolic(rid);
@@ -543,12 +595,12 @@
     }
     function cdMetabolic(rid) {
       var esc = function (x) { return x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); };
-      var r = cd.now.match(new RegExp('<reaction\\b[^>]*\\bid="' + esc(rid) + '"[\\s\\S]*?</reaction>'));
+      var r = shared.cd.now.match(new RegExp('<reaction\\b[^>]*\\bid="' + esc(rid) + '"[\\s\\S]*?</reaction>'));
       if (!r) return false;
       var ids = [], m, re = /<celldesigner:(?:baseReactant\b[^>]*?\bspecies|reactantLink\b[^>]*?\breactant)="([^"]+)"/g;
       while ((m = re.exec(r[0]))) ids.push(m[1]);
       return ids.some(function (s) {
-        var sp = cd.now.match(new RegExp('<species\\b[^>]*\\bid="' + esc(s) + '"[\\s\\S]*?</species>'));
+        var sp = shared.cd.now.match(new RegExp('<species\\b[^>]*\\bid="' + esc(s) + '"[\\s\\S]*?</species>'));
         return sp && /<celldesigner:class>(SIMPLE_MOLECULE|ION)</.test(sp[0]);
       });
     }
@@ -575,7 +627,7 @@
     function cdDelete(nodes, lines) {
       var al = [], jobs = [], ab = function (t, rid) { try { return cdMk.about(t, rid); } catch (e) { return null; } };
       var seen = {}, job = function (j) { var k = JSON.stringify(j); if (!seen[k]) { seen[k] = 1; jobs.push(j); } };
-      var t0 = cd.now;
+      var t0 = shared.cd.now;
       nodes.forEach(function (i) {
         var r = cdRole(i), rid = r ? cdRid(i) : null;
         if (r === 'proc') job({ rid: rid });
@@ -609,17 +661,19 @@
       });
       return true;
     }
+    function __run18() {   // run at start, in order (__start)
     document.addEventListener('keydown', function (e) {
       if ((e.key !== 'Delete' && e.key !== 'Backspace') || !cdPal() || /input|textarea|select/i.test(document.activeElement.tagName)) return;
-      if ((selN.length || (selE.length && !selP.length)) && cdDelete(selN, selE)) { e.preventDefault(); e.stopImmediatePropagation(); }   // an area's bend points go with their lines, as the menu's Delete
+      if ((shared.selN.length || (shared.selE.length && !shared.selP.length)) && cdDelete(shared.selN, shared.selE)) { e.preventDefault(); e.stopImmediatePropagation(); }   // an area's bend points go with their lines, as the menu's Delete
     }, true);
+    }
     function cdDeleteItem() {   // the right-click menu's Delete over a state variable, a unit of information, a node or a line
       if (!rclick) return null;
       var sq = svAt(rclick);
-      if (sq) return function () { svSel = { id: nodes2[sq[0]].id, j: sq[1] }; svDelete(); };
+      if (sq) return function () { shared.svSel = { id: nodes2[sq[0]].id, j: sq[1] }; svDelete(); };
       var h = hit(rclick);
-      if (h && h.n != null) { var i = h.n; return function () { cdDelete(selN.indexOf(i) >= 0 ? selN : [i], selN.indexOf(i) >= 0 ? selE : []); }; }
-      if (h && h.e != null && h.p == null) { var k = h.e; return function () { var all = selE.indexOf(k) >= 0; cdDelete(all ? selN : [], all ? selE : [k]); }; }   // over the selection: all of it
+      if (h && h.n != null) { var i = h.n; return function () { cdDelete(shared.selN.indexOf(i) >= 0 ? shared.selN : [i], shared.selN.indexOf(i) >= 0 ? shared.selE : []); }; }
+      if (h && h.e != null && h.p == null) { var k = h.e; return function () { var all = shared.selE.indexOf(k) >= 0; cdDelete(all ? shared.selN : [], all ? shared.selE : [k]); }; }   // over the selection: all of it
       return null;
     }
     // the right-click menu over a species, a line or a gate: its other kinds within the palette's
@@ -631,7 +685,7 @@
       if (h && h.n != null) {
         var i = h.n, r = cdRole(i), id = nodes2[i].id;
         if (r === 'gate') {
-          var g = cdMk.about(cd.now, cdRid(i)), m = id.match(/\|g(\d+)$/), now = m ? g.gates[+m[1]] : g.gate;
+          var g = cdMk.about(shared.cd.now, cdRid(i)), m = id.match(/\|g(\d+)$/), now = m ? g.gates[+m[1]] : g.gate;
           if (!now) return null;
           var nin = m ? now.inputs.length : (g.inputs || []).length;
           CD_GATES.forEach(function (q) {
@@ -640,7 +694,7 @@
           return out;
         }
         if (r === 'proc') return cdRxItems(cdRid(i));
-        var A = cdMk.aliasInfo(cd.now, id);
+        var A = cdMk.aliasInfo(shared.cd.now, id);
         if (!A.cls) return null;
         out = cdSvItems(id, A);   // first, as on SBGN-ML maps: Add state variable, Add structural state, Add unit of information
         if (A.cls === 'COMPLEX') return out.length ? out : null;
@@ -654,12 +708,12 @@
         var ln = edges2[h.e], mm = ln.id.match(/^(.*)\|(a|b|m\d+)$/);
         if (!mm || (ln.t != null && cdRole(ln.t) === 'gate')) return null;   // a gate's input: nothing to change on it
         if (ln.s != null && cdRole(ln.s) === 'gate') {   // a gate's line out: its other output types (a modifier's on a reaction, reduced notation's between species)
-          var gs = ln.s, gref = cdGateRef(gs), ga = cdMk.about(cd.now, cdRid(gs)), gm = nodes2[gs].id.match(/\|g(\d+)$/), gw = gm ? ga.gates[+gm[1]] : ga.gate;
+          var gs = ln.s, gref = cdGateRef(gs), ga = cdMk.about(shared.cd.now, cdRid(gs)), gm = nodes2[gs].id.match(/\|g(\d+)$/), gw = gm ? ga.gates[+gm[1]] : ga.gate;
           if (!gw) return null;
           return cdModIdentity(gm ? CD_MODS : CD_RED, gw.out, function (k) { cdApply(function (t) { return cdMk.gateType(t, gref, { output: k }); }, [nodes2[gs].id]); });
         }
         if (mm[2][0] !== 'm') return cdRxItems(mm[1]);
-        var n = +mm[2].slice(1), ab = cdMk.about(cd.now, mm[1]), was = ab.mods[n];
+        var n = +mm[2].slice(1), ab = cdMk.about(shared.cd.now, mm[1]), was = ab.mods[n];
         if (cdMk.MODS.indexOf(was) < 0) return null;   // a gate's own line: its gate's menu
         return cdModIdentity(CD_MODS, was, function (k) { cdApply(function (t) { return cdMk.modifierType(t, mm[1], n, k); }, [], [mm[1] + '|m' + n]); });
       }
@@ -669,7 +723,7 @@
     // complex and a single species are not changed into one another), none a complex cannot hold for its member (phenotype,
     // degraded); a click retypes it (cd_make.retype, its colour following the scheme), one undo step
     function cdIdentity(id, r, done) {
-      var A = cdMk.aliasInfo(cd.now, id);
+      var A = cdMk.aliasInfo(shared.cd.now, id);
       if (!A.cls) return null;
       return kindWindow(r, CD_SP.filter(function (q) { return q[0] !== 'COMPLEX' && !cdComp(q[0]) && !(A.complex && /^(PHENOTYPE|DEGRADED)$/.test(q[0])); }).map(function (q) {
         return { name: q[1], own: q[0] === A.cls, go: function () { cdApply(function (t) { return cdMk.retype(t, id, q[0], { from: cdColour(t, A.cls), to: cdColour(t, q[0]) }); }, [id]); } };
@@ -682,9 +736,12 @@
         return kindWindow(r, set.map(function (q) { return { name: CD_NAME[q[1]], own: q[0] === was, go: function () { go(q[0]); } }; }), done);
       })]);
     }
-    var CD_MODS = CD_MOD.map(function (q) { return [q[0], q[0]]; });   // a modifier's types, each its own sign
+    var CD_MODS;
+    function __run19() {   // run at start, in order (__start)
+    CD_MODS = CD_MOD.map(function (q) { return [q[0], q[0]]; });
+    }   // a modifier's types, each its own sign
     function cdRxItems(rid) {   // a reaction's other types: a process's among the three; reduced notation (a modulation) by Change identity
-      var ab = cdMk.about(cd.now, rid), set = cdMk.PROCESS.indexOf(ab.type) >= 0 ? CD_RX : null;
+      var ab = cdMk.about(shared.cd.now, rid), set = cdMk.PROCESS.indexOf(ab.type) >= 0 ? CD_RX : null;
       if (cdMk.REDUCED.indexOf(ab.type) >= 0) return cdModIdentity(CD_RED, ab.type, function (k) { cdApply(function (t) { return cdMk.reactionType(t, rid, k); }, [], [rid]); });
       if (ab.reversible === null) return null;
       // its other types by Change identity (core.js kindWindow), as a species' and a modifier's; then reversible or not
@@ -698,16 +755,19 @@
     // reversible or not (cd_make.reversible; about() null where a reaction may not be): also the Reversible tick box in
     // Properties, for one reaction selected (its lines or its square, nothing else); true when written
     function cdReversible(rid, on) { return cdApply(function (t) { return cdMk.reversible(t, rid, on); }, [], [rid]); }
-    var cdRxSeen = [null, null];   // [rid and file, reversible or null]: read once per selection and change (Properties runs with every paint)
+    var cdRxSeen;
+    function __run20() {   // run at start, in order (__start)
+    cdRxSeen = [null, null];
+    }   // [rid and file, reversible or null]: read once per selection and change (Properties runs with every paint)
     function cdRxOf() {   // { rid, on } of the one reaction selected that may be reversible, else null
-      if (!cd || selP.length || svSel || (!selE.length && !selN.length)) return null;
-      if (selE.length === 1 && !selN.length && edges2[selE[0]] && /\|[rp]\d+$/.test(edges2[selE[0]].id)) return null;   // an added reactant or product alone: its own line's Properties
+      if (!shared.cd || shared.selP.length || shared.svSel || (!shared.selE.length && !shared.selN.length)) return null;
+      if (shared.selE.length === 1 && !shared.selN.length && edges2[shared.selE[0]] && /\|[rp]\d+$/.test(edges2[shared.selE[0]].id)) return null;   // an added reactant or product alone: its own line's Properties
       var rid = null, ok = true;
-      selE.forEach(function (k) { var m = edges2[k] && edges2[k].id.match(/^(.*)\|(a|b|r\d+|p\d+)$/); if (!m || (rid && rid !== m[1])) ok = false; else rid = m[1]; });
-      selN.forEach(function (i) { var m = nodes2[i] && nodes2[i].id.match(/^(.*)\|proc$/); if (!m || (rid && rid !== m[1])) ok = false; else rid = m[1]; });
+      shared.selE.forEach(function (k) { var m = edges2[k] && edges2[k].id.match(/^(.*)\|(a|b|r\d+|p\d+)$/); if (!m || (rid && rid !== m[1])) ok = false; else rid = m[1]; });
+      shared.selN.forEach(function (i) { var m = nodes2[i] && nodes2[i].id.match(/^(.*)\|proc$/); if (!m || (rid && rid !== m[1])) ok = false; else rid = m[1]; });
       if (!ok || !rid) return null;
-      var key = rid + '\u0000' + cd.now;
-      if (cdRxSeen[0] !== key) { var ab = null; try { ab = cdMk.about(cd.now, rid); } catch (e) { ab = null; } cdRxSeen = [key, ab ? ab.reversible : null]; }
+      var key = rid + '\u0000' + shared.cd.now;
+      if (cdRxSeen[0] !== key) { var ab = null; try { ab = cdMk.about(shared.cd.now, rid); } catch (e) { ab = null; } cdRxSeen = [key, ab ? ab.reversible : null]; }
       return cdRxSeen[1] === null ? null : { rid: rid, on: cdRxSeen[1] };
     }
     // a compartment's name dragged by itself (its drawn text pressed, in Full editing): it follows the pointer from one
@@ -715,11 +775,14 @@
     // name would be, and is written there on release (cd_make.nameAt, one undo step); a press with no move selects the
     // compartment, as a click on it does, and a double click still opens the name. Reached through svDown (create.js),
     // which the core asks before a node is pressed
-    var cdNm = null;
+    var cdNm, cdCardDrag, cdCard;
+    function __run21() {   // run at start, in order (__start)
+    cdNm = null;
     // a cardinality on a CellDesigner map (create.js cardDown): the file keeps its number (stoichiometry), no place, so it
     // stays in the middle; a click on its box selects its line, a drag says why it stays, Delete then takes the number out
     // (an added reactant's or product's; a reaction's own two in Properties' Cardinality rows)
-    var cdCardDrag = null, cdCard = null;
+    cdCardDrag = null, cdCard = null;
+    }
     function cdCardAt(e) {   // the line whose drawn cardinality (cdrender's count: 11 high, a grey edge) is under the pointer
       var hit = null;
       Array.prototype.forEach.call(V.img.querySelectorAll('[data-e] rect[height="11"]'), function (r) {
@@ -735,9 +798,10 @@
       var k = cdCardAt(e);
       if (k < 0) return false;
       V.view.focus({ preventScroll: true });
-      if (selE.length === 1 && selE[0] === k) { e.stopImmediatePropagation(); e.preventDefault(); cdCardDrag = { x: e.clientX, y: e.clientY }; return true; }
+      if (shared.selE.length === 1 && shared.selE[0] === k) { e.stopImmediatePropagation(); e.preventDefault(); cdCardDrag = { x: e.clientX, y: e.clientY }; return true; }
       cdCardDrag = { pick: k, x: e.clientX, y: e.clientY }; return true;   // a click selects its line, a drag moves the map
     }
+    function __run22() {   // run at start, in order (__start)
     window.addEventListener('pointermove', function (e) {
       var d = cdCardDrag;
       if (!d) return;
@@ -749,16 +813,17 @@
       var d = cdCardDrag; cdCardDrag = null;
       if (!d || d.pick == null) return;
       e.stopImmediatePropagation();
-      selN = []; selP = []; selE = [d.pick]; part = null; cdCard = d.pick; paint();
+      shared.selN = []; shared.selP = []; shared.selE = [d.pick]; shared.part = null; cdCard = d.pick; paint();
     }, true);
     window.addEventListener('keydown', function (e) {   // Delete: its number out, not the line
       if (cdCard == null || (e.key !== 'Delete' && e.key !== 'Backspace') || /input|textarea|select/i.test(document.activeElement.tagName)) return;
       var k = cdCard;
-      if (!cd || selE.length !== 1 || selE[0] !== k || selN.length || selP.length || !edges2[k]) { cdCard = null; return; }
+      if (!shared.cd || shared.selE.length !== 1 || shared.selE[0] !== k || shared.selN.length || shared.selP.length || !edges2[k]) { cdCard = null; return; }
       e.preventDefault(); e.stopImmediatePropagation();
       if (/\|[rp]\d+$/.test(edges2[k].id)) { cdCard = null; PF_CD.line.setCount(k, ''); }
       else warn('A reaction\'s own reactant and product: their numbers are cleared in Properties, Cardinality.');
     }, true);
+    }
     function cdNameDown(e, P, h) {
       if (!cdPal() || tool || e.shiftKey || e.pointerType !== 'mouse' || edgeAt(P) || (h && (h.p != null || h.e != null || (h.n != null && !nodes2[h.n].comp)))) return false;   // a finger moves the map; a compartment's edge, a bend point, a line or a species over the name: theirs
       var k = -1, area = Infinity, info = null, pad = 3, res = null;   // the innermost compartment whose drawn name is under the pointer (one still named by its id too)
@@ -767,7 +832,7 @@
         if (!n.comp || b[2] * b[3] >= area || P[0] < b[0] || P[1] < b[1] || P[0] > b[0] + b[2] || P[1] > b[1] + b[3]) return;   // its name is inside its box
         if (textsOf(i, null, res = res || svIcons()).some(function (el) { var r = el.getBoundingClientRect(); return e.clientX >= r.left - pad && e.clientX <= r.right + pad && e.clientY >= r.top - pad && e.clientY <= r.bottom + pad; })) { k = i; area = b[2] * b[3]; }
       });
-      if (k < 0 || selN.indexOf(k) < 0) return false;   // the compartment selected first: a drag on the name of one not selected moves the map
+      if (k < 0 || shared.selN.indexOf(k) < 0) return false;   // the compartment selected first: a drag on the name of one not selected moves the map
       try { info = cdMk.nameInfo(cdNow().t, nodes2[k].id); } catch (err) { info = null; }
       if (!info) return false;
       e.stopImmediatePropagation(); e.preventDefault();
@@ -775,6 +840,7 @@
       cdNm = { k: k, id: nodes2[k].id, info: info, P: P, x: e.clientX, y: e.clientY, p: null, parts: null, pid: e.pointerId };
       return true;
     }
+    function __run23() {   // run at start, in order (__start)
     window.addEventListener('pointermove', function (e) {
       var d = cdNm;
       if (!d || e.pointerId !== d.pid) return;
@@ -788,7 +854,8 @@
       d.parts.forEach(function (el) { if (dx || dy) el.setAttribute('transform', 'translate(' + f1(dx) + ' ' + f1(dy) + ')'); else el.removeAttribute('transform'); });
     }, true);
     window.addEventListener('pointerup', function (e) { if (cdNm && e.pointerId === cdNm.pid) cdNameUp(); }, true);
-    window.addEventListener('pointercancel', function (e) { if (cdNm && e.pointerId === cdNm.pid) cdNameUp(true); }, true);   // a drag taken away: nothing written
+    window.addEventListener('pointercancel', function (e) { if (cdNm && e.pointerId === cdNm.pid) cdNameUp(true); }, true);
+    }   // a drag taken away: nothing written
     function cdNameUp(cancel) {
       var d = cdNm; cdNm = null;
       if (!d) return;
@@ -796,11 +863,12 @@
       if (d.p && cdApply(function (t) { return cdMk.nameAt(t, d.id, d.p); }, [d.id])) return;
       (d.parts || []).forEach(function (el) { el.removeAttribute('transform'); });
       var k = nodes2.findIndex(function (n) { return n.id === d.id; });
-      selN = k >= 0 ? [k] : []; selP = []; selE = []; part = null; paint();
+      shared.selN = k >= 0 ? [k] : []; shared.selP = []; shared.selE = []; shared.part = null; paint();
     }
     // a name typed in place (a double click on a species, a complex's member included, on a complex's or a compartment's
     // drawn name, or anywhere on a complex or a compartment off what it holds; typeIn in create.js), written by cd_make.rename;
     // a degraded species has none
+    function __run24() {   // run at start, in order (__start)
     V.view.addEventListener('dblclick', function (e) {
       if (!cdPal() || !editing(e)) return;
       if (tool || Date.now() - placedAt < 600) { e.stopImmediatePropagation(); return; }
@@ -809,14 +877,15 @@
       if (sq) { e.stopImmediatePropagation(); cdSvOpen(nodes2[sq[0]].id, sq[1]); return; }   // a residue's, the structural state's or the unit's window
       var i = nameAt(P, named);   // create.js: a species, a member, else a group's drawn name or the group round P; a line, a process or a gate nothing
       if (i < 0) return;
-      var A = cdMk.aliasInfo(cd.now, nodes2[i].id);
+      var A = cdMk.aliasInfo(shared.cd.now, nodes2[i].id);
       if (A.cls === 'DEGRADED') return;
       e.stopImmediatePropagation(); typeIn(nodes2[i].id, null);
     }, true);
+    }
     // the name as typed: CellDesigner's file keeps it escaped, a line break as _br_ and Greek letters spelled (cd_make.cdName);
     // a species not named yet carries its id (CellDesigner's way), shown as no name
     function cdNameOf(id, shown) {   // shown: the name as drawn (Properties), else '' for one still named after its id (typed in place)
-      var A = cdMk.aliasInfo(cd.now, id), s = A.name || '';
+      var A = cdMk.aliasInfo(shared.cd.now, id), s = A.name || '';
       if (s === A.id && !shown) return '';
       s = s.replace(/&#x([0-9a-f]+);/gi, function (m, h) { return String.fromCodePoint(parseInt(h, 16)); }).replace(/&#(\d+);/g, function (m, d) { return String.fromCodePoint(+d); })
         .replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
@@ -834,18 +903,21 @@
     // modification is this species'. Once a variable, always a variable: before a residue changes, the protein's other
     // entries of the same name and type (a converted file's one per species) are joined into one (cd_make.joinKin). Written by cd_make (residue, residueState, residueName, residueMove, residueRemove,
     // structural, structuralMove, info), one undo step each
-    var SS = 'StructuralState';
-    var cdFeatMemo = {};   // per alias and file: cd_make.features (read by svAt on a press and svMarks while one is selected); of
+    var cdFeatMemo;
+    function __run25() {   // run at start, in order (__start)
+    cdFeatMemo = {};
+    }   // per alias and file: cd_make.features (read by svAt on a press and svMarks while one is selected); of
     // cd.base, the file as written last (cd.now follows once drawn; a move of a node changes no feature)
     function cdFeat(id) {
-      var t = cd.base;
+      var t = shared.cd.base;
       if (cdFeatMemo.t !== t) cdFeatMemo = { t: t };
       if (!(id in cdFeatMemo)) { try { cdFeatMemo[id] = cdMk.features(t, id); } catch (e) { cdFeatMemo[id] = null; } }
       return cdFeatMemo[id];
     }
     function cdFront(i, f) { var b = boxOf(i), s = 6 * ((f && f.homodimer || 1) - 1); return [b[0], b[1], b[2] - s, b[3] - s]; }   // the front copy of a multimer (cdrender frontBox)
-    var cdPend = null;   // { id, kind, angle }: a structural state or unit of information shown before it is in the file (written once it has a value)
-    function cdSym(st) { return st == null ? '' : st in window.cdrender.SYMBOL ? window.cdrender.SYMBOL[st] : st; }
+    function __run26() {   // run at start, in order (__start)
+    shared.cdPend = null;
+    }   // { id, kind, angle }: a structural state or unit of information shown before it is in the file (written once it has a value)
     // the icons shown on node i, as create.js svList gives them: [text, centre, size, kind, index among its kind]
     function cdSvList(i) {
       var n = nodes2[i];
@@ -855,9 +927,9 @@
       if (!f) return [];
       var b = cdFront(i, f), on = window.cdrender.onBorder, out = [];
       f.residues.forEach(function (r, k) { out.push([r.name, on(b, r.angle), [16, 16], SV, k]); });   // a residue's text: its site name (its modification in its window)
-      var st = f.structural || (cdPend && cdPend.id === n.id && cdPend.kind === SS ? { text: '', angle: cdPend.angle } : null);
+      var st = f.structural || (shared.cdPend && shared.cdPend.id === n.id && shared.cdPend.kind === SS ? { text: '', angle: shared.cdPend.angle } : null);
       if (st) out.push([st.text, on(b, st.angle), [2 * cdRx(st.text), 16], SS, 0]);
-      if (f.info || (cdPend && cdPend.id === n.id && cdPend.kind === UI)) out.push([f.info ? f.info.text : '', [b[0] + b[2] / 2, b[1]], [70, 16], UI, 0]);
+      if (f.info || (shared.cdPend && shared.cdPend.id === n.id && shared.cdPend.kind === UI)) out.push([f.info ? f.info.text : '', [b[0] + b[2] / 2, b[1]], [70, 16], UI, 0]);
       return out;
     }
     // Icons that never touch (notes/state-crowding.md; the SBGN-ML copy: create.js svRoom): a residue, the structural
@@ -866,7 +938,10 @@
     // middle outwards, the sides' middles, the corners, the top, the sides' other places); with none free the species
     // grows about its centre (cdGrowStep), the residues on a grown side spread again (cdOn), and the places are worked out
     // again. Nothing else moves; never when a map is opened or saved.
-    var cdTop = Math.PI / 2;
+    var cdTop;
+    function __run27() {   // run at start, in order (__start)
+    cdTop = Math.PI / 2;
+    }
     function cdRx(txt) { return Math.trunc(window.cdrender.width(txt || '', 10) / 2 + 12); }   // a structural state's half width (cdrender)
     function cdFrontOf(t, a, box) { var I = cdMk.aliasInfo(t, a), b = box || I.box, s = 6 * ((I.homodimer || 1) - 1); return [b[0], b[1], b[2] - s, b[3] - s]; }   // cdFront from the file (box: a size tried)
     function cdAngleOn(p, F) { return cdMk.ratioAngle([(p[0] - F[0]) / F[2] - 0.5, (p[1] - F[1]) / F[3] - 0.5]); }
@@ -917,7 +992,10 @@
       }
       return { box: b === b0 ? null : b, angle: cdMk.placesFor(F[2], F[3])[0] };
     }
-    var cdGrew = null;   // during cdApply: alias id -> its box before it grew (in the editor's frame), its holders grown after
+    var cdGrew;
+    function __run28() {   // run at start, in order (__start)
+    cdGrew = null;
+    }   // during cdApply: alias id -> its box before it grew (in the editor's frame), its holders grown after
     function cdGrowBounds(t, a, box) {   // the bounds alone (the icons kept by angle, in proportion: another copy of the protein)
       if (cdGrew && !cdGrew[a]) { var i = nodes2.findIndex(function (n) { return n.id === a; }); if (i >= 0) cdGrew[a] = boxOf(i); }
       return cdMk.bounds(t, a, box);
@@ -997,7 +1075,10 @@
       });
       return t;
     }
-    var cdMultiMemo = [null, null];   // [file, { class and name: true }]: the multimers on the map, read in one pass per file
+    var cdMultiMemo;
+    function __run29() {   // run at start, in order (__start)
+    cdMultiMemo = [null, null];
+    }   // [file, { class and name: true }]: the multimers on the map, read in one pass per file
     function cdKindKey(sp) { var cl = /<celldesigner:class>([^<]*)</.exec(sp), nm = / name="([^"]*)"/.exec(sp); return cl && nm ? cl[1] + '\u0001' + nm[1] : null; }
     function cdMultis(t) {
       if (cdMultiMemo[0] !== t) {
@@ -1048,7 +1129,7 @@
       var q = cdSvList(i)[j], id = nodes2[i].id;
       if (!q || q[3] === UI) return false;
       var a = cdAngle(i, r), ok = cdApply(function (t) { return q[3] === SV ? cdMk.residueMove(cdMk.joinKin(t, id), id, q[4], a) : cdMk.structuralMove(t, id, a); }, []);
-      svSel = { id: id, j: j }; paint();
+      shared.svSel = { id: id, j: j }; paint();
       return ok;
     }
     function cdSvDelete(i, j) {
@@ -1066,8 +1147,8 @@
     // a new structural state's text typed in its ellipse (typeIn, create.js): written on every copy of the species, each
     // at its own free place (this one where it was shown); nothing when left empty
     function cdSsTyped(id, v) {
-      var pend = cdPend && cdPend.id === id && cdPend.kind === SS ? cdPend : null;
-      cdPend = null;
+      var pend = shared.cdPend && shared.cdPend.id === id && shared.cdPend.kind === SS ? shared.cdPend : null;
+      shared.cdPend = null;
       if (pend && v) cdApply(function (t) { return cdSsSet(t, id, v, pend.angle); }, []);
       paint();
     }
@@ -1080,9 +1161,9 @@
     // the node where there is room, else above, right, left. Enter, Esc or a click outside close it. Kept as typing
     // (create.js), so a zoom or a pan moves it and another map, leaving editing or another field closes it (its text kept)
     function cdSvWin(id, kind, k) {
-      if (typing) typing.done(true);
+      if (shared.typing) shared.typing.done(true);
       var m0 = map, res = kind === SV, ui = kind === UI;
-      var feat = function () { try { return cdMk.features(cd.base, id); } catch (e) { return null; } };   // the file as just written (cd.now follows once drawn)
+      var feat = function () { try { return cdMk.features(shared.cd.base, id); } catch (e) { return null; } };   // the file as just written (cd.now follows once drawn)
       var f = feat();
       if (!f || (res && !f.residues[k])) return;
       var box = document.createElement('div');
@@ -1104,7 +1185,7 @@
       };
       if (res) cdMk.STATES.forEach(function (s) { sel.appendChild(new Option(s, s)); });   // CellDesigner's names as its list writes them
       var rid = res ? f.residues[k].id : null;   // the residue by its id: another one removed or an undo moves its index
-      var pendOf = function () { return cdPend && cdPend.id === id && cdPend.kind === kind ? cdPend : null; };
+      var pendOf = function () { return shared.cdPend && shared.cdPend.id === id && shared.cdPend.kind === kind ? shared.cdPend : null; };
       if (ui) {
         Object.keys(cdMk.INFO).concat(['N', 'free input']).forEach(function (p) { sel.appendChild(new Option(p, p)); });
         sel.value = f.info ? f.info.prefix : 'pc'; labels();
@@ -1118,7 +1199,7 @@
         row.hidden = !!sel.value;
       }
       var T;
-      var live = function () { return typing === T && on && map === m0; };
+      var live = function () { return shared.typing === T && on && map === m0; };
       var kNow = function () { var g = feat(); return g ? g.residues.findIndex(function (r) { return r.id === rid; }) : -1; };
       var jOf = function () {   // its index among the node's icons (cdSvList: the residues, then the structural state); -1 when gone
         var g = feat();
@@ -1130,7 +1211,7 @@
         cdApply(fn, []);
         var j = jOf();
         if (j < 0 && !pendOf()) { T.done(false); return; }   // gone (removed): the window with it
-        svSel = j < 0 ? null : { id: id, j: j }; paint();
+        shared.svSel = j < 0 ? null : { id: id, j: j }; paint();
       };
       var site = function () {   // the site as typed, when it differs
         var kk = kNow(), r = kk < 0 ? null : feat().residues[kk], v = inp.value.trim();
@@ -1140,7 +1221,7 @@
         var pend = pendOf();
         if (v) {
           write(function (t) { return cdSsSet(t, id, v, pend ? pend.angle : null); });
-          if (pend && cdPend === pend) cdPend = null;
+          if (pend && shared.cdPend === pend) shared.cdPend = null;
         }
         else if (!pend) write(function (t) { return cdMk.structural(t, id, null); });
       };
@@ -1148,7 +1229,7 @@
         var pend = pendOf();
         if (!q) { if (!pend) write(function (t) { return cdMk.info(t, id, null); }); return; }
         write(function (t) { return cdTopClear(cdMk.info(t, id, q, true), id, false); });
-        if (pend && cdPend === pend) cdPend = null;
+        if (pend && shared.cdPend === pend) shared.cdPend = null;
       };
       var chosen = function () { return [sel.value, fixed() ? lab.value : inp.value.trim()]; };
       var commit = function () {
@@ -1171,11 +1252,11 @@
         box.style.left = at[0] / z + 'px'; box.style.top = at[1] / z + 'px';
       };
       var outside = function (e) { if (!box.contains(e.target)) T.done(true); };
-      T = typing = { inp: inp, place: place, done: function (keep) {
-        if (typing !== T) return;
+      T = shared.typing = { inp: inp, place: place, done: function (keep) {
+        if (shared.typing !== T) return;
         if (keep) commit();
-        typing = null; box.remove(); document.removeEventListener('pointerdown', outside, true);
-        if (pendOf()) cdPend = null;
+        shared.typing = null; box.remove(); document.removeEventListener('pointerdown', outside, true);
+        if (pendOf()) shared.cdPend = null;
         paint();
       } };
       sel.addEventListener('change', function () {
@@ -1207,8 +1288,8 @@
       document.body.appendChild(box);
       document.addEventListener('pointerdown', outside, true);
       var j0 = jOf();
-      svSel = j0 < 0 ? null : { id: id, j: j0 }; paint(); place();
-      box.tabIndex = -1; setTimeout(function () { if (typing === T) box.focus({ preventScroll: true }); }, 0);
+      shared.svSel = j0 < 0 ? null : { id: id, j: j0 }; paint(); place();
+      box.tabIndex = -1; setTimeout(function () { if (shared.typing === T) box.focus({ preventScroll: true }); }, 0);
     }
     // added from the species' menu: a residue as an empty circle at the first free place (cdResidueNew), selected (its window
     // by a double click); a structural state (never empty) typed at once in its ellipse at cdSsAngle; a unit of
@@ -1216,17 +1297,17 @@
     function cdSvAdd(id, kind) {
       var i = nodes2.findIndex(function (n) { return n.id === id; });
       if (i < 0) return;
-      if (typing) typing.done(true);   // a field still open written first, so it does not take this one's place
+      if (shared.typing) shared.typing.done(true);   // a field still open written first, so it does not take this one's place
       if (kind === SV) {
         var k = null;
         if (!cdApply(function (t) { var o = cdResidueNew(t, id); k = o.residue; return o.text; }, [])) return;
-        svSel = { id: id, j: k }; paint();
+        shared.svSel = { id: id, j: k }; paint();
         return;
       }
-      cdPend = kind === SS ? { id: id, kind: SS, angle: cdSsAngle(cd.base, id, '') } : { id: id, kind: UI };
+      shared.cdPend = kind === SS ? { id: id, kind: SS, angle: cdSsAngle(shared.cd.base, id, '') } : { id: id, kind: UI };
       if (kind === UI) { cdSvWin(id, UI, 0); return; }
       var j = cdSvList(i).map(function (q) { return q[3]; }).indexOf(SS);
-      if (j < 0) { cdPend = null; return; }
+      if (j < 0) { shared.cdPend = null; return; }
       typeIn(id, j);
     }
     // the right-click items over a species or a complex: Add state variable (a protein's residue), Add structural state,
@@ -1252,7 +1333,7 @@
       out.push(['Change state', subItem(function (r, done) {
         return kindWindow(r, cdMk.STATES.map(function (s) {
           return { name: s, own: s === now,
-            go: function () { cdApply(function (t) { return cdMk.residueState(cdMk.joinKin(t, id), id, it[4], s); }, []); svSel = { id: id, j: q[1] }; paint(); } };
+            go: function () { cdApply(function (t) { return cdMk.residueState(cdMk.joinKin(t, id), id, it[4], s); }, []); shared.svSel = { id: id, j: q[1] }; paint(); } };
         }), done);
       })]);
       return out;
@@ -1262,7 +1343,7 @@
       Object.keys(cdMk.INFO).forEach(function (p) { cdMk.INFO[p].forEach(function (l) { list.push([p, l]); }); });
       return [['Change unit', subItem(function (r, done) {
         return kindWindow(r, list.map(function (u) {
-          return { name: u.join(':'), own: u.join(':') === now, go: function () { cdApply(function (t) { return cdMk.info(t, id, u, true); }, []); svSel = { id: id, j: j }; paint(); } };
+          return { name: u.join(':'), own: u.join(':') === now, go: function () { cdApply(function (t) { return cdMk.info(t, id, u, true); }, []); shared.svSel = { id: id, j: j }; paint(); } };
         }), done);
       })]];
     }
@@ -1281,25 +1362,34 @@
       remember(false); setBoxes(one);
       var ks = nodes2.map(function (n, k) { return ids.indexOf(n.id) >= 0 ? k : -1; }).filter(function (k) { return k >= 0; });
       setBoxes(grown(ks, boxOf, function (k) { return was[nodes2[k].id] || boxOf(k); }, function () { return false; }));
-      selN = []; nodes2.forEach(function (n, k) { if (ids.indexOf(n.id) >= 0) selN.push(k); });
-      sizeRec = null; render(); paint(); changed();
+      shared.selN = []; nodes2.forEach(function (n, k) { if (ids.indexOf(n.id) >= 0) shared.selN.push(k); });
+      shared.sizeRec = null; render(); paint(); changed();
     }
-    var cdLook = [], cdLineMemo = [null, null, null, null];   // [alias id, file, its look]; [line id, file, its colour, its width]
+    var cdLook, cdLineMemo;
+    function __run30() {   // run at start, in order (__start)
+    cdLook = [], cdLineMemo = [null, null, null, null];
+    }   // [alias id, file, its look]; [line id, file, its colour, its width]
     function cdLineRead(k) {   // read once per line and file (it runs with every paint)
       var id = edges2[k].id;
-      if (cdLineMemo[0] !== id || cdLineMemo[1] !== cd.now) { var c = null, w = null; try { c = cdMk.lineColour(cd.now, id); w = cdMk.lineWidth(cd.now, id); } catch (e) { c = w = null; } cdLineMemo = [id, cd.now, c, w]; }
+      if (cdLineMemo[0] !== id || cdLineMemo[1] !== shared.cd.now) { var c = null, w = null; try { c = cdMk.lineColour(shared.cd.now, id); w = cdMk.lineWidth(shared.cd.now, id); } catch (e) { c = w = null; } cdLineMemo = [id, shared.cd.now, c, w]; }
       return cdLineMemo;
     }
     function cdLineColour(k) { return cdLineRead(k)[2]; }
-    var cdPartsMemo = [null, null, null];   // [reaction, file, its participants]: read once per reaction and file
+    var cdPartsMemo;
+    function __run31() {   // run at start, in order (__start)
+    cdPartsMemo = [null, null, null];
+    }   // [reaction, file, its participants]: read once per reaction and file
     function cdParts(rid) {
-      if (cdPartsMemo[0] !== rid || cdPartsMemo[1] !== cd.now) { var p; try { p = cdMk.participants(cd.now, rid); } catch (e) { p = []; } cdPartsMemo = [rid, cd.now, p]; }
+      if (cdPartsMemo[0] !== rid || cdPartsMemo[1] !== shared.cd.now) { var p; try { p = cdMk.participants(shared.cd.now, rid); } catch (e) { p = []; } cdPartsMemo = [rid, shared.cd.now, p]; }
       return cdPartsMemo[2];
     }
-    var cdCountMemo = {};   // a line's cardinality by its id, for one file (Properties runs with every paint)
+    var cdCountMemo;
+    function __run32() {   // run at start, in order (__start)
+    cdCountMemo = {};
+    }   // a line's cardinality by its id, for one file (Properties runs with every paint)
     function cdCount(id) {
-      if (cdCountMemo.now !== cd.now) cdCountMemo = { now: cd.now };
-      if (!(id in cdCountMemo)) { var c; try { c = cdMk.stoichiometry(cd.now, id); } catch (e) { c = undefined; } cdCountMemo[id] = c; }
+      if (cdCountMemo.now !== shared.cd.now) cdCountMemo = { now: shared.cd.now };
+      if (!(id in cdCountMemo)) { var c; try { c = cdMk.stoichiometry(shared.cd.now, id); } catch (e) { c = undefined; } cdCountMemo[id] = c; }
       return cdCountMemo[id];
     }
     function cdMember(i) { var n = nodes2[i]; return n.up != null && nodes2[n.up].shape.kind === 'Complex'; }   // a complex's member (a complex inside one too)
@@ -1308,7 +1398,9 @@
       var id = edges2[k].id, keep = /\|[mrp]\d+$/.test(id) ? id : id.replace(/\|[^|]*$/, '');
       return cdApply(function (t) { return f(t, id); }, [], [keep]);
     }
-    var PF_CD = { sizable: cdProp, size: cdSetSize, def: cdDef,
+    var PF_CD;
+    function __run33() {   // run at start, in order (__start)
+    PF_CD = { sizable: cdProp, size: cdSetSize, def: cdDef,
       rx: { of: cdRxOf, set: cdReversible,   // a reaction's Reversible (propRx, create.js)
         counts: cdParts,   // its reactants' and products' numbers by name (rxCounts)
         setCount: function (rid, line, v) { return cdApply(function (t) { return cdMk.restoich(t, line, v); }, [], [rid]); } },
@@ -1324,10 +1416,10 @@
       },
       look: function (i) {   // null while the file is behind the map read (an undo not drawn yet); read once per node and file (it runs with every paint)
         var id = nodes2[i].id;
-        if (cdLook[0] !== id || cdLook[1] !== cd.now) {
+        if (cdLook[0] !== id || cdLook[1] !== shared.cd.now) {
           var L = null;
-          try { L = cdMk.look(cd.now, id); var ss = cdMk.features(cd.now, id).structural; L = { ss: ss ? ss.text : '', label: cdNameOf(id, true), font: L.font, fill: L.fill, line: '#000000', width: L.width, multimer: L.multimer, cls: L.cls, mem: L.mem, outer: L.outer, inner: L.inner }; } catch (e) { L = null; }
-          cdLook = [id, cd.now, L];
+          try { L = cdMk.look(shared.cd.now, id); var ss = cdMk.features(shared.cd.now, id).structural; L = { ss: ss ? ss.text : '', label: cdNameOf(id, true), font: L.font, fill: L.fill, line: '#000000', width: L.width, multimer: L.multimer, cls: L.cls, mem: L.mem, outer: L.outer, inner: L.inner }; } catch (e) { L = null; }
+          cdLook = [id, shared.cd.now, L];
         }
         return cdLook[2] && Object.assign({}, cdLook[2]);
       },
@@ -1356,6 +1448,7 @@
     // a species' structural state as one row (one field, as it is one), after
     // the compartment's rows; its text, empty for none; residues stay on the right-click (many, each its own list)
     propRows([['ss', 'Structural state', 'text', '', 'The species\u2019 structural state, free text; emptied, it is removed']]);
+    }
     function cdDouble(k, x, ids) {
       if (!isFinite(x)) return false;
       var clamp = function (v, a, b) { return Math.min(Math.max(v, a), b); };
@@ -1376,11 +1469,11 @@
     // cut 5, a degraded circle 3/8 of the width with its stroke), so nothing changes shape on the drop
     function cdCompGhost(w, h, oval) {   // a new compartment as cdrender draws it (cd_make's COMP: its lines and band; its colour by Colours)
       var C = cdMk.COMP;
-      return window.cdrender.compartmentShape(0, 0, w, h, C.thickness, C.outer, C.inner, '#' + (cdColour(cd && cd.now, 'COMPARTMENT') || C.colour).slice(2), oval);
+      return window.cdrender.compartmentShape(0, 0, w, h, C.thickness, C.outer, C.inner, '#' + (cdColour(shared.cd && shared.cd.now, 'COMPARTMENT') || C.colour).slice(2), oval);
     }
     function cdGhost(kind) {
       var cls = cdKind(kind), s = cdSize(cls), n = cdComp(cls) ? 1 : cdCopies(cls), e = 6 * (n - 1), w = s[0] - e, h = s[1] - e, k = cdCols() === 'custom' && cdKept()[cls],   // a kept multimer: its front one, the copies behind (as dropped)
-        col = cdComp(cls) ? 'none' : '#' + (cdColour(cd && cd.now, cls) || cdMk.LOOK[cls][2]).slice(2), ink = ' fill="' + col + '" stroke="#000" stroke-width="' + (k && k.width > 0 && cls !== 'DEGRADED' ? k.width : 1) + '"';
+        col = cdComp(cls) ? 'none' : '#' + (cdColour(shared.cd && shared.cd.now, cls) || cdMk.LOOK[cls][2]).slice(2), ink = ' fill="' + col + '" stroke="#000" stroke-width="' + (k && k.width > 0 && cls !== 'DEGRADED' ? k.width : 1) + '"';
       var shape = {
         PROTEIN: '<rect width="' + w + '" height="' + h + '" rx="5"' + ink + '/>', GENE: '<rect width="' + w + '" height="' + h + '"' + ink + '/>',
         RNA: '<path d="M' + h + ' 0H' + w + 'L' + (w - h) + ' ' + h + 'H0z"' + ink + '/>', SIMPLE_MOLECULE: '<ellipse cx="' + w / 2 + '" cy="' + h / 2 + '" rx="' + w / 2 + '" ry="' + h / 2 + '"' + ink + '/>',
@@ -1393,3 +1486,6 @@
       for (var j = n - 1, back = ''; j > 0; j--) back += '<g transform="translate(' + 6 * j + ' ' + 6 * j + ')">' + shape + '</g>';
       return { w: s[0], h: s[1], svg: '<svg width="100%" height="100%" viewBox="0 0 ' + s[0] + ' ' + s[1] + '" overflow="visible">' + (back || '') + shape + '</svg>' };
     }
+
+    export function __start() { __run1(); __run2(); __run3(); __run4(); __run5(); __run6(); __run7(); __run8(); __run9(); __run10(); __run11(); __run12(); __run13(); __run14(); __run15(); __run16(); __run17(); __run18(); __run19(); __run20(); __run21(); __run22(); __run23(); __run24(); __run25(); __run26(); __run27(); __run28(); __run29(); __run30(); __run31(); __run32(); __run33(); }   // the part's statements, in their order
+    export { CD_DEF_KEY, CD_GATE, PF_CD, cdCardDown, cdCheck, cdClick, cdClsOf, cdDeleteItem, cdFeat, cdFill, cdFront, cdGateMarks, cdGhost, cdHow, cdInfo, cdItems, cdKind, cdLineAt, cdLink, cdLinkMarks, cdLiveEnds, cdMake, cdNameDown, cdNameOf, cdOnLine, cdOverMarks, cdPal, cdRename, cdRole, cdSsTyped, cdStartOk, cdSvDelete, cdSvList, cdSvMove, cdSvOpen };

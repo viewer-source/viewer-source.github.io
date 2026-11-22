@@ -1,3 +1,8 @@
+import { shared, V } from './state.js';
+import { boxOf, cut, edges2, f1, gE, gN, gridBlock, lastFor, lastSvg, nodes2, num, on, points, ports, pt, rebase, spotNo, status, undo, warn } from './core.js';
+import { bx, dropCopies, picOff, restPt, toPic } from './live.js';
+import { cdCheck, cdClsOf, cdRole } from './cdcreate.js';
+
     // ---------- the CellDesigner part (editor/src/celldesigner.js) ----------
     // A CellDesigner map edited in CellDesigner's own model: the GraphML renderers/converter/cd_edit.js makes of it, the
     // moves written back into the CellDesigner text by it, the map drawn by cdrender.js (both in JavaScript, the same
@@ -7,18 +12,21 @@
     // a CellDesigner map, edited with the same tools as a yEd map: as the GraphML that
     // renderers/converter/cd_edit.js makes of it (cd_edit.py's header says how), the moves written back into the CellDesigner file
     // by it and the map drawn by cdrender, each part in a group of its own; text is that GraphML, cd.now the file
-    var cdp = null, cdJs = null, cdMk = null, cd = null;   // the CellDesigner side loading, once loaded (cd_edit, cd_make), the file edited ({ base, now })
+    var cdp, cdJs, cdMk;
+    function __run1() {   // run at start, in order (__start)
+    cdp = null, cdJs = null, cdMk = null, shared.cd = null;
+    }   // the CellDesigner side loading, once loaded (cd_edit, cd_make), the file edited ({ base, now })
     function isCd(t) { return /<sbml[\s>]/.test(t.slice(0, 3000)) && t.indexOf('celldesigner') >= 0; }
     // the line grid (core.js, lineStep): a line's end on a node on it inside the shape and along its outline, bend points
     // snapping to it; or none: a line's end at one of the node's places only, as a CellDesigner file keeps a species' line,
     // places that follow each node's size and so meet no grid, its bend points lined up by the guides alone
-    function lineGrid() { return !cd; }
+    function lineGrid() { return !shared.cd; }
     // the places a line's end takes on node n where the format fixes them, as offsets from its centre with the place's
     // name third: on a CellDesigner species its 16 (cdrender anchorAt, on a multimer's front copy as the line is drawn),
     // which cd_edit writes as that place; the centre apart (nodeCentre). A dragged end (core.js spot) and a new line
     // (cdcreate.js cdPort) land alike. null elsewhere
     function nodePlaces(n) {
-      var R = window.cdrender, cl = cd && R && R.anchorAt && cdRole(n) === 'epn' ? cdClsOf(nodes2[n].id) : null;
+      var R = window.cdrender, cl = shared.cd && R && R.anchorAt && cdRole(n) === 'epn' ? cdClsOf(nodes2[n].id) : null;
       if (!cl) return null;
       var b = bx(n), C = [b[0] + b[2] / 2, b[1] + b[3] / 2], f = R.frontBox(b, cl[1]);
       return Object.keys(R.ANCHOR).map(function (k) { var A = R.anchorAt(cl[0], f, k); return [A[0] - C[0], A[1] - C[1], k]; });
@@ -30,7 +38,9 @@
     // a process glyph not moved itself stays midway on its segment of the main line wherever that goes (cd_edit), so
     // while a drag or the keys move a segment's end it follows at once (not only on
     // release): procs, each glyph with its two main arcs; liveG, the glyphs' shifts until the map is drawn again
-    var procs = [], liveG = null;
+    function __run2() {   // run at start, in order (__start)
+    shared.procs = [], shared.liveG = null;
+    }
     function cdpy() {   // the CellDesigner side: cdrender.js, then cd_edit.js (it reads cdrender), quick to load
       if (cdp) return cdp;
       var script = function (f) {
@@ -50,7 +60,10 @@
     }
     // a CellDesigner file made into the editor's GraphML once per text (read ahead while the map is shown, then at the
     // switch and for the click data the same text again): the last few kept
-    var cdMemo = [];
+    var cdMemo;
+    function __run3() {   // run at start, in order (__start)
+    cdMemo = [];
+    }
     // once the map has changed (an undo step taken), every drawing fits the canvas round the content (cd_edit.place's fit:
     // the content's top left 40 to 40 + the block (gridBlock) from the corner, the canvas MARGIN past its right and bottom), so the file saved, its
     // downloads and the site's picture never carry a canvas larger than the map; the shift moves the frame with it
@@ -61,13 +74,13 @@
     // drawing on screen when it is of this GraphML, else drawn here (x0 may still belong to an older drawing)
     function cdShift(svg) { var m = /<g transform="translate\(([-\d.]+),([-\d.]+)\)">/.exec(svg || ''); return m ? [+m[1], +m[2]] : [0, 0]; }
     function cdNow() {
-      if (lastFor && lastFor[0] === text && lastFor[1] === cd.now) return { t: cd.now, sh: cdShift(lastSvg) };
-      var q = cdDraw(cd.base, text);
+      if (lastFor && lastFor[0] === shared.text && lastFor[1] === shared.cd.now) return { t: shared.cd.now, sh: cdShift(lastSvg) };
+      var q = cdDraw(shared.cd.base, shared.text);
       return { t: q[1], sh: cdShift(q[0]) };
     }
     // a changed file made the map's base, its GraphML made again (the caller parses it): that GraphML is in the drawn file's
     // places, so the editor's places move by the drawing's shift, and the frame with them (rebase): nothing moves on screen
-    function cdRebuild(t, sh) { cd.base = t; text = cdGraphml(t); rebase(sh[0], sh[1]); }
+    function cdRebuild(t, sh) { shared.cd.base = t; shared.text = cdGraphml(t); rebase(sh[0], sh[1]); }
     function cdGraphml(t) {
       var g = cdKnown(t);
       if (g) return g;
@@ -93,7 +106,7 @@
     // where a line meets a glyph that follows its segment: CellDesigner ties the meeting points to the segment, an added
     // reactant or product at a share of it (turned and stretched with it), a modifier at a spot round the glyph (turned)
     function glyphPort(i, off, eid) {
-      var L = liveG && liveG[i];
+      var L = shared.liveG && shared.liveG[i];
       if (!L || (!L[2] && L[3] === 1)) return off;
       var c = Math.cos(L[2]), s2 = Math.sin(L[2]), f = /\|[rp]\d+$/.test(eid) ? L[3] : 1;
       return [f * (c * off[0] - s2 * off[1]), f * (s2 * off[0] + c * off[1])];
@@ -104,12 +117,12 @@
     // since cdLines draws a move with the drop's own code, glyphFollow's drawing is the fallback only; its glyph place
     // (liveG, corrected by cdLines) and the hiding of the lines still serve the guides and the selection
     function glyphFollow(ns, ps, back, pp) {   // pp: a port being dragged
-      if (!procs.length || !gN) return;
-      var old = liveG; liveG = null;
+      if (!shared.procs.length || !gN) return;
+      var old = shared.liveG; shared.liveG = null;
       var rest = function (i) { var b = boxOf(i); return back && ns.has(i) ? [b[0] - back[0], b[1] - back[1], b[2], b[3]] : b; };
       var restP = function (pi) { var p = points[pi], o = back && ps.has(pi); return [num(p, 'x') - (o ? back[0] : 0), num(p, 'y') - (o ? back[1] : 0)]; };
       var out = {}, any = false;
-      procs.forEach(function (q) {
+      shared.procs.forEach(function (q) {
         var ea = edges2[q.a], eb = edges2[q.b];
         if (ns.has(q.g) || ea.s == null || eb.t == null) return;
         var port = pp && pp.to && (pp.k === q.a || pp.k === q.b);
@@ -119,14 +132,14 @@
       });
       if (old) Object.keys(old).forEach(function (i) { if (!out[i]) { var g = gN[nodes2[i].id]; if (g) g.removeAttribute('transform'); } });
       if (!any) return;
-      liveG = out; live = live || new Set();
+      shared.liveG = out; shared.live = shared.live || new Set();
       Object.keys(out).forEach(function (i) {
         var o2 = out[i], c0 = toPic(o2[4]), g = gN[nodes2[i].id];   // moved with its middle and turned with its segment (about its middle on the picture)
         if (g) g.setAttribute('transform', 'translate(' + f1(c0[0] + o2[0]) + ' ' + f1(c0[1] + o2[1]) + ') rotate(' + f1(o2[2] * 180 / Math.PI) + ') translate(' + f1(-c0[0]) + ' ' + f1(-c0[1]) + ')');
         edges2.forEach(function (e, k) {
           if (e.s !== +i && e.t !== +i) return;
           var gs = gE[e.id]; if (gs) gs.forEach(function (x) { x.style.display = 'none'; });
-          live.add(k);
+          shared.live.add(k);
         });
       });
     }
@@ -135,11 +148,14 @@
     // screen (cdBase, set where the drawing is put in; made ahead when the browser is idle), writes the reactions the
     // move touches as the drop writes them and draws them with cdrender's own reaction drawing (the same text as the
     // drawing after the drop, tests/cd-live.js), put in place of their groups as copies; the glyph's place follows it
-    var cdBase = null, cdLive = null;
+    var cdLive;
+    function __run4() {   // run at start, in order (__start)
+    shared.cdBase = null, cdLive = null;
+    }
     function cdSession() {
-      if (!cd || !cdJs || !cdJs.live || !cdBase) return null;
-      if (cdLive && cdLive.base === cdBase) return cdLive.s;
-      try { cdLive = { base: cdBase, s: cdJs.live(cdBase.now, cdBase.text) }; } catch (e) { cdLive = null; }
+      if (!shared.cd || !cdJs || !cdJs.live || !shared.cdBase) return null;
+      if (cdLive && cdLive.base === shared.cdBase) return cdLive.s;
+      try { cdLive = { base: shared.cdBase, s: cdJs.live(shared.cdBase.now, shared.cdBase.text) }; } catch (e) { cdLive = null; }
       return cdLive ? cdLive.s : null;
     }
     function cdSessionSoon() { (window.requestIdleCallback || function (f) { setTimeout(f, 0); })(function () { if (on) cdSession(); }); }
@@ -150,16 +166,16 @@
       var S = cdSession();
       if (!S || !S.holder) return;
       var todo = ks.filter(function (i) {
-        var R = liveOrig[i], b = liveC[i];
+        var R = shared.liveOrig[i], b = shared.liveC[i];
         return !(R && R.at && R.at.every(function (v, j) { return v === b[j]; }));
-      }).map(function (i) { return [i, S.holder(nodes2[i].id, toPic(liveC[i]))]; }).filter(function (q) { return q[1] != null; });
+      }).map(function (i) { return [i, S.holder(nodes2[i].id, toPic(shared.liveC[i]))]; }).filter(function (q) { return q[1] != null; });
       if (!todo.length) return;
       var doc = new DOMParser().parseFromString('<svg xmlns="http://www.w3.org/2000/svg">' + todo.map(function (q) { return '<g>' + q[1] + '</g>'; }).join('') + '</svg>', 'image/svg+xml').documentElement;
       var parts = Array.prototype.filter.call(doc.childNodes, function (c) { return c.nodeType === 1; });
       todo.forEach(function (q, k) {
         var i = q[0], g = gN[nodes2[i].id];
-        if (!liveOrig[i]) { var kids = Array.prototype.slice.call(g.childNodes); liveOrig[i] = { back: function () { g.replaceChildren.apply(g, kids); } }; }
-        liveOrig[i].at = liveC[i].slice();
+        if (!shared.liveOrig[i]) { var kids = Array.prototype.slice.call(g.childNodes); shared.liveOrig[i] = { back: function () { g.replaceChildren.apply(g, kids); } }; }
+        shared.liveOrig[i].at = shared.liveC[i].slice();
         g.replaceChildren.apply(g, Array.prototype.map.call(parts[k].childNodes, function (c) { return document.importNode(c, true); }));
       });
     }
@@ -179,10 +195,13 @@
       R.at = nb.slice();
       return R;
     }
-    var liveCd = { glyphs: glyphFollow, lines: cdLines, holders: cdHolders, size: cdSizeLive };
-    var RXE = /^(.*)\|(a|b|[rpmi]\d+)$/;   // i: an input of a gate between entities
+    var liveCd, RXE;
+    function __run5() {   // run at start, in order (__start)
+    liveCd = { glyphs: glyphFollow, lines: cdLines, holders: cdHolders, size: cdSizeLive };
+    RXE = /^(.*)\|(a|b|[rpmi]\d+)$/;
+    }   // i: an input of a gate between entities
     function cdLines(ks, pp) {   // false: not drawn this way (the copies of fullLines then)
-      if (!cd || !gE) return false;
+      if (!shared.cd || !gE) return false;
       var rids = new Set();
       ks.forEach(function (k) { var m = edges2[k].id.match(RXE); if (m) rids.add(m[1]); });
       if (!rids.size) return false;
@@ -231,14 +250,14 @@
             var orig = id && gE[id] ? gE[id][q[2] ? gE[id].length - 1 : 0] : pn ? gN[pn] : null;
             el.removeAttribute('data-e'); el.removeAttribute('data-n'); el.classList.add('m2-ed-copy');
             q[1].parentNode.insertBefore(el, q[1]);
-            copies.push([el, orig, id && byE[id] != null ? byE[id] : null]);
+            shared.copies.push([el, orig, id && byE[id] != null ? byE[id] : null]);
           });
         });
         // the glyph where it is drawn now (selection, guides, the ends of the lines at it)
         var gi = nodes2.findIndex(function (n) { return n.id === rid + '|proc'; }), r0 = S.rest(rid);
         if (gi >= 0 && r0 && f.sq) {
-          liveG = liveG || {};
-          liveG[gi] = [f.sq[0] - r0[0][0], f.sq[1] - r0[0][1], f.ang - r0[1], r0[2] ? f.len / r0[2] : 1, [r0[0][0] + picOff()[0], r0[0][1] + picOff()[1], r0[1], r0[2]]];   // the rest place in the editor's frame, as glyphFollow's
+          shared.liveG = shared.liveG || {};
+          shared.liveG[gi] = [f.sq[0] - r0[0][0], f.sq[1] - r0[0][1], f.ang - r0[1], r0[2] ? f.len / r0[2] : 1, [r0[0][0] + picOff()[0], r0[0][1] + picOff()[1], r0[1], r0[2]]];   // the rest place in the editor's frame, as glyphFollow's
         }
       });
       return true;
@@ -250,7 +269,7 @@
     function beyond(k, i, all) {
       var e = edges2[k], last = all.length - 1;
       if (i > 0 && i < last) return [all[i], e.pts[i - 1]];
-      var q = procs.find(function (r) { return (i === last && r.a === k) || (i === 0 && r.b === k); });
+      var q = shared.procs.find(function (r) { return (i === last && r.a === k) || (i === 0 && r.b === k); });
       if (!q) return [all[i], null];
       if (i === last) { var eb = edges2[q.b]; if (eb.t == null) return [all[i], null]; return eb.pts.length ? [pt(eb.pts[0]), eb.pts[0]] : [ports(q.b)[eb.pts.length + 1], null]; }
       var ea = edges2[q.a]; if (ea.s == null) return [all[i], null];
@@ -261,7 +280,7 @@
     // for the bend at B (as glyphFollow and glyphPort place it), and the point its first segment runs to
     function glyphArcs(bp) {
       var out = [];
-      procs.forEach(function (q) {
+      shared.procs.forEach(function (q) {
         var ea = edges2[q.a], eb = edges2[q.b];
         if (ea.s == null || eb.t == null || (ea.pts.indexOf(bp) < 0 && eb.pts.indexOf(bp) < 0)) return;
         edges2.forEach(function (e, k) { if (k !== q.a && k !== q.b && e.s != null && e.t != null && (e.s === q.g || e.t === q.g)) out.push({ q: q, k: k }); });
@@ -317,7 +336,10 @@
     // the CellDesigner side loaded in the background a few seconds after the page has shown a CellDesigner map where the
     // Edit tab is (two small JavaScript files, so opening for editing does not wait on them)
     function cdMap(m) { var d = m && m.downloads && m.downloads[0]; return !!(d && d.label === 'CellDesigner'); }
-    var warm = null;
+    var warm;
+    function __run6() {   // run at start, in order (__start)
+    warm = null;
+    }
     function warmUp() {
       clearTimeout(warm);
       warm = setTimeout(function () {
@@ -332,4 +354,9 @@
         });
       }, 2500);
     }
+    function __run7() {   // run at start, in order (__start)
     warmUp();
+    }
+
+    export function __start() { __run1(); __run2(); __run3(); __run4(); __run5(); __run6(); __run7(); }   // the part's statements, in their order
+    export { beyond, cdDraw, cdGraphml, cdJs, cdKnown, cdMap, cdMk, cdNow, cdRebuild, cdRemember, cdSessionSoon, cdpy, glyphArcs, glyphPort, isCd, joinAt, joinGuides, joinSolve, lineGrid, liveCd, nodeCentre, nodePlaces, plainCanvas, warmUp };

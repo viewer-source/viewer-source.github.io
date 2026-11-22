@@ -1,3 +1,6 @@
+import { V } from './state.js';
+import { box, on } from './core.js';
+
     // ---------- How to edit (editor/src/help.js) ----------
     // The one source of the editor's how-to (a popover, so the Edit window keeps its room for palettes and
     // new tools need): shown as a popover over the map's left edge by the "?" after the tools, or the ? key while
@@ -6,7 +9,10 @@
     // Short on purpose: only what a person would not find by trying (a drag moves, a handle resizes, Delete removes stay
     // out); each section a title, a header row or null, and rows of a gesture, what it does and, in Less obvious, the
     // maps it applies to.
-    var MOD = /mac|iphone|ipad|ipod/i.test((navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || navigator.userAgent) ? 'Cmd' : 'Ctrl';
+    var MOD;
+    function __run1() {   // run at start, in order (__start)
+    MOD = /mac|iphone|ipad|ipod/i.test((navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || navigator.userAgent) ? 'Cmd' : 'Ctrl';
+    }
     function helpList() {
       return [
         ['While editing', null, [
@@ -41,7 +47,10 @@
           ['Colours, Original', 'puts back the map\u2019s own colours after another choice', 'all']]]
       ];
     }
-    var helpBtn = box.querySelector('#m2-ed-help'), helpBox = null;
+    var helpBtn, helpBox;
+    function __run2() {   // run at start, in order (__start)
+    helpBtn = box.querySelector('#m2-ed-help'), helpBox = null;
+    }
     function helpBuild() {
       var e = function (t) { return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;'); };
       helpBox = document.createElement('div');
@@ -66,6 +75,7 @@
       } else helpBox.hidden = true;
       helpBtn.setAttribute('aria-pressed', String(show));
     }
+    function __run3() {   // run at start, in order (__start)
     helpBtn.addEventListener('click', function () { help(); });
     document.addEventListener('keydown', function (ev) {
       if (helpBox && !helpBox.hidden && ev.key === 'Escape') { help(false); ev.stopPropagation(); return; }
@@ -77,3 +87,7 @@
     document.addEventListener('pointerdown', function (ev) {   // a click elsewhere closes it
       if (helpBox && !helpBox.hidden && !helpBox.contains(ev.target) && !helpBtn.contains(ev.target)) help(false);
     }, true);
+    }
+
+    export function __start() { __run1(); __run2(); __run3(); }   // the part's statements, in their order
+    export { help, helpBox };

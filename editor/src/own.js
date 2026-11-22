@@ -1,3 +1,8 @@
+import { shared, V } from './state.js';
+import { ahead, api, b64, blobSha, changed, drawText, freeName, gh, graphmlOf, heldText, localBox, map, mapTop, note, on, origFolderDrop, origRead, origWrite, repo, site, src, stop, toFolder, token, unkeep, warn } from './core.js';
+import { cdMap, cdMk, cdpy, isCd } from './celldesigner.js';
+import { NEW_ID, emptyBase, isSb, madeHere, sbMap } from './sbgn.js';
+
     // ---------- the reader's own storage (editor/src/own.js) ----------
     // What a reader without a GitHub token keeps (three layers: this browser, a folder on the computer,
     // GitHub): the drafts' writes, the folder's record, and the reader's own maps with their groups, the list's right-click
@@ -15,7 +20,10 @@
     // the reader's folder (layer 2), kept beside the drafts (store folder): its handle (key dir), read
     // once per page, and the files written here (key files: map id -> { name, mod, size }), read afresh each time, since
     // another tab of the site may have written one since; its name in localStorage (V.folderName)
-    var dirP = null;
+    var dirP;
+    function __run1() {   // run at start, in order (__start)
+    dirP = null;
+    }
     function folder() {
       if (!V.folderName() || !window.indexedDB) return Promise.resolve(null);
       if (!dirP) dirP = V.draftDo('readonly', function (st) { return st.get('dir'); }, 'folder');
@@ -46,9 +54,14 @@
     // folder and no token, as their files in it. Delete map puts one in Deleted (hidden, with deleted: the time; below),
     // the same file added again brings it back. Example maps: the site's maps marked example: true in their pages
     // (below, exampleIds), every other map being the reader's, however it was made
-    var MINE_KEY = 'atlas-mine', mine = {}, mineURLs = {};
+    var MINE_KEY, mine, mineURLs;
+    function __run2() {   // run at start, in order (__start)
+    MINE_KEY = 'atlas-mine', mine = {}, mineURLs = {};
+    }
     function mineFlag() { try { if (Object.keys(mine).length) localStorage.setItem(MINE_KEY, '1'); else localStorage.removeItem(MINE_KEY); } catch (e) {} }
-    var mineIn = (function () {
+    var mineIn;
+    function __run3() {   // run at start, in order (__start)
+    mineIn = (function () {
       var has; try { has = localStorage.getItem(MINE_KEY); } catch (e) {}
       if (!has || !window.indexedDB) return Promise.resolve();
       return V.draftDo('readonly', function (st) { return st.getAll(); }, 'mine').then(function (all) {
@@ -58,6 +71,7 @@
         Object.keys(mine).forEach(function (k) { var r = mine[k]; if (r.group === undefined) { r.group = legacy || ''; minePut(r).catch(function () {}); } });
       }).catch(function () {});
     })();
+    }
     function minePut(r) {
       mine[r.id] = r; mineFlag();
       return V.draftDo('readwrite', function (st) { return st.put(r, r.id); }, 'mine');
@@ -66,14 +80,20 @@
     // the reader's groups (each named at once when added, no predefined name): as many as they
     // like, each named when made, kept in their browser in the order made (atlas-mine-groups); a map in no group stands
     // at the top of the list. Never a name of the site's groups or another of theirs (the two would merge)
-    var GROUPS_KEY = 'atlas-mine-groups';
+    var GROUPS_KEY;
+    function __run4() {   // run at start, in order (__start)
+    GROUPS_KEY = 'atlas-mine-groups';
+    }
     function mineGroups() {
       try { var a = JSON.parse(localStorage.getItem(GROUPS_KEY) || '[]'); return Array.isArray(a) ? a.filter(function (g) { return typeof g === 'string' && g; }) : []; } catch (e) { return []; }
     }
     function mineGroupsSet(a) { try { if (a.length) localStorage.setItem(GROUPS_KEY, JSON.stringify(a)); else localStorage.removeItem(GROUPS_KEY); } catch (e) {} }
     // kept for every atlas page of this address; on a page whose site has a group of the same name, that group of the
     // reader's is not shown (its maps stand at the top), so the two never merge
-    var groupsHere = [];
+    var groupsHere;
+    function __run5() {   // run at start, in order (__start)
+    groupsHere = [];
+    }
     function mineGroupsHere() {
       var site = (V.siteList || []).map(function (m) { return m.group; });
       return mineGroups().filter(function (g) { return site.indexOf(g) < 0; });
@@ -87,7 +107,10 @@
     // a name typed in place in the list, one way for groups and maps (inPlace): the field where the line was; Enter or a click elsewhere keeps it, Esc leaves it; o.bad(v) gives why a name is
     // refused (the field red, kept open). The list is not built again while it is open (V.naming, the viewer's
     // buildList), so a save or a folder scan meanwhile never drops what is being typed
-    var naming = null;
+    var naming;
+    function __run6() {   // run at start, in order (__start)
+    naming = null;
+    }
     function inPlace(at, o) {
       if (naming) naming(true);
       var f = document.createElement('input'), done = false;
@@ -220,9 +243,12 @@
       mineGroupsSet(gs);
     }
     function groupBack(name, at) { var gs = mineGroups().filter(function (g) { return g !== name; }); gs.splice(Math.min(at, gs.length), 0, name); mineGroupsSet(gs); V.refreshMine(); }
-    var pressed = false;
+    var pressed;
+    function __run7() {   // run at start, in order (__start)
+    pressed = false;
     document.addEventListener('pointerdown', function () { pressed = true; }, true);
     document.addEventListener('pointerup', function () { setTimeout(function () { pressed = false; }, 0); }, true);
+    }
     function removeGroup(name) {   // the group goes, its maps stay, at the top of the list
       mineGroupsSet(mineGroups().filter(function (g) { return g !== name; }));
       Object.keys(mine).forEach(function (k) { var r = mine[k]; if (r.group === name) { r.group = ''; minePut(r).catch(function () {}); } });
@@ -234,7 +260,10 @@
     // of theirs Rename group, first; then New SBGN-ML map, New CellDesigner map, Add map from file (into the group
     // clicked, if it is the reader's or with a token the site's, else at the top), Add group; Delete map, or Remove group and Delete group
     // last of all (items.last). The viewer asks for them (listItems) and shows the menu, its own entries (Open all groups, ...) between
-    var addTo = '';
+    var addTo;
+    function __run8() {   // run at start, in order (__start)
+    addTo = '';
+    }
     function listItems(e) {
       var t = e.target.closest('.m2-map, .m2-group, .m2-empty'), m = t && t.classList.contains('m2-map') ? V.byId[t.dataset.id] : null;
       var gh = !!(repo() && token()), tg = t && !t.classList.contains('m2-link-group') && t.dataset.group;   // with a token a site group takes maps too
@@ -315,7 +344,10 @@
       var top = before === true, run = top ? ids.slice().reverse() : ids;   // first in the group: the last put first, so they keep their order
       return run.reduce(function (p, id) { return p.then(function () { return moveTo(id, g, before, ids.indexOf(id), ids.length); }); }, Promise.resolve());
     }
-    var pageWas = {};   // a page's order as the last move found it (moveU's undo puts it back; the build's may lag)
+    var pageWas;
+    function __run9() {   // run at start, in order (__start)
+    pageWas = {};
+    }   // a page's order as the last move found it (moveU's undo puts it back; the build's may lag)
     function toSiteGroup(id, g, k, top) {   // maps/<id>.md: its group and its order (after the group's last, k after it; top: n maps before its first); one commit
       var at = top ? siteFirst(g) - top + (k | 0) : siteOrder(g) + (k | 0);
       return siteFront(id, function (f) { pageWas[id] = { order: f.get('order') }; f.set('group', JSON.stringify(g.replace(/["\\]/g, ''))); f.set('order', String(at)); f.drop('example'); }, 'Map moved in the viewer');   // moved out of its group: the reader's
@@ -430,7 +462,9 @@
       var ms = V.maps, i = ms.findIndex(function (x) { return x.id === id; });
       return i >= 0 && ms[i + 1] && (ms[i + 1].group || '') === (ms[i].group || '') ? ms[i + 1].id : null;
     }
-    try { localStorage.removeItem('atlas-examples'); } catch (e) {}   // the choice of hiding example maps, removed: the maps shown again
+    function __run10() {   // run at start, in order (__start)
+    try { localStorage.removeItem('atlas-examples'); } catch (e) {}
+    }   // the choice of hiding example maps, removed: the maps shown again
     function letGo(url) {   // an old version's address let go once nothing on the page uses it (a link or picture shown, the map on screen)
       setTimeout(function () {
         var used = (V.current && (V.current.image === url || (V.current.downloads || []).some(function (d) { return d.url === url; }))) ||
@@ -455,7 +489,10 @@
     // browser as a reader's map with `site` (its id there), dropped once the site lists that id built from its last save
     // (withMine; arrived: the old id to the site's, so the map shown follows). atlas-hidden-maps: the site's maps an older
     // version's Remove map hid in this browser only; read until they are moved into Deleted (binMigrate)
-    var HIDDEN_KEY = 'atlas-hidden-maps';
+    var HIDDEN_KEY;
+    function __run11() {   // run at start, in order (__start)
+    HIDDEN_KEY = 'atlas-hidden-maps';
+    }
     function hiddenSet(ids) { try { if (ids.length) localStorage.setItem(HIDDEN_KEY, JSON.stringify(ids)); else localStorage.removeItem(HIDDEN_KEY); } catch (e) {} }
     function siteHidden() { try { var a = JSON.parse(localStorage.getItem(HIDDEN_KEY) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } }
     // A map on its way to the site stays the reader's until the build is of its last save (the entry's src, the file's
@@ -493,7 +530,10 @@
     // copies it over maps/ (an example deleted, even forever, comes back) and drops their edited SBGN-ML copies
     // (maps/sbgn-ml/<name>-sbgn.sbgn), so the build writes those again from the GraphML maps; in this browser, with or
     // without a token, their drafts, Deleted marks, moves to other groups and names given meanwhile are let go
-    var exBackup = null;   // with a token: whether the data repository has examples/, asked once
+    var exBackup;
+    function __run12() {   // run at start, in order (__start)
+    exBackup = null;
+    }   // with a token: whether the data repository has examples/, asked once
     function backupKnown() {
       if (exBackup !== null || !(repo() && token())) return;
       exBackup = false;
@@ -599,7 +639,7 @@
                 }).then(function () { return post('/git/trees', { base_tree: c.tree.sha, tree: tree }); })
                   .then(function (t) { return post('/git/commits', { message: 'Example maps restored in the viewer' + (taken.length ? '; kept as the reader\'s: ' + taken.join(', ') : ''), tree: t.sha, parents: [ref.object.sha] }); })
                   .then(function (n) { return post('/git/refs/heads/main', { sha: n.sha }, 'PATCH'); })
-                  .then(function () { ghDir = null; return ids.concat(back); });
+                  .then(function () { shared.ghDir = null; return ids.concat(back); });
               });
             });
           });
@@ -617,7 +657,10 @@
     // A CellDesigner map too: the reader picks the
     // format in the menu, New SBGN-ML map or New CellDesigner map; an empty CellDesigner file as cd_make writes one, edited
     // with the CellDesigner palette (cdcreate.js)
-    var making = false;
+    var making;
+    function __run13() {   // run at start, in order (__start)
+    making = false;
+    }
     function newMap(group, fmt) {
       if (making) return Promise.resolve();   // one at a time: a second click meanwhile would take the same name
       making = true;
@@ -651,11 +694,14 @@
     // token in their maps/<id>.md (topic, the name the list shows; the title too where it was the same), shown at once
     // while the site's list still has the old name. Maps whose name the build takes from elsewhere (the SBGN-ML groups,
     // their edited copies under maps/sbgn-ml/) are not renamed; an SBGN-ML map with a page of its own (maps/<id>.sbgn) is
-    var renamed = {};   // site map id -> { was, to }: the list's name before and the one given here
+    var renamed, NAMED_KEY, nk;
+    function __run14() {   // run at start, in order (__start)
+    renamed = {};   // site map id -> { was, to }: the list's name before and the one given here
     // a site map's name given in this browser only (local: no token, or a clash in a group of the reader's own, where the
     // site's page is not the place): kept per page as the moves are, until the site's own name of it changes
-    var NAMED_KEY = 'atlas-named:' + location.pathname;
-    try { var nk = JSON.parse(localStorage.getItem(NAMED_KEY) || '{}'); Object.keys(nk).forEach(function (id) { renamed[id] = Object.assign({ local: true }, nk[id]); }); } catch (e) {}
+    NAMED_KEY = 'atlas-named:' + location.pathname;
+    try { nk = JSON.parse(localStorage.getItem(NAMED_KEY) || '{}'); Object.keys(nk).forEach(function (id) { renamed[id] = Object.assign({ local: true }, nk[id]); }); } catch (e) {}
+    }
     function namedSave() {
       var o = {}; Object.keys(renamed).forEach(function (id) { if (renamed[id].local) o[id] = { was: renamed[id].was, to: renamed[id].to }; });
       try { if (Object.keys(o).length) localStorage.setItem(NAMED_KEY, JSON.stringify(o)); else localStorage.removeItem(NAMED_KEY); } catch (e) {}
@@ -722,7 +768,10 @@
     // its map is in the list (without a token one after another, with one all at once after the commit); a file not
     // added stays a red row with its reason until clicked. Shown only once adding takes longer than ADD_AFTER, so a
     // quick pick never flashes. Not while searching, nor under a closed group (the count stays on its heading)
-    var adding = [], ADD_AFTER = 300;   // { group, rows: [{ name, f, why }], n, done, shown }
+    var adding, ADD_AFTER;
+    function __run15() {   // run at start, in order (__start)
+    adding = [], ADD_AFTER = 300;
+    }   // { group, rows: [{ name, f, why }], n, done, shown }
     function addPaint() {
       var box = document.getElementById('m2-list');
       if (!box) return;
@@ -803,7 +852,9 @@
         V.refreshMine(); if (last) V.go(last);
       }
     }
-    var picker = document.createElement('input');
+    var picker;
+    function __run16() {   // run at start, in order (__start)
+    picker = document.createElement('input');
     picker.type = 'file'; picker.multiple = true; picker.accept = '.graphml,.xml,.sbgn'; picker.hidden = true;
     picker.addEventListener('change', function () { var l = Array.prototype.slice.call(picker.files), to = addTo; listMade(function () { return addFiles(l, to); }); picker.value = ''; });
     document.body.appendChild(picker);
@@ -814,6 +865,7 @@
       var t = e.target.closest && e.target.closest('#m2-list [data-group]'), g = t && t.dataset.group;
       var l = Array.prototype.slice.call(e.dataTransfer.files); listMade(function () { return addFiles(l, ownGroup(g) ? g : ''); });
     });
+    }
     // With a token GitHub is where the reader's maps are kept: a map made or added goes there at once (toSite), and a
     // map of theirs still only in this browser (made before connecting, or its sending failed) is sent when the page
     // opens connected, when a token is connected, and when it is edited. Its record keeps the site's id, the file's
@@ -829,7 +881,10 @@
     // another page or tab meanwhile: done again on the newest main, three tries). More than BULK of text, or a tree
     // GitHub refuses (too large), is sent as two halves, one after the other. Gives per map the id, the file's path, its
     // blob sha (the build's src once it has drawn this very file) and the text, or { err } for a part not sent
-    var BULK = 20e6;
+    var BULK;
+    function __run17() {   // run at start, in order (__start)
+    BULK = 20e6;
+    }
     function toSiteMany(items) {
       if (!(repo() && token())) return Promise.reject(new Error('not connected to GitHub'));
       var j = ghJson, post = ghPost, used = {};
@@ -866,7 +921,7 @@
         };
         return Promise.all(part.map(function (it) { return blobSha(it.text); })).then(function (shas) {
           return go().then(function (ids) {
-            ghDir = null;
+            shared.ghDir = null;
             return ids.map(function (id, i) { used[id] = 1; delete hiddenGone[id]; binClear(id); return { id: id, path: 'maps/' + id + part[i].ext, sha: shas[i], text: part[i].text }; });   // the listing read again next time; an id deleted forever before, taken again: a map of its own
           }, function (e) { return e.split ? halves(part) : part.map(function () { return { err: e }; }); });
         });
@@ -876,7 +931,10 @@
     function toSite(title, ext, text, group, order) { return toSiteMany([{ title: title, ext: ext, text: text, group: group, order: order }]).then(function (a) { if (a[0].err) throw a[0].err; return a[0]; }); }
     // one map of the reader's to GitHub; its record then, or null (gone or hidden). One send per map at a time, and one
     // at a time across this site's tabs (the record read again inside the lock: another tab may have sent it)
-    var upping = {};
+    var upping;
+    function __run18() {   // run at start, in order (__start)
+    upping = {};
+    }
     function oneAtATime(f) { return navigator.locks && navigator.locks.request ? navigator.locks.request('atlas-own-to-site', f) : f(); }
     function upOne(id) {
       if (upping[id]) return upping[id];
@@ -914,7 +972,7 @@
         if (site !== s || !on || !(repo() && token())) { if (n.text !== n.saved) upAll(); return; }   // left meanwhile: its last changes sent all the same
         s.pending = false; s.path = n.path; s.sha = n.sha; s.saved = n.saved;
         localBox(); V.refreshMine();
-        if (src() !== n.saved) { dirty = true; changed(); }
+        if (src() !== n.saved) { shared.dirty = true; changed(); }
       }, function (e) {
         if (site === s) warn('Not on GitHub: ' + String(e && e.message ? e.message : e).replace(/\.$/, '') + '. This map is kept in this browser only; it is sent again after the next change.');
       });
@@ -922,7 +980,10 @@
     // every map of the reader's not on GitHub, or with changes GitHub does not have (a save that failed, a disconnect,
     // a file changed in the folder meanwhile), sent one after another once the site's list is in (a map's order is
     // after its group's last); what went said in grey, what did not in red
-    var upRun = null;
+    var upRun;
+    function __run19() {   // run at start, in order (__start)
+    upRun = null;
+    }
     function upAll() {
       if (!(repo() && token())) return Promise.resolve();
       if (upRun) return upRun;
@@ -970,7 +1031,10 @@
     // history still has them). A site map's state is its page's front matter (deleted: <date>, ISO in UTC), kept here
     // meanwhile (atlas-bin-pending: id -> [the date, '' for restored; when]) until the build has it, at most an hour
     // (another device or tab may have changed it since)
-    var BIN_KEY = 'atlas-bin-pending';
+    var BIN_KEY;
+    function __run20() {   // run at start, in order (__start)
+    BIN_KEY = 'atlas-bin-pending';
+    }
     function binPending() { try { var o = JSON.parse(localStorage.getItem(BIN_KEY) || '{}'); return o && typeof o === 'object' && !Array.isArray(o) ? o : {}; } catch (e) { return {}; } }
     function binPendingSet(o) { try { if (Object.keys(o).length) localStorage.setItem(BIN_KEY, JSON.stringify(o)); else localStorage.removeItem(BIN_KEY); } catch (e) {} }
     function binState(m, pend) {   // a site map's date in Deleted, '' if not; what this page did wins until the build has it (then let go)
@@ -987,7 +1051,10 @@
     // One page write at a time from this page: two at once on main refuse each other (409, the branch moved), as several
     // maps restored together did; a write still refused (another tab, an editor save) is read and tried up to three times
     // more; a write that never answers holds the next ones 30 s at most from its start
-    var siteQ = Promise.resolve();
+    var siteQ;
+    function __run21() {   // run at start, in order (__start)
+    siteQ = Promise.resolve();
+    }
     function siteFront(id, edit, message) {
       V.pageSent(id, '');   // held from the moment it is asked for, also while it waits behind other writes
       var prev = siteQ, p = prev.then(function () { return frontWrite(id, edit, message, 0); })
@@ -1039,7 +1106,10 @@
     // says pageless) keeps its Deleted state in maps/deleted.json (id -> { deleted: <date> or "forever", written: <when> }),
     // which build.py reads; a restored map's line goes. Written one write at a time, as the pages, read again when GitHub
     // refuses it; the maps asked for in one go (Delete group, its undo) in one write
-    var BIN_FILE = 'maps/deleted.json';
+    var BIN_FILE;
+    function __run22() {   // run at start, in order (__start)
+    BIN_FILE = 'maps/deleted.json';
+    }
     function pageless(m) { return !!m && !m.mine && !!m.pageless; }
     function binFileRead(d) { try { var o = d && d.content ? JSON.parse(textOf(d.content)) : {}; return o && typeof o === 'object' && !Array.isArray(o) ? o : {}; } catch (e) { return {}; } }
     function binFileText(o) { return JSON.stringify(o, null, 1) + '\n'; }
@@ -1053,7 +1123,10 @@
         if (!r.ok) throw new Error('GitHub ' + r.status);
       });
     }
-    var pbWait = {};   // 'on' and 'off': the maps asked for in this turn of the page, written together
+    var pbWait;
+    function __run23() {   // run at start, in order (__start)
+    pbWait = {};
+    }   // 'on' and 'off': the maps asked for in this turn of the page, written together
     function pagelessBin(id, on) {
       var k = on ? 'on' : 'off', w = pbWait[k], pend = binPending();
       if (!w) {
@@ -1083,7 +1156,10 @@
     // place kept in atlas-groups-gone) and comes back with the first map restored into it, or with an undo; a site group
     // is its maps' and comes back with them. A map being edited stays, and with it the group. While searching, the
     // group's maps in sight only (the selection is what is seen)
-    var GONE_KEY = 'atlas-groups-gone';
+    var GONE_KEY;
+    function __run24() {   // run at start, in order (__start)
+    GONE_KEY = 'atlas-groups-gone';
+    }
     function goneRead() { try { var o = JSON.parse(localStorage.getItem(GONE_KEY) || '{}'); return o && typeof o === 'object' && !Array.isArray(o) ? o : {}; } catch (e) { return {}; } }
     function goneSet(name, at) { var o = goneRead(); if (at === null) delete o[name]; else o[name] = at; try { if (Object.keys(o).length) localStorage.setItem(GONE_KEY, JSON.stringify(o)); else localStorage.removeItem(GONE_KEY); } catch (e) {} }
     function goneBack(name) {   // a group of the reader's deleted with its maps: back in its place (Restore of one of them)
@@ -1123,7 +1199,9 @@
     // Delete N maps); the next map in the list shown first (the one before at the list's end), as a mailbox goes on to the next
     // message. The key alone does nothing here, as in Finder: in edit mode it removes what is selected, so one key never
     // means both an object and the whole map. Not in a field, a menu, a name being given, or on a map in Deleted
-    var DEL_KEY = /mac|iphone|ipad|ipod/i.test((navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || navigator.userAgent) ? '\u2318\u232B' : 'Ctrl+Del';
+    var DEL_KEY;
+    function __run25() {   // run at start, in order (__start)
+    DEL_KEY = /mac|iphone|ipad|ipod/i.test((navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || navigator.userAgent) ? '\u2318\u232B' : 'Ctrl+Del';
     document.addEventListener('keydown', function (e) {
       if ((e.key !== 'Delete' && e.key !== 'Backspace') || e.defaultPrevented || e.altKey || e.shiftKey || !(e.ctrlKey || e.metaKey)) return;
       if (naming || document.querySelector('.m2-cx') || V.grid.classList.contains('m2-editing')) return;
@@ -1147,6 +1225,7 @@
       if (next) V.go(next.dataset.id);
       binU([m]);
     });
+    }
     function bin(m, quiet) {   // quiet: the list drawn again by the caller, once for several
       var say = function (e) { alert((m.mine ? m.title : m.topic) + ' was not deleted: ' + (e && e.message ? e.message : e)); }, sent = null;
       if (m.mine) {
@@ -1269,12 +1348,15 @@
           });
         }).catch(function (e) { if (e.status === 422 && ++tries < 3) return go(); throw e; });
       };
-      return go().then(function () { ghDir = null; });
+      return go().then(function () { shared.ghDir = null; });
     }
     // A reader without a token who keeps their maps in a folder: a map deleted moves its file into the folder's Deleted/, Restore moves it back (beside a file
     // of the same name: -2, ...), Delete forever removes it there. The folder's scan reads the folder's own files only,
     // so nothing in Deleted/ comes back as a map. Connected, the folder is not used (GitHub is where the maps are)
-    var BIN_DIR = 'Deleted';
+    var BIN_DIR;
+    function __run26() {   // run at start, in order (__start)
+    BIN_DIR = 'Deleted';
+    }
     function folderMove(id, toBin) {
       if (repo() && token()) return Promise.resolve();
       return folder().then(function (f) {
@@ -1316,7 +1398,10 @@
         });
       }).catch(function () {});
     }
-    var hiddenGone = {};   // site maps let go here (the build still lists them until it runs again)
+    var hiddenGone;
+    function __run27() {   // run at start, in order (__start)
+    hiddenGone = {};
+    }   // site maps let go here (the build still lists them until it runs again)
     function erase(ms) {
       ms = ms.filter(Boolean).map(parentOf).filter(function (m, i, a) { return a.findIndex(function (x) { return x.id === m.id; }) === i; }); if (!ms.length) return;
       var n = ms.length, what = n === 1 ? (ms[0].mine ? ms[0].title : ms[0].topic) : n + ' maps';
@@ -1366,13 +1451,16 @@
     // a new map, a copy or files added, put in Deleted), the order dragged as it was. The keys go to the list while it is
     // where the last press was (or the last change came from), else to the map being edited (core.js); outside editing
     // always to the list. Delete forever is not undone (as emptying the Bin). One step at a time, after the change before
-    var listPast = [], listAhead = [], listLast = false, listStepping = Promise.resolve();
-    function listDid(undo, redo, e) { e = e || { undo: undo, redo: redo }; e.at = V.tick(true); listPast.push(e); if (listPast.length > 100) listPast.shift(); listAhead = []; listLast = true; }
-    function listTop(back) { var s = back ? listPast : listAhead; return s.length ? s[s.length - 1].at || 0 : 0; }   // when the list's next undo (or redo) was taken (V.tick)
+    var listPast, listLast, listStepping;
+    function __run28() {   // run at start, in order (__start)
+    listPast = [], shared.listAhead = [], listLast = false, listStepping = Promise.resolve();
+    }
+    function listDid(undo, redo, e) { e = e || { undo: undo, redo: redo }; e.at = V.tick(true); listPast.push(e); if (listPast.length > 100) listPast.shift(); shared.listAhead = []; listLast = true; }
+    function listTop(back) { var s = back ? listPast : shared.listAhead; return s.length ? s[s.length - 1].at || 0 : 0; }   // when the list's next undo (or redo) was taken (V.tick)
     function listStep(back) {
-      var s = (back ? listPast : listAhead).pop();   // taken at the press, so the next press (and a setting's) sees the step after it
+      var s = (back ? listPast : shared.listAhead).pop();   // taken at the press, so the next press (and a setting's) sees the step after it
       if (!s) return;
-      s.at = V.tick(); (back ? listAhead : listPast).push(s);
+      s.at = V.tick(); (back ? shared.listAhead : listPast).push(s);
       listStepping = listStepping.then(function () {
         return new Promise(function (ok) { ok(back ? s.undo() : s.redo()); }).catch(function () {}).then(function () { V.refreshMine(); });   // a throw never stops the steps after it
       });
@@ -1444,6 +1532,8 @@
         groupBack(name, at); V.orderPut(o);
       }, function () { removeGroup(name); });
     }
+    var own;
+    function __run29() {   // run at start, in order (__start)
     window.addEventListener('pointerdown', function (e) {   // where the last press was: the list, else elsewhere (a menu keeps it as it was)
       var t = e.target.closest ? e.target : e.target.parentElement;
       if (t && t.closest('.m2-cx')) return;
@@ -1462,10 +1552,14 @@
       listStep(bk);
     }, true);
     // what the viewer asks of this part (the list's entries and groups, a map's record)
-    var own = {
+    own = {
       read: function () { return mineIn; },
       here: function () { return (groupsHere = mineGroupsHere()); }, groups: function () { return groupsHere; }, order: mineGroups,   // order: every group the reader made, on the site or not, in their order
       withMine: withMine, addPaint: addPaint, isGroup: ownGroup, movable: movable, moveTo: function (id, g, before) { return moveU([id], g, before); }, moveMany: moveU, did: listDid, rename: renameGroup, canRenameGroup: canRenameGroup, renameMap: renameMap, canRename: canRename, newMap: function (g, f) { return listMade(function () { return newMap(g, f); }); }, shown: mineShown, listItems: listItems,
       rec: function (id) { return mine[id] || null; }, naming: function () { return !!naming; }
     };
-    mineIn.then(upAll).then(binMigrate);   // connected: the reader's maps kept in this browser go to GitHub
+    mineIn.then(upAll).then(binMigrate);
+    }   // connected: the reader's maps kept in this browser go to GitHub
+
+    export function __start() { __run1(); __run2(); __run3(); __run4(); __run5(); __run6(); __run7(); __run8(); __run9(); __run10(); __run11(); __run12(); __run13(); __run14(); __run15(); __run16(); __run17(); __run18(); __run19(); __run20(); __run21(); __run22(); __run23(); __run24(); __run25(); __run26(); __run27(); __run28(); __run29(); }   // the part's statements, in their order
+    export { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, mine, mineAdd, mineIn, mineMatch, minePut, origGh, origPut, own, savedMine, toGh, upAll, upRun };

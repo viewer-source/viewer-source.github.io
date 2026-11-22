@@ -16,8 +16,7 @@ var gitSha = function (t) { var b = Buffer.from(t, 'utf8'); return crypto.create
 (async function () {
   var b = await chromium.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], bad = 0;
   if (local) {   // the editor as Jekyll builds it (editor.js with its sources put in), from a working tree
-    var ed = fs.readFileSync(path.join(local, 'editor/editor.js'), 'utf8').replace(/^---[\s\S]*?---\n/, '')
-      .replace(/\{% include_relative (src\/[\w.]+) %\}/g, function (m, f) { return fs.readFileSync(path.join(local, 'editor', f), 'utf8'); });
+    var ed = require('./editor-now.js')(local);
     await page.route('**/editor/editor.js*', function (r) { r.fulfill({ status: 200, contentType: 'application/javascript', body: ed }); });
   }
   page.on('pageerror', function (e) { errs.push(e.message); });
