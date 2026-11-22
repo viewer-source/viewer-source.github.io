@@ -401,7 +401,7 @@
       if (!ySession(t).s) return false;
       var boxes = {}, paths = {}, ways = {}, moved = /* @__PURE__ */ new Set();
       nodes2.forEach(function(n, i) {
-        var p = shared.poseNow && shared.poseNow[i], a = p ? p.box : bx(i), b = restBox(i);
+        var p = shared.poseNow && shared.poseNow[i], a = bx(i), b = restBox(i);
         if (p && p.way) ways[n.id] = p.way;
         if (a[0] !== b[0] || a[1] !== b[1] || a[2] !== b[2] || a[3] !== b[3]) {
           boxes[n.id] = a;
@@ -4703,43 +4703,55 @@
     TURN = { right: 0, down: 90, left: 180, up: 270 };
     livePose.push(function(sets, alone, out) {
       if (!sbJs || !sbJs.terminal) return;
-      var moved = function(k) {
+      var raw = function(k) {
         var b = boxOf(k);
         return sets.n.has(k) ? [b[0] + sets.dx, b[1] + sets.dy, b[2], b[3]] : b;
+      };
+      var moved = function(k) {
+        return out[k] ? out[k].box : raw(k);
       };
       var mid = function(b) {
         return [b[0] + b[2] / 2, b[1] + b[3] / 2];
       };
-      nodes2.forEach(function(n, i) {
-        if (n.shape.kind !== "Tag" || n.sub != null && sets.n.has(n.sub)) return;
-        var es = edges2.map(function(q2, k) {
-          return k;
-        }).filter(function(k) {
-          var q2 = edges2[k];
-          return (q2.s === i || q2.t === i) && q2.s != null && q2.t != null;
-        });
-        var mine2 = sets.n.has(i);
-        if (!mine2 && !(n.sub == null && es.length === 1 && sets.n.has(edges2[es[0]].s === i ? edges2[es[0]].t : edges2[es[0]].s))) return;
-        var mb = moved(i), on2 = null, q = null, now = sbJs.wayOfR && sbJs.wayOfR(realizerOf(n.el)) || "right";
-        if (mine2 && n.sub != null) {
-          if (!(alone && !centreIn(mb, boxOf(n.sub)) && es.length <= 1)) q = boxOf(n.sub);
-        } else if (mine2 && !alone) {
-          var j = subIn(mb, sets.n);
-          if (j >= 0) q = boxOf(j);
+      var lines = null, linesOf = function(i) {
+        if (!lines) {
+          lines = {};
+          edges2.forEach(function(q, k) {
+            if (q.s != null && q.t != null) [q.s, q.t].forEach(function(x) {
+              if (nodes2[x].shape.kind === "Tag") (lines[x] = lines[x] || []).push(k);
+            });
+          });
         }
-        if (q) on2 = n.sub != null && onSide(mb, q, now) || onBorder(mb, q);
-        else {
-          if (es.length !== 1) return;
-          var e = edges2[es[0]], oc = mid(moved(e.s === i ? e.t : e.s)), c = mid(mb), dx = oc[0] - c[0], dy = oc[1] - c[1];
-          var way = Math.abs(dx) >= Math.abs(dy) ? dx >= 0 ? "right" : "left" : dy >= 0 ? "down" : "up";
-          on2 = [!!HORIZ[way] === mb[2] >= mb[3] ? mb : [c[0] - mb[3] / 2, c[1] - mb[2] / 2, mb[3], mb[2]], way];
-        }
-        var ports2 = {};
-        es.forEach(function(k) {
-          var e2 = edges2[k];
-          ports2[k] = tagEnd(on2[1], on2[0], q, mid(moved(e2.s === i ? e2.t : e2.s)));
+        return lines[i] || [];
+      };
+      [0, 1].forEach(function() {
+        nodes2.forEach(function(n, i) {
+          if (n.shape.kind !== "Tag" || n.sub != null && sets.n.has(n.sub)) return;
+          var mine2 = sets.n.has(i);
+          if (!mine2 && n.sub != null) return;
+          var es = linesOf(i);
+          if (!mine2 && !(es.length === 1 && (out[edges2[es[0]].s === i ? edges2[es[0]].t : edges2[es[0]].s] || sets.n.has(edges2[es[0]].s === i ? edges2[es[0]].t : edges2[es[0]].s)))) return;
+          var mb = raw(i), on2 = null, q = null, now = sbJs.wayOfR && sbJs.wayOfR(realizerOf(n.el)) || "right";
+          if (mine2 && n.sub != null) {
+            if (!(alone && !centreIn(mb, boxOf(n.sub)) && es.length <= 1)) q = boxOf(n.sub);
+          } else if (mine2 && !alone) {
+            var j = subIn(mb, sets.n);
+            if (j >= 0) q = boxOf(j);
+          }
+          if (q) on2 = n.sub != null && onSide(mb, q, now) || onBorder(mb, q);
+          else {
+            if (es.length !== 1) return;
+            var e = edges2[es[0]], oc = mid(moved(e.s === i ? e.t : e.s)), c = mid(mb), dx = oc[0] - c[0], dy = oc[1] - c[1];
+            var way = Math.abs(dx) >= Math.abs(dy) ? dx >= 0 ? "right" : "left" : dy >= 0 ? "down" : "up";
+            on2 = [!!HORIZ[way] === mb[2] >= mb[3] ? mb : [c[0] - mb[3] / 2, c[1] - mb[2] / 2, mb[3], mb[2]], way];
+          }
+          var ports2 = {};
+          es.forEach(function(k) {
+            var e2 = edges2[k];
+            ports2[k] = tagEnd(on2[1], on2[0], q, mid(moved(e2.s === i ? e2.t : e2.s)));
+          });
+          out[i] = { box: on2[0], way: on2[1], turn: (TURN[on2[1]] - TURN[now] + 360) % 360, ports: ports2 };
         });
-        out[i] = { box: on2[0], way: on2[1], turn: (TURN[on2[1]] - TURN[now] + 360) % 360, ports: ports2 };
       });
     });
   }
@@ -14591,17 +14603,12 @@
     if (e.s == null || e.t == null) return null;
     B = B || bx;
     P = P || pt;
-    var B0 = B;
-    if (B === bx && shared.poseNow) B = function(n) {
-      var q = shared.poseNow[n];
-      return q ? q.box : bx(n);
-    };
     var mine2 = pp && pp.to && pp.k === k, S = B(mine2 && !pp.end && pp.n2 != null ? pp.n2 : e.s), T = B(mine2 && pp.end && pp.n2 != null ? pp.n2 : e.t), pa = e.path, o = function(a) {
       if (mine2 && (pp.end ? "t" : "s") === a[0]) return pp.to[a[1] === "x" ? 0 : 1];
       return pa ? parseFloat(pa.getAttribute(a)) || 0 : 0;
     };
     var so = [o("sx"), o("sy")], to = [o("tx"), o("ty")];
-    if (B0 === bx) {
+    if (B === bx) {
       so = posePort(e.s, glyphPort(e.s, so, e.id), k);
       to = posePort(e.t, glyphPort(e.t, to, e.id), k);
     }
@@ -14610,8 +14617,8 @@
       pts.push(P(pi));
     });
     pts.push([T[0] + T[2] / 2 + to[0], T[1] + T[3] / 2 + to[1]]);
-    pts[0] = cutShape(mine2 && !pp.end && pp.n2 != null ? pp.n2 : e.s, pts[0], pts[1], S, B0 !== bx);
-    pts[pts.length - 1] = cutShape(mine2 && pp.end && pp.n2 != null ? pp.n2 : e.t, pts[pts.length - 1], pts[pts.length - 2], T, B0 !== bx);
+    pts[0] = cutShape(mine2 && !pp.end && pp.n2 != null ? pp.n2 : e.s, pts[0], pts[1], S, B !== bx);
+    pts[pts.length - 1] = cutShape(mine2 && pp.end && pp.n2 != null ? pp.n2 : e.t, pts[pts.length - 1], pts[pts.length - 2], T, B !== bx);
     return pts;
   }
   function cutShape(n, port, outer, b, still) {
@@ -15461,11 +15468,7 @@
       if (mine2 && (pp.end ? "t" : "s") === a[0]) return pp.to[a[1] === "x" ? 0 : 1];
       return pa ? parseFloat(pa.getAttribute(a)) || 0 : 0;
     };
-    var box2 = function(n) {
-      var q = shared.poseNow && shared.poseNow[n];
-      return q ? q.box : bx(n);
-    };
-    var S = box2(ns), T = box2(nt), so = posePort(ns, [o("sx"), o("sy")], k), to = posePort(nt, [o("tx"), o("ty")], k);
+    var S = bx(ns), T = bx(nt), so = posePort(ns, [o("sx"), o("sy")], k), to = posePort(nt, [o("tx"), o("ty")], k);
     return [[S[0] + S[2] / 2 + so[0], S[1] + S[3] / 2 + so[1]]].concat(e.pts.map(pt), [[T[0] + T[2] / 2 + to[0], T[1] + T[3] / 2 + to[1]]]);
   }
   function snap(d) {

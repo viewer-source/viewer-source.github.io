@@ -2197,19 +2197,17 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       var e = edges2[k];
       if (e.s == null || e.t == null) return null;
       B = B || bx; P = P || pt;
-      var B0 = B;
-      if (B === bx && shared.poseNow) B = function (n) { var q = shared.poseNow[n]; return q ? q.box : bx(n); };   // a node the drag poses (a terminal held on its border): its ports from its posed box
       var mine = pp && pp.to && pp.k === k, S = B(mine && !pp.end && pp.n2 != null ? pp.n2 : e.s), T = B(mine && pp.end && pp.n2 != null ? pp.n2 : e.t), pa = e.path, o = function (a) {
         if (mine && (pp.end ? 't' : 's') === a[0]) return pp.to[a[1] === 'x' ? 0 : 1];
         return pa ? parseFloat(pa.getAttribute(a)) || 0 : 0;
       };
       var so = [o('sx'), o('sy')], to = [o('tx'), o('ty')];
-      if (B0 === bx) { so = posePort(e.s, glyphPort(e.s, so, e.id), k); to = posePort(e.t, glyphPort(e.t, to, e.id), k); }
+      if (B === bx) { so = posePort(e.s, glyphPort(e.s, so, e.id), k); to = posePort(e.t, glyphPort(e.t, to, e.id), k); }
       var pts = [[S[0] + S[2] / 2 + so[0], S[1] + S[3] / 2 + so[1]]];
       e.pts.forEach(function (pi) { pts.push(P(pi)); });
       pts.push([T[0] + T[2] / 2 + to[0], T[1] + T[3] / 2 + to[1]]);
-      pts[0] = cutShape(mine && !pp.end && pp.n2 != null ? pp.n2 : e.s, pts[0], pts[1], S, B0 !== bx);
-      pts[pts.length - 1] = cutShape(mine && pp.end && pp.n2 != null ? pp.n2 : e.t, pts[pts.length - 1], pts[pts.length - 2], T, B0 !== bx);
+      pts[0] = cutShape(mine && !pp.end && pp.n2 != null ? pp.n2 : e.s, pts[0], pts[1], S, B !== bx);
+      pts[pts.length - 1] = cutShape(mine && pp.end && pp.n2 != null ? pp.n2 : e.t, pts[pts.length - 1], pts[pts.length - 2], T, B !== bx);
       return pts;
     }
     // where the arc from outer to its port inside node n's shape (at box b) first meets the shape outline, as the
@@ -2883,13 +2881,12 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     // bend pressed snaps when one of its two segments is nearly level or upright, and a segment so lined up is drawn
     // as a thick grey line while the drag runs (both for an L)
     function ports(k, pp) {   // the arc's points with its ends at the ports (node centre and offset), as yEd lines them up;
-      // a node the drag poses (a terminal held on its border) at its posed box and ports, where the drop puts them
+      // a node the drag poses (a terminal held on its border) at its posed box (bx) and ports, where the drop puts them
       var e = edges2[k], mine = pp && pp.to && pp.k === k, ns = mine && !pp.end && pp.n2 != null ? pp.n2 : e.s, nt = mine && pp.end && pp.n2 != null ? pp.n2 : e.t, pa = e.path, o = function (a) {
         if (mine && (pp.end ? 't' : 's') === a[0]) return pp.to[a[1] === 'x' ? 0 : 1];
         return pa ? parseFloat(pa.getAttribute(a)) || 0 : 0;
       };
-      var box = function (n) { var q = shared.poseNow && shared.poseNow[n]; return q ? q.box : bx(n); };
-      var S = box(ns), T = box(nt), so = posePort(ns, [o('sx'), o('sy')], k), to = posePort(nt, [o('tx'), o('ty')], k);
+      var S = bx(ns), T = bx(nt), so = posePort(ns, [o('sx'), o('sy')], k), to = posePort(nt, [o('tx'), o('ty')], k);
       return [[S[0] + S[2] / 2 + so[0], S[1] + S[3] / 2 + so[1]]].concat(e.pts.map(pt), [[T[0] + T[2] / 2 + to[0], T[1] + T[3] / 2 + to[1]]]);
     }
     function snap(d) {

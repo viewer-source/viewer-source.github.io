@@ -989,14 +989,23 @@ import { origGh, origPut } from './own.js';
     TURN = { right: 0, down: 90, left: 180, up: 270 };
     livePose.push(function (sets, alone, out) {
       if (!sbJs || !sbJs.terminal) return;
-      var moved = function (k) { var b = boxOf(k); return sets.n.has(k) ? [b[0] + sets.dx, b[1] + sets.dy, b[2], b[3]] : b; };
+      // a line's other end where the drop has it: posed in the first pass (a terminal on its border), else moved by the drag
+      var raw = function (k) { var b = boxOf(k); return sets.n.has(k) ? [b[0] + sets.dx, b[1] + sets.dy, b[2], b[3]] : b; };
+      var moved = function (k) { return out[k] ? out[k].box : raw(k); };
       var mid = function (b) { return [b[0] + b[2] / 2, b[1] + b[3] / 2]; };
-      nodes2.forEach(function (n, i) {
+      var lines = null, linesOf = function (i) {   // the tags' lines, gathered once per frame
+        if (!lines) { lines = {}; edges2.forEach(function (q, k) { if (q.s != null && q.t != null) [q.s, q.t].forEach(function (x) { if (nodes2[x].shape.kind === 'Tag') (lines[x] = lines[x] || []).push(k); }); }); }
+        return lines[i] || [];
+      };
+      // two passes, as the drop: the terminals onto their borders first (termsFix), then the free tags facing their line's
+      // other end where it now is (tagAim), the terminals' ports from the posed ends too
+      [0, 1].forEach(function () { nodes2.forEach(function (n, i) {
         if (n.shape.kind !== 'Tag' || (n.sub != null && sets.n.has(n.sub))) return;   // a terminal going with its submap
-        var es = edges2.map(function (q, k) { return k; }).filter(function (k) { var q = edges2[k]; return (q.s === i || q.t === i) && q.s != null && q.t != null; });
         var mine = sets.n.has(i);
-        if (!mine && !(n.sub == null && es.length === 1 && sets.n.has(edges2[es[0]].s === i ? edges2[es[0]].t : edges2[es[0]].s))) return;   // nothing it does follows this move
-        var mb = moved(i), on = null, q = null, now = (sbJs.wayOfR && sbJs.wayOfR(realizerOf(n.el))) || 'right';
+        if (!mine && n.sub != null) return;
+        var es = linesOf(i);
+        if (!mine && !(es.length === 1 && (out[edges2[es[0]].s === i ? edges2[es[0]].t : edges2[es[0]].s] || sets.n.has(edges2[es[0]].s === i ? edges2[es[0]].t : edges2[es[0]].s)))) return;   // nothing it does follows this move
+        var mb = raw(i), on = null, q = null, now = (sbJs.wayOfR && sbJs.wayOfR(realizerOf(n.el))) || 'right';
         if (mine && n.sub != null) { if (!(alone && !centreIn(mb, boxOf(n.sub)) && es.length <= 1)) q = boxOf(n.sub); }
         else if (mine && !alone) { var j = subIn(mb, sets.n); if (j >= 0) q = boxOf(j); }
         if (q) on = (n.sub != null && onSide(mb, q, now)) || onBorder(mb, q);   // as termsFix on release
@@ -1009,7 +1018,7 @@ import { origGh, origPut } from './own.js';
         var ports = {};
         es.forEach(function (k) { var e = edges2[k]; ports[k] = tagEnd(on[1], on[0], q, mid(moved(e.s === i ? e.t : e.s))); });   // as tagTurnT sets them
         out[i] = { box: on[0], way: on[1], turn: (TURN[on[1]] - TURN[now] + 360) % 360, ports: ports };
-      });
+      }); });
     });
     }
     function centreIn(b, q) { var c = [b[0] + b[2] / 2, b[1] + b[3] / 2]; return c[0] >= q[0] && c[0] <= q[0] + q[2] && c[1] >= q[1] && c[1] <= q[1] + q[3]; }

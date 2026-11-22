@@ -167,8 +167,8 @@ import { sbJs } from './sbgn.js';
       try {
         if (!ySession(t).s) return false;
         var boxes = {}, paths = {}, ways = {}, moved = new Set();
-        nodes2.forEach(function (n, i) {   // a node the drag poses at its posed box and way, so its lines end on its outline there
-          var p = shared.poseNow && shared.poseNow[i], a = p ? p.box : bx(i), b = restBox(i);
+        nodes2.forEach(function (n, i) {   // a node the drag poses at its posed box (bx) and way, so its lines end on its outline there
+          var p = shared.poseNow && shared.poseNow[i], a = bx(i), b = restBox(i);
           if (p && p.way) ways[n.id] = p.way;
           if (a[0] !== b[0] || a[1] !== b[1] || a[2] !== b[2] || a[3] !== b[3]) { boxes[n.id] = a; moved.add(i); }
         });
