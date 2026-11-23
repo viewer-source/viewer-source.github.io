@@ -534,10 +534,12 @@ import { ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues, confet
       return best;
     }
     // a line's sign kept in hand draws forgivingly (as linkHow): the kind picked where it fits, else the kind the ends
-    // give, silently; never a new reaction for a modifier picked between two species (Reduced notation unticked)
+    // give, silently; never a new reaction for a modifier picked between two species (Reduced notation unticked); a
+    // catalysis between species a physical stimulation in reduced notation where it is ticked
     function cdHow0(a, b, P) {
       var want = tool && ARCS[tool.kind] ? cdKind(tool.kind) : null, h = cdKind0(a, b, P, want), g;
       if (h && h.no && want && tool.sticky && (g = cdKind0(a, b, P, null)) && !g.no && !(g.rx && cdMk.MODS.indexOf(want) >= 0)) return g;
+      if (h && h.no && want === 'CATALYSIS' && tool.sticky && (g = cdKind0(a, b, P, 'PHYSICAL_STIMULATION')) && !g.no) return g;   // between species a reduced physical stimulation, an activation
       return h;
     }
     function cdKind0(a, b, P, want) {

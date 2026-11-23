@@ -7232,6 +7232,7 @@
     if (shared.cd) return cdHow(a, b, P);
     var want = arcTool(), h = linkKind(a, b, P, want), g;
     if (h && h.no && want && tool.sticky && (g = linkKind(a, b, P, null)) && !g.no && !(g.pair && MODK[want])) return g;
+    if (h && h.no && want === "catalysis" && tool.sticky && (g = linkKind(a, b, P, "stimulation")) && !g.no) return g;
     return h;
   }
   function pdLimit(s, t, cls) {
@@ -9329,6 +9330,7 @@
   function cdHow0(a, b, P) {
     var want = tool && ARCS[tool.kind] ? cdKind(tool.kind) : null, h = cdKind0(a, b, P, want), g;
     if (h && h.no && want && tool.sticky && (g = cdKind0(a, b, P, null)) && !g.no && !(g.rx && cdMk.MODS.indexOf(want) >= 0)) return g;
+    if (h && h.no && want === "CATALYSIS" && tool.sticky && (g = cdKind0(a, b, P, "PHYSICAL_STIMULATION")) && !g.no) return g;
     return h;
   }
   function cdKind0(a, b, P, want) {

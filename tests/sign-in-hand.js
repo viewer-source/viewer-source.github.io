@@ -4,7 +4,9 @@
 // entities get a process between them; an entity onto that process's side off its antennas the map's most used
 // modulation; an entity onto its middle a consumption; the process to an entity a production. CellDesigner (the ACLY demo
 // map, State transition in hand, where physical stimulation is the most used modifier): a species onto a reaction's square that modifier, onto its
-// main line an added reactant, the reaction to a species an added product, two species a new reaction. Nothing is saved.
+// main line an added reactant, the reaction to a species an added product, two species a new reaction. Catalysis in hand,
+// which fits no two entities or species: a stimulation (SBGN-ML), a reduced physical stimulation (CellDesigner); taken
+// for one line, nothing. Nothing is saved.
 //   node tests/sign-in-hand.js [viewer folder: its editor served in place of the page's] [base address]
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path');
 var local = process.argv[2], base = process.argv[3] || 'https://viewer-source.github.io/styles/';
@@ -66,6 +68,11 @@ var local = process.argv[2], base = process.argv[3] || 'https://viewer-source.gi
   var c4 = (await made('simple chemical', 1200, 300))[0], n1 = await ids(), prod = await line(C, await at(c4), 'production');
   ok('the process to an entity: one line, no new node', prod.length === 1 && (await ids()).length === n1.length, prod.join(' '));
 
+  ok('Catalysis taken for one line, two entities: nothing made', (await line(await at(m1), await at(c2), 'catalysis', true)).length === 0);
+  var act = await line(await at(m1), await at(c2), 'catalysis');   // Reduced notation ticked (the default): a catalysis fits no two entities
+  ok('Catalysis in hand, two entities: one line, no process', act.length === 1, act.join(' '));
+  if (act[0]) { var k0 = await kindOf(act[0]); ok('it is a stimulation (an activation)', /^Stimulation/.test(k0), k0); }
+
   // CellDesigner
   await start('#acly-celldesigner', 'cd:PROTEIN');
   s = await signs();
@@ -81,6 +88,10 @@ var local = process.argv[2], base = process.argv[3] || 'https://viewer-source.gi
   ok('a reaction to a species: an added product', prd.length === 1 && /^re_n3\|p\d+$/.test(prd[0]), prd.join(' '));
   var rx = await line(await at(p1), await at(p3), 'cd:STATE_TRANSITION');
   ok('two species: a new reaction', rx.length >= 1 && !/^re_n3\|/.test(rx[0]), rx.join(' '));
+  ok('Catalysis taken for one line, two species: nothing made', (await line(await at(p1), await at(p2), 'cd:CATALYSIS', true)).length === 0);
+  var red = await line(await at(p1), await at(p2), 'cd:CATALYSIS');
+  ok('Catalysis in hand, two species: one line', red.length >= 1 && !/^re_n3\|/.test(red[0]), red.join(' '));
+  if (red[0]) { var k3 = await kindOf(red[0]); ok('it is a physical stimulation (reduced notation)', /^Physical stimulation/.test(k3), k3); }
   ok('no script error', errs.length === 0, errs.join(' | '));
   await b.close();
   process.exit(bad ? 1 : 0);

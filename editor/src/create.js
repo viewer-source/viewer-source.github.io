@@ -2128,11 +2128,14 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
     // step), else a stimulation
     // An arc's sign kept in hand (a double click) draws forgivingly: the kind picked where it fits the two ends, else the
     // kind the ends give (no kind picked), silently; never a process made between two entities for a modulation picked
-    // (that would say one is turned into the other). A sign taken for one line (a click) makes that kind or nothing
+    // (that would say one is turned into the other); a catalysis that fits neither way a stimulation where one fits (an
+    // activation: two entities in reduced notation, Activity Flow). A sign taken for one line (a click) makes that kind
+    // or nothing
     function linkHow(a, b, P) {
       if (shared.cd) return cdHow(a, b, P);   // a CellDesigner map's (cdcreate.js), with where its end lands
       var want = arcTool(), h = linkKind(a, b, P, want), g;
       if (h && h.no && want && tool.sticky && (g = linkKind(a, b, P, null)) && !g.no && !(g.pair && MODK[want])) return g;
+      if (h && h.no && want === 'catalysis' && tool.sticky && (g = linkKind(a, b, P, 'stimulation')) && !g.no) return g;
       return h;
     }
     // SBGN PD's connectivity table (3.4.1) for what the roles alone do not tell: an empty set is only consumed or
