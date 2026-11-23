@@ -4,7 +4,8 @@
 //   2. made-up moves (every third node, compartments too, every second line's bend points, one line given a bend more):
 //      the converter reads the written file back to the moved places, graphml() of the written file gives them too, and
 //      the file differs from the original only in numbers where no line was rewritten (and a point box put in for a
-//      reaction whose glyph had none).
+//      reaction whose glyph had none);
+//   3. after every edit the text outside layout:listOfLayouts (the model) is the original's, byte for byte.
 //   node tests/sbml-edit.js <folder of SBML files>     (needs python3 with lxml, @xmldom/xmldom)
 var fs = require('fs'), path = require('path'), cp = require('child_process');
 var X = require('@xmldom/xmldom'), opt = { DOMParser: X.DOMParser };
@@ -70,6 +71,8 @@ fs.readdirSync(dir).filter(function (f) { return /\.(sbml|xml)$/.test(f); }).sor
     var strip = function (s) { return s.replace(/-?\d+(\.\d+)?([eE][-+]?\d+)?/g, '#'); };
     var put = /<([\w.-]+:)?boundingBox><([\w.-]+:)?position [^>]*\/><([\w.-]+:)?dimensions [^>]*\/><\/([\w.-]+:)?boundingBox>/g;   // a point put in for a reaction with no box
     if (!more && strip(t2.replace(put, '')) !== strip(t.replace(put, ''))) bad.push('the file changed beyond numbers');
+    var model = function (s) { return s.replace(/<([\w.-]+:)?listOfLayouts[\s>][\s\S]*<\/([\w.-]+:)?listOfLayouts>/, '') };   // the model: everything outside the layouts
+    if (model(t2) !== model(t)) bad.push((more ? 'bend added, ' : '') + 'the model changed (text outside listOfLayouts)');
   });
   fails += bad.length ? 1 : 0;
   console.log((bad.length ? 'FAIL  ' : 'ok    ') + f + (bad.length ? '\n  ' + bad.slice(0, 6).join('\n  ') + (bad.length > 6 ? '\n  ... ' + (bad.length - 6) + ' more' : '') : ''));
