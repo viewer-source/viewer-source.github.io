@@ -2158,13 +2158,20 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
     // an end of line k dragged onto node i (core.js takes): what drawing the line would refuse (linkKind's counts and its
     // equivalence rules), so a drag never makes what drawing does not. A reason, or null; Activity Flow and CellDesigner
     // maps have rules of their own
+    // Settings' Proposed tick box Demerging links from logic gates: an AND or OR gate may have several lines out (never a NOT
+    // gate, a delay or an equivalence)
+    function fans(g) {
+      if (!V.fanout || nodes2[g].eq) return false;
+      var l = nodes2[g].el.getElementsByTagNameNS(Y, 'NodeLabel')[0], w = l ? l.textContent.trim().toUpperCase() : '';
+      return w === 'AND' || w === 'OR';
+    }
     function moveLimit(k, end, i) {
       if (shared.cd || palLangNow() !== 'pd') return null;
       var e = edges2[k], s = end ? e.s : i, t = end ? i : e.t, a = e.arr[1];
       var others = function (g, into) { return edges2.filter(function (q, j) { return j !== k && (into ? q.t === g : q.s === g); }).length; };
       var word = function (g) { var l = nodes2[g].el.getElementsByTagNameNS(Y, 'NodeLabel')[0]; return l ? l.textContent.trim().toUpperCase() : ''; };
       if (a === 'none' && roleOf(s) === 'proc') return 'A consumption goes from an entity into a process.';   // a headless line leaving a process
-      if (!end && roleOf(s) === 'gate' && others(s, false)) return 'A logic gate has one line out, and this one has it.';
+      if (!end && roleOf(s) === 'gate' && !fans(s) && others(s, false)) return 'A logic gate has one line out, and this one has it.';
       if (end && roleOf(t) === 'gate' && /^(NOT|\u03c4)$/.test(word(t)) && others(t, true)) return 'This gate has one input, and it has it.';
       if (MODS.test(a) && nodes2[s].eq) return 'An equivalence\u2019s line goes to an entity.';
       if (nodes2[i].shape.kind === 'Tag') return a !== 'none' ? 'A tag is joined to an entity by an equivalence arc.' : tagRoom(i, end ? s : t, k);
@@ -2200,7 +2207,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
         return ok(u === 'catalysis' ? 'stimulation' : u);   // the map's usual kind into a process may be catalysis
       }
       if (ra === 'pheno') return { no: 'Nothing leaves a phenotype: it is modulated by an entity or a logic gate (Reduced notation is unticked in the palette).' };
-      if (ra === 'gate' && outs(a)) return { no: 'A logic gate has one line out, and this one has it.' };   // SBGN PD; the converter's rules for the equivalence
+      if (ra === 'gate' && !fans(a) && outs(a)) return { no: 'A logic gate has one line out, and this one has it.' };   // SBGN PD; the converter's rules for the equivalence
       var word = function (i) { var l = nodes2[i].el.getElementsByTagNameNS(Y, 'NodeLabel')[0]; return l ? l.textContent.trim() : ''; };   // a gate's word as drawn (a made one is not in the file yet)
       if (rb === 'gate' && (word(b) === '\u03c4' || word(b).toUpperCase() === 'NOT') && ins(b)) return { no: 'A ' + (word(b) === '\u03c4' ? 'delay' : 'NOT gate') + ' has one input, and this one has it.' };
       var af = palLangNow() === 'af';   // Activity Flow: influences join two activities, and leave a gate for one
@@ -2263,7 +2270,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
           return k ? { kind: k.kind, cls: k.cls } : null;
         };
         var name = function (k) { return k.kind + ':' + k.cls; };
-        var sets = palLangNow() === 'af' ? ['af'] : hybOn() ? ['pd', 'reduced'] : ['pd'];
+        var sets = (palLangNow() === 'af' ? ['af'] : hybOn() ? ['pd', 'reduced'] : ['pd']).concat(V.fanout ? ['fanout'] : []);
         var checks = function (s, t, a, skip) {   // the table's named checks from the map's lines, line skip left out (the line being moved)
           var other = function (q, j) { return j !== skip; };
           return function (c) {

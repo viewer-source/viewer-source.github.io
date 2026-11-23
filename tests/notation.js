@@ -37,6 +37,10 @@ var A = N.nodeKind('sbgnml', 'biological activity');
 yes('stimulation', A, A, AF, 'AF: influence'); yes('inhibition', AND, A, AF, 'AF: gate output'); no('consumption', A, A, AF, 'AF: no consumption');
 // refuse rows
 no('stimulation', AND, P, chk('gateOneOut', 'A logic gate has one line out, and this one has it.'), 'gate one out', 'A logic gate has one line out, and this one has it.');
+var fan = function (on) { return { sets: on ? ['pd', 'fanout'] : ['pd'], check: function (c) { return c === 'gateOneOut' ? 'one out' : null; } }; };
+yes('stimulation', AND, P, fan(true), 'proposed fanout: an AND gate\u2019s second line out'); yes('stimulation', G('Operator', 'OR'), P, fan(true), 'proposed fanout: an OR gate\u2019s second line out');
+no('stimulation', AND, P, fan(false), 'fanout off: one line out', 'one out'); no('logic arc', NOT, AND, fan(true), 'fanout on: a NOT gate keeps one line out', 'one out');
+no('logic arc', EQ, M, fan(true), 'fanout on: an equivalence keeps one line out', 'one out');
 no('logic arc', M, NOT, chk('oneInput', 'one'), 'NOT one input', 'one'); no('logic arc', M, DL, chk('oneInput', 'one'), 'delay one input', 'one');
 yes('logic arc', M, AND, chk('oneInput', 'one'), 'AND takes many');
 no('consumption', M, P, chk('already', 'There.'), 'already', 'There.');

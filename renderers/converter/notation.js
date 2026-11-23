@@ -15,7 +15,8 @@
 //     does not tell. SBGN-ML: sbgn_edit.mapKind (engines.sbgn_edit), its one master; CellDesigner: hybrid when a reduced
 //     notation reaction is in the file, else pd; GraphML: null (the editor's palette tab and tick box decide).
 //   allowed(arc, from, to, ctx) -> null, or the reason the line is refused. from, to: nodeKind's answers. ctx: { sets:
-//     the sets on (pd, reduced, af; house always), check(name): a reason or null for a rule that needs the map }.
+//     the sets on (pd, reduced, af, and the proposed fanout; house always), check(name): a reason or null for a rule
+//     that needs the map }. A row with `unless` is off while one of those sets is on.
 //   paletteOff(sets) -> { sign: reason }: the palette's signs a set takes away (the CellDesigner compatible tick box).
 // RULES is data only, read against the specification line by line: each row a rule, its reason as the editor says it.
 // tests/notation.js runs one case per rule; tests/rules-cases/ holds GraphML maps with expected answers, shared with the
@@ -132,7 +133,9 @@
       { id: 'af-influence', sets: ['af'], arc: INFL, from: ['entity', 'gate'], to: ['entity', 'phenotype'], spec: 'AF 3.3' }
     ],
     refuse: [
-      { id: 'gate-one-out', sets: ['house'], arc: ['*'], from: ['gate'], to: ['*'], check: 'gateOneOut' },
+      { id: 'gate-one-out', sets: ['house'], arc: ['*'], from: ['gate:not', 'gate:delay', 'gate:equivalence'], to: ['*'], check: 'gateOneOut', spec: '3.4.1' },
+      { id: 'gate-one-out-and-or', sets: ['house'], unless: ['fanout'], arc: ['*'], from: ['gate:and', 'gate:or'], to: ['*'], check: 'gateOneOut', spec: '3.4.1',
+        why: 'With the proposed set fanout on, an AND or OR gate may have several lines out (demerging links, not yet in SBGN).' },
       { id: 'one-input', sets: ['house'], arc: ['*'], from: ['*'], to: ['gate:not', 'gate:delay'], check: 'oneInput' },
       { id: 'already', sets: ['house'], arc: ['*'], from: ['*'], to: ['*'], check: 'already' },
       { id: 'reversible', sets: ['pd'], arc: ['consumption'], from: ['*'], to: ['process'], check: 'reversible', spec: '3.5.2.5' },
@@ -165,7 +168,7 @@
     }
     return false;
   }
-  function on(row, sets) { return row.sets.some(function (s) { return s === 'house' || sets.indexOf(s) >= 0; }); }
+  function on(row, sets) { return !(row.unless || []).some(function (s) { return sets.indexOf(s) >= 0; }) && row.sets.some(function (s) { return s === 'house' || sets.indexOf(s) >= 0; }); }
   function fits(row, arc, from, to) { return (row.arc.indexOf('*') >= 0 || row.arc.indexOf(arc) >= 0) && side(row.from, from) && side(row.to, to); }
   function allowed(arc, from, to, ctx) {
     ctx = ctx || {};

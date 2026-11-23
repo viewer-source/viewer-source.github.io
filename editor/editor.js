@@ -565,7 +565,18 @@
             { id: "af-influence", sets: ["af"], arc: INFL2, from: ["entity", "gate"], to: ["entity", "phenotype"], spec: "AF 3.3" }
           ],
           refuse: [
-            { id: "gate-one-out", sets: ["house"], arc: ["*"], from: ["gate"], to: ["*"], check: "gateOneOut" },
+            { id: "gate-one-out", sets: ["house"], arc: ["*"], from: ["gate:not", "gate:delay", "gate:equivalence"], to: ["*"], check: "gateOneOut", spec: "3.4.1" },
+            {
+              id: "gate-one-out-and-or",
+              sets: ["house"],
+              unless: ["fanout"],
+              arc: ["*"],
+              from: ["gate:and", "gate:or"],
+              to: ["*"],
+              check: "gateOneOut",
+              spec: "3.4.1",
+              why: "With the proposed set fanout on, an AND or OR gate may have several lines out (demerging links, not yet in SBGN)."
+            },
             { id: "one-input", sets: ["house"], arc: ["*"], from: ["*"], to: ["gate:not", "gate:delay"], check: "oneInput" },
             { id: "already", sets: ["house"], arc: ["*"], from: ["*"], to: ["*"], check: "already" },
             { id: "reversible", sets: ["pd"], arc: ["consumption"], from: ["*"], to: ["process"], check: "reversible", spec: "3.5.2.5" },
@@ -626,7 +637,9 @@
           return false;
         }
         function on2(row, sets) {
-          return row.sets.some(function(s) {
+          return !(row.unless || []).some(function(s) {
+            return sets.indexOf(s) >= 0;
+          }) && row.sets.some(function(s) {
             return s === "house" || sets.indexOf(s) >= 0;
           });
         }
@@ -7248,6 +7261,11 @@
     }
     return null;
   }
+  function fans(g) {
+    if (!V.fanout || nodes2[g].eq) return false;
+    var l = nodes2[g].el.getElementsByTagNameNS(Y, "NodeLabel")[0], w = l ? l.textContent.trim().toUpperCase() : "";
+    return w === "AND" || w === "OR";
+  }
   function moveLimit(k, end, i) {
     if (shared.cd || palLangNow() !== "pd") return null;
     var e = edges2[k], s = end ? e.s : i, t = end ? i : e.t, a = e.arr[1];
@@ -7261,7 +7279,7 @@
       return l ? l.textContent.trim().toUpperCase() : "";
     };
     if (a === "none" && roleOf(s) === "proc") return "A consumption goes from an entity into a process.";
-    if (!end && roleOf(s) === "gate" && others(s, false)) return "A logic gate has one line out, and this one has it.";
+    if (!end && roleOf(s) === "gate" && !fans(s) && others(s, false)) return "A logic gate has one line out, and this one has it.";
     if (end && roleOf(t) === "gate" && /^(NOT|\u03c4)$/.test(word(t)) && others(t, true)) return "This gate has one input, and it has it.";
     if (MODS.test(a) && nodes2[s].eq) return "An equivalence\u2019s line goes to an entity.";
     if (nodes2[i].shape.kind === "Tag") return a !== "none" ? "A tag is joined to an entity by an equivalence arc." : tagRoom(i, end ? s : t, k);
@@ -7308,7 +7326,7 @@
       return ok(u === "catalysis" ? "stimulation" : u);
     }
     if (ra === "pheno") return { no: "Nothing leaves a phenotype: it is modulated by an entity or a logic gate (Reduced notation is unticked in the palette)." };
-    if (ra === "gate" && outs(a)) return { no: "A logic gate has one line out, and this one has it." };
+    if (ra === "gate" && !fans(a) && outs(a)) return { no: "A logic gate has one line out, and this one has it." };
     var word = function(i) {
       var l = nodes2[i].el.getElementsByTagNameNS(Y, "NodeLabel")[0];
       return l ? l.textContent.trim() : "";
@@ -7374,7 +7392,7 @@
       var name2 = function(k) {
         return k.kind + ":" + k.cls;
       };
-      var sets = palLangNow() === "af" ? ["af"] : hybOn() ? ["pd", "reduced"] : ["pd"];
+      var sets = (palLangNow() === "af" ? ["af"] : hybOn() ? ["pd", "reduced"] : ["pd"]).concat(V.fanout ? ["fanout"] : []);
       var checks = function(s, t, a, skip) {
         var other = function(q, j) {
           return j !== skip;
