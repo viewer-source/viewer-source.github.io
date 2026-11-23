@@ -616,21 +616,12 @@
             {
               id: "empty-set-from",
               sets: ["pd"],
-              arc: ["production", "logic arc", "equivalence arc"],
-              from: ["entity:empty set"],
-              to: ["*"],
-              no: "An empty set is only consumed or produced.",
-              spec: "3.4.1"
-            },
-            {
-              id: "empty-set-modifier",
-              sets: ["strict"],
-              arc: MODS2,
+              arc: ["production", "logic arc", "equivalence arc"].concat(MODS2),
               from: ["entity:empty set"],
               to: ["*"],
               no: "An empty set is only consumed or produced.",
               spec: "3.4.1",
-              why: "CellDesigner takes a degraded species as a reaction\u2019s modifier."
+              why: "Kept in the default set though CellDesigner takes a degraded species as a modifier: it carries no information there."
             },
             {
               id: "empty-set-to",

@@ -44,7 +44,7 @@ var ST = { sets: ['pd', 'strict'] }, STR = { sets: ['pd', 'reduced', 'strict', '
 yes('consumption', PH, P, PD, 'C3: a phenotype consumed (CellDesigner)'); no('consumption', PH, P, ST, 'strict: a phenotype is not consumed');
 no('stimulation', PH, P, ST, 'strict: nothing leaves a phenotype'); yes('production', P, PH, PD, 'a phenotype produced (CellDesigner)'); no('production', P, PH, ST, 'strict: a phenotype is not produced');
 yes('catalysis', PH, P, PD, 'a phenotype as a catalysis (CellDesigner)'); no('catalysis', PH, P, ST, 'strict: a phenotype is no catalyst');
-yes('stimulation', E, P, PD, 'an empty set as a modifier (CellDesigner)'); no('stimulation', E, P, ST, 'strict: an empty set is only consumed or produced');
+no('stimulation', E, P, PD, 'no empty set as a modifier, unticked too', 'An empty set is only consumed or produced.'); no('stimulation', E, P, ST, 'strict: an empty set is only consumed or produced');
 no('stimulation', M, S, STR, 'strict: reduced notation off'); no('stimulation', AND, P, STR, 'strict: fanout off', 'one out');
 yes('stimulation', M, P, ST, 'strict: a stimulation of a process'); yes('catalysis', M, PH, ST, 'strict: catalysis onto a phenotype (3.4.1 table)');
 var one = function (name, strict) { return { sets: strict ? ['pd', 'strict'] : ['pd'], check: function (c) { return c === name ? 'once' : null; } }; };

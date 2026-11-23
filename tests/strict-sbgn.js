@@ -1,6 +1,6 @@
 // The palette's Strict SBGN tick box (plan 3 step 6), on Testing Glycolysis SBGN-ML. Unticked (the default): a phenotype
-// is consumed, produced and catalyses (CellDesigner's phenotype is a species), a gene catalyses, an empty set stimulates
-// (CellDesigner 4.4.2 holds each, checked on a file opened there), two entities take a stimulation (Reduced notation,
+// is consumed, produced and catalyses (CellDesigner's phenotype is a species), a gene catalyses (CellDesigner 4.4.2 holds
+// each, checked on a file opened there), an empty set never modulates, two entities take a stimulation (Reduced notation,
 // ticked by default), a process takes a second catalysis, an empty set a second consumption. Ticked: each of these refused, the lines the map holds kept, Reduced notation pale and out of use with its tick kept; Cmd+Z
 // unticks it again. Nothing is saved (no token).
 //   node tests/strict-sbgn.js [address] [viewer folder: its editor and renderers served in place of the page's]
@@ -45,7 +45,7 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysis
   ok('unticked: a phenotype as a catalysis', (await line('catalysis', ph, p3)) === 1);
   ok('unticked: a phenotype produced', (await line('production', p2, ph)) === 1);
   ok('unticked: a gene as a catalysis', (await line('catalysis', gn, p2)) === 1);
-  ok('unticked: an empty set as a stimulation', (await line('stimulation', es, p3)) === 1);
+  ok('unticked: an empty set no stimulation either (SBGN)', (await line('stimulation', es, p3)) === 0);
   ok('unticked: a stimulation between two entities (Reduced notation)', (await line('stimulation', m1, m2)) === 1);
   ok('a first catalysis', (await line('catalysis', m1, p3)) === 1);
   ok('unticked: a second catalysis on the same process', (await line('catalysis', m2, p3)) === 1);
