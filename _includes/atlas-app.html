@@ -903,8 +903,8 @@ page, so its styles keep the base they were made on).
 <svg id="m2-pin" viewBox="0 0 24 32" aria-hidden="true"><path d="M12 31C12 31 2 18.5 2 11.5a10 10 0 0 1 20 0C22 18.5 12 31 12 31z" style="fill: var(--m2-accent)"/><circle cx="12" cy="11.5" r="3.6" fill="#fff"/></svg>
 <div class="m2-ctrl">
 <span id="m2-zoom"></span>
-<button type="button" id="m2-out" title="Zoom out">&minus;</button>
-<button type="button" id="m2-in" title="Zoom in">+</button>
+<button type="button" id="m2-out" title="Zoom out (−)">&minus;</button>
+<button type="button" id="m2-in" title="Zoom in (+)">+</button>
 <button type="button" id="m2-mode"></button>
 <button type="button" id="m2-full" title="Full screen" aria-label="Full screen"></button>
 </div>
@@ -1656,6 +1656,8 @@ page, so its styles keep the base they were made on).
   function listGroups() {
     var ns = GROUPS && maps ? groupNames().concat(linkGroups(links)) : [];
     if (own) ns = ns.concat(own.groups() || []);
+    var q = document.getElementById('m2-search');
+    if (!(q && q.value)) ns = Array.prototype.map.call(document.querySelectorAll('#m2-list .m2-group[data-group]'), function (g) { return g.getAttribute('data-group'); }).concat(ns);   // in the order the list shows them (a reader's new group where it stands), then any not drawn
     return ns.filter(function (n, i) { return n && ns.indexOf(n) === i; });
   }
   function linkGroups(ls) {   // the links' groups in the order first met, no group ('') first
@@ -2142,8 +2144,8 @@ page, so its styles keep the base they were made on).
     var b = document.getElementById('m2-mode');
     b.textContent = mode === 'fit' ? 'Fit' : 'Read';
     b.title = mode === 'fit'
-      ? 'Whole map. Click for reading size, the same for every map'
-      : 'Reading size, the same for every map. Click for the whole map';
+      ? 'Whole map (0). Click for reading size, the same for every map'
+      : 'Reading size (0), the same for every map. Click for the whole map';
     showSettings();
   }
   showMode();
@@ -2232,6 +2234,7 @@ page, so its styles keep the base they were made on).
   var MAC = /mac/i.test(navigator.platform);
   var tipsBox = null, MOD = /mac|iphone|ipad|ipod/i.test((navigator.userAgentData && navigator.userAgentData.platform) || navigator.platform || navigator.userAgent) ? 'Cmd' : 'Ctrl';
   function tipsBuild() {
+    var ed = setting('edit');   // the page has the Edit tab
     var e = function (t) { return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;'); };
     var table = function (head, rows) { return '<table>' + (head ? '<tr>' + head.map(function (h) { return '<th>' + e(h) + '</th>'; }).join('') + '</tr>' : '') + rows.map(function (r) { return '<tr>' + r.map(function (c) { return '<td>' + e(c) + '</td>'; }).join('') + '</tr>'; }).join('') + '</table>'; };
     tipsBox = document.createElement('div');
@@ -2253,7 +2256,7 @@ page, so its styles keep the base they were made on).
         ['Shift + right click', 'the browser’s own menu'],
         ['+ and − keys, or the buttons', 'zoom in and out'],
         ['0, or Fit and Read', 'the whole map or reading size'],
-        ['E, or ' + MOD + ' + E', 'switch between viewing and editing'],
+      ].concat(ed ? [['E, or ' + MOD + ' + E', 'switch between viewing and editing']] : [], [   // the editing rows only where the page has the Edit tab
         ['?, or the ? sign at the end of the icons', 'this window (while editing: the editor’s help)'],
         [MOD + ' + Z, ' + MOD + ' + Shift + Z or ' + MOD + ' + Y', 'undo, redo the last change of a setting: Settings, the grid, the palette’s choices'],
         ['Arrow keys', 'the next or the previous map in the list'],
@@ -2261,8 +2264,8 @@ page, so its styles keep the base they were made on).
         ['Esc', 'clears the selection, closes a window or a menu']].concat(own ? [
         [MOD + ' + Z, ' + MOD + ' + Shift + Z in the list', 'undo, redo the list’s last change: a move, Delete, Restore, a name, a group, a new map (while editing: after a click in the list)'],
         ['Shift or ' + MOD + ' + click on a group’s name', 'selects the group, not opened or closed; ' + MOD + ' + Delete then deletes it, as Delete group'],
-        [MOD + ' + Delete', 'with the list in sight and nothing selected on the map: puts the map shown, or the maps selected in the list, in Deleted and shows the next one; Delete alone does not, as in Finder']] : [])) +
-      '<h4>While editing</h4>' + table(null, [
+        [MOD + ' + Delete', 'with the list in sight and nothing selected on the map: puts the map shown, or the maps selected in the list, in Deleted and shows the next one; Delete alone does not, as in Finder']] : []))) +
+      (!ed ? '' : '<h4>While editing</h4>' + table(null, [
         ['Click, then drag', 'an item is selected first, then moved'],
         ['Drag on empty space or an item not selected', GRAB ? 'moves the map, as outside editing' : 'selects an area in place of the selection'],
         ['Shift + click, Shift + drag', 'adds an item or an area to the selection; Shift + click takes an item out'],
@@ -2271,7 +2274,7 @@ page, so its styles keep the base they were made on).
         [MOD + ' + Z, ' + MOD + ' + Shift + Z or ' + MOD + ' + Y', 'undo, redo the last change, of the map or of a setting'],
         ['Delete', 'remove what is selected, where it can be removed'],
         [MOD + ' + A', 'select all'],
-        [MOD + ' + S', 'save at once']]);
+        [MOD + ' + S', 'save at once']]));
     document.body.appendChild(tipsBox);
     tipsBox.querySelector('.m2-tips-x').addEventListener('click', function () { tips(false); });
   }
@@ -3374,7 +3377,8 @@ page, so its styles keep the base they were made on).
   }
   function movedOf(id) { return Object.prototype.hasOwnProperty.call(regrouped, id) ? regrouped[id] : null; }
   function arrange(list) {  // the site's list in the reader's order
-    var site = list.slice(), groups = siteGroups(site);
+    var site = list.slice(), groups = siteGroups(site.filter(function (m) { return !m.mine; }));   // a site group keeps the site's place when a reader's map joins it (own maps come first in the list)
+    groups = site.reduce(function (a, m) { var g = m.group || ''; if (m.mine && groups.indexOf(g) < 0 && a.indexOf(g) < 0) a.push(g); return a; }, []).concat(groups);   // groups of the reader's maps alone first, as before
     var rank = function (known, x, i) { var k = (known || []).indexOf(x); return k < 0 ? 1e6 + i : k; };
     return site.map(function (m, i) {
       var g = m.group || '';
@@ -4369,10 +4373,10 @@ page, so its styles keep the base they were made on).
       if (document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen)
         item(box, isPageFull() ? 'Exit full screen' : 'Full screen with tools', pageFull);
       gap();
-      var sh = shown(m);
+      var sh = shown(m);   // a reader's own map: its drawing (sh.svg), as Download SVG takes it
       mapDownloads(m).forEach(function (d) { item(box, d[0], d[1]); });
       if (!m.imageError) item(box, 'Copy image as PNG', function (r) { copyPicture(m, url, r, sh); });
-      if (!m.imageError && svgOf(m, url)) item(box, 'Copy image as SVG', function (r) { copySvg(m, url, r, sh); });
+      if (!m.imageError && (svgOf(m, url) || sh && sh.svg)) item(box, 'Copy image as SVG', function (r) { copySvg(m, url, r, sh); });
       gap();
       ['Newt', 'MINERVA'].forEach(function (l) { if (url[l]) link(box, 'Open in ' + l, url[l]); });
       while (box.lastChild && box.lastChild.classList.contains('m2-sep')) box.removeChild(box.lastChild);

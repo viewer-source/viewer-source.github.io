@@ -40,8 +40,9 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
 
   // 2. Cmd+Delete with an area on the map: kept; after Esc: Delete alone kept, Cmd+Delete in Deleted
   var MOD = process.platform === 'darwin' ? 'Meta' : 'Control';
-  await menu('#m2-list .m2-map[data-id="testing-glycolysis-sbgn"]', 'Make a copy'); await page.waitForTimeout(1500);
+  await menu('#m2-list .m2-map[data-id="acly-celldesigner"]', 'Make a copy'); await page.waitForTimeout(1500);   // a CellDesigner map: the site's SBGN-ML maps from another editor are not copied
   var copy = await hash();
+  ok('2. Make a copy made one', copy !== 'acly-celldesigner' && (await ids()).indexOf(copy) >= 0, copy);
   await view(); await list();
   await page.click('#m2-list .m2-map[data-id="' + copy + '"]'); await page.waitForTimeout(2500);
   var B = await mapBox();
@@ -55,9 +56,8 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
   await page.keyboard.press(MOD + '+Delete'); await page.waitForTimeout(1500);
   ok('2. after Esc, ' + MOD + '+Delete puts it in Deleted', (await ids()).indexOf(copy) < 0, await hash());
 
-  // 3 and 4. edit mode on a copy of its own
-  await menu('#m2-list .m2-map[data-id="testing-glycolysis-sbgn"]', 'Make a copy'); await page.waitForTimeout(1500);
-  var copy2 = await hash();
+  // 3 and 4. edit mode on the site's SBGN-ML map (its edits kept in this browser only, cleared at the end)
+  await page.click('#m2-list .m2-map[data-id="testing-glycolysis-sbgn"]'); await page.waitForTimeout(2500);
   if (!(await editing())) { await page.keyboard.press('e'); await page.waitForTimeout(2500); }
   await page.waitForSelector('#m2-editwin button[data-make="macromolecule"]', { state: 'visible', timeout: 30000 }); await page.waitForTimeout(1500);
   var n0 = await glyphs();

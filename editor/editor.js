@@ -2299,7 +2299,7 @@
     })));
   }
   function canCopy(m) {
-    return !!m && !m.shownAs && (m.mine ? !!mine[m.id] : !!graphmlOf(m) && (!sbMap(m) || /^maps\/[^/]+\.sbgn$/.test(m.editPath || "")));
+    return !!m && !m.shownAs && (m.mine ? !!mine[m.id] : !!graphmlOf(m) && (!sbMap(m) || /^maps\/[^/]+\.sbgn$/.test(m.editPath || "") && !!m.madeHere));
   }
   function fmtOf(m) {
     return (((m.site || m).downloads || [])[0] || {}).label || "";
@@ -4287,13 +4287,22 @@
     });
   }
   function listMade(run) {
-    var ks = [], e = { undo: function() {
-      return fwd.then(function() {
-        return binKeys(ks);
-      });
-    }, redo: function() {
-      return restoreKeys(ks);
-    } };
+    var ks = [], ids = [], at2 = location.hash.slice(1);
+    var e = {
+      undo: function() {
+        return fwd.then(function() {
+          var on1 = ids.indexOf(location.hash.slice(1)) >= 0;
+          return Promise.resolve(binKeys(ks)).then(function() {
+            if (on1 && at2 && V.byId[at2]) V.go(at2);
+          });
+        });
+      },
+      redo: function() {
+        return Promise.resolve(restoreKeys(ks)).then(function() {
+          if (ids.length === 1 && V.byId[ids[0]]) V.go(ids[0]);
+        });
+      }
+    };
     var fwd = mineIn.then(function() {
       var had = {};
       Object.keys(mine).forEach(function(id) {
@@ -4301,7 +4310,10 @@
       });
       return Promise.resolve(run()).then(function() {
         Object.keys(mine).forEach(function(id) {
-          if (!had[id] && !mine[id].hidden) ks.push(listKey(mine[id]));
+          if (!had[id] && !mine[id].hidden) {
+            ks.push(listKey(mine[id]));
+            ids.push(id);
+          }
         });
         if (!ks.length) listPast.splice(listPast.indexOf(e) >>> 0, 1);
       });

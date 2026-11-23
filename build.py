@@ -429,7 +429,7 @@ def entry_of(title, group, order, d, **more):
                  'draft': False, 'tag': '', 'image': d['image'], 'width': d['width'], 'height': d['height'], 'scale': 1,
                  'annotation': d['annotation'], 'image_error': '', 'v': d['v'], 'colours': True, 'legend': 'sbgn',
                  'downloads': [{'label': 'SBGN-ML', 'url': d['file']}, {'label': 'SVG', 'url': d['image']}]},
-                **({'shapes': True} if d.get('shapes') else {}), **{k: d[k] for k in ('src', 'edit_path', 'edit_base') if k in d}, **more)
+                **({'shapes': True} if d.get('shapes') else {}), **{k: d[k] for k in ('src', 'edit_path', 'edit_base', 'made_here') if k in d}, **more)
 
 
 BINNED = None
@@ -566,6 +566,8 @@ def main():
         shutil.copy(f, os.path.join(ROOT, 'downloads', mid + '.sbgn'))
         d['file'], d['src'] = '/downloads/%s.sbgn' % mid, blob_sha(f)
         d['edit_path'], d['edit_base'] = 'maps/%s.sbgn' % mid, '/atlas-data/%s.graphml' % mid
+        if re.search(r'<map\s[^>]*id="viewer-new-map"', open(f, encoding='utf-8').read(3000)):   # made with New map (the editor's NEW_ID): the list may copy it
+            d['made_here'] = True
         search += search_entries(mid, nodes)
         title = meta.get('title', mid)
         write_entry(mid, entry_of(title, meta.get('group', ''), int(meta.get('order', 0)), d, topic=meta.get('topic', title), written=meta.get('written', ''),

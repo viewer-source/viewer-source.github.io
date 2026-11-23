@@ -374,7 +374,7 @@ import { NEW_ID, emptyBase, isSb, madeHere, sbMap } from './sbgn.js';
     // the original, opened at once (no name field: one command at a time, as Finder's Duplicate). Of a reader's own map, or of the site's
     // GraphML or CellDesigner map as it is now (the edits this page holds, else GitHub's version, else the site's);
     // with a token every copy goes to the site, as Add map does (an SBGN-ML one only made here)
-    function canCopy(m) { return !!m && !m.shownAs && (m.mine ? !!mine[m.id] : !!graphmlOf(m) && (!sbMap(m) || /^maps\/[^/]+\.sbgn$/.test(m.editPath || ''))); }   // an SBGN-ML map of the site's own, not one of its groups'
+    function canCopy(m) { return !!m && !m.shownAs && (m.mine ? !!mine[m.id] : !!graphmlOf(m) && (!sbMap(m) || /^maps\/[^/]+\.sbgn$/.test(m.editPath || '') && !!m.madeHere)); }   // an SBGN-ML map of the site's own made with New map (build.py made_here; copyOf refuses another editor's), not one of its groups'
     // Names as in Finder, the format being the extension the list shows: two maps may share a name unless they are in
     // the same group and of the same format. A name taken there is refused when typed (Rename map); a name the viewer
     // makes (Make a copy, New map, Add map from file), or a clash a move or a Restore brings, takes (1), (2), ... after it
@@ -1540,11 +1540,13 @@ import { NEW_ID, emptyBase, isSb, madeHere, sbMap } from './sbgn.js';
       listDid(function () { return fwd.then(function () { return binKeys(ks); }).then(function () { if (made && !inGroup(made).length) groupGo(made); }); }, function () { return restoreKeys(ks); });
     }
     function listMade(run) {   // a new map, a copy or files added: undone into Deleted, as Finder's undo of a copy
-      var ks = [], e = { undo: function () { return fwd.then(function () { return binKeys(ks); }); }, redo: function () { return restoreKeys(ks); } };
+      var ks = [], ids = [], at = location.hash.slice(1);   // at: the map shown before, shown again when the undo takes the one made away
+      var e = { undo: function () { return fwd.then(function () { var on1 = ids.indexOf(location.hash.slice(1)) >= 0; return Promise.resolve(binKeys(ks)).then(function () { if (on1 && at && V.byId[at]) V.go(at); }); }); },
+        redo: function () { return Promise.resolve(restoreKeys(ks)).then(function () { if (ids.length === 1 && V.byId[ids[0]]) V.go(ids[0]); }); } };   // the copy shown again, as when it was made
       var fwd = mineIn.then(function () {
         var had = {}; Object.keys(mine).forEach(function (id) { had[id] = !mine[id].hidden; });   // a deleted map brought back by its file counts as made
         return Promise.resolve(run()).then(function () {
-          Object.keys(mine).forEach(function (id) { if (!had[id] && !mine[id].hidden) ks.push(listKey(mine[id])); });
+          Object.keys(mine).forEach(function (id) { if (!had[id] && !mine[id].hidden) { ks.push(listKey(mine[id])); ids.push(id); } });
           if (!ks.length) listPast.splice(listPast.indexOf(e) >>> 0, 1);   // nothing made: no step left behind
         });
       });
