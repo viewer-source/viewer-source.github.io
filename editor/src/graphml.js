@@ -42,7 +42,6 @@ import { sbJs } from './sbgn.js';
     // only: the editor's GraphML and the file stay as they are
     var AF_KINDS;
     function __run2() {   // run at start, in order (__start)
-    shared.afSbgn = false;
     AF_KINDS = /^(Macromolecule|SimpleChemical|NucleicAcidFeature|UnspecifiedEntity|Complex)$/;
     }
     function afGraphml(d) {   // d: a document of its own, changed in place

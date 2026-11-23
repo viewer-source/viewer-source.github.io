@@ -11,7 +11,7 @@ import { yr } from './graphml.js';
     // A map of the site saves its edited copy to its editPath (maps/sbgn-ml/...), the file it came from left unchanged.
     var sbp, sbJs, EMPTY_BASE, baseURL;
     function __run1() {   // run at start, in order (__start)
-    sbp = null, sbJs = null, shared.sb = null;   // the SBGN-ML side loading, loaded, the file edited ({ base: its text, g0: the build's GraphML })
+    sbp = null, sbJs = null;   // the SBGN-ML side loading, loaded, the file edited ({ base: its text, g0: the build's GraphML })
     // a map made here (New map, own.js): drawn and edited from the converter's GraphML of an empty map, sbgn_edit.graphml
     // making every glyph drawn since (the same drawing as the converter's, checked on every kind the palette makes); its
     // map id says so, so only such a file is taken back from the folder or Add map from file (another editor's may hold
@@ -64,9 +64,6 @@ import { yr } from './graphml.js';
       return g;
     }
     function sbRemember(t, g, base) { sbMemo.unshift([t, base, g]); sbMemo.length = Math.min(sbMemo.length, 3); }
-    function __run4() {   // run at start, in order (__start)
-    shared.sbLast = null;
-    }   // [GraphML, its SBGN-ML text]: the moves written once per text
     function sbNow() {   // a write that fails is said, and the last text written stands (never the file without its moves silently)
       if (!shared.sbLast || shared.sbLast[0] !== shared.text || shared.sbLast[2] !== shared.sb) {
         try { shared.sbLast = [shared.text, edOf(shared.sb.base).write(shared.sb.base, shared.text), shared.sb]; }
@@ -98,7 +95,7 @@ import { yr } from './graphml.js';
     }
     var sbK, GEO;
     function __run6() {   // run at start, in order (__start)
-    sbK = { sb: null }, shared.sbBack = false;
+    sbK = { sb: null };
     GEO = /\s(?:x|y|width|height|sx|sy|tx|ty|ratio|modelPosition|nodeRatioX|nodeRatioY|labelRatioX|labelRatioY|offsetX|offsetY|borderDistance)="[^"]*"/g;
     }
     function sbRead() {   // the file written from the GraphML now: its kind and language, none when the write failed
@@ -135,5 +132,5 @@ import { yr } from './graphml.js';
       parse(); shared.selP = []; shared.selE = []; shared.dirty = true; render(); paint();   // the GraphML made again: its lines in another order
     }
 
-    export function __start() { __run1(); __run2(); __run3(); __run4(); __run5(); __run6(); }   // the part's statements, in their order
+    export function __start() { __run1(); __run2(); __run3(); __run5(); __run6(); }   // the part's statements, in their order
     export { EMPTY_BASE, GEO, NEW_ID, edOf, emptyBase, isSb, madeHere, sbBase, sbFollow, sbGraphml, sbJs, sbKind, sbMap, sbNow, sbRemember, sbpy, viaGraphml };

@@ -110,13 +110,19 @@ cfiles.forEach(function (f) {
   if (c0.length > 1) cjobs.push({ f: f, t: t, g: g, what: 'compartment into another', moves: [[c0[0], c0[1]]], comp: true });
   var mem = ids.filter(function (id) { var A = d.alias.get(id); return A && A[2].getAttribute('complexSpeciesAlias'); })[0];
   // a complex member taken out (Shift) is allowed: cd_make.leave writes it as a species after the move
-  if (mem) { ran++; var w = ed.nestCheck(t, [[mem, null]], opt); if (w) fail(path.basename(f) + ' nestCheck', 'a complex member taken out was refused: ' + w); }
+  // nestCheck reads a document already parsed (the editor's kept one, opt.doc) as it reads the text: each case asked both ways
+  var nd = Object.assign({}, opt, { doc: new opt.DOMParser().parseFromString(t, 'application/xml') }), nest = function (mv) {
+    var a = ed.nestCheck(t, mv, opt), b = ed.nestCheck(t, mv, nd);
+    if (a !== b) fail(path.basename(f) + ' nestCheck', 'the answer from the parsed document differs from the text\'s: ' + a + ' / ' + b);
+    return a;
+  };
+  if (mem) { ran++; var w = nest([[mem, null]]); if (w) fail(path.basename(f) + ' nestCheck', 'a complex member taken out was refused: ' + w); }
   var twice = Object.keys(spOf).filter(function (s) { return spOf[s].length > 1 && spOf[s].every(function (a) { return !d.alias.get(a)[2].getAttribute('complexSpeciesAlias'); }); })[0];
   if (twice) {
     ran++;
     var a0 = spOf[twice][0], to = comps.filter(function (c) { return c !== I.U[a0]; })[0] || null;
-    if (to !== (I.U[a0] || null) && !ed.nestCheck(t, [[a0, to]], opt)) fail(path.basename(f) + ' nestCheck', 'one copy of a species drawn twice moved alone was not refused');
-    if (ed.nestCheck(t, spOf[twice].map(function (a) { return [a, to]; }), opt)) fail(path.basename(f) + ' nestCheck', 'all copies of a species moved together were refused');
+    if (to !== (I.U[a0] || null) && !nest([[a0, to]])) fail(path.basename(f) + ' nestCheck', 'one copy of a species drawn twice moved alone was not refused');
+    if (nest(spOf[twice].map(function (a) { return [a, to]; }))) fail(path.basename(f) + ' nestCheck', 'all copies of a species moved together were refused');
   }
 });
 cjobs.forEach(function (j) { j.g2 = se.moveInto(j.g, j.moves); });

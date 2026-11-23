@@ -250,7 +250,7 @@ import { origGh, origPut } from './own.js';
       '<div class="m2-ed-pblk m2-ed-pcdc">' + palTip('<label class="m2-ed-phyb" title="Ticked: the palette offers only what CellDesigner and MINERVA can hold; unticked: tags and submaps\u2019 terminals too"><input type="checkbox"><span>CellDesigner compatible</span></label>', 'CellDesigner compatible', INFO.cdc) + '</div>' +
       '<div class="m2-ed-pblk m2-ed-pstrict">' + palTip('<label class="m2-ed-phyb" title="Ticked (the default): under PD a modulation may also end on an entity, and a logic gate\u2019s output go to one (CellDesigner\u2019s reduced notation); with a process on the map the file stays Process Description, without one such a link makes it Activity Flow. Unticked: Process Description only"><input type="checkbox"><span>Reduced notation</span></label>', 'Reduced notation', INFO.strict) + '</div>' +
       '<div class="m2-ed-psigns"></div>';
-    palSignsEl = pal.querySelector('.m2-ed-psigns'), shared.palShown = null;
+    palSignsEl = pal.querySelector('.m2-ed-psigns');
     }
     function palBlocks() {   // the blocks of the one list shown, or the plain list (palSigns)
       var row = palSignsEl.querySelector('.m2-ed-prow[data-blocks]'), b = row && row.querySelector('button');
@@ -1520,9 +1520,6 @@ import { origGh, origPut } from './own.js';
     }
     // a name (j null), or the j-th icon's text (a state variable's value, a unit of information), typed in a box over the
     // map; Enter or leaving it keeps it, Esc not (a unit's text free: N:3, mt:prot, ct:mRNA; a CellDesigner map's icons have windows of their own, cdcreate.js cdSvWin)
-    function __run30() {   // run at start, in order (__start)
-    shared.typing = null;
-    }
     function typeIn(id, j, fresh) {   // fresh: the unit was made for this typing, deleted again when nothing is kept
       if (shared.typing) shared.typing.done(true);
       var i = nodes2.findIndex(function (n) { return n.id === id; });
@@ -1685,7 +1682,7 @@ import { origGh, origPut } from './own.js';
     // deletes it
     var svDrag, svKey;
     function __run32() {   // run at start, in order (__start)
-    shared.svSel = null, svDrag = null, svKey = null;
+    svDrag = null, svKey = null;
     }   // svSel: { id, j }; svKey: a move by the arrow keys under way
     function svOn() { return palOn() || cdPal(); }   // state variables edited: SBGN-ML maps (Full) and CellDesigner maps (cdcreate.js)
     function svBox(i) { return shared.cd ? cdFront(i, cdFeat(nodes2[i].id)) : boxOf(i); }   // the box its state variables sit round: a CellDesigner multimer's front copy
@@ -2955,5 +2952,5 @@ import { origGh, origPut } from './own.js';
     });
     }
 
-    export function __start() { __run1(); __run2(); __run3(); __run4(); __run5(); __run6(); __run7(); __run8(); __run9(); __run10(); __run11(); __run12(); __run13(); __run14(); __run15(); __run16(); __run17(); __run18(); __run19(); __run20(); __run21(); __run22(); __run23(); __run24(); __run25(); __run26(); __run27(); __run28(); __run29(); __run30(); __run31(); __run32(); __run33(); __run34(); __run35(); __run36(); __run37(); __run38(); __run39(); __run40(); __run41(); __run42(); __run43(); __run44(); __run45(); __run46(); __run47(); __run48(); __run49(); __run50(); __run51(); __run52(); __run53(); __run54(); __run55(); __run56(); __run57(); __run58(); __run59(); __run60(); }   // the part's statements, in their order
+    export function __start() { __run1(); __run2(); __run3(); __run4(); __run5(); __run6(); __run7(); __run8(); __run9(); __run10(); __run11(); __run12(); __run13(); __run14(); __run15(); __run16(); __run17(); __run18(); __run19(); __run20(); __run21(); __run22(); __run23(); __run24(); __run25(); __run26(); __run27(); __run28(); __run29(); __run31(); __run32(); __run33(); __run34(); __run35(); __run36(); __run37(); __run38(); __run39(); __run40(); __run41(); __run42(); __run43(); __run44(); __run45(); __run46(); __run47(); __run48(); __run49(); __run50(); __run51(); __run52(); __run53(); __run54(); __run55(); __run56(); __run57(); __run58(); __run59(); __run60(); }   // the part's statements, in their order
     export { ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues, confettiLine, confettiOne, confettiPick, confettiSquares, ddOpen, hex, hybOn, iconKeep, iconSpread, innermost, joinDo, joinPack, joinPlan, keepLook, keepMapChoice, link, linkDown, linkEnd, linkMove, linkPaint, linkUp, looksKept, mapCols, moveLimit, nameAt, origAll, pNow, pal, palBlocks, palDid, palDown, palDrop, palId, palLangNow, palShow, palSigns, palSignsEl, palStore, palStyle, palTake, palUp, pdLimit, placedAt, propFmt, propRows, setSize, sizable, styleRow, svAt, svDelete, svDown, svIcons, svList, svMarks, svParts, textsOf, tool, typeIn };

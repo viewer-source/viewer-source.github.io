@@ -5,6 +5,146 @@
   var shared = {};
   function setV(v) {
     V = v;
+    Object.keys(LIFETIMES).forEach(reset);
+  }
+  function none() {
+    return null;
+  }
+  function no() {
+    return false;
+  }
+  function list() {
+    return [];
+  }
+  var LIFETIMES = {
+    page: {
+      palShown: none,
+      // the palette's set as last shown (create.js palShow)
+      listAhead: list,
+      // the list's maps read ahead (own.js)
+      ghDir: none,
+      // when the data repository's folder was last listed (core.js, own.js)
+      switching: no,
+      // editing ends because another map was chosen
+      afSbgn: no
+      // AF's SBGN view: follows the palette's look (create.js palLook); stop() draws the map plainly
+    },
+    map: {
+      text: function() {
+        return "";
+      },
+      // the GraphML edited (a CellDesigner or SBGN-ML map's working copy)
+      cd: none,
+      // a CellDesigner map: { base, now }
+      sb: none,
+      // an SBGN-ML map: { base, g0 }
+      sbLast: none,
+      // an SBGN-ML map's [GraphML, its SBGN-ML text, sb]: the moves written once per text (sbgn.js)
+      sbBack: no,
+      // the next parse follows an undo (sbgn.js sbKind)
+      dirty: no,
+      // moves not saved
+      redo: list,
+      // the redo steps (undo is core.js's own)
+      selN: list,
+      selE: list,
+      selP: list,
+      // selected nodes, arcs, bend points (indices in nodes2, edges2, points)
+      svSel: none,
+      // a selected state variable or unit of information { id, j }
+      part: none,
+      // a selected part of a line (a port or a bend point)
+      procs: list,
+      // the process glyphs with their two main arcs (parse)
+      cdBase: none,
+      // the drawing the CellDesigner live session starts from { now, text }
+      cdGate: none
+      // a CellDesigner logic gate being made: { kind, inputs: [node ids] } (cdcreate.js)
+    },
+    gesture: {
+      tap: none,
+      // a press waiting to become a click
+      typing: none,
+      // a name being typed on the map (create.js typeIn)
+      cdPend: none
+      // a CellDesigner structural state or unit of information shown before it is in the file, written once it has a value: { id, kind, angle } (cdcreate.js)
+    },
+    drawing: {
+      live: none,
+      liveC: none,
+      liveOrig: none,
+      liveG: none,
+      // a move drawn live: arcs hidden, boxes, holders' groups, glyphs' shifts
+      sizeRec: none,
+      // the node drawn live while it is resized: its parts and how they were
+      keyed: none,
+      // what the arrow keys moved since the map was last drawn
+      poseNow: none,
+      poseText: none,
+      // a dragged tag's or terminal's pose
+      copies: list,
+      // the live copies of lines drawn over the picture
+      frozen: no
+      // the copies kept until the map is drawn again
+    },
+    cache: {
+      hpMemo: none,
+      // the ports of the GraphML drawing, by its text
+      cdStrictMemo: function() {
+        return [null, false];
+      }
+      // the CellDesigner set's tick box, read from this browser once per map, not on every paint
+    }
+  };
+  function reset(kind) {
+    var L = LIFETIMES[kind];
+    Object.keys(L).forEach(function(k) {
+      shared[k] = L[k]();
+    });
+  }
+  function resetMap() {
+    cleared().forEach(reset);
+  }
+  function resetDrawing() {
+    reset("drawing");
+  }
+  function cleared() {
+    return ["map", "gesture", "drawing", "cache"];
+  }
+  function takeMap() {
+    var o = {};
+    cleared().forEach(function(kind) {
+      Object.keys(LIFETIMES[kind]).forEach(function(k) {
+        o[k] = shared[k];
+      });
+    });
+    return o;
+  }
+  function putMap(o) {
+    Object.keys(o).forEach(function(k) {
+      shared[k] = o[k];
+    });
+  }
+  function plant(o) {
+    var ok = {};
+    cleared().forEach(function(kind) {
+      Object.keys(LIFETIMES[kind]).forEach(function(k) {
+        ok[k] = 1;
+      });
+    });
+    Object.keys(o).forEach(function(k) {
+      if (ok[k]) shared[k] = o[k];
+    });
+  }
+  function stateNow() {
+    var out = {};
+    Object.keys(LIFETIMES).forEach(function(kind) {
+      out[kind] = {};
+      Object.keys(LIFETIMES[kind]).forEach(function(k) {
+        out[kind][k] = shared[k];
+      });
+    });
+    return out;
   }
 
   // editor/src/sbgn.js
@@ -13,7 +153,7 @@
   var EMPTY_BASE;
   var baseURL;
   function __run1() {
-    sbp = null, sbJs = null, shared.sb = null;
+    sbp = null, sbJs = null;
     EMPTY_BASE = `<?xml version='1.0' encoding='UTF-8'?>
 <graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:y="http://www.yworks.com/xml/graphml">
   <key for="node" id="ng" yfiles.type="nodegraphics"/>
@@ -101,9 +241,6 @@
     sbMemo.unshift([t, base, g]);
     sbMemo.length = Math.min(sbMemo.length, 3);
   }
-  function __run4() {
-    shared.sbLast = null;
-  }
   function sbNow() {
     if (!shared.sbLast || shared.sbLast[0] !== shared.text || shared.sbLast[2] !== shared.sb) {
       try {
@@ -128,7 +265,7 @@
   var sbK;
   var GEO;
   function __run6() {
-    sbK = { sb: null }, shared.sbBack = false;
+    sbK = { sb: null };
     GEO = /\s(?:x|y|width|height|sx|sy|tx|ty|ratio|modelPosition|nodeRatioX|nodeRatioY|labelRatioX|labelRatioY|offsetX|offsetY|borderDistance)="[^"]*"/g;
   }
   function sbRead() {
@@ -188,7 +325,6 @@
     __run1();
     __run2();
     __run3();
-    __run4();
     __run5();
     __run6();
   }
@@ -227,7 +363,6 @@
   }
   var AF_KINDS;
   function __run22() {
-    shared.afSbgn = false;
     AF_KINDS = /^(Macromolecule|SimpleChemical|NucleicAcidFeature|UnspecifiedEntity|Complex)$/;
   }
   function afGraphml(d) {
@@ -662,7 +797,7 @@
     });
   }
   var GROUPS_KEY;
-  function __run42() {
+  function __run4() {
     GROUPS_KEY = "atlas-mine-groups";
   }
   function mineGroups() {
@@ -1423,9 +1558,9 @@
       return [];
     }
   }
-  function withMine(list) {
+  function withMine(list2) {
     var ids = {}, held = {};
-    list.forEach(function(m) {
+    list2.forEach(function(m) {
       ids[m.id] = m;
     });
     Object.keys(mine).forEach(function(k) {
@@ -1448,11 +1583,11 @@
         if (location.hash.slice(1) === k && V.byId[r.site]) V.go(r.site);
       }, 0);
     });
-    list = siteNamed(list.filter(function(m) {
+    list2 = siteNamed(list2.filter(function(m) {
       return !held[m.id];
     }));
     var hid = siteHidden(), gh2 = !!(repo() && token()), pend = binPending(), n0 = Object.keys(pend).length, binned = [];
-    list = list.filter(function(m) {
+    list2 = list2.filter(function(m) {
       if (hiddenGone[m.id]) return false;
       var tb = twinBase(m), tp = tb && (ids[tb + "-graphml"] || ids[tb]), d = tp && m.deleted && m.deleted === tp.deleted ? binState(tp, pend) : tp && binState(tp, pend) || binState(m, pend);
       if (!d && (!gh2 || hid.indexOf(m.id) < 0)) return true;
@@ -1467,7 +1602,7 @@
       var r = mine[k];
       if (r.hidden) binned.push(Object.assign(mineEntry(r), { binned: r.deleted || r.at }));
     });
-    return own2.concat(list, binned);
+    return own2.concat(list2, binned);
   }
   var exBackup;
   function __run122() {
@@ -1740,8 +1875,8 @@
   function canRename(m, gh2) {
     return !!m && !m.shownAs && (m.mine ? !!mine[m.id] && (!mine[m.id].site || !!gh2) : !!gh2 && !/^maps\/sbgn-ml\//.test(m.editPath || ""));
   }
-  function siteNamed(list) {
-    return list.map(function(m) {
+  function siteNamed(list2) {
+    return list2.map(function(m) {
       var n = renamed[m.id];
       if (!n) return m;
       if (m.topic === n.to && !V.pageBehind(m) || n.local && m.topic !== n.was) {
@@ -1885,9 +2020,9 @@
       });
     });
   }
-  function addFiles(list, group) {
-    list = Array.prototype.slice.call(list);
-    var picked = list.filter(function(f) {
+  function addFiles(list2, group) {
+    list2 = Array.prototype.slice.call(list2);
+    var picked = list2.filter(function(f) {
       return /\.(graphml|xml|sbgn)$/i.test(f.name);
     });
     if (!picked.length) return Promise.resolve();
@@ -1923,7 +2058,7 @@
         return f.text();
       }).then(function(t) {
         if (isSb(t) && !madeHere(t)) throw new Error("an SBGN-ML file from another editor cannot be added yet, only one made here with New map");
-        if (gh2) return drawText(t).then(function(d) {
+        if (gh2) return drawText(t, null, "adding").then(function(d) {
           var ext = siteExt(t), title = freeTitle(f.name.replace(/\.(graphml|xml|sbgn)$/i, ""), group || "", fmtOfText(t), out.filter(function(o) {
             return fmtOfText(o.t) === fmtOfText(t);
           }).map(function(o) {
@@ -1934,7 +2069,7 @@
           b.done++;
           if (b.shown) addPaint();
         });
-        return drawText(t).then(function(d) {
+        return drawText(t, null, "adding").then(function(d) {
           return mineAdd(f.name, t, d, null, group || void 0);
         }).then(function(r) {
           last = r.id;
@@ -2610,8 +2745,8 @@
       if (e.key !== "Delete" && e.key !== "Backspace" || e.defaultPrevented || e.altKey || e.shiftKey || !(e.ctrlKey || e.metaKey)) return;
       if (naming || document.querySelector(".m2-cx") || V.grid.classList.contains("m2-editing")) return;
       if (e.target.closest && e.target.closest("input, select, textarea, [contenteditable]")) return;
-      var list = document.getElementById("m2-list"), m = V.chosen && V.byId[V.chosen.id], sel = V.picked(), pg = V.pickedGroup();
-      if (pg !== null && list && list.offsetParent) {
+      var list2 = document.getElementById("m2-list"), m = V.chosen && V.byId[V.chosen.id], sel = V.picked(), pg = V.pickedGroup();
+      if (pg !== null && list2 && list2.offsetParent) {
         var gm = groupMaps(pg, !!(repo() && token()));
         V.pickSet([]);
         if (gm.length || ownGroup(pg) && !inGroup(pg).length) {
@@ -2620,7 +2755,7 @@
           return;
         }
       }
-      if ((sel.length > 1 || sel.length === 1 && (!m || sel[0] !== m.id)) && list && list.offsetParent) {
+      if ((sel.length > 1 || sel.length === 1 && (!m || sel[0] !== m.id)) && list2 && list2.offsetParent) {
         var ms = sel.map(function(id) {
           return V.byId[id];
         }).filter(function(x) {
@@ -2632,10 +2767,10 @@
         }
         return;
       }
-      if (!list || !list.offsetParent || !m || m.binned || !canDelete(m, !!(repo() && token()))) return;
+      if (!list2 || !list2.offsetParent || !m || m.binned || !canDelete(m, !!(repo() && token()))) return;
       if (V.mapSelected && V.mapSelected()) return;
       e.preventDefault();
-      var items = Array.prototype.slice.call(list.querySelectorAll(".m2-map:not(.m2-binned)")), i = items.findIndex(function(b) {
+      var items = Array.prototype.slice.call(list2.querySelectorAll(".m2-map:not(.m2-binned)")), i = items.findIndex(function(b) {
         return b.dataset.id === m.id;
       });
       var next = i < 0 ? null : items[i + 1] || items[i - 1];
@@ -3031,7 +3166,7 @@
   var listLast;
   var listStepping;
   function __run28() {
-    listPast = [], shared.listAhead = [], listLast = false, listStepping = Promise.resolve();
+    listPast = [], listLast = false, listStepping = Promise.resolve();
   }
   function listDid(undo2, redo, e) {
     e = e || { undo: undo2, redo };
@@ -3228,8 +3363,8 @@
       var k = V.letter(e);
       if (k !== "z" && k !== "y") return;
       if (naming || V.typing()) return;
-      var list = document.getElementById("m2-list"), bk = k === "z" && !e.shiftKey;
-      var toList = !!(list && list.offsetParent) && !(V.grid.classList.contains("m2-editing") && !listLast);
+      var list2 = document.getElementById("m2-list"), bk = k === "z" && !e.shiftKey;
+      var toList = !!(list2 && list2.offsetParent) && !(V.grid.classList.contains("m2-editing") && !listLast);
       if (V.setFirst(bk, toList ? listTop(bk) : mapTop(bk))) {
         e.preventDefault();
         e.stopImmediatePropagation();
@@ -3285,7 +3420,7 @@
     __run13();
     __run23();
     __run33();
-    __run42();
+    __run4();
     __run52();
     __run62();
     __run7();
@@ -3496,7 +3631,7 @@
   var pal;
   var PAL_KEY;
   var palSet;
-  function __run43() {
+  function __run42() {
     tool = null;
     pal = document.createElement("div");
     pal.className = "m2-ed-palette";
@@ -3588,7 +3723,7 @@
   var palSignsEl;
   function __run63() {
     pal.innerHTML = '<div class="m2-ed-prow m2-ed-pnot" role="group" aria-label="Notation">' + palBtn('data-lang="pd"', "Process Description", '<text x="12" y="17.3" text-anchor="middle" font-size="15">PD</text>') + palBtn('data-lang="af"', "Activity Flow", '<text x="12" y="17.3" text-anchor="middle" font-size="15">AF</text>') + '</div><div class="m2-ed-plook" role="radiogroup" aria-label="Activity Flow view">' + palTip(palView("rn", "Reduced notation view", "Reduced notation view: each activity drawn as its entity"), "Reduced notation view", INFO.rn) + palTip(palView("sbgn", "SBGN AF view", "SBGN Activity Flow view: each entity drawn as its SBGN activity"), "SBGN Activity Flow view", INFO.sbgn) + '</div><div class="m2-ed-pblk m2-ed-pprot">' + palTip('<label class="m2-ed-phyb" title="Ticked: every protein activity carries the auxiliary unit of a macromolecule, drawn and saved in the file; unticked: none has it"><input type="checkbox"><span>Protein auxiliary unit</span></label>', "Protein auxiliary unit", INFO.prot) + '</div><div class="m2-ed-pblk m2-ed-pcdc">' + palTip('<label class="m2-ed-phyb" title="Ticked: the palette offers only what CellDesigner and MINERVA can hold; unticked: tags and submaps\u2019 terminals too"><input type="checkbox"><span>CellDesigner compatible</span></label>', "CellDesigner compatible", INFO.cdc) + '</div><div class="m2-ed-pblk m2-ed-pstrict">' + palTip('<label class="m2-ed-phyb" title="Ticked (the default): under PD a modulation may also end on an entity, and a logic gate\u2019s output go to one (CellDesigner\u2019s reduced notation); with a process on the map the file stays Process Description, without one such a link makes it Activity Flow. Unticked: Process Description only"><input type="checkbox"><span>Reduced notation</span></label>', "Reduced notation", INFO.strict) + '</div><div class="m2-ed-psigns"></div>';
-    palSignsEl = pal.querySelector(".m2-ed-psigns"), shared.palShown = null;
+    palSignsEl = pal.querySelector(".m2-ed-psigns");
   }
   function palBlocks() {
     var row = palSignsEl.querySelector(".m2-ed-prow[data-blocks]"), b = row && row.querySelector("button");
@@ -3682,13 +3817,13 @@
         ddClose();
         return;
       }
-      var list = Array.prototype.slice.call(ddOpen.querySelectorAll("button"));
-      if (!list.length) return;
-      var i = list.indexOf(document.activeElement), d = e.key === "ArrowDown" ? 1 : -1;
-      if (i < 0) i = list.findIndex(function(b) {
+      var list2 = Array.prototype.slice.call(ddOpen.querySelectorAll("button"));
+      if (!list2.length) return;
+      var i = list2.indexOf(document.activeElement), d = e.key === "ArrowDown" ? 1 : -1;
+      if (i < 0) i = list2.findIndex(function(b) {
         return b.getAttribute("aria-selected") === "true";
       });
-      list[i < 0 ? d > 0 ? 0 : list.length - 1 : (i + d + list.length) % list.length].focus();
+      list2[i < 0 ? d > 0 ? 0 : list2.length - 1 : (i + d + list2.length) % list2.length].focus();
     }, true);
     window.addEventListener("resize", ddClose);
     document.addEventListener("scroll", function(e) {
@@ -4616,10 +4751,10 @@
       shared.dirty = true;
     }
   }
-  function termsFix(list, any) {
+  function termsFix(list2, any) {
     if (!sbJs || !sbJs.way) return;
     var nb = {}, ways = [];
-    list.forEach(function(i) {
+    list2.forEach(function(i) {
       var s = nodes2[i] && nodes2[i].sub;
       if (s == null) return;
       var b = boxOf(i), q = boxOf(s), on2 = onSide(b, q, sbJs.wayOfR && sbJs.wayOfR(realizerOf(nodes2[i].el)) || "", any) || onBorder(b, q);
@@ -5594,9 +5729,6 @@
     })[0];
     return l ? ownText(l) : "";
   }
-  function __run30() {
-    shared.typing = null;
-  }
   function typeIn(id, j, fresh) {
     if (shared.typing) shared.typing.done(true);
     var i = nodes2.findIndex(function(n) {
@@ -5879,7 +6011,7 @@
   var svDrag;
   var svKey;
   function __run322() {
-    shared.svSel = null, svDrag = null, svKey = null;
+    svDrag = null, svKey = null;
   }
   function svOn() {
     return palOn() || cdPal();
@@ -6315,13 +6447,13 @@
       }
     }, true);
   }
-  function nodesDelete(list, arcs) {
-    list = list.concat(nodes2.map(function(n, k) {
-      return n.sub != null && list.indexOf(n.sub) >= 0 && list.indexOf(k) < 0 ? k : -1;
+  function nodesDelete(list2, arcs) {
+    list2 = list2.concat(nodes2.map(function(n, k) {
+      return n.sub != null && list2.indexOf(n.sub) >= 0 && list2.indexOf(k) < 0 ? k : -1;
     }).filter(function(k) {
       return k >= 0;
     }));
-    var ids = list.filter(function(i) {
+    var ids = list2.filter(function(i) {
       return isMade(nodes2[i]) || emptyComp(nodes2[i]);
     }).map(function(i) {
       return nodes2[i].id;
@@ -6454,8 +6586,8 @@
       };
     };
   }
-  function arcsDelete(list) {
-    var ids = list.map(function(k) {
+  function arcsDelete(list2) {
+    var ids = list2.map(function(k) {
       return edges2[k] && edges2[k].id;
     }).filter(Boolean);
     if (!ids.length) return false;
@@ -6833,7 +6965,7 @@
     cdGateMarks(out);
     cdOverMarks(out);
     if (!link || !link.moved || link.at !== shared.text) return;
-    var A = bx(link.from), C = [A[0] + A[2] / 2, A[1] + A[3] / 2], no = !!(link.how && link.how.no);
+    var A = bx(link.from), C = [A[0] + A[2] / 2, A[1] + A[3] / 2], no2 = !!(link.how && link.how.no);
     var P = link.P, inFrom = inRim(rimOf(link.from, A), [P[0] - C[0], P[1] - C[1]]), S = inFrom ? null : cutShape(link.from, C, P, A);
     if (S && link.to >= 0 && link.to !== link.from) P = cutShape(link.to, P, S, bx(link.to));
     var E = shared.cd && S ? cdLiveEnds(S, P, C) : null;
@@ -6842,8 +6974,8 @@
       P = E[1];
     }
     if (shared.cd) cdLinkMarks(out);
-    else if (link.how && !no && link.to >= 0) out.push(landMarks([], linkLand(link.from, link.to, link.how.cls)));
-    if (S) out.push('<path class="m2-ed-live" stroke-width="' + f1(Math.max(1, V.z)) + '"' + (no ? ' stroke-dasharray="4 3"' : "") + ' d="M' + f1(sx(S[0])) + " " + f1(sy(S[1])) + "L" + f1(sx(P[0])) + " " + f1(sy(P[1])) + '"/>');
+    else if (link.how && !no2 && link.to >= 0) out.push(landMarks([], linkLand(link.from, link.to, link.how.cls)));
+    if (S) out.push('<path class="m2-ed-live" stroke-width="' + f1(Math.max(1, V.z)) + '"' + (no2 ? ' stroke-dasharray="4 3"' : "") + ' d="M' + f1(sx(S[0])) + " " + f1(sy(S[1])) + "L" + f1(sx(P[0])) + " " + f1(sy(P[1])) + '"/>');
   }
   function __run422() {
     document.addEventListener("keydown", function(e) {
@@ -6940,7 +7072,7 @@
   var props;
   var EROWS;
   var RROWS;
-  function __run432() {
+  function __run43() {
     ROWS = [
       ["label", "Label", "text"],
       ["font", "Font size", "num", ' min="1" max="200"', "The name\u2019s size"],
@@ -7817,7 +7949,7 @@
     __run110();
     __run210();
     __run34();
-    __run43();
+    __run42();
     __run53();
     __run63();
     __run72();
@@ -7843,7 +7975,6 @@
     __run272();
     __run282();
     __run292();
-    __run30();
     __run31();
     __run322();
     __run332();
@@ -7856,7 +7987,7 @@
     __run40();
     __run41();
     __run422();
-    __run432();
+    __run43();
     __run44();
     __run45();
     __run46();
@@ -7979,9 +8110,6 @@
   }
   function cdPal() {
     return on && V.current === map && !!shared.cd && !!cdJs && !!cdMk && V.level === "full";
-  }
-  function __run410() {
-    shared.cdStrictMemo = [null, false];
   }
   function cdStrict() {
     var id = palId();
@@ -8382,9 +8510,6 @@
     });
     if (ok && cx) joinPack([cx]);
   }
-  function __run113() {
-    shared.cdGate = null;
-  }
   function cdGateClick(P) {
     var kind = CD_GATE[tool.kind], i = linkEnd(P, -1), r = i >= 0 ? cdRole(i) : null;
     if (!shared.cdGate || shared.cdGate.kind !== kind) shared.cdGate = { kind, inputs: [] };
@@ -8491,14 +8616,14 @@
     if (k >= 0 && cdGateOk(k)) cdLand(out, k, cdGateLand0(k, cdHover.P));
   }
   function cdLinkMarks(out) {
-    var add = cdAdd(), no = link.how && link.how.no, part = !no && link.how && link.how.part;
-    var rx = !(add || part) || no ? -1 : cdRole(link.from) === "proc" ? link.from : link.to >= 0 && cdRole(link.to) === "proc" ? link.to : -1;
+    var add = cdAdd(), no2 = link.how && link.how.no, part = !no2 && link.how && link.how.part;
+    var rx = !(add || part) || no2 ? -1 : cdRole(link.from) === "proc" ? link.from : link.to >= 0 && cdRole(link.to) === "proc" ? link.to : -1;
     if (rx >= 0) cdMainLine(out, rx);
     if (cdFromJoin()) {
       var J = cdJoin(link.from, false);
       out.push(cdDot(J || cdCentre(link.from), "m2-ed-pickh"));
     } else cdPicked(out, link.from);
-    if (link.to < 0 || !link.how || no) return;
+    if (link.to < 0 || !link.how || no2) return;
     if (rx === link.to) out.push(landMarks([], link.how.land && link.how.land.Q || cdCentre(link.to)));
     else cdLand(out, link.to, link.how.land);
   }
@@ -9219,9 +9344,6 @@
     var b = boxOf(i), s = 6 * ((f && f.homodimer || 1) - 1);
     return [b[0], b[1], b[2] - s, b[3] - s];
   }
-  function __run263() {
-    shared.cdPend = null;
-  }
   function cdSvList(i) {
     var n = nodes2[i];
     var role = n && cdRole(i);
@@ -9838,14 +9960,14 @@
     return out;
   }
   function cdUnitItems(id, j) {
-    var f = cdFeat(id), now = f && f.info ? f.info.prefix + ":" + f.info.label : "", list = [];
+    var f = cdFeat(id), now = f && f.info ? f.info.prefix + ":" + f.info.label : "", list2 = [];
     Object.keys(cdMk.INFO).forEach(function(p) {
       cdMk.INFO[p].forEach(function(l) {
-        list.push([p, l]);
+        list2.push([p, l]);
       });
     });
     return [["Change unit", subItem(function(r, done) {
-      return kindWindow(r, list.map(function(u) {
+      return kindWindow(r, list2.map(function(u) {
         return { name: u.join(":"), own: u.join(":") === now, go: function() {
           cdApply(function(t) {
             return cdMk.info(t, id, u, true);
@@ -9900,7 +10022,7 @@
   }
   var cdLook;
   var cdLineMemo;
-  function __run302() {
+  function __run30() {
     cdLook = [], cdLineMemo = [null, null, null, null];
   }
   function cdLineRead(k) {
@@ -10129,14 +10251,12 @@
     __run111();
     __run211();
     __run310();
-    __run410();
     __run510();
     __run64();
     __run73();
     __run83();
     __run93();
     __run103();
-    __run113();
     __run124();
     __run134();
     __run143();
@@ -10151,11 +10271,10 @@
     __run234();
     __run243();
     __run253();
-    __run263();
     __run273();
     __run283();
     __run293();
-    __run302();
+    __run30();
     __run312();
     __run323();
     __run333();
@@ -10165,8 +10284,8 @@
   var cdp;
   var cdJs;
   var cdMk;
-  function __run114() {
-    cdp = null, cdJs = null, cdMk = null, shared.cd = null;
+  function __run113() {
+    cdp = null, cdJs = null, cdMk = null;
   }
   function isCd(t) {
     return /<sbml[\s>]/.test(t.slice(0, 3e3)) && t.indexOf("celldesigner") >= 0;
@@ -10186,9 +10305,6 @@
   function nodeCentre(n, P) {
     var b = bx(n);
     return Math.max(Math.abs(P[0] - b[0] - b[2] / 2) / (b[2] / 2 || 1), Math.abs(P[1] - b[1] - b[3] / 2) / (b[3] / 2 || 1)) < 0.5;
-  }
-  function __run214() {
-    shared.procs = [], shared.liveG = null;
   }
   function cdpy() {
     if (cdp) return cdp;
@@ -10225,7 +10341,33 @@
     cdMemo = [];
   }
   function cdDraw(t, g, fit) {
-    return cdJs.draw(t, g, { fit: fit == null ? undo.length > 0 : fit, block: gridBlock() });
+    return cdJs.draw(t, g, { fit: fit == null ? undo.length > 0 : fit, block: gridBlock(), parsed: on ? function(c, d) {
+      cdDocKeep(c, d, shownId());
+    } : null });
+  }
+  var cdDocNow;
+  function shownId() {
+    return V.chosen ? V.chosen.id : null;
+  }
+  function cdDoc(t, id) {
+    if (cdDocNow && cdDocNow.t === t) return cdDocNow.doc;
+    var doc2 = new DOMParser().parseFromString(t, "application/xml");
+    if (id !== false) cdDocKeep(t, doc2, id === void 0 ? shownId() : id);
+    return doc2;
+  }
+  function cdDocKeep(t, doc2, id) {
+    cdDocNow = { t, doc: doc2, id };
+  }
+  function cdKept2() {
+    return cdDocNow ? cdDocNow.id : null;
+  }
+  function cdShown(id) {
+    if (!cdDocNow) return;
+    if (cdDocNow.id === "adding") cdDocNow.id = id;
+    else if (cdDocNow.id !== id) {
+      cdDocNow = null;
+      cdLive = null;
+    }
   }
   function cdShift(svg) {
     var m = /<g transform="translate\(([-\d.]+),([-\d.]+)\)">/.exec(svg || "");
@@ -10244,7 +10386,7 @@
   function cdGraphml(t) {
     var g = cdKnown(t);
     if (g) return g;
-    g = cdJs.graphml(t);
+    g = cdJs.graphml(t, null, { doc: cdDoc(t) });
     cdRemember(t, g);
     return g;
   }
@@ -10325,14 +10467,14 @@
     });
   }
   var cdLive;
-  function __run411() {
-    shared.cdBase = null, cdLive = null;
+  function __run410() {
+    cdLive = null;
   }
   function cdSession() {
     if (!shared.cd || !cdJs || !cdJs.live || !shared.cdBase) return null;
     if (cdLive && cdLive.base === shared.cdBase) return cdLive.s;
     try {
-      cdLive = { base: shared.cdBase, s: cdJs.live(shared.cdBase.now, shared.cdBase.text) };
+      cdLive = { base: shared.cdBase, s: cdJs.live(shared.cdBase.now, shared.cdBase.text, { doc: cdDoc(shared.cdBase.now) }) };
     } catch (e) {
       cdLive = null;
     }
@@ -10429,14 +10571,14 @@
       var q = ["sx", "sy", "tx", "ty"].map(function(a) {
         return parseFloat(e.path.getAttribute(a)) || 0;
       });
-      var no = e.path.getAttribute("spot");
-      if (no) q.push(parseInt(no, 10));
+      var no2 = e.path.getAttribute("spot");
+      if (no2) q.push(parseInt(no2, 10));
       if (pp && pp.to && pp.k === k) {
         var j = pp.end ? 2 : 0;
         q[j] = pp.to[0];
         q[j + 1] = pp.to[1];
-        no = spotNo(pp, pp.to);
-        if (no) q[4] = no;
+        no2 = spotNo(pp, pp.to);
+        if (no2) q[4] = no2;
       }
       paths.set(e.id, q);
     });
@@ -10453,12 +10595,12 @@
       ends = /* @__PURE__ */ new Map([[ep.id, [nodes2[pp.end ? ep.s : pp.n2].id, nodes2[pp.end ? pp.n2 : ep.t].id]]]);
       boxes.set(nodes2[pp.n2].id, toPic(bx(pp.n2)));
     }
-    var list = Array.from(rids), out = S.frame(boxes, bends, paths, list, ends);
-    if (list.some(function(r) {
+    var list2 = Array.from(rids), out = S.frame(boxes, bends, paths, list2, ends);
+    if (list2.some(function(r) {
       return !out[r];
     })) return false;
     dropCopies();
-    list.forEach(function(rid) {
+    list2.forEach(function(rid) {
       var f = out[rid], ids = Object.keys(gE).filter(function(id) {
         return id.indexOf(rid + "|") === 0;
       });
@@ -10629,10 +10771,9 @@
     warmUp();
   }
   function __start6() {
-    __run114();
-    __run214();
+    __run113();
     __run311();
-    __run411();
+    __run410();
     __run511();
     __run65();
     __run74();
@@ -10641,9 +10782,6 @@
   // editor/src/live.js
   function liveFmt() {
     return shared.cd ? liveCd : liveY;
-  }
-  function __run115() {
-    shared.liveC = null, shared.liveOrig = null;
   }
   function bx(i) {
     if (shared.poseNow && shared.poseNow[i]) return shared.poseNow[i].box;
@@ -10738,8 +10876,8 @@
     shared.frozen = false;
   }
   var livePose;
-  function __run215() {
-    livePose = [], shared.poseNow = null, shared.poseText = null;
+  function __run214() {
+    livePose = [];
   }
   function posed() {
     var out = {};
@@ -10820,9 +10958,6 @@
       shared.live.add(k);
     });
     liveFmt().glyphs(shared.keyed.n, shared.keyed.p, [shared.keyed.dx, shared.keyed.dy]);
-  }
-  function __run313() {
-    shared.copies = [], shared.frozen = false;
   }
   function restBox(i) {
     var b = boxOf(i), k = shared.keyed && shared.keyed.n.has(i);
@@ -11031,9 +11166,6 @@
       if (shared.liveOrig[i]) livePut(shared.liveOrig[i], shared.liveC[i]);
     });
   }
-  function __run412() {
-    shared.sizeRec = null;
-  }
   function liveRec(i) {
     var g = gN && gN[nodes2[i].id];
     if (!g) return null;
@@ -11110,15 +11242,12 @@
     shared.sizeRec = null;
   }
   function __start7() {
-    __run115();
-    __run215();
-    __run313();
-    __run412();
+    __run214();
   }
 
   // editor/src/help.js
   var MOD;
-  function __run116() {
+  function __run114() {
     MOD = /mac|iphone|ipad|ipod/i.test(navigator.userAgentData && navigator.userAgentData.platform || navigator.platform || navigator.userAgent) ? "Cmd" : "Ctrl";
   }
   function helpList() {
@@ -11159,7 +11288,7 @@
   }
   var helpBtn;
   var helpBox;
-  function __run216() {
+  function __run215() {
     helpBtn = box.querySelector("#m2-ed-help"), helpBox = null;
   }
   function helpBuild() {
@@ -11212,7 +11341,7 @@
     } else helpBox.hidden = true;
     helpBtn.setAttribute("aria-pressed", String(show));
   }
-  function __run314() {
+  function __run313() {
     helpBtn.addEventListener("click", function() {
       help();
     });
@@ -11233,9 +11362,9 @@
     }, true);
   }
   function __start8() {
-    __run116();
-    __run216();
-    __run314();
+    __run114();
+    __run215();
+    __run313();
   }
 
   // editor/src/core.js
@@ -11244,7 +11373,7 @@
   var Y;
   var G;
   var drawing;
-  function __run117() {
+  function __run115() {
     lastSvg = null, lastFor = null;
     Y = "http://www.yworks.com/xml/graphml", G = "http://graphml.graphdrawing.org/xmlns";
     drawing = false;
@@ -11282,11 +11411,11 @@
   var keyGuides;
   var keyRun;
   var keyDue;
-  function __run217() {
+  function __run216() {
     box = document.getElementById("m2-editwin"), status = document.getElementById("m2-ed-status");
     overlay = document.getElementById("m2-edit-layer");
     on = false, map = null;
-    shared.text = "", name = "", handle = null, shared.dirty = false;
+    name = "", handle = null;
     unsaved = {};
     reSel = function() {
       try {
@@ -11301,10 +11430,9 @@
     doc = null, geos = [], points = [], nodes2 = [], edges2 = [];
     docText = null;
     x0 = 0, y0 = 0;
-    shared.selN = [], shared.selP = [], shared.selE = [];
-    undo = [], shared.redo = [], drag = null, band = null, ticket = 0, nudgeAt = 0, timer = null;
-    gN = null, gE = null, mv = null, shared.live = null;
-    shared.keyed = null, keyGuides = null, keyRun = null, keyDue = null;
+    undo = [], drag = null, band = null, ticket = 0, nudgeAt = 0, timer = null;
+    gN = null, gE = null, mv = null;
+    keyGuides = null, keyRun = null, keyDue = null;
   }
   function keyFlush() {
     clearTimeout(timer);
@@ -11329,8 +11457,7 @@
   var STEP0;
   var stepOk;
   var gridSet;
-  function __run315() {
-    shared.part = null;
+  function __run314() {
     TOKEN_KEY = V.tokenKey, AUTOSAVE = 3e3;
     site = null;
     saveTimer = null, saving = null, saveAgain = false, stuck = false;
@@ -11370,7 +11497,7 @@
     box.querySelector("#m2-ed-snap").setAttribute("aria-pressed", String(gridSet.snap));
   }
   var gridCv;
-  function __run413() {
+  function __run411() {
     gridCv = null;
   }
   function gridPaint() {
@@ -11968,11 +12095,11 @@
     }, function() {
     });
   }
-  function drawText(t, g0) {
+  function drawText(t, g0, keep) {
     var c = isCd(t), s = !c && isSb(t);
     if (!c && !s && !/<graphml[\s>]/.test(t.slice(0, 3e3))) return Promise.reject(new Error("not a GraphML, CellDesigner or SBGN-ML file"));
     return (c ? cdpy() : s ? sbpy() : yr()).then(function() {
-      var svg = c ? window.cdrender.render(t, { classes: true, groups: true }) : window.yrender.render(s ? sbGraphml(t, g0 || EMPTY_BASE) : t, { classes: true, groups: true, sbgn: s }).svg;
+      var svg = c ? window.cdrender.render(cdDoc(t, keep || false), { classes: true, groups: true }) : window.yrender.render(s ? sbGraphml(t, g0 || EMPTY_BASE) : t, { classes: true, groups: true, sbgn: s }).svg;
       var w = svg.match(/ width="([\d.]+)" height="([\d.]+)"/);
       if (!w) throw new Error("not a map this viewer can draw");
       return { svg, width: parseFloat(w[1]), height: parseFloat(w[2]) };
@@ -12021,7 +12148,7 @@
       URL.revokeObjectURL(a.href);
     }, 1e3);
   }
-  function __run118() {
+  function __run116() {
     box.querySelector("#m2-ed-local-dl").addEventListener("click", function() {
       if (shared.text) download();
     });
@@ -12761,7 +12888,7 @@
     out.forEach(function(t, i) {
       moves.push([nodes2[i].id, t == null ? null : nodes2[t].id]);
     });
-    var why = moves.length && shared.cd && cdJs && cdJs.nestCheck ? cdJs.nestCheck(shared.cd.now, moves) : null;
+    var why = moves.length && shared.cd && cdJs && cdJs.nestCheck ? cdJs.nestCheck(shared.cd.now, moves, { doc: cdDoc(shared.cd.now) }) : null;
     if (why) return refused(why);
     var jp = arg.join && arg.join.length ? joinPlan(arg.join, moves.map(function(m) {
       return m[0];
@@ -13367,16 +13494,7 @@
       if (old.indexOf("blob:") === 0) URL.revokeObjectURL(old);
       gN = {};
       gE = {};
-      shared.live = null;
-      shared.liveC = null;
-      shared.liveOrig = null;
-      shared.sizeRec = null;
-      shared.keyed = null;
-      shared.liveG = null;
-      shared.poseNow = null;
-      shared.poseText = null;
-      shared.copies = [];
-      shared.frozen = false;
+      resetDrawing();
       pic.querySelectorAll("[data-n]").forEach(function(g) {
         gN[g.getAttribute("data-n")] = g;
       });
@@ -13409,7 +13527,6 @@
     if (localTimer) local(true);
     var tk = opening;
     if (viaGraphml(t)) {
-      shared.cd = null;
       quiet();
       return sbpy().then(function() {
         if (tk !== opening) return;
@@ -13418,18 +13535,13 @@
         if (ed0.unique) t = ed0.unique(t, g0);
         var g = sbGraphml(t, g0);
         var sb1 = { base: t, g0 };
-        shared.sbLast = [g, edOf(t).write(t, g), sb1];
-        shared.sb = sb1;
-        begin(g, t, n, h, s, same, t0);
+        var last = [g, edOf(t).write(t, g), sb1];
+        begin(g, t, n, h, s, same, t0, { sb: sb1, sbLast: last });
       }).catch(function(e) {
         if (tk === opening) warn("Cannot edit " + n + ": " + e);
       });
     }
-    shared.sb = null;
-    if (!isCd(t)) {
-      shared.cd = null;
-      return begin(t, t, n, h, s, same);
-    }
+    if (!isCd(t)) return begin(t, t, n, h, s, same, null, {});
     quiet();
     return cdpy().then(function() {
       if (tk !== opening) return;
@@ -13438,8 +13550,7 @@
         t = sg.text;
         takenIn = sg.n + (sg.n > 1 ? " positive influences" : " positive influence") + " (open arrowhead, not SBGN) made reduced physical stimulation (open triangle).";
       }
-      shared.cd = { base: t, now: t };
-      begin(cdGraphml(t), t, n, h, s, same, t0);
+      begin(cdGraphml(t), t, n, h, s, same, t0, { cd: { base: t, now: t } });
     }).catch(function(e) {
       if (tk === opening) warn("Cannot edit " + n + ": " + e);
     });
@@ -13448,13 +13559,25 @@
   function __run204() {
     takenIn = null;
   }
-  function begin(g, t, n, h, s, same, t0) {
+  function begin(g, t, n, h, s, same, t0, fmt2) {
+    var was = takeMap();
+    resetMap();
+    if (fmt2.cd) shared.cd = fmt2.cd;
+    if (fmt2.sb) {
+      shared.sb = fmt2.sb;
+      shared.sbLast = fmt2.sbLast;
+    }
     layout();
     sbpy();
     try {
       shared.text = g;
       parse();
     } catch (e) {
+      putMap(was);
+      try {
+        parse();
+      } catch (e2) {
+      }
       warn("Cannot edit " + n + ": " + e);
       return;
     }
@@ -13473,13 +13596,7 @@
     }
     if (site && site.pending && canFolder && V.folderName()) folderCheck();
     stuck = false;
-    shared.dirty = false;
     undo = [];
-    shared.redo = [];
-    shared.cdGate = null;
-    shared.selN = [];
-    shared.selP = [];
-    shared.selE = [];
     histTake(t, g);
     edits = 0;
     if (reSel && V.chosen && reSel.map === V.chosen.id) {
@@ -13522,13 +13639,7 @@
     V.grid.classList.add("m2-editing");
     buttons();
     gN = gE = null;
-    mv = shared.live = null;
-    shared.liveG = null;
-    shared.poseNow = null;
-    shared.poseText = null;
-    shared.copies = [];
-    shared.frozen = false;
-    shared.cdBase = null;
+    mv = null;
     if (same && same.text === t) {
       var grouped = same.svg && same.svg.indexOf(' data-n="') >= 0;
       (shared.cd ? cdpy() : yr()).then(function() {
@@ -13552,6 +13663,7 @@
   function stop() {
     if (shared.typing) shared.typing.done(true);
     if (!on) return;
+    keyFlush();
     if (saveTimer) push();
     leftMoves = { site, n: undo.length };
     var moved = undo.length > 0 || edits > 0;
@@ -13736,7 +13848,7 @@
   var drawMemo;
   var preDoc;
   var editPre;
-  function __run218() {
+  function __run217() {
     bank = {}, preTimer = null, sweepT = 0, openTitle = null, drawMemo = null, preDoc = [], editPre = null;
   }
   function preKey(m) {
@@ -13761,7 +13873,7 @@
   }
   var known;
   function __run225() {
-    shared.ghDir = null, known = {};
+    known = {};
   }
   function ghList() {
     if (shared.ghDir && Date.now() - shared.ghDir.at < 3e5) return shared.ghDir;
@@ -13912,7 +14024,7 @@
       if (!cdm) return p;
       return waitFor(m).then(function() {
         if (!still()) throw 0;
-        p.g = cdKnown(p.t) || cdJs.graphml(p.t);
+        p.g = cdKnown(p.t) || cdJs.graphml(p.t, null, { doc: cdDoc(p.t, V.current && V.current.id === m.id ? m.id : false) });
         return p;
       });
     });
@@ -13976,7 +14088,7 @@
   function sweep() {
     var cur = V.current, t = ++sweepT, here = cur ? V.maps.indexOf(V.byId[cur.id]) : -1;
     if (here < 0) return;
-    var list = V.maps.filter(function(m) {
+    var list2 = V.maps.filter(function(m) {
       return graphmlOf(m);
     }).map(function(m, i2) {
       return [m, Math.abs(V.maps.indexOf(m) - here), i2];
@@ -13985,7 +14097,7 @@
     }).map(function(x) {
       return x[0];
     });
-    var near2 = list.slice(0, 3);
+    var near2 = list2.slice(0, 3);
     Object.keys(bank).forEach(function(id) {
       if (!V.byId[id]) delete bank[id];
       else if (!near2.some(function(m) {
@@ -13994,8 +14106,8 @@
     });
     var i = 0;
     var next = function() {
-      if (t !== sweepT || on || i >= list.length) return;
-      var m = list[i], bg = m.id !== cur.id;
+      if (t !== sweepT || on || i >= list2.length) return;
+      var m = list2[i], bg = m.id !== cur.id;
       if (bg && V.netIdle && !V.netIdle()) {
         setTimeout(next, 500);
         return;
@@ -14177,6 +14289,7 @@
               return r.status === 404 && shared.sb ? s0.base : r.text();
             })
           ]).then(function(f) {
+            if (!on || site !== s0) return;
             s0.sha = f[0].sha || null;
             s0.pending = false;
             buttons();
@@ -14278,7 +14391,7 @@
   }
   var kwBox;
   var kwBy;
-  function __run264() {
+  function __run263() {
     box.querySelector("#m2-ed-gsdrop").addEventListener("click", function(e) {
       e.stopPropagation();
       if (gsMenu) {
@@ -14388,8 +14501,8 @@
       e.preventDefault();
       if (e.key === "ArrowRight") return;
       if (e.key === "ArrowDown" || e.key === "ArrowUp") {
-        var list = Array.prototype.slice.call(kwBox.querySelectorAll("button:not(:disabled)")), i = list.indexOf(document.activeElement), d = e.key === "ArrowDown" ? 1 : -1;
-        if (list.length) list[i < 0 ? d > 0 ? 0 : list.length - 1 : (i + d + list.length) % list.length].focus();
+        var list2 = Array.prototype.slice.call(kwBox.querySelectorAll("button:not(:disabled)")), i = list2.indexOf(document.activeElement), d = e.key === "ArrowDown" ? 1 : -1;
+        if (list2.length) list2[i < 0 ? d > 0 ? 0 : list2.length - 1 : (i + d + list2.length) % list2.length].focus();
         return;
       }
       kwClose(true);
@@ -14407,7 +14520,6 @@
   var picWait;
   function __run284() {
     picWait = false;
-    shared.switching = false;
   }
   function shown(any) {
     if (!V.grid.classList.contains("m2-win-edit") || on) return;
@@ -14450,7 +14562,7 @@
     map.width = 0;
     render();
   }
-  function __run303() {
+  function __run302() {
     box.querySelector("#m2-ed-back").addEventListener("click", resume);
   }
   function away() {
@@ -14468,7 +14580,7 @@
   }
   var HANDLE;
   var BEND;
-  function __run316() {
+  function __run315() {
     window.addEventListener("beforeunload", function(e) {
       if (shared.dirty) {
         if (saveTimer) push();
@@ -14744,9 +14856,6 @@
     if (end) return e.arr[1] === "none" ? "in" : null;
     return !(e.t != null && nodes2[e.t].hub) && e.arr[0] === "none" && e.arr[1] === "none" && !nodes2[n].eq ? "in" : "out";
   }
-  function __run334() {
-    shared.hpMemo = null;
-  }
   function hubPorts() {
     if (!shared.hpMemo || shared.hpMemo[0] !== shared.text) shared.hpMemo = [shared.text, window.yrender.render(docText === shared.text ? doc : shared.text, {}).ports];
     return shared.hpMemo[1];
@@ -14763,7 +14872,7 @@
     if (!P) return;
     var rel = function(q) {
       return [q[0] - c[0], q[1] - c[1]];
-    }, list = [];
+    }, list2 = [];
     edges2.forEach(function(e, k) {
       if (!e.path) return;
       [0, 1].forEach(function(end) {
@@ -14778,10 +14887,10 @@
           }
         }
         var L = Math.abs(o[0]) >= Math.abs(o[1]) ? Math.abs(o[0]) - b[2] / 2 : Math.abs(o[1]) - b[3] / 2, port = L > 0.5 && Math.min(Math.abs(o[0]), Math.abs(o[1])) <= 0.5;
-        list.push({ k, end, to: port ? Math.abs(o[0]) >= Math.abs(o[1]) ? [0, Math.sign(o[0]) * (b[3] / 2 + L)] : [-Math.sign(o[1]) * (b[2] / 2 + L), 0] : [-o[1] * b[2] / b[3], o[0] * b[3] / b[2]] });
+        list2.push({ k, end, to: port ? Math.abs(o[0]) >= Math.abs(o[1]) ? [0, Math.sign(o[0]) * (b[3] / 2 + L)] : [-Math.sign(o[1]) * (b[2] / 2 + L), 0] : [-o[1] * b[2] / b[3], o[0] * b[3] / b[2]] });
       });
     });
-    if (list.length) setPorts(list);
+    if (list2.length) setPorts(list2);
   }
   function placesOf(pp) {
     if (nodes2[pp.n].hub && !(MODS.test(edges2[pp.k].arr[1]) && pp.end) && window.yrender && hubPorts()[nodes2[pp.n].id]) return null;
@@ -15099,7 +15208,7 @@
   function setPort(pp, merge) {
     setPorts([pp], null, merge);
   }
-  function setPorts(list, re, merge) {
+  function setPorts(list2, re, merge) {
     var all = Array.prototype.slice.call(doc.getElementsByTagNameNS(Y, "Path")), by = /* @__PURE__ */ new Map();
     if (re && (shared.text.match(/<edge\b[^>]*>/g) || []).length !== edges2.length) {
       shared.frozen = false;
@@ -15108,11 +15217,11 @@
       paint();
       return;
     }
-    list.forEach(function(pp) {
-      var e = edges2[pp.k], a = pp.end ? ["tx", "ty"] : ["sx", "sy"], no = spotNo(pp, pp.to), vals = [fmt(pp.to[0]), fmt(pp.to[1])];
-      if (no) {
+    list2.forEach(function(pp) {
+      var e = edges2[pp.k], a = pp.end ? ["tx", "ty"] : ["sx", "sy"], no2 = spotNo(pp, pp.to), vals = [fmt(pp.to[0]), fmt(pp.to[1])];
+      if (no2) {
         a = a.concat("spot");
-        vals.push(String(no));
+        vals.push(String(no2));
       }
       if (!re && Math.abs((num(e.path, a[0]) || 0) - pp.to[0]) < 0.01 && Math.abs((num(e.path, a[1]) || 0) - pp.to[1]) < 0.01) return;
       var nth = all.indexOf(e.path);
@@ -15351,7 +15460,6 @@
     return on && V.current === map && !e.target.closest(".m2-ctrl, .m2-info, .m2-ed-type");
   }
   function __run362() {
-    shared.tap = null;
     V.view.addEventListener("pointerdown", function(e) {
       keyGuides = null;
       keyFlush();
@@ -15427,7 +15535,7 @@
       if (!h) return tapped();
       if (!alone && linkDown(e, P, h)) return;
       if (h.glyph) return tapped();
-      var list = h.p != null ? shared.selP : h.e != null ? shared.selE : shared.selN, k = h.p != null ? h.p : h.e != null ? h.e : h.n, there = list.indexOf(k) >= 0;
+      var list2 = h.p != null ? shared.selP : h.e != null ? shared.selE : shared.selN, k = h.p != null ? h.p : h.e != null ? h.e : h.n, there = list2.indexOf(k) >= 0;
       var keepE = null;
       if (!there && h.p != null && shared.selE.some(function(q) {
         return edges2[q].pts.indexOf(h.p) >= 0;
@@ -15439,7 +15547,7 @@
         shared.selN = [];
         shared.selE = [];
         shared.selP = [h.p];
-        list = shared.selP;
+        list2 = shared.selP;
         there = true;
       }
       if (!there && h.p != null && !keepE) {
@@ -15574,12 +15682,12 @@
     parse();
     return { p: edges2[k].pts[at2], at: Q, k: k + 1 };
   }
-  function unbend(list) {
-    list = list.slice().sort(function(a, b) {
+  function unbend(list2) {
+    list2 = list2.slice().sort(function(a, b) {
       return b - a;
     });
     var before = shared.text;
-    list.forEach(function(pi) {
+    list2.forEach(function(pi) {
       var re = /<y:Point\s[^>]*>/g, m, c = -1;
       while (m = re.exec(shared.text)) if (++c === pi) break;
       if (!m) return;
@@ -15702,7 +15810,7 @@
   }
   var GAP_OUT;
   var CLOSE;
-  function __run414() {
+  function __run412() {
     window.m2EditPackHere = function(member) {
       var c = complexHere(member);
       if (c != null) c = outerComplex(c);
@@ -16212,9 +16320,9 @@
     }
     if (d.made == null && !d.keepE && d.sx0 != null && e.type === "pointerup" && Math.hypot(e.clientX - d.sx0, e.clientY - d.sy0) < 4) {
       unshift();
-      var out1 = function(list, k) {
-        var j = list.indexOf(k);
-        if (k != null && j >= 0) list.splice(j, 1);
+      var out1 = function(list2, k) {
+        var j = list2.indexOf(k);
+        if (k != null && j >= 0) list2.splice(j, 1);
       };
       if (d.p != null) out1(shared.selP, d.p);
       else if (d.e != null) out1(shared.selE, d.e);
@@ -16243,7 +16351,7 @@
     }
     paint();
   }
-  function __run433() {
+  function __run432() {
     V.view.addEventListener("pointerup", release, true);
     V.view.addEventListener("pointercancel", release, true);
   }
@@ -16353,7 +16461,7 @@
         }).forEach(function(t2, i) {
           mvs.push([nodes2[i].id, t2 == null ? null : nodes2[t2].id]);
         });
-        var whyK = mvs.length ? cdJs.nestCheck(shared.cd.now, mvs) : null;
+        var whyK = mvs.length ? cdJs.nestCheck(shared.cd.now, mvs, { doc: cdDoc(shared.cd.now) }) : null;
         if (whyK) return;
       }
       remember(true);
@@ -16405,17 +16513,17 @@
     }, true);
   }
   function __start9() {
-    __run117();
-    __run217();
-    __run315();
-    __run413();
+    __run115();
+    __run216();
+    __run314();
+    __run411();
     __run512();
     __run66();
     __run75();
     __run84();
     __run94();
     __run104();
-    __run118();
+    __run116();
     __run125();
     __run135();
     __run144();
@@ -16425,19 +16533,18 @@
     __run184();
     __run194();
     __run204();
-    __run218();
+    __run217();
     __run225();
     __run235();
     __run244();
     __run254();
-    __run264();
+    __run263();
     __run274();
     __run284();
     __run294();
-    __run303();
-    __run316();
+    __run302();
+    __run315();
     __run324();
-    __run334();
     __run343();
     __run352();
     __run362();
@@ -16445,9 +16552,9 @@
     __run382();
     __run392();
     __run402();
-    __run414();
+    __run412();
     __run423();
-    __run433();
+    __run432();
     __run442();
     __run452();
     __run462();
@@ -16456,6 +16563,12 @@
   // editor/src/main.js
   window.m2Editor = function(v) {
     setV(v);
+    window.m2EditState = function() {
+      var s = stateNow();
+      s.cdKept = cdKept2();
+      return s;
+    };
+    window.m2EditPlant = plant;
     __start9();
     __start7();
     __start2();
@@ -16484,6 +16597,7 @@
         }
       }
     }, left: function(m) {
+      cdShown(m && m.id);
       if (on && m !== map) stop();
       buttons();
       setTimeout(shown, 0);

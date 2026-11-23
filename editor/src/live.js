@@ -18,9 +18,6 @@ import { svList, svParts } from './create.js';
     // drawn on the picture at once, until the renderer has drawn the map again
     // liveOrig: per holder drawn live, how to put back what the renderer drew (liveRec's record, or a CellDesigner
     // holder's { back, at }: liveBack)
-    function __run1() {   // run at start, in order (__start)
-    shared.liveC = null, shared.liveOrig = null;
-    }
     function bx(i) { if (shared.poseNow && shared.poseNow[i]) return shared.poseNow[i].box; if (shared.liveC && shared.liveC[i]) return shared.liveC[i]; var b = boxOf(i);
       if (shared.liveG && shared.liveG[i]) return [b[0] + shared.liveG[i][0], b[1] + shared.liveG[i][1], b[2], b[3]]; return mv && mv.n.has(i) ? [b[0] + mv.dx, b[1] + mv.dy, b[2], b[3]] : b; }
     // the holders round what moves (and round the one resized) grown as on release (grown), drawn at once; seed: the
@@ -75,7 +72,7 @@ import { svList, svParts } from './create.js';
     // upright, its lines drawn live to its ports turned with it (bx, posePort, drawnShape)
     var livePose;
     function __run2() {   // run at start, in order (__start)
-    livePose = [], shared.poseNow = null, shared.poseText = null;
+    livePose = [];
     }
     function posed() {
       var out = {};
@@ -127,9 +124,6 @@ import { svList, svParts } from './create.js';
     // each a copy of the renderer's own group of that arc, so it keeps its colour, width and
     // dashes; its line goes through the new places, and what is drawn at an end (arrowhead, circle, bar) is carried to
     // that end, turned as the end's segment turned. The originals are hidden; the copies go when the map is drawn again
-    function __run3() {   // run at start, in order (__start)
-    shared.copies = [], shared.frozen = false;
-    }
     function restBox(i) { var b = boxOf(i), k = shared.keyed && shared.keyed.n.has(i); return k ? [b[0] - shared.keyed.dx, b[1] - shared.keyed.dy, b[2], b[3]] : b; }
     function restPt(pi) { var p = points[pi], k = shared.keyed && shared.keyed.p && shared.keyed.p.has(pi); return [num(p, 'x') - (k ? shared.keyed.dx : 0), num(p, 'y') - (k ? shared.keyed.dy : 0)]; }
     function dropCopies() {   // the copies taken away, an original shown again unless its arc still follows a move
@@ -290,9 +284,6 @@ import { svList, svParts } from './create.js';
         if (shared.liveOrig[i]) livePut(shared.liveOrig[i], shared.liveC[i]);
       });
     }
-    function __run4() {   // run at start, in order (__start)
-    shared.sizeRec = null;
-    }   // the node drawn live while it is resized: its parts and how they were
     // a node drawn at another box during a drag, on the picture itself until the renderer draws the map again: a node
     // resized by its handles (sizeLive) and the holders growing round a move (liveDraw) alike. liveRec(i) reads what node
     // i draws: its shape (two for a multimer), its state variables and units of information (kept at their place on its
@@ -345,5 +336,5 @@ import { svList, svParts } from './create.js';
       shared.sizeRec = null;
     }
 
-    export function __start() { __run1(); __run2(); __run3(); __run4(); }   // the part's statements, in their order
+    export function __start() { __run2(); }   // the part's statements, in their order
     export { bx, dropCopies, keyShift, liveFit, liveLines, liveOff, livePose, picOff, posePort, restBox, restPt, shift, sizeLive, sizeOff, toPic, unshift };

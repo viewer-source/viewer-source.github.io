@@ -3,7 +3,10 @@
 // compared with the previous release's (tests/cd-compare.js and the writer tests). The rules and their reasons are in
 // cd_edit-rules.md beside it under the same names (snake_case there).
 //   graphml(cdText, off, opt) -> GraphML text;  place(cdText, graphmlText, opt) -> [CellDesigner text, shift];
-//   draw(cdText, graphmlText, opt) -> [svg, CellDesigner text, GraphML text]   (opt: { DOMParser } in Node)
+//   draw(cdText, graphmlText, opt) -> [svg, CellDesigner text, GraphML text]   (opt: { DOMParser } in Node; opt.parsed(text,
+//   doc): given the new text's parsed document, for a caller that reads the text again)
+// graphml and live read the map from opt.doc when given (the text already parsed by the caller, read only), so one parse
+// serves every reader of a text; place parses its own, as it writes into the document it reads.
 (function (root) {
   'use strict';
   var cdr = typeof module !== 'undefined' && module.exports ? require('./cdrender.js') : root.cdrender;
@@ -23,7 +26,7 @@
   function rxid(rx) { return get(rx, 'id') || get(rx, 'metaid'); }
   function rxOpen(rid) { return '<reaction [^>]*\\b(?:meta)?id="' + reEscape(rid) + '"'; }
 
-  function drawing(t, opt) { return new cdr.Drawing(t, { DOMParser: DP(opt) }); }
+  function drawing(t, opt) { return new cdr.Drawing(opt && opt.doc ? opt.doc : t, { DOMParser: DP(opt) }); }
   function num(v) { return repr(round(F(v), 6)); }
   function compartments(d) {
     var out = new Map();
@@ -671,11 +674,11 @@
     });
   }
   function place(t, gtext, opt) {
-    var d = drawing(t, opt), rd = read(gtext, opt), rxsAll = findall(d.model, 's:listOfReactions/s:reaction'), olds = {};
+    var own = { DOMParser: DP(opt) }, d = drawing(t, own), rd = read(gtext, opt), rxsAll = findall(d.model, 's:listOfReactions/s:reaction'), olds = {};   // own: a document of its own, written into
     rxsAll.forEach(function (rx) { olds[rxid(rx)] = lines(d, rx); });
     var t2 = rewire(d, t, rd[4], olds);
     if (t2 !== t) {   // a line's end moved to another node: the participant first, then read again
-      t = t2; d = drawing(t, opt); rxsAll = findall(d.model, 's:listOfReactions/s:reaction'); olds = {};
+      t = t2; d = drawing(t, own); rxsAll = findall(d.model, 's:listOfReactions/s:reaction'); olds = {};
       rxsAll.forEach(function (rx) { olds[rxid(rx)] = lines(d, rx); });
     }
     var comps = compartments(d), up = tree(d, comps), boxes = rd[0], bends = rd[2], paths = rd[3];
@@ -869,13 +872,14 @@
     return why;
   }
   function draw(t, gtext, opt) {
-    var p = place(t, gtext, opt), c = p[0], sh = p[1];
-    var svg = cdr.render(c, { classes: true, groups: true, DOMParser: DP(opt) });
+    var p = place(t, gtext, opt), c = p[0], sh = p[1], doc = new (DP(opt))().parseFromString(c, 'application/xml');   // the new text parsed once, for the drawing and the GraphML
+    var svg = cdr.render(doc, { classes: true, groups: true, DOMParser: DP(opt) });
     if (sh[0] !== 0 || sh[1] !== 0) {
       svg = svg.replace('<g transform="translate(0,0)">', '<g transform="translate(' + repr(sh[0]) + ',' + repr(sh[1]) + ')"><g transform="translate(' + repr(-sh[0]) + ',' + repr(-sh[1]) + ')">');
       svg = svg.slice(0, svg.lastIndexOf('</svg>')) + '</g>\n</svg>\n';
     }
-    return [svg, c, graphml(c, sh, opt)];
+    if (opt && opt.parsed) opt.parsed(c, doc);
+    return [svg, c, graphml(c, sh, { DOMParser: DP(opt), doc: doc })];
   }
 
   // the editor's live drawing of a move (during a drag the reactions follow the nodes, not only after the
@@ -886,7 +890,7 @@
   // reaction's groups as in the editor's drawing (the same text as draw()'s for that reaction, tests/cd-live.js), null
   // for one not drawn. JavaScript only (the editor), it writes no file.
   function live(t, gtext, opt) {
-    var d = new cdr.Drawing(t, { classes: true, groups: true, DOMParser: DP(opt) }), comps = compartments(d), rd = read(gtext, opt);
+    var d = new cdr.Drawing(opt && opt.doc ? opt.doc : t, { classes: true, groups: true, DOMParser: DP(opt) }), comps = compartments(d), rd = read(gtext, opt);
     var old = new Map(), alias0 = new Map(), olds = {}, slices = {}, T0 = new Text(t), last = [], errors = [];
     d.alias.forEach(function (a, i) { old.set(i, a[1]); alias0.set(i, a); });
     comps.forEach(function (v, c) { old.set(c, v[0]); });

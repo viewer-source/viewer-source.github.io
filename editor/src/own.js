@@ -855,13 +855,13 @@ import { NEW_ID, emptyBase, isSb, madeHere, sbMap } from './sbgn.js';
       return picked.reduce(function (p, f) {
         return p.then(function () { return f.text(); }).then(function (t) {
           if (isSb(t) && !madeHere(t)) throw new Error('an SBGN-ML file from another editor cannot be added yet, only one made here with New map');
-          if (gh) return drawText(t).then(function (d) {   // with a token: to the site, shown from here until built
+          if (gh) return drawText(t, null, 'adding').then(function (d) {   // with a token: to the site, shown from here until built
             var ext = siteExt(t), title = freeTitle(f.name.replace(/\.(graphml|xml|sbgn)$/i, ''), group || '', fmtOfText(t), out.filter(function (o) { return fmtOfText(o.t) === fmtOfText(t); }).map(function (o) { return o.title; }));
             if (!ext) throw new Error(siteWhy(t));
             out.push({ f: f, d: d, t: t, ext: ext, title: title });
             b.done++; if (b.shown) addPaint();
           });
-          return drawText(t).then(function (d) { return mineAdd(f.name, t, d, null, group || undefined); }).then(function (r) {
+          return drawText(t, null, 'adding').then(function (d) { return mineAdd(f.name, t, d, null, group || undefined); }).then(function (r) {
             last = r.id; gone(f); b.done++; if (b.shown) V.refreshMine();   // the map in the list, its row gone
             return toFolder(r.id, r.file, r.text).catch(function (e) { why(f, new Error('kept in this browser, not in the folder: ' + (e && e.message ? e.message : e))); });
           });
@@ -1486,7 +1486,7 @@ import { NEW_ID, emptyBase, isSb, madeHere, sbMap } from './sbgn.js';
     // always to the list. Delete forever is not undone (as emptying the Bin). One step at a time, after the change before
     var listPast, listLast, listStepping;
     function __run28() {   // run at start, in order (__start)
-    listPast = [], shared.listAhead = [], listLast = false, listStepping = Promise.resolve();
+    listPast = [], listLast = false, listStepping = Promise.resolve();
     }
     function listDid(undo, redo, e) { e = e || { undo: undo, redo: redo }; e.at = V.tick(true); listPast.push(e); if (listPast.length > 100) listPast.shift(); shared.listAhead = []; listLast = true; }
     function listTop(back) { var s = back ? listPast : shared.listAhead; return s.length ? s[s.length - 1].at || 0 : 0; }   // when the list's next undo (or redo) was taken (V.tick)

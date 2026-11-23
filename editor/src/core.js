@@ -1,7 +1,7 @@
-import { shared, V } from './state.js';
+import { putMap, resetDrawing, resetMap, shared, takeMap, V } from './state.js';
 import { bx, keyShift, liveFit, liveLines, liveOff, posePort, shift, sizeLive, sizeOff, unshift } from './live.js';
 import { AF_KINDS, drawGraphml, noNegative, shiftedAhead, yr } from './graphml.js';
-import { beyond, cdDraw, cdGraphml, cdJs, cdKnown, cdMap, cdMk, cdNow, cdRebuild, cdRemember, cdSessionSoon, cdpy, glyphArcs, glyphPort, isCd, joinAt, joinGuides, joinSolve, lineGrid, nodeCentre, nodePlaces, plainCanvas } from './celldesigner.js';
+import { beyond, cdDoc, cdDraw, cdGraphml, cdJs, cdKnown, cdMap, cdMk, cdNow, cdRebuild, cdRemember, cdSessionSoon, cdpy, glyphArcs, glyphPort, isCd, joinAt, joinGuides, joinSolve, lineGrid, nodeCentre, nodePlaces, plainCanvas } from './celldesigner.js';
 import { EMPTY_BASE, edOf, isSb, madeHere, sbBase, sbFollow, sbGraphml, sbJs, sbKind, sbMap, sbNow, sbRemember, sbpy, viaGraphml } from './sbgn.js';
 import { ddOpen, hybOn, joinDo, joinPack, joinPlan, link, linkDown, linkMove, linkPaint, linkUp, moveLimit, origAll, palDown, palLangNow, palShow, palUp, pdLimit, propFmt, setSize, sizable, svDown, svMarks, tool } from './create.js';
 import { help, helpBox } from './help.js';
@@ -30,7 +30,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     box = document.getElementById('m2-editwin'), status = document.getElementById('m2-ed-status');
     overlay = document.getElementById('m2-edit-layer');
     on = false, map = null;    // editing, and the map object shown while editing
-    shared.text = '', name = '', handle = null, shared.dirty = false;
+    name = '', handle = null;
     unsaved = {};   // by map id: a site map left with moves not saved on GitHub { id, name, site, text }; its sha read from site when used
     // the selection kept over a reload of this tab, applied when editing of the same map starts again
     reSel = (function () {
@@ -46,16 +46,15 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     doc = null, geos = [], points = [], nodes2 = [], edges2 = [];
     docText = null;            // the text doc was read from (kept by a move, which changes both alike): the renderer reuses doc then
     x0 = 0, y0 = 0;            // where the drawing's top left is in yEd units
-    shared.selN = [], shared.selP = [], shared.selE = [];   // selected nodes (indices in nodes2), bend points (in points), arcs (in edges2)
-    undo = [], shared.redo = [], drag = null, band = null, ticket = 0, nudgeAt = 0, timer = null;
+    undo = [], drag = null, band = null, ticket = 0, nudgeAt = 0, timer = null;
     // moving the item itself while it is dragged (in an editor it is already there while it moves):
     // the editor's drawing is put in the page as SVG with each node and arc in a group of its own (gN, gE: by id), so a
     // drag shifts the groups at once; an arc with only one end or some bends moving is hidden and drawn as plain lines
     // following the pointer (live) until the renderer has drawn the map again
-    gN = null, gE = null, mv = null, shared.live = null;
+    gN = null, gE = null, mv = null;
     // a move by the arrow keys shown on the drawing at once, as a drag (not only when the key is let go,
     // the drawing waiting for the keys to stop): what the keys moved since the map was last drawn
-    shared.keyed = null, keyGuides = null, keyRun = null, keyDue = null;
+    keyGuides = null, keyRun = null, keyDue = null;
     }   // keyRun: how far the keys moved the selection since what holds what was last settled; keyDue: that settling, waiting for the keys to stop
     function keyFlush() { clearTimeout(timer); if (keyDue) keyDue(); }   // a press or another selection: the keys' run settled now
     function boxesBefore(B0) { var o = {}; nodes2.forEach(function (n, k) { o[n.id] = B0(k); }); return o; }   // every node's box before a change, by id (the map is read again before it is used)
@@ -65,7 +64,6 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     // the keys, as a drag on the line itself does not move it
     var TOKEN_KEY, AUTOSAVE, site, saveTimer, saving, saveAgain, stuck, siteRef, GRID_KEY, STEP0, stepOk, gridSet;
     function __run3() {   // run at start, in order (__start)
-    shared.part = null;
     // saving to the site: the maps are in the site's data repository (<owner>/<owner>-data, private), the map's source
     // maps/<file>.graphml; after a write the site's build is started (its workflow in <owner>/<owner>.github.io)
     TOKEN_KEY = V.tokenKey, AUTOSAVE = 3000;   // the key is the viewer's (it ignores drafts while a token is in)
@@ -482,11 +480,11 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       }).then(function () { if (news) V.refreshMine(); }, function () {});
     }
     // a reader's own map drawn for the list (My maps): as the build draws, with the role classes
-    function drawText(t, g0) {   // a reader's map: GraphML, CellDesigner, or SBGN-ML made here (New map), drawn from the empty base (own.js); g0: a site SBGN-ML map's build GraphML
+    function drawText(t, g0, keep) {   // a reader's map: GraphML, CellDesigner, or SBGN-ML made here (New map), drawn from the empty base (own.js); g0: a site SBGN-ML map's build GraphML; keep: 'adding' when the map is shown next (a CellDesigner file's document kept for it, celldesigner.js cdDoc)
       var c = isCd(t), s = !c && isSb(t);
       if (!c && !s && !/<graphml[\s>]/.test(t.slice(0, 3000))) return Promise.reject(new Error('not a GraphML, CellDesigner or SBGN-ML file'));
       return (c ? cdpy() : s ? sbpy() : yr()).then(function () {
-        var svg = c ? window.cdrender.render(t, { classes: true, groups: true }) : window.yrender.render(s ? sbGraphml(t, g0 || EMPTY_BASE) : t, { classes: true, groups: true, sbgn: s }).svg;   // grouped: the editor's own drawing, taken as it is on entering edit (adopt)
+        var svg = c ? window.cdrender.render(cdDoc(t, keep || false), { classes: true, groups: true }) : window.yrender.render(s ? sbGraphml(t, g0 || EMPTY_BASE) : t, { classes: true, groups: true, sbgn: s }).svg;   // grouped: the editor's own drawing, taken as it is on entering edit (adopt)
         var w = svg.match(/ width="([\d.]+)" height="([\d.]+)"/);
         if (!w) throw new Error('not a map this viewer can draw');
         return { svg: svg, width: parseFloat(w[1]), height: parseFloat(w[2]) };
@@ -1052,7 +1050,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       var moves = [], at = {};
       nodes2.forEach(function (n, i) { at[n.id] = i; });
       out.forEach(function (t, i) { moves.push([nodes2[i].id, t == null ? null : nodes2[t].id]); });
-      var why = moves.length && shared.cd && cdJs && cdJs.nestCheck ? cdJs.nestCheck(shared.cd.now, moves) : null;
+      var why = moves.length && shared.cd && cdJs && cdJs.nestCheck ? cdJs.nestCheck(shared.cd.now, moves, { doc: cdDoc(shared.cd.now) }) : null;   // the file's kept document, read only
       if (why) return refused(why);
       var jp = arg.join && arg.join.length ? joinPlan(arg.join, moves.map(function (m) { return m[0]; })) : { joins: [], why: '' };   // a glyph dropped on a complex: its member (create.js)
       if (jp.why) return refused(jp.why);
@@ -1402,7 +1400,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
           var old = V.img.src || '';
           V.img.removeAttribute('id'); pic.id = 'm2-img'; pic.setAttribute('aria-label', map.title); V.img.replaceWith(pic); V.img = pic;
           if (old.indexOf('blob:') === 0) URL.revokeObjectURL(old);
-          gN = {}; gE = {}; shared.live = null; shared.liveC = null; shared.liveOrig = null; shared.sizeRec = null; shared.keyed = null; shared.liveG = null; shared.poseNow = null; shared.poseText = null; shared.copies = []; shared.frozen = false;
+          gN = {}; gE = {}; resetDrawing();
           pic.querySelectorAll('[data-n]').forEach(function (g) { gN[g.getAttribute('data-n')] = g; });
           pic.querySelectorAll('[data-e]').forEach(function (g) { var k = g.getAttribute('data-e'); (gE[k] = gE[k] || []).push(g); });
           if (shared.cd) cdSessionSoon();
@@ -1427,8 +1425,9 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       if (shared.typing) shared.typing.done(true);
       if (localTimer) local(true);   // the last move of the map before kept first, before cd and text change
       var tk = opening;
+      // the new map's format is handed to begin, which writes it after resetMap: until then the map left stays whole
       if (viaGraphml(t)) {   // an SBGN-ML map (or SBML, layout only): the GraphML of its text, made from the build's (g0, read with the map)
-        shared.cd = null; quiet();
+        quiet();
         return sbpy().then(function () {
           if (tk !== opening) return;
           if (!g0) throw 'its GraphML did not load';
@@ -1436,13 +1435,12 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
           if (ed0.unique) t = ed0.unique(t, g0);   // two glyphs of one id: the later renamed as the build's GraphML has it, written at the next save
           var g = sbGraphml(t, g0);
           var sb1 = { base: t, g0: g0 };
-          shared.sbLast = [g, edOf(t).write(t, g), sb1];   // a file whose moves could not be written back is said now, not at the first save; kept for src()
-          shared.sb = sb1; begin(g, t, n, h, s, same, t0);
+          var last = [g, edOf(t).write(t, g), sb1];   // a file whose moves could not be written back is said now, not at the first save; kept for src()
+          begin(g, t, n, h, s, same, t0, { sb: sb1, sbLast: last });
         })
           .catch(function (e) { if (tk === opening) warn('Cannot edit ' + n + ': ' + e); });
       }
-      shared.sb = null;
-      if (!isCd(t)) { shared.cd = null; return begin(t, t, n, h, s, same); }
+      if (!isCd(t)) return begin(t, t, n, h, s, same, null, {});
       quiet();
       return cdpy().then(function () {
         if (tk !== opening) return;
@@ -1450,7 +1448,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
         // text, written at the next save; the file as it was stays the site's base (what GitHub and the site hold)
         var sg = cdMk ? cdMk.sbgn(t) : { n: 0 }, t0 = t;
         if (sg.n) { t = sg.text; takenIn = sg.n + (sg.n > 1 ? ' positive influences' : ' positive influence') + ' (open arrowhead, not SBGN) made reduced physical stimulation (open triangle).'; }
-        shared.cd = { base: t, now: t }; begin(cdGraphml(t), t, n, h, s, same, t0);
+        begin(cdGraphml(t), t, n, h, s, same, t0, { cd: { base: t, now: t } });
       })
         .catch(function (e) { if (tk === opening) warn('Cannot edit ' + n + ': ' + e); });
     }
@@ -1458,16 +1456,20 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     function __run20() {   // run at start, in order (__start)
     takenIn = null;
     }   // what the opening changed in the file (cd_make sbgn), said once the map is drawn
-    function begin(g, t, n, h, s, same, t0) {   // same: { width, height, x0, y0, scale } of the picture on screen, drawn from this very file; t0: the file as read, where the opening changed it
+    function begin(g, t, n, h, s, same, t0, fmt) {   // same: { width, height, x0, y0, scale } of the picture on screen, drawn from this very file; t0: the file as read, where the opening changed it; fmt: the map's format ({ cd } or { sb, sbLast }; {}: GraphML)
+      var was = takeMap();   // the map before, put back if this one cannot be read
+      resetMap();   // every field of the map, gesture, drawing and cache lifetimes as at the start (state.js), then the new map's own
+      if (fmt.cd) shared.cd = fmt.cd;
+      if (fmt.sb) { shared.sb = fmt.sb; shared.sbLast = fmt.sbLast; }
       layout();   // its extent() measures what the holders grow round (extOf), at the first move
       sbpy();   // sbgn_edit quietly, on every map: its stacking (stackComps) and moveInto serve GraphML maps too
-      try { shared.text = g; parse(); } catch (e) { warn('Cannot edit ' + n + ': ' + e); return; }
+      try { shared.text = g; parse(); } catch (e) { putMap(was); try { parse(); } catch (e2) {} warn('Cannot edit ' + n + ': ' + e); return; }   // its moves not saved still said and kept
       siteRef = null; name = n; handle = h; site = s || null;
       t0 = t0 || t;
       if (site) { site.base = site.pending && site.pub != null ? site.pub : t0; site.fromDraft = t0 !== site.base; }   // no token: the site's text, a draft on top of it
       if (site) { site.known = site.mine ? (mine[site.id] ? mine[site.id].text : null) : V.drafts[site.id] ? V.drafts[site.id].text : null; site.clashed = false; }   // what this browser kept of the map when it was opened (local: the save clash)
       if (site && site.pending && canFolder && V.folderName()) folderCheck();
-      stuck = false; shared.dirty = false; undo = []; shared.redo = []; shared.cdGate = null; shared.selN = []; shared.selP = []; shared.selE = [];
+      stuck = false; undo = [];
       histTake(t, g);
       edits = 0;
       if (reSel && V.chosen && reSel.map === V.chosen.id) {   // reloaded while editing this map: its selection back
@@ -1486,7 +1488,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       document.getElementById('m2-title').textContent = n;
       V.grid.classList.add('m2-editing');
       buttons();
-      gN = gE = null; mv = shared.live = null; shared.liveG = null; shared.poseNow = null; shared.poseText = null; shared.copies = []; shared.frozen = false; shared.cdBase = null;
+      gN = gE = null; mv = null;
       if (same && same.text === t) {
         var grouped = same.svg && same.svg.indexOf(' data-n="') >= 0;   // the editor's own drawing of this very file
         (shared.cd ? cdpy() : yr()).then(function () { if (on && V.current === map && !edits && !gN && !grouped) render(); });   // the renderer loaded quietly for the first change
@@ -1501,6 +1503,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     function stop() {
       if (shared.typing) shared.typing.done(true);   // a name being typed kept on its own map first (create.js)
       if (!on) return;
+      keyFlush();   // the arrow keys' last run settled on this map, not on the next one opened (its 150 ms timer)
       if (saveTimer) push();   // a move still waiting is saved now
       leftMoves = { site: site, n: undo.length };   // before histKeep, which empties undo
       var moved = undo.length > 0 || edits > 0;   // every move undone counts too: the kept picture follows the text left
@@ -1658,7 +1661,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     // version GitHub already said is newer (else the check after the switch reopens in a loop)
     var known;
     function __run22() {   // run at start, in order (__start)
-    shared.ghDir = null, known = {};
+    known = {};
     }
     function ghList() {
       if (shared.ghDir && Date.now() - shared.ghDir.at < 300000) return shared.ghDir;
@@ -1754,7 +1757,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
         if (!cdm) return p;   // a GraphML map is ready as it is
         return waitFor(m).then(function () {
           if (!still()) throw 0;
-          p.g = cdKnown(p.t) || cdJs.graphml(p.t);   // a CellDesigner file made into the editor's GraphML: a step of its own
+          p.g = cdKnown(p.t) || cdJs.graphml(p.t, null, { doc: cdDoc(p.t, V.current && V.current.id === m.id ? m.id : false) });   // a CellDesigner file made into the editor's GraphML: a step of its own (its document kept for the map shown)
           return p;
         });
       });
@@ -1937,6 +1940,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
           Promise.all([api('/contents/' + s0.path + '?ref=main').then(function (r) { return r.status === 404 && shared.sb ? {} : r.json(); }),   // an SBGN-ML map's edited copy not made yet: the first save makes it
             api('/contents/' + s0.path + '?ref=main', { headers: { Accept: 'application/vnd.github.raw' } }).then(function (r) { return r.status === 404 && shared.sb ? s0.base : r.text(); })])
             .then(function (f) {
+              if (!on || site !== s0) return;   // another map opened meanwhile: this one stays as kept in the browser, taken up when it is opened again (its moves never written into the map open now)
               s0.sha = f[0].sha || null; s0.pending = false; buttons();
               if (f[1] !== s0.base) { stuck = true; warn('Connected, but the map in the repository is newer than the copy opened: moves not saved, nothing overwritten. Stop editing and open the map again.'); return; }
               if (s0.id) unkeep(s0.id);   // GitHub holds the map from now on
@@ -2056,7 +2060,6 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     var picWait;
     function __run28() {   // run at start, in order (__start)
     picWait = false;   // the Edit window open before the map's picture is in (a reload in edit mode): started once it is
-    shared.switching = false;
     }   // editing ends because another map was chosen (leaving): the Edit window stays
     function shown(any) {   // the Edit window open on a map: edit it, or say why not (also when another map is chosen); any: its picture failed
       if (!V.grid.classList.contains('m2-win-edit') || on) return;
@@ -2327,9 +2330,6 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       if (n == null || !nodes2[n].hub) return null;
       if (end) return e.arr[1] === 'none' ? 'in' : null;
       return !(e.t != null && nodes2[e.t].hub) && e.arr[0] === 'none' && e.arr[1] === 'none' && !nodes2[n].eq ? 'in' : 'out';
-    }
-    function __run33() {   // run at start, in order (__start)
-    shared.hpMemo = null;
     }
     function hubPorts() {   // the ports as the renderer draws them, per node id: [port one, port two, anything coming in]
       if (!shared.hpMemo || shared.hpMemo[0] !== shared.text) shared.hpMemo = [shared.text, window.yrender.render(docText === shared.text ? doc : shared.text, {}).ports];   // the editor's own drawing sets it (drawGraphml): this only before it
@@ -2795,7 +2795,6 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     }
     function editing(e) { return on && V.current === map && !e.target.closest('.m2-ctrl, .m2-info, .m2-ed-type'); }   // a press in the name box is the box's
     function __run36() {   // run at start, in order (__start)
-    shared.tap = null;
     // edit mode is view mode plus the selection (the same gestures as in view mode):
     // two-finger scrolling moves the map, a pinch zooms (the viewer's wheel handler); a drag on empty
     // space or on an item not selected moves the map, as in the viewer; a click selects (on empty space: clears the
@@ -3454,7 +3453,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       if (ks.n.size && shared.cd && full() && cdJs && cdJs.nestCheck) {   // a move the CellDesigner file cannot hold refused at once, not after the run (a jump back)
         var r0 = keyRun || [0, 0], dd = d, Bk = function (k) { var b = boxOf(k); return ks.n.has(k) ? [b[0] + dd[0], b[1] + dd[1], b[2], b[3]] : b; };
         var mvs = []; regroup('plain', ks.n, Bk, function (k) { var b = boxOf(k); return ks.n.has(k) ? [b[0] - r0[0], b[1] - r0[1], b[2], b[3]] : b; }).forEach(function (t2, i) { mvs.push([nodes2[i].id, t2 == null ? null : nodes2[t2].id]); });
-        var whyK = mvs.length ? cdJs.nestCheck(shared.cd.now, mvs) : null;
+        var whyK = mvs.length ? cdJs.nestCheck(shared.cd.now, mvs, { doc: cdDoc(shared.cd.now) }) : null;
         if (whyK) return;   // refused: nothing moves, nothing said
       }
       remember(true); move(d[0], d[1], ks); keyShift(ks, d[0], d[1]); keyGuides = bp != null ? bendGuides(bp) : null; paint();
@@ -3473,5 +3472,5 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     }, true);
     }
 
-    export function __start() { __run1(); __run2(); __run3(); __run4(); __run5(); __run6(); __run7(); __run8(); __run9(); __run10(); __run11(); __run12(); __run13(); __run14(); __run15(); __run16(); __run17(); __run18(); __run19(); __run20(); __run21(); __run22(); __run23(); __run24(); __run25(); __run26(); __run27(); __run28(); __run29(); __run30(); __run31(); __run32(); __run33(); __run34(); __run35(); __run36(); __run37(); __run38(); __run39(); __run40(); __run41(); __run42(); __run43(); __run44(); __run45(); __run46(); }   // the part's statements, in their order
+    export function __start() { __run1(); __run2(); __run3(); __run4(); __run5(); __run6(); __run7(); __run8(); __run9(); __run10(); __run11(); __run12(); __run13(); __run14(); __run15(); __run16(); __run17(); __run18(); __run19(); __run20(); __run21(); __run22(); __run23(); __run24(); __run25(); __run26(); __run27(); __run28(); __run29(); __run30(); __run31(); __run32(); __run34(); __run35(); __run36(); __run37(); __run38(); __run39(); __run40(); __run41(); __run42(); __run43(); __run44(); __run45(); __run46(); }   // the part's statements, in their order
     export { G, HANDLE, MODS, Y, ahead, aheadSoon, api, at, away, b64, blobSha, box, boxOf, buttons, cdOwn, changed, chooseFolder, complexHere, cut, cutShape, doc, docText, drag, drawText, edgeAt, edges2, editing, f1, fmt, freeName, full, gE, gN, gh, graphmlOf, gridBlock, gridSet, grown, handleMarks, heldText, hit, holder, holderSize, holds, hubPorts, inComplex, inRim, keyFlush, keyTake, kindWindow, landMarks, lastFor, lastSvg, lateItem, layTool, line, livePath, localBox, map, mapTop, moveFix, mv, name, near, nodes2, note, num, on, origFolderDrop, origFromFolder, origRead, origToFolder, origWrite, outlineD, overlap, ownMenus, paint, parse, parseFix, picWait, points, ports, procPlaces, pt, quiet, rclick, realizerOf, rebase, refit, regroup, remember, render, repo, rimOf, roleOf, roomy, setBoxes, setPort, settle, shapeD, shown, site, spotNo, src, status, stop, subItem, sx, sy, syncFolder, toFolder, toGrid, token, tops, under, undo, unkeep, unpush, warn, x0, y0 };

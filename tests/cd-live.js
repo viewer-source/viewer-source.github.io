@@ -3,6 +3,9 @@
 // map: three made-up moves of nodes, bend points and line ends (as tests/cd-compare.js makes them), every reaction drawn
 // live, its halo and lines found as they are in draw()'s picture; and line ends moved to another species (as
 // tests/cd-reconnect.js picks them), drawn live with the new end as the drop draws them.
+// Each map is parsed once and that document handed to graphml() and to every live() of it, as the editor does (one
+// document per text, read only): a reader writing into it would change the later moves' drawings. Checked too: graphml()
+// gives the same text from the shared document as from the text, and draw()'s opt.parsed is given its new text's document.
 //   node tests/cd-live.js [CellDesigner files or folders ...]   (default: maps/)
 var fs = require('fs'), path = require('path');
 var here = path.join(__dirname, '..'), DP = require('@xmldom/xmldom').DOMParser;
@@ -55,14 +58,18 @@ function setEnd(g, eid, j, to, port) {   // edge eid's end j (0 source, 1 target
   return new (require('@xmldom/xmldom').XMLSerializer)().serializeToString(doc);
 }
 var same = 0, diff = 0, skipped = 0, bad = [], recon = 0;
+var docs = {}, shared = function (f, t) { return docs[f] || (docs[f] = { DOMParser: DP, doc: new DP().parseFromString(t, 'application/xml') }); };
 files.forEach(function (f) {
   var t = fs.readFileSync(f, 'utf8'), g;
-  try { g = ed.graphml(t, null, opt); } catch (e) { return; }
+  try { g = ed.graphml(t, null, shared(f, t)); } catch (e) { return; }
+  if (g !== ed.graphml(t, null, opt)) { diff++; bad.push(path.basename(f) + ': graphml() from the shared document differs from the text\'s'); }
   var base = read(g), rids = [];
   base[1].forEach(function (v, k) { var m = /^(.*)\|(a|b|[rpmi]\d+)$/.exec(k); if (m && rids.indexOf(m[1]) < 0) rids.push(m[1]); });
   [1, 2, 3].forEach(function (seed) {
     var mg = moved(g, seed), q;
-    try { q = ed.draw(t, mg, opt); } catch (e) { return; }
+    var given = null;
+    try { q = ed.draw(t, mg, { DOMParser: DP, parsed: function (c, d) { given = [c, d]; } }); } catch (e) { return; }
+    if (!given || given[0] !== q[1] || !given[1].documentElement) { diff++; bad.push(path.basename(f) + ' seed ' + seed + ': draw() did not give its new text\'s document'); }
     if (/<g transform="translate\(0,0\)"><g transform/.test(q[0])) { skipped++; return; }   // shifted after the drop: not live
     // the drawing after the drop, its halos and its lines apart (draw() is place() then this drawing)
     var D = new cdr.Drawing(q[1], { classes: true, groups: true, DOMParser: DP }), svg = D.svg();
@@ -70,7 +77,7 @@ files.forEach(function (f) {
     var halo = D.halo.join('\n'), lines = D.lines.join('\n');
     var now = read(mg), boxes = new Map();
     now[0].forEach(function (b, k) { var o = base[0].get(k); if (!o || b.some(function (v, j) { return v !== o[j]; })) boxes.set(k, b); });
-    var S = ed.live(t, g, opt), out = S.frame(boxes, now[1], now[2], rids);
+    var S = ed.live(t, g, shared(f, t)), out = S.frame(boxes, now[1], now[2], rids);
     S.errors.forEach(function (e) { diff++; if (bad.length < 10) bad.push(path.basename(f) + ' seed ' + seed + ' failed: ' + e); });
     rids.forEach(function (rid) {
       var o = out[rid];
@@ -83,7 +90,7 @@ files.forEach(function (f) {
 // line ends moved to another species: the reaction drawn live with the new end, against the drop's drawing
 files.forEach(function (f) {
   var t = fs.readFileSync(f, 'utf8'), g;
-  try { g = ed.graphml(t, null, opt); } catch (e) { return; }
+  try { g = ed.graphml(t, null, shared(f, t)); } catch (e) { return; }
   var K = kinds(g), targets = Object.keys(K.N).filter(K.ok), base = read(g);
   [[/\|a$/, 0], [/\|b$/, 1], [/\|m\d+$/, 0], [/\|r\d+$/, 0], [/\|p\d+$/, 1]].forEach(function (k, ki) {
     var eid = Object.keys(K.E).filter(function (e) { return k[0].test(e) && K.ok(K.E[e][k[1]]) && !/\|g\d*$/.test(K.E[e][1 - k[1]]); })[0];
@@ -97,7 +104,7 @@ files.forEach(function (f) {
     if (/<g transform="translate\(0,0\)"><g transform/.test(q[0])) { skipped++; return; }
     var D = new cdr.Drawing(q[1], { classes: true, groups: true, DOMParser: DP }); D.svg();
     var now = read(mg), ends = new Map([[eid, K.E[eid].map(function (x, j) { return j === k[1] ? to : x; })]]);
-    var S = ed.live(t, g, opt), out = S.frame(new Map(), now[1], now[2], [rid], ends);
+    var S = ed.live(t, g, shared(f, t)), out = S.frame(new Map(), now[1], now[2], [rid], ends);
     S.errors.forEach(function (e) { diff++; if (bad.length < 10) bad.push(path.basename(f) + ' end of ' + eid + ' failed: ' + e); });
     var o = out[rid];
     if (!o) { skipped++; return; }

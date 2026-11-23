@@ -87,9 +87,6 @@ import { ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues, confet
 
     // the palette shown on a CellDesigner map (palShow, create.js)
     function cdPal() { return on && V.current === map && !!shared.cd && !!cdJs && !!cdMk && V.level === 'full'; }
-    function __run4() {   // run at start, in order (__start)
-    shared.cdStrictMemo = [null, false];
-    }   // read from this browser once per map, not on every paint
     function cdStrict() {   // the Reduced notation tick box, per map as on SBGN-ML maps (unticked: no reduced notation)
       var id = palId();
       if (shared.cdStrictMemo[0] !== id) { var k = palStore()[id]; shared.cdStrictMemo = [id, !!(k && k.strict === true)]; }
@@ -348,9 +345,6 @@ import { ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues, confet
 
     // a gate by three clicks: its inputs (two for AND and OR, one for NOT and the unknown gate), then
     // the reaction's square, or the target entity in reduced notation; the inputs marked as they are clicked
-    function __run11() {   // run at start, in order (__start)
-    shared.cdGate = null;
-    }   // { kind, inputs: [node ids] }
     function cdGateClick(P) {
       var kind = CD_GATE[tool.kind], i = linkEnd(P, -1), r = i >= 0 ? cdRole(i) : null;
       if (!shared.cdGate || shared.cdGate.kind !== kind) shared.cdGate = { kind: kind, inputs: [] };
@@ -915,9 +909,6 @@ import { ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues, confet
       return cdFeatMemo[id];
     }
     function cdFront(i, f) { var b = boxOf(i), s = 6 * ((f && f.homodimer || 1) - 1); return [b[0], b[1], b[2] - s, b[3] - s]; }   // the front copy of a multimer (cdrender frontBox)
-    function __run26() {   // run at start, in order (__start)
-    shared.cdPend = null;
-    }   // { id, kind, angle }: a structural state or unit of information shown before it is in the file (written once it has a value)
     // the icons shown on node i, as create.js svList gives them: [text, centre, size, kind, index among its kind]
     function cdSvList(i) {
       var n = nodes2[i];
@@ -1487,5 +1478,5 @@ import { ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues, confet
       return { w: s[0], h: s[1], svg: '<svg width="100%" height="100%" viewBox="0 0 ' + s[0] + ' ' + s[1] + '" overflow="visible">' + (back || '') + shape + '</svg>' };
     }
 
-    export function __start() { __run1(); __run2(); __run3(); __run4(); __run5(); __run6(); __run7(); __run8(); __run9(); __run10(); __run11(); __run12(); __run13(); __run14(); __run15(); __run16(); __run17(); __run18(); __run19(); __run20(); __run21(); __run22(); __run23(); __run24(); __run25(); __run26(); __run27(); __run28(); __run29(); __run30(); __run31(); __run32(); __run33(); }   // the part's statements, in their order
+    export function __start() { __run1(); __run2(); __run3(); __run5(); __run6(); __run7(); __run8(); __run9(); __run10(); __run12(); __run13(); __run14(); __run15(); __run16(); __run17(); __run18(); __run19(); __run20(); __run21(); __run22(); __run23(); __run24(); __run25(); __run27(); __run28(); __run29(); __run30(); __run31(); __run32(); __run33(); }   // the part's statements, in their order
     export { CD_DEF_KEY, CD_GATE, PF_CD, cdCardDown, cdCheck, cdClick, cdClsOf, cdDeleteItem, cdFeat, cdFill, cdFront, cdGateMarks, cdGhost, cdHow, cdInfo, cdItems, cdKind, cdLineAt, cdLink, cdLinkMarks, cdLiveEnds, cdMake, cdNameDown, cdNameOf, cdOnLine, cdOverMarks, cdPal, cdRename, cdRole, cdSsTyped, cdStartOk, cdSvDelete, cdSvList, cdSvMove, cdSvOpen };

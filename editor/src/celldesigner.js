@@ -14,7 +14,7 @@ import { cdCheck, cdClsOf, cdRole } from './cdcreate.js';
     // by it and the map drawn by cdrender, each part in a group of its own; text is that GraphML, cd.now the file
     var cdp, cdJs, cdMk;
     function __run1() {   // run at start, in order (__start)
-    cdp = null, cdJs = null, cdMk = null, shared.cd = null;
+    cdp = null, cdJs = null, cdMk = null;
     }   // the CellDesigner side loading, once loaded (cd_edit, cd_make), the file edited ({ base, now })
     function isCd(t) { return /<sbml[\s>]/.test(t.slice(0, 3000)) && t.indexOf('celldesigner') >= 0; }
     // the line grid (core.js, lineStep): a line's end on a node on it inside the shape and along its outline, bend points
@@ -38,9 +38,6 @@ import { cdCheck, cdClsOf, cdRole } from './cdcreate.js';
     // a process glyph not moved itself stays midway on its segment of the main line wherever that goes (cd_edit), so
     // while a drag or the keys move a segment's end it follows at once (not only on
     // release): procs, each glyph with its two main arcs; liveG, the glyphs' shifts until the map is drawn again
-    function __run2() {   // run at start, in order (__start)
-    shared.procs = [], shared.liveG = null;
-    }
     function cdpy() {   // the CellDesigner side: cdrender.js, then cd_edit.js (it reads cdrender), quick to load
       if (cdp) return cdp;
       var script = function (f) {
@@ -69,7 +66,30 @@ import { cdCheck, cdClsOf, cdRole } from './cdcreate.js';
     // downloads and the site's picture never carry a canvas larger than the map; the shift moves the frame with it
     // (render, cdRebuild). Unchanged, the file draws as itself: opening it, or every change undone, saves nothing and
     // leaves the picture's frame as the site's. fit given: the read-ahead, before editing
-    function cdDraw(t, g, fit) { return cdJs.draw(t, g, { fit: fit == null ? undo.length > 0 : fit, block: gridBlock() }); }
+    function cdDraw(t, g, fit) {   // [svg, file, GraphML]; the new file's document kept for the session while editing
+      return cdJs.draw(t, g, { fit: fit == null ? undo.length > 0 : fit, block: gridBlock(), parsed: on ? function (c, d) { cdDocKeep(c, d, shownId()); } : null });
+    }
+    // a CellDesigner file's XML parsed once for every reader of that text (cdrender's drawing on adding, cd_edit's GraphML
+    // at the read-ahead or the opening, its live session after entry, the drawing and GraphML after a change): one
+    // document kept, the shown map's, as the readers only read it (cd_edit.place parses its own). id: the map it is kept
+    // for (by default the map shown); false: parsed, not kept (a map read ahead that is not shown, a folder's file);
+    // 'adding': a file being added, whose map is the next one shown. Let go when another map is shown (cdShown), the
+    // live session made from it with it
+    var cdDocNow;   // { t, doc, id }; none at the start
+    function shownId() { return V.chosen ? V.chosen.id : null; }
+    function cdDoc(t, id) {
+      if (cdDocNow && cdDocNow.t === t) return cdDocNow.doc;
+      var doc = new DOMParser().parseFromString(t, 'application/xml');
+      if (id !== false) cdDocKeep(t, doc, id === undefined ? shownId() : id);
+      return doc;
+    }
+    function cdDocKeep(t, doc, id) { cdDocNow = { t: t, doc: doc, id: id }; }
+    function cdKept() { return cdDocNow ? cdDocNow.id : null; }   // the map whose document is kept (the tests' view)
+    function cdShown(id) {   // a map shown (the viewer's left)
+      if (!cdDocNow) return;
+      if (cdDocNow.id === 'adding') cdDocNow.id = id;
+      else if (cdDocNow.id !== id) { cdDocNow = null; cdLive = null; }   // the live session reads it too
+    }
     // the file as drawn now (a move not drawn yet put in) with the shift (out of negative places, or the fit) that drawing holds: the
     // drawing on screen when it is of this GraphML, else drawn here (x0 may still belong to an older drawing)
     function cdShift(svg) { var m = /<g transform="translate\(([-\d.]+),([-\d.]+)\)">/.exec(svg || ''); return m ? [+m[1], +m[2]] : [0, 0]; }
@@ -84,7 +104,7 @@ import { cdCheck, cdClsOf, cdRole } from './cdcreate.js';
     function cdGraphml(t) {
       var g = cdKnown(t);
       if (g) return g;
-      g = cdJs.graphml(t);
+      g = cdJs.graphml(t, null, { doc: cdDoc(t) });
       cdRemember(t, g);
       return g;
     }
@@ -150,12 +170,12 @@ import { cdCheck, cdClsOf, cdRole } from './cdcreate.js';
     // drawing after the drop, tests/cd-live.js), put in place of their groups as copies; the glyph's place follows it
     var cdLive;
     function __run4() {   // run at start, in order (__start)
-    shared.cdBase = null, cdLive = null;
+    cdLive = null;
     }
     function cdSession() {
       if (!shared.cd || !cdJs || !cdJs.live || !shared.cdBase) return null;
       if (cdLive && cdLive.base === shared.cdBase) return cdLive.s;
-      try { cdLive = { base: shared.cdBase, s: cdJs.live(shared.cdBase.now, shared.cdBase.text) }; } catch (e) { cdLive = null; }
+      try { cdLive = { base: shared.cdBase, s: cdJs.live(shared.cdBase.now, shared.cdBase.text, { doc: cdDoc(shared.cdBase.now) }) }; } catch (e) { cdLive = null; }
       return cdLive ? cdLive.s : null;
     }
     function cdSessionSoon() {
@@ -361,5 +381,5 @@ import { cdCheck, cdClsOf, cdRole } from './cdcreate.js';
     warmUp();
     }
 
-    export function __start() { __run1(); __run2(); __run3(); __run4(); __run5(); __run6(); __run7(); }   // the part's statements, in their order
-    export { beyond, cdDraw, cdGraphml, cdJs, cdKnown, cdMap, cdMk, cdNow, cdRebuild, cdRemember, cdSessionSoon, cdpy, glyphArcs, glyphPort, isCd, joinAt, joinGuides, joinSolve, lineGrid, liveCd, nodeCentre, nodePlaces, plainCanvas, warmUp };
+    export function __start() { __run1(); __run3(); __run4(); __run5(); __run6(); __run7(); }   // the part's statements, in their order
+    export { beyond, cdDoc, cdDraw, cdGraphml, cdKept, cdJs, cdKnown, cdMap, cdMk, cdNow, cdRebuild, cdRemember, cdSessionSoon, cdShown, cdpy, glyphArcs, glyphPort, isCd, joinAt, joinGuides, joinSolve, lineGrid, liveCd, nodeCentre, nodePlaces, plainCanvas, warmUp };
