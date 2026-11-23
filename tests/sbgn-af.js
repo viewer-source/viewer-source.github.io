@@ -280,6 +280,11 @@ var WL = steps([['a PD file of direct links, a glyph moved', LINKS, gL, se.resiz
 var RN = { a: ['macromolecule', null], c: ['complex', null], p: ['perturbing agent', null], s: ['simple chemical', null] };
 expect('a PD file of direct links, a glyph moved', WL[0][0], 'process description', RN, { e0: 'stimulation', e1: 'inhibition' }, 'af');
 expect('a PD file of direct links, a link drawn', WL[1][0], 'process description', RN, { e0: 'stimulation', e1: 'inhibition', e2: 'inhibition' }, 'af');
+// an entity's activity unit chosen in the AF palette: written as the entity it names, once (the class was set twice)
+['simple chemical', 'nucleic acid feature', 'unspecified entity'].forEach(function (u) {
+  var W = steps([['a PD file of direct links, a unit set to ' + u, LINKS, gL, se.activity(gL, 'a', u, opt)]]);
+  expect('a PD file of direct links, a unit set to ' + u, W[0][0], 'process description', Object.assign({}, RN, { a: [u, null] }), { e0: 'stimulation', e1: 'inhibition' }, 'af');
+});
 var propOf = function (g, id, name) {   // a node's property (its text), as the converter writes it
   var k = new RegExp('<key attr\\.name="' + name + '"[^>]*id="([^"]+)"').exec(g) || new RegExp('<key[^>]*id="([^"]+)"[^>]*attr\\.name="' + name + '"').exec(g), n = new RegExp('<node id="' + id + '"[\\s\\S]*?</node>').exec(g);
   var d = k && n && new RegExp('<data key="' + k[1] + '">([^<]*)</data>').exec(n[0]);

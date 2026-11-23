@@ -596,9 +596,10 @@
     // not Activity Flow: an entity the editor holds as an activity is written as the entity its unit names (a file's
     // activity turned PD by toPd included, also one kept so in the GraphML made again, afUnitOf; else a unit set by
     // hand is written as the base file's)
+    var unitCls = {};   // the classes set here: the entity's kind below leaves them (one class written once)
     if (!af) Object.keys(S.glyph).forEach(function (id) {
       var c = S.glyph[id].el.getAttribute('class') || '', u = G.node[id] ? afUnitOf(G, id) : null;
-      if (u != null && KPLAIN.test(c) && !/ multimer$|^perturbing agent$/.test(c) && actCls(u) !== c) T.set(S.glyph[id].el, 'class', actCls(u));
+      if (u != null && KPLAIN.test(c) && !/ multimer$|^perturbing agent$/.test(c) && actCls(u) !== c) { T.set(S.glyph[id].el, 'class', actCls(u)); unitCls[id] = 1; }
     });
     var close = function (a, b) { return Math.abs(a - b) < 1e-6; };   // (used by the names below too)
     var iconsOf = function (id, kind) {   // [text, rx, ry] of a node's state variables (or units of information) in the GraphML
@@ -759,7 +760,7 @@
       // an entity made another (entityKind): its class from the GraphML's shape, a multimer kept where the new class has one
       var b0 = cls.replace(/ multimer$/, ''), cf = classOfCfg(cfgOf(n.geo.parentNode)) || '', base = ENTITY.test(b0) && ENTITY.test(cf) ? cf : b0, multi = isMulti(G, id);
       var nowCls = MULTI.test(base) && (base !== b0 || multi !== drawnMulti(cls, iconsOf(id, 'UnitOfInformation').map(function (q) { return q[0]; }))) ? base + (multi ? ' multimer' : '') : base !== b0 ? base : null;   // judged by the units as now typed
-      if (nowCls && nowCls !== cls) T.set(g.el, 'class', nowCls);
+      if (nowCls && nowCls !== cls && !unitCls[id]) T.set(g.el, 'class', nowCls);
       var have = kids(g.el, 'glyph').filter(function (c) { return c.getAttribute('class') === 'state variable'; }), more = '';
       var icons = iconsOf(id), hu = unitsOf(g.el), ui = iconsOf(id, 'UnitOfInformation'), cutEls = [];
       have.slice(icons.length).forEach(function (c) { T.cut(c); cutEls.push(c); });   // deleted in the editor
