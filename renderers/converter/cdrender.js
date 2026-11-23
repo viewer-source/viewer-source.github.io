@@ -5,6 +5,8 @@
 // its numbers read as the converter's), shared with cd_edit.js. The rules and their reasons are in cdrender-rules.md
 // beside it under the same names (snake_case there); comments here are short.
 //   browser: cdrender.render(text, { classes, groups }) -> svg;  cdrender.renderHits(text, opt) -> [svg, hits]
+//            cdrender.elements(text, opt).one(id), cdrender.one(text, id, opt) -> { out, halo, lines }: one
+//            species, compartment or reaction drawn alone
 //   node:    node renderers/converter/cdrender.js map.xml out.svg   (needs @xmldom/xmldom)
 (function (root) {
   'use strict';
@@ -831,13 +833,32 @@
   };
 
   function render(src, opt) { return new Drawing(src, opt).svg(); }
+  // one element drawn alone, as render(src, { groups: true }) draws it: a species alias (its group), a compartment alias
+  // (its group), or a reaction (by its id, or one of its lines' ids, re1|a: every group of the reaction, its halo and
+  // its lines). elements(src, opt).one(id) -> { out, halo, lines }: the pieces in the order the whole drawing has them
+  // (tests/one-element.js), or null when there is no such element; the map read once. one(src, id, opt): the same once
+  function elements(src, opt) {
+    var d = new Drawing(src, Object.assign({}, opt || {}, { groups: true })), cas = {}, rxs = {};
+    findall(d.ext, 'cd:listOfCompartmentAliases/cd:compartmentAlias').forEach(function (a) { if (find(a, 'cd:bounds')) cas[get(a, 'id')] = a; });
+    findall(d.model, 's:listOfReactions/s:reaction').forEach(function (r) { rxs[get(r, 'id') || get(r, 'metaid')] = r; });
+    return { one: function (id) {
+      d.out = []; d.halo = []; d.lines = []; d.hitReactions = new Map(); d.cur = null;
+      var rid = String(id).split('|')[0];
+      if (d.alias.has(id)) { d.out.push('<g data-n="' + attr(id) + '">'); d.node(id); d.out.push('</g>'); }
+      else if (Object.prototype.hasOwnProperty.call(cas, id)) { d.out.push('<g data-n="' + attr(id) + '">'); d.compartment(cas[id]); d.out.push('</g>'); }
+      else if (Object.prototype.hasOwnProperty.call(rxs, rid)) { d.cur = rid; try { d.reaction(rxs[rid]); } catch (e) { d.log(rid + ': ' + e.message); } }
+      else return null;
+      return { out: d.out, halo: d.halo, lines: d.lines };
+    } };
+  }
+  function one(src, id, opt) { return elements(src, opt).one(id); }
   function renderHits(src, opt) {
     var d = new Drawing(src, opt), svg = d.svg(), aliases = [];
     d.alias.forEach(function (a, i) { aliases.push({ id: i, species: get(a[2], 'species'), 'class': a[0], box: a[1].map(function (v) { return round(v, 1); }) }); });
     var reactions = {}; d.hitReactions.forEach(function (v, k) { reactions[k] = v; });
     return [svg, { aliases: aliases, reactions: reactions }];
   }
-  var api = { render: render, renderHits: renderHits, Drawing: Drawing, py: py, xml: xml, SQUARE: SQUARE, ANCHOR: ANCHOR, fromFrame: fromFrame, toFrame: toFrame,
+  var api = { render: render, renderHits: renderHits, elements: elements, one: one, Drawing: Drawing, py: py, xml: xml, SQUARE: SQUARE, ANCHOR: ANCHOR, fromFrame: fromFrame, toFrame: toFrame,
     editPoints: editPoints, unit: unit, onBorder: onBorder, width: width, target: target, plainName: plainName, NAME: NAME, GATE: GATE, SYMBOL: SYMBOL, ROLE: ROLE, anchorAt: anchorAt, frontBox: frontBox, compartmentShape: compartmentShape, nameLeft: nameLeft, NAME_PLACES: NAME_PLACES, namePoint: namePoint, namePlaceOf: namePlaceOf };   // GATE: the editor's palette checks its signs against it   // NAME: cd_make.js writes names
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.cdrender = api;
 

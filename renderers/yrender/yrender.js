@@ -4,6 +4,8 @@
 // Comments here are short: the rules and their reasons are in rules.md beside it, function by function, under the same
 // names (snake_case there).
 //   browser: yrender.render(text or XML document, { classes, roles, groups }) -> { svg, errors }
+//            yrender.elements(text or document, opt).one(id), yrender.one(text, id, opt) -> the svg of one node or
+//            arc drawn alone, as in the whole
 //   node:    node renderers/yrender/yrender.js map.graphml map.svg [--roles] [--classes]   (needs @xmldom/xmldom)
 (function (root) {
   'use strict';
@@ -923,7 +925,25 @@
     }
     return { draw: draw };
   }
-  var api = { render: render, live: live, num: num, dist: dist };
+  // one node or one arc drawn alone (JavaScript only): the map read once with each in its group, as render(src, {
+  // groups: true }) draws it; elements(src, opt).one(id) gives that element's group's text, exactly as it stands in the
+  // whole drawing (tests/one-element.js), or null when the map has no such node or arc; elements(...) is null when the
+  // map cannot be drawn. one(src, id, opt): the same for a single element
+  function elements(src, opt) {
+    opt = Object.assign({}, opt || {}, { groups: true });
+    errors = []; ROLES = !!opt.roles; CLASSES = !!opt.classes; FROM_SBGN = !!opt.sbgn;
+    var doc = typeof src === 'string' ? new (root.DOMParser || opt.DOMParser)().parseFromString(src, 'application/xml') : src;
+    var m = new YMap(doc, opt), byE = {};
+    if (errors.length) return null;
+    m.order.forEach(function (item) { if (item[0] === 'e') byE[get(item[1][0], 'id')] = item[1]; });
+    return { one: function (id) {
+      ROLES = !!opt.roles; CLASSES = !!opt.classes; FROM_SBGN = !!opt.sbgn;
+      if (has(m.nodes, id)) return m.nodes[id].svg || null;
+      return has(byE, id) ? m.edgeSvg(byE[id][0], byE[id][1]) || null : null;
+    } };
+  }
+  function one(src, id, opt) { var E = elements(src, opt); return E && E.one(id); }
+  var api = { render: render, live: live, elements: elements, one: one, num: num, dist: dist };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.yrender = api;
 
   if (typeof require !== 'undefined' && typeof module !== 'undefined' && require.main === module) {   // node yrender.js map.graphml map.svg [--roles] [--classes] [--sbgn]

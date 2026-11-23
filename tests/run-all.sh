@@ -47,5 +47,6 @@ t 4 node tests/cd-join.js python3
 t 4 node tests/sbgn-names.js python3
 t 4 node tests/sbgn-stack.js python3
 t 4 node tests/membership.js python3
+t 4 node tests/one-element.js
 if [ -n "$failed" ]; then echo "Failed:$failed"; exit 1; fi
 echo "All $ran tests passed${part:+ (part $part)}."
