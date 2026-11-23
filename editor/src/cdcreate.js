@@ -2,6 +2,7 @@ import { shared, V } from './state.js';
 import { at, boxOf, changed, commit, cutShape, edgeAt, edges2, editing, f1, fmt, gridSet, grown, handleMarks, hit, keyFlush, kindWindow, landMarks, lateItem, line, map, near, nodes2, on, paint, parse, ports, procPlaces, quiet, rclick, render, setBoxes, shapeD, subItem, sx, sy, toGrid, warn, x0, y0 } from './core.js';
 import { bx, liveOff, sizeOff } from './live.js';
 import { cdJs, cdMk, cdNow, cdRebuild, nodeCentre, nodePlaces } from './celldesigner.js';
+import NT from '../../renderers/converter/notation.js';   // the notation's kinds and rules table, as on the SBGN maps (create.js ruleSays)
 import { ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues, confettiLine, confettiOne, confettiPick, confettiSquares, hex, iconKeep, iconSpread, innermost, joinPack, keepLook, keepMapChoice, link, linkEnd, looksKept, mapCols, nameAt, origAll, pNow, pal, palBlocks, palDid, palDrop, palId, palShow, palSigns, palSignsEl, palStore, palStyle, palTake, placedAt, propRows, styleRow, svAt, svDelete, svIcons, textsOf, tool, typeIn } from './create.js';
 
     // ---------- the CellDesigner palette (editor/src/cdcreate.js) ----------
@@ -507,12 +508,13 @@ import { ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues, confet
     // the main line (cdrender SQUARE's order, 2 to 7). Anything else: the centre
     var cdClsMemo;
     function __run16() {   // run at start, in order (__start)
-    cdClsMemo = [null, {}];
+    cdClsMemo = { t: null, cls: {}, about: {} };
     }
+    function cdMemo() { var t = shared.cd.now; if (cdClsMemo.t !== t) cdClsMemo = { t: t, cls: {}, about: {} }; return cdClsMemo; }   // read once per file: a species' class (cdClsOf), a reaction (cdAbout)
     function cdClsOf(id) {
-      if (cdClsMemo[0] !== shared.cd.now) cdClsMemo = [shared.cd.now, {}];
-      if (!(id in cdClsMemo[1])) { try { var A = cdMk.aliasInfo(shared.cd.now, id); cdClsMemo[1][id] = A.cls && [A.cls, A.homodimer || 1]; } catch (e) { cdClsMemo[1][id] = null; } }
-      return cdClsMemo[1][id];
+      var M = cdMemo();
+      if (!(id in M.cls)) { try { var A = cdMk.aliasInfo(M.t, id); M.cls[id] = A.cls && [A.cls, A.homodimer || 1]; } catch (e) { M.cls[id] = null; } }
+      return M.cls[id];
     }
     function cdPort(i, P, how) {   // all: every place offered, for the marks (cdLand)
       var b = bx(i), C = [b[0] + b[2] / 2, b[1] + b[3] / 2], best = null, bd = Infinity, all = [];
@@ -537,10 +539,71 @@ import { ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues, confet
     // give, silently; never a new reaction for a modifier picked between two species (Reduced notation unticked); a
     // catalysis between species a physical stimulation in reduced notation where it is ticked
     function cdHow0(a, b, P) {
-      var want = tool && ARCS[tool.kind] ? cdKind(tool.kind) : null, h = cdKind0(a, b, P, want), g;
-      if (h && h.no && want && tool.sticky && (g = cdKind0(a, b, P, null)) && !g.no && !(g.rx && cdMk.MODS.indexOf(want) >= 0)) return g;
-      if (h && h.no && want === 'CATALYSIS' && tool.sticky && (g = cdKind0(a, b, P, 'PHYSICAL_STIMULATION')) && !g.no) return g;   // between species a reduced physical stimulation, an activation
+      var want = tool && ARCS[tool.kind] ? cdKind(tool.kind) : null, h = cdKindOk(a, b, P, want), g;
+      if (h && h.no && want && tool.sticky && (g = cdKindOk(a, b, P, null)) && !g.no && !(g.rx && cdMk.MODS.indexOf(want) >= 0)) return g;
+      if (h && h.no && want === 'CATALYSIS' && tool.sticky && (g = cdKindOk(a, b, P, 'PHYSICAL_STIMULATION')) && !g.no) return g;   // between species a reduced physical stimulation, an activation
       return h;
+    }
+    function cdKindOk(a, b, P, want) {   // cdKind0's kind for the gesture, then the rules table's answer for it (cdSays)
+      var h = cdKind0(a, b, P, want), m = h && !h.no && cdSays(h, a, b);
+      return m ? { no: m } : h;
+    }
+    // ---------- the rules table (notation.js) on a CellDesigner map, the same rows as on the SBGN maps (create.js ruleSays) ----------
+    // A node's kind by its CellDesigner class (a species', a gate's type; a reaction's square a process, as is -1, the
+    // reaction a line between two species makes); the sets: PD, with reduced notation where the Reduced notation tick box
+    // is ticked; the checks answered from the reaction in the file. A node with no kind is left to cdKind0 and takes0
+    function cdAbout(rid) {   // cd_make.about of a reaction, once per file (takes asks it for every node under the pointer)
+      var M = cdMemo();
+      if (!(rid in M.about)) { try { M.about[rid] = cdMk.about(M.t, rid); } catch (e) { M.about[rid] = null; } }
+      return M.about[rid];
+    }
+    function cdGateOf(i) {   // a gate's type and inputs: a modifier's gate by its number, a gate between species its reaction's
+      var m = nodes2[i].id.match(/^(.*)\|g(\d*)$/), A = m && cdAbout(m[1]);
+      return !A ? null : m[2] ? A.gates[+m[2]] : A.gate && { kind: A.gate.kind, inputs: A.inputs || [] };
+    }
+    function cdNt(i) {
+      var r = i < 0 ? 'proc' : cdRole(i), c;
+      if (r === 'proc') return { kind: 'process', cls: 'process' };
+      if (r === 'gate') { var g = cdGateOf(i); return g ? NT.nodeKind('celldesigner', 'BOOLEAN_LOGIC_GATE_' + g.kind) : null; }
+      return r === 'epn' && (c = cdClsOf(nodes2[i].id)) ? NT.nodeKind('celldesigner', c[0]) : null;
+    }
+    function cdReduced(type) { return /^(UNKNOWN_)?(REDUCED_|POSITIVE_INFLUENCE|NEGATIVE_INFLUENCE)/.test(type || ''); }   // a reaction type of reduced notation (notation.js CD_REDUCED)
+    // the table's answer for a line of class cls from s to t; held: the line being moved is a reduced notation reaction
+    function cdAsk(cls, s, t, held) {
+      var ks = cdNt(s), kt = cdNt(t);
+      if (!ks || !kt) return null;
+      return NT.allowed(cls, ks, kt, { sets: ['pd'].concat(cdStrict() ? [] : ['reduced']), held: !!held, check: function (c) {
+        if (c === 'oneInput') { var g = cdGateOf(t); return g && g.inputs && g.inputs.length ? 'A NOT gate has one input, and this one has it.' : null; }
+        if (c === 'already' && t >= 0 && cdRole(t) === 'proc' && NT.MODS.indexOf(cls) >= 0) {   // the same modifier of the same species on that reaction
+          var A = cdAbout(cdRid(t)), al = nodes2[s].id;
+          return A && A.mods.some(function (type, j) { return NT.arcKind('celldesigner', type) === cls && A.modAliases[j] === al; }) ? 'This ' + cls + ' is there already.' : null;
+        }
+        return null;   // a gate's one line out is made with it; CellDesigner checks no reversible reaction
+      } });
+    }
+    function cdSays(h, a, b) {   // cdKind0's answer h for a line from a to b, put to the table
+      if (h.rx) return cdAsk('consumption', a, -1) || cdAsk('production', -1, b);
+      if (h.red) return cdAsk(NT.arcKind('celldesigner', h.red), a, b);
+      if (h.gate) return cdAsk('logic arc', a, b);
+      if (h.mod) return cdAsk(NT.arcKind('celldesigner', h.mod), a, b);
+      if (h.part) return h.part === 'reactant' ? cdAsk('consumption', a, b) : cdAsk('production', a, b);
+      return null;
+    }
+    // an end of line k dragged onto species i (core.js takes, after takes0's own test): the table's answer for the line as
+    // it would be; a reduced notation reaction asked between its two species
+    function cdMoveSays(k, end, i) {
+      var e = edges2[k], m = e.id.match(/^(.*)\|(a|b|[rpmi])(\d*)$/), A = m && cdAbout(m[1]);
+      if (!A) return null;
+      var s = end ? e.s : i, t = end ? i : e.t;
+      if (cdReduced(A.type)) {
+        var ea = edges2.filter(function (q) { return q.id === m[1] + '|a'; })[0], eb = edges2.filter(function (q) { return q.id === m[1] + '|b'; })[0];
+        var was = end ? e.t : e.s, ends = [ea ? ea.s : null, eb ? eb.t : ea ? ea.t : null].map(function (x) { return x === was ? i : x; });
+        if (ends[0] == null || ends[1] == null) return null;
+        var pic = function (x) { var q = cdNt(x); return !!q && q.kind === 'phenotype'; };   // held while its source stays the same sort (a species; a phenotype)
+        return cdAsk(NT.arcKind('celldesigner', A.type), ends[0], ends[1], !ea || pic(ea.s) === pic(ends[0]));
+      }
+      var cls = /^[ar]$/.test(m[2]) ? 'consumption' : /^[bp]$/.test(m[2]) ? 'production' : m[2] === 'm' ? NT.arcKind('celldesigner', A.mods[+m[3]]) : 'logic arc';
+      return cls ? cdAsk(cls, s, t) : null;
     }
     function cdKind0(a, b, P, want) {
       if (b < 0) return null;
@@ -1480,4 +1543,4 @@ import { ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues, confet
     }
 
     export function __start() { __run1(); __run2(); __run3(); __run5(); __run6(); __run7(); __run8(); __run9(); __run10(); __run12(); __run13(); __run14(); __run15(); __run16(); __run17(); __run18(); __run19(); __run20(); __run21(); __run22(); __run23(); __run24(); __run25(); __run27(); __run28(); __run29(); __run30(); __run31(); __run32(); __run33(); }   // the part's statements, in their order
-    export { CD_DEF_KEY, CD_GATE, PF_CD, cdCardDown, cdCheck, cdClick, cdClsOf, cdDeleteItem, cdFeat, cdFill, cdFront, cdGateMarks, cdGhost, cdHow, cdInfo, cdItems, cdKind, cdLineAt, cdLink, cdLinkMarks, cdLiveEnds, cdMake, cdNameDown, cdNameOf, cdOnLine, cdOverMarks, cdPal, cdRename, cdRole, cdSsTyped, cdStartOk, cdSvDelete, cdSvList, cdSvMove, cdSvOpen };
+    export { CD_DEF_KEY, CD_GATE, PF_CD, cdCardDown, cdCheck, cdClick, cdClsOf, cdDeleteItem, cdFeat, cdFill, cdFront, cdGateMarks, cdGhost, cdHow, cdInfo, cdItems, cdKind, cdLineAt, cdLink, cdLinkMarks, cdLiveEnds, cdMake, cdMoveSays, cdNameDown, cdNameOf, cdOnLine, cdOverMarks, cdPal, cdRename, cdRole, cdSsTyped, cdStartOk, cdSvDelete, cdSvList, cdSvMove, cdSvOpen };

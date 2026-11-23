@@ -16,7 +16,7 @@
 //     notation reaction is in the file, else pd; GraphML: null (the editor's palette tab and tick box decide).
 //   allowed(arc, from, to, ctx) -> null, or the reason the line is refused. from, to: nodeKind's answers. ctx: { sets:
 //     the sets on (pd, reduced, af, strict, and the proposed fanout; house always), check(name): a reason or null for a
-//     rule that needs the map }. A row with `unless` is off while one of those sets is on. strict (the palette's Strict
+//     rule that needs the map, held: the line asked is one being moved that is in reduced notation already }. A row with `unless` is off while one of those sets is on. strict (the palette's Strict
 //     SBGN): the specification alone, so reduced and fanout are off with it, the rows marked `unless: strict` (what
 //     CellDesigner allows beyond it) too, and the rows of the set strict (what it refuses that CellDesigner allows) on.
 //   paletteOff(sets) -> { sign: reason }: the palette's signs a set takes away (the CellDesigner compatible tick box).
@@ -75,6 +75,12 @@
   }
   var HEAD = { delta: 'production', white_circle: 'catalysis', t_shape: 'inhibition', white_diamond: 'modulation',
                white_delta: 'stimulation', white_delta_bar: 'necessary stimulation', crows_foot_one: 'inhibition' };   // sbgn_edit ARROW, read back
+  function arcHead(format, cls) {   // the arrowhead a GraphML line of that kind is drawn with ('none': a plain line)
+    if (format !== 'graphml') return null;
+    if (cls === 'inhibition') return 't_shape';
+    for (var h in HEAD) if (HEAD[h] === cls) return h;
+    return ARCS.indexOf(cls) >= 0 ? 'none' : null;
+  }
   var SBGN_ARC = { 'positive influence': 'stimulation', 'negative influence': 'inhibition', 'unknown influence': 'modulation' };
   var CD_ARC = {
     CATALYSIS: 'catalysis', UNKNOWN_CATALYSIS: 'catalysis', INHIBITION: 'inhibition', UNKNOWN_INHIBITION: 'inhibition',
@@ -107,8 +113,8 @@
   // caller (ctx.check): gateOneOut (a gate's one line out), oneInput (a NOT gate's or a delay's one input), already (the
   // same line there already), tagRoom (a tag's one line), reversible (a reversible process takes no consumption),
   // oneCatalysis and oneNecessary (a process's one catalysis, its one necessary stimulation), emptyOne (an empty set's one
-  // consumption or production). The audit of every row against the specification and CellDesigner: the viewer's
-  // notes/rules-audit.md.
+  // consumption or production); a row with `held` holds only for a line
+  // being moved that is in reduced notation already (ctx.held). The audit of every row against the specification and CellDesigner: the viewer's notes/rules-audit.md.
   var RULES = {
     need: {
       consumption: 'A consumption goes from an entity into a process.',
@@ -139,7 +145,9 @@
         from: ['phenotype'], to: ['process'], why: 'CellDesigner’s phenotype is a species: a reaction’s reactant or modifier.' },
       { id: 'phenotype-product', sets: ['house'], unless: ['strict'], arc: ['production'], from: ['process'], to: ['phenotype'],
         why: 'CellDesigner’s phenotype is a species: a reaction’s product.' },
-      { id: 'af-influence', sets: ['af'], arc: INFL, from: ['entity', 'gate'], to: ['entity', 'phenotype'], spec: 'AF 3.3' }
+      { id: 'af-influence', sets: ['af'], arc: INFL, from: ['entity', 'gate'], to: ['entity', 'phenotype'], spec: 'AF 3.3' },
+      { id: 'reduced-held', sets: ['house'], arc: INFL, from: ['entity', 'gate', 'phenotype', 'submap'], to: ['entity'], held: true,
+        why: 'A line the map already has in reduced notation may be moved; a new one is drawn only with Reduced notation ticked.' }
     ],
     refuse: [
       { id: 'gate-one-out', sets: ['house'], arc: ['*'], from: ['gate:not', 'gate:delay', 'gate:equivalence'], to: ['*'], check: 'gateOneOut', spec: '3.4.1' },
@@ -200,7 +208,7 @@
     }
     for (i = 0; i < RULES.allow.length; i++) {
       r = RULES.allow[i];
-      if (!on(r, sets) || !fits(r, arc, from, to)) continue;
+      if (!on(r, sets) || (r.held && !ctx.held) || !fits(r, arc, from, to)) continue;
       return r.check ? check(r.check) : null;
     }
     return RULES.need[arc];
@@ -211,6 +219,6 @@
     return o;
   }
 
-  var api = { ARCS: ARCS, MODS: MODS, RULES: RULES, nodeKind: nodeKind, arcKind: arcKind, mapKind: mapKind, allowed: allowed, paletteOff: paletteOff };
+  var api = { ARCS: ARCS, MODS: MODS, RULES: RULES, nodeKind: nodeKind, arcKind: arcKind, arcHead: arcHead, mapKind: mapKind, allowed: allowed, paletteOff: paletteOff };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.notation = api;
 })(typeof self !== 'undefined' ? self : this);

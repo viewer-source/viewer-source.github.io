@@ -478,6 +478,12 @@
           white_delta_bar: "necessary stimulation",
           crows_foot_one: "inhibition"
         };
+        function arcHead(format, cls) {
+          if (format !== "graphml") return null;
+          if (cls === "inhibition") return "t_shape";
+          for (var h in HEAD) if (HEAD[h] === cls) return h;
+          return ARCS2.indexOf(cls) >= 0 ? "none" : null;
+        }
         var SBGN_ARC = { "positive influence": "stimulation", "negative influence": "inhibition", "unknown influence": "modulation" };
         var CD_ARC = {
           CATALYSIS: "catalysis",
@@ -580,7 +586,16 @@
               to: ["phenotype"],
               why: "CellDesigner\u2019s phenotype is a species: a reaction\u2019s product."
             },
-            { id: "af-influence", sets: ["af"], arc: INFL2, from: ["entity", "gate"], to: ["entity", "phenotype"], spec: "AF 3.3" }
+            { id: "af-influence", sets: ["af"], arc: INFL2, from: ["entity", "gate"], to: ["entity", "phenotype"], spec: "AF 3.3" },
+            {
+              id: "reduced-held",
+              sets: ["house"],
+              arc: INFL2,
+              from: ["entity", "gate", "phenotype", "submap"],
+              to: ["entity"],
+              held: true,
+              why: "A line the map already has in reduced notation may be moved; a new one is drawn only with Reduced notation ticked."
+            }
           ],
           refuse: [
             { id: "gate-one-out", sets: ["house"], arc: ["*"], from: ["gate:not", "gate:delay", "gate:equivalence"], to: ["*"], check: "gateOneOut", spec: "3.4.1" },
@@ -705,7 +720,7 @@
           }
           for (i = 0; i < RULES.allow.length; i++) {
             r = RULES.allow[i];
-            if (!on2(r, sets) || !fits(r, arc, from, to)) continue;
+            if (!on2(r, sets) || r.held && !ctx.held || !fits(r, arc, from, to)) continue;
             return r.check ? check(r.check) : null;
           }
           return RULES.need[arc];
@@ -719,7 +734,7 @@
           });
           return o;
         }
-        var api2 = { ARCS: ARCS2, MODS: MODS2, RULES, nodeKind, arcKind, mapKind, allowed, paletteOff };
+        var api2 = { ARCS: ARCS2, MODS: MODS2, RULES, nodeKind, arcKind, arcHead, mapKind, allowed, paletteOff };
         if (typeof module !== "undefined" && module.exports) module.exports = api2;
         else root.notation = api2;
       })(typeof self !== "undefined" ? self : exports);
@@ -1360,6 +1375,9 @@
     __run22();
     __run32();
   }
+
+  // editor/src/cdcreate.js
+  var import_notation2 = __toESM(require_notation());
 
   // editor/src/own.js
   function draftPut(id, rec) {
@@ -5766,7 +5784,7 @@
       var afN = afKind();
       if (now) return lateItem(["Change identity", subItem(function(r, done) {
         return kindWindow(r, PAL_PD[4][1].filter(function(q) {
-          return MODK[q[0]] && !(q[0] === "catalysis" && (afN || roleOf(ed.t) === "epn" || pdLimit(ed.s, ed.t, "catalysis")));
+          return MODK[q[0]] && !(q[0] === "catalysis" && (afN || ruleSays("catalysis", ed.s, ed.t, h.e)));
         }).map(function(q) {
           var c = q[0], af = afN && sbJs.AF_ARC[c];
           return { name: af ? af[0].toUpperCase() + af.slice(1) : q[1], own: c === now, go: function() {
@@ -7310,75 +7328,86 @@
     if (h && h.no && want === "catalysis" && tool.sticky && (g = linkKind(a, b, P, "stimulation")) && !g.no) return g;
     return h;
   }
-  function pdLimit(s, t, cls) {
-    if (shared.cd || palLangNow() !== "pd" || s < 0 || t < 0) return null;
-    var ks = nodes2[s].shape.kind, kt = nodes2[t].shape.kind, flux = cls === "pair" || cls === "consumption" || cls === "production";
-    var mod = /^(catalysis|modulation|stimulation|inhibition|necessary stimulation)$/.test(cls), loose = !sbgnStrict();
-    if (ks === "EmptySet" && !(cls === "pair" || cls === "consumption") && !(mod && loose) || kt === "EmptySet" && !(cls === "pair" || cls === "production")) return "An empty set is only consumed or produced.";
-    if (ks === "PerturbingAgent" && (flux || cls === "catalysis" || cls === "logic arc") || kt === "PerturbingAgent") return "A perturbing agent only starts a modulation, stimulation, inhibition or necessary stimulation.";
-    if (cls === "catalysis" && ks === "NucleicAcidFeature" && !loose) return "A nucleic acid feature is no catalyst.";
-    if (cls === "catalysis" && (ks === "Phenotype" && !loose || ks === "Submap" || kt === "Submap")) return "A catalysis goes from an entity to a process.";
-    if (cls === "consumption" && roleOf(t) === "proc") {
-      var rv = sbJs.reversibility(shared.text, nodes2[t].id, { sbgn: src() });
-      if (rv && rv.rev) return "A reversible process has productions on both sides.";
-    }
-    return null;
-  }
   function fans(g) {
     if (!V.fanout || sbgnStrict() || nodes2[g].eq) return false;
     var l = nodes2[g].el.getElementsByTagNameNS(Y, "NodeLabel")[0], w = l ? l.textContent.trim().toUpperCase() : "";
     return w === "AND" || w === "OR";
   }
-  function strictCount(s, t, cls, skip) {
-    if (!sbgnStrict()) return null;
-    var n = function(f) {
+  function ntKind(i) {
+    if (i < 0) return { kind: "process", cls: "process" };
+    var r = roleOf(i), sub = nodes2[i].shape.kind === "Submap" && !nodes2[i].comp;
+    if (!r && !sub) return null;
+    var l = nodes2[i].el.getElementsByTagNameNS(Y, "NodeLabel")[0];
+    return import_notation.default.nodeKind("graphml", r === "proc" ? "Process" : nodes2[i].shape.kind, l ? l.textContent.trim() : "");
+  }
+  function ntSets() {
+    return (palLangNow() === "af" ? ["af"] : hybOn() ? ["pd", "reduced"] : ["pd"]).concat(V.fanout ? ["fanout"] : [], sbgnStrict() ? ["strict"] : []);
+  }
+  function ntCheck(cls, s, t, skip) {
+    var a = skip >= 0 && import_notation.default.arcKind("graphml", edges2[skip].arr[1]) === cls ? edges2[skip].arr[1] : import_notation.default.arcHead("graphml", cls);
+    var lines = function(f) {
       return edges2.filter(function(q, j) {
         return j !== skip && f(q);
       }).length;
     };
-    if ((cls === "catalysis" || cls === "necessary stimulation") && roleOf(t) === "proc" && n(function(q) {
-      return q.t === t && q.arr[1] === (cls === "catalysis" ? "white_circle" : "white_delta_bar");
-    })) return "A process has one " + cls + " in SBGN (Strict SBGN is ticked in the palette).";
-    var empty = function(x) {
-      return nodes2[x].shape.kind === "EmptySet";
+    return function(c) {
+      if (c === "gateOneOut") return lines(function(q) {
+        return q.s === s;
+      }) ? "A logic gate has one line out, and this one has it." : null;
+      if (c === "oneInput") return lines(function(q) {
+        return q.t === t;
+      }) ? "This gate has one input, and it has it." : null;
+      if (c === "already") return s >= 0 && t >= 0 && lines(function(q) {
+        return q.arr[1] === a && (q.s === s && q.t === t || a === "none" && q.s === t && q.t === s);
+      }) ? "This line is there already." : null;
+      if (c === "tagRoom") {
+        var tg = roleOf(s) === "tag" ? s : t;
+        return tagRoom(tg, tg === s ? t : s, skip);
+      }
+      if (c === "reversible") {
+        var rv = t >= 0 && sbJs.reversibility(shared.text, nodes2[t].id, { sbgn: src() });
+        return rv && rv.rev ? "A reversible process has productions on both sides." : null;
+      }
+      if (c === "oneCatalysis" || c === "oneNecessary") return t >= 0 && lines(function(q) {
+        return q.t === t && q.arr[1] === a;
+      }) ? "A process has one " + cls + " in SBGN (Strict SBGN is ticked in the palette)." : null;
+      if (c === "emptyOne") {
+        var x = cls === "consumption" ? s : t;
+        return x >= 0 && lines(function(q) {
+          return q.s === x || q.t === x;
+        }) ? "An empty set has one line in SBGN (Strict SBGN is ticked in the palette)." : null;
+      }
+      return null;
     };
-    if (cls === "consumption" && empty(s) || cls === "production" && empty(t)) {
-      var e = empty(s) && cls === "consumption" ? s : t;
-      if (n(function(q) {
-        return q.s === e || q.t === e;
-      })) return "An empty set has one line in SBGN (Strict SBGN is ticked in the palette).";
-    }
-    return null;
   }
-  function moveLimit(k, end, i) {
-    var e = edges2[k], s = end ? e.s : i, t = end ? i : e.t, a = e.arr[1];
-    if (edges2.some(function(q, j) {
-      return j !== k && q.arr[1] === a && (q.s === s && q.t === t || a === "none" && q.s === t && q.t === s);
-    })) return "This line is there already.";
-    if (shared.cd) return null;
-    var others = function(g, into) {
-      return edges2.filter(function(q, j) {
-        return j !== k && (into ? q.t === g : q.s === g);
-      }).length;
+  function ntHeld(k, s) {
+    var h = k >= 0 ? edges2[k] : null, hs = h && ntKind(h.s), ht = h && ntKind(h.t), ns = h && ntKind(s);
+    var pic = function(x) {
+      return x.kind === "phenotype" || x.kind === "submap";
     };
-    var word = function(g) {
-      var l = nodes2[g].el.getElementsByTagNameNS(Y, "NodeLabel")[0];
-      return l ? l.textContent.trim().toUpperCase() : "";
-    };
-    if (a === "none" && roleOf(s) === "proc") return "A consumption goes from an entity into a process.";
-    var sc = strictCount(s, t, a === "delta" ? "production" : a === "none" ? "consumption" : import_notation.default.arcKind("graphml", a), k);
-    if (sc) return sc;
-    if (!end && roleOf(s) === "gate" && !fans(s) && others(s, false)) return "A logic gate has one line out, and this one has it.";
-    if (end && roleOf(t) === "gate" && /^(NOT|\u03c4)$/.test(word(t)) && others(t, true)) return "This gate has one input, and it has it.";
-    if (MODS.test(a) && nodes2[s].eq) return "An equivalence\u2019s line goes to an entity.";
-    if (a === "none" && !end && nodes2[e.s].eq && !nodes2[i].eq) return "An equivalence\u2019s line goes to an entity.";
-    if (nodes2[i].shape.kind === "Tag") return a !== "none" ? "A tag is joined to an entity by an equivalence arc." : tagRoom(i, end ? s : t, k);
-    if (a === "none" && roleOf(end ? s : t) === "tag") return tagRoom(end ? s : t, i, k);
-    if (a === "none" && roleOf(s) === "gate" && roleOf(t) === "gate" && (nodes2[s].eq || nodes2[t].eq)) return "An equivalence joins entities only.";
-    return null;
+    return !!(ht && hs && ns) && pic(hs) === pic(ns) && (ht.kind === "entity" || pic(hs) && ht.kind !== "process");
+  }
+  function ruleSays(cls, s, t, skip) {
+    var ks = ntKind(s), kt = ntKind(t);
+    if (skip == null) skip = -1;
+    if (!ks || !kt) return null;
+    return import_notation.default.allowed(cls, ks, kt, { sets: ntSets(), check: ntCheck(cls, s, t, skip), held: ntHeld(skip, s) });
+  }
+  function moveCls(k, s, t) {
+    var e = edges2[k], kt = ntKind(t);
+    if (e.arr[1] !== "none") return import_notation.default.arcKind("graphml", e.arr[1]);
+    if ([e.s, e.t, s, t].some(function(x) {
+      return roleOf(x) === "tag";
+    })) return "equivalence arc";
+    return import_notation.default.arcKind("graphml", "none", kt ? kt.kind : "") || "logic arc";
+  }
+  function moveSays(k, end, i) {
+    if (shared.cd) return cdMoveSays(k, end, i);
+    var e = edges2[k], s = end ? e.s : i, t = end ? i : e.t;
+    return ruleSays(moveCls(k, s, t), s, t, k);
   }
   function linkKind(a, b, P, want) {
-    var r = linkKind0(a, b, P, want), m = r && !r.no && (pdLimit(a, b, r.pair ? "pair" : r.cls) || !r.pair && strictCount(a, b, r.cls, -1));
+    var r = linkKind0(a, b, P, want), m = r && !r.no && (r.pair ? ruleSays("consumption", a, -1) || ruleSays("production", -1, b) : ruleSays(r.cls, a, b));
     return m ? { no: m } : r;
   }
   function linkKind0(a, b, P, want) {
@@ -7473,54 +7502,9 @@
     var keep = palSet, rows = {};
     palSet = { lang: o && o.lang || "pd", look: palSet.look, strict: !!(o && o.strict), sbgn: !!(o && o.sbgn) };
     try {
-      var word = function(i) {
-        var l = nodes2[i].el.getElementsByTagNameNS(Y, "NodeLabel")[0];
-        return l ? l.textContent.trim() : "";
-      };
-      var kindOf2 = function(i) {
-        var r = roleOf(i), sub = nodes2[i].shape.kind === "Submap" && !nodes2[i].comp;
-        if (!r && !sub) return null;
-        var k = import_notation.default.nodeKind("graphml", r === "proc" ? "Process" : nodes2[i].shape.kind, word(i));
-        return k ? { kind: k.kind, cls: k.cls } : null;
-      };
-      var name2 = function(k) {
+      var kindOf2 = ntKind, name2 = function(k) {
         return k.kind + ":" + k.cls;
-      };
-      var sets = (palLangNow() === "af" ? ["af"] : hybOn() ? ["pd", "reduced"] : ["pd"]).concat(V.fanout ? ["fanout"] : [], sbgnStrict() ? ["strict"] : []);
-      var checks = function(s, t, a, skip) {
-        var other = function(q, j) {
-          return j !== skip;
-        };
-        return function(c) {
-          if (c === "gateOneOut") return edges2.some(function(q, j) {
-            return other(q, j) && q.s === s;
-          }) ? "A logic gate has one line out, and this one has it." : null;
-          if (c === "oneInput") return edges2.some(function(q, j) {
-            return other(q, j) && q.t === t;
-          }) ? "This gate has one input, and it has it." : null;
-          if (c === "already") return edges2.some(function(q, j) {
-            return other(q, j) && (q.s === s && q.t === t || a === "none" && q.s === t && q.t === s) && q.arr[1] === a;
-          }) ? "This line is there already." : null;
-          if (c === "tagRoom") {
-            var tg = roleOf(s) === "tag" ? s : t;
-            return tagRoom(tg, tg === s ? t : s, skip == null ? -1 : skip);
-          }
-          if (c === "oneCatalysis" || c === "oneNecessary" || c === "emptyOne") {
-            var SV2 = palSet.sbgn;
-            palSet.sbgn = true;
-            try {
-              return strictCount(s, t, c === "oneCatalysis" ? "catalysis" : c === "oneNecessary" ? "necessary stimulation" : roleOf(s) === "proc" ? "production" : "consumption", skip == null ? -1 : skip);
-            } finally {
-              palSet.sbgn = SV2;
-            }
-          }
-          if (c === "reversible") {
-            var m = pdLimit(s, t, "consumption");
-            return m && /reversible/.test(m) ? m : null;
-          }
-          return null;
-        };
-      };
+      }, sets = ntSets();
       edges2.forEach(function(e, k) {
         var a = e.arr[1];
         if (a !== "none" && !import_notation.default.arcKind("graphml", a)) return;
@@ -7529,10 +7513,7 @@
             if (i === e.s || i === e.t) return;
             var s = end ? e.s : i, t = end ? i : e.t, ks = kindOf2(s), kt = kindOf2(t);
             if (!ks || !kt) return;
-            var tagLine = a === "none" && [e.s, e.t].some(function(x) {
-              return roleOf(x) === "tag";
-            });
-            var c = a !== "none" ? import_notation.default.arcKind("graphml", a) : tagLine || ks.kind === "tag" || kt.kind === "tag" ? "equivalence arc" : import_notation.default.arcKind("graphml", "none", kt.kind) || "logic arc";
+            var c = moveCls(k, s, t);
             var was = a !== "none" ? c : import_notation.default.arcKind("graphml", "none", kindOf2(e.t) ? kindOf2(e.t).kind : "") || "logic arc";
             var key = [was, end, name2(ks), name2(kt), name2(kindOf2(e.s) || { kind: "?" }), name2(kindOf2(e.t) || { kind: "?" })].join("|");
             if (rows[key]) return;
@@ -7546,8 +7527,8 @@
               line: name2(kindOf2(e.s) || { kind: "?" }) + " > " + name2(kindOf2(e.t) || { kind: "?" }),
               drag: !!takes(k, end, i),
               draw: !h ? "nothing" : h.no ? h.no : h.pair ? "pair" : h.cls,
-              tableDrag: import_notation.default.allowed(c, ks, kt, { sets, check: checks(s, t, a, k) }),
-              tableDraw: import_notation.default.allowed(c, ks, kt, { sets, check: checks(s, t, a, null) })
+              tableDrag: import_notation.default.allowed(c, ks, kt, { sets, check: ntCheck(c, s, t, k), held: ntHeld(k, s) }),
+              tableDraw: import_notation.default.allowed(c, ks, kt, { sets, check: ntCheck(c, s, t, -1) })
             };
           });
         });
@@ -9400,19 +9381,24 @@
   }
   var cdClsMemo;
   function __run163() {
-    cdClsMemo = [null, {}];
+    cdClsMemo = { t: null, cls: {}, about: {} };
+  }
+  function cdMemo() {
+    var t = shared.cd.now;
+    if (cdClsMemo.t !== t) cdClsMemo = { t, cls: {}, about: {} };
+    return cdClsMemo;
   }
   function cdClsOf(id) {
-    if (cdClsMemo[0] !== shared.cd.now) cdClsMemo = [shared.cd.now, {}];
-    if (!(id in cdClsMemo[1])) {
+    var M = cdMemo();
+    if (!(id in M.cls)) {
       try {
-        var A = cdMk.aliasInfo(shared.cd.now, id);
-        cdClsMemo[1][id] = A.cls && [A.cls, A.homodimer || 1];
+        var A = cdMk.aliasInfo(M.t, id);
+        M.cls[id] = A.cls && [A.cls, A.homodimer || 1];
       } catch (e) {
-        cdClsMemo[1][id] = null;
+        M.cls[id] = null;
       }
     }
-    return cdClsMemo[1][id];
+    return M.cls[id];
   }
   function cdPort(i, P, how) {
     var b = bx(i), C = [b[0] + b[2] / 2, b[1] + b[3] / 2], best = null, bd = Infinity, all = [];
@@ -9449,10 +9435,89 @@
     return best;
   }
   function cdHow0(a, b, P) {
-    var want = tool && ARCS[tool.kind] ? cdKind(tool.kind) : null, h = cdKind0(a, b, P, want), g;
-    if (h && h.no && want && tool.sticky && (g = cdKind0(a, b, P, null)) && !g.no && !(g.rx && cdMk.MODS.indexOf(want) >= 0)) return g;
-    if (h && h.no && want === "CATALYSIS" && tool.sticky && (g = cdKind0(a, b, P, "PHYSICAL_STIMULATION")) && !g.no) return g;
+    var want = tool && ARCS[tool.kind] ? cdKind(tool.kind) : null, h = cdKindOk(a, b, P, want), g;
+    if (h && h.no && want && tool.sticky && (g = cdKindOk(a, b, P, null)) && !g.no && !(g.rx && cdMk.MODS.indexOf(want) >= 0)) return g;
+    if (h && h.no && want === "CATALYSIS" && tool.sticky && (g = cdKindOk(a, b, P, "PHYSICAL_STIMULATION")) && !g.no) return g;
     return h;
+  }
+  function cdKindOk(a, b, P, want) {
+    var h = cdKind0(a, b, P, want), m = h && !h.no && cdSays(h, a, b);
+    return m ? { no: m } : h;
+  }
+  function cdAbout(rid) {
+    var M = cdMemo();
+    if (!(rid in M.about)) {
+      try {
+        M.about[rid] = cdMk.about(M.t, rid);
+      } catch (e) {
+        M.about[rid] = null;
+      }
+    }
+    return M.about[rid];
+  }
+  function cdGateOf(i) {
+    var m = nodes2[i].id.match(/^(.*)\|g(\d*)$/), A = m && cdAbout(m[1]);
+    return !A ? null : m[2] ? A.gates[+m[2]] : A.gate && { kind: A.gate.kind, inputs: A.inputs || [] };
+  }
+  function cdNt(i) {
+    var r = i < 0 ? "proc" : cdRole(i), c;
+    if (r === "proc") return { kind: "process", cls: "process" };
+    if (r === "gate") {
+      var g = cdGateOf(i);
+      return g ? import_notation2.default.nodeKind("celldesigner", "BOOLEAN_LOGIC_GATE_" + g.kind) : null;
+    }
+    return r === "epn" && (c = cdClsOf(nodes2[i].id)) ? import_notation2.default.nodeKind("celldesigner", c[0]) : null;
+  }
+  function cdReduced(type) {
+    return /^(UNKNOWN_)?(REDUCED_|POSITIVE_INFLUENCE|NEGATIVE_INFLUENCE)/.test(type || "");
+  }
+  function cdAsk(cls, s, t, held) {
+    var ks = cdNt(s), kt = cdNt(t);
+    if (!ks || !kt) return null;
+    return import_notation2.default.allowed(cls, ks, kt, { sets: ["pd"].concat(cdStrict() ? [] : ["reduced"]), held: !!held, check: function(c) {
+      if (c === "oneInput") {
+        var g = cdGateOf(t);
+        return g && g.inputs && g.inputs.length ? "A NOT gate has one input, and this one has it." : null;
+      }
+      if (c === "already" && t >= 0 && cdRole(t) === "proc" && import_notation2.default.MODS.indexOf(cls) >= 0) {
+        var A = cdAbout(cdRid(t)), al = nodes2[s].id;
+        return A && A.mods.some(function(type, j) {
+          return import_notation2.default.arcKind("celldesigner", type) === cls && A.modAliases[j] === al;
+        }) ? "This " + cls + " is there already." : null;
+      }
+      return null;
+    } });
+  }
+  function cdSays(h, a, b) {
+    if (h.rx) return cdAsk("consumption", a, -1) || cdAsk("production", -1, b);
+    if (h.red) return cdAsk(import_notation2.default.arcKind("celldesigner", h.red), a, b);
+    if (h.gate) return cdAsk("logic arc", a, b);
+    if (h.mod) return cdAsk(import_notation2.default.arcKind("celldesigner", h.mod), a, b);
+    if (h.part) return h.part === "reactant" ? cdAsk("consumption", a, b) : cdAsk("production", a, b);
+    return null;
+  }
+  function cdMoveSays(k, end, i) {
+    var e = edges2[k], m = e.id.match(/^(.*)\|(a|b|[rpmi])(\d*)$/), A = m && cdAbout(m[1]);
+    if (!A) return null;
+    var s = end ? e.s : i, t = end ? i : e.t;
+    if (cdReduced(A.type)) {
+      var ea = edges2.filter(function(q) {
+        return q.id === m[1] + "|a";
+      })[0], eb = edges2.filter(function(q) {
+        return q.id === m[1] + "|b";
+      })[0];
+      var was = end ? e.t : e.s, ends = [ea ? ea.s : null, eb ? eb.t : ea ? ea.t : null].map(function(x) {
+        return x === was ? i : x;
+      });
+      if (ends[0] == null || ends[1] == null) return null;
+      var pic = function(x) {
+        var q = cdNt(x);
+        return !!q && q.kind === "phenotype";
+      };
+      return cdAsk(import_notation2.default.arcKind("celldesigner", A.type), ends[0], ends[1], !ea || pic(ea.s) === pic(ends[0]));
+    }
+    var cls = /^[ar]$/.test(m[2]) ? "consumption" : /^[bp]$/.test(m[2]) ? "production" : m[2] === "m" ? import_notation2.default.arcKind("celldesigner", A.mods[+m[3]]) : "logic arc";
+    return cls ? cdAsk(cls, s, t) : null;
   }
   function cdKind0(a, b, P, want) {
     if (b < 0) return null;
@@ -11001,9 +11066,9 @@
     });
     return cdp;
   }
-  var cdMemo;
+  var cdMemo2;
   function __run311() {
-    cdMemo = [];
+    cdMemo2 = [];
   }
   function cdDraw(t, g, fit) {
     return cdJs.draw(t, g, { fit: fit == null ? undo.length > 0 : fit, block: gridBlock(), parsed: on ? function(c, d) {
@@ -11056,12 +11121,12 @@
     return g;
   }
   function cdKnown(t) {
-    for (var i = 0; i < cdMemo.length; i++) if (cdMemo[i][0] === t) return cdMemo[i][1];
+    for (var i = 0; i < cdMemo2.length; i++) if (cdMemo2[i][0] === t) return cdMemo2[i][1];
     return null;
   }
   function cdRemember(t, g) {
-    cdMemo.unshift([t, g]);
-    cdMemo.length = Math.min(cdMemo.length, 3);
+    cdMemo2.unshift([t, g]);
+    cdMemo2.length = Math.min(cdMemo2.length, 3);
   }
   function glyphMid(q, B, P, pp) {
     var ea = edges2[q.a], eb = edges2[q.b], o = function(e, a2) {
@@ -15713,10 +15778,7 @@
     return false;
   }
   function takes(k, end, i) {
-    if (!takes0(k, end, i)) return false;
-    if (shared.cd) return true;
-    var e = edges2[k], s = end ? e.s : i, t = end ? i : e.t, a = e.arr[1];
-    return !pdLimit(s, t, a === "delta" ? "production" : a === "white_circle" ? "catalysis" : a === "none" ? roleOf(t) === "proc" ? "consumption" : roleOf(s) === "tag" || roleOf(t) === "tag" ? "equivalence arc" : "logic arc" : "modulation") && !moveLimit(k, end, i);
+    return takes0(k, end, i) && !moveSays(k, end, i);
   }
   function takerAt(pp, P) {
     var R = 4 / V.z, best = null, ba = Infinity;

@@ -5,7 +5,8 @@
 // drawing's with every line), with Reduced notation ticked, unticked, Strict SBGN ticked and on the AF tab. Where dragging or drawing differs
 // from the table, the question is listed. Nothing is saved (no token).
 //   node tests/rules-agree.js [address] [viewer folder: its editor and renderers served in place of the page's] [out.json]
-// It lists and exits 0; with --check it exits 1 on any question answered differently (the check once the rules are one).
+// It lists and exits 0; with --check it exits 1 on any question answered differently: since drawing and dragging ask the
+// table (plan 3 step 6, item 6) every question should agree, and tests/run-browser.sh runs it so.
 var { chromium } = require('playwright');
 var args = process.argv.slice(2), check = args.indexOf('--check') >= 0; args = args.filter(function (a) { return a !== '--check'; });
 var url = args[0] || 'https://viewer-source.github.io/styles/#glycolysis-sbgn', local = args[1], out = args[2], fs = require('fs'), path = require('path');

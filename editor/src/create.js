@@ -3,7 +3,7 @@ import { G, GE, HANDLE, MODS, Y, at, box, boxOf, cdOwn, changed, commit, complex
 import { bx, liveOff, livePose, sizeOff } from './live.js';
 import { cdMk, cdNow, cdRebuild } from './celldesigner.js';
 import { GEO, edOf, sbJs, sbKind } from './sbgn.js';
-import { CD_DEF_KEY, CD_GATE, PF_CD, cdCardDown, cdClick, cdClsOf, cdDeleteItem, cdFeat, cdFill, cdFront, cdGateMarks, cdGhost, cdHow, cdInfo, cdItems, cdKind, cdLineAt, cdLink, cdLinkMarks, cdLiveEnds, cdMake, cdNameDown, cdNameOf, cdOnLine, cdOverMarks, cdPal, cdRename, cdRole, cdSsTyped, cdStartOk, cdSvDelete, cdSvList, cdSvMove, cdSvOpen } from './cdcreate.js';
+import { CD_DEF_KEY, CD_GATE, PF_CD, cdCardDown, cdClick, cdClsOf, cdDeleteItem, cdFeat, cdFill, cdFront, cdGateMarks, cdGhost, cdHow, cdInfo, cdItems, cdKind, cdLineAt, cdLink, cdLinkMarks, cdLiveEnds, cdMake, cdMoveSays, cdNameDown, cdNameOf, cdOnLine, cdOverMarks, cdPal, cdRename, cdRole, cdSsTyped, cdStartOk, cdSvDelete, cdSvList, cdSvMove, cdSvOpen } from './cdcreate.js';
 import { origGh, origPut } from './own.js';
 import NT from '../../renderers/converter/notation.js';   // the notation's kinds and rules table (plan 3 step 6)
 
@@ -1123,7 +1123,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
         var h = hit(P), ed = h && h.e != null && h.p == null ? edges2[h.e] : null, now = ed && Object.keys(MODK).filter(function (c) { return sbJs.ARROW[c] === ed.arr[1]; })[0];
         var afN = afKind();   // an AF map (the map, not the tab): its influences by AF's names, no catalysis there
         if (now) return lateItem(['Change identity', subItem(function (r, done) {   // its kinds by Change identity (core.js kindWindow), the palette's names
-          return kindWindow(r, PAL_PD[4][1].filter(function (q) { return MODK[q[0]] && !(q[0] === 'catalysis' && (afN || roleOf(ed.t) === 'epn' || pdLimit(ed.s, ed.t, 'catalysis'))); }).map(function (q) {
+          return kindWindow(r, PAL_PD[4][1].filter(function (q) { return MODK[q[0]] && !(q[0] === 'catalysis' && (afN || ruleSays('catalysis', ed.s, ed.t, h.e))); }).map(function (q) {
             var c = q[0], af = afN && sbJs.AF_ARC[c];
             return { name: af ? af[0].toUpperCase() + af.slice(1) : q[1], own: c === now, go: function () {
               var t2 = sbJs.arcKind(shared.text, ed.id, c);
@@ -2150,24 +2150,6 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       if (h && h.no && want === 'catalysis' && tool.sticky && (g = linkKind(a, b, P, 'stimulation')) && !g.no) return g;
       return h;
     }
-    // SBGN PD's connectivity table (3.4.1) for what the roles alone do not tell: an empty set is only consumed or
-    // produced, a perturbing agent only starts a modulation (modulation, stimulation, inhibition, necessary
-    // stimulation), a nucleic acid feature is no catalyst. cls: the arc's class, 'pair' for a process made between two
-    // entities (s consumed, t produced). A reason, or null; Activity Flow and CellDesigner maps have rules of their own
-    function pdLimit(s, t, cls) {
-      if (shared.cd || palLangNow() !== 'pd' || s < 0 || t < 0) return null;
-      var ks = nodes2[s].shape.kind, kt = nodes2[t].shape.kind, flux = cls === 'pair' || cls === 'consumption' || cls === 'production';
-      var mod = /^(catalysis|modulation|stimulation|inhibition|necessary stimulation)$/.test(cls), loose = !sbgnStrict();   // Strict SBGN unticked: what CellDesigner also takes (notation.js)
-      if ((ks === 'EmptySet' && !(cls === 'pair' || cls === 'consumption') && !(mod && loose)) || (kt === 'EmptySet' && !(cls === 'pair' || cls === 'production'))) return 'An empty set is only consumed or produced.';   // a degraded species a reaction's modifier
-      if ((ks === 'PerturbingAgent' && (flux || cls === 'catalysis' || cls === 'logic arc')) || kt === 'PerturbingAgent') return 'A perturbing agent only starts a modulation, stimulation, inhibition or necessary stimulation.';
-      if (cls === 'catalysis' && ks === 'NucleicAcidFeature' && !loose) return 'A nucleic acid feature is no catalyst.';   // a gene or an RNA a catalysis
-      if (cls === 'catalysis' && ((ks === 'Phenotype' && !loose) || ks === 'Submap' || kt === 'Submap')) return 'A catalysis goes from an entity to a process.';
-      if (cls === 'consumption' && roleOf(t) === 'proc') {   // a reversible process has productions on both sides, no consumption (3.5.2.5)
-        var rv = sbJs.reversibility(shared.text, nodes2[t].id, { sbgn: src() });
-        if (rv && rv.rev) return 'A reversible process has productions on both sides.';
-      }
-      return null;
-    }
     // Settings' Proposed tick box Demerging links from logic gates: an AND or OR gate may have several lines out (never a NOT
     // gate, a delay or an equivalence)
     function fans(g) {
@@ -2175,38 +2157,64 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       var l = nodes2[g].el.getElementsByTagNameNS(Y, 'NodeLabel')[0], w = l ? l.textContent.trim().toUpperCase() : '';
       return w === 'AND' || w === 'OR';
     }
-    // Strict SBGN's counts (notation.js oneCatalysis, oneNecessary, emptyOne): a line of class cls from s to t, line skip left
-    // out (the line being moved; -1 for a new one). A reason, or null; nothing while Strict SBGN is unticked
-    function strictCount(s, t, cls, skip) {
-      if (!sbgnStrict()) return null;   // off on CellDesigner maps (never ticked there: cdcreate.js keeps its own palette)
-      var n = function (f) { return edges2.filter(function (q, j) { return j !== skip && f(q); }).length; };
-      if ((cls === 'catalysis' || cls === 'necessary stimulation') && roleOf(t) === 'proc' && n(function (q) { return q.t === t && q.arr[1] === (cls === 'catalysis' ? 'white_circle' : 'white_delta_bar'); })) return 'A process has one ' + cls + ' in SBGN (Strict SBGN is ticked in the palette).';
-      var empty = function (x) { return nodes2[x].shape.kind === 'EmptySet'; };
-      if ((cls === 'consumption' && empty(s)) || (cls === 'production' && empty(t))) { var e = empty(s) && cls === 'consumption' ? s : t; if (n(function (q) { return q.s === e || q.t === e; })) return 'An empty set has one line in SBGN (Strict SBGN is ticked in the palette).'; }
-      return null;
+    // ---------- the rules table (notation.js), asked by drawing (linkKind) and dragging (core.js takes) alike ----------
+    // A line of class cls from node s to node t is put to the table in the notation's terms: each node's kind (ntKind), the
+    // sets the palette has on (ntSets), the table's named checks answered from the map's lines (ntCheck), the line being
+    // moved left out (skip). -1 for s or t: the process a line between two entities makes. A node the table has no kind for
+    // (a compartment, a member of a complex) is left to the gesture's own test (core.js takes0, linkKind0). CellDesigner
+    // maps ask the same table in their own part (cdcreate.js cdSays, cdMoveSays)
+    function ntKind(i) {
+      if (i < 0) return { kind: 'process', cls: 'process' };
+      var r = roleOf(i), sub = nodes2[i].shape.kind === 'Submap' && !nodes2[i].comp;
+      if (!r && !sub) return null;
+      var l = nodes2[i].el.getElementsByTagNameNS(Y, 'NodeLabel')[0];   // a gate's word as drawn (a made one is not in the file yet)
+      return NT.nodeKind('graphml', r === 'proc' ? 'Process' : nodes2[i].shape.kind, l ? l.textContent.trim() : '');
     }
-    // an end of line k dragged onto node i (core.js takes): what drawing the line would refuse (linkKind's counts and its
-    // equivalence rules), so a drag never makes what drawing does not. A reason, or null, on the PD and AF tabs;
-    // CellDesigner maps have rules of their own
-    function moveLimit(k, end, i) {
-      var e = edges2[k], s = end ? e.s : i, t = end ? i : e.t, a = e.arr[1];
-      if (edges2.some(function (q, j) { return j !== k && q.arr[1] === a && ((q.s === s && q.t === t) || (a === 'none' && q.s === t && q.t === s)); })) return 'This line is there already.';   // the same kind between the same two nodes, as drawing refuses it (every set; core.js takes calls this only off CellDesigner maps)
-      if (shared.cd) return null;   // the rules below hold on the PD and AF tabs alike, as drawing applies them
-      var others = function (g, into) { return edges2.filter(function (q, j) { return j !== k && (into ? q.t === g : q.s === g); }).length; };
-      var word = function (g) { var l = nodes2[g].el.getElementsByTagNameNS(Y, 'NodeLabel')[0]; return l ? l.textContent.trim().toUpperCase() : ''; };
-      if (a === 'none' && roleOf(s) === 'proc') return 'A consumption goes from an entity into a process.';   // a headless line leaving a process
-      var sc = strictCount(s, t, a === 'delta' ? 'production' : a === 'none' ? 'consumption' : NT.arcKind('graphml', a), k); if (sc) return sc;
-      if (!end && roleOf(s) === 'gate' && !fans(s) && others(s, false)) return 'A logic gate has one line out, and this one has it.';
-      if (end && roleOf(t) === 'gate' && /^(NOT|\u03c4)$/.test(word(t)) && others(t, true)) return 'This gate has one input, and it has it.';
-      if (MODS.test(a) && nodes2[s].eq) return 'An equivalence\u2019s line goes to an entity.';
-      if (a === 'none' && !end && nodes2[e.s].eq && !nodes2[i].eq) return 'An equivalence\u2019s line goes to an entity.';   // its output's start stays on the equivalence (onto a gate or a process it would be a line out of them)
-      if (nodes2[i].shape.kind === 'Tag') return a !== 'none' ? 'A tag is joined to an entity by an equivalence arc.' : tagRoom(i, end ? s : t, k);
-      if (a === 'none' && roleOf(end ? s : t) === 'tag') return tagRoom(end ? s : t, i, k);   // a tag's line onto another entity: a terminal keeps one line from outside and one from inside
-      if (a === 'none' && roleOf(s) === 'gate' && roleOf(t) === 'gate' && (nodes2[s].eq || nodes2[t].eq)) return 'An equivalence joins entities only.';
-      return null;
+    function ntSets() { return (palLangNow() === 'af' ? ['af'] : hybOn() ? ['pd', 'reduced'] : ['pd']).concat(V.fanout ? ['fanout'] : [], sbgnStrict() ? ['strict'] : []); }
+    function ntCheck(cls, s, t, skip) {
+      var a = skip >= 0 && NT.arcKind('graphml', edges2[skip].arr[1]) === cls ? edges2[skip].arr[1] : NT.arcHead('graphml', cls);   // a moved line keeps its own arrowhead
+      var lines = function (f) { return edges2.filter(function (q, j) { return j !== skip && f(q); }).length; };
+      return function (c) {
+        if (c === 'gateOneOut') return lines(function (q) { return q.s === s; }) ? 'A logic gate has one line out, and this one has it.' : null;
+        if (c === 'oneInput') return lines(function (q) { return q.t === t; }) ? 'This gate has one input, and it has it.' : null;
+        if (c === 'already') return s >= 0 && t >= 0 && lines(function (q) { return q.arr[1] === a && ((q.s === s && q.t === t) || (a === 'none' && q.s === t && q.t === s)); }) ? 'This line is there already.' : null;
+        if (c === 'tagRoom') { var tg = roleOf(s) === 'tag' ? s : t; return tagRoom(tg, tg === s ? t : s, skip); }
+        if (c === 'reversible') { var rv = t >= 0 && sbJs.reversibility(shared.text, nodes2[t].id, { sbgn: src() }); return rv && rv.rev ? 'A reversible process has productions on both sides.' : null; }   // 3.5.2.5
+        if (c === 'oneCatalysis' || c === 'oneNecessary') return t >= 0 && lines(function (q) { return q.t === t && q.arr[1] === a; }) ? 'A process has one ' + cls + ' in SBGN (Strict SBGN is ticked in the palette).' : null;
+        if (c === 'emptyOne') { var x = cls === 'consumption' ? s : t; return x >= 0 && lines(function (q) { return q.s === x || q.t === x; }) ? 'An empty set has one line in SBGN (Strict SBGN is ticked in the palette).' : null; }
+        return null;
+      };
     }
-    function linkKind(a, b, P, want) {
-      var r = linkKind0(a, b, P, want), m = r && !r.no && (pdLimit(a, b, r.pair ? 'pair' : r.cls) || (!r.pair && strictCount(a, b, r.cls, -1)));
+    // line k, moved to start at s, is in reduced notation already and keeps its sort of source (an entity or a gate; a
+    // phenotype or a submap): onto an entity, or from a phenotype or a submap to no process
+    function ntHeld(k, s) {
+      var h = k >= 0 ? edges2[k] : null, hs = h && ntKind(h.s), ht = h && ntKind(h.t), ns = h && ntKind(s);
+      var pic = function (x) { return x.kind === 'phenotype' || x.kind === 'submap'; };
+      return !!(ht && hs && ns) && pic(hs) === pic(ns) && (ht.kind === 'entity' || (pic(hs) && ht.kind !== 'process'));
+    }
+    function ruleSays(cls, s, t, skip) {
+      var ks = ntKind(s), kt = ntKind(t);
+      if (skip == null) skip = -1;
+      if (!ks || !kt) return null;
+      return NT.allowed(cls, ks, kt, { sets: ntSets(), check: ntCheck(cls, s, t, skip), held: ntHeld(skip, s) });
+    }
+    // the class line k would have with its ends at s and t: a plain line's kind follows its ends (into a process a
+    // consumption, with a tag an equivalence arc, else a logic arc)
+    function moveCls(k, s, t) {
+      var e = edges2[k], kt = ntKind(t);
+      if (e.arr[1] !== 'none') return NT.arcKind('graphml', e.arr[1]);
+      if ([e.s, e.t, s, t].some(function (x) { return roleOf(x) === 'tag'; })) return 'equivalence arc';
+      return NT.arcKind('graphml', 'none', kt ? kt.kind : '') || 'logic arc';
+    }
+    // an end of line k dragged onto node i (core.js takes, after takes0): the table's answer for the line as it would be,
+    // so a drag never makes what drawing does not. A reason, or null
+    function moveSays(k, end, i) {
+      if (shared.cd) return cdMoveSays(k, end, i);
+      var e = edges2[k], s = end ? e.s : i, t = end ? i : e.t;
+      return ruleSays(moveCls(k, s, t), s, t, k);
+    }
+    function linkKind(a, b, P, want) {   // linkKind0's kind for the gesture, then the table's answer for it
+      var r = linkKind0(a, b, P, want), m = r && !r.no && (r.pair ? ruleSays('consumption', a, -1) || ruleSays('production', -1, b) : ruleSays(r.cls, a, b));
       return m ? { no: m } : r;
     }
     function linkKind0(a, b, P, want) {
@@ -2294,27 +2302,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       var keep = palSet, rows = {};
       palSet = { lang: o && o.lang || 'pd', look: palSet.look, strict: !!(o && o.strict), sbgn: !!(o && o.sbgn) };
       try {
-        var word = function (i) { var l = nodes2[i].el.getElementsByTagNameNS(Y, 'NodeLabel')[0]; return l ? l.textContent.trim() : ''; };
-        var kindOf = function (i) {   // the notation's kind of a node the editor joins lines to (a member of a complex, a decoration: none)
-          var r = roleOf(i), sub = nodes2[i].shape.kind === 'Submap' && !nodes2[i].comp;
-          if (!r && !sub) return null;
-          var k = NT.nodeKind('graphml', r === 'proc' ? 'Process' : nodes2[i].shape.kind, word(i));
-          return k ? { kind: k.kind, cls: k.cls } : null;
-        };
-        var name = function (k) { return k.kind + ':' + k.cls; };
-        var sets = (palLangNow() === 'af' ? ['af'] : hybOn() ? ['pd', 'reduced'] : ['pd']).concat(V.fanout ? ['fanout'] : [], sbgnStrict() ? ['strict'] : []);
-        var checks = function (s, t, a, skip) {   // the table's named checks from the map's lines, line skip left out (the line being moved)
-          var other = function (q, j) { return j !== skip; };
-          return function (c) {
-            if (c === 'gateOneOut') return edges2.some(function (q, j) { return other(q, j) && q.s === s; }) ? 'A logic gate has one line out, and this one has it.' : null;
-            if (c === 'oneInput') return edges2.some(function (q, j) { return other(q, j) && q.t === t; }) ? 'This gate has one input, and it has it.' : null;
-            if (c === 'already') return edges2.some(function (q, j) { return other(q, j) && ((q.s === s && q.t === t) || (a === 'none' && q.s === t && q.t === s)) && q.arr[1] === a; }) ? 'This line is there already.' : null;
-            if (c === 'tagRoom') { var tg = roleOf(s) === 'tag' ? s : t; return tagRoom(tg, tg === s ? t : s, skip == null ? -1 : skip); }
-            if (c === 'oneCatalysis' || c === 'oneNecessary' || c === 'emptyOne') { var SV = palSet.sbgn; palSet.sbgn = true; try { return strictCount(s, t, c === 'oneCatalysis' ? 'catalysis' : c === 'oneNecessary' ? 'necessary stimulation' : roleOf(s) === 'proc' ? 'production' : 'consumption', skip == null ? -1 : skip); } finally { palSet.sbgn = SV; } }
-            if (c === 'reversible') { var m = pdLimit(s, t, 'consumption'); return m && /reversible/.test(m) ? m : null; }   // pdLimit's own reading of the file
-            return null;
-          };
-        };
+        var kindOf = ntKind, name = function (k) { return k.kind + ':' + k.cls; }, sets = ntSets();
         edges2.forEach(function (e, k) {
           var a = e.arr[1];
           if (a !== 'none' && !NT.arcKind('graphml', a)) return;
@@ -2323,18 +2311,15 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
               if (i === e.s || i === e.t) return;
               var s = end ? e.s : i, t = end ? i : e.t, ks = kindOf(s), kt = kindOf(t);
               if (!ks || !kt) return;
-              // the line as it would be: a plain line's kind follows its ends (into a process a consumption, into a gate a
-              // logic arc, with a tag an equivalence arc)
-              var tagLine = a === 'none' && [e.s, e.t].some(function (x) { return roleOf(x) === 'tag'; });   // a tag's line stays one
-              var c = a !== 'none' ? NT.arcKind('graphml', a) : tagLine || ks.kind === 'tag' || kt.kind === 'tag' ? 'equivalence arc' : NT.arcKind('graphml', 'none', kt.kind) || 'logic arc';
+              var c = moveCls(k, s, t);
               var was = a !== 'none' ? c : NT.arcKind('graphml', 'none', kindOf(e.t) ? kindOf(e.t).kind : '') || 'logic arc';
               var key = [was, end, name(ks), name(kt), name(kindOf(e.s) || { kind: '?' }), name(kindOf(e.t) || { kind: '?' })].join('|');
               if (rows[key]) return;
               var want = c === 'equivalence arc' && (ks.kind === 'tag' || kt.kind === 'tag') ? 'consumption' : c, h = linkKind(s, t, null, want);   // a tag's line is drawn with the plain line's sign
               rows[key] = { arc: was, now: c, end: end ? 'target' : 'source', from: name(ks), to: name(kt), line: name(kindOf(e.s) || { kind: '?' }) + ' > ' + name(kindOf(e.t) || { kind: '?' }),
                             drag: !!takes(k, end, i), draw: !h ? 'nothing' : h.no ? h.no : h.pair ? 'pair' : h.cls,
-                            tableDrag: NT.allowed(c, ks, kt, { sets: sets, check: checks(s, t, a, k) }),
-                            tableDraw: NT.allowed(c, ks, kt, { sets: sets, check: checks(s, t, a, null) }) };
+                            tableDrag: NT.allowed(c, ks, kt, { sets: sets, check: ntCheck(c, s, t, k), held: ntHeld(k, s) }),
+                            tableDraw: NT.allowed(c, ks, kt, { sets: sets, check: ntCheck(c, s, t, -1) }) };
             });
           });
         });
@@ -3020,4 +3005,4 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
     }
 
     export function __start() { __run1(); __run2(); __run3(); __run4(); __run5(); __run6(); __run7(); __run8(); __run9(); __run10(); __run11(); __run12(); __run13(); __run14(); __run15(); __run16(); __run17(); __run18(); __run19(); __run20(); __run21(); __run22(); __run23(); __run24(); __run25(); __run26(); __run27(); __run28(); __run29(); __run31(); __run32(); __run33(); __run34(); __run35(); __run36(); __run37(); __run38(); __run39(); __run40(); __run41(); __run42(); __run43(); __run44(); __run45(); __run46(); __run47(); __run48(); __run49(); __run50(); __run51(); __run52(); __run53(); __run54(); __run55(); __run56(); __run57(); __run58(); __run59(); __run60(); __run61(); }   // the part's statements, in their order
-    export { ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues, confettiLine, confettiOne, confettiPick, confettiSquares, ddOpen, hex, hybOn, iconKeep, iconSpread, innermost, joinDo, joinPack, joinPlan, keepLook, keepMapChoice, link, linkDown, linkEnd, linkMove, linkPaint, linkUp, looksKept, mapCols, moveLimit, nameAt, origAll, pNow, pal, palBlocks, palDid, palDown, palDrop, palId, palLangNow, palShow, palSigns, palSignsEl, palStore, palStyle, palTake, palUp, pdLimit, placedAt, propFmt, propRows, sbgnStrict, setSize, sizable, styleRow, svAt, svDelete, svDown, svIcons, svList, svMarks, svParts, textsOf, tool, typeIn };
+    export { ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues, confettiLine, confettiOne, confettiPick, confettiSquares, ddOpen, hex, hybOn, iconKeep, iconSpread, innermost, joinDo, joinPack, joinPlan, keepLook, keepMapChoice, link, linkDown, linkEnd, linkMove, linkPaint, linkUp, looksKept, mapCols, moveSays, nameAt, origAll, pNow, pal, palBlocks, palDid, palDown, palDrop, palId, palLangNow, palShow, palSigns, palSignsEl, palStore, palStyle, palTake, palUp, placedAt, propFmt, propRows, sbgnStrict, setSize, sizable, styleRow, svAt, svDelete, svDown, svIcons, svList, svMarks, svParts, textsOf, tool, typeIn };

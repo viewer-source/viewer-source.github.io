@@ -33,6 +33,12 @@ yes('stimulation', PH, P, RD, 'reduced: from a phenotype'); yes('stimulation', P
 no('stimulation', PH, M, PD, 'unticked: nothing from a phenotype to an entity');
 yes('modulation', SM, M, RD, 'reduced: from a submap'); yes('stimulation', M, SM, RD, 'reduced: into a submap');
 no('stimulation', M, SM, PD, 'unticked: nothing into a submap');
+// a line in reduced notation already, moved (D5): kept where Reduced notation is unticked and under Strict SBGN, a new one not
+var HP = { sets: ['pd'], held: true }, HS = { sets: ['pd', 'strict'], held: true };
+yes('stimulation', M, S, HP, 'held: moved onto another entity, unticked'); yes('inhibition', AND, M, HS, 'held: from a gate, Strict SBGN');
+yes('modulation', PH, M, HP, 'held: from a phenotype'); no('catalysis', M, S, HP, 'held: never a catalysis between entities');
+no('stimulation', M, PA, HP, 'held: not onto a perturbing agent'); no('stimulation', M, S, { sets: ['pd'], held: false }, 'not held: a new one refused');
+ok('arcHead graphml', N.arcHead('graphml', 'inhibition') === 't_shape' && N.arcHead('graphml', 'production') === 'delta' && N.arcHead('graphml', 'logic arc') === 'none' && N.arcHead('graphml', 'x') === null && N.arcHead('sbgnml', 'production') === null);
 // Strict SBGN: the specification alone
 var ST = { sets: ['pd', 'strict'] }, STR = { sets: ['pd', 'reduced', 'strict', 'fanout'], check: function (c) { return c === 'gateOneOut' ? 'one out' : null; } };
 yes('consumption', PH, P, PD, 'C3: a phenotype consumed (CellDesigner)'); no('consumption', PH, P, ST, 'strict: a phenotype is not consumed');

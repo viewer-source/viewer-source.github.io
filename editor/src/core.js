@@ -4,7 +4,7 @@ import { bx, keyShift, liveFit, liveLines, liveOff, posePort, shift, sizeLive, s
 import { AF_KINDS, drawGraphml, noNegative, shiftedAhead, yr } from './graphml.js';
 import { beyond, cdDoc, cdDraw, cdGraphml, cdJs, cdKnown, cdMap, cdMk, cdNow, cdRebuild, cdRemember, cdSessionSoon, cdpy, glyphArcs, glyphPort, isCd, joinAt, joinGuides, joinSolve, lineGrid, nodeCentre, nodePlaces, plainCanvas } from './celldesigner.js';
 import { EMPTY_BASE, edOf, isSb, madeHere, sbBase, sbFollow, sbGraphml, sbJs, sbKind, sbMap, sbNow, sbRemember, sbpy, viaGraphml } from './sbgn.js';
-import { ddOpen, hybOn, joinDo, joinPack, joinPlan, link, linkDown, linkMove, linkPaint, linkUp, moveLimit, origAll, palDown, palLangNow, palShow, palUp, pdLimit, propFmt, sbgnStrict, setSize, sizable, svDown, svMarks, tool } from './create.js';
+import { ddOpen, hybOn, joinDo, joinPack, joinPlan, link, linkDown, linkMove, linkPaint, linkUp, moveSays, origAll, palDown, palLangNow, palShow, palUp, propFmt, sbgnStrict, setSize, sizable, svDown, svMarks, tool } from './create.js';
 import { help, helpBox } from './help.js';
 import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepBeside, keptNow, mine, mineAdd, mineIn, mineMatch, minePut, savedMine, toGh, upAll, upRun } from './own.js';
 
@@ -2478,7 +2478,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       }
       if (i === other || (!r && !(hybOn() && nodes2[i].shape.kind === 'Submap')) || a[0] !== 'none') return false;
       var tg = roleOf(e.s) === 'tag' ? e.s : roleOf(e.t) === 'tag' ? e.t : null;
-      if (a[1] === 'none' && tg != null) return (end ? e.t : e.s) !== tg && r === 'epn';   // a tag's or terminal's equivalence arc: its entity end to another entity, the tag's end stays (SBGN only; tagRoom in moveLimit)
+      if (a[1] === 'none' && tg != null) return (end ? e.t : e.s) !== tg && r === 'epn';   // a tag's or terminal's equivalence arc: its entity end to another entity, the tag's end stays (SBGN only; the table's tagRoom)
       if (a[1] === 'none') {   // the arrowhead-less line: its hub end at a process or gate, its other end at an entity (or a gate into a gate)
         if (!hub(roleOf(e.s)) && !hub(roleOf(e.t))) return false;   // a plain line between other glyphs (an equivalence arc): not this line
         var h = hub(roleOf(e.t)) ? 1 : 0;
@@ -2492,11 +2492,8 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       if (MODS.test(a[1])) return loose || (end ? r === 'proc' || r === 'pheno' || (r === 'epn' && a[1] !== 'white_circle' && (roleOf(e.t) === 'epn' || palLangNow() === 'af' || hybOn())) : r === 'epn' || r === 'gate' || (r === 'pheno' && roleOf(e.t) === 'proc' && !sbgnStrict()));
       return false;
     }
-    function takes(k, end, i) {   // takes0, and SBGN PD's table for the line as it would be (pdLimit)
-      if (!takes0(k, end, i)) return false;
-      if (shared.cd) return true;
-      var e = edges2[k], s = end ? e.s : i, t = end ? i : e.t, a = e.arr[1];
-      return !pdLimit(s, t, a === 'delta' ? 'production' : a === 'white_circle' ? 'catalysis' : a === 'none' ? (roleOf(t) === 'proc' ? 'consumption' : roleOf(s) === 'tag' || roleOf(t) === 'tag' ? 'equivalence arc' : 'logic arc') : 'modulation') && !moveLimit(k, end, i);
+    function takes(k, end, i) {   // takes0, and the rules table for the line as it would be (create.js moveSays)
+      return takes0(k, end, i) && !moveSays(k, end, i);
     }
     function takerAt(pp, P) {   // the innermost node under P that can take the end, or its own node; null over nothing that can
       var R = 4 / V.z, best = null, ba = Infinity;
