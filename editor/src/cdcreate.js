@@ -1,5 +1,5 @@
 import { shared, V } from './state.js';
-import { at, boxOf, changed, cutShape, edgeAt, edges2, editing, f1, fmt, gridSet, grown, handleMarks, hit, keyFlush, kindWindow, landMarks, lateItem, line, map, near, nodes2, on, paint, parse, ports, procPlaces, quiet, rclick, remember, render, setBoxes, shapeD, subItem, sx, sy, toGrid, warn, x0, y0 } from './core.js';
+import { at, boxOf, changed, commit, cutShape, edgeAt, edges2, editing, f1, fmt, gridSet, grown, handleMarks, hit, keyFlush, kindWindow, landMarks, lateItem, line, map, near, nodes2, on, paint, parse, ports, procPlaces, quiet, rclick, render, setBoxes, shapeD, subItem, sx, sy, toGrid, warn, x0, y0 } from './core.js';
 import { bx, liveOff, sizeOff } from './live.js';
 import { cdJs, cdMk, cdNow, cdRebuild, nodeCentre, nodePlaces } from './celldesigner.js';
 import { ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues, confettiLine, confettiOne, confettiPick, confettiSquares, hex, iconKeep, iconSpread, innermost, joinPack, keepLook, keepMapChoice, link, linkEnd, looksKept, mapCols, nameAt, origAll, pNow, pal, palBlocks, palDid, palDrop, palId, palShow, palSigns, palSignsEl, palStore, palStyle, palTake, placedAt, propRows, styleRow, svAt, svDelete, svIcons, textsOf, tool, typeIn } from './create.js';
@@ -148,8 +148,7 @@ import { ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues, confet
       if (t2 && t2.text != null) t2 = t2.text;
       var grew = cdGrew; cdGrew = null;
       if (!t2 || t2 === now) return false;
-      remember(false);
-      cdRebuild(t2, N.sh); parse();
+      return commit(null, { name: 'CellDesigner change', ids: [].concat(typeof sel === 'function' ? [] : sel || []), quiet: true, write: function () { cdRebuild(t2, N.sh); }, then: function () {
       var gk = nodes2.map(function (n, k) { return grew[n.id] ? k : -1; }).filter(function (k) { return k >= 0; });   // species grown for an icon: what holds them grown round them (as cdSetSize)
       if (gk.length) setBoxes(grown(gk, boxOf, function (k) { return grew[nodes2[k].id] || boxOf(k); }, function () { return false; }));
       shared.selN = []; shared.selP = []; shared.selE = []; shared.part = null;
@@ -157,8 +156,7 @@ import { ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues, confet
       if (typeof selLines === 'function') selLines = selLines();
       (sel || []).forEach(function (id) { nodes2.forEach(function (n, i) { if (n.id === id) shared.selN.push(i); }); });
       (selLines || []).forEach(function (id) { edges2.forEach(function (q, k) { if (q.id === id || q.id === id + '|a' || q.id === id + '|b') shared.selE.push(k); }); });
-      shared.dirty = true; quiet(); render(); paint(); changed();
-      return true;
+      } });
     }
     // what a node is on a CellDesigner map: 'epn' a species (not a complex's member), 'proc' a reaction's square, 'gate' a
     // gate, null a compartment or a member
@@ -1223,7 +1221,7 @@ import { ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues, confet
         if (pend && shared.cdPend === pend) shared.cdPend = null;
       };
       var chosen = function () { return [sel.value, fixed() ? lab.value : inp.value.trim()]; };
-      var commit = function () {
+      var typed = function () {
         if (ui) {   // a typed label (N, free input) when it differs; a new unit as shown, pc and T unless changed
           var g = (feat() || {}).info, q = chosen();
           if (q[1] && (pendOf() || !g || g.prefix !== q[0] || g.label !== q[1])) unit(q);
@@ -1245,7 +1243,7 @@ import { ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues, confet
       var outside = function (e) { if (!box.contains(e.target)) T.done(true); };
       T = shared.typing = { inp: inp, place: place, done: function (keep) {
         if (shared.typing !== T) return;
-        if (keep) commit();
+        if (keep) typed();
         shared.typing = null; box.remove(); document.removeEventListener('pointerdown', outside, true);
         if (pendOf()) shared.cdPend = null;
         paint();
@@ -1262,7 +1260,7 @@ import { ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues, confet
         row.hidden = !!sel.value;
         if (sel.value) put(sel.value); else { var g = feat(); inp.value = g && g.structural ? g.structural.text : ''; inp.focus(); }   // Text: from what is there, written once changed
       });
-      inp.addEventListener('change', commit);
+      inp.addEventListener('change', typed);
       if (ui) lab.addEventListener('change', function () { unit(chosen()); });
       if (!res) box.querySelector('button').addEventListener('click', function () { if (pendOf()) T.done(false); else if (ui) unit(null); else put(null); });
       box.addEventListener('keydown', function (e) {
@@ -1350,11 +1348,12 @@ import { ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues, confet
       var ids = [], was = {}, one = {};
       pairs.forEach(function (q) { var b = boxOf(q[0]); if (q[1].some(function (v, j) { return Math.abs(v - b[j]) >= 0.005; })) { ids.push(nodes2[q[0]].id); was[nodes2[q[0]].id] = b; one[q[0]] = q[1]; } });
       if (!ids.length) { liveOff(); sizeOff(); paint(); return; }
-      remember(false); setBoxes(one);
-      var ks = nodes2.map(function (n, k) { return ids.indexOf(n.id) >= 0 ? k : -1; }).filter(function (k) { return k >= 0; });
-      setBoxes(grown(ks, boxOf, function (k) { return was[nodes2[k].id] || boxOf(k); }, function () { return false; }));
-      shared.selN = []; nodes2.forEach(function (n, k) { if (ids.indexOf(n.id) >= 0) shared.selN.push(k); });
-      shared.sizeRec = null; render(); paint(); changed();
+      commit(null, { name: 'size', ids: ids, write: function () { setBoxes(one); }, parsed: true, then: function () {
+        var ks = nodes2.map(function (n, k) { return ids.indexOf(n.id) >= 0 ? k : -1; }).filter(function (k) { return k >= 0; });
+        setBoxes(grown(ks, boxOf, function (k) { return was[nodes2[k].id] || boxOf(k); }, function () { return false; }));
+        shared.selN = []; nodes2.forEach(function (n, k) { if (ids.indexOf(n.id) >= 0) shared.selN.push(k); });
+        shared.sizeRec = null;
+      } });
     }
     var cdLook, cdLineMemo;
     function __run30() {   // run at start, in order (__start)

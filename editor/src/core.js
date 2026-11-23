@@ -1340,12 +1340,17 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     // row one step), the text set and read again, o.then (the rest of the same action: what it writes goes through
     // setText into the same step), the selection (o.sel node ids, o.selE line ids, the rest cleared; neither given: left
     // as it is), saved and drawn. It records what changed: shared.lastChange { name, ids } (o.name, o.ids or the ids
-    // selected), read by the tests
+    // selected), read by the tests. o.write in place of t2 (null): the action writes itself (a CellDesigner file made again,
+    // boxes set), the caller having checked that it changes something; o.parsed: that write read the map already;
+    // o.reparse: read again after o.then, which wrote more
     function commit(t2, o) {
       o = o || {};
-      if (t2 === shared.text) return false;
-      remember(!!o.merge); setText(t2); parse();
+      if (!o.write && t2 === shared.text) return false;
+      remember(!!o.merge);
+      if (o.write) o.write(); else setText(t2);
+      if (!o.parsed) parse();
       if (o.then) o.then();
+      if (o.reparse) parse();
       if (o.sel || o.selE) {
         var n = o.sel || [], e = o.selE || [];
         shared.selN = []; shared.selP = []; shared.selE = []; shared.part = null;

@@ -878,10 +878,11 @@ import { origGh, origPut } from './own.js';
       else { nw = 'right'; nb = [q[0], R[1] + h - (t - 2 * w - h) - S / 2, L, S]; }
       var o = {}; o[i] = nb.map(function (v) { return +fmt(v); });
       var eids = shared.selE.map(function (k) { return edges2[k] && edges2[k].id; });   // by id: the map is read again
-      remember(true); setBoxes(o);
-      var at = -1; nodes2.forEach(function (m, k) { if (m.id === tKey.id) at = k; });
-      if (at >= 0) { var t2 = tagTurnT(shared.text, at, nw, true); if (t2 !== shared.text) { setText(t2); parse(); } }
-      shared.dirty = true; shared.selN = at >= 0 ? [at] : []; shared.selE = edges2.map(function (q, k) { return eids.indexOf(q.id) >= 0 ? k : -1; }).filter(function (k) { return k >= 0; }); render(); paint(); changed();
+      commit(null, { name: 'tag turned', ids: [tKey.id], merge: true, write: function () { setBoxes(o); }, parsed: true, then: function () {
+        var at = -1; nodes2.forEach(function (m, k) { if (m.id === tKey.id) at = k; });
+        if (at >= 0) { var t2 = tagTurnT(shared.text, at, nw, true); if (t2 !== shared.text) { setText(t2); parse(); } }
+        shared.selN = at >= 0 ? [at] : []; shared.selE = edges2.map(function (q, k) { return eids.indexOf(q.id) >= 0 ? k : -1; }).filter(function (k) { return k >= 0; });
+      } });
       return true;
     });
     // a tag turned spins as a whole (its width and height swapped round its centre between left or right and up or down;
@@ -1372,13 +1373,13 @@ import { origGh, origPut } from './own.js';
       if (i < 0) return;
       var k = svK(i), room = svRoom(i, [18 * k, 18 * k], null), was = boxOf(i);
       var id = nodes2[i].id, j = svList(i).filter(function (h) { return h[3] === SV; }).length;   // after the state variables, before the units
-      remember(false);
-      if (room.box) svGrowTo(id, room.box);
-      setText(sbJs.state(shared.text, id, '', room.r[0], room.r[1]));
-      parse();
-      if (room.box) svHold(id, was);
-      svCopies(id).forEach(function (c) { svAddTo(c, room.r, ''); });   // on every copy at the same place (svCopies)
-      made(id);
+      commit(null, { name: 'state variable added', sel: [id], quiet: true, reparse: true, write: function () {
+        if (room.box) svGrowTo(id, room.box);
+        setText(sbJs.state(shared.text, id, '', room.r[0], room.r[1]));
+      }, then: function () {
+        if (room.box) svHold(id, was);
+        svCopies(id).forEach(function (c) { svAddTo(c, room.r, ''); });   // on every copy at the same place (svCopies)
+      } });
       shared.selN = []; shared.svSel = { id: id, j: j }; paint();
     }
     // Once a variable, always a variable (as a CellDesigner residue belongs to the protein and shows on every species of
@@ -1469,10 +1470,7 @@ import { origGh, origPut } from './own.js';
       if (i < 0) return;
       var j = svList(i).length, was = boxOf(i);   // the units come last in the node's list
       var t2 = sbJs.unit(shared.text, id, value || '');
-      if (t2 === shared.text) return;
-      remember(false); setText(t2);
-      if (!shared.afSbgn) { parse(); if (svSettle(id, null)) svHold(id, was); }
-      made(id);
+      if (!commit(t2, { name: 'unit added', sel: [id], quiet: true, reparse: true, then: function () { if (!shared.afSbgn && svSettle(id, null)) svHold(id, was); } })) return;
       shared.selN = []; shared.svSel = { id: id, j: j }; paint();
     }
     function made(id) {   // the text changed by a palette action: read again, the node (or nodes: an array) selected, drawn, saved

@@ -4667,29 +4667,27 @@
       var eids = shared.selE.map(function(k) {
         return edges2[k] && edges2[k].id;
       });
-      remember(true);
-      setBoxes(o);
-      var at2 = -1;
-      nodes2.forEach(function(m, k) {
-        if (m.id === tKey.id) at2 = k;
-      });
-      if (at2 >= 0) {
-        var t2 = tagTurnT(shared.text, at2, nw, true);
-        if (t2 !== shared.text) {
-          setText(t2);
-          parse();
+      commit(null, { name: "tag turned", ids: [tKey.id], merge: true, write: function() {
+        setBoxes(o);
+      }, parsed: true, then: function() {
+        var at2 = -1;
+        nodes2.forEach(function(m, k) {
+          if (m.id === tKey.id) at2 = k;
+        });
+        if (at2 >= 0) {
+          var t2 = tagTurnT(shared.text, at2, nw, true);
+          if (t2 !== shared.text) {
+            setText(t2);
+            parse();
+          }
         }
-      }
-      shared.dirty = true;
-      shared.selN = at2 >= 0 ? [at2] : [];
-      shared.selE = edges2.map(function(q2, k) {
-        return eids.indexOf(q2.id) >= 0 ? k : -1;
-      }).filter(function(k) {
-        return k >= 0;
-      });
-      render();
-      paint();
-      changed();
+        shared.selN = at2 >= 0 ? [at2] : [];
+        shared.selE = edges2.map(function(q2, k) {
+          return eids.indexOf(q2.id) >= 0 ? k : -1;
+        }).filter(function(k) {
+          return k >= 0;
+        });
+      } });
       return true;
     });
     HORIZ = { left: 1, right: 1 };
@@ -5457,15 +5455,15 @@
     var id = nodes2[i].id, j = svList(i).filter(function(h) {
       return h[3] === SV;
     }).length;
-    remember(false);
-    if (room.box) svGrowTo(id, room.box);
-    setText(sbJs.state(shared.text, id, "", room.r[0], room.r[1]));
-    parse();
-    if (room.box) svHold(id, was);
-    svCopies(id).forEach(function(c) {
-      svAddTo(c, room.r, "");
-    });
-    made(id);
+    commit(null, { name: "state variable added", sel: [id], quiet: true, reparse: true, write: function() {
+      if (room.box) svGrowTo(id, room.box);
+      setText(sbJs.state(shared.text, id, "", room.r[0], room.r[1]));
+    }, then: function() {
+      if (room.box) svHold(id, was);
+      svCopies(id).forEach(function(c) {
+        svAddTo(c, room.r, "");
+      });
+    } });
     shared.selN = [];
     shared.svSel = { id, j };
     paint();
@@ -5605,14 +5603,9 @@
     if (i < 0) return;
     var j = svList(i).length, was = boxOf(i);
     var t2 = sbJs.unit(shared.text, id, value || "");
-    if (t2 === shared.text) return;
-    remember(false);
-    setText(t2);
-    if (!shared.afSbgn) {
-      parse();
-      if (svSettle(id, null)) svHold(id, was);
-    }
-    made(id);
+    if (!commit(t2, { name: "unit added", sel: [id], quiet: true, reparse: true, then: function() {
+      if (!shared.afSbgn && svSettle(id, null)) svHold(id, was);
+    } })) return;
     shared.selN = [];
     shared.svSel = { id, j };
     paint();
@@ -8054,41 +8047,36 @@
     var grew = cdGrew;
     cdGrew = null;
     if (!t2 || t2 === now) return false;
-    remember(false);
-    cdRebuild(t2, N.sh);
-    parse();
-    var gk = nodes2.map(function(n, k) {
-      return grew[n.id] ? k : -1;
-    }).filter(function(k) {
-      return k >= 0;
-    });
-    if (gk.length) setBoxes(grown(gk, boxOf, function(k) {
-      return grew[nodes2[k].id] || boxOf(k);
-    }, function() {
-      return false;
-    }));
-    shared.selN = [];
-    shared.selP = [];
-    shared.selE = [];
-    shared.part = null;
-    if (typeof sel === "function") sel = sel();
-    if (typeof selLines === "function") selLines = selLines();
-    (sel || []).forEach(function(id) {
-      nodes2.forEach(function(n, i) {
-        if (n.id === id) shared.selN.push(i);
+    return commit(null, { name: "CellDesigner change", ids: [].concat(typeof sel === "function" ? [] : sel || []), quiet: true, write: function() {
+      cdRebuild(t2, N.sh);
+    }, then: function() {
+      var gk = nodes2.map(function(n, k) {
+        return grew[n.id] ? k : -1;
+      }).filter(function(k) {
+        return k >= 0;
       });
-    });
-    (selLines || []).forEach(function(id) {
-      edges2.forEach(function(q, k) {
-        if (q.id === id || q.id === id + "|a" || q.id === id + "|b") shared.selE.push(k);
+      if (gk.length) setBoxes(grown(gk, boxOf, function(k) {
+        return grew[nodes2[k].id] || boxOf(k);
+      }, function() {
+        return false;
+      }));
+      shared.selN = [];
+      shared.selP = [];
+      shared.selE = [];
+      shared.part = null;
+      if (typeof sel === "function") sel = sel();
+      if (typeof selLines === "function") selLines = selLines();
+      (sel || []).forEach(function(id) {
+        nodes2.forEach(function(n, i) {
+          if (n.id === id) shared.selN.push(i);
+        });
       });
-    });
-    shared.dirty = true;
-    quiet();
-    render();
-    paint();
-    changed();
-    return true;
+      (selLines || []).forEach(function(id) {
+        edges2.forEach(function(q, k) {
+          if (q.id === id || q.id === id + "|a" || q.id === id + "|b") shared.selE.push(k);
+        });
+      });
+    } });
   }
   function cdRole(i) {
     var n = nodes2[i];
@@ -9607,7 +9595,7 @@
     var chosen = function() {
       return [sel.value, fixed() ? lab.value : inp.value.trim()];
     };
-    var commit2 = function() {
+    var typed = function() {
       if (ui) {
         var g = (feat() || {}).info, q = chosen();
         if (q[1] && (pendOf() || !g || g.prefix !== q[0] || g.label !== q[1])) unit(q);
@@ -9641,7 +9629,7 @@
     };
     T = shared.typing = { inp, place, done: function(keep) {
       if (shared.typing !== T) return;
-      if (keep) commit2();
+      if (keep) typed();
       shared.typing = null;
       box2.remove();
       document.removeEventListener("pointerdown", outside, true);
@@ -9650,7 +9638,7 @@
     } };
     sel.addEventListener("change", function() {
       if (ui) {
-        var g = (feat() || {}).info, typed = inp.value.trim(), was = typed || (g && !cdMk.INFO[g.prefix] ? g.label : "");
+        var g = (feat() || {}).info, typed2 = inp.value.trim(), was = typed2 || (g && !cdMk.INFO[g.prefix] ? g.label : "");
         labels();
         if (g && g.prefix === sel.value) {
           if (fixed()) lab.value = g.label;
@@ -9680,7 +9668,7 @@
         inp.focus();
       }
     });
-    inp.addEventListener("change", commit2);
+    inp.addEventListener("change", typed);
     if (ui) lab.addEventListener("change", function() {
       unit(chosen());
     });
@@ -9834,26 +9822,25 @@
       paint();
       return;
     }
-    remember(false);
-    setBoxes(one);
-    var ks = nodes2.map(function(n, k) {
-      return ids.indexOf(n.id) >= 0 ? k : -1;
-    }).filter(function(k) {
-      return k >= 0;
-    });
-    setBoxes(grown(ks, boxOf, function(k) {
-      return was[nodes2[k].id] || boxOf(k);
-    }, function() {
-      return false;
-    }));
-    shared.selN = [];
-    nodes2.forEach(function(n, k) {
-      if (ids.indexOf(n.id) >= 0) shared.selN.push(k);
-    });
-    shared.sizeRec = null;
-    render();
-    paint();
-    changed();
+    commit(null, { name: "size", ids, write: function() {
+      setBoxes(one);
+    }, parsed: true, then: function() {
+      var ks = nodes2.map(function(n, k) {
+        return ids.indexOf(n.id) >= 0 ? k : -1;
+      }).filter(function(k) {
+        return k >= 0;
+      });
+      setBoxes(grown(ks, boxOf, function(k) {
+        return was[nodes2[k].id] || boxOf(k);
+      }, function() {
+        return false;
+      }));
+      shared.selN = [];
+      nodes2.forEach(function(n, k) {
+        if (ids.indexOf(n.id) >= 0) shared.selN.push(k);
+      });
+      shared.sizeRec = null;
+    } });
   }
   var cdLook;
   var cdLineMemo;
@@ -13206,11 +13193,13 @@
   }
   function commit(t2, o) {
     o = o || {};
-    if (t2 === shared.text) return false;
+    if (!o.write && t2 === shared.text) return false;
     remember(!!o.merge);
-    setText(t2);
-    parse();
+    if (o.write) o.write();
+    else setText(t2);
+    if (!o.parsed) parse();
     if (o.then) o.then();
+    if (o.reparse) parse();
     if (o.sel || o.selE) {
       var n = o.sel || [], e = o.selE || [];
       shared.selN = [];
