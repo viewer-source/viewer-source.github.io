@@ -584,11 +584,11 @@
     // what the map is now, the file and the editor's drawing together: where
     // that differs from what the file alone is, the file is turned to it first, its own glyphs and arcs included (toAf,
     // toPd); a file whose kind the edits leave as it was is written as before (write(s, conv(s)) is s)
-    // A PD file whose links alone read as AF (entities and direct links, nothing only PD has) is turned AF at its first
-    // change (not written PD while it reads AF); opened and saved with no change it comes back as it was
+    // A PD file whose links alone read as AF (entities and direct links, nothing only PD has) is reduced notation: SBGN-ML
+    // has no field for the display, so it keeps its PD classes when edited, what is made in it written in PD's form
+    // (an activity as the entity its unit names, a link under PD's name); only a map that becomes AF by its edits turns
     var K = { own: own, now: kinds(t, S, G) }, af;
-    var turnAf = K.now === 'af' && (K.own !== 'af' || !afForm(t, S)) && !(opt && opt.asIs);
-    if (turnAf && K.own === 'af' && !G.ids.some(function (id) { return afUnitOf(G, id) != null; }) && write(t0, gtext, Object.assign({}, opt, { asIs: true })) === t0) return t0;   // no change (an activity marked in the editor is one)
+    var turnAf = K.now === 'af' && K.own !== 'af';
     if (turnAf) { t = toAf(t, S, was); S = sbgn(t, opt); af = true; }
     else if (K.now !== K.own && (K.now === 'pd' || K.now === 'hybrid') && afForm(t, S)) { t = toPd(t, S); S = sbgn(t, opt); af = false; }
     else af = K.now === 'af' && afForm(t, S);

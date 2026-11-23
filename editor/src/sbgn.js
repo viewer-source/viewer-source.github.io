@@ -109,7 +109,7 @@ import { yr } from './graphml.js';
       if (how) sbPlace();   // a change (parse)
       if (sbK.sb !== shared.sb) sbK = { sb: shared.sb, text: null, key: null, kind: 'empty', af: false, g: null, bad: false };
       if (sbK.text !== shared.text) {
-        if (sbK.bad || sbK.key !== shared.text.replace(GEO, '') || (sbK.kind === 'af' && !sbK.af)) sbRead();   // a PD file that reads AF is turned at its first change, a move too
+        if (sbK.bad || sbK.key !== shared.text.replace(GEO, '') || (sbK.kind === 'af' && !sbK.af)) sbRead();   // read again where the kind may have changed (a PD-class file of direct links keeps its classes: reduced notation)
         else sbK.text = shared.text;
       }
       if (sbK.bad) return sbK.kind;

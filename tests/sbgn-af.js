@@ -192,7 +192,7 @@ expect('a process added to the AF file', W2[3][0], 'process description', { p1: 
 // file's own kind measured before the deleted glyphs go); (2) a file turned is read again into the editor's GraphML: no
 // activity left marked on a PD map, drawn as the converter draws the file, written back the same, on every AF file of the
 // demo with a process added and deleted; (3) a PD file of entities
-// and direct links (it reads AF) comes back as it was when saved with no change, and is turned AF at its first change;
+// and direct links (it reads AF) comes back as it was when saved with no change, and keeps its PD classes when changed;
 // (4) a reopened draft's perturbing agent turned a perturbation carries the file's class
 var gProc = W2[3][1], back = steps([['the process deleted again (a draft reopened)', W2[3][0], gProc, se.remove(se.graphml(W2[3][0], gProc, opt), ['pr'], opt)],
   ['the process deleted again (the same editing)', afNew, gAf, se.remove(se.graphml(W2[3][0], proc, opt), ['pr'], opt), W2[3][0]]]);
@@ -273,15 +273,20 @@ var LINKS = '<?xml version="1.0" encoding="UTF-8"?>\n<sbgn:sbgn xmlns:sbgn="http
 var LF = path.join(tmp, 'links.sbgn'); fs.writeFileSync(LF, LINKS);
 var gL = conv([LF])[0];
 if (se.mapKind(LINKS) !== 'af' || se.write(LINKS, gL, opt) !== LINKS) { bad++; console.log('DIFFERENT a PD file of direct links: ' + se.mapKind(LINKS) + ', saved unchanged ' + (se.write(LINKS, gL, opt) === LINKS)); }
-var WL = steps([['a PD file of direct links, a glyph moved', LINKS, gL, se.resize(gL, 's', [320, 250, 40, 40], opt)]]);
-expect('a PD file of direct links, a glyph moved', WL[0][0], 'activity flow', { a: ['biological activity', null], c: ['biological activity', 'complex'], p: ['perturbation', null], s: ['biological activity', 'simple chemical'] }, { e0: 'positive influence', e1: 'negative influence' }, 'af');
+// reduced notation in SBGN-ML (PD classes read as AF by their links) keeps its PD classes when edited, a new link
+// written under PD's name (before, the first change turned it AF)
+var WL = steps([['a PD file of direct links, a glyph moved', LINKS, gL, se.resize(gL, 's', [320, 250, 40, 40], opt)],
+  ['a PD file of direct links, a link drawn', LINKS, gL, se.connect(gL, 'e2', 'a', 's', 'inhibition', { DOMParser: DP, sbgn: LINKS })]]);
+var RN = { a: ['macromolecule', null], c: ['complex', null], p: ['perturbing agent', null], s: ['simple chemical', null] };
+expect('a PD file of direct links, a glyph moved', WL[0][0], 'process description', RN, { e0: 'stimulation', e1: 'inhibition' }, 'af');
+expect('a PD file of direct links, a link drawn', WL[1][0], 'process description', RN, { e0: 'stimulation', e1: 'inhibition', e2: 'inhibition' }, 'af');
 var propOf = function (g, id, name) {   // a node's property (its text), as the converter writes it
   var k = new RegExp('<key attr\\.name="' + name + '"[^>]*id="([^"]+)"').exec(g) || new RegExp('<key[^>]*id="([^"]+)"[^>]*attr\\.name="' + name + '"').exec(g), n = new RegExp('<node id="' + id + '"[\\s\\S]*?</node>').exec(g);
   var d = k && n && new RegExp('<data key="' + k[1] + '">([^<]*)</data>').exec(n[0]);
   return d ? d[1] : null;
 };
 var gLr = se.graphml(WL[0][0], gL, opt);
-if (propOf(gLr, 'p', 'SBGN class') !== 'perturbation' || propOf(WL[0][1], 'p', 'SBGN class') !== 'perturbation') { bad++; console.log('DIFFERENT a reopened draft\'s perturbation: ' + propOf(gLr, 'p', 'SBGN class') + ', the converter ' + propOf(WL[0][1], 'p', 'SBGN class')); }
+if (propOf(gLr, 'p', 'SBGN class') !== 'perturbing agent' || propOf(WL[0][1], 'p', 'SBGN class') !== 'perturbing agent') { bad++; console.log('DIFFERENT a reopened draft\'s perturbation: ' + propOf(gLr, 'p', 'SBGN class') + ', the converter ' + propOf(WL[0][1], 'p', 'SBGN class')); }
 // 4. what a map is: the one master (create.js palKind and write() both read it)
 var M = function (lang, body) { return '<sbgn><map' + (lang == null ? '' : ' language="' + lang + '"') + '>' + body + '</map></sbgn>'; };
 var A = '<glyph id="a" class="biological activity"/><glyph id="b" class="biological activity"/><arc id="i" class="positive influence" source="a" target="b"/>';
