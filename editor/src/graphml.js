@@ -213,15 +213,8 @@ import { sbJs } from './sbgn.js';
     // or the text itself when nothing moves; were it ever to differ from noNegative's, the drawing made ahead is simply
     // not used (it is kept with its text), so this can only cost time, never change a map
     function shiftedAhead(t, d) {
-      var own = new Map(), bs = [];
-      var owner = function (e) { for (var p = e.parentNode; p; p = p.parentNode) if (p.localName === 'node' && p.namespaceURI === G) return p; return null; };
-      Array.prototype.forEach.call(d.getElementsByTagNameNS(Y, 'Geometry'), function (g) { var n = owner(g); if (n && !own.has(n)) own.set(n, g); });
-      own.forEach(function (g0, n) {
-        var r = realizerOf(n), g = r && r.getElementsByTagNameNS(Y, 'Geometry')[0];
-        if (!g) g = g0;   // as parse(): the realizer's first geometry, else the node's first
-        bs.push([num(g, 'x'), num(g, 'y')]);
-      });
-      var sh = GE.shiftOf(bs, Array.prototype.map.call(d.getElementsByTagNameNS(Y, 'Point'), function (p) { return [num(p, 'x'), num(p, 'y')]; }), gridBlock());
+      var R; try { R = GE.read(t, { doc: d }); } catch (e) { return t; }   // a file parse() would refuse: left as it is (entering edit says why)
+      var sh = GE.shiftOf(R.nodes.map(function (n) { var g = R.geos[n.ag]; return [num(g, 'x'), num(g, 'y')]; }), R.points.map(function (p) { return [num(p, 'x'), num(p, 'y')]; }), gridBlock());
       return sh ? GE.shift(t, sh[0], sh[1]) : t;
     }
     function noNegative() {

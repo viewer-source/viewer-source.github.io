@@ -22,7 +22,7 @@
 (function (root) {
   'use strict';
   var G = 'http://graphml.graphdrawing.org/xmlns', Y = 'http://www.yworks.com/xml/graphml';
-  function els(el) { return Array.prototype.filter.call(el.childNodes, function (c) { return c.nodeType === 1; }); }
+  function els(el) { return el.children ? Array.prototype.slice.call(el.children) : Array.prototype.filter.call(el.childNodes, function (c) { return c.nodeType === 1; }); }   // the browser's children, else the element nodes
   function num(el, a) { return parseFloat(el.getAttribute(a)); }
   function fmt(v) { return String(Math.round(v * 1000) / 1000); }
   function realizerOf(el) {   // the node's own yEd realizer (of a group: the one shown)
@@ -57,6 +57,7 @@
     var doc = opt.doc;
     if (!doc) {
       var DP = opt.DOMParser || root.DOMParser, bad = false;
+      if (!DP) throw 'no DOMParser (under Node: opt.DOMParser)';
       try { doc = new DP({ onError: function (l) { if (l !== 'warning') bad = true; } }).parseFromString(t, 'application/xml'); } catch (e) { bad = true; }
       if (bad || !doc || !doc.documentElement) throw 'not a readable XML file';
     }
@@ -224,7 +225,7 @@
     var by = function (m) { return m < 0 ? Math.ceil((40 - m) / block) * block : 0; }, sx = by(mx), sy = by(my);
     return sx || sy ? [sx, sy] : null;
   }
-  var api = { G: G, Y: Y, read: read, realizerOf: realizerOf, shapeOf: shapeOf, place: place, boxes: boxes, insets: insets, ends: ends, pathOf: pathOf, bend: bend, unbend: unbend,
-              shift: shift, shiftTag: shiftTag, shiftOf: shiftOf, fmt: fmt, num: num };
+  var api = { G: G, Y: Y, read: read, realizerOf: realizerOf, place: place, boxes: boxes, insets: insets, ends: ends, pathOf: pathOf, bend: bend, unbend: unbend,
+              shift: shift, shiftOf: shiftOf, fmt: fmt, num: num };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.graphml_edit = api;
 })(typeof self !== 'undefined' ? self : this);

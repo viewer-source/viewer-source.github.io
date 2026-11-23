@@ -1299,7 +1299,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
           // a step of its own, named 'shift' (the tests read it), inside the undo step of the change that caused it: undone
           // alone, the map would be back in negative places and shifted again by the next drawing
           var sh = !drag && noNegative();
-          if (sh) { parse(); rebase(sh[0], sh[1]); shared.lastChange = { name: 'shift', ids: [], shift: sh, after: shared.lastChange ? shared.lastChange.name : null }; }
+          if (sh) { parse(); rebase(sh[0], sh[1]); var lc = shared.lastChange; shared.lastChange = { name: 'shift', ids: lc ? lc.ids : [], shift: sh, after: lc ? lc.name : null }; }
           r = drawMemo && !drawMemo.cd && drawMemo.text === shared.text && !shared.afSbgn ? drawMemo.r : drawGraphml(shared.text);   // the read-ahead drawing is never in the SBGN AF view
         }
         if (t !== ticket) return;
@@ -2862,8 +2862,8 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       var a = pts[j - 1], b = pts[j], dx = b[0] - a[0], dy = b[1] - a[1], L = dx * dx + dy * dy;
       var t = L ? Math.max(0, Math.min(1, ((P[0] - a[0]) * dx + (P[1] - a[1]) * dy) / L)) : 0;
       var Q = [Math.round((a[0] + dx * t) * 1000) / 1000, Math.round((a[1] + dy * t) * 1000) / 1000];
-      var at = j - 1, paths = Array.prototype.slice.call(doc.getElementsByTagNameNS(Y, 'Path'));
-      var t2 = GE.bend(shared.text, at < e.pts.length ? { before: e.pts[at] } : e.pts.length ? { after: e.pts[e.pts.length - 1] } : { path: paths.indexOf(e.path) }, Q[0], Q[1]);
+      var at = j - 1, first = function () { return Array.prototype.indexOf.call(doc.getElementsByTagNameNS(Y, 'Path'), e.path); };   // the path's index, only for a line's first bend
+      var t2 = GE.bend(shared.text, at < e.pts.length ? { before: e.pts[at] } : e.pts.length ? { after: e.pts[e.pts.length - 1] } : { path: first() }, Q[0], Q[1]);
       if (t2 == null) return null;
       remember(false); setText(t2);
       parse();

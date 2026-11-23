@@ -22,6 +22,11 @@ var DRIVER = ['import sys, json, contextlib, io', 'sys.path[:0] = [' + JSON.stri
   'json.dump(out, sys.stdout)'].join('\n');
 var conv = {};
 if (sbgns.length) JSON.parse(cp.execFileSync(py, ['-c', DRIVER], { input: JSON.stringify(sbgns), maxBuffer: 1 << 30 }).toString()).forEach(function (g, i) { conv[sbgns[i]] = g; });
+function within(t, ids, map) {   // an id touched: one of ids or inside one of them; map: the map's own element too (its box follows what it holds)
+  var up = {}, top = {}, d = new DP().parseFromString(t.replace(/^\ufeff/, ''), 'application/xml');
+  (function walk(e, h) { Array.prototype.forEach.call(e.childNodes, function (k) { if (k.nodeType !== 1) return; var id = k.getAttribute('id'); if (id) { up[id] = h; if (k.localName === 'map') top[id] = 1; } walk(k, id || h); }); })(d, null);
+  return function (id) { if (map && top[id]) return true; for (var x = id; x; x = up[x]) if (ids.indexOf(x) >= 0) return true; return false; };
+}
 var bad = 0, ran = 0, said = 0, kinds = { yed: 0, cd: 0, sbgn: 0 };
 function no(tag, m) { bad++; if (said++ < 12) console.log('DIFF ' + tag + ': ' + m); }
 files.forEach(function (f) {
@@ -47,13 +52,16 @@ files.forEach(function (f) {
     ids = Array.from(new cr.Drawing(s2, opt).alias.keys());
     if (JSON.stringify(before.one(n.id)) === JSON.stringify(after.one(n.id))) no(tag, 'the node moved is drawn as before');
     ids.forEach(function (id) { if (id !== n.id && JSON.stringify(before.one(id)) !== JSON.stringify(after.one(id))) no(tag, id + ' drawn otherwise'); });
+    var rxs = (src.match(/<reaction [^>]*\bid="[^"]*"/g) || []).map(function (q) { return /\bid="([^"]*)"/.exec(q)[1]; });
+    rxs.forEach(function (r) { if (rx.indexOf(r) < 0 && JSON.stringify(before.one(r)) !== JSON.stringify(after.one(r))) no(tag, 'reaction ' + r + ' drawn otherwise'); });
     return;
   }
   if (kind === 'sbgn') {
     s2 = se.write(src, g2, opt);
-    U.diff(src, s2, function (id) { return id === n.id || lines.indexOf(id) >= 0 || (id && id.indexOf(n.id) === 0) || /^<map/.test(id); }).slice(0, 2).forEach(function (d) { no(tag, 'file: ' + d); });
+    U.diff(src, s2, within(src, [n.id].concat(lines), true)).slice(0, 2).forEach(function (d) { no(tag, 'file: ' + d); });
     g2 = se.graphml(s2, g, opt);   // the GraphML read again from the file written
   }
+  if (kind === 'yed') U.diff(g, g2, [n.id]).slice(0, 2).forEach(function (d) { no(tag, 'file: ' + d); });   // a yEd map's file is its GraphML; its lines keep their text (their ends are offsets)
   before = yr.elements(g, opt); after = yr.elements(g2, opt);
   if (!before || !after) return no(tag, 'not drawn');
   if (before.one(n.id) === after.one(n.id)) no(tag, 'the node moved is drawn as before');

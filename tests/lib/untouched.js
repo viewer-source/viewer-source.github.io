@@ -2,9 +2,11 @@
 // every other element with an id (a node, an edge, a glyph, an arc, a species, an alias, a reaction) compares equal:
 // its own text, attributes in their order, with the elements inside it that have ids of their own left out (each is
 // compared by itself), so a member moved inside a complex touches the member and not the complex, nor does a touched
-// element added to it or taken out of it (its place among the others is not compared). The text outside
+// element added to it or taken out of it (its place among the others is not compared). An indent changed is seen;
+// what the parser evens out is not (quotes, an entity written another way, <c/> for <c></c>, spaces between attributes):
+// a writer that keeps the file byte for byte is checked by comparing the texts themselves. The text outside
 // every element with an id (the file's header, its lists) is compared as the element '' and is touched only when ''
-// is named. Format-free: GraphML, SBGN-ML and CellDesigner alike.
+// is named; so is the declaration before the root, compared as written. Format-free: GraphML, SBGN-ML and CellDesigner alike.
 //   var U = require('./lib/untouched.js');
 //   U.diff(before, after, touched, opt) -> [] when nothing else changed, else one line per difference
 //     touched: an array of ids, or a function (id) -> true for an id the change may touch (added and removed ids too)
@@ -40,7 +42,9 @@ function elements(text, opt) {
 function diff(before, after, touched, opt) {
   var may = typeof touched === 'function' ? touched : (function (s) { return function (id) { return s.indexOf(id.replace(/#\d+$/, '')) >= 0; }; })(touched || []);
   var A = elements(before, opt), B = elements(after, opt), out = [];
-  var mine = function (t) { return t.replace(/<!--#([^]*?)-->/g, function (all, id) { return may(id) ? '' : all; }).replace(/>\s+</g, '><'); };   // a touched element added, taken out or moved in it (and the indent round it)
+  var mine = function (t) { return t.replace(/\s*<!--#([^]*?)-->/g, function (all, id) { return may(id) ? '' : all; }); };   // a touched element added, taken out or moved in it, with the indent before it
+  var pro = function (t) { var m = /<[^?!]/.exec(String(t).replace(/^\ufeff/, '')); return m ? String(t).replace(/^\ufeff/, '').slice(0, m.index) : ''; };   // the declaration and what stands before the root, as written
+  if (!may('') && pro(before) !== pro(after)) out.push('the text before the root element: changed' + first(pro(before), pro(after)));
   Object.keys(A).forEach(function (id) {
     if (may(id)) return;
     if (!(id in B)) out.push((id || 'the file outside its elements') + ': removed');

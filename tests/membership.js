@@ -25,7 +25,7 @@ var fs = require('fs'), path = require('path'), cp = require('child_process');
 var here = path.join(__dirname, '..'), se = require(path.join(here, 'renderers/converter/sbgn_edit.js')), ed = require(path.join(here, 'renderers/converter/cd_edit.js'));
 var yr = require(path.join(here, 'renderers/yrender/yrender.js'));
 var DP = require('@xmldom/xmldom').DOMParser, opt = { DOMParser: DP };
-var U = require('./lib/untouched.js'), py = process.argv[2] || 'python3', bad = 0, ran = 0, C = require('./compare.js').open('membership'), edB = C.base('renderers/converter/cd_edit.js');
+var GE = require(path.join(here, 'renderers/converter/graphml_edit.js')), U = require('./lib/untouched.js'), py = process.argv[2] || 'python3', bad = 0, ran = 0, C = require('./compare.js').open('membership'), edB = C.base('renderers/converter/cd_edit.js');
 var GN = 'http://graphml.graphdrawing.org/xmlns', YN = 'http://www.yworks.com/xml/graphml';
 function fail(tag, m) { bad++; console.log('DIFF', tag, '|', m); }
 function xml(t, tag) { var errs = [], d; try { d = new DP({ onError: function (l, m) { if (l !== 'warning') errs.push(m); } }).parseFromString(t.replace(/^\ufeff/, ''), 'application/xml'); } catch (e) { errs.push(e.message); } if (errs.length) fail(tag, 'XML: ' + errs[0]); return d; }
@@ -337,11 +337,11 @@ fs.readdirSync(path.join(here, 'maps')).filter(function (f) { return /\.graphml$
   for (var k = 0; k < N[i].inside.length; k++) { var q = N[N[i].inside[k]], qb = E.boxOf(N[i].inside[k]); g1 = setGeo(g1, q.id, [qb[0] + dx, null, null, null]); }
   var cur = { E: editorOf(g1, false) }, reparse = function (t) { cur.E = editorOf(t, false); N1.length = 0; cur.E.N.forEach(function (x) { N1.push(x); }); };
   var N1 = cur.E.N.slice(), bo = function (k) { return N1[k].box.slice(); };
-  var api = new Function('nodes2', 'boxOf', 'cd', 'window', 'T0', 'reparse', CODE2)(N1, bo, false, { layout: LAY }, g1, reparse);
+  var api = new Function('nodes2', 'boxOf', 'cd', 'window', 'T0', 'reparse', 'GE', CODE2)(N1, bo, false, { layout: LAY }, g1, reparse, GE);
   var i1 = N1.findIndex(function (n) { return n.id === id; }), set = new Set([i1].concat(N1[i1].inside));
   var nb = api.grown([i1], bo, function (k) { var q = bo(k); return set.has(k) ? [q[0] - dx, q[1], q[2], q[3]] : q; }, function (k) { return set.has(k); }), t2 = g1;
   Object.keys(nb).forEach(function (k) { t2 = setGeo(t2, N1[k].id, nb[k].map(function (v) { return Math.round(v * 1000) / 1000; })); });
-  var api2 = new Function('nodes2', 'boxOf', 'cd', 'window', 'T0', 'reparse', CODE2)(N1, bo, false, { layout: LAY }, t2, reparse);
+  var api2 = new Function('nodes2', 'boxOf', 'cd', 'window', 'T0', 'reparse', 'GE', CODE2)(N1, bo, false, { layout: LAY }, t2, reparse, GE);
   reparse(t2); api2.refit([id]);
   var t3 = api2.text(), E3 = editorOf(t3, false), N3 = E3.N, P = N3.findIndex(function (n) { return n.id === pid; }), cb = E3.boxOf(P);
   var x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;

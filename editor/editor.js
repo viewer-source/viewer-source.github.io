@@ -33,7 +33,7 @@
         "use strict";
         var G2 = "http://graphml.graphdrawing.org/xmlns", Y2 = "http://www.yworks.com/xml/graphml";
         function els(el) {
-          return Array.prototype.filter.call(el.childNodes, function(c) {
+          return el.children ? Array.prototype.slice.call(el.children) : Array.prototype.filter.call(el.childNodes, function(c) {
             return c.nodeType === 1;
           });
         }
@@ -78,6 +78,7 @@
           var doc2 = opt.doc;
           if (!doc2) {
             var DP = opt.DOMParser || root.DOMParser, bad = false;
+            if (!DP) throw "no DOMParser (under Node: opt.DOMParser)";
             try {
               doc2 = new DP({ onError: function(l) {
                 if (l !== "warning") bad = true;
@@ -335,7 +336,6 @@
           Y: Y2,
           read,
           realizerOf: realizerOf2,
-          shapeOf,
           place,
           boxes,
           insets,
@@ -344,7 +344,6 @@
           bend: bend2,
           unbend: unbend2,
           shift: shift2,
-          shiftTag,
           shiftOf,
           fmt: fmt2,
           num: num2
@@ -960,21 +959,16 @@
     return true;
   }
   function shiftedAhead(t, d) {
-    var own2 = /* @__PURE__ */ new Map(), bs = [];
-    var owner2 = function(e) {
-      for (var p = e.parentNode; p; p = p.parentNode) if (p.localName === "node" && p.namespaceURI === G) return p;
-      return null;
-    };
-    Array.prototype.forEach.call(d.getElementsByTagNameNS(Y, "Geometry"), function(g) {
-      var n = owner2(g);
-      if (n && !own2.has(n)) own2.set(n, g);
-    });
-    own2.forEach(function(g0, n) {
-      var r = realizerOf(n), g = r && r.getElementsByTagNameNS(Y, "Geometry")[0];
-      if (!g) g = g0;
-      bs.push([num(g, "x"), num(g, "y")]);
-    });
-    var sh = import_graphml_edit.default.shiftOf(bs, Array.prototype.map.call(d.getElementsByTagNameNS(Y, "Point"), function(p) {
+    var R;
+    try {
+      R = import_graphml_edit.default.read(t, { doc: d });
+    } catch (e) {
+      return t;
+    }
+    var sh = import_graphml_edit.default.shiftOf(R.nodes.map(function(n) {
+      var g = R.geos[n.ag];
+      return [num(g, "x"), num(g, "y")];
+    }), R.points.map(function(p) {
       return [num(p, "x"), num(p, "y")];
     }), gridBlock());
     return sh ? import_graphml_edit.default.shift(t, sh[0], sh[1]) : t;
@@ -13477,7 +13471,8 @@
         if (sh) {
           parse();
           rebase(sh[0], sh[1]);
-          shared.lastChange = { name: "shift", ids: [], shift: sh, after: shared.lastChange ? shared.lastChange.name : null };
+          var lc = shared.lastChange;
+          shared.lastChange = { name: "shift", ids: lc ? lc.ids : [], shift: sh, after: lc ? lc.name : null };
         }
         r = drawMemo && !drawMemo.cd && drawMemo.text === shared.text && !shared.afSbgn ? drawMemo.r : drawGraphml(shared.text);
       }
@@ -15669,8 +15664,10 @@
     var a = pts[j - 1], b = pts[j], dx = b[0] - a[0], dy = b[1] - a[1], L = dx * dx + dy * dy;
     var t = L ? Math.max(0, Math.min(1, ((P[0] - a[0]) * dx + (P[1] - a[1]) * dy) / L)) : 0;
     var Q = [Math.round((a[0] + dx * t) * 1e3) / 1e3, Math.round((a[1] + dy * t) * 1e3) / 1e3];
-    var at2 = j - 1, paths = Array.prototype.slice.call(doc.getElementsByTagNameNS(Y, "Path"));
-    var t2 = import_graphml_edit.default.bend(shared.text, at2 < e.pts.length ? { before: e.pts[at2] } : e.pts.length ? { after: e.pts[e.pts.length - 1] } : { path: paths.indexOf(e.path) }, Q[0], Q[1]);
+    var at2 = j - 1, first = function() {
+      return Array.prototype.indexOf.call(doc.getElementsByTagNameNS(Y, "Path"), e.path);
+    };
+    var t2 = import_graphml_edit.default.bend(shared.text, at2 < e.pts.length ? { before: e.pts[at2] } : e.pts.length ? { after: e.pts[e.pts.length - 1] } : { path: first() }, Q[0], Q[1]);
     if (t2 == null) return null;
     remember(false);
     setText(t2);
