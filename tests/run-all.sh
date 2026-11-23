@@ -1,7 +1,8 @@
 #!/bin/sh
 # Every test that runs without a browser, in one list: the workflow Compare renderers runs it, and so does the release
 # before anything is published. Run from the viewer's root after `python3 build.py` (some tests read downloads/), with
-# the demo and test maps in maps/, test-maps/ and parked/ and the reference set in reference/ (the site's data). Every test runs; the exit is 1 when any
+# the demo and test maps in maps/, test-maps/ and parked/ (the site's data), and BASE an earlier release's checkout
+# for the comparisons (tests/compare.js; without it they run their own checks only). Every test runs; the exit is 1 when any
 # failed, and the last lines name them.
 #   sh tests/run-all.sh       every test
 #   sh tests/run-all.sh 2     only part 2 of 4: the release runs the four parts at once on four machines (about 5 min
@@ -21,9 +22,9 @@ t() {
   if "$@"; then echo "::endgroup::"; else echo "::endgroup::"; echo "::error::failed: $*"; failed="$failed
   $*"; fi
 }
-t 1 node tests/yrender-reference.js
-t 2 node tests/layout-reference.js
-t 1 node tests/cd-reference.js
+t 1 node tests/yrender-compare.js python3
+t 2 node tests/layout-compare.js
+t 1 node tests/cd-compare.js
 t 2 node tests/cd-live.js
 t 4 node tests/cd-snap-redo.js
 t 4 node tests/cd-fit.js

@@ -1,20 +1,16 @@
 // Make main: on every CellDesigner map, every reaction with an added reactant or product has it
 // swapped with the main one, as the editor's right-click Make main writes cd_edit's GraphML (the two edges trade their
-// species end, their port there and their bend points). Checked: cd_edit.js writes the text kept in the reference set
-// (tests/reference.js); the base reactant or product now names the added one's species and alias and the link the old main one's; the
+// species end, their port there and their bend points). Checked: cd_edit.js writes what the previous release writes
+// (tests/compare.js); the base reactant or product now names the added one's species and alias and the link the old main one's; the
 // SBML references still list both species; the GraphML made again has the two lines swapped and every other line as
 // before; the text reads as XML.
-//   node tests/cd-make-main.js [CellDesigner files or folders ...]   (default: maps/)
+//   node tests/cd-make-main.js [CellDesigner files or folders ...]   (default: the test set)
 var fs = require('fs'), path = require('path');
 var here = path.join(__dirname, '..'), ed = require(path.join(here, 'renderers/converter/cd_edit.js'));
 var DP = require('@xmldom/xmldom').DOMParser, opt = { DOMParser: DP };
 var args = process.argv.slice(2);
-var files = [];
-(args.length ? args : [path.join(here, 'maps')]).forEach(function walk(p) {
-  var st; try { st = fs.statSync(p); } catch (e) { return; }
-  if (st.isDirectory()) { if (!/(^|\/)(\.git|node_modules)$/.test(p)) fs.readdirSync(p).sort().forEach(function (f) { walk(path.join(p, f)); }); }
-  else if (/\.xml$/.test(p)) { var t = fs.readFileSync(p, 'utf8').slice(0, 3000); if (/<sbml[\s>]/.test(t) && t.indexOf('celldesigner') >= 0) files.push(p); }
-});
+var C = require('./compare.js').open('cd-make-main'), edB = C.base('renderers/converter/cd_edit.js');
+var files = C.files(args, function (p) { if (!/\.xml$/.test(p)) return false; var t = fs.readFileSync(p, 'utf8').slice(0, 3000); return /<sbml[\s>]/.test(t) && t.indexOf('celldesigner') >= 0; });
 function edges(g) {   // id -> [source, target, port at the source, port at the target, bend points]
   var E = {}, re = /<edge\b[\s\S]*?<\/edge>/g, b;
   while ((b = re.exec(g))) {
@@ -37,12 +33,11 @@ files.forEach(function (f) {
     else refused.push(path.basename(f) + ' ' + id);
   });
 });
-var R = require('./reference.js').open('cd-make-main', args.length === 0);
 var bad = 0;
 jobs.forEach(function (j, n) {
   var tag = path.basename(j.f) + ' ' + j.link + ' made main', msg = [], out;
   try { out = ed.apply(j.t, j.g1, opt); } catch (e) { msg.push('JavaScript: ' + (e && e.message || e)); }
-  if (out !== undefined && R.check(tag, [j.t, tag], out, [j.t]) === 'different') msg.push('not the text kept in the reference set');
+  if (out !== undefined && C.check(tag, out, edB && edB.apply(j.t, j.g1, opt)) === 'different') msg.push('not as the previous release writes it');
   if (out !== undefined) {
     new DP({ onError: function (l, m) { if (l !== 'warning') msg.push('XML: ' + m); } }).parseFromString(out, 'application/xml');
     var E0 = edges(j.g0), E1 = edges(ed.graphml(out, null, opt));
@@ -70,5 +65,5 @@ if (r0 && E0[p0]) {
   if (ed.makeMain(g2, r0) !== null) { bad++; console.log('DIFF makeMain offered on a species that is also a product'); }
 }
 console.log(jobs.length + ' swaps on ' + files.length + ' maps (' + refused.length + ' not offered): ' + (bad ? bad + ' wrong' : 'all right'));
-R.end('written texts');
+C.end('written texts');
 process.exit(bad ? 1 : 0);

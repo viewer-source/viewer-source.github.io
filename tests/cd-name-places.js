@@ -1,13 +1,13 @@
 // A CellDesigner compartment's name at one of nine places (cdrender.namePoint, cd_make.nameAt): each place on
 // membranes of 4, 12 and 24, the name kept at its place through a rename (one line and two), a new membrane and a resize
-// and move written back by cd_edit.place (its text kept in the reference set, tests/reference.js); a name elsewhere stays
+// and move written back by cd_edit.place (as the previous release writes it, tests/compare.js); a name elsewhere stays
 // where it is; a new compartment's name at the top middle, 12.5 below its top as before.
 //   node tests/cd-name-places.js   (needs @xmldom/xmldom)
 var path = require('path');
 var here = path.join(__dirname, '..'), DP = require('@xmldom/xmldom').DOMParser;
 global.DOMParser = DP;
 var M = require(path.join(here, 'renderers/converter/cd_make.js')), E = require(path.join(here, 'renderers/converter/cd_edit.js'));
-var C = require(path.join(here, 'renderers/converter/cdrender.js')), R = require('./reference.js').open('cd-name-places', true);
+var C = require(path.join(here, 'renderers/converter/cdrender.js')), Cmp = require('./compare.js').open('cd-name-places'), EB = Cmp.base('renderers/converter/cd_edit.js');
 var bad = [], n = 0;
 function check(ok, what) { n++; if (!ok) bad.push(what); }
 function np(t, a) { var m = new RegExp('compartmentAlias id="' + a + '"[\\s\\S]*?namePoint x="([^"]*)" y="([^"]*)"').exec(t); return [parseFloat(m[1]), parseFloat(m[2])]; }
@@ -36,7 +36,7 @@ check(M.namePlace(r0.text, r0.alias) === 't' && np(r0.text, r0.alias)[1] === 52.
     var g = E.graphml(t, null, { DOMParser: DP }).replace(/(<node id="ca1"[\s\S]*?<y:Geometry )x="[^"]*" y="[^"]*" width="[^"]*" height="[^"]*"/, '$1x="52.0" y="30.0" width="380.0" height="150.0"');
     var js = E.place(t, g, { DOMParser: DP })[0];
     check(M.namePlace(js, a) === p, th + ' ' + p + ': kept through a resize');
-    check(R.check(th + ' ' + p + ' resize', [th, p], js, [t]) !== 'different', th + ' ' + p + ': the text kept in the reference set');
+    check(Cmp.check(th + ' ' + p + ' resize', js, EB && EB.place(t, g, { DOMParser: DP })[0]) !== 'different', th + ' ' + p + ': as the previous release writes it');
   });
 });
 
@@ -60,6 +60,6 @@ check(M.namePlace(t1, r1.alias) === '', 'elsewhere read as none');
 t1 = M.rename(t1, r1.alias, 'Nucleus');
 check(np(t1, r1.alias)[0] === 150 && np(t1, r1.alias)[1] === 150, 'elsewhere kept through a rename');
 
-R.end('resizes written');
+Cmp.end('resizes written');
 console.log(n + ' checks, ' + (n - bad.length) + ' right' + (bad.length ? '\n' + bad.join('\n') : ''));
 process.exit(bad.length ? 1 : 0);

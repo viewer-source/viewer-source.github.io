@@ -187,10 +187,10 @@ sitemap: false
   <text class="ca-sub" x="127" y="707" text-anchor="middle">the converter's repository</text>
   <text class="ca-name" x="127" y="732" text-anchor="middle">get_mapconv.sh</text>
   <rect class="ca-box" x="230" y="650" width="175" height="110" rx="6"/>
-  <text class="ca-title" x="317" y="672" text-anchor="middle">In: the reference set</text>
-  <text class="ca-sub" x="317" y="692" text-anchor="middle">the demo maps' drawings</text>
-  <text class="ca-sub" x="317" y="707" text-anchor="middle">and texts, from the data</text>
-  <text class="ca-name" x="317" y="732" text-anchor="middle">reference/</text>
+  <text class="ca-title" x="317" y="672" text-anchor="middle">In: the test set</text>
+  <text class="ca-sub" x="317" y="692" text-anchor="middle">maps chosen so every kind</text>
+  <text class="ca-sub" x="317" y="707" text-anchor="middle">is drawn twice, from the data</text>
+  <text class="ca-name" x="317" y="732" text-anchor="middle">test-maps/test-set/</text>
   <rect class="ca-box" x="420" y="650" width="175" height="110" rx="6"/>
   <text class="ca-title" x="507" y="672" text-anchor="middle">Out: atlas sites</text>
   <text class="ca-sub" x="507" y="692" text-anchor="middle">viewer, look, editor,</text>
@@ -209,7 +209,7 @@ sitemap: false
   <rect class="ca-box" x="990" y="650" width="175" height="110" rx="6"/>
   <text class="ca-title" x="1077" y="672" text-anchor="middle">Checks</text>
   <text class="ca-sub" x="1077" y="692" text-anchor="middle">workflow Compare renderers:</text>
-  <text class="ca-sub" x="1077" y="707" text-anchor="middle">the reference set kept,</text>
+  <text class="ca-sub" x="1077" y="707" text-anchor="middle">same as the last release,</text>
   <text class="ca-sub" x="1077" y="722" text-anchor="middle">editor writes checked</text>
   <text class="ca-name" x="1077" y="747" text-anchor="middle">tests/</text>
 </svg>
@@ -238,7 +238,7 @@ own file back, which the build then draws again. This page shows the parts and w
   <tr><td>Editor</td><td>Layout editing on all three formats: moves, bend points, ports, compartments, Grid, Snap, Pack, undo. With Editing on Full, SBGN-ML and CellDesigner maps are edited in full: a palette of glyphs, arcs, logic gates, a line's end moved to another node. Eight source files joined into <code>editor/editor.js</code>, <code>core.js</code> the largest.</td></tr>
   <tr><td>Saving</td><td>With a GitHub token: the map's file committed to the site's data repository a few seconds after the last move, and the site's build started. A reader's own maps too: committed when made or added, shown from the browser until the build has drawn their last save, and no folder used. Without: kept in the browser, or written into a folder chosen once (Chrome, Edge).</td></tr>
   <tr><td>Demo maps</td><td>92 entries in six groups: GraphML (21), CellDesigner (21), SBGN-ML written from the GraphML maps (21), SBGN-ML external (18), SBGN-ML external AF (9), AsthmaMap (2).</td></tr>
-  <tr><td>Checks</td><td>Tests in the workflow Compare renderers: the renderers, cd_edit and layout.js against the reference set of the demo maps (a difference shown by its first line), the editor's writes back into CellDesigner and SBGN-ML, live drawing equal to the drawing after the drop. No browser test of the page itself.</td></tr>
+  <tr><td>Checks</td><td>Tests in the workflow Compare renderers: the renderers, cd_edit and layout.js on the test set against the previous release (a difference shown by its first line), the editor's writes back into CellDesigner and SBGN-ML, live drawing equal to the drawing after the drop. No browser test of the page itself.</td></tr>
 </table>
 
 <h2>Modules</h2>

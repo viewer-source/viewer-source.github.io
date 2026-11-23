@@ -1,6 +1,6 @@
 // cd_edit: the editor on a CellDesigner map, through the GraphML it makes of it and the moves written back into the
-// CellDesigner text. The one master (a Python twin it once had is retired); its texts on the demo maps are
-// kept in the reference set (tests/cd-reference.js and the writer tests). The rules and their reasons are in
+// CellDesigner text. The one master (a Python twin it once had is retired); its texts on the test set are
+// compared with the previous release's (tests/cd-compare.js and the writer tests). The rules and their reasons are in
 // cd_edit-rules.md beside it under the same names (snake_case there).
 //   graphml(cdText, off, opt) -> GraphML text;  place(cdText, graphmlText, opt) -> [CellDesigner text, shift];
 //   draw(cdText, graphmlText, opt) -> [svg, CellDesigner text, GraphML text]   (opt: { DOMParser } in Node)

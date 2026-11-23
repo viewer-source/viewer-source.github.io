@@ -6,7 +6,7 @@
 //     converter's GraphML of s2 nests every node as g2 does; graphml(s2, conv(s)) too (a draft reopened on an older
 //     build); write(s2, conv(s2)) is s2 (stable); yrender draws g2.
 //   CellDesigner (every demo map with a compartment): an alias taken out of its compartment and one put into another,
-//     a compartment put into another; cd_edit.js writes the text kept in the reference set (tests/reference.js); the alias's
+//     a compartment put into another; cd_edit.js writes what the previous release writes (tests/compare.js); the alias's
 //     compartmentAlias and its species' compartment, a compartment's outside, as CellDesigner writes them; the GraphML
 //     made again from it nests the alias as moved. nestCheck lets a complex's member out (cd_make.leave writes it) and refuses one copy of a species drawn
 //     twice in one compartment.
@@ -23,7 +23,7 @@ var fs = require('fs'), path = require('path'), cp = require('child_process');
 var here = path.join(__dirname, '..'), se = require(path.join(here, 'renderers/converter/sbgn_edit.js')), ed = require(path.join(here, 'renderers/converter/cd_edit.js'));
 var yr = require(path.join(here, 'renderers/yrender/yrender.js'));
 var DP = require('@xmldom/xmldom').DOMParser, opt = { DOMParser: DP };
-var py = process.argv[2] || 'python3', bad = 0, ran = 0, R = require('./reference.js').open('membership', true);
+var py = process.argv[2] || 'python3', bad = 0, ran = 0, C = require('./compare.js').open('membership'), edB = C.base('renderers/converter/cd_edit.js');
 var GN = 'http://graphml.graphdrawing.org/xmlns', YN = 'http://www.yworks.com/xml/graphml';
 function fail(tag, m) { bad++; console.log('DIFF', tag, '|', m); }
 function xml(t, tag) { var errs = [], d; try { d = new DP({ onError: function (l, m) { if (l !== 'warning') errs.push(m); } }).parseFromString(t.replace(/^\ufeff/, ''), 'application/xml'); } catch (e) { errs.push(e.message); } if (errs.length) fail(tag, 'XML: ' + errs[0]); return d; }
@@ -120,7 +120,7 @@ cfiles.forEach(function (f) {
   }
 });
 cjobs.forEach(function (j) { j.g2 = se.moveInto(j.g, j.moves); });
-function kept(tag, t, g, out) { if (R.check(tag, [t, tag], out, [t]) === 'different') fail(tag, 'not the text kept in the reference set'); }
+function kept(tag, t, g, out) { if (C.check(tag, out, edB && edB.apply(t, g, opt)) === 'different') fail(tag, 'not as the previous release writes it'); }
 cjobs.forEach(function (j, n) {
   var tag = path.basename(j.f) + ' ' + j.what + ' ' + j.moves.map(function (m) { return m[0] + ' -> ' + m[1]; }).join(', '), out;
   ran++;
@@ -335,6 +335,6 @@ fs.readdirSync(path.join(here, 'maps')).filter(function (f) { return /\.graphml$
   if (me[2] > cb[0] + cb[2] + 1e-6) fail(f + ' ' + id, 'its drawing sticks out of its compartment after the push');
 });
 console.log(yn + " GraphML pushes checked against yEd's box");
-R.end('CellDesigner writes');
+C.end('CellDesigner writes');
 console.log(ran + rn + ' checks (' + rn + ' of the editor\'s rules): ' + sjobs.length + ' SBGN-ML changes on ' + files.length + ' maps, ' + cjobs.length + ' CellDesigner changes on ' + cfiles.length + ' maps, ' + gn + ' GraphML maps: ' + (bad ? bad + ' wrong' : 'all right'));
 process.exit(bad ? 1 : 0);

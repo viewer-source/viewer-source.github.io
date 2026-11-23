@@ -1,6 +1,6 @@
 // yrender, the yEd GraphML renderer: the viewer's build (through renderers/render.js) and the editor draw with it. The
-// one master (a Python twin it once had is retired); the drawings it gives on the demo maps are kept in the
-// reference set (tests/yrender-reference.js, the workflow Compare renderers). Other sites' Python copies are their own.
+// one master (a Python twin it once had is retired); its drawings on the test set are compared with the
+// previous release's (tests/yrender-compare.js, the workflow Compare renderers). Other sites' Python copies are their own.
 // Comments here are short: the rules and their reasons are in rules.md beside it, function by function, under the same
 // names (snake_case there).
 //   browser: yrender.render(text or XML document, { classes, roles, groups }) -> { svg, errors }

@@ -1,6 +1,6 @@
 // cd_edit.live() against cd_edit.draw(): the editor's live drawing of a move (each reaction the move touches, drawn by the
 // drop's own code) must be the same text as the drawing made after the drop, reaction by reaction. For every CellDesigner
-// map: three made-up moves of nodes, bend points and line ends (as tests/cd-reference.js makes them), every reaction drawn
+// map: three made-up moves of nodes, bend points and line ends (as tests/cd-compare.js makes them), every reaction drawn
 // live, its halo and lines found as they are in draw()'s picture; and line ends moved to another species (as
 // tests/cd-reconnect.js picks them), drawn live with the new end as the drop draws them.
 //   node tests/cd-live.js [CellDesigner files or folders ...]   (default: maps/)

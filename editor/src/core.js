@@ -623,7 +623,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
 
     // the layout tools (renderers/layout/layout.js, its own master since it was unlinked from the layout skill it began
     // as), run on the map's text; only the numbers they change are written back (tidy), so the rest stays byte for byte.
-    // One undo step. Checked by tests/layout-reference.js: layout.tidy(text, what, ids, keepPorts)
+    // One undo step. Checked by tests/layout-compare.js: layout.tidy(text, what, ids, keepPorts)
     var lay;
     function __run12() {   // run at start, in order (__start)
     lay = null;

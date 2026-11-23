@@ -1,6 +1,6 @@
 // cdrender, the CellDesigner renderer: the editor in the browser and the viewer's build (renderers/render.js) draw with
-// it. The one master (a Python twin it once had is retired); its drawings on the demo maps are kept in the
-// reference set (tests/cd-reference.js). With it the four helpers it takes from the converter (cd_layout's ANCHOR, ANGLE,
+// it. The one master (a Python twin it once had is retired); its drawings on the test set are compared with
+// the previous release's (tests/cd-compare.js). With it the four helpers it takes from the converter (cd_layout's ANCHOR, ANGLE,
 // SQUARE, anchor_point, from_frame, to_frame and celldesigner's plain_name), and Python's number writing (py below, so
 // its numbers read as the converter's), shared with cd_edit.js. The rules and their reasons are in cdrender-rules.md
 // beside it under the same names (snake_case there); comments here are short.

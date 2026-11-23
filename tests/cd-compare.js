@@ -1,19 +1,15 @@
-// cdrender.js and cd_edit.js on every CellDesigner map against the reference set (tests/reference.js), in every way
-// the viewer uses them: the build's drawing (classes) and its click data, the plain drawing, the editor's drawing
-// (groups), cd_edit's GraphML, and cd_edit's write-back after moves (nodes, bend points, ports, a modifier's end, as the
-// editor makes them; three seeded sets of moves per map, the second also past the top left so the map shifts back).
-// Replaced cd-compare.js, the comparison with the Python twins.
-//   node tests/cd-reference.js [CellDesigner files or folders ...]   (default: maps/)
+// cdrender.js and cd_edit.js against the previous release (tests/compare.js) on the test set's CellDesigner maps, in
+// every way the viewer uses them: the build's drawing (classes) and its click data, the plain drawing, the editor's
+// drawing (groups), cd_edit's GraphML, and cd_edit's write-back after moves (nodes, bend points, ports, a modifier's
+// end, as the editor makes them; three seeded sets of moves per map, the second also past the top left so the map
+// shifts back).
+//   BASE=<earlier release> node tests/cd-compare.js [CellDesigner files or folders ...]
 var fs = require('fs'), path = require('path');
 var here = path.join(__dirname, '..'), cd = require(path.join(here, 'renderers/converter/cdrender.js'));
 var ed = require(path.join(here, 'renderers/converter/cd_edit.js'));
-var xd = require('@xmldom/xmldom'), DP = xd.DOMParser, XS = xd.XMLSerializer, R = require('./reference.js').open('cd', process.argv.length <= 2);
-var files = [];
-(process.argv.length > 2 ? process.argv.slice(2) : [path.join(here, 'maps')]).forEach(function walk(p) {
-  var st; try { st = fs.statSync(p); } catch (e) { return; }
-  if (st.isDirectory()) { if (!/(^|\/)(\.git|node_modules)$/.test(p)) fs.readdirSync(p).sort().forEach(function (f) { walk(path.join(p, f)); }); }
-  else if (/\.xml$/.test(p)) { var t = fs.readFileSync(p, 'utf8').slice(0, 3000); if (/<sbml[\s>]/.test(t) && t.indexOf('celldesigner') >= 0) files.push(p); }
-});
+var xd = require('@xmldom/xmldom'), DP = xd.DOMParser, XS = xd.XMLSerializer, C = require('./compare.js').open('cd');
+var cdB = C.base('renderers/converter/cdrender.js'), edB = C.base('renderers/converter/cd_edit.js');
+var files = C.files(process.argv.slice(2), function (p) { if (!/\.xml$/.test(p)) return false; var t = fs.readFileSync(p, 'utf8').slice(0, 3000); return /<sbml[\s>]/.test(t) && t.indexOf('celldesigner') >= 0; });
 var G = 'http://graphml.graphdrawing.org/xmlns', Y = 'http://www.yworks.com/xml/graphml';
 function rng(seed) {   // mulberry32: the same moves on every machine
   return function () { seed |= 0; seed = seed + 0x6D2B79F5 | 0; var t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
@@ -40,17 +36,13 @@ function js(f) { try { return f(); } catch (e) { var m = /^(\w+Error):/.exec(e.m
 var t0 = Date.now(), o = { DOMParser: DP };
 files.forEach(function (f) {
   var t = fs.readFileSync(f, 'utf8'), name = path.relative(here, f);
-  R.check(name + ' classes', t, js(function () { var h = cd.renderHits(t, Object.assign({ classes: true }, o)); return [h[0], h[1]]; }));
-  R.check(name + ' plain', t, js(function () { return cd.render(t, o); }));
-  var gd = js(function () { return cd.render(t, Object.assign({ classes: true, groups: true }, o)); });
-  R.check(name + ' groups', t, gd);
+  var both = function (key, fn) { C.check(name + ' ' + key, js(function () { return fn(cd, ed); }), cdB && js(function () { return fn(cdB, edB); })); };
+  both('classes', function (c) { var h = c.renderHits(t, Object.assign({ classes: true }, o)); return [h[0], h[1]]; });
+  both('plain', function (c) { return c.render(t, o); });
+  both('groups', function (c) { return c.render(t, Object.assign({ classes: true, groups: true }, o)); });
+  both('graphml', function (c, e) { return e.graphml(t, null, o); });
   var g = js(function () { return ed.graphml(t, null, o); });
-  R.check(name + ' graphml', t, g);
   if (/^refused: /.test(g)) return;
-  [1, 2, 3].forEach(function (seed) {
-    var mg = moved(g, seed);
-    R.check(name + ' edit ' + seed, [t, seed], js(function () { return ed.draw(t, mg, o); }), [gd, t, mg]);   // the drawing, the file and its GraphML, each as changed
-  });
+  [1, 2, 3].forEach(function (seed) { var mg = moved(g, seed); both('edit ' + seed, function (c, e) { return e.draw(t, mg, o); }); });
 });
-var ok = R.end(files.length + ' CellDesigner maps (' + (Date.now() - t0) + ' ms)');
-process.exit(ok ? 0 : 1);
+process.exit(C.end(files.length + ' CellDesigner maps (' + (Date.now() - t0) + ' ms)') ? 0 : 1);

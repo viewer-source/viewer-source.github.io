@@ -1,11 +1,16 @@
 # Every test that runs without a browser (tests/run-all.sh, the one list): the JavaScript renderers, layout.js and
-# cd_edit's writes against the reference set kept in the site's data repository (reference/, tests/reference.js), the
-# editor's writes into CellDesigner, SBGN-ML and SBML read back by the converter. Runs by hand only, at the end of a build round, in four parts at once on four machines, every part to its end even when another fails.
+# cd_edit's writes on the test set compared with the release the previous run tested (tests/compare.js; input base
+# names another release commit), the editor's writes into CellDesigner, SBGN-ML and SBML read back by the converter. Runs by hand only, at the end of a build round, in four parts at once on four machines, every part to its end even when another fails.
 name: Compare renderers
 on:
   workflow_dispatch:
+    inputs:
+      base:
+        description: 'Release commit to compare with (default: the one the previous run tested)'
+        required: false
 permissions:
   contents: read
+  actions: read
 jobs:
   compare:
     strategy:
@@ -24,11 +29,20 @@ jobs:
           repository: ${{ github.repository_owner }}/${{ github.repository_owner }}-data
           token: ${{ secrets.DATA_TOKEN }}
           path: .data
-      - run: for d in maps test-maps cache parked reference; do [ -d .data/$d ] && cp -r .data/$d .; done; rm -rf .data
+      - run: for d in maps test-maps cache parked; do [ -d .data/$d ] && cp -r .data/$d .; done; rm -rf .data
       - uses: actions/setup-python@v5
         with: {python-version: '3.12'}
       - uses: actions/setup-node@v4
         with: {node-version: '22'}
       - run: pip install lxml && npm ci
       - run: python3 build.py   # downloads/: the SBGN-ML written from the GraphML maps, which some tests read
+      - name: the earlier release, to compare with
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BASE_IN: ${{ inputs.base }}
+        run: |
+          base="$BASE_IN"
+          [ -n "$base" ] || base=$(gh api "repos/${{ github.repository }}/actions/workflows/compare-renderers.yml/runs?per_page=5" --jq '[.workflow_runs[] | select(.id != ${{ github.run_id }})][0].head_sha')
+          git fetch -q --depth=1 origin "$base" && mkdir .base && git archive "$base" renderers | tar -x -C .base
+          echo "BASE=$PWD/.base" >> "$GITHUB_ENV"; echo "compared with $base"
       - run: sh tests/run-all.sh ${{ matrix.part }}   # one part of every test without a browser, the list kept there
