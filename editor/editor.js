@@ -7518,7 +7518,7 @@
       svMove(k.i, shared.svSel.j, k.r);
     }, true);
     document.addEventListener("keydown", function(e) {
-      if (shared.svSel && (e.key === "Escape" || (e.ctrlKey || e.metaKey) && /^[zya]$/i.test(e.key))) {
+      if (shared.svSel && (e.key === "Escape" || (e.ctrlKey || e.metaKey) && /^[zya]$/i.test(e.key) && !V.typing())) {
         shared.svSel = null;
         paint();
       }

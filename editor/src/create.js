@@ -2006,7 +2006,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       svMove(k.i, shared.svSel.j, k.r);
     }, true);
     document.addEventListener('keydown', function (e) {   // Esc, undo, redo and select all leave no state variable selected
-      if (shared.svSel && (e.key === 'Escape' || ((e.ctrlKey || e.metaKey) && /^[zya]$/i.test(e.key)))) { shared.svSel = null; paint(); }
+      if (shared.svSel && (e.key === 'Escape' || ((e.ctrlKey || e.metaKey) && /^[zya]$/i.test(e.key) && !V.typing()))) { shared.svSel = null; paint(); }   // not while a field or a small window has the keys
     }, true);
     document.addEventListener('keydown', function (e) {
       if ((e.key !== 'Delete' && e.key !== 'Backspace') || !svOn() || /input|textarea|select/i.test(document.activeElement.tagName)) return;
