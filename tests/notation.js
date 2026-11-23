@@ -48,7 +48,7 @@ no('consumption', M, P, chk('reversible', 'R.'), 'reversible', 'R.');
 yes('consumption', M, P, { sets: ['af'], check: function (c) { return c === 'reversible' ? 'R.' : null; } }, 'the reversible check is asked in PD only');
 no('production', E, P, PD, 'empty set produces nothing', 'An empty set is only consumed or produced.');
 yes('consumption', E, P, PD, 'empty set consumed'); yes('production', P, E, PD, 'empty set produced');
-no('catalysis', M, E, PD, 'nothing modulates an empty set');
+no('catalysis', M, E, PD, 'nothing modulates an empty set'); no('equivalence arc', T, E, PD, 'no tag for an empty set', 'An empty set is only consumed or produced.');
 no('consumption', PA, P, PD, 'agent consumed', 'A perturbing agent only starts a modulation, stimulation, inhibition or necessary stimulation.');
 yes('stimulation', PA, P, PD, 'agent stimulates'); no('production', P, PA, PD, 'agent produced');
 no('catalysis', NA, P, PD, 'nucleic acid feature', 'A nucleic acid feature is no catalyst.'); yes('stimulation', NA, P, PD, 'nucleic acid feature stimulates');

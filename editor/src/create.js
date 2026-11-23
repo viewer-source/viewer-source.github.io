@@ -2155,9 +2155,6 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       }
       return null;
     }
-    // an end of line k dragged onto node i (core.js takes): what drawing the line would refuse (linkKind's counts and its
-    // equivalence rules), so a drag never makes what drawing does not. A reason, or null; Activity Flow and CellDesigner
-    // maps have rules of their own
     // Settings' Proposed tick box Demerging links from logic gates: an AND or OR gate may have several lines out (never a NOT
     // gate, a delay or an equivalence)
     function fans(g) {
@@ -2165,15 +2162,20 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       var l = nodes2[g].el.getElementsByTagNameNS(Y, 'NodeLabel')[0], w = l ? l.textContent.trim().toUpperCase() : '';
       return w === 'AND' || w === 'OR';
     }
+    // an end of line k dragged onto node i (core.js takes): what drawing the line would refuse (linkKind's counts and its
+    // equivalence rules), so a drag never makes what drawing does not. A reason, or null, on the PD and AF tabs;
+    // CellDesigner maps have rules of their own
     function moveLimit(k, end, i) {
-      if (shared.cd || palLangNow() !== 'pd') return null;
       var e = edges2[k], s = end ? e.s : i, t = end ? i : e.t, a = e.arr[1];
+      if (edges2.some(function (q, j) { return j !== k && q.arr[1] === a && ((q.s === s && q.t === t) || (a === 'none' && q.s === t && q.t === s)); })) return 'This line is there already.';   // the same kind between the same two nodes, as drawing refuses it (every set; core.js takes calls this only off CellDesigner maps)
+      if (shared.cd) return null;   // the rules below hold on the PD and AF tabs alike, as drawing applies them
       var others = function (g, into) { return edges2.filter(function (q, j) { return j !== k && (into ? q.t === g : q.s === g); }).length; };
       var word = function (g) { var l = nodes2[g].el.getElementsByTagNameNS(Y, 'NodeLabel')[0]; return l ? l.textContent.trim().toUpperCase() : ''; };
       if (a === 'none' && roleOf(s) === 'proc') return 'A consumption goes from an entity into a process.';   // a headless line leaving a process
       if (!end && roleOf(s) === 'gate' && !fans(s) && others(s, false)) return 'A logic gate has one line out, and this one has it.';
       if (end && roleOf(t) === 'gate' && /^(NOT|\u03c4)$/.test(word(t)) && others(t, true)) return 'This gate has one input, and it has it.';
       if (MODS.test(a) && nodes2[s].eq) return 'An equivalence\u2019s line goes to an entity.';
+      if (a === 'none' && !end && nodes2[e.s].eq && !nodes2[i].eq) return 'An equivalence\u2019s line goes to an entity.';   // its output's start stays on the equivalence (onto a gate or a process it would be a line out of them)
       if (nodes2[i].shape.kind === 'Tag') return a !== 'none' ? 'A tag is joined to an entity by an equivalence arc.' : tagRoom(i, end ? s : t, k);
       if (a === 'none' && roleOf(end ? s : t) === 'tag') return tagRoom(end ? s : t, i, k);   // a tag's line onto another entity: a terminal keeps one line from outside and one from inside
       if (a === 'none' && roleOf(s) === 'gate' && roleOf(t) === 'gate' && (nodes2[s].eq || nodes2[t].eq)) return 'An equivalence joins entities only.';
@@ -2201,6 +2203,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       // unticked, SBGN PD's rules alone
       var loose = hybOn(), subA = loose && nodes2[a].shape.kind === 'Submap', subB = loose && nodes2[b].shape.kind === 'Submap';
       if (subB) rb = 'pheno';
+      if (!loose && (nodes2[a].shape.kind === 'Submap' || nodes2[b].shape.kind === 'Submap')) return { no: 'A submap is joined to the map by its tags or terminals (Reduced notation is unticked in the palette).' };   // a submap has no role here: no line kind fits it
       if (loose && (ra === 'pheno' || subA)) {
         if ((want && !MODK[want]) || want === 'catalysis') return { no: 'A phenotype or a submap starts a stimulation, inhibition, necessary stimulation or modulation.' };
         if (rb !== 'proc' && rb !== 'pheno' && rb !== 'epn') return { no: 'A line from a phenotype or a submap goes to a process, an entity, a phenotype or a submap.' };

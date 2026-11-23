@@ -583,7 +583,7 @@
             {
               id: "empty-set-from",
               sets: ["pd"],
-              arc: ["production", "catalysis", "modulation", "stimulation", "inhibition", "necessary stimulation", "logic arc"],
+              arc: ["production", "catalysis", "modulation", "stimulation", "inhibition", "necessary stimulation", "logic arc", "equivalence arc"],
               from: ["entity:empty set"],
               to: ["*"],
               no: "An empty set is only consumed or produced.",
@@ -592,7 +592,7 @@
             {
               id: "empty-set-to",
               sets: ["pd"],
-              arc: ["consumption", "catalysis", "modulation", "stimulation", "inhibition", "necessary stimulation", "logic arc"],
+              arc: ["consumption", "catalysis", "modulation", "stimulation", "inhibition", "necessary stimulation", "logic arc", "equivalence arc"],
               from: ["*"],
               to: ["entity:empty set"],
               no: "An empty set is only consumed or produced.",
@@ -7267,8 +7267,11 @@
     return w === "AND" || w === "OR";
   }
   function moveLimit(k, end, i) {
-    if (shared.cd || palLangNow() !== "pd") return null;
     var e = edges2[k], s = end ? e.s : i, t = end ? i : e.t, a = e.arr[1];
+    if (edges2.some(function(q, j) {
+      return j !== k && q.arr[1] === a && (q.s === s && q.t === t || a === "none" && q.s === t && q.t === s);
+    })) return "This line is there already.";
+    if (shared.cd) return null;
     var others = function(g, into) {
       return edges2.filter(function(q, j) {
         return j !== k && (into ? q.t === g : q.s === g);
@@ -7282,6 +7285,7 @@
     if (!end && roleOf(s) === "gate" && !fans(s) && others(s, false)) return "A logic gate has one line out, and this one has it.";
     if (end && roleOf(t) === "gate" && /^(NOT|\u03c4)$/.test(word(t)) && others(t, true)) return "This gate has one input, and it has it.";
     if (MODS.test(a) && nodes2[s].eq) return "An equivalence\u2019s line goes to an entity.";
+    if (a === "none" && !end && nodes2[e.s].eq && !nodes2[i].eq) return "An equivalence\u2019s line goes to an entity.";
     if (nodes2[i].shape.kind === "Tag") return a !== "none" ? "A tag is joined to an entity by an equivalence arc." : tagRoom(i, end ? s : t, k);
     if (a === "none" && roleOf(end ? s : t) === "tag") return tagRoom(end ? s : t, i, k);
     if (a === "none" && roleOf(s) === "gate" && roleOf(t) === "gate" && (nodes2[s].eq || nodes2[t].eq)) return "An equivalence joins entities only.";
@@ -7320,6 +7324,7 @@
     }
     var loose = hybOn(), subA = loose && nodes2[a].shape.kind === "Submap", subB = loose && nodes2[b].shape.kind === "Submap";
     if (subB) rb = "pheno";
+    if (!loose && (nodes2[a].shape.kind === "Submap" || nodes2[b].shape.kind === "Submap")) return { no: "A submap is joined to the map by its tags or terminals (Reduced notation is unticked in the palette)." };
     if (loose && (ra === "pheno" || subA)) {
       if (want && !MODK[want] || want === "catalysis") return { no: "A phenotype or a submap starts a stimulation, inhibition, necessary stimulation or modulation." };
       if (rb !== "proc" && rb !== "pheno" && rb !== "epn") return { no: "A line from a phenotype or a submap goes to a process, an entity, a phenotype or a submap." };
