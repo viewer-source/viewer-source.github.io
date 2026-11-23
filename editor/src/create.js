@@ -2175,6 +2175,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       if (end && roleOf(t) === 'gate' && /^(NOT|\u03c4)$/.test(word(t)) && others(t, true)) return 'This gate has one input, and it has it.';
       if (MODS.test(a) && nodes2[s].eq) return 'An equivalence\u2019s line goes to an entity.';
       if (nodes2[i].shape.kind === 'Tag') return a !== 'none' ? 'A tag is joined to an entity by an equivalence arc.' : tagRoom(i, end ? s : t, k);
+      if (a === 'none' && roleOf(end ? s : t) === 'tag') return tagRoom(end ? s : t, i, k);   // a tag's line onto another entity: a terminal keeps one line from outside and one from inside
       if (a === 'none' && roleOf(s) === 'gate' && roleOf(t) === 'gate' && (nodes2[s].eq || nodes2[t].eq)) return 'An equivalence joins entities only.';
       return null;
     }

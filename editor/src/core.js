@@ -2477,6 +2477,8 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
         return !proc(here) && !/\|g\d*$/.test(nodes2[end ? e.s : e.t].id) && !proc(i) && !nd.comp && !(nd.up != null && !nodes2[nd.up].comp);
       }
       if (i === other || (!r && !(hybOn() && nodes2[i].shape.kind === 'Submap')) || a[0] !== 'none') return false;
+      var tg = roleOf(e.s) === 'tag' ? e.s : roleOf(e.t) === 'tag' ? e.t : null;
+      if (a[1] === 'none' && tg != null) return (end ? e.t : e.s) !== tg && r === 'epn';   // a tag's or terminal's equivalence arc: its entity end to another entity, the tag's end stays (SBGN only; tagRoom in moveLimit)
       if (a[1] === 'none') {   // the arrowhead-less line: its hub end at a process or gate, its other end at an entity (or a gate into a gate)
         if (!hub(roleOf(e.s)) && !hub(roleOf(e.t))) return false;   // a plain line between other glyphs (an equivalence arc): not this line
         var h = hub(roleOf(e.t)) ? 1 : 0;
@@ -2494,7 +2496,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       if (!takes0(k, end, i)) return false;
       if (shared.cd) return true;
       var e = edges2[k], s = end ? e.s : i, t = end ? i : e.t, a = e.arr[1];
-      return !pdLimit(s, t, a === 'delta' ? 'production' : a === 'white_circle' ? 'catalysis' : a === 'none' ? (roleOf(t) === 'proc' ? 'consumption' : 'logic arc') : 'modulation') && !moveLimit(k, end, i);
+      return !pdLimit(s, t, a === 'delta' ? 'production' : a === 'white_circle' ? 'catalysis' : a === 'none' ? (roleOf(t) === 'proc' ? 'consumption' : roleOf(s) === 'tag' || roleOf(t) === 'tag' ? 'equivalence arc' : 'logic arc') : 'modulation') && !moveLimit(k, end, i);
     }
     function takerAt(pp, P) {   // the innermost node under P that can take the end, or its own node; null over nothing that can
       var R = 4 / V.z, best = null, ba = Infinity;
