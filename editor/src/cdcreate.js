@@ -567,7 +567,6 @@ import { ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues, confet
       if (r === 'gate') { var g = cdGateOf(i); return g ? NT.nodeKind('celldesigner', 'BOOLEAN_LOGIC_GATE_' + g.kind) : null; }
       return r === 'epn' && (c = cdClsOf(nodes2[i].id)) ? NT.nodeKind('celldesigner', c[0]) : null;
     }
-    function cdReduced(type) { return /^(UNKNOWN_)?(REDUCED_|POSITIVE_INFLUENCE|NEGATIVE_INFLUENCE)/.test(type || ''); }   // a reaction type of reduced notation (notation.js CD_REDUCED)
     // the table's answer for a line of class cls from s to t; held: the line being moved is a reduced notation reaction
     function cdAsk(cls, s, t, held) {
       var ks = cdNt(s), kt = cdNt(t);
@@ -589,21 +588,24 @@ import { ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues, confet
       if (h.part) return h.part === 'reactant' ? cdAsk('consumption', a, b) : cdAsk('production', a, b);
       return null;
     }
-    // an end of line k dragged onto species i (core.js takes, after takes0's own test): the table's answer for the line as
-    // it would be; a reduced notation reaction asked between its two species
+    // an end of line k dragged onto species i (core.js takes, after takes0, which keeps a gate's lines and a reaction's
+    // square in place): the table's answer for the line as it would be. A reduced notation reaction asked between its two
+    // species; any other reaction drawn without a square (cd_edit FULL: a transcriptional activation, a heterodimer
+    // association, ...) left as it is, the table having no kind for its single line
     function cdMoveSays(k, end, i) {
-      var e = edges2[k], m = e.id.match(/^(.*)\|(a|b|[rpmi])(\d*)$/), A = m && cdAbout(m[1]);
+      var e = edges2[k], m = e.id.match(/^(.*)\|(a|b|[rpm])(\d*)$/), A = m && cdAbout(m[1]);
       if (!A) return null;
-      var s = end ? e.s : i, t = end ? i : e.t;
-      if (cdReduced(A.type)) {
+      var sq = nodes2.some(function (n) { return n.id === m[1] + '|proc'; });
+      if (!sq) {
+        if (!NT.reducedType('celldesigner', A.type)) return null;
         var ea = edges2.filter(function (q) { return q.id === m[1] + '|a'; })[0], eb = edges2.filter(function (q) { return q.id === m[1] + '|b'; })[0];
         var was = end ? e.t : e.s, ends = [ea ? ea.s : null, eb ? eb.t : ea ? ea.t : null].map(function (x) { return x === was ? i : x; });
         if (ends[0] == null || ends[1] == null) return null;
         var pic = function (x) { var q = cdNt(x); return !!q && q.kind === 'phenotype'; };   // held while its source stays the same sort (a species; a phenotype)
         return cdAsk(NT.arcKind('celldesigner', A.type), ends[0], ends[1], !ea || pic(ea.s) === pic(ends[0]));
       }
-      var cls = /^[ar]$/.test(m[2]) ? 'consumption' : /^[bp]$/.test(m[2]) ? 'production' : m[2] === 'm' ? NT.arcKind('celldesigner', A.mods[+m[3]]) : 'logic arc';
-      return cls ? cdAsk(cls, s, t) : null;
+      var cls = m[2] === 'm' ? NT.arcKind('celldesigner', A.mods[+m[3]]) : /^[ar]$/.test(m[2]) ? 'consumption' : 'production';   // a modifier: its species' end (a gate's line stays, takes0)
+      return cls ? cdAsk(cls, end ? e.s : i, end ? i : e.t) : null;
     }
     function cdKind0(a, b, P, want) {
       if (b < 0) return null;

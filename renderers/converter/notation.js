@@ -100,6 +100,7 @@
     return null;
   }
   var CD_REDUCED = /\btype="(?:UNKNOWN_)?(?:REDUCED_PHYSICAL_STIMULATION|REDUCED_MODULATION|REDUCED_TRIGGER|NEGATIVE_INFLUENCE|POSITIVE_INFLUENCE)"/;
+  function reducedType(format, type) { return format === 'celldesigner' && CD_REDUCED.test('type="' + (type || '') + '"'); }   // a reaction type of reduced notation
   function mapKind(format, text, engines) {
     if (format === 'sbgnml') { var se = engines && engines.sbgn_edit; return se && se.mapKind ? se.mapKind(text) : null; }
     if (format === 'celldesigner') return /<celldesigner:(?:speciesAlias|complexSpeciesAlias)\b/.test(text || '') ? (CD_REDUCED.test(text) ? 'hybrid' : 'pd') : 'empty';
@@ -218,6 +219,6 @@
     return o;
   }
 
-  var api = { ARCS: ARCS, MODS: MODS, RULES: RULES, nodeKind: nodeKind, arcKind: arcKind, arcHead: arcHead, mapKind: mapKind, allowed: allowed, paletteOff: paletteOff };
+  var api = { ARCS: ARCS, MODS: MODS, RULES: RULES, nodeKind: nodeKind, arcKind: arcKind, arcHead: arcHead, reducedType: reducedType, mapKind: mapKind, allowed: allowed, paletteOff: paletteOff };
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.notation = api;
 })(typeof self !== 'undefined' ? self : this);

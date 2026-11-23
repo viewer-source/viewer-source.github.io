@@ -2171,16 +2171,22 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       return NT.nodeKind('graphml', r === 'proc' ? 'Process' : nodes2[i].shape.kind, l ? l.textContent.trim() : '');
     }
     function ntSets() { return (palLangNow() === 'af' ? ['af'] : hybOn() ? ['pd', 'reduced'] : ['pd']).concat(V.fanout ? ['fanout'] : [], sbgnStrict() ? ['strict'] : []); }
+    var revMemo;   // a process's reversibility, read once per map text: a drag asks it on every pointer move
+    function reversibleNow(id) {
+      if (!revMemo || revMemo.t !== shared.text) revMemo = { t: shared.text, r: {} };
+      if (!(id in revMemo.r)) revMemo.r[id] = sbJs.reversibility(shared.text, id, { sbgn: src() });
+      return revMemo.r[id];
+    }
     function ntCheck(cls, s, t, skip) {
-      var a = skip >= 0 && NT.arcKind('graphml', edges2[skip].arr[1]) === cls ? edges2[skip].arr[1] : NT.arcHead('graphml', cls);   // a moved line keeps its own arrowhead
+      var plain = NT.arcHead('graphml', cls) === 'none', same = function (q) { return plain ? q.arr[1] === 'none' : NT.arcKind('graphml', q.arr[1]) === cls; };   // by kind: crows_foot_one and t_shape are both an inhibition
       var lines = function (f) { return edges2.filter(function (q, j) { return j !== skip && f(q); }).length; };
       return function (c) {
         if (c === 'gateOneOut') return lines(function (q) { return q.s === s; }) ? 'A logic gate has one line out, and this one has it.' : null;
         if (c === 'oneInput') return lines(function (q) { return q.t === t; }) ? 'This gate has one input, and it has it.' : null;
-        if (c === 'already') return s >= 0 && t >= 0 && lines(function (q) { return q.arr[1] === a && ((q.s === s && q.t === t) || (a === 'none' && q.s === t && q.t === s)); }) ? 'This line is there already.' : null;
-        if (c === 'tagRoom') { var tg = roleOf(s) === 'tag' ? s : t; return tagRoom(tg, tg === s ? t : s, skip); }
-        if (c === 'reversible') { var rv = t >= 0 && sbJs.reversibility(shared.text, nodes2[t].id, { sbgn: src() }); return rv && rv.rev ? 'A reversible process has productions on both sides.' : null; }   // 3.5.2.5
-        if (c === 'oneCatalysis' || c === 'oneNecessary') return t >= 0 && lines(function (q) { return q.t === t && q.arr[1] === a; }) ? 'A process has one ' + cls + ' in SBGN (Strict SBGN is ticked in the palette).' : null;
+        if (c === 'already') return s >= 0 && t >= 0 && lines(function (q) { return same(q) && ((q.s === s && q.t === t) || (plain && q.s === t && q.t === s)); }) ? 'This line is there already.' : null;
+        if (c === 'tagRoom') { if (s < 0 || t < 0) return null; var tg = roleOf(s) === 'tag' ? s : t; return tagRoom(tg, tg === s ? t : s, skip); }
+        if (c === 'reversible') { var rv = t >= 0 && reversibleNow(nodes2[t].id); return rv && rv.rev ? 'A reversible process has productions on both sides.' : null; }   // 3.5.2.5
+        if (c === 'oneCatalysis' || c === 'oneNecessary') return t >= 0 && lines(function (q) { return q.t === t && same(q); }) ? 'A process has one ' + cls + ' in SBGN (Strict SBGN is ticked in the palette).' : null;
         if (c === 'emptyOne') { var x = cls === 'consumption' ? s : t; return x >= 0 && lines(function (q) { return q.s === x || q.t === x; }) ? 'An empty set has one line in SBGN (Strict SBGN is ticked in the palette).' : null; }
         return null;
       };
@@ -2211,6 +2217,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
     function moveSays(k, end, i) {
       if (shared.cd) return cdMoveSays(k, end, i);
       var e = edges2[k], s = end ? e.s : i, t = end ? i : e.t;
+      if (!ntKind(s) || !ntKind(t)) return 'Not a glyph of the notation.';   // takes0 leaves the kinds to the table: a gate with a word it does not know takes no moved end
       return ruleSays(moveCls(k, s, t), s, t, k);
     }
     function linkKind(a, b, P, want) {   // linkKind0's kind for the gesture, then the table's answer for it

@@ -516,6 +516,9 @@
           return null;
         }
         var CD_REDUCED = /\btype="(?:UNKNOWN_)?(?:REDUCED_PHYSICAL_STIMULATION|REDUCED_MODULATION|REDUCED_TRIGGER|NEGATIVE_INFLUENCE|POSITIVE_INFLUENCE)"/;
+        function reducedType(format, type) {
+          return format === "celldesigner" && CD_REDUCED.test('type="' + (type || "") + '"');
+        }
         function mapKind(format, text, engines) {
           if (format === "sbgnml") {
             var se = engines && engines.sbgn_edit;
@@ -725,7 +728,7 @@
           });
           return o;
         }
-        var api2 = { ARCS: ARCS2, MODS: MODS2, RULES, nodeKind, arcKind, arcHead, mapKind, allowed, paletteOff };
+        var api2 = { ARCS: ARCS2, MODS: MODS2, RULES, nodeKind, arcKind, arcHead, reducedType, mapKind, allowed, paletteOff };
         if (typeof module !== "undefined" && module.exports) module.exports = api2;
         else root.notation = api2;
       })(typeof self !== "undefined" ? self : exports);
@@ -7334,8 +7337,16 @@
   function ntSets() {
     return (palLangNow() === "af" ? ["af"] : hybOn() ? ["pd", "reduced"] : ["pd"]).concat(V.fanout ? ["fanout"] : [], sbgnStrict() ? ["strict"] : []);
   }
+  var revMemo;
+  function reversibleNow(id) {
+    if (!revMemo || revMemo.t !== shared.text) revMemo = { t: shared.text, r: {} };
+    if (!(id in revMemo.r)) revMemo.r[id] = sbJs.reversibility(shared.text, id, { sbgn: src() });
+    return revMemo.r[id];
+  }
   function ntCheck(cls, s, t, skip) {
-    var a = skip >= 0 && import_notation.default.arcKind("graphml", edges2[skip].arr[1]) === cls ? edges2[skip].arr[1] : import_notation.default.arcHead("graphml", cls);
+    var plain = import_notation.default.arcHead("graphml", cls) === "none", same = function(q) {
+      return plain ? q.arr[1] === "none" : import_notation.default.arcKind("graphml", q.arr[1]) === cls;
+    };
     var lines = function(f) {
       return edges2.filter(function(q, j) {
         return j !== skip && f(q);
@@ -7349,18 +7360,19 @@
         return q.t === t;
       }) ? "This gate has one input, and it has it." : null;
       if (c === "already") return s >= 0 && t >= 0 && lines(function(q) {
-        return q.arr[1] === a && (q.s === s && q.t === t || a === "none" && q.s === t && q.t === s);
+        return same(q) && (q.s === s && q.t === t || plain && q.s === t && q.t === s);
       }) ? "This line is there already." : null;
       if (c === "tagRoom") {
+        if (s < 0 || t < 0) return null;
         var tg = roleOf(s) === "tag" ? s : t;
         return tagRoom(tg, tg === s ? t : s, skip);
       }
       if (c === "reversible") {
-        var rv = t >= 0 && sbJs.reversibility(shared.text, nodes2[t].id, { sbgn: src() });
+        var rv = t >= 0 && reversibleNow(nodes2[t].id);
         return rv && rv.rev ? "A reversible process has productions on both sides." : null;
       }
       if (c === "oneCatalysis" || c === "oneNecessary") return t >= 0 && lines(function(q) {
-        return q.t === t && q.arr[1] === a;
+        return q.t === t && same(q);
       }) ? "A process has one " + cls + " in SBGN (Strict SBGN is ticked in the palette)." : null;
       if (c === "emptyOne") {
         var x = cls === "consumption" ? s : t;
@@ -7395,6 +7407,7 @@
   function moveSays(k, end, i) {
     if (shared.cd) return cdMoveSays(k, end, i);
     var e = edges2[k], s = end ? e.s : i, t = end ? i : e.t;
+    if (!ntKind(s) || !ntKind(t)) return "Not a glyph of the notation.";
     return ruleSays(moveCls(k, s, t), s, t, k);
   }
   function linkKind(a, b, P, want) {
@@ -9459,9 +9472,6 @@
     }
     return r === "epn" && (c = cdClsOf(nodes2[i].id)) ? import_notation2.default.nodeKind("celldesigner", c[0]) : null;
   }
-  function cdReduced(type) {
-    return /^(UNKNOWN_)?(REDUCED_|POSITIVE_INFLUENCE|NEGATIVE_INFLUENCE)/.test(type || "");
-  }
   function cdAsk(cls, s, t, held) {
     var ks = cdNt(s), kt = cdNt(t);
     if (!ks || !kt) return null;
@@ -9488,10 +9498,13 @@
     return null;
   }
   function cdMoveSays(k, end, i) {
-    var e = edges2[k], m = e.id.match(/^(.*)\|(a|b|[rpmi])(\d*)$/), A = m && cdAbout(m[1]);
+    var e = edges2[k], m = e.id.match(/^(.*)\|(a|b|[rpm])(\d*)$/), A = m && cdAbout(m[1]);
     if (!A) return null;
-    var s = end ? e.s : i, t = end ? i : e.t;
-    if (cdReduced(A.type)) {
+    var sq2 = nodes2.some(function(n) {
+      return n.id === m[1] + "|proc";
+    });
+    if (!sq2) {
+      if (!import_notation2.default.reducedType("celldesigner", A.type)) return null;
       var ea = edges2.filter(function(q) {
         return q.id === m[1] + "|a";
       })[0], eb = edges2.filter(function(q) {
@@ -9507,8 +9520,8 @@
       };
       return cdAsk(import_notation2.default.arcKind("celldesigner", A.type), ends[0], ends[1], !ea || pic(ea.s) === pic(ends[0]));
     }
-    var cls = /^[ar]$/.test(m[2]) ? "consumption" : /^[bp]$/.test(m[2]) ? "production" : m[2] === "m" ? import_notation2.default.arcKind("celldesigner", A.mods[+m[3]]) : "logic arc";
-    return cls ? cdAsk(cls, s, t) : null;
+    var cls = m[2] === "m" ? import_notation2.default.arcKind("celldesigner", A.mods[+m[3]]) : /^[ar]$/.test(m[2]) ? "consumption" : "production";
+    return cls ? cdAsk(cls, end ? e.s : i, end ? i : e.t) : null;
   }
   function cdKind0(a, b, P, want) {
     if (b < 0) return null;
@@ -15761,12 +15774,10 @@
     if (a[1] === "none") {
       if (!hub(roleOf(e.s)) && !hub(roleOf(e.t))) return false;
       var h = hub(roleOf(e.t)) ? 1 : 0;
-      return end === h ? hub(r) && !(r === "proc" && ro === "gate") : r === "epn" || r === "gate" && ro === "gate" || r === "pheno" && ro === "proc" && !sbgnStrict();
+      return end === h ? hub(r) && !(r === "proc" && ro === "gate") : r === "epn" || r === "gate" || r === "pheno";
     }
-    if (a[1] === "delta") return hub(roleOf(end ? e.t : e.s)) ? r === "proc" : r === "epn" || r === "pheno" && !sbgnStrict();
-    var loose = hybOn() && a[1] !== "white_circle" && (r === "pheno" || nodes2[i].shape.kind === "Submap");
-    if (MODS.test(a[1])) return loose || (end ? r === "proc" || r === "pheno" || r === "epn" && a[1] !== "white_circle" && (roleOf(e.t) === "epn" || palLangNow() === "af" || hybOn()) : r === "epn" || r === "gate" || r === "pheno" && roleOf(e.t) === "proc" && !sbgnStrict());
-    return false;
+    if (a[1] === "delta") return hub(roleOf(end ? e.t : e.s)) ? r === "proc" : r !== "proc";
+    return MODS.test(a[1]);
   }
   function takes(k, end, i) {
     return takes0(k, end, i) && !moveSays(k, end, i);

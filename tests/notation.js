@@ -38,6 +38,7 @@ var HP = { sets: ['pd'], held: true }, HS = { sets: ['pd', 'strict'], held: true
 yes('stimulation', M, S, HP, 'held: moved onto another entity, unticked'); yes('inhibition', AND, M, HS, 'held: from a gate, Strict SBGN');
 yes('modulation', PH, M, HP, 'held: from a phenotype'); no('catalysis', M, S, HP, 'held: never a catalysis between entities');
 no('stimulation', M, PA, HP, 'held: not onto a perturbing agent'); no('stimulation', M, S, { sets: ['pd'], held: false }, 'not held: a new one refused');
+ok('reducedType celldesigner', N.reducedType('celldesigner', 'UNKNOWN_REDUCED_MODULATION') && N.reducedType('celldesigner', 'POSITIVE_INFLUENCE') && !N.reducedType('celldesigner', 'TRANSCRIPTIONAL_ACTIVATION') && !N.reducedType('celldesigner', 'STATE_TRANSITION') && !N.reducedType('graphml', 'POSITIVE_INFLUENCE'));
 ok('arcHead graphml', N.arcHead('graphml', 'inhibition') === 't_shape' && N.arcHead('graphml', 'production') === 'delta' && N.arcHead('graphml', 'logic arc') === 'none' && N.arcHead('graphml', 'x') === null && N.arcHead('sbgnml', 'production') === null);
 // Strict SBGN: the specification alone
 var ST = { sets: ['pd', 'strict'] }, STR = { sets: ['pd', 'reduced', 'strict', 'fanout'], check: function (c) { return c === 'gateOneOut' ? 'one out' : null; } };
