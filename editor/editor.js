@@ -3513,7 +3513,7 @@
         // a tag: dropped on a submap's border it is that submap's terminal, sliding along it; elsewhere a free tag. Only
         // with the palette's CellDesigner compatible unticked (CellDesigner has neither; compat()); its sign the
         // macromolecule's box with the phenotype's point
-        ["tag", "Tag", '<path d="M1.5 5h16.5l4.5 7-4.5 7h-16.5z"/>']
+        ["tag", "Tag / terminal", '<path d="M1.5 5h16.5l4.5 7-4.5 7h-16.5z"/>']
       ]],
       // logic gates (with SBGN's equivalence operator), a
       // circle with its word or sign, made bare as a process, its antennas grown by its arcs; marks inside a sign are class
