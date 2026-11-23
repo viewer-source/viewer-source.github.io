@@ -12574,6 +12574,12 @@
           return (v - io[j] + far[j] >= PAD ? PAD : Math.min(PAD, v - io[j])) + io[j];
         });
         w = [e[0] - pad[0], e[1] - pad[1], e[2] + pad[2], e[3] + pad[3]];
+      } else if (overlap(s0, c0) && moving2(k) && !nodes2[k].comp && drawnOut(k, p, s0, c0, B0)) {
+        var m0 = [s0[0] + s0[2] / 2 - c0[0], s0[1] + s0[3] / 2 - c0[1], c0[0] + c0[2] - s0[0] - s0[2] / 2, c0[1] + c0[3] - s0[1] - s0[3] / 2].map(function(v, j) {
+          return v + far[j] >= 1 ? 1 : v;
+        });
+        var cx = b[0] + b[2] / 2, cy = b[1] + b[3] / 2;
+        w = [cx - m0[0], cy - m0[1], cx + m0[2], cy + m0[3]];
       } else if (overlap(s0, c0)) w = [b[0] + b[2] - 1, b[1] + b[3] - 1, b[0] + 1, b[1] + 1];
       else return;
       var x02 = Math.min(c[0], w[0]), y02 = Math.min(c[1], w[1]), x1 = Math.max(c[0] + c[2], w[2]), y1 = Math.max(c[1] + c[3], w[3]);
@@ -12583,6 +12589,13 @@
     };
     ks.forEach(hold);
     return nb;
+  }
+  function drawnOut(k, p, s0, c0, B0) {
+    return nodes2.some(function(q, j) {
+      if (!q.comp || j === p || j === k || under(j, p) || under(j, k)) return false;
+      var d = B0(j), x02 = Math.max(s0[0], d[0]), y02 = Math.max(s0[1], d[1]), x1 = Math.min(s0[0] + s0[2], d[0] + d[2]), y1 = Math.min(s0[1] + s0[3], d[1] + d[3]);
+      return x1 > x02 && y1 > y02 && !inBox([x02, y02, x1 - x02, y1 - y02], c0);
+    });
   }
   function extOf(k, b) {
     var L = window.layout, g = boxOf(k);
