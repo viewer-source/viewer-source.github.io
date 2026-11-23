@@ -68,7 +68,7 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#acly-celld
   await draw('cd:PHYSICAL_STIMULATION', await at(gene), sq);
   var t3 = await text();
   ok('the same stimulation again refused (the line is there already)', count(t3, /<celldesigner:modification\b/g) === m0 + 1);
-  await draw('cd:STATE_TRANSITION', await at(p1), await at(ph));
+  await draw('cd:STATE_TRANSITION', await at(p2), await at(ph));   // from the second protein: a line from the first would lie on the reaction dragged below and take its clicks
   var t4 = await text();
   ok('a reaction into the phenotype taken (a phenotype is a product in CellDesigner)', count(t4, /<reaction\b/g) === count(t3, /<reaction\b/g) + 1);
   await draw('cd:STATE_TRANSITION', await at(ph), await at(p3));
@@ -80,8 +80,11 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#acly-celld
   ok('its product end dragged onto the third protein: it moves there', did && productOf(await text(), rid) === p3, productOf(await text(), rid));
   did = await dragEnd(rid + '|b', await at(p3), await at(ph));
   ok('then onto the phenotype: it moves there (a phenotype is a product in CellDesigner)', did && productOf(await text(), rid) === ph, productOf(await text(), rid));
+  did = await dragEnd(rid + '|b', await at(ph), await at(p2));
+  ok('then off the phenotype onto the second protein: it moves there', did && productOf(await text(), rid) === p2, productOf(await text(), rid));
   ok('no script error', !errs.length, errs.join(' / '));
   console.log(bad ? bad + ' wrong' : 'all ok');
   await b.close();
   process.exit(bad ? 1 : 0);
 })();
+
