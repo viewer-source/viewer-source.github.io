@@ -161,7 +161,7 @@ sitemap: false
     <text x="1085" y="428">cd_edit.js</text>
     <text x="1085" y="450">cd_make.js</text>
     <text x="1085" y="472">sbgn_edit.js</text>
-    <text x="1085" y="494">layout.js</text>
+    <text x="1085" y="494">layout.js, holding.js</text>
   </g>
   <rect class="ca-box" x="1005" y="524" width="160" height="50" rx="6"/>
   <text class="ca-title" x="1085" y="544" text-anchor="middle">Browser storage</text>
@@ -226,7 +226,7 @@ picture and one set of click data, so the viewer in the browser never knows whic
 for the layout, loaded only where the Edit tab is, draws with the same renderers in the browser and saves the map's
 own file back, which the build then draws again. This page shows the parts and where each lives. How to use it: <a href="/guide/">Guide</a>.</p>
 
-<p class="ca-upd">Updated 2026-11-22, with the editor's parts as modules bundled into one file (before it, which part may use which).</p>
+<p class="ca-upd">Updated 2026-11-23, with what holds what as an engine of its own (<code>holding.js</code>), which the editor calls.</p>
 
 <h2>State</h2>
 
@@ -261,6 +261,7 @@ own file back, which the build then draws again. This page shows the parts and w
   <tr><td><code>converter/sbml_edit.js</code></td><td>The same for SBML with a layout, for the layout alone (a map whose entry says <code>layoutOnly</code>): its GraphML from the build's, and the moves written back into the SBML text, only the numbers that change (glyph positions, a compartment's size, labels with their glyphs, a reaction's curve with its process, a line's ends and bend points). Uses <code>sbgn_edit.js</code>'s text editing.</td></tr>
   <tr><td><code>converter/mapconv/</code></td><td>The converter's package (copy): reads SBGN-ML into GraphML for the build, gives cdrender four helpers.</td></tr>
   <tr><td><code>layout/layout.js</code></td><td>Pack and Snap (begun as the layout skill's, now its own), and <code>tidy</code>, which writes back only the attributes they change.</td></tr>
+  <tr><td><code>layout/holding.js</code></td><td>What holds what: the compartment a box lies in, the new holders after a drag, a drag with Shift or a resize, the holders grown round what moved, a complex resized round its members. Pure functions of a model of the map (its nodes, their boxes, what each draws round its box, the paddings); the editor calls them, and under Node a tool gets the same answer in one call (<code>settle</code>). It decides; the writers write.</td></tr>
 
   <tr class="ca-group"><td colspan="2">Viewer, in the browser</td></tr>
   <tr><td><code>atlas-app.html</code></td><td>The page: the list (groups, order by dragging in development mode), the map window (zoom, pan, separators, full screen), the panel, search, downloads, Settings, the legend, the right-click menu. Loads the editor only when the look turns the Edit tab on, and keeps an edited drawing on screen until the build catches up.</td></tr>
@@ -316,6 +317,7 @@ never knows the page, the viewer never knows a format.</p>
   <tr><td>yrender</td><td>here, <code>yrender.js</code></td><td>older Python copies in other map tools, their own</td></tr>
   <tr><td>cdrender, cd_edit</td><td>here, the <code>.js</code></td><td>an older Python copy in another site's CellDesigner viewer, its own</td></tr>
     <tr><td>layout (packing, snap to grid, tidy)</td><td>here, <code>layout.js</code></td><td>none; it began as the layout skill's scripts, which go their own way</td></tr>
+  <tr><td>what holds what</td><td>here, <code>holding.js</code></td><td>none</td></tr>
   <tr><td>mapconv</td><td>the converter's repository</td><td>here, <code>renderers/converter/mapconv/</code></td></tr>
   <tr><td><code>databases.py</code></td><td>here</td><td>the build of another atlas site</td></tr>
 </table>

@@ -14,8 +14,8 @@
 //     twice in one compartment.
 //   GraphML (every demo yEd map with a compartment): a node taken out of its compartment and put into another: the
 //     GraphML reads as XML, nests it there, and yrender draws it.
-//   The editor's rules (editor/src/core.js regroup, lifted out and run on the demo maps' GraphML, CellDesigner's as
-//     cd_edit makes it): a resize that changes nothing moves nothing; a compartment made 8 wider lets nothing go; a node
+//   The editor's rules (renderers/layout/holding.js, the engine the editor calls, run here under Node on the demo maps'
+//     GraphML, CellDesigner's as cd_edit makes it): a resize that changes nothing moves nothing; a compartment made 8 wider lets nothing go; a node
 //     nudged inside its holder stays (overlapping compartments: no switching); a Shift drag of a member keeps it until it
 //     is fully out; a compartment moved by itself lets go only what no longer overlaps it; one moved plain over free glyphs takes them in, only what it newly covers; one moved past its
 //     holder's edge stays in it (its holder grows), one resized past it leaves it and holds what it now covers; what
@@ -214,42 +214,10 @@ gfiles.forEach(function (f) {
 });
 
 // ---------- the editor's rules (regroup) ----------
+var HOLD = require(path.join(here, 'renderers/layout/holding.js'));
 var core = fs.readFileSync(path.join(here, 'editor/src/core.js'), 'utf8');
 function lift(name) { var i = core.indexOf('    function ' + name + '('); if (i < 0) throw new Error('no ' + name + ' in core.js'); var j = core.indexOf('\n    function ', i + 10), k = core.indexOf('\n    //', i + 10); return core.slice(i, Math.min(j < 0 ? 1e9 : j, k < 0 ? 1e9 : k)); }
-// the paddings as Settings keeps them (core.js pads): compartments 1 here, as these cases were set, complexes As Repack
-var PADS = 'var PAD_KEY = "k", localStorage = { getItem: function () { return JSON.stringify({ comp: 1, cx: "repack" }); } };\n';
-var CODE = PADS + ['setText', 'pads', 'cxRoom', 'inBox', 'overlap', 'under', 'notIn', 'cdOwn', 'holder', 'regroup', 'inComplex', 'grown', 'drawnOut', 'tops', 'extOf'].map(lift).join('\n');
-var LAY = require(path.join(here, 'renderers/layout/layout.js'));   // extOf's layout.extent
-function editorOf(g, cd) {   // the editor's nodes2 (up, kids, inside, comp, hub, shape), as parse() reads them
-  var d = new DP().parseFromString(g, 'application/xml'), N = [], byEl = new Map();
-  Array.prototype.forEach.call(d.getElementsByTagNameNS(GN, 'node'), function (n) { byEl.set(n, N.length); N.push({ el: n, id: n.getAttribute('id') }); });
-  var owner = function (e) { for (var p = e.parentNode; p; p = p.parentNode) if (p.localName === 'node') return p; return null; };
-  N.forEach(function (n) {
-    n.inside = Array.prototype.map.call(n.el.getElementsByTagNameNS(GN, 'node'), function (c) { return byEl.get(c); });
-    n.kids = n.inside.filter(function (c) { return owner(N[c].el) === n.el; });
-    var rs = n.el.getElementsByTagNameNS(YN, 'Realizers')[0], r = rs ? Array.prototype.filter.call(rs.childNodes, function (c) { return c.nodeType === 1; })[+rs.getAttribute('active') || 0] : null;
-    if (!r) Array.prototype.forEach.call(n.el.childNodes, function (dd) { if (dd.nodeType === 1 && dd.localName === 'data') Array.prototype.forEach.call(dd.childNodes, function (c) { if (!r && c.nodeType === 1 && c.namespaceURI === YN) r = c; }); });
-    var cfg = r ? r.getAttribute('configuration') || '' : '';
-    n.hub = !cd && /sbgn\.(Process|Operator)$/.test(cfg);
-    n.comp = n.el.getAttribute('yfiles.foldertype') === 'group' && !/omplex/.test(cfg);
-    n.shape = { kind: /^Generic/.test(r ? r.localName : '') ? cfg.replace('com.yworks.sbgn.', '') : 'rectangle' };
-    var geo = r.getElementsByTagNameNS(YN, 'Geometry')[0];
-    n.box = ['x', 'y', 'width', 'height'].map(function (k) { return parseFloat(geo.getAttribute(k)); });
-    n.up = null;
-    var ins = r.getElementsByTagNameNS(YN, 'Insets')[0], iv = function (k) { return ins ? parseFloat(ins.getAttribute(k + 'F') || ins.getAttribute(k)) || 0 : 0; };
-    n.ins = [iv('left'), iv('top'), iv('right'), iv('bottom')]; n.lab = { t: 0, b: 0 };
-    Array.prototype.forEach.call(r.childNodes, function (l) {   // its own labels inside, at the top or the bottom (as parse())
-      if (l.nodeType !== 1 || l.localName !== 'NodeLabel' || l.getAttribute('modelName') !== 'internal' || l.getAttribute('visible') === 'false') return;
-      var sd = (l.getAttribute('modelPosition') || '').charAt(0);
-      if (sd === 't' || sd === 'b') n.lab[sd] = Math.max(n.lab[sd], parseFloat(l.getAttribute('height')) || 0);
-    });
-  });
-  N.forEach(function (n, i) { n.kids.forEach(function (c) { N[c].up = i; }); });
-  var boxOf = function (i) { return N[i].box.slice(); };
-  var api = new Function('nodes2', 'boxOf', 'shared', 'window', CODE + '\nreturn { regroup: regroup, under: under, grown: grown };')(N, boxOf, { cd: cd }, { layout: LAY });   // cd: the editor's shared.cd (state.js)
-  api.N = N; api.boxOf = boxOf;
-  return api;
-}
+var HM = require('./lib/holding-model.js'), model = HM.model, editorOf = HM.editorOf, LAY = HM.LAY;   // LAY: layout.extent
 var rmaps = fs.readdirSync(path.join(here, 'maps')).filter(function (f) { return /\.graphml$|-celldesigner\.xml$/.test(f); }), rn = 0;
 rmaps.forEach(function (f) {
   var cd = /celldesigner/.test(f), t = fs.readFileSync(path.join(here, 'maps', f), 'utf8'), g = cd ? ed.graphml(t, null, opt) : t, E = editorOf(g, cd), N = E.N, B = E.boxOf;
@@ -275,6 +243,59 @@ rmaps.forEach(function (f) {
     }
   });
 });
+// the one call for a tool (holding.settle) against the path core.js takes on every demo map: regroup, the new holders
+// written (sbgn_edit.moveInto) and the map read again, then grown on what was read (core.js settle), both from the
+// engine, so what is checked is that settle's holders applied in memory (moved) give what a write and a read give; that
+// core.js calls the engine as settle does is tests/holding-live.js's check. A compartment's members (up to six a map):
+// pushed 30 past its right border (plain: the holder grows) and taken out with Shift 3000 to the right (alone: it
+// leaves). The same new holders and the same grown boxes, or the case is named
+var sn = 0;
+rmaps.forEach(function (f) {
+  var cd = /celldesigner/.test(f), t = fs.readFileSync(path.join(here, 'maps', f), 'utf8'), g = cd ? ed.graphml(t, null, opt) : t, E = editorOf(g, cd), N = E.N, B = E.boxOf;
+  var ms = N.map(function (n, i) { return i; }).filter(function (i) { var n = N[i]; return n.id.indexOf('|') < 0 && !n.hub && n.up != null && N[n.up].comp; }).slice(0, 6);
+  ms.forEach(function (i) {
+    [['plain', B(N[i].up)[0] + B(N[i].up)[2] - B(i)[0] + 30 - B(i)[2]], ['alone', 3000]].forEach(function (c) {
+      var how = c[0], dx = c[1], set = new Set(how === 'plain' ? [i].concat(N[i].inside) : [i]);
+      var Bn = function (k) { var b = B(k); return set.has(k) ? [b[0] + dx, b[1], b[2], b[3]] : b; }, before = {};
+      N.forEach(function (n, k) { before[n.id] = B(k); });
+      var away = { x0: Math.min(0, dx), x1: Math.max(0, dx), y0: 0, y1: 0 };
+      var got = HOLD.settle(model(N, Bn, cd), { how: how, ids: Array.from(set).map(function (k) { return N[k].id; }), before: before, away: away });
+      // the editor's path
+      var out = E.regroup(how, set, Bn, B), moves = [];
+      out.forEach(function (t2, k) { moves.push([N[k].id, t2 == null ? null : N[t2].id]); });
+      var g2 = g;
+      try { if (moves.length) g2 = se.moveInto(g, moves); } catch (e) { return; }   // a nesting the GraphML cannot hold: the editor says Not regrouped
+      var E2 = editorOf(g2, cd), N2 = E2.N, at = {}; N2.forEach(function (n, k) { at[n.id] = k; });
+      var ids = {}; set.forEach(function (k) { ids[N[k].id] = 1; });
+      var Bn2 = function (k) { var b = E2.boxOf(k); return ids[N2[k].id] ? [b[0] + dx, b[1], b[2], b[3]] : b; }, B02 = function (k) { return before[N2[k].id]; };
+      var H2 = HOLD.make(model(N2, Bn2, cd)), set2 = new Set(Object.keys(ids).map(function (id) { return at[id]; }));
+      var nb = H2.grown(H2.tops(set2, how === 'alone'), Bn2, B02, function (k) { return set2.has(k); }, away), want = {};
+      Object.keys(nb).forEach(function (k) { want[N2[+k].id] = nb[k]; });
+      sn++; rn++;
+      var r3 = function (o) { var x = {}; Object.keys(o).sort().forEach(function (k) { x[k] = o[k].map(function (v) { return Math.round(v * 1000) / 1000; }); }); return JSON.stringify(x); };
+      if (JSON.stringify(got.moves) !== JSON.stringify(moves)) fail(f + ' ' + N[i].id + ' ' + how, 'settle moves ' + JSON.stringify(got.moves) + ', the editor ' + JSON.stringify(moves));
+      else if (r3(got.boxes) !== r3(want)) fail(f + ' ' + N[i].id + ' ' + how, 'settle grows ' + r3(got.boxes) + ', the editor ' + r3(want));
+    });
+  });
+});
+// resizes (core.js holderSize): a complex or a compartment inside a compartment made 60 wider to the right, in Full and
+// in Layout editing; the editor regroups a compartment in Full and grows nothing, else grows the holders round it
+rmaps.forEach(function (f) {
+  var cd = /celldesigner/.test(f), t = fs.readFileSync(path.join(here, 'maps', f), 'utf8'), g = cd ? ed.graphml(t, null, opt) : t, E = editorOf(g, cd), N = E.N, B = E.boxOf;
+  var rs = N.map(function (n, i) { return i; }).filter(function (i) { var n = N[i]; return n.id.indexOf('|') < 0 && n.up != null && N[n.up].comp && (n.comp || n.shape.kind === 'Complex'); }).slice(0, 6);
+  rs.forEach(function (i) {
+    [false, true].forEach(function (layout) {
+      var Bn = function (k) { var b = B(k); return k === i ? [b[0], b[1], b[2] + 60, b[3]] : b; }, before = {};
+      N.forEach(function (n, k) { before[n.id] = B(k); });
+      var got = HOLD.settle(model(N, Bn, cd), { how: 'box', ids: [N[i].id], before: before, layout: layout }), moves = [], want = {};
+      if (!layout && N[i].comp) E.regroup('box', new Set([i]), Bn, B).forEach(function (t2, k) { moves.push([N[k].id, t2 == null ? null : N[t2].id]); });
+      else { var nb = HOLD.make(model(N, Bn, cd)).grown([i], Bn, B, function () { return false; }); Object.keys(nb).forEach(function (k) { want[N[+k].id] = nb[k]; }); }
+      sn++; rn++;
+      if (JSON.stringify(got.moves) !== JSON.stringify(moves) || JSON.stringify(got.boxes) !== JSON.stringify(want)) fail(f + ' ' + N[i].id + ' resized' + (layout ? ' (Layout)' : ''), 'settle ' + JSON.stringify(got) + ', the editor ' + JSON.stringify({ moves: moves, boxes: want }));
+    });
+  });
+});
+console.log(sn + ' changes: settle gives what the editor\'s path gives');
 function inBoxT(b, c) { return c[0] <= b[0] + 1e-6 && c[1] <= b[1] + 1e-6 && b[0] + b[2] <= c[0] + c[2] + 1e-6 && b[1] + b[3] <= c[1] + c[3] + 1e-6; }
 // made-up cases on a small map: a compartment C (0 0 400 300) holding a (20 20 80 40) and b (350 120 80 40, partly out),
 // a free glyph f (500 50 80 40), a compartment D (600 0 300 300) holding e (650 50 80 40)
@@ -325,7 +346,7 @@ function tiny() {
 // yEd's own box after a push: a compartment's member pushed 20 past the border on
 // every demo GraphML map, its holders grown (grown) and their Insets and BorderInsets refitted (refit); then yEd's box of
 // the holder, what it holds inside (as layout.js extent() measures it) with its Insets and BorderInsets, is the box saved
-var CODE2 = PADS + 'var shared = { text: T0, cd: cd };\n' + ['setText', 'pads', 'cxRoom', 'inBox', 'overlap', 'under', 'inComplex', 'grown', 'drawnOut', 'extOf', 'refit', 'insetsOf'].map(lift).join('\n') + '\nfunction parse() { reparse(shared.text); }\nreturn { grown: grown, refit: refit, text: function () { return shared.text; } };';
+var CODE2 = 'var shared = { text: T0, cd: cd };\nfunction hm() { return H.make(MODEL(nodes2, boxOf, cd)); }\n' + ['setText', 'inBox', 'grown', 'extOf', 'refit', 'insetsOf'].map(lift).join('\n') + '\nfunction parse() { reparse(shared.text); }\nreturn { grown: grown, refit: refit, text: function () { return shared.text; } };';
 var yn = 0;
 fs.readdirSync(path.join(here, 'maps')).filter(function (f) { return /\.graphml$/.test(f); }).forEach(function (f) {
   var g = fs.readFileSync(path.join(here, 'maps', f), 'utf8'), E = editorOf(g, false), N = E.N;
@@ -337,11 +358,11 @@ fs.readdirSync(path.join(here, 'maps')).filter(function (f) { return /\.graphml$
   for (var k = 0; k < N[i].inside.length; k++) { var q = N[N[i].inside[k]], qb = E.boxOf(N[i].inside[k]); g1 = setGeo(g1, q.id, [qb[0] + dx, null, null, null]); }
   var cur = { E: editorOf(g1, false) }, reparse = function (t) { cur.E = editorOf(t, false); N1.length = 0; cur.E.N.forEach(function (x) { N1.push(x); }); };
   var N1 = cur.E.N.slice(), bo = function (k) { return N1[k].box.slice(); };
-  var api = new Function('nodes2', 'boxOf', 'cd', 'window', 'T0', 'reparse', 'GE', CODE2)(N1, bo, false, { layout: LAY }, g1, reparse, GE);
+  var api = new Function('nodes2', 'boxOf', 'cd', 'window', 'T0', 'reparse', 'GE', 'H', 'MODEL', CODE2)(N1, bo, false, { layout: LAY }, g1, reparse, GE, HOLD, model);
   var i1 = N1.findIndex(function (n) { return n.id === id; }), set = new Set([i1].concat(N1[i1].inside));
   var nb = api.grown([i1], bo, function (k) { var q = bo(k); return set.has(k) ? [q[0] - dx, q[1], q[2], q[3]] : q; }, function (k) { return set.has(k); }), t2 = g1;
   Object.keys(nb).forEach(function (k) { t2 = setGeo(t2, N1[k].id, nb[k].map(function (v) { return Math.round(v * 1000) / 1000; })); });
-  var api2 = new Function('nodes2', 'boxOf', 'cd', 'window', 'T0', 'reparse', 'GE', CODE2)(N1, bo, false, { layout: LAY }, t2, reparse, GE);
+  var api2 = new Function('nodes2', 'boxOf', 'cd', 'window', 'T0', 'reparse', 'GE', 'H', 'MODEL', CODE2)(N1, bo, false, { layout: LAY }, t2, reparse, GE, HOLD, model);
   reparse(t2); api2.refit([id]);
   var t3 = api2.text(), E3 = editorOf(t3, false), N3 = E3.N, P = N3.findIndex(function (n) { return n.id === pid; }), cb = E3.boxOf(P);
   var x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;

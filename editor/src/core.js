@@ -1,5 +1,6 @@
 import { putMap, resetDrawing, resetMap, shared, takeMap, V } from './state.js';
 import GE from '../../renderers/converter/graphml_edit.js';   // the GraphML engine: the map's GraphML read and written as text
+import H from '../../renderers/layout/holding.js';   // what holds what: regrouping, growing a holder, the holder a box lies in
 import { bx, keyShift, liveFit, liveLines, liveOff, posePort, shift, sizeLive, sizeOff, unshift } from './live.js';
 import { AF_KINDS, drawGraphml, noNegative, shiftedAhead, yr } from './graphml.js';
 import { beyond, cdDoc, cdDraw, cdGraphml, cdJs, cdKnown, cdMap, cdMk, cdNow, cdRebuild, cdRemember, cdSessionSoon, cdpy, glyphArcs, glyphPort, isCd, joinAt, joinGuides, joinSolve, lineGrid, nodeCentre, nodePlaces, plainCanvas } from './celldesigner.js';
@@ -764,19 +765,13 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     // never taken in, only let go to a compartment already round them; a CellDesigner glyph or gate the same, cd_edit
     // placing it again.
     function full() { return V.level === 'full'; }
-    function inBox(b, c) { return c[0] <= b[0] && c[1] <= b[1] && b[0] + b[2] <= c[0] + c[2] && b[1] + b[3] <= c[1] + c[3]; }   // as cd_edit's inside()
-    function overlap(b, c) { return b[0] < c[0] + c[2] && c[0] < b[0] + b[2] && b[1] < c[1] + c[3] && c[1] < b[1] + b[3]; }
-    function under(i, a) { for (var u = nodes2[i].up; u != null; u = nodes2[u].up) if (u === a) return true; return false; }   // a holds i, at any depth
-    function notIn(i) { return function (k) { return k === i || under(k, i); }; }   // neither the node nor what it holds
-    function cdOwn(i) { return !!shared.cd && nodes2[i].id.indexOf('|') >= 0; }   // a CellDesigner process glyph or gate
-    function holder(b, not, B) {   // the innermost compartment whose box holds box b fully, none for which not() holds
-      var best = null, area = Infinity;
-      nodes2.forEach(function (n, k) { if (!n.comp || not(k)) return; var c = B(k); if (inBox(b, c) && c[2] * c[3] < area) { area = c[2] * c[3]; best = k; } });
-      return best;
-    }
-    function tops(set, alone) {   // the nodes a move grows round: those not moving with their holder; with Shift only compartments (rule 2)
-      return Array.from(set).filter(function (i) { return !cdOwn(i) && (alone ? nodes2[i].comp : !(nodes2[i].up != null && set.has(nodes2[i].up))); });
-    }
+    function inBox(b, c) { return H.inBox(b, c); }   // holding.js
+    function overlap(b, c) { return H.overlap(b, c); }
+    function under(i, a) { return hm().under(i, a); }   // a holds i, at any depth
+    function notIn(i) { return hm().notIn(i); }   // neither the node nor what it holds
+    function cdOwn(i) { return hm().cdOwn(i); }   // a CellDesigner process glyph or gate
+    function holder(b, not, B) { return hm().holder(b, not, B); }   // the innermost compartment whose box holds box b fully, none for which not() holds
+    function tops(set, alone) { return hm().tops(set, alone); }   // the nodes a move grows round: those not moving with their holder; with Shift only compartments (rule 2)
     // an inside member's least space to its compartment's inner line (inside CellDesigner's double border, clear of a
     // compartment's name) when a drag grows the compartment round it (PAD in grown):
     // its value Settings' Compartments padding (the viewer writes the key), 12 by default, 0 to 64 in steps of 4; a
@@ -793,63 +788,18 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       var ok = function (v, m) { return typeof v === 'number' && v >= 0 && v <= m && v % 4 === 0; };
       return { comp: ok(p.comp, 64) ? p.comp : 12, cx: ok(p.cx, 32) ? p.cx : 'repack' };
     }
-    function cxRoom(n) {   // [left, top, right, bottom] from complex n's members (what they draw) to its box
-      var p = pads().cx, R = window.layout && window.layout.room;
-      if (p === 'repack' && R) return [R.left, R.top + n.lab.t, R.right, n.lab.b ? R.named + n.lab.b : R.bottom];
-      if (p === 'repack') p = 12;
-      return [p, p + n.lab.t, p, p + n.lab.b];
+    // what holds what (holding.js, the engine the rules live in), bound to the map as the editor reads it now: its nodes,
+    // their boxes, what each draws round its box, the paddings of Settings
+    // (made again only when the map's node list or format changes; the paddings read when used)
+    var hmOf;
+    function hm() {
+      if (hmOf && hmOf.nodes === nodes2 && hmOf.cd === !!shared.cd) return hmOf.H;
+      var M = { nodes: nodes2, box: boxOf, ext: extOf, cd: !!shared.cd, get pad() { return pads().comp; }, get cx() { return pads().cx; }, get room() { return window.layout && window.layout.room; } };
+      hmOf = { nodes: nodes2, cd: M.cd, H: H.make(M) };
+      return hmOf.H;
     }
-    // the holders grown round a change of places: node -> its new box. ks: the nodes moved (tops) or the one resized; B:
-    // the boxes now, B0: before; moving(k): k moves with them. Measured by what each node draws round its box (extOf). A
-    // complex grows to hold its member with its padding and labels (cxRoom); a compartment to keep PAD from its inner
-    // line round an inside member (as close as it was, where it was closer), an edge member crossing its border by one
-    // unit, or, moved with another compartment drawn outside it there (drawnOut), its box's centre one unit inside (as
-    // far out as it was where it started out), nothing for one already fully outside; what grows grows its own holder in turn the
-    // same way; never smaller. away: a drag's furthest moves so far ({ x0, x1, y0, y1 }, the least and most dx and dy);
-    // a moving member whose room on a side reached the padding during the drag (moved away from a closer place) takes the
-    // padding there again, the closer room it started with dropped
-    function grown(ks, B, B0, moving, away) {
-      var nb = {}, box = function (k) { return nb[k] || B(k); };
-      var hold = function (k) {
-        var p = nodes2[k].up;
-        if (p == null || moving(p)) return;
-        var n = nodes2[p], c = box(p), b = box(k), w, e = extOf(k, b);
-        var s0 = B0(k), c0 = B0(p), e0 = extOf(k, s0);
-        var far = away && moving(k) ? [away.x1, away.y1, -away.x0, -away.y0] : [0, 0, 0, 0];   // how far it went from each side
-        if (n.shape.kind === 'Complex') {   // its padding, as close as the member was where it was closer (as a compartment's)
-          var g0 = [e0[0] - c0[0], e0[1] - c0[1], c0[0] + c0[2] - e0[2], c0[1] + c0[3] - e0[3]];
-          var rm = cxRoom(n).map(function (v, j) { return g0[j] + far[j] >= v ? v : Math.min(v, Math.max(g0[j], 0)); });
-          w = [e[0] - rm[0], e[1] - rm[1], e[2] + rm[2], e[3] + rm[3]];
-        }
-        else if (inBox(s0, c0)) {   // inside: PAD from its inner line (as close as it was, where it already was closer: another tool's file)
-          var io = [shared.cd ? n.ins[0] : 0, (shared.cd ? n.ins[1] : 0) + n.lab.t, shared.cd ? n.ins[2] : 0, (shared.cd ? n.ins[3] : 0) + n.lab.b];
-          var PAD = pads().comp, pad = [e0[0] - c0[0], e0[1] - c0[1], c0[0] + c0[2] - e0[2], c0[1] + c0[3] - e0[3]].map(function (v, j) { return (v - io[j] + far[j] >= PAD ? PAD : Math.min(PAD, v - io[j])) + io[j]; });
-          w = [e[0] - pad[0], e[1] - pad[1], e[2] + pad[2], e[3] + pad[3]];
-        } else if (overlap(s0, c0) && moving(k) && !nodes2[k].comp && drawnOut(k, p, s0, c0, B0)) {   // dragged on the edge, another compartment drawn outside it there: its centre kept inside
-          var m0 = [s0[0] + s0[2] / 2 - c0[0], s0[1] + s0[3] / 2 - c0[1], c0[0] + c0[2] - s0[0] - s0[2] / 2, c0[1] + c0[3] - s0[1] - s0[3] / 2]
-            .map(function (v, j) { return v + far[j] >= 1 ? 1 : v; });   // one unit inside; where it started further out (another tool's file), as far out as it was
-          var cx = b[0] + b[2] / 2, cy = b[1] + b[3] / 2;
-          w = [cx - m0[0], cy - m0[1], cx + m0[2], cy + m0[3]];
-        } else if (overlap(s0, c0)) w = [b[0] + b[2] - 1, b[1] + b[3] - 1, b[0] + 1, b[1] + 1];   // on the edge against empty space: kept crossing it
-        else return;   // fully outside already (another tool's file): as it is
-        var x0 = Math.min(c[0], w[0]), y0 = Math.min(c[1], w[1]), x1 = Math.max(c[0] + c[2], w[2]), y1 = Math.max(c[1] + c[3], w[3]);
-        if (Math.abs(x0 - c[0]) < 0.01 && Math.abs(y0 - c[1]) < 0.01 && Math.abs(x1 - c[0] - c[2]) < 0.01 && Math.abs(y1 - c[1] - c[3]) < 0.01) return;
-        nb[p] = [x0, y0, x1 - x0, y1 - y0];
-        hold(p);
-      };
-      ks.forEach(hold);
-      return nb;
-    }
-    // edge member k of compartment p (boxes s0, c0 at the drag's start, B0) has another compartment drawn outside p where
-    // it sits: one that covers some of k's box outside p (a neighbour, or p's holder, as round a nucleus), not one inside p
-    // or k. Read from the start's boxes, so the answer holds until release
-    function drawnOut(k, p, s0, c0, B0) {
-      return nodes2.some(function (q, j) {
-        if (!q.comp || j === p || j === k || under(j, p) || under(j, k)) return false;
-        var d = B0(j), x0 = Math.max(s0[0], d[0]), y0 = Math.max(s0[1], d[1]), x1 = Math.min(s0[0] + s0[2], d[0] + d[2]), y1 = Math.min(s0[1] + s0[3], d[1] + d[3]);
-        return x1 > x0 && y1 > y0 && !inBox([x0, y0, x1 - x0, y1 - y0], c0);
-      });
-    }
+    // the holders grown round a change of places (holding.js grown, its rules there)
+    function grown(ks, B, B0, moving, away) { return hm().grown(ks, B, B0, moving, away); }
     function extOf(k, b) {   // what node k draws round box b (its labels, units of information, a multimer's second outline), as layout.js extent() measures it for the fit's room(): [x0, y0, x1, y1]
       var L = window.layout, g = boxOf(k);
       if (!L || !L.extent) return [b[0], b[1], b[0] + b[2], b[1] + b[3]];
@@ -885,51 +835,8 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       setText(GE.boxes(shared.text, at));
       parse(); shared.dirty = true;
     }
-    // the new holders after a change of places (Full editing only), node -> its new parent (null: the map itself), only
-    // where it changes. how: 'plain' (set: the nodes moved with what they hold), 'alone' (set: the nodes moved by
-    // themselves), 'box' (set: a compartment resized or made); B: the boxes now, B0: before the change
-    function regroup(how, set, B, B0) {
-      B = B || boxOf; B0 = B0 || boxOf;
-      var out = new Map(), fixed = function (k) { return nodes2[k].hub || cdOwn(k); }, changed = [];
-      var away = function (k, b, not) {   // where node k goes once it leaves its holder
-        if (!fixed(k)) return holder(b, not, B);
-        for (var u = nodes2[k].up; u != null; u = nodes2[u].up) if (nodes2[u].comp && !not(u) && inBox(b, B(u))) return u;   // a process or gate: a compartment already round it
-        return null;
-      };
-      set.forEach(function (i) {
-        var n = nodes2[i], p = n.up, b = B(i);
-        if (cdOwn(i) || (how === 'plain' && ((p != null && set.has(p)) || inComplex(i)))) return;   // with its holder; a plain drag keeps a complex's members
-        if (n.comp || (how === 'alone' && n.kids.length)) changed.push(i);   // its box changed by itself, or it moved
-        var not = how === 'plain' ? function (k) { return set.has(k); } : notIn(i), t;
-        if (p != null && how === 'alone' && nodes2[p].shape.kind === 'Complex') { if (!inBox(b, B(p))) out.set(i, away(i, b, not)); return; }   // out of its complex once not fully inside
-        if (p != null && (how === 'plain' ? true : how === 'alone' ? overlap(b, B(p)) : inBox(b, B(p)))) {   // stays: only into a compartment it newly lies fully in, deeper inside
-          t = holder(b, not, B);
-          if (t == null || t === p || !under(t, p) || fixed(i) || inBox(B0(i), B0(t))) return;
-        } else if (p == null) {
-          t = holder(b, not, B);
-          if (t == null || fixed(i) || (how === 'box' && inBox(B0(i), B0(t)))) return;
-        } else t = away(i, b, not);   // fully out with Shift; a compartment resized past its holder's edge
-        if (t !== p) out.set(i, t);
-      });
-      changed.forEach(function (i) {
-        var n = nodes2[i], b = B(i), b0 = B0(i);
-        if (how !== 'plain') n.kids.forEach(function (k) {   // what no longer overlaps it (a complex: no longer fully inside)
-          if (set.has(k) || out.has(k)) return;
-          var kb = B(k);
-          if (n.comp ? !overlap(kb, b) && overlap(kb, b0) : !inBox(kb, b) && inBox(kb, b0)) out.set(k, away(k, kb, notIn(k)));
-        });
-        if (!n.comp) return;
-        var nu = out.has(i) ? out.get(i) : n.up;   // its holder after the change: neither it nor those round it are taken in
-        nodes2.forEach(function (m, j) {   // what it newly covers, with what is inside; one that held it too, once it has left it
-          if (j === i || set.has(j) || out.has(j) || fixed(j) || inComplex(j) || under(j, i) || j === nu || (nu != null && under(nu, j))) return;
-          var jb = B(j);
-          if (!inBox(jb, b) || inBox(jb, b0)) return;
-          var t = holder(jb, function (k) { return k !== i && (k === j || under(k, j)); }, B);
-          if (t !== m.up && (t === i || (t != null && under(t, i)))) out.set(j, t);
-        });
-      });
-      return out;
-    }
+    // the new holders after a change of places, Full editing only (holding.js regroup, its rules there)
+    function regroup(how, set, B, B0) { return hm().regroup(how, set, B, B0); }
     // the new holders written into the GraphML (sbgn_edit.moveInto, the master of moving a GraphML node into another), the
     // map read again with the selection kept (by id: moveInto may reorder what a group's graph holds); then a glyph
     // dropped on a complex put into it (arg.join, the ids moved: joinPlan, create.js) and the holders grown round what
@@ -1031,11 +938,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       if (/t/.test(s)) y0 = g(y0 + dy); if (/b/.test(s)) y1 = g(y1 + dy);
       // smaller than what it holds too (all inside may end up outside: allowed): in Full what no longer overlaps it is let go on release (regroup); in Layout
       // (what holds what never changes there) held where every member it overlapped still overlaps it by one unit
-      if (!full()) nodes2[d.rs.c].kids.forEach(function (k) {
-        var q = boxOf(k);
-        if (!overlap(q, b)) return;
-        x0 = Math.min(x0, q[0] + q[2] - 1); y0 = Math.min(y0, q[1] + q[3] - 1); x1 = Math.max(x1, q[0] + 1); y1 = Math.max(y1, q[1] + 1);
-      });
+      if (!full()) { var kp = hm().keepMembers(d.rs.c, b, [x0, y0, x1, y1]); x0 = kp[0]; y0 = kp[1]; x1 = kp[2]; y1 = kp[3]; }
       if (x1 - x0 < 30) { if (/l/.test(s)) x0 = x1 - 30; else x1 = x0 + 30; }   // 30 at least: room for a CellDesigner compartment's two lines (12 apart on each side)
       if (y1 - y0 < 30) { if (/t/.test(s)) y0 = y1 - 30; else y1 = y0 + 30; }
       return [x0, y0, x1 - x0, y1 - y0];
@@ -1050,19 +953,8 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     // a node that holds others (a compartment; a complex with members, the only other holder a format part makes
     // resizable): resized as a holder, its parts drawn by liveDraw
     function holds(i) { return !!nodes2[i].comp || nodes2[i].kids.length > 0; }
-    // a complex resized by its handles: the sides dragged (s) held where its members still fit, with its padding and labels
-    // as grown() holds a member, never further out than where they started (b0: members closer than the Insets in another
-    // tool's file keep their room); the members stay where they are
-    function roomy(i, b, s, b0) {
-      var n = nodes2[i], x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
-      var rm = cxRoom(n);
-      n.kids.forEach(function (k) { var e = extOf(k, boxOf(k)); x0 = Math.min(x0, e[0] - rm[0]); y0 = Math.min(y0, e[1] - rm[1]); x1 = Math.max(x1, e[2] + rm[2]); y1 = Math.max(y1, e[3] + rm[3]); });
-      if (x0 === Infinity) return b;
-      var L = b[0], T = b[1], R = b[0] + b[2], B = b[1] + b[3];
-      if (/l/.test(s)) L = Math.min(L, Math.max(x0, b0[0])); if (/r/.test(s)) R = Math.max(R, Math.min(x1, b0[0] + b0[2]));
-      if (/t/.test(s)) T = Math.min(T, Math.max(y0, b0[1])); if (/b/.test(s)) B = Math.max(B, Math.min(y1, b0[1] + b0[3]));
-      return [L, T, R - L, B - T];
-    }
+    // a complex resized by its handles, held where its members still fit (holding.js roomy)
+    function roomy(i, b, s, b0) { return hm().roomy(i, b, s, b0); }
     function pt(pi) { var p = points[pi], o = mv && mv.p.has(pi); return [num(p, 'x') + (o ? mv.dx : 0), num(p, 'y') + (o ? mv.dy : 0)]; }
     // the grey guides of a bend point moved by the keys (as in a drag, to see when a segment is level or
     // upright): one bend point selected alone, a segment drawn while it is exactly level or upright; no snapping, the
@@ -2667,7 +2559,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       var dx = b[0] - a[0], dy = b[1] - a[1], L = dx * dx + dy * dy, t = L ? Math.max(0, Math.min(1, ((P[0] - a[0]) * dx + (P[1] - a[1]) * dy) / L)) : 0;
       return Math.hypot(P[0] - a[0] - dx * t, P[1] - a[1] - dy * t);
     }
-    function inComplex(i) { for (var u = nodes2[i].up; u != null; u = nodes2[u].up) if (nodes2[u].shape.kind === 'Complex') return true; return false; }
+    function inComplex(i) { return hm().inComplex(i); }
     function hit(P) {   // a bend point first, then a node, then an arc, then a group (its contents and arcs come first)
       var R = 6 / V.z, best = null, group = null;
       // among bend points close together the one selected wins, then one of the arc selected (select

@@ -354,6 +354,278 @@
     }
   });
 
+  // renderers/layout/holding.js
+  var require_holding = __commonJS({
+    "renderers/layout/holding.js"(exports, module) {
+      (function(root) {
+        "use strict";
+        function inBox2(b, c) {
+          return c[0] <= b[0] && c[1] <= b[1] && b[0] + b[2] <= c[0] + c[2] && b[1] + b[3] <= c[1] + c[3];
+        }
+        function overlap2(b, c) {
+          return b[0] < c[0] + c[2] && c[0] < b[0] + b[2] && b[1] < c[1] + c[3] && c[1] < b[1] + b[3];
+        }
+        function make(M) {
+          var nodes = M.nodes, boxOf2 = M.box;
+          var extOf2 = function(k, b) {
+            return M.ext ? M.ext(k, b) : [b[0], b[1], b[0] + b[2], b[1] + b[3]];
+          };
+          function under2(i, a) {
+            for (var u = nodes[i].up; u != null; u = nodes[u].up) if (u === a) return true;
+            return false;
+          }
+          function notIn(i) {
+            return function(k) {
+              return k === i || under2(k, i);
+            };
+          }
+          function inComplex2(i) {
+            for (var u = nodes[i].up; u != null; u = nodes[u].up) if (nodes[u].shape.kind === "Complex") return true;
+            return false;
+          }
+          function cdOwn2(i) {
+            return !!M.cd && nodes[i].id.indexOf("|") >= 0;
+          }
+          function holder2(b, not, B) {
+            var best = null, area = Infinity;
+            B = B || boxOf2;
+            nodes.forEach(function(n, k) {
+              if (!n.comp || not(k)) return;
+              var c = B(k);
+              if (inBox2(b, c) && c[2] * c[3] < area) {
+                area = c[2] * c[3];
+                best = k;
+              }
+            });
+            return best;
+          }
+          function tops2(set, alone) {
+            return Array.from(set).filter(function(i) {
+              return !cdOwn2(i) && (alone ? nodes[i].comp : !(nodes[i].up != null && set.has(nodes[i].up)));
+            });
+          }
+          function cxRoom(n) {
+            var p = M.cx, R = M.room;
+            if (p === "repack" && R) return [R.left, R.top + n.lab.t, R.right, n.lab.b ? R.named + n.lab.b : R.bottom];
+            if (p === "repack") p = 12;
+            return [p, p + n.lab.t, p, p + n.lab.b];
+          }
+          function grown2(ks, B, B0, moving2, away2) {
+            var nb = {}, box2 = function(k) {
+              return nb[k] || B(k);
+            }, PAD = M.pad;
+            var hold = function(k) {
+              var p = nodes[k].up;
+              if (p == null || moving2(p)) return;
+              var n = nodes[p], c = box2(p), b = box2(k), w, e = extOf2(k, b);
+              var s0 = B0(k), c0 = B0(p), e0 = extOf2(k, s0);
+              var far = away2 && moving2(k) ? [away2.x1, away2.y1, -away2.x0, -away2.y0] : [0, 0, 0, 0];
+              if (n.shape.kind === "Complex") {
+                var g0 = [e0[0] - c0[0], e0[1] - c0[1], c0[0] + c0[2] - e0[2], c0[1] + c0[3] - e0[3]];
+                var rm = cxRoom(n).map(function(v, j) {
+                  return g0[j] + far[j] >= v ? v : Math.min(v, Math.max(g0[j], 0));
+                });
+                w = [e[0] - rm[0], e[1] - rm[1], e[2] + rm[2], e[3] + rm[3]];
+              } else if (inBox2(s0, c0)) {
+                var io = [M.cd ? n.ins[0] : 0, (M.cd ? n.ins[1] : 0) + n.lab.t, M.cd ? n.ins[2] : 0, (M.cd ? n.ins[3] : 0) + n.lab.b];
+                var pad = [e0[0] - c0[0], e0[1] - c0[1], c0[0] + c0[2] - e0[2], c0[1] + c0[3] - e0[3]].map(function(v, j) {
+                  return (v - io[j] + far[j] >= PAD ? PAD : Math.min(PAD, v - io[j])) + io[j];
+                });
+                w = [e[0] - pad[0], e[1] - pad[1], e[2] + pad[2], e[3] + pad[3]];
+              } else if (overlap2(s0, c0) && moving2(k) && !nodes[k].comp && drawnOut(k, p, s0, c0, B0)) {
+                var m0 = [s0[0] + s0[2] / 2 - c0[0], s0[1] + s0[3] / 2 - c0[1], c0[0] + c0[2] - s0[0] - s0[2] / 2, c0[1] + c0[3] - s0[1] - s0[3] / 2].map(function(v, j) {
+                  return v + far[j] >= 1 ? 1 : v;
+                });
+                var cx = b[0] + b[2] / 2, cy = b[1] + b[3] / 2;
+                w = [cx - m0[0], cy - m0[1], cx + m0[2], cy + m0[3]];
+              } else if (overlap2(s0, c0)) w = [b[0] + b[2] - 1, b[1] + b[3] - 1, b[0] + 1, b[1] + 1];
+              else return;
+              var x02 = Math.min(c[0], w[0]), y02 = Math.min(c[1], w[1]), x1 = Math.max(c[0] + c[2], w[2]), y1 = Math.max(c[1] + c[3], w[3]);
+              if (Math.abs(x02 - c[0]) < 0.01 && Math.abs(y02 - c[1]) < 0.01 && Math.abs(x1 - c[0] - c[2]) < 0.01 && Math.abs(y1 - c[1] - c[3]) < 0.01) return;
+              nb[p] = [x02, y02, x1 - x02, y1 - y02];
+              hold(p);
+            };
+            ks.forEach(hold);
+            return nb;
+          }
+          function drawnOut(k, p, s0, c0, B0) {
+            return nodes.some(function(q, j) {
+              if (!q.comp || j === p || j === k || under2(j, p) || under2(j, k)) return false;
+              var d = B0(j), x02 = Math.max(s0[0], d[0]), y02 = Math.max(s0[1], d[1]), x1 = Math.min(s0[0] + s0[2], d[0] + d[2]), y1 = Math.min(s0[1] + s0[3], d[1] + d[3]);
+              return x1 > x02 && y1 > y02 && !inBox2([x02, y02, x1 - x02, y1 - y02], c0);
+            });
+          }
+          function regroup2(how, set, B, B0) {
+            B = B || boxOf2;
+            B0 = B0 || boxOf2;
+            var out = /* @__PURE__ */ new Map(), fixed = function(k) {
+              return nodes[k].hub || cdOwn2(k);
+            }, changed2 = [];
+            var away2 = function(k, b, not) {
+              if (!fixed(k)) return holder2(b, not, B);
+              for (var u = nodes[k].up; u != null; u = nodes[u].up) if (nodes[u].comp && !not(u) && inBox2(b, B(u))) return u;
+              return null;
+            };
+            set.forEach(function(i) {
+              var n = nodes[i], p = n.up, b = B(i);
+              if (cdOwn2(i) || how === "plain" && (p != null && set.has(p) || inComplex2(i))) return;
+              if (n.comp || how === "alone" && n.kids.length) changed2.push(i);
+              var not = how === "plain" ? function(k) {
+                return set.has(k);
+              } : notIn(i), t;
+              if (p != null && how === "alone" && nodes[p].shape.kind === "Complex") {
+                if (!inBox2(b, B(p))) out.set(i, away2(i, b, not));
+                return;
+              }
+              if (p != null && (how === "plain" ? true : how === "alone" ? overlap2(b, B(p)) : inBox2(b, B(p)))) {
+                t = holder2(b, not, B);
+                if (t == null || t === p || !under2(t, p) || fixed(i) || inBox2(B0(i), B0(t))) return;
+              } else if (p == null) {
+                t = holder2(b, not, B);
+                if (t == null || fixed(i) || how === "box" && inBox2(B0(i), B0(t))) return;
+              } else t = away2(i, b, not);
+              if (t !== p) out.set(i, t);
+            });
+            changed2.forEach(function(i) {
+              var n = nodes[i], b = B(i), b0 = B0(i);
+              if (how !== "plain") n.kids.forEach(function(k) {
+                if (set.has(k) || out.has(k)) return;
+                var kb = B(k);
+                if (n.comp ? !overlap2(kb, b) && overlap2(kb, b0) : !inBox2(kb, b) && inBox2(kb, b0)) out.set(k, away2(k, kb, notIn(k)));
+              });
+              if (!n.comp) return;
+              var nu = out.has(i) ? out.get(i) : n.up;
+              nodes.forEach(function(m, j) {
+                if (j === i || set.has(j) || out.has(j) || fixed(j) || inComplex2(j) || under2(j, i) || j === nu || nu != null && under2(nu, j)) return;
+                var jb = B(j);
+                if (!inBox2(jb, b) || inBox2(jb, b0)) return;
+                var t = holder2(jb, function(k) {
+                  return k !== i && (k === j || under2(k, j));
+                }, B);
+                if (t !== m.up && (t === i || t != null && under2(t, i))) out.set(j, t);
+              });
+            });
+            return out;
+          }
+          function roomy2(i, b, s, b0) {
+            var n = nodes[i], x02 = Infinity, y02 = Infinity, x1 = -Infinity, y1 = -Infinity;
+            var rm = cxRoom(n);
+            n.kids.forEach(function(k) {
+              var e = extOf2(k, boxOf2(k));
+              x02 = Math.min(x02, e[0] - rm[0]);
+              y02 = Math.min(y02, e[1] - rm[1]);
+              x1 = Math.max(x1, e[2] + rm[2]);
+              y1 = Math.max(y1, e[3] + rm[3]);
+            });
+            if (x02 === Infinity) return b;
+            var L = b[0], T = b[1], R = b[0] + b[2], B = b[1] + b[3];
+            if (/l/.test(s)) L = Math.min(L, Math.max(x02, b0[0]));
+            if (/r/.test(s)) R = Math.max(R, Math.min(x1, b0[0] + b0[2]));
+            if (/t/.test(s)) T = Math.min(T, Math.max(y02, b0[1]));
+            if (/b/.test(s)) B = Math.max(B, Math.min(y1, b0[1] + b0[3]));
+            return [L, T, R - L, B - T];
+          }
+          function keepMembers(i, b0, e) {
+            var x02 = e[0], y02 = e[1], x1 = e[2], y1 = e[3];
+            nodes[i].kids.forEach(function(k) {
+              var q = boxOf2(k);
+              if (!overlap2(q, b0)) return;
+              x02 = Math.min(x02, q[0] + q[2] - 1);
+              y02 = Math.min(y02, q[1] + q[3] - 1);
+              x1 = Math.max(x1, q[0] + 1);
+              y1 = Math.max(y1, q[1] + 1);
+            });
+            return [x02, y02, x1, y1];
+          }
+          return {
+            cdOwn: cdOwn2,
+            keepMembers,
+            inBox: inBox2,
+            overlap: overlap2,
+            under: under2,
+            notIn,
+            inComplex: inComplex2,
+            holder: holder2,
+            tops: tops2,
+            regroup: regroup2,
+            grown: grown2,
+            drawnOut,
+            cxRoom,
+            roomy: roomy2
+          };
+        }
+        function moved(M, moves) {
+          var up = M.nodes.map(function(n) {
+            return n.up;
+          });
+          moves.forEach(function(m) {
+            up[m[0]] = m[1];
+          });
+          var kids = M.nodes.map(function() {
+            return [];
+          });
+          M.nodes.forEach(function(n, k) {
+            var keep = n.kids.filter(function(c) {
+              return up[c] === k;
+            });
+            kids[k] = keep;
+          });
+          moves.forEach(function(m) {
+            if (m[1] != null && kids[m[1]].indexOf(m[0]) < 0) kids[m[1]].push(m[0]);
+          });
+          var nodes = M.nodes.map(function(n, k) {
+            var o = Object.create(n);
+            o.up = up[k];
+            o.kids = kids[k];
+            return o;
+          });
+          var M2 = {};
+          Object.keys(M).forEach(function(key) {
+            M2[key] = M[key];
+          });
+          M2.nodes = nodes;
+          return M2;
+        }
+        function settle2(M, change) {
+          var at2 = {};
+          M.nodes.forEach(function(n, k) {
+            at2[n.id] = k;
+          });
+          var set = new Set(change.ids.map(function(id) {
+            return at2[id];
+          }).filter(function(k) {
+            return k != null;
+          }));
+          var B0 = function(k) {
+            return change.before && change.before[M.nodes[k].id] || M.box(k);
+          };
+          var box2 = change.how === "box", regroups = !change.layout && (!box2 || Array.from(set).every(function(k) {
+            return M.nodes[k].comp;
+          }));
+          var H2 = make(M), out = regroups ? H2.regroup(change.how, set, M.box, B0) : /* @__PURE__ */ new Map(), mv2 = [];
+          out.forEach(function(t, i) {
+            mv2.push([i, t]);
+          });
+          var M2 = moved(M, mv2), H22 = make(M2), boxes = {};
+          var nb = box2 ? regroups ? {} : H22.grown(Array.from(set), M.box, B0, function() {
+            return false;
+          }) : H22.grown(H22.tops(set, change.how === "alone"), M.box, B0, function(k) {
+            return set.has(k);
+          }, change.away);
+          Object.keys(nb).forEach(function(k) {
+            boxes[M.nodes[+k].id] = nb[k];
+          });
+          return { moves: mv2.map(function(m) {
+            return [M.nodes[m[0]].id, m[1] == null ? null : M.nodes[m[1]].id];
+          }), boxes };
+        }
+        var api2 = { inBox: inBox2, overlap: overlap2, make, moved, settle: settle2 };
+        if (typeof module !== "undefined" && module.exports) module.exports = api2;
+        else root.holding = api2;
+      })(typeof self !== "undefined" ? self : exports);
+    }
+  });
+
   // renderers/converter/notation.js
   var require_notation = __commonJS({
     "renderers/converter/notation.js"(exports, module) {
@@ -900,6 +1172,7 @@
 
   // editor/src/core.js
   var import_graphml_edit = __toESM(require_graphml_edit());
+  var import_holding = __toESM(require_holding());
 
   // editor/src/sbgn.js
   var sbp;
@@ -4775,8 +5048,8 @@
       var r = parseInt(m[1].slice(0, 2), 16) / 255, g = parseInt(m[1].slice(2, 4), 16) / 255, b = parseInt(m[1].slice(4, 6), 16) / 255;
       var mx = Math.max(r, g, b), d = mx - Math.min(r, g, b);
       if (d <= 0.08) continue;
-      var H = mx === r ? (g - b) / d % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
-      hues.push((H * 60 + 360) % 360);
+      var H2 = mx === r ? (g - b) / d % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+      hues.push((H2 * 60 + 360) % 360);
     }
     return hues;
   }
@@ -6752,11 +7025,11 @@
   function shapesOf(i, j) {
     var g = gN && gN[nodes2[i].id], q = g && svList(i)[j];
     if (!q) return [];
-    var r = V.view.getBoundingClientRect(), k = V.pz(), L = r.left + sx(q[1][0] - q[2][0] / 2) * k, T = r.top + sy(q[1][1] - q[2][1] / 2) * k, W = q[2][0] * V.z * k, H = q[2][1] * V.z * k;
+    var r = V.view.getBoundingClientRect(), k = V.pz(), L = r.left + sx(q[1][0] - q[2][0] / 2) * k, T = r.top + sy(q[1][1] - q[2][1] / 2) * k, W = q[2][0] * V.z * k, H2 = q[2][1] * V.z * k;
     return Array.prototype.filter.call(g.querySelectorAll("path, rect, ellipse, circle, polygon"), function(el) {
       if (el.closest("[data-n]") !== g) return false;
       var b = el.getBoundingClientRect();
-      return Math.abs(b.left - L) < 3 && Math.abs(b.top - T) < 3 && Math.abs(b.width - W) < 4 && Math.abs(b.height - H) < 4;
+      return Math.abs(b.left - L) < 3 && Math.abs(b.top - T) < 3 && Math.abs(b.width - W) < 4 && Math.abs(b.height - H2) < 4;
     });
   }
   function nameBox(i, res) {
@@ -7589,11 +7862,11 @@
     return best;
   }
   function offAxis(i, P) {
-    var id = nodes2[i].id, H = window.yrender && hubPorts()[id], b = bx(i), c = [b[0] + b[2] / 2, b[1] + b[3] / 2];
-    if (!H || !H[0] || !edges2.some(function(q) {
+    var id = nodes2[i].id, H2 = window.yrender && hubPorts()[id], b = bx(i), c = [b[0] + b[2] / 2, b[1] + b[3] / 2];
+    if (!H2 || !H2[0] || !edges2.some(function(q) {
       return q.t === i && q.arr[1] === "none" || q.s === i && q.arr[1] === "delta";
     })) return false;
-    var hz = Math.abs(H[0][0] - c[0]) >= Math.abs(H[0][1] - c[1]), dx = Math.abs(P[0] - c[0]), dy = Math.abs(P[1] - c[1]);
+    var hz = Math.abs(H2[0][0] - c[0]) >= Math.abs(H2[0][1] - c[1]), dx = Math.abs(P[0] - c[0]), dy = Math.abs(P[1] - c[1]);
     return hz ? dy > dx : dx > dy;
   }
   function linkMove(e) {
@@ -7671,12 +7944,12 @@
     } });
   }
   function linkLand(a, b, cls) {
-    var B = bx(b), c = [B[0] + B[2] / 2, B[1] + B[3] / 2], r = roleOf(b), H = r && /^(proc|gate)$/.test(r) && window.yrender && hubPorts()[nodes2[b].id];
+    var B = bx(b), c = [B[0] + B[2] / 2, B[1] + B[3] / 2], r = roleOf(b), H2 = r && /^(proc|gate)$/.test(r) && window.yrender && hubPorts()[nodes2[b].id];
     if (!r || !/^(proc|gate)$/.test(r)) return c;
-    if ((cls === "consumption" || cls === "logic arc") && H && H[0]) return H[0];
+    if ((cls === "consumption" || cls === "logic arc") && H2 && H2[0]) return H2[0];
     if (!cls || !MODS.test(sbJs.ARROW[cls]) || r !== "proc") return c;
     var A = bx(a), dx = A[0] + A[2] / 2 - c[0], dy = A[1] + A[3] / 2 - c[1];
-    var vert = H && H[0] ? Math.abs(H[0][0] - c[0]) >= Math.abs(H[0][1] - c[1]) : Math.abs(dy) > Math.abs(dx);
+    var vert = H2 && H2[0] ? Math.abs(H2[0][0] - c[0]) >= Math.abs(H2[0][1] - c[1]) : Math.abs(dy) > Math.abs(dx);
     return vert ? [c[0], c[1] + (dy >= 0 ? 1 : -1) * B[3] / 2] : [c[0] + (dx >= 0 ? 1 : -1) * B[2] / 2, c[1]];
   }
   function linkPaint(out) {
@@ -10283,9 +10556,9 @@
   function cdSsFirst(txt, keep) {
     return function(F) {
       if (keep != null) return [keep];
-      var rx = cdRx(txt), H = Math.PI / 2, c = [cdTop];
+      var rx = cdRx(txt), H2 = Math.PI / 2, c = [cdTop];
       [37 + rx, -(37 + rx)].forEach(function(dx) {
-        if (Math.abs(dx) + rx <= F[2] / 2) c.push(H - dx / F[2] * H);
+        if (Math.abs(dx) + rx <= F[2] / 2) c.push(H2 - dx / F[2] * H2);
       });
       return c;
     };
@@ -10554,9 +10827,9 @@
       }
       var vr = V.view.getBoundingClientRect(), z = box2.getBoundingClientRect().width / box2.offsetWidth || 1, w = box2.offsetWidth * z, ht = box2.offsetHeight * z;
       var nb = boxOf(i), X0 = Math.min(nb[0], q[1][0] - q[2][0] / 2), X1 = Math.max(nb[0] + nb[2], q[1][0] + q[2][0] / 2), Y0 = Math.min(nb[1], q[1][1] - q[2][1] / 2), Y1 = Math.max(nb[1] + nb[3], q[1][1] + q[2][1] / 2);
-      var L = vr.left + sx(X0) * z, R = vr.left + sx(X1) * z, T0 = vr.top + sy(Y0) * z, B = vr.top + sy(Y1) * z, g = 10 * z, W = V.winW(), H = V.winH();
-      var cx = Math.max(4, Math.min((L + R) / 2 - w / 2, W - 4 - w)), cy = Math.max(4, Math.min((T0 + B) / 2 - ht / 2, H - 4 - ht));
-      var at2 = B + g + ht <= H - 4 ? [cx, B + g] : T0 - g - ht >= 4 ? [cx, T0 - g - ht] : R + g + w <= W - 4 ? [R + g, cy] : L - g - w >= 4 ? [L - g - w, cy] : [cx, Math.max(4, H - 4 - ht)];
+      var L = vr.left + sx(X0) * z, R = vr.left + sx(X1) * z, T0 = vr.top + sy(Y0) * z, B = vr.top + sy(Y1) * z, g = 10 * z, W = V.winW(), H2 = V.winH();
+      var cx = Math.max(4, Math.min((L + R) / 2 - w / 2, W - 4 - w)), cy = Math.max(4, Math.min((T0 + B) / 2 - ht / 2, H2 - 4 - ht));
+      var at2 = B + g + ht <= H2 - 4 ? [cx, B + g] : T0 - g - ht >= 4 ? [cx, T0 - g - ht] : R + g + w <= W - 4 ? [R + g, cy] : L - g - w >= 4 ? [L - g - w, cy] : [cx, Math.max(4, H2 - 4 - ht)];
       box2.style.left = at2[0] / z + "px";
       box2.style.top = at2[1] / z + "px";
     };
@@ -12276,7 +12549,7 @@
       V.view.insertBefore(gridCv, V.view.firstChild);
     }
     gridCv.style.display = "";
-    var R = gridCv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1, W = V.view.clientWidth, H = V.view.clientHeight;
+    var R = gridCv.getBoundingClientRect(), dpr = window.devicePixelRatio || 1, W = V.view.clientWidth, H2 = V.view.clientHeight;
     var cw = Math.round(R.width * dpr), ch = Math.round(R.height * dpr), k = cw / W;
     if (gridCv.width !== cw || gridCv.height !== ch) {
       gridCv.width = cw;
@@ -12291,7 +12564,7 @@
     [["rgba(0,0,0,.07)", 1], ["rgba(0,0,0,.13)", 0]].forEach(function(t) {
       c.strokeStyle = t[0];
       c.beginPath();
-      [[ox, W, cw, true], [oy, H, ch, false]].forEach(function(A) {
+      [[ox, W, cw, true], [oy, H2, ch, false]].forEach(function(A) {
         var i = Math.ceil(-A[0] / a), v;
         for (; (v = A[0] + i * a) <= A[1]; i++) {
           if ((i % 2 + 2) % 2 !== t[1]) continue;
@@ -13267,39 +13540,22 @@
     return V.level === "full";
   }
   function inBox(b, c) {
-    return c[0] <= b[0] && c[1] <= b[1] && b[0] + b[2] <= c[0] + c[2] && b[1] + b[3] <= c[1] + c[3];
+    return import_holding.default.inBox(b, c);
   }
   function overlap(b, c) {
-    return b[0] < c[0] + c[2] && c[0] < b[0] + b[2] && b[1] < c[1] + c[3] && c[1] < b[1] + b[3];
+    return import_holding.default.overlap(b, c);
   }
   function under(i, a) {
-    for (var u = nodes2[i].up; u != null; u = nodes2[u].up) if (u === a) return true;
-    return false;
-  }
-  function notIn(i) {
-    return function(k) {
-      return k === i || under(k, i);
-    };
+    return hm().under(i, a);
   }
   function cdOwn(i) {
-    return !!shared.cd && nodes2[i].id.indexOf("|") >= 0;
+    return hm().cdOwn(i);
   }
   function holder(b, not, B) {
-    var best = null, area = Infinity;
-    nodes2.forEach(function(n, k) {
-      if (!n.comp || not(k)) return;
-      var c = B(k);
-      if (inBox(b, c) && c[2] * c[3] < area) {
-        area = c[2] * c[3];
-        best = k;
-      }
-    });
-    return best;
+    return hm().holder(b, not, B);
   }
   function tops(set, alone) {
-    return Array.from(set).filter(function(i) {
-      return !cdOwn(i) && (alone ? nodes2[i].comp : !(nodes2[i].up != null && set.has(nodes2[i].up)));
-    });
+    return hm().tops(set, alone);
   }
   var PAD_KEY;
   function __run164() {
@@ -13316,56 +13572,21 @@
     };
     return { comp: ok(p.comp, 64) ? p.comp : 12, cx: ok(p.cx, 32) ? p.cx : "repack" };
   }
-  function cxRoom(n) {
-    var p = pads().cx, R = window.layout && window.layout.room;
-    if (p === "repack" && R) return [R.left, R.top + n.lab.t, R.right, n.lab.b ? R.named + n.lab.b : R.bottom];
-    if (p === "repack") p = 12;
-    return [p, p + n.lab.t, p, p + n.lab.b];
+  var hmOf;
+  function hm() {
+    if (hmOf && hmOf.nodes === nodes2 && hmOf.cd === !!shared.cd) return hmOf.H;
+    var M = { nodes: nodes2, box: boxOf, ext: extOf, cd: !!shared.cd, get pad() {
+      return pads().comp;
+    }, get cx() {
+      return pads().cx;
+    }, get room() {
+      return window.layout && window.layout.room;
+    } };
+    hmOf = { nodes: nodes2, cd: M.cd, H: import_holding.default.make(M) };
+    return hmOf.H;
   }
   function grown(ks, B, B0, moving2, away2) {
-    var nb = {}, box2 = function(k) {
-      return nb[k] || B(k);
-    };
-    var hold = function(k) {
-      var p = nodes2[k].up;
-      if (p == null || moving2(p)) return;
-      var n = nodes2[p], c = box2(p), b = box2(k), w, e = extOf(k, b);
-      var s0 = B0(k), c0 = B0(p), e0 = extOf(k, s0);
-      var far = away2 && moving2(k) ? [away2.x1, away2.y1, -away2.x0, -away2.y0] : [0, 0, 0, 0];
-      if (n.shape.kind === "Complex") {
-        var g0 = [e0[0] - c0[0], e0[1] - c0[1], c0[0] + c0[2] - e0[2], c0[1] + c0[3] - e0[3]];
-        var rm = cxRoom(n).map(function(v, j) {
-          return g0[j] + far[j] >= v ? v : Math.min(v, Math.max(g0[j], 0));
-        });
-        w = [e[0] - rm[0], e[1] - rm[1], e[2] + rm[2], e[3] + rm[3]];
-      } else if (inBox(s0, c0)) {
-        var io = [shared.cd ? n.ins[0] : 0, (shared.cd ? n.ins[1] : 0) + n.lab.t, shared.cd ? n.ins[2] : 0, (shared.cd ? n.ins[3] : 0) + n.lab.b];
-        var PAD = pads().comp, pad = [e0[0] - c0[0], e0[1] - c0[1], c0[0] + c0[2] - e0[2], c0[1] + c0[3] - e0[3]].map(function(v, j) {
-          return (v - io[j] + far[j] >= PAD ? PAD : Math.min(PAD, v - io[j])) + io[j];
-        });
-        w = [e[0] - pad[0], e[1] - pad[1], e[2] + pad[2], e[3] + pad[3]];
-      } else if (overlap(s0, c0) && moving2(k) && !nodes2[k].comp && drawnOut(k, p, s0, c0, B0)) {
-        var m0 = [s0[0] + s0[2] / 2 - c0[0], s0[1] + s0[3] / 2 - c0[1], c0[0] + c0[2] - s0[0] - s0[2] / 2, c0[1] + c0[3] - s0[1] - s0[3] / 2].map(function(v, j) {
-          return v + far[j] >= 1 ? 1 : v;
-        });
-        var cx = b[0] + b[2] / 2, cy = b[1] + b[3] / 2;
-        w = [cx - m0[0], cy - m0[1], cx + m0[2], cy + m0[3]];
-      } else if (overlap(s0, c0)) w = [b[0] + b[2] - 1, b[1] + b[3] - 1, b[0] + 1, b[1] + 1];
-      else return;
-      var x02 = Math.min(c[0], w[0]), y02 = Math.min(c[1], w[1]), x1 = Math.max(c[0] + c[2], w[2]), y1 = Math.max(c[1] + c[3], w[3]);
-      if (Math.abs(x02 - c[0]) < 0.01 && Math.abs(y02 - c[1]) < 0.01 && Math.abs(x1 - c[0] - c[2]) < 0.01 && Math.abs(y1 - c[1] - c[3]) < 0.01) return;
-      nb[p] = [x02, y02, x1 - x02, y1 - y02];
-      hold(p);
-    };
-    ks.forEach(hold);
-    return nb;
-  }
-  function drawnOut(k, p, s0, c0, B0) {
-    return nodes2.some(function(q, j) {
-      if (!q.comp || j === p || j === k || under(j, p) || under(j, k)) return false;
-      var d = B0(j), x02 = Math.max(s0[0], d[0]), y02 = Math.max(s0[1], d[1]), x1 = Math.min(s0[0] + s0[2], d[0] + d[2]), y1 = Math.min(s0[1] + s0[3], d[1] + d[3]);
-      return x1 > x02 && y1 > y02 && !inBox([x02, y02, x1 - x02, y1 - y02], c0);
-    });
+    return hm().grown(ks, B, B0, moving2, away2);
   }
   function extOf(k, b) {
     var L = window.layout, g = boxOf(k);
@@ -13420,56 +13641,7 @@
     shared.dirty = true;
   }
   function regroup(how, set, B, B0) {
-    B = B || boxOf;
-    B0 = B0 || boxOf;
-    var out = /* @__PURE__ */ new Map(), fixed = function(k) {
-      return nodes2[k].hub || cdOwn(k);
-    }, changed2 = [];
-    var away2 = function(k, b, not) {
-      if (!fixed(k)) return holder(b, not, B);
-      for (var u = nodes2[k].up; u != null; u = nodes2[u].up) if (nodes2[u].comp && !not(u) && inBox(b, B(u))) return u;
-      return null;
-    };
-    set.forEach(function(i) {
-      var n = nodes2[i], p = n.up, b = B(i);
-      if (cdOwn(i) || how === "plain" && (p != null && set.has(p) || inComplex(i))) return;
-      if (n.comp || how === "alone" && n.kids.length) changed2.push(i);
-      var not = how === "plain" ? function(k) {
-        return set.has(k);
-      } : notIn(i), t;
-      if (p != null && how === "alone" && nodes2[p].shape.kind === "Complex") {
-        if (!inBox(b, B(p))) out.set(i, away2(i, b, not));
-        return;
-      }
-      if (p != null && (how === "plain" ? true : how === "alone" ? overlap(b, B(p)) : inBox(b, B(p)))) {
-        t = holder(b, not, B);
-        if (t == null || t === p || !under(t, p) || fixed(i) || inBox(B0(i), B0(t))) return;
-      } else if (p == null) {
-        t = holder(b, not, B);
-        if (t == null || fixed(i) || how === "box" && inBox(B0(i), B0(t))) return;
-      } else t = away2(i, b, not);
-      if (t !== p) out.set(i, t);
-    });
-    changed2.forEach(function(i) {
-      var n = nodes2[i], b = B(i), b0 = B0(i);
-      if (how !== "plain") n.kids.forEach(function(k) {
-        if (set.has(k) || out.has(k)) return;
-        var kb = B(k);
-        if (n.comp ? !overlap(kb, b) && overlap(kb, b0) : !inBox(kb, b) && inBox(kb, b0)) out.set(k, away2(k, kb, notIn(k)));
-      });
-      if (!n.comp) return;
-      var nu = out.has(i) ? out.get(i) : n.up;
-      nodes2.forEach(function(m, j) {
-        if (j === i || set.has(j) || out.has(j) || fixed(j) || inComplex(j) || under(j, i) || j === nu || nu != null && under(nu, j)) return;
-        var jb = B(j);
-        if (!inBox(jb, b) || inBox(jb, b0)) return;
-        var t = holder(jb, function(k) {
-          return k !== i && (k === j || under(k, j));
-        }, B);
-        if (t !== m.up && (t === i || t != null && under(t, i))) out.set(j, t);
-      });
-    });
-    return out;
+    return hm().regroup(how, set, B, B0);
   }
   function stackComps(ids) {
     if (shared.cd || !full() || !sbJs || !sbJs.stack) return;
@@ -13677,14 +13849,13 @@
     if (/r/.test(s)) x1 = g(x1 + dx);
     if (/t/.test(s)) y02 = g(y02 + dy);
     if (/b/.test(s)) y1 = g(y1 + dy);
-    if (!full()) nodes2[d.rs.c].kids.forEach(function(k) {
-      var q = boxOf(k);
-      if (!overlap(q, b)) return;
-      x02 = Math.min(x02, q[0] + q[2] - 1);
-      y02 = Math.min(y02, q[1] + q[3] - 1);
-      x1 = Math.max(x1, q[0] + 1);
-      y1 = Math.max(y1, q[1] + 1);
-    });
+    if (!full()) {
+      var kp = hm().keepMembers(d.rs.c, b, [x02, y02, x1, y1]);
+      x02 = kp[0];
+      y02 = kp[1];
+      x1 = kp[2];
+      y1 = kp[3];
+    }
     if (x1 - x02 < 30) {
       if (/l/.test(s)) x02 = x1 - 30;
       else x1 = x02 + 30;
@@ -13707,22 +13878,7 @@
     return !!nodes2[i].comp || nodes2[i].kids.length > 0;
   }
   function roomy(i, b, s, b0) {
-    var n = nodes2[i], x02 = Infinity, y02 = Infinity, x1 = -Infinity, y1 = -Infinity;
-    var rm = cxRoom(n);
-    n.kids.forEach(function(k) {
-      var e = extOf(k, boxOf(k));
-      x02 = Math.min(x02, e[0] - rm[0]);
-      y02 = Math.min(y02, e[1] - rm[1]);
-      x1 = Math.max(x1, e[2] + rm[2]);
-      y1 = Math.max(y1, e[3] + rm[3]);
-    });
-    if (x02 === Infinity) return b;
-    var L = b[0], T = b[1], R = b[0] + b[2], B = b[1] + b[3];
-    if (/l/.test(s)) L = Math.min(L, Math.max(x02, b0[0]));
-    if (/r/.test(s)) R = Math.max(R, Math.min(x1, b0[0] + b0[2]));
-    if (/t/.test(s)) T = Math.min(T, Math.max(y02, b0[1]));
-    if (/b/.test(s)) B = Math.max(B, Math.min(y1, b0[1] + b0[3]));
-    return [L, T, R - L, B - T];
+    return hm().roomy(i, b, s, b0);
   }
   function pt(pi) {
     var p = points[pi], o = mv && mv.p.has(pi);
@@ -15820,9 +15976,9 @@
     return best;
   }
   function portOn(pp, i, P, free) {
-    var b = bx(i), e = edges2[pp.k], H = nodes2[i].hub && window.yrender && hubPorts()[nodes2[i].id];
-    if (!H || MODS.test(e.arr[1]) && pp.end) return spot({ k: pp.k, end: pp.end, n: i }, P, free);
-    var q = pp.end || e.arr[1] === "none" && !nodes2[e.t].hub ? H[0] : H[1];
+    var b = bx(i), e = edges2[pp.k], H2 = nodes2[i].hub && window.yrender && hubPorts()[nodes2[i].id];
+    if (!H2 || MODS.test(e.arr[1]) && pp.end) return spot({ k: pp.k, end: pp.end, n: i }, P, free);
+    var q = pp.end || e.arr[1] === "none" && !nodes2[e.t].hub ? H2[0] : H2[1];
     return [q[0] - b[0] - b[2] / 2, q[1] - b[1] - b[3] / 2];
   }
   function aim(pp, P, free) {
@@ -16032,8 +16188,7 @@
     return Math.hypot(P[0] - a[0] - dx * t, P[1] - a[1] - dy * t);
   }
   function inComplex(i) {
-    for (var u = nodes2[i].up; u != null; u = nodes2[u].up) if (nodes2[u].shape.kind === "Complex") return true;
-    return false;
+    return hm().inComplex(i);
   }
   function hit(P) {
     var R = 6 / V.z, best = null, group = null;
