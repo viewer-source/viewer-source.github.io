@@ -36,7 +36,8 @@ export var LIFETIMES = {
     part: none,          // a selected part of a line (a port or a bend point)
     procs: list,         // the process glyphs with their two main arcs (parse)
     cdBase: none,        // the drawing the CellDesigner live session starts from { now, text }
-    cdGate: none         // a CellDesigner logic gate being made: { kind, inputs: [node ids] } (cdcreate.js)
+    cdGate: none,        // a CellDesigner logic gate being made: { kind, inputs: [node ids] } (cdcreate.js)
+    lastChange: none     // what the last whole action changed: { name, ids } (core.js commit)
   },
   gesture: {
     tap: none,           // a press waiting to become a click

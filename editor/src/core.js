@@ -1336,6 +1336,27 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
         undo = h.undo; shared.redo = h.redo; shiftSum = h.shift;
       } catch (e) { undo = []; shared.redo = []; if (shared.text !== g0) { setText(g0); parse(); } }
     }
+    // a whole action, the one change path: nothing when t2 is the text already; else one undo step (o.merge: nudges in a
+    // row one step), the text set and read again, o.then (the rest of the same action: what it writes goes through
+    // setText into the same step), the selection (o.sel node ids, o.selE line ids, the rest cleared; neither given: left
+    // as it is), saved and drawn. It records what changed: shared.lastChange { name, ids } (o.name, o.ids or the ids
+    // selected), read by the tests
+    function commit(t2, o) {
+      o = o || {};
+      if (t2 === shared.text) return false;
+      remember(!!o.merge); setText(t2); parse();
+      if (o.then) o.then();
+      if (o.sel || o.selE) {
+        var n = o.sel || [], e = o.selE || [];
+        shared.selN = []; shared.selP = []; shared.selE = []; shared.part = null;
+        nodes2.forEach(function (q, i) { if (n.indexOf(q.id) >= 0) shared.selN.push(i); });
+        edges2.forEach(function (q, k) { if (e.indexOf(q.id) >= 0) shared.selE.push(k); });
+      }
+      shared.dirty = true; shared.lastChange = { name: o.name || 'change', ids: [].concat(o.ids || o.sel || [], o.ids ? [] : o.selE || []) };
+      if (o.quiet) quiet();
+      render(); paint(); changed();
+      return true;
+    }
     function remember(merge) {   // the text before a change, for undo; nudges in a row are one step
       var now = Date.now();
       if (!(merge && now - nudgeAt < 800)) { step(undo, undoText(), true); shared.redo = []; }
@@ -2977,21 +2998,19 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     // On a CellDesigner map the glyph then sits midway on the segment it is on, as CellDesigner puts it
     function unbend(list) {
       list = list.slice().sort(function (a, b) { return b - a; });   // last first, so the earlier ones keep their place in the text
-      var before = shared.text;
+      var t = shared.text;
       list.forEach(function (pi) {
         var re = /<y:Point\s[^>]*>/g, m, c = -1;
-        while ((m = re.exec(shared.text))) if (++c === pi) break;
+        while ((m = re.exec(t))) if (++c === pi) break;
         if (!m) return;
         var a = m.index, b = m.index + m[0].length;
-        var s0 = shared.text.lastIndexOf('\n', a - 1) + 1;
-        if (/^[ \t]*$/.test(shared.text.slice(s0, a)) && shared.text[b] === '\n') { a = s0; b += 1; }   // on a line of its own: the line goes
-        setText(shared.text.slice(0, a) + shared.text.slice(b));
+        var s0 = t.lastIndexOf('\n', a - 1) + 1;
+        if (/^[ \t]*$/.test(t.slice(s0, a)) && t[b] === '\n') { a = s0; b += 1; }   // on a line of its own: the line goes
+        t = t.slice(0, a) + t.slice(b);
       });
-      if (shared.text === before) return false;
-      var keep = shared.text; setText(before); remember(false); setText(keep);
-      parse(); shared.selN = []; shared.selP = []; shared.selE = []; keyGuides = null; shared.dirty = true;
-      render(); paint(); changed();
-      return true;
+      if (t === shared.text) return false;
+      keyGuides = null;
+      return commit(t, { name: 'bend point removed', sel: [] });
     }
     var rclick;
     function __run37() {   // run at start, in order (__start)
@@ -3023,8 +3042,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       var t2 = window.cd_edit.makeMain(shared.text, edges2[k].id);
       if (!t2) return null;
       return { label: /\|r\d+$/.test(edges2[k].id) ? 'Make main reactant' : 'Make main product', go: function () {
-        remember(false); setText(t2);
-        parse(); shared.selN = []; shared.selP = []; shared.selE = []; keyGuides = null; shared.dirty = true; render(); paint(); changed();
+        keyGuides = null; commit(t2, { name: 'make main', ids: [edges2[k].id], sel: [] });
       } };
     };
     }
@@ -3476,4 +3494,4 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     }
 
     export function __start() { __run1(); __run2(); __run3(); __run4(); __run5(); __run6(); __run7(); __run8(); __run9(); __run10(); __run11(); __run12(); __run13(); __run14(); __run15(); __run16(); __run17(); __run18(); __run19(); __run20(); __run21(); __run22(); __run23(); __run24(); __run25(); __run26(); __run27(); __run28(); __run29(); __run30(); __run31(); __run32(); __run34(); __run35(); __run36(); __run37(); __run38(); __run39(); __run40(); __run41(); __run42(); __run43(); __run44(); __run45(); __run46(); }   // the part's statements, in their order
-    export { G, HANDLE, MODS, Y, ahead, aheadSoon, api, at, away, b64, blobSha, box, boxOf, buttons, cdOwn, changed, chooseFolder, complexHere, cut, cutShape, doc, docText, drag, drawText, edgeAt, edges2, editing, f1, fmt, freeName, full, gE, gN, gh, graphmlOf, gridBlock, gridSet, grown, handleMarks, heldText, hit, holder, holderSize, holds, hubPorts, inComplex, inRim, keyFlush, keyTake, kindWindow, landMarks, lastFor, lastSvg, lateItem, layTool, line, livePath, localBox, map, mapTop, moveFix, mv, name, near, nodes2, note, num, on, origFolderDrop, origFromFolder, origRead, origToFolder, origWrite, outlineD, overlap, ownMenus, paint, parse, parseFix, picWait, points, ports, procPlaces, pt, quiet, rclick, realizerOf, rebase, refit, regroup, remember, render, repo, rimOf, roleOf, roomy, setBoxes, setPort, setText, settle, shapeD, shown, site, spotNo, src, status, stop, subItem, sx, sy, syncFolder, toFolder, toGrid, token, tops, under, undo, unkeep, unpush, warn, x0, y0 };
+    export { G, HANDLE, MODS, Y, ahead, aheadSoon, api, at, away, b64, blobSha, box, boxOf, buttons, cdOwn, changed, chooseFolder, commit, complexHere, cut, cutShape, doc, docText, drag, drawText, edgeAt, edges2, editing, f1, fmt, freeName, full, gE, gN, gh, graphmlOf, gridBlock, gridSet, grown, handleMarks, heldText, hit, holder, holderSize, holds, hubPorts, inComplex, inRim, keyFlush, keyTake, kindWindow, landMarks, lastFor, lastSvg, lateItem, layTool, line, livePath, localBox, map, mapTop, moveFix, mv, name, near, nodes2, note, num, on, origFolderDrop, origFromFolder, origRead, origToFolder, origWrite, outlineD, overlap, ownMenus, paint, parse, parseFix, picWait, points, ports, procPlaces, pt, quiet, rclick, realizerOf, rebase, refit, regroup, remember, render, repo, rimOf, roleOf, roomy, setBoxes, setPort, setText, settle, shapeD, shown, site, spotNo, src, status, stop, subItem, sx, sy, syncFolder, toFolder, toGrid, token, tops, under, undo, unkeep, unpush, warn, x0, y0 };

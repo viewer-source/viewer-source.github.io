@@ -1,5 +1,5 @@
 import { shared, V } from './state.js';
-import { G, HANDLE, MODS, Y, at, box, boxOf, cdOwn, changed, complexHere, cutShape, doc, edges2, editing, f1, fmt, full, gE, gN, gridSet, grown, hit, holder, holderSize, holds, hubPorts, inComplex, inRim, keyTake, kindWindow, landMarks, lateItem, layTool, map, moveFix, name, nodes2, num, on, origFromFolder, origToFolder, outlineD, overlap, ownMenus, paint, parse, parseFix, quiet, rclick, realizerOf, refit, regroup, remember, render, rimOf, roleOf, roomy, setBoxes, setPort, setText, settle, site, src, subItem, sx, sy, toGrid, under, undo, unpush, warn, x0, y0 } from './core.js';
+import { G, HANDLE, MODS, Y, at, box, boxOf, cdOwn, changed, commit, complexHere, cutShape, doc, edges2, editing, f1, fmt, full, gE, gN, gridSet, grown, hit, holder, holderSize, holds, hubPorts, inComplex, inRim, keyTake, kindWindow, landMarks, lateItem, layTool, map, moveFix, name, nodes2, num, on, origFromFolder, origToFolder, outlineD, overlap, ownMenus, paint, parse, parseFix, quiet, rclick, realizerOf, refit, regroup, remember, render, rimOf, roleOf, roomy, setBoxes, setPort, setText, settle, site, src, subItem, sx, sy, toGrid, under, undo, unpush, warn, x0, y0 } from './core.js';
 import { bx, liveOff, livePose, sizeOff } from './live.js';
 import { cdMk, cdNow, cdRebuild } from './celldesigner.js';
 import { GEO, edOf, sbJs, sbKind } from './sbgn.js';
@@ -527,7 +527,7 @@ import { origGh, origPut } from './own.js';
       Object.keys(now.node).forEach(function (id) { var o = r.node && r.node[id], a = now.node[id]; if (!o) added++; else if (o.fill !== a.fill || o.line !== a.line) M[id] = { fill: o.fill, line: o.line }; });
       Object.keys(now.edge).forEach(function (id) { if (!r.edge || !(id in r.edge)) added++; });
       var t2 = sbJs.restyleAll(shared.text, M, null, function (id) { return r.edge && id in r.edge && r.edge[id] !== now.edge[id] ? r.edge[id] : undefined; });
-      if (t2 !== shared.text) { remember(false); setText(t2); made([]); }
+      commit(t2, { name: 'colours from a file', sel: [], quiet: true });
       return added;
     }
     // a choice of Colours recolours the whole map, one undo step: every entity, complex, compartment, tag and terminal its fill by the
@@ -578,8 +578,7 @@ import { origGh, origPut } from './own.js';
       var M = {};
       sbPlan(mode, true).forEach(function (q) { M[nodes2[q[0]].id] = q[1]; });
       var lh = [], t2 = sbJs.restyleAll(shared.text, M, null, mode === 'custom' ? null : function () { return mode === 'confetti' ? confettiLine(lh).toUpperCase() : null; });
-      if (t2 === shared.text) return;
-      remember(false); setText(t2); made([]);
+      commit(t2, { name: 'colours', sel: [], quiet: true });
     }
     function palFill() {   // the signs of the set chosen; the tabs and the look marked
       var k = palKey();
@@ -632,7 +631,7 @@ import { origGh, origPut } from './own.js';
     pal.querySelector('.m2-ed-pprot input').addEventListener('change', function (e) {   // every protein activity given the box or not, one undo step
       protOn = e.target.checked; e.target.blur();   // the editor's keys (undo) work at once, not the tick box's
       var t2 = palOn() ? sbJs.proteinBoxes(shared.text, protOn) : shared.text;
-      if (t2 !== shared.text) { remember(false); setText(t2); parse(); shared.dirty = true; render(); changed(); }
+      commit(t2, { name: 'protein boxes' });
       palShow(); paint();
     });
     palMap = null;
@@ -1121,10 +1120,7 @@ import { origGh, origPut } from './own.js';
             var c = q[0], af = afN && sbJs.AF_ARC[c];
             return { name: af ? af[0].toUpperCase() + af.slice(1) : q[1], own: c === now, go: function () {
               var t2 = sbJs.arcKind(shared.text, ed.id, c);
-              if (t2 === shared.text) return;
-              remember(false); setText(t2); parse(); shared.selN = []; shared.selP = []; shared.part = null;
-              shared.selE = edges2.map(function (e2, j) { return e2.id === ed.id ? j : -1; }).filter(function (j) { return j >= 0; });
-              shared.dirty = true; render(); paint(); changed();
+              commit(t2, { name: 'arc kind', sel: [], selE: [ed.id] });
             } };
           }), done);
         })]);
@@ -1135,16 +1131,16 @@ import { origGh, origPut } from './own.js';
       if (au == null && k >= 0 && afMap() && palKind() === 'af' && !nodes2[k].kids.length) au = sbJs.unitFor(nodes2[k].shape.kind);   // a plain entity of an AF map: written as its activity (a file's turned so, toAf)
       if (au === undefined) au = null;
       if (au != null) {
-        var aid = nodes2[k].id, setU = function (u) { return function () { var t2 = sbJs.activity(shared.text, aid, u); if (t2 === shared.text) return; remember(false); setText(t2); made(aid); }; };
+        var aid = nodes2[k].id, setU = function (u) { return function () { commit(sbJs.activity(shared.text, aid, u), { name: 'activity unit', sel: [aid], quiet: true }); }; };
         // its unit's text (free text, not restricted to a vocabulary): typed, or
         // ct:gene and ct:mRNA on a nucleic acid feature's; one unit per activity (AF), so one text
         var ui = svList(k).filter(function (q) { return q[3] === UI; })[0], ut = ui ? ui[0] : '';
         var setT = function (v) { return function () {
           var t2 = ui ? (v === null ? sbJs.unitDelete(shared.text, aid, 0) : sbJs.unitValue(shared.text, aid, 0, v)) : sbJs.unit(shared.text, aid, v);
-          if (t2 === shared.text) return; remember(false); setText(t2); made(aid);
+          commit(t2, { name: 'unit text', sel: [aid], quiet: true });
         }; };
         var typeT = function () {
-          if (!ui) { var t2 = sbJs.unit(shared.text, aid, ''); if (t2 === shared.text) return; remember(false); setText(t2); made(aid); }
+          if (!ui && !commit(sbJs.unit(shared.text, aid, ''), { name: 'unit added to type in', sel: [aid], quiet: true })) return;
           var j = svList(nodes2.findIndex(function (n) { return n.id === aid; })).map(function (q) { return q[3]; }).indexOf(UI);
           if (j >= 0) typeIn(aid, j, !ui);   // made for this: gone again when nothing is typed
         };
@@ -1159,7 +1155,7 @@ import { origGh, origPut } from './own.js';
         var gid = nodes2[k].id;
         var gins = edges2.filter(function (q) { return q.t === k; }).length;
         return ['and', 'or', 'not'].filter(function (c) { return c !== gc && !(c === 'not' && gins > 1); }).map(function (c) {   // a NOT has one input
-          return ['Make ' + c.toUpperCase(), function () { var t2 = sbJs.kind(shared.text, gid, c); if (t2 === shared.text) return; remember(false); setText(t2); made(gid); }];
+          return ['Make ' + c.toUpperCase(), function () { commit(sbJs.kind(shared.text, gid, c), { name: 'gate kind', sel: [gid], quiet: true }); }];
         });
       }
       // an entity (macromolecule, simple chemical, nucleic acid feature, unspecified entity; not an Activity Flow activity
@@ -1173,13 +1169,11 @@ import { origGh, origPut } from './own.js';
           ['Add unit of information ct:mRNA', function () { makeUnit(eid, 'ct:mRNA'); }], ['Add unit of information ct:gene', function () { makeUnit(eid, 'ct:gene'); }]);
         eout.push(['Change identity', subItem(function (r, done) {   // its kinds by the palette's names (core.js kindWindow)
           return kindWindow(r, sbJs.ENTITIES.map(function (c) {
-            return { name: c[0].toUpperCase() + c.slice(1), own: c === eb, go: function () { var t2 = sbJs.entityKind(shared.text, eid, c); if (t2 === shared.text) return; remember(false); setText(t2); made(eid); } };
+            return { name: c[0].toUpperCase() + c.slice(1), own: c === eb, go: function () { commit(sbJs.entityKind(shared.text, eid, c), { name: 'entity kind', sel: [eid], quiet: true }); } };
           }), done);
         })]);
         if (eb === 'macromolecule') eout.push([emulti ? 'Make macromolecule' : 'Make multimer', function () {
-          var t2 = sbJs.multimer(shared.text, eid, !emulti);
-          if (t2 === shared.text) return;
-          remember(false); setText(t2); made(eid);
+          commit(sbJs.multimer(shared.text, eid, !emulti), { name: 'multimer', sel: [eid], quiet: true });
         }]);
         eout.late = true;   // rarely used: after the common items, above Delete
         return eout;
@@ -1190,7 +1184,7 @@ import { origGh, origPut } from './own.js';
         var pit = lateItem(['Change identity', subItem(function (r, done) {
           return kindWindow(r, sbJs.PROCESSES.map(function (c) {
             var q = psigns.filter(function (s) { return s[0] === c; })[0];
-            return q && { name: q[1], own: c === pc, go: function () { var t2 = sbJs.kind(shared.text, pid, c); if (t2 === shared.text) return; remember(false); setText(t2); made(pid); } };
+            return q && { name: q[1], own: c === pc, go: function () { commit(sbJs.kind(shared.text, pid, c), { name: 'process kind', sel: [pid], quiet: true }); } };
           }).filter(Boolean), done);
         })]);
         // Make reversible or Make irreversible, after Change identity, as on CellDesigner reactions: its consumptions
@@ -1206,7 +1200,7 @@ import { origGh, origPut } from './own.js';
       var hc = k < 0 && P && (palOn() || stackOn) ? hit(P) : null;
       if (hc && hc.n != null && hc.p == null && nodes2[hc.n].comp) {
         var cid = nodes2[hc.n].id, np = palOn() ? sbJs.namePlaces(shared.text, cid) : null, sm = sbJs.stackMoves(shared.text, cid);   // the places its name can take (a name too wide for a side: the middles only); where it partly overlaps another, its order
-        var go = function (t2) { if (t2 === shared.text) return; remember(false); setText(t2); made(cid); };
+        var go = function (t2) { commit(t2, { name: 'compartment', sel: [cid], quiet: true }); };
         var its = (np ? np[1] : []).map(function (q) { return [NAME_WORDS[q], function () { go(sbJs.nameAt(shared.text, cid, q)); }]; });
         if (sm[1]) its.push(['Bring forward', function () { go(sbJs.restack(shared.text, cid, 1)); }]);
         if (sm[0]) its.push(['Send backward', function () { go(sbJs.restack(shared.text, cid, -1)); }]);
@@ -1616,8 +1610,7 @@ import { origGh, origPut } from './own.js';
       if (shared.cd) { cdRename(id, v); return; }
       if (!sbJs || shared.sb && !edOf(src()).nameable(src(), id)) return;   // a GraphML map's label written as it stands (no SBGN-ML class to ask)
       var t2 = sbJs.label(shared.text, id, v);
-      if (t2 === shared.text) return;
-      remember(false); setText(t2); parse(); svJoin(id); shared.dirty = true; quiet(); render(); paint(); changed();
+      commit(t2, { name: 'name', ids: [id], then: function () { svJoin(id); }, quiet: true });
     }
     // Name by members: a complex named by its members' names joined by colons (A:B, CellDesigner's usual name for
     // a complex), in reading order (rows from the top, each from the left); a member complex with no name gives its own
@@ -1794,9 +1787,7 @@ import { origGh, origPut } from './own.js';
     function svMove(i, j, r) {   // the state variable j of node i written at the place r (a CellDesigner map's: cdcreate.js)
       if (shared.cd) { cdSvMove(i, j, r); return; }
       var q = svList(i)[j], share = q[3] === SV ? svShareMove(i, q, svR(i, q), r) : null;   // the copies too
-      remember(false); setText((q[3] === UI ? sbJs.unitMove : sbJs.stateMove)(shared.text, nodes2[i].id, q[4], r[0], r[1])); parse();
-      if (share) share();
-      shared.dirty = true; render(); paint(); changed();
+      commit((q[3] === UI ? sbJs.unitMove : sbJs.stateMove)(shared.text, nodes2[i].id, q[4], r[0], r[1]), { name: 'state variable moved', ids: [nodes2[i].id], then: share });
     }
     function svDelete() {
       var i = svNode();
@@ -1804,9 +1795,8 @@ import { origGh, origPut } from './own.js';
       if (shared.cd) { var j = shared.svSel.j; shared.svSel = null; return cdSvDelete(i, j); }
       var q = svList(i)[shared.svSel.j];
       var share = q[3] === SV ? svShareMove(i, q, svR(i, q), null) : null;   // the copies too
-      remember(false); setText((q[3] === UI ? sbJs.unitDelete : sbJs.stateDelete)(shared.text, shared.svSel.id, q[4], { sbgn: shared.sb.base })); shared.svSel = null;
-      parse();
-      if (share) share(); shared.dirty = true; render(); paint(); changed();
+      var sid = shared.svSel.id;
+      commit((q[3] === UI ? sbJs.unitDelete : sbJs.stateDelete)(shared.text, sid, q[4], { sbgn: shared.sb.base }), { name: 'state variable deleted', ids: [sid], then: function () { shared.svSel = null; if (share) share(); } });
       return true;
     }
     // a cardinality (a consumption's or production's number; SBGN-ML maps): a click selects it with its line (Properties
@@ -1915,8 +1905,7 @@ import { origGh, origPut } from './own.js';
     }
     function cardMove(id, pos) {
       var t2 = sbJs.countMove(shared.text, id, pos);
-      if (t2 === shared.text) { render(); paint(); return; }
-      remember(false); setText(t2); parse(); shared.dirty = true; render(); paint(); changed();
+      if (!commit(t2, { name: 'cardinality moved', ids: [id] })) { render(); paint(); }
     }
     function __run36() {   // run at start, in order (__start)
     window.addEventListener('keydown', function (e) {
@@ -1927,7 +1916,7 @@ import { origGh, origPut } from './own.js';
       if (e.key === 'Delete' || e.key === 'Backspace') {
         e.preventDefault(); e.stopImmediatePropagation();
         var t2 = sbJs.recount(shared.text, cardSel.id, ''); cardSel = null;
-        if (t2 !== shared.text) { remember(false); setText(t2); parse(); shared.dirty = true; render(); paint(); changed(); }
+        commit(t2, { name: 'cardinality taken off' });
         return;
       }
       var d = KEYS[e.key];
@@ -1955,10 +1944,7 @@ import { origGh, origPut } from './own.js';
       if (!ids.length && !eids.length) return false;
       var t2 = ids.length ? sbJs.remove(shared.text, ids) : shared.text;
       if (eids.length) t2 = sbJs.arcRemove(t2, eids);
-      if (t2 === shared.text) return false;
-      remember(false); setText(t2); shared.selN = []; shared.selP = []; shared.selE = []; shared.part = null;
-      parse(); shared.dirty = true; render(); paint(); changed();
-      return true;
+      return commit(t2, { name: 'deleted', sel: [] });
     }
     // the arrow keys move the state variable selected round its node's border by 1 unit, with Shift by 10, along
     // the border, free of the places. The key's direction along the
@@ -2039,11 +2025,7 @@ import { origGh, origPut } from './own.js';
     function arcsDelete(list) {   // arcs deleted, the file's own and those made (Settings, Editing on Full, SBGN-ML maps)
       var ids = list.map(function (k) { return edges2[k] && edges2[k].id; }).filter(Boolean);
       if (!ids.length) return false;
-      var t2 = sbJs.arcRemove(shared.text, ids);
-      if (t2 === shared.text) return false;
-      remember(false); setText(t2); shared.selN = []; shared.selP = []; shared.selE = []; shared.part = null;
-      parse(); shared.dirty = true; render(); paint(); changed();
-      return true;
+      return commit(sbJs.arcRemove(shared.text, ids), { name: 'arcs deleted', ids: ids, sel: [] });
     }
 
     // a sign dragged from the palette onto the map: the future node at its own size and the map's zoom
@@ -2321,11 +2303,8 @@ import { origGh, origPut } from './own.js';
       } catch (err) { warn('The arc could not be made: ' + (err && err.message || err) + '.'); return; }
       if (sbCols() === 'confetti') ids.forEach(function (id) { t2 = sbJs.recolour(t2, id, confettiLine(confettiHues(t2)).toUpperCase()); });   // a new line a colour of its own, as the map's
       if (t2 === shared.text) return;
-      remember(false); setText(t2);
-      parse(); tagAim([ia, ib]); termsFix(nodes2.map(function (n, k) { return (n.id === ia || n.id === ib) && n.sub != null ? k : -1; }).filter(function (k) { return k >= 0; }));   // a tag's line at its point, a free tag facing it
-      shared.selN = []; shared.selP = []; shared.part = null;
-      shared.selE = edges2.map(function (q, k) { return ids.indexOf(q.id) >= 0 ? k : -1; }).filter(function (k) { return k >= 0; });   // the new arcs selected: Delete takes them back at once
-      shared.dirty = true; quiet(); render(); paint(); changed();
+      commit(t2, { name: 'arc made', sel: [], selE: ids, quiet: true, then: function () { tagAim([ia, ib]); termsFix(nodes2.map(function (n, k) { return (n.id === ia || n.id === ib) && n.sub != null ? k : -1; }).filter(function (k) { return k >= 0; }));   // a tag's line at its point, a free tag facing it
+      } });   // the new arcs selected: Delete takes them back at once
     }
     // where a line being drawn will be attached on node b, shown by the blue square of landMarks (as a CellDesigner map's
     // landing, and an end dragged): an entity's centre; a process's or gate's port in for what goes into it (its antenna
@@ -2395,14 +2374,15 @@ import { origGh, origPut } from './own.js';
       try { pairs.forEach(function (q) { var id = nodes2[q[0]].id; ids.push(id); was[id] = boxOf(q[0]); t2 = sbJs.resize(t2, id, q[1]); }); }
       catch (err) { warn('Not resized: ' + (err && err.message || err) + '.'); liveOff(); sizeOff(); paint(); return; }
       if (t2 === shared.text) { liveOff(); sizeOff(); paint(); return; }
-      remember(false); setText(t2); parse(); shared.dirty = true;
+      commit(t2, { name: 'resized', ids: ids, then: function () {
       nodes2.forEach(function (n) { if (n.sub != null && ids.indexOf(n.id) >= 0) tids.push(n.id); });   // a terminal resized itself: kept on its side
       if (tids.length) termsFix(nodes2.map(function (n, k) { return tids.indexOf(n.id) >= 0 ? k : -1; }).filter(function (k) { return k >= 0; }), true);
       shared.selN = []; nodes2.forEach(function (n, k) { if (ids.indexOf(n.id) >= 0) shared.selN.push(k); });
       var ks = shared.selN.slice();   // their holders grown round them as round a drag (grown)
       if (ks.length) setBoxes(grown(ks, boxOf, function (k) { return was[nodes2[k].id] || boxOf(k); }, function () { return false; }));
       refit(ids);
-      shared.sizeRec = null; render(); paint(); changed();
+      shared.sizeRec = null;
+      } });
     }
     // Properties as yEd's Properties View (familiar from the graph editor, compact): two columns, the name on the left;
     // with Newt's fields the atlas maps keep (label, width, height, border and
@@ -2624,7 +2604,7 @@ import { origGh, origPut } from './own.js';
         }
       });
       if (t2 === shared.text) return false;
-      remember(false); setText(t2); made(ids);
+      commit(t2, { name: 'properties', sel: ids, quiet: true });
       return true;
     }
     function sbEnds(id, o, box) { var t2 = sbJs.scaleEnds(shared.text, id, o, box); if (t2 !== shared.text) { setText(t2); parse(); } }   // a complex's line ends after its box was set (dragEnd, core.js)
@@ -2636,12 +2616,7 @@ import { origGh, origPut } from './own.js';
       if (!n) return false;
       for (var j = 0; j < n; j++) ids.push(freeId('arc_', ids));
       var t2 = sbJs.reversible(shared.text, pid, on, ids, { sbgn: src() });
-      if (t2 === shared.text) return false;
-      remember(false); setText(t2); parse(); shared.selN = []; shared.selP = []; shared.selE = []; shared.part = null;
-      if (keepNode) nodes2.forEach(function (q, i) { if (q.id === pid) shared.selN.push(i); });
-      else shared.selE = edges2.map(function (e2, q) { return ids.indexOf(e2.id) >= 0 ? q : -1; }).filter(function (q) { return q >= 0; });
-      shared.dirty = true; quiet(); render(); paint(); changed();
-      return true;
+      return commit(t2, { name: 'reversible', ids: [pid], sel: keepNode ? [pid] : [], selE: keepNode ? [] : ids, quiet: true });
     }
     // Properties' Reversible tick box for one SBGN-ML process selected alone, under its own rows (withNode): { rid, on },
     // or null where it can be neither (no production, an association, a gate); read once per process and text, as
@@ -2741,10 +2716,7 @@ import { origGh, origPut } from './own.js';
     function sbLineWidth(k, w) { return sbLineTo(k, sbJs.rewidth(shared.text, edges2[k].id, w)); }   // w 1 the default
     function sbLineTo(k, t2) {   // the line's text changed: one undo step, the line selected again
       var id = edges2[k].id;
-      if (t2 === shared.text) return false;
-      remember(false); setText(t2); parse(); shared.selE = []; edges2.forEach(function (q, j) { if (q.id === id) shared.selE = [j]; });
-      shared.dirty = true; render(); paint(); changed();
-      return true;
+      return commit(t2, { name: 'line look', ids: [id], then: function () { shared.selE = []; edges2.forEach(function (q, j) { if (q.id === id) shared.selE = [j]; }); } });
     }
     function atHub(k, end) { var e = edges2[k], n = end ? e.t : e.s; return n == null || !!nodes2[n].hub; }
     function edgeShow(k, all, r2, rxLine) {   // rxLine: the line of a whole reaction selected (its colour, not one participant's number)
@@ -2920,12 +2892,11 @@ import { origGh, origPut } from './own.js';
       try { t2 = sbJs.fit(shared.text, items, { sbgn: src() }); } catch (err) { warn('Not changed: ' + (err && err.message || err) + '.'); return false; }
       if (t2 === shared.text) return false;
       var sel = shared.selN.map(function (i) { return nodes2[i].id; });
-      remember(false); setText(t2); parse(); shared.dirty = true;
-      shared.selN = []; nodes2.forEach(function (n, k) { if (sel.indexOf(n.id) >= 0) shared.selN.push(k); });
+      commit(t2, { name: 'size', ids: Object.keys(was), sel: sel, then: function () {
       var ks = nodes2.map(function (n, k) { return was[n.id] ? k : -1; }).filter(function (k) { return k >= 0; });
       if (ks.length) setBoxes(grown(ks, boxOf, function (k) { return was[nodes2[k].id] || boxOf(k); }, function () { return false; }));   // their holders grown round them (sbSetSize)
       refit(Object.keys(was));
-      render(); paint(); changed();
+      } });
       return true;
     }
     function __run60() {   // run at start, in order (__start)
