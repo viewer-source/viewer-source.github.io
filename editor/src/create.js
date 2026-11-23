@@ -417,8 +417,8 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
           if (seq !== pickSeq || !on || site !== s0 || palId() !== id) return;   // another choice, map or Done meanwhile
           var r = [o[0], o[1]].reduce(function (a, x) { return x && typeof x === 'object' && (x.fill || x.node) && (!a || (x.at || 0) > (a.at || 0)) ? x : a; }, mine0);   // the newest: GitHub's, the folder's or this browser's
           if (r && r !== mine0) origKeep(id, Object.assign({}, r, { sent: r === o[0] ? 1 : undefined }));   // kept here too, so the field reads it
+          if (!r) { palDid([CHOICE_KEY], function () { keepMapChoice('cols', 'file'); }); paint(); return; }   // no colours of this map kept: the map stays as it is, nothing said; the choice alone its undo step
           keepMapChoice('cols', 'file');   // only now: a choice made while GitHub was asked still saw the map's scheme (no record taken from it)
-          if (!r) { paint(); return; }   // no colours of this map kept: the map stays as it is, nothing said
           back(r);
           paint();
         });
@@ -1093,10 +1093,10 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
     // Select all of this kind, at the end of the right-click menu over a node: every node of the map of its kind selected
     // (SBGN-ML: its class, a multimer with its plain kind; CellDesigner: its species class, or compartment; GraphML: its
     // shape), so Properties sets them together
-    ownMenus.push(function (P) { return (shared.sb || cdPal()) && svAt(P); });   // a state variable or unit of information: its own menu only
+    ownMenus.push(function (P) { return svOn() && svAt(P); });   // a state variable or unit of information: its own menu only (edited in Full; in Layout the node's menu)
     window.m2EditNodeItems = function () {
       var it = nodeItems(), h = rclick && on && V.current === map ? hit(rclick) : null, i = h && h.n != null && h.p == null ? h.n : -1;
-      if (i < 0 || ((shared.sb || cdPal()) && svAt(rclick)) || kindKey(i) == null) return it;   // not over a state variable or unit (its own menu)
+      if (i < 0 || (svOn() && svAt(rclick)) || kindKey(i) == null || (nodes2[i].kids.length > 0 && nodes2[i].shape.kind !== 'Complex')) return it;   // not over a state variable or unit (its own menu; edited in Full); a compartment with members counts as empty space (core.js emptyClick): the map's menu alone
       it = it || [];
       it.tail = [['Select all of this kind', function () { selectKind(i); }]];   // the object's last item before Delete
       return it;
@@ -1179,7 +1179,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
             return { name: c[0].toUpperCase() + c.slice(1), own: c === eb, go: function () { commit(sbJs.entityKind(shared.text, eid, c), { name: 'entity kind', sel: [eid], quiet: true }); } };
           }), done);
         })]);
-        if (eb === 'macromolecule') eout.push([emulti ? 'Make macromolecule' : 'Make multimer', function () {
+        if (hasMulti(eb)) eout.push([emulti ? 'Make ' + eb : 'Make multimer', function () {   // every kind with a multimer (as Properties' Multimer)
           commit(sbJs.multimer(shared.text, eid, !emulti), { name: 'multimer', sel: [eid], quiet: true });
         }]);
         eout.late = true;   // rarely used: after the common items, above Delete
@@ -2539,14 +2539,15 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
     var TAGS;
     function __run45() {   // run at start, in order (__start)
     TAGS = /^(tag|terminal)$/;
-    }   // a tag's rows: Label, Width, Height, Fill colour, Border colour, Border width, Orientation (a terminal's shown, set by its side)
+    }   // a tag's rows: Label, Font size, Width, Height, Fill colour, Border colour, Border width, Orientation (a terminal's shown, set by its side)
     // the rows a glyph has by its class: Label where sbgn_edit keeps a name (NAMED), Multimer where it writes one (MULTI); Set as default for the kinds the palette makes in a kept look
+    function hasMulti(c) { return sbJs.MULTI.test(c); }   // a kind with a multimer (sbgn_edit MULTI): Properties' Multimer row and the menu's Make multimer
     function sbOff(k, i) {
       var c = sbClasses()[nodes2[i].id] || '';
       if (k === 'way') return !TAGS.test(c);
-      if (TAGS.test(c)) return !/^(label|w|h|fill|line|width)$/.test(k);
+      if (TAGS.test(c)) return !/^(label|font|w|h|fill|line|width)$/.test(k);   // Font size as every named glyph (NAMED has tag and terminal)
       if (k === 'label' || k === 'font') return !sbJs.NAMED.test(c);   // a font size where there is a name
-      if (k === 'multimer') return !sbJs.MULTI.test(c.replace(/ multimer$/, ''));
+      if (k === 'multimer') return !hasMulti(c.replace(/ multimer$/, ''));
       if (k === 'ant') return !hubGroup(i) || sbAnts()[nodes2[i].id] == null;   // a process's or gate's antenna, once it has ports
       if (EXTRA.indexOf(k) >= 0) return true;   // another format's own rows (propRows)
       if (k === 'def') return !/^(macromolecule|simple chemical)( multimer)?$|^biological activity$/.test(c) && !hubGroup(i);

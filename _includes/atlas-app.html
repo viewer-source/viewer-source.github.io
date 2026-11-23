@@ -1392,7 +1392,7 @@ page, so its styles keep the base they were made on).
   }
   function lsDid(before, refresh) { setDid(function (o) { lsPut(o); refresh(); }, before, lsSnap(Object.keys(before))); }
   function letter(e) { return /^[a-z]$/i.test(e.key || '') ? e.key.toLowerCase() : /^Key[A-Z]$/.test(e.code || '') ? e.code.slice(3).toLowerCase() : ''; }   // the letter typed (Z on a German keyboard too), else its place (a Cyrillic layout)
-  function typingText() { var a = document.activeElement; return !!a && (a.isContentEditable || /textarea/i.test(a.tagName) || (/input/i.test(a.tagName) && !/^(checkbox|radio|range|button|submit|reset|color|file)$/i.test(a.type))); }   // a text field keeps its own undo
+  function typingText() { var a = document.activeElement; return !!a && (a.isContentEditable || !!a.closest('[data-keys-own]') || /textarea/i.test(a.tagName) || (/input/i.test(a.tagName) && !/^(checkbox|radio|range|button|submit|reset|color|file)$/i.test(a.type))); }   // a text field keeps its own undo
   document.addEventListener('keydown', function (e) {   // without the editor (a page with no Edit tab) the keys undo settings alone; with it, own.js chooses
     if (editor || !(e.ctrlKey || e.metaKey) || e.altKey || typingText()) return;
     var k = letter(e);
@@ -2218,7 +2218,7 @@ page, so its styles keep the base they were made on).
   var spaceHeld = false, overApp = false, app = document.querySelector('.m2');
   app.addEventListener('pointerenter', function () { overApp = true; });
   app.addEventListener('pointerleave', function () { overApp = false; });
-  function typing() { var a = document.activeElement; return a && (/input|textarea|select/i.test(a.tagName) || a.isContentEditable); }
+  function typing() { var a = document.activeElement; return a && (/input|textarea|select/i.test(a.tagName) || a.isContentEditable || !!a.closest('[data-keys-own]')); }   // data-keys-own: a small window whose keys stay in it
   document.addEventListener('keydown', function (e) {
     if ((e.code !== 'Space' && e.key !== ' ') || typing()) return;
     spaceHeld = true;
@@ -4354,7 +4354,7 @@ page, so its styles keep the base they were made on).
       if (unbend || bend || turn || main || mac || packHere || del || unbendAll || whole) sep(box);
       // over an item (a molecule in view mode, anything the editor's right click is on) its own items only: the page's
       // and the whole map's items are for empty map space
-      if ((n || ed && window.m2EditOnObject && window.m2EditOnObject()) && box.querySelector('button')) {
+      if (n || ed && window.m2EditOnObject && window.m2EditOnObject()) {   // with no item of its own (a reaction's square in Layout only): no menu, never the page's
         while (box.lastChild && box.lastChild.classList.contains('m2-sep')) box.removeChild(box.lastChild);
         return box;
       }
@@ -4416,6 +4416,7 @@ page, so its styles keep the base they were made on).
       close();
       var r = view.getBoundingClientRect();
       menu = build((cx - r.left) / pz(), (cy - r.top) / pz(), ed);
+      if (!menu.querySelector('button')) { menu = null; return; }   // an item with nothing to offer
       if (menuAny()) { var mm = ed && chosen ? chosen : current; menuArrange(menu, menuWhich(menu, ed, !!mm && formatOf(mm) === '.xml')); }   // in the reader's order, where arranged (Settings, Menus)
       // no item lit under a pointer that has not moved (a menu moved up off the window's edge opened
       // with Remove all bend points lit, as if chosen): the highlight follows the pointer from its first move
@@ -4459,6 +4460,7 @@ page, so its styles keep the base they were made on).
       // one types another letter there; Cmd with E could still come through as e), or by its letter
       if (!(e.code === 'KeyE' || (e.key && e.key.toLowerCase() === 'e')) || e.altKey || e.shiftKey || e.repeat || !current) return;
       var mod = e.ctrlKey || e.metaKey, a = document.activeElement;
+      if (a && a.closest('[data-keys-own]')) return;   // a small window open (its fields, or itself focused): its keys stay there
       if (!mod && a && (/input|textarea|select/i.test(a.tagName) || a.isContentEditable)) return;
       var editing = grid.classList.contains('m2-editing');
       if (!editing) { var eb = document.querySelector('#m2-rail .m2-ri[data-win="edit"]'); if (!eb || !eb.offsetParent) return; }

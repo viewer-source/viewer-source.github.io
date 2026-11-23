@@ -731,6 +731,7 @@ import { ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues, confet
       var sq = svAt(rclick);
       if (sq) return function () { shared.svSel = { id: nodes2[sq[0]].id, j: sq[1] }; svDelete(); };
       var h = hit(rclick);
+      if (h && h.n != null && nodes2[h.n].kids.length > 0 && nodes2[h.n].shape.kind !== 'Complex') return null;   // inside a compartment with contents: empty space (core.js emptyClick), never deleted with them
       if (h && h.n != null) { var i = h.n; return function () { cdDelete(shared.selN.indexOf(i) >= 0 ? shared.selN : [i], shared.selN.indexOf(i) >= 0 ? shared.selE : []); }; }
       if (h && h.e != null && h.p == null) { var k = h.e; return function () { var all = shared.selE.indexOf(k) >= 0; cdDelete(all ? shared.selN : [], all ? shared.selE : [k]); }; }   // over the selection: all of it
       return null;
@@ -1345,7 +1346,8 @@ import { ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues, confet
       document.addEventListener('pointerdown', outside, true);
       var j0 = jOf();
       shared.svSel = j0 < 0 ? null : { id: id, j: j0 }; paint(); place();
-      box.tabIndex = -1; setTimeout(function () { if (shared.typing === T) box.focus({ preventScroll: true }); }, 0);
+      box.tabIndex = -1; box.setAttribute('data-keys-own', '');   // the page's keys (E, Cmd+A) leave it alone while it has the focus
+      setTimeout(function () { if (shared.typing === T) box.focus({ preventScroll: true }); }, 0);
     }
     // added from the species' menu: a residue as an empty circle at the first free place (cdResidueNew), selected (its window
     // by a double click); a structural state (never empty) typed at once in its ellipse at cdSsAngle; a unit of

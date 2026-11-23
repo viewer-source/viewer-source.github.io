@@ -1514,6 +1514,7 @@ import { NEW_ID, emptyBase, isSb, madeHere, sbMap } from './sbgn.js';
     }
     function listDid(undo, redo, e) { e = e || { undo: undo, redo: redo }; e.at = V.tick(true); listPast.push(e); if (listPast.length > 100) listPast.shift(); shared.listAhead = []; listLast = true; }
     function listTop(back) { var s = back ? listPast : shared.listAhead; return s.length ? s[s.length - 1].at || 0 : 0; }   // when the list's next undo (or redo) was taken (V.tick)
+    function listFirst(back) { var lt = listTop(back); if (!lt || lt <= mapTop(back)) return false; listStep(back); return true; }   // the Edit window's Undo and Redo: the list's step when it is newer than the map's
     function listStep(back) {
       var s = (back ? listPast : shared.listAhead).pop();   // taken at the press, so the next press (and a setting's) sees the step after it
       if (!s) return;
@@ -1622,4 +1623,4 @@ import { NEW_ID, emptyBase, isSb, madeHere, sbMap } from './sbgn.js';
     }   // connected: the reader's maps kept in this browser go to GitHub
 
     export function __start() { __run1(); __run2(); __run3(); __run4(); __run5(); __run6(); __run7(); __run8(); __run9(); __run10(); __run11(); __run12(); __run13(); __run14(); __run15(); __run16(); __run17(); __run18(); __run19(); __run20(); __run21(); __run22(); __run23(); __run24(); __run25(); __run26(); __run27(); __run28(); __run29(); }   // the part's statements, in their order
-    export { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepBeside, keptNow, mine, mineAdd, mineIn, mineMatch, minePut, origGh, origPut, own, savedMine, toGh, upAll, upRun };
+    export { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepBeside, keptNow, listFirst, listTop, mine, mineAdd, mineIn, mineMatch, minePut, origGh, origPut, own, savedMine, toGh, upAll, upRun };

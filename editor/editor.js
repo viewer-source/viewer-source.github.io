@@ -4216,6 +4216,12 @@
     var s = back2 ? listPast : shared.listAhead;
     return s.length ? s[s.length - 1].at || 0 : 0;
   }
+  function listFirst(back2) {
+    var lt = listTop(back2);
+    if (!lt || lt <= mapTop(back2)) return false;
+    listStep(back2);
+    return true;
+  }
   function listStep(back2) {
     var s = (back2 ? listPast : shared.listAhead).pop();
     if (!s) return;
@@ -5032,11 +5038,14 @@
           return x && typeof x === "object" && (x.fill || x.node) && (!a || (x.at || 0) > (a.at || 0)) ? x : a;
         }, mine0);
         if (r2 && r2 !== mine0) origKeep(id, Object.assign({}, r2, { sent: r2 === o[0] ? 1 : void 0 }));
-        keepMapChoice("cols", "file");
         if (!r2) {
+          palDid([CHOICE_KEY], function() {
+            keepMapChoice("cols", "file");
+          });
           paint();
           return;
         }
+        keepMapChoice("cols", "file");
         back2(r2);
         paint();
       });
@@ -6077,11 +6086,11 @@
   function __run282() {
     NAME_WORDS = { tl: "Name at top left", t: "Name at top middle", tr: "Name at top right", bl: "Name at bottom left", b: "Name at bottom middle", br: "Name at bottom right" };
     ownMenus.push(function(P) {
-      return (shared.sb || cdPal()) && svAt(P);
+      return svOn() && svAt(P);
     });
     window.m2EditNodeItems = function() {
       var it = nodeItems(), h = rclick && on && V.current === map ? hit(rclick) : null, i = h && h.n != null && h.p == null ? h.n : -1;
-      if (i < 0 || (shared.sb || cdPal()) && svAt(rclick) || kindKey(i) == null) return it;
+      if (i < 0 || svOn() && svAt(rclick) || kindKey(i) == null || nodes2[i].kids.length > 0 && nodes2[i].shape.kind !== "Complex") return it;
       it = it || [];
       it.tail = [["Select all of this kind", function() {
         selectKind(i);
@@ -6215,7 +6224,7 @@
           } };
         }), done);
       })]);
-      if (eb === "macromolecule") eout.push([emulti ? "Make macromolecule" : "Make multimer", function() {
+      if (hasMulti(eb)) eout.push([emulti ? "Make " + eb : "Make multimer", function() {
         commit(sbJs.multimer(shared.text, eid, !emulti), { name: "multimer", sel: [eid], quiet: true });
       }]);
       eout.late = true;
@@ -8186,12 +8195,15 @@
   function __run45() {
     TAGS = /^(tag|terminal)$/;
   }
+  function hasMulti(c) {
+    return sbJs.MULTI.test(c);
+  }
   function sbOff(k, i) {
     var c = sbClasses()[nodes2[i].id] || "";
     if (k === "way") return !TAGS.test(c);
-    if (TAGS.test(c)) return !/^(label|w|h|fill|line|width)$/.test(k);
+    if (TAGS.test(c)) return !/^(label|font|w|h|fill|line|width)$/.test(k);
     if (k === "label" || k === "font") return !sbJs.NAMED.test(c);
-    if (k === "multimer") return !sbJs.MULTI.test(c.replace(/ multimer$/, ""));
+    if (k === "multimer") return !hasMulti(c.replace(/ multimer$/, ""));
     if (k === "ant") return !hubGroup(i) || sbAnts()[nodes2[i].id] == null;
     if (EXTRA.indexOf(k) >= 0) return true;
     if (k === "def") return !/^(macromolecule|simple chemical)( multimer)?$|^biological activity$/.test(c) && !hubGroup(i);
@@ -10056,6 +10068,7 @@
       svDelete();
     };
     var h = hit(rclick);
+    if (h && h.n != null && nodes2[h.n].kids.length > 0 && nodes2[h.n].shape.kind !== "Complex") return null;
     if (h && h.n != null) {
       var i = h.n;
       return function() {
@@ -10977,6 +10990,7 @@
     paint();
     place();
     box2.tabIndex = -1;
+    box2.setAttribute("data-keys-own", "");
     setTimeout(function() {
       if (shared.typing === T) box2.focus({ preventScroll: true });
     }, 0);
@@ -12360,15 +12374,16 @@
         ["Drag between two entities with Consumption or Production", "makes the process between them, with both arcs", "SBGN-ML"],
         ["A sign kept in hand, dragged between two nodes", "draws what the two ends call for: consumption, modulation, production", "SBGN-ML, CellDesigner"],
         ["Drop a node on a complex", "makes it a member, the complex packed round it", "SBGN-ML, CellDesigner"],
-        ["Click an item already selected, or double click", "types its text in place (P, P@S505)", "SBGN-ML"],
+        ["Double click a name", "types it in place", "SBGN-ML, CellDesigner"],
+        ["Click a state variable already selected", "types its text in place (P, P@S505)", "SBGN-ML"],
         ["Alt held while dragging or resizing", "no snapping: any place, any size", "all"],
         ["Click a line\u2019s end square, then arrow keys", "moves the end round the node\u2019s outline", "all"],
         ["Click a state variable, then arrow keys", "moves it round the border", "SBGN-ML, CellDesigner"],
         ["Right click on a line", "adds a bend point there, or removes the one clicked", "all"],
         ["Right click on empty space", "Remove all bend points, Snap map to grid, Repack all complexes", "all"],
         ["Right click on a complex", "Name by members (A:B), Repack complex", "all"],
-        ["Right click on a process", "Turn process, a quarter clockwise", "all"],
-        ["Right click on a node or line", "Change identity: another kind, its lines kept", "all"],
+        ["Right click on a process", "Turn process, a quarter clockwise", "SBGN-ML, GraphML"],
+        ["Right click on an entity, a process or a modulation", "Change identity: another kind, its lines kept", "SBGN-ML, CellDesigner"],
         ["Right click on overlapping compartments", "Bring forward, Send backward", "SBGN-ML, GraphML"],
         ["Right click on an added reactant or product", "Make main reactant, Make main product", "CellDesigner"],
         ["Add reactant or Add product, onto a reaction\u2019s line", "joins a line to a reaction already there", "CellDesigner"],
@@ -15402,10 +15417,10 @@
     });
     box.querySelector("#m2-ed-save").addEventListener("click", save);
     box.querySelector("#m2-ed-undo").addEventListener("click", function() {
-      if (on && !V.setFirst(true, mapTop(true))) back(undo, shared.redo);
+      if (on && !V.setFirst(true, Math.max(mapTop(true), listTop(true))) && !listFirst(true)) back(undo, shared.redo);
     });
     box.querySelector("#m2-ed-redo").addEventListener("click", function() {
-      if (on && !V.setFirst(false, mapTop(false))) back(shared.redo, undo);
+      if (on && !V.setFirst(false, Math.max(mapTop(false), listTop(false))) && !listFirst(false)) back(shared.redo, undo);
     });
     box.querySelector("#m2-ed-stop").addEventListener("click", function() {
       V.win = "list";
