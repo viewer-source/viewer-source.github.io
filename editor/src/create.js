@@ -1128,7 +1128,7 @@ import { origGh, origPut } from './own.js';
       // an activity under AF: made another kind, its unit
       // given, or its unit taken off (a protein's activity again: with no auxiliary unit an activity is a protein's)
       var au = k >= 0 && afMap() ? sbJs.activities(shared.text)[nodes2[k].id] : null;
-      if (au == null && k >= 0 && afMap() && palKind() === 'af' && !nodes2[k].kids.length) au = sbJs.unitFor(nodes2[k].shape.kind);   // a plain entity of an AF map: written as its activity (a file's turned so, toAf)
+      if (au == null && k >= 0 && afMap() && palKind() === 'af' && !nodes2[k].kids.length) au = sbJs.unitFor(nodes2[k].shape.kind);   // a plain entity of an AF map: written as its activity (an AF file's turned so, toAf; a reduced-notation file keeps the entity's class, sbgn_edit write0)
       if (au === undefined) au = null;
       if (au != null) {
         var aid = nodes2[k].id, setU = function (u) { return function () { commit(sbJs.activity(shared.text, aid, u), { name: 'activity unit', sel: [aid], quiet: true }); }; };
@@ -1787,7 +1787,7 @@ import { origGh, origPut } from './own.js';
     function svMove(i, j, r) {   // the state variable j of node i written at the place r (a CellDesigner map's: cdcreate.js)
       if (shared.cd) { cdSvMove(i, j, r); return; }
       var q = svList(i)[j], share = q[3] === SV ? svShareMove(i, q, svR(i, q), r) : null;   // the copies too
-      commit((q[3] === UI ? sbJs.unitMove : sbJs.stateMove)(shared.text, nodes2[i].id, q[4], r[0], r[1]), { name: 'state variable moved', ids: [nodes2[i].id], then: share });
+      if (!commit((q[3] === UI ? sbJs.unitMove : sbJs.stateMove)(shared.text, nodes2[i].id, q[4], r[0], r[1]), { name: 'state variable moved', ids: [nodes2[i].id], then: share })) { render(); paint(); }
     }
     function svDelete() {
       var i = svNode();
@@ -1796,7 +1796,7 @@ import { origGh, origPut } from './own.js';
       var q = svList(i)[shared.svSel.j];
       var share = q[3] === SV ? svShareMove(i, q, svR(i, q), null) : null;   // the copies too
       var sid = shared.svSel.id;
-      commit((q[3] === UI ? sbJs.unitDelete : sbJs.stateDelete)(shared.text, sid, q[4], { sbgn: shared.sb.base }), { name: 'state variable deleted', ids: [sid], then: function () { shared.svSel = null; if (share) share(); } });
+      if (!commit((q[3] === UI ? sbJs.unitDelete : sbJs.stateDelete)(shared.text, sid, q[4], { sbgn: shared.sb.base }), { name: 'state variable deleted', ids: [sid], then: function () { shared.svSel = null; if (share) share(); } })) { shared.svSel = null; render(); paint(); }
       return true;
     }
     // a cardinality (a consumption's or production's number; SBGN-ML maps): a click selects it with its line (Properties
@@ -1915,8 +1915,8 @@ import { origGh, origPut } from './own.js';
       if (!c) return;
       if (e.key === 'Delete' || e.key === 'Backspace') {
         e.preventDefault(); e.stopImmediatePropagation();
-        var t2 = sbJs.recount(shared.text, cardSel.id, ''); cardSel = null;
-        commit(t2, { name: 'cardinality taken off' });
+        var cid = cardSel.id, t2 = sbJs.recount(shared.text, cid, ''); cardSel = null;
+        commit(t2, { name: 'cardinality taken off', ids: [cid] });
         return;
       }
       var d = KEYS[e.key];
@@ -1944,7 +1944,7 @@ import { origGh, origPut } from './own.js';
       if (!ids.length && !eids.length) return false;
       var t2 = ids.length ? sbJs.remove(shared.text, ids) : shared.text;
       if (eids.length) t2 = sbJs.arcRemove(t2, eids);
-      return commit(t2, { name: 'deleted', sel: [] });
+      return commit(t2, { name: 'deleted', ids: ids.concat(eids), sel: [] });
     }
     // the arrow keys move the state variable selected round its node's border by 1 unit, with Shift by 10, along
     // the border, free of the places. The key's direction along the
@@ -2892,7 +2892,8 @@ import { origGh, origPut } from './own.js';
       try { t2 = sbJs.fit(shared.text, items, { sbgn: src() }); } catch (err) { warn('Not changed: ' + (err && err.message || err) + '.'); return false; }
       if (t2 === shared.text) return false;
       var sel = shared.selN.map(function (i) { return nodes2[i].id; });
-      commit(t2, { name: 'size', ids: Object.keys(was), sel: sel, then: function () {
+      commit(t2, { name: 'size', ids: Object.keys(was), then: function () {   // the nodes selected again, lines and bend points kept
+      shared.selN = []; nodes2.forEach(function (n, k) { if (sel.indexOf(n.id) >= 0) shared.selN.push(k); });
       var ks = nodes2.map(function (n, k) { return was[n.id] ? k : -1; }).filter(function (k) { return k >= 0; });
       if (ks.length) setBoxes(grown(ks, boxOf, function (k) { return was[nodes2[k].id] || boxOf(k); }, function () { return false; }));   // their holders grown round them (sbSetSize)
       refit(Object.keys(was));

@@ -109,7 +109,7 @@ import { yr } from './graphml.js';
       if (how) sbPlace();   // a change (parse)
       if (sbK.sb !== shared.sb) sbK = { sb: shared.sb, text: null, key: null, kind: 'empty', af: false, g: null, bad: false };
       if (sbK.text !== shared.text) {
-        if (sbK.bad || sbK.key !== shared.text.replace(GEO, '') || (sbK.kind === 'af' && !sbK.af)) sbRead();   // read again where the kind may have changed (a PD-class file of direct links keeps its classes: reduced notation)
+        if (sbK.bad || sbK.key !== shared.text.replace(GEO, '')) sbRead();   // read again when more than places changed (a move writes nothing)
         else sbK.text = shared.text;
       }
       if (sbK.bad) return sbK.kind;
@@ -124,7 +124,7 @@ import { yr } from './graphml.js';
       }
       return sbK.kind;
     }
-    function sbFollow() {   // after a move (changed()): a file the move turned (a PD file of direct links), seen at a paint, followed now
+    function sbFollow() {   // after a move (changed()): a file the move turned, seen at a paint, followed now
       if (!shared.sb || !sbJs || drag || sbK.sb !== shared.sb) return;
       if (sbPlace()) { parse(); shared.dirty = true; render(); paint(); }   // a line moved: its cardinality with it
       sbKind();

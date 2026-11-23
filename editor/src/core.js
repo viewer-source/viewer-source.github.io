@@ -1370,7 +1370,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       try { t = take(from); } catch (e) { from.length = 0; from.rb = []; from.ts = []; tookShift = null; warn('Undo history lost: ' + e + '.'); return; }
       clearTimeout(timer); keyDue = null; keyRun = null;   // the keys' run undone: nothing settled on top of it
       var was = undoText();
-      step(to, was); setText(fromUndo(t)); nudgeAt = 0; shared.cdGate = null; shared.sbBack = true; parse(); shared.selN = []; shared.selP = []; shared.selE = []; shared.part = null; shared.dirty = true; render(); paint(); changed();
+      step(to, was); setText(fromUndo(t)); shared.lastChange = { name: from === undo ? 'undo' : 'redo', ids: [] }; nudgeAt = 0; shared.cdGate = null; shared.sbBack = true; parse(); shared.selN = []; shared.selP = []; shared.selE = []; shared.part = null; shared.dirty = true; render(); paint(); changed();
     }
 
     // the drawing: the renderer in the browser; the map keeps its place on screen when the drawing's edges change
