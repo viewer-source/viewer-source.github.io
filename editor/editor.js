@@ -4293,19 +4293,23 @@
     });
   }
   function listMade(run) {
-    var ks = [], ids = [], at2 = location.hash.slice(1);
+    var ks = [], at2 = location.hash.slice(1);
     var e = {
       undo: function() {
         return fwd.then(function() {
-          var on1 = ids.indexOf(location.hash.slice(1)) >= 0;
+          var on1 = ks.some(function(k) {
+            var c = listCur(k.id, k.site);
+            return c && c.id === location.hash.slice(1);
+          });
           return Promise.resolve(binKeys(ks)).then(function() {
-            if (on1 && at2 && V.byId[at2]) V.go(at2);
+            if (on1 && at2 && V.byId[at2] && !V.byId[at2].binned) V.go(at2);
           });
         });
       },
       redo: function() {
         return Promise.resolve(restoreKeys(ks)).then(function() {
-          if (ids.length === 1 && V.byId[ids[0]]) V.go(ids[0]);
+          var c = ks.length === 1 && listCur(ks[0].id, ks[0].site);
+          if (c) V.go(c.id);
         });
       }
     };
@@ -4316,10 +4320,7 @@
       });
       return Promise.resolve(run()).then(function() {
         Object.keys(mine).forEach(function(id) {
-          if (!had[id] && !mine[id].hidden) {
-            ks.push(listKey(mine[id]));
-            ids.push(id);
-          }
+          if (!had[id] && !mine[id].hidden) ks.push(listKey(mine[id]));
         });
         if (!ks.length) listPast.splice(listPast.indexOf(e) >>> 0, 1);
       });
@@ -5028,7 +5029,9 @@
     var id = palId(), seq = ++pickSeq;
     if (v === "file") {
       if (!id) {
-        keepMapChoice("cols", "file");
+        palDid([CHOICE_KEY], function() {
+          keepMapChoice("cols", "file");
+        });
         return;
       }
       var mine0 = origAll()[id] || null, s0 = site;
@@ -6090,7 +6093,7 @@
     });
     window.m2EditNodeItems = function() {
       var it = nodeItems(), h = rclick && on && V.current === map ? hit(rclick) : null, i = h && h.n != null && h.p == null ? h.n : -1;
-      if (i < 0 || svOn() && svAt(rclick) || kindKey(i) == null || nodes2[i].kids.length > 0 && nodes2[i].shape.kind !== "Complex") return it;
+      if (i < 0 || svOn() && svAt(rclick) || kindKey(i) == null || asSpace(i)) return it;
       it = it || [];
       it.tail = [["Select all of this kind", function() {
         selectKind(i);
@@ -10068,7 +10071,7 @@
       svDelete();
     };
     var h = hit(rclick);
-    if (h && h.n != null && nodes2[h.n].kids.length > 0 && nodes2[h.n].shape.kind !== "Complex") return null;
+    if (h && h.n != null && asSpace(h.n)) return null;
     if (h && h.n != null) {
       var i = h.n;
       return function() {
@@ -16584,7 +16587,10 @@
       return f(rclick);
     })) return false;
     var h = hit(rclick);
-    return !h || h.n != null && nodes2[h.n].kids.length > 0 && nodes2[h.n].shape.kind !== "Complex";
+    return !h || h.n != null && asSpace(h.n);
+  }
+  function asSpace(i) {
+    return nodes2[i].kids.length > 0 && nodes2[i].shape.kind !== "Complex";
   }
   var ownMenus;
   function __run402() {

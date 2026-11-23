@@ -4416,7 +4416,7 @@ page, so its styles keep the base they were made on).
       close();
       var r = view.getBoundingClientRect();
       menu = build((cx - r.left) / pz(), (cy - r.top) / pz(), ed);
-      if (!menu.querySelector('button')) { menu = null; return; }   // an item with nothing to offer
+      if (!menu.querySelector('button, a')) { menu = null; return; }   // an item with nothing to offer
       if (menuAny()) { var mm = ed && chosen ? chosen : current; menuArrange(menu, menuWhich(menu, ed, !!mm && formatOf(mm) === '.xml')); }   // in the reader's order, where arranged (Settings, Menus)
       // no item lit under a pointer that has not moved (a menu moved up off the window's edge opened
       // with Remove all bend points lit, as if chosen): the highlight follows the pointer from its first move

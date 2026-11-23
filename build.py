@@ -566,7 +566,7 @@ def main():
         shutil.copy(f, os.path.join(ROOT, 'downloads', mid + '.sbgn'))
         d['file'], d['src'] = '/downloads/%s.sbgn' % mid, blob_sha(f)
         d['edit_path'], d['edit_base'] = 'maps/%s.sbgn' % mid, '/atlas-data/%s.graphml' % mid
-        if re.search(r'<map\s[^>]*id="viewer-new-map"', open(f, encoding='utf-8').read(3000)):   # made with New map (the editor's NEW_ID): the list may copy it
+        if re.search(r'<map\s[^>]*id="viewer-new-map"', open(f, encoding='utf-8').read(3000)):   # made with New map: the list may copy it (a copy of editor/src/sbgn.js madeHere and NEW_ID, its master)
             d['made_here'] = True
         search += search_entries(mid, nodes)
         title = meta.get('title', mid)

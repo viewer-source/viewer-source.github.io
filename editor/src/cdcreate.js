@@ -1,5 +1,5 @@
 import { shared, V } from './state.js';
-import { at, boxOf, changed, commit, cutShape, edgeAt, edges2, editing, f1, fmt, gridSet, grown, handleMarks, hit, keyFlush, kindWindow, landMarks, lateItem, line, map, near, nodes2, on, paint, parse, ports, procPlaces, quiet, rclick, render, setBoxes, shapeD, subItem, sx, sy, toGrid, warn, x0, y0 } from './core.js';
+import { asSpace, at, boxOf, changed, commit, cutShape, edgeAt, edges2, editing, f1, fmt, gridSet, grown, handleMarks, hit, keyFlush, kindWindow, landMarks, lateItem, line, map, near, nodes2, on, paint, parse, ports, procPlaces, quiet, rclick, render, setBoxes, shapeD, subItem, sx, sy, toGrid, warn, x0, y0 } from './core.js';
 import { bx, liveOff, sizeOff } from './live.js';
 import { cdJs, cdMk, cdNow, cdRebuild, nodeCentre, nodePlaces } from './celldesigner.js';
 import NT from '../../renderers/converter/notation.js';   // the notation's kinds and rules table, as on the SBGN maps (create.js ruleSays)
@@ -731,7 +731,7 @@ import { ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues, confet
       var sq = svAt(rclick);
       if (sq) return function () { shared.svSel = { id: nodes2[sq[0]].id, j: sq[1] }; svDelete(); };
       var h = hit(rclick);
-      if (h && h.n != null && nodes2[h.n].kids.length > 0 && nodes2[h.n].shape.kind !== 'Complex') return null;   // inside a compartment with contents: empty space (core.js emptyClick), never deleted with them
+      if (h && h.n != null && asSpace(h.n)) return null;   // inside a compartment with contents: empty space (core.js asSpace), never deleted with them
       if (h && h.n != null) { var i = h.n; return function () { cdDelete(shared.selN.indexOf(i) >= 0 ? shared.selN : [i], shared.selN.indexOf(i) >= 0 ? shared.selE : []); }; }
       if (h && h.e != null && h.p == null) { var k = h.e; return function () { var all = shared.selE.indexOf(k) >= 0; cdDelete(all ? shared.selN : [], all ? shared.selE : [k]); }; }   // over the selection: all of it
       return null;

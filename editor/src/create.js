@@ -1,5 +1,5 @@
 import { shared, V } from './state.js';
-import { G, GE, HANDLE, MODS, Y, at, box, boxOf, cdOwn, changed, commit, complexHere, cutShape, doc, edges2, editing, f1, fmt, full, gE, gN, gridSet, grown, hit, holder, holderSize, holds, hubPorts, inComplex, inRim, keyTake, kindWindow, landMarks, lateItem, layTool, map, moveFix, name, nodes2, num, on, origFromFolder, origToFolder, outlineD, overlap, ownMenus, paint, parse, parseFix, quiet, rclick, realizerOf, refit, regroup, remember, render, rimOf, roleOf, roomy, setBoxes, setPort, setText, settle, site, src, subItem, sx, sy, takes, toGrid, under, undo, unpush, warn, x0, y0 } from './core.js';
+import { G, GE, HANDLE, MODS, Y, asSpace, at, box, boxOf, cdOwn, changed, commit, complexHere, cutShape, doc, edges2, editing, f1, fmt, full, gE, gN, gridSet, grown, hit, holder, holderSize, holds, hubPorts, inComplex, inRim, keyTake, kindWindow, landMarks, lateItem, layTool, map, moveFix, name, nodes2, num, on, origFromFolder, origToFolder, outlineD, overlap, ownMenus, paint, parse, parseFix, quiet, rclick, realizerOf, refit, regroup, remember, render, rimOf, roleOf, roomy, setBoxes, setPort, setText, settle, site, src, subItem, sx, sy, takes, toGrid, under, undo, unpush, warn, x0, y0 } from './core.js';
 import { bx, liveOff, livePose, sizeOff } from './live.js';
 import { cdMk, cdNow, cdRebuild } from './celldesigner.js';
 import { GEO, edOf, sbJs, sbKind } from './sbgn.js';
@@ -411,7 +411,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
     function colsPick(v, cur, take, back, recolour) {   // a choice of Colours on the map (cur: the one it shows): take its own colours, put them back, or recolour
       var id = palId(), seq = ++pickSeq;
       if (v === 'file') {
-        if (!id) { keepMapChoice('cols', 'file'); return; }
+        if (!id) { palDid([CHOICE_KEY], function () { keepMapChoice('cols', 'file'); }); return; }
         var mine0 = origAll()[id] || null, s0 = site;
         Promise.all([origGh(), origFromFolder(id)]).then(function (o) {
           if (seq !== pickSeq || !on || site !== s0 || palId() !== id) return;   // another choice, map or Done meanwhile
@@ -1096,7 +1096,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
     ownMenus.push(function (P) { return svOn() && svAt(P); });   // a state variable or unit of information: its own menu only (edited in Full; in Layout the node's menu)
     window.m2EditNodeItems = function () {
       var it = nodeItems(), h = rclick && on && V.current === map ? hit(rclick) : null, i = h && h.n != null && h.p == null ? h.n : -1;
-      if (i < 0 || (svOn() && svAt(rclick)) || kindKey(i) == null || (nodes2[i].kids.length > 0 && nodes2[i].shape.kind !== 'Complex')) return it;   // not over a state variable or unit (its own menu; edited in Full); a compartment with members counts as empty space (core.js emptyClick): the map's menu alone
+      if (i < 0 || (svOn() && svAt(rclick)) || kindKey(i) == null || asSpace(i)) return it;   // not over a state variable or unit (its own menu; edited in Full); a compartment with members counts as empty space (core.js asSpace): the map's menu alone
       it = it || [];
       it.tail = [['Select all of this kind', function () { selectKind(i); }]];   // the object's last item before Delete
       return it;
