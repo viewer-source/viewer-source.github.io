@@ -2400,13 +2400,22 @@
     });
   }
   function copyOf(m, t, name2, go, made2) {
-    var id = m.id, r0 = m.mine ? mine[id] : null, group = m.group || "", title = freeTitle(name2, group, fmtOf(m)), next = after(id);
+    var id = m.id, r0 = m.mine ? mine[id] : null, group = m.group || "", fmt2 = fmtOf(m), title = freeTitle(name2, group, fmt2), next = after(id);
+    var slug = function(v) {
+      return v.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+    };
     var ext = r0 ? (r0.file.match(/\.[^.]+$/) || [".xml"])[0] : cdMap(m) ? ".xml" : sbMap(m) ? ".sbgn" : ".graphml";
-    var file = freeFile(title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") + ext);
+    var file = freeFile(slug(title) + ext);
     var gh2 = !!(repo() && token());
     return mineIn.then(function() {
       return t ? t() : textNow(m);
     }).then(function(t2) {
+      if (isSb(t2) && !madeHere(t2)) throw new Error(otherSb());
+      if (fmtOfText(t2) !== fmt2) {
+        title = freeTitle(name2, group, fmtOfText(t2));
+        ext = isCd(t2) ? ".xml" : isSb(t2) ? ".sbgn" : ".graphml";
+        file = freeFile(slug(title) + ext);
+      }
       if (gh2) {
         ext = siteExt(t2);
         if (!ext) throw new Error(siteWhy(t2));
@@ -2450,6 +2459,24 @@
         if (!(repo() && token())) toFolder(r.id, r.file, now);
       }
       said(r.title, r.id, was);
+    });
+  }
+  function fromTool(id, text, name2) {
+    var m = V.byId[id];
+    if (!m) return Promise.reject(new Error("the map is no longer in the list"));
+    if (naming) naming(true);
+    var t = String(text == null ? "" : text), out = null, err = null;
+    return listMade(function() {
+      return copyOf(m, function() {
+        return t;
+      }, name2, true, function(r) {
+        out = r;
+      }).catch(function(e) {
+        err = e;
+      });
+    }).then(function() {
+      if (err) throw err;
+      return { id: out.id, name: out.title };
     });
   }
   function keptNow(s) {
@@ -3054,7 +3081,7 @@
       return p.then(function() {
         return f.text();
       }).then(function(t) {
-        if (isSb(t) && !madeHere(t)) throw new Error("an SBGN-ML file from another editor cannot be added yet, only one made here with New map");
+        if (isSb(t) && !madeHere(t)) throw new Error(otherSb());
         if (gh2) return drawText(t, null, "adding").then(function(d) {
           var ext = siteExt(t), title = freeTitle(f.name.replace(/\.(graphml|xml|sbgn)$/i, ""), group || "", fmtOfText(t), out.filter(function(o) {
             return fmtOfText(o.t) === fmtOfText(t);
@@ -3151,6 +3178,9 @@
         return addFiles(l, ownGroup(g) ? g : "");
       });
     });
+  }
+  function otherSb() {
+    return "an SBGN-ML file from another editor cannot be added yet, only one made here with New map";
   }
   function siteExt(t) {
     return isCd(t) ? ".xml" : isSb(t) ? madeHere(t) ? ".sbgn" : null : /yworks\.com/.test(t.slice(0, 5e3)) ? ".graphml" : null;
@@ -4409,7 +4439,17 @@
       },
       naming: function() {
         return !!naming;
-      }
+      },
+      tool: { kind: function(id) {
+        return fmtOf(V.byId[id] || {});
+      }, name: function(id) {
+        var m = V.byId[id];
+        return m ? mapName(m) : "";
+      }, text: function(id) {
+        var m = V.byId[id];
+        return m ? textNow(m) : Promise.reject(new Error("the map is no longer in the list"));
+      }, add: fromTool }
+      // what a tool's run is handed (tools.js)
     };
     mineIn.then(upAll).then(binMigrate);
   }
@@ -17285,6 +17325,61 @@
     __run462();
   }
 
+  // editor/src/tools.js
+  function registry() {
+    var list2 = [];
+    function get(id) {
+      return list2.filter(function(t) {
+        return t.id === id;
+      })[0] || null;
+    }
+    function fits(t, map2) {
+      if (!map2 || t.kinds.indexOf("*") < 0 && t.kinds.indexOf(map2.kind) < 0) return false;
+      if (!t.applies) return true;
+      try {
+        return !!t.applies(map2);
+      } catch (e) {
+        return false;
+      }
+    }
+    return {
+      register: function(t) {
+        if (!t || typeof t.id !== "string" || !t.id) throw new Error("a tool needs an id");
+        if (typeof t.run !== "function") throw new Error("tool " + t.id + " has no run");
+        if (get(t.id)) throw new Error("a tool with the id " + t.id + " is registered already");
+        var k = Array.isArray(t.kinds) ? t.kinds.slice() : typeof t.kinds === "string" ? [t.kinds] : [];
+        if (!k.length) throw new Error("tool " + t.id + " names no kind of map");
+        var rec = { id: t.id, label: t.label || t.id, kinds: k, applies: typeof t.applies === "function" ? t.applies : null, run: t.run };
+        list2.push(rec);
+        return function() {
+          var i = list2.indexOf(rec);
+          if (i >= 0) list2.splice(i, 1);
+        };
+      },
+      forMap: function(map2) {
+        return list2.filter(function(t) {
+          return fits(t, map2);
+        }).map(function(t) {
+          return { id: t.id, label: t.label };
+        });
+      },
+      run: function(id, map2, ctx) {
+        var t = get(id);
+        if (!t) return Promise.reject(new Error("no tool " + id));
+        if (!fits(t, map2)) return Promise.reject(new Error(t.label + " does not apply to this map"));
+        try {
+          return Promise.resolve(t.run(ctx));
+        } catch (e) {
+          return Promise.reject(e);
+        }
+      },
+      label: function(id) {
+        var t = get(id);
+        return t ? t.label : "";
+      }
+    };
+  }
+
   // editor/src/main.js
   window.m2Editor = function(v) {
     setV(v);
@@ -17303,6 +17398,27 @@
     __start5();
     __start8();
     __start3();
+    var tools = registry();
+    var shownMap = function() {
+      var m = v.current;
+      return m ? { id: m.id, name: own.tool.name(m.id), kind: own.tool.kind(m.id) } : null;
+    };
+    window.m2Tools = {
+      register: tools.register,
+      forMap: function() {
+        var m = shownMap();
+        return m ? tools.forMap(m) : [];
+      },
+      run: function(id) {
+        var m = shownMap();
+        if (!m) return Promise.reject(new Error("no map is shown"));
+        return tools.run(id, m, { map: m, text: function() {
+          return own.tool.text(m.id);
+        }, add: function(t, name2) {
+          return own.tool.add(m.id, t, name2 || m.name + " (" + tools.label(id) + ")");
+        } });
+      }
+    };
     buttons();
     aheadSoon();
     syncFolder();

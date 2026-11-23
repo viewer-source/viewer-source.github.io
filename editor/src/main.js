@@ -14,6 +14,7 @@ import { aheadSoon, away, buttons, chooseFolder, map, on, paint, picWait, repo, 
 import { cdKept, cdShown, warmUp } from './celldesigner.js';
 import { own } from './own.js';
 import { shared } from './state.js';
+import { registry } from './tools.js';
 
 window.m2Editor = function (v) {
     setV(v);
@@ -28,6 +29,17 @@ window.m2Editor = function (v) {
     start_cdcreate();
     start_help();
     start_own();
+    var tools = registry();   // tools' commands for the map shown (tools.js); a run is handed the map, its text and add, a new map under it (own.js fromTool)
+    var shownMap = function () { var m = v.current; return m ? { id: m.id, name: own.tool.name(m.id), kind: own.tool.kind(m.id) } : null; };
+    window.m2Tools = {
+      register: tools.register,
+      forMap: function () { var m = shownMap(); return m ? tools.forMap(m) : []; },
+      run: function (id) {
+        var m = shownMap();
+        if (!m) return Promise.reject(new Error('no map is shown'));
+        return tools.run(id, m, { map: m, text: function () { return own.tool.text(m.id); }, add: function (t, name) { return own.tool.add(m.id, t, name || m.name + ' (' + tools.label(id) + ')'); } });
+      }
+    };
     buttons();
     aheadSoon();
     syncFolder();   // the reader's folder read for My maps, when the browser still allows it

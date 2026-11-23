@@ -444,13 +444,18 @@ import { NEW_ID, emptyBase, isSb, madeHere, sbMap } from './sbgn.js';
     }
     // a map of the reader's made from map m, right under it in its group, in every way maps are kept (GitHub with a token,
     // else this browser and the folder): its text, t() (no t: m's text now), named name (made free in the group); go (or
-    // go() once made): shown once made, after made(record). Gives the new record
+    // go() once made): shown once made, after made(record). Gives the new record. The format, the extension and the name
+    // check follow the text, so a tool's text of another format (fromTool) lands as its own kind; a text the reader's
+    // maps cannot take is refused as Add map refuses it
     function copyOf(m, t, name, go, made) {
-      var id = m.id, r0 = m.mine ? mine[id] : null, group = m.group || '', title = freeTitle(name, group, fmtOf(m)), next = after(id);   // next: read before the copy is in the list
+      var id = m.id, r0 = m.mine ? mine[id] : null, group = m.group || '', fmt = fmtOf(m), title = freeTitle(name, group, fmt), next = after(id);   // next: read before the copy is in the list
+      var slug = function (v) { return v.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''); };
       var ext = r0 ? (r0.file.match(/\.[^.]+$/) || ['.xml'])[0] : cdMap(m) ? '.xml' : sbMap(m) ? '.sbgn' : '.graphml';
-      var file = freeFile(title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') + ext);
+      var file = freeFile(slug(title) + ext);
       var gh = !!(repo() && token());
       return mineIn.then(function () { return t ? t() : textNow(m); }).then(function (t) {
+        if (isSb(t) && !madeHere(t)) throw new Error(otherSb());
+        if (fmtOfText(t) !== fmt) { title = freeTitle(name, group, fmtOfText(t)); ext = isCd(t) ? '.xml' : isSb(t) ? '.sbgn' : '.graphml'; file = freeFile(slug(title) + ext); }
         if (gh) { ext = siteExt(t); if (!ext) throw new Error(siteWhy(t)); }
         var made = r0 && t === r0.text ? Promise.resolve({ svg: r0.svg, width: r0.width, height: r0.height }) : drawText(t);
         return made.then(function (d) {
@@ -478,6 +483,16 @@ import { NEW_ID, emptyBase, isSb, madeHere, sbMap } from './sbgn.js';
         if (now !== r.text) { r.text = now; mine[r.id] = r; minePut(r).catch(function () {}); if (!(repo() && token())) toFolder(r.id, r.file, now); }
         said(r.title, r.id, was);
       });
+    }
+    // A tool's text as a new map of the reader's, right under its source (map id) in its group, opened, in every way maps
+    // are kept (copyOf), one step of the list's undo (into Deleted, as a copy). name: the tool's, else '<source> (label)'
+    // given by the caller. Gives { id, name }; a text the reader's maps cannot take is refused, nothing added
+    function fromTool(id, text, name) {
+      var m = V.byId[id]; if (!m) return Promise.reject(new Error('the map is no longer in the list'));
+      if (naming) naming(true);
+      var t = String(text == null ? '' : text), out = null, err = null;
+      return listMade(function () { return copyOf(m, function () { return t; }, name, true, function (r) { out = r; }).catch(function (e) { err = e; }); })
+        .then(function () { if (err) throw err; return { id: out.id, name: out.title }; });
     }
     // what is kept in this browser now for a map edited without GitHub: its draft, or the reader's record (null: none),
     // read afresh, as another tab of the site may have written it since this page opened the map
@@ -854,7 +869,7 @@ import { NEW_ID, emptyBase, isSb, madeHere, sbMap } from './sbgn.js';
       var why = function (f, e) { var r = rowOf(f), w = e && e.message ? e.message : String(e); if (r) r.why = w; else b.rows.push({ name: f.name, f: f, why: w }); };
       return picked.reduce(function (p, f) {
         return p.then(function () { return f.text(); }).then(function (t) {
-          if (isSb(t) && !madeHere(t)) throw new Error('an SBGN-ML file from another editor cannot be added yet, only one made here with New map');
+          if (isSb(t) && !madeHere(t)) throw new Error(otherSb());
           if (gh) return drawText(t, null, 'adding').then(function (d) {   // with a token: to the site, shown from here until built
             var ext = siteExt(t), title = freeTitle(f.name.replace(/\.(graphml|xml|sbgn)$/i, ''), group || '', fmtOfText(t), out.filter(function (o) { return fmtOfText(o.t) === fmtOfText(t); }).map(function (o) { return o.title; }));
             if (!ext) throw new Error(siteWhy(t));
@@ -904,6 +919,7 @@ import { NEW_ID, emptyBase, isSb, madeHere, sbMap } from './sbgn.js';
     // opens connected, when a token is connected, and when it is edited. Its record keeps the site's id, the file's
     // path and sha, and the text GitHub has (saved), so editing saves there (core.js push) and withMine knows when the
     // build has it. The file kinds the site's build takes: a yEd GraphML, a CellDesigner file, an SBGN-ML map made here
+    function otherSb() { return 'an SBGN-ML file from another editor cannot be added yet, only one made here with New map'; }   // Add map's and a tool's refusal of another editor's SBGN-ML
     function siteExt(t) { return isCd(t) ? '.xml' : isSb(t) ? (madeHere(t) ? '.sbgn' : null) : /yworks\.com/.test(t.slice(0, 5000)) ? '.graphml' : null; }
     function siteWhy(t) { return isSb(t) ? 'an SBGN-ML file from another editor cannot go to the site yet, only one made here with New map' : 'not a yEd GraphML or CellDesigner file'; }
     function onSite(r, s, title) { r.site = s.id; r.path = s.path; r.sha = s.sha; r.saved = s.text; r.siteTitle = title; return r; }
@@ -1589,7 +1605,8 @@ import { NEW_ID, emptyBase, isSb, madeHere, sbMap } from './sbgn.js';
       read: function () { return mineIn; },
       here: function () { return (groupsHere = mineGroupsHere()); }, groups: function () { return groupsHere; }, order: mineGroups,   // order: every group the reader made, on the site or not, in their order
       withMine: withMine, addPaint: addPaint, isGroup: ownGroup, movable: movable, moveTo: function (id, g, before) { return moveU([id], g, before); }, moveMany: moveU, did: listDid, rename: renameGroup, canRenameGroup: canRenameGroup, renameMap: renameMap, canRename: canRename, newMap: function (g, f) { return listMade(function () { return newMap(g, f); }); }, shown: mineShown, listItems: listItems,
-      rec: function (id) { return mine[id] || null; }, naming: function () { return !!naming; }
+      rec: function (id) { return mine[id] || null; }, naming: function () { return !!naming; },
+      tool: { kind: function (id) { return fmtOf(V.byId[id] || {}); }, name: function (id) { var m = V.byId[id]; return m ? mapName(m) : ''; }, text: function (id) { var m = V.byId[id]; return m ? textNow(m) : Promise.reject(new Error('the map is no longer in the list')); }, add: fromTool }   // what a tool's run is handed (tools.js)
     };
     mineIn.then(upAll).then(binMigrate);
     }   // connected: the reader's maps kept in this browser go to GitHub
