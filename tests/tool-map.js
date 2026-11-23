@@ -151,6 +151,21 @@ async function browser(b) {
   await P.page.keyboard.press('Control+z'); await P.page.waitForTimeout(1500);
   var after = await recs();
   ok('Cmd+Z in the list: the last map made goes to Deleted', after.filter(function (x) { return /\.sbgn$/.test(x.file); }).every(function (x) { return x.hidden; }) && after.some(function (x) { return x.text.indexOf(MARK) >= 0 && !x.hidden; }), JSON.stringify(after.map(function (x) { return x.file + (x.hidden ? ' hidden' : ''); })));
+  var gone = after.filter(function (x) { return x.hidden; })[0];
+  if (gone) {
+    await P.page.evaluate(function (id) { location.hash = '#' + id; }, gone.id); await P.page.waitForTimeout(1500);
+    var no2 = await P.page.evaluate(function (id) { return window.m2Tools.forMap().length && location.hash === '#' + id ? window.m2Tools.run('to-sbgn').then(function () { return 'made'; }, function (e) { return e.message; }) : 'not shown'; }, gone.id);
+    ok('a map in Deleted is no tool\'s source', /in Deleted/.test(no2), no2);
+  }
+  await P.page.click('#m2-list .m2-map[data-id="' + MAP + '"]').catch(function () {}); await P.page.waitForTimeout(1000);
+  var two = await P.page.evaluate(function (a) {
+    window.m2Tools.register({ id: 'twice', label: 'Twice', kinds: ['*'], run: function (ctx) { return Promise.all([ctx.add(a + '<!--1-->'), ctx.add(a + '<!--2-->'), ctx.add(a + '<!--3-->', '***')]); } });
+    return window.m2Tools.run('twice').then(function (r) { return r.map(function (x) { return x.name; }); }, function (e) { return [e.message]; });
+  }, SB_HERE);
+  await P.page.waitForTimeout(2000);
+  var all = await recs(), f2 = all.filter(function (x) { return /<!--[123]-->/.test(x.text); }).map(function (x) { return x.file; });
+  ok('several maps asked for at once: each its own name and file', two.length === 3 && two[0] !== two[1] && f2.length === 3 && new Set(f2).size === 3, two.join(' | ') + ' / ' + f2.join(','));
+  ok('a name of no letters a to z: a file name all the same', f2.every(function (f) { return /^[a-z0-9]/.test(f); }), f2.join(','));
   ok('no script error', !P.errs.length, P.errs.join(' | '));
   await ctx.close();
 }

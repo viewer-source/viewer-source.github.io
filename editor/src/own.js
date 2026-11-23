@@ -449,7 +449,7 @@ import { NEW_ID, emptyBase, isSb, madeHere, sbMap } from './sbgn.js';
     // maps cannot take is refused as Add map refuses it
     function copyOf(m, t, name, go, made) {
       var id = m.id, r0 = m.mine ? mine[id] : null, group = m.group || '', fmt = fmtOf(m), title = freeTitle(name, group, fmt), next = after(id);   // next: read before the copy is in the list
-      var slug = function (v) { return v.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''); };
+      var slug = function (v) { return v.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'map'; };   // a name of no letters a to z (another script, signs): never an empty file name
       var ext = r0 ? (r0.file.match(/\.[^.]+$/) || ['.xml'])[0] : cdMap(m) ? '.xml' : sbMap(m) ? '.sbgn' : '.graphml';
       var file = freeFile(slug(title) + ext);
       var gh = !!(repo() && token());
@@ -489,11 +489,19 @@ import { NEW_ID, emptyBase, isSb, madeHere, sbMap } from './sbgn.js';
     // given by the caller. Gives { id, name }; a text the reader's maps cannot take is refused, nothing added
     function fromTool(id, text, name) {
       var m = V.byId[id]; if (!m) return Promise.reject(new Error('the map is no longer in the list'));
+      if (m.binned) return Promise.reject(new Error('the map is in Deleted'));   // its group may be gone and its place is Deleted's: restored first
       if (naming) naming(true);
       var t = String(text == null ? '' : text), out = null, err = null;
-      return listMade(function () { return copyOf(m, function () { return t; }, name, true, function (r) { out = r; }).catch(function (e) { err = e; }); })
-        .then(function () { if (err) throw err; return { id: out.id, name: out.title }; });
+      name = String(name == null ? '' : name).replace(/\s+/g, ' ').trim() || 'Unnamed map';   // a tool's name taken as text, as a typed name
+      var go = function () {
+        return listMade(function () { return copyOf(m, function () { return t; }, name, true, function (r) { out = r; }).catch(function (e) { err = e; }); })
+          .then(function () { if (err) throw err; return { id: out.id, name: out.title }; });
+      };
+      var p = (toolLast || Promise.resolve()).then(go, go);   // one at a time: two at once would take the same free name and file, and one undo step would claim both maps
+      toolLast = p.catch(function () {});
+      return p;
     }
+    var toolLast;   // the last map a tool asked for, made or refused
     // what is kept in this browser now for a map edited without GitHub: its draft, or the reader's record (null: none),
     // read afresh, as another tab of the site may have written it since this page opened the map
     // A clash found: this page's copy of the record taken from what was read, so opening the map again shows the newer version

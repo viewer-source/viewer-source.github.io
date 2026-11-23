@@ -2402,7 +2402,7 @@
   function copyOf(m, t, name2, go, made2) {
     var id = m.id, r0 = m.mine ? mine[id] : null, group = m.group || "", fmt2 = fmtOf(m), title = freeTitle(name2, group, fmt2), next = after(id);
     var slug = function(v) {
-      return v.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+      return v.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "map";
     };
     var ext = r0 ? (r0.file.match(/\.[^.]+$/) || [".xml"])[0] : cdMap(m) ? ".xml" : sbMap(m) ? ".sbgn" : ".graphml";
     var file = freeFile(slug(title) + ext);
@@ -2464,21 +2464,30 @@
   function fromTool(id, text, name2) {
     var m = V.byId[id];
     if (!m) return Promise.reject(new Error("the map is no longer in the list"));
+    if (m.binned) return Promise.reject(new Error("the map is in Deleted"));
     if (naming) naming(true);
     var t = String(text == null ? "" : text), out = null, err = null;
-    return listMade(function() {
-      return copyOf(m, function() {
-        return t;
-      }, name2, true, function(r) {
-        out = r;
-      }).catch(function(e) {
-        err = e;
+    name2 = String(name2 == null ? "" : name2).replace(/\s+/g, " ").trim() || "Unnamed map";
+    var go = function() {
+      return listMade(function() {
+        return copyOf(m, function() {
+          return t;
+        }, name2, true, function(r) {
+          out = r;
+        }).catch(function(e) {
+          err = e;
+        });
+      }).then(function() {
+        if (err) throw err;
+        return { id: out.id, name: out.title };
       });
-    }).then(function() {
-      if (err) throw err;
-      return { id: out.id, name: out.title };
+    };
+    var p = (toolLast || Promise.resolve()).then(go, go);
+    toolLast = p.catch(function() {
     });
+    return p;
   }
+  var toolLast;
   function keptNow(s) {
     return V.draftDo("readonly", function(st) {
       return st.get(s.id);
