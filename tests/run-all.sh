@@ -24,6 +24,7 @@ t() {
 }
 t 1 node tests/yrender-compare.js python3
 t 2 node tests/layout-compare.js
+t 2 node tests/no-page.js python3
 t 1 node tests/cd-compare.js
 t 2 node tests/cd-live.js
 t 4 node tests/cd-snap-redo.js
