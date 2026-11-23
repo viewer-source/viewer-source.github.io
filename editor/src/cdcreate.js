@@ -1468,8 +1468,8 @@ import { ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues, confet
         count: function (k) { return /\|[rp]\d+$/.test(edges2[k].id) ? cdCount(edges2[k].id) : undefined; },   // an added reactant's or product's own number (the main ones are the reaction's rows)
         setCount: function (k, v) { return cdLineTo(k, function (t, id) { return cdMk.restoich(t, id, v); }); } },
       node: function (i) { return cdProp(i) ? i : -1; },
-      off: function (k, i) {   // pNow: look's, read just before; a compartment no border width, multimer or font size (CellDesigner keeps none for its name), a complex no multimer, an Unknown no border width
-        return k === 'line' || k === 'ant' || (k === 'ss' && /^(COMPARTMENT|DEGRADED)$/.test(pNow.cls)) || (/^(mem|outer|inner)$/.test(k) && pNow.cls !== 'COMPARTMENT') || (/^(label|font|fill|multimer)$/.test(k) && pNow.cls === 'DEGRADED') || (/^(width|multimer|def|font)$/.test(k) && pNow.cls === 'COMPARTMENT') || (/^(multimer|def)$/.test(k) && pNow.cls === 'COMPLEX') || (k === 'width' && pNow.cls === 'UNKNOWN');   // an Unknown has no outline in CellDesigner, so no border width
+      off: function (k, i) {   // pNow: look's, read just before; no SBGN-ML row (a line's colour, an antenna, a tag's Orientation); a compartment no border width, multimer or font size (CellDesigner keeps none for its name), a complex no multimer, an Unknown no border width
+        return k === 'line' || k === 'ant' || k === 'way' || (k === 'ss' && /^(COMPARTMENT|DEGRADED)$/.test(pNow.cls)) || (/^(mem|outer|inner)$/.test(k) && pNow.cls !== 'COMPARTMENT') || (/^(label|font|fill|multimer)$/.test(k) && pNow.cls === 'DEGRADED') || (/^(width|multimer|def|font)$/.test(k) && pNow.cls === 'COMPARTMENT') || (/^(multimer|def)$/.test(k) && pNow.cls === 'COMPLEX') || (k === 'width' && pNow.cls === 'UNKNOWN');   // an Unknown has no outline in CellDesigner, so no border width
       },
       look: function (i) {   // null while the file is behind the map read (an undo not drawn yet); read once per node and file (it runs with every paint)
         var id = nodes2[i].id;

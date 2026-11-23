@@ -11218,7 +11218,7 @@
         return cdProp(i) ? i : -1;
       },
       off: function(k, i) {
-        return k === "line" || k === "ant" || k === "ss" && /^(COMPARTMENT|DEGRADED)$/.test(pNow.cls) || /^(mem|outer|inner)$/.test(k) && pNow.cls !== "COMPARTMENT" || /^(label|font|fill|multimer)$/.test(k) && pNow.cls === "DEGRADED" || /^(width|multimer|def|font)$/.test(k) && pNow.cls === "COMPARTMENT" || /^(multimer|def)$/.test(k) && pNow.cls === "COMPLEX" || k === "width" && pNow.cls === "UNKNOWN";
+        return k === "line" || k === "ant" || k === "way" || k === "ss" && /^(COMPARTMENT|DEGRADED)$/.test(pNow.cls) || /^(mem|outer|inner)$/.test(k) && pNow.cls !== "COMPARTMENT" || /^(label|font|fill|multimer)$/.test(k) && pNow.cls === "DEGRADED" || /^(width|multimer|def|font)$/.test(k) && pNow.cls === "COMPARTMENT" || /^(multimer|def)$/.test(k) && pNow.cls === "COMPLEX" || k === "width" && pNow.cls === "UNKNOWN";
       },
       look: function(i) {
         var id = nodes2[i].id;
