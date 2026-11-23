@@ -416,7 +416,7 @@
       cdGate: none,
       // a CellDesigner logic gate being made: { kind, inputs: [node ids] } (cdcreate.js)
       lastChange: none
-      // what the last whole action changed: { name, ids } (core.js commit)
+      // what the last whole action changed: { name, ids } (core.js commit); the shift out of negative places { name: 'shift', shift: [dx, dy], after: the action's name }
     },
     gesture: {
       tap: none,
@@ -13477,6 +13477,7 @@
         if (sh) {
           parse();
           rebase(sh[0], sh[1]);
+          shared.lastChange = { name: "shift", ids: [], shift: sh, after: shared.lastChange ? shared.lastChange.name : null };
         }
         r = drawMemo && !drawMemo.cd && drawMemo.text === shared.text && !shared.afSbgn ? drawMemo.r : drawGraphml(shared.text);
       }

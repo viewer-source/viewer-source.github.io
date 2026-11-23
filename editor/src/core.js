@@ -1296,8 +1296,10 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
         } else {
           // shifted: the editor's places moved, so its frame moves with them and nothing moves on screen (taken for a new
           // frame of the drawing, the shift would make the map jump right and down, out of sight on some maps)
+          // a step of its own, named 'shift' (the tests read it), inside the undo step of the change that caused it: undone
+          // alone, the map would be back in negative places and shifted again by the next drawing
           var sh = !drag && noNegative();
-          if (sh) { parse(); rebase(sh[0], sh[1]); }
+          if (sh) { parse(); rebase(sh[0], sh[1]); shared.lastChange = { name: 'shift', ids: [], shift: sh, after: shared.lastChange ? shared.lastChange.name : null }; }
           r = drawMemo && !drawMemo.cd && drawMemo.text === shared.text && !shared.afSbgn ? drawMemo.r : drawGraphml(shared.text);   // the read-ahead drawing is never in the SBGN AF view
         }
         if (t !== ticket) return;

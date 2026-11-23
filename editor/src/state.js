@@ -37,7 +37,7 @@ export var LIFETIMES = {
     procs: list,         // the process glyphs with their two main arcs (parse)
     cdBase: none,        // the drawing the CellDesigner live session starts from { now, text }
     cdGate: none,        // a CellDesigner logic gate being made: { kind, inputs: [node ids] } (cdcreate.js)
-    lastChange: none     // what the last whole action changed: { name, ids } (core.js commit)
+    lastChange: none     // what the last whole action changed: { name, ids } (core.js commit); the shift out of negative places { name: 'shift', shift: [dx, dy], after: the action's name }
   },
   gesture: {
     tap: none,           // a press waiting to become a click

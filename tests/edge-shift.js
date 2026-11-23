@@ -20,6 +20,8 @@ async function sbgn(page, ok) {   // a node moved past the edge on an SBGN-ML ma
   await page.mouse.move(g[0], g[1]); await page.mouse.down(); await page.mouse.move(g[0]-200, g[1]-150, {steps:5}); await page.mouse.move(g[0]-400, g[1]-300, {steps:5}); await page.mouse.up(); await page.waitForTimeout(2500);
   ok('SBGN-ML: moved past the edge where released', near(await box(lft), [p[0]-400, p[1]-300]), JSON.stringify([await box(lft), p]));
   ok('SBGN-ML: map stays', near(await box(ref), r0));
+  var lc = await page.evaluate(() => { var s = window.m2EditState && window.m2EditState(); return s && Object.keys(s).map(k => s[k] && s[k].lastChange).filter(Boolean)[0]; });   // the shift named (core.js render)
+  ok('SBGN-ML: the shift named as a change', !!lc && lc.name === 'shift' && lc.shift && (lc.shift[0] > 0 || lc.shift[1] > 0), JSON.stringify(lc));
   await page.keyboard.press('Control+z'); await page.waitForTimeout(2500);
   ok('SBGN-ML: undo: node back', near(await box(lft), p), JSON.stringify([await box(lft), p])); ok('SBGN-ML: undo: map stays', near(await box(ref), r0), JSON.stringify([await box(ref), r0]));
   await page.keyboard.press('Control+Shift+z'); await page.waitForTimeout(2500);
