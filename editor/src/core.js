@@ -3123,7 +3123,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       var d = drag; drag = null; band = null; mv = null; shared.poseNow = null;
       if (d && d.made != null) { setText(unpush()); parse(); shared.selP = []; shared.selE = [d.made - 1]; }   // a bend point this drag made: gone again
       else if (d && d.keepE) { shared.selE = d.keepE; shared.selP = []; }
-      unshift(); sizeOff(); render(); paint();
+      unshift(); sizeOff(); if (d && d.made != null) render(); paint();   // the file unchanged otherwise: the drawing as it was is enough
       return true;
     }
     function dragEnd(e) {   // the end of a drag of the selection, a port or a resize

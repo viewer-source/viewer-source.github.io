@@ -2664,9 +2664,10 @@
   }
   function restoreExamples() {
     var gh2 = !!(repo() && token());
-    var ids = exampleIds(), was = examplesWas(ids), done = null;
+    var ids = exampleIds(), was = null, done = null, step2 = {};
     var fwd = run();
     function run() {
+      was = examplesWas(ids);
       examplesHere(ids, gh2);
       if (!gh2) return Promise.resolve();
       return examplesToSite().then(function(r) {
@@ -2676,27 +2677,31 @@
         }), gh2);
       }).catch(function(e) {
         examplesPut(was);
+        var k = listPast.indexOf(step2);
+        if (k >= 0) listPast.splice(k, 1);
         alert("The example maps were not restored: " + (e && e.message ? e.message : e));
       });
     }
-    listDid(function() {
+    step2.undo = function() {
       return fwd.then(function() {
         if (!gh2 || !done) {
           examplesPut(was);
           return;
         }
-        return examplesBack(done.before).then(function() {
+        return examplesBack(done).then(function(kept) {
           examplesPut(was);
+          if (kept.length) alert("The restore was undone, except where a map was changed after it: " + kept.join(", "));
         }, function(e) {
           alert("The restore was not undone: " + (e && e.message ? e.message : e));
         });
       });
-    }, function() {
-      was = examplesWas(ids);
+    };
+    step2.redo = function() {
       done = null;
       fwd = run();
       return fwd;
-    });
+    };
+    listDid(step2.undo, step2.redo, step2);
   }
   function examplesAll(ids) {
     return ids.concat(ids.filter(function(id) {
@@ -2704,7 +2709,7 @@
     }).map(twinOf));
   }
   function examplesWas(ids) {
-    var was = { ids, pend: binPending(), hidden: siteHidden(), moved: {}, renamed: {}, gone: {}, drafts: {} };
+    var was = { ids, at: Date.now(), pend: binPending(), hidden: siteHidden(), moved: {}, renamed: {}, gone: {}, drafts: {} };
     examplesAll(ids).forEach(function(id) {
       was.moved[id] = V.movedOf(id);
       was.renamed[id] = renamed[id];
@@ -2725,27 +2730,47 @@
     });
     namedSave();
     Object.keys(was.drafts).forEach(function(id) {
-      draftPut(id, Object.assign({}, was.drafts[id])).catch(function() {
+      if (!(V.drafts[id] && (V.drafts[id].at || 0) > was.at)) draftPut(id, Object.assign({}, was.drafts[id])).catch(function() {
       });
     });
     var m = V.current && V.byId[V.current.id];
     if (m && was.drafts[m.id] && !V.grid.classList.contains("m2-editing")) V.put(m, true);
     V.refreshMine();
   }
-  function examplesBack(before) {
+  function examplesBack(done) {
     var tries = 0;
     var go = function() {
       return api("/git/ref/heads/main").then(ghJson).then(function(ref) {
         return api("/git/commits/" + ref.object.sha).then(ghJson).then(function(c) {
-          var tree = Object.keys(before).map(function(p) {
-            return { path: p, mode: "100644", type: "blob", sha: before[p] };
-          });
-          return ghPost("/git/trees", { base_tree: c.tree.sha, tree }).then(function(t) {
-            return ghPost("/git/commits", { message: "Example maps restored in the viewer: undone", tree: t.sha, parents: [ref.object.sha] });
-          }).then(function(n) {
-            return ghPost("/git/refs/heads/main", { sha: n.sha }, "PATCH");
-          }).then(function() {
-            shared.ghDir = null;
+          return api("/git/trees/" + c.tree.sha).then(ghJson).then(function(root) {
+            var m = root.tree.filter(function(f) {
+              return f.path === "maps" && f.type === "tree";
+            })[0];
+            return m ? api("/git/trees/" + m.sha + "?recursive=1").then(ghJson) : { tree: [] };
+          }).then(function(x) {
+            if (x.truncated) throw new Error("the maps are too many to read at once");
+            var now = {};
+            x.tree.forEach(function(f) {
+              if (f.type === "blob") now["maps/" + f.path] = f.sha;
+            });
+            var kept = [], tree = [];
+            Object.keys(done.before).forEach(function(p) {
+              if ((now[p] || null) === (done.after[p] || null)) {
+                if (done.before[p] || now[p]) tree.push({ path: p, mode: "100644", type: "blob", sha: done.before[p] });
+              } else kept.push(p.replace(/^maps\//, "").replace(/\.[^./]+$/, "").replace(/^(extra|sbgn-ml|colours)\//, "").split("/")[0]);
+            });
+            kept = kept.filter(function(k, i) {
+              return kept.indexOf(k) === i;
+            });
+            if (!tree.length) return kept;
+            return ghPost("/git/trees", { base_tree: c.tree.sha, tree }).then(function(t) {
+              return ghPost("/git/commits", { message: "Example maps restored in the viewer: undone", tree: t.sha, parents: [ref.object.sha] });
+            }).then(function(n) {
+              return ghPost("/git/refs/heads/main", { sha: n.sha }, "PATCH");
+            }).then(function() {
+              shared.ghDir = null;
+              return kept;
+            });
           });
         });
       }).catch(function(e) {
@@ -2875,11 +2900,19 @@
                 return post("/git/refs/heads/main", { sha: n.sha }, "PATCH");
               }).then(function() {
                 shared.ghDir = null;
-                var before = {};
-                tree.forEach(function(f) {
+                var before = {}, after2 = {};
+                return Promise.all(tree.map(function(f) {
                   before[f.path] = shaOf[f.path.slice(5)] || null;
+                  if (f.content == null) {
+                    after2[f.path] = f.sha;
+                    return null;
+                  }
+                  return blobSha(f.content).then(function(h) {
+                    after2[f.path] = h;
+                  });
+                })).then(function() {
+                  return { ids: ids.concat(back2), before, after: after2 };
                 });
-                return { ids: ids.concat(back2), before };
               });
             });
           });
@@ -17164,7 +17197,7 @@
     }
     unshift();
     sizeOff();
-    render();
+    if (d && d.made != null) render();
     paint();
     return true;
   }

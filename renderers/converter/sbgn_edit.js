@@ -2002,7 +2002,11 @@
       for (var p = G.node[id].el.parentNode; p && p.nodeType === 1; p = p.parentNode) if (p.localName === 'node' && del[p.getAttribute('id')]) return;
       T.cut(G.node[id].el);
     });
-    Object.keys(G.edge).forEach(function (k) { var e = G.edge[k]; if (del[e.s] || del[e.t]) T.cut(e.el); });
+    Object.keys(G.edge).forEach(function (k) {
+      var e = G.edge[k]; if (!del[e.s] && !del[e.t]) return;
+      for (var p = e.el.parentNode; p && p.nodeType === 1; p = p.parentNode) if (p.localName === 'node' && del[p.getAttribute('id')]) return;   // inside a node cut already
+      T.cut(e.el);
+    });
     return goneMark(plainEmpty(T.text(), opt), Object.keys(del));
   }
   // a complex group left with no member (its last one deleted) made yEd's plain Complex again, as the converter writes an
