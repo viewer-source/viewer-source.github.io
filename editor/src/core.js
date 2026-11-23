@@ -7,7 +7,7 @@ import { beyond, cdDoc, cdDraw, cdGraphml, cdJs, cdKnown, cdMap, cdMk, cdNow, cd
 import { EMPTY_BASE, edOf, isSb, madeHere, sbBase, sbFollow, sbGraphml, sbJs, sbKind, sbMap, sbNow, sbRemember, sbpy, viaGraphml } from './sbgn.js';
 import { ddOpen, hybOn, joinDo, joinPack, joinPlan, link, linkDown, linkMove, linkPaint, linkUp, moveSays, origAll, palDown, palShow, palUp, propFmt, setSize, sizable, svDown, svMarks, tool } from './create.js';
 import { help, helpBox } from './help.js';
-import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepBeside, keptNow, listFirst, listTop, mine, mineAdd, mineIn, mineMatch, minePut, savedMine, toGh, upAll, upRun } from './own.js';
+import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepBeside, keptNow, listGo, mine, mineAdd, mineIn, mineMatch, minePut, savedMine, toGh, upAll, upRun } from './own.js';
 
     // ---------- the editor's shared core (editor/src/core.js) ----------
     // Moves only: nodes and bend points of a map, nudged in the map window. A CellDesigner map is edited as the GraphML
@@ -1895,8 +1895,8 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     function __run29() {   // run at start, in order (__start)
     document.querySelectorAll('#m2-rail .m2-ri[data-win="edit"]').forEach(function (b) { b.addEventListener('click', shown); });
     box.querySelector('#m2-ed-save').addEventListener('click', save);
-    box.querySelector('#m2-ed-undo').addEventListener('click', function () { if (on && !V.setFirst(true, Math.max(mapTop(true), listTop(true))) && !listFirst(true)) back(undo, shared.redo); });   // the newest of a setting, the list's step and the map's, in the order made
-    box.querySelector('#m2-ed-redo').addEventListener('click', function () { if (on && !V.setFirst(false, Math.max(mapTop(false), listTop(false))) && !listFirst(false)) back(shared.redo, undo); });
+    box.querySelector('#m2-ed-undo').addEventListener('click', function () { if (on && !listGo(true)) back(undo, shared.redo); });   // as the keys: the list's or the map's by the last press, a newer setting first
+    box.querySelector('#m2-ed-redo').addEventListener('click', function () { if (on && !listGo(false)) back(shared.redo, undo); });
     box.querySelector('#m2-ed-stop').addEventListener('click', function () { V.win = 'list'; V.railMark(); if (V.chosen) V.put(V.chosen); else stop(); });
     }
     function resume() {   // back to a file from the computer with moves not saved

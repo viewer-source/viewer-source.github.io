@@ -4317,9 +4317,14 @@
     var s = back2 ? listPast : shared.listAhead;
     return s.length ? s[s.length - 1].at || 0 : 0;
   }
-  function listFirst(back2) {
-    var lt = listTop(back2);
-    if (!lt || lt <= mapTop(back2)) return false;
+  function toList() {
+    var list2 = document.getElementById("m2-list");
+    return !!(list2 && list2.offsetParent) && !(V.grid.classList.contains("m2-editing") && !listLast);
+  }
+  function listGo(back2) {
+    var tl = toList();
+    if (V.setFirst(back2, tl ? listTop(back2) : mapTop(back2))) return true;
+    if (!tl) return false;
     listStep(back2);
     return true;
   }
@@ -4511,7 +4516,7 @@
   function __run29() {
     window.addEventListener("pointerdown", function(e) {
       var t = e.target.closest ? e.target : e.target.parentElement;
-      if (t && t.closest(".m2-cx")) return;
+      if (t && t.closest(".m2-cx, #m2-ed-undo, #m2-ed-redo")) return;
       listLast = !!(t && t.closest("#m2-list")) && !(V.grid.classList.contains("m2-editing") && t.closest(".m2-map"));
     }, true);
     window.addEventListener("keydown", function(e) {
@@ -4519,17 +4524,9 @@
       var k = V.letter(e);
       if (k !== "z" && k !== "y") return;
       if (naming || V.typing()) return;
-      var list2 = document.getElementById("m2-list"), bk = k === "z" && !e.shiftKey;
-      var toList = !!(list2 && list2.offsetParent) && !(V.grid.classList.contains("m2-editing") && !listLast);
-      if (V.setFirst(bk, toList ? listTop(bk) : mapTop(bk))) {
-        e.preventDefault();
-        e.stopImmediatePropagation();
-        return;
-      }
-      if (!toList) return;
+      if (!listGo(k === "z" && !e.shiftKey)) return;
       e.preventDefault();
       e.stopImmediatePropagation();
-      listStep(bk);
     }, true);
     own = {
       read: function() {
@@ -15539,10 +15536,10 @@
     });
     box.querySelector("#m2-ed-save").addEventListener("click", save);
     box.querySelector("#m2-ed-undo").addEventListener("click", function() {
-      if (on && !V.setFirst(true, Math.max(mapTop(true), listTop(true))) && !listFirst(true)) back(undo, shared.redo);
+      if (on && !listGo(true)) back(undo, shared.redo);
     });
     box.querySelector("#m2-ed-redo").addEventListener("click", function() {
-      if (on && !V.setFirst(false, Math.max(mapTop(false), listTop(false))) && !listFirst(false)) back(shared.redo, undo);
+      if (on && !listGo(false)) back(shared.redo, undo);
     });
     box.querySelector("#m2-ed-stop").addEventListener("click", function() {
       V.win = "list";

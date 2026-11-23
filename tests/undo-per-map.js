@@ -93,6 +93,7 @@ function viewerHunks() {   // [old, new] pieces of the viewer's file changed sin
     var a0 = await now(); await editNode(); var a1 = await now();
     await page.waitForTimeout(5000);   // saved
     await choose(other);
+    if (!mi) { await editNode(); await undoKey(); await page.waitForTimeout(5000); }   // a map with negative places is shifted out of them by its first edit, kept by undo: shifted once before its history is compared
     var b0 = await now(); await editNode(); var b1 = await now();
     ok('the other map edited', b1 && b1 !== b0);
     await page.waitForTimeout(5000);

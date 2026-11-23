@@ -1583,7 +1583,13 @@ import { NEW_ID, emptyBase, isSb, madeHere, sbMap } from './sbgn.js';
     }
     function listDid(undo, redo, e) { e = e || { undo: undo, redo: redo }; e.at = V.tick(true); listPast.push(e); if (listPast.length > 100) listPast.shift(); shared.listAhead = []; listLast = true; }
     function listTop(back) { var s = back ? listPast : shared.listAhead; return s.length ? s[s.length - 1].at || 0 : 0; }   // when the list's next undo (or redo) was taken (V.tick)
-    function listFirst(back) { var lt = listTop(back); if (!lt || lt <= mapTop(back)) return false; listStep(back); return true; }   // the Edit window's Undo and Redo: the list's step when it is newer than the map's
+    function toList() { var list = document.getElementById('m2-list'); return !!(list && list.offsetParent) && !(V.grid.classList.contains('m2-editing') && !listLast); }   // the list's undo or the map's: by the place of the last press, keys and buttons alike
+    function listGo(back) {   // undo (or redo) for the keys and the Edit window's buttons: a setting newer than the place's step first, then the list's step; false: the map's own undo
+      var tl = toList();
+      if (V.setFirst(back, tl ? listTop(back) : mapTop(back))) return true;   // a setting changed after the list's or the map's step: undone first (V.setDid)
+      if (!tl) return false;
+      listStep(back); return true;
+    }
     function listStep(back) {
       var s = (back ? listPast : shared.listAhead).pop();   // taken at the press, so the next press (and a setting's) sees the step after it
       if (!s) return;
@@ -1665,7 +1671,7 @@ import { NEW_ID, emptyBase, isSb, madeHere, sbMap } from './sbgn.js';
     function __run29() {   // run at start, in order (__start)
     window.addEventListener('pointerdown', function (e) {   // where the last press was: the list, else elsewhere (a menu keeps it as it was)
       var t = e.target.closest ? e.target : e.target.parentElement;
-      if (t && t.closest('.m2-cx')) return;
+      if (t && t.closest('.m2-cx, #m2-ed-undo, #m2-ed-redo')) return;   // the Undo and Redo buttons follow the press before them
       listLast = !!(t && t.closest('#m2-list')) && !(V.grid.classList.contains('m2-editing') && t.closest('.m2-map'));   // a map chosen while editing: the keys to that map's undo, until the list itself changes (listDid)
     }, true);
     window.addEventListener('keydown', function (e) {
@@ -1673,12 +1679,8 @@ import { NEW_ID, emptyBase, isSb, madeHere, sbMap } from './sbgn.js';
       var k = V.letter(e);
       if (k !== 'z' && k !== 'y') return;
       if (naming || V.typing()) return;   // a field's own undo
-      var list = document.getElementById('m2-list'), bk = k === 'z' && !e.shiftKey;
-      var toList = !!(list && list.offsetParent) && !(V.grid.classList.contains('m2-editing') && !listLast);
-      if (V.setFirst(bk, toList ? listTop(bk) : mapTop(bk))) { e.preventDefault(); e.stopImmediatePropagation(); return; }   // a setting changed after the list's or the map's step: undone first (V.setDid)
-      if (!toList) return;   // the map's undo (core.js)
+      if (!listGo(k === 'z' && !e.shiftKey)) return;   // the map's undo (core.js)
       e.preventDefault(); e.stopImmediatePropagation();
-      listStep(bk);
     }, true);
     // what the viewer asks of this part (the list's entries and groups, a map's record)
     own = {
@@ -1692,4 +1694,4 @@ import { NEW_ID, emptyBase, isSb, madeHere, sbMap } from './sbgn.js';
     }   // connected: the reader's maps kept in this browser go to GitHub
 
     export function __start() { __run1(); __run2(); __run3(); __run4(); __run5(); __run6(); __run7(); __run8(); __run9(); __run10(); __run11(); __run12(); __run13(); __run14(); __run15(); __run16(); __run17(); __run18(); __run19(); __run20(); __run21(); __run22(); __run23(); __run24(); __run25(); __run26(); __run27(); __run28(); __run29(); }   // the part's statements, in their order
-    export { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepBeside, keptNow, listFirst, listTop, mine, mineAdd, mineIn, mineMatch, minePut, origGh, origPut, own, savedMine, toGh, upAll, upRun };
+    export { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepBeside, keptNow, listGo, mine, mineAdd, mineIn, mineMatch, minePut, origGh, origPut, own, savedMine, toGh, upAll, upRun };
