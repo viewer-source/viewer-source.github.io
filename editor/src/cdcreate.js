@@ -1335,6 +1335,7 @@ import { ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues, confet
         e.stopPropagation();
         if (e.key === 'Escape') { e.preventDefault(); T.done(false); V.view.focus({ preventScroll: true }); }
         else if (e.key === 'Enter' && e.target.tagName !== 'BUTTON') { e.preventDefault(); T.done(true); V.view.focus({ preventScroll: true }); }
+        else if ((e.ctrlKey || e.metaKey) && V.letter(e) === 'a' && !/input/i.test(e.target.tagName)) e.preventDefault();   // select all: a field's own text, never the page's behind the window
       });
       box.addEventListener('pointerdown', function (e) { e.stopPropagation(); });
       box.addEventListener('keydown', function (e) {   // Tab and Shift+Tab go round the window's own fields, so no key reaches the map under it

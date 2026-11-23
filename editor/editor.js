@@ -10970,7 +10970,7 @@
         e.preventDefault();
         T.done(true);
         V.view.focus({ preventScroll: true });
-      }
+      } else if ((e.ctrlKey || e.metaKey) && V.letter(e) === "a" && !/input/i.test(e.target.tagName)) e.preventDefault();
     });
     box2.addEventListener("pointerdown", function(e) {
       e.stopPropagation();
