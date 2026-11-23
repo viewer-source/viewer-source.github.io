@@ -2484,12 +2484,12 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
         var h = hub(roleOf(e.t)) ? 1 : 0;
         return end === h ? hub(r) && !(r === 'proc' && ro === 'gate') : r === 'epn' || (r === 'gate' && ro === 'gate') || (r === 'pheno' && ro === 'proc' && !sbgnStrict());   // a phenotype a reaction's reactant, Strict SBGN unticked (create.js linkKind0)
       }
-      if (a[1] === 'delta') return hub(roleOf(end ? e.t : e.s)) ? r === 'proc' : r === 'epn';   // a production: from a process to an entity
+      if (a[1] === 'delta') return hub(roleOf(end ? e.t : e.s)) ? r === 'proc' : r === 'epn' || (r === 'pheno' && !sbgnStrict());   // a production: from a process to an entity (a phenotype too, Strict SBGN unticked)
       // a modulation: from an entity or gate to a process or phenotype; an influence (Activity Flow) or a reduced
       // notation one (Hybrid) to an entity too, as the palette makes them (linkHow), never a catalysis
       // Reduced notation ticked: a phenotype or a submap also at either end, a catalysis aside (linkKind0)
       var loose = hybOn() && a[1] !== 'white_circle' && (r === 'pheno' || nodes2[i].shape.kind === 'Submap');
-      if (MODS.test(a[1])) return loose || (end ? r === 'proc' || r === 'pheno' || (r === 'epn' && a[1] !== 'white_circle' && (roleOf(e.t) === 'epn' || palLangNow() === 'af' || hybOn())) : r === 'epn' || r === 'gate' || (r === 'pheno' && a[1] !== 'white_circle' && roleOf(e.t) === 'proc' && !sbgnStrict()));
+      if (MODS.test(a[1])) return loose || (end ? r === 'proc' || r === 'pheno' || (r === 'epn' && a[1] !== 'white_circle' && (roleOf(e.t) === 'epn' || palLangNow() === 'af' || hybOn())) : r === 'epn' || r === 'gate' || (r === 'pheno' && roleOf(e.t) === 'proc' && !sbgnStrict()));
       return false;
     }
     function takes(k, end, i) {   // takes0, and SBGN PD's table for the line as it would be (pdLimit)

@@ -566,10 +566,19 @@
               id: "phenotype-species",
               sets: ["house"],
               unless: ["strict"],
-              arc: ["consumption", "modulation", "stimulation", "inhibition", "necessary stimulation"],
+              arc: ["consumption"].concat(MODS2),
               from: ["phenotype"],
               to: ["process"],
               why: "CellDesigner\u2019s phenotype is a species: a reaction\u2019s reactant or modifier."
+            },
+            {
+              id: "phenotype-product",
+              sets: ["house"],
+              unless: ["strict"],
+              arc: ["production"],
+              from: ["process"],
+              to: ["phenotype"],
+              why: "CellDesigner\u2019s phenotype is a species: a reaction\u2019s product."
             },
             { id: "af-influence", sets: ["af"], arc: INFL2, from: ["entity", "gate"], to: ["entity", "phenotype"], spec: "AF 3.3" }
           ],
@@ -592,11 +601,21 @@
             {
               id: "empty-set-from",
               sets: ["pd"],
-              arc: ["production", "catalysis", "modulation", "stimulation", "inhibition", "necessary stimulation", "logic arc", "equivalence arc"],
+              arc: ["production", "logic arc", "equivalence arc"],
               from: ["entity:empty set"],
               to: ["*"],
               no: "An empty set is only consumed or produced.",
               spec: "3.4.1"
+            },
+            {
+              id: "empty-set-modifier",
+              sets: ["strict"],
+              arc: MODS2,
+              from: ["entity:empty set"],
+              to: ["*"],
+              no: "An empty set is only consumed or produced.",
+              spec: "3.4.1",
+              why: "CellDesigner takes a degraded species as a reaction\u2019s modifier."
             },
             {
               id: "empty-set-to",
@@ -625,8 +644,18 @@
               no: "A perturbing agent only starts a modulation, stimulation, inhibition or necessary stimulation.",
               spec: "3.4.1"
             },
-            { id: "nucleic-catalyst", sets: ["pd"], arc: ["catalysis"], from: ["entity:nucleic acid feature"], to: ["*"], no: "A nucleic acid feature is no catalyst.", spec: "3.4.1" },
-            { id: "catalysis-ends", sets: ["pd"], arc: ["catalysis"], from: ["phenotype", "submap"], to: ["*"], no: "A catalysis goes from an entity to a process.", spec: "3.4.1" },
+            { id: "nucleic-catalyst", sets: ["strict"], why: "CellDesigner takes a gene or an RNA as a catalysis.", arc: ["catalysis"], from: ["entity:nucleic acid feature"], to: ["*"], no: "A nucleic acid feature is no catalyst.", spec: "3.4.1" },
+            { id: "catalysis-ends", sets: ["pd"], arc: ["catalysis"], from: ["submap"], to: ["*"], no: "A catalysis goes from an entity to a process.", spec: "3.4.1" },
+            {
+              id: "phenotype-catalyst",
+              sets: ["strict"],
+              arc: ["catalysis"],
+              from: ["phenotype"],
+              to: ["*"],
+              no: "A catalysis goes from an entity to a process.",
+              spec: "3.4.1",
+              why: "CellDesigner takes a phenotype as a catalysis."
+            },
             { id: "catalysis-submap", sets: ["pd"], arc: ["catalysis"], from: ["*"], to: ["submap"], no: "A catalysis goes from an entity to a process.", spec: "3.4.1" },
             { id: "one-catalysis", sets: ["strict"], arc: ["catalysis"], from: ["*"], to: ["process"], check: "oneCatalysis", spec: "3.5.2.4" },
             { id: "one-necessary", sets: ["strict"], arc: ["necessary stimulation"], from: ["*"], to: ["process"], check: "oneNecessary", spec: "3.5.2.4" },
@@ -7284,10 +7313,11 @@
   function pdLimit(s, t, cls) {
     if (shared.cd || palLangNow() !== "pd" || s < 0 || t < 0) return null;
     var ks = nodes2[s].shape.kind, kt = nodes2[t].shape.kind, flux = cls === "pair" || cls === "consumption" || cls === "production";
-    if (ks === "EmptySet" && !(cls === "pair" || cls === "consumption") || kt === "EmptySet" && !(cls === "pair" || cls === "production")) return "An empty set is only consumed or produced.";
+    var mod = /^(catalysis|modulation|stimulation|inhibition|necessary stimulation)$/.test(cls), loose = !sbgnStrict();
+    if (ks === "EmptySet" && !(cls === "pair" || cls === "consumption") && !(mod && loose) || kt === "EmptySet" && !(cls === "pair" || cls === "production")) return "An empty set is only consumed or produced.";
     if (ks === "PerturbingAgent" && (flux || cls === "catalysis" || cls === "logic arc") || kt === "PerturbingAgent") return "A perturbing agent only starts a modulation, stimulation, inhibition or necessary stimulation.";
-    if (cls === "catalysis" && ks === "NucleicAcidFeature") return "A nucleic acid feature is no catalyst.";
-    if (cls === "catalysis" && (ks === "Phenotype" || ks === "Submap" || kt === "Submap")) return "A catalysis goes from an entity to a process.";
+    if (cls === "catalysis" && ks === "NucleicAcidFeature" && !loose) return "A nucleic acid feature is no catalyst.";
+    if (cls === "catalysis" && (ks === "Phenotype" && !loose || ks === "Submap" || kt === "Submap")) return "A catalysis goes from an entity to a process.";
     if (cls === "consumption" && roleOf(t) === "proc") {
       var rv = sbJs.reversibility(shared.text, nodes2[t].id, { sbgn: src() });
       if (rv && rv.rev) return "A reversible process has productions on both sides.";
@@ -7378,10 +7408,8 @@
       if (room) return { no: room };
       return has(a, b, "none") || has(b, a, "none") ? { no: "This equivalence arc is there already." } : { cls: "equivalence arc" };
     }
-    if (ra === "pheno" && rb === "proc" && !sbgnStrict()) {
-      if (want === "catalysis") return { no: "A catalysis goes from an entity to a process." };
-      ra = "epn";
-    }
+    if (ra === "pheno" && rb === "proc" && !sbgnStrict()) ra = "epn";
+    if (ra === "proc" && rb === "pheno" && !sbgnStrict() && (!want || want === "production")) return has(a, b, "delta") ? { no: "This production is there already." } : { cls: "production" };
     var loose = hybOn(), subA = loose && nodes2[a].shape.kind === "Submap", subB = loose && nodes2[b].shape.kind === "Submap";
     if (subB) rb = "pheno";
     if (!loose && (nodes2[a].shape.kind === "Submap" || nodes2[b].shape.kind === "Submap")) return { no: "A submap is joined to the map by its tags or terminals (Reduced notation is unticked in the palette)." };
@@ -15679,9 +15707,9 @@
       var h = hub(roleOf(e.t)) ? 1 : 0;
       return end === h ? hub(r) && !(r === "proc" && ro === "gate") : r === "epn" || r === "gate" && ro === "gate" || r === "pheno" && ro === "proc" && !sbgnStrict();
     }
-    if (a[1] === "delta") return hub(roleOf(end ? e.t : e.s)) ? r === "proc" : r === "epn";
+    if (a[1] === "delta") return hub(roleOf(end ? e.t : e.s)) ? r === "proc" : r === "epn" || r === "pheno" && !sbgnStrict();
     var loose = hybOn() && a[1] !== "white_circle" && (r === "pheno" || nodes2[i].shape.kind === "Submap");
-    if (MODS.test(a[1])) return loose || (end ? r === "proc" || r === "pheno" || r === "epn" && a[1] !== "white_circle" && (roleOf(e.t) === "epn" || palLangNow() === "af" || hybOn()) : r === "epn" || r === "gate" || r === "pheno" && a[1] !== "white_circle" && roleOf(e.t) === "proc" && !sbgnStrict());
+    if (MODS.test(a[1])) return loose || (end ? r === "proc" || r === "pheno" || r === "epn" && a[1] !== "white_circle" && (roleOf(e.t) === "epn" || palLangNow() === "af" || hybOn()) : r === "epn" || r === "gate" || r === "pheno" && roleOf(e.t) === "proc" && !sbgnStrict());
     return false;
   }
   function takes(k, end, i) {

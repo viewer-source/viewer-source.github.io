@@ -2157,10 +2157,11 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
     function pdLimit(s, t, cls) {
       if (shared.cd || palLangNow() !== 'pd' || s < 0 || t < 0) return null;
       var ks = nodes2[s].shape.kind, kt = nodes2[t].shape.kind, flux = cls === 'pair' || cls === 'consumption' || cls === 'production';
-      if ((ks === 'EmptySet' && !(cls === 'pair' || cls === 'consumption')) || (kt === 'EmptySet' && !(cls === 'pair' || cls === 'production'))) return 'An empty set is only consumed or produced.';
+      var mod = /^(catalysis|modulation|stimulation|inhibition|necessary stimulation)$/.test(cls), loose = !sbgnStrict();   // Strict SBGN unticked: what CellDesigner also takes (notation.js)
+      if ((ks === 'EmptySet' && !(cls === 'pair' || cls === 'consumption') && !(mod && loose)) || (kt === 'EmptySet' && !(cls === 'pair' || cls === 'production'))) return 'An empty set is only consumed or produced.';   // a degraded species a reaction's modifier
       if ((ks === 'PerturbingAgent' && (flux || cls === 'catalysis' || cls === 'logic arc')) || kt === 'PerturbingAgent') return 'A perturbing agent only starts a modulation, stimulation, inhibition or necessary stimulation.';
-      if (cls === 'catalysis' && ks === 'NucleicAcidFeature') return 'A nucleic acid feature is no catalyst.';
-      if (cls === 'catalysis' && (ks === 'Phenotype' || ks === 'Submap' || kt === 'Submap')) return 'A catalysis goes from an entity to a process.';
+      if (cls === 'catalysis' && ks === 'NucleicAcidFeature' && !loose) return 'A nucleic acid feature is no catalyst.';   // a gene or an RNA a catalysis
+      if (cls === 'catalysis' && ((ks === 'Phenotype' && !loose) || ks === 'Submap' || kt === 'Submap')) return 'A catalysis goes from an entity to a process.';
       if (cls === 'consumption' && roleOf(t) === 'proc') {   // a reversible process has productions on both sides, no consumption (3.5.2.5)
         var rv = sbJs.reversibility(shared.text, nodes2[t].id, { sbgn: src() });
         if (rv && rv.rev) return 'A reversible process has productions on both sides.';
@@ -2224,12 +2225,10 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       // Reduced notation ticked: a phenotype or a submap starts a modulation as an entity does, and a submap takes one as a
       // phenotype does (CellDesigner has one glyph for phenotype, submap and perturbing agent, with lines both ways);
       // unticked, SBGN PD's rules alone
-      // a phenotype into a process, Strict SBGN unticked: a reaction's reactant or modifier, as CellDesigner's phenotype is a
-      // species (notation.js phenotype-species); never a catalysis. Then the entity's rules: on an antenna a consumption
-      if (ra === 'pheno' && rb === 'proc' && !sbgnStrict()) {
-        if (want === 'catalysis') return { no: 'A catalysis goes from an entity to a process.' };
-        ra = 'epn';
-      }
+      // a phenotype, Strict SBGN unticked: a reaction's reactant, modifier or product, as CellDesigner's phenotype is a
+      // species (notation.js phenotype-species, phenotype-product); then the entity's rules: on an antenna a consumption
+      if (ra === 'pheno' && rb === 'proc' && !sbgnStrict()) ra = 'epn';
+      if (ra === 'proc' && rb === 'pheno' && !sbgnStrict() && (!want || want === 'production')) return has(a, b, 'delta') ? { no: 'This production is there already.' } : { cls: 'production' };
       var loose = hybOn(), subA = loose && nodes2[a].shape.kind === 'Submap', subB = loose && nodes2[b].shape.kind === 'Submap';
       if (subB) rb = 'pheno';
       if (!loose && (nodes2[a].shape.kind === 'Submap' || nodes2[b].shape.kind === 'Submap')) return { no: 'A submap is joined to the map by its tags or terminals (Reduced notation is unticked in the palette).' };   // a submap has no role here: no line kind fits it
