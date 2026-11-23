@@ -204,7 +204,7 @@ var core = fs.readFileSync(path.join(here, 'editor/src/core.js'), 'utf8');
 function lift(name) { var i = core.indexOf('    function ' + name + '('); if (i < 0) throw new Error('no ' + name + ' in core.js'); var j = core.indexOf('\n    function ', i + 10), k = core.indexOf('\n    //', i + 10); return core.slice(i, Math.min(j < 0 ? 1e9 : j, k < 0 ? 1e9 : k)); }
 // the paddings as Settings keeps them (core.js pads): compartments 1 here, as these cases were set, complexes As Repack
 var PADS = 'var PAD_KEY = "k", localStorage = { getItem: function () { return JSON.stringify({ comp: 1, cx: "repack" }); } };\n';
-var CODE = PADS + ['pads', 'cxRoom', 'inBox', 'overlap', 'under', 'notIn', 'cdOwn', 'holder', 'regroup', 'inComplex', 'grown', 'tops', 'extOf'].map(lift).join('\n');
+var CODE = PADS + ['pads', 'cxRoom', 'inBox', 'overlap', 'under', 'notIn', 'cdOwn', 'holder', 'regroup', 'inComplex', 'grown', 'drawnOut', 'tops', 'extOf'].map(lift).join('\n');
 var LAY = require(path.join(here, 'renderers/layout/layout.js'));   // extOf's layout.extent
 function editorOf(g, cd) {   // the editor's nodes2 (up, kids, inside, comp, hub, shape), as parse() reads them
   var d = new DP().parseFromString(g, 'application/xml'), N = [], byEl = new Map();
