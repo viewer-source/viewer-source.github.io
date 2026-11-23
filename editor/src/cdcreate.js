@@ -93,7 +93,7 @@ import { ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues, confet
       return shared.cdStrictMemo[1];
     }
     function cdFill() {
-      ['.m2-ed-pnot', '.m2-ed-plook', '.m2-ed-pprot', '.m2-ed-pcdc'].forEach(function (c) { pal.querySelector(c).hidden = true; });   // no PD and AF on a CellDesigner map
+      ['.m2-ed-pnot', '.m2-ed-plook', '.m2-ed-pprot', '.m2-ed-pcdc', '.m2-ed-psbgn'].forEach(function (c) { pal.querySelector(c).hidden = true; });   // no PD and AF on a CellDesigner map
       pal.querySelector('.m2-ed-pnot').style.display = 'none';   // a row: its display wins over hidden
       var hy = pal.querySelector('.m2-ed-pstrict'), hyc = hy.querySelector('input'), strict = cdStrict();
       hy.hidden = false;

@@ -2,7 +2,7 @@
 // one node of every kind the palette makes and one line of every kind are made; then the editor's m2EditAsk puts each
 // end of each line on every other node and asks dragging (core.js takes), drawing the same kind between the same two
 // nodes (create.js linkKind) and the rules table (notation.js allowed) for each (the drag's counts without the moved line,
-// drawing's with every line), with Reduced notation ticked, unticked and on the AF tab. Where dragging or drawing differs
+// drawing's with every line), with Reduced notation ticked, unticked, Strict SBGN ticked and on the AF tab. Where dragging or drawing differs
 // from the table, the question is listed. Nothing is saved (no token).
 //   node tests/rules-agree.js [address] [viewer folder: its editor and renderers served in place of the page's] [out.json]
 // It lists and exits 0; with --check it exits 1 on any question answered differently (the check once the rules are one).
@@ -43,9 +43,9 @@ var url = args[0] || 'https://viewer-source.github.io/styles/#glycolysis-sbgn', 
   await line('consumption', M, EQ); await line('consumption', M2, EQ); await line('consumption', EQ, SC); await line('consumption', TG, M);
   await line('stimulation', M, SC);   // reduced notation: a modulation onto an entity
   var plain = { consumption: 1, 'logic arc': 1, 'equivalence arc': 1 }, all = {}, n = 0, bad = 0;
-  for (var mode of [{ lang: 'pd' }, { lang: 'pd', strict: true }, { lang: 'af' }]) {
+  for (var mode of [{ lang: 'pd' }, { lang: 'pd', strict: true }, { lang: 'pd', sbgn: true }, { lang: 'af' }]) {
     var rows = await page.evaluate(function (o) { return window.m2EditAsk(o); }, mode) || [];
-    var name = mode.lang === 'af' ? 'AF' : mode.strict ? 'PD, Reduced notation unticked' : 'PD, Reduced notation ticked';
+    var name = mode.lang === 'af' ? 'AF' : mode.sbgn ? 'PD, Strict SBGN' : mode.strict ? 'PD, Reduced notation unticked' : 'PD, Reduced notation ticked';
     var diff = rows.filter(function (r) {
       r.drawOk = r.draw === r.now || !!(plain[r.draw] && plain[r.now]);
       r.dragTable = r.tableDrag === null; r.drawTable = r.tableDraw === null;

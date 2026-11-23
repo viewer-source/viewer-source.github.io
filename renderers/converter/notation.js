@@ -15,8 +15,10 @@
 //     does not tell. SBGN-ML: sbgn_edit.mapKind (engines.sbgn_edit), its one master; CellDesigner: hybrid when a reduced
 //     notation reaction is in the file, else pd; GraphML: null (the editor's palette tab and tick box decide).
 //   allowed(arc, from, to, ctx) -> null, or the reason the line is refused. from, to: nodeKind's answers. ctx: { sets:
-//     the sets on (pd, reduced, af, and the proposed fanout; house always), check(name): a reason or null for a rule
-//     that needs the map }. A row with `unless` is off while one of those sets is on.
+//     the sets on (pd, reduced, af, strict, and the proposed fanout; house always), check(name): a reason or null for a
+//     rule that needs the map }. A row with `unless` is off while one of those sets is on. strict (the palette's Strict
+//     SBGN): the specification alone, so reduced and fanout are off with it, the rows marked `unless: strict` (what
+//     CellDesigner allows beyond it) too, and the rows of the set strict (what it refuses that CellDesigner allows) on.
 //   paletteOff(sets) -> { sign: reason }: the palette's signs a set takes away (the CellDesigner compatible tick box).
 // RULES is data only, read against the specification line by line: each row a rule, its reason as the editor says it.
 // tests/notation.js runs one case per rule; tests/rules-cases/ holds GraphML maps with expected answers, shared with the
@@ -103,7 +105,10 @@
   // does; else the first matching refusal's reason, or the arc's own `need`. A side is matched by a list of kinds,
   // 'kind' or 'kind:class' ('entity:empty set'), '*' any. `check` names a rule that needs the map, answered by the
   // caller (ctx.check): gateOneOut (a gate's one line out), oneInput (a NOT gate's or a delay's one input), already (the
-  // same line there already), tagRoom (a tag's one line), reversible (a reversible process takes no consumption).
+  // same line there already), tagRoom (a tag's one line), reversible (a reversible process takes no consumption),
+  // oneCatalysis and oneNecessary (a process's one catalysis, its one necessary stimulation), emptyOne (an empty set's one
+  // consumption or production). The audit of every row against the specification and CellDesigner: the viewer's
+  // notes/rules-audit.md.
   var RULES = {
     need: {
       consumption: 'A consumption goes from an entity into a process.',
@@ -130,6 +135,8 @@
         why: 'CellDesigner has one glyph for phenotype, submap and perturbing agent, with lines both ways.' },
       { id: 'reduced-submap', sets: ['reduced'], arc: INFL, from: ['entity', 'gate'], to: ['submap'],
         why: 'A submap takes a modulation as a phenotype does (CellDesigner’s one glyph).' },
+      { id: 'phenotype-species', sets: ['house'], unless: ['strict'], arc: ['consumption', 'modulation', 'stimulation', 'inhibition', 'necessary stimulation'],
+        from: ['phenotype'], to: ['process'], why: 'CellDesigner’s phenotype is a species: a reaction’s reactant or modifier.' },
       { id: 'af-influence', sets: ['af'], arc: INFL, from: ['entity', 'gate'], to: ['entity', 'phenotype'], spec: 'AF 3.3' }
     ],
     refuse: [
@@ -150,6 +157,10 @@
       { id: 'nucleic-catalyst', sets: ['pd'], arc: ['catalysis'], from: ['entity:nucleic acid feature'], to: ['*'], no: 'A nucleic acid feature is no catalyst.', spec: '3.4.1' },
       { id: 'catalysis-ends', sets: ['pd'], arc: ['catalysis'], from: ['phenotype', 'submap'], to: ['*'], no: 'A catalysis goes from an entity to a process.', spec: '3.4.1' },
       { id: 'catalysis-submap', sets: ['pd'], arc: ['catalysis'], from: ['*'], to: ['submap'], no: 'A catalysis goes from an entity to a process.', spec: '3.4.1' },
+      { id: 'one-catalysis', sets: ['strict'], arc: ['catalysis'], from: ['*'], to: ['process'], check: 'oneCatalysis', spec: '3.5.2.4' },
+      { id: 'one-necessary', sets: ['strict'], arc: ['necessary stimulation'], from: ['*'], to: ['process'], check: 'oneNecessary', spec: '3.5.2.4' },
+      { id: 'empty-set-one-out', sets: ['strict'], arc: ['consumption'], from: ['entity:empty set'], to: ['*'], check: 'emptyOne', spec: '3.4.1' },
+      { id: 'empty-set-one-in', sets: ['strict'], arc: ['production'], from: ['*'], to: ['entity:empty set'], check: 'emptyOne', spec: '3.4.1' },
       { id: 'equivalence-entities', sets: ['house'], arc: ['logic arc'], from: ['gate:equivalence'], to: ['gate'], no: 'An equivalence joins entities only.', spec: '2.9.4' },
       { id: 'into-equivalence', sets: ['house'], arc: ['logic arc'], from: ['gate'], to: ['gate:equivalence'], no: 'An equivalence joins entities only.', spec: '2.9.4' },
       { id: 'equivalence-line', sets: ['house'], arc: MODS, from: ['gate:equivalence'], to: ['*'], no: 'An equivalence’s line goes to an entity.', spec: '2.9.4' }
@@ -174,6 +185,7 @@
     ctx = ctx || {};
     var sets = ctx.sets || ['pd'], check = ctx.check || function () { return null; }, i, r, why;
     if (ARCS.indexOf(arc) < 0) return 'Not a line of the notation.';
+    if (sets.indexOf('strict') >= 0) sets = sets.filter(function (x) { return x !== 'reduced' && x !== 'fanout'; });   // the specification alone
     for (i = 0; i < RULES.refuse.length; i++) {
       r = RULES.refuse[i];
       if (!on(r, sets) || !fits(r, arc, from, to)) continue;

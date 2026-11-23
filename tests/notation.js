@@ -29,9 +29,23 @@ yes('equivalence arc', T, M, PD, 'tag to entity'); yes('equivalence arc', M, T, 
 no('stimulation', M, S, PD, 'entity to entity, reduced unticked'); yes('stimulation', M, S, RD, 'reduced: entity to entity');
 no('catalysis', M, S, RD, 'reduced: no catalysis between entities');
 yes('inhibition', AND, S, RD, 'reduced: gate to entity');
-yes('stimulation', PH, P, RD, 'reduced: from a phenotype'); no('stimulation', PH, P, PD, 'unticked: nothing leaves a phenotype');
+yes('stimulation', PH, P, RD, 'reduced: from a phenotype'); yes('stimulation', PH, P, PD, 'unticked: a phenotype modulates a process (CellDesigner)');
+no('stimulation', PH, M, PD, 'unticked: nothing from a phenotype to an entity');
 yes('modulation', SM, M, RD, 'reduced: from a submap'); yes('stimulation', M, SM, RD, 'reduced: into a submap');
 no('stimulation', M, SM, PD, 'unticked: nothing into a submap');
+// Strict SBGN: the specification alone
+var ST = { sets: ['pd', 'strict'] }, STR = { sets: ['pd', 'reduced', 'strict', 'fanout'], check: function (c) { return c === 'gateOneOut' ? 'one out' : null; } };
+yes('consumption', PH, P, PD, 'C3: a phenotype consumed (CellDesigner)'); no('consumption', PH, P, ST, 'strict: a phenotype is not consumed');
+no('stimulation', PH, P, ST, 'strict: nothing leaves a phenotype'); no('production', P, PH, PD, 'a phenotype is not produced');
+no('catalysis', PH, P, PD, 'a phenotype is no catalyst, unticked too');
+no('stimulation', M, S, STR, 'strict: reduced notation off'); no('stimulation', AND, P, STR, 'strict: fanout off', 'one out');
+yes('stimulation', M, P, ST, 'strict: a stimulation of a process'); yes('catalysis', M, PH, ST, 'strict: catalysis onto a phenotype (3.4.1 table)');
+var one = function (name, strict) { return { sets: strict ? ['pd', 'strict'] : ['pd'], check: function (c) { return c === name ? 'once' : null; } }; };
+no('catalysis', M, P, one('oneCatalysis', true), 'strict: a second catalysis', 'once'); yes('catalysis', M, P, one('oneCatalysis', false), 'unticked: a second catalysis');
+no('necessary stimulation', M, P, one('oneNecessary', true), 'strict: a second necessary stimulation', 'once'); yes('necessary stimulation', M, P, one('oneNecessary', false), 'unticked: a second necessary stimulation');
+yes('stimulation', M, P, one('oneCatalysis', true), 'strict: stimulations not counted');
+no('consumption', E, P, one('emptyOne', true), 'strict: an empty set consumed twice', 'once'); no('production', P, E, one('emptyOne', true), 'strict: an empty set produced twice', 'once');
+yes('consumption', E, P, one('emptyOne', false), 'unticked: an empty set consumed twice');
 // Activity Flow
 var A = N.nodeKind('sbgnml', 'biological activity');
 yes('stimulation', A, A, AF, 'AF: influence'); yes('inhibition', AND, A, AF, 'AF: gate output'); no('consumption', A, A, AF, 'AF: no consumption');

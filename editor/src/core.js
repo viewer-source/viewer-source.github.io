@@ -4,7 +4,7 @@ import { bx, keyShift, liveFit, liveLines, liveOff, posePort, shift, sizeLive, s
 import { AF_KINDS, drawGraphml, noNegative, shiftedAhead, yr } from './graphml.js';
 import { beyond, cdDoc, cdDraw, cdGraphml, cdJs, cdKnown, cdMap, cdMk, cdNow, cdRebuild, cdRemember, cdSessionSoon, cdpy, glyphArcs, glyphPort, isCd, joinAt, joinGuides, joinSolve, lineGrid, nodeCentre, nodePlaces, plainCanvas } from './celldesigner.js';
 import { EMPTY_BASE, edOf, isSb, madeHere, sbBase, sbFollow, sbGraphml, sbJs, sbKind, sbMap, sbNow, sbRemember, sbpy, viaGraphml } from './sbgn.js';
-import { ddOpen, hybOn, joinDo, joinPack, joinPlan, link, linkDown, linkMove, linkPaint, linkUp, moveLimit, origAll, palDown, palLangNow, palShow, palUp, pdLimit, propFmt, setSize, sizable, svDown, svMarks, tool } from './create.js';
+import { ddOpen, hybOn, joinDo, joinPack, joinPlan, link, linkDown, linkMove, linkPaint, linkUp, moveLimit, origAll, palDown, palLangNow, palShow, palUp, pdLimit, propFmt, sbgnStrict, setSize, sizable, svDown, svMarks, tool } from './create.js';
 import { help, helpBox } from './help.js';
 import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepBeside, keptNow, mine, mineAdd, mineIn, mineMatch, minePut, savedMine, toGh, upAll, upRun } from './own.js';
 
@@ -2482,14 +2482,14 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       if (a[1] === 'none') {   // the arrowhead-less line: its hub end at a process or gate, its other end at an entity (or a gate into a gate)
         if (!hub(roleOf(e.s)) && !hub(roleOf(e.t))) return false;   // a plain line between other glyphs (an equivalence arc): not this line
         var h = hub(roleOf(e.t)) ? 1 : 0;
-        return end === h ? hub(r) && !(r === 'proc' && ro === 'gate') : r === 'epn' || (r === 'gate' && ro === 'gate');
+        return end === h ? hub(r) && !(r === 'proc' && ro === 'gate') : r === 'epn' || (r === 'gate' && ro === 'gate') || (r === 'pheno' && ro === 'proc' && !sbgnStrict());   // a phenotype a reaction's reactant, Strict SBGN unticked (create.js linkKind0)
       }
       if (a[1] === 'delta') return hub(roleOf(end ? e.t : e.s)) ? r === 'proc' : r === 'epn';   // a production: from a process to an entity
       // a modulation: from an entity or gate to a process or phenotype; an influence (Activity Flow) or a reduced
       // notation one (Hybrid) to an entity too, as the palette makes them (linkHow), never a catalysis
       // Reduced notation ticked: a phenotype or a submap also at either end, a catalysis aside (linkKind0)
       var loose = hybOn() && a[1] !== 'white_circle' && (r === 'pheno' || nodes2[i].shape.kind === 'Submap');
-      if (MODS.test(a[1])) return loose || (end ? r === 'proc' || r === 'pheno' || (r === 'epn' && a[1] !== 'white_circle' && (roleOf(e.t) === 'epn' || palLangNow() === 'af' || hybOn())) : r === 'epn' || r === 'gate');
+      if (MODS.test(a[1])) return loose || (end ? r === 'proc' || r === 'pheno' || (r === 'epn' && a[1] !== 'white_circle' && (roleOf(e.t) === 'epn' || palLangNow() === 'af' || hybOn())) : r === 'epn' || r === 'gate' || (r === 'pheno' && a[1] !== 'white_circle' && roleOf(e.t) === 'proc' && !sbgnStrict()));
       return false;
     }
     function takes(k, end, i) {   // takes0, and SBGN PD's table for the line as it would be (pdLimit)

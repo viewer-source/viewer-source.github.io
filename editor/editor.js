@@ -562,6 +562,15 @@
               to: ["submap"],
               why: "A submap takes a modulation as a phenotype does (CellDesigner\u2019s one glyph)."
             },
+            {
+              id: "phenotype-species",
+              sets: ["house"],
+              unless: ["strict"],
+              arc: ["consumption", "modulation", "stimulation", "inhibition", "necessary stimulation"],
+              from: ["phenotype"],
+              to: ["process"],
+              why: "CellDesigner\u2019s phenotype is a species: a reaction\u2019s reactant or modifier."
+            },
             { id: "af-influence", sets: ["af"], arc: INFL2, from: ["entity", "gate"], to: ["entity", "phenotype"], spec: "AF 3.3" }
           ],
           refuse: [
@@ -619,6 +628,10 @@
             { id: "nucleic-catalyst", sets: ["pd"], arc: ["catalysis"], from: ["entity:nucleic acid feature"], to: ["*"], no: "A nucleic acid feature is no catalyst.", spec: "3.4.1" },
             { id: "catalysis-ends", sets: ["pd"], arc: ["catalysis"], from: ["phenotype", "submap"], to: ["*"], no: "A catalysis goes from an entity to a process.", spec: "3.4.1" },
             { id: "catalysis-submap", sets: ["pd"], arc: ["catalysis"], from: ["*"], to: ["submap"], no: "A catalysis goes from an entity to a process.", spec: "3.4.1" },
+            { id: "one-catalysis", sets: ["strict"], arc: ["catalysis"], from: ["*"], to: ["process"], check: "oneCatalysis", spec: "3.5.2.4" },
+            { id: "one-necessary", sets: ["strict"], arc: ["necessary stimulation"], from: ["*"], to: ["process"], check: "oneNecessary", spec: "3.5.2.4" },
+            { id: "empty-set-one-out", sets: ["strict"], arc: ["consumption"], from: ["entity:empty set"], to: ["*"], check: "emptyOne", spec: "3.4.1" },
+            { id: "empty-set-one-in", sets: ["strict"], arc: ["production"], from: ["*"], to: ["entity:empty set"], check: "emptyOne", spec: "3.4.1" },
             { id: "equivalence-entities", sets: ["house"], arc: ["logic arc"], from: ["gate:equivalence"], to: ["gate"], no: "An equivalence joins entities only.", spec: "2.9.4" },
             { id: "into-equivalence", sets: ["house"], arc: ["logic arc"], from: ["gate"], to: ["gate:equivalence"], no: "An equivalence joins entities only.", spec: "2.9.4" },
             { id: "equivalence-line", sets: ["house"], arc: MODS2, from: ["gate:equivalence"], to: ["*"], no: "An equivalence\u2019s line goes to an entity.", spec: "2.9.4" }
@@ -652,6 +665,9 @@
             return null;
           }, i, r, why;
           if (ARCS2.indexOf(arc) < 0) return "Not a line of the notation.";
+          if (sets.indexOf("strict") >= 0) sets = sets.filter(function(x) {
+            return x !== "reduced" && x !== "fanout";
+          });
           for (i = 0; i < RULES.refuse.length; i++) {
             r = RULES.refuse[i];
             if (!on2(r, sets) || !fits(r, arc, from, to)) continue;
@@ -4306,9 +4322,9 @@
   }
   function palFor() {
     var all = palStore(), id = palId(), k = id && all[id];
-    if (k && (k.lang === "pd" || k.lang === "af")) return { lang: k.lang, look: k.look === "sbgn" ? "sbgn" : "rn", strict: k.strict === true };
+    if (k && (k.lang === "pd" || k.lang === "af")) return { lang: k.lang, look: k.look === "sbgn" ? "sbgn" : "rn", strict: k.strict === true, sbgn: k.sbgn === true };
     var af = sbJs.isAf(shared.sb && shared.sb.base);
-    return { lang: af ? "af" : "pd", look: af ? "sbgn" : "rn", strict: false };
+    return { lang: af ? "af" : "pd", look: af ? "sbgn" : "rn", strict: false, sbgn: false };
   }
   function palKeep() {
     var all = palStore(), id = palId();
@@ -4336,7 +4352,10 @@
     return sbKind();
   }
   function hybOn() {
-    return palLangNow() === "pd" && palSet.strict !== true;
+    return palLangNow() === "pd" && palSet.strict !== true && !sbgnStrict();
+  }
+  function sbgnStrict() {
+    return palLangNow() === "pd" && palSet.sbgn === true;
   }
   function palLangNow() {
     return palSet.lang === "af" ? "af" : "pd";
@@ -4363,7 +4382,8 @@
   var INFO;
   function __run53() {
     INFO = {
-      strict: "Corresponds to CellDesigner's Reduced Notation. Stimulation, inhibition, necessary stimulation and modulation may also link entities, phenotypes and submaps. Such maps open in CellDesigner and MINERVA, but other SBGN-ML tools may not read them. Unticked, the SBGN Process Description rules alone.",
+      strict: "Corresponds to CellDesigner's Reduced Notation. Stimulation, inhibition, necessary stimulation and modulation may also link entities, phenotypes and submaps. Such maps open in CellDesigner and MINERVA, but other SBGN-ML tools may not read them. Unticked, the SBGN Process Description rules alone. Off while Strict SBGN is ticked.",
+      sbgn: "Keeps what is drawn from now on to the SBGN Process Description specification alone: no reduced notation, one catalysis and one necessary stimulation per process, one line at an empty set, no line from a phenotype. Unticked, the default, the specification and what CellDesigner also allows, such as a phenotype as a reaction's reactant or modifier. What the map already holds is not changed.",
       rn: "Corresponds to CellDesigner's Reduced Notation palette, which enables an Activity Flow type of representation.",
       sbgn: "Follows the SBGN Activity Flow specification. The map is saved as an Activity Flow SBGN-ML file.",
       prot: "When ticked, shows the auxiliary unit on protein activities. An activity with no auxiliary unit is by default a protein activity.",
@@ -4376,7 +4396,7 @@
   }
   var palSignsEl;
   function __run63() {
-    pal.innerHTML = '<div class="m2-ed-prow m2-ed-pnot" role="group" aria-label="Notation">' + palBtn('data-lang="pd"', "Process Description", '<text x="12" y="17.3" text-anchor="middle" font-size="15">PD</text>') + palBtn('data-lang="af"', "Activity Flow", '<text x="12" y="17.3" text-anchor="middle" font-size="15">AF</text>') + '</div><div class="m2-ed-plook" role="radiogroup" aria-label="Activity Flow view">' + palTip(palView("rn", "Reduced notation view", "Reduced notation view: each activity drawn as its entity"), "Reduced notation view", INFO.rn) + palTip(palView("sbgn", "SBGN AF view", "SBGN Activity Flow view: each entity drawn as its SBGN activity"), "SBGN Activity Flow view", INFO.sbgn) + '</div><div class="m2-ed-pblk m2-ed-pprot">' + palTip('<label class="m2-ed-phyb" title="Ticked: every protein activity carries the auxiliary unit of a macromolecule, drawn and saved in the file; unticked: none has it"><input type="checkbox"><span>Protein auxiliary unit</span></label>', "Protein auxiliary unit", INFO.prot) + '</div><div class="m2-ed-pblk m2-ed-pcdc">' + palTip('<label class="m2-ed-phyb" title="Ticked: the palette offers only what CellDesigner and MINERVA can hold; unticked: tags and submaps\u2019 terminals too"><input type="checkbox"><span>CellDesigner compatible</span></label>', "CellDesigner compatible", INFO.cdc) + '</div><div class="m2-ed-pblk m2-ed-pstrict">' + palTip('<label class="m2-ed-phyb" title="Ticked (the default): under PD a modulation may also end on an entity, and a logic gate\u2019s output go to one (CellDesigner\u2019s reduced notation); with a process on the map the file stays Process Description, without one such a link makes it Activity Flow. Unticked: Process Description only"><input type="checkbox"><span>Reduced notation</span></label>', "Reduced notation", INFO.strict) + '</div><div class="m2-ed-psigns"></div>';
+    pal.innerHTML = '<div class="m2-ed-prow m2-ed-pnot" role="group" aria-label="Notation">' + palBtn('data-lang="pd"', "Process Description", '<text x="12" y="17.3" text-anchor="middle" font-size="15">PD</text>') + palBtn('data-lang="af"', "Activity Flow", '<text x="12" y="17.3" text-anchor="middle" font-size="15">AF</text>') + '</div><div class="m2-ed-plook" role="radiogroup" aria-label="Activity Flow view">' + palTip(palView("rn", "Reduced notation view", "Reduced notation view: each activity drawn as its entity"), "Reduced notation view", INFO.rn) + palTip(palView("sbgn", "SBGN AF view", "SBGN Activity Flow view: each entity drawn as its SBGN activity"), "SBGN Activity Flow view", INFO.sbgn) + '</div><div class="m2-ed-pblk m2-ed-pprot">' + palTip('<label class="m2-ed-phyb" title="Ticked: every protein activity carries the auxiliary unit of a macromolecule, drawn and saved in the file; unticked: none has it"><input type="checkbox"><span>Protein auxiliary unit</span></label>', "Protein auxiliary unit", INFO.prot) + '</div><div class="m2-ed-pblk m2-ed-pcdc">' + palTip('<label class="m2-ed-phyb" title="Ticked: the palette offers only what CellDesigner and MINERVA can hold; unticked: tags and submaps\u2019 terminals too"><input type="checkbox"><span>CellDesigner compatible</span></label>', "CellDesigner compatible", INFO.cdc) + '</div><div class="m2-ed-pblk m2-ed-psbgn">' + palTip('<label class="m2-ed-phyb" title="Ticked: what is drawn keeps to the SBGN PD specification alone; unticked: CellDesigner\u2019s additions too"><input type="checkbox"><span>Strict SBGN</span></label>', "Strict SBGN", INFO.sbgn) + '</div><div class="m2-ed-pblk m2-ed-pstrict">' + palTip('<label class="m2-ed-phyb" title="Ticked (the default): under PD a modulation may also end on an entity, and a logic gate\u2019s output go to one (CellDesigner\u2019s reduced notation); with a process on the map the file stays Process Description, without one such a link makes it Activity Flow. Unticked: Process Description only"><input type="checkbox"><span>Reduced notation</span></label>', "Reduced notation", INFO.strict) + '</div><div class="m2-ed-psigns"></div>';
     palSignsEl = pal.querySelector(".m2-ed-psigns");
   }
   function palBlocks() {
@@ -4878,10 +4898,14 @@
       b.setAttribute("aria-checked", String(b.dataset.look === look));
     });
     pal.querySelector(".m2-ed-plook").hidden = !palViews();
-    var hy = pal.querySelector(".m2-ed-pstrict"), hyc = hy.querySelector("input");
-    hy.hidden = lang !== "pd";
+    var hy = pal.querySelector(".m2-ed-pstrict"), hyc = hy.querySelector("input"), sg = pal.querySelector(".m2-ed-psbgn"), sgc = sg.querySelector("input");
+    hy.hidden = sg.hidden = lang !== "pd";
     cdInfo(hy, false);
-    if (hyc.checked !== hybOn()) hyc.checked = hybOn();
+    if (sgc.checked !== sbgnStrict()) sgc.checked = sbgnStrict();
+    var red = palSet.strict !== true;
+    if (hyc.checked !== red) hyc.checked = red;
+    hyc.disabled = sbgnStrict();
+    hy.classList.toggle("m2-ed-poff", sbgnStrict());
     var pb = pal.querySelector(".m2-ed-pprot"), pbc = pb.querySelector("input");
     pb.hidden = !palViews();
     if (!pb.hidden) {
@@ -4906,7 +4930,7 @@
     if (on && V.current === map && !shared.cd) render();
   }
   function palPick(lang, look) {
-    palSet = { lang: lang || palSet.lang, look: look || palSet.look, strict: palSet.strict };
+    palSet = { lang: lang || palSet.lang, look: look || palSet.look, strict: palSet.strict, sbgn: palSet.sbgn };
     if (tool && !palOk(tool.kind)) tool = null;
     palKeep();
     palFill();
@@ -4933,6 +4957,15 @@
       palDid([PAL_KEY], function() {
         palSet.strict = !e.target.checked;
         palKeep();
+      });
+    });
+    pal.querySelector(".m2-ed-psbgn input").addEventListener("change", function(e) {
+      e.target.blur();
+      if (cdPal()) return;
+      palDid([PAL_KEY], function() {
+        palSet.sbgn = e.target.checked;
+        palKeep();
+        palFill();
       });
     });
     pal.querySelector(".m2-ed-pcdc input").addEventListener("change", function(e) {
@@ -7262,9 +7295,30 @@
     return null;
   }
   function fans(g) {
-    if (!V.fanout || nodes2[g].eq) return false;
+    if (!V.fanout || sbgnStrict() || nodes2[g].eq) return false;
     var l = nodes2[g].el.getElementsByTagNameNS(Y, "NodeLabel")[0], w = l ? l.textContent.trim().toUpperCase() : "";
     return w === "AND" || w === "OR";
+  }
+  function strictCount(s, t, cls, skip) {
+    if (!sbgnStrict()) return null;
+    var n = function(f) {
+      return edges2.filter(function(q, j) {
+        return j !== skip && f(q);
+      }).length;
+    };
+    if ((cls === "catalysis" || cls === "necessary stimulation") && roleOf(t) === "proc" && n(function(q) {
+      return q.t === t && q.arr[1] === (cls === "catalysis" ? "white_circle" : "white_delta_bar");
+    })) return "A process has one " + cls + " in SBGN (Strict SBGN is ticked in the palette).";
+    var empty = function(x) {
+      return nodes2[x].shape.kind === "EmptySet";
+    };
+    if (cls === "consumption" && empty(s) || cls === "production" && empty(t)) {
+      var e = empty(s) && cls === "consumption" ? s : t;
+      if (n(function(q) {
+        return q.s === e || q.t === e;
+      })) return "An empty set has one line in SBGN (Strict SBGN is ticked in the palette).";
+    }
+    return null;
   }
   function moveLimit(k, end, i) {
     var e = edges2[k], s = end ? e.s : i, t = end ? i : e.t, a = e.arr[1];
@@ -7282,6 +7336,8 @@
       return l ? l.textContent.trim().toUpperCase() : "";
     };
     if (a === "none" && roleOf(s) === "proc") return "A consumption goes from an entity into a process.";
+    var sc = strictCount(s, t, a === "delta" ? "production" : a === "none" ? "consumption" : import_notation.default.arcKind("graphml", a), k);
+    if (sc) return sc;
     if (!end && roleOf(s) === "gate" && !fans(s) && others(s, false)) return "A logic gate has one line out, and this one has it.";
     if (end && roleOf(t) === "gate" && /^(NOT|\u03c4)$/.test(word(t)) && others(t, true)) return "This gate has one input, and it has it.";
     if (MODS.test(a) && nodes2[s].eq) return "An equivalence\u2019s line goes to an entity.";
@@ -7292,7 +7348,7 @@
     return null;
   }
   function linkKind(a, b, P, want) {
-    var r = linkKind0(a, b, P, want), m = r && !r.no && pdLimit(a, b, r.pair ? "pair" : r.cls);
+    var r = linkKind0(a, b, P, want), m = r && !r.no && (pdLimit(a, b, r.pair ? "pair" : r.cls) || !r.pair && strictCount(a, b, r.cls, -1));
     return m ? { no: m } : r;
   }
   function linkKind0(a, b, P, want) {
@@ -7322,6 +7378,10 @@
       if (room) return { no: room };
       return has(a, b, "none") || has(b, a, "none") ? { no: "This equivalence arc is there already." } : { cls: "equivalence arc" };
     }
+    if (ra === "pheno" && rb === "proc" && !sbgnStrict()) {
+      if (want === "catalysis") return { no: "A catalysis goes from an entity to a process." };
+      ra = "epn";
+    }
     var loose = hybOn(), subA = loose && nodes2[a].shape.kind === "Submap", subB = loose && nodes2[b].shape.kind === "Submap";
     if (subB) rb = "pheno";
     if (!loose && (nodes2[a].shape.kind === "Submap" || nodes2[b].shape.kind === "Submap")) return { no: "A submap is joined to the map by its tags or terminals (Reduced notation is unticked in the palette)." };
@@ -7331,7 +7391,7 @@
       var u = want || usual(b, "stimulation");
       return ok(u === "catalysis" ? "stimulation" : u);
     }
-    if (ra === "pheno") return { no: "Nothing leaves a phenotype: it is modulated by an entity or a logic gate (Reduced notation is unticked in the palette)." };
+    if (ra === "pheno") return { no: sbgnStrict() ? "Nothing leaves a phenotype in SBGN (Strict SBGN is ticked in the palette)." : "A line from a phenotype goes into a process (Reduced notation is unticked in the palette)." };
     if (ra === "gate" && !fans(a) && outs(a)) return { no: "A logic gate has one line out, and this one has it." };
     var word = function(i) {
       var l = nodes2[i].el.getElementsByTagNameNS(Y, "NodeLabel")[0];
@@ -7383,7 +7443,7 @@
   function askAll(o) {
     if (!palOn()) return null;
     var keep = palSet, rows = {};
-    palSet = { lang: o && o.lang || "pd", look: palSet.look, strict: !!(o && o.strict) };
+    palSet = { lang: o && o.lang || "pd", look: palSet.look, strict: !!(o && o.strict), sbgn: !!(o && o.sbgn) };
     try {
       var word = function(i) {
         var l = nodes2[i].el.getElementsByTagNameNS(Y, "NodeLabel")[0];
@@ -7398,7 +7458,7 @@
       var name2 = function(k) {
         return k.kind + ":" + k.cls;
       };
-      var sets = (palLangNow() === "af" ? ["af"] : hybOn() ? ["pd", "reduced"] : ["pd"]).concat(V.fanout ? ["fanout"] : []);
+      var sets = (palLangNow() === "af" ? ["af"] : hybOn() ? ["pd", "reduced"] : ["pd"]).concat(V.fanout ? ["fanout"] : [], sbgnStrict() ? ["strict"] : []);
       var checks = function(s, t, a, skip) {
         var other = function(q, j) {
           return j !== skip;
@@ -7416,6 +7476,15 @@
           if (c === "tagRoom") {
             var tg = roleOf(s) === "tag" ? s : t;
             return tagRoom(tg, tg === s ? t : s, skip == null ? -1 : skip);
+          }
+          if (c === "oneCatalysis" || c === "oneNecessary" || c === "emptyOne") {
+            var SV2 = palSet.sbgn;
+            palSet.sbgn = true;
+            try {
+              return strictCount(s, t, c === "oneCatalysis" ? "catalysis" : c === "oneNecessary" ? "necessary stimulation" : roleOf(s) === "proc" ? "production" : "consumption", skip == null ? -1 : skip);
+            } finally {
+              palSet.sbgn = SV2;
+            }
           }
           if (c === "reversible") {
             var m = pdLimit(s, t, "consumption");
@@ -8693,7 +8762,7 @@
     return shared.cdStrictMemo[1];
   }
   function cdFill() {
-    [".m2-ed-pnot", ".m2-ed-plook", ".m2-ed-pprot", ".m2-ed-pcdc"].forEach(function(c) {
+    [".m2-ed-pnot", ".m2-ed-plook", ".m2-ed-pprot", ".m2-ed-pcdc", ".m2-ed-psbgn"].forEach(function(c) {
       pal.querySelector(c).hidden = true;
     });
     pal.querySelector(".m2-ed-pnot").style.display = "none";
@@ -15608,11 +15677,11 @@
     if (a[1] === "none") {
       if (!hub(roleOf(e.s)) && !hub(roleOf(e.t))) return false;
       var h = hub(roleOf(e.t)) ? 1 : 0;
-      return end === h ? hub(r) && !(r === "proc" && ro === "gate") : r === "epn" || r === "gate" && ro === "gate";
+      return end === h ? hub(r) && !(r === "proc" && ro === "gate") : r === "epn" || r === "gate" && ro === "gate" || r === "pheno" && ro === "proc" && !sbgnStrict();
     }
     if (a[1] === "delta") return hub(roleOf(end ? e.t : e.s)) ? r === "proc" : r === "epn";
     var loose = hybOn() && a[1] !== "white_circle" && (r === "pheno" || nodes2[i].shape.kind === "Submap");
-    if (MODS.test(a[1])) return loose || (end ? r === "proc" || r === "pheno" || r === "epn" && a[1] !== "white_circle" && (roleOf(e.t) === "epn" || palLangNow() === "af" || hybOn()) : r === "epn" || r === "gate");
+    if (MODS.test(a[1])) return loose || (end ? r === "proc" || r === "pheno" || r === "epn" && a[1] !== "white_circle" && (roleOf(e.t) === "epn" || palLangNow() === "af" || hybOn()) : r === "epn" || r === "gate" || r === "pheno" && a[1] !== "white_circle" && roleOf(e.t) === "proc" && !sbgnStrict());
     return false;
   }
   function takes(k, end, i) {

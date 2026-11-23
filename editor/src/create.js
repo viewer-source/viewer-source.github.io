@@ -174,9 +174,9 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
     function palId() { return site && (site.id || site.path) || name || null; }   // the map edited (V.current is the editor's own entry then)
     function palFor() {   // the map's choice, else from its file
       var all = palStore(), id = palId(), k = id && all[id];
-      if (k && (k.lang === 'pd' || k.lang === 'af')) return { lang: k.lang, look: k.look === 'sbgn' ? 'sbgn' : 'rn', strict: k.strict === true };
+      if (k && (k.lang === 'pd' || k.lang === 'af')) return { lang: k.lang, look: k.look === 'sbgn' ? 'sbgn' : 'rn', strict: k.strict === true, sbgn: k.sbgn === true };
       var af = sbJs.isAf(shared.sb && shared.sb.base);
-      return { lang: af ? 'af' : 'pd', look: af ? 'sbgn' : 'rn', strict: false };
+      return { lang: af ? 'af' : 'pd', look: af ? 'sbgn' : 'rn', strict: false, sbgn: false };
     }
     function palKeep() { var all = palStore(), id = palId(); if (!id) return; all[id] = palSet; try { localStorage.setItem(PAL_KEY, JSON.stringify(all)); } catch (e) {} }
     function palSign(q) {
@@ -207,7 +207,13 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
     // by default, as in CellDesigner, unticked on purpose for the restriction, e.g. for teaching): under PD a modulation may end on an
     // entity, and a gate's output go to one, as CellDesigner's reduced notation, while ticked; per map in this browser
     // (`strict`, true when unticked)
-    function hybOn() { return palLangNow() === 'pd' && palSet.strict !== true; }
+    function hybOn() { return palLangNow() === 'pd' && palSet.strict !== true && !sbgnStrict(); }
+    // Strict SBGN, unticked by default (per map in this browser, `sbgn`): ticked, what is drawn from then on keeps to the
+    // SBGN PD specification alone (notation.js, the set strict): no reduced notation (its tick box shown pale, its own tick
+    // kept), no proposed demerging links, a process's one catalysis and one necessary stimulation, an empty set's one line,
+    // nothing from a phenotype; unticked, the specification and what CellDesigner allows beyond it (a phenotype a
+    // reaction's reactant or modifier). What the map holds is never changed by it
+    function sbgnStrict() { return palLangNow() === 'pd' && palSet.sbgn === true; }
     function palLangNow() { return palSet.lang === 'af' ? 'af' : 'pd'; }
     // the views (SBGN or CellDesigner) only where the map is pure Activity Flow or still empty (the AF SBGN view has no
     // process); elsewhere the reduced notation view, no switch shown
@@ -225,7 +231,8 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
     var INFO;
     function __run5() {   // run at start, in order (__start)
     INFO = {
-      strict: 'Corresponds to CellDesigner\'s Reduced Notation. Stimulation, inhibition, necessary stimulation and modulation may also link entities, phenotypes and submaps. Such maps open in CellDesigner and MINERVA, but other SBGN-ML tools may not read them. Unticked, the SBGN Process Description rules alone.',
+      strict: 'Corresponds to CellDesigner\'s Reduced Notation. Stimulation, inhibition, necessary stimulation and modulation may also link entities, phenotypes and submaps. Such maps open in CellDesigner and MINERVA, but other SBGN-ML tools may not read them. Unticked, the SBGN Process Description rules alone. Off while Strict SBGN is ticked.',
+      sbgn: 'Keeps what is drawn from now on to the SBGN Process Description specification alone: no reduced notation, one catalysis and one necessary stimulation per process, one line at an empty set, no line from a phenotype. Unticked, the default, the specification and what CellDesigner also allows, such as a phenotype as a reaction\'s reactant or modifier. What the map already holds is not changed.',
       rn: 'Corresponds to CellDesigner\'s Reduced Notation palette, which enables an Activity Flow type of representation.',
       sbgn: 'Follows the SBGN Activity Flow specification. The map is saved as an Activity Flow SBGN-ML file.',
       prot: 'When ticked, shows the auxiliary unit on protein activities. An activity with no auxiliary unit is by default a protein activity.',
@@ -249,6 +256,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       palTip(palView('sbgn', 'SBGN AF view', 'SBGN Activity Flow view: each entity drawn as its SBGN activity'), 'SBGN Activity Flow view', INFO.sbgn) + '</div>' +
       '<div class="m2-ed-pblk m2-ed-pprot">' + palTip('<label class="m2-ed-phyb" title="Ticked: every protein activity carries the auxiliary unit of a macromolecule, drawn and saved in the file; unticked: none has it"><input type="checkbox"><span>Protein auxiliary unit</span></label>', 'Protein auxiliary unit', INFO.prot) + '</div>' +
       '<div class="m2-ed-pblk m2-ed-pcdc">' + palTip('<label class="m2-ed-phyb" title="Ticked: the palette offers only what CellDesigner and MINERVA can hold; unticked: tags and submaps\u2019 terminals too"><input type="checkbox"><span>CellDesigner compatible</span></label>', 'CellDesigner compatible', INFO.cdc) + '</div>' +
+      '<div class="m2-ed-pblk m2-ed-psbgn">' + palTip('<label class="m2-ed-phyb" title="Ticked: what is drawn keeps to the SBGN PD specification alone; unticked: CellDesigner\u2019s additions too"><input type="checkbox"><span>Strict SBGN</span></label>', 'Strict SBGN', INFO.sbgn) + '</div>' +
       '<div class="m2-ed-pblk m2-ed-pstrict">' + palTip('<label class="m2-ed-phyb" title="Ticked (the default): under PD a modulation may also end on an entity, and a logic gate\u2019s output go to one (CellDesigner\u2019s reduced notation); with a process on the map the file stays Process Description, without one such a link makes it Activity Flow. Unticked: Process Description only"><input type="checkbox"><span>Reduced notation</span></label>', 'Reduced notation', INFO.strict) + '</div>' +
       '<div class="m2-ed-psigns"></div>';
     palSignsEl = pal.querySelector('.m2-ed-psigns');
@@ -589,10 +597,13 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       Array.prototype.forEach.call(pal.querySelectorAll('[data-lang]'), function (b) { b.setAttribute('aria-pressed', String(b.dataset.lang === lang)); });
       Array.prototype.forEach.call(pal.querySelectorAll('[data-look]'), function (b) { b.setAttribute('aria-checked', String(b.dataset.look === look)); });
       pal.querySelector('.m2-ed-plook').hidden = !palViews();
-      var hy = pal.querySelector('.m2-ed-pstrict'), hyc = hy.querySelector('input');
-      hy.hidden = lang !== 'pd';
+      var hy = pal.querySelector('.m2-ed-pstrict'), hyc = hy.querySelector('input'), sg = pal.querySelector('.m2-ed-psbgn'), sgc = sg.querySelector('input');
+      hy.hidden = sg.hidden = lang !== 'pd';
       cdInfo(hy, false);   // its SBGN texts back after a CellDesigner map
-      if (hyc.checked !== hybOn()) hyc.checked = hybOn();   // ticked: reduced notation allowed (strict off)
+      if (sgc.checked !== sbgnStrict()) sgc.checked = sbgnStrict();
+      var red = palSet.strict !== true;   // its own tick, kept while Strict SBGN takes it out of use
+      if (hyc.checked !== red) hyc.checked = red;
+      hyc.disabled = sbgnStrict(); hy.classList.toggle('m2-ed-poff', sbgnStrict());
       var pb = pal.querySelector('.m2-ed-pprot'), pbc = pb.querySelector('input');
       pb.hidden = !palViews();   // only on an Activity Flow map or an empty one (proteinBoxes leaves a map turned PD as it is)
       if (!pb.hidden) { var pf = protFile(); if (pf != null) protOn = pf; k = palKey(); }
@@ -611,7 +622,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       if (on && V.current === map && !shared.cd) render();
     }
     function palPick(lang, look) {
-      palSet = { lang: lang || palSet.lang, look: look || palSet.look, strict: palSet.strict };
+      palSet = { lang: lang || palSet.lang, look: look || palSet.look, strict: palSet.strict, sbgn: palSet.sbgn };
       if (tool && !palOk(tool.kind)) tool = null;
       palKeep(); palFill(); palShow();   // palShow sets the look
     }
@@ -623,6 +634,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       if (b && !b.disabled) palDid([PAL_KEY], function () { palPick(b.dataset.lang, b.dataset.look); });
     });
     pal.querySelector('.m2-ed-pstrict input').addEventListener('change', function (e) { e.target.blur(); if (cdPal()) return; palDid([PAL_KEY], function () { palSet.strict = !e.target.checked; palKeep(); }); });   // a CellDesigner map's own: cdcreate.js   // blurred: the editor's keys (undo) work at once
+    pal.querySelector('.m2-ed-psbgn input').addEventListener('change', function (e) { e.target.blur(); if (cdPal()) return; palDid([PAL_KEY], function () { palSet.sbgn = e.target.checked; palKeep(); palFill(); }); });   // blurred: the editor's keys (undo) work at once
     pal.querySelector('.m2-ed-pcdc input').addEventListener('change', function (e) {
       var v = e.target.checked; e.target.blur();   // the editor's keys (undo) work at once
       palDid([CDC_KEY], function () { try { if (v) localStorage.setItem(CDC_KEY, 'on'); else localStorage.removeItem(CDC_KEY); } catch (er) {} });
@@ -2158,9 +2170,19 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
     // Settings' Proposed tick box Demerging links from logic gates: an AND or OR gate may have several lines out (never a NOT
     // gate, a delay or an equivalence)
     function fans(g) {
-      if (!V.fanout || nodes2[g].eq) return false;
+      if (!V.fanout || sbgnStrict() || nodes2[g].eq) return false;   // Strict SBGN: the specification's one line out
       var l = nodes2[g].el.getElementsByTagNameNS(Y, 'NodeLabel')[0], w = l ? l.textContent.trim().toUpperCase() : '';
       return w === 'AND' || w === 'OR';
+    }
+    // Strict SBGN's counts (notation.js oneCatalysis, oneNecessary, emptyOne): a line of class cls from s to t, line skip left
+    // out (the line being moved; -1 for a new one). A reason, or null; nothing while Strict SBGN is unticked
+    function strictCount(s, t, cls, skip) {
+      if (!sbgnStrict()) return null;   // off on CellDesigner maps (never ticked there: cdcreate.js keeps its own palette)
+      var n = function (f) { return edges2.filter(function (q, j) { return j !== skip && f(q); }).length; };
+      if ((cls === 'catalysis' || cls === 'necessary stimulation') && roleOf(t) === 'proc' && n(function (q) { return q.t === t && q.arr[1] === (cls === 'catalysis' ? 'white_circle' : 'white_delta_bar'); })) return 'A process has one ' + cls + ' in SBGN (Strict SBGN is ticked in the palette).';
+      var empty = function (x) { return nodes2[x].shape.kind === 'EmptySet'; };
+      if ((cls === 'consumption' && empty(s)) || (cls === 'production' && empty(t))) { var e = empty(s) && cls === 'consumption' ? s : t; if (n(function (q) { return q.s === e || q.t === e; })) return 'An empty set has one line in SBGN (Strict SBGN is ticked in the palette).'; }
+      return null;
     }
     // an end of line k dragged onto node i (core.js takes): what drawing the line would refuse (linkKind's counts and its
     // equivalence rules), so a drag never makes what drawing does not. A reason, or null, on the PD and AF tabs;
@@ -2172,6 +2194,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       var others = function (g, into) { return edges2.filter(function (q, j) { return j !== k && (into ? q.t === g : q.s === g); }).length; };
       var word = function (g) { var l = nodes2[g].el.getElementsByTagNameNS(Y, 'NodeLabel')[0]; return l ? l.textContent.trim().toUpperCase() : ''; };
       if (a === 'none' && roleOf(s) === 'proc') return 'A consumption goes from an entity into a process.';   // a headless line leaving a process
+      var sc = strictCount(s, t, a === 'delta' ? 'production' : a === 'none' ? 'consumption' : NT.arcKind('graphml', a), k); if (sc) return sc;
       if (!end && roleOf(s) === 'gate' && !fans(s) && others(s, false)) return 'A logic gate has one line out, and this one has it.';
       if (end && roleOf(t) === 'gate' && /^(NOT|\u03c4)$/.test(word(t)) && others(t, true)) return 'This gate has one input, and it has it.';
       if (MODS.test(a) && nodes2[s].eq) return 'An equivalence\u2019s line goes to an entity.';
@@ -2182,7 +2205,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       return null;
     }
     function linkKind(a, b, P, want) {
-      var r = linkKind0(a, b, P, want), m = r && !r.no && pdLimit(a, b, r.pair ? 'pair' : r.cls);
+      var r = linkKind0(a, b, P, want), m = r && !r.no && (pdLimit(a, b, r.pair ? 'pair' : r.cls) || (!r.pair && strictCount(a, b, r.cls, -1)));
       return m ? { no: m } : r;
     }
     function linkKind0(a, b, P, want) {
@@ -2201,6 +2224,12 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       // Reduced notation ticked: a phenotype or a submap starts a modulation as an entity does, and a submap takes one as a
       // phenotype does (CellDesigner has one glyph for phenotype, submap and perturbing agent, with lines both ways);
       // unticked, SBGN PD's rules alone
+      // a phenotype into a process, Strict SBGN unticked: a reaction's reactant or modifier, as CellDesigner's phenotype is a
+      // species (notation.js phenotype-species); never a catalysis. Then the entity's rules: on an antenna a consumption
+      if (ra === 'pheno' && rb === 'proc' && !sbgnStrict()) {
+        if (want === 'catalysis') return { no: 'A catalysis goes from an entity to a process.' };
+        ra = 'epn';
+      }
       var loose = hybOn(), subA = loose && nodes2[a].shape.kind === 'Submap', subB = loose && nodes2[b].shape.kind === 'Submap';
       if (subB) rb = 'pheno';
       if (!loose && (nodes2[a].shape.kind === 'Submap' || nodes2[b].shape.kind === 'Submap')) return { no: 'A submap is joined to the map by its tags or terminals (Reduced notation is unticked in the palette).' };   // a submap has no role here: no line kind fits it
@@ -2210,7 +2239,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
         var u = want || usual(b, 'stimulation');
         return ok(u === 'catalysis' ? 'stimulation' : u);   // the map's usual kind into a process may be catalysis
       }
-      if (ra === 'pheno') return { no: 'Nothing leaves a phenotype: it is modulated by an entity or a logic gate (Reduced notation is unticked in the palette).' };
+      if (ra === 'pheno') return { no: sbgnStrict() ? 'Nothing leaves a phenotype in SBGN (Strict SBGN is ticked in the palette).' : 'A line from a phenotype goes into a process (Reduced notation is unticked in the palette).' };
       if (ra === 'gate' && !fans(a) && outs(a)) return { no: 'A logic gate has one line out, and this one has it.' };   // SBGN PD; the converter's rules for the equivalence
       var word = function (i) { var l = nodes2[i].el.getElementsByTagNameNS(Y, 'NodeLabel')[0]; return l ? l.textContent.trim() : ''; };   // a gate's word as drawn (a made one is not in the file yet)
       if (rb === 'gate' && (word(b) === '\u03c4' || word(b).toUpperCase() === 'NOT') && ins(b)) return { no: 'A ' + (word(b) === '\u03c4' ? 'delay' : 'NOT gate') + ' has one input, and this one has it.' };
@@ -2259,12 +2288,12 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
     // on every other node, whether dragging takes it (core.js takes) and what drawing that line's kind between the same
     // two nodes gives (linkKind: its class, 'pair', or the reason), beside the rules table's answer (notation.js allowed)
     // for each: for the drag the moved line itself left out of the counts, for drawing a new line every line counted.
-    // o: { lang: 'pd' or 'af', strict: Reduced notation unticked }, set for the asking only. One row per distinct question,
+    // o: { lang: 'pd' or 'af', strict: Reduced notation unticked, sbgn: Strict SBGN ticked }, set for the asking only. One row per distinct question,
     // the nodes named by their notation kinds. Only where the SBGN palette is (palOn).
     function askAll(o) {
       if (!palOn()) return null;   // an SBGN or GraphML map in full editing
       var keep = palSet, rows = {};
-      palSet = { lang: o && o.lang || 'pd', look: palSet.look, strict: !!(o && o.strict) };
+      palSet = { lang: o && o.lang || 'pd', look: palSet.look, strict: !!(o && o.strict), sbgn: !!(o && o.sbgn) };
       try {
         var word = function (i) { var l = nodes2[i].el.getElementsByTagNameNS(Y, 'NodeLabel')[0]; return l ? l.textContent.trim() : ''; };
         var kindOf = function (i) {   // the notation's kind of a node the editor joins lines to (a member of a complex, a decoration: none)
@@ -2274,7 +2303,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
           return k ? { kind: k.kind, cls: k.cls } : null;
         };
         var name = function (k) { return k.kind + ':' + k.cls; };
-        var sets = (palLangNow() === 'af' ? ['af'] : hybOn() ? ['pd', 'reduced'] : ['pd']).concat(V.fanout ? ['fanout'] : []);
+        var sets = (palLangNow() === 'af' ? ['af'] : hybOn() ? ['pd', 'reduced'] : ['pd']).concat(V.fanout ? ['fanout'] : [], sbgnStrict() ? ['strict'] : []);
         var checks = function (s, t, a, skip) {   // the table's named checks from the map's lines, line skip left out (the line being moved)
           var other = function (q, j) { return j !== skip; };
           return function (c) {
@@ -2282,6 +2311,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
             if (c === 'oneInput') return edges2.some(function (q, j) { return other(q, j) && q.t === t; }) ? 'This gate has one input, and it has it.' : null;
             if (c === 'already') return edges2.some(function (q, j) { return other(q, j) && ((q.s === s && q.t === t) || (a === 'none' && q.s === t && q.t === s)) && q.arr[1] === a; }) ? 'This line is there already.' : null;
             if (c === 'tagRoom') { var tg = roleOf(s) === 'tag' ? s : t; return tagRoom(tg, tg === s ? t : s, skip == null ? -1 : skip); }
+            if (c === 'oneCatalysis' || c === 'oneNecessary' || c === 'emptyOne') { var SV = palSet.sbgn; palSet.sbgn = true; try { return strictCount(s, t, c === 'oneCatalysis' ? 'catalysis' : c === 'oneNecessary' ? 'necessary stimulation' : roleOf(s) === 'proc' ? 'production' : 'consumption', skip == null ? -1 : skip); } finally { palSet.sbgn = SV; } }
             if (c === 'reversible') { var m = pdLimit(s, t, 'consumption'); return m && /reversible/.test(m) ? m : null; }   // pdLimit's own reading of the file
             return null;
           };
@@ -2991,4 +3021,4 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
     }
 
     export function __start() { __run1(); __run2(); __run3(); __run4(); __run5(); __run6(); __run7(); __run8(); __run9(); __run10(); __run11(); __run12(); __run13(); __run14(); __run15(); __run16(); __run17(); __run18(); __run19(); __run20(); __run21(); __run22(); __run23(); __run24(); __run25(); __run26(); __run27(); __run28(); __run29(); __run31(); __run32(); __run33(); __run34(); __run35(); __run36(); __run37(); __run38(); __run39(); __run40(); __run41(); __run42(); __run43(); __run44(); __run45(); __run46(); __run47(); __run48(); __run49(); __run50(); __run51(); __run52(); __run53(); __run54(); __run55(); __run56(); __run57(); __run58(); __run59(); __run60(); __run61(); }   // the part's statements, in their order
-    export { ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues, confettiLine, confettiOne, confettiPick, confettiSquares, ddOpen, hex, hybOn, iconKeep, iconSpread, innermost, joinDo, joinPack, joinPlan, keepLook, keepMapChoice, link, linkDown, linkEnd, linkMove, linkPaint, linkUp, looksKept, mapCols, moveLimit, nameAt, origAll, pNow, pal, palBlocks, palDid, palDown, palDrop, palId, palLangNow, palShow, palSigns, palSignsEl, palStore, palStyle, palTake, palUp, pdLimit, placedAt, propFmt, propRows, setSize, sizable, styleRow, svAt, svDelete, svDown, svIcons, svList, svMarks, svParts, textsOf, tool, typeIn };
+    export { ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues, confettiLine, confettiOne, confettiPick, confettiSquares, ddOpen, hex, hybOn, iconKeep, iconSpread, innermost, joinDo, joinPack, joinPlan, keepLook, keepMapChoice, link, linkDown, linkEnd, linkMove, linkPaint, linkUp, looksKept, mapCols, moveLimit, nameAt, origAll, pNow, pal, palBlocks, palDid, palDown, palDrop, palId, palLangNow, palShow, palSigns, palSignsEl, palStore, palStyle, palTake, palUp, pdLimit, placedAt, propFmt, propRows, sbgnStrict, setSize, sizable, styleRow, svAt, svDelete, svDown, svIcons, svList, svMarks, svParts, textsOf, tool, typeIn };
