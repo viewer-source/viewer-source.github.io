@@ -1,5 +1,5 @@
 import { shared, V } from './state.js';
-import { boxOf, cut, edges2, f1, gE, gN, gridBlock, lastFor, lastSvg, nodes2, num, on, points, ports, pt, rebase, spotNo, status, undo, warn } from './core.js';
+import { boxOf, cut, edges2, f1, gE, gN, gridBlock, lastFor, lastSvg, nodes2, num, on, points, ports, pt, rebase, setText, spotNo, status, undo, warn } from './core.js';
 import { bx, dropCopies, picOff, restPt, toPic } from './live.js';
 import { cdCheck, cdClsOf, cdRole } from './cdcreate.js';
 
@@ -100,7 +100,7 @@ import { cdCheck, cdClsOf, cdRole } from './cdcreate.js';
     }
     // a changed file made the map's base, its GraphML made again (the caller parses it): that GraphML is in the drawn file's
     // places, so the editor's places move by the drawing's shift, and the frame with them (rebase): nothing moves on screen
-    function cdRebuild(t, sh) { shared.cd.base = t; shared.text = cdGraphml(t); rebase(sh[0], sh[1]); }
+    function cdRebuild(t, sh) { shared.cd.base = t; setText(cdGraphml(t)); rebase(sh[0], sh[1]); }
     function cdGraphml(t) {
       var g = cdKnown(t);
       if (g) return g;

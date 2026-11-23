@@ -24,6 +24,9 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     Y = 'http://www.yworks.com/xml/graphml', G = 'http://graphml.graphdrawing.org/xmlns';
     drawing = false;
     }           // the renderer busy with the last move
+    // the one place the map's text is set (release/check.js refuses another): a whole action goes through commit(), a
+    // gesture's steps before its one undo step and the history (undo, redo, a kept history) through this alone
+    function setText(t) { shared.text = t; return t; }
     function src() { return shared.cd ? shared.cd.now : shared.sb ? sbNow() : shared.text; }   // the map's own file as it is now (an SBGN-ML map's with the moves written in)
     var box, status, overlay, on, map, name, handle, unsaved, reSel, reGh, doc, geos, points, nodes2, edges2, docText, x0, y0, undo, drag, band, ticket, nudgeAt, timer, gN, gE, mv, keyGuides, keyRun, keyDue;
     function __run2() {   // run at start, in order (__start)
@@ -580,7 +583,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
         if (good.n < undo.length) { undo.length = good.n; if (undo.ts) undo.ts.length = Math.min(undo.ts.length, good.n); }
         var g = fromUndo(good.u);
         if (shared.sb && good.sb) shared.sb.base = good.sb;
-        shared.text = g; shared.selN = []; shared.selP = []; shared.selE = []; shared.part = null;
+        setText(g); shared.selN = []; shared.selP = []; shared.selE = []; shared.part = null;
         try { parse(); render(); paint(); } catch (e) {}
       }
       var say = function (at) { if (on) warn('Something went wrong in the editor (' + (at ? at + ': ' : '') + msg.split('\n')[0] + ')' + (back ? '; the map is back as it was after the last change.' : '.')); };
@@ -661,7 +664,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
         out.slice().reverse().forEach(function (m) { t2 = N.moveInto(t2, [m]); });
         if (!same) remember(false);
         var keepSel = same ? shared.selN.map(function (i) { return nodes2[i].id; }) : [];
-        shared.text = t2; parse(); shared.selN = []; shared.selP = []; shared.selE = []; shared.dirty = true;
+        setText(t2); parse(); shared.selN = []; shared.selP = []; shared.selE = []; shared.dirty = true;
         if (keepSel.length) nodes2.forEach(function (n, k) { if (keepSel.indexOf(n.id) >= 0) shared.selN.push(k); });
         if (out.length) {
           var at = {}; nodes2.forEach(function (n, k) { at[n.id] = k; });
@@ -795,11 +798,11 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     // the move: new x and y for some y:Geometry and y:Point, written into the text in one pass, the rest untouched
     function write(g, p) {
       var k = { 'Geometry': -1, 'Point': -1 }, same = docText === shared.text;   // the elements of doc got these numbers already (move)
-      shared.text = shared.text.replace(/<y:(Geometry|Point)\s[^>]*>/g, function (tag, kind) {
+      setText(shared.text.replace(/<y:(Geometry|Point)\s[^>]*>/g, function (tag, kind) {
         var i = ++k[kind], v = (kind === 'Geometry' ? g : p)[i];
         if (!v) return tag;
         return tag.replace(/(\sx=")[^"]*"/, '$1' + v[0] + '"').replace(/(\sy=")[^"]*"/, '$1' + v[1] + '"');
-      });
+      }));
       if (same) docText = shared.text;
     }
     function moving(alone) {   // what a move of the selection moves: nodes (a group with what it holds) and bend points;
@@ -971,17 +974,17 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
         });
         if (tag !== x[0]) put.push([m.index + x.index, x[0].length, tag]);
       });
-      put.sort(function (a, b) { return b[0] - a[0]; }).forEach(function (q2) { shared.text = shared.text.slice(0, q2[0]) + q2[2] + shared.text.slice(q2[0] + q2[1]); });
+      put.sort(function (a, b) { return b[0] - a[0]; }).forEach(function (q2) { setText(shared.text.slice(0, q2[0]) + q2[2] + shared.text.slice(q2[0] + q2[1])); });
     }
     function setBoxes(nb) {   // boxes written into the text (node index -> [x, y, w, h]), the map read again
       var at = {}, i = -1;
       Object.keys(nb).forEach(function (k) { at[nodes2[+k].ag] = nb[k].map(fmt); });
       if (!Object.keys(at).length) return;
-      shared.text = shared.text.replace(/<y:Geometry\s[^>]*>/g, function (tag) {
+      setText(shared.text.replace(/<y:Geometry\s[^>]*>/g, function (tag) {
         var v = at[++i];
         if (v) ['x', 'y', 'width', 'height'].forEach(function (a, j) { tag = tag.replace(new RegExp('(\\s' + a + '=")[^"]*"'), '$1' + v[j] + '"'); });
         return tag;
-      });
+      }));
       parse(); shared.dirty = true;
     }
     // the new holders after a change of places (Full editing only), node -> its new parent (null: the map itself), only
@@ -1043,7 +1046,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       nodes2.forEach(function (n, i) { at[n.id] = i; });
       ids.forEach(function (id) { var i = at[id]; if (i != null && nodes2[i].comp) t2 = sbJs.stack(t2, id); });
       if (t2 === shared.text) return;
-      var keep = shared.selN.map(function (i) { return nodes2[i].id; }); shared.text = t2; parse(); shared.dirty = true;
+      var keep = shared.selN.map(function (i) { return nodes2[i].id; }); setText(t2); parse(); shared.dirty = true;
       shared.selN = []; nodes2.forEach(function (n, i) { if (keep.indexOf(n.id) >= 0) shared.selN.push(i); });
     }
     function settle(out, arg, done, refused) {
@@ -1089,7 +1092,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
         if (left.length) { warn('Not regrouped: ' + left.map(function (m) { return m[0]; }).join(', ')); return rest(); }
         var ids = shared.selN.map(function (i) { return nodes2[i].id; }), es = shared.selE.map(function (k) { return edges2[k].id; });
         var ps = shared.selP.map(function (pi) { var k = edges2.findIndex(function (e) { return e.pts.indexOf(pi) >= 0; }); return k < 0 ? null : [edges2[k].id, edges2[k].pts.indexOf(pi)]; });
-        shared.text = t2; parse(); shared.dirty = true; shared.part = null;
+        setText(t2); parse(); shared.dirty = true; shared.part = null;
         var byN = {}, byE = {}; nodes2.forEach(function (n, i) { byN[n.id] = i; }); edges2.forEach(function (e, k) { byE[e.id] = k; });
         shared.selN = ids.filter(function (id) { return byN[id] != null; }).map(function (id) { return byN[id]; });
         shared.selE = es.filter(function (id) { return byE[id] != null; }).map(function (id) { return byE[id]; });
@@ -1329,9 +1332,9 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       try {
         if (h.sbBase && shared.sb) shared.sb.base = h.sbBase;
         var g = fromUndo(h.u);   // the editor's own text and file as they were (a CellDesigner map's GraphML and base)
-        if (g !== shared.text) { shared.text = g; parse(); }
+        if (g !== shared.text) { setText(g); parse(); }
         undo = h.undo; shared.redo = h.redo; shiftSum = h.shift;
-      } catch (e) { undo = []; shared.redo = []; if (shared.text !== g0) { shared.text = g0; parse(); } }
+      } catch (e) { undo = []; shared.redo = []; if (shared.text !== g0) { setText(g0); parse(); } }
     }
     function remember(merge) {   // the text before a change, for undo; nudges in a row are one step
       var now = Date.now();
@@ -1346,7 +1349,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       try { t = take(from); } catch (e) { from.length = 0; from.rb = []; from.ts = []; tookShift = null; warn('Undo history lost: ' + e + '.'); return; }
       clearTimeout(timer); keyDue = null; keyRun = null;   // the keys' run undone: nothing settled on top of it
       var was = undoText();
-      step(to, was); shared.text = fromUndo(t); nudgeAt = 0; shared.cdGate = null; shared.sbBack = true; parse(); shared.selN = []; shared.selP = []; shared.selE = []; shared.part = null; shared.dirty = true; render(); paint(); changed();
+      step(to, was); setText(fromUndo(t)); nudgeAt = 0; shared.cdGate = null; shared.sbBack = true; parse(); shared.selN = []; shared.selP = []; shared.selE = []; shared.part = null; shared.dirty = true; render(); paint(); changed();
     }
 
     // the drawing: the renderer in the browser; the map keeps its place on screen when the drawing's edges change
@@ -1362,7 +1365,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
           shared.cd.now = q[1]; r = [q[0], []]; shared.cdBase = { now: q[1], text: q[2] };   // what the live drawing of a move starts from
           if (q[2] !== shared.text && !drag) {   // the same map, its new bend points (a glyph moved) now its own
             var ids = shared.selN.map(function (i) { return nodes2[i].id; }), np = points.length;
-            shared.text = q[2]; parse();
+            setText(q[2]); parse();
             shared.selN = ids.map(function (id) { return nodes2.findIndex(function (n) { return n.id === id; }); }).filter(function (i) { return i >= 0; });
             if (points.length !== np) { shared.selP = []; shared.selE = []; }
           }
@@ -1463,7 +1466,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       if (fmt.sb) { shared.sb = fmt.sb; shared.sbLast = fmt.sbLast; }
       layout();   // its extent() measures what the holders grow round (extOf), at the first move
       sbpy();   // sbgn_edit quietly, on every map: its stacking (stackComps) and moveInto serve GraphML maps too
-      try { shared.text = g; parse(); } catch (e) { putMap(was); try { parse(); } catch (e2) {} warn('Cannot edit ' + n + ': ' + e); return; }   // its moves not saved still said and kept
+      try { setText(g); parse(); } catch (e) { putMap(was); try { parse(); } catch (e2) {} warn('Cannot edit ' + n + ': ' + e); return; }   // its moves not saved still said and kept
       siteRef = null; name = n; handle = h; site = s || null;
       t0 = t0 || t;
       if (site) { site.base = site.pending && site.pub != null ? site.pub : t0; site.fromDraft = t0 !== site.base; }   // no token: the site's text, a draft on top of it
@@ -1944,7 +1947,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
               s0.sha = f[0].sha || null; s0.pending = false; buttons();
               if (f[1] !== s0.base) { stuck = true; warn('Connected, but the map in the repository is newer than the copy opened: moves not saved, nothing overwritten. Stop editing and open the map again.'); return; }
               if (s0.id) unkeep(s0.id);   // GitHub holds the map from now on
-              if (moved) { shared.text = keep; shared.dirty = true; push(); } else quiet();
+              if (moved) { setText(keep); shared.dirty = true; push(); } else quiet();
             });
         } else { buttons(); quiet(); }
       }).catch(function (e) {
@@ -2609,10 +2612,10 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       if (!by.size) { unshift(); paint(); return; }
       remember(!!merge);
       var c = -1, ce = -1;
-      if (re) shared.text = shared.text.replace(/<edge\b[^>]*>/g, function (tag) {
+      if (re) setText(shared.text.replace(/<edge\b[^>]*>/g, function (tag) {
         return ++ce !== re.k ? tag : tag.replace(new RegExp('(\\s' + re.att + '\\s*=\\s*)("[^"]*"|\'[^\']*\')'), function (m, p1) { return p1 + '"' + re.id + '"'; });
-      });
-      shared.text = shared.text.replace(/<y:Path\b[^>]*>/g, function (tag) {
+      }));
+      setText(shared.text.replace(/<y:Path\b[^>]*>/g, function (tag) {
         var kv = by.get(++c);
         if (!kv) return tag;
         kv.forEach(function (q) {
@@ -2620,7 +2623,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
           tag = re.test(tag) ? tag.replace(re, '$1' + q[1] + '"') : tag.replace(/(\/?>)$/, ' ' + q[0] + '="' + q[1] + '"$1');
         });
         return tag;
-      });
+      }));
       parse(); shared.dirty = true; render(); paint(); changed();
     }
     function paint() {
@@ -2951,21 +2954,21 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       var m, before = shared.text;
       if (at < e.pts.length) {   // before a bend the arc has: on a line of its own, as that one
         m = nth(/<y:Point\s[^>]*>/g, e.pts[at]);
-        shared.text = shared.text.slice(0, m.index) + tag + '\n' + indent(m.index) + shared.text.slice(m.index);
+        setText(shared.text.slice(0, m.index) + tag + '\n' + indent(m.index) + shared.text.slice(m.index));
       } else if (e.pts.length) {   // after its last bend
         m = nth(/<y:Point\s[^>]*>/g, e.pts[e.pts.length - 1]);
         var end = m.index + m[0].length;
-        shared.text = shared.text.slice(0, end) + '\n' + indent(m.index) + tag + shared.text.slice(end);
+        setText(shared.text.slice(0, end) + '\n' + indent(m.index) + tag + shared.text.slice(end));
       } else {   // its first bend: inside the y:Path, opened if it closes in itself
         var paths = Array.prototype.slice.call(doc.getElementsByTagNameNS(Y, 'Path'));
         m = nth(/<y:Path[\s>\/][^>]*>/g, paths.indexOf(e.path));
         if (!m) return null;
         var w = indent(m.index), end2 = m.index + m[0].length;
-        shared.text = /\/>$/.test(m[0])
+        setText(/\/>$/.test(m[0])
           ? shared.text.slice(0, m.index) + m[0].replace(/\s*\/>$/, '>') + '\n' + w + '  ' + tag + '\n' + w + '</y:Path>' + shared.text.slice(end2)
-          : shared.text.slice(0, end2) + '\n' + w + '  ' + tag + shared.text.slice(end2);
+          : shared.text.slice(0, end2) + '\n' + w + '  ' + tag + shared.text.slice(end2));
       }
-      var keep = shared.text; shared.text = before; remember(false); shared.text = keep;
+      var keep = shared.text; setText(before); remember(false); setText(keep);
       parse();
       return { p: edges2[k].pts[at], at: Q, k: k + 1 };
     }
@@ -2982,10 +2985,10 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
         var a = m.index, b = m.index + m[0].length;
         var s0 = shared.text.lastIndexOf('\n', a - 1) + 1;
         if (/^[ \t]*$/.test(shared.text.slice(s0, a)) && shared.text[b] === '\n') { a = s0; b += 1; }   // on a line of its own: the line goes
-        shared.text = shared.text.slice(0, a) + shared.text.slice(b);
+        setText(shared.text.slice(0, a) + shared.text.slice(b));
       });
       if (shared.text === before) return false;
-      var keep = shared.text; shared.text = before; remember(false); shared.text = keep;
+      var keep = shared.text; setText(before); remember(false); setText(keep);
       parse(); shared.selN = []; shared.selP = []; shared.selE = []; keyGuides = null; shared.dirty = true;
       render(); paint(); changed();
       return true;
@@ -3020,7 +3023,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       var t2 = window.cd_edit.makeMain(shared.text, edges2[k].id);
       if (!t2) return null;
       return { label: /\|r\d+$/.test(edges2[k].id) ? 'Make main reactant' : 'Make main product', go: function () {
-        remember(false); shared.text = t2;
+        remember(false); setText(t2);
         parse(); shared.selN = []; shared.selP = []; shared.selE = []; keyGuides = null; shared.dirty = true; render(); paint(); changed();
       } };
     };
@@ -3342,7 +3345,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       var before = boxesBefore(function (k) { return nodes2[k].id === rid ? b0r : boxOf(k); });
       var B0r = function (k) { return before[nodes2[k].id] || boxOf(k); }, doneR = function () { render(); paint(); changed(); }, ri = nodes2.findIndex(function (n) { return n.id === rid; });
       if (!full() || !nodes2[ri].comp) { setBoxes(grown([ri], boxOf, B0r, function () { return false; })); refit([rid]); doneR(); return; }   // a complex: its members kept (roomy), its holders grown
-      settle(regroup('box', new Set([ri]), boxOf, B0r), { moving: [rid] }, doneR, function () { shared.text = unpush(); parse(); liveOff(); paint(); });   // refused: taken back, nothing said
+      settle(regroup('box', new Set([ri]), boxOf, B0r), { moving: [rid] }, doneR, function () { setText(unpush()); parse(); liveOff(); paint(); });   // refused: taken back, nothing said
     }
     function dragEnd(e) {   // the end of a drag of the selection, a port or a resize
       var d = drag; drag = null; var sets = mv; mv = null; shared.poseNow = null;   // the file holds the pose from here (the drawing keeps it until drawn again)   // the moved groups and live arcs stay until the map is drawn again
@@ -3365,10 +3368,10 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       var fitAfter = function () {   // what holds what settled again (Full: regroup), a glyph dropped on a complex put into it (joinPlan, create.js), the holders round what moved grown (grown), in the same undo step
         var B0 = function (k) { var b = boxOf(k); return sets.n.has(k) ? [b[0] - d.dx, b[1] - d.dy, b[2], b[3]] : b; };   // the boxes before the drag
         settle(full() ? regroup(d.alone ? 'alone' : 'plain', sets.n, boxOf, B0) : new Map(), { join: full() ? movedNow : null, grow: tops(sets.n, d.alone).map(function (k) { return nodes2[k].id; }), before: boxesBefore(B0), moving: movedNow, away: d.away },
-          function () { render(); changed(); }, function () { shared.text = unpush(); parse(); unshift(); paint(); });   // a CellDesigner file that cannot hold it: not moved, nothing said
+          function () { render(); changed(); }, function () { setText(unpush()); parse(); unshift(); paint(); });   // a CellDesigner file that cannot hold it: not moved, nothing said
       };
       if (d.made != null && Math.abs(d.dx) < 0.01 && Math.abs(d.dy) < 0.01) {   // a new bend dragged back to where it was made (a snap may leave a hair): none made
-        shared.text = unpush(); parse(); shared.selP = []; shared.selE = [d.made - 1]; unshift(); paint(); return;
+        setText(unpush()); parse(); shared.selP = []; shared.selE = [d.made - 1]; unshift(); paint(); return;
       }
       // a second click on what is selected, with no drag (under 4 px on screen): it is deselected;
       // a bend point of an arc selected keeps its arc
@@ -3466,11 +3469,11 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
         fixMoved(set);
         var B0 = function (k) { var b = boxOf(k); return set.has(k) ? [b[0] - run[0], b[1] - run[1], b[2], b[3]] : b; };
         settle(full() ? regroup('plain', set, boxOf, B0) : new Map(), { grow: tops(set, false).map(function (k) { return nodes2[k].id; }), before: boxesBefore(B0), moving: kids }, function () { render(); paint(); },
-          function () { shared.text = unpush(); parse(); shared.keyed = null; render(); paint(); });   // refused (checked at each key already): taken back, nothing said
+          function () { setText(unpush()); parse(); shared.keyed = null; render(); paint(); });   // refused (checked at each key already): taken back, nothing said
       };
       clearTimeout(timer); timer = setTimeout(function () { if (keyDue) keyDue(); }, 150); changed();
     }, true);
     }
 
     export function __start() { __run1(); __run2(); __run3(); __run4(); __run5(); __run6(); __run7(); __run8(); __run9(); __run10(); __run11(); __run12(); __run13(); __run14(); __run15(); __run16(); __run17(); __run18(); __run19(); __run20(); __run21(); __run22(); __run23(); __run24(); __run25(); __run26(); __run27(); __run28(); __run29(); __run30(); __run31(); __run32(); __run34(); __run35(); __run36(); __run37(); __run38(); __run39(); __run40(); __run41(); __run42(); __run43(); __run44(); __run45(); __run46(); }   // the part's statements, in their order
-    export { G, HANDLE, MODS, Y, ahead, aheadSoon, api, at, away, b64, blobSha, box, boxOf, buttons, cdOwn, changed, chooseFolder, complexHere, cut, cutShape, doc, docText, drag, drawText, edgeAt, edges2, editing, f1, fmt, freeName, full, gE, gN, gh, graphmlOf, gridBlock, gridSet, grown, handleMarks, heldText, hit, holder, holderSize, holds, hubPorts, inComplex, inRim, keyFlush, keyTake, kindWindow, landMarks, lastFor, lastSvg, lateItem, layTool, line, livePath, localBox, map, mapTop, moveFix, mv, name, near, nodes2, note, num, on, origFolderDrop, origFromFolder, origRead, origToFolder, origWrite, outlineD, overlap, ownMenus, paint, parse, parseFix, picWait, points, ports, procPlaces, pt, quiet, rclick, realizerOf, rebase, refit, regroup, remember, render, repo, rimOf, roleOf, roomy, setBoxes, setPort, settle, shapeD, shown, site, spotNo, src, status, stop, subItem, sx, sy, syncFolder, toFolder, toGrid, token, tops, under, undo, unkeep, unpush, warn, x0, y0 };
+    export { G, HANDLE, MODS, Y, ahead, aheadSoon, api, at, away, b64, blobSha, box, boxOf, buttons, cdOwn, changed, chooseFolder, complexHere, cut, cutShape, doc, docText, drag, drawText, edgeAt, edges2, editing, f1, fmt, freeName, full, gE, gN, gh, graphmlOf, gridBlock, gridSet, grown, handleMarks, heldText, hit, holder, holderSize, holds, hubPorts, inComplex, inRim, keyFlush, keyTake, kindWindow, landMarks, lastFor, lastSvg, lateItem, layTool, line, livePath, localBox, map, mapTop, moveFix, mv, name, near, nodes2, note, num, on, origFolderDrop, origFromFolder, origRead, origToFolder, origWrite, outlineD, overlap, ownMenus, paint, parse, parseFix, picWait, points, ports, procPlaces, pt, quiet, rclick, realizerOf, rebase, refit, regroup, remember, render, repo, rimOf, roleOf, roomy, setBoxes, setPort, setText, settle, shapeD, shown, site, spotNo, src, status, stop, subItem, sx, sy, syncFolder, toFolder, toGrid, token, tops, under, undo, unkeep, unpush, warn, x0, y0 };

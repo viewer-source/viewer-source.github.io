@@ -259,7 +259,7 @@
   function sbPlace() {
     if (!sbJs.countsPlace || shared.text === sbPlaced || shared.text.indexOf("<y:EdgeLabel") < 0) return false;
     var t2 = sbJs.countsPlace(shared.text), was = shared.text !== t2;
-    shared.text = sbPlaced = t2;
+    setText(sbPlaced = t2);
     return was;
   }
   var sbK;
@@ -298,7 +298,7 @@
         warn("The map could not be read again after it turned " + (sbK.af ? "Activity Flow" : "Process Description") + ": " + (e && e.message || e) + ".");
         return sbK.kind;
       }
-      shared.text = g;
+      setText(g);
       sbRead();
       if (!sbK.bad) sbK.g = sbK.af;
     }
@@ -652,9 +652,9 @@
       return m < 0 ? Math.ceil((40 - m) / B) * B : 0;
     }, sx2 = block(mx), sy2 = block(my);
     if (!sx2 && !sy2) return null;
-    shared.text = shared.text.replace(re, function(tag) {
+    setText(shared.text.replace(re, function(tag) {
       return shiftTag(tag, sx2, sy2);
-    });
+    }));
     return [sx2, sy2];
   }
   function __start2() {
@@ -4141,7 +4141,7 @@
     });
     if (t2 !== shared.text) {
       remember(false);
-      shared.text = t2;
+      setText(t2);
       made([]);
     }
     return added;
@@ -4213,7 +4213,7 @@
     });
     if (t2 === shared.text) return;
     remember(false);
-    shared.text = t2;
+    setText(t2);
     made([]);
   }
   function palFill() {
@@ -4309,7 +4309,7 @@
       var t2 = palOn() ? sbJs.proteinBoxes(shared.text, protOn) : shared.text;
       if (t2 !== shared.text) {
         remember(false);
-        shared.text = t2;
+        setText(t2);
         parse();
         shared.dirty = true;
         render();
@@ -4535,7 +4535,7 @@
       if (done.length) cdRebuild(t, N.sh);
     } else joins.forEach(function(q) {
       try {
-        shared.text = sbJs.join(shared.text, q[0], q[1], { checked: true });
+        setText(sbJs.join(shared.text, q[0], q[1], { checked: true }));
         done.push(q[1]);
       } catch (err) {
         warn("A glyph could not be put into the complex.");
@@ -4688,7 +4688,7 @@
       if (at2 >= 0) {
         var t2 = tagTurnT(shared.text, at2, nw, true);
         if (t2 !== shared.text) {
-          shared.text = t2;
+          setText(t2);
           parse();
         }
       }
@@ -4746,7 +4746,7 @@
       t2 = tagTurnT(t2, i, Math.abs(dx) >= Math.abs(dy) ? dx >= 0 ? "right" : "left" : dy >= 0 ? "down" : "up");
     });
     if (t2 !== shared.text) {
-      shared.text = t2;
+      setText(t2);
       parse();
       shared.dirty = true;
     }
@@ -4772,7 +4772,7 @@
       t2 = tagTurnT(t2, at2[q[0]], q[1], true);
     });
     if (t2 !== shared.text) {
-      shared.text = t2;
+      setText(t2);
       parse();
       shared.dirty = true;
     }
@@ -4818,7 +4818,7 @@
         t2 = sbJs.terminal(t2, nodes2[q[0]].id, true);
       });
       if (t2 !== shared.text) {
-        shared.text = t2;
+        setText(t2);
         parse();
         shared.dirty = true;
       }
@@ -4955,7 +4955,7 @@
       return;
     }
     remember(false);
-    shared.text = t2;
+    setText(t2);
     if (cls === "compartment") {
       parse();
       var ni = nodes2.findIndex(function(n) {
@@ -5078,7 +5078,7 @@
             var t2 = sbJs.arcKind(shared.text, ed.id, c);
             if (t2 === shared.text) return;
             remember(false);
-            shared.text = t2;
+            setText(t2);
             parse();
             shared.selN = [];
             shared.selP = [];
@@ -5105,7 +5105,7 @@
           var t2 = sbJs.activity(shared.text, aid, u);
           if (t2 === shared.text) return;
           remember(false);
-          shared.text = t2;
+          setText(t2);
           made(aid);
         };
       };
@@ -5117,7 +5117,7 @@
           var t2 = ui ? v === null ? sbJs.unitDelete(shared.text, aid, 0) : sbJs.unitValue(shared.text, aid, 0, v) : sbJs.unit(shared.text, aid, v);
           if (t2 === shared.text) return;
           remember(false);
-          shared.text = t2;
+          setText(t2);
           made(aid);
         };
       };
@@ -5126,7 +5126,7 @@
           var t2 = sbJs.unit(shared.text, aid, "");
           if (t2 === shared.text) return;
           remember(false);
-          shared.text = t2;
+          setText(t2);
           made(aid);
         }
         var j = svList(nodes2.findIndex(function(n) {
@@ -5160,7 +5160,7 @@
           var t2 = sbJs.kind(shared.text, gid, c);
           if (t2 === shared.text) return;
           remember(false);
-          shared.text = t2;
+          setText(t2);
           made(gid);
         }];
       });
@@ -5191,7 +5191,7 @@
             var t2 = sbJs.entityKind(shared.text, eid, c);
             if (t2 === shared.text) return;
             remember(false);
-            shared.text = t2;
+            setText(t2);
             made(eid);
           } };
         }), done);
@@ -5200,7 +5200,7 @@
         var t2 = sbJs.multimer(shared.text, eid, !emulti);
         if (t2 === shared.text) return;
         remember(false);
-        shared.text = t2;
+        setText(t2);
         made(eid);
       }]);
       eout.late = true;
@@ -5220,7 +5220,7 @@
             var t2 = sbJs.kind(shared.text, pid, c);
             if (t2 === shared.text) return;
             remember(false);
-            shared.text = t2;
+            setText(t2);
             made(pid);
           } };
         }).filter(Boolean), done);
@@ -5238,7 +5238,7 @@
       var go = function(t2) {
         if (t2 === shared.text) return;
         remember(false);
-        shared.text = t2;
+        setText(t2);
         made(cid);
       };
       var its = (np ? np[1] : []).map(function(q) {
@@ -5404,9 +5404,9 @@
     }), b = boxOf(i), ic = svMoved(i, svIconsOn(i).filter(function(q) {
       return !skip || !skip(q);
     }), b, nb);
-    shared.text = sbJs.resize(shared.text, id, nb);
+    setText(sbJs.resize(shared.text, id, nb));
     ic.forEach(function(q) {
-      if (q.k === SV) shared.text = sbJs.stateMove(shared.text, id, q.n, q.r[0], q.r[1]);
+      if (q.k === SV) setText(sbJs.stateMove(shared.text, id, q.n, q.r[0], q.r[1]));
     });
     parse();
   }
@@ -5489,7 +5489,7 @@
         svGrowTo(id, r.box, sk);
         grew = true;
       }
-      shared.text = sbJs.stateMove(shared.text, id, hit2.n, r.r[0], r.r[1]);
+      setText(sbJs.stateMove(shared.text, id, hit2.n, r.r[0], r.r[1]));
       parse();
       i = nodes2.findIndex(function(n) {
         return n.id === id;
@@ -5518,7 +5518,7 @@
     }).length;
     remember(false);
     if (room.box) svGrowTo(id, room.box);
-    shared.text = sbJs.state(shared.text, id, "", room.r[0], room.r[1]);
+    setText(sbJs.state(shared.text, id, "", room.r[0], room.r[1]));
     parse();
     if (room.box) svHold(id, was);
     svCopies(id).forEach(function(c) {
@@ -5597,7 +5597,7 @@
     }
     if (!at2) at2 = svRoom(k, s, null);
     if (at2.box) svGrowTo(c, at2.box);
-    shared.text = sbJs.state(shared.text, c, txt, at2.r[0], at2.r[1]);
+    setText(sbJs.state(shared.text, c, txt, at2.r[0], at2.r[1]));
     parse();
     if (at2.box) svHold(c, b0);
   }
@@ -5610,12 +5610,12 @@
         var k = svIdx(c), wb = boxOf(k), cur = svOnly(k)[m][0];
         if (has >= 0 && has !== m) {
           if (!cur) {
-            shared.text = sbJs.stateDelete(shared.text, c, m, { sbgn: shared.sb.base });
+            setText(sbJs.stateDelete(shared.text, c, m, { sbgn: shared.sb.base }));
             parse();
           }
           return;
         }
-        shared.text = sbJs.stateValue(shared.text, c, m, svVal(cur) + (nv ? "@" + nv : ""));
+        setText(sbJs.stateValue(shared.text, c, m, svVal(cur) + (nv ? "@" + nv : "")));
         parse();
         if (svSettle(c, m)) svHold(c, wb);
       } else if (m < 0 && nv && has < 0) svAddTo(c, r, "@" + nv);
@@ -5632,7 +5632,7 @@
         var k = svIdx(w[0]);
         if (k < 0) return;
         if (!r) {
-          shared.text = sbJs.stateDelete(shared.text, w[0], w[1], { sbgn: shared.sb.base });
+          setText(sbJs.stateDelete(shared.text, w[0], w[1], { sbgn: shared.sb.base }));
           return;
         }
         var b = boxOf(k), ic = svIconsOn(k), me = ic.filter(function(o) {
@@ -5640,7 +5640,7 @@
         })[0];
         if (me && !svClash(svPt(b, r), me.s, b, ic.filter(function(o) {
           return o !== me;
-        }))) shared.text = sbJs.stateMove(shared.text, w[0], w[1], r[0], r[1]);
+        }))) setText(sbJs.stateMove(shared.text, w[0], w[1], r[0], r[1]));
       });
       parse();
     };
@@ -5666,7 +5666,7 @@
     var t2 = sbJs.unit(shared.text, id, value || "");
     if (t2 === shared.text) return;
     remember(false);
-    shared.text = t2;
+    setText(t2);
     if (!shared.afSbgn) {
       parse();
       if (svSettle(id, null)) svHold(id, was);
@@ -5838,7 +5838,7 @@
         if (fresh && (!keep || !v) && on && map === m0) {
           var t0 = undo.length ? unpush() : shared.text;
           if (t0 !== shared.text) {
-            shared.text = t0;
+            setText(t0);
             parse();
             shared.dirty = true;
             quiet();
@@ -5856,7 +5856,7 @@
         var t2 = unit ? sbJs.unitValue(shared.text, id, sv[4], v) : sbJs.stateValue(shared.text, id, sv[4], v);
         if (t2 === shared.text) return;
         if (!fresh) remember(false);
-        shared.text = t2;
+        setText(t2);
         parse();
         if (au0 == null) {
           var ix = nodes2.findIndex(function(n) {
@@ -5912,7 +5912,7 @@
     var t2 = sbJs.label(shared.text, id, v);
     if (t2 === shared.text) return;
     remember(false);
-    shared.text = t2;
+    setText(t2);
     parse();
     svJoin(id);
     shared.dirty = true;
@@ -6194,7 +6194,7 @@
     }
     var q = svList(i)[j], share = q[3] === SV ? svShareMove(i, q, svR(i, q), r) : null;
     remember(false);
-    shared.text = (q[3] === UI ? sbJs.unitMove : sbJs.stateMove)(shared.text, nodes2[i].id, q[4], r[0], r[1]);
+    setText((q[3] === UI ? sbJs.unitMove : sbJs.stateMove)(shared.text, nodes2[i].id, q[4], r[0], r[1]));
     parse();
     if (share) share();
     shared.dirty = true;
@@ -6213,7 +6213,7 @@
     var q = svList(i)[shared.svSel.j];
     var share = q[3] === SV ? svShareMove(i, q, svR(i, q), null) : null;
     remember(false);
-    shared.text = (q[3] === UI ? sbJs.unitDelete : sbJs.stateDelete)(shared.text, shared.svSel.id, q[4], { sbgn: shared.sb.base });
+    setText((q[3] === UI ? sbJs.unitDelete : sbJs.stateDelete)(shared.text, shared.svSel.id, q[4], { sbgn: shared.sb.base }));
     shared.svSel = null;
     parse();
     if (share) share();
@@ -6388,7 +6388,7 @@
       return;
     }
     remember(false);
-    shared.text = t2;
+    setText(t2);
     parse();
     shared.dirty = true;
     render();
@@ -6415,7 +6415,7 @@
         cardSel = null;
         if (t2 !== shared.text) {
           remember(false);
-          shared.text = t2;
+          setText(t2);
           parse();
           shared.dirty = true;
           render();
@@ -6466,7 +6466,7 @@
     if (eids.length) t2 = sbJs.arcRemove(t2, eids);
     if (t2 === shared.text) return false;
     remember(false);
-    shared.text = t2;
+    setText(t2);
     shared.selN = [];
     shared.selP = [];
     shared.selE = [];
@@ -6594,7 +6594,7 @@
     var t2 = sbJs.arcRemove(shared.text, ids);
     if (t2 === shared.text) return false;
     remember(false);
-    shared.text = t2;
+    setText(t2);
     shared.selN = [];
     shared.selP = [];
     shared.selE = [];
@@ -6930,7 +6930,7 @@
     });
     if (t2 === shared.text) return;
     remember(false);
-    shared.text = t2;
+    setText(t2);
     parse();
     tagAim([ia, ib]);
     termsFix(nodes2.map(function(n, k) {
@@ -7041,7 +7041,7 @@
       return;
     }
     remember(false);
-    shared.text = t2;
+    setText(t2);
     parse();
     shared.dirty = true;
     nodes2.forEach(function(n) {
@@ -7403,14 +7403,14 @@
     });
     if (t2 === shared.text) return false;
     remember(false);
-    shared.text = t2;
+    setText(t2);
     made(ids);
     return true;
   }
   function sbEnds(id, o, box2) {
     var t2 = sbJs.scaleEnds(shared.text, id, o, box2);
     if (t2 !== shared.text) {
-      shared.text = t2;
+      setText(t2);
       parse();
     }
   }
@@ -7421,7 +7421,7 @@
     var t2 = sbJs.reversible(shared.text, pid, on2, ids, { sbgn: src() });
     if (t2 === shared.text) return false;
     remember(false);
-    shared.text = t2;
+    setText(t2);
     parse();
     shared.selN = [];
     shared.selP = [];
@@ -7601,7 +7601,7 @@
     var id = edges2[k].id;
     if (t2 === shared.text) return false;
     remember(false);
-    shared.text = t2;
+    setText(t2);
     parse();
     shared.selE = [];
     edges2.forEach(function(q, j) {
@@ -7893,7 +7893,7 @@
       return nodes2[i].id;
     });
     remember(false);
-    shared.text = t2;
+    setText(t2);
     parse();
     shared.dirty = true;
     shared.selN = [];
@@ -10380,7 +10380,7 @@
   }
   function cdRebuild(t, sh) {
     shared.cd.base = t;
-    shared.text = cdGraphml(t);
+    setText(cdGraphml(t));
     rebase(sh[0], sh[1]);
   }
   function cdGraphml(t) {
@@ -11378,6 +11378,10 @@
     Y = "http://www.yworks.com/xml/graphml", G = "http://graphml.graphdrawing.org/xmlns";
     drawing = false;
   }
+  function setText(t) {
+    shared.text = t;
+    return t;
+  }
   function src() {
     return shared.cd ? shared.cd.now : shared.sb ? sbNow() : shared.text;
   }
@@ -12221,7 +12225,7 @@
       }
       var g = fromUndo(good.u);
       if (shared.sb && good.sb) shared.sb.base = good.sb;
-      shared.text = g;
+      setText(g);
       shared.selN = [];
       shared.selP = [];
       shared.selE = [];
@@ -12355,7 +12359,7 @@
       var keepSel2 = same ? shared.selN.map(function(i) {
         return nodes2[i].id;
       }) : [];
-      shared.text = t2;
+      setText(t2);
       parse();
       shared.selN = [];
       shared.selP = [];
@@ -12585,11 +12589,11 @@
   }
   function write(g, p) {
     var k = { "Geometry": -1, "Point": -1 }, same = docText === shared.text;
-    shared.text = shared.text.replace(/<y:(Geometry|Point)\s[^>]*>/g, function(tag, kind) {
+    setText(shared.text.replace(/<y:(Geometry|Point)\s[^>]*>/g, function(tag, kind) {
       var i = ++k[kind], v = (kind === "Geometry" ? g : p)[i];
       if (!v) return tag;
       return tag.replace(/(\sx=")[^"]*"/, "$1" + v[0] + '"').replace(/(\sy=")[^"]*"/, "$1" + v[1] + '"');
-    });
+    }));
     if (same) docText = shared.text;
   }
   function moving(alone) {
@@ -12787,7 +12791,7 @@
     put2.sort(function(a, b) {
       return b[0] - a[0];
     }).forEach(function(q2) {
-      shared.text = shared.text.slice(0, q2[0]) + q2[2] + shared.text.slice(q2[0] + q2[1]);
+      setText(shared.text.slice(0, q2[0]) + q2[2] + shared.text.slice(q2[0] + q2[1]));
     });
   }
   function setBoxes(nb) {
@@ -12796,13 +12800,13 @@
       at2[nodes2[+k].ag] = nb[k].map(fmt);
     });
     if (!Object.keys(at2).length) return;
-    shared.text = shared.text.replace(/<y:Geometry\s[^>]*>/g, function(tag) {
+    setText(shared.text.replace(/<y:Geometry\s[^>]*>/g, function(tag) {
       var v = at2[++i];
       if (v) ["x", "y", "width", "height"].forEach(function(a, j) {
         tag = tag.replace(new RegExp("(\\s" + a + '=")[^"]*"'), "$1" + v[j] + '"');
       });
       return tag;
-    });
+    }));
     parse();
     shared.dirty = true;
   }
@@ -12872,7 +12876,7 @@
     var keep = shared.selN.map(function(i) {
       return nodes2[i].id;
     });
-    shared.text = t2;
+    setText(t2);
     parse();
     shared.dirty = true;
     shared.selN = [];
@@ -12997,7 +13001,7 @@
         });
         return k < 0 ? null : [edges2[k].id, edges2[k].pts.indexOf(pi)];
       });
-      shared.text = t2;
+      setText(t2);
       parse();
       shared.dirty = true;
       shared.part = null;
@@ -13350,7 +13354,7 @@
       if (h.sbBase && shared.sb) shared.sb.base = h.sbBase;
       var g = fromUndo(h.u);
       if (g !== shared.text) {
-        shared.text = g;
+        setText(g);
         parse();
       }
       undo = h.undo;
@@ -13360,7 +13364,7 @@
       undo = [];
       shared.redo = [];
       if (shared.text !== g0) {
-        shared.text = g0;
+        setText(g0);
         parse();
       }
     }
@@ -13395,7 +13399,7 @@
     keyRun = null;
     var was = undoText();
     step(to, was);
-    shared.text = fromUndo(t);
+    setText(fromUndo(t));
     nudgeAt = 0;
     shared.cdGate = null;
     shared.sbBack = true;
@@ -13425,7 +13429,7 @@
           var ids = shared.selN.map(function(i) {
             return nodes2[i].id;
           }), np = points.length;
-          shared.text = q[2];
+          setText(q[2]);
           parse();
           shared.selN = ids.map(function(id) {
             return nodes2.findIndex(function(n) {
@@ -13570,7 +13574,7 @@
     layout();
     sbpy();
     try {
-      shared.text = g;
+      setText(g);
       parse();
     } catch (e) {
       putMap(was);
@@ -14300,7 +14304,7 @@
             }
             if (s0.id) unkeep(s0.id);
             if (moved) {
-              shared.text = keep;
+              setText(keep);
               shared.dirty = true;
               push();
             } else quiet();
@@ -15236,12 +15240,12 @@
     }
     remember(!!merge);
     var c = -1, ce = -1;
-    if (re) shared.text = shared.text.replace(/<edge\b[^>]*>/g, function(tag) {
+    if (re) setText(shared.text.replace(/<edge\b[^>]*>/g, function(tag) {
       return ++ce !== re.k ? tag : tag.replace(new RegExp("(\\s" + re.att + `\\s*=\\s*)("[^"]*"|'[^']*')`), function(m, p1) {
         return p1 + '"' + re.id + '"';
       });
-    });
-    shared.text = shared.text.replace(/<y:Path\b[^>]*>/g, function(tag) {
+    }));
+    setText(shared.text.replace(/<y:Path\b[^>]*>/g, function(tag) {
       var kv = by.get(++c);
       if (!kv) return tag;
       kv.forEach(function(q) {
@@ -15249,7 +15253,7 @@
         tag = re2.test(tag) ? tag.replace(re2, "$1" + q[1] + '"') : tag.replace(/(\/?>)$/, " " + q[0] + '="' + q[1] + '"$1');
       });
       return tag;
-    });
+    }));
     parse();
     shared.dirty = true;
     render();
@@ -15663,22 +15667,22 @@
     var m, before = shared.text;
     if (at2 < e.pts.length) {
       m = nth(/<y:Point\s[^>]*>/g, e.pts[at2]);
-      shared.text = shared.text.slice(0, m.index) + tag + "\n" + indent(m.index) + shared.text.slice(m.index);
+      setText(shared.text.slice(0, m.index) + tag + "\n" + indent(m.index) + shared.text.slice(m.index));
     } else if (e.pts.length) {
       m = nth(/<y:Point\s[^>]*>/g, e.pts[e.pts.length - 1]);
       var end = m.index + m[0].length;
-      shared.text = shared.text.slice(0, end) + "\n" + indent(m.index) + tag + shared.text.slice(end);
+      setText(shared.text.slice(0, end) + "\n" + indent(m.index) + tag + shared.text.slice(end));
     } else {
       var paths = Array.prototype.slice.call(doc.getElementsByTagNameNS(Y, "Path"));
       m = nth(/<y:Path[\s>\/][^>]*>/g, paths.indexOf(e.path));
       if (!m) return null;
       var w = indent(m.index), end2 = m.index + m[0].length;
-      shared.text = /\/>$/.test(m[0]) ? shared.text.slice(0, m.index) + m[0].replace(/\s*\/>$/, ">") + "\n" + w + "  " + tag + "\n" + w + "</y:Path>" + shared.text.slice(end2) : shared.text.slice(0, end2) + "\n" + w + "  " + tag + shared.text.slice(end2);
+      setText(/\/>$/.test(m[0]) ? shared.text.slice(0, m.index) + m[0].replace(/\s*\/>$/, ">") + "\n" + w + "  " + tag + "\n" + w + "</y:Path>" + shared.text.slice(end2) : shared.text.slice(0, end2) + "\n" + w + "  " + tag + shared.text.slice(end2));
     }
     var keep = shared.text;
-    shared.text = before;
+    setText(before);
     remember(false);
-    shared.text = keep;
+    setText(keep);
     parse();
     return { p: edges2[k].pts[at2], at: Q, k: k + 1 };
   }
@@ -15697,13 +15701,13 @@
         a = s0;
         b += 1;
       }
-      shared.text = shared.text.slice(0, a) + shared.text.slice(b);
+      setText(shared.text.slice(0, a) + shared.text.slice(b));
     });
     if (shared.text === before) return false;
     var keep = shared.text;
-    shared.text = before;
+    setText(before);
     remember(false);
-    shared.text = keep;
+    setText(keep);
     parse();
     shared.selN = [];
     shared.selP = [];
@@ -15748,7 +15752,7 @@
       if (!t2) return null;
       return { label: /\|r\d+$/.test(edges2[k].id) ? "Make main reactant" : "Make main product", go: function() {
         remember(false);
-        shared.text = t2;
+        setText(t2);
         parse();
         shared.selN = [];
         shared.selP = [];
@@ -16247,7 +16251,7 @@
       return;
     }
     settle(regroup("box", /* @__PURE__ */ new Set([ri]), boxOf, B0r), { moving: [rid] }, doneR, function() {
-      shared.text = unpush();
+      setText(unpush());
       parse();
       liveOff();
       paint();
@@ -16302,7 +16306,7 @@
           changed();
         },
         function() {
-          shared.text = unpush();
+          setText(unpush());
           parse();
           unshift();
           paint();
@@ -16310,7 +16314,7 @@
       );
     };
     if (d.made != null && Math.abs(d.dx) < 0.01 && Math.abs(d.dy) < 0.01) {
-      shared.text = unpush();
+      setText(unpush());
       parse();
       shared.selP = [];
       shared.selE = [d.made - 1];
@@ -16497,7 +16501,7 @@
             paint();
           },
           function() {
-            shared.text = unpush();
+            setText(unpush());
             parse();
             shared.keyed = null;
             render();

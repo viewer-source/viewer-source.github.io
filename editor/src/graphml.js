@@ -1,5 +1,5 @@
 import { shared, V } from './state.js';
-import { G, Y, boxOf, doc, docText, edges2, fmt, gE, gN, gridBlock, lastFor, mv, nodes2, num, on, points, pt, realizerOf, warn } from './core.js';
+import { G, Y, boxOf, doc, docText, edges2, fmt, gE, gN, gridBlock, lastFor, mv, nodes2, num, on, points, pt, realizerOf, setText, warn } from './core.js';
 import { bx, dropCopies, posePort, restBox, restPt } from './live.js';
 import { sbJs } from './sbgn.js';
 
@@ -239,7 +239,7 @@ import { sbJs } from './sbgn.js';
       points.forEach(function (p) { mx = Math.min(mx, num(p, 'x')); my = Math.min(my, num(p, 'y')); });
       var B = gridBlock(), block = function (m) { return m < 0 ? Math.ceil((40 - m) / B) * B : 0; }, sx = block(mx), sy = block(my);
       if (!sx && !sy) return null;
-      shared.text = shared.text.replace(re, function (tag) { return shiftTag(tag, sx, sy); });
+      setText(shared.text.replace(re, function (tag) { return shiftTag(tag, sx, sy); }));
       return [sx, sy];
     }
 

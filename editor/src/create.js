@@ -1,5 +1,5 @@
 import { shared, V } from './state.js';
-import { G, HANDLE, MODS, Y, at, box, boxOf, cdOwn, changed, complexHere, cutShape, doc, edges2, editing, f1, fmt, full, gE, gN, gridSet, grown, hit, holder, holderSize, holds, hubPorts, inComplex, inRim, keyTake, kindWindow, landMarks, lateItem, layTool, map, moveFix, name, nodes2, num, on, origFromFolder, origToFolder, outlineD, overlap, ownMenus, paint, parse, parseFix, quiet, rclick, realizerOf, refit, regroup, remember, render, rimOf, roleOf, roomy, setBoxes, setPort, settle, site, src, subItem, sx, sy, toGrid, under, undo, unpush, warn, x0, y0 } from './core.js';
+import { G, HANDLE, MODS, Y, at, box, boxOf, cdOwn, changed, complexHere, cutShape, doc, edges2, editing, f1, fmt, full, gE, gN, gridSet, grown, hit, holder, holderSize, holds, hubPorts, inComplex, inRim, keyTake, kindWindow, landMarks, lateItem, layTool, map, moveFix, name, nodes2, num, on, origFromFolder, origToFolder, outlineD, overlap, ownMenus, paint, parse, parseFix, quiet, rclick, realizerOf, refit, regroup, remember, render, rimOf, roleOf, roomy, setBoxes, setPort, setText, settle, site, src, subItem, sx, sy, toGrid, under, undo, unpush, warn, x0, y0 } from './core.js';
 import { bx, liveOff, livePose, sizeOff } from './live.js';
 import { cdMk, cdNow, cdRebuild } from './celldesigner.js';
 import { GEO, edOf, sbJs, sbKind } from './sbgn.js';
@@ -527,7 +527,7 @@ import { origGh, origPut } from './own.js';
       Object.keys(now.node).forEach(function (id) { var o = r.node && r.node[id], a = now.node[id]; if (!o) added++; else if (o.fill !== a.fill || o.line !== a.line) M[id] = { fill: o.fill, line: o.line }; });
       Object.keys(now.edge).forEach(function (id) { if (!r.edge || !(id in r.edge)) added++; });
       var t2 = sbJs.restyleAll(shared.text, M, null, function (id) { return r.edge && id in r.edge && r.edge[id] !== now.edge[id] ? r.edge[id] : undefined; });
-      if (t2 !== shared.text) { remember(false); shared.text = t2; made([]); }
+      if (t2 !== shared.text) { remember(false); setText(t2); made([]); }
       return added;
     }
     // a choice of Colours recolours the whole map, one undo step: every entity, complex, compartment, tag and terminal its fill by the
@@ -579,7 +579,7 @@ import { origGh, origPut } from './own.js';
       sbPlan(mode, true).forEach(function (q) { M[nodes2[q[0]].id] = q[1]; });
       var lh = [], t2 = sbJs.restyleAll(shared.text, M, null, mode === 'custom' ? null : function () { return mode === 'confetti' ? confettiLine(lh).toUpperCase() : null; });
       if (t2 === shared.text) return;
-      remember(false); shared.text = t2; made([]);
+      remember(false); setText(t2); made([]);
     }
     function palFill() {   // the signs of the set chosen; the tabs and the look marked
       var k = palKey();
@@ -632,7 +632,7 @@ import { origGh, origPut } from './own.js';
     pal.querySelector('.m2-ed-pprot input').addEventListener('change', function (e) {   // every protein activity given the box or not, one undo step
       protOn = e.target.checked; e.target.blur();   // the editor's keys (undo) work at once, not the tick box's
       var t2 = palOn() ? sbJs.proteinBoxes(shared.text, protOn) : shared.text;
-      if (t2 !== shared.text) { remember(false); shared.text = t2; parse(); shared.dirty = true; render(); changed(); }
+      if (t2 !== shared.text) { remember(false); setText(t2); parse(); shared.dirty = true; render(); changed(); }
       palShow(); paint();
     });
     palMap = null;
@@ -773,7 +773,7 @@ import { origGh, origPut } from './own.js';
         var N = cdNow(), t = N.t;
         joins.forEach(function (q) { try { t = cdMk.join(t, q[0], q[1]); done.push(q[1]); } catch (err) { warn(String(err && err.message || err)); } });
         if (done.length) cdRebuild(t, N.sh);
-      } else joins.forEach(function (q) { try { shared.text = sbJs.join(shared.text, q[0], q[1], { checked: true }); done.push(q[1]); } catch (err) { warn('A glyph could not be put into the complex.'); } });
+      } else joins.forEach(function (q) { try { setText(sbJs.join(shared.text, q[0], q[1], { checked: true })); done.push(q[1]); } catch (err) { warn('A glyph could not be put into the complex.'); } });
       if (!done.length) return done;
       parse(); shared.dirty = true;
       var at = {}; nodes2.forEach(function (n, i) { at[n.id] = i; });
@@ -881,7 +881,7 @@ import { origGh, origPut } from './own.js';
       var eids = shared.selE.map(function (k) { return edges2[k] && edges2[k].id; });   // by id: the map is read again
       remember(true); setBoxes(o);
       var at = -1; nodes2.forEach(function (m, k) { if (m.id === tKey.id) at = k; });
-      if (at >= 0) { var t2 = tagTurnT(shared.text, at, nw, true); if (t2 !== shared.text) { shared.text = t2; parse(); } }
+      if (at >= 0) { var t2 = tagTurnT(shared.text, at, nw, true); if (t2 !== shared.text) { setText(t2); parse(); } }
       shared.dirty = true; shared.selN = at >= 0 ? [at] : []; shared.selE = edges2.map(function (q, k) { return eids.indexOf(q.id) >= 0 ? k : -1; }).filter(function (k) { return k >= 0; }); render(); paint(); changed();
       return true;
     });
@@ -927,7 +927,7 @@ import { origGh, origPut } from './own.js';
         var o = es[0].s === i ? es[0].t : es[0].s, b = boxOf(i), q = boxOf(o), dx = q[0] + q[2] / 2 - b[0] - b[2] / 2, dy = q[1] + q[3] / 2 - b[1] - b[3] / 2;
         t2 = tagTurnT(t2, i, Math.abs(dx) >= Math.abs(dy) ? (dx >= 0 ? 'right' : 'left') : (dy >= 0 ? 'down' : 'up'));
       });
-      if (t2 !== shared.text) { shared.text = t2; parse(); shared.dirty = true; }
+      if (t2 !== shared.text) { setText(t2); parse(); shared.dirty = true; }
     }
     // after a move (core.js fixMoved) or a submap resized: each terminal back onto its submap's border, its way by its side
     function termsFix(list, any) {   // any: each kept on the side it is on (onSide)
@@ -944,7 +944,7 @@ import { origGh, origPut } from './own.js';
       var t2 = shared.text, at = {};
       nodes2.forEach(function (n, k) { at[n.id] = k; });
       ways.forEach(function (q) { t2 = tagTurnT(t2, at[q[0]], q[1], true); });   // its lines at its ports (its box set above)
-      if (t2 !== shared.text) { shared.text = t2; parse(); shared.dirty = true; }
+      if (t2 !== shared.text) { setText(t2); parse(); shared.dirty = true; }
     }
     // a tag moved: a terminal moved without its submap slides along it, and with Shift (alone) dropped with its centre out
     // of the submap it leaves it, a free tag again; a free tag dropped with its centre inside a submap joins it (as a
@@ -976,7 +976,7 @@ import { origGh, origPut } from './own.js';
       var t2 = shared.text;
       out.forEach(function (id) { t2 = sbJs.terminal(t2, id, false); });
       join.forEach(function (q) { t2 = sbJs.terminal(t2, nodes2[q[0]].id, true); });
-      if (t2 !== shared.text) { shared.text = t2; parse(); shared.dirty = true; }
+      if (t2 !== shared.text) { setText(t2); parse(); shared.dirty = true; }
       termsFix(nodes2.map(function (m, k) { return keep.has(m.id) ? k : -1; }).filter(function (k) { return k >= 0; }));
       var aim = [];   // the free tags moved, and those whose line's other end moved
       edges2.forEach(function (q) { if (q.s != null && q.t != null) [[q.s, q.t], [q.t, q.s]].forEach(function (p) { if (nodes2[p[0]].shape.kind === 'Tag' && (ids.has(nodes2[p[0]].id) || ids.has(nodes2[p[1]].id))) aim.push(nodes2[p[0]].id); }); });
@@ -1045,7 +1045,7 @@ import { origGh, origPut } from './own.js';
       if (cls === 'tag') { var on = sm >= 0 ? onBorder([X, Y2, w, h], boxOf(sm)) : null; way = on ? on[1] : 'right'; if (!on && bx0[3] > bx0[2]) bx0 = [+fmt(P[0] - h / 2), +fmt(P[1] - w / 2), h, w]; if (on) { bx0 = on[0].map(function (v) { return +fmt(v); }); c = nodes2[sm].up; } }   // its box onto the submap's side, pointing in, held where its submap is
       try { t2 = sbJs.add(shared.text, { id: id, cls: act != null ? sbJs.unitClass(act) : cls, activity: act, label: '', box: bx0, parent: c != null ? nodes2[c].id : null, fill: D.fill, line: D.line, width: D.width, multimer: D.multimer, font: D.font, units: units || undefined, way: way, letters: sbJs.GLT.test(cls) ? stdLetters() : null }); if (sm >= 0) t2 = sbJs.terminal(t2, id, true); }
       catch (err) { warn('The ' + (act != null ? 'activity' : cls) + ' could not be added: ' + (err && err.message || err) + '.'); return; }
-      remember(false); shared.text = t2;
+      remember(false); setText(t2);
       if (cls === 'compartment') {   // what it covers taken in, in the same undo step
         parse();
         var ni = nodes2.findIndex(function (n) { return n.id === id; }), inn = ni >= 0 ? regroup('box', new Set([ni]), boxOf, function (k) { return k === ni ? [0, 0, 0, 0] : boxOf(k); }) : new Map();
@@ -1122,7 +1122,7 @@ import { origGh, origPut } from './own.js';
             return { name: af ? af[0].toUpperCase() + af.slice(1) : q[1], own: c === now, go: function () {
               var t2 = sbJs.arcKind(shared.text, ed.id, c);
               if (t2 === shared.text) return;
-              remember(false); shared.text = t2; parse(); shared.selN = []; shared.selP = []; shared.part = null;
+              remember(false); setText(t2); parse(); shared.selN = []; shared.selP = []; shared.part = null;
               shared.selE = edges2.map(function (e2, j) { return e2.id === ed.id ? j : -1; }).filter(function (j) { return j >= 0; });
               shared.dirty = true; render(); paint(); changed();
             } };
@@ -1135,16 +1135,16 @@ import { origGh, origPut } from './own.js';
       if (au == null && k >= 0 && afMap() && palKind() === 'af' && !nodes2[k].kids.length) au = sbJs.unitFor(nodes2[k].shape.kind);   // a plain entity of an AF map: written as its activity (a file's turned so, toAf)
       if (au === undefined) au = null;
       if (au != null) {
-        var aid = nodes2[k].id, setU = function (u) { return function () { var t2 = sbJs.activity(shared.text, aid, u); if (t2 === shared.text) return; remember(false); shared.text = t2; made(aid); }; };
+        var aid = nodes2[k].id, setU = function (u) { return function () { var t2 = sbJs.activity(shared.text, aid, u); if (t2 === shared.text) return; remember(false); setText(t2); made(aid); }; };
         // its unit's text (free text, not restricted to a vocabulary): typed, or
         // ct:gene and ct:mRNA on a nucleic acid feature's; one unit per activity (AF), so one text
         var ui = svList(k).filter(function (q) { return q[3] === UI; })[0], ut = ui ? ui[0] : '';
         var setT = function (v) { return function () {
           var t2 = ui ? (v === null ? sbJs.unitDelete(shared.text, aid, 0) : sbJs.unitValue(shared.text, aid, 0, v)) : sbJs.unit(shared.text, aid, v);
-          if (t2 === shared.text) return; remember(false); shared.text = t2; made(aid);
+          if (t2 === shared.text) return; remember(false); setText(t2); made(aid);
         }; };
         var typeT = function () {
-          if (!ui) { var t2 = sbJs.unit(shared.text, aid, ''); if (t2 === shared.text) return; remember(false); shared.text = t2; made(aid); }
+          if (!ui) { var t2 = sbJs.unit(shared.text, aid, ''); if (t2 === shared.text) return; remember(false); setText(t2); made(aid); }
           var j = svList(nodes2.findIndex(function (n) { return n.id === aid; })).map(function (q) { return q[3]; }).indexOf(UI);
           if (j >= 0) typeIn(aid, j, !ui);   // made for this: gone again when nothing is typed
         };
@@ -1159,7 +1159,7 @@ import { origGh, origPut } from './own.js';
         var gid = nodes2[k].id;
         var gins = edges2.filter(function (q) { return q.t === k; }).length;
         return ['and', 'or', 'not'].filter(function (c) { return c !== gc && !(c === 'not' && gins > 1); }).map(function (c) {   // a NOT has one input
-          return ['Make ' + c.toUpperCase(), function () { var t2 = sbJs.kind(shared.text, gid, c); if (t2 === shared.text) return; remember(false); shared.text = t2; made(gid); }];
+          return ['Make ' + c.toUpperCase(), function () { var t2 = sbJs.kind(shared.text, gid, c); if (t2 === shared.text) return; remember(false); setText(t2); made(gid); }];
         });
       }
       // an entity (macromolecule, simple chemical, nucleic acid feature, unspecified entity; not an Activity Flow activity
@@ -1173,13 +1173,13 @@ import { origGh, origPut } from './own.js';
           ['Add unit of information ct:mRNA', function () { makeUnit(eid, 'ct:mRNA'); }], ['Add unit of information ct:gene', function () { makeUnit(eid, 'ct:gene'); }]);
         eout.push(['Change identity', subItem(function (r, done) {   // its kinds by the palette's names (core.js kindWindow)
           return kindWindow(r, sbJs.ENTITIES.map(function (c) {
-            return { name: c[0].toUpperCase() + c.slice(1), own: c === eb, go: function () { var t2 = sbJs.entityKind(shared.text, eid, c); if (t2 === shared.text) return; remember(false); shared.text = t2; made(eid); } };
+            return { name: c[0].toUpperCase() + c.slice(1), own: c === eb, go: function () { var t2 = sbJs.entityKind(shared.text, eid, c); if (t2 === shared.text) return; remember(false); setText(t2); made(eid); } };
           }), done);
         })]);
         if (eb === 'macromolecule') eout.push([emulti ? 'Make macromolecule' : 'Make multimer', function () {
           var t2 = sbJs.multimer(shared.text, eid, !emulti);
           if (t2 === shared.text) return;
-          remember(false); shared.text = t2; made(eid);
+          remember(false); setText(t2); made(eid);
         }]);
         eout.late = true;   // rarely used: after the common items, above Delete
         return eout;
@@ -1190,7 +1190,7 @@ import { origGh, origPut } from './own.js';
         var pit = lateItem(['Change identity', subItem(function (r, done) {
           return kindWindow(r, sbJs.PROCESSES.map(function (c) {
             var q = psigns.filter(function (s) { return s[0] === c; })[0];
-            return q && { name: q[1], own: c === pc, go: function () { var t2 = sbJs.kind(shared.text, pid, c); if (t2 === shared.text) return; remember(false); shared.text = t2; made(pid); } };
+            return q && { name: q[1], own: c === pc, go: function () { var t2 = sbJs.kind(shared.text, pid, c); if (t2 === shared.text) return; remember(false); setText(t2); made(pid); } };
           }).filter(Boolean), done);
         })]);
         // Make reversible or Make irreversible, after Change identity, as on CellDesigner reactions: its consumptions
@@ -1206,7 +1206,7 @@ import { origGh, origPut } from './own.js';
       var hc = k < 0 && P && (palOn() || stackOn) ? hit(P) : null;
       if (hc && hc.n != null && hc.p == null && nodes2[hc.n].comp) {
         var cid = nodes2[hc.n].id, np = palOn() ? sbJs.namePlaces(shared.text, cid) : null, sm = sbJs.stackMoves(shared.text, cid);   // the places its name can take (a name too wide for a side: the middles only); where it partly overlaps another, its order
-        var go = function (t2) { if (t2 === shared.text) return; remember(false); shared.text = t2; made(cid); };
+        var go = function (t2) { if (t2 === shared.text) return; remember(false); setText(t2); made(cid); };
         var its = (np ? np[1] : []).map(function (q) { return [NAME_WORDS[q], function () { go(sbJs.nameAt(shared.text, cid, q)); }]; });
         if (sm[1]) its.push(['Bring forward', function () { go(sbJs.restack(shared.text, cid, 1)); }]);
         if (sm[0]) its.push(['Send backward', function () { go(sbJs.restack(shared.text, cid, -1)); }]);
@@ -1310,8 +1310,8 @@ import { origGh, origPut } from './own.js';
     // information keep their places too (sbgn_edit keeps their ratios)
     function svGrowTo(id, nb, skip) {   // skip(icon): left out, as svRoom left it out (it moves next)
       var i = nodes2.findIndex(function (n) { return n.id === id; }), b = boxOf(i), ic = svMoved(i, svIconsOn(i).filter(function (q) { return !skip || !skip(q); }), b, nb);
-      shared.text = sbJs.resize(shared.text, id, nb);
-      ic.forEach(function (q) { if (q.k === SV) shared.text = sbJs.stateMove(shared.text, id, q.n, q.r[0], q.r[1]); });
+      setText(sbJs.resize(shared.text, id, nb));
+      ic.forEach(function (q) { if (q.k === SV) setText(sbJs.stateMove(shared.text, id, q.n, q.r[0], q.r[1])); });
       parse();
     }
     function svIconsOn(i) {   // node i's icons as ratios of its box (sbgn_edit keeps them so through a resize): { r, s, k: kind, n: index among its kind }
@@ -1362,7 +1362,7 @@ import { origGh, origPut } from './own.js';
         if (!hit) break;
         var sk = function (o) { return o.k === SV && o.n === hit.n; }, r = svRoom(i, hit.s, sk);
         if (r.box) { svGrowTo(id, r.box, sk); grew = true; }
-        shared.text = sbJs.stateMove(shared.text, id, hit.n, r.r[0], r.r[1]); parse(); i = nodes2.findIndex(function (n) { return n.id === id; });
+        setText(sbJs.stateMove(shared.text, id, hit.n, r.r[0], r.r[1])); parse(); i = nodes2.findIndex(function (n) { return n.id === id; });
       }
       return grew;
     }
@@ -1380,7 +1380,7 @@ import { origGh, origPut } from './own.js';
       var id = nodes2[i].id, j = svList(i).filter(function (h) { return h[3] === SV; }).length;   // after the state variables, before the units
       remember(false);
       if (room.box) svGrowTo(id, room.box);
-      shared.text = sbJs.state(shared.text, id, '', room.r[0], room.r[1]);
+      setText(sbJs.state(shared.text, id, '', room.r[0], room.r[1]));
       parse();
       if (room.box) svHold(id, was);
       svCopies(id).forEach(function (c) { svAddTo(c, room.r, ''); });   // on every copy at the same place (svCopies)
@@ -1429,7 +1429,7 @@ import { origGh, origPut } from './own.js';
       }
       if (!at) at = svRoom(k, s, null);
       if (at.box) svGrowTo(c, at.box);
-      shared.text = sbJs.state(shared.text, c, txt, at.r[0], at.r[1]); parse();
+      setText(sbJs.state(shared.text, c, txt, at.r[0], at.r[1])); parse();
       if (at.box) svHold(c, b0);
     }
     // after state variable n of node id was typed from was to now (at place r0 before): its variable named or renamed on
@@ -1442,8 +1442,8 @@ import { origGh, origPut } from './own.js';
         var m = svTwin(c, was, r0), has = nv ? svTwin(c, now, r) : -1;
         if (m >= 0 && ov !== nv) {
           var k = svIdx(c), wb = boxOf(k), cur = svOnly(k)[m][0];
-          if (has >= 0 && has !== m) { if (!cur) { shared.text = sbJs.stateDelete(shared.text, c, m, { sbgn: shared.sb.base }); parse(); } return; }
-          shared.text = sbJs.stateValue(shared.text, c, m, svVal(cur) + (nv ? '@' + nv : '')); parse();
+          if (has >= 0 && has !== m) { if (!cur) { setText(sbJs.stateDelete(shared.text, c, m, { sbgn: shared.sb.base })); parse(); } return; }
+          setText(sbJs.stateValue(shared.text, c, m, svVal(cur) + (nv ? '@' + nv : ''))); parse();
           if (svSettle(c, m)) svHold(c, wb);
         } else if (m < 0 && nv && has < 0) svAddTo(c, r, '@' + nv);
       });
@@ -1455,9 +1455,9 @@ import { origGh, origPut } from './own.js';
         ws.forEach(function (w) {
           var k = svIdx(w[0]);
           if (k < 0) return;
-          if (!r) { shared.text = sbJs.stateDelete(shared.text, w[0], w[1], { sbgn: shared.sb.base }); return; }
+          if (!r) { setText(sbJs.stateDelete(shared.text, w[0], w[1], { sbgn: shared.sb.base })); return; }
           var b = boxOf(k), ic = svIconsOn(k), me = ic.filter(function (o) { return o.k === SV && o.n === w[1]; })[0];
-          if (me && !svClash(svPt(b, r), me.s, b, ic.filter(function (o) { return o !== me; }))) shared.text = sbJs.stateMove(shared.text, w[0], w[1], r[0], r[1]);
+          if (me && !svClash(svPt(b, r), me.s, b, ic.filter(function (o) { return o !== me; }))) setText(sbJs.stateMove(shared.text, w[0], w[1], r[0], r[1]));
         });
         parse();
       };
@@ -1476,7 +1476,7 @@ import { origGh, origPut } from './own.js';
       var j = svList(i).length, was = boxOf(i);   // the units come last in the node's list
       var t2 = sbJs.unit(shared.text, id, value || '');
       if (t2 === shared.text) return;
-      remember(false); shared.text = t2;
+      remember(false); setText(t2);
       if (!shared.afSbgn) { parse(); if (svSettle(id, null)) svHold(id, was); }
       made(id);
       shared.selN = []; shared.svSel = { id: id, j: j }; paint();
@@ -1588,13 +1588,13 @@ import { origGh, origPut } from './own.js';
           if (shared.cd && sv) { if (keep && on && map === m0) cdSsTyped(id, v.trim()); else if (shared.cdPend) { shared.cdPend = null; paint(); } return; }   // a CellDesigner map's new structural state (cdcreate.js)
           if (sv && !unit) v = v.replace(/@+$/, '');   // P@ is P (a site needs a name)
           if (unit) v = v.trim();   // a unit of only spaces is none
-          if (fresh && (!keep || !v) && on && map === m0) { var t0 = undo.length ? unpush() : shared.text; if (t0 !== shared.text) { shared.text = t0; parse(); shared.dirty = true; quiet(); render(); paint(); changed(); } return; }
+          if (fresh && (!keep || !v) && on && map === m0) { var t0 = undo.length ? unpush() : shared.text; if (t0 !== shared.text) { setText(t0); parse(); shared.dirty = true; quiet(); render(); paint(); changed(); } return; }
           if (!keep || v === before.replace(/[\r\n]+/g, ' ') || !on || map !== m0 ) return;   // a name on several lines, untouched, kept as it was (the box shows it on one)
           if (!sv) { setName(id, v); return; }
           var t2 = unit ? sbJs.unitValue(shared.text, id, sv[4], v) : sbJs.stateValue(shared.text, id, sv[4], v);
           if (t2 === shared.text) return;
           if (!fresh) remember(false);   // a unit made for this typing: one step with its making (its step is taken back when nothing is kept, above)
-          shared.text = t2; parse();
+          setText(t2); parse();
           if (au0 == null) { var ix = nodes2.findIndex(function (n) { return n.id === id; }), was = ix >= 0 ? boxOf(ix) : null; if (was && svSettle(id, unit ? null : sv[4])) svHold(id, was); }   // a wider icon given room (notes/state-crowding.md)
           if (au0 == null && !unit) svShareText(id, sv[0], r0, sv[4], v);   // its variable on every copy
           shared.dirty = true; quiet(); render(); paint(); changed();
@@ -1617,7 +1617,7 @@ import { origGh, origPut } from './own.js';
       if (!sbJs || shared.sb && !edOf(src()).nameable(src(), id)) return;   // a GraphML map's label written as it stands (no SBGN-ML class to ask)
       var t2 = sbJs.label(shared.text, id, v);
       if (t2 === shared.text) return;
-      remember(false); shared.text = t2; parse(); svJoin(id); shared.dirty = true; quiet(); render(); paint(); changed();
+      remember(false); setText(t2); parse(); svJoin(id); shared.dirty = true; quiet(); render(); paint(); changed();
     }
     // Name by members: a complex named by its members' names joined by colons (A:B, CellDesigner's usual name for
     // a complex), in reading order (rows from the top, each from the left); a member complex with no name gives its own
@@ -1794,7 +1794,7 @@ import { origGh, origPut } from './own.js';
     function svMove(i, j, r) {   // the state variable j of node i written at the place r (a CellDesigner map's: cdcreate.js)
       if (shared.cd) { cdSvMove(i, j, r); return; }
       var q = svList(i)[j], share = q[3] === SV ? svShareMove(i, q, svR(i, q), r) : null;   // the copies too
-      remember(false); shared.text = (q[3] === UI ? sbJs.unitMove : sbJs.stateMove)(shared.text, nodes2[i].id, q[4], r[0], r[1]); parse();
+      remember(false); setText((q[3] === UI ? sbJs.unitMove : sbJs.stateMove)(shared.text, nodes2[i].id, q[4], r[0], r[1])); parse();
       if (share) share();
       shared.dirty = true; render(); paint(); changed();
     }
@@ -1804,7 +1804,7 @@ import { origGh, origPut } from './own.js';
       if (shared.cd) { var j = shared.svSel.j; shared.svSel = null; return cdSvDelete(i, j); }
       var q = svList(i)[shared.svSel.j];
       var share = q[3] === SV ? svShareMove(i, q, svR(i, q), null) : null;   // the copies too
-      remember(false); shared.text = (q[3] === UI ? sbJs.unitDelete : sbJs.stateDelete)(shared.text, shared.svSel.id, q[4], { sbgn: shared.sb.base }); shared.svSel = null;
+      remember(false); setText((q[3] === UI ? sbJs.unitDelete : sbJs.stateDelete)(shared.text, shared.svSel.id, q[4], { sbgn: shared.sb.base })); shared.svSel = null;
       parse();
       if (share) share(); shared.dirty = true; render(); paint(); changed();
       return true;
@@ -1916,7 +1916,7 @@ import { origGh, origPut } from './own.js';
     function cardMove(id, pos) {
       var t2 = sbJs.countMove(shared.text, id, pos);
       if (t2 === shared.text) { render(); paint(); return; }
-      remember(false); shared.text = t2; parse(); shared.dirty = true; render(); paint(); changed();
+      remember(false); setText(t2); parse(); shared.dirty = true; render(); paint(); changed();
     }
     function __run36() {   // run at start, in order (__start)
     window.addEventListener('keydown', function (e) {
@@ -1927,7 +1927,7 @@ import { origGh, origPut } from './own.js';
       if (e.key === 'Delete' || e.key === 'Backspace') {
         e.preventDefault(); e.stopImmediatePropagation();
         var t2 = sbJs.recount(shared.text, cardSel.id, ''); cardSel = null;
-        if (t2 !== shared.text) { remember(false); shared.text = t2; parse(); shared.dirty = true; render(); paint(); changed(); }
+        if (t2 !== shared.text) { remember(false); setText(t2); parse(); shared.dirty = true; render(); paint(); changed(); }
         return;
       }
       var d = KEYS[e.key];
@@ -1956,7 +1956,7 @@ import { origGh, origPut } from './own.js';
       var t2 = ids.length ? sbJs.remove(shared.text, ids) : shared.text;
       if (eids.length) t2 = sbJs.arcRemove(t2, eids);
       if (t2 === shared.text) return false;
-      remember(false); shared.text = t2; shared.selN = []; shared.selP = []; shared.selE = []; shared.part = null;
+      remember(false); setText(t2); shared.selN = []; shared.selP = []; shared.selE = []; shared.part = null;
       parse(); shared.dirty = true; render(); paint(); changed();
       return true;
     }
@@ -2041,7 +2041,7 @@ import { origGh, origPut } from './own.js';
       if (!ids.length) return false;
       var t2 = sbJs.arcRemove(shared.text, ids);
       if (t2 === shared.text) return false;
-      remember(false); shared.text = t2; shared.selN = []; shared.selP = []; shared.selE = []; shared.part = null;
+      remember(false); setText(t2); shared.selN = []; shared.selP = []; shared.selE = []; shared.part = null;
       parse(); shared.dirty = true; render(); paint(); changed();
       return true;
     }
@@ -2321,7 +2321,7 @@ import { origGh, origPut } from './own.js';
       } catch (err) { warn('The arc could not be made: ' + (err && err.message || err) + '.'); return; }
       if (sbCols() === 'confetti') ids.forEach(function (id) { t2 = sbJs.recolour(t2, id, confettiLine(confettiHues(t2)).toUpperCase()); });   // a new line a colour of its own, as the map's
       if (t2 === shared.text) return;
-      remember(false); shared.text = t2;
+      remember(false); setText(t2);
       parse(); tagAim([ia, ib]); termsFix(nodes2.map(function (n, k) { return (n.id === ia || n.id === ib) && n.sub != null ? k : -1; }).filter(function (k) { return k >= 0; }));   // a tag's line at its point, a free tag facing it
       shared.selN = []; shared.selP = []; shared.part = null;
       shared.selE = edges2.map(function (q, k) { return ids.indexOf(q.id) >= 0 ? k : -1; }).filter(function (k) { return k >= 0; });   // the new arcs selected: Delete takes them back at once
@@ -2395,7 +2395,7 @@ import { origGh, origPut } from './own.js';
       try { pairs.forEach(function (q) { var id = nodes2[q[0]].id; ids.push(id); was[id] = boxOf(q[0]); t2 = sbJs.resize(t2, id, q[1]); }); }
       catch (err) { warn('Not resized: ' + (err && err.message || err) + '.'); liveOff(); sizeOff(); paint(); return; }
       if (t2 === shared.text) { liveOff(); sizeOff(); paint(); return; }
-      remember(false); shared.text = t2; parse(); shared.dirty = true;
+      remember(false); setText(t2); parse(); shared.dirty = true;
       nodes2.forEach(function (n) { if (n.sub != null && ids.indexOf(n.id) >= 0) tids.push(n.id); });   // a terminal resized itself: kept on its side
       if (tids.length) termsFix(nodes2.map(function (n, k) { return tids.indexOf(n.id) >= 0 ? k : -1; }).filter(function (k) { return k >= 0; }), true);
       shared.selN = []; nodes2.forEach(function (n, k) { if (ids.indexOf(n.id) >= 0) shared.selN.push(k); });
@@ -2624,10 +2624,10 @@ import { origGh, origPut } from './own.js';
         }
       });
       if (t2 === shared.text) return false;
-      remember(false); shared.text = t2; made(ids);
+      remember(false); setText(t2); made(ids);
       return true;
     }
-    function sbEnds(id, o, box) { var t2 = sbJs.scaleEnds(shared.text, id, o, box); if (t2 !== shared.text) { shared.text = t2; parse(); } }   // a complex's line ends after its box was set (dragEnd, core.js)
+    function sbEnds(id, o, box) { var t2 = sbJs.scaleEnds(shared.text, id, o, box); if (t2 !== shared.text) { setText(t2); parse(); } }   // a complex's line ends after its box was set (dragEnd, core.js)
     // a process made reversible or irreversible (sbgn_edit.reversible), from its right-click menu or Properties' Reversible
     // tick box: one undo step; the turned lines selected (the menu) or the process kept selected (Properties); false when
     // nothing changed
@@ -2637,7 +2637,7 @@ import { origGh, origPut } from './own.js';
       for (var j = 0; j < n; j++) ids.push(freeId('arc_', ids));
       var t2 = sbJs.reversible(shared.text, pid, on, ids, { sbgn: src() });
       if (t2 === shared.text) return false;
-      remember(false); shared.text = t2; parse(); shared.selN = []; shared.selP = []; shared.selE = []; shared.part = null;
+      remember(false); setText(t2); parse(); shared.selN = []; shared.selP = []; shared.selE = []; shared.part = null;
       if (keepNode) nodes2.forEach(function (q, i) { if (q.id === pid) shared.selN.push(i); });
       else shared.selE = edges2.map(function (e2, q) { return ids.indexOf(e2.id) >= 0 ? q : -1; }).filter(function (q) { return q >= 0; });
       shared.dirty = true; quiet(); render(); paint(); changed();
@@ -2742,7 +2742,7 @@ import { origGh, origPut } from './own.js';
     function sbLineTo(k, t2) {   // the line's text changed: one undo step, the line selected again
       var id = edges2[k].id;
       if (t2 === shared.text) return false;
-      remember(false); shared.text = t2; parse(); shared.selE = []; edges2.forEach(function (q, j) { if (q.id === id) shared.selE = [j]; });
+      remember(false); setText(t2); parse(); shared.selE = []; edges2.forEach(function (q, j) { if (q.id === id) shared.selE = [j]; });
       shared.dirty = true; render(); paint(); changed();
       return true;
     }
@@ -2920,7 +2920,7 @@ import { origGh, origPut } from './own.js';
       try { t2 = sbJs.fit(shared.text, items, { sbgn: src() }); } catch (err) { warn('Not changed: ' + (err && err.message || err) + '.'); return false; }
       if (t2 === shared.text) return false;
       var sel = shared.selN.map(function (i) { return nodes2[i].id; });
-      remember(false); shared.text = t2; parse(); shared.dirty = true;
+      remember(false); setText(t2); parse(); shared.dirty = true;
       shared.selN = []; nodes2.forEach(function (n, k) { if (sel.indexOf(n.id) >= 0) shared.selN.push(k); });
       var ks = nodes2.map(function (n, k) { return was[n.id] ? k : -1; }).filter(function (k) { return k >= 0; });
       if (ks.length) setBoxes(grown(ks, boxOf, function (k) { return was[nodes2[k].id] || boxOf(k); }, function () { return false; }));   // their holders grown round them (sbSetSize)
