@@ -1,0 +1,50 @@
+{
+ "_": "The answer each case should get: the line \"case\" added to base.graphml. Master: the viewer’s tests/rules-cases (make.js); the converter keeps a copy.",
+ "base": "ok",
+ "cases": {
+  "catalysis-process": {
+   "answer": "ok",
+   "rule": "modulation"
+  },
+  "catalysis-entity": {
+   "answer": "refused",
+   "rule": "reduced-direct"
+  },
+  "stimulation-entity": {
+   "answer": "ok",
+   "rule": "reduced-direct"
+  },
+  "inhibition-entity": {
+   "answer": "ok",
+   "rule": "reduced-direct"
+  },
+  "inhibition-phenotype": {
+   "answer": "ok",
+   "rule": "modulation"
+  },
+  "production-reversed": {
+   "answer": "refused",
+   "rule": "production"
+  },
+  "production-second": {
+   "answer": "ok",
+   "rule": "production"
+  },
+  "plain-entities": {
+   "answer": "refused",
+   "rule": "logic-in"
+  },
+  "logic-third-input": {
+   "answer": "ok",
+   "rule": "logic-in"
+  },
+  "modulation-from-process": {
+   "answer": "refused",
+   "rule": "modulation"
+  },
+  "tag-process": {
+   "answer": "refused",
+   "rule": "tag"
+  }
+ }
+}

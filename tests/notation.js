@@ -1,0 +1,77 @@
+// renderers/converter/notation.js under Node: one case per rule of its table (allowed and refused), the accessors of the
+// three formats, the palette's CellDesigner set, and the shared cases (tests/rules-cases/expected.json: GraphML maps with
+// what each line should get, the converter's copy run against its own rules). No browser, no data repository.
+//   node tests/notation.js
+var path = require('path'), fs = require('fs'), here = path.join(__dirname, '..');
+var N = require(path.join(here, 'renderers/converter/notation.js'));
+var bad = 0, n = 0;
+function ok(what, v, more) { n++; if (!v) bad++; if (!v) console.log('WRONG ' + what + (more ? '  ' + more : '')); }
+var G = function (c, w) { return N.nodeKind('graphml', c, w); };
+var M = G('Macromolecule'), S = G('SimpleChemical'), NA = G('NucleicAcidFeature'), E = G('EmptySet'), PA = G('PerturbingAgent');
+var P = G('Process'), AND = G('Operator', 'AND'), NOT = G('Operator', 'NOT'), EQ = G('Operator', '≡'), DL = G('Operator', 'τ');
+var PH = G('Phenotype'), SM = G('Submap'), T = G('Tag');
+var PD = { sets: ['pd'] }, RD = { sets: ['pd', 'reduced'] }, AF = { sets: ['af'] };
+function yes(arc, a, b, ctx, what) { var r = N.allowed(arc, a, b, ctx); ok(what + ': allowed', r === null, r); }
+function no(arc, a, b, ctx, what, why) { var r = N.allowed(arc, a, b, ctx); ok(what + ': refused' + (why ? ' (' + why + ')' : ''), r !== null && (!why || r === why), r); }
+function chk(name, why) { return { sets: ['pd'], check: function (c) { return c === name ? why : null; } }; }
+
+// allow rows
+yes('consumption', M, P, PD, 'consumption'); no('consumption', P, M, PD, 'consumption reversed');
+yes('production', P, S, PD, 'production'); no('production', M, P, PD, 'production reversed');
+['catalysis', 'modulation', 'stimulation', 'inhibition', 'necessary stimulation'].forEach(function (a) {
+  yes(a, M, P, PD, a + ' to a process'); yes(a, AND, P, PD, a + ' from a gate'); yes(a, M, PH, PD, a + ' to a phenotype');
+  no(a, P, M, PD, a + ' from a process');
+});
+yes('logic arc', M, AND, PD, 'logic arc in'); yes('logic arc', AND, NOT, PD, 'gate into gate'); no('logic arc', P, AND, PD, 'process into gate');
+yes('logic arc', EQ, M, PD, 'equivalence out');
+yes('equivalence arc', T, M, PD, 'tag to entity'); yes('equivalence arc', M, T, PD, 'entity to tag'); no('equivalence arc', T, P, PD, 'tag to process'); no('equivalence arc', M, S, PD, 'no tag at either end');
+// reduced notation
+no('stimulation', M, S, PD, 'entity to entity, reduced unticked'); yes('stimulation', M, S, RD, 'reduced: entity to entity');
+no('catalysis', M, S, RD, 'reduced: no catalysis between entities');
+yes('inhibition', AND, S, RD, 'reduced: gate to entity');
+yes('stimulation', PH, P, RD, 'reduced: from a phenotype'); no('stimulation', PH, P, PD, 'unticked: nothing leaves a phenotype');
+yes('modulation', SM, M, RD, 'reduced: from a submap'); yes('stimulation', M, SM, RD, 'reduced: into a submap');
+no('stimulation', M, SM, PD, 'unticked: nothing into a submap');
+// Activity Flow
+var A = N.nodeKind('sbgnml', 'biological activity');
+yes('stimulation', A, A, AF, 'AF: influence'); yes('inhibition', AND, A, AF, 'AF: gate output'); no('consumption', A, A, AF, 'AF: no consumption');
+// refuse rows
+no('stimulation', AND, P, chk('gateOneOut', 'A logic gate has one line out, and this one has it.'), 'gate one out', 'A logic gate has one line out, and this one has it.');
+no('logic arc', M, NOT, chk('oneInput', 'one'), 'NOT one input', 'one'); no('logic arc', M, DL, chk('oneInput', 'one'), 'delay one input', 'one');
+yes('logic arc', M, AND, chk('oneInput', 'one'), 'AND takes many');
+no('consumption', M, P, chk('already', 'There.'), 'already', 'There.');
+no('consumption', M, P, chk('reversible', 'R.'), 'reversible', 'R.');
+yes('consumption', M, P, { sets: ['af'], check: function (c) { return c === 'reversible' ? 'R.' : null; } }, 'the reversible check is asked in PD only');
+no('production', E, P, PD, 'empty set produces nothing', 'An empty set is only consumed or produced.');
+yes('consumption', E, P, PD, 'empty set consumed'); yes('production', P, E, PD, 'empty set produced');
+no('catalysis', M, E, PD, 'nothing modulates an empty set');
+no('consumption', PA, P, PD, 'agent consumed', 'A perturbing agent only starts a modulation, stimulation, inhibition or necessary stimulation.');
+yes('stimulation', PA, P, PD, 'agent stimulates'); no('production', P, PA, PD, 'agent produced');
+no('catalysis', NA, P, PD, 'nucleic acid feature', 'A nucleic acid feature is no catalyst.'); yes('stimulation', NA, P, PD, 'nucleic acid feature stimulates');
+no('catalysis', PH, P, RD, 'catalysis from a phenotype', 'A catalysis goes from an entity to a process.');
+no('catalysis', M, SM, RD, 'catalysis into a submap', 'A catalysis goes from an entity to a process.');
+no('logic arc', EQ, AND, PD, 'equivalence into a gate', 'An equivalence joins entities only.');
+no('logic arc', AND, EQ, PD, 'gate into equivalence', 'An equivalence joins entities only.');
+no('stimulation', EQ, P, PD, 'equivalence line', 'An equivalence’s line goes to an entity.');
+no('tag', M, P, PD, 'not an arc');
+// accessors
+ok('graphml gate word', G('Operator', 'or').cls === 'or' && G('Operator', 'x') === null);
+ok('graphml unknown', G('StateVariable') === null);
+ok('sbgnml multimer', N.nodeKind('sbgnml', 'macromolecule multimer').cls === 'macromolecule');
+ok('sbgnml perturbation', N.nodeKind('sbgnml', 'perturbation').cls === 'perturbing agent');
+ok('celldesigner classes', N.nodeKind('celldesigner', 'RNA').cls === 'nucleic acid feature' && N.nodeKind('celldesigner', 'BOOLEAN_LOGIC_GATE_AND').kind === 'gate');
+ok('arcs graphml', N.arcKind('graphml', 'none', 'process') === 'consumption' && N.arcKind('graphml', 'none', 'gate') === 'logic arc' && N.arcKind('graphml', 'white_delta_bar') === 'necessary stimulation');
+ok('arcs sbgnml', N.arcKind('sbgnml', 'negative influence') === 'inhibition' && N.arcKind('sbgnml', 'catalysis') === 'catalysis');
+ok('arcs celldesigner', N.arcKind('celldesigner', 'REDUCED_TRIGGER') === 'necessary stimulation' && N.arcKind('celldesigner', 'UNKNOWN_CATALYSIS') === 'catalysis');
+ok('mapKind celldesigner', N.mapKind('celldesigner', '<celldesigner:speciesAlias id="a"/><reaction><celldesigner:reactionType>STATE_TRANSITION</celldesigner:reactionType></reaction> type="NEGATIVE_INFLUENCE"') === 'hybrid');
+ok('mapKind graphml unknown', N.mapKind('graphml', '<graphml/>') === null);
+var se = require(path.join(here, 'renderers/converter/sbgn_edit.js'));
+ok('mapKind sbgnml from sbgn_edit', N.mapKind('sbgnml', '<sbgn><map language="activity flow"><glyph class="biological activity" id="a"/></map></sbgn>', { sbgn_edit: se }) === 'af');
+// the palette's CellDesigner set
+var off = N.paletteOff(['cd']);
+ok('palette cd set', Object.keys(off).sort().join() === 'delay,tag' && !Object.keys(N.paletteOff([])).length);
+// the shared cases
+var cases = path.join(here, 'tests/rules-cases');
+if (fs.existsSync(path.join(cases, 'expected.json'))) n += require('./rules-cases/run.js')(N, cases, function (what, v, more) { if (!v) { bad++; console.log('WRONG ' + what + (more ? '  ' + more : '')); } });
+console.log((bad ? bad + ' of ' + n + ' WRONG' : 'All ' + n + ' cases ok') + ' (notation.js, ' + (N.RULES.allow.length + N.RULES.refuse.length) + ' rules)');
+process.exit(bad ? 1 : 0);

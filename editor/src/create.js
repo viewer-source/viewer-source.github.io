@@ -1,10 +1,11 @@
 import { shared, V } from './state.js';
-import { G, GE, HANDLE, MODS, Y, at, box, boxOf, cdOwn, changed, commit, complexHere, cutShape, doc, edges2, editing, f1, fmt, full, gE, gN, gridSet, grown, hit, holder, holderSize, holds, hubPorts, inComplex, inRim, keyTake, kindWindow, landMarks, lateItem, layTool, map, moveFix, name, nodes2, num, on, origFromFolder, origToFolder, outlineD, overlap, ownMenus, paint, parse, parseFix, quiet, rclick, realizerOf, refit, regroup, remember, render, rimOf, roleOf, roomy, setBoxes, setPort, setText, settle, site, src, subItem, sx, sy, toGrid, under, undo, unpush, warn, x0, y0 } from './core.js';
+import { G, GE, HANDLE, MODS, Y, at, box, boxOf, cdOwn, changed, commit, complexHere, cutShape, doc, edges2, editing, f1, fmt, full, gE, gN, gridSet, grown, hit, holder, holderSize, holds, hubPorts, inComplex, inRim, keyTake, kindWindow, landMarks, lateItem, layTool, map, moveFix, name, nodes2, num, on, origFromFolder, origToFolder, outlineD, overlap, ownMenus, paint, parse, parseFix, quiet, rclick, realizerOf, refit, regroup, remember, render, rimOf, roleOf, roomy, setBoxes, setPort, setText, settle, site, src, subItem, sx, sy, takes, toGrid, under, undo, unpush, warn, x0, y0 } from './core.js';
 import { bx, liveOff, livePose, sizeOff } from './live.js';
 import { cdMk, cdNow, cdRebuild } from './celldesigner.js';
 import { GEO, edOf, sbJs, sbKind } from './sbgn.js';
 import { CD_DEF_KEY, CD_GATE, PF_CD, cdCardDown, cdClick, cdClsOf, cdDeleteItem, cdFeat, cdFill, cdFront, cdGateMarks, cdGhost, cdHow, cdInfo, cdItems, cdKind, cdLineAt, cdLink, cdLinkMarks, cdLiveEnds, cdMake, cdNameDown, cdNameOf, cdOnLine, cdOverMarks, cdPal, cdRename, cdRole, cdSsTyped, cdStartOk, cdSvDelete, cdSvList, cdSvMove, cdSvOpen } from './cdcreate.js';
 import { origGh, origPut } from './own.js';
+import NT from '../../renderers/converter/notation.js';   // the notation's kinds and rules table (plan 3 step 6)
 
     // ---------- making new things: the palette (editor/src/create.js) ----------
     // The full editor: entities taken from a palette in the Edit window, as in yEd and Newt. A click on
@@ -2240,6 +2241,66 @@ import { origGh, origPut } from './own.js';
       if (has(a, b, cls === 'production' ? 'delta' : 'none')) return { no: 'This ' + cls + ' is there already.' };
       return { cls: cls };
     }
+    // Drawing and dragging asked the same question (tests/rules-agree.js): for every line of the map, each of its ends put
+    // on every other node, whether dragging takes it (core.js takes) and what drawing that line's kind between the same
+    // two nodes gives (linkKind: its class, 'pair', or the reason), beside the rules table's answer (notation.js allowed)
+    // for each: for the drag the moved line itself left out of the counts, for drawing a new line every line counted.
+    // o: { lang: 'pd' or 'af', strict: Reduced notation unticked }, set for the asking only. One row per distinct question,
+    // the nodes named by their notation kinds. Only where the SBGN palette is (palOn).
+    function askAll(o) {
+      if (!palOn()) return null;   // an SBGN or GraphML map in full editing
+      var keep = palSet, rows = {};
+      palSet = { lang: o && o.lang || 'pd', look: palSet.look, strict: !!(o && o.strict) };
+      try {
+        var word = function (i) { var l = nodes2[i].el.getElementsByTagNameNS(Y, 'NodeLabel')[0]; return l ? l.textContent.trim() : ''; };
+        var kindOf = function (i) {   // the notation's kind of a node the editor joins lines to (a member of a complex, a decoration: none)
+          var r = roleOf(i), sub = nodes2[i].shape.kind === 'Submap' && !nodes2[i].comp;
+          if (!r && !sub) return null;
+          var k = NT.nodeKind('graphml', r === 'proc' ? 'Process' : nodes2[i].shape.kind, word(i));
+          return k ? { kind: k.kind, cls: k.cls } : null;
+        };
+        var name = function (k) { return k.kind + ':' + k.cls; };
+        var sets = palLangNow() === 'af' ? ['af'] : hybOn() ? ['pd', 'reduced'] : ['pd'];
+        var checks = function (s, t, a, skip) {   // the table's named checks from the map's lines, line skip left out (the line being moved)
+          var other = function (q, j) { return j !== skip; };
+          return function (c) {
+            if (c === 'gateOneOut') return edges2.some(function (q, j) { return other(q, j) && q.s === s; }) ? 'A logic gate has one line out, and this one has it.' : null;
+            if (c === 'oneInput') return edges2.some(function (q, j) { return other(q, j) && q.t === t; }) ? 'This gate has one input, and it has it.' : null;
+            if (c === 'already') return edges2.some(function (q, j) { return other(q, j) && ((q.s === s && q.t === t) || (a === 'none' && q.s === t && q.t === s)) && q.arr[1] === a; }) ? 'This line is there already.' : null;
+            if (c === 'tagRoom') { var tg = roleOf(s) === 'tag' ? s : t; return tagRoom(tg, tg === s ? t : s, skip == null ? -1 : skip); }
+            if (c === 'reversible') { var m = pdLimit(s, t, 'consumption'); return m && /reversible/.test(m) ? m : null; }   // pdLimit's own reading of the file
+            return null;
+          };
+        };
+        edges2.forEach(function (e, k) {
+          var a = e.arr[1];
+          if (a !== 'none' && !NT.arcKind('graphml', a)) return;
+          [0, 1].forEach(function (end) {
+            nodes2.forEach(function (n, i) {
+              if (i === e.s || i === e.t) return;
+              var s = end ? e.s : i, t = end ? i : e.t, ks = kindOf(s), kt = kindOf(t);
+              if (!ks || !kt) return;
+              // the line as it would be: a plain line's kind follows its ends (into a process a consumption, into a gate a
+              // logic arc, with a tag an equivalence arc)
+              var tagLine = a === 'none' && [e.s, e.t].some(function (x) { return roleOf(x) === 'tag'; });   // a tag's line stays one
+              var c = a !== 'none' ? NT.arcKind('graphml', a) : tagLine || ks.kind === 'tag' || kt.kind === 'tag' ? 'equivalence arc' : NT.arcKind('graphml', 'none', kt.kind) || 'logic arc';
+              var was = a !== 'none' ? c : NT.arcKind('graphml', 'none', kindOf(e.t) ? kindOf(e.t).kind : '') || 'logic arc';
+              var key = [was, end, name(ks), name(kt), name(kindOf(e.s) || { kind: '?' }), name(kindOf(e.t) || { kind: '?' })].join('|');
+              if (rows[key]) return;
+              var want = c === 'equivalence arc' && (ks.kind === 'tag' || kt.kind === 'tag') ? 'consumption' : c, h = linkKind(s, t, null, want);   // a tag's line is drawn with the plain line's sign
+              rows[key] = { arc: was, now: c, end: end ? 'target' : 'source', from: name(ks), to: name(kt), line: name(kindOf(e.s) || { kind: '?' }) + ' > ' + name(kindOf(e.t) || { kind: '?' }),
+                            drag: !!takes(k, end, i), draw: !h ? 'nothing' : h.no ? h.no : h.pair ? 'pair' : h.cls,
+                            tableDrag: NT.allowed(c, ks, kt, { sets: sets, check: checks(s, t, a, k) }),
+                            tableDraw: NT.allowed(c, ks, kt, { sets: sets, check: checks(s, t, a, null) }) };
+            });
+          });
+        });
+      } finally { palSet = keep; }
+      return Object.keys(rows).map(function (k) { return rows[k]; });
+    }
+    function __run61() {   // run at start, in order (__start)
+    window.m2EditAsk = askAll;
+    }
     // the modulation a line with no kind picked gets: the one most used on the map into nodes of b's role (catalysis only
     // into processes), ties in the palette's order, else `dflt` (a map with none yet)
     function usual(b, dflt) {
@@ -2915,5 +2976,5 @@ import { origGh, origPut } from './own.js';
     });
     }
 
-    export function __start() { __run1(); __run2(); __run3(); __run4(); __run5(); __run6(); __run7(); __run8(); __run9(); __run10(); __run11(); __run12(); __run13(); __run14(); __run15(); __run16(); __run17(); __run18(); __run19(); __run20(); __run21(); __run22(); __run23(); __run24(); __run25(); __run26(); __run27(); __run28(); __run29(); __run31(); __run32(); __run33(); __run34(); __run35(); __run36(); __run37(); __run38(); __run39(); __run40(); __run41(); __run42(); __run43(); __run44(); __run45(); __run46(); __run47(); __run48(); __run49(); __run50(); __run51(); __run52(); __run53(); __run54(); __run55(); __run56(); __run57(); __run58(); __run59(); __run60(); }   // the part's statements, in their order
+    export function __start() { __run1(); __run2(); __run3(); __run4(); __run5(); __run6(); __run7(); __run8(); __run9(); __run10(); __run11(); __run12(); __run13(); __run14(); __run15(); __run16(); __run17(); __run18(); __run19(); __run20(); __run21(); __run22(); __run23(); __run24(); __run25(); __run26(); __run27(); __run28(); __run29(); __run31(); __run32(); __run33(); __run34(); __run35(); __run36(); __run37(); __run38(); __run39(); __run40(); __run41(); __run42(); __run43(); __run44(); __run45(); __run46(); __run47(); __run48(); __run49(); __run50(); __run51(); __run52(); __run53(); __run54(); __run55(); __run56(); __run57(); __run58(); __run59(); __run60(); __run61(); }   // the part's statements, in their order
     export { ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues, confettiLine, confettiOne, confettiPick, confettiSquares, ddOpen, hex, hybOn, iconKeep, iconSpread, innermost, joinDo, joinPack, joinPlan, keepLook, keepMapChoice, link, linkDown, linkEnd, linkMove, linkPaint, linkUp, looksKept, mapCols, moveLimit, nameAt, origAll, pNow, pal, palBlocks, palDid, palDown, palDrop, palId, palLangNow, palShow, palSigns, palSignsEl, palStore, palStyle, palTake, palUp, pdLimit, placedAt, propFmt, propRows, setSize, sizable, styleRow, svAt, svDelete, svDown, svIcons, svList, svMarks, svParts, textsOf, tool, typeIn };

@@ -23,6 +23,7 @@ t() {
   $*"; fi
 }
 t 1 node tests/yrender-compare.js python3
+t 1 node tests/notation.js
 t 2 node tests/layout-compare.js
 t 2 node tests/no-page.js python3
 t 1 node tests/cd-compare.js
