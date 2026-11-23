@@ -1,4 +1,5 @@
 import { putMap, resetDrawing, resetMap, shared, takeMap, V } from './state.js';
+import GE from '../../renderers/converter/graphml_edit.js';   // the GraphML engine: the map's GraphML read and written as text
 import { bx, keyShift, liveFit, liveLines, liveOff, posePort, shift, sizeLive, sizeOff, unshift } from './live.js';
 import { AF_KINDS, drawGraphml, noNegative, shiftedAhead, yr } from './graphml.js';
 import { beyond, cdDoc, cdDraw, cdGraphml, cdJs, cdKnown, cdMap, cdMk, cdNow, cdRebuild, cdRemember, cdSessionSoon, cdpy, glyphArcs, glyphPort, isCd, joinAt, joinGuides, joinSolve, lineGrid, nodeCentre, nodePlaces, plainCanvas } from './celldesigner.js';
@@ -696,86 +697,11 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       if (shared.sb) sbKind(how);   // a change that turned an SBGN-ML file: the GraphML made again from it first (sbgn.js)
       var pd = preDoc.filter(function (x) { return x.text === shared.text; })[0];   // read ahead, each used once
       preDoc = preDoc.filter(function (x) { return x !== pd; });
-      doc = pd ? pd.doc : new DOMParser().parseFromString(shared.text, 'application/xml');
-      docText = shared.text;
-      if (doc.getElementsByTagName('parsererror').length) throw 'not a readable XML file';
-      geos = Array.prototype.slice.call(doc.getElementsByTagNameNS(Y, 'Geometry'));
-      points = Array.prototype.slice.call(doc.getElementsByTagNameNS(Y, 'Point'));
-      if ((shared.text.match(/<y:Geometry\s/g) || []).length !== geos.length || (shared.text.match(/<y:Point\s/g) || []).length !== points.length)
-        throw 'the file is not written as yEd writes it';
-      var owner = function (e, tag) { for (var p = e.parentNode; p; p = p.parentNode) if (p.localName === tag && p.namespaceURI === G) return p; return null; };
-      var gi = new Map(), byEl = new Map();
-      geos.forEach(function (g, i) { gi.set(g, i); });
-      nodes2 = Array.prototype.slice.call(doc.getElementsByTagNameNS(G, 'node')).map(function (n, i) {
-        byEl.set(n, i);
-        return { el: n, id: n.getAttribute('id'), geo: [] };
-      });
-      geos.forEach(function (g, i) { var n = owner(g, 'node'); if (n && byEl.has(n)) nodes2[byEl.get(n)].geo.push(i); });
-      nodes2 = nodes2.filter(function (n) { return n.geo.length; });
-      byEl = new Map(); nodes2.forEach(function (n, i) { byEl.set(n.el, i); });
-      nodes2.forEach(function (n) {   // a group moves with what it holds, as in yEd
-        n.inside = Array.prototype.slice.call(n.el.getElementsByTagNameNS(G, 'node')).map(function (c) { return byEl.get(c); }).filter(function (c) { return c != null; });
-        n.kids = n.inside.filter(function (c) { return owner(nodes2[c].el, 'node') === n.el; });
-        var r = realizerOf(n.el), g = r && r.getElementsByTagNameNS(Y, 'Geometry')[0];
-        n.ag = g && gi.has(g) ? gi.get(g) : n.geo[0];   // the geometry of the realizer shown (a group open or closed)
-        n.shape = r ? shapeOf(r) : { kind: 'rectangle', props: {} };
-        n.hub = !shared.cd && /sbgn\.(Process|Operator)$/.test(r ? r.getAttribute('configuration') || '' : '');   // a process or logic gate: one object with its two ports
-        n.eq = n.hub && n.shape.kind === 'Operator' && Array.prototype.some.call(r.getElementsByTagNameNS(Y, 'NodeLabel'), function (l) { return l.textContent.trim() === '\u2261'; });   // an equivalence gate (yrender's eq)
-        n.up = null;
-        n.comp = n.el.getAttribute('yfiles.foldertype') === 'group' && !/omplex/.test(r ? r.getAttribute('configuration') || '' : '');
-        var ins = r && r.getElementsByTagNameNS(Y, 'Insets')[0], iv = function (k) { return ins ? parseFloat(ins.getAttribute(k + 'F') || ins.getAttribute(k)) || 0 : 0; };
-        n.ins = [iv('left'), iv('top'), iv('right'), iv('bottom')];
-        n.lab = { t: 0, b: 0 };   // its own labels inside, at the top or the bottom (as the layout skill's room())
-        if (r) Array.prototype.forEach.call(r.children, function (l) {
-          if (l.localName !== 'NodeLabel' || l.getAttribute('modelName') !== 'internal' || l.getAttribute('visible') === 'false') return;
-          var side = (l.getAttribute('modelPosition') || '').charAt(0);
-          if (side === 't' || side === 'b') n.lab[side] = Math.max(n.lab[side], parseFloat(l.getAttribute('height')) || 0);
-          if (!n.labPos) n.labPos = l.getAttribute('modelPosition') || 'c';
-        });
-      });
-      nodes2.forEach(function (n, i) { n.kids.forEach(function (c) { nodes2[c].up = i; }); });
+      var R = GE.read(shared.text, { doc: pd ? pd.doc : null, cd: !!shared.cd });
+      doc = R.doc; docText = shared.text; geos = R.geos; points = R.points; nodes2 = R.nodes; edges2 = R.edges; shared.procs = R.procs;
       parseFix.forEach(function (f) { f(); });
-      var byId = {}; nodes2.forEach(function (n, i) { byId[n.id] = i; });
-      var pi = new Map(); points.forEach(function (p, i) { pi.set(p, i); });
-      edges2 = Array.prototype.slice.call(doc.getElementsByTagNameNS(G, 'edge')).map(function (e) {
-        var ar = e.getElementsByTagNameNS(Y, 'Arrows')[0];
-        return { id: e.getAttribute('id'), s: byId[e.getAttribute('source')], t: byId[e.getAttribute('target')], path: e.getElementsByTagNameNS(Y, 'Path')[0] || null,
-                 arr: ar ? [ar.getAttribute('source') || 'none', ar.getAttribute('target') || 'none'] : ['none', 'none'],
-                 pts: Array.prototype.slice.call(e.getElementsByTagNameNS(Y, 'Point')).map(function (p) { return pi.get(p); }),
-                 smooth: e.getElementsByTagNameNS(Y, 'QuadCurveEdge').length > 0 || Array.prototype.some.call(e.getElementsByTagNameNS(Y, 'BendStyle'), function (b) { return b.getAttribute('smoothed') === 'true'; }) };
-      });
-      var byE = {}; edges2.forEach(function (e, k) { byE[e.id] = k; });
-      shared.procs = [];
-      nodes2.forEach(function (n, i) {
-        var m = n.id.match(/^(.*)\|proc$/);
-        if (m && byE[m[1] + '|a'] != null && byE[m[1] + '|b'] != null) shared.procs.push({ g: i, a: byE[m[1] + '|a'], b: byE[m[1] + '|b'] });
-      });
     }
-    function realizerOf(el) {   // the node's own yEd realizer (of a group: the one shown)
-      for (var i = 0; i < el.children.length; i++) {
-        var dd = el.children[i];
-        if (dd.localName !== 'data') continue;
-        for (var j = 0; j < dd.children.length; j++) {
-          var r = dd.children[j];
-          if (r.namespaceURI !== Y) continue;
-          if (r.localName === 'ProxyAutoBoundsNode') {
-            var rs = r.getElementsByTagNameNS(Y, 'Realizers')[0];
-            return rs ? rs.children[parseInt(rs.getAttribute('active') || '0', 10)] || null : null;
-          }
-          return r;
-        }
-      }
-      return null;
-    }
-    function shapeOf(r) {   // as the yEd renderer reads it: the SBGN style or the plain shape, and the style's numbers
-      var props = {}, kind;
-      Array.prototype.forEach.call(r.getElementsByTagNameNS(Y, 'Property'), function (p) {
-        props[(p.getAttribute('name') || '').replace('com.yworks.sbgn.style.', '')] = p.getAttribute('value');
-      });
-      if (/^Generic/.test(r.localName)) kind = (r.getAttribute('configuration') || '').replace('com.yworks.sbgn.', '');
-      else { var sh = r.getElementsByTagNameNS(Y, 'Shape')[0]; kind = sh ? sh.getAttribute('type') : 'rectangle'; }
-      return { kind: kind, props: props };
-    }
+    function realizerOf(el) { return GE.realizerOf(el); }   // the node's own yEd realizer (of a group: the one shown)
     // after a move of nodes (a drag, the keys): each function given the nodes moved (their indices) puts what it keeps in
     // place (a terminal back onto its submap's border, create.js), in the same undo step
     var moveFix, parseFix, keyTake;
@@ -793,16 +719,12 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     }
     function num(el, a) { return parseFloat(el.getAttribute(a)); }
     function boxOf(i) { var g = geos[nodes2[i].ag]; return [num(g, 'x'), num(g, 'y'), num(g, 'width'), num(g, 'height')]; }
-    function fmt(v) { return String(Math.round(v * 1000) / 1000); }
+    function fmt(v) { return GE.fmt(v); }
 
     // the move: new x and y for some y:Geometry and y:Point, written into the text in one pass, the rest untouched
     function write(g, p) {
-      var k = { 'Geometry': -1, 'Point': -1 }, same = docText === shared.text;   // the elements of doc got these numbers already (move)
-      setText(shared.text.replace(/<y:(Geometry|Point)\s[^>]*>/g, function (tag, kind) {
-        var i = ++k[kind], v = (kind === 'Geometry' ? g : p)[i];
-        if (!v) return tag;
-        return tag.replace(/(\sx=")[^"]*"/, '$1' + v[0] + '"').replace(/(\sy=")[^"]*"/, '$1' + v[1] + '"');
-      }));
+      var same = docText === shared.text;   // the elements of doc got these numbers already (move)
+      setText(GE.place(shared.text, g, p));
       if (same) docText = shared.text;
     }
     function moving(alone) {   // what a move of the selection moves: nodes (a group with what it holds) and bend points;
@@ -955,36 +877,12 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       });
       if (shared.text !== t0) parse();
     }
-    function insetsOf(id, ins, bins) {   // the y:Insets (null: kept) and y:BorderInsets of node id's realizer shown, written into the text
-      var q = id.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/[.*+?^${}()|[\]\\\/]/g, '\\$&');
-      var m = new RegExp('<node(?=[\\s>/])[^>]*?\\sid="' + q + '"').exec(shared.text);
-      if (!m) return;
-      var rest = shared.text.slice(m.index), own = rest.slice(0, Math.min.apply(null, [rest.search(/<graph(?=[\s>\/])/), rest.indexOf('</node>')].filter(function (k) { return k >= 0; }).concat([rest.length])));
-      var act = /<y:Realizers\s[^>]*active="(\d+)"/.exec(own), k = act ? +act[1] : 0, put = [];
-      [['Insets', ins], ['BorderInsets', bins]].forEach(function (q2) {
-        var re = new RegExp('<y:' + q2[0] + '\\s[^>]*>', 'g'), x;
-        for (var j = 0; (x = re.exec(own)) && j < k; j++);
-        if (!x) return;
-        var tag = x[0];
-        ['left', 'top', 'right', 'bottom'].forEach(function (sd, j) {
-          var v = q2[1][j];
-          if (v == null) return;
-          v = Math.round(v * 1000) / 1000;
-          tag = tag.replace(new RegExp('(\\s' + sd + '=")[^"]*"'), '$1' + Math.round(v) + '"').replace(new RegExp('(\\s' + sd + 'F=")[^"]*"'), '$1' + (v % 1 ? String(v) : v + '.0') + '"');
-        });
-        if (tag !== x[0]) put.push([m.index + x.index, x[0].length, tag]);
-      });
-      put.sort(function (a, b) { return b[0] - a[0]; }).forEach(function (q2) { setText(shared.text.slice(0, q2[0]) + q2[2] + shared.text.slice(q2[0] + q2[1])); });
-    }
+    function insetsOf(id, ins, bins) { setText(GE.insets(shared.text, id, ins, bins)); }   // the y:Insets (null: kept) and y:BorderInsets of node id's realizer shown, written into the text
     function setBoxes(nb) {   // boxes written into the text (node index -> [x, y, w, h]), the map read again
-      var at = {}, i = -1;
+      var at = {};
       Object.keys(nb).forEach(function (k) { at[nodes2[+k].ag] = nb[k].map(fmt); });
       if (!Object.keys(at).length) return;
-      setText(shared.text.replace(/<y:Geometry\s[^>]*>/g, function (tag) {
-        var v = at[++i];
-        if (v) ['x', 'y', 'width', 'height'].forEach(function (a, j) { tag = tag.replace(new RegExp('(\\s' + a + '=")[^"]*"'), '$1' + v[j] + '"'); });
-        return tag;
-      }));
+      setText(GE.boxes(shared.text, at));
       parse(); shared.dirty = true;
     }
     // the new holders after a change of places (Full editing only), node -> its new parent (null: the map itself), only
@@ -2637,19 +2535,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       });
       if (!by.size) { unshift(); paint(); return; }
       remember(!!merge);
-      var c = -1, ce = -1;
-      if (re) setText(shared.text.replace(/<edge\b[^>]*>/g, function (tag) {
-        return ++ce !== re.k ? tag : tag.replace(new RegExp('(\\s' + re.att + '\\s*=\\s*)("[^"]*"|\'[^\']*\')'), function (m, p1) { return p1 + '"' + re.id + '"'; });
-      }));
-      setText(shared.text.replace(/<y:Path\b[^>]*>/g, function (tag) {
-        var kv = by.get(++c);
-        if (!kv) return tag;
-        kv.forEach(function (q) {
-          var re = new RegExp('(\\s' + q[0] + '=")[^"]*"');
-          tag = re.test(tag) ? tag.replace(re, '$1' + q[1] + '"') : tag.replace(/(\/?>)$/, ' ' + q[0] + '="' + q[1] + '"$1');
-        });
-        return tag;
-      }));
+      setText(GE.ends(shared.text, by, re));
       parse(); shared.dirty = true; render(); paint(); changed();
     }
     function paint() {
@@ -2974,27 +2860,10 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       var a = pts[j - 1], b = pts[j], dx = b[0] - a[0], dy = b[1] - a[1], L = dx * dx + dy * dy;
       var t = L ? Math.max(0, Math.min(1, ((P[0] - a[0]) * dx + (P[1] - a[1]) * dy) / L)) : 0;
       var Q = [Math.round((a[0] + dx * t) * 1000) / 1000, Math.round((a[1] + dy * t) * 1000) / 1000];
-      var tag = '<y:Point x="' + fmt(Q[0]) + '" y="' + fmt(Q[1]) + '"/>', at = j - 1;
-      var nth = function (re, n) { var m, c = -1; re.lastIndex = 0; while ((m = re.exec(shared.text))) if (++c === n) return m; return null; };
-      var indent = function (pos) { var s0 = shared.text.lastIndexOf('\n', pos - 1) + 1, w = shared.text.slice(s0, pos).match(/^[ \t]*/)[0]; return w; };
-      var m, before = shared.text;
-      if (at < e.pts.length) {   // before a bend the arc has: on a line of its own, as that one
-        m = nth(/<y:Point\s[^>]*>/g, e.pts[at]);
-        setText(shared.text.slice(0, m.index) + tag + '\n' + indent(m.index) + shared.text.slice(m.index));
-      } else if (e.pts.length) {   // after its last bend
-        m = nth(/<y:Point\s[^>]*>/g, e.pts[e.pts.length - 1]);
-        var end = m.index + m[0].length;
-        setText(shared.text.slice(0, end) + '\n' + indent(m.index) + tag + shared.text.slice(end));
-      } else {   // its first bend: inside the y:Path, opened if it closes in itself
-        var paths = Array.prototype.slice.call(doc.getElementsByTagNameNS(Y, 'Path'));
-        m = nth(/<y:Path[\s>\/][^>]*>/g, paths.indexOf(e.path));
-        if (!m) return null;
-        var w = indent(m.index), end2 = m.index + m[0].length;
-        setText(/\/>$/.test(m[0])
-          ? shared.text.slice(0, m.index) + m[0].replace(/\s*\/>$/, '>') + '\n' + w + '  ' + tag + '\n' + w + '</y:Path>' + shared.text.slice(end2)
-          : shared.text.slice(0, end2) + '\n' + w + '  ' + tag + shared.text.slice(end2));
-      }
-      var keep = shared.text; setText(before); remember(false); setText(keep);
+      var at = j - 1, paths = Array.prototype.slice.call(doc.getElementsByTagNameNS(Y, 'Path'));
+      var t2 = GE.bend(shared.text, at < e.pts.length ? { before: e.pts[at] } : e.pts.length ? { after: e.pts[e.pts.length - 1] } : { path: paths.indexOf(e.path) }, Q[0], Q[1]);
+      if (t2 == null) return null;
+      remember(false); setText(t2);
       parse();
       return { p: edges2[k].pts[at], at: Q, k: k + 1 };
     }
@@ -3002,17 +2871,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     // CellDesigner's right click Remove Anchor Point; yEd: Delete): its y:Point out of the text, one undo step.
     // On a CellDesigner map the glyph then sits midway on the segment it is on, as CellDesigner puts it
     function unbend(list) {
-      list = list.slice().sort(function (a, b) { return b - a; });   // last first, so the earlier ones keep their place in the text
-      var t = shared.text;
-      list.forEach(function (pi) {
-        var re = /<y:Point\s[^>]*>/g, m, c = -1;
-        while ((m = re.exec(t))) if (++c === pi) break;
-        if (!m) return;
-        var a = m.index, b = m.index + m[0].length;
-        var s0 = t.lastIndexOf('\n', a - 1) + 1;
-        if (/^[ \t]*$/.test(t.slice(s0, a)) && t[b] === '\n') { a = s0; b += 1; }   // on a line of its own: the line goes
-        t = t.slice(0, a) + t.slice(b);
-      });
+      var t = GE.unbend(shared.text, list);
       if (t === shared.text) return false;
       keyGuides = null;
       return commit(t, { name: 'bend point removed', sel: [] });
@@ -3499,4 +3358,4 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     }
 
     export function __start() { __run1(); __run2(); __run3(); __run4(); __run5(); __run6(); __run7(); __run8(); __run9(); __run10(); __run11(); __run12(); __run13(); __run14(); __run15(); __run16(); __run17(); __run18(); __run19(); __run20(); __run21(); __run22(); __run23(); __run24(); __run25(); __run26(); __run27(); __run28(); __run29(); __run30(); __run31(); __run32(); __run34(); __run35(); __run36(); __run37(); __run38(); __run39(); __run40(); __run41(); __run42(); __run43(); __run44(); __run45(); __run46(); }   // the part's statements, in their order
-    export { G, HANDLE, MODS, Y, ahead, aheadSoon, api, at, away, b64, blobSha, box, boxOf, buttons, cdOwn, changed, chooseFolder, commit, complexHere, cut, cutShape, doc, docText, drag, drawText, edgeAt, edges2, editing, f1, fmt, freeName, full, gE, gN, gh, graphmlOf, gridBlock, gridSet, grown, handleMarks, heldText, hit, holder, holderSize, holds, hubPorts, inComplex, inRim, keyFlush, keyTake, kindWindow, landMarks, lastFor, lastSvg, lateItem, layTool, line, livePath, localBox, map, mapTop, moveFix, mv, name, near, nodes2, note, num, on, origFolderDrop, origFromFolder, origRead, origToFolder, origWrite, outlineD, overlap, ownMenus, paint, parse, parseFix, picWait, points, ports, procPlaces, pt, quiet, rclick, realizerOf, rebase, refit, regroup, remember, render, repo, rimOf, roleOf, roomy, setBoxes, setPort, setText, settle, shapeD, shown, site, spotNo, src, status, stop, subItem, sx, sy, syncFolder, toFolder, toGrid, token, tops, under, undo, unkeep, unpush, warn, x0, y0 };
+    export { G, GE, HANDLE, MODS, Y, ahead, aheadSoon, api, at, away, b64, blobSha, box, boxOf, buttons, cdOwn, changed, chooseFolder, commit, complexHere, cut, cutShape, doc, docText, drag, drawText, edgeAt, edges2, editing, f1, fmt, freeName, full, gE, gN, gh, graphmlOf, gridBlock, gridSet, grown, handleMarks, heldText, hit, holder, holderSize, holds, hubPorts, inComplex, inRim, keyFlush, keyTake, kindWindow, landMarks, lastFor, lastSvg, lateItem, layTool, line, livePath, localBox, map, mapTop, moveFix, mv, name, near, nodes2, note, num, on, origFolderDrop, origFromFolder, origRead, origToFolder, origWrite, outlineD, overlap, ownMenus, paint, parse, parseFix, picWait, points, ports, procPlaces, pt, quiet, rclick, realizerOf, rebase, refit, regroup, remember, render, repo, rimOf, roleOf, roomy, setBoxes, setPort, setText, settle, shapeD, shown, site, spotNo, src, status, stop, subItem, sx, sy, syncFolder, toFolder, toGrid, token, tops, under, undo, unkeep, unpush, warn, x0, y0 };

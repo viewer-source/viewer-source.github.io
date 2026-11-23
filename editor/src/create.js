@@ -1,5 +1,5 @@
 import { shared, V } from './state.js';
-import { G, HANDLE, MODS, Y, at, box, boxOf, cdOwn, changed, commit, complexHere, cutShape, doc, edges2, editing, f1, fmt, full, gE, gN, gridSet, grown, hit, holder, holderSize, holds, hubPorts, inComplex, inRim, keyTake, kindWindow, landMarks, lateItem, layTool, map, moveFix, name, nodes2, num, on, origFromFolder, origToFolder, outlineD, overlap, ownMenus, paint, parse, parseFix, quiet, rclick, realizerOf, refit, regroup, remember, render, rimOf, roleOf, roomy, setBoxes, setPort, setText, settle, site, src, subItem, sx, sy, toGrid, under, undo, unpush, warn, x0, y0 } from './core.js';
+import { G, GE, HANDLE, MODS, Y, at, box, boxOf, cdOwn, changed, commit, complexHere, cutShape, doc, edges2, editing, f1, fmt, full, gE, gN, gridSet, grown, hit, holder, holderSize, holds, hubPorts, inComplex, inRim, keyTake, kindWindow, landMarks, lateItem, layTool, map, moveFix, name, nodes2, num, on, origFromFolder, origToFolder, outlineD, overlap, ownMenus, paint, parse, parseFix, quiet, rclick, realizerOf, refit, regroup, remember, render, rimOf, roleOf, roomy, setBoxes, setPort, setText, settle, site, src, subItem, sx, sy, toGrid, under, undo, unpush, warn, x0, y0 } from './core.js';
 import { bx, liveOff, livePose, sizeOff } from './live.js';
 import { cdMk, cdNow, cdRebuild } from './celldesigner.js';
 import { GEO, edOf, sbJs, sbKind } from './sbgn.js';
@@ -900,14 +900,7 @@ import { origGh, origPut } from './own.js';
       if (!q && es.length !== 1) return t;
       es.forEach(function (e) {
         var end = e.t === i, o = boxOf(end ? e.s : e.t), p = tagEnd(way, nb, q, [o[0] + o[2] / 2, o[1] + o[3] / 2]);
-        var xid = e.id.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        t = t.replace(new RegExp('(<edge id="' + xid + '"(?:(?!</edge>)[\\s\\S])*?<y:Path)([^>]*?)(/?>)'), function (m, a, at, close) {   // its Path in this edge only; a missing offset added
-          [[end ? 'tx' : 'sx', p[0]], [end ? 'ty' : 'sy', p[1]]].forEach(function (k) {
-            var v = ' ' + k[0] + '="' + sbJs.repr(k[1]) + '"', re = new RegExp('\\s' + k[0] + '="[^"]*"');
-            at = re.test(at) ? at.replace(re, v) : at + v;
-          });
-          return a + at + close;
-        });
+        t = GE.pathOf(t, e.id, [[end ? 'tx' : 'sx', p[0]], [end ? 'ty' : 'sy', p[1]]].map(function (k) { return [k[0], sbJs.repr(k[1])]; }));   // its Path in this edge only; a missing offset added
       });
       return t;
     }

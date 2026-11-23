@@ -1,5 +1,5 @@
 import { shared, V } from './state.js';
-import { G, Y, boxOf, doc, docText, edges2, fmt, gE, gN, gridBlock, lastFor, mv, nodes2, num, on, points, pt, realizerOf, setText, warn } from './core.js';
+import { G, GE, Y, boxOf, doc, docText, edges2, gE, gN, gridBlock, lastFor, mv, nodes2, num, on, points, pt, realizerOf, setText, warn } from './core.js';
 import { bx, dropCopies, posePort, restBox, restPt } from './live.js';
 import { sbJs } from './sbgn.js';
 
@@ -213,34 +213,23 @@ import { sbJs } from './sbgn.js';
     // or the text itself when nothing moves; were it ever to differ from noNegative's, the drawing made ahead is simply
     // not used (it is kept with its text), so this can only cost time, never change a map
     function shiftedAhead(t, d) {
-      var mx = Infinity, my = Infinity, re = /<y:(?:Geometry|Point)\s[^>]*>/g;
+      var own = new Map(), bs = [];
       var owner = function (e) { for (var p = e.parentNode; p; p = p.parentNode) if (p.localName === 'node' && p.namespaceURI === G) return p; return null; };
-      var own = new Map();
       Array.prototype.forEach.call(d.getElementsByTagNameNS(Y, 'Geometry'), function (g) { var n = owner(g); if (n && !own.has(n)) own.set(n, g); });
       own.forEach(function (g0, n) {
         var r = realizerOf(n), g = r && r.getElementsByTagNameNS(Y, 'Geometry')[0];
         if (!g) g = g0;   // as parse(): the realizer's first geometry, else the node's first
-        mx = Math.min(mx, num(g, 'x')); my = Math.min(my, num(g, 'y'));
+        bs.push([num(g, 'x'), num(g, 'y')]);
       });
-      Array.prototype.forEach.call(d.getElementsByTagNameNS(Y, 'Point'), function (p) { mx = Math.min(mx, num(p, 'x')); my = Math.min(my, num(p, 'y')); });
-      var B = gridBlock(), block = function (m) { return m < 0 ? Math.ceil((40 - m) / B) * B : 0; }, sx = block(mx), sy = block(my);
-      if (!sx && !sy) return t;
-      return t.replace(re, function (tag) { return shiftTag(tag, sx, sy); });
-    }
-    function shiftTag(tag, sx, sy) {   // only the axis shifted is written (an SBGN-ML map's other numbers stay as they are)
-      if (sx) tag = tag.replace(/(\sx=")([^"]*)"/, function (a, k, v) { return k + fmt(parseFloat(v) + sx) + '"'; });
-      if (sy) tag = tag.replace(/(\sy=")([^"]*)"/, function (a, k, v) { return k + fmt(parseFloat(v) + sy) + '"'; });
-      return tag;
+      var sh = GE.shiftOf(bs, Array.prototype.map.call(d.getElementsByTagNameNS(Y, 'Point'), function (p) { return [num(p, 'x'), num(p, 'y')]; }), gridBlock());
+      return sh ? GE.shift(t, sh[0], sh[1]) : t;
     }
     function noNegative() {
       // what is drawn counts (a closed group's other size, kept by yEd, does not), all of it moves
-      var mx = Infinity, my = Infinity, re = /<y:(?:Geometry|Point)\s[^>]*>/g;
-      nodes2.forEach(function (n, i) { var b = boxOf(i); mx = Math.min(mx, b[0]); my = Math.min(my, b[1]); });
-      points.forEach(function (p) { mx = Math.min(mx, num(p, 'x')); my = Math.min(my, num(p, 'y')); });
-      var B = gridBlock(), block = function (m) { return m < 0 ? Math.ceil((40 - m) / B) * B : 0; }, sx = block(mx), sy = block(my);
-      if (!sx && !sy) return null;
-      setText(shared.text.replace(re, function (tag) { return shiftTag(tag, sx, sy); }));
-      return [sx, sy];
+      var sh = GE.shiftOf(nodes2.map(function (n, i) { return boxOf(i); }), points.map(function (p) { return [num(p, 'x'), num(p, 'y')]; }), gridBlock());
+      if (!sh) return null;
+      setText(GE.shift(shared.text, sh[0], sh[1]));
+      return sh;
     }
 
     export function __start() { __run1(); __run2(); __run3(); }   // the part's statements, in their order

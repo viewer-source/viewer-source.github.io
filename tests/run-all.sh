@@ -30,6 +30,7 @@ t 4 node tests/cd-snap-redo.js
 t 4 node tests/cd-fit.js
 t 4 node tests/cd-modifier-spot.js
 t 3 node tests/cd-reconnect.js
+t 1 node tests/graphml-edit.js
 t 1 node tests/cd-make-main.js
 t 4 node tests/cd-square.js
 t 4 node tests/cd-metaid.js
