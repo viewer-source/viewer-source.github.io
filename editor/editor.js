@@ -7245,6 +7245,21 @@
       paint();
     }, true);
     window.addEventListener("pointerup", svUp, true);
+    document.addEventListener("keydown", function(e) {
+      if (e.key !== "Escape") return;
+      if (svDrag && svDrag.parts) {
+        svDrag.parts.forEach(function(el) {
+          el.removeAttribute("transform");
+        });
+        svDrag = null;
+      } else if (palDrag && palDrag.moved) {
+        if (palDrag.img) palDrag.img.remove();
+        palDrag = null;
+      } else return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      paint();
+    }, true);
   }
   function svUp(e) {
     var d = svDrag;
@@ -12450,6 +12465,7 @@
         ["Double click a name", "types it in place", "SBGN-ML, CellDesigner"],
         ["Click a state variable already selected", "types its text in place (P, P@S505)", "SBGN-ML"],
         ["Alt held while dragging or resizing", "no snapping: any place, any size", "all"],
+        ["Esc during a drag", "puts it back: nothing moved, resized, bent or made", "all"],
         ["Click a line\u2019s end square, then arrow keys", "moves the end round the node\u2019s outline", "all"],
         ["Click a state variable, then arrow keys", "moves it round the border", "SBGN-ML, CellDesigner"],
         ["Right click on a line", "adds a bend point there, or removes the one clicked", "all"],
@@ -17130,6 +17146,28 @@
       paint();
     });
   }
+  function dragCancel() {
+    if (!drag && !band) return false;
+    var d = drag;
+    drag = null;
+    band = null;
+    mv = null;
+    shared.poseNow = null;
+    if (d && d.made != null) {
+      setText(unpush());
+      parse();
+      shared.selP = [];
+      shared.selE = [d.made - 1];
+    } else if (d && d.keepE) {
+      shared.selE = d.keepE;
+      shared.selP = [];
+    }
+    unshift();
+    sizeOff();
+    render();
+    paint();
+    return true;
+  }
   function dragEnd(e) {
     var d = drag;
     drag = null;
@@ -17292,6 +17330,10 @@
         e.preventDefault();
         if (k === "z" && !e.shiftKey) back(undo, shared.redo);
         else back(shared.redo, undo);
+        return;
+      }
+      if (e.key === "Escape" && dragCancel()) {
+        e.preventDefault();
         return;
       }
       if (e.key === "Escape") {

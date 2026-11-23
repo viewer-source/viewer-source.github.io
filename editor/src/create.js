@@ -1777,6 +1777,13 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       paint();
     }, true);
     window.addEventListener('pointerup', svUp, true);
+    document.addEventListener('keydown', function (e) {   // Esc while a state variable or a palette sign is dragged: put back, nothing written or made
+      if (e.key !== 'Escape') return;
+      if (svDrag && svDrag.parts) { svDrag.parts.forEach(function (el) { el.removeAttribute('transform'); }); svDrag = null; }
+      else if (palDrag && palDrag.moved) { if (palDrag.img) palDrag.img.remove(); palDrag = null; }
+      else return;
+      e.preventDefault(); e.stopImmediatePropagation(); paint();
+    }, true);
     }   // capture: the core's own handlers may stop the release on the map
     function svUp(e) {
       var d = svDrag; svDrag = null;

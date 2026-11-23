@@ -33,6 +33,7 @@ import { box, on } from './core.js';
           ['Double click a name', 'types it in place', 'SBGN-ML, CellDesigner'],
           ['Click a state variable already selected', 'types its text in place (P, P@S505)', 'SBGN-ML'],
           ['Alt held while dragging or resizing', 'no snapping: any place, any size', 'all'],
+          ['Esc during a drag', 'puts it back: nothing moved, resized, bent or made', 'all'],
           ['Click a line\u2019s end square, then arrow keys', 'moves the end round the node\u2019s outline', 'all'],
           ['Click a state variable, then arrow keys', 'moves it round the border', 'SBGN-ML, CellDesigner'],
           ['Right click on a line', 'adds a bend point there, or removes the one clicked', 'all'],

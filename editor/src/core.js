@@ -3118,6 +3118,14 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       if (!full() || !nodes2[ri].comp) { setBoxes(grown([ri], boxOf, B0r, function () { return false; })); refit([rid]); doneR(); return; }   // a complex: its members kept (roomy), its holders grown
       settle(regroup('box', new Set([ri]), boxOf, B0r), { moving: [rid] }, doneR, function () { setText(unpush()); parse(); liveOff(); paint(); });   // refused: taken back, nothing said
     }
+    function dragCancel() {   // Esc while a drag runs (a move, a resize, a line's end, a bend point, an area): nothing changed, the release after does nothing
+      if (!drag && !band) return false;
+      var d = drag; drag = null; band = null; mv = null; shared.poseNow = null;
+      if (d && d.made != null) { setText(unpush()); parse(); shared.selP = []; shared.selE = [d.made - 1]; }   // a bend point this drag made: gone again
+      else if (d && d.keepE) { shared.selE = d.keepE; shared.selP = []; }
+      unshift(); sizeOff(); render(); paint();
+      return true;
+    }
     function dragEnd(e) {   // the end of a drag of the selection, a port or a resize
       var d = drag; drag = null; var sets = mv; mv = null; shared.poseNow = null;   // the file holds the pose from here (the drawing keeps it until drawn again)   // the moved groups and live arcs stay until the map is drawn again
       if (!d.port && !d.rs) shared.frozen = true;   // the copies too: the file now has the new places, the picture not yet
@@ -3209,6 +3217,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       }
       if (mod && (k === 'z' || k === 'y')) { e.preventDefault(); if (k === 'z' && !e.shiftKey) back(undo, shared.redo); else back(shared.redo, undo); return; }   // a newer setting was taken by own.js first
       // Escape does one thing: a window, menu, list, help box, tool or line in hand closed first (their own listeners), the selection after
+      if (e.key === 'Escape' && dragCancel()) { e.preventDefault(); return; }   // a drag under way put back first, as yEd
       if (e.key === 'Escape') { if (e.defaultPrevented || ddOpen || tool || link || (helpBox && !helpBox.hidden)) return; shared.selN = []; shared.selP = []; shared.selE = []; shared.part = null; keyGuides = null; paint(); return; }
       if ((e.key === 'Delete' || e.key === 'Backspace') && shared.selP.length && !shared.selN.length) { e.preventDefault(); unbend(shared.selP); return; }
       var step = e.shiftKey ? 10 : 1, d = { arrowleft: [-step, 0], arrowright: [step, 0], arrowup: [0, -step], arrowdown: [0, step] }[k];
