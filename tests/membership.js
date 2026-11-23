@@ -4,11 +4,13 @@
 //     compartment, one put into a compartment, a compartment put into another, a complex's member taken out (to the map,
 //     or to a compartment); s2 = write(s, g2). Checked: the glyph's compartmentRef in s2, a member now a top glyph; the
 //     converter's GraphML of s2 nests every node as g2 does; graphml(s2, conv(s)) too (a draft reopened on an older
-//     build); write(s2, conv(s2)) is s2 (stable); yrender draws g2.
+//     build); write(s2, conv(s2)) is s2 (stable); yrender draws g2; every other glyph and arc is as in s
+//     (tests/lib/untouched.js; touched: what moved with what it holds).
 //   CellDesigner (every demo map with a compartment): an alias taken out of its compartment and one put into another,
 //     a compartment put into another; cd_edit.js writes what the previous release writes (tests/compare.js); the alias's
 //     compartmentAlias and its species' compartment, a compartment's outside, as CellDesigner writes them; the GraphML
-//     made again from it nests the alias as moved. nestCheck lets a complex's member out (cd_make.leave writes it) and refuses one copy of a species drawn
+//     made again from it nests the alias as moved; every other element is as before (tests/lib/untouched.js; touched:
+//     the alias, its species, a compartment's own elements, a complex a member left, the members of what moved). nestCheck lets a complex's member out (cd_make.leave writes it) and refuses one copy of a species drawn
 //     twice in one compartment.
 //   GraphML (every demo yEd map with a compartment): a node taken out of its compartment and put into another: the
 //     GraphML reads as XML, nests it there, and yrender draws it.
@@ -23,7 +25,7 @@ var fs = require('fs'), path = require('path'), cp = require('child_process');
 var here = path.join(__dirname, '..'), se = require(path.join(here, 'renderers/converter/sbgn_edit.js')), ed = require(path.join(here, 'renderers/converter/cd_edit.js'));
 var yr = require(path.join(here, 'renderers/yrender/yrender.js'));
 var DP = require('@xmldom/xmldom').DOMParser, opt = { DOMParser: DP };
-var py = process.argv[2] || 'python3', bad = 0, ran = 0, C = require('./compare.js').open('membership'), edB = C.base('renderers/converter/cd_edit.js');
+var U = require('./lib/untouched.js'), py = process.argv[2] || 'python3', bad = 0, ran = 0, C = require('./compare.js').open('membership'), edB = C.base('renderers/converter/cd_edit.js');
 var GN = 'http://graphml.graphdrawing.org/xmlns', YN = 'http://www.yworks.com/xml/graphml';
 function fail(tag, m) { bad++; console.log('DIFF', tag, '|', m); }
 function xml(t, tag) { var errs = [], d; try { d = new DP({ onError: function (l, m) { if (l !== 'warning') errs.push(m); } }).parseFromString(t.replace(/^\ufeff/, ''), 'application/xml'); } catch (e) { errs.push(e.message); } if (errs.length) fail(tag, 'XML: ' + errs[0]); return d; }
@@ -37,6 +39,12 @@ function ups(g) {   // node id -> the id of the node holding it, and which nodes
     K[n.getAttribute('id')] = grp && r0 && r0.localName === 'GroupNode' ? 'comp' : (gen && /Complex$/.test(gen.getAttribute('configuration') || '')) || (r0 && r0.localName === 'GenericGroupNode') ? 'complex' : '';
   });
   return { U: U, K: K };
+}
+function holds(t, ids) {   // what moving ids may touch: each id with what it holds
+  var up = {}, d = new DP().parseFromString(t.replace(/^\ufeff/, ''), 'application/xml'), set = {};
+  (function walk(n, h) { Array.prototype.forEach.call(n.childNodes, function (k) { if (k.nodeType !== 1) return; var id = k.getAttribute('id'); if (id) up[id] = h; walk(k, id || h); }); })(d, null);
+  ids.forEach(function (id) { set[id] = true; });
+  return function (id) { for (var x = id; x; x = up[x]) if (set[x]) return true; return false; };
 }
 function sameNest(a, b, ids) { return ids.filter(function (id) { return a.U[id] !== b.U[id]; }); }
 
@@ -91,6 +99,7 @@ sjobs.forEach(function (j, n) {
   if (se.write(j.s2, c2, opt) !== j.s2) fail(tag, 'not stable: written again it changes');
   try { yr.render(j.g2, { DOMParser: DP }); } catch (e) { fail(tag, 'yrender: ' + (e && e.message || e)); }
   if (se.write(j.s, j.g, opt) !== j.s) fail(tag, 'the file without a change is not written as it was');
+  U.diff(j.s, j.s2, holds(j.s, j.moves.map(function (m) { return m[0]; })), opt).slice(0, 2).forEach(function (u) { fail(tag, 'untouched: ' + u); });
 });
 
 // ---------- CellDesigner ----------
@@ -147,6 +156,11 @@ cjobs.forEach(function (j, n) {
   var B = ups(ed.graphml(out, null, opt));
   if (B.U[m[0]] !== m[1]) fail(tag, 'the GraphML made again holds it in ' + B.U[m[0]]);
   if (ed.apply(j.t, j.g, opt) !== j.t) fail(tag, 'no change is not written as it was');
+  var sp = function (al) { var q = new RegExp('<celldesigner:(?:complexS|s)peciesAlias id="' + al + '"[^>]*>').exec(j.t); return q && /species="([^"]*)"/.exec(q[0])[1]; };
+  var mine = [m[0], sp(m[0])];
+  (j.t.match(/<celldesigner:speciesAlias [^>]*complexSpeciesAlias="[^"]*"[^>]*>/g) || []).forEach(function (q) { if (q.indexOf('complexSpeciesAlias="' + m[0] + '"') >= 0) { var a = /\sid="([^"]*)"/.exec(q)[1]; mine.push(a, sp(a)); } });
+  if (j.comp) mine.push(new RegExp('<celldesigner:compartmentAlias id="' + m[0] + '" compartment="([^"]*)"').exec(j.t)[1]);
+  U.diff(j.t, out, mine, opt).slice(0, 2).forEach(function (u) { fail(tag, 'untouched: ' + u); });
 });
 
 (function () {   // a complex moved out of its compartment whose members carry a compartmentAlias (the mast cell map's do): theirs follows

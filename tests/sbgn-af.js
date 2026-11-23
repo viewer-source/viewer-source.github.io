@@ -19,6 +19,7 @@ var fs = require('fs'), path = require('path'), cp = require('child_process'), o
 var here = path.join(__dirname, '..'), se = require(path.join(here, 'renderers/converter/sbgn_edit.js'));
 var yr = require(path.join(here, 'renderers/yrender/yrender.js'));
 var X = require('@xmldom/xmldom'), DP = X.DOMParser, opt = { DOMParser: DP };
+var U = require('./lib/untouched.js');
 var args = process.argv.slice(2), py = args[0] && !/\.(sbgn|nwt)$|\//.test(args[0]) && !fs.existsSync(args[0]) ? args.shift() : 'python3';
 var files = [];
 (args.length ? args : ['test-maps/sbgn-ml/af'].map(function (p) { return path.join(here, p); })).forEach(function walk(p) {
@@ -280,6 +281,12 @@ var WL = steps([['a PD file of direct links, a glyph moved', LINKS, gL, se.resiz
 var RN = { a: ['macromolecule', null], c: ['complex', null], p: ['perturbing agent', null], s: ['simple chemical', null] };
 expect('a PD file of direct links, a glyph moved', WL[0][0], 'process description', RN, { e0: 'stimulation', e1: 'inhibition' }, 'af');
 expect('a PD file of direct links, a link drawn', WL[1][0], 'process description', RN, { e0: 'stimulation', e1: 'inhibition', e2: 'inhibition' }, 'af');
+// and nothing else in it changes (tests/lib/untouched.js, a named case): the glyph moved touches itself and its link,
+// the link drawn only itself
+[[WL[0][0], ['s', 'e1']], [WL[1][0], ['e2']]].forEach(function (q, k) {
+  var u = U.diff(LINKS, q[0], q[1], opt);
+  if (u.length) { bad++; console.log('DIFFERENT a PD file of direct links, ' + (k ? 'a link drawn' : 'a glyph moved') + ', untouched: ' + u.slice(0, 2).join('; ')); }
+});
 // an entity's activity unit chosen in the AF palette: written as the entity it names, once (the class was set twice)
 ['simple chemical', 'nucleic acid feature', 'unspecified entity'].forEach(function (u) {
   var W = steps([['a PD file of direct links, a unit set to ' + u, LINKS, gL, se.activity(gL, 'a', u, opt)]]);

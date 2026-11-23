@@ -4,13 +4,15 @@
 //      out, an end set on a side, a process turned), conv(write(s, g)) has g's places (boxes and bends exactly, each
 //      arc end the same or drawn the same: an end on the line toward its next point read as the centre), and
 //      graphml(write(s, g), conv(s)) is conv(write(s, g)) byte for byte (the editor reopens a draft as the build will
-//      draw it).
+//      draw it), and every glyph and arc the moves did not touch is in write(s, g) as in s (tests/lib/untouched.js;
+//      touched: the nodes moved with what they hold, the arcs at them or whose bends or ends changed, a turned
+//      process's arcs, and the ports of each, the map's own box).
 //   node tests/sbgn-edit.js [python] [SBGN-ML files or folders ...]   (default: python3; test-maps/sbgn-ml/pd, maps/,
 //   downloads/*-sbgn.sbgn)
 var fs = require('fs'), path = require('path'), cp = require('child_process'), os = require('os');
 var here = path.join(__dirname, '..'), se = require(path.join(here, 'renderers/converter/sbgn_edit.js'));
 var X = require('@xmldom/xmldom'), DP = X.DOMParser, opt = { DOMParser: DP };
-var args = process.argv.slice(2), py = args[0] && !/\.(sbgn|nwt)$|\//.test(args[0]) && !fs.existsSync(args[0]) ? args.shift() : 'python3';
+var U = require('./lib/untouched.js'), args = process.argv.slice(2), py = args[0] && !/\.(sbgn|nwt)$|\//.test(args[0]) && !fs.existsSync(args[0]) ? args.shift() : 'python3';
 var files = [];
 (args.length ? args : ['test-maps/sbgn-ml/pd', 'maps', 'downloads'].map(function (p) { return path.join(here, p); })).forEach(function walk(p) {
   var st; try { st = fs.statSync(p); } catch (e) { return; }
@@ -45,20 +47,22 @@ function geoOf(n) {
 }
 // moves as the editor makes them, on the GraphML's own text
 function moved(g, seed) {
-  var r = rnd(seed), doc = new DP().parseFromString(g, 'application/xml'), set = function (el, k, v) { el.setAttribute(k, String(v)); };
+  var r = rnd(seed), doc = new DP().parseFromString(g, 'application/xml'), set = function (el, k, v) { el.setAttribute(k, String(v)); }, ids = {};
   var nodes = Array.prototype.slice.call(doc.getElementsByTagNameNS(G, 'node')).filter(geoOf);
   var shift = function (n, dx, dy) {   // a node, and a group with what it holds, as the editor moves them
     [n].concat(Array.prototype.slice.call(n.getElementsByTagNameNS(G, 'node'))).forEach(function (m) {
       var geo = geoOf(m); if (!geo) return;
+      ids[m.getAttribute('id')] = true;
       set(geo, 'x', F(geo.getAttribute('x')) + dx); set(geo, 'y', F(geo.getAttribute('y')) + dy);
     });
   };
   pick(r, nodes, 4).forEach(function (n) { shift(n, [-37.5, 12, 60.25][Math.floor(r() * 3)], [-20, 8.5, 33][Math.floor(r() * 3)]); });
   var edges = Array.prototype.slice.call(doc.getElementsByTagNameNS(G, 'edge'));
   var pts = Array.prototype.slice.call(doc.getElementsByTagNameNS(Y, 'Point'));
-  pick(r, pts, 3).forEach(function (p) { set(p, 'x', F(p.getAttribute('x')) + 7); set(p, 'y', F(p.getAttribute('y')) - 11.5); });
+  pick(r, pts, 3).forEach(function (p) { ids[p.parentNode.parentNode.parentNode.parentNode.getAttribute('id')] = true; set(p, 'x', F(p.getAttribute('x')) + 7); set(p, 'y', F(p.getAttribute('y')) - 11.5); });
   pick(r, edges, 2).forEach(function (e) {   // a bend added where there was none, or the bends taken out
     var path = e.getElementsByTagNameNS(Y, 'Path')[0], ps = path.getElementsByTagNameNS(Y, 'Point');
+    ids[e.getAttribute('id')] = true;
     if (ps.length) { while (ps.length) path.removeChild(ps[0]); return; }
     var q = doc.createElementNS(Y, 'y:Point'); set(q, 'x', 123.5); set(q, 'y', 77.25); path.appendChild(q);
   });
@@ -66,11 +70,13 @@ function moved(g, seed) {
   var hub = function (id) { return byId[id] && isHub(byId[id]); };
   pick(r, edges.filter(function (e) { return !hub(e.getAttribute('target')); }), 2).forEach(function (e) {   // an end set on a side of its node
     var path = e.getElementsByTagNameNS(Y, 'Path')[0], geo = geoOf(byId[e.getAttribute('target')]);
+    ids[e.getAttribute('id')] = true;
     if (geo) { set(path, 'tx', 0); set(path, 'ty', -F(geo.getAttribute('height')) / 2); }
   });
   var procs = nodes.filter(function (n) { return hub(n.getAttribute('id')); });
   pick(r, procs, 2).forEach(function (n) {   // a process turned a quarter, its port ends with it
     var id = n.getAttribute('id');
+    ids[id] = true;
     edges.forEach(function (e) {
       var path = e.getElementsByTagNameNS(Y, 'Path')[0];
       [['source', 'sx', 'sy'], ['target', 'tx', 'ty']].forEach(function (q) {
@@ -80,7 +86,22 @@ function moved(g, seed) {
       });
     });
   });
-  return new X.XMLSerializer().serializeToString(doc);
+  edges.forEach(function (e) { if (ids[e.getAttribute('source')] || ids[e.getAttribute('target')]) ids[e.getAttribute('id')] = true; });
+  return { g: new X.XMLSerializer().serializeToString(doc), ids: ids };
+}
+// what a set of moved GraphML ids may touch in the SBGN-ML: those glyphs and arcs with everything inside them (state
+// variables, units of information, ports), the map's box (its bbox follows what it holds)
+function touches(ids, s) {
+  var up = {}, d = new DP().parseFromString(s.replace(/^\ufeff/, ''), 'application/xml');
+  (function walk(n, holder) {
+    Array.prototype.forEach.call(n.childNodes, function (k) {
+      if (k.nodeType !== 1) return;
+      var id = k.getAttribute('id');
+      if (id) up[id] = { up: holder, map: k.localName === 'map' };
+      walk(k, id || holder);
+    });
+  })(d, null);
+  return function (id) { for (var x = id; x; x = up[x] && up[x].up) if (ids[x]) return true; return !!(up[id] && up[id].map); };
 }
 function isHub(n) { var geo = geoOf(n); return !!geo && /sbgn\.(Process|Operator)$/.test(geo.parentNode.getAttribute('configuration') || ''); }
 // the places of a GraphML: node boxes, edge bends, edge ends (as offsets), the processes and gates
@@ -146,9 +167,9 @@ files.forEach(function (f, i) {
     if (se.graphml(s, g0[i], opt) !== g0[i]) say('graphml(s, conv(s)) is not conv(s)');
     if (se.write(s, g0[i], opt) !== s) say('write(s, conv(s)) is not s');
     for (var seed = 1; seed <= 3; seed++) {
-      var g1 = moved(g0[i], seed * 7919 + i), s1 = se.write(s, g1, opt), p = path.join(tmp, i + '-' + seed + path.extname(f));
+      var mv = moved(g0[i], seed * 7919 + i), g1 = mv.g, s1 = se.write(s, g1, opt), p = path.join(tmp, i + '-' + seed + path.extname(f));
       fs.writeFileSync(p, s1);
-      later.push({ f: f, p: p, g1: g1, s1: s1, base: g0[i], s: s, seed: seed });
+      later.push({ f: f, p: p, g1: g1, s1: s1, base: g0[i], s: s, seed: seed, ids: mv.ids });
     }
   } catch (e) { say(e.stack.split('\n').slice(0, 3).join(' ')); }
   runs++;
@@ -159,6 +180,8 @@ later.forEach(function (x, j) {
   if (!g2[j]) return say('the converter cannot read what was written');
   var bad = compare(x.g1, g2[j]);
   if (bad.length) say(bad.length + ' places differ: ' + bad.slice(0, 4).join('; '));
+  var un = U.diff(x.s, x.s1, touches(x.ids, x.s), opt);
+  if (un.length) say(un.length + ' untouched changed: ' + un.slice(0, 2).join('; '));
   var back = se.graphml(x.s1, x.base, opt);
   if (back !== g2[j]) { say('graphml(write(s, g), conv(s)) is not conv(write(s, g))'); if (process.env.DUMP) { fs.writeFileSync(process.env.DUMP + '-a', g2[j]); fs.writeFileSync(process.env.DUMP + '-b', back); process.exit(1); } }
 });

@@ -3,14 +3,15 @@
 // reactant, the base product, a modifier, an added reactant, an added product), its end at a species moved to another
 // species alias (never a member inside a complex, never a compartment). Checked: cd_edit.js writes what the
 // previous release writes (tests/compare.js); the reaction now names the new species and alias in the CellDesigner element (a modifier's
-// linkTarget too) and in SBML's reference; the GraphML made again from it has the line at the new node and every other
-// line as before; the text reads as XML.
+// linkTarget too) and in SBML's reference; the GraphML made again from it has the line at the new node; every element
+// but the reaction and the two species (their lists of the reactions they catalyse) is as before (tests/lib/untouched.js,
+// a refused move: every element but the reaction); the text reads as XML.
 //   node tests/cd-reconnect.js [CellDesigner files or folders ...]   (default: the test set)
 var fs = require('fs'), path = require('path');
 var here = path.join(__dirname, '..'), ed = require(path.join(here, 'renderers/converter/cd_edit.js'));
 var DP = require('@xmldom/xmldom').DOMParser, opt = { DOMParser: DP };
 var args = process.argv.slice(2);
-var C = require('./compare.js').open('cd-reconnect'), edB = C.base('renderers/converter/cd_edit.js');
+var U = require('./lib/untouched.js'), C = require('./compare.js').open('cd-reconnect'), edB = C.base('renderers/converter/cd_edit.js');
 var files = C.files(args, function (p) { if (!/\.xml$/.test(p)) return false; var t = fs.readFileSync(p, 'utf8').slice(0, 3000); return /<sbml[\s>]/.test(t) && t.indexOf('celldesigner') >= 0; });
 var G = 'http://graphml.graphdrawing.org/xmlns', Y = 'http://www.yworks.com/xml/graphml';
 function graph(g) {   // nodes (id -> its parent's kind) and edges (id -> [source, target])
@@ -55,19 +56,20 @@ jobs.forEach(function (j, n) {
   var tag = path.basename(j.f) + ' ' + j.kind + ' ' + j.eid + ': ' + j.from + ' -> ' + j.to, msg = [], out;
   try { out = ed.apply(j.t, j.g1, opt); } catch (e) { msg.push('JavaScript: ' + (e && e.message || e)); }
   if (out !== undefined && C.check(tag, out, edB && edB.apply(j.t, j.g1, opt)) === 'different') msg.push('not as the previous release writes it');
+  var rid = j.eid.split('|')[0], sid = function (tt, al) { var m = new RegExp('Alias id="' + al + '"[^>]*species="([^"]*)"').exec(tt) || new RegExp('species="([^"]*)"[^>]*id="' + al + '"').exec(tt); return m && m[1]; };
   if (out !== undefined && j.kind === 'refused') {
     var E0 = graph(j.g0).E, E1 = graph(ed.graphml(out, null, opt)).E;   // every line at the nodes it had (only the port of that end may change)
     if (Object.keys(E0).some(function (e) { return !E1[e] || E1[e].join() !== E0[e].join(); })) msg.push('a participant changed');
+    U.diff(j.t, out, [rid]).slice(0, 2).forEach(function (d) { msg.push('untouched: ' + d); });
   } else if (out !== undefined) {
     var doc = new DP({ onError: function (l, m) { if (l !== 'warning') msg.push('XML: ' + m); } }).parseFromString(out, 'application/xml');
-    var A = graph(ed.graphml(out, null, opt)), B = graph(j.g1);
+    var A = graph(ed.graphml(out, null, opt));
     if (!A.E[j.eid] || A.E[j.eid][j.j] !== j.to) msg.push('read back at ' + (A.E[j.eid] && A.E[j.eid][j.j]));
-    Object.keys(B.E).forEach(function (e) { if (e !== j.eid && (!A.E[e] || A.E[e].join() !== B.E[e].join())) msg.push('other line ' + e + ' changed'); });
+    U.diff(j.t, out, [rid, sid(j.t, j.from), sid(j.t, j.to)]).slice(0, 2).forEach(function (d) { msg.push('untouched: ' + d); });
     var rx = out.slice(out.indexOf('id="' + j.eid.split('|')[0] + '"'));
     rx = rx.slice(0, rx.indexOf('</reaction>'));
     if (rx.indexOf('<celldesigner:alias>' + j.to + '<') < 0) msg.push('SBML reference not moved to the new alias');
     // a catalysis: the species' lists of the reactions they catalyse follow, where the file keeps them
-    var rid = j.eid.split('|')[0], sid = function (tt, al) { var m = new RegExp('Alias id="' + al + '"[^>]*species="([^"]*)"').exec(tt) || new RegExp('species="([^"]*)"[^>]*id="' + al + '"').exec(tt); return m && m[1]; };
     var cats = function (tt, s2) { var i = tt.indexOf('<species '), m = new RegExp('<species [^>]*\\bid="' + s2 + '"[\\s\\S]*?</species>').exec(tt); return m ? m[0].indexOf('<celldesigner:catalyzed reaction="' + rid + '"/>') >= 0 : false; };
     if (j.kind === 'modifier' && /type="(UNKNOWN_)?CATALYSIS"/.test(rx.slice(0, rx.indexOf('</celldesigner:modification>'))) && cats(j.t, sid(j.t, j.from))) {
       if (!cats(out, sid(out, j.to))) msg.push('the new species does not list the reaction it catalyses');
@@ -78,5 +80,27 @@ jobs.forEach(function (j, n) {
   if (msg.length) { bad++; console.log('DIFF', tag, '|', msg.slice(0, 4).join(' | ')); } else if (process.env.VERBOSE) console.log('ok  ', tag);
 });
 console.log(jobs.length + ' moves on ' + files.length + ' maps (' + jobs.filter(function (j) { return j.kind === 'refused'; }).length + ' refused, ' + jobs.filter(function (j) { return j.cat; }).length + ' catalyses with their lists): ' + (bad ? bad + ' wrong' : 'all right'));
+// A line keeps its connection place when its nodes move (tests/lib/untouched.js, a named case): on every map, a reaction's
+// base reactant moved by (20, 10); only that alias and the reactions with a line at it change (their bend points kept
+// where they are), and each such reaction keeps every port (linkAnchor) it had.
+var moved = 0;
+files.forEach(function (f) {
+  var t = fs.readFileSync(f, 'utf8'), g = ed.graphml(t, null, opt), I = graph(g);
+  var e0 = Object.keys(I.E).filter(function (e) { return /\|a$/.test(e); })[0];
+  if (!e0) return;
+  var nid = I.E[e0][0], i = g.indexOf('<node id="' + nid + '"'), gi = g.indexOf('<y:Geometry', i), ge = g.indexOf('>', gi);
+  var geo = g.slice(gi, ge + 1).replace(/ x="([-\d.]+)"/, function (_, x) { return ' x="' + (+x + 20) + '"'; }).replace(/ y="([-\d.]+)"/, function (_, y) { return ' y="' + (+y + 10) + '"'; });
+  var tag = path.basename(f) + ' node moved ' + nid, msg = [], out;
+  try { out = ed.apply(t, g.slice(0, gi) + geo + g.slice(ge + 1), opt); } catch (e) { msg.push('JavaScript: ' + (e && e.message || e)); }
+  if (out !== undefined) {
+    var rs = Object.keys(I.E).filter(function (e) { return I.E[e].indexOf(nid) >= 0; }).map(function (e) { return e.split('|')[0]; });
+    U.diff(t, out, [nid].concat(rs)).slice(0, 2).forEach(function (d) { msg.push('untouched: ' + d); });
+    var ports = function (tt, r) { var m = new RegExp('<reaction [^>]*\\bid="' + r + '"[\\s\\S]*?</reaction>').exec(tt); return m ? (m[0].match(/<celldesigner:linkAnchor [^>]*>/g) || []).join() : ''; };
+    rs.forEach(function (r) { if (ports(t, r) !== ports(out, r)) msg.push(r + ': a port changed'); });
+  }
+  moved++;
+  if (msg.length) { bad++; console.log('DIFF', tag, '|', msg.slice(0, 4).join(' | ')); } else if (process.env.VERBOSE) console.log('ok  ', tag);
+});
+console.log(moved + ' nodes moved: ' + (bad ? bad + ' wrong in all' : 'every port kept, nothing else changed'));
 C.end('written texts');
 process.exit(bad ? 1 : 0);
