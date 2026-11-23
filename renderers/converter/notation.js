@@ -64,13 +64,16 @@
     BOOLEAN_LOGIC_GATE_AND: GATE('and'), BOOLEAN_LOGIC_GATE_OR: GATE('or'), BOOLEAN_LOGIC_GATE_NOT: GATE('not'),
     BOOLEAN_LOGIC_GATE_UNKNOWN: GATE('equivalence')
   };
+  // a gene: a nucleic acid feature marked so (graphml, sbgnml: word its units of information, ct:gene among them;
+  // celldesigner: the class GENE), sub 'gene'; a row names it 'entity:gene'
+  var GENE = { kind: 'entity', cls: 'nucleic acid feature', sub: 'gene' }, GENE_UNIT = /(^|\s)ct:gene(\s|$)/i;
   function nodeKind(format, cls, word) {
     if (format === 'graphml') {
       if (cls === 'Operator') { var g = WORD[String(word || '').trim().toUpperCase()] || WORD[String(word || '').trim()]; return g ? GATE(g) : null; }
-      return GRAPHML[cls] || null;
+      return cls === 'NucleicAcidFeature' && GENE_UNIT.test(word || '') ? GENE : GRAPHML[cls] || null;
     }
-    if (format === 'sbgnml') return SBGNML[String(cls || '').replace(/ multimer$/, '')] || null;
-    if (format === 'celldesigner') return CELLDESIGNER[cls] || null;
+    if (format === 'sbgnml') { var c = String(cls || '').replace(/ multimer$/, ''); return c === 'nucleic acid feature' && GENE_UNIT.test(word || '') ? GENE : SBGNML[c] || null; }
+    if (format === 'celldesigner') return cls === 'GENE' ? GENE : CELLDESIGNER[cls] || null;
     return null;
   }
   var HEAD = { delta: 'production', white_circle: 'catalysis', t_shape: 'inhibition', white_diamond: 'modulation',
@@ -166,7 +169,9 @@
         no: 'A perturbing agent only starts a modulation, stimulation, inhibition or necessary stimulation.', spec: '3.4.1' },
       { id: 'agent-to', sets: ['pd'], arc: ['*'], from: ['*'], to: ['entity:perturbing agent'],
         no: 'A perturbing agent only starts a modulation, stimulation, inhibition or necessary stimulation.', spec: '3.4.1' },
-      { id: 'nucleic-catalyst', sets: ['strict'], why: 'CellDesigner takes a gene or an RNA as a catalysis.', arc: ['catalysis'], from: ['entity:nucleic acid feature'], to: ['*'], no: 'A nucleic acid feature is no catalyst.', spec: '3.4.1' },
+      { id: 'gene-catalyst', sets: ['pd'], arc: ['catalysis'], from: ['entity:gene'], to: ['*'], no: 'A gene is no catalyst.', spec: '3.4.1',
+        why: 'An RNA may catalyse (ribozymes) and CellDesigner holds both; a gene never does.' },
+      { id: 'nucleic-catalyst', sets: ['strict'], arc: ['catalysis'], from: ['entity:nucleic acid feature'], to: ['*'], no: 'A nucleic acid feature is no catalyst.', spec: '3.4.1' },
       { id: 'catalysis-ends', sets: ['pd'], arc: ['catalysis'], from: ['submap'], to: ['*'], no: 'A catalysis goes from an entity to a process.', spec: '3.4.1' },
       { id: 'phenotype-catalyst', sets: ['strict'], arc: ['catalysis'], from: ['phenotype'], to: ['*'], no: 'A catalysis goes from an entity to a process.', spec: '3.4.1',
         why: 'CellDesigner takes a phenotype as a catalysis.' },
@@ -189,7 +194,7 @@
     if (!k) return false;
     for (var i = 0; i < list.length; i++) {
       var w = list[i];
-      if (w === '*' || w === k.kind || w === k.kind + ':' + k.cls) return true;
+      if (w === '*' || w === k.kind || w === k.kind + ':' + k.cls || (k.sub && w === k.kind + ':' + k.sub)) return true;
     }
     return false;
   }

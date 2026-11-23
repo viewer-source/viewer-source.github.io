@@ -73,7 +73,12 @@ yes('consumption', E, P, PD, 'empty set consumed'); yes('production', P, E, PD, 
 no('catalysis', M, E, PD, 'nothing modulates an empty set'); no('equivalence arc', T, E, PD, 'no tag for an empty set', 'An empty set is only consumed or produced.');
 no('consumption', PA, P, PD, 'agent consumed', 'A perturbing agent only starts a modulation, stimulation, inhibition or necessary stimulation.');
 yes('stimulation', PA, P, PD, 'agent stimulates'); no('production', P, PA, PD, 'agent produced');
-yes('catalysis', NA, P, PD, 'a nucleic acid feature as a catalysis (CellDesigner)'); no('catalysis', NA, P, ST, 'strict: nucleic acid feature', 'A nucleic acid feature is no catalyst.'); yes('stimulation', NA, P, PD, 'nucleic acid feature stimulates');
+yes('catalysis', NA, P, PD, 'a nucleic acid feature (an RNA) as a catalysis (ribozymes, CellDesigner)');
+var GN = G('NucleicAcidFeature', 'ct:gene'), CDG = N.nodeKind('celldesigner', 'GENE'), CDR = N.nodeKind('celldesigner', 'RNA');
+ok('a gene told apart', GN.sub === 'gene' && CDG.sub === 'gene' && !CDR.sub && !G('NucleicAcidFeature', 'ct:mRNA').sub && N.nodeKind('sbgnml', 'nucleic acid feature', 'ct:gene').sub === 'gene');
+no('catalysis', GN, P, PD, 'a gene is no catalyst', 'A gene is no catalyst.'); no('catalysis', CDG, P, PD, 'a CellDesigner gene is no catalyst', 'A gene is no catalyst.');
+yes('catalysis', CDR, P, PD, 'a CellDesigner RNA as a catalysis'); yes('stimulation', GN, P, PD, 'a gene stimulates');
+no('catalysis', CDR, P, ST, 'strict: an RNA is no catalyst', 'A nucleic acid feature is no catalyst.'); no('catalysis', NA, P, ST, 'strict: nucleic acid feature', 'A nucleic acid feature is no catalyst.'); yes('stimulation', NA, P, PD, 'nucleic acid feature stimulates');
 yes('catalysis', PH, P, RD, 'reduced: catalysis from a phenotype into a process'); no('catalysis', PH, M, RD, 'reduced: no catalysis from a phenotype to an entity');
 no('catalysis', M, SM, RD, 'catalysis into a submap', 'A catalysis goes from an entity to a process.');
 no('logic arc', EQ, AND, PD, 'equivalence into a gate', 'An equivalence joins entities only.');

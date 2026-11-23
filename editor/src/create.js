@@ -2168,7 +2168,13 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       var r = roleOf(i), sub = nodes2[i].shape.kind === 'Submap' && !nodes2[i].comp;
       if (!r && !sub) return null;
       var l = nodes2[i].el.getElementsByTagNameNS(Y, 'NodeLabel')[0];   // a gate's word as drawn (a made one is not in the file yet)
+      if (nodes2[i].shape.kind === 'NucleicAcidFeature') return NT.nodeKind('graphml', 'NucleicAcidFeature', ntUnits(i));   // ct:gene among its units: a gene
       return NT.nodeKind('graphml', r === 'proc' ? 'Process' : nodes2[i].shape.kind, l ? l.textContent.trim() : '');
+    }
+    var unitMemo;   // the map's icons, read once per map text: a drag asks for kinds on every pointer move
+    function ntUnits(i) {
+      if (!unitMemo || unitMemo[0] !== shared.text) unitMemo = [shared.text, svIcons()];
+      return svList(i, unitMemo[1]).filter(function (q) { return q[3] === 'UnitOfInformation'; }).map(function (q) { return q[0].trim(); }).join(' ');
     }
     function ntSets() { return (palLangNow() === 'af' ? ['af'] : hybOn() ? ['pd', 'reduced'] : ['pd']).concat(V.fanout ? ['fanout'] : [], sbgnStrict() ? ['strict'] : []); }
     var revMemo;   // a process's reversibility, read once per map text: a drag asks it on every pointer move

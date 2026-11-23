@@ -457,16 +457,20 @@
           BOOLEAN_LOGIC_GATE_NOT: GATE("not"),
           BOOLEAN_LOGIC_GATE_UNKNOWN: GATE("equivalence")
         };
+        var GENE = { kind: "entity", cls: "nucleic acid feature", sub: "gene" }, GENE_UNIT = /(^|\s)ct:gene(\s|$)/i;
         function nodeKind(format, cls, word) {
           if (format === "graphml") {
             if (cls === "Operator") {
               var g = WORD[String(word || "").trim().toUpperCase()] || WORD[String(word || "").trim()];
               return g ? GATE(g) : null;
             }
-            return GRAPHML[cls] || null;
+            return cls === "NucleicAcidFeature" && GENE_UNIT.test(word || "") ? GENE : GRAPHML[cls] || null;
           }
-          if (format === "sbgnml") return SBGNML[String(cls || "").replace(/ multimer$/, "")] || null;
-          if (format === "celldesigner") return CELLDESIGNER[cls] || null;
+          if (format === "sbgnml") {
+            var c = String(cls || "").replace(/ multimer$/, "");
+            return c === "nucleic acid feature" && GENE_UNIT.test(word || "") ? GENE : SBGNML[c] || null;
+          }
+          if (format === "celldesigner") return cls === "GENE" ? GENE : CELLDESIGNER[cls] || null;
           return null;
         }
         var HEAD = {
@@ -653,7 +657,17 @@
               no: "A perturbing agent only starts a modulation, stimulation, inhibition or necessary stimulation.",
               spec: "3.4.1"
             },
-            { id: "nucleic-catalyst", sets: ["strict"], why: "CellDesigner takes a gene or an RNA as a catalysis.", arc: ["catalysis"], from: ["entity:nucleic acid feature"], to: ["*"], no: "A nucleic acid feature is no catalyst.", spec: "3.4.1" },
+            {
+              id: "gene-catalyst",
+              sets: ["pd"],
+              arc: ["catalysis"],
+              from: ["entity:gene"],
+              to: ["*"],
+              no: "A gene is no catalyst.",
+              spec: "3.4.1",
+              why: "An RNA may catalyse (ribozymes) and CellDesigner holds both; a gene never does."
+            },
+            { id: "nucleic-catalyst", sets: ["strict"], arc: ["catalysis"], from: ["entity:nucleic acid feature"], to: ["*"], no: "A nucleic acid feature is no catalyst.", spec: "3.4.1" },
             { id: "catalysis-ends", sets: ["pd"], arc: ["catalysis"], from: ["submap"], to: ["*"], no: "A catalysis goes from an entity to a process.", spec: "3.4.1" },
             {
               id: "phenotype-catalyst",
@@ -683,7 +697,7 @@
           if (!k) return false;
           for (var i = 0; i < list2.length; i++) {
             var w = list2[i];
-            if (w === "*" || w === k.kind || w === k.kind + ":" + k.cls) return true;
+            if (w === "*" || w === k.kind || w === k.kind + ":" + k.cls || k.sub && w === k.kind + ":" + k.sub) return true;
           }
           return false;
         }
@@ -7332,7 +7346,17 @@
     var r = roleOf(i), sub = nodes2[i].shape.kind === "Submap" && !nodes2[i].comp;
     if (!r && !sub) return null;
     var l = nodes2[i].el.getElementsByTagNameNS(Y, "NodeLabel")[0];
+    if (nodes2[i].shape.kind === "NucleicAcidFeature") return import_notation.default.nodeKind("graphml", "NucleicAcidFeature", ntUnits(i));
     return import_notation.default.nodeKind("graphml", r === "proc" ? "Process" : nodes2[i].shape.kind, l ? l.textContent.trim() : "");
+  }
+  var unitMemo;
+  function ntUnits(i) {
+    if (!unitMemo || unitMemo[0] !== shared.text) unitMemo = [shared.text, svIcons()];
+    return svList(i, unitMemo[1]).filter(function(q) {
+      return q[3] === "UnitOfInformation";
+    }).map(function(q) {
+      return q[0].trim();
+    }).join(" ");
   }
   function ntSets() {
     return (palLangNow() === "af" ? ["af"] : hybOn() ? ["pd", "reduced"] : ["pd"]).concat(V.fanout ? ["fanout"] : [], sbgnStrict() ? ["strict"] : []);

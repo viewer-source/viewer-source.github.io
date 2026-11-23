@@ -1,7 +1,8 @@
 // The rules table (renderers/converter/notation.js) on a CellDesigner map, as drawing and dragging ask it there
 // (editor/src/cdcreate.js cdSays, cdMoveSays): on the ACLY demo map a gene, three proteins and a phenotype are made, then
-// a reaction between two proteins; a catalysis from the gene onto its square taken (CellDesigner 4.4.2 holds a gene as a
-// catalysis: the default set, notes/rules-audit.md), the same catalysis again refused (the line is there already); a
+// a reaction between two proteins; a catalysis from the gene onto its square refused (SBGN: a nucleic acid feature is no
+// catalyst, kept by default though CellDesigner holds it, notes/rules-audit.md), a stimulation from it taken, the same
+// stimulation again refused (the line is there already); a
 // reaction into the phenotype and one from it taken (CellDesigner's phenotype is a species); the reaction's product end
 // dragged onto the third protein moves there, then onto the phenotype. Nothing is saved (no token).
 //   node tests/cd-rules.js [address] [viewer folder: its editor and renderers served in place of the page's]
@@ -60,10 +61,13 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#acly-celld
   var sq = await at(rid + '|proc'), m0 = count(t1, /<celldesigner:modification\b/g);
   await draw('cd:CATALYSIS', await at(gene), sq);
   var t2 = await text(), cat = function (t) { return count(t, /<celldesigner:modification\b[^>]*type="CATALYSIS"/g); };
-  ok('a catalysis from the gene onto its square taken (CellDesigner holds a gene as a catalysis)', count(t2, /<celldesigner:modification\b/g) === m0 + 1 && cat(t2) === cat(t1) + 1);
-  await draw('cd:CATALYSIS', await at(gene), sq);
+  ok('a catalysis from the gene onto its square refused (SBGN: a nucleic acid feature is no catalyst)', count(t2, /<celldesigner:modification\b/g) === m0 && cat(t2) === cat(t1));
+  await draw('cd:PHYSICAL_STIMULATION', await at(gene), sq);
+  var t2b = await text();
+  ok('a stimulation from the gene onto its square taken', count(t2b, /<celldesigner:modification\b/g) === m0 + 1);
+  await draw('cd:PHYSICAL_STIMULATION', await at(gene), sq);
   var t3 = await text();
-  ok('the same catalysis again refused (the line is there already)', count(t3, /<celldesigner:modification\b/g) === m0 + 1);
+  ok('the same stimulation again refused (the line is there already)', count(t3, /<celldesigner:modification\b/g) === m0 + 1);
   await draw('cd:STATE_TRANSITION', await at(p1), await at(ph));
   var t4 = await text();
   ok('a reaction into the phenotype taken (a phenotype is a product in CellDesigner)', count(t4, /<reaction\b/g) === count(t3, /<reaction\b/g) + 1);
