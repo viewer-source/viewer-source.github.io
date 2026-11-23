@@ -603,27 +603,67 @@ import { NEW_ID, emptyBase, isSb, madeHere, sbMap } from './sbgn.js';
     }
     function restoreExamples() {
       var gh = !!(repo() && token());   // nothing asked: the examples' earlier versions stay in the data repository's history
-      // shown restored at once; with a token GitHub's commit follows, and if it fails the list goes back as it was
-      var was = { pend: binPending(), hidden: siteHidden(), moved: {}, renamed: {}, gone: {} };
-      var ids = exampleIds();
-      ids.forEach(function (id) { was.moved[id] = V.movedOf(id); was.renamed[id] = renamed[id]; was.gone[id] = hiddenGone[id]; });
-      examplesHere(ids, gh);
-      if (!gh) return;
-      examplesToSite().then(function (all) {
-        examplesHere(all.filter(function (id) { return ids.indexOf(id) < 0; }), gh);   // deleted forever before (or with no page of their own): shown once the build has them
-      }).catch(function (e) {
-        binPendingSet(was.pend); hiddenSet(was.hidden);
-        ids.forEach(function (id) {
-          if (was.moved[id] !== null) V.setMoved(id, was.moved[id]);
-          if (was.renamed[id]) renamed[id] = was.renamed[id];
-          if (was.gone[id]) hiddenGone[id] = was.gone[id];
+      // shown restored at once; with a token GitHub's commit follows, and if it fails the list goes back as it was.
+      // One step of the list's undo: the list and this browser's kept edits of the examples put back, with a token also
+      // the files the restore changed on GitHub (examplesBack); redo restores again
+      var ids = exampleIds(), was = examplesWas(ids), done = null;
+      var fwd = run();
+      function run() {
+        examplesHere(ids, gh);
+        if (!gh) return Promise.resolve();
+        return examplesToSite().then(function (r) {
+          done = r;
+          examplesHere(r.ids.filter(function (id) { return ids.indexOf(id) < 0; }), gh);   // deleted forever before (or with no page of their own): shown once the build has them
+        }).catch(function (e) {
+          examplesPut(was);
+          alert('The example maps were not restored: ' + (e && e.message ? e.message : e));
         });
-        V.refreshMine();
-        alert('The example maps were not restored: ' + (e && e.message ? e.message : e));
+      }
+      listDid(function () {
+        return fwd.then(function () {
+          if (!gh || !done) { examplesPut(was); return; }
+          return examplesBack(done.before).then(function () { examplesPut(was); }, function (e) { alert('The restore was not undone: ' + (e && e.message ? e.message : e)); });
+        });
+      }, function () { was = examplesWas(ids); done = null; fwd = run(); return fwd; });
+    }
+    function examplesAll(ids) { return ids.concat(ids.filter(function (id) { return /-graphml$/.test(id); }).map(twinOf)); }   // with their SBGN-ML twins
+    function examplesWas(ids) {   // what a restore lets go: the list's records of these examples and this browser's kept edits
+      var was = { ids: ids, pend: binPending(), hidden: siteHidden(), moved: {}, renamed: {}, gone: {}, drafts: {} };
+      examplesAll(ids).forEach(function (id) { was.moved[id] = V.movedOf(id); was.renamed[id] = renamed[id]; was.gone[id] = hiddenGone[id]; if (V.drafts[id]) was.drafts[id] = V.drafts[id]; });
+      return was;
+    }
+    function examplesPut(was) {   // the list and the kept edits as they were before a restore
+      binPendingSet(was.pend); hiddenSet(was.hidden);
+      Object.keys(was.moved).forEach(function (id) {
+        V.setMoved(id, was.moved[id]);
+        if (was.renamed[id]) renamed[id] = was.renamed[id]; else delete renamed[id];
+        if (was.gone[id]) hiddenGone[id] = was.gone[id]; else delete hiddenGone[id];
       });
+      namedSave();
+      Object.keys(was.drafts).forEach(function (id) { draftPut(id, Object.assign({}, was.drafts[id])).catch(function () {}); });
+      var m = V.current && V.byId[V.current.id];
+      if (m && was.drafts[m.id] && !V.grid.classList.contains('m2-editing')) V.put(m, true);   // shown: with its kept edits again
+      V.refreshMine();
+    }
+    // a restore's commit undone: each path it changed under maps/ put back as it was before (null: one it added goes),
+    // in one commit on main, three tries; later commits to other paths kept
+    function examplesBack(before) {
+      var tries = 0;
+      var go = function () {
+        return api('/git/ref/heads/main').then(ghJson).then(function (ref) {
+          return api('/git/commits/' + ref.object.sha).then(ghJson).then(function (c) {
+            var tree = Object.keys(before).map(function (p) { return { path: p, mode: '100644', type: 'blob', sha: before[p] }; });
+            return ghPost('/git/trees', { base_tree: c.tree.sha, tree: tree })
+              .then(function (t) { return ghPost('/git/commits', { message: 'Example maps restored in the viewer: undone', tree: t.sha, parents: [ref.object.sha] }); })
+              .then(function (n) { return ghPost('/git/refs/heads/main', { sha: n.sha }, 'PATCH'); })
+              .then(function () { shared.ghDir = null; });
+          });
+        }).catch(function (e) { if (e.status === 422 && ++tries < 3) return go(); throw e; });
+      };
+      return go();
     }
     function examplesHere(ids, gh) {   // this browser's changes to these examples (and their SBGN-ML twins) let go, the list drawn again
-      var all = ids.concat(ids.filter(function (id) { return /-graphml$/.test(id); }).map(twinOf));
+      var all = examplesAll(ids);
       var pend = binPending(), deleted = {};
       (V.siteList || []).forEach(function (m) { deleted[m.id] = m.deleted; });
       all.forEach(function (id) {
@@ -695,7 +735,11 @@ import { NEW_ID, emptyBase, isSb, madeHere, sbMap } from './sbgn.js';
                 }).then(function () { return post('/git/trees', { base_tree: c.tree.sha, tree: tree }); })
                   .then(function (t) { return post('/git/commits', { message: 'Example maps restored in the viewer' + (taken.length ? '; kept as the reader\'s: ' + taken.join(', ') : ''), tree: t.sha, parents: [ref.object.sha] }); })
                   .then(function (n) { return post('/git/refs/heads/main', { sha: n.sha }, 'PATCH'); })
-                  .then(function () { shared.ghDir = null; return ids.concat(back); });
+                  .then(function () {
+                    shared.ghDir = null;
+                    var before = {}; tree.forEach(function (f) { before[f.path] = shaOf[f.path.slice(5)] || null; });   // each path as it was, for the undo (examplesBack)
+                    return { ids: ids.concat(back), before: before };
+                  });
               });
             });
           });

@@ -2664,35 +2664,99 @@
   }
   function restoreExamples() {
     var gh2 = !!(repo() && token());
-    var was = { pend: binPending(), hidden: siteHidden(), moved: {}, renamed: {}, gone: {} };
-    var ids = exampleIds();
-    ids.forEach(function(id) {
+    var ids = exampleIds(), was = examplesWas(ids), done = null;
+    var fwd = run();
+    function run() {
+      examplesHere(ids, gh2);
+      if (!gh2) return Promise.resolve();
+      return examplesToSite().then(function(r) {
+        done = r;
+        examplesHere(r.ids.filter(function(id) {
+          return ids.indexOf(id) < 0;
+        }), gh2);
+      }).catch(function(e) {
+        examplesPut(was);
+        alert("The example maps were not restored: " + (e && e.message ? e.message : e));
+      });
+    }
+    listDid(function() {
+      return fwd.then(function() {
+        if (!gh2 || !done) {
+          examplesPut(was);
+          return;
+        }
+        return examplesBack(done.before).then(function() {
+          examplesPut(was);
+        }, function(e) {
+          alert("The restore was not undone: " + (e && e.message ? e.message : e));
+        });
+      });
+    }, function() {
+      was = examplesWas(ids);
+      done = null;
+      fwd = run();
+      return fwd;
+    });
+  }
+  function examplesAll(ids) {
+    return ids.concat(ids.filter(function(id) {
+      return /-graphml$/.test(id);
+    }).map(twinOf));
+  }
+  function examplesWas(ids) {
+    var was = { ids, pend: binPending(), hidden: siteHidden(), moved: {}, renamed: {}, gone: {}, drafts: {} };
+    examplesAll(ids).forEach(function(id) {
       was.moved[id] = V.movedOf(id);
       was.renamed[id] = renamed[id];
       was.gone[id] = hiddenGone[id];
+      if (V.drafts[id]) was.drafts[id] = V.drafts[id];
     });
-    examplesHere(ids, gh2);
-    if (!gh2) return;
-    examplesToSite().then(function(all) {
-      examplesHere(all.filter(function(id) {
-        return ids.indexOf(id) < 0;
-      }), gh2);
-    }).catch(function(e) {
-      binPendingSet(was.pend);
-      hiddenSet(was.hidden);
-      ids.forEach(function(id) {
-        if (was.moved[id] !== null) V.setMoved(id, was.moved[id]);
-        if (was.renamed[id]) renamed[id] = was.renamed[id];
-        if (was.gone[id]) hiddenGone[id] = was.gone[id];
+    return was;
+  }
+  function examplesPut(was) {
+    binPendingSet(was.pend);
+    hiddenSet(was.hidden);
+    Object.keys(was.moved).forEach(function(id) {
+      V.setMoved(id, was.moved[id]);
+      if (was.renamed[id]) renamed[id] = was.renamed[id];
+      else delete renamed[id];
+      if (was.gone[id]) hiddenGone[id] = was.gone[id];
+      else delete hiddenGone[id];
+    });
+    namedSave();
+    Object.keys(was.drafts).forEach(function(id) {
+      draftPut(id, Object.assign({}, was.drafts[id])).catch(function() {
       });
-      V.refreshMine();
-      alert("The example maps were not restored: " + (e && e.message ? e.message : e));
     });
+    var m = V.current && V.byId[V.current.id];
+    if (m && was.drafts[m.id] && !V.grid.classList.contains("m2-editing")) V.put(m, true);
+    V.refreshMine();
+  }
+  function examplesBack(before) {
+    var tries = 0;
+    var go = function() {
+      return api("/git/ref/heads/main").then(ghJson).then(function(ref) {
+        return api("/git/commits/" + ref.object.sha).then(ghJson).then(function(c) {
+          var tree = Object.keys(before).map(function(p) {
+            return { path: p, mode: "100644", type: "blob", sha: before[p] };
+          });
+          return ghPost("/git/trees", { base_tree: c.tree.sha, tree }).then(function(t) {
+            return ghPost("/git/commits", { message: "Example maps restored in the viewer: undone", tree: t.sha, parents: [ref.object.sha] });
+          }).then(function(n) {
+            return ghPost("/git/refs/heads/main", { sha: n.sha }, "PATCH");
+          }).then(function() {
+            shared.ghDir = null;
+          });
+        });
+      }).catch(function(e) {
+        if (e.status === 422 && ++tries < 3) return go();
+        throw e;
+      });
+    };
+    return go();
   }
   function examplesHere(ids, gh2) {
-    var all = ids.concat(ids.filter(function(id) {
-      return /-graphml$/.test(id);
-    }).map(twinOf));
+    var all = examplesAll(ids);
     var pend = binPending(), deleted = {};
     (V.siteList || []).forEach(function(m2) {
       deleted[m2.id] = m2.deleted;
@@ -2811,7 +2875,11 @@
                 return post("/git/refs/heads/main", { sha: n.sha }, "PATCH");
               }).then(function() {
                 shared.ghDir = null;
-                return ids.concat(back2);
+                var before = {};
+                tree.forEach(function(f) {
+                  before[f.path] = shaOf[f.path.slice(5)] || null;
+                });
+                return { ids: ids.concat(back2), before };
               });
             });
           });
@@ -7442,7 +7510,7 @@
       return k >= 0;
     }));
     var ids = list2.filter(function(i) {
-      return isMade(nodes2[i]) || emptyComp(nodes2[i]);
+      return isMade(nodes2[i]) || emptyComp(nodes2[i]) || nodes2[i].shape.kind === "Complex";
     }).map(function(i) {
       return nodes2[i].id;
     });
@@ -7549,7 +7617,9 @@
         svDelete();
       };
       var i = madeAt(rclick);
-      if (i < 0) i = innermost(rclick, emptyComp);
+      if (i < 0) i = innermost(rclick, function(n) {
+        return emptyComp(n) || n.shape.kind === "Complex";
+      });
       if (i >= 0) return function() {
         if (shared.selN.indexOf(i) >= 0) nodesDelete(shared.selN, shared.selP.length ? [] : shared.selE);
         else nodesDelete([i]);

@@ -1991,9 +1991,17 @@
     return T.text();
   }
   function antenna(t, id, L, opt) { return fit(t, [{ id: id, ant: L }], opt); }   // every port of process or gate id at antenna L
-  function remove(t, ids, opt) {   // nodes deleted in the editor's GraphML, with every line at them; their ids kept for write()
+  function remove(t, ids, opt) {   // nodes deleted in the editor's GraphML, a complex with its members, with every line at them; their ids kept for write()
     var G = gml(t, opt), T = new Tags(t, G.doc), del = {};
-    ids.forEach(function (id) { if (G.node[id]) { del[id] = 1; T.cut(G.node[id].el); } });
+    ids.forEach(function (id) {
+      if (!G.node[id]) return;
+      del[id] = 1;
+      Array.prototype.forEach.call(G.node[id].el.getElementsByTagNameNS(GNS, 'node'), function (m) { if (G.node[m.getAttribute('id')]) del[m.getAttribute('id')] = 1; });   // a complex's members go with it
+    });
+    Object.keys(del).forEach(function (id) {   // each element cut once: the outermost of what goes
+      for (var p = G.node[id].el.parentNode; p && p.nodeType === 1; p = p.parentNode) if (p.localName === 'node' && del[p.getAttribute('id')]) return;
+      T.cut(G.node[id].el);
+    });
     Object.keys(G.edge).forEach(function (k) { var e = G.edge[k]; if (del[e.s] || del[e.t]) T.cut(e.el); });
     return goneMark(plainEmpty(T.text(), opt), Object.keys(del));
   }

@@ -1940,10 +1940,10 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       if (k.to && cardSel && cardSel.id === k.id) cardMove(k.id, k.to); else { cardShow(k.parts, true); paint(); }
     }, true);
     }
-    function nodesDelete(list, arcs) {   // the glyphs the palette makes, an empty compartment too, deleted with every line at them,
+    function nodesDelete(list, arcs) {   // the glyphs the palette makes, a complex with its members, an empty compartment too, deleted with every line at them,
       // and the lines selected with them (one undo step, as cdDelete on a CellDesigner map)
       list = list.concat(nodes2.map(function (n, k) { return n.sub != null && list.indexOf(n.sub) >= 0 && list.indexOf(k) < 0 ? k : -1; }).filter(function (k) { return k >= 0; }));   // a submap's terminals go with it (as Newt)
-      var ids = list.filter(function (i) { return isMade(nodes2[i]) || emptyComp(nodes2[i]); }).map(function (i) { return nodes2[i].id; });
+      var ids = list.filter(function (i) { return isMade(nodes2[i]) || emptyComp(nodes2[i]) || nodes2[i].shape.kind === 'Complex'; }).map(function (i) { return nodes2[i].id; });   // a complex with its members (sbgn_edit.remove)
       var eids = (arcs || []).map(function (k) { return edges2[k] && edges2[k].id; }).filter(Boolean);
       if (!ids.length && !eids.length) return false;
       var t2 = ids.length ? sbJs.remove(shared.text, ids) : shared.text;
@@ -2019,7 +2019,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       var q = svAt(rclick);
       if (q) return function () { shared.svSel = { id: nodes2[q[0]].id, j: q[1] }; svDelete(); };
       var i = madeAt(rclick);
-      if (i < 0) i = innermost(rclick, emptyComp);
+      if (i < 0) i = innermost(rclick, function (n) { return emptyComp(n) || n.shape.kind === 'Complex'; });   // inside a complex off its members: the complex, deleted with them
       if (i >= 0) return function () { if (shared.selN.indexOf(i) >= 0) nodesDelete(shared.selN, shared.selP.length ? [] : shared.selE); else nodesDelete([i]); };   // over the selection: all of it (as the key)
       var h = hit(rclick);   // a line: everything selected with it, or it alone
       if (!h || h.e == null || h.p != null) return null;
