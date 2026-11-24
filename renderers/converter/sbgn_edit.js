@@ -2799,26 +2799,44 @@
     if (!(h > 0) || Math.abs(w - need) < 0.5 || (grow && w >= need)) return;
     T.set(b, 'x', num(x + w / 2 - need / 2)); T.set(b, 'w', num(need));
   }
-  function ptmOf(g) {   // a glyph's notes and the sites of their PTM line
-    var nt = kid(g, 'notes'), m = nt ? (nt.textContent || '').match(/(^|\n)\s*PTM:[ \t]*([^\n]*)/) : null;
-    return { notes: nt, sites: m ? m[2].split(/\s+/).filter(function (x) { return x.indexOf('@') >= 0; }) : [], all: m ? m[2] : null };
+  // the glyph's PTM line: a line of its notes (after a tag or a line break) that starts with PTM: and holds sites only, as
+  // the converter reads one (annotation.from_notes); found and rewritten in the notes' own markup, so another tool's
+  // text (a line that only mentions PTM, a line with words) is never taken for it
+  var SITE = /^[^@\s]*@\S+$/;
+  function unesc(v) { return v.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&amp;/g, '&'); }
+  function ptmOf(T, g) {
+    var nt = kid(g, 'notes'), p = { notes: nt, sites: [], found: false };
+    if (!nt) return p;
+    p.s0 = T.at.get(nt)[0]; p.s1 = T.end(nt); p.raw = T.t.slice(p.s0, p.s1);
+    var re = /(^|>|\n)[ \t]*(PTM:[ \t]*([^\n<]*))/g, m;
+    while ((m = re.exec(p.raw))) {
+      var ts = m[3].trim().split(/\s+/).filter(Boolean).map(unesc);
+      if (ts.length && ts.every(function (x) { return SITE.test(x); })) { p.found = true; p.i = m.index + m[0].length - m[2].length; p.j = m.index + m[0].length; p.sites = ts; break; }
+    }
+    return p;
   }
-  function ptmWrite(T, g, nt, sites, pre) {   // the PTM line set to sites (none: the line out, the notes out when nothing else is left)
-    var line = sites.length ? 'PTM: ' + sites.join(' ') : '';
-    if (nt) {
-      var s0 = T.at.get(nt)[0], s1 = T.end(nt), raw = T.t.slice(s0, s1), had = /PTM:[ \t]*[^\n<]*/.test(raw);
-      var rest = (nt.textContent || '').replace(/(^|\n)\s*PTM:[ \t]*[^\n]*/, '').trim();
-      if (!line && !rest) { T.cut(nt); return; }
-      var L = esc(line), out = had ? raw.replace(/\n?[ \t]*PTM:[ \t]*[^\n<]*/, function (m0) { return line ? m0.replace(/PTM:[ \t]*[^\n<]*/, function () { return L; }) : ''; })
-        : /<\/([\w.-]+:)?body\s*>/.test(raw) ? raw.replace(/<\/([\w.-]+:)?body\s*>/, function (e) { return (rest ? '\n' : '') + L + e; }) : raw.replace(/<\/([\w.-]+:)?notes\s*>$/, function (e) { return L + e; });
-      T.ed.push([s0, s1, out]); return;
+  function ptmWrite(T, g, p, sites, pre) {   // the PTM line set to sites (none: the line out, the notes out when nothing else is left)
+    var line = sites.length ? esc('PTM: ' + sites.join(' ')) : '';
+    if (p.notes) {
+      var raw = p.raw, out;
+      if (p.found) {
+        if (line) out = raw.slice(0, p.i) + line + raw.slice(p.j);
+        else { var k = p.i; while (k > 0 && /[ \t]/.test(raw[k - 1])) k--; if (raw[k - 1] === '\n') k--; out = raw.slice(0, k) + raw.slice(p.j); }
+      } else {
+        if (!line) return;
+        var said = /\S/.test(raw.replace(/<[^>]*>/g, '')), m = raw.match(/<\/([\w.-]+:)?body\s*>/) || raw.match(/<\/([\w.-]+:)?html\s*>/) || raw.match(/<\/([\w.-]+:)?notes\s*>$/);
+        out = raw.slice(0, m.index) + (said ? '\n' : '') + line + raw.slice(m.index);
+      }
+      if (!/\S/.test(out.replace(/<[^>]*>/g, ''))) T.cut(p.notes); else T.ed.push([p.s0, p.s1, out]);
+      return;
     }
     if (!line) return;
     var ind = T.indent(g) + '  ', st = T.at.get(g)[1];
-    T.ed.push([st, st, '\n' + ind + '<' + pre + 'notes>\n' + ind + '  <html xmlns="http://www.w3.org/1999/xhtml">\n' + ind + '    <body>' + esc(line) + '</body>\n' + ind + '  </html>\n' + ind + '</' + pre + 'notes>']);
+    T.ed.push([st, st, '\n' + ind + '<' + pre + 'notes>\n' + ind + '  <html xmlns="http://www.w3.org/1999/xhtml">\n' + ind + '    <body>' + line + '</body>\n' + ind + '  </html>\n' + ind + '</' + pre + 'notes>']);
   }
   function svsOf(g) { return kids(g, 'glyph').filter(function (c) { return c.getAttribute('class') === 'state variable'; }); }
   function sitesOut(t, opt) {
+    if (t.charCodeAt(0) === 0xFEFF) return '\uFEFF' + sitesOut(t.slice(1), opt);   // a byte-order mark kept, the text read after it
     var doc = new (DP(opt))().parseFromString(t, 'application/xml'), T = new Tags(t, doc), any = false;
     Array.prototype.forEach.call(doc.getElementsByTagName('*'), function (g) {
       if (g.localName !== 'glyph') return;
@@ -2831,16 +2849,17 @@
       });
       if (!moved.length) return;
       any = true;
-      var p = ptmOf(g);
-      ptmWrite(T, g, p.notes, moved.concat(p.sites.filter(function (x) { return moved.indexOf(x) < 0; })), g.prefix ? g.prefix + ':' : '');
+      var p = ptmOf(T, g);
+      ptmWrite(T, g, p, moved.concat(p.sites.filter(function (x) { return moved.indexOf(x) < 0; })), g.prefix ? g.prefix + ':' : '');
     });
     return any ? T.text() : t;
   }
   function sitesIn(t, opt) {
+    if (t.charCodeAt(0) === 0xFEFF) return '\uFEFF' + sitesIn(t.slice(1), opt);
     var doc = new (DP(opt))().parseFromString(t, 'application/xml'), T = new Tags(t, doc), any = false;
     Array.prototype.forEach.call(doc.getElementsByTagName('*'), function (g) {
       if (g.localName !== 'glyph') return;
-      var p = ptmOf(g), svs = svsOf(g), shown = [];
+      var p = ptmOf(T, g), svs = svsOf(g), shown = [];
       svs.forEach(function (sv) {
         var st = kid(sv, 'state'), vr = st && st.getAttribute('variable');
         if (vr) { var full = (st.getAttribute('value') || '') + '@' + vr; shown.push(full); var b0 = T.ed.length; svWiden(T, sv, full, true); if (T.ed.length > b0) any = true; }
@@ -2857,7 +2876,7 @@
         T.set(st, 'variable', site.slice(site.indexOf('@') + 1)); svWiden(T, sv, site);
         took = true;
       });
-      if (took || left.length !== p.sites.length) { any = true; ptmWrite(T, g, p.notes, left, g.prefix ? g.prefix + ':' : ''); }
+      if (took || left.length !== p.sites.length) { any = true; ptmWrite(T, g, p, left, g.prefix ? g.prefix + ':' : ''); }
     });
     return any ? T.text() : t;
   }

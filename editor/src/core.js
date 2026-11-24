@@ -325,7 +325,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     }
     function atSite() {
       var n = !on && leftMoves && leftMoves.site === site ? leftMoves.n : undo.length;
-      return site.pending && (src() === site.pub || (!n && !site.fromDraft));
+      return site.pending && (src() === site.pub || (!n && !site.fromDraft && (!shared.sb || src() === site.base)));   // an SBGN-ML map written as now seen (Show sites) is a change
     }
     function unkeep(id) {   // the reader's changes let go (Back to the site's map, a token connected): a write waiting dropped too
       if (localFor && localFor.id === id) { clearTimeout(localTimer); localTimer = null; localFor = null; }
@@ -1250,8 +1250,9 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
         quiet();
         var t0 = t;
         return sbpy().then(function () {
-          var tin = sbIn(t);   // sites kept in the notes back on their circles (written as Show sites says, sbOut): its GraphML read from that text
+          var tin = sbIn(t), sited = function (x) { return (x.match(/<([\w.-]+:)?state [^>]*variable="[^"]/g) || []).length; };   // sites kept in the notes back on their circles (written as Show sites says, sbOut)
           if (tin === t) return g0;
+          if (g0 && sited(tin) === sited(t)) { t = tin; return g0; }   // boxes widened only: the GraphML the site drew kept (it takes the places from the text)
           t = tin;
           return sbReader(t).then(function () { return sbOwn(t); });
         }).then(function (g1) {
@@ -1297,7 +1298,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       if (site) { site.known = site.mine ? (mine[site.id] ? mine[site.id].text : null) : V.drafts[site.id] ? V.drafts[site.id].text : null; site.clashed = false; }   // what this browser kept of the map when it was opened (local: the save clash)
       if (site && site.pending && canFolder && V.folderName()) folderCheck();
       stuck = false; undo = [];
-      histTake(t, g);
+      histTake(shared.sb ? t0 : t, g);   // an SBGN-ML map: the file as read (its sites put back on opening, sbIn), as it was left
       edits = 0;
       if (reSel && V.chosen && reSel.map === V.chosen.id) {   // reloaded while editing this map: its selection back
         nodes2.forEach(function (n, i) { if (reSel.n.indexOf(n.id) >= 0) shared.selN.push(i); });
@@ -1316,7 +1317,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       V.grid.classList.add('m2-editing');
       buttons();
       gN = gE = null; mv = null;
-      if (same && same.text === t) {
+      if (same && same.text === (shared.sb ? t0 : t)) {
         var grouped = same.svg && same.svg.indexOf(' data-n="') >= 0;   // the editor's own drawing of this very file
         (shared.cd ? cdpy() : yr()).then(function () { if (on && V.current === map && !edits && !gN && !grouped) render(); });   // the renderer loaded quietly for the first change
         if (grouped) adopt(same.svg);
@@ -2783,8 +2784,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     function __run38() {   // run at start, in order (__start)
     window.m2EditSites = function () {   // Show sites changed while an SBGN-ML map is edited: the file written as now seen (sbOut), saved
       if (!on || !site || !shared.sb || !shared.sbLast || !sbJs || !sbJs.sitesOut) return;
-      var w = shared.sbLast[1];
-      if (!isSb(w) || sbJs.sitesOut(w) === w) return;   // no site on the map
+      if (!isSb(shared.sbLast[1]) || src() === (site.saved || site.base)) return;   // as it is saved already
       shared.dirty = true; changed();
     };
     window.m2EditNow = function () { return on && site && site.id && shared.text ? { id: site.id, text: src(), svg: shownSvg(), file: name } : null; };

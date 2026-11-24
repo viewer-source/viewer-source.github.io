@@ -45,6 +45,7 @@ t 2 node tests/sbgn-create.js python3
 t 3 node tests/sbgn-connect.js python3
 t 4 node tests/sbgn-af.js python3
 t 4 node tests/sbgnml-read.js maps test-maps parked
+t 4 node tests/sites-notes.js maps test-maps
 t 4 node tests/sbgn-restyle.js python3
 t 4 node tests/sbgn-join.js python3
 t 4 node tests/cd-join.js python3

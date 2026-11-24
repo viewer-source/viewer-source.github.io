@@ -14,8 +14,15 @@ var SB = 'external-newt-unstable-atm-mediated-phosphorylation-of-repair-proteins
   page.on('dialog', function (d) { d.accept().catch(function () {}); });
   var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more ? '  ' + more : '')); };
   var settle = async function () { await page.waitForSelector('.m2-ri[data-win="set"]', { timeout: 30000 }); await page.waitForTimeout(2500); };
-  var ticked = function () { return page.$eval('#m2-set-sites', function (x) { return x.checked; }); };
-  var openSet = async function () { if (!(await page.$eval('#m2-set-sites', function (x) { return !!x.offsetParent; }))) { await page.click('.m2-ri[data-win="set"]'); await page.waitForTimeout(700); } };
+  var ticked = function () { return page.evaluate(function () { return localStorage.getItem('atlas-show-sites') === 'on'; }); };
+  // Show sites is the palette's tick box (while editing); outside editing the setting kept in the browser is flipped and the page reloaded
+  var flip = async function () {
+    if (await page.evaluate(function () { return !!(window.m2EditNow && window.m2EditNow()); })) { await page.click('.m2-ed-psites input'); return; }
+    var on = await ticked();
+    await page.evaluate(function (on) { if (on) localStorage.removeItem('atlas-show-sites'); else localStorage.setItem('atlas-show-sites', 'on'); }, on);
+    await page.reload({ waitUntil: 'load' }); await settle();
+  };
+  var openSet = async function () {};
   // the picture on screen as text: an image's file (a blob when the viewer put the setting into it), or the editor's drawing
   var picText = function () {
     return page.evaluate(function () {
@@ -45,12 +52,11 @@ var SB = 'external-newt-unstable-atm-mediated-phosphorylation-of-repair-proteins
   console.log('-- SBGN-ML map (Newt), view mode');
   await page.goto(base + '#' + SB, { waitUntil: 'load' }); await settle();
   await openSet();
-  ok('Settings: Display, Show sites, unticked by default', await page.$eval('#m2-set-sites', function (x) { return !!x.offsetParent; }) && !(await ticked()));
-  ok('its circled i says what it does', /only the value \(P\)/.test(await page.$eval('.m2-set-disp .m2-itip', function (x) { return x.getAttribute('data-info'); })));
+  ok('Show sites unticked by default, not in Settings', !(await ticked()) && !(await page.$('#m2-set-sites')));
   var t0 = await picText(), s0 = await seen(t0);
   ok('unticked: no text with a site drawn', s0.at === 0 && s0.values > 0, s0.values + ' values, ' + s0.at + ' with @');
   ok('unticked: P drawn where P@S139 is', s0.texts.indexOf('P') >= 0 && s0.texts.indexOf('P@S139') < 0);
-  await openSet(); await page.click('#m2-set-sites'); await page.waitForTimeout(2500);
+  await flip(); await page.waitForTimeout(2500);
   var t1 = await picText(), s1 = await seen(t1);
   ok('ticked: kept in the browser', (await page.evaluate(function () { return localStorage.getItem('atlas-show-sites'); })) === 'on');
   ok('ticked: the sites drawn, the value-only circles hidden', s1.at > 0 && s1.values === 0 && s1.texts.indexOf('P@S139') >= 0, s1.at + ' with @');
@@ -67,20 +73,14 @@ var SB = 'external-newt-unstable-atm-mediated-phosphorylation-of-repair-proteins
   var d = await dl, dt = d ? require('fs').readFileSync(await d.path(), 'utf8') : '';
   ok('Download SVG as on screen: the sites shown', d && /class="m2-pic m2-sv"/.test(dt) && (await seen(dt)).at > 0, d ? '' : 'no download');
 
-  console.log('-- undo and redo of the setting');
-  await openSet(); await page.click('#m2-set-sites'); await page.waitForTimeout(1500);
-  ok('unticked again', !(await ticked()) && (await seen(await picText())).at === 0);
-  await page.keyboard.press('Control+KeyZ'); await page.waitForTimeout(1500);
-  ok('Cmd+Z: ticked, sites drawn', (await ticked()) && (await seen(await picText())).at > 0);
-  await page.keyboard.press('Control+Shift+KeyZ'); await page.waitForTimeout(1500);
-  ok('Cmd+Shift+Z: unticked, sites hidden', !(await ticked()) && (await seen(await picText())).at === 0);
+  await flip();   // unticked again for the CellDesigner map
 
   console.log('-- CellDesigner map, view mode');
   await page.goto(base + '#' + CD, { waitUntil: 'load' }); await settle(); await openSet();
   ok('the CellDesigner map on screen', (await page.$eval('#m2-title', function (x) { return x.textContent; })) !== '' && (await page.evaluate(function () { return location.hash; })) === '#' + CD && /aspirin/i.test(await page.$eval('#m2-title', function (x) { return x.textContent; })));
   var c0 = await seen(await picText());
   ok('unticked: no residue name drawn', c0.sites === 0);
-  await openSet(); await page.click('#m2-set-sites'); await page.waitForTimeout(2500);
+  await flip(); await page.waitForTimeout(2500);
   var c1 = await seen(await picText());
   ok('ticked: residue names drawn', c1.sites > 0, c1.sites + ' names');
 
@@ -93,7 +93,7 @@ var SB = 'external-newt-unstable-atm-mediated-phosphorylation-of-repair-proteins
   ok('the editor\'s drawing: residue names shown (ticked)', (await shownNames()) > 0);
   var names = function (t) { return (t.match(/<celldesigner:modificationResidue\b[^>]*>/g) || []).join('\n'); };
   var f0 = await page.evaluate(function () { return window.m2EditNow().text; });
-  await openSet(); await page.click('#m2-set-sites'); await page.waitForTimeout(800);
+  await flip(); await page.waitForTimeout(800);
   var editing = await page.evaluate(function () { return document.querySelector('.m2').classList.contains('m2-editing') && !!window.m2EditNow(); });
   ok('unticked while editing: names hidden at once, editing goes on', (await shownNames()) === 0 && editing);
   await page.keyboard.press('Control+KeyZ'); await page.waitForTimeout(800);
@@ -116,12 +116,12 @@ var SB = 'external-newt-unstable-atm-mediated-phosphorylation-of-repair-proteins
     await page.waitForTimeout(2500);
     var shown = function () { return page.evaluate(function () { var im = document.getElementById('m2-img'); return [].slice.call(im.querySelectorAll('text')).filter(function (e) { return e.getClientRects().length; }).map(function (e) { return e.textContent; }); }); };
     ok('ticked: P@S139 in the editor\'s drawing', (await shown()).indexOf('P@S139') >= 0);
-    await openSet(); await page.click('#m2-set-sites'); await page.waitForTimeout(800);
+    await flip(); await page.waitForTimeout(800);
     var sh = await shown();
     ok('unticked: P alone, editing goes on', sh.indexOf('P@S139') < 0 && sh.indexOf('P') >= 0 && !!(await page.evaluate(function () { return window.m2EditNow(); })));
     var st = function (t) { return (t.match(/<state\b[^>]*>/g) || []).join('\n'); };
     var fb = await page.evaluate(function () { return window.m2EditNow().text; });
-    ok('the file keeps every site', /variable="S139"/.test(fb));
+    ok('unticked: the file written as seen, the site in its glyph\'s PTM note, none on a state variable', !/variable="S139"/.test(fb) && /PTM:[^<\n]*@S139/.test(fb));
     // the field: the state variable's own text, the site with it
     var at = await page.evaluate(function () {
       var g = [].slice.call(document.querySelectorAll('#m2-img .sv-value')).filter(function (e) { return e.getClientRects().length; })[0];

@@ -236,6 +236,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       rn: 'Corresponds to CellDesigner\'s Reduced Notation palette, which enables an Activity Flow type of representation.',
       sbgn: 'Follows the SBGN Activity Flow specification. The map is saved as an Activity Flow SBGN-ML file.',
       prot: 'When ticked, shows the auxiliary unit on protein activities. An activity with no auxiliary unit is by default a protein activity.',
+      sites: "A state variable shows its site (P@S1177). Unticked, only the value (P): an SBGN-ML map is saved so, its sites kept in the glyphs' notes, and they come back when ticked.",
       cdc: 'Keeps maps to what CellDesigner and MINERVA can hold. Unticked, the palette also offers tags, and submaps with terminals on their border. What a map already holds is not changed by it.'
     };
     }
@@ -255,6 +256,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       palTip(palView('rn', 'Reduced notation view', 'Reduced notation view: each activity drawn as its entity'), 'Reduced notation view', INFO.rn) +
       palTip(palView('sbgn', 'SBGN AF view', 'SBGN Activity Flow view: each entity drawn as its SBGN activity'), 'SBGN Activity Flow view', INFO.sbgn) + '</div>' +
       '<div class="m2-ed-pblk m2-ed-pprot">' + palTip('<label class="m2-ed-phyb" title="Ticked: every protein activity carries the auxiliary unit of a macromolecule, drawn and saved in the file; unticked: none has it"><input type="checkbox"><span>Protein auxiliary unit</span></label>', 'Protein auxiliary unit', INFO.prot) + '</div>' +
+      '<div class="m2-ed-pblk m2-ed-psites">' + palTip('<label class="m2-ed-phyb" title="Ticked: every state variable shows its site and the map is saved so; unticked: the value alone, the sites kept in the notes"><input type="checkbox"><span>Show sites</span></label>', 'Show sites', INFO.sites) + '</div>' +
       '<div class="m2-ed-pblk m2-ed-pcdc">' + palTip('<label class="m2-ed-phyb" title="Ticked: the palette offers only what CellDesigner and MINERVA can hold; unticked: tags and submaps\u2019 terminals too"><input type="checkbox"><span>CellDesigner compatible</span></label>', 'CellDesigner compatible', INFO.cdc) + '</div>' +
       '<div class="m2-ed-pblk m2-ed-psbgn">' + palTip('<label class="m2-ed-phyb" title="Ticked: what is drawn keeps to the SBGN PD specification alone; unticked: CellDesigner\u2019s additions too"><input type="checkbox"><span>Strict SBGN</span></label>', 'Strict SBGN', INFO.sbgn) + '</div>' +
       '<div class="m2-ed-pblk m2-ed-pstrict">' + palTip('<label class="m2-ed-phyb" title="Ticked (the default): under PD a modulation may also end on an entity, and a logic gate\u2019s output go to one (CellDesigner\u2019s reduced notation); with a process on the map the file stays Process Description, without one such a link makes it Activity Flow. Unticked: Process Description only"><input type="checkbox"><span>Reduced notation</span></label>', 'Reduced notation', INFO.strict) + '</div>' +
@@ -608,6 +610,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       pb.hidden = !palViews();   // only on an Activity Flow map or an empty one (proteinBoxes leaves a map turned PD as it is)
       if (!pb.hidden) { var pf = protFile(); if (pf != null) protOn = pf; k = palKey(); }
       if (pbc.checked !== protOn) pbc.checked = protOn;
+      var ps = pal.querySelector('.m2-ed-psites input'); if (ps.checked !== !!V.sites) ps.checked = !!V.sites;
       var cc = pal.querySelector('.m2-ed-pcdc'), ccb = cc.querySelector('input'); cc.hidden = false;   // hidden on a CellDesigner map (cdFill)
       if (ccb.checked !== compat()) ccb.checked = compat();
       if (shared.palShown === k + compat()) return;
@@ -641,6 +644,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       if (tool && !palOk(tool.kind)) tool = null;   // a tag in hand
       shared.palShown = null; palShow(); paint();
     });
+    pal.querySelector('.m2-ed-psites input').addEventListener('change', function (e) { e.target.blur(); if (V.setSites) V.setSites(e.target.checked); });   // Show sites, the viewer's setting (undone with the settings)
     pal.querySelector('.m2-ed-pprot input').addEventListener('change', function (e) {   // every protein activity given the box or not, one undo step
       protOn = e.target.checked; e.target.blur();   // the editor's keys (undo) work at once, not the tick box's
       var t2 = palOn() ? sbJs.proteinBoxes(shared.text, protOn) : shared.text;

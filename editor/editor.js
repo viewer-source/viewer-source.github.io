@@ -1321,11 +1321,22 @@
   var outMemo;
   function sbOut(w) {
     if (V.sites || !sbJs || !sbJs.sitesOut || !isSb(w)) return w;
-    if (!outMemo || outMemo[0] !== w) outMemo = [w, sbJs.sitesOut(w)];
+    if (!outMemo || outMemo[0] !== w) {
+      var o = w;
+      try {
+        o = sbJs.sitesOut(w);
+      } catch (e) {
+      }
+      outMemo = [w, o];
+    }
     return outMemo[1];
   }
   function sbIn(t) {
-    return sbJs && sbJs.sitesIn && isSb(t) ? sbJs.sitesIn(t) : t;
+    try {
+      return sbJs && sbJs.sitesIn && isSb(t) ? sbJs.sitesIn(t) : t;
+    } catch (e) {
+      return t;
+    }
   }
   var sbPlaced;
   function __run5() {
@@ -4927,6 +4938,7 @@
       rn: "Corresponds to CellDesigner's Reduced Notation palette, which enables an Activity Flow type of representation.",
       sbgn: "Follows the SBGN Activity Flow specification. The map is saved as an Activity Flow SBGN-ML file.",
       prot: "When ticked, shows the auxiliary unit on protein activities. An activity with no auxiliary unit is by default a protein activity.",
+      sites: "A state variable shows its site (P@S1177). Unticked, only the value (P): an SBGN-ML map is saved so, its sites kept in the glyphs' notes, and they come back when ticked.",
       cdc: "Keeps maps to what CellDesigner and MINERVA can hold. Unticked, the palette also offers tags, and submaps with terminals on their border. What a map already holds is not changed by it."
     };
   }
@@ -4936,7 +4948,7 @@
   }
   var palSignsEl;
   function __run63() {
-    pal.innerHTML = '<div class="m2-ed-prow m2-ed-pnot" role="group" aria-label="Notation">' + palBtn('data-lang="pd"', "Process Description", '<text x="12" y="17.3" text-anchor="middle" font-size="15">PD</text>') + palBtn('data-lang="af"', "Activity Flow", '<text x="12" y="17.3" text-anchor="middle" font-size="15">AF</text>') + '</div><div class="m2-ed-plook" role="radiogroup" aria-label="Activity Flow view">' + palTip(palView("rn", "Reduced notation view", "Reduced notation view: each activity drawn as its entity"), "Reduced notation view", INFO.rn) + palTip(palView("sbgn", "SBGN AF view", "SBGN Activity Flow view: each entity drawn as its SBGN activity"), "SBGN Activity Flow view", INFO.sbgn) + '</div><div class="m2-ed-pblk m2-ed-pprot">' + palTip('<label class="m2-ed-phyb" title="Ticked: every protein activity carries the auxiliary unit of a macromolecule, drawn and saved in the file; unticked: none has it"><input type="checkbox"><span>Protein auxiliary unit</span></label>', "Protein auxiliary unit", INFO.prot) + '</div><div class="m2-ed-pblk m2-ed-pcdc">' + palTip('<label class="m2-ed-phyb" title="Ticked: the palette offers only what CellDesigner and MINERVA can hold; unticked: tags and submaps\u2019 terminals too"><input type="checkbox"><span>CellDesigner compatible</span></label>', "CellDesigner compatible", INFO.cdc) + '</div><div class="m2-ed-pblk m2-ed-psbgn">' + palTip('<label class="m2-ed-phyb" title="Ticked: what is drawn keeps to the SBGN PD specification alone; unticked: CellDesigner\u2019s additions too"><input type="checkbox"><span>Strict SBGN</span></label>', "Strict SBGN", INFO.sbgn) + '</div><div class="m2-ed-pblk m2-ed-pstrict">' + palTip('<label class="m2-ed-phyb" title="Ticked (the default): under PD a modulation may also end on an entity, and a logic gate\u2019s output go to one (CellDesigner\u2019s reduced notation); with a process on the map the file stays Process Description, without one such a link makes it Activity Flow. Unticked: Process Description only"><input type="checkbox"><span>Reduced notation</span></label>', "Reduced notation", INFO.strict) + '</div><div class="m2-ed-psigns"></div>';
+    pal.innerHTML = '<div class="m2-ed-prow m2-ed-pnot" role="group" aria-label="Notation">' + palBtn('data-lang="pd"', "Process Description", '<text x="12" y="17.3" text-anchor="middle" font-size="15">PD</text>') + palBtn('data-lang="af"', "Activity Flow", '<text x="12" y="17.3" text-anchor="middle" font-size="15">AF</text>') + '</div><div class="m2-ed-plook" role="radiogroup" aria-label="Activity Flow view">' + palTip(palView("rn", "Reduced notation view", "Reduced notation view: each activity drawn as its entity"), "Reduced notation view", INFO.rn) + palTip(palView("sbgn", "SBGN AF view", "SBGN Activity Flow view: each entity drawn as its SBGN activity"), "SBGN Activity Flow view", INFO.sbgn) + '</div><div class="m2-ed-pblk m2-ed-pprot">' + palTip('<label class="m2-ed-phyb" title="Ticked: every protein activity carries the auxiliary unit of a macromolecule, drawn and saved in the file; unticked: none has it"><input type="checkbox"><span>Protein auxiliary unit</span></label>', "Protein auxiliary unit", INFO.prot) + '</div><div class="m2-ed-pblk m2-ed-psites">' + palTip('<label class="m2-ed-phyb" title="Ticked: every state variable shows its site and the map is saved so; unticked: the value alone, the sites kept in the notes"><input type="checkbox"><span>Show sites</span></label>', "Show sites", INFO.sites) + '</div><div class="m2-ed-pblk m2-ed-pcdc">' + palTip('<label class="m2-ed-phyb" title="Ticked: the palette offers only what CellDesigner and MINERVA can hold; unticked: tags and submaps\u2019 terminals too"><input type="checkbox"><span>CellDesigner compatible</span></label>', "CellDesigner compatible", INFO.cdc) + '</div><div class="m2-ed-pblk m2-ed-psbgn">' + palTip('<label class="m2-ed-phyb" title="Ticked: what is drawn keeps to the SBGN PD specification alone; unticked: CellDesigner\u2019s additions too"><input type="checkbox"><span>Strict SBGN</span></label>', "Strict SBGN", INFO.sbgn) + '</div><div class="m2-ed-pblk m2-ed-pstrict">' + palTip('<label class="m2-ed-phyb" title="Ticked (the default): under PD a modulation may also end on an entity, and a logic gate\u2019s output go to one (CellDesigner\u2019s reduced notation); with a process on the map the file stays Process Description, without one such a link makes it Activity Flow. Unticked: Process Description only"><input type="checkbox"><span>Reduced notation</span></label>', "Reduced notation", INFO.strict) + '</div><div class="m2-ed-psigns"></div>';
     palSignsEl = pal.querySelector(".m2-ed-psigns");
   }
   function palBlocks() {
@@ -5459,6 +5471,8 @@
       k = palKey();
     }
     if (pbc.checked !== protOn) pbc.checked = protOn;
+    var ps = pal.querySelector(".m2-ed-psites input");
+    if (ps.checked !== !!V.sites) ps.checked = !!V.sites;
     var cc = pal.querySelector(".m2-ed-pcdc"), ccb = cc.querySelector("input");
     cc.hidden = false;
     if (ccb.checked !== compat()) ccb.checked = compat();
@@ -5527,6 +5541,10 @@
       shared.palShown = null;
       palShow();
       paint();
+    });
+    pal.querySelector(".m2-ed-psites input").addEventListener("change", function(e) {
+      e.target.blur();
+      if (V.setSites) V.setSites(e.target.checked);
     });
     pal.querySelector(".m2-ed-pprot input").addEventListener("change", function(e) {
       protOn = e.target.checked;
@@ -9332,6 +9350,8 @@
     [".m2-ed-pnot", ".m2-ed-plook", ".m2-ed-pprot", ".m2-ed-pcdc", ".m2-ed-psbgn"].forEach(function(c) {
       pal.querySelector(c).hidden = true;
     });
+    var ps = pal.querySelector(".m2-ed-psites input");
+    if (ps && ps.checked !== !!V.sites) ps.checked = !!V.sites;
     pal.querySelector(".m2-ed-pnot").style.display = "none";
     var hy = pal.querySelector(".m2-ed-pstrict"), hyc = hy.querySelector("input"), strict = cdStrict();
     hy.hidden = false;
@@ -13148,7 +13168,7 @@
   }
   function atSite() {
     var n = !on && leftMoves && leftMoves.site === site ? leftMoves.n : undo.length;
-    return site.pending && (src() === site.pub || !n && !site.fromDraft);
+    return site.pending && (src() === site.pub || !n && !site.fromDraft && (!shared.sb || src() === site.base));
   }
   function unkeep(id) {
     if (localFor && localFor.id === id) {
@@ -14607,8 +14627,14 @@
       quiet();
       var t0 = t;
       return sbpy().then(function() {
-        var tin = sbIn(t);
+        var tin = sbIn(t), sited = function(x) {
+          return (x.match(/<([\w.-]+:)?state [^>]*variable="[^"]/g) || []).length;
+        };
         if (tin === t) return g0;
+        if (g0 && sited(tin) === sited(t)) {
+          t = tin;
+          return g0;
+        }
         t = tin;
         return sbReader(t).then(function() {
           return sbOwn(t);
@@ -14683,7 +14709,7 @@
     if (site && site.pending && canFolder && V.folderName()) folderCheck();
     stuck = false;
     undo = [];
-    histTake(t, g);
+    histTake(shared.sb ? t0 : t, g);
     edits = 0;
     if (reSel && V.chosen && reSel.map === V.chosen.id) {
       nodes2.forEach(function(n2, i) {
@@ -14726,7 +14752,7 @@
     buttons();
     gN = gE = null;
     mv = null;
-    if (same && same.text === t) {
+    if (same && same.text === (shared.sb ? t0 : t)) {
       var grouped = same.svg && same.svg.indexOf(' data-n="') >= 0;
       (shared.cd ? cdpy() : yr()).then(function() {
         if (on && V.current === map && !edits && !gN && !grouped) render();
@@ -16746,8 +16772,7 @@
   function __run382() {
     window.m2EditSites = function() {
       if (!on || !site || !shared.sb || !shared.sbLast || !sbJs || !sbJs.sitesOut) return;
-      var w = shared.sbLast[1];
-      if (!isSb(w) || sbJs.sitesOut(w) === w) return;
+      if (!isSb(shared.sbLast[1]) || src() === (site.saved || site.base)) return;
       shared.dirty = true;
       changed();
     };

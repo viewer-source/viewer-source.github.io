@@ -103,11 +103,11 @@ import { yr } from './graphml.js';
     var outMemo;
     function sbOut(w) {
       if (V.sites || !sbJs || !sbJs.sitesOut || !isSb(w)) return w;
-      if (!outMemo || outMemo[0] !== w) outMemo = [w, sbJs.sitesOut(w)];
+      if (!outMemo || outMemo[0] !== w) { var o = w; try { o = sbJs.sitesOut(w); } catch (e) {} outMemo = [w, o]; }   // a text it cannot edit written as it is
       return outMemo[1];
     }
     // a file opened: every site kept in its notes back on its circle, so it can be shown and is written as seen (sbOut)
-    function sbIn(t) { return sbJs && sbJs.sitesIn && isSb(t) ? sbJs.sitesIn(t) : t; }
+    function sbIn(t) { try { return sbJs && sbJs.sitesIn && isSb(t) ? sbJs.sitesIn(t) : t; } catch (e) { return t; } }
     // what the map is (sbgn_edit.mapKind), read once per change of the editor's GraphML: a change of
     // places only (a move, a resize) keeps the kind read before, so a drag or a paint writes nothing (a key
     // made on every paint cost 10 ms a call on a 2 MB map, three calls a paint). Two languages are kept apart:
@@ -170,4 +170,4 @@ import { yr } from './graphml.js';
     }
 
     export function __start() { __run1(); __run2(); __run3(); __run5(); __run6(); }   // the part's statements, in their order
-    export { EMPTY_BASE, GEO, NEW_ID, edOf, emptyBase, isSb, madeHere, sbBase, sbFollow, sbGraphml, sbJs, sbKind, sbIn, sbMap, sbNow, sbOut, sbOwn, sbReader, sbRemember, sbpy, viaGraphml };
+    export { EMPTY_BASE, GEO, NEW_ID, edOf, emptyBase, isSb, madeHere, sbBase, sbFollow, sbGraphml, sbJs, sbKind, sbIn, sbMap, sbNow, sbOwn, sbReader, sbRemember, sbpy, viaGraphml };

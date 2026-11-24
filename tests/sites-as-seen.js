@@ -1,4 +1,4 @@
-// Sites as seen (Settings, Display, Show sites; notes/sites-as-drawn.md): an SBGN-ML map is written as it is seen. On
+// Sites as seen (the palette's Show sites; notes/sites-as-drawn.md): an SBGN-ML map is written as it is seen. On
 // the live page with this tree's editor (--local) or the page's own, a reader's file added with no token:
 // 1. Unticked: the file the editor writes has no site on any state variable, each in its glyph's PTM note, the
 //    circles sized for the value.
@@ -37,12 +37,9 @@ var ptm = function (t) { return (t.match(/PTM:[^<\n]*/g) || []).join(' ').split(
     await page.waitForTimeout(800);
   };
   var now = function () { return page.evaluate(function () { return window.m2EditNow().text; }); };
-  var tick = async function () {
-    if (!(await page.$eval('#m2-set-sites', function (x) { return !!x.offsetParent; }))) { await page.click('.m2-ri[data-win="set"]'); await page.waitForTimeout(700); }
-    await page.click('#m2-set-sites'); await page.waitForTimeout(800);
-    var c = await page.$eval('#m2-set-sites', function (x) { return x.checked; });
-    await page.click('.m2-ri[data-win="edit"]').catch(function () {}); await page.waitForTimeout(600);
-    return c;
+  var tick = async function () {   // the palette's Show sites, while editing
+    await page.click('.m2-ed-psites input'); await page.waitForTimeout(800);
+    return page.$eval('.m2-ed-psites input', function (x) { return x.checked; });
   };
   await page.goto(base, { waitUntil: 'load' });
   await page.evaluate(function () { localStorage.clear(); }); await page.reload({ waitUntil: 'load' });
@@ -57,7 +54,7 @@ var ptm = function (t) { return (t.match(/PTM:[^<\n]*/g) || []).join(' ').split(
   c = await tick(); var t3 = await now();
   ok('2. unticked again: as written unticked', !c && t3 === t1);
   await tick();   // ticked for the file saved by another tool
-  await page.click('.m2-ri[data-win="list"]'); await page.waitForTimeout(1200);   // editing left, back to the list
+  await page.click('.m2-ri[data-win="list"]'); await page.waitForTimeout(1200);   // editing left, back to the list (the setting kept)
   await add('sites-b.sbgn', t1);
   var t4 = await now();
   ok('3. a file with its sites only in the notes, opened ticked: the sites drawn again', vars(t4) === n && ptm(t4) === 0, vars(t4) + ' on circles');
