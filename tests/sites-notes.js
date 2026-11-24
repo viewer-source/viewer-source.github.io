@@ -1,4 +1,5 @@
-// sbgn_edit.sitesOut and sitesIn (sites as seen, notes/sites-as-drawn.md) on small cases and on files:
+// sbgn_edit.sitesOut and sitesIn (sites as seen, notes/sites-as-drawn.md: a hidden site an RDF link on its glyph, a PTM
+// line of the notes read too) on small cases and on files:
 // another tool's notes text kept (a line that only mentions PTM, a PTM line with words, paragraphs, notes with no
 // body); sitesIn(sitesOut(t)) puts every site back; sitesOut(sitesIn(sitesOut(t))) is sitesOut(t); a byte-order mark kept.
 //   node tests/sites-notes.js [SBGN-ML files or folders ...]

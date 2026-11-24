@@ -2784,14 +2784,15 @@
     return t;
   }
 
-  // ---------- sites drawn or kept in the notes (what is seen is what the file holds) ----------
-  // A state variable's site is drawn (<state value="P" variable="S1177"/>, its box sized for P@S1177) or kept in its
-  // glyph's notes, the line PTM: P@S1177 (the converter's own place for sites no circle takes), the circle showing P.
-  //   sitesOut(t) -> t with every drawn site moved into its glyph's PTM line, the box sized for the value alone
-  //   sitesIn(t)  -> t with every site of a PTM line put back on the first circle of its value not showing a site yet
-  //                  (in the order drawn, an empty value too), its box sized for value@site; a drawn site's box too
-  //                  narrow for its text widened. sitesIn(sitesOut(t)) shows every site of t again.
-  // Only the attributes, boxes and notes these touch change; the rest byte for byte.
+  // ---------- sites drawn or kept as links (what is seen is what the file holds) ----------
+  // A state variable's site is drawn (<state value="P" variable="S1177"/>, its box sized for P@S1177) or kept on its
+  // glyph as an RDF site link (below), the circle showing P.
+  //   sitesOut(t) -> t with every drawn site moved into its glyph's site links, the box sized for the value alone
+  //   sitesIn(t)  -> t with every site link, and every site of a PTM line in the notes, put back on its circle (its own
+  //                  first, else the first of its value showing no site, an empty value too), its box sized for
+  //                  value@site; a drawn site's box too narrow for its text widened. sitesIn(sitesOut(t)) shows every
+  //                  site of t again.
+  // Only the attributes, boxes, notes and links these touch change; the rest byte for byte.
   function svNeed(txt, h) { var n = Array.from(txt).length; return n <= 2 ? h : Math.round((n * 5.4 + 12) * h / 18 * 100) / 100; }   // the editor's svSize, at the box's height
   function svWiden(T, sv, txt, grow) {   // the state variable's box to the width its text needs, its centre kept
     var b = kid(sv, 'bbox'); if (!b) return;
@@ -2835,8 +2836,59 @@
     T.ed.push([st, st, '\n' + ind + '<' + pre + 'notes>\n' + ind + '  <html xmlns="http://www.w3.org/1999/xhtml">\n' + ind + '    <body>' + line + '</body>\n' + ind + '  </html>\n' + ind + '</' + pre + 'notes>']);
   }
   function svsOf(g) { return kids(g, 'glyph').filter(function (c) { return c.getAttribute('class') === 'state variable'; }); }
+  // A site not drawn is kept as an RDF statement on its entity glyph, bqbiol:hasProperty with the link
+  // urn:sbgn:site:<state variable id>:<value>@<site>, the place other editors keep (Newt keeps an RDF statement with any link,
+  // and drops a glyph's notes and unknown extensions); the order of the links is not kept, so each names its circle, the
+  // value the fallback. A PTM line of the notes (the converter's place) is read too.
+  var SITE_URN = 'urn:sbgn:site:', RDF_NS = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#', BQB = 'http://biomodels.net/biology-qualifiers/';
+  function kidL(el, name) { return el ? kids(el).filter(function (c) { return c.localName === name; })[0] || null : null; }
+  function siteUrn(sv, full) { return SITE_URN + encodeURIComponent(sv).replace(/%40/g, '@') + ':' + encodeURIComponent(full).replace(/%40/g, '@'); }
+  function rdfOf(g) {   // the glyph's own RDF description and the site links in it
+    var ext = kidL(g, 'extension'), ann = kidL(ext, 'annotation'), rdf = kidL(ann, 'RDF'), desc = kidL(rdf, 'Description'), hps = [], items = [];
+    if (desc) kids(desc).forEach(function (hp) {
+      if (hp.localName !== 'hasProperty' || hp.namespaceURI !== BQB) return;
+      var lis = hp.getElementsByTagNameNS(RDF_NS, 'li'), ours = 0;
+      for (var k = 0; k < lis.length; k++) {
+        var r = lis[k].getAttributeNS(RDF_NS, 'resource') || '';
+        if (r.indexOf(SITE_URN) !== 0) continue;
+        var rest = r.slice(SITE_URN.length), c = rest.indexOf(':'), full = decodeURIComponent(rest.slice(c + 1));
+        if (c < 0 || full.indexOf('@') < 0) continue;
+        ours++; items.push({ sv: decodeURIComponent(rest.slice(0, c)), full: full });
+      }
+      if (ours) hps.push({ el: hp, all: ours === lis.length });
+    });
+    return { g: g, ext: ext, ann: ann, rdf: rdf, desc: desc, hps: hps, items: items };
+  }
+  function siteWrite(T, r, items) {   // the glyph's site links set to items, none: taken out with what held only them
+    var g = r.g, pre = g.prefix ? g.prefix + ':' : '';
+    if (r.desc && !items.length && r.hps.length && r.hps.every(function (h) { return h.all; }) && kids(r.desc).length === r.hps.length) {
+      var top = r.desc;   // nothing else left: the description, and what held only it, out
+      while (top.parentNode && top.parentNode !== g && kids(top.parentNode).length === 1) top = top.parentNode;
+      T.cut(top); return;
+    }
+    r.hps.forEach(function (h) { if (h.all) T.cut(h.el); else Array.prototype.forEach.call(h.el.getElementsByTagNameNS(RDF_NS, 'li'), function (li) { if ((li.getAttributeNS(RDF_NS, 'resource') || '').indexOf(SITE_URN) === 0) T.cut(li); }); });
+    if (!items.length) return;
+    var base = r.desc ? T.indent(r.desc) + '  ' : null;
+    var block = function (ind) {
+      return '\n' + ind + '<bqbiol:hasProperty xmlns:bqbiol="' + BQB + '" xmlns:rdf="' + RDF_NS + '">\n' + ind + '  <rdf:Bag>\n' +
+        items.map(function (x) { return ind + '    <rdf:li rdf:resource="' + esc(siteUrn(x.sv, x.full)) + '"/>\n'; }).join('') + ind + '  </rdf:Bag>\n' + ind + '</bqbiol:hasProperty>';
+    };
+    if (r.desc) { var at = T.at.get(r.desc)[1]; T.ed.push([at, at, block(base)]); return; }
+    var gi = T.indent(g) + '  ', about = g.getAttribute('id') || '';
+    var desc = function (ind) { return '\n' + ind + '<rdf:Description xmlns:rdf="' + RDF_NS + '" rdf:about="#' + esc(about) + '">' + block(ind + '  ') + '\n' + ind + '</rdf:Description>'; };
+    var rdf = function (ind) { return '\n' + ind + '<rdf:RDF xmlns:rdf="' + RDF_NS + '">' + desc(ind + '  ') + '\n' + ind + '</rdf:RDF>'; };
+    var ann = function (ind) { return '\n' + ind + '<' + pre + 'annotation>' + rdf(ind + '  ') + '\n' + ind + '</' + pre + 'annotation>'; };
+    var into = function (el, text) { var a = T.at.get(el)[1]; T.ed.push([a, a, text]); };
+    if (r.rdf) into(r.rdf, desc(T.indent(r.rdf) + '  '));
+    else if (r.ann) into(r.ann, rdf(T.indent(r.ann) + '  '));
+    else if (r.ext) into(r.ext, ann(T.indent(r.ext) + '  '));
+    else {
+      var nt = kidL(g, 'notes'), a2 = nt ? T.end(nt) : T.at.get(g)[1];
+      T.ed.push([a2, a2, '\n' + gi + '<' + pre + 'extension>' + ann(gi + '  ') + '\n' + gi + '</' + pre + 'extension>']);
+    }
+  }
   function sitesOut(t, opt) {
-    if (t.charCodeAt(0) === 0xFEFF) return '\uFEFF' + sitesOut(t.slice(1), opt);   // a byte-order mark kept, the text read after it
+    if (t.charCodeAt(0) === 0xFEFF) return '﻿' + sitesOut(t.slice(1), opt);   // a byte-order mark kept, the text read after it
     var doc = new (DP(opt))().parseFromString(t, 'application/xml'), T = new Tags(t, doc), any = false;
     Array.prototype.forEach.call(doc.getElementsByTagName('*'), function (g) {
       if (g.localName !== 'glyph') return;
@@ -2845,38 +2897,43 @@
         var st = kid(sv, 'state'), vr = st && st.getAttribute('variable');
         if (!vr) return;
         var val = st.getAttribute('value') || '';
-        moved.push(val + '@' + vr); T.unset(st, 'variable'); svWiden(T, sv, val);
+        moved.push({ sv: sv.getAttribute('id') || '', full: val + '@' + vr }); T.unset(st, 'variable'); svWiden(T, sv, val);
       });
       if (!moved.length) return;
       any = true;
-      var p = ptmOf(T, g);
-      ptmWrite(T, g, p, moved.concat(p.sites.filter(function (x) { return moved.indexOf(x) < 0; })), g.prefix ? g.prefix + ':' : '');
+      var r = rdfOf(g), mv = moved.map(function (x) { return x.sv; });
+      siteWrite(T, r, moved.concat(r.items.filter(function (x) { return mv.indexOf(x.sv) < 0; })));
     });
     return any ? T.text() : t;
   }
   function sitesIn(t, opt) {
-    if (t.charCodeAt(0) === 0xFEFF) return '\uFEFF' + sitesIn(t.slice(1), opt);
+    if (t.charCodeAt(0) === 0xFEFF) return '﻿' + sitesIn(t.slice(1), opt);
     var doc = new (DP(opt))().parseFromString(t, 'application/xml'), T = new Tags(t, doc), any = false;
     Array.prototype.forEach.call(doc.getElementsByTagName('*'), function (g) {
       if (g.localName !== 'glyph') return;
-      var p = ptmOf(T, g), svs = svsOf(g), shown = [];
+      var r = rdfOf(g), p = ptmOf(T, g), svs = svsOf(g), shown = [];
       svs.forEach(function (sv) {
         var st = kid(sv, 'state'), vr = st && st.getAttribute('variable');
         if (vr) { var full = (st.getAttribute('value') || '') + '@' + vr; shown.push(full); var b0 = T.ed.length; svWiden(T, sv, full, true); if (T.ed.length > b0) any = true; }
       });
-      if (!p.sites.length) return;
-      var left = p.sites.filter(function (x) { return shown.indexOf(x) < 0; }), took = false;
-      svs.forEach(function (sv) {
+      if (!r.items.length && !p.sites.length) return;
+      var items = r.items.slice(), left = p.sites.filter(function (x) { return shown.indexOf(x) < 0; }), took = false;
+      var valOf = function (x) { return x.slice(0, x.indexOf('@')); };
+      svs.forEach(function (sv) {   // a circle showing no site: its own link first, then a link or a PTM site of its value
         var st = kid(sv, 'state');
         if (!st || st.getAttribute('variable')) return;
-        var val = st.getAttribute('value') || '', k = -1;
-        for (var i = 0; i < left.length; i++) if (left[i].slice(0, left[i].indexOf('@')) === val) { k = i; break; }
-        if (k < 0) return;
-        var site = left.splice(k, 1)[0];
+        var val = st.getAttribute('value') || '', id = sv.getAttribute('id') || '', k, site = null;
+        for (k = 0; k < items.length && site === null; k++) if (items[k].sv === id && valOf(items[k].full) === val) site = items.splice(k, 1)[0].full;
+        for (k = 0; k < items.length && site === null; k++) if (valOf(items[k].full) === val) site = items.splice(k, 1)[0].full;
+        for (k = 0; k < left.length && site === null; k++) if (valOf(left[k]) === val) site = left.splice(k, 1)[0];
+        if (site === null) return;
         T.set(st, 'variable', site.slice(site.indexOf('@') + 1)); svWiden(T, sv, site);
         took = true;
       });
-      if (took || left.length !== p.sites.length) { any = true; ptmWrite(T, g, p, left, g.prefix ? g.prefix + ':' : ''); }
+      if (!took) return;
+      any = true;
+      if (items.length !== r.items.length) siteWrite(T, r, items);
+      if (left.length !== p.sites.filter(function (x) { return shown.indexOf(x) < 0; }).length || left.length !== p.sites.length) ptmWrite(T, g, p, left, g.prefix ? g.prefix + ':' : '');
     });
     return any ? T.text() : t;
   }

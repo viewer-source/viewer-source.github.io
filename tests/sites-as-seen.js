@@ -1,9 +1,9 @@
 // Sites as seen (the palette's Show sites; notes/sites-as-drawn.md): an SBGN-ML map is written as it is seen. On
 // the live page with this tree's editor (--local) or the page's own, a reader's file added with no token:
-// 1. Unticked: the file the editor writes has no site on any state variable, each in its glyph's PTM note, the
+// 1. Unticked: the file the editor writes has no site on any state variable, each a site link on its glyph, the
 //    circles sized for the value.
 // 2. Ticked: every site back on its state variable, the box sized for value@site; unticked again: as in 1.
-// 3. That file of 1, as another tool saves it with the notes kept, added again with Show sites ticked: its sites
+// 3. That file of 1, as another tool saves it with the links kept, added again with Show sites ticked: its sites
 //    drawn again from the notes.
 //   node tests/sites-as-seen.js <SBGN-ML file with sites> [base address] [--local]
 var path = require('path'), fs = require('fs'), os = require('os'), { chromium } = require('playwright');
@@ -12,7 +12,7 @@ var file = args[0], base = args[1] || 'https://viewer-source.github.io/styles/',
 if (!file) { console.log('usage: node tests/sites-as-seen.js <SBGN-ML file with sites> [base] [--local]'); process.exit(2); }
 var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more ? '  ' + more : '')); };
 var vars = function (t) { return (t.match(/<([\w.-]+:)?state [^>]*variable="/g) || []).length; };
-var ptm = function (t) { return (t.match(/PTM:[^<\n]*/g) || []).join(' ').split(/\s+/).filter(function (x) { return x.indexOf('@') >= 0; }).length; };
+var ptm = function (t) { return (t.match(/urn:sbgn:site:[^"]*/g) || []).length; };   // the sites kept as links on their glyphs
 (async function () {
   var b = await chromium.launch(), ctx = await b.newContext({ viewport: { width: 1400, height: 900 } }), page = await ctx.newPage(), errs = [];
   page.setDefaultTimeout(60000);
@@ -48,7 +48,7 @@ var ptm = function (t) { return (t.match(/PTM:[^<\n]*/g) || []).join(' ').split(
   await add('sites-a.sbgn', orig);
   var t1 = await now();
   ok('1. unticked: no site on a state variable', vars(t1) === 0, vars(t1) + ' left');
-  ok('1. each site kept in its glyph\'s PTM note', ptm(t1) === n, ptm(t1) + ' of ' + n);
+  ok('1. each site kept as a link on its glyph', ptm(t1) === n, ptm(t1) + ' of ' + n);
   var c = await tick(), t2 = await now();
   ok('2. ticked: every site back on its state variable', c && vars(t2) === n && ptm(t2) === 0, vars(t2) + ' on circles, ' + ptm(t2) + ' in notes');
   c = await tick(); var t3 = await now();
@@ -57,7 +57,7 @@ var ptm = function (t) { return (t.match(/PTM:[^<\n]*/g) || []).join(' ').split(
   await page.click('.m2-ri[data-win="list"]'); await page.waitForTimeout(1200);   // editing left, back to the list (the setting kept)
   await add('sites-b.sbgn', t1);
   var t4 = await now();
-  ok('3. a file with its sites only in the notes, opened ticked: the sites drawn again', vars(t4) === n && ptm(t4) === 0, vars(t4) + ' on circles');
+  ok('3. a file with its sites only as links, opened ticked: the sites drawn again', vars(t4) === n && ptm(t4) === 0, vars(t4) + ' on circles');
   var shown = await page.evaluate(function () { var p = document.getElementById('m2-img'); return p && p.outerHTML ? (p.outerHTML.match(/@S\d+/g) || []).length : -1; });
   ok('3. and in the drawing', shown > 0, shown + ' site texts in the editor\'s picture');
   ok('no page errors', !errs.length, errs.slice(0, 2).join(' | '));
