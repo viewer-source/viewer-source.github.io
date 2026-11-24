@@ -2298,7 +2298,7 @@ page, so its styles keep the base they were made on).
         ['Esc', 'clears the selection, closes a window or a menu']].concat(own ? [
         [MOD + ' + Z, ' + MOD + ' + Shift + Z in the list', 'undo, redo the list’s last change: a move, Delete, Restore, a name, a group, a new map (while editing: after a click in the list)'],
         ['Shift or ' + MOD + ' + click on a group’s name', 'selects the group, not opened or closed; ' + MOD + ' + Delete then deletes it, as Delete group'],
-        [MOD + ' + Delete', 'with the list in sight and nothing selected on the map: puts the map shown, or the maps selected in the list, in Deleted and shows the next one; Delete alone does not, as in Finder']] : []))));
+        [MOD + ' + Delete', 'with the list in sight and nothing selected on the map: puts the map shown, or the maps selected in the list, in Deleted and shows the next one; Delete alone does not, as in Finder']] : [])));
     document.body.appendChild(tipsBox);
     tipsBox.querySelector('.m2-tips-x').addEventListener('click', function () { tips(false); });
   }
