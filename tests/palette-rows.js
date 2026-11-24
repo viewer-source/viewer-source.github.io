@@ -36,7 +36,7 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#testing-gl
   ok('the tick box in the palette', await page.isVisible('#m2-editwin .m2-ed-pcdc input'));
   ok('above Reduced notation', await page.evaluate(function () {
     var a = document.querySelector('#m2-editwin .m2-ed-pcdc'), s = document.querySelector('#m2-editwin .m2-ed-pstrict');
-    return a.getBoundingClientRect().bottom <= s.getBoundingClientRect().top + 1 && a.nextElementSibling === s;
+    return a.getBoundingClientRect().bottom <= s.getBoundingClientRect().top + 1;   // Strict SBGN, a block of its own, sits between them
   }));
   if (!local) ok('not in Settings', !(await page.$('#m2-set-cdc')));   // the page itself: only on the live site
   ok('unticked: Tag offered', !(await ticked()) && await tag());

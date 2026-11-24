@@ -370,7 +370,12 @@ page, so its styles keep the base they were made on).
   html:not(.m2-signs-normal) #m2-editwin > * { max-width: 204px; }
   html:not(.m2-signs-normal) #m2-editwin .m2-ed-tools, html:not(.m2-signs-normal) #m2-editwin .m2-ed-prow { gap: 4px 6px; }
   html:not(.m2-signs-normal) #m2-editwin .m2-ed-tools > button, html:not(.m2-signs-normal) #m2-editwin .m2-ed-palette button[data-make] { width: 36px; height: 36px; }
-  html:not(.m2-signs-normal) #m2-editwin .m2-ed-tools > button svg, html:not(.m2-signs-normal) #m2-editwin .m2-ed-palette button[data-make] svg { width: 24px; height: 24px; }
+  /* the lines as thick on screen as at Normal: every weight of Sign weights times 21/24 */
+  html:not(.m2-signs-normal) #m2-editwin .m2-ed-tools > button svg, html:not(.m2-signs-normal) #m2-editwin .m2-ed-palette button[data-make] svg { width: 24px; height: 24px; stroke-width: 1.2; }
+  html:not(.m2-signs-normal) #m2-editwin .m2-ed-tools > button svg .in, html:not(.m2-signs-normal) #m2-editwin .m2-ed-palette button[data-make] svg .in { stroke-width: 1.14; }
+  html:not(.m2-signs-normal) #m2-editwin .m2-ed-tools > button svg .thin, html:not(.m2-signs-normal) #m2-editwin .m2-ed-palette button[data-make] svg .thin { stroke-width: .57; }
+  html:not(.m2-signs-normal) #m2-editwin .m2-ed-tools > button svg text, html:not(.m2-signs-normal) #m2-editwin .m2-ed-palette button[data-make] svg text { stroke-width: .245; }
+  html:not(.m2-signs-normal) #m2-editwin .m2-ed-palette button[data-make] svg [stroke-width="2.2"] { stroke-width: 1.925; }   /* the compartment sign's double weight, the same times 21/24 */
   /* Sign weights, one set for every sign in the Edit window, palette and tools,
      present and future: outlines 1.37 (1.2 px on screen: the 24 unit signs are drawn at 21 px; 1.6 is too heavy); a mark inside a sign (class 'in': the omitted process's //, the uncertain one's ?,
      the equivalence bars) 1.3 with round ends; a dot (class 'dot') a filled circle, never a stub of line; letters (AND,
