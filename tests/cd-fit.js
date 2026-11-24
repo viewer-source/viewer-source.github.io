@@ -1,7 +1,7 @@
 // cd_edit.place(..., { fit: true }), the canvas fitted on every drawing of a CellDesigner map while editing: for every CellDesigner map,
 // the canvas fitted round what is drawn (its top left MARGIN to MARGIN + 16 from the corner, MARGIN to spare past its right
 // and bottom), everything moved by the same whole grid blocks, the reactions' own (relative) bend points untouched, the
-// file read again by cdrender, and a second fit changing nothing.
+// file read again by cdrender, and a second fit changing nothing; an empty map left as it is.
 //   node tests/cd-fit.js [CellDesigner files or folders ...]   (default: maps/)
 var fs = require('fs'), path = require('path');
 var here = path.join(__dirname, '..'), DP = require('@xmldom/xmldom').DOMParser;
@@ -32,6 +32,10 @@ files.forEach(function (f) {
   try {
     var g = ed.graphml(t, null, opt), r = ed.place(t, g, { DOMParser: DP, fit: true }), t2 = r[0], sh = r[1];
     var a = aliasBounds(t), b = aliasBounds(t2), d = new cdr.Drawing(t2, opt);
+    if (!Object.keys(a).length) {   // an empty map (New map, nothing drawn yet): nothing to fit round, the file left as it is
+      if (sh[0] || sh[1] || t2 !== t) throw new Error('an empty map changed by the fit: ' + sh);
+      ok++; return;
+    }
     Object.keys(a).forEach(function (id) {
       if (!b[id]) throw new Error(id + ' lost');
       if (Math.abs(b[id].x - a[id].x - sh[0]) > 1e-3 || Math.abs(b[id].y - a[id].y - sh[1]) > 1e-3 || b[id].w !== a[id].w || b[id].h !== a[id].h) throw new Error(id + ' not moved by the shift');
@@ -58,7 +62,7 @@ function layered(t) {
 }
 function layerNums(t) { var o = [], re = /<celldesigner:bounds ((?:s?[xy]|[se][xy]|[wh])="[^"]*"[^>]*)>/g, ly = /<celldesigner:listOfLayers>[\s\S]*?<\/celldesigner:listOfLayers>/.exec(t), m; while (ly && (m = re.exec(ly[0]))) { var v = {}; m[1].replace(/\b(\w+)="([^"]*)"/g, function (_, k, x) { v[k] = parseFloat(x); }); o.push(v); } return o; }
 (function () {
-  var f = files.filter(function (p) { return fs.readFileSync(p, 'utf8').indexOf('<celldesigner:listOfLayers/>') >= 0; })[0];
+  var f = files.filter(function (p) { var t = fs.readFileSync(p, 'utf8'); return t.indexOf('<celldesigner:listOfLayers/>') >= 0 && Object.keys(aliasBounds(t)).length > 1; })[0];
   if (!f) return;
   var name = path.relative(process.cwd(), f) + ' with free texts';
   try {
