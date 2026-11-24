@@ -11,6 +11,7 @@
 //   node tests/tool-map.js <base address> <clone of the site's data repository> [--local]
 // --local: the editor of the working tree routed into the live page, to check before a release.
 var engine = require('playwright')[process.env.BROWSER || 'chromium'], fs = require('fs'), path = require('path');
+var NOISE = require('./lib/noise.js');   // what a browser reports that is no fault of the page
 var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
 var data = process.argv[3], local = process.argv.indexOf('--local') > 0;
 if (!data) { console.log('usage: node tests/tool-map.js <base address> <clone of the data repository> [--local]'); process.exit(2); }
@@ -22,7 +23,7 @@ var SB_OTHER = SB_HERE.replace('viewer-new-map', 'from-another-editor');
 async function open(ctx, setup) {
   if (ED) await ctx.route(/\/styles\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: ED }); });
   var page = await ctx.newPage(), errs = [];
-  page.on('pageerror', function (e) { errs.push(e.message); });
+  page.on('pageerror', function (e) { if (!NOISE.test(e.message)) errs.push(e.message); });
   page.on('dialog', function (d) { d.accept().catch(function () {}); });
   await page.goto(base, { waitUntil: 'load' });
   await page.evaluate(setup || function () { localStorage.clear(); });

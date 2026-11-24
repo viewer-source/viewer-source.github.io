@@ -19,11 +19,12 @@ var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : '
     await ctx.route(/\/styles\/editor\/editor\.js(\?|$)/, function (r) { r.fulfill({ contentType: 'application/javascript', body: built.js }); });
     await ctx.route(/\/styles\/editor\/editor\.js\.map(\?|$)/, function (r) { r.fulfill({ contentType: 'application/json', body: built.map }); });
   }
-  await page.addInitScript(function () {   // setAttribute throws once on the map's drawing while window.__boom is set
-    try { localStorage.setItem('atlas-edit-level', 'full'); } catch (e) {}
-    var set = Element.prototype.setAttribute;
-    Element.prototype.setAttribute = function () { if (window.__boom && this.closest && this.closest('#m2-img')) { window.__boom = false; throw new Error('test boom'); } return set.apply(this, arguments); };
-  });
+  await page.addInitScript(function () { try { localStorage.setItem('atlas-edit-level', 'full'); } catch (e) {} });
+  // setAttribute throws once on the map's drawing while window.__boom is set, from a script served on the page's own
+  // address, as the editor's code is: a script a test injects has an address of its own in WebKit and Firefox, which the
+  // catcher rightly passes by as another site's
+  var BOOM = new URL('test-boom.js', base).href;
+  await ctx.route(BOOM, function (r) { r.fulfill({ contentType: 'application/javascript', body: "(function () { var set = Element.prototype.setAttribute; Element.prototype.setAttribute = function () { if (window.__boom && this.closest && this.closest('#m2-img')) { window.__boom = false; throw new Error('test boom'); } return set.apply(this, arguments); }; })();" }); });
   var status = function () { return page.$eval('#m2-ed-status', function (s) { return s.textContent; }).catch(function () { return ''; }); };
   var now = function () { return page.evaluate(function () { var n = window.m2EditNow && window.m2EditNow(); return n ? n.text : null; }); };
   var node = function () { return page.$$eval('#m2-img [data-n]', function (l) { for (var g of l) { var r = g.getBoundingClientRect(); if (r.width > 20 && r.width < 200 && r.left > 350 && r.top > 120 && r.right < 1300 && r.bottom < 800) return [r.left + r.width / 2, r.top + r.height / 2]; } return null; }); };
@@ -31,6 +32,7 @@ var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : '
   await page.evaluate(function () { localStorage.clear(); localStorage.setItem('atlas-edit-level', 'full'); });
   await page.goto(base + '#' + (process.env.MAP || 'glycolysis-graphml'), { waitUntil: 'load' });
   await page.waitForSelector('.m2-ri[data-win="edit"]', { timeout: 30000 }); await page.waitForTimeout(1500);
+  await page.addScriptTag({ url: BOOM });
 
   // view mode: nothing said, nothing done
   await page.evaluate(function () { setTimeout(function () { throw new Error('test view'); }, 0); });

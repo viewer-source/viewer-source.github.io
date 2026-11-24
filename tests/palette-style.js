@@ -11,6 +11,7 @@
 // No script error.
 //   node tests/palette-style.js [base address] [viewer folder: its editor served in place of the page's]
 var engine = require('playwright')[process.env.BROWSER || 'chromium'], fs = require('fs'), path = require('path');   // BROWSER=webkit or firefox: the same test in another engine
+var NOISE = require('./lib/noise.js');   // what a browser reports that is no fault of the page
 var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local = process.argv[3];
 (async function () {
   var b = await engine.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], bad = 0;
@@ -20,7 +21,7 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local =
     await page.route('**/renderers/converter/*.js*', function (r) { r.fulfill({ status: 200, contentType: 'application/javascript', body: fs.readFileSync(path.join(local, 'renderers/converter', new URL(r.request().url()).pathname.split('/').pop()), 'utf8') }); });   // and the renderers it calls, of the same tree
     await page.route('**/renderers/yrender/yrender.js*', function (r) { r.fulfill({ status: 200, contentType: 'application/javascript', body: fs.readFileSync(path.join(local, 'renderers/yrender/yrender.js'), 'utf8') }); });
   }
-  page.on('pageerror', function (e) { errs.push(e.message); });
+  page.on('pageerror', function (e) { if (!NOISE.test(e.message)) errs.push(e.message); });
   var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more ? '  ' + more : '')); };
   var ids = function () { return page.$$eval('#m2-img [data-n]', function (l) { return l.map(function (x) { return x.getAttribute('data-n'); }); }); };
   var start = async function (h, sign) {

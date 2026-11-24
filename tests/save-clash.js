@@ -12,6 +12,7 @@
 //   node tests/save-clash.js <base address> <clone of the site's data repository> [--local]
 // --local: the editor of the working tree routed into the live page, to check before a release.
 var engine = require('playwright')[process.env.BROWSER || 'chromium'], fs = require('fs'), path = require('path');
+var NOISE = require('./lib/noise.js');   // what a browser reports that is no fault of the page
 var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
 var data = process.argv[3], local = process.argv.indexOf('--local') > 0;
 if (!data) { console.log('usage: node tests/save-clash.js <base address> <clone of the data repository> [--local]'); process.exit(2); }
@@ -42,7 +43,7 @@ async function pages(ctx, n) {
   var out = [];
   for (var i = 0; i < n; i++) {
     var page = await ctx.newPage(), errs = [];
-    page.on('pageerror', function (e) { this.push(e.message); }.bind(errs));
+    page.on('pageerror', function (e) { if (!NOISE.test(e.message)) this.push(e.message); }.bind(errs));
     out.push({ page: page, errs: errs, h: helpers(page) });
   }
   return out;

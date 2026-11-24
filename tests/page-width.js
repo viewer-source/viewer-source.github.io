@@ -3,13 +3,14 @@
 // inside it, after the page opens on a map and after a click on a map of the list. Prints what sticks out.
 //   node tests/page-width.js [base address ...]   (BROWSER=webkit: Safari's engine)
 var engine = require('playwright')[process.env.BROWSER || 'chromium'];   // BROWSER=webkit or firefox: the same test in another engine
+var NOISE = require('./lib/noise.js');   // what a browser reports that is no fault of the page
 var bases = process.argv.slice(2); if (!bases.length) bases = ['https://viewer-source.github.io/styles/', 'https://viewer-source.github.io/'];
 var bad = 0, ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more ? '  ' + more : '')); };
 (async function () {
   var b = await engine.launch();
   for (var base of bases) for (var vw of [[1400, 820], [1280, 760], [1512, 860]]) {
     var page = await b.newPage({ viewport: { width: vw[0], height: vw[1] } }), errs = [];
-    page.on('pageerror', function (e) { errs.push(e.message); });
+    page.on('pageerror', function (e) { if (!NOISE.test(e.message)) errs.push(e.message); });
     await page.goto(base + '#glycolysis-graphml', { waitUntil: 'load' }); await page.waitForTimeout(3000);
     var m = function () {
       return page.evaluate(function () {

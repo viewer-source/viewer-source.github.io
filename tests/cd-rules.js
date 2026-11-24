@@ -6,17 +6,18 @@
 // reaction into the phenotype and one from it taken (CellDesigner's phenotype is a species); the reaction's product end
 // dragged onto the third protein moves there, then onto the phenotype. Nothing is saved (no token).
 //   node tests/cd-rules.js [address] [viewer folder: its editor and renderers served in place of the page's]
-var { chromium } = require('playwright'), fs = require('fs'), path = require('path');
+var engine = require('playwright')[process.env.BROWSER || 'chromium'], fs = require('fs'), path = require('path');
+var NOISE = require('./lib/noise.js');   // what a browser reports that is no fault of the page
 var url = process.argv[2] || 'https://viewer-source.github.io/styles/#acly-celldesigner', local = process.argv[3];
 (async function () {
-  var b = await chromium.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], bad = 0;
+  var b = await engine.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], bad = 0;
   var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more && !v ? '  ' + more : '')); };
   if (local) {
     var ed = require('./editor-now.js')(local);
     await page.route('**/editor/editor.js*', function (r) { r.fulfill({ status: 200, contentType: 'application/javascript', body: ed }); });
     await page.route('**/renderers/converter/*.js*', function (r) { r.fulfill({ status: 200, contentType: 'application/javascript', body: fs.readFileSync(path.join(local, 'renderers/converter', new URL(r.request().url()).pathname.split('/').pop()), 'utf8') }); });
   }
-  page.on('pageerror', function (e) { errs.push(e.message); });
+  page.on('pageerror', function (e) { if (!NOISE.test(e.message)) errs.push(e.message); });
   var ids = function () { return page.$$eval('#m2-img [data-n]', function (l) { return l.map(function (x) { return x.getAttribute('data-n'); }); }); };
   var at = function (id) { return page.$eval('#m2-img [data-n="' + id + '"]', function (g) { var r = g.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }); };
   var text = function () { return page.evaluate(function () { return window.m2EditNow().text; }); };

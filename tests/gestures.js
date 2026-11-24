@@ -3,13 +3,14 @@
 // sideways only; Space held with the wheel scrolls the page and leaves the map still.
 //   node tests/gestures.js [page address]
 var engine = require('playwright')[process.env.BROWSER || 'chromium'];   // BROWSER=webkit or firefox: the same test in another engine
+var NOISE = require('./lib/noise.js');   // what a browser reports that is no fault of the page
 var URL0 = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysis-sbgn';
 (async function () {
   var b = await engine.launch(), bad = 0, errs = [];
   var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more && !v ? '  ' + more : '')); };
   var ctx = await b.newContext({ viewport: { width: 1400, height: 900 }, permissions: (process.env.BROWSER || 'chromium') === 'chromium' ? ['clipboard-read', 'clipboard-write'] : [] });   // other engines name no such permission
   var page = await ctx.newPage();
-  page.on('pageerror', function (e) { errs.push(e.message); });
+  page.on('pageerror', function (e) { if (!NOISE.test(e.message)) errs.push(e.message); });
   await page.goto(URL0, { waitUntil: 'load' });
   await page.waitForFunction(function () { var i = document.getElementById('m2-img'); return i && i.style.width; }, null, { timeout: 30000 });
   await page.waitForTimeout(2500);
@@ -31,10 +32,12 @@ var URL0 = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysi
   var menu = await page.$$eval('.m2-cx button, .m2-cx .m2-cx-head', function (l) { return l.map(function (x) { return x.textContent.trim(); }); });
   ok('right click inside: the area menu, Zoom to area and Copy image as PNG only', menu.join('|') === 'Zoom to area|Copy image as PNG', menu.join(' | '));
   await page.click('.m2-cx button:has-text("Copy image as PNG")'); await page.waitForTimeout(2500);
-  var got = await page.evaluate(async function () {
-    var it = (await navigator.clipboard.read())[0], bm = await createImageBitmap(await it.getType('image/png')); return bm.width + 'x' + bm.height;
-  }).catch(function (e) { return 'error ' + e.message; });
-  ok('Copy image as PNG of the area: a sharp picture', /^\d+x\d+$/.test(got) && +got.split('x')[0] > 500, got);
+  if ((process.env.BROWSER || 'chromium') === 'chromium') {   // only Chromium lets a test read the clipboard back
+    var got = await page.evaluate(async function () {
+      var it = (await navigator.clipboard.read())[0], bm = await createImageBitmap(await it.getType('image/png')); return bm.width + 'x' + bm.height;
+    }).catch(function (e) { return 'error ' + e.message; });
+    ok('Copy image as PNG of the area: a sharp picture', /^\d+x\d+$/.test(got) && +got.split('x')[0] > 500, got);
+  } else console.log('--    Copy image as PNG of the area: not read back in ' + process.env.BROWSER + ' (its clipboard is closed to tests)');
   var ar = await page.$eval('#m2-area', function (e) { var r = e.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2, r.width]; });
   await page.mouse.click(cx, cy, { button: 'right' }); await page.waitForTimeout(300);
   await page.click('.m2-cx button:has-text("Zoom to area")'); await page.waitForTimeout(500);
@@ -85,7 +88,7 @@ var URL0 = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysi
   } else console.log('      (no Edit tab on this page)');
   // Settings, Gestures: Drag selects an area ticked; a drag then selects an area in both modes; unticked again, back
   var p2 = await (await b.newContext({ viewport: { width: 1400, height: 900 } })).newPage();
-  p2.on('pageerror', function (e) { errs.push(e.message); });
+  p2.on('pageerror', function (e) { if (!NOISE.test(e.message)) errs.push(e.message); });
   await p2.goto(URL0, { waitUntil: 'load' });
   await p2.waitForFunction(function () { var i = document.getElementById('m2-img'); return i && i.style.width; }, null, { timeout: 30000 }); await p2.waitForTimeout(2500);
   await p2.click('.m2-ri[data-win="set"]'); await p2.waitForTimeout(300);
@@ -102,7 +105,8 @@ var URL0 = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysi
   ok('Settings: a click elsewhere closes it', !(await p2.$('.m2-ipop')));
   await p2.click('#m2-setwin .m2-set-itip'); await p2.waitForTimeout(150); await p2.keyboard.press('Escape'); await p2.waitForTimeout(150);
   ok('Settings: Esc closes it', !(await p2.$('.m2-ipop')));
-  ok('Settings: the box level with the first line of its name', await p2.evaluate(function () { var c = document.getElementById('m2-set-grab').getBoundingClientRect(), l = c.top + c.height / 2, sp = document.getElementById('m2-set-grab').nextElementSibling, r = document.createRange(); r.setStart(sp.firstChild, 0); r.setEnd(sp.firstChild, 1); var f = r.getBoundingClientRect(); return Math.abs(l - (f.top + f.height / 2)) <= 2; }));
+  var off = await p2.evaluate(function () { var c = document.getElementById('m2-set-grab').getBoundingClientRect(), l = c.top + c.height / 2, sp = document.getElementById('m2-set-grab').nextElementSibling, r = document.createRange(); r.setStart(sp.firstChild, 0); r.setEnd(sp.firstChild, 1); var f = r.getBoundingClientRect(); return Math.round((l - (f.top + f.height / 2)) * 10) / 10; });
+  ok('Settings: the box level with the first line of its name (within 2 px)', Math.abs(off) <= 2, off + ' px');
   await p2.click('#m2-set-grab'); await p2.waitForTimeout(200);
   ok('Ticked: kept', await p2.evaluate(function () { return document.getElementById('m2-set-grab').checked && localStorage.getItem('atlas-drag-moves') === 'off'; }));
   var tf2 = function () { return p2.$eval('#m2-img', function (i) { return i.style.transform; }); }, w0 = await tf2();

@@ -8,6 +8,7 @@
 // is printed with the counts behind each source. Printed, not checked.
 //   node tests/hostile-files.js <clone of the site's data repository> [base address] [viewer folder: its renderers served in place of the page's]
 var engine = require('playwright')[process.env.BROWSER || 'chromium'], fs = require('fs'), path = require('path');   // BROWSER=webkit or firefox: the same test in another engine
+var NOISE = require('./lib/noise.js');   // what a browser reports that is no fault of the page
 var data = process.argv[2], base = process.argv[3] || 'https://viewer-source.github.io/styles/', local = process.argv[4], bad = 0;
 if (!data) { console.log('usage: node tests/hostile-files.js <clone of the data repository> [base address] [viewer folder]'); process.exit(2); }
 var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more ? '  ' + more : '')); };
@@ -55,7 +56,7 @@ function sbgnml() {
 
 (async function () {
   var b = await engine.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], said = [];
-  page.on('pageerror', function (e) { errs.push(e.message); });
+  page.on('pageerror', function (e) { if (!NOISE.test(e.message)) errs.push(e.message); });
   if (local) await page.route(/\/renderers\/(converter|yrender)\/[a-z_]+\.js/, function (r) { var f = /\/renderers\/(converter|yrender)\/([a-z_]+\.js)/.exec(r.request().url()); r.fulfill({ status: 200, contentType: 'application/javascript', body: fs.readFileSync(path.join(local, 'renderers', f[1], f[2]), 'utf8') }); });
   page.on('dialog', function (d) { said.push(d.message()); d.accept().catch(function () {}); });
   var POLICY = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'";

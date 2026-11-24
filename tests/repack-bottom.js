@@ -7,10 +7,11 @@
 // scale checked against the file). Undo puts the file back. Nothing is saved (no token). No script error.
 //   node tests/repack-bottom.js [base address]
 var engine = require('playwright')[process.env.BROWSER || 'chromium'];   // BROWSER=webkit or firefox: the same test in another engine
+var NOISE = require('./lib/noise.js');   // what a browser reports that is no fault of the page
 var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
 (async function () {
   var b = await engine.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], bad = 0;
-  page.on('pageerror', function (e) { errs.push(e.message); });
+  page.on('pageerror', function (e) { if (!NOISE.test(e.message)) errs.push(e.message); });
   var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more && !v ? '  ' + more : '')); };
   var now = function () { return page.evaluate(function () { return window.m2EditNow().text; }); };
   var open = async function (h) {

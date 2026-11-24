@@ -4,10 +4,11 @@
 // added line its own. Nothing is saved (no token). No script error.
 //   node tests/cd-line-own.js [base address] [viewer folder: its editor and renderers served in place of the page's]
 var engine = require('playwright')[process.env.BROWSER || 'chromium'], fs = require('fs'), path = require('path');   // BROWSER=webkit or firefox: the same test in another engine
+var NOISE = require('./lib/noise.js');   // what a browser reports that is no fault of the page
 var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local = process.argv[3];
 (async function () {
   var b = await engine.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], bad = 0;
-  page.on('pageerror', function (e) { errs.push(e.message); });
+  page.on('pageerror', function (e) { if (!NOISE.test(e.message)) errs.push(e.message); });
   var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more ? '  ' + more : '')); };
   if (local) {
     var ed = require('./editor-now.js')(local);
@@ -32,14 +33,18 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local =
     var p = await page.$eval('#m2-img [data-e="' + e + '"] polyline[stroke]', function (l) { var q = l.points, k = Math.floor((q.numberOfItems - 1) / 2), a = q.getItem(k), c = q.getItem(k + 1), m = l.getScreenCTM(); return [(a.x + c.x) / 2 * m.a + m.e, (a.y + c.y) / 2 * m.d + m.f]; });
     await page.keyboard.press('Escape'); await page.mouse.click(1350, 880); await page.waitForTimeout(300);
     await page.mouse.click(p[0], p[1]); await page.waitForTimeout(500);
+    return page.evaluate(function (a) {   // what lies under the click, and where the line is drawn on screen, said when the click selects nothing
+      var h = document.elementFromPoint(a[0], a[1]), r = document.querySelector('#m2-img [data-e="' + a[2] + '"] polyline[stroke]').getBoundingClientRect(), g = h && h.closest && h.closest('[data-e],[data-n]');
+      return 'clicked ' + Math.round(a[0]) + ',' + Math.round(a[1]) + ' on ' + (h ? h.tagName + (g ? ' of ' + (g.dataset.e || g.dataset.n) : '') : 'nothing') + '; line box ' + [r.left, r.top, r.right, r.bottom].map(Math.round).join(',');
+    }, [p[0], p[1], e]);
   };
   var shown = function () { return page.evaluate(function () { return Array.from(document.querySelectorAll('#m2-editwin .m2-ed-props tr[data-k]')).filter(function (tr) { return tr.offsetParent; }).map(function (tr) { return tr.dataset.k; }); }); };
   var col = function (e) { return page.evaluate(function (e) { return window.cd_make.lineColour(window.m2EditNow().text, e); }, e); };
   var drawn = function (e) { return page.$$eval('#m2-img [data-e="' + e + '"] polyline[stroke]', function (l) { return l.map(function (x) { return x.getAttribute('stroke'); }).join(' '); }); };
   var put = async function (k, v) { await page.fill('#m2-ed-' + k, v); await page.press('#m2-ed-' + k, 'Enter'); await page.waitForTimeout(700); };
   var line = add[0] + '|' + add[1], main = add[0] + '|a', m0 = await col(main);
-  await on(line);
-  ok('the added line clicked alone: Line colour and width alone, with its Cardinality', JSON.stringify(await shown()) === JSON.stringify(['ecol', 'ewid', 'card']), JSON.stringify(await shown()));
+  var hit = await on(line), sh = await shown();
+  ok('the added line clicked alone: Line colour and width alone, with its Cardinality', JSON.stringify(sh) === JSON.stringify(['ecol', 'ewid', 'card']), JSON.stringify(sh) + (sh.length ? '' : '  ' + hit));
   ok('it shows its own colour', (await page.inputValue('#m2-ed-ecol')) === (await col(line)), await page.inputValue('#m2-ed-ecol'));
   await put('ecol', '#3456ab');
   ok('written into its own link, the reaction’s kept', (await col(line)) === '#3456ab' && (await col(main)) === m0, (await col(line)) + ' ' + (await col(main)));

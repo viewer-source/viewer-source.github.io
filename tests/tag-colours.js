@@ -1,14 +1,17 @@
-// Tags and terminals coloured as other glyphs: on the Testing Glycolysis SBGN-ML map (its terminal glyph_8), the
+// Tags and terminals coloured as other glyphs: on the SBGN website's insulin-like growth factor map with its MAPK
+// cascade submap, from the test set (MAP=<id> ID=<glyph> for another; a demo map edited by hand may lose its terminal), its terminal glyph41, the
 // terminal selected shows Fill colour, Border colour and Border width in Properties; a fill and a border typed there are
 // written into the file's render extension; Colours Mist and sage (the Default colours) then gives it a tag's white, Confetti a pastel of its own,
 // and one undo takes the recolouring back. Nothing is saved (no token). No script error.
 //   node tests/tag-colours.js [base address] [viewer folder: its editor served in place of the page's]
 var engine = require('playwright')[process.env.BROWSER || 'chromium'], fs = require('fs'), path = require('path');   // BROWSER=webkit or firefox: the same test in another engine
-var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local = process.argv[3], bad = 0, ID = 'glyph_8';
+var NOISE = require('./lib/noise.js');   // what a browser reports that is no fault of the page
+var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local = process.argv[3], bad = 0, ID = process.env.ID || 'glyph41';
+var MAP = process.env.MAP || 'external-sbgn-website-downloads-examples-insulin-like-growth-factor-signaling-withsubmap-mapk-cascade-sbgn';
 var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more ? '  ' + more : '')); };
 (async function () {
   var b = await engine.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [];
-  page.on('pageerror', function (e) { errs.push(e.message); });
+  page.on('pageerror', function (e) { if (!NOISE.test(e.message)) errs.push(e.message); });
   if (local) {
     var ed = require('./editor-now.js')(local);
     await page.route('**/editor/editor.js*', function (r) { r.fulfill({ status: 200, contentType: 'application/javascript', body: ed }); });
@@ -39,7 +42,7 @@ var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : '
   };
   var shown = function (k) { return page.$eval('#m2-editwin .m2-ed-pnode tr[data-k="' + k + '"]', function (r) { return !r.hidden && r.offsetParent !== null; }).catch(function () { return false; }); };
   await page.goto(base, { waitUntil: 'load' }); await page.evaluate(function () { localStorage.clear(); });
-  await page.goto(base + '#testing-glycolysis-sbgn', { waitUntil: 'load' });
+  await page.goto(base + '#' + MAP, { waitUntil: 'load' });
   await page.waitForSelector('.m2-ri[data-win="edit"]', { timeout: 30000 }); await page.waitForTimeout(1500);
   await page.click('.m2-ri[data-win="edit"]');
   await page.waitForFunction(function () { return !!(window.m2EditNow && window.m2EditNow()) && !!document.querySelector('[data-n]'); }, null, { timeout: 30000 }); await page.waitForTimeout(1500);

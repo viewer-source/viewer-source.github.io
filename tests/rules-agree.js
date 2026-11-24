@@ -7,18 +7,19 @@
 //   node tests/rules-agree.js [address] [viewer folder: its editor and renderers served in place of the page's] [out.json]
 // It lists and exits 0; with --check it exits 1 on any question answered differently: since drawing and dragging ask the
 // table (plan 3 step 6, item 6) every question should agree, and tests/run-browser.sh runs it so.
-var { chromium } = require('playwright');
+var engine = require('playwright')[process.env.BROWSER || 'chromium'];
+var NOISE = require('./lib/noise.js');   // what a browser reports that is no fault of the page
 var args = process.argv.slice(2), check = args.indexOf('--check') >= 0; args = args.filter(function (a) { return a !== '--check'; });
 var url = args[0] || 'https://viewer-source.github.io/styles/#glycolysis-sbgn', local = args[1], out = args[2], fs = require('fs'), path = require('path');
 (async function () {
-  var b = await chromium.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [];
+  var b = await engine.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [];
   if (local) {
     var ed = require('./editor-now.js')(local);
     await page.route('**/editor/editor.js*', function (r) { r.fulfill({ status: 200, contentType: 'application/javascript', body: ed }); });
     await page.route('**/renderers/converter/*.js*', function (r) { r.fulfill({ status: 200, contentType: 'application/javascript', body: fs.readFileSync(path.join(local, 'renderers/converter', new URL(r.request().url()).pathname.split('/').pop()), 'utf8') }); });
     await page.route('**/renderers/yrender/yrender.js*', function (r) { r.fulfill({ status: 200, contentType: 'application/javascript', body: fs.readFileSync(path.join(local, 'renderers/yrender/yrender.js'), 'utf8') }); });
   }
-  page.on('pageerror', function (e) { errs.push(e.message); });
+  page.on('pageerror', function (e) { if (!NOISE.test(e.message)) errs.push(e.message); });
   var ids = function () { return page.$$eval('#m2-img [data-n]', function (l) { return l.map(function (x) { return x.getAttribute('data-n'); }); }); };
   var rect = function (id) { return page.$eval('#m2-img [data-n="' + id + '"]', function (g) { var r = g.getBoundingClientRect(); return [r.left, r.top, r.width, r.height]; }); };
   var make = async function (kind, x, y) { var b4 = await ids(); await page.click('#m2-editwin button[data-make="' + kind + '"]'); await page.mouse.click(x, y); await page.waitForTimeout(900); await page.keyboard.press('Escape'); return (await ids()).filter(function (z) { return b4.indexOf(z) < 0; })[0]; };

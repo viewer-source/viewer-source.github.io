@@ -6,11 +6,12 @@
 // in its field, no warning in the Edit window's status line. Nothing is saved (no token). No script error.
 //   node tests/props-range.js [base address]
 var engine = require('playwright')[process.env.BROWSER || 'chromium'];   // BROWSER=webkit or firefox: the same test in another engine
+var NOISE = require('./lib/noise.js');   // what a browser reports that is no fault of the page
 var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
 var MAPS = [['glycolysis-sbgn', 'macromolecule'], ['glycolysis-celldesigner', 'cd:PROTEIN']];
 (async function () {
   var b = await engine.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], bad = 0;
-  page.on('pageerror', function (e) { errs.push(e.message); });
+  page.on('pageerror', function (e) { if (!NOISE.test(e.message)) errs.push(e.message); });
   var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more && !v ? '  ' + more : '')); };
   var ids = function () { return page.$$eval('#m2-img [data-n]', function (l) { return l.map(function (x) { return x.getAttribute('data-n'); }); }); };
   var glyphs = function () { return page.evaluate(function () { return (window.m2EditNow().text.match(/<glyph [^>]*\bid="[^"]+"/g) || []).map(function (g) { return /\bid="([^"]+)"/.exec(g)[1]; }); }); };

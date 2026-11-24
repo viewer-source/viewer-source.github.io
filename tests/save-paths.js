@@ -13,6 +13,7 @@
 //   node tests/save-paths.js <base address> <clone of the site's data repository> [--local]
 // --local: the editor of the working tree routed into the live page, to check before a release.
 var engine = require('playwright')[process.env.BROWSER || 'chromium'], fs = require('fs'), path = require('path');   // BROWSER=webkit or firefox: the same test in another engine
+var NOISE = require('./lib/noise.js');   // what a browser reports that is no fault of the page
 var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
 var data = process.argv[3];
 if (!data) { console.log('usage: node tests/save-paths.js <base address> <clone of the data repository>'); process.exit(2); }
@@ -47,7 +48,7 @@ function helpers(page) {
 async function github(b) {
   console.log('-- GitHub');
   var page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], h = helpers(page);
-  page.on('pageerror', function (e) { errs.push(e.message); });
+  page.on('pageerror', function (e) { if (!NOISE.test(e.message)) errs.push(e.message); });
   await routeLocal(page);
   var sha = {}, puts = [], body = {};
   await page.route('https://api.github.com/**', async function (route) {
@@ -116,7 +117,7 @@ async function folder(b) {
   console.log('-- Folder');
   if ((process.env.BROWSER || 'chromium') !== 'chromium') { console.log('skip  this engine has no folder picker (Safari, Firefox): the page offers Download the map instead'); return; }
   var ctx = await b.newContext({ viewport: { width: 1400, height: 900 } }), page = await ctx.newPage(), errs = [], h = helpers(page);
-  page.on('pageerror', function (e) { errs.push(e.message); });
+  page.on('pageerror', function (e) { if (!NOISE.test(e.message)) errs.push(e.message); });
   await routeLocal(ctx);
   await page.addInitScript(function () {
     window.showDirectoryPicker = function () { return navigator.storage.getDirectory().then(function (r) { return r.getDirectoryHandle('maps', { create: true }); }); };
@@ -161,7 +162,7 @@ async function folder(b) {
 async function browser(b) {
   console.log('-- This browser');
   var ctx = await b.newContext({ viewport: { width: 1400, height: 900 } }), page = await ctx.newPage(), errs = [], h = helpers(page);
-  page.on('pageerror', function (e) { errs.push(e.message); });
+  page.on('pageerror', function (e) { if (!NOISE.test(e.message)) errs.push(e.message); });
   await routeLocal(ctx);
   await page.addInitScript(function () {   // the store full on demand (window.__full): IndexedDB refuses a draft
     var put = IDBObjectStore.prototype.put;

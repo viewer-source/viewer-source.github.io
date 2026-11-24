@@ -6,7 +6,8 @@
 // other way round, is a difference. Testing Glycolysis SBGN-ML, the full editor, no token, the working tree's editor
 // and renderers routed into the live /styles/ page.
 //   node tests/drag-preview.js [viewer folder]   (LIVE=1: the page's own code; ONLY=<case name part>; SHOT=<prefix>)
-var { chromium } = require('playwright'), fs = require('fs'), path = require('path');
+var engine = require('playwright')[process.env.BROWSER || 'chromium'], fs = require('fs'), path = require('path');
+var NOISE = require('./lib/noise.js');   // what a browser reports that is no fault of the page
 var here = process.argv[2] || path.join(__dirname, '..'), URL = 'https://viewer-source.github.io/styles/#testing-glycolysis-sbgn', bad = 0;
 var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more && !v ? '  ' + more : '')); };
 async function open(b) {
@@ -16,7 +17,7 @@ async function open(b) {
     await p.route(/\/styles\/editor\/editor\.js(\?|$)/, function (r) { r.fulfill({ contentType: 'application/javascript', body: ed }); });
     await p.route(/\/styles\/renderers\/.*\.js/, function (r) { var f = /renderers\/(.*\.js)/.exec(r.request().url())[1]; r.fulfill({ contentType: 'application/javascript', body: fs.readFileSync(path.join(here, 'renderers', f), 'utf8') }); });
   }
-  p.on('pageerror', function (e) { errs.push(e.message); });
+  p.on('pageerror', function (e) { if (!NOISE.test(e.message)) errs.push(e.message); });
   await p.addInitScript(function () { try { localStorage.removeItem('atlas-cd-compatible'); localStorage.setItem('atlas-edit-level', 'full'); localStorage.setItem('atlas-drag-moves', 'off'); } catch (e) {} });
   await p.goto(URL, { waitUntil: 'load' });
   await p.waitForSelector('.m2-ri[data-win="edit"]', { timeout: 30000 });
@@ -105,7 +106,7 @@ async function steps(p, name, P, pts, o) {
   }
 }
 (async function () {
-  var b = await chromium.launch(), p = await open(b);
+  var b = await engine.launch(), p = await open(b);
   // a submap made 240 by 160 in empty room, a terminal on its right side, a line to it from an entity of the map
   var sm = await make(p, 'submap', 1100, 700), S = await rect(p, sm);
   await p.mouse.click(S[0] + S[2] / 2, S[1] + S[3] / 2); await p.waitForTimeout(500);

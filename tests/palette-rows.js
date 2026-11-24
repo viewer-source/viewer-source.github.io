@@ -4,6 +4,7 @@
 // is not in Settings, takes the Tag (and AF's delay) out and puts it back, and one undo puts it back as it was. No script error.
 //   node tests/palette-rows.js [address] [viewer folder: its editor served in place of the page's]
 var engine = require('playwright')[process.env.BROWSER || 'chromium'], fs = require('fs'), path = require('path');   // BROWSER=webkit or firefox: the same test in another engine
+var NOISE = require('./lib/noise.js');   // what a browser reports that is no fault of the page
 var url = process.argv[2] || 'https://viewer-source.github.io/styles/#testing-glycolysis-sbgn', local = process.argv[3];
 (async function () {
   var b = await engine.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], bad = 0;
@@ -11,7 +12,7 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#testing-gl
     var ed = require('./editor-now.js')(local);
     await page.route('**/editor/editor.js*', function (r) { r.fulfill({ status: 200, contentType: 'application/javascript', body: ed }); });
   }
-  page.on('pageerror', function (e) { errs.push(e.message); });
+  page.on('pageerror', function (e) { if (!NOISE.test(e.message)) errs.push(e.message); });
   var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more && !v ? '  ' + more : '')); };
   // the left edge of the first sign and of the given signs
   var lefts = function (kinds) {
