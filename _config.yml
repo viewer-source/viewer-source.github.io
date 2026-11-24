@@ -55,7 +55,3 @@ exclude:
 nav:
   - name: Atlas
     url: /
-  - name: Architecture
-    url: /architecture/
-  - name: Guide
-    url: /guide/
