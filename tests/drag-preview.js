@@ -38,14 +38,14 @@ function drawn(p) {
       for (var q0 = el; q0 && q0 !== img && q0 !== ov; q0 = q0.parentNode) if (getComputedStyle(q0).display === 'none' || getComputedStyle(q0).visibility === 'hidden') return;
       var m = window.__ctm(el), q = [], pt = function (x, y) { q.push([m.a * x + m.c * y + m.e, m.b * x + m.d * y + m.f]); };
       var n = el.localName, num = function (a) { return parseFloat(el.getAttribute(a) || 0); };
-      if (n === 'rect') { var x = num('x'), y = num('y'), w = num('width'), h = num('height'); if (!w || !h) return; pt(x, y); pt(x + w, y + h); }
+      if (n === 'rect') { var x = num('x'), y = num('y'), w = num('width'), h = num('height'); if (!w || !h) return; pt(x, y); pt(x + w, y); pt(x + w, y + h); pt(x, y + h); }
       else if (n === 'ellipse' || n === 'circle') { var cx = num('cx'), cy = num('cy'), rx = n === 'circle' ? num('r') : num('rx'), ry = n === 'circle' ? num('r') : num('ry'); pt(cx - rx, cy - ry); pt(cx + rx, cy + ry); }
       else {
         var d = el.getAttribute(n === 'path' ? 'd' : 'points') || '';
-        if (/[AaHhVvCcSsTtQq]/.test(d)) { var bb = el.getBBox(); pt(bb.x, bb.y); pt(bb.x + bb.width, bb.y + bb.height); }
+        if (/[AaHhVvCcSsTtQq]/.test(d)) { var bb = el.getBBox(); pt(bb.x, bb.y); pt(bb.x + bb.width, bb.y); pt(bb.x + bb.width, bb.y + bb.height); pt(bb.x, bb.y + bb.height); }   // a box by its four corners, as a polygon gives them
         else { var v = d.match(/-?[\d.]+(?:e-?\d+)?/g) || []; for (var i = 0; i + 1 < v.length; i += 2) pt(+v[i], +v[i + 1]); }
       }
-      out.push(q);
+      out.push(q.filter(function (u, i) { return !q.slice(0, i).some(function (v) { return Math.abs(u[0] - v[0]) < 0.5 && Math.abs(u[1] - v[1]) < 0.5; }); }));   // a closing point repeated once
     });
     return out;
   });
@@ -79,9 +79,10 @@ async function line(p, from, to) {   // a consumption from glyph from to glyph t
 async function steps(p, name, P, pts, o) {
   o = o || {};
   if (process.env.ONLY && name.indexOf(process.env.ONLY) < 0) return;
+  var text = function () { return p.evaluate(function () { return window.m2EditNow().text; }); };
   for (var k = 0; k < pts.length; k++) {
     await p.keyboard.press('Escape'); await p.waitForTimeout(150);
-    if (o.pick !== false) { await p.mouse.click(P[0], P[1]); await p.waitForTimeout(300); }
+    if (o.pick !== false) { var Q = o.pickAt || P; await p.mouse.click(Q[0], Q[1]); await p.waitForTimeout(300); }   // pickAt: the click that selects, when the press is on a handle
     if (o.line) {   // its line selected too, by Shift with a click on it outside the submap
       var lp = await p.evaluate(function (id) {
         var g = document.querySelector('#m2-img [data-e="' + id + '"] path'); if (!g) return null;
@@ -90,6 +91,7 @@ async function steps(p, name, P, pts, o) {
       await p.keyboard.down('Shift'); await p.mouse.click(lp[0], lp[1]); await p.keyboard.up('Shift'); await p.waitForTimeout(300);
     }
     if (o.shift) await p.keyboard.down('Shift');
+    var t0 = await text();
     await p.mouse.move(P[0], P[1]); await p.mouse.down();
     await p.mouse.move(P[0] + 5, P[1] + 5, { steps: 2 });
     for (var j = 0; j <= k; j++) await p.mouse.move(pts[j][0], pts[j][1], { steps: 4 });
@@ -103,7 +105,10 @@ async function steps(p, name, P, pts, o) {
     var d = diff(mid, drop), same = !d.mid.length && !d.drop.length;
     ok(name + ', step ' + (k + 1) + ' of ' + pts.length + ': the drag draws what the drop there draws', same,
       'drawn only during the drag: ' + d.mid.slice(0, 3).map(fmt).join(' | ') + '  drawn only after the drop: ' + d.drop.slice(0, 3).map(fmt).join(' | '));
-    await p.keyboard.press('Control+z'); await p.waitForTimeout(1500);
+    var moved = (await text()) !== t0;   // a drop that changed nothing has no undo step: Cmd+Z would take back the change before it
+    ok(name + ', step ' + (k + 1) + ': the drop changes the map', moved);
+    if (moved) { await p.keyboard.press('Control+z'); await p.waitForTimeout(1500); }
+    ok(name + ', step ' + (k + 1) + ': the next step starts from the same map', (await text()) === t0);
   }
 }
 (async function () {
@@ -142,7 +147,7 @@ async function steps(p, name, P, pts, o) {
   ok('set up: the terminal\u2019s line found', !!le && !!(await p.$('#m2-img [data-e="' + le + '"]')), le);
   await steps(p, 'terminal with its line selected, from the bottom side up the right side', cb, [[Rt + 4, B - 6], [Rt + 6, B - 40]], { line: le });
   // the submap resized by its bottom right handle: its terminal on the right side stays on it
-  await steps(p, 'submap resized wider and taller', [Rt - 1, B - 1], [[Rt + 30, B + 20], [Rt + 80, B + 50]], { pick: false });
+  await steps(p, 'submap resized wider and taller', [Rt - 1, B - 1], [[Rt + 30, B + 20], [Rt + 80, B + 50]], { pickAt: [L + S[2] * 0.3, T + S[3] * 0.3] });   // selected first, so the corner is its handle
   ok('no script error', !p.errs.length, p.errs.join(' | '));
   await b.close();
   console.log(bad ? bad + ' wrong' : 'all ok'); process.exit(bad ? 1 : 0);

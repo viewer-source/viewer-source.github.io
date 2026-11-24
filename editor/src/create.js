@@ -993,8 +993,18 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
     // submap, with one line, free); a free tag dragged with its centre into a submap on its border; a free tag with one
     // line facing the line's other end
     TURN = { right: 0, down: 90, left: 180, up: 270 };
-    livePose.push(function (sets, alone, out) {
+    livePose.push(function (sets, alone, out, rs) {
       if (!sbJs || !sbJs.terminal) return;
+      var wayNow = function (n) { return (sbJs.wayOfR && sbJs.wayOfR(realizerOf(n.el))) || 'right'; };   // the way a tag points in the file
+      if (rs) {   // a submap resized: each of its terminals scaled with the box and kept on its side (sbSetSize, termsFix with any), its lines' ports with it
+        nodes2.forEach(function (n, i) {
+          if (n.shape.kind !== 'Tag' || n.sub !== rs.i) return;
+          var b = termScaled(boxOf(i), boxOf(rs.i), rs.box), now = wayNow(n), on = onSide(b, rs.box, now, true) || onBorder(b, rs.box), ports = {};
+          edges2.forEach(function (e, k) { if (e.s === i || e.t === i) { var o = boxOf(e.s === i ? e.t : e.s); ports[k] = tagEnd(on[1], on[0], rs.box, [o[0] + o[2] / 2, o[1] + o[3] / 2]); } });
+          out[i] = { box: on[0], way: on[1], turn: (TURN[on[1]] - TURN[now] + 360) % 360, ports: ports };
+        });
+        return;
+      }
       // a line's other end where the drop has it: posed in the first pass (a terminal on its border), else moved by the drag
       var raw = function (k) { var b = boxOf(k); return sets.n.has(k) ? [b[0] + sets.dx, b[1] + sets.dy, b[2], b[3]] : b; };
       var moved = function (k) { return out[k] ? out[k].box : raw(k); };
@@ -1011,7 +1021,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
         if (!mine && n.sub != null) return;
         var es = linesOf(i);
         if (!mine && !(es.length === 1 && (out[edges2[es[0]].s === i ? edges2[es[0]].t : edges2[es[0]].s] || sets.n.has(edges2[es[0]].s === i ? edges2[es[0]].t : edges2[es[0]].s)))) return;   // nothing it does follows this move
-        var mb = raw(i), on = null, q = null, now = (sbJs.wayOfR && sbJs.wayOfR(realizerOf(n.el))) || 'right';
+        var mb = raw(i), on = null, q = null, now = wayNow(n);
         if (mine && n.sub != null) { if (!(alone && !centreIn(mb, boxOf(n.sub)) && es.length <= 1)) q = boxOf(n.sub); }
         else if (mine && !alone) { var j = subIn(mb, sets.n); if (j >= 0) q = boxOf(j); }
         if (q) on = (n.sub != null && onSide(mb, q, now)) || onBorder(mb, q);   // as termsFix on release
@@ -2460,14 +2470,17 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       var n = nodes2[i];
       return !!n.comp || isMade(n);   // a compartment too (holderSize); a process or gate too, its antennas kept as long (sbgn_edit.resize)
     }
+    function termScaled(b, b0, b1) {   // a terminal's box b on a submap resized from b0 to b1: its place scaled with the box (the drop, sbSetSize, and the drag, livePose)
+      var rx = b0[2] ? (b[0] + b[2] / 2 - b0[0]) / b0[2] : 0.5, ry = b0[3] ? (b[1] + b[3] / 2 - b0[1]) / b0[3] : 0.5;
+      return [b1[0] + rx * b1[2] - b[2] / 2, b1[1] + ry * b1[3] - b[3] / 2, b[2], b[3]];
+    }
     function sbSetSize(pairs) {   // each node given its box, one undo step with the compartments round them grown to hold them
       var ids = [], was = {}, t2 = shared.text, tids = [];   // tids: the terminals of a submap resized, kept on its sides (termsFix)
       pairs.forEach(function (q) {
         var b0 = boxOf(q[0]), b1 = q[1];
         nodes2.forEach(function (n, k) {
           if (n.sub !== q[0]) return;
-          var b = boxOf(k), rx = b0[2] ? (b[0] + b[2] / 2 - b0[0]) / b0[2] : 0.5, ry = b0[3] ? (b[1] + b[3] / 2 - b0[1]) / b0[3] : 0.5;   // its place scaled with the box
-          t2 = sbJs.resize(t2, n.id, [b1[0] + rx * b1[2] - b[2] / 2, b1[1] + ry * b1[3] - b[3] / 2, b[2], b[3]]);
+          t2 = sbJs.resize(t2, n.id, termScaled(boxOf(k), b0, b1));
           tids.push(n.id);
         });
       });

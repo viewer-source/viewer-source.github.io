@@ -49,6 +49,7 @@ export var LIFETIMES = {
     sizeRec: none,       // the node drawn live while it is resized: its parts and how they were
     keyed: none,         // what the arrow keys moved since the map was last drawn
     poseNow: none, poseText: none,   // a dragged tag's or terminal's pose
+    sizePosed: no,       // the terminals of a submap being resized posed on its new border (live.js poseSize)
     copies: list,        // the live copies of lines drawn over the picture
     frozen: no           // the copies kept until the map is drawn again
   },

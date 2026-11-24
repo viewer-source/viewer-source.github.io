@@ -74,9 +74,9 @@ import { svList, svParts } from './create.js';
     function __run2() {   // run at start, in order (__start)
     livePose = [];
     }
-    function posed() {
+    function posed(sets, rs) {   // sets: what moves (the drag's by default); rs: a node being resized, { i, box }
       var out = {};
-      livePose.forEach(function (f) { f(mv, !!(drag && drag.alone), out); });
+      livePose.forEach(function (f) { f(sets || mv, !!(drag && drag.alone), out, rs || null); });
       if (!Object.keys(out).length) return;
       shared.poseNow = out; shared.poseText = new Map();
       var o = picOff();
@@ -330,11 +330,21 @@ import { svList, svParts } from './create.js';
       if (!shared.sizeRec || shared.sizeRec.i !== i) { sizeOff(); shared.sizeRec = own ? own(i, null, null) : liveRec(i); }
       if (shared.sizeRec) { if (own) own(i, nb, shared.sizeRec); else livePut(shared.sizeRec, nb); }
     }
-    function sizeOff() {   // the node drawn as the renderer drew it
+    // a submap being resized: its terminals shown on its new border as the drop puts them (create.js livePose, termsFix),
+    // their lines drawn live to them
+    function poseSize(i, box) {
+      poseBack();
+      if (!gN) return;
+      shared.live = shared.live || new Set();
+      posed({ n: new Set(), p: new Set(), dx: 0, dy: 0 }, { i: i, box: box });
+      if (shared.poseNow) shared.sizePosed = true;
+    }
+    function sizeOff() {   // the node drawn as the renderer drew it, its terminals posed during the resize too
+      if (shared.sizePosed) { shared.sizePosed = false; unshift(); }
       if (!shared.sizeRec) return;
       liveBack(shared.sizeRec);
       shared.sizeRec = null;
     }
 
     export function __start() { __run2(); }   // the part's statements, in their order
-    export { bx, dropCopies, keyShift, liveFit, liveLines, liveOff, livePose, picOff, posePort, restBox, restPt, shift, sizeLive, sizeOff, toPic, unshift };
+    export { bx, dropCopies, keyShift, liveFit, liveLines, liveOff, livePose, picOff, posePort, poseSize, restBox, restPt, shift, sizeLive, sizeOff, toPic, unshift };

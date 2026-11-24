@@ -1,7 +1,7 @@
 import { putMap, resetDrawing, resetMap, shared, takeMap, V } from './state.js';
 import GE from '../../renderers/converter/graphml_edit.js';   // the GraphML engine: the map's GraphML read and written as text
 import H from '../../renderers/layout/holding.js';   // what holds what: regrouping, growing a holder, the holder a box lies in
-import { bx, keyShift, liveFit, liveLines, liveOff, posePort, shift, sizeLive, sizeOff, unshift } from './live.js';
+import { bx, keyShift, liveFit, liveLines, liveOff, posePort, poseSize, shift, sizeLive, sizeOff, unshift } from './live.js';
 import { AF_KINDS, drawGraphml, noNegative, shiftedAhead, yr } from './graphml.js';
 import { beyond, cdDoc, cdDraw, cdGraphml, cdJs, cdKnown, cdMap, cdMk, cdNow, cdRebuild, cdRemember, cdSessionSoon, cdpy, glyphArcs, glyphPort, isCd, joinAt, joinGuides, joinSolve, lineGrid, nodeCentre, nodePlaces, plainCanvas } from './celldesigner.js';
 import { EMPTY_BASE, edOf, isSb, madeHere, sbBase, sbFollow, sbGraphml, sbJs, sbKind, sbMap, sbNow, sbRemember, sbpy, viaGraphml } from './sbgn.js';
@@ -3045,6 +3045,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
           seed[rc] = nodes2[rc].comp ? resized(drag, P, gridSet.snap && !e.altKey && !e.ctrlKey) : holds(rc) ? roomy(rc, sized(drag, P, e.altKey || e.ctrlKey), drag.rs.s, drag.rs.b0) : sized(drag, P, e.altKey || e.ctrlKey);
           liveFit(seed);
           if (!holds(rc)) sizeLive(rc, seed[rc]);
+          poseSize(rc, shared.liveC && shared.liveC[rc] || seed[rc]);   // a submap's terminals on its new border
         }
         else if (drag.grab && Math.hypot(e.clientX - drag.grab.sx, e.clientY - drag.grab.sy) < 4) return;   // not a drag yet
         else {

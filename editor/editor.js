@@ -1105,6 +1105,8 @@
       poseNow: none,
       poseText: none,
       // a dragged tag's or terminal's pose
+      sizePosed: no,
+      // the terminals of a submap being resized posed on its new border (live.js poseSize)
       copies: list,
       // the live copies of lines drawn over the picture
       frozen: no
@@ -6001,8 +6003,25 @@
       tagAim(aim2);
     });
     TURN = { right: 0, down: 90, left: 180, up: 270 };
-    livePose.push(function(sets, alone, out) {
+    livePose.push(function(sets, alone, out, rs) {
       if (!sbJs || !sbJs.terminal) return;
+      var wayNow = function(n) {
+        return sbJs.wayOfR && sbJs.wayOfR(realizerOf(n.el)) || "right";
+      };
+      if (rs) {
+        nodes2.forEach(function(n, i) {
+          if (n.shape.kind !== "Tag" || n.sub !== rs.i) return;
+          var b = termScaled(boxOf(i), boxOf(rs.i), rs.box), now = wayNow(n), on2 = onSide(b, rs.box, now, true) || onBorder(b, rs.box), ports2 = {};
+          edges2.forEach(function(e, k) {
+            if (e.s === i || e.t === i) {
+              var o = boxOf(e.s === i ? e.t : e.s);
+              ports2[k] = tagEnd(on2[1], on2[0], rs.box, [o[0] + o[2] / 2, o[1] + o[3] / 2]);
+            }
+          });
+          out[i] = { box: on2[0], way: on2[1], turn: (TURN[on2[1]] - TURN[now] + 360) % 360, ports: ports2 };
+        });
+        return;
+      }
       var raw = function(k) {
         var b = boxOf(k);
         return sets.n.has(k) ? [b[0] + sets.dx, b[1] + sets.dy, b[2], b[3]] : b;
@@ -6031,7 +6050,7 @@
           if (!mine2 && n.sub != null) return;
           var es = linesOf(i);
           if (!mine2 && !(es.length === 1 && (out[edges2[es[0]].s === i ? edges2[es[0]].t : edges2[es[0]].s] || sets.n.has(edges2[es[0]].s === i ? edges2[es[0]].t : edges2[es[0]].s)))) return;
-          var mb = raw(i), on2 = null, q = null, now = sbJs.wayOfR && sbJs.wayOfR(realizerOf(n.el)) || "right";
+          var mb = raw(i), on2 = null, q = null, now = wayNow(n);
           if (mine2 && n.sub != null) {
             if (!(alone && !centreIn(mb, boxOf(n.sub)) && es.length <= 1)) q = boxOf(n.sub);
           } else if (mine2 && !alone) {
@@ -8188,14 +8207,17 @@
     var n = nodes2[i];
     return !!n.comp || isMade(n);
   }
+  function termScaled(b, b0, b1) {
+    var rx = b0[2] ? (b[0] + b[2] / 2 - b0[0]) / b0[2] : 0.5, ry = b0[3] ? (b[1] + b[3] / 2 - b0[1]) / b0[3] : 0.5;
+    return [b1[0] + rx * b1[2] - b[2] / 2, b1[1] + ry * b1[3] - b[3] / 2, b[2], b[3]];
+  }
   function sbSetSize(pairs) {
     var ids = [], was = {}, t2 = shared.text, tids = [];
     pairs.forEach(function(q) {
       var b0 = boxOf(q[0]), b1 = q[1];
       nodes2.forEach(function(n, k) {
         if (n.sub !== q[0]) return;
-        var b = boxOf(k), rx = b0[2] ? (b[0] + b[2] / 2 - b0[0]) / b0[2] : 0.5, ry = b0[3] ? (b[1] + b[3] / 2 - b0[1]) / b0[3] : 0.5;
-        t2 = sbJs.resize(t2, n.id, [b1[0] + rx * b1[2] - b[2] / 2, b1[1] + ry * b1[3] - b[3] / 2, b[2], b[3]]);
+        t2 = sbJs.resize(t2, n.id, termScaled(boxOf(k), b0, b1));
         tids.push(n.id);
       });
     });
@@ -12103,10 +12125,10 @@
   function __run214() {
     livePose = [];
   }
-  function posed() {
+  function posed(sets, rs) {
     var out = {};
     livePose.forEach(function(f) {
-      f(mv, !!(drag && drag.alone), out);
+      f(sets || mv, !!(drag && drag.alone), out, rs || null);
     });
     if (!Object.keys(out).length) return;
     shared.poseNow = out;
@@ -12460,7 +12482,18 @@
       else livePut(shared.sizeRec, nb);
     }
   }
+  function poseSize(i, box2) {
+    poseBack();
+    if (!gN) return;
+    shared.live = shared.live || /* @__PURE__ */ new Set();
+    posed({ n: /* @__PURE__ */ new Set(), p: /* @__PURE__ */ new Set(), dx: 0, dy: 0 }, { i, box: box2 });
+    if (shared.poseNow) shared.sizePosed = true;
+  }
   function sizeOff() {
+    if (shared.sizePosed) {
+      shared.sizePosed = false;
+      unshift();
+    }
     if (!shared.sizeRec) return;
     liveBack(shared.sizeRec);
     shared.sizeRec = null;
@@ -17021,6 +17054,7 @@
           seed[rc] = nodes2[rc].comp ? resized(drag, P, gridSet.snap && !e.altKey && !e.ctrlKey) : holds(rc) ? roomy(rc, sized(drag, P, e.altKey || e.ctrlKey), drag.rs.s, drag.rs.b0) : sized(drag, P, e.altKey || e.ctrlKey);
           liveFit(seed);
           if (!holds(rc)) sizeLive(rc, seed[rc]);
+          poseSize(rc, shared.liveC && shared.liveC[rc] || seed[rc]);
         } else if (drag.grab && Math.hypot(e.clientX - drag.grab.sx, e.clientY - drag.grab.sy) < 4) return;
         else {
           if (drag.grab) {
