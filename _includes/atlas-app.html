@@ -150,7 +150,7 @@ page, so its styles keep the base they were made on).
   .m2.m2-info-shut { grid-template-columns: var(--m2-list-w, 240px) minmax(600px, 1fr) 0; }
   #m2-split-r::after { content: ''; position: absolute; top: 50%; left: 50%; width: 4px; height: 20px; margin: -10px 0 0 -2px;
     background: radial-gradient(circle, var(--m2-grip) 1.5px, transparent 2px) center / 4px 8px repeat-y; }
-  #m2-list { max-height: calc(100vh / var(--zoom, 1) - 180px); overflow-y: auto; }
+  #m2-list { max-height: calc(100vh / var(--zoom, 1) - 180px); overflow-y: auto; overscroll-behavior: contain; }   /* the wheel at the list's end never moves the page (Space with the wheel does) */
   /* Edit panel on the right (Settings, Editing): the Edit window in a column of its own after the map, so the list stays
      on the left while editing; the column takes the annotations' place (no annotations open while editing). Its
      separator on its left edge sets its width (--m2-edit-w), kept in the browser */
@@ -159,7 +159,7 @@ page, so its styles keep the base they were made on).
   .m2-edit-right.m2-win-edit:not(.m2-edit-off) #m2-epanel { display: block; }
   .m2-edit-right.m2-win-edit:not(.m2-edit-off) > .m2-info:not(.m2-over), .m2-edit-right.m2-win-edit:not(.m2-edit-off) #m2-split-r { display: none !important; }
   #m2-epanel #m2-editwin { display: block; }
-  #m2-epanel-in { position: sticky; top: 0; max-height: calc(100vh / var(--zoom, 1) - 60px); overflow-y: auto; }
+  #m2-epanel-in { position: sticky; top: 0; max-height: calc(100vh / var(--zoom, 1) - 60px); overflow-y: auto; overscroll-behavior: contain; }
   #m2-split-e { position: absolute; top: 0; left: calc(-1 * var(--m2-split)); width: var(--m2-split); height: 100%; cursor: col-resize; touch-action: none; z-index: 1; }
   #m2-split-e::after { content: ''; position: absolute; top: 50%; left: 50%; width: 4px; height: 20px; margin: -10px 0 0 -2px;
     background: radial-gradient(circle, var(--m2-grip) 1.5px, transparent 2px) center / 4px 8px repeat-y; }
@@ -175,6 +175,7 @@ page, so its styles keep the base they were made on).
     #m2-title { order: 5; margin-top: 12px; } .m2-nav { order: 6; margin: 10px 0 0; } #m2-text { order: 7; }
     #m2-search { margin-bottom: 8px; }
     #m2-list { max-height: 92px; border-bottom: 1px solid #eee; }
+    .m2 #m2-list, .m2 #m2-setwin, .m2 #m2-editwin, .m2 #m2-infowin, .m2 .m2-info { overscroll-behavior: auto; }   /* in the page's flow on a phone: a swipe over them goes on to the page */
     #m2-split { display: none; }
     .m2-list-shut .m2-nav { display: block; }
   }
@@ -282,7 +283,7 @@ page, so its styles keep the base they were made on).
     .m2-bar-tabs .m2-nav > .m2-info { width: auto !important; margin: 0 !important; padding: 0 4px !important; border: 0 !important; }
     html .m2-bar-tabs.m2-info-tab .m2-main { border-right-color: transparent !important; }
     .m2-bar-tabs.m2-info-tab .m2-ri.m2-open { background: none; color: #80868b; }
-    #m2-infowin { overflow-y: auto; max-height: calc(100vh / var(--zoom, 1) - 110px); font-size: 14px; line-height: 1.45; color: var(--m2-text-soft); overflow-wrap: anywhere; }
+    #m2-infowin { overflow-y: auto; overscroll-behavior: contain; max-height: calc(100vh / var(--zoom, 1) - 110px); font-size: 14px; line-height: 1.45; color: var(--m2-text-soft); overflow-wrap: anywhere; }
     #m2-infowin p { margin: 0 0 8px; padding: 0 4px; }
     #m2-infowin .m2-pi-name { font-size: 16px; font-weight: 400; color: var(--m2-text); }
     #m2-infowin .m2-k { color: var(--m2-muted); }
@@ -305,7 +306,7 @@ page, so its styles keep the base they were made on).
      Orientation, Reduced notation, Settings choices); 14 px only for the PD and AF tabs and the full-width
      action buttons (Choose a folder, Connect). No third size; a new control takes one of the two */
   #m2-editwin { padding: 0; font-size: 14px; line-height: 1.45; color: var(--m2-text-soft);
-    max-height: calc(100vh / var(--zoom, 1) - 110px); overflow-y: auto; }   /* scrolls as the list does, its foot level with the map window's (so Properties stays on screen); menus go to the body, not clipped */
+    max-height: calc(100vh / var(--zoom, 1) - 110px); overflow-y: auto; overscroll-behavior: contain; }   /* scrolls as the list does, its foot level with the map window's (so Properties stays on screen); menus go to the body, not clipped */
   #m2-editwin button { display: block; width: 100%; box-sizing: border-box; font: inherit; font-size: 14px; line-height: 20px; padding: 4px 10px; margin: 0 0 8px; text-align: left;
     background: var(--m2-bg); border: 1px solid var(--m2-button); border-radius: var(--m2-radius-button); color: var(--m2-button); cursor: pointer; }
   #m2-editwin button:hover:not(:disabled) { background: var(--m2-accent); border-color: var(--m2-accent); color: var(--m2-on-accent); }
@@ -579,7 +580,8 @@ page, so its styles keep the base they were made on).
   #m2-legend .m2-leg-tabs button + button { border-left: 1px solid var(--m2-button, var(--m2-line)); }
   #m2-legend .m2-leg-tabs button.m2-on { background: var(--m2-accent); color: var(--m2-on-accent, #fff); }
   #m2-legend [data-leg]:not(button):not(.m2-on) { display: none; }
-  #m2-setwin { padding: 0; font-size: 14px; line-height: 1.45; color: var(--m2-text-soft); }
+  #m2-setwin { padding: 0; font-size: 14px; line-height: 1.45; color: var(--m2-text-soft);
+    max-height: calc(100vh / var(--zoom, 1) - 110px); overflow-y: auto; overscroll-behavior: contain; }   /* scrolls inside the panel, as the Edit window; the wheel over it never moves the page, at its end or when it fits */
   #m2-setwin .m2-set-k { margin: 4px 0 6px; }
   #m2-setwin .m2-set-note { font-size: 12px; color: var(--m2-muted); margin: 6px 0 14px; }
   #m2-setwin .m2-set-row { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -756,7 +758,7 @@ page, so its styles keep the base they were made on).
   #m2-hl circle { fill: #8db4f0; fill-opacity: .7; }
   .m2-editing #m2-hl { display: none !important; }
   #m2-pin { position: absolute; left: 0; top: 0; width: 24px; height: 32px; margin: -32px 0 0 -12px; pointer-events: none; display: none; filter: drop-shadow(0 1px 1px #0005); }
-  .m2-info { grid-column: 3; font-size: 14px; line-height: 1.45; color: var(--m2-text-soft); max-height: calc(100vh / var(--zoom, 1) - 140px); overflow-y: auto; overflow-wrap: anywhere; }
+  .m2-info { grid-column: 3; font-size: 14px; line-height: 1.45; color: var(--m2-text-soft); max-height: calc(100vh / var(--zoom, 1) - 140px); overflow-y: auto; overscroll-behavior: contain; overflow-wrap: anywhere; }
   .m2-info.m2-over { position: absolute; z-index: 2; top: 36px; right: 8px; bottom: 8px; width: min(260px, 70%); max-height: none; padding: 10px 12px; background: var(--m2-bg); border: 1px solid var(--m2-line); border-radius: var(--m2-radius); box-shadow: 0 2px 8px #0002; cursor: auto; user-select: text; }
   .m2-info:empty { display: none; }
   /* --m2-info-float: 1: the panel as a card over the map, the list's width (its own --m2-info-w),
