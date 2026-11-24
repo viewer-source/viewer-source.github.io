@@ -1,5 +1,6 @@
-// Sign size (Settings, Editing; atlas-app.html setSigns): Large by default, the tools and the palette's signs 36 px with
-// 24 px drawings, five in a row; Normal 32 px signs with 21 px drawings, six in a row; at either size the palette and the
+// Sign size (Settings, Editing; atlas-app.html setSigns): one grid at either size, tools and palette 32 px tiles, six in a
+// row, the tools' drawings 21 px; Sign size sets only the palette's drawings, 24 px at Large (the default), 21 at Normal;
+// no lines between the tools; at either size the palette and the
 // window's blocks as wide as the icon row above at the usual 240 px panel, the palette's outlines 1.2 px on screen, the
 // tools' 1.4 as the top icons, the small arrows 1.2; one undo puts Large back; the choice stays after a reload; a panel narrower than the usual one wraps the signs
 // and nothing passes its edge. Testing Glycolysis SBGN-ML, full editing. No script error.
@@ -27,7 +28,7 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#testing-gl
       var pal = vis('#m2-editwin .m2-ed-palette button[data-make]'), tools = vis('#m2-editwin .m2-ed-tools > button'), rows = {};
       pal.forEach(function (e) { var k = Math.round(e.getBoundingClientRect().top); rows[k] = (rows[k] || 0) + 1; });
       var panel = document.getElementById('m2-editwin').parentElement.getBoundingClientRect();
-      return { pal: span(pal), rail: span(vis('.m2-ri')), line: span([document.querySelector('#m2-editwin > .m2-ed-palette')]), box: Math.round(pal[0].getBoundingClientRect().width), draw: Math.round(pal[0].querySelector('svg').getBoundingClientRect().width), tool: Math.round(tools[0].getBoundingClientRect().width),
+      return { pal: span(pal), rail: span(vis('.m2-ri')), line: span([document.querySelector('#m2-editwin > .m2-ed-palette')]), box: Math.round(pal[0].getBoundingClientRect().width), draw: Math.round(pal[0].querySelector('svg').getBoundingClientRect().width), tool: Math.round(tools[0].getBoundingClientRect().width), tdraw: Math.round(tools[0].querySelector('svg').getBoundingClientRect().width), seps: document.querySelectorAll('#m2-editwin .m2-ed-tools .m2-ed-sep').length,
         weights: [].concat(pal.slice(0, 1), tools.slice(0, 1)).map(function (b) { var v = b.querySelector('svg'), k = v.getBoundingClientRect().width / v.viewBox.baseVal.width; return parseFloat(getComputedStyle(v.querySelector('rect, path')).strokeWidth) * k; }).concat(vis('#m2-editwin .m2-ed-gsf svg path').map(function (e) { return parseFloat(getComputedStyle(e).strokeWidth); })),
         rows: Object.keys(rows).sort(function (a, b) { return a - b; }).map(function (k) { return rows[k]; }), panelR: Math.round(panel.right), z: parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--zoom')) || 1 };
     });
@@ -36,10 +37,11 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#testing-gl
   await page.evaluate(function () {}).catch(function () {});
   await open(page); await page.evaluate(function () { localStorage.removeItem('atlas-sign-size'); }); await open(page); await edit(page);
   var L = await measure(page), z = L.z, px = function (v) { return Math.round(v / z); };
-  ok('Large by default: signs 36 px', px(L.box) === 36 && px(L.tool) === 36, JSON.stringify(L));
-  ok('Large: drawings 24 px', px(L.draw) === 24, JSON.stringify(L));
+  ok('Large by default: tiles 32 px, tools and palette', px(L.box) === 32 && px(L.tool) === 32, JSON.stringify(L));
+  ok('Large: palette drawings 24 px, tools 21', px(L.draw) === 24 && px(L.tdraw) === 21, JSON.stringify(L));
+  ok('no lines between the tools', L.seps === 0, JSON.stringify(L));
   ok('Large: the palette as wide as the icon row', Math.abs(L.pal[0] - L.rail[0]) <= 1 && Math.abs(L.pal[1] - L.rail[1]) <= 1, JSON.stringify(L));
-  ok('Large: five in a row', L.rows[0] === 5, JSON.stringify(L.rows));
+  ok('Large: six in a row', L.rows[0] === 6, JSON.stringify(L.rows));
   ok('Large: palette 1.2 px, tools 1.4, the arrow 1.2', L.weights.every(function (w, i) { return Math.abs(w / z - (i === 1 ? 1.4 : 1.2)) < .03; }), JSON.stringify(L.weights));
   ok('Large: the lines as wide as the icon row', Math.abs(L.line[0] - L.rail[0]) <= 1 && Math.abs(L.line[1] - L.rail[1]) <= 1, JSON.stringify(L));
   // Normal, chosen in Settings
@@ -49,7 +51,7 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#testing-gl
   ok('Normal on after its click', await page.$eval('#m2-set-signs button[data-signs="normal"]', function (e) { return e.classList.contains('m2-on'); }));
   await edit(page);
   var N = await measure(page);
-  ok('Normal: signs 32 px, drawings 21 px', px(N.box) === 32 && px(N.tool) === 32 && px(N.draw) === 21, JSON.stringify(N));
+  ok('Normal: tiles 32 px, drawings 21 px', px(N.box) === 32 && px(N.tool) === 32 && px(N.draw) === 21 && px(N.tdraw) === 21, JSON.stringify(N));
   ok('Normal: six in a row', N.rows[0] === 6, JSON.stringify(N.rows));
   ok('Normal: the palette as wide as the icon row', Math.abs(N.pal[0] - N.rail[0]) <= 1 && Math.abs(N.pal[1] - N.rail[1]) <= 1, JSON.stringify(N));
   ok('Normal: palette 1.2 px, tools 1.4, the arrow 1.2', N.weights.every(function (w, i) { return Math.abs(w / z - (i === 1 ? 1.4 : 1.2)) < .03; }), JSON.stringify(N.weights));
