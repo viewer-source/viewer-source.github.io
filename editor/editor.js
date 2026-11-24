@@ -1239,6 +1239,9 @@
     sbp = sbScript("sbgn_edit").then(function() {
       return sbScript("sbml_edit").catch(function() {
       });
+    }).then(function() {
+      return sbScript("sbgnml_read").catch(function() {
+      });
     }).then(yr).then(function() {
       sbJs = window.sbgn_edit;
       return sbJs;
@@ -1251,14 +1254,25 @@
   }
   function sbBase(m, low) {
     var e = m.site || m;
+    if (e.ownText) return sbpy().then(function() {
+      return sbOwn(e.ownText());
+    });
     return fetch(e.editBase + V.ver(e), { priority: low ? "low" : "auto" }).then(function(r) {
       if (!r.ok) throw r.status;
       return r.text();
     });
   }
+  var ownMemo;
+  function sbOwn(t) {
+    if (madeHere(t)) return EMPTY_BASE;
+    if (!window.sbgnml_read) throw new Error("the SBGN-ML reader did not load");
+    if (!ownMemo || ownMemo[0] !== t) ownMemo = [t, window.sbgnml_read.graphml(t).text];
+    return ownMemo[1];
+  }
   var sbMemo;
   function __run3() {
     sbMemo = [];
+    ownMemo = null;
   }
   function sbGraphml(t, base) {
     for (var i = 0; i < sbMemo.length; i++) if (sbMemo[i][0] === t && sbMemo[i][1] === base) return sbMemo[i][2];
@@ -2301,7 +2315,7 @@
     })));
   }
   function canCopy(m) {
-    return !!m && !m.shownAs && (m.mine ? !!mine[m.id] : !!graphmlOf(m) && (!sbMap(m) || /^maps\/[^/]+\.sbgn$/.test(m.editPath || "") && !!m.madeHere));
+    return !!m && !m.shownAs && (m.mine ? !!mine[m.id] : !!graphmlOf(m) && (!sbMap(m) || /^maps\/[^/]+\.sbgn$/.test(m.editPath || "")));
   }
   function fmtOf(m) {
     return (((m.site || m).downloads || [])[0] || {}).label || "";
@@ -2412,7 +2426,6 @@
     return mineIn.then(function() {
       return t ? t() : textNow(m);
     }).then(function(t2) {
-      if (isSb(t2) && !madeHere(t2)) throw new Error(otherSb());
       if (fmtOfText(t2) !== fmt2) {
         title = freeTitle(name2, group, fmtOfText(t2));
         ext = isCd(t2) ? ".xml" : isSb(t2) ? ".sbgn" : ".graphml";
@@ -2570,6 +2583,9 @@
     };
     if (sbm) {
       e.editBase = emptyBase();
+      e.ownText = function() {
+        return mine[r.id] ? mine[r.id].text : r.text;
+      };
       e.editPath = r.file;
     }
     return e;
@@ -3079,7 +3095,7 @@
     var back2 = !id && old && old.text !== text && old.src === h;
     var r = {
       id: old ? old.id : newId(),
-      title: old ? old.title : freeTitle(name2.replace(/\.(graphml|xml|sbgn)$/i, ""), group || "", fmtOfText(text)),
+      title: old ? old.title : freeTitle(name2.replace(/\.(graphml|xml|sbgn|nwt)$/i, ""), group || "", fmtOfText(text)),
       file: old ? old.file : name2,
       text: back2 ? old.text : text,
       svg: back2 ? old.svg : d.svg,
@@ -3141,7 +3157,7 @@
         row.setAttribute("data-group", g);
         row.title = r.why ? r.name + " was not added: " + r.why + " (click to dismiss)" : "Adding " + r.name;
         if (!r.why) row.appendChild(Object.assign(document.createElement("span"), { className: "m2-spin" }));
-        row.appendChild(Object.assign(document.createElement("span"), { className: "m2-name", textContent: r.name.replace(/\.(graphml|xml|sbgn)$/i, "") }));
+        row.appendChild(Object.assign(document.createElement("span"), { className: "m2-name", textContent: r.name.replace(/\.(graphml|xml|sbgn|nwt)$/i, "") }));
         if (r.why) {
           row.appendChild(Object.assign(document.createElement("span"), { className: "m2-wait-why", textContent: r.why }));
           row.addEventListener("click", function() {
@@ -3159,7 +3175,7 @@
   function addFiles(list2, group) {
     list2 = Array.prototype.slice.call(list2);
     var picked = list2.filter(function(f) {
-      return /\.(graphml|xml|sbgn)$/i.test(f.name);
+      return /\.(graphml|xml|sbgn|nwt)$/i.test(f.name);
     });
     if (!picked.length) return Promise.resolve();
     var gh2 = repo() && token(), last = null, out = [];
@@ -3193,9 +3209,8 @@
       return p.then(function() {
         return f.text();
       }).then(function(t) {
-        if (isSb(t) && !madeHere(t)) throw new Error(otherSb());
         if (gh2) return drawText(t, null, "adding").then(function(d) {
-          var ext = siteExt(t), title = freeTitle(f.name.replace(/\.(graphml|xml|sbgn)$/i, ""), group || "", fmtOfText(t), out.filter(function(o) {
+          var ext = siteExt(t), title = freeTitle(f.name.replace(/\.(graphml|xml|sbgn|nwt)$/i, ""), group || "", fmtOfText(t), out.filter(function(o) {
             return fmtOfText(o.t) === fmtOfText(t);
           }).map(function(o) {
             return o.title;
@@ -3268,7 +3283,7 @@
     picker = document.createElement("input");
     picker.type = "file";
     picker.multiple = true;
-    picker.accept = ".graphml,.xml,.sbgn";
+    picker.accept = ".graphml,.xml,.sbgn,.nwt";
     picker.hidden = true;
     picker.addEventListener("change", function() {
       var l = Array.prototype.slice.call(picker.files), to = addTo;
@@ -3291,14 +3306,11 @@
       });
     });
   }
-  function otherSb() {
-    return "an SBGN-ML file from another editor cannot be added yet, only one made here with New map";
-  }
   function siteExt(t) {
-    return isCd(t) ? ".xml" : isSb(t) ? madeHere(t) ? ".sbgn" : null : /yworks\.com/.test(t.slice(0, 5e3)) ? ".graphml" : null;
+    return isCd(t) ? ".xml" : isSb(t) ? ".sbgn" : /yworks\.com/.test(t.slice(0, 5e3)) ? ".graphml" : null;
   }
-  function siteWhy(t) {
-    return isSb(t) ? "an SBGN-ML file from another editor cannot go to the site yet, only one made here with New map" : "not a yEd GraphML or CellDesigner file";
+  function siteWhy() {
+    return "not a yEd GraphML, CellDesigner or SBGN-ML file";
   }
   function onSite(r, s, title) {
     r.site = s.id;
@@ -3420,7 +3432,7 @@
         var r = mine[id];
         if (!r || r.hidden) return null;
         if (r.site) return r;
-        var ext = siteExt(r.text), title = r.title.replace(/\.(graphml|xml|sbgn)$/i, "");
+        var ext = siteExt(r.text), title = r.title.replace(/\.(graphml|xml|sbgn|nwt)$/i, "");
         if (!ext) throw new Error(siteWhy(r.text));
         return toSite(title, ext, r.text, r.group || "", siteOrder(r.group || "")).then(function(s) {
           if (!mine[id]) return null;
@@ -13329,7 +13341,7 @@
         });
         return all(f.dir).then(function(hs) {
           return hs.filter(function(h) {
-            return h.kind === "file" && /\.(graphml|xml|sbgn)$/i.test(h.name);
+            return h.kind === "file" && /\.(graphml|xml|sbgn|nwt)$/i.test(h.name);
           }).reduce(function(q, h) {
             return q.then(function() {
               var id = ours[h.name];
@@ -13340,7 +13352,6 @@
                 if (r && w && fl.lastModified === w.mod && fl.size === w.size) return;
                 return fl.text().then(function(t) {
                   if (!id && mineMatch(h.name, t)) return;
-                  if (isSb(t) && !madeHere(t)) return;
                   return drawText(t).then(function(d) {
                     return mineAdd(h.name, t, d, id || null);
                   }).then(function(n) {
@@ -13363,7 +13374,7 @@
     var c = isCd(t), s = !c && isSb(t);
     if (!c && !s && !/<graphml[\s>]/.test(t.slice(0, 3e3))) return Promise.reject(new Error("not a GraphML, CellDesigner or SBGN-ML file"));
     return (c ? cdpy() : s ? sbpy() : yr()).then(function() {
-      var svg = c ? window.cdrender.render(cdDoc(t, keep || false), { classes: true, groups: true }) : window.yrender.render(s ? sbGraphml(t, g0 || EMPTY_BASE) : t, { classes: true, groups: true, sbgn: s }).svg;
+      var svg = c ? window.cdrender.render(cdDoc(t, keep || false), { classes: true, groups: true }) : window.yrender.render(s ? sbGraphml(t, g0 || sbOwn(t)) : t, { classes: true, groups: true, sbgn: s }).svg;
       var w = svg.match(/ width="([\d.]+)" height="([\d.]+)"/);
       if (!w) throw new Error("not a map this viewer can draw");
       return { svg, width: parseFloat(w[1]), height: parseFloat(w[2]) };

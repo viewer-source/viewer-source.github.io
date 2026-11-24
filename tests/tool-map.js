@@ -7,7 +7,8 @@
 //    there as its file.
 // 3. This browser, no token and no folder: kept as a map of the reader's; Cmd+Z in the list puts it in Deleted.
 // In each: a tool's text of the map's own format (GraphML), a text of another format (an SBGN-ML made here) kept as
-// that format, and another editor's SBGN-ML refused with nothing added. On the styles page, Glycolysis (GraphML).
+// that format, and another editor's SBGN-ML added as an SBGN-ML map too (read by sbgnml_read). On the styles page,
+// Glycolysis (GraphML).
 //   node tests/tool-map.js <base address> <clone of the site's data repository> [--local]
 // --local: the editor of the working tree routed into the live page, to check before a release.
 var engine = require('playwright')[process.env.BROWSER || 'chromium'], fs = require('fs'), path = require('path');
@@ -22,6 +23,7 @@ var SB_OTHER = SB_HERE.replace('viewer-new-map', 'from-another-editor');
 
 async function open(ctx, setup) {
   if (ED) await ctx.route(/\/styles\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: ED }); });
+  if (ED) await ctx.route(/\/renderers\/(converter|yrender|layout)\/[a-z_]+\.js/, function (r) { var f = path.join(__dirname, '..', 'renderers', /\/renderers\/(.+\.js)/.exec(new URL(r.request().url()).pathname)[1]); if (fs.existsSync(f)) r.fulfill({ contentType: 'application/javascript', body: fs.readFileSync(f, 'utf8') }); else r.continue(); });
   var page = await ctx.newPage(), errs = [];
   page.on('pageerror', function (e) { if (!NOISE.test(e.message)) errs.push(e.message); });
   page.on('dialog', function (d) { d.accept().catch(function () {}); });
@@ -64,9 +66,8 @@ async function common(P, kept, label) {   // kept(): { texts: [text], files: [na
   ok('a text of another format kept as that format (.sbgn)', sb && !sb.err && sb.name === 'Made by a tool' && k.files.some(function (f) { return /\.sbgn$/.test(f); }), JSON.stringify(sb) + ' ' + k.files.join(','));
   var n = k.texts.length;
   var no = await page.evaluate(function () { return window.m2Tools.run('other').then(function () { return ''; }, function (e) { return e.message; }); });
-  await page.waitForTimeout(1500);
-  ok('another editor\'s SBGN-ML refused, with the reason', /another editor/.test(no), no);
-  ok('and nothing added', (await kept()).texts.length === n);
+  await page.waitForTimeout(label === 'on GitHub' ? 3000 : 1500);
+  ok('another editor\'s SBGN-ML added as a map of its own', !no && (await kept()).texts.length === n + 1, no);
   return made;
 }
 
@@ -151,7 +152,7 @@ async function browser(b) {
   await P.page.click('#m2-list .m2-map[data-id="' + MAP + '"]').catch(function () {}); await P.page.waitForTimeout(800);
   await P.page.keyboard.press('Control+z'); await P.page.waitForTimeout(1500);
   var after = await recs();
-  ok('Cmd+Z in the list: the last map made goes to Deleted', after.filter(function (x) { return /\.sbgn$/.test(x.file); }).every(function (x) { return x.hidden; }) && after.some(function (x) { return x.text.indexOf(MARK) >= 0 && !x.hidden; }), JSON.stringify(after.map(function (x) { return x.file + (x.hidden ? ' hidden' : ''); })));
+  ok('Cmd+Z in the list: the last map made (the other editor\'s SBGN-ML) goes to Deleted, the others stay', after.some(function (x) { return /-other\.sbgn$/.test(x.file) && x.hidden; }) && after.every(function (x) { return /-other\.sbgn$/.test(x.file) || !x.hidden; }) && after.some(function (x) { return x.text.indexOf(MARK) >= 0; }), JSON.stringify(after.map(function (x) { return x.file + (x.hidden ? ' hidden' : ''); })));
   var gone = after.filter(function (x) { return x.hidden; })[0];
   if (gone) {
     await P.page.evaluate(function (id) { location.hash = '#' + id; }, gone.id); await P.page.waitForTimeout(1500);

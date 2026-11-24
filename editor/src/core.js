@@ -4,7 +4,7 @@ import H from '../../renderers/layout/holding.js';   // what holds what: regroup
 import { bx, keyShift, liveFit, liveLines, liveOff, posePort, poseSize, shift, sizeLive, sizeOff, unshift } from './live.js';
 import { AF_KINDS, drawGraphml, noNegative, shiftedAhead, yr } from './graphml.js';
 import { beyond, cdDoc, cdDraw, cdGraphml, cdJs, cdKnown, cdMap, cdMk, cdNow, cdRebuild, cdRemember, cdSessionSoon, cdpy, glyphArcs, glyphPort, isCd, joinAt, joinGuides, joinSolve, lineGrid, nodeCentre, nodePlaces, plainCanvas } from './celldesigner.js';
-import { EMPTY_BASE, edOf, isSb, madeHere, sbBase, sbFollow, sbGraphml, sbJs, sbKind, sbMap, sbNow, sbRemember, sbpy, viaGraphml } from './sbgn.js';
+import { edOf, isSb, sbBase, sbFollow, sbGraphml, sbJs, sbKind, sbMap, sbNow, sbOwn, sbRemember, sbpy, viaGraphml } from './sbgn.js';
 import { ddOpen, hybOn, joinDo, joinPack, joinPlan, link, linkDown, linkMove, linkPaint, linkUp, moveSays, origAll, palDown, palShow, palUp, propFmt, setSize, sizable, svDown, svMarks, tool } from './create.js';
 import { help, helpBox } from './help.js';
 import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepBeside, keptNow, listGo, mine, mineAdd, mineIn, mineMatch, minePut, savedMine, toGh, upAll, upRun } from './own.js';
@@ -458,7 +458,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
           Object.keys(f.files).forEach(function (id) { ours[f.files[id].name] = id; });
           V.maps.forEach(function (m) { if (!m.mine) siteFiles[(graphmlOf(m.site || m) || '').split('?')[0].split('/').pop()] = 1; });   // the site's maps' files (a draft kept here)
           return all(f.dir).then(function (hs) {
-            return hs.filter(function (h) { return h.kind === 'file' && /\.(graphml|xml|sbgn)$/i.test(h.name); }).reduce(function (q, h) {
+            return hs.filter(function (h) { return h.kind === 'file' && /\.(graphml|xml|sbgn|nwt)$/i.test(h.name); }).reduce(function (q, h) {
               return q.then(function () {
                 var id = ours[h.name];
                 if (id ? !mine[id] : siteFiles[h.name.replace(/-\d+(\.[^.]+)$/, '$1')]) return;   // a site's map kept here
@@ -471,7 +471,6 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
                     // content), so their original beside the copy written here, or a map taken off the
                     // list, is left as it is
                     if (!id && mineMatch(h.name, t)) return;
-                    if (isSb(t) && !madeHere(t)) return;   // another editor's SBGN-ML: not drawn from the empty base (sbgn.js)
                     return drawText(t).then(function (d) { return mineAdd(h.name, t, d, id || null); }).then(function (n) {
                       news = true;
                       return folderFile(n.id, { name: h.name, mod: fl.lastModified, size: fl.size });
@@ -485,11 +484,11 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       }).then(function () { if (news) V.refreshMine(); }, function () {});
     }
     // a reader's own map drawn for the list (My maps): as the build draws, with the role classes
-    function drawText(t, g0, keep) {   // a reader's map: GraphML, CellDesigner, or SBGN-ML made here (New map), drawn from the empty base (own.js); g0: a site SBGN-ML map's build GraphML; keep: 'adding' when the map is shown next (a CellDesigner file's document kept for it, celldesigner.js cdDoc)
+    function drawText(t, g0, keep) {   // a reader's map: GraphML, CellDesigner, or SBGN-ML (sbOwn: from the empty base if made here, else read by sbgnml_read); g0: a site SBGN-ML map's build GraphML; keep: 'adding' when the map is shown next (a CellDesigner file's document kept for it, celldesigner.js cdDoc)
       var c = isCd(t), s = !c && isSb(t);
       if (!c && !s && !/<graphml[\s>]/.test(t.slice(0, 3000))) return Promise.reject(new Error('not a GraphML, CellDesigner or SBGN-ML file'));
       return (c ? cdpy() : s ? sbpy() : yr()).then(function () {
-        var svg = c ? window.cdrender.render(cdDoc(t, keep || false), { classes: true, groups: true }) : window.yrender.render(s ? sbGraphml(t, g0 || EMPTY_BASE) : t, { classes: true, groups: true, sbgn: s }).svg;   // grouped: the editor's own drawing, taken as it is on entering edit (adopt)
+        var svg = c ? window.cdrender.render(cdDoc(t, keep || false), { classes: true, groups: true }) : window.yrender.render(s ? sbGraphml(t, g0 || sbOwn(t)) : t, { classes: true, groups: true, sbgn: s }).svg;   // grouped: the editor's own drawing, taken as it is on entering edit (adopt)
         var w = svg.match(/ width="([\d.]+)" height="([\d.]+)"/);
         if (!w) throw new Error('not a map this viewer can draw');
         return { svg: svg, width: parseFloat(w[1]), height: parseFloat(w[2]) };

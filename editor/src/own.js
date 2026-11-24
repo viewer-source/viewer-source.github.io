@@ -1,7 +1,7 @@
 import { shared, V } from './state.js';
 import { ahead, api, b64, blobSha, changed, drawText, freeName, gh, graphmlOf, heldText, localBox, map, mapTop, note, on, origFolderDrop, origRead, origWrite, repo, site, src, stop, toFolder, token, unkeep, warn } from './core.js';
 import { cdMap, cdMk, cdpy, isCd } from './celldesigner.js';
-import { NEW_ID, emptyBase, isSb, madeHere, sbMap } from './sbgn.js';
+import { NEW_ID, emptyBase, isSb, sbMap } from './sbgn.js';
 
     // ---------- the reader's own storage (editor/src/own.js) ----------
     // What a reader without a GitHub token keeps (three layers: this browser, a folder on the computer,
@@ -374,7 +374,7 @@ import { NEW_ID, emptyBase, isSb, madeHere, sbMap } from './sbgn.js';
     // the original, opened at once (no name field: one command at a time, as Finder's Duplicate). Of a reader's own map, or of the site's
     // GraphML or CellDesigner map as it is now (the edits this page holds, else GitHub's version, else the site's);
     // with a token every copy goes to the site, as Add map does (an SBGN-ML one only made here)
-    function canCopy(m) { return !!m && !m.shownAs && (m.mine ? !!mine[m.id] : !!graphmlOf(m) && (!sbMap(m) || /^maps\/[^/]+\.sbgn$/.test(m.editPath || '') && !!m.madeHere)); }   // an SBGN-ML map of the site's own made with New map (build.py made_here; copyOf refuses another editor's), not one of its groups'
+    function canCopy(m) { return !!m && !m.shownAs && (m.mine ? !!mine[m.id] : !!graphmlOf(m) && (!sbMap(m) || /^maps\/[^/]+\.sbgn$/.test(m.editPath || ''))); }   // an SBGN-ML map of the site's own (maps/<id>.sbgn), not one of its groups'
     // Names as in Finder, the format being the extension the list shows: two maps may share a name unless they are in
     // the same group and of the same format. A name taken there is refused when typed (Rename map); a name the viewer
     // makes (Make a copy, New map, Add map from file), or a clash a move or a Restore brings, takes (1), (2), ... after it
@@ -454,7 +454,6 @@ import { NEW_ID, emptyBase, isSb, madeHere, sbMap } from './sbgn.js';
       var file = freeFile(slug(title) + ext);
       var gh = !!(repo() && token());
       return mineIn.then(function () { return t ? t() : textNow(m); }).then(function (t) {
-        if (isSb(t) && !madeHere(t)) throw new Error(otherSb());
         if (fmtOfText(t) !== fmt) { title = freeTitle(name, group, fmtOfText(t)); ext = isCd(t) ? '.xml' : isSb(t) ? '.sbgn' : '.graphml'; file = freeFile(slug(title) + ext); }
         if (gh) { ext = siteExt(t); if (!ext) throw new Error(siteWhy(t)); }
         var made = r0 && t === r0.text ? Promise.resolve({ svg: r0.svg, width: r0.width, height: r0.height }) : drawText(t);
@@ -538,7 +537,7 @@ import { NEW_ID, emptyBase, isSb, madeHere, sbMap } from './sbgn.js';
       var e = { id: r.id, title: r.title, group: r.group && (groupsHere.indexOf(r.group) >= 0 || V.siteGroupOf(r.group)) ? r.group : '', topic: r.id, mine: true, file: r.file, width: r.width, height: r.height, v: String(r.at),
         image: u.svg, colours: true, legend: cdm ? 'celldesigner' : 'sbgn', downloads: [{ label: cdm ? 'CellDesigner' : sbm ? 'SBGN-ML' : 'GraphML', url: u.text }] };
       // colours: its picture drawn with the role classes (drawText, core.js), so Settings' Map colours (File, Default) apply
-      if (sbm) { e.editBase = emptyBase(); e.editPath = r.file; }   // made here (New map): edited as a site's SBGN-ML map, from the empty base (sbgn.js)
+      if (sbm) { e.editBase = emptyBase(); e.ownText = function () { return mine[r.id] ? mine[r.id].text : r.text; }; e.editPath = r.file; }   // edited as a site's SBGN-ML map, from the GraphML sbOwn makes of its text (sbgn.js)
       return e;
     }
     // with a token a map added goes to the site (toSite): until the site's build has it, it is shown from this
@@ -776,8 +775,8 @@ import { NEW_ID, emptyBase, isSb, madeHere, sbMap } from './sbgn.js';
     // the group right-clicked or at the top, opened at once in the Edit window with the palette, nothing asked (no name
     // needed to start, as in Google Docs; a double-click names it).
     // With a token it goes to GitHub at once (toSite) and every change is saved there; else kept as any map of theirs
-    // (this browser, their folder). Its map id (NEW_ID, sbgn.js) marks the file as made here (madeHere, sbgn.js), so the folder and Add map from file
-    // take it back; an SBGN-ML file of another editor is not taken (it may hold what the empty base cannot draw)
+    // (this browser, their folder). Its map id (NEW_ID, sbgn.js) marks the file as made here (madeHere, sbgn.js), so it is edited from the
+    // empty base; an SBGN-ML file of another editor from the converter's GraphML of it (sbOwn)
     function newId() { return 'mine-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
     // A CellDesigner map too: the reader picks the
     // format in the menu, New SBGN-ML map or New CellDesigner map; an empty CellDesigner file as cd_make writes one, edited
@@ -882,7 +881,7 @@ import { NEW_ID, emptyBase, isSb, madeHere, sbMap } from './sbgn.js';
     function mineAdd(name, text, d, id, group) {   // group: the reader's group it was added into (undefined: where it was, else at the top)
       var h = textHash(text), old = id ? mine[id] : mineMatch(name, text, h);
       var back = !id && old && old.text !== text && old.src === h;   // the file as first added, the map since edited: the edits kept (an older map, matched by name alone, takes the new file)
-      var r = { id: old ? old.id : newId(), title: old ? old.title : freeTitle(name.replace(/\.(graphml|xml|sbgn)$/i, ''), group || '', fmtOfText(text)),
+      var r = { id: old ? old.id : newId(), title: old ? old.title : freeTitle(name.replace(/\.(graphml|xml|sbgn|nwt)$/i, ''), group || '', fmtOfText(text)),
         file: old ? old.file : name, text: back ? old.text : text, svg: back ? old.svg : d.svg, width: back ? old.width : d.width, height: back ? old.height : d.height,
         at: back ? old.at : Date.now(), src: old ? old.src || (id ? undefined : h) : h, hidden: false, group: group !== undefined ? group : old && old.group || '' };
       if (old && old.site) ['site', 'path', 'sha', 'saved', 'siteTitle'].forEach(function (k) { r[k] = old[k]; });   // on GitHub already: its file there, its new text sent once connected
@@ -922,7 +921,7 @@ import { NEW_ID, emptyBase, isSb, madeHere, sbMap } from './sbgn.js';
           row.setAttribute('data-group', g);   // a file dropped on it goes into its group
           row.title = r.why ? r.name + ' was not added: ' + r.why + ' (click to dismiss)' : 'Adding ' + r.name;
           if (!r.why) row.appendChild(Object.assign(document.createElement('span'), { className: 'm2-spin' }));
-          row.appendChild(Object.assign(document.createElement('span'), { className: 'm2-name', textContent: r.name.replace(/\.(graphml|xml|sbgn)$/i, '') }));
+          row.appendChild(Object.assign(document.createElement('span'), { className: 'm2-name', textContent: r.name.replace(/\.(graphml|xml|sbgn|nwt)$/i, '') }));
           if (r.why) {
             row.appendChild(Object.assign(document.createElement('span'), { className: 'm2-wait-why', textContent: r.why }));
             row.addEventListener('click', function () { var i = b.rows.indexOf(r); if (i >= 0) b.rows.splice(i, 1); addPaint(); });
@@ -934,7 +933,7 @@ import { NEW_ID, emptyBase, isSb, madeHere, sbMap } from './sbgn.js';
     }
     function addFiles(list, group) {   // a reader's files, drawn and kept; group: Add map or a drop on a group of theirs
       list = Array.prototype.slice.call(list);   // the picker's list empties when it is reset
-      var picked = list.filter(function (f) { return /\.(graphml|xml|sbgn)$/i.test(f.name); });
+      var picked = list.filter(function (f) { return /\.(graphml|xml|sbgn|nwt)$/i.test(f.name); });
       if (!picked.length) return Promise.resolve();
       var gh = repo() && token(), last = null, out = [];   // with a token: all drawn first, then sent in one commit
       var b = { group: group || '', rows: picked.map(function (f) { return { name: f.name, f: f }; }), n: picked.length, done: 0, shown: false };
@@ -946,9 +945,8 @@ import { NEW_ID, emptyBase, isSb, madeHere, sbMap } from './sbgn.js';
       var why = function (f, e) { var r = rowOf(f), w = e && e.message ? e.message : String(e); if (r) r.why = w; else b.rows.push({ name: f.name, f: f, why: w }); };
       return picked.reduce(function (p, f) {
         return p.then(function () { return f.text(); }).then(function (t) {
-          if (isSb(t) && !madeHere(t)) throw new Error(otherSb());
           if (gh) return drawText(t, null, 'adding').then(function (d) {   // with a token: to the site, shown from here until built
-            var ext = siteExt(t), title = freeTitle(f.name.replace(/\.(graphml|xml|sbgn)$/i, ''), group || '', fmtOfText(t), out.filter(function (o) { return fmtOfText(o.t) === fmtOfText(t); }).map(function (o) { return o.title; }));
+            var ext = siteExt(t), title = freeTitle(f.name.replace(/\.(graphml|xml|sbgn|nwt)$/i, ''), group || '', fmtOfText(t), out.filter(function (o) { return fmtOfText(o.t) === fmtOfText(t); }).map(function (o) { return o.title; }));
             if (!ext) throw new Error(siteWhy(t));
             out.push({ f: f, d: d, t: t, ext: ext, title: title });
             b.done++; if (b.shown) addPaint();
@@ -980,7 +978,7 @@ import { NEW_ID, emptyBase, isSb, madeHere, sbMap } from './sbgn.js';
     var picker;
     function __run16() {   // run at start, in order (__start)
     picker = document.createElement('input');
-    picker.type = 'file'; picker.multiple = true; picker.accept = '.graphml,.xml,.sbgn'; picker.hidden = true;
+    picker.type = 'file'; picker.multiple = true; picker.accept = '.graphml,.xml,.sbgn,.nwt'; picker.hidden = true;
     picker.addEventListener('change', function () { var l = Array.prototype.slice.call(picker.files), to = addTo; listMade(function () { return addFiles(l, to); }); picker.value = ''; });
     document.body.appendChild(picker);
     document.addEventListener('dragover', function (e) { if (e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types, 'Files') >= 0) e.preventDefault(); });
@@ -995,10 +993,9 @@ import { NEW_ID, emptyBase, isSb, madeHere, sbMap } from './sbgn.js';
     // map of theirs still only in this browser (made before connecting, or its sending failed) is sent when the page
     // opens connected, when a token is connected, and when it is edited. Its record keeps the site's id, the file's
     // path and sha, and the text GitHub has (saved), so editing saves there (core.js push) and withMine knows when the
-    // build has it. The file kinds the site's build takes: a yEd GraphML, a CellDesigner file, an SBGN-ML map made here
-    function otherSb() { return 'an SBGN-ML file from another editor cannot be added yet, only one made here with New map'; }   // Add map's and a tool's refusal of another editor's SBGN-ML
-    function siteExt(t) { return isCd(t) ? '.xml' : isSb(t) ? (madeHere(t) ? '.sbgn' : null) : /yworks\.com/.test(t.slice(0, 5000)) ? '.graphml' : null; }
-    function siteWhy(t) { return isSb(t) ? 'an SBGN-ML file from another editor cannot go to the site yet, only one made here with New map' : 'not a yEd GraphML or CellDesigner file'; }
+    // build has it. The file kinds the site's build takes: a yEd GraphML, a CellDesigner file, an SBGN-ML map
+    function siteExt(t) { return isCd(t) ? '.xml' : isSb(t) ? '.sbgn' : /yworks\.com/.test(t.slice(0, 5000)) ? '.graphml' : null; }
+    function siteWhy() { return 'not a yEd GraphML, CellDesigner or SBGN-ML file'; }
     function onSite(r, s, title) { r.site = s.id; r.path = s.path; r.sha = s.sha; r.saved = s.text; r.siteTitle = title; return r; }
     // readers' maps put on the site (ext from siteExt: only what the build takes, any other file would stop it): each
     // file as maps/<id><ext> and its maps/<id>.md (title, group, order), all in one commit on main (the files' text in
@@ -1070,7 +1067,7 @@ import { NEW_ID, emptyBase, isSb, madeHere, sbMap } from './sbgn.js';
           var r = mine[id];
           if (!r || r.hidden) return null;
           if (r.site) return r;
-          var ext = siteExt(r.text), title = r.title.replace(/\.(graphml|xml|sbgn)$/i, '');
+          var ext = siteExt(r.text), title = r.title.replace(/\.(graphml|xml|sbgn|nwt)$/i, '');
           if (!ext) throw new Error(siteWhy(r.text));
           return toSite(title, ext, r.text, r.group || '', siteOrder(r.group || '')).then(function (s) {
             if (!mine[id]) return null;

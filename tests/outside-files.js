@@ -29,7 +29,11 @@ var LIST = [   // [file in the data repository, the tool that wrote it]
 ];
 var list = args.length ? args.map(function (f) { return [f, path.extname(f)]; }) : LIST.map(function (l) { return [path.join(data, l[0]), l[1]]; });
 // what a move may change: numbers; the rest of the text (names, classes, ids, what is joined) must stay
-function words(t) { return t.replace(/-?\d+(\.\d+)?(e[+-]?\d+)?/gi, '#').replace(/\s+/g, ' '); }
+// (a byte-order mark at the start is dropped by the browser reading any file; the order of a tag's attributes is no content)
+function words(t) {
+  return t.replace(/^\uFEFF/, '').replace(/-?\d+(\.\d+)?(e[+-]?\d+)?/gi, '#').replace(/\s+/g, ' ')
+    .replace(/<([\w:.-]+)((?:\s+[^\s=/>]+="[^"]*")+)\s*(\/?)>/g, function (m, n, as, sl) { return '<' + n + ' ' + as.trim().split(/\s+(?=[^\s=]+=")/).sort().join(' ') + sl + '>'; });
+}
 (async function () {
   var b = await chromium.launch(), rows = [];
   for (var i = 0; i < list.length; i++) {
@@ -74,7 +78,7 @@ function words(t) { return t.replace(/-?\d+(\.\d+)?(e[+-]?\d+)?/gi, '#').replace
         row.status = await page.evaluate(function () { return (document.querySelector('#m2-ed-status') || {}).textContent || ''; });
         if (ed2) {
           var before = await page.evaluate(function () { return window.m2EditNow().text; });
-          row.sameOnEntry = before === orig;
+          row.sameOnEntry = before === orig.replace(/^\uFEFF/, '');
           await page.mouse.click(700, 450);
           await page.keyboard.press((process.platform === 'darwin' ? 'Meta' : 'Control') + '+a');
           await page.keyboard.press('ArrowRight');
@@ -82,6 +86,7 @@ function words(t) { return t.replace(/-?\d+(\.\d+)?(e[+-]?\d+)?/gi, '#').replace
           var after = await page.evaluate(function () { return window.m2EditNow().text; });
           row.moved = after !== before;
           row.onlyNumbers = words(after) === words(orig);
+          if (process.env.OUTSIDE_DUMP) fs.writeFileSync(path.join(process.env.OUTSIDE_DUMP, name + '.after'), after);
           var a = orig.split('\n'), c = after.split('\n'), n = 0;
           for (var k = 0; k < Math.max(a.length, c.length); k++) if (a[k] !== c[k]) n++;
           row.linesChanged = n + ' of ' + a.length;

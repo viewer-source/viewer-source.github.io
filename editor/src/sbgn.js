@@ -14,8 +14,8 @@ import { yr } from './graphml.js';
     sbp = null, sbJs = null;   // the SBGN-ML side loading, loaded, the file edited ({ base: its text, g0: the build's GraphML })
     // a map made here (New map, own.js): drawn and edited from the converter's GraphML of an empty map, sbgn_edit.graphml
     // making every glyph drawn since (the same drawing as the converter's, checked on every kind the palette makes); its
-    // map id says so, so only such a file is taken back from the folder or Add map from file (another editor's may hold
-    // what this way cannot draw: association)
+    // map id says so. Another editor's file (Add map from file, a folder, a tool) is edited from the converter's GraphML
+    // of it, made in the browser by renderers/converter/sbgnml_read.js (sbOwn)
     EMPTY_BASE = '<?xml version=\'1.0\' encoding=\'UTF-8\'?>\n<graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:y="http://www.yworks.com/xml/graphml">\n' +
       '  <key for="node" id="ng" yfiles.type="nodegraphics"/>\n  <key for="graphml" id="res" yfiles.type="resources"/>\n  <key for="edge" id="eg" yfiles.type="edgegraphics"/>\n' +
       '  <graph edgedefault="directed" id="G"/>\n  <data key="res">\n    <y:Resources/>\n  </data>\n</graphml>\n';
@@ -44,18 +44,28 @@ import { yr } from './graphml.js';
     }
     function sbpy() {   // sbgn_edit.js, sbml_edit.js (which uses it), then the yEd renderer
       if (sbp) return sbp;
-      sbp = sbScript('sbgn_edit').then(function () { return sbScript('sbml_edit').catch(function () {}); }).then(yr).then(function () { sbJs = window.sbgn_edit; return sbJs; });   // a copy without sbml_edit keeps SBGN-ML
+      sbp = sbScript('sbgn_edit').then(function () { return sbScript('sbml_edit').catch(function () {}); }).then(function () { return sbScript('sbgnml_read').catch(function () {}); }).then(yr).then(function () { sbJs = window.sbgn_edit; return sbJs; });   // a copy without sbml_edit keeps SBGN-ML
       sbp.catch(function (e) { sbp = null; warn('The SBGN-ML side did not load: ' + e); });
       return sbp;
     }
-    // the converter's GraphML of a map, as the build kept it (fetched once per version)
+    // the converter's GraphML of a map, as the build kept it (fetched once per version); a reader's own map's made here
     function sbBase(m, low) {
       var e = m.site || m;
+      if (e.ownText) return sbpy().then(function () { return sbOwn(e.ownText()); });
       return fetch(e.editBase + V.ver(e), { priority: low ? 'low' : 'auto' }).then(function (r) { if (!r.ok) throw r.status; return r.text(); });
+    }
+    // the GraphML a reader's own SBGN-ML text is edited as: the empty base for a map made here, else the converter's
+    // GraphML of the text (sbgnml_read, its JavaScript copy; sbgn_edit.graphml(t, it) is it), the last one kept
+    var ownMemo;
+    function sbOwn(t) {
+      if (madeHere(t)) return EMPTY_BASE;
+      if (!window.sbgnml_read) throw new Error('the SBGN-ML reader did not load');
+      if (!ownMemo || ownMemo[0] !== t) ownMemo = [t, window.sbgnml_read.graphml(t).text];
+      return ownMemo[1];
     }
     var sbMemo;
     function __run3() {   // run at start, in order (__start)
-    sbMemo = [];
+    sbMemo = []; ownMemo = null;
     }   // [SBGN-ML text, the GraphML it was made from, its GraphML], the last few: one text gives another GraphML from another base (else the empty base's would be served for the build's)
     function sbGraphml(t, base) {
       for (var i = 0; i < sbMemo.length; i++) if (sbMemo[i][0] === t && sbMemo[i][1] === base) return sbMemo[i][2];
@@ -133,4 +143,4 @@ import { yr } from './graphml.js';
     }
 
     export function __start() { __run1(); __run2(); __run3(); __run5(); __run6(); }   // the part's statements, in their order
-    export { EMPTY_BASE, GEO, NEW_ID, edOf, emptyBase, isSb, madeHere, sbBase, sbFollow, sbGraphml, sbJs, sbKind, sbMap, sbNow, sbRemember, sbpy, viaGraphml };
+    export { EMPTY_BASE, GEO, NEW_ID, edOf, emptyBase, isSb, madeHere, sbBase, sbFollow, sbGraphml, sbJs, sbKind, sbMap, sbNow, sbOwn, sbRemember, sbpy, viaGraphml };

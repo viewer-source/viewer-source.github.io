@@ -1,12 +1,12 @@
 // Hostile files: the page keeps a write token and draws maps from anywhere, so a map's text must never run as code. A
-// GraphML (a script as a node's link too), a CellDesigner and an SBGN-ML map (Glycolysis of the data repository, in both formats; a small SBGN-ML) carry markup and script in their
+// GraphML (a script as a node's link too), a CellDesigner and an SBGN-ML map (Glycolysis of the data repository, in both formats; a small SBGN-ML, as made here and as another editor's) carry markup and script in their
 // labels, colours, font, notes and file names; each is added from the list (no token), shown, opened in the editor
 // and a node of it selected (a file the editor cannot read is refused, said in red), the palette's Colours list opened. Checked after every step: no payload ran (window.__pwned), no element anywhere in the
 // page carries a payload's event handler or script (in any letter case: some paths upper-case a colour), the list shows the name as text.
 // Measured at the same time: what the page needs to run under a Content-Security-Policy. The page is served with a
 // strict policy as Report-Only (nothing blocked), every violation is collected, and the policy the page would need
 // is printed with the counts behind each source. Printed, not checked.
-//   node tests/hostile-files.js <clone of the site's data repository> [base address] [viewer folder: its renderers served in place of the page's]
+//   node tests/hostile-files.js <clone of the site's data repository> [base address] [viewer folder: its editor and renderers served in place of the page's]
 var engine = require('playwright')[process.env.BROWSER || 'chromium'], fs = require('fs'), path = require('path');   // BROWSER=webkit or firefox: the same test in another engine
 var NOISE = require('./lib/noise.js');   // what a browser reports that is no fault of the page
 var data = process.argv[2], base = process.argv[3] || 'https://viewer-source.github.io/styles/', local = process.argv[4], bad = 0;
@@ -57,6 +57,7 @@ function sbgnml() {
 (async function () {
   var b = await engine.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], said = [];
   page.on('pageerror', function (e) { if (!NOISE.test(e.message)) errs.push(e.message); });
+  if (local) { var ED = require('./editor-now.js')(local); await page.route(/\/editor\/editor\.js/, function (r) { r.fulfill({ status: 200, contentType: 'application/javascript', body: ED }); }); }
   if (local) await page.route(/\/renderers\/(converter|yrender)\/[a-z_]+\.js/, function (r) { var f = /\/renderers\/(converter|yrender)\/([a-z_]+\.js)/.exec(r.request().url()); r.fulfill({ status: 200, contentType: 'application/javascript', body: fs.readFileSync(path.join(local, 'renderers', f[1], f[2]), 'utf8') }); });
   page.on('dialog', function (d) { said.push(d.message()); d.accept().catch(function () {}); });
   var POLICY = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'self'";
@@ -89,7 +90,7 @@ function sbgnml() {
   await page.waitForSelector('.m2-ri[data-win="edit"]', { state: 'attached', timeout: 30000 }); await page.waitForTimeout(3000);
   if (!(await page.$('#m2-list .m2-map:visible'))) await page.click('.m2-ri[data-win="list"]');
   await page.waitForSelector('#m2-list .m2-map', { state: 'visible', timeout: 30000 });
-  var files = [['GraphML', NAME + '.graphml', graphml()], ['CellDesigner', NAME + ' cd.xml', celldesigner()], ['CellDesigner, a quote in an id', NAME + ' id.xml', celldesigner(true)], ['SBGN-ML', NAME + ' sb.sbgn', sbgnml()]];
+  var files = [['GraphML', NAME + '.graphml', graphml()], ['CellDesigner', NAME + ' cd.xml', celldesigner()], ['CellDesigner, a quote in an id', NAME + ' id.xml', celldesigner(true)], ['SBGN-ML', NAME + ' sb.sbgn', sbgnml()], ['SBGN-ML from another editor', NAME + ' other.sbgn', sbgnml().replace('viewer-new-map', 'another-editor')]];
   for (var f of files) {
     console.log('-- ' + f[0]);
     await page.click('#m2-list .m2-map >> nth=0', { button: 'right' }); await page.waitForTimeout(300);
