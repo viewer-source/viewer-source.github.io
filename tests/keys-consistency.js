@@ -40,7 +40,7 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
 
   // 2. Cmd+Delete with an area on the map: kept; after Esc: Delete alone kept, Cmd+Delete in Deleted
   var MOD = process.platform === 'darwin' ? 'Meta' : 'Control';
-  await menu('#m2-list .m2-map[data-id="acly-celldesigner"]', 'Make a copy'); await page.waitForTimeout(1500);   // a CellDesigner map: the site's SBGN-ML maps from another editor are not copied
+  await menu('#m2-list .m2-map[data-id="acly-celldesigner"]', 'Make a copy'); await page.waitForTimeout(1500);   // a CellDesigner map (the group SBGN-ML's maps are not copied)
   var copy = await hash();
   ok('2. Make a copy made one', copy !== 'acly-celldesigner' && (await ids()).indexOf(copy) >= 0, copy);
   await view(); await list();

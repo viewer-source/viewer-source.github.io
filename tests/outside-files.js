@@ -29,11 +29,8 @@ var LIST = [   // [file in the data repository, the tool that wrote it]
 ];
 var list = args.length ? args.map(function (f) { return [f, path.extname(f)]; }) : LIST.map(function (l) { return [path.join(data, l[0]), l[1]]; });
 // what a move may change: numbers; the rest of the text (names, classes, ids, what is joined) must stay
-// (a byte-order mark at the start is dropped by the browser reading any file; the order of a tag's attributes is no content)
-function words(t) {
-  return t.replace(/^\uFEFF/, '').replace(/-?\d+(\.\d+)?(e[+-]?\d+)?/gi, '#').replace(/\s+/g, ' ')
-    .replace(/<([\w:.-]+)((?:\s+[^\s=/>]+="[^"]*")+)\s*(\/?)>/g, function (m, n, as, sl) { return '<' + n + ' ' + as.trim().split(/\s+(?=[^\s=]+=")/).sort().join(' ') + sl + '>'; });
-}
+// (a byte-order mark at the start is dropped by the browser reading any file)
+function words(t) { return t.replace(/^\uFEFF/, '').replace(/-?\d+(\.\d+)?(e[+-]?\d+)?/gi, '#').replace(/\s+/g, ' '); }
 (async function () {
   var b = await chromium.launch(), rows = [];
   for (var i = 0; i < list.length; i++) {
@@ -64,7 +61,7 @@ function words(t) {
       await page.setInputFiles('input[type=file]', copy);
       var got = await page.waitForFunction(function () {
         if (location.hash.indexOf('#mine') === 0) return 'added';
-        var red = Array.prototype.map.call(document.querySelectorAll('#m2-list *'), function (e) { return e.children.length ? '' : e.textContent; }).filter(function (s) { return /cannot|not |refused|fail/i.test(s); });
+        var red = Array.prototype.map.call(document.querySelectorAll('#m2-list *'), function (e) { return e.children.length ? '' : e.textContent; }).filter(function (s) { return /cannot|not |nothing|refused|fail/i.test(s); });
         return red.length ? 'refused: ' + red.join(' | ') : false;
       }, null, { polling: 200, timeout: 120000 }).then(function (h) { return h.jsonValue(); }, function () { return 'nothing after 120 s'; });
       row.added = got; row.addMs = Date.now() - t0;

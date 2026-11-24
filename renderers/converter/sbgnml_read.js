@@ -49,14 +49,19 @@
     var s = String(v);
     return /[.e]/.test(s) ? s : s + '.0';
   }
-  function pctg(v) {   // Python's '%g'
+  function pctg(v) {   // Python's '%g': six significant digits, an exact tie rounded to even (JavaScript rounds it up)
     if (v === 0) return '0';
-    var e = Number(v.toExponential(5).split('e')[1]);
+    if (!isFinite(v)) return v !== v ? 'nan' : v > 0 ? 'inf' : '-inf';
+    var ex = Math.abs(v).toExponential(60).split('e'), d = ex[0].replace('.', ''), e = Number(ex[1]);
+    var tie = d[6] === '5' && /^0*$/.test(d.slice(7)), keep = d.slice(0, 6);
+    if (!(tie && Number(d[5]) % 2 === 0)) { var r = Math.abs(v).toExponential(5).split('e'); keep = r[0].replace('.', ''); e = Number(r[1]); }
+    var sign = v < 0 ? '-' : '';
     if (e < -4 || e >= 6) {
-      var m = v.toExponential(5).split('e'), x = m[0].replace(/\.?0+$/, ''), n = Number(m[1]);
-      return x + 'e' + (n < 0 ? '-' : '+') + (Math.abs(n) < 10 ? '0' : '') + Math.abs(n);
+      var x = (keep[0] + '.' + keep.slice(1)).replace(/\.?0+$/, '');
+      return sign + x + 'e' + (e < 0 ? '-' : '+') + (Math.abs(e) < 10 ? '0' : '') + Math.abs(e);
     }
-    return v.toFixed(Math.max(0, 5 - e)).replace(/(\.\d*?)0+$/, '$1').replace(/\.$/, '');
+    var digits = e >= 0 ? keep.slice(0, e + 1) + '.' + keep.slice(e + 1) : '0.' + '0'.repeat(-e - 1) + keep;
+    return sign + digits.replace(/(\.\d*?)0+$/, '$1').replace(/\.$/, '');
   }
   function pyRound(x) {   // Python's round() to an integer: halves to even
     var f = Math.floor(x), d = x - f;
@@ -64,7 +69,7 @@
   }
   function pyFloat(s) {   // Python's float() of a text: a number or an error
     if (s == null) throw new TypeError('float() argument must be a string or a real number, not NoneType');
-    var t = String(s).trim(), v = /^[+-]?(\d+\.?\d*(e[+-]?\d+)?|\.\d+(e[+-]?\d+)?|inf(inity)?|nan)$/i.test(t) ? Number(t.replace(/^([+-]?)inf(inity)?$/i, '$1Infinity')) : NaN;
+    var t = String(s).trim().replace(/(\d)_(?=\d)/g, '$1'), v = /^[+-]?(\d+\.?\d*(e[+-]?\d+)?|\.\d+(e[+-]?\d+)?|inf(inity)?|nan)$/i.test(t) ? Number(t.replace(/^([+-]?)inf(inity)?$/i, '$1Infinity')) : NaN;
     if (v !== v && !/nan/i.test(t)) throw new Error('could not convert string to float: ' + JSON.stringify(String(s)));
     return v;
   }
@@ -410,7 +415,9 @@
     });
     var kept = renamed.filter(function (i) { return nodes.has(i); }).map(function (i) { return words(nodes.get(i).labels[0]); });
     if (kept.length) say('changed', '"activity" cut from the label of: ' + kept.join(', '));
-    skipped.forEach(function (ids, what) { say('left out', what + ': ' + ids.length + ' left out (' + ids.slice(0, 5).join(', ') + (ids.length > 5 ? ' ...' : '') + ')'); });
+    skipped.forEach(function (ids, what) {
+      if (ids.slice(0, 5).some(function (i) { return i === null; })) throw new TypeError('sequence item 0: expected str instance, NoneType found');   // as the converter: an element left out with no id stops the reading
+      say('left out', what + ': ' + ids.length + ' left out (' + ids.slice(0, 5).join(', ') + (ids.length > 5 ? ' ...' : '') + ')'); });
     nodes.forEach(function (d) { d.unit_at = ownPlaces(d); });
     return { nodes: nodes, arcs: arcs, messages: msgs };
   }

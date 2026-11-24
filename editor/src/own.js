@@ -373,7 +373,7 @@ import { NEW_ID, emptyBase, isSb, sbMap } from './sbgn.js';
     // Make a copy, in the list's menu: a new map named Copy of <name> (as in Google Docs), in the same group right under
     // the original, opened at once (no name field: one command at a time, as Finder's Duplicate). Of a reader's own map, or of the site's
     // GraphML or CellDesigner map as it is now (the edits this page holds, else GitHub's version, else the site's);
-    // with a token every copy goes to the site, as Add map does (an SBGN-ML one only made here)
+    // with a token every copy goes to the site, as Add map does
     function canCopy(m) { return !!m && !m.shownAs && (m.mine ? !!mine[m.id] : !!graphmlOf(m) && (!sbMap(m) || /^maps\/[^/]+\.sbgn$/.test(m.editPath || ''))); }   // an SBGN-ML map of the site's own (maps/<id>.sbgn), not one of its groups'
     // Names as in Finder, the format being the extension the list shows: two maps may share a name unless they are in
     // the same group and of the same format. A name taken there is refused when typed (Rename map); a name the viewer
@@ -455,7 +455,7 @@ import { NEW_ID, emptyBase, isSb, sbMap } from './sbgn.js';
       var gh = !!(repo() && token());
       return mineIn.then(function () { return t ? t() : textNow(m); }).then(function (t) {
         if (fmtOfText(t) !== fmt) { title = freeTitle(name, group, fmtOfText(t)); ext = isCd(t) ? '.xml' : isSb(t) ? '.sbgn' : '.graphml'; file = freeFile(slug(title) + ext); }
-        if (gh) { ext = siteExt(t); if (!ext) throw new Error(siteWhy(t)); }
+        if (gh) { ext = siteExt(t); if (!ext) throw new Error(siteWhy()); }
         var made = r0 && t === r0.text ? Promise.resolve({ svg: r0.svg, width: r0.width, height: r0.height }) : drawText(t);
         return made.then(function (d) {
           var r = { id: newId(), title: title, file: file, text: t, svg: d.svg, width: d.width, height: d.height, at: Date.now(), src: textHash(t), hidden: false, group: group };
@@ -537,7 +537,7 @@ import { NEW_ID, emptyBase, isSb, sbMap } from './sbgn.js';
       var e = { id: r.id, title: r.title, group: r.group && (groupsHere.indexOf(r.group) >= 0 || V.siteGroupOf(r.group)) ? r.group : '', topic: r.id, mine: true, file: r.file, width: r.width, height: r.height, v: String(r.at),
         image: u.svg, colours: true, legend: cdm ? 'celldesigner' : 'sbgn', downloads: [{ label: cdm ? 'CellDesigner' : sbm ? 'SBGN-ML' : 'GraphML', url: u.text }] };
       // colours: its picture drawn with the role classes (drawText, core.js), so Settings' Map colours (File, Default) apply
-      if (sbm) { e.editBase = emptyBase(); e.ownText = function () { return mine[r.id] ? mine[r.id].text : r.text; }; e.editPath = r.file; }   // edited as a site's SBGN-ML map, from the GraphML sbOwn makes of its text (sbgn.js)
+      if (sbm) { e.editBase = emptyBase(); e.ownText = function () { return r.text; }; e.editPath = r.file; }   // edited as a site's SBGN-ML map, from the GraphML sbOwn makes of its text (sbgn.js)
       return e;
     }
     // with a token a map added goes to the site (toSite): until the site's build has it, it is shown from this
@@ -947,7 +947,7 @@ import { NEW_ID, emptyBase, isSb, sbMap } from './sbgn.js';
         return p.then(function () { return f.text(); }).then(function (t) {
           if (gh) return drawText(t, null, 'adding').then(function (d) {   // with a token: to the site, shown from here until built
             var ext = siteExt(t), title = freeTitle(f.name.replace(/\.(graphml|xml|sbgn|nwt)$/i, ''), group || '', fmtOfText(t), out.filter(function (o) { return fmtOfText(o.t) === fmtOfText(t); }).map(function (o) { return o.title; }));
-            if (!ext) throw new Error(siteWhy(t));
+            if (!ext) throw new Error(siteWhy());
             out.push({ f: f, d: d, t: t, ext: ext, title: title });
             b.done++; if (b.shown) addPaint();
           });
@@ -1068,7 +1068,7 @@ import { NEW_ID, emptyBase, isSb, sbMap } from './sbgn.js';
           if (!r || r.hidden) return null;
           if (r.site) return r;
           var ext = siteExt(r.text), title = r.title.replace(/\.(graphml|xml|sbgn|nwt)$/i, '');
-          if (!ext) throw new Error(siteWhy(r.text));
+          if (!ext) throw new Error(siteWhy());
           return toSite(title, ext, r.text, r.group || '', siteOrder(r.group || '')).then(function (s) {
             if (!mine[id]) return null;
             var n = onSite(Object.assign({}, mine[id]), s, title);

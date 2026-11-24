@@ -901,7 +901,8 @@
       var nx = kids(a, 'next');
       if (nx.length !== e.pts.length || nx.some(function (q, j) { var p = xy(q); return !close(p[0], e.pts[j][0]) || !close(p[1], e.pts[j][1]); })) {
         var pre = a.prefix ? a.prefix + ':' : '';
-        var out = e.pts.map(function (p, j) { return '<' + pre + 'next x="' + (e.ptEl[j].getAttribute('x')) + '" y="' + (e.ptEl[j].getAttribute('y')) + '"/>'; });
+        var yx = nx.length && /\sy\s*=[^>]*\sx\s*=/.test(T.t.slice(T.at.get(nx[0])[0], T.at.get(nx[0])[1]));   // the file's own order of x and y kept (the SBGN website's files write y first)
+        var out = e.pts.map(function (p, j) { var x = 'x="' + e.ptEl[j].getAttribute('x') + '"', y = 'y="' + e.ptEl[j].getAttribute('y') + '"'; return '<' + pre + 'next ' + (yx ? y + ' ' + x : x + ' ' + y) + '/>'; });
         if (nx.length) {
           var ind = '\n' + T.indent(nx[0]);
           var from = T.at.get(nx[0])[0];

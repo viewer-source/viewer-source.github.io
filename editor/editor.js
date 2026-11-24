@@ -1239,9 +1239,6 @@
     sbp = sbScript("sbgn_edit").then(function() {
       return sbScript("sbml_edit").catch(function() {
       });
-    }).then(function() {
-      return sbScript("sbgnml_read").catch(function() {
-      });
     }).then(yr).then(function() {
       sbJs = window.sbgn_edit;
       return sbJs;
@@ -1255,6 +1252,8 @@
   function sbBase(m, low) {
     var e = m.site || m;
     if (e.ownText) return sbpy().then(function() {
+      return sbReader(e.ownText());
+    }).then(function() {
       return sbOwn(e.ownText());
     });
     return fetch(e.editBase + V.ver(e), { priority: low ? "low" : "auto" }).then(function(r) {
@@ -1263,10 +1262,33 @@
     });
   }
   var ownMemo;
+  var readerP;
+  function sbReader(t) {
+    if (madeHere(t) || window.sbgnml_read) return Promise.resolve();
+    readerP = readerP || sbScript("sbgnml_read");
+    readerP.catch(function() {
+      readerP = null;
+    });
+    return readerP;
+  }
   function sbOwn(t) {
     if (madeHere(t)) return EMPTY_BASE;
     if (!window.sbgnml_read) throw new Error("the SBGN-ML reader did not load");
-    if (!ownMemo || ownMemo[0] !== t) ownMemo = [t, window.sbgnml_read.graphml(t).text];
+    if (!ownMemo || ownMemo[0] !== t) {
+      var r = window.sbgnml_read.graphml(t);
+      if (r.text.indexOf("<node ") < 0 && r.messages.some(function(x) {
+        return x[0] === "left out";
+      })) {
+        if (/<([\w.-]+:)?map\s[^>]*language\s*=\s*["']entity relationship/.test(t.slice(0, 5e3))) throw new Error("an Entity Relationship map, which this editor does not read yet");
+        var gone = r.messages.filter(function(x) {
+          return x[0] === "left out";
+        }).map(function(x) {
+          return x[1].replace(/: (\d+) left out \(.*$/, " ($1)");
+        });
+        throw new Error("nothing in it can be drawn" + (gone.length ? " (left out: " + gone.join(", ") + ")" : ""));
+      }
+      ownMemo = [t, r.text];
+    }
     return ownMemo[1];
   }
   var sbMemo;
@@ -2433,7 +2455,7 @@
       }
       if (gh2) {
         ext = siteExt(t2);
-        if (!ext) throw new Error(siteWhy(t2));
+        if (!ext) throw new Error(siteWhy());
       }
       var made3 = r0 && t2 === r0.text ? Promise.resolve({ svg: r0.svg, width: r0.width, height: r0.height }) : drawText(t2);
       return made3.then(function(d) {
@@ -2584,7 +2606,7 @@
     if (sbm) {
       e.editBase = emptyBase();
       e.ownText = function() {
-        return mine[r.id] ? mine[r.id].text : r.text;
+        return r.text;
       };
       e.editPath = r.file;
     }
@@ -3215,7 +3237,7 @@
           }).map(function(o) {
             return o.title;
           }));
-          if (!ext) throw new Error(siteWhy(t));
+          if (!ext) throw new Error(siteWhy());
           out.push({ f, d, t, ext, title });
           b.done++;
           if (b.shown) addPaint();
@@ -3433,7 +3455,7 @@
         if (!r || r.hidden) return null;
         if (r.site) return r;
         var ext = siteExt(r.text), title = r.title.replace(/\.(graphml|xml|sbgn|nwt)$/i, "");
-        if (!ext) throw new Error(siteWhy(r.text));
+        if (!ext) throw new Error(siteWhy());
         return toSite(title, ext, r.text, r.group || "", siteOrder(r.group || "")).then(function(s) {
           if (!mine[id]) return null;
           var n = onSite(Object.assign({}, mine[id]), s, title);
@@ -13373,7 +13395,9 @@
   function drawText(t, g0, keep) {
     var c = isCd(t), s = !c && isSb(t);
     if (!c && !s && !/<graphml[\s>]/.test(t.slice(0, 3e3))) return Promise.reject(new Error("not a GraphML, CellDesigner or SBGN-ML file"));
-    return (c ? cdpy() : s ? sbpy() : yr()).then(function() {
+    return (c ? cdpy() : s ? sbpy().then(function() {
+      return g0 ? null : sbReader(t);
+    }) : yr()).then(function() {
       var svg = c ? window.cdrender.render(cdDoc(t, keep || false), { classes: true, groups: true }) : window.yrender.render(s ? sbGraphml(t, g0 || sbOwn(t)) : t, { classes: true, groups: true, sbgn: s }).svg;
       var w = svg.match(/ width="([\d.]+)" height="([\d.]+)"/);
       if (!w) throw new Error("not a map this viewer can draw");

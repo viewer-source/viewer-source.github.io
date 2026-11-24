@@ -44,23 +44,39 @@ import { yr } from './graphml.js';
     }
     function sbpy() {   // sbgn_edit.js, sbml_edit.js (which uses it), then the yEd renderer
       if (sbp) return sbp;
-      sbp = sbScript('sbgn_edit').then(function () { return sbScript('sbml_edit').catch(function () {}); }).then(function () { return sbScript('sbgnml_read').catch(function () {}); }).then(yr).then(function () { sbJs = window.sbgn_edit; return sbJs; });   // a copy without sbml_edit keeps SBGN-ML
+      sbp = sbScript('sbgn_edit').then(function () { return sbScript('sbml_edit').catch(function () {}); }).then(yr).then(function () { sbJs = window.sbgn_edit; return sbJs; });   // a copy without sbml_edit keeps SBGN-ML
       sbp.catch(function (e) { sbp = null; warn('The SBGN-ML side did not load: ' + e); });
       return sbp;
     }
     // the converter's GraphML of a map, as the build kept it (fetched once per version); a reader's own map's made here
     function sbBase(m, low) {
       var e = m.site || m;
-      if (e.ownText) return sbpy().then(function () { return sbOwn(e.ownText()); });
+      if (e.ownText) return sbpy().then(function () { return sbReader(e.ownText()); }).then(function () { return sbOwn(e.ownText()); });
       return fetch(e.editBase + V.ver(e), { priority: low ? 'low' : 'auto' }).then(function (r) { if (!r.ok) throw r.status; return r.text(); });
     }
     // the GraphML a reader's own SBGN-ML text is edited as: the empty base for a map made here, else the converter's
     // GraphML of the text (sbgnml_read, its JavaScript copy; sbgn_edit.graphml(t, it) is it), the last one kept
-    var ownMemo;
+    // (sbReader loads the reader first, only for such a text, again after a failed load). A file of which nothing can be
+    // drawn (an Entity Relationship map) is refused with what was left out; an empty map is taken
+    var ownMemo, readerP;
+    function sbReader(t) {
+      if (madeHere(t) || window.sbgnml_read) return Promise.resolve();
+      readerP = readerP || sbScript('sbgnml_read');
+      readerP.catch(function () { readerP = null; });
+      return readerP;
+    }
     function sbOwn(t) {
       if (madeHere(t)) return EMPTY_BASE;
       if (!window.sbgnml_read) throw new Error('the SBGN-ML reader did not load');
-      if (!ownMemo || ownMemo[0] !== t) ownMemo = [t, window.sbgnml_read.graphml(t).text];
+      if (!ownMemo || ownMemo[0] !== t) {
+        var r = window.sbgnml_read.graphml(t);
+        if (r.text.indexOf('<node ') < 0 && r.messages.some(function (x) { return x[0] === 'left out'; })) {   // glyphs, none drawable (an empty map is taken)
+          if (/<([\w.-]+:)?map\s[^>]*language\s*=\s*["']entity relationship/.test(t.slice(0, 5000))) throw new Error('an Entity Relationship map, which this editor does not read yet');
+          var gone = r.messages.filter(function (x) { return x[0] === 'left out'; }).map(function (x) { return x[1].replace(/: (\d+) left out \(.*$/, ' ($1)'); });
+          throw new Error('nothing in it can be drawn' + (gone.length ? ' (left out: ' + gone.join(', ') + ')' : ''));
+        }
+        ownMemo = [t, r.text];
+      }
       return ownMemo[1];
     }
     var sbMemo;
@@ -143,4 +159,4 @@ import { yr } from './graphml.js';
     }
 
     export function __start() { __run1(); __run2(); __run3(); __run5(); __run6(); }   // the part's statements, in their order
-    export { EMPTY_BASE, GEO, NEW_ID, edOf, emptyBase, isSb, madeHere, sbBase, sbFollow, sbGraphml, sbJs, sbKind, sbMap, sbNow, sbOwn, sbRemember, sbpy, viaGraphml };
+    export { EMPTY_BASE, GEO, NEW_ID, edOf, emptyBase, isSb, madeHere, sbBase, sbFollow, sbGraphml, sbJs, sbKind, sbMap, sbNow, sbOwn, sbReader, sbRemember, sbpy, viaGraphml };
