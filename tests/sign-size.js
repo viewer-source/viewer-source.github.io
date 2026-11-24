@@ -4,10 +4,10 @@
 // tools' 1.4 as the top icons, the small arrows 1.2; one undo puts Large back; the choice stays after a reload; a panel narrower than the usual one wraps the signs
 // and nothing passes its edge. Testing Glycolysis SBGN-ML, full editing. No script error.
 //   node tests/sign-size.js [address]
-var { chromium } = require('playwright');
+var engine = require('playwright')[process.env.BROWSER || 'chromium'];   // BROWSER=webkit or firefox: the same test in another engine
 var url = process.argv[2] || 'https://viewer-source.github.io/styles/#testing-glycolysis-sbgn';
 (async function () {
-  var b = await chromium.launch(), bad = 0, errs = [];
+  var b = await engine.launch(), bad = 0, errs = [];
   var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more && !v ? '  ' + more : '')); };
   var ctx = await b.newContext({ viewport: { width: 1400, height: 900 } });
   async function open(page, listW) {
