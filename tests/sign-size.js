@@ -1,7 +1,7 @@
 // Sign size (Settings, Editing; atlas-app.html setSigns): Large by default, the tools and the palette's signs 36 px with
 // 24 px drawings, five in a row; Normal 32 px signs with 21 px drawings, six in a row; at either size the palette and the
-// window's blocks as wide as the icon row above at the usual 240 px panel, the outlines 1.4 px on screen (the top
-// icons' weight) and the small arrows 1.2; one undo puts Large back; the choice stays after a reload; a panel narrower than the usual one wraps the signs
+// window's blocks as wide as the icon row above at the usual 240 px panel, the palette's outlines 1.2 px on screen, the
+// tools' 1.4 as the top icons, the small arrows 1.2; one undo puts Large back; the choice stays after a reload; a panel narrower than the usual one wraps the signs
 // and nothing passes its edge. Testing Glycolysis SBGN-ML, full editing. No script error.
 //   node tests/sign-size.js [address]
 var { chromium } = require('playwright');
@@ -40,7 +40,7 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#testing-gl
   ok('Large: drawings 24 px', px(L.draw) === 24, JSON.stringify(L));
   ok('Large: the palette as wide as the icon row', Math.abs(L.pal[0] - L.rail[0]) <= 1 && Math.abs(L.pal[1] - L.rail[1]) <= 1, JSON.stringify(L));
   ok('Large: five in a row', L.rows[0] === 5, JSON.stringify(L.rows));
-  ok('Large: outlines 1.4 px, the arrow 1.2', L.weights.every(function (w, i) { return Math.abs(w / z - (i < 2 ? 1.4 : 1.2)) < .03; }), JSON.stringify(L.weights));
+  ok('Large: palette 1.2 px, tools 1.4, the arrow 1.2', L.weights.every(function (w, i) { return Math.abs(w / z - (i === 1 ? 1.4 : 1.2)) < .03; }), JSON.stringify(L.weights));
   ok('Large: the lines as wide as the icon row', Math.abs(L.line[0] - L.rail[0]) <= 1 && Math.abs(L.line[1] - L.rail[1]) <= 1, JSON.stringify(L));
   // Normal, chosen in Settings
   await page.click('.m2-ri[data-win="set"]'); await page.waitForTimeout(400);
@@ -52,7 +52,7 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#testing-gl
   ok('Normal: signs 32 px, drawings 21 px', px(N.box) === 32 && px(N.tool) === 32 && px(N.draw) === 21, JSON.stringify(N));
   ok('Normal: six in a row', N.rows[0] === 6, JSON.stringify(N.rows));
   ok('Normal: the palette as wide as the icon row', Math.abs(N.pal[0] - N.rail[0]) <= 1 && Math.abs(N.pal[1] - N.rail[1]) <= 1, JSON.stringify(N));
-  ok('Normal: outlines 1.4 px, the arrow 1.2', N.weights.every(function (w, i) { return Math.abs(w / z - (i < 2 ? 1.4 : 1.2)) < .03; }), JSON.stringify(N.weights));
+  ok('Normal: palette 1.2 px, tools 1.4, the arrow 1.2', N.weights.every(function (w, i) { return Math.abs(w / z - (i === 1 ? 1.4 : 1.2)) < .03; }), JSON.stringify(N.weights));
   // kept after a reload
   await page.reload({ waitUntil: 'load' }); await page.waitForSelector('.m2-ri[data-win="edit"]', { timeout: 30000 });
   ok('Normal kept after a reload', await page.evaluate(function () { return document.documentElement.classList.contains('m2-signs-normal'); }));
