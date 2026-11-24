@@ -26,7 +26,7 @@ var LOCAL = [
     var m = document.querySelector('.wrapper-masthead'), v = document.getElementById('m2-view').getBoundingClientRect(), g = document.querySelector(s);
     return { fs: document.fullscreenElement === document.documentElement, bar: m ? m.getBoundingClientRect().height : -1, top: v.top, bottom: v.bottom, h: innerHeight, title: g && g.title, list: !!document.querySelector('.m2-nav').offsetWidth };
   }, sign); };
-  ok('the sign is shown, just before the ?', await page.evaluate(function (s) { var f = document.querySelector(s), h = document.querySelector('#m2-rail .m2-ri[data-win="help"]'); return !!(f && f.offsetParent && f.querySelector('svg') && h && f.nextElementSibling === h); }, sign));
+  ok('the sign is shown, last of the icons', await page.evaluate(function (s) { var f = document.querySelector(s); return !!(f && f.offsetParent && f.querySelector('svg') && !f.nextElementSibling); }, sign));
   ok('drawn as its neighbours: the same colour, line width and no fill as Settings', await page.evaluate(function (s) {
     var st = function (q) { var p = document.querySelector(q + ' svg path') || document.querySelector(q + ' svg circle'), c = getComputedStyle(p); return [c.stroke, c.strokeWidth, c.fill === 'none' || c.fill === 'rgba(0, 0, 0, 0)' ? 'none' : c.fill].join(); };
     return st(s) === st('#m2-rail .m2-ri[data-win="set"]');
@@ -45,7 +45,7 @@ var LOCAL = [
   ok('a second click: back, the top bar again', !a.fs && a.bar > 20, JSON.stringify(a));
   ok('the sign back to Full screen with tools', a.title === 'Full screen with tools', a.title);
   ok('the map window under the top bar again', a.top >= a.bar - 1, JSON.stringify(a));
-  ok('the ? still opens Gestures and keys', await page.evaluate(function () { document.querySelector('#m2-rail .m2-ri[data-win="help"]').click(); var t = document.getElementById('m2-tips'); return !!(t && !t.hidden); }));
+  ok('the ? key still opens Gestures and keys', await page.evaluate(function () { document.dispatchEvent(new KeyboardEvent('keydown', { key: '?', bubbles: true })); var t = document.getElementById('m2-tips'); return !!(t && !t.hidden); }));
   ok('no page errors', !errs.length); if (errs.length) console.log(errs.join('\n'));
   await b.close(); console.log(bad ? bad + ' WRONG' : 'all ok'); process.exit(bad ? 1 : 0);
 })();

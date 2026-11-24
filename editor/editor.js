@@ -12516,6 +12516,7 @@
         ["Shift + drag on what is selected", "moves it by itself, out of what holds it"],
         ["Arrow keys", "move what is selected by 1, with Shift by 10"],
         [MOD + " + Z, " + MOD + " + Shift + Z or " + MOD + " + Y", "undo, redo the last change, of the map or of a setting"],
+        [MOD + " + A", "select all"],
         [MOD + " + S", "save at once"],
         ["Delete", "remove what is selected, where it can be removed"],
         ["E", "switch between editing and viewing"]
