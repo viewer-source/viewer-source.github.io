@@ -158,7 +158,7 @@ page, so its styles keep the base they were made on).
   .m2.m2-edit-right.m2-win-edit:not(.m2-edit-off) { grid-template-columns: var(--m2-list-w, 240px) minmax(600px, 1fr) var(--m2-edit-w, 240px); }
   .m2-edit-right.m2-win-edit:not(.m2-edit-off) #m2-epanel { display: block; }
   .m2-edit-right.m2-win-edit:not(.m2-edit-off) > .m2-info:not(.m2-over), .m2-edit-right.m2-win-edit:not(.m2-edit-off) #m2-split-r { display: none !important; }
-  #m2-epanel #m2-editwin { display: block; }
+  #m2-epanel #m2-editwin { display: block; max-height: none; overflow: visible; }   /* on the right the panel scrolls, sized to the map window's foot (listHeight); the cap above is the left place's */
   #m2-epanel-in { position: sticky; top: 0; max-height: calc(100vh / var(--zoom, 1) - 60px); overflow-y: auto; overscroll-behavior: contain; }
   #m2-split-e { position: absolute; top: 0; left: calc(-1 * var(--m2-split)); width: var(--m2-split); height: 100%; cursor: col-resize; touch-action: none; z-index: 1; }
   #m2-split-e::after { content: ''; position: absolute; top: 50%; left: 50%; width: 4px; height: 20px; margin: -10px 0 0 -2px;
@@ -2583,6 +2583,10 @@ page, so its styles keep the base they were made on).
     split.style.height = Math.max(0, Math.floor((bottom - split.parentNode.getBoundingClientRect().top) / pz())) + 'px';
     // a floating list window (--m2-nav-float) as tall as the map window
     if (grid && grid.classList.contains('m2-nav-float')) grid.style.setProperty('--m2-float-h', Math.max(0, Math.floor((vb.bottom - grid.getBoundingClientRect().top) / pz())) + 'px');
+    // the Edit panel on the right ends with the map window, as the windows on the left do, never past the window's
+    // bottom (it stays in sight while the page scrolls)
+    var ein = document.getElementById('m2-epanel-in');
+    if (ein && ein.offsetParent) ein.style.maxHeight = Math.max(120, Math.floor((Math.min(vb.bottom, winH() - 8 * pz()) - ein.getBoundingClientRect().top) / pz())) + 'px';
   }
   // the separator between the list and the map: dragged sideways it sets the list's width (under 60 px the list is
   // out of sight, the separator stays at the page's edge), a click on it then brings the list back, a double click
@@ -2818,9 +2822,10 @@ page, so its styles keep the base they were made on).
   })();
   railMark();
   window.addEventListener('resize', listHeight);
-  window.addEventListener('scroll', function () { if (getComputedStyle(listBox).position === 'sticky') listHeight(); }, { passive: true });
+  window.addEventListener('scroll', function () { if (getComputedStyle(listBox).position === 'sticky' || document.getElementById('m2-epanel').offsetParent) listHeight(); }, { passive: true });
   if (window.ResizeObserver) {
     new ResizeObserver(listHeight).observe(view);
+    new ResizeObserver(listHeight).observe(document.getElementById('m2-epanel'));   // the Edit panel on the right, opened or shut
     new ResizeObserver(listHeight).observe(document.getElementById('m2-downloads'));
   }
   // with the floating list (--m2-nav-float) a map not yet zoomed or panned is fitted again when the map window's width
