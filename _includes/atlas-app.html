@@ -304,7 +304,7 @@ page, so its styles keep the base they were made on).
   /* Type in the Edit window, one scale: 12 px for every label, value, field, list and note (Grid size, Properties,
      Orientation, Reduced notation, Settings choices); 14 px only for the PD and AF tabs and the full-width
      action buttons (Choose a folder, Connect). No third size; a new control takes one of the two */
-  #m2-editwin { padding: 0 4px; font-size: 14px; line-height: 1.45; color: var(--m2-text-soft);
+  #m2-editwin { padding: 0; font-size: 14px; line-height: 1.45; color: var(--m2-text-soft);
     max-height: calc(100vh / var(--zoom, 1) - 110px); overflow-y: auto; }   /* scrolls as the list does, its foot level with the map window's (so Properties stays on screen); menus go to the body, not clipped */
   #m2-editwin button { display: block; width: 100%; box-sizing: border-box; font: inherit; font-size: 14px; line-height: 20px; padding: 4px 10px; margin: 0 0 8px; text-align: left;
     background: var(--m2-bg); border: 1px solid var(--m2-button); border-radius: var(--m2-radius-button); color: var(--m2-button); cursor: pointer; }
@@ -334,8 +334,8 @@ page, so its styles keep the base they were made on).
   /* nothing in the Edit window stretches or moves when the panel is dragged wider (the boxes end
      within the default panel size): every block keeps the width it has in the panel at its
      usual 240 px, so the tools, the palette and the fields stay where they are; tests/panel-width.js */
-  #m2-editwin > * { max-width: 185px; }
-  #m2-editwin .m2-ed-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 2px; margin: 0 0 10px; padding: 0 0 8px; border-bottom: 1px solid var(--m2-frame); }
+  #m2-editwin > * { max-width: 204px; }   /* as wide as the icon row above at the usual 240 px (12 to 216), at either Sign size */
+  #m2-editwin .m2-ed-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 2.4px; margin: 0 0 10px; padding: 0 0 8px; border-bottom: 1px solid var(--m2-frame); }
   #m2-editwin .m2-ed-tools button { display: flex; align-items: center; justify-content: center; flex: none; width: 32px; height: 32px; padding: 0; margin: 0;
     border: 0; border-radius: 6px; background: none; color: #80868b; }
   #m2-editwin .m2-ed-tools button:hover:not(:disabled), #m2-editwin .m2-ed-palette button:hover:not(:disabled) { background: var(--m2-soft); border-color: transparent; color: #80868b; }   /* the one hover of the sign buttons, tools and palette alike */
@@ -348,6 +348,7 @@ page, so its styles keep the base they were made on).
   #m2-editwin .m2-ed-gsf button { display: flex; align-items: center; justify-content: center; flex: none; width: 20px; height: 100%; margin: 0; padding: 0; border: 0; border-radius: 0 4px 4px 0; background: none; color: #80868b; cursor: pointer; }
   #m2-editwin .m2-ed-gsf button:hover { background: var(--m2-soft); color: #80868b; }
   #m2-editwin .m2-ed-gsf svg { width: 10px; height: 6px; }
+  #m2-editwin .m2-ed-gsf svg path, #m2-editwin .m2-ed-pdd svg path { stroke-width: 1.2; }   /* the small arrows at the signs' outline weight */
   .m2-cx.m2-gs-menu { min-width: 0; width: 64px; font-size: 12px; line-height: 16px; }   /* Grid size's list, the right-click menu's look */
   .m2-cx.m2-gs-menu button[aria-checked="true"] { font-weight: 500; }
   #m2-editwin .m2-ed-gsize input:focus { outline: none; }   /* the frame is on .m2-ed-gsf:focus-within */
@@ -355,19 +356,17 @@ page, so its styles keep the base they were made on).
      tools' grey square, one kept in hand for several (a double click) with a darker edge as well */
   #m2-editwin .m2-ed-palette { margin: 0 0 10px; padding: 0 0 8px; border-bottom: 1px solid var(--m2-frame); }
   #m2-editwin .m2-ed-palette p { margin: 2px 0 2px; font-size: 12px; line-height: 16px; color: var(--m2-text-soft); }
-  #m2-editwin .m2-ed-prow { display: flex; flex-wrap: wrap; gap: 4px 2px; margin: 0 0 4px; }
+  #m2-editwin .m2-ed-prow { display: flex; flex-wrap: wrap; gap: 4px 2.4px;   /* six 32 px signs across the 204 px */ margin: 0 0 4px; }
   #m2-editwin .m2-ed-pbr { flex-basis: 100%; height: 0; }   /* a block of the one list starts a row (palSigns), its gap one row gap more */
   #m2-editwin .m2-ed-pflat .m2-ed-pbr { display: none; }   /* the plain list where the blocks would cost a row (palBlocks) */   /* on the tools' grid (the palette's signs in the tools' columns): the same button, gap and sign box */
   #m2-editwin .m2-ed-palette button { display: flex; align-items: center; justify-content: center; flex: none; box-sizing: border-box; width: 32px; height: 32px; padding: 0; margin: 0; border: 1px solid transparent; border-radius: 6px; background: none; color: #80868b; }   /* the tools' grey, as the other signs */
   #m2-editwin .m2-ed-palette button[aria-pressed="true"], #m2-editwin .m2-ed-palette button[aria-pressed="true"]:hover { background: var(--m2-soft); color: #70757a; }
   #m2-editwin .m2-ed-palette button.m2-ed-sticky, #m2-editwin .m2-ed-palette button.m2-ed-sticky:hover { border-color: #70757a; }
   #m2-editwin .m2-ed-palette svg { width: 21px; height: 21px; stroke-width: 1.37; }
-  /* Sign size (Settings, Editing): Large, the default, 36 px signs with 24 px drawings 6 px apart and the window's blocks
-     204 px from the panel's edge, the same span as the icon row above (12 to 216 px at the usual 240); Normal
-     (html.m2-signs-normal) the sizes before: 32 px signs, 21 px drawings 2 px apart, blocks 185 px inside 4 px. A panel
-     narrower than the usual one wraps the signs as before; a wider one moves nothing (Panel widths) */
-  html:not(.m2-signs-normal) #m2-editwin { padding: 0; }
-  html:not(.m2-signs-normal) #m2-editwin > * { max-width: 204px; }
+  /* Sign size (Settings, Editing): both sizes fill the window's 204 px, the icon row's span. Large, the default, 36 px
+     signs with 24 px drawings 6 px apart, five in a row; Normal (html.m2-signs-normal) 32 px signs with 21 px drawings
+     2.4 px apart, six in a row. A panel narrower than the usual one wraps the signs; a wider one moves nothing (Panel
+     widths). The lines are as thick on screen at either size */
   html:not(.m2-signs-normal) #m2-editwin .m2-ed-tools, html:not(.m2-signs-normal) #m2-editwin .m2-ed-prow { gap: 4px 6px; }
   html:not(.m2-signs-normal) #m2-editwin .m2-ed-tools > button, html:not(.m2-signs-normal) #m2-editwin .m2-ed-palette button[data-make] { width: 36px; height: 36px; }
   /* the lines as thick on screen as at Normal: every weight of Sign weights times 21/24 */
