@@ -1,6 +1,6 @@
 // Settings, Editing, Edit panel chosen while editing: editing moves with the panel. From the Edit window on the left,
-// Settings, Right: the panel on the right open and editing, the list on the left. Then Settings, Left: the Edit window
-// in the list's place, still editing, the map not moved (also after a change to it). GitHub played by the script.
+// Settings, Right: the panel on the right open and editing, Settings still open on the left. Then Settings, Left: the
+// Edit window in Settings' place, still editing, the map not moved (also after a change to it). GitHub played by the script.
 //   node tests/edit-side-switch.js <base address> <clone of the site's data repository> [--local]
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path'), cp = require('child_process');
 var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
@@ -62,7 +62,7 @@ function viewerHunks() {   // [old, new] pieces of the viewer's file changed sin
     if (/dispatches$/.test(rest)) return route.fulfill({ status: 204, body: '' });
     return json(404, { message: 'Not Found' });
   });
-  var st = function () { return page.evaluate(function () { var g = document.querySelector('.m2'); return { editing: g.classList.contains('m2-editing'), right: g.classList.contains('m2-edit-right'), list: g.classList.contains('m2-win-list'), edwin: g.classList.contains('m2-win-edit') }; }); };
+  var st = function () { return page.evaluate(function () { var g = document.querySelector('.m2'); return { editing: g.classList.contains('m2-editing'), right: g.classList.contains('m2-edit-right'), list: g.classList.contains('m2-win-list'), set: g.classList.contains('m2-win-set'), edwin: g.classList.contains('m2-win-edit') }; }); };
   var waitEdit = function () { return page.waitForFunction(function () { return !!(window.m2EditNow && window.m2EditNow()); }, null, { timeout: 30000 }).catch(function () {}); };
   await page.goto(base, { waitUntil: 'load' });
   await page.evaluate(function () { localStorage.setItem('atlas-edit-token', 'test-token'); localStorage.removeItem('atlas-edit-side'); });
@@ -81,12 +81,12 @@ function viewerHunks() {   // [old, new] pieces of the viewer's file changed sin
   await page.click('.m2-ri[data-win="set"]'); await page.waitForTimeout(800);
   await page.click('#m2-set-eside button[data-eside="right"]'); await waitEdit(); await page.waitForTimeout(2000);
   var a = await st();
-  ok('Right: still editing, the panel on the right, the list on the left', a.editing && a.right && a.list, JSON.stringify(a));
-  await page.click('.m2-ri[data-win="set"]'); await page.waitForTimeout(800);
-  ok('Settings opened on the left: editing goes on', (await st()).editing);
+  ok('Right: still editing, the panel on the right, Settings still open on the left', a.editing && a.right && a.set, JSON.stringify(a));
+  if (!(await st()).set) { await page.click('.m2-ri[data-win="set"]'); await page.waitForTimeout(800); }   // open already after Right
+  ok('Settings on the left: editing goes on', (await st()).editing);
   await page.click('#m2-set-eside button[data-eside="left"]'); await waitEdit(); await page.waitForTimeout(2000);
   var c = await st();
-  ok('Left: still editing, the Edit window in the list\'s place', c.editing && !c.right && c.edwin, JSON.stringify(c));
+  ok('Left: still editing, the Edit window in Settings\' place', c.editing && !c.right && c.edwin, JSON.stringify(c));
   ok('the map not moved through Right and back to Left', (await pos()) === p0, p0 + ' then ' + (await pos()));
   await page.click('.m2-ri[data-win="list"]'); await page.waitForTimeout(800);
   await page.click('.m2-ri[data-win="set"]'); await page.waitForTimeout(800);

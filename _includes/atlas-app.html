@@ -1459,8 +1459,8 @@ page, so its styles keep the base they were made on).
     return document.documentElement.clientWidth >= (lw + 600 + ew + 32) * k;
   }
   // Chosen while editing (Settings opened from the Edit window on the left, setFromEdit, or the panel open on the right),
-  // editing moves with the panel: Right opens the panel on the right and the left panel shows the list; Left puts the
-  // Edit window in the list's place
+  // editing moves with the panel: Right opens the panel on the right and Settings stay open on the left; Left puts the
+  // Edit window in Settings' place
   var setFromEdit = false;
   document.querySelectorAll('#m2-set-eside button').forEach(function (b) {
     b.addEventListener('click', function () {
@@ -1468,7 +1468,7 @@ page, so its styles keep the base they were made on).
       var toRight = b.dataset.eside === 'right', editing = toRight ? setFromEdit : eRight() && eRight.open;
       try { if (toRight) localStorage.setItem('atlas-edit-side', 'right'); else localStorage.removeItem('atlas-edit-side'); } catch (e) {}
       setFromEdit = false;
-      if (editing && toRight && eRight()) win = 'list';
+      if (editing && toRight && eRight()) win = 'set';   // Settings stay where the choice was made
       if (editing && !toRight) win = 'edit';   // editing goes on, the Edit window moved into the list's place: never stopped and started again (the map would move)
       railMark(); showSettings(); window.dispatchEvent(new Event('resize'));
       var eb = document.querySelector('#m2-rail .m2-ri[data-win="edit"]');
