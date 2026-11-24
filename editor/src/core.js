@@ -4,7 +4,7 @@ import H from '../../renderers/layout/holding.js';   // what holds what: regroup
 import { bx, keyShift, liveFit, liveLines, liveOff, posePort, poseSize, shift, sizeLive, sizeOff, unshift } from './live.js';
 import { AF_KINDS, drawGraphml, noNegative, shiftedAhead, yr } from './graphml.js';
 import { beyond, cdDoc, cdDraw, cdGraphml, cdJs, cdKnown, cdMap, cdMk, cdNow, cdRebuild, cdRemember, cdSessionSoon, cdpy, glyphArcs, glyphPort, isCd, joinAt, joinGuides, joinSolve, lineGrid, nodeCentre, nodePlaces, plainCanvas } from './celldesigner.js';
-import { edOf, isSb, sbBase, sbFollow, sbGraphml, sbJs, sbKind, sbMap, sbNow, sbOwn, sbReader, sbRemember, sbpy, viaGraphml } from './sbgn.js';
+import { edOf, isSb, sbBase, sbFollow, sbGraphml, sbJs, sbIn, sbKind, sbMap, sbNow, sbOwn, sbReader, sbRemember, sbpy, viaGraphml } from './sbgn.js';
 import { ddOpen, hybOn, joinDo, joinPack, joinPlan, link, linkDown, linkMove, linkPaint, linkUp, moveSays, origAll, palDown, palShow, palUp, propFmt, setSize, sizable, svDown, svMarks, tool } from './create.js';
 import { help, helpBox } from './help.js';
 import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepBeside, keptNow, listGo, mine, mineAdd, mineIn, mineMatch, minePut, savedMine, toGh, upAll, upRun } from './own.js';
@@ -487,7 +487,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     function drawText(t, g0, keep) {   // a reader's map: GraphML, CellDesigner, or SBGN-ML (sbOwn: from the empty base if made here, else read by sbgnml_read); g0: a site SBGN-ML map's build GraphML; keep: 'adding' when the map is shown next (a CellDesigner file's document kept for it, celldesigner.js cdDoc)
       var c = isCd(t), s = !c && isSb(t);
       if (!c && !s && !/<graphml[\s>]/.test(t.slice(0, 3000))) return Promise.reject(new Error('not a GraphML, CellDesigner or SBGN-ML file'));
-      return (c ? cdpy() : s ? sbpy().then(function () { return g0 ? null : sbReader(t); }) : yr()).then(function () {
+      return (c ? cdpy() : s ? sbpy().then(function () { if (!g0) t = sbIn(t); return g0 ? null : sbReader(t); }) : yr()).then(function () {
         var svg = c ? window.cdrender.render(cdDoc(t, keep || false), { classes: true, groups: true }) : window.yrender.render(s ? sbGraphml(t, g0 || sbOwn(t)) : t, { classes: true, groups: true, sbgn: s }).svg;   // grouped: the editor's own drawing, taken as it is on entering edit (adopt)
         var w = svg.match(/ width="([\d.]+)" height="([\d.]+)"/);
         if (!w) throw new Error('not a map this viewer can draw');
@@ -1248,10 +1248,17 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       // the new map's format is handed to begin, which writes it after resetMap: until then the map left stays whole
       if (viaGraphml(t)) {   // an SBGN-ML map (or SBML, layout only): the GraphML of its text, made from the build's (g0, read with the map)
         quiet();
+        var t0 = t;
         return sbpy().then(function () {
+          var tin = sbIn(t);   // sites kept in the notes back on their circles (written as Show sites says, sbOut): its GraphML read from that text
+          if (tin === t) return g0;
+          t = tin;
+          return sbReader(t).then(function () { return sbOwn(t); });
+        }).then(function (g1) {
+          g0 = g1;
           if (tk !== opening) return;
           if (!g0) throw 'its GraphML did not load';
-          var t0 = t, ed0 = edOf(t);
+          var ed0 = edOf(t);
           if (ed0.unique) t = ed0.unique(t, g0);   // two glyphs of one id: the later renamed as the build's GraphML has it, written at the next save
           var g = sbGraphml(t, g0);
           var sb1 = { base: t, g0: g0 };
@@ -2774,6 +2781,12 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     // the map being edited as it is now, for the viewer's menu (the download is what is on the screen;
     // else Download CellDesigner XML gives the site's file without the moves just made)
     function __run38() {   // run at start, in order (__start)
+    window.m2EditSites = function () {   // Show sites changed while an SBGN-ML map is edited: the file written as now seen (sbOut), saved
+      if (!on || !site || !shared.sb || !shared.sbLast || !sbJs || !sbJs.sitesOut) return;
+      var w = shared.sbLast[1];
+      if (!isSb(w) || sbJs.sitesOut(w) === w) return;   // no site on the map
+      shared.dirty = true; changed();
+    };
     window.m2EditNow = function () { return on && site && site.id && shared.text ? { id: site.id, text: src(), svg: shownSvg(), file: name } : null; };
     window.m2EditTurn = function () {   // the right-click menu's Turn process over a process or logic gate
       if (!on || V.current !== map || !rclick || !window.yrender || onOwnMenu()) return null;

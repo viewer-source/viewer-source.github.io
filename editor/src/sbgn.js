@@ -81,7 +81,7 @@ import { yr } from './graphml.js';
     }
     var sbMemo;
     function __run3() {   // run at start, in order (__start)
-    sbMemo = []; ownMemo = null;
+    sbMemo = []; ownMemo = null; outMemo = null;
     }   // [SBGN-ML text, the GraphML it was made from, its GraphML], the last few: one text gives another GraphML from another base (else the empty base's would be served for the build's)
     function sbGraphml(t, base) {
       for (var i = 0; i < sbMemo.length; i++) if (sbMemo[i][0] === t && sbMemo[i][1] === base) return sbMemo[i][2];
@@ -93,10 +93,21 @@ import { yr } from './graphml.js';
     function sbNow() {   // a write that fails is said, and the last text written stands (never the file without its moves silently)
       if (!shared.sbLast || shared.sbLast[0] !== shared.text || shared.sbLast[2] !== shared.sb) {
         try { shared.sbLast = [shared.text, edOf(shared.sb.base).write(shared.sb.base, shared.text), shared.sb]; }
-        catch (e) { warn('The moves could not be written into the SBGN-ML file: ' + (e && e.message || e) + '. The last version written is kept.'); return shared.sbLast && shared.sbLast[2] === shared.sb ? shared.sbLast[1] : shared.sb.base; }
+        catch (e) { warn('The moves could not be written into the SBGN-ML file: ' + (e && e.message || e) + '. The last version written is kept.'); return sbOut(shared.sbLast && shared.sbLast[2] === shared.sb ? shared.sbLast[1] : shared.sb.base); }
       }
-      return shared.sbLast[1];
+      return sbOut(shared.sbLast[1]);
     }
+    // the file as it is seen (Settings, Display, Show sites): unticked, every site written into its glyph's PTM note and
+    // the circle shows the value alone (sbgn_edit.sitesOut); ticked, as written, every site on its state variable (the
+    // file was opened with sitesIn, start in core.js). SBGN-ML only, the last one kept
+    var outMemo;
+    function sbOut(w) {
+      if (V.sites || !sbJs || !sbJs.sitesOut || !isSb(w)) return w;
+      if (!outMemo || outMemo[0] !== w) outMemo = [w, sbJs.sitesOut(w)];
+      return outMemo[1];
+    }
+    // a file opened: every site kept in its notes back on its circle, so it can be shown and is written as seen (sbOut)
+    function sbIn(t) { return sbJs && sbJs.sitesIn && isSb(t) ? sbJs.sitesIn(t) : t; }
     // what the map is (sbgn_edit.mapKind), read once per change of the editor's GraphML: a change of
     // places only (a move, a resize) keeps the kind read before, so a drag or a paint writes nothing (a key
     // made on every paint cost 10 ms a call on a 2 MB map, three calls a paint). Two languages are kept apart:
@@ -159,4 +170,4 @@ import { yr } from './graphml.js';
     }
 
     export function __start() { __run1(); __run2(); __run3(); __run5(); __run6(); }   // the part's statements, in their order
-    export { EMPTY_BASE, GEO, NEW_ID, edOf, emptyBase, isSb, madeHere, sbBase, sbFollow, sbGraphml, sbJs, sbKind, sbMap, sbNow, sbOwn, sbReader, sbRemember, sbpy, viaGraphml };
+    export { EMPTY_BASE, GEO, NEW_ID, edOf, emptyBase, isSb, madeHere, sbBase, sbFollow, sbGraphml, sbJs, sbKind, sbIn, sbMap, sbNow, sbOut, sbOwn, sbReader, sbRemember, sbpy, viaGraphml };

@@ -1295,6 +1295,7 @@
   function __run3() {
     sbMemo = [];
     ownMemo = null;
+    outMemo = null;
   }
   function sbGraphml(t, base) {
     for (var i = 0; i < sbMemo.length; i++) if (sbMemo[i][0] === t && sbMemo[i][1] === base) return sbMemo[i][2];
@@ -1312,10 +1313,19 @@
         shared.sbLast = [shared.text, edOf(shared.sb.base).write(shared.sb.base, shared.text), shared.sb];
       } catch (e) {
         warn("The moves could not be written into the SBGN-ML file: " + (e && e.message || e) + ". The last version written is kept.");
-        return shared.sbLast && shared.sbLast[2] === shared.sb ? shared.sbLast[1] : shared.sb.base;
+        return sbOut(shared.sbLast && shared.sbLast[2] === shared.sb ? shared.sbLast[1] : shared.sb.base);
       }
     }
-    return shared.sbLast[1];
+    return sbOut(shared.sbLast[1]);
+  }
+  var outMemo;
+  function sbOut(w) {
+    if (V.sites || !sbJs || !sbJs.sitesOut || !isSb(w)) return w;
+    if (!outMemo || outMemo[0] !== w) outMemo = [w, sbJs.sitesOut(w)];
+    return outMemo[1];
+  }
+  function sbIn(t) {
+    return sbJs && sbJs.sitesIn && isSb(t) ? sbJs.sitesIn(t) : t;
   }
   var sbPlaced;
   function __run5() {
@@ -13396,6 +13406,7 @@
     var c = isCd(t), s = !c && isSb(t);
     if (!c && !s && !/<graphml[\s>]/.test(t.slice(0, 3e3))) return Promise.reject(new Error("not a GraphML, CellDesigner or SBGN-ML file"));
     return (c ? cdpy() : s ? sbpy().then(function() {
+      if (!g0) t = sbIn(t);
       return g0 ? null : sbReader(t);
     }) : yr()).then(function() {
       var svg = c ? window.cdrender.render(cdDoc(t, keep || false), { classes: true, groups: true }) : window.yrender.render(s ? sbGraphml(t, g0 || sbOwn(t)) : t, { classes: true, groups: true, sbgn: s }).svg;
@@ -14594,10 +14605,19 @@
     var tk = opening;
     if (viaGraphml(t)) {
       quiet();
+      var t0 = t;
       return sbpy().then(function() {
+        var tin = sbIn(t);
+        if (tin === t) return g0;
+        t = tin;
+        return sbReader(t).then(function() {
+          return sbOwn(t);
+        });
+      }).then(function(g1) {
+        g0 = g1;
         if (tk !== opening) return;
         if (!g0) throw "its GraphML did not load";
-        var t0 = t, ed0 = edOf(t);
+        var ed0 = edOf(t);
         if (ed0.unique) t = ed0.unique(t, g0);
         var g = sbGraphml(t, g0);
         var sb1 = { base: t, g0 };
@@ -14611,12 +14631,12 @@
     quiet();
     return cdpy().then(function() {
       if (tk !== opening) return;
-      var sg = cdMk ? cdMk.sbgn(t) : { n: 0 }, t0 = t;
+      var sg = cdMk ? cdMk.sbgn(t) : { n: 0 }, t02 = t;
       if (sg.n) {
         t = sg.text;
         takenIn = sg.n + (sg.n > 1 ? " positive influences" : " positive influence") + " (open arrowhead, not SBGN) made reduced physical stimulation (open triangle).";
       }
-      begin(cdGraphml(t), t, n, h, s, same, t0, { cd: { base: t, now: t } });
+      begin(cdGraphml(t), t, n, h, s, same, t02, { cd: { base: t, now: t } });
     }).catch(function(e) {
       if (tk === opening) warn("Cannot edit " + n + ": " + e);
     });
@@ -16724,6 +16744,13 @@
     return nowSvg() || (lastFor && !lastFor[3] && site && lastFor[2] === site.id ? lastSvg : null);
   }
   function __run382() {
+    window.m2EditSites = function() {
+      if (!on || !site || !shared.sb || !shared.sbLast || !sbJs || !sbJs.sitesOut) return;
+      var w = shared.sbLast[1];
+      if (!isSb(w) || sbJs.sitesOut(w) === w) return;
+      shared.dirty = true;
+      changed();
+    };
     window.m2EditNow = function() {
       return on && site && site.id && shared.text ? { id: site.id, text: src(), svg: shownSvg(), file: name } : null;
     };

@@ -2784,11 +2784,89 @@
     return t;
   }
 
+  // ---------- sites drawn or kept in the notes (what is seen is what the file holds) ----------
+  // A state variable's site is drawn (<state value="P" variable="S1177"/>, its box sized for P@S1177) or kept in its
+  // glyph's notes, the line PTM: P@S1177 (the converter's own place for sites no circle takes), the circle showing P.
+  //   sitesOut(t) -> t with every drawn site moved into its glyph's PTM line, the box sized for the value alone
+  //   sitesIn(t)  -> t with every site of a PTM line put back on the first circle of its value not showing a site yet
+  //                  (in the order drawn, an empty value too), its box sized for value@site; a drawn site's box too
+  //                  narrow for its text widened. sitesIn(sitesOut(t)) shows every site of t again.
+  // Only the attributes, boxes and notes these touch change; the rest byte for byte.
+  function svNeed(txt, h) { var n = Array.from(txt).length; return n <= 2 ? h : Math.round((n * 5.4 + 12) * h / 18 * 100) / 100; }   // the editor's svSize, at the box's height
+  function svWiden(T, sv, txt, grow) {   // the state variable's box to the width its text needs, its centre kept
+    var b = kid(sv, 'bbox'); if (!b) return;
+    var x = F(b.getAttribute('x')), w = F(b.getAttribute('w')), h = F(b.getAttribute('h')), need = svNeed(txt, h);
+    if (!(h > 0) || Math.abs(w - need) < 0.5 || (grow && w >= need)) return;
+    T.set(b, 'x', num(x + w / 2 - need / 2)); T.set(b, 'w', num(need));
+  }
+  function ptmOf(g) {   // a glyph's notes and the sites of their PTM line
+    var nt = kid(g, 'notes'), m = nt ? (nt.textContent || '').match(/(^|\n)\s*PTM:[ \t]*([^\n]*)/) : null;
+    return { notes: nt, sites: m ? m[2].split(/\s+/).filter(function (x) { return x.indexOf('@') >= 0; }) : [], all: m ? m[2] : null };
+  }
+  function ptmWrite(T, g, nt, sites, pre) {   // the PTM line set to sites (none: the line out, the notes out when nothing else is left)
+    var line = sites.length ? 'PTM: ' + sites.join(' ') : '';
+    if (nt) {
+      var s0 = T.at.get(nt)[0], s1 = T.end(nt), raw = T.t.slice(s0, s1), had = /PTM:[ \t]*[^\n<]*/.test(raw);
+      var rest = (nt.textContent || '').replace(/(^|\n)\s*PTM:[ \t]*[^\n]*/, '').trim();
+      if (!line && !rest) { T.cut(nt); return; }
+      var L = esc(line), out = had ? raw.replace(/\n?[ \t]*PTM:[ \t]*[^\n<]*/, function (m0) { return line ? m0.replace(/PTM:[ \t]*[^\n<]*/, function () { return L; }) : ''; })
+        : /<\/([\w.-]+:)?body\s*>/.test(raw) ? raw.replace(/<\/([\w.-]+:)?body\s*>/, function (e) { return (rest ? '\n' : '') + L + e; }) : raw.replace(/<\/([\w.-]+:)?notes\s*>$/, function (e) { return L + e; });
+      T.ed.push([s0, s1, out]); return;
+    }
+    if (!line) return;
+    var ind = T.indent(g) + '  ', st = T.at.get(g)[1];
+    T.ed.push([st, st, '\n' + ind + '<' + pre + 'notes>\n' + ind + '  <html xmlns="http://www.w3.org/1999/xhtml">\n' + ind + '    <body>' + esc(line) + '</body>\n' + ind + '  </html>\n' + ind + '</' + pre + 'notes>']);
+  }
+  function svsOf(g) { return kids(g, 'glyph').filter(function (c) { return c.getAttribute('class') === 'state variable'; }); }
+  function sitesOut(t, opt) {
+    var doc = new (DP(opt))().parseFromString(t, 'application/xml'), T = new Tags(t, doc), any = false;
+    Array.prototype.forEach.call(doc.getElementsByTagName('*'), function (g) {
+      if (g.localName !== 'glyph') return;
+      var moved = [];
+      svsOf(g).forEach(function (sv) {
+        var st = kid(sv, 'state'), vr = st && st.getAttribute('variable');
+        if (!vr) return;
+        var val = st.getAttribute('value') || '';
+        moved.push(val + '@' + vr); T.unset(st, 'variable'); svWiden(T, sv, val);
+      });
+      if (!moved.length) return;
+      any = true;
+      var p = ptmOf(g);
+      ptmWrite(T, g, p.notes, moved.concat(p.sites.filter(function (x) { return moved.indexOf(x) < 0; })), g.prefix ? g.prefix + ':' : '');
+    });
+    return any ? T.text() : t;
+  }
+  function sitesIn(t, opt) {
+    var doc = new (DP(opt))().parseFromString(t, 'application/xml'), T = new Tags(t, doc), any = false;
+    Array.prototype.forEach.call(doc.getElementsByTagName('*'), function (g) {
+      if (g.localName !== 'glyph') return;
+      var p = ptmOf(g), svs = svsOf(g), shown = [];
+      svs.forEach(function (sv) {
+        var st = kid(sv, 'state'), vr = st && st.getAttribute('variable');
+        if (vr) { var full = (st.getAttribute('value') || '') + '@' + vr; shown.push(full); var b0 = T.ed.length; svWiden(T, sv, full, true); if (T.ed.length > b0) any = true; }
+      });
+      if (!p.sites.length) return;
+      var left = p.sites.filter(function (x) { return shown.indexOf(x) < 0; }), took = false;
+      svs.forEach(function (sv) {
+        var st = kid(sv, 'state');
+        if (!st || st.getAttribute('variable')) return;
+        var val = st.getAttribute('value') || '', k = -1;
+        for (var i = 0; i < left.length; i++) if (left[i].slice(0, left[i].indexOf('@')) === val) { k = i; break; }
+        if (k < 0) return;
+        var site = left.splice(k, 1)[0];
+        T.set(st, 'variable', site.slice(site.indexOf('@') + 1)); svWiden(T, sv, site);
+        took = true;
+      });
+      if (took || left.length !== p.sites.length) { any = true; ptmWrite(T, g, p.notes, left, g.prefix ? g.prefix + ':' : ''); }
+    });
+    return any ? T.text() : t;
+  }
+
   var api = { unique: unique, LOOKS: LOOKS, ANT: ANT, GATE_FONT: GATE_FONT, SIZE: SIZE, antennas: antennas, antenna: antenna, fit: fit, GLT: GLT, NAMED: NAMED, MULTI: MULTI, graphml: graphml, write: write, join: join, joinable: joinable, nameAt: nameAt, namePlaces: namePlaces, stack: stack, restack: restack, stackMoves: stackMoves, NAME_PLACES: NAME_PLACES, defaults: defaults, add: add, lookOf: lookOf, restyle: restyle, restyleAll: restyleAll, colours: colours, lineOf: lineOf, recolour: recolour, widthOf: widthOf, rewidth: rewidth, label: label, state: state, stateValue: stateValue, stateMove: stateMove, unitMove: unitMove, entityKind: entityKind, ENTITIES: ['macromolecule', 'simple chemical', 'nucleic acid feature', 'unspecified entity'], stateDelete: stateDelete,
               unit: unit, unitValue: unitValue, unitDelete: unitDelete, multimer: multimer, classOf: classOf, MAKE: MAKE, kind: kind, PROCESSES: ['process'].concat(Object.keys(SIGN)), SIGN: SIGN, remove: remove, resize: resize, scaleEnds: scaleEnds, gone: gone, nameable: nameable,
               moveInto: moveInto, connect: connect, reversible: reversible, reversibility: reversibility, arcRemove: arcRemove, arcKind: arcKind, GATE: GATE, ARROW: ARROW, MODULATIONS: ['stimulation', 'catalysis', 'inhibition', 'necessary stimulation', 'modulation'],
               activity: activity, activities: activities, proteinBoxes: proteinBoxes, afUnitBox: afUnitBox, afUnitFont: afUnitFont, isAf: isAf, mapKind: mapKind, unitFor: unitFor, fillFor: fillFor, AF_ARC: AF_ARC, UNITS: Object.keys(UNIT_CLS).filter(function (u) { return u && u !== 'perturbation'; }), unitClass: actCls,
               way: way, wayOfR: function (r) { return cfgOf(r) === 'Tag' ? wayOf(r) : null; }, wayOf: function (t, id, opt) { var G = gml(t, opt); return isTag(G, id) ? wayOf(G.node[id].geo.parentNode) : null; }, terminal: terminal,
-              countOf: countOf, recount: recount, countsAt: countsAt, countLens: lineLens, countMove: countMove, countsPlace: countsPlace, countOn: countOn, countAlong: countAlong, Tags: Tags, repr: repr, num: num };   // Tags, repr and num serve sbml_edit.js too
+              countOf: countOf, recount: recount, countsAt: countsAt, countLens: lineLens, countMove: countMove, countsPlace: countsPlace, countOn: countOn, countAlong: countAlong, sitesIn: sitesIn, sitesOut: sitesOut, Tags: Tags, repr: repr, num: num };   // Tags, repr and num serve sbml_edit.js too
   if (typeof module !== 'undefined' && module.exports) module.exports = api; else root.sbgn_edit = api;
 })(typeof self !== 'undefined' ? self : this);
