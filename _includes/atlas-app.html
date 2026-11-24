@@ -339,7 +339,7 @@ page, so its styles keep the base they were made on).
      within the default panel size): every block keeps the width it has in the panel at its
      usual 240 px, so the tools, the palette and the fields stay where they are; tests/panel-width.js */
   #m2-editwin > *, #m2-setwin > .m2-set-tools { max-width: 204px; }   /* as wide as the icon row above at the usual 240 px (12 to 216), at either Sign size */
-  #m2-editwin .m2-ed-tools, #m2-setwin .m2-set-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 2.4px; margin: 0 0 10px; padding: 0 0 8px; border-bottom: 1px solid var(--m2-frame); }
+  #m2-editwin .m2-ed-tools, #m2-setwin .m2-set-tools { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 2.3px; margin: 0 0 10px; padding: 0 0 8px; border-bottom: 1px solid var(--m2-frame); }
   #m2-editwin .m2-ed-tools button, #m2-setwin .m2-set-tools button { display: flex; align-items: center; justify-content: center; flex: none; width: 32px; height: 32px; padding: 0; margin: 0;
     border: 0; border-radius: 6px; background: none; color: #80868b; }
   #m2-editwin .m2-ed-tools button:hover:not(:disabled), #m2-setwin .m2-set-tools button:hover, #m2-editwin .m2-ed-palette button:hover:not(:disabled) { background: var(--m2-soft); border-color: transparent; color: #80868b; }   /* the one hover of the sign buttons, tools and palette alike */
@@ -360,7 +360,7 @@ page, so its styles keep the base they were made on).
      tools' grey square, one kept in hand for several (a double click) with a darker edge as well */
   #m2-editwin .m2-ed-palette { margin: 0 0 10px; padding: 0 0 8px; border-bottom: 1px solid var(--m2-frame); }
   #m2-editwin .m2-ed-palette p { margin: 2px 0 2px; font-size: 12px; line-height: 16px; color: var(--m2-ed-name); }
-  #m2-editwin .m2-ed-prow { display: flex; flex-wrap: wrap; gap: 4px 2.4px;   /* six 32 px signs across the 204 px */ margin: 0 0 4px; }
+  #m2-editwin .m2-ed-prow { display: flex; flex-wrap: wrap; gap: 4px 2.3px;   /* six 32 px signs across the 204 px, half a pixel to spare: at a zoom Firefox rounds the row past 204 and wraps the sixth */ margin: 0 0 4px; }
   #m2-editwin .m2-ed-pbr { flex-basis: 100%; height: 0; }   /* a block of the one list starts a row (palSigns), its gap one row gap more */
   #m2-editwin .m2-ed-pflat .m2-ed-pbr { display: none; }   /* the plain list where the blocks would cost a row (palBlocks) */   /* on the tools' grid (the palette's signs in the tools' columns): the same button, gap and sign box */
   #m2-editwin .m2-ed-palette button { display: flex; align-items: center; justify-content: center; flex: none; box-sizing: border-box; width: 32px; height: 32px; padding: 0; margin: 0; border: 1px solid transparent; border-radius: 6px; background: none; color: #80868b; }   /* the tools' grey, as the other signs */
@@ -371,7 +371,7 @@ page, so its styles keep the base they were made on).
      signs with 24 px drawings 6 px apart, five in a row; Normal (html.m2-signs-normal) 32 px signs with 21 px drawings
      2.4 px apart, six in a row. A panel narrower than the usual one wraps the signs; a wider one moves nothing (Panel
      widths). The lines are as thick on screen at either size */
-  html:not(.m2-signs-normal) #m2-editwin .m2-ed-tools, html:not(.m2-signs-normal) #m2-editwin .m2-ed-prow { gap: 4px 6px; }
+  html:not(.m2-signs-normal) #m2-editwin .m2-ed-tools, html:not(.m2-signs-normal) #m2-editwin .m2-ed-prow { gap: 4px 5.9px; }
   html:not(.m2-signs-normal) #m2-editwin .m2-ed-tools > button, html:not(.m2-signs-normal) #m2-setwin .m2-set-tools > button, html:not(.m2-signs-normal) #m2-editwin .m2-ed-palette button[data-make] { width: 36px; height: 36px; }
   /* the lines as thick on screen as at Normal, every weight times 21/24: the tools 1.4 px, as the top icons; the palette's
      signs, the glyphs for the map, 1.2 px */
