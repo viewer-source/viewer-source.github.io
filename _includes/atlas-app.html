@@ -323,7 +323,10 @@ page, so its styles keep the base they were made on).
   #m2-ed-status { margin: 0 0 10px; overflow-wrap: anywhere; }
   #m2-ed-status:empty { display: none; }
   #m2-ed-status.m2-ed-warn { color: var(--m2-error); }   /* only warnings are said */
-  #m2-editwin .m2-set-k { margin: 4px 0 6px; color: var(--m2-text); }
+  /* the Edit window's text in two colours, on every format: names, headings and tick boxes' labels in one grey, a value
+     in a field or a dropdown darker */
+  #m2-editwin { --m2-ed-name: #5f6368; --m2-ed-value: #202124; }
+  #m2-editwin .m2-set-k { margin: 4px 0 6px; color: var(--m2-ed-name); }
   /* the tools as a row of signs at the top of the Edit window (after yEd's toolbar: symbols, not words;
      a few, more as they are needed): plain grey signs as the tabs; a switch that is on gets a
      a very light grey square with a soft grey sign (a black sign would break the soft grey look;
@@ -341,10 +344,10 @@ page, so its styles keep the base they were made on).
   #m2-editwin .m2-ed-tools button:hover:not(:disabled), #m2-editwin .m2-ed-palette button:hover:not(:disabled) { background: var(--m2-soft); border-color: transparent; color: #80868b; }   /* the one hover of the sign buttons, tools and palette alike */
   #m2-editwin .m2-ed-tools button[aria-pressed="true"], #m2-editwin .m2-ed-tools button[aria-pressed="true"]:hover { background: var(--m2-soft); color: #70757a; }   /* on: the grey square, the sign between its usual grey and the first darker one */
   #m2-editwin .m2-ed-tools svg { width: 21px; height: 21px; stroke-width: 1.6; }
-  #m2-editwin .m2-ed-gsize { order: 99; flex: 0 0 100%; display: flex; align-items: center; gap: 6px; margin: 2px 0 0 4px; font-size: 12px; color: #5f6368; white-space: nowrap; }   /* Grid size on its own line at the tools' foot, under the Grid and Snap switches (in the row it broke the signs onto three lines) */
+  #m2-editwin .m2-ed-gsize { order: 99; flex: 0 0 100%; display: flex; align-items: center; gap: 6px; margin: 2px 0 0 4px; font-size: 12px; color: var(--m2-ed-name); white-space: nowrap; }   /* Grid size on its own line at the tools' foot, under the Grid and Snap switches (in the row it broke the signs onto three lines) */
   #m2-editwin .m2-ed-gsf { display: flex; align-items: center; width: 64px; height: 24px; box-sizing: border-box; border: 1px solid var(--m2-frame); border-radius: 4px; background: var(--m2-bg); }   /* the field and its arrow, one box (the browser's datalist filtered by the value typed, so it offered 8 alone) */
   #m2-editwin .m2-ed-gsf:focus-within { border-color: #70757a; }
-  #m2-editwin .m2-ed-gsf input { flex: 1; min-width: 0; height: 100%; box-sizing: border-box; margin: 0; padding: 0 4px; font: inherit; color: #202124; border: 0; background: none; outline: none; }
+  #m2-editwin .m2-ed-gsf input { flex: 1; min-width: 0; height: 100%; box-sizing: border-box; margin: 0; padding: 0 4px; font: inherit; color: var(--m2-ed-value); border: 0; background: none; outline: none; }
   #m2-editwin .m2-ed-gsf button { display: flex; align-items: center; justify-content: center; flex: none; width: 20px; height: 100%; margin: 0; padding: 0; border: 0; border-radius: 0 4px 4px 0; background: none; color: #80868b; cursor: pointer; }
   #m2-editwin .m2-ed-gsf button:hover { background: var(--m2-soft); color: #80868b; }
   #m2-editwin .m2-ed-gsf svg { width: 10px; height: 6px; }
@@ -355,7 +358,7 @@ page, so its styles keep the base they were made on).
   /* the palette (the full editor, as yEd's and Newt's): signs under the tools, shown with Settings, Editing on Full; a sign in hand on the
      tools' grey square, one kept in hand for several (a double click) with a darker edge as well */
   #m2-editwin .m2-ed-palette { margin: 0 0 10px; padding: 0 0 8px; border-bottom: 1px solid var(--m2-frame); }
-  #m2-editwin .m2-ed-palette p { margin: 2px 0 2px; font-size: 12px; line-height: 16px; color: var(--m2-text-soft); }
+  #m2-editwin .m2-ed-palette p { margin: 2px 0 2px; font-size: 12px; line-height: 16px; color: var(--m2-ed-name); }
   #m2-editwin .m2-ed-prow { display: flex; flex-wrap: wrap; gap: 4px 2.4px;   /* six 32 px signs across the 204 px */ margin: 0 0 4px; }
   #m2-editwin .m2-ed-pbr { flex-basis: 100%; height: 0; }   /* a block of the one list starts a row (palSigns), its gap one row gap more */
   #m2-editwin .m2-ed-pflat .m2-ed-pbr { display: none; }   /* the plain list where the blocks would cost a row (palBlocks) */   /* on the tools' grid (the palette's signs in the tools' columns): the same button, gap and sign box */
@@ -391,10 +394,10 @@ page, so its styles keep the base they were made on).
      choices under the tabs, the palette's small grey text, the chosen circle filled in the sign grey; no accent */
   #m2-editwin .m2-ed-plook { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; margin: 0 0 8px 4px; }
   #m2-editwin .m2-ed-plook[hidden] { display: none; }
-  #m2-editwin .m2-ed-phyb { display: flex; align-items: center; gap: 6px; margin: 0 0 8px 6px; font-size: 12px; color: var(--m2-text-soft); cursor: pointer; }
+  #m2-editwin .m2-ed-phyb { display: flex; align-items: center; gap: 6px; margin: 0 0 8px 6px; font-size: 12px; color: var(--m2-ed-name); cursor: pointer; }
   #m2-editwin .m2-ed-phyb[hidden] { display: none; }
   #m2-editwin .m2-ed-phyb input { margin: 0; width: 12px; height: 12px; accent-color: #70757a; cursor: pointer; }
-  #m2-editwin .m2-ed-palette .m2-ed-plook button { width: auto; height: 22px; gap: 7px; padding: 0 6px 0 2px; font: inherit; font-size: 12px; white-space: nowrap; color: var(--m2-text-soft); cursor: pointer; }
+  #m2-editwin .m2-ed-palette .m2-ed-plook button { width: auto; height: 22px; gap: 7px; padding: 0 6px 0 2px; font: inherit; font-size: 12px; white-space: nowrap; color: var(--m2-ed-name); cursor: pointer; }
   #m2-editwin .m2-ed-palette .m2-ed-plook button:hover { background: var(--m2-soft); }
   #m2-editwin .m2-ed-radio { flex: none; box-sizing: border-box; width: 12px; height: 12px; border: 1.3px solid #80868b; border-radius: 50%; }
   #m2-editwin .m2-ed-plook button[aria-checked="true"] .m2-ed-radio { border-color: #70757a; background: radial-gradient(circle, #70757a 0 2.5px, transparent 3px); }
@@ -405,11 +408,11 @@ page, so its styles keep the base they were made on).
   #m2-editwin .m2-ed-pblk[hidden] { display: none; }
   #m2-editwin .m2-ed-pblk .m2-ed-phyb { margin: 0; }
   #m2-editwin .m2-ed-poff .m2-ed-phyb, #m2-editwin .m2-ed-poff .m2-ed-phyb input { opacity: .45; cursor: default; }   /* a tick box out of use (Reduced notation under Strict SBGN): pale, not clickable, its tick kept */
-  #m2-editwin .m2-ed-pmap { margin: 0 0 10px; padding: 0 0 8px; border-bottom: 1px solid var(--m2-frame); font-size: 12px; line-height: 16px; color: var(--m2-text-soft); }   /* the map's choices for new nodes (palDrop, create.js), under the palette's own line, a line under them as under Properties (Disconnect from GitHub below it) */
+  #m2-editwin .m2-ed-pmap { margin: 0 0 10px; padding: 0 0 8px; border-bottom: 1px solid var(--m2-frame); font-size: 12px; line-height: 16px; color: var(--m2-ed-name); }   /* the map's choices for new nodes (palDrop, create.js), under the palette's own line, a line under them as under Properties (Disconnect from GitHub below it) */
   #m2-editwin .m2-ed-pmap[hidden] { display: none; }
   #m2-editwin .m2-ed-pmap .m2-ed-ptab { margin: 0; }
-  #m2-editwin .m2-ed-pmap .m2-ed-pdd { display: flex; align-items: center; gap: 4px; width: 100%; height: 22px; box-sizing: border-box; margin: 0; padding: 0 4px; border: 1px solid var(--m2-frame); border-radius: 4px; background: var(--m2-bg); color: var(--m2-text); font: inherit; text-align: left; cursor: pointer; }   /* a Properties field with its arrow */
-  #m2-editwin .m2-ed-pmap .m2-ed-pdd:hover:not(:disabled), #m2-editwin .m2-ed-pmap .m2-ed-pdd[aria-expanded="true"] { border-color: #70757a; background: var(--m2-bg); color: var(--m2-text); }   /* a field, not a button: no accent */
+  #m2-editwin .m2-ed-pmap .m2-ed-pdd { display: flex; align-items: center; gap: 4px; width: 100%; height: 22px; box-sizing: border-box; margin: 0; padding: 0 4px; border: 1px solid var(--m2-frame); border-radius: 4px; background: var(--m2-bg); color: var(--m2-ed-value); font: inherit; text-align: left; cursor: pointer; }   /* a Properties field with its arrow */
+  #m2-editwin .m2-ed-pmap .m2-ed-pdd:hover:not(:disabled), #m2-editwin .m2-ed-pmap .m2-ed-pdd[aria-expanded="true"] { border-color: #70757a; background: var(--m2-bg); color: var(--m2-ed-value); }   /* a field, not a button: no accent */
   #m2-editwin .m2-ed-pmap .m2-ed-pdd span { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   #m2-editwin .m2-ed-pmap .m2-ed-pdd svg { flex: none; width: 10px; height: 6px; color: #80868b; }
   .m2-cx.m2-ed-pdl { min-width: 0; max-width: 320px; font-size: 12px; line-height: 16px; }   /* the field's list (palDrop, create.js): a small window under or above its field, the right-click menu's look at the field's size */
@@ -440,7 +443,7 @@ page, so its styles keep the base they were made on).
   /* Properties (compact, as graph editors show them): yEd's two columns under the palette, the names on
      the left in the palette's grey, small plain fields with a light edge on the right; a colour as its swatch (the picker)
      beside its hex; Size step last, the step of a resize by the handles */
-  #m2-editwin .m2-ed-props { margin: 0 0 10px; padding: 0 0 8px; border-bottom: 1px solid var(--m2-frame); font-size: 12px; line-height: 16px; color: var(--m2-text-soft); }
+  #m2-editwin .m2-ed-props { margin: 0 0 10px; padding: 0 0 8px; border-bottom: 1px solid var(--m2-frame); font-size: 12px; line-height: 16px; color: var(--m2-ed-name); }
   #m2-editwin .m2-ed-props[hidden], #m2-editwin .m2-ed-props tr[hidden], #m2-editwin .m2-ed-props table[hidden] { display: none; }
   #m2-editwin .m2-ed-props p { margin: 2px 0 4px; }
   #m2-editwin .m2-ed-ptab { width: 100%; border-collapse: collapse; margin: 0 0 8px; }
@@ -449,15 +452,15 @@ page, so its styles keep the base they were made on).
   #m2-editwin .m2-ed-pcard th[colspan] { padding-top: 8px; }
   #m2-editwin .m2-ed-ptab td { height: 24px; padding: 1px 0; vertical-align: middle; }
   #m2-editwin .m2-ed-ptab input[type="text"], #m2-editwin .m2-ed-ptab input[type="number"] { box-sizing: border-box; width: 100%; min-width: 0; height: 22px; margin: 0; padding: 0 4px;
-    border: 1px solid var(--m2-frame); border-radius: 4px; background: var(--m2-bg); color: var(--m2-text); font: inherit; -moz-appearance: textfield; }
+    border: 1px solid var(--m2-frame); border-radius: 4px; background: var(--m2-bg); color: var(--m2-ed-value); font: inherit; -moz-appearance: textfield; }
   #m2-editwin .m2-ed-ptab input[type="number"], #m2-editwin .m2-ed-ptab input.m2-ed-card, #m2-editwin .m2-ed-pc input[type="text"] { width: 64px; }   /* a number or a hex colour needs no more */
   #m2-editwin .m2-ed-ptab input:focus { outline: none; border-color: #70757a; }
-  #m2-editwin .m2-ed-ptab select { box-sizing: border-box; height: 22px; margin: 0; padding: 0 2px; border: 1px solid var(--m2-frame); border-radius: 4px; background: var(--m2-bg); color: var(--m2-text); font: inherit; }   /* a choice in a row (a tag's Orientation): a field as the others, quiet */
+  #m2-editwin .m2-ed-ptab select { box-sizing: border-box; height: 22px; margin: 0; padding: 0 2px; border: 1px solid var(--m2-frame); border-radius: 4px; background: var(--m2-bg); color: var(--m2-ed-value); font: inherit; }   /* a choice in a row (a tag's Orientation): a field as the others, quiet */
   #m2-editwin .m2-ed-ptab select:focus, #m2-editwin .m2-ed-ptab select:focus-visible { outline: none; border-color: #70757a; }
   #m2-editwin .m2-ed-ptab select:disabled { border-color: transparent; background: transparent; color: #9aa0a6; opacity: 1; }
   #m2-editwin .m2-ed-ptab input:disabled { border-color: transparent; background: transparent; color: #9aa0a6; }   /* shown, not typed: a line's end at a process's or gate's port */
   #m2-editwin .m2-ed-ptab input::-webkit-inner-spin-button, #m2-editwin .m2-ed-ptab input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-  #m2-editwin .m2-ed-ptab input[type="checkbox"] { display: block; margin: 0; }
+  #m2-editwin .m2-ed-ptab input[type="checkbox"] { display: block; margin: 0; width: 12px; height: 12px; accent-color: #70757a; }   /* as the palette's tick boxes */
   #m2-editwin .m2-ed-pc { display: flex; gap: 4px; align-items: center; }
   #m2-editwin .m2-ed-pc input[type="color"] { flex: none; width: 22px; height: 22px; margin: 0; padding: 0; border: 1px solid var(--m2-frame); border-radius: 4px; background: none; cursor: pointer; }
   #m2-editwin .m2-ed-pc input[type="color"]::-webkit-color-swatch-wrapper { padding: 2px; }
