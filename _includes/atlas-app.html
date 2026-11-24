@@ -584,7 +584,7 @@ page, so its styles keep the base they were made on).
   /* yes-or-no choices as tick boxes (File extensions, Layout only), the
      editor's tick box look in the accent */
   #m2-setwin .m2-set-tick { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; color: var(--m2-text); cursor: pointer; }
-  #m2-setwin .m2-set-tick input { flex: none; width: 15px; height: 15px; margin: 0; accent-color: var(--m2-accent); cursor: pointer; }
+  #m2-setwin .m2-set-tick input { flex: none; width: 15px; height: 15px; margin: 0; font: inherit; line-height: inherit; accent-color: var(--m2-accent); cursor: pointer; }   /* the label's font and line, so 1lh below is its line, not the control font's each engine sets */
   /* the paddings (Editing): Padding, then each kind's name and its short list on the right, the rows the Settings
      column's 176 px, each list as wide as its value */
   #m2-setwin .m2-set-padk { margin: 4px 0 6px; color: var(--m2-text); }

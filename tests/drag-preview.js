@@ -12,6 +12,7 @@ var here = process.argv[2] || path.join(__dirname, '..'), URL = 'https://viewer-
 var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more && !v ? '  ' + more : '')); };
 async function open(b) {
   var p = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [];
+  await p.addInitScript(require('./lib/screen.js'));   // window.__ctm, the screen matrix in every engine
   if (!process.env.LIVE) {
     var ed = require('./editor-now.js')(here);
     await p.route(/\/styles\/editor\/editor\.js(\?|$)/, function (r) { r.fulfill({ contentType: 'application/javascript', body: ed }); });
@@ -35,7 +36,7 @@ function drawn(p) {
     if (ov) els = els.concat(Array.prototype.slice.call(ov.querySelectorAll('.m2-ed-handle, .m2-ed-bend, .m2-ed-port, .m2-ed-place, .m2-ed-sel')));   // the editor's marks that stay after a drop (handles, bend and port squares); guides show only while dragging
     els.forEach(function (el) {
       for (var q0 = el; q0 && q0 !== img && q0 !== ov; q0 = q0.parentNode) if (getComputedStyle(q0).display === 'none' || getComputedStyle(q0).visibility === 'hidden') return;
-      var m = el.getScreenCTM(), q = [], pt = function (x, y) { q.push([m.a * x + m.c * y + m.e, m.b * x + m.d * y + m.f]); };
+      var m = window.__ctm(el), q = [], pt = function (x, y) { q.push([m.a * x + m.c * y + m.e, m.b * x + m.d * y + m.f]); };
       var n = el.localName, num = function (a) { return parseFloat(el.getAttribute(a) || 0); };
       if (n === 'rect') { var x = num('x'), y = num('y'), w = num('width'), h = num('height'); if (!w || !h) return; pt(x, y); pt(x + w, y + h); }
       else if (n === 'ellipse' || n === 'circle') { var cx = num('cx'), cy = num('cy'), rx = n === 'circle' ? num('r') : num('rx'), ry = n === 'circle' ? num('r') : num('ry'); pt(cx - rx, cy - ry); pt(cx + rx, cy + ry); }
@@ -84,7 +85,7 @@ async function steps(p, name, P, pts, o) {
     if (o.line) {   // its line selected too, by Shift with a click on it outside the submap
       var lp = await p.evaluate(function (id) {
         var g = document.querySelector('#m2-img [data-e="' + id + '"] path'); if (!g) return null;
-        var L = g.getTotalLength(), q = g.getPointAtLength(L * 0.3), m = g.getScreenCTM(); return [m.a * q.x + m.c * q.y + m.e, m.b * q.x + m.d * q.y + m.f];
+        var L = g.getTotalLength(), q = g.getPointAtLength(L * 0.3), m = window.__ctm(g); return [m.a * q.x + m.c * q.y + m.e, m.b * q.x + m.d * q.y + m.f];
       }, o.line);
       await p.keyboard.down('Shift'); await p.mouse.click(lp[0], lp[1]); await p.keyboard.up('Shift'); await p.waitForTimeout(300);
     }

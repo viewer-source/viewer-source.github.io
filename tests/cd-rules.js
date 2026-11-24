@@ -11,6 +11,7 @@ var NOISE = require('./lib/noise.js');   // what a browser reports that is no fa
 var url = process.argv[2] || 'https://viewer-source.github.io/styles/#acly-celldesigner', local = process.argv[3];
 (async function () {
   var b = await engine.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], bad = 0;
+  await page.addInitScript(require('./lib/screen.js'));   // window.__ctm, the screen matrix in every engine
   var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more && !v ? '  ' + more : '')); };
   if (local) {
     var ed = require('./editor-now.js')(local);
@@ -32,7 +33,7 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#acly-celld
     var all = []; document.querySelectorAll('#m2-img [data-e="' + a[0] + '"]').forEach(function (g) { all.push(g); g.querySelectorAll('*').forEach(function (c) { all.push(c); }); });
     var q = all.filter(function (x) { return x.getTotalLength; }).sort(function (u, v) { return v.getTotalLength() - u.getTotalLength(); })[0];
     if (!q) return null;
-    var pt = q.getPointAtLength(q.getTotalLength() * a[1]), m = q.getScreenCTM();
+    var pt = q.getPointAtLength(q.getTotalLength() * a[1]), m = window.__ctm(q);
     return [m.a * pt.x + m.c * pt.y + m.e, m.b * pt.x + m.d * pt.y + m.f]; }, [id, s]); };
   var marks = function () { return page.$$eval('.m2-ed-bend', function (l) { return l.map(function (x) { var r = x.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }); }); };
   var dragEnd = async function (line, near, to) {   // the line selected, its end square nearest `near` dragged to `to`
