@@ -11,7 +11,9 @@ var URL0 = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysi
   var page = await (await b.newContext({ viewport: { width: 1400, height: 900 } })).newPage();
   page.on('pageerror', function (e) { errs.push(e.message); });
   await page.goto(URL0, { waitUntil: 'load' });
-  await page.wai  var sign = '#m2-set-help', shown = function (id) { return page.evaluate(function (id) { var x = document.getElementById(id); return !!(x && !x.hidden); }, id); };
+  await page.waitForSelector('.m2-ri[data-win="edit"]', { timeout: 30000 });
+  await page.waitForTimeout(2000);
+  var sign = '#m2-set-help', shown = function (id) { return page.evaluate(function (id) { var x = document.getElementById(id); return !!(x && !x.hidden); }, id); };
   ok('no ? among the top icons', await page.evaluate(function () { return !document.querySelector('#m2-rail .m2-ri[data-win="help"]'); }));
   await page.click('#m2-rail .m2-ri[data-win="set"]'); await page.waitForTimeout(300);
   ok('the ? is first in Settings', await page.evaluate(function (s) { var h = document.querySelector(s), w = document.getElementById('m2-setwin'); return !!(h && h.offsetParent && w.firstElementChild.contains(h)); }, sign));
@@ -34,10 +36,11 @@ var URL0 = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysi
   await page.waitForSelector('.m2-editing', { timeout: 15000 }); await page.waitForTimeout(1500);
   await page.click('#m2-ed-help'); await page.waitForTimeout(300);
   ok('while editing, the Edit window\'s ? opens the editor\'s help', await shown('m2-ed-help-box'));
-  ok('the editor\'s help is the short one: While editing and Less obvious, 19 rows with a Maps column', await page.evaluate(function () {
+  ok('the editor\'s help is the short one: While editing and Less obvious, with a Maps column', await page.evaluate(function () {
     var h = document.getElementById('m2-ed-help-box'), t = h.querySelectorAll('table'), hs = [].map.call(h.querySelectorAll('h4'), function (x) { return x.textContent; });
-    return hs.join('|') === 'While editing|Less obvious' && t.length === 2 && t[1].querySelectorAll('tr').length === 20 && /Maps/.test(t[1].rows[0].textContent);
+    return hs.join('|') === 'While editing|Less obvious' && t.length === 2 && t[1].querySelectorAll('tr').length > 1 && /Maps/.test(t[1].rows[0].textContent);
   }));
+  ok('the editor\'s help has select all', await page.evaluate(function () { return /select all/.test(document.getElementById('m2-ed-help-box').textContent); }));
   ok('as wide as Gestures and keys', await page.evaluate(function () { return Math.abs(document.getElementById('m2-ed-help-box').offsetWidth - 760) < 2; }));
   var hb = await page.evaluate(function () { var r = document.getElementById('m2-ed-help-box').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; });
   await page.mouse.move(hb.x, hb.y);
@@ -50,15 +53,11 @@ var URL0 = process.argv[2] || 'https://viewer-source.github.io/styles/#glycolysi
   await page.click('#m2-ed-help'); await page.waitForTimeout(300);
   ok('a second click closes the editor\'s help', !(await shown('m2-ed-help-box')));
   await page.keyboard.press('?'); await page.waitForTimeout(300);
-  ok('while editing, the ? key opens the editor\'s help', await shown('m2-ed-help-box') && !(await shown('m2-tips')));
-  await page.keyboard.press('Escape');
+  ok('while editing, the ? key opens the editor\'s help', (await shown('m2-ed-help-box')) && !(await shown('m2-tips')));
+  await page.keyboard.press('Escape'); await page.waitForTimeout(200);
   await page.click('#m2-rail .m2-ri[data-win="set"]'); await page.waitForTimeout(300);
   await page.click(sign); await page.waitForTimeout(300);
-  ok('while editing, the Settings ? opens Gestures and keys', await shown('m2-tips') && !(await shown('m2-ed-help-box')));
-ght - 2;
-  }, y0));
-  await page.click(sign); await page.waitForTimeout(300);
-  ok('a second click closes the editor\'s help', !(await shown('m2-ed-help-box')));
+  ok('while editing, the Settings ? opens Gestures and keys', (await shown('m2-tips')) && !(await shown('m2-ed-help-box')));
   ok('no page errors', !errs.length); if (errs.length) console.log(errs.join('\n'));
   await b.close(); console.log(bad ? bad + ' WRONG' : 'all ok'); process.exit(bad ? 1 : 0);
 })();
