@@ -577,7 +577,7 @@ page, so its styles keep the base they were made on).
   #m2-legend .m2-leg-tabs button + button { border-left: 1px solid var(--m2-button, var(--m2-line)); }
   #m2-legend .m2-leg-tabs button.m2-on { background: var(--m2-accent); color: var(--m2-on-accent, #fff); }
   #m2-legend [data-leg]:not(button):not(.m2-on) { display: none; }
-  #m2-setwin { padding: 0 4px; font-size: 14px; line-height: 1.45; color: var(--m2-text-soft); }
+  #m2-setwin { padding: 0; font-size: 14px; line-height: 1.45; color: var(--m2-text-soft); }
   #m2-setwin .m2-set-k { margin: 4px 0 6px; }
   #m2-setwin .m2-set-note { font-size: 12px; color: var(--m2-muted); margin: 6px 0 14px; }
   #m2-setwin .m2-set-row { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -590,9 +590,9 @@ page, so its styles keep the base they were made on).
   #m2-setwin .m2-set-tick { display: flex; align-items: center; gap: 8px; margin: 0 0 10px; color: var(--m2-text); cursor: pointer; }
   #m2-setwin .m2-set-tick input { flex: none; width: 15px; height: 15px; margin: 0; font: inherit; line-height: inherit; accent-color: var(--m2-accent); cursor: pointer; }   /* the label's font and line, so 1lh below is its line, not the control font's each engine sets */
   /* the paddings (Editing): Padding, then each kind's name and its short list on the right, the rows the Settings
-     column's 176 px, each list as wide as its value */
+     column's 204 px, each list as wide as its value */
   #m2-setwin .m2-set-padk { margin: 4px 0 6px; color: var(--m2-text); }
-  #m2-setwin .m2-set-pad { display: flex; align-items: center; justify-content: space-between; max-width: 176px; margin: 0 0 8px; color: var(--m2-text); white-space: nowrap; }
+  #m2-setwin .m2-set-pad { display: flex; align-items: center; justify-content: space-between; max-width: 204px; margin: 0 0 8px; color: var(--m2-text); white-space: nowrap; }
   /* a tick box with (recommended) in its name and a circled i after it, the size of the text: the reason in the info window */
   #m2-setwin .m2-set-tick-rec { align-items: flex-start; }   /* a name on two lines: the box level with its first */
   #m2-setwin .m2-set-tick-rec input { margin-top: calc((1lh - 15px) / 2); }
@@ -603,11 +603,12 @@ page, so its styles keep the base they were made on).
   #m2-setwin .m2-set-pad select:focus { outline: none; }   /* no focus ring: a choice is made and the list closes, nothing stays marked */
   /* the two-choice rows (Association, Source, Annotations, Icons) as equal buttons, the same width in every row (a
      unified look, as segmented controls keep their segments equal: Apple HIG, Primer) */
-  #m2-setwin .m2-set-row { display: grid; grid-template-columns: repeat(2, 1fr); max-width: 176px; }
+  #m2-setwin .m2-set-row { display: grid; grid-template-columns: repeat(2, 1fr); max-width: 204px; }
   #m2-setwin .m2-set-row button { min-width: 0; text-align: center; white-space: nowrap; }
   /* everything in Settings keeps the button rows' width when the panel is dragged wider (a sufficient
-     width, kept): the slider, its value and the colour choices no longer stretch */
-  #m2-setwin > *, #m2-setwin > div > * { max-width: 176px; }
+     width, kept): the slider, its value and the colour choices no longer stretch. 204 px from the panel's edge, as the
+     Edit window and the icon row above at the usual 240 px (12 to 216) */
+  #m2-setwin > *, #m2-setwin > div > * { max-width: 204px; }
   /* Map size as a slider (buttons are visually noisy), 5% steps from 75 to 150%,
      ticks at 75, 100, 125 and 150 only; the value beside the name */
   #m2-set-size-v { float: right; color: var(--m2-muted); }

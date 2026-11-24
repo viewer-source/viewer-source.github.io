@@ -1,5 +1,5 @@
 // Panel widths: with the panel dragged wider, nothing in the Edit and Settings windows may
-// stretch or move. Opens each window at the panel's usual width and at a wide one, with a macromolecule selected so
+// stretch or move, and Settings' blocks span the same width as the Edit window's (the icon row's). Opens each window at the panel's usual width and at a wide one, with a macromolecule selected so
 // Properties shows, and compares every visible control's place and size. Runs on a page with the editor, by default
 // the styles page on an SBGN-ML map; [css] adds a style sheet first (to try a change before it is pushed).
 //   node tests/panel-width.js [address] [css]
@@ -27,17 +27,24 @@ async function shot(browser, wide, win) {
       n[k] = (n[k] || 0) + 1; k += '#' + n[k];
       out[k] = [r.left - o.left, r.top - o.top, r.width, r.height].map(Math.round).join(',');
     });
+    var l = 1e9, rt = -1e9;   // the span of the window's visible blocks, from its left edge
+    Array.prototype.forEach.call(w.children, function (e) {
+      if (!e.offsetParent) return; var r = e.getBoundingClientRect(); l = Math.min(l, r.left - o.left); rt = Math.max(rt, r.right - o.left);
+    });
+    out._span = Math.round(l) + '..' + Math.round(rt);
     return out;
   }, 'm2-' + win + 'win');
   await page.close();
   return got;
 }
 (async function () {
-  var browser = await chromium.launch(), bad = 0, seen = 0;
+  var browser = await chromium.launch(), bad = 0, seen = 0, span = {};
   for (var win of ['edit', 'set']) {
     var a = await shot(browser, false, win), b = await shot(browser, true, win);
+    span[win] = a._span;
     for (var k in a) { seen++; if (a[k] !== b[k]) { bad++; console.log(win + ' ' + k + ': ' + a[k] + ' at 240 px, ' + (b[k] || 'gone') + ' at ' + WIDE + ' px'); } }
   }
+  if (span.set !== span.edit) { bad++; console.log('Settings spans ' + span.set + ', the Edit window ' + span.edit + ' (screen px from the window\'s edge)'); }
   console.log(seen + ' controls compared, ' + bad + ' moved or stretched with the panel wider');
   await browser.close();
   process.exit(bad || !seen ? 1 : 0);
