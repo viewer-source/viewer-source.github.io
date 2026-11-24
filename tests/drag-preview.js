@@ -97,6 +97,10 @@ async function steps(p, name, P, pts, o) {
     for (var j = 0; j <= k; j++) await p.mouse.move(pts[j][0], pts[j][1], { steps: 4 });
     await p.waitForTimeout(250);
     var mid = await drawn(p);
+    var laid = await p.evaluate(function () {   // the posed glyphs' boxes as the browser lays them out, to tell a drawing apart from a reading of it
+      var s = window.m2EditState(), pn = null; Object.keys(s).forEach(function (k) { if (s[k] && s[k].poseNow) pn = s[k].poseNow; });
+      return pn ? Array.prototype.slice.call(document.querySelectorAll('#m2-img [data-n][transform*="rotate"]')).map(function (g) { var r = g.getBoundingClientRect(); return g.getAttribute('data-n') + ' ' + [r.left, r.top, r.right, r.bottom].map(Math.round).join(','); }).join('; ') : '';
+    });
     if (process.env.SHOT) await p.screenshot({ path: process.env.SHOT + '-' + name.replace(/\W+/g, '-') + '-' + k + '-mid.png' });
     await p.mouse.up(); if (o.shift) await p.keyboard.up('Shift');
     await p.waitForTimeout(1800);
@@ -104,7 +108,7 @@ async function steps(p, name, P, pts, o) {
     if (process.env.SHOT) await p.screenshot({ path: process.env.SHOT + '-' + name.replace(/\W+/g, '-') + '-' + k + '-drop.png' });
     var d = diff(mid, drop), same = !d.mid.length && !d.drop.length;
     ok(name + ', step ' + (k + 1) + ' of ' + pts.length + ': the drag draws what the drop there draws', same,
-      'drawn only during the drag: ' + d.mid.slice(0, 3).map(fmt).join(' | ') + '  drawn only after the drop: ' + d.drop.slice(0, 3).map(fmt).join(' | '));
+      'drawn only during the drag: ' + d.mid.slice(0, 3).map(fmt).join(' | ') + '  drawn only after the drop: ' + d.drop.slice(0, 3).map(fmt).join(' | ') + (laid ? '  laid out during the drag: ' + laid : ''));
     var moved = (await text()) !== t0;   // a drop that changed nothing has no undo step: Cmd+Z would take back the change before it
     ok(name + ', step ' + (k + 1) + ': the drop changes the map', moved);
     if (moved) { await p.keyboard.press('Control+z'); await p.waitForTimeout(1500); }
