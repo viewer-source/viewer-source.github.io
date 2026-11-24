@@ -289,24 +289,6 @@
     var cx = kids(node, G, 'data').some(function (dd) { var all = [dd].concat(Array.prototype.slice.call(dd.getElementsByTagName('*'))); return all.some(function (c) { return get(c, 'configuration') === SBGN + 'Complex'; }); });
     return cx ? 1 : kid(node, G, 'graph') ? 0 : 2;
   }
-  // a complex's name kept at its bottom inside (modelPosition b): where its members leave it no room there (a member's box,
-  // with a name of its own drawn under it, meeting the name's box), the name goes just under the outline, so it stays
-  // readable; its box as labelPlace gives it, moved, else null (name_under in rules.md)
-  function nameUnder(node, r, x, y, w, h) {
-    if (!r || get(r, 'configuration') !== SBGN + 'Complex') return null;
-    var bottomName = function (l) { return get(l, 'modelName') === 'internal' && (get(l, 'modelPosition') || '').indexOf('b') === 0 && get(l, 'visible') !== 'false' && !get(l, 'iconData') && pyStrip(itertext(l)); };
-    var lab = kids(r, Y, 'NodeLabel').filter(bottomName)[0], box = lab ? labelPlace(lab, x, y, w, h) : null;
-    if (!box) return null;
-    var lx = box[0], ly = box[1], lw = box[2], lh = box[3], sub = kid(node, G, 'graph'), cs = sub ? kids(sub, G, 'node') : [];
-    for (var i = 0; i < cs.length; i++) {
-      var cr = realizer(cs[i]), g = cr ? kid(cr, Y, 'Geometry') : null;
-      if (!g) continue;
-      var cx = pyFloat(get(g, 'x')), cy = pyFloat(get(g, 'y')), cw = pyFloat(get(g, 'width')), ch = pyFloat(get(g, 'height')), below = nameUnder(cs[i], cr, cx, cy, cw, ch);
-      if (below) ch += below[3];
-      if (cx < lx + lw && lx < cx + cw && cy < ly + lh && ly < cy + ch) return [lx, y + h, lw, lh];
-    }
-    return null;
-  }
   function realizer(node) {
     var data = [];
     kids(node, G, 'data').forEach(function (dd) { elems(dd).forEach(function (c) { if (c.namespaceURI === Y) data.push(c); }); });
@@ -602,11 +584,10 @@
       // the generic square white as every process (Newt fills an association dark grey)
       s = '<g class="sbgn-' + sc + '">' + c + '</g><g class="sbgn-generic" display="none">' + outlines.map(function (o) { return shapeSvg(o, '#FFFFFF', stroke, rl); }).join('') + '</g>';
     }
-    var aux = [], under = nameUnder(node, r, x, y, w, h);   // aux: the outlines of its state variables and units of information (visualEnd); under: a complex's name with no room inside
+    var aux = [];   // the outlines of its state variables and units of information (visualEnd)
     kids(r, Y, 'NodeLabel').forEach(function (lab) {
       if (get(lab, 'visible') === 'false') return;
       var box = labelPlace(lab, x, y, w, h);
-      if (under && box && box[1] < y + h && get(lab, 'modelName') === 'internal' && (get(lab, 'modelPosition') || '').indexOf('b') === 0 && !get(lab, 'iconData')) box = under;
       if (!box) { if (get(lab, 'iconData') || pyStrip(itertext(lab))) refuse(where, 'label without a position'); return; }
       var ax = box[0], ay = box[1], lw = box[2], lh = box[3];
       self.boxes.push([ax, ay, lw, lh]);

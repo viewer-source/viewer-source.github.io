@@ -130,10 +130,6 @@ an arc goes behind the node it starts at (a bend or an antenna's tip inside the 
 
 - `def paint_layer(node):`: 0 a compartment (a group not a complex), 1 a complex, 2 any other node (read_graph)
 
-## name_under
-
-a complex's name kept at its bottom inside (modelPosition b): where its members leave it no room there (a member's box, with a name of its own drawn under it, meeting the name's box), the name goes just under the outline, so it stays readable; its box as label_place gives it, moved, else None
-
 ## text_lines
 
 the label's text in its box (x, y, w, h absolute); text: drawn in place of the label's own
@@ -183,7 +179,6 @@ nodes depth first, groups before their members; parent: the role of the group th
 a node drawn without fill (SBGN-ML has none) takes its role's colour too; a glyph of an SBGN-ML file with no fill is white, not transparent (an edge behind a transparent glyph shows through it), compartments stay transparent; a yEd GraphML node with no fill stays as yEd draws it the generic square white as every process (Newt fills an association dark grey)
 
 - `aux = []`: the outlines of its state variables and units of information (visual_end)
-- `under = name_under(node, r, x, y, w, h)`: a complex's name with no room inside: under it
 the text's role: of the fill under its start, the label's box, the node or the group
 
 ## ends
