@@ -24,7 +24,7 @@
   var G = 'http://graphml.graphdrawing.org/xmlns', Y = 'http://www.yworks.com/xml/graphml';
   function els(el) { return el.children ? Array.prototype.slice.call(el.children) : Array.prototype.filter.call(el.childNodes, function (c) { return c.nodeType === 1; }); }   // the browser's children, else the element nodes
   function num(el, a) { return parseFloat(el.getAttribute(a)); }
-  function fmt(v) { return String(Math.round(v * 1000) / 1000); }
+  function fmt(v) { v = Math.round(v * 1000) / 1000; return v % 1 ? String(v) : v.toFixed(1); }   // a whole number as yEd writes it (603.0)
   function realizerOf(el) {   // the node's own yEd realizer (of a group: the one shown)
     var cs = els(el);
     for (var i = 0; i < cs.length; i++) {

@@ -5,7 +5,7 @@
 // for byte. A reference kept for that test only; the editor's code is the engine's.
 var G = 'http://graphml.graphdrawing.org/xmlns', Y = 'http://www.yworks.com/xml/graphml';
 function num(el, a) { return parseFloat(el.getAttribute(a)); }
-function fmt(v) { return String(Math.round(v * 1000) / 1000); }
+function fmt(v) { v = Math.round(v * 1000) / 1000; return v % 1 ? String(v) : v.toFixed(1); }   // as the engine since whole numbers are written as yEd writes them
 function children(el) { return Array.prototype.filter.call(el.childNodes, function (c) { return c.nodeType === 1; }); }   // the browser's el.children
 function realizerOf(el) {
   for (var i = 0; i < children(el).length; i++) {

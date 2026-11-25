@@ -41,7 +41,8 @@
           return parseFloat(el.getAttribute(a));
         }
         function fmt2(v) {
-          return String(Math.round(v * 1e3) / 1e3);
+          v = Math.round(v * 1e3) / 1e3;
+          return v % 1 ? String(v) : v.toFixed(1);
         }
         function realizerOf2(el) {
           var cs = els(el);
