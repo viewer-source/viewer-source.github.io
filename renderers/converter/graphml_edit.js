@@ -10,7 +10,7 @@
 //     GraphML: no hubs). Throws 'not a readable XML file' or 'the file is not written as yEd writes it'.
 //   place(t, g, p): new x and y for some y:Geometry (index -> [x, y] as text) and y:Point, in one pass.
 //   boxes(t, at): new x, y, width and height for some y:Geometry (index -> four texts).
-//   insets(t, id, ins, bins): the y:Insets (a null side kept) and y:BorderInsets of node id's realizer shown.
+//   insets(t, id, ins, bins): the y:Insets (a null side kept) and y:BorderInsets of node id's realizer shown, each side's whole number cut as yEd writes it (6 beside 6.5).
 //   ends(t, by, re): line ends, by: path index (its y:Path in the text) -> [[attribute, value], ...], an attribute
 //     missing added; re { k, att, id }: edge k's source or target set to node id too. pathOf(t, id, kv): edge id's own
 //     y:Path given these attributes, one missing added at its end.
@@ -145,7 +145,7 @@
         var v = q2[1][j];
         if (v == null) return;
         v = Math.round(v * 1000) / 1000;
-        tag = tag.replace(new RegExp('(\\s' + sd + '=")[^"]*"'), '$1' + Math.round(v) + '"').replace(new RegExp('(\\s' + sd + 'F=")[^"]*"'), '$1' + (v % 1 ? String(v) : v + '.0') + '"');
+        tag = tag.replace(new RegExp('(\\s' + sd + '=")[^"]*"'), '$1' + Math.trunc(v) + '"').replace(new RegExp('(\\s' + sd + 'F=")[^"]*"'), '$1' + (v % 1 ? String(v) : v + '.0') + '"');
       });
       if (tag !== x[0]) put.push([m.index + x.index, x[0].length, tag]);
     });

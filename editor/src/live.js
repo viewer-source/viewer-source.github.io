@@ -8,7 +8,7 @@ import { svList, svParts } from './create.js';
     // resized by its handles (sizeLive), the lines it touches drawn in full (liveLines, fullLines), all in the picture's
     // frame (picOff, toPic). A format with a way of its own gives it through liveFmt(), its format object's live(): CellDesigner (liveCd, celldesigner.js)
     // its process glyphs following their segments, its reactions drawn by the drop's code and its holders by cdrender;
-    // GraphML and SBGN-ML maps (liveY, graphml.js) their arcs and the processes and gates at them drawn by the yEd
+    // GraphML and SBGN-ML maps (liveY, drawing.js) their arcs and the processes and gates at them drawn by the yEd
     // renderer. What is drawn here is put back when the map is drawn again.
     function liveFmt() { return shared.F.live(); }
     // compartments are containers: resized by dragging an edge or a handle, and grown by themselves

@@ -3,11 +3,13 @@
 import { addFormats, plant, setV, stateNow } from './state.js';
 import { __start as start_core } from './core.js';
 import { __start as start_live } from './live.js';
-import { __start as start_graphml } from './graphml.js';
+import { __start as start_drawing } from './drawing.js';
 import { __start as start_celldesigner } from './celldesigner.js';
+import { __start as start_engines } from './engines.js';
 import { __start as start_sbgn } from './sbgn.js';
 import { __start as start_create } from './create.js';
 import { __start as start_cdcreate } from './cdcreate.js';
+import { __start as start_sbcreate } from './sbcreate.js';
 import { __start as start_help } from './help.js';
 import { __start as start_own } from './own.js';
 import { aheadSoon, away, buttons, chooseFolder, map, on, paint, picWait, repo, shown, stop, syncFolder, token, unkeep } from './core.js';
@@ -25,11 +27,13 @@ window.m2Editor = function (v) {
     window.m2EditPlant = plant;   // the tests' values put into the map's fields before a switch (tests/map-switch.js)
     start_core();
     start_live();
-    start_graphml();
+    start_drawing();
     start_celldesigner();
+    start_engines();
     start_sbgn();
     start_create();
     start_cdcreate();
+    start_sbcreate();
     start_help();
     start_own();
     var tools = registry();   // tools' commands for the map shown (tools.js); a run is handed the map, its text and add, a new map under it (own.js fromTool)

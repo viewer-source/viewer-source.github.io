@@ -222,7 +222,7 @@
               var v = q2[1][j2];
               if (v == null) return;
               v = Math.round(v * 1e3) / 1e3;
-              tag = tag.replace(new RegExp("(\\s" + sd + '=")[^"]*"'), "$1" + Math.round(v) + '"').replace(new RegExp("(\\s" + sd + 'F=")[^"]*"'), "$1" + (v % 1 ? String(v) : v + ".0") + '"');
+              tag = tag.replace(new RegExp("(\\s" + sd + '=")[^"]*"'), "$1" + Math.trunc(v) + '"').replace(new RegExp("(\\s" + sd + 'F=")[^"]*"'), "$1" + (v % 1 ? String(v) : v + ".0") + '"');
             });
             if (tag !== x[0]) put2.push([m.index + x.index, x[0].length, tag]);
           });
@@ -1198,9 +1198,46 @@
   var import_graphml_edit = __toESM(require_graphml_edit());
   var import_holding = __toESM(require_holding());
 
-  // editor/src/graphml.js
-  var yrp;
+  // editor/src/engines.js
+  var sbp;
+  var sbJs;
   function __run1() {
+    sbp = null, sbJs = null;
+  }
+  function sbScript(name2) {
+    return new Promise(function(res, rej) {
+      if (window[name2]) return res();
+      var s = document.createElement("script");
+      s.src = V.renderers + "converter/" + name2 + ".js" + V.build;
+      s.onload = res;
+      s.onerror = function() {
+        rej(name2 + " not found");
+      };
+      document.head.appendChild(s);
+    });
+  }
+  function sbpy() {
+    if (sbp) return sbp;
+    sbp = sbScript("sbgn_edit").then(function() {
+      return sbScript("sbml_edit").catch(function() {
+      });
+    }).then(yr).then(function() {
+      sbJs = window.sbgn_edit;
+      return sbJs;
+    });
+    sbp.catch(function(e) {
+      sbp = null;
+      warn("The SBGN-ML side did not load: " + e);
+    });
+    return sbp;
+  }
+  function __start() {
+    __run1();
+  }
+
+  // editor/src/drawing.js
+  var yrp;
+  function __run12() {
     yrp = null;
   }
   function yr() {
@@ -1225,7 +1262,7 @@
   }
   function drawGraphml(t) {
     var A = shared.afSbgn ? afGraphml(t === docText && doc ? doc.cloneNode(true) : new DOMParser().parseFromString(t, "application/xml")) : null;
-    var r = window.yrender.render(A ? A.doc : t === docText && doc ? doc : t, { classes: true, groups: true, sbgn: !!shared.sb });
+    var r = window.yrender.render(A ? A.doc : t === docText && doc ? doc : t, { classes: true, groups: true, sbgn: !!shared.F.sbgnLook });
     if (!A) shared.hpMemo = [t, r.ports];
     if (!A && on) yAhead(t);
     return [A ? afUnits(r.svg, A.units) : r.svg, r.errors];
@@ -1385,7 +1422,7 @@
     edges2.forEach(function(e, k) {
       ix[e.id] = k;
     });
-    yLive = { t, ix, s: window.yrender.live(t === docText && doc ? doc : t, { classes: true, sbgn: !!shared.sb }) };
+    yLive = { t, ix, s: window.yrender.live(t === docText && doc ? doc : t, { classes: true, sbgn: !!shared.F.sbgnLook }) };
     return yLive;
   }
   function yAhead(t) {
@@ -1493,73 +1530,16 @@
     setText(import_graphml_edit.default.shift(shared.text, sh[0], sh[1]));
     return sh;
   }
-  function __start() {
-    __run1();
+  function __start2() {
+    __run12();
     __run2();
     __run3();
   }
-  function graphmlFormat() {
-    return {
-      name: "graphml",
-      load: yr,
-      engineCd: false,
-      now: function() {
-        return shared.text;
-      },
-      ownFrame: false,
-      live: function() {
-        return liveY;
-      },
-      mainLines: false,
-      afView: true,
-      stacks: true,
-      insets: true,
-      fileType: { description: "yEd GraphML", accept: { "application/xml": [".graphml"] } },
-      stackComp: function(t, id) {
-        return sbJs && sbJs.stack ? sbJs.stack(t, id) : t;
-      },
-      square: function() {
-        return null;
-      },
-      beside: function() {
-        return null;
-      },
-      open: function(t) {
-        return { g: t, t };
-      },
-      // edited as it is
-      drawOwn: function(t) {
-        return yr().then(function() {
-          return window.yrender.render(t, { classes: true, groups: true, sbgn: false }).svg;
-        });
-      },
-      // a reader's own map drawn for the list (core.js drawText), as the build draws
-      ahead: { load: yr },
-      // the read-ahead: the renderer; the file is edited as it is
-      reads: function(t) {
-        return /<graphml[\s>]/.test(t.slice(0, 3e3));
-      },
-      entry: function(m) {
-        var d = m && m.downloads && m.downloads[0];
-        return !!(d && d.label === "GraphML");
-      },
-      kind: function(n) {
-        return n.shape && n.shape.kind || null;
-      },
-      // a node's shape
-      nameable: function() {
-        return !!sbJs;
-      }
-    };
-  }
 
   // editor/src/sbgn.js
-  var sbp;
-  var sbJs;
   var EMPTY_BASE;
   var baseURL;
-  function __run12() {
-    sbp = null, sbJs = null;
+  function __run13() {
     EMPTY_BASE = `<?xml version='1.0' encoding='UTF-8'?>
 <graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:y="http://www.yworks.com/xml/graphml">
   <key for="node" id="ng" yfiles.type="nodegraphics"/>
@@ -1598,33 +1578,6 @@
   }
   function sbMap(m) {
     return !!(m && !m.shownAs && (m.site || m).editBase);
-  }
-  function sbScript(name2) {
-    return new Promise(function(res, rej) {
-      if (window[name2]) return res();
-      var s = document.createElement("script");
-      s.src = V.renderers + "converter/" + name2 + ".js" + V.build;
-      s.onload = res;
-      s.onerror = function() {
-        rej(name2 + " not found");
-      };
-      document.head.appendChild(s);
-    });
-  }
-  function sbpy() {
-    if (sbp) return sbp;
-    sbp = sbScript("sbgn_edit").then(function() {
-      return sbScript("sbml_edit").catch(function() {
-      });
-    }).then(yr).then(function() {
-      sbJs = window.sbgn_edit;
-      return sbJs;
-    });
-    sbp.catch(function(e) {
-      sbp = null;
-      warn("The SBGN-ML side did not load: " + e);
-    });
-    return sbp;
   }
   function sbBase(m, low) {
     var e = m.site || m;
@@ -1820,8 +1773,8 @@
       }
     };
   }
-  function __start2() {
-    __run12();
+  function __start3() {
+    __run13();
     __run22();
     __run32();
     __run5();
@@ -1840,6 +1793,7 @@
       },
       mainLines: false,
       afView: true,
+      sbgnLook: true,
       stacks: true,
       insets: true,
       sitesOut: function() {
@@ -1949,11 +1903,667 @@
     };
   }
 
+  // editor/src/sbcreate.js
+  var TAGS;
+  var sbRxSeen;
+  var sbCountMemo;
+  var antMemo;
+  var cardMemo;
+  var PF_SB;
+  function __run14() {
+    TAGS = /^(tag|terminal)$/;
+    sbRxSeen = [null, null];
+    sbCountMemo = [null, null, null];
+    antMemo = [null, {}];
+    cardMemo = [null, null];
+    PF_SB = {
+      sizable: sbSizable,
+      size: sbSetSize,
+      node: sbNode,
+      set: sbSet,
+      def: sbDef,
+      ends: sbEnds,
+      hub: function(i) {
+        return !!hubGroup(i);
+      },
+      rx: { of: sbRxOf, set: function(pid, on2) {
+        return sbReversible(pid, on2, true);
+      }, withNode: true },
+      line: {
+        colour: sbLineColour,
+        set: sbLineSet,
+        width: function(k) {
+          return sbJs.widthOf(sbEdgeEl(k));
+        },
+        setWidth: sbLineWidth,
+        ports: true,
+        // a line's colour, width and its ports' rows (edgeShow, edgeSet)
+        count: sbCount,
+        setCount: function(k, v) {
+          return sbLineTo(k, sbJs.recount(shared.text, edges2[k].id, v));
+        }
+      },
+      // a consumption's or production's cardinality
+      off: sbOff,
+      look: function(i) {
+        var r = realizerOf(nodes2[i].el), o = sbJs.lookOf(r), wf = field("way");
+        if (wf) {
+          wf.disabled = nodes2[i].sub != null;
+          wf.title = wf.disabled ? "A terminal points into its submap, set by the side it sits on" : "";
+        }
+        var an = hubGroup(i) ? sbAnts()[nodes2[i].id] : null;
+        return { label: nameOf(i), font: o.font, fill: o.fill ? o.fill.slice(0, 7).toLowerCase() : "", line: (o.line || "#000000").slice(0, 7).toLowerCase(), width: o.width, multimer: o.multimer, way: sbJs.wayOfR && sbJs.wayOfR(r) || "right", ant: an == null ? "" : an };
+      }
+    };
+  }
+  function palOn() {
+    return on && V.current === map && !!shared.sb && !!sbJs && V.level === "full";
+  }
+  function palKind() {
+    return sbKind();
+  }
+  function afKind() {
+    return !!shared.sb && palKind() === "af";
+  }
+  function hybridActs() {
+    return shared.sb && palKind() === "hybrid" ? sbJs.activities(shared.text) : null;
+  }
+  function svDeleteSb(i) {
+    var q = svList(i)[shared.svSel.j];
+    var share = q[3] === SV ? svShareMove(i, q, svR(i, q), null) : null;
+    var sid = shared.svSel.id;
+    if (!commit((q[3] === UI ? sbJs.unitDelete : sbJs.stateDelete)(shared.text, sid, q[4], { sbgn: shared.sb.base }), { name: "state variable deleted", ids: [sid], then: function() {
+      shared.svSel = null;
+      if (share) share();
+    } })) {
+      shared.svSel = null;
+      render();
+      paint();
+    }
+    return true;
+  }
+  function sbFileAf() {
+    return !!shared.sb && sbJs.isAf(shared.sb.base);
+  }
+  function sbSizable(i) {
+    var n = nodes2[i];
+    return !!n.comp || isMade(n);
+  }
+  function sbSetSize(pairs) {
+    var ids = [], was = {}, t2 = shared.text, tids = [];
+    pairs.forEach(function(q) {
+      var b0 = boxOf(q[0]), b1 = q[1];
+      nodes2.forEach(function(n, k) {
+        if (n.sub !== q[0]) return;
+        t2 = sbJs.resize(t2, n.id, termScaled(boxOf(k), b0, b1));
+        tids.push(n.id);
+      });
+    });
+    try {
+      pairs.forEach(function(q) {
+        var id = nodes2[q[0]].id;
+        ids.push(id);
+        was[id] = boxOf(q[0]);
+        t2 = sbJs.resize(t2, id, q[1]);
+      });
+    } catch (err) {
+      warn("Not resized: " + (err && err.message || err) + ".");
+      liveOff();
+      sizeOff();
+      paint();
+      return;
+    }
+    if (t2 === shared.text) {
+      liveOff();
+      sizeOff();
+      paint();
+      return;
+    }
+    commit(t2, { name: "resized", ids, then: function() {
+      nodes2.forEach(function(n) {
+        if (n.sub != null && ids.indexOf(n.id) >= 0) tids.push(n.id);
+      });
+      if (tids.length) termsFix(nodes2.map(function(n, k) {
+        return tids.indexOf(n.id) >= 0 ? k : -1;
+      }).filter(function(k) {
+        return k >= 0;
+      }), true);
+      shared.selN = [];
+      nodes2.forEach(function(n, k) {
+        if (ids.indexOf(n.id) >= 0) shared.selN.push(k);
+      });
+      var ks = shared.selN.slice();
+      if (ks.length) setBoxes(grown(ks, boxOf, function(k) {
+        return was[nodes2[k].id] || boxOf(k);
+      }, function() {
+        return false;
+      }));
+      refit(ids);
+      shared.sizeRec = null;
+    } });
+  }
+  function sbNode(i) {
+    return sbJs.LOOKS.test(sbClasses()[nodes2[i].id] || "") ? i : -1;
+  }
+  function sbOff(k, i) {
+    var c = sbClasses()[nodes2[i].id] || "";
+    if (k === "way") return !TAGS.test(c);
+    if (TAGS.test(c)) return !/^(label|font|w|h|fill|line|width)$/.test(k);
+    if (k === "label" || k === "font") return !sbJs.NAMED.test(c);
+    if (k === "multimer") return !hasMulti(c.replace(/ multimer$/, ""));
+    if (k === "ant") return !hubGroup(i) || sbAnts()[nodes2[i].id] == null;
+    if (EXTRA.indexOf(k) >= 0) return true;
+    if (k === "def") return !/^(macromolecule|simple chemical)( multimer)?$|^biological activity$/.test(c) && !hubGroup(i);
+    return false;
+  }
+  function kindOf(i) {
+    var c = (sbClasses()[nodes2[i].id] || "").replace(/ multimer$/, "");
+    if (c === "biological activity") return lookKey(c, sbJs.activities(shared.text)[nodes2[i].id]);
+    return c || (nodes2[i].shape.kind === "SimpleChemical" ? "simple chemical" : "macromolecule");
+  }
+  function sbSet(k, v, is) {
+    var ids = is.map(function(i) {
+      return nodes2[i].id;
+    }), t2 = shared.text;
+    if (k === "ant") {
+      var L = parseFloat(v);
+      return isFinite(L) && fitHubs(is.filter(function(i) {
+        return hubGroup(i);
+      }).map(function(i) {
+        return { id: nodes2[i].id, ant: Math.min(Math.max(L, 1), 200) };
+      }));
+    }
+    ids.forEach(function(id) {
+      if (k === "label") t2 = sbJs.label(t2, id, v.replace(/[\r\n]+/g, " "));
+      else if (k === "multimer") t2 = sbJs.multimer(t2, id, v);
+      else if (k === "width") {
+        var x = parseFloat(v);
+        if (isFinite(x)) t2 = sbJs.restyle(t2, id, { width: Math.min(Math.max(x, 0.25), 20) });
+      } else if (k === "font") {
+        var z = parseFloat(v);
+        if (isFinite(z)) t2 = sbJs.restyle(t2, id, { font: Math.min(Math.max(Math.round(z * 2) / 2, 1), 200) });
+      } else if (k === "way") {
+        var ti = is.filter(function(i) {
+          return nodes2[i].id === id;
+        })[0];
+        if (ti != null && nodes2[ti].sub == null) t2 = tagTurnT(t2, ti, v);
+      } else {
+        var c = hex(v), o = {};
+        if (c !== null && !(c === "" && k === "line")) {
+          o[k] = c === "#000000" && k === "line" ? null : c || null;
+          t2 = sbJs.restyle(t2, id, o);
+        }
+      }
+    });
+    if (t2 === shared.text) return false;
+    commit(t2, { name: "properties", sel: ids, quiet: true });
+    return true;
+  }
+  function sbEnds(id, o, box2) {
+    var t2 = sbJs.scaleEnds(shared.text, id, o, box2);
+    if (t2 !== shared.text) {
+      setText(t2);
+      parse();
+    }
+  }
+  function sbReversible(pid, on2, keepNode) {
+    var rv = sbJs.reversibility(shared.text, pid, { sbgn: src() }), n = rv ? on2 ? rv.can : rv.rev : 0, ids = [];
+    if (!n) return false;
+    for (var j = 0; j < n; j++) ids.push(freeId("arc_", ids));
+    var t2 = sbJs.reversible(shared.text, pid, on2, ids, { sbgn: src() });
+    return commit(t2, { name: "reversible", ids: [pid], sel: keepNode ? [pid] : [], selE: keepNode ? [] : ids, quiet: true });
+  }
+  function sbRxOf() {
+    if (shared.selN.length !== 1 || shared.selE.length || shared.selP.length || shared.svSel) return null;
+    var id = nodes2[shared.selN[0]] && nodes2[shared.selN[0]].id;
+    if (!id || sbJs.PROCESSES.indexOf(sbClasses()[id] || "") < 0) return null;
+    var key = id + "\0" + shared.text;
+    if (sbRxSeen[0] !== key) {
+      var rv = null;
+      try {
+        rv = sbJs.reversibility(shared.text, id, { sbgn: src() });
+      } catch (e) {
+        rv = null;
+      }
+      sbRxSeen = [key, rv && (rv.can || rv.rev) ? { rid: id, on: rv.rev > 0 } : null];
+    }
+    return sbRxSeen[1];
+  }
+  function sbCount(k) {
+    var id = edges2[k].id;
+    if (sbCountMemo[0] !== id || sbCountMemo[1] !== shared.text) {
+      var c;
+      try {
+        c = sbJs.countOf(shared.text, id);
+      } catch (e) {
+        c = void 0;
+      }
+      sbCountMemo = [id, shared.text, c];
+    }
+    return sbCountMemo[2];
+  }
+  function sbEdgeEl(k) {
+    var el = edges2[k].path.parentNode;
+    while (el && el.localName !== "edge") el = el.parentNode;
+    return el;
+  }
+  function sbLineColour(k) {
+    return sbJs.lineOf(sbEdgeEl(k)) || "#000000";
+  }
+  function sbLineSet(k, c) {
+    return sbLineTo(k, sbJs.recolour(shared.text, edges2[k].id, c));
+  }
+  function sbLineWidth(k, w) {
+    return sbLineTo(k, sbJs.rewidth(shared.text, edges2[k].id, w));
+  }
+  function sbLineTo(k, t2) {
+    var id = edges2[k].id;
+    return commit(t2, { name: "line look", ids: [id], then: function() {
+      shared.selE = [];
+      edges2.forEach(function(q, j) {
+        if (q.id === id) shared.selE = [j];
+      });
+    } });
+  }
+  function sbDef(i) {
+    var o = sbJs.lookOf(realizerOf(nodes2[i].el)), b = boxOf(i), all = defsKept(), g = hubGroup(i);
+    if (g) HUB_KINDS[g].forEach(function(c) {
+      all[c] = { w: b[2], h: b[3], fill: o.fill, line: o.line, width: o.width, ant: sbAnts()[nodes2[i].id] };
+    });
+    else all[kindOf(i)] = { w: b[2], h: b[3], fill: o.fill, line: o.line, width: o.width, multimer: o.multimer, font: o.font };
+    if (!keepLook(DEF_KEY, all)) return;
+    keepMapChoice("style", "custom");
+    keepMapChoice("cols", "custom");
+    styleRow();
+    sbColsRow();
+  }
+  function hubGroup(i) {
+    var c = i != null && nodes2[i] ? sbClasses()[nodes2[i].id] || "" : "";
+    return HUB_KINDS.process.indexOf(c) >= 0 ? "process" : HUB_KINDS.gate.indexOf(c) >= 0 ? "gate" : null;
+  }
+  function sbAnts() {
+    if (antMemo[0] !== shared.text) antMemo = [shared.text, sbJs.antennas(shared.text, { sbgn: src() })];
+    return antMemo[1];
+  }
+  function __run23() {
+    props.querySelector(".m2-ed-pall").addEventListener("click", function() {
+      var i = propNode(), g = i >= 0 ? hubGroup(i) : null;
+      if (!g) return;
+      var b = boxOf(i), ant = sbAnts()[nodes2[i].id], lt = sbJs.GLT.test(sbClasses()[nodes2[i].id] || "") ? sbJs.lookOf(realizerOf(nodes2[i].el)).font : null;
+      var items = nodes2.map(function(n, k) {
+        if (k === i || hubGroup(k) !== g) return null;
+        var o = boxOf(k);
+        return { id: n.id, box: [+fmt(o[0] + o[2] / 2 - b[2] / 2), +fmt(o[1] + o[3] / 2 - b[3] / 2), b[2], b[3]], ant, letters: lt };
+      }).filter(Boolean);
+      if (!keepSel(function() {
+        return fitHubs(items);
+      })) warn("Every one of this kind already has this size and antenna.");
+    });
+    props.querySelector(".m2-ed-pstd").addEventListener("click", function() {
+      var ns = propNodes().filter(function(i) {
+        return hubGroup(i);
+      });
+      if (!ns.length) return;
+      var s = stdScale(), lt = stdLetters();
+      var items = ns.map(function(i) {
+        var gate = hubGroup(i) === "gate", S = sbJs.SIZE[gate ? "and" : "process"], o = boxOf(i), w = S[0] * s, h = S[1] * s;
+        return { id: nodes2[i].id, box: [+fmt(o[0] + o[2] / 2 - w / 2), +fmt(o[1] + o[3] / 2 - h / 2), w, h], ant: sbJs.ANT * s, letters: gate ? lt : null };
+      });
+      if (!keepSel(function() {
+        return fitHubs(items);
+      })) warn("Already at the standard size and antenna.");
+    });
+  }
+  function sbCols() {
+    return mapCols(["file", "none", "default", "confetti", "custom"], sbIs);
+  }
+  function sbSquares(mode) {
+    if (mode === "confetti") return confettiSquares();
+    var seen = {}, h = "", kept = mode === "custom" ? defsKept() : {};
+    SB_SQ.forEach(function(c) {
+      var k = kept[c], x = mode === "none" ? "#FFFFFF" : mode === "default" ? sbJs.fillFor(c) : k && k.fill ? k.fill : sbJs.defaults(src(), null, c).fill || "#FFFFFF";
+      x = String(x).toUpperCase();
+      if (seen[x]) return;
+      seen[x] = 1;
+      h += '<i style="background:' + x + '" title="' + c + ", " + x + '"></i>';
+    });
+    return '<span class="m2-cs-sw">' + h + "</span>";
+  }
+  function sbColsRow() {
+    return palDrop({ key: "cols", label: "Colours", title: "Colours of the map and of new glyphs", list: SB_COLS, get: sbCols, set: function(v) {
+      colsPick(v, sbCols(), function() {
+        return sbJs.colours(shared.text);
+      }, sbOriginal, sbRecolour);
+    }, sq: sbSquares });
+  }
+  function sbOriginal(r) {
+    var now = sbJs.colours(shared.text), M = {}, added = 0;
+    Object.keys(now.node).forEach(function(id) {
+      var o = r.node && r.node[id], a = now.node[id];
+      if (!o) added++;
+      else if (o.fill !== a.fill || o.line !== a.line) M[id] = { fill: o.fill, line: o.line };
+    });
+    Object.keys(now.edge).forEach(function(id) {
+      if (!r.edge || !(id in r.edge)) added++;
+    });
+    var t2 = sbJs.restyleAll(shared.text, M, null, function(id) {
+      return r.edge && id in r.edge && r.edge[id] !== now.edge[id] ? r.edge[id] : void 0;
+    });
+    commit(t2, { name: "colours from a file", sel: [], quiet: true });
+    return added;
+  }
+  function sbPlan(mode, pick) {
+    if (sbActMemo[0] !== shared.text) sbActMemo = [shared.text, sbJs.activities(shared.text)];
+    var cls = sbClasses(), acts = sbActMemo[1], kept = mode === "custom" ? defsKept() : {}, hues = [], P = [];
+    nodes2.forEach(function(n, i) {
+      var c = cls[n.id] || "";
+      if (!SB_FILLED.test(c)) {
+        if (sbJs.LOOKS.test(c) && mode !== "custom") P.push([i, { line: null }]);
+        return;
+      }
+      var base = c.replace(/ multimer$/, ""), u = acts[n.id], o;
+      var ff = sbJs.fillFor(u != null ? "biological activity" : base === "terminal" ? "tag" : base, u);
+      if (mode === "default") o = { fill: ff, line: null };
+      else if (mode === "none") o = { fill: null, line: null };
+      else if (mode === "custom") {
+        var k = kept[lookKey(base, u)];
+        if (!k || !(k.w > 0)) return;
+        o = {};
+        ["fill", "line", "width"].forEach(function(q) {
+          if (q in k) o[q] = k[q];
+        });
+      } else {
+        if (!ff || base === "compartment") return;
+        o = { fill: pick ? confettiPick(hues).toUpperCase() : true, line: null };
+      }
+      P.push([i, o]);
+    });
+    return P;
+  }
+  function sbIs(mode) {
+    if (!palOn()) return false;
+    if (mode === "file") {
+      var r = origAll()[palId()];
+      if (!r) return null;
+      var now = sbJs.colours(shared.text);
+      return Object.keys(r.node || {}).every(function(id) {
+        var a = now.node[id], o = r.node[id];
+        return !a || a.fill === o.fill && a.line === o.line;
+      }) && Object.keys(r.edge || {}).every(function(id) {
+        return !(id in now.edge) || now.edge[id] === r.edge[id];
+      });
+    }
+    var P = sbPlan(mode, false).filter(function(q) {
+      return "fill" in q[1];
+    });
+    if (!P.length) return null;
+    return P.every(function(q) {
+      var f = sbJs.lookOf(realizerOf(nodes2[q[0]].el)).fill;
+      return mode === "confetti" ? confettiOne(f) : (f ? f.slice(0, 7).toUpperCase() : null) === (q[1].fill ? q[1].fill.toUpperCase() : null);
+    });
+  }
+  function sbRecolour(mode) {
+    if (mode === "file" || !palOn()) return;
+    var M = {};
+    sbPlan(mode, true).forEach(function(q) {
+      M[nodes2[q[0]].id] = q[1];
+    });
+    var lh = [], t2 = sbJs.restyleAll(shared.text, M, null, mode === "custom" ? null : function() {
+      return mode === "confetti" ? confettiLine(lh).toUpperCase() : null;
+    });
+    commit(t2, { name: "colours", sel: [], quiet: true });
+  }
+  function svBase(i) {
+    var c = (sbClasses()[nodes2[i].id] || "").replace(/ multimer$/, "") || "macromolecule", b = boxOf(i);
+    try {
+      var D = defOf(c);
+      if (D && D.w && D.h) return [D.w, D.h];
+    } catch (e) {
+    }
+    return [b[2], b[3]];
+  }
+  function svCopies(id) {
+    var i = svIdx(id);
+    if (!shared.sb || shared.afSbgn || afKind() || i < 0 || nodes2[i].shape.kind !== "Macromolecule" || !svNm(i)) return [];
+    var nm = svNm(i);
+    return nodes2.filter(function(n, k) {
+      return k !== i && n.shape.kind === "Macromolecule" && svNm(k) === nm;
+    }).map(function(n) {
+      return n.id;
+    });
+  }
+  function svShareText(id, was, r0, n, now) {
+    var ov = svVar(was), nv = svVar(now), i = svIdx(id), q = i >= 0 ? svOnly(i)[n] : null, r = q ? svR(i, q) : r0;
+    if (!ov && !nv) return;
+    svCopies(id).forEach(function(c) {
+      var m = svTwin(c, was, r0), has = nv ? svTwin(c, now, r) : -1;
+      if (m >= 0 && ov !== nv) {
+        var k = svIdx(c), wb = boxOf(k), cur = svOnly(k)[m][0];
+        if (has >= 0 && has !== m) {
+          if (!cur) {
+            setText(sbJs.stateDelete(shared.text, c, m, { sbgn: shared.sb.base }));
+            parse();
+          }
+          return;
+        }
+        setText(sbJs.stateValue(shared.text, c, m, svVal(cur) + (nv ? "@" + nv : "")));
+        parse();
+        if (svSettle(c, m)) svHold(c, wb);
+      } else if (m < 0 && nv && has < 0) svAddTo(c, r, "@" + nv);
+    });
+  }
+  function svShareMove(i, q, r0, r) {
+    var ws = svCopies(nodes2[i].id).map(function(c) {
+      return [c, svTwin(c, q[0], r0)];
+    }).filter(function(w) {
+      return w[1] >= 0;
+    });
+    return function() {
+      ws.forEach(function(w) {
+        var k = svIdx(w[0]);
+        if (k < 0) return;
+        if (!r) {
+          setText(sbJs.stateDelete(shared.text, w[0], w[1], { sbgn: shared.sb.base }));
+          return;
+        }
+        var b = boxOf(k), ic = svIconsOn(k), me = ic.filter(function(o) {
+          return o.k === SV && o.n === w[1];
+        })[0];
+        if (me && !svClash(svPt(b, r), me.s, b, ic.filter(function(o) {
+          return o !== me;
+        }))) setText(sbJs.stateMove(shared.text, w[0], w[1], r[0], r[1]));
+      });
+      parse();
+    };
+  }
+  function cardAll() {
+    if (cardMemo[0] !== shared.text) cardMemo = [shared.text, shared.sb && sbJs && sbJs.countsAt ? sbJs.countsAt(shared.text) : {}];
+    return cardMemo[1];
+  }
+  function cardAt(P) {
+    if (!shared.sb || !sbJs || !sbJs.countsAt || shared.text.indexOf("<y:EdgeLabel") < 0) return null;
+    var o = cardAll(), pad = 2 / V.z, got = null;
+    Object.keys(o).forEach(function(id) {
+      var b = o[id].box;
+      if (P[0] >= b[0] - pad && P[0] <= b[0] + b[2] + pad && P[1] >= b[1] - pad && P[1] <= b[1] + b[3] + pad) got = id;
+    });
+    return got;
+  }
+  var SB_COLS;
+  function __run33() {
+    SB_COLS = [["file", "Original", "The map\u2019s own colours, as they were before another choice; new glyphs in the colour most glyphs of their kind have on it"], ["default", "Mist and sage", "The whole map and new glyphs in the viewer\u2019s starting colours: a pale blue for proteins, a pale green for small molecules"], ["none", "No colours", "The whole map and new glyphs unfilled"], ["custom", "Custom default", "The whole map and new glyphs in the colours kept by Set as default; a kind with none as it is"], ["confetti", "Confetti", "Every glyph of the map, and every new one, a pastel of its own"]];
+  }
+  var SB_SQ;
+  function __run4() {
+    SB_SQ = ["macromolecule", "simple chemical", "nucleic acid feature", "phenotype", "compartment"];
+  }
+  var SB_FILLED;
+  var sbActMemo;
+  function __run52() {
+    SB_FILLED = /^(macromolecule|simple chemical|nucleic acid feature|unspecified entity|perturbing agent|phenotype|complex|compartment|submap|biological activity|perturbation|tag|terminal)( multimer)?$/;
+    sbActMemo = [null, {}];
+  }
+  function svVal(s) {
+    var a = (s || "").indexOf("@");
+    return a < 0 ? s || "" : s.slice(0, a);
+  }
+  function svNm(i) {
+    return nameOf(i).replace(/\s+/g, " ").trim();
+  }
+  function fitHubs(items) {
+    if (!items.length) return false;
+    var was = {};
+    items.forEach(function(it) {
+      var i = nodes2.findIndex(function(n) {
+        return n.id === it.id;
+      });
+      was[it.id] = boxOf(i);
+    });
+    var t2;
+    try {
+      t2 = sbJs.fit(shared.text, items, { sbgn: src() });
+    } catch (err) {
+      warn("Not changed: " + (err && err.message || err) + ".");
+      return false;
+    }
+    if (t2 === shared.text) return false;
+    var sel = shared.selN.map(function(i) {
+      return nodes2[i].id;
+    });
+    commit(t2, { name: "size", ids: Object.keys(was), then: function() {
+      shared.selN = [];
+      nodes2.forEach(function(n, k) {
+        if (sel.indexOf(n.id) >= 0) shared.selN.push(k);
+      });
+      var ks = nodes2.map(function(n, k) {
+        return was[n.id] ? k : -1;
+      }).filter(function(k) {
+        return k >= 0;
+      });
+      if (ks.length) setBoxes(grown(ks, boxOf, function(k) {
+        return was[nodes2[k].id] || boxOf(k);
+      }, function() {
+        return false;
+      }));
+      refit(Object.keys(was));
+    } });
+    return true;
+  }
+  function __start4() {
+    __run14();
+    __run23();
+    __run33();
+    __run4();
+    __run52();
+  }
+
+  // editor/src/geometry.js
+  function nodeCentre(n, P) {
+    var b = bx(n);
+    return Math.max(Math.abs(P[0] - b[0] - b[2] / 2) / (b[2] / 2 || 1), Math.abs(P[1] - b[1] - b[3] / 2) / (b[3] / 2 || 1)) < 0.5;
+  }
+  function glyphMid(q, B, P, pp) {
+    var ea = edges2[q.a], eb = edges2[q.b], o = function(e, a2) {
+      if (pp && pp.to && edges2[pp.k] === e && (pp.end ? "t" : "s") === a2[0]) return pp.to[a2[1] === "x" ? 0 : 1];
+      return e.path ? parseFloat(e.path.getAttribute(a2)) || 0 : 0;
+    };
+    var S = B(pp && pp.n2 != null && edges2[pp.k] === ea && !pp.end ? pp.n2 : ea.s), T = B(pp && pp.n2 != null && edges2[pp.k] === eb && pp.end ? pp.n2 : eb.t);
+    var all = [[S[0] + S[2] / 2 + o(ea, "sx"), S[1] + S[3] / 2 + o(ea, "sy")]].concat(
+      ea.pts.map(P),
+      eb.pts.map(P),
+      [[T[0] + T[2] / 2 + o(eb, "tx"), T[1] + T[3] / 2 + o(eb, "ty")]]
+    );
+    var k = ea.pts.length, n = all.length - 1, a = all[k], b = all[k + 1];
+    if (k === 0) a = cut(all[0], all[1], S);
+    if (k + 1 === n) b = cut(all[n], all[n - 1], T);
+    return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, Math.atan2(b[1] - a[1], b[0] - a[0]), Math.hypot(b[0] - a[0], b[1] - a[1])];
+  }
+  function glyphPort(i, off, eid) {
+    var L = shared.liveG && shared.liveG[i];
+    if (!L || !L[2] && L[3] === 1) return off;
+    var c = Math.cos(L[2]), s2 = Math.sin(L[2]), f = /\|[rp]\d+$/.test(eid) ? L[3] : 1;
+    return [f * (c * off[0] - s2 * off[1]), f * (s2 * off[0] + c * off[1])];
+  }
+  function beyond(k, i, all) {
+    var e = edges2[k], last = all.length - 1;
+    if (i > 0 && i < last) return [all[i], e.pts[i - 1]];
+    var q = shared.procs.find(function(r) {
+      return i === last && r.a === k || i === 0 && r.b === k;
+    });
+    if (!q) return [all[i], null];
+    if (i === last) {
+      var eb = edges2[q.b];
+      if (eb.t == null) return [all[i], null];
+      return eb.pts.length ? [pt(eb.pts[0]), eb.pts[0]] : [ports(q.b)[eb.pts.length + 1], null];
+    }
+    var ea = edges2[q.a];
+    if (ea.s == null) return [all[i], null];
+    return ea.pts.length ? [pt(ea.pts[ea.pts.length - 1]), ea.pts[ea.pts.length - 1]] : [ports(q.a)[0], null];
+  }
+  function glyphArcs(bp) {
+    var out = [];
+    shared.procs.forEach(function(q) {
+      var ea = edges2[q.a], eb = edges2[q.b];
+      if (ea.s == null || eb.t == null || ea.pts.indexOf(bp) < 0 && eb.pts.indexOf(bp) < 0) return;
+      edges2.forEach(function(e, k) {
+        if (k !== q.a && k !== q.b && e.s != null && e.t != null && (e.s === q.g || e.t === q.g)) out.push({ q, k });
+      });
+    });
+    return out;
+  }
+  function joinAt(o, bp, B) {
+    var q = o.q, e = edges2[o.k], st = e.s === q.g, P2 = function(pi) {
+      return pi === bp ? B : pt(pi);
+    };
+    var at2 = function(a) {
+      return e.path ? parseFloat(e.path.getAttribute(a)) || 0 : 0;
+    };
+    var r = glyphMid(q, boxOf, restPt), m = glyphMid(q, bx, P2), off = st ? [at2("sx"), at2("sy")] : [at2("tx"), at2("ty")];
+    var f = /\|[rp]\d+$/.test(e.id) && r[3] ? m[3] / r[3] : 1, t = m[2] - r[2], c = Math.cos(t), s2 = Math.sin(t), G2 = boxOf(q.g);
+    var J = [G2[0] + G2[2] / 2 + m[0] - r[0] + f * (c * off[0] - s2 * off[1]), G2[1] + G2[3] / 2 + m[1] - r[1] + f * (s2 * off[0] + c * off[1])];
+    var N;
+    if (st) {
+      if (e.pts.length) N = pt(e.pts[0]);
+      else {
+        var T = bx(e.t);
+        N = [T[0] + T[2] / 2 + at2("tx"), T[1] + T[3] / 2 + at2("ty")];
+      }
+    } else {
+      if (e.pts.length) N = pt(e.pts[e.pts.length - 1]);
+      else {
+        var S = bx(e.s);
+        N = [S[0] + S[2] / 2 + at2("sx"), S[1] + S[3] / 2 + at2("sy")];
+      }
+    }
+    return [J, N];
+  }
+  function joinSolve(o, bp, B, ax, cm) {
+    var c = 0;
+    for (var it = 0; it < 4; it++) {
+      var P0 = B.slice(), P1 = B.slice();
+      P0[ax] += c;
+      P1[ax] += c + 1;
+      var a = joinAt(o, bp, P0), b = joinAt(o, bp, P1), res = a[0][cm] - a[1][cm], dv = b[0][cm] - b[1][cm] - res;
+      if (Math.abs(dv) < 0.05) return null;
+      c -= res / dv;
+      if (Math.abs(res) < 1e-4) break;
+    }
+    return c;
+  }
+  function joinGuides(bp, B) {
+    var out = [];
+    glyphArcs(bp).forEach(function(o) {
+      var J = joinAt(o, bp, B);
+      if (Math.abs(J[0][0] - J[1][0]) < 0.05 || Math.abs(J[0][1] - J[1][1]) < 0.05) out.push(J);
+    });
+    return out;
+  }
+
   // editor/src/celldesigner.js
   var cdp;
   var cdJs;
   var cdMk;
-  function __run13() {
+  function __run15() {
     cdp = null, cdJs = null, cdMk = null;
   }
   function isCd(t) {
@@ -1967,10 +2577,6 @@
       var A = R.anchorAt(cl[0], f, k);
       return [A[0] - C[0], A[1] - C[1], k];
     });
-  }
-  function nodeCentre(n, P) {
-    var b = bx(n);
-    return Math.max(Math.abs(P[0] - b[0] - b[2] / 2) / (b[2] / 2 || 1), Math.abs(P[1] - b[1] - b[3] / 2) / (b[3] / 2 || 1)) < 0.5;
   }
   function cdpy() {
     if (cdp) return cdp;
@@ -2003,7 +2609,7 @@
     return cdp;
   }
   var cdMemo;
-  function __run33() {
+  function __run34() {
     cdMemo = [];
   }
   function cdDraw(t, g, fit) {
@@ -2064,28 +2670,6 @@
     cdMemo.unshift([t, g]);
     cdMemo.length = Math.min(cdMemo.length, 3);
   }
-  function glyphMid(q, B, P, pp) {
-    var ea = edges2[q.a], eb = edges2[q.b], o = function(e, a2) {
-      if (pp && pp.to && edges2[pp.k] === e && (pp.end ? "t" : "s") === a2[0]) return pp.to[a2[1] === "x" ? 0 : 1];
-      return e.path ? parseFloat(e.path.getAttribute(a2)) || 0 : 0;
-    };
-    var S = B(pp && pp.n2 != null && edges2[pp.k] === ea && !pp.end ? pp.n2 : ea.s), T = B(pp && pp.n2 != null && edges2[pp.k] === eb && pp.end ? pp.n2 : eb.t);
-    var all = [[S[0] + S[2] / 2 + o(ea, "sx"), S[1] + S[3] / 2 + o(ea, "sy")]].concat(
-      ea.pts.map(P),
-      eb.pts.map(P),
-      [[T[0] + T[2] / 2 + o(eb, "tx"), T[1] + T[3] / 2 + o(eb, "ty")]]
-    );
-    var k = ea.pts.length, n = all.length - 1, a = all[k], b = all[k + 1];
-    if (k === 0) a = cut(all[0], all[1], S);
-    if (k + 1 === n) b = cut(all[n], all[n - 1], T);
-    return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, Math.atan2(b[1] - a[1], b[0] - a[0]), Math.hypot(b[0] - a[0], b[1] - a[1])];
-  }
-  function glyphPort(i, off, eid) {
-    var L = shared.liveG && shared.liveG[i];
-    if (!L || !L[2] && L[3] === 1) return off;
-    var c = Math.cos(L[2]), s2 = Math.sin(L[2]), f = /\|[rp]\d+$/.test(eid) ? L[3] : 1;
-    return [f * (c * off[0] - s2 * off[1]), f * (s2 * off[0] + c * off[1])];
-  }
   function glyphFollow(ns, ps, back2, pp) {
     if (!shared.procs.length || !gN) return;
     var old = shared.liveG;
@@ -2133,7 +2717,7 @@
     });
   }
   var cdLive;
-  function __run4() {
+  function __run42() {
     cdLive = null;
   }
   function cdSession() {
@@ -2211,7 +2795,7 @@
   }
   var liveCd;
   var RXE;
-  function __run52() {
+  function __run53() {
     liveCd = { glyphs: glyphFollow, lines: cdLines, holders: cdHolders, size: cdSizeLive };
     RXE = /^(.*)\|(a|b|[rpmi]\d+)$/;
   }
@@ -2305,80 +2889,6 @@
     });
     return true;
   }
-  function beyond(k, i, all) {
-    var e = edges2[k], last = all.length - 1;
-    if (i > 0 && i < last) return [all[i], e.pts[i - 1]];
-    var q = shared.procs.find(function(r) {
-      return i === last && r.a === k || i === 0 && r.b === k;
-    });
-    if (!q) return [all[i], null];
-    if (i === last) {
-      var eb = edges2[q.b];
-      if (eb.t == null) return [all[i], null];
-      return eb.pts.length ? [pt(eb.pts[0]), eb.pts[0]] : [ports(q.b)[eb.pts.length + 1], null];
-    }
-    var ea = edges2[q.a];
-    if (ea.s == null) return [all[i], null];
-    return ea.pts.length ? [pt(ea.pts[ea.pts.length - 1]), ea.pts[ea.pts.length - 1]] : [ports(q.a)[0], null];
-  }
-  function glyphArcs(bp) {
-    var out = [];
-    shared.procs.forEach(function(q) {
-      var ea = edges2[q.a], eb = edges2[q.b];
-      if (ea.s == null || eb.t == null || ea.pts.indexOf(bp) < 0 && eb.pts.indexOf(bp) < 0) return;
-      edges2.forEach(function(e, k) {
-        if (k !== q.a && k !== q.b && e.s != null && e.t != null && (e.s === q.g || e.t === q.g)) out.push({ q, k });
-      });
-    });
-    return out;
-  }
-  function joinAt(o, bp, B) {
-    var q = o.q, e = edges2[o.k], st = e.s === q.g, P2 = function(pi) {
-      return pi === bp ? B : pt(pi);
-    };
-    var at2 = function(a) {
-      return e.path ? parseFloat(e.path.getAttribute(a)) || 0 : 0;
-    };
-    var r = glyphMid(q, boxOf, restPt), m = glyphMid(q, bx, P2), off = st ? [at2("sx"), at2("sy")] : [at2("tx"), at2("ty")];
-    var f = /\|[rp]\d+$/.test(e.id) && r[3] ? m[3] / r[3] : 1, t = m[2] - r[2], c = Math.cos(t), s2 = Math.sin(t), G2 = boxOf(q.g);
-    var J = [G2[0] + G2[2] / 2 + m[0] - r[0] + f * (c * off[0] - s2 * off[1]), G2[1] + G2[3] / 2 + m[1] - r[1] + f * (s2 * off[0] + c * off[1])];
-    var N;
-    if (st) {
-      if (e.pts.length) N = pt(e.pts[0]);
-      else {
-        var T = bx(e.t);
-        N = [T[0] + T[2] / 2 + at2("tx"), T[1] + T[3] / 2 + at2("ty")];
-      }
-    } else {
-      if (e.pts.length) N = pt(e.pts[e.pts.length - 1]);
-      else {
-        var S = bx(e.s);
-        N = [S[0] + S[2] / 2 + at2("sx"), S[1] + S[3] / 2 + at2("sy")];
-      }
-    }
-    return [J, N];
-  }
-  function joinSolve(o, bp, B, ax, cm) {
-    var c = 0;
-    for (var it = 0; it < 4; it++) {
-      var P0 = B.slice(), P1 = B.slice();
-      P0[ax] += c;
-      P1[ax] += c + 1;
-      var a = joinAt(o, bp, P0), b = joinAt(o, bp, P1), res = a[0][cm] - a[1][cm], dv = b[0][cm] - b[1][cm] - res;
-      if (Math.abs(dv) < 0.05) return null;
-      c -= res / dv;
-      if (Math.abs(res) < 1e-4) break;
-    }
-    return c;
-  }
-  function joinGuides(bp, B) {
-    var out = [];
-    glyphArcs(bp).forEach(function(o) {
-      var J = joinAt(o, bp, B);
-      if (Math.abs(J[0][0] - J[1][0]) < 0.05 || Math.abs(J[0][1] - J[1][1]) < 0.05) out.push(J);
-    });
-    return out;
-  }
   function plainCanvas() {
     var el = V.img;
     if (!el || el.tagName !== "IMG" || !el.src) return;
@@ -2460,11 +2970,11 @@
       }
     };
   }
-  function __start3() {
-    __run13();
-    __run33();
-    __run4();
-    __run52();
+  function __start5() {
+    __run15();
+    __run34();
+    __run42();
+    __run53();
     __run62();
     __run72();
   }
@@ -2670,7 +3180,7 @@
   // editor/src/cdcreate.js
   var import_notation = __toESM(require_notation());
   var CD_SP;
-  function __run14() {
+  function __run16() {
     CD_SP = [
       ["PROTEIN", "Protein", '<rect x="1.5" y="5" width="21" height="14" rx="3.5"/>'],
       ["GENE", "Gene", '<rect x="1.5" y="6" width="21" height="12"/>'],
@@ -2701,7 +3211,7 @@
   var RED_OF;
   var CD_NAME;
   var cdK;
-  function __run23() {
+  function __run24() {
     CD_Q = '<path d="M9.8 10.2a2.2 2.2 0 1 1 3.2 2c-.7.4-1 .8-1 1.6" class="in"/><circle class="dot" cx="12" cy="16.4" r=".8"/>';
     CD_GATES = [
       ["AND", "AND gate", '<text x="12" y="16.2" text-anchor="middle" font-size="9">&amp;</text>', "&amp;"],
@@ -2757,7 +3267,7 @@
     }), true], ["Reactions", CD_RX.concat(CD_ADD).map(cdK), true], ["Modifiers", CD_MOD.map(cdK)]];
   }
   var CD_GATE;
-  function __run34() {
+  function __run35() {
     CD_RX.concat(CD_ADD, CD_MOD).forEach(function(q) {
       ARCS["cd:" + q[0]] = 1;
     });
@@ -2800,7 +3310,7 @@
     palBlocks();
   }
   var CD_INFO;
-  function __run53() {
+  function __run54() {
     CD_INFO = "Lets the modifiers\u2019 signs (inhibition, physical stimulation, modulation, trigger) join two species directly, written as CellDesigner\u2019s reduced notation, and allows a logic gate between species. Unticked: reactions and their modifiers only. CellDesigner\u2019s positive influence (an open arrowhead, not an SBGN sign) is made a physical stimulation when a map is opened.";
   }
   function cdInfo(hy, on_) {
@@ -3286,7 +3796,7 @@
     else cdLand(out, link.to, link.how.land);
   }
   var cdOver;
-  function __run15() {
+  function __run152() {
     cdOver = null;
     V.view.addEventListener("pointermove", function(e) {
       var on_ = cdPal() && cdAdd() === "p" && !e.buttons && !link, i = on_ ? linkEnd(at(e), -1) : -1, id = i >= 0 && cdRole(i) === "proc" ? nodes2[i].id : null;
@@ -3392,7 +3902,7 @@
     return h;
   }
   var cdClsMemo;
-  function __run16() {
+  function __run162() {
     cdClsMemo = { t: null, cls: {}, about: {} };
   }
   function cdMemo2() {
@@ -4029,7 +4539,7 @@
     shared.part = null;
     paint();
   }
-  function __run24() {
+  function __run242() {
     V.view.addEventListener("dblclick", function(e) {
       if (!cdPal() || !editing(e)) return;
       if (tool || Date.now() - placedAt < 600) {
@@ -5003,11 +5513,11 @@
     for (var j = n - 1, back2 = ""; j > 0; j--) back2 += '<g transform="translate(' + 6 * j + " " + 6 * j + ')">' + shape + "</g>";
     return { w: s[0], h: s[1], svg: '<svg width="100%" height="100%" viewBox="0 0 ' + s[0] + " " + s[1] + '" overflow="visible">' + (back2 || "") + shape + "</svg>" };
   }
-  function __start4() {
-    __run14();
-    __run23();
-    __run34();
-    __run53();
+  function __start6() {
+    __run16();
+    __run24();
+    __run35();
+    __run54();
     __run63();
     __run73();
     __run8();
@@ -5016,8 +5526,8 @@
     __run122();
     __run132();
     __run142();
-    __run15();
-    __run16();
+    __run152();
+    __run162();
     __run17();
     __run18();
     __run19();
@@ -5025,7 +5535,7 @@
     __run21();
     __run222();
     __run232();
-    __run24();
+    __run242();
     __run25();
     __run27();
     __run28();
@@ -5122,7 +5632,7 @@
     }
   }
   var mineIn;
-  function __run35() {
+  function __run36() {
     mineIn = function() {
       var has;
       try {
@@ -5170,7 +5680,7 @@
     });
   }
   var GROUPS_KEY;
-  function __run42() {
+  function __run43() {
     GROUPS_KEY = "atlas-mine-groups";
   }
   function mineGroups() {
@@ -5191,7 +5701,7 @@
     }
   }
   var groupsHere;
-  function __run54() {
+  function __run55() {
     groupsHere = [];
   }
   function mineGroupsHere() {
@@ -6493,7 +7003,7 @@
   }
   var adding;
   var ADD_AFTER;
-  function __run152() {
+  function __run153() {
     adding = [], ADD_AFTER = 300;
   }
   function addPaint() {
@@ -6655,7 +7165,7 @@
     }
   }
   var picker;
-  function __run162() {
+  function __run163() {
     picker = document.createElement("input");
     picker.type = "file";
     picker.multiple = true;
@@ -7174,7 +7684,7 @@
     return p;
   }
   var GONE_KEY;
-  function __run242() {
+  function __run243() {
     GONE_KEY = "atlas-groups-gone";
   }
   function goneRead() {
@@ -7984,12 +8494,12 @@
     };
     mineIn.then(upAll).then(binMigrate);
   }
-  function __start5() {
+  function __start7() {
     __run110();
     __run26();
-    __run35();
-    __run42();
-    __run54();
+    __run36();
+    __run43();
+    __run55();
     __run64();
     __run74();
     __run82();
@@ -7999,8 +8509,8 @@
     __run123();
     __run133();
     __run143();
-    __run152();
-    __run162();
+    __run153();
+    __run163();
     __run172();
     __run182();
     __run192();
@@ -8008,7 +8518,7 @@
     __run212();
     __run223();
     __run233();
-    __run242();
+    __run243();
     __run252();
     __run262();
     __run272();
@@ -8184,7 +8694,7 @@
   var PALS;
   var ARCS;
   var MODK;
-  function __run36() {
+  function __run37() {
     PALS = { pd: PAL_PD, rn: palAf(false), sbgn: palAf(true), rnP: palAf(false, true), sbgnP: palAf(true, true) };
     ARCS = {}, MODK = {};
     PAL_PD[4][1].forEach(function(q) {
@@ -8200,7 +8710,7 @@
   var pal;
   var PAL_KEY;
   var palSet;
-  function __run43() {
+  function __run44() {
     tool = null;
     pal = document.createElement("div");
     pal.className = "m2-ed-palette";
@@ -8222,7 +8732,7 @@
   function palFor() {
     var all = palStore(), id = palId(), k = id && all[id];
     if (k && (k.lang === "pd" || k.lang === "af")) return { lang: k.lang, look: k.look === "sbgn" ? "sbgn" : "rn", strict: k.strict === true, sbgn: k.sbgn === true };
-    var af = sbJs.isAf(shared.sb && shared.sb.base);
+    var af = sbFileAf();
     return { lang: af ? "af" : "pd", look: af ? "sbgn" : "rn", strict: false, sbgn: false };
   }
   function palKeep() {
@@ -8247,9 +8757,6 @@
       return (i && s[2] ? '<span class="m2-ed-pbr" aria-hidden="true"></span>' : "") + s[1].map(palSign).join("");
     }).join("") + "</div>";
   }
-  function palKind() {
-    return sbKind();
-  }
   function hybOn() {
     return palLangNow() === "pd" && palSet.strict !== true && !sbgnStrict();
   }
@@ -8264,10 +8771,7 @@
     return palLangNow() === "af" && (k === "af" || k === "empty");
   }
   function afMap() {
-    return !!shared.sb && palOn() && palLangNow() === "af";
-  }
-  function afKind() {
-    return !!shared.sb && palKind() === "af";
+    return palOn() && palLangNow() === "af";
   }
   function palLookNow() {
     return palViews() && palSet.look === "sbgn" ? "sbgn" : "rn";
@@ -8279,10 +8783,10 @@
     return '<button type="button" role="radio" data-look="' + look + '" title="' + title + '" aria-label="' + title + '" aria-checked="false"><span class="m2-ed-radio" aria-hidden="true"></span>' + name2 + "</button>";
   }
   var INFO;
-  function __run55() {
+  function __run56() {
     INFO = {
       strict: "Corresponds to CellDesigner's Reduced Notation. Stimulation, inhibition, necessary stimulation and modulation may also link entities, phenotypes and submaps. Such maps open in CellDesigner and MINERVA, but other SBGN-ML tools may not read them. Unticked, the SBGN Process Description rules alone. Off while Strict SBGN is ticked.",
-      sbgn: "Keeps what is drawn from now on to the SBGN Process Description specification alone: no reduced notation, one catalysis and one necessary stimulation per process, one line at an empty set, no line from a phenotype. Unticked, the default, the specification and what CellDesigner also allows, such as a phenotype as a reaction's reactant or modifier. What the map already holds is not changed.",
+      sbgnPd: "Keeps what is drawn from now on to the SBGN Process Description specification alone: no reduced notation, one catalysis and one necessary stimulation per process, one line at an empty set, no line from a phenotype. Unticked, the default, the specification and what CellDesigner also allows, such as a phenotype as a reaction's reactant or modifier. What the map already holds is not changed.",
       rn: "Corresponds to CellDesigner's Reduced Notation palette, which enables an Activity Flow type of representation.",
       sbgn: "Follows the SBGN Activity Flow specification. The map is saved as an Activity Flow SBGN-ML file.",
       prot: "When ticked, shows the auxiliary unit on protein activities. An activity with no auxiliary unit is by default a protein activity.",
@@ -8296,7 +8800,7 @@
   }
   var palSignsEl;
   function __run65() {
-    pal.innerHTML = '<div class="m2-ed-prow m2-ed-pnot" role="group" aria-label="Notation">' + palBtn('data-lang="pd"', "Process Description", '<text x="12" y="17.3" text-anchor="middle" font-size="15">PD</text>') + palBtn('data-lang="af"', "Activity Flow", '<text x="12" y="17.3" text-anchor="middle" font-size="15">AF</text>') + '</div><div class="m2-ed-plook" role="radiogroup" aria-label="Activity Flow view">' + palTip(palView("rn", "Reduced notation view", "Reduced notation view: each activity drawn as its entity"), "Reduced notation view", INFO.rn) + palTip(palView("sbgn", "SBGN AF view", "SBGN Activity Flow view: each entity drawn as its SBGN activity"), "SBGN Activity Flow view", INFO.sbgn) + '</div><div class="m2-ed-pblk m2-ed-pprot">' + palTip('<label class="m2-ed-phyb" title="Ticked: every protein activity carries the auxiliary unit of a macromolecule, drawn and saved in the file; unticked: none has it"><input type="checkbox"><span>Protein auxiliary unit</span></label>', "Protein auxiliary unit", INFO.prot) + '</div><div class="m2-ed-pblk m2-ed-pcdc">' + palTip('<label class="m2-ed-phyb" title="Ticked: the palette offers only what CellDesigner and MINERVA can hold; unticked: tags and submaps\u2019 terminals too"><input type="checkbox"><span>CellDesigner compatible</span></label>', "CellDesigner compatible", INFO.cdc) + '</div><div class="m2-ed-pblk m2-ed-psbgn">' + palTip('<label class="m2-ed-phyb" title="Ticked: what is drawn keeps to the SBGN PD specification alone; unticked: CellDesigner\u2019s additions too"><input type="checkbox"><span>Strict SBGN</span></label>', "Strict SBGN", INFO.sbgn) + '</div><div class="m2-ed-pblk m2-ed-pstrict">' + palTip('<label class="m2-ed-phyb" title="Ticked (the default): under PD a modulation may also end on an entity, and a logic gate\u2019s output go to one (CellDesigner\u2019s reduced notation); with a process on the map the file stays Process Description, without one such a link makes it Activity Flow. Unticked: Process Description only"><input type="checkbox"><span>Reduced notation</span></label>', "Reduced notation", INFO.strict) + '</div><div class="m2-ed-pblk m2-ed-psites">' + palTip('<label class="m2-ed-phyb" title="Ticked: every state variable shows its site and the map is saved so; unticked: the value alone, the sites kept in the notes"><input type="checkbox"><span>Show sites</span></label>', "Show sites", INFO.sites) + '</div><div class="m2-ed-psigns"></div>';
+    pal.innerHTML = '<div class="m2-ed-prow m2-ed-pnot" role="group" aria-label="Notation">' + palBtn('data-lang="pd"', "Process Description", '<text x="12" y="17.3" text-anchor="middle" font-size="15">PD</text>') + palBtn('data-lang="af"', "Activity Flow", '<text x="12" y="17.3" text-anchor="middle" font-size="15">AF</text>') + '</div><div class="m2-ed-plook" role="radiogroup" aria-label="Activity Flow view">' + palTip(palView("rn", "Reduced notation view", "Reduced notation view: each activity drawn as its entity"), "Reduced notation view", INFO.rn) + palTip(palView("sbgn", "SBGN AF view", "SBGN Activity Flow view: each entity drawn as its SBGN activity"), "SBGN Activity Flow view", INFO.sbgn) + '</div><div class="m2-ed-pblk m2-ed-pprot">' + palTip('<label class="m2-ed-phyb" title="Ticked: every protein activity carries the auxiliary unit of a macromolecule, drawn and saved in the file; unticked: none has it"><input type="checkbox"><span>Protein auxiliary unit</span></label>', "Protein auxiliary unit", INFO.prot) + '</div><div class="m2-ed-pblk m2-ed-pcdc">' + palTip('<label class="m2-ed-phyb" title="Ticked: the palette offers only what CellDesigner and MINERVA can hold; unticked: tags and submaps\u2019 terminals too"><input type="checkbox"><span>CellDesigner compatible</span></label>', "CellDesigner compatible", INFO.cdc) + '</div><div class="m2-ed-pblk m2-ed-psbgn">' + palTip('<label class="m2-ed-phyb" title="Ticked: what is drawn keeps to the SBGN PD specification alone; unticked: CellDesigner\u2019s additions too"><input type="checkbox"><span>Strict SBGN</span></label>', "Strict SBGN", INFO.sbgnPd) + '</div><div class="m2-ed-pblk m2-ed-pstrict">' + palTip('<label class="m2-ed-phyb" title="Ticked (the default): under PD a modulation may also end on an entity, and a logic gate\u2019s output go to one (CellDesigner\u2019s reduced notation); with a process on the map the file stays Process Description, without one such a link makes it Activity Flow. Unticked: Process Description only"><input type="checkbox"><span>Reduced notation</span></label>', "Reduced notation", INFO.strict) + '</div><div class="m2-ed-pblk m2-ed-psites">' + palTip('<label class="m2-ed-phyb" title="Ticked: every state variable shows its site and the map is saved so; unticked: the value alone, the sites kept in the notes"><input type="checkbox"><span>Show sites</span></label>', "Show sites", INFO.sites) + '</div><div class="m2-ed-psigns"></div>';
     palSignsEl = pal.querySelector(".m2-ed-psigns");
   }
   function palBlocks() {
@@ -8594,7 +9098,7 @@
     return choiceMemo.v;
   }
   var STYLES;
-  function __run153() {
+  function __run154() {
     STYLES = [["file", "From map", "New nodes the size most nodes of their kind have on this map"], ["default", "Standard sizes", "New nodes at the standard sizes: CellDesigner\u2019s own on a CellDesigner map, the editor\u2019s on others"], ["custom", "Custom default", "New nodes the size kept by Set as default; From map for a kind with none"]];
   }
   function palStyle() {
@@ -8659,7 +9163,7 @@
     return best;
   }
   var CONF;
-  function __run163() {
+  function __run164() {
     CONF = null;
   }
   function confettiOne(hex2) {
@@ -8674,119 +9178,6 @@
       var x = confettiHex(k * 137.508 % 360);
       return '<i style="background:' + x + '" title="' + x.toUpperCase() + '"></i>';
     }).join("") + "</span>";
-  }
-  var SB_COLS;
-  function __run173() {
-    SB_COLS = [["file", "Original", "The map\u2019s own colours, as they were before another choice; new glyphs in the colour most glyphs of their kind have on it"], ["default", "Mist and sage", "The whole map and new glyphs in the viewer\u2019s starting colours: a pale blue for proteins, a pale green for small molecules"], ["none", "No colours", "The whole map and new glyphs unfilled"], ["custom", "Custom default", "The whole map and new glyphs in the colours kept by Set as default; a kind with none as it is"], ["confetti", "Confetti", "Every glyph of the map, and every new one, a pastel of its own"]];
-  }
-  function sbCols() {
-    return mapCols(["file", "none", "default", "confetti", "custom"], sbIs);
-  }
-  var SB_SQ;
-  function __run183() {
-    SB_SQ = ["macromolecule", "simple chemical", "nucleic acid feature", "phenotype", "compartment"];
-  }
-  function sbSquares(mode) {
-    if (mode === "confetti") return confettiSquares();
-    var seen = {}, h = "", kept = mode === "custom" ? defsKept() : {};
-    SB_SQ.forEach(function(c) {
-      var k = kept[c], x = mode === "none" ? "#FFFFFF" : mode === "default" ? sbJs.fillFor(c) : k && k.fill ? k.fill : sbJs.defaults(src(), null, c).fill || "#FFFFFF";
-      x = String(x).toUpperCase();
-      if (seen[x]) return;
-      seen[x] = 1;
-      h += '<i style="background:' + x + '" title="' + c + ", " + x + '"></i>';
-    });
-    return '<span class="m2-cs-sw">' + h + "</span>";
-  }
-  function sbColsRow() {
-    return palDrop({ key: "cols", label: "Colours", title: "Colours of the map and of new glyphs", list: SB_COLS, get: sbCols, set: function(v) {
-      colsPick(v, sbCols(), function() {
-        return sbJs.colours(shared.text);
-      }, sbOriginal, sbRecolour);
-    }, sq: sbSquares });
-  }
-  function sbOriginal(r) {
-    var now = sbJs.colours(shared.text), M = {}, added = 0;
-    Object.keys(now.node).forEach(function(id) {
-      var o = r.node && r.node[id], a = now.node[id];
-      if (!o) added++;
-      else if (o.fill !== a.fill || o.line !== a.line) M[id] = { fill: o.fill, line: o.line };
-    });
-    Object.keys(now.edge).forEach(function(id) {
-      if (!r.edge || !(id in r.edge)) added++;
-    });
-    var t2 = sbJs.restyleAll(shared.text, M, null, function(id) {
-      return r.edge && id in r.edge && r.edge[id] !== now.edge[id] ? r.edge[id] : void 0;
-    });
-    commit(t2, { name: "colours from a file", sel: [], quiet: true });
-    return added;
-  }
-  var SB_FILLED;
-  var sbActMemo;
-  function __run193() {
-    SB_FILLED = /^(macromolecule|simple chemical|nucleic acid feature|unspecified entity|perturbing agent|phenotype|complex|compartment|submap|biological activity|perturbation|tag|terminal)( multimer)?$/;
-    sbActMemo = [null, {}];
-  }
-  function sbPlan(mode, pick) {
-    if (sbActMemo[0] !== shared.text) sbActMemo = [shared.text, sbJs.activities(shared.text)];
-    var cls = sbClasses(), acts = sbActMemo[1], kept = mode === "custom" ? defsKept() : {}, hues = [], P = [];
-    nodes2.forEach(function(n, i) {
-      var c = cls[n.id] || "";
-      if (!SB_FILLED.test(c)) {
-        if (sbJs.LOOKS.test(c) && mode !== "custom") P.push([i, { line: null }]);
-        return;
-      }
-      var base = c.replace(/ multimer$/, ""), u = acts[n.id], o;
-      var ff = sbJs.fillFor(u != null ? "biological activity" : base === "terminal" ? "tag" : base, u);
-      if (mode === "default") o = { fill: ff, line: null };
-      else if (mode === "none") o = { fill: null, line: null };
-      else if (mode === "custom") {
-        var k = kept[lookKey(base, u)];
-        if (!k || !(k.w > 0)) return;
-        o = {};
-        ["fill", "line", "width"].forEach(function(q) {
-          if (q in k) o[q] = k[q];
-        });
-      } else {
-        if (!ff || base === "compartment") return;
-        o = { fill: pick ? confettiPick(hues).toUpperCase() : true, line: null };
-      }
-      P.push([i, o]);
-    });
-    return P;
-  }
-  function sbIs(mode) {
-    if (!palOn()) return false;
-    if (mode === "file") {
-      var r = origAll()[palId()];
-      if (!r) return null;
-      var now = sbJs.colours(shared.text);
-      return Object.keys(r.node || {}).every(function(id) {
-        var a = now.node[id], o = r.node[id];
-        return !a || a.fill === o.fill && a.line === o.line;
-      }) && Object.keys(r.edge || {}).every(function(id) {
-        return !(id in now.edge) || now.edge[id] === r.edge[id];
-      });
-    }
-    var P = sbPlan(mode, false).filter(function(q) {
-      return "fill" in q[1];
-    });
-    if (!P.length) return null;
-    return P.every(function(q) {
-      var f = sbJs.lookOf(realizerOf(nodes2[q[0]].el)).fill;
-      return mode === "confetti" ? confettiOne(f) : (f ? f.slice(0, 7).toUpperCase() : null) === (q[1].fill ? q[1].fill.toUpperCase() : null);
-    });
-  }
-  function sbRecolour(mode) {
-    if (mode === "file" || !palOn()) return;
-    var M = {};
-    sbPlan(mode, true).forEach(function(q) {
-      M[nodes2[q[0]].id] = q[1];
-    });
-    var lh = [], t2 = sbJs.restyleAll(shared.text, M, null, mode === "custom" ? null : function() {
-      return mode === "confetti" ? confettiLine(lh).toUpperCase() : null;
-    });
-    commit(t2, { name: "colours", sel: [], quiet: true });
   }
   function palFill() {
     var k = palKey();
@@ -8934,9 +9325,6 @@
   }
   function __run213() {
     box.querySelector(".m2-ed-tools").insertAdjacentElement("afterend", pal);
-  }
-  function palOn() {
-    return on && V.current === map && !!shared.sb && !!sbJs && V.level === "full";
   }
   function palShow() {
     var cdp_ = cdPal(), show = palOn() || cdp_;
@@ -9187,7 +9575,7 @@
     return [[x, k === 3 ? q[1] + q[3] - L : q[1], S, L], k === 3 ? "up" : "down"];
   }
   var SIDE;
-  function __run243() {
+  function __run244() {
     SIDE = { right: 0, left: 1, down: 2, up: 3 };
   }
   function onSide(b, q, way, any) {
@@ -9945,15 +10333,6 @@
     var w = b[2] + S, h = b[3] + S * base[1] / base[0];
     return [b[0] - (w - b[2]) / 2, b[1] - (h - b[3]) / 2, w, h];
   }
-  function svBase(i) {
-    var c = (sbClasses()[nodes2[i].id] || "").replace(/ multimer$/, "") || "macromolecule", b = boxOf(i);
-    try {
-      var D = defOf(c);
-      if (D && D.w && D.h) return [D.w, D.h];
-    } catch (e) {
-    }
-    return [b[2], b[3]];
-  }
   function svRoom(i, s, skip) {
     var b0 = boxOf(i), b = b0, base = svBase(i), S = svStep(i), ic0 = svIconsOn(i).filter(function(q) {
       return !skip || !skip(q);
@@ -10052,10 +10431,6 @@
     var a = (s || "").indexOf("@");
     return a < 0 ? "" : s.slice(a + 1).trim();
   }
-  function svVal(s) {
-    var a = (s || "").indexOf("@");
-    return a < 0 ? s || "" : s.slice(0, a);
-  }
   function svIdx(id) {
     return nodes2.findIndex(function(n) {
       return n.id === id;
@@ -10069,19 +10444,6 @@
   function svR(i, q) {
     var b = boxOf(i);
     return [(q[1][0] - b[0]) / b[2] - 0.5, (q[1][1] - b[1]) / b[3] - 0.5];
-  }
-  function svNm(i) {
-    return nameOf(i).replace(/\s+/g, " ").trim();
-  }
-  function svCopies(id) {
-    var i = svIdx(id);
-    if (!shared.sb || shared.afSbgn || afKind() || i < 0 || nodes2[i].shape.kind !== "Macromolecule" || !svNm(i)) return [];
-    var nm = svNm(i);
-    return nodes2.filter(function(n, k) {
-      return k !== i && n.shape.kind === "Macromolecule" && svNm(k) === nm;
-    }).map(function(n) {
-      return n.id;
-    });
   }
   function svTwin(c, txt, r) {
     var k = svIdx(c);
@@ -10119,50 +10481,6 @@
     setText(sbJs.state(shared.text, c, txt, at2.r[0], at2.r[1]));
     parse();
     if (at2.box) svHold(c, b0);
-  }
-  function svShareText(id, was, r0, n, now) {
-    var ov = svVar(was), nv = svVar(now), i = svIdx(id), q = i >= 0 ? svOnly(i)[n] : null, r = q ? svR(i, q) : r0;
-    if (!ov && !nv) return;
-    svCopies(id).forEach(function(c) {
-      var m = svTwin(c, was, r0), has = nv ? svTwin(c, now, r) : -1;
-      if (m >= 0 && ov !== nv) {
-        var k = svIdx(c), wb = boxOf(k), cur = svOnly(k)[m][0];
-        if (has >= 0 && has !== m) {
-          if (!cur) {
-            setText(sbJs.stateDelete(shared.text, c, m, { sbgn: shared.sb.base }));
-            parse();
-          }
-          return;
-        }
-        setText(sbJs.stateValue(shared.text, c, m, svVal(cur) + (nv ? "@" + nv : "")));
-        parse();
-        if (svSettle(c, m)) svHold(c, wb);
-      } else if (m < 0 && nv && has < 0) svAddTo(c, r, "@" + nv);
-    });
-  }
-  function svShareMove(i, q, r0, r) {
-    var ws = svCopies(nodes2[i].id).map(function(c) {
-      return [c, svTwin(c, q[0], r0)];
-    }).filter(function(w) {
-      return w[1] >= 0;
-    });
-    return function() {
-      ws.forEach(function(w) {
-        var k = svIdx(w[0]);
-        if (k < 0) return;
-        if (!r) {
-          setText(sbJs.stateDelete(shared.text, w[0], w[1], { sbgn: shared.sb.base }));
-          return;
-        }
-        var b = boxOf(k), ic = svIconsOn(k), me = ic.filter(function(o) {
-          return o.k === SV && o.n === w[1];
-        })[0];
-        if (me && !svClash(svPt(b, r), me.s, b, ic.filter(function(o) {
-          return o !== me;
-        }))) setText(sbJs.stateMove(shared.text, w[0], w[1], r[0], r[1]));
-      });
-      parse();
-    };
   }
   function svJoin(id) {
     var i = svIdx(id), cs = svCopies(id).map(svIdx).sort(function(a, b) {
@@ -10497,7 +10815,7 @@
   function svAt(P) {
     var own2 = shared.F.sv;
     if (own2 ? !own2.on() : shared.afSbgn || afKind()) return null;
-    var res = own2 ? null : svIcons(), found = null, pad = 3 / V.z, acts = shared.sb && palKind() === "hybrid" ? sbJs.activities(shared.text) : null;
+    var res = own2 ? null : svIcons(), found = null, pad = 3 / V.z, acts = hybridActs();
     nodes2.forEach(function(n, k) {
       if (own2 ? own2.far(P, k) : n.shape.kind !== "Macromolecule" && n.shape.kind !== "NucleicAcidFeature" || acts && acts[n.id] != null) return;
       svList(k, res).forEach(function(q, j) {
@@ -10722,38 +11040,13 @@
       shared.svSel = null;
       return shared.F.sv.del(i, j);
     }
-    var q = svList(i)[shared.svSel.j];
-    var share = q[3] === SV ? svShareMove(i, q, svR(i, q), null) : null;
-    var sid = shared.svSel.id;
-    if (!commit((q[3] === UI ? sbJs.unitDelete : sbJs.stateDelete)(shared.text, sid, q[4], { sbgn: shared.sb.base }), { name: "state variable deleted", ids: [sid], then: function() {
-      shared.svSel = null;
-      if (share) share();
-    } })) {
-      shared.svSel = null;
-      render();
-      paint();
-    }
-    return true;
+    return svDeleteSb(i);
   }
   var cardSel;
   var cardDrag;
   var cardKey;
-  var cardMemo;
   function __run342() {
-    cardSel = null, cardDrag = null, cardKey = null, cardMemo = [null, null];
-  }
-  function cardAll() {
-    if (cardMemo[0] !== shared.text) cardMemo = [shared.text, shared.sb && sbJs && sbJs.countsAt ? sbJs.countsAt(shared.text) : {}];
-    return cardMemo[1];
-  }
-  function cardAt(P) {
-    if (!shared.sb || !sbJs || !sbJs.countsAt || shared.text.indexOf("<y:EdgeLabel") < 0) return null;
-    var o = cardAll(), pad = 2 / V.z, got = null;
-    Object.keys(o).forEach(function(id) {
-      var b = o[id].box;
-      if (P[0] >= b[0] - pad && P[0] <= b[0] + b[2] + pad && P[1] >= b[1] - pad && P[1] <= b[1] + b[3] + pad) got = id;
-    });
-    return got;
+    cardSel = null, cardDrag = null, cardKey = null;
   }
   function cardK(id) {
     return edges2.findIndex(function(q) {
@@ -10963,7 +11256,7 @@
     return commit(t2, { name: "deleted", ids: ids.concat(eids), sel: [] });
   }
   var KEYS;
-  function __run37() {
+  function __run372() {
     KEYS = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
   }
   function perim(b) {
@@ -11580,66 +11873,9 @@
       })];
     }));
   }
-  function sbSizable(i) {
-    var n = nodes2[i];
-    return !!n.comp || isMade(n);
-  }
   function termScaled(b, b0, b1) {
     var rx = b0[2] ? (b[0] + b[2] / 2 - b0[0]) / b0[2] : 0.5, ry = b0[3] ? (b[1] + b[3] / 2 - b0[1]) / b0[3] : 0.5;
     return [b1[0] + rx * b1[2] - b[2] / 2, b1[1] + ry * b1[3] - b[3] / 2, b[2], b[3]];
-  }
-  function sbSetSize(pairs) {
-    var ids = [], was = {}, t2 = shared.text, tids = [];
-    pairs.forEach(function(q) {
-      var b0 = boxOf(q[0]), b1 = q[1];
-      nodes2.forEach(function(n, k) {
-        if (n.sub !== q[0]) return;
-        t2 = sbJs.resize(t2, n.id, termScaled(boxOf(k), b0, b1));
-        tids.push(n.id);
-      });
-    });
-    try {
-      pairs.forEach(function(q) {
-        var id = nodes2[q[0]].id;
-        ids.push(id);
-        was[id] = boxOf(q[0]);
-        t2 = sbJs.resize(t2, id, q[1]);
-      });
-    } catch (err) {
-      warn("Not resized: " + (err && err.message || err) + ".");
-      liveOff();
-      sizeOff();
-      paint();
-      return;
-    }
-    if (t2 === shared.text) {
-      liveOff();
-      sizeOff();
-      paint();
-      return;
-    }
-    commit(t2, { name: "resized", ids, then: function() {
-      nodes2.forEach(function(n) {
-        if (n.sub != null && ids.indexOf(n.id) >= 0) tids.push(n.id);
-      });
-      if (tids.length) termsFix(nodes2.map(function(n, k) {
-        return tids.indexOf(n.id) >= 0 ? k : -1;
-      }).filter(function(k) {
-        return k >= 0;
-      }), true);
-      shared.selN = [];
-      nodes2.forEach(function(n, k) {
-        if (ids.indexOf(n.id) >= 0) shared.selN.push(k);
-      });
-      var ks = shared.selN.slice();
-      if (ks.length) setBoxes(grown(ks, boxOf, function(k) {
-        return was[nodes2[k].id] || boxOf(k);
-      }, function() {
-        return false;
-      }));
-      refit(ids);
-      shared.sizeRec = null;
-    } });
   }
   var ROWS;
   var props;
@@ -11682,7 +11918,7 @@
   var inH;
   var field;
   var pNow;
-  function __run44() {
+  function __run442() {
     props.innerHTML = "<p>Properties</p>" + table(ROWS, " m2-ed-pnode") + table(EROWS, " m2-ed-pedge") + table(RROWS, " m2-ed-prx") + '<table class="m2-ed-ptab m2-ed-pcard" hidden></table><button type="button" class="m2-ed-pdef" title="The next ones of this kind made from the palette take these">Set as default</button><button type="button" class="m2-ed-pall" title="Every glyph of this kind on the map (every process, or every logic gate) takes this one\u2019s size and antenna">Apply to all of this kind</button><button type="button" class="m2-ed-pstd" title="The standard size and antenna of processes and logic gates, at the map\u2019s scale (Style, Standard sizes)">Standard size</button>';
     pal.insertAdjacentElement("afterend", props);
     props.insertAdjacentElement("afterend", pmap);
@@ -11705,34 +11941,11 @@
       return i >= 0;
     });
   }
-  function sbNode(i) {
-    return sbJs.LOOKS.test(sbClasses()[nodes2[i].id] || "") ? i : -1;
-  }
-  var TAGS;
-  function __run45() {
-    TAGS = /^(tag|terminal)$/;
-  }
   function hasMulti(c) {
     return sbJs.MULTI.test(c);
   }
-  function sbOff(k, i) {
-    var c = sbClasses()[nodes2[i].id] || "";
-    if (k === "way") return !TAGS.test(c);
-    if (TAGS.test(c)) return !/^(label|font|w|h|fill|line|width)$/.test(k);
-    if (k === "label" || k === "font") return !sbJs.NAMED.test(c);
-    if (k === "multimer") return !hasMulti(c.replace(/ multimer$/, ""));
-    if (k === "ant") return !hubGroup(i) || sbAnts()[nodes2[i].id] == null;
-    if (EXTRA.indexOf(k) >= 0) return true;
-    if (k === "def") return !/^(macromolecule|simple chemical)( multimer)?$|^biological activity$/.test(c) && !hubGroup(i);
-    return false;
-  }
   function lookKey(cls, unit) {
     return cls === "biological activity" ? cls + ":" + (unit || "") : cls;
-  }
-  function kindOf(i) {
-    var c = (sbClasses()[nodes2[i].id] || "").replace(/ multimer$/, "");
-    if (c === "biological activity") return lookKey(c, sbJs.activities(shared.text)[nodes2[i].id]);
-    return c || (nodes2[i].shape.kind === "SimpleChemical" ? "simple chemical" : "macromolecule");
   }
   function propsShow(all) {
     var i = propNode(), k = propEdge(), r2 = function(v) {
@@ -11929,120 +12142,8 @@
     }
     return r;
   }
-  function sbSet(k, v, is) {
-    var ids = is.map(function(i) {
-      return nodes2[i].id;
-    }), t2 = shared.text;
-    if (k === "ant") {
-      var L = parseFloat(v);
-      return isFinite(L) && fitHubs(is.filter(function(i) {
-        return hubGroup(i);
-      }).map(function(i) {
-        return { id: nodes2[i].id, ant: Math.min(Math.max(L, 1), 200) };
-      }));
-    }
-    ids.forEach(function(id) {
-      if (k === "label") t2 = sbJs.label(t2, id, v.replace(/[\r\n]+/g, " "));
-      else if (k === "multimer") t2 = sbJs.multimer(t2, id, v);
-      else if (k === "width") {
-        var x = parseFloat(v);
-        if (isFinite(x)) t2 = sbJs.restyle(t2, id, { width: Math.min(Math.max(x, 0.25), 20) });
-      } else if (k === "font") {
-        var z = parseFloat(v);
-        if (isFinite(z)) t2 = sbJs.restyle(t2, id, { font: Math.min(Math.max(Math.round(z * 2) / 2, 1), 200) });
-      } else if (k === "way") {
-        var ti = is.filter(function(i) {
-          return nodes2[i].id === id;
-        })[0];
-        if (ti != null && nodes2[ti].sub == null) t2 = tagTurnT(t2, ti, v);
-      } else {
-        var c = hex(v), o = {};
-        if (c !== null && !(c === "" && k === "line")) {
-          o[k] = c === "#000000" && k === "line" ? null : c || null;
-          t2 = sbJs.restyle(t2, id, o);
-        }
-      }
-    });
-    if (t2 === shared.text) return false;
-    commit(t2, { name: "properties", sel: ids, quiet: true });
-    return true;
-  }
-  function sbEnds(id, o, box2) {
-    var t2 = sbJs.scaleEnds(shared.text, id, o, box2);
-    if (t2 !== shared.text) {
-      setText(t2);
-      parse();
-    }
-  }
-  function sbReversible(pid, on2, keepNode) {
-    var rv = sbJs.reversibility(shared.text, pid, { sbgn: src() }), n = rv ? on2 ? rv.can : rv.rev : 0, ids = [];
-    if (!n) return false;
-    for (var j = 0; j < n; j++) ids.push(freeId("arc_", ids));
-    var t2 = sbJs.reversible(shared.text, pid, on2, ids, { sbgn: src() });
-    return commit(t2, { name: "reversible", ids: [pid], sel: keepNode ? [pid] : [], selE: keepNode ? [] : ids, quiet: true });
-  }
-  var sbRxSeen;
-  function __run49() {
-    sbRxSeen = [null, null];
-  }
-  function sbRxOf() {
-    if (shared.selN.length !== 1 || shared.selE.length || shared.selP.length || shared.svSel) return null;
-    var id = nodes2[shared.selN[0]] && nodes2[shared.selN[0]].id;
-    if (!id || sbJs.PROCESSES.indexOf(sbClasses()[id] || "") < 0) return null;
-    var key = id + "\0" + shared.text;
-    if (sbRxSeen[0] !== key) {
-      var rv = null;
-      try {
-        rv = sbJs.reversibility(shared.text, id, { sbgn: src() });
-      } catch (e) {
-        rv = null;
-      }
-      sbRxSeen = [key, rv && (rv.can || rv.rev) ? { rid: id, on: rv.rev > 0 } : null];
-    }
-    return sbRxSeen[1];
-  }
-  var PF_SB;
   var eFor;
   function __run50() {
-    PF_SB = {
-      sizable: sbSizable,
-      size: sbSetSize,
-      node: sbNode,
-      set: sbSet,
-      def: sbDef,
-      ends: sbEnds,
-      hub: function(i) {
-        return !!hubGroup(i);
-      },
-      rx: { of: sbRxOf, set: function(pid, on2) {
-        return sbReversible(pid, on2, true);
-      }, withNode: true },
-      line: {
-        colour: sbLineColour,
-        set: sbLineSet,
-        width: function(k) {
-          return sbJs.widthOf(sbEdgeEl(k));
-        },
-        setWidth: sbLineWidth,
-        ports: true,
-        // a line's colour, width and its ports' rows (edgeShow, edgeSet)
-        count: sbCount,
-        setCount: function(k, v) {
-          return sbLineTo(k, sbJs.recount(shared.text, edges2[k].id, v));
-        }
-      },
-      // a consumption's or production's cardinality
-      off: sbOff,
-      look: function(i) {
-        var r = realizerOf(nodes2[i].el), o = sbJs.lookOf(r), wf = field("way");
-        if (wf) {
-          wf.disabled = nodes2[i].sub != null;
-          wf.title = wf.disabled ? "A terminal points into its submap, set by the side it sits on" : "";
-        }
-        var an = hubGroup(i) ? sbAnts()[nodes2[i].id] : null;
-        return { label: nameOf(i), font: o.font, fill: o.fill ? o.fill.slice(0, 7).toLowerCase() : "", line: (o.line || "#000000").slice(0, 7).toLowerCase(), width: o.width, multimer: o.multimer, way: sbJs.wayOfR && sbJs.wayOfR(r) || "right", ant: an == null ? "" : an };
-      }
-    };
     eFor = null;
   }
   function propRx() {
@@ -12104,46 +12205,6 @@
       return q.id.indexOf(r.rid + "|") === 0 && !/\|[mrp]\d+$/.test(q.id);
     });
     return k >= 0 && f.line.colour(k) != null ? k : -1;
-  }
-  var sbCountMemo;
-  function __run532() {
-    sbCountMemo = [null, null, null];
-  }
-  function sbCount(k) {
-    var id = edges2[k].id;
-    if (sbCountMemo[0] !== id || sbCountMemo[1] !== shared.text) {
-      var c;
-      try {
-        c = sbJs.countOf(shared.text, id);
-      } catch (e) {
-        c = void 0;
-      }
-      sbCountMemo = [id, shared.text, c];
-    }
-    return sbCountMemo[2];
-  }
-  function sbEdgeEl(k) {
-    var el = edges2[k].path.parentNode;
-    while (el && el.localName !== "edge") el = el.parentNode;
-    return el;
-  }
-  function sbLineColour(k) {
-    return sbJs.lineOf(sbEdgeEl(k)) || "#000000";
-  }
-  function sbLineSet(k, c) {
-    return sbLineTo(k, sbJs.recolour(shared.text, edges2[k].id, c));
-  }
-  function sbLineWidth(k, w) {
-    return sbLineTo(k, sbJs.rewidth(shared.text, edges2[k].id, w));
-  }
-  function sbLineTo(k, t2) {
-    var id = edges2[k].id;
-    return commit(t2, { name: "line look", ids: [id], then: function() {
-      shared.selE = [];
-      edges2.forEach(function(q, j) {
-        if (q.id === id) shared.selE = [j];
-      });
-    } });
   }
   function atHub(k, end) {
     var e = edges2[k], n = end ? e.t : e.s;
@@ -12253,7 +12314,7 @@
     });
   }
   var DEF_KEY;
-  function __run56() {
+  function __run562() {
     propRows([["way", "Orientation", "select", ["right", "left", "up", "down"]]]);
     propRows([["ant", "Antenna", "num", ' min="1" max="200"', "The stick from a process or logic gate to its port, in px from its side"]]);
     props.addEventListener("keydown", function(e) {
@@ -12346,33 +12407,9 @@
       return false;
     }
   }
-  function sbDef(i) {
-    var o = sbJs.lookOf(realizerOf(nodes2[i].el)), b = boxOf(i), all = defsKept(), g = hubGroup(i);
-    if (g) HUB_KINDS[g].forEach(function(c) {
-      all[c] = { w: b[2], h: b[3], fill: o.fill, line: o.line, width: o.width, ant: sbAnts()[nodes2[i].id] };
-    });
-    else all[kindOf(i)] = { w: b[2], h: b[3], fill: o.fill, line: o.line, width: o.width, multimer: o.multimer, font: o.font };
-    if (!keepLook(DEF_KEY, all)) return;
-    keepMapChoice("style", "custom");
-    keepMapChoice("cols", "custom");
-    styleRow();
-    sbColsRow();
-  }
   var HUB_KINDS;
   function __run58() {
     HUB_KINDS = { process: ["process", "omitted process", "uncertain process"], gate: ["and", "or", "not", "equivalence", "delay"] };
-  }
-  function hubGroup(i) {
-    var c = i != null && nodes2[i] ? sbClasses()[nodes2[i].id] || "" : "";
-    return HUB_KINDS.process.indexOf(c) >= 0 ? "process" : HUB_KINDS.gate.indexOf(c) >= 0 ? "gate" : null;
-  }
-  var antMemo;
-  function __run59() {
-    antMemo = [null, {}];
-  }
-  function sbAnts() {
-    if (antMemo[0] !== shared.text) antMemo = [shared.text, sbJs.antennas(shared.text, { sbgn: src() })];
-    return antMemo[1];
   }
   function antNow() {
     var st = palStyle(), kept = defsKept(), A = sbAnts(), out = {};
@@ -12404,80 +12441,12 @@
   function stdLetters() {
     return Math.round(sbJs.GATE_FONT * stdScale() * 2) / 2;
   }
-  function fitHubs(items) {
-    if (!items.length) return false;
-    var was = {};
-    items.forEach(function(it) {
-      var i = nodes2.findIndex(function(n) {
-        return n.id === it.id;
-      });
-      was[it.id] = boxOf(i);
-    });
-    var t2;
-    try {
-      t2 = sbJs.fit(shared.text, items, { sbgn: src() });
-    } catch (err) {
-      warn("Not changed: " + (err && err.message || err) + ".");
-      return false;
-    }
-    if (t2 === shared.text) return false;
-    var sel = shared.selN.map(function(i) {
-      return nodes2[i].id;
-    });
-    commit(t2, { name: "size", ids: Object.keys(was), then: function() {
-      shared.selN = [];
-      nodes2.forEach(function(n, k) {
-        if (sel.indexOf(n.id) >= 0) shared.selN.push(k);
-      });
-      var ks = nodes2.map(function(n, k) {
-        return was[n.id] ? k : -1;
-      }).filter(function(k) {
-        return k >= 0;
-      });
-      if (ks.length) setBoxes(grown(ks, boxOf, function(k) {
-        return was[nodes2[k].id] || boxOf(k);
-      }, function() {
-        return false;
-      }));
-      refit(Object.keys(was));
-    } });
-    return true;
-  }
-  function __run60() {
-    props.querySelector(".m2-ed-pall").addEventListener("click", function() {
-      var i = propNode(), g = i >= 0 ? hubGroup(i) : null;
-      if (!g) return;
-      var b = boxOf(i), ant = sbAnts()[nodes2[i].id], lt = sbJs.GLT.test(sbClasses()[nodes2[i].id] || "") ? sbJs.lookOf(realizerOf(nodes2[i].el)).font : null;
-      var items = nodes2.map(function(n, k) {
-        if (k === i || hubGroup(k) !== g) return null;
-        var o = boxOf(k);
-        return { id: n.id, box: [+fmt(o[0] + o[2] / 2 - b[2] / 2), +fmt(o[1] + o[3] / 2 - b[3] / 2), b[2], b[3]], ant, letters: lt };
-      }).filter(Boolean);
-      if (!keepSel(function() {
-        return fitHubs(items);
-      })) warn("Every one of this kind already has this size and antenna.");
-    });
-    props.querySelector(".m2-ed-pstd").addEventListener("click", function() {
-      var ns = propNodes().filter(function(i) {
-        return hubGroup(i);
-      });
-      if (!ns.length) return;
-      var s = stdScale(), lt = stdLetters();
-      var items = ns.map(function(i) {
-        var gate = hubGroup(i) === "gate", S = sbJs.SIZE[gate ? "and" : "process"], o = boxOf(i), w = S[0] * s, h = S[1] * s;
-        return { id: nodes2[i].id, box: [+fmt(o[0] + o[2] / 2 - w / 2), +fmt(o[1] + o[3] / 2 - h / 2), w, h], ant: sbJs.ANT * s, letters: gate ? lt : null };
-      });
-      if (!keepSel(function() {
-        return fitHubs(items);
-      })) warn("Already at the standard size and antenna.");
-    });
-  }
-  function __start6() {
+  function __start8() {
     __run111();
     __run210();
-    __run36();
-    __run43();
-    __run55();
+    __run37();
+    __run44();
+    __run56();
     __run65();
     __run75();
     __run83();
@@ -12487,16 +12456,13 @@
     __run124();
     __run134();
     __run144();
-    __run153();
-    __run163();
-    __run173();
-    __run183();
-    __run193();
+    __run154();
+    __run164();
     __run203();
     __run213();
     __run224();
     __run234();
-    __run243();
+    __run244();
     __run253();
     __run263();
     __run273();
@@ -12508,29 +12474,24 @@
     __run342();
     __run352();
     __run362();
-    __run37();
+    __run372();
     __run38();
     __run39();
     __run40();
     __run41();
     __run422();
     __run432();
-    __run44();
-    __run45();
+    __run442();
     __run47();
     __run48();
-    __run49();
     __run50();
     __run51();
     __run522();
-    __run532();
     __run542();
     __run552();
-    __run56();
+    __run562();
     __run57();
     __run58();
-    __run59();
-    __run60();
     __run61();
   }
 
@@ -13007,7 +12968,7 @@
     liveBack(shared.sizeRec);
     shared.sizeRec = null;
   }
-  function __start7() {
+  function __start9() {
     __run211();
   }
 
@@ -13130,7 +13091,7 @@
       if (helpBox && !helpBox.hidden && !helpBox.contains(ev.target) && !helpBtn.contains(ev.target)) help(false);
     }, true);
   }
-  function __start8() {
+  function __start10() {
     __run113();
     __run214();
     __run310();
@@ -13270,7 +13231,7 @@
     box.querySelector("#m2-ed-snap").setAttribute("aria-pressed", String(gridSet.snap));
   }
   var gridCv;
-  function __run46() {
+  function __run45() {
     gridCv = null;
   }
   function gridPaint() {
@@ -13393,7 +13354,7 @@
   }
   var buildTimer;
   var buildRefused;
-  function __run510() {
+  function __run59() {
     buildTimer = null, buildRefused = 0;
   }
   function dispatchBuild(keep) {
@@ -13957,7 +13918,7 @@
   var caughtAt;
   var srcMap;
   var PASSED;
-  function __run462() {
+  function __run46() {
     good = null, caughtAt = 0, srcMap = null;
     PASSED = /ResizeObserver loop|Failed to fetch|Load failed|NetworkError|network connection was lost|appears to be offline|request timed out|access control checks|The operation was aborted|AbortError|^Script error\.?$/;
     addEventListener("error", function(e) {
@@ -14212,7 +14173,7 @@
   var moveFix;
   var parseFix;
   var keyTake;
-  function __run154() {
+  function __run155() {
     moveFix = [], parseFix = [];
     keyTake = [];
   }
@@ -14298,7 +14259,7 @@
     return hm().tops(set, alone);
   }
   var PAD_KEY;
-  function __run164() {
+  function __run165() {
     PAD_KEY = "atlas-edit-padding";
   }
   function pads() {
@@ -14334,7 +14295,7 @@
     var e = L.extent(nodes2[k].el);
     return [b[0] + e[0] - g[0], b[1] + e[1] - g[1], b[0] + b[2] + e[2] - g[0] - g[2], b[1] + b[3] + e[3] - g[1] - g[3]];
   }
-  function refit(ids) {
+  function refit(ids, before) {
     if (!shared.F.insets || !ids.length) return;
     var want = /* @__PURE__ */ new Set(), at2 = {};
     nodes2.forEach(function(n, k) {
@@ -14346,6 +14307,7 @@
     var t0 = shared.text;
     want.forEach(function(u) {
       var n = nodes2[u], b = boxOf(u), x02 = Infinity, y02 = Infinity, x1 = -Infinity, y1 = -Infinity;
+      if (before && wholeMove(u, before)) return;
       n.kids.forEach(function(k) {
         if (!inBox(boxOf(k), b)) return;
         var e = extOf(k, boxOf(k));
@@ -14366,6 +14328,15 @@
       insetsOf(n.id, ins, bins);
     });
     if (shared.text !== t0) parse();
+  }
+  function wholeMove(u, before) {
+    var b0 = before[nodes2[u].id], b = boxOf(u);
+    if (!b0) return false;
+    var dx = b[0] - b0[0], dy = b[1] - b0[1], same = function(k) {
+      var p = before[nodes2[k].id], q = boxOf(k), e = 1e-6;
+      return !!p && Math.abs(q[0] - p[0] - dx) < e && Math.abs(q[1] - p[1] - dy) < e && Math.abs(q[2] - p[2]) < e && Math.abs(q[3] - p[3]) < e;
+    };
+    return same(u) && nodes2[u].kids.every(same);
   }
   function insetsOf(id, ins, bins) {
     setText(import_graphml_edit.default.insets(shared.text, id, ins, bins));
@@ -14474,7 +14445,7 @@
       }), grew));
       refit((arg.moving || []).concat(moves.map(function(m) {
         return m[0];
-      })));
+      })), arg.before);
       done();
       joinPack(cids);
     };
@@ -14729,7 +14700,7 @@
   }
   var shiftSum;
   var tookShift;
-  function __run174() {
+  function __run173() {
     shiftSum = [0, 0], tookShift = null;
   }
   function rebase(dx, dy) {
@@ -14790,7 +14761,7 @@
   var openKey;
   var histLast;
   var edits;
-  function __run184() {
+  function __run183() {
     hist = {}, histKey = null, openKey = null, histLast = null, edits = 0;
   }
   function histKeep() {
@@ -15021,7 +14992,7 @@
     showDrawing([svg, []]);
   }
   var opening;
-  function __run194() {
+  function __run193() {
     opening = 0;
   }
   function start(t, n, h, s, same, g0) {
@@ -15101,7 +15072,7 @@
       scale: 1,
       downloads: [],
       colours: true,
-      // drawn with the role classes (graphml.js, V.recolour): Settings' Map colours offered while editing
+      // drawn with the role classes (drawing.js, V.recolour): Settings' Map colours offered while editing
       layoutOnly: !!(V.chosen && (V.chosen.site || V.chosen).layoutOnly)
     };
     if (same) {
@@ -15731,7 +15702,7 @@
     }).catch(function() {
     });
   }
-  function __run244() {
+  function __run245() {
     box.querySelector("#m2-ed-gh-go").addEventListener("click", function() {
       var v = box.querySelector("#m2-ed-gh-token").value.trim();
       if (!v) return;
@@ -17097,7 +17068,7 @@
     return commit(t, { name: "bend point removed", sel: [] });
   }
   var rclick;
-  function __run372() {
+  function __run373() {
     rclick = null;
   }
   function nowSvg() {
@@ -17787,7 +17758,7 @@
     var to = (s[0] || s[1]) && s[0] === -u[0] && s[1] === -u[1] ? [0, 0] : [u[0] * b[2] / 2, u[1] * b[3] / 2];
     setPort({ k: pp.k, end: pp.end, n: pp.n, to }, true);
   }
-  function __run442() {
+  function __run443() {
     document.addEventListener("keydown", function(e) {
       if (!shared.text) return;
       var mod = e.ctrlKey || e.metaKey, k = V.letter(e) || (e.key || "").toLowerCase();
@@ -17921,12 +17892,12 @@
       changed();
     }, true);
   }
-  function __start9() {
+  function __start11() {
     __run114();
     __run215();
     __run311();
-    __run46();
-    __run510();
+    __run45();
+    __run59();
     __run66();
     __run76();
     __run84();
@@ -17936,16 +17907,16 @@
     __run125();
     __run135();
     __run145();
-    __run154();
-    __run164();
-    __run174();
-    __run184();
-    __run194();
+    __run155();
+    __run165();
+    __run173();
+    __run183();
+    __run193();
     __run204();
     __run216();
     __run225();
     __run235();
-    __run244();
+    __run245();
     __run254();
     __run264();
     __run274();
@@ -17956,16 +17927,72 @@
     __run343();
     __run353();
     __run363();
-    __run372();
+    __run373();
     __run382();
     __run392();
     __run402();
     __run412();
     __run423();
     __run433();
-    __run442();
+    __run443();
     __run452();
-    __run462();
+    __run46();
+  }
+
+  // editor/src/graphml.js
+  function graphmlFormat() {
+    return {
+      name: "graphml",
+      load: yr,
+      engineCd: false,
+      now: function() {
+        return shared.text;
+      },
+      ownFrame: false,
+      live: function() {
+        return liveY;
+      },
+      mainLines: false,
+      afView: true,
+      stacks: true,
+      insets: true,
+      fileType: { description: "yEd GraphML", accept: { "application/xml": [".graphml"] } },
+      stackComp: function(t, id) {
+        return sbJs && sbJs.stack ? sbJs.stack(t, id) : t;
+      },
+      square: function() {
+        return null;
+      },
+      beside: function() {
+        return null;
+      },
+      open: function(t) {
+        return { g: t, t };
+      },
+      // edited as it is
+      drawOwn: function(t) {
+        return yr().then(function() {
+          return window.yrender.render(t, { classes: true, groups: true, sbgn: false }).svg;
+        });
+      },
+      // a reader's own map drawn for the list (core.js drawText), as the build draws
+      ahead: { load: yr },
+      // the read-ahead: the renderer; the file is edited as it is
+      reads: function(t) {
+        return /<graphml[\s>]/.test(t.slice(0, 3e3));
+      },
+      entry: function(m) {
+        var d = m && m.downloads && m.downloads[0];
+        return !!(d && d.label === "GraphML");
+      },
+      kind: function(n) {
+        return n.shape && n.shape.kind || null;
+      },
+      // a node's shape
+      nameable: function() {
+        return !!sbJs;
+      }
+    };
   }
 
   // editor/src/tools.js
@@ -18033,15 +18060,17 @@
       return s;
     };
     window.m2EditPlant = plant;
+    __start11();
     __start9();
-    __start7();
+    __start2();
+    __start5();
     __start();
     __start3();
-    __start2();
+    __start8();
     __start6();
     __start4();
-    __start8();
-    __start5();
+    __start10();
+    __start7();
     var tools = registry();
     var shownMap = function() {
       var m = v.current;

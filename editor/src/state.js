@@ -8,7 +8,8 @@ export var shared = {};
 //   beside()   the file kept beside the GraphML edited, as it is now (CellDesigner), else null: what a drawing is of
 //   ownFrame   the picture is drawn in the file's own places (CellDesigner), else shifted out of negative places
 //   live()     the live drawing of a move, the format's own way (live.js liveFmt): { glyphs, lines, holders, size }
-//   afView     the map can be drawn in AF's SBGN view (graphml.js afSbgn; not CellDesigner, drawn by cdrender)
+//   afView     the map can be drawn in AF's SBGN view (drawing.js afSbgn; not CellDesigner, drawn by cdrender)
+//   sbgnLook   drawn by yrender as SBGN draws it, a glyph with no fill white (SBGN-ML); none: as yEd draws it
 //   stacks     a compartment's name places and its order (Bring forward, Send backward) are written by the engine (not CellDesigner)
 //   mainLines  a reaction has one main reactant and product, the others added (CellDesigner): Make main
 //   cardDown(e)  a press on a cardinality, where the format has its own way (CellDesigner); none: create.js's

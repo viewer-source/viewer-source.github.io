@@ -1,6 +1,7 @@
 import { shared, V } from './state.js';
 import { drag, paint, parse, render, setText, src, warn } from './core.js';
-import { liveY, yr } from './graphml.js';
+import { liveY, yr } from './drawing.js';
+import { sbJs, sbScript, sbpy } from './engines.js';
 
     // ---------- the SBGN-ML part (editor/src/sbgn.js) ----------
     // An SBGN-ML map edited as the GraphML the converter makes of it (as a GraphML map, layout only):
@@ -9,9 +10,8 @@ import { liveY, yr } from './graphml.js';
     // that change; the map is drawn by the yEd renderer as any GraphML map, so a GraphML map and an SBGN-ML map are edited
     // alike. text is that GraphML, sb.base the SBGN-ML text editing started from, src() the SBGN-ML text with the moves.
     // A map of the site saves its edited copy to its editPath (maps/sbgn-ml/...), the file it came from left unchanged.
-    var sbp, sbJs, EMPTY_BASE, baseURL;
+    var EMPTY_BASE, baseURL;
     function __run1() {   // run at start, in order (__start)
-    sbp = null, sbJs = null;   // the SBGN-ML side loading, loaded, the file edited ({ base: its text, g0: the build's GraphML })
     // a map made here (New map, own.js): drawn and edited from the converter's GraphML of an empty map, sbgn_edit.graphml
     // making every glyph drawn since (the same drawing as the converter's, checked on every kind the palette makes); its
     // map id says so. Another editor's file (Add map from file, a folder, a tool) is edited from the converter's GraphML
@@ -34,20 +34,6 @@ import { liveY, yr } from './graphml.js';
     function viaGraphml(t) { return isSb(t) || isSbml(t); }
     function edOf(t) { return isSbml(t) && window.sbml_edit ? window.sbml_edit : sbJs; }
     function sbMap(m) { return !!(m && !m.shownAs && (m.site || m).editBase); }   // shown from another file (Settings' Source): not this one
-    function sbScript(name) {
-      return new Promise(function (res, rej) {
-        if (window[name]) return res();
-        var s = document.createElement('script');
-        s.src = V.renderers + 'converter/' + name + '.js' + V.build; s.onload = res; s.onerror = function () { rej(name + ' not found'); };
-        document.head.appendChild(s);
-      });
-    }
-    function sbpy() {   // sbgn_edit.js, sbml_edit.js (which uses it), then the yEd renderer
-      if (sbp) return sbp;
-      sbp = sbScript('sbgn_edit').then(function () { return sbScript('sbml_edit').catch(function () {}); }).then(yr).then(function () { sbJs = window.sbgn_edit; return sbJs; });   // a copy without sbml_edit keeps SBGN-ML
-      sbp.catch(function (e) { sbp = null; warn('The SBGN-ML side did not load: ' + e); });
-      return sbp;
-    }
     // the converter's GraphML of a map, as the build kept it (fetched once per version); a reader's own map's made here
     function sbBase(m, low) {
       var e = m.site || m;
@@ -197,7 +183,7 @@ import { liveY, yr } from './graphml.js';
     export function __start() { __run1(); __run2(); __run3(); __run5(); __run6(); __run7(); }   // the part's statements, in their order
     // SBGN-ML's format object (state.js formats): the file written from the one opened with the moves of the GraphML
     function sbFormat() {
-      return { name: 'sb', load: yr, engineCd: false, now: sbNow, ownFrame: false, live: function () { return liveY; }, mainLines: false, afView: true, stacks: true, insets: true, sitesOut: function () { return !!shared.sbLast && !!sbJs && !!sbJs.sitesOut && isSb(shared.sbLast[1]); }, fileType: { description: 'SBGN-ML', accept: { 'application/xml': ['.sbgn', '.nwt'] } }, stackComp: function (t, id) { return sbJs && sbJs.stack ? sbJs.stack(t, id) : t; }, square: function () { return null; }, beside: function () { return null; },
+      return { name: 'sb', load: yr, engineCd: false, now: sbNow, ownFrame: false, live: function () { return liveY; }, mainLines: false, afView: true, sbgnLook: true, stacks: true, insets: true, sitesOut: function () { return !!shared.sbLast && !!sbJs && !!sbJs.sitesOut && isSb(shared.sbLast[1]); }, fileType: { description: 'SBGN-ML', accept: { 'application/xml': ['.sbgn', '.nwt'] } }, stackComp: function (t, id) { return sbJs && sbJs.stack ? sbJs.stack(t, id) : t; }, square: function () { return null; }, beside: function () { return null; },
         reads: viaGraphml, entry: sbMap,   // an SBML file with a layout too, edited the same way
         base: { keep: function () { return shared.sb ? shared.sb.base : null; }, put: function (b) { if (shared.sb) shared.sb.base = b; } },   // the SBGN-ML file the GraphML was read from (sbKind may read it again)
         asRead: true,   // the history and the picture on screen are of the file as read, before the opening put its sites back
@@ -241,4 +227,4 @@ import { liveY, yr } from './graphml.js';
         parsing: function (how) { sbKind(how); },   // before the GraphML is read: a change that turned the file followed
         g0: function () { return shared.sb ? shared.sb.g0 : null; } };   // the GraphML the map was opened on (a site map's: the build's)
     }
-    export { EMPTY_BASE, GEO, NEW_ID, emptyBase, isSb, madeHere, sbJs, sbKind, sbMap, sbNow, sbFormat, sbClasses, sbpy };
+    export { EMPTY_BASE, GEO, NEW_ID, emptyBase, isSb, madeHere, sbKind, sbMap, sbNow, sbFormat, sbClasses };

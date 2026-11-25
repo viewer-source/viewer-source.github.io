@@ -2,9 +2,9 @@ import { formatOfMap, formatOfText, formats, putMap, resetDrawing, resetMap, sha
 import GE from '../../renderers/converter/graphml_edit.js';   // the GraphML engine: the map's GraphML read and written as text
 import H from '../../renderers/layout/holding.js';   // what holds what: regrouping, growing a holder, the holder a box lies in
 import { bx, keyShift, liveFit, liveLines, liveOff, posePort, poseSize, shift, sizeLive, sizeOff, unshift } from './live.js';
-import { AF_KINDS, drawGraphml, noNegative, shiftedAhead } from './graphml.js';
-import { beyond, glyphArcs, glyphPort, joinAt, joinGuides, joinSolve, nodeCentre } from './celldesigner.js';
-import { sbpy } from './sbgn.js';
+import { AF_KINDS, drawGraphml, noNegative, shiftedAhead } from './drawing.js';
+import { beyond, glyphArcs, glyphPort, joinAt, joinGuides, joinSolve, nodeCentre } from './geometry.js';
+import { sbpy } from './engines.js';
 import { ddOpen, hybOn, joinDo, joinPack, joinPlan, link, linkDown, linkMove, linkPaint, linkUp, moveSays, origAll, palDown, palShow, palUp, propFmt, setSize, sizable, svDown, svMarks, tool } from './create.js';
 import { help, helpBox } from './help.js';
 import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepBeside, keptNow, listGo, mine, mineAdd, mineIn, mineMatch, minePut, savedMine, toGh, upAll, upRun } from './own.js';
@@ -91,7 +91,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     STEP0 = 8, stepOk = function (v) { return v >= 1 && v <= 100 ? Math.round(v) : STEP0; };
     gridSet = (function () { try { var g = JSON.parse(localStorage.getItem(GRID_KEY) || '{}'); return { shown: g.shown !== false, snap: g.snap === true, step: stepOk(+g.step) }; } catch (e) { return { shown: true, snap: false, step: STEP0 }; } })();
     }
-    // the shift out of negative places (graphml.js, cd_edit.place) in whole blocks of the grid: the smallest even number of
+    // the shift out of negative places (drawing.js, cd_edit.place) in whole blocks of the grid: the smallest even number of
     // steps that is 16 or more (16 on 4 and 8), so a map on the grid stays on it, its stronger lines too
     function gridBlock() { var s = gridSet.step; return 2 * s * Math.ceil(8 / s); }
     // the line grid, never drawn: ports (offsets from a node's centre) and bend points step on it. Half of Grid size, halved
@@ -812,7 +812,9 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     // where an inside member now sits closer, as the fit's room() measures it (layout.js's tidy 'fit'); an edge
     // member is left out (yEd will draw its group round it). CellDesigner and SBGN-ML files
     // keep no insets
-    function refit(ids) {
+    // before (optional, every node's box before the change, by id): a group that moved whole, its members by the same
+    // step and every size kept, keeps the insets its file gives (a file comes back whole)
+    function refit(ids, before) {
       if (!shared.F.insets || !ids.length) return;   // F.insets: the GraphML edited keeps yEd's group insets
       var want = new Set(), at = {};
       nodes2.forEach(function (n, k) { at[n.id] = k; });
@@ -820,6 +822,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       var t0 = shared.text;
       want.forEach(function (u) {
         var n = nodes2[u], b = boxOf(u), x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+        if (before && wholeMove(u, before)) return;
         n.kids.forEach(function (k) { if (!inBox(boxOf(k), b)) return; var e = extOf(k, boxOf(k)); x0 = Math.min(x0, e[0]); y0 = Math.min(y0, e[1]); x1 = Math.max(x1, e[2]); y1 = Math.max(y1, e[3]); });
         if (x0 === Infinity) return;
         var need = [x0 - b[0], y0 - b[1] - n.lab.t, b[0] + b[2] - x1, b[1] + b[3] - y1 - n.lab.b].map(function (v, j) { return v - n.ins[j]; });
@@ -827,6 +830,15 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
         insetsOf(n.id, ins, bins);
       });
       if (shared.text !== t0) parse();
+    }
+    function wholeMove(u, before) {   // group u and each of its members moved by one step, no size changed
+      var b0 = before[nodes2[u].id], b = boxOf(u);
+      if (!b0) return false;
+      var dx = b[0] - b0[0], dy = b[1] - b0[1], same = function (k) {
+        var p = before[nodes2[k].id], q = boxOf(k), e = 1e-6;
+        return !!p && Math.abs(q[0] - p[0] - dx) < e && Math.abs(q[1] - p[1] - dy) < e && Math.abs(q[2] - p[2]) < e && Math.abs(q[3] - p[3]) < e;
+      };
+      return same(u) && nodes2[u].kids.every(same);
     }
     function insetsOf(id, ins, bins) { setText(GE.insets(shared.text, id, ins, bins)); }   // the y:Insets (null: kept) and y:BorderInsets of node id's realizer shown, written into the text
     function setBoxes(nb) {   // boxes written into the text (node index -> [x, y, w, h]), the map read again
@@ -884,7 +896,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
           setBoxes(gb);
         }
         stackComps((arg.moving || []).concat(moves.map(function (m) { return m[0]; }), grew));   // compartments whose box or holder changed: the smaller in front where they partly overlap (sbgn_edit.stack)
-        refit((arg.moving || []).concat(moves.map(function (m) { return m[0]; })));   // yEd's box the one saved
+        refit((arg.moving || []).concat(moves.map(function (m) { return m[0]; })), arg.before);   // yEd's box the one saved; a group moved whole keeps its insets
         done(); joinPack(cids);   // the complexes that took a member packed, in this undo step
       };
       if (!moves.length) return rest();
@@ -1191,7 +1203,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     // or from adopt() when the picture on screen is already the editor's drawing of the file opened
     function showDrawing(r) {
         if (r[1].length) warn('Drawn with warnings: ' + r[1].join('; '));
-        var svg = r[0]; lastSvg = svg; lastFor = [shared.text, shared.F.beside(), site && site.id, shared.afSbgn];   // [3]: drawn in the SBGN AF view, never kept, saved or downloaded (graphml.js)
+        var svg = r[0]; lastSvg = svg; lastFor = [shared.text, shared.F.beside(), site && site.id, shared.afSbgn];   // [3]: drawn in the SBGN AF view, never kept, saved or downloaded (drawing.js)
         if (!on && site && V.kept && V.kept.id === site.id && V.kept.text != null) { V.kept.text = src(); V.kept.svg = svg; }   // left before this redraw ended: the kept file and drawing as drawn
         if (!on && site && unsaved[site.id] && unsaved[site.id].site === site) unsaved[site.id].text = src();   // the same for moves not saved
         histLate();
@@ -1266,7 +1278,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
         edges2.forEach(function (a, i) { if (reSel.e.indexOf(a.id) >= 0) shared.selE.push(i); });
       }
       reSel = null; reGh = null;   // used by this start or not at all
-      map = { id: 'edit', title: openTitle || n, width: 0, height: 0, scale: 1, downloads: [], colours: true,   // drawn with the role classes (graphml.js, V.recolour): Settings' Map colours offered while editing
+      map = { id: 'edit', title: openTitle || n, width: 0, height: 0, scale: 1, downloads: [], colours: true,   // drawn with the role classes (drawing.js, V.recolour): Settings' Map colours offered while editing
         layoutOnly: !!(V.chosen && (V.chosen.site || V.chosen).layoutOnly) };   // the map's own limit kept while editing (V.level)
       if (same) {   // editing starts on the picture as it is: no redraw, the map stays where it is
         map.width = same.width; map.height = same.height; map.scale = same.scale; x0 = same.x0; y0 = same.y0;
@@ -2402,7 +2414,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       // Before the editor's drawing is in the page, a thin blue line over the map
       var blueG = function (g) {
         var cs = shared.copies.filter(function (c) { return c[1] === g; });
-        if (cs.length) cs.forEach(function (c) { if (c[0].classList) c[0].classList.add('m2-ed-blue'); }); else g.classList.add('m2-ed-blue');   // a line drawn in more pieces: the pieces after the first stand in as empty comments (graphml.js yLines)
+        if (cs.length) cs.forEach(function (c) { if (c[0].classList) c[0].classList.add('m2-ed-blue'); }); else g.classList.add('m2-ed-blue');   // a line drawn in more pieces: the pieces after the first stand in as empty comments (drawing.js yLines)
       };
       hlE.forEach(function (k) {
         var gs = gE && gE[edges2[k].id];

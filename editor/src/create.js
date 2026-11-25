@@ -1,7 +1,9 @@
 import { shared, V } from './state.js';
 import { G, GE, HANDLE, MODS, Y, asSpace, at, box, boxOf, changed, commit, complexHere, cutShape, doc, edges2, editing, f1, fmt, full, gE, gN, gridSet, grown, hit, holder, holderSize, holds, hubPorts, inComplex, inRim, keyTake, kindWindow, landMarks, lateItem, layTool, map, moveFix, name, nodes2, num, on, origFromFolder, origToFolder, outlineD, overlap, ownMenus, paint, parse, parseFix, quiet, rclick, realizerOf, refit, regroup, remember, render, rimOf, roleOf, roomy, setBoxes, setPort, setText, settle, site, src, subItem, sx, sy, takes, toGrid, under, undo, unpush, warn, x0, y0 } from './core.js';
-import { bx, liveOff, livePose, sizeOff } from './live.js';
-import { GEO, sbClasses, sbJs, sbKind } from './sbgn.js';
+import { bx, livePose } from './live.js';
+import { GEO } from './sbgn.js';
+import { afKind, cardAll, cardAt, hubGroup, hybridActs, palKind, palOn, PF_SB, sbAnts, sbCols, sbColsRow, sbFileAf, sbReversible, svBase, svCopies, svDeleteSb, svShareMove, svShareText } from './sbcreate.js';
+import { sbJs } from './engines.js';
 import { CD_DEF_KEY, CD_GATE, PF_CD, cdClick, cdDeleteItem, cdFill, cdGateMarks, cdGhost, cdInfo, cdItems, cdKind, cdMake, cdNameDown, cdOverMarks, cdPal } from './cdcreate.js';
 import { origGh, origPut } from './own.js';
 import NT from '../../renderers/converter/notation.js';   // the notation's kinds and rules table (plan 3 step 6)
@@ -174,7 +176,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
     function palFor() {   // the map's choice, else from its file
       var all = palStore(), id = palId(), k = id && all[id];
       if (k && (k.lang === 'pd' || k.lang === 'af')) return { lang: k.lang, look: k.look === 'sbgn' ? 'sbgn' : 'rn', strict: k.strict === true, sbgn: k.sbgn === true };
-      var af = sbJs.isAf(shared.sb && shared.sb.base);
+      var af = sbFileAf();
       return { lang: af ? 'af' : 'pd', look: af ? 'sbgn' : 'rn', strict: false, sbgn: false };
     }
     function palKeep() { var all = palStore(), id = palId(); if (!id) return; all[id] = palSet; try { localStorage.setItem(PAL_KEY, JSON.stringify(all)); } catch (e) {} }
@@ -196,10 +198,6 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
     // about 13 px, as large as text buttons, the look as the glyph it draws, SBGN's
     // activity (a rectangle with the entity's shape on its top edge) or the entity itself (Reduced notation), the names in
     // the titles
-    // what the map is, read from its file as it is now: sbgn_edit.mapKind, the one
-    // master write() also decides by (empty, pd, hybrid, af), the file turned to it as it changes; read once per change of
-    // the editor's GraphML (sbKind, sbgn.js), never for a paint
-    function palKind() { return sbKind(); }
     // PD and AF only choose the palette, Activity Flow or Process Description, on every map, nothing else;
     // what the map is follows what is drawn (palKind, write)
     // Reduced notation, ticked by default (as CellDesigner's View, Change Toolbar Visible, Reduced Notation; the free way
@@ -219,10 +217,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
     function palViews() { var k = palKind(); return palLangNow() === 'af' && (k === 'af' || k === 'empty'); }
     // Activity Flow has no state variables, and an activity one unit of information: its shape the entity's kind, its text
     // free, set from the activity's right-click menu, never by a click on the unit
-    function afMap() { return !!shared.sb && palOn() && palLangNow() === 'af'; }
-    // the map itself Activity Flow (palKind), whichever palette is chosen: what a glyph's right-click menu offers and whether
-    // its state variables are picked follow the map, never the tab (else the AF tab would take them from a PD map)
-    function afKind() { return !!shared.sb && palKind() === 'af'; }
+    function afMap() { return palOn() && palLangNow() === 'af'; }
     function palLookNow() { return palViews() && palSet.look === 'sbgn' ? 'sbgn' : 'rn'; }
     function palBtn(attr, title, sign) { return '<button type="button" ' + attr + ' title="' + title + '" aria-label="' + title + '" aria-pressed="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true">' + sign + '</svg></button>'; }
     function palView(look, name, title) { return '<button type="button" role="radio" data-look="' + look + '" title="' + title + '" aria-label="' + title + '" aria-checked="false"><span class="m2-ed-radio" aria-hidden="true"></span>' + name + '</button>'; }
@@ -231,7 +226,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
     function __run5() {   // run at start, in order (__start)
     INFO = {
       strict: 'Corresponds to CellDesigner\'s Reduced Notation. Stimulation, inhibition, necessary stimulation and modulation may also link entities, phenotypes and submaps. Such maps open in CellDesigner and MINERVA, but other SBGN-ML tools may not read them. Unticked, the SBGN Process Description rules alone. Off while Strict SBGN is ticked.',
-      sbgn: 'Keeps what is drawn from now on to the SBGN Process Description specification alone: no reduced notation, one catalysis and one necessary stimulation per process, one line at an empty set, no line from a phenotype. Unticked, the default, the specification and what CellDesigner also allows, such as a phenotype as a reaction\'s reactant or modifier. What the map already holds is not changed.',
+      sbgnPd: 'Keeps what is drawn from now on to the SBGN Process Description specification alone: no reduced notation, one catalysis and one necessary stimulation per process, one line at an empty set, no line from a phenotype. Unticked, the default, the specification and what CellDesigner also allows, such as a phenotype as a reaction\'s reactant or modifier. What the map already holds is not changed.',
       rn: 'Corresponds to CellDesigner\'s Reduced Notation palette, which enables an Activity Flow type of representation.',
       sbgn: 'Follows the SBGN Activity Flow specification. The map is saved as an Activity Flow SBGN-ML file.',
       prot: 'When ticked, shows the auxiliary unit on protein activities. An activity with no auxiliary unit is by default a protein activity.',
@@ -256,7 +251,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       palTip(palView('sbgn', 'SBGN AF view', 'SBGN Activity Flow view: each entity drawn as its SBGN activity'), 'SBGN Activity Flow view', INFO.sbgn) + '</div>' +
       '<div class="m2-ed-pblk m2-ed-pprot">' + palTip('<label class="m2-ed-phyb" title="Ticked: every protein activity carries the auxiliary unit of a macromolecule, drawn and saved in the file; unticked: none has it"><input type="checkbox"><span>Protein auxiliary unit</span></label>', 'Protein auxiliary unit', INFO.prot) + '</div>' +
       '<div class="m2-ed-pblk m2-ed-pcdc">' + palTip('<label class="m2-ed-phyb" title="Ticked: the palette offers only what CellDesigner and MINERVA can hold; unticked: tags and submaps\u2019 terminals too"><input type="checkbox"><span>CellDesigner compatible</span></label>', 'CellDesigner compatible', INFO.cdc) + '</div>' +
-      '<div class="m2-ed-pblk m2-ed-psbgn">' + palTip('<label class="m2-ed-phyb" title="Ticked: what is drawn keeps to the SBGN PD specification alone; unticked: CellDesigner\u2019s additions too"><input type="checkbox"><span>Strict SBGN</span></label>', 'Strict SBGN', INFO.sbgn) + '</div>' +
+      '<div class="m2-ed-pblk m2-ed-psbgn">' + palTip('<label class="m2-ed-phyb" title="Ticked: what is drawn keeps to the SBGN PD specification alone; unticked: CellDesigner\u2019s additions too"><input type="checkbox"><span>Strict SBGN</span></label>', 'Strict SBGN', INFO.sbgnPd) + '</div>' +
       '<div class="m2-ed-pblk m2-ed-pstrict">' + palTip('<label class="m2-ed-phyb" title="Ticked (the default): under PD a modulation may also end on an entity, and a logic gate\u2019s output go to one (CellDesigner\u2019s reduced notation); with a process on the map the file stays Process Description, without one such a link makes it Activity Flow. Unticked: Process Description only"><input type="checkbox"><span>Reduced notation</span></label>', 'Reduced notation', INFO.strict) + '</div>' +
       '<div class="m2-ed-pblk m2-ed-psites">' + palTip('<label class="m2-ed-phyb" title="Ticked: every state variable shows its site and the map is saved so; unticked: the value alone, the sites kept in the notes"><input type="checkbox"><span>Show sites</span></label>', 'Show sites', INFO.sites) + '</div>' +
       '<div class="m2-ed-psigns"></div>';
@@ -509,87 +504,6 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       return !!hex && CONF[String(hex).slice(0, 7).toUpperCase()] === 1;
     }
     function confettiSquares() { return '<span class="m2-cs-sw">' + [0, 1, 2, 3, 4].map(function (k) { var x = confettiHex(k * 137.508 % 360); return '<i style="background:' + x + '" title="' + x.toUpperCase() + '"></i>'; }).join('') + '</span>'; }
-    // Colours on SBGN-ML maps, kept per map or read from it (mapCols): the map's own (sbgn_edit.defaults: the fill most glyphs of the
-    // kind have; the Default colours for a kind the map lacks), the viewer's Default colours, none, or Confetti
-    var SB_COLS;
-    function __run17() {   // run at start, in order (__start)
-    SB_COLS = [['file', 'Original', 'The map\u2019s own colours, as they were before another choice; new glyphs in the colour most glyphs of their kind have on it'], ['default', 'Mist and sage', 'The whole map and new glyphs in the viewer\u2019s starting colours: a pale blue for proteins, a pale green for small molecules'], ['none', 'No colours', 'The whole map and new glyphs unfilled'], ['custom', 'Custom default', 'The whole map and new glyphs in the colours kept by Set as default; a kind with none as it is'], ['confetti', 'Confetti', 'Every glyph of the map, and every new one, a pastel of its own']];
-    }
-    function sbCols() { return mapCols(['file', 'none', 'default', 'confetti', 'custom'], sbIs); }
-    var SB_SQ;
-    function __run18() {   // run at start, in order (__start)
-    SB_SQ = ['macromolecule', 'simple chemical', 'nucleic acid feature', 'phenotype', 'compartment'];
-    }
-    function sbSquares(mode) {   // five at most, the first at the right (row-reverse), each colour once
-      if (mode === 'confetti') return confettiSquares();
-      var seen = {}, h = '', kept = mode === 'custom' ? defsKept() : {};
-      SB_SQ.forEach(function (c) {
-        var k = kept[c], x = mode === 'none' ? '#FFFFFF' : mode === 'default' ? sbJs.fillFor(c) : k && k.fill ? k.fill : sbJs.defaults(src(), null, c).fill || '#FFFFFF';
-        x = String(x).toUpperCase();
-        if (seen[x]) return; seen[x] = 1;
-        h += '<i style="background:' + x + '" title="' + c + ', ' + x + '"></i>';
-      });
-      return '<span class="m2-cs-sw">' + h + '</span>';
-    }
-    function sbColsRow() { return palDrop({ key: 'cols', label: 'Colours', title: 'Colours of the map and of new glyphs', list: SB_COLS, get: sbCols, set: function (v) { colsPick(v, sbCols(), function () { return sbJs.colours(shared.text); }, sbOriginal, sbRecolour); }, sq: sbSquares }); }
-    function sbOriginal(r) {   // the colours kept put back: each node's fill and border, each line's, those the record knows
-      var now = sbJs.colours(shared.text), M = {}, added = 0;
-      Object.keys(now.node).forEach(function (id) { var o = r.node && r.node[id], a = now.node[id]; if (!o) added++; else if (o.fill !== a.fill || o.line !== a.line) M[id] = { fill: o.fill, line: o.line }; });
-      Object.keys(now.edge).forEach(function (id) { if (!r.edge || !(id in r.edge)) added++; });
-      var t2 = sbJs.restyleAll(shared.text, M, null, function (id) { return r.edge && id in r.edge && r.edge[id] !== now.edge[id] ? r.edge[id] : undefined; });
-      commit(t2, { name: 'colours from a file', sel: [], quiet: true });
-      return added;
-    }
-    // a choice of Colours recolours the whole map, one undo step: every entity, complex, compartment, tag and terminal its fill by the
-    // choice (its border black), as a new one of its kind would get it (defOf); Original puts back the map's own (colsPick); Custom a
-    // kind with a kept look its fill, border and width, the rest as they are; Confetti every entity, complexes too, a pastel
-    // of its own, one after another (compartments as they are). Every line black, under Confetti a colour of its own
-    // (confettiLine); processes, gates and the other glyphs their border black. One parse (sbgn_edit.restyleAll)
-    var SB_FILLED, sbActMemo;
-    function __run19() {   // run at start, in order (__start)
-    SB_FILLED = /^(macromolecule|simple chemical|nucleic acid feature|unspecified entity|perturbing agent|phenotype|complex|compartment|submap|biological activity|perturbation|tag|terminal)( multimer)?$/;
-    sbActMemo = [null, {}];
-    }
-    function sbPlan(mode, pick) {   // [[node index, its look], ...] under a choice of Colours, as sbRecolour sets them (pick: Confetti's colours picked)
-      if (sbActMemo[0] !== shared.text) sbActMemo = [shared.text, sbJs.activities(shared.text)];   // one parse per change of the map (sbIs asks for each choice)
-      var cls = sbClasses(), acts = sbActMemo[1], kept = mode === 'custom' ? defsKept() : {}, hues = [], P = [];
-      nodes2.forEach(function (n, i) {
-        var c = cls[n.id] || '';
-        if (!SB_FILLED.test(c)) { if (sbJs.LOOKS.test(c) && mode !== 'custom') P.push([i, { line: null }]); return; }
-        var base = c.replace(/ multimer$/, ''), u = acts[n.id], o;
-        var ff = sbJs.fillFor(u != null ? 'biological activity' : base === 'terminal' ? 'tag' : base, u);   // a terminal coloured as a tag
-        if (mode === 'default') o = { fill: ff, line: null };
-        else if (mode === 'none') o = { fill: null, line: null };
-        // Custom: a look kept the old way (a share of a size, no w) left out, as defOf
-        else if (mode === 'custom') { var k = kept[lookKey(base, u)]; if (!k || !(k.w > 0)) return; o = {}; ['fill', 'line', 'width'].forEach(function (q) { if (q in k) o[q] = k[q]; }); }
-        else { if (!ff || base === 'compartment') return; o = { fill: pick ? confettiPick(hues).toUpperCase() : true, line: null }; }   // Confetti (fill true: filled, no colour picked)
-        P.push([i, o]);
-      });
-      return P;
-    }
-    function sbIs(mode) {   // the map's glyphs filled as the choice fills them (Confetti: each a confetti pastel; Original: as kept); null: none to read
-      if (!palOn()) return false;
-      if (mode === 'file') {
-        var r = origAll()[palId()];
-        if (!r) return null;
-        var now = sbJs.colours(shared.text);
-        return Object.keys(r.node || {}).every(function (id) { var a = now.node[id], o = r.node[id]; return !a || (a.fill === o.fill && a.line === o.line); }) &&
-          Object.keys(r.edge || {}).every(function (id) { return !(id in now.edge) || now.edge[id] === r.edge[id]; });
-      }
-      var P = sbPlan(mode, false).filter(function (q) { return 'fill' in q[1]; });
-      if (!P.length) return null;
-      return P.every(function (q) {
-        var f = sbJs.lookOf(realizerOf(nodes2[q[0]].el)).fill;
-        return mode === 'confetti' ? confettiOne(f) : (f ? f.slice(0, 7).toUpperCase() : null) === (q[1].fill ? q[1].fill.toUpperCase() : null);
-      });
-    }
-    function sbRecolour(mode) {
-      if (mode === 'file' || !palOn()) return;
-      var M = {};
-      sbPlan(mode, true).forEach(function (q) { M[nodes2[q[0]].id] = q[1]; });
-      var lh = [], t2 = sbJs.restyleAll(shared.text, M, null, mode === 'custom' ? null : function () { return mode === 'confetti' ? confettiLine(lh).toUpperCase() : null; });
-      commit(t2, { name: 'colours', sel: [], quiet: true });
-    }
     function palFill() {   // the signs of the set chosen; the tabs and the look marked
       var k = palKey();
       var lang = palLangNow(), look = palLookNow();
@@ -617,7 +531,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       if (tool && !palOk(tool.kind)) tool = null;   // a sign in hand that this set lacks (e.g. a delay kept after the map turned PD)
       palSignsEl.innerHTML = palSigns(palSet0(PALS[k])); palBlocks();
     }
-    function palLook() {   // the map drawn in the SBGN view while AF's SBGN view is chosen and the map has no process (graphml.js afSbgn)
+    function palLook() {   // the map drawn in the SBGN view while AF's SBGN view is chosen and the map has no process (drawing.js afSbgn)
       var want = palOn() && palLookNow() === 'sbgn';
       if (want === shared.afSbgn) return;
       shared.afSbgn = want;
@@ -660,7 +574,6 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
     function __run21() {   // run at start, in order (__start)
     box.querySelector('.m2-ed-tools').insertAdjacentElement('afterend', pal);
     }
-    function palOn() { return on && V.current === map && !!shared.sb && !!sbJs && V.level === 'full'; }
     function palShow() {
       var cdp_ = cdPal(), show = palOn() || cdp_;   // a CellDesigner map: its own set (cdcreate.js)
       if (cdp_) cdFill();
@@ -1329,11 +1242,6 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       var w = b[2] + S, h = b[3] + S * base[1] / base[0];
       return [b[0] - (w - b[2]) / 2, b[1] - (h - b[3]) / 2, w, h];
     }
-    function svBase(i) {
-      var c = ((sbClasses()[nodes2[i].id] || '').replace(/ multimer$/, '')) || 'macromolecule', b = boxOf(i);
-      try { var D = defOf(c); if (D && D.w && D.h) return [D.w, D.h]; } catch (e) { /* its own size */ }
-      return [b[2], b[3]];
-    }
     // a free place for an icon of size s on node i: { box: grown (null: as it is), r }; skip(icon): not counted
     function svRoom(i, s, skip) {
       var b0 = boxOf(i), b = b0, base = svBase(i), S = svStep(i), ic0 = svIconsOn(i).filter(function (q) { return !skip || !skip(q); }), c;
@@ -1399,17 +1307,9 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
     // a few steps to free it, else the copy's first free place (svRoom); a move to a place taken there leaves the copy's
     // where it was. Process Description maps only (Activity Flow has no state variables)
     function svVar(s) { var a = (s || '').indexOf('@'); return a < 0 ? '' : s.slice(a + 1).trim(); }   // value@variable: the variable
-    function svVal(s) { var a = (s || '').indexOf('@'); return a < 0 ? s || '' : s.slice(0, a); }
     function svIdx(id) { return nodes2.findIndex(function (n) { return n.id === id; }); }
     function svOnly(i) { return svList(i).filter(function (q) { return q[3] === SV; }); }
     function svR(i, q) { var b = boxOf(i); return [(q[1][0] - b[0]) / b[2] - 0.5, (q[1][1] - b[1]) / b[3] - 0.5]; }
-    function svNm(i) { return nameOf(i).replace(/\s+/g, ' ').trim(); }
-    function svCopies(id) {   // the other macromolecules named as node id (an SBGN-ML map's, Process Description): their ids
-      var i = svIdx(id);
-      if (!shared.sb || shared.afSbgn || afKind() || i < 0 || nodes2[i].shape.kind !== 'Macromolecule' || !svNm(i)) return [];
-      var nm = svNm(i);
-      return nodes2.filter(function (n, k) { return k !== i && n.shape.kind === 'Macromolecule' && svNm(k) === nm; }).map(function (n) { return n.id; });
-    }
     // copy c's state variable answering one with text txt at place r: by its variable's name; an unnamed one at the same
     // place; for an empty one (txt ''), else the copy's empty one nearest r (one made with it where its place was taken).
     // Never by order alone, so a copy's own value-only state variable is never taken for another; -1 for none
@@ -1435,36 +1335,6 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       if (at.box) svGrowTo(c, at.box);
       setText(sbJs.state(shared.text, c, txt, at.r[0], at.r[1])); parse();
       if (at.box) svHold(c, b0);
-    }
-    // after state variable n of node id was typed from was to now (at place r0 before): its variable named or renamed on
-    // every copy (their values kept), added where a copy has none; a copy that has the new variable already keeps that
-    // one, its twin dropped when empty (else left, its value its own)
-    function svShareText(id, was, r0, n, now) {
-      var ov = svVar(was), nv = svVar(now), i = svIdx(id), q = i >= 0 ? svOnly(i)[n] : null, r = q ? svR(i, q) : r0;
-      if (!ov && !nv) return;   // a value alone: each glyph's own
-      svCopies(id).forEach(function (c) {
-        var m = svTwin(c, was, r0), has = nv ? svTwin(c, now, r) : -1;
-        if (m >= 0 && ov !== nv) {
-          var k = svIdx(c), wb = boxOf(k), cur = svOnly(k)[m][0];
-          if (has >= 0 && has !== m) { if (!cur) { setText(sbJs.stateDelete(shared.text, c, m, { sbgn: shared.sb.base })); parse(); } return; }
-          setText(sbJs.stateValue(shared.text, c, m, svVal(cur) + (nv ? '@' + nv : ''))); parse();
-          if (svSettle(c, m)) svHold(c, wb);
-        } else if (m < 0 && nv && has < 0) svAddTo(c, r, '@' + nv);
-      });
-    }
-    // state variable q of node i (at r0) taken to place r, or deleted (r null), on every copy
-    function svShareMove(i, q, r0, r) {
-      var ws = svCopies(nodes2[i].id).map(function (c) { return [c, svTwin(c, q[0], r0)]; }).filter(function (w) { return w[1] >= 0; });
-      return function () {
-        ws.forEach(function (w) {
-          var k = svIdx(w[0]);
-          if (k < 0) return;
-          if (!r) { setText(sbJs.stateDelete(shared.text, w[0], w[1], { sbgn: shared.sb.base })); return; }
-          var b = boxOf(k), ic = svIconsOn(k), me = ic.filter(function (o) { return o.k === SV && o.n === w[1]; })[0];
-          if (me && !svClash(svPt(b, r), me.s, b, ic.filter(function (o) { return o !== me; }))) setText(sbJs.stateMove(shared.text, w[0], w[1], r[0], r[1]));
-        });
-        parse();
-      };
     }
     function svJoin(id) {   // node id named as other macromolecules: theirs added where it has none (the copy with most as the model)
       var i = svIdx(id), cs = svCopies(id).map(svIdx).sort(function (a, b) { return svOnly(b).length - svOnly(a).length; });
@@ -1669,7 +1539,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
     function svAt(P) {   // the state variable or unit of information under P: [node, j] (it may stand out of its node)
       var own = shared.F.sv;   // the format's own (CellDesigner's, its palette on): else not drawn in the SBGN AF view; an activity's unit text is set from its right-click menu, never clicked, moved or typed
       if (own ? !own.on() : shared.afSbgn || afKind()) return null;
-      var res = own ? null : svIcons(), found = null, pad = 3 / V.z, acts = shared.sb && palKind() === 'hybrid' ? sbJs.activities(shared.text) : null;   // a hybrid map's activities keep their units as on an AF map
+      var res = own ? null : svIcons(), found = null, pad = 3 / V.z, acts = hybridActs();   // a hybrid map's activities keep their units as on an AF map (sbcreate.js)
       nodes2.forEach(function (n, k) {
         if (own ? own.far(P, k) : n.shape.kind !== 'Macromolecule' && n.shape.kind !== 'NucleicAcidFeature' || (acts && acts[n.id] != null)) return;   // the format's own: too far from its box
         svList(k, res).forEach(function (q, j) { if (Math.abs(P[0] - q[1][0]) <= q[2][0] / 2 + pad && Math.abs(P[1] - q[1][1]) <= q[2][1] / 2 + pad) found = [k, j]; });
@@ -1808,11 +1678,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       var i = svNode();
       if (i < 0) return false;
       if (shared.F.sv) { var j = shared.svSel.j; shared.svSel = null; return shared.F.sv.del(i, j); }   // the format's own (CellDesigner: removed from its file)
-      var q = svList(i)[shared.svSel.j];
-      var share = q[3] === SV ? svShareMove(i, q, svR(i, q), null) : null;   // the copies too
-      var sid = shared.svSel.id;
-      if (!commit((q[3] === UI ? sbJs.unitDelete : sbJs.stateDelete)(shared.text, sid, q[4], { sbgn: shared.sb.base }), { name: 'state variable deleted', ids: [sid], then: function () { shared.svSel = null; if (share) share(); } })) { shared.svSel = null; render(); paint(); }
-      return true;
+      return svDeleteSb(i);   // an SBGN-ML map's (sbcreate.js)
     }
     // a cardinality (a consumption's or production's number; SBGN-ML maps): a click selects it with its line (Properties
     // shows the line's rows, Cardinality last), a press on it selected drags it along its line, to the side the pointer is
@@ -1821,16 +1687,9 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
     // 10; Delete takes it out; Esc during a drag puts it back; a click on it selected puts the cursor in Cardinality. Its
     // place is kept as sbgn_edit's pos (the GraphML label's ratio and side, the SBGN-ML glyph's bbox), drawn again where
     // its line runs after a move (sbgn.js sbPlace). A CellDesigner map's: cdcreate.js cdCardDown
-    var cardSel, cardDrag, cardKey, cardMemo;
+    var cardSel, cardDrag, cardKey;
     function __run34() {   // run at start, in order (__start)
-    cardSel = null, cardDrag = null, cardKey = null, cardMemo = [null, null];
-    }
-    function cardAll() { if (cardMemo[0] !== shared.text) cardMemo = [shared.text, shared.sb && sbJs && sbJs.countsAt ? sbJs.countsAt(shared.text) : {}]; return cardMemo[1]; }
-    function cardAt(P) {   // the id of the line whose cardinality's box is under P (map units)
-      if (!shared.sb || !sbJs || !sbJs.countsAt || shared.text.indexOf('<y:EdgeLabel') < 0) return null;
-      var o = cardAll(), pad = 2 / V.z, got = null;
-      Object.keys(o).forEach(function (id) { var b = o[id].box; if (P[0] >= b[0] - pad && P[0] <= b[0] + b[2] + pad && P[1] >= b[1] - pad && P[1] <= b[1] + b[3] + pad) got = id; });
-      return got;
+    cardSel = null, cardDrag = null, cardKey = null;
     }
     function cardK(id) { return edges2.findIndex(function (q) { return q.id === id; }); }
     function cardOn() { if (!cardSel) return null; var k = cardK(cardSel.id), c = cardAll()[cardSel.id]; if (k < 0 || !c || shared.selE.length !== 1 || shared.selE[0] !== k || shared.selN.length || shared.selP.length) { cardSel = null; return null; } return c; }
@@ -2449,7 +2308,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
     // one selected, typed for an exact size (its centre kept); Grid size beside the Grid and Snap switches (core.js), kept in this browser with them.
     // sbgn_edit.resize writes the box, its name kept centred, its state variables at their places on the border; write()
     // scales what the SBGN-ML glyph carries the same way.
-    // Resizing and Properties serve every format with a palette through its part's answers (propFmt: PF_SB here, PF_CD in
+    // Resizing and Properties serve every format with a palette through its part's answers (propFmt: PF_SB in sbcreate.js, PF_CD in
     // cdcreate.js): which node they are for, which rows apply, its look, a field set, a size set
     function propFmt() { return palOn() ? PF_SB : cdPal() ? PF_CD : null; }
     function sizable(i) {   // a complex holding members on every format with a part (held round them: roomy, core.js), not in AF's SBGN view (its members not drawn); else the part's answer
@@ -2461,36 +2320,9 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
     function setSizes(pairs) {   // [[node, box], ...]: one undo step for them all (Properties with several nodes selected)
       var f = propFmt(); if (f) f.size(pairs.map(function (q) { return [q[0], q[1].map(function (v) { return +fmt(v); })]; }));
     }
-    function sbSizable(i) {   // a glyph made from the palette, a complex's member too (the complex grows round it), a compartment
-      var n = nodes2[i];
-      return !!n.comp || isMade(n);   // a compartment too (holderSize); a process or gate too, its antennas kept as long (sbgn_edit.resize)
-    }
     function termScaled(b, b0, b1) {   // a terminal's box b on a submap resized from b0 to b1: its place scaled with the box (the drop, sbSetSize, and the drag, livePose)
       var rx = b0[2] ? (b[0] + b[2] / 2 - b0[0]) / b0[2] : 0.5, ry = b0[3] ? (b[1] + b[3] / 2 - b0[1]) / b0[3] : 0.5;
       return [b1[0] + rx * b1[2] - b[2] / 2, b1[1] + ry * b1[3] - b[3] / 2, b[2], b[3]];
-    }
-    function sbSetSize(pairs) {   // each node given its box, one undo step with the compartments round them grown to hold them
-      var ids = [], was = {}, t2 = shared.text, tids = [];   // tids: the terminals of a submap resized, kept on its sides (termsFix)
-      pairs.forEach(function (q) {
-        var b0 = boxOf(q[0]), b1 = q[1];
-        nodes2.forEach(function (n, k) {
-          if (n.sub !== q[0]) return;
-          t2 = sbJs.resize(t2, n.id, termScaled(boxOf(k), b0, b1));
-          tids.push(n.id);
-        });
-      });
-      try { pairs.forEach(function (q) { var id = nodes2[q[0]].id; ids.push(id); was[id] = boxOf(q[0]); t2 = sbJs.resize(t2, id, q[1]); }); }
-      catch (err) { warn('Not resized: ' + (err && err.message || err) + '.'); liveOff(); sizeOff(); paint(); return; }
-      if (t2 === shared.text) { liveOff(); sizeOff(); paint(); return; }
-      commit(t2, { name: 'resized', ids: ids, then: function () {
-      nodes2.forEach(function (n) { if (n.sub != null && ids.indexOf(n.id) >= 0) tids.push(n.id); });   // a terminal resized itself: kept on its side
-      if (tids.length) termsFix(nodes2.map(function (n, k) { return tids.indexOf(n.id) >= 0 ? k : -1; }).filter(function (k) { return k >= 0; }), true);
-      shared.selN = []; nodes2.forEach(function (n, k) { if (ids.indexOf(n.id) >= 0) shared.selN.push(k); });
-      var ks = shared.selN.slice();   // their holders grown round them as round a drag (grown)
-      if (ks.length) setBoxes(grown(ks, boxOf, function (k) { return was[nodes2[k].id] || boxOf(k); }, function () { return false; }));
-      refit(ids);
-      shared.sizeRec = null;
-      } });
     }
     // Properties as yEd's Properties View (familiar from the graph editor, compact): two columns, the name on the left;
     // with Newt's fields the atlas maps keep (label, width, height, border and
@@ -2548,32 +2380,9 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       var a = shared.selN.map(function (i) { return f.node(i); });
       return shared.selN.length === 1 ? (a[0] >= 0 ? a : []) : a.filter(function (i) { return i >= 0; });
     }
-    function sbNode(i) {   // a glyph Properties restyles (sbgn_edit LOOKS: entities, complexes, compartments, processes, gates, tags and terminals; its class read from the file once per selection and change)
-      return sbJs.LOOKS.test(sbClasses()[nodes2[i].id] || '') ? i : -1;
-    }
-    var TAGS;
-    function __run45() {   // run at start, in order (__start)
-    TAGS = /^(tag|terminal)$/;
-    }   // a tag's rows: Label, Font size, Width, Height, Fill colour, Border colour, Border width, Orientation (a terminal's shown, set by its side)
     // the rows a glyph has by its class: Label where sbgn_edit keeps a name (NAMED), Multimer where it writes one (MULTI); Set as default for the kinds the palette makes in a kept look
     function hasMulti(c) { return sbJs.MULTI.test(c); }   // a kind with a multimer (sbgn_edit MULTI): Properties' Multimer row and the menu's Make multimer
-    function sbOff(k, i) {
-      var c = sbClasses()[nodes2[i].id] || '';
-      if (k === 'way') return !TAGS.test(c);
-      if (TAGS.test(c)) return !/^(label|font|w|h|fill|line|width)$/.test(k);   // Font size as every named glyph (NAMED has tag and terminal)
-      if (k === 'label' || k === 'font') return !sbJs.NAMED.test(c);   // a font size where there is a name
-      if (k === 'multimer') return !hasMulti(c.replace(/ multimer$/, ''));
-      if (k === 'ant') return !hubGroup(i) || sbAnts()[nodes2[i].id] == null;   // a process's or gate's antenna, once it has ports
-      if (EXTRA.indexOf(k) >= 0) return true;   // another format's own rows (propRows)
-      if (k === 'def') return !/^(macromolecule|simple chemical)( multimer)?$|^biological activity$/.test(c) && !hubGroup(i);
-      return false;
-    }
     function lookKey(cls, unit) { return cls === 'biological activity' ? cls + ':' + (unit || '') : cls; }   // Set as default's kind: the glyph's class, an activity's by its unit
-    function kindOf(i) {
-      var c = (sbClasses()[nodes2[i].id] || '').replace(/ multimer$/, '');
-      if (c === 'biological activity') return lookKey(c, sbJs.activities(shared.text)[nodes2[i].id]);
-      return c || (nodes2[i].shape.kind === 'SimpleChemical' ? 'simple chemical' : 'macromolecule');
-    }
     function propsShow(all) {   // all: every field shown again, the one focused too (Esc)
       var i = propNode(), k = propEdge(), r2 = function (v) { return String(Math.round(v * 100) / 100); }, ns = propNodes();
       props.querySelector('.m2-ed-prx').hidden = true; pcard.hidden = true;
@@ -2682,66 +2491,11 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       if (shared.selN.length !== ids.length) { shared.selN = []; nodes2.forEach(function (n, k) { if (ids.indexOf(n.id) >= 0) shared.selN.push(k); }); paint(); }
       return r;
     }
-    function sbSet(k, v, is) {   // every node of is given the value, one undo step; true when the text changed
-      var ids = is.map(function (i) { return nodes2[i].id; }), t2 = shared.text;
-      if (k === 'ant') {   // 1 to 200: the nearest, silently; the processes and gates of them, in one reading (sbgn_edit.fit)
-        var L = parseFloat(v);
-        return isFinite(L) && fitHubs(is.filter(function (i) { return hubGroup(i); }).map(function (i) { return { id: nodes2[i].id, ant: Math.min(Math.max(L, 1), 200) }; }));
-      }
-      ids.forEach(function (id) {
-        if (k === 'label') t2 = sbJs.label(t2, id, v.replace(/[\r\n]+/g, ' '));
-        else if (k === 'multimer') t2 = sbJs.multimer(t2, id, v);   // a count, if any, stays the unit of information typed (N:3)
-        else if (k === 'width') { var x = parseFloat(v); if (isFinite(x)) t2 = sbJs.restyle(t2, id, { width: Math.min(Math.max(x, 0.25), 20) }); }   // outside 0.25 to 20: the nearest, silently
-        else if (k === 'font') { var z = parseFloat(v); if (isFinite(z)) t2 = sbJs.restyle(t2, id, { font: Math.min(Math.max(Math.round(z * 2) / 2, 1), 200) }); }   // in halves, 1 to 200: the nearest, silently
-        else if (k === 'way') { var ti = is.filter(function (i) { return nodes2[i].id === id; })[0]; if (ti != null && nodes2[ti].sub == null) t2 = tagTurnT(t2, ti, v); }   // a free tag turned, spinning (a terminal's follows its side)
-        else {
-          var c = hex(v), o = {};
-          if (c !== null && !(c === '' && k === 'line')) { o[k] = c === '#000000' && k === 'line' ? null : c || null; t2 = sbJs.restyle(t2, id, o); }
-        }
-      });
-      if (t2 === shared.text) return false;
-      commit(t2, { name: 'properties', sel: ids, quiet: true });
-      return true;
-    }
-    function sbEnds(id, o, box) { var t2 = sbJs.scaleEnds(shared.text, id, o, box); if (t2 !== shared.text) { setText(t2); parse(); } }   // a complex's line ends after its box was set (dragEnd, core.js)
-    // a process made reversible or irreversible (sbgn_edit.reversible), from its right-click menu or Properties' Reversible
-    // tick box: one undo step; the turned lines selected (the menu) or the process kept selected (Properties); false when
-    // nothing changed
-    function sbReversible(pid, on, keepNode) {
-      var rv = sbJs.reversibility(shared.text, pid, { sbgn: src() }), n = rv ? (on ? rv.can : rv.rev) : 0, ids = [];
-      if (!n) return false;
-      for (var j = 0; j < n; j++) ids.push(freeId('arc_', ids));
-      var t2 = sbJs.reversible(shared.text, pid, on, ids, { sbgn: src() });
-      return commit(t2, { name: 'reversible', ids: [pid], sel: keepNode ? [pid] : [], selE: keepNode ? [] : ids, quiet: true });
-    }
     // Properties' Reversible tick box for one SBGN-ML process selected alone, under its own rows (withNode): { rid, on },
     // or null where it can be neither (no production, an association, a gate); read once per process and text, as
     // Properties runs with every paint
-    var sbRxSeen;
-    function __run49() {   // run at start, in order (__start)
-    sbRxSeen = [null, null];
-    }
-    function sbRxOf() {
-      if (shared.selN.length !== 1 || shared.selE.length || shared.selP.length || shared.svSel) return null;
-      var id = nodes2[shared.selN[0]] && nodes2[shared.selN[0]].id;
-      if (!id || sbJs.PROCESSES.indexOf(sbClasses()[id] || '') < 0) return null;
-      var key = id + '\u0000' + shared.text;
-      if (sbRxSeen[0] !== key) { var rv = null; try { rv = sbJs.reversibility(shared.text, id, { sbgn: src() }); } catch (e) { rv = null; } sbRxSeen = [key, rv && (rv.can || rv.rev) ? { rid: id, on: rv.rev > 0 } : null]; }
-      return sbRxSeen[1];
-    }
-    var PF_SB, eFor;
+    var eFor;
     function __run50() {   // run at start, in order (__start)
-    PF_SB = { sizable: sbSizable, size: sbSetSize, node: sbNode, set: sbSet, def: sbDef, ends: sbEnds, hub: function (i) { return !!hubGroup(i); },
-      rx: { of: sbRxOf, set: function (pid, on) { return sbReversible(pid, on, true); }, withNode: true },
-      line: { colour: sbLineColour, set: sbLineSet, width: function (k) { return sbJs.widthOf(sbEdgeEl(k)); }, setWidth: sbLineWidth, ports: true,   // a line's colour, width and its ports' rows (edgeShow, edgeSet)
-        count: sbCount, setCount: function (k, v) { return sbLineTo(k, sbJs.recount(shared.text, edges2[k].id, v)); } },   // a consumption's or production's cardinality
-      off: sbOff,
-      look: function (i) {
-        var r = realizerOf(nodes2[i].el), o = sbJs.lookOf(r), wf = field('way');
-        if (wf) { wf.disabled = nodes2[i].sub != null; wf.title = wf.disabled ? 'A terminal points into its submap, set by the side it sits on' : ''; }
-        var an = hubGroup(i) ? sbAnts()[nodes2[i].id] : null;   // read only for a process or gate (every antenna in one reading of the text)
-        return { label: nameOf(i), font: o.font, fill: o.fill ? o.fill.slice(0, 7).toLowerCase() : '', line: (o.line || '#000000').slice(0, 7).toLowerCase(), width: o.width, multimer: o.multimer, way: (sbJs.wayOfR && sbJs.wayOfR(r)) || 'right', ant: an == null ? '' : an };
-      } };
     // a line's Properties, one line selected on a map whose format's part has a line's answers (PF_SB.line): Line colour
     // and its ports as yEd gives them, offsets from its glyph's centre (sx, sy at the source, tx, ty at the target), set
     // as a dragged end sets them (setPorts). An end at a process's or gate's port goes with it: shown, not typed.
@@ -2796,23 +2550,6 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       if (!r || !f.line) return -1;
       var k = edges2.findIndex(function (q) { return q.id.indexOf(r.rid + '|') === 0 && !/\|[mrp]\d+$/.test(q.id); });   // not a line with its own colour
       return k >= 0 && f.line.colour(k) != null ? k : -1;
-    }
-    var sbCountMemo;
-    function __run53() {   // run at start, in order (__start)
-    sbCountMemo = [null, null, null];
-    }   // [line id, text, its cardinality]: read once per line and text (Properties runs with every paint)
-    function sbCount(k) {
-      var id = edges2[k].id;
-      if (sbCountMemo[0] !== id || sbCountMemo[1] !== shared.text) { var c; try { c = sbJs.countOf(shared.text, id); } catch (e) { c = undefined; } sbCountMemo = [id, shared.text, c]; }
-      return sbCountMemo[2];
-    }
-    function sbEdgeEl(k) { var el = edges2[k].path.parentNode; while (el && el.localName !== 'edge') el = el.parentNode; return el; }
-    function sbLineColour(k) { return sbJs.lineOf(sbEdgeEl(k)) || '#000000'; }
-    function sbLineSet(k, c) { return sbLineTo(k, sbJs.recolour(shared.text, edges2[k].id, c)); }   // c '#rrggbb', null for black (yEd's default, no colour written); false when nothing changed
-    function sbLineWidth(k, w) { return sbLineTo(k, sbJs.rewidth(shared.text, edges2[k].id, w)); }   // w 1 the default
-    function sbLineTo(k, t2) {   // the line's text changed: one undo step, the line selected again
-      var id = edges2[k].id;
-      return commit(t2, { name: 'line look', ids: [id], then: function () { shared.selE = []; edges2.forEach(function (q, j) { if (q.id === id) shared.selE = [j]; }); } });
     }
     function atHub(k, end) { var e = edges2[k], n = end ? e.t : e.s; return n == null || !!nodes2[n].hub; }
     function edgeShow(k, all, r2, rxLine) {   // rxLine: the line of a whole reaction selected (its colour, not one participant's number)
@@ -2937,29 +2674,12 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
     });
     }
     function keepLook(key, all) { try { localStorage.setItem(key, JSON.stringify(all)); return true; } catch (e) { warn('The default could not be kept in this browser.'); return false; } }
-    function sbDef(i) {
-      var o = sbJs.lookOf(realizerOf(nodes2[i].el)), b = boxOf(i), all = defsKept(), g = hubGroup(i);
-      if (g) HUB_KINDS[g].forEach(function (c) { all[c] = { w: b[2], h: b[3], fill: o.fill, line: o.line, width: o.width, ant: sbAnts()[nodes2[i].id] }; });   // every kind drawn alike (a process's three, the gates), the letters left standard
-      else all[kindOf(i)] = { w: b[2], h: b[3], fill: o.fill, line: o.line, width: o.width, multimer: o.multimer, font: o.font };   // as it is, no share of another size
-      if (!keepLook(DEF_KEY, all)) return;
-      keepMapChoice('style', 'custom'); keepMapChoice('cols', 'custom'); styleRow(); sbColsRow();
-    }
     // Processes and logic gates as two kinds for sizes and antennas (each drawn alike: Apply to all, Set as default, the
-    // antenna of new arcs): hubGroup, the kind of node i ('process', 'gate' or null); sbAnts, every antenna of the map
-    // (sbgn_edit.antennas), read once per text
+    // antenna of new arcs); hubGroup and sbAnts, the kind of a node and every antenna of the map, are in sbcreate.js
     var HUB_KINDS;
     function __run58() {   // run at start, in order (__start)
     HUB_KINDS = { process: ['process', 'omitted process', 'uncertain process'], gate: ['and', 'or', 'not', 'equivalence', 'delay'] };
     }
-    function hubGroup(i) {
-      var c = i != null && nodes2[i] ? sbClasses()[nodes2[i].id] || '' : '';
-      return HUB_KINDS.process.indexOf(c) >= 0 ? 'process' : HUB_KINDS.gate.indexOf(c) >= 0 ? 'gate' : null;
-    }
-    var antMemo;
-    function __run59() {   // run at start, in order (__start)
-    antMemo = [null, {}];
-    }
-    function sbAnts() { if (antMemo[0] !== shared.text) antMemo = [shared.text, sbJs.antennas(shared.text, { sbgn: src() })]; return antMemo[1]; }
     // the antenna new arcs give a process or gate with no port yet (sbgn_edit.connect's opt.ant), by Style: Standard
     // sizes the standard (sbgn_edit.ANT), Custom the one kept by Set as default, From map (and Custom with none) the one
     // most of that kind have on the map, else the standard
@@ -2981,44 +2701,6 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
     // (sbgn_edit.fit); the compartments round them grown to hold them, as a resize does
     function stdScale() { var D = sbJs.defaults(src(), null, 'process'); return D.w0 / sbJs.SIZE.process[0]; }   // the map's scale (sbgn_edit.defaults)
     function stdLetters() { return Math.round(sbJs.GATE_FONT * stdScale() * 2) / 2; }
-    function fitHubs(items) {
-      if (!items.length) return false;
-      var was = {}; items.forEach(function (it) { var i = nodes2.findIndex(function (n) { return n.id === it.id; }); was[it.id] = boxOf(i); });
-      var t2;
-      try { t2 = sbJs.fit(shared.text, items, { sbgn: src() }); } catch (err) { warn('Not changed: ' + (err && err.message || err) + '.'); return false; }
-      if (t2 === shared.text) return false;
-      var sel = shared.selN.map(function (i) { return nodes2[i].id; });
-      commit(t2, { name: 'size', ids: Object.keys(was), then: function () {   // the nodes selected again, lines and bend points kept
-      shared.selN = []; nodes2.forEach(function (n, k) { if (sel.indexOf(n.id) >= 0) shared.selN.push(k); });
-      var ks = nodes2.map(function (n, k) { return was[n.id] ? k : -1; }).filter(function (k) { return k >= 0; });
-      if (ks.length) setBoxes(grown(ks, boxOf, function (k) { return was[nodes2[k].id] || boxOf(k); }, function () { return false; }));   // their holders grown round them (sbSetSize)
-      refit(Object.keys(was));
-      } });
-      return true;
-    }
-    function __run60() {   // run at start, in order (__start)
-    props.querySelector('.m2-ed-pall').addEventListener('click', function () {
-      var i = propNode(), g = i >= 0 ? hubGroup(i) : null;
-      if (!g) return;
-      var b = boxOf(i), ant = sbAnts()[nodes2[i].id], lt = sbJs.GLT.test(sbClasses()[nodes2[i].id] || '') ? sbJs.lookOf(realizerOf(nodes2[i].el)).font : null;
-      var items = nodes2.map(function (n, k) {
-        if (k === i || hubGroup(k) !== g) return null;
-        var o = boxOf(k);
-        return { id: n.id, box: [+fmt(o[0] + o[2] / 2 - b[2] / 2), +fmt(o[1] + o[3] / 2 - b[3] / 2), b[2], b[3]], ant: ant, letters: lt };
-      }).filter(Boolean);
-      if (!keepSel(function () { return fitHubs(items); })) warn('Every one of this kind already has this size and antenna.');
-    });
-    props.querySelector('.m2-ed-pstd').addEventListener('click', function () {
-      var ns = propNodes().filter(function (i) { return hubGroup(i); });
-      if (!ns.length) return;
-      var s = stdScale(), lt = stdLetters();
-      var items = ns.map(function (i) {
-        var gate = hubGroup(i) === 'gate', S = sbJs.SIZE[gate ? 'and' : 'process'], o = boxOf(i), w = S[0] * s, h = S[1] * s;
-        return { id: nodes2[i].id, box: [+fmt(o[0] + o[2] / 2 - w / 2), +fmt(o[1] + o[3] / 2 - h / 2), w, h], ant: sbJs.ANT * s, letters: gate ? lt : null };
-      });
-      if (!keepSel(function () { return fitHubs(items); })) warn('Already at the standard size and antenna.');
-    });
-    }
 
-    export function __start() { __run1(); __run2(); __run3(); __run4(); __run5(); __run6(); __run7(); __run8(); __run9(); __run10(); __run11(); __run12(); __run13(); __run14(); __run15(); __run16(); __run17(); __run18(); __run19(); __run20(); __run21(); __run22(); __run23(); __run24(); __run25(); __run26(); __run27(); __run28(); __run29(); __run31(); __run32(); __run33(); __run34(); __run35(); __run36(); __run37(); __run38(); __run39(); __run40(); __run41(); __run42(); __run43(); __run44(); __run45(); __run47(); __run48(); __run49(); __run50(); __run51(); __run52(); __run53(); __run54(); __run55(); __run56(); __run57(); __run58(); __run59(); __run60(); __run61(); }   // the part's statements, in their order
-    export { ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues, confettiLine, confettiOne, confettiPick, confettiSquares, ddOpen, hex, hybOn, iconKeep, iconSpread, innermost, joinDo, joinPack, joinPlan, keepLook, keepMapChoice, link, linkDown, linkEnd, linkMove, linkPaint, linkUp, looksKept, mapCols, moveSays, nameAt, origAll, pNow, pal, palBlocks, palDid, palDown, palDrop, palId, palLangNow, palShow, palSigns, palSignsEl, palStore, palStyle, palTake, palUp, placedAt, propFmt, propRows, sbgnStrict, setSize, sizable, styleRow, svAt, svDelete, svDown, svIcons, svList, svMarks, svParts, textsOf, tool, typeIn };
+    export function __start() { __run1(); __run2(); __run3(); __run4(); __run5(); __run6(); __run7(); __run8(); __run9(); __run10(); __run11(); __run12(); __run13(); __run14(); __run15(); __run16(); __run20(); __run21(); __run22(); __run23(); __run24(); __run25(); __run26(); __run27(); __run28(); __run29(); __run31(); __run32(); __run33(); __run34(); __run35(); __run36(); __run37(); __run38(); __run39(); __run40(); __run41(); __run42(); __run43(); __run44(); __run47(); __run48(); __run50(); __run51(); __run52(); __run54(); __run55(); __run56(); __run57(); __run58(); __run61(); }   // the part's statements, in their order
+    export { ARCS, colsPick, confettiFill, confettiHues, confettiLine, confettiOne, confettiPick, confettiSquares, ddOpen, DEF_KEY, defOf, defsKept, EXTRA, field, freeId, hasMulti, hex, HUB_KINDS, hybOn, iconKeep, iconSpread, innermost, isMade, joinDo, joinPack, joinPlan, keepLook, keepMapChoice, keepSel, link, linkDown, linkEnd, linkMove, linkPaint, linkUp, lookKey, looksKept, mapCols, moveSays, nameAt, nameOf, origAll, pal, PAL_KEY, palBlocks, palDid, palDown, palDrop, palId, palLangNow, palShow, palSigns, palSignsEl, palStore, palStyle, palTake, palUp, placedAt, pNow, propFmt, propNode, propNodes, propRows, props, sbgnStrict, setSize, sizable, SS, stdLetters, stdScale, styleRow, SV, svAddTo, svAt, svClash, svDelete, svDown, svHold, svIcons, svIconsOn, svIdx, svList, svMarks, svOnly, svParts, svPt, svR, svSettle, svTwin, svVar, tagTurnT, termScaled, termsFix, textsOf, tool, typeIn, UI };

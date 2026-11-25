@@ -109,7 +109,7 @@ function insetsOf(text, id, ins, bins) {
       var v = q2[1][j];
       if (v == null) return;
       v = Math.round(v * 1000) / 1000;
-      tag = tag.replace(new RegExp('(\\s' + sd + '=")[^"]*"'), '$1' + Math.round(v) + '"').replace(new RegExp('(\\s' + sd + 'F=")[^"]*"'), '$1' + (v % 1 ? String(v) : v + '.0') + '"');
+      tag = tag.replace(new RegExp('(\\s' + sd + '=")[^"]*"'), '$1' + Math.trunc(v) + '"').replace(new RegExp('(\\s' + sd + 'F=")[^"]*"'), '$1' + (v % 1 ? String(v) : v + '.0') + '"');   // the whole number cut, as the engine since it writes insets as yEd does
     });
     if (tag !== x[0]) put.push([m.index + x.index, x[0].length, tag]);
   });
