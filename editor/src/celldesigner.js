@@ -382,4 +382,8 @@ import { cdCheck, cdClsOf, cdRole } from './cdcreate.js';
     }
 
     export function __start() { __run1(); __run3(); __run4(); __run5(); __run6(); __run7(); }   // the part's statements, in their order
-    export { beyond, cdDoc, cdDraw, cdGraphml, cdKept, cdJs, cdKnown, cdMap, cdMk, cdNow, cdRebuild, cdRemember, cdSessionSoon, cdShown, cdpy, glyphArcs, glyphPort, isCd, joinAt, joinGuides, joinSolve, lineGrid, liveCd, nodeCentre, nodePlaces, plainCanvas, warmUp };
+    // CellDesigner's format object (state.js formats): the file is kept beside the GraphML edited, the moves written in
+    function cdFormat() {
+      return { name: 'cd', now: function () { return shared.cd.now; }, ownFrame: true, live: function () { return liveCd; } };
+    }
+    export { beyond, cdFormat, cdDoc, cdDraw, cdGraphml, cdKept, cdJs, cdKnown, cdMap, cdMk, cdNow, cdRebuild, cdRemember, cdSessionSoon, cdShown, cdpy, glyphArcs, glyphPort, isCd, joinAt, joinGuides, joinSolve, lineGrid, liveCd, nodeCentre, nodePlaces, plainCanvas, warmUp };

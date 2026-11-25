@@ -1,6 +1,6 @@
 import { shared, V } from './state.js';
 import { drag, paint, parse, render, setText, src, warn } from './core.js';
-import { yr } from './graphml.js';
+import { liveY, yr } from './graphml.js';
 
     // ---------- the SBGN-ML part (editor/src/sbgn.js) ----------
     // An SBGN-ML map edited as the GraphML the converter makes of it (as a GraphML map, layout only):
@@ -170,4 +170,8 @@ import { yr } from './graphml.js';
     }
 
     export function __start() { __run1(); __run2(); __run3(); __run5(); __run6(); }   // the part's statements, in their order
-    export { EMPTY_BASE, GEO, NEW_ID, edOf, emptyBase, isSb, madeHere, sbBase, sbFollow, sbGraphml, sbJs, sbKind, sbIn, sbMap, sbNow, sbOwn, sbReader, sbRemember, sbpy, viaGraphml };
+    // SBGN-ML's format object (state.js formats): the file written from the one opened with the moves of the GraphML
+    function sbFormat() {
+      return { name: 'sb', now: sbNow, ownFrame: false, live: function () { return liveY; } };
+    }
+    export { EMPTY_BASE, GEO, NEW_ID, edOf, emptyBase, isSb, madeHere, sbBase, sbFollow, sbGraphml, sbJs, sbKind, sbIn, sbMap, sbNow, sbOwn, sbFormat, sbReader, sbRemember, sbpy, viaGraphml };

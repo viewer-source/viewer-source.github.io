@@ -2,6 +2,14 @@
 // editor's state that more than one module changes (a module may read what it imports, never assign it).
 export var V;
 export var shared = {};
+// The file formats, one object per format (graphml.js, celldesigner.js, sbgn.js), put here by main.js before the parts
+// start; the open map's object is shared.F. Shared code asks F and never which format a map is. Its jobs and tables:
+//   now()      the map's own file as it is now (core.js src)
+//   ownFrame   the picture is drawn in the file's own places (CellDesigner), else shifted out of negative places
+//   live()     the live drawing of a move, the format's own way (live.js liveFmt): { glyphs, lines, holders, size }
+// Moved one question at a time (stage 1 of notes/format-object-design.md in the working repository).
+export var formats = {};
+export function addFormats(o) { Object.keys(o).forEach(function (k) { formats[k] = o[k]; }); }
 export function setV(v) { V = v; Object.keys(LIFETIMES).forEach(reset); }   // every field present from the start
 
 // Every field of shared, by how long it lives, with its value at the start (a function: a fresh list or object each
@@ -25,6 +33,7 @@ export var LIFETIMES = {
   },
   map: {
     text: function () { return ''; },   // the GraphML edited (a CellDesigner or SBGN-ML map's working copy)
+    F: function () { return formats.graphml || null; },   // the map's format object (formats), set by core.js begin
     cd: none,            // a CellDesigner map: { base, now }
     sb: none,            // an SBGN-ML map: { base, g0 }
     sbLast: none,        // an SBGN-ML map's [GraphML, its SBGN-ML text, sb]: the moves written once per text (sbgn.js)

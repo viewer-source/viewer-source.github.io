@@ -1,6 +1,6 @@
 // The editor's entry: the viewer loads the built editor.js (editor/build.js bundles this file and what it imports) once
 // its style turns --m2-edit on, and calls window.m2Editor with V. The parts start in this order.
-import { plant, setV, stateNow } from './state.js';
+import { addFormats, plant, setV, stateNow } from './state.js';
 import { __start as start_core } from './core.js';
 import { __start as start_live } from './live.js';
 import { __start as start_graphml } from './graphml.js';
@@ -11,12 +11,15 @@ import { __start as start_cdcreate } from './cdcreate.js';
 import { __start as start_help } from './help.js';
 import { __start as start_own } from './own.js';
 import { aheadSoon, away, buttons, chooseFolder, map, on, paint, picWait, repo, shown, stop, syncFolder, token, unkeep } from './core.js';
-import { cdKept, cdShown, warmUp } from './celldesigner.js';
+import { cdFormat, cdKept, cdShown, warmUp } from './celldesigner.js';
+import { graphmlFormat } from './graphml.js';
+import { sbFormat } from './sbgn.js';
 import { own } from './own.js';
 import { shared } from './state.js';
 import { registry } from './tools.js';
 
 window.m2Editor = function (v) {
+    addFormats({ graphml: graphmlFormat(), cd: cdFormat(), sb: sbFormat() });   // before setV: the map's F starts as GraphML's
     setV(v);
     window.m2EditState = function () { var s = stateNow(); s.cdKept = cdKept(); return s; };   // the editor's shared fields by lifetime and the map whose CellDesigner document is kept, read by the tests (tests/map-switch.js)
     window.m2EditPlant = plant;   // the tests' values put into the map's fields before a switch (tests/map-switch.js)

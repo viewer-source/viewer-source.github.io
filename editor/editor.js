@@ -1024,6 +1024,12 @@
   // editor/src/state.js
   var V;
   var shared = {};
+  var formats = {};
+  function addFormats(o) {
+    Object.keys(o).forEach(function(k) {
+      formats[k] = o[k];
+    });
+  }
   function setV(v) {
     V = v;
     Object.keys(LIFETIMES).forEach(reset);
@@ -1055,6 +1061,10 @@
         return "";
       },
       // the GraphML edited (a CellDesigner or SBGN-ML map's working copy)
+      F: function() {
+        return formats.graphml || null;
+      },
+      // the map's format object (formats), set by core.js begin
       cd: none,
       // a CellDesigner map: { base, now }
       sb: none,
@@ -1176,236 +1186,2329 @@
   var import_graphml_edit = __toESM(require_graphml_edit());
   var import_holding = __toESM(require_holding());
 
-  // editor/src/sbgn.js
-  var sbp;
-  var sbJs;
-  var EMPTY_BASE;
-  var baseURL;
+  // editor/src/cdcreate.js
+  var import_notation = __toESM(require_notation());
+  var CD_SP;
   function __run1() {
-    sbp = null, sbJs = null;
-    EMPTY_BASE = `<?xml version='1.0' encoding='UTF-8'?>
-<graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:y="http://www.yworks.com/xml/graphml">
-  <key for="node" id="ng" yfiles.type="nodegraphics"/>
-  <key for="graphml" id="res" yfiles.type="resources"/>
-  <key for="edge" id="eg" yfiles.type="edgegraphics"/>
-  <graph edgedefault="directed" id="G"/>
-  <data key="res">
-    <y:Resources/>
-  </data>
-</graphml>
-`;
-    baseURL = null;
+    CD_SP = [
+      ["PROTEIN", "Protein", '<rect x="1.5" y="5" width="21" height="14" rx="3.5"/>'],
+      ["GENE", "Gene", '<rect x="1.5" y="6" width="21" height="12"/>'],
+      ["RNA", "RNA", '<path d="M11.5 7h11l-10 10h-11z"/>'],
+      ["SIMPLE_MOLECULE", "Simple molecule", '<circle cx="12" cy="12" r="7"/>'],
+      ["UNKNOWN", "Unknown", '<ellipse cx="12" cy="12" rx="10.5" ry="6" fill="currentColor" fill-opacity=".35" stroke="none"/>'],
+      ["PHENOTYPE", "Phenotype", '<path d="M6 5h12l4.5 7-4.5 7h-12l-4.5-7z"/>'],
+      ["DEGRADED", "Degraded", '<circle cx="12" cy="12" r="8"/><path d="M4 20l16-16"/>'],
+      // the complex: its box with cut corners holding three overlapping members, each opaque over the one behind it
+      ["COMPLEX", "Complex", '<path d="M6 2.5h12l3.5 3.5v12l-3.5 3.5h-12l-3.5-3.5v-12z"/><g class="thin" fill="#fff"><rect x="8.5" y="5.5" width="7.5" height="6.5" rx="1"/><rect x="5" y="10" width="6.5" height="4.5" rx="1"/><ellipse cx="14.3" cy="14.8" rx="4.6" ry="3.6"/></g>'],
+      ["COMPARTMENT", "Compartment", '<rect x="1.5" y="3.5" width="21" height="17" rx="6"/><rect class="thin" x="4.5" y="6.5" width="15" height="11" rx="3.5"/>'],
+      // CellDesigner's oval compartment (class OVAL), its two lines as the square one's
+      ["OVAL", "Oval compartment", '<ellipse cx="12" cy="12" rx="10.5" ry="8.5"/><ellipse class="thin" cx="12" cy="12" rx="7.5" ry="5.5"/>']
+    ];
   }
-  function emptyBase() {
-    return baseURL || (baseURL = URL.createObjectURL(new Blob([EMPTY_BASE], { type: "application/xml" })));
+  function cdComp(cls) {
+    return cls === "COMPARTMENT" || cls === "OVAL";
   }
-  var NEW_ID;
+  var CD_Q;
+  var CD_GATES;
+  var CD_LINE;
+  var CD_HEAD;
+  var CD_RX;
+  var CD_DOTS;
+  var CD_ADD;
+  var CD_MOD;
+  var CD_RED;
+  var RED_OF;
+  var CD_NAME;
+  var cdK;
   function __run2() {
-    NEW_ID = "viewer-new-map";
-  }
-  function madeHere(t) {
-    return new RegExp('<map\\s[^>]*id="' + NEW_ID + '"').test(t.slice(0, 3e3));
-  }
-  function isSb(t) {
-    return /<([\w.-]+:)?sbgn[\s>]/.test(t.slice(0, 3e3));
-  }
-  function isSbml(t) {
-    t = t || "";
-    return /<sbml[\s>]/.test(t.slice(0, 3e3)) && t.indexOf("listOfLayouts") >= 0 && t.slice(0, 2e5).indexOf("celldesigner") < 0;
-  }
-  function viaGraphml(t) {
-    return isSb(t) || isSbml(t);
-  }
-  function edOf(t) {
-    return isSbml(t) && window.sbml_edit ? window.sbml_edit : sbJs;
-  }
-  function sbMap(m) {
-    return !!(m && !m.shownAs && (m.site || m).editBase);
-  }
-  function sbScript(name2) {
-    return new Promise(function(res, rej) {
-      if (window[name2]) return res();
-      var s = document.createElement("script");
-      s.src = V.renderers + "converter/" + name2 + ".js" + V.build;
-      s.onload = res;
-      s.onerror = function() {
-        rej(name2 + " not found");
-      };
-      document.head.appendChild(s);
+    CD_Q = '<path d="M9.8 10.2a2.2 2.2 0 1 1 3.2 2c-.7.4-1 .8-1 1.6" class="in"/><circle class="dot" cx="12" cy="16.4" r=".8"/>';
+    CD_GATES = [
+      ["AND", "AND gate", '<text x="12" y="16.2" text-anchor="middle" font-size="9">&amp;</text>', "&amp;"],
+      ["OR", "OR gate", '<path d="M12 9.5v7" class="in"/>', "|"],
+      ["NOT", "NOT gate", '<path d="M12 9.6v4.6" class="in"/><circle class="dot" cx="12" cy="16.6" r=".8"/>', "!"],
+      ["UNKNOWN", "Unknown gate", '<g transform="translate(0 .7)">' + CD_Q + "</g>", "?"]
+    ].map(function(q) {
+      var ins = q[0] === "NOT" ? "M12 1v5.5" : "M3 4l4.4 4.4M21 4l-4.4 4.4";
+      return [q[0], q[1], '<circle cx="12" cy="13" r="6.5"/><path d="' + ins + 'M12 19.5V23"/>' + q[2], q[3]];
     });
-  }
-  function sbpy() {
-    if (sbp) return sbp;
-    sbp = sbScript("sbgn_edit").then(function() {
-      return sbScript("sbml_edit").catch(function() {
-      });
-    }).then(yr).then(function() {
-      sbJs = window.sbgn_edit;
-      return sbJs;
+    CD_LINE = '<path d="M1.5 12h15"/>', CD_HEAD = '<path d="M16 8.5l6.5 3.5-6.5 3.5z" fill="currentColor"/>';
+    CD_RX = [
+      ["STATE_TRANSITION", "State transition", CD_LINE + CD_HEAD],
+      ["KNOWN_TRANSITION_OMITTED", "Known transition omitted", CD_LINE + '<path d="M6.5 16l2.5-8M10 16l2.5-8" class="in"/>' + CD_HEAD],
+      ["UNKNOWN_TRANSITION", "Unknown transition", CD_LINE + '<g transform="translate(-2.5 -1.5)">' + CD_Q + "</g>" + CD_HEAD]
+    ];
+    CD_DOTS = '<path d="M1.5 18h21" class="in" stroke-dasharray="1.4 3.5"/>';
+    CD_ADD = [
+      ["ADD_REACTANT", "Add reactant (from a species onto a reaction; onto a logic gate, a new input)", CD_DOTS + '<path d="M3.5 4.5L11 18"/>'],
+      ["ADD_PRODUCT", "Add product (from a reaction to a species)", CD_DOTS + '<path d="M11 18l6-9"/><path d="M20.5 4l-.6 6.6-5.2-3.4z" fill="currentColor"/>']
+    ];
+    CD_MOD = [
+      ["CATALYSIS", "Catalysis", '<path d="M12 1.5v14"/><circle cx="12" cy="18.5" r="3"/>'],
+      ["INHIBITION", "Inhibition", '<path d="M12 1.5v19M7 20.5h10"/>'],
+      ["PHYSICAL_STIMULATION", "Physical stimulation", '<path d="M12 1.5v12.5M7.5 14h9l-4.5 7.5z"/>'],
+      ["MODULATION", "Modulation", '<path d="M12 1.5v11M12 12.5l3.5 4.5-3.5 4.5-3.5-4.5z"/>'],
+      ["TRIGGER", "Trigger", '<path d="M12 1.5v13.5M7 11.5h10M7.5 15h9l-4.5 7z"/>']
+    ].map(function(q) {
+      return [q[0], q[1] + (q[0] === "CATALYSIS" ? " (onto a reaction)" : " (onto a reaction, or between species with Reduced notation ticked)"), q[2]];
     });
-    sbp.catch(function(e) {
-      sbp = null;
-      warn("The SBGN-ML side did not load: " + e);
+    CD_RED = [["NEGATIVE_INFLUENCE", "INHIBITION"], ["REDUCED_PHYSICAL_STIMULATION", "PHYSICAL_STIMULATION"], ["REDUCED_MODULATION", "MODULATION"], ["REDUCED_TRIGGER", "TRIGGER"]];
+    RED_OF = {};
+    CD_RED.forEach(function(q) {
+      RED_OF[q[1]] = q[0];
     });
-    return sbp;
-  }
-  function sbBase(m, low) {
-    var e = m.site || m;
-    if (e.ownText) return sbpy().then(function() {
-      return sbReader(e.ownText());
-    }).then(function() {
-      return sbOwn(e.ownText());
+    CD_NAME = {};
+    CD_SP.concat(CD_RX, CD_ADD, CD_MOD).forEach(function(q) {
+      CD_NAME[q[0]] = q[1].replace(/ \(.*\)$/, "");
     });
-    return fetch(e.editBase + V.ver(e), { priority: low ? "low" : "auto" }).then(function(r) {
-      if (!r.ok) throw r.status;
-      return r.text();
+    CD_RED.forEach(function(q) {
+      CD_NAME[q[0]] = CD_NAME[q[1]];
     });
-  }
-  var ownMemo;
-  var readerP;
-  function sbReader(t) {
-    if (madeHere(t) || window.sbgnml_read) return Promise.resolve();
-    readerP = readerP || sbScript("sbgnml_read");
-    readerP.catch(function() {
-      readerP = null;
+    CD_GATES.forEach(function(q) {
+      CD_NAME["G_" + q[0]] = q[1];
     });
-    return readerP;
+    cdK = function(q) {
+      return ["cd:" + q[0], q[1], q[2]];
+    };
   }
-  function sbOwn(t) {
-    if (madeHere(t)) return EMPTY_BASE;
-    if (!window.sbgnml_read) throw new Error("the SBGN-ML reader did not load");
-    if (!ownMemo || ownMemo[0] !== t) {
-      var r = window.sbgnml_read.graphml(t);
-      if (r.text.indexOf("<node ") < 0 && r.messages.some(function(x) {
-        return x[0] === "left out";
-      })) {
-        if (/<([\w.-]+:)?map\s[^>]*language\s*=\s*["']entity relationship/.test(t.slice(0, 5e3))) throw new Error("an Entity Relationship map, which this editor does not read yet");
-        var gone = r.messages.filter(function(x) {
-          return x[0] === "left out";
-        }).map(function(x) {
-          return x[1].replace(/: (\d+) left out \(.*$/, " ($1)");
-        });
-        throw new Error("nothing in it can be drawn" + (gone.length ? " (left out: " + gone.join(", ") + ")" : ""));
-      }
-      ownMemo = [t, r.text];
-    }
-    return ownMemo[1];
+  function palCd() {
+    return [["Species", CD_SP.map(cdK)], ["Logic gates", CD_GATES.map(function(q) {
+      return ["cd:G_" + q[0], q[1], q[2]];
+    }), true], ["Reactions", CD_RX.concat(CD_ADD).map(cdK), true], ["Modifiers", CD_MOD.map(cdK)]];
   }
-  var sbMemo;
+  var CD_GATE;
   function __run3() {
-    sbMemo = [];
-    ownMemo = null;
-    outMemo = null;
+    CD_RX.concat(CD_ADD, CD_MOD).forEach(function(q) {
+      ARCS["cd:" + q[0]] = 1;
+    });
+    CD_GATE = {};
+    CD_GATES.forEach(function(q) {
+      CD_GATE["cd:G_" + q[0]] = q[0];
+    });
   }
-  function sbGraphml(t, base) {
-    for (var i = 0; i < sbMemo.length; i++) if (sbMemo[i][0] === t && sbMemo[i][1] === base) return sbMemo[i][2];
-    var ed = edOf(t), g = ed.graphml(ed.unique ? ed.unique(t, base) : t, base);
-    sbRemember(t, g, base);
-    return g;
+  function cdKind(k) {
+    return k && k.indexOf("cd:") === 0 ? k.slice(3) : null;
   }
-  function sbRemember(t, g, base) {
-    sbMemo.unshift([t, base, g]);
-    sbMemo.length = Math.min(sbMemo.length, 3);
+  function cdPal() {
+    return on && V.current === map && !!shared.cd && !!cdJs && !!cdMk && V.level === "full";
   }
-  function sbNow() {
-    if (!shared.sbLast || shared.sbLast[0] !== shared.text || shared.sbLast[2] !== shared.sb) {
-      try {
-        shared.sbLast = [shared.text, edOf(shared.sb.base).write(shared.sb.base, shared.text), shared.sb];
-      } catch (e) {
-        warn("The moves could not be written into the SBGN-ML file: " + (e && e.message || e) + ". The last version written is kept.");
-        return sbOut(shared.sbLast && shared.sbLast[2] === shared.sb ? shared.sbLast[1] : shared.sb.base);
-      }
+  function cdStrict() {
+    var id = palId();
+    if (shared.cdStrictMemo[0] !== id) {
+      var k = palStore()[id];
+      shared.cdStrictMemo = [id, !!(k && k.strict === true)];
     }
-    return sbOut(shared.sbLast[1]);
+    return shared.cdStrictMemo[1];
   }
-  var outMemo;
-  function sbOut(w) {
-    if (V.sites || !sbJs || !sbJs.sitesOut || !isSb(w)) return w;
-    if (!outMemo || outMemo[0] !== w) {
-      var o = w;
-      try {
-        o = sbJs.sitesOut(w);
-      } catch (e) {
-      }
-      outMemo = [w, o];
-    }
-    return outMemo[1];
+  function cdFill() {
+    [".m2-ed-pnot", ".m2-ed-plook", ".m2-ed-pprot", ".m2-ed-pcdc", ".m2-ed-psbgn"].forEach(function(c) {
+      pal.querySelector(c).hidden = true;
+    });
+    var ps = pal.querySelector(".m2-ed-psites input");
+    if (ps && ps.checked !== !!V.sites) ps.checked = !!V.sites;
+    pal.querySelector(".m2-ed-pnot").style.display = "none";
+    var hy = pal.querySelector(".m2-ed-pstrict"), hyc = hy.querySelector("input"), strict = cdStrict();
+    hy.hidden = false;
+    if (hyc.checked !== !strict) hyc.checked = !strict;
+    cdInfo(hy, true);
+    styleRow();
+    cdColsRow();
+    var k = "cd" + (strict ? "S" : "");
+    if (shared.palShown === k) return;
+    shared.palShown = k;
+    palSignsEl.innerHTML = palSigns(palCd());
+    palBlocks();
   }
-  function sbIn(t) {
-    try {
-      return sbJs && sbJs.sitesIn && isSb(t) ? sbJs.sitesIn(t) : t;
-    } catch (e) {
-      return t;
-    }
-  }
-  var sbPlaced;
+  var CD_INFO;
   function __run5() {
-    sbPlaced = null;
+    CD_INFO = "Lets the modifiers\u2019 signs (inhibition, physical stimulation, modulation, trigger) join two species directly, written as CellDesigner\u2019s reduced notation, and allows a logic gate between species. Unticked: reactions and their modifiers only. CellDesigner\u2019s positive influence (an open arrowhead, not an SBGN sign) is made a physical stimulation when a map is opened.";
   }
-  function sbPlace() {
-    if (!sbJs.countsPlace || shared.text === sbPlaced || shared.text.indexOf("<y:EdgeLabel") < 0) return false;
-    var t2 = sbJs.countsPlace(shared.text), was = shared.text !== t2;
-    setText(sbPlaced = t2);
-    return was;
+  function cdInfo(hy, on_) {
+    var lab = hy.querySelector("label"), ti = hy.querySelector(".m2-ed-ptip");
+    if (!lab.dataset.sbgn) {
+      lab.dataset.sbgn = lab.title;
+      ti.dataset.sbgn = ti.dataset.info;
+    }
+    var v = on_ ? CD_INFO : ti.dataset.sbgn;
+    if (ti.dataset.info !== v) {
+      lab.title = on_ ? "Ticked (the default): the reduced notation signs shown" : lab.dataset.sbgn;
+      ti.dataset.info = v;
+    }
   }
-  var sbK;
-  var GEO;
+  function cdCheck() {
+    var g = window.cdrender && window.cdrender.GATE, miss = CD_SP.filter(function(q) {
+      return !cdComp(q[0]) && !cdMk.LOOK[q[0]];
+    }).map(function(q) {
+      return q[0];
+    }).concat(
+      CD_RX.filter(function(q) {
+        return cdMk.PROCESS.indexOf(q[0]) < 0;
+      }).map(function(q) {
+        return q[0];
+      }),
+      CD_MOD.filter(function(q) {
+        return cdMk.MODS.indexOf(q[0]) < 0;
+      }).map(function(q) {
+        return q[0];
+      }),
+      CD_RED.filter(function(q) {
+        return cdMk.REDUCED.indexOf(q[0]) < 0;
+      }).map(function(q) {
+        return q[0];
+      }),
+      CD_GATES.filter(function(q) {
+        return !cdMk.NEED[q[0]];
+      }).map(function(q) {
+        return q[0];
+      })
+    );
+    if (miss.length) console.error("The CellDesigner palette offers kinds cd_make lacks: " + miss.join(", "));
+    if (g) CD_GATES.forEach(function(q) {
+      var v = g[q[0]];
+      if (v && q[3] !== v) console.error("The palette\u2019s " + q[1] + " sign differs from cdrender\u2019s " + v);
+    });
+  }
   function __run6() {
-    sbK = { sb: null };
-    GEO = /\s(?:x|y|width|height|sx|sy|tx|ty|ratio|modelPosition|nodeRatioX|nodeRatioY|labelRatioX|labelRatioY|offsetX|offsetY|borderDistance)="[^"]*"/g;
+    pal.querySelector(".m2-ed-pstrict input").addEventListener("change", function(e) {
+      if (!cdPal()) return;
+      palDid([PAL_KEY], function() {
+        var all = palStore(), id = palId();
+        shared.cdStrictMemo = [id, !e.target.checked];
+        if (id) {
+          all[id] = { lang: "pd", look: "rn", strict: !e.target.checked };
+          try {
+            localStorage.setItem(PAL_KEY, JSON.stringify(all));
+          } catch (er) {
+          }
+        }
+      });
+      shared.palShown = null;
+      palShow();
+    });
   }
-  function sbRead() {
-    var s = src();
-    sbK.text = shared.text;
-    sbK.key = shared.text.replace(GEO, "");
-    sbK.bad = !(shared.sbLast && shared.sbLast[0] === shared.text && shared.sbLast[2] === shared.sb);
-    if (!sbK.bad) {
-      sbK.kind = edOf(s).mapKind(s);
-      sbK.af = edOf(s).isAf(s);
+  function cdApply(fn, sel, selLines) {
+    keyFlush();
+    var N = cdNow(), now = N.t;
+    var t2;
+    cdGrew = {};
+    try {
+      t2 = fn(now, N.sh);
+    } catch (err) {
+      cdGrew = null;
+      if (!(err && err.refused)) warn(String(err && err.message || err).replace(/\.?$/, "."));
+      return false;
     }
+    if (t2 && t2.text != null) t2 = t2.text;
+    var grew = cdGrew;
+    cdGrew = null;
+    if (!t2 || t2 === now) return false;
+    return commit(null, { name: "CellDesigner change", ids: [].concat(typeof sel === "function" ? [] : sel || []), quiet: true, write: function() {
+      cdRebuild(t2, N.sh);
+    }, then: function() {
+      var gk = nodes2.map(function(n, k) {
+        return grew[n.id] ? k : -1;
+      }).filter(function(k) {
+        return k >= 0;
+      });
+      if (gk.length) setBoxes(grown(gk, boxOf, function(k) {
+        return grew[nodes2[k].id] || boxOf(k);
+      }, function() {
+        return false;
+      }));
+      shared.selN = [];
+      shared.selP = [];
+      shared.selE = [];
+      shared.part = null;
+      if (typeof sel === "function") sel = sel();
+      if (typeof selLines === "function") selLines = selLines();
+      (sel || []).forEach(function(id) {
+        nodes2.forEach(function(n, i) {
+          if (n.id === id) shared.selN.push(i);
+        });
+      });
+      (selLines || []).forEach(function(id) {
+        edges2.forEach(function(q, k) {
+          if (q.id === id || q.id === id + "|a" || q.id === id + "|b") shared.selE.push(k);
+        });
+      });
+    } });
   }
-  function sbKind(how) {
-    if (!shared.sb || !sbJs) return "empty";
-    if (how) sbPlace();
-    if (sbK.sb !== shared.sb) sbK = { sb: shared.sb, text: null, key: null, kind: "empty", af: false, g: null, bad: false };
-    if (sbK.text !== shared.text) {
-      if (sbK.bad || sbK.key !== shared.text.replace(GEO, "")) sbRead();
-      else sbK.text = shared.text;
+  function cdRole(i) {
+    var n = nodes2[i];
+    if (/\|proc$/.test(n.id)) return "proc";
+    if (/\|g\d*$/.test(n.id)) return "gate";
+    if (n.comp || n.up != null && !nodes2[n.up].comp) return null;
+    return "epn";
+  }
+  function cdRid(i) {
+    return nodes2[i].id.replace(/\|(proc|g\d*)$/, "");
+  }
+  function cdGateRef(i) {
+    var m = nodes2[i].id.match(/^(.*)\|g(\d*)$/);
+    return m[2] ? m[1] + "|m" + m[2] : m[1];
+  }
+  function cdComplexAt(P) {
+    var i = innermost(P, function(n) {
+      return n.shape.kind === "Complex";
+    });
+    return i >= 0 ? nodes2[i].id : null;
+  }
+  var CD_COLS;
+  var CD_COMP_DEFAULT;
+  function __run7() {
+    CD_COLS = [["file", "Original", "The map\u2019s own colours, as they were before another choice; new species and compartments in the colour most of their class have on it, Default for a class it has none of"], ["cd", "CellDesigner", "The whole map and new species and compartments in CellDesigner\u2019s own colours"], ["default", "Mist and sage", "The whole map and new species and compartments in the viewer\u2019s starting colours: a pale blue for proteins, a pale green for small molecules"], ["none", "No colours", "The whole map and new species and compartments white"], ["custom", "Custom default", "The whole map and new species in the colours kept by Set as default; a class with none as it is"], ["confetti", "Confetti", "Every species of the map, and every new one, a pastel of its own; compartments as they are"]];
+    CD_COMP_DEFAULT = "ffdfdbce";
+  }
+  function cdCols() {
+    return mapCols(["file", "none", "cd", "default", "confetti", "custom"], cdIs);
+  }
+  function cdIs(mode) {
+    var t = shared.cd && shared.cd.now;
+    if (!t || !cdMk) return false;
+    if (mode === "file") {
+      var r = origAll()[palId()];
+      if (!r) return null;
+      var now = cdMk.colours(t), same = function(a, b2) {
+        return a == null || b2 == null || String(a).toLowerCase() === String(b2).toLowerCase();
+      };
+      return Object.keys(r.fill || {}).every(function(id) {
+        return same(now.fill[id], r.fill[id]);
+      }) && Object.keys(r.line || {}).every(function(id) {
+        var a = now.line[id] || {};
+        return Object.keys(r.line[id]).every(function(q) {
+          return same(a[q], r.line[id][q]);
+        });
+      });
     }
-    if (sbK.bad) return sbK.kind;
-    if (sbK.g == null || how === "back") sbK.g = sbK.af;
-    else if (how === "follow" && sbK.g !== sbK.af) {
-      var g, key = shared.text.replace(GEO, "");
-      if (sbK.failed === key) return sbK.kind;
-      try {
-        g = edOf(src()).graphml(src(), shared.text);
-      } catch (e) {
-        sbK.failed = key;
-        warn("The map could not be read again after it turned " + (sbK.af ? "Activity Flow" : "Process Description") + ": " + (e && e.message || e) + ".");
-        return sbK.kind;
+    var n = cdMk.classColours(t), cols = [];
+    Object.keys(n).forEach(function(cls) {
+      if (cls !== "DEGRADED") cols = cols.concat(Object.keys(n[cls]));
+    });
+    if (!cols.length) return null;
+    if (mode === "confetti") return cols.every(function(c) {
+      return confettiOne("#" + c.slice(2));
+    });
+    var fn = cdFills(mode, t), read = 0;
+    var all = Object.keys(n).every(function(cls) {
+      var x = cls === "DEGRADED" ? null : fn(cls);
+      if (x) read++;
+      return !x || Object.keys(n[cls]).every(function(c) {
+        return c.slice(2) === x.slice(1).toLowerCase();
+      });
+    });
+    return read ? all : null;
+  }
+  var CD_UNKNOWN;
+  function __run8() {
+    CD_UNKNOWN = "ffdddddd";
+  }
+  function cdColour(t, cls) {
+    return cdColourIn(cdCols(), t, cls);
+  }
+  function cdColourIn(m, t, cls) {
+    var comp = cdComp(cls);
+    if (m === "none") return cls === "UNKNOWN" ? CD_UNKNOWN : "ffffffff";
+    if (m === "confetti") {
+      if (cls !== "DEGRADED" && !comp) return "ff" + confettiFill(t).slice(1);
+      m = "file";
+    }
+    if (m === "custom") {
+      var k = !comp && cdKept()[cls];
+      if (k && k.fill) return "ff" + k.fill.slice(1).toLowerCase();
+      m = "file";
+    }
+    if (m === "file") {
+      var f = t ? comp ? cdMk.compartmentColour(t) : cdMk.classColour(t, cls) : null;
+      if (f) return f;
+      m = "default";
+    }
+    if (m === "cd") return comp ? cdMk.COMP.colour : null;
+    if (comp) return CD_COMP_DEFAULT;
+    if (cls === "UNKNOWN") return CD_UNKNOWN;
+    var c = V.schemeFill && window.cdrender ? V.schemeFill("default", window.cdrender.ROLE[cls] || "white") : null;
+    return c ? "ff" + c.toLowerCase() : null;
+  }
+  var CD_SQ;
+  function __run9() {
+    CD_SQ = [["PROTEIN", "protein"], ["SIMPLE_MOLECULE", "simple molecule"], ["PHENOTYPE", "phenotype"], ["GENE", "gene"], ["RNA", "RNA"]];
+  }
+  function cdSquares(mode) {
+    var sq2 = function(x, t) {
+      return '<i style="background:#' + x.slice(2) + '" title="' + t + '"></i>';
+    }, h;
+    if (mode === "confetti") return confettiSquares();
+    if (mode === "none") h = sq2("ffffffff", "every species, #FFFFFF; Unknown, drawn with no outline, #DDDDDD");
+    else if (mode !== "file") {
+      var seen = {};
+      h = CD_SQ.map(function(q) {
+        var x = (mode === "cd" ? null : cdColourIn(mode, mode === "custom" && shared.cd ? shared.cd.now : null, q[0])) || cdMk.LOOK[q[0]][2];
+        if (seen[x]) {
+          seen[x].push(q[1]);
+          return null;
+        }
+        seen[x] = [q[1]];
+        return x;
+      }).filter(Boolean).map(function(x) {
+        return sq2(x, seen[x].join(", ") + ", #" + x.slice(2).toUpperCase());
+      }).join("");
+    } else {
+      var n = shared.cd && shared.cd.now ? cdMk.classColours(shared.cd.now) : {}, w = {}, order = [];
+      Object.keys(n).forEach(function(cls) {
+        Object.keys(n[cls]).forEach(function(col) {
+          if (!(col in w)) {
+            w[col] = 0;
+            order.push(col);
+          }
+          w[col] += n[cls][col];
+        });
+      });
+      h = order.slice().sort(function(a, b) {
+        return w[b] - w[a] || order.indexOf(a) - order.indexOf(b);
+      }).slice(0, 5).map(function(x) {
+        return sq2(x, "#" + x.slice(2).toUpperCase() + ", " + w[x] + " species");
+      }).join("");
+    }
+    return '<span class="m2-cs-sw">' + h + "</span>";
+  }
+  function cdColsRow() {
+    return palDrop({ key: "cols", label: "Colours", title: "Colours of the map and of new species and compartments", list: CD_COLS, get: cdCols, set: function(v) {
+      colsPick(v, cdCols(), function() {
+        return cdMk.colours(cdNow().t);
+      }, cdOriginal, cdRecolour);
+    }, sq: cdSquares });
+  }
+  function cdOriginal(r) {
+    var added = 0, F = r.fill || {}, L = r.line || {};
+    cdApply(function(t0) {
+      var now = cdMk.colours(t0);
+      added = Object.keys(now.fill).filter(function(id) {
+        return !(id in F);
+      }).length;
+      Object.keys(now.line).forEach(function(rid) {
+        Object.keys(now.line[rid]).forEach(function(q) {
+          if (!(L[rid] && q in L[rid])) added++;
+        });
+      });
+      return cdMk.recolourAll(
+        t0,
+        function(cls, id) {
+          return id in F && F[id] !== now.fill[id] ? F[id] : null;
+        },
+        function(k, rid, q) {
+          var a = L[rid];
+          return a && q in a && a[q] !== (now.line[rid] || {})[q] ? a[q] : null;
+        }
+      );
+    }, []);
+    return added;
+  }
+  function cdRecolour(mode) {
+    if (mode === "file" || !shared.cd) return;
+    cdApply(function(t0) {
+      var lh = [];
+      return cdMk.recolourAll(t0, cdFills(mode, t0), mode === "custom" ? null : function() {
+        return mode === "confetti" ? confettiLine(lh) : "#000000";
+      });
+    }, []);
+  }
+  function cdFills(mode, t0) {
+    var hues = [], kept = mode === "custom" ? cdKept() : null;
+    return function(cls) {
+      var comp = cdComp(cls);
+      if (mode === "confetti") return comp ? null : confettiPick(hues);
+      if (mode === "custom") {
+        var k = !comp && kept[cls];
+        return k && k.fill || null;
       }
-      setText(g);
-      sbRead();
-      if (!sbK.bad) sbK.g = sbK.af;
-    }
-    return sbK.kind;
+      var x = cdColourIn(mode, t0, cls) || (cdMk.LOOK[cls] || [])[2];
+      return x ? "#" + x.slice(2) : null;
+    };
   }
-  function sbFollow() {
-    if (!shared.sb || !sbJs || drag || sbK.sb !== shared.sb) return;
-    if (sbPlace()) {
-      parse();
-      shared.dirty = true;
-      render();
-      paint();
+  function cdSize(cls) {
+    if (cdComp(cls)) return cdMk.COMP.size.slice();
+    var st = palStyle(), k = st === "custom" ? cdKept()[cls] : null;
+    if (k && k.w > 0 && k.h > 0) return [k.w, k.h];
+    return st !== "default" && cls !== "COMPLEX" && shared.cd && cdMk.classSize(shared.cd.now, cls) || cdMk.LOOK[cls].slice(0, 2);
+  }
+  var CD_DEF_KEY;
+  function __run10() {
+    CD_DEF_KEY = "atlas-edit-cd-defaults";
+  }
+  function cdKept() {
+    return looksKept(CD_DEF_KEY);
+  }
+  function cdDef(i) {
+    var id = nodes2[i].id, L, n, all = cdKept();
+    try {
+      L = cdMk.look(shared.cd.now, id);
+      n = cdMk.aliasInfo(shared.cd.now, id).homodimer || 1;
+    } catch (e) {
+      return;
     }
-    sbKind();
-    if (sbK.bad || sbK.g == null || sbK.g === sbK.af || sbK.failed === shared.text.replace(GEO, "")) return;
-    parse();
+    var b = boxOf(i);
+    all[L.cls] = { w: b[2], h: b[3], width: L.width, multimer: n > 1, copies: n, font: L.font };
+    if (L.fill && L.cls !== "DEGRADED") all[L.cls].fill = L.fill;
+    if (!keepLook(CD_DEF_KEY, all)) return;
+    keepMapChoice("style", "custom");
+    keepMapChoice("cols", "custom");
+    styleRow();
+    cdColsRow();
+  }
+  function cdCopies(cls) {
+    var k = palStyle() === "custom" && cls !== "DEGRADED" ? cdKept()[cls] : null;
+    return k && k.multimer && k.w > 0 ? Math.max(2, k.copies || 2) : 1;
+  }
+  function cdKeptLook(t, alias, cls) {
+    var k = cdKept()[cls], n = cdCopies(cls);
+    if (!k || cls === "DEGRADED") return t;
+    if (cdCols() === "custom" && k.width > 0 && k.width !== 1) t = cdMk.restyle(t, alias, { width: k.width });
+    if (n > 1) t = cdMk.homodimer(t, alias, n);
+    if (palStyle() === "custom" && k.font > 0 && k.font !== 12) t = cdMk.restyle(t, alias, { font: k.font });
+    return t;
+  }
+  function cdMake(P, kind) {
+    var cls = cdKind(kind);
+    if (!cls || CD_GATE[kind]) return;
+    var s = cdSize(cls), e = cdComp(cls) ? 0 : 6 * (cdCopies(cls) - 1);
+    var boxAt = function(sh) {
+      var X = P[0] + sh[0] - s[0] / 2, Y2 = P[1] + sh[1] - s[1] / 2;
+      if (gridSet.snap) {
+        X += toGrid(X + s[0] / 2, gridSet.step);
+        Y2 += toGrid(Y2 + s[1] / 2, gridSet.step);
+      }
+      return [+fmt(X), +fmt(Y2), s[0] - e, s[1] - e];
+    };
+    var cx = !cdComp(cls) && !/^(PHENOTYPE|DEGRADED)$/.test(cls) ? cdComplexAt(P) : null, made2 = null;
+    var ok = cdApply(function(t, sh) {
+      var b = boxAt(sh), r = cdComp(cls) ? cdMk.compartment(t, { name: "", box: b, oval: cls === "OVAL", colour: cdColour(t, cls) }) : cdMk.species(t, { cls, name: "", box: b, complex: cx, colour: cdColour(t, cls) });
+      made2 = r.alias;
+      return cdComp(cls) ? r.text : cdKeptLook(r.text, r.alias, cls);
+    }, function() {
+      return [made2];
+    });
+    if (ok && cx) joinPack([cx]);
+  }
+  function cdGateClick(P) {
+    var kind = CD_GATE[tool.kind], i = linkEnd(P, -1), r = i >= 0 ? cdRole(i) : null;
+    if (!shared.cdGate || shared.cdGate.kind !== kind) shared.cdGate = { kind, inputs: [] };
+    var need = cdMk.NEED[kind];
+    if (shared.cdGate.inputs.length < need) {
+      if (r !== "epn" || shared.cdGate.inputs.indexOf(nodes2[i].id) >= 0) return;
+      shared.cdGate.inputs.push(nodes2[i].id);
+      paint();
+      return;
+    }
+    if (r !== "proc" && (r !== "epn" || cdStrict())) return;
+    var g = shared.cdGate, target = r === "proc" ? cdRid(i) : nodes2[i].id, out = null, L = cdGateLand(i, P) || {};
+    if (!cdApply(
+      function(t) {
+        var q = cdMk.gate(t, { kind: g.kind, inputs: g.inputs, target, spot: L.spot, toAt: L.at });
+        out = q.gate;
+        return q.text;
+      },
+      function() {
+        return [/\|m\d+$/.test(out) ? out.replace(/\|m(\d+)$/, "|g$1") : out + "|g"];
+      }
+    )) return;
+    shared.cdGate = null;
+    if (tool && !tool.sticky) palTake(null);
+  }
+  var cdHover;
+  function __run12() {
+    cdHover = null;
+  }
+  function cdHandles(i, cls) {
+    return handleMarks(bx(i), cls);
+  }
+  function cdDot(Q, cls) {
+    var d = Math.max(3, 4 * V.z);
+    return '<rect class="' + cls + '" x="' + f1(sx(Q[0]) - d / 2) + '" y="' + f1(sy(Q[1]) - d / 2) + '" width="' + f1(d) + '" height="' + f1(d) + '"/>';
+  }
+  function cdCentre(i) {
+    var b = bx(i);
+    return [b[0] + b[2] / 2, b[1] + b[3] / 2];
+  }
+  function cdPicked(out, i) {
+    out.push('<g transform="translate(' + f1(V.tx - x0 * V.z) + "," + f1(V.ty - y0 * V.z) + ") scale(" + V.z + ')"><path class="m2-ed-pick" stroke-width="' + f1(1 / Math.max(V.z, 0.01)) + '" d="' + shapeD(i) + '"/></g>');
+    out.push(cdHandles(i, "m2-ed-pickh") + cdDot(cdCentre(i), "m2-ed-pickh"));
+  }
+  function cdLand(out, i, L) {
+    var b = bx(i), off = 3.3 * V.z;
+    out.push('<rect class="m2-ed-landbox" x="' + f1(sx(b[0]) - off) + '" y="' + f1(sy(b[1]) - off) + '" width="' + f1(b[2] * V.z + 2 * off) + '" height="' + f1(b[3] * V.z + 2 * off) + '"/>');
+    out.push(cdHandles(i, "m2-ed-landh") + landMarks(L && L.all || [], L && L.Q || cdCentre(i)));
+  }
+  function cdGateOk(i) {
+    if (i < 0) return false;
+    var r = cdRole(i), need = cdMk.NEED[CD_GATE[tool.kind]], got = shared.cdGate && shared.cdGate.kind === CD_GATE[tool.kind] ? shared.cdGate.inputs : [];
+    if (got.length < need) return r === "epn" && got.indexOf(nodes2[i].id) < 0;
+    return r === "proc" || r === "epn" && !cdStrict();
+  }
+  function cdGateLand(i, P) {
+    var r = cdRole(i);
+    return r === "proc" ? cdPort(i, P, { mod: true }) : r === "epn" ? cdPort(i, P, { red: true }) : null;
+  }
+  function __run13() {
+    V.view.addEventListener("pointermove", function(e) {
+      var on_ = cdPal() && tool && CD_GATE[tool.kind] && !e.buttons, P = on_ ? at(e) : null, i = on_ ? linkEnd(P, -1) : -1;
+      if (on_ && !cdGateOk(i)) i = -1;
+      var h = i >= 0 ? { id: nodes2[i].id, P } : null, was = cdHover;
+      cdHover = h;
+      var q = function(x) {
+        if (!x) return "";
+        var k = nodes2.findIndex(function(n) {
+          return n.id === x.id;
+        }), L = k >= 0 && cdGateLand0(k, x.P);
+        return x.id + (L ? (L.at || "") + (L.spot || "") : "");
+      };
+      if (q(was) !== q(h)) paint();
+    });
+  }
+  function cdGateLand0(k, P) {
+    var need = cdMk.NEED[CD_GATE[tool.kind]], got = shared.cdGate && shared.cdGate.kind === CD_GATE[tool.kind] ? shared.cdGate.inputs.length : 0;
+    return got >= need ? cdGateLand(k, P) : null;
+  }
+  function __run14() {
+    V.view.addEventListener("pointerleave", function() {
+      if (cdHover) {
+        cdHover = null;
+        paint();
+      }
+    });
+  }
+  function cdGateMarks(out) {
+    if (!tool || !CD_GATE[tool.kind] || !cdPal()) {
+      shared.cdGate = null;
+      cdHover = null;
+      return;
+    }
+    if (shared.cdGate && CD_GATE[tool.kind] !== shared.cdGate.kind) shared.cdGate = null;
+    if (shared.cdGate) shared.cdGate.inputs.forEach(function(id) {
+      var i = nodes2.findIndex(function(n) {
+        return n.id === id;
+      });
+      if (i >= 0) cdPicked(out, i);
+    });
+    var k = cdHover ? nodes2.findIndex(function(n) {
+      return n.id === cdHover.id;
+    }) : -1;
+    if (k >= 0 && cdGateOk(k)) cdLand(out, k, cdGateLand0(k, cdHover.P));
+  }
+  function cdLinkMarks(out) {
+    var add = cdAdd(), no2 = link.how && link.how.no, part = !no2 && link.how && link.how.part;
+    var rx = !(add || part) || no2 ? -1 : cdRole(link.from) === "proc" ? link.from : link.to >= 0 && cdRole(link.to) === "proc" ? link.to : -1;
+    if (rx >= 0) cdMainLine(out, rx);
+    if (cdFromJoin()) {
+      var J = cdJoin(link.from, false);
+      out.push(cdDot(J || cdCentre(link.from), "m2-ed-pickh"));
+    } else cdPicked(out, link.from);
+    if (link.to < 0 || !link.how || no2) return;
+    if (rx === link.to) out.push(landMarks([], link.how.land && link.how.land.Q || cdCentre(link.to)));
+    else cdLand(out, link.to, link.how.land);
+  }
+  var cdOver;
+  function __run15() {
+    cdOver = null;
+    V.view.addEventListener("pointermove", function(e) {
+      var on_ = cdPal() && cdAdd() === "p" && !e.buttons && !link, i = on_ ? linkEnd(at(e), -1) : -1, id = i >= 0 && cdRole(i) === "proc" ? nodes2[i].id : null;
+      if (id !== cdOver) {
+        cdOver = id;
+        paint();
+      }
+    });
+    V.view.addEventListener("pointerleave", function() {
+      if (cdOver) {
+        cdOver = null;
+        paint();
+      }
+    });
+  }
+  function cdOverMarks(out) {
+    var i = cdOver && cdPal() && !link && cdAdd() === "p" ? nodes2.findIndex(function(n) {
+      return n.id === cdOver;
+    }) : -1;
+    if (i < 0) {
+      cdOver = null;
+      return;
+    }
+    cdMainLine(out, i);
+    var J = cdJoin(i, false);
+    if (J) out.push(cdDot(J, "m2-ed-pickh"));
+  }
+  function cdAdd() {
+    var k = tool && cdKind(tool.kind);
+    return k === "ADD_REACTANT" ? "r" : k === "ADD_PRODUCT" ? "p" : null;
+  }
+  function cdFree() {
+    return !!tool && !!ARCS[tool.kind] && tool.sticky;
+  }
+  function cdFromJoin() {
+    return cdAdd() === "p" || cdFree() && cdRole(link.from) === "proc";
+  }
+  function cdOnLine() {
+    return !!cdAdd() || cdFree();
+  }
+  function cdStartOk(i) {
+    var r = cdRole(i), add = cdAdd();
+    return r !== "gate" && (cdFree() || (add === "r" ? r === "epn" : add === "p" ? r === "proc" : true));
+  }
+  function cdMain(i) {
+    return edges2.map(function(e, k) {
+      return e.t === i && /\|a$/.test(e.id) || e.s === i && /\|b$/.test(e.id) ? k : -1;
+    }).filter(function(k) {
+      return k >= 0;
+    });
+  }
+  function cdJoin(i, into) {
+    var ka = edges2.findIndex(function(e) {
+      return e.t === i && /\|a$/.test(e.id);
+    });
+    if (ka < 0) return null;
+    var p = ports(ka), A = p[p.length - 2], C = p[p.length - 1];
+    if (p.length === 2 && edges2[ka].s != null) A = cutShape(edges2[ka].s, A, C, bx(edges2[ka].s));
+    var t = into ? 0.75 : 1.25;
+    return [A[0] + t * (C[0] - A[0]), A[1] + t * (C[1] - A[1])];
+  }
+  function cdMainLine(out, i) {
+    cdMain(i).forEach(function(k) {
+      var p = line(k);
+      if (p) out.push('<path class="m2-ed-rxline" stroke-width="' + f1(Math.max(1.5, 1.5 * V.z)) + '" d="M' + p.map(function(q) {
+        return f1(sx(q[0])) + " " + f1(sy(q[1]));
+      }).join("L") + '"/>');
+    });
+  }
+  function cdLineAt(P, not) {
+    if (!cdOnLine()) return -1;
+    var R = 5 / V.z, best = -1, bd = Infinity;
+    edges2.forEach(function(e, k) {
+      var i = /\|a$/.test(e.id) ? e.t : /\|b$/.test(e.id) ? e.s : null;
+      if (i == null || i === not || cdRole(i) !== "proc") return;
+      var p = line(k);
+      for (var j = 1; p && j < p.length; j++) {
+        var d = near(P, p[j - 1], p[j]);
+        if (d <= R && d < bd) {
+          bd = d;
+          best = i;
+        }
+      }
+    });
+    return best;
+  }
+  function cdLiveEnds(S, P, C) {
+    var h = link.how, ok = h && !h.no, J;
+    if (ok && h.part === "reactant" && h.land && h.land.Q) {
+      J = h.land.Q;
+      return [cutShape(link.from, C, J, bx(link.from)), J];
+    }
+    if ((ok ? h.part === "product" : !h && cdFromJoin()) && (J = cdJoin(link.from, false))) return [J, ok && h.land && h.land.Q ? cutShape(link.to, h.land.Q, J, bx(link.to)) : P];
+    return [S, P];
+  }
+  function cdClick(P) {
+    if (CD_GATE[tool.kind]) cdGateClick(P);
+    else cdMake(P, tool.kind);
+  }
+  function cdHow(a, b, P) {
+    var h = cdHow0(a, b, P);
+    if (h && !h.no && P) h.land = cdPort(b, P, h);
+    return h;
+  }
+  var cdClsMemo;
+  function __run16() {
+    cdClsMemo = { t: null, cls: {}, about: {} };
+  }
+  function cdMemo() {
+    var t = shared.cd.now;
+    if (cdClsMemo.t !== t) cdClsMemo = { t, cls: {}, about: {} };
+    return cdClsMemo;
+  }
+  function cdClsOf(id) {
+    var M = cdMemo();
+    if (!(id in M.cls)) {
+      try {
+        var A = cdMk.aliasInfo(M.t, id);
+        M.cls[id] = A.cls && [A.cls, A.homodimer || 1];
+      } catch (e) {
+        M.cls[id] = null;
+      }
+    }
+    return M.cls[id];
+  }
+  function cdPort(i, P, how) {
+    var b = bx(i), C = [b[0] + b[2] / 2, b[1] + b[3] / 2], best = null, bd = Infinity, all = [];
+    var near2 = function(Q, o) {
+      all.push(Q);
+      var d = Math.hypot(Q[0] - P[0], Q[1] - P[1]);
+      if (d < bd) {
+        bd = d;
+        best = o;
+        o.Q = Q;
+      }
+    };
+    if (how.mod && cdRole(i) === "proc") {
+      var S = procPlaces(i);
+      if (!S) return { Q: C };
+      S.forEach(function(o, k) {
+        near2([C[0] + o[0], C[1] + o[1]], { spot: k + 2 });
+      });
+      best.all = all;
+      return best;
+    }
+    if (how.part === "reactant" && cdRole(i) === "proc") {
+      var J = cdJoin(i, true);
+      return J ? { Q: J, all: [J] } : { Q: C };
+    }
+    var N = how.rx || how.red || how.part === "product" ? nodePlaces(i) : null;
+    if (!N) return { Q: C };
+    N.forEach(function(o) {
+      near2([C[0] + o[0], C[1] + o[1]], { at: o[2] });
+    });
+    all.push(C);
+    if (nodeCentre(i, P)) return { Q: C, all };
+    best.all = all;
+    return best;
+  }
+  function cdHow0(a, b, P) {
+    var want = tool && ARCS[tool.kind] ? cdKind(tool.kind) : null, h = cdKindOk(a, b, P, want), g;
+    if (h && h.no && want && tool.sticky && (g = cdKindOk(a, b, P, null)) && !g.no && !(g.rx && cdMk.MODS.indexOf(want) >= 0)) return g;
+    if (h && h.no && want === "CATALYSIS" && tool.sticky && (g = cdKindOk(a, b, P, "PHYSICAL_STIMULATION")) && !g.no) return g;
+    return h;
+  }
+  function cdKindOk(a, b, P, want) {
+    var h = cdKind0(a, b, P, want), m = h && !h.no && cdSays(h, a, b);
+    return m ? { no: m } : h;
+  }
+  function cdAbout(rid) {
+    var M = cdMemo();
+    if (!(rid in M.about)) {
+      try {
+        M.about[rid] = cdMk.about(M.t, rid);
+      } catch (e) {
+        M.about[rid] = null;
+      }
+    }
+    return M.about[rid];
+  }
+  function cdGateOf(i) {
+    var m = nodes2[i].id.match(/^(.*)\|g(\d*)$/), A = m && cdAbout(m[1]);
+    return !A ? null : m[2] ? A.gates[+m[2]] : A.gate && { kind: A.gate.kind, inputs: A.inputs || [] };
+  }
+  function cdNt(i) {
+    var r = i < 0 ? "proc" : cdRole(i), c;
+    if (r === "proc") return { kind: "process", cls: "process" };
+    if (r === "gate") {
+      var g = cdGateOf(i);
+      return g ? import_notation.default.nodeKind("celldesigner", "BOOLEAN_LOGIC_GATE_" + g.kind) : null;
+    }
+    return r === "epn" && (c = cdClsOf(nodes2[i].id)) ? import_notation.default.nodeKind("celldesigner", c[0]) : null;
+  }
+  function cdAsk(cls, s, t, held) {
+    var ks = cdNt(s), kt = cdNt(t);
+    if (!ks || !kt) return null;
+    return import_notation.default.allowed(cls, ks, kt, { sets: ["pd"].concat(cdStrict() ? [] : ["reduced"]), held: !!held, check: function(c) {
+      if (c === "oneInput") {
+        var g = cdGateOf(t);
+        return g && g.inputs && g.inputs.length ? "A NOT gate has one input, and this one has it." : null;
+      }
+      if (c === "already" && t >= 0 && cdRole(t) === "proc" && import_notation.default.MODS.indexOf(cls) >= 0) {
+        var A = cdAbout(cdRid(t)), al = nodes2[s].id;
+        return A && A.mods.some(function(type, j) {
+          return import_notation.default.arcKind("celldesigner", type) === cls && A.modAliases[j] === al;
+        }) ? "This " + cls + " is there already." : null;
+      }
+      return null;
+    } });
+  }
+  function cdSays(h, a, b) {
+    if (h.rx) return cdAsk("consumption", a, -1) || cdAsk("production", -1, b);
+    if (h.red) return cdAsk(import_notation.default.arcKind("celldesigner", h.red), a, b);
+    if (h.gate) return cdAsk("logic arc", a, b);
+    if (h.mod) return cdAsk(import_notation.default.arcKind("celldesigner", h.mod), a, b);
+    if (h.part) return h.part === "reactant" ? cdAsk("consumption", a, b) : cdAsk("production", a, b);
+    return null;
+  }
+  function cdMoveSays(k, end, i) {
+    var e = edges2[k], m = e.id.match(/^(.*)\|(a|b|[rpm])(\d*)$/), A = m && cdAbout(m[1]);
+    if (!A) return null;
+    var sq2 = nodes2.some(function(n) {
+      return n.id === m[1] + "|proc";
+    });
+    if (!sq2) {
+      if (!import_notation.default.reducedType("celldesigner", A.type)) return null;
+      var ea = edges2.filter(function(q) {
+        return q.id === m[1] + "|a";
+      })[0], eb = edges2.filter(function(q) {
+        return q.id === m[1] + "|b";
+      })[0];
+      var was = end ? e.t : e.s, ends = [ea ? ea.s : null, eb ? eb.t : ea ? ea.t : null].map(function(x) {
+        return x === was ? i : x;
+      });
+      if (ends[0] == null || ends[1] == null) return null;
+      var pic = function(x) {
+        var q = cdNt(x);
+        return !!q && q.kind === "phenotype";
+      };
+      return cdAsk(import_notation.default.arcKind("celldesigner", A.type), ends[0], ends[1], !ea || pic(ea.s) === pic(ends[0]));
+    }
+    var cls = m[2] === "m" ? import_notation.default.arcKind("celldesigner", A.mods[+m[3]]) : /^[ar]$/.test(m[2]) ? "consumption" : "production";
+    return cls ? cdAsk(cls, end ? e.s : i, end ? i : e.t) : null;
+  }
+  function cdKind0(a, b, P, want) {
+    if (b < 0) return null;
+    var ra = cdRole(a), rb = cdRole(b), line2 = !want;
+    var isRx = want && CD_RX.some(function(q) {
+      return q[0] === want;
+    }), isMod = want && cdMk.MODS.indexOf(want) >= 0;
+    var add = want === "ADD_REACTANT" ? "r" : want === "ADD_PRODUCT" ? "p" : null;
+    if (!rb) return { no: "A line joins species, a reaction\u2019s square or a logic gate: never a compartment or a complex\u2019s member." };
+    if (ra === "gate") return { no: "A logic gate has one line out, made with the gate." };
+    if (rb === "gate") {
+      if (ra !== "epn") return { no: "A logic gate\u2019s inputs are species." };
+      return add === "r" || line2 ? { gate: true } : { no: "A new input of a logic gate is drawn with Add reactant." };
+    }
+    if (ra === "proc" && rb === "proc") return { no: "A line does not join two reactions." };
+    if (add === "r") return ra === "epn" && rb === "proc" ? { part: "reactant" } : { no: "Add reactant goes from a species onto a reaction (its square or its main line) or onto a logic gate." };
+    if (add === "p") return ra === "proc" && rb === "epn" ? { part: "product" } : { no: "Add product goes from a reaction (its square or its main line) to a species." };
+    if (line2 && ra === "proc") return { part: "product" };
+    if (line2 && rb === "proc") return onSquare(b, P) ? { mod: cdUsual(b) } : { part: "reactant" };
+    if (ra === "proc") return isMod ? { no: "A " + CD_NAME[want].toLowerCase() + " goes from a species." } : { no: "A product added to a reaction is drawn with Add product." };
+    if (rb === "proc") {
+      return isRx ? { no: "A reactant added to a reaction is drawn with Add reactant; a reaction\u2019s sign makes a new reaction between two species." } : { mod: want || "CATALYSIS" };
+    }
+    if (isMod) {
+      if (!RED_OF[want]) return { no: "CellDesigner has no catalysis between species: it ends on a reaction\u2019s square (between species, physical stimulation)." };
+      return cdStrict() ? { no: "A " + CD_NAME[want].toLowerCase() + " between species is reduced notation, unticked in the palette; it ends on a reaction\u2019s square." } : { red: RED_OF[want] };
+    }
+    return { rx: want || "STATE_TRANSITION" };
+  }
+  function onSquare(i, P) {
+    var b = bx(i), R = 4 / V.z;
+    return !P || P[0] >= b[0] - R && P[0] <= b[0] + b[2] + R && P[1] >= b[1] - R && P[1] <= b[1] + b[3] + R;
+  }
+  var cdUsualMemo;
+  function __run17() {
+    cdUsualMemo = [null, null, {}];
+  }
+  function cdUsual(i) {
+    if (cdUsualMemo[0] !== shared.cd.now) {
+      var n = {}, best = null, most = 0, m, re = /<celldesigner:modification\b[^>]*?\btype="([A-Z_]+)"/g;
+      while (m = re.exec(shared.cd.now)) n[m[1]] = (n[m[1]] || 0) + 1;
+      CD_MOD.forEach(function(q) {
+        if (n[q[0]] > most) {
+          most = n[q[0]];
+          best = q[0];
+        }
+      });
+      cdUsualMemo = [shared.cd.now, best, {}];
+    }
+    var rid = cdRid(i), met = cdUsualMemo[2];
+    if (!(rid in met)) met[rid] = cdMetabolic(rid);
+    return cdUsualMemo[1] || (met[rid] ? "CATALYSIS" : "PHYSICAL_STIMULATION");
+  }
+  function cdMetabolic(rid) {
+    var esc = function(x) {
+      return x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    };
+    var r = shared.cd.now.match(new RegExp('<reaction\\b[^>]*\\bid="' + esc(rid) + '"[\\s\\S]*?</reaction>'));
+    if (!r) return false;
+    var ids = [], m, re = /<celldesigner:(?:baseReactant\b[^>]*?\bspecies|reactantLink\b[^>]*?\breactant)="([^"]+)"/g;
+    while (m = re.exec(r[0])) ids.push(m[1]);
+    return ids.some(function(s) {
+      var sp = shared.cd.now.match(new RegExp('<species\\b[^>]*\\bid="' + esc(s) + '"[\\s\\S]*?</species>'));
+      return sp && /<celldesigner:class>(SIMPLE_MOLECULE|ION)</.test(sp[0]);
+    });
+  }
+  function cdLink(a, b, how) {
+    var ia = nodes2[a].id, ib = nodes2[b].id, line2 = null;
+    cdApply(function(t) {
+      var q;
+      var L = how.land || {};
+      if (how.rx) {
+        q = cdMk.reaction(t, { type: how.rx, from: ia, to: ib, toAt: L.at });
+        line2 = q.reaction;
+      } else if (how.red) {
+        q = cdMk.reduced(t, { type: how.red, from: ia, to: ib, toAt: L.at });
+        line2 = q.reaction;
+      } else if (how.gate) q = cdMk.gateInput(t, cdGateRef(b), ia);
+      else if (how.mod) {
+        q = cdMk.modifier(t, cdRid(b), ia, how.mod, L.spot);
+        line2 = cdRid(b) + "|" + q.part;
+      } else {
+        q = how.part === "reactant" ? cdMk.reactant(t, cdRid(b), ia) : cdMk.product(t, cdRid(a), ib, L.at);
+        line2 = cdRid(how.part === "reactant" ? b : a) + "|" + q.part;
+      }
+      if (line2 && cdCols() === "confetti") {
+        try {
+          return cdMk.recolourLine(q.text, /\|/.test(line2) ? line2 : line2 + "|a", confettiLine(confettiHues(q.text)));
+        } catch (e) {
+          if (!(e && e.refused)) throw e;
+        }
+      }
+      return q.text;
+    }, [], function() {
+      return line2 ? [line2] : [];
+    });
+  }
+  function cdDelete(nodes, lines) {
+    var al = [], jobs = [], ab = function(t, rid) {
+      try {
+        return cdMk.about(t, rid);
+      } catch (e) {
+        return null;
+      }
+    };
+    var seen = {}, job = function(j) {
+      var k = JSON.stringify(j);
+      if (!seen[k]) {
+        seen[k] = 1;
+        jobs.push(j);
+      }
+    };
+    var t0 = shared.cd.now;
+    nodes.forEach(function(i) {
+      var r = cdRole(i), rid = r ? cdRid(i) : null;
+      if (r === "proc") job({ rid });
+      else if (r === "gate") {
+        var m = nodes2[i].id.match(/\|g(\d+)$/), A = ab(t0, rid);
+        if (!m) job({ rid });
+        else if (A) job({ rid, mod: A.mods[+m[1]], al: A.modAliases[+m[1]] });
+      } else al.push(nodes2[i].id);
+    });
+    lines.forEach(function(k) {
+      var e = edges2[k], m = e.id.match(/^(.*)\|(a|b|[rpmi])(\d*)$/);
+      if (!m) return;
+      var rid = m[1], A = ab(t0, rid);
+      if (m[2] === "a" || m[2] === "b") job({ rid });
+      else if (m[2] === "i") job({ rid, input: nodes2[e.s].id });
+      else if (m[2] === "m" && A) job({ rid, mod: A.mods[+m[3]], al: A.modAliases[+m[3]] });
+      else if (A) job({ rid, link: m[2], al: (m[2] === "r" ? A.rl : A.pl)[+m[3]] });
+    });
+    if (!al.length && !jobs.length) return false;
+    cdApply(function(t) {
+      jobs.forEach(function(j) {
+        var A = ab(t, j.rid);
+        if (!A) return;
+        if (j.input) {
+          if (A.inputs && A.inputs.indexOf(j.input) >= 0) t = cdMk.gateInputRemove(t, j.rid, j.input);
+          return;
+        }
+        if (j.mod) {
+          var n = A.mods.findIndex(function(x, q) {
+            return x === j.mod && A.modAliases[q] === j.al;
+          });
+          if (n >= 0) t = cdMk.removeLine(t, j.rid, "m" + n);
+          return;
+        }
+        if (j.link) {
+          var l = (j.link === "r" ? A.rl : A.pl).indexOf(j.al);
+          if (l >= 0) t = cdMk.removeLine(t, j.rid, j.link + l);
+          return;
+        }
+        t = cdMk.removeLine(t, j.rid);
+      });
+      if (al.length) t = cdMk.remove(t, al);
+      return t;
+    });
+    return true;
+  }
+  function __run18() {
+    document.addEventListener("keydown", function(e) {
+      if (e.key !== "Delete" && e.key !== "Backspace" || !cdPal() || /input|textarea|select/i.test(document.activeElement.tagName)) return;
+      if ((shared.selN.length || shared.selE.length && !shared.selP.length) && cdDelete(shared.selN, shared.selE)) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+      }
+    }, true);
+  }
+  function cdDeleteItem() {
+    if (!rclick) return null;
+    var sq2 = svAt(rclick);
+    if (sq2) return function() {
+      shared.svSel = { id: nodes2[sq2[0]].id, j: sq2[1] };
+      svDelete();
+    };
+    var h = hit(rclick);
+    if (h && h.n != null && asSpace(h.n)) return null;
+    if (h && h.n != null) {
+      var i = h.n;
+      return function() {
+        cdDelete(shared.selN.indexOf(i) >= 0 ? shared.selN : [i], shared.selN.indexOf(i) >= 0 ? shared.selE : []);
+      };
+    }
+    if (h && h.e != null && h.p == null) {
+      var k = h.e;
+      return function() {
+        var all = shared.selE.indexOf(k) >= 0;
+        cdDelete(all ? shared.selN : [], all ? shared.selE : [k]);
+      };
+    }
+    return null;
+  }
+  function cdItems() {
+    if (!rclick) return null;
+    var sq2 = svAt(rclick);
+    if (sq2) return cdSvOwnItems(sq2);
+    var h = hit(rclick), out = [];
+    if (h && h.n != null) {
+      var i = h.n, r = cdRole(i), id = nodes2[i].id;
+      if (r === "gate") {
+        var g = cdMk.about(shared.cd.now, cdRid(i)), m = id.match(/\|g(\d+)$/), now = m ? g.gates[+m[1]] : g.gate;
+        if (!now) return null;
+        var nin = m ? now.inputs.length : (g.inputs || []).length;
+        CD_GATES.forEach(function(q) {
+          if (q[0] !== now.kind && !(q[0] === "NOT" && nin > 1) && nin >= cdMk.NEED[q[0]]) out.push(["Make " + q[1], function() {
+            cdApply(function(t) {
+              return cdMk.gateType(t, cdGateRef(i), { kind: q[0] });
+            }, [id]);
+          }]);
+        });
+        return out;
+      }
+      if (r === "proc") return cdRxItems(cdRid(i));
+      var A = cdMk.aliasInfo(shared.cd.now, id);
+      if (!A.cls) return null;
+      out = cdSvItems(id, A);
+      if (A.cls === "COMPLEX") return out.length ? out : null;
+      out.push(["Change identity", subItem(function(r2, done) {
+        return cdIdentity(id, r2, done);
+      })]);
+      if (A.cls !== "DEGRADED") out.push([A.homodimer > 1 ? "Make monomer" : "Make multimer", function() {
+        cdApply(function(t) {
+          return A.homodimer > 1 ? cdMk.homodimer(t, id, 1) : cdTopClear(cdMk.homodimer(t, id, 2), id, true);
+        }, [id]);
+      }]);
+      out.late = true;
+      return out;
+    }
+    if (h && h.e != null && h.p == null) {
+      var ln = edges2[h.e], mm = ln.id.match(/^(.*)\|(a|b|m\d+)$/);
+      if (!mm || ln.t != null && cdRole(ln.t) === "gate") return null;
+      if (ln.s != null && cdRole(ln.s) === "gate") {
+        var gs = ln.s, gref = cdGateRef(gs), ga = cdMk.about(shared.cd.now, cdRid(gs)), gm = nodes2[gs].id.match(/\|g(\d+)$/), gw2 = gm ? ga.gates[+gm[1]] : ga.gate;
+        if (!gw2) return null;
+        return cdModIdentity(gm ? CD_MODS : CD_RED, gw2.out, function(k) {
+          cdApply(function(t) {
+            return cdMk.gateType(t, gref, { output: k });
+          }, [nodes2[gs].id]);
+        });
+      }
+      if (mm[2][0] !== "m") return cdRxItems(mm[1]);
+      var n = +mm[2].slice(1), ab = cdMk.about(shared.cd.now, mm[1]), was = ab.mods[n];
+      if (cdMk.MODS.indexOf(was) < 0) return null;
+      return cdModIdentity(CD_MODS, was, function(k) {
+        cdApply(function(t) {
+          return cdMk.modifierType(t, mm[1], n, k);
+        }, [], [mm[1] + "|m" + n]);
+      });
+    }
+    return null;
+  }
+  function cdIdentity(id, r, done) {
+    var A = cdMk.aliasInfo(shared.cd.now, id);
+    if (!A.cls) return null;
+    return kindWindow(r, CD_SP.filter(function(q) {
+      return q[0] !== "COMPLEX" && !cdComp(q[0]) && !(A.complex && /^(PHENOTYPE|DEGRADED)$/.test(q[0]));
+    }).map(function(q) {
+      return { name: q[1], own: q[0] === A.cls, go: function() {
+        cdApply(function(t) {
+          return cdMk.retype(t, id, q[0], { from: cdColour(t, A.cls), to: cdColour(t, q[0]) });
+        }, [id]);
+      } };
+    }), done);
+  }
+  function cdModIdentity(set, was, go) {
+    return lateItem(["Change identity", subItem(function(r, done) {
+      return kindWindow(r, set.map(function(q) {
+        return { name: CD_NAME[q[1]], own: q[0] === was, go: function() {
+          go(q[0]);
+        } };
+      }), done);
+    })]);
+  }
+  var CD_MODS;
+  function __run19() {
+    CD_MODS = CD_MOD.map(function(q) {
+      return [q[0], q[0]];
+    });
+  }
+  function cdRxItems(rid) {
+    var ab = cdMk.about(shared.cd.now, rid), set = cdMk.PROCESS.indexOf(ab.type) >= 0 ? CD_RX : null;
+    if (cdMk.REDUCED.indexOf(ab.type) >= 0) return cdModIdentity(CD_RED, ab.type, function(k) {
+      cdApply(function(t) {
+        return cdMk.reactionType(t, rid, k);
+      }, [], [rid]);
+    });
+    if (ab.reversible === null) return null;
+    var out = set ? [["Change identity", subItem(function(r, done) {
+      return kindWindow(r, set.map(function(q) {
+        return { name: q[1], own: q[0] === ab.type, go: function() {
+          cdApply(function(t) {
+            return cdMk.reactionType(t, rid, q[0]);
+          }, [], [rid]);
+        } };
+      }), done);
+    })]] : [];
+    out.push([ab.reversible ? "Make irreversible" : "Make reversible", function() {
+      cdReversible(rid, !ab.reversible);
+    }]);
+    out.late = true;
+    return out;
+  }
+  function cdReversible(rid, on2) {
+    return cdApply(function(t) {
+      return cdMk.reversible(t, rid, on2);
+    }, [], [rid]);
+  }
+  var cdRxSeen;
+  function __run20() {
+    cdRxSeen = [null, null];
+  }
+  function cdRxOf() {
+    if (!shared.cd || shared.selP.length || shared.svSel || !shared.selE.length && !shared.selN.length) return null;
+    if (shared.selE.length === 1 && !shared.selN.length && edges2[shared.selE[0]] && /\|[rp]\d+$/.test(edges2[shared.selE[0]].id)) return null;
+    var rid = null, ok = true;
+    shared.selE.forEach(function(k) {
+      var m = edges2[k] && edges2[k].id.match(/^(.*)\|(a|b|r\d+|p\d+)$/);
+      if (!m || rid && rid !== m[1]) ok = false;
+      else rid = m[1];
+    });
+    shared.selN.forEach(function(i) {
+      var m = nodes2[i] && nodes2[i].id.match(/^(.*)\|proc$/);
+      if (!m || rid && rid !== m[1]) ok = false;
+      else rid = m[1];
+    });
+    if (!ok || !rid) return null;
+    var key = rid + "\0" + shared.cd.now;
+    if (cdRxSeen[0] !== key) {
+      var ab = null;
+      try {
+        ab = cdMk.about(shared.cd.now, rid);
+      } catch (e) {
+        ab = null;
+      }
+      cdRxSeen = [key, ab ? ab.reversible : null];
+    }
+    return cdRxSeen[1] === null ? null : { rid, on: cdRxSeen[1] };
+  }
+  var cdNm;
+  var cdCardDrag;
+  var cdCard;
+  function __run21() {
+    cdNm = null;
+    cdCardDrag = null, cdCard = null;
+  }
+  function cdCardAt(e) {
+    var hit2 = null;
+    Array.prototype.forEach.call(V.img.querySelectorAll('[data-e] rect[height="11"]'), function(r) {
+      if ((r.getAttribute("stroke") || "").toLowerCase() !== "#9aa0a6") return;
+      var b = r.getBoundingClientRect();
+      if (e.clientX >= b.left - 2 && e.clientX <= b.right + 2 && e.clientY >= b.top - 2 && e.clientY <= b.bottom + 2) hit2 = r.closest("[data-e]").getAttribute("data-e");
+    });
+    if (hit2 == null) return -1;
+    var k = edges2.findIndex(function(q) {
+      return q.id === hit2;
+    });
+    return k >= 0 ? k : edges2.findIndex(function(q) {
+      return q.id.indexOf(hit2 + "|") === 0;
+    });
+  }
+  function cdCardDown(e) {
+    var k = cdCardAt(e);
+    if (k < 0) return false;
+    V.view.focus({ preventScroll: true });
+    if (shared.selE.length === 1 && shared.selE[0] === k) {
+      e.stopImmediatePropagation();
+      e.preventDefault();
+      cdCardDrag = { x: e.clientX, y: e.clientY };
+      return true;
+    }
+    cdCardDrag = { pick: k, x: e.clientX, y: e.clientY };
+    return true;
+  }
+  function __run22() {
+    window.addEventListener("pointermove", function(e) {
+      var d = cdCardDrag;
+      if (!d) return;
+      var far = Math.hypot(e.clientX - d.x, e.clientY - d.y);
+      if (d.pick != null) {
+        if (!e.buttons || far >= 5) cdCardDrag = null;
+        return;
+      }
+      if (far >= 4 && !d.said) {
+        d.said = true;
+        warn("CellDesigner keeps no place for a cardinality: it stays in the middle of its line.");
+      }
+    }, true);
+    window.addEventListener("pointerup", function(e) {
+      var d = cdCardDrag;
+      cdCardDrag = null;
+      if (!d || d.pick == null) return;
+      e.stopImmediatePropagation();
+      shared.selN = [];
+      shared.selP = [];
+      shared.selE = [d.pick];
+      shared.part = null;
+      cdCard = d.pick;
+      paint();
+    }, true);
+    window.addEventListener("keydown", function(e) {
+      if (cdCard == null || e.key !== "Delete" && e.key !== "Backspace" || /input|textarea|select/i.test(document.activeElement.tagName)) return;
+      var k = cdCard;
+      if (!shared.cd || shared.selE.length !== 1 || shared.selE[0] !== k || shared.selN.length || shared.selP.length || !edges2[k]) {
+        cdCard = null;
+        return;
+      }
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      if (/\|[rp]\d+$/.test(edges2[k].id)) {
+        cdCard = null;
+        PF_CD.line.setCount(k, "");
+      } else warn("A reaction's own reactant and product: their numbers are cleared in Properties, Cardinality.");
+    }, true);
+  }
+  function cdNameDown(e, P, h) {
+    if (!cdPal() || tool || e.shiftKey || e.pointerType !== "mouse" || edgeAt(P) || h && (h.p != null || h.e != null || h.n != null && !nodes2[h.n].comp)) return false;
+    var k = -1, area = Infinity, info = null, pad = 3, res = null;
+    nodes2.forEach(function(n, i) {
+      var b = boxOf(i);
+      if (!n.comp || b[2] * b[3] >= area || P[0] < b[0] || P[1] < b[1] || P[0] > b[0] + b[2] || P[1] > b[1] + b[3]) return;
+      if (textsOf(i, null, res = res || svIcons()).some(function(el) {
+        var r = el.getBoundingClientRect();
+        return e.clientX >= r.left - pad && e.clientX <= r.right + pad && e.clientY >= r.top - pad && e.clientY <= r.bottom + pad;
+      })) {
+        k = i;
+        area = b[2] * b[3];
+      }
+    });
+    if (k < 0 || shared.selN.indexOf(k) < 0) return false;
+    try {
+      info = cdMk.nameInfo(cdNow().t, nodes2[k].id);
+    } catch (err) {
+      info = null;
+    }
+    if (!info) return false;
+    e.stopImmediatePropagation();
+    e.preventDefault();
+    V.view.setPointerCapture(e.pointerId);
+    V.view.focus({ preventScroll: true });
+    cdNm = { k, id: nodes2[k].id, info, P, x: e.clientX, y: e.clientY, p: null, parts: null, pid: e.pointerId };
+    return true;
+  }
+  function __run23() {
+    window.addEventListener("pointermove", function(e) {
+      var d = cdNm;
+      if (!d || e.pointerId !== d.pid) return;
+      if (!e.buttons) {
+        cdNameUp();
+        return;
+      }
+      if (!d.p && Math.hypot(e.clientX - d.x, e.clientY - d.y) < 4) return;
+      var Q = at(e), I = d.info, want = [I.np[0] + Q[0] - d.P[0], I.np[1] + Q[1] - d.P[1]], best = null, bd = Infinity;
+      window.cdrender.NAME_PLACES.forEach(function(p) {
+        var q = window.cdrender.namePoint(I.box, I.name, I.th, p, I.oval), dd = Math.hypot(q[0] - want[0], q[1] - want[1]);
+        if (dd < bd) {
+          bd = dd;
+          best = [p, q];
+        }
+      });
+      if (!d.parts) d.parts = textsOf(d.k, null);
+      d.p = best[0];
+      var dx = best[1][0] - I.np[0], dy = best[1][1] - I.np[1];
+      d.parts.forEach(function(el) {
+        if (dx || dy) el.setAttribute("transform", "translate(" + f1(dx) + " " + f1(dy) + ")");
+        else el.removeAttribute("transform");
+      });
+    }, true);
+    window.addEventListener("pointerup", function(e) {
+      if (cdNm && e.pointerId === cdNm.pid) cdNameUp();
+    }, true);
+    window.addEventListener("pointercancel", function(e) {
+      if (cdNm && e.pointerId === cdNm.pid) cdNameUp(true);
+    }, true);
+  }
+  function cdNameUp(cancel) {
+    var d = cdNm;
+    cdNm = null;
+    if (!d) return;
+    if (cancel) {
+      (d.parts || []).forEach(function(el) {
+        el.removeAttribute("transform");
+      });
+      return;
+    }
+    if (d.p && cdApply(function(t) {
+      return cdMk.nameAt(t, d.id, d.p);
+    }, [d.id])) return;
+    (d.parts || []).forEach(function(el) {
+      el.removeAttribute("transform");
+    });
+    var k = nodes2.findIndex(function(n) {
+      return n.id === d.id;
+    });
+    shared.selN = k >= 0 ? [k] : [];
     shared.selP = [];
     shared.selE = [];
-    shared.dirty = true;
-    render();
+    shared.part = null;
     paint();
+  }
+  function __run24() {
+    V.view.addEventListener("dblclick", function(e) {
+      if (!cdPal() || !editing(e)) return;
+      if (tool || Date.now() - placedAt < 600) {
+        e.stopImmediatePropagation();
+        return;
+      }
+      var named = function(n, k) {
+        return cdRole(k) === "epn" || n.comp || n.up != null && nodes2[n.up].shape.kind === "Complex";
+      };
+      var P = at(e), sq2 = svAt(P);
+      if (sq2) {
+        e.stopImmediatePropagation();
+        cdSvOpen(nodes2[sq2[0]].id, sq2[1]);
+        return;
+      }
+      var i = nameAt(P, named);
+      if (i < 0) return;
+      var A = cdMk.aliasInfo(shared.cd.now, nodes2[i].id);
+      if (A.cls === "DEGRADED") return;
+      e.stopImmediatePropagation();
+      typeIn(nodes2[i].id, null);
+    }, true);
+  }
+  function cdNameOf(id, shown2) {
+    var A = cdMk.aliasInfo(shared.cd.now, id), s = A.name || "";
+    if (s === A.id && !shown2) return "";
+    s = s.replace(/&#x([0-9a-f]+);/gi, function(m, h) {
+      return String.fromCodePoint(parseInt(h, 16));
+    }).replace(/&#(\d+);/g, function(m, d) {
+      return String.fromCodePoint(+d);
+    }).replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
+    return window.cdrender.plainName(s).replace(/_br_/g, " ");
+  }
+  function cdRename(id, v) {
+    cdApply(function(t) {
+      return cdMk.rename(t, id, v);
+    }, [id]);
+  }
+  var cdFeatMemo;
+  function __run25() {
+    cdFeatMemo = {};
+  }
+  function cdFeat(id) {
+    var t = shared.cd.base;
+    if (cdFeatMemo.t !== t) cdFeatMemo = { t };
+    if (!(id in cdFeatMemo)) {
+      try {
+        cdFeatMemo[id] = cdMk.features(t, id);
+      } catch (e) {
+        cdFeatMemo[id] = null;
+      }
+    }
+    return cdFeatMemo[id];
+  }
+  function cdFront(i, f) {
+    var b = boxOf(i), s = 6 * ((f && f.homodimer || 1) - 1);
+    return [b[0], b[1], b[2] - s, b[3] - s];
+  }
+  function cdSvList(i) {
+    var n = nodes2[i];
+    var role = n && cdRole(i);
+    if (!n || n.comp || !cdMk || !window.cdrender || role !== "epn" && role !== null) return [];
+    var f = cdFeat(n.id);
+    if (!f) return [];
+    var b = cdFront(i, f), on2 = window.cdrender.onBorder, out = [];
+    f.residues.forEach(function(r, k) {
+      out.push([r.name, on2(b, r.angle), [16, 16], SV, k]);
+    });
+    var st = f.structural || (shared.cdPend && shared.cdPend.id === n.id && shared.cdPend.kind === SS ? { text: "", angle: shared.cdPend.angle } : null);
+    if (st) out.push([st.text, on2(b, st.angle), [2 * cdRx(st.text), 16], SS, 0]);
+    if (f.info || shared.cdPend && shared.cdPend.id === n.id && shared.cdPend.kind === UI) out.push([f.info ? f.info.text : "", [b[0] + b[2] / 2, b[1]], [70, 16], UI, 0]);
+    return out;
+  }
+  var cdTop;
+  function __run27() {
+    cdTop = Math.PI / 2;
+  }
+  function cdRx(txt) {
+    return Math.trunc(window.cdrender.width(txt || "", 10) / 2 + 12);
+  }
+  function cdFrontOf(t, a, box2) {
+    var I = cdMk.aliasInfo(t, a), b = box2 || I.box, s = 6 * ((I.homodimer || 1) - 1);
+    return [b[0], b[1], b[2] - s, b[3] - s];
+  }
+  function cdAngleOn(p, F) {
+    return cdMk.ratioAngle([(p[0] - F[0]) / F[2] - 0.5, (p[1] - F[1]) / F[3] - 0.5]);
+  }
+  function cdIcons0(t, a) {
+    var f = cdMk.features(t, a), out = [];
+    f.residues.forEach(function(r, k) {
+      out.push({ ang: r.angle, s: [16, 16], k: SV, n: k });
+    });
+    if (f.structural) out.push({ ang: f.structural.angle, s: [2 * cdRx(f.structural.text), 16], k: SS, n: 0 });
+    if (f.info || cdMultiTop(t, a)) out.push({ ang: null, s: [70, 16], k: UI, n: 0 });
+    return out;
+  }
+  function cdOn(ic, F, F0) {
+    var on2 = window.cdrender.onBorder, top = function(B) {
+      return [B[0] + B[2] / 2, B[1]];
+    };
+    if (!F0) return ic.map(function(q) {
+      return { c: q.ang == null ? top(F) : on2(F, q.ang), s: q.s, k: q.k, n: q.n };
+    });
+    var rel = function(B, p) {
+      return [p[0] - B[0] - B[2] / 2, p[1] - B[1] - B[3] / 2];
+    }, abs = function(p) {
+      return [p[0] + F[0] + F[2] / 2, p[1] + F[1] + F[3] / 2];
+    };
+    var rs = ic.filter(function(q) {
+      return q.k === SV;
+    }), os = ic.filter(function(q) {
+      return q.k !== SV;
+    });
+    var oP = os.map(function(q) {
+      return q.ang == null ? rel(F, top(F)) : iconKeep(rel(F0, on2(F0, q.ang)), F0[2], F0[3], F[2], F[3]);
+    });
+    var rP = iconSpread(rs.map(function(q) {
+      return { p: rel(F0, on2(F0, q.ang)), s: q.s };
+    }), os.map(function(q, k) {
+      return { p: oP[k], s: q.s };
+    }), F0[2], F0[3], F[2], F[3], 20);
+    return ic.map(function(q) {
+      var k = rs.indexOf(q);
+      return { c: abs(k < 0 ? oP[os.indexOf(q)] : rP[k]), s: q.s, k: q.k, n: q.n };
+    });
+  }
+  function cdIcons(t, a, F) {
+    return cdOn(cdIcons0(t, a), F || cdFrontOf(t, a));
+  }
+  function cdClash(c, s, icons) {
+    return icons.some(function(q) {
+      return Math.abs(c[0] - q.c[0]) < (s[0] + q.s[0]) / 2 + 2 - 1e-6 && Math.abs(c[1] - q.c[1]) < (s[1] + q.s[1]) / 2 + 2 - 1e-6;
+    });
+  }
+  function cdPairs(ic) {
+    var n = 0;
+    ic.forEach(function(q, k) {
+      ic.slice(k + 1).forEach(function(o) {
+        if (cdClash(q.c, q.s, [o])) n++;
+      });
+    });
+    return n;
+  }
+  function cdGrowStep(b, base) {
+    var w = b[2] + 20, h = b[3] + 20 * base[1] / base[0];
+    return [b[0] - (w - b[2]) / 2, b[1] - (h - b[3]) / 2, w, h];
+  }
+  function cdKindSize(t, a) {
+    var I = cdMk.aliasInfo(t, a), L = cdMk.LOOK[I.cls];
+    return L ? [L[0], L[1]] : [I.box[2], I.box[3]];
+  }
+  function cdRoom(t, a, s, first, skip, also) {
+    var b0 = cdMk.aliasInfo(t, a).box, b = b0, base = cdKindSize(t, a), on2 = window.cdrender.onBorder, F0 = cdFrontOf(t, a), F = F0;
+    var ic0 = cdIcons0(t, a).filter(function(q) {
+      return !skip || !skip(q);
+    });
+    for (var g = 0; g < 80; g++) {
+      F = cdFrontOf(t, a, b);
+      var ic = cdOn(ic0, F, F0), cands = (first ? first(F) : []).concat(cdMk.placesFor(F[2], F[3], Math.max(20, s[1] + 4)));
+      for (var j = 0; j < cands.length; j++) if (!cdClash(on2(F, cands[j]), s, ic) && !(also && also(cands[j]))) return { box: b === b0 ? null : b, angle: cands[j] };
+      b = cdGrowStep(b, base);
+    }
+    return { box: b === b0 ? null : b, angle: cdMk.placesFor(F[2], F[3])[0] };
+  }
+  var cdGrew;
+  function __run28() {
+    cdGrew = null;
+  }
+  function cdGrowBounds(t, a, box2) {
+    if (cdGrew && !cdGrew[a]) {
+      var i = nodes2.findIndex(function(n) {
+        return n.id === a;
+      });
+      if (i >= 0) cdGrew[a] = boxOf(i);
+    }
+    return cdMk.bounds(t, a, box2);
+  }
+  function cdGrow(t, a, box2, skip) {
+    if (!box2) return t;
+    var t0 = t, F0 = cdFrontOf(t, a), F = cdFrontOf(t, a, box2), ic = cdOn(cdIcons0(t, a).filter(function(q) {
+      return !skip || !skip(q);
+    }), F, F0), any = false;
+    ic.forEach(function(q) {
+      if (q.k === SV) {
+        t = cdMk.residueMove(t, a, q.n, cdAngleOn(q.c, F));
+        any = true;
+      } else if (q.k === SS) t = cdMk.structuralMove(t, a, cdAngleOn(q.c, F));
+    });
+    t = cdGrowBounds(t, a, box2);
+    return any ? cdFitOthers(t0, t, a) : t;
+  }
+  function cdFitOthers(t0, t, id) {
+    cdMk.proteinAliases(t, id).forEach(function(a) {
+      if (a === id) return;
+      var was = cdPairs(cdIcons(t0, a)), ic = cdIcons0(t, a), b0 = cdMk.aliasInfo(t, a).box, b = b0, base = cdKindSize(t, a);
+      if (cdPairs(cdOn(ic, cdFrontOf(t, a))) <= was) return;
+      for (var g = 0; g < 30; g++) {
+        b = cdGrowStep(b, base);
+        if (cdPairs(cdOn(ic, cdFrontOf(t, a, b))) <= was) {
+          t = cdGrowBounds(t, a, b);
+          return;
+        }
+      }
+    });
+    return t;
+  }
+  function cdOthersTop(t, id) {
+    var on2 = window.cdrender.onBorder, cs = cdMk.proteinAliases(t, id).filter(function(a) {
+      return a !== id;
+    }).map(function(a) {
+      var F = cdFrontOf(t, a);
+      return [F, cdIcons(t, a, F).filter(function(q) {
+        return q.k !== SV;
+      })];
+    });
+    return function(ang) {
+      return cs.some(function(c) {
+        return cdClash(on2(c[0], ang), [16, 16], c[1]);
+      });
+    };
+  }
+  function cdResidueNew(t, id) {
+    t = cdMk.joinKin(t, id);
+    var r = cdRoom(t, id, [16, 16], null, null, cdOthersTop(t, id));
+    t = cdGrow(t, id, r.box);
+    var o = cdMk.residue(t, id, { state: "empty", angle: r.angle });
+    return { text: cdFitOthers(t, o.text, id), residue: o.residue };
+  }
+  function cdResidueRoom(t, id, k) {
+    var sk = function(q) {
+      return q.k === SV && q.n === k;
+    }, r = cdRoom(t, id, [16, 16], null, sk, cdOthersTop(t, id));
+    t = cdGrow(t, id, r.box, sk);
+    return cdFitOthers(t, cdMk.residueMove(t, id, k, r.angle), id);
+  }
+  function cdSsFirst(txt, keep) {
+    return function(F) {
+      if (keep != null) return [keep];
+      var rx = cdRx(txt), H2 = Math.PI / 2, c = [cdTop];
+      [37 + rx, -(37 + rx)].forEach(function(dx) {
+        if (Math.abs(dx) + rx <= F[2] / 2) c.push(H2 - dx / F[2] * H2);
+      });
+      return c;
+    };
+  }
+  function cdSsAngle(t, id, txt) {
+    return cdRoom(t, id, [2 * cdRx(txt), 16], cdSsFirst(txt), function(q) {
+      return q.k === SS;
+    }).angle;
+  }
+  function cdSsSet(t, id, v, keep) {
+    var was = {};
+    cdCopiesOf(t, id).forEach(function(a) {
+      var s = cdMk.features(t, a).structural;
+      was[a] = a === id && keep != null ? keep : s ? s.angle : null;
+    });
+    t = cdMk.structural(t, id, v, true);
+    Object.keys(was).forEach(function(a) {
+      var s = [2 * cdRx(v), 16], skip = function(q) {
+        return q.k === SS;
+      }, r = null;
+      if (was[a] != null) r = cdRoom(t, a, s, function() {
+        return [was[a]];
+      }, skip);
+      if (!r || r.box || r.angle !== was[a]) r = cdRoom(t, a, s, cdSsFirst(v), skip);
+      t = cdMk.structuralMove(cdGrow(t, a, r.box, skip), a, r.angle);
+    });
+    return t;
+  }
+  var cdMultiMemo;
+  function __run29() {
+    cdMultiMemo = [null, null];
+  }
+  function cdKindKey(sp) {
+    var cl = /<celldesigner:class>([^<]*)</.exec(sp), nm = / name="([^"]*)"/.exec(sp);
+    return cl && nm ? cl[1] + "" + nm[1] : null;
+  }
+  function cdMultis(t) {
+    if (cdMultiMemo[0] !== t) {
+      var out = {}, re = /<species [^>]*>[\s\S]*?<\/species>/g, m;
+      while (m = re.exec(t)) {
+        var hd = /<celldesigner:homodimer>(\d+)</.exec(m[0]), key = hd && +hd[1] > 1 && cdKindKey(m[0]);
+        if (key) out[key] = true;
+      }
+      cdMultiMemo = [t, out];
+    }
+    return cdMultiMemo[1];
+  }
+  function cdMultiTop(t, id) {
+    var sp = new RegExp('<species [^>]*id="' + cdMk.aliasInfo(t, id).id + '"[^>]*>[\\s\\S]*?</species>').exec(t), key = sp && cdKindKey(sp[0]);
+    return !!(key && cdMultis(t)[key]);
+  }
+  function cdCopiesOf(t, id) {
+    var sid = cdMk.aliasInfo(t, id).id, out = [id], re = new RegExp('<celldesigner:(?:complexS|s)peciesAlias id="([^"]*)" species="' + sid + '"', "g"), m;
+    while (m = re.exec(t)) if (m[1] !== id) out.push(m[1]);
+    return out;
+  }
+  function cdKindAliases(t, id) {
+    var sp = new RegExp('<species [^>]*id="' + cdMk.aliasInfo(t, id).id + '"[^>]*>[\\s\\S]*?</species>').exec(t), key = sp && cdKindKey(sp[0]), out = [];
+    if (!key) return cdCopiesOf(t, id);
+    var re = /<species [^>]*>[\s\S]*?<\/species>/g, m;
+    while (m = re.exec(t)) if (cdKindKey(m[0]) === key) {
+      var sid = / id="([^"]*)"/.exec(m[0]);
+      if (sid) cdCopiesOf(t, cdFirstAlias(t, sid[1]) || id).forEach(function(a) {
+        if (out.indexOf(a) < 0) out.push(a);
+      });
+    }
+    return out.length ? out : [id];
+  }
+  function cdFirstAlias(t, sid) {
+    var m = new RegExp('<celldesigner:(?:complexS|s)peciesAlias id="([^"]*)" species="' + sid + '"').exec(t);
+    return m ? m[1] : null;
+  }
+  function cdTopClear(t, id, all) {
+    (all ? cdKindAliases(t, id) : [id]).forEach(function(a) {
+      for (var g = 0; g < 40; g++) {
+        var ic = cdIcons(t, a), u = ic.filter(function(q) {
+          return q.k === UI;
+        });
+        var hit2 = ic.filter(function(q) {
+          return q.k !== UI && cdClash(q.c, q.s, u);
+        })[0];
+        if (!hit2) break;
+        if (hit2.k === SS) {
+          var s = cdMk.features(t, a).structural, r = cdRoom(t, a, hit2.s, cdSsFirst(s.text), function(q) {
+            return q.k === SS;
+          });
+          t = cdMk.structuralMove(cdGrow(t, a, r.box, function(q) {
+            return q.k === SS;
+          }), a, r.angle);
+        } else t = cdResidueRoom(t, a, hit2.n);
+      }
+    });
+    return t;
+  }
+  function cdAngle(i, r) {
+    return cdMk.ratioAngle(r);
+  }
+  function cdSvMove(i, j, r) {
+    var q = cdSvList(i)[j], id = nodes2[i].id;
+    if (!q || q[3] === UI) return false;
+    var a = cdAngle(i, r), ok = cdApply(function(t) {
+      return q[3] === SV ? cdMk.residueMove(cdMk.joinKin(t, id), id, q[4], a) : cdMk.structuralMove(t, id, a);
+    }, []);
+    shared.svSel = { id, j };
+    paint();
+    return ok;
+  }
+  function cdSvDelete(i, j) {
+    var q = cdSvList(i)[j], id = nodes2[i].id;
+    if (!q) return false;
+    return cdApply(function(t) {
+      return q[3] === SV ? cdMk.residueRemove(cdMk.joinKin(t, id), id, q[4]) : q[3] === SS ? cdMk.structural(t, id, null) : cdMk.info(t, id, null);
+    }, [id]);
+  }
+  function cdSvOpen(id, j) {
+    var i = nodes2.findIndex(function(n) {
+      return n.id === id;
+    }), q = i < 0 ? null : cdSvList(i)[j];
+    if (!q) return;
+    cdSvWin(id, q[3], q[4]);
+  }
+  function cdSsTyped(id, v) {
+    var pend = shared.cdPend && shared.cdPend.id === id && shared.cdPend.kind === SS ? shared.cdPend : null;
+    shared.cdPend = null;
+    if (pend && v) cdApply(function(t) {
+      return cdSsSet(t, id, v, pend.angle);
+    }, []);
+    paint();
+  }
+  function cdSvWin(id, kind, k) {
+    if (shared.typing) shared.typing.done(true);
+    var m0 = map, res = kind === SV, ui = kind === UI;
+    var feat = function() {
+      try {
+        return cdMk.features(shared.cd.base, id);
+      } catch (e) {
+        return null;
+      }
+    };
+    var f = feat();
+    if (!f || res && !f.residues[k]) return;
+    var box2 = document.createElement("div");
+    box2.className = "m2-cx m2-cdsv";
+    box2.setAttribute("role", "dialog");
+    box2.setAttribute("aria-label", res ? "Residue" : ui ? "Unit of information" : "Structural state");
+    box2.innerHTML = ui ? '<label><span>Prefix</span><select></select></label><label class="m2-cdsv-list"><span>Label</span><select></select></label><label class="m2-cdsv-text"><span>Label</span><input type="text" spellcheck="false"></label><button type="button">Remove</button>' : res ? '<label><span>Site</span><input type="text" spellcheck="false"></label><label><span>Modification</span><select></select></label>' : '<label><span>State</span><select><option value="open">Open</option><option value="closed">Closed</option><option value="">Text</option></select></label><label class="m2-cdsv-text"><span>Text</span><input type="text" spellcheck="false"></label><button type="button">Remove</button>';
+    var inp = box2.querySelector("input"), sel = box2.querySelector("select"), row = box2.querySelector(".m2-cdsv-text");
+    var lrow = box2.querySelector(".m2-cdsv-list"), lab = lrow && lrow.querySelector("select");
+    var fixed = function() {
+      return !!cdMk.INFO[sel.value];
+    };
+    var labels = function() {
+      lab.textContent = "";
+      (cdMk.INFO[sel.value] || []).forEach(function(l) {
+        lab.appendChild(new Option(l, l));
+      });
+      lrow.hidden = !fixed();
+      row.hidden = fixed();
+    };
+    if (res) cdMk.STATES.forEach(function(s) {
+      sel.appendChild(new Option(s, s));
+    });
+    var rid = res ? f.residues[k].id : null;
+    var pendOf = function() {
+      return shared.cdPend && shared.cdPend.id === id && shared.cdPend.kind === kind ? shared.cdPend : null;
+    };
+    if (ui) {
+      Object.keys(cdMk.INFO).concat(["N", "free input"]).forEach(function(p) {
+        sel.appendChild(new Option(p, p));
+      });
+      sel.value = f.info ? f.info.prefix : "pc";
+      labels();
+      if (fixed()) lab.value = f.info ? f.info.label : lab.options[0].value;
+      else inp.value = f.info ? f.info.label : "";
+    } else if (res) {
+      inp.value = f.residues[k].name || "";
+      sel.value = f.residues[k].state || "empty";
+    } else {
+      var now = f.structural ? f.structural.text : "";
+      sel.value = /^(open|closed)$/.test(now) ? now : "";
+      inp.value = sel.value ? "" : now;
+      row.hidden = !!sel.value;
+    }
+    var T;
+    var live = function() {
+      return shared.typing === T && on && map === m0;
+    };
+    var kNow = function() {
+      var g = feat();
+      return g ? g.residues.findIndex(function(r) {
+        return r.id === rid;
+      }) : -1;
+    };
+    var jOf = function() {
+      var g = feat();
+      return !g ? -1 : res ? kNow() : ui ? g.info || pendOf() ? g.residues.length + (g.structural ? 1 : 0) : -1 : g.structural || pendOf() ? g.residues.length : -1;
+    };
+    var write2 = function(fn) {
+      if (!live()) return;
+      if (res && (k = kNow()) < 0) {
+        T.done(false);
+        return;
+      }
+      cdApply(fn, []);
+      var j = jOf();
+      if (j < 0 && !pendOf()) {
+        T.done(false);
+        return;
+      }
+      shared.svSel = j < 0 ? null : { id, j };
+      paint();
+    };
+    var site2 = function() {
+      var kk = kNow(), r = kk < 0 ? null : feat().residues[kk], v = inp.value.trim();
+      if (r && v !== (r.name || "")) write2(function(t) {
+        return cdMk.residueName(cdMk.joinKin(t, id), id, k, v);
+      });
+    };
+    var put2 = function(v) {
+      var pend = pendOf();
+      if (v) {
+        write2(function(t) {
+          return cdSsSet(t, id, v, pend ? pend.angle : null);
+        });
+        if (pend && shared.cdPend === pend) shared.cdPend = null;
+      } else if (!pend) write2(function(t) {
+        return cdMk.structural(t, id, null);
+      });
+    };
+    var unit = function(q) {
+      var pend = pendOf();
+      if (!q) {
+        if (!pend) write2(function(t) {
+          return cdMk.info(t, id, null);
+        });
+        return;
+      }
+      write2(function(t) {
+        return cdTopClear(cdMk.info(t, id, q, true), id, false);
+      });
+      if (pend && shared.cdPend === pend) shared.cdPend = null;
+    };
+    var chosen = function() {
+      return [sel.value, fixed() ? lab.value : inp.value.trim()];
+    };
+    var typed = function() {
+      if (ui) {
+        var g = (feat() || {}).info, q = chosen();
+        if (q[1] && (pendOf() || !g || g.prefix !== q[0] || g.label !== q[1])) unit(q);
+        return;
+      }
+      if (res) site2();
+      else if (!sel.value) {
+        var v = inp.value.trim(), st = (feat() || {}).structural;
+        if (v !== (st ? st.text : "") || v && pendOf()) put2(v);
+      }
+    };
+    var place = function() {
+      var i = nodes2.findIndex(function(n) {
+        return n.id === id;
+      }), j = jOf(), q = i < 0 || j < 0 ? null : cdSvList(i)[j];
+      if (i < 0 || !box2.isConnected) return;
+      if (!q || q[3] !== kind) {
+        var b = boxOf(i);
+        q = [0, [b[0] + b[2] / 2, b[1] + b[3] / 2], [b[2], 0]];
+      }
+      var vr = V.view.getBoundingClientRect(), z = box2.getBoundingClientRect().width / box2.offsetWidth || 1, w = box2.offsetWidth * z, ht = box2.offsetHeight * z;
+      var nb = boxOf(i), X0 = Math.min(nb[0], q[1][0] - q[2][0] / 2), X1 = Math.max(nb[0] + nb[2], q[1][0] + q[2][0] / 2), Y0 = Math.min(nb[1], q[1][1] - q[2][1] / 2), Y1 = Math.max(nb[1] + nb[3], q[1][1] + q[2][1] / 2);
+      var L = vr.left + sx(X0) * z, R = vr.left + sx(X1) * z, T0 = vr.top + sy(Y0) * z, B = vr.top + sy(Y1) * z, g = 10 * z, W = V.winW(), H2 = V.winH();
+      var cx = Math.max(4, Math.min((L + R) / 2 - w / 2, W - 4 - w)), cy = Math.max(4, Math.min((T0 + B) / 2 - ht / 2, H2 - 4 - ht));
+      var at2 = B + g + ht <= H2 - 4 ? [cx, B + g] : T0 - g - ht >= 4 ? [cx, T0 - g - ht] : R + g + w <= W - 4 ? [R + g, cy] : L - g - w >= 4 ? [L - g - w, cy] : [cx, Math.max(4, H2 - 4 - ht)];
+      box2.style.left = at2[0] / z + "px";
+      box2.style.top = at2[1] / z + "px";
+    };
+    var outside = function(e) {
+      if (!box2.contains(e.target)) T.done(true);
+    };
+    T = shared.typing = { inp, place, done: function(keep) {
+      if (shared.typing !== T) return;
+      if (keep) typed();
+      shared.typing = null;
+      box2.remove();
+      document.removeEventListener("pointerdown", outside, true);
+      if (pendOf()) shared.cdPend = null;
+      paint();
+    } };
+    sel.addEventListener("change", function() {
+      if (ui) {
+        var g = (feat() || {}).info, typed2 = inp.value.trim(), was = typed2 || (g && !cdMk.INFO[g.prefix] ? g.label : "");
+        labels();
+        if (g && g.prefix === sel.value) {
+          if (fixed()) lab.value = g.label;
+          else inp.value = g.label;
+          return;
+        }
+        if (fixed()) unit(chosen());
+        else {
+          inp.value = was;
+          inp.focus();
+          if (was) unit(chosen());
+        }
+        return;
+      }
+      if (res) {
+        var s = sel.value;
+        write2(function(t) {
+          return cdMk.residueState(cdMk.joinKin(t, id), id, k, s);
+        });
+        return;
+      }
+      row.hidden = !!sel.value;
+      if (sel.value) put2(sel.value);
+      else {
+        var g = feat();
+        inp.value = g && g.structural ? g.structural.text : "";
+        inp.focus();
+      }
+    });
+    inp.addEventListener("change", typed);
+    if (ui) lab.addEventListener("change", function() {
+      unit(chosen());
+    });
+    if (!res) box2.querySelector("button").addEventListener("click", function() {
+      if (pendOf()) T.done(false);
+      else if (ui) unit(null);
+      else put2(null);
+    });
+    box2.addEventListener("keydown", function(e) {
+      e.stopPropagation();
+      if (e.key === "Escape") {
+        e.preventDefault();
+        T.done(false);
+        V.view.focus({ preventScroll: true });
+      } else if (e.key === "Enter" && e.target.tagName !== "BUTTON") {
+        e.preventDefault();
+        T.done(true);
+        V.view.focus({ preventScroll: true });
+      } else if ((e.ctrlKey || e.metaKey) && V.letter(e) === "a" && !/input/i.test(e.target.tagName)) e.preventDefault();
+    });
+    box2.addEventListener("pointerdown", function(e) {
+      e.stopPropagation();
+    });
+    box2.addEventListener("keydown", function(e) {
+      if (e.key !== "Tab") return;
+      var fs = Array.prototype.filter.call(box2.querySelectorAll("input, select, button"), function(x) {
+        return !x.closest("[hidden]");
+      }), at2 = fs.indexOf(document.activeElement);
+      e.preventDefault();
+      fs[(at2 + (e.shiftKey ? -1 : 1) + fs.length) % fs.length].focus();
+    });
+    document.body.appendChild(box2);
+    document.addEventListener("pointerdown", outside, true);
+    var j0 = jOf();
+    shared.svSel = j0 < 0 ? null : { id, j: j0 };
+    paint();
+    place();
+    box2.tabIndex = -1;
+    box2.setAttribute("data-keys-own", "");
+    setTimeout(function() {
+      if (shared.typing === T) box2.focus({ preventScroll: true });
+    }, 0);
+  }
+  function cdSvAdd(id, kind) {
+    var i = nodes2.findIndex(function(n) {
+      return n.id === id;
+    });
+    if (i < 0) return;
+    if (shared.typing) shared.typing.done(true);
+    if (kind === SV) {
+      var k = null;
+      if (!cdApply(function(t) {
+        var o = cdResidueNew(t, id);
+        k = o.residue;
+        return o.text;
+      }, [])) return;
+      shared.svSel = { id, j: k };
+      paint();
+      return;
+    }
+    shared.cdPend = kind === SS ? { id, kind: SS, angle: cdSsAngle(shared.cd.base, id, "") } : { id, kind: UI };
+    if (kind === UI) {
+      cdSvWin(id, UI, 0);
+      return;
+    }
+    var j = cdSvList(i).map(function(q) {
+      return q[3];
+    }).indexOf(SS);
+    if (j < 0) {
+      shared.cdPend = null;
+      return;
+    }
+    typeIn(id, j);
+  }
+  function cdSvItems(id, A) {
+    var f = cdFeat(id), out = [];
+    if (!f || A.cls === "DEGRADED") return out;
+    if (f.protein) out.push(["Add state variable", function() {
+      cdSvAdd(id, SV);
+    }]);
+    if (!f.structural) out.push(["Add structural state", function() {
+      cdSvAdd(id, SS);
+    }]);
+    if (!f.info) out.push(["Add unit of information", function() {
+      cdSvAdd(id, UI);
+    }]);
+    return out;
+  }
+  function cdSvOwnItems(q) {
+    var i = q[0], it = cdSvList(i)[q[1]], id = nodes2[i].id;
+    if (!it) return null;
+    var out = [["Edit", function() {
+      cdSvOpen(id, q[1]);
+    }]];
+    if (it[3] === UI) return out.concat(cdUnitItems(id, q[1]));
+    if (it[3] !== SV) return out;
+    var now = cdFeat(id).residues[it[4]].state || "empty";
+    out.push(["Change state", subItem(function(r, done) {
+      return kindWindow(r, cdMk.STATES.map(function(s) {
+        return {
+          name: s,
+          own: s === now,
+          go: function() {
+            cdApply(function(t) {
+              return cdMk.residueState(cdMk.joinKin(t, id), id, it[4], s);
+            }, []);
+            shared.svSel = { id, j: q[1] };
+            paint();
+          }
+        };
+      }), done);
+    })]);
+    return out;
+  }
+  function cdUnitItems(id, j) {
+    var f = cdFeat(id), now = f && f.info ? f.info.prefix + ":" + f.info.label : "", list2 = [];
+    Object.keys(cdMk.INFO).forEach(function(p) {
+      cdMk.INFO[p].forEach(function(l) {
+        list2.push([p, l]);
+      });
+    });
+    return [["Change unit", subItem(function(r, done) {
+      return kindWindow(r, list2.map(function(u) {
+        return { name: u.join(":"), own: u.join(":") === now, go: function() {
+          cdApply(function(t) {
+            return cdMk.info(t, id, u, true);
+          }, []);
+          shared.svSel = { id, j };
+          paint();
+        } };
+      }), done);
+    })]];
+  }
+  function cdSpecies(i) {
+    return cdRole(i) === "epn" && nodes2[i].el.getAttribute("yfiles.foldertype") !== "group";
+  }
+  function cdSetSize(pairs) {
+    var ids = [], was = {}, one = {};
+    pairs.forEach(function(q) {
+      var b = boxOf(q[0]);
+      if (q[1].some(function(v, j) {
+        return Math.abs(v - b[j]) >= 5e-3;
+      })) {
+        ids.push(nodes2[q[0]].id);
+        was[nodes2[q[0]].id] = b;
+        one[q[0]] = q[1];
+      }
+    });
+    if (!ids.length) {
+      liveOff();
+      sizeOff();
+      paint();
+      return;
+    }
+    commit(null, { name: "size", ids, write: function() {
+      setBoxes(one);
+    }, parsed: true, then: function() {
+      var ks = nodes2.map(function(n, k) {
+        return ids.indexOf(n.id) >= 0 ? k : -1;
+      }).filter(function(k) {
+        return k >= 0;
+      });
+      setBoxes(grown(ks, boxOf, function(k) {
+        return was[nodes2[k].id] || boxOf(k);
+      }, function() {
+        return false;
+      }));
+      shared.selN = [];
+      nodes2.forEach(function(n, k) {
+        if (ids.indexOf(n.id) >= 0) shared.selN.push(k);
+      });
+      shared.sizeRec = null;
+    } });
+  }
+  var cdLook;
+  var cdLineMemo;
+  function __run30() {
+    cdLook = [], cdLineMemo = [null, null, null, null];
+  }
+  function cdLineRead(k) {
+    var id = edges2[k].id;
+    if (cdLineMemo[0] !== id || cdLineMemo[1] !== shared.cd.now) {
+      var c = null, w = null;
+      try {
+        c = cdMk.lineColour(shared.cd.now, id);
+        w = cdMk.lineWidth(shared.cd.now, id);
+      } catch (e) {
+        c = w = null;
+      }
+      cdLineMemo = [id, shared.cd.now, c, w];
+    }
+    return cdLineMemo;
+  }
+  function cdLineColour(k) {
+    return cdLineRead(k)[2];
+  }
+  var cdPartsMemo;
+  function __run31() {
+    cdPartsMemo = [null, null, null];
+  }
+  function cdParts(rid) {
+    if (cdPartsMemo[0] !== rid || cdPartsMemo[1] !== shared.cd.now) {
+      var p;
+      try {
+        p = cdMk.participants(shared.cd.now, rid);
+      } catch (e) {
+        p = [];
+      }
+      cdPartsMemo = [rid, shared.cd.now, p];
+    }
+    return cdPartsMemo[2];
+  }
+  var cdCountMemo;
+  function __run32() {
+    cdCountMemo = {};
+  }
+  function cdCount(id) {
+    if (cdCountMemo.now !== shared.cd.now) cdCountMemo = { now: shared.cd.now };
+    if (!(id in cdCountMemo)) {
+      var c;
+      try {
+        c = cdMk.stoichiometry(shared.cd.now, id);
+      } catch (e) {
+        c = void 0;
+      }
+      cdCountMemo[id] = c;
+    }
+    return cdCountMemo[id];
+  }
+  function cdMember(i) {
+    var n = nodes2[i];
+    return n.up != null && nodes2[n.up].shape.kind === "Complex";
+  }
+  function cdProp(i) {
+    return cdSpecies(i) || cdMember(i) || nodes2[i].comp || cdRole(i) === "epn" && nodes2[i].shape.kind === "Complex";
+  }
+  function cdLineTo(k, f) {
+    var id = edges2[k].id, keep = /\|[mrp]\d+$/.test(id) ? id : id.replace(/\|[^|]*$/, "");
+    return cdApply(function(t) {
+      return f(t, id);
+    }, [], [keep]);
+  }
+  var PF_CD;
+  function __run33() {
+    PF_CD = {
+      sizable: cdProp,
+      size: cdSetSize,
+      def: cdDef,
+      rx: {
+        of: cdRxOf,
+        set: cdReversible,
+        // a reaction's Reversible (propRx, create.js)
+        counts: cdParts,
+        // its reactants' and products' numbers by name (rxCounts)
+        setCount: function(rid, line2, v) {
+          return cdApply(function(t) {
+            return cdMk.restoich(t, line2, v);
+          }, [], [rid]);
+        }
+      },
+      // a line's colour and width (edgeShow, edgeSet): a modifier's, an added reactant's or product's own, else its
+      // reaction's (a reduced notation's line, a main line); a gate's lines none (cd_make.lineColour null), no ports as offsets
+      line: {
+        colour: cdLineColour,
+        set: function(k, c) {
+          return cdLineTo(k, function(t, id) {
+            return cdMk.recolourLine(t, id, c || "#000000");
+          });
+        },
+        width: function(k) {
+          return cdLineRead(k)[3];
+        },
+        setWidth: function(k, w) {
+          return cdLineTo(k, function(t, id) {
+            return cdMk.rewidthLine(t, id, w);
+          });
+        },
+        ports: false,
+        count: function(k) {
+          return /\|[rp]\d+$/.test(edges2[k].id) ? cdCount(edges2[k].id) : void 0;
+        },
+        // an added reactant's or product's own number (the main ones are the reaction's rows)
+        setCount: function(k, v) {
+          return cdLineTo(k, function(t, id) {
+            return cdMk.restoich(t, id, v);
+          });
+        }
+      },
+      node: function(i) {
+        return cdProp(i) ? i : -1;
+      },
+      off: function(k, i) {
+        return k === "line" || k === "ant" || k === "way" || k === "ss" && /^(COMPARTMENT|DEGRADED)$/.test(pNow.cls) || /^(mem|outer|inner)$/.test(k) && pNow.cls !== "COMPARTMENT" || /^(label|font|fill|multimer)$/.test(k) && pNow.cls === "DEGRADED" || /^(width|multimer|def|font)$/.test(k) && pNow.cls === "COMPARTMENT" || /^(multimer|def)$/.test(k) && pNow.cls === "COMPLEX" || k === "width" && pNow.cls === "UNKNOWN";
+      },
+      look: function(i) {
+        var id = nodes2[i].id;
+        if (cdLook[0] !== id || cdLook[1] !== shared.cd.now) {
+          var L = null;
+          try {
+            L = cdMk.look(shared.cd.now, id);
+            var ss = cdMk.features(shared.cd.now, id).structural;
+            L = { ss: ss ? ss.text : "", label: cdNameOf(id, true), font: L.font, fill: L.fill, line: "#000000", width: L.width, multimer: L.multimer, cls: L.cls, mem: L.mem, outer: L.outer, inner: L.inner };
+          } catch (e) {
+            L = null;
+          }
+          cdLook = [id, shared.cd.now, L];
+        }
+        return cdLook[2] && Object.assign({}, cdLook[2]);
+      },
+      set: function(k, v, is) {
+        var ids = is.map(function(i) {
+          return nodes2[i].id;
+        }), all = function(f) {
+          return cdApply(function(t) {
+            ids.forEach(function(id) {
+              t = f(t, id);
+            });
+            return t;
+          }, ids);
+        };
+        if (k === "label") return all(function(t, id) {
+          return cdMk.rename(t, id, v.replace(/[\r\n]+/g, " "));
+        });
+        if (k === "multimer") return all(function(t, id) {
+          return !v ? cdMk.homodimer(t, id, 1) : cdMk.aliasInfo(t, id).homodimer > 1 ? t : cdTopClear(cdMk.homodimer(t, id, 2), id, true);
+        });
+        if (k === "width") {
+          var x = parseFloat(v);
+          return isFinite(x) && all(function(t, id) {
+            return cdMk.restyle(t, id, { width: Math.min(Math.max(x, 0.25), 20) });
+          });
+        }
+        if (k === "font") {
+          var z = parseFloat(v);
+          return isFinite(z) && all(function(t, id) {
+            return cdMk.restyle(t, id, { font: Math.min(Math.max(Math.round(z), 1), 200) });
+          });
+        }
+        if (k === "fill") {
+          var c = hex(v);
+          return !!c && all(function(t, id) {
+            return cdMk.restyle(t, id, { fill: c });
+          });
+        }
+        if (/^(mem|outer|inner)$/.test(k)) return cdDouble(k, parseFloat(v), ids);
+        if (k === "ss") {
+          var tx = v.replace(/[\r\n]+/g, " ").trim();
+          return all(function(t, id) {
+            if (/^(COMPARTMENT|DEGRADED)$/.test(cdMk.aliasInfo(t, id).cls || "COMPARTMENT")) return t;
+            var s0 = cdMk.features(t, id).structural;
+            return tx ? s0 && s0.text === tx ? t : cdSsSet(t, id, tx, null) : s0 ? cdMk.structural(t, id, null) : t;
+          });
+        }
+        return false;
+      }
+    };
+    propRows([
+      ["mem", "Membrane", "num", ' min="2" max="100"', "Membrane thickness: the band between the two lines, 2 at least"],
+      ["outer", "Outer line", "num", ' min="2" max="20"', "Outer line width, at least the inner line + 1"],
+      ["inner", "Inner line", "num", ' min="1" max="19"', "Inner line width, 1 at least"]
+    ]);
+    propRows([["ss", "Structural state", "text", "", "The species\u2019 structural state, free text; emptied, it is removed"]]);
+  }
+  function cdDouble(k, x, ids) {
+    if (!isFinite(x)) return false;
+    var clamp = function(v, a, b) {
+      return Math.min(Math.max(v, a), b);
+    };
+    return cdApply(function(t) {
+      ids.forEach(function(id) {
+        var L = cdMk.look(t, id), b = cdMk.aliasInfo(t, id).box, o = { mem: L.mem, outer: L.outer, inner: L.inner };
+        o[k] = x;
+        o.mem = clamp(o.mem, 2, b ? Math.max(2, Math.min(b[2], b[3]) / 2 - 3) : 100);
+        o.outer = clamp(o.outer, 2, 20);
+        o.inner = clamp(o.inner, 1, o.outer - 1);
+        t = cdMk.restyle(t, id, o);
+      });
+      return t;
+    }, ids);
+  }
+  function cdCompGhost(w, h, oval) {
+    var C = cdMk.COMP;
+    return window.cdrender.compartmentShape(0, 0, w, h, C.thickness, C.outer, C.inner, "#" + (cdColour(shared.cd && shared.cd.now, "COMPARTMENT") || C.colour).slice(2), oval);
+  }
+  function cdGhost(kind) {
+    var cls = cdKind(kind), s = cdSize(cls), n = cdComp(cls) ? 1 : cdCopies(cls), e = 6 * (n - 1), w = s[0] - e, h = s[1] - e, k = cdCols() === "custom" && cdKept()[cls], col = cdComp(cls) ? "none" : "#" + (cdColour(shared.cd && shared.cd.now, cls) || cdMk.LOOK[cls][2]).slice(2), ink = ' fill="' + col + '" stroke="#000" stroke-width="' + (k && k.width > 0 && cls !== "DEGRADED" ? k.width : 1) + '"';
+    var shape = {
+      PROTEIN: '<rect width="' + w + '" height="' + h + '" rx="5"' + ink + "/>",
+      GENE: '<rect width="' + w + '" height="' + h + '"' + ink + "/>",
+      RNA: '<path d="M' + h + " 0H" + w + "L" + (w - h) + " " + h + 'H0z"' + ink + "/>",
+      SIMPLE_MOLECULE: '<ellipse cx="' + w / 2 + '" cy="' + h / 2 + '" rx="' + w / 2 + '" ry="' + h / 2 + '"' + ink + "/>",
+      UNKNOWN: '<ellipse cx="' + w / 2 + '" cy="' + h / 2 + '" rx="' + w / 2 + '" ry="' + h / 2 + '" fill="' + col + '"/>',
+      PHENOTYPE: '<path d="M' + h / 2 + " 0H" + (w - h / 2) + "L" + w + " " + h / 2 + "L" + (w - h / 2) + " " + h + "H" + h / 2 + "L0 " + h / 2 + 'z"' + ink + "/>",
+      DEGRADED: '<circle cx="' + w / 2 + '" cy="' + h / 2 + '" r="' + w * 3 / 8 + '"' + ink + '/><path d="M' + w * 0.7 + " 0L" + w * 0.3 + " " + h + '" stroke="#000"/>',
+      COMPLEX: '<path d="M5 0H' + (w - 5) + "L" + w + " 5V" + (h - 5) + "L" + (w - 5) + " " + h + "H5L0 " + (h - 5) + 'V5z"' + ink + ' stroke-width="2"/>',
+      COMPARTMENT: cdCompGhost(w, h, false),
+      OVAL: cdCompGhost(w, h, true)
+    }[cls];
+    for (var j = n - 1, back2 = ""; j > 0; j--) back2 += '<g transform="translate(' + 6 * j + " " + 6 * j + ')">' + shape + "</g>";
+    return { w: s[0], h: s[1], svg: '<svg width="100%" height="100%" viewBox="0 0 ' + s[0] + " " + s[1] + '" overflow="visible">' + (back2 || "") + shape + "</svg>" };
   }
   function __start() {
     __run1();
@@ -1413,11 +3516,542 @@
     __run3();
     __run5();
     __run6();
+    __run7();
+    __run8();
+    __run9();
+    __run10();
+    __run12();
+    __run13();
+    __run14();
+    __run15();
+    __run16();
+    __run17();
+    __run18();
+    __run19();
+    __run20();
+    __run21();
+    __run22();
+    __run23();
+    __run24();
+    __run25();
+    __run27();
+    __run28();
+    __run29();
+    __run30();
+    __run31();
+    __run32();
+    __run33();
+  }
+
+  // editor/src/celldesigner.js
+  var cdp;
+  var cdJs;
+  var cdMk;
+  function __run110() {
+    cdp = null, cdJs = null, cdMk = null;
+  }
+  function isCd(t) {
+    return /<sbml[\s>]/.test(t.slice(0, 3e3)) && t.indexOf("celldesigner") >= 0;
+  }
+  function lineGrid() {
+    return !shared.cd;
+  }
+  function nodePlaces(n) {
+    var R = window.cdrender, cl = shared.cd && R && R.anchorAt && cdRole(n) === "epn" ? cdClsOf(nodes2[n].id) : null;
+    if (!cl) return null;
+    var b = bx(n), C = [b[0] + b[2] / 2, b[1] + b[3] / 2], f = R.frontBox(b, cl[1]);
+    return Object.keys(R.ANCHOR).map(function(k) {
+      var A = R.anchorAt(cl[0], f, k);
+      return [A[0] - C[0], A[1] - C[1], k];
+    });
+  }
+  function nodeCentre(n, P) {
+    var b = bx(n);
+    return Math.max(Math.abs(P[0] - b[0] - b[2] / 2) / (b[2] / 2 || 1), Math.abs(P[1] - b[1] - b[3] / 2) / (b[3] / 2 || 1)) < 0.5;
+  }
+  function cdpy() {
+    if (cdp) return cdp;
+    var script = function(f) {
+      return new Promise(function(res, rej) {
+        var s = document.createElement("script");
+        s.src = V.renderers + "converter/" + f + ".js" + V.build;
+        s.onload = res;
+        s.onerror = function() {
+          rej(f + " not found");
+        };
+        document.head.appendChild(s);
+      });
+    };
+    cdp = (window.cdrender ? Promise.resolve() : script("cdrender")).then(function() {
+      return window.cd_edit ? null : script("cd_edit");
+    }).then(function() {
+      return window.cd_make ? null : script("cd_make").catch(function() {
+      });
+    }).then(function() {
+      cdJs = window.cd_edit;
+      cdMk = window.cd_make || null;
+      if (cdMk) cdCheck();
+      return cdJs;
+    });
+    cdp.catch(function(e) {
+      cdp = null;
+      warn("The CellDesigner renderer did not load: " + e);
+    });
+    return cdp;
+  }
+  var cdMemo2;
+  function __run34() {
+    cdMemo2 = [];
+  }
+  function cdDraw(t, g, fit) {
+    return cdJs.draw(t, g, { fit: fit == null ? undo.length > 0 : fit, block: gridBlock(), parsed: on ? function(c, d) {
+      cdDocKeep(c, d, shownId());
+    } : null });
+  }
+  var cdDocNow;
+  function shownId() {
+    return V.chosen ? V.chosen.id : null;
+  }
+  function cdDoc(t, id) {
+    if (cdDocNow && cdDocNow.t === t) return cdDocNow.doc;
+    var doc2 = new DOMParser().parseFromString(t, "application/xml");
+    if (id !== false) cdDocKeep(t, doc2, id === void 0 ? shownId() : id);
+    return doc2;
+  }
+  function cdDocKeep(t, doc2, id) {
+    cdDocNow = { t, doc: doc2, id };
+  }
+  function cdKept2() {
+    return cdDocNow ? cdDocNow.id : null;
+  }
+  function cdShown(id) {
+    if (!cdDocNow) return;
+    if (cdDocNow.id === "adding") cdDocNow.id = id;
+    else if (cdDocNow.id !== id) {
+      cdDocNow = null;
+      cdLive = null;
+    }
+  }
+  function cdShift(svg) {
+    var m = /<g transform="translate\(([-\d.]+),([-\d.]+)\)">/.exec(svg || "");
+    return m ? [+m[1], +m[2]] : [0, 0];
+  }
+  function cdNow() {
+    if (lastFor && lastFor[0] === shared.text && lastFor[1] === shared.cd.now) return { t: shared.cd.now, sh: cdShift(lastSvg) };
+    var q = cdDraw(shared.cd.base, shared.text);
+    return { t: q[1], sh: cdShift(q[0]) };
+  }
+  function cdRebuild(t, sh) {
+    shared.cd.base = t;
+    setText(cdGraphml(t));
+    rebase(sh[0], sh[1]);
+  }
+  function cdGraphml(t) {
+    var g = cdKnown(t);
+    if (g) return g;
+    g = cdJs.graphml(t, null, { doc: cdDoc(t) });
+    cdRemember(t, g);
+    return g;
+  }
+  function cdKnown(t) {
+    for (var i = 0; i < cdMemo2.length; i++) if (cdMemo2[i][0] === t) return cdMemo2[i][1];
+    return null;
+  }
+  function cdRemember(t, g) {
+    cdMemo2.unshift([t, g]);
+    cdMemo2.length = Math.min(cdMemo2.length, 3);
+  }
+  function glyphMid(q, B, P, pp) {
+    var ea = edges2[q.a], eb = edges2[q.b], o = function(e, a2) {
+      if (pp && pp.to && edges2[pp.k] === e && (pp.end ? "t" : "s") === a2[0]) return pp.to[a2[1] === "x" ? 0 : 1];
+      return e.path ? parseFloat(e.path.getAttribute(a2)) || 0 : 0;
+    };
+    var S = B(pp && pp.n2 != null && edges2[pp.k] === ea && !pp.end ? pp.n2 : ea.s), T = B(pp && pp.n2 != null && edges2[pp.k] === eb && pp.end ? pp.n2 : eb.t);
+    var all = [[S[0] + S[2] / 2 + o(ea, "sx"), S[1] + S[3] / 2 + o(ea, "sy")]].concat(
+      ea.pts.map(P),
+      eb.pts.map(P),
+      [[T[0] + T[2] / 2 + o(eb, "tx"), T[1] + T[3] / 2 + o(eb, "ty")]]
+    );
+    var k = ea.pts.length, n = all.length - 1, a = all[k], b = all[k + 1];
+    if (k === 0) a = cut(all[0], all[1], S);
+    if (k + 1 === n) b = cut(all[n], all[n - 1], T);
+    return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, Math.atan2(b[1] - a[1], b[0] - a[0]), Math.hypot(b[0] - a[0], b[1] - a[1])];
+  }
+  function glyphPort(i, off, eid) {
+    var L = shared.liveG && shared.liveG[i];
+    if (!L || !L[2] && L[3] === 1) return off;
+    var c = Math.cos(L[2]), s2 = Math.sin(L[2]), f = /\|[rp]\d+$/.test(eid) ? L[3] : 1;
+    return [f * (c * off[0] - s2 * off[1]), f * (s2 * off[0] + c * off[1])];
+  }
+  function glyphFollow(ns, ps, back2, pp) {
+    if (!shared.procs.length || !gN) return;
+    var old = shared.liveG;
+    shared.liveG = null;
+    var rest = function(i) {
+      var b = boxOf(i);
+      return back2 && ns.has(i) ? [b[0] - back2[0], b[1] - back2[1], b[2], b[3]] : b;
+    };
+    var restP = function(pi) {
+      var p = points[pi], o = back2 && ps.has(pi);
+      return [num(p, "x") - (o ? back2[0] : 0), num(p, "y") - (o ? back2[1] : 0)];
+    };
+    var out = {}, any = false;
+    shared.procs.forEach(function(q) {
+      var ea = edges2[q.a], eb = edges2[q.b];
+      if (ns.has(q.g) || ea.s == null || eb.t == null) return;
+      var port = pp && pp.to && (pp.k === q.a || pp.k === q.b);
+      if (!(port || ns.has(ea.s) || ns.has(eb.t) || ea.pts.concat(eb.pts).some(function(p) {
+        return ps.has(p);
+      }))) return;
+      var a = glyphMid(q, bx, pt, pp), b = glyphMid(q, rest, restP);
+      out[q.g] = [a[0] - b[0], a[1] - b[1], isFinite(a[2] - b[2]) && b[3] ? a[2] - b[2] : 0, b[3] ? a[3] / b[3] : 1, b];
+      any = true;
+    });
+    if (old) Object.keys(old).forEach(function(i) {
+      if (!out[i]) {
+        var g = gN[nodes2[i].id];
+        if (g) g.removeAttribute("transform");
+      }
+    });
+    if (!any) return;
+    shared.liveG = out;
+    shared.live = shared.live || /* @__PURE__ */ new Set();
+    Object.keys(out).forEach(function(i) {
+      var o2 = out[i], c0 = toPic(o2[4]), g = gN[nodes2[i].id];
+      if (g) g.setAttribute("transform", "translate(" + f1(c0[0] + o2[0]) + " " + f1(c0[1] + o2[1]) + ") rotate(" + f1(o2[2] * 180 / Math.PI) + ") translate(" + f1(-c0[0]) + " " + f1(-c0[1]) + ")");
+      edges2.forEach(function(e, k) {
+        if (e.s !== +i && e.t !== +i) return;
+        var gs = gE[e.id];
+        if (gs) gs.forEach(function(x) {
+          x.style.display = "none";
+        });
+        shared.live.add(k);
+      });
+    });
+  }
+  var cdLive;
+  function __run4() {
+    cdLive = null;
+  }
+  function cdSession() {
+    if (!shared.cd || !cdJs || !cdJs.live || !shared.cdBase) return null;
+    if (cdLive && cdLive.base === shared.cdBase) return cdLive.s;
+    try {
+      cdLive = { base: shared.cdBase, s: cdJs.live(shared.cdBase.now, shared.cdBase.text, { doc: cdDoc(shared.cdBase.now) }) };
+    } catch (e) {
+      cdLive = null;
+    }
+    return cdLive ? cdLive.s : null;
+  }
+  function cdSessionSoon() {
+    if (!shared.cdBase && shared.cd) shared.cdBase = { now: shared.cd.now, text: shared.text };
+    (window.requestIdleCallback || function(f) {
+      setTimeout(f, 0);
+    })(function() {
+      if (on) cdSession();
+    });
+  }
+  function cdHolders(ks) {
+    var S = cdSession();
+    if (!S || !S.holder) return;
+    var todo = ks.filter(function(i) {
+      var R = shared.liveOrig[i], b = shared.liveC[i];
+      return !(R && R.at && R.at.every(function(v, j) {
+        return v === b[j];
+      }));
+    }).map(function(i) {
+      return [i, S.holder(nodes2[i].id, toPic(shared.liveC[i]))];
+    }).filter(function(q) {
+      return q[1] != null;
+    });
+    if (!todo.length) return;
+    var doc2 = new DOMParser().parseFromString('<svg xmlns="http://www.w3.org/2000/svg">' + todo.map(function(q) {
+      return "<g>" + q[1] + "</g>";
+    }).join("") + "</svg>", "image/svg+xml").documentElement;
+    var parts = Array.prototype.filter.call(doc2.childNodes, function(c) {
+      return c.nodeType === 1;
+    });
+    todo.forEach(function(q, k) {
+      var i = q[0], g = gN[nodes2[i].id];
+      if (!shared.liveOrig[i]) {
+        var kids = Array.prototype.slice.call(g.childNodes);
+        shared.liveOrig[i] = { back: function() {
+          g.replaceChildren.apply(g, kids);
+        } };
+      }
+      shared.liveOrig[i].at = shared.liveC[i].slice();
+      g.replaceChildren.apply(g, Array.prototype.map.call(parts[k].childNodes, function(c) {
+        return document.importNode(c, true);
+      }));
+    });
+  }
+  function cdSizeLive(i, nb, R) {
+    var S = cdSession(), g = gN && gN[nodes2[i].id];
+    if (!S || !S.holder || !g) return R;
+    if (!R) {
+      var kids = Array.prototype.slice.call(g.childNodes);
+      return { i, back: function() {
+        g.replaceChildren.apply(g, kids);
+      } };
+    }
+    if (!nb || R.at && R.at.every(function(v, j) {
+      return v === nb[j];
+    })) return R;
+    var svg = S.holder(nodes2[i].id, toPic(nb));
+    if (svg == null) return R;
+    var doc2 = new DOMParser().parseFromString('<svg xmlns="http://www.w3.org/2000/svg"><g>' + svg + "</g></svg>", "image/svg+xml").documentElement.firstElementChild;
+    g.replaceChildren.apply(g, Array.prototype.map.call(doc2.childNodes, function(c) {
+      return document.importNode(c, true);
+    }));
+    R.at = nb.slice();
+    return R;
+  }
+  var liveCd;
+  var RXE;
+  function __run52() {
+    liveCd = { glyphs: glyphFollow, lines: cdLines, holders: cdHolders, size: cdSizeLive };
+    RXE = /^(.*)\|(a|b|[rpmi]\d+)$/;
+  }
+  function cdLines(ks, pp) {
+    if (!shared.cd || !gE) return false;
+    var rids = /* @__PURE__ */ new Set();
+    ks.forEach(function(k) {
+      var m = edges2[k].id.match(RXE);
+      if (m) rids.add(m[1]);
+    });
+    if (!rids.size) return false;
+    var S = cdSession();
+    if (!S) return false;
+    var bends = /* @__PURE__ */ new Map(), paths = /* @__PURE__ */ new Map(), boxes = /* @__PURE__ */ new Map(), byE = {};
+    edges2.forEach(function(e, k) {
+      byE[e.id] = k;
+      var m = e.id.match(RXE);
+      if (!m || !rids.has(m[1])) return;
+      bends.set(e.id, e.pts.map(function(pi) {
+        return toPic(pt(pi));
+      }));
+      if (!e.path) return;
+      var q = ["sx", "sy", "tx", "ty"].map(function(a) {
+        return parseFloat(e.path.getAttribute(a)) || 0;
+      });
+      var no2 = e.path.getAttribute("spot");
+      if (no2) q.push(parseInt(no2, 10));
+      if (pp && pp.to && pp.k === k) {
+        var j = pp.end ? 2 : 0;
+        q[j] = pp.to[0];
+        q[j + 1] = pp.to[1];
+        no2 = spotNo(pp, pp.to);
+        if (no2) q[4] = no2;
+      }
+      paths.set(e.id, q);
+    });
+    edges2.forEach(function(e) {
+      var m = e.id.match(RXE);
+      if (!m || !rids.has(m[1])) return;
+      [e.s, e.t].forEach(function(i) {
+        if (i != null && !/\|proc$/.test(nodes2[i].id)) boxes.set(nodes2[i].id, toPic(bx(i)));
+      });
+    });
+    var ends = null;
+    if (pp && pp.to && pp.n2 != null && rids.has((edges2[pp.k].id.match(RXE) || [])[1])) {
+      var ep = edges2[pp.k];
+      ends = /* @__PURE__ */ new Map([[ep.id, [nodes2[pp.end ? ep.s : pp.n2].id, nodes2[pp.end ? pp.n2 : ep.t].id]]]);
+      boxes.set(nodes2[pp.n2].id, toPic(bx(pp.n2)));
+    }
+    var list2 = Array.from(rids), out = S.frame(boxes, bends, paths, list2, ends);
+    if (list2.some(function(r) {
+      return !out[r];
+    })) return false;
+    dropCopies();
+    list2.forEach(function(rid) {
+      var f = out[rid], ids = Object.keys(gE).filter(function(id) {
+        return id.indexOf(rid + "|") === 0;
+      });
+      if (!ids.length) return;
+      var ref = gE[ids[0]], hRef = ref[0], lRef = ref[ref.length - 1], pg = gN[rid + "|proc"];
+      ids.forEach(function(id) {
+        gE[id].forEach(function(g) {
+          g.style.display = "none";
+        });
+      });
+      if (pg) pg.style.display = "none";
+      var doc2 = new DOMParser().parseFromString('<svg xmlns="http://www.w3.org/2000/svg"><g>' + f.halo + "</g><g>" + f.lines + "</g></svg>", "image/svg+xml").documentElement;
+      var parts = Array.prototype.filter.call(doc2.childNodes, function(c) {
+        return c.nodeType === 1;
+      });
+      [[parts[0], hRef, 0], [parts[1], lRef, 1]].forEach(function(q) {
+        Array.prototype.filter.call(q[0].childNodes, function(c) {
+          return c.nodeType === 1;
+        }).forEach(function(c) {
+          var el = document.importNode(c, true), id = el.getAttribute("data-e"), pn = el.getAttribute("data-n");
+          var orig = id && gE[id] ? gE[id][q[2] ? gE[id].length - 1 : 0] : pn ? gN[pn] : null;
+          el.removeAttribute("data-e");
+          el.removeAttribute("data-n");
+          el.classList.add("m2-ed-copy");
+          q[1].parentNode.insertBefore(el, q[1]);
+          shared.copies.push([el, orig, id && byE[id] != null ? byE[id] : null]);
+        });
+      });
+      var gi = nodes2.findIndex(function(n) {
+        return n.id === rid + "|proc";
+      }), r0 = S.rest(rid);
+      if (gi >= 0 && r0 && f.sq) {
+        shared.liveG = shared.liveG || {};
+        shared.liveG[gi] = [f.sq[0] - r0[0][0], f.sq[1] - r0[0][1], f.ang - r0[1], r0[2] ? f.len / r0[2] : 1, [r0[0][0] + picOff()[0], r0[0][1] + picOff()[1], r0[1], r0[2]]];
+      }
+    });
+    return true;
+  }
+  function beyond(k, i, all) {
+    var e = edges2[k], last = all.length - 1;
+    if (i > 0 && i < last) return [all[i], e.pts[i - 1]];
+    var q = shared.procs.find(function(r) {
+      return i === last && r.a === k || i === 0 && r.b === k;
+    });
+    if (!q) return [all[i], null];
+    if (i === last) {
+      var eb = edges2[q.b];
+      if (eb.t == null) return [all[i], null];
+      return eb.pts.length ? [pt(eb.pts[0]), eb.pts[0]] : [ports(q.b)[eb.pts.length + 1], null];
+    }
+    var ea = edges2[q.a];
+    if (ea.s == null) return [all[i], null];
+    return ea.pts.length ? [pt(ea.pts[ea.pts.length - 1]), ea.pts[ea.pts.length - 1]] : [ports(q.a)[0], null];
+  }
+  function glyphArcs(bp) {
+    var out = [];
+    shared.procs.forEach(function(q) {
+      var ea = edges2[q.a], eb = edges2[q.b];
+      if (ea.s == null || eb.t == null || ea.pts.indexOf(bp) < 0 && eb.pts.indexOf(bp) < 0) return;
+      edges2.forEach(function(e, k) {
+        if (k !== q.a && k !== q.b && e.s != null && e.t != null && (e.s === q.g || e.t === q.g)) out.push({ q, k });
+      });
+    });
+    return out;
+  }
+  function joinAt(o, bp, B) {
+    var q = o.q, e = edges2[o.k], st = e.s === q.g, P2 = function(pi) {
+      return pi === bp ? B : pt(pi);
+    };
+    var at2 = function(a) {
+      return e.path ? parseFloat(e.path.getAttribute(a)) || 0 : 0;
+    };
+    var r = glyphMid(q, boxOf, restPt), m = glyphMid(q, bx, P2), off = st ? [at2("sx"), at2("sy")] : [at2("tx"), at2("ty")];
+    var f = /\|[rp]\d+$/.test(e.id) && r[3] ? m[3] / r[3] : 1, t = m[2] - r[2], c = Math.cos(t), s2 = Math.sin(t), G2 = boxOf(q.g);
+    var J = [G2[0] + G2[2] / 2 + m[0] - r[0] + f * (c * off[0] - s2 * off[1]), G2[1] + G2[3] / 2 + m[1] - r[1] + f * (s2 * off[0] + c * off[1])];
+    var N;
+    if (st) {
+      if (e.pts.length) N = pt(e.pts[0]);
+      else {
+        var T = bx(e.t);
+        N = [T[0] + T[2] / 2 + at2("tx"), T[1] + T[3] / 2 + at2("ty")];
+      }
+    } else {
+      if (e.pts.length) N = pt(e.pts[e.pts.length - 1]);
+      else {
+        var S = bx(e.s);
+        N = [S[0] + S[2] / 2 + at2("sx"), S[1] + S[3] / 2 + at2("sy")];
+      }
+    }
+    return [J, N];
+  }
+  function joinSolve(o, bp, B, ax, cm) {
+    var c = 0;
+    for (var it = 0; it < 4; it++) {
+      var P0 = B.slice(), P1 = B.slice();
+      P0[ax] += c;
+      P1[ax] += c + 1;
+      var a = joinAt(o, bp, P0), b = joinAt(o, bp, P1), res = a[0][cm] - a[1][cm], dv = b[0][cm] - b[1][cm] - res;
+      if (Math.abs(dv) < 0.05) return null;
+      c -= res / dv;
+      if (Math.abs(res) < 1e-4) break;
+    }
+    return c;
+  }
+  function joinGuides(bp, B) {
+    var out = [];
+    glyphArcs(bp).forEach(function(o) {
+      var J = joinAt(o, bp, B);
+      if (Math.abs(J[0][0] - J[1][0]) < 0.05 || Math.abs(J[0][1] - J[1][1]) < 0.05) out.push(J);
+    });
+    return out;
+  }
+  function plainCanvas() {
+    var el = V.img;
+    if (!el || el.tagName !== "IMG" || !el.src) return;
+    fetch(el.src).then(function(r) {
+      return r.text();
+    }).then(function(t) {
+      var u = t.replace(/<rect width="100%" height="100%" fill="#fff"\/>\n?/, "");
+      if (u === t || !on || V.img !== el) return;
+      var url = URL.createObjectURL(new Blob([u], { type: "image/svg+xml" })), i = new Image();
+      i.onload = function() {
+        if (!on || V.img !== el) {
+          URL.revokeObjectURL(url);
+          return;
+        }
+        var old = el.src;
+        el.src = url;
+        if (old.indexOf("blob:") === 0) setTimeout(function() {
+          URL.revokeObjectURL(old);
+        }, 1e3);
+      };
+      i.src = url;
+    }).catch(function() {
+    });
+  }
+  function cdMap(m) {
+    var d = m && m.downloads && m.downloads[0];
+    return !!(d && d.label === "CellDesigner");
+  }
+  var warm;
+  function __run62() {
+    warm = null;
+  }
+  function warmUp() {
+    clearTimeout(warm);
+    warm = setTimeout(function() {
+      var eb = document.querySelector('#m2-rail .m2-ri[data-win="edit"]');
+      if (cdp || !eb || !eb.offsetParent || !cdMap(V.current)) return;
+      (window.requestIdleCallback || function(f) {
+        setTimeout(f, 0);
+      })(function() {
+        if (cdp || !cdMap(V.current)) return;
+        var s0 = status.textContent, w0 = status.classList.contains("m2-ed-warn");
+        var back2 = function() {
+          if (!on) {
+            status.textContent = s0;
+            status.classList.toggle("m2-ed-warn", w0);
+          }
+        };
+        cdpy().then(back2, function() {
+        });
+        back2();
+      });
+    }, 2500);
+  }
+  function __run72() {
+    warmUp();
+  }
+  function __start2() {
+    __run110();
+    __run34();
+    __run4();
+    __run52();
+    __run62();
+    __run72();
+  }
+  function cdFormat() {
+    return { name: "cd", now: function() {
+      return shared.cd.now;
+    }, ownFrame: true, live: function() {
+      return liveCd;
+    } };
   }
 
   // editor/src/graphml.js
   var yrp;
-  function __run12() {
+  function __run111() {
     yrp = null;
   }
   function yr() {
@@ -1448,7 +4082,7 @@
     return [A ? afUnits(r.svg, A.units) : r.svg, r.errors];
   }
   var AF_KINDS;
-  function __run22() {
+  function __run26() {
     AF_KINDS = /^(Macromolecule|SimpleChemical|NucleicAcidFeature|UnspecifiedEntity|Complex)$/;
   }
   function afGraphml(d) {
@@ -1582,7 +4216,7 @@
   }
   var yLive;
   var liveY;
-  function __run32() {
+  function __run35() {
     yLive = null;
     liveY = { glyphs: function() {
     }, lines: yLines, holders: null };
@@ -1710,14 +4344,262 @@
     setText(import_graphml_edit.default.shift(shared.text, sh[0], sh[1]));
     return sh;
   }
-  function __start2() {
-    __run12();
-    __run22();
-    __run32();
+  function __start3() {
+    __run111();
+    __run26();
+    __run35();
+  }
+  function graphmlFormat() {
+    return { name: "graphml", now: function() {
+      return shared.text;
+    }, ownFrame: false, live: function() {
+      return liveY;
+    } };
   }
 
-  // editor/src/cdcreate.js
-  var import_notation2 = __toESM(require_notation());
+  // editor/src/sbgn.js
+  var sbp;
+  var sbJs;
+  var EMPTY_BASE;
+  var baseURL;
+  function __run112() {
+    sbp = null, sbJs = null;
+    EMPTY_BASE = `<?xml version='1.0' encoding='UTF-8'?>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:y="http://www.yworks.com/xml/graphml">
+  <key for="node" id="ng" yfiles.type="nodegraphics"/>
+  <key for="graphml" id="res" yfiles.type="resources"/>
+  <key for="edge" id="eg" yfiles.type="edgegraphics"/>
+  <graph edgedefault="directed" id="G"/>
+  <data key="res">
+    <y:Resources/>
+  </data>
+</graphml>
+`;
+    baseURL = null;
+  }
+  function emptyBase() {
+    return baseURL || (baseURL = URL.createObjectURL(new Blob([EMPTY_BASE], { type: "application/xml" })));
+  }
+  var NEW_ID;
+  function __run210() {
+    NEW_ID = "viewer-new-map";
+  }
+  function madeHere(t) {
+    return new RegExp('<map\\s[^>]*id="' + NEW_ID + '"').test(t.slice(0, 3e3));
+  }
+  function isSb(t) {
+    return /<([\w.-]+:)?sbgn[\s>]/.test(t.slice(0, 3e3));
+  }
+  function isSbml(t) {
+    t = t || "";
+    return /<sbml[\s>]/.test(t.slice(0, 3e3)) && t.indexOf("listOfLayouts") >= 0 && t.slice(0, 2e5).indexOf("celldesigner") < 0;
+  }
+  function viaGraphml(t) {
+    return isSb(t) || isSbml(t);
+  }
+  function edOf(t) {
+    return isSbml(t) && window.sbml_edit ? window.sbml_edit : sbJs;
+  }
+  function sbMap(m) {
+    return !!(m && !m.shownAs && (m.site || m).editBase);
+  }
+  function sbScript(name2) {
+    return new Promise(function(res, rej) {
+      if (window[name2]) return res();
+      var s = document.createElement("script");
+      s.src = V.renderers + "converter/" + name2 + ".js" + V.build;
+      s.onload = res;
+      s.onerror = function() {
+        rej(name2 + " not found");
+      };
+      document.head.appendChild(s);
+    });
+  }
+  function sbpy() {
+    if (sbp) return sbp;
+    sbp = sbScript("sbgn_edit").then(function() {
+      return sbScript("sbml_edit").catch(function() {
+      });
+    }).then(yr).then(function() {
+      sbJs = window.sbgn_edit;
+      return sbJs;
+    });
+    sbp.catch(function(e) {
+      sbp = null;
+      warn("The SBGN-ML side did not load: " + e);
+    });
+    return sbp;
+  }
+  function sbBase(m, low) {
+    var e = m.site || m;
+    if (e.ownText) return sbpy().then(function() {
+      return sbReader(e.ownText());
+    }).then(function() {
+      return sbOwn(e.ownText());
+    });
+    return fetch(e.editBase + V.ver(e), { priority: low ? "low" : "auto" }).then(function(r) {
+      if (!r.ok) throw r.status;
+      return r.text();
+    });
+  }
+  var ownMemo;
+  var readerP;
+  function sbReader(t) {
+    if (madeHere(t) || window.sbgnml_read) return Promise.resolve();
+    readerP = readerP || sbScript("sbgnml_read");
+    readerP.catch(function() {
+      readerP = null;
+    });
+    return readerP;
+  }
+  function sbOwn(t) {
+    if (madeHere(t)) return EMPTY_BASE;
+    if (!window.sbgnml_read) throw new Error("the SBGN-ML reader did not load");
+    if (!ownMemo || ownMemo[0] !== t) {
+      var r = window.sbgnml_read.graphml(t);
+      if (r.text.indexOf("<node ") < 0 && r.messages.some(function(x) {
+        return x[0] === "left out";
+      })) {
+        if (/<([\w.-]+:)?map\s[^>]*language\s*=\s*["']entity relationship/.test(t.slice(0, 5e3))) throw new Error("an Entity Relationship map, which this editor does not read yet");
+        var gone = r.messages.filter(function(x) {
+          return x[0] === "left out";
+        }).map(function(x) {
+          return x[1].replace(/: (\d+) left out \(.*$/, " ($1)");
+        });
+        throw new Error("nothing in it can be drawn" + (gone.length ? " (left out: " + gone.join(", ") + ")" : ""));
+      }
+      ownMemo = [t, r.text];
+    }
+    return ownMemo[1];
+  }
+  var sbMemo;
+  function __run36() {
+    sbMemo = [];
+    ownMemo = null;
+    outMemo = null;
+  }
+  function sbGraphml(t, base) {
+    for (var i = 0; i < sbMemo.length; i++) if (sbMemo[i][0] === t && sbMemo[i][1] === base) return sbMemo[i][2];
+    var ed = edOf(t), g = ed.graphml(ed.unique ? ed.unique(t, base) : t, base);
+    sbRemember(t, g, base);
+    return g;
+  }
+  function sbRemember(t, g, base) {
+    sbMemo.unshift([t, base, g]);
+    sbMemo.length = Math.min(sbMemo.length, 3);
+  }
+  function sbNow() {
+    if (!shared.sbLast || shared.sbLast[0] !== shared.text || shared.sbLast[2] !== shared.sb) {
+      try {
+        shared.sbLast = [shared.text, edOf(shared.sb.base).write(shared.sb.base, shared.text), shared.sb];
+      } catch (e) {
+        warn("The moves could not be written into the SBGN-ML file: " + (e && e.message || e) + ". The last version written is kept.");
+        return sbOut(shared.sbLast && shared.sbLast[2] === shared.sb ? shared.sbLast[1] : shared.sb.base);
+      }
+    }
+    return sbOut(shared.sbLast[1]);
+  }
+  var outMemo;
+  function sbOut(w) {
+    if (V.sites || !sbJs || !sbJs.sitesOut || !isSb(w)) return w;
+    if (!outMemo || outMemo[0] !== w) {
+      var o = w;
+      try {
+        o = sbJs.sitesOut(w);
+      } catch (e) {
+      }
+      outMemo = [w, o];
+    }
+    return outMemo[1];
+  }
+  function sbIn(t) {
+    try {
+      return sbJs && sbJs.sitesIn && isSb(t) ? sbJs.sitesIn(t) : t;
+    } catch (e) {
+      return t;
+    }
+  }
+  var sbPlaced;
+  function __run53() {
+    sbPlaced = null;
+  }
+  function sbPlace() {
+    if (!sbJs.countsPlace || shared.text === sbPlaced || shared.text.indexOf("<y:EdgeLabel") < 0) return false;
+    var t2 = sbJs.countsPlace(shared.text), was = shared.text !== t2;
+    setText(sbPlaced = t2);
+    return was;
+  }
+  var sbK;
+  var GEO;
+  function __run63() {
+    sbK = { sb: null };
+    GEO = /\s(?:x|y|width|height|sx|sy|tx|ty|ratio|modelPosition|nodeRatioX|nodeRatioY|labelRatioX|labelRatioY|offsetX|offsetY|borderDistance)="[^"]*"/g;
+  }
+  function sbRead() {
+    var s = src();
+    sbK.text = shared.text;
+    sbK.key = shared.text.replace(GEO, "");
+    sbK.bad = !(shared.sbLast && shared.sbLast[0] === shared.text && shared.sbLast[2] === shared.sb);
+    if (!sbK.bad) {
+      sbK.kind = edOf(s).mapKind(s);
+      sbK.af = edOf(s).isAf(s);
+    }
+  }
+  function sbKind(how) {
+    if (!shared.sb || !sbJs) return "empty";
+    if (how) sbPlace();
+    if (sbK.sb !== shared.sb) sbK = { sb: shared.sb, text: null, key: null, kind: "empty", af: false, g: null, bad: false };
+    if (sbK.text !== shared.text) {
+      if (sbK.bad || sbK.key !== shared.text.replace(GEO, "")) sbRead();
+      else sbK.text = shared.text;
+    }
+    if (sbK.bad) return sbK.kind;
+    if (sbK.g == null || how === "back") sbK.g = sbK.af;
+    else if (how === "follow" && sbK.g !== sbK.af) {
+      var g, key = shared.text.replace(GEO, "");
+      if (sbK.failed === key) return sbK.kind;
+      try {
+        g = edOf(src()).graphml(src(), shared.text);
+      } catch (e) {
+        sbK.failed = key;
+        warn("The map could not be read again after it turned " + (sbK.af ? "Activity Flow" : "Process Description") + ": " + (e && e.message || e) + ".");
+        return sbK.kind;
+      }
+      setText(g);
+      sbRead();
+      if (!sbK.bad) sbK.g = sbK.af;
+    }
+    return sbK.kind;
+  }
+  function sbFollow() {
+    if (!shared.sb || !sbJs || drag || sbK.sb !== shared.sb) return;
+    if (sbPlace()) {
+      parse();
+      shared.dirty = true;
+      render();
+      paint();
+    }
+    sbKind();
+    if (sbK.bad || sbK.g == null || sbK.g === sbK.af || sbK.failed === shared.text.replace(GEO, "")) return;
+    parse();
+    shared.selP = [];
+    shared.selE = [];
+    shared.dirty = true;
+    render();
+    paint();
+  }
+  function __start4() {
+    __run112();
+    __run210();
+    __run36();
+    __run53();
+    __run63();
+  }
+  function sbFormat() {
+    return { name: "sb", now: sbNow, ownFrame: false, live: function() {
+      return liveY;
+    } };
+  }
 
   // editor/src/own.js
   function draftPut(id, rec) {
@@ -1739,7 +4621,7 @@
     });
   }
   var dirP;
-  function __run13() {
+  function __run113() {
     dirP = null;
   }
   function folder() {
@@ -1794,7 +4676,7 @@
   var MINE_KEY;
   var mine;
   var mineURLs;
-  function __run23() {
+  function __run211() {
     MINE_KEY = "atlas-mine", mine = {}, mineURLs = {};
   }
   function mineFlag() {
@@ -1805,7 +4687,7 @@
     }
   }
   var mineIn;
-  function __run33() {
+  function __run37() {
     mineIn = function() {
       var has;
       try {
@@ -1853,7 +4735,7 @@
     });
   }
   var GROUPS_KEY;
-  function __run4() {
+  function __run42() {
     GROUPS_KEY = "atlas-mine-groups";
   }
   function mineGroups() {
@@ -1874,7 +4756,7 @@
     }
   }
   var groupsHere;
-  function __run52() {
+  function __run54() {
     groupsHere = [];
   }
   function mineGroupsHere() {
@@ -1902,7 +4784,7 @@
     return v === was || !groupTaken(v, was);
   }
   var naming;
-  function __run62() {
+  function __run64() {
     naming = null;
   }
   function inPlace(at2, o) {
@@ -2140,7 +5022,7 @@
     V.refreshMine();
   }
   var pressed;
-  function __run7() {
+  function __run73() {
     pressed = false;
     document.addEventListener("pointerdown", function() {
       pressed = true;
@@ -2171,7 +5053,7 @@
     V.refreshMine();
   }
   var addTo;
-  function __run8() {
+  function __run82() {
     addTo = "";
   }
   function listItems(e) {
@@ -2303,7 +5185,7 @@
     }, Promise.resolve());
   }
   var pageWas;
-  function __run9() {
+  function __run92() {
     pageWas = {};
   }
   function toSiteGroup(id, g, k, top) {
@@ -2582,7 +5464,7 @@
     });
     return i >= 0 && ms[i + 1] && (ms[i + 1].group || "") === (ms[i].group || "") ? ms[i + 1].id : null;
   }
-  function __run10() {
+  function __run102() {
     try {
       localStorage.removeItem("atlas-examples");
     } catch (e) {
@@ -3042,7 +5924,7 @@
   var renamed;
   var NAMED_KEY;
   var nk;
-  function __run14() {
+  function __run142() {
     renamed = {};
     NAMED_KEY = "atlas-named:" + location.pathname;
     try {
@@ -3160,7 +6042,7 @@
   }
   var adding;
   var ADD_AFTER;
-  function __run15() {
+  function __run152() {
     adding = [], ADD_AFTER = 300;
   }
   function addPaint() {
@@ -3322,7 +6204,7 @@
     }
   }
   var picker;
-  function __run16() {
+  function __run162() {
     picker = document.createElement("input");
     picker.type = "file";
     picker.multiple = true;
@@ -3364,7 +6246,7 @@
     return r;
   }
   var BULK;
-  function __run17() {
+  function __run172() {
     BULK = 2e7;
   }
   function toSiteMany(items) {
@@ -3456,7 +6338,7 @@
     });
   }
   var upping;
-  function __run18() {
+  function __run182() {
     upping = {};
   }
   function oneAtATime(f) {
@@ -3529,7 +6411,7 @@
     });
   }
   var upRun;
-  function __run19() {
+  function __run192() {
     upRun = null;
   }
   function upAll() {
@@ -3597,7 +6479,7 @@
     });
   }
   var BIN_KEY;
-  function __run20() {
+  function __run202() {
     BIN_KEY = "atlas-bin-pending";
   }
   function binPending() {
@@ -3649,7 +6531,7 @@
     });
   }
   var siteQ;
-  function __run21() {
+  function __run212() {
     siteQ = Promise.resolve();
   }
   function siteFront(id, edit, message) {
@@ -3841,7 +6723,7 @@
     return p;
   }
   var GONE_KEY;
-  function __run24() {
+  function __run242() {
     GONE_KEY = "atlas-groups-gone";
   }
   function goneRead() {
@@ -3933,7 +6815,7 @@
     return fwd;
   }
   var DEL_KEY;
-  function __run25() {
+  function __run252() {
     DEL_KEY = /mac|iphone|ipad|ipod/i.test(navigator.userAgentData && navigator.userAgentData.platform || navigator.platform || navigator.userAgent) ? "\u2318\u232B" : "Ctrl+Del";
     document.addEventListener("keydown", function(e) {
       if (e.key !== "Delete" && e.key !== "Backspace" || e.defaultPrevented || e.altKey || e.shiftKey || !(e.ctrlKey || e.metaKey)) return;
@@ -4198,7 +7080,7 @@
     });
   }
   var BIN_DIR;
-  function __run26() {
+  function __run262() {
     BIN_DIR = "Deleted";
   }
   function folderMove(id, toBin) {
@@ -4278,7 +7160,7 @@
     });
   }
   var hiddenGone;
-  function __run27() {
+  function __run272() {
     hiddenGone = {};
   }
   function erase(ms) {
@@ -4359,7 +7241,7 @@
   var listPast;
   var listLast;
   var listStepping;
-  function __run28() {
+  function __run282() {
     listPast = [], listLast = false, listStepping = Promise.resolve();
   }
   function listDid(undo2, redo, e) {
@@ -4570,7 +7452,7 @@
     });
   }
   var own;
-  function __run29() {
+  function __run292() {
     window.addEventListener("pointerdown", function(e) {
       var t = e.target.closest ? e.target : e.target.parentElement;
       if (t && t.closest(".m2-cx, #m2-ed-undo, #m2-ed-redo")) return;
@@ -4636,42 +7518,42 @@
     };
     mineIn.then(upAll).then(binMigrate);
   }
-  function __start3() {
-    __run13();
-    __run23();
-    __run33();
-    __run4();
-    __run52();
-    __run62();
-    __run7();
-    __run8();
-    __run9();
-    __run10();
+  function __start5() {
+    __run113();
+    __run211();
+    __run37();
+    __run42();
+    __run54();
+    __run64();
+    __run73();
+    __run82();
+    __run92();
+    __run102();
     __run11();
     __run122();
     __run132();
-    __run14();
-    __run15();
-    __run16();
-    __run17();
-    __run18();
-    __run19();
-    __run20();
-    __run21();
+    __run142();
+    __run152();
+    __run162();
+    __run172();
+    __run182();
+    __run192();
+    __run202();
+    __run212();
     __run222();
     __run232();
-    __run24();
-    __run25();
-    __run26();
-    __run27();
-    __run28();
-    __run29();
+    __run242();
+    __run252();
+    __run262();
+    __run272();
+    __run282();
+    __run292();
   }
 
   // editor/src/create.js
-  var import_notation = __toESM(require_notation());
+  var import_notation2 = __toESM(require_notation());
   var PRESET;
-  function __run110() {
+  function __run114() {
     PRESET = { "nucleic acid feature ct:gene": ["nucleic acid feature", ["ct:gene"]], "nucleic acid feature ct:mRNA": ["nucleic acid feature", ["ct:mRNA"]] };
   }
   function baseKind(k) {
@@ -4698,7 +7580,7 @@
   var ACT_REST_CD;
   var PERT;
   var LOGIC;
-  function __run210() {
+  function __run213() {
     PAL_PD = [
       // groups named as SBGN's PD reference card, ordered
       // nodes first, the gates, the arcs last; the gates and the arcs each start a block of the one list (palSigns);
@@ -4836,7 +7718,7 @@
   var PALS;
   var ARCS;
   var MODK;
-  function __run34() {
+  function __run38() {
     PALS = { pd: PAL_PD, rn: palAf(false), sbgn: palAf(true), rnP: palAf(false, true), sbgnP: palAf(true, true) };
     ARCS = {}, MODK = {};
     PAL_PD[4][1].forEach(function(q) {
@@ -4852,7 +7734,7 @@
   var pal;
   var PAL_KEY;
   var palSet;
-  function __run42() {
+  function __run43() {
     tool = null;
     pal = document.createElement("div");
     pal.className = "m2-ed-palette";
@@ -4931,7 +7813,7 @@
     return '<button type="button" role="radio" data-look="' + look + '" title="' + title + '" aria-label="' + title + '" aria-checked="false"><span class="m2-ed-radio" aria-hidden="true"></span>' + name2 + "</button>";
   }
   var INFO;
-  function __run53() {
+  function __run55() {
     INFO = {
       strict: "Corresponds to CellDesigner's Reduced Notation. Stimulation, inhibition, necessary stimulation and modulation may also link entities, phenotypes and submaps. Such maps open in CellDesigner and MINERVA, but other SBGN-ML tools may not read them. Unticked, the SBGN Process Description rules alone. Off while Strict SBGN is ticked.",
       sbgn: "Keeps what is drawn from now on to the SBGN Process Description specification alone: no reduced notation, one catalysis and one necessary stimulation per process, one line at an empty set, no line from a phenotype. Unticked, the default, the specification and what CellDesigner also allows, such as a phenotype as a reaction's reactant or modifier. What the map already holds is not changed.",
@@ -4947,7 +7829,7 @@
     return '<div class="m2-ed-pline">' + line2 + '<button type="button" class="m2-ed-pinfo m2-ed-ptip m2-itip" aria-label="About ' + name2 + '" title="About ' + name2 + '" data-info="' + t + '" aria-expanded="false"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" aria-hidden="true"><circle cx="8" cy="8" r="7.2" stroke-width="1.1"/><path d="M8 7.3v4.2" stroke-width="1.8" stroke-linecap="round"/><circle cx="8" cy="4.6" r="1.2" fill="currentColor" stroke="none"/></svg></button></div>';
   }
   var palSignsEl;
-  function __run63() {
+  function __run65() {
     pal.innerHTML = '<div class="m2-ed-prow m2-ed-pnot" role="group" aria-label="Notation">' + palBtn('data-lang="pd"', "Process Description", '<text x="12" y="17.3" text-anchor="middle" font-size="15">PD</text>') + palBtn('data-lang="af"', "Activity Flow", '<text x="12" y="17.3" text-anchor="middle" font-size="15">AF</text>') + '</div><div class="m2-ed-plook" role="radiogroup" aria-label="Activity Flow view">' + palTip(palView("rn", "Reduced notation view", "Reduced notation view: each activity drawn as its entity"), "Reduced notation view", INFO.rn) + palTip(palView("sbgn", "SBGN AF view", "SBGN Activity Flow view: each entity drawn as its SBGN activity"), "SBGN Activity Flow view", INFO.sbgn) + '</div><div class="m2-ed-pblk m2-ed-pprot">' + palTip('<label class="m2-ed-phyb" title="Ticked: every protein activity carries the auxiliary unit of a macromolecule, drawn and saved in the file; unticked: none has it"><input type="checkbox"><span>Protein auxiliary unit</span></label>', "Protein auxiliary unit", INFO.prot) + '</div><div class="m2-ed-pblk m2-ed-pcdc">' + palTip('<label class="m2-ed-phyb" title="Ticked: the palette offers only what CellDesigner and MINERVA can hold; unticked: tags and submaps\u2019 terminals too"><input type="checkbox"><span>CellDesigner compatible</span></label>', "CellDesigner compatible", INFO.cdc) + '</div><div class="m2-ed-pblk m2-ed-psbgn">' + palTip('<label class="m2-ed-phyb" title="Ticked: what is drawn keeps to the SBGN PD specification alone; unticked: CellDesigner\u2019s additions too"><input type="checkbox"><span>Strict SBGN</span></label>', "Strict SBGN", INFO.sbgn) + '</div><div class="m2-ed-pblk m2-ed-pstrict">' + palTip('<label class="m2-ed-phyb" title="Ticked (the default): under PD a modulation may also end on an entity, and a logic gate\u2019s output go to one (CellDesigner\u2019s reduced notation); with a process on the map the file stays Process Description, without one such a link makes it Activity Flow. Unticked: Process Description only"><input type="checkbox"><span>Reduced notation</span></label>', "Reduced notation", INFO.strict) + '</div><div class="m2-ed-pblk m2-ed-psites">' + palTip('<label class="m2-ed-phyb" title="Ticked: every state variable shows its site and the map is saved so; unticked: the value alone, the sites kept in the notes"><input type="checkbox"><span>Show sites</span></label>', "Show sites", INFO.sites) + '</div><div class="m2-ed-psigns"></div>';
     palSignsEl = pal.querySelector(".m2-ed-psigns");
   }
@@ -4964,7 +7846,7 @@
     }, 0) > Math.ceil(all / c);
     row.classList.toggle("m2-ed-pflat", flat);
   }
-  function __run72() {
+  function __run74() {
     if (window.ResizeObserver) new ResizeObserver(palBlocks).observe(palSignsEl);
   }
   function palKey() {
@@ -4972,7 +7854,7 @@
   }
   var EXTENDED;
   var CDC_KEY;
-  function __run82() {
+  function __run83() {
     EXTENDED = { tag: 1, delay: 1 };
     CDC_KEY = "atlas-cd-compatible";
   }
@@ -4992,7 +7874,7 @@
   }
   var protOn;
   var protMemo;
-  function __run92() {
+  function __run93() {
     protOn = false, protMemo = [null, null];
   }
   function protFile() {
@@ -5012,7 +7894,7 @@
   }
   var pmap;
   var ddOpen;
-  function __run102() {
+  function __run103() {
     pmap = document.createElement("div");
     pmap.className = "m2-ed-pmap";
     pmap.hidden = true;
@@ -5027,7 +7909,7 @@
     ddOpen = null;
     if (back2) f.focus();
   }
-  function __run112() {
+  function __run115() {
     document.addEventListener("pointerdown", function(e) {
       if (ddOpen && !ddOpen.contains(e.target) && !ddOpen._r.contains(e.target)) ddClose();
     }, true);
@@ -5178,7 +8060,7 @@
     }
   }
   var pickSeq;
-  function __run142() {
+  function __run143() {
     pickSeq = 0;
   }
   function colsPick(v, cur, take2, back2, recolour) {
@@ -5246,7 +8128,7 @@
     return choiceMemo.v;
   }
   var STYLES;
-  function __run152() {
+  function __run153() {
     STYLES = [["file", "From map", "New nodes the size most nodes of their kind have on this map"], ["default", "Standard sizes", "New nodes at the standard sizes: CellDesigner\u2019s own on a CellDesigner map, the editor\u2019s on others"], ["custom", "Custom default", "New nodes the size kept by Set as default; From map for a kind with none"]];
   }
   function palStyle() {
@@ -5311,7 +8193,7 @@
     return best;
   }
   var CONF;
-  function __run162() {
+  function __run163() {
     CONF = null;
   }
   function confettiOne(hex2) {
@@ -5328,14 +8210,14 @@
     }).join("") + "</span>";
   }
   var SB_COLS;
-  function __run172() {
+  function __run173() {
     SB_COLS = [["file", "Original", "The map\u2019s own colours, as they were before another choice; new glyphs in the colour most glyphs of their kind have on it"], ["default", "Mist and sage", "The whole map and new glyphs in the viewer\u2019s starting colours: a pale blue for proteins, a pale green for small molecules"], ["none", "No colours", "The whole map and new glyphs unfilled"], ["custom", "Custom default", "The whole map and new glyphs in the colours kept by Set as default; a kind with none as it is"], ["confetti", "Confetti", "Every glyph of the map, and every new one, a pastel of its own"]];
   }
   function sbCols() {
     return mapCols(["file", "none", "default", "confetti", "custom"], sbIs);
   }
   var SB_SQ;
-  function __run182() {
+  function __run183() {
     SB_SQ = ["macromolecule", "simple chemical", "nucleic acid feature", "phenotype", "compartment"];
   }
   function sbSquares(mode) {
@@ -5375,7 +8257,7 @@
   }
   var SB_FILLED;
   var sbActMemo;
-  function __run192() {
+  function __run193() {
     SB_FILLED = /^(macromolecule|simple chemical|nucleic acid feature|unspecified entity|perturbing agent|phenotype|complex|compartment|submap|biological activity|perturbation|tag|terminal)( multimer)?$/;
     sbActMemo = [null, {}];
   }
@@ -5503,7 +8385,7 @@
     });
   }
   var palMap;
-  function __run202() {
+  function __run203() {
     pal.addEventListener("click", function(e) {
       var b = e.target.closest("button[data-lang], button[data-look]");
       if (b && !b.disabled) palDid([PAL_KEY], function() {
@@ -5584,7 +8466,7 @@
       palFill();
     }
   }
-  function __run212() {
+  function __run214() {
     box.querySelector(".m2-ed-tools").insertAdjacentElement("afterend", pal);
   }
   function palOn() {
@@ -5857,7 +8739,7 @@
     return [[x, k === 3 ? q[1] + q[3] - L : q[1], S, L], k === 3 ? "up" : "down"];
   }
   var SIDE;
-  function __run242() {
+  function __run243() {
     SIDE = { right: 0, left: 1, down: 2, up: 3 };
   }
   function onSide(b, q, way, any) {
@@ -5877,7 +8759,7 @@
   }
   var tKey;
   var HORIZ;
-  function __run252() {
+  function __run253() {
     tKey = null;
     keyTake.push(function(d, e) {
       if (!sbJs || !sbJs.way || shared.selN.length !== 1 || shared.selP.length) return false;
@@ -6007,7 +8889,7 @@
     }
   }
   var TURN;
-  function __run262() {
+  function __run263() {
     moveFix.push(function(set, alone) {
       if (!sbJs || !sbJs.terminal) return;
       var ids = /* @__PURE__ */ new Set(), keep = /* @__PURE__ */ new Set(), out = [], join = [];
@@ -6243,7 +9125,7 @@
     return i >= 0 && nodes2[i].shape.kind === "Macromolecule" ? i : -1;
   }
   var PLACES;
-  function __run272() {
+  function __run273() {
     PLACES = function() {
       var out = [], k;
       for (k = -4; k <= 4; k++) {
@@ -6265,7 +9147,7 @@
     return best.slice();
   }
   var NAME_WORDS;
-  function __run282() {
+  function __run283() {
     NAME_WORDS = { tl: "Name at top left", t: "Name at top middle", tr: "Name at top right", bl: "Name at bottom left", b: "Name at bottom middle", br: "Name at bottom right" };
     ownMenus.push(function(P) {
       return svOn() && svAt(P);
@@ -6889,7 +9771,7 @@
   var SV;
   var UI;
   var SS;
-  function __run292() {
+  function __run293() {
     SV = "StateVariable", UI = "UnitOfInformation", SS = "StructuralState";
   }
   function svIcons() {
@@ -7133,7 +10015,7 @@
       return s;
     }).join(":");
   }
-  function __run31() {
+  function __run312() {
     window.m2EditNameHere = function(member) {
       var c = complexHere(member);
       if (c == null || shared.afSbgn || afKind()) return null;
@@ -7526,7 +10408,7 @@
     }
     return { r: cardClamp(c, r), s };
   }
-  function __run35() {
+  function __run352() {
     window.addEventListener("pointermove", function(e) {
       var d = cardDrag;
       if (!d) return;
@@ -7585,7 +10467,7 @@
       paint();
     }
   }
-  function __run36() {
+  function __run362() {
     window.addEventListener("keydown", function(e) {
       if (!cardSel || /input|textarea|select/i.test(document.activeElement.tagName) || e.ctrlKey || e.metaKey || e.altKey) return;
       if (e.key === "Escape" && cardDrag && cardDrag.to) {
@@ -7649,7 +10531,7 @@
     return commit(t2, { name: "deleted", ids: ids.concat(eids), sel: [] });
   }
   var KEYS;
-  function __run37() {
+  function __run372() {
     KEYS = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
   }
   function perim(b) {
@@ -7683,7 +10565,7 @@
     }
     return d[0] * OUT[sides[0]][0] + d[1] * OUT[sides[0]][1] > 0 ? -1 : 1;
   }
-  function __run38() {
+  function __run382() {
     document.addEventListener("keydown", function(e) {
       var d = KEYS[e.key];
       if (!d || !shared.svSel || !svOn() || e.ctrlKey || e.metaKey || e.altKey || /input|textarea|select/i.test(document.activeElement.tagName)) return;
@@ -7888,8 +10770,8 @@
     var r = roleOf(i), sub = nodes2[i].shape.kind === "Submap" && !nodes2[i].comp;
     if (!r && !sub) return null;
     var l = nodes2[i].el.getElementsByTagNameNS(Y, "NodeLabel")[0];
-    if (nodes2[i].shape.kind === "NucleicAcidFeature") return import_notation.default.nodeKind("graphml", "NucleicAcidFeature", ntUnits(i));
-    return import_notation.default.nodeKind("graphml", r === "proc" ? "Process" : nodes2[i].shape.kind, l ? l.textContent.trim() : "");
+    if (nodes2[i].shape.kind === "NucleicAcidFeature") return import_notation2.default.nodeKind("graphml", "NucleicAcidFeature", ntUnits(i));
+    return import_notation2.default.nodeKind("graphml", r === "proc" ? "Process" : nodes2[i].shape.kind, l ? l.textContent.trim() : "");
   }
   var unitMemo;
   function ntUnits(i) {
@@ -7910,8 +10792,8 @@
     return revMemo.r[id];
   }
   function ntCheck(cls, s, t, skip) {
-    var plain = import_notation.default.arcHead("graphml", cls) === "none", same = function(q) {
-      return plain ? q.arr[1] === "none" : import_notation.default.arcKind("graphml", q.arr[1]) === cls;
+    var plain = import_notation2.default.arcHead("graphml", cls) === "none", same = function(q) {
+      return plain ? q.arr[1] === "none" : import_notation2.default.arcKind("graphml", q.arr[1]) === cls;
     };
     var lines = function(f) {
       return edges2.filter(function(q, j) {
@@ -7960,15 +10842,15 @@
     var ks = ntKind(s), kt = ntKind(t);
     if (skip == null) skip = -1;
     if (!ks || !kt) return null;
-    return import_notation.default.allowed(cls, ks, kt, { sets: ntSets(), check: ntCheck(cls, s, t, skip), held: ntHeld(skip, s) });
+    return import_notation2.default.allowed(cls, ks, kt, { sets: ntSets(), check: ntCheck(cls, s, t, skip), held: ntHeld(skip, s) });
   }
   function moveCls(k, s, t) {
     var e = edges2[k], kt = ntKind(t);
-    if (e.arr[1] !== "none") return import_notation.default.arcKind("graphml", e.arr[1]);
+    if (e.arr[1] !== "none") return import_notation2.default.arcKind("graphml", e.arr[1]);
     if ([e.s, e.t, s, t].some(function(x) {
       return roleOf(x) === "tag";
     })) return "equivalence arc";
-    return import_notation.default.arcKind("graphml", "none", kt ? kt.kind : "") || "logic arc";
+    return import_notation2.default.arcKind("graphml", "none", kt ? kt.kind : "") || "logic arc";
   }
   function moveSays(k, end, i) {
     if (shared.cd) return cdMoveSays(k, end, i);
@@ -8077,14 +10959,14 @@
       }, sets = ntSets();
       edges2.forEach(function(e, k) {
         var a = e.arr[1];
-        if (a !== "none" && !import_notation.default.arcKind("graphml", a)) return;
+        if (a !== "none" && !import_notation2.default.arcKind("graphml", a)) return;
         [0, 1].forEach(function(end) {
           nodes2.forEach(function(n, i) {
             if (i === e.s || i === e.t) return;
             var s = end ? e.s : i, t = end ? i : e.t, ks = kindOf2(s), kt = kindOf2(t);
             if (!ks || !kt) return;
             var c = moveCls(k, s, t);
-            var was = a !== "none" ? c : import_notation.default.arcKind("graphml", "none", kindOf2(e.t) ? kindOf2(e.t).kind : "") || "logic arc";
+            var was = a !== "none" ? c : import_notation2.default.arcKind("graphml", "none", kindOf2(e.t) ? kindOf2(e.t).kind : "") || "logic arc";
             var key = [was, end, name2(ks), name2(kt), name2(kindOf2(e.s) || { kind: "?" }), name2(kindOf2(e.t) || { kind: "?" })].join("|");
             if (rows[key]) return;
             var want = c === "equivalence arc" && (ks.kind === "tag" || kt.kind === "tag") ? "consumption" : c, h = linkKind(s, t, null, want);
@@ -8097,8 +10979,8 @@
               line: name2(kindOf2(e.s) || { kind: "?" }) + " > " + name2(kindOf2(e.t) || { kind: "?" }),
               drag: !!takes(k, end, i),
               draw: !h ? "nothing" : h.no ? h.no : h.pair ? "pair" : h.cls,
-              tableDrag: import_notation.default.allowed(c, ks, kt, { sets, check: ntCheck(c, s, t, k), held: ntHeld(k, s) }),
-              tableDraw: import_notation.default.allowed(c, ks, kt, { sets, check: ntCheck(c, s, t, -1) })
+              tableDrag: import_notation2.default.allowed(c, ks, kt, { sets, check: ntCheck(c, s, t, k), held: ntHeld(k, s) }),
+              tableDraw: import_notation2.default.allowed(c, ks, kt, { sets, check: ntCheck(c, s, t, -1) })
             };
           });
         });
@@ -8330,7 +11212,7 @@
   var props;
   var EROWS;
   var RROWS;
-  function __run43() {
+  function __run432() {
     ROWS = [
       ["label", "Label", "text"],
       ["font", "Font size", "num", ' min="1" max="200"', "The name\u2019s size"],
@@ -8901,7 +11783,7 @@
     });
     setPort({ k, end, n: end ? e.t : e.s, to });
   }
-  function __run54() {
+  function __run542() {
     EROWS.forEach(function(r) {
       var f = field(r[0]);
       [f, f.previousElementSibling].filter(Boolean).forEach(function(x) {
@@ -8932,7 +11814,7 @@
     });
   }
   var EXTRA;
-  function __run55() {
+  function __run552() {
     ROWS.forEach(propListen);
     EXTRA = [];
   }
@@ -9171,49 +12053,49 @@
       })) warn("Already at the standard size and antenna.");
     });
   }
-  function __start4() {
-    __run110();
-    __run210();
-    __run34();
-    __run42();
-    __run53();
-    __run63();
-    __run72();
-    __run82();
-    __run92();
-    __run102();
-    __run112();
+  function __start6() {
+    __run114();
+    __run213();
+    __run38();
+    __run43();
+    __run55();
+    __run65();
+    __run74();
+    __run83();
+    __run93();
+    __run103();
+    __run115();
     __run123();
     __run133();
-    __run142();
-    __run152();
-    __run162();
-    __run172();
-    __run182();
-    __run192();
-    __run202();
-    __run212();
+    __run143();
+    __run153();
+    __run163();
+    __run173();
+    __run183();
+    __run193();
+    __run203();
+    __run214();
     __run223();
     __run233();
-    __run242();
-    __run252();
-    __run262();
-    __run272();
-    __run282();
-    __run292();
-    __run31();
+    __run243();
+    __run253();
+    __run263();
+    __run273();
+    __run283();
+    __run293();
+    __run312();
     __run322();
     __run332();
     __run342();
-    __run35();
-    __run36();
-    __run37();
-    __run38();
+    __run352();
+    __run362();
+    __run372();
+    __run382();
     __run39();
     __run40();
     __run41();
     __run422();
-    __run43();
+    __run432();
     __run44();
     __run45();
     __run46();
@@ -9224,8 +12106,8 @@
     __run51();
     __run522();
     __run532();
-    __run54();
-    __run55();
+    __run542();
+    __run552();
     __run56();
     __run57();
     __run58();
@@ -9234,2864 +12116,9 @@
     __run61();
   }
 
-  // editor/src/cdcreate.js
-  var CD_SP;
-  function __run111() {
-    CD_SP = [
-      ["PROTEIN", "Protein", '<rect x="1.5" y="5" width="21" height="14" rx="3.5"/>'],
-      ["GENE", "Gene", '<rect x="1.5" y="6" width="21" height="12"/>'],
-      ["RNA", "RNA", '<path d="M11.5 7h11l-10 10h-11z"/>'],
-      ["SIMPLE_MOLECULE", "Simple molecule", '<circle cx="12" cy="12" r="7"/>'],
-      ["UNKNOWN", "Unknown", '<ellipse cx="12" cy="12" rx="10.5" ry="6" fill="currentColor" fill-opacity=".35" stroke="none"/>'],
-      ["PHENOTYPE", "Phenotype", '<path d="M6 5h12l4.5 7-4.5 7h-12l-4.5-7z"/>'],
-      ["DEGRADED", "Degraded", '<circle cx="12" cy="12" r="8"/><path d="M4 20l16-16"/>'],
-      // the complex: its box with cut corners holding three overlapping members, each opaque over the one behind it
-      ["COMPLEX", "Complex", '<path d="M6 2.5h12l3.5 3.5v12l-3.5 3.5h-12l-3.5-3.5v-12z"/><g class="thin" fill="#fff"><rect x="8.5" y="5.5" width="7.5" height="6.5" rx="1"/><rect x="5" y="10" width="6.5" height="4.5" rx="1"/><ellipse cx="14.3" cy="14.8" rx="4.6" ry="3.6"/></g>'],
-      ["COMPARTMENT", "Compartment", '<rect x="1.5" y="3.5" width="21" height="17" rx="6"/><rect class="thin" x="4.5" y="6.5" width="15" height="11" rx="3.5"/>'],
-      // CellDesigner's oval compartment (class OVAL), its two lines as the square one's
-      ["OVAL", "Oval compartment", '<ellipse cx="12" cy="12" rx="10.5" ry="8.5"/><ellipse class="thin" cx="12" cy="12" rx="7.5" ry="5.5"/>']
-    ];
-  }
-  function cdComp(cls) {
-    return cls === "COMPARTMENT" || cls === "OVAL";
-  }
-  var CD_Q;
-  var CD_GATES;
-  var CD_LINE;
-  var CD_HEAD;
-  var CD_RX;
-  var CD_DOTS;
-  var CD_ADD;
-  var CD_MOD;
-  var CD_RED;
-  var RED_OF;
-  var CD_NAME;
-  var cdK;
-  function __run211() {
-    CD_Q = '<path d="M9.8 10.2a2.2 2.2 0 1 1 3.2 2c-.7.4-1 .8-1 1.6" class="in"/><circle class="dot" cx="12" cy="16.4" r=".8"/>';
-    CD_GATES = [
-      ["AND", "AND gate", '<text x="12" y="16.2" text-anchor="middle" font-size="9">&amp;</text>', "&amp;"],
-      ["OR", "OR gate", '<path d="M12 9.5v7" class="in"/>', "|"],
-      ["NOT", "NOT gate", '<path d="M12 9.6v4.6" class="in"/><circle class="dot" cx="12" cy="16.6" r=".8"/>', "!"],
-      ["UNKNOWN", "Unknown gate", '<g transform="translate(0 .7)">' + CD_Q + "</g>", "?"]
-    ].map(function(q) {
-      var ins = q[0] === "NOT" ? "M12 1v5.5" : "M3 4l4.4 4.4M21 4l-4.4 4.4";
-      return [q[0], q[1], '<circle cx="12" cy="13" r="6.5"/><path d="' + ins + 'M12 19.5V23"/>' + q[2], q[3]];
-    });
-    CD_LINE = '<path d="M1.5 12h15"/>', CD_HEAD = '<path d="M16 8.5l6.5 3.5-6.5 3.5z" fill="currentColor"/>';
-    CD_RX = [
-      ["STATE_TRANSITION", "State transition", CD_LINE + CD_HEAD],
-      ["KNOWN_TRANSITION_OMITTED", "Known transition omitted", CD_LINE + '<path d="M6.5 16l2.5-8M10 16l2.5-8" class="in"/>' + CD_HEAD],
-      ["UNKNOWN_TRANSITION", "Unknown transition", CD_LINE + '<g transform="translate(-2.5 -1.5)">' + CD_Q + "</g>" + CD_HEAD]
-    ];
-    CD_DOTS = '<path d="M1.5 18h21" class="in" stroke-dasharray="1.4 3.5"/>';
-    CD_ADD = [
-      ["ADD_REACTANT", "Add reactant (from a species onto a reaction; onto a logic gate, a new input)", CD_DOTS + '<path d="M3.5 4.5L11 18"/>'],
-      ["ADD_PRODUCT", "Add product (from a reaction to a species)", CD_DOTS + '<path d="M11 18l6-9"/><path d="M20.5 4l-.6 6.6-5.2-3.4z" fill="currentColor"/>']
-    ];
-    CD_MOD = [
-      ["CATALYSIS", "Catalysis", '<path d="M12 1.5v14"/><circle cx="12" cy="18.5" r="3"/>'],
-      ["INHIBITION", "Inhibition", '<path d="M12 1.5v19M7 20.5h10"/>'],
-      ["PHYSICAL_STIMULATION", "Physical stimulation", '<path d="M12 1.5v12.5M7.5 14h9l-4.5 7.5z"/>'],
-      ["MODULATION", "Modulation", '<path d="M12 1.5v11M12 12.5l3.5 4.5-3.5 4.5-3.5-4.5z"/>'],
-      ["TRIGGER", "Trigger", '<path d="M12 1.5v13.5M7 11.5h10M7.5 15h9l-4.5 7z"/>']
-    ].map(function(q) {
-      return [q[0], q[1] + (q[0] === "CATALYSIS" ? " (onto a reaction)" : " (onto a reaction, or between species with Reduced notation ticked)"), q[2]];
-    });
-    CD_RED = [["NEGATIVE_INFLUENCE", "INHIBITION"], ["REDUCED_PHYSICAL_STIMULATION", "PHYSICAL_STIMULATION"], ["REDUCED_MODULATION", "MODULATION"], ["REDUCED_TRIGGER", "TRIGGER"]];
-    RED_OF = {};
-    CD_RED.forEach(function(q) {
-      RED_OF[q[1]] = q[0];
-    });
-    CD_NAME = {};
-    CD_SP.concat(CD_RX, CD_ADD, CD_MOD).forEach(function(q) {
-      CD_NAME[q[0]] = q[1].replace(/ \(.*\)$/, "");
-    });
-    CD_RED.forEach(function(q) {
-      CD_NAME[q[0]] = CD_NAME[q[1]];
-    });
-    CD_GATES.forEach(function(q) {
-      CD_NAME["G_" + q[0]] = q[1];
-    });
-    cdK = function(q) {
-      return ["cd:" + q[0], q[1], q[2]];
-    };
-  }
-  function palCd() {
-    return [["Species", CD_SP.map(cdK)], ["Logic gates", CD_GATES.map(function(q) {
-      return ["cd:G_" + q[0], q[1], q[2]];
-    }), true], ["Reactions", CD_RX.concat(CD_ADD).map(cdK), true], ["Modifiers", CD_MOD.map(cdK)]];
-  }
-  var CD_GATE;
-  function __run310() {
-    CD_RX.concat(CD_ADD, CD_MOD).forEach(function(q) {
-      ARCS["cd:" + q[0]] = 1;
-    });
-    CD_GATE = {};
-    CD_GATES.forEach(function(q) {
-      CD_GATE["cd:G_" + q[0]] = q[0];
-    });
-  }
-  function cdKind(k) {
-    return k && k.indexOf("cd:") === 0 ? k.slice(3) : null;
-  }
-  function cdPal() {
-    return on && V.current === map && !!shared.cd && !!cdJs && !!cdMk && V.level === "full";
-  }
-  function cdStrict() {
-    var id = palId();
-    if (shared.cdStrictMemo[0] !== id) {
-      var k = palStore()[id];
-      shared.cdStrictMemo = [id, !!(k && k.strict === true)];
-    }
-    return shared.cdStrictMemo[1];
-  }
-  function cdFill() {
-    [".m2-ed-pnot", ".m2-ed-plook", ".m2-ed-pprot", ".m2-ed-pcdc", ".m2-ed-psbgn"].forEach(function(c) {
-      pal.querySelector(c).hidden = true;
-    });
-    var ps = pal.querySelector(".m2-ed-psites input");
-    if (ps && ps.checked !== !!V.sites) ps.checked = !!V.sites;
-    pal.querySelector(".m2-ed-pnot").style.display = "none";
-    var hy = pal.querySelector(".m2-ed-pstrict"), hyc = hy.querySelector("input"), strict = cdStrict();
-    hy.hidden = false;
-    if (hyc.checked !== !strict) hyc.checked = !strict;
-    cdInfo(hy, true);
-    styleRow();
-    cdColsRow();
-    var k = "cd" + (strict ? "S" : "");
-    if (shared.palShown === k) return;
-    shared.palShown = k;
-    palSignsEl.innerHTML = palSigns(palCd());
-    palBlocks();
-  }
-  var CD_INFO;
-  function __run510() {
-    CD_INFO = "Lets the modifiers\u2019 signs (inhibition, physical stimulation, modulation, trigger) join two species directly, written as CellDesigner\u2019s reduced notation, and allows a logic gate between species. Unticked: reactions and their modifiers only. CellDesigner\u2019s positive influence (an open arrowhead, not an SBGN sign) is made a physical stimulation when a map is opened.";
-  }
-  function cdInfo(hy, on_) {
-    var lab = hy.querySelector("label"), ti = hy.querySelector(".m2-ed-ptip");
-    if (!lab.dataset.sbgn) {
-      lab.dataset.sbgn = lab.title;
-      ti.dataset.sbgn = ti.dataset.info;
-    }
-    var v = on_ ? CD_INFO : ti.dataset.sbgn;
-    if (ti.dataset.info !== v) {
-      lab.title = on_ ? "Ticked (the default): the reduced notation signs shown" : lab.dataset.sbgn;
-      ti.dataset.info = v;
-    }
-  }
-  function cdCheck() {
-    var g = window.cdrender && window.cdrender.GATE, miss = CD_SP.filter(function(q) {
-      return !cdComp(q[0]) && !cdMk.LOOK[q[0]];
-    }).map(function(q) {
-      return q[0];
-    }).concat(
-      CD_RX.filter(function(q) {
-        return cdMk.PROCESS.indexOf(q[0]) < 0;
-      }).map(function(q) {
-        return q[0];
-      }),
-      CD_MOD.filter(function(q) {
-        return cdMk.MODS.indexOf(q[0]) < 0;
-      }).map(function(q) {
-        return q[0];
-      }),
-      CD_RED.filter(function(q) {
-        return cdMk.REDUCED.indexOf(q[0]) < 0;
-      }).map(function(q) {
-        return q[0];
-      }),
-      CD_GATES.filter(function(q) {
-        return !cdMk.NEED[q[0]];
-      }).map(function(q) {
-        return q[0];
-      })
-    );
-    if (miss.length) console.error("The CellDesigner palette offers kinds cd_make lacks: " + miss.join(", "));
-    if (g) CD_GATES.forEach(function(q) {
-      var v = g[q[0]];
-      if (v && q[3] !== v) console.error("The palette\u2019s " + q[1] + " sign differs from cdrender\u2019s " + v);
-    });
-  }
-  function __run64() {
-    pal.querySelector(".m2-ed-pstrict input").addEventListener("change", function(e) {
-      if (!cdPal()) return;
-      palDid([PAL_KEY], function() {
-        var all = palStore(), id = palId();
-        shared.cdStrictMemo = [id, !e.target.checked];
-        if (id) {
-          all[id] = { lang: "pd", look: "rn", strict: !e.target.checked };
-          try {
-            localStorage.setItem(PAL_KEY, JSON.stringify(all));
-          } catch (er) {
-          }
-        }
-      });
-      shared.palShown = null;
-      palShow();
-    });
-  }
-  function cdApply(fn, sel, selLines) {
-    keyFlush();
-    var N = cdNow(), now = N.t;
-    var t2;
-    cdGrew = {};
-    try {
-      t2 = fn(now, N.sh);
-    } catch (err) {
-      cdGrew = null;
-      if (!(err && err.refused)) warn(String(err && err.message || err).replace(/\.?$/, "."));
-      return false;
-    }
-    if (t2 && t2.text != null) t2 = t2.text;
-    var grew = cdGrew;
-    cdGrew = null;
-    if (!t2 || t2 === now) return false;
-    return commit(null, { name: "CellDesigner change", ids: [].concat(typeof sel === "function" ? [] : sel || []), quiet: true, write: function() {
-      cdRebuild(t2, N.sh);
-    }, then: function() {
-      var gk = nodes2.map(function(n, k) {
-        return grew[n.id] ? k : -1;
-      }).filter(function(k) {
-        return k >= 0;
-      });
-      if (gk.length) setBoxes(grown(gk, boxOf, function(k) {
-        return grew[nodes2[k].id] || boxOf(k);
-      }, function() {
-        return false;
-      }));
-      shared.selN = [];
-      shared.selP = [];
-      shared.selE = [];
-      shared.part = null;
-      if (typeof sel === "function") sel = sel();
-      if (typeof selLines === "function") selLines = selLines();
-      (sel || []).forEach(function(id) {
-        nodes2.forEach(function(n, i) {
-          if (n.id === id) shared.selN.push(i);
-        });
-      });
-      (selLines || []).forEach(function(id) {
-        edges2.forEach(function(q, k) {
-          if (q.id === id || q.id === id + "|a" || q.id === id + "|b") shared.selE.push(k);
-        });
-      });
-    } });
-  }
-  function cdRole(i) {
-    var n = nodes2[i];
-    if (/\|proc$/.test(n.id)) return "proc";
-    if (/\|g\d*$/.test(n.id)) return "gate";
-    if (n.comp || n.up != null && !nodes2[n.up].comp) return null;
-    return "epn";
-  }
-  function cdRid(i) {
-    return nodes2[i].id.replace(/\|(proc|g\d*)$/, "");
-  }
-  function cdGateRef(i) {
-    var m = nodes2[i].id.match(/^(.*)\|g(\d*)$/);
-    return m[2] ? m[1] + "|m" + m[2] : m[1];
-  }
-  function cdComplexAt(P) {
-    var i = innermost(P, function(n) {
-      return n.shape.kind === "Complex";
-    });
-    return i >= 0 ? nodes2[i].id : null;
-  }
-  var CD_COLS;
-  var CD_COMP_DEFAULT;
-  function __run73() {
-    CD_COLS = [["file", "Original", "The map\u2019s own colours, as they were before another choice; new species and compartments in the colour most of their class have on it, Default for a class it has none of"], ["cd", "CellDesigner", "The whole map and new species and compartments in CellDesigner\u2019s own colours"], ["default", "Mist and sage", "The whole map and new species and compartments in the viewer\u2019s starting colours: a pale blue for proteins, a pale green for small molecules"], ["none", "No colours", "The whole map and new species and compartments white"], ["custom", "Custom default", "The whole map and new species in the colours kept by Set as default; a class with none as it is"], ["confetti", "Confetti", "Every species of the map, and every new one, a pastel of its own; compartments as they are"]];
-    CD_COMP_DEFAULT = "ffdfdbce";
-  }
-  function cdCols() {
-    return mapCols(["file", "none", "cd", "default", "confetti", "custom"], cdIs);
-  }
-  function cdIs(mode) {
-    var t = shared.cd && shared.cd.now;
-    if (!t || !cdMk) return false;
-    if (mode === "file") {
-      var r = origAll()[palId()];
-      if (!r) return null;
-      var now = cdMk.colours(t), same = function(a, b2) {
-        return a == null || b2 == null || String(a).toLowerCase() === String(b2).toLowerCase();
-      };
-      return Object.keys(r.fill || {}).every(function(id) {
-        return same(now.fill[id], r.fill[id]);
-      }) && Object.keys(r.line || {}).every(function(id) {
-        var a = now.line[id] || {};
-        return Object.keys(r.line[id]).every(function(q) {
-          return same(a[q], r.line[id][q]);
-        });
-      });
-    }
-    var n = cdMk.classColours(t), cols = [];
-    Object.keys(n).forEach(function(cls) {
-      if (cls !== "DEGRADED") cols = cols.concat(Object.keys(n[cls]));
-    });
-    if (!cols.length) return null;
-    if (mode === "confetti") return cols.every(function(c) {
-      return confettiOne("#" + c.slice(2));
-    });
-    var fn = cdFills(mode, t), read = 0;
-    var all = Object.keys(n).every(function(cls) {
-      var x = cls === "DEGRADED" ? null : fn(cls);
-      if (x) read++;
-      return !x || Object.keys(n[cls]).every(function(c) {
-        return c.slice(2) === x.slice(1).toLowerCase();
-      });
-    });
-    return read ? all : null;
-  }
-  var CD_UNKNOWN;
-  function __run83() {
-    CD_UNKNOWN = "ffdddddd";
-  }
-  function cdColour(t, cls) {
-    return cdColourIn(cdCols(), t, cls);
-  }
-  function cdColourIn(m, t, cls) {
-    var comp = cdComp(cls);
-    if (m === "none") return cls === "UNKNOWN" ? CD_UNKNOWN : "ffffffff";
-    if (m === "confetti") {
-      if (cls !== "DEGRADED" && !comp) return "ff" + confettiFill(t).slice(1);
-      m = "file";
-    }
-    if (m === "custom") {
-      var k = !comp && cdKept()[cls];
-      if (k && k.fill) return "ff" + k.fill.slice(1).toLowerCase();
-      m = "file";
-    }
-    if (m === "file") {
-      var f = t ? comp ? cdMk.compartmentColour(t) : cdMk.classColour(t, cls) : null;
-      if (f) return f;
-      m = "default";
-    }
-    if (m === "cd") return comp ? cdMk.COMP.colour : null;
-    if (comp) return CD_COMP_DEFAULT;
-    if (cls === "UNKNOWN") return CD_UNKNOWN;
-    var c = V.schemeFill && window.cdrender ? V.schemeFill("default", window.cdrender.ROLE[cls] || "white") : null;
-    return c ? "ff" + c.toLowerCase() : null;
-  }
-  var CD_SQ;
-  function __run93() {
-    CD_SQ = [["PROTEIN", "protein"], ["SIMPLE_MOLECULE", "simple molecule"], ["PHENOTYPE", "phenotype"], ["GENE", "gene"], ["RNA", "RNA"]];
-  }
-  function cdSquares(mode) {
-    var sq2 = function(x, t) {
-      return '<i style="background:#' + x.slice(2) + '" title="' + t + '"></i>';
-    }, h;
-    if (mode === "confetti") return confettiSquares();
-    if (mode === "none") h = sq2("ffffffff", "every species, #FFFFFF; Unknown, drawn with no outline, #DDDDDD");
-    else if (mode !== "file") {
-      var seen = {};
-      h = CD_SQ.map(function(q) {
-        var x = (mode === "cd" ? null : cdColourIn(mode, mode === "custom" && shared.cd ? shared.cd.now : null, q[0])) || cdMk.LOOK[q[0]][2];
-        if (seen[x]) {
-          seen[x].push(q[1]);
-          return null;
-        }
-        seen[x] = [q[1]];
-        return x;
-      }).filter(Boolean).map(function(x) {
-        return sq2(x, seen[x].join(", ") + ", #" + x.slice(2).toUpperCase());
-      }).join("");
-    } else {
-      var n = shared.cd && shared.cd.now ? cdMk.classColours(shared.cd.now) : {}, w = {}, order = [];
-      Object.keys(n).forEach(function(cls) {
-        Object.keys(n[cls]).forEach(function(col) {
-          if (!(col in w)) {
-            w[col] = 0;
-            order.push(col);
-          }
-          w[col] += n[cls][col];
-        });
-      });
-      h = order.slice().sort(function(a, b) {
-        return w[b] - w[a] || order.indexOf(a) - order.indexOf(b);
-      }).slice(0, 5).map(function(x) {
-        return sq2(x, "#" + x.slice(2).toUpperCase() + ", " + w[x] + " species");
-      }).join("");
-    }
-    return '<span class="m2-cs-sw">' + h + "</span>";
-  }
-  function cdColsRow() {
-    return palDrop({ key: "cols", label: "Colours", title: "Colours of the map and of new species and compartments", list: CD_COLS, get: cdCols, set: function(v) {
-      colsPick(v, cdCols(), function() {
-        return cdMk.colours(cdNow().t);
-      }, cdOriginal, cdRecolour);
-    }, sq: cdSquares });
-  }
-  function cdOriginal(r) {
-    var added = 0, F = r.fill || {}, L = r.line || {};
-    cdApply(function(t0) {
-      var now = cdMk.colours(t0);
-      added = Object.keys(now.fill).filter(function(id) {
-        return !(id in F);
-      }).length;
-      Object.keys(now.line).forEach(function(rid) {
-        Object.keys(now.line[rid]).forEach(function(q) {
-          if (!(L[rid] && q in L[rid])) added++;
-        });
-      });
-      return cdMk.recolourAll(
-        t0,
-        function(cls, id) {
-          return id in F && F[id] !== now.fill[id] ? F[id] : null;
-        },
-        function(k, rid, q) {
-          var a = L[rid];
-          return a && q in a && a[q] !== (now.line[rid] || {})[q] ? a[q] : null;
-        }
-      );
-    }, []);
-    return added;
-  }
-  function cdRecolour(mode) {
-    if (mode === "file" || !shared.cd) return;
-    cdApply(function(t0) {
-      var lh = [];
-      return cdMk.recolourAll(t0, cdFills(mode, t0), mode === "custom" ? null : function() {
-        return mode === "confetti" ? confettiLine(lh) : "#000000";
-      });
-    }, []);
-  }
-  function cdFills(mode, t0) {
-    var hues = [], kept = mode === "custom" ? cdKept() : null;
-    return function(cls) {
-      var comp = cdComp(cls);
-      if (mode === "confetti") return comp ? null : confettiPick(hues);
-      if (mode === "custom") {
-        var k = !comp && kept[cls];
-        return k && k.fill || null;
-      }
-      var x = cdColourIn(mode, t0, cls) || (cdMk.LOOK[cls] || [])[2];
-      return x ? "#" + x.slice(2) : null;
-    };
-  }
-  function cdSize(cls) {
-    if (cdComp(cls)) return cdMk.COMP.size.slice();
-    var st = palStyle(), k = st === "custom" ? cdKept()[cls] : null;
-    if (k && k.w > 0 && k.h > 0) return [k.w, k.h];
-    return st !== "default" && cls !== "COMPLEX" && shared.cd && cdMk.classSize(shared.cd.now, cls) || cdMk.LOOK[cls].slice(0, 2);
-  }
-  var CD_DEF_KEY;
-  function __run103() {
-    CD_DEF_KEY = "atlas-edit-cd-defaults";
-  }
-  function cdKept() {
-    return looksKept(CD_DEF_KEY);
-  }
-  function cdDef(i) {
-    var id = nodes2[i].id, L, n, all = cdKept();
-    try {
-      L = cdMk.look(shared.cd.now, id);
-      n = cdMk.aliasInfo(shared.cd.now, id).homodimer || 1;
-    } catch (e) {
-      return;
-    }
-    var b = boxOf(i);
-    all[L.cls] = { w: b[2], h: b[3], width: L.width, multimer: n > 1, copies: n, font: L.font };
-    if (L.fill && L.cls !== "DEGRADED") all[L.cls].fill = L.fill;
-    if (!keepLook(CD_DEF_KEY, all)) return;
-    keepMapChoice("style", "custom");
-    keepMapChoice("cols", "custom");
-    styleRow();
-    cdColsRow();
-  }
-  function cdCopies(cls) {
-    var k = palStyle() === "custom" && cls !== "DEGRADED" ? cdKept()[cls] : null;
-    return k && k.multimer && k.w > 0 ? Math.max(2, k.copies || 2) : 1;
-  }
-  function cdKeptLook(t, alias, cls) {
-    var k = cdKept()[cls], n = cdCopies(cls);
-    if (!k || cls === "DEGRADED") return t;
-    if (cdCols() === "custom" && k.width > 0 && k.width !== 1) t = cdMk.restyle(t, alias, { width: k.width });
-    if (n > 1) t = cdMk.homodimer(t, alias, n);
-    if (palStyle() === "custom" && k.font > 0 && k.font !== 12) t = cdMk.restyle(t, alias, { font: k.font });
-    return t;
-  }
-  function cdMake(P, kind) {
-    var cls = cdKind(kind);
-    if (!cls || CD_GATE[kind]) return;
-    var s = cdSize(cls), e = cdComp(cls) ? 0 : 6 * (cdCopies(cls) - 1);
-    var boxAt = function(sh) {
-      var X = P[0] + sh[0] - s[0] / 2, Y2 = P[1] + sh[1] - s[1] / 2;
-      if (gridSet.snap) {
-        X += toGrid(X + s[0] / 2, gridSet.step);
-        Y2 += toGrid(Y2 + s[1] / 2, gridSet.step);
-      }
-      return [+fmt(X), +fmt(Y2), s[0] - e, s[1] - e];
-    };
-    var cx = !cdComp(cls) && !/^(PHENOTYPE|DEGRADED)$/.test(cls) ? cdComplexAt(P) : null, made2 = null;
-    var ok = cdApply(function(t, sh) {
-      var b = boxAt(sh), r = cdComp(cls) ? cdMk.compartment(t, { name: "", box: b, oval: cls === "OVAL", colour: cdColour(t, cls) }) : cdMk.species(t, { cls, name: "", box: b, complex: cx, colour: cdColour(t, cls) });
-      made2 = r.alias;
-      return cdComp(cls) ? r.text : cdKeptLook(r.text, r.alias, cls);
-    }, function() {
-      return [made2];
-    });
-    if (ok && cx) joinPack([cx]);
-  }
-  function cdGateClick(P) {
-    var kind = CD_GATE[tool.kind], i = linkEnd(P, -1), r = i >= 0 ? cdRole(i) : null;
-    if (!shared.cdGate || shared.cdGate.kind !== kind) shared.cdGate = { kind, inputs: [] };
-    var need = cdMk.NEED[kind];
-    if (shared.cdGate.inputs.length < need) {
-      if (r !== "epn" || shared.cdGate.inputs.indexOf(nodes2[i].id) >= 0) return;
-      shared.cdGate.inputs.push(nodes2[i].id);
-      paint();
-      return;
-    }
-    if (r !== "proc" && (r !== "epn" || cdStrict())) return;
-    var g = shared.cdGate, target = r === "proc" ? cdRid(i) : nodes2[i].id, out = null, L = cdGateLand(i, P) || {};
-    if (!cdApply(
-      function(t) {
-        var q = cdMk.gate(t, { kind: g.kind, inputs: g.inputs, target, spot: L.spot, toAt: L.at });
-        out = q.gate;
-        return q.text;
-      },
-      function() {
-        return [/\|m\d+$/.test(out) ? out.replace(/\|m(\d+)$/, "|g$1") : out + "|g"];
-      }
-    )) return;
-    shared.cdGate = null;
-    if (tool && !tool.sticky) palTake(null);
-  }
-  var cdHover;
-  function __run124() {
-    cdHover = null;
-  }
-  function cdHandles(i, cls) {
-    return handleMarks(bx(i), cls);
-  }
-  function cdDot(Q, cls) {
-    var d = Math.max(3, 4 * V.z);
-    return '<rect class="' + cls + '" x="' + f1(sx(Q[0]) - d / 2) + '" y="' + f1(sy(Q[1]) - d / 2) + '" width="' + f1(d) + '" height="' + f1(d) + '"/>';
-  }
-  function cdCentre(i) {
-    var b = bx(i);
-    return [b[0] + b[2] / 2, b[1] + b[3] / 2];
-  }
-  function cdPicked(out, i) {
-    out.push('<g transform="translate(' + f1(V.tx - x0 * V.z) + "," + f1(V.ty - y0 * V.z) + ") scale(" + V.z + ')"><path class="m2-ed-pick" stroke-width="' + f1(1 / Math.max(V.z, 0.01)) + '" d="' + shapeD(i) + '"/></g>');
-    out.push(cdHandles(i, "m2-ed-pickh") + cdDot(cdCentre(i), "m2-ed-pickh"));
-  }
-  function cdLand(out, i, L) {
-    var b = bx(i), off = 3.3 * V.z;
-    out.push('<rect class="m2-ed-landbox" x="' + f1(sx(b[0]) - off) + '" y="' + f1(sy(b[1]) - off) + '" width="' + f1(b[2] * V.z + 2 * off) + '" height="' + f1(b[3] * V.z + 2 * off) + '"/>');
-    out.push(cdHandles(i, "m2-ed-landh") + landMarks(L && L.all || [], L && L.Q || cdCentre(i)));
-  }
-  function cdGateOk(i) {
-    if (i < 0) return false;
-    var r = cdRole(i), need = cdMk.NEED[CD_GATE[tool.kind]], got = shared.cdGate && shared.cdGate.kind === CD_GATE[tool.kind] ? shared.cdGate.inputs : [];
-    if (got.length < need) return r === "epn" && got.indexOf(nodes2[i].id) < 0;
-    return r === "proc" || r === "epn" && !cdStrict();
-  }
-  function cdGateLand(i, P) {
-    var r = cdRole(i);
-    return r === "proc" ? cdPort(i, P, { mod: true }) : r === "epn" ? cdPort(i, P, { red: true }) : null;
-  }
-  function __run134() {
-    V.view.addEventListener("pointermove", function(e) {
-      var on_ = cdPal() && tool && CD_GATE[tool.kind] && !e.buttons, P = on_ ? at(e) : null, i = on_ ? linkEnd(P, -1) : -1;
-      if (on_ && !cdGateOk(i)) i = -1;
-      var h = i >= 0 ? { id: nodes2[i].id, P } : null, was = cdHover;
-      cdHover = h;
-      var q = function(x) {
-        if (!x) return "";
-        var k = nodes2.findIndex(function(n) {
-          return n.id === x.id;
-        }), L = k >= 0 && cdGateLand0(k, x.P);
-        return x.id + (L ? (L.at || "") + (L.spot || "") : "");
-      };
-      if (q(was) !== q(h)) paint();
-    });
-  }
-  function cdGateLand0(k, P) {
-    var need = cdMk.NEED[CD_GATE[tool.kind]], got = shared.cdGate && shared.cdGate.kind === CD_GATE[tool.kind] ? shared.cdGate.inputs.length : 0;
-    return got >= need ? cdGateLand(k, P) : null;
-  }
-  function __run143() {
-    V.view.addEventListener("pointerleave", function() {
-      if (cdHover) {
-        cdHover = null;
-        paint();
-      }
-    });
-  }
-  function cdGateMarks(out) {
-    if (!tool || !CD_GATE[tool.kind] || !cdPal()) {
-      shared.cdGate = null;
-      cdHover = null;
-      return;
-    }
-    if (shared.cdGate && CD_GATE[tool.kind] !== shared.cdGate.kind) shared.cdGate = null;
-    if (shared.cdGate) shared.cdGate.inputs.forEach(function(id) {
-      var i = nodes2.findIndex(function(n) {
-        return n.id === id;
-      });
-      if (i >= 0) cdPicked(out, i);
-    });
-    var k = cdHover ? nodes2.findIndex(function(n) {
-      return n.id === cdHover.id;
-    }) : -1;
-    if (k >= 0 && cdGateOk(k)) cdLand(out, k, cdGateLand0(k, cdHover.P));
-  }
-  function cdLinkMarks(out) {
-    var add = cdAdd(), no2 = link.how && link.how.no, part = !no2 && link.how && link.how.part;
-    var rx = !(add || part) || no2 ? -1 : cdRole(link.from) === "proc" ? link.from : link.to >= 0 && cdRole(link.to) === "proc" ? link.to : -1;
-    if (rx >= 0) cdMainLine(out, rx);
-    if (cdFromJoin()) {
-      var J = cdJoin(link.from, false);
-      out.push(cdDot(J || cdCentre(link.from), "m2-ed-pickh"));
-    } else cdPicked(out, link.from);
-    if (link.to < 0 || !link.how || no2) return;
-    if (rx === link.to) out.push(landMarks([], link.how.land && link.how.land.Q || cdCentre(link.to)));
-    else cdLand(out, link.to, link.how.land);
-  }
-  var cdOver;
-  function __run153() {
-    cdOver = null;
-    V.view.addEventListener("pointermove", function(e) {
-      var on_ = cdPal() && cdAdd() === "p" && !e.buttons && !link, i = on_ ? linkEnd(at(e), -1) : -1, id = i >= 0 && cdRole(i) === "proc" ? nodes2[i].id : null;
-      if (id !== cdOver) {
-        cdOver = id;
-        paint();
-      }
-    });
-    V.view.addEventListener("pointerleave", function() {
-      if (cdOver) {
-        cdOver = null;
-        paint();
-      }
-    });
-  }
-  function cdOverMarks(out) {
-    var i = cdOver && cdPal() && !link && cdAdd() === "p" ? nodes2.findIndex(function(n) {
-      return n.id === cdOver;
-    }) : -1;
-    if (i < 0) {
-      cdOver = null;
-      return;
-    }
-    cdMainLine(out, i);
-    var J = cdJoin(i, false);
-    if (J) out.push(cdDot(J, "m2-ed-pickh"));
-  }
-  function cdAdd() {
-    var k = tool && cdKind(tool.kind);
-    return k === "ADD_REACTANT" ? "r" : k === "ADD_PRODUCT" ? "p" : null;
-  }
-  function cdFree() {
-    return !!tool && !!ARCS[tool.kind] && tool.sticky;
-  }
-  function cdFromJoin() {
-    return cdAdd() === "p" || cdFree() && cdRole(link.from) === "proc";
-  }
-  function cdOnLine() {
-    return !!cdAdd() || cdFree();
-  }
-  function cdStartOk(i) {
-    var r = cdRole(i), add = cdAdd();
-    return r !== "gate" && (cdFree() || (add === "r" ? r === "epn" : add === "p" ? r === "proc" : true));
-  }
-  function cdMain(i) {
-    return edges2.map(function(e, k) {
-      return e.t === i && /\|a$/.test(e.id) || e.s === i && /\|b$/.test(e.id) ? k : -1;
-    }).filter(function(k) {
-      return k >= 0;
-    });
-  }
-  function cdJoin(i, into) {
-    var ka = edges2.findIndex(function(e) {
-      return e.t === i && /\|a$/.test(e.id);
-    });
-    if (ka < 0) return null;
-    var p = ports(ka), A = p[p.length - 2], C = p[p.length - 1];
-    if (p.length === 2 && edges2[ka].s != null) A = cutShape(edges2[ka].s, A, C, bx(edges2[ka].s));
-    var t = into ? 0.75 : 1.25;
-    return [A[0] + t * (C[0] - A[0]), A[1] + t * (C[1] - A[1])];
-  }
-  function cdMainLine(out, i) {
-    cdMain(i).forEach(function(k) {
-      var p = line(k);
-      if (p) out.push('<path class="m2-ed-rxline" stroke-width="' + f1(Math.max(1.5, 1.5 * V.z)) + '" d="M' + p.map(function(q) {
-        return f1(sx(q[0])) + " " + f1(sy(q[1]));
-      }).join("L") + '"/>');
-    });
-  }
-  function cdLineAt(P, not) {
-    if (!cdOnLine()) return -1;
-    var R = 5 / V.z, best = -1, bd = Infinity;
-    edges2.forEach(function(e, k) {
-      var i = /\|a$/.test(e.id) ? e.t : /\|b$/.test(e.id) ? e.s : null;
-      if (i == null || i === not || cdRole(i) !== "proc") return;
-      var p = line(k);
-      for (var j = 1; p && j < p.length; j++) {
-        var d = near(P, p[j - 1], p[j]);
-        if (d <= R && d < bd) {
-          bd = d;
-          best = i;
-        }
-      }
-    });
-    return best;
-  }
-  function cdLiveEnds(S, P, C) {
-    var h = link.how, ok = h && !h.no, J;
-    if (ok && h.part === "reactant" && h.land && h.land.Q) {
-      J = h.land.Q;
-      return [cutShape(link.from, C, J, bx(link.from)), J];
-    }
-    if ((ok ? h.part === "product" : !h && cdFromJoin()) && (J = cdJoin(link.from, false))) return [J, ok && h.land && h.land.Q ? cutShape(link.to, h.land.Q, J, bx(link.to)) : P];
-    return [S, P];
-  }
-  function cdClick(P) {
-    if (CD_GATE[tool.kind]) cdGateClick(P);
-    else cdMake(P, tool.kind);
-  }
-  function cdHow(a, b, P) {
-    var h = cdHow0(a, b, P);
-    if (h && !h.no && P) h.land = cdPort(b, P, h);
-    return h;
-  }
-  var cdClsMemo;
-  function __run163() {
-    cdClsMemo = { t: null, cls: {}, about: {} };
-  }
-  function cdMemo() {
-    var t = shared.cd.now;
-    if (cdClsMemo.t !== t) cdClsMemo = { t, cls: {}, about: {} };
-    return cdClsMemo;
-  }
-  function cdClsOf(id) {
-    var M = cdMemo();
-    if (!(id in M.cls)) {
-      try {
-        var A = cdMk.aliasInfo(M.t, id);
-        M.cls[id] = A.cls && [A.cls, A.homodimer || 1];
-      } catch (e) {
-        M.cls[id] = null;
-      }
-    }
-    return M.cls[id];
-  }
-  function cdPort(i, P, how) {
-    var b = bx(i), C = [b[0] + b[2] / 2, b[1] + b[3] / 2], best = null, bd = Infinity, all = [];
-    var near2 = function(Q, o) {
-      all.push(Q);
-      var d = Math.hypot(Q[0] - P[0], Q[1] - P[1]);
-      if (d < bd) {
-        bd = d;
-        best = o;
-        o.Q = Q;
-      }
-    };
-    if (how.mod && cdRole(i) === "proc") {
-      var S = procPlaces(i);
-      if (!S) return { Q: C };
-      S.forEach(function(o, k) {
-        near2([C[0] + o[0], C[1] + o[1]], { spot: k + 2 });
-      });
-      best.all = all;
-      return best;
-    }
-    if (how.part === "reactant" && cdRole(i) === "proc") {
-      var J = cdJoin(i, true);
-      return J ? { Q: J, all: [J] } : { Q: C };
-    }
-    var N = how.rx || how.red || how.part === "product" ? nodePlaces(i) : null;
-    if (!N) return { Q: C };
-    N.forEach(function(o) {
-      near2([C[0] + o[0], C[1] + o[1]], { at: o[2] });
-    });
-    all.push(C);
-    if (nodeCentre(i, P)) return { Q: C, all };
-    best.all = all;
-    return best;
-  }
-  function cdHow0(a, b, P) {
-    var want = tool && ARCS[tool.kind] ? cdKind(tool.kind) : null, h = cdKindOk(a, b, P, want), g;
-    if (h && h.no && want && tool.sticky && (g = cdKindOk(a, b, P, null)) && !g.no && !(g.rx && cdMk.MODS.indexOf(want) >= 0)) return g;
-    if (h && h.no && want === "CATALYSIS" && tool.sticky && (g = cdKindOk(a, b, P, "PHYSICAL_STIMULATION")) && !g.no) return g;
-    return h;
-  }
-  function cdKindOk(a, b, P, want) {
-    var h = cdKind0(a, b, P, want), m = h && !h.no && cdSays(h, a, b);
-    return m ? { no: m } : h;
-  }
-  function cdAbout(rid) {
-    var M = cdMemo();
-    if (!(rid in M.about)) {
-      try {
-        M.about[rid] = cdMk.about(M.t, rid);
-      } catch (e) {
-        M.about[rid] = null;
-      }
-    }
-    return M.about[rid];
-  }
-  function cdGateOf(i) {
-    var m = nodes2[i].id.match(/^(.*)\|g(\d*)$/), A = m && cdAbout(m[1]);
-    return !A ? null : m[2] ? A.gates[+m[2]] : A.gate && { kind: A.gate.kind, inputs: A.inputs || [] };
-  }
-  function cdNt(i) {
-    var r = i < 0 ? "proc" : cdRole(i), c;
-    if (r === "proc") return { kind: "process", cls: "process" };
-    if (r === "gate") {
-      var g = cdGateOf(i);
-      return g ? import_notation2.default.nodeKind("celldesigner", "BOOLEAN_LOGIC_GATE_" + g.kind) : null;
-    }
-    return r === "epn" && (c = cdClsOf(nodes2[i].id)) ? import_notation2.default.nodeKind("celldesigner", c[0]) : null;
-  }
-  function cdAsk(cls, s, t, held) {
-    var ks = cdNt(s), kt = cdNt(t);
-    if (!ks || !kt) return null;
-    return import_notation2.default.allowed(cls, ks, kt, { sets: ["pd"].concat(cdStrict() ? [] : ["reduced"]), held: !!held, check: function(c) {
-      if (c === "oneInput") {
-        var g = cdGateOf(t);
-        return g && g.inputs && g.inputs.length ? "A NOT gate has one input, and this one has it." : null;
-      }
-      if (c === "already" && t >= 0 && cdRole(t) === "proc" && import_notation2.default.MODS.indexOf(cls) >= 0) {
-        var A = cdAbout(cdRid(t)), al = nodes2[s].id;
-        return A && A.mods.some(function(type, j) {
-          return import_notation2.default.arcKind("celldesigner", type) === cls && A.modAliases[j] === al;
-        }) ? "This " + cls + " is there already." : null;
-      }
-      return null;
-    } });
-  }
-  function cdSays(h, a, b) {
-    if (h.rx) return cdAsk("consumption", a, -1) || cdAsk("production", -1, b);
-    if (h.red) return cdAsk(import_notation2.default.arcKind("celldesigner", h.red), a, b);
-    if (h.gate) return cdAsk("logic arc", a, b);
-    if (h.mod) return cdAsk(import_notation2.default.arcKind("celldesigner", h.mod), a, b);
-    if (h.part) return h.part === "reactant" ? cdAsk("consumption", a, b) : cdAsk("production", a, b);
-    return null;
-  }
-  function cdMoveSays(k, end, i) {
-    var e = edges2[k], m = e.id.match(/^(.*)\|(a|b|[rpm])(\d*)$/), A = m && cdAbout(m[1]);
-    if (!A) return null;
-    var sq2 = nodes2.some(function(n) {
-      return n.id === m[1] + "|proc";
-    });
-    if (!sq2) {
-      if (!import_notation2.default.reducedType("celldesigner", A.type)) return null;
-      var ea = edges2.filter(function(q) {
-        return q.id === m[1] + "|a";
-      })[0], eb = edges2.filter(function(q) {
-        return q.id === m[1] + "|b";
-      })[0];
-      var was = end ? e.t : e.s, ends = [ea ? ea.s : null, eb ? eb.t : ea ? ea.t : null].map(function(x) {
-        return x === was ? i : x;
-      });
-      if (ends[0] == null || ends[1] == null) return null;
-      var pic = function(x) {
-        var q = cdNt(x);
-        return !!q && q.kind === "phenotype";
-      };
-      return cdAsk(import_notation2.default.arcKind("celldesigner", A.type), ends[0], ends[1], !ea || pic(ea.s) === pic(ends[0]));
-    }
-    var cls = m[2] === "m" ? import_notation2.default.arcKind("celldesigner", A.mods[+m[3]]) : /^[ar]$/.test(m[2]) ? "consumption" : "production";
-    return cls ? cdAsk(cls, end ? e.s : i, end ? i : e.t) : null;
-  }
-  function cdKind0(a, b, P, want) {
-    if (b < 0) return null;
-    var ra = cdRole(a), rb = cdRole(b), line2 = !want;
-    var isRx = want && CD_RX.some(function(q) {
-      return q[0] === want;
-    }), isMod = want && cdMk.MODS.indexOf(want) >= 0;
-    var add = want === "ADD_REACTANT" ? "r" : want === "ADD_PRODUCT" ? "p" : null;
-    if (!rb) return { no: "A line joins species, a reaction\u2019s square or a logic gate: never a compartment or a complex\u2019s member." };
-    if (ra === "gate") return { no: "A logic gate has one line out, made with the gate." };
-    if (rb === "gate") {
-      if (ra !== "epn") return { no: "A logic gate\u2019s inputs are species." };
-      return add === "r" || line2 ? { gate: true } : { no: "A new input of a logic gate is drawn with Add reactant." };
-    }
-    if (ra === "proc" && rb === "proc") return { no: "A line does not join two reactions." };
-    if (add === "r") return ra === "epn" && rb === "proc" ? { part: "reactant" } : { no: "Add reactant goes from a species onto a reaction (its square or its main line) or onto a logic gate." };
-    if (add === "p") return ra === "proc" && rb === "epn" ? { part: "product" } : { no: "Add product goes from a reaction (its square or its main line) to a species." };
-    if (line2 && ra === "proc") return { part: "product" };
-    if (line2 && rb === "proc") return onSquare(b, P) ? { mod: cdUsual(b) } : { part: "reactant" };
-    if (ra === "proc") return isMod ? { no: "A " + CD_NAME[want].toLowerCase() + " goes from a species." } : { no: "A product added to a reaction is drawn with Add product." };
-    if (rb === "proc") {
-      return isRx ? { no: "A reactant added to a reaction is drawn with Add reactant; a reaction\u2019s sign makes a new reaction between two species." } : { mod: want || "CATALYSIS" };
-    }
-    if (isMod) {
-      if (!RED_OF[want]) return { no: "CellDesigner has no catalysis between species: it ends on a reaction\u2019s square (between species, physical stimulation)." };
-      return cdStrict() ? { no: "A " + CD_NAME[want].toLowerCase() + " between species is reduced notation, unticked in the palette; it ends on a reaction\u2019s square." } : { red: RED_OF[want] };
-    }
-    return { rx: want || "STATE_TRANSITION" };
-  }
-  function onSquare(i, P) {
-    var b = bx(i), R = 4 / V.z;
-    return !P || P[0] >= b[0] - R && P[0] <= b[0] + b[2] + R && P[1] >= b[1] - R && P[1] <= b[1] + b[3] + R;
-  }
-  var cdUsualMemo;
-  function __run173() {
-    cdUsualMemo = [null, null, {}];
-  }
-  function cdUsual(i) {
-    if (cdUsualMemo[0] !== shared.cd.now) {
-      var n = {}, best = null, most = 0, m, re = /<celldesigner:modification\b[^>]*?\btype="([A-Z_]+)"/g;
-      while (m = re.exec(shared.cd.now)) n[m[1]] = (n[m[1]] || 0) + 1;
-      CD_MOD.forEach(function(q) {
-        if (n[q[0]] > most) {
-          most = n[q[0]];
-          best = q[0];
-        }
-      });
-      cdUsualMemo = [shared.cd.now, best, {}];
-    }
-    var rid = cdRid(i), met = cdUsualMemo[2];
-    if (!(rid in met)) met[rid] = cdMetabolic(rid);
-    return cdUsualMemo[1] || (met[rid] ? "CATALYSIS" : "PHYSICAL_STIMULATION");
-  }
-  function cdMetabolic(rid) {
-    var esc = function(x) {
-      return x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    };
-    var r = shared.cd.now.match(new RegExp('<reaction\\b[^>]*\\bid="' + esc(rid) + '"[\\s\\S]*?</reaction>'));
-    if (!r) return false;
-    var ids = [], m, re = /<celldesigner:(?:baseReactant\b[^>]*?\bspecies|reactantLink\b[^>]*?\breactant)="([^"]+)"/g;
-    while (m = re.exec(r[0])) ids.push(m[1]);
-    return ids.some(function(s) {
-      var sp = shared.cd.now.match(new RegExp('<species\\b[^>]*\\bid="' + esc(s) + '"[\\s\\S]*?</species>'));
-      return sp && /<celldesigner:class>(SIMPLE_MOLECULE|ION)</.test(sp[0]);
-    });
-  }
-  function cdLink(a, b, how) {
-    var ia = nodes2[a].id, ib = nodes2[b].id, line2 = null;
-    cdApply(function(t) {
-      var q;
-      var L = how.land || {};
-      if (how.rx) {
-        q = cdMk.reaction(t, { type: how.rx, from: ia, to: ib, toAt: L.at });
-        line2 = q.reaction;
-      } else if (how.red) {
-        q = cdMk.reduced(t, { type: how.red, from: ia, to: ib, toAt: L.at });
-        line2 = q.reaction;
-      } else if (how.gate) q = cdMk.gateInput(t, cdGateRef(b), ia);
-      else if (how.mod) {
-        q = cdMk.modifier(t, cdRid(b), ia, how.mod, L.spot);
-        line2 = cdRid(b) + "|" + q.part;
-      } else {
-        q = how.part === "reactant" ? cdMk.reactant(t, cdRid(b), ia) : cdMk.product(t, cdRid(a), ib, L.at);
-        line2 = cdRid(how.part === "reactant" ? b : a) + "|" + q.part;
-      }
-      if (line2 && cdCols() === "confetti") {
-        try {
-          return cdMk.recolourLine(q.text, /\|/.test(line2) ? line2 : line2 + "|a", confettiLine(confettiHues(q.text)));
-        } catch (e) {
-          if (!(e && e.refused)) throw e;
-        }
-      }
-      return q.text;
-    }, [], function() {
-      return line2 ? [line2] : [];
-    });
-  }
-  function cdDelete(nodes, lines) {
-    var al = [], jobs = [], ab = function(t, rid) {
-      try {
-        return cdMk.about(t, rid);
-      } catch (e) {
-        return null;
-      }
-    };
-    var seen = {}, job = function(j) {
-      var k = JSON.stringify(j);
-      if (!seen[k]) {
-        seen[k] = 1;
-        jobs.push(j);
-      }
-    };
-    var t0 = shared.cd.now;
-    nodes.forEach(function(i) {
-      var r = cdRole(i), rid = r ? cdRid(i) : null;
-      if (r === "proc") job({ rid });
-      else if (r === "gate") {
-        var m = nodes2[i].id.match(/\|g(\d+)$/), A = ab(t0, rid);
-        if (!m) job({ rid });
-        else if (A) job({ rid, mod: A.mods[+m[1]], al: A.modAliases[+m[1]] });
-      } else al.push(nodes2[i].id);
-    });
-    lines.forEach(function(k) {
-      var e = edges2[k], m = e.id.match(/^(.*)\|(a|b|[rpmi])(\d*)$/);
-      if (!m) return;
-      var rid = m[1], A = ab(t0, rid);
-      if (m[2] === "a" || m[2] === "b") job({ rid });
-      else if (m[2] === "i") job({ rid, input: nodes2[e.s].id });
-      else if (m[2] === "m" && A) job({ rid, mod: A.mods[+m[3]], al: A.modAliases[+m[3]] });
-      else if (A) job({ rid, link: m[2], al: (m[2] === "r" ? A.rl : A.pl)[+m[3]] });
-    });
-    if (!al.length && !jobs.length) return false;
-    cdApply(function(t) {
-      jobs.forEach(function(j) {
-        var A = ab(t, j.rid);
-        if (!A) return;
-        if (j.input) {
-          if (A.inputs && A.inputs.indexOf(j.input) >= 0) t = cdMk.gateInputRemove(t, j.rid, j.input);
-          return;
-        }
-        if (j.mod) {
-          var n = A.mods.findIndex(function(x, q) {
-            return x === j.mod && A.modAliases[q] === j.al;
-          });
-          if (n >= 0) t = cdMk.removeLine(t, j.rid, "m" + n);
-          return;
-        }
-        if (j.link) {
-          var l = (j.link === "r" ? A.rl : A.pl).indexOf(j.al);
-          if (l >= 0) t = cdMk.removeLine(t, j.rid, j.link + l);
-          return;
-        }
-        t = cdMk.removeLine(t, j.rid);
-      });
-      if (al.length) t = cdMk.remove(t, al);
-      return t;
-    });
-    return true;
-  }
-  function __run183() {
-    document.addEventListener("keydown", function(e) {
-      if (e.key !== "Delete" && e.key !== "Backspace" || !cdPal() || /input|textarea|select/i.test(document.activeElement.tagName)) return;
-      if ((shared.selN.length || shared.selE.length && !shared.selP.length) && cdDelete(shared.selN, shared.selE)) {
-        e.preventDefault();
-        e.stopImmediatePropagation();
-      }
-    }, true);
-  }
-  function cdDeleteItem() {
-    if (!rclick) return null;
-    var sq2 = svAt(rclick);
-    if (sq2) return function() {
-      shared.svSel = { id: nodes2[sq2[0]].id, j: sq2[1] };
-      svDelete();
-    };
-    var h = hit(rclick);
-    if (h && h.n != null && asSpace(h.n)) return null;
-    if (h && h.n != null) {
-      var i = h.n;
-      return function() {
-        cdDelete(shared.selN.indexOf(i) >= 0 ? shared.selN : [i], shared.selN.indexOf(i) >= 0 ? shared.selE : []);
-      };
-    }
-    if (h && h.e != null && h.p == null) {
-      var k = h.e;
-      return function() {
-        var all = shared.selE.indexOf(k) >= 0;
-        cdDelete(all ? shared.selN : [], all ? shared.selE : [k]);
-      };
-    }
-    return null;
-  }
-  function cdItems() {
-    if (!rclick) return null;
-    var sq2 = svAt(rclick);
-    if (sq2) return cdSvOwnItems(sq2);
-    var h = hit(rclick), out = [];
-    if (h && h.n != null) {
-      var i = h.n, r = cdRole(i), id = nodes2[i].id;
-      if (r === "gate") {
-        var g = cdMk.about(shared.cd.now, cdRid(i)), m = id.match(/\|g(\d+)$/), now = m ? g.gates[+m[1]] : g.gate;
-        if (!now) return null;
-        var nin = m ? now.inputs.length : (g.inputs || []).length;
-        CD_GATES.forEach(function(q) {
-          if (q[0] !== now.kind && !(q[0] === "NOT" && nin > 1) && nin >= cdMk.NEED[q[0]]) out.push(["Make " + q[1], function() {
-            cdApply(function(t) {
-              return cdMk.gateType(t, cdGateRef(i), { kind: q[0] });
-            }, [id]);
-          }]);
-        });
-        return out;
-      }
-      if (r === "proc") return cdRxItems(cdRid(i));
-      var A = cdMk.aliasInfo(shared.cd.now, id);
-      if (!A.cls) return null;
-      out = cdSvItems(id, A);
-      if (A.cls === "COMPLEX") return out.length ? out : null;
-      out.push(["Change identity", subItem(function(r2, done) {
-        return cdIdentity(id, r2, done);
-      })]);
-      if (A.cls !== "DEGRADED") out.push([A.homodimer > 1 ? "Make monomer" : "Make multimer", function() {
-        cdApply(function(t) {
-          return A.homodimer > 1 ? cdMk.homodimer(t, id, 1) : cdTopClear(cdMk.homodimer(t, id, 2), id, true);
-        }, [id]);
-      }]);
-      out.late = true;
-      return out;
-    }
-    if (h && h.e != null && h.p == null) {
-      var ln = edges2[h.e], mm = ln.id.match(/^(.*)\|(a|b|m\d+)$/);
-      if (!mm || ln.t != null && cdRole(ln.t) === "gate") return null;
-      if (ln.s != null && cdRole(ln.s) === "gate") {
-        var gs = ln.s, gref = cdGateRef(gs), ga = cdMk.about(shared.cd.now, cdRid(gs)), gm = nodes2[gs].id.match(/\|g(\d+)$/), gw2 = gm ? ga.gates[+gm[1]] : ga.gate;
-        if (!gw2) return null;
-        return cdModIdentity(gm ? CD_MODS : CD_RED, gw2.out, function(k) {
-          cdApply(function(t) {
-            return cdMk.gateType(t, gref, { output: k });
-          }, [nodes2[gs].id]);
-        });
-      }
-      if (mm[2][0] !== "m") return cdRxItems(mm[1]);
-      var n = +mm[2].slice(1), ab = cdMk.about(shared.cd.now, mm[1]), was = ab.mods[n];
-      if (cdMk.MODS.indexOf(was) < 0) return null;
-      return cdModIdentity(CD_MODS, was, function(k) {
-        cdApply(function(t) {
-          return cdMk.modifierType(t, mm[1], n, k);
-        }, [], [mm[1] + "|m" + n]);
-      });
-    }
-    return null;
-  }
-  function cdIdentity(id, r, done) {
-    var A = cdMk.aliasInfo(shared.cd.now, id);
-    if (!A.cls) return null;
-    return kindWindow(r, CD_SP.filter(function(q) {
-      return q[0] !== "COMPLEX" && !cdComp(q[0]) && !(A.complex && /^(PHENOTYPE|DEGRADED)$/.test(q[0]));
-    }).map(function(q) {
-      return { name: q[1], own: q[0] === A.cls, go: function() {
-        cdApply(function(t) {
-          return cdMk.retype(t, id, q[0], { from: cdColour(t, A.cls), to: cdColour(t, q[0]) });
-        }, [id]);
-      } };
-    }), done);
-  }
-  function cdModIdentity(set, was, go) {
-    return lateItem(["Change identity", subItem(function(r, done) {
-      return kindWindow(r, set.map(function(q) {
-        return { name: CD_NAME[q[1]], own: q[0] === was, go: function() {
-          go(q[0]);
-        } };
-      }), done);
-    })]);
-  }
-  var CD_MODS;
-  function __run193() {
-    CD_MODS = CD_MOD.map(function(q) {
-      return [q[0], q[0]];
-    });
-  }
-  function cdRxItems(rid) {
-    var ab = cdMk.about(shared.cd.now, rid), set = cdMk.PROCESS.indexOf(ab.type) >= 0 ? CD_RX : null;
-    if (cdMk.REDUCED.indexOf(ab.type) >= 0) return cdModIdentity(CD_RED, ab.type, function(k) {
-      cdApply(function(t) {
-        return cdMk.reactionType(t, rid, k);
-      }, [], [rid]);
-    });
-    if (ab.reversible === null) return null;
-    var out = set ? [["Change identity", subItem(function(r, done) {
-      return kindWindow(r, set.map(function(q) {
-        return { name: q[1], own: q[0] === ab.type, go: function() {
-          cdApply(function(t) {
-            return cdMk.reactionType(t, rid, q[0]);
-          }, [], [rid]);
-        } };
-      }), done);
-    })]] : [];
-    out.push([ab.reversible ? "Make irreversible" : "Make reversible", function() {
-      cdReversible(rid, !ab.reversible);
-    }]);
-    out.late = true;
-    return out;
-  }
-  function cdReversible(rid, on2) {
-    return cdApply(function(t) {
-      return cdMk.reversible(t, rid, on2);
-    }, [], [rid]);
-  }
-  var cdRxSeen;
-  function __run203() {
-    cdRxSeen = [null, null];
-  }
-  function cdRxOf() {
-    if (!shared.cd || shared.selP.length || shared.svSel || !shared.selE.length && !shared.selN.length) return null;
-    if (shared.selE.length === 1 && !shared.selN.length && edges2[shared.selE[0]] && /\|[rp]\d+$/.test(edges2[shared.selE[0]].id)) return null;
-    var rid = null, ok = true;
-    shared.selE.forEach(function(k) {
-      var m = edges2[k] && edges2[k].id.match(/^(.*)\|(a|b|r\d+|p\d+)$/);
-      if (!m || rid && rid !== m[1]) ok = false;
-      else rid = m[1];
-    });
-    shared.selN.forEach(function(i) {
-      var m = nodes2[i] && nodes2[i].id.match(/^(.*)\|proc$/);
-      if (!m || rid && rid !== m[1]) ok = false;
-      else rid = m[1];
-    });
-    if (!ok || !rid) return null;
-    var key = rid + "\0" + shared.cd.now;
-    if (cdRxSeen[0] !== key) {
-      var ab = null;
-      try {
-        ab = cdMk.about(shared.cd.now, rid);
-      } catch (e) {
-        ab = null;
-      }
-      cdRxSeen = [key, ab ? ab.reversible : null];
-    }
-    return cdRxSeen[1] === null ? null : { rid, on: cdRxSeen[1] };
-  }
-  var cdNm;
-  var cdCardDrag;
-  var cdCard;
-  function __run213() {
-    cdNm = null;
-    cdCardDrag = null, cdCard = null;
-  }
-  function cdCardAt(e) {
-    var hit2 = null;
-    Array.prototype.forEach.call(V.img.querySelectorAll('[data-e] rect[height="11"]'), function(r) {
-      if ((r.getAttribute("stroke") || "").toLowerCase() !== "#9aa0a6") return;
-      var b = r.getBoundingClientRect();
-      if (e.clientX >= b.left - 2 && e.clientX <= b.right + 2 && e.clientY >= b.top - 2 && e.clientY <= b.bottom + 2) hit2 = r.closest("[data-e]").getAttribute("data-e");
-    });
-    if (hit2 == null) return -1;
-    var k = edges2.findIndex(function(q) {
-      return q.id === hit2;
-    });
-    return k >= 0 ? k : edges2.findIndex(function(q) {
-      return q.id.indexOf(hit2 + "|") === 0;
-    });
-  }
-  function cdCardDown(e) {
-    var k = cdCardAt(e);
-    if (k < 0) return false;
-    V.view.focus({ preventScroll: true });
-    if (shared.selE.length === 1 && shared.selE[0] === k) {
-      e.stopImmediatePropagation();
-      e.preventDefault();
-      cdCardDrag = { x: e.clientX, y: e.clientY };
-      return true;
-    }
-    cdCardDrag = { pick: k, x: e.clientX, y: e.clientY };
-    return true;
-  }
-  function __run224() {
-    window.addEventListener("pointermove", function(e) {
-      var d = cdCardDrag;
-      if (!d) return;
-      var far = Math.hypot(e.clientX - d.x, e.clientY - d.y);
-      if (d.pick != null) {
-        if (!e.buttons || far >= 5) cdCardDrag = null;
-        return;
-      }
-      if (far >= 4 && !d.said) {
-        d.said = true;
-        warn("CellDesigner keeps no place for a cardinality: it stays in the middle of its line.");
-      }
-    }, true);
-    window.addEventListener("pointerup", function(e) {
-      var d = cdCardDrag;
-      cdCardDrag = null;
-      if (!d || d.pick == null) return;
-      e.stopImmediatePropagation();
-      shared.selN = [];
-      shared.selP = [];
-      shared.selE = [d.pick];
-      shared.part = null;
-      cdCard = d.pick;
-      paint();
-    }, true);
-    window.addEventListener("keydown", function(e) {
-      if (cdCard == null || e.key !== "Delete" && e.key !== "Backspace" || /input|textarea|select/i.test(document.activeElement.tagName)) return;
-      var k = cdCard;
-      if (!shared.cd || shared.selE.length !== 1 || shared.selE[0] !== k || shared.selN.length || shared.selP.length || !edges2[k]) {
-        cdCard = null;
-        return;
-      }
-      e.preventDefault();
-      e.stopImmediatePropagation();
-      if (/\|[rp]\d+$/.test(edges2[k].id)) {
-        cdCard = null;
-        PF_CD.line.setCount(k, "");
-      } else warn("A reaction's own reactant and product: their numbers are cleared in Properties, Cardinality.");
-    }, true);
-  }
-  function cdNameDown(e, P, h) {
-    if (!cdPal() || tool || e.shiftKey || e.pointerType !== "mouse" || edgeAt(P) || h && (h.p != null || h.e != null || h.n != null && !nodes2[h.n].comp)) return false;
-    var k = -1, area = Infinity, info = null, pad = 3, res = null;
-    nodes2.forEach(function(n, i) {
-      var b = boxOf(i);
-      if (!n.comp || b[2] * b[3] >= area || P[0] < b[0] || P[1] < b[1] || P[0] > b[0] + b[2] || P[1] > b[1] + b[3]) return;
-      if (textsOf(i, null, res = res || svIcons()).some(function(el) {
-        var r = el.getBoundingClientRect();
-        return e.clientX >= r.left - pad && e.clientX <= r.right + pad && e.clientY >= r.top - pad && e.clientY <= r.bottom + pad;
-      })) {
-        k = i;
-        area = b[2] * b[3];
-      }
-    });
-    if (k < 0 || shared.selN.indexOf(k) < 0) return false;
-    try {
-      info = cdMk.nameInfo(cdNow().t, nodes2[k].id);
-    } catch (err) {
-      info = null;
-    }
-    if (!info) return false;
-    e.stopImmediatePropagation();
-    e.preventDefault();
-    V.view.setPointerCapture(e.pointerId);
-    V.view.focus({ preventScroll: true });
-    cdNm = { k, id: nodes2[k].id, info, P, x: e.clientX, y: e.clientY, p: null, parts: null, pid: e.pointerId };
-    return true;
-  }
-  function __run234() {
-    window.addEventListener("pointermove", function(e) {
-      var d = cdNm;
-      if (!d || e.pointerId !== d.pid) return;
-      if (!e.buttons) {
-        cdNameUp();
-        return;
-      }
-      if (!d.p && Math.hypot(e.clientX - d.x, e.clientY - d.y) < 4) return;
-      var Q = at(e), I = d.info, want = [I.np[0] + Q[0] - d.P[0], I.np[1] + Q[1] - d.P[1]], best = null, bd = Infinity;
-      window.cdrender.NAME_PLACES.forEach(function(p) {
-        var q = window.cdrender.namePoint(I.box, I.name, I.th, p, I.oval), dd = Math.hypot(q[0] - want[0], q[1] - want[1]);
-        if (dd < bd) {
-          bd = dd;
-          best = [p, q];
-        }
-      });
-      if (!d.parts) d.parts = textsOf(d.k, null);
-      d.p = best[0];
-      var dx = best[1][0] - I.np[0], dy = best[1][1] - I.np[1];
-      d.parts.forEach(function(el) {
-        if (dx || dy) el.setAttribute("transform", "translate(" + f1(dx) + " " + f1(dy) + ")");
-        else el.removeAttribute("transform");
-      });
-    }, true);
-    window.addEventListener("pointerup", function(e) {
-      if (cdNm && e.pointerId === cdNm.pid) cdNameUp();
-    }, true);
-    window.addEventListener("pointercancel", function(e) {
-      if (cdNm && e.pointerId === cdNm.pid) cdNameUp(true);
-    }, true);
-  }
-  function cdNameUp(cancel) {
-    var d = cdNm;
-    cdNm = null;
-    if (!d) return;
-    if (cancel) {
-      (d.parts || []).forEach(function(el) {
-        el.removeAttribute("transform");
-      });
-      return;
-    }
-    if (d.p && cdApply(function(t) {
-      return cdMk.nameAt(t, d.id, d.p);
-    }, [d.id])) return;
-    (d.parts || []).forEach(function(el) {
-      el.removeAttribute("transform");
-    });
-    var k = nodes2.findIndex(function(n) {
-      return n.id === d.id;
-    });
-    shared.selN = k >= 0 ? [k] : [];
-    shared.selP = [];
-    shared.selE = [];
-    shared.part = null;
-    paint();
-  }
-  function __run243() {
-    V.view.addEventListener("dblclick", function(e) {
-      if (!cdPal() || !editing(e)) return;
-      if (tool || Date.now() - placedAt < 600) {
-        e.stopImmediatePropagation();
-        return;
-      }
-      var named = function(n, k) {
-        return cdRole(k) === "epn" || n.comp || n.up != null && nodes2[n.up].shape.kind === "Complex";
-      };
-      var P = at(e), sq2 = svAt(P);
-      if (sq2) {
-        e.stopImmediatePropagation();
-        cdSvOpen(nodes2[sq2[0]].id, sq2[1]);
-        return;
-      }
-      var i = nameAt(P, named);
-      if (i < 0) return;
-      var A = cdMk.aliasInfo(shared.cd.now, nodes2[i].id);
-      if (A.cls === "DEGRADED") return;
-      e.stopImmediatePropagation();
-      typeIn(nodes2[i].id, null);
-    }, true);
-  }
-  function cdNameOf(id, shown2) {
-    var A = cdMk.aliasInfo(shared.cd.now, id), s = A.name || "";
-    if (s === A.id && !shown2) return "";
-    s = s.replace(/&#x([0-9a-f]+);/gi, function(m, h) {
-      return String.fromCodePoint(parseInt(h, 16));
-    }).replace(/&#(\d+);/g, function(m, d) {
-      return String.fromCodePoint(+d);
-    }).replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&");
-    return window.cdrender.plainName(s).replace(/_br_/g, " ");
-  }
-  function cdRename(id, v) {
-    cdApply(function(t) {
-      return cdMk.rename(t, id, v);
-    }, [id]);
-  }
-  var cdFeatMemo;
-  function __run253() {
-    cdFeatMemo = {};
-  }
-  function cdFeat(id) {
-    var t = shared.cd.base;
-    if (cdFeatMemo.t !== t) cdFeatMemo = { t };
-    if (!(id in cdFeatMemo)) {
-      try {
-        cdFeatMemo[id] = cdMk.features(t, id);
-      } catch (e) {
-        cdFeatMemo[id] = null;
-      }
-    }
-    return cdFeatMemo[id];
-  }
-  function cdFront(i, f) {
-    var b = boxOf(i), s = 6 * ((f && f.homodimer || 1) - 1);
-    return [b[0], b[1], b[2] - s, b[3] - s];
-  }
-  function cdSvList(i) {
-    var n = nodes2[i];
-    var role = n && cdRole(i);
-    if (!n || n.comp || !cdMk || !window.cdrender || role !== "epn" && role !== null) return [];
-    var f = cdFeat(n.id);
-    if (!f) return [];
-    var b = cdFront(i, f), on2 = window.cdrender.onBorder, out = [];
-    f.residues.forEach(function(r, k) {
-      out.push([r.name, on2(b, r.angle), [16, 16], SV, k]);
-    });
-    var st = f.structural || (shared.cdPend && shared.cdPend.id === n.id && shared.cdPend.kind === SS ? { text: "", angle: shared.cdPend.angle } : null);
-    if (st) out.push([st.text, on2(b, st.angle), [2 * cdRx(st.text), 16], SS, 0]);
-    if (f.info || shared.cdPend && shared.cdPend.id === n.id && shared.cdPend.kind === UI) out.push([f.info ? f.info.text : "", [b[0] + b[2] / 2, b[1]], [70, 16], UI, 0]);
-    return out;
-  }
-  var cdTop;
-  function __run273() {
-    cdTop = Math.PI / 2;
-  }
-  function cdRx(txt) {
-    return Math.trunc(window.cdrender.width(txt || "", 10) / 2 + 12);
-  }
-  function cdFrontOf(t, a, box2) {
-    var I = cdMk.aliasInfo(t, a), b = box2 || I.box, s = 6 * ((I.homodimer || 1) - 1);
-    return [b[0], b[1], b[2] - s, b[3] - s];
-  }
-  function cdAngleOn(p, F) {
-    return cdMk.ratioAngle([(p[0] - F[0]) / F[2] - 0.5, (p[1] - F[1]) / F[3] - 0.5]);
-  }
-  function cdIcons0(t, a) {
-    var f = cdMk.features(t, a), out = [];
-    f.residues.forEach(function(r, k) {
-      out.push({ ang: r.angle, s: [16, 16], k: SV, n: k });
-    });
-    if (f.structural) out.push({ ang: f.structural.angle, s: [2 * cdRx(f.structural.text), 16], k: SS, n: 0 });
-    if (f.info || cdMultiTop(t, a)) out.push({ ang: null, s: [70, 16], k: UI, n: 0 });
-    return out;
-  }
-  function cdOn(ic, F, F0) {
-    var on2 = window.cdrender.onBorder, top = function(B) {
-      return [B[0] + B[2] / 2, B[1]];
-    };
-    if (!F0) return ic.map(function(q) {
-      return { c: q.ang == null ? top(F) : on2(F, q.ang), s: q.s, k: q.k, n: q.n };
-    });
-    var rel = function(B, p) {
-      return [p[0] - B[0] - B[2] / 2, p[1] - B[1] - B[3] / 2];
-    }, abs = function(p) {
-      return [p[0] + F[0] + F[2] / 2, p[1] + F[1] + F[3] / 2];
-    };
-    var rs = ic.filter(function(q) {
-      return q.k === SV;
-    }), os = ic.filter(function(q) {
-      return q.k !== SV;
-    });
-    var oP = os.map(function(q) {
-      return q.ang == null ? rel(F, top(F)) : iconKeep(rel(F0, on2(F0, q.ang)), F0[2], F0[3], F[2], F[3]);
-    });
-    var rP = iconSpread(rs.map(function(q) {
-      return { p: rel(F0, on2(F0, q.ang)), s: q.s };
-    }), os.map(function(q, k) {
-      return { p: oP[k], s: q.s };
-    }), F0[2], F0[3], F[2], F[3], 20);
-    return ic.map(function(q) {
-      var k = rs.indexOf(q);
-      return { c: abs(k < 0 ? oP[os.indexOf(q)] : rP[k]), s: q.s, k: q.k, n: q.n };
-    });
-  }
-  function cdIcons(t, a, F) {
-    return cdOn(cdIcons0(t, a), F || cdFrontOf(t, a));
-  }
-  function cdClash(c, s, icons) {
-    return icons.some(function(q) {
-      return Math.abs(c[0] - q.c[0]) < (s[0] + q.s[0]) / 2 + 2 - 1e-6 && Math.abs(c[1] - q.c[1]) < (s[1] + q.s[1]) / 2 + 2 - 1e-6;
-    });
-  }
-  function cdPairs(ic) {
-    var n = 0;
-    ic.forEach(function(q, k) {
-      ic.slice(k + 1).forEach(function(o) {
-        if (cdClash(q.c, q.s, [o])) n++;
-      });
-    });
-    return n;
-  }
-  function cdGrowStep(b, base) {
-    var w = b[2] + 20, h = b[3] + 20 * base[1] / base[0];
-    return [b[0] - (w - b[2]) / 2, b[1] - (h - b[3]) / 2, w, h];
-  }
-  function cdKindSize(t, a) {
-    var I = cdMk.aliasInfo(t, a), L = cdMk.LOOK[I.cls];
-    return L ? [L[0], L[1]] : [I.box[2], I.box[3]];
-  }
-  function cdRoom(t, a, s, first, skip, also) {
-    var b0 = cdMk.aliasInfo(t, a).box, b = b0, base = cdKindSize(t, a), on2 = window.cdrender.onBorder, F0 = cdFrontOf(t, a), F = F0;
-    var ic0 = cdIcons0(t, a).filter(function(q) {
-      return !skip || !skip(q);
-    });
-    for (var g = 0; g < 80; g++) {
-      F = cdFrontOf(t, a, b);
-      var ic = cdOn(ic0, F, F0), cands = (first ? first(F) : []).concat(cdMk.placesFor(F[2], F[3], Math.max(20, s[1] + 4)));
-      for (var j = 0; j < cands.length; j++) if (!cdClash(on2(F, cands[j]), s, ic) && !(also && also(cands[j]))) return { box: b === b0 ? null : b, angle: cands[j] };
-      b = cdGrowStep(b, base);
-    }
-    return { box: b === b0 ? null : b, angle: cdMk.placesFor(F[2], F[3])[0] };
-  }
-  var cdGrew;
-  function __run283() {
-    cdGrew = null;
-  }
-  function cdGrowBounds(t, a, box2) {
-    if (cdGrew && !cdGrew[a]) {
-      var i = nodes2.findIndex(function(n) {
-        return n.id === a;
-      });
-      if (i >= 0) cdGrew[a] = boxOf(i);
-    }
-    return cdMk.bounds(t, a, box2);
-  }
-  function cdGrow(t, a, box2, skip) {
-    if (!box2) return t;
-    var t0 = t, F0 = cdFrontOf(t, a), F = cdFrontOf(t, a, box2), ic = cdOn(cdIcons0(t, a).filter(function(q) {
-      return !skip || !skip(q);
-    }), F, F0), any = false;
-    ic.forEach(function(q) {
-      if (q.k === SV) {
-        t = cdMk.residueMove(t, a, q.n, cdAngleOn(q.c, F));
-        any = true;
-      } else if (q.k === SS) t = cdMk.structuralMove(t, a, cdAngleOn(q.c, F));
-    });
-    t = cdGrowBounds(t, a, box2);
-    return any ? cdFitOthers(t0, t, a) : t;
-  }
-  function cdFitOthers(t0, t, id) {
-    cdMk.proteinAliases(t, id).forEach(function(a) {
-      if (a === id) return;
-      var was = cdPairs(cdIcons(t0, a)), ic = cdIcons0(t, a), b0 = cdMk.aliasInfo(t, a).box, b = b0, base = cdKindSize(t, a);
-      if (cdPairs(cdOn(ic, cdFrontOf(t, a))) <= was) return;
-      for (var g = 0; g < 30; g++) {
-        b = cdGrowStep(b, base);
-        if (cdPairs(cdOn(ic, cdFrontOf(t, a, b))) <= was) {
-          t = cdGrowBounds(t, a, b);
-          return;
-        }
-      }
-    });
-    return t;
-  }
-  function cdOthersTop(t, id) {
-    var on2 = window.cdrender.onBorder, cs = cdMk.proteinAliases(t, id).filter(function(a) {
-      return a !== id;
-    }).map(function(a) {
-      var F = cdFrontOf(t, a);
-      return [F, cdIcons(t, a, F).filter(function(q) {
-        return q.k !== SV;
-      })];
-    });
-    return function(ang) {
-      return cs.some(function(c) {
-        return cdClash(on2(c[0], ang), [16, 16], c[1]);
-      });
-    };
-  }
-  function cdResidueNew(t, id) {
-    t = cdMk.joinKin(t, id);
-    var r = cdRoom(t, id, [16, 16], null, null, cdOthersTop(t, id));
-    t = cdGrow(t, id, r.box);
-    var o = cdMk.residue(t, id, { state: "empty", angle: r.angle });
-    return { text: cdFitOthers(t, o.text, id), residue: o.residue };
-  }
-  function cdResidueRoom(t, id, k) {
-    var sk = function(q) {
-      return q.k === SV && q.n === k;
-    }, r = cdRoom(t, id, [16, 16], null, sk, cdOthersTop(t, id));
-    t = cdGrow(t, id, r.box, sk);
-    return cdFitOthers(t, cdMk.residueMove(t, id, k, r.angle), id);
-  }
-  function cdSsFirst(txt, keep) {
-    return function(F) {
-      if (keep != null) return [keep];
-      var rx = cdRx(txt), H2 = Math.PI / 2, c = [cdTop];
-      [37 + rx, -(37 + rx)].forEach(function(dx) {
-        if (Math.abs(dx) + rx <= F[2] / 2) c.push(H2 - dx / F[2] * H2);
-      });
-      return c;
-    };
-  }
-  function cdSsAngle(t, id, txt) {
-    return cdRoom(t, id, [2 * cdRx(txt), 16], cdSsFirst(txt), function(q) {
-      return q.k === SS;
-    }).angle;
-  }
-  function cdSsSet(t, id, v, keep) {
-    var was = {};
-    cdCopiesOf(t, id).forEach(function(a) {
-      var s = cdMk.features(t, a).structural;
-      was[a] = a === id && keep != null ? keep : s ? s.angle : null;
-    });
-    t = cdMk.structural(t, id, v, true);
-    Object.keys(was).forEach(function(a) {
-      var s = [2 * cdRx(v), 16], skip = function(q) {
-        return q.k === SS;
-      }, r = null;
-      if (was[a] != null) r = cdRoom(t, a, s, function() {
-        return [was[a]];
-      }, skip);
-      if (!r || r.box || r.angle !== was[a]) r = cdRoom(t, a, s, cdSsFirst(v), skip);
-      t = cdMk.structuralMove(cdGrow(t, a, r.box, skip), a, r.angle);
-    });
-    return t;
-  }
-  var cdMultiMemo;
-  function __run293() {
-    cdMultiMemo = [null, null];
-  }
-  function cdKindKey(sp) {
-    var cl = /<celldesigner:class>([^<]*)</.exec(sp), nm = / name="([^"]*)"/.exec(sp);
-    return cl && nm ? cl[1] + "" + nm[1] : null;
-  }
-  function cdMultis(t) {
-    if (cdMultiMemo[0] !== t) {
-      var out = {}, re = /<species [^>]*>[\s\S]*?<\/species>/g, m;
-      while (m = re.exec(t)) {
-        var hd = /<celldesigner:homodimer>(\d+)</.exec(m[0]), key = hd && +hd[1] > 1 && cdKindKey(m[0]);
-        if (key) out[key] = true;
-      }
-      cdMultiMemo = [t, out];
-    }
-    return cdMultiMemo[1];
-  }
-  function cdMultiTop(t, id) {
-    var sp = new RegExp('<species [^>]*id="' + cdMk.aliasInfo(t, id).id + '"[^>]*>[\\s\\S]*?</species>').exec(t), key = sp && cdKindKey(sp[0]);
-    return !!(key && cdMultis(t)[key]);
-  }
-  function cdCopiesOf(t, id) {
-    var sid = cdMk.aliasInfo(t, id).id, out = [id], re = new RegExp('<celldesigner:(?:complexS|s)peciesAlias id="([^"]*)" species="' + sid + '"', "g"), m;
-    while (m = re.exec(t)) if (m[1] !== id) out.push(m[1]);
-    return out;
-  }
-  function cdKindAliases(t, id) {
-    var sp = new RegExp('<species [^>]*id="' + cdMk.aliasInfo(t, id).id + '"[^>]*>[\\s\\S]*?</species>').exec(t), key = sp && cdKindKey(sp[0]), out = [];
-    if (!key) return cdCopiesOf(t, id);
-    var re = /<species [^>]*>[\s\S]*?<\/species>/g, m;
-    while (m = re.exec(t)) if (cdKindKey(m[0]) === key) {
-      var sid = / id="([^"]*)"/.exec(m[0]);
-      if (sid) cdCopiesOf(t, cdFirstAlias(t, sid[1]) || id).forEach(function(a) {
-        if (out.indexOf(a) < 0) out.push(a);
-      });
-    }
-    return out.length ? out : [id];
-  }
-  function cdFirstAlias(t, sid) {
-    var m = new RegExp('<celldesigner:(?:complexS|s)peciesAlias id="([^"]*)" species="' + sid + '"').exec(t);
-    return m ? m[1] : null;
-  }
-  function cdTopClear(t, id, all) {
-    (all ? cdKindAliases(t, id) : [id]).forEach(function(a) {
-      for (var g = 0; g < 40; g++) {
-        var ic = cdIcons(t, a), u = ic.filter(function(q) {
-          return q.k === UI;
-        });
-        var hit2 = ic.filter(function(q) {
-          return q.k !== UI && cdClash(q.c, q.s, u);
-        })[0];
-        if (!hit2) break;
-        if (hit2.k === SS) {
-          var s = cdMk.features(t, a).structural, r = cdRoom(t, a, hit2.s, cdSsFirst(s.text), function(q) {
-            return q.k === SS;
-          });
-          t = cdMk.structuralMove(cdGrow(t, a, r.box, function(q) {
-            return q.k === SS;
-          }), a, r.angle);
-        } else t = cdResidueRoom(t, a, hit2.n);
-      }
-    });
-    return t;
-  }
-  function cdAngle(i, r) {
-    return cdMk.ratioAngle(r);
-  }
-  function cdSvMove(i, j, r) {
-    var q = cdSvList(i)[j], id = nodes2[i].id;
-    if (!q || q[3] === UI) return false;
-    var a = cdAngle(i, r), ok = cdApply(function(t) {
-      return q[3] === SV ? cdMk.residueMove(cdMk.joinKin(t, id), id, q[4], a) : cdMk.structuralMove(t, id, a);
-    }, []);
-    shared.svSel = { id, j };
-    paint();
-    return ok;
-  }
-  function cdSvDelete(i, j) {
-    var q = cdSvList(i)[j], id = nodes2[i].id;
-    if (!q) return false;
-    return cdApply(function(t) {
-      return q[3] === SV ? cdMk.residueRemove(cdMk.joinKin(t, id), id, q[4]) : q[3] === SS ? cdMk.structural(t, id, null) : cdMk.info(t, id, null);
-    }, [id]);
-  }
-  function cdSvOpen(id, j) {
-    var i = nodes2.findIndex(function(n) {
-      return n.id === id;
-    }), q = i < 0 ? null : cdSvList(i)[j];
-    if (!q) return;
-    cdSvWin(id, q[3], q[4]);
-  }
-  function cdSsTyped(id, v) {
-    var pend = shared.cdPend && shared.cdPend.id === id && shared.cdPend.kind === SS ? shared.cdPend : null;
-    shared.cdPend = null;
-    if (pend && v) cdApply(function(t) {
-      return cdSsSet(t, id, v, pend.angle);
-    }, []);
-    paint();
-  }
-  function cdSvWin(id, kind, k) {
-    if (shared.typing) shared.typing.done(true);
-    var m0 = map, res = kind === SV, ui = kind === UI;
-    var feat = function() {
-      try {
-        return cdMk.features(shared.cd.base, id);
-      } catch (e) {
-        return null;
-      }
-    };
-    var f = feat();
-    if (!f || res && !f.residues[k]) return;
-    var box2 = document.createElement("div");
-    box2.className = "m2-cx m2-cdsv";
-    box2.setAttribute("role", "dialog");
-    box2.setAttribute("aria-label", res ? "Residue" : ui ? "Unit of information" : "Structural state");
-    box2.innerHTML = ui ? '<label><span>Prefix</span><select></select></label><label class="m2-cdsv-list"><span>Label</span><select></select></label><label class="m2-cdsv-text"><span>Label</span><input type="text" spellcheck="false"></label><button type="button">Remove</button>' : res ? '<label><span>Site</span><input type="text" spellcheck="false"></label><label><span>Modification</span><select></select></label>' : '<label><span>State</span><select><option value="open">Open</option><option value="closed">Closed</option><option value="">Text</option></select></label><label class="m2-cdsv-text"><span>Text</span><input type="text" spellcheck="false"></label><button type="button">Remove</button>';
-    var inp = box2.querySelector("input"), sel = box2.querySelector("select"), row = box2.querySelector(".m2-cdsv-text");
-    var lrow = box2.querySelector(".m2-cdsv-list"), lab = lrow && lrow.querySelector("select");
-    var fixed = function() {
-      return !!cdMk.INFO[sel.value];
-    };
-    var labels = function() {
-      lab.textContent = "";
-      (cdMk.INFO[sel.value] || []).forEach(function(l) {
-        lab.appendChild(new Option(l, l));
-      });
-      lrow.hidden = !fixed();
-      row.hidden = fixed();
-    };
-    if (res) cdMk.STATES.forEach(function(s) {
-      sel.appendChild(new Option(s, s));
-    });
-    var rid = res ? f.residues[k].id : null;
-    var pendOf = function() {
-      return shared.cdPend && shared.cdPend.id === id && shared.cdPend.kind === kind ? shared.cdPend : null;
-    };
-    if (ui) {
-      Object.keys(cdMk.INFO).concat(["N", "free input"]).forEach(function(p) {
-        sel.appendChild(new Option(p, p));
-      });
-      sel.value = f.info ? f.info.prefix : "pc";
-      labels();
-      if (fixed()) lab.value = f.info ? f.info.label : lab.options[0].value;
-      else inp.value = f.info ? f.info.label : "";
-    } else if (res) {
-      inp.value = f.residues[k].name || "";
-      sel.value = f.residues[k].state || "empty";
-    } else {
-      var now = f.structural ? f.structural.text : "";
-      sel.value = /^(open|closed)$/.test(now) ? now : "";
-      inp.value = sel.value ? "" : now;
-      row.hidden = !!sel.value;
-    }
-    var T;
-    var live = function() {
-      return shared.typing === T && on && map === m0;
-    };
-    var kNow = function() {
-      var g = feat();
-      return g ? g.residues.findIndex(function(r) {
-        return r.id === rid;
-      }) : -1;
-    };
-    var jOf = function() {
-      var g = feat();
-      return !g ? -1 : res ? kNow() : ui ? g.info || pendOf() ? g.residues.length + (g.structural ? 1 : 0) : -1 : g.structural || pendOf() ? g.residues.length : -1;
-    };
-    var write2 = function(fn) {
-      if (!live()) return;
-      if (res && (k = kNow()) < 0) {
-        T.done(false);
-        return;
-      }
-      cdApply(fn, []);
-      var j = jOf();
-      if (j < 0 && !pendOf()) {
-        T.done(false);
-        return;
-      }
-      shared.svSel = j < 0 ? null : { id, j };
-      paint();
-    };
-    var site2 = function() {
-      var kk = kNow(), r = kk < 0 ? null : feat().residues[kk], v = inp.value.trim();
-      if (r && v !== (r.name || "")) write2(function(t) {
-        return cdMk.residueName(cdMk.joinKin(t, id), id, k, v);
-      });
-    };
-    var put2 = function(v) {
-      var pend = pendOf();
-      if (v) {
-        write2(function(t) {
-          return cdSsSet(t, id, v, pend ? pend.angle : null);
-        });
-        if (pend && shared.cdPend === pend) shared.cdPend = null;
-      } else if (!pend) write2(function(t) {
-        return cdMk.structural(t, id, null);
-      });
-    };
-    var unit = function(q) {
-      var pend = pendOf();
-      if (!q) {
-        if (!pend) write2(function(t) {
-          return cdMk.info(t, id, null);
-        });
-        return;
-      }
-      write2(function(t) {
-        return cdTopClear(cdMk.info(t, id, q, true), id, false);
-      });
-      if (pend && shared.cdPend === pend) shared.cdPend = null;
-    };
-    var chosen = function() {
-      return [sel.value, fixed() ? lab.value : inp.value.trim()];
-    };
-    var typed = function() {
-      if (ui) {
-        var g = (feat() || {}).info, q = chosen();
-        if (q[1] && (pendOf() || !g || g.prefix !== q[0] || g.label !== q[1])) unit(q);
-        return;
-      }
-      if (res) site2();
-      else if (!sel.value) {
-        var v = inp.value.trim(), st = (feat() || {}).structural;
-        if (v !== (st ? st.text : "") || v && pendOf()) put2(v);
-      }
-    };
-    var place = function() {
-      var i = nodes2.findIndex(function(n) {
-        return n.id === id;
-      }), j = jOf(), q = i < 0 || j < 0 ? null : cdSvList(i)[j];
-      if (i < 0 || !box2.isConnected) return;
-      if (!q || q[3] !== kind) {
-        var b = boxOf(i);
-        q = [0, [b[0] + b[2] / 2, b[1] + b[3] / 2], [b[2], 0]];
-      }
-      var vr = V.view.getBoundingClientRect(), z = box2.getBoundingClientRect().width / box2.offsetWidth || 1, w = box2.offsetWidth * z, ht = box2.offsetHeight * z;
-      var nb = boxOf(i), X0 = Math.min(nb[0], q[1][0] - q[2][0] / 2), X1 = Math.max(nb[0] + nb[2], q[1][0] + q[2][0] / 2), Y0 = Math.min(nb[1], q[1][1] - q[2][1] / 2), Y1 = Math.max(nb[1] + nb[3], q[1][1] + q[2][1] / 2);
-      var L = vr.left + sx(X0) * z, R = vr.left + sx(X1) * z, T0 = vr.top + sy(Y0) * z, B = vr.top + sy(Y1) * z, g = 10 * z, W = V.winW(), H2 = V.winH();
-      var cx = Math.max(4, Math.min((L + R) / 2 - w / 2, W - 4 - w)), cy = Math.max(4, Math.min((T0 + B) / 2 - ht / 2, H2 - 4 - ht));
-      var at2 = B + g + ht <= H2 - 4 ? [cx, B + g] : T0 - g - ht >= 4 ? [cx, T0 - g - ht] : R + g + w <= W - 4 ? [R + g, cy] : L - g - w >= 4 ? [L - g - w, cy] : [cx, Math.max(4, H2 - 4 - ht)];
-      box2.style.left = at2[0] / z + "px";
-      box2.style.top = at2[1] / z + "px";
-    };
-    var outside = function(e) {
-      if (!box2.contains(e.target)) T.done(true);
-    };
-    T = shared.typing = { inp, place, done: function(keep) {
-      if (shared.typing !== T) return;
-      if (keep) typed();
-      shared.typing = null;
-      box2.remove();
-      document.removeEventListener("pointerdown", outside, true);
-      if (pendOf()) shared.cdPend = null;
-      paint();
-    } };
-    sel.addEventListener("change", function() {
-      if (ui) {
-        var g = (feat() || {}).info, typed2 = inp.value.trim(), was = typed2 || (g && !cdMk.INFO[g.prefix] ? g.label : "");
-        labels();
-        if (g && g.prefix === sel.value) {
-          if (fixed()) lab.value = g.label;
-          else inp.value = g.label;
-          return;
-        }
-        if (fixed()) unit(chosen());
-        else {
-          inp.value = was;
-          inp.focus();
-          if (was) unit(chosen());
-        }
-        return;
-      }
-      if (res) {
-        var s = sel.value;
-        write2(function(t) {
-          return cdMk.residueState(cdMk.joinKin(t, id), id, k, s);
-        });
-        return;
-      }
-      row.hidden = !!sel.value;
-      if (sel.value) put2(sel.value);
-      else {
-        var g = feat();
-        inp.value = g && g.structural ? g.structural.text : "";
-        inp.focus();
-      }
-    });
-    inp.addEventListener("change", typed);
-    if (ui) lab.addEventListener("change", function() {
-      unit(chosen());
-    });
-    if (!res) box2.querySelector("button").addEventListener("click", function() {
-      if (pendOf()) T.done(false);
-      else if (ui) unit(null);
-      else put2(null);
-    });
-    box2.addEventListener("keydown", function(e) {
-      e.stopPropagation();
-      if (e.key === "Escape") {
-        e.preventDefault();
-        T.done(false);
-        V.view.focus({ preventScroll: true });
-      } else if (e.key === "Enter" && e.target.tagName !== "BUTTON") {
-        e.preventDefault();
-        T.done(true);
-        V.view.focus({ preventScroll: true });
-      } else if ((e.ctrlKey || e.metaKey) && V.letter(e) === "a" && !/input/i.test(e.target.tagName)) e.preventDefault();
-    });
-    box2.addEventListener("pointerdown", function(e) {
-      e.stopPropagation();
-    });
-    box2.addEventListener("keydown", function(e) {
-      if (e.key !== "Tab") return;
-      var fs = Array.prototype.filter.call(box2.querySelectorAll("input, select, button"), function(x) {
-        return !x.closest("[hidden]");
-      }), at2 = fs.indexOf(document.activeElement);
-      e.preventDefault();
-      fs[(at2 + (e.shiftKey ? -1 : 1) + fs.length) % fs.length].focus();
-    });
-    document.body.appendChild(box2);
-    document.addEventListener("pointerdown", outside, true);
-    var j0 = jOf();
-    shared.svSel = j0 < 0 ? null : { id, j: j0 };
-    paint();
-    place();
-    box2.tabIndex = -1;
-    box2.setAttribute("data-keys-own", "");
-    setTimeout(function() {
-      if (shared.typing === T) box2.focus({ preventScroll: true });
-    }, 0);
-  }
-  function cdSvAdd(id, kind) {
-    var i = nodes2.findIndex(function(n) {
-      return n.id === id;
-    });
-    if (i < 0) return;
-    if (shared.typing) shared.typing.done(true);
-    if (kind === SV) {
-      var k = null;
-      if (!cdApply(function(t) {
-        var o = cdResidueNew(t, id);
-        k = o.residue;
-        return o.text;
-      }, [])) return;
-      shared.svSel = { id, j: k };
-      paint();
-      return;
-    }
-    shared.cdPend = kind === SS ? { id, kind: SS, angle: cdSsAngle(shared.cd.base, id, "") } : { id, kind: UI };
-    if (kind === UI) {
-      cdSvWin(id, UI, 0);
-      return;
-    }
-    var j = cdSvList(i).map(function(q) {
-      return q[3];
-    }).indexOf(SS);
-    if (j < 0) {
-      shared.cdPend = null;
-      return;
-    }
-    typeIn(id, j);
-  }
-  function cdSvItems(id, A) {
-    var f = cdFeat(id), out = [];
-    if (!f || A.cls === "DEGRADED") return out;
-    if (f.protein) out.push(["Add state variable", function() {
-      cdSvAdd(id, SV);
-    }]);
-    if (!f.structural) out.push(["Add structural state", function() {
-      cdSvAdd(id, SS);
-    }]);
-    if (!f.info) out.push(["Add unit of information", function() {
-      cdSvAdd(id, UI);
-    }]);
-    return out;
-  }
-  function cdSvOwnItems(q) {
-    var i = q[0], it = cdSvList(i)[q[1]], id = nodes2[i].id;
-    if (!it) return null;
-    var out = [["Edit", function() {
-      cdSvOpen(id, q[1]);
-    }]];
-    if (it[3] === UI) return out.concat(cdUnitItems(id, q[1]));
-    if (it[3] !== SV) return out;
-    var now = cdFeat(id).residues[it[4]].state || "empty";
-    out.push(["Change state", subItem(function(r, done) {
-      return kindWindow(r, cdMk.STATES.map(function(s) {
-        return {
-          name: s,
-          own: s === now,
-          go: function() {
-            cdApply(function(t) {
-              return cdMk.residueState(cdMk.joinKin(t, id), id, it[4], s);
-            }, []);
-            shared.svSel = { id, j: q[1] };
-            paint();
-          }
-        };
-      }), done);
-    })]);
-    return out;
-  }
-  function cdUnitItems(id, j) {
-    var f = cdFeat(id), now = f && f.info ? f.info.prefix + ":" + f.info.label : "", list2 = [];
-    Object.keys(cdMk.INFO).forEach(function(p) {
-      cdMk.INFO[p].forEach(function(l) {
-        list2.push([p, l]);
-      });
-    });
-    return [["Change unit", subItem(function(r, done) {
-      return kindWindow(r, list2.map(function(u) {
-        return { name: u.join(":"), own: u.join(":") === now, go: function() {
-          cdApply(function(t) {
-            return cdMk.info(t, id, u, true);
-          }, []);
-          shared.svSel = { id, j };
-          paint();
-        } };
-      }), done);
-    })]];
-  }
-  function cdSpecies(i) {
-    return cdRole(i) === "epn" && nodes2[i].el.getAttribute("yfiles.foldertype") !== "group";
-  }
-  function cdSetSize(pairs) {
-    var ids = [], was = {}, one = {};
-    pairs.forEach(function(q) {
-      var b = boxOf(q[0]);
-      if (q[1].some(function(v, j) {
-        return Math.abs(v - b[j]) >= 5e-3;
-      })) {
-        ids.push(nodes2[q[0]].id);
-        was[nodes2[q[0]].id] = b;
-        one[q[0]] = q[1];
-      }
-    });
-    if (!ids.length) {
-      liveOff();
-      sizeOff();
-      paint();
-      return;
-    }
-    commit(null, { name: "size", ids, write: function() {
-      setBoxes(one);
-    }, parsed: true, then: function() {
-      var ks = nodes2.map(function(n, k) {
-        return ids.indexOf(n.id) >= 0 ? k : -1;
-      }).filter(function(k) {
-        return k >= 0;
-      });
-      setBoxes(grown(ks, boxOf, function(k) {
-        return was[nodes2[k].id] || boxOf(k);
-      }, function() {
-        return false;
-      }));
-      shared.selN = [];
-      nodes2.forEach(function(n, k) {
-        if (ids.indexOf(n.id) >= 0) shared.selN.push(k);
-      });
-      shared.sizeRec = null;
-    } });
-  }
-  var cdLook;
-  var cdLineMemo;
-  function __run30() {
-    cdLook = [], cdLineMemo = [null, null, null, null];
-  }
-  function cdLineRead(k) {
-    var id = edges2[k].id;
-    if (cdLineMemo[0] !== id || cdLineMemo[1] !== shared.cd.now) {
-      var c = null, w = null;
-      try {
-        c = cdMk.lineColour(shared.cd.now, id);
-        w = cdMk.lineWidth(shared.cd.now, id);
-      } catch (e) {
-        c = w = null;
-      }
-      cdLineMemo = [id, shared.cd.now, c, w];
-    }
-    return cdLineMemo;
-  }
-  function cdLineColour(k) {
-    return cdLineRead(k)[2];
-  }
-  var cdPartsMemo;
-  function __run312() {
-    cdPartsMemo = [null, null, null];
-  }
-  function cdParts(rid) {
-    if (cdPartsMemo[0] !== rid || cdPartsMemo[1] !== shared.cd.now) {
-      var p;
-      try {
-        p = cdMk.participants(shared.cd.now, rid);
-      } catch (e) {
-        p = [];
-      }
-      cdPartsMemo = [rid, shared.cd.now, p];
-    }
-    return cdPartsMemo[2];
-  }
-  var cdCountMemo;
-  function __run323() {
-    cdCountMemo = {};
-  }
-  function cdCount(id) {
-    if (cdCountMemo.now !== shared.cd.now) cdCountMemo = { now: shared.cd.now };
-    if (!(id in cdCountMemo)) {
-      var c;
-      try {
-        c = cdMk.stoichiometry(shared.cd.now, id);
-      } catch (e) {
-        c = void 0;
-      }
-      cdCountMemo[id] = c;
-    }
-    return cdCountMemo[id];
-  }
-  function cdMember(i) {
-    var n = nodes2[i];
-    return n.up != null && nodes2[n.up].shape.kind === "Complex";
-  }
-  function cdProp(i) {
-    return cdSpecies(i) || cdMember(i) || nodes2[i].comp || cdRole(i) === "epn" && nodes2[i].shape.kind === "Complex";
-  }
-  function cdLineTo(k, f) {
-    var id = edges2[k].id, keep = /\|[mrp]\d+$/.test(id) ? id : id.replace(/\|[^|]*$/, "");
-    return cdApply(function(t) {
-      return f(t, id);
-    }, [], [keep]);
-  }
-  var PF_CD;
-  function __run333() {
-    PF_CD = {
-      sizable: cdProp,
-      size: cdSetSize,
-      def: cdDef,
-      rx: {
-        of: cdRxOf,
-        set: cdReversible,
-        // a reaction's Reversible (propRx, create.js)
-        counts: cdParts,
-        // its reactants' and products' numbers by name (rxCounts)
-        setCount: function(rid, line2, v) {
-          return cdApply(function(t) {
-            return cdMk.restoich(t, line2, v);
-          }, [], [rid]);
-        }
-      },
-      // a line's colour and width (edgeShow, edgeSet): a modifier's, an added reactant's or product's own, else its
-      // reaction's (a reduced notation's line, a main line); a gate's lines none (cd_make.lineColour null), no ports as offsets
-      line: {
-        colour: cdLineColour,
-        set: function(k, c) {
-          return cdLineTo(k, function(t, id) {
-            return cdMk.recolourLine(t, id, c || "#000000");
-          });
-        },
-        width: function(k) {
-          return cdLineRead(k)[3];
-        },
-        setWidth: function(k, w) {
-          return cdLineTo(k, function(t, id) {
-            return cdMk.rewidthLine(t, id, w);
-          });
-        },
-        ports: false,
-        count: function(k) {
-          return /\|[rp]\d+$/.test(edges2[k].id) ? cdCount(edges2[k].id) : void 0;
-        },
-        // an added reactant's or product's own number (the main ones are the reaction's rows)
-        setCount: function(k, v) {
-          return cdLineTo(k, function(t, id) {
-            return cdMk.restoich(t, id, v);
-          });
-        }
-      },
-      node: function(i) {
-        return cdProp(i) ? i : -1;
-      },
-      off: function(k, i) {
-        return k === "line" || k === "ant" || k === "way" || k === "ss" && /^(COMPARTMENT|DEGRADED)$/.test(pNow.cls) || /^(mem|outer|inner)$/.test(k) && pNow.cls !== "COMPARTMENT" || /^(label|font|fill|multimer)$/.test(k) && pNow.cls === "DEGRADED" || /^(width|multimer|def|font)$/.test(k) && pNow.cls === "COMPARTMENT" || /^(multimer|def)$/.test(k) && pNow.cls === "COMPLEX" || k === "width" && pNow.cls === "UNKNOWN";
-      },
-      look: function(i) {
-        var id = nodes2[i].id;
-        if (cdLook[0] !== id || cdLook[1] !== shared.cd.now) {
-          var L = null;
-          try {
-            L = cdMk.look(shared.cd.now, id);
-            var ss = cdMk.features(shared.cd.now, id).structural;
-            L = { ss: ss ? ss.text : "", label: cdNameOf(id, true), font: L.font, fill: L.fill, line: "#000000", width: L.width, multimer: L.multimer, cls: L.cls, mem: L.mem, outer: L.outer, inner: L.inner };
-          } catch (e) {
-            L = null;
-          }
-          cdLook = [id, shared.cd.now, L];
-        }
-        return cdLook[2] && Object.assign({}, cdLook[2]);
-      },
-      set: function(k, v, is) {
-        var ids = is.map(function(i) {
-          return nodes2[i].id;
-        }), all = function(f) {
-          return cdApply(function(t) {
-            ids.forEach(function(id) {
-              t = f(t, id);
-            });
-            return t;
-          }, ids);
-        };
-        if (k === "label") return all(function(t, id) {
-          return cdMk.rename(t, id, v.replace(/[\r\n]+/g, " "));
-        });
-        if (k === "multimer") return all(function(t, id) {
-          return !v ? cdMk.homodimer(t, id, 1) : cdMk.aliasInfo(t, id).homodimer > 1 ? t : cdTopClear(cdMk.homodimer(t, id, 2), id, true);
-        });
-        if (k === "width") {
-          var x = parseFloat(v);
-          return isFinite(x) && all(function(t, id) {
-            return cdMk.restyle(t, id, { width: Math.min(Math.max(x, 0.25), 20) });
-          });
-        }
-        if (k === "font") {
-          var z = parseFloat(v);
-          return isFinite(z) && all(function(t, id) {
-            return cdMk.restyle(t, id, { font: Math.min(Math.max(Math.round(z), 1), 200) });
-          });
-        }
-        if (k === "fill") {
-          var c = hex(v);
-          return !!c && all(function(t, id) {
-            return cdMk.restyle(t, id, { fill: c });
-          });
-        }
-        if (/^(mem|outer|inner)$/.test(k)) return cdDouble(k, parseFloat(v), ids);
-        if (k === "ss") {
-          var tx = v.replace(/[\r\n]+/g, " ").trim();
-          return all(function(t, id) {
-            if (/^(COMPARTMENT|DEGRADED)$/.test(cdMk.aliasInfo(t, id).cls || "COMPARTMENT")) return t;
-            var s0 = cdMk.features(t, id).structural;
-            return tx ? s0 && s0.text === tx ? t : cdSsSet(t, id, tx, null) : s0 ? cdMk.structural(t, id, null) : t;
-          });
-        }
-        return false;
-      }
-    };
-    propRows([
-      ["mem", "Membrane", "num", ' min="2" max="100"', "Membrane thickness: the band between the two lines, 2 at least"],
-      ["outer", "Outer line", "num", ' min="2" max="20"', "Outer line width, at least the inner line + 1"],
-      ["inner", "Inner line", "num", ' min="1" max="19"', "Inner line width, 1 at least"]
-    ]);
-    propRows([["ss", "Structural state", "text", "", "The species\u2019 structural state, free text; emptied, it is removed"]]);
-  }
-  function cdDouble(k, x, ids) {
-    if (!isFinite(x)) return false;
-    var clamp = function(v, a, b) {
-      return Math.min(Math.max(v, a), b);
-    };
-    return cdApply(function(t) {
-      ids.forEach(function(id) {
-        var L = cdMk.look(t, id), b = cdMk.aliasInfo(t, id).box, o = { mem: L.mem, outer: L.outer, inner: L.inner };
-        o[k] = x;
-        o.mem = clamp(o.mem, 2, b ? Math.max(2, Math.min(b[2], b[3]) / 2 - 3) : 100);
-        o.outer = clamp(o.outer, 2, 20);
-        o.inner = clamp(o.inner, 1, o.outer - 1);
-        t = cdMk.restyle(t, id, o);
-      });
-      return t;
-    }, ids);
-  }
-  function cdCompGhost(w, h, oval) {
-    var C = cdMk.COMP;
-    return window.cdrender.compartmentShape(0, 0, w, h, C.thickness, C.outer, C.inner, "#" + (cdColour(shared.cd && shared.cd.now, "COMPARTMENT") || C.colour).slice(2), oval);
-  }
-  function cdGhost(kind) {
-    var cls = cdKind(kind), s = cdSize(cls), n = cdComp(cls) ? 1 : cdCopies(cls), e = 6 * (n - 1), w = s[0] - e, h = s[1] - e, k = cdCols() === "custom" && cdKept()[cls], col = cdComp(cls) ? "none" : "#" + (cdColour(shared.cd && shared.cd.now, cls) || cdMk.LOOK[cls][2]).slice(2), ink = ' fill="' + col + '" stroke="#000" stroke-width="' + (k && k.width > 0 && cls !== "DEGRADED" ? k.width : 1) + '"';
-    var shape = {
-      PROTEIN: '<rect width="' + w + '" height="' + h + '" rx="5"' + ink + "/>",
-      GENE: '<rect width="' + w + '" height="' + h + '"' + ink + "/>",
-      RNA: '<path d="M' + h + " 0H" + w + "L" + (w - h) + " " + h + 'H0z"' + ink + "/>",
-      SIMPLE_MOLECULE: '<ellipse cx="' + w / 2 + '" cy="' + h / 2 + '" rx="' + w / 2 + '" ry="' + h / 2 + '"' + ink + "/>",
-      UNKNOWN: '<ellipse cx="' + w / 2 + '" cy="' + h / 2 + '" rx="' + w / 2 + '" ry="' + h / 2 + '" fill="' + col + '"/>',
-      PHENOTYPE: '<path d="M' + h / 2 + " 0H" + (w - h / 2) + "L" + w + " " + h / 2 + "L" + (w - h / 2) + " " + h + "H" + h / 2 + "L0 " + h / 2 + 'z"' + ink + "/>",
-      DEGRADED: '<circle cx="' + w / 2 + '" cy="' + h / 2 + '" r="' + w * 3 / 8 + '"' + ink + '/><path d="M' + w * 0.7 + " 0L" + w * 0.3 + " " + h + '" stroke="#000"/>',
-      COMPLEX: '<path d="M5 0H' + (w - 5) + "L" + w + " 5V" + (h - 5) + "L" + (w - 5) + " " + h + "H5L0 " + (h - 5) + 'V5z"' + ink + ' stroke-width="2"/>',
-      COMPARTMENT: cdCompGhost(w, h, false),
-      OVAL: cdCompGhost(w, h, true)
-    }[cls];
-    for (var j = n - 1, back2 = ""; j > 0; j--) back2 += '<g transform="translate(' + 6 * j + " " + 6 * j + ')">' + shape + "</g>";
-    return { w: s[0], h: s[1], svg: '<svg width="100%" height="100%" viewBox="0 0 ' + s[0] + " " + s[1] + '" overflow="visible">' + (back2 || "") + shape + "</svg>" };
-  }
-  function __start5() {
-    __run111();
-    __run211();
-    __run310();
-    __run510();
-    __run64();
-    __run73();
-    __run83();
-    __run93();
-    __run103();
-    __run124();
-    __run134();
-    __run143();
-    __run153();
-    __run163();
-    __run173();
-    __run183();
-    __run193();
-    __run203();
-    __run213();
-    __run224();
-    __run234();
-    __run243();
-    __run253();
-    __run273();
-    __run283();
-    __run293();
-    __run30();
-    __run312();
-    __run323();
-    __run333();
-  }
-
-  // editor/src/celldesigner.js
-  var cdp;
-  var cdJs;
-  var cdMk;
-  function __run113() {
-    cdp = null, cdJs = null, cdMk = null;
-  }
-  function isCd(t) {
-    return /<sbml[\s>]/.test(t.slice(0, 3e3)) && t.indexOf("celldesigner") >= 0;
-  }
-  function lineGrid() {
-    return !shared.cd;
-  }
-  function nodePlaces(n) {
-    var R = window.cdrender, cl = shared.cd && R && R.anchorAt && cdRole(n) === "epn" ? cdClsOf(nodes2[n].id) : null;
-    if (!cl) return null;
-    var b = bx(n), C = [b[0] + b[2] / 2, b[1] + b[3] / 2], f = R.frontBox(b, cl[1]);
-    return Object.keys(R.ANCHOR).map(function(k) {
-      var A = R.anchorAt(cl[0], f, k);
-      return [A[0] - C[0], A[1] - C[1], k];
-    });
-  }
-  function nodeCentre(n, P) {
-    var b = bx(n);
-    return Math.max(Math.abs(P[0] - b[0] - b[2] / 2) / (b[2] / 2 || 1), Math.abs(P[1] - b[1] - b[3] / 2) / (b[3] / 2 || 1)) < 0.5;
-  }
-  function cdpy() {
-    if (cdp) return cdp;
-    var script = function(f) {
-      return new Promise(function(res, rej) {
-        var s = document.createElement("script");
-        s.src = V.renderers + "converter/" + f + ".js" + V.build;
-        s.onload = res;
-        s.onerror = function() {
-          rej(f + " not found");
-        };
-        document.head.appendChild(s);
-      });
-    };
-    cdp = (window.cdrender ? Promise.resolve() : script("cdrender")).then(function() {
-      return window.cd_edit ? null : script("cd_edit");
-    }).then(function() {
-      return window.cd_make ? null : script("cd_make").catch(function() {
-      });
-    }).then(function() {
-      cdJs = window.cd_edit;
-      cdMk = window.cd_make || null;
-      if (cdMk) cdCheck();
-      return cdJs;
-    });
-    cdp.catch(function(e) {
-      cdp = null;
-      warn("The CellDesigner renderer did not load: " + e);
-    });
-    return cdp;
-  }
-  var cdMemo2;
-  function __run311() {
-    cdMemo2 = [];
-  }
-  function cdDraw(t, g, fit) {
-    return cdJs.draw(t, g, { fit: fit == null ? undo.length > 0 : fit, block: gridBlock(), parsed: on ? function(c, d) {
-      cdDocKeep(c, d, shownId());
-    } : null });
-  }
-  var cdDocNow;
-  function shownId() {
-    return V.chosen ? V.chosen.id : null;
-  }
-  function cdDoc(t, id) {
-    if (cdDocNow && cdDocNow.t === t) return cdDocNow.doc;
-    var doc2 = new DOMParser().parseFromString(t, "application/xml");
-    if (id !== false) cdDocKeep(t, doc2, id === void 0 ? shownId() : id);
-    return doc2;
-  }
-  function cdDocKeep(t, doc2, id) {
-    cdDocNow = { t, doc: doc2, id };
-  }
-  function cdKept2() {
-    return cdDocNow ? cdDocNow.id : null;
-  }
-  function cdShown(id) {
-    if (!cdDocNow) return;
-    if (cdDocNow.id === "adding") cdDocNow.id = id;
-    else if (cdDocNow.id !== id) {
-      cdDocNow = null;
-      cdLive = null;
-    }
-  }
-  function cdShift(svg) {
-    var m = /<g transform="translate\(([-\d.]+),([-\d.]+)\)">/.exec(svg || "");
-    return m ? [+m[1], +m[2]] : [0, 0];
-  }
-  function cdNow() {
-    if (lastFor && lastFor[0] === shared.text && lastFor[1] === shared.cd.now) return { t: shared.cd.now, sh: cdShift(lastSvg) };
-    var q = cdDraw(shared.cd.base, shared.text);
-    return { t: q[1], sh: cdShift(q[0]) };
-  }
-  function cdRebuild(t, sh) {
-    shared.cd.base = t;
-    setText(cdGraphml(t));
-    rebase(sh[0], sh[1]);
-  }
-  function cdGraphml(t) {
-    var g = cdKnown(t);
-    if (g) return g;
-    g = cdJs.graphml(t, null, { doc: cdDoc(t) });
-    cdRemember(t, g);
-    return g;
-  }
-  function cdKnown(t) {
-    for (var i = 0; i < cdMemo2.length; i++) if (cdMemo2[i][0] === t) return cdMemo2[i][1];
-    return null;
-  }
-  function cdRemember(t, g) {
-    cdMemo2.unshift([t, g]);
-    cdMemo2.length = Math.min(cdMemo2.length, 3);
-  }
-  function glyphMid(q, B, P, pp) {
-    var ea = edges2[q.a], eb = edges2[q.b], o = function(e, a2) {
-      if (pp && pp.to && edges2[pp.k] === e && (pp.end ? "t" : "s") === a2[0]) return pp.to[a2[1] === "x" ? 0 : 1];
-      return e.path ? parseFloat(e.path.getAttribute(a2)) || 0 : 0;
-    };
-    var S = B(pp && pp.n2 != null && edges2[pp.k] === ea && !pp.end ? pp.n2 : ea.s), T = B(pp && pp.n2 != null && edges2[pp.k] === eb && pp.end ? pp.n2 : eb.t);
-    var all = [[S[0] + S[2] / 2 + o(ea, "sx"), S[1] + S[3] / 2 + o(ea, "sy")]].concat(
-      ea.pts.map(P),
-      eb.pts.map(P),
-      [[T[0] + T[2] / 2 + o(eb, "tx"), T[1] + T[3] / 2 + o(eb, "ty")]]
-    );
-    var k = ea.pts.length, n = all.length - 1, a = all[k], b = all[k + 1];
-    if (k === 0) a = cut(all[0], all[1], S);
-    if (k + 1 === n) b = cut(all[n], all[n - 1], T);
-    return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, Math.atan2(b[1] - a[1], b[0] - a[0]), Math.hypot(b[0] - a[0], b[1] - a[1])];
-  }
-  function glyphPort(i, off, eid) {
-    var L = shared.liveG && shared.liveG[i];
-    if (!L || !L[2] && L[3] === 1) return off;
-    var c = Math.cos(L[2]), s2 = Math.sin(L[2]), f = /\|[rp]\d+$/.test(eid) ? L[3] : 1;
-    return [f * (c * off[0] - s2 * off[1]), f * (s2 * off[0] + c * off[1])];
-  }
-  function glyphFollow(ns, ps, back2, pp) {
-    if (!shared.procs.length || !gN) return;
-    var old = shared.liveG;
-    shared.liveG = null;
-    var rest = function(i) {
-      var b = boxOf(i);
-      return back2 && ns.has(i) ? [b[0] - back2[0], b[1] - back2[1], b[2], b[3]] : b;
-    };
-    var restP = function(pi) {
-      var p = points[pi], o = back2 && ps.has(pi);
-      return [num(p, "x") - (o ? back2[0] : 0), num(p, "y") - (o ? back2[1] : 0)];
-    };
-    var out = {}, any = false;
-    shared.procs.forEach(function(q) {
-      var ea = edges2[q.a], eb = edges2[q.b];
-      if (ns.has(q.g) || ea.s == null || eb.t == null) return;
-      var port = pp && pp.to && (pp.k === q.a || pp.k === q.b);
-      if (!(port || ns.has(ea.s) || ns.has(eb.t) || ea.pts.concat(eb.pts).some(function(p) {
-        return ps.has(p);
-      }))) return;
-      var a = glyphMid(q, bx, pt, pp), b = glyphMid(q, rest, restP);
-      out[q.g] = [a[0] - b[0], a[1] - b[1], isFinite(a[2] - b[2]) && b[3] ? a[2] - b[2] : 0, b[3] ? a[3] / b[3] : 1, b];
-      any = true;
-    });
-    if (old) Object.keys(old).forEach(function(i) {
-      if (!out[i]) {
-        var g = gN[nodes2[i].id];
-        if (g) g.removeAttribute("transform");
-      }
-    });
-    if (!any) return;
-    shared.liveG = out;
-    shared.live = shared.live || /* @__PURE__ */ new Set();
-    Object.keys(out).forEach(function(i) {
-      var o2 = out[i], c0 = toPic(o2[4]), g = gN[nodes2[i].id];
-      if (g) g.setAttribute("transform", "translate(" + f1(c0[0] + o2[0]) + " " + f1(c0[1] + o2[1]) + ") rotate(" + f1(o2[2] * 180 / Math.PI) + ") translate(" + f1(-c0[0]) + " " + f1(-c0[1]) + ")");
-      edges2.forEach(function(e, k) {
-        if (e.s !== +i && e.t !== +i) return;
-        var gs = gE[e.id];
-        if (gs) gs.forEach(function(x) {
-          x.style.display = "none";
-        });
-        shared.live.add(k);
-      });
-    });
-  }
-  var cdLive;
-  function __run410() {
-    cdLive = null;
-  }
-  function cdSession() {
-    if (!shared.cd || !cdJs || !cdJs.live || !shared.cdBase) return null;
-    if (cdLive && cdLive.base === shared.cdBase) return cdLive.s;
-    try {
-      cdLive = { base: shared.cdBase, s: cdJs.live(shared.cdBase.now, shared.cdBase.text, { doc: cdDoc(shared.cdBase.now) }) };
-    } catch (e) {
-      cdLive = null;
-    }
-    return cdLive ? cdLive.s : null;
-  }
-  function cdSessionSoon() {
-    if (!shared.cdBase && shared.cd) shared.cdBase = { now: shared.cd.now, text: shared.text };
-    (window.requestIdleCallback || function(f) {
-      setTimeout(f, 0);
-    })(function() {
-      if (on) cdSession();
-    });
-  }
-  function cdHolders(ks) {
-    var S = cdSession();
-    if (!S || !S.holder) return;
-    var todo = ks.filter(function(i) {
-      var R = shared.liveOrig[i], b = shared.liveC[i];
-      return !(R && R.at && R.at.every(function(v, j) {
-        return v === b[j];
-      }));
-    }).map(function(i) {
-      return [i, S.holder(nodes2[i].id, toPic(shared.liveC[i]))];
-    }).filter(function(q) {
-      return q[1] != null;
-    });
-    if (!todo.length) return;
-    var doc2 = new DOMParser().parseFromString('<svg xmlns="http://www.w3.org/2000/svg">' + todo.map(function(q) {
-      return "<g>" + q[1] + "</g>";
-    }).join("") + "</svg>", "image/svg+xml").documentElement;
-    var parts = Array.prototype.filter.call(doc2.childNodes, function(c) {
-      return c.nodeType === 1;
-    });
-    todo.forEach(function(q, k) {
-      var i = q[0], g = gN[nodes2[i].id];
-      if (!shared.liveOrig[i]) {
-        var kids = Array.prototype.slice.call(g.childNodes);
-        shared.liveOrig[i] = { back: function() {
-          g.replaceChildren.apply(g, kids);
-        } };
-      }
-      shared.liveOrig[i].at = shared.liveC[i].slice();
-      g.replaceChildren.apply(g, Array.prototype.map.call(parts[k].childNodes, function(c) {
-        return document.importNode(c, true);
-      }));
-    });
-  }
-  function cdSizeLive(i, nb, R) {
-    var S = cdSession(), g = gN && gN[nodes2[i].id];
-    if (!S || !S.holder || !g) return R;
-    if (!R) {
-      var kids = Array.prototype.slice.call(g.childNodes);
-      return { i, back: function() {
-        g.replaceChildren.apply(g, kids);
-      } };
-    }
-    if (!nb || R.at && R.at.every(function(v, j) {
-      return v === nb[j];
-    })) return R;
-    var svg = S.holder(nodes2[i].id, toPic(nb));
-    if (svg == null) return R;
-    var doc2 = new DOMParser().parseFromString('<svg xmlns="http://www.w3.org/2000/svg"><g>' + svg + "</g></svg>", "image/svg+xml").documentElement.firstElementChild;
-    g.replaceChildren.apply(g, Array.prototype.map.call(doc2.childNodes, function(c) {
-      return document.importNode(c, true);
-    }));
-    R.at = nb.slice();
-    return R;
-  }
-  var liveCd;
-  var RXE;
-  function __run511() {
-    liveCd = { glyphs: glyphFollow, lines: cdLines, holders: cdHolders, size: cdSizeLive };
-    RXE = /^(.*)\|(a|b|[rpmi]\d+)$/;
-  }
-  function cdLines(ks, pp) {
-    if (!shared.cd || !gE) return false;
-    var rids = /* @__PURE__ */ new Set();
-    ks.forEach(function(k) {
-      var m = edges2[k].id.match(RXE);
-      if (m) rids.add(m[1]);
-    });
-    if (!rids.size) return false;
-    var S = cdSession();
-    if (!S) return false;
-    var bends = /* @__PURE__ */ new Map(), paths = /* @__PURE__ */ new Map(), boxes = /* @__PURE__ */ new Map(), byE = {};
-    edges2.forEach(function(e, k) {
-      byE[e.id] = k;
-      var m = e.id.match(RXE);
-      if (!m || !rids.has(m[1])) return;
-      bends.set(e.id, e.pts.map(function(pi) {
-        return toPic(pt(pi));
-      }));
-      if (!e.path) return;
-      var q = ["sx", "sy", "tx", "ty"].map(function(a) {
-        return parseFloat(e.path.getAttribute(a)) || 0;
-      });
-      var no2 = e.path.getAttribute("spot");
-      if (no2) q.push(parseInt(no2, 10));
-      if (pp && pp.to && pp.k === k) {
-        var j = pp.end ? 2 : 0;
-        q[j] = pp.to[0];
-        q[j + 1] = pp.to[1];
-        no2 = spotNo(pp, pp.to);
-        if (no2) q[4] = no2;
-      }
-      paths.set(e.id, q);
-    });
-    edges2.forEach(function(e) {
-      var m = e.id.match(RXE);
-      if (!m || !rids.has(m[1])) return;
-      [e.s, e.t].forEach(function(i) {
-        if (i != null && !/\|proc$/.test(nodes2[i].id)) boxes.set(nodes2[i].id, toPic(bx(i)));
-      });
-    });
-    var ends = null;
-    if (pp && pp.to && pp.n2 != null && rids.has((edges2[pp.k].id.match(RXE) || [])[1])) {
-      var ep = edges2[pp.k];
-      ends = /* @__PURE__ */ new Map([[ep.id, [nodes2[pp.end ? ep.s : pp.n2].id, nodes2[pp.end ? pp.n2 : ep.t].id]]]);
-      boxes.set(nodes2[pp.n2].id, toPic(bx(pp.n2)));
-    }
-    var list2 = Array.from(rids), out = S.frame(boxes, bends, paths, list2, ends);
-    if (list2.some(function(r) {
-      return !out[r];
-    })) return false;
-    dropCopies();
-    list2.forEach(function(rid) {
-      var f = out[rid], ids = Object.keys(gE).filter(function(id) {
-        return id.indexOf(rid + "|") === 0;
-      });
-      if (!ids.length) return;
-      var ref = gE[ids[0]], hRef = ref[0], lRef = ref[ref.length - 1], pg = gN[rid + "|proc"];
-      ids.forEach(function(id) {
-        gE[id].forEach(function(g) {
-          g.style.display = "none";
-        });
-      });
-      if (pg) pg.style.display = "none";
-      var doc2 = new DOMParser().parseFromString('<svg xmlns="http://www.w3.org/2000/svg"><g>' + f.halo + "</g><g>" + f.lines + "</g></svg>", "image/svg+xml").documentElement;
-      var parts = Array.prototype.filter.call(doc2.childNodes, function(c) {
-        return c.nodeType === 1;
-      });
-      [[parts[0], hRef, 0], [parts[1], lRef, 1]].forEach(function(q) {
-        Array.prototype.filter.call(q[0].childNodes, function(c) {
-          return c.nodeType === 1;
-        }).forEach(function(c) {
-          var el = document.importNode(c, true), id = el.getAttribute("data-e"), pn = el.getAttribute("data-n");
-          var orig = id && gE[id] ? gE[id][q[2] ? gE[id].length - 1 : 0] : pn ? gN[pn] : null;
-          el.removeAttribute("data-e");
-          el.removeAttribute("data-n");
-          el.classList.add("m2-ed-copy");
-          q[1].parentNode.insertBefore(el, q[1]);
-          shared.copies.push([el, orig, id && byE[id] != null ? byE[id] : null]);
-        });
-      });
-      var gi = nodes2.findIndex(function(n) {
-        return n.id === rid + "|proc";
-      }), r0 = S.rest(rid);
-      if (gi >= 0 && r0 && f.sq) {
-        shared.liveG = shared.liveG || {};
-        shared.liveG[gi] = [f.sq[0] - r0[0][0], f.sq[1] - r0[0][1], f.ang - r0[1], r0[2] ? f.len / r0[2] : 1, [r0[0][0] + picOff()[0], r0[0][1] + picOff()[1], r0[1], r0[2]]];
-      }
-    });
-    return true;
-  }
-  function beyond(k, i, all) {
-    var e = edges2[k], last = all.length - 1;
-    if (i > 0 && i < last) return [all[i], e.pts[i - 1]];
-    var q = shared.procs.find(function(r) {
-      return i === last && r.a === k || i === 0 && r.b === k;
-    });
-    if (!q) return [all[i], null];
-    if (i === last) {
-      var eb = edges2[q.b];
-      if (eb.t == null) return [all[i], null];
-      return eb.pts.length ? [pt(eb.pts[0]), eb.pts[0]] : [ports(q.b)[eb.pts.length + 1], null];
-    }
-    var ea = edges2[q.a];
-    if (ea.s == null) return [all[i], null];
-    return ea.pts.length ? [pt(ea.pts[ea.pts.length - 1]), ea.pts[ea.pts.length - 1]] : [ports(q.a)[0], null];
-  }
-  function glyphArcs(bp) {
-    var out = [];
-    shared.procs.forEach(function(q) {
-      var ea = edges2[q.a], eb = edges2[q.b];
-      if (ea.s == null || eb.t == null || ea.pts.indexOf(bp) < 0 && eb.pts.indexOf(bp) < 0) return;
-      edges2.forEach(function(e, k) {
-        if (k !== q.a && k !== q.b && e.s != null && e.t != null && (e.s === q.g || e.t === q.g)) out.push({ q, k });
-      });
-    });
-    return out;
-  }
-  function joinAt(o, bp, B) {
-    var q = o.q, e = edges2[o.k], st = e.s === q.g, P2 = function(pi) {
-      return pi === bp ? B : pt(pi);
-    };
-    var at2 = function(a) {
-      return e.path ? parseFloat(e.path.getAttribute(a)) || 0 : 0;
-    };
-    var r = glyphMid(q, boxOf, restPt), m = glyphMid(q, bx, P2), off = st ? [at2("sx"), at2("sy")] : [at2("tx"), at2("ty")];
-    var f = /\|[rp]\d+$/.test(e.id) && r[3] ? m[3] / r[3] : 1, t = m[2] - r[2], c = Math.cos(t), s2 = Math.sin(t), G2 = boxOf(q.g);
-    var J = [G2[0] + G2[2] / 2 + m[0] - r[0] + f * (c * off[0] - s2 * off[1]), G2[1] + G2[3] / 2 + m[1] - r[1] + f * (s2 * off[0] + c * off[1])];
-    var N;
-    if (st) {
-      if (e.pts.length) N = pt(e.pts[0]);
-      else {
-        var T = bx(e.t);
-        N = [T[0] + T[2] / 2 + at2("tx"), T[1] + T[3] / 2 + at2("ty")];
-      }
-    } else {
-      if (e.pts.length) N = pt(e.pts[e.pts.length - 1]);
-      else {
-        var S = bx(e.s);
-        N = [S[0] + S[2] / 2 + at2("sx"), S[1] + S[3] / 2 + at2("sy")];
-      }
-    }
-    return [J, N];
-  }
-  function joinSolve(o, bp, B, ax, cm) {
-    var c = 0;
-    for (var it = 0; it < 4; it++) {
-      var P0 = B.slice(), P1 = B.slice();
-      P0[ax] += c;
-      P1[ax] += c + 1;
-      var a = joinAt(o, bp, P0), b = joinAt(o, bp, P1), res = a[0][cm] - a[1][cm], dv = b[0][cm] - b[1][cm] - res;
-      if (Math.abs(dv) < 0.05) return null;
-      c -= res / dv;
-      if (Math.abs(res) < 1e-4) break;
-    }
-    return c;
-  }
-  function joinGuides(bp, B) {
-    var out = [];
-    glyphArcs(bp).forEach(function(o) {
-      var J = joinAt(o, bp, B);
-      if (Math.abs(J[0][0] - J[1][0]) < 0.05 || Math.abs(J[0][1] - J[1][1]) < 0.05) out.push(J);
-    });
-    return out;
-  }
-  function plainCanvas() {
-    var el = V.img;
-    if (!el || el.tagName !== "IMG" || !el.src) return;
-    fetch(el.src).then(function(r) {
-      return r.text();
-    }).then(function(t) {
-      var u = t.replace(/<rect width="100%" height="100%" fill="#fff"\/>\n?/, "");
-      if (u === t || !on || V.img !== el) return;
-      var url = URL.createObjectURL(new Blob([u], { type: "image/svg+xml" })), i = new Image();
-      i.onload = function() {
-        if (!on || V.img !== el) {
-          URL.revokeObjectURL(url);
-          return;
-        }
-        var old = el.src;
-        el.src = url;
-        if (old.indexOf("blob:") === 0) setTimeout(function() {
-          URL.revokeObjectURL(old);
-        }, 1e3);
-      };
-      i.src = url;
-    }).catch(function() {
-    });
-  }
-  function cdMap(m) {
-    var d = m && m.downloads && m.downloads[0];
-    return !!(d && d.label === "CellDesigner");
-  }
-  var warm;
-  function __run65() {
-    warm = null;
-  }
-  function warmUp() {
-    clearTimeout(warm);
-    warm = setTimeout(function() {
-      var eb = document.querySelector('#m2-rail .m2-ri[data-win="edit"]');
-      if (cdp || !eb || !eb.offsetParent || !cdMap(V.current)) return;
-      (window.requestIdleCallback || function(f) {
-        setTimeout(f, 0);
-      })(function() {
-        if (cdp || !cdMap(V.current)) return;
-        var s0 = status.textContent, w0 = status.classList.contains("m2-ed-warn");
-        var back2 = function() {
-          if (!on) {
-            status.textContent = s0;
-            status.classList.toggle("m2-ed-warn", w0);
-          }
-        };
-        cdpy().then(back2, function() {
-        });
-        back2();
-      });
-    }, 2500);
-  }
-  function __run74() {
-    warmUp();
-  }
-  function __start6() {
-    __run113();
-    __run311();
-    __run410();
-    __run511();
-    __run65();
-    __run74();
-  }
-
   // editor/src/live.js
   function liveFmt() {
-    return shared.cd ? liveCd : liveY;
+    return shared.F.live();
   }
   function bx(i) {
     if (shared.poseNow && shared.poseNow[i]) return shared.poseNow[i].box;
@@ -12122,7 +12149,7 @@
     if (shared.liveOrig) delete shared.liveOrig[i];
   }
   function picOff() {
-    return shared.cd ? [x0, y0] : [0, 0];
+    return shared.F.ownFrame ? [x0, y0] : [0, 0];
   }
   function toPic(b) {
     var o = picOff();
@@ -12186,7 +12213,7 @@
     shared.frozen = false;
   }
   var livePose;
-  function __run214() {
+  function __run215() {
     livePose = [];
   }
   function posed(sets, rs) {
@@ -12563,12 +12590,12 @@
     shared.sizeRec = null;
   }
   function __start7() {
-    __run214();
+    __run215();
   }
 
   // editor/src/help.js
   var MOD;
-  function __run114() {
+  function __run116() {
     MOD = /mac|iphone|ipad|ipod/i.test(navigator.userAgentData && navigator.userAgentData.platform || navigator.platform || navigator.userAgent) ? "Cmd" : "Ctrl";
   }
   function helpList() {
@@ -12612,7 +12639,7 @@
   }
   var helpBtn;
   var helpBox;
-  function __run215() {
+  function __run216() {
     helpBtn = box.querySelector("#m2-ed-help"), helpBox = null;
   }
   function helpBuild() {
@@ -12665,7 +12692,7 @@
     } else helpBox.hidden = true;
     helpBtn.setAttribute("aria-pressed", String(show));
   }
-  function __run313() {
+  function __run310() {
     helpBtn.addEventListener("click", function() {
       help();
     });
@@ -12686,9 +12713,9 @@
     }, true);
   }
   function __start8() {
-    __run114();
-    __run215();
-    __run313();
+    __run116();
+    __run216();
+    __run310();
   }
 
   // editor/src/core.js
@@ -12697,7 +12724,7 @@
   var Y;
   var G;
   var drawing;
-  function __run115() {
+  function __run117() {
     lastSvg = null, lastFor = null;
     Y = "http://www.yworks.com/xml/graphml", G = "http://graphml.graphdrawing.org/xmlns";
     drawing = false;
@@ -12707,7 +12734,7 @@
     return t;
   }
   function src() {
-    return shared.cd ? shared.cd.now : shared.sb ? sbNow() : shared.text;
+    return shared.F.now();
   }
   var box;
   var status;
@@ -12739,7 +12766,7 @@
   var keyGuides;
   var keyRun;
   var keyDue;
-  function __run216() {
+  function __run217() {
     box = document.getElementById("m2-editwin"), status = document.getElementById("m2-ed-status");
     overlay = document.getElementById("m2-edit-layer");
     on = false, map = null;
@@ -12785,7 +12812,7 @@
   var STEP0;
   var stepOk;
   var gridSet;
-  function __run314() {
+  function __run311() {
     TOKEN_KEY = V.tokenKey, AUTOSAVE = 3e3;
     site = null;
     saveTimer = null, saving = null, saveAgain = false, stuck = false;
@@ -12825,7 +12852,7 @@
     box.querySelector("#m2-ed-snap").setAttribute("aria-pressed", String(gridSet.snap));
   }
   var gridCv;
-  function __run411() {
+  function __run410() {
     gridCv = null;
   }
   function gridPaint() {
@@ -12905,10 +12932,10 @@
     }), x0: fr.x0, y0: fr.y0 };
   }
   function picX0() {
-    return shared.cd ? 0 : x0;
+    return shared.F.ownFrame ? 0 : x0;
   }
   function picY0() {
-    return shared.cd ? 0 : y0;
+    return shared.F.ownFrame ? 0 : y0;
   }
   function nowRef() {
     return { ids: nodes2.map(function(n) {
@@ -12948,7 +12975,7 @@
   }
   var buildTimer;
   var buildRefused;
-  function __run512() {
+  function __run510() {
     buildTimer = null, buildRefused = 0;
   }
   function dispatchBuild(keep) {
@@ -13478,7 +13505,7 @@
       URL.revokeObjectURL(a.href);
     }, 1e3);
   }
-  function __run116() {
+  function __run118() {
     box.querySelector("#m2-ed-local-dl").addEventListener("click", function() {
       if (shared.text) download();
     });
@@ -13634,7 +13661,7 @@
     status.classList.remove("m2-ed-warn");
   }
   var lay;
-  function __run125() {
+  function __run124() {
     lay = null;
   }
   function layout() {
@@ -13723,7 +13750,7 @@
   function pack(ids) {
     layTool("pack", ids);
   }
-  function __run135() {
+  function __run134() {
     box.querySelector("#m2-ed-tidy-grid").addEventListener("click", snapMap);
   }
   function outerComplex(i) {
@@ -14648,12 +14675,12 @@
         var g = sbGraphml(t, g0);
         var sb1 = { base: t, g0 };
         var last = [g, edOf(t).write(t, g), sb1];
-        begin(g, t, n, h, s, same, t0, { sb: sb1, sbLast: last });
+        begin(g, t, n, h, s, same, t0, { name: "sb", sb: sb1, sbLast: last });
       }).catch(function(e) {
         if (tk === opening) warn("Cannot edit " + n + ": " + e);
       });
     }
-    if (!isCd(t)) return begin(t, t, n, h, s, same, null, {});
+    if (!isCd(t)) return begin(t, t, n, h, s, same, null, { name: "graphml" });
     quiet();
     return cdpy().then(function() {
       if (tk !== opening) return;
@@ -14662,7 +14689,7 @@
         t = sg.text;
         takenIn = sg.n + (sg.n > 1 ? " positive influences" : " positive influence") + " (open arrowhead, not SBGN) made reduced physical stimulation (open triangle).";
       }
-      begin(cdGraphml(t), t, n, h, s, same, t02, { cd: { base: t, now: t } });
+      begin(cdGraphml(t), t, n, h, s, same, t02, { name: "cd", cd: { base: t, now: t } });
     }).catch(function(e) {
       if (tk === opening) warn("Cannot edit " + n + ": " + e);
     });
@@ -14674,6 +14701,7 @@
   function begin(g, t, n, h, s, same, t0, fmt2) {
     var was = takeMap();
     resetMap();
+    shared.F = formats[fmt2.name];
     if (fmt2.cd) shared.cd = fmt2.cd;
     if (fmt2.sb) {
       shared.sb = fmt2.sb;
@@ -14960,7 +14988,7 @@
   var drawMemo;
   var preDoc;
   var editPre;
-  function __run217() {
+  function __run218() {
     bank = {}, preTimer = null, sweepT = 0, openTitle = null, drawMemo = null, preDoc = [], editPre = null;
   }
   function preKey(m) {
@@ -14984,7 +15012,7 @@
     });
   }
   var known;
-  function __run225() {
+  function __run224() {
     known = {};
   }
   function ghList() {
@@ -15052,7 +15080,7 @@
   var idle;
   var lastInput;
   var mark;
-  function __run235() {
+  function __run234() {
     idle = function() {
       return new Promise(function(res) {
         (window.requestIdleCallback || function(f) {
@@ -15503,7 +15531,7 @@
   }
   var kwBox;
   var kwBy;
-  function __run263() {
+  function __run264() {
     box.querySelector("#m2-ed-gsdrop").addEventListener("click", function(e) {
       e.stopPropagation();
       if (gsMenu) {
@@ -15692,7 +15720,7 @@
   }
   var HANDLE;
   var BEND;
-  function __run315() {
+  function __run313() {
     window.addEventListener("beforeunload", function(e) {
       if (shared.dirty) {
         if (saveTimer) push();
@@ -15887,7 +15915,7 @@
     return d + "L" + P(pts[pts.length - 1]);
   }
   var MAIN;
-  function __run324() {
+  function __run323() {
     MAIN = /^(.*)\|(a|b|r\d+|p\d+)$/;
   }
   function lit() {
@@ -16233,7 +16261,7 @@
   }
   var EPN;
   var MODS;
-  function __run352() {
+  function __run353() {
     EPN = /^(Macromolecule|SimpleChemical|Complex|NucleicAcidFeature|UnspecifiedEntity|EmptySet|PerturbingAgent)$/;
     MODS = /^(white_circle|white_delta|white_delta_bar|t_shape|crows_foot_one|white_diamond)$/;
   }
@@ -16553,7 +16581,7 @@
   function editing(e) {
     return on && V.current === map && !e.target.closest(".m2-ctrl, .m2-info, .m2-ed-type");
   }
-  function __run362() {
+  function __run363() {
     V.view.addEventListener("pointerdown", function(e) {
       keyGuides = null;
       keyFlush();
@@ -16760,7 +16788,7 @@
     return commit(t, { name: "bend point removed", sel: [] });
   }
   var rclick;
-  function __run372() {
+  function __run373() {
     rclick = null;
   }
   function nowSvg() {
@@ -16769,7 +16797,7 @@
   function shownSvg() {
     return nowSvg() || (lastFor && !lastFor[3] && site && lastFor[2] === site.id ? lastSvg : null);
   }
-  function __run382() {
+  function __run383() {
     window.m2EditSites = function() {
       if (!on || !site || !shared.sb || !shared.sbLast || !sbJs || !sbJs.sitesOut) return;
       if (!isSb(shared.sbLast[1]) || src() === (site.saved || site.base)) return;
@@ -17418,7 +17446,7 @@
     }
     paint();
   }
-  function __run432() {
+  function __run433() {
     V.view.addEventListener("pointerup", release, true);
     V.view.addEventListener("pointercancel", release, true);
   }
@@ -17584,19 +17612,19 @@
     }, true);
   }
   function __start9() {
-    __run115();
-    __run216();
-    __run314();
-    __run411();
-    __run512();
+    __run117();
+    __run217();
+    __run311();
+    __run410();
+    __run510();
     __run66();
     __run75();
     __run84();
     __run94();
     __run104();
-    __run116();
-    __run125();
-    __run135();
+    __run118();
+    __run124();
+    __run134();
     __run144();
     __run154();
     __run164();
@@ -17604,28 +17632,28 @@
     __run184();
     __run194();
     __run204();
-    __run217();
-    __run225();
-    __run235();
+    __run218();
+    __run224();
+    __run234();
     __run244();
     __run254();
-    __run263();
+    __run264();
     __run274();
     __run284();
     __run294();
     __run302();
-    __run315();
-    __run324();
+    __run313();
+    __run323();
     __run343();
-    __run352();
-    __run362();
-    __run372();
-    __run382();
+    __run353();
+    __run363();
+    __run373();
+    __run383();
     __run392();
     __run402();
     __run412();
     __run423();
-    __run432();
+    __run433();
     __run442();
     __run452();
     __run462();
@@ -17688,6 +17716,7 @@
 
   // editor/src/main.js
   window.m2Editor = function(v) {
+    addFormats({ graphml: graphmlFormat(), cd: cdFormat(), sb: sbFormat() });
     setV(v);
     window.m2EditState = function() {
       var s = stateNow();
@@ -17697,13 +17726,13 @@
     window.m2EditPlant = plant;
     __start9();
     __start7();
+    __start3();
     __start2();
+    __start4();
     __start6();
     __start();
-    __start4();
-    __start5();
     __start8();
-    __start3();
+    __start5();
     var tools = registry();
     var shownMap = function() {
       var m = v.current;

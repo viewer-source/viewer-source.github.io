@@ -1,10 +1,10 @@
-import { putMap, resetDrawing, resetMap, shared, takeMap, V } from './state.js';
+import { formats, putMap, resetDrawing, resetMap, shared, takeMap, V } from './state.js';
 import GE from '../../renderers/converter/graphml_edit.js';   // the GraphML engine: the map's GraphML read and written as text
 import H from '../../renderers/layout/holding.js';   // what holds what: regrouping, growing a holder, the holder a box lies in
 import { bx, keyShift, liveFit, liveLines, liveOff, posePort, poseSize, shift, sizeLive, sizeOff, unshift } from './live.js';
 import { AF_KINDS, drawGraphml, noNegative, shiftedAhead, yr } from './graphml.js';
 import { beyond, cdDoc, cdDraw, cdGraphml, cdJs, cdKnown, cdMap, cdMk, cdNow, cdRebuild, cdRemember, cdSessionSoon, cdpy, glyphArcs, glyphPort, isCd, joinAt, joinGuides, joinSolve, lineGrid, nodeCentre, nodePlaces, plainCanvas } from './celldesigner.js';
-import { edOf, isSb, sbBase, sbFollow, sbGraphml, sbJs, sbIn, sbKind, sbMap, sbNow, sbOwn, sbReader, sbRemember, sbpy, viaGraphml } from './sbgn.js';
+import { edOf, isSb, sbBase, sbFollow, sbGraphml, sbJs, sbIn, sbKind, sbMap, sbOwn, sbReader, sbRemember, sbpy, viaGraphml } from './sbgn.js';
 import { ddOpen, hybOn, joinDo, joinPack, joinPlan, link, linkDown, linkMove, linkPaint, linkUp, moveSays, origAll, palDown, palShow, palUp, propFmt, setSize, sizable, svDown, svMarks, tool } from './create.js';
 import { help, helpBox } from './help.js';
 import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepBeside, keptNow, listGo, mine, mineAdd, mineIn, mineMatch, minePut, savedMine, toGh, upAll, upRun } from './own.js';
@@ -29,7 +29,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     // the one place the map's text is set (release/check.js refuses another): a whole action goes through commit(), a
     // gesture's steps before its one undo step and the history (undo, redo, a kept history) through this alone
     function setText(t) { shared.text = t; return t; }
-    function src() { return shared.cd ? shared.cd.now : shared.sb ? sbNow() : shared.text; }   // the map's own file as it is now (an SBGN-ML map's with the moves written in)
+    function src() { return shared.F.now(); }   // the map's own file as it is now (an SBGN-ML map's with the moves written in)
     var box, status, overlay, on, map, name, handle, unsaved, reSel, reGh, doc, geos, points, nodes2, edges2, docText, x0, y0, undo, drag, band, ticket, nudgeAt, timer, gN, gE, mv, keyGuides, keyRun, keyDue;
     function __run2() {   // run at start, in order (__start)
     box = document.getElementById('m2-editwin'), status = document.getElementById('m2-ed-status');
@@ -160,8 +160,8 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     // the frame of the picture against the file saved (kept with the edited drawing, the start of the next editing): a
     // CellDesigner drawing is in the file's places, which already hold a shift (out of negative places, or the canvas fit), so 0, 0; the
     // editor's own frame (x0, y0) is that shift less (else back in edit mode the map jumps by the shift)
-    function picX0() { return shared.cd ? 0 : x0; }
-    function picY0() { return shared.cd ? 0 : y0; }
+    function picX0() { return shared.F.ownFrame ? 0 : x0; }   // the picture in the file's own frame (F.ownFrame), else shifted out of negative places
+    function picY0() { return shared.F.ownFrame ? 0 : y0; }
     function nowRef() { return { ids: nodes2.map(function (n) { return n.id; }), boxes: nodes2.map(function (n, i) { return boxOf(i); }), x0: x0, y0: y0 }; }   // ids: nodes made since keep their own boxes apart
     function owner() { var h = location.hostname; return /\.github\.io$/.test(h) ? h.split('.')[0] : null; }
     function repo() { var o = owner(); return o ? o + '/' + o + '-data' : null; }
@@ -1264,11 +1264,11 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
           var g = sbGraphml(t, g0);
           var sb1 = { base: t, g0: g0 };
           var last = [g, edOf(t).write(t, g), sb1];   // a file whose moves could not be written back is said now, not at the first save; kept for src()
-          begin(g, t, n, h, s, same, t0, { sb: sb1, sbLast: last });
+          begin(g, t, n, h, s, same, t0, { name: 'sb', sb: sb1, sbLast: last });
         })
           .catch(function (e) { if (tk === opening) warn('Cannot edit ' + n + ': ' + e); });
       }
-      if (!isCd(t)) return begin(t, t, n, h, s, same, null, {});
+      if (!isCd(t)) return begin(t, t, n, h, s, same, null, { name: 'graphml' });
       quiet();
       return cdpy().then(function () {
         if (tk !== opening) return;
@@ -1276,7 +1276,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
         // text, written at the next save; the file as it was stays the site's base (what GitHub and the site hold)
         var sg = cdMk ? cdMk.sbgn(t) : { n: 0 }, t0 = t;
         if (sg.n) { t = sg.text; takenIn = sg.n + (sg.n > 1 ? ' positive influences' : ' positive influence') + ' (open arrowhead, not SBGN) made reduced physical stimulation (open triangle).'; }
-        begin(cdGraphml(t), t, n, h, s, same, t0, { cd: { base: t, now: t } });
+        begin(cdGraphml(t), t, n, h, s, same, t0, { name: 'cd', cd: { base: t, now: t } });
       })
         .catch(function (e) { if (tk === opening) warn('Cannot edit ' + n + ': ' + e); });
     }
@@ -1284,9 +1284,10 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     function __run20() {   // run at start, in order (__start)
     takenIn = null;
     }   // what the opening changed in the file (cd_make sbgn), said once the map is drawn
-    function begin(g, t, n, h, s, same, t0, fmt) {   // same: { width, height, x0, y0, scale } of the picture on screen, drawn from this very file; t0: the file as read, where the opening changed it; fmt: the map's format ({ cd } or { sb, sbLast }; {}: GraphML)
+    function begin(g, t, n, h, s, same, t0, fmt) {   // same: { width, height, x0, y0, scale } of the picture on screen, drawn from this very file; t0: the file as read, where the opening changed it; fmt: the map's format ({ name: 'cd', cd } or { name: 'sb', sb, sbLast }; { name: 'graphml' })
       var was = takeMap();   // the map before, put back if this one cannot be read
       resetMap();   // every field of the map, gesture, drawing and cache lifetimes as at the start (state.js), then the new map's own
+      shared.F = formats[fmt.name];
       if (fmt.cd) shared.cd = fmt.cd;
       if (fmt.sb) { shared.sb = fmt.sb; shared.sbLast = fmt.sbLast; }
       layout();   // its extent() measures what the holders grow round (extOf), at the first move

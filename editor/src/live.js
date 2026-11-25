@@ -1,18 +1,16 @@
 import { shared, V } from './state.js';
 import { boxOf, drag, edges2, f1, full, gE, gN, grown, holds, line, livePath, mv, nodes2, num, outlineD, points, tops, x0, y0 } from './core.js';
-import { liveY } from './graphml.js';
-import { liveCd } from './celldesigner.js';
 import { svList, svParts } from './create.js';
 
     // ---------- the live drawing of a move (editor/src/live.js) ----------
     // What a drag, a held arrow key, a dragged port or a resize shows before the release, on every format: the groups of
     // what moves shifted (shift, keyShift, unshift), the holders growing round it (liveFit, liveDraw, liveRec), a node
     // resized by its handles (sizeLive), the lines it touches drawn in full (liveLines, fullLines), all in the picture's
-    // frame (picOff, toPic). A format with a way of its own gives it through liveFmt(): CellDesigner (liveCd, celldesigner.js)
+    // frame (picOff, toPic). A format with a way of its own gives it through liveFmt(), its format object's live(): CellDesigner (liveCd, celldesigner.js)
     // its process glyphs following their segments, its reactions drawn by the drop's code and its holders by cdrender;
     // GraphML and SBGN-ML maps (liveY, graphml.js) their arcs and the processes and gates at them drawn by the yEd
     // renderer. What is drawn here is put back when the map is drawn again.
-    function liveFmt() { return shared.cd ? liveCd : liveY; }
+    function liveFmt() { return shared.F.live(); }
     // compartments are containers: resized by dragging an edge or a handle, and grown by themselves
     // when what they hold is moved past their margin; liveC: their boxes while a drag runs (index in nodes2 -> box),
     // drawn on the picture at once, until the renderer has drawn the map again
@@ -40,7 +38,7 @@ import { svList, svParts } from './create.js';
     // fit, cd_edit.place) puts x0, y0 from the editor's (the frame's two translates cancel inside the picture); a GraphML
     // picture is in the editor's own. Everything put into the picture during a move (the selection's fill, the live
     // reactions, the holders growing) is placed through it, the one place this is reckoned
-    function picOff() { return shared.cd ? [x0, y0] : [0, 0]; }
+    function picOff() { return shared.F.ownFrame ? [x0, y0] : [0, 0]; }
     function toPic(b) { var o = picOff(); return b.length > 2 ? [b[0] - o[0], b[1] - o[1], b[2], b[3]] : [b[0] - o[0], b[1] - o[1]]; }
     function liveOff() { shared.liveC = null; if (shared.liveOrig) Object.keys(shared.liveOrig).forEach(function (i) { undraw(+i); }); shared.liveOrig = null; }
     function shift() {   // the drag shown on the drawing itself: groups moved, arcs touched hidden (drawn live)

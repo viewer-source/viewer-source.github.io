@@ -11,7 +11,7 @@ var args = process.argv.slice(2), local = args.indexOf('--local') >= 0; args = a
 var base = args[0] || 'https://viewer-source.github.io/styles/', here = path.join(__dirname, '..');
 var MAPS = { graphml: 'glycolysis-graphml', celldesigner: 'glycolysis-celldesigner', sbgn: 'testing-glycolysis-sbgn' };
 // what the opening of a map sets, by format: checked apart
-var OPENED = ['text', 'cd', 'sb', 'sbLast', 'procs', 'cdBase'];
+var OPENED = ['text', 'F', 'cd', 'sb', 'sbLast', 'procs', 'cdBase'];   // F: the map's format object (state.js formats)
 (async function () {
   var b = await chromium.launch(), bad = 0;
   var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more ? '  ' + more : '')); };

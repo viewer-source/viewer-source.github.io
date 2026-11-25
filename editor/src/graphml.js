@@ -226,4 +226,8 @@ import { sbJs } from './sbgn.js';
     }
 
     export function __start() { __run1(); __run2(); __run3(); }   // the part's statements, in their order
-    export { AF_KINDS, drawGraphml, liveY, noNegative, shiftedAhead, yr };
+    // GraphML's format object (state.js formats): the GraphML edited is the file itself
+    function graphmlFormat() {
+      return { name: 'graphml', now: function () { return shared.text; }, ownFrame: false, live: function () { return liveY; } };
+    }
+    export { AF_KINDS, graphmlFormat, drawGraphml, liveY, noNegative, shiftedAhead, yr };
