@@ -3453,7 +3453,10 @@ page, so its styles keep the base they were made on).
   }
   function groupOff() { if (pickedGroup !== null) { pickedGroup = null; groupLit(); } }   // any other selection ends the group's
   function groupLit() { Array.prototype.forEach.call(document.querySelectorAll('#m2-list .m2-group'), function (h) { h.classList.toggle('m2-on', pickedGroup !== null && h.getAttribute('data-group') === pickedGroup && !h.classList.contains('m2-bin')); }); }
-  function pickRows() { return Array.prototype.slice.call(document.querySelectorAll('#m2-list .m2-map:not(.m2-binned)')); }
+  // Deleted's maps are selected as any group's (Cmd+A, Cmd or Shift with a click), never together with a group's: a
+  // selection is in Deleted or out of it, as Finder's is in one folder's window
+  function pickRows() { return Array.prototype.slice.call(document.querySelectorAll('#m2-list .m2-map')); }
+  function binnedRow(id) { var b = document.querySelector('#m2-list .m2-map[data-id="' + CSS.escape(id) + '"]'); return !!b && b.classList.contains('m2-binned'); }
   function pickShown() { var c = chosen || current; return c ? c.id : null; }
   function inPick(id) { return picked.length ? picked.indexOf(id) >= 0 : id === pickShown(); }
   function pickSet(ids) {   // in the list's order; the rows lit at once, no list made again
@@ -3463,9 +3466,9 @@ page, so its styles keep the base they were made on).
     pickRows().forEach(function (b) { b.classList.toggle('m2-on', inPick(b.dataset.id)); });
   }
   function pickClick(id, e) {
-    var now = picked.length ? picked : [pickShown()].filter(Boolean);
+    var inBin = binnedRow(id), now = (picked.length ? picked : [pickShown()].filter(Boolean)).filter(function (x) { return binnedRow(x) === inBin; });
     if (e.shiftKey) {
-      var ids = pickRows().map(function (b) { return b.dataset.id; }), z = ids.indexOf(id);
+      var ids = pickRows().filter(function (b) { return b.classList.contains('m2-binned') === inBin; }).map(function (b) { return b.dataset.id; }), z = ids.indexOf(id);
       var a = ids.indexOf(now.indexOf(pickFrom) >= 0 ? pickFrom : now[now.length - 1]);   // from the last map added, if still selected
       if (a < 0) a = z;
       var range = ids.slice(Math.min(a, z), Math.max(a, z) + 1);
@@ -3479,6 +3482,30 @@ page, so its styles keep the base they were made on).
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape' && (picked.length || pickedGroup !== null) && !e.defaultPrevented && !document.querySelector('.m2-cx')) { pickSet([]); }
   });
+  // Cmd+A (Ctrl+A) after a click in the list, as in Finder: every map of the group last clicked in (a map's or its
+  // heading's), Deleted's maps in Deleted; with no map clicked yet, the group of the map shown. Never the browser's
+  // select all of the page's text (it lit the whole list and stayed, as a click on a row never clears a text
+  // selection). Taken before the editor's own Cmd+A, which is the map's after a click on the map
+  var listAt = null, listLast = false;   // listAt: the row or heading last pressed in the list; listLast: the list pressed last
+  document.addEventListener('pointerdown', function (e) {
+    var inList = !!e.target.closest && !!e.target.closest('#m2-list');
+    listLast = inList;
+    if (!inList) return;
+    listAt = e.target.closest('#m2-list .m2-map, #m2-list .m2-group') || listAt;
+    var s = window.getSelection();   // a text selection left on the list (a click on a row, a button, never clears it)
+    if (s && !s.isCollapsed && !e.target.closest('input, textarea, [contenteditable]')) s.removeAllRanges();
+  }, true);
+  window.addEventListener('keydown', function (e) {
+    if (!own || !listLast || !(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey || letter(e) !== 'a' || typingText() || document.querySelector('.m2-cx')) return;
+    var at = listAt && listAt.isConnected ? listAt : null;
+    if (!at) { var c = pickShown(); at = c && document.querySelector('#m2-list .m2-map[data-id="' + CSS.escape(c) + '"]'); }
+    e.preventDefault(); e.stopPropagation();
+    if (!at) return;
+    if (at.classList.contains('m2-bin') || at.classList.contains('m2-binned')) return pickSet(pickRows().filter(function (b) { return b.classList.contains('m2-binned'); }).map(function (b) { return b.dataset.id; }));
+    if (at.classList.contains('m2-group')) { if (!at.classList.contains('m2-link-group') && at.hasAttribute('data-group')) pickGroup(at.getAttribute('data-group')); return; }
+    var g = at.getAttribute('data-group') || '', mineToo = at.classList.contains('m2-mine');
+    pickSet(pickRows().filter(function (b) { return !b.classList.contains('m2-binned') && (b.getAttribute('data-group') || '') === g && (g || b.classList.contains('m2-mine') === mineToo); }).map(function (b) { return b.dataset.id; }));
+  }, true);
   (function () {   // the selection box
     var box = document.getElementById('m2-list'), at = null, marq = null, base = [];
     box.addEventListener('pointerdown', function (e) {
@@ -3494,7 +3521,7 @@ page, so its styles keep the base they were made on).
         if (Math.abs(e.clientX - at.x) + Math.abs(e.clientY - at.y) < 6) return;
         base = at.add ? (picked.length ? picked.slice() : [pickShown()].filter(Boolean)) : [];
         marq = el('div', 'm2-marq'); document.body.appendChild(marq); document.body.classList.add('m2-boxing');
-        at.rows = pickRows().map(function (b) { var q = b.getBoundingClientRect(); return { id: b.dataset.id, l: q.left, r: q.right, t: q.top + box.scrollTop, b: q.bottom + box.scrollTop }; });   // measured once, in the list's scroll
+        at.rows = pickRows().filter(function (b) { return !b.classList.contains('m2-binned'); }).map(function (b) { var q = b.getBoundingClientRect(); return { id: b.dataset.id, l: q.left, r: q.right, t: q.top + box.scrollTop, b: q.bottom + box.scrollTop }; });   // measured once, in the list's scroll
       }
       if (e.pointerType === 'mouse' && !e.buttons) return end(e);   // released outside the window
       e.preventDefault();
@@ -3821,12 +3848,15 @@ page, so its styles keep the base they were made on).
       box.appendChild(bh);
       if (binOpen) bin.forEach(function (m) {
         var when = new Date(m.binned).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
-        var b = el('button', 'm2-item m2-map m2-sub m2-binned' + (m === (chosen || current) ? ' m2-on' : ''));
+        var b = el('button', 'm2-item m2-map m2-sub m2-binned' + ((picked.length ? picked.indexOf(m.id) >= 0 : m === (chosen || current)) ? ' m2-on' : ''));
         b.appendChild(el('span', 'm2-name', label(m)));
         if (bin.some(function (x) { return x !== m && label(x) === label(m); })) b.appendChild(el('span', 'm2-when', when));
         b.type = 'button'; b.setAttribute('data-id', m.id);
         b.title = label(m) + ', deleted ' + when + '. Right-click to restore';
-        b.addEventListener('click', function () { go(m.id); });
+        b.addEventListener('click', function (e) {
+          if (e.metaKey || e.ctrlKey || e.shiftKey) return pickClick(m.id, e);   // several deleted maps selected, as any group's
+          go(m.id);
+        });
         box.appendChild(b);
       });
       if (binOpen && !bin.length) { var be = el('div', 'm2-empty m2-bin-empty', 'No deleted maps'); be.setAttribute('data-bin', '1'); box.appendChild(be); }   // its menu is the heading's

@@ -274,7 +274,15 @@ import { NEW_ID, emptyBase, isSb, sbMap } from './sbgn.js';
       var editing = V.grid.classList.contains('m2-editing') && V.chosen && V.chosen.id === (m && m.id);   // while editing, current is the editor's own
       // Deleted (as a mailbox's or the Mac's Bin): on a map in it Restore, then Delete forever last; on its heading
       // Delete all forever. Nothing else there (a deleted map is not renamed, copied, moved or edited)
-      if (m && m.binned) { var bi = [['Restore', function () { restoreU(m); }]]; bi.last = [['Delete forever', function () { erase([m]); }]]; return bi; }
+      if (m && m.binned) {   // several deleted maps selected (Cmd+A in Deleted, Cmd or Shift with a click): Restore N maps, Delete N maps forever
+        var bsel = V.picked();
+        if (bsel.indexOf(m.id) < 0) V.pickSet([]);
+        else if (bsel.length > 1) {
+          var bms = bsel.map(function (id) { return V.byId[id]; }).filter(function (x) { return x && x.binned; });
+          var bm = [['Restore ' + bms.length + ' maps', function () { restoreManyU(bms); }]]; bm.last = [['Delete ' + bms.length + ' maps forever', function () { erase(bms); }]]; return bm;
+        }
+        var bi = [['Restore', function () { restoreU(m); }]]; bi.last = [['Delete forever', function () { erase([m]); }]]; return bi;
+      }
       if (t && t.dataset.bin) { var bh = [], gone = V.maps.filter(function (x) { return x.binned; }); if (gone.length) bh.last = [['Delete all forever', function () { erase(gone); }]]; return bh; }   // an empty Deleted: nothing to delete
       // on a map: Rename map, Make a copy, Move to, at the top; Delete map last of all, under a line of its own, away
       // from the others (as the map's menu: not while it is edited)
@@ -1611,6 +1619,11 @@ import { NEW_ID, emptyBase, isSb, sbMap } from './sbgn.js';
     function restoreU(m) {   // a twin by its GraphML map, as restore; a group of the reader's it brought back goes again with its undo
       var ks = [listKey(parentOf(m))], had = mineGroups().slice(), fwd = restore(m), made = mineGroups().filter(function (g) { return had.indexOf(g) < 0; })[0];
       listDid(function () { return fwd.then(function () { return binKeys(ks); }).then(function () { if (made && !inGroup(made).length) groupGo(made); }); }, function () { return restoreKeys(ks); });
+    }
+    function restoreManyU(ms) {   // several at once, one step of undo (as restoreU for each)
+      var ks = ms.map(parentOf).map(listKey), had = mineGroups().slice(), fwd = restoreKeys(ks), made = mineGroups().filter(function (g) { return had.indexOf(g) < 0; });
+      listDid(function () { return fwd.then(function () { return binKeys(ks); }).then(function () { made.forEach(function (g) { if (!inGroup(g).length) groupGo(g); }); }); }, function () { return restoreKeys(ks); });
+      return fwd;
     }
     function listMade(run) {   // a new map, a copy or files added: undone into Deleted, as Finder's undo of a copy
       var ks = [], at = location.hash.slice(1);   // at: the map shown before, shown again when the undo takes the one made away

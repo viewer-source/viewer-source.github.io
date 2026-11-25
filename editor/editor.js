@@ -5454,6 +5454,22 @@
     if (canRestoreExamples()) items.push(["Restore example maps", restoreExamples]);
     var editing2 = V.grid.classList.contains("m2-editing") && V.chosen && V.chosen.id === (m && m.id);
     if (m && m.binned) {
+      var bsel = V.picked();
+      if (bsel.indexOf(m.id) < 0) V.pickSet([]);
+      else if (bsel.length > 1) {
+        var bms = bsel.map(function(id) {
+          return V.byId[id];
+        }).filter(function(x2) {
+          return x2 && x2.binned;
+        });
+        var bm = [["Restore " + bms.length + " maps", function() {
+          restoreManyU(bms);
+        }]];
+        bm.last = [["Delete " + bms.length + " maps forever", function() {
+          erase(bms);
+        }]];
+        return bm;
+      }
       var bi = [["Restore", function() {
         restoreU(m);
       }]];
@@ -7712,6 +7728,23 @@
     }, function() {
       return restoreKeys(ks);
     });
+  }
+  function restoreManyU(ms) {
+    var ks = ms.map(parentOf).map(listKey), had = mineGroups().slice(), fwd = restoreKeys(ks), made2 = mineGroups().filter(function(g) {
+      return had.indexOf(g) < 0;
+    });
+    listDid(function() {
+      return fwd.then(function() {
+        return binKeys(ks);
+      }).then(function() {
+        made2.forEach(function(g) {
+          if (!inGroup(g).length) groupGo(g);
+        });
+      });
+    }, function() {
+      return restoreKeys(ks);
+    });
+    return fwd;
   }
   function listMade(run) {
     var ks = [], at2 = location.hash.slice(1);
