@@ -1030,6 +1030,19 @@
       formats[k] = o[k];
     });
   }
+  function inOrder() {
+    return [formats.sb, formats.cd, formats.graphml].filter(Boolean);
+  }
+  function formatOfText(t) {
+    return inOrder().find(function(f) {
+      return f.reads(t);
+    }) || null;
+  }
+  function formatOfMap(m) {
+    return inOrder().find(function(f) {
+      return f.entry(m);
+    }) || null;
+  }
   function setV(v) {
     V = v;
     Object.keys(LIFETIMES).forEach(reset);
@@ -1512,6 +1525,25 @@
       beside: function() {
         return null;
       },
+      open: function(t) {
+        return { g: t, t };
+      },
+      // edited as it is
+      drawOwn: function(t) {
+        return yr().then(function() {
+          return window.yrender.render(t, { classes: true, groups: true, sbgn: false }).svg;
+        });
+      },
+      // a reader's own map drawn for the list (core.js drawText), as the build draws
+      ahead: { load: yr },
+      // the read-ahead: the renderer; the file is edited as it is
+      reads: function(t) {
+        return /<graphml[\s>]/.test(t.slice(0, 3e3));
+      },
+      entry: function(m) {
+        var d = m && m.downloads && m.downloads[0];
+        return !!(d && d.label === "GraphML");
+      },
       kind: function(n) {
         return n.shape && n.shape.kind || null;
       },
@@ -1823,6 +1855,71 @@
       },
       beside: function() {
         return null;
+      },
+      reads: viaGraphml,
+      entry: sbMap,
+      // an SBML file with a layout too, edited the same way
+      asRead: true,
+      // the history and the picture on screen are of the file as read, before the opening put its sites back
+      // opening: the GraphML of its text, from the build's (g0) where the text matches it, else the reader's (sbOwn); its
+      // sites kept in the notes put back on their circles (sbIn, written as Show sites says, sbOut); the moves written back
+      // at once, so a file whose moves cannot be is said now, not at the first save
+      open: function(t, g0, still) {
+        var t0 = t;
+        return sbpy().then(function() {
+          var tin = sbIn(t), sited = function(x) {
+            return (x.match(/<([\w.-]+:)?state [^>]*variable="[^"]/g) || []).length;
+          };
+          if (tin === t) return g0;
+          if (g0 && sited(tin) === sited(t)) {
+            t = tin;
+            return g0;
+          }
+          t = tin;
+          return sbReader(t).then(function() {
+            return sbOwn(t);
+          });
+        }).then(function(g1) {
+          if (!still()) return null;
+          if (!g1) throw "its GraphML did not load";
+          var ed0 = edOf(t);
+          if (ed0.unique) t = ed0.unique(t, g1);
+          var g = sbGraphml(t, g1), sb1 = { base: t, g0: g1 };
+          return { g, t, t0, own: { sb: sb1, sbLast: [g, edOf(t).write(t, g), sb1] } };
+        });
+      },
+      // a reader's own map drawn for the list (core.js drawText): SBGN-ML only (not SBML), from the empty base if made here,
+      // else read by sbgnml_read; g0: a site map's build GraphML
+      drawOwn: function(t, g0) {
+        if (!isSb(t)) return null;
+        return sbpy().then(function() {
+          if (!g0) t = sbIn(t);
+          return g0 ? null : sbReader(t);
+        }).then(function() {
+          return window.yrender.render(sbGraphml(t, g0 || sbOwn(t)), { classes: true, groups: true, sbgn: true }).svg;
+        });
+      },
+      asGraphml: function(t) {
+        return shared.sb ? sbGraphml(t, shared.sb.g0) : t;
+      },
+      // the site's file as the editor's GraphML, from the open map's base
+      // the read-ahead: its edited copy (maps/sbgn-ml/...), the converter's GraphML it is edited from, drawn as SBGN; on
+      // leaving, the text kept with its GraphML, so it is reopened on the very GraphML it was left with (keeper)
+      ahead: {
+        load: sbpy,
+        path: function(m) {
+          return m.editPath;
+        },
+        base: sbBase,
+        graphml: sbGraphml,
+        sbgn: true,
+        keeper: function() {
+          var g0 = shared.sb && shared.sb.g0;
+          return function(t, g) {
+            sbRemember(t, g, g0);
+            return null;
+          };
+        }
       },
       kind: function(n) {
         var c = sbClasses()[n.id];
@@ -2464,6 +2561,51 @@
       },
       beside: function() {
         return shared.cd.now;
+      },
+      reads: isCd,
+      entry: cdMap,
+      // opening: CellDesigner's open arrowhead taken in as SBGN's open triangle (cd_make sbgn): the editor works on the
+      // changed text, written at the next save, the change said once the map is drawn; the file as it was stays the
+      // site's base (what GitHub and the site hold)
+      open: function(t, g0, still) {
+        return cdpy().then(function() {
+          if (!still()) return null;
+          var sg = cdMk ? cdMk.sbgn(t) : { n: 0 }, t0 = t, said = null;
+          if (sg.n) {
+            t = sg.text;
+            said = sg.n + (sg.n > 1 ? " positive influences" : " positive influence") + " (open arrowhead, not SBGN) made reduced physical stimulation (open triangle).";
+          }
+          return { g: cdGraphml(t), t, t0, said, own: { cd: { base: t, now: t } } };
+        });
+      },
+      // a reader's own map drawn for the list (core.js drawText) by cdrender; keep: 'adding' when the map is shown next
+      // (its document kept for it, cdDoc)
+      drawOwn: function(t, g0, keep) {
+        return cdpy().then(function() {
+          return window.cdrender.render(cdDoc(t, keep || false), { classes: true, groups: true });
+        });
+      },
+      asGraphml: function(t) {
+        return cdJs ? cdGraphml(t) : t;
+      },
+      // the site's file as the editor's GraphML (the reference of the site's drawing)
+      // the read-ahead: the GraphML of its file (its document kept for the map shown), drawn by cdrender; that GraphML
+      // handed to the opening (took); the drawing kept on leaving, with the file it was made from (keeper)
+      ahead: {
+        load: cdpy,
+        graphml: function(t, b, keep) {
+          return cdKnown(t) || cdJs.graphml(t, null, { doc: cdDoc(t, keep) });
+        },
+        took: cdRemember,
+        draw: function(t, g) {
+          return { cd: true, base: t, text: g, q: cdDraw(t, g, false), block: gridBlock() };
+        },
+        keeper: function() {
+          return function(t, g, svg) {
+            cdRemember(t, g);
+            return { cd: true, base: t, text: g, q: [svg, t, g] };
+          };
+        }
       },
       kind: function(n) {
         var c = cdClsOf(n.id);
@@ -13642,13 +13784,9 @@
     });
   }
   function drawText(t, g0, keep) {
-    var c = isCd(t), s = !c && isSb(t);
-    if (!c && !s && !/<graphml[\s>]/.test(t.slice(0, 3e3))) return Promise.reject(new Error("not a GraphML, CellDesigner or SBGN-ML file"));
-    return (c ? cdpy() : s ? sbpy().then(function() {
-      if (!g0) t = sbIn(t);
-      return g0 ? null : sbReader(t);
-    }) : yr()).then(function() {
-      var svg = c ? window.cdrender.render(cdDoc(t, keep || false), { classes: true, groups: true }) : window.yrender.render(s ? sbGraphml(t, g0 || sbOwn(t)) : t, { classes: true, groups: true, sbgn: s }).svg;
+    var F = formatOfText(t), made2 = F && F.drawOwn(t, g0, keep);
+    if (!made2) return Promise.reject(new Error("not a GraphML, CellDesigner or SBGN-ML file"));
+    return made2.then(function(svg) {
       var w = svg.match(/ width="([\d.]+)" height="([\d.]+)"/);
       if (!w) throw new Error("not a map this viewer can draw");
       return { svg, width: parseFloat(w[1]), height: parseFloat(w[2]) };
@@ -14826,64 +14964,30 @@
   function start(t, n, h, s, same, g0) {
     if (shared.typing) shared.typing.done(true);
     if (localTimer) local(true);
-    var tk = opening;
-    if (viaGraphml(t)) {
-      quiet();
-      var t0 = t;
-      return sbpy().then(function() {
-        var tin = sbIn(t), sited = function(x) {
-          return (x.match(/<([\w.-]+:)?state [^>]*variable="[^"]/g) || []).length;
-        };
-        if (tin === t) return g0;
-        if (g0 && sited(tin) === sited(t)) {
-          t = tin;
-          return g0;
-        }
-        t = tin;
-        return sbReader(t).then(function() {
-          return sbOwn(t);
-        });
-      }).then(function(g1) {
-        g0 = g1;
-        if (tk !== opening) return;
-        if (!g0) throw "its GraphML did not load";
-        var ed0 = edOf(t);
-        if (ed0.unique) t = ed0.unique(t, g0);
-        var g = sbGraphml(t, g0);
-        var sb1 = { base: t, g0 };
-        var last = [g, edOf(t).write(t, g), sb1];
-        begin(g, t, n, h, s, same, t0, { name: "sb", sb: sb1, sbLast: last });
-      }).catch(function(e) {
-        if (tk === opening) warn("Cannot edit " + n + ": " + e);
-      });
-    }
-    if (!isCd(t)) return begin(t, t, n, h, s, same, null, { name: "graphml" });
+    var tk = opening, still = function() {
+      return tk === opening;
+    };
+    var F = formatOfText(t) || formats.graphml, o = F.open(t, g0, still);
+    var go = function(o2) {
+      if (!o2 || !still()) return;
+      if (o2.said) takenIn = o2.said;
+      begin(o2.g, o2.t, n, h, s, same, o2.t0 || null, F, o2.own);
+    };
+    if (!o.then) return go(o);
     quiet();
-    return cdpy().then(function() {
-      if (tk !== opening) return;
-      var sg = cdMk ? cdMk.sbgn(t) : { n: 0 }, t02 = t;
-      if (sg.n) {
-        t = sg.text;
-        takenIn = sg.n + (sg.n > 1 ? " positive influences" : " positive influence") + " (open arrowhead, not SBGN) made reduced physical stimulation (open triangle).";
-      }
-      begin(cdGraphml(t), t, n, h, s, same, t02, { name: "cd", cd: { base: t, now: t } });
-    }).catch(function(e) {
-      if (tk === opening) warn("Cannot edit " + n + ": " + e);
+    return o.then(go).catch(function(e) {
+      if (still()) warn("Cannot edit " + n + ": " + e);
     });
   }
   var takenIn;
   function __run204() {
     takenIn = null;
   }
-  function begin(g, t, n, h, s, same, t0, fmt2) {
+  function begin(g, t, n, h, s, same, t0, F, own2) {
     var was = takeMap();
     resetMap();
-    shared.F = formats[fmt2.name];
-    if (fmt2.cd) shared.cd = fmt2.cd;
-    if (fmt2.sb) {
-      shared.sb = fmt2.sb;
-      shared.sbLast = fmt2.sbLast;
-    }
+    shared.F = F;
+    if (own2) putMap(own2);
     layout();
     sbpy();
     try {
@@ -14914,7 +15018,7 @@
     if (site && site.pending && canFolder && V.folderName()) folderCheck();
     stuck = false;
     undo = [];
-    histTake(shared.sb ? t0 : t, g);
+    histTake(F.asRead ? t0 : t, g);
     edits = 0;
     if (reSel && V.chosen && reSel.map === V.chosen.id) {
       nodes2.forEach(function(n2, i) {
@@ -14957,7 +15061,7 @@
     buttons();
     gN = gE = null;
     mv = null;
-    if (same && same.text === (shared.sb ? t0 : t)) {
+    if (same && same.text === (F.asRead ? t0 : t)) {
       var grouped = same.svg && same.svg.indexOf(' data-n="') >= 0;
       shared.F.load().then(function() {
         if (on && V.current === map && !edits && !gN && !grouped) render();
@@ -15051,7 +15155,7 @@
   function keepAhead() {
     var s = site, m = s && s.id ? V.byId[s.id] : null, old = editPre;
     if (!m || !old || stuck || s.pending || old.key !== preKey(m)) return false;
-    var p = { key: old.key, id: old.id, path: old.path, file: old.file, img: old.img, sitePub: old.sitePub, siteFrame: old.siteFrame, base: old.base, kept: s };
+    var p = { key: old.key, id: old.id, path: old.path, file: old.file, img: old.img, sitePub: old.sitePub, siteFrame: old.siteFrame, base: old.base, F: old.F, kept: s };
     p.gh = (saving || Promise.resolve()).then(function() {
       var k = ghKnown(s);
       if (!k) throw "not saved";
@@ -15067,10 +15171,8 @@
     bank[p.id] = p;
     var S = src(), g = shared.text, d0 = doc, el = V.img, svg = lastSvg;
     if (!(svg && !drawing && !mv && !shared.keyed && !shared.liveC && docText === g && lastFor && !lastFor[3] && lastFor[0] === g && lastFor[1] === shared.F.beside())) return true;
-    var isCd2 = !!shared.cd, isSbm = !!shared.sb, sbG0 = shared.sb && shared.sb.g0, make = function() {
-      var dm = isCd2 ? { cd: true, base: S, text: g, q: [svg, S, g] } : { cd: false, text: g, r: [svg, []] };
-      if (isCd2) cdRemember(S, g);
-      else if (isSbm) sbRemember(S, g, sbG0);
+    var kept = shared.F.ahead.keeper ? shared.F.ahead.keeper() : null, make = function() {
+      var dm = kept && kept(S, g, svg) || { cd: false, text: g, r: [svg, []] };
       p.memo = dm;
       p.docs = [{ text: g, doc: d0 }];
       p.drawn = Promise.resolve();
@@ -15121,7 +15223,7 @@
   }
   function graphmlOf(m) {
     var d = m && m.downloads && m.downloads[0];
-    return d && (d.label === "GraphML" || d.label === "CellDesigner" || sbMap(m)) ? d.url : null;
+    return d && formatOfMap(m) ? d.url : null;
   }
   function save() {
     if (!shared.text) return;
@@ -15288,18 +15390,18 @@
     return V.current && V.current.id === m.id ? idle() : calm();
   }
   function ahead(m, low) {
-    var url = graphmlOf(m);
+    var url = graphmlOf(m), F = url && formatOfMap(m), A = F && F.ahead;
     if (!url) return null;
     var key = preKey(m), old = bank[m.id];
     if (old && old.key === key && (!old.bad || low && Date.now() - old.bad < 3e5)) return old;
     var file = url.split("?")[0].split("/").pop(), path = "maps/" + file;
-    if (sbMap(m)) {
-      path = m.editPath;
+    if (A.path) {
+      path = A.path(m);
       file = path.split("/").pop();
     }
-    var p = { key, id: m.id, path, file, img: m.image + V.ver(m) };
-    if (sbMap(m)) {
-      p.base = sbBase(m, low);
+    var p = { key, id: m.id, path, file, img: m.image + V.ver(m), F };
+    if (A.base) {
+      p.base = A.base(m, low);
       p.base.catch(function() {
         p.bad = p.bad || Date.now();
       });
@@ -15323,25 +15425,20 @@
   }
   function readyOf(p, m) {
     if (p.ready) return p.ready;
-    var cdm = cdMap(m), sbm = sbMap(m), still = function() {
+    var A = p.F.ahead, still = function() {
       return bank[m.id] === p && !on;
     };
-    var r = p.ready = (cdm ? cdpy() : sbm ? sbpy() : yr()).then(function() {
+    var r = p.ready = A.load().then(function() {
       return Promise.all([heldText(m) || p.sitePub, p.gh]);
     }).then(function(x) {
       p.t = x[1] ? x[1].text : x[0];
-      if (sbm) return p.base.then(function(b) {
-        p.b = b;
+      if (!A.graphml) return p;
+      return Promise.resolve(p.base || null).then(function(b) {
+        if (p.base) p.b = b;
         return waitFor(m);
       }).then(function() {
         if (!still()) throw 0;
-        p.g = sbGraphml(p.t, p.b);
-        return p;
-      });
-      if (!cdm) return p;
-      return waitFor(m).then(function() {
-        if (!still()) throw 0;
-        p.g = cdKnown(p.t) || cdJs.graphml(p.t, null, { doc: cdDoc(p.t, V.current && V.current.id === m.id ? m.id : false) });
+        p.g = A.graphml(p.t, p.b, V.current && V.current.id === m.id ? m.id : false);
         return p;
       });
     });
@@ -15352,7 +15449,7 @@
   }
   function drawAhead(p, m) {
     if (p.drawn) return p.drawn;
-    var cdm = cdMap(m), mine2 = {};
+    var F = p.F, mine2 = {};
     var still = function() {
       return bank[m.id] === p && !on && p.drawn === mine2.p;
     };
@@ -15365,7 +15462,7 @@
       if (!still()) throw 0;
       g = p.g || p.t;
       d = rd(g);
-      g2 = cdm ? g : shiftedAhead(g, d);
+      g2 = F.ownFrame ? g : shiftedAhead(g, d);
       d2 = g2 === g ? d : rd(g2);
       p.docs = g2 === g ? [{ text: g, doc: d }] : [{ text: g, doc: d }, { text: g2, doc: d2 }];
       return waitFor(m);
@@ -15379,9 +15476,9 @@
         p.memo = dm;
         return waitFor(m);
       }
-      if (cdm) dm = { cd: true, base: p.t, text: g, q: cdDraw(p.t, g, false), block: gridBlock() };
+      if (F.ahead.draw) dm = F.ahead.draw(p.t, g);
       else {
-        var y = window.yrender.render(d2, { classes: true, groups: true, sbgn: sbMap(m) });
+        var y = window.yrender.render(d2, { classes: true, groups: true, sbgn: !!F.ahead.sbgn });
         dm = { cd: false, text: g2, r: [y.svg, y.errors] };
       }
       p.memo = dm;
@@ -15389,7 +15486,7 @@
     }).then(function() {
       if (!still() || p.memo !== dm) throw 0;
       if (dm.own && dm.own.length >= 3e6) return;
-      dm.rec = V.recolour(dm.own || (cdm ? dm.q[0] : dm.r[0]));
+      dm.rec = V.recolour(dm.own || (dm.q ? dm.q[0] : dm.r[0]));
       dm.pic = document.importNode(new DOMParser().parseFromString(dm.rec, "image/svg+xml").documentElement, true);
     });
     mine2.p.catch(function() {
@@ -15477,7 +15574,7 @@
         if (tk !== opening) return;
         drawMemo = p.memo || null;
         preDoc = p.docs || [];
-        if (p.g && p.t === t && !p.b) cdRemember(t, p.g);
+        if (p.g && p.t === t && p.F.ahead.took) p.F.ahead.took(t, p.g);
         dropDrawing(p);
         var same = r[1] && V.img === shownPic && V.current === m ? Object.assign({}, r[1], { text: r[0] }) : null;
         if (s) {
@@ -15491,7 +15588,8 @@
         }).then(function() {
           openTitle = null;
           if (tk !== opening) return;
-          siteRef = r[3] ? baseOf(isCd(r[2]) && cdJs ? cdGraphml(r[2]) : shared.sb && viaGraphml(r[2]) ? sbGraphml(r[2], shared.sb.g0) : r[2], r[3]) : null;
+          var Fs = formatOfText(r[2]);
+          siteRef = r[3] ? baseOf(Fs && Fs.asGraphml ? Fs.asGraphml(r[2]) : r[2], r[3]) : null;
           map.title = m.title;
           document.getElementById("m2-title").textContent = m.title;
         });
@@ -15540,7 +15638,7 @@
       var gone = function() {
         if (tk === opening && u) warn("The moves not saved before could not be taken up: the map changed on GitHub meanwhile. This is its version there.");
       };
-      if (!g && sbMap(m)) return published.then(function(t) {
+      if (!g && p.F.ahead.path) return published.then(function(t) {
         return go(t, { path, sha: null });
       }).then(gone).catch(notLoaded);
       if (!g) return fromSite(null);

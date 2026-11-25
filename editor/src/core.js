@@ -1,10 +1,10 @@
-import { formats, putMap, resetDrawing, resetMap, shared, takeMap, V } from './state.js';
+import { formatOfMap, formatOfText, formats, putMap, resetDrawing, resetMap, shared, takeMap, V } from './state.js';
 import GE from '../../renderers/converter/graphml_edit.js';   // the GraphML engine: the map's GraphML read and written as text
 import H from '../../renderers/layout/holding.js';   // what holds what: regrouping, growing a holder, the holder a box lies in
 import { bx, keyShift, liveFit, liveLines, liveOff, posePort, poseSize, shift, sizeLive, sizeOff, unshift } from './live.js';
-import { AF_KINDS, drawGraphml, noNegative, shiftedAhead, yr } from './graphml.js';
-import { beyond, cdDoc, cdDraw, cdGraphml, cdJs, cdKnown, cdMap, cdMk, cdRemember, cdpy, glyphArcs, glyphPort, isCd, joinAt, joinGuides, joinSolve, lineGrid, nodeCentre, nodePlaces } from './celldesigner.js';
-import { edOf, isSb, sbBase, sbFollow, sbGraphml, sbIn, sbKind, sbMap, sbOwn, sbReader, sbRemember, sbpy, viaGraphml } from './sbgn.js';
+import { AF_KINDS, drawGraphml, noNegative, shiftedAhead } from './graphml.js';
+import { beyond, cdDraw, glyphArcs, glyphPort, joinAt, joinGuides, joinSolve, lineGrid, nodeCentre, nodePlaces } from './celldesigner.js';
+import { isSb, sbFollow, sbKind, sbpy } from './sbgn.js';
 import { ddOpen, hybOn, joinDo, joinPack, joinPlan, link, linkDown, linkMove, linkPaint, linkUp, moveSays, origAll, palDown, palShow, palUp, propFmt, setSize, sizable, svDown, svMarks, tool } from './create.js';
 import { help, helpBox } from './help.js';
 import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepBeside, keptNow, listGo, mine, mineAdd, mineIn, mineMatch, minePut, savedMine, toGh, upAll, upRun } from './own.js';
@@ -484,11 +484,10 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       }).then(function () { if (news) V.refreshMine(); }, function () {});
     }
     // a reader's own map drawn for the list (My maps): as the build draws, with the role classes
-    function drawText(t, g0, keep) {   // a reader's map: GraphML, CellDesigner, or SBGN-ML (sbOwn: from the empty base if made here, else read by sbgnml_read); g0: a site SBGN-ML map's build GraphML; keep: 'adding' when the map is shown next (a CellDesigner file's document kept for it, celldesigner.js cdDoc)
-      var c = isCd(t), s = !c && isSb(t);
-      if (!c && !s && !/<graphml[\s>]/.test(t.slice(0, 3000))) return Promise.reject(new Error('not a GraphML, CellDesigner or SBGN-ML file'));
-      return (c ? cdpy() : s ? sbpy().then(function () { if (!g0) t = sbIn(t); return g0 ? null : sbReader(t); }) : yr()).then(function () {
-        var svg = c ? window.cdrender.render(cdDoc(t, keep || false), { classes: true, groups: true }) : window.yrender.render(s ? sbGraphml(t, g0 || sbOwn(t)) : t, { classes: true, groups: true, sbgn: s }).svg;   // grouped: the editor's own drawing, taken as it is on entering edit (adopt)
+    function drawText(t, g0, keep) {   // a reader's map, GraphML, CellDesigner or SBGN-ML, drawn its format's way (drawOwn); g0: a site SBGN-ML map's build GraphML; keep: 'adding' when the map is shown next
+      var F = formatOfText(t), made = F && F.drawOwn(t, g0, keep);   // grouped: the editor's own drawing, taken as it is on entering edit (adopt)
+      if (!made) return Promise.reject(new Error('not a GraphML, CellDesigner or SBGN-ML file'));
+      return made.then(function (svg) {
         var w = svg.match(/ width="([\d.]+)" height="([\d.]+)"/);
         if (!w) throw new Error('not a map this viewer can draw');
         return { svg: svg, width: parseFloat(w[1]), height: parseFloat(w[2]) };
@@ -1238,55 +1237,26 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     function __run19() {   // run at start, in order (__start)
     opening = 0;
     }
-    function start(t, n, h, s, same, g0) {   // a CellDesigner file is first made into the GraphML the editor edits; g0: an SBGN-ML map's GraphML as the build made it
+    function start(t, n, h, s, same, g0) {   // the file is first made into the GraphML the editor edits, its format's own way (F.open); g0: an SBGN-ML map's GraphML as the build made it
       if (shared.typing) shared.typing.done(true);
       if (localTimer) local(true);   // the last move of the map before kept first, before cd and text change
-      var tk = opening;
+      var tk = opening, still = function () { return tk === opening; };
       // the new map's format is handed to begin, which writes it after resetMap: until then the map left stays whole
-      if (viaGraphml(t)) {   // an SBGN-ML map (or SBML, layout only): the GraphML of its text, made from the build's (g0, read with the map)
-        quiet();
-        var t0 = t;
-        return sbpy().then(function () {
-          var tin = sbIn(t), sited = function (x) { return (x.match(/<([\w.-]+:)?state [^>]*variable="[^"]/g) || []).length; };   // sites kept in the notes back on their circles (written as Show sites says, sbOut)
-          if (tin === t) return g0;
-          if (g0 && sited(tin) === sited(t)) { t = tin; return g0; }   // boxes widened only: the GraphML the site drew kept (it takes the places from the text)
-          t = tin;
-          return sbReader(t).then(function () { return sbOwn(t); });
-        }).then(function (g1) {
-          g0 = g1;
-          if (tk !== opening) return;
-          if (!g0) throw 'its GraphML did not load';
-          var ed0 = edOf(t);
-          if (ed0.unique) t = ed0.unique(t, g0);   // two glyphs of one id: the later renamed as the build's GraphML has it, written at the next save
-          var g = sbGraphml(t, g0);
-          var sb1 = { base: t, g0: g0 };
-          var last = [g, edOf(t).write(t, g), sb1];   // a file whose moves could not be written back is said now, not at the first save; kept for src()
-          begin(g, t, n, h, s, same, t0, { name: 'sb', sb: sb1, sbLast: last });
-        })
-          .catch(function (e) { if (tk === opening) warn('Cannot edit ' + n + ': ' + e); });
-      }
-      if (!isCd(t)) return begin(t, t, n, h, s, same, null, { name: 'graphml' });
+      var F = formatOfText(t) || formats.graphml, o = F.open(t, g0, still);   // a file of no kind known is tried as GraphML
+      var go = function (o) { if (!o || !still()) return; if (o.said) takenIn = o.said; begin(o.g, o.t, n, h, s, same, o.t0 || null, F, o.own); };
+      if (!o.then) return go(o);   // GraphML: edited as it is, at once
       quiet();
-      return cdpy().then(function () {
-        if (tk !== opening) return;
-        // CellDesigner's open arrowhead taken in as SBGN's open triangle (cd_make sbgn): the editor works on the changed
-        // text, written at the next save; the file as it was stays the site's base (what GitHub and the site hold)
-        var sg = cdMk ? cdMk.sbgn(t) : { n: 0 }, t0 = t;
-        if (sg.n) { t = sg.text; takenIn = sg.n + (sg.n > 1 ? ' positive influences' : ' positive influence') + ' (open arrowhead, not SBGN) made reduced physical stimulation (open triangle).'; }
-        begin(cdGraphml(t), t, n, h, s, same, t0, { name: 'cd', cd: { base: t, now: t } });
-      })
-        .catch(function (e) { if (tk === opening) warn('Cannot edit ' + n + ': ' + e); });
+      return o.then(go).catch(function (e) { if (still()) warn('Cannot edit ' + n + ': ' + e); });
     }
     var takenIn;
     function __run20() {   // run at start, in order (__start)
     takenIn = null;
     }   // what the opening changed in the file (cd_make sbgn), said once the map is drawn
-    function begin(g, t, n, h, s, same, t0, fmt) {   // same: { width, height, x0, y0, scale } of the picture on screen, drawn from this very file; t0: the file as read, where the opening changed it; fmt: the map's format ({ name: 'cd', cd } or { name: 'sb', sb, sbLast }; { name: 'graphml' })
+    function begin(g, t, n, h, s, same, t0, F, own) {   // same: { width, height, x0, y0, scale } of the picture on screen, drawn from this very file; t0: the file as read, where the opening changed it; F: the map's format object; own: its fields of the map's lifetime (CellDesigner { cd }, SBGN-ML { sb, sbLast })
       var was = takeMap();   // the map before, put back if this one cannot be read
       resetMap();   // every field of the map, gesture, drawing and cache lifetimes as at the start (state.js), then the new map's own
-      shared.F = formats[fmt.name];
-      if (fmt.cd) shared.cd = fmt.cd;
-      if (fmt.sb) { shared.sb = fmt.sb; shared.sbLast = fmt.sbLast; }
+      shared.F = F;
+      if (own) putMap(own);
       layout();   // its extent() measures what the holders grow round (extOf), at the first move
       sbpy();   // sbgn_edit quietly, on every map: its stacking (stackComps) and moveInto serve GraphML maps too
       try { setText(g); parse(); } catch (e) { putMap(was); try { parse(); } catch (e2) {} warn('Cannot edit ' + n + ': ' + e); return; }   // its moves not saved still said and kept
@@ -1296,7 +1266,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       if (site) { site.known = site.mine ? (mine[site.id] ? mine[site.id].text : null) : V.drafts[site.id] ? V.drafts[site.id].text : null; site.clashed = false; }   // what this browser kept of the map when it was opened (local: the save clash)
       if (site && site.pending && canFolder && V.folderName()) folderCheck();
       stuck = false; undo = [];
-      histTake(shared.sb ? t0 : t, g);   // an SBGN-ML map: the file as read (its sites put back on opening, sbIn), as it was left
+      histTake(F.asRead ? t0 : t, g);   // SBGN-ML: the file as read (its sites put back on opening, sbIn), as it was left
       edits = 0;
       if (reSel && V.chosen && reSel.map === V.chosen.id) {   // reloaded while editing this map: its selection back
         nodes2.forEach(function (n, i) { if (reSel.n.indexOf(n.id) >= 0) shared.selN.push(i); });
@@ -1315,7 +1285,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       V.grid.classList.add('m2-editing');
       buttons();
       gN = gE = null; mv = null;
-      if (same && same.text === (shared.sb ? t0 : t)) {
+      if (same && same.text === (F.asRead ? t0 : t)) {
         var grouped = same.svg && same.svg.indexOf(' data-n="') >= 0;   // the editor's own drawing of this very file
         shared.F.load().then(function () { if (on && V.current === map && !edits && !gN && !grouped) render(); });   // the renderer loaded quietly for the first change
         if (grouped) adopt(same.svg);
@@ -1379,7 +1349,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     function keepAhead() {
       var s = site, m = s && s.id ? V.byId[s.id] : null, old = editPre;
       if (!m || !old || stuck || s.pending || old.key !== preKey(m)) return false;
-      var p = { key: old.key, id: old.id, path: old.path, file: old.file, img: old.img, sitePub: old.sitePub, siteFrame: old.siteFrame, base: old.base, kept: s };
+      var p = { key: old.key, id: old.id, path: old.path, file: old.file, img: old.img, sitePub: old.sitePub, siteFrame: old.siteFrame, base: old.base, F: old.F, kept: s };
       // the version as saved once a save under way is done; a save that did not go through: GitHub read afresh
       p.gh = (saving || Promise.resolve()).then(function () {
         var k = ghKnown(s);
@@ -1393,10 +1363,8 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       // move in the text drawn, none moving; made ahead now, or once the save under way has written that very text
       var S = src(), g = shared.text, d0 = doc, el = V.img, svg = lastSvg;
       if (!(svg && !drawing && !mv && !shared.keyed && !shared.liveC && docText === g && lastFor && !lastFor[3] && lastFor[0] === g && lastFor[1] === shared.F.beside())) return true;
-      var isCd = !!shared.cd, isSbm = !!shared.sb, sbG0 = shared.sb && shared.sb.g0, make = function () {
-        var dm = isCd ? { cd: true, base: S, text: g, q: [svg, S, g] } : { cd: false, text: g, r: [svg, []] };
-        if (isCd) cdRemember(S, g);
-        else if (isSbm) sbRemember(S, g, sbG0);   // an SBGN-ML map reopened on the very GraphML it was left with
+      var kept = shared.F.ahead.keeper ? shared.F.ahead.keeper() : null, make = function () {   // the format's own part taken now, used once the text is saved
+        var dm = kept && kept(S, g, svg) || { cd: false, text: g, r: [svg, []] };
         p.memo = dm; p.docs = [{ text: g, doc: d0 }]; p.drawn = Promise.resolve();
         if (el === V.img && el.tagName.toLowerCase() === 'svg' && el.querySelector('[data-e]')) {   // the page's drawing itself
           el.querySelectorAll('.m2-ed-copy').forEach(function (x) { x.remove(); });
@@ -1434,7 +1402,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     }
     function graphmlOf(m) {   // a map drawn from its own file, GraphML, CellDesigner, or a file with an editBase (SBGN-ML, SBML): that file is first in its downloads
       var d = m && m.downloads && m.downloads[0];
-      return d && (d.label === 'GraphML' || d.label === 'CellDesigner' || sbMap(m)) ? d.url : null;
+      return d && formatOfMap(m) ? d.url : null;
     }
 
     function save() {
@@ -1546,14 +1514,14 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     // a map's entry: its files asked for now (the map shown at the browser's usual priority, the others low), then, in
     // idle moments, the renderer and a CellDesigner file's GraphML (p.ready, the text editing starts from)
     function ahead(m, low) {
-      var url = graphmlOf(m);
+      var url = graphmlOf(m), F = url && formatOfMap(m), A = F && F.ahead;
       if (!url) return null;
       var key = preKey(m), old = bank[m.id];
       if (old && old.key === key && (!old.bad || (low && Date.now() - old.bad < 300000))) return old;
       var file = url.split('?')[0].split('/').pop(), path = 'maps/' + file;
-      if (sbMap(m)) { path = m.editPath; file = path.split('/').pop(); }   // an SBGN-ML map: its edited copy (maps/sbgn-ml/...), under the file's own name
-      var p = { key: key, id: m.id, path: path, file: file, img: m.image + V.ver(m) };
-      if (sbMap(m)) { p.base = sbBase(m, low); p.base.catch(function () { p.bad = p.bad || Date.now(); }); }
+      if (A.path) { path = A.path(m); file = path.split('/').pop(); }   // a map edited as a copy of its own (SBGN-ML: maps/sbgn-ml/...), under the file's own name
+      var p = { key: key, id: m.id, path: path, file: file, img: m.image + V.ver(m), F: F };
+      if (A.base) { p.base = A.base(m, low); p.base.catch(function () { p.bad = p.bad || Date.now(); }); }
       p.sitePub = fetch(url, { cache: 'no-cache', priority: low ? 'low' : 'auto' }).then(function (r) { if (!r.ok) throw r.status; return r.text(); });
       // the repository's version (newer than the site while a build runs) and its sha, which makes GitHub refuse a save
       // over a version changed meanwhile; null: not a map of this repository (saved as a file)
@@ -1570,20 +1538,15 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     function heldText(m) { var k = V.kept; return k && k.id === m.id && (k.draft || V.behind(m, k)) && k.text ? k.text : null; }
     function readyOf(p, m) {   // made again when an earlier try stopped (editing began, a newer entry)
       if (p.ready) return p.ready;
-      var cdm = cdMap(m), sbm = sbMap(m), still = function () { return bank[m.id] === p && !on; };
-      var r = p.ready = (cdm ? cdpy() : sbm ? sbpy() : yr()).then(function () {
+      var A = p.F.ahead, still = function () { return bank[m.id] === p && !on; };
+      var r = p.ready = A.load().then(function () {
         return Promise.all([heldText(m) || p.sitePub, p.gh]);
       }).then(function (x) {
         p.t = x[1] ? x[1].text : x[0];
-        if (sbm) return p.base.then(function (b) { p.b = b; return waitFor(m); }).then(function () {   // an SBGN-ML map: the GraphML of its text, a step of its own
+        if (!A.graphml) return p;   // a GraphML map is ready as it is
+        return Promise.resolve(p.base || null).then(function (b) { if (p.base) p.b = b; return waitFor(m); }).then(function () {   // the GraphML of a CellDesigner or SBGN-ML text: a step of its own
           if (!still()) throw 0;
-          p.g = sbGraphml(p.t, p.b);
-          return p;
-        });
-        if (!cdm) return p;   // a GraphML map is ready as it is
-        return waitFor(m).then(function () {
-          if (!still()) throw 0;
-          p.g = cdKnown(p.t) || cdJs.graphml(p.t, null, { doc: cdDoc(p.t, V.current && V.current.id === m.id ? m.id : false) });   // a CellDesigner file made into the editor's GraphML: a step of its own (its document kept for the map shown)
+          p.g = A.graphml(p.t, p.b, V.current && V.current.id === m.id ? m.id : false);   // a CellDesigner file's document kept for the map shown
           return p;
         });
       });
@@ -1596,7 +1559,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     // long enough to be felt while the map is only looked at (one step was 84-134 ms on large maps)
     function drawAhead(p, m) {
       if (p.drawn) return p.drawn;
-      var cdm = cdMap(m), mine = {};
+      var F = p.F, mine = {};
       var still = function () { return bank[m.id] === p && !on && p.drawn === mine.p; };
       var rd = function (x) { return new DOMParser().parseFromString(x, 'application/xml'); };
       var g, d, g2, d2, dm;
@@ -1605,7 +1568,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
         if (!still()) throw 0;
         g = p.g || p.t;   // a CellDesigner or SBGN-ML map: the GraphML made of it
         d = rd(g);
-        g2 = cdm ? g : shiftedAhead(g, d);   // a map with negative places is shifted on entering edit (noNegative)
+        g2 = F.ownFrame ? g : shiftedAhead(g, d);   // a map with negative places is shifted on entering edit (noNegative)
         d2 = g2 === g ? d : rd(g2);
         p.docs = g2 === g ? [{ text: g, doc: d }] : [{ text: g, doc: d }, { text: g2, doc: d2 }];   // the documents the editor reads its file into
         return waitFor(m);
@@ -1618,14 +1581,14 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
         // enough for one idle moment (a larger one is put in when editing starts)
         var fr = x[0];
         if (fr && fr.svg && fr.svg.indexOf(' data-n="') >= 0 && p.t === x[1]) { dm = { cd: null, text: null, pic: null, own: fr.svg }; p.memo = dm; return waitFor(m); }
-        if (cdm) dm = { cd: true, base: p.t, text: g, q: cdDraw(p.t, g, false), block: gridBlock() };
-        else { var y = window.yrender.render(d2, { classes: true, groups: true, sbgn: sbMap(m) }); dm = { cd: false, text: g2, r: [y.svg, y.errors] }; }   // the renderer only reads the document
+        if (F.ahead.draw) dm = F.ahead.draw(p.t, g);   // CellDesigner: its own renderer, { cd: true, base, text, q }
+        else { var y = window.yrender.render(d2, { classes: true, groups: true, sbgn: !!F.ahead.sbgn }); dm = { cd: false, text: g2, r: [y.svg, y.errors] }; }   // the renderer only reads the document
         p.memo = dm;
         return waitFor(m);
       }).then(function () {
         if (!still() || p.memo !== dm) throw 0;
         if (dm.own && dm.own.length >= 3e6) return;
-        dm.rec = V.recolour(dm.own || (cdm ? dm.q[0] : dm.r[0]));   // the drawing as the page's elements, ready to put in
+        dm.rec = V.recolour(dm.own || (dm.q ? dm.q[0] : dm.r[0]));   // the drawing as the page's elements, ready to put in
         dm.pic = document.importNode(new DOMParser().parseFromString(dm.rec, 'image/svg+xml').documentElement, true);
       });
       mine.p.catch(function () { if (p.drawn === mine.p) p.drawn = null; });
@@ -1683,7 +1646,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
           if (tk !== opening) return;   // left, or another map opened, meanwhile
           // what was read ahead for this map handed to the editor, used once (made again by the sweep if wanted)
           drawMemo = p.memo || null; preDoc = p.docs || [];
-          if (p.g && p.t === t && !p.b) cdRemember(t, p.g);
+          if (p.g && p.t === t && p.F.ahead.took) p.F.ahead.took(t, p.g);   // CellDesigner: the GraphML made ahead known to the opening
           dropDrawing(p);
           var same = r[1] && V.img === shownPic && V.current === m ? Object.assign({}, r[1], { text: r[0] }) : null;
           if (s) { s.id = m.id; s.v = V.ver(m); if (s.pending) s.pub = r[2]; }   // the site's own text: a draft back to it is let go
@@ -1691,7 +1654,8 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
           return Promise.resolve(p.base || null).then(function (b) { if (tk === opening) return start(t, file, null, s, same, b); }).then(function () {
             openTitle = null;
             if (tk !== opening) return;
-            siteRef = r[3] ? baseOf(isCd(r[2]) && cdJs ? cdGraphml(r[2]) : shared.sb && viaGraphml(r[2]) ? sbGraphml(r[2], shared.sb.g0) : r[2], r[3]) : null;
+            var Fs = formatOfText(r[2]);   // the site's text as the editor's GraphML, its format's way
+            siteRef = r[3] ? baseOf(Fs && Fs.asGraphml ? Fs.asGraphml(r[2]) : r[2], r[3]) : null;
             map.title = m.title; document.getElementById('m2-title').textContent = m.title;
           });
         });
@@ -1727,7 +1691,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
           shared.dirty = true; changed(); note();
         }, notLoaded);
         var gone = function () { if (tk === opening && u) warn('The moves not saved before could not be taken up: the map changed on GitHub meanwhile. This is its version there.'); };
-        if (!g && sbMap(m)) return published.then(function (t) { return go(t, { path: path, sha: null }); }).then(gone).catch(notLoaded);   // an SBGN-ML map with no edited copy yet: the first save makes it
+        if (!g && p.F.ahead.path) return published.then(function (t) { return go(t, { path: path, sha: null }); }).then(gone).catch(notLoaded);   // a map edited as a copy of its own (SBGN-ML) with no copy yet: the first save makes it
         if (!g) return fromSite(null);   // not a map of this repository: saved as a file
         return go(g.text, { path: path, sha: g.sha }).then(function () {
           if (tk !== opening) return;

@@ -433,7 +433,28 @@ import { cdCardDown, cdCheck, cdClsOf, cdHow, cdLineAt, cdLink, cdLinkMarks, cdL
     // CellDesigner's format object (state.js formats): the file is kept beside the GraphML edited, the moves written in
     function cdFormat() {
       return { name: 'cd', load: cdpy, engineCd: true, now: function () { return shared.cd.now; }, ownFrame: true, live: function () { return liveCd; }, cardDown: cdCardDown, mainLines: true, afView: false, stacks: false, insets: false, magenta: true, opened: plainCanvas, drawn: cdSessionSoon, lit: cdLit, endTo: cdEndTo, undoKeep: function () { return { g: shared.text, b: shared.cd.base }; }, undoPut: function (t) { shared.cd.base = t.b; return t.g; }, leave: cdLeave, nestReady: function () { return !!cdJs && !!cdJs.nestCheck; }, nestWhy: function (moves) { return cdJs && cdJs.nestCheck ? cdJs.nestCheck(shared.cd.now, moves, { doc: cdDoc(shared.cd.now) }) : null; }, modLine: function (id) { return /\|m\d+$/.test(id); }, ownLine: function (id) { return /\|(a|b|r\d+|p\d+)$/.test(id); }, fileType: { description: 'CellDesigner', accept: { 'application/xml': ['.xml'] } }, join: cdJoin(), line: cdLine(), square: function (id) { var m = /^(.*)\|proc$/.exec(id); return m ? m[1] : null; }, beside: function () { return shared.cd.now; },
+        reads: isCd, entry: cdMap,
+        // opening: CellDesigner's open arrowhead taken in as SBGN's open triangle (cd_make sbgn): the editor works on the
+        // changed text, written at the next save, the change said once the map is drawn; the file as it was stays the
+        // site's base (what GitHub and the site hold)
+        open: function (t, g0, still) {
+          return cdpy().then(function () {
+            if (!still()) return null;
+            var sg = cdMk ? cdMk.sbgn(t) : { n: 0 }, t0 = t, said = null;
+            if (sg.n) { t = sg.text; said = sg.n + (sg.n > 1 ? ' positive influences' : ' positive influence') + ' (open arrowhead, not SBGN) made reduced physical stimulation (open triangle).'; }
+            return { g: cdGraphml(t), t: t, t0: t0, said: said, own: { cd: { base: t, now: t } } };
+          });
+        },
+        // a reader's own map drawn for the list (core.js drawText) by cdrender; keep: 'adding' when the map is shown next
+        // (its document kept for it, cdDoc)
+        drawOwn: function (t, g0, keep) { return cdpy().then(function () { return window.cdrender.render(cdDoc(t, keep || false), { classes: true, groups: true }); }); },
+        asGraphml: function (t) { return cdJs ? cdGraphml(t) : t; },   // the site's file as the editor's GraphML (the reference of the site's drawing)
+        // the read-ahead: the GraphML of its file (its document kept for the map shown), drawn by cdrender; that GraphML
+        // handed to the opening (took); the drawing kept on leaving, with the file it was made from (keeper)
+        ahead: { load: cdpy, graphml: function (t, b, keep) { return cdKnown(t) || cdJs.graphml(t, null, { doc: cdDoc(t, keep) }); }, took: cdRemember,
+          draw: function (t, g) { return { cd: true, base: t, text: g, q: cdDraw(t, g, false), block: gridBlock() }; },
+          keeper: function () { return function (t, g, svg) { cdRemember(t, g); return { cd: true, base: t, text: g, q: [svg, t, g] }; }; } },
         kind: function (n) { var c = cdClsOf(n.id); return c ? c[0] : n.comp ? 'compartment' : null; },   // its species class, or compartment
         ownName: cdNameOf, rename: cdRename, nameable: function () { return !!cdMk; } };   // names read from and written into its file
     }
-    export { beyond, cdFormat, cdDoc, cdDraw, cdGraphml, cdKept, cdJs, cdKnown, cdMap, cdMk, cdNow, cdRebuild, cdRemember, cdSessionSoon, cdShown, cdpy, glyphArcs, glyphPort, isCd, joinAt, joinGuides, joinSolve, lineGrid, liveCd, nodeCentre, nodePlaces, plainCanvas, warmUp };
+    export { beyond, cdFormat, cdDraw, cdKept, cdJs, cdMap, cdMk, cdNow, cdRebuild, cdSessionSoon, cdShown, cdpy, glyphArcs, glyphPort, isCd, joinAt, joinGuides, joinSolve, lineGrid, liveCd, nodeCentre, nodePlaces, plainCanvas, warmUp };

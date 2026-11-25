@@ -198,8 +198,43 @@ import { liveY, yr } from './graphml.js';
     // SBGN-ML's format object (state.js formats): the file written from the one opened with the moves of the GraphML
     function sbFormat() {
       return { name: 'sb', load: yr, engineCd: false, now: sbNow, ownFrame: false, live: function () { return liveY; }, mainLines: false, afView: true, stacks: true, insets: true, sitesOut: function () { return !!shared.sbLast && !!sbJs && !!sbJs.sitesOut; }, fileType: { description: 'SBGN-ML', accept: { 'application/xml': ['.sbgn', '.nwt'] } }, stackComp: function (t, id) { return sbJs && sbJs.stack ? sbJs.stack(t, id) : t; }, square: function () { return null; }, beside: function () { return null; },
+        reads: viaGraphml, entry: sbMap,   // an SBML file with a layout too, edited the same way
+        asRead: true,   // the history and the picture on screen are of the file as read, before the opening put its sites back
+        // opening: the GraphML of its text, from the build's (g0) where the text matches it, else the reader's (sbOwn); its
+        // sites kept in the notes put back on their circles (sbIn, written as Show sites says, sbOut); the moves written back
+        // at once, so a file whose moves cannot be is said now, not at the first save
+        open: function (t, g0, still) {
+          var t0 = t;
+          return sbpy().then(function () {
+            var tin = sbIn(t), sited = function (x) { return (x.match(/<([\w.-]+:)?state [^>]*variable="[^"]/g) || []).length; };
+            if (tin === t) return g0;
+            if (g0 && sited(tin) === sited(t)) { t = tin; return g0; }   // boxes widened only: the GraphML the site drew kept (it takes the places from the text)
+            t = tin;
+            return sbReader(t).then(function () { return sbOwn(t); });
+          }).then(function (g1) {
+            if (!still()) return null;
+            if (!g1) throw 'its GraphML did not load';
+            var ed0 = edOf(t);
+            if (ed0.unique) t = ed0.unique(t, g1);   // two glyphs of one id: the later renamed as the build's GraphML has it, written at the next save
+            var g = sbGraphml(t, g1), sb1 = { base: t, g0: g1 };
+            return { g: g, t: t, t0: t0, own: { sb: sb1, sbLast: [g, edOf(t).write(t, g), sb1] } };   // sbLast kept for src()
+          });
+        },
+        // a reader's own map drawn for the list (core.js drawText): SBGN-ML only (not SBML), from the empty base if made here,
+        // else read by sbgnml_read; g0: a site map's build GraphML
+        drawOwn: function (t, g0) {
+          if (!isSb(t)) return null;
+          return sbpy().then(function () { if (!g0) t = sbIn(t); return g0 ? null : sbReader(t); }).then(function () {
+            return window.yrender.render(sbGraphml(t, g0 || sbOwn(t)), { classes: true, groups: true, sbgn: true }).svg;
+          });
+        },
+        asGraphml: function (t) { return shared.sb ? sbGraphml(t, shared.sb.g0) : t; },   // the site's file as the editor's GraphML, from the open map's base
+        // the read-ahead: its edited copy (maps/sbgn-ml/...), the converter's GraphML it is edited from, drawn as SBGN; on
+        // leaving, the text kept with its GraphML, so it is reopened on the very GraphML it was left with (keeper)
+        ahead: { load: sbpy, path: function (m) { return m.editPath; }, base: sbBase, graphml: sbGraphml, sbgn: true,
+          keeper: function () { var g0 = shared.sb && shared.sb.g0; return function (t, g) { sbRemember(t, g, g0); return null; }; } },
         kind: function (n) { var c = sbClasses()[n.id]; return c ? c.replace(/ multimer$/, '') : null; },   // a glyph's class, a multimer with its plain kind
         nameable: function (id) { var t = src(); return !!sbJs && edOf(t).nameable(t, id); },   // a glyph whose class takes a name
         join: sbJoin() };
     }
-    export { EMPTY_BASE, GEO, NEW_ID, edOf, emptyBase, isSb, madeHere, sbBase, sbFollow, sbGraphml, sbJs, sbKind, sbIn, sbMap, sbNow, sbOwn, sbFormat, sbReader, sbRemember, sbClasses, sbpy, viaGraphml };
+    export { EMPTY_BASE, GEO, NEW_ID, emptyBase, isSb, madeHere, sbFollow, sbJs, sbKind, sbMap, sbNow, sbFormat, sbClasses, sbpy };

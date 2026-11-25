@@ -51,9 +51,30 @@ export var shared = {};
 //   join       how a glyph is put into a complex (create.js joinPlan, joinDo), or null (GraphML): { ok() joining is on,
 //              own(i) a node that never joins (optional), joinable(id, cid) why not or nothing, write(joins) the
 //              complexes that took a member }
+//   reads(t)   a file of this format (formatOfText)
+//   entry(m)   a map's entry edited from a file of this format (formatOfMap)
+//   open(t, g0, still)  a file opened for editing: { g: the GraphML edited, t: the text edited, t0: the file as read, said:
+//              what the opening changed in it, own: the format's fields of the map (putMap) }, or a promise of it; null
+//              when the opening was left (still() false). GraphML: at once, the file itself
+//   asRead     the history and the picture on screen are of the file as read (SBGN-ML, its sites put back after)
+//   drawOwn(t, g0, keep)  a reader's own map drawn for the list (core.js drawText): a promise of the SVG, or null when
+//              the format cannot draw this text
+//   asGraphml(t)  the site's text as the editor's GraphML (siteRef); none: the text itself
+//   ahead      the read-ahead (core.js ahead, readyOf, drawAhead, keepAhead): { load() its scripts; path(m) where its
+//              edited copy is kept, also: the first save makes it (SBGN-ML); base(m, low) what its GraphML is made from;
+//              graphml(t, b, keep) the GraphML editing starts from (none: the text); draw(t, g) its own drawing made
+//              ahead (CellDesigner), else yrender's, as SBGN when sbgn; took(t, g) the GraphML made ahead handed to the
+//              opening; keeper() taken on leaving, a function (t, g, svg) that keeps the format's part and gives the
+//              drawing's memo, or null for the plain one }
 // Moved one question at a time (stage 1 of notes/format-object-design.md in the working repository).
 export var formats = {};
 export function addFormats(o) { Object.keys(o).forEach(function (k) { formats[k] = o[k]; }); }
+// The format of a file, or of the file a map's entry is edited from, for the read-ahead, the opening and the list's own
+// maps, which ask by file and not by the open map (shared.F): each format asked in this order, the first that takes it;
+// null when none does
+function inOrder() { return [formats.sb, formats.cd, formats.graphml].filter(Boolean); }
+export function formatOfText(t) { return inOrder().find(function (f) { return f.reads(t); }) || null; }
+export function formatOfMap(m) { return inOrder().find(function (f) { return f.entry(m); }) || null; }
 export function setV(v) { V = v; Object.keys(LIFETIMES).forEach(reset); }   // every field present from the start
 
 // Every field of shared, by how long it lives, with its value at the start (a function: a fresh list or object each
