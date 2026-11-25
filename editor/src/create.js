@@ -896,8 +896,9 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       join.forEach(function (q) { t2 = sbJs.terminal(t2, nodes2[q[0]].id, true); });
       if (t2 !== shared.text) { setText(t2); parse(); shared.dirty = true; }
       termsFix(nodes2.map(function (m, k) { return keep.has(m.id) ? k : -1; }).filter(function (k) { return k >= 0; }));
-      var aim = [];   // the free tags moved, and those whose line's other end moved
-      edges2.forEach(function (q) { if (q.s != null && q.t != null) [[q.s, q.t], [q.t, q.s]].forEach(function (p) { if (nodes2[p[0]].shape.kind === 'Tag' && (ids.has(nodes2[p[0]].id) || ids.has(nodes2[p[1]].id))) aim.push(nodes2[p[0]].id); }); });
+      // the free tags moved apart from their line's other end (one of the two moved): moved together, a tag faces as it did
+      var aim = [];
+      edges2.forEach(function (q) { if (q.s != null && q.t != null) [[q.s, q.t], [q.t, q.s]].forEach(function (p) { if (nodes2[p[0]].shape.kind === 'Tag' && ids.has(nodes2[p[0]].id) !== ids.has(nodes2[p[1]].id)) aim.push(nodes2[p[0]].id); }); });
       tagAim(aim);
     });
     // the same during the drag (live.js livePose): each tag shown where the release puts it, by the rules above: a terminal
@@ -939,6 +940,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
         if (q) on = (n.sub != null && onSide(mb, q, now)) || onBorder(mb, q);   // as termsFix on release
         else {   // free, facing its one line's other end (tagAim)
           if (es.length !== 1) return;
+          if (mine && sets.n.has(edges2[es[0]].s === i ? edges2[es[0]].t : edges2[es[0]].s)) return;   // moved with that end: it faces as it did
           var e = edges2[es[0]], oc = mid(moved(e.s === i ? e.t : e.s)), c = mid(mb), dx = oc[0] - c[0], dy = oc[1] - c[1];
           var way = Math.abs(dx) >= Math.abs(dy) ? (dx >= 0 ? 'right' : 'left') : (dy >= 0 ? 'down' : 'up');
           on = [!!HORIZ[way] === (mb[2] >= mb[3]) ? mb : [c[0] - mb[3] / 2, c[1] - mb[2] / 2, mb[3], mb[2]], way];   // as tagTurnT: long across its point's direction

@@ -83,7 +83,7 @@ import { sbJs, sbScript, sbpy } from './engines.js';
       }
       return sbOut(shared.sbLast[1]);
     }
-    // the file as it is seen (Settings, Display, Show sites): unticked, every site written into its glyph's PTM note and
+    // the file as it is seen (Settings, Display, Show sites): unticked, every site written as a link on its glyph and
     // the circle shows the value alone (sbgn_edit.sitesOut); ticked, as written, every site on its state variable (the
     // file was opened with sitesIn, start in core.js). SBGN-ML only, the last one kept
     var outMemo;
@@ -182,6 +182,15 @@ import { sbJs, sbScript, sbpy } from './engines.js';
     }
     export function __start() { __run1(); __run2(); __run3(); __run5(); __run6(); __run7(); }   // the part's statements, in their order
     // SBGN-ML's format object (state.js formats): the file written from the one opened with the moves of the GraphML
+    // why an SBGN-ML file cannot be drawn, in a reader's words: the reader's own errors keep the converter's Python
+    // wording, which says nothing to a person; the error itself goes to the console
+    function sbWhy(e) {
+      var m = String(e && e.message || e), q = /^could not convert string to float: (.*)$/.exec(m);
+      if (typeof console !== 'undefined') console.warn('SBGN-ML reading: ' + m);
+      if (q) return 'a position or size in the file is not a number (' + q[1] + '): the tool that wrote it left a value out';
+      if (/NoneType|^(TypeError|AttributeError|KeyError|IndexError|ValueError)\b/.test(m)) return 'a glyph or arc in the file lacks a part SBGN-ML requires (its class, id or box)';
+      return m;
+    }
     function sbFormat() {
       return { name: 'sb', load: yr, engineCd: false, now: sbNow, ownFrame: false, live: function () { return liveY; }, mainLines: false, afView: true, sbgnLook: true, stacks: true, insets: true, sitesOut: function () { return !!shared.sbLast && !!sbJs && !!sbJs.sitesOut && isSb(shared.sbLast[1]); }, fileType: { description: 'SBGN-ML', accept: { 'application/xml': ['.sbgn', '.nwt'] } }, stackComp: function (t, id) { return sbJs && sbJs.stack ? sbJs.stack(t, id) : t; }, square: function () { return null; }, beside: function () { return null; },
         reads: viaGraphml, entry: sbMap,   // an SBML file with a layout too, edited the same way
@@ -204,7 +213,11 @@ import { sbJs, sbScript, sbpy } from './engines.js';
             var ed0 = edOf(t);
             if (ed0.unique) t = ed0.unique(t, g1);   // two glyphs of one id: the later renamed as the build's GraphML has it, written at the next save
             var g = sbGraphml(t, g1), sb1 = { base: t, g0: g1 };
-            return { g: g, t: t, t0: t0, own: { sb: sb1, sbLast: [g, edOf(t).write(t, g), sb1] } };   // sbLast kept for src()
+            // the sites the file draws on its state variables, written as their glyphs' links while Show sites is off
+            // (sbOut): said once the map is drawn, as the file changes on entry
+            var n = !V.sites && sbJs && sbJs.sitesOut && isSb(t0) ? (t0.match(/<([\w.-]+:)?state [^>]*variable="[^"]/g) || []).length : 0;
+            var said = n ? n + (n > 1 ? ' sites' : ' site') + ' kept as links on ' + (n > 1 ? 'their glyphs' : 'its glyph') + ' and drawn as the value alone, as Show sites (Settings, Display) is off.' : null;
+            return { g: g, t: t, t0: t0, said: said, own: { sb: sb1, sbLast: [g, edOf(t).write(t, g), sb1] } };   // sbLast kept for src()
           });
         },
         // a reader's own map drawn for the list (core.js drawText): SBGN-ML only (not SBML), from the empty base if made here,
@@ -213,7 +226,7 @@ import { sbJs, sbScript, sbpy } from './engines.js';
           if (!isSb(t)) return null;
           return sbpy().then(function () { if (!g0) t = sbIn(t); return g0 ? null : sbReader(t); }).then(function () {
             return window.yrender.render(sbGraphml(t, g0 || sbOwn(t)), { classes: true, groups: true, sbgn: true }).svg;
-          });
+          }).catch(function (e) { throw new Error(sbWhy(e)); });
         },
         asGraphml: function (t) { return shared.sb ? sbGraphml(t, shared.sb.g0) : t; },   // the site's file as the editor's GraphML, from the open map's base
         // the read-ahead: its edited copy (maps/sbgn-ml/...), the converter's GraphML it is edited from, drawn as SBGN; on

@@ -215,9 +215,15 @@ import { sbJs } from './engines.js';
     // or the text itself when nothing moves; were it ever to differ from noNegative's, the drawing made ahead is simply
     // not used (it is kept with its text), so this can only cost time, never change a map
     function shiftedAhead(t, d) {
-      var R; try { R = GE.read(t, { doc: d }); } catch (e) { return t; }   // a file parse() would refuse: left as it is (entering edit says why)
-      var sh = GE.shiftOf(R.nodes.map(function (n) { var g = R.geos[n.ag]; return [num(g, 'x'), num(g, 'y')]; }), R.points.map(function (p) { return [num(p, 'x'), num(p, 'y')]; }), gridBlock());
+      var sh = shiftAhead(t, d);
       return sh ? GE.shift(t, sh[0], sh[1]) : t;
+    }
+    // the shift itself, [sx, sy], or null when nothing moves (also when no place in the text is negative, read from the
+    // text alone, so most maps are never parsed for it); d: the text's document, when there is one
+    function shiftAhead(t, d) {
+      if (!/<y:(Geometry|Point)\b[^>]*\s[xy]="-/.test(t)) return null;
+      var R; try { R = GE.read(t, d ? { doc: d } : {}); } catch (e) { return null; }   // a file parse() would refuse: left as it is (entering edit says why)
+      return GE.shiftOf(R.nodes.map(function (n) { var g = R.geos[n.ag]; return [num(g, 'x'), num(g, 'y')]; }), R.points.map(function (p) { return [num(p, 'x'), num(p, 'y')]; }), gridBlock());
     }
     function noNegative() {
       // what is drawn counts (a closed group's other size, kept by yEd, does not), all of it moves
@@ -228,4 +234,4 @@ import { sbJs } from './engines.js';
     }
 
     export function __start() { __run1(); __run2(); __run3(); }   // the part's statements, in their order
-    export { AF_KINDS, drawGraphml, liveY, noNegative, shiftedAhead, yr };
+    export { AF_KINDS, drawGraphml, liveY, noNegative, shiftAhead, shiftedAhead, yr };

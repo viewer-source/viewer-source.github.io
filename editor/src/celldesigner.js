@@ -369,6 +369,19 @@ import { cdCardDown, cdCheck, cdClsOf, cdHow, cdLineAt, cdLink, cdLinkMarks, cdL
       }
       return [q[0], []];
     }
+    // why a file read as CellDesigner cannot be drawn, in a reader's words (the reader's own error, in the converter's
+    // Python wording, says nothing to a person): a model of SBML Level 3, which CellDesigner never writes; a drawing whose
+    // species the model no longer has (a tool such as COPASI changed the model after CellDesigner saved it, keeping the
+    // drawing as it was); else the drawing unreadable. The error itself goes to the console.
+    function cdWhy(t, e) {
+      var m = String(e && e.message || e), head = t.slice(0, 3000);
+      if (typeof console !== 'undefined') console.warn('CellDesigner reading: ' + m);
+      if (!/^(AttributeError|KeyError|TypeError|ValueError|IndexError|Error)\b/.test(m) && !/NoneType|not subscriptable|index out of range/.test(m)) return m;   // already in words
+      var by = /metaid="COPASI/.test(head) ? 'COPASI' : 'another tool';
+      if (/<sbml\b[^>]*\blevel="3"/.test(head)) return 'an SBML Level 3 file holding CellDesigner\u2019s notes from an earlier version (CellDesigner writes Level 2): ' + by + ' wrote it after CellDesigner, and SBML files are not opened here yet';
+      if (/^KeyError/.test(m)) return 'its CellDesigner drawing names species its model no longer has: ' + by + ' changed the model after CellDesigner saved it, so the drawing cannot be matched to it';
+      return 'its CellDesigner drawing could not be read: a part CellDesigner writes is missing or written another way';
+    }
     // CellDesigner's format object (state.js formats): the file is kept beside the GraphML edited, the moves written in
     function cdFormat() {
       return { name: 'cd', load: cdpy, engineCd: true, now: function () { return shared.cd.now; }, ownFrame: true, live: function () { return liveCd; }, cardDown: cdCardDown, mainLines: true, afView: false, stacks: false, insets: false, magenta: true, opened: plainCanvas, drawn: cdSessionSoon, redraw: cdRedraw, lit: cdLit, endTo: cdEndTo, undoKeep: function () { return { g: shared.text, b: shared.cd.base }; }, undoPut: function (t) { shared.cd.base = t.b; return t.g; }, leave: cdLeave, nestReady: function () { return !!cdJs && !!cdJs.nestCheck; }, nestWhy: function (moves) { return cdJs && cdJs.nestCheck ? cdJs.nestCheck(shared.cd.now, moves, { doc: cdDoc(shared.cd.now) }) : null; }, modLine: function (id) { return /\|m\d+$/.test(id); }, ownLine: function (id) { return /\|(a|b|r\d+|p\d+)$/.test(id); }, fileType: { description: 'CellDesigner', accept: { 'application/xml': ['.xml'] } }, join: cdJoin(), line: cdLine(), sv: cdSv(), square: function (id) { var m = /^(.*)\|proc$/.exec(id); return m ? m[1] : null; }, beside: function () { return shared.cd.now; },
@@ -389,7 +402,7 @@ import { cdCardDown, cdCheck, cdClsOf, cdHow, cdLineAt, cdLink, cdLinkMarks, cdL
         },
         // a reader's own map drawn for the list (core.js drawText) by cdrender; keep: 'adding' when the map is shown next
         // (its document kept for it, cdDoc)
-        drawOwn: function (t, g0, keep) { return cdpy().then(function () { return window.cdrender.render(cdDoc(t, keep || false), { classes: true, groups: true }); }); },
+        drawOwn: function (t, g0, keep) { return cdpy().then(function () { return window.cdrender.render(cdDoc(t, keep || false), { classes: true, groups: true }); }).catch(function (e) { throw new Error(cdWhy(t, e)); }); },
         asGraphml: function (t) { return cdJs ? cdGraphml(t) : t; },   // the site's file as the editor's GraphML (the reference of the site's drawing)
         // the read-ahead: the GraphML of its file (its document kept for the map shown), drawn by cdrender; that GraphML
         // handed to the opening (took); the drawing kept on leaving, with the file it was made from (keeper)

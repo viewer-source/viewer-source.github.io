@@ -1506,19 +1506,23 @@
     return true;
   }
   function shiftedAhead(t, d) {
+    var sh = shiftAhead(t, d);
+    return sh ? import_graphml_edit.default.shift(t, sh[0], sh[1]) : t;
+  }
+  function shiftAhead(t, d) {
+    if (!/<y:(Geometry|Point)\b[^>]*\s[xy]="-/.test(t)) return null;
     var R;
     try {
-      R = import_graphml_edit.default.read(t, { doc: d });
+      R = import_graphml_edit.default.read(t, d ? { doc: d } : {});
     } catch (e) {
-      return t;
+      return null;
     }
-    var sh = import_graphml_edit.default.shiftOf(R.nodes.map(function(n) {
+    return import_graphml_edit.default.shiftOf(R.nodes.map(function(n) {
       var g = R.geos[n.ag];
       return [num(g, "x"), num(g, "y")];
     }), R.points.map(function(p) {
       return [num(p, "x"), num(p, "y")];
     }), gridBlock());
-    return sh ? import_graphml_edit.default.shift(t, sh[0], sh[1]) : t;
   }
   function noNegative() {
     var sh = import_graphml_edit.default.shiftOf(nodes2.map(function(n, i) {
@@ -1781,6 +1785,13 @@
     __run6();
     __run7();
   }
+  function sbWhy(e) {
+    var m = String(e && e.message || e), q = /^could not convert string to float: (.*)$/.exec(m);
+    if (typeof console !== "undefined") console.warn("SBGN-ML reading: " + m);
+    if (q) return "a position or size in the file is not a number (" + q[1] + "): the tool that wrote it left a value out";
+    if (/NoneType|^(TypeError|AttributeError|KeyError|IndexError|ValueError)\b/.test(m)) return "a glyph or arc in the file lacks a part SBGN-ML requires (its class, id or box)";
+    return m;
+  }
   function sbFormat() {
     return {
       name: "sb",
@@ -1844,7 +1855,9 @@
           var ed0 = edOf(t);
           if (ed0.unique) t = ed0.unique(t, g1);
           var g = sbGraphml(t, g1), sb1 = { base: t, g0: g1 };
-          return { g, t, t0, own: { sb: sb1, sbLast: [g, edOf(t).write(t, g), sb1] } };
+          var n = !V.sites && sbJs && sbJs.sitesOut && isSb(t0) ? (t0.match(/<([\w.-]+:)?state [^>]*variable="[^"]/g) || []).length : 0;
+          var said = n ? n + (n > 1 ? " sites" : " site") + " kept as links on " + (n > 1 ? "their glyphs" : "its glyph") + " and drawn as the value alone, as Show sites (Settings, Display) is off." : null;
+          return { g, t, t0, said, own: { sb: sb1, sbLast: [g, edOf(t).write(t, g), sb1] } };
         });
       },
       // a reader's own map drawn for the list (core.js drawText): SBGN-ML only (not SBML), from the empty base if made here,
@@ -1856,6 +1869,8 @@
           return g0 ? null : sbReader(t);
         }).then(function() {
           return window.yrender.render(sbGraphml(t, g0 || sbOwn(t)), { classes: true, groups: true, sbgn: true }).svg;
+        }).catch(function(e) {
+          throw new Error(sbWhy(e));
         });
       },
       asGraphml: function(t) {
@@ -3061,6 +3076,15 @@
     }
     return [q[0], []];
   }
+  function cdWhy(t, e) {
+    var m = String(e && e.message || e), head = t.slice(0, 3e3);
+    if (typeof console !== "undefined") console.warn("CellDesigner reading: " + m);
+    if (!/^(AttributeError|KeyError|TypeError|ValueError|IndexError|Error)\b/.test(m) && !/NoneType|not subscriptable|index out of range/.test(m)) return m;
+    var by = /metaid="COPASI/.test(head) ? "COPASI" : "another tool";
+    if (/<sbml\b[^>]*\blevel="3"/.test(head)) return "an SBML Level 3 file holding CellDesigner\u2019s notes from an earlier version (CellDesigner writes Level 2): " + by + " wrote it after CellDesigner, and SBML files are not opened here yet";
+    if (/^KeyError/.test(m)) return "its CellDesigner drawing names species its model no longer has: " + by + " changed the model after CellDesigner saved it, so the drawing cannot be matched to it";
+    return "its CellDesigner drawing could not be read: a part CellDesigner writes is missing or written another way";
+  }
   function cdFormat() {
     return {
       name: "cd",
@@ -3140,6 +3164,8 @@
       drawOwn: function(t, g0, keep) {
         return cdpy().then(function() {
           return window.cdrender.render(cdDoc(t, keep || false), { classes: true, groups: true });
+        }).catch(function(e) {
+          throw new Error(cdWhy(t, e));
         });
       },
       asGraphml: function(t) {
@@ -4833,8 +4859,19 @@
     return !!(key && cdMultis(t)[key]);
   }
   function cdCopiesOf(t, id) {
-    var sid = cdMk.aliasInfo(t, id).id, out = [id], re = new RegExp('<celldesigner:(?:complexS|s)peciesAlias id="([^"]*)" species="' + sid + '"', "g"), m;
-    while (m = re.exec(t)) if (m[1] !== id) out.push(m[1]);
+    var out = [id];
+    cdAliasesOf(t, cdMk.aliasInfo(t, id).id).forEach(function(a) {
+      if (a !== id) out.push(a);
+    });
+    return out;
+  }
+  function cdAliasesOf(t, sid) {
+    var out = [], re = /<celldesigner:(?:complexS|s)peciesAlias\s[^>]*>/g, m, a, s;
+    while (m = re.exec(t)) {
+      a = /\sid="([^"]*)"/.exec(m[0]);
+      s = /\sspecies="([^"]*)"/.exec(m[0]);
+      if (a && s && s[1] === sid) out.push(a[1]);
+    }
     return out;
   }
   function cdKindAliases(t, id) {
@@ -4850,8 +4887,7 @@
     return out.length ? out : [id];
   }
   function cdFirstAlias(t, sid) {
-    var m = new RegExp('<celldesigner:(?:complexS|s)peciesAlias id="([^"]*)" species="' + sid + '"').exec(t);
-    return m ? m[1] : null;
+    return cdAliasesOf(t, sid)[0] || null;
   }
   function cdTopClear(t, id, all) {
     (all ? cdKindAliases(t, id) : [id]).forEach(function(a) {
@@ -10213,7 +10249,7 @@
       var aim2 = [];
       edges2.forEach(function(q) {
         if (q.s != null && q.t != null) [[q.s, q.t], [q.t, q.s]].forEach(function(p) {
-          if (nodes2[p[0]].shape.kind === "Tag" && (ids.has(nodes2[p[0]].id) || ids.has(nodes2[p[1]].id))) aim2.push(nodes2[p[0]].id);
+          if (nodes2[p[0]].shape.kind === "Tag" && ids.has(nodes2[p[0]].id) !== ids.has(nodes2[p[1]].id)) aim2.push(nodes2[p[0]].id);
         });
       });
       tagAim(aim2);
@@ -10276,6 +10312,7 @@
           if (q) on2 = n.sub != null && onSide(mb, q, now) || onBorder(mb, q);
           else {
             if (es.length !== 1) return;
+            if (mine2 && sets.n.has(edges2[es[0]].s === i ? edges2[es[0]].t : edges2[es[0]].s)) return;
             var e = edges2[es[0]], oc = mid(moved(e.s === i ? e.t : e.s)), c = mid(mb), dx = oc[0] - c[0], dy = oc[1] - c[1];
             var way = Math.abs(dx) >= Math.abs(dy) ? dx >= 0 ? "right" : "left" : dy >= 0 ? "down" : "up";
             on2 = [!!HORIZ[way] === mb[2] >= mb[3] ? mb : [c[0] - mb[3] / 2, c[1] - mb[2] / 2, mb[3], mb[2]], way];
@@ -14806,16 +14843,32 @@
   function regroup(how, set, B, B0) {
     return hm().regroup(how, set, B, B0);
   }
-  function stackComps(ids) {
+  function stackComps(ids, before, always) {
     var S = shared.F.stackComp;
     if (!S || !full()) return;
     var t2 = shared.text, at2 = {};
     nodes2.forEach(function(n, i) {
       at2[n.id] = i;
     });
+    var part = function(a, b) {
+      var ix = Math.min(a[0] + a[2], b[0] + b[2]) - Math.max(a[0], b[0]), iy = Math.min(a[1] + a[3], b[1] + b[3]) - Math.max(a[1], b[1]);
+      var holds2 = function(p, q) {
+        return p[0] <= q[0] && p[1] <= q[1] && p[0] + p[2] >= q[0] + q[2] && p[1] + p[3] >= q[1] + q[3];
+      };
+      return ix > 0 && iy > 0 && !holds2(a, b) && !holds2(b, a);
+    };
+    var asWas = function(i) {
+      var b1 = boxOf(i), b0 = before && before[nodes2[i].id];
+      if (!b0 || Math.abs(b0[2] - b1[2]) > 1e-6 || Math.abs(b0[3] - b1[3]) > 1e-6) return false;
+      return nodes2.every(function(n, j) {
+        if (j === i || !n.comp) return true;
+        var c1 = boxOf(j), c0 = before[n.id] || c1;
+        return part(b1, c1) === part(b0, c0);
+      });
+    };
     ids.forEach(function(id) {
       var i = at2[id];
-      if (i != null && nodes2[i].comp) t2 = S(t2, id);
+      if (i != null && nodes2[i].comp && ((always || []).indexOf(id) >= 0 || !asWas(i))) t2 = S(t2, id);
     });
     if (t2 === shared.text) return;
     var keep = shared.selN.map(function(i) {
@@ -14894,7 +14947,9 @@
       }
       stackComps((arg.moving || []).concat(moves.map(function(m) {
         return m[0];
-      }), grew));
+      }), grew), arg.before, moves.map(function(m) {
+        return m[0];
+      }));
       refit((arg.moving || []).concat(moves.map(function(m) {
         return m[0];
       })), arg.before);
@@ -15431,10 +15486,16 @@
       if (first) V.fit();
       else V.draw();
       if (!r[1].length && !saveTimer && !saving && !shared.dirty) {
-        if (takenIn) warn(takenIn);
-        else quiet();
+        if (takenIn) {
+          openSaid = takenIn;
+          takenIn = null;
+        }
+        if (openSaid && !undo.length) warn(openSaid);
+        else {
+          openSaid = null;
+          quiet();
+        }
         sayOpen();
-        takenIn = null;
       }
     })();
   }
@@ -15456,7 +15517,9 @@
     var F = formatOfText(t) || formats.graphml, o = F.open(t, g0, still);
     var go = function(o2) {
       if (!o2 || !still()) return;
-      if (o2.said) takenIn = o2.said;
+      var sh = F.ownFrame ? null : shiftAhead(o2.g), moved = sh ? [sh[0] ? sh[0] + " right" : "", sh[1] ? sh[1] + " down" : ""].filter(Boolean).join(" and ") : "";
+      openSaid = null;
+      takenIn = [o2.said, moved ? "Everything moved " + moved + ", as a map here has no negative places." : ""].filter(Boolean).join(" ") || null;
       begin(o2.g, o2.t, n, h, s, same, o2.t0 || null, F, o2.own);
     };
     if (!o.then) return go(o);
@@ -15466,8 +15529,10 @@
     });
   }
   var takenIn;
+  var openSaid;
   function __run204() {
     takenIn = null;
+    openSaid = null;
   }
   function begin(g, t, n, h, s, same, t0, F, own2) {
     var was = takeMap();
@@ -15552,9 +15617,9 @@
       shared.F.load().then(function() {
         if (on && V.current === map && !edits && !gN && !grouped) render();
       });
+      quiet();
       if (grouped) adopt(same.svg);
       paint();
-      quiet();
       sayOpen();
       shownWhole();
       return;

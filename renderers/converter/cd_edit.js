@@ -24,6 +24,7 @@
   // a reaction's id: one with a metaid and no id (SBML requires one) is read by its metaid, as the converter reads it;
   // rxOpen finds its start tag in the text by either
   function rxid(rx) { return get(rx, 'id') || get(rx, 'metaid'); }
+  function aliasOpen(kind, id) { return '<celldesigner:' + kind + '\\s[^>]*?\\bid="' + reEscape(id) + '"'; }   // an alias's opening tag, its id anywhere among the attributes
   function rxOpen(rid) { return '<reaction [^>]*\\b(?:meta)?id="' + reEscape(rid) + '"'; }
 
   function drawing(t, opt) { return new cdr.Drawing(opt && opt.doc ? opt.doc : t, { DOMParser: DP(opt) }); }
@@ -397,19 +398,28 @@
   // one reading of the file, not one per reaction. A reaction is found by its id or its metaid, as rxOpen
   Text.prototype.at = function (kind, id) {
     if (!this.ix) {
-      var ix = this.ix = new Map(), re = /<(reaction|species) [^>]*>/g, m;
+      var ix = this.ix = new Map(), re = /<(reaction|species) [^>]*>/g, m, metas = [];
       var keep = function (k, v) { if (!ix.has(k)) ix.set(k, v); };
+      // a reaction by its id first, by its metaid only where no reaction has that id: a file merged from several maps
+      // (ACSN's masters) may give one reaction metaid="re266" id="re210" and another id="re266"
       while ((m = re.exec(this.t))) {
-        var a = /\bid="([^"]*)"/.exec(m[0]), b = m[1] === 'reaction' ? /\bmetaid="([^"]*)"/.exec(m[0]) : null;
-        if (a && b && b.index < a.index) { keep(m[1] + ' ' + b[1], m.index); b = null; }
+        var a = /\sid="([^"]*)"/.exec(m[0]), b = m[1] === 'reaction' ? /\smetaid="([^"]*)"/.exec(m[0]) : null;
         if (a) keep(m[1] + ' ' + a[1], m.index);
-        if (b) keep(m[1] + ' ' + b[1], m.index);
+        if (b) metas.push([m[1] + ' ' + b[1], m.index]);
       }
-      var al = /<celldesigner:(speciesAlias|complexSpeciesAlias|compartmentAlias) id="([^"]*)"/g;   // the aliases, as the patterns that find them
+      metas.forEach(function (q) { keep(q[0], q[1]); });
+      // the aliases, as aliasOpen() finds them: their id anywhere among the attributes (Newt writes compartment= or
+      // compartmentAlias= before it)
+      var al = /<celldesigner:(speciesAlias|complexSpeciesAlias|compartmentAlias)\s[^>]*?\bid="([^"]*)"/g;
       while ((m = al.exec(this.t))) keep(m[1] + ' ' + m[2], m.index);
     }
     return this.ix.get(kind + ' ' + id);
   };
+  // an editPoints element, with or without attributes (CellDesigner may write omittedShapeIndex on it): found by
+  // EP, its points written in place with its opening tag kept
+  var EP = '<celldesigner:editPoints[\\s>]';
+  function epText(T, sp) { return T.t.slice(T.t.indexOf('>', sp[0]) + 1, sp[1]).replace(/<\/celldesigner:editPoints>$/, ''); }
+  function epPut(T, sp, txt) { T.put(sp[0], sp[1], T.t.slice(sp[0], T.t.indexOf('>', sp[0]) + 1) + txt + '</celldesigner:editPoints>'); }
   Text.prototype.span = function (open, start, end) {
     var m = this.search(open, start, end);
     if (!m) return null;
@@ -562,7 +572,11 @@
       var body = LIST + list.map(function (x) { return '\n<celldesigner:catalyzed reaction="' + x + '"/>'; }).join('') + '\n</celldesigner:listOfCatalyzedReactions>';
       if (l && !list.length) T.put(l[0], l[1] + (T.t.slice(l[1], l[1] + 1) === '\n' ? 1 : 0), '');
       else if (l) T.put(l[0], l[1], body);
-      else { var at = T.t.indexOf('</celldesigner:extension>', s[0]); if (at >= 0 && at < s[1]) T.put(at, at, body + '\n'); }
+      else {
+        var at = T.t.indexOf('</celldesigner:extension>', s[0]);
+        if (at < 0 || at >= s[1]) at = T.t.indexOf('</annotation>', s[0]);   // CellDesigner 4.0's layout: its elements straight in the annotation
+        if (at >= 0 && at < s[1]) T.put(at, at, body + '\n');
+      }
     });
     return T.done();
   }
@@ -588,8 +602,8 @@
     var ls = T.span('<celldesigner:listOfGateMember>', s[0], s[1]), top = nth(T, '<celldesigner:GateMember ', ls, o.top);
     T.attrs(top[0], [['editPoints', ep]]);
     scheme(T, top, nb.length, o.bends.length);
-    var re = T.span('<celldesigner:editPoints>', s[0], ls[0]);   // the reaction's own copy of the gate's points
-    if (re) T.put(re[0], re[1], '<celldesigner:editPoints>' + ep + '</celldesigner:editPoints>');
+    var re = T.span(EP, s[0], ls[0]);   // the reaction's own copy of the gate's points
+    if (re) epPut(T, re, ep);
     o.ins.forEach(function (q) {
       var M = d.end(find(q.el, 'cd:linkTarget'), q.alias)[0], k = rid + '|i' + q.n, nb2 = bends.has(k) ? bends.get(k) : q.bends;
       var tx = points(get(q.el, 'editPoints'), q.bends, nb2, near(M, q.M, 1e-6) && near(G, o.G, 1e-6), function (p) { return toFrame(M, G, p); });
@@ -610,12 +624,12 @@
     var inSub = function (at) { return subs.some(function (q) { return q[0] <= at && at < q[1]; }); };
     var cs = null, re2 = /<celldesigner:connectScheme/g;
     while ((m = re2.exec(seg))) { var at = s[0] + m.index; if (!inSub(at)) { cs = T.span('<celldesigner:connectScheme', at, s[1]); break; } }
-    var ep = T.span('<celldesigner:editPoints>', cs ? cs[1] : s[0], s[1]);
+    var ep = T.span(EP, cs ? cs[1] : s[0], s[1]);
     if (ep && inSub(ep[0])) ep = null;
-    var oldTok = ep ? T.t.slice(ep[0], ep[1]).replace(/<\/?celldesigner:editPoints>/g, '') : '';
+    var oldTok = ep ? epText(T, ep) : '';
     var txt = points(oldTok, o.bends, main, frameSame, function (p) { return toFrame(A, B, p); });
     if (ep) {
-      if (main.length) T.put(ep[0], ep[1], '<celldesigner:editPoints>' + txt + '</celldesigner:editPoints>');
+      if (main.length) epPut(T, ep, txt);
       else T.put(ep[0], ep[1] + (T.t.slice(ep[1], ep[1] + 1) === '\n' ? 1 : 0), '');
     } else if (main.length && cs) {
       var nl = T.t.slice(cs[1], cs[1] + 1) === '\n' ? '\n' : '';
@@ -665,8 +679,8 @@
       var tag = l.into ? 'reactantLink' : 'productLink', ls = null;
       for (var si = 0; si < subs.length && !ls; si++) if (T.span('<celldesigner:' + tag + ' ', subs[si][0], subs[si][1])) ls = nth(T, '<celldesigner:' + tag + ' ', subs[si], l.n);
       if (!ls) return;
-      var child = T.span('<celldesigner:editPoints>', ls[0], ls[1]);
-      if (child && tx) T.put(child[0], child[1], '<celldesigner:editPoints>' + tx + '</celldesigner:editPoints>');
+      var child = T.span(EP, ls[0], ls[1]);
+      if (child && tx) epPut(T, child, tx);
       else if (child) T.put(child[0], child[1] + (T.t.slice(child[1], child[1] + 1) === '\n' ? 1 : 0), '');   // its last bend point gone: the element goes, as the main line's
       else T.attrs(ls[0], [['editPoints', tx || null]]);
       var c3 = T.span('<celldesigner:connectScheme', ls[0], ls[1]);
@@ -717,7 +731,7 @@
       var n = nw.get(i);
       if ([0, 1, 2, 3].every(function (j) { return Math.abs(n[j] - b[j]) < 1e-3; })) return;
       var kind = comps.has(i) ? 'compartmentAlias' : d.alias.get(i)[0] === 'COMPLEX' ? 'complexSpeciesAlias' : 'speciesAlias';
-      var s = T.span('<celldesigner:' + kind + ' id="' + reEscape(i) + '"', T.at(kind, i));
+      var s = T.span(aliasOpen(kind, i), T.at(kind, i));
       if (!s) throw new Error("TypeError: 'NoneType' object is not subscriptable");
       var bt = T.span('<celldesigner:bounds ', s[0], s[1]);
       T.attrs(bt[0], ['x', 'y', 'w', 'h'].map(function (k, j) { return [k, j]; }).filter(function (q) { return Math.abs(n[q[1]] - b[q[1]]) >= 1e-3; }).map(function (q) { return [q[0], num(n[q[1]])]; }));
@@ -769,12 +783,12 @@
       }
       var A = d.alias.get(i)[2], sid = get(A, 'species');
       if (get(A, 'complexSpeciesAlias') !== null) return;
-      var ak = d.alias.get(i)[0] === 'COMPLEX' ? 'complexSpeciesAlias' : 'speciesAlias', s = T.span('<celldesigner:' + ak + ' id="' + reEscape(i) + '"', T.at(ak, i));
+      var ak = d.alias.get(i)[0] === 'COMPLEX' ? 'complexSpeciesAlias' : 'speciesAlias', s = T.span(aliasOpen(ak, i), T.at(ak, i));
       T.attrs(s[0], [['compartmentAlias', p]]);
       var ip2 = T.span('<celldesigner:innerPosition ', s[0], s[1]);   // its offset from the new compartment's corner, as CellDesigner writes it when it reassigns
       if (ip2 && p !== null) T.attrs(ip2[0], [['x', num(nw.get(i)[0] - nw.get(p)[0])], ['y', num(nw.get(i)[1] - nw.get(p)[1])]]);
       if (d.alias.get(i)[0] === 'COMPLEX') carriers(T.t, i).forEach(function (q) {   // its members that carry a compartmentAlias (CellDesigner writes their complex's): the new one
-        if (q[1] !== p) T.attrs(T.span('<celldesigner:' + q[2] + ' id="' + reEscape(q[0]) + '"', T.at(q[2], q[0]))[0], [['compartmentAlias', p]]);
+        if (q[1] !== p) T.attrs(T.span(aliasOpen(q[2], q[0]), T.at(q[2], q[0]))[0], [['compartmentAlias', p]]);
       });
       var sp = spDone.has(sid) ? null : T.span('<species [^>]*\\bid="' + reEscape(sid) + '"', T.at('species', sid));
       spDone.add(sid);

@@ -98,11 +98,22 @@
   // ---- the XML, as the lxml calls of the Python read it ----
   var NS = { cd: 'http://www.sbml.org/2001/ns/celldesigner', s: 'http://www.sbml.org/sbml/level2/version4' };
   function steps(path) { return path.split('/').map(function (p) { var q = p.split(':'); return [NS[q[0]], q[1]]; }); }
-  function kids(el, ns, name) { var o = []; if (!el) return o; for (var c = el.firstChild; c; c = c.nextSibling) if (c.nodeType === 1 && c.namespaceURI === ns && c.localName === name) o.push(c); return o; }
+  // SBML Level 2 in any of its versions: CellDesigner 4.0 wrote Version 1 (http://www.sbml.org/sbml/level2), later
+  // versions Version 4; the elements read here are the same in both
+  var SBML2 = /^http:\/\/www\.sbml\.org\/sbml\/level2(\/version\d)?$/;
+  function nsIs(u, ns) { return u === ns || (ns === NS.s && SBML2.test(u || '')); }
+  function kids(el, ns, name) { var o = []; if (!el) return o; for (var c = el.firstChild; c; c = c.nextSibling) if (c.nodeType === 1 && nsIs(c.namespaceURI, ns) && c.localName === name) o.push(c); return o; }
+  // CellDesigner 4.0's layout puts its elements straight in an annotation, with no <celldesigner:extension> around
+  // them: such an annotation stands for the extension
+  function bare(el) { if (!el || el.localName !== 'annotation') return false; for (var c = el.firstChild; c; c = c.nextSibling) if (c.nodeType === 1 && c.namespaceURI === NS.cd && c.localName !== 'extension') return true; return false; }
   function findall(el, path) {   // el.findall(path) / iterfind
     if (!el) throw new Error("AttributeError: 'NoneType' object has no attribute 'find'");
     var cur = [el];
-    steps(path).forEach(function (s) { var nx = []; cur.forEach(function (c) { kids(c, s[0], s[1]).forEach(function (k) { nx.push(k); }); }); cur = nx; });
+    steps(path).forEach(function (s) {
+      var nx = [];
+      cur.forEach(function (c) { var k = kids(c, s[0], s[1]); if (!k.length && s[0] === NS.cd && s[1] === 'extension' && bare(c)) k = [c]; k.forEach(function (x) { nx.push(x); }); });
+      cur = nx;
+    });
     return cur;
   }
   function find(el, path) { return findall(el, path)[0] || null; }

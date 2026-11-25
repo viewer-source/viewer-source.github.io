@@ -61,6 +61,14 @@ which of the nine places a namePoint is at (within 1 on each axis), else None; o
 - `def front(self, i):`: a multimer's front copy, 6 smaller per copy behind it
 - `def open(self, e):`: a group of the editor's (GROUPS) for one line, in the lines and in their halo
 
+## The XML, as lxml read it (find, findall)
+
+CellDesigner 4.0's layout read as the later one: SBML Level 2 in any of its versions (4.0 wrote Version 1,
+`http://www.sbml.org/sbml/level2`; later versions Version 4), and an annotation holding CellDesigner's elements
+straight, with no `<celldesigner:extension>` round them, taken as that extension (ACSN 2.0's archive, 35 maps, was refused
+with an AttributeError when the model was not found). The writer keeps such a file in its own layout
+(cd_make's older and bare).
+
 ## __init__
 
 - `self.extra = {}`: extras(): per alias, what does not depend on its box

@@ -1153,8 +1153,15 @@ import { ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues, confet
     }
     // the copies (aliases) of node id's species in the file t, id first
     function cdCopiesOf(t, id) {
-      var sid = cdMk.aliasInfo(t, id).id, out = [id], re = new RegExp('<celldesigner:(?:complexS|s)peciesAlias id="([^"]*)" species="' + sid + '"', 'g'), m;
-      while ((m = re.exec(t))) if (m[1] !== id) out.push(m[1]);
+      var out = [id];
+      cdAliasesOf(t, cdMk.aliasInfo(t, id).id).forEach(function (a) { if (a !== id) out.push(a); });
+      return out;
+    }
+    // the aliases of species sid in the file t, in the file's order; their attributes in any order (Newt writes
+    // compartmentAlias= before id=)
+    function cdAliasesOf(t, sid) {
+      var out = [], re = /<celldesigner:(?:complexS|s)peciesAlias\s[^>]*>/g, m, a, s;
+      while ((m = re.exec(t))) { a = /\sid="([^"]*)"/.exec(m[0]); s = /\sspecies="([^"]*)"/.exec(m[0]); if (a && s && s[1] === sid) out.push(a[1]); }
       return out;
     }
     // every alias of a species of id's class and name (cdMultiTop draws a multimer's count on each)
@@ -1165,7 +1172,7 @@ import { ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues, confet
       while ((m = re.exec(t))) if (cdKindKey(m[0]) === key) { var sid = / id="([^"]*)"/.exec(m[0]); if (sid) cdCopiesOf(t, cdFirstAlias(t, sid[1]) || id).forEach(function (a) { if (out.indexOf(a) < 0) out.push(a); }); }
       return out.length ? out : [id];
     }
-    function cdFirstAlias(t, sid) { var m = new RegExp('<celldesigner:(?:complexS|s)peciesAlias id="([^"]*)" species="' + sid + '"').exec(t); return m ? m[1] : null; }
+    function cdFirstAlias(t, sid) { return cdAliasesOf(t, sid)[0] || null; }
     // the top made free for a unit of information (on that copy) or a multimer's count (on every species of its kind): a
     // structural state or a residue on a copy that the unit's box now meets moved to its first free place (the copy grown
     // where none is); one clear of it stays

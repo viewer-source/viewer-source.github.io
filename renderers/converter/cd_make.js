@@ -153,7 +153,7 @@
   function isReaction(t, id) { return !!span(t, '<reaction(?=\\s)[^>]*\\sid="' + q(id) + '"'); }
   function isGate(m) { return /^BOOLEAN_LOGIC_GATE_/.test(at(m.tag, 'type')); }
   function parts(t, rid) {   // a reaction's participants as its text has them, each { sp, tag }
-    var rs = rspan(t, rid), x = span(t, '<celldesigner:extension>', rs[0], rs[1]);
+    var rs = rspan(t, rid), x = span(t, '<celldesigner:extension>', rs[0], rs[1]) || span(t, '<annotation[\\s>]', rs[0], rs[1]);   // CellDesigner 4.0's layout: the annotation itself
     return { id: rid, rs: rs, x: x, type: /<celldesigner:reactionType>([^<]*)</.exec(t.slice(rs[0], rs[1]))[1],
       br: all(t, '<celldesigner:baseReactant[\\s>/]', x), bp: all(t, '<celldesigner:baseProduct[\\s>/]', x),
       rl: all(t, '<celldesigner:reactantLink ', x), pl: all(t, '<celldesigner:productLink ', x),
@@ -214,6 +214,27 @@
     return v.length ? attrs(t, md[0], v) : t;
   }
   var EXT = '</celldesigner:extension>';   // the first one in a file ends the model's extension, where its lists are
+  // CellDesigner 4.0's layout (SBML Level 2 Version 1, as ACSN's archive keeps it): its elements straight in each
+  // annotation, no <celldesigner:extension> around them. The model's lists then end with the model's annotation; what is
+  // made here is written with the wrapper and the wrapper taken off again (bare), so the file keeps one layout
+  var olderMemo = [null, false];   // the last text asked about: a 4.0 file has no wrapper, so the test reads it all (37 ms on 60 MB)
+  function older(t) {
+    if (olderMemo[0] !== t) olderMemo = [t, t.indexOf('<celldesigner:extension>') < 0 && t.indexOf('<celldesigner:modelDisplay') >= 0];
+    return olderMemo[1];
+  }
+  function extEnd(t) {
+    var i = t.indexOf(EXT);
+    if (i >= 0 || !older(t)) return i;
+    var m = /<model[\s>]/.exec(t), a = m ? span(t, '<annotation[\\s>]', m.index) : null;
+    return a ? a[1] - '</annotation>'.length : -1;
+  }
+  function bare(r) {
+    var off = function (s) { return typeof s === 'string' ? s.replace(/<celldesigner:extension>(\r?\n)?/g, '').replace(/(\r?\n)?<\/celldesigner:extension>/g, '') : s; };   // a file's \r\n line ends too (put)
+    if (typeof r === 'string') return off(r);
+    if (Array.isArray(r)) return r.map(off);
+    if (r && typeof r === 'object' && typeof r.text === 'string') { var o = {}; Object.keys(r).forEach(function (k) { o[k] = k === 'text' ? off(r[k]) : r[k]; }); return o; }
+    return r;
+  }
 
   // ---- the map ----
   function empty(opt) {
@@ -242,7 +263,7 @@
     t = add(t, CD + 'listOfCompartmentAliases', '<celldesigner:compartmentAlias id="' + aid + '" compartment="' + cid + '">\n<celldesigner:class>' + (o.oval ? 'OVAL' : 'SQUARE') + '</celldesigner:class>\n' +
       '<celldesigner:bounds x="' + num(b[0]) + '" y="' + num(b[1]) + '" w="' + num(b[2]) + '" h="' + num(b[3]) + '"/>\n<celldesigner:namePoint x="' + num(nx) +
       '" y="' + num(npt[1]) + '"/>\n<celldesigner:doubleLine thickness="' + num(COMP.thickness) + '" outerWidth="' + num(COMP.outer) + '" innerWidth="' + num(COMP.inner) + '"/>\n<celldesigner:paint color="' + (o.colour || COMP.colour) + '" scheme="Color"/>\n' +
-      '<celldesigner:info state="empty" angle="' + DOWN + '"/>\n</celldesigner:compartmentAlias>', 0, t.length, t.indexOf(EXT));
+      '<celldesigner:info state="empty" angle="' + DOWN + '"/>\n</celldesigner:compartmentAlias>', 0, t.length, extEnd(t));
     t = add(t, 'listOfCompartments', '<compartment metaid="' + cid + '" id="' + cid + '" name="' + name + '" size="1" units="volume" outside="' + (out ? out.compartment : 'default') +
       '">\n<annotation>\n<celldesigner:extension>\n<celldesigner:name>' + name + '</celldesigner:name>\n</celldesigner:extension>\n</annotation>\n</compartment>', 0, t.length);
     // what it is drawn round moves into it (membership follows the boxes, as the editor's GraphML nests
@@ -291,7 +312,7 @@
     var id = referenceOf(t, cls, name), r = REF[cls];
     if (id) return [t, id];
     id = next(t, r[3]);
-    return [add(t, CD + r[2], '<celldesigner:' + r[0] + ' id="' + id + '" name="' + name + '" type="' + r[4] + '"/>', 0, t.length, t.indexOf(EXT)), id];
+    return [add(t, CD + r[2], '<celldesigner:' + r[0] + ' id="' + id + '" name="' + name + '" type="' + r[4] + '"/>', 0, t.length, extEnd(t)), id];
   }
   function unused(t, ref) {   // a reference no species names any more goes
     var sp = reference(t, ref);
@@ -318,11 +339,11 @@
       extra = ' compartmentAlias="' + K.id + '"'; ip = [b[0] - K.box[0], b[1] - K.box[1]]; comp = K.compartment;
     }
     if (REF[cls]) { var rr = referenceFor(t, cls, name); t = rr[0]; ref = rr[1]; }
-    t = add(t, CD + ALIASES[cls === 'COMPLEX' ? 'complexSpeciesAlias' : 'speciesAlias'], aliasXml(aid, sid, cls, b, extra, ip, o.colour && o.colour.toLowerCase()), 0, t.length, t.indexOf(EXT));
+    t = add(t, CD + ALIASES[cls === 'COMPLEX' ? 'complexSpeciesAlias' : 'speciesAlias'], aliasXml(aid, sid, cls, b, extra, ip, o.colour && o.colour.toLowerCase()), 0, t.length, extEnd(t));
     if (C) {   // an included species, not in listOfSpecies
       t = add(t, CD + 'listOfIncludedSpecies', '<celldesigner:species id="' + sid + '" name="' + name + '">\n<celldesigner:notes>\n<html xmlns="http://www.w3.org/1999/xhtml">\n' +
         '<head>\n<title/>\n</head>\n<body/>\n</html>\n</celldesigner:notes>\n<celldesigner:annotation>\n<celldesigner:complexSpecies>' + C.species +
-        '</celldesigner:complexSpecies>\n' + identity(cls, ref, name) + '\n</celldesigner:annotation>\n</celldesigner:species>', 0, t.indexOf(EXT),
+        '</celldesigner:complexSpecies>\n' + identity(cls, ref, name) + '\n</celldesigner:annotation>\n</celldesigner:species>', 0, extEnd(t),
         after(t, '>', t.indexOf('<celldesigner:modelDisplay ')));   // after the map's size, as CellDesigner writes it
     } else {
       t = add(t, 'listOfSpecies', '<species metaid="' + sid + '" id="' + sid + '" name="' + name + '" compartment="' + comp + '" initialAmount="0">\n<annotation>\n' +
@@ -481,7 +502,7 @@
   // species' listOfCatalyzedReactions (CellDesigner lists every modifier there, not only catalysts)
   function addMods(t, rid, els, ins) {
     var R = parts(t, rid);
-    t = add(t, CD + 'listOfModification', els.join('\n'), R.x[0], R.x[1], R.x[1] - EXT.length);
+    t = add(t, CD + 'listOfModification', els.join('\n'), R.x[0], R.x[1], t.lastIndexOf('</', R.x[1] - 1));   // before the extension's end tag, or the annotation's (4.0's layout)
     var rs = rspan(t, rid), meta = metas(t);
     t = add(t, 'listOfModifiers', ins.map(function (A) { return sref('modifierSpeciesReference', meta(), A); }).join('\n'), rs[0], rs[1], after(t, '</listOfProducts>', rs[0]));
     ins.forEach(function (A) { t = catalyze(t, A.species, rid); });
@@ -1087,7 +1108,7 @@
     t = drop(t, S.sp, ['listOfSpecies']);
     var mine = t.indexOf('<celldesigner:complexSpecies>' + S.id + '</');   // a complex's species before its members' (as CellDesigner lists them)
     if (mine >= 0) { var o = t.lastIndexOf('<celldesigner:species ', mine); t = put(t, o, o, inc + '\n'); }
-    else t = add(t, CD + 'listOfIncludedSpecies', inc, 0, t.indexOf(EXT), after(t, '>', t.indexOf('<celldesigner:modelDisplay ')));
+    else t = add(t, CD + 'listOfIncludedSpecies', inc, 0, extEnd(t), after(t, '>', t.indexOf('<celldesigner:modelDisplay ')));
     if (A.kind === 'complexSpeciesAlias') {   // a complex, with the complexes inside it, after the complex now holding it
       var sub = [id];
       for (var k = 0; k < sub.length; k++) inside(t, 'complexSpeciesAlias', sub[k]).forEach(function (m) { if (alias(t, m).kind === 'complexSpeciesAlias') sub.push(m); });
@@ -1372,5 +1393,9 @@
     reactant: reactant, product: product, modifier: modifier, reactionType: reactionType, reversible: reversible, modifierType: modifierType, removeLine: removeLine,
     gate: gate, gateInput: gateInput, gateInputRemove: gateInputRemove, gateType: gateType, residue: residue, residueState: residueState,
     residueRemove: residueRemove, residueName: residueName, residueMove: residueMove, structuralMove: structuralMove, features: features, STATES: STATES, placesFor: placesFor, ratioAngle: ratioAngle, bounds: bounds, proteinAliases: proteinAliases, joinKin: joinKin, structural: structural, info: info, infoUnit: infoUnit, INFO: INFO, homodimer: homodimer, look: look, restyle: restyle, recolourAll: recolourAll, colours: colours, cdName: cdName, joinable: joinable, join: join, leave: leave };
+  Object.keys(api).forEach(function (k) {   // a file in CellDesigner 4.0's layout written back in it (older, bare)
+    var f = api[k];
+    if (typeof f === 'function' && !/^[A-Z]/.test(k)) api[k] = function (t) { var r = f.apply(this, arguments); return typeof t === 'string' && older(t) ? bare(r) : r; };
+  });
   if (node) module.exports = api; else root.cd_make = api;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -129,9 +129,17 @@ the element whose start tag matches open_re, from its start to the end of its en
 
 ## at
 
-where the first reaction, species or alias with this id starts: one pass over the text, made on the first lookup (the text does not change while edits are collected), so finding all of a large map's reactions costs one reading of the file, not one per reaction. A reaction is found by its id or its metaid, as rx_open
+where the first reaction, species or alias with this id starts: one pass over the text, made on the first lookup (the text does not change while edits are collected), so finding all of a large map's reactions costs one reading of the file, not one per reaction. A reaction is found by its id or its metaid, as rx_open; its id first, its metaid only where no reaction has that id (ACSN 2.0's masters, merged from several maps, give one reaction metaid="re266" id="re210" and another id="re266"; the metaid taken first wrote the second's moves into the first, refused as IndexError)
 
-- `for m in re.finditer(r'<celldesigner:(speciesAlias|complexSpeciesAlias|compartmentAlias) id="([^"]*)"', self.t`: the aliases, as the patterns that find them
+- the aliases, as aliasOpen() finds them: the id anywhere among the start tag's attributes (Newt's CellDesigner export writes compartment= or compartmentAlias= before id=; found only as the first attribute, a move refused as "'NoneType' object is not subscriptable")
+
+## editPoints (EP, epText, epPut)
+
+an editPoints element found with or without attributes (CellDesigner may write omittedShapeIndex on it, as ACSN 2.0's files do), its points written in place with its opening tag kept; found only bare, a second editPoints was added beside it on a move
+
+## catalysed lists in CellDesigner 4.0's layout
+
+a species' listOfCatalyzedReactions made where none was: before its extension's end, else (CellDesigner 4.0's layout, no extension) before its annotation's end
 
 ## attrs
 

@@ -2,7 +2,7 @@ import { formatOfMap, formatOfText, formats, putMap, resetDrawing, resetMap, sha
 import GE from '../../renderers/converter/graphml_edit.js';   // the GraphML engine: the map's GraphML read and written as text
 import H from '../../renderers/layout/holding.js';   // what holds what: regrouping, growing a holder, the holder a box lies in
 import { bx, keyShift, liveFit, liveLines, liveOff, posePort, poseSize, shift, sizeLive, sizeOff, unshift } from './live.js';
-import { AF_KINDS, drawGraphml, noNegative, shiftedAhead } from './drawing.js';
+import { AF_KINDS, drawGraphml, noNegative, shiftAhead, shiftedAhead } from './drawing.js';
 import { beyond, glyphArcs, glyphPort, joinAt, joinGuides, joinSolve, nodeCentre } from './geometry.js';
 import { sbpy } from './engines.js';
 import { ddOpen, hybOn, joinDo, joinPack, joinPlan, link, linkDown, linkMove, linkPaint, linkUp, moveSays, origAll, palDown, palShow, palUp, propFmt, setSize, sizable, svDown, svMarks, tool } from './create.js';
@@ -868,12 +868,25 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     // dropped on a complex) is not changed: refused(), nothing said. An undo while it waits stops it
     // a compartment that partly overlaps another of its holder is
     // drawn behind it when larger, in front when smaller (sbgn_edit.stack, the order in the file); not on CellDesigner maps
-    function stackComps(ids) {   // in Full editing (Layout keeps the file's order), GraphML and SBGN-ML maps (sbgn_edit loaded at the start, begin)
+    // before: every node's box before the change, by id; a compartment whose size and partial overlaps with the others
+    // are as they were (moved together with them, or within the same overlaps) keeps the file's order; always: the ids
+    // stacked anyway (a new holder)
+    function stackComps(ids, before, always) {   // in Full editing (Layout keeps the file's order), GraphML and SBGN-ML maps (sbgn_edit loaded at the start, begin)
       var S = shared.F.stackComp;   // the format's writing of a compartment's order (F.stackComp); none on CellDesigner maps
       if (!S || !full()) return;
       var t2 = shared.text, at = {};
       nodes2.forEach(function (n, i) { at[n.id] = i; });
-      ids.forEach(function (id) { var i = at[id]; if (i != null && nodes2[i].comp) t2 = S(t2, id); });
+      var part = function (a, b) {   // the boxes share some area, neither holds the other (sbgn_edit's overlapOnly)
+        var ix = Math.min(a[0] + a[2], b[0] + b[2]) - Math.max(a[0], b[0]), iy = Math.min(a[1] + a[3], b[1] + b[3]) - Math.max(a[1], b[1]);
+        var holds = function (p, q) { return p[0] <= q[0] && p[1] <= q[1] && p[0] + p[2] >= q[0] + q[2] && p[1] + p[3] >= q[1] + q[3]; };
+        return ix > 0 && iy > 0 && !holds(a, b) && !holds(b, a);
+      };
+      var asWas = function (i) {
+        var b1 = boxOf(i), b0 = before && before[nodes2[i].id];
+        if (!b0 || Math.abs(b0[2] - b1[2]) > 1e-6 || Math.abs(b0[3] - b1[3]) > 1e-6) return false;
+        return nodes2.every(function (n, j) { if (j === i || !n.comp) return true; var c1 = boxOf(j), c0 = before[n.id] || c1; return part(b1, c1) === part(b0, c0); });
+      };
+      ids.forEach(function (id) { var i = at[id]; if (i != null && nodes2[i].comp && ((always || []).indexOf(id) >= 0 || !asWas(i))) t2 = S(t2, id); });
       if (t2 === shared.text) return;
       var keep = shared.selN.map(function (i) { return nodes2[i].id; }); setText(t2); parse(); shared.dirty = true;
       shared.selN = []; nodes2.forEach(function (n, i) { if (keep.indexOf(n.id) >= 0) shared.selN.push(i); });
@@ -905,7 +918,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
           Object.keys(gb || {}).forEach(function (k) { if (nodes2[+k]) grew.push(nodes2[+k].id); });
           setBoxes(gb);
         }
-        stackComps((arg.moving || []).concat(moves.map(function (m) { return m[0]; }), grew));   // compartments whose box or holder changed: the smaller in front where they partly overlap (sbgn_edit.stack)
+        stackComps((arg.moving || []).concat(moves.map(function (m) { return m[0]; }), grew), arg.before, moves.map(function (m) { return m[0]; }));   // compartments whose box or holder changed: the smaller in front where they partly overlap (sbgn_edit.stack)
         refit((arg.moving || []).concat(moves.map(function (m) { return m[0]; })), arg.before);   // yEd's box the one saved; a group moved whole keeps its insets
         done(); joinPack(cids);   // the complexes that took a member packed, in this undo step
       };
@@ -1236,7 +1249,13 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
           pic.querySelectorAll('[data-e]').forEach(function (g) { var k = g.getAttribute('data-e'); (gE[k] = gE[k] || []).push(g); });
           if (shared.F.drawn) shared.F.drawn();   // what the format readies once its drawing is in (CellDesigner: the live session)
           if (first) V.fit(); else V.draw();
-          if (!r[1].length && !saveTimer && !saving && !shared.dirty) { if (takenIn) warn(takenIn); else quiet(); sayOpen(); takenIn = null; }   // the file changed by opening it: said in red, as a change the reader did not make
+          // the file changed by opening it: said in red, as a change the reader did not make, and again by the drawings
+          // that follow at once (a shift's) until the reader's first change
+          if (!r[1].length && !saveTimer && !saving && !shared.dirty) {
+            if (takenIn) { openSaid = takenIn; takenIn = null; }
+            if (openSaid && !undo.length) warn(openSaid); else { openSaid = null; quiet(); }
+            sayOpen();
+          }
         })();
     }
     // entering edit on the picture as it is: the site's build and a reader's own map draw it as the editor does (each node
@@ -1258,15 +1277,23 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       var tk = opening, still = function () { return tk === opening; };
       // the new map's format is handed to begin, which writes it after resetMap: until then the map left stays whole
       var F = formatOfText(t) || formats.graphml, o = F.open(t, g0, still);   // a file of no kind known is tried as GraphML
-      var go = function (o) { if (!o || !still()) return; if (o.said) takenIn = o.said; begin(o.g, o.t, n, h, s, same, o.t0 || null, F, o.own); };
+      var go = function (o) {
+        if (!o || !still()) return;
+        // what the opening changed in the file, said once the map is drawn: the format's own (o.said), and a map with
+        // negative places shifted to start at zero or more (noNegative; a CellDesigner map in its own frame, cd_edit)
+        var sh = F.ownFrame ? null : shiftAhead(o.g), moved = sh ? [sh[0] ? sh[0] + ' right' : '', sh[1] ? sh[1] + ' down' : ''].filter(Boolean).join(' and ') : '';
+        openSaid = null;
+        takenIn = [o.said, moved ? 'Everything moved ' + moved + ', as a map here has no negative places.' : ''].filter(Boolean).join(' ') || null;
+        begin(o.g, o.t, n, h, s, same, o.t0 || null, F, o.own);
+      };
       if (!o.then) return go(o);   // GraphML: edited as it is, at once
       quiet();
       return o.then(go).catch(function (e) { if (still()) warn('Cannot edit ' + n + ': ' + e); });
     }
-    var takenIn;
+    var takenIn, openSaid;
     function __run20() {   // run at start, in order (__start)
-    takenIn = null;
-    }   // what the opening changed in the file (cd_make sbgn), said once the map is drawn
+    takenIn = null; openSaid = null;
+    }   // what the opening changed in the file (cd_make sbgn), said once the map is drawn; openSaid: said, until a change
     function begin(g, t, n, h, s, same, t0, F, own) {   // same: { width, height, x0, y0, scale } of the picture on screen, drawn from this very file; t0: the file as read, where the opening changed it; F: the map's format object; own: its fields of the map's lifetime (CellDesigner { cd }, SBGN-ML { sb, sbLast })
       var was = takeMap();   // the map before, put back if this one cannot be read
       resetMap();   // every field of the map, gesture, drawing and cache lifetimes as at the start (state.js), then the new map's own
@@ -1303,8 +1330,9 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       if (same && same.text === (F.asRead ? t0 : t)) {
         var grouped = same.svg && same.svg.indexOf(' data-n="') >= 0;   // the editor's own drawing of this very file
         shared.F.load().then(function () { if (on && V.current === map && !edits && !gN && !grouped) render(); });   // the renderer loaded quietly for the first change
+        quiet();   // before adopt, which says what the opening changed in the file (takenIn)
         if (grouped) adopt(same.svg);
-        paint(); quiet(); sayOpen(); shownWhole(); return;
+        paint(); sayOpen(); shownWhole(); return;
       }
       quiet(); sayOpen();
       render();
