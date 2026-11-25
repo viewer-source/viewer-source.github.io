@@ -4,7 +4,7 @@
 // membership is kept as a person's edit keeps it. It imports nothing, reads no page and writes nothing: each function
 // gives its answer, and the caller writes it (sbgn_edit.moveInto for a new holder, graphml_edit.boxes for a box).
 //   inBox(b, c), overlap(b, c): two boxes [x, y, w, h].
-//   make(M) -> { inBox, overlap, under, notIn, inComplex, holder, tops, regroup, grown, drawnOut, cxRoom, roomy, keepMembers, cdOwn }, the
+//   make(M) -> { inBox, overlap, under, notIn, inComplex, holder, tops, regroup, grown, drawnOut, cxRoom, roomy, keepMembers, placed }, the
 //     functions bound to model M:
 //     M.nodes: the map's nodes, as the editor reads them from its GraphML: { id, up (the index of the node holding it,
 //       or null), kids (the indexes it holds directly), comp (a compartment), hub (a process or a logic gate),
@@ -176,7 +176,7 @@
       });
       return [x0, y0, x1, y1];
     }
-    return { cdOwn: cdOwn, keepMembers: keepMembers, inBox: inBox, overlap: overlap, under: under, notIn: notIn, inComplex: inComplex, holder: holder, tops: tops,
+    return { placed: cdOwn, keepMembers: keepMembers, inBox: inBox, overlap: overlap, under: under, notIn: notIn, inComplex: inComplex, holder: holder, tops: tops,
              regroup: regroup, grown: grown, drawnOut: drawnOut, cxRoom: cxRoom, roomy: roomy };
   }
 

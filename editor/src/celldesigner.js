@@ -1,5 +1,5 @@
 import { shared, V } from './state.js';
-import { boxOf, cdOwn, cut, edges2, f1, gE, gN, gridBlock, lastFor, lastSvg, nodes2, num, on, points, ports, pt, rebase, setText, spotNo, status, undo, warn } from './core.js';
+import { boxOf, cut, drag, edges2, f1, gE, gN, gridBlock, lastFor, lastSvg, nodes2, num, on, parse, placed, points, ports, pt, rebase, setText, spotNo, status, undo, warn } from './core.js';
 import { bx, dropCopies, picOff, restPt, toPic } from './live.js';
 import { cdCardDown, cdCheck, cdClsOf, cdHow, cdLineAt, cdLink, cdLinkMarks, cdLiveEnds, cdMoveSays, cdNameOf, cdOnLine, cdRename, cdRole, cdStartOk } from './cdcreate.js';
 
@@ -386,7 +386,7 @@ import { cdCardDown, cdCheck, cdClsOf, cdHow, cdLineAt, cdLink, cdLinkMarks, cdL
     function cdJoin() {
       return {
         ok: function () { return !!cdMk && !!cdMk.join; },
-        own: cdOwn,
+        own: placed,
         joinable: function (id, cid) { return cdMk.joinable(shared.cd.now, id, cid); },
         write: function (joins) {   // the complexes that took a member
           var N = cdNow(), t = N.t, done = [];
@@ -430,9 +430,24 @@ import { cdCardDown, cdCheck, cdClsOf, cdHow, cdLineAt, cdLink, cdLinkMarks, cdL
       cdRebuild(t, N.sh);
       return true;
     }
+    // the map drawn now (core.js render, state.js F.redraw): the moves written into the file, drawn by cdrender, and the
+    // GraphML made of it again; memo: the drawing made ahead unfitted, as the map before any change, used only on this Grid
+    // size's block. [svg, warnings]
+    function cdRedraw(memo) {
+      var dm = memo && memo.cd && memo.base === shared.cd.base && memo.text === shared.text && memo.block === gridBlock() && !undo.length ? memo : null;
+      var q = dm ? dm.q : cdDraw(shared.cd.base, shared.text);
+      shared.cd.now = q[1]; shared.cdBase = { now: q[1], text: q[2] };   // what the live drawing of a move starts from
+      if (q[2] !== shared.text && !drag) {   // the same map, its new bend points (a glyph moved) now its own
+        var ids = shared.selN.map(function (i) { return nodes2[i].id; }), np = points.length;
+        setText(q[2]); parse();
+        shared.selN = ids.map(function (id) { return nodes2.findIndex(function (n) { return n.id === id; }); }).filter(function (i) { return i >= 0; });
+        if (points.length !== np) { shared.selP = []; shared.selE = []; }
+      }
+      return [q[0], []];
+    }
     // CellDesigner's format object (state.js formats): the file is kept beside the GraphML edited, the moves written in
     function cdFormat() {
-      return { name: 'cd', load: cdpy, engineCd: true, now: function () { return shared.cd.now; }, ownFrame: true, live: function () { return liveCd; }, cardDown: cdCardDown, mainLines: true, afView: false, stacks: false, insets: false, magenta: true, opened: plainCanvas, drawn: cdSessionSoon, lit: cdLit, endTo: cdEndTo, undoKeep: function () { return { g: shared.text, b: shared.cd.base }; }, undoPut: function (t) { shared.cd.base = t.b; return t.g; }, leave: cdLeave, nestReady: function () { return !!cdJs && !!cdJs.nestCheck; }, nestWhy: function (moves) { return cdJs && cdJs.nestCheck ? cdJs.nestCheck(shared.cd.now, moves, { doc: cdDoc(shared.cd.now) }) : null; }, modLine: function (id) { return /\|m\d+$/.test(id); }, ownLine: function (id) { return /\|(a|b|r\d+|p\d+)$/.test(id); }, fileType: { description: 'CellDesigner', accept: { 'application/xml': ['.xml'] } }, join: cdJoin(), line: cdLine(), square: function (id) { var m = /^(.*)\|proc$/.exec(id); return m ? m[1] : null; }, beside: function () { return shared.cd.now; },
+      return { name: 'cd', load: cdpy, engineCd: true, now: function () { return shared.cd.now; }, ownFrame: true, live: function () { return liveCd; }, cardDown: cdCardDown, mainLines: true, afView: false, stacks: false, insets: false, magenta: true, opened: plainCanvas, drawn: cdSessionSoon, redraw: cdRedraw, lit: cdLit, endTo: cdEndTo, undoKeep: function () { return { g: shared.text, b: shared.cd.base }; }, undoPut: function (t) { shared.cd.base = t.b; return t.g; }, leave: cdLeave, nestReady: function () { return !!cdJs && !!cdJs.nestCheck; }, nestWhy: function (moves) { return cdJs && cdJs.nestCheck ? cdJs.nestCheck(shared.cd.now, moves, { doc: cdDoc(shared.cd.now) }) : null; }, modLine: function (id) { return /\|m\d+$/.test(id); }, ownLine: function (id) { return /\|(a|b|r\d+|p\d+)$/.test(id); }, fileType: { description: 'CellDesigner', accept: { 'application/xml': ['.xml'] } }, join: cdJoin(), line: cdLine(), square: function (id) { var m = /^(.*)\|proc$/.exec(id); return m ? m[1] : null; }, beside: function () { return shared.cd.now; },
         reads: isCd, entry: cdMap,
         // opening: CellDesigner's open arrowhead taken in as SBGN's open triangle (cd_make sbgn): the editor works on the
         // changed text, written at the next save, the change said once the map is drawn; the file as it was stays the
@@ -457,4 +472,4 @@ import { cdCardDown, cdCheck, cdClsOf, cdHow, cdLineAt, cdLink, cdLinkMarks, cdL
         kind: function (n) { var c = cdClsOf(n.id); return c ? c[0] : n.comp ? 'compartment' : null; },   // its species class, or compartment
         ownName: cdNameOf, rename: cdRename, nameable: function () { return !!cdMk; } };   // names read from and written into its file
     }
-    export { beyond, cdFormat, cdDraw, cdKept, cdJs, cdMap, cdMk, cdNow, cdRebuild, cdSessionSoon, cdShown, cdpy, glyphArcs, glyphPort, isCd, joinAt, joinGuides, joinSolve, lineGrid, liveCd, nodeCentre, nodePlaces, plainCanvas, warmUp };
+    export { beyond, cdFormat, cdKept, cdJs, cdMap, cdMk, cdNow, cdRebuild, cdSessionSoon, cdShown, cdpy, glyphArcs, glyphPort, isCd, joinAt, joinGuides, joinSolve, lineGrid, liveCd, nodeCentre, nodePlaces, plainCanvas, warmUp };

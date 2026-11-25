@@ -199,6 +199,7 @@ import { liveY, yr } from './graphml.js';
     function sbFormat() {
       return { name: 'sb', load: yr, engineCd: false, now: sbNow, ownFrame: false, live: function () { return liveY; }, mainLines: false, afView: true, stacks: true, insets: true, sitesOut: function () { return !!shared.sbLast && !!sbJs && !!sbJs.sitesOut; }, fileType: { description: 'SBGN-ML', accept: { 'application/xml': ['.sbgn', '.nwt'] } }, stackComp: function (t, id) { return sbJs && sbJs.stack ? sbJs.stack(t, id) : t; }, square: function () { return null; }, beside: function () { return null; },
         reads: viaGraphml, entry: sbMap,   // an SBML file with a layout too, edited the same way
+        base: { keep: function () { return shared.sb ? shared.sb.base : null; }, put: function (b) { if (shared.sb) shared.sb.base = b; } },   // the SBGN-ML file the GraphML was read from (sbKind may read it again)
         asRead: true,   // the history and the picture on screen are of the file as read, before the opening put its sites back
         // opening: the GraphML of its text, from the build's (g0) where the text matches it, else the reader's (sbOwn); its
         // sites kept in the notes put back on their circles (sbIn, written as Show sites says, sbOut); the moves written back

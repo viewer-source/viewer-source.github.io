@@ -383,7 +383,7 @@
             for (var u = nodes[i].up; u != null; u = nodes[u].up) if (nodes[u].shape.kind === "Complex") return true;
             return false;
           }
-          function cdOwn2(i) {
+          function cdOwn(i) {
             return !!M.cd && nodes[i].id.indexOf("|") >= 0;
           }
           function holder2(b, not, B) {
@@ -401,7 +401,7 @@
           }
           function tops2(set, alone) {
             return Array.from(set).filter(function(i) {
-              return !cdOwn2(i) && (alone ? nodes[i].comp : !(nodes[i].up != null && set.has(nodes[i].up)));
+              return !cdOwn(i) && (alone ? nodes[i].comp : !(nodes[i].up != null && set.has(nodes[i].up)));
             });
           }
           function cxRoom(n) {
@@ -459,7 +459,7 @@
             B = B || boxOf2;
             B0 = B0 || boxOf2;
             var out = /* @__PURE__ */ new Map(), fixed = function(k) {
-              return nodes[k].hub || cdOwn2(k);
+              return nodes[k].hub || cdOwn(k);
             }, changed2 = [];
             var away2 = function(k, b, not) {
               if (!fixed(k)) return holder2(b, not, B);
@@ -468,7 +468,7 @@
             };
             set.forEach(function(i) {
               var n = nodes[i], p = n.up, b = B(i);
-              if (cdOwn2(i) || how === "plain" && (p != null && set.has(p) || inComplex2(i))) return;
+              if (cdOwn(i) || how === "plain" && (p != null && set.has(p) || inComplex2(i))) return;
               if (n.comp || how === "alone" && n.kids.length) changed2.push(i);
               var not = how === "plain" ? function(k) {
                 return set.has(k);
@@ -538,7 +538,7 @@
             return [x02, y02, x1, y1];
           }
           return {
-            cdOwn: cdOwn2,
+            placed: cdOwn,
             keepMembers,
             inBox: inBox2,
             overlap: overlap2,
@@ -1859,6 +1859,12 @@
       reads: viaGraphml,
       entry: sbMap,
       // an SBML file with a layout too, edited the same way
+      base: { keep: function() {
+        return shared.sb ? shared.sb.base : null;
+      }, put: function(b) {
+        if (shared.sb) shared.sb.base = b;
+      } },
+      // the SBGN-ML file the GraphML was read from (sbKind may read it again)
       asRead: true,
       // the history and the picture on screen are of the file as read, before the opening put its sites back
       // opening: the GraphML of its text, from the build's (g0) where the text matches it, else the reader's (sbOwn); its
@@ -2430,7 +2436,7 @@
       ok: function() {
         return !!cdMk && !!cdMk.join;
       },
-      own: cdOwn,
+      own: placed,
       joinable: function(id, cid) {
         return cdMk.joinable(shared.cd.now, id, cid);
       },
@@ -2510,6 +2516,31 @@
     cdRebuild(t, N.sh);
     return true;
   }
+  function cdRedraw(memo) {
+    var dm = memo && memo.cd && memo.base === shared.cd.base && memo.text === shared.text && memo.block === gridBlock() && !undo.length ? memo : null;
+    var q = dm ? dm.q : cdDraw(shared.cd.base, shared.text);
+    shared.cd.now = q[1];
+    shared.cdBase = { now: q[1], text: q[2] };
+    if (q[2] !== shared.text && !drag) {
+      var ids = shared.selN.map(function(i) {
+        return nodes2[i].id;
+      }), np = points.length;
+      setText(q[2]);
+      parse();
+      shared.selN = ids.map(function(id) {
+        return nodes2.findIndex(function(n) {
+          return n.id === id;
+        });
+      }).filter(function(i) {
+        return i >= 0;
+      });
+      if (points.length !== np) {
+        shared.selP = [];
+        shared.selE = [];
+      }
+    }
+    return [q[0], []];
+  }
   function cdFormat() {
     return {
       name: "cd",
@@ -2530,6 +2561,7 @@
       magenta: true,
       opened: plainCanvas,
       drawn: cdSessionSoon,
+      redraw: cdRedraw,
       lit: cdLit,
       endTo: cdEndTo,
       undoKeep: function() {
@@ -7562,8 +7594,6 @@
       }) === i;
     });
     if (!ms.length) return;
-    var n = ms.length, what = n === 1 ? ms[0].mine ? ms[0].title : ms[0].topic : n + " maps";
-    if (!confirm("Delete " + what + " forever? This cannot be undone.")) return;
     var site2 = [], gone = [], gh2 = !!(repo() && token());
     ms.forEach(function(m) {
       if (m.mine) {
@@ -9213,9 +9243,9 @@
     });
     HORIZ = { left: 1, right: 1 };
   }
-  function tagTurnT(t, i, way, placed) {
+  function tagTurnT(t, i, way, placed2) {
     var n = nodes2[i], id = n.id, b = boxOf(i), now = sbJs.wayOfR && sbJs.wayOfR(realizerOf(n.el)) || "right", nb = b;
-    if (!placed && (HORIZ[way] ? b[3] > b[2] : b[2] > b[3])) nb = [b[0] + b[2] / 2 - b[3] / 2, b[1] + b[3] / 2 - b[2] / 2, b[3], b[2]].map(function(v) {
+    if (!placed2 && (HORIZ[way] ? b[3] > b[2] : b[2] > b[3])) nb = [b[0] + b[2] / 2 - b[3] / 2, b[1] + b[3] / 2 - b[2] / 2, b[3], b[2]].map(function(v) {
       return +fmt(v);
     });
     if (nb !== b) t = sbJs.resize(t, id, nb);
@@ -13916,8 +13946,14 @@
       caught(e.reason, "");
     });
   }
+  function baseKeep() {
+    return shared.F.base ? shared.F.base.keep() : null;
+  }
+  function basePut(b) {
+    if (b && shared.F.base) shared.F.base.put(b);
+  }
   function goodNow() {
-    good = { u: undoText(), n: undo.length, sb: shared.sb ? shared.sb.base : null, at: map };
+    good = { u: undoText(), n: undo.length, base: baseKeep(), at: map };
   }
   function caught(err, file) {
     var msg = err && err.message ? err.message : String(err), stack = err && err.stack ? String(err.stack) : "";
@@ -13940,7 +13976,7 @@
         if (undo.ts) undo.ts.length = Math.min(undo.ts.length, good.n);
       }
       var g = fromUndo(good.u);
-      if (shared.sb && good.sb) shared.sb.base = good.sb;
+      basePut(good.base);
       setText(g);
       shared.selN = [];
       shared.selP = [];
@@ -14059,7 +14095,7 @@
       var L = q[0], N = q[1], out = [], t1 = shared.text, before = boxesBefore(boxOf);
       nodes2.forEach(function(n, k) {
         var p = n.up;
-        if (p != null && nodes2[p].comp && !cdOwn(k) && overlap(boxOf(k), boxOf(p)) && !inBox(boxOf(k), boxOf(p))) out.push([n.id, nodes2[p].id]);
+        if (p != null && nodes2[p].comp && !placed(k) && overlap(boxOf(k), boxOf(p)) && !inBox(boxOf(k), boxOf(p))) out.push([n.id, nodes2[p].id]);
       });
       out.forEach(function(m) {
         t1 = N.moveInto(t1, [[m[0], null]]);
@@ -14233,8 +14269,8 @@
   function under(i, a) {
     return hm().under(i, a);
   }
-  function cdOwn(i) {
-    return hm().cdOwn(i);
+  function placed(i) {
+    return hm().placed(i);
   }
   function holder(b, not, B) {
     return hm().holder(b, not, B);
@@ -14745,7 +14781,7 @@
     delete hist[id];
     histLast = null;
     if (undo.length || shared.redo.length) {
-      var h = hist[id] = { undo, redo: shared.redo, u: undoText(), src: src(), shift: shiftSum, sbBase: shared.sb && shared.sb.base, size: 0 };
+      var h = hist[id] = { undo, redo: shared.redo, u: undoText(), src: src(), shift: shiftSum, base: baseKeep(), size: 0 };
       h.size = sizeOf(h.u) + h.src.length + h.undo.concat(h.redo).reduce(function(k, d) {
         return k + sizeOf(d);
       }, 0);
@@ -14786,7 +14822,7 @@
     delete hist[id];
     histLast = null;
     try {
-      if (h.sbBase && shared.sb) shared.sb.base = h.sbBase;
+      basePut(h.base);
       var g = fromUndo(h.u);
       if (g !== shared.text) {
         setText(g);
@@ -14884,32 +14920,8 @@
     drawing = true;
     return shared.F.load().then(function(p) {
       var r;
-      if (shared.cd) {
-        var dm = drawMemo && drawMemo.cd && drawMemo.base === shared.cd.base && drawMemo.text === shared.text && drawMemo.block === gridBlock() && !undo.length ? drawMemo : null;
-        var q = dm ? dm.q : cdDraw(shared.cd.base, shared.text);
-        if (t !== ticket) return;
-        shared.cd.now = q[1];
-        r = [q[0], []];
-        shared.cdBase = { now: q[1], text: q[2] };
-        if (q[2] !== shared.text && !drag) {
-          var ids = shared.selN.map(function(i) {
-            return nodes2[i].id;
-          }), np = points.length;
-          setText(q[2]);
-          parse();
-          shared.selN = ids.map(function(id) {
-            return nodes2.findIndex(function(n) {
-              return n.id === id;
-            });
-          }).filter(function(i) {
-            return i >= 0;
-          });
-          if (points.length !== np) {
-            shared.selP = [];
-            shared.selE = [];
-          }
-        }
-      } else {
+      if (shared.F.redraw) r = shared.F.redraw(drawMemo);
+      else {
         var sh = !drag && noNegative();
         if (sh) {
           parse();
@@ -14917,7 +14929,7 @@
           var lc = shared.lastChange;
           shared.lastChange = { name: "shift", ids: lc ? lc.ids : [], shift: sh, after: lc ? lc.name : null };
         }
-        r = drawMemo && !drawMemo.cd && drawMemo.text === shared.text && !shared.afSbgn ? drawMemo.r : drawGraphml(shared.text);
+        r = drawMemo && drawMemo.r && drawMemo.text === shared.text && !shared.afSbgn ? drawMemo.r : drawGraphml(shared.text);
       }
       if (t !== ticket) return;
       drawing = false;

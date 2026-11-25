@@ -5,6 +5,7 @@
 //      Cmd+Z puts them in Deleted again.
 //   4. A text selection left on the list goes at the next press on it.
 //   5. Cmd+A after a click on the map: the list's selection is left as it is.
+//   6. Delete N maps forever: done at once, no dialog asking again.
 //   node tests/list-select-all.js [base address] [--local]
 // --local: the editor and the viewer of the working tree routed into the live page (run styles/update.sh first)
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path'), cp = require('child_process');
@@ -99,6 +100,15 @@ function viewerHunks() {
   var l5a = await lit();
   await page.keyboard.press(mod + '+a'); await page.waitForTimeout(300);
   ok('5. Cmd+A after a click on the map: the list as it was', (await lit()).join() === l5a.join(), (await lit()).join(','));
+  // 6
+  var dialogs = 0; page.on('dialog', function () { dialogs++; });
+  if (await (await page.$('#m2-list .m2-bin')).evaluate(function (h) { return h.classList.contains('m2-shut'); })) { await page.click('#m2-list .m2-bin'); await page.waitForTimeout(500); }
+  await page.click(brow('all-a'), { modifiers: [mod] }); await page.waitForTimeout(300);
+  await page.keyboard.press(mod + '+a'); await page.waitForTimeout(300);
+  await page.click(brow('all-b'), { button: 'right' }); await page.waitForTimeout(300);
+  await page.click('.m2-cx button:text-is("Delete 3 maps forever")'); await page.waitForTimeout(2000);
+  var left6 = await page.$$eval('#m2-list .m2-map.m2-binned', function (l) { return l.length; });
+  ok('6. Delete 3 maps forever: gone, no dialog', left6 === 0 && dialogs === 0, left6 + ' left, ' + dialogs + ' dialogs');
   ok('no page errors', !errs.length, errs.slice(0, 3).join(' | '));
   await b.close();
   console.log(bad ? bad + ' WRONG' : 'all ok');

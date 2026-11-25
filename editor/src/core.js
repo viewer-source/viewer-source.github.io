@@ -3,7 +3,7 @@ import GE from '../../renderers/converter/graphml_edit.js';   // the GraphML eng
 import H from '../../renderers/layout/holding.js';   // what holds what: regrouping, growing a holder, the holder a box lies in
 import { bx, keyShift, liveFit, liveLines, liveOff, posePort, poseSize, shift, sizeLive, sizeOff, unshift } from './live.js';
 import { AF_KINDS, drawGraphml, noNegative, shiftedAhead } from './graphml.js';
-import { beyond, cdDraw, glyphArcs, glyphPort, joinAt, joinGuides, joinSolve, lineGrid, nodeCentre, nodePlaces } from './celldesigner.js';
+import { beyond, glyphArcs, glyphPort, joinAt, joinGuides, joinSolve, lineGrid, nodeCentre, nodePlaces } from './celldesigner.js';
 import { isSb, sbFollow, sbKind, sbpy } from './sbgn.js';
 import { ddOpen, hybOn, joinDo, joinPack, joinPlan, link, linkDown, linkMove, linkPaint, linkUp, moveSays, origAll, palDown, palShow, palUp, propFmt, setSize, sizable, svDown, svMarks, tool } from './create.js';
 import { help, helpBox } from './help.js';
@@ -567,7 +567,11 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     addEventListener('error', function (e) { caught(e.error || e.message, e.filename); });
     addEventListener('unhandledrejection', function (e) { caught(e.reason, ''); });
     }
-    function goodNow() { good = { u: undoText(), n: undo.length, sb: shared.sb ? shared.sb.base : null, at: map }; }
+    // the file a map's GraphML was read from, kept with a point to go back to (the last good state, a map's history) and
+    // put back with it, the format's own way (state.js F.base); none: nothing kept
+    function baseKeep() { return shared.F.base ? shared.F.base.keep() : null; }
+    function basePut(b) { if (b && shared.F.base) shared.F.base.put(b); }
+    function goodNow() { good = { u: undoText(), n: undo.length, base: baseKeep(), at: map }; }
     function caught(err, file) {
       var msg = err && err.message ? err.message : String(err), stack = err && err.stack ? String(err.stack) : '';
       if (!on || PASSED.test(msg) || (err && err.name === 'AbortError')) return;
@@ -582,7 +586,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
         drag = null; band = null; shared.tap = null; drawing = false;
         if (good.n < undo.length) { undo.length = good.n; if (undo.ts) undo.ts.length = Math.min(undo.ts.length, good.n); }
         var g = fromUndo(good.u);
-        if (shared.sb && good.sb) shared.sb.base = good.sb;
+        basePut(good.base);
         setText(g); shared.selN = []; shared.selP = []; shared.selE = []; shared.part = null;
         try { parse(); render(); paint(); } catch (e) {}
       }
@@ -654,7 +658,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
         var L = q[0], N = q[1], out = [], t1 = shared.text, before = boxesBefore(boxOf);
         nodes2.forEach(function (n, k) {
           var p = n.up;
-          if (p != null && nodes2[p].comp && !cdOwn(k) && overlap(boxOf(k), boxOf(p)) && !inBox(boxOf(k), boxOf(p))) out.push([n.id, nodes2[p].id]);
+          if (p != null && nodes2[p].comp && !placed(k) && overlap(boxOf(k), boxOf(p)) && !inBox(boxOf(k), boxOf(p))) out.push([n.id, nodes2[p].id]);
         });
         out.forEach(function (m) { t1 = N.moveInto(t1, [[m[0], null]]); });
         var r = L.tidy(t1, what, ids || [], shared.F.engineCd, { grid: gridSet.step, route: lineStep() });   // Snap map to grid on Grid size, bend points on the line step
@@ -767,7 +771,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     function overlap(b, c) { return H.overlap(b, c); }
     function under(i, a) { return hm().under(i, a); }   // a holds i, at any depth
     function notIn(i) { return hm().notIn(i); }   // neither the node nor what it holds
-    function cdOwn(i) { return hm().cdOwn(i); }   // a CellDesigner process glyph or gate
+    function placed(i) { return hm().placed(i); }   // a node the file's engine places itself, never taken in or out by a move (CellDesigner's process glyphs and gates, holding.js)
     function holder(b, not, B) { return hm().holder(b, not, B); }   // the innermost compartment whose box holds box b fully, none for which not() holds
     function tops(set, alone) { return hm().tops(set, alone); }   // the nodes a move grows round: those not moving with their holder; with Shift only compartments (rule 2)
     // an inside member's least space to its compartment's inner line (inside CellDesigner's double border, clear of a
@@ -1092,7 +1096,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       if (!histKey) return;
       var id = histKey; histKey = null; delete hist[id]; histLast = null;
       if (undo.length || shared.redo.length) {
-        var h = hist[id] = { undo: undo, redo: shared.redo, u: undoText(), src: src(), shift: shiftSum, sbBase: shared.sb && shared.sb.base, size: 0 };
+        var h = hist[id] = { undo: undo, redo: shared.redo, u: undoText(), src: src(), shift: shiftSum, base: baseKeep(), size: 0 };
         h.size = sizeOf(h.u) + h.src.length + h.undo.concat(h.redo).reduce(function (k, d) { return k + sizeOf(d); }, 0);
         histLast = { id: id, h: h, site: site };
         var ids = Object.keys(hist), sum = ids.reduce(function (k, i) { return k + hist[i].size; }, 0);
@@ -1115,7 +1119,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       if (!h || h.src !== t) return;   // a file not as left: its history stays until this map is left again (a newer read may match)
       delete hist[id]; histLast = null;
       try {
-        if (h.sbBase && shared.sb) shared.sb.base = h.sbBase;
+        basePut(h.base);
         var g = fromUndo(h.u);   // the editor's own text and file as they were (a CellDesigner map's GraphML and base)
         if (g !== shared.text) { setText(g); parse(); }
         undo = h.undo; shared.redo = h.redo; shiftSum = h.shift;
@@ -1169,25 +1173,15 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       drawing = true;
       return shared.F.load().then(function (p) {   // the format's renderer (F.load)
         var r;
-        if (shared.cd) {   // the moves written into the CellDesigner file, drawn, and the GraphML made of it again
-          var dm = drawMemo && drawMemo.cd && drawMemo.base === shared.cd.base && drawMemo.text === shared.text && drawMemo.block === gridBlock() && !undo.length ? drawMemo : null;   // drawn ahead unfitted, as the map before any change, on this Grid size's block
-          var q = dm ? dm.q : cdDraw(shared.cd.base, shared.text);
-          if (t !== ticket) return;
-          shared.cd.now = q[1]; r = [q[0], []]; shared.cdBase = { now: q[1], text: q[2] };   // what the live drawing of a move starts from
-          if (q[2] !== shared.text && !drag) {   // the same map, its new bend points (a glyph moved) now its own
-            var ids = shared.selN.map(function (i) { return nodes2[i].id; }), np = points.length;
-            setText(q[2]); parse();
-            shared.selN = ids.map(function (id) { return nodes2.findIndex(function (n) { return n.id === id; }); }).filter(function (i) { return i >= 0; });
-            if (points.length !== np) { shared.selP = []; shared.selE = []; }
-          }
-        } else {
+        if (shared.F.redraw) r = shared.F.redraw(drawMemo);   // the format's own drawing (CellDesigner: its file, drawn by cdrender)
+        else {
           // shifted: the editor's places moved, so its frame moves with them and nothing moves on screen (taken for a new
           // frame of the drawing, the shift would make the map jump right and down, out of sight on some maps)
           // a step of its own, named 'shift' (the tests read it), inside the undo step of the change that caused it: undone
           // alone, the map would be back in negative places and shifted again by the next drawing
           var sh = !drag && noNegative();
           if (sh) { parse(); rebase(sh[0], sh[1]); var lc = shared.lastChange; shared.lastChange = { name: 'shift', ids: lc ? lc.ids : [], shift: sh, after: lc ? lc.name : null }; }
-          r = drawMemo && !drawMemo.cd && drawMemo.text === shared.text && !shared.afSbgn ? drawMemo.r : drawGraphml(shared.text);   // the read-ahead drawing is never in the SBGN AF view
+          r = drawMemo && drawMemo.r && drawMemo.text === shared.text && !shared.afSbgn ? drawMemo.r : drawGraphml(shared.text);   // the read-ahead drawing is never in the SBGN AF view
         }
         if (t !== ticket) return;
         drawing = false;
@@ -3215,4 +3209,4 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     }
 
     export function __start() { __run1(); __run2(); __run3(); __run4(); __run5(); __run6(); __run7(); __run8(); __run9(); __run10(); __run11(); __run12(); __run13(); __run14(); __run15(); __run16(); __run17(); __run18(); __run19(); __run20(); __run21(); __run22(); __run23(); __run24(); __run25(); __run26(); __run27(); __run28(); __run29(); __run30(); __run31(); __run34(); __run35(); __run36(); __run37(); __run38(); __run39(); __run40(); __run41(); __run42(); __run43(); __run44(); __run45(); __run46(); }   // the part's statements, in their order
-    export { asSpace, G, GE, HANDLE, MODS, Y, ahead, aheadSoon, api, at, away, b64, blobSha, box, boxOf, buttons, cdOwn, changed, chooseFolder, commit, complexHere, cut, cutShape, doc, docText, drag, drawText, edgeAt, edges2, editing, f1, fmt, freeName, full, gE, gN, gh, graphmlOf, gridBlock, gridSet, grown, handleMarks, heldText, hit, holder, holderSize, holds, hubPorts, inComplex, inRim, keyFlush, keyTake, kindWindow, landMarks, lastFor, lastSvg, lateItem, layTool, line, livePath, localBox, map, mapTop, moveFix, mv, name, near, nodes2, note, num, on, origFolderDrop, origFromFolder, origRead, origToFolder, origWrite, outlineD, overlap, ownMenus, paint, parse, parseFix, picWait, points, ports, procPlaces, pt, quiet, rclick, realizerOf, rebase, refit, regroup, remember, render, repo, rimOf, roleOf, roomy, setBoxes, setPort, setText, settle, shapeD, shown, site, spotNo, src, status, stop, subItem, sx, sy, syncFolder, takes, toFolder, toGrid, token, tops, under, undo, unkeep, unpush, warn, x0, y0 };
+    export { asSpace, G, GE, HANDLE, MODS, Y, ahead, aheadSoon, api, at, away, b64, blobSha, box, boxOf, buttons, changed, chooseFolder, commit, complexHere, cut, cutShape, doc, docText, drag, drawText, edgeAt, edges2, editing, f1, fmt, freeName, full, gE, gN, gh, graphmlOf, gridBlock, gridSet, grown, handleMarks, heldText, hit, holder, holderSize, holds, hubPorts, inComplex, inRim, keyFlush, keyTake, kindWindow, landMarks, lastFor, lastSvg, lateItem, layTool, line, livePath, localBox, map, mapTop, moveFix, mv, name, near, nodes2, note, num, on, origFolderDrop, origFromFolder, origRead, origToFolder, origWrite, outlineD, overlap, ownMenus, paint, parse, parseFix, picWait, placed, points, ports, procPlaces, pt, quiet, rclick, realizerOf, rebase, refit, regroup, remember, render, repo, rimOf, roleOf, roomy, setBoxes, setPort, setText, settle, shapeD, shown, site, spotNo, src, status, stop, subItem, sx, sy, syncFolder, takes, toFolder, toGrid, token, tops, under, undo, unkeep, unpush, warn, x0, y0 };

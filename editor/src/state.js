@@ -39,6 +39,9 @@ export var shared = {};
 //   undoKeep()  an undo step as the format keeps it (CellDesigner: { g: the GraphML, b: the file it was made from }); none: the GraphML
 //   undoPut(t)  such a step put back, its GraphML returned (CellDesigner: the file set again); none: t.g
 //   load()     the renderer that draws the map, loaded (a promise: CellDesigner cdpy, cdrender and cd_edit; the others yr, yrender)
+//   redraw(memo)  the map drawn now, the format's own way (CellDesigner: the moves written into its file, drawn by
+//              cdrender, the GraphML made again of it), [svg, warnings]; memo: the drawing made ahead for this opening; none:
+//              core.js render's, yrender's drawing of the GraphML, shifted out of negative places
 //   engineCd   the engines' CellDesigner rules apply (holding.js M.cd: a compartment's double border, process glyphs and gates;
 //              layout.js tidy; graphml_edit.read's cd)
 //   modLine(id)  a modifier's line of a reaction (CellDesigner: <reaction>|m<n>), its end landing at the square's six places; none
@@ -56,6 +59,8 @@ export var shared = {};
 //   open(t, g0, still)  a file opened for editing: { g: the GraphML edited, t: the text edited, t0: the file as read, said:
 //              what the opening changed in it, own: the format's fields of the map (putMap) }, or a promise of it; null
 //              when the opening was left (still() false). GraphML: at once, the file itself
+//   base       the file the GraphML edited was read from, kept with a point to go back to (core.js good, the history)
+//              and put back with it: { keep(), put(b) } (SBGN-ML: shared.sb.base); none: nothing kept
 //   asRead     the history and the picture on screen are of the file as read (SBGN-ML, its sites put back after)
 //   drawOwn(t, g0, keep)  a reader's own map drawn for the list (core.js drawText): a promise of the SVG, or null when
 //              the format cannot draw this text

@@ -1535,8 +1535,8 @@ import { NEW_ID, emptyBase, isSb, sbMap } from './sbgn.js';
     }   // site maps let go here (the build still lists them until it runs again)
     function erase(ms) {
       ms = ms.filter(Boolean).map(parentOf).filter(function (m, i, a) { return a.findIndex(function (x) { return x.id === m.id; }) === i; }); if (!ms.length) return;
-      var n = ms.length, what = n === 1 ? (ms[0].mine ? ms[0].title : ms[0].topic) : n + ' maps';
-      if (!confirm('Delete ' + what + ' forever? This cannot be undone.')) return;
+      // no confirmation dialog: Delete forever is chosen
+      // from its own menu item, last and apart, so it is not hit by chance
       var site = [], gone = [], gh = !!(repo() && token());
       ms.forEach(function (m) {
         if (m.mine) {

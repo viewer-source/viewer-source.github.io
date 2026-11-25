@@ -90,6 +90,7 @@ function viewerHunks() {   // [old, new] pieces of the viewer's file changed sin
     console.log('-- ' + id + ', Edit window on the right');
     if (!mi) { await page.goto(base + '#' + id, { waitUntil: 'load' }); await settle(); await page.click('.m2-ri[data-win="edit"]'); await waitEdit(); }
     else await choose(id);   // the page stays (a new # alone does not reload it)
+    if (!mi) { await editNode(); await undoKey(); await page.waitForTimeout(5000); }   // the same for the first map (yEd's example has negative places)
     var a0 = await now(); await editNode(); var a1 = await now();
     await page.waitForTimeout(5000);   // saved
     await choose(other);
