@@ -172,6 +172,6 @@ import { liveY, yr } from './graphml.js';
     export function __start() { __run1(); __run2(); __run3(); __run5(); __run6(); }   // the part's statements, in their order
     // SBGN-ML's format object (state.js formats): the file written from the one opened with the moves of the GraphML
     function sbFormat() {
-      return { name: 'sb', now: sbNow, ownFrame: false, live: function () { return liveY; } };
+      return { name: 'sb', now: sbNow, ownFrame: false, live: function () { return liveY; }, mainLines: false, afView: true, beside: function () { return null; } };
     }
     export { EMPTY_BASE, GEO, NEW_ID, edOf, emptyBase, isSb, madeHere, sbBase, sbFollow, sbGraphml, sbJs, sbKind, sbIn, sbMap, sbNow, sbOwn, sbFormat, sbReader, sbRemember, sbpy, viaGraphml };

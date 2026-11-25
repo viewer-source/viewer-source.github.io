@@ -3,7 +3,7 @@ import { G, GE, HANDLE, MODS, Y, asSpace, at, box, boxOf, cdOwn, changed, commit
 import { bx, liveOff, livePose, sizeOff } from './live.js';
 import { cdMk, cdNow, cdRebuild } from './celldesigner.js';
 import { GEO, edOf, sbJs, sbKind } from './sbgn.js';
-import { CD_DEF_KEY, CD_GATE, PF_CD, cdCardDown, cdClick, cdClsOf, cdDeleteItem, cdFeat, cdFill, cdFront, cdGateMarks, cdGhost, cdHow, cdInfo, cdItems, cdKind, cdLineAt, cdLink, cdLinkMarks, cdLiveEnds, cdMake, cdMoveSays, cdNameDown, cdNameOf, cdOnLine, cdOverMarks, cdPal, cdRename, cdRole, cdSsTyped, cdStartOk, cdSvDelete, cdSvList, cdSvMove, cdSvOpen } from './cdcreate.js';
+import { CD_DEF_KEY, CD_GATE, PF_CD, cdClick, cdClsOf, cdDeleteItem, cdFeat, cdFill, cdFront, cdGateMarks, cdGhost, cdHow, cdInfo, cdItems, cdKind, cdLineAt, cdLink, cdLinkMarks, cdLiveEnds, cdMake, cdMoveSays, cdNameDown, cdNameOf, cdOnLine, cdOverMarks, cdPal, cdRename, cdRole, cdSsTyped, cdStartOk, cdSvDelete, cdSvList, cdSvMove, cdSvOpen } from './cdcreate.js';
 import { origGh, origPut } from './own.js';
 import NT from '../../renderers/converter/notation.js';   // the notation's kinds and rules table (plan 3 step 6)
 
@@ -622,7 +622,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       var want = palOn() && palLookNow() === 'sbgn';
       if (want === shared.afSbgn) return;
       shared.afSbgn = want;
-      if (on && V.current === map && !shared.cd) render();
+      if (on && V.current === map && shared.F.afView) render();
     }
     function palPick(lang, look) {
       palSet = { lang: lang || palSet.lang, look: look || palSet.look, strict: palSet.strict, sbgn: palSet.sbgn };
@@ -1883,7 +1883,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
     }
     function cardDown(e, P) {   // a press on a cardinality (svDown, before state variables): true when it takes the press
       if (tool || e.shiftKey) return false;
-      if (shared.cd) return cdCardDown(e);   // no place in a CellDesigner file (cdcreate.js)
+      if (shared.F.cardDown) return shared.F.cardDown(e);   // a format's own (CellDesigner: none in its file, cdcreate.js cdCardDown)
       var id = cardAt(P), k = id == null ? -1 : cardK(id);
       if (k < 0) return false;
       V.view.focus({ preventScroll: true });

@@ -5,8 +5,12 @@ export var shared = {};
 // The file formats, one object per format (graphml.js, celldesigner.js, sbgn.js), put here by main.js before the parts
 // start; the open map's object is shared.F. Shared code asks F and never which format a map is. Its jobs and tables:
 //   now()      the map's own file as it is now (core.js src)
+//   beside()   the file kept beside the GraphML edited, as it is now (CellDesigner), else null: what a drawing is of
 //   ownFrame   the picture is drawn in the file's own places (CellDesigner), else shifted out of negative places
 //   live()     the live drawing of a move, the format's own way (live.js liveFmt): { glyphs, lines, holders, size }
+//   afView     the map can be drawn in AF's SBGN view (graphml.js afSbgn; not CellDesigner, drawn by cdrender)
+//   mainLines  a reaction has one main reactant and product, the others added (CellDesigner): Make main
+//   cardDown(e)  a press on a cardinality, where the format has its own way (CellDesigner); none: create.js's
 // Moved one question at a time (stage 1 of notes/format-object-design.md in the working repository).
 export var formats = {};
 export function addFormats(o) { Object.keys(o).forEach(function (k) { formats[k] = o[k]; }); }

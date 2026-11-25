@@ -31,6 +31,7 @@ var OPENED = ['text', 'F', 'cd', 'sb', 'sbLast', 'procs', 'cdBase'];   // F: the
       if (!s) return null;
       ['page', 'map', 'gesture', 'drawing', 'cache'].forEach(function (kind) { out[kind] = {}; Object.keys(s[kind]).forEach(function (k) { var v = s[kind][k]; out[kind][k] = Array.isArray(v) ? { list: v.length } : v && typeof v === 'object' ? { set: true } : typeof v === 'string' ? { text: v.length } : v; }); });
       out.cdKept = s.cdKept;
+      out.fmtName = s.map.F && s.map.F.name;   // the format object the opening chose
       out.strictFresh = s.cache.cdStrictMemo[0] !== '__planted';   // the tick box's memo, read again for this map or empty
       out.hpOwn = !s.cache.hpMemo || s.cache.hpMemo[0] === s.map.text;   // the ports cache, when filled, of this map's own text (its drawing fills it)
       return out;
@@ -83,6 +84,7 @@ var OPENED = ['text', 'F', 'cd', 'sb', 'sbLast', 'procs', 'cdBase'];   // F: the
     var cd = kinds[j] === 'celldesigner', sb = kinds[j] === 'sbgn';
     ok(kinds[j] + ': its format alone (cd, sb, sbLast)', !!s.map.cd === cd && !!s.map.sb === sb && !!s.map.sbLast === sb,
       'cd ' + JSON.stringify(s.map.cd) + ', sb ' + JSON.stringify(s.map.sb) + ', sbLast ' + JSON.stringify(s.map.sbLast));
+    ok(kinds[j] + ': its format object', s.fmtName === { graphml: 'graphml', celldesigner: 'cd', sbgn: 'sb' }[kinds[j]], 'F ' + s.fmtName);
     ok(kinds[j] + ': its own text, of this map', s.map.text && s.map.text.text > 0);
     ok(kinds[j] + ': no parsed document of the first map kept', kinds[j] === 'celldesigner' ? s.cdKept === null || s.cdKept === B : s.cdKept === null, 'kept for ' + s.cdKept);
     ok(kinds[j] + ': the page\'s fields left as they were', page0 && Object.keys(page0).every(function (k) { return k === 'palShown' || k === 'afSbgn' || JSON.stringify(page0[k]) === JSON.stringify(s.page[k]); }));

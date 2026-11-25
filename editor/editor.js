@@ -4046,6 +4046,8 @@
       return shared.cd.now;
     }, ownFrame: true, live: function() {
       return liveCd;
+    }, cardDown: cdCardDown, mainLines: true, afView: false, beside: function() {
+      return shared.cd.now;
     } };
   }
 
@@ -4354,6 +4356,8 @@
       return shared.text;
     }, ownFrame: false, live: function() {
       return liveY;
+    }, mainLines: false, afView: true, beside: function() {
+      return null;
     } };
   }
 
@@ -4598,6 +4602,8 @@
   function sbFormat() {
     return { name: "sb", now: sbNow, ownFrame: false, live: function() {
       return liveY;
+    }, mainLines: false, afView: true, beside: function() {
+      return null;
     } };
   }
 
@@ -8368,7 +8374,7 @@
     var want = palOn() && palLookNow() === "sbgn";
     if (want === shared.afSbgn) return;
     shared.afSbgn = want;
-    if (on && V.current === map && !shared.cd) render();
+    if (on && V.current === map && shared.F.afView) render();
   }
   function palPick(lang, look) {
     palSet = { lang: lang || palSet.lang, look: look || palSet.look, strict: palSet.strict, sbgn: palSet.sbgn };
@@ -10388,7 +10394,7 @@
   }
   function cardDown(e, P) {
     if (tool || e.shiftKey) return false;
-    if (shared.cd) return cdCardDown(e);
+    if (shared.F.cardDown) return shared.F.cardDown(e);
     var id = cardAt(P), k = id == null ? -1 : cardK(id);
     if (k < 0) return false;
     V.view.focus({ preventScroll: true });
@@ -13131,7 +13137,7 @@
     localTimer = null;
     var s = localFor;
     if (!s || site !== s) return;
-    var drawn = !drawing && lastFor && lastFor[0] === shared.text && lastFor[1] === (shared.cd ? shared.cd.now : null);
+    var drawn = !drawing && lastFor && lastFor[0] === shared.text && lastFor[1] === shared.F.beside();
     if (!drawn && !force) {
       localTimer = setTimeout(local, 300);
       return;
@@ -14585,7 +14591,7 @@
     if (r[1].length) warn("Drawn with warnings: " + r[1].join("; "));
     var svg = r[0];
     lastSvg = svg;
-    lastFor = [shared.text, shared.cd ? shared.cd.now : null, site && site.id, shared.afSbgn];
+    lastFor = [shared.text, shared.F.beside(), site && site.id, shared.afSbgn];
     if (!on && site && V.kept && V.kept.id === site.id && V.kept.text != null) {
       V.kept.text = src();
       V.kept.svg = svg;
@@ -14809,7 +14815,7 @@
     var moved = undo.length > 0 || edits > 0;
     histKeep();
     var kpic = V.img;
-    if (shared.afSbgn && !shared.cd) {
+    if (shared.afSbgn && shared.F.afView) {
       shared.afSbgn = false;
       var pl = drawGraphml(shared.text);
       lastSvg = pl[0];
@@ -14889,7 +14895,7 @@
     });
     bank[p.id] = p;
     var S = src(), g = shared.text, d0 = doc, el = V.img, svg = lastSvg;
-    if (!(svg && !drawing && !mv && !shared.keyed && !shared.liveC && docText === g && lastFor && !lastFor[3] && lastFor[0] === g && lastFor[1] === (shared.cd ? S : null))) return true;
+    if (!(svg && !drawing && !mv && !shared.keyed && !shared.liveC && docText === g && lastFor && !lastFor[3] && lastFor[0] === g && lastFor[1] === shared.F.beside())) return true;
     var isCd2 = !!shared.cd, isSbm = !!shared.sb, sbG0 = shared.sb && shared.sb.g0, make = function() {
       var dm = isCd2 ? { cd: true, base: S, text: g, q: [svg, S, g] } : { cd: false, text: g, r: [svg, []] };
       if (isCd2) cdRemember(S, g);
@@ -16792,7 +16798,7 @@
     rclick = null;
   }
   function nowSvg() {
-    return lastFor && !lastFor[3] && lastFor[0] === shared.text && lastFor[1] === (shared.cd ? shared.cd.now : null) ? lastSvg : null;
+    return lastFor && !lastFor[3] && lastFor[0] === shared.text && lastFor[1] === shared.F.beside() ? lastSvg : null;
   }
   function shownSvg() {
     return nowSvg() || (lastFor && !lastFor[3] && site && lastFor[2] === site.id ? lastSvg : null);
@@ -16817,7 +16823,7 @@
       } };
     };
     window.m2EditMain = function() {
-      if (!on || V.current !== map || !rclick || !shared.cd || !window.cd_edit || onOwnMenu()) return null;
+      if (!on || V.current !== map || !rclick || !shared.F.mainLines || !window.cd_edit || onOwnMenu()) return null;
       var h = hit(rclick), k = h && h.e != null && !h.glyph ? h.e : h && h.p != null ? edges2.findIndex(function(e) {
         return e.pts.indexOf(h.p) >= 0;
       }) : -1;

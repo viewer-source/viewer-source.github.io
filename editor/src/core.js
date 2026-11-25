@@ -277,7 +277,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       clearTimeout(localTimer); localTimer = null;
       var s = localFor;
       if (!s || site !== s) return;
-      var drawn = !drawing && lastFor && lastFor[0] === shared.text && lastFor[1] === (shared.cd ? shared.cd.now : null);
+      var drawn = !drawing && lastFor && lastFor[0] === shared.text && lastFor[1] === shared.F.beside();
       if (!drawn && !force) { localTimer = setTimeout(local, 300); return; }
       localFor = null;
       if (s.clashed) return;   // kept beside already (clashed): the map itself is never written by this page again
@@ -1202,7 +1202,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     // or from adopt() when the picture on screen is already the editor's drawing of the file opened
     function showDrawing(r) {
         if (r[1].length) warn('Drawn with warnings: ' + r[1].join('; '));
-        var svg = r[0]; lastSvg = svg; lastFor = [shared.text, shared.cd ? shared.cd.now : null, site && site.id, shared.afSbgn];   // [3]: drawn in the SBGN AF view, never kept, saved or downloaded (graphml.js)
+        var svg = r[0]; lastSvg = svg; lastFor = [shared.text, shared.F.beside(), site && site.id, shared.afSbgn];   // [3]: drawn in the SBGN AF view, never kept, saved or downloaded (graphml.js)
         if (!on && site && V.kept && V.kept.id === site.id && V.kept.text != null) { V.kept.text = src(); V.kept.svg = svg; }   // left before this redraw ended: the kept file and drawing as drawn
         if (!on && site && unsaved[site.id] && unsaved[site.id].site === site) unsaved[site.id].text = src();   // the same for moves not saved
         histLate();
@@ -1338,7 +1338,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       var moved = undo.length > 0 || edits > 0;   // every move undone counts too: the kept picture follows the text left
       histKeep();   // its undo and redo kept for when it is opened again
       var kpic = V.img;
-      if (shared.afSbgn && !shared.cd) {   // the SBGN AF view stays in the editor: the map left drawn plainly, for the viewer and what is kept
+      if (shared.afSbgn && shared.F.afView) {   // the SBGN AF view stays in the editor: the map left drawn plainly, for the viewer and what is kept
         shared.afSbgn = false;
         var pl = drawGraphml(shared.text); lastSvg = pl[0]; lastFor = [shared.text, null, site && site.id, false];
         kpic = new Promise(function (res) { var im = new Image(); im.onload = function () { res(im); }; im.onerror = function () { res(V.img); }; im.src = URL.createObjectURL(new Blob([V.recolour(pl[0])], { type: 'image/svg+xml' })); });
@@ -1395,7 +1395,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       // the drawing on screen kept with it, only when it is the drawing of the text the next editing starts from: every
       // move in the text drawn, none moving; made ahead now, or once the save under way has written that very text
       var S = src(), g = shared.text, d0 = doc, el = V.img, svg = lastSvg;
-      if (!(svg && !drawing && !mv && !shared.keyed && !shared.liveC && docText === g && lastFor && !lastFor[3] && lastFor[0] === g && lastFor[1] === (shared.cd ? S : null))) return true;
+      if (!(svg && !drawing && !mv && !shared.keyed && !shared.liveC && docText === g && lastFor && !lastFor[3] && lastFor[0] === g && lastFor[1] === shared.F.beside())) return true;
       var isCd = !!shared.cd, isSbm = !!shared.sb, sbG0 = shared.sb && shared.sb.g0, make = function () {
         var dm = isCd ? { cd: true, base: S, text: g, q: [svg, S, g] } : { cd: false, text: g, r: [svg, []] };
         if (isCd) cdRemember(S, g);
@@ -2777,7 +2777,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     rclick = null;
     }   // where the last right click was, for the menu's Remove bend point
     // the drawing of the file as it is now, when the renderer has drawn it (not before the first move: the picture is then still the one editing started on)
-    function nowSvg() { return lastFor && !lastFor[3] && lastFor[0] === shared.text && lastFor[1] === (shared.cd ? shared.cd.now : null) ? lastSvg : null; }
+    function nowSvg() { return lastFor && !lastFor[3] && lastFor[0] === shared.text && lastFor[1] === shared.F.beside() ? lastSvg : null; }
     // while a redraw runs, the last drawing of this map (one move behind for a moment) in place of the site's picture
     function shownSvg() { return nowSvg() || (lastFor && !lastFor[3] && site && lastFor[2] === site.id ? lastSvg : null); }
     // the map being edited as it is now, for the viewer's menu (the download is what is on the screen;
@@ -2801,7 +2801,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     // it with the main one, cd_edit.makeMain on the GraphML (the network stays: layout editing too); place() writes the
     // participants and CellDesigner's process square goes to the middle of the new main line. One undo step.
     window.m2EditMain = function () {
-      if (!on || V.current !== map || !rclick || !shared.cd || !window.cd_edit || onOwnMenu()) return null;
+      if (!on || V.current !== map || !rclick || !shared.F.mainLines || !window.cd_edit || onOwnMenu()) return null;
       var h = hit(rclick), k = h && h.e != null && !h.glyph ? h.e : h && h.p != null ? edges2.findIndex(function (e) { return e.pts.indexOf(h.p) >= 0; }) : -1;
       if (k < 0 || !/\|[rp]\d+$/.test(edges2[k].id)) return null;
       var t2 = window.cd_edit.makeMain(shared.text, edges2[k].id);
