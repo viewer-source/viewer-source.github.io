@@ -5546,6 +5546,67 @@
     __run332();
   }
 
+  // editor/src/graphml.js
+  function noLayout(t) {
+    return /<graphml[\s>]/.test(t.slice(0, 3e3)) && !/yworks\.com/.test(t.slice(0, 5e3)) ? "a GraphML file with no yEd layout (as Cytoscape, Gephi or NetworkX write it): nothing in it says where to draw. Open it in yEd, lay it out and save it there, then add it again" : null;
+  }
+  function graphmlFormat() {
+    return {
+      name: "graphml",
+      load: yr,
+      engineCd: false,
+      now: function() {
+        return shared.text;
+      },
+      ownFrame: false,
+      live: function() {
+        return liveY;
+      },
+      mainLines: false,
+      afView: true,
+      stacks: true,
+      insets: true,
+      fileType: { description: "yEd GraphML", accept: { "application/xml": [".graphml"] } },
+      stackComp: function(t, id) {
+        return sbJs && sbJs.stack ? sbJs.stack(t, id) : t;
+      },
+      square: function() {
+        return null;
+      },
+      beside: function() {
+        return null;
+      },
+      open: function(t) {
+        return { g: t, t };
+      },
+      // edited as it is
+      drawOwn: function(t) {
+        var no2 = noLayout(t);
+        if (no2) return Promise.reject(new Error(no2));
+        return yr().then(function() {
+          return window.yrender.render(t, { classes: true, groups: true, sbgn: false }).svg;
+        });
+      },
+      // a reader's own map drawn for the list (core.js drawText), as the build draws
+      ahead: { load: yr },
+      // the read-ahead: the renderer; the file is edited as it is
+      reads: function(t) {
+        return /<graphml[\s>]/.test(t.slice(0, 3e3));
+      },
+      entry: function(m) {
+        var d = m && m.downloads && m.downloads[0];
+        return !!(d && d.label === "GraphML");
+      },
+      kind: function(n) {
+        return n.shape && n.shape.kind || null;
+      },
+      // a node's shape
+      nameable: function() {
+        return !!sbJs;
+      }
+    };
+  }
+
   // editor/src/own.js
   function draftPut(id, rec) {
     rec.id = id;
@@ -6319,7 +6380,7 @@
       }
       if (gh2) {
         ext = siteExt(t2);
-        if (!ext) throw new Error(siteWhy());
+        if (!ext) throw new Error(siteWhy(t2));
       }
       var made3 = r0 && t2 === r0.text ? Promise.resolve({ svg: r0.svg, width: r0.width, height: r0.height }) : drawText(t2);
       return made3.then(function(d) {
@@ -7101,7 +7162,7 @@
           }).map(function(o) {
             return o.title;
           }));
-          if (!ext) throw new Error(siteWhy());
+          if (!ext) throw new Error(siteWhy(t));
           out.push({ f, d, t, ext, title });
           b.done++;
           if (b.shown) addPaint();
@@ -7195,8 +7256,8 @@
   function siteExt(t) {
     return isCd(t) ? ".xml" : isSb(t) ? ".sbgn" : /yworks\.com/.test(t.slice(0, 5e3)) ? ".graphml" : null;
   }
-  function siteWhy() {
-    return "not a yEd GraphML, CellDesigner or SBGN-ML file";
+  function siteWhy(t) {
+    return t && noLayout(t) || "not a yEd GraphML, CellDesigner or SBGN-ML file";
   }
   function onSite(r, s, title) {
     r.site = s.id;
@@ -7319,7 +7380,7 @@
         if (!r || r.hidden) return null;
         if (r.site) return r;
         var ext = siteExt(r.text), title = r.title.replace(/\.(graphml|xml|sbgn|nwt)$/i, "");
-        if (!ext) throw new Error(siteWhy());
+        if (!ext) throw new Error(siteWhy(r.text));
         return toSite(title, ext, r.text, r.group || "", siteOrder(r.group || "")).then(function(s) {
           if (!mine[id]) return null;
           var n = onSite(Object.assign({}, mine[id]), s, title);
@@ -17937,62 +17998,6 @@
     __run443();
     __run452();
     __run46();
-  }
-
-  // editor/src/graphml.js
-  function graphmlFormat() {
-    return {
-      name: "graphml",
-      load: yr,
-      engineCd: false,
-      now: function() {
-        return shared.text;
-      },
-      ownFrame: false,
-      live: function() {
-        return liveY;
-      },
-      mainLines: false,
-      afView: true,
-      stacks: true,
-      insets: true,
-      fileType: { description: "yEd GraphML", accept: { "application/xml": [".graphml"] } },
-      stackComp: function(t, id) {
-        return sbJs && sbJs.stack ? sbJs.stack(t, id) : t;
-      },
-      square: function() {
-        return null;
-      },
-      beside: function() {
-        return null;
-      },
-      open: function(t) {
-        return { g: t, t };
-      },
-      // edited as it is
-      drawOwn: function(t) {
-        return yr().then(function() {
-          return window.yrender.render(t, { classes: true, groups: true, sbgn: false }).svg;
-        });
-      },
-      // a reader's own map drawn for the list (core.js drawText), as the build draws
-      ahead: { load: yr },
-      // the read-ahead: the renderer; the file is edited as it is
-      reads: function(t) {
-        return /<graphml[\s>]/.test(t.slice(0, 3e3));
-      },
-      entry: function(m) {
-        var d = m && m.downloads && m.downloads[0];
-        return !!(d && d.label === "GraphML");
-      },
-      kind: function(n) {
-        return n.shape && n.shape.kind || null;
-      },
-      // a node's shape
-      nameable: function() {
-        return !!sbJs;
-      }
-    };
   }
 
   // editor/src/tools.js

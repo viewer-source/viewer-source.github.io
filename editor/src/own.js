@@ -1,6 +1,7 @@
 import { shared, V } from './state.js';
 import { ahead, api, b64, blobSha, changed, drawText, freeName, gh, graphmlOf, heldText, localBox, map, mapTop, note, on, origFolderDrop, origRead, origWrite, repo, site, src, stop, toFolder, token, unkeep, warn } from './core.js';
 import { cdMap, cdMk, cdpy, isCd } from './celldesigner.js';
+import { noLayout } from './graphml.js';
 import { NEW_ID, emptyBase, isSb, sbMap } from './sbgn.js';
 
     // ---------- the reader's own storage (editor/src/own.js) ----------
@@ -463,7 +464,7 @@ import { NEW_ID, emptyBase, isSb, sbMap } from './sbgn.js';
       var gh = !!(repo() && token());
       return mineIn.then(function () { return t ? t() : textNow(m); }).then(function (t) {
         if (fmtOfText(t) !== fmt) { title = freeTitle(name, group, fmtOfText(t)); ext = isCd(t) ? '.xml' : isSb(t) ? '.sbgn' : '.graphml'; file = freeFile(slug(title) + ext); }
-        if (gh) { ext = siteExt(t); if (!ext) throw new Error(siteWhy()); }
+        if (gh) { ext = siteExt(t); if (!ext) throw new Error(siteWhy(t)); }
         var made = r0 && t === r0.text ? Promise.resolve({ svg: r0.svg, width: r0.width, height: r0.height }) : drawText(t);
         return made.then(function (d) {
           var r = { id: newId(), title: title, file: file, text: t, svg: d.svg, width: d.width, height: d.height, at: Date.now(), src: textHash(t), hidden: false, group: group };
@@ -955,7 +956,7 @@ import { NEW_ID, emptyBase, isSb, sbMap } from './sbgn.js';
         return p.then(function () { return f.text(); }).then(function (t) {
           if (gh) return drawText(t, null, 'adding').then(function (d) {   // with a token: to the site, shown from here until built
             var ext = siteExt(t), title = freeTitle(f.name.replace(/\.(graphml|xml|sbgn|nwt)$/i, ''), group || '', fmtOfText(t), out.filter(function (o) { return fmtOfText(o.t) === fmtOfText(t); }).map(function (o) { return o.title; }));
-            if (!ext) throw new Error(siteWhy());
+            if (!ext) throw new Error(siteWhy(t));
             out.push({ f: f, d: d, t: t, ext: ext, title: title });
             b.done++; if (b.shown) addPaint();
           });
@@ -1003,7 +1004,7 @@ import { NEW_ID, emptyBase, isSb, sbMap } from './sbgn.js';
     // path and sha, and the text GitHub has (saved), so editing saves there (core.js push) and withMine knows when the
     // build has it. The file kinds the site's build takes: a yEd GraphML, a CellDesigner file, an SBGN-ML map
     function siteExt(t) { return isCd(t) ? '.xml' : isSb(t) ? '.sbgn' : /yworks\.com/.test(t.slice(0, 5000)) ? '.graphml' : null; }
-    function siteWhy() { return 'not a yEd GraphML, CellDesigner or SBGN-ML file'; }
+    function siteWhy(t) { return (t && noLayout(t)) || 'not a yEd GraphML, CellDesigner or SBGN-ML file'; }
     function onSite(r, s, title) { r.site = s.id; r.path = s.path; r.sha = s.sha; r.saved = s.text; r.siteTitle = title; return r; }
     // readers' maps put on the site (ext from siteExt: only what the build takes, any other file would stop it): each
     // file as maps/<id><ext> and its maps/<id>.md (title, group, order), all in one commit on main (the files' text in
@@ -1076,7 +1077,7 @@ import { NEW_ID, emptyBase, isSb, sbMap } from './sbgn.js';
           if (!r || r.hidden) return null;
           if (r.site) return r;
           var ext = siteExt(r.text), title = r.title.replace(/\.(graphml|xml|sbgn|nwt)$/i, '');
-          if (!ext) throw new Error(siteWhy());
+          if (!ext) throw new Error(siteWhy(r.text));
           return toSite(title, ext, r.text, r.group || '', siteOrder(r.group || '')).then(function (s) {
             if (!mine[id]) return null;
             var n = onSite(Object.assign({}, mine[id]), s, title);
