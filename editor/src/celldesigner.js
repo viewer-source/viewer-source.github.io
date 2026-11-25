@@ -1,5 +1,5 @@
 import { shared, V } from './state.js';
-import { boxOf, cut, edges2, f1, gE, gN, gridBlock, lastFor, lastSvg, nodes2, num, on, points, ports, pt, rebase, setText, spotNo, status, undo, warn } from './core.js';
+import { boxOf, cdOwn, cut, edges2, f1, gE, gN, gridBlock, lastFor, lastSvg, nodes2, num, on, points, ports, pt, rebase, setText, spotNo, status, undo, warn } from './core.js';
 import { bx, dropCopies, picOff, restPt, toPic } from './live.js';
 import { cdCardDown, cdCheck, cdClsOf, cdNameOf, cdRename, cdRole } from './cdcreate.js';
 
@@ -381,11 +381,27 @@ import { cdCardDown, cdCheck, cdClsOf, cdNameOf, cdRename, cdRole } from './cdcr
     warmUp();
     }
 
+    // CellDesigner's way to put a species into a complex (state.js F.join), with cd_make, into the file and the GraphML made
+    // again from it; its process glyphs and gates never join
+    function cdJoin() {
+      return {
+        ok: function () { return !!cdMk && !!cdMk.join; },
+        own: function (i) { return cdOwn(i); },
+        joinable: function (id, cid) { return cdMk.joinable(shared.cd.now, id, cid); },
+        write: function (joins) {   // the complexes that took a member
+          var N = cdNow(), t = N.t, done = [];
+          joins.forEach(function (q) { try { t = cdMk.join(t, q[0], q[1]); done.push(q[1]); } catch (err) { warn(String(err && err.message || err)); } });
+          if (done.length) cdRebuild(t, N.sh);
+          return done;
+        }
+      };
+    }
     export function __start() { __run1(); __run3(); __run4(); __run5(); __run6(); __run7(); }   // the part's statements, in their order
     // CellDesigner's format object (state.js formats): the file is kept beside the GraphML edited, the moves written in
     function cdFormat() {
       return { name: 'cd', now: function () { return shared.cd.now; }, ownFrame: true, live: function () { return liveCd; }, cardDown: cdCardDown, mainLines: true, afView: false, beside: function () { return shared.cd.now; },
         kind: function (n) { var c = cdClsOf(n.id); return c ? c[0] : n.comp ? 'compartment' : null; },   // its species class, or compartment
-        ownName: cdNameOf, rename: cdRename, nameable: function () { return !!cdMk; } };   // names read from and written into its file
+        ownName: cdNameOf, rename: cdRename, nameable: function () { return !!cdMk; },   // names read from and written into its file
+        join: cdJoin() };
     }
     export { beyond, cdFormat, cdDoc, cdDraw, cdGraphml, cdKept, cdJs, cdKnown, cdMap, cdMk, cdNow, cdRebuild, cdRemember, cdSessionSoon, cdShown, cdpy, glyphArcs, glyphPort, isCd, joinAt, joinGuides, joinSolve, lineGrid, liveCd, nodeCentre, nodePlaces, plainCanvas, warmUp };

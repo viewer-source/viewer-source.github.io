@@ -182,11 +182,24 @@ import { liveY, yr } from './graphml.js';
       }
       return sbClsMemo[1];
     }
+    // SBGN-ML's way to put a glyph into a complex (state.js F.join), with sbgn_edit; not on an Activity Flow map or view
+    function sbJoin() {
+      return {
+        ok: function () { return !!sbJs && !!sbJs.join && sbKind() !== 'af' && !shared.afSbgn; },
+        joinable: function (id, cid) { return sbJs.joinable(shared.text, id, cid); },
+        write: function (joins) {   // into the editor's GraphML; the complexes that took a member
+          var done = [];
+          joins.forEach(function (q) { try { setText(sbJs.join(shared.text, q[0], q[1], { checked: true })); done.push(q[1]); } catch (err) { warn('A glyph could not be put into the complex.'); } });
+          return done;
+        }
+      };
+    }
     export function __start() { __run1(); __run2(); __run3(); __run5(); __run6(); __run7(); }   // the part's statements, in their order
     // SBGN-ML's format object (state.js formats): the file written from the one opened with the moves of the GraphML
     function sbFormat() {
       return { name: 'sb', now: sbNow, ownFrame: false, live: function () { return liveY; }, mainLines: false, afView: true, beside: function () { return null; },
         kind: function (n) { var c = sbClasses()[n.id]; return c ? c.replace(/ multimer$/, '') : null; },   // a glyph's class, a multimer with its plain kind
-        nameable: function (id) { return !!sbJs && edOf(src()).nameable(src(), id); } };   // a glyph whose class takes a name
+        nameable: function (id) { return !!sbJs && edOf(src()).nameable(src(), id); },   // a glyph whose class takes a name
+        join: sbJoin() };
     }
     export { EMPTY_BASE, GEO, NEW_ID, edOf, emptyBase, isSb, madeHere, sbBase, sbFollow, sbGraphml, sbJs, sbKind, sbIn, sbMap, sbNow, sbOwn, sbFormat, sbReader, sbRemember, sbClasses, sbpy, viaGraphml };

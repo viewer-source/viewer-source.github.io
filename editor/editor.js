@@ -1186,10 +1186,1191 @@
   var import_graphml_edit = __toESM(require_graphml_edit());
   var import_holding = __toESM(require_holding());
 
+  // editor/src/graphml.js
+  var yrp;
+  function __run1() {
+    yrp = null;
+  }
+  function yr() {
+    if (yrp) return yrp;
+    yrp = new Promise(function(res, rej) {
+      if (window.yrender) return res(window.yrender);
+      var s = document.createElement("script");
+      s.src = V.renderers + "yrender/yrender.js" + V.build;
+      s.onload = function() {
+        res(window.yrender);
+      };
+      s.onerror = function() {
+        rej("renderer not found");
+      };
+      document.head.appendChild(s);
+    });
+    yrp.catch(function(e) {
+      yrp = null;
+      warn("The renderer did not load: " + e);
+    });
+    return yrp;
+  }
+  function drawGraphml(t) {
+    var A = shared.afSbgn ? afGraphml(t === docText && doc ? doc.cloneNode(true) : new DOMParser().parseFromString(t, "application/xml")) : null;
+    var r = window.yrender.render(A ? A.doc : t === docText && doc ? doc : t, { classes: true, groups: true, sbgn: !!shared.sb });
+    if (!A) shared.hpMemo = [t, r.ports];
+    if (!A && on) yAhead(t);
+    return [A ? afUnits(r.svg, A.units) : r.svg, r.errors];
+  }
+  var AF_KINDS;
+  function __run2() {
+    AF_KINDS = /^(Macromolecule|SimpleChemical|NucleicAcidFeature|UnspecifiedEntity|Complex)$/;
+  }
+  function afGraphml(d) {
+    var units = [], up = {}, keys = {};
+    Array.prototype.forEach.call(d.getElementsByTagNameNS(G, "key"), function(k) {
+      if (k.getAttribute("for") === "node") keys[k.getAttribute("id")] = k.getAttribute("attr.name");
+    });
+    var prop = function(n, name2) {
+      var x = Array.prototype.filter.call(n.childNodes, function(c) {
+        return c.localName === "data" && keys[c.getAttribute("key")] === name2;
+      })[0];
+      return x ? x.textContent.trim() : null;
+    };
+    var uText = {};
+    Array.prototype.forEach.call(d.getElementsByTagNameNS(Y, "Resource"), function(q) {
+      var gn = q.getElementsByTagNameNS(Y, "GenericNode")[0], l = gn && /UnitOfInformation$/.test(gn.getAttribute("configuration") || "") && gn.getElementsByTagNameNS(Y, "NodeLabel")[0];
+      if (l) uText[q.getAttribute("id")] = l.textContent;
+    });
+    var ownNode = function(e) {
+      for (var q = e.parentNode; q; q = q.parentNode) if (q.localName === "node" && q.namespaceURI === G) return q;
+      return null;
+    };
+    Array.prototype.slice.call(d.getElementsByTagNameNS(G, "node")).forEach(function(n) {
+      if (up[n.getAttribute("id")]) return;
+      var rs = ["GenericNode", "GenericGroupNode"].reduce(function(a, k) {
+        return a.concat(Array.prototype.slice.call(n.getElementsByTagNameNS(Y, k)));
+      }, []).filter(function(r) {
+        return ownNode(r) === n;
+      });
+      var kind = null, txt = "";
+      rs.forEach(function(r) {
+        var k = (r.getAttribute("configuration") || "").replace("com.yworks.sbgn.", "");
+        if (!AF_KINDS.test(k)) return;
+        kind = kind || k;
+        r.setAttribute("configuration", "com.yworks.sbgn.Macromolecule");
+        Array.prototype.slice.call(r.getElementsByTagNameNS(Y, "StyleProperties")).forEach(function(x) {
+          x.parentNode.removeChild(x);
+        });
+        var sp = d.createElementNS(Y, "y:StyleProperties"), pr = d.createElementNS(Y, "y:Property");
+        pr.setAttribute("class", "java.lang.Integer");
+        pr.setAttribute("name", "com.yworks.sbgn.style.radius");
+        pr.setAttribute("value", "0");
+        sp.appendChild(pr);
+        r.appendChild(sp);
+        Array.prototype.slice.call(r.getElementsByTagNameNS(Y, "NodeLabel")).forEach(function(l) {
+          var q = l.getAttribute("iconData");
+          if (!q) return;
+          if (!txt && uText[q]) txt = uText[q];
+          l.parentNode.removeChild(l);
+        });
+      });
+      if (!kind) return;
+      var r0 = realizerOf(n) || rs[0], g = r0.getElementsByTagNameNS(Y, "Geometry")[0];
+      var act = prop(n, "SBGN class") === "biological activity";
+      units.push([n.getAttribute("id"), act ? prop(n, "SBGN unit") || "" : sbJs.unitFor(kind) || "", +g.getAttribute("x"), +g.getAttribute("y"), +g.getAttribute("width"), +g.getAttribute("height"), act ? txt.trim() : ""]);
+      Array.prototype.slice.call(n.childNodes).forEach(function(c) {
+        if (c.localName !== "graph") return;
+        var names = [];
+        Array.prototype.forEach.call(c.getElementsByTagNameNS(G, "node"), function(m) {
+          up[m.getAttribute("id")] = n.getAttribute("id");
+          var ml = Array.prototype.filter.call(m.getElementsByTagNameNS(Y, "NodeLabel"), function(l) {
+            return !l.getAttribute("iconData") && l.textContent.trim();
+          })[0];
+          if (ml && !m.getElementsByTagNameNS(G, "graph").length) names.push(ml.textContent.trim());
+        });
+        n.removeChild(c);
+        rs.forEach(function(r) {
+          var l = Array.prototype.filter.call(r.getElementsByTagNameNS(Y, "NodeLabel"), function(x) {
+            return !x.getAttribute("iconData");
+          })[0];
+          if (!l) return;
+          if (!l.textContent.trim() && names.length) {
+            while (l.firstChild) l.removeChild(l.firstChild);
+            l.appendChild(d.createTextNode(names.join(":")));
+            l.setAttribute("hasText", "true");
+          }
+          l.setAttribute("modelName", "internal");
+          l.setAttribute("modelPosition", "c");
+        });
+      });
+    });
+    Array.prototype.slice.call(d.getElementsByTagNameNS(G, "edge")).forEach(function(e) {
+      var p = e.getElementsByTagNameNS(Y, "Path")[0];
+      if (up[e.getAttribute("source")] && up[e.getAttribute("source")] === up[e.getAttribute("target")]) {
+        e.parentNode.removeChild(e);
+        return;
+      }
+      [["source", "sx", "sy"], ["target", "tx", "ty"]].forEach(function(q) {
+        var to = up[e.getAttribute(q[0])];
+        if (!to) return;
+        e.setAttribute(q[0], to);
+        if (p) {
+          p.setAttribute(q[1], "0.0");
+          p.setAttribute(q[2], "0.0");
+        }
+      });
+    });
+    return { doc: d, units };
+  }
+  function afUnits(svg, units) {
+    var esc = function(x) {
+      return x.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#x27;");
+    };
+    var byId = {};
+    units.forEach(function(u) {
+      var B = sbJs.afUnitBox(u.slice(2, 6), u[1], u[6]);
+      if (!B) return;
+      var x = B[0], y = B[1], w = B[2], h = B[3], c = h * 0.3, m = y + h / 2, f = function(v) {
+        return Math.round(v * 100) / 100;
+      }, k = sbJs.unitClass(u[1]), D;
+      if (k === "macromolecule") D = "M" + f(x + c) + " " + f(y) + "H" + f(x + w - c) + "Q" + f(x + w) + " " + f(y) + " " + f(x + w) + " " + f(y + c) + "V" + f(y + h - c) + "Q" + f(x + w) + " " + f(y + h) + " " + f(x + w - c) + " " + f(y + h) + "H" + f(x + c) + "Q" + f(x) + " " + f(y + h) + " " + f(x) + " " + f(y + h - c) + "V" + f(y + c) + "Q" + f(x) + " " + f(y) + " " + f(x + c) + " " + f(y) + "Z";
+      else if (k === "nucleic acid feature") D = "M" + f(x) + " " + f(y) + "H" + f(x + w) + "V" + f(y + h - c) + "Q" + f(x + w) + " " + f(y + h) + " " + f(x + w - c) + " " + f(y + h) + "H" + f(x + c) + "Q" + f(x) + " " + f(y + h) + " " + f(x) + " " + f(y + h - c) + "Z";
+      else if (k === "complex") D = "M" + f(x + c) + " " + f(y) + "H" + f(x + w - c) + "L" + f(x + w) + " " + f(y + c) + "V" + f(y + h - c) + "L" + f(x + w - c) + " " + f(y + h) + "H" + f(x + c) + "L" + f(x) + " " + f(y + h - c) + "V" + f(y + c) + "Z";
+      else if (k === "phenotype") D = "M" + f(x) + " " + f(y) + "H" + f(x + w) + "L" + f(x + w - c) + " " + f(m) + "L" + f(x + w) + " " + f(y + h) + "H" + f(x) + "L" + f(x + c) + " " + f(m) + "Z";
+      else D = "M" + f(x) + " " + f(m) + "A" + f(w / 2) + " " + f(h / 2) + " 0 1 0 " + f(x + w) + " " + f(m) + "A" + f(w / 2) + " " + f(h / 2) + " 0 1 0 " + f(x) + " " + f(m) + "Z";
+      var fs = sbJs.afUnitFont(h), T = u[6] ? '<text class="m2-af-ut" x="' + f(x + w / 2) + '" y="' + f(m) + '" font-family="Arial, Helvetica, sans-serif" font-size="' + f(fs) + '" text-anchor="middle" dominant-baseline="central" fill="#000000">' + esc(u[6].replace(/\s*\n\s*/g, " ")) + "</text>" : "";
+      byId[esc(u[0])] = '<path d="' + D + '" fill="white" class="c-white" stroke="#000000"/>' + T;
+    });
+    var out = [], at2 = 0, stack = [], re = /<g data-n="([^"]*)">|<g[\s>]|<\/g>/g, mt;
+    while (mt = re.exec(svg)) {
+      if (mt[0] === "</g>") {
+        var id = stack.pop();
+        if (id && byId[id]) {
+          out.push(svg.slice(at2, mt.index), byId[id]);
+          at2 = mt.index;
+        }
+      } else stack.push(mt[1] || null);
+    }
+    out.push(svg.slice(at2));
+    return out.join("");
+  }
+  var yLive;
+  var liveY;
+  function __run3() {
+    yLive = null;
+    liveY = { glyphs: function() {
+    }, lines: yLines, holders: null };
+  }
+  function svgEl(svg) {
+    var g = new DOMParser().parseFromString('<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">' + svg + "</svg>", "image/svg+xml").documentElement.firstElementChild;
+    if (!g) return null;
+    g = document.importNode(g, true);
+    g.removeAttribute("data-e");
+    g.removeAttribute("data-n");
+    g.classList.add("m2-ed-copy");
+    return g;
+  }
+  function ySession(t) {
+    if (yLive && yLive.t === t) return yLive;
+    var ix = {};
+    edges2.forEach(function(e, k) {
+      ix[e.id] = k;
+    });
+    yLive = { t, ix, s: window.yrender.live(t === docText && doc ? doc : t, { classes: true, sbgn: !!shared.sb }) };
+    return yLive;
+  }
+  function yAhead(t) {
+    var go = function() {
+      try {
+        if (on && !mv && !shared.keyed && window.yrender && window.yrender.live && t === shared.text) ySession(t);
+      } catch (x) {
+      }
+    };
+    if (window.requestIdleCallback) requestIdleCallback(go, { timeout: 2e3 });
+    else setTimeout(go, 300);
+  }
+  function yLines(ks, pp) {
+    if (!gE || shared.afSbgn || !lastFor || lastFor[3] || !window.yrender || !window.yrender.live || pp && pp.n2 != null) return false;
+    var t = lastFor[0], out;
+    try {
+      if (!ySession(t).s) return false;
+      var boxes = {}, paths = {}, ways = {}, moved = /* @__PURE__ */ new Set();
+      nodes2.forEach(function(n, i) {
+        var p = shared.poseNow && shared.poseNow[i], a = bx(i), b = restBox(i);
+        if (p && p.way) ways[n.id] = p.way;
+        if (a[0] !== b[0] || a[1] !== b[1] || a[2] !== b[2] || a[3] !== b[3]) {
+          boxes[n.id] = a;
+          moved.add(i);
+        }
+      });
+      edges2.forEach(function(e, k) {
+        var pts = e.pts.map(pt), mine2 = pp && pp.to && pp.k === k;
+        if (!mine2 && !ks.has(k)) {
+          if (!moved.has(e.s) && !moved.has(e.t) && !e.pts.some(function(pi, j2) {
+            var r = restPt(pi);
+            return r[0] !== pts[j2][0] || r[1] !== pts[j2][1];
+          })) return;
+        }
+        var q = ["sx", "sy", "tx", "ty"].map(function(a) {
+          return e.path ? parseFloat(e.path.getAttribute(a)) || 0 : 0;
+        });
+        q = posePort(e.s, q.slice(0, 2), k).concat(posePort(e.t, q.slice(2), k));
+        if (mine2) {
+          var j = pp.end ? 2 : 0;
+          q[j] = pp.to[0];
+          q[j + 1] = pp.to[1];
+        }
+        paths[e.id] = { pts, port: q };
+      });
+      out = yLive.s.draw(boxes, paths, Array.from(ks, function(k) {
+        return edges2[k].id;
+      }), ways);
+    } catch (x) {
+      out = null;
+    }
+    if (!out) return false;
+    dropCopies();
+    Object.keys(out.n).forEach(function(id) {
+      var g = gN[id], c = svgEl(out.n[id]), tr = g && (g.getAttribute("transform") || "").match(/translate\(([-\d.e]+)[ ,]+([-\d.e]+)\)/);
+      if (!g || !c) return;
+      if (!tr) {
+        g.style.display = "none";
+        g.parentNode.insertBefore(c, g.nextSibling);
+        shared.copies.push([c, g, null]);
+        return;
+      }
+      c.setAttribute("transform", "translate(" + -tr[1] + " " + -tr[2] + ")");
+      Array.prototype.forEach.call(g.children, function(x) {
+        x.style.display = "none";
+        shared.copies.push([document.createComment(""), x, null]);
+      });
+      g.insertBefore(c, g.firstChild);
+      shared.copies.push([c, null, null]);
+    });
+    Object.keys(out.e).forEach(function(id) {
+      var gs = gE[id], c = svgEl(out.e[id]);
+      if (!gs || !c) return;
+      gs.forEach(function(g, j) {
+        g.style.display = "none";
+        if (j) shared.copies.push([document.createComment(""), g, yLive.ix[id]]);
+      });
+      gs[0].parentNode.insertBefore(c, gs[0].nextSibling);
+      shared.copies.push([c, gs[0], yLive.ix[id]]);
+    });
+    return true;
+  }
+  function shiftedAhead(t, d) {
+    var R;
+    try {
+      R = import_graphml_edit.default.read(t, { doc: d });
+    } catch (e) {
+      return t;
+    }
+    var sh = import_graphml_edit.default.shiftOf(R.nodes.map(function(n) {
+      var g = R.geos[n.ag];
+      return [num(g, "x"), num(g, "y")];
+    }), R.points.map(function(p) {
+      return [num(p, "x"), num(p, "y")];
+    }), gridBlock());
+    return sh ? import_graphml_edit.default.shift(t, sh[0], sh[1]) : t;
+  }
+  function noNegative() {
+    var sh = import_graphml_edit.default.shiftOf(nodes2.map(function(n, i) {
+      return boxOf(i);
+    }), points.map(function(p) {
+      return [num(p, "x"), num(p, "y")];
+    }), gridBlock());
+    if (!sh) return null;
+    setText(import_graphml_edit.default.shift(shared.text, sh[0], sh[1]));
+    return sh;
+  }
+  function __start() {
+    __run1();
+    __run2();
+    __run3();
+  }
+  function graphmlFormat() {
+    return {
+      name: "graphml",
+      now: function() {
+        return shared.text;
+      },
+      ownFrame: false,
+      live: function() {
+        return liveY;
+      },
+      mainLines: false,
+      afView: true,
+      beside: function() {
+        return null;
+      },
+      kind: function(n) {
+        return n.shape && n.shape.kind || null;
+      },
+      // a node's shape
+      nameable: function() {
+        return !!sbJs;
+      }
+    };
+  }
+
+  // editor/src/sbgn.js
+  var sbp;
+  var sbJs;
+  var EMPTY_BASE;
+  var baseURL;
+  function __run12() {
+    sbp = null, sbJs = null;
+    EMPTY_BASE = `<?xml version='1.0' encoding='UTF-8'?>
+<graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:y="http://www.yworks.com/xml/graphml">
+  <key for="node" id="ng" yfiles.type="nodegraphics"/>
+  <key for="graphml" id="res" yfiles.type="resources"/>
+  <key for="edge" id="eg" yfiles.type="edgegraphics"/>
+  <graph edgedefault="directed" id="G"/>
+  <data key="res">
+    <y:Resources/>
+  </data>
+</graphml>
+`;
+    baseURL = null;
+  }
+  function emptyBase() {
+    return baseURL || (baseURL = URL.createObjectURL(new Blob([EMPTY_BASE], { type: "application/xml" })));
+  }
+  var NEW_ID;
+  function __run22() {
+    NEW_ID = "viewer-new-map";
+  }
+  function madeHere(t) {
+    return new RegExp('<map\\s[^>]*id="' + NEW_ID + '"').test(t.slice(0, 3e3));
+  }
+  function isSb(t) {
+    return /<([\w.-]+:)?sbgn[\s>]/.test(t.slice(0, 3e3));
+  }
+  function isSbml(t) {
+    t = t || "";
+    return /<sbml[\s>]/.test(t.slice(0, 3e3)) && t.indexOf("listOfLayouts") >= 0 && t.slice(0, 2e5).indexOf("celldesigner") < 0;
+  }
+  function viaGraphml(t) {
+    return isSb(t) || isSbml(t);
+  }
+  function edOf(t) {
+    return isSbml(t) && window.sbml_edit ? window.sbml_edit : sbJs;
+  }
+  function sbMap(m) {
+    return !!(m && !m.shownAs && (m.site || m).editBase);
+  }
+  function sbScript(name2) {
+    return new Promise(function(res, rej) {
+      if (window[name2]) return res();
+      var s = document.createElement("script");
+      s.src = V.renderers + "converter/" + name2 + ".js" + V.build;
+      s.onload = res;
+      s.onerror = function() {
+        rej(name2 + " not found");
+      };
+      document.head.appendChild(s);
+    });
+  }
+  function sbpy() {
+    if (sbp) return sbp;
+    sbp = sbScript("sbgn_edit").then(function() {
+      return sbScript("sbml_edit").catch(function() {
+      });
+    }).then(yr).then(function() {
+      sbJs = window.sbgn_edit;
+      return sbJs;
+    });
+    sbp.catch(function(e) {
+      sbp = null;
+      warn("The SBGN-ML side did not load: " + e);
+    });
+    return sbp;
+  }
+  function sbBase(m, low) {
+    var e = m.site || m;
+    if (e.ownText) return sbpy().then(function() {
+      return sbReader(e.ownText());
+    }).then(function() {
+      return sbOwn(e.ownText());
+    });
+    return fetch(e.editBase + V.ver(e), { priority: low ? "low" : "auto" }).then(function(r) {
+      if (!r.ok) throw r.status;
+      return r.text();
+    });
+  }
+  var ownMemo;
+  var readerP;
+  function sbReader(t) {
+    if (madeHere(t) || window.sbgnml_read) return Promise.resolve();
+    readerP = readerP || sbScript("sbgnml_read");
+    readerP.catch(function() {
+      readerP = null;
+    });
+    return readerP;
+  }
+  function sbOwn(t) {
+    if (madeHere(t)) return EMPTY_BASE;
+    if (!window.sbgnml_read) throw new Error("the SBGN-ML reader did not load");
+    if (!ownMemo || ownMemo[0] !== t) {
+      var r = window.sbgnml_read.graphml(t);
+      if (r.text.indexOf("<node ") < 0 && r.messages.some(function(x) {
+        return x[0] === "left out";
+      })) {
+        if (/<([\w.-]+:)?map\s[^>]*language\s*=\s*["']entity relationship/.test(t.slice(0, 5e3))) throw new Error("an Entity Relationship map, which this editor does not read yet");
+        var gone = r.messages.filter(function(x) {
+          return x[0] === "left out";
+        }).map(function(x) {
+          return x[1].replace(/: (\d+) left out \(.*$/, " ($1)");
+        });
+        throw new Error("nothing in it can be drawn" + (gone.length ? " (left out: " + gone.join(", ") + ")" : ""));
+      }
+      ownMemo = [t, r.text];
+    }
+    return ownMemo[1];
+  }
+  var sbMemo;
+  function __run32() {
+    sbMemo = [];
+    ownMemo = null;
+    outMemo = null;
+  }
+  function sbGraphml(t, base) {
+    for (var i = 0; i < sbMemo.length; i++) if (sbMemo[i][0] === t && sbMemo[i][1] === base) return sbMemo[i][2];
+    var ed = edOf(t), g = ed.graphml(ed.unique ? ed.unique(t, base) : t, base);
+    sbRemember(t, g, base);
+    return g;
+  }
+  function sbRemember(t, g, base) {
+    sbMemo.unshift([t, base, g]);
+    sbMemo.length = Math.min(sbMemo.length, 3);
+  }
+  function sbNow() {
+    if (!shared.sbLast || shared.sbLast[0] !== shared.text || shared.sbLast[2] !== shared.sb) {
+      try {
+        shared.sbLast = [shared.text, edOf(shared.sb.base).write(shared.sb.base, shared.text), shared.sb];
+      } catch (e) {
+        warn("The moves could not be written into the SBGN-ML file: " + (e && e.message || e) + ". The last version written is kept.");
+        return sbOut(shared.sbLast && shared.sbLast[2] === shared.sb ? shared.sbLast[1] : shared.sb.base);
+      }
+    }
+    return sbOut(shared.sbLast[1]);
+  }
+  var outMemo;
+  function sbOut(w) {
+    if (V.sites || !sbJs || !sbJs.sitesOut || !isSb(w)) return w;
+    if (!outMemo || outMemo[0] !== w) {
+      var o = w;
+      try {
+        o = sbJs.sitesOut(w);
+      } catch (e) {
+      }
+      outMemo = [w, o];
+    }
+    return outMemo[1];
+  }
+  function sbIn(t) {
+    try {
+      return sbJs && sbJs.sitesIn && isSb(t) ? sbJs.sitesIn(t) : t;
+    } catch (e) {
+      return t;
+    }
+  }
+  var sbPlaced;
+  function __run5() {
+    sbPlaced = null;
+  }
+  function sbPlace() {
+    if (!sbJs.countsPlace || shared.text === sbPlaced || shared.text.indexOf("<y:EdgeLabel") < 0) return false;
+    var t2 = sbJs.countsPlace(shared.text), was = shared.text !== t2;
+    setText(sbPlaced = t2);
+    return was;
+  }
+  var sbK;
+  var GEO;
+  function __run6() {
+    sbK = { sb: null };
+    GEO = /\s(?:x|y|width|height|sx|sy|tx|ty|ratio|modelPosition|nodeRatioX|nodeRatioY|labelRatioX|labelRatioY|offsetX|offsetY|borderDistance)="[^"]*"/g;
+  }
+  function sbRead() {
+    var s = src();
+    sbK.text = shared.text;
+    sbK.key = shared.text.replace(GEO, "");
+    sbK.bad = !(shared.sbLast && shared.sbLast[0] === shared.text && shared.sbLast[2] === shared.sb);
+    if (!sbK.bad) {
+      sbK.kind = edOf(s).mapKind(s);
+      sbK.af = edOf(s).isAf(s);
+    }
+  }
+  function sbKind(how) {
+    if (!shared.sb || !sbJs) return "empty";
+    if (how) sbPlace();
+    if (sbK.sb !== shared.sb) sbK = { sb: shared.sb, text: null, key: null, kind: "empty", af: false, g: null, bad: false };
+    if (sbK.text !== shared.text) {
+      if (sbK.bad || sbK.key !== shared.text.replace(GEO, "")) sbRead();
+      else sbK.text = shared.text;
+    }
+    if (sbK.bad) return sbK.kind;
+    if (sbK.g == null || how === "back") sbK.g = sbK.af;
+    else if (how === "follow" && sbK.g !== sbK.af) {
+      var g, key = shared.text.replace(GEO, "");
+      if (sbK.failed === key) return sbK.kind;
+      try {
+        g = edOf(src()).graphml(src(), shared.text);
+      } catch (e) {
+        sbK.failed = key;
+        warn("The map could not be read again after it turned " + (sbK.af ? "Activity Flow" : "Process Description") + ": " + (e && e.message || e) + ".");
+        return sbK.kind;
+      }
+      setText(g);
+      sbRead();
+      if (!sbK.bad) sbK.g = sbK.af;
+    }
+    return sbK.kind;
+  }
+  function sbFollow() {
+    if (!shared.sb || !sbJs || drag || sbK.sb !== shared.sb) return;
+    if (sbPlace()) {
+      parse();
+      shared.dirty = true;
+      render();
+      paint();
+    }
+    sbKind();
+    if (sbK.bad || sbK.g == null || sbK.g === sbK.af || sbK.failed === shared.text.replace(GEO, "")) return;
+    parse();
+    shared.selP = [];
+    shared.selE = [];
+    shared.dirty = true;
+    render();
+    paint();
+  }
+  var sbClsMemo;
+  function __run7() {
+    sbClsMemo = [null, {}];
+  }
+  function sbClasses() {
+    if (sbClsMemo[0] !== shared.text) {
+      var m = {}, d = new DOMParser().parseFromString(src(), "application/xml");
+      Array.prototype.forEach.call(d.getElementsByTagNameNS("*", "glyph"), function(g) {
+        if (g.getAttribute("id")) m[g.getAttribute("id")] = g.getAttribute("class") || "";
+      });
+      sbClsMemo = [shared.text, m];
+    }
+    return sbClsMemo[1];
+  }
+  function sbJoin() {
+    return {
+      ok: function() {
+        return !!sbJs && !!sbJs.join && sbKind() !== "af" && !shared.afSbgn;
+      },
+      joinable: function(id, cid) {
+        return sbJs.joinable(shared.text, id, cid);
+      },
+      write: function(joins) {
+        var done = [];
+        joins.forEach(function(q) {
+          try {
+            setText(sbJs.join(shared.text, q[0], q[1], { checked: true }));
+            done.push(q[1]);
+          } catch (err) {
+            warn("A glyph could not be put into the complex.");
+          }
+        });
+        return done;
+      }
+    };
+  }
+  function __start2() {
+    __run12();
+    __run22();
+    __run32();
+    __run5();
+    __run6();
+    __run7();
+  }
+  function sbFormat() {
+    return {
+      name: "sb",
+      now: sbNow,
+      ownFrame: false,
+      live: function() {
+        return liveY;
+      },
+      mainLines: false,
+      afView: true,
+      beside: function() {
+        return null;
+      },
+      kind: function(n) {
+        var c = sbClasses()[n.id];
+        return c ? c.replace(/ multimer$/, "") : null;
+      },
+      // a glyph's class, a multimer with its plain kind
+      nameable: function(id) {
+        return !!sbJs && edOf(src()).nameable(src(), id);
+      },
+      // a glyph whose class takes a name
+      join: sbJoin()
+    };
+  }
+
+  // editor/src/celldesigner.js
+  var cdp;
+  var cdJs;
+  var cdMk;
+  function __run13() {
+    cdp = null, cdJs = null, cdMk = null;
+  }
+  function isCd(t) {
+    return /<sbml[\s>]/.test(t.slice(0, 3e3)) && t.indexOf("celldesigner") >= 0;
+  }
+  function lineGrid() {
+    return !shared.cd;
+  }
+  function nodePlaces(n) {
+    var R = window.cdrender, cl = shared.cd && R && R.anchorAt && cdRole(n) === "epn" ? cdClsOf(nodes2[n].id) : null;
+    if (!cl) return null;
+    var b = bx(n), C = [b[0] + b[2] / 2, b[1] + b[3] / 2], f = R.frontBox(b, cl[1]);
+    return Object.keys(R.ANCHOR).map(function(k) {
+      var A = R.anchorAt(cl[0], f, k);
+      return [A[0] - C[0], A[1] - C[1], k];
+    });
+  }
+  function nodeCentre(n, P) {
+    var b = bx(n);
+    return Math.max(Math.abs(P[0] - b[0] - b[2] / 2) / (b[2] / 2 || 1), Math.abs(P[1] - b[1] - b[3] / 2) / (b[3] / 2 || 1)) < 0.5;
+  }
+  function cdpy() {
+    if (cdp) return cdp;
+    var script = function(f) {
+      return new Promise(function(res, rej) {
+        var s = document.createElement("script");
+        s.src = V.renderers + "converter/" + f + ".js" + V.build;
+        s.onload = res;
+        s.onerror = function() {
+          rej(f + " not found");
+        };
+        document.head.appendChild(s);
+      });
+    };
+    cdp = (window.cdrender ? Promise.resolve() : script("cdrender")).then(function() {
+      return window.cd_edit ? null : script("cd_edit");
+    }).then(function() {
+      return window.cd_make ? null : script("cd_make").catch(function() {
+      });
+    }).then(function() {
+      cdJs = window.cd_edit;
+      cdMk = window.cd_make || null;
+      if (cdMk) cdCheck();
+      return cdJs;
+    });
+    cdp.catch(function(e) {
+      cdp = null;
+      warn("The CellDesigner renderer did not load: " + e);
+    });
+    return cdp;
+  }
+  var cdMemo;
+  function __run33() {
+    cdMemo = [];
+  }
+  function cdDraw(t, g, fit) {
+    return cdJs.draw(t, g, { fit: fit == null ? undo.length > 0 : fit, block: gridBlock(), parsed: on ? function(c, d) {
+      cdDocKeep(c, d, shownId());
+    } : null });
+  }
+  var cdDocNow;
+  function shownId() {
+    return V.chosen ? V.chosen.id : null;
+  }
+  function cdDoc(t, id) {
+    if (cdDocNow && cdDocNow.t === t) return cdDocNow.doc;
+    var doc2 = new DOMParser().parseFromString(t, "application/xml");
+    if (id !== false) cdDocKeep(t, doc2, id === void 0 ? shownId() : id);
+    return doc2;
+  }
+  function cdDocKeep(t, doc2, id) {
+    cdDocNow = { t, doc: doc2, id };
+  }
+  function cdKept() {
+    return cdDocNow ? cdDocNow.id : null;
+  }
+  function cdShown(id) {
+    if (!cdDocNow) return;
+    if (cdDocNow.id === "adding") cdDocNow.id = id;
+    else if (cdDocNow.id !== id) {
+      cdDocNow = null;
+      cdLive = null;
+    }
+  }
+  function cdShift(svg) {
+    var m = /<g transform="translate\(([-\d.]+),([-\d.]+)\)">/.exec(svg || "");
+    return m ? [+m[1], +m[2]] : [0, 0];
+  }
+  function cdNow() {
+    if (lastFor && lastFor[0] === shared.text && lastFor[1] === shared.cd.now) return { t: shared.cd.now, sh: cdShift(lastSvg) };
+    var q = cdDraw(shared.cd.base, shared.text);
+    return { t: q[1], sh: cdShift(q[0]) };
+  }
+  function cdRebuild(t, sh) {
+    shared.cd.base = t;
+    setText(cdGraphml(t));
+    rebase(sh[0], sh[1]);
+  }
+  function cdGraphml(t) {
+    var g = cdKnown(t);
+    if (g) return g;
+    g = cdJs.graphml(t, null, { doc: cdDoc(t) });
+    cdRemember(t, g);
+    return g;
+  }
+  function cdKnown(t) {
+    for (var i = 0; i < cdMemo.length; i++) if (cdMemo[i][0] === t) return cdMemo[i][1];
+    return null;
+  }
+  function cdRemember(t, g) {
+    cdMemo.unshift([t, g]);
+    cdMemo.length = Math.min(cdMemo.length, 3);
+  }
+  function glyphMid(q, B, P, pp) {
+    var ea = edges2[q.a], eb = edges2[q.b], o = function(e, a2) {
+      if (pp && pp.to && edges2[pp.k] === e && (pp.end ? "t" : "s") === a2[0]) return pp.to[a2[1] === "x" ? 0 : 1];
+      return e.path ? parseFloat(e.path.getAttribute(a2)) || 0 : 0;
+    };
+    var S = B(pp && pp.n2 != null && edges2[pp.k] === ea && !pp.end ? pp.n2 : ea.s), T = B(pp && pp.n2 != null && edges2[pp.k] === eb && pp.end ? pp.n2 : eb.t);
+    var all = [[S[0] + S[2] / 2 + o(ea, "sx"), S[1] + S[3] / 2 + o(ea, "sy")]].concat(
+      ea.pts.map(P),
+      eb.pts.map(P),
+      [[T[0] + T[2] / 2 + o(eb, "tx"), T[1] + T[3] / 2 + o(eb, "ty")]]
+    );
+    var k = ea.pts.length, n = all.length - 1, a = all[k], b = all[k + 1];
+    if (k === 0) a = cut(all[0], all[1], S);
+    if (k + 1 === n) b = cut(all[n], all[n - 1], T);
+    return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, Math.atan2(b[1] - a[1], b[0] - a[0]), Math.hypot(b[0] - a[0], b[1] - a[1])];
+  }
+  function glyphPort(i, off, eid) {
+    var L = shared.liveG && shared.liveG[i];
+    if (!L || !L[2] && L[3] === 1) return off;
+    var c = Math.cos(L[2]), s2 = Math.sin(L[2]), f = /\|[rp]\d+$/.test(eid) ? L[3] : 1;
+    return [f * (c * off[0] - s2 * off[1]), f * (s2 * off[0] + c * off[1])];
+  }
+  function glyphFollow(ns, ps, back2, pp) {
+    if (!shared.procs.length || !gN) return;
+    var old = shared.liveG;
+    shared.liveG = null;
+    var rest = function(i) {
+      var b = boxOf(i);
+      return back2 && ns.has(i) ? [b[0] - back2[0], b[1] - back2[1], b[2], b[3]] : b;
+    };
+    var restP = function(pi) {
+      var p = points[pi], o = back2 && ps.has(pi);
+      return [num(p, "x") - (o ? back2[0] : 0), num(p, "y") - (o ? back2[1] : 0)];
+    };
+    var out = {}, any = false;
+    shared.procs.forEach(function(q) {
+      var ea = edges2[q.a], eb = edges2[q.b];
+      if (ns.has(q.g) || ea.s == null || eb.t == null) return;
+      var port = pp && pp.to && (pp.k === q.a || pp.k === q.b);
+      if (!(port || ns.has(ea.s) || ns.has(eb.t) || ea.pts.concat(eb.pts).some(function(p) {
+        return ps.has(p);
+      }))) return;
+      var a = glyphMid(q, bx, pt, pp), b = glyphMid(q, rest, restP);
+      out[q.g] = [a[0] - b[0], a[1] - b[1], isFinite(a[2] - b[2]) && b[3] ? a[2] - b[2] : 0, b[3] ? a[3] / b[3] : 1, b];
+      any = true;
+    });
+    if (old) Object.keys(old).forEach(function(i) {
+      if (!out[i]) {
+        var g = gN[nodes2[i].id];
+        if (g) g.removeAttribute("transform");
+      }
+    });
+    if (!any) return;
+    shared.liveG = out;
+    shared.live = shared.live || /* @__PURE__ */ new Set();
+    Object.keys(out).forEach(function(i) {
+      var o2 = out[i], c0 = toPic(o2[4]), g = gN[nodes2[i].id];
+      if (g) g.setAttribute("transform", "translate(" + f1(c0[0] + o2[0]) + " " + f1(c0[1] + o2[1]) + ") rotate(" + f1(o2[2] * 180 / Math.PI) + ") translate(" + f1(-c0[0]) + " " + f1(-c0[1]) + ")");
+      edges2.forEach(function(e, k) {
+        if (e.s !== +i && e.t !== +i) return;
+        var gs = gE[e.id];
+        if (gs) gs.forEach(function(x) {
+          x.style.display = "none";
+        });
+        shared.live.add(k);
+      });
+    });
+  }
+  var cdLive;
+  function __run4() {
+    cdLive = null;
+  }
+  function cdSession() {
+    if (!shared.cd || !cdJs || !cdJs.live || !shared.cdBase) return null;
+    if (cdLive && cdLive.base === shared.cdBase) return cdLive.s;
+    try {
+      cdLive = { base: shared.cdBase, s: cdJs.live(shared.cdBase.now, shared.cdBase.text, { doc: cdDoc(shared.cdBase.now) }) };
+    } catch (e) {
+      cdLive = null;
+    }
+    return cdLive ? cdLive.s : null;
+  }
+  function cdSessionSoon() {
+    if (!shared.cdBase && shared.cd) shared.cdBase = { now: shared.cd.now, text: shared.text };
+    (window.requestIdleCallback || function(f) {
+      setTimeout(f, 0);
+    })(function() {
+      if (on) cdSession();
+    });
+  }
+  function cdHolders(ks) {
+    var S = cdSession();
+    if (!S || !S.holder) return;
+    var todo = ks.filter(function(i) {
+      var R = shared.liveOrig[i], b = shared.liveC[i];
+      return !(R && R.at && R.at.every(function(v, j) {
+        return v === b[j];
+      }));
+    }).map(function(i) {
+      return [i, S.holder(nodes2[i].id, toPic(shared.liveC[i]))];
+    }).filter(function(q) {
+      return q[1] != null;
+    });
+    if (!todo.length) return;
+    var doc2 = new DOMParser().parseFromString('<svg xmlns="http://www.w3.org/2000/svg">' + todo.map(function(q) {
+      return "<g>" + q[1] + "</g>";
+    }).join("") + "</svg>", "image/svg+xml").documentElement;
+    var parts = Array.prototype.filter.call(doc2.childNodes, function(c) {
+      return c.nodeType === 1;
+    });
+    todo.forEach(function(q, k) {
+      var i = q[0], g = gN[nodes2[i].id];
+      if (!shared.liveOrig[i]) {
+        var kids = Array.prototype.slice.call(g.childNodes);
+        shared.liveOrig[i] = { back: function() {
+          g.replaceChildren.apply(g, kids);
+        } };
+      }
+      shared.liveOrig[i].at = shared.liveC[i].slice();
+      g.replaceChildren.apply(g, Array.prototype.map.call(parts[k].childNodes, function(c) {
+        return document.importNode(c, true);
+      }));
+    });
+  }
+  function cdSizeLive(i, nb, R) {
+    var S = cdSession(), g = gN && gN[nodes2[i].id];
+    if (!S || !S.holder || !g) return R;
+    if (!R) {
+      var kids = Array.prototype.slice.call(g.childNodes);
+      return { i, back: function() {
+        g.replaceChildren.apply(g, kids);
+      } };
+    }
+    if (!nb || R.at && R.at.every(function(v, j) {
+      return v === nb[j];
+    })) return R;
+    var svg = S.holder(nodes2[i].id, toPic(nb));
+    if (svg == null) return R;
+    var doc2 = new DOMParser().parseFromString('<svg xmlns="http://www.w3.org/2000/svg"><g>' + svg + "</g></svg>", "image/svg+xml").documentElement.firstElementChild;
+    g.replaceChildren.apply(g, Array.prototype.map.call(doc2.childNodes, function(c) {
+      return document.importNode(c, true);
+    }));
+    R.at = nb.slice();
+    return R;
+  }
+  var liveCd;
+  var RXE;
+  function __run52() {
+    liveCd = { glyphs: glyphFollow, lines: cdLines, holders: cdHolders, size: cdSizeLive };
+    RXE = /^(.*)\|(a|b|[rpmi]\d+)$/;
+  }
+  function cdLines(ks, pp) {
+    if (!shared.cd || !gE) return false;
+    var rids = /* @__PURE__ */ new Set();
+    ks.forEach(function(k) {
+      var m = edges2[k].id.match(RXE);
+      if (m) rids.add(m[1]);
+    });
+    if (!rids.size) return false;
+    var S = cdSession();
+    if (!S) return false;
+    var bends = /* @__PURE__ */ new Map(), paths = /* @__PURE__ */ new Map(), boxes = /* @__PURE__ */ new Map(), byE = {};
+    edges2.forEach(function(e, k) {
+      byE[e.id] = k;
+      var m = e.id.match(RXE);
+      if (!m || !rids.has(m[1])) return;
+      bends.set(e.id, e.pts.map(function(pi) {
+        return toPic(pt(pi));
+      }));
+      if (!e.path) return;
+      var q = ["sx", "sy", "tx", "ty"].map(function(a) {
+        return parseFloat(e.path.getAttribute(a)) || 0;
+      });
+      var no2 = e.path.getAttribute("spot");
+      if (no2) q.push(parseInt(no2, 10));
+      if (pp && pp.to && pp.k === k) {
+        var j = pp.end ? 2 : 0;
+        q[j] = pp.to[0];
+        q[j + 1] = pp.to[1];
+        no2 = spotNo(pp, pp.to);
+        if (no2) q[4] = no2;
+      }
+      paths.set(e.id, q);
+    });
+    edges2.forEach(function(e) {
+      var m = e.id.match(RXE);
+      if (!m || !rids.has(m[1])) return;
+      [e.s, e.t].forEach(function(i) {
+        if (i != null && !/\|proc$/.test(nodes2[i].id)) boxes.set(nodes2[i].id, toPic(bx(i)));
+      });
+    });
+    var ends = null;
+    if (pp && pp.to && pp.n2 != null && rids.has((edges2[pp.k].id.match(RXE) || [])[1])) {
+      var ep = edges2[pp.k];
+      ends = /* @__PURE__ */ new Map([[ep.id, [nodes2[pp.end ? ep.s : pp.n2].id, nodes2[pp.end ? pp.n2 : ep.t].id]]]);
+      boxes.set(nodes2[pp.n2].id, toPic(bx(pp.n2)));
+    }
+    var list2 = Array.from(rids), out = S.frame(boxes, bends, paths, list2, ends);
+    if (list2.some(function(r) {
+      return !out[r];
+    })) return false;
+    dropCopies();
+    list2.forEach(function(rid) {
+      var f = out[rid], ids = Object.keys(gE).filter(function(id) {
+        return id.indexOf(rid + "|") === 0;
+      });
+      if (!ids.length) return;
+      var ref = gE[ids[0]], hRef = ref[0], lRef = ref[ref.length - 1], pg = gN[rid + "|proc"];
+      ids.forEach(function(id) {
+        gE[id].forEach(function(g) {
+          g.style.display = "none";
+        });
+      });
+      if (pg) pg.style.display = "none";
+      var doc2 = new DOMParser().parseFromString('<svg xmlns="http://www.w3.org/2000/svg"><g>' + f.halo + "</g><g>" + f.lines + "</g></svg>", "image/svg+xml").documentElement;
+      var parts = Array.prototype.filter.call(doc2.childNodes, function(c) {
+        return c.nodeType === 1;
+      });
+      [[parts[0], hRef, 0], [parts[1], lRef, 1]].forEach(function(q) {
+        Array.prototype.filter.call(q[0].childNodes, function(c) {
+          return c.nodeType === 1;
+        }).forEach(function(c) {
+          var el = document.importNode(c, true), id = el.getAttribute("data-e"), pn = el.getAttribute("data-n");
+          var orig = id && gE[id] ? gE[id][q[2] ? gE[id].length - 1 : 0] : pn ? gN[pn] : null;
+          el.removeAttribute("data-e");
+          el.removeAttribute("data-n");
+          el.classList.add("m2-ed-copy");
+          q[1].parentNode.insertBefore(el, q[1]);
+          shared.copies.push([el, orig, id && byE[id] != null ? byE[id] : null]);
+        });
+      });
+      var gi = nodes2.findIndex(function(n) {
+        return n.id === rid + "|proc";
+      }), r0 = S.rest(rid);
+      if (gi >= 0 && r0 && f.sq) {
+        shared.liveG = shared.liveG || {};
+        shared.liveG[gi] = [f.sq[0] - r0[0][0], f.sq[1] - r0[0][1], f.ang - r0[1], r0[2] ? f.len / r0[2] : 1, [r0[0][0] + picOff()[0], r0[0][1] + picOff()[1], r0[1], r0[2]]];
+      }
+    });
+    return true;
+  }
+  function beyond(k, i, all) {
+    var e = edges2[k], last = all.length - 1;
+    if (i > 0 && i < last) return [all[i], e.pts[i - 1]];
+    var q = shared.procs.find(function(r) {
+      return i === last && r.a === k || i === 0 && r.b === k;
+    });
+    if (!q) return [all[i], null];
+    if (i === last) {
+      var eb = edges2[q.b];
+      if (eb.t == null) return [all[i], null];
+      return eb.pts.length ? [pt(eb.pts[0]), eb.pts[0]] : [ports(q.b)[eb.pts.length + 1], null];
+    }
+    var ea = edges2[q.a];
+    if (ea.s == null) return [all[i], null];
+    return ea.pts.length ? [pt(ea.pts[ea.pts.length - 1]), ea.pts[ea.pts.length - 1]] : [ports(q.a)[0], null];
+  }
+  function glyphArcs(bp) {
+    var out = [];
+    shared.procs.forEach(function(q) {
+      var ea = edges2[q.a], eb = edges2[q.b];
+      if (ea.s == null || eb.t == null || ea.pts.indexOf(bp) < 0 && eb.pts.indexOf(bp) < 0) return;
+      edges2.forEach(function(e, k) {
+        if (k !== q.a && k !== q.b && e.s != null && e.t != null && (e.s === q.g || e.t === q.g)) out.push({ q, k });
+      });
+    });
+    return out;
+  }
+  function joinAt(o, bp, B) {
+    var q = o.q, e = edges2[o.k], st = e.s === q.g, P2 = function(pi) {
+      return pi === bp ? B : pt(pi);
+    };
+    var at2 = function(a) {
+      return e.path ? parseFloat(e.path.getAttribute(a)) || 0 : 0;
+    };
+    var r = glyphMid(q, boxOf, restPt), m = glyphMid(q, bx, P2), off = st ? [at2("sx"), at2("sy")] : [at2("tx"), at2("ty")];
+    var f = /\|[rp]\d+$/.test(e.id) && r[3] ? m[3] / r[3] : 1, t = m[2] - r[2], c = Math.cos(t), s2 = Math.sin(t), G2 = boxOf(q.g);
+    var J = [G2[0] + G2[2] / 2 + m[0] - r[0] + f * (c * off[0] - s2 * off[1]), G2[1] + G2[3] / 2 + m[1] - r[1] + f * (s2 * off[0] + c * off[1])];
+    var N;
+    if (st) {
+      if (e.pts.length) N = pt(e.pts[0]);
+      else {
+        var T = bx(e.t);
+        N = [T[0] + T[2] / 2 + at2("tx"), T[1] + T[3] / 2 + at2("ty")];
+      }
+    } else {
+      if (e.pts.length) N = pt(e.pts[e.pts.length - 1]);
+      else {
+        var S = bx(e.s);
+        N = [S[0] + S[2] / 2 + at2("sx"), S[1] + S[3] / 2 + at2("sy")];
+      }
+    }
+    return [J, N];
+  }
+  function joinSolve(o, bp, B, ax, cm) {
+    var c = 0;
+    for (var it = 0; it < 4; it++) {
+      var P0 = B.slice(), P1 = B.slice();
+      P0[ax] += c;
+      P1[ax] += c + 1;
+      var a = joinAt(o, bp, P0), b = joinAt(o, bp, P1), res = a[0][cm] - a[1][cm], dv = b[0][cm] - b[1][cm] - res;
+      if (Math.abs(dv) < 0.05) return null;
+      c -= res / dv;
+      if (Math.abs(res) < 1e-4) break;
+    }
+    return c;
+  }
+  function joinGuides(bp, B) {
+    var out = [];
+    glyphArcs(bp).forEach(function(o) {
+      var J = joinAt(o, bp, B);
+      if (Math.abs(J[0][0] - J[1][0]) < 0.05 || Math.abs(J[0][1] - J[1][1]) < 0.05) out.push(J);
+    });
+    return out;
+  }
+  function plainCanvas() {
+    var el = V.img;
+    if (!el || el.tagName !== "IMG" || !el.src) return;
+    fetch(el.src).then(function(r) {
+      return r.text();
+    }).then(function(t) {
+      var u = t.replace(/<rect width="100%" height="100%" fill="#fff"\/>\n?/, "");
+      if (u === t || !on || V.img !== el) return;
+      var url = URL.createObjectURL(new Blob([u], { type: "image/svg+xml" })), i = new Image();
+      i.onload = function() {
+        if (!on || V.img !== el) {
+          URL.revokeObjectURL(url);
+          return;
+        }
+        var old = el.src;
+        el.src = url;
+        if (old.indexOf("blob:") === 0) setTimeout(function() {
+          URL.revokeObjectURL(old);
+        }, 1e3);
+      };
+      i.src = url;
+    }).catch(function() {
+    });
+  }
+  function cdMap(m) {
+    var d = m && m.downloads && m.downloads[0];
+    return !!(d && d.label === "CellDesigner");
+  }
+  var warm;
+  function __run62() {
+    warm = null;
+  }
+  function warmUp() {
+    clearTimeout(warm);
+    warm = setTimeout(function() {
+      var eb = document.querySelector('#m2-rail .m2-ri[data-win="edit"]');
+      if (cdp || !eb || !eb.offsetParent || !cdMap(V.current)) return;
+      (window.requestIdleCallback || function(f) {
+        setTimeout(f, 0);
+      })(function() {
+        if (cdp || !cdMap(V.current)) return;
+        var s0 = status.textContent, w0 = status.classList.contains("m2-ed-warn");
+        var back2 = function() {
+          if (!on) {
+            status.textContent = s0;
+            status.classList.toggle("m2-ed-warn", w0);
+          }
+        };
+        cdpy().then(back2, function() {
+        });
+        back2();
+      });
+    }, 2500);
+  }
+  function __run72() {
+    warmUp();
+  }
+  function cdJoin() {
+    return {
+      ok: function() {
+        return !!cdMk && !!cdMk.join;
+      },
+      own: function(i) {
+        return cdOwn(i);
+      },
+      joinable: function(id, cid) {
+        return cdMk.joinable(shared.cd.now, id, cid);
+      },
+      write: function(joins) {
+        var N = cdNow(), t = N.t, done = [];
+        joins.forEach(function(q) {
+          try {
+            t = cdMk.join(t, q[0], q[1]);
+            done.push(q[1]);
+          } catch (err) {
+            warn(String(err && err.message || err));
+          }
+        });
+        if (done.length) cdRebuild(t, N.sh);
+        return done;
+      }
+    };
+  }
+  function __start3() {
+    __run13();
+    __run33();
+    __run4();
+    __run52();
+    __run62();
+    __run72();
+  }
+  function cdFormat() {
+    return {
+      name: "cd",
+      now: function() {
+        return shared.cd.now;
+      },
+      ownFrame: true,
+      live: function() {
+        return liveCd;
+      },
+      cardDown: cdCardDown,
+      mainLines: true,
+      afView: false,
+      beside: function() {
+        return shared.cd.now;
+      },
+      kind: function(n) {
+        var c = cdClsOf(n.id);
+        return c ? c[0] : n.comp ? "compartment" : null;
+      },
+      // its species class, or compartment
+      ownName: cdNameOf,
+      rename: cdRename,
+      nameable: function() {
+        return !!cdMk;
+      },
+      // names read from and written into its file
+      join: cdJoin()
+    };
+  }
+
   // editor/src/cdcreate.js
   var import_notation = __toESM(require_notation());
   var CD_SP;
-  function __run1() {
+  function __run14() {
     CD_SP = [
       ["PROTEIN", "Protein", '<rect x="1.5" y="5" width="21" height="14" rx="3.5"/>'],
       ["GENE", "Gene", '<rect x="1.5" y="6" width="21" height="12"/>'],
@@ -1220,7 +2401,7 @@
   var RED_OF;
   var CD_NAME;
   var cdK;
-  function __run2() {
+  function __run23() {
     CD_Q = '<path d="M9.8 10.2a2.2 2.2 0 1 1 3.2 2c-.7.4-1 .8-1 1.6" class="in"/><circle class="dot" cx="12" cy="16.4" r=".8"/>';
     CD_GATES = [
       ["AND", "AND gate", '<text x="12" y="16.2" text-anchor="middle" font-size="9">&amp;</text>', "&amp;"],
@@ -1276,7 +2457,7 @@
     }), true], ["Reactions", CD_RX.concat(CD_ADD).map(cdK), true], ["Modifiers", CD_MOD.map(cdK)]];
   }
   var CD_GATE;
-  function __run3() {
+  function __run34() {
     CD_RX.concat(CD_ADD, CD_MOD).forEach(function(q) {
       ARCS["cd:" + q[0]] = 1;
     });
@@ -1319,7 +2500,7 @@
     palBlocks();
   }
   var CD_INFO;
-  function __run5() {
+  function __run53() {
     CD_INFO = "Lets the modifiers\u2019 signs (inhibition, physical stimulation, modulation, trigger) join two species directly, written as CellDesigner\u2019s reduced notation, and allows a logic gate between species. Unticked: reactions and their modifiers only. CellDesigner\u2019s positive influence (an open arrowhead, not an SBGN sign) is made a physical stimulation when a map is opened.";
   }
   function cdInfo(hy, on_) {
@@ -1367,7 +2548,7 @@
       if (v && q[3] !== v) console.error("The palette\u2019s " + q[1] + " sign differs from cdrender\u2019s " + v);
     });
   }
-  function __run6() {
+  function __run63() {
     pal.querySelector(".m2-ed-pstrict input").addEventListener("change", function(e) {
       if (!cdPal()) return;
       palDid([PAL_KEY], function() {
@@ -1454,7 +2635,7 @@
   }
   var CD_COLS;
   var CD_COMP_DEFAULT;
-  function __run7() {
+  function __run73() {
     CD_COLS = [["file", "Original", "The map\u2019s own colours, as they were before another choice; new species and compartments in the colour most of their class have on it, Default for a class it has none of"], ["cd", "CellDesigner", "The whole map and new species and compartments in CellDesigner\u2019s own colours"], ["default", "Mist and sage", "The whole map and new species and compartments in the viewer\u2019s starting colours: a pale blue for proteins, a pale green for small molecules"], ["none", "No colours", "The whole map and new species and compartments white"], ["custom", "Custom default", "The whole map and new species in the colours kept by Set as default; a class with none as it is"], ["confetti", "Confetti", "Every species of the map, and every new one, a pastel of its own; compartments as they are"]];
     CD_COMP_DEFAULT = "ffdfdbce";
   }
@@ -1512,7 +2693,7 @@
       m = "file";
     }
     if (m === "custom") {
-      var k = !comp && cdKept()[cls];
+      var k = !comp && cdKept2()[cls];
       if (k && k.fill) return "ff" + k.fill.slice(1).toLowerCase();
       m = "file";
     }
@@ -1611,7 +2792,7 @@
     }, []);
   }
   function cdFills(mode, t0) {
-    var hues = [], kept = mode === "custom" ? cdKept() : null;
+    var hues = [], kept = mode === "custom" ? cdKept2() : null;
     return function(cls) {
       var comp = cdComp(cls);
       if (mode === "confetti") return comp ? null : confettiPick(hues);
@@ -1625,7 +2806,7 @@
   }
   function cdSize(cls) {
     if (cdComp(cls)) return cdMk.COMP.size.slice();
-    var st = palStyle(), k = st === "custom" ? cdKept()[cls] : null;
+    var st = palStyle(), k = st === "custom" ? cdKept2()[cls] : null;
     if (k && k.w > 0 && k.h > 0) return [k.w, k.h];
     return st !== "default" && cls !== "COMPLEX" && shared.cd && cdMk.classSize(shared.cd.now, cls) || cdMk.LOOK[cls].slice(0, 2);
   }
@@ -1633,11 +2814,11 @@
   function __run10() {
     CD_DEF_KEY = "atlas-edit-cd-defaults";
   }
-  function cdKept() {
+  function cdKept2() {
     return looksKept(CD_DEF_KEY);
   }
   function cdDef(i) {
-    var id = nodes2[i].id, L, n, all = cdKept();
+    var id = nodes2[i].id, L, n, all = cdKept2();
     try {
       L = cdMk.look(shared.cd.now, id);
       n = cdMk.aliasInfo(shared.cd.now, id).homodimer || 1;
@@ -1654,11 +2835,11 @@
     cdColsRow();
   }
   function cdCopies(cls) {
-    var k = palStyle() === "custom" && cls !== "DEGRADED" ? cdKept()[cls] : null;
+    var k = palStyle() === "custom" && cls !== "DEGRADED" ? cdKept2()[cls] : null;
     return k && k.multimer && k.w > 0 ? Math.max(2, k.copies || 2) : 1;
   }
   function cdKeptLook(t, alias, cls) {
-    var k = cdKept()[cls], n = cdCopies(cls);
+    var k = cdKept2()[cls], n = cdCopies(cls);
     if (!k || cls === "DEGRADED") return t;
     if (cdCols() === "custom" && k.width > 0 && k.width !== 1) t = cdMk.restyle(t, alias, { width: k.width });
     if (n > 1) t = cdMk.homodimer(t, alias, n);
@@ -1713,7 +2894,7 @@
     if (tool && !tool.sticky) palTake(null);
   }
   var cdHover;
-  function __run12() {
+  function __run122() {
     cdHover = null;
   }
   function cdHandles(i, cls) {
@@ -1746,7 +2927,7 @@
     var r = cdRole(i);
     return r === "proc" ? cdPort(i, P, { mod: true }) : r === "epn" ? cdPort(i, P, { red: true }) : null;
   }
-  function __run13() {
+  function __run132() {
     V.view.addEventListener("pointermove", function(e) {
       var on_ = cdPal() && tool && CD_GATE[tool.kind] && !e.buttons, P = on_ ? at(e) : null, i = on_ ? linkEnd(P, -1) : -1;
       if (on_ && !cdGateOk(i)) i = -1;
@@ -1766,7 +2947,7 @@
     var need = cdMk.NEED[CD_GATE[tool.kind]], got = shared.cdGate && shared.cdGate.kind === CD_GATE[tool.kind] ? shared.cdGate.inputs.length : 0;
     return got >= need ? cdGateLand(k, P) : null;
   }
-  function __run14() {
+  function __run142() {
     V.view.addEventListener("pointerleave", function() {
       if (cdHover) {
         cdHover = null;
@@ -1797,7 +2978,7 @@
     var rx = !(add || part) || no2 ? -1 : cdRole(link.from) === "proc" ? link.from : link.to >= 0 && cdRole(link.to) === "proc" ? link.to : -1;
     if (rx >= 0) cdMainLine(out, rx);
     if (cdFromJoin()) {
-      var J = cdJoin(link.from, false);
+      var J = cdJoin2(link.from, false);
       out.push(cdDot(J || cdCentre(link.from), "m2-ed-pickh"));
     } else cdPicked(out, link.from);
     if (link.to < 0 || !link.how || no2) return;
@@ -1830,7 +3011,7 @@
       return;
     }
     cdMainLine(out, i);
-    var J = cdJoin(i, false);
+    var J = cdJoin2(i, false);
     if (J) out.push(cdDot(J, "m2-ed-pickh"));
   }
   function cdAdd() {
@@ -1857,7 +3038,7 @@
       return k >= 0;
     });
   }
-  function cdJoin(i, into) {
+  function cdJoin2(i, into) {
     var ka = edges2.findIndex(function(e) {
       return e.t === i && /\|a$/.test(e.id);
     });
@@ -1898,7 +3079,7 @@
       J = h.land.Q;
       return [cutShape(link.from, C, J, bx(link.from)), J];
     }
-    if ((ok ? h.part === "product" : !h && cdFromJoin()) && (J = cdJoin(link.from, false))) return [J, ok && h.land && h.land.Q ? cutShape(link.to, h.land.Q, J, bx(link.to)) : P];
+    if ((ok ? h.part === "product" : !h && cdFromJoin()) && (J = cdJoin2(link.from, false))) return [J, ok && h.land && h.land.Q ? cutShape(link.to, h.land.Q, J, bx(link.to)) : P];
     return [S, P];
   }
   function cdClick(P) {
@@ -1914,13 +3095,13 @@
   function __run16() {
     cdClsMemo = { t: null, cls: {}, about: {} };
   }
-  function cdMemo() {
+  function cdMemo2() {
     var t = shared.cd.now;
     if (cdClsMemo.t !== t) cdClsMemo = { t, cls: {}, about: {} };
     return cdClsMemo;
   }
   function cdClsOf(id) {
-    var M = cdMemo();
+    var M = cdMemo2();
     if (!(id in M.cls)) {
       try {
         var A = cdMk.aliasInfo(M.t, id);
@@ -1952,7 +3133,7 @@
       return best;
     }
     if (how.part === "reactant" && cdRole(i) === "proc") {
-      var J = cdJoin(i, true);
+      var J = cdJoin2(i, true);
       return J ? { Q: J, all: [J] } : { Q: C };
     }
     var N = how.rx || how.red || how.part === "product" ? nodePlaces(i) : null;
@@ -1976,7 +3157,7 @@
     return m ? { no: m } : h;
   }
   function cdAbout(rid) {
-    var M = cdMemo();
+    var M = cdMemo2();
     if (!(rid in M.about)) {
       try {
         M.about[rid] = cdMk.about(M.t, rid);
@@ -2422,7 +3603,7 @@
     cdCardDrag = { pick: k, x: e.clientX, y: e.clientY };
     return true;
   }
-  function __run22() {
+  function __run222() {
     window.addEventListener("pointermove", function(e) {
       var d = cdCardDrag;
       if (!d) return;
@@ -2491,7 +3672,7 @@
     cdNm = { k, id: nodes2[k].id, info, P, x: e.clientX, y: e.clientY, p: null, parts: null, pid: e.pointerId };
     return true;
   }
-  function __run23() {
+  function __run232() {
     window.addEventListener("pointermove", function(e) {
       var d = cdNm;
       if (!d || e.pointerId !== d.pid) return;
@@ -3322,7 +4503,7 @@
     return cdPartsMemo[2];
   }
   var cdCountMemo;
-  function __run32() {
+  function __run322() {
     cdCountMemo = {};
   }
   function cdCount(id) {
@@ -3352,7 +4533,7 @@
     }, [], [keep]);
   }
   var PF_CD;
-  function __run33() {
+  function __run332() {
     PF_CD = {
       sizable: cdProp,
       size: cdSetSize,
@@ -3494,7 +4675,7 @@
     return window.cdrender.compartmentShape(0, 0, w, h, C.thickness, C.outer, C.inner, "#" + (cdColour(shared.cd && shared.cd.now, "COMPARTMENT") || C.colour).slice(2), oval);
   }
   function cdGhost(kind) {
-    var cls = cdKind(kind), s = cdSize(cls), n = cdComp(cls) ? 1 : cdCopies(cls), e = 6 * (n - 1), w = s[0] - e, h = s[1] - e, k = cdCols() === "custom" && cdKept()[cls], col = cdComp(cls) ? "none" : "#" + (cdColour(shared.cd && shared.cd.now, cls) || cdMk.LOOK[cls][2]).slice(2), ink = ' fill="' + col + '" stroke="#000" stroke-width="' + (k && k.width > 0 && cls !== "DEGRADED" ? k.width : 1) + '"';
+    var cls = cdKind(kind), s = cdSize(cls), n = cdComp(cls) ? 1 : cdCopies(cls), e = 6 * (n - 1), w = s[0] - e, h = s[1] - e, k = cdCols() === "custom" && cdKept2()[cls], col = cdComp(cls) ? "none" : "#" + (cdColour(shared.cd && shared.cd.now, cls) || cdMk.LOOK[cls][2]).slice(2), ink = ' fill="' + col + '" stroke="#000" stroke-width="' + (k && k.width > 0 && cls !== "DEGRADED" ? k.width : 1) + '"';
     var shape = {
       PROTEIN: '<rect width="' + w + '" height="' + h + '" rx="5"' + ink + "/>",
       GENE: '<rect width="' + w + '" height="' + h + '"' + ink + "/>",
@@ -3510,19 +4691,19 @@
     for (var j = n - 1, back2 = ""; j > 0; j--) back2 += '<g transform="translate(' + 6 * j + " " + 6 * j + ')">' + shape + "</g>";
     return { w: s[0], h: s[1], svg: '<svg width="100%" height="100%" viewBox="0 0 ' + s[0] + " " + s[1] + '" overflow="visible">' + (back2 || "") + shape + "</svg>" };
   }
-  function __start() {
-    __run1();
-    __run2();
-    __run3();
-    __run5();
-    __run6();
-    __run7();
+  function __start4() {
+    __run14();
+    __run23();
+    __run34();
+    __run53();
+    __run63();
+    __run73();
     __run8();
     __run9();
     __run10();
-    __run12();
-    __run13();
-    __run14();
+    __run122();
+    __run132();
+    __run142();
     __run15();
     __run16();
     __run17();
@@ -3530,8 +4711,8 @@
     __run19();
     __run20();
     __run21();
-    __run22();
-    __run23();
+    __run222();
+    __run232();
     __run24();
     __run25();
     __run27();
@@ -3539,1137 +4720,8 @@
     __run29();
     __run30();
     __run31();
-    __run32();
-    __run33();
-  }
-
-  // editor/src/celldesigner.js
-  var cdp;
-  var cdJs;
-  var cdMk;
-  function __run110() {
-    cdp = null, cdJs = null, cdMk = null;
-  }
-  function isCd(t) {
-    return /<sbml[\s>]/.test(t.slice(0, 3e3)) && t.indexOf("celldesigner") >= 0;
-  }
-  function lineGrid() {
-    return !shared.cd;
-  }
-  function nodePlaces(n) {
-    var R = window.cdrender, cl = shared.cd && R && R.anchorAt && cdRole(n) === "epn" ? cdClsOf(nodes2[n].id) : null;
-    if (!cl) return null;
-    var b = bx(n), C = [b[0] + b[2] / 2, b[1] + b[3] / 2], f = R.frontBox(b, cl[1]);
-    return Object.keys(R.ANCHOR).map(function(k) {
-      var A = R.anchorAt(cl[0], f, k);
-      return [A[0] - C[0], A[1] - C[1], k];
-    });
-  }
-  function nodeCentre(n, P) {
-    var b = bx(n);
-    return Math.max(Math.abs(P[0] - b[0] - b[2] / 2) / (b[2] / 2 || 1), Math.abs(P[1] - b[1] - b[3] / 2) / (b[3] / 2 || 1)) < 0.5;
-  }
-  function cdpy() {
-    if (cdp) return cdp;
-    var script = function(f) {
-      return new Promise(function(res, rej) {
-        var s = document.createElement("script");
-        s.src = V.renderers + "converter/" + f + ".js" + V.build;
-        s.onload = res;
-        s.onerror = function() {
-          rej(f + " not found");
-        };
-        document.head.appendChild(s);
-      });
-    };
-    cdp = (window.cdrender ? Promise.resolve() : script("cdrender")).then(function() {
-      return window.cd_edit ? null : script("cd_edit");
-    }).then(function() {
-      return window.cd_make ? null : script("cd_make").catch(function() {
-      });
-    }).then(function() {
-      cdJs = window.cd_edit;
-      cdMk = window.cd_make || null;
-      if (cdMk) cdCheck();
-      return cdJs;
-    });
-    cdp.catch(function(e) {
-      cdp = null;
-      warn("The CellDesigner renderer did not load: " + e);
-    });
-    return cdp;
-  }
-  var cdMemo2;
-  function __run34() {
-    cdMemo2 = [];
-  }
-  function cdDraw(t, g, fit) {
-    return cdJs.draw(t, g, { fit: fit == null ? undo.length > 0 : fit, block: gridBlock(), parsed: on ? function(c, d) {
-      cdDocKeep(c, d, shownId());
-    } : null });
-  }
-  var cdDocNow;
-  function shownId() {
-    return V.chosen ? V.chosen.id : null;
-  }
-  function cdDoc(t, id) {
-    if (cdDocNow && cdDocNow.t === t) return cdDocNow.doc;
-    var doc2 = new DOMParser().parseFromString(t, "application/xml");
-    if (id !== false) cdDocKeep(t, doc2, id === void 0 ? shownId() : id);
-    return doc2;
-  }
-  function cdDocKeep(t, doc2, id) {
-    cdDocNow = { t, doc: doc2, id };
-  }
-  function cdKept2() {
-    return cdDocNow ? cdDocNow.id : null;
-  }
-  function cdShown(id) {
-    if (!cdDocNow) return;
-    if (cdDocNow.id === "adding") cdDocNow.id = id;
-    else if (cdDocNow.id !== id) {
-      cdDocNow = null;
-      cdLive = null;
-    }
-  }
-  function cdShift(svg) {
-    var m = /<g transform="translate\(([-\d.]+),([-\d.]+)\)">/.exec(svg || "");
-    return m ? [+m[1], +m[2]] : [0, 0];
-  }
-  function cdNow() {
-    if (lastFor && lastFor[0] === shared.text && lastFor[1] === shared.cd.now) return { t: shared.cd.now, sh: cdShift(lastSvg) };
-    var q = cdDraw(shared.cd.base, shared.text);
-    return { t: q[1], sh: cdShift(q[0]) };
-  }
-  function cdRebuild(t, sh) {
-    shared.cd.base = t;
-    setText(cdGraphml(t));
-    rebase(sh[0], sh[1]);
-  }
-  function cdGraphml(t) {
-    var g = cdKnown(t);
-    if (g) return g;
-    g = cdJs.graphml(t, null, { doc: cdDoc(t) });
-    cdRemember(t, g);
-    return g;
-  }
-  function cdKnown(t) {
-    for (var i = 0; i < cdMemo2.length; i++) if (cdMemo2[i][0] === t) return cdMemo2[i][1];
-    return null;
-  }
-  function cdRemember(t, g) {
-    cdMemo2.unshift([t, g]);
-    cdMemo2.length = Math.min(cdMemo2.length, 3);
-  }
-  function glyphMid(q, B, P, pp) {
-    var ea = edges2[q.a], eb = edges2[q.b], o = function(e, a2) {
-      if (pp && pp.to && edges2[pp.k] === e && (pp.end ? "t" : "s") === a2[0]) return pp.to[a2[1] === "x" ? 0 : 1];
-      return e.path ? parseFloat(e.path.getAttribute(a2)) || 0 : 0;
-    };
-    var S = B(pp && pp.n2 != null && edges2[pp.k] === ea && !pp.end ? pp.n2 : ea.s), T = B(pp && pp.n2 != null && edges2[pp.k] === eb && pp.end ? pp.n2 : eb.t);
-    var all = [[S[0] + S[2] / 2 + o(ea, "sx"), S[1] + S[3] / 2 + o(ea, "sy")]].concat(
-      ea.pts.map(P),
-      eb.pts.map(P),
-      [[T[0] + T[2] / 2 + o(eb, "tx"), T[1] + T[3] / 2 + o(eb, "ty")]]
-    );
-    var k = ea.pts.length, n = all.length - 1, a = all[k], b = all[k + 1];
-    if (k === 0) a = cut(all[0], all[1], S);
-    if (k + 1 === n) b = cut(all[n], all[n - 1], T);
-    return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, Math.atan2(b[1] - a[1], b[0] - a[0]), Math.hypot(b[0] - a[0], b[1] - a[1])];
-  }
-  function glyphPort(i, off, eid) {
-    var L = shared.liveG && shared.liveG[i];
-    if (!L || !L[2] && L[3] === 1) return off;
-    var c = Math.cos(L[2]), s2 = Math.sin(L[2]), f = /\|[rp]\d+$/.test(eid) ? L[3] : 1;
-    return [f * (c * off[0] - s2 * off[1]), f * (s2 * off[0] + c * off[1])];
-  }
-  function glyphFollow(ns, ps, back2, pp) {
-    if (!shared.procs.length || !gN) return;
-    var old = shared.liveG;
-    shared.liveG = null;
-    var rest = function(i) {
-      var b = boxOf(i);
-      return back2 && ns.has(i) ? [b[0] - back2[0], b[1] - back2[1], b[2], b[3]] : b;
-    };
-    var restP = function(pi) {
-      var p = points[pi], o = back2 && ps.has(pi);
-      return [num(p, "x") - (o ? back2[0] : 0), num(p, "y") - (o ? back2[1] : 0)];
-    };
-    var out = {}, any = false;
-    shared.procs.forEach(function(q) {
-      var ea = edges2[q.a], eb = edges2[q.b];
-      if (ns.has(q.g) || ea.s == null || eb.t == null) return;
-      var port = pp && pp.to && (pp.k === q.a || pp.k === q.b);
-      if (!(port || ns.has(ea.s) || ns.has(eb.t) || ea.pts.concat(eb.pts).some(function(p) {
-        return ps.has(p);
-      }))) return;
-      var a = glyphMid(q, bx, pt, pp), b = glyphMid(q, rest, restP);
-      out[q.g] = [a[0] - b[0], a[1] - b[1], isFinite(a[2] - b[2]) && b[3] ? a[2] - b[2] : 0, b[3] ? a[3] / b[3] : 1, b];
-      any = true;
-    });
-    if (old) Object.keys(old).forEach(function(i) {
-      if (!out[i]) {
-        var g = gN[nodes2[i].id];
-        if (g) g.removeAttribute("transform");
-      }
-    });
-    if (!any) return;
-    shared.liveG = out;
-    shared.live = shared.live || /* @__PURE__ */ new Set();
-    Object.keys(out).forEach(function(i) {
-      var o2 = out[i], c0 = toPic(o2[4]), g = gN[nodes2[i].id];
-      if (g) g.setAttribute("transform", "translate(" + f1(c0[0] + o2[0]) + " " + f1(c0[1] + o2[1]) + ") rotate(" + f1(o2[2] * 180 / Math.PI) + ") translate(" + f1(-c0[0]) + " " + f1(-c0[1]) + ")");
-      edges2.forEach(function(e, k) {
-        if (e.s !== +i && e.t !== +i) return;
-        var gs = gE[e.id];
-        if (gs) gs.forEach(function(x) {
-          x.style.display = "none";
-        });
-        shared.live.add(k);
-      });
-    });
-  }
-  var cdLive;
-  function __run4() {
-    cdLive = null;
-  }
-  function cdSession() {
-    if (!shared.cd || !cdJs || !cdJs.live || !shared.cdBase) return null;
-    if (cdLive && cdLive.base === shared.cdBase) return cdLive.s;
-    try {
-      cdLive = { base: shared.cdBase, s: cdJs.live(shared.cdBase.now, shared.cdBase.text, { doc: cdDoc(shared.cdBase.now) }) };
-    } catch (e) {
-      cdLive = null;
-    }
-    return cdLive ? cdLive.s : null;
-  }
-  function cdSessionSoon() {
-    if (!shared.cdBase && shared.cd) shared.cdBase = { now: shared.cd.now, text: shared.text };
-    (window.requestIdleCallback || function(f) {
-      setTimeout(f, 0);
-    })(function() {
-      if (on) cdSession();
-    });
-  }
-  function cdHolders(ks) {
-    var S = cdSession();
-    if (!S || !S.holder) return;
-    var todo = ks.filter(function(i) {
-      var R = shared.liveOrig[i], b = shared.liveC[i];
-      return !(R && R.at && R.at.every(function(v, j) {
-        return v === b[j];
-      }));
-    }).map(function(i) {
-      return [i, S.holder(nodes2[i].id, toPic(shared.liveC[i]))];
-    }).filter(function(q) {
-      return q[1] != null;
-    });
-    if (!todo.length) return;
-    var doc2 = new DOMParser().parseFromString('<svg xmlns="http://www.w3.org/2000/svg">' + todo.map(function(q) {
-      return "<g>" + q[1] + "</g>";
-    }).join("") + "</svg>", "image/svg+xml").documentElement;
-    var parts = Array.prototype.filter.call(doc2.childNodes, function(c) {
-      return c.nodeType === 1;
-    });
-    todo.forEach(function(q, k) {
-      var i = q[0], g = gN[nodes2[i].id];
-      if (!shared.liveOrig[i]) {
-        var kids = Array.prototype.slice.call(g.childNodes);
-        shared.liveOrig[i] = { back: function() {
-          g.replaceChildren.apply(g, kids);
-        } };
-      }
-      shared.liveOrig[i].at = shared.liveC[i].slice();
-      g.replaceChildren.apply(g, Array.prototype.map.call(parts[k].childNodes, function(c) {
-        return document.importNode(c, true);
-      }));
-    });
-  }
-  function cdSizeLive(i, nb, R) {
-    var S = cdSession(), g = gN && gN[nodes2[i].id];
-    if (!S || !S.holder || !g) return R;
-    if (!R) {
-      var kids = Array.prototype.slice.call(g.childNodes);
-      return { i, back: function() {
-        g.replaceChildren.apply(g, kids);
-      } };
-    }
-    if (!nb || R.at && R.at.every(function(v, j) {
-      return v === nb[j];
-    })) return R;
-    var svg = S.holder(nodes2[i].id, toPic(nb));
-    if (svg == null) return R;
-    var doc2 = new DOMParser().parseFromString('<svg xmlns="http://www.w3.org/2000/svg"><g>' + svg + "</g></svg>", "image/svg+xml").documentElement.firstElementChild;
-    g.replaceChildren.apply(g, Array.prototype.map.call(doc2.childNodes, function(c) {
-      return document.importNode(c, true);
-    }));
-    R.at = nb.slice();
-    return R;
-  }
-  var liveCd;
-  var RXE;
-  function __run52() {
-    liveCd = { glyphs: glyphFollow, lines: cdLines, holders: cdHolders, size: cdSizeLive };
-    RXE = /^(.*)\|(a|b|[rpmi]\d+)$/;
-  }
-  function cdLines(ks, pp) {
-    if (!shared.cd || !gE) return false;
-    var rids = /* @__PURE__ */ new Set();
-    ks.forEach(function(k) {
-      var m = edges2[k].id.match(RXE);
-      if (m) rids.add(m[1]);
-    });
-    if (!rids.size) return false;
-    var S = cdSession();
-    if (!S) return false;
-    var bends = /* @__PURE__ */ new Map(), paths = /* @__PURE__ */ new Map(), boxes = /* @__PURE__ */ new Map(), byE = {};
-    edges2.forEach(function(e, k) {
-      byE[e.id] = k;
-      var m = e.id.match(RXE);
-      if (!m || !rids.has(m[1])) return;
-      bends.set(e.id, e.pts.map(function(pi) {
-        return toPic(pt(pi));
-      }));
-      if (!e.path) return;
-      var q = ["sx", "sy", "tx", "ty"].map(function(a) {
-        return parseFloat(e.path.getAttribute(a)) || 0;
-      });
-      var no2 = e.path.getAttribute("spot");
-      if (no2) q.push(parseInt(no2, 10));
-      if (pp && pp.to && pp.k === k) {
-        var j = pp.end ? 2 : 0;
-        q[j] = pp.to[0];
-        q[j + 1] = pp.to[1];
-        no2 = spotNo(pp, pp.to);
-        if (no2) q[4] = no2;
-      }
-      paths.set(e.id, q);
-    });
-    edges2.forEach(function(e) {
-      var m = e.id.match(RXE);
-      if (!m || !rids.has(m[1])) return;
-      [e.s, e.t].forEach(function(i) {
-        if (i != null && !/\|proc$/.test(nodes2[i].id)) boxes.set(nodes2[i].id, toPic(bx(i)));
-      });
-    });
-    var ends = null;
-    if (pp && pp.to && pp.n2 != null && rids.has((edges2[pp.k].id.match(RXE) || [])[1])) {
-      var ep = edges2[pp.k];
-      ends = /* @__PURE__ */ new Map([[ep.id, [nodes2[pp.end ? ep.s : pp.n2].id, nodes2[pp.end ? pp.n2 : ep.t].id]]]);
-      boxes.set(nodes2[pp.n2].id, toPic(bx(pp.n2)));
-    }
-    var list2 = Array.from(rids), out = S.frame(boxes, bends, paths, list2, ends);
-    if (list2.some(function(r) {
-      return !out[r];
-    })) return false;
-    dropCopies();
-    list2.forEach(function(rid) {
-      var f = out[rid], ids = Object.keys(gE).filter(function(id) {
-        return id.indexOf(rid + "|") === 0;
-      });
-      if (!ids.length) return;
-      var ref = gE[ids[0]], hRef = ref[0], lRef = ref[ref.length - 1], pg = gN[rid + "|proc"];
-      ids.forEach(function(id) {
-        gE[id].forEach(function(g) {
-          g.style.display = "none";
-        });
-      });
-      if (pg) pg.style.display = "none";
-      var doc2 = new DOMParser().parseFromString('<svg xmlns="http://www.w3.org/2000/svg"><g>' + f.halo + "</g><g>" + f.lines + "</g></svg>", "image/svg+xml").documentElement;
-      var parts = Array.prototype.filter.call(doc2.childNodes, function(c) {
-        return c.nodeType === 1;
-      });
-      [[parts[0], hRef, 0], [parts[1], lRef, 1]].forEach(function(q) {
-        Array.prototype.filter.call(q[0].childNodes, function(c) {
-          return c.nodeType === 1;
-        }).forEach(function(c) {
-          var el = document.importNode(c, true), id = el.getAttribute("data-e"), pn = el.getAttribute("data-n");
-          var orig = id && gE[id] ? gE[id][q[2] ? gE[id].length - 1 : 0] : pn ? gN[pn] : null;
-          el.removeAttribute("data-e");
-          el.removeAttribute("data-n");
-          el.classList.add("m2-ed-copy");
-          q[1].parentNode.insertBefore(el, q[1]);
-          shared.copies.push([el, orig, id && byE[id] != null ? byE[id] : null]);
-        });
-      });
-      var gi = nodes2.findIndex(function(n) {
-        return n.id === rid + "|proc";
-      }), r0 = S.rest(rid);
-      if (gi >= 0 && r0 && f.sq) {
-        shared.liveG = shared.liveG || {};
-        shared.liveG[gi] = [f.sq[0] - r0[0][0], f.sq[1] - r0[0][1], f.ang - r0[1], r0[2] ? f.len / r0[2] : 1, [r0[0][0] + picOff()[0], r0[0][1] + picOff()[1], r0[1], r0[2]]];
-      }
-    });
-    return true;
-  }
-  function beyond(k, i, all) {
-    var e = edges2[k], last = all.length - 1;
-    if (i > 0 && i < last) return [all[i], e.pts[i - 1]];
-    var q = shared.procs.find(function(r) {
-      return i === last && r.a === k || i === 0 && r.b === k;
-    });
-    if (!q) return [all[i], null];
-    if (i === last) {
-      var eb = edges2[q.b];
-      if (eb.t == null) return [all[i], null];
-      return eb.pts.length ? [pt(eb.pts[0]), eb.pts[0]] : [ports(q.b)[eb.pts.length + 1], null];
-    }
-    var ea = edges2[q.a];
-    if (ea.s == null) return [all[i], null];
-    return ea.pts.length ? [pt(ea.pts[ea.pts.length - 1]), ea.pts[ea.pts.length - 1]] : [ports(q.a)[0], null];
-  }
-  function glyphArcs(bp) {
-    var out = [];
-    shared.procs.forEach(function(q) {
-      var ea = edges2[q.a], eb = edges2[q.b];
-      if (ea.s == null || eb.t == null || ea.pts.indexOf(bp) < 0 && eb.pts.indexOf(bp) < 0) return;
-      edges2.forEach(function(e, k) {
-        if (k !== q.a && k !== q.b && e.s != null && e.t != null && (e.s === q.g || e.t === q.g)) out.push({ q, k });
-      });
-    });
-    return out;
-  }
-  function joinAt(o, bp, B) {
-    var q = o.q, e = edges2[o.k], st = e.s === q.g, P2 = function(pi) {
-      return pi === bp ? B : pt(pi);
-    };
-    var at2 = function(a) {
-      return e.path ? parseFloat(e.path.getAttribute(a)) || 0 : 0;
-    };
-    var r = glyphMid(q, boxOf, restPt), m = glyphMid(q, bx, P2), off = st ? [at2("sx"), at2("sy")] : [at2("tx"), at2("ty")];
-    var f = /\|[rp]\d+$/.test(e.id) && r[3] ? m[3] / r[3] : 1, t = m[2] - r[2], c = Math.cos(t), s2 = Math.sin(t), G2 = boxOf(q.g);
-    var J = [G2[0] + G2[2] / 2 + m[0] - r[0] + f * (c * off[0] - s2 * off[1]), G2[1] + G2[3] / 2 + m[1] - r[1] + f * (s2 * off[0] + c * off[1])];
-    var N;
-    if (st) {
-      if (e.pts.length) N = pt(e.pts[0]);
-      else {
-        var T = bx(e.t);
-        N = [T[0] + T[2] / 2 + at2("tx"), T[1] + T[3] / 2 + at2("ty")];
-      }
-    } else {
-      if (e.pts.length) N = pt(e.pts[e.pts.length - 1]);
-      else {
-        var S = bx(e.s);
-        N = [S[0] + S[2] / 2 + at2("sx"), S[1] + S[3] / 2 + at2("sy")];
-      }
-    }
-    return [J, N];
-  }
-  function joinSolve(o, bp, B, ax, cm) {
-    var c = 0;
-    for (var it = 0; it < 4; it++) {
-      var P0 = B.slice(), P1 = B.slice();
-      P0[ax] += c;
-      P1[ax] += c + 1;
-      var a = joinAt(o, bp, P0), b = joinAt(o, bp, P1), res = a[0][cm] - a[1][cm], dv = b[0][cm] - b[1][cm] - res;
-      if (Math.abs(dv) < 0.05) return null;
-      c -= res / dv;
-      if (Math.abs(res) < 1e-4) break;
-    }
-    return c;
-  }
-  function joinGuides(bp, B) {
-    var out = [];
-    glyphArcs(bp).forEach(function(o) {
-      var J = joinAt(o, bp, B);
-      if (Math.abs(J[0][0] - J[1][0]) < 0.05 || Math.abs(J[0][1] - J[1][1]) < 0.05) out.push(J);
-    });
-    return out;
-  }
-  function plainCanvas() {
-    var el = V.img;
-    if (!el || el.tagName !== "IMG" || !el.src) return;
-    fetch(el.src).then(function(r) {
-      return r.text();
-    }).then(function(t) {
-      var u = t.replace(/<rect width="100%" height="100%" fill="#fff"\/>\n?/, "");
-      if (u === t || !on || V.img !== el) return;
-      var url = URL.createObjectURL(new Blob([u], { type: "image/svg+xml" })), i = new Image();
-      i.onload = function() {
-        if (!on || V.img !== el) {
-          URL.revokeObjectURL(url);
-          return;
-        }
-        var old = el.src;
-        el.src = url;
-        if (old.indexOf("blob:") === 0) setTimeout(function() {
-          URL.revokeObjectURL(old);
-        }, 1e3);
-      };
-      i.src = url;
-    }).catch(function() {
-    });
-  }
-  function cdMap(m) {
-    var d = m && m.downloads && m.downloads[0];
-    return !!(d && d.label === "CellDesigner");
-  }
-  var warm;
-  function __run62() {
-    warm = null;
-  }
-  function warmUp() {
-    clearTimeout(warm);
-    warm = setTimeout(function() {
-      var eb = document.querySelector('#m2-rail .m2-ri[data-win="edit"]');
-      if (cdp || !eb || !eb.offsetParent || !cdMap(V.current)) return;
-      (window.requestIdleCallback || function(f) {
-        setTimeout(f, 0);
-      })(function() {
-        if (cdp || !cdMap(V.current)) return;
-        var s0 = status.textContent, w0 = status.classList.contains("m2-ed-warn");
-        var back2 = function() {
-          if (!on) {
-            status.textContent = s0;
-            status.classList.toggle("m2-ed-warn", w0);
-          }
-        };
-        cdpy().then(back2, function() {
-        });
-        back2();
-      });
-    }, 2500);
-  }
-  function __run72() {
-    warmUp();
-  }
-  function __start2() {
-    __run110();
-    __run34();
-    __run4();
-    __run52();
-    __run62();
-    __run72();
-  }
-  function cdFormat() {
-    return {
-      name: "cd",
-      now: function() {
-        return shared.cd.now;
-      },
-      ownFrame: true,
-      live: function() {
-        return liveCd;
-      },
-      cardDown: cdCardDown,
-      mainLines: true,
-      afView: false,
-      beside: function() {
-        return shared.cd.now;
-      },
-      kind: function(n) {
-        var c = cdClsOf(n.id);
-        return c ? c[0] : n.comp ? "compartment" : null;
-      },
-      // its species class, or compartment
-      ownName: cdNameOf,
-      rename: cdRename,
-      nameable: function() {
-        return !!cdMk;
-      }
-    };
-  }
-
-  // editor/src/graphml.js
-  var yrp;
-  function __run111() {
-    yrp = null;
-  }
-  function yr() {
-    if (yrp) return yrp;
-    yrp = new Promise(function(res, rej) {
-      if (window.yrender) return res(window.yrender);
-      var s = document.createElement("script");
-      s.src = V.renderers + "yrender/yrender.js" + V.build;
-      s.onload = function() {
-        res(window.yrender);
-      };
-      s.onerror = function() {
-        rej("renderer not found");
-      };
-      document.head.appendChild(s);
-    });
-    yrp.catch(function(e) {
-      yrp = null;
-      warn("The renderer did not load: " + e);
-    });
-    return yrp;
-  }
-  function drawGraphml(t) {
-    var A = shared.afSbgn ? afGraphml(t === docText && doc ? doc.cloneNode(true) : new DOMParser().parseFromString(t, "application/xml")) : null;
-    var r = window.yrender.render(A ? A.doc : t === docText && doc ? doc : t, { classes: true, groups: true, sbgn: !!shared.sb });
-    if (!A) shared.hpMemo = [t, r.ports];
-    if (!A && on) yAhead(t);
-    return [A ? afUnits(r.svg, A.units) : r.svg, r.errors];
-  }
-  var AF_KINDS;
-  function __run26() {
-    AF_KINDS = /^(Macromolecule|SimpleChemical|NucleicAcidFeature|UnspecifiedEntity|Complex)$/;
-  }
-  function afGraphml(d) {
-    var units = [], up = {}, keys = {};
-    Array.prototype.forEach.call(d.getElementsByTagNameNS(G, "key"), function(k) {
-      if (k.getAttribute("for") === "node") keys[k.getAttribute("id")] = k.getAttribute("attr.name");
-    });
-    var prop = function(n, name2) {
-      var x = Array.prototype.filter.call(n.childNodes, function(c) {
-        return c.localName === "data" && keys[c.getAttribute("key")] === name2;
-      })[0];
-      return x ? x.textContent.trim() : null;
-    };
-    var uText = {};
-    Array.prototype.forEach.call(d.getElementsByTagNameNS(Y, "Resource"), function(q) {
-      var gn = q.getElementsByTagNameNS(Y, "GenericNode")[0], l = gn && /UnitOfInformation$/.test(gn.getAttribute("configuration") || "") && gn.getElementsByTagNameNS(Y, "NodeLabel")[0];
-      if (l) uText[q.getAttribute("id")] = l.textContent;
-    });
-    var ownNode = function(e) {
-      for (var q = e.parentNode; q; q = q.parentNode) if (q.localName === "node" && q.namespaceURI === G) return q;
-      return null;
-    };
-    Array.prototype.slice.call(d.getElementsByTagNameNS(G, "node")).forEach(function(n) {
-      if (up[n.getAttribute("id")]) return;
-      var rs = ["GenericNode", "GenericGroupNode"].reduce(function(a, k) {
-        return a.concat(Array.prototype.slice.call(n.getElementsByTagNameNS(Y, k)));
-      }, []).filter(function(r) {
-        return ownNode(r) === n;
-      });
-      var kind = null, txt = "";
-      rs.forEach(function(r) {
-        var k = (r.getAttribute("configuration") || "").replace("com.yworks.sbgn.", "");
-        if (!AF_KINDS.test(k)) return;
-        kind = kind || k;
-        r.setAttribute("configuration", "com.yworks.sbgn.Macromolecule");
-        Array.prototype.slice.call(r.getElementsByTagNameNS(Y, "StyleProperties")).forEach(function(x) {
-          x.parentNode.removeChild(x);
-        });
-        var sp = d.createElementNS(Y, "y:StyleProperties"), pr = d.createElementNS(Y, "y:Property");
-        pr.setAttribute("class", "java.lang.Integer");
-        pr.setAttribute("name", "com.yworks.sbgn.style.radius");
-        pr.setAttribute("value", "0");
-        sp.appendChild(pr);
-        r.appendChild(sp);
-        Array.prototype.slice.call(r.getElementsByTagNameNS(Y, "NodeLabel")).forEach(function(l) {
-          var q = l.getAttribute("iconData");
-          if (!q) return;
-          if (!txt && uText[q]) txt = uText[q];
-          l.parentNode.removeChild(l);
-        });
-      });
-      if (!kind) return;
-      var r0 = realizerOf(n) || rs[0], g = r0.getElementsByTagNameNS(Y, "Geometry")[0];
-      var act = prop(n, "SBGN class") === "biological activity";
-      units.push([n.getAttribute("id"), act ? prop(n, "SBGN unit") || "" : sbJs.unitFor(kind) || "", +g.getAttribute("x"), +g.getAttribute("y"), +g.getAttribute("width"), +g.getAttribute("height"), act ? txt.trim() : ""]);
-      Array.prototype.slice.call(n.childNodes).forEach(function(c) {
-        if (c.localName !== "graph") return;
-        var names = [];
-        Array.prototype.forEach.call(c.getElementsByTagNameNS(G, "node"), function(m) {
-          up[m.getAttribute("id")] = n.getAttribute("id");
-          var ml = Array.prototype.filter.call(m.getElementsByTagNameNS(Y, "NodeLabel"), function(l) {
-            return !l.getAttribute("iconData") && l.textContent.trim();
-          })[0];
-          if (ml && !m.getElementsByTagNameNS(G, "graph").length) names.push(ml.textContent.trim());
-        });
-        n.removeChild(c);
-        rs.forEach(function(r) {
-          var l = Array.prototype.filter.call(r.getElementsByTagNameNS(Y, "NodeLabel"), function(x) {
-            return !x.getAttribute("iconData");
-          })[0];
-          if (!l) return;
-          if (!l.textContent.trim() && names.length) {
-            while (l.firstChild) l.removeChild(l.firstChild);
-            l.appendChild(d.createTextNode(names.join(":")));
-            l.setAttribute("hasText", "true");
-          }
-          l.setAttribute("modelName", "internal");
-          l.setAttribute("modelPosition", "c");
-        });
-      });
-    });
-    Array.prototype.slice.call(d.getElementsByTagNameNS(G, "edge")).forEach(function(e) {
-      var p = e.getElementsByTagNameNS(Y, "Path")[0];
-      if (up[e.getAttribute("source")] && up[e.getAttribute("source")] === up[e.getAttribute("target")]) {
-        e.parentNode.removeChild(e);
-        return;
-      }
-      [["source", "sx", "sy"], ["target", "tx", "ty"]].forEach(function(q) {
-        var to = up[e.getAttribute(q[0])];
-        if (!to) return;
-        e.setAttribute(q[0], to);
-        if (p) {
-          p.setAttribute(q[1], "0.0");
-          p.setAttribute(q[2], "0.0");
-        }
-      });
-    });
-    return { doc: d, units };
-  }
-  function afUnits(svg, units) {
-    var esc = function(x) {
-      return x.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#x27;");
-    };
-    var byId = {};
-    units.forEach(function(u) {
-      var B = sbJs.afUnitBox(u.slice(2, 6), u[1], u[6]);
-      if (!B) return;
-      var x = B[0], y = B[1], w = B[2], h = B[3], c = h * 0.3, m = y + h / 2, f = function(v) {
-        return Math.round(v * 100) / 100;
-      }, k = sbJs.unitClass(u[1]), D;
-      if (k === "macromolecule") D = "M" + f(x + c) + " " + f(y) + "H" + f(x + w - c) + "Q" + f(x + w) + " " + f(y) + " " + f(x + w) + " " + f(y + c) + "V" + f(y + h - c) + "Q" + f(x + w) + " " + f(y + h) + " " + f(x + w - c) + " " + f(y + h) + "H" + f(x + c) + "Q" + f(x) + " " + f(y + h) + " " + f(x) + " " + f(y + h - c) + "V" + f(y + c) + "Q" + f(x) + " " + f(y) + " " + f(x + c) + " " + f(y) + "Z";
-      else if (k === "nucleic acid feature") D = "M" + f(x) + " " + f(y) + "H" + f(x + w) + "V" + f(y + h - c) + "Q" + f(x + w) + " " + f(y + h) + " " + f(x + w - c) + " " + f(y + h) + "H" + f(x + c) + "Q" + f(x) + " " + f(y + h) + " " + f(x) + " " + f(y + h - c) + "Z";
-      else if (k === "complex") D = "M" + f(x + c) + " " + f(y) + "H" + f(x + w - c) + "L" + f(x + w) + " " + f(y + c) + "V" + f(y + h - c) + "L" + f(x + w - c) + " " + f(y + h) + "H" + f(x + c) + "L" + f(x) + " " + f(y + h - c) + "V" + f(y + c) + "Z";
-      else if (k === "phenotype") D = "M" + f(x) + " " + f(y) + "H" + f(x + w) + "L" + f(x + w - c) + " " + f(m) + "L" + f(x + w) + " " + f(y + h) + "H" + f(x) + "L" + f(x + c) + " " + f(m) + "Z";
-      else D = "M" + f(x) + " " + f(m) + "A" + f(w / 2) + " " + f(h / 2) + " 0 1 0 " + f(x + w) + " " + f(m) + "A" + f(w / 2) + " " + f(h / 2) + " 0 1 0 " + f(x) + " " + f(m) + "Z";
-      var fs = sbJs.afUnitFont(h), T = u[6] ? '<text class="m2-af-ut" x="' + f(x + w / 2) + '" y="' + f(m) + '" font-family="Arial, Helvetica, sans-serif" font-size="' + f(fs) + '" text-anchor="middle" dominant-baseline="central" fill="#000000">' + esc(u[6].replace(/\s*\n\s*/g, " ")) + "</text>" : "";
-      byId[esc(u[0])] = '<path d="' + D + '" fill="white" class="c-white" stroke="#000000"/>' + T;
-    });
-    var out = [], at2 = 0, stack = [], re = /<g data-n="([^"]*)">|<g[\s>]|<\/g>/g, mt;
-    while (mt = re.exec(svg)) {
-      if (mt[0] === "</g>") {
-        var id = stack.pop();
-        if (id && byId[id]) {
-          out.push(svg.slice(at2, mt.index), byId[id]);
-          at2 = mt.index;
-        }
-      } else stack.push(mt[1] || null);
-    }
-    out.push(svg.slice(at2));
-    return out.join("");
-  }
-  var yLive;
-  var liveY;
-  function __run35() {
-    yLive = null;
-    liveY = { glyphs: function() {
-    }, lines: yLines, holders: null };
-  }
-  function svgEl(svg) {
-    var g = new DOMParser().parseFromString('<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">' + svg + "</svg>", "image/svg+xml").documentElement.firstElementChild;
-    if (!g) return null;
-    g = document.importNode(g, true);
-    g.removeAttribute("data-e");
-    g.removeAttribute("data-n");
-    g.classList.add("m2-ed-copy");
-    return g;
-  }
-  function ySession(t) {
-    if (yLive && yLive.t === t) return yLive;
-    var ix = {};
-    edges2.forEach(function(e, k) {
-      ix[e.id] = k;
-    });
-    yLive = { t, ix, s: window.yrender.live(t === docText && doc ? doc : t, { classes: true, sbgn: !!shared.sb }) };
-    return yLive;
-  }
-  function yAhead(t) {
-    var go = function() {
-      try {
-        if (on && !mv && !shared.keyed && window.yrender && window.yrender.live && t === shared.text) ySession(t);
-      } catch (x) {
-      }
-    };
-    if (window.requestIdleCallback) requestIdleCallback(go, { timeout: 2e3 });
-    else setTimeout(go, 300);
-  }
-  function yLines(ks, pp) {
-    if (!gE || shared.afSbgn || !lastFor || lastFor[3] || !window.yrender || !window.yrender.live || pp && pp.n2 != null) return false;
-    var t = lastFor[0], out;
-    try {
-      if (!ySession(t).s) return false;
-      var boxes = {}, paths = {}, ways = {}, moved = /* @__PURE__ */ new Set();
-      nodes2.forEach(function(n, i) {
-        var p = shared.poseNow && shared.poseNow[i], a = bx(i), b = restBox(i);
-        if (p && p.way) ways[n.id] = p.way;
-        if (a[0] !== b[0] || a[1] !== b[1] || a[2] !== b[2] || a[3] !== b[3]) {
-          boxes[n.id] = a;
-          moved.add(i);
-        }
-      });
-      edges2.forEach(function(e, k) {
-        var pts = e.pts.map(pt), mine2 = pp && pp.to && pp.k === k;
-        if (!mine2 && !ks.has(k)) {
-          if (!moved.has(e.s) && !moved.has(e.t) && !e.pts.some(function(pi, j2) {
-            var r = restPt(pi);
-            return r[0] !== pts[j2][0] || r[1] !== pts[j2][1];
-          })) return;
-        }
-        var q = ["sx", "sy", "tx", "ty"].map(function(a) {
-          return e.path ? parseFloat(e.path.getAttribute(a)) || 0 : 0;
-        });
-        q = posePort(e.s, q.slice(0, 2), k).concat(posePort(e.t, q.slice(2), k));
-        if (mine2) {
-          var j = pp.end ? 2 : 0;
-          q[j] = pp.to[0];
-          q[j + 1] = pp.to[1];
-        }
-        paths[e.id] = { pts, port: q };
-      });
-      out = yLive.s.draw(boxes, paths, Array.from(ks, function(k) {
-        return edges2[k].id;
-      }), ways);
-    } catch (x) {
-      out = null;
-    }
-    if (!out) return false;
-    dropCopies();
-    Object.keys(out.n).forEach(function(id) {
-      var g = gN[id], c = svgEl(out.n[id]), tr = g && (g.getAttribute("transform") || "").match(/translate\(([-\d.e]+)[ ,]+([-\d.e]+)\)/);
-      if (!g || !c) return;
-      if (!tr) {
-        g.style.display = "none";
-        g.parentNode.insertBefore(c, g.nextSibling);
-        shared.copies.push([c, g, null]);
-        return;
-      }
-      c.setAttribute("transform", "translate(" + -tr[1] + " " + -tr[2] + ")");
-      Array.prototype.forEach.call(g.children, function(x) {
-        x.style.display = "none";
-        shared.copies.push([document.createComment(""), x, null]);
-      });
-      g.insertBefore(c, g.firstChild);
-      shared.copies.push([c, null, null]);
-    });
-    Object.keys(out.e).forEach(function(id) {
-      var gs = gE[id], c = svgEl(out.e[id]);
-      if (!gs || !c) return;
-      gs.forEach(function(g, j) {
-        g.style.display = "none";
-        if (j) shared.copies.push([document.createComment(""), g, yLive.ix[id]]);
-      });
-      gs[0].parentNode.insertBefore(c, gs[0].nextSibling);
-      shared.copies.push([c, gs[0], yLive.ix[id]]);
-    });
-    return true;
-  }
-  function shiftedAhead(t, d) {
-    var R;
-    try {
-      R = import_graphml_edit.default.read(t, { doc: d });
-    } catch (e) {
-      return t;
-    }
-    var sh = import_graphml_edit.default.shiftOf(R.nodes.map(function(n) {
-      var g = R.geos[n.ag];
-      return [num(g, "x"), num(g, "y")];
-    }), R.points.map(function(p) {
-      return [num(p, "x"), num(p, "y")];
-    }), gridBlock());
-    return sh ? import_graphml_edit.default.shift(t, sh[0], sh[1]) : t;
-  }
-  function noNegative() {
-    var sh = import_graphml_edit.default.shiftOf(nodes2.map(function(n, i) {
-      return boxOf(i);
-    }), points.map(function(p) {
-      return [num(p, "x"), num(p, "y")];
-    }), gridBlock());
-    if (!sh) return null;
-    setText(import_graphml_edit.default.shift(shared.text, sh[0], sh[1]));
-    return sh;
-  }
-  function __start3() {
-    __run111();
-    __run26();
-    __run35();
-  }
-  function graphmlFormat() {
-    return {
-      name: "graphml",
-      now: function() {
-        return shared.text;
-      },
-      ownFrame: false,
-      live: function() {
-        return liveY;
-      },
-      mainLines: false,
-      afView: true,
-      beside: function() {
-        return null;
-      },
-      kind: function(n) {
-        return n.shape && n.shape.kind || null;
-      },
-      // a node's shape
-      nameable: function() {
-        return !!sbJs;
-      }
-    };
-  }
-
-  // editor/src/sbgn.js
-  var sbp;
-  var sbJs;
-  var EMPTY_BASE;
-  var baseURL;
-  function __run112() {
-    sbp = null, sbJs = null;
-    EMPTY_BASE = `<?xml version='1.0' encoding='UTF-8'?>
-<graphml xmlns="http://graphml.graphdrawing.org/xmlns" xmlns:y="http://www.yworks.com/xml/graphml">
-  <key for="node" id="ng" yfiles.type="nodegraphics"/>
-  <key for="graphml" id="res" yfiles.type="resources"/>
-  <key for="edge" id="eg" yfiles.type="edgegraphics"/>
-  <graph edgedefault="directed" id="G"/>
-  <data key="res">
-    <y:Resources/>
-  </data>
-</graphml>
-`;
-    baseURL = null;
-  }
-  function emptyBase() {
-    return baseURL || (baseURL = URL.createObjectURL(new Blob([EMPTY_BASE], { type: "application/xml" })));
-  }
-  var NEW_ID;
-  function __run210() {
-    NEW_ID = "viewer-new-map";
-  }
-  function madeHere(t) {
-    return new RegExp('<map\\s[^>]*id="' + NEW_ID + '"').test(t.slice(0, 3e3));
-  }
-  function isSb(t) {
-    return /<([\w.-]+:)?sbgn[\s>]/.test(t.slice(0, 3e3));
-  }
-  function isSbml(t) {
-    t = t || "";
-    return /<sbml[\s>]/.test(t.slice(0, 3e3)) && t.indexOf("listOfLayouts") >= 0 && t.slice(0, 2e5).indexOf("celldesigner") < 0;
-  }
-  function viaGraphml(t) {
-    return isSb(t) || isSbml(t);
-  }
-  function edOf(t) {
-    return isSbml(t) && window.sbml_edit ? window.sbml_edit : sbJs;
-  }
-  function sbMap(m) {
-    return !!(m && !m.shownAs && (m.site || m).editBase);
-  }
-  function sbScript(name2) {
-    return new Promise(function(res, rej) {
-      if (window[name2]) return res();
-      var s = document.createElement("script");
-      s.src = V.renderers + "converter/" + name2 + ".js" + V.build;
-      s.onload = res;
-      s.onerror = function() {
-        rej(name2 + " not found");
-      };
-      document.head.appendChild(s);
-    });
-  }
-  function sbpy() {
-    if (sbp) return sbp;
-    sbp = sbScript("sbgn_edit").then(function() {
-      return sbScript("sbml_edit").catch(function() {
-      });
-    }).then(yr).then(function() {
-      sbJs = window.sbgn_edit;
-      return sbJs;
-    });
-    sbp.catch(function(e) {
-      sbp = null;
-      warn("The SBGN-ML side did not load: " + e);
-    });
-    return sbp;
-  }
-  function sbBase(m, low) {
-    var e = m.site || m;
-    if (e.ownText) return sbpy().then(function() {
-      return sbReader(e.ownText());
-    }).then(function() {
-      return sbOwn(e.ownText());
-    });
-    return fetch(e.editBase + V.ver(e), { priority: low ? "low" : "auto" }).then(function(r) {
-      if (!r.ok) throw r.status;
-      return r.text();
-    });
-  }
-  var ownMemo;
-  var readerP;
-  function sbReader(t) {
-    if (madeHere(t) || window.sbgnml_read) return Promise.resolve();
-    readerP = readerP || sbScript("sbgnml_read");
-    readerP.catch(function() {
-      readerP = null;
-    });
-    return readerP;
-  }
-  function sbOwn(t) {
-    if (madeHere(t)) return EMPTY_BASE;
-    if (!window.sbgnml_read) throw new Error("the SBGN-ML reader did not load");
-    if (!ownMemo || ownMemo[0] !== t) {
-      var r = window.sbgnml_read.graphml(t);
-      if (r.text.indexOf("<node ") < 0 && r.messages.some(function(x) {
-        return x[0] === "left out";
-      })) {
-        if (/<([\w.-]+:)?map\s[^>]*language\s*=\s*["']entity relationship/.test(t.slice(0, 5e3))) throw new Error("an Entity Relationship map, which this editor does not read yet");
-        var gone = r.messages.filter(function(x) {
-          return x[0] === "left out";
-        }).map(function(x) {
-          return x[1].replace(/: (\d+) left out \(.*$/, " ($1)");
-        });
-        throw new Error("nothing in it can be drawn" + (gone.length ? " (left out: " + gone.join(", ") + ")" : ""));
-      }
-      ownMemo = [t, r.text];
-    }
-    return ownMemo[1];
-  }
-  var sbMemo;
-  function __run36() {
-    sbMemo = [];
-    ownMemo = null;
-    outMemo = null;
-  }
-  function sbGraphml(t, base) {
-    for (var i = 0; i < sbMemo.length; i++) if (sbMemo[i][0] === t && sbMemo[i][1] === base) return sbMemo[i][2];
-    var ed = edOf(t), g = ed.graphml(ed.unique ? ed.unique(t, base) : t, base);
-    sbRemember(t, g, base);
-    return g;
-  }
-  function sbRemember(t, g, base) {
-    sbMemo.unshift([t, base, g]);
-    sbMemo.length = Math.min(sbMemo.length, 3);
-  }
-  function sbNow() {
-    if (!shared.sbLast || shared.sbLast[0] !== shared.text || shared.sbLast[2] !== shared.sb) {
-      try {
-        shared.sbLast = [shared.text, edOf(shared.sb.base).write(shared.sb.base, shared.text), shared.sb];
-      } catch (e) {
-        warn("The moves could not be written into the SBGN-ML file: " + (e && e.message || e) + ". The last version written is kept.");
-        return sbOut(shared.sbLast && shared.sbLast[2] === shared.sb ? shared.sbLast[1] : shared.sb.base);
-      }
-    }
-    return sbOut(shared.sbLast[1]);
-  }
-  var outMemo;
-  function sbOut(w) {
-    if (V.sites || !sbJs || !sbJs.sitesOut || !isSb(w)) return w;
-    if (!outMemo || outMemo[0] !== w) {
-      var o = w;
-      try {
-        o = sbJs.sitesOut(w);
-      } catch (e) {
-      }
-      outMemo = [w, o];
-    }
-    return outMemo[1];
-  }
-  function sbIn(t) {
-    try {
-      return sbJs && sbJs.sitesIn && isSb(t) ? sbJs.sitesIn(t) : t;
-    } catch (e) {
-      return t;
-    }
-  }
-  var sbPlaced;
-  function __run53() {
-    sbPlaced = null;
-  }
-  function sbPlace() {
-    if (!sbJs.countsPlace || shared.text === sbPlaced || shared.text.indexOf("<y:EdgeLabel") < 0) return false;
-    var t2 = sbJs.countsPlace(shared.text), was = shared.text !== t2;
-    setText(sbPlaced = t2);
-    return was;
-  }
-  var sbK;
-  var GEO;
-  function __run63() {
-    sbK = { sb: null };
-    GEO = /\s(?:x|y|width|height|sx|sy|tx|ty|ratio|modelPosition|nodeRatioX|nodeRatioY|labelRatioX|labelRatioY|offsetX|offsetY|borderDistance)="[^"]*"/g;
-  }
-  function sbRead() {
-    var s = src();
-    sbK.text = shared.text;
-    sbK.key = shared.text.replace(GEO, "");
-    sbK.bad = !(shared.sbLast && shared.sbLast[0] === shared.text && shared.sbLast[2] === shared.sb);
-    if (!sbK.bad) {
-      sbK.kind = edOf(s).mapKind(s);
-      sbK.af = edOf(s).isAf(s);
-    }
-  }
-  function sbKind(how) {
-    if (!shared.sb || !sbJs) return "empty";
-    if (how) sbPlace();
-    if (sbK.sb !== shared.sb) sbK = { sb: shared.sb, text: null, key: null, kind: "empty", af: false, g: null, bad: false };
-    if (sbK.text !== shared.text) {
-      if (sbK.bad || sbK.key !== shared.text.replace(GEO, "")) sbRead();
-      else sbK.text = shared.text;
-    }
-    if (sbK.bad) return sbK.kind;
-    if (sbK.g == null || how === "back") sbK.g = sbK.af;
-    else if (how === "follow" && sbK.g !== sbK.af) {
-      var g, key = shared.text.replace(GEO, "");
-      if (sbK.failed === key) return sbK.kind;
-      try {
-        g = edOf(src()).graphml(src(), shared.text);
-      } catch (e) {
-        sbK.failed = key;
-        warn("The map could not be read again after it turned " + (sbK.af ? "Activity Flow" : "Process Description") + ": " + (e && e.message || e) + ".");
-        return sbK.kind;
-      }
-      setText(g);
-      sbRead();
-      if (!sbK.bad) sbK.g = sbK.af;
-    }
-    return sbK.kind;
-  }
-  function sbFollow() {
-    if (!shared.sb || !sbJs || drag || sbK.sb !== shared.sb) return;
-    if (sbPlace()) {
-      parse();
-      shared.dirty = true;
-      render();
-      paint();
-    }
-    sbKind();
-    if (sbK.bad || sbK.g == null || sbK.g === sbK.af || sbK.failed === shared.text.replace(GEO, "")) return;
-    parse();
-    shared.selP = [];
-    shared.selE = [];
-    shared.dirty = true;
-    render();
-    paint();
-  }
-  var sbClsMemo;
-  function __run73() {
-    sbClsMemo = [null, {}];
-  }
-  function sbClasses() {
-    if (sbClsMemo[0] !== shared.text) {
-      var m = {}, d = new DOMParser().parseFromString(src(), "application/xml");
-      Array.prototype.forEach.call(d.getElementsByTagNameNS("*", "glyph"), function(g) {
-        if (g.getAttribute("id")) m[g.getAttribute("id")] = g.getAttribute("class") || "";
-      });
-      sbClsMemo = [shared.text, m];
-    }
-    return sbClsMemo[1];
-  }
-  function __start4() {
-    __run112();
-    __run210();
-    __run36();
-    __run53();
-    __run63();
-    __run73();
-  }
-  function sbFormat() {
-    return {
-      name: "sb",
-      now: sbNow,
-      ownFrame: false,
-      live: function() {
-        return liveY;
-      },
-      mainLines: false,
-      afView: true,
-      beside: function() {
-        return null;
-      },
-      kind: function(n) {
-        var c = sbClasses()[n.id];
-        return c ? c.replace(/ multimer$/, "") : null;
-      },
-      // a glyph's class, a multimer with its plain kind
-      nameable: function(id) {
-        return !!sbJs && edOf(src()).nameable(src(), id);
-      }
-    };
+    __run322();
+    __run332();
   }
 
   // editor/src/own.js
@@ -4692,7 +4744,7 @@
     });
   }
   var dirP;
-  function __run113() {
+  function __run110() {
     dirP = null;
   }
   function folder() {
@@ -4747,7 +4799,7 @@
   var MINE_KEY;
   var mine;
   var mineURLs;
-  function __run211() {
+  function __run26() {
     MINE_KEY = "atlas-mine", mine = {}, mineURLs = {};
   }
   function mineFlag() {
@@ -4758,7 +4810,7 @@
     }
   }
   var mineIn;
-  function __run37() {
+  function __run35() {
     mineIn = function() {
       var has;
       try {
@@ -5652,7 +5704,7 @@
     return own2.concat(list2, binned);
   }
   var exBackup;
-  function __run122() {
+  function __run123() {
     exBackup = null;
   }
   function backupKnown() {
@@ -5942,7 +5994,7 @@
     return "mine-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   }
   var making;
-  function __run132() {
+  function __run133() {
     making = false;
   }
   function newMap(group, fmt2) {
@@ -5995,7 +6047,7 @@
   var renamed;
   var NAMED_KEY;
   var nk;
-  function __run142() {
+  function __run143() {
     renamed = {};
     NAMED_KEY = "atlas-named:" + location.pathname;
     try {
@@ -6697,7 +6749,7 @@
     });
   }
   var BIN_FILE;
-  function __run222() {
+  function __run223() {
     BIN_FILE = "maps/deleted.json";
   }
   function pageless(m) {
@@ -6734,7 +6786,7 @@
     });
   }
   var pbWait;
-  function __run232() {
+  function __run233() {
     pbWait = {};
   }
   function pagelessBin(id, on2) {
@@ -7590,9 +7642,9 @@
     mineIn.then(upAll).then(binMigrate);
   }
   function __start5() {
-    __run113();
-    __run211();
-    __run37();
+    __run110();
+    __run26();
+    __run35();
     __run42();
     __run54();
     __run64();
@@ -7601,9 +7653,9 @@
     __run92();
     __run102();
     __run11();
-    __run122();
-    __run132();
-    __run142();
+    __run123();
+    __run133();
+    __run143();
     __run152();
     __run162();
     __run172();
@@ -7611,8 +7663,8 @@
     __run192();
     __run202();
     __run212();
-    __run222();
-    __run232();
+    __run223();
+    __run233();
     __run242();
     __run252();
     __run262();
@@ -7624,7 +7676,7 @@
   // editor/src/create.js
   var import_notation2 = __toESM(require_notation());
   var PRESET;
-  function __run114() {
+  function __run111() {
     PRESET = { "nucleic acid feature ct:gene": ["nucleic acid feature", ["ct:gene"]], "nucleic acid feature ct:mRNA": ["nucleic acid feature", ["ct:mRNA"]] };
   }
   function baseKind(k) {
@@ -7651,7 +7703,7 @@
   var ACT_REST_CD;
   var PERT;
   var LOGIC;
-  function __run213() {
+  function __run210() {
     PAL_PD = [
       // groups named as SBGN's PD reference card, ordered
       // nodes first, the gates, the arcs last; the gates and the arcs each start a block of the one list (palSigns);
@@ -7789,7 +7841,7 @@
   var PALS;
   var ARCS;
   var MODK;
-  function __run38() {
+  function __run36() {
     PALS = { pd: PAL_PD, rn: palAf(false), sbgn: palAf(true), rnP: palAf(false, true), sbgnP: palAf(true, true) };
     ARCS = {}, MODK = {};
     PAL_PD[4][1].forEach(function(q) {
@@ -7980,7 +8032,7 @@
     ddOpen = null;
     if (back2) f.focus();
   }
-  function __run115() {
+  function __run112() {
     document.addEventListener("pointerdown", function(e) {
       if (ddOpen && !ddOpen.contains(e.target) && !ddOpen._r.contains(e.target)) ddClose();
     }, true);
@@ -8079,7 +8131,7 @@
   }
   var CHOICE_KEY;
   var choiceMemo;
-  function __run123() {
+  function __run124() {
     CHOICE_KEY = "atlas-edit-map-choices", choiceMemo = {};
     try {
       ["atlas-edit-style", "atlas-edit-sb-colours", "atlas-edit-cd-colours"].forEach(function(k) {
@@ -8110,7 +8162,7 @@
     }
   }
   var ORIG_KEY;
-  function __run133() {
+  function __run134() {
     ORIG_KEY = "atlas-edit-originals";
   }
   function origAll() {
@@ -8131,7 +8183,7 @@
     }
   }
   var pickSeq;
-  function __run143() {
+  function __run144() {
     pickSeq = 0;
   }
   function colsPick(v, cur, take2, back2, recolour) {
@@ -8537,7 +8589,7 @@
       palFill();
     }
   }
-  function __run214() {
+  function __run213() {
     box.querySelector(".m2-ed-tools").insertAdjacentElement("afterend", pal);
   }
   function palOn() {
@@ -8570,7 +8622,7 @@
   }
   var placeAt;
   var placedAt;
-  function __run223() {
+  function __run224() {
     pal.addEventListener("click", function(e) {
       var b = e.target.closest("button[data-make]");
       if (!b) return;
@@ -8637,7 +8689,8 @@
   }
   function joinPlan(moved, leaving) {
     var out = { joins: [], why: "" };
-    if (!on || V.current !== map || V.level !== "full" || !moved.length || (shared.cd ? !cdMk || !cdMk.join : !palOn() || !sbJs.join || palKind() === "af" || shared.afSbgn)) return out;
+    var J = shared.F.join;
+    if (!on || V.current !== map || V.level !== "full" || !moved.length || !J || !J.ok()) return out;
     var at2 = {}, cx = [], mv0 = {};
     nodes2.forEach(function(n, i) {
       at2[n.id] = i;
@@ -8656,7 +8709,7 @@
     };
     moved.forEach(function(id) {
       var i = at2[id];
-      if (i == null || out.why || shared.cd && cdOwn(i) || nodes2[i].up != null && mv0[nodes2[nodes2[i].up].id] || !out0[id] && inCx(i)) return;
+      if (i == null || out.why || J.own && J.own(i) || nodes2[i].up != null && mv0[nodes2[nodes2[i].up].id] || !out0[id] && inCx(i)) return;
       var b = boxOf(i), P = [b[0] + b[2] / 2, b[1] + b[3] / 2], best = -1, area = Infinity;
       cx.forEach(function(j) {
         var q = boxOf(j);
@@ -8668,7 +8721,7 @@
       if (best < 0) return;
       var why;
       try {
-        why = shared.cd ? cdMk.joinable(shared.cd.now, id, nodes2[best].id) : sbJs.joinable(shared.text, id, nodes2[best].id);
+        why = J.joinable(id, nodes2[best].id);
       } catch (err) {
         return;
       }
@@ -8710,26 +8763,7 @@
     });
     var sel = shared.selN.map(function(i) {
       return nodes2[i].id;
-    }), done = [];
-    if (shared.cd) {
-      var N = cdNow(), t = N.t;
-      joins.forEach(function(q) {
-        try {
-          t = cdMk.join(t, q[0], q[1]);
-          done.push(q[1]);
-        } catch (err) {
-          warn(String(err && err.message || err));
-        }
-      });
-      if (done.length) cdRebuild(t, N.sh);
-    } else joins.forEach(function(q) {
-      try {
-        setText(sbJs.join(shared.text, q[0], q[1], { checked: true }));
-        done.push(q[1]);
-      } catch (err) {
-        warn("A glyph could not be put into the complex.");
-      }
-    });
+    }), done = shared.F.join.write(joins);
     if (!done.length) return done;
     parse();
     shared.dirty = true;
@@ -8779,7 +8813,7 @@
       }
     });
   }
-  function __run233() {
+  function __run234() {
     parseFix.push(terminals);
   }
   function subAt(P, d) {
@@ -10140,7 +10174,7 @@
   }
   var svDrag;
   var svKey;
-  function __run322() {
+  function __run323() {
     svDrag = null, svKey = null;
   }
   function svOn() {
@@ -10271,7 +10305,7 @@
       return b.width + b.height > 0 && cx >= L && cx <= R && cy >= T && cy <= B && b.left >= L - 2 && b.right <= R + 2 && b.top >= T - 2 && b.bottom <= B + 2;
     });
   }
-  function __run332() {
+  function __run333() {
     window.addEventListener("pointermove", function(e) {
       if (svDrag && svDrag.pick) {
         if (!e.buttons || Math.hypot(e.clientX - svDrag.x, e.clientY - svDrag.y) >= 5) svDrag = null;
@@ -10592,7 +10626,7 @@
     return commit(t2, { name: "deleted", ids: ids.concat(eids), sel: [] });
   }
   var KEYS;
-  function __run372() {
+  function __run37() {
     KEYS = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
   }
   function perim(b) {
@@ -10626,7 +10660,7 @@
     }
     return d[0] * OUT[sides[0]][0] + d[1] * OUT[sides[0]][1] > 0 ? -1 : 1;
   }
-  function __run382() {
+  function __run38() {
     document.addEventListener("keydown", function(e) {
       var d = KEYS[e.key];
       if (!d || !shared.svSel || !svOn() || e.ctrlKey || e.metaKey || e.altKey || /input|textarea|select/i.test(document.activeElement.tagName)) return;
@@ -12101,9 +12135,9 @@
     });
   }
   function __start6() {
-    __run114();
-    __run213();
-    __run38();
+    __run111();
+    __run210();
+    __run36();
     __run43();
     __run55();
     __run65();
@@ -12111,19 +12145,19 @@
     __run83();
     __run93();
     __run103();
-    __run115();
-    __run123();
-    __run133();
-    __run143();
+    __run112();
+    __run124();
+    __run134();
+    __run144();
     __run153();
     __run163();
     __run173();
     __run183();
     __run193();
     __run203();
-    __run214();
-    __run223();
-    __run233();
+    __run213();
+    __run224();
+    __run234();
     __run243();
     __run253();
     __run263();
@@ -12131,13 +12165,13 @@
     __run283();
     __run293();
     __run312();
-    __run322();
-    __run332();
+    __run323();
+    __run333();
     __run342();
     __run352();
     __run362();
-    __run372();
-    __run382();
+    __run37();
+    __run38();
     __run39();
     __run40();
     __run41();
@@ -12259,7 +12293,7 @@
     shared.frozen = false;
   }
   var livePose;
-  function __run215() {
+  function __run211() {
     livePose = [];
   }
   function posed(sets, rs) {
@@ -12636,12 +12670,12 @@
     shared.sizeRec = null;
   }
   function __start7() {
-    __run215();
+    __run211();
   }
 
   // editor/src/help.js
   var MOD;
-  function __run116() {
+  function __run113() {
     MOD = /mac|iphone|ipad|ipod/i.test(navigator.userAgentData && navigator.userAgentData.platform || navigator.platform || navigator.userAgent) ? "Cmd" : "Ctrl";
   }
   function helpList() {
@@ -12685,7 +12719,7 @@
   }
   var helpBtn;
   var helpBox;
-  function __run216() {
+  function __run214() {
     helpBtn = box.querySelector("#m2-ed-help"), helpBox = null;
   }
   function helpBuild() {
@@ -12759,8 +12793,8 @@
     }, true);
   }
   function __start8() {
-    __run116();
-    __run216();
+    __run113();
+    __run214();
     __run310();
   }
 
@@ -12770,7 +12804,7 @@
   var Y;
   var G;
   var drawing;
-  function __run117() {
+  function __run114() {
     lastSvg = null, lastFor = null;
     Y = "http://www.yworks.com/xml/graphml", G = "http://graphml.graphdrawing.org/xmlns";
     drawing = false;
@@ -12812,7 +12846,7 @@
   var keyGuides;
   var keyRun;
   var keyDue;
-  function __run217() {
+  function __run215() {
     box = document.getElementById("m2-editwin"), status = document.getElementById("m2-ed-status");
     overlay = document.getElementById("m2-edit-layer");
     on = false, map = null;
@@ -13551,7 +13585,7 @@
       URL.revokeObjectURL(a.href);
     }, 1e3);
   }
-  function __run118() {
+  function __run115() {
     box.querySelector("#m2-ed-local-dl").addEventListener("click", function() {
       if (shared.text) download();
     });
@@ -13707,7 +13741,7 @@
     status.classList.remove("m2-ed-warn");
   }
   var lay;
-  function __run124() {
+  function __run125() {
     lay = null;
   }
   function layout() {
@@ -13796,7 +13830,7 @@
   function pack(ids) {
     layTool("pack", ids);
   }
-  function __run134() {
+  function __run135() {
     box.querySelector("#m2-ed-tidy-grid").addEventListener("click", snapMap);
   }
   function outerComplex(i) {
@@ -13804,7 +13838,7 @@
     for (var u = i; u != null; u = nodes2[u].up) if (nodes2[u].shape.kind === "Complex") c = u;
     return c;
   }
-  function __run144() {
+  function __run145() {
     box.querySelector("#m2-ed-tidy-pack").addEventListener("click", function() {
       pack(shared.selN.map(function(i) {
         var c = outerComplex(i);
@@ -15034,7 +15068,7 @@
   var drawMemo;
   var preDoc;
   var editPre;
-  function __run218() {
+  function __run216() {
     bank = {}, preTimer = null, sweepT = 0, openTitle = null, drawMemo = null, preDoc = [], editPre = null;
   }
   function preKey(m) {
@@ -15058,7 +15092,7 @@
     });
   }
   var known;
-  function __run224() {
+  function __run225() {
     known = {};
   }
   function ghList() {
@@ -15126,7 +15160,7 @@
   var idle;
   var lastInput;
   var mark;
-  function __run234() {
+  function __run235() {
     idle = function() {
       return new Promise(function(res) {
         (window.requestIdleCallback || function(f) {
@@ -15961,7 +15995,7 @@
     return d + "L" + P(pts[pts.length - 1]);
   }
   var MAIN;
-  function __run323() {
+  function __run324() {
     MAIN = /^(.*)\|(a|b|r\d+|p\d+)$/;
   }
   function lit() {
@@ -16834,7 +16868,7 @@
     return commit(t, { name: "bend point removed", sel: [] });
   }
   var rclick;
-  function __run373() {
+  function __run372() {
     rclick = null;
   }
   function nowSvg() {
@@ -16843,7 +16877,7 @@
   function shownSvg() {
     return nowSvg() || (lastFor && !lastFor[3] && site && lastFor[2] === site.id ? lastSvg : null);
   }
-  function __run383() {
+  function __run382() {
     window.m2EditSites = function() {
       if (!on || !site || !shared.sb || !shared.sbLast || !sbJs || !sbJs.sitesOut) return;
       if (!isSb(shared.sbLast[1]) || src() === (site.saved || site.base)) return;
@@ -17658,8 +17692,8 @@
     }, true);
   }
   function __start9() {
-    __run117();
-    __run217();
+    __run114();
+    __run215();
     __run311();
     __run46();
     __run510();
@@ -17668,19 +17702,19 @@
     __run84();
     __run94();
     __run104();
-    __run118();
-    __run124();
-    __run134();
-    __run144();
+    __run115();
+    __run125();
+    __run135();
+    __run145();
     __run154();
     __run164();
     __run174();
     __run184();
     __run194();
     __run204();
-    __run218();
-    __run224();
-    __run234();
+    __run216();
+    __run225();
+    __run235();
     __run244();
     __run254();
     __run264();
@@ -17689,12 +17723,12 @@
     __run294();
     __run302();
     __run313();
-    __run323();
+    __run324();
     __run343();
     __run353();
     __run363();
-    __run373();
-    __run383();
+    __run372();
+    __run382();
     __run392();
     __run402();
     __run412();
@@ -17766,17 +17800,17 @@
     setV(v);
     window.m2EditState = function() {
       var s = stateNow();
-      s.cdKept = cdKept2();
+      s.cdKept = cdKept();
       return s;
     };
     window.m2EditPlant = plant;
     __start9();
     __start7();
+    __start();
     __start3();
     __start2();
-    __start4();
     __start6();
-    __start();
+    __start4();
     __start8();
     __start5();
     var tools = registry();

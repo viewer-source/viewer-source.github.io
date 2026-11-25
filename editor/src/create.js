@@ -1,7 +1,6 @@
 import { shared, V } from './state.js';
-import { G, GE, HANDLE, MODS, Y, asSpace, at, box, boxOf, cdOwn, changed, commit, complexHere, cutShape, doc, edges2, editing, f1, fmt, full, gE, gN, gridSet, grown, hit, holder, holderSize, holds, hubPorts, inComplex, inRim, keyTake, kindWindow, landMarks, lateItem, layTool, map, moveFix, name, nodes2, num, on, origFromFolder, origToFolder, outlineD, overlap, ownMenus, paint, parse, parseFix, quiet, rclick, realizerOf, refit, regroup, remember, render, rimOf, roleOf, roomy, setBoxes, setPort, setText, settle, site, src, subItem, sx, sy, takes, toGrid, under, undo, unpush, warn, x0, y0 } from './core.js';
+import { G, GE, HANDLE, MODS, Y, asSpace, at, box, boxOf, changed, commit, complexHere, cutShape, doc, edges2, editing, f1, fmt, full, gE, gN, gridSet, grown, hit, holder, holderSize, holds, hubPorts, inComplex, inRim, keyTake, kindWindow, landMarks, lateItem, layTool, map, moveFix, name, nodes2, num, on, origFromFolder, origToFolder, outlineD, overlap, ownMenus, paint, parse, parseFix, quiet, rclick, realizerOf, refit, regroup, remember, render, rimOf, roleOf, roomy, setBoxes, setPort, setText, settle, site, src, subItem, sx, sy, takes, toGrid, under, undo, unpush, warn, x0, y0 } from './core.js';
 import { bx, liveOff, livePose, sizeOff } from './live.js';
-import { cdMk, cdNow, cdRebuild } from './celldesigner.js';
 import { GEO, sbClasses, sbJs, sbKind } from './sbgn.js';
 import { CD_DEF_KEY, CD_GATE, PF_CD, cdClick, cdDeleteItem, cdFeat, cdFill, cdFront, cdGateMarks, cdGhost, cdHow, cdInfo, cdItems, cdKind, cdLineAt, cdLink, cdLinkMarks, cdLiveEnds, cdMake, cdMoveSays, cdNameDown, cdOnLine, cdOverMarks, cdPal, cdRole, cdSsTyped, cdStartOk, cdSvDelete, cdSvList, cdSvMove, cdSvOpen } from './cdcreate.js';
 import { origGh, origPut } from './own.js';
@@ -743,7 +742,8 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
     }
     function joinPlan(moved, leaving) {
       var out = { joins: [], why: '' };
-      if (!on || V.current !== map || V.level !== 'full' || !moved.length || (shared.cd ? !cdMk || !cdMk.join : !palOn() || !sbJs.join || palKind() === 'af' || shared.afSbgn)) return out;
+      var J = shared.F.join;   // the format's way to join (F.join): none on GraphML maps
+      if (!on || V.current !== map || V.level !== 'full' || !moved.length || !J || !J.ok()) return out;
       var at = {}, cx = [], mv0 = {};
       nodes2.forEach(function (n, i) { at[n.id] = i; if (n.shape.kind === 'Complex') cx.push(i); });
       moved.forEach(function (id) { mv0[id] = 1; });
@@ -751,7 +751,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       var inCx = function (i) { for (var u = nodes2[i].up; u != null; u = nodes2[u].up) if (nodes2[u].shape.kind === 'Complex') return true; return false; };
       moved.forEach(function (id) {
         var i = at[id];
-        if (i == null || out.why || (shared.cd && cdOwn(i)) || (nodes2[i].up != null && mv0[nodes2[nodes2[i].up].id]) || (!out0[id] && inCx(i))) return;
+        if (i == null || out.why || (J.own && J.own(i)) || (nodes2[i].up != null && mv0[nodes2[nodes2[i].up].id]) || (!out0[id] && inCx(i))) return;
         var b = boxOf(i), P = [b[0] + b[2] / 2, b[1] + b[3] / 2], best = -1, area = Infinity;
         cx.forEach(function (j) {   // the innermost complex round its centre that does not move with it
           var q = boxOf(j);
@@ -761,14 +761,14 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
         });
         if (best < 0) return;
         var why;
-        try { why = shared.cd ? cdMk.joinable(shared.cd.now, id, nodes2[best].id) : sbJs.joinable(shared.text, id, nodes2[best].id); } catch (err) { return; }
+        try { why = J.joinable(id, nodes2[best].id); } catch (err) { return; }
         if (!why) out.joins.push([id, nodes2[best].id]);
         else out.why = joinWhy(why, '"' + (nameOf(i) || id) + '"');
       });
       return out;
     }
-    // the joins of joinPlan written (SBGN-ML: into the editor's GraphML; CellDesigner: into the file, the GraphML made again
-    // from it), the selection kept; returns the ids of the complexes that took a member
+    // the joins of joinPlan written by the format (F.join.write; SBGN-ML: into the editor's GraphML; CellDesigner: into the
+    // file, the GraphML made again from it), the selection kept; returns the ids of the complexes that took a member
     // a glyph joining a complex where it would lie on a member is put first under the members, its left side on theirs
     // (Pack keeps members where they are and would leave the two on top of each other), with what it holds
     function joinBeside(id, cid) {
@@ -784,12 +784,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
     function joinDo(joins) {
       if (!joins.length) return [];
       joins.forEach(function (q) { joinBeside(q[0], q[1]); });
-      var sel = shared.selN.map(function (i) { return nodes2[i].id; }), done = [];
-      if (shared.cd) {
-        var N = cdNow(), t = N.t;
-        joins.forEach(function (q) { try { t = cdMk.join(t, q[0], q[1]); done.push(q[1]); } catch (err) { warn(String(err && err.message || err)); } });
-        if (done.length) cdRebuild(t, N.sh);
-      } else joins.forEach(function (q) { try { setText(sbJs.join(shared.text, q[0], q[1], { checked: true })); done.push(q[1]); } catch (err) { warn('A glyph could not be put into the complex.'); } });
+      var sel = shared.selN.map(function (i) { return nodes2[i].id; }), done = shared.F.join.write(joins);   // written the format's way (F.join)
       if (!done.length) return done;
       parse(); shared.dirty = true;
       var at = {}; nodes2.forEach(function (n, i) { at[n.id] = i; });

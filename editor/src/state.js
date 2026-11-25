@@ -16,6 +16,9 @@ export var shared = {};
 //   nameable(id)  the file can take a name for this node (setName; Name by members greyed when not)
 //   ownName(id, shown)  a name the format keeps its own way (CellDesigner: in its file; shown: as drawn); none: the GraphML label
 //   rename(id, v)  a name written the format's own way (CellDesigner); none: create.js's, the label through the engine
+//   join       how a glyph is put into a complex (create.js joinPlan, joinDo), or null (GraphML): { ok() joining is on,
+//              own(i) a node that never joins (optional), joinable(id, cid) why not or nothing, write(joins) the
+//              complexes that took a member }
 // Moved one question at a time (stage 1 of notes/format-object-design.md in the working repository).
 export var formats = {};
 export function addFormats(o) { Object.keys(o).forEach(function (k) { formats[k] = o[k]; }); }
