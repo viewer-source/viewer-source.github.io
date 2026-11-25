@@ -199,7 +199,7 @@ import { liveY, yr } from './graphml.js';
     function sbFormat() {
       return { name: 'sb', now: sbNow, ownFrame: false, live: function () { return liveY; }, mainLines: false, afView: true, beside: function () { return null; },
         kind: function (n) { var c = sbClasses()[n.id]; return c ? c.replace(/ multimer$/, '') : null; },   // a glyph's class, a multimer with its plain kind
-        nameable: function (id) { return !!sbJs && edOf(src()).nameable(src(), id); },   // a glyph whose class takes a name
+        nameable: function (id) { var t = src(); return !!sbJs && edOf(t).nameable(t, id); },   // a glyph whose class takes a name
         join: sbJoin() };
     }
     export { EMPTY_BASE, GEO, NEW_ID, edOf, emptyBase, isSb, madeHere, sbBase, sbFollow, sbGraphml, sbJs, sbKind, sbIn, sbMap, sbNow, sbOwn, sbFormat, sbReader, sbRemember, sbClasses, sbpy, viaGraphml };

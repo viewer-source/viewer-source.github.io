@@ -386,7 +386,7 @@ import { cdCardDown, cdCheck, cdClsOf, cdNameOf, cdRename, cdRole } from './cdcr
     function cdJoin() {
       return {
         ok: function () { return !!cdMk && !!cdMk.join; },
-        own: function (i) { return cdOwn(i); },
+        own: cdOwn,
         joinable: function (id, cid) { return cdMk.joinable(shared.cd.now, id, cid); },
         write: function (joins) {   // the complexes that took a member
           var N = cdNow(), t = N.t, done = [];

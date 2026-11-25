@@ -1805,7 +1805,8 @@
       },
       // a glyph's class, a multimer with its plain kind
       nameable: function(id) {
-        return !!sbJs && edOf(src()).nameable(src(), id);
+        var t = src();
+        return !!sbJs && edOf(t).nameable(t, id);
       },
       // a glyph whose class takes a name
       join: sbJoin()
@@ -2307,9 +2308,7 @@
       ok: function() {
         return !!cdMk && !!cdMk.join;
       },
-      own: function(i) {
-        return cdOwn(i);
-      },
+      own: cdOwn,
       joinable: function(id, cid) {
         return cdMk.joinable(shared.cd.now, id, cid);
       },
