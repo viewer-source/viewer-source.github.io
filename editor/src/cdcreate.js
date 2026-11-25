@@ -1183,6 +1183,9 @@ import { ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues, confet
     // the angle of a place on node i's border ([rx, ry] of its front copy, create.js border and svBox), as CellDesigner
     // keeps it: onBorder's inverse, 0 the right, pi/2 the top
     function cdAngle(i, r) { return cdMk.ratioAngle(r); }   // cd_make's (onBorder's inverse), one copy
+    // node k too far from P for any of its icons (svAt, create.js): its file not read; a structural state's ellipse may
+    // reach out wide
+    function cdSvFar(P, k) { var b = boxOf(k); return P[0] < b[0] - 80 || P[0] > b[0] + b[2] + 80 || P[1] < b[1] - 12 || P[1] > b[1] + b[3] + 12; }
     function cdSvMove(i, j, r) {   // the icon j of node i moved to the place r: its angle written (a unit of information stays)
       var q = cdSvList(i)[j], id = nodes2[i].id;
       if (!q || q[3] === UI) return false;
@@ -1203,8 +1206,11 @@ import { ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues, confet
       cdSvWin(id, q[3], q[4]);
     }
     // a new structural state's text typed in its ellipse (typeIn, create.js): written on every copy of the species, each
-    // at its own free place (this one where it was shown); nothing when left empty
-    function cdSsTyped(id, v) {
+    // at its own free place (this one where it was shown); nothing when left empty. Not kept (Esc, another map, editing
+    // left): the icon shown before it was in the file goes
+    function cdSsTyped(id, v, keep) {
+      if (!keep) { if (shared.cdPend) { shared.cdPend = null; paint(); } return; }
+      v = v.trim();
       var pend = shared.cdPend && shared.cdPend.id === id && shared.cdPend.kind === SS ? shared.cdPend : null;
       shared.cdPend = null;
       if (pend && v) cdApply(function (t) { return cdSsSet(t, id, v, pend.angle); }, []);
@@ -1549,4 +1555,4 @@ import { ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues, confet
     }
 
     export function __start() { __run1(); __run2(); __run3(); __run5(); __run6(); __run7(); __run8(); __run9(); __run10(); __run12(); __run13(); __run14(); __run15(); __run16(); __run17(); __run18(); __run19(); __run20(); __run21(); __run22(); __run23(); __run24(); __run25(); __run27(); __run28(); __run29(); __run30(); __run31(); __run32(); __run33(); }   // the part's statements, in their order
-    export { CD_DEF_KEY, CD_GATE, PF_CD, cdCardDown, cdCheck, cdClick, cdClsOf, cdDeleteItem, cdFeat, cdFill, cdFront, cdGateMarks, cdGhost, cdHow, cdInfo, cdItems, cdKind, cdLineAt, cdLink, cdLinkMarks, cdLiveEnds, cdMake, cdMoveSays, cdNameDown, cdNameOf, cdOnLine, cdOverMarks, cdPal, cdRename, cdRole, cdSsTyped, cdStartOk, cdSvDelete, cdSvList, cdSvMove, cdSvOpen };
+    export { CD_DEF_KEY, CD_GATE, PF_CD, cdCardDown, cdCheck, cdClick, cdClsOf, cdDeleteItem, cdFeat, cdFill, cdFront, cdGateMarks, cdGhost, cdHow, cdInfo, cdItems, cdKind, cdLineAt, cdLink, cdLinkMarks, cdLiveEnds, cdMake, cdMoveSays, cdNameDown, cdNameOf, cdOnLine, cdOverMarks, cdPal, cdRename, cdRole, cdSsTyped, cdStartOk, cdSvDelete, cdSvFar, cdSvList, cdSvMove, cdSvOpen };

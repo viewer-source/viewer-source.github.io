@@ -1,7 +1,7 @@
 import { shared, V } from './state.js';
 import { boxOf, cut, drag, edges2, f1, gE, gN, gridBlock, lastFor, lastSvg, nodes2, num, on, parse, placed, points, ports, pt, rebase, setText, spotNo, status, undo, warn } from './core.js';
 import { bx, dropCopies, picOff, restPt, toPic } from './live.js';
-import { cdCardDown, cdCheck, cdClsOf, cdHow, cdLineAt, cdLink, cdLinkMarks, cdLiveEnds, cdMoveSays, cdNameOf, cdOnLine, cdRename, cdRole, cdStartOk } from './cdcreate.js';
+import { cdCardDown, cdCheck, cdClsOf, cdHow, cdLineAt, cdLink, cdLinkMarks, cdLiveEnds, cdMoveSays, cdNameOf, cdPal, cdOnLine, cdRename, cdRole, cdSsTyped, cdStartOk, cdFeat, cdFront, cdSvDelete, cdSvFar, cdSvList, cdSvMove, cdSvOpen } from './cdcreate.js';
 
     // ---------- the CellDesigner part (editor/src/celldesigner.js) ----------
     // A CellDesigner map edited in CellDesigner's own model: the GraphML renderers/converter/cd_edit.js makes of it, the
@@ -401,6 +401,11 @@ import { cdCardDown, cdCheck, cdClsOf, cdHow, cdLineAt, cdLink, cdLinkMarks, cdL
     function cdLine() {
       return { role: cdRole, lineAt: cdLineAt, onLine: cdOnLine, startOk: cdStartOk, how: cdHow, moveSays: cdMoveSays, make: cdLink, liveEnds: cdLiveEnds, marks: cdLinkMarks };
     }
+    // state variables and units of information (create.js svList, svAt, svMove, svDelete, typeIn), CellDesigner's own:
+    // residues, the structural state and the unit of information read from and written into its file (cdcreate.js)
+    function cdSv() {
+      return { list: cdSvList, box: function (i) { return cdFront(i, cdFeat(nodes2[i].id)); }, open: cdSvOpen, move: cdSvMove, del: cdSvDelete, unitStays: true, on: cdPal, far: cdSvFar, typed: cdSsTyped };
+    }
     // a reaction lit whole (core.js lit): a main line or its square selected lights all its lines (hlE, line indices) and
     // its square (glyphs, node indices)
     function cdLit(hlE, glyphs) {
@@ -447,7 +452,7 @@ import { cdCardDown, cdCheck, cdClsOf, cdHow, cdLineAt, cdLink, cdLinkMarks, cdL
     }
     // CellDesigner's format object (state.js formats): the file is kept beside the GraphML edited, the moves written in
     function cdFormat() {
-      return { name: 'cd', load: cdpy, engineCd: true, now: function () { return shared.cd.now; }, ownFrame: true, live: function () { return liveCd; }, cardDown: cdCardDown, mainLines: true, afView: false, stacks: false, insets: false, magenta: true, opened: plainCanvas, drawn: cdSessionSoon, redraw: cdRedraw, lit: cdLit, endTo: cdEndTo, undoKeep: function () { return { g: shared.text, b: shared.cd.base }; }, undoPut: function (t) { shared.cd.base = t.b; return t.g; }, leave: cdLeave, nestReady: function () { return !!cdJs && !!cdJs.nestCheck; }, nestWhy: function (moves) { return cdJs && cdJs.nestCheck ? cdJs.nestCheck(shared.cd.now, moves, { doc: cdDoc(shared.cd.now) }) : null; }, modLine: function (id) { return /\|m\d+$/.test(id); }, ownLine: function (id) { return /\|(a|b|r\d+|p\d+)$/.test(id); }, fileType: { description: 'CellDesigner', accept: { 'application/xml': ['.xml'] } }, join: cdJoin(), line: cdLine(), square: function (id) { var m = /^(.*)\|proc$/.exec(id); return m ? m[1] : null; }, beside: function () { return shared.cd.now; },
+      return { name: 'cd', load: cdpy, engineCd: true, now: function () { return shared.cd.now; }, ownFrame: true, live: function () { return liveCd; }, cardDown: cdCardDown, mainLines: true, afView: false, stacks: false, insets: false, magenta: true, opened: plainCanvas, drawn: cdSessionSoon, redraw: cdRedraw, lit: cdLit, endTo: cdEndTo, undoKeep: function () { return { g: shared.text, b: shared.cd.base }; }, undoPut: function (t) { shared.cd.base = t.b; return t.g; }, leave: cdLeave, nestReady: function () { return !!cdJs && !!cdJs.nestCheck; }, nestWhy: function (moves) { return cdJs && cdJs.nestCheck ? cdJs.nestCheck(shared.cd.now, moves, { doc: cdDoc(shared.cd.now) }) : null; }, modLine: function (id) { return /\|m\d+$/.test(id); }, ownLine: function (id) { return /\|(a|b|r\d+|p\d+)$/.test(id); }, fileType: { description: 'CellDesigner', accept: { 'application/xml': ['.xml'] } }, join: cdJoin(), line: cdLine(), sv: cdSv(), square: function (id) { var m = /^(.*)\|proc$/.exec(id); return m ? m[1] : null; }, beside: function () { return shared.cd.now; },
         reads: isCd, entry: cdMap,
         // opening: CellDesigner's open arrowhead taken in as SBGN's open triangle (cd_make sbgn): the editor works on the
         // changed text, written at the next save, the change said once the map is drawn; the file as it was stays the

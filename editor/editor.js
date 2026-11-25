@@ -2466,6 +2466,11 @@
   function cdLine() {
     return { role: cdRole, lineAt: cdLineAt, onLine: cdOnLine, startOk: cdStartOk, how: cdHow, moveSays: cdMoveSays, make: cdLink, liveEnds: cdLiveEnds, marks: cdLinkMarks };
   }
+  function cdSv() {
+    return { list: cdSvList, box: function(i) {
+      return cdFront(i, cdFeat(nodes2[i].id));
+    }, open: cdSvOpen, move: cdSvMove, del: cdSvDelete, unitStays: true, on: cdPal, far: cdSvFar, typed: cdSsTyped };
+  }
   function cdLit(hlE, glyphs) {
     var rx = /* @__PURE__ */ new Set();
     var F = shared.F, of = function(id) {
@@ -2587,6 +2592,7 @@
       fileType: { description: "CellDesigner", accept: { "application/xml": [".xml"] } },
       join: cdJoin(),
       line: cdLine(),
+      sv: cdSv(),
       square: function(id) {
         var m = /^(.*)\|proc$/.exec(id);
         return m ? m[1] : null;
@@ -4353,6 +4359,10 @@
   function cdAngle(i, r) {
     return cdMk.ratioAngle(r);
   }
+  function cdSvFar(P, k) {
+    var b = boxOf(k);
+    return P[0] < b[0] - 80 || P[0] > b[0] + b[2] + 80 || P[1] < b[1] - 12 || P[1] > b[1] + b[3] + 12;
+  }
   function cdSvMove(i, j, r) {
     var q = cdSvList(i)[j], id = nodes2[i].id;
     if (!q || q[3] === UI) return false;
@@ -4377,7 +4387,15 @@
     if (!q) return;
     cdSvWin(id, q[3], q[4]);
   }
-  function cdSsTyped(id, v) {
+  function cdSsTyped(id, v, keep) {
+    if (!keep) {
+      if (shared.cdPend) {
+        shared.cdPend = null;
+        paint();
+      }
+      return;
+    }
+    v = v.trim();
     var pend = shared.cdPend && shared.cdPend.id === id && shared.cdPend.kind === SS ? shared.cdPend : null;
     shared.cdPend = null;
     if (pend && v) cdApply(function(t) {
@@ -10048,7 +10066,7 @@
   }
   function svCopies(id) {
     var i = svIdx(id);
-    if (shared.cd || !shared.sb || shared.afSbgn || afKind() || i < 0 || nodes2[i].shape.kind !== "Macromolecule" || !svNm(i)) return [];
+    if (!shared.sb || shared.afSbgn || afKind() || i < 0 || nodes2[i].shape.kind !== "Macromolecule" || !svNm(i)) return [];
     var nm = svNm(i);
     return nodes2.filter(function(n, k) {
       return k !== i && n.shape.kind === "Macromolecule" && svNm(k) === nm;
@@ -10199,7 +10217,7 @@
     return t;
   }
   function svList(i, res) {
-    if (shared.cd) return cdSvList(i);
+    if (shared.F.sv) return shared.F.sv.list(i);
     var r = realizerOf(nodes2[i].el), b = boxOf(i), out = [], n = {};
     res = res || svIcons();
     if (r) Array.prototype.forEach.call(r.children, function(l) {
@@ -10250,7 +10268,7 @@
       var B0 = sbJs.afUnitBox(b, au0, sv[0] || "x");
       at0 = [B0[0] + 1, B0[1] + 1, B0[2] - 2, B0[3] - 2];
     }
-    var r0 = sv && !shared.cd ? svR(i, sv) : null;
+    var r0 = sv ? svR(i, sv) : null;
     var inp = document.createElement("input"), before = !sv ? shared.F.ownName ? shared.F.ownName(id) : nameOf(i) : sv[0], m0 = map;
     inp.type = "text";
     inp.className = "m2-ed-type";
@@ -10263,12 +10281,12 @@
     });
     inp.style.background = gN && gN[nodes2[i].id] ? "transparent" : !sv && fl && fl.getAttribute("hasColor") !== "false" && fl.getAttribute("color") ? fl.getAttribute("color").slice(0, 7) : "#fff";
     inp.style.color = lab && lab.getAttribute("textColor") || "#000";
-    if (shared.cd && shared.cdPend && sv && !sv[0]) {
+    if (shared.cdPend && sv && !sv[0]) {
       inp.style.background = "#fff";
       inp.style.border = "1px solid #000";
     }
     var grow = unit || !!sv && sv[3] === SS;
-    var own2 = !!sv && !shared.cd && au0 == null, ik = own2 ? sv[2][1] / (unit ? 16 : 18) : 1;
+    var own2 = !!sv && !shared.F.sv && au0 == null, ik = own2 ? sv[2][1] / (unit ? 16 : 18) : 1;
     if (own2) {
       grow = true;
       fs = 10 * ik;
@@ -10312,12 +10330,8 @@
           el.style.visibility = "";
         });
         var v = inp.value.replace(/[\r\n]+/g, " ");
-        if (shared.cd && sv) {
-          if (keep && on && map === m0) cdSsTyped(id, v.trim());
-          else if (shared.cdPend) {
-            shared.cdPend = null;
-            paint();
-          }
+        if (shared.F.sv && sv) {
+          shared.F.sv.typed(id, v, keep && on && map === m0);
           return;
         }
         if (sv && !unit) v = v.replace(/@+$/, "");
@@ -10472,16 +10486,11 @@
     return n && test(n, h.n) ? h.n : -1;
   }
   function svAt(P) {
-    if (shared.cd) {
-      if (!cdPal()) return null;
-    } else if (shared.afSbgn || afKind()) return null;
-    var res = shared.cd ? null : svIcons(), found = null, pad = 3 / V.z, acts = shared.sb && palKind() === "hybrid" ? sbJs.activities(shared.text) : null;
+    var own2 = shared.F.sv;
+    if (own2 ? !own2.on() : shared.afSbgn || afKind()) return null;
+    var res = own2 ? null : svIcons(), found = null, pad = 3 / V.z, acts = shared.sb && palKind() === "hybrid" ? sbJs.activities(shared.text) : null;
     nodes2.forEach(function(n, k) {
-      if (!shared.cd && (n.shape.kind !== "Macromolecule" && n.shape.kind !== "NucleicAcidFeature" || acts && acts[n.id] != null)) return;
-      if (shared.cd) {
-        var b = boxOf(k);
-        if (P[0] < b[0] - 80 || P[0] > b[0] + b[2] + 80 || P[1] < b[1] - 12 || P[1] > b[1] + b[3] + 12) return;
-      }
+      if (own2 ? own2.far(P, k) : n.shape.kind !== "Macromolecule" && n.shape.kind !== "NucleicAcidFeature" || acts && acts[n.id] != null) return;
       svList(k, res).forEach(function(q, j) {
         if (Math.abs(P[0] - q[1][0]) <= q[2][0] / 2 + pad && Math.abs(P[1] - q[1][1]) <= q[2][1] / 2 + pad) found = [k, j];
       });
@@ -10497,7 +10506,10 @@
     return palOn() || cdPal();
   }
   function svBox(i) {
-    return shared.cd ? cdFront(i, cdFeat(nodes2[i].id)) : boxOf(i);
+    return shared.F.sv ? shared.F.sv.box(i) : boxOf(i);
+  }
+  function svFixed(i, j) {
+    return !!(shared.F.sv && shared.F.sv.unitStays) && svList(i)[j][3] === UI;
   }
   function svNode() {
     if (!shared.svSel) return -1;
@@ -10542,7 +10554,7 @@
     shared.selE = [];
     shared.part = null;
     shared.svSel = { id: nodes2[q[0]].id, j: q[1] };
-    svDrag = { i: q[0], again, x: e.clientX, y: e.clientY, to: null, r: null, fixed: !!shared.cd && svList(q[0])[q[1]][3] === UI };
+    svDrag = { i: q[0], again, x: e.clientX, y: e.clientY, to: null, r: null, fixed: svFixed(q[0], q[1]) };
     paint();
     return true;
   }
@@ -10680,11 +10692,11 @@
       return;
     }
     if (d.r && shared.svSel) svMove(d.i, shared.svSel.j, d.r);
-    else if (d.again && !d.moved && shared.svSel) (shared.cd ? cdSvOpen : typeIn)(shared.svSel.id, shared.svSel.j);
+    else if (d.again && !d.moved && shared.svSel) (shared.F.sv ? shared.F.sv.open : typeIn)(shared.svSel.id, shared.svSel.j);
   }
   function svMove(i, j, r) {
-    if (shared.cd) {
-      cdSvMove(i, j, r);
+    if (shared.F.sv) {
+      shared.F.sv.move(i, j, r);
       return;
     }
     var q = svList(i)[j], share = q[3] === SV ? svShareMove(i, q, svR(i, q), r) : null;
@@ -10696,10 +10708,10 @@
   function svDelete() {
     var i = svNode();
     if (i < 0) return false;
-    if (shared.cd) {
+    if (shared.F.sv) {
       var j = shared.svSel.j;
       shared.svSel = null;
-      return cdSvDelete(i, j);
+      return shared.F.sv.del(i, j);
     }
     var q = svList(i)[shared.svSel.j];
     var share = q[3] === SV ? svShareMove(i, q, svR(i, q), null) : null;
@@ -10981,7 +10993,7 @@
       var d = KEYS[e.key];
       if (!d || !shared.svSel || !svOn() || e.ctrlKey || e.metaKey || e.altKey || /input|textarea|select/i.test(document.activeElement.tagName)) return;
       var i = svNode();
-      if (i < 0 || shared.cd && svList(i)[shared.svSel.j][3] === UI) return;
+      if (i < 0 || svFixed(i, shared.svSel.j)) return;
       e.preventDefault();
       e.stopImmediatePropagation();
       var b = svBox(i), q = svList(i)[shared.svSel.j];
@@ -11015,7 +11027,7 @@
     }, true);
     document.addEventListener("keydown", function(e) {
       if (e.key !== "Delete" && e.key !== "Backspace" || !svOn() || /input|textarea|select/i.test(document.activeElement.tagName)) return;
-      if (shared.cd) {
+      if (!palOn()) {
         if (svDelete()) {
           e.preventDefault();
           e.stopImmediatePropagation();

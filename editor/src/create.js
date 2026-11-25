@@ -2,7 +2,7 @@ import { shared, V } from './state.js';
 import { G, GE, HANDLE, MODS, Y, asSpace, at, box, boxOf, changed, commit, complexHere, cutShape, doc, edges2, editing, f1, fmt, full, gE, gN, gridSet, grown, hit, holder, holderSize, holds, hubPorts, inComplex, inRim, keyTake, kindWindow, landMarks, lateItem, layTool, map, moveFix, name, nodes2, num, on, origFromFolder, origToFolder, outlineD, overlap, ownMenus, paint, parse, parseFix, quiet, rclick, realizerOf, refit, regroup, remember, render, rimOf, roleOf, roomy, setBoxes, setPort, setText, settle, site, src, subItem, sx, sy, takes, toGrid, under, undo, unpush, warn, x0, y0 } from './core.js';
 import { bx, liveOff, livePose, sizeOff } from './live.js';
 import { GEO, sbClasses, sbJs, sbKind } from './sbgn.js';
-import { CD_DEF_KEY, CD_GATE, PF_CD, cdClick, cdDeleteItem, cdFeat, cdFill, cdFront, cdGateMarks, cdGhost, cdInfo, cdItems, cdKind, cdMake, cdNameDown, cdOverMarks, cdPal, cdSsTyped, cdSvDelete, cdSvList, cdSvMove, cdSvOpen } from './cdcreate.js';
+import { CD_DEF_KEY, CD_GATE, PF_CD, cdClick, cdDeleteItem, cdFill, cdGateMarks, cdGhost, cdInfo, cdItems, cdKind, cdMake, cdNameDown, cdOverMarks, cdPal } from './cdcreate.js';
 import { origGh, origPut } from './own.js';
 import NT from '../../renderers/converter/notation.js';   // the notation's kinds and rules table (plan 3 step 6)
 
@@ -1406,7 +1406,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
     function svNm(i) { return nameOf(i).replace(/\s+/g, ' ').trim(); }
     function svCopies(id) {   // the other macromolecules named as node id (an SBGN-ML map's, Process Description): their ids
       var i = svIdx(id);
-      if (shared.cd || !shared.sb || shared.afSbgn || afKind() || i < 0 || nodes2[i].shape.kind !== 'Macromolecule' || !svNm(i)) return [];
+      if (!shared.sb || shared.afSbgn || afKind() || i < 0 || nodes2[i].shape.kind !== 'Macromolecule' || !svNm(i)) return [];
       var nm = svNm(i);
       return nodes2.filter(function (n, k) { return k !== i && n.shape.kind === 'Macromolecule' && svNm(k) === nm; }).map(function (n) { return n.id; });
     }
@@ -1504,7 +1504,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
     }
     function ownText(l) { var t = ''; for (var c = l.firstChild; c; c = c.nextSibling) if (c.nodeType === 3 || c.nodeType === 4) t += c.nodeValue; return t; }
     function svList(i, res) {   // the icons shown on node i: [text, centre in yEd units, size, kind, index among its kind]; res: svIcons(), read once by a caller going through many nodes
-      if (shared.cd) return cdSvList(i);   // a CellDesigner map's, from its file (cdcreate.js)
+      if (shared.F.sv) return shared.F.sv.list(i);   // the format's own (CellDesigner's, from its file)
       var r = realizerOf(nodes2[i].el), b = boxOf(i), out = [], n = {};
       res = res || svIcons();
       if (r) Array.prototype.forEach.call(r.children, function (l) {
@@ -1545,7 +1545,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       } else at0 = !sv ? [b[0] + inset, b[1] + inset, b[2] - 2 * inset, b[3] - 2 * inset] : [sv[1][0] - sv[2][0] / 2 + 1, sv[1][1] - sv[2][1] / 2 + 1, sv[2][0] - 2, sv[2][1] - 2];
       var au0 = unit && shared.afSbgn ? sbJs.activities(shared.text)[id] : null;   // an activity's unit in the SBGN AF view: typed where it is drawn (afUnitBox)
       if (au0 != null) { var B0 = sbJs.afUnitBox(b, au0, sv[0] || 'x'); at0 = [B0[0] + 1, B0[1] + 1, B0[2] - 2, B0[3] - 2]; }
-      var r0 = sv && !shared.cd ? svR(i, sv) : null;   // for the copies (svShareText)
+      var r0 = sv ? svR(i, sv) : null;   // for the copies (svShareText)
       var inp = document.createElement('input'), before = !sv ? (shared.F.ownName ? shared.F.ownName(id) : nameOf(i)) : sv[0], m0 = map;   // a format's own name (F.ownName: CellDesigner's from its file)
       inp.type = 'text'; inp.className = 'm2-ed-type'; inp.value = before; inp.spellcheck = false;
       inp.setAttribute('aria-label', !sv ? 'Name' : unit ? 'Unit of information' : 'State variable (value, or value@site)');
@@ -1556,11 +1556,11 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       hid.forEach(function (el) { el.style.visibility = 'hidden'; });
       inp.style.background = gN && gN[nodes2[i].id] ? 'transparent' : !sv && fl && fl.getAttribute('hasColor') !== 'false' && fl.getAttribute('color') ? fl.getAttribute('color').slice(0, 7) : '#fff';
       inp.style.color = lab && lab.getAttribute('textColor') || '#000';
-      if (shared.cd && shared.cdPend && sv && !sv[0]) { inp.style.background = '#fff'; inp.style.border = '1px solid #000'; }   // a CellDesigner icon not in the file yet: nothing drawn under the field
+      if (shared.cdPend && sv && !sv[0]) { inp.style.background = '#fff'; inp.style.border = '1px solid #000'; }   // a CellDesigner icon not in the file yet: nothing drawn under the field
       var grow = unit || (!!sv && sv[3] === SS);   // a new CellDesigner structural state grows too (cdrender: its text and 12 a side)
       // an SBGN-ML map's state variable or unit of information: the field is the icon itself while typed (white, its outline,
       // a state variable's round ends), sized at every key as sbgn_edit sizes it on Enter (svIcon), the drawn icon hidden
-      var own = !!sv && !shared.cd && au0 == null, ik = own ? sv[2][1] / (unit ? 16 : 18) : 1;
+      var own = !!sv && !shared.F.sv && au0 == null, ik = own ? sv[2][1] / (unit ? 16 : 18) : 1;
       if (own) {
         grow = true; fs = 10 * ik; at0 = [sv[1][0] - sv[2][0] / 2, sv[1][1] - sv[2][1] / 2, sv[2][0], sv[2][1]];
         inp.style.background = '#fff'; inp.style.boxSizing = 'border-box'; inp.style.padding = '0';
@@ -1586,7 +1586,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
           if (!shared.typing || shared.typing.inp !== inp) return;
           shared.typing = null; inp.remove(); hid.forEach(function (el) { el.style.visibility = ''; });
           var v = inp.value.replace(/[\r\n]+/g, ' ');
-          if (shared.cd && sv) { if (keep && on && map === m0) cdSsTyped(id, v.trim()); else if (shared.cdPend) { shared.cdPend = null; paint(); } return; }   // a CellDesigner map's new structural state (cdcreate.js)
+          if (shared.F.sv && sv) { shared.F.sv.typed(id, v, keep && on && map === m0); return; }   // the format's own (a CellDesigner map's new structural state)
           if (sv && !unit) v = v.replace(/@+$/, '');   // P@ is P (a site needs a name)
           if (unit) v = v.trim();   // a unit of only spaces is none
           if (fresh && (!keep || !v) && on && map === m0) { var t0 = undo.length ? unpush() : shared.text; if (t0 !== shared.text) { setText(t0); parse(); shared.dirty = true; quiet(); render(); paint(); changed(); } return; }
@@ -1667,11 +1667,11 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       return n && test(n, h.n) ? h.n : -1;
     }
     function svAt(P) {   // the state variable or unit of information under P: [node, j] (it may stand out of its node)
-      if (shared.cd) { if (!cdPal()) return null; } else if (shared.afSbgn || afKind()) return null;   // not drawn in the SBGN AF view; an activity's unit text is set from its right-click menu, never clicked, moved or typed
-      var res = shared.cd ? null : svIcons(), found = null, pad = 3 / V.z, acts = shared.sb && palKind() === 'hybrid' ? sbJs.activities(shared.text) : null;   // a hybrid map's activities keep their units as on an AF map
+      var own = shared.F.sv;   // the format's own (CellDesigner's, its palette on): else not drawn in the SBGN AF view; an activity's unit text is set from its right-click menu, never clicked, moved or typed
+      if (own ? !own.on() : shared.afSbgn || afKind()) return null;
+      var res = own ? null : svIcons(), found = null, pad = 3 / V.z, acts = shared.sb && palKind() === 'hybrid' ? sbJs.activities(shared.text) : null;   // a hybrid map's activities keep their units as on an AF map
       nodes2.forEach(function (n, k) {
-        if (!shared.cd && (n.shape.kind !== 'Macromolecule' && n.shape.kind !== 'NucleicAcidFeature' || (acts && acts[n.id] != null))) return;
-        if (shared.cd) { var b = boxOf(k); if (P[0] < b[0] - 80 || P[0] > b[0] + b[2] + 80 || P[1] < b[1] - 12 || P[1] > b[1] + b[3] + 12) return; }   // far from its box: its file not read (a structural state's ellipse may reach out wide)
+        if (own ? own.far(P, k) : n.shape.kind !== 'Macromolecule' && n.shape.kind !== 'NucleicAcidFeature' || (acts && acts[n.id] != null)) return;   // the format's own: too far from its box
         svList(k, res).forEach(function (q, j) { if (Math.abs(P[0] - q[1][0]) <= q[2][0] / 2 + pad && Math.abs(P[1] - q[1][1]) <= q[2][1] / 2 + pad) found = [k, j]; });
       });
       return found;
@@ -1685,7 +1685,8 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
     svDrag = null, svKey = null;
     }   // svSel: { id, j }; svKey: a move by the arrow keys under way
     function svOn() { return palOn() || cdPal(); }   // state variables edited: SBGN-ML maps (Full) and CellDesigner maps (cdcreate.js)
-    function svBox(i) { return shared.cd ? cdFront(i, cdFeat(nodes2[i].id)) : boxOf(i); }   // the box its state variables sit round: a CellDesigner multimer's front copy
+    function svBox(i) { return shared.F.sv ? shared.F.sv.box(i) : boxOf(i); }   // the box its state variables sit round (the format's own: a CellDesigner multimer's front copy)
+    function svFixed(i, j) { return !!(shared.F.sv && shared.F.sv.unitStays) && svList(i)[j][3] === UI; }   // a unit of information that stays at the top (CellDesigner's: its angle's convention not known)
     function svNode() { if (!shared.svSel) return -1; var i = nodes2.findIndex(function (n) { return n.id === shared.svSel.id; }); return i >= 0 && svList(i)[shared.svSel.j] ? i : -1; }
     function svMarks(over) {   // four black squares at the corners of the state variable selected (paint, core.js)
       if (shared.typing) shared.typing.place();   // the text field follows a zoom or a pan
@@ -1710,7 +1711,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       e.stopImmediatePropagation();
       shared.selN = []; shared.selP = []; shared.selE = []; shared.part = null;
       shared.svSel = { id: nodes2[q[0]].id, j: q[1] };
-      svDrag = { i: q[0], again: again, x: e.clientX, y: e.clientY, to: null, r: null, fixed: !!shared.cd && svList(q[0])[q[1]][3] === UI };   // a CellDesigner unit of information stays at the top (its angle's convention not known)
+      svDrag = { i: q[0], again: again, x: e.clientX, y: e.clientY, to: null, r: null, fixed: svFixed(q[0], q[1]) };
       paint();
       return true;
     }
@@ -1796,17 +1797,17 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
         shared.selN = []; shared.selP = []; shared.selE = []; shared.part = null; shared.svSel = { id: nodes2[d.pick[0]].id, j: d.pick[1] }; paint(); return;
       }
       if (d.r && shared.svSel) svMove(d.i, shared.svSel.j, d.r);
-      else if (d.again && !d.moved && shared.svSel) (shared.cd ? cdSvOpen : typeIn)(shared.svSel.id, shared.svSel.j);   // a click on it selected: its text (a CellDesigner map's: its window, cdcreate.js)
+      else if (d.again && !d.moved && shared.svSel) (shared.F.sv ? shared.F.sv.open : typeIn)(shared.svSel.id, shared.svSel.j);   // a click on it selected: its text, or the format's own (a CellDesigner map's window)
     }
-    function svMove(i, j, r) {   // the state variable j of node i written at the place r (a CellDesigner map's: cdcreate.js)
-      if (shared.cd) { cdSvMove(i, j, r); return; }
+    function svMove(i, j, r) {   // the state variable j of node i written at the place r (the format's own: CellDesigner's angle in its file)
+      if (shared.F.sv) { shared.F.sv.move(i, j, r); return; }
       var q = svList(i)[j], share = q[3] === SV ? svShareMove(i, q, svR(i, q), r) : null;   // the copies too
       if (!commit((q[3] === UI ? sbJs.unitMove : sbJs.stateMove)(shared.text, nodes2[i].id, q[4], r[0], r[1]), { name: 'state variable moved', ids: [nodes2[i].id], then: share })) { render(); paint(); }
     }
     function svDelete() {
       var i = svNode();
       if (i < 0) return false;
-      if (shared.cd) { var j = shared.svSel.j; shared.svSel = null; return cdSvDelete(i, j); }
+      if (shared.F.sv) { var j = shared.svSel.j; shared.svSel = null; return shared.F.sv.del(i, j); }   // the format's own (CellDesigner: removed from its file)
       var q = svList(i)[shared.svSel.j];
       var share = q[3] === SV ? svShareMove(i, q, svR(i, q), null) : null;   // the copies too
       var sid = shared.svSel.id;
@@ -1996,7 +1997,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       var d = KEYS[e.key];
       if (!d || !shared.svSel || !svOn() || e.ctrlKey || e.metaKey || e.altKey || /input|textarea|select/i.test(document.activeElement.tagName)) return;
       var i = svNode();
-      if (i < 0 || (shared.cd && svList(i)[shared.svSel.j][3] === UI)) return;   // a CellDesigner unit of information: not moved
+      if (i < 0 || svFixed(i, shared.svSel.j)) return;
       e.preventDefault(); e.stopImmediatePropagation();
       var b = svBox(i), q = svList(i)[shared.svSel.j];
       if (!svKey) svKey = { i: i, t: toT(b, [(q[1][0] - b[0]) / b[2] - 0.5, (q[1][1] - b[1]) / b[3] - 0.5]), c0: q[1], parts: svParts(i, q) };
@@ -2020,7 +2021,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
     }, true);
     document.addEventListener('keydown', function (e) {
       if ((e.key !== 'Delete' && e.key !== 'Backspace') || !svOn() || /input|textarea|select/i.test(document.activeElement.tagName)) return;
-      if (shared.cd) { if (svDelete()) { e.preventDefault(); e.stopImmediatePropagation(); } return; }   // the rest of a CellDesigner map's: cdcreate.js
+      if (!palOn()) { if (svDelete()) { e.preventDefault(); e.stopImmediatePropagation(); } return; }   // the other palette's map (CellDesigner): the rest of its Delete is its own (cdcreate.js)
       if (svDelete() || ((shared.selN.length || (shared.selE.length && !shared.selP.length)) && nodesDelete(shared.selN, shared.selP.length ? [] : shared.selE))) { e.preventDefault(); e.stopImmediatePropagation(); }   // an area's bend points go with their lines, as the menu's Delete; bend points alone are core.js's
     }, true);
     window.m2EditDelete = function () {   // the right-click menu's Delete over a state variable, a unit of information, a macromolecule or a simple chemical

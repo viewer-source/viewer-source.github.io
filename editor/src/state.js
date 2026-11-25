@@ -14,6 +14,14 @@ export var shared = {};
 //   cardDown(e)  a press on a cardinality, where the format has its own way (CellDesigner); none: create.js's
 //   line       drawing a line the format's own way (CellDesigner, cdcreate.js: { role(i), lineAt(P, not), onLine(), startOk(i),
 //              how(a, b, P), moveSays(k, end, i), make(a, b, how), liveEnds(S, P, C), marks(out) }); none: create.js's, by the notation's table
+//   sv         state variables and units of information kept the format's own way (CellDesigner: residues, the structural
+//              state and the unit of information in its file, cdcreate.js): { list(i) the icons on node i, as create.js
+//              svList gives them; box(i) the box they sit round, a multimer's front copy; open(id, j)
+//              the j-th icon's own window, in place of typing its text; move(i, j, r) the icon written
+//              at the place r of the border; del(i, j) the icon deleted; unitStays: a unit of
+//              information is not moved (its angle's convention not known); on() its icons are
+//              edited now (its palette on); far(P, k) node k too far from P for any of its icons;
+//              typed(id, v, keep) an icon's text typed in place, kept or not (a new structural state) }; none: create.js's, the GraphML's icons written by sbgn_edit
 //   square(id) the reaction a node is the square of (CellDesigner's process glyph, id <reaction>|proc: no item of its own,
 //              never selected or moved alone), else null
 //   insets     the GraphML edited keeps yEd's group insets (refit); not CellDesigner, whose GraphML is made again from its file

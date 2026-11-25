@@ -45,7 +45,7 @@ function viewerHunks() {
       r.fulfill({ response: res, body: t, headers: Object.assign({}, res.headers(), { 'content-type': 'text/html; charset=utf-8' }) });
     });
   }
-  var SID = 'copy-of-glycolysis-graphml';
+  var SID = 'asthmamap-mast-cell-graphml';   // a GraphML demo map still on the site (Copy of Glycolysis, the one before, was deleted forever there)
   var files = {}, blobs = {}, trees = {}, commits = 0, puts = [];
   files['maps/' + SID + '.graphml'] = '<graphml/>';
   files['maps/' + SID + '.md'] = '---\ntitle: "Copy of Glycolysis"\ntopic: "Copy of Glycolysis"\ngroup: "Testing"\norder: 3\n---\nIts text.\n';
