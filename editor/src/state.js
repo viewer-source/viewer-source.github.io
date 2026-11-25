@@ -38,7 +38,14 @@ export var shared = {};
 //              by the notation's roles
 //   drawn()    what the format readies once a drawing is put in (CellDesigner: the live session of cd_edit, cdSessionSoon); none
 //              for the others
-//   sitesOut() the file writes sites as Show sites shows them, its writer loaded (SBGN-ML: sbgn_edit.sitesOut); none for the others
+//   moved()    what the format does after a move, undo or redo (core.js changed; SBGN-ML: sbFollow, a file the move
+//              turned, its GraphML made again from it); none for the others
+//   parsing(how)  what the format does before the GraphML is read (core.js parse; how: 'back' after an undo or redo, else
+//              'follow'; SBGN-ML: sbKind, a change that turned the file, the GraphML made again from it); none for the others
+//   g0()       the GraphML the open map's file was first read as (SBGN-ML: shared.sb.g0, a site map's the build's), so a
+//              site map kept in the browser is drawn as the site draws it (core.js local); none for the others
+//   sitesOut() the file writes sites as Show sites shows them, its writer loaded (SBGN-ML: sbgn_edit.sitesOut, the file
+//              written an SBGN-ML one, not SBML); none for the others
 //   nestWhy(moves)  why the file cannot hold these moves of what holds what ([[id, new holder id or null], ...]), or null
 //              (CellDesigner: cd_edit.nestCheck on the file's kept document, read only); none for the others
 //   nestReady()  nestWhy's check loaded (the arrow keys work out the new holders only then)
@@ -69,7 +76,8 @@ export var shared = {};
 //              when the opening was left (still() false). GraphML: at once, the file itself
 //   base       the file the GraphML edited was read from, kept with a point to go back to (core.js good, the history)
 //              and put back with it: { keep(), put(b) } (SBGN-ML: shared.sb.base); none: nothing kept
-//   asRead     the history and the picture on screen are of the file as read (SBGN-ML, its sites put back after)
+//   asRead     the history and the picture on screen are of the file as read (SBGN-ML, its sites put back after), so with no
+//              move the file written may differ from it, a change (core.js atSite)
 //   drawOwn(t, g0, keep)  a reader's own map drawn for the list (core.js drawText): a promise of the SVG, or null when
 //              the format cannot draw this text
 //   asGraphml(t)  the site's text as the editor's GraphML (siteRef); none: the text itself
@@ -115,7 +123,6 @@ export var LIFETIMES = {
     cd: none,            // a CellDesigner map: { base, now }
     sb: none,            // an SBGN-ML map: { base, g0 }
     sbLast: none,        // an SBGN-ML map's [GraphML, its SBGN-ML text, sb]: the moves written once per text (sbgn.js)
-    sbBack: no,          // the next parse follows an undo (sbgn.js sbKind)
     dirty: no,           // moves not saved
     redo: list,          // the redo steps (undo is core.js's own)
     selN: list, selE: list, selP: list,   // selected nodes, arcs, bend points (indices in nodes2, edges2, points)

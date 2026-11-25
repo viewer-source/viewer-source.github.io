@@ -197,7 +197,7 @@ import { liveY, yr } from './graphml.js';
     export function __start() { __run1(); __run2(); __run3(); __run5(); __run6(); __run7(); }   // the part's statements, in their order
     // SBGN-ML's format object (state.js formats): the file written from the one opened with the moves of the GraphML
     function sbFormat() {
-      return { name: 'sb', load: yr, engineCd: false, now: sbNow, ownFrame: false, live: function () { return liveY; }, mainLines: false, afView: true, stacks: true, insets: true, sitesOut: function () { return !!shared.sbLast && !!sbJs && !!sbJs.sitesOut; }, fileType: { description: 'SBGN-ML', accept: { 'application/xml': ['.sbgn', '.nwt'] } }, stackComp: function (t, id) { return sbJs && sbJs.stack ? sbJs.stack(t, id) : t; }, square: function () { return null; }, beside: function () { return null; },
+      return { name: 'sb', load: yr, engineCd: false, now: sbNow, ownFrame: false, live: function () { return liveY; }, mainLines: false, afView: true, stacks: true, insets: true, sitesOut: function () { return !!shared.sbLast && !!sbJs && !!sbJs.sitesOut && isSb(shared.sbLast[1]); }, fileType: { description: 'SBGN-ML', accept: { 'application/xml': ['.sbgn', '.nwt'] } }, stackComp: function (t, id) { return sbJs && sbJs.stack ? sbJs.stack(t, id) : t; }, square: function () { return null; }, beside: function () { return null; },
         reads: viaGraphml, entry: sbMap,   // an SBML file with a layout too, edited the same way
         base: { keep: function () { return shared.sb ? shared.sb.base : null; }, put: function (b) { if (shared.sb) shared.sb.base = b; } },   // the SBGN-ML file the GraphML was read from (sbKind may read it again)
         asRead: true,   // the history and the picture on screen are of the file as read, before the opening put its sites back
@@ -236,6 +236,9 @@ import { liveY, yr } from './graphml.js';
           keeper: function () { var g0 = shared.sb && shared.sb.g0; return function (t, g) { sbRemember(t, g, g0); return null; }; } },
         kind: function (n) { var c = sbClasses()[n.id]; return c ? c.replace(/ multimer$/, '') : null; },   // a glyph's class, a multimer with its plain kind
         nameable: function (id) { var t = src(); return !!sbJs && edOf(t).nameable(t, id); },   // a glyph whose class takes a name
-        join: sbJoin() };
+        join: sbJoin(),
+        moved: sbFollow,   // after a move: a file the move turned followed
+        parsing: function (how) { sbKind(how); },   // before the GraphML is read: a change that turned the file followed
+        g0: function () { return shared.sb ? shared.sb.g0 : null; } };   // the GraphML the map was opened on (a site map's: the build's)
     }
-    export { EMPTY_BASE, GEO, NEW_ID, emptyBase, isSb, madeHere, sbFollow, sbJs, sbKind, sbMap, sbNow, sbFormat, sbClasses, sbpy };
+    export { EMPTY_BASE, GEO, NEW_ID, emptyBase, isSb, madeHere, sbJs, sbKind, sbMap, sbNow, sbFormat, sbClasses, sbpy };

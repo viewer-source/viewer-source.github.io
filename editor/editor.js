@@ -1084,8 +1084,6 @@
       // an SBGN-ML map: { base, g0 }
       sbLast: none,
       // an SBGN-ML map's [GraphML, its SBGN-ML text, sb]: the moves written once per text (sbgn.js)
-      sbBack: no,
-      // the next parse follows an undo (sbgn.js sbKind)
       dirty: no,
       // moves not saved
       redo: list,
@@ -1844,7 +1842,7 @@
       stacks: true,
       insets: true,
       sitesOut: function() {
-        return !!shared.sbLast && !!sbJs && !!sbJs.sitesOut;
+        return !!shared.sbLast && !!sbJs && !!sbJs.sitesOut && isSb(shared.sbLast[1]);
       },
       fileType: { description: "SBGN-ML", accept: { "application/xml": [".sbgn", ".nwt"] } },
       stackComp: function(t, id) {
@@ -1937,7 +1935,16 @@
         return !!sbJs && edOf(t).nameable(t, id);
       },
       // a glyph whose class takes a name
-      join: sbJoin()
+      join: sbJoin(),
+      moved: sbFollow,
+      // after a move: a file the move turned followed
+      parsing: function(how) {
+        sbKind(how);
+      },
+      // before the GraphML is read: a change that turned the file followed
+      g0: function() {
+        return shared.sb ? shared.sb.g0 : null;
+      }
     };
   }
 
@@ -13426,7 +13433,7 @@
       openSay = null;
     }
     goodNow();
-    sbFollow();
+    if (shared.F.moved) shared.F.moved();
     if (site && site.pending) {
       localFor = site;
       clearTimeout(localTimer);
@@ -13549,7 +13556,7 @@
     if (s.clashed) return;
     var t = src(), at2 = { width: map.width, height: map.height, x0: picX0(), y0: picY0(), ref: siteRef, cur: nowRef() };
     var own2 = lastFor && lastFor[2] === s.id && !lastFor[3] ? lastSvg : null;
-    var nm = name, back2 = !s.mine && atSite(), g0 = shared.sb && !s.mine ? shared.sb.g0 : null;
+    var nm = name, back2 = !s.mine && atSite(), g0 = !s.mine && shared.F.g0 ? shared.F.g0() : null;
     var pic = function() {
       return own2 ? Promise.resolve({ svg: own2, width: at2.width, height: at2.height }) : drawText(t, g0);
     };
@@ -13604,7 +13611,7 @@
   }
   function atSite() {
     var n = !on && leftMoves && leftMoves.site === site ? leftMoves.n : undo.length;
-    return site.pending && (src() === site.pub || !n && !site.fromDraft && (!shared.sb || src() === site.base));
+    return site.pending && (src() === site.pub || !n && !site.fromDraft && (!shared.F.asRead || src() === site.base));
   }
   function unkeep(id) {
     if (localFor && localFor.id === id) {
@@ -14177,10 +14184,8 @@
       }));
     });
   }
-  function parse() {
-    var how = shared.sbBack ? "back" : "follow";
-    shared.sbBack = false;
-    if (shared.sb) sbKind(how);
+  function parse(back2) {
+    if (shared.F.parsing) shared.F.parsing(back2 ? "back" : "follow");
     var pd = preDoc.filter(function(x) {
       return x.text === shared.text;
     })[0];
@@ -14916,8 +14921,7 @@
     shared.lastChange = { name: from === undo ? "undo" : "redo", ids: [] };
     nudgeAt = 0;
     shared.cdGate = null;
-    shared.sbBack = true;
-    parse();
+    parse(true);
     shared.selN = [];
     shared.selP = [];
     shared.selE = [];
@@ -15751,14 +15755,14 @@
         var moved = shared.dirty || !!(site && site.pending && src() !== site.pub);
         if (on && site) {
           var keep = shared.text;
-          var s0 = site;
+          var s0 = site, copy = !!shared.F.ahead.path;
           Promise.all([
             api("/contents/" + s0.path + "?ref=main").then(function(r) {
-              return r.status === 404 && shared.sb ? {} : r.json();
+              return r.status === 404 && copy ? {} : r.json();
             }),
-            // an SBGN-ML map's edited copy not made yet: the first save makes it
+            // a map edited as a copy of its own (SBGN-ML) with no copy yet: the first save makes it
             api("/contents/" + s0.path + "?ref=main", { headers: { Accept: "application/vnd.github.raw" } }).then(function(r) {
-              return r.status === 404 && shared.sb ? s0.base : r.text();
+              return r.status === 404 && copy ? s0.base : r.text();
             })
           ]).then(function(f) {
             if (!on || site !== s0) return;
@@ -17100,7 +17104,7 @@
   function __run382() {
     window.m2EditSites = function() {
       if (!on || !site || !shared.F.sitesOut || !shared.F.sitesOut()) return;
-      if (!isSb(shared.sbLast[1]) || src() === (site.saved || site.base)) return;
+      if (src() === (site.saved || site.base)) return;
       shared.dirty = true;
       changed();
     };

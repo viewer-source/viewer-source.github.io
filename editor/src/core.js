@@ -4,7 +4,7 @@ import H from '../../renderers/layout/holding.js';   // what holds what: regroup
 import { bx, keyShift, liveFit, liveLines, liveOff, posePort, poseSize, shift, sizeLive, sizeOff, unshift } from './live.js';
 import { AF_KINDS, drawGraphml, noNegative, shiftedAhead } from './graphml.js';
 import { beyond, glyphArcs, glyphPort, joinAt, joinGuides, joinSolve, lineGrid, nodeCentre, nodePlaces } from './celldesigner.js';
-import { isSb, sbFollow, sbKind, sbpy } from './sbgn.js';
+import { sbpy } from './sbgn.js';
 import { ddOpen, hybOn, joinDo, joinPack, joinPlan, link, linkDown, linkMove, linkPaint, linkUp, moveSays, origAll, palDown, palShow, palUp, propFmt, setSize, sizable, svDown, svMarks, tool } from './create.js';
 import { help, helpBox } from './help.js';
 import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepBeside, keptNow, listGo, mine, mineAdd, mineIn, mineMatch, minePut, savedMine, toGh, upAll, upRun } from './own.js';
@@ -203,7 +203,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       edits++;
       if (openSay) { if (status.textContent === openSay.t) quiet(); openSay = null; }   // the save clash said until the reader's next change
       goodNow();
-      sbFollow();   // a move that turned an SBGN-ML file: the GraphML made again from it (sbgn.js)
+      if (shared.F.moved) shared.F.moved();   // the format's own after a move (SBGN-ML: a file the move turned, its GraphML made again)
       if (site && site.pending) { localFor = site; clearTimeout(localTimer); localTimer = setTimeout(local, 800); localBox(); return; }   // no token: kept in this browser
       if (site && site.mine) { localFor = site; clearTimeout(localTimer); localTimer = setTimeout(local, 800); }   // a reader's map saved on GitHub: its record follows too, so no move waits on GitHub alone
       if (!site || !token() || stuck) return;
@@ -286,7 +286,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       // at once) is never stored with it; then this text is drawn for it here
       var own = lastFor && lastFor[2] === s.id && !lastFor[3] ? lastSvg : null;
       // taken now: by the time the check below is done another map may be open (local(true) at opening), the globals its own
-      var nm = name, back = !s.mine && atSite(), g0 = shared.sb && !s.mine ? shared.sb.g0 : null;
+      var nm = name, back = !s.mine && atSite(), g0 = !s.mine && shared.F.g0 ? shared.F.g0() : null;
       var pic = function () { return own ? Promise.resolve({ svg: own, width: at.width, height: at.height }) : drawText(t, g0); };   // a site map's SBGN-ML drawn from the build's GraphML, as the site draws it
       var fail = function (e) { if (site === s) warn('Not kept in this browser: ' + String(e && e.message ? e.message : e).replace(/\.$/, '') + '. Download the map to keep your changes.'); };
       // what this browser keeps of the map read afresh first: written by another tab since this page opened it, it is
@@ -325,7 +325,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     }
     function atSite() {
       var n = !on && leftMoves && leftMoves.site === site ? leftMoves.n : undo.length;
-      return site.pending && (src() === site.pub || (!n && !site.fromDraft && (!shared.sb || src() === site.base)));   // an SBGN-ML map written as now seen (Show sites) is a change
+      return site.pending && (src() === site.pub || (!n && !site.fromDraft && (!shared.F.asRead || src() === site.base)));   // a file written otherwise than read with no move (SBGN-ML, as now seen: Show sites) is a change
     }
     function unkeep(id) {   // the reader's changes let go (Back to the site's map, a token connected): a write waiting dropped too
       if (localFor && localFor.id === id) { clearTimeout(localTimer); localTimer = null; localFor = null; }
@@ -695,9 +695,8 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     }
 
     // the file read: every y:Geometry and y:Point in document order, which is also their order in the text
-    function parse() {
-      var how = shared.sbBack ? 'back' : 'follow'; shared.sbBack = false;
-      if (shared.sb) sbKind(how);   // a change that turned an SBGN-ML file: the GraphML made again from it first (sbgn.js)
+    function parse(back) {   // back: after an undo or redo
+      if (shared.F.parsing) shared.F.parsing(back ? 'back' : 'follow');   // the format's own first (SBGN-ML: a change that turned the file, the GraphML made again from it)
       var pd = preDoc.filter(function (x) { return x.text === shared.text; })[0];   // read ahead, each used once
       preDoc = preDoc.filter(function (x) { return x !== pd; });
       var R = GE.read(shared.text, { doc: pd ? pd.doc : null, cd: shared.F.engineCd });
@@ -1164,7 +1163,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       try { t = take(from); } catch (e) { from.length = 0; from.rb = []; from.ts = []; tookShift = null; warn('Undo history lost: ' + e + '.'); return; }
       clearTimeout(timer); keyDue = null; keyRun = null;   // the keys' run undone: nothing settled on top of it
       var was = undoText();
-      step(to, was); setText(fromUndo(t)); shared.lastChange = { name: from === undo ? 'undo' : 'redo', ids: [] }; nudgeAt = 0; shared.cdGate = null; shared.sbBack = true; parse(); shared.selN = []; shared.selP = []; shared.selE = []; shared.part = null; shared.dirty = true; render(); paint(); changed();
+      step(to, was); setText(fromUndo(t)); shared.lastChange = { name: from === undo ? 'undo' : 'redo', ids: [] }; nudgeAt = 0; shared.cdGate = null; parse(true); shared.selN = []; shared.selP = []; shared.selE = []; shared.part = null; shared.dirty = true; render(); paint(); changed();
     }
 
     // the drawing: the renderer in the browser; the map keeps its place on screen when the drawing's edges change
@@ -1720,9 +1719,9 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
         var moved = shared.dirty || !!(site && site.pending && src() !== site.pub);   // moves kept in the browser count too
         if (on && site) {   // connected while editing: go on from the repository's version, keeping the moves made
           var keep = shared.text;
-          var s0 = site;   // (s0.base: the text editing started from)
-          Promise.all([api('/contents/' + s0.path + '?ref=main').then(function (r) { return r.status === 404 && shared.sb ? {} : r.json(); }),   // an SBGN-ML map's edited copy not made yet: the first save makes it
-            api('/contents/' + s0.path + '?ref=main', { headers: { Accept: 'application/vnd.github.raw' } }).then(function (r) { return r.status === 404 && shared.sb ? s0.base : r.text(); })])
+          var s0 = site, copy = !!shared.F.ahead.path;   // (s0.base: the text editing started from)
+          Promise.all([api('/contents/' + s0.path + '?ref=main').then(function (r) { return r.status === 404 && copy ? {} : r.json(); }),   // a map edited as a copy of its own (SBGN-ML) with no copy yet: the first save makes it
+            api('/contents/' + s0.path + '?ref=main', { headers: { Accept: 'application/vnd.github.raw' } }).then(function (r) { return r.status === 404 && copy ? s0.base : r.text(); })])
             .then(function (f) {
               if (!on || site !== s0) return;   // another map opened meanwhile: this one stays as kept in the browser, taken up when it is opened again (its moves never written into the map open now)
               s0.sha = f[0].sha || null; s0.pending = false; buttons();
@@ -2723,7 +2722,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     function __run38() {   // run at start, in order (__start)
     window.m2EditSites = function () {   // Show sites changed while an SBGN-ML map is edited: the file written as now seen (sbOut), saved
       if (!on || !site || !shared.F.sitesOut || !shared.F.sitesOut()) return;   // a format that writes sites as seen (SBGN-ML), its writer loaded
-      if (!isSb(shared.sbLast[1]) || src() === (site.saved || site.base)) return;   // as it is saved already
+      if (src() === (site.saved || site.base)) return;   // as it is saved already
       shared.dirty = true; changed();
     };
     window.m2EditNow = function () { return on && site && site.id && shared.text ? { id: site.id, text: src(), svg: shownSvg(), file: name } : null; };

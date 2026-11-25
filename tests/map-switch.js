@@ -63,10 +63,10 @@ var OPENED = ['text', 'F', 'cd', 'sb', 'sbLast', 'procs', 'cdBase'];   // F: the
     var picked = await pickNode();
     await page.keyboard.press('Shift+ArrowRight'); await page.waitForTimeout(600);   // past the keys' settle
     // and fields no gesture here sets, planted: a selected state variable, a CellDesigner unit being typed, a gate being
-    // made, an undo's next parse, the caches; each one a switch before this step did not clear
-    await page.evaluate(function () { window.m2EditPlant({ svSel: { id: '__planted', j: 0 }, cdPend: { id: '__planted', kind: 'x', angle: 0 }, cdGate: { kind: 'and', inputs: [] }, sbBack: true, hpMemo: ['__planted', {}], cdStrictMemo: ['__planted', true] }); });
+    // made, the caches; each one a switch before this step did not clear
+    await page.evaluate(function () { window.m2EditPlant({ svSel: { id: '__planted', j: 0 }, cdPend: { id: '__planted', kind: 'x', angle: 0 }, cdGate: { kind: 'and', inputs: [] }, hpMemo: ['__planted', {}], cdStrictMemo: ['__planted', true] }); });
     var a = await state();
-    ok(kinds[i] + ': a node selected and moved before leaving, fields planted', picked && a && a.map.selN.list > 0 && a.map.dirty === true && a.map.svSel && a.gesture.cdPend && a.map.sbBack === true, a ? 'selected ' + a.map.selN.list + ', dirty ' + a.map.dirty : 'no state');
+    ok(kinds[i] + ': a node selected and moved before leaving, fields planted', picked && a && a.map.selN.list > 0 && a.map.dirty === true && a.map.svSel && a.gesture.cdPend, a ? 'selected ' + a.map.selN.list + ', dirty ' + a.map.dirty : 'no state');
     var page0 = a && a.page;
     await page.click('.m2-map[data-id="' + B + '"]');
     await editingOn(B);
