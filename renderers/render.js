@@ -5,6 +5,9 @@
 //   either with "groups":true  -> the same, each node and line in a group of its own (data-n, data-e): the published
 //                                 picture is this drawing, which the editor takes as its own on entering edit (no redraw),
 //                                 and the build reads the lines a click lights from it
+//   {"kind":"sbgnml","src":path} -> {"graphml":...}                  (converter/sbgnml_read.js: an SBGN-ML file read into
+//                                 the GraphML the editor edits it as and yrender draws; the converter's reading, copied)
+//   {"kind":"names"}           -> {"names":[[text, written], ...]}  (cdrender.js NAME: CellDesigner's written names)
 //   anything that fails           -> {"error": message}
 // A CellDesigner map whose compartments name a picture in their notes ('Glyph: glyphs/x.png', MINERVA's way) gets the
 // picture drawn in the compartment's box when that file is beside the map, embedded as a data address; without the file
@@ -13,6 +16,7 @@
 var fs = require('fs'), path = require('path'), readline = require('readline');
 var DP = require('@xmldom/xmldom').DOMParser;
 var yr = require(path.join(__dirname, 'yrender', 'yrender.js')), cd = require(path.join(__dirname, 'converter', 'cdrender.js'));
+var sr = require(path.join(__dirname, 'converter', 'sbgnml_read.js'));
 var log = function (s) { process.stderr.write(s + '\n'); };
 function glyphs(src) {
   return function (rel) {
@@ -24,9 +28,11 @@ function glyphs(src) {
 readline.createInterface({ input: process.stdin }).on('line', function (line) {
   var out;
   try {
-    var job = JSON.parse(line), text = fs.readFileSync(job.src, 'utf8');
-    var g = !!job.groups;
-    if (job.kind === 'yed') { var r = yr.render(text, { classes: true, groups: g, sbgn: !!job.sbgn, DOMParser: DP }); out = { svg: r.svg, errors: r.errors }; }
+    var job = JSON.parse(line);
+    if (job.kind === 'names') { process.stdout.write(JSON.stringify({ names: cd.NAME }) + '\n'); return; }
+    var text = fs.readFileSync(job.src, 'utf8'), g = !!job.groups;
+    if (job.kind === 'sbgnml') out = { graphml: sr.graphml(text, { DOMParser: DP }).text };
+    else if (job.kind === 'yed') { var r = yr.render(text, { classes: true, groups: g, sbgn: !!job.sbgn, DOMParser: DP }); out = { svg: r.svg, errors: r.errors }; }
     else { var h = cd.renderHits(text, { classes: true, groups: g, DOMParser: DP, log: log, glyph: glyphs(job.src) }); out = { svg: h[0], hits: h[1] }; }
   } catch (e) { out = { error: String(e && e.message || e) }; }
   process.stdout.write(JSON.stringify(out) + '\n');

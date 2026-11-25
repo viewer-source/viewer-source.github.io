@@ -21,8 +21,8 @@
 #   the reader's, however it was made; its SBGN-ML twin below is an example with it); with
 #   newt: true a Newt link opens the map's SBGN-ML on the demo, minerva: <address> a MINERVA link.
 # SBGN-ML (shown the same way as GraphML): a map whose maps/extra/<id>/ has an
-#   .sbgn file gets that file drawn as well, read by the converter (renderers/converter/mapconv: sbgnml.read, the file's
-#   own places and sizes) into GraphML and drawn by yrender.js, with its click data: downloads/<id>-sbgnml.svg and
+#   .sbgn file gets that file drawn as well, read by renderers/converter/sbgnml_read.js (the converter's reading copied
+#   into JavaScript: the file's own places and sizes) into GraphML and drawn by yrender.js, with its click data: downloads/<id>-sbgnml.svg and
 #   atlas-data/<id>-sbgnml.json, named in the entry's sbgn; the viewer shows it when Settings' Source is SBGN-ML.
 # maps/<id>.sbgn with its maps/<id>.md: an SBGN-ML map of its own in the group its entry names, drawn from the file as
 #   above and edited in place (edit_path maps/<id>.sbgn).
@@ -57,7 +57,7 @@ from urllib.parse import unquote
 from lxml import etree
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.join(ROOT, 'renderers', 'converter'))   # the converter's plain_name
+sys.path.insert(0, os.path.join(ROOT, 'renderers', 'converter'))   # the converter's copy: the group SBGN-ML, the parked SBML group
 # The drawings come from the JavaScript renderers (yrender.js, cdrender.js: the masters), run by
 # Node through renderers/render.js, started once for the whole build; every fill and name gets its role's class beside
 # its colour, for the viewer's Map colours (Settings), and 'colours' in a map's entry says its picture has them.
@@ -70,7 +70,7 @@ def render(kind, src, sbgn=False, groups=False):   # sbgn: a GraphML made from a
     if _node is None:
         _node = subprocess.Popen(['node', os.path.join(ROOT, 'renderers', 'render.js')], stdin=subprocess.PIPE,
                                  stdout=subprocess.PIPE, text=True, encoding='utf-8', bufsize=1)
-    job = dict({'kind': kind, 'src': src}, **({'sbgn': True} if sbgn else {}), **({'groups': True} if groups else {}))
+    job = dict({'kind': kind}, **({'src': src} if src else {}), **({'sbgn': True} if sbgn else {}), **({'groups': True} if groups else {}))
     _node.stdin.write(json.dumps(job) + '\n'); _node.stdin.flush()
     line = _node.stdout.readline()
     if not line:   # the renderer is gone: stop the build, never a map after another left out quietly
@@ -123,7 +123,6 @@ def lines_of(svg, key):
 
 def floats(v):   # the click data's numbers as the Python renderer gave them (12.0, not 12, in the JSON written)
     return [floats(x) for x in v] if isinstance(v, list) else float(v) if isinstance(v, (int, float)) else v
-from mapconv.celldesigner import plain_name  # noqa: E402
 import databases as db  # noqa: E402
 from databases import realizer, first_label, search_entries  # noqa: E402
 
@@ -225,8 +224,17 @@ def miriam(e):
     return out
 
 
-def name(n):
-    return ' '.join(plain_name(n or '').replace('_br_', ' ').split())
+_names = None
+
+
+def name(n):   # a CellDesigner name as text: _space_, _alpha_ and the rest back (cdrender.js NAME, the master)
+    global _names
+    if _names is None:
+        _names = render('names', None)['names']
+    s = n or ''
+    for text, written in _names:
+        s = s.replace(written, text)
+    return ' '.join(s.replace('_br_', ' ').split())
 
 
 def celldesigner(src, out_svg):
@@ -300,18 +308,20 @@ def drawn(name, nodes, extra=b''):
 
 
 def converted(src, name, body, keep=False, reader=None):
-    # a file the converter reads (its SBGN-ML reader, or the reader given) through GraphML, then drawn and read as a
-    # GraphML map into downloads/<name>.svg: the drawing (drawn()) and its click data. A file the converter or the
-    # renderer cannot take is said and left out, never stopping the build of the other maps. keep: the GraphML kept as
+    # an SBGN-ML file read into GraphML (renderers/converter/sbgnml_read.js, the converter's reading copied, run by
+    # render.js; or a reader of the converter given, as the parked SBML group's), then drawn and read as a GraphML map
+    # into downloads/<name>.svg: the drawing (drawn()) and its click data. A file the reader or the renderer cannot
+    # take is said and left out, never stopping the build of the other maps. keep: the GraphML kept as
     # atlas-data/<name>.graphml, the file the editor edits the map as (renderers/converter/sbgn_edit.js)
     import contextlib, io, tempfile
-    from mapconv import graphml as writer, report
-    if reader is None:
-        from mapconv import sbgnml as reader
     tmp = None
     try:
-        with report.collect(), contextlib.redirect_stdout(io.StringIO()):
-            text = writer.write(reader.read(src))
+        if reader is None:
+            text = render('sbgnml', src)['graphml']
+        else:
+            from mapconv import graphml as writer, report
+            with report.collect(), contextlib.redirect_stdout(io.StringIO()):
+                text = writer.write(reader.read(src))
         with tempfile.NamedTemporaryFile('w', suffix='.graphml', delete=False, encoding='utf-8') as f:
             f.write(text)
         tmp = f.name
@@ -319,7 +329,8 @@ def converted(src, name, body, keep=False, reader=None):
         if keep:
             shutil.copy(tmp, os.path.join(ROOT, 'atlas-data', name + '.graphml'))
     except (Exception, SystemExit) as e:
-        print('warning: %s not drawn, left out: %s' % (os.path.relpath(src, ROOT), str(e).splitlines()[0] if str(e) else type(e).__name__))
+        said = str(e).splitlines()[0] if str(e) else type(e).__name__
+        print('warning: %s not drawn, left out: %s' % (os.path.relpath(src, ROOT), said[len(src) + 2:] if said.startswith(src + ': ') else said))
         return None, []
     finally:
         if tmp:
