@@ -293,20 +293,19 @@
     });
     this.cnames = {};
     findall(model, 's:listOfCompartments/s:compartment').forEach(function (c) { self.cnames[get(c, 'id')] = get(c, 'name') || get(c, 'id'); });
-    // a compartment drawn as a picture (MINERVA's glyphs: 'Glyph: glyphs/x.png' in its notes): opt.glyph gives the
-    // picture's address for that path, or nothing; with no opt.glyph every compartment is drawn as lines
-    this.glyph = {};
-    if (opt.glyph) findall(model, 's:listOfCompartments/s:compartment').forEach(function (c) {
-      var n = find(c, 's:notes'), m = n && /Glyph:\s*(.+?\.png)/i.exec(n.textContent || ''), href = m && opt.glyph(m[1]);
-      if (href) self.glyph[get(c, 'id')] = href;
-    });
+    // compartments and species drawn as pictures (MINERVA's glyphs: 'Glyph: glyphs/x.png' in their notes): opt.glyph
+    // gives the picture's address for that path, or nothing; with no opt.glyph everything is drawn as lines
+    this.pic = opt.glyph ? function (s) { var m = /Glyph:[ \t]*([^\r\n<]+?\.(?:png|svg))[ \t\r]*(?:\n|<|$)/i.exec(s || ''); return m ? opt.glyph(m[1]) || null : null; } : function () { return null; };
+    this.glyph = {}; this.spGlyph = {};
+    findall(model, 's:listOfCompartments/s:compartment').forEach(function (c) { var n = find(c, 's:notes'), href = n && self.pic(n.textContent); if (href) self.glyph[get(c, 'id')] = href; });
+    findall(model, 's:listOfSpecies/s:species').forEach(function (s) { var n = find(s, 's:notes'), href = n && self.pic(n.textContent); if (href) self.spGlyph[get(s, 'id')] = href; });
     this.alias = new Map();
     findall(ext, 'cd:listOfComplexSpeciesAliases/cd:complexSpeciesAlias').concat(findall(ext, 'cd:listOfSpeciesAliases/cd:speciesAlias')).forEach(function (a) {
       if (!species.has(get(a, 'species'))) throw new Error('KeyError: ' + get(a, 'species'));
       var sp = species.get(get(a, 'species')), b = find(a, 'cd:bounds');
       self.alias.set(get(a, 'id'), [text(find(sp[1], 'cd:class')), ['x', 'y', 'w', 'h'].map(function (k) { return F(get(b, k)); }), a, sp[0], sp[1]]);
     });
-    this.ext = ext; this.model = model;
+    this.ext = ext; this.model = model; this.under = []; this.over = [];
     this.hitReactions = new Map(); this.cur = null;
   }
   var D = Drawing.prototype;
@@ -342,7 +341,7 @@
     var dl = find(a, 'cd:doubleLine');
     var t = dl ? F(get(dl, 'thickness', 12)) : 12, ow = dl ? F(get(dl, 'outerWidth', 2)) : 2, iw = dl ? F(get(dl, 'innerWidth', 1)) : 1;
     var pic = has(self.glyph, get(a, 'compartment')) ? self.glyph[get(a, 'compartment')] : null;
-    self.out.push(pic ? '<image href="' + escape(pic).replace(/"/g, '&quot;') + '" x="' + fmt(x) + '" y="' + fmt(y) + '" width="' + fmt(w) + '" height="' + fmt(h) + '" preserveAspectRatio="none"/>'
+    self.out.push(pic ? image(pic, x, y, w, h)
       : compartmentShape(x, y, w, h, t, ow, iw, colour(get(find(a, 'cd:paint'), 'color'))[0], text(find(a, 'cd:class')) === 'OVAL'));
     var np = find(a, 'cd:namePoint'), nm = has(self.cnames, get(a, 'compartment')) ? self.cnames[get(a, 'compartment')] : '';
     // a name at the top middle of its bounds stays at the top middle of a live box (cd_edit's place() keeps it so)
@@ -354,6 +353,9 @@
       self.text(line, nx, ny + 15.5 + 14 * k, 12, 'start');
     });
   };
+  function image(href, x, y, w, h, extra) {
+    return '<image href="' + escape(href).replace(/"/g, '&quot;') + '" x="' + fmt(x) + '" y="' + fmt(y) + '" width="' + fmt(w) + '" height="' + fmt(h) + '" preserveAspectRatio="none"' + (extra || '') + '/>';
+  }
   D.text = function (s, x, y, size, anchor, family, extra) {
     if (size === undefined) size = 12;
     this.out.push('<text x="' + fmt(x) + '" y="' + fmt(y) + '" font-family="' + (family || FONT) + '" font-size="' + fmt(size) + '" text-anchor="' + (anchor || 'middle') + '"' + (extra || '') + '>' + escape(s) + '</text>');
@@ -405,6 +407,8 @@
   };
   D.node = function (i) {
     var A = this.alias.get(i), cls = A[0], x = A[1][0], y = A[1][1], w = A[1][2], h = A[1][3], a = A[2], name = A[3], si = A[4], self = this;
+    var pic = has(this.spGlyph, get(a, 'species')) ? this.spGlyph[get(a, 'species')] : null;
+    if (pic) { this.out.push(image(pic, x, y, w, h)); return; }   // a species drawn as its picture: no shape, marks or name (MINERVA's way)
     var hd = find(si, 'cd:state/cd:homodimer'), n = hd ? I(text(hd)) : 1;
     var paint = find(a, 'cd:usualView/cd:paint'), c = colour(paint ? get(paint, 'color') : 'ffffffff', '#ffffff'), fill = c[0], alpha = c[1];   // a paint that is no colour: white, as none
     var hyp = find(si, 'cd:hypothetical');
@@ -823,14 +827,23 @@
     if (this.cur) this.hit(this.cur).at = [round(sq[0], 1), round(sq[1], 1)];
     squares.forEach(function (s) { self.lines.push(s); });
   };
+  // a layer's free texts; one whose notes name a picture is that picture in its box, its words not drawn, also on a
+  // layer marked not visible: under everything, over everything only with a positive 'Z-Index:', never picked by the
+  // pointer
   D.texts = function () {
     var self = this;
     findall(this.ext, 'cd:listOfLayers/cd:layer').forEach(function (layer) {
-      if (get(layer, 'visible') === 'false') return;
       findall(layer, 'cd:listOfTexts/cd:layerSpeciesAlias').forEach(function (t) {
-        var b = find(t, 'cd:bounds'), fe = find(t, 'cd:font'), x = F(get(b, 'x')), y = F(get(b, 'y')), h = F(get(b, 'h'));
+        var ln = find(t, 'cd:layerNotes'), notes = ln ? text(ln) || '' : '', pic = self.pic(notes), b = find(t, 'cd:bounds');
+        if (pic && b) {
+          var zi = /Z-Index:[ \t]*(-?\d+)/i.exec(notes);
+          (zi && +zi[1] > 0 ? self.over : self.under).push(image(pic, F(get(b, 'x')), F(get(b, 'y')), F(get(b, 'w')), F(get(b, 'h')), ' pointer-events="none"'));
+          return;
+        }
+        if (get(layer, 'visible') === 'false') return;
+        var fe = find(t, 'cd:font'), x = F(get(b, 'x')), y = F(get(b, 'y')), h = F(get(b, 'h'));
         var z = fe && get(fe, 'size') ? F(get(fe, 'size')) : 11.0;
-        var lines = (text(find(t, 'cd:layerNotes')) || '').trim().split('\n').map(function (l) { return l.trim(); }).filter(function (l) { return l && l.indexOf('=') < 0; });
+        var lines = (text(ln) || '').trim().split('\n').map(function (l) { return l.trim(); }).filter(function (l) { return l && l.indexOf('=') < 0; });
         var top = y + h / 2 - z * 7 / 12 * (lines.length - 1) + z / 3;
         lines.forEach(function (line, k) { self.text(line, x, top + z * 7 / 6 * k, z, 'start'); });
       });
@@ -839,8 +852,8 @@
   D.svg = function () {
     this.compartments(); this.species(); this.texts(); this.reactions();
     return '<?xml version="1.0" encoding="UTF-8"?>\n<svg xmlns="http://www.w3.org/2000/svg" width="' + fmt(this.W) + '" height="' + fmt(this.H) + '" viewBox="0 0 ' + fmt(this.W) + ' ' + fmt(this.H) + '">\n' +
-      '<rect width="100%" height="100%" fill="#fff"/>\n' + (this.GROUPS ? '<g transform="translate(0,0)">\n' : '') + this.out.join('\n') + '\n' +
-      '<g fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">\n' + this.halo.join('\n') + '\n</g>\n' + this.lines.join('\n') + '\n' + (this.GROUPS ? '</g>\n' : '') + '</svg>\n';
+      '<rect width="100%" height="100%" fill="#fff"/>\n' + (this.GROUPS ? '<g transform="translate(0,0)">\n' : '') + this.under.map(function (s) { return s + '\n'; }).join('') + this.out.join('\n') + '\n' +
+      '<g fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">\n' + this.halo.join('\n') + '\n</g>\n' + this.lines.join('\n') + '\n' + this.over.map(function (s) { return s + '\n'; }).join('') + (this.GROUPS ? '</g>\n' : '') + '</svg>\n';
   };
 
   function render(src, opt) { return new Drawing(src, opt).svg(); }

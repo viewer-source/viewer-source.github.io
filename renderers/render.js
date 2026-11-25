@@ -9,9 +9,9 @@
 //                                 the GraphML the editor edits it as and yrender draws; the converter's reading, copied)
 //   {"kind":"names"}           -> {"names":[[text, written], ...]}  (cdrender.js NAME: CellDesigner's written names)
 //   anything that fails           -> {"error": message}
-// A CellDesigner map whose compartments name a picture in their notes ('Glyph: glyphs/x.png', MINERVA's way) gets the
-// picture drawn in the compartment's box when that file is beside the map, embedded as a data address; without the file
-// the compartment is drawn as lines.
+// A CellDesigner map whose compartments, species or layer texts name a picture in their notes ('Glyph: glyphs/x.png',
+// MINERVA's way) gets the picture drawn in their boxes when that file is beside the map (an SVG of the same name in its
+// place), embedded as a data address; without the file they are drawn as before.
 // Needs @xmldom/xmldom (npm install in the repository, or NODE_PATH).
 var fs = require('fs'), path = require('path'), readline = require('readline');
 var DP = require('@xmldom/xmldom').DOMParser;
@@ -19,10 +19,13 @@ var yr = require(path.join(__dirname, 'yrender', 'yrender.js')), cd = require(pa
 var sr = require(path.join(__dirname, 'converter', 'sbgnml_read.js'));
 var log = function (s) { process.stderr.write(s + '\n'); };
 function glyphs(src) {
+  var file = function (f) { return fs.existsSync(f) && fs.statSync(f).isFile(); };
   return function (rel) {
     var dir = path.dirname(path.resolve(src)), f = path.resolve(dir, rel), up = path.relative(dir, f);
-    if (path.isAbsolute(rel) || up.split(path.sep)[0] === '..' || !/\.png$/i.test(f) || !fs.existsSync(f) || !fs.statSync(f).isFile()) return null;   // only a PNG file in the map's own folder
-    return 'data:image/png;base64,' + fs.readFileSync(f).toString('base64');
+    if (path.isAbsolute(rel) || up.split(path.sep)[0] === '..' || !/\.(png|svg)$/i.test(f)) return null;   // only a picture in the map's own folder
+    var svg = f.replace(/\.(png|svg)$/i, '.svg');
+    if (file(svg)) return 'data:image/svg+xml;base64,' + fs.readFileSync(svg).toString('base64');   // an SVG kept beside the PNG a note names: drawn in its place
+    return /\.png$/i.test(f) && file(f) ? 'data:image/png;base64,' + fs.readFileSync(f).toString('base64') : null;
   };
 }
 readline.createInterface({ input: process.stdin }).on('line', function (line) {

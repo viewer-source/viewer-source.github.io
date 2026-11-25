@@ -1,9 +1,9 @@
 import { shared, V } from './state.js';
 import { ahead, api, b64, blobSha, changed, drawText, freeName, gh, graphmlOf, heldText, localBox, map, mapTop, note, on, origFolderDrop, origRead, origWrite, repo, site, src, stop, toFolder, token, unkeep, warn } from './core.js';
-import { cdMap, cdMk, cdpy, isCd } from './celldesigner.js';
+import { cdMap, cdMk, cdPicSource, cdpy, isCd } from './celldesigner.js';
 import { noLayout } from './graphml.js';
 import { NEW_ID, emptyBase, isSb, sbMap } from './sbgn.js';
-import { bytesSha, minervaProject, settleGlyphs, unzip } from './minerva.js';
+import { bytesSha, glyphsNamed, minervaProject, settleGlyphs, unzip } from './minerva.js';
 
     // ---------- the reader's own storage (editor/src/own.js) ----------
     // What a reader without a GitHub token keeps (three layers: this browser, a folder on the computer,
@@ -1007,7 +1007,8 @@ import { bytesSha, minervaProject, settleGlyphs, unzip } from './minerva.js';
       var gh = repo() && token();
       return f.arrayBuffer().then(unzip).then(function (es) {
         var p = minervaProject(es);
-        return settleGlyphs(p, gh ? siteGlyphs() : folderGlyphs()).then(function () {
+        return settleGlyphs(p, gh ? siteGlyphs() : localGlyphs()).then(function () {
+          Object.keys(p.glyphs).forEach(function (g) { held[g] = p.glyphs[g]; });   // its maps drawn with them before any store has them
           var files = p.maps.map(function (m) { var x = new File([m.text], m.path.split('/').pop(), { type: 'text/xml' }); x.zipPath = m.path; return x; });
           return files.reduce(function (q, x, i) {   // every map drawn before anything is added: a map that cannot be drawn refuses the whole zip
             return q.then(function () { return drawText(p.maps[i].text, null, 'adding'); }).then(function (d) { x.drawn = d; }, function (e) {
@@ -1036,6 +1037,51 @@ import { bytesSha, minervaProject, settleGlyphs, unzip } from './minerva.js';
         return dir.then(function (d) { return d && d.getFileHandle(n.slice(7)); }).then(function (h) { return h && h.getFile(); })
           .then(function (fl) { return fl && fl.arrayBuffer(); }).then(function (a) { return a ? bytesSha(new Uint8Array(a)) : null; }).catch(function () { return null; });
       };
+    }
+    // a picture a map's notes name (glyphs/x.png), for its drawing (celldesigner.js cdPicsFor): an SVG of the same name
+    // first, drawn in its place; from the first place that has it: a zip opened on this page (held), GitHub's maps/glyphs/
+    // with a token, the folder's glyphs/, the projects this browser keeps. A Blob of its type, or null
+    var held, ghPics, storedAll;
+    function __run30() {   // run at start, in order (__start)
+    held = {}; ghPics = null; storedAll = null;
+    cdPicSource(picRead, function (t) { return glyphsNamed(t.replace(/&(lt|gt|quot|apos|amp);/g, function (m, e) { return { lt: '<', gt: '>', quot: '"', apos: "'", amp: '&' }[e]; })); });
+    }
+    function picRead(n) {
+      var svg = n.replace(/\.png$/i, '.svg'), names = svg !== n ? [svg, n] : [n];
+      return names.reduce(function (q, m) { return q.then(function (b) { return b || picFrom(m); }); }, Promise.resolve(null));
+    }
+    function picFrom(n) {
+      var type = /\.svg$/i.test(n) ? 'image/svg+xml' : 'image/png', blob = function (d) { return d ? new Blob([d], { type: type }) : null; };
+      if (Object.prototype.hasOwnProperty.call(held, n)) return Promise.resolve(blob(held[n]));
+      var tok = repo() && token();
+      if (tok && !ghPics) { ghPics = siteGlyphs(); setTimeout(function () { ghPics = null; }, 60000); }   // the listing read once a minute at most
+      var fromGh = tok ? ghPics(n).then(function (sha) {
+        return sha && api('/git/blobs/' + sha).then(ghJson).then(function (d) { return blob(Uint8Array.from(atob((d.content || '').replace(/\s/g, '')), function (c) { return c.charCodeAt(0); })); });
+      }) : Promise.resolve(null);
+      return fromGh.catch(function () { return null; }).then(function (b) {
+        if (b) return b;
+        return (V.folderName() && /^glyphs\/[^/]+$/.test(n) ? folder() : Promise.resolve(null)).then(function (f) { return f && f.dir.getDirectoryHandle('glyphs'); }).then(function (d) { return d && d.getFileHandle(n.slice(7)); })
+          .then(function (h) { return h && h.getFile(); }).then(function (fl) { return fl ? blob(fl) : null; }).catch(function () { return null; });
+      }).then(function (b) { return b || storedPic(n).then(blob).catch(function () { return null; }); });
+    }
+    // without a token: the pictures kept in the folder, else on this page or in this browser (two zips naming the same
+    // picture, as HIDmap's and AsthmaMap's overview.png: the second numbered)
+    function localGlyphs() {
+      var f = folderGlyphs();
+      return function (n) {
+        return f(n).then(function (s) {
+          if (s) return s;
+          if (Object.prototype.hasOwnProperty.call(held, n)) return bytesSha(held[n]);
+          return storedPic(n).then(function (b) { return b && b.arrayBuffer().then(function (a) { return bytesSha(new Uint8Array(a)); }); });
+        });
+      };
+    }
+    function storedPic(n) {   // a picture of the projects this browser keeps: the store read once for a batch of names
+      if (!storedAll) { storedAll = V.draftDo('readonly', function (st) { return st.getAll(); }, 'folder').catch(function () { return []; }); setTimeout(function () { storedAll = null; }, 2000); }
+      return storedAll.then(function (all) {
+        var r = (all || []).filter(function (x) { return x && /^mz-/.test(x.id || '') && x.glyphs && x.glyphs[n]; })[0];
+        return r ? r.glyphs[n] : null;
+      });
     }
     function projectRecord(p, maps) { return JSON.stringify({ zip: p.zip, maps: maps, glyphs: Object.keys(p.glyphs), kept: Object.keys(p.kept) }, null, 1) + '\n'; }
     // with a token: the project's files for the commit of its maps (toSiteMany): its pictures and other files as blobs
@@ -1816,5 +1862,5 @@ import { bytesSha, minervaProject, settleGlyphs, unzip } from './minerva.js';
     mineIn.then(upAll).then(binMigrate);
     }   // connected: the reader's maps kept in this browser go to GitHub
 
-    export function __start() { __run1(); __run2(); __run3(); __run4(); __run5(); __run6(); __run7(); __run8(); __run9(); __run10(); __run11(); __run12(); __run13(); __run14(); __run15(); __run16(); __run17(); __run18(); __run19(); __run20(); __run21(); __run22(); __run23(); __run24(); __run25(); __run26(); __run27(); __run28(); __run29(); }   // the part's statements, in their order
+    export function __start() { __run1(); __run2(); __run3(); __run4(); __run5(); __run6(); __run7(); __run8(); __run9(); __run10(); __run11(); __run12(); __run13(); __run14(); __run15(); __run16(); __run17(); __run18(); __run19(); __run20(); __run21(); __run22(); __run23(); __run24(); __run25(); __run26(); __run27(); __run28(); __run29(); __run30(); }   // the part's statements, in their order
     export { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepBeside, keptNow, listGo, mine, mineAdd, mineIn, mineMatch, minePut, openZipFolder, origGh, origPut, own, savedMine, toGh, upAll, upRun };

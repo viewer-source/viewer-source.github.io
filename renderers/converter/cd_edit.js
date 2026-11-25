@@ -887,7 +887,7 @@
   }
   function draw(t, gtext, opt) {
     var p = place(t, gtext, opt), c = p[0], sh = p[1], doc = new (DP(opt))().parseFromString(c, 'application/xml');   // the new text parsed once, for the drawing and the GraphML
-    var svg = cdr.render(doc, { classes: true, groups: true, DOMParser: DP(opt) });
+    var svg = cdr.render(doc, { classes: true, groups: true, DOMParser: DP(opt), glyph: opt && opt.glyph });   // glyph: MINERVA's pictures (cdrender)
     if (sh[0] !== 0 || sh[1] !== 0) {
       svg = svg.replace('<g transform="translate(0,0)">', '<g transform="translate(' + repr(sh[0]) + ',' + repr(sh[1]) + ')"><g transform="translate(' + repr(-sh[0]) + ',' + repr(-sh[1]) + ')">');
       svg = svg.slice(0, svg.lastIndexOf('</svg>')) + '</g>\n</svg>\n';
@@ -904,7 +904,7 @@
   // reaction's groups as in the editor's drawing (the same text as draw()'s for that reaction, tests/cd-live.js), null
   // for one not drawn. JavaScript only (the editor), it writes no file.
   function live(t, gtext, opt) {
-    var d = new cdr.Drawing(opt && opt.doc ? opt.doc : t, { classes: true, groups: true, DOMParser: DP(opt) }), comps = compartments(d), rd = read(gtext, opt);
+    var d = new cdr.Drawing(opt && opt.doc ? opt.doc : t, { classes: true, groups: true, DOMParser: DP(opt), glyph: opt && opt.glyph }), comps = compartments(d), rd = read(gtext, opt);
     var old = new Map(), alias0 = new Map(), olds = {}, slices = {}, T0 = new Text(t), last = [], errors = [];
     d.alias.forEach(function (a, i) { old.set(i, a[1]); alias0.set(i, a); });
     comps.forEach(function (v, c) { old.set(c, v[0]); });

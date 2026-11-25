@@ -48,6 +48,28 @@ import { cdCardDown, cdCheck, cdClsOf, cdHow, cdLineAt, cdLink, cdLinkMarks, cdL
       cdp.catch(function (e) { cdp = null; warn('The CellDesigner renderer did not load: ' + e); });
       return cdp;
     }
+    // MINERVA's pictures ('Glyph: glyphs/x.png' in a compartment's, a species' or a layer text's notes), drawn by cdrender
+    // from data addresses (a map's picture in the list is shown as an image, which loads nothing else): read before a map
+    // is drawn (drawOwn, the opening) into one cache of the page by the reader own.js gives (cdPicSource: the zip being
+    // opened, GitHub, the folder, this browser); the editor's redraws and live drawings read the same cache. A picture not found is not kept as none (it may come later: a zip, a folder allowed),
+    // and a name not read is drawn as before and marked (cdPicMiss), so a read-ahead drawn before its pictures is not
+    // taken at entry. names: the pictures a map's text names (own.js: minerva.js glyphsNamed on its unescaped text)
+    var cdPics, cdPicRead, cdPicNames, cdPicMiss;
+    function __run8() {   // run at start, in order (__start)
+    cdPics = {}; cdPicRead = null; cdPicNames = null; cdPicMiss = false;
+    }
+    function cdPicSource(read, names) { cdPicRead = read; cdPicNames = names; }
+    function cdGlyph(p) { if (Object.prototype.hasOwnProperty.call(cdPics, p)) return cdPics[p]; cdPicMiss = true; return null; }
+    function cdPicsFor(t) {
+      if (!cdPicRead) return Promise.resolve();
+      var want = cdPicNames(t).filter(function (p) { return !Object.prototype.hasOwnProperty.call(cdPics, p); });
+      if (!want.length) return Promise.resolve();
+      return Promise.all(want.map(function (p) {
+        return cdPicRead(p).then(function (b) {
+          return b && new Promise(function (res) { var r = new FileReader(); r.onload = function () { res(r.result); }; r.onerror = function () { res(null); }; r.readAsDataURL(b); });
+        }).catch(function () { return null; }).then(function (u) { if (u) cdPics[p] = u; });
+      }));
+    }
     // a CellDesigner file made into the editor's GraphML once per text (read ahead while the map is shown, then at the
     // switch and for the click data the same text again): the last few kept
     var cdMemo;
@@ -60,7 +82,7 @@ import { cdCardDown, cdCheck, cdClsOf, cdHow, cdLineAt, cdLink, cdLinkMarks, cdL
     // (render, cdRebuild). Unchanged, the file draws as itself: opening it, or every change undone, saves nothing and
     // leaves the picture's frame as the site's. fit given: the read-ahead, before editing
     function cdDraw(t, g, fit) {   // [svg, file, GraphML]; the new file's document kept for the session while editing
-      return cdJs.draw(t, g, { fit: fit == null ? undo.length > 0 : fit, block: gridBlock(), parsed: on ? function (c, d) { cdDocKeep(c, d, shownId()); } : null });
+      return cdJs.draw(t, g, { fit: fit == null ? undo.length > 0 : fit, block: gridBlock(), glyph: cdGlyph, parsed: on ? function (c, d) { cdDocKeep(c, d, shownId()); } : null });
     }
     // a CellDesigner file's XML parsed once for every reader of that text (cdrender's drawing on adding, cd_edit's GraphML
     // at the read-ahead or the opening, its live session after entry, the drawing and GraphML after a change): one
@@ -147,7 +169,7 @@ import { cdCardDown, cdCheck, cdClsOf, cdHow, cdLineAt, cdLink, cdLinkMarks, cdL
     function cdSession() {
       if (!shared.cd || !cdJs || !cdJs.live || !shared.cdBase) return null;
       if (cdLive && cdLive.base === shared.cdBase) return cdLive.s;
-      try { cdLive = { base: shared.cdBase, s: cdJs.live(shared.cdBase.now, shared.cdBase.text, { doc: cdDoc(shared.cdBase.now) }) }; } catch (e) { cdLive = null; }
+      try { cdLive = { base: shared.cdBase, s: cdJs.live(shared.cdBase.now, shared.cdBase.text, { doc: cdDoc(shared.cdBase.now), glyph: cdGlyph }) }; } catch (e) { cdLive = null; }
       return cdLive ? cdLive.s : null;
     }
     function cdSessionSoon() {
@@ -315,7 +337,7 @@ import { cdCardDown, cdCheck, cdClsOf, cdHow, cdLineAt, cdLink, cdLinkMarks, cdL
         }
       };
     }
-    export function __start() { __run1(); __run3(); __run4(); __run5(); __run6(); __run7(); }   // the part's statements, in their order
+    export function __start() { __run1(); __run3(); __run4(); __run5(); __run6(); __run7(); __run8(); }   // the part's statements, in their order
     // drawing a line (create.js linkEnd, linkDown, linkHow, moveSays, linkMake, linkPaint), CellDesigner's way (cdcreate.js)
     function cdLine() {
       return { role: cdRole, lineAt: cdLineAt, onLine: cdOnLine, startOk: cdStartOk, how: cdHow, moveSays: cdMoveSays, make: cdLink, liveEnds: cdLiveEnds, marks: cdLinkMarks };
@@ -358,7 +380,7 @@ import { cdCardDown, cdCheck, cdClsOf, cdHow, cdLineAt, cdLink, cdLinkMarks, cdL
     // GraphML made of it again; memo: the drawing made ahead unfitted, as the map before any change, used only on this Grid
     // size's block. [svg, warnings]
     function cdRedraw(memo) {
-      var dm = memo && memo.cd && memo.base === shared.cd.base && memo.text === shared.text && memo.block === gridBlock() && !undo.length ? memo : null;
+      var dm = memo && memo.cd && memo.base === shared.cd.base && memo.text === shared.text && memo.block === gridBlock() && !undo.length && !memo.miss ? memo : null;
       var q = dm ? dm.q : cdDraw(shared.cd.base, shared.text);
       shared.cd.now = q[1]; shared.cdBase = { now: q[1], text: q[2] };   // what the live drawing of a move starts from
       if (q[2] !== shared.text && !drag) {   // the same map, its new bend points (a glyph moved) now its own
@@ -393,7 +415,7 @@ import { cdCardDown, cdCheck, cdClsOf, cdHow, cdLineAt, cdLink, cdLinkMarks, cdL
         // changed text, written at the next save, the change said once the map is drawn; the file as it was stays the
         // site's base (what GitHub and the site hold)
         open: function (t, g0, still) {
-          return cdpy().then(function () {
+          return cdpy().then(function () { return cdPicsFor(t); }).then(function () {
             if (!still()) return null;
             var sg = cdMk ? cdMk.sbgn(t) : { n: 0 }, t0 = t, said = null;
             if (sg.n) { t = sg.text; said = sg.n + (sg.n > 1 ? ' positive influences' : ' positive influence') + ' (open arrowhead, not SBGN) made reduced physical stimulation (open triangle).'; }
@@ -402,14 +424,14 @@ import { cdCardDown, cdCheck, cdClsOf, cdHow, cdLineAt, cdLink, cdLinkMarks, cdL
         },
         // a reader's own map drawn for the list (core.js drawText) by cdrender; keep: 'adding' when the map is shown next
         // (its document kept for it, cdDoc)
-        drawOwn: function (t, g0, keep) { return cdpy().then(function () { return window.cdrender.render(cdDoc(t, keep || false), { classes: true, groups: true }); }).catch(function (e) { throw new Error(cdWhy(t, e)); }); },
+        drawOwn: function (t, g0, keep) { return cdpy().then(function () { return cdPicsFor(t); }).then(function () { return window.cdrender.render(cdDoc(t, keep || false), { classes: true, groups: true, glyph: cdGlyph }); }).catch(function (e) { throw new Error(cdWhy(t, e)); }); },
         asGraphml: function (t) { return cdJs ? cdGraphml(t) : t; },   // the site's file as the editor's GraphML (the reference of the site's drawing)
         // the read-ahead: the GraphML of its file (its document kept for the map shown), drawn by cdrender; that GraphML
         // handed to the opening (took); the drawing kept on leaving, with the file it was made from (keeper)
         ahead: { load: cdpy, graphml: function (t, b, keep) { return cdKnown(t) || cdJs.graphml(t, null, { doc: cdDoc(t, keep) }); }, took: cdRemember,
-          draw: function (t, g) { return { cd: true, base: t, text: g, q: cdDraw(t, g, false), block: gridBlock() }; },
+          draw: function (t, g) { cdPicMiss = false; var q = cdDraw(t, g, false); return { cd: true, base: t, text: g, q: q, block: gridBlock(), miss: cdPicMiss }; },   // miss: drawn before its pictures were read
           keeper: function () { return function (t, g, svg) { cdRemember(t, g); return { cd: true, base: t, text: g, q: [svg, t, g] }; }; } },
         kind: function (n) { var c = cdClsOf(n.id); return c ? c[0] : n.comp ? 'compartment' : null; },   // its species class, or compartment
         ownName: cdNameOf, rename: cdRename, nameable: function () { return !!cdMk; } };   // names read from and written into its file
     }
-    export { cdFormat, cdKept, cdJs, cdMap, cdMk, cdNow, cdRebuild, cdSessionSoon, cdShown, cdpy, isCd, liveCd, nodePlaces, plainCanvas, warmUp };
+    export { cdFormat, cdKept, cdPicSource, cdJs, cdMap, cdMk, cdNow, cdRebuild, cdSessionSoon, cdShown, cdpy, isCd, liveCd, nodePlaces, plainCanvas, warmUp };

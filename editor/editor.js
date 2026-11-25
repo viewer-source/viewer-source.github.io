@@ -2623,12 +2623,56 @@
     });
     return cdp;
   }
+  var cdPics;
+  var cdPicRead;
+  var cdPicNames;
+  var cdPicMiss;
+  function __run8() {
+    cdPics = {};
+    cdPicRead = null;
+    cdPicNames = null;
+    cdPicMiss = false;
+  }
+  function cdPicSource(read, names) {
+    cdPicRead = read;
+    cdPicNames = names;
+  }
+  function cdGlyph(p) {
+    if (Object.prototype.hasOwnProperty.call(cdPics, p)) return cdPics[p];
+    cdPicMiss = true;
+    return null;
+  }
+  function cdPicsFor(t) {
+    if (!cdPicRead) return Promise.resolve();
+    var want = cdPicNames(t).filter(function(p) {
+      return !Object.prototype.hasOwnProperty.call(cdPics, p);
+    });
+    if (!want.length) return Promise.resolve();
+    return Promise.all(want.map(function(p) {
+      return cdPicRead(p).then(function(b) {
+        return b && new Promise(function(res) {
+          var r = new FileReader();
+          r.onload = function() {
+            res(r.result);
+          };
+          r.onerror = function() {
+            res(null);
+          };
+          r.readAsDataURL(b);
+        });
+      }).catch(function() {
+        return null;
+      }).then(function(u) {
+        if (u) cdPics[p] = u;
+      });
+    }));
+  }
   var cdMemo;
   function __run34() {
     cdMemo = [];
   }
   function cdDraw(t, g, fit) {
-    return cdJs.draw(t, g, { fit: fit == null ? undo.length > 0 : fit, block: gridBlock(), parsed: on ? function(c, d) {
+    return cdJs.draw(t, g, { fit: fit == null ? undo.length > 0 : fit, block: gridBlock(), glyph: cdGlyph, parsed: on ? function(c, d) {
       cdDocKeep(c, d, shownId());
     } : null });
   }
@@ -2739,7 +2783,7 @@
     if (!shared.cd || !cdJs || !cdJs.live || !shared.cdBase) return null;
     if (cdLive && cdLive.base === shared.cdBase) return cdLive.s;
     try {
-      cdLive = { base: shared.cdBase, s: cdJs.live(shared.cdBase.now, shared.cdBase.text, { doc: cdDoc(shared.cdBase.now) }) };
+      cdLive = { base: shared.cdBase, s: cdJs.live(shared.cdBase.now, shared.cdBase.text, { doc: cdDoc(shared.cdBase.now), glyph: cdGlyph }) };
     } catch (e) {
       cdLive = null;
     }
@@ -2992,6 +3036,7 @@
     __run53();
     __run62();
     __run72();
+    __run8();
   }
   function cdLine() {
     return { role: cdRole, lineAt: cdLineAt, onLine: cdOnLine, startOk: cdStartOk, how: cdHow, moveSays: cdMoveSays, make: cdLink, liveEnds: cdLiveEnds, marks: cdLinkMarks };
@@ -3052,7 +3097,7 @@
     return true;
   }
   function cdRedraw(memo) {
-    var dm = memo && memo.cd && memo.base === shared.cd.base && memo.text === shared.text && memo.block === gridBlock() && !undo.length ? memo : null;
+    var dm = memo && memo.cd && memo.base === shared.cd.base && memo.text === shared.text && memo.block === gridBlock() && !undo.length && !memo.miss ? memo : null;
     var q = dm ? dm.q : cdDraw(shared.cd.base, shared.text);
     shared.cd.now = q[1];
     shared.cdBase = { now: q[1], text: q[2] };
@@ -3150,6 +3195,8 @@
       // site's base (what GitHub and the site hold)
       open: function(t, g0, still) {
         return cdpy().then(function() {
+          return cdPicsFor(t);
+        }).then(function() {
           if (!still()) return null;
           var sg = cdMk ? cdMk.sbgn(t) : { n: 0 }, t0 = t, said = null;
           if (sg.n) {
@@ -3163,7 +3210,9 @@
       // (its document kept for it, cdDoc)
       drawOwn: function(t, g0, keep) {
         return cdpy().then(function() {
-          return window.cdrender.render(cdDoc(t, keep || false), { classes: true, groups: true });
+          return cdPicsFor(t);
+        }).then(function() {
+          return window.cdrender.render(cdDoc(t, keep || false), { classes: true, groups: true, glyph: cdGlyph });
         }).catch(function(e) {
           throw new Error(cdWhy(t, e));
         });
@@ -3181,8 +3230,11 @@
         },
         took: cdRemember,
         draw: function(t, g) {
-          return { cd: true, base: t, text: g, q: cdDraw(t, g, false), block: gridBlock() };
+          cdPicMiss = false;
+          var q = cdDraw(t, g, false);
+          return { cd: true, base: t, text: g, q, block: gridBlock(), miss: cdPicMiss };
         },
+        // miss: drawn before its pictures were read
         keeper: function() {
           return function(t, g, svg) {
             cdRemember(t, g);
@@ -3515,7 +3567,7 @@
     return read ? all : null;
   }
   var CD_UNKNOWN;
-  function __run8() {
+  function __run82() {
     CD_UNKNOWN = "ffdddddd";
   }
   function cdColour(t, cls) {
@@ -4016,10 +4068,10 @@
     }
     return r === "epn" && (c = cdClsOf(nodes2[i].id)) ? import_notation.default.nodeKind("celldesigner", c[0]) : null;
   }
-  function cdAsk(cls, s, t, held) {
+  function cdAsk(cls, s, t, held2) {
     var ks = cdNt(s), kt = cdNt(t);
     if (!ks || !kt) return null;
-    return import_notation.default.allowed(cls, ks, kt, { sets: ["pd"].concat(cdStrict() ? [] : ["reduced"]), held: !!held, check: function(c) {
+    return import_notation.default.allowed(cls, ks, kt, { sets: ["pd"].concat(cdStrict() ? [] : ["reduced"]), held: !!held2, check: function(c) {
       if (c === "oneInput") {
         var g = cdGateOf(t);
         return g && g.inputs && g.inputs.length ? "A NOT gate has one input, and this one has it." : null;
@@ -5556,7 +5608,7 @@
     __run54();
     __run63();
     __run73();
-    __run8();
+    __run82();
     __run9();
     __run10();
     __run122();
@@ -6257,7 +6309,7 @@
     V.refreshMine();
   }
   var addTo;
-  function __run82() {
+  function __run83() {
     addTo = "";
   }
   function listItems(e) {
@@ -6755,7 +6807,7 @@
     }
   }
   function withMine(list2) {
-    var ids = {}, held = {};
+    var ids = {}, held2 = {};
     list2.forEach(function(m) {
       ids[m.id] = m;
     });
@@ -6764,7 +6816,7 @@
       if (!s) return;
       var waits = on && site && site.id === k || r.saved != null && r.text !== r.saved;
       if (waits || r.sha && s.src && s.src !== r.sha && Date.now() - r.at < 36e5) {
-        held[r.site] = 1;
+        held2[r.site] = 1;
         return;
       }
       V.arrived[k] = r.site;
@@ -6780,7 +6832,7 @@
       }, 0);
     });
     list2 = siteNamed(list2.filter(function(m) {
-      return !held[m.id];
+      return !held2[m.id];
     }));
     var hid = siteHidden(), gh2 = !!(repo() && token()), pend = binPending(), n0 = Object.keys(pend).length, binned = [];
     list2 = list2.filter(function(m) {
@@ -7454,7 +7506,10 @@
     var gh2 = repo() && token();
     return f.arrayBuffer().then(unzip).then(function(es) {
       var p = minervaProject(es);
-      return settleGlyphs(p, gh2 ? siteGlyphs() : folderGlyphs()).then(function() {
+      return settleGlyphs(p, gh2 ? siteGlyphs() : localGlyphs()).then(function() {
+        Object.keys(p.glyphs).forEach(function(g) {
+          held[g] = p.glyphs[g];
+        });
         var files = p.maps.map(function(m) {
           var x = new File([m.text], m.path.split("/").pop(), { type: "text/xml" });
           x.zipPath = m.path;
@@ -7521,6 +7576,99 @@
         return null;
       });
     };
+  }
+  var held;
+  var ghPics;
+  var storedAll;
+  function __run302() {
+    held = {};
+    ghPics = null;
+    storedAll = null;
+    cdPicSource(picRead, function(t) {
+      return glyphsNamed(t.replace(/&(lt|gt|quot|apos|amp);/g, function(m, e) {
+        return { lt: "<", gt: ">", quot: '"', apos: "'", amp: "&" }[e];
+      }));
+    });
+  }
+  function picRead(n) {
+    var svg = n.replace(/\.png$/i, ".svg"), names = svg !== n ? [svg, n] : [n];
+    return names.reduce(function(q, m) {
+      return q.then(function(b) {
+        return b || picFrom(m);
+      });
+    }, Promise.resolve(null));
+  }
+  function picFrom(n) {
+    var type = /\.svg$/i.test(n) ? "image/svg+xml" : "image/png", blob = function(d) {
+      return d ? new Blob([d], { type }) : null;
+    };
+    if (Object.prototype.hasOwnProperty.call(held, n)) return Promise.resolve(blob(held[n]));
+    var tok = repo() && token();
+    if (tok && !ghPics) {
+      ghPics = siteGlyphs();
+      setTimeout(function() {
+        ghPics = null;
+      }, 6e4);
+    }
+    var fromGh = tok ? ghPics(n).then(function(sha) {
+      return sha && api("/git/blobs/" + sha).then(ghJson).then(function(d) {
+        return blob(Uint8Array.from(atob((d.content || "").replace(/\s/g, "")), function(c) {
+          return c.charCodeAt(0);
+        }));
+      });
+    }) : Promise.resolve(null);
+    return fromGh.catch(function() {
+      return null;
+    }).then(function(b) {
+      if (b) return b;
+      return (V.folderName() && /^glyphs\/[^/]+$/.test(n) ? folder() : Promise.resolve(null)).then(function(f) {
+        return f && f.dir.getDirectoryHandle("glyphs");
+      }).then(function(d) {
+        return d && d.getFileHandle(n.slice(7));
+      }).then(function(h) {
+        return h && h.getFile();
+      }).then(function(fl) {
+        return fl ? blob(fl) : null;
+      }).catch(function() {
+        return null;
+      });
+    }).then(function(b) {
+      return b || storedPic(n).then(blob).catch(function() {
+        return null;
+      });
+    });
+  }
+  function localGlyphs() {
+    var f = folderGlyphs();
+    return function(n) {
+      return f(n).then(function(s) {
+        if (s) return s;
+        if (Object.prototype.hasOwnProperty.call(held, n)) return bytesSha(held[n]);
+        return storedPic(n).then(function(b) {
+          return b && b.arrayBuffer().then(function(a) {
+            return bytesSha(new Uint8Array(a));
+          });
+        });
+      });
+    };
+  }
+  function storedPic(n) {
+    if (!storedAll) {
+      storedAll = V.draftDo("readonly", function(st) {
+        return st.getAll();
+      }, "folder").catch(function() {
+        return [];
+      });
+      setTimeout(function() {
+        storedAll = null;
+      }, 2e3);
+    }
+    return storedAll.then(function(all) {
+      var r = (all || []).filter(function(x) {
+        return x && /^mz-/.test(x.id || "") && x.glyphs && x.glyphs[n];
+      })[0];
+      return r ? r.glyphs[n] : null;
+    });
   }
   function projectRecord(p, maps) {
     return JSON.stringify({ zip: p.zip, maps, glyphs: Object.keys(p.glyphs), kept: Object.keys(p.kept) }, null, 1) + "\n";
@@ -8974,7 +9122,7 @@
     __run55();
     __run64();
     __run74();
-    __run82();
+    __run83();
     __run92();
     __run102();
     __run11();
@@ -8996,6 +9144,7 @@
     __run272();
     __run282();
     __run292();
+    __run302();
   }
 
   // editor/src/create.js
@@ -9296,7 +9445,7 @@
   }
   var EXTENDED;
   var CDC_KEY;
-  function __run83() {
+  function __run84() {
     EXTENDED = { tag: 1, delay: 1 };
     CDC_KEY = "atlas-cd-compatible";
   }
@@ -12922,7 +13071,7 @@
     __run56();
     __run65();
     __run75();
-    __run83();
+    __run84();
     __run93();
     __run103();
     __run112();
@@ -14042,7 +14191,7 @@
     }
   }
   var leftMoves;
-  function __run84() {
+  function __run85() {
     leftMoves = null;
   }
   function atSite() {
@@ -16528,7 +16677,7 @@
     map.width = 0;
     render();
   }
-  function __run302() {
+  function __run303() {
     box.querySelector("#m2-ed-back").addEventListener("click", resume);
   }
   function away() {
@@ -18417,7 +18566,7 @@
     __run59();
     __run66();
     __run76();
-    __run84();
+    __run85();
     __run94();
     __run104();
     __run115();
@@ -18439,7 +18588,7 @@
     __run274();
     __run284();
     __run294();
-    __run302();
+    __run303();
     __run313();
     __run343();
     __run353();
