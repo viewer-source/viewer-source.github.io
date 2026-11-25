@@ -2,8 +2,8 @@ import { shared, V } from './state.js';
 import { G, GE, HANDLE, MODS, Y, asSpace, at, box, boxOf, cdOwn, changed, commit, complexHere, cutShape, doc, edges2, editing, f1, fmt, full, gE, gN, gridSet, grown, hit, holder, holderSize, holds, hubPorts, inComplex, inRim, keyTake, kindWindow, landMarks, lateItem, layTool, map, moveFix, name, nodes2, num, on, origFromFolder, origToFolder, outlineD, overlap, ownMenus, paint, parse, parseFix, quiet, rclick, realizerOf, refit, regroup, remember, render, rimOf, roleOf, roomy, setBoxes, setPort, setText, settle, site, src, subItem, sx, sy, takes, toGrid, under, undo, unpush, warn, x0, y0 } from './core.js';
 import { bx, liveOff, livePose, sizeOff } from './live.js';
 import { cdMk, cdNow, cdRebuild } from './celldesigner.js';
-import { GEO, edOf, sbJs, sbKind } from './sbgn.js';
-import { CD_DEF_KEY, CD_GATE, PF_CD, cdClick, cdClsOf, cdDeleteItem, cdFeat, cdFill, cdFront, cdGateMarks, cdGhost, cdHow, cdInfo, cdItems, cdKind, cdLineAt, cdLink, cdLinkMarks, cdLiveEnds, cdMake, cdMoveSays, cdNameDown, cdNameOf, cdOnLine, cdOverMarks, cdPal, cdRename, cdRole, cdSsTyped, cdStartOk, cdSvDelete, cdSvList, cdSvMove, cdSvOpen } from './cdcreate.js';
+import { GEO, sbClasses, sbJs, sbKind } from './sbgn.js';
+import { CD_DEF_KEY, CD_GATE, PF_CD, cdClick, cdDeleteItem, cdFeat, cdFill, cdFront, cdGateMarks, cdGhost, cdHow, cdInfo, cdItems, cdKind, cdLineAt, cdLink, cdLinkMarks, cdLiveEnds, cdMake, cdMoveSays, cdNameDown, cdOnLine, cdOverMarks, cdPal, cdRole, cdSsTyped, cdStartOk, cdSvDelete, cdSvList, cdSvMove, cdSvOpen } from './cdcreate.js';
 import { origGh, origPut } from './own.js';
 import NT from '../../renderers/converter/notation.js';   // the notation's kinds and rules table (plan 3 step 6)
 
@@ -1116,13 +1116,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       return it;
     };
     }
-    function kindKey(i) {
-      var n = nodes2[i];
-      if (!n) return null;
-      if (shared.cd) { var c1 = cdClsOf(n.id); return c1 ? c1[0] : n.comp ? 'compartment' : null; }
-      if (shared.sb) { var c = sbClasses()[n.id]; return c ? c.replace(/ multimer$/, '') : null; }
-      return n.shape && n.shape.kind || null;
-    }
+    function kindKey(i) { return nodes2[i] ? shared.F.kind(nodes2[i]) : null; }   // the node's kind, its format's (F.kind)
     function selectKind(i) {
       var key = kindKey(i);
       if (key == null) return;
@@ -1557,7 +1551,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       var au0 = unit && shared.afSbgn ? sbJs.activities(shared.text)[id] : null;   // an activity's unit in the SBGN AF view: typed where it is drawn (afUnitBox)
       if (au0 != null) { var B0 = sbJs.afUnitBox(b, au0, sv[0] || 'x'); at0 = [B0[0] + 1, B0[1] + 1, B0[2] - 2, B0[3] - 2]; }
       var r0 = sv && !shared.cd ? svR(i, sv) : null;   // for the copies (svShareText)
-      var inp = document.createElement('input'), before = !sv ? (shared.cd ? cdNameOf(id) : nameOf(i)) : sv[0], m0 = map;   // a CellDesigner name from its file (cdcreate.js)
+      var inp = document.createElement('input'), before = !sv ? (shared.F.ownName ? shared.F.ownName(id) : nameOf(i)) : sv[0], m0 = map;   // a format's own name (F.ownName: CellDesigner's from its file)
       inp.type = 'text'; inp.className = 'm2-ed-type'; inp.value = before; inp.spellcheck = false;
       inp.setAttribute('aria-label', !sv ? 'Name' : unit ? 'Unit of information' : 'State variable (value, or value@site)');
       // the drawn text hidden while typing, the field itself transparent (a filled field cut the shape's
@@ -1622,11 +1616,11 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       setTimeout(function () { inp.focus(); inp.setSelectionRange(inp.value.length, inp.value.length); }, 0);   // only the cursor, at the end, nothing selected in blue
     }
     // a name written as typing writes it (typeIn): a CellDesigner map's into its file (cdcreate.js), an SBGN-ML map's label
-    function nameNow(i) { return (shared.cd ? cdNameOf(nodes2[i].id) : nameOf(i)).replace(/[\r\n]+/g, ' ').trim(); }   // a name as one line (a CellDesigner one from its file, cdcreate.js)
-    function shownName(i) { return (shared.cd ? cdNameOf(nodes2[i].id, true) : nameOf(i)).replace(/[\r\n]+/g, ' ').trim(); }   // the name as drawn: a CellDesigner member still named after its id gives that id
+    function nameNow(i) { return (shared.F.ownName ? shared.F.ownName(nodes2[i].id) : nameOf(i)).replace(/[\r\n]+/g, ' ').trim(); }   // a name as one line (a format's own, F.ownName: CellDesigner's from its file)
+    function shownName(i) { return (shared.F.ownName ? shared.F.ownName(nodes2[i].id, true) : nameOf(i)).replace(/[\r\n]+/g, ' ').trim(); }   // the name as drawn: a CellDesigner member still named after its id gives that id
     function setName(id, v) {
-      if (shared.cd) { cdRename(id, v); return; }
-      if (!sbJs || shared.sb && !edOf(src()).nameable(src(), id)) return;   // a GraphML map's label written as it stands (no SBGN-ML class to ask)
+      if (shared.F.rename) { shared.F.rename(id, v); return; }   // a format's own writing (CellDesigner: into its file)
+      if (!shared.F.nameable(id)) return;   // a GraphML map's label written as it stands; an SBGN-ML glyph's when its class takes a name
       var t2 = sbJs.label(shared.text, id, v);
       commit(t2, { name: 'name', ids: [id], then: function () { svJoin(id); }, quiet: true });
     }
@@ -1649,17 +1643,17 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       var c = complexHere(member);
       if (c == null || shared.afSbgn || afKind()) return null;   // not in an Activity Flow view, where members are not drawn
       var v = membersName(c), id = nodes2[c].id, go = function () { setName(id, v); };
-      go.same = v === nameNow(c) || !shared.cd && (!sbJs || shared.sb && !edOf(src()).nameable(src(), id));   // greyed only when already so named (or the file cannot take a name), so the item stays where it is found
+      go.same = v === nameNow(c) || !shared.F.nameable(id);   // greyed only when already so named (or the file cannot take a name), so the item stays where it is found
       return go;
     };
     // a double click on a named entity, or on one of its state variables or units of information, opens its text; on a
     // complex or a compartment anywhere off what it holds (a double click has no other use), the field at its drawn name.
     // Without the palette (GraphML maps, Layout editing) groups only: their names, as Name by members, on every map
     V.view.addEventListener('dblclick', function (e) {
-      if (!editing(e) || shared.cd && cdPal()) return;   // a CellDesigner map in Full editing: cdcreate.js
+      if (!editing(e) || cdPal()) return;   // a CellDesigner map in Full editing: cdcreate.js
       if (tool || Date.now() - placedAt < 600) { e.stopImmediatePropagation(); return; }   // the clicks of a placing: no box
-      var full = palOn(), base = src(), P = at(e), q = full ? svAt(P) : null;
-      var ok = function (n) { return shared.cd ? !!cdMk : !!sbJs && (!shared.sb || sbJs.nameable(base, n.id)); };   // the file can take the name (setName)
+      var full = palOn(), P = at(e), q = full ? svAt(P) : null;
+      var ok = function (n) { return shared.F.nameable(n.id); };   // the file can take the name (setName)
       var grp = function (n) { return n.el.getAttribute('yfiles.foldertype') === 'group'; };
       var nameable = function (n) { return (n.comp || n.shape.kind === 'Complex' && !shared.afSbgn && !afKind() || full && !grp(n)) && ok(n); };
       if (q) { e.stopImmediatePropagation(); typeIn(nodes2[q[0]].id, q[1]); return; }
@@ -2577,19 +2571,6 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       if (k === 'def') return !/^(macromolecule|simple chemical)( multimer)?$|^biological activity$/.test(c) && !hubGroup(i);
       return false;
     }
-    // every glyph's class in the SBGN-ML file as written now, read once per change of the editor's text (src() writes the file)
-    var sbClsMemo;
-    function __run46() {   // run at start, in order (__start)
-    sbClsMemo = [null, {}];
-    }
-    function sbClasses() {
-      if (sbClsMemo[0] !== shared.text) {
-        var m = {}, d = new DOMParser().parseFromString(src(), 'application/xml');
-        Array.prototype.forEach.call(d.getElementsByTagNameNS('*', 'glyph'), function (g) { if (g.getAttribute('id')) m[g.getAttribute('id')] = g.getAttribute('class') || ''; });
-        sbClsMemo = [shared.text, m];
-      }
-      return sbClsMemo[1];
-    }
     function lookKey(cls, unit) { return cls === 'biological activity' ? cls + ':' + (unit || '') : cls; }   // Set as default's kind: the glyph's class, an activity's by its unit
     function kindOf(i) {
       var c = (sbClasses()[nodes2[i].id] || '').replace(/ multimer$/, '');
@@ -3042,5 +3023,5 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
     });
     }
 
-    export function __start() { __run1(); __run2(); __run3(); __run4(); __run5(); __run6(); __run7(); __run8(); __run9(); __run10(); __run11(); __run12(); __run13(); __run14(); __run15(); __run16(); __run17(); __run18(); __run19(); __run20(); __run21(); __run22(); __run23(); __run24(); __run25(); __run26(); __run27(); __run28(); __run29(); __run31(); __run32(); __run33(); __run34(); __run35(); __run36(); __run37(); __run38(); __run39(); __run40(); __run41(); __run42(); __run43(); __run44(); __run45(); __run46(); __run47(); __run48(); __run49(); __run50(); __run51(); __run52(); __run53(); __run54(); __run55(); __run56(); __run57(); __run58(); __run59(); __run60(); __run61(); }   // the part's statements, in their order
+    export function __start() { __run1(); __run2(); __run3(); __run4(); __run5(); __run6(); __run7(); __run8(); __run9(); __run10(); __run11(); __run12(); __run13(); __run14(); __run15(); __run16(); __run17(); __run18(); __run19(); __run20(); __run21(); __run22(); __run23(); __run24(); __run25(); __run26(); __run27(); __run28(); __run29(); __run31(); __run32(); __run33(); __run34(); __run35(); __run36(); __run37(); __run38(); __run39(); __run40(); __run41(); __run42(); __run43(); __run44(); __run45(); __run47(); __run48(); __run49(); __run50(); __run51(); __run52(); __run53(); __run54(); __run55(); __run56(); __run57(); __run58(); __run59(); __run60(); __run61(); }   // the part's statements, in their order
     export { ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues, confettiLine, confettiOne, confettiPick, confettiSquares, ddOpen, hex, hybOn, iconKeep, iconSpread, innermost, joinDo, joinPack, joinPlan, keepLook, keepMapChoice, link, linkDown, linkEnd, linkMove, linkPaint, linkUp, looksKept, mapCols, moveSays, nameAt, origAll, pNow, pal, palBlocks, palDid, palDown, palDrop, palId, palLangNow, palShow, palSigns, palSignsEl, palStore, palStyle, palTake, palUp, placedAt, propFmt, propRows, sbgnStrict, setSize, sizable, styleRow, svAt, svDelete, svDown, svIcons, svList, svMarks, svParts, textsOf, tool, typeIn };

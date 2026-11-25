@@ -9,9 +9,11 @@
 //     direct members' drawn names joined by colons in reading order (rows from the top, each from the left); greyed
 //     when the complex already has that name (Glycolysis CellDesigner's PKA-R:cAMP, f001-glycolysis's s4:s2:s3); one
 //     undo step. Nothing is saved (no token). No script error.
-//   node tests/complex-names.js [base address]
+//   node tests/complex-names.js [base address] [--local]   (--local: the working tree's editor and renderers routed in)
 var { chromium } = require('playwright');
-var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
+var path = require('path'), fs = require('fs'), editorNow = require('./editor-now.js'), here = path.join(__dirname, '..');
+var args = process.argv.slice(2), local = args.indexOf('--local') >= 0; args = args.filter(function (a) { return a !== '--local'; });
+var base = args[0] || 'https://viewer-source.github.io/styles/';
 (async function () {
   var b = await chromium.launch(), page, errs = [], bad = 0;
   var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more && !v ? '  ' + more : '')); };
@@ -20,6 +22,14 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
     if (page) await page.close();
     page = await b.newPage({ viewport: { width: 1400, height: 900 } });
     page.on('pageerror', function (e) { errs.push(e.message); });
+    if (local) {   // the working tree's editor and renderers routed in
+      var ed = editorNow(here);
+      await page.route(/\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: ed }); });
+      await page.route(/\/renderers\/(converter|yrender|layout)\/[^/?]+\.js/, function (r) {
+        var m = new URL(r.request().url()).pathname.match(/\/renderers\/(.+)$/), fp = path.join(here, 'renderers', m[1]);
+        if (fs.existsSync(fp)) r.fulfill({ contentType: 'application/javascript', body: fs.readFileSync(fp, 'utf8') }); else r.continue();
+      });
+    }
     await page.addInitScript(function (l) { try { localStorage.setItem('atlas-edit-level', l); } catch (e) {} }, level);
   };
   var open = async function (hash) {
@@ -174,8 +184,8 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
   var Ps = await empty('n3');
   if (Ps) await byMembersCase('glycolysis-sbgn n3 (Layout)', 'n3', Ps, sbLabel('n3'));
   else ok('glycolysis-sbgn (Layout): a point on the complex n3 off its members', false);
-  var Bs = await box('n3__n0'), fs = await dbl([(Bs[0] + Bs[2]) / 2, (Bs[1] + Bs[3]) / 2]);
-  ok('glycolysis-sbgn (Layout): double click on a member: no field', !fs, JSON.stringify(fs));
+  var Bs = await box('n3__n0'), fm = await dbl([(Bs[0] + Bs[2]) / 2, (Bs[1] + Bs[3]) / 2]);
+  ok('glycolysis-sbgn (Layout): double click on a member: no field', !fm, JSON.stringify(fm));
   await page.keyboard.press('Escape');
   await open('glycolysis-celldesigner');
   var Pl = await empty('sa_n1'), Bcl = await box('sa_n1'), fcl = Pl ? await dbl(Pl) : null;

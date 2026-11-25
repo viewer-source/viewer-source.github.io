@@ -1,7 +1,7 @@
 import { shared, V } from './state.js';
 import { boxOf, cut, edges2, f1, gE, gN, gridBlock, lastFor, lastSvg, nodes2, num, on, points, ports, pt, rebase, setText, spotNo, status, undo, warn } from './core.js';
 import { bx, dropCopies, picOff, restPt, toPic } from './live.js';
-import { cdCardDown, cdCheck, cdClsOf, cdRole } from './cdcreate.js';
+import { cdCardDown, cdCheck, cdClsOf, cdNameOf, cdRename, cdRole } from './cdcreate.js';
 
     // ---------- the CellDesigner part (editor/src/celldesigner.js) ----------
     // A CellDesigner map edited in CellDesigner's own model: the GraphML renderers/converter/cd_edit.js makes of it, the
@@ -384,6 +384,8 @@ import { cdCardDown, cdCheck, cdClsOf, cdRole } from './cdcreate.js';
     export function __start() { __run1(); __run3(); __run4(); __run5(); __run6(); __run7(); }   // the part's statements, in their order
     // CellDesigner's format object (state.js formats): the file is kept beside the GraphML edited, the moves written in
     function cdFormat() {
-      return { name: 'cd', now: function () { return shared.cd.now; }, ownFrame: true, live: function () { return liveCd; }, cardDown: cdCardDown, mainLines: true, afView: false, beside: function () { return shared.cd.now; } };
+      return { name: 'cd', now: function () { return shared.cd.now; }, ownFrame: true, live: function () { return liveCd; }, cardDown: cdCardDown, mainLines: true, afView: false, beside: function () { return shared.cd.now; },
+        kind: function (n) { var c = cdClsOf(n.id); return c ? c[0] : n.comp ? 'compartment' : null; },   // its species class, or compartment
+        ownName: cdNameOf, rename: cdRename, nameable: function () { return !!cdMk; } };   // names read from and written into its file
     }
     export { beyond, cdFormat, cdDoc, cdDraw, cdGraphml, cdKept, cdJs, cdKnown, cdMap, cdMk, cdNow, cdRebuild, cdRemember, cdSessionSoon, cdShown, cdpy, glyphArcs, glyphPort, isCd, joinAt, joinGuides, joinSolve, lineGrid, liveCd, nodeCentre, nodePlaces, plainCanvas, warmUp };

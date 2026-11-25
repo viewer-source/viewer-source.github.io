@@ -6,12 +6,22 @@
 // with the grey background (tr.m2-mixed); a fill typed goes to every selected node in one undo step, Width typed keeps
 // each node's centre (GraphML maps have no Properties: there the selection alone is checked). Maps: Testing
 // Glycolysis (SBGN-ML), Glycolysis (CellDesigner), Glycolysis (GraphML). Nothing is saved (no token). No script error.
-//   node tests/select-kind.js [base address]
+//   node tests/select-kind.js [base address] [--local]   (--local: the working tree's editor and renderers routed in)
 var { chromium } = require('playwright');
-var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
+var path = require('path'), fs = require('fs'), editorNow = require('./editor-now.js'), here = path.join(__dirname, '..');
+var args = process.argv.slice(2), local = args.indexOf('--local') >= 0; args = args.filter(function (a) { return a !== '--local'; });
+var base = args[0] || 'https://viewer-source.github.io/styles/';
 (async function () {
   var b = await chromium.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], bad = 0;
   page.on('pageerror', function (e) { errs.push(e.message); });
+  if (local) {   // the working tree's editor and renderers routed in
+    var ed = editorNow(here);
+    await page.route(/\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: ed }); });
+    await page.route(/\/renderers\/(converter|yrender|layout)\/[^/?]+\.js/, function (r) {
+      var m = new URL(r.request().url()).pathname.match(/\/renderers\/(.+)$/), fp = path.join(here, 'renderers', m[1]);
+      if (fs.existsSync(fp)) r.fulfill({ contentType: 'application/javascript', body: fs.readFileSync(fp, 'utf8') }); else r.continue();
+    });
+  }
   var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more && !v ? '  ' + more : '')); };
   var now = function () { return page.evaluate(function () { return window.m2EditNow().text; }); };
   var open = async function (hash) {

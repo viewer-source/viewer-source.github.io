@@ -11,6 +11,11 @@ export var shared = {};
 //   afView     the map can be drawn in AF's SBGN view (graphml.js afSbgn; not CellDesigner, drawn by cdrender)
 //   mainLines  a reaction has one main reactant and product, the others added (CellDesigner): Make main
 //   cardDown(e)  a press on a cardinality, where the format has its own way (CellDesigner); none: create.js's
+//   kind(n)    a node's kind, for Select all of this kind: SBGN-ML its class (a multimer as its plain kind), CellDesigner
+//              its species class or compartment, GraphML its shape; null when it has none
+//   nameable(id)  the file can take a name for this node (setName; Name by members greyed when not)
+//   ownName(id, shown)  a name the format keeps its own way (CellDesigner: in its file; shown: as drawn); none: the GraphML label
+//   rename(id, v)  a name written the format's own way (CellDesigner); none: create.js's, the label through the engine
 // Moved one question at a time (stage 1 of notes/format-object-design.md in the working repository).
 export var formats = {};
 export function addFormats(o) { Object.keys(o).forEach(function (k) { formats[k] = o[k]; }); }

@@ -228,6 +228,8 @@ import { sbJs } from './sbgn.js';
     export function __start() { __run1(); __run2(); __run3(); }   // the part's statements, in their order
     // GraphML's format object (state.js formats): the GraphML edited is the file itself
     function graphmlFormat() {
-      return { name: 'graphml', now: function () { return shared.text; }, ownFrame: false, live: function () { return liveY; }, mainLines: false, afView: true, beside: function () { return null; } };
+      return { name: 'graphml', now: function () { return shared.text; }, ownFrame: false, live: function () { return liveY; }, mainLines: false, afView: true, beside: function () { return null; },
+        kind: function (n) { return n.shape && n.shape.kind || null; },   // a node's shape
+        nameable: function () { return !!sbJs; } };   // any node's label, written by the engine
     }
     export { AF_KINDS, graphmlFormat, drawGraphml, liveY, noNegative, shiftedAhead, yr };

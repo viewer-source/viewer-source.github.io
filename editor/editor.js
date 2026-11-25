@@ -4042,13 +4042,32 @@
     __run72();
   }
   function cdFormat() {
-    return { name: "cd", now: function() {
-      return shared.cd.now;
-    }, ownFrame: true, live: function() {
-      return liveCd;
-    }, cardDown: cdCardDown, mainLines: true, afView: false, beside: function() {
-      return shared.cd.now;
-    } };
+    return {
+      name: "cd",
+      now: function() {
+        return shared.cd.now;
+      },
+      ownFrame: true,
+      live: function() {
+        return liveCd;
+      },
+      cardDown: cdCardDown,
+      mainLines: true,
+      afView: false,
+      beside: function() {
+        return shared.cd.now;
+      },
+      kind: function(n) {
+        var c = cdClsOf(n.id);
+        return c ? c[0] : n.comp ? "compartment" : null;
+      },
+      // its species class, or compartment
+      ownName: cdNameOf,
+      rename: cdRename,
+      nameable: function() {
+        return !!cdMk;
+      }
+    };
   }
 
   // editor/src/graphml.js
@@ -4352,13 +4371,28 @@
     __run35();
   }
   function graphmlFormat() {
-    return { name: "graphml", now: function() {
-      return shared.text;
-    }, ownFrame: false, live: function() {
-      return liveY;
-    }, mainLines: false, afView: true, beside: function() {
-      return null;
-    } };
+    return {
+      name: "graphml",
+      now: function() {
+        return shared.text;
+      },
+      ownFrame: false,
+      live: function() {
+        return liveY;
+      },
+      mainLines: false,
+      afView: true,
+      beside: function() {
+        return null;
+      },
+      kind: function(n) {
+        return n.shape && n.shape.kind || null;
+      },
+      // a node's shape
+      nameable: function() {
+        return !!sbJs;
+      }
+    };
   }
 
   // editor/src/sbgn.js
@@ -4592,19 +4626,50 @@
     render();
     paint();
   }
+  var sbClsMemo;
+  function __run73() {
+    sbClsMemo = [null, {}];
+  }
+  function sbClasses() {
+    if (sbClsMemo[0] !== shared.text) {
+      var m = {}, d = new DOMParser().parseFromString(src(), "application/xml");
+      Array.prototype.forEach.call(d.getElementsByTagNameNS("*", "glyph"), function(g) {
+        if (g.getAttribute("id")) m[g.getAttribute("id")] = g.getAttribute("class") || "";
+      });
+      sbClsMemo = [shared.text, m];
+    }
+    return sbClsMemo[1];
+  }
   function __start4() {
     __run112();
     __run210();
     __run36();
     __run53();
     __run63();
+    __run73();
   }
   function sbFormat() {
-    return { name: "sb", now: sbNow, ownFrame: false, live: function() {
-      return liveY;
-    }, mainLines: false, afView: true, beside: function() {
-      return null;
-    } };
+    return {
+      name: "sb",
+      now: sbNow,
+      ownFrame: false,
+      live: function() {
+        return liveY;
+      },
+      mainLines: false,
+      afView: true,
+      beside: function() {
+        return null;
+      },
+      kind: function(n) {
+        var c = sbClasses()[n.id];
+        return c ? c.replace(/ multimer$/, "") : null;
+      },
+      // a glyph's class, a multimer with its plain kind
+      nameable: function(id) {
+        return !!sbJs && edOf(src()).nameable(src(), id);
+      }
+    };
   }
 
   // editor/src/own.js
@@ -5028,7 +5093,7 @@
     V.refreshMine();
   }
   var pressed;
-  function __run73() {
+  function __run74() {
     pressed = false;
     document.addEventListener("pointerdown", function() {
       pressed = true;
@@ -7531,7 +7596,7 @@
     __run42();
     __run54();
     __run64();
-    __run73();
+    __run74();
     __run82();
     __run92();
     __run102();
@@ -7852,7 +7917,7 @@
     }, 0) > Math.ceil(all / c);
     row.classList.toggle("m2-ed-pflat", flat);
   }
-  function __run74() {
+  function __run75() {
     if (window.ResizeObserver) new ResizeObserver(palBlocks).observe(palSignsEl);
   }
   function palKey() {
@@ -9169,17 +9234,7 @@
     };
   }
   function kindKey(i) {
-    var n = nodes2[i];
-    if (!n) return null;
-    if (shared.cd) {
-      var c1 = cdClsOf(n.id);
-      return c1 ? c1[0] : n.comp ? "compartment" : null;
-    }
-    if (shared.sb) {
-      var c = sbClasses()[n.id];
-      return c ? c.replace(/ multimer$/, "") : null;
-    }
-    return n.shape && n.shape.kind || null;
+    return nodes2[i] ? shared.F.kind(nodes2[i]) : null;
   }
   function selectKind(i) {
     var key = kindKey(i);
@@ -9846,7 +9901,7 @@
       at0 = [B0[0] + 1, B0[1] + 1, B0[2] - 2, B0[3] - 2];
     }
     var r0 = sv && !shared.cd ? svR(i, sv) : null;
-    var inp = document.createElement("input"), before = !sv ? shared.cd ? cdNameOf(id) : nameOf(i) : sv[0], m0 = map;
+    var inp = document.createElement("input"), before = !sv ? shared.F.ownName ? shared.F.ownName(id) : nameOf(i) : sv[0], m0 = map;
     inp.type = "text";
     inp.className = "m2-ed-type";
     inp.value = before;
@@ -9980,17 +10035,17 @@
     }, 0);
   }
   function nameNow(i) {
-    return (shared.cd ? cdNameOf(nodes2[i].id) : nameOf(i)).replace(/[\r\n]+/g, " ").trim();
+    return (shared.F.ownName ? shared.F.ownName(nodes2[i].id) : nameOf(i)).replace(/[\r\n]+/g, " ").trim();
   }
   function shownName(i) {
-    return (shared.cd ? cdNameOf(nodes2[i].id, true) : nameOf(i)).replace(/[\r\n]+/g, " ").trim();
+    return (shared.F.ownName ? shared.F.ownName(nodes2[i].id, true) : nameOf(i)).replace(/[\r\n]+/g, " ").trim();
   }
   function setName(id, v) {
-    if (shared.cd) {
-      cdRename(id, v);
+    if (shared.F.rename) {
+      shared.F.rename(id, v);
       return;
     }
-    if (!sbJs || shared.sb && !edOf(src()).nameable(src(), id)) return;
+    if (!shared.F.nameable(id)) return;
     var t2 = sbJs.label(shared.text, id, v);
     commit(t2, { name: "name", ids: [id], then: function() {
       svJoin(id);
@@ -10028,18 +10083,18 @@
       var v = membersName(c), id = nodes2[c].id, go = function() {
         setName(id, v);
       };
-      go.same = v === nameNow(c) || !shared.cd && (!sbJs || shared.sb && !edOf(src()).nameable(src(), id));
+      go.same = v === nameNow(c) || !shared.F.nameable(id);
       return go;
     };
     V.view.addEventListener("dblclick", function(e) {
-      if (!editing(e) || shared.cd && cdPal()) return;
+      if (!editing(e) || cdPal()) return;
       if (tool || Date.now() - placedAt < 600) {
         e.stopImmediatePropagation();
         return;
       }
-      var full2 = palOn(), base = src(), P = at(e), q = full2 ? svAt(P) : null;
+      var full2 = palOn(), P = at(e), q = full2 ? svAt(P) : null;
       var ok = function(n) {
-        return shared.cd ? !!cdMk : !!sbJs && (!shared.sb || sbJs.nameable(base, n.id));
+        return shared.F.nameable(n.id);
       };
       var grp = function(n) {
         return n.el.getAttribute("yfiles.foldertype") === "group";
@@ -11299,20 +11354,6 @@
     if (k === "def") return !/^(macromolecule|simple chemical)( multimer)?$|^biological activity$/.test(c) && !hubGroup(i);
     return false;
   }
-  var sbClsMemo;
-  function __run46() {
-    sbClsMemo = [null, {}];
-  }
-  function sbClasses() {
-    if (sbClsMemo[0] !== shared.text) {
-      var m = {}, d = new DOMParser().parseFromString(src(), "application/xml");
-      Array.prototype.forEach.call(d.getElementsByTagNameNS("*", "glyph"), function(g) {
-        if (g.getAttribute("id")) m[g.getAttribute("id")] = g.getAttribute("class") || "";
-      });
-      sbClsMemo = [shared.text, m];
-    }
-    return sbClsMemo[1];
-  }
   function lookKey(cls, unit) {
     return cls === "biological activity" ? cls + ":" + (unit || "") : cls;
   }
@@ -12066,7 +12107,7 @@
     __run43();
     __run55();
     __run65();
-    __run74();
+    __run75();
     __run83();
     __run93();
     __run103();
@@ -12104,7 +12145,6 @@
     __run432();
     __run44();
     __run45();
-    __run46();
     __run47();
     __run48();
     __run49();
@@ -12858,7 +12898,7 @@
     box.querySelector("#m2-ed-snap").setAttribute("aria-pressed", String(gridSet.snap));
   }
   var gridCv;
-  function __run410() {
+  function __run46() {
     gridCv = null;
   }
   function gridPaint() {
@@ -13129,7 +13169,7 @@
   var localTimer;
   var localFor;
   var lq;
-  function __run75() {
+  function __run76() {
     localTimer = null, localFor = null, lq = Promise.resolve();
   }
   function local(force) {
@@ -17621,10 +17661,10 @@
     __run117();
     __run217();
     __run311();
-    __run410();
+    __run46();
     __run510();
     __run66();
-    __run75();
+    __run76();
     __run84();
     __run94();
     __run104();
