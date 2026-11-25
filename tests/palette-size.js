@@ -1,10 +1,9 @@
-// Sign size (Settings, Editing; atlas-app.html setSigns): one grid at either size, tools and palette 32 px tiles, six in a
-// row, the tools' drawings 21 px; Sign size sets only the palette's drawings, 24 px at Large (the default), 21 at Normal;
-// no lines between the tools; at either size the palette and the
-// window's blocks as wide as the icon row above at the usual 240 px panel, the palette's outlines 1.2 px on screen, the
-// tools' 1.4 as the top icons, the small arrows 1.2; one undo puts Large back; the choice stays after a reload; a panel narrower than the usual one wraps the signs
-// and nothing passes its edge. Testing Glycolysis SBGN-ML, full editing. No script error.
-//   node tests/sign-size.js [address]
+// The palette's one size (atlas-app.html; no Normal size): tools and palette 32 px tiles, six in a row,
+// the tools' drawings 21 px, the palette's 24; no lines between the tools; the palette and the window's blocks as wide
+// as the icon row above at the usual 240 px panel, the palette's outlines 1.2 px on screen, the tools' 1.4 as the top
+// icons, the small arrows 1.2; no Sign size left in Settings; a panel narrower than the usual one wraps the signs and
+// nothing passes its edge. Testing Glycolysis SBGN-ML, full editing. No script error.
+//   node tests/palette-size.js [address]
 var engine = require('playwright')[process.env.BROWSER || 'chromium'];   // BROWSER=webkit or firefox: the same test in another engine
 var url = process.argv[2] || 'https://viewer-source.github.io/styles/#testing-glycolysis-sbgn';
 (async function () {
@@ -35,36 +34,17 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#testing-gl
   }
   var page = await ctx.newPage(); page.on('pageerror', function (e) { errs.push(e.message); });
   await page.evaluate(function () {}).catch(function () {});
-  await open(page); await page.evaluate(function () { localStorage.removeItem('atlas-sign-size'); }); await open(page); await edit(page);
+  await open(page); await page.evaluate(function () { localStorage.setItem('atlas-sign-size', 'normal'); }); await open(page); await edit(page);   // an old Normal choice left in a browser changes nothing
   var L = await measure(page), z = L.z, px = function (v) { return Math.round(v / z); };
-  ok('Large by default: tiles 32 px, tools and palette', px(L.box) === 32 && px(L.tool) === 32, JSON.stringify(L));
-  ok('Large: palette drawings 24 px, tools 21', px(L.draw) === 24 && px(L.tdraw) === 21, JSON.stringify(L));
+  ok('tiles 32 px, tools and palette', px(L.box) === 32 && px(L.tool) === 32, JSON.stringify(L));
+  ok('palette drawings 24 px, tools 21', px(L.draw) === 24 && px(L.tdraw) === 21, JSON.stringify(L));
   ok('no lines between the tools', L.seps === 0, JSON.stringify(L));
-  ok('Large: the palette as wide as the icon row', Math.abs(L.pal[0] - L.rail[0]) <= 1 && Math.abs(L.pal[1] - L.rail[1]) <= 1, JSON.stringify(L));
-  ok('Large: six in a row', L.rows[0] === 6, JSON.stringify(L.rows));
-  ok('Large: palette 1.2 px, tools 1.4, the arrow 1.2', L.weights.every(function (w, i) { return Math.abs(w / z - (i === 1 ? 1.4 : 1.2)) < .03; }), JSON.stringify(L.weights));
-  ok('Large: the lines as wide as the icon row', Math.abs(L.line[0] - L.rail[0]) <= 1 && Math.abs(L.line[1] - L.rail[1]) <= 1, JSON.stringify(L));
-  // Normal, chosen in Settings
+  ok('the palette as wide as the icon row', Math.abs(L.pal[0] - L.rail[0]) <= 1 && Math.abs(L.pal[1] - L.rail[1]) <= 1, JSON.stringify(L));
+  ok('six in a row', L.rows[0] === 6, JSON.stringify(L.rows));
+  ok('palette 1.2 px, tools 1.4, the arrow 1.2', L.weights.every(function (w, i) { return Math.abs(w / z - (i === 1 ? 1.4 : 1.2)) < .03; }), JSON.stringify(L.weights));
+  ok('the lines as wide as the icon row', Math.abs(L.line[0] - L.rail[0]) <= 1 && Math.abs(L.line[1] - L.rail[1]) <= 1, JSON.stringify(L));
   await page.click('.m2-ri[data-win="set"]'); await page.waitForTimeout(400);
-  ok('Sign size in Settings, Large on', await page.isVisible('#m2-set-signs button[data-signs="normal"]') && await page.$eval('#m2-set-signs button[data-signs="large"]', function (e) { return e.classList.contains('m2-on'); }));
-  await page.click('#m2-set-signs button[data-signs="normal"]'); await page.waitForTimeout(300);
-  ok('Normal on after its click', await page.$eval('#m2-set-signs button[data-signs="normal"]', function (e) { return e.classList.contains('m2-on'); }));
-  await edit(page);
-  var N = await measure(page);
-  ok('Normal: tiles 32 px, drawings 21 px', px(N.box) === 32 && px(N.tool) === 32 && px(N.draw) === 21 && px(N.tdraw) === 21, JSON.stringify(N));
-  ok('Normal: six in a row', N.rows[0] === 6, JSON.stringify(N.rows));
-  ok('Normal: the palette as wide as the icon row', Math.abs(N.pal[0] - N.rail[0]) <= 1 && Math.abs(N.pal[1] - N.rail[1]) <= 1, JSON.stringify(N));
-  ok('Normal: palette 1.2 px, tools 1.4, the arrow 1.2', N.weights.every(function (w, i) { return Math.abs(w / z - (i === 1 ? 1.4 : 1.2)) < .03; }), JSON.stringify(N.weights));
-  // kept after a reload
-  await page.reload({ waitUntil: 'load' }); await page.waitForSelector('.m2-ri[data-win="edit"]', { timeout: 30000 });
-  ok('Normal kept after a reload', await page.evaluate(function () { return document.documentElement.classList.contains('m2-signs-normal'); }));
-  // one undo puts Large back
-  await page.click('.m2-ri[data-win="set"]'); await page.waitForTimeout(300);
-  await page.click('#m2-set-signs button[data-signs="large"]'); await page.click('#m2-set-signs button[data-signs="normal"]'); await page.waitForTimeout(200);
-  await page.mouse.click(700, 450); await page.keyboard.press('Meta+z'); await page.waitForTimeout(300);
-  var und = await page.evaluate(function () { return !document.documentElement.classList.contains('m2-signs-normal') && localStorage.getItem('atlas-sign-size') === null; });
-  if (!und) { await page.keyboard.press('Control+z'); await page.waitForTimeout(300); und = await page.evaluate(function () { return !document.documentElement.classList.contains('m2-signs-normal'); }); }
-  ok('one undo puts Large back', und);
+  ok('no Sign size in Settings', !(await page.$('#m2-set-signs')) && !(await page.evaluate(function () { return /Sign size/.test(document.getElementById('m2-setwin').textContent); })));
   await page.evaluate(function () { localStorage.removeItem('atlas-sign-size'); });
   // a narrower panel: the signs wrap, nothing passes its edge
   var p2 = await ctx.newPage(); p2.on('pageerror', function (e) { errs.push(e.message); });
