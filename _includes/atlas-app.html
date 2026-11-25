@@ -4579,7 +4579,7 @@ page, so its styles keep the base they were made on).
     function hasToken() { try { return !!localStorage.getItem(TOKEN_KEY); } catch (e) { return false; } }
     function draftDo(mode, f, store) {
       if (!draftDb) draftDb = new Promise(function (res, rej) {
-        var r = indexedDB.open('atlas-edit-drafts', 3);
+        var r = indexedDB.open('atlas-edit-drafts', 3);   // kept at 3: an older copy on this address (a kept version) opening 3 would fail on a newer database
         r.onupgradeneeded = function () { ['maps', 'folder', 'mine'].forEach(function (n) { if (!r.result.objectStoreNames.contains(n)) r.result.createObjectStore(n); }); };
         r.onsuccess = function () { var d = r.result; d.onversionchange = function () { d.close(); draftDb = null; }; res(d); };   // a newer page's upgrade not held up by this one
         r.onerror = function () { rej(r.error); };

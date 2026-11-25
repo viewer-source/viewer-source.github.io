@@ -3,6 +3,7 @@ import { ahead, api, b64, blobSha, changed, drawText, freeName, gh, graphmlOf, h
 import { cdMap, cdMk, cdpy, isCd } from './celldesigner.js';
 import { noLayout } from './graphml.js';
 import { NEW_ID, emptyBase, isSb, sbMap } from './sbgn.js';
+import { bytesSha, minervaProject, settleGlyphs, unzip } from './minerva.js';
 
     // ---------- the reader's own storage (editor/src/own.js) ----------
     // What a reader without a GitHub token keeps (three layers: this browser, a folder on the computer,
@@ -940,11 +941,11 @@ import { NEW_ID, emptyBase, isSb, sbMap } from './sbgn.js';
         });
       });
     }
-    function addFiles(list, group) {   // a reader's files, drawn and kept; group: Add map or a drop on a group of theirs
+    function addFiles(list, group, proj) {   // a reader's files, drawn and kept; group: Add map or a drop on a group of theirs; proj: a MINERVA project's maps (openZip)
       list = Array.prototype.slice.call(list);   // the picker's list empties when it is reset
-      var picked = list.filter(function (f) { return /\.(graphml|xml|sbgn|nwt)$/i.test(f.name); });
+      var picked = list.filter(function (f) { return /\.(graphml|xml|sbgn|nwt)$/i.test(f.name) || (!proj && /\.zip$/i.test(f.name)); });
       if (!picked.length) return Promise.resolve();
-      var gh = repo() && token(), last = null, out = [];   // with a token: all drawn first, then sent in one commit
+      var gh = repo() && token(), last = null, top = null, out = [];   // with a token: all drawn first, then sent in one commit; top: a project's top level
       var b = { group: group || '', rows: picked.map(function (f) { return { name: f.name, f: f }; }), n: picked.length, done: 0, shown: false };
       adding.push(b);
       if (group && V.closed[group]) { delete V.closed[group]; V.saveClosed(); }
@@ -953,14 +954,19 @@ import { NEW_ID, emptyBase, isSb, sbMap } from './sbgn.js';
       var gone = function (f) { var r = rowOf(f); if (r) b.rows.splice(b.rows.indexOf(r), 1); };
       var why = function (f, e) { var r = rowOf(f), w = e && e.message ? e.message : String(e); if (r) r.why = w; else b.rows.push({ name: f.name, f: f, why: w }); };
       return picked.reduce(function (p, f) {
+        if (/\.zip$/i.test(f.name) && !f.zipPath) return p.then(function () { return openZip(f); }).then(function () { gone(f); b.done++; }, function (e) { why(f, e); b.done++; });   // a group of its own, added on its own
         return p.then(function () { return f.text(); }).then(function (t) {
-          if (gh) return drawText(t, null, 'adding').then(function (d) {   // with a token: to the site, shown from here until built
+          var drawn = f.drawn ? Promise.resolve(f.drawn) : drawText(t, null, 'adding');   // a project's maps drawn already (openZip)
+          if (gh) return drawn.then(function (d) {   // with a token: to the site, shown from here until built
             var ext = siteExt(t), title = freeTitle(f.name.replace(/\.(graphml|xml|sbgn|nwt)$/i, ''), group || '', fmtOfText(t), out.filter(function (o) { return fmtOfText(o.t) === fmtOfText(t); }).map(function (o) { return o.title; }));
             if (!ext) throw new Error(siteWhy(t));
+            if (proj && ext !== '.xml') throw new Error('not a CellDesigner map');
             out.push({ f: f, d: d, t: t, ext: ext, title: title });
             b.done++; if (b.shown) addPaint();
           });
-          return drawText(t, null, 'adding').then(function (d) { return mineAdd(f.name, t, d, null, group || undefined); }).then(function (r) {
+          return drawn.then(function (d) { return mineAdd(f.name, t, d, proj ? newId() : null, group || undefined); }).then(function (r) {   // a project's map always a map of its own
+            if (proj) proj.ids[f.zipPath] = r.id;
+            if (proj && f.zipPath === proj.maps[0].path) top = r.id;
             last = r.id; gone(f); b.done++; if (b.shown) V.refreshMine();   // the map in the list, its row gone
             return toFolder(r.id, r.file, r.text).catch(function (e) { why(f, new Error('kept in this browser, not in the folder: ' + (e && e.message ? e.message : e))); });
           });
@@ -968,26 +974,128 @@ import { NEW_ID, emptyBase, isSb, sbMap } from './sbgn.js';
       }, Promise.resolve()).then(function () {
         if (!out.length) return;
         var order = siteOrder(group);
-        return toSiteMany(out.map(function (o) { return { title: o.title, ext: o.ext, text: o.t, group: group, order: order++ }; })).then(function (ss) {
+        return toSiteMany(out.map(function (o) { return { title: o.title, ext: o.ext, text: o.t, group: group, order: order++ }; }), proj && siteProject(proj, out.map(function (o) { return o.f.zipPath; }))).then(function (ss) {
           return out.reduce(function (p, o, i) {   // a part GitHub refused said, the parts sent kept
             if (ss[i].err) { why(o.f, ss[i].err); return p; }
             var r = { id: newId(), title: o.title, file: o.f.name, text: o.t, svg: o.d.svg, width: o.d.width, height: o.d.height, at: Date.now(), hidden: false, group: group || '' };
-            return p.then(function () { return minePut(onSite(r, ss[i], o.title)); }).then(function () { last = r.id; gone(o.f); }, function (e) { why(o.f, e); });
+            return p.then(function () { return minePut(onSite(r, ss[i], o.title)); }).then(function () { last = r.id; if (proj && o.f.zipPath === proj.maps[0].path) top = r.id; gone(o.f); }, function (e) { why(o.f, e); });
           }, Promise.resolve());
         }).catch(function (e) { out.forEach(function (o) { if (rowOf(o.f) && !rowOf(o.f).why) why(o.f, e); }); });
-      }).then(fin, function (e) { b.rows.forEach(function (r) { if (!r.why) r.why = e && e.message ? e.message : String(e); }); fin(); });
+      }).then(function () { if (proj && !gh) return keepProject(proj); }).then(fin, function (e) { b.rows.forEach(function (r) { if (!r.why) r.why = e && e.message ? e.message : String(e); }); fin(); });
       function fin() {
         clearTimeout(timer);
         b.done = b.n;
         b.rows = b.rows.filter(function (r) { return r.why; });   // only what was not added stays, in red
         b.shown = b.rows.length > 0;
-        V.refreshMine(); if (last) V.go(last);
+        if (proj && !last) mineGroupsSet(mineGroups().filter(function (x) { return x !== group; }));   // nothing of the project landed (GitHub refused the commit): no empty group left
+        V.refreshMine();
+        if (proj && !gh) proj.maps.forEach(function (m) {   // the top level first, its submaps after in the zip's order (the list would sort them by name); placeMap reads the list as last made
+          if (proj.ids[m.path]) { V.placeMap(proj.ids[m.path], group); V.refreshMine(); }
+        });
+        if (last) V.go(top || last);   // a project's top level shown
       }
+    }
+    // A zip is taken only as a MINERVA project in CellDesigner (minerva.js): one new group of the reader's, named after
+    // the zip (a second of the same name numbered), its top level first and its submaps after under their file names.
+    // Its pictures and its other files are kept the way its maps are, with the project's record (which map came from
+    // which path of the zip, so a pack gives MINERVA the same names): with a token in the data repository, in the
+    // commit of the maps (pictures in maps/glyphs/, where the build looks beside a map; the other files and the record
+    // in maps/minerva/<record>/); else in this browser (store folder, key minerva:<record>), and with a folder in it as well (pictures in
+    // glyphs/, the other files and the record in the hidden .viewer/minerva/<record>/). A picture of a name kept already
+    // as another file is numbered and the maps' notes follow it. A zip that is not a project is refused whole, nothing added
+    function openZip(f) {
+      var gh = repo() && token();
+      return f.arrayBuffer().then(unzip).then(function (es) {
+        var p = minervaProject(es);
+        return settleGlyphs(p, gh ? siteGlyphs() : folderGlyphs()).then(function () {
+          var files = p.maps.map(function (m) { var x = new File([m.text], m.path.split('/').pop(), { type: 'text/xml' }); x.zipPath = m.path; return x; });
+          return files.reduce(function (q, x, i) {   // every map drawn before anything is added: a map that cannot be drawn refuses the whole zip
+            return q.then(function () { return drawText(p.maps[i].text, null, 'adding'); }).then(function (d) { x.drawn = d; }, function (e) {
+              throw new Error('the map ' + x.name.replace(/\.xml$/i, '') + ' cannot be drawn: ' + (e && e.message ? e.message : e));
+            });
+          }, Promise.resolve()).then(function () {
+            var base = f.name.replace(/\.zip$/i, '').replace(/["\\]/g, '').trim() || 'MINERVA project', g = base;
+            for (var k = 2; !mineValid(g); k++) g = base + ' ' + k;
+            mineGroupsSet([g].concat(mineGroups()));   // first of the reader's groups, as Add group makes one
+            p.rec = 'mz-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); p.zip = f.name; p.size = f.size; p.ids = {};
+            return addFiles(files, g, p);
+          });
+        });
+      });
+    }
+    function bytes64(d) { var s = ''; for (var i = 0; i < d.length; i += 0x8000) s += String.fromCharCode.apply(null, d.subarray(i, i + 0x8000)); return btoa(s); }
+    function siteGlyphs() {   // the pictures in maps/glyphs/ on GitHub: name -> blob sha (none yet: none)
+      var got = api('/contents/maps/glyphs?ref=main').then(function (r) { return r.status === 404 ? [] : ghJson(r); }).then(function (d) {
+        var o = {}; (Array.isArray(d) ? d : []).forEach(function (x) { o['glyphs/' + x.name] = x.sha; }); return o;
+      });
+      return function (n) { return got.then(function (o) { return o[n] || null; }); };
+    }
+    function folderGlyphs() {   // the pictures in the folder's glyphs/ (no folder, or none there: none)
+      var dir = (V.folderName() ? folder() : Promise.resolve(null)).then(function (f) { return f && f.dir.getDirectoryHandle('glyphs'); }).catch(function () { return null; });
+      return function (n) {
+        return dir.then(function (d) { return d && d.getFileHandle(n.slice(7)); }).then(function (h) { return h && h.getFile(); })
+          .then(function (fl) { return fl && fl.arrayBuffer(); }).then(function (a) { return a ? bytesSha(new Uint8Array(a)) : null; }).catch(function () { return null; });
+      };
+    }
+    function projectRecord(p, maps) { return JSON.stringify({ zip: p.zip, maps: maps, glyphs: Object.keys(p.glyphs), kept: Object.keys(p.kept) }, null, 1) + '\n'; }
+    // with a token: the project's files for the commit of its maps (toSiteMany): its pictures and other files as blobs
+    // made first, the record from the maps' ids on the site (paths: the zip path of each map sent, in the order sent)
+    function siteProject(p, paths) {
+      var at = 'maps/minerva/' + p.rec + '/', files = [];
+      Object.keys(p.glyphs).forEach(function (g) { files.push({ path: 'maps/' + g, data: p.glyphs[g] }); });
+      Object.keys(p.kept).forEach(function (k) { files.push({ path: at + k, data: p.kept[k] }); });
+      return {
+        blobs: function () {
+          return files.reduce(function (q, x) {
+            return q.then(function (out) { return ghPost('/git/blobs', { content: bytes64(x.data), encoding: 'base64' }).then(function (b) { out.push({ path: x.path, mode: '100644', type: 'blob', sha: b.sha }); return out; }); });
+          }, Promise.resolve([]));
+        },
+        record: function (ids) {
+          var maps = paths.map(function (pa, i) { p.ids[pa] = ids[i]; return { id: ids[i], path: pa }; });
+          return { path: at + 'record.json', mode: '100644', type: 'blob', content: projectRecord(p, maps) };
+        }
+      };
+    }
+    // without a token: the project in this browser, and in the folder when one is chosen
+    function keepProject(p) {
+      var maps = p.maps.filter(function (m) { return p.ids[m.path]; }).map(function (m) { return { id: p.ids[m.path], path: m.path, file: mine[p.ids[m.path]].file }; });
+      if (!maps.length) return Promise.resolve();
+      var blobs = function (o) { var r = {}; Object.keys(o).forEach(function (k) { r[k] = new Blob([o[k]]); }); return r; };
+      var rec = { id: p.rec, zip: p.zip, size: p.size, maps: maps, glyphs: blobs(p.glyphs), kept: blobs(p.kept), at: Date.now() };
+      return V.draftDo('readwrite', function (st) { return st.put(rec, 'minerva:' + rec.id); }, 'folder')   // beside the folder's record, under keys of their own: no new store, so the database keeps its version
+        .catch(function (e) { warn('The pictures of ' + p.zip + ' were not kept in this browser: ' + (e && e.message ? e.message : e)); })
+        .then(function () { return folderProject(p, maps); });
+    }
+    function folderProject(p, maps) {
+      if (!V.folderName()) return Promise.resolve();
+      var put = function (dir, path, data) {   // a file at a path under dir, its folders made
+        var parts = path.split('/'), name = parts.pop();
+        return parts.reduce(function (q, x) { return q.then(function (d) { return d.getDirectoryHandle(x, { create: true }); }); }, Promise.resolve(dir))
+          .then(function (d) { return d.getFileHandle(name, { create: true }); }).then(function (h) { return h.createWritable(); })
+          .then(function (w) { return w.write(data).then(function () { return w.close(); }); });
+      };
+      return folder().then(function (f) {
+        if (!f) return;
+        return f.dir.queryPermission({ mode: 'readwrite' }).then(function (perm) {
+          if (perm !== 'granted') return;
+          var at = '.viewer/minerva/' + p.rec + '/', all = Object.keys(p.glyphs).map(function (g) { return [g, p.glyphs[g]]; })
+            .concat(Object.keys(p.kept).map(function (k) { return [at + k, p.kept[k]]; }), [[at + 'record.json', projectRecord(p, maps)]]);
+          return all.reduce(function (q, x) { return q.then(function () { return put(f.dir, x[0], x[1]); }); }, Promise.resolve());
+        });
+      }).catch(function (e) { warn('The pictures of ' + p.zip + ' were not kept in the folder: ' + (e && e.message ? e.message : e)); });
+    }
+    // a zip found in the folder (core.js syncFolder): opened with no undo step (the page's own scan, not the reader's
+    // act), and not when this browser keeps a project from a zip of that name and size (the folder chosen again)
+    function openZipFolder(file) {
+      return V.draftDo('readonly', function (st) { return st.getAll(); }, 'folder').catch(function () { return []; }).then(function (all) {
+        if ((all || []).some(function (r) { return r && /^mz-/.test(r.id || '') && r.zip === file.name && r.size === file.size; })) return;
+        return addFiles([file], '');
+      });
     }
     var picker;
     function __run16() {   // run at start, in order (__start)
     picker = document.createElement('input');
-    picker.type = 'file'; picker.multiple = true; picker.accept = '.graphml,.xml,.sbgn,.nwt'; picker.hidden = true;
+    picker.type = 'file'; picker.multiple = true; picker.accept = '.graphml,.xml,.sbgn,.nwt,.zip'; picker.hidden = true;
     picker.addEventListener('change', function () { var l = Array.prototype.slice.call(picker.files), to = addTo; listMade(function () { return addFiles(l, to); }); picker.value = ''; });
     document.body.appendChild(picker);
     document.addEventListener('dragover', function (e) { if (e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types, 'Files') >= 0) e.preventDefault(); });
@@ -1017,9 +1125,10 @@ import { NEW_ID, emptyBase, isSb, sbMap } from './sbgn.js';
     function __run17() {   // run at start, in order (__start)
     BULK = 20e6;
     }
-    function toSiteMany(items) {
+    function toSiteMany(items, extra) {   // extra: a MINERVA project's files and record (siteProject), in the same commit, never split
       if (!(repo() && token())) return Promise.reject(new Error('not connected to GitHub'));
-      var j = ghJson, post = ghPost, used = {};
+      var j = ghJson, post = ghPost, used = {}, more = extra ? extra.blobs() : Promise.resolve(null);
+      more.catch(function () {});   // a failure is said by the commit that waits for it
       var slugOf = function (base) { return (base.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'map').replace(/-(sbgn|sbgnml)$|^external-/, function (x) { return x === 'external-' ? 'map-external-' : x + '-map'; }); };   // the build's own ids end or start so
       var mdOf = function (base, it) { return '---\ntitle: ' + JSON.stringify(base) + '\ntopic: ' + JSON.stringify(base) + '\ngroup: ' + JSON.stringify(it.group || '') + '\norder: ' + (it.order | 0) + '\n---\n'; };
       var halves = function (part) {
@@ -1027,8 +1136,11 @@ import { NEW_ID, emptyBase, isSb, sbMap } from './sbgn.js';
         return send(part.slice(0, h)).then(function (a) { return send(part.slice(h)).then(function (b) { return a.concat(b); }); });
       };
       var send = function (part) {
-        if (part.length > 1 && part.reduce(function (n, it) { return n + it.text.length; }, 0) > BULK) return halves(part);
-        var tries = 0;
+        if (!extra && part.length > 1 && part.reduce(function (n, it) { return n + it.text.length; }, 0) > BULK) return halves(part);
+        var tries = 0, texts = extra ? part.reduce(function (q, it) {   // a project's maps as blobs too: the tree then holds shas only, small however large the project
+          return q.then(function (out) { return post('/git/blobs', { content: it.text, encoding: 'utf-8' }).then(function (b) { out.push(b.sha); return out; }); });
+        }, Promise.resolve([])) : Promise.resolve(null);
+        texts.catch(function () {});
         var go = function () {
           var ids;
           return api('/contents/maps?ref=main').then(j).then(function (d) {
@@ -1036,17 +1148,17 @@ import { NEW_ID, emptyBase, isSb, sbMap } from './sbgn.js';
             ids = part.map(function (it) { var s = slugOf(it.title), id = s; for (var k = 2; taken[id]; k++) id = s + '-' + k; taken[id] = 1; return id; });
             return api('/git/ref/heads/main').then(j);
           }).then(function (ref) {
-            return api('/git/commits/' + ref.object.sha).then(j).then(function (c) {
-              var t = [];
+            return Promise.all([api('/git/commits/' + ref.object.sha).then(j), more, texts]).then(function (cm) {
+              var c = cm[0], t = cm[1] ? cm[1].concat([extra.record(ids)]) : [];
               part.forEach(function (it, i) {
                 var base = it.title.replace(/["\\]/g, '');   // the build reads the front matter's quotes plainly
-                t.push({ path: 'maps/' + ids[i] + it.ext, mode: '100644', type: 'blob', content: it.text }, { path: 'maps/' + ids[i] + '.md', mode: '100644', type: 'blob', content: mdOf(base, it) });
+                t.push(Object.assign({ path: 'maps/' + ids[i] + it.ext, mode: '100644', type: 'blob' }, cm[2] ? { sha: cm[2][i] } : { content: it.text }), { path: 'maps/' + ids[i] + '.md', mode: '100644', type: 'blob', content: mdOf(base, it) });
               });
               return post('/git/trees', { base_tree: c.tree.sha, tree: t }).catch(function (e) { e.tree = true; throw e; });
             }).then(function (t) { return post('/git/commits', { message: part.length === 1 ? 'Map added in the viewer: ' + ids[0] + part[0].ext : part.length + ' maps added in the viewer', tree: t.sha, parents: [ref.object.sha] }); })
               .then(function (c) { return post('/git/refs/heads/main', { sha: c.sha }, 'PATCH'); });
           }).then(function () { return ids; }).catch(function (e) {
-            if (e.tree && part.length > 1 && e.status !== 401 && e.status !== 403) throw Object.assign(e, { split: true });
+            if (e.tree && !extra && part.length > 1 && e.status !== 401 && e.status !== 403) throw Object.assign(e, { split: true });
             if (e.status === 422 && ++tries < 3) return go();
             throw e;
           });
@@ -1705,4 +1817,4 @@ import { NEW_ID, emptyBase, isSb, sbMap } from './sbgn.js';
     }   // connected: the reader's maps kept in this browser go to GitHub
 
     export function __start() { __run1(); __run2(); __run3(); __run4(); __run5(); __run6(); __run7(); __run8(); __run9(); __run10(); __run11(); __run12(); __run13(); __run14(); __run15(); __run16(); __run17(); __run18(); __run19(); __run20(); __run21(); __run22(); __run23(); __run24(); __run25(); __run26(); __run27(); __run28(); __run29(); }   // the part's statements, in their order
-    export { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepBeside, keptNow, listGo, mine, mineAdd, mineIn, mineMatch, minePut, origGh, origPut, own, savedMine, toGh, upAll, upRun };
+    export { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepBeside, keptNow, listGo, mine, mineAdd, mineIn, mineMatch, minePut, openZipFolder, origGh, origPut, own, savedMine, toGh, upAll, upRun };

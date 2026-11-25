@@ -7,7 +7,7 @@ import { beyond, glyphArcs, glyphPort, joinAt, joinGuides, joinSolve, nodeCentre
 import { sbpy } from './engines.js';
 import { ddOpen, hybOn, joinDo, joinPack, joinPlan, link, linkDown, linkMove, linkPaint, linkUp, moveSays, origAll, palDown, palShow, palUp, propFmt, setSize, sizable, svDown, svMarks, tool } from './create.js';
 import { help, helpBox } from './help.js';
-import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepBeside, keptNow, listGo, mine, mineAdd, mineIn, mineMatch, minePut, savedMine, toGh, upAll, upRun } from './own.js';
+import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepBeside, keptNow, listGo, mine, mineAdd, mineIn, mineMatch, minePut, openZipFolder, savedMine, toGh, upAll, upRun } from './own.js';
 
     // ---------- the editor's shared core (editor/src/core.js) ----------
     // Moves only: nodes and bend points of a map, nudged in the map window. A CellDesigner map is edited as the GraphML
@@ -442,7 +442,10 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     }
     // the folder as the list (My maps): the GraphML and CellDesigner files a reader put there, and SBGN-ML ones made here (New map), are added, one changed
     // since by another program (yEd, CellDesigner) is read again; the files written here for the site's maps are left
-    // out, a map in Deleted stays there (its file in the folder's Deleted/, not read)
+    // out, a map in Deleted stays there (its file in the folder's Deleted/, not read). A zip put there is opened once as
+    // a MINERVA project (own.js openZip; its maps then written beside it as any added map), noted as zip:<name> in the
+    // folder's record whether it opened or was refused, so it is not opened again (a zip of that name changed later
+    // neither: it is the reader's maps in the list that are worked on, not the zip)
     function syncFolder() {
       if (!canFolder || !V.folderName() || (repo() && token())) return Promise.resolve();   // connected: the folder not used
       var news = false;
@@ -458,6 +461,13 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
           Object.keys(f.files).forEach(function (id) { ours[f.files[id].name] = id; });
           V.maps.forEach(function (m) { if (!m.mine) siteFiles[(graphmlOf(m.site || m) || '').split('?')[0].split('/').pop()] = 1; });   // the site's maps' files (a draft kept here)
           return all(f.dir).then(function (hs) {
+            var zips = hs.filter(function (h) { return h.kind === 'file' && /\.zip$/i.test(h.name) && !f.files['zip:' + h.name]; });
+            return zips.reduce(function (q, h) {
+              return q.then(function () { return h.getFile(); }).then(function (fl) {
+                return folderFile('zip:' + h.name, { name: h.name, mod: fl.lastModified, size: fl.size }).then(function () { return openZipFolder(fl); });
+              }).catch(function () {});
+            }, Promise.resolve()).then(function () { return hs; });
+          }).then(function (hs) {
             return hs.filter(function (h) { return h.kind === 'file' && /\.(graphml|xml|sbgn|nwt)$/i.test(h.name); }).reduce(function (q, h) {
               return q.then(function () {
                 var id = ours[h.name];
