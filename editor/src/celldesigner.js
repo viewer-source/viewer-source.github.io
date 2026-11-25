@@ -1,7 +1,7 @@
 import { shared, V } from './state.js';
 import { boxOf, cdOwn, cut, edges2, f1, gE, gN, gridBlock, lastFor, lastSvg, nodes2, num, on, points, ports, pt, rebase, setText, spotNo, status, undo, warn } from './core.js';
 import { bx, dropCopies, picOff, restPt, toPic } from './live.js';
-import { cdCardDown, cdCheck, cdClsOf, cdNameOf, cdRename, cdRole } from './cdcreate.js';
+import { cdCardDown, cdCheck, cdClsOf, cdHow, cdLineAt, cdLink, cdLinkMarks, cdLiveEnds, cdMoveSays, cdNameOf, cdOnLine, cdRename, cdRole, cdStartOk } from './cdcreate.js';
 
     // ---------- the CellDesigner part (editor/src/celldesigner.js) ----------
     // A CellDesigner map edited in CellDesigner's own model: the GraphML renderers/converter/cd_edit.js makes of it, the
@@ -397,11 +397,43 @@ import { cdCardDown, cdCheck, cdClsOf, cdNameOf, cdRename, cdRole } from './cdcr
       };
     }
     export function __start() { __run1(); __run3(); __run4(); __run5(); __run6(); __run7(); }   // the part's statements, in their order
+    // drawing a line (create.js linkEnd, linkDown, linkHow, moveSays, linkMake, linkPaint), CellDesigner's way (cdcreate.js)
+    function cdLine() {
+      return { role: cdRole, lineAt: cdLineAt, onLine: cdOnLine, startOk: cdStartOk, how: cdHow, moveSays: cdMoveSays, make: cdLink, liveEnds: cdLiveEnds, marks: cdLinkMarks };
+    }
+    // a reaction lit whole (core.js lit): a main line or its square selected lights all its lines (hlE, line indices) and
+    // its square (glyphs, node indices)
+    function cdLit(hlE, glyphs) {
+      var rx = new Set();
+      var F = shared.F, of = function (id) { return id.slice(0, id.lastIndexOf('|')); };   // a line's reaction
+      shared.selE.forEach(function (k) { if (/\|[ab]$/.test(edges2[k].id)) rx.add(of(edges2[k].id)); });
+      shared.selN.forEach(function (i) { var r = F.square(nodes2[i].id); if (r != null) rx.add(r); });
+      if (!rx.size) return;
+      edges2.forEach(function (e, k) { if (F.ownLine(e.id) && rx.has(of(e.id))) hlE.add(k); });
+      nodes2.forEach(function (n, i) { var r = F.square(n.id); if (r != null && rx.has(r)) glyphs.add(i); });
+    }
+    // an end of line k moved to node i (core.js takes0, full editing): a reaction's end at a species, to another species or
+    // complex (no member, no compartment, no glyph or gate, none the reaction has already); its other end at a species or at
+    // the reaction's glyph, never a gate's line (cd_edit rewire)
+    function cdEndTo(k, end, i) {
+      var e = edges2[k], nd = nodes2[i], here = end ? e.t : e.s, proc = function (x) { return /\|(proc|g\d*)$/.test(nodes2[x].id); }, rid = e.id.slice(0, e.id.lastIndexOf('|') + 1);
+      if (edges2.some(function (f) { return f.id.indexOf(rid) === 0 && (f.s === i || f.t === i); })) return false;
+      return !proc(here) && !/\|g\d*$/.test(nodes2[end ? e.s : e.t].id) && !proc(i) && !nd.comp && !(nd.up != null && !nodes2[nd.up].comp);
+    }
+    // a member that left its complex (Shift) made a species of the compartment it went to (cd_make.leave), the GraphML made
+    // again from the file (core.js settle); moves: [[id, new holder id or null], ...]. Whether the file changed
+    function cdLeave(moves) {
+      if (!cdMk || !moves.some(function (m) { try { return !!cdMk.aliasInfo(shared.cd.now, m[0]).complex; } catch (err) { return false; } })) return false;
+      var N = cdNow(), t = N.t, t0 = t;
+      moves.forEach(function (m) { try { if (cdMk.aliasInfo(t, m[0]).complex) t = cdMk.leave(t, m[0], m[1]); } catch (err) { warn(String(err && err.message || err)); } });
+      if (t === t0) return false;
+      cdRebuild(t, N.sh);
+      return true;
+    }
     // CellDesigner's format object (state.js formats): the file is kept beside the GraphML edited, the moves written in
     function cdFormat() {
-      return { name: 'cd', now: function () { return shared.cd.now; }, ownFrame: true, live: function () { return liveCd; }, cardDown: cdCardDown, mainLines: true, afView: false, beside: function () { return shared.cd.now; },
+      return { name: 'cd', load: cdpy, engineCd: true, now: function () { return shared.cd.now; }, ownFrame: true, live: function () { return liveCd; }, cardDown: cdCardDown, mainLines: true, afView: false, stacks: false, insets: false, magenta: true, opened: plainCanvas, drawn: cdSessionSoon, lit: cdLit, endTo: cdEndTo, undoKeep: function () { return { g: shared.text, b: shared.cd.base }; }, undoPut: function (t) { shared.cd.base = t.b; return t.g; }, leave: cdLeave, nestReady: function () { return !!cdJs && !!cdJs.nestCheck; }, nestWhy: function (moves) { return cdJs && cdJs.nestCheck ? cdJs.nestCheck(shared.cd.now, moves, { doc: cdDoc(shared.cd.now) }) : null; }, modLine: function (id) { return /\|m\d+$/.test(id); }, ownLine: function (id) { return /\|(a|b|r\d+|p\d+)$/.test(id); }, fileType: { description: 'CellDesigner', accept: { 'application/xml': ['.xml'] } }, join: cdJoin(), line: cdLine(), square: function (id) { var m = /^(.*)\|proc$/.exec(id); return m ? m[1] : null; }, beside: function () { return shared.cd.now; },
         kind: function (n) { var c = cdClsOf(n.id); return c ? c[0] : n.comp ? 'compartment' : null; },   // its species class, or compartment
-        ownName: cdNameOf, rename: cdRename, nameable: function () { return !!cdMk; },   // names read from and written into its file
-        join: cdJoin() };
+        ownName: cdNameOf, rename: cdRename, nameable: function () { return !!cdMk; } };   // names read from and written into its file
     }
     export { beyond, cdFormat, cdDoc, cdDraw, cdGraphml, cdKept, cdJs, cdKnown, cdMap, cdMk, cdNow, cdRebuild, cdRemember, cdSessionSoon, cdShown, cdpy, glyphArcs, glyphPort, isCd, joinAt, joinGuides, joinSolve, lineGrid, liveCd, nodeCentre, nodePlaces, plainCanvas, warmUp };

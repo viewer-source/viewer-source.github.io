@@ -5,12 +5,22 @@
 // the square; the gate's menu (no NOT for two inputs); the gate's line out and an input line deleted together; a reduced physical stimulation between two species; a name typed in place; the right-click menus' other kinds, a species' through Change identity's window;
 // a species deleted with its reaction; New CellDesigner map making species and a reaction on an empty map. Nothing is
 // saved (no token). No script error anywhere.
-//   node tests/cd-palette.js [address]
+//   node tests/cd-palette.js [address] [--local]   (--local: the working tree's editor and renderers routed in)
 var { chromium } = require('playwright');
-var url = process.argv[2] || 'https://viewer-source.github.io/styles/#acly-celldesigner';
+var path = require('path'), fs = require('fs'), editorNow = require('./editor-now.js'), here = path.join(__dirname, '..');
+var args = process.argv.slice(2), local = args.indexOf('--local') >= 0; args = args.filter(function (a) { return a !== '--local'; });
+var url = args[0] || 'https://viewer-source.github.io/styles/#acly-celldesigner';
 (async function () {
   var b = await chromium.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], bad = 0;
   page.on('pageerror', function (e) { errs.push(e.message); });
+  if (local) {   // the working tree's editor and renderers routed in
+    var ed = editorNow(here);
+    await page.route(/\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: ed }); });
+    await page.route(/\/renderers\/(converter|yrender|layout)\/[^/?]+\.js/, function (r) {
+      var m = new URL(r.request().url()).pathname.match(/\/renderers\/(.+)$/), fp = path.join(here, 'renderers', m[1]);
+      if (fs.existsSync(fp)) r.fulfill({ contentType: 'application/javascript', body: fs.readFileSync(fp, 'utf8') }); else r.continue();
+    });
+  }
   var ok = function (what, v, why) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (v || !why ? '' : ' ' + why)); };
   var ids = function () { return page.$$eval('#m2-img [data-n]', function (l) { return l.map(function (x) { return x.getAttribute('data-n'); }); }); };
   var es = function () { return page.$$eval('#m2-img [data-e]', function (l) { return Array.from(new Set(l.map(function (x) { return x.getAttribute('data-e'); }))); }); };
@@ -24,6 +34,7 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#acly-celld
   };
   var menu = async function (P) { for (var n = 0; n < 2 && (await page.$('.m2-cx')); n++) await page.keyboard.press('Escape');   // a list open beside a menu: Escape closes the list, then the menu
     await page.mouse.click(P[0], P[1], { button: 'right' }); await page.waitForTimeout(300); return page.$$eval('.m2-cx button', function (l) { return l.map(function (x) { return x.textContent; }); }); };
+  var del = function (l) { return l.findIndex(function (t) { return /^Delete(Del|\u232B|$)/.test(t); }); };   // Delete, its key shown after it (Del, or the Mac's delete sign)
   var start = async function (u) {
     await page.goto(u, { waitUntil: 'load' }); await page.waitForSelector('.m2-ri[data-win="edit"]', { timeout: 30000 });
     if (!(await page.$('#m2-editwin button[data-make="cd:PROTEIN"]:visible'))) await page.click('.m2-ri[data-win="edit"]');
@@ -80,7 +91,7 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#acly-celld
   var k1 = await ci(); await page.click('.m2-ci button:has-text("Gene")').catch(function () {}); await page.waitForTimeout(800);
   var l2 = await menu(await at(p)); await page.click('.m2-cx button:has-text("Change identity")').catch(function () {}); await page.waitForTimeout(300);
   var k2 = await ci(); await page.keyboard.press('Escape'); await page.waitForTimeout(200);
-  ok('the species menu has one Change identity, above Delete, Delete the last of its items', l1.indexOf('Change identity\u25B6') >= 0 && l1.indexOf('Change identity\u25B6') < l1.indexOf('Delete') && l1.indexOf('Select all of this kind') < l1.indexOf('Delete') && !l1.some(function (t) { return /^Make (protein|gene|rna|simple|unknown|phenotype|degraded)/i.test(t); }));
+  ok('the species menu has one Change identity, above Delete, Delete the last of its items', l1.indexOf('Change identity\u25B6') >= 0 && l1.indexOf('Change identity\u25B6') < del(l1) && l1.indexOf('Select all of this kind') < del(l1) && !l1.some(function (t) { return /^Make (protein|gene|rna|simple|unknown|phenotype|degraded)/i.test(t); }));
   ok('its window lists the seven kinds, the own checked, and retypes', k1.length === 7 && k1[0] === 'Protein*' && k2.indexOf('Gene*') >= 0 && k2.indexOf('Protein') >= 0);
   ok('Escape closes the list', !(await page.$('.m2-ci')));
   await menu(await at(p)); await page.click('.m2-cx button:has-text("Change identity")').catch(function () {}); await page.waitForTimeout(300);
@@ -89,7 +100,7 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#acly-celld
   await page.keyboard.press('Escape');
   var l3 = await menu(await at(rid + '|proc')); await page.click('.m2-cx button:has-text("Change identity")').catch(function () {}); await page.waitForTimeout(300);
   var k4 = await ci(); await page.keyboard.press('Escape');
-  ok('the square offers its reaction types in Change identity, above Delete, its own marked', l3.indexOf('Change identity\u25B6') >= 0 && l3.indexOf('Change identity\u25B6') < l3.indexOf('Delete') && !l3.some(function (x) { return /^Make (state|unknown|known)/.test(x); }) && JSON.stringify(k4) === JSON.stringify(['State transition*', 'Known transition omitted', 'Unknown transition']), JSON.stringify([l3, k4]));
+  ok('the square offers its reaction types in Change identity, above Delete, its own marked', l3.indexOf('Change identity\u25B6') >= 0 && l3.indexOf('Change identity\u25B6') < del(l3) && !l3.some(function (x) { return /^Make (state|unknown|known)/.test(x); }) && JSON.stringify(k4) === JSON.stringify(['State transition*', 'Known transition omitted', 'Unknown transition']), JSON.stringify([l3, k4]));
   var arcIs = async function (id) {   // a modulation's right-click menu and its Change identity window: [menu, kinds], the own one marked *
     var l = await menu(await lineAt(id)); await page.click('.m2-cx button:has-text("Change identity")').catch(function () {}); await page.waitForTimeout(300);
     return [l, await ci()];
@@ -98,7 +109,7 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#acly-celld
   for (var mi = 0; mi < ms.length && !inh; mi++) { var t1 = await arcIs(ms[mi]); if (t1[1].indexOf('Inhibition*') >= 0) { inh = ms[mi]; a1 = t1; } else await page.keyboard.press('Escape'); }
   a1 = a1 || [[], []]; await page.click('.m2-ci button:has-text("Catalysis")').catch(function () {}); await page.waitForTimeout(800);
   var a2 = inh ? await arcIs(inh) : [[], []]; await page.keyboard.press('Escape');
-  ok('a modifier: Change identity above Delete, its five kinds, the own greyed, retyped', a1[0].indexOf('Change identity\u25B6') >= 0 && a1[0].indexOf('Change identity\u25B6') < a1[0].indexOf('Delete') && !a1[0].some(function (t) { return /^Make /.test(t); })
+  ok('a modifier: Change identity above Delete, its five kinds, the own greyed, retyped', a1[0].indexOf('Change identity\u25B6') >= 0 && a1[0].indexOf('Change identity\u25B6') < del(a1[0]) && !a1[0].some(function (t) { return /^Make /.test(t); })
     && a1[1].length === 5 && a1[1].indexOf('Inhibition*') >= 0 && a2[1].indexOf('Catalysis*') >= 0);
   var a3 = await arcIs(red[0]); await page.keyboard.press('Escape');
   ok('reduced notation: its four kinds, no catalysis, the own greyed', a3[1].length === 4 && a3[1].indexOf('Physical stimulation*') >= 0 && a3[1].indexOf('Catalysis') < 0);

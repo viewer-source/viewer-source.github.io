@@ -197,7 +197,7 @@ import { liveY, yr } from './graphml.js';
     export function __start() { __run1(); __run2(); __run3(); __run5(); __run6(); __run7(); }   // the part's statements, in their order
     // SBGN-ML's format object (state.js formats): the file written from the one opened with the moves of the GraphML
     function sbFormat() {
-      return { name: 'sb', now: sbNow, ownFrame: false, live: function () { return liveY; }, mainLines: false, afView: true, beside: function () { return null; },
+      return { name: 'sb', load: yr, engineCd: false, now: sbNow, ownFrame: false, live: function () { return liveY; }, mainLines: false, afView: true, stacks: true, insets: true, sitesOut: function () { return !!shared.sbLast && !!sbJs && !!sbJs.sitesOut; }, fileType: { description: 'SBGN-ML', accept: { 'application/xml': ['.sbgn', '.nwt'] } }, stackComp: function (t, id) { return sbJs && sbJs.stack ? sbJs.stack(t, id) : t; }, square: function () { return null; }, beside: function () { return null; },
         kind: function (n) { var c = sbClasses()[n.id]; return c ? c.replace(/ multimer$/, '') : null; },   // a glyph's class, a multimer with its plain kind
         nameable: function (id) { var t = src(); return !!sbJs && edOf(t).nameable(t, id); },   // a glyph whose class takes a name
         join: sbJoin() };

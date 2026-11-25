@@ -1,5 +1,5 @@
 import { shared, V } from './state.js';
-import { asSpace, at, boxOf, changed, commit, cutShape, edgeAt, edges2, editing, f1, fmt, gridSet, grown, handleMarks, hit, keyFlush, kindWindow, landMarks, lateItem, line, map, near, nodes2, on, paint, parse, ports, procPlaces, quiet, rclick, render, setBoxes, shapeD, subItem, sx, sy, toGrid, warn, x0, y0 } from './core.js';
+import { asSpace, at, boxOf, changed, commit, cutShape, edgeAt, edges2, editing, f1, fmt, gridSet, grown, handleMarks, hit, keyFlush, kindWindow, landMarks, lateItem, line, map, near, nodes2, on, paint, parse, ports, procPlaces, quiet, rclick, setBoxes, shapeD, subItem, sx, sy, toGrid, warn, x0, y0 } from './core.js';
 import { bx, liveOff, sizeOff } from './live.js';
 import { cdJs, cdMk, cdNow, cdRebuild, nodeCentre, nodePlaces } from './celldesigner.js';
 import NT from '../../renderers/converter/notation.js';   // the notation's kinds and rules table, as on the SBGN maps (create.js ruleSays)

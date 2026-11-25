@@ -9,8 +9,40 @@ export var shared = {};
 //   ownFrame   the picture is drawn in the file's own places (CellDesigner), else shifted out of negative places
 //   live()     the live drawing of a move, the format's own way (live.js liveFmt): { glyphs, lines, holders, size }
 //   afView     the map can be drawn in AF's SBGN view (graphml.js afSbgn; not CellDesigner, drawn by cdrender)
+//   stacks     a compartment's name places and its order (Bring forward, Send backward) are written by the engine (not CellDesigner)
 //   mainLines  a reaction has one main reactant and product, the others added (CellDesigner): Make main
 //   cardDown(e)  a press on a cardinality, where the format has its own way (CellDesigner); none: create.js's
+//   line       drawing a line the format's own way (CellDesigner, cdcreate.js: { role(i), lineAt(P, not), onLine(), startOk(i),
+//              how(a, b, P), moveSays(k, end, i), make(a, b, how), liveEnds(S, P, C), marks(out) }); none: create.js's, by the notation's table
+//   square(id) the reaction a node is the square of (CellDesigner's process glyph, id <reaction>|proc: no item of its own,
+//              never selected or moved alone), else null
+//   insets     the GraphML edited keeps yEd's group insets (refit); not CellDesigner, whose GraphML is made again from its file
+//   stackComp(t, id)  compartment id put behind or in front of those it partly overlaps (stackComps), the engine's sbgn_edit.stack
+//              (the text as it was while it is loading); none on CellDesigner maps
+//   fileType   the file's type as Save as offers it (showSaveFilePicker's types)
+//   magenta    the square marks magenta, as CellDesigner draws them (else black, as yEd)
+//   opened()   what the format does once its map is open (CellDesigner: plainCanvas); none for the others
+//   lit(hlE, glyphs)  what the format lights with the selection, added to the sets of lines and nodes (CellDesigner: a
+//              reaction's lines and square, its main line or square selected); none for the others
+//   ownLine(id)  a line that is one of a reaction's own (CellDesigner: its main lines, added reactants and products), drawn
+//              with no squares in its square; none for the others
+//   endTo(k, end, i)  whether an end of line k may be moved to node i, the format's own rule (CellDesigner); none: core.js's
+//              by the notation's roles
+//   drawn()    what the format readies once a drawing is put in (CellDesigner: the live session of cd_edit, cdSessionSoon); none
+//              for the others
+//   sitesOut() the file writes sites as Show sites shows them, its writer loaded (SBGN-ML: sbgn_edit.sitesOut); none for the others
+//   nestWhy(moves)  why the file cannot hold these moves of what holds what ([[id, new holder id or null], ...]), or null
+//              (CellDesigner: cd_edit.nestCheck on the file's kept document, read only); none for the others
+//   nestReady()  nestWhy's check loaded (the arrow keys work out the new holders only then)
+//   leave(moves)  members that left their complex written the format's own way (CellDesigner: cd_make.leave, the GraphML made
+//              again), whether the file changed; none for the others (a member's leaving is a plain move there)
+//   undoKeep()  an undo step as the format keeps it (CellDesigner: { g: the GraphML, b: the file it was made from }); none: the GraphML
+//   undoPut(t)  such a step put back, its GraphML returned (CellDesigner: the file set again); none: t.g
+//   load()     the renderer that draws the map, loaded (a promise: CellDesigner cdpy, cdrender and cd_edit; the others yr, yrender)
+//   engineCd   the engines' CellDesigner rules apply (holding.js M.cd: a compartment's double border, process glyphs and gates;
+//              layout.js tidy; graphml_edit.read's cd)
+//   modLine(id)  a modifier's line of a reaction (CellDesigner: <reaction>|m<n>), its end landing at the square's six places; none
+//              for the others
 //   kind(n)    a node's kind, for Select all of this kind: SBGN-ML its class (a multimer as its plain kind), CellDesigner
 //              its species class or compartment, GraphML its shape; null when it has none
 //   nameable(id)  the file can take a name for this node (setName; Name by members greyed when not)

@@ -2,7 +2,7 @@ import { shared, V } from './state.js';
 import { G, GE, HANDLE, MODS, Y, asSpace, at, box, boxOf, changed, commit, complexHere, cutShape, doc, edges2, editing, f1, fmt, full, gE, gN, gridSet, grown, hit, holder, holderSize, holds, hubPorts, inComplex, inRim, keyTake, kindWindow, landMarks, lateItem, layTool, map, moveFix, name, nodes2, num, on, origFromFolder, origToFolder, outlineD, overlap, ownMenus, paint, parse, parseFix, quiet, rclick, realizerOf, refit, regroup, remember, render, rimOf, roleOf, roomy, setBoxes, setPort, setText, settle, site, src, subItem, sx, sy, takes, toGrid, under, undo, unpush, warn, x0, y0 } from './core.js';
 import { bx, liveOff, livePose, sizeOff } from './live.js';
 import { GEO, sbClasses, sbJs, sbKind } from './sbgn.js';
-import { CD_DEF_KEY, CD_GATE, PF_CD, cdClick, cdDeleteItem, cdFeat, cdFill, cdFront, cdGateMarks, cdGhost, cdHow, cdInfo, cdItems, cdKind, cdLineAt, cdLink, cdLinkMarks, cdLiveEnds, cdMake, cdMoveSays, cdNameDown, cdOnLine, cdOverMarks, cdPal, cdRole, cdSsTyped, cdStartOk, cdSvDelete, cdSvList, cdSvMove, cdSvOpen } from './cdcreate.js';
+import { CD_DEF_KEY, CD_GATE, PF_CD, cdClick, cdDeleteItem, cdFeat, cdFill, cdFront, cdGateMarks, cdGhost, cdInfo, cdItems, cdKind, cdMake, cdNameDown, cdOverMarks, cdPal, cdSsTyped, cdSvDelete, cdSvList, cdSvMove, cdSvOpen } from './cdcreate.js';
 import { origGh, origPut } from './own.js';
 import NT from '../../renderers/converter/notation.js';   // the notation's kinds and rules table (plan 3 step 6)
 
@@ -443,10 +443,10 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
     // is(m): true, false, or null where the map has nothing to read (an empty map: a kept choice stands, none is read).
     // An SBGN-ML map's moves and resizes change no colour: read again only when more than places changed (sbgn.js GEO)
     function mapCols(ids, is) {
-      var id = palId(), b = shared.cd ? shared.cd.now : null, M = choiceMemo;
+      var id = palId(), b = shared.F.beside(), M = choiceMemo;   // the file kept beside the GraphML (CellDesigner), else null
       if (M.id === id && M.t === shared.text && M.b === b) return M.v;
-      var key = shared.cd ? null : shared.text.replace(GEO, '');
-      if (M.id === id && !shared.cd && M.key === key) { M.t = shared.text; return M.v; }
+      var key = b == null ? shared.text.replace(GEO, '') : null;
+      if (M.id === id && b == null && M.key === key) { M.t = shared.text; return M.v; }
       var k = mapChoice('cols', ids), v = k === 'custom' || (k && is(k) !== false) ? k : null;   // Original while the map has its kept colours (or none were kept)
       if (!v) ids.some(function (m) { return m !== 'file' && m !== 'custom' && is(m) === true && (v = m); });
       choiceMemo = { id: id, t: shared.text, b: b, key: key, v: v || 'file' };
@@ -1206,7 +1206,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       }
       // a compartment's name in one of its six places (never in the middle):
       // over a named compartment and nothing else, the places it is not in (sbgn_edit.nameAt)
-      var stackOn = on && V.current === map && !shared.cd && full() && !!sbJs;   // stacking on GraphML maps too (Full editing), names on SBGN-ML maps
+      var stackOn = on && V.current === map && shared.F.stacks && full() && !!sbJs;   // stacking on GraphML maps too (Full editing), names on SBGN-ML maps (F.stacks)
       var hc = k < 0 && P && (palOn() || stackOn) ? hit(P) : null;
       if (hc && hc.n != null && hc.p == null && nodes2[hc.n].comp) {
         var cid = nodes2[hc.n].id, np = palOn() ? sbJs.namePlaces(shared.text, cid) : null, sm = sbJs.stackMoves(shared.text, cid);   // the places its name can take (a name too wide for a side: the middles only); where it partly overlaps another, its order
@@ -2111,13 +2111,13 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
     link = null;
     }   // { from, x, y, moved, to, P, how }
     function linkEnd(P, not) {   // the innermost entity, process, gate, phenotype or submap under P (a complex, not its member: roleOf), not node `not`
-      var R = 4 / V.z, best = -1, ba = Infinity;
+      var R = 4 / V.z, best = -1, ba = Infinity, L = shared.F.line;   // a format's own lines (F.line, CellDesigner: cdcreate.js)
       nodes2.forEach(function (n, i) {
-        var b = boxOf(i), r = shared.cd ? cdRole(i) : roleOf(i) || (hybOn() && nodes2[i].shape.kind === 'Submap' ? 'sub' : null);   // a submap, with Reduced notation ticked: linkKind0 decides
+        var b = boxOf(i), r = L ? L.role(i) : roleOf(i) || (hybOn() && nodes2[i].shape.kind === 'Submap' ? 'sub' : null);   // a submap, with Reduced notation ticked: linkKind0 decides
         if (i === not || !r || P[0] < b[0] - R || P[0] > b[0] + b[2] + R || P[1] < b[1] - R || P[1] > b[1] + b[3] + R) return;
         if (b[2] * b[3] < ba) { ba = b[2] * b[3]; best = i; }
       });
-      return best < 0 && shared.cd ? cdLineAt(P, not) : best;   // a CellDesigner reaction taken by its main line (cdcreate.js)
+      return best < 0 && L ? L.lineAt(P, not) : best;   // a CellDesigner reaction taken by its main line (cdcreate.js)
     }
     var downs;
     function __run41() {   // run at start, in order (__start)
@@ -2130,10 +2130,11 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
     function linkDown(e, P, h) {   // a press on a node with an arc's sign picked: a line begun there
       if (!(palOn() || cdPal()) || e.shiftKey || downs.size > 1 || link) return false;
       if (!arcTool()) return false;   // no sign picked: a drag on a node moves the map (or what is selected)
-      if (h.n == null && !h.glyph && !(shared.cd && cdOnLine())) return false;   // a press on a line or a bend point selects it, but for CellDesigner's Add reactant, Add product and a line's sign kept in hand
+      var L = shared.F.line;
+      if (h.n == null && !h.glyph && !(L && L.onLine())) return false;   // a press on a line or a bend point selects it, but for CellDesigner's Add reactant, Add product and a line's sign kept in hand
       var i = linkEnd(P, -1);
       if (i < 0) return false;
-      if (shared.cd && !cdStartOk(i)) return false;   // a CellDesigner gate's one line out is made with it: a drag moves the gate; Add reactant and Add product from their own ends only
+      if (L && !L.startOk(i)) return false;   // a CellDesigner gate's one line out is made with it: a drag moves the gate; Add reactant and Add product from their own ends only
       e.stopImmediatePropagation(); e.preventDefault();
       V.view.setPointerCapture(e.pointerId); V.view.focus({ preventScroll: true });
       link = { from: i, pid: e.pointerId, x: e.clientX, y: e.clientY, moved: false, to: -1, P: P, how: null, at: shared.text };
@@ -2154,7 +2155,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
     // activation: two entities in reduced notation, Activity Flow). A sign taken for one line (a click) makes that kind
     // or nothing
     function linkHow(a, b, P) {
-      if (shared.cd) return cdHow(a, b, P);   // a CellDesigner map's (cdcreate.js), with where its end lands
+      if (shared.F.line) return shared.F.line.how(a, b, P);   // a format's own (CellDesigner: cdcreate.js), with where its end lands
       var want = arcTool(), h = linkKind(a, b, P, want), g;
       if (h && h.no && want && tool.sticky && (g = linkKind(a, b, P, null)) && !g.no && !(g.pair && MODK[want])) return g;
       if (h && h.no && want === 'catalysis' && tool.sticky && (g = linkKind(a, b, P, 'stimulation')) && !g.no) return g;
@@ -2231,7 +2232,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
     // an end of line k dragged onto node i (core.js takes, after takes0): the table's answer for the line as it would be,
     // so a drag never makes what drawing does not. A reason, or null
     function moveSays(k, end, i) {
-      if (shared.cd) return cdMoveSays(k, end, i);
+      if (shared.F.line) return shared.F.line.moveSays(k, end, i);   // a format's own (CellDesigner: cdcreate.js)
       var e = edges2[k], s = end ? e.s : i, t = end ? i : e.t;
       if (!ntKind(s) || !ntKind(t)) return 'Not a glyph of the notation.';   // takes0 leaves the kinds to the table: a gate with a word it does not know takes no moved end
       return ruleSays(moveCls(k, s, t), s, t, k);
@@ -2389,7 +2390,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       return true;
     }
     function linkMake(a, b, how) {
-      if (shared.cd) { cdLink(a, b, how); return; }
+      if (shared.F.line) { shared.F.line.make(a, b, how); return; }   // a format's own (CellDesigner: into its file, cdcreate.js)
       var ia = nodes2[a].id, ib = nodes2[b].id, t2 = shared.text, ids = [], o = { sbgn: src(), ant: antNow() };   // ports worked out at the antenna Style gives
       try {
         if (how.cls) { ids.push(freeId('arc_')); t2 = sbJs.connect(t2, ids[0], ia, ib, how.cls, o); }
@@ -2429,9 +2430,9 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       // pointer is still inside it, and over a node that would take it up to where it meets that node's outline
       var P = link.P, inFrom = inRim(rimOf(link.from, A), [P[0] - C[0], P[1] - C[1]]), S = inFrom ? null : cutShape(link.from, C, P, A);
       if (S && link.to >= 0 && link.to !== link.from) P = cutShape(link.to, P, S, bx(link.to));
-      var E = shared.cd && S ? cdLiveEnds(S, P, C) : null;   // an added reactant's or product's join (cdcreate.js)
+      var L = shared.F.line, E = L && S ? L.liveEnds(S, P, C) : null;   // an added reactant's or product's join (cdcreate.js)
       if (E) { S = E[0]; P = E[1]; }
-      if (shared.cd) cdLinkMarks(out);   // CellDesigner's marks (cdcreate.js)
+      if (L) L.marks(out);   // CellDesigner's marks (cdcreate.js)
       else if (link.how && !no && link.to >= 0) out.push(landMarks([], linkLand(link.from, link.to, link.how.cls)));
       if (S) out.push('<path class="m2-ed-live" stroke-width="' + f1(Math.max(1, V.z)) + '"' + (no ? ' stroke-dasharray="4 3"' : '') + ' d="M' + f1(sx(S[0])) + ' ' + f1(sy(S[1])) + 'L' + f1(sx(P[0])) + ' ' + f1(sy(P[1])) + '"/>');
     }
@@ -2621,7 +2622,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
     mLook = [null, null, null];
     }   // [nodes, their looks, the file read]
     function propsMany(ns, all, r2) {
-      var pf = propFmt(), key = ns.join(','), now = shared.cd ? shared.cd.now : shared.text;
+      var pf = propFmt(), key = ns.join(','), now = shared.F.beside() || shared.text;   // the file the looks are read from (CellDesigner's beside the GraphML)
       if (mLook[0] !== key || mLook[2] !== now) mLook = [key, ns.map(function (i) { var L = pf.look(i), b = bx(i); if (L) { L.w = r2(b[2]); L.h = r2(b[3]); ROWS.forEach(function (r) { if (r[2] === 'num' && L[r[0]] != null) L[r[0]] = r2(L[r[0]]); }); } return L; }), now];
       var Ls = mLook[1];
       if (Ls.some(function (L) { return !L; })) { props.hidden = true; return; }

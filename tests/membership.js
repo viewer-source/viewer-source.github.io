@@ -346,7 +346,7 @@ function tiny() {
 // yEd's own box after a push: a compartment's member pushed 20 past the border on
 // every demo GraphML map, its holders grown (grown) and their Insets and BorderInsets refitted (refit); then yEd's box of
 // the holder, what it holds inside (as layout.js extent() measures it) with its Insets and BorderInsets, is the box saved
-var CODE2 = 'var shared = { text: T0, cd: cd };\nfunction hm() { return H.make(MODEL(nodes2, boxOf, cd)); }\n' + ['setText', 'inBox', 'grown', 'extOf', 'refit', 'insetsOf'].map(lift).join('\n') + '\nfunction parse() { reparse(shared.text); }\nreturn { grown: grown, refit: refit, text: function () { return shared.text; } };';
+var CODE2 = 'var shared = { text: T0, cd: cd, F: { insets: !cd, engineCd: !!cd } };\nfunction hm() { return H.make(MODEL(nodes2, boxOf, cd)); }\n' + ['setText', 'inBox', 'grown', 'extOf', 'refit', 'insetsOf'].map(lift).join('\n') + '\nfunction parse() { reparse(shared.text); }\nreturn { grown: grown, refit: refit, text: function () { return shared.text; } };';
 var yn = 0;
 fs.readdirSync(path.join(here, 'maps')).filter(function (f) { return /\.graphml$/.test(f); }).forEach(function (f) {
   var g = fs.readFileSync(path.join(here, 'maps', f), 'utf8'), E = editorOf(g, false), N = E.N;

@@ -5,12 +5,22 @@
 // node's outline and ends at the pointer; over the second node it stops on that node's outline. Straight across and at
 // a slant (about 15 degrees). Checked on the drawn path's two ends against the nodes' boxes on screen, 2 px tolerance.
 // GraphML maps have no palette, so no line is drawn there. Nothing is saved (no token). No script error.
-//   node tests/line-live.js [base address]
+//   node tests/line-live.js [base address] [--local]   (--local: the working tree's editor and renderers routed in)
 var { chromium } = require('playwright');
-var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
+var path = require('path'), fs = require('fs'), editorNow = require('./editor-now.js'), here = path.join(__dirname, '..');
+var args = process.argv.slice(2), local = args.indexOf('--local') >= 0; args = args.filter(function (a) { return a !== '--local'; });
+var base = args[0] || 'https://viewer-source.github.io/styles/';
 var MAPS = [['glycolysis-sbgn', 'macromolecule', 'production'], ['glycolysis-celldesigner', 'cd:PROTEIN', 'cd:STATE_TRANSITION']];
 (async function () {
   var b = await chromium.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], bad = 0;
+  if (local) {   // the working tree's editor and renderers routed in
+    var ed = editorNow(here);
+    await page.route(/\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: ed }); });
+    await page.route(/\/renderers\/(converter|yrender|layout)\/[^/?]+\.js/, function (r) {
+      var m = new URL(r.request().url()).pathname.match(/\/renderers\/(.+)$/), fp = path.join(here, 'renderers', m[1]);
+      if (fs.existsSync(fp)) r.fulfill({ contentType: 'application/javascript', body: fs.readFileSync(fp, 'utf8') }); else r.continue();
+    });
+  }
   page.on('pageerror', function (e) { errs.push(e.message); });
   var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more && !v ? '  ' + more : '')); };
   var rects = function () { return page.$$eval('#m2-img [data-n]', function (l) { var o = {}; l.forEach(function (g) { var r = g.getBoundingClientRect(); o[g.getAttribute('data-n')] = [r.left, r.top, r.right, r.bottom]; }); return o; }); };
