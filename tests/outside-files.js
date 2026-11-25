@@ -2,8 +2,9 @@
 // can do): files as other tools wrote them (Newt, CellDesigner, yEd, MINERVA, the SBGN website, libsbgn), each added
 // on the live site through Add map from file with no token, as a person outside does, never through the build. Per
 // file: added or refused (and the words said), drawn, editing started, everything selected and moved by an arrow
-// key, the text the editor would save read back (m2EditNow): changed only in numbers (the move), never in names,
-// kinds or what is joined to what.
+// key, the text the editor would save read back (m2EditNow): the move changes only numbers, never names, kinds or what
+// is joined to what; a change made on entering edit (a rule kept on purpose, as positive influence taken in as reduced
+// physical stimulation) counts only when the status line says it. OUTSIDE_DUMP=<folder>: the text on entry and after.
 //   node tests/outside-files.js <data clone> [base address] [--local] [files ...]   (default: the list below, from the
 //   site's data repository cloned at <data clone>)
 // --local: the working tree's editor and renderers routed into the live page.
@@ -61,7 +62,7 @@ function words(t) { return t.replace(/^\uFEFF/, '').replace(/-?\d+(\.\d+)?(e[+-]
       await page.setInputFiles('input[type=file]', copy);
       var got = await page.waitForFunction(function () {
         if (location.hash.indexOf('#mine') === 0) return 'added';
-        var red = Array.prototype.map.call(document.querySelectorAll('#m2-list *'), function (e) { return e.children.length ? '' : e.textContent; }).filter(function (s) { return /cannot|not |nothing|refused|fail/i.test(s); });
+        var red = Array.prototype.map.call(document.querySelectorAll('#m2-list *'), function (e) { return e.children.length ? '' : e.textContent; }).filter(function (s) { return /cannot|not |nothing|refused|fail|Error\b/i.test(s); });   // Error: a reader's own words, said as they are
         return red.length ? 'refused: ' + red.join(' | ') : false;
       }, null, { polling: 200, timeout: 120000 }).then(function (h) { return h.jsonValue(); }, function () { return 'nothing after 120 s'; });
       row.added = got; row.addMs = Date.now() - t0;
@@ -83,7 +84,9 @@ function words(t) { return t.replace(/^\uFEFF/, '').replace(/-?\d+(\.\d+)?(e[+-]
           var after = await page.evaluate(function () { return window.m2EditNow().text; });
           row.moved = after !== before;
           row.onlyNumbers = words(after) === words(orig);
-          if (process.env.OUTSIDE_DUMP) fs.writeFileSync(path.join(process.env.OUTSIDE_DUMP, name + '.after'), after);
+          // the move itself, apart from what entering edit changed (a rule kept on purpose, said in the status line)
+          row.moveOnlyNumbers = words(after) === words(before);
+          if (process.env.OUTSIDE_DUMP) { fs.writeFileSync(path.join(process.env.OUTSIDE_DUMP, name + '.before'), before); fs.writeFileSync(path.join(process.env.OUTSIDE_DUMP, name + '.after'), after); }
           var a = orig.split('\n'), c = after.split('\n'), n = 0;
           for (var k = 0; k < Math.max(a.length, c.length); k++) if (a[k] !== c[k]) n++;
           row.linesChanged = n + ' of ' + a.length;
@@ -96,7 +99,9 @@ function words(t) { return t.replace(/^\uFEFF/, '').replace(/-?\d+(\.\d+)?(e[+-]
     await ctx.close();
   }
   await b.close();
-  var bad = rows.filter(function (r) { return r.added !== 'added' || !r.edit || !r.moved || !r.onlyNumbers || r.errors; }).length;
+  // short: not added, not editable, not moved, a move changing more than numbers, a change on entry the status did not
+  // say, or an error on the page
+  var bad = rows.filter(function (r) { return r.added !== 'added' || !r.edit || !r.moved || !r.moveOnlyNumbers || (!r.sameOnEntry && !r.status) || /Not drawn|Error/.test(r.status || '') || r.errors; }).length;
   console.log(bad ? bad + ' of ' + rows.length + ' files fall short' : 'all ' + rows.length + ' files open, edit and keep their content');
   process.exit(bad ? 1 : 0);
 })();
