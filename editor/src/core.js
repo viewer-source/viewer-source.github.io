@@ -3,7 +3,7 @@ import GE from '../../renderers/converter/graphml_edit.js';   // the GraphML eng
 import H from '../../renderers/layout/holding.js';   // what holds what: regrouping, growing a holder, the holder a box lies in
 import { bx, keyShift, liveFit, liveLines, liveOff, posePort, poseSize, shift, sizeLive, sizeOff, unshift } from './live.js';
 import { AF_KINDS, drawGraphml, noNegative, shiftedAhead } from './graphml.js';
-import { beyond, glyphArcs, glyphPort, joinAt, joinGuides, joinSolve, lineGrid, nodeCentre, nodePlaces } from './celldesigner.js';
+import { beyond, glyphArcs, glyphPort, joinAt, joinGuides, joinSolve, nodeCentre } from './celldesigner.js';
 import { sbpy } from './sbgn.js';
 import { ddOpen, hybOn, joinDo, joinPack, joinPlan, link, linkDown, linkMove, linkPaint, linkUp, moveSays, origAll, palDown, palShow, palUp, propFmt, setSize, sizable, svDown, svMarks, tool } from './create.js';
 import { help, helpBox } from './help.js';
@@ -2137,13 +2137,14 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     }
     function placesOf(pp) {   // the places an end may take at node pp.n (portOn's choice), as offsets from its centre; null on the ports' grid (any point of it)
       if (nodes2[pp.n].hub && !(MODS.test(edges2[pp.k].arr[1]) && pp.end) && window.yrender && hubPorts()[nodes2[pp.n].id]) return null;   // a process's or gate's own port: the one place
-      var N = nodePlaces(pp.n);
-      return procSpots(pp) || hubSides(pp) || (N && [[0, 0]].concat(N)) || (lineGrid() ? null : fivePlaces(pp.n));
+      var N = places(pp.n);
+      return procSpots(pp) || hubSides(pp) || (N && [[0, 0]].concat(N)) || (shared.F.fixedEnds ? fivePlaces(pp.n) : null);
     }
     function fivePlaces(n) { var b = bx(n); return [[0, 0], [0, -b[3] / 2], [0, b[3] / 2], [-b[2] / 2, 0], [b[2] / 2, 0]]; }   // the centre and the sides' middles
-    function spot(pp, P, free) {   // the end's place on its node as an offset from its centre: a glyph's six, the ports' grid (free: anywhere, gridSpot), else the nearest of the node's places (nodePlaces) or five
-      var b = bx(pp.n), c = [b[0] + b[2] / 2, b[1] + b[3] / 2], S = procSpots(pp) || hubSides(pp), N = S ? null : nodePlaces(pp.n), F = null;
-      if (!S && lineGrid()) return gridSpot(pp.n, [P[0] - c[0], P[1] - c[1]], free);
+    function places(n) { return shared.F.places ? shared.F.places(n) : null; }   // the places a line's end takes on node n where the format fixes them
+    function spot(pp, P, free) {   // the end's place on its node as an offset from its centre: a glyph's six, the ports' grid (free: anywhere, gridSpot), else the nearest of the node's places (F.places) or five
+      var b = bx(pp.n), c = [b[0] + b[2] / 2, b[1] + b[3] / 2], S = procSpots(pp) || hubSides(pp), N = S ? null : places(pp.n), F = null;
+      if (!S && !shared.F.fixedEnds) return gridSpot(pp.n, [P[0] - c[0], P[1] - c[1]], free);
       if (N && nodeCentre(pp.n, P)) return [0, 0];
       // at a glyph a tie (a drop on its centre) goes to the side facing the modifier: the point
       // before the end weighs in a little
@@ -2151,7 +2152,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       var cost = function (o) { var q = [c[0] + o[0], c[1] + o[1]]; return Math.hypot(q[0] - P[0], q[1] - P[1]) + (F ? 1e-3 * Math.hypot(q[0] - F[0], q[1] - F[1]) : 0); };
       return (S || N || fivePlaces(pp.n)).reduce(function (m, o) { return cost(o) < cost(m) ? o : m; });
     }
-    // ---- ports on the line grid (where the format's part says so: lineGrid), as offsets from the node's centre ----
+    // ---- ports on the line grid (where the format keeps no fixed ends: F.fixedEnds), as offsets from the node's centre ----
     // Inside the shape a grid of the line step (lineStep) from the centre. On the outline the port stays on it, and the coordinate on the grid
     // is the axis the outline runs closer to there (x on a top or bottom side, y on a left or right side; on a curve
     // switching where it runs at 45 degrees); the other is read from the outline. A run of one axis ends at that switch or
@@ -2346,7 +2347,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     function aim(pp, P, free) {   // the dragged end's next place: on its own node, on a node that takes it, or free at the pointer (Alt or Ctrl, a process's port, or off the ports' grid)
       var i = takerAt(pp, P), b;
       pp.n2 = null; pp.free = false;
-      if (i == null && !pp.hub && !free && lineGrid()) i = pp.n;   // on the ports' grid, over nothing that takes it: on its own outline, nearest the pointer
+      if (i == null && !pp.hub && !free && !shared.F.fixedEnds) i = pp.n;   // on the ports' grid, over nothing that takes it: on its own outline, nearest the pointer
       if (i === pp.n) { pp.to = pp.hub ? null : spot(pp, P, free); return; }   // an end at a port stays with its process
       if (i != null) { pp.n2 = i; pp.to = portOn(pp, i, P, free); return; }
       b = bx(pp.n); pp.free = true; pp.to = [P[0] - b[0] - b[2] / 2, P[1] - b[1] - b[3] / 2];
@@ -2955,13 +2956,13 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       });
     }
     function onGrid(d) {   // snap to the grid, an axis a guide has not taken: the node pressed by its centre on Grid size, a
-      // bend point (alone, or the first of an arc dragged) on the line step where the format has a line grid (lineGrid; else
+      // bend point (alone, or the first of an arc dragged) on the line step where the format has a line grid (not F.fixedEnds; else
       // its guides alone); Alt or Ctrl held, no snapping
       var X, Y2, st;
       if (d.n != null) { var b = boxOf(d.n); X = b[0] + b[2] / 2; Y2 = b[1] + b[3] / 2; st = gridSet.step; }
       else {
         var pi = d.p != null ? d.p : d.e != null && edges2[d.e].pts.length ? edges2[d.e].pts[0] : null;
-        if (pi == null || !lineGrid()) return;
+        if (pi == null || shared.F.fixedEnds) return;
         X = num(points[pi], 'x'); Y2 = num(points[pi], 'y'); st = lineStep();
       }
       if (!d.gx) d.dx += toGrid(X + d.dx, st);
@@ -3122,14 +3123,14 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     V.view.addEventListener('pointercancel', release, true);
     }
 
-    // an end of a line moved by the keys, as a drag sets it: round a glyph or a node's fixed places (nodePlaces) to the next
+    // an end of a line moved by the keys, as a drag sets it: round a glyph or a node's fixed places (F.places) to the next
     // place; on the ports' grid (portStep); else among the node's five places, from the centre to the side the arrow points to, from a side the
     // opposite arrow back to the centre, another to its side
     function portKey(pp, d, fine) {
       if (pp.hub) return;   // at a process's or gate's port: it goes with the process
       var e = edges2[pp.k], a = pp.end ? ['tx', 'ty'] : ['sx', 'sy'], b = bx(pp.n), u = [Math.sign(d[0]), Math.sign(d[1])];
-      var off = [num(e.path, a[0]) || 0, num(e.path, a[1]) || 0], G = procSpots(pp) || hubSides(pp), N = G ? null : nodePlaces(pp.n), S = G || (N && [[0, 0]].concat(N));
-      if (!S && lineGrid()) {   // plain arrows a step of the line step, Shift 1; the same key again goes on round the outline the same way
+      var off = [num(e.path, a[0]) || 0, num(e.path, a[1]) || 0], G = procSpots(pp) || hubSides(pp), N = G ? null : places(pp.n), S = G || (N && [[0, 0]].concat(N));
+      if (!S && !shared.F.fixedEnds) {   // plain arrows a step of the line step, Shift 1; the same key again goes on round the outline the same way
         var rn = pp.run, go = rn && rn.u + '' === u + '' && Math.abs(rn.to[0] - off[0]) < 0.01 && Math.abs(rn.to[1] - off[1]) < 0.01 ? rn.di : null;   // the run lives on the pressed end: a new press, undo or Esc ends it
         var g2 = portStep(pp.n, off, u, fine ? 1 : lineStep(), go);
         pp.run = g2 && g2.di != null ? { u: u, di: g2.di, to: g2.to } : null;
@@ -3137,7 +3138,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
         return;
       }
       var c = [b[0] + b[2] / 2, b[1] + b[3] / 2], o = spot(pp, [c[0] + off[0], c[1] + off[1]]), s = [Math.sign(o[0]), Math.sign(o[1])];
-      if (S) {   // round a glyph: the place the arrow points to most nearly; among a node's places (nodePlaces) the nearest
+      if (S) {   // round a glyph: the place the arrow points to most nearly; among a node's places (F.places) the nearest
         // within 60 degrees of the arrow, nearer and straighter first, so the arrows walk round its outline place by place
         var best = null, bs = G ? 0.3 : -Infinity;
         S.forEach(function (q) {

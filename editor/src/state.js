@@ -38,6 +38,10 @@ export var shared = {};
 //              by the notation's roles
 //   drawn()    what the format readies once a drawing is put in (CellDesigner: the live session of cd_edit, cdSessionSoon); none
 //              for the others
+//   fixedEnds  a line's end lies only at a node's own places (CellDesigner's 16, places that follow the node's size), so
+//              no line grid: ends not on the outline at the line step, bend points not snapped to it (core.js); else the grid
+//   places(n)  the places a line's end takes on node n where the format fixes them, as offsets from its centre with the
+//              place's name third (CellDesigner: a species' 16, celldesigner.js nodePlaces), else null; none: null
 //   moved()    what the format does after a move, undo or redo (core.js changed; SBGN-ML: sbFollow, a file the move
 //              turned, its GraphML made again from it); none for the others
 //   parsing(how)  what the format does before the GraphML is read (core.js parse; how: 'back' after an undo or redo, else

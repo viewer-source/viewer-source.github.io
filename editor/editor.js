@@ -1958,9 +1958,6 @@
   function isCd(t) {
     return /<sbml[\s>]/.test(t.slice(0, 3e3)) && t.indexOf("celldesigner") >= 0;
   }
-  function lineGrid() {
-    return !shared.cd;
-  }
   function nodePlaces(n) {
     var R = window.cdrender, cl = shared.cd && R && R.anchorAt && cdRole(n) === "epn" ? cdClsOf(nodes2[n].id) : null;
     if (!cl) return null;
@@ -2607,6 +2604,10 @@
       beside: function() {
         return shared.cd.now;
       },
+      // a line's end at one of a node's places only, as a CellDesigner file keeps a species' line: places that follow each
+      // node's size and so meet no line grid, its bend points lined up by the guides alone (state.js fixedEnds)
+      fixedEnds: true,
+      places: nodePlaces,
       reads: isCd,
       entry: cdMap,
       // opening: CellDesigner's open arrowhead taken in as SBGN's open triangle (cd_make sbgn): the editor works on the
@@ -16346,16 +16347,19 @@
   }
   function placesOf(pp) {
     if (nodes2[pp.n].hub && !(MODS.test(edges2[pp.k].arr[1]) && pp.end) && window.yrender && hubPorts()[nodes2[pp.n].id]) return null;
-    var N = nodePlaces(pp.n);
-    return procSpots(pp) || hubSides(pp) || N && [[0, 0]].concat(N) || (lineGrid() ? null : fivePlaces(pp.n));
+    var N = places(pp.n);
+    return procSpots(pp) || hubSides(pp) || N && [[0, 0]].concat(N) || (shared.F.fixedEnds ? fivePlaces(pp.n) : null);
   }
   function fivePlaces(n) {
     var b = bx(n);
     return [[0, 0], [0, -b[3] / 2], [0, b[3] / 2], [-b[2] / 2, 0], [b[2] / 2, 0]];
   }
+  function places(n) {
+    return shared.F.places ? shared.F.places(n) : null;
+  }
   function spot(pp, P, free) {
-    var b = bx(pp.n), c = [b[0] + b[2] / 2, b[1] + b[3] / 2], S = procSpots(pp) || hubSides(pp), N = S ? null : nodePlaces(pp.n), F = null;
-    if (!S && lineGrid()) return gridSpot(pp.n, [P[0] - c[0], P[1] - c[1]], free);
+    var b = bx(pp.n), c = [b[0] + b[2] / 2, b[1] + b[3] / 2], S = procSpots(pp) || hubSides(pp), N = S ? null : places(pp.n), F = null;
+    if (!S && !shared.F.fixedEnds) return gridSpot(pp.n, [P[0] - c[0], P[1] - c[1]], free);
     if (N && nodeCentre(pp.n, P)) return [0, 0];
     if (S) {
       var all = ports(pp.k);
@@ -16627,7 +16631,7 @@
     var i = takerAt(pp, P), b;
     pp.n2 = null;
     pp.free = false;
-    if (i == null && !pp.hub && !free && lineGrid()) i = pp.n;
+    if (i == null && !pp.hub && !free && !shared.F.fixedEnds) i = pp.n;
     if (i === pp.n) {
       pp.to = pp.hub ? null : spot(pp, P, free);
       return;
@@ -17433,7 +17437,7 @@
       st = gridSet.step;
     } else {
       var pi = d.p != null ? d.p : d.e != null && edges2[d.e].pts.length ? edges2[d.e].pts[0] : null;
-      if (pi == null || !lineGrid()) return;
+      if (pi == null || shared.F.fixedEnds) return;
       X = num(points[pi], "x");
       Y2 = num(points[pi], "y");
       st = lineStep();
@@ -17757,8 +17761,8 @@
   function portKey(pp, d, fine) {
     if (pp.hub) return;
     var e = edges2[pp.k], a = pp.end ? ["tx", "ty"] : ["sx", "sy"], b = bx(pp.n), u = [Math.sign(d[0]), Math.sign(d[1])];
-    var off = [num(e.path, a[0]) || 0, num(e.path, a[1]) || 0], G2 = procSpots(pp) || hubSides(pp), N = G2 ? null : nodePlaces(pp.n), S = G2 || N && [[0, 0]].concat(N);
-    if (!S && lineGrid()) {
+    var off = [num(e.path, a[0]) || 0, num(e.path, a[1]) || 0], G2 = procSpots(pp) || hubSides(pp), N = G2 ? null : places(pp.n), S = G2 || N && [[0, 0]].concat(N);
+    if (!S && !shared.F.fixedEnds) {
       var rn = pp.run, go = rn && rn.u + "" === u + "" && Math.abs(rn.to[0] - off[0]) < 0.01 && Math.abs(rn.to[1] - off[1]) < 0.01 ? rn.di : null;
       var g2 = portStep(pp.n, off, u, fine ? 1 : lineStep(), go);
       pp.run = g2 && g2.di != null ? { u, di: g2.di, to: g2.to } : null;

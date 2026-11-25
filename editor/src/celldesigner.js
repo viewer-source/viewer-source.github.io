@@ -17,10 +17,6 @@ import { cdCardDown, cdCheck, cdClsOf, cdHow, cdLineAt, cdLink, cdLinkMarks, cdL
     cdp = null, cdJs = null, cdMk = null;
     }   // the CellDesigner side loading, once loaded (cd_edit, cd_make), the file edited ({ base, now })
     function isCd(t) { return /<sbml[\s>]/.test(t.slice(0, 3000)) && t.indexOf('celldesigner') >= 0; }
-    // the line grid (core.js, lineStep): a line's end on a node on it inside the shape and along its outline, bend points
-    // snapping to it; or none: a line's end at one of the node's places only, as a CellDesigner file keeps a species' line,
-    // places that follow each node's size and so meet no grid, its bend points lined up by the guides alone
-    function lineGrid() { return !shared.cd; }
     // the places a line's end takes on node n where the format fixes them, as offsets from its centre with the place's
     // name third: on a CellDesigner species its 16 (cdrender anchorAt, on a multimer's front copy as the line is drawn),
     // which cd_edit writes as that place; the centre apart (nodeCentre). A dragged end (core.js spot) and a new line
@@ -453,6 +449,9 @@ import { cdCardDown, cdCheck, cdClsOf, cdHow, cdLineAt, cdLink, cdLinkMarks, cdL
     // CellDesigner's format object (state.js formats): the file is kept beside the GraphML edited, the moves written in
     function cdFormat() {
       return { name: 'cd', load: cdpy, engineCd: true, now: function () { return shared.cd.now; }, ownFrame: true, live: function () { return liveCd; }, cardDown: cdCardDown, mainLines: true, afView: false, stacks: false, insets: false, magenta: true, opened: plainCanvas, drawn: cdSessionSoon, redraw: cdRedraw, lit: cdLit, endTo: cdEndTo, undoKeep: function () { return { g: shared.text, b: shared.cd.base }; }, undoPut: function (t) { shared.cd.base = t.b; return t.g; }, leave: cdLeave, nestReady: function () { return !!cdJs && !!cdJs.nestCheck; }, nestWhy: function (moves) { return cdJs && cdJs.nestCheck ? cdJs.nestCheck(shared.cd.now, moves, { doc: cdDoc(shared.cd.now) }) : null; }, modLine: function (id) { return /\|m\d+$/.test(id); }, ownLine: function (id) { return /\|(a|b|r\d+|p\d+)$/.test(id); }, fileType: { description: 'CellDesigner', accept: { 'application/xml': ['.xml'] } }, join: cdJoin(), line: cdLine(), sv: cdSv(), square: function (id) { var m = /^(.*)\|proc$/.exec(id); return m ? m[1] : null; }, beside: function () { return shared.cd.now; },
+        // a line's end at one of a node's places only, as a CellDesigner file keeps a species' line: places that follow each
+        // node's size and so meet no line grid, its bend points lined up by the guides alone (state.js fixedEnds)
+        fixedEnds: true, places: nodePlaces,
         reads: isCd, entry: cdMap,
         // opening: CellDesigner's open arrowhead taken in as SBGN's open triangle (cd_make sbgn): the editor works on the
         // changed text, written at the next save, the change said once the map is drawn; the file as it was stays the
@@ -477,4 +476,4 @@ import { cdCardDown, cdCheck, cdClsOf, cdHow, cdLineAt, cdLink, cdLinkMarks, cdL
         kind: function (n) { var c = cdClsOf(n.id); return c ? c[0] : n.comp ? 'compartment' : null; },   // its species class, or compartment
         ownName: cdNameOf, rename: cdRename, nameable: function () { return !!cdMk; } };   // names read from and written into its file
     }
-    export { beyond, cdFormat, cdKept, cdJs, cdMap, cdMk, cdNow, cdRebuild, cdSessionSoon, cdShown, cdpy, glyphArcs, glyphPort, isCd, joinAt, joinGuides, joinSolve, lineGrid, liveCd, nodeCentre, nodePlaces, plainCanvas, warmUp };
+    export { beyond, cdFormat, cdKept, cdJs, cdMap, cdMk, cdNow, cdRebuild, cdSessionSoon, cdShown, cdpy, glyphArcs, glyphPort, isCd, joinAt, joinGuides, joinSolve, liveCd, nodeCentre, nodePlaces, plainCanvas, warmUp };

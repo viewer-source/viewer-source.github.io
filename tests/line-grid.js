@@ -6,7 +6,7 @@
 // and y multiples of the step); the arrow keys on that bend point move it by 1, Shift 10, as nodes (as designed, not the
 // step). Testing Glycolysis (SBGN-ML): the same port presses, measured on screen by the four marks round the end (map
 // units from the bend point's Shift move of 10), and the bend point made by a drag on the lattice (the arc's next point
-// in the file). CellDesigner maps have no line grid (lineGrid in celldesigner.js), not tested here. Nothing is saved (no token). No script error.
+// in the file). CellDesigner maps have no line grid (F.fixedEnds, celldesigner.js), not tested here. Nothing is saved (no token). No script error.
 //   node tests/line-grid.js [base address]
 var { chromium } = require('playwright');
 var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
