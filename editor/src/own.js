@@ -1072,8 +1072,8 @@ import { bytesSha, fitPixels, glyphsNamed, keptGlyphs, minervaProject, packEntri
       return f.arrayBuffer().then(function (a) {
         var d = new Uint8Array(a), png = d.length > 8 && d[0] === 0x89 && d[1] === 0x50 && d[2] === 0x4e && d[3] === 0x47;
         var svg = !png && /<svg[\s>]/i.test(new TextDecoder().decode(d.subarray(0, 65536)));
-        if (!png && !svg) throw new Error(f.name + ' is not a picture MINERVA can take here: PNG or SVG only');
-        var stem = f.name.replace(/\.[^.]*$/, '').replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^[-.]+|-+$/g, '') || 'picture', ext = png ? '.png' : '.svg', other = png ? '.svg' : '.png';
+        if (!png && !svg) throw new Error(f.name + ' is not a image MINERVA can take here: PNG or SVG only');
+        var stem = f.name.replace(/\.[^.]*$/, '').replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^[-.]+|-+$/g, '') || 'image', ext = png ? '.png' : '.svg', other = png ? '.svg' : '.png';
         var gh = repo() && token(), look = gh ? siteGlyphs() : localGlyphs();
         return bytesSha(d).then(function (sha) {
           var free = function (k) {
@@ -1095,14 +1095,14 @@ import { bytesSha, fitPixels, glyphsNamed, keptGlyphs, minervaProject, packEntri
         var at = '/contents/maps/' + file.split('/').map(encodeURIComponent).join('/');
         return api(at + '?ref=main').then(function (r) {
           if (r.ok) return;
-          return api(at, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: 'Picture: ' + file, content: bytes64(d), branch: 'main' }) }).then(ghJson);
-        }).then(function () { ghPics = null; }, function (e) { throw new Error('the picture was not kept on GitHub: ' + (e && e.message ? e.message : e)); });
+          return api(at, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: 'Image: ' + file, content: bytes64(d), branch: 'main' }) }).then(ghJson);
+        }).then(function () { ghPics = null; }, function (e) { throw new Error('the image was not kept on GitHub: ' + (e && e.message ? e.message : e)); });
       }
       var blob = new Blob([d]);
       var inBrowser = V.draftDo('readonly', function (st) { return st.get('minerva:mz-pictures'); }, 'folder').then(function (r) {
         r = r || { id: 'mz-pictures', glyphs: {} }; r.glyphs[file] = blob; r.at = Date.now(); storedAll = null;
         return V.draftDo('readwrite', function (st) { return st.put(r, 'minerva:mz-pictures'); }, 'folder');
-      }).catch(function (e) { throw new Error('the picture was not kept in this browser: ' + (e && e.message ? e.message : e)); });   // refused: else the note names a picture gone after a reload
+      }).catch(function (e) { throw new Error('the image was not kept in this browser: ' + (e && e.message ? e.message : e)); });   // refused: else the note names a image gone after a reload
       return inBrowser.then(function () { return picToFolder(file, d); });
     }
     function picToFolder(file, d) {
@@ -1110,7 +1110,7 @@ import { bytesSha, fitPixels, glyphsNamed, keptGlyphs, minervaProject, packEntri
       return folder().then(function (f) {
         if (!f) return;
         return f.dir.queryPermission({ mode: 'readwrite' }).then(function (perm) { if (perm === 'granted') return putIn(f.dir, file, d); });
-      }).catch(function (e) { warn('The picture ' + file + ' was not kept in the folder: ' + (e && e.message ? e.message : e)); });
+      }).catch(function (e) { warn('The image ' + file + ' was not kept in the folder: ' + (e && e.message ? e.message : e)); });
     }
     function putIn(dir, path, data) {   // a file at a path under dir, its folders made
       var parts = path.split('/'), name = parts.pop();
@@ -1143,7 +1143,7 @@ import { bytesSha, fitPixels, glyphsNamed, keptGlyphs, minervaProject, packEntri
       if (to && !followed[n]) {
         followed[n] = 1;
         inTurn(function () { return b.arrayBuffer().then(function (a) { var d = new Uint8Array(a); return to === 'gh' ? picStore(n, d, true) : picToFolder(n, d); }); })
-          .catch(function (e) { followed[n] = 0; warn('The picture ' + n + ' did not follow its map: ' + (e && e.message ? e.message : e)); });
+          .catch(function (e) { followed[n] = 0; warn('The image ' + n + ' did not follow its map: ' + (e && e.message ? e.message : e)); });
       }
       return b;
     }
@@ -1192,7 +1192,7 @@ import { bytesSha, fitPixels, glyphsNamed, keptGlyphs, minervaProject, packEntri
       var blobs = function (o) { var r = {}; Object.keys(o).forEach(function (k) { r[k] = new Blob([o[k]]); }); return r; };
       var rec = { id: p.rec, zip: p.zip, size: p.size, maps: maps, glyphs: blobs(p.glyphs), kept: blobs(p.kept), at: Date.now() };
       return V.draftDo('readwrite', function (st) { return st.put(rec, 'minerva:' + rec.id); }, 'folder')   // beside the folder's record, under keys of their own: no new store, so the database keeps its version
-        .catch(function (e) { warn('The pictures of ' + p.zip + ' were not kept in this browser: ' + (e && e.message ? e.message : e)); })
+        .catch(function (e) { warn('The images of ' + p.zip + ' were not kept in this browser: ' + (e && e.message ? e.message : e)); })
         .then(function () { return folderProject(p, maps); });
     }
     function folderProject(p, maps) {
@@ -1205,7 +1205,7 @@ import { bytesSha, fitPixels, glyphsNamed, keptGlyphs, minervaProject, packEntri
             .concat(Object.keys(p.kept).map(function (k) { return [at + k, p.kept[k]]; }), [[at + 'record.json', projectRecord(p, maps)]]);
           return all.reduce(function (q, x) { return q.then(function () { return putIn(f.dir, x[0], x[1]); }); }, Promise.resolve());
         });
-      }).catch(function (e) { warn('The pictures of ' + p.zip + ' were not kept in the folder: ' + (e && e.message ? e.message : e)); });
+      }).catch(function (e) { warn('The images of ' + p.zip + ' were not kept in the folder: ' + (e && e.message ? e.message : e)); });
     }
     // a zip found in the folder (core.js syncFolder): opened with no undo step (the page's own scan, not the reader's
     // act), and not when this browser keeps a project from a zip of that name and size (the folder chosen again)
@@ -1354,10 +1354,10 @@ import { bytesSha, fitPixels, glyphsNamed, keptGlyphs, minervaProject, packEntri
               });
             });
           }, Promise.resolve()).then(function () {
-            Object.keys(pics).forEach(function (x) { if (pics[x].length > 5 * 1048576) said.push(x + ' is ' + (pics[x].length / 1048576).toFixed(1) + ' MB: MINERVA takes it in a zip, but its own editor refuses a picture over 5 MB.'); });
+            Object.keys(pics).forEach(function (x) { if (pics[x].length > 5 * 1048576) said.push(x + ' is ' + (pics[x].length / 1048576).toFixed(1) + ' MB: MINERVA takes it in a zip, but its own editor refuses a image over 5 MB.'); });
             var e = packEntries(maps.map(function (x) { return { path: x.path, text: x.text }; }), pics, keptBytes, missing);
-            if (fitted.length) said.push(fitted.length + ' picture' + (fitted.length > 1 ? 's' : '') + ' made in the proportions of ' + (fitted.length > 1 ? 'their boxes' : 'its box') + ', as here (MINERVA keeps a picture\'s own): ' + fitted.join(', ') + '.');
-            if (e.z.length) said.push('Z-Index of the compartments with pictures set from what holds what in: ' + e.z.join(', ') + '.');
+            if (fitted.length) said.push(fitted.length + ' image' + (fitted.length > 1 ? 's' : '') + ' made in the proportions of ' + (fitted.length > 1 ? 'their boxes' : 'its box') + ', as here (MINERVA keeps a image\'s own): ' + fitted.join(', ') + '.');
+            if (e.z.length) said.push('Z-Index of the compartments with images set from what holds what in: ' + e.z.join(', ') + '.');
             if (e.gone.length) said.push('Links to maps no longer in the group left out: ' + e.gone.join(', ') + '.');
             return zip(e.entries);
           });

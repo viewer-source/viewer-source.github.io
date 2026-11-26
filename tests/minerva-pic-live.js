@@ -96,7 +96,7 @@ var SVG = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="300" heigh
   ok('1. undone: no note, no picture', glyph(await now(), 's', 's_n3') === null && (await imgs()).length === 0);
   await redo();
   ok('1. redone', glyph(await now(), 's', 's_n3') === 'glyphs/red-cell.png' && (await imgs()).length === 1);
-  var r1 = await box(SP), it = await menu(r1[0] + 6, r1[1] + 6, 'Fit box to picture');
+  var r1 = await box(SP), it = await menu(r1[0] + 6, r1[1] + 6, 'Fit box to image');
   if (Array.isArray(it)) ok('1. right-click: Fit box to picture', false, it.join(' | ')); else { await it.click(); await page.waitForTimeout(2000); }
   var a1 = /<celldesigner:speciesAlias id="sa_n3"[\s\S]*?<celldesigner:bounds ([^>]*)>/.exec(await now())[1], wv = +/w="([^"]+)"/.exec(a1)[1], hv = +/h="([^"]+)"/.exec(a1)[1];
   var a0 = /<celldesigner:speciesAlias id="sa_n3"[\s\S]*?<celldesigner:bounds ([^>]*)>/.exec(t1)[1], w0 = +/w="([^"]+)"/.exec(a0)[1], h0 = +/h="([^"]+)"/.exec(a0)[1], y0 = +/y="([^"]+)"/.exec(a0)[1], y1 = +/y="([^"]+)"/.exec(a1)[1];
@@ -117,7 +117,7 @@ var SVG = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="300" heigh
   ok('3. dropped on empty space: nothing written, where backgrounds go said', (await now()) === t4 && /right click on empty map space/.test(await status()), await status());
   ok('3. a dropped picture never added as a map', !(await page.$('#m2-list .m2-map[data-title="blue"]')));
   // 1 (end). Remove picture by the right-click
-  r1 = await box(SP); it = await menu(r1[0] + 6, r1[1] + 6, 'Remove picture');
+  r1 = await box(SP); it = await menu(r1[0] + 6, r1[1] + 6, 'Remove image');
   if (Array.isArray(it)) ok('1. right-click: Remove picture', false, it.join(' | ')); else { await it.click(); await page.waitForTimeout(2000); }
   ok('1. Remove picture: the note gone, the species drawn again', glyph(await now(), 's', 's_n3') === null && !(await imgs()).some(function (x) { return /png/.test(x.href) && x.g === SP; }));
   await select(SP);
@@ -128,10 +128,10 @@ var SVG = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="300" heigh
   ok('4. a text named .png: refused with the reason, nothing written', (await now()) === t4 && /PNG or SVG only/.test(await status()), await status());
   // 5. a background
   var t5 = await now();
-  it = await menu(1300, 860, 'Add background picture…');
+  it = await menu(1300, 860, 'Add background image…');
   if (Array.isArray(it)) ok('5. Add background picture on empty space', false, it.join(' | ')); else await choose(function () { return it.click(); }, { name: 'tissue.png', mimeType: 'image/png', buffer: BG });
   var bgs = await page.evaluate(function () { var s = document.getElementById('m2-img'), i = Array.prototype.filter.call(s.querySelectorAll('image'), function (x) { return x.getAttribute('pointer-events') === 'none'; })[0], g = s.querySelector('g[data-n]'); return i ? { under: !!(g && (i.compareDocumentPosition(g) & 4)), x: +i.getAttribute('x'), y: +i.getAttribute('y') } : null; });
-  ok('5. the background drawn under the network, its layer and note written', bgs && bgs.under && /name="Background pictures"[\s\S]*Glyph: glyphs\/tissue\.png\nZ-Index: -1/.test(await now()), JSON.stringify(bgs));
+  ok('5. the background drawn under the network, its layer and note written', bgs && bgs.under && /name="Background images"[\s\S]*Glyph: glyphs\/tissue\.png\nZ-Index: -1/.test(await now()), JSON.stringify(bgs));
   it = await menu(1300, 860, 'Move and resize background');
   if (Array.isArray(it)) ok('5. Move and resize background', false, it.join(' | ')); else { await it.click(); await page.waitForTimeout(800); }
   var hs = await page.$$eval('#m2-view .m2-ed-handle', function (l) { return l.length; });
@@ -146,25 +146,25 @@ var SVG = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="300" heigh
   ok('5. the move undone in one step', /<celldesigner:layerSpeciesAlias[^>]*>[\s\S]*?<celldesigner:bounds ([^>]*)>/.exec(await now())[1] === bb);
   await page.keyboard.press('Escape'); await page.waitForTimeout(500);
   ok('5. Esc: the handles gone', (await page.$$eval('#m2-view .m2-ed-handle', function (l) { return l.length; })) === 0);
-  it = await menu(1300, 860, 'Fit background to picture');
+  it = await menu(1300, 860, 'Fit background to image');
   if (Array.isArray(it)) ok('5. Fit background to picture', false, it.join(' | ')); else { await it.click(); await page.waitForTimeout(2000); }
   var bf = /<celldesigner:layerSpeciesAlias[^>]*>[\s\S]*?<celldesigner:bounds ([^>]*)>/.exec(await now())[1];
   ok('5. Fit background to picture: 4:1', Math.abs(+/w="([^"]+)"/.exec(bf)[1] / +/h="([^"]+)"/.exec(bf)[1] - 4) < 0.01, bf);
-  it = await menu(1300, 860, 'Remove background picture');
+  it = await menu(1300, 860, 'Remove background image');
   if (Array.isArray(it)) ok('5. Remove background picture', false, it.join(' | ')); else { await it.click(); await page.waitForTimeout(2000); }
   ok('5. removed: the file as before the background', (await now()) === t5);
   // 5b. Settings, Gestures, Drag selects an area ticked: a drag inside the background still moves it; a press on a node ends the mode
   await page.evaluate(function () { localStorage.setItem('atlas-drag-moves', 'off'); });
   await enter('srebp-celldesigner');
-  it = await menu(1300, 860, 'Add background picture\u2026');
+  it = await menu(1300, 860, 'Add background image\u2026');
   if (Array.isArray(it)) ok('5b. Add background picture', false, it.join(' | ')); else await choose(function () { return it.click(); }, { name: 'tissue.png', mimeType: 'image/png', buffer: BG });
   it = await menu(1300, 860, 'Move and resize background'); if (!Array.isArray(it)) { await it.click(); await page.waitForTimeout(800); }
   var b5 = /<celldesigner:layerSpeciesAlias[^>]*>[\s\S]*?<celldesigner:bounds ([^>]*)>/.exec(await now())[1], c5 = await box('sa_n8');
   await page.mouse.move(c5[0] + 6, c5[1] + 6); await page.mouse.down(); await page.mouse.move(c5[0] + 60, c5[1] + 46, { steps: 6 }); await page.mouse.up(); await page.waitForTimeout(2000);
   var a5 = /<celldesigner:layerSpeciesAlias[^>]*>[\s\S]*?<celldesigner:bounds ([^>]*)>/.exec(await now())[1];
   ok('5b. Drag selects an area ticked: a drag inside the background, over a species, moves the background, not the species', a5 !== b5 && (/<celldesigner:speciesAlias id="sa_n8"[\s\S]*?<\/celldesigner:speciesAlias>/.exec(await now()) || [])[0] === (/<celldesigner:speciesAlias id="sa_n8"[\s\S]*?<\/celldesigner:speciesAlias>/.exec(t5) || [])[0], b5 + ' -> ' + a5);
-  it = await menu(1300, 860, 'Remove background picture'); if (!Array.isArray(it)) { await it.click(); await page.waitForTimeout(2000); }
-  ok('5b. removed, no handles left', (await page.$$eval('#m2-view .m2-ed-handle', function (l) { return l.length; })) === 0 && !/Background pictures/.test(await now()));
+  it = await menu(1300, 860, 'Remove background image'); if (!Array.isArray(it)) { await it.click(); await page.waitForTimeout(2000); }
+  ok('5b. removed, no handles left', (await page.$$eval('#m2-view .m2-ed-handle', function (l) { return l.length; })) === 0 && !/Background images/.test(await now()));
   await page.evaluate(function () { localStorage.removeItem('atlas-drag-moves'); });
   // 6. the page opened again: drawn from this browser
   await page.waitForTimeout(3000);

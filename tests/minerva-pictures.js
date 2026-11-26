@@ -49,7 +49,7 @@ function nodeCases(name, t) {
   var tr = mk.backgroundSet(tm, r.n, { name: 'glyphs/bg2.png' });
   ok(name + ' background: replaced', mk.backgrounds(tr).filter(function (g) { return g.n === r.n; })[0].name === 'glyphs/bg2.png');
   var r2 = mk.background(tr, 'glyphs/bg3.png', [0, 0, 50, 50]);
-  ok(name + ' background: a second one in the same layer', (r2.text.match(/name="Background pictures"/g) || []).length === 1 && mk.backgrounds(r2.text).length === b0 + 2);
+  ok(name + ' background: a second one in the same layer', (r2.text.match(/name="Background images"/g) || []).length === 1 && mk.backgrounds(r2.text).length === b0 + 2);
   var tx = mk.backgroundRemove(mk.backgroundRemove(r2.text, r2.n), r.n);
   ok(name + ' background: both removed, the text as it was', tx === t, JSON.stringify(diffOnly(t, tx)).slice(0, 300));
 }
@@ -63,17 +63,17 @@ var own = fs.readFileSync(path.join(data, 'maps', files[0]), 'utf8');
   var t0 = own.replace(/<celldesigner:listOfLayers\/>|<celldesigner:listOfLayers>\s*<\/celldesigner:listOfLayers>/, '<celldesigner:listOfLayers>\n' + c[0] + '\n</celldesigner:listOfLayers>');
   if (t0 === own) { ok('own layer ' + c[1] + ': test map has a list of layers', false); return; }
   var r = mk.background(t0, 'glyphs/b.png', [0, 0, 9, 9]), back = mk.backgroundRemove(r.text, r.n);
-  ok('own layer Background (' + c[1] + '): left as it was, the background in a layer of its own', r.text.indexOf(c[0]) >= 0 && /name="Background pictures"/.test(r.text), r.text.slice(r.text.indexOf('<celldesigner:listOfLayers'), r.text.indexOf('<celldesigner:listOfLayers') + 400));
+  ok('own layer Background (' + c[1] + '): left as it was, the background in a layer of its own', r.text.indexOf(c[0]) >= 0 && /name="Background images"/.test(r.text), r.text.slice(r.text.indexOf('<celldesigner:listOfLayers'), r.text.indexOf('<celldesigner:listOfLayers') + 400));
   ok('own layer Background (' + c[1] + '): background removed, the text as it was', back === t0);
   new DP({ onError: function (l, m) { if (l !== 'warning') { bad++; console.log('WRONG own layer ' + c[1] + ': not well formed: ' + m); } } }).parseFromString(r.text, 'application/xml');
 });
-// the layer Background pictures as another tool may leave it (self-closed, on one line): a background added well formed
-[['<celldesigner:layer id="7" name="Background pictures" locked="false" visible="false"/>', 'self-closed'],
- ['<celldesigner:layer id="7" name="Background pictures" locked="false" visible="false"><celldesigner:listOfSquares/></celldesigner:layer>', 'one line']].forEach(function (c) {
+// the layer Background images as another tool may leave it (self-closed, on one line): a background added well formed
+[['<celldesigner:layer id="7" name="Background images" locked="false" visible="false"/>', 'self-closed'],
+ ['<celldesigner:layer id="7" name="Background images" locked="false" visible="false"><celldesigner:listOfSquares/></celldesigner:layer>', 'one line']].forEach(function (c) {
   var t0 = own.replace(/<celldesigner:listOfLayers\/>|<celldesigner:listOfLayers>\s*<\/celldesigner:listOfLayers>/, '<celldesigner:listOfLayers>\n' + c[0] + '\n</celldesigner:listOfLayers>'), errs = [];
   var r = mk.background(t0, 'glyphs/b.png', [0, 0, 9, 9]);
   new DP({ onError: function (l, m) { if (l !== 'warning') errs.push(m); } }).parseFromString(r.text, 'application/xml');
-  ok('layer Background pictures (' + c[1] + '): a background added, well formed, read back', !errs.length && mk.backgrounds(r.text).length === 1 && (r.text.match(/name="Background pictures"/g) || []).length === 1, errs.join(' | '));
+  ok('layer Background images (' + c[1] + '): a background added, well formed, read back', !errs.length && mk.backgrounds(r.text).length === 1 && (r.text.match(/name="Background images"/g) || []).length === 1, errs.join(' | '));
 });
 // notes written after the annotation (SBML allows only before, some tools write after): found, never a second notes block
 var sa = aliases(own, '<celldesigner:speciesAlias id="([^"]+)"(?![^>]*complexSpeciesAlias=)')[0], sid = /species="([^"]+)"/.exec(new RegExp('<celldesigner:speciesAlias id="' + sa + '"[^>]*>').exec(own)[0])[1];

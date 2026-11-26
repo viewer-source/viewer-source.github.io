@@ -82,8 +82,8 @@
       var used = [], glyphs = {}, kept = {};
       maps.forEach(function (m) {
         glyphsNamed(m.text).forEach(function (g) {
-          if (!/\.png$/i.test(g)) throw new Error(g + ' is named in ' + stem(m.path) + ': MINERVA takes PNG pictures only');
-          if (!/^glyphs\/[^/]+$/.test(g)) throw new Error(g + ' is named in ' + stem(m.path) + ': only pictures directly in glyphs/ are read here');   // the stores keep glyphs/ as one folder
+          if (!/\.png$/i.test(g)) throw new Error(g + ' is named in ' + stem(m.path) + ': MINERVA takes PNG images only');
+          if (!/^glyphs\/[^/]+$/.test(g)) throw new Error(g + ' is named in ' + stem(m.path) + ': only images directly in glyphs/ are read here');   // the stores keep glyphs/ as one folder
           if (!files[g]) throw new Error(g + ' is named in ' + stem(m.path) + ' but missing from the zip');
           if (used.indexOf(g) < 0) used.push(g);
         });
@@ -287,7 +287,7 @@
         paths[key] = m.title;
         picturesOn(m.text).pics.forEach(function (p) {
           var g = p.glyph;
-          if (!/^glyphs\/[^/]+\.png$/i.test(g)) throw new Error(g + ' is named in ' + m.title + ': MINERVA reads pictures as glyphs/<name>.png');
+          if (!/^glyphs\/[^/]+\.png$/i.test(g)) throw new Error(g + ' is named in ' + m.title + ': MINERVA reads images as glyphs/<name>.png');
           var n = need[g];
           if (!n) { n = need[g] = { name: g, box: null, mixed: false, maps: [] }; order.push(n); }
           if (n.maps.indexOf(m.title) < 0) n.maps.push(m.title);

@@ -1708,11 +1708,11 @@ page, so its styles keep the base they were made on).
     [/^(Full screen with tools|Exit full screen)$/, 'Full screen with tools'],
     [/^Download (PNG|SVG)$/, ''],
     [/^Download (\d+ maps )?as MINERVA zip$/, 'Download as MINERVA zip'],
-    [/^(Set|Replace) picture…$/, 'Set or replace picture'],
-    [/^Replace background picture( \(.+\))?…$/, 'Replace background picture'],   // the file's name after it when a map has several
+    [/^(Set|Replace) image…$/, 'Set or replace image'],
+    [/^Replace background image( \(.+\))?…$/, 'Replace background image'],   // the file's name after it when a map has several
     [/^Move and resize background( \(.+\))?$/, 'Move and resize background'],
-    [/^Fit background to picture( \(.+\))?$/, 'Fit background to picture'],
-    [/^Remove background picture( \(.+\))?$/, 'Remove background picture'],
+    [/^Fit background to image( \(.+\))?$/, 'Fit background to image'],
+    [/^Remove background image( \(.+\))?$/, 'Remove background image'],
     [/^Download /, 'Download <its format>'],
     [/^Turn (process|logic gate)$/, 'Turn process or logic gate'],
     [/^Make main (reactant|product)$/, 'Make main reactant or product'],
@@ -1729,7 +1729,7 @@ page, so its styles keep the base they were made on).
     [/^Unit of information ct:/, 'Unit of information ct:mRNA or ct:gene']
   ];
   var MENU_PAGE = ['Switch to viewer or edit', '|', 'New SBGN-ML map', 'New CellDesigner map', '|', 'Full screen with tools', '|', 'Download <its format>', 'Download PNG', 'Download SVG', 'Copy image as PNG', 'Copy image as SVG', '|', 'Open in Newt', 'Open in MINERVA'];
-  var MENU_MAPTOOLS = ['Snap map to grid', 'Repack all complexes', 'Show grid', 'Snap to grid', 'Add background picture…', 'Replace background picture', 'Move and resize background', 'Fit background to picture', 'Remove background picture', 'Remove all bend points'];
+  var MENU_MAPTOOLS = ['Snap map to grid', 'Repack all complexes', 'Show grid', 'Snap to grid', 'Add background image…', 'Replace background image', 'Move and resize background', 'Fit background to image', 'Remove background image', 'Remove all bend points'];
   var MENU_LISTNEW = ['New SBGN-ML map', 'New CellDesigner map', 'Add map from file', 'Add group', 'Restore example maps'];
   var MENU_LISTVIEW = ['Open all groups', 'Close all groups', 'Show or hide file extensions'];
   var MENUS = [
@@ -1747,10 +1747,10 @@ page, so its styles keep the base they were made on).
     { id: 'edit-af', cd: false, head: 'Map, edit mode', name: 'Activity (Activity Flow)', items: ['Make <another kind>', 'Remove unit of information', 'Add or edit unit of information text', 'Unit of information ct:mRNA or ct:gene', 'Remove unit of information text', 'Name by members', 'Repack complex', '|', 'Select all of this kind', '|', 'Delete'] },
     { id: 'edit-glyph', head: 'Map, edit mode', name: 'Other node, complex', items: ['Change identity', 'Name by members', 'Repack complex', '|', 'Select all of this kind', '|', 'Delete'] },
     { id: 'edit-sv', cd: false, head: 'Map, edit mode', name: 'State variable or unit of information (SBGN-ML)', items: ['Delete'] },
-    { id: 'edit-cd-species', cd: true, head: 'Map, edit mode', name: 'Species (CellDesigner)', items: ['Add state variable', 'Add structural state', 'Add unit of information', 'Change identity', 'Make multimer or monomer', 'Set or replace picture', 'Fit box to picture', 'Remove picture', 'Name by members', 'Repack complex', '|', 'Select all of this kind', '|', 'Delete'] },
+    { id: 'edit-cd-species', cd: true, head: 'Map, edit mode', name: 'Species (CellDesigner)', items: ['Add state variable', 'Add structural state', 'Add unit of information', 'Change identity', 'Make multimer or monomer', 'Set or replace image', 'Fit box to image', 'Remove image', 'Name by members', 'Repack complex', '|', 'Select all of this kind', '|', 'Delete'] },
     { id: 'edit-cd-residue', cd: true, head: 'Map, edit mode', name: 'Residue (CellDesigner)', items: ['Edit', 'Change state', '|', 'Delete'] },
     { id: 'edit-cd-unit', cd: true, head: 'Map, edit mode', name: 'Unit of information or structural state (CellDesigner)', items: ['Edit', 'Change unit', '|', 'Delete'] },
-    { id: 'edit-compartment', head: 'Map, edit mode', name: 'Inside a compartment', items: ['Name at <place>', 'Bring forward', 'Send backward', 'Set or replace picture', 'Fit box to picture', 'Remove picture', '|', 'Select all of this kind', '|', 'Delete', '|'].concat(MENU_MAPTOOLS, '|', MENU_PAGE) },
+    { id: 'edit-compartment', head: 'Map, edit mode', name: 'Inside a compartment', items: ['Name at <place>', 'Bring forward', 'Send backward', 'Set or replace image', 'Fit box to image', 'Remove image', '|', 'Select all of this kind', '|', 'Delete', '|'].concat(MENU_MAPTOOLS, '|', MENU_PAGE) },
     { id: 'edit-empty', head: 'Map, edit mode', name: 'Empty map space', items: MENU_MAPTOOLS.concat('|', MENU_PAGE) },
     { id: 'list-map', head: 'Map list', name: 'One map', items: ['Rename map', 'Make a copy', 'Move to...', 'Set as top level', '|', 'Download <its format>', 'Download PNG', 'Download SVG', 'Download as MINERVA zip', '|'].concat(MENU_LISTNEW, '|', MENU_LISTVIEW, '|', 'Delete map') },
     { id: 'list-several', head: 'Map list', name: 'Several maps selected', items: ['Move to...', '|', 'Download as MINERVA zip', '|'].concat(MENU_LISTNEW, '|', MENU_LISTVIEW, '|', 'Delete map') },
@@ -1760,7 +1760,11 @@ page, so its styles keep the base they were made on).
     { id: 'list-deleted-head', head: 'Map list', name: 'Deleted\'s heading', items: ['Delete all forever'] }
   ];
   function menuById(id) { for (var i = 0; i < MENUS.length; i++) if (MENUS[i].id === id) return MENUS[i]; return null; }
-  function menuStore() { try { return JSON.parse(localStorage.getItem(MENU_KEY) || '{}') || {}; } catch (e) { return {}; } }
+  function menuStore() {   // items once named picture are kept under their image names
+    try { var s = JSON.parse(localStorage.getItem(MENU_KEY) || '{}') || {}; } catch (e) { return {}; }
+    Object.keys(s).forEach(function (m) { if (Array.isArray(s[m])) s[m] = s[m].map(function (k) { return typeof k === 'string' ? k.replace(/\bpicture\b/g, 'image').replace(/\bPicture\b/g, 'Image') : k; }); });
+    return s;
+  }
   function menuDefault(id) { var m = menuById(id); return m ? m.items.slice() : []; }
   function menuNow(id, s) {   // the order kept, with items the code has dropped since left out and those it has added since put beside their neighbour
     var def = menuDefault(id), got = (s || menuStore())[id] || MENU_SHIPPED[id];

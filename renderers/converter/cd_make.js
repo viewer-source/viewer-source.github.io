@@ -1391,7 +1391,7 @@
   // the packer of the collections write it: the line first in the notes' body, the rest of the notes kept; CellDesigner
   // shows the lines as text and draws nothing. Removed, the Glyph line goes with MINERVA's lines right after it and the rest stays; notes made here for the
   // picture alone go with it, so a picture put on and taken off gives the text back
-  var BG_LAYER = 'Background pictures';
+  var BG_LAYER = 'Background images', BG_NAME = 'Background (?:images|pictures)';   // written; read (the earlier name too)
   var GLYPH = /Glyph:[ \t]*([^\r\n<]+?\.(?:png|svg))[ \t\r]*(?:\n|<|$)/i;
   var NOTES0 = '<notes>\n<html xmlns="http://www.w3.org/1999/xhtml">\n<head>\n<title/>\n</head>\n<body>';
   var NOTES1 = '</body>\n</html>\n</notes>';
@@ -1452,8 +1452,8 @@
       return m ? { n: k, name: unesc(m[1]), box: b ? ['x', 'y', 'w', 'h'].map(function (v) { return F(at(b[0], v)); }) : null } : null;
     }).filter(Boolean);
   }
-  function bgText(t, n) { var x = layerTexts(t)[n]; if (!x || !backgrounds(t).some(function (g) { return g.n === n; })) fail('No background picture ' + n + ' on the map.'); return x; }
-  // a background added: a text of the layer Background pictures (made, not visible, when the map has none: CellDesigner
+  function bgText(t, n) { var x = layerTexts(t)[n]; if (!x || !backgrounds(t).some(function (g) { return g.n === n; })) fail('No background image ' + n + ' on the map.'); return x; }
+  // a background added: a text of the layer Background images (made, not visible, when the map has none: CellDesigner
   // then shows no words of it; a name of its own, so a reader's own layer, Background or any, is never written into or
   // removed), its notes the picture under everything (Z-Index -1, as MINERVA's backgrounds), its box the given one.
   // { text, n }
@@ -1461,7 +1461,7 @@
     if (!/^glyphs\/[^/]+\.png$/.test(name || '')) fail('A picture is named glyphs/<name>.png.');
     var B = box.map(num), item = '<celldesigner:layerSpeciesAlias x="' + B[0] + '" y="' + B[1] + '">\n<celldesigner:layerNotes>\nGlyph: ' + py.escape(name) + '\nZ-Index: -1\n</celldesigner:layerNotes>\n' +
       '<celldesigner:bounds x="' + B[0] + '" y="' + B[1] + '" w="' + B[2] + '" h="' + B[3] + '"/>\n<celldesigner:paint color="ff000000"/>\n<celldesigner:font size="11"/>\n</celldesigner:layerSpeciesAlias>';
-    var L = span(t, '<celldesigner:layer(?=\\s)[^>]*\\sname="' + BG_LAYER + '"'), n = layerTexts(t).length;
+    var L = span(t, '<celldesigner:layer(?=\\s)[^>]*\\sname="' + BG_NAME + '"'), n = layerTexts(t).length;
     if (L) {
       n = layerTexts(t).filter(function (x) { return x.sp[0] < L[1]; }).length;
       var h = t.indexOf('>', L[0]) + 1;
@@ -1488,13 +1488,13 @@
     }
     return t;
   }
-  // a background taken off; the layer Background pictures left with no text goes too, and the list of layers then as the file
+  // a background taken off; the layer Background images left with no text goes too, and the list of layers then as the file
   // writes it empty, so a background added and removed gives the text back
   function backgroundRemove(t, n) {
-    var x = bgText(t, n), L0 = span(t, '<celldesigner:layer(?=\\s)[^>]*\\sname="' + BG_LAYER + '"');
+    var x = bgText(t, n), L0 = span(t, '<celldesigner:layer(?=\\s)[^>]*\\sname="' + BG_NAME + '"');
     t = cut(t, x.sp);
     if (L0 && L0[0] < x.sp[0] && L0[1] > x.sp[1]) {
-      var L = span(t, '<celldesigner:layer(?=\\s)[^>]*\\sname="' + BG_LAYER + '"'), inner = t.slice(t.indexOf('>', L[0]) + 1, L[1] - '</celldesigner:layer>'.length);
+      var L = span(t, '<celldesigner:layer(?=\\s)[^>]*\\sname="' + BG_NAME + '"'), inner = t.slice(t.indexOf('>', L[0]) + 1, L[1] - '</celldesigner:layer>'.length);
       if (/^\s*<celldesigner:listOfTexts>\s*<\/celldesigner:listOfTexts>\s*$/.test(inner)) { var c0 = cut(t, L); t = /<celldesigner:listOfLayers><\/celldesigner:listOfLayers>/.test(c0) ? c0 : drop(t, L, [CD + 'listOfLayers']); }   // a list written open with nothing in it stays so
     }
     return t;

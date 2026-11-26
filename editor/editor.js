@@ -2641,7 +2641,7 @@
     cdPicKeeper = keep;
   }
   function cdPicKeep(f) {
-    if (!cdPicKeeper) return Promise.reject(new Error("pictures cannot be kept on this page"));
+    if (!cdPicKeeper) return Promise.reject(new Error("images cannot be kept on this page"));
     return cdPicKeeper(f).then(function(r) {
       return new Promise(function(res) {
         var fr = new FileReader();
@@ -5601,7 +5601,7 @@
       ["inner", "Inner line", "num", ' min="1" max="19"', "Inner line width, 1 at least"]
     ]);
     propRows([["ss", "Structural state", "text", "", "The species\u2019 structural state, free text; emptied, it is removed"]]);
-    propRows([["pic", "Picture", "pic", "", "MINERVA\u2019s picture, drawn stretched to the box as MINERVA draws it (PNG or SVG)"]]);
+    propRows([["pic", "Image", "pic", "", "MINERVA\u2019s image, drawn stretched to the box as MINERVA draws it (PNG or SVG)"]]);
     field("pic").addEventListener("click", function() {
       var ids = cdPicIds();
       if (ids.length) cdPicChoose(function(f) {
@@ -5633,11 +5633,11 @@
       e.stopPropagation();
       var h = hit(at(e)), i = h && h.n != null && h.p == null ? h.n : -1;
       if (fs.length > 1) {
-        warn("One picture at a time: drop a single PNG or SVG on a compartment or a species.");
+        warn("One image at a time: drop a single PNG or SVG on a compartment or a species.");
         return;
       }
       if (i < 0 || !cdPicAble(i)) {
-        warn("A picture goes on a compartment or a species (a complex\u2019s member takes none). A background picture is added by a right click on empty map space.");
+        warn("A image goes on a compartment or a species (a complex\u2019s member takes none). A background image is added by a right click on empty map space.");
         return;
       }
       cdPicSet([nodes2[i].id], fs[0]);
@@ -5655,7 +5655,7 @@
   var cdBg;
   function cdStill(m0) {
     if (on && V.current === m0 && cdPal()) return true;
-    warn("The map was left while its picture was being kept; nothing was put on.");
+    warn("The map was left while its image was being kept; nothing was put on.");
     return false;
   }
   function cdPicAble(i) {
@@ -5696,7 +5696,7 @@
         return t;
       }, ids);
     }, function(e) {
-      warn("Picture not put on: " + String(e && e.message ? e.message : e).replace(/\.?$/, "."));
+      warn("Image not put on: " + String(e && e.message ? e.message : e).replace(/\.?$/, "."));
     });
   }
   function cdPicDims(src2) {
@@ -5730,7 +5730,7 @@
   function cdPicFit(id) {
     var src2 = cdPicUrl(cdPicOf(id)), m0 = map;
     if (!src2) {
-      warn("The picture is not read yet; try again once it is drawn.");
+      warn("The image is not read yet; try again once it is drawn.");
       return;
     }
     cdPicDims(src2).then(function(d) {
@@ -5746,14 +5746,14 @@
   function cdPicItems(i) {
     var id = nodes2[i].id, has = !!cdPicOf(id);
     if (!cdPicAble(i)) return [];
-    var out = [[has ? "Replace picture\u2026" : "Set picture\u2026", function() {
+    var out = [[has ? "Replace image\u2026" : "Set image\u2026", function() {
       cdPicChoose(function(f) {
         cdPicSet([id], f);
       });
     }]];
-    if (has) out.push(["Fit box to picture", function() {
+    if (has) out.push(["Fit box to image", function() {
       cdPicFit(id);
-    }], ["Remove picture", function() {
+    }], ["Remove image", function() {
       cdPicSet([id], null);
     }]);
     return out;
@@ -5789,13 +5789,13 @@
   }
   function cdBgItems() {
     if (!cdPal()) return null;
-    var bs = cdBgs(), out = [["Add background picture\u2026", function() {
+    var bs = cdBgs(), out = [["Add background image\u2026", function() {
       cdPicChoose(cdBgAdd);
     }]];
     bs.forEach(function(g) {
       var nm = bs.length > 1 ? " (" + g.name.replace(/^glyphs\//, "") + ")" : "", ref = { name: g.name, box: g.box.slice() };
       out.push(
-        ["Replace background picture" + nm + "\u2026", function() {
+        ["Replace background image" + nm + "\u2026", function() {
           cdPicChoose(function(f) {
             cdBgReplace(ref, f);
           });
@@ -5804,10 +5804,10 @@
           cdBg = { ref, box: ref.box.slice() };
           paint();
         }],
-        ["Fit background to picture" + nm, function() {
+        ["Fit background to image" + nm, function() {
           cdBgFit(ref);
         }],
-        ["Remove background picture" + nm, function() {
+        ["Remove background image" + nm, function() {
           cdBg = null;
           cdBgDo(ref, cdMk.backgroundRemove);
         }]
@@ -5831,7 +5831,7 @@
         })).text;
       }, []);
     }, function(e) {
-      warn("Background picture not added: " + String(e && e.message ? e.message : e).replace(/\.?$/, "."));
+      warn("Background image not added: " + String(e && e.message ? e.message : e).replace(/\.?$/, "."));
     });
   }
   function cdBgReplace(ref, f) {
@@ -5843,14 +5843,14 @@
         });
       },
       function(e) {
-        warn("Background picture not replaced: " + String(e && e.message ? e.message : e).replace(/\.?$/, "."));
+        warn("Background image not replaced: " + String(e && e.message ? e.message : e).replace(/\.?$/, "."));
       }
     );
   }
   function cdBgFit(ref) {
     var g = cdBgFind(ref), src2 = g && cdPicUrl(g.name), m0 = map;
     if (!src2) {
-      warn("The picture is not read yet; try again once it is drawn.");
+      warn("The image is not read yet; try again once it is drawn.");
       return;
     }
     cdPicDims(src2).then(function(d) {
@@ -6169,8 +6169,8 @@
     var used = [], glyphs = {}, kept = {};
     maps.forEach(function(m) {
       glyphsNamed(m.text).forEach(function(g) {
-        if (!/\.png$/i.test(g)) throw new Error(g + " is named in " + stem(m.path) + ": MINERVA takes PNG pictures only");
-        if (!/^glyphs\/[^/]+$/.test(g)) throw new Error(g + " is named in " + stem(m.path) + ": only pictures directly in glyphs/ are read here");
+        if (!/\.png$/i.test(g)) throw new Error(g + " is named in " + stem(m.path) + ": MINERVA takes PNG images only");
+        if (!/^glyphs\/[^/]+$/.test(g)) throw new Error(g + " is named in " + stem(m.path) + ": only images directly in glyphs/ are read here");
         if (!files[g]) throw new Error(g + " is named in " + stem(m.path) + " but missing from the zip");
         if (used.indexOf(g) < 0) used.push(g);
       });
@@ -6508,7 +6508,7 @@
       paths[key] = m.title;
       picturesOn(m.text).pics.forEach(function(p) {
         var g = p.glyph;
-        if (!/^glyphs\/[^/]+\.png$/i.test(g)) throw new Error(g + " is named in " + m.title + ": MINERVA reads pictures as glyphs/<name>.png");
+        if (!/^glyphs\/[^/]+\.png$/i.test(g)) throw new Error(g + " is named in " + m.title + ": MINERVA reads images as glyphs/<name>.png");
         var n = need[g];
         if (!n) {
           n = need[g] = { name: g, box: null, mixed: false, maps: [] };
@@ -8348,8 +8348,8 @@
     return f.arrayBuffer().then(function(a) {
       var d = new Uint8Array(a), png = d.length > 8 && d[0] === 137 && d[1] === 80 && d[2] === 78 && d[3] === 71;
       var svg = !png && /<svg[\s>]/i.test(new TextDecoder().decode(d.subarray(0, 65536)));
-      if (!png && !svg) throw new Error(f.name + " is not a picture MINERVA can take here: PNG or SVG only");
-      var stem2 = f.name.replace(/\.[^.]*$/, "").replace(/[^A-Za-z0-9._-]+/g, "-").replace(/^[-.]+|-+$/g, "") || "picture", ext = png ? ".png" : ".svg", other = png ? ".svg" : ".png";
+      if (!png && !svg) throw new Error(f.name + " is not a image MINERVA can take here: PNG or SVG only");
+      var stem2 = f.name.replace(/\.[^.]*$/, "").replace(/[^A-Za-z0-9._-]+/g, "-").replace(/^[-.]+|-+$/g, "") || "image", ext = png ? ".png" : ".svg", other = png ? ".svg" : ".png";
       var gh2 = repo() && token(), look = gh2 ? siteGlyphs() : localGlyphs();
       return bytesSha(d).then(function(sha) {
         var free = function(k) {
@@ -8373,11 +8373,11 @@
       var at2 = "/contents/maps/" + file.split("/").map(encodeURIComponent).join("/");
       return api(at2 + "?ref=main").then(function(r) {
         if (r.ok) return;
-        return api(at2, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message: "Picture: " + file, content: bytes64(d), branch: "main" }) }).then(ghJson);
+        return api(at2, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message: "Image: " + file, content: bytes64(d), branch: "main" }) }).then(ghJson);
       }).then(function() {
         ghPics = null;
       }, function(e) {
-        throw new Error("the picture was not kept on GitHub: " + (e && e.message ? e.message : e));
+        throw new Error("the image was not kept on GitHub: " + (e && e.message ? e.message : e));
       });
     }
     var blob = new Blob([d]);
@@ -8392,7 +8392,7 @@
         return st.put(r, "minerva:mz-pictures");
       }, "folder");
     }).catch(function(e) {
-      throw new Error("the picture was not kept in this browser: " + (e && e.message ? e.message : e));
+      throw new Error("the image was not kept in this browser: " + (e && e.message ? e.message : e));
     });
     return inBrowser.then(function() {
       return picToFolder(file, d);
@@ -8406,7 +8406,7 @@
         if (perm === "granted") return putIn(f.dir, file, d);
       });
     }).catch(function(e) {
-      warn("The picture " + file + " was not kept in the folder: " + (e && e.message ? e.message : e));
+      warn("The image " + file + " was not kept in the folder: " + (e && e.message ? e.message : e));
     });
   }
   function putIn(dir, path, data) {
@@ -8486,7 +8486,7 @@
         });
       }).catch(function(e) {
         followed[n] = 0;
-        warn("The picture " + n + " did not follow its map: " + (e && e.message ? e.message : e));
+        warn("The image " + n + " did not follow its map: " + (e && e.message ? e.message : e));
       });
     }
     return b;
@@ -8572,7 +8572,7 @@
     return V.draftDo("readwrite", function(st) {
       return st.put(rec, "minerva:" + rec.id);
     }, "folder").catch(function(e) {
-      warn("The pictures of " + p.zip + " were not kept in this browser: " + (e && e.message ? e.message : e));
+      warn("The images of " + p.zip + " were not kept in this browser: " + (e && e.message ? e.message : e));
     }).then(function() {
       return folderProject(p, maps);
     });
@@ -8595,7 +8595,7 @@
         }, Promise.resolve());
       });
     }).catch(function(e) {
-      warn("The pictures of " + p.zip + " were not kept in the folder: " + (e && e.message ? e.message : e));
+      warn("The images of " + p.zip + " were not kept in the folder: " + (e && e.message ? e.message : e));
     });
   }
   function openZipFolder(file) {
@@ -8890,13 +8890,13 @@
           });
         }, Promise.resolve()).then(function() {
           Object.keys(pics).forEach(function(x) {
-            if (pics[x].length > 5 * 1048576) said.push(x + " is " + (pics[x].length / 1048576).toFixed(1) + " MB: MINERVA takes it in a zip, but its own editor refuses a picture over 5 MB.");
+            if (pics[x].length > 5 * 1048576) said.push(x + " is " + (pics[x].length / 1048576).toFixed(1) + " MB: MINERVA takes it in a zip, but its own editor refuses a image over 5 MB.");
           });
           var e = packEntries(maps.map(function(x) {
             return { path: x.path, text: x.text };
           }), pics, keptBytes, missing);
-          if (fitted.length) said.push(fitted.length + " picture" + (fitted.length > 1 ? "s" : "") + " made in the proportions of " + (fitted.length > 1 ? "their boxes" : "its box") + ", as here (MINERVA keeps a picture's own): " + fitted.join(", ") + ".");
-          if (e.z.length) said.push("Z-Index of the compartments with pictures set from what holds what in: " + e.z.join(", ") + ".");
+          if (fitted.length) said.push(fitted.length + " image" + (fitted.length > 1 ? "s" : "") + " made in the proportions of " + (fitted.length > 1 ? "their boxes" : "its box") + ", as here (MINERVA keeps a image's own): " + fitted.join(", ") + ".");
+          if (e.z.length) said.push("Z-Index of the compartments with images set from what holds what in: " + e.z.join(", ") + ".");
           if (e.gone.length) said.push("Links to maps no longer in the group left out: " + e.gone.join(", ") + ".");
           return zip(e.entries);
         });
@@ -14801,8 +14801,8 @@
         ["Right click on an added reactant or product", "Make main reactant, Make main product", "CellDesigner"],
         ["Add reactant or Add product, onto a reaction\u2019s line", "joins a line to a reaction already there", "CellDesigner"],
         ["A logic gate sign: click its inputs, then the reaction", "places the gate where CellDesigner would", "CellDesigner"],
-        ["Picture in Properties, or a PNG or SVG dropped on a compartment or species", "MINERVA\u2019s picture, drawn in the box as MINERVA draws it; Fit box to picture on the right click", "CellDesigner"],
-        ["Right click on empty map space, Add background picture", "a picture under the whole map, as MINERVA draws it; moved and resized from the same menu", "CellDesigner"],
+        ["Image in Properties, or a PNG or SVG dropped on a compartment or species", "MINERVA\u2019s image, drawn in the box as MINERVA draws it; Fit box to image on the right click", "CellDesigner"],
+        ["Right click on empty map space, Add background image", "a image under the whole map, as MINERVA draws it; moved and resized from the same menu", "CellDesigner"],
         ["Set as default, in Properties", "the next ones of that kind made this size and look", "all"],
         ["Colours, Original", "puts back the map\u2019s own colours after another choice", "all"]
       ]]

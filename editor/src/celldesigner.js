@@ -62,7 +62,7 @@ import { cdBgItems, cdCardDown, cdCheck, cdClsOf, cdFeat, cdFront, cdHow, cdLine
     // a picture put on here (cdcreate.js: Properties, the menu, a drop): kept by own.js where the maps are kept, then in the
     // page's cache under the name its note gives, so the change drawn next shows it. { note, file, type, bytes }
     function cdPicKeep(f) {
-      if (!cdPicKeeper) return Promise.reject(new Error('pictures cannot be kept on this page'));
+      if (!cdPicKeeper) return Promise.reject(new Error('images cannot be kept on this page'));
       return cdPicKeeper(f).then(function (r) {
         return new Promise(function (res) { var fr = new FileReader(); fr.onload = function () { res(fr.result); }; fr.onerror = function () { res(null); }; fr.readAsDataURL(new Blob([r.bytes], { type: r.type })); })
           .then(function (u) { if (u) cdPics[r.note] = u; return r; });

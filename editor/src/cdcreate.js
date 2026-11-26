@@ -1529,7 +1529,7 @@ import { field, ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues,
     // the compartment's rows; its text, empty for none; residues stay on the right-click (many, each its own list)
     propRows([['ss', 'Structural state', 'text', '', 'The species\u2019 structural state, free text; emptied, it is removed']]);
     // MINERVA's picture (notes/minerva-pack-plan.md, step 3), last: Choose and Remove on the node Properties is for
-    propRows([['pic', 'Picture', 'pic', '', 'MINERVA’s picture, drawn stretched to the box as MINERVA draws it (PNG or SVG)']]);
+    propRows([['pic', 'Image', 'pic', '', 'MINERVA’s image, drawn stretched to the box as MINERVA draws it (PNG or SVG)']]);
     field('pic').addEventListener('click', function () { var ids = cdPicIds(); if (ids.length) cdPicChoose(function (f) { cdPicSet(ids, f); }); });
     field('pic').parentNode.querySelector('.m2-ed-ppicoff').addEventListener('click', function () { var ids = cdPicIds(); if (ids.length) cdPicSet(ids, null); });
     cdPicker = document.createElement('input');
@@ -1544,8 +1544,8 @@ import { field, ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues,
       if (!fs.every(function (f) { return /\.(png|svg)$/i.test(f.name) || /^image\/(png|svg\+xml)$/.test(f.type); })) return;
       e.preventDefault(); e.stopPropagation();
       var h = hit(at(e)), i = h && h.n != null && h.p == null ? h.n : -1;
-      if (fs.length > 1) { warn('One picture at a time: drop a single PNG or SVG on a compartment or a species.'); return; }
-      if (i < 0 || !cdPicAble(i)) { warn('A picture goes on a compartment or a species (a complex’s member takes none). A background picture is added by a right click on empty map space.'); return; }
+      if (fs.length > 1) { warn('One image at a time: drop a single PNG or SVG on a compartment or a species.'); return; }
+      if (i < 0 || !cdPicAble(i)) { warn('A image goes on a compartment or a species (a complex’s member takes none). A background image is added by a right click on empty map space.'); return; }
       cdPicSet([nodes2[i].id], fs[0]);
     }, true);
     // a background being moved or resized (Move and resize background): its handles until Esc or a press elsewhere
@@ -1566,7 +1566,7 @@ import { field, ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues,
     var cdPicker, cdPickFor, cdBg;
     // after a picture's keep (seconds with GitHub): the same map still in edit mode, else nothing written and said so (the
     // picture stays kept, unnamed by any map)
-    function cdStill(m0) { if (on && V.current === m0 && cdPal()) return true; warn('The map was left while its picture was being kept; nothing was put on.'); return false; }
+    function cdStill(m0) { if (on && V.current === m0 && cdPal()) return true; warn('The map was left while its image was being kept; nothing was put on.'); return false; }
     function cdPicAble(i) { var n = nodes2[i]; return !!n && (!!n.comp || cdRole(i) === 'epn'); }   // a compartment, a species or complex not inside a complex
     function cdPicOf(id) { try { return cdMk.pictureOf(shared.cd.now, id); } catch (e) { return null; } }
     function cdPicIds() { return shared.selN.filter(cdPicAble).map(function (i) { return nodes2[i].id; }); }
@@ -1577,7 +1577,7 @@ import { field, ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues,
       return cdPicKeep(f).then(function (r) {
         if (!cdStill(m0)) return;
         cdApply(function (t) { ids.forEach(function (id) { t = cdMk.picture(t, id, r.note); }); return t; }, ids);
-      }, function (e) { warn('Picture not put on: ' + String(e && e.message ? e.message : e).replace(/\.?$/, '.')); });
+      }, function (e) { warn('Image not put on: ' + String(e && e.message ? e.message : e).replace(/\.?$/, '.')); });
     }
     // a picture's width and height: an SVG's from its own width and height, else its viewBox; a PNG's as the browser reads it
     function cdPicDims(src) {
@@ -1595,7 +1595,7 @@ import { field, ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues,
     function cdFitBox(b, d) { var h = b[2] * d[1] / d[0]; return [b[0], b[1] + b[3] / 2 - h / 2, b[2], h]; }   // the picture's proportions, its centre and width kept
     function cdPicFit(id) {
       var src = cdPicUrl(cdPicOf(id)), m0 = map;
-      if (!src) { warn('The picture is not read yet; try again once it is drawn.'); return; }
+      if (!src) { warn('The image is not read yet; try again once it is drawn.'); return; }
       cdPicDims(src).then(function (d) {
         var i = nodes2.findIndex(function (n) { return n.id === id; });
         if (!d || i < 0 || !on || V.current !== m0) return;
@@ -1607,8 +1607,8 @@ import { field, ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues,
     function cdPicItems(i) {   // the node's picture items (cdItems), last of its own
       var id = nodes2[i].id, has = !!cdPicOf(id);
       if (!cdPicAble(i)) return [];
-      var out = [[has ? 'Replace picture…' : 'Set picture…', function () { cdPicChoose(function (f) { cdPicSet([id], f); }); }]];
-      if (has) out.push(['Fit box to picture', function () { cdPicFit(id); }], ['Remove picture', function () { cdPicSet([id], null); }]);
+      var out = [[has ? 'Replace image…' : 'Set image…', function () { cdPicChoose(function (f) { cdPicSet([id], f); }); }]];
+      if (has) out.push(['Fit box to image', function () { cdPicFit(id); }], ['Remove image', function () { cdPicSet([id], null); }]);
       return out;
     }
     // a background is known by its picture and its box (its number among the layer texts shifts as others are added or
@@ -1624,13 +1624,13 @@ import { field, ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues,
     // the backgrounds' items on empty map space (celldesigner.js F.mapItems, core.js m2EditMapItems)
     function cdBgItems() {
       if (!cdPal()) return null;
-      var bs = cdBgs(), out = [['Add background picture…', function () { cdPicChoose(cdBgAdd); }]];
+      var bs = cdBgs(), out = [['Add background image…', function () { cdPicChoose(cdBgAdd); }]];
       bs.forEach(function (g) {
         var nm = bs.length > 1 ? ' (' + g.name.replace(/^glyphs\//, '') + ')' : '', ref = { name: g.name, box: g.box.slice() };
-        out.push(['Replace background picture' + nm + '…', function () { cdPicChoose(function (f) { cdBgReplace(ref, f); }); }],
+        out.push(['Replace background image' + nm + '…', function () { cdPicChoose(function (f) { cdBgReplace(ref, f); }); }],
           ['Move and resize background' + nm, function () { cdBg = { ref: ref, box: ref.box.slice() }; paint(); }],
-          ['Fit background to picture' + nm, function () { cdBgFit(ref); }],
-          ['Remove background picture' + nm, function () { cdBg = null; cdBgDo(ref, cdMk.backgroundRemove); }]);
+          ['Fit background to image' + nm, function () { cdBgFit(ref); }],
+          ['Remove background image' + nm, function () { cdBg = null; cdBgDo(ref, cdMk.backgroundRemove); }]);
       });
       return out;
     }
@@ -1640,16 +1640,16 @@ import { field, ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues,
       return cdPicKeep(f).then(function (r) {
         if (!cdStill(m0)) return;
         cdApply(function (t) { return cdMk.background(t, r.note, box.map(function (v) { return Math.round(v * 100) / 100; })).text; }, []);
-      }, function (e) { warn('Background picture not added: ' + String(e && e.message ? e.message : e).replace(/\.?$/, '.')); });
+      }, function (e) { warn('Background image not added: ' + String(e && e.message ? e.message : e).replace(/\.?$/, '.')); });
     }
     function cdBgReplace(ref, f) {
       var m0 = map;
       return cdPicKeep(f).then(function (r) { if (cdStill(m0)) cdBgDo(ref, function (t, n) { return cdMk.backgroundSet(t, n, { name: r.note }); }); },
-        function (e) { warn('Background picture not replaced: ' + String(e && e.message ? e.message : e).replace(/\.?$/, '.')); });
+        function (e) { warn('Background image not replaced: ' + String(e && e.message ? e.message : e).replace(/\.?$/, '.')); });
     }
     function cdBgFit(ref) {
       var g = cdBgFind(ref), src = g && cdPicUrl(g.name), m0 = map;
-      if (!src) { warn('The picture is not read yet; try again once it is drawn.'); return; }
+      if (!src) { warn('The image is not read yet; try again once it is drawn.'); return; }
       cdPicDims(src).then(function (d) {
         var g2 = cdBgFind(ref);
         if (!d || !g2 || !on || V.current !== m0) return;
