@@ -6,15 +6,19 @@
 //    selection, the second clears the selection.
 // 3. CellDesigner (Glycolysis): a species and a line selected, Delete from the right-click menu over the line: both gone.
 // 4. Activity Flow (CaMKII): an influence's arrow end dragged onto another activity lands there.
-//   node tests/delete-escape.js [base address]
-var { chromium } = require('playwright');
-var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
+//   node tests/delete-escape.js [base address] --data=<clone of the data repository>   (the Activity Flow map is its test set's CaMKII, added as a person adds a file)
+var { chromium } = require('playwright'), path = require('path'), OM = require('./lib/open-map.js');
+var base = process.argv[2] && process.argv[2][0] !== '-' ? process.argv[2] : 'https://viewer-source.github.io/styles/';
+var data = (process.argv.filter(function (a) { return /^--data=/.test(a); })[0] || '').slice(7) ;
+if (!data) { console.log('give --data=<clone of the site\'s data repository> (its test set)'); process.exit(2); }
+var CAMKII_AF = path.join(data, 'test-maps/test-set/test-maps/sbgn-ml/af/sbgn-website/downloads/figure_to_sbgn/camkii_Nov2014_AF.sbgn');
 (async function () {
   var b = await chromium.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], bad = 0;
   page.on('pageerror', function (e) { errs.push(e.message); });
   var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more ? '  ' + more : '')); };
-  var start = async function (h, sign) {
-    await page.goto(base + '#' + h, { waitUntil: 'load' }); await page.waitForSelector('.m2-ri[data-win="edit"]', { timeout: 30000 });
+  var start = async function (h, sign) {   // h: a site map's address, or { file } from the test set added by Add map from file
+    if (h.file) await OM.byFile(page, base, h.file); else await OM.byAddress(page, base, h);
+    await page.waitForSelector('.m2-ri[data-win="edit"]', { timeout: 30000 });
     await page.waitForTimeout(2500);   // edit mode kept over a reload comes back by itself: the tab only when it did not
     if (!(await page.evaluate(function () { return document.querySelector('.m2').classList.contains('m2-editing'); }))) await page.click('.m2-ri[data-win="edit"]');
     await page.waitForSelector('#m2-editwin button[data-make="' + sign + '"]', { state: 'visible', timeout: 30000 }); await page.waitForTimeout(1500);
@@ -76,7 +80,7 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
   ok('and the line’s reaction', r1 < r0, r0 + ' -> ' + r1);
 
   // 4, Activity Flow
-  await start('external-af-sbgn-website-downloads-figure-to-sbgn-camkii-nov2014-af-sbgn', 'activity');
+  await start({ file: CAMKII_AF }, 'activity');
   var arcs = await page.evaluate(function () { var d = new DOMParser().parseFromString(window.m2EditNow().text, 'application/xml'), g = {};
     Array.from(d.getElementsByTagName('glyph')).forEach(function (x) { g[x.getAttribute('id')] = x.getAttribute('class'); });
     return Array.from(d.getElementsByTagName('arc')).filter(function (a) { return a.getAttribute('class') === 'positive influence' && g[a.getAttribute('target')] === 'biological activity'; })

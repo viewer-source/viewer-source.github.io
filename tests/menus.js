@@ -7,11 +7,15 @@
 //   3. The window: opened from Settings, a menu chosen, Delete moved to the top by its row menu; the other menus holding
 //      Delete show it on top too (the stack of cards), Here only takes it back from them; a line added; the map's menu
 //      then in that order; Cmd or Ctrl with Z undoes the line; Reset all menus leaves every menu as built.
-//   node tests/menus.js [base address] [--local]
+//   node tests/menus.js [base address] [--local] --data=<clone of the data repository>
 // --local: the editor and the viewer of the working tree routed into the live page (run styles/update.sh first)
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path'), cp = require('child_process');
 var base = process.argv[2] && process.argv[2][0] !== '-' ? process.argv[2] : 'https://viewer-source.github.io/styles/';
 var local = process.argv.indexOf('--local') > 0, here = path.join(__dirname, '..');
+var OM = require('./lib/open-map.js'), data = (process.argv.filter(function (a) { return /^--data=/.test(a); })[0] || '').slice(7) ;
+if (!data) { console.log('give --data=<clone of the site\'s data repository> (its test set)'); process.exit(2); }
+// the maps right-clicked: two site maps by address and an Activity Flow file of the test set added as a person adds one
+var MAPS = [{ id: 'srebp-celldesigner' }, { id: 'glycogen-muscle-sbgn' }, { file: path.join(data, 'test-maps/test-set/test-maps/sbgn-ml/af/libsbgn/test-files/AF/AF_Reference_Card.sbgn') }];
 function editorNow() {
   return require('./editor-now.js')(here);
 }
@@ -39,19 +43,19 @@ function viewerHunks() {
         r.fulfill({ response: res, body: t, headers: Object.assign({}, res.headers(), { 'content-type': 'text/html; charset=utf-8' }) });
       });
     }
-    await page.goto(base + '#' + hash, { waitUntil: 'load' });
+    page.mapShown = hash.file ? await OM.byFile(page, base, hash.file) : await OM.byAddress(page, base, hash.id || hash);
     await page.waitForSelector('.m2-ri[data-win="edit"]', { state: 'attached', timeout: 30000 }); await page.waitForTimeout(2500);
     if (edit) { await page.click('.m2-ri[data-win="edit"]'); await page.waitForTimeout(4000); }
     return page;
   }
   var menuAt = async function (page, x, y, opts) {
     await page.keyboard.press('Escape'); await page.mouse.click(x, y, Object.assign({ button: 'right' }, opts || {})); await page.waitForTimeout(150);
-    return page.evaluate(function () {
+    return page.evaluate(function (cd) {
       var m = document.querySelector('.m2-cx:not(.m2-me-card)'); if (!m) return null;
       var rows = Array.prototype.map.call(m.children, function (c) { return c.classList.contains('m2-sep') ? '|' : c.classList.contains('m2-cx-head') ? null : (c.querySelector('button') || c).childNodes[0].nodeValue.trim(); }).filter(function (x) { return x !== null; });
       var ed = document.querySelector('.m2.m2-editing, .m2-editing') ? true : false;
-      return { rows: rows, id: window.m2Menus.which(m, ed, /celldesigner/.test(location.hash)) };
-    });
+      return { rows: rows, id: window.m2Menus.which(m, ed, cd) };
+    }, !!page.mapShown && page.mapShown.format === 'CellDesigner');   // the format of the map shown, never of the address
   };
   var points = function (page) { return page.evaluate(function () {
     var out = [], img = document.getElementById('m2-img'); if (!img) return out;
@@ -62,8 +66,8 @@ function viewerHunks() {
   }); };
   var seen = {};
   // 1, 2: the menus of three maps in edit mode
-  for (var hash of ['srebp-celldesigner', 'glycogen-muscle-sbgn', 'external-af-libsbgn-test-files-af-af-reference-card-sbgn']) {
-    var page = await open(hash, true), pts = await points(page);
+  for (var spec of MAPS) {
+    var page = await open(spec, true), pts = await points(page), hash = page.mapShown.name + page.mapShown.ext;
     pts.push([1590, 990]);
     for (var p of pts) { var m = await menuAt(page, p[0], p[1]); if (m && m.rows.length) { var k = m.id + ' :: ' + m.rows.join(' / '); if (!seen[k]) seen[k] = { id: m.id, rows: m.rows, from: hash }; } }
     await page.close();
