@@ -5,17 +5,19 @@
 // member 8 under it in the file, to that member's unit of information (its name not counted 10 below its new bottom); a named complex's label box lies inside it. Which complexes and members:
 // the file the editor would save (m2EditNow); where they are drawn: each one's drawing on the map (getBBox, map units, its
 // scale checked against the file). Undo puts the file back. Nothing is saved (no token). No script error.
-//   node tests/repack-bottom.js [base address]
+//   node tests/repack-bottom.js [base address] --data=<clone of the data repository>   (Testing Glycolysis from its test set, added as a person adds a file)
 var engine = require('playwright')[process.env.BROWSER || 'chromium'];   // BROWSER=webkit or firefox: the same test in another engine
 var NOISE = require('./lib/noise.js');   // what a browser reports that is no fault of the page
-var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
+var base = process.argv.slice(2).filter(function (a) { return a.slice(0, 2) !== '--'; })[0] || 'https://viewer-source.github.io/styles/';
+var OM = require('./lib/open-map.js');   // a map by its address, checked; a test-set map added from its file
 (async function () {
   var b = await engine.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], bad = 0;
   page.on('pageerror', function (e) { if (!NOISE.test(e.message)) errs.push(e.message); });
   var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more && !v ? '  ' + more : '')); };
   var now = function () { return page.evaluate(function () { return window.m2EditNow().text; }); };
   var open = async function (h) {
-    await page.goto('about:blank'); await page.goto(base + '#' + h, { waitUntil: 'load' }); await page.waitForSelector('.m2-ri[data-win="edit"]', { timeout: 60000 });
+    var id = await OM.resolve(page, base, h);
+    await page.goto('about:blank'); await OM.byAddress(page, base, id); await page.waitForSelector('.m2-ri[data-win="edit"]', { timeout: 60000 });
     await page.waitForTimeout(2500); if (!(await page.$('#m2-editwin:visible'))) await page.click('.m2-ri[data-win="edit"]');
     await page.waitForSelector('#m2-editwin', { state: 'visible', timeout: 30000 }); await page.waitForTimeout(4000);
   };

@@ -9,10 +9,12 @@
 // species class) and its own Colours; Style and Colours kept per map (another map's choice not shown). Each map opened
 // as a page of its own (about:blank first: a hash change alone keeps the Edit window open). Nothing is saved (no token).
 // No script error.
-//   node tests/palette-style.js [base address] [viewer folder: its editor served in place of the page's]
+//   node tests/palette-style.js [base address] [viewer folder: its editor served in place of the page's] --data=<clone of the data repository>   (Testing Glycolysis from its test set, added as a person adds a file)
 var engine = require('playwright')[process.env.BROWSER || 'chromium'], fs = require('fs'), path = require('path');   // BROWSER=webkit or firefox: the same test in another engine
 var NOISE = require('./lib/noise.js');   // what a browser reports that is no fault of the page
-var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local = process.argv[3];
+var args = process.argv.slice(2).filter(function (a) { return a.slice(0, 2) !== '--'; });
+var base = args[0] || 'https://viewer-source.github.io/styles/', local = args[1];
+var OM = require('./lib/open-map.js');   // a map by its address, checked; a test-set map added from its file
 (async function () {
   var b = await engine.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], bad = 0;
   if (local) {   // the editor as Jekyll builds it (editor.js with its sources put in), from a working tree
@@ -25,7 +27,8 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local =
   var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more ? '  ' + more : '')); };
   var ids = function () { return page.$$eval('#m2-img [data-n]', function (l) { return l.map(function (x) { return x.getAttribute('data-n'); }); }); };
   var start = async function (h, sign) {
-    await page.goto('about:blank'); await page.goto(base + '#' + h, { waitUntil: 'load' }); await page.waitForSelector('.m2-ri[data-win="edit"]', { timeout: 30000 });
+    var id = await OM.resolve(page, base, h);
+    await page.goto('about:blank'); await OM.byAddress(page, base, id); await page.waitForSelector('.m2-ri[data-win="edit"]', { timeout: 30000 });
     await page.waitForTimeout(1500);
     if (!(await page.$('#m2-editwin button[data-make="' + sign + '"]:visible'))) await page.click('.m2-ri[data-win="edit"]');
     await page.waitForSelector('#m2-editwin button[data-make="' + sign + '"]', { state: 'visible', timeout: 30000 }); await page.waitForTimeout(1500);

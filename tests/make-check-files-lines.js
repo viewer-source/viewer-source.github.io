@@ -3,9 +3,11 @@
 //    a gene onto its reaction, an inhibition from a third protein onto the reaction.
 // 2. SBGN-ML (Testing Glycolysis): two macromolecules joined from the handle (a process made between them, with its
 //    consumption and production), an inhibition from a third macromolecule onto the process.
-//   node tests/make-check-files-lines.js <out folder> [base address]
+//   node tests/make-check-files-lines.js <out folder> [base address] --data=<clone of the data repository>   (Testing Glycolysis from its test set, added as a person adds a file)
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path');
-var out = process.argv[2], base = process.argv[3] || 'https://viewer-source.github.io/styles/';
+var args = process.argv.slice(2).filter(function (a) { return a.slice(0, 2) !== '--'; });
+var out = args[0], base = args[1] || 'https://viewer-source.github.io/styles/';
+var OM = require('./lib/open-map.js');   // a map by its address, checked; a test-set map added from its file
 (async function () {
   var b = await chromium.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [];
   page.on('pageerror', function (e) { errs.push(e.message); });
@@ -13,7 +15,7 @@ var out = process.argv[2], base = process.argv[3] || 'https://viewer-source.gith
   var es = function () { return page.$$eval('#m2-img [data-e]', function (l) { return Array.from(new Set(l.map(function (x) { return x.getAttribute('data-e'); }))); }); };
   var at = function (id) { return page.$eval('#m2-img [data-n="' + id + '"]', function (g) { var r = g.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }); };
   var start = async function (h, sign) {
-    await page.goto(base + '#' + h, { waitUntil: 'load' }); await page.waitForSelector('.m2-ri[data-win="edit"]', { timeout: 30000 });
+    await OM.open(page, base, h); await page.waitForSelector('.m2-ri[data-win="edit"]', { timeout: 30000 });
     if (!(await page.$('#m2-editwin button[data-make="' + sign + '"]:visible'))) await page.click('.m2-ri[data-win="edit"]');
     await page.waitForSelector('#m2-editwin button[data-make="' + sign + '"]', { state: 'visible', timeout: 30000 }); await page.waitForTimeout(1500);
   };

@@ -6,9 +6,10 @@
 //   2. Cmd+Z takes the protein back out of the file, and the complex stays;
 //   3. on a GraphML map the palette is not shown, so nothing is placed (no join asked).
 // Nothing is saved (no token). No script error.
-//   node tests/join-live.js [base address] [--local]   (--local: the working tree's editor and renderers routed in)
+//   node tests/join-live.js [base address] [--local] --data=<clone of the data repository>   (--local: the working tree's editor and renderers routed in; Testing Glycolysis from its test set, added as a person adds a file)
 var path = require('path'), fs = require('fs'), { chromium } = require('playwright'), editorNow = require('./editor-now.js'), here = path.join(__dirname, '..');
-var args = process.argv.slice(2), local = args.indexOf('--local') >= 0; args = args.filter(function (a) { return a !== '--local'; });
+var args = process.argv.slice(2), local = args.indexOf('--local') >= 0; args = args.filter(function (a) { return a.slice(0, 2) !== '--'; });
+var OM = require('./lib/open-map.js');   // a map by its address, checked; a test-set map added from its file
 var base = args[0] || 'https://viewer-source.github.io/styles/';
 var MAPS = [
   { name: 'SBGN-ML', hash: 'testing-glycolysis-sbgn', complex: 'complex', protein: 'macromolecule' },
@@ -47,7 +48,8 @@ var MAPS = [
   };
   var sign = function (k) { return page.click('#m2-editwin button[data-make="' + k + '"]'); };
   var open = async function (hash, sel) {
-    await page.goto('about:blank'); await page.goto(base + '#' + hash, { waitUntil: 'load' });
+    var id = await OM.resolve(page, base, hash);
+    await page.goto('about:blank'); await OM.byAddress(page, base, id);
     await page.waitForSelector('.m2-ri[data-win="edit"]', { timeout: 60000 });
     if (!(await page.$('#m2-editwin:visible'))) await page.click('.m2-ri[data-win="edit"]');
     await page.waitForFunction(function () { return !!window.m2EditNow(); }, null, { timeout: 60000 });
