@@ -5,9 +5,9 @@
 // 3. Edit mode: an area over the whole map (nodes and bend points), then the Delete key: the glyphs go, as by the menu.
 // 4. Edit mode: the right-click menu's Delete shows its key; the status line says nothing after a move.
 // 5. Gestures and keys: + and - zoom in and out; S, Esc and Delete listed.
-//   node tests/keys-consistency.js [base address]
-var { chromium } = require('playwright');
-var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
+//   node tests/keys-consistency.js [base address] --data=<clone of the data repository>
+var { chromium } = require('playwright'), OM = require('./lib/open-map.js');
+var base = process.argv.slice(2).filter(function (a) { return a.slice(0, 2) !== '--'; })[0] || 'https://viewer-source.github.io/styles/';
 (async function () {
   var b = await chromium.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], bad = 0;
   page.on('pageerror', function (e) { errs.push(e.message); });
@@ -24,13 +24,14 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
   var shiftDrag = async function (x1, y1, x2, y2) { await page.keyboard.down('Shift'); await page.mouse.move(x1, y1); await page.mouse.down(); await page.mouse.move(x2, y2, { steps: 12 }); await page.mouse.up(); await page.keyboard.up('Shift'); await page.waitForTimeout(400); };
   var glyphs = function () { return page.evaluate(function () { var n = window.m2EditNow && window.m2EditNow(); return n ? new DOMParser().parseFromString(n.text, 'application/xml').getElementsByTagName('glyph').length : -1; }); };
 
-  await page.goto(base + '#glycolysis-graphml', { waitUntil: 'load' });
+  var GLY = await OM.resolve(page, base, 'testing-glycolysis-sbgn');   // the SBGN-ML map, from the test set
+  await OM.byAddress(page, base, 'glycolysis-graphml');
   await page.waitForSelector('.m2-ri[data-win="edit"]', { state: 'attached', timeout: 30000 }); await page.waitForTimeout(3000);
   await view();
 
   // 1. zoom keys after a pick in the list
   await list();
-  await page.click('#m2-list .m2-map[data-id="testing-glycolysis-sbgn"]'); await page.waitForTimeout(2500);
+  await page.click('#m2-list .m2-map[data-id="' + GLY + '"]'); await page.waitForTimeout(2500);
   var z0 = await tf();
   await page.keyboard.press('+'); await page.waitForTimeout(400);
   var z1 = await tf();
@@ -56,12 +57,13 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
   await page.keyboard.press(MOD + '+Delete'); await page.waitForTimeout(1500);
   ok('2. after Esc, ' + MOD + '+Delete puts it in Deleted', (await ids()).indexOf(copy) < 0, await hash());
 
-  // 3 and 4. edit mode on the site's SBGN-ML map (its edits kept in this browser only, cleared at the end)
-  await page.click('#m2-list .m2-map[data-id="testing-glycolysis-sbgn"]'); await page.waitForTimeout(2500);
+  // 3 and 4. edit mode on the test set's SBGN-ML map (its edits kept in this browser only, cleared at the end)
+  await page.click('#m2-list .m2-map[data-id="' + GLY + '"]'); await page.waitForTimeout(2500);
   if (!(await editing())) { await page.keyboard.press('e'); await page.waitForTimeout(2500); }
   await page.waitForSelector('#m2-editwin button[data-make="macromolecule"]', { state: 'visible', timeout: 30000 }); await page.waitForTimeout(1500);
   var n0 = await glyphs();
-  var node = await page.$eval('#m2-img [data-n]', function (g) { var r = g.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; });
+  // a node whose centre is on the map, not under a panel (a map added from a file opens at its own scale, not fitted)
+  var node = await page.$$eval('#m2-img [data-n]', function (l) { for (var g of l) { var r = g.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2; if ((document.elementFromPoint(x, y) || {}).id === 'm2-view') return [x, y]; } var r0 = l[0].getBoundingClientRect(); return [r0.left + r0.width / 2, r0.top + r0.height / 2]; });
   await page.mouse.click(node[0], node[1], { button: 'right' }); await page.waitForTimeout(400);
   var key = await page.$eval('.m2-cx button:text-is("Delete") .m2-cx-key', function (k) { return k.textContent; }).catch(function () { return ''; });
   if (!key) key = await page.evaluate(function () { var b = Array.from(document.querySelectorAll('.m2-cx button')).filter(function (x) { return /^Delete/.test(x.textContent); })[0]; var k = b && b.querySelector('.m2-cx-key'); return k ? k.textContent : ''; });

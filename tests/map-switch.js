@@ -5,9 +5,9 @@
 // fields those of the second map alone. The page's fields are left as they were. Full editing, no token (the moves kept
 // as drafts in this browser). A CellDesigner document kept by the editor is never the first map's once the second is
 // shown. Read through window.m2EditState, which only reads.
-//   node tests/map-switch.js [base address] [--local]   (--local: the working tree's editor and renderers routed in)
-var path = require('path'), fs = require('fs'), { chromium } = require('playwright'), editorNow = require('./editor-now.js');
-var args = process.argv.slice(2), local = args.indexOf('--local') >= 0; args = args.filter(function (a) { return a !== '--local'; });
+//   node tests/map-switch.js [base address] [--local] --data=<clone of the data repository>   (--local: the working tree's editor and renderers routed in)
+var path = require('path'), fs = require('fs'), { chromium } = require('playwright'), editorNow = require('./editor-now.js'), OM = require('./lib/open-map.js');
+var args = process.argv.slice(2), local = args.indexOf('--local') >= 0; args = args.filter(function (a) { return a.slice(0, 2) !== '--'; });
 var base = args[0] || 'https://viewer-source.github.io/styles/', here = path.join(__dirname, '..');
 var MAPS = { graphml: 'glycolysis-graphml', celldesigner: 'glycolysis-celldesigner', sbgn: 'testing-glycolysis-sbgn' };
 // what the opening of a map sets, by format: checked apart
@@ -41,20 +41,22 @@ var OPENED = ['text', 'F', 'cd', 'sb', 'sbLast', 'procs', 'cdBase'];   // F: the
     return page.waitForFunction(function (id) { var n = window.m2EditNow && window.m2EditNow(); return !!(n && n.id === id); }, id, { timeout: 60000 }).then(function () { return page.waitForTimeout(1500); });
   };
   var pickNode = async function () {
-    var c = await page.$$eval('#m2-img [data-n]', function (l) { for (var g of l) { var r = g.getBoundingClientRect(); if (r.width > 20 && r.width < 200 && r.left > 350 && r.top > 120 && r.right < 1350 && r.bottom < 850) return [r.left + r.width / 2, r.top + r.height / 2]; } return null; });
+    // a node in sight, its centre not under a panel (a map added from a file opens at its own scale, not fitted)
+    var c = await page.$$eval('#m2-img [data-n]', function (l) { for (var g of l) { var r = g.getBoundingClientRect(), x = r.left + r.width / 2, y = r.top + r.height / 2; if (r.width > 20 && r.width < 200 && r.left > 350 && r.top > 120 && r.right < 1350 && r.bottom < 850 && (document.elementFromPoint(x, y) || {}).id === 'm2-view') return [x, y]; } return null; });
     if (!c) return false;
     await page.mouse.click(c[0], c[1]); await page.waitForTimeout(400);
     return true;
   };
   await page.goto(base, { waitUntil: 'load' });
   await page.evaluate(function () { localStorage.clear(); localStorage.setItem('atlas-edit-level', 'full'); localStorage.setItem('atlas-edit-side', 'right'); });
+  MAPS.sbgn = await OM.resolve(page, base, MAPS.sbgn);   // after the storage is cleared: the test-set map's address in this browser
   var kinds = Object.keys(MAPS), first = true;
   for (var i = 0; i < kinds.length; i++) for (var j = 0; j < kinds.length; j++) {
     if (i === j) continue;
     var A = MAPS[kinds[i]], B = MAPS[kinds[j]];
     console.log('-- ' + kinds[i] + ' then ' + kinds[j]);
     if (first) {
-      await page.goto(base + '#' + A, { waitUntil: 'load' });
+      await OM.byAddress(page, base, A);
       await page.waitForSelector('.m2-ri[data-win="edit"]', { timeout: 30000 }); await page.waitForTimeout(2500);
       await page.click('.m2-ri[data-win="edit"]'); first = false;
     } else await page.click('.m2-map[data-id="' + A + '"]');

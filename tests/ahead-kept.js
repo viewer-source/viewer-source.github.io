@@ -4,18 +4,18 @@
 // yet, left with no move and edited again (the first save makes the copy). No page error (a TypeError in the sweep stops
 // the read-ahead quietly) and editing starts again. GitHub is played by this script, files from a clone of the site's
 // data repository.
-//   node tests/ahead-kept.js <clone of the site's data repository> [base address] [--local]
+//   node tests/ahead-kept.js <clone of the site's data repository> [base address] [--local] --data=<clone of the data repository>
 // --local: the working tree's editor and renderers routed in
-var path = require('path'), fs = require('fs'), { chromium } = require('playwright'), editorNow = require('./editor-now.js');
-var args = process.argv.slice(2), local = args.indexOf('--local') >= 0; args = args.filter(function (a) { return a !== '--local'; });
+var path = require('path'), fs = require('fs'), { chromium } = require('playwright'), editorNow = require('./editor-now.js'), OM = require('./lib/open-map.js');
+var args = process.argv.slice(2), local = args.indexOf('--local') >= 0; args = args.filter(function (a) { return a.slice(0, 2) !== '--'; });
 var data = args[0], base = args[1] || 'https://viewer-source.github.io/styles/', here = path.join(__dirname, '..');
-var MAPS = { graphml: 'glycolysis-graphml', celldesigner: 'glycolysis-celldesigner', sbgn: 'testing-glycolysis-sbgn' }, OTHER = 'glycolysis-graphml';
-if (!data) { console.log('usage: node tests/ahead-kept.js <clone of the data repository> [base address] [--local]'); process.exit(2); }
+var MAPS = { graphml: 'glycolysis-graphml', celldesigner: 'glycolysis-celldesigner', sbgn: 'glycolysis-sbgn' }, OTHER = 'glycolysis-graphml';   // sbgn: an example's SBGN-ML copy, the kind whose edited copy may be missing on GitHub
+if (!data) { console.log('usage: node tests/ahead-kept.js <clone of the data repository> [base address] [--local] --data=<clone of the data repository>'); process.exit(2); }
 (async function () {
   var b = await chromium.launch(), bad = 0;
   var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more ? '  ' + more : '')); };
   for (var kind of Object.keys(MAPS)) {
-    var id = MAPS[kind], other = id === OTHER ? MAPS.celldesigner : OTHER;
+    var ref = MAPS[kind], other = ref === OTHER ? MAPS.celldesigner : OTHER;
     var ctx = await b.newContext({ viewport: { width: 1400, height: 900 } }), page = await ctx.newPage(), errs = [];
     page.setDefaultTimeout(120000);
     page.on('pageerror', function (e) { errs.push(e.message); });
@@ -47,8 +47,10 @@ if (!data) { console.log('usage: node tests/ahead-kept.js <clone of the data rep
       return json(404, { message: 'Not Found' });
     });
     await page.goto(base, { waitUntil: 'load' });
-    await page.evaluate(function () { localStorage.clear(); localStorage.setItem('atlas-edit-token', 'test-token'); localStorage.setItem('atlas-edit-level', 'full'); });
-    await page.goto(base + '#' + id, { waitUntil: 'load' });
+    await page.evaluate(function () { localStorage.clear(); });
+    var id = await OM.resolve(page, base, ref);   // a test-set map added with no token, so it is kept in this browser
+    await page.evaluate(function () { localStorage.setItem('atlas-edit-token', 'test-token'); localStorage.setItem('atlas-edit-level', 'full'); });
+    await OM.byAddress(page, base, id);
     await page.waitForSelector('.m2-ri[data-win="edit"]'); await page.waitForTimeout(2500);
     var editing = function () { return page.waitForFunction(function (id) { var n = window.m2EditNow && window.m2EditNow(); return !!(n && n.id === id); }, id, { timeout: 60000 }).then(function () { return true; }, function () { return false; }); };
     await page.click('.m2-ri[data-win="edit"]');

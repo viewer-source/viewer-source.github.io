@@ -3,11 +3,13 @@
 // stay white. Tests from the design: the choice offered, the colours in both themes, no accent blue left in Linen, the
 // light square of a palette sign seen against the panel, the choice kept over a reload and set before the page is
 // painted, undo and redo of it, the right-click menu white, the SVG download the same in both themes.
-//   node tests/themes.js [base address] [--local]   (default: the styles page; --local routes the working tree's viewer in)
-var { chromium } = require('playwright'), fs = require('fs'), path = require('path'), cp = require('child_process');
+//   node tests/themes.js [base address] [--local] --data=<clone of the data repository>   (default: the styles page; --local routes the working tree's viewer in)
+var { chromium } = require('playwright'), fs = require('fs'), path = require('path'), cp = require('child_process'), OM = require('./lib/open-map.js');
 var base = process.argv.slice(2).filter(function (a) { return a[0] !== '-'; })[0] || 'https://viewer-source.github.io/styles/';
 var local = process.argv.indexOf('--local') > 0, here = path.join(__dirname, '..');
-var MAP = 'testing-glycolysis-sbgn', BLUE = 'rgb(65, 131, 196)', GREY = 'rgb(113, 119, 124)', LINEN = 'rgb(245, 244, 241)', WHITE = 'rgb(255, 255, 255)';
+var MAP = 'testing-glycolysis-sbgn',   // from the test set: its address in this browser given by OM.resolve
+    SVGMAP = 'colour-glycolysis-sbgn',   // a site SBGN-ML map, for the SVG download
+    BLUE = 'rgb(65, 131, 196)', GREY = 'rgb(113, 119, 124)', LINEN = 'rgb(245, 244, 241)', WHITE = 'rgb(255, 255, 255)';
 function viewerHunks() {   // [old, new] pieces of the styles copy of the viewer changed since HEAD
   var d = cp.execFileSync('git', ['diff', '-U2', process.env.REV || 'HEAD', '--', '../styles/_includes/atlas-app.html'], { cwd: here, maxBuffer: 1 << 26 }).toString(), out = [];
   d.split(/\n(?=@@ )/).slice(1).forEach(function (h) {
@@ -47,11 +49,14 @@ function viewerHunks() {   // [old, new] pieces of the styles copy of the viewer
   var bg = function (sel) { return page.$eval(sel, function (e) { return getComputedStyle(e).backgroundColor; }); };
   var theme = function () { return page.evaluate(function () { return document.documentElement.getAttribute('data-theme'); }); };
   var chosenBg = function () { return page.evaluate(function () { var e = document.querySelector('.m2-item.m2-on'); return e && getComputedStyle(e).backgroundColor; }); };
-  var svg = async function () {
+  var svg = async function () {   // the SVG download is offered for a site map only (a map added from a file has none): read on SVGMAP, then back to MAP
+    await OM.byAddress(page, base, SVGMAP); await page.waitForTimeout(2500);
     var dl = page.waitForEvent('download', { timeout: 15000 }).catch(function () { return null; });
     await page.click('.m2-ri[data-win="dl"]'); await page.waitForTimeout(600);
     await page.evaluate(function () { var a = [].slice.call(document.querySelectorAll('#m2-dlwin a[download], #m2-downloads a[download]')).filter(function (x) { return /\.svg(\?|$)/.test(x.getAttribute('href')) && x.offsetParent; })[0]; if (a) a.click(); });
-    var d = await dl; return d ? fs.readFileSync(await d.path(), 'utf8') : null;
+    var d = await dl, t = d ? fs.readFileSync(await d.path(), 'utf8') : null;
+    await OM.byAddress(page, base, MAP); await page.waitForTimeout(2500);
+    return t;
   };
   var blues = function () {   // elements of the page (not the map) showing the accent blue as fill, edge or text
     return page.evaluate(function (B) {
@@ -63,7 +68,8 @@ function viewerHunks() {   // [old, new] pieces of the styles copy of the viewer
   };
 
   await page.goto(base, { waitUntil: 'load' }); await page.evaluate(function () { localStorage.clear(); });
-  await page.goto(base + '#' + MAP, { waitUntil: 'load' }); await settle(); await openSet();
+  MAP = await OM.resolve(page, base, MAP);   // after the storage is cleared
+  await OM.byAddress(page, base, MAP); await settle(); await openSet();
   console.log('-- Default');
   var opts = await page.$$eval('#m2-set-theme option', function (os) { return os.map(function (o) { return o.textContent; }); });
   ok('Settings, Display: Theme, a drop-down with Default, Linen and Grey', opts.join() === 'Default,Linen,Grey', opts.join());

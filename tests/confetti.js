@@ -2,9 +2,10 @@
 // SBGN-ML map and the CellDesigner glycolysis map, each in a fresh page, Confetti chosen, three nodes placed: each new
 // node a pastel of its own (HSL lightness 82%), the three apart, each, with a working tree given, the colour its confettiFill
 // gives for the map as it was. Nothing is saved (no token). No script error.
-//   node tests/confetti.js [base address] [viewer folder: its editor served in place of the page's]
-var chromium = require('playwright').chromium, fs = require('fs'), path = require('path');
-var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local = process.argv[3], bad = 0;
+//   node tests/confetti.js [base address] [viewer folder: its editor served in place of the page's] --data=<clone of the data repository>
+var chromium = require('playwright').chromium, fs = require('fs'), path = require('path'), OM = require('./lib/open-map.js');
+var pos = process.argv.slice(2).filter(function (a) { return a.slice(0, 2) !== '--'; });
+var base = pos[0] || 'https://viewer-source.github.io/styles/', local = pos[1], bad = 0;
 var confettiFill = null;
 if (local) { var cs = fs.readFileSync(path.join(local, 'editor/src/create.js'), 'utf8'); eval(cs.slice(cs.indexOf('    function confettiHex'), cs.indexOf('    function confettiSquares'))); }
 var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more ? '  ' + more : '')); };
@@ -16,7 +17,7 @@ async function run(b, map, sign, kind) {
     await page.route(/\/renderers\/converter\/(sbgn_edit|cd_make)\.js/, function (r) { var f = /(sbgn_edit|cd_make)\.js/.exec(r.request().url())[0]; r.fulfill({ status: 200, contentType: 'application/javascript', body: fs.readFileSync(path.join(local, 'renderers/converter', f), 'utf8') }); });
   }
   page.on('pageerror', function (e) { errs.push(e.message); });
-  await page.goto(base + '#' + map, { waitUntil: 'load' });
+  await OM.open(page, base, map);   // a test-set map added to this page's browser, a site map by its address
   await page.evaluate(function () { localStorage.removeItem('atlas-edit-map-choices'); });
   await page.waitForSelector('.m2-ri[data-win="edit"]', { timeout: 30000 });
   if (!(await page.$('#m2-editwin button[data-make="' + sign + '"]:visible'))) await page.click('.m2-ri[data-win="edit"]');

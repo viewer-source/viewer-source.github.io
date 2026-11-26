@@ -3,12 +3,13 @@
 // extensions), the palette's Reduced notation tick box; with a map's change and a setting's mixed, in the order made.
 // Outside editing too (the list's undo when its last change is older). GitHub is played by this script, as in
 // tests/undo-per-map.js.
-//   node tests/undo-settings.js <base address> <clone of the site's data repository> [--local]
+//   node tests/undo-settings.js <base address> <clone of the site's data repository> [--local] --data=<clone of the data repository>
 // --local: the editor and the viewer of the working tree routed into the live page (as tests/edit-reload.js).
-var { chromium } = require('playwright'), fs = require('fs'), path = require('path'), cp = require('child_process');
-var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
-var data = process.argv[3], local = process.argv.indexOf('--local') > 0, here = path.join(__dirname, '..');
-if (!data) { console.log('usage: node tests/undo-settings.js <base address> <clone of the data repository> [--local]'); process.exit(2); }
+var { chromium } = require('playwright'), fs = require('fs'), path = require('path'), cp = require('child_process'), OM = require('./lib/open-map.js');
+var pos = process.argv.slice(2).filter(function (a) { return a.slice(0, 2) !== '--'; });
+var base = pos[0] || 'https://viewer-source.github.io/styles/';
+var data = pos[1], local = process.argv.indexOf('--local') > 0, here = path.join(__dirname, '..');
+if (!data) { console.log('usage: node tests/undo-settings.js <base address> <clone of the data repository> [--local] --data=<clone of the data repository>'); process.exit(2); }
 function editorNow() {   // editor.js joined as Jekyll joins it
   return require('./editor-now.js')(here);
 }
@@ -73,9 +74,12 @@ function viewerHunks() {   // [old, new] pieces of the styles page's viewer chan
   var setSize = async function (v) { await page.fill('#m2-ed-gsize', String(v)); await page.press('#m2-ed-gsize', 'Enter'); await page.waitForTimeout(400); };
 
   await page.goto(base, { waitUntil: 'load' });
-  await page.evaluate(function () { localStorage.clear(); localStorage.setItem('atlas-edit-token', 'test-token'); localStorage.setItem('atlas-edit-level', 'full'); localStorage.setItem('atlas-edit-side', 'right'); });
-  var id = process.env.MAP || 'glycolysis-celldesigner';
-  await page.goto(base + '#' + id, { waitUntil: 'load' }); await settle();
+  await page.evaluate(function () { localStorage.clear(); });
+  // the SBGN-ML map of the palette's part, from the test set unless named: added before the token, so kept in this browser
+  var pm = await OM.resolve(page, base, process.env.PALMAP || 'testing-glycolysis-sbgn');
+  await page.evaluate(function () { localStorage.setItem('atlas-edit-token', 'test-token'); localStorage.setItem('atlas-edit-level', 'full'); localStorage.setItem('atlas-edit-side', 'right'); });
+  var id = await OM.resolve(page, base, process.env.MAP || 'glycolysis-celldesigner');
+  await OM.byAddress(page, base, id); await settle();
   await page.click('.m2-ri[data-win="edit"]'); await waitEdit();
 
   console.log('-- Grid size, Grid, Snap');
@@ -169,8 +173,8 @@ function viewerHunks() {   // [old, new] pieces of the styles page's viewer chan
   await page.mouse.click(700, 880); await page.waitForTimeout(200);
   ok('Map size changed', (await ls('atlas-map-size')) !== sz0);
   await key(); await lsIs('atlas-map-size', sz0, 'Cmd+Z: Map size back');
-  var sbId = process.env.SBMAP || 'glycolysis-celldesigner';
-  await page.goto(base + '#' + sbId, { waitUntil: 'load' }); await settle();
+  var sbId = await OM.resolve(page, base, process.env.SBMAP || 'glycolysis-celldesigner');
+  await OM.byAddress(page, base, sbId); await settle();
   await page.click('.m2-ri[data-win="set"]'); await page.waitForTimeout(800);
   if (await page.$eval('.m2-set-source', function (x) { return x.style.display !== 'none'; }).catch(function () { return false; })) {
     var src0 = await ls('atlas-map-source');
@@ -188,9 +192,8 @@ function viewerHunks() {   // [old, new] pieces of the styles page's viewer chan
   } else ok('Source offered on ' + sbId, false);
 
   console.log('-- the palette on an SBGN-ML map (PD or AF, Style, Set as default), Complexes');
-  var pm = process.env.PALMAP || 'testing-glycolysis-sbgn';
   await page.evaluate(function () { localStorage.setItem('atlas-edit-side', 'right'); });
-  await page.goto(base + '#' + pm, { waitUntil: 'load' }); await page.reload({ waitUntil: 'load' }); await settle();
+  await OM.byAddress(page, base, pm); await page.reload({ waitUntil: 'load' }); await settle();
   if (!(await page.evaluate(function () { return document.querySelector('.m2').classList.contains('m2-editing'); }))) { await page.click('.m2-ri[data-win="edit"]'); }
   await waitEdit();
   var entry = async function (k) { return page.evaluate(function (a) { var o = JSON.parse(localStorage.getItem(a[0]) || '{}'); var ks = Object.keys(o).filter(function (x) { return x.indexOf(a[1]) >= 0; }); return ks.length ? JSON.stringify(o[ks[0]]) : null; }, [k, pm.replace(/-sbgn$/, '')]); };
