@@ -10,7 +10,7 @@
 // The yEd template (mapconv/yed.graphml) is kept below as TEMPLATE.
 (function (root) {
   'use strict';
-  var VERSION = 'cd689c8';   // the converter's commit this copy was taken from
+  var VERSION = '5863f42';   // the converter's commit this copy was taken from
   var NS = 'http://sbgn.org/libsbgn/0.3', RENDER = 'http://www.sbml.org/sbml/level3/version1/render/version1';
   var OLD_RENDER = 'http://projects.eml.org/bcb/sbml/render';
   var RDF = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#';
@@ -107,7 +107,7 @@
     if (!m) return null;
     var db = m[1] || m[2], x = m[3];
     if (db == null || db.toUpperCase() === 'CHEBI') return (db || x).toUpperCase().indexOf('CHEBI') === 0 ? 'urn:miriam:obo.chebi:CHEBI%3A' + x.split(':').pop() : null;
-    if (db.toUpperCase() === 'GO') return 'urn:miriam:obo.go:GO%3A' + x;
+    if (db.toUpperCase() === 'GO') return 'urn:miriam:obo.go:GO%3A' + x.split(':').pop();
     return 'urn:miriam:' + (URN[db] !== undefined ? URN[db] : db.toLowerCase()) + ':' + x;
   }
   function colour(c, defs) {
@@ -133,12 +133,12 @@
     return out;
   }
   var NAMED = ['hgnc.symbol', 'hgnc', 'uniprot', 'obo.chebi'];
-  var NOT_THE_BOX = ['isDescribedBy', 'encodes', 'isHomologTo', 'hasTaxon', 'occursIn', 'hasProperty', 'isPropertyOf'];
   function dbOf(u) { var i = u.lastIndexOf(':'); return i < 0 ? '' : u.slice(0, i).slice('urn:miriam:'.length); }
   function keptLinks(bags) {  // annotation.kept: the four databases into their properties, every other link as read
+    bags = bags.filter(function (b) { return b[0] === 'bqbiol' || b[0] === 'bqmodel'; });
     var family = bags.some(function (b) { return b[1] === 'hasVersion'; }), named = [];
     bags.forEach(function (b) {
-      if (NOT_THE_BOX.indexOf(b[1]) < 0) b[2].forEach(function (u) { if (u.indexOf('urn:miriam:') === 0 && NAMED.indexOf(dbOf(u)) >= 0 && (b[1] === 'hasVersion') === family) named.push(u); });
+      if (b[1] === (family ? 'hasVersion' : 'is')) b[2].forEach(function (u) { if (u.indexOf('urn:miriam:') === 0 && NAMED.indexOf(dbOf(u)) >= 0) named.push(u); });
     });
     if (!family) {
       var many = NAMED.filter(function (db) { var seen = {}; named.forEach(function (u) { if (dbOf(u) === db) seen[u] = 1; }); return Object.keys(seen).length > 1; });
@@ -311,7 +311,8 @@
     if (!rootEl || doc.getElementsByTagName('parsererror').length) throw new Error('not an XML file');
     var say = function (kind, t) { msgs.push([kind, t]); };
     var every = sKids(rootEl, 'map'), which = (opt && opt.map) || 0, m = every[which] || null;
-    if (!m) throw new Error('no SBGN-ML map in the file');
+    if (!every.length) throw new Error('no SBGN-ML map in the file');
+    if (!m) throw new Error('the file has ' + every.length + ' map' + (every.length === 1 ? '' : 's') + ': no map ' + (which + 1));
     if (every.length > 1) say('summary', 'map ' + (which + 1) + ' of ' + every.length + ' in the file (' + (get(m, 'id') || 'no id') + ')');
     var defs = new Map();
     below(m, function (e) { return isR(e, 'colorDefinition'); }).forEach(function (c) { defs.set(get(c, 'id'), rget(c, 'value')); });
