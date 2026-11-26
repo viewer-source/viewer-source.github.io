@@ -303,11 +303,18 @@ page, so its styles keep the base they were made on).
   /* Type in the Edit window, one scale: 12 px for every label, value, field, list and note (Grid size, Properties,
      Orientation, Reduced notation, Settings choices); 14 px only for the PD and AF tabs and the full-width
      action buttons (Choose a folder, Connect). No third size; a new control takes one of the two */
+  /* THE EDIT WINDOW'S OWN STYLE, apart from the rest of the page. The page (lists, Settings, Downloads, menus) uses the
+     accent: a coloured fill under the pointer and when chosen. The Edit window never does: greys only, at rest, under
+     the pointer, pressed or chosen; every button there is quiet as the sign buttons are (the light grey square, the
+     text and edge unchanged). The accent is redefined inside the window, so a control that takes the page's accent here
+     turns grey, never a colour. Colour on the map (the selection, handles) is the map's, not the window's.
+     tests/edit-quiet.js fails on any coloured control in the window. */
+  #m2-editwin { --m2-accent: var(--m2-soft); --m2-on-accent: var(--m2-button); }
   #m2-editwin { padding: 0; font-size: 14px; line-height: 1.45; color: var(--m2-text-soft);
     max-height: calc(100vh / var(--zoom, 1) - 110px); overflow-y: auto; overscroll-behavior: contain; }   /* scrolls as the list does, its foot level with the map window's (so Properties stays on screen); menus go to the body, not clipped */
   #m2-editwin button { display: block; width: 100%; box-sizing: border-box; font: inherit; font-size: 14px; line-height: 20px; padding: 4px 10px; margin: 0 0 8px; text-align: left;
     background: var(--m2-bg); border: 1px solid var(--m2-button); border-radius: var(--m2-radius-button); color: var(--m2-button); cursor: pointer; }
-  #m2-editwin button:hover:not(:disabled) { background: var(--m2-accent); border-color: var(--m2-accent); color: var(--m2-on-accent); }
+  #m2-editwin button:hover:not(:disabled) { background: var(--m2-soft); border-color: var(--m2-button); color: var(--m2-button); }   /* the light grey square, text and edge unchanged */
   #m2-editwin button:disabled { opacity: .4; cursor: default; }
   #m2-editwin button[hidden] { display: none; }
   #m2-ed-this, #m2-ed-back, #m2-ed-stop { display: none !important; }   /* silent editing: the tab is the switch */
@@ -504,7 +511,7 @@ page, so its styles keep the base they were made on).
     color: var(--m2-muted); font-size: 18px; line-height: 24px; cursor: pointer; }   /* the tabs' size and line (one line width for every sign) */
   #m2-editwin .m2-set-row { display: flex; gap: 6px; margin: 0 0 12px; }
   #m2-editwin .m2-set-row button { display: inline-block; width: auto; min-width: 46px; margin: 0; font-size: 12px; line-height: 18px; padding: 4px 8px; text-align: center; }
-  #m2-editwin .m2-set-row button.m2-on { background: var(--m2-accent); border-color: var(--m2-accent); color: var(--m2-on-accent); }
+  #m2-editwin .m2-set-row button.m2-on, #m2-editwin .m2-set-row button.m2-on:hover { background: var(--m2-soft); border-color: #70757a; color: var(--m2-ed-value); }   /* chosen: the grey square, a darker grey edge and text */
   #m2-editwin .m2-set-note { font-size: 12px; color: var(--m2-muted); margin: 6px 0 14px; }
   /* Disconnect from GitHub: a quiet line of text at the end, always right under a line, no button look, no hover */
   #m2-editwin #m2-ed-gh-off, #m2-editwin #m2-ed-gh-off:hover:not(:disabled) { display: inline; width: auto; padding: 0; margin: 0 0 8px; border: 0;
