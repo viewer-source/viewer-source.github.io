@@ -2356,6 +2356,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
         : r[2] === 'colour' ? '<span class="m2-ed-pc"><input type="color" tabindex="-1" aria-label="' + r[1] + ', picker"><input type="text" id="' + id + '" spellcheck="false" autocomplete="off"' + (r[0] === 'fill' ? ' placeholder="none"' : '') + '></span>'
         : r[2] === 'num' ? '<input type="number" id="' + id + '" step="any"' + (r[3] || (r[0] === 'width' ? ' min="0.25" max="20"' : /^[st][xy]$/.test(r[0]) ? '' : ' min="1" max="5000"')) + '>'
         : r[2] === 'card' ? '<input type="text" inputmode="decimal" class="m2-ed-card" id="' + id + '" placeholder="1" spellcheck="false" autocomplete="off">'
+        : r[2] === 'pic' ? '<span class="m2-ed-ppic"><img alt="" hidden><span class="m2-ed-ppicname"></span><button type="button" id="' + id + '">Choose</button><button type="button" class="m2-ed-ppicoff">Remove</button></span>'
         : '<input type="text" id="' + id + '" spellcheck="false" autocomplete="off">';
       return '<tr data-k="' + r[0] + '"' + (r[4] ? ' title="' + r[4] + '"' : '') + '><th><label for="' + id + '">' + r[1] + '</label></th><td>' + f + '</td></tr>';
     }).join('') + '</table>'; }
@@ -2418,6 +2419,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       pNow.w = r2(b[2]); pNow.h = r2(b[3]); ROWS.forEach(function (r) { if (r[2] === 'num' && pNow[r[0]] != null) pNow[r[0]] = r2(pNow[r[0]]); });
       ROWS.forEach(function (r) {
         var f = field(r[0]);
+        if (r[2] === 'pic') { picShow(f, pNow[r[0]]); return; }   // its button focused after a choice: shown all the same
         if (!all && document.activeElement === f) return;
         if (r[2] === 'check') { f.checked = pNow[r[0]]; return; }
         if (f.value !== pNow[r[0]]) f.value = pNow[r[0]];   // only what changed (it runs with every paint)
@@ -2444,7 +2446,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       props.querySelector('.m2-ed-pstd').hidden = !pf.hub || !ns.every(pf.hub);   // several processes or gates: Standard size for all of them
       ROWS.forEach(function (r) {
         var tr = props.querySelector('.m2-ed-pnode tr[data-k="' + r[0] + '"]'), f = field(r[0]);
-        tr.hidden = r[0] === 'label' || ns.some(function (i, j) { pNow = Ls[j]; return (/^[wh]$/.test(r[0]) && (!sizable(i) || holds(i))) || pf.off(r[0], i); });   // a holder's size alone (holderSize)
+        tr.hidden = r[0] === 'label' || r[2] === 'pic' || ns.some(function (i, j) { pNow = Ls[j]; return (/^[wh]$/.test(r[0]) && (!sizable(i) || holds(i))) || pf.off(r[0], i); });   // a holder's size alone (holderSize)
         if (tr.hidden || (!all && document.activeElement === f)) return;
         var vs = Ls.map(function (L) { return r[2] === 'check' ? !!L[r[0]] : String(L[r[0]] == null ? '' : L[r[0]]); }), one = vs.every(function (v) { return v === vs[0]; });
         tr.classList.toggle('m2-mixed', !one);
@@ -2604,7 +2606,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
     });
     }
     function propListen(r) {
-      if (/^[wh]$/.test(r[0])) return;   // Width and Height: above
+      if (/^[wh]$/.test(r[0]) || r[2] === 'pic') return;   // Width and Height: above; a picture's row: its format's part (its buttons)
       var f = field(r[0]);
       f.addEventListener('change', function () { propSet(r[0]); });
       if (r[2] === 'colour') f.previousElementSibling.addEventListener('change', function (e) { f.value = e.target.value; propSet(r[0]); });
@@ -2621,6 +2623,15 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       Array.prototype.slice.call(tmp.querySelectorAll('tr')).reverse().forEach(function (tr) { at.insertAdjacentElement('afterend', tr); });
       var k = ROWS.findIndex(function (r) { return r[0] === last; });
       rows.forEach(function (r, j) { ROWS.splice(k + 1 + j, 0, r); EXTRA.push(r[0]); propListen(r); });
+    }
+    // a picture's row (a format's part adds one: CellDesigner's Picture): v { name, src } or null; its preview, its file's
+    // name, Choose, and Remove while there is one. The buttons are the part's
+    function picShow(f, v) {
+      var box = f.parentNode, img = box.querySelector('img'), nm = box.querySelector('.m2-ed-ppicname'), src = v && v.src || '';
+      nm.textContent = v ? v.name.replace(/^glyphs\//, '') : 'none';
+      nm.title = v ? v.name : '';
+      if (img.getAttribute('src') !== src) { if (src) img.setAttribute('src', src); else img.removeAttribute('src'); }
+      img.hidden = !src; box.querySelector('.m2-ed-ppicoff').hidden = !v;
     }
     var DEF_KEY;
     function __run56() {   // run at start, in order (__start)

@@ -1044,7 +1044,70 @@ import { bytesSha, glyphsNamed, minervaProject, settleGlyphs, unzip } from './mi
     var held, ghPics, storedAll;
     function __run30() {   // run at start, in order (__start)
     held = {}; ghPics = null; storedAll = null;
-    cdPicSource(picRead, function (t) { return glyphsNamed(t.replace(/&(lt|gt|quot|apos|amp);/g, function (m, e) { return { lt: '<', gt: '>', quot: '"', apos: "'", amp: '&' }[e]; })); });
+    cdPicSource(picRead, function (t) { return glyphsNamed(t.replace(/&(lt|gt|quot|apos|amp);/g, function (m, e) { return { lt: '<', gt: '>', quot: '"', apos: "'", amp: '&' }[e]; })); }, picKeep);
+    followed = {}; picQ = Promise.resolve();
+    }
+    // a picture put on here (celldesigner.js cdPicKeep, from Properties, the menu or a drop): PNG or SVG by its bytes,
+    // named after its file (letters, digits, dot, dash and underscore kept) and numbered when another picture of that
+    // name is kept (an SVG and a PNG of one name count as one, as a note naming x.png draws x.svg), and kept at once where
+    // the maps are kept, before the map naming it is saved, so a note never names a picture that is nowhere: on this page,
+    // and with a token in GitHub's maps/glyphs/, else in this browser and in the folder when one is chosen. An SVG is kept
+    // as SVG (its PNG made only when a MINERVA zip is written); the note always names the PNG, as MINERVA reads it.
+    // Gives { note, file, type, bytes }; refused with the reason (not a picture, GitHub refusing it)
+    var followed, picQ;
+    // the keeps and follows one after another: two at once (two drops) would read the same free name and the same browser
+    // record, the second write losing the first picture; on GitHub two writes at once to one branch are refused
+    function inTurn(fn) { var p = picQ.then(fn); picQ = p.catch(function () {}); return p; }
+    function picKeep(f) { return inTurn(function () { return keepNow(f); }); }
+    function keepNow(f) {
+      return f.arrayBuffer().then(function (a) {
+        var d = new Uint8Array(a), png = d.length > 8 && d[0] === 0x89 && d[1] === 0x50 && d[2] === 0x4e && d[3] === 0x47;
+        var svg = !png && /<svg[\s>]/i.test(new TextDecoder().decode(d.subarray(0, 65536)));
+        if (!png && !svg) throw new Error(f.name + ' is not a picture MINERVA can take here: PNG or SVG only');
+        var stem = f.name.replace(/\.[^.]*$/, '').replace(/[^A-Za-z0-9._-]+/g, '-').replace(/^[-.]+|-+$/g, '') || 'picture', ext = png ? '.png' : '.svg', other = png ? '.svg' : '.png';
+        var gh = repo() && token(), look = gh ? siteGlyphs() : localGlyphs();
+        return bytesSha(d).then(function (sha) {
+          var free = function (k) {
+            var s = 'glyphs/' + (k < 2 ? stem : stem + '-' + k);
+            return Promise.all([look(s + ext), look(s + other)]).then(function (r) { return (!r[0] || r[0] === sha) && !r[1] ? { s: s, there: r[0] === sha } : free(k < 2 ? 2 : k + 1); });
+          };
+          return free(1);
+        }).then(function (n) {
+          var file = n.s + ext;
+          held[file] = d;
+          return (n.there ? Promise.resolve() : picStore(file, d, gh)).then(function () { return { note: n.s + '.png', file: file, type: png ? 'image/png' : 'image/svg+xml', bytes: d }; });
+        });
+      });
+    }
+    // a picture kept where the maps are: with a token GitHub's maps/glyphs/ (a failure refuses it), else this browser (its
+    // record minerva:mz-pictures, beside the zips' records, read by storedPic) and the folder's glyphs/ when one is chosen
+    function picStore(file, d, gh) {
+      if (gh) {   // a file of that name already there is the same picture (picKeep's free name, follow's lookup missed it): left as it is
+        var at = '/contents/maps/' + file.split('/').map(encodeURIComponent).join('/');
+        return api(at + '?ref=main').then(function (r) {
+          if (r.ok) return;
+          return api(at, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: 'Picture: ' + file, content: bytes64(d), branch: 'main' }) }).then(ghJson);
+        }).then(function () { ghPics = null; }, function (e) { throw new Error('the picture was not kept on GitHub: ' + (e && e.message ? e.message : e)); });
+      }
+      var blob = new Blob([d]);
+      var inBrowser = V.draftDo('readonly', function (st) { return st.get('minerva:mz-pictures'); }, 'folder').then(function (r) {
+        r = r || { id: 'mz-pictures', glyphs: {} }; r.glyphs[file] = blob; r.at = Date.now(); storedAll = null;
+        return V.draftDo('readwrite', function (st) { return st.put(r, 'minerva:mz-pictures'); }, 'folder');
+      }).catch(function (e) { throw new Error('the picture was not kept in this browser: ' + (e && e.message ? e.message : e)); });   // refused: else the note names a picture gone after a reload
+      return inBrowser.then(function () { return picToFolder(file, d); });
+    }
+    function picToFolder(file, d) {
+      if (!V.folderName()) return Promise.resolve();
+      return folder().then(function (f) {
+        if (!f) return;
+        return f.dir.queryPermission({ mode: 'readwrite' }).then(function (perm) { if (perm === 'granted') return putIn(f.dir, file, d); });
+      }).catch(function (e) { warn('The picture ' + file + ' was not kept in the folder: ' + (e && e.message ? e.message : e)); });
+    }
+    function putIn(dir, path, data) {   // a file at a path under dir, its folders made
+      var parts = path.split('/'), name = parts.pop();
+      return parts.reduce(function (q, x) { return q.then(function (d) { return d.getDirectoryHandle(x, { create: true }); }); }, Promise.resolve(dir))
+        .then(function (d) { return d.getFileHandle(name, { create: true }); }).then(function (h) { return h.createWritable(); })
+        .then(function (w) { return w.write(data).then(function () { return w.close(); }); });
     }
     function picRead(n) {
       var svg = n.replace(/\.png$/i, '.svg'), names = svg !== n ? [svg, n] : [n];
@@ -1061,8 +1124,19 @@ import { bytesSha, glyphsNamed, minervaProject, settleGlyphs, unzip } from './mi
       return fromGh.catch(function () { return null; }).then(function (b) {
         if (b) return b;
         return (V.folderName() && /^glyphs\/[^/]+$/.test(n) ? folder() : Promise.resolve(null)).then(function (f) { return f && f.dir.getDirectoryHandle('glyphs'); }).then(function (d) { return d && d.getFileHandle(n.slice(7)); })
-          .then(function (h) { return h && h.getFile(); }).then(function (fl) { return fl ? blob(fl) : null; }).catch(function () { return null; });
-      }).then(function (b) { return b || storedPic(n).then(blob).catch(function () { return null; }); });
+          .then(function (h) { return h && h.getFile(); }).then(function (fl) { return fl ? follow(n, blob(fl), 'folder') : null; }).catch(function () { return null; });
+      }).then(function (b) { return b || storedPic(n).then(function (d) { return d && follow(n, blob(d), 'browser'); }).catch(function () { return null; }); });
+    }
+    // a picture found below where the maps are kept now (a token connected, a folder chosen after it was put on): copied
+    // there once per page, so the build and the folder have it as they have the map naming it
+    function follow(n, b, from) {
+      var gh = repo() && token(), to = gh ? 'gh' : V.folderName() && from === 'browser' ? 'folder' : null;
+      if (to && !followed[n]) {
+        followed[n] = 1;
+        inTurn(function () { return b.arrayBuffer().then(function (a) { var d = new Uint8Array(a); return to === 'gh' ? picStore(n, d, true) : picToFolder(n, d); }); })
+          .catch(function (e) { followed[n] = 0; warn('The picture ' + n + ' did not follow its map: ' + (e && e.message ? e.message : e)); });
+      }
+      return b;
     }
     // without a token: the pictures kept in the folder, else on this page or in this browser (two zips naming the same
     // picture, as HIDmap's and AsthmaMap's overview.png: the second numbered)
@@ -1114,19 +1188,13 @@ import { bytesSha, glyphsNamed, minervaProject, settleGlyphs, unzip } from './mi
     }
     function folderProject(p, maps) {
       if (!V.folderName()) return Promise.resolve();
-      var put = function (dir, path, data) {   // a file at a path under dir, its folders made
-        var parts = path.split('/'), name = parts.pop();
-        return parts.reduce(function (q, x) { return q.then(function (d) { return d.getDirectoryHandle(x, { create: true }); }); }, Promise.resolve(dir))
-          .then(function (d) { return d.getFileHandle(name, { create: true }); }).then(function (h) { return h.createWritable(); })
-          .then(function (w) { return w.write(data).then(function () { return w.close(); }); });
-      };
       return folder().then(function (f) {
         if (!f) return;
         return f.dir.queryPermission({ mode: 'readwrite' }).then(function (perm) {
           if (perm !== 'granted') return;
           var at = '.viewer/minerva/' + p.rec + '/', all = Object.keys(p.glyphs).map(function (g) { return [g, p.glyphs[g]]; })
             .concat(Object.keys(p.kept).map(function (k) { return [at + k, p.kept[k]]; }), [[at + 'record.json', projectRecord(p, maps)]]);
-          return all.reduce(function (q, x) { return q.then(function () { return put(f.dir, x[0], x[1]); }); }, Promise.resolve());
+          return all.reduce(function (q, x) { return q.then(function () { return putIn(f.dir, x[0], x[1]); }); }, Promise.resolve());
         });
       }).catch(function (e) { warn('The pictures of ' + p.zip + ' were not kept in the folder: ' + (e && e.message ? e.message : e)); });
     }

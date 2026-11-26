@@ -1,10 +1,10 @@
 import { shared, V } from './state.js';
-import { asSpace, at, boxOf, changed, commit, cutShape, edgeAt, edges2, editing, f1, fmt, gridSet, grown, handleMarks, hit, keyFlush, kindWindow, landMarks, lateItem, line, map, near, nodes2, on, paint, parse, ports, procPlaces, quiet, rclick, setBoxes, shapeD, subItem, sx, sy, toGrid, warn, x0, y0 } from './core.js';
+import { holds, roomy, asSpace, at, boxOf, changed, commit, cutShape, edgeAt, edges2, editing, f1, fmt, gridSet, grown, handleMarks, hit, keyFlush, kindWindow, landMarks, lateItem, line, map, near, nodes2, on, paint, parse, ports, procPlaces, quiet, rclick, setBoxes, shapeD, subItem, sx, sy, toGrid, warn, x0, y0 } from './core.js';
 import { bx, liveOff, sizeOff } from './live.js';
-import { cdJs, cdMk, cdNow, cdRebuild, nodePlaces } from './celldesigner.js';
+import { cdJs, cdMk, cdNow, cdPicKeep, cdPicUrl, cdRebuild, nodePlaces } from './celldesigner.js';
 import { nodeCentre } from './geometry.js';
 import NT from '../../renderers/converter/notation.js';   // the notation's kinds and rules table, as on the SBGN maps (create.js ruleSays)
-import { ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues, confettiLine, confettiOne, confettiPick, confettiSquares, hex, iconKeep, iconSpread, innermost, joinPack, keepLook, keepMapChoice, link, linkEnd, looksKept, mapCols, nameAt, origAll, pNow, pal, palBlocks, palDid, palDrop, palId, palShow, palSigns, palSignsEl, palStore, palStyle, palTake, placedAt, propRows, styleRow, svAt, svDelete, svIcons, textsOf, tool, typeIn } from './create.js';
+import { field, ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues, confettiLine, confettiOne, confettiPick, confettiSquares, hex, iconKeep, iconSpread, innermost, joinPack, keepLook, keepMapChoice, link, linkEnd, looksKept, mapCols, nameAt, origAll, pNow, pal, palBlocks, palDid, palDrop, palId, palShow, palSigns, palSignsEl, palStore, palStyle, palTake, placedAt, propRows, styleRow, svAt, svDelete, svIcons, textsOf, tool, typeIn } from './create.js';
 
     // ---------- the CellDesigner palette (editor/src/cdcreate.js) ----------
     // The CellDesigner palette, writing the CellDesigner file directly: on a CellDesigner map with Settings, Editing on Full, the Edit
@@ -439,6 +439,7 @@ import { ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues, confet
     V.view.addEventListener('pointerleave', function () { if (cdOver) { cdOver = null; paint(); } });
     }
     function cdOverMarks(out) {
+      cdBgMarks(out);   // a background being moved or resized
       var i = cdOver && cdPal() && !link && cdAdd() === 'p' ? nodes2.findIndex(function (n) { return n.id === cdOver; }) : -1;
       if (i < 0) { cdOver = null; return; }
       cdMainLine(out, i);
@@ -757,12 +758,13 @@ import { ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues, confet
         }
         if (r === 'proc') return cdRxItems(cdRid(i));
         var A = cdMk.aliasInfo(shared.cd.now, id);
-        if (!A.cls) return null;
+        if (!A.cls) { var cp = cdPicItems(i); cp.late = true; return cp.length ? cp : null; }   // a compartment: its picture's items
         out = cdSvItems(id, A);   // first, as on SBGN-ML maps: Add state variable, Add structural state, Add unit of information
-        if (A.cls === 'COMPLEX') return out.length ? out : null;
+        if (A.cls === 'COMPLEX') { out = out.concat(cdPicItems(i)); return out.length ? out : null; }
         out.push(['Change identity', subItem(function (r, done) { return cdIdentity(id, r, done); })]);
         // after it, the species' homodimer, as Properties' Multimer (2 when made, 1 back)
         if (A.cls !== 'DEGRADED') out.push([A.homodimer > 1 ? 'Make monomer' : 'Make multimer', function () { cdApply(function (t) { return A.homodimer > 1 ? cdMk.homodimer(t, id, 1) : cdTopClear(cdMk.homodimer(t, id, 2), id, true); }, [id]); }]);
+        out = out.concat(cdPicItems(i));   // its picture's, last
         out.late = true;   // rarely used: after the common items, above Delete
         return out;
       }
@@ -1486,17 +1488,20 @@ import { ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues, confet
         count: function (k) { return /\|[rp]\d+$/.test(edges2[k].id) ? cdCount(edges2[k].id) : undefined; },   // an added reactant's or product's own number (the main ones are the reaction's rows)
         setCount: function (k, v) { return cdLineTo(k, function (t, id) { return cdMk.restoich(t, id, v); }); } },
       node: function (i) { return cdProp(i) ? i : -1; },
-      off: function (k, i) {   // pNow: look's, read just before; no SBGN-ML row (a line's colour, an antenna, a tag's Orientation); a compartment no border width, multimer or font size (CellDesigner keeps none for its name), a complex no multimer, an Unknown no border width
+      off: function (k, i) {   // pNow: look's, read just before; Picture on a compartment or a species not a member (cdPicAble); no SBGN-ML row (a line's colour, an antenna, a tag's Orientation); a compartment no border width, multimer or font size (CellDesigner keeps none for its name), a complex no multimer, an Unknown no border width
+        if (k === 'pic') return !cdPicAble(i);
         return k === 'line' || k === 'ant' || k === 'way' || (k === 'ss' && /^(COMPARTMENT|DEGRADED)$/.test(pNow.cls)) || (/^(mem|outer|inner)$/.test(k) && pNow.cls !== 'COMPARTMENT') || (/^(label|font|fill|multimer)$/.test(k) && pNow.cls === 'DEGRADED') || (/^(width|multimer|def|font)$/.test(k) && pNow.cls === 'COMPARTMENT') || (/^(multimer|def)$/.test(k) && pNow.cls === 'COMPLEX') || (k === 'width' && pNow.cls === 'UNKNOWN');   // an Unknown has no outline in CellDesigner, so no border width
       },
       look: function (i) {   // null while the file is behind the map read (an undo not drawn yet); read once per node and file (it runs with every paint)
         var id = nodes2[i].id;
         if (cdLook[0] !== id || cdLook[1] !== shared.cd.now) {
           var L = null;
-          try { L = cdMk.look(shared.cd.now, id); var ss = cdMk.features(shared.cd.now, id).structural; L = { ss: ss ? ss.text : '', label: cdNameOf(id, true), font: L.font, fill: L.fill, line: '#000000', width: L.width, multimer: L.multimer, cls: L.cls, mem: L.mem, outer: L.outer, inner: L.inner }; } catch (e) { L = null; }
+          try { L = cdMk.look(shared.cd.now, id); var ss = cdMk.features(shared.cd.now, id).structural; var pn = cdPicOf(id); L = { pic: pn ? { name: pn, src: cdPicUrl(pn) } : null, ss: ss ? ss.text : '', label: cdNameOf(id, true), font: L.font, fill: L.fill, line: '#000000', width: L.width, multimer: L.multimer, cls: L.cls, mem: L.mem, outer: L.outer, inner: L.inner }; } catch (e) { L = null; }
           cdLook = [id, shared.cd.now, L];
         }
-        return cdLook[2] && Object.assign({}, cdLook[2]);
+        var L2 = cdLook[2] && Object.assign({}, cdLook[2]);
+        if (L2 && L2.pic) L2.pic = { name: L2.pic.name, src: cdPicUrl(L2.pic.name) };   // its preview as soon as the picture is read, the file unchanged
+        return L2;
       },
       set: function (k, v, is) {   // every node of is given the value, one undo step
         var ids = is.map(function (i) { return nodes2[i].id; }), all = function (f) { return cdApply(function (t) { ids.forEach(function (id) { t = f(t, id); }); return t; }, ids); };
@@ -1523,6 +1528,179 @@ import { ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues, confet
     // a species' structural state as one row (one field, as it is one), after
     // the compartment's rows; its text, empty for none; residues stay on the right-click (many, each its own list)
     propRows([['ss', 'Structural state', 'text', '', 'The species\u2019 structural state, free text; emptied, it is removed']]);
+    // MINERVA's picture (notes/minerva-pack-plan.md, step 3), last: Choose and Remove on the node Properties is for
+    propRows([['pic', 'Picture', 'pic', '', 'MINERVA’s picture, drawn stretched to the box as MINERVA draws it (PNG or SVG)']]);
+    field('pic').addEventListener('click', function () { var ids = cdPicIds(); if (ids.length) cdPicChoose(function (f) { cdPicSet(ids, f); }); });
+    field('pic').parentNode.querySelector('.m2-ed-ppicoff').addEventListener('click', function () { var ids = cdPicIds(); if (ids.length) cdPicSet(ids, null); });
+    cdPicker = document.createElement('input');
+    cdPicker.type = 'file'; cdPicker.accept = '.png,.svg,image/png,image/svg+xml'; cdPicker.hidden = true;
+    cdPicker.addEventListener('change', function () { var f = cdPicker.files[0], go = cdPickFor; cdPickFor = null; cdPicker.value = ''; if (f && go) go(f); });
+    document.body.appendChild(cdPicker);
+    // a PNG or SVG dropped on the map in edit mode: on the compartment or species under it (before the list's drop, which
+    // would take it for a map); one at a time; on empty space it says where backgrounds are added
+    document.addEventListener('drop', function (e) {
+      var fs = e.dataTransfer ? Array.prototype.slice.call(e.dataTransfer.files || []) : [];
+      if (!fs.length || !cdPal() || !on || V.current !== map || !V.view.contains(e.target)) return;
+      if (!fs.every(function (f) { return /\.(png|svg)$/i.test(f.name) || /^image\/(png|svg\+xml)$/.test(f.type); })) return;
+      e.preventDefault(); e.stopPropagation();
+      var h = hit(at(e)), i = h && h.n != null && h.p == null ? h.n : -1;
+      if (fs.length > 1) { warn('One picture at a time: drop a single PNG or SVG on a compartment or a species.'); return; }
+      if (i < 0 || !cdPicAble(i)) { warn('A picture goes on a compartment or a species (a complex’s member takes none). A background picture is added by a right click on empty map space.'); return; }
+      cdPicSet([nodes2[i].id], fs[0]);
+    }, true);
+    // a background being moved or resized (Move and resize background): its handles until Esc or a press elsewhere
+    window.addEventListener('pointerdown', cdBgDown, true);   // on the window, so it comes before the editor's own press on the map (core.js), whatever is under it
+    document.addEventListener('keydown', function (e) { if (cdBg && e.key === 'Escape') { cdBg = null; paint(); } });
+    }
+    // ---------- MINERVA's pictures (notes/minerva-pack-plan.md, step 3) ----------
+    // A picture on a compartment or a species (a complex too; a complex's member none: MINERVA reads only top-level
+    // species), drawn stretched to its box as MINERVA draws it: Properties' Picture row (Choose, Remove), the right-click
+    // items Set picture..., Remove picture and Fit box to picture, or a PNG or SVG dropped on it. The picture is kept
+    // first where the maps are kept (own.js picKeep, through celldesigner.js cdPicKeep), then its note written
+    // (cd_make.picture), one undo step; refused (not PNG or SVG, GitHub refusing it): said, nothing written. Fit box to
+    // picture gives the box the picture's proportions, its centre and width kept, one undo step.
+    // Backgrounds, layer texts holding a picture (cd_make.background), from the right-click on empty map space: Add
+    // background picture... (its box round the whole drawing), and for each: Replace..., Move and resize (its outline and
+    // handles: a drag inside moves it, on a handle resizes it, each release one undo step; Esc or a press elsewhere ends),
+    // Fit background to picture, Remove. A background is never picked by a click, so the network under it is edited as before
+    var cdPicker, cdPickFor, cdBg;
+    // after a picture's keep (seconds with GitHub): the same map still in edit mode, else nothing written and said so (the
+    // picture stays kept, unnamed by any map)
+    function cdStill(m0) { if (on && V.current === m0 && cdPal()) return true; warn('The map was left while its picture was being kept; nothing was put on.'); return false; }
+    function cdPicAble(i) { var n = nodes2[i]; return !!n && (!!n.comp || cdRole(i) === 'epn'); }   // a compartment, a species or complex not inside a complex
+    function cdPicOf(id) { try { return cdMk.pictureOf(shared.cd.now, id); } catch (e) { return null; } }
+    function cdPicIds() { return shared.selN.filter(cdPicAble).map(function (i) { return nodes2[i].id; }); }
+    function cdPicChoose(go) { cdPickFor = go; cdPicker.value = ''; cdPicker.click(); }
+    function cdPicSet(ids, f) {   // f a File: kept, then put on every node of ids; null: taken off
+      if (!f) return cdApply(function (t) { ids.forEach(function (id) { t = cdMk.picture(t, id, null); }); return t; }, ids);
+      var m0 = map;
+      return cdPicKeep(f).then(function (r) {
+        if (!cdStill(m0)) return;
+        cdApply(function (t) { ids.forEach(function (id) { t = cdMk.picture(t, id, r.note); }); return t; }, ids);
+      }, function (e) { warn('Picture not put on: ' + String(e && e.message ? e.message : e).replace(/\.?$/, '.')); });
+    }
+    // a picture's width and height: an SVG's from its own width and height, else its viewBox; a PNG's as the browser reads it
+    function cdPicDims(src) {
+      var m = /^data:image\/svg\+xml;base64,(.*)$/.exec(src || '');
+      if (m) {
+        try {
+          var tx = new TextDecoder().decode(Uint8Array.from(atob(m[1]), function (c) { return c.charCodeAt(0); })), a = (/<svg\b[^>]*>/i.exec(tx) || [''])[0];
+          var w = /\swidth="([\d.]+)(?:px)?"/.exec(a), h = /\sheight="([\d.]+)(?:px)?"/.exec(a), vb = /\sviewBox="\s*[-\d.e]+[\s,]+[-\d.e]+[\s,]+([\d.e]+)[\s,]+([\d.e]+)/i.exec(a);
+          if (w && h && +w[1] > 0 && +h[1] > 0) return Promise.resolve([+w[1], +h[1]]);
+          if (vb && +vb[1] > 0 && +vb[2] > 0) return Promise.resolve([+vb[1], +vb[2]]);
+        } catch (e) {}
+      }
+      return new Promise(function (res) { var im = new Image(); im.onload = function () { res(im.naturalWidth > 0 && im.naturalHeight > 0 ? [im.naturalWidth, im.naturalHeight] : null); }; im.onerror = function () { res(null); }; im.src = src; });
+    }
+    function cdFitBox(b, d) { var h = b[2] * d[1] / d[0]; return [b[0], b[1] + b[3] / 2 - h / 2, b[2], h]; }   // the picture's proportions, its centre and width kept
+    function cdPicFit(id) {
+      var src = cdPicUrl(cdPicOf(id)), m0 = map;
+      if (!src) { warn('The picture is not read yet; try again once it is drawn.'); return; }
+      cdPicDims(src).then(function (d) {
+        var i = nodes2.findIndex(function (n) { return n.id === id; });
+        if (!d || i < 0 || !on || V.current !== m0) return;
+        var b = boxOf(i), nb = cdFitBox(b, d);
+        if (holds(i) && !nodes2[i].comp) nb = roomy(i, nb, 'tb', b);   // a complex never smaller than its members need, as its handles
+        cdSetSize([[i, nb]]);
+      });
+    }
+    function cdPicItems(i) {   // the node's picture items (cdItems), last of its own
+      var id = nodes2[i].id, has = !!cdPicOf(id);
+      if (!cdPicAble(i)) return [];
+      var out = [[has ? 'Replace picture…' : 'Set picture…', function () { cdPicChoose(function (f) { cdPicSet([id], f); }); }]];
+      if (has) out.push(['Fit box to picture', function () { cdPicFit(id); }], ['Remove picture', function () { cdPicSet([id], null); }]);
+      return out;
+    }
+    // a background is known by its picture and its box (its number among the layer texts shifts as others are added or
+    // removed, and a keep from GitHub can take seconds): the one of that picture with that box, else the only one of that
+    // picture; null when it is gone. The map's backgrounds read once per text (cdBgMarks runs with every paint)
+    var cdBgMemo;
+    function cdBgs() { if (!cdBgMemo || cdBgMemo[0] !== shared.cd.now) { var bs; try { bs = cdMk.backgrounds(shared.cd.now); } catch (e) { bs = []; } cdBgMemo = [shared.cd.now, bs]; } return cdBgMemo[1]; }
+    function cdBgFind(ref) {
+      var same = cdBgs().filter(function (g) { return g.name === ref.name; });
+      return same.filter(function (g) { return g.box && g.box.every(function (v, k) { return Math.abs(v - ref.box[k]) < 0.005; }); })[0] || (same.length === 1 ? same[0] : null);
+    }
+    function cdBgDo(ref, f) { return cdApply(function (t) { var g = cdBgFind(ref); return g ? f(t, g.n) : t; }, []); }   // one undo step on that background, if it is still there
+    // the backgrounds' items on empty map space (celldesigner.js F.mapItems, core.js m2EditMapItems)
+    function cdBgItems() {
+      if (!cdPal()) return null;
+      var bs = cdBgs(), out = [['Add background picture…', function () { cdPicChoose(cdBgAdd); }]];
+      bs.forEach(function (g) {
+        var nm = bs.length > 1 ? ' (' + g.name.replace(/^glyphs\//, '') + ')' : '', ref = { name: g.name, box: g.box.slice() };
+        out.push(['Replace background picture' + nm + '…', function () { cdPicChoose(function (f) { cdBgReplace(ref, f); }); }],
+          ['Move and resize background' + nm, function () { cdBg = { ref: ref, box: ref.box.slice() }; paint(); }],
+          ['Fit background to picture' + nm, function () { cdBgFit(ref); }],
+          ['Remove background picture' + nm, function () { cdBg = null; cdBgDo(ref, cdMk.backgroundRemove); }]);
+      });
+      return out;
+    }
+    function cdBgAdd(f) {
+      var m0 = map, bs = nodes2.map(function (n, i) { return boxOf(i); }).filter(Boolean);
+      var box = bs.length ? bs.reduce(function (a, b) { var x = Math.min(a[0], b[0]), y = Math.min(a[1], b[1]); return [x, y, Math.max(a[0] + a[2], b[0] + b[2]) - x, Math.max(a[1] + a[3], b[1] + b[3]) - y]; }) : [0, 0, 800, 600];   // round the whole drawing
+      return cdPicKeep(f).then(function (r) {
+        if (!cdStill(m0)) return;
+        cdApply(function (t) { return cdMk.background(t, r.note, box.map(function (v) { return Math.round(v * 100) / 100; })).text; }, []);
+      }, function (e) { warn('Background picture not added: ' + String(e && e.message ? e.message : e).replace(/\.?$/, '.')); });
+    }
+    function cdBgReplace(ref, f) {
+      var m0 = map;
+      return cdPicKeep(f).then(function (r) { if (cdStill(m0)) cdBgDo(ref, function (t, n) { return cdMk.backgroundSet(t, n, { name: r.note }); }); },
+        function (e) { warn('Background picture not replaced: ' + String(e && e.message ? e.message : e).replace(/\.?$/, '.')); });
+    }
+    function cdBgFit(ref) {
+      var g = cdBgFind(ref), src = g && cdPicUrl(g.name), m0 = map;
+      if (!src) { warn('The picture is not read yet; try again once it is drawn.'); return; }
+      cdPicDims(src).then(function (d) {
+        var g2 = cdBgFind(ref);
+        if (!d || !g2 || !on || V.current !== m0) return;
+        var nb = cdFitBox(g2.box, d).map(function (v) { return Math.round(v * 100) / 100; });
+        cdBgDo(ref, function (t, n) { return cdMk.backgroundSet(t, n, { box: nb }); });
+        if (cdBg && cdBg.ref.name === ref.name && cdBg.ref.box.join() === ref.box.join()) { cdBg.ref = { name: ref.name, box: nb }; cdBg.box = nb.slice(); }
+      });
+    }
+    // its outline and eight handles while being moved or resized (cdOverMarks); gone when it is no longer on the map (an
+    // undo of its adding, a remove); after an undo of a move, followed to the box it has again when it is the only one of
+    // its picture
+    function cdBgMarks(out) {
+      if (!cdBg) return;
+      if (!cdBg.drag) {
+        var g = cdPal() && on && V.current === map ? cdBgFind(cdBg.ref) : null;
+        if (!g) { cdBg = null; return; }
+        cdBg.ref = { name: g.name, box: g.box.slice() }; cdBg.box = g.box.slice();
+      }
+      var b = cdBg.box;
+      out.push('<rect class="m2-ed-ghost" x="' + sx(b[0]) + '" y="' + sy(b[1]) + '" width="' + b[2] * V.z + '" height="' + b[3] * V.z + '"/>' + handleMarks(b, 'm2-ed-handle'));
+    }
+    function cdBgDown(e) {
+      if (!cdBg || e.button !== 0 || !V.view.contains(e.target) || !editing(e)) return;
+      var P = at(e), b = cdBg.box, tol = Math.max(5, 8 / V.z), o = 3.3;
+      var xs = [b[0] - o, b[0] + b[2] / 2, b[0] + b[2] + o], ys = [b[1] - o, b[1] + b[3] / 2, b[1] + b[3] + o], hx = -1, hy = -1;
+      xs.forEach(function (x, k) { if (Math.abs(P[0] - x) <= tol) hx = k; });
+      ys.forEach(function (y, k) { if (Math.abs(P[1] - y) <= tol) hy = k; });
+      var onHandle = hx >= 0 && hy >= 0 && !(hx === 1 && hy === 1), inside = P[0] >= b[0] && P[0] <= b[0] + b[2] && P[1] >= b[1] && P[1] <= b[1] + b[3];
+      if (!onHandle && !inside) { cdBg = null; paint(); return; }   // a press elsewhere: done, the press goes on as usual
+      e.preventDefault(); e.stopImmediatePropagation();
+      var b0 = b.slice(), ref = cdBg.ref, el = V.view;
+      cdBg.drag = true;
+      try { el.setPointerCapture(e.pointerId); } catch (er) {}
+      var move = function (ev) {
+        var Q = at(ev), dx = Q[0] - P[0], dy = Q[1] - P[1], nb = b0.slice();
+        if (!onHandle) { nb[0] += dx; nb[1] += dy; }
+        else {
+          if (hx === 0) { nb[0] = Math.min(b0[0] + dx, b0[0] + b0[2] - 1); nb[2] = b0[0] + b0[2] - nb[0]; } else if (hx === 2) nb[2] = Math.max(1, b0[2] + dx);
+          if (hy === 0) { nb[1] = Math.min(b0[1] + dy, b0[1] + b0[3] - 1); nb[3] = b0[1] + b0[3] - nb[1]; } else if (hy === 2) nb[3] = Math.max(1, b0[3] + dy);
+        }
+        if (cdBg) { cdBg.box = nb; paint(); }
+      };
+      var up = function () {
+        el.removeEventListener('pointermove', move); el.removeEventListener('pointerup', up); el.removeEventListener('pointercancel', up);
+        if (!cdBg) return;
+        cdBg.drag = false;
+        var nb = cdBg.box.map(function (v) { return Math.round(v * 100) / 100; });
+        if (nb.some(function (v, k) { return Math.abs(v - b0[k]) >= 0.005; })) { cdBg.ref = { name: ref.name, box: nb }; cdBgDo(ref, function (t, n) { return cdMk.backgroundSet(t, n, { box: nb }); }); }
+        else paint();
+      };
+      el.addEventListener('pointermove', move); el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up);
     }
     function cdDouble(k, x, ids) {
       if (!isFinite(x)) return false;
@@ -1563,4 +1741,4 @@ import { ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues, confet
     }
 
     export function __start() { __run1(); __run2(); __run3(); __run5(); __run6(); __run7(); __run8(); __run9(); __run10(); __run12(); __run13(); __run14(); __run15(); __run16(); __run17(); __run18(); __run19(); __run20(); __run21(); __run22(); __run23(); __run24(); __run25(); __run27(); __run28(); __run29(); __run30(); __run31(); __run32(); __run33(); }   // the part's statements, in their order
-    export { CD_DEF_KEY, CD_GATE, PF_CD, cdCardDown, cdCheck, cdClick, cdClsOf, cdDeleteItem, cdFeat, cdFill, cdFront, cdGateMarks, cdGhost, cdHow, cdInfo, cdItems, cdKind, cdLineAt, cdLink, cdLinkMarks, cdLiveEnds, cdMake, cdMoveSays, cdNameDown, cdNameOf, cdOnLine, cdOverMarks, cdPal, cdRename, cdRole, cdSsTyped, cdStartOk, cdSvDelete, cdSvFar, cdSvList, cdSvMove, cdSvOpen };
+    export { CD_DEF_KEY, CD_GATE, PF_CD, cdBgItems, cdCardDown, cdCheck, cdClick, cdClsOf, cdDeleteItem, cdFeat, cdFill, cdFront, cdGateMarks, cdGhost, cdHow, cdInfo, cdItems, cdKind, cdLineAt, cdLink, cdLinkMarks, cdLiveEnds, cdMake, cdMoveSays, cdNameDown, cdNameOf, cdOnLine, cdOverMarks, cdPal, cdRename, cdRole, cdSsTyped, cdStartOk, cdSvDelete, cdSvFar, cdSvList, cdSvMove, cdSvOpen };

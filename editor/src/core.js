@@ -2856,7 +2856,7 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       if (!emptyClick()) return null;
       var tick = function (v) { return v ? '<span class="m2-cx-key" aria-hidden="true">\u2713</span>' : ''; };
       return [['Snap map to grid', snapMap], ['Repack all complexes', function () { pack([]); }],
-        ['Show grid', gridShow, tick(gridSet.shown), gridSet.shown], ['Snap to grid', gridSnap, tick(gridSet.snap), gridSet.snap]];
+        ['Show grid', gridShow, tick(gridSet.shown), gridSet.shown], ['Snap to grid', gridSnap, tick(gridSet.snap), gridSet.snap]].concat(shared.F.mapItems && shared.F.mapItems() || []);   // and the format's own (CellDesigner: background pictures)
     };
     // a bend point put where the right click was on a line (as
     // CellDesigner's right click Add Anchor Point): the same new point a drag on the line makes, left

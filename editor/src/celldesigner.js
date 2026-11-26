@@ -2,7 +2,7 @@ import { shared, V } from './state.js';
 import { boxOf, drag, edges2, f1, gE, gN, gridBlock, lastFor, lastSvg, nodes2, num, on, parse, placed, points, pt, rebase, setText, spotNo, status, undo, warn } from './core.js';
 import { bx, dropCopies, picOff, toPic } from './live.js';
 import { glyphMid } from './geometry.js';
-import { cdCardDown, cdCheck, cdClsOf, cdHow, cdLineAt, cdLink, cdLinkMarks, cdLiveEnds, cdMoveSays, cdNameOf, cdPal, cdOnLine, cdRename, cdRole, cdSsTyped, cdStartOk, cdFeat, cdFront, cdSvDelete, cdSvFar, cdSvList, cdSvMove, cdSvOpen } from './cdcreate.js';
+import { cdBgItems, cdCardDown, cdCheck, cdClsOf, cdFeat, cdFront, cdHow, cdLineAt, cdLink, cdLinkMarks, cdLiveEnds, cdMoveSays, cdNameOf, cdOnLine, cdPal, cdRename, cdRole, cdSsTyped, cdStartOk, cdSvDelete, cdSvFar, cdSvList, cdSvMove, cdSvOpen } from './cdcreate.js';
 
     // ---------- the CellDesigner part (editor/src/celldesigner.js) ----------
     // A CellDesigner map edited in CellDesigner's own model: the GraphML renderers/converter/cd_edit.js makes of it, the
@@ -54,11 +54,21 @@ import { cdCardDown, cdCheck, cdClsOf, cdHow, cdLineAt, cdLink, cdLinkMarks, cdL
     // opened, GitHub, the folder, this browser); the editor's redraws and live drawings read the same cache. A picture not found is not kept as none (it may come later: a zip, a folder allowed),
     // and a name not read is drawn as before and marked (cdPicMiss), so a read-ahead drawn before its pictures is not
     // taken at entry. names: the pictures a map's text names (own.js: minerva.js glyphsNamed on its unescaped text)
-    var cdPics, cdPicRead, cdPicNames, cdPicMiss;
+    var cdPics, cdPicRead, cdPicNames, cdPicMiss, cdPicKeeper;
     function __run8() {   // run at start, in order (__start)
-    cdPics = {}; cdPicRead = null; cdPicNames = null; cdPicMiss = false;
+    cdPics = {}; cdPicRead = null; cdPicNames = null; cdPicMiss = false; cdPicKeeper = null;
     }
-    function cdPicSource(read, names) { cdPicRead = read; cdPicNames = names; }
+    function cdPicSource(read, names, keep) { cdPicRead = read; cdPicNames = names; cdPicKeeper = keep; }
+    // a picture put on here (cdcreate.js: Properties, the menu, a drop): kept by own.js where the maps are kept, then in the
+    // page's cache under the name its note gives, so the change drawn next shows it. { note, file, type, bytes }
+    function cdPicKeep(f) {
+      if (!cdPicKeeper) return Promise.reject(new Error('pictures cannot be kept on this page'));
+      return cdPicKeeper(f).then(function (r) {
+        return new Promise(function (res) { var fr = new FileReader(); fr.onload = function () { res(fr.result); }; fr.onerror = function () { res(null); }; fr.readAsDataURL(new Blob([r.bytes], { type: r.type })); })
+          .then(function (u) { if (u) cdPics[r.note] = u; return r; });
+      });
+    }
+    function cdPicUrl(note) { return note && Object.prototype.hasOwnProperty.call(cdPics, note) ? cdPics[note] : null; }   // the picture a note names as drawn (Properties' preview), null when not read
     function cdGlyph(p) { if (Object.prototype.hasOwnProperty.call(cdPics, p)) return cdPics[p]; cdPicMiss = true; return null; }
     function cdPicsFor(t) {
       if (!cdPicRead) return Promise.resolve();
@@ -432,6 +442,7 @@ import { cdCardDown, cdCheck, cdClsOf, cdHow, cdLineAt, cdLink, cdLinkMarks, cdL
           draw: function (t, g) { cdPicMiss = false; var q = cdDraw(t, g, false); return { cd: true, base: t, text: g, q: q, block: gridBlock(), miss: cdPicMiss }; },   // miss: drawn before its pictures were read
           keeper: function () { return function (t, g, svg) { cdRemember(t, g); return { cd: true, base: t, text: g, q: [svg, t, g] }; }; } },
         kind: function (n) { var c = cdClsOf(n.id); return c ? c[0] : n.comp ? 'compartment' : null; },   // its species class, or compartment
-        ownName: cdNameOf, rename: cdRename, nameable: function () { return !!cdMk; } };   // names read from and written into its file
+        ownName: cdNameOf, rename: cdRename, nameable: function () { return !!cdMk; },   // names read from and written into its file
+        mapItems: cdBgItems };   // empty map space's items of its own (core.js m2EditMapItems): MINERVA's background pictures
     }
-    export { cdFormat, cdKept, cdPicSource, cdJs, cdMap, cdMk, cdNow, cdRebuild, cdSessionSoon, cdShown, cdpy, isCd, liveCd, nodePlaces, plainCanvas, warmUp };
+    export { cdFormat, cdKept, cdPicKeep, cdPicSource, cdPicUrl, cdPicsFor, cdJs, cdMap, cdMk, cdNow, cdRebuild, cdSessionSoon, cdShown, cdpy, isCd, liveCd, nodePlaces, plainCanvas, warmUp };

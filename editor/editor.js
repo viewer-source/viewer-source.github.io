@@ -2627,15 +2627,39 @@
   var cdPicRead;
   var cdPicNames;
   var cdPicMiss;
+  var cdPicKeeper;
   function __run8() {
     cdPics = {};
     cdPicRead = null;
     cdPicNames = null;
     cdPicMiss = false;
+    cdPicKeeper = null;
   }
-  function cdPicSource(read, names) {
+  function cdPicSource(read, names, keep) {
     cdPicRead = read;
     cdPicNames = names;
+    cdPicKeeper = keep;
+  }
+  function cdPicKeep(f) {
+    if (!cdPicKeeper) return Promise.reject(new Error("pictures cannot be kept on this page"));
+    return cdPicKeeper(f).then(function(r) {
+      return new Promise(function(res) {
+        var fr = new FileReader();
+        fr.onload = function() {
+          res(fr.result);
+        };
+        fr.onerror = function() {
+          res(null);
+        };
+        fr.readAsDataURL(new Blob([r.bytes], { type: r.type }));
+      }).then(function(u) {
+        if (u) cdPics[r.note] = u;
+        return r;
+      });
+    });
+  }
+  function cdPicUrl(note2) {
+    return note2 && Object.prototype.hasOwnProperty.call(cdPics, note2) ? cdPics[note2] : null;
   }
   function cdGlyph(p) {
     if (Object.prototype.hasOwnProperty.call(cdPics, p)) return cdPics[p];
@@ -3251,7 +3275,9 @@
       rename: cdRename,
       nameable: function() {
         return !!cdMk;
-      }
+      },
+      // names read from and written into its file
+      mapItems: cdBgItems
     };
   }
 
@@ -3891,6 +3917,7 @@
     });
   }
   function cdOverMarks(out) {
+    cdBgMarks(out);
     var i = cdOver && cdPal() && !link && cdAdd() === "p" ? nodes2.findIndex(function(n) {
       return n.id === cdOver;
     }) : -1;
@@ -4332,9 +4359,16 @@
       }
       if (r === "proc") return cdRxItems(cdRid(i));
       var A = cdMk.aliasInfo(shared.cd.now, id);
-      if (!A.cls) return null;
+      if (!A.cls) {
+        var cp = cdPicItems(i);
+        cp.late = true;
+        return cp.length ? cp : null;
+      }
       out = cdSvItems(id, A);
-      if (A.cls === "COMPLEX") return out.length ? out : null;
+      if (A.cls === "COMPLEX") {
+        out = out.concat(cdPicItems(i));
+        return out.length ? out : null;
+      }
       out.push(["Change identity", subItem(function(r2, done) {
         return cdIdentity(id, r2, done);
       })]);
@@ -4343,6 +4377,7 @@
           return A.homodimer > 1 ? cdMk.homodimer(t, id, 1) : cdTopClear(cdMk.homodimer(t, id, 2), id, true);
         }, [id]);
       }]);
+      out = out.concat(cdPicItems(i));
       out.late = true;
       return out;
     }
@@ -5492,6 +5527,7 @@
         return cdProp(i) ? i : -1;
       },
       off: function(k, i) {
+        if (k === "pic") return !cdPicAble(i);
         return k === "line" || k === "ant" || k === "way" || k === "ss" && /^(COMPARTMENT|DEGRADED)$/.test(pNow.cls) || /^(mem|outer|inner)$/.test(k) && pNow.cls !== "COMPARTMENT" || /^(label|font|fill|multimer)$/.test(k) && pNow.cls === "DEGRADED" || /^(width|multimer|def|font)$/.test(k) && pNow.cls === "COMPARTMENT" || /^(multimer|def)$/.test(k) && pNow.cls === "COMPLEX" || k === "width" && pNow.cls === "UNKNOWN";
       },
       look: function(i) {
@@ -5501,13 +5537,16 @@
           try {
             L = cdMk.look(shared.cd.now, id);
             var ss = cdMk.features(shared.cd.now, id).structural;
-            L = { ss: ss ? ss.text : "", label: cdNameOf(id, true), font: L.font, fill: L.fill, line: "#000000", width: L.width, multimer: L.multimer, cls: L.cls, mem: L.mem, outer: L.outer, inner: L.inner };
+            var pn = cdPicOf(id);
+            L = { pic: pn ? { name: pn, src: cdPicUrl(pn) } : null, ss: ss ? ss.text : "", label: cdNameOf(id, true), font: L.font, fill: L.fill, line: "#000000", width: L.width, multimer: L.multimer, cls: L.cls, mem: L.mem, outer: L.outer, inner: L.inner };
           } catch (e) {
             L = null;
           }
           cdLook = [id, shared.cd.now, L];
         }
-        return cdLook[2] && Object.assign({}, cdLook[2]);
+        var L2 = cdLook[2] && Object.assign({}, cdLook[2]);
+        if (L2 && L2.pic) L2.pic = { name: L2.pic.name, src: cdPicUrl(L2.pic.name) };
+        return L2;
       },
       set: function(k, v, is) {
         var ids = is.map(function(i) {
@@ -5562,6 +5601,352 @@
       ["inner", "Inner line", "num", ' min="1" max="19"', "Inner line width, 1 at least"]
     ]);
     propRows([["ss", "Structural state", "text", "", "The species\u2019 structural state, free text; emptied, it is removed"]]);
+    propRows([["pic", "Picture", "pic", "", "MINERVA\u2019s picture, drawn stretched to the box as MINERVA draws it (PNG or SVG)"]]);
+    field("pic").addEventListener("click", function() {
+      var ids = cdPicIds();
+      if (ids.length) cdPicChoose(function(f) {
+        cdPicSet(ids, f);
+      });
+    });
+    field("pic").parentNode.querySelector(".m2-ed-ppicoff").addEventListener("click", function() {
+      var ids = cdPicIds();
+      if (ids.length) cdPicSet(ids, null);
+    });
+    cdPicker = document.createElement("input");
+    cdPicker.type = "file";
+    cdPicker.accept = ".png,.svg,image/png,image/svg+xml";
+    cdPicker.hidden = true;
+    cdPicker.addEventListener("change", function() {
+      var f = cdPicker.files[0], go = cdPickFor;
+      cdPickFor = null;
+      cdPicker.value = "";
+      if (f && go) go(f);
+    });
+    document.body.appendChild(cdPicker);
+    document.addEventListener("drop", function(e) {
+      var fs = e.dataTransfer ? Array.prototype.slice.call(e.dataTransfer.files || []) : [];
+      if (!fs.length || !cdPal() || !on || V.current !== map || !V.view.contains(e.target)) return;
+      if (!fs.every(function(f) {
+        return /\.(png|svg)$/i.test(f.name) || /^image\/(png|svg\+xml)$/.test(f.type);
+      })) return;
+      e.preventDefault();
+      e.stopPropagation();
+      var h = hit(at(e)), i = h && h.n != null && h.p == null ? h.n : -1;
+      if (fs.length > 1) {
+        warn("One picture at a time: drop a single PNG or SVG on a compartment or a species.");
+        return;
+      }
+      if (i < 0 || !cdPicAble(i)) {
+        warn("A picture goes on a compartment or a species (a complex\u2019s member takes none). A background picture is added by a right click on empty map space.");
+        return;
+      }
+      cdPicSet([nodes2[i].id], fs[0]);
+    }, true);
+    window.addEventListener("pointerdown", cdBgDown, true);
+    document.addEventListener("keydown", function(e) {
+      if (cdBg && e.key === "Escape") {
+        cdBg = null;
+        paint();
+      }
+    });
+  }
+  var cdPicker;
+  var cdPickFor;
+  var cdBg;
+  function cdStill(m0) {
+    if (on && V.current === m0 && cdPal()) return true;
+    warn("The map was left while its picture was being kept; nothing was put on.");
+    return false;
+  }
+  function cdPicAble(i) {
+    var n = nodes2[i];
+    return !!n && (!!n.comp || cdRole(i) === "epn");
+  }
+  function cdPicOf(id) {
+    try {
+      return cdMk.pictureOf(shared.cd.now, id);
+    } catch (e) {
+      return null;
+    }
+  }
+  function cdPicIds() {
+    return shared.selN.filter(cdPicAble).map(function(i) {
+      return nodes2[i].id;
+    });
+  }
+  function cdPicChoose(go) {
+    cdPickFor = go;
+    cdPicker.value = "";
+    cdPicker.click();
+  }
+  function cdPicSet(ids, f) {
+    if (!f) return cdApply(function(t) {
+      ids.forEach(function(id) {
+        t = cdMk.picture(t, id, null);
+      });
+      return t;
+    }, ids);
+    var m0 = map;
+    return cdPicKeep(f).then(function(r) {
+      if (!cdStill(m0)) return;
+      cdApply(function(t) {
+        ids.forEach(function(id) {
+          t = cdMk.picture(t, id, r.note);
+        });
+        return t;
+      }, ids);
+    }, function(e) {
+      warn("Picture not put on: " + String(e && e.message ? e.message : e).replace(/\.?$/, "."));
+    });
+  }
+  function cdPicDims(src2) {
+    var m = /^data:image\/svg\+xml;base64,(.*)$/.exec(src2 || "");
+    if (m) {
+      try {
+        var tx = new TextDecoder().decode(Uint8Array.from(atob(m[1]), function(c) {
+          return c.charCodeAt(0);
+        })), a = (/<svg\b[^>]*>/i.exec(tx) || [""])[0];
+        var w = /\swidth="([\d.]+)(?:px)?"/.exec(a), h = /\sheight="([\d.]+)(?:px)?"/.exec(a), vb = /\sviewBox="\s*[-\d.e]+[\s,]+[-\d.e]+[\s,]+([\d.e]+)[\s,]+([\d.e]+)/i.exec(a);
+        if (w && h && +w[1] > 0 && +h[1] > 0) return Promise.resolve([+w[1], +h[1]]);
+        if (vb && +vb[1] > 0 && +vb[2] > 0) return Promise.resolve([+vb[1], +vb[2]]);
+      } catch (e) {
+      }
+    }
+    return new Promise(function(res) {
+      var im = new Image();
+      im.onload = function() {
+        res(im.naturalWidth > 0 && im.naturalHeight > 0 ? [im.naturalWidth, im.naturalHeight] : null);
+      };
+      im.onerror = function() {
+        res(null);
+      };
+      im.src = src2;
+    });
+  }
+  function cdFitBox(b, d) {
+    var h = b[2] * d[1] / d[0];
+    return [b[0], b[1] + b[3] / 2 - h / 2, b[2], h];
+  }
+  function cdPicFit(id) {
+    var src2 = cdPicUrl(cdPicOf(id)), m0 = map;
+    if (!src2) {
+      warn("The picture is not read yet; try again once it is drawn.");
+      return;
+    }
+    cdPicDims(src2).then(function(d) {
+      var i = nodes2.findIndex(function(n) {
+        return n.id === id;
+      });
+      if (!d || i < 0 || !on || V.current !== m0) return;
+      var b = boxOf(i), nb = cdFitBox(b, d);
+      if (holds(i) && !nodes2[i].comp) nb = roomy(i, nb, "tb", b);
+      cdSetSize([[i, nb]]);
+    });
+  }
+  function cdPicItems(i) {
+    var id = nodes2[i].id, has = !!cdPicOf(id);
+    if (!cdPicAble(i)) return [];
+    var out = [[has ? "Replace picture\u2026" : "Set picture\u2026", function() {
+      cdPicChoose(function(f) {
+        cdPicSet([id], f);
+      });
+    }]];
+    if (has) out.push(["Fit box to picture", function() {
+      cdPicFit(id);
+    }], ["Remove picture", function() {
+      cdPicSet([id], null);
+    }]);
+    return out;
+  }
+  var cdBgMemo;
+  function cdBgs() {
+    if (!cdBgMemo || cdBgMemo[0] !== shared.cd.now) {
+      var bs;
+      try {
+        bs = cdMk.backgrounds(shared.cd.now);
+      } catch (e) {
+        bs = [];
+      }
+      cdBgMemo = [shared.cd.now, bs];
+    }
+    return cdBgMemo[1];
+  }
+  function cdBgFind(ref) {
+    var same = cdBgs().filter(function(g) {
+      return g.name === ref.name;
+    });
+    return same.filter(function(g) {
+      return g.box && g.box.every(function(v, k) {
+        return Math.abs(v - ref.box[k]) < 5e-3;
+      });
+    })[0] || (same.length === 1 ? same[0] : null);
+  }
+  function cdBgDo(ref, f) {
+    return cdApply(function(t) {
+      var g = cdBgFind(ref);
+      return g ? f(t, g.n) : t;
+    }, []);
+  }
+  function cdBgItems() {
+    if (!cdPal()) return null;
+    var bs = cdBgs(), out = [["Add background picture\u2026", function() {
+      cdPicChoose(cdBgAdd);
+    }]];
+    bs.forEach(function(g) {
+      var nm = bs.length > 1 ? " (" + g.name.replace(/^glyphs\//, "") + ")" : "", ref = { name: g.name, box: g.box.slice() };
+      out.push(
+        ["Replace background picture" + nm + "\u2026", function() {
+          cdPicChoose(function(f) {
+            cdBgReplace(ref, f);
+          });
+        }],
+        ["Move and resize background" + nm, function() {
+          cdBg = { ref, box: ref.box.slice() };
+          paint();
+        }],
+        ["Fit background to picture" + nm, function() {
+          cdBgFit(ref);
+        }],
+        ["Remove background picture" + nm, function() {
+          cdBg = null;
+          cdBgDo(ref, cdMk.backgroundRemove);
+        }]
+      );
+    });
+    return out;
+  }
+  function cdBgAdd(f) {
+    var m0 = map, bs = nodes2.map(function(n, i) {
+      return boxOf(i);
+    }).filter(Boolean);
+    var box2 = bs.length ? bs.reduce(function(a, b) {
+      var x = Math.min(a[0], b[0]), y = Math.min(a[1], b[1]);
+      return [x, y, Math.max(a[0] + a[2], b[0] + b[2]) - x, Math.max(a[1] + a[3], b[1] + b[3]) - y];
+    }) : [0, 0, 800, 600];
+    return cdPicKeep(f).then(function(r) {
+      if (!cdStill(m0)) return;
+      cdApply(function(t) {
+        return cdMk.background(t, r.note, box2.map(function(v) {
+          return Math.round(v * 100) / 100;
+        })).text;
+      }, []);
+    }, function(e) {
+      warn("Background picture not added: " + String(e && e.message ? e.message : e).replace(/\.?$/, "."));
+    });
+  }
+  function cdBgReplace(ref, f) {
+    var m0 = map;
+    return cdPicKeep(f).then(
+      function(r) {
+        if (cdStill(m0)) cdBgDo(ref, function(t, n) {
+          return cdMk.backgroundSet(t, n, { name: r.note });
+        });
+      },
+      function(e) {
+        warn("Background picture not replaced: " + String(e && e.message ? e.message : e).replace(/\.?$/, "."));
+      }
+    );
+  }
+  function cdBgFit(ref) {
+    var g = cdBgFind(ref), src2 = g && cdPicUrl(g.name), m0 = map;
+    if (!src2) {
+      warn("The picture is not read yet; try again once it is drawn.");
+      return;
+    }
+    cdPicDims(src2).then(function(d) {
+      var g2 = cdBgFind(ref);
+      if (!d || !g2 || !on || V.current !== m0) return;
+      var nb = cdFitBox(g2.box, d).map(function(v) {
+        return Math.round(v * 100) / 100;
+      });
+      cdBgDo(ref, function(t, n) {
+        return cdMk.backgroundSet(t, n, { box: nb });
+      });
+      if (cdBg && cdBg.ref.name === ref.name && cdBg.ref.box.join() === ref.box.join()) {
+        cdBg.ref = { name: ref.name, box: nb };
+        cdBg.box = nb.slice();
+      }
+    });
+  }
+  function cdBgMarks(out) {
+    if (!cdBg) return;
+    if (!cdBg.drag) {
+      var g = cdPal() && on && V.current === map ? cdBgFind(cdBg.ref) : null;
+      if (!g) {
+        cdBg = null;
+        return;
+      }
+      cdBg.ref = { name: g.name, box: g.box.slice() };
+      cdBg.box = g.box.slice();
+    }
+    var b = cdBg.box;
+    out.push('<rect class="m2-ed-ghost" x="' + sx(b[0]) + '" y="' + sy(b[1]) + '" width="' + b[2] * V.z + '" height="' + b[3] * V.z + '"/>' + handleMarks(b, "m2-ed-handle"));
+  }
+  function cdBgDown(e) {
+    if (!cdBg || e.button !== 0 || !V.view.contains(e.target) || !editing(e)) return;
+    var P = at(e), b = cdBg.box, tol = Math.max(5, 8 / V.z), o = 3.3;
+    var xs = [b[0] - o, b[0] + b[2] / 2, b[0] + b[2] + o], ys = [b[1] - o, b[1] + b[3] / 2, b[1] + b[3] + o], hx = -1, hy = -1;
+    xs.forEach(function(x, k) {
+      if (Math.abs(P[0] - x) <= tol) hx = k;
+    });
+    ys.forEach(function(y, k) {
+      if (Math.abs(P[1] - y) <= tol) hy = k;
+    });
+    var onHandle = hx >= 0 && hy >= 0 && !(hx === 1 && hy === 1), inside = P[0] >= b[0] && P[0] <= b[0] + b[2] && P[1] >= b[1] && P[1] <= b[1] + b[3];
+    if (!onHandle && !inside) {
+      cdBg = null;
+      paint();
+      return;
+    }
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    var b0 = b.slice(), ref = cdBg.ref, el = V.view;
+    cdBg.drag = true;
+    try {
+      el.setPointerCapture(e.pointerId);
+    } catch (er) {
+    }
+    var move2 = function(ev) {
+      var Q = at(ev), dx = Q[0] - P[0], dy = Q[1] - P[1], nb = b0.slice();
+      if (!onHandle) {
+        nb[0] += dx;
+        nb[1] += dy;
+      } else {
+        if (hx === 0) {
+          nb[0] = Math.min(b0[0] + dx, b0[0] + b0[2] - 1);
+          nb[2] = b0[0] + b0[2] - nb[0];
+        } else if (hx === 2) nb[2] = Math.max(1, b0[2] + dx);
+        if (hy === 0) {
+          nb[1] = Math.min(b0[1] + dy, b0[1] + b0[3] - 1);
+          nb[3] = b0[1] + b0[3] - nb[1];
+        } else if (hy === 2) nb[3] = Math.max(1, b0[3] + dy);
+      }
+      if (cdBg) {
+        cdBg.box = nb;
+        paint();
+      }
+    };
+    var up = function() {
+      el.removeEventListener("pointermove", move2);
+      el.removeEventListener("pointerup", up);
+      el.removeEventListener("pointercancel", up);
+      if (!cdBg) return;
+      cdBg.drag = false;
+      var nb = cdBg.box.map(function(v) {
+        return Math.round(v * 100) / 100;
+      });
+      if (nb.some(function(v, k) {
+        return Math.abs(v - b0[k]) >= 5e-3;
+      })) {
+        cdBg.ref = { name: ref.name, box: nb };
+        cdBgDo(ref, function(t, n) {
+          return cdMk.backgroundSet(t, n, { box: nb });
+        });
+      } else paint();
+    };
+    el.addEventListener("pointermove", move2);
+    el.addEventListener("pointerup", up);
+    el.addEventListener("pointercancel", up);
   }
   function cdDouble(k, x, ids) {
     if (!isFinite(x)) return false;
@@ -7588,6 +7973,102 @@
       return glyphsNamed(t.replace(/&(lt|gt|quot|apos|amp);/g, function(m, e) {
         return { lt: "<", gt: ">", quot: '"', apos: "'", amp: "&" }[e];
       }));
+    }, picKeep);
+    followed = {};
+    picQ = Promise.resolve();
+  }
+  var followed;
+  var picQ;
+  function inTurn(fn) {
+    var p = picQ.then(fn);
+    picQ = p.catch(function() {
+    });
+    return p;
+  }
+  function picKeep(f) {
+    return inTurn(function() {
+      return keepNow(f);
+    });
+  }
+  function keepNow(f) {
+    return f.arrayBuffer().then(function(a) {
+      var d = new Uint8Array(a), png = d.length > 8 && d[0] === 137 && d[1] === 80 && d[2] === 78 && d[3] === 71;
+      var svg = !png && /<svg[\s>]/i.test(new TextDecoder().decode(d.subarray(0, 65536)));
+      if (!png && !svg) throw new Error(f.name + " is not a picture MINERVA can take here: PNG or SVG only");
+      var stem2 = f.name.replace(/\.[^.]*$/, "").replace(/[^A-Za-z0-9._-]+/g, "-").replace(/^[-.]+|-+$/g, "") || "picture", ext = png ? ".png" : ".svg", other = png ? ".svg" : ".png";
+      var gh2 = repo() && token(), look = gh2 ? siteGlyphs() : localGlyphs();
+      return bytesSha(d).then(function(sha) {
+        var free = function(k) {
+          var s = "glyphs/" + (k < 2 ? stem2 : stem2 + "-" + k);
+          return Promise.all([look(s + ext), look(s + other)]).then(function(r) {
+            return (!r[0] || r[0] === sha) && !r[1] ? { s, there: r[0] === sha } : free(k < 2 ? 2 : k + 1);
+          });
+        };
+        return free(1);
+      }).then(function(n) {
+        var file = n.s + ext;
+        held[file] = d;
+        return (n.there ? Promise.resolve() : picStore(file, d, gh2)).then(function() {
+          return { note: n.s + ".png", file, type: png ? "image/png" : "image/svg+xml", bytes: d };
+        });
+      });
+    });
+  }
+  function picStore(file, d, gh2) {
+    if (gh2) {
+      var at2 = "/contents/maps/" + file.split("/").map(encodeURIComponent).join("/");
+      return api(at2 + "?ref=main").then(function(r) {
+        if (r.ok) return;
+        return api(at2, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ message: "Picture: " + file, content: bytes64(d), branch: "main" }) }).then(ghJson);
+      }).then(function() {
+        ghPics = null;
+      }, function(e) {
+        throw new Error("the picture was not kept on GitHub: " + (e && e.message ? e.message : e));
+      });
+    }
+    var blob = new Blob([d]);
+    var inBrowser = V.draftDo("readonly", function(st) {
+      return st.get("minerva:mz-pictures");
+    }, "folder").then(function(r) {
+      r = r || { id: "mz-pictures", glyphs: {} };
+      r.glyphs[file] = blob;
+      r.at = Date.now();
+      storedAll = null;
+      return V.draftDo("readwrite", function(st) {
+        return st.put(r, "minerva:mz-pictures");
+      }, "folder");
+    }).catch(function(e) {
+      throw new Error("the picture was not kept in this browser: " + (e && e.message ? e.message : e));
+    });
+    return inBrowser.then(function() {
+      return picToFolder(file, d);
+    });
+  }
+  function picToFolder(file, d) {
+    if (!V.folderName()) return Promise.resolve();
+    return folder().then(function(f) {
+      if (!f) return;
+      return f.dir.queryPermission({ mode: "readwrite" }).then(function(perm) {
+        if (perm === "granted") return putIn(f.dir, file, d);
+      });
+    }).catch(function(e) {
+      warn("The picture " + file + " was not kept in the folder: " + (e && e.message ? e.message : e));
+    });
+  }
+  function putIn(dir, path, data) {
+    var parts = path.split("/"), name2 = parts.pop();
+    return parts.reduce(function(q, x) {
+      return q.then(function(d) {
+        return d.getDirectoryHandle(x, { create: true });
+      });
+    }, Promise.resolve(dir)).then(function(d) {
+      return d.getFileHandle(name2, { create: true });
+    }).then(function(h) {
+      return h.createWritable();
+    }).then(function(w) {
+      return w.write(data).then(function() {
+        return w.close();
+      });
     });
   }
   function picRead(n) {
@@ -7628,15 +8109,33 @@
       }).then(function(h) {
         return h && h.getFile();
       }).then(function(fl) {
-        return fl ? blob(fl) : null;
+        return fl ? follow(n, blob(fl), "folder") : null;
       }).catch(function() {
         return null;
       });
     }).then(function(b) {
-      return b || storedPic(n).then(blob).catch(function() {
+      return b || storedPic(n).then(function(d) {
+        return d && follow(n, blob(d), "browser");
+      }).catch(function() {
         return null;
       });
     });
+  }
+  function follow(n, b, from) {
+    var gh2 = repo() && token(), to = gh2 ? "gh" : V.folderName() && from === "browser" ? "folder" : null;
+    if (to && !followed[n]) {
+      followed[n] = 1;
+      inTurn(function() {
+        return b.arrayBuffer().then(function(a) {
+          var d = new Uint8Array(a);
+          return to === "gh" ? picStore(n, d, true) : picToFolder(n, d);
+        });
+      }).catch(function(e) {
+        followed[n] = 0;
+        warn("The picture " + n + " did not follow its map: " + (e && e.message ? e.message : e));
+      });
+    }
+    return b;
   }
   function localGlyphs() {
     var f = folderGlyphs();
@@ -7726,22 +8225,6 @@
   }
   function folderProject(p, maps) {
     if (!V.folderName()) return Promise.resolve();
-    var put2 = function(dir, path, data) {
-      var parts = path.split("/"), name2 = parts.pop();
-      return parts.reduce(function(q, x) {
-        return q.then(function(d) {
-          return d.getDirectoryHandle(x, { create: true });
-        });
-      }, Promise.resolve(dir)).then(function(d) {
-        return d.getFileHandle(name2, { create: true });
-      }).then(function(h) {
-        return h.createWritable();
-      }).then(function(w) {
-        return w.write(data).then(function() {
-          return w.close();
-        });
-      });
-    };
     return folder().then(function(f) {
       if (!f) return;
       return f.dir.queryPermission({ mode: "readwrite" }).then(function(perm) {
@@ -7753,7 +8236,7 @@
         }), [[at2 + "record.json", projectRecord(p, maps)]]);
         return all.reduce(function(q, x) {
           return q.then(function() {
-            return put2(f.dir, x[0], x[1]);
+            return putIn(f.dir, x[0], x[1]);
           });
         }, Promise.resolve());
       });
@@ -12532,7 +13015,7 @@
     return '<table class="m2-ed-ptab' + cls + '">' + rows.map(function(r) {
       var id = "m2-ed-" + r[0], f = r[2] === "check" ? '<input type="checkbox" id="' + id + '">' : r[2] === "select" ? '<select id="' + id + '">' + r[3].map(function(o) {
         return '<option value="' + o + '">' + o + "</option>";
-      }).join("") + "</select>" : r[2] === "colour" ? '<span class="m2-ed-pc"><input type="color" tabindex="-1" aria-label="' + r[1] + ', picker"><input type="text" id="' + id + '" spellcheck="false" autocomplete="off"' + (r[0] === "fill" ? ' placeholder="none"' : "") + "></span>" : r[2] === "num" ? '<input type="number" id="' + id + '" step="any"' + (r[3] || (r[0] === "width" ? ' min="0.25" max="20"' : /^[st][xy]$/.test(r[0]) ? "" : ' min="1" max="5000"')) + ">" : r[2] === "card" ? '<input type="text" inputmode="decimal" class="m2-ed-card" id="' + id + '" placeholder="1" spellcheck="false" autocomplete="off">' : '<input type="text" id="' + id + '" spellcheck="false" autocomplete="off">';
+      }).join("") + "</select>" : r[2] === "colour" ? '<span class="m2-ed-pc"><input type="color" tabindex="-1" aria-label="' + r[1] + ', picker"><input type="text" id="' + id + '" spellcheck="false" autocomplete="off"' + (r[0] === "fill" ? ' placeholder="none"' : "") + "></span>" : r[2] === "num" ? '<input type="number" id="' + id + '" step="any"' + (r[3] || (r[0] === "width" ? ' min="0.25" max="20"' : /^[st][xy]$/.test(r[0]) ? "" : ' min="1" max="5000"')) + ">" : r[2] === "card" ? '<input type="text" inputmode="decimal" class="m2-ed-card" id="' + id + '" placeholder="1" spellcheck="false" autocomplete="off">' : r[2] === "pic" ? '<span class="m2-ed-ppic"><img alt="" hidden><span class="m2-ed-ppicname"></span><button type="button" id="' + id + '">Choose</button><button type="button" class="m2-ed-ppicoff">Remove</button></span>' : '<input type="text" id="' + id + '" spellcheck="false" autocomplete="off">';
       return '<tr data-k="' + r[0] + '"' + (r[4] ? ' title="' + r[4] + '"' : "") + '><th><label for="' + id + '">' + r[1] + "</label></th><td>" + f + "</td></tr>";
     }).join("") + "</table>";
   }
@@ -12632,6 +13115,10 @@
     });
     ROWS.forEach(function(r) {
       var f = field(r[0]);
+      if (r[2] === "pic") {
+        picShow(f, pNow[r[0]]);
+        return;
+      }
       if (!all && document.activeElement === f) return;
       if (r[2] === "check") {
         f.checked = pNow[r[0]];
@@ -12673,7 +13160,7 @@
     props.querySelector(".m2-ed-pstd").hidden = !pf.hub || !ns.every(pf.hub);
     ROWS.forEach(function(r) {
       var tr = props.querySelector('.m2-ed-pnode tr[data-k="' + r[0] + '"]'), f = field(r[0]);
-      tr.hidden = r[0] === "label" || ns.some(function(i, j) {
+      tr.hidden = r[0] === "label" || r[2] === "pic" || ns.some(function(i, j) {
         pNow = Ls[j];
         return /^[wh]$/.test(r[0]) && (!sizable(i) || holds(i)) || pf.off(r[0], i);
       });
@@ -12905,7 +13392,7 @@
     });
   }
   function propListen(r) {
-    if (/^[wh]$/.test(r[0])) return;
+    if (/^[wh]$/.test(r[0]) || r[2] === "pic") return;
     var f = field(r[0]);
     f.addEventListener("change", function() {
       propSet(r[0]);
@@ -12934,6 +13421,17 @@
       EXTRA.push(r[0]);
       propListen(r);
     });
+  }
+  function picShow(f, v) {
+    var box2 = f.parentNode, img = box2.querySelector("img"), nm = box2.querySelector(".m2-ed-ppicname"), src2 = v && v.src || "";
+    nm.textContent = v ? v.name.replace(/^glyphs\//, "") : "none";
+    nm.title = v ? v.name : "";
+    if (img.getAttribute("src") !== src2) {
+      if (src2) img.setAttribute("src", src2);
+      else img.removeAttribute("src");
+    }
+    img.hidden = !src2;
+    box2.querySelector(".m2-ed-ppicoff").hidden = !v;
   }
   var DEF_KEY;
   function __run562() {
@@ -13312,7 +13810,7 @@
     });
     shared.copies = [];
   }
-  function follow(o, n) {
+  function follow2(o, n) {
     var seg = [];
     for (var i = 1; i < o.length; i++) {
       var a = o[i - 1], b = o[i], L = Math.hypot(b[0] - a[0], b[1] - a[1]), a1 = n[i - 1], b1 = n[i], L1 = Math.hypot(b1[0] - a1[0], b1[1] - a1[1]);
@@ -13415,7 +13913,7 @@
       if (!gs) return;
       var o = line(k, restBox, restPt), n = line(k, null, null, pp);
       if (!o || !n) return;
-      var F0 = follow(o, n), pair = function(str, closed) {
+      var F0 = follow2(o, n), pair = function(str, closed) {
         if (!closed) str = withBends(str, o.slice(1, -1));
         var v = str.match(/-?[\d.]+(?:e-?\d+)?/g) || [], k2 = 0, P = [];
         for (var i = 0; i + 1 < v.length; i += 2) P.push([+v[i], +v[i + 1]]);
@@ -13633,6 +14131,8 @@
         ["Right click on an added reactant or product", "Make main reactant, Make main product", "CellDesigner"],
         ["Add reactant or Add product, onto a reaction\u2019s line", "joins a line to a reaction already there", "CellDesigner"],
         ["A logic gate sign: click its inputs, then the reaction", "places the gate where CellDesigner would", "CellDesigner"],
+        ["Picture in Properties, or a PNG or SVG dropped on a compartment or species", "MINERVA\u2019s picture, drawn in the box as MINERVA draws it; Fit box to picture on the right click", "CellDesigner"],
+        ["Right click on empty map space, Add background picture", "a picture under the whole map, as MINERVA draws it; moved and resized from the same menu", "CellDesigner"],
         ["Set as default, in Properties", "the next ones of that kind made this size and look", "all"],
         ["Colours, Original", "puts back the map\u2019s own colours after another choice", "all"]
       ]]
@@ -17850,7 +18350,7 @@
         }],
         ["Show grid", gridShow, tick(gridSet.shown), gridSet.shown],
         ["Snap to grid", gridSnap, tick(gridSet.snap), gridSet.snap]
-      ];
+      ].concat(shared.F.mapItems && shared.F.mapItems() || []);
     };
     window.m2EditAddBend = function() {
       if (!on || V.current !== map || !rclick || onOwnMenu()) return null;

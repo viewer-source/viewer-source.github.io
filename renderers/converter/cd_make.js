@@ -61,7 +61,7 @@
     'prenylated', 'sulfated', 'protonated', "don't care", 'unknown', 'empty'];
   var ALIASES = { speciesAlias: 'listOfSpeciesAliases', complexSpeciesAlias: 'listOfComplexSpeciesAliases', compartmentAlias: 'listOfCompartmentAliases' };
   // lists CellDesigner always writes, empty or not
-  var KEEP = /^celldesigner:listOf(CompartmentAliases|ComplexSpeciesAliases|SpeciesAliases|Proteins|Genes|RNAs|AntisenseRNAs)$/;
+  var KEEP = /^celldesigner:listOf(CompartmentAliases|ComplexSpeciesAliases|SpeciesAliases|Proteins|Genes|RNAs|AntisenseRNAs|Layers)$/;
   var DOWN = '-1.5707963267948966', LINE = '<celldesigner:line width="1.0" color="ff000000"/>';
   // a name as the converter writes it (cd_name, cdrender's NAME), a line break as CellDesigner's _br_
   function unesc(s) { return s.replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&'); }   // an attribute's text as the XML parser reads it
@@ -1384,12 +1384,127 @@
     if (lineWidth(t, eid) === w) return t;   // the same number as the file writes it (1 for 1.0): no change
     return attrs(t, L[0], [['width', String(w % 1 ? w : w.toFixed(1))]]);
   }
+  // ---- MINERVA's pictures ----
+  // A picture is the line 'Glyph: glyphs/x.png' in an element's notes, as MINERVA reads it: a compartment's or a top-level
+  // species' SBML notes (a complex's too; its members' are not read), and a layer text's layerNotes (a background).
+  // MINERVA may write 'Z-Index: n' and 'SemanticZoomLevelTransparency: n' beside it. Written as MINERVA's own projects and
+  // the packer of the collections write it: the line first in the notes' body, the rest of the notes kept; CellDesigner
+  // shows the lines as text and draws nothing. Removed, the Glyph line goes with MINERVA's lines right after it and the rest stays; notes made here for the
+  // picture alone go with it, so a picture put on and taken off gives the text back
+  var BG_LAYER = 'Background pictures';
+  var GLYPH = /Glyph:[ \t]*([^\r\n<]+?\.(?:png|svg))[ \t\r]*(?:\n|<|$)/i;
+  var NOTES0 = '<notes>\n<html xmlns="http://www.w3.org/1999/xhtml">\n<head>\n<title/>\n</head>\n<body>';
+  var NOTES1 = '</body>\n</html>\n</notes>';
+  function picClean(s) { return s.replace(/(^|>)[ \t]*Glyph:[^\r\n<]*(?:\r?\n|(?=<)|$)(?:[ \t]*(?:Z-Index|SemanticZoomLevelTransparency):[^\r\n<]*(?:\r?\n|(?=<)|$))*/gim, '$1'); }   // the Glyph line (also the first after <body>) and MINERVA's lines right after it; a Z-Index of the element's own, elsewhere, kept
+  function picOwner(t, id) {   // the model element whose notes hold a node's picture: its span
+    var A = alias(t, id);
+    if (A.kind === 'compartmentAlias') {
+      var c = span(t, '<compartment(?=\\s)[^>]*\\sid="' + q(A.compartment) + '"');
+      if (!c) fail('No compartment ' + A.compartment + ' on the map.');
+      return c;
+    }
+    if (A.s.inc) refuse('A member of a complex takes no picture; its complex does.');
+    return A.s.sp;
+  }
+  function notesIn(t, sp) {   // the element's own notes, before or after its annotation (not inside it): [start, end] in t, or null
+    var h = t.indexOf('>', sp[0]) + 1, an = span(t, '<annotation[\\s>]', h, sp[1]), n = t.indexOf('<notes>', h);
+    if (n >= 0 && an && n > an[0] && n < an[1]) n = t.indexOf('<notes>', an[1]);
+    return n >= 0 && n < sp[1] ? [n, t.indexOf('</notes>', n) + 8] : null;
+  }
+  function pictureOf(t, id) { var n = notesIn(t, picOwner(t, id)), m = n && GLYPH.exec(t.slice(n[0], n[1])); return m ? unesc(m[1]) : null; }
+  function picture(t, id, name) {   // name 'glyphs/x.png' put on (or in place of the one there), null taken off
+    var sp = picOwner(t, id), n = notesIn(t, sp), line = name ? 'Glyph: ' + py.escape(name) + '\n' : '';
+    if (name && !/^glyphs\/[^/]+\.png$/.test(name)) fail('A picture is named glyphs/<name>.png.');
+    if (!n) {
+      if (!name) return t;
+      if (t.slice(sp[1] - 2, sp[1]) === '/>' && t.indexOf('>', sp[0]) + 1 === sp[1]) {   // <compartment .../> with nothing inside
+        var tag = head(t, sp).slice(0, -2) + '>', nm = /^<(\w+)/.exec(tag)[1];
+        return put(t, sp[0], sp[1], tag + '\n' + NOTES0 + line + NOTES1 + '\n</' + nm + '>');
+      }
+      var h = eol(t, t.indexOf('>', sp[0]) + 1);
+      return put(t, h, h, NOTES0 + line + NOTES1 + '\n');
+    }
+    var seg = t.slice(n[0], n[1]), g = GLYPH.exec(seg);
+    if (g && name) {   // replaced: the name alone, its other lines kept
+      var a = n[0] + g.index + g[0].indexOf(g[1]);
+      return unesc(g[1]) === name ? t : put(t, a, a + g[1].length, py.escape(name));
+    }
+    var b = /(<(?:\w+:)?body\b[^>]*?)(\/?)>/.exec(seg);
+    if (!name) {
+      if (!g) return t;
+      var s2 = picClean(seg), b2 = /(<(?:\w+:)?body\b[^>]*>)([\s\S]*?)(<\/(?:\w+:)?body>)/.exec(s2);
+      if (b2 && !b2[2]) s2 = s2.slice(0, b2.index) + b2[1].slice(0, -1) + '/>' + s2.slice(b2.index + b2[0].length);   // a body left empty written as CellDesigner writes one
+      var s2n = s2.replace(/\r\n/g, '\n');   // the file's own line ends (put() wrote CRLF in a CRLF file)
+      if (s2n === NOTES0 + NOTES1 || s2n === NOTES0.replace('<body>', '<body/>') + NOTES1.replace('</body>', '')) return cut(t, n);   // notes made for the picture alone
+      return put(t, n[0], n[1], s2);
+    }
+    if (b && b[2]) return put(t, n[0] + b.index, n[0] + b.index + b[0].length, b[1] + '>' + line + '</' + /^<([\w:]+)/.exec(b[1])[1] + '>');   // <body/>
+    if (b) { var at0 = n[0] + b.index + b[0].length, own = /^(?:[ \t]*(?:Z-Index|SemanticZoomLevelTransparency):[^\r\n<]*\r?\n)*/.exec(t.slice(at0))[0]; at0 += own.length; return put(t, at0, at0, line); }   // after MINERVA lines the element has of its own, so taking the picture off leaves them
+    return put(t, n[1] - 8, n[1] - 8, NOTES0.slice(8) + line + NOTES1.slice(0, -8));   // notes with no body: a body of its own after what is there
+  }
+  // backgrounds: the layer texts whose notes name a picture, in the file's order: [{ n, name, box }]; n counts every
+  // layer text of the file, so a background keeps its number while others are added after it
+  function layerTexts(t) { return all(t, '<celldesigner:layerSpeciesAlias(?=[\\s>])', [0, t.length]); }
+  function backgrounds(t) {
+    return layerTexts(t).map(function (x, k) {
+      var seg = t.slice(x.sp[0], x.sp[1]), ln = /<celldesigner:layerNotes>([\s\S]*?)<\/celldesigner:layerNotes>/.exec(seg), m = ln && GLYPH.exec(ln[1]);
+      var b = /<celldesigner:bounds [^>]*>/.exec(seg);
+      return m ? { n: k, name: unesc(m[1]), box: b ? ['x', 'y', 'w', 'h'].map(function (v) { return F(at(b[0], v)); }) : null } : null;
+    }).filter(Boolean);
+  }
+  function bgText(t, n) { var x = layerTexts(t)[n]; if (!x || !backgrounds(t).some(function (g) { return g.n === n; })) fail('No background picture ' + n + ' on the map.'); return x; }
+  // a background added: a text of the layer Background pictures (made, not visible, when the map has none: CellDesigner
+  // then shows no words of it; a name of its own, so a reader's own layer, Background or any, is never written into or
+  // removed), its notes the picture under everything (Z-Index -1, as MINERVA's backgrounds), its box the given one.
+  // { text, n }
+  function background(t, name, box) {
+    if (!/^glyphs\/[^/]+\.png$/.test(name || '')) fail('A picture is named glyphs/<name>.png.');
+    var B = box.map(num), item = '<celldesigner:layerSpeciesAlias x="' + B[0] + '" y="' + B[1] + '">\n<celldesigner:layerNotes>\nGlyph: ' + py.escape(name) + '\nZ-Index: -1\n</celldesigner:layerNotes>\n' +
+      '<celldesigner:bounds x="' + B[0] + '" y="' + B[1] + '" w="' + B[2] + '" h="' + B[3] + '"/>\n<celldesigner:paint color="ff000000"/>\n<celldesigner:font size="11"/>\n</celldesigner:layerSpeciesAlias>';
+    var L = span(t, '<celldesigner:layer(?=\\s)[^>]*\\sname="' + BG_LAYER + '"'), n = layerTexts(t).length;
+    if (L) {
+      n = layerTexts(t).filter(function (x) { return x.sp[0] < L[1]; }).length;
+      var h = t.indexOf('>', L[0]) + 1;
+      if (t[h - 2] === '/') return { text: put(t, L[0], L[1], head(t, L).slice(0, -2) + '>\n<celldesigner:listOfTexts>\n' + item + '\n</celldesigner:listOfTexts>\n</celldesigner:layer>'), n: n };   // <layer .../>
+      return { text: add(t, CD + 'listOfTexts', item, L[0], L[1], eol(t, h)), n: n };
+    }
+    var ids_ = ids(t, '<celldesigner:layer(?=\\s)').map(Number).filter(isFinite), lid = (ids_.length ? Math.max.apply(null, ids_) : 0) + 1;
+    var layer = '<celldesigner:layer id="' + lid + '" name="' + BG_LAYER + '" locked="false" visible="false">\n<celldesigner:listOfTexts>\n' + item + '\n</celldesigner:listOfTexts>\n</celldesigner:layer>';
+    var bd = t.indexOf('<celldesigner:listOfBlockDiagrams'), e = extEnd(t);
+    return { text: add(t, CD + 'listOfLayers', layer, 0, t.length, bd >= 0 ? bd : e), n: n };
+  }
+  // a background changed: o.name its picture, o.box its box (the layer text's x and y with it)
+  function backgroundSet(t, n, o) {
+    var x = bgText(t, n), seg = t.slice(x.sp[0], x.sp[1]);
+    if (o.name) {
+      if (!/^glyphs\/[^/]+\.png$/.test(o.name)) fail('A picture is named glyphs/<name>.png.');
+      var g = GLYPH.exec(seg.slice(seg.indexOf('<celldesigner:layerNotes>'))), a = x.sp[0] + seg.indexOf('<celldesigner:layerNotes>') + g.index + g[0].indexOf(g[1]);
+      if (unesc(g[1]) !== o.name) { t = put(t, a, a + g[1].length, py.escape(o.name)); x = layerTexts(t)[n]; seg = t.slice(x.sp[0], x.sp[1]); }
+    }
+    if (o.box) {
+      var B = o.box.map(num), bm = /<celldesigner:bounds [^>]*>/.exec(seg);
+      if (bm) t = attrs(t, x.sp[0] + bm.index, [['x', B[0]], ['y', B[1]], ['w', B[2]], ['h', B[3]]]);
+      t = attrs(t, x.sp[0], [['x', B[0]], ['y', B[1]]]);
+    }
+    return t;
+  }
+  // a background taken off; the layer Background pictures left with no text goes too, and the list of layers then as the file
+  // writes it empty, so a background added and removed gives the text back
+  function backgroundRemove(t, n) {
+    var x = bgText(t, n), L0 = span(t, '<celldesigner:layer(?=\\s)[^>]*\\sname="' + BG_LAYER + '"');
+    t = cut(t, x.sp);
+    if (L0 && L0[0] < x.sp[0] && L0[1] > x.sp[1]) {
+      var L = span(t, '<celldesigner:layer(?=\\s)[^>]*\\sname="' + BG_LAYER + '"'), inner = t.slice(t.indexOf('>', L[0]) + 1, L[1] - '</celldesigner:layer>'.length);
+      if (/^\s*<celldesigner:listOfTexts>\s*<\/celldesigner:listOfTexts>\s*$/.test(inner)) { var c0 = cut(t, L); t = /<celldesigner:listOfLayers><\/celldesigner:listOfLayers>/.test(c0) ? c0 : drop(t, L, [CD + 'listOfLayers']); }   // a list written open with nothing in it stays so
+    }
+    return t;
+  }
   function aliasInfo(t, id) {
     var A = alias(t, id), C = A.kind === 'compartmentAlias' ? span(t, '<compartment(?=\\s)[^>]*\\sid="' + q(A.compartment) + '"') : null;
     var hd = A.s && /<celldesigner:homodimer>(\d+)</.exec(t.slice(A.s.sp[0], A.s.sp[1]));
     return { kind: A.kind, cls: A.cls || null, id: A.species || A.compartment, name: A.s ? A.s.name : C ? at(head(t, C), 'name') : null, complex: A.complex, box: A.box, homodimer: hd ? +hd[1] : 1 };
   }
-  var api = { LOOK: LOOK, COMP: COMP, lineColour: lineColour, recolourLine: recolourLine, lineWidth: lineWidth, rewidthLine: rewidthLine, stoichiometry: stoichiometry, restoich: restoich, participants: participants, PROCESS: PROCESS, REDUCED: REDUCED, sbgn: sbgn, MODS: MODS, NEED: NEED, about: about, aliasInfo: aliasInfo, classColour: classColour, compartmentColour: compartmentColour, classColours: classColours, classSize: classSize, empty: empty, species: newSpecies, compartment: compartment, rename: rename, namePlace: namePlace, nameAt: nameAt, nameInfo: nameInfo, retype: retype, remove: remove, reaction: reaction, reduced: reduced,
+  var api = { picture: picture, pictureOf: pictureOf, backgrounds: backgrounds, background: background, backgroundSet: backgroundSet, backgroundRemove: backgroundRemove, LOOK: LOOK, COMP: COMP, lineColour: lineColour, recolourLine: recolourLine, lineWidth: lineWidth, rewidthLine: rewidthLine, stoichiometry: stoichiometry, restoich: restoich, participants: participants, PROCESS: PROCESS, REDUCED: REDUCED, sbgn: sbgn, MODS: MODS, NEED: NEED, about: about, aliasInfo: aliasInfo, classColour: classColour, compartmentColour: compartmentColour, classColours: classColours, classSize: classSize, empty: empty, species: newSpecies, compartment: compartment, rename: rename, namePlace: namePlace, nameAt: nameAt, nameInfo: nameInfo, retype: retype, remove: remove, reaction: reaction, reduced: reduced,
     reactant: reactant, product: product, modifier: modifier, reactionType: reactionType, reversible: reversible, modifierType: modifierType, removeLine: removeLine,
     gate: gate, gateInput: gateInput, gateInputRemove: gateInputRemove, gateType: gateType, residue: residue, residueState: residueState,
     residueRemove: residueRemove, residueName: residueName, residueMove: residueMove, structuralMove: structuralMove, features: features, STATES: STATES, placesFor: placesFor, ratioAngle: ratioAngle, bounds: bounds, proteinAliases: proteinAliases, joinKin: joinKin, structural: structural, info: info, infoUnit: infoUnit, INFO: INFO, homodimer: homodimer, look: look, restyle: restyle, recolourAll: recolourAll, colours: colours, cdName: cdName, joinable: joinable, join: join, leave: leave };
