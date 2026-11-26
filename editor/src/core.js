@@ -634,7 +634,10 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
     // mark by the title: when and how a map is saved is the system's concern). A warning stays until the next thing that works.
     function warn(t) { status.textContent = t; status.classList.add('m2-ed-warn'); }
     function note() { if (buildRefused) return warn(buildNote()); quiet(); }   // a step that worked: nothing said, a warning before it cleared; a build refused stays said
-    function quiet() { status.textContent = ''; status.classList.remove('m2-ed-warn'); }
+    function quiet() {   // while disconnected with the map's moves kept in this browser only, that stays said in place of nothing
+      if (offSay && on && site && site.pending && !token()) return warn(offSay);
+      status.textContent = ''; status.classList.remove('m2-ed-warn');
+    }
 
     // the layout tools (renderers/layout/layout.js, its own master since it was unlinked from the layout skill it began
     // as), run on the map's text; only the numbers they change are written back (tidy), so the rest stays byte for byte.
@@ -1764,34 +1767,75 @@ import { draftDrop, draftPut, folder, folderFile, folderForget, folderSet, keepB
       api('').then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); }).then(function (d) {
         if (!d.permissions || !d.permissions.push) throw 'it cannot write to ' + repo();
         box.querySelector('#m2-ed-gh-token').value = '';
+        offSay = null;
         upAll();   // the reader's maps kept in this browser go to GitHub
         if (on && site && site.mine) { buttons(); quiet(); if (site.pending) toGh(site); return; }   // a reader's map edited: sent (or its save taken up), then saved there
         var moved = shared.dirty || !!(site && site.pending && src() !== site.pub);   // moves kept in the browser count too
         if (on && site) {   // connected while editing: go on from the repository's version, keeping the moves made
           var keep = shared.text;
           var s0 = site, copy = !!shared.F.ahead.path;   // (s0.base: the text editing started from)
-          Promise.all([api('/contents/' + s0.path + '?ref=main').then(function (r) { return r.status === 404 && copy ? {} : r.json(); }),   // a map edited as a copy of its own (SBGN-ML) with no copy yet: the first save makes it
+          Promise.resolve(saving).catch(function () {}).then(function () { return Promise.all([api('/contents/' + s0.path + '?ref=main').then(function (r) { return r.status === 404 && copy ? {} : r.json(); }),   // a map edited as a copy of its own (SBGN-ML) with no copy yet: the first save makes it
             api('/contents/' + s0.path + '?ref=main', { headers: { Accept: 'application/vnd.github.raw' } }).then(function (r) { return r.status === 404 && copy ? s0.base : r.text(); })])
             .then(function (f) {
               if (!on || site !== s0) return;   // another map opened meanwhile: this one stays as kept in the browser, taken up when it is opened again (its moves never written into the map open now)
               s0.sha = f[0].sha || null; s0.pending = false; buttons();
-              if (f[1] !== s0.base) { stuck = true; warn('Connected, but the map in the repository is newer than the copy opened: moves not saved, nothing overwritten. Stop editing and open the map again.'); return; }
-              if (s0.id) unkeep(s0.id);   // GitHub holds the map from now on
+              // compared with what this page last saved there, not with the text editing began from (else every save made
+              // before a Disconnect read as a change by someone else)
+              if (f[1] !== (s0.saved != null ? s0.saved : s0.base)) {
+                if (moved) return conflict(s0, keep);   // changed elsewhere meanwhile: the reader's moves kept beside it, said
+                stuck = true; warn('Connected, but the map on GitHub was changed elsewhere since you opened it; you made no move, so nothing is lost. Stop editing and open the map again.'); return;
+              }
+              if (s0.id) Promise.resolve(unkeep(s0.id)).then(function () { s0.known = null; }, function () {});   // GitHub holds the map from now on; nothing kept in this browser now (else a second Disconnect read the draft's going as another tab's change)
               if (moved) { setText(keep); shared.dirty = true; push(); } else quiet();
-            });
+            }); });
         } else { buttons(); quiet(); }
       }).catch(function (e) {
         try { localStorage.removeItem(TOKEN_KEY); } catch (x) {}
         warn('The token was not accepted (' + e + ').'); ghForm(true);
       });
     });
-    box.querySelector('#m2-ed-gh-off').addEventListener('click', function () {
-      if (saveTimer) push();
-      try { localStorage.removeItem(TOKEN_KEY); } catch (e) {}
-      if (site && !site.pending) { site.pending = true; site.pub = site.saved || site.base; site.fromDraft = false; }   // further moves kept in this browser (else lost silently)
-      buttons(); quiet();
-    });
+    // Disconnect from GitHub: a change of setup, not of the map, so never one click: a window says what it does and
+    // Cancel is the default (Enter, Esc, a click beside it); once done, the red line says it until the token is pasted again
+    offSay = null;
+    box.querySelector('#m2-ed-gh-off').addEventListener('click', function () { askOff(disconnect); });
     box.querySelector('#m2-ed-this').addEventListener('click', editShown);
+    }
+    var offSay;   // the red line said while disconnected (null: connected, or never disconnected on this page)
+    function disconnect() {
+      var s = site, w = saveTimer ? push() : (saving || Promise.resolve());   // a save waiting goes now, with the token still there
+      try { localStorage.removeItem(TOKEN_KEY); } catch (e) {}
+      if (s && !s.pending) {   // further moves kept in this browser (else lost silently); pub: GitHub's text as this page last wrote it
+        s.pending = true; s.pub = s.saved || s.base; s.fromDraft = false;
+        Promise.resolve(w).catch(function () {}).then(function () { if (s.pending && s.saved != null) s.pub = s.saved; });   // the save under way, once through
+      }
+      offSay = 'Disconnected from GitHub: moves are no longer saved to the site, only kept in this browser. Paste a token below to save them there again.';
+      buttons(); quiet();
+    }
+    function askOff(go) {
+      var veil = document.createElement('div'), w = document.createElement('div'), back = document.activeElement;
+      veil.className = 'm2-me-veil'; w.className = 'm2-ask';
+      w.setAttribute('role', 'alertdialog'); w.setAttribute('aria-modal', 'true'); w.setAttribute('aria-labelledby', 'm2-ask-h');
+      w.innerHTML = '<h3 id="m2-ask-h">Disconnect from GitHub?</h3>' +
+        '<p>Your moves will no longer be saved to ' + (repo() || 'the site') + ' or shown on the site. They are kept in this browser only, and lost if its site data is cleared.</p>' +
+        '<p>The token is removed from this browser. To save to the site again, you paste it again.</p>' +
+        '<div class="m2-ask-row"><button type="button" class="m2-ask-no">Cancel</button><button type="button" class="m2-ask-yes">Disconnect</button></div>';
+      veil.appendChild(w); document.body.appendChild(veil);
+      var close = function (yes) {
+        veil.remove(); window.removeEventListener('keydown', key, true);
+        if (back && back.isConnected && back.focus) back.focus();
+        if (yes) go();
+      };
+      var key = function (e) {   // the page behind takes no keys; Esc and Enter on Cancel close it unchanged
+        e.stopImmediatePropagation();
+        if (e.key === 'Escape') { e.preventDefault(); close(false); }
+        else if (e.key === 'Tab') { e.preventDefault(); (document.activeElement === no ? yes : no).focus(); }
+      };
+      var no = w.querySelector('.m2-ask-no'), yes = w.querySelector('.m2-ask-yes');
+      no.addEventListener('click', function () { close(false); });
+      yes.addEventListener('click', function () { close(true); });
+      veil.addEventListener('pointerdown', function (e) { if (e.target === veil) close(false); });
+      window.addEventListener('keydown', key, true);
+      no.focus();
     }
     function gridPut(g) { Object.assign(gridSet, { shown: g.shown, snap: g.snap, step: g.step }); gridKeep(); inGrid.value = String(gridSet.step); gridButtons(); paint(); }   // an undo or redo of Grid, Snap or Grid size
     function gridDid(was) { V.setDid(gridPut, was, { shown: gridSet.shown, snap: gridSet.snap, step: gridSet.step }); }

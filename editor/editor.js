@@ -15846,6 +15846,7 @@
     quiet();
   }
   function quiet() {
+    if (offSay && on && site && site.pending && !token()) return warn(offSay);
     status.textContent = "";
     status.classList.remove("m2-ed-warn");
   }
@@ -17554,6 +17555,7 @@
       }).then(function(d) {
         if (!d.permissions || !d.permissions.push) throw "it cannot write to " + repo();
         box.querySelector("#m2-ed-gh-token").value = "";
+        offSay = null;
         upAll();
         if (on && site && site.mine) {
           buttons();
@@ -17565,30 +17567,37 @@
         if (on && site) {
           var keep = shared.text;
           var s0 = site, copy = !!shared.F.ahead.path;
-          Promise.all([
-            api("/contents/" + s0.path + "?ref=main").then(function(r) {
-              return r.status === 404 && copy ? {} : r.json();
-            }),
-            // a map edited as a copy of its own (SBGN-ML) with no copy yet: the first save makes it
-            api("/contents/" + s0.path + "?ref=main", { headers: { Accept: "application/vnd.github.raw" } }).then(function(r) {
-              return r.status === 404 && copy ? s0.base : r.text();
-            })
-          ]).then(function(f) {
-            if (!on || site !== s0) return;
-            s0.sha = f[0].sha || null;
-            s0.pending = false;
-            buttons();
-            if (f[1] !== s0.base) {
-              stuck = true;
-              warn("Connected, but the map in the repository is newer than the copy opened: moves not saved, nothing overwritten. Stop editing and open the map again.");
-              return;
-            }
-            if (s0.id) unkeep(s0.id);
-            if (moved) {
-              setText(keep);
-              shared.dirty = true;
-              push();
-            } else quiet();
+          Promise.resolve(saving).catch(function() {
+          }).then(function() {
+            return Promise.all([
+              api("/contents/" + s0.path + "?ref=main").then(function(r) {
+                return r.status === 404 && copy ? {} : r.json();
+              }),
+              // a map edited as a copy of its own (SBGN-ML) with no copy yet: the first save makes it
+              api("/contents/" + s0.path + "?ref=main", { headers: { Accept: "application/vnd.github.raw" } }).then(function(r) {
+                return r.status === 404 && copy ? s0.base : r.text();
+              })
+            ]).then(function(f) {
+              if (!on || site !== s0) return;
+              s0.sha = f[0].sha || null;
+              s0.pending = false;
+              buttons();
+              if (f[1] !== (s0.saved != null ? s0.saved : s0.base)) {
+                if (moved) return conflict(s0, keep);
+                stuck = true;
+                warn("Connected, but the map on GitHub was changed elsewhere since you opened it; you made no move, so nothing is lost. Stop editing and open the map again.");
+                return;
+              }
+              if (s0.id) Promise.resolve(unkeep(s0.id)).then(function() {
+                s0.known = null;
+              }, function() {
+              });
+              if (moved) {
+                setText(keep);
+                shared.dirty = true;
+                push();
+              } else quiet();
+            });
           });
         } else {
           buttons();
@@ -17603,21 +17612,70 @@
         ghForm(true);
       });
     });
+    offSay = null;
     box.querySelector("#m2-ed-gh-off").addEventListener("click", function() {
-      if (saveTimer) push();
-      try {
-        localStorage.removeItem(TOKEN_KEY);
-      } catch (e) {
-      }
-      if (site && !site.pending) {
-        site.pending = true;
-        site.pub = site.saved || site.base;
-        site.fromDraft = false;
-      }
-      buttons();
-      quiet();
+      askOff(disconnect);
     });
     box.querySelector("#m2-ed-this").addEventListener("click", editShown);
+  }
+  var offSay;
+  function disconnect() {
+    var s = site, w = saveTimer ? push() : saving || Promise.resolve();
+    try {
+      localStorage.removeItem(TOKEN_KEY);
+    } catch (e) {
+    }
+    if (s && !s.pending) {
+      s.pending = true;
+      s.pub = s.saved || s.base;
+      s.fromDraft = false;
+      Promise.resolve(w).catch(function() {
+      }).then(function() {
+        if (s.pending && s.saved != null) s.pub = s.saved;
+      });
+    }
+    offSay = "Disconnected from GitHub: moves are no longer saved to the site, only kept in this browser. Paste a token below to save them there again.";
+    buttons();
+    quiet();
+  }
+  function askOff(go) {
+    var veil = document.createElement("div"), w = document.createElement("div"), back2 = document.activeElement;
+    veil.className = "m2-me-veil";
+    w.className = "m2-ask";
+    w.setAttribute("role", "alertdialog");
+    w.setAttribute("aria-modal", "true");
+    w.setAttribute("aria-labelledby", "m2-ask-h");
+    w.innerHTML = '<h3 id="m2-ask-h">Disconnect from GitHub?</h3><p>Your moves will no longer be saved to ' + (repo() || "the site") + ' or shown on the site. They are kept in this browser only, and lost if its site data is cleared.</p><p>The token is removed from this browser. To save to the site again, you paste it again.</p><div class="m2-ask-row"><button type="button" class="m2-ask-no">Cancel</button><button type="button" class="m2-ask-yes">Disconnect</button></div>';
+    veil.appendChild(w);
+    document.body.appendChild(veil);
+    var close = function(yes2) {
+      veil.remove();
+      window.removeEventListener("keydown", key, true);
+      if (back2 && back2.isConnected && back2.focus) back2.focus();
+      if (yes2) go();
+    };
+    var key = function(e) {
+      e.stopImmediatePropagation();
+      if (e.key === "Escape") {
+        e.preventDefault();
+        close(false);
+      } else if (e.key === "Tab") {
+        e.preventDefault();
+        (document.activeElement === no2 ? yes : no2).focus();
+      }
+    };
+    var no2 = w.querySelector(".m2-ask-no"), yes = w.querySelector(".m2-ask-yes");
+    no2.addEventListener("click", function() {
+      close(false);
+    });
+    yes.addEventListener("click", function() {
+      close(true);
+    });
+    veil.addEventListener("pointerdown", function(e) {
+      if (e.target === veil) close(false);
+    });
+    window.addEventListener("keydown", key, true);
+    no2.focus();
   }
   function gridPut(g) {
     Object.assign(gridSet, { shown: g.shown, snap: g.snap, step: g.step });

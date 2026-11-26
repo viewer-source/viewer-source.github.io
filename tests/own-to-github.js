@@ -157,7 +157,7 @@ var gitSha = function (t) { var b = Buffer.from(t, 'utf8'); return crypto.create
   // 6. disconnected while editing: the moves kept in this browser, sent when the page opens connected again
   await page.goto(base + '#' + id4, { waitUntil: 'load' }); await page.waitForSelector('.m2-ri[data-win="edit"]', { timeout: 30000 }); await page.waitForTimeout(2500);
   await edit();
-  await page.click('#m2-ed-gh-off'); await page.waitForTimeout(500);
+  await page.click('#m2-ed-gh-off'); await page.waitForTimeout(300); await page.click('.m2-ask-yes'); await page.waitForTimeout(500);
   await make(1000, 500); await page.waitForTimeout(3000);
   r4 = (await recs()).filter(function (r) { return r.id === id4; })[0];
   var count = function (t) { return ((t || '').match(/class="macromolecule"/g) || []).length; };

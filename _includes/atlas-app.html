@@ -831,6 +831,13 @@ page, so its styles keep the base they were made on).
   #m2-setwin .m2-set-menus { margin: 14px 0 0; }
   #m2-setwin .m2-set-row.m2-set-one { grid-template-columns: 1fr; }
   .m2-me-veil { position: fixed; inset: 0; z-index: 1000; background: rgba(0, 0, 0, .25); display: flex; align-items: center; justify-content: center; }
+  /* a question that guards a change of setup (Disconnect from GitHub; core.js askOff): greys only, as the Edit window; Cancel first and focused */
+  .m2-ask { width: min(420px, calc(100vw - 32px)); box-sizing: border-box; padding: 20px 22px 16px; background: var(--m2-bg); color: var(--m2-text); border: 1px solid var(--m2-line); border-radius: 8px; box-shadow: 0 8px 32px rgba(0, 0, 0, .18); font-size: 14px; line-height: 1.45; }
+  .m2-ask h3 { margin: 0 0 10px; font-size: 16px; font-weight: 600; }
+  .m2-ask p { margin: 0 0 10px; }
+  .m2-ask-row { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+  .m2-ask-row button { font: inherit; font-size: 14px; line-height: 20px; padding: 5px 14px; border: 1px solid var(--m2-line); border-radius: 4px; background: var(--m2-bg); color: var(--m2-text); cursor: pointer; }
+  .m2-ask-row button:hover, .m2-ask-row button:focus-visible { background: var(--m2-soft); }
   .m2-me { width: min(1040px, calc(100vw - 32px)); height: min(680px, calc(100vh - 32px)); display: flex; flex-direction: column; background: var(--m2-bg); color: var(--m2-text); border: 1px solid var(--m2-line); border-radius: 8px; box-shadow: 0 8px 32px rgba(0, 0, 0, .18); font-size: 14px; overflow: hidden; }
   .m2-me-top { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; border-bottom: 1px solid var(--m2-line); }
   .m2-me-title { font-weight: 500; }
