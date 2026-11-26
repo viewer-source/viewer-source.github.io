@@ -5,9 +5,10 @@
 // gives the standard size and antenna (a process 20, a gate 24 with letters 10, antennas 10), one glyph or every one
 // selected by Select all of this kind. Read from the SBGN-ML text the editor would save (bboxes, ports, render font
 // sizes). Nothing is saved (no token). No script error.
-//   node tests/antenna.js [address] [viewer folder: its editor and renderers served in place of the page's]
+//   node tests/antenna.js --data=<clone of the data repository> [address] [viewer folder: its editor and renderers served in place of the page's]
 var { chromium } = require('playwright');
-var url = process.argv[2] || 'https://viewer-source.github.io/styles/#testing-glycolysis-sbgn', local = process.argv[3], fs = require('fs'), path = require('path');
+var OM = require('./lib/open-map.js'), argv = process.argv.slice(2).filter(function (a) { return !/^--/.test(a); });   // --data=... is no address or folder
+var url = argv[0] || 'https://viewer-source.github.io/styles/#testing-glycolysis-sbgn', local = argv[1], base = url.split('#')[0], ref = url.split('#')[1] || '', fs = require('fs'), path = require('path');
 var X = require('@xmldom/xmldom');
 function hubs(s) {   // { id: { cls, w, h, ant, font } } of the processes and gates of SBGN-ML text s
   var d = new X.DOMParser().parseFromString(s, 'application/xml'), out = {}, font = {};
@@ -40,7 +41,7 @@ function hubs(s) {   // { id: { cls, w, h, ant, font } } of the processes and ga
   }
   page.on('pageerror', function (e) { errs.push(e.message); });
   var now = async function () { return hubs(await page.evaluate(function () { return window.m2EditNow().text; })); };
-  await page.goto(url, { waitUntil: 'load' });
+  await OM.open(page, base, ref);
   await page.waitForSelector('.m2-ri[data-win="edit"]', { timeout: 60000 });
   if (!(await page.$('#m2-editwin:visible'))) await page.click('.m2-ri[data-win="edit"]');
   await page.waitForFunction(function () { return !!window.m2EditNow(); }, null, { timeout: 30000 }); await page.waitForTimeout(3000);

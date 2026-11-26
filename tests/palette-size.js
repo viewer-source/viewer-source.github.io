@@ -3,15 +3,16 @@
 // as the icon row above at the usual 240 px panel, the palette's outlines 1.2 px on screen, the tools' 1.4 as the top
 // icons, the small arrows 1.2; no Sign size left in Settings; a panel narrower than the usual one wraps the signs and
 // nothing passes its edge. Testing Glycolysis SBGN-ML, full editing. No script error.
-//   node tests/palette-size.js [address]
+//   node tests/palette-size.js --data=<clone of the data repository> [address]
 var engine = require('playwright')[process.env.BROWSER || 'chromium'];   // BROWSER=webkit or firefox: the same test in another engine
-var url = process.argv[2] || 'https://viewer-source.github.io/styles/#testing-glycolysis-sbgn';
+var OM = require('./lib/open-map.js'), argv = process.argv.slice(2).filter(function (a) { return !/^--/.test(a); });   // --data=... is no address or folder
+var url = argv[0] || 'https://viewer-source.github.io/styles/#testing-glycolysis-sbgn', base = url.split('#')[0], ref = url.split('#')[1] || '';
 (async function () {
   var b = await engine.launch(), bad = 0, errs = [];
   var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more && !v ? '  ' + more : '')); };
   var ctx = await b.newContext({ viewport: { width: 1400, height: 900 } });
   async function open(page, listW) {
-    await page.goto(url, { waitUntil: 'load' });
+    await OM.open(page, base, ref);
     await page.evaluate(function (w) { localStorage.setItem('atlas-edit-level', 'full'); localStorage.removeItem('atlas-edit-side'); if (w) localStorage.setItem('atlas-list-width:' + location.pathname, String(w)); else localStorage.removeItem('atlas-list-width:' + location.pathname); }, listW || 0);
     await page.reload({ waitUntil: 'load' });
     await page.waitForSelector('.m2-ri[data-win="edit"]', { timeout: 30000 });

@@ -5,10 +5,11 @@
 // to that step, released, measured, undone). Any shape or line drawn during the drag that the drop does not draw, or the
 // other way round, is a difference. Testing Glycolysis SBGN-ML, the full editor, no token, the working tree's editor
 // and renderers routed into the live /styles/ page.
-//   node tests/drag-preview.js [viewer folder]   (LIVE=1: the page's own code; ONLY=<case name part>; SHOT=<prefix>)
+//   node tests/drag-preview.js --data=<clone of the data repository> [viewer folder]   (LIVE=1: the page's own code; ONLY=<case name part>; SHOT=<prefix>)
 var engine = require('playwright')[process.env.BROWSER || 'chromium'], fs = require('fs'), path = require('path');
 var NOISE = require('./lib/noise.js');   // what a browser reports that is no fault of the page
-var here = process.argv[2] || path.join(__dirname, '..'), URL = 'https://viewer-source.github.io/styles/#testing-glycolysis-sbgn', bad = 0;
+var OM = require('./lib/open-map.js'), argv = process.argv.slice(2).filter(function (a) { return !/^--/.test(a); });   // --data=... is no address or folder
+var here = argv[0] || path.join(__dirname, '..'), BASE = 'https://viewer-source.github.io/styles/', bad = 0;
 var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more && !v ? '  ' + more : '')); };
 async function open(b) {
   var p = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [];
@@ -20,7 +21,7 @@ async function open(b) {
   }
   p.on('pageerror', function (e) { if (!NOISE.test(e.message)) errs.push(e.message); });
   await p.addInitScript(function () { try { localStorage.removeItem('atlas-cd-compatible'); localStorage.setItem('atlas-edit-level', 'full'); localStorage.setItem('atlas-drag-moves', 'off'); } catch (e) {} });
-  await p.goto(URL, { waitUntil: 'load' });
+  await OM.open(p, BASE, 'testing-glycolysis-sbgn');
   await p.waitForSelector('.m2-ri[data-win="edit"]', { timeout: 30000 });
   await p.click('.m2-ri[data-win="edit"]');
   await p.waitForSelector('#m2-editwin button[data-make="submap"]', { state: 'visible', timeout: 30000 }); await p.waitForTimeout(2500);

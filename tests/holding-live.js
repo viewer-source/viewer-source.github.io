@@ -5,10 +5,11 @@
 // compartment (it joins), the compartment resized so the member is no longer in it (it is let go). After each, the
 // editor's GraphML (every node's holder and box) is compared with holding.settle run under Node on the GraphML from
 // before the gesture, given the same moves; then the gesture is undone. Any holder or box that differs is named.
-//   node tests/holding-live.js [viewer folder]   (LIVE=1: the page's own code)
+//   node tests/holding-live.js --data=<clone of the data repository> [viewer folder]   (LIVE=1: the page's own code)
 var engine = require('playwright')[process.env.BROWSER || 'chromium'], fs = require('fs'), path = require('path');
 var NOISE = require('./lib/noise.js');   // what a browser reports that is no fault of the page
-var here = process.argv[2] || path.join(__dirname, '..'), URL = 'https://viewer-source.github.io/styles/#testing-glycolysis-sbgn', bad = 0;
+var OM = require('./lib/open-map.js'), argv = process.argv.slice(2).filter(function (a) { return !/^--/.test(a); });   // --data=... is no address or folder
+var here = argv[0] || path.join(__dirname, '..'), BASE = 'https://viewer-source.github.io/styles/', bad = 0;
 var HM = require('./lib/holding-model.js');
 var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more && !v ? '  ' + more : '')); };
 function nodesOf(g) {   // id -> { up: holder id, box }
@@ -47,7 +48,7 @@ function compare(what, want, got) {
   }
   p.on('pageerror', function (e) { if (!NOISE.test(e.message)) errs.push(e.message); });
   await p.addInitScript(function () { try { localStorage.removeItem('atlas-cd-compatible'); localStorage.removeItem('atlas-edit-padding'); localStorage.setItem('atlas-edit-level', 'full'); localStorage.setItem('atlas-drag-moves', 'off'); } catch (e) {} });
-  await p.goto(URL, { waitUntil: 'load' });
+  await OM.open(p, BASE, 'testing-glycolysis-sbgn');
   await p.waitForSelector('.m2-ri[data-win="edit"]', { timeout: 30000 }); await p.click('.m2-ri[data-win="edit"]');
   await p.waitForSelector('#m2-editwin button[data-make="compartment"]', { state: 'visible', timeout: 30000 }); await p.waitForTimeout(2500);
   var text = function () { return p.evaluate(function () { var s = window.m2EditState(), t = null; Object.keys(s).forEach(function (k) { if (s[k] && typeof s[k].text === 'string') t = s[k].text; }); return t; }); };

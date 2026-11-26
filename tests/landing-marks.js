@@ -3,9 +3,10 @@
 // (.m2-ed-port) at the second's centre, no grey fill over it (.m2-ed-dark gone from the editor); released, the
 // production and its process made; a stimulation dragged from the first over that process: the square on the middle of
 // one of the process's sides, inside its box's reach. Nothing is saved (no token). No script error.
-//   node tests/landing-marks.js [address] [viewer folder: its editor served in place of the page's]
+//   node tests/landing-marks.js --data=<clone of the data repository> [address] [viewer folder: its editor served in place of the page's]
 var { chromium } = require('playwright'), fs = require('fs'), path = require('path');
-var url = process.argv[2] || 'https://viewer-source.github.io/styles/#testing-glycolysis-sbgn', local = process.argv[3];
+var OM = require('./lib/open-map.js'), argv = process.argv.slice(2).filter(function (a) { return !/^--/.test(a); });   // --data=... is no address or folder
+var url = argv[0] || 'https://viewer-source.github.io/styles/#testing-glycolysis-sbgn', local = argv[1], base = url.split('#')[0], ref = url.split('#')[1] || '';
 (async function () {
   var b = await chromium.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], bad = 0;
   if (local) {
@@ -24,7 +25,7 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#testing-gl
     await page.keyboard.press('Escape');
     return Object.keys(await rects()).filter(function (i) { return before.indexOf(i) < 0; })[0];
   };
-  await page.goto(url, { waitUntil: 'load' });
+  await OM.open(page, base, ref);
   await page.evaluate(function () { localStorage.setItem('atlas-edit-level', 'full'); localStorage.setItem('atlas-drag-moves', 'off'); });
   await page.reload({ waitUntil: 'load' });
   await page.waitForSelector('.m2-ri[data-win="edit"]', { timeout: 60000 }); await page.click('.m2-ri[data-win="edit"]');

@@ -2,10 +2,11 @@
 // Glycolysis SBGN-ML with full editing: at the panel's usual width the gates start a row and the arcs start a row, with
 // CellDesigner compatible ticked (no Tag) and unticked (Tag), under PD and AF; the tick box sits above Reduced notation,
 // is not in Settings, takes the Tag (and AF's delay) out and puts it back, and one undo puts it back as it was. No script error.
-//   node tests/palette-rows.js [address] [viewer folder: its editor served in place of the page's]
+//   node tests/palette-rows.js --data=<clone of the data repository> [address] [viewer folder: its editor served in place of the page's]
 var engine = require('playwright')[process.env.BROWSER || 'chromium'], fs = require('fs'), path = require('path');   // BROWSER=webkit or firefox: the same test in another engine
 var NOISE = require('./lib/noise.js');   // what a browser reports that is no fault of the page
-var url = process.argv[2] || 'https://viewer-source.github.io/styles/#testing-glycolysis-sbgn', local = process.argv[3];
+var OM = require('./lib/open-map.js'), argv = process.argv.slice(2).filter(function (a) { return !/^--/.test(a); });   // --data=... is no address or folder
+var url = argv[0] || 'https://viewer-source.github.io/styles/#testing-glycolysis-sbgn', local = argv[1], base = url.split('#')[0], ref = url.split('#')[1] || '';
 (async function () {
   var b = await engine.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], bad = 0;
   if (local) {
@@ -28,7 +29,7 @@ var url = process.argv[2] || 'https://viewer-source.github.io/styles/#testing-gl
   };
   var tag = function () { return page.isVisible('#m2-editwin button[data-make="tag"]'); };
   var ticked = function () { return page.$eval('#m2-editwin .m2-ed-pcdc input', function (i) { return i.checked; }); };
-  await page.goto(url, { waitUntil: 'load' });
+  await OM.open(page, base, ref);
   await page.evaluate(function () { localStorage.removeItem('atlas-cd-compatible'); localStorage.removeItem('atlas-edit-palette'); localStorage.setItem('atlas-edit-level', 'full'); });
   await page.reload({ waitUntil: 'load' });
   await page.waitForSelector('.m2-ri[data-win="edit"]', { timeout: 30000 });
