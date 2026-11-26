@@ -27,7 +27,7 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
         if (e.tagName === 'INPUT' && e.type === 'checkbox') { var k = Math.round(e.getBoundingClientRect().width / z) + 'px ' + cs.accentColor; (ticks[k] = ticks[k] || []).push(e.id || e.className); return; }
         if (e.tagName === 'SELECT' || (e.tagName === 'INPUT' && /^(text|number)$/.test(e.type) && !e.disabled) || (e.tagName === 'SPAN' && e.closest('.m2-ed-pdd'))) { (values[cs.color] = values[cs.color] || []).push(e.id || e.className || e.tagName); return; }
         var own = [].some.call(e.childNodes, function (n) { return n.nodeType === 3 && n.textContent.trim(); });
-        if (own && !(e.tagName === 'BUTTON' && e.matches('.m2-ed-pdef, .m2-ed-pall, .m2-ed-pstd, .m2-ed-ppic button')) && !e.closest('button.m2-ed-pinfo')) { var t = [].map.call(e.childNodes, function (n) { return n.nodeType === 3 ? n.textContent.trim() : ''; }).join('').slice(0, 20); (names[cs.color] = names[cs.color] || []).push(t); }
+        if (own && !(e.tagName === 'BUTTON' && e.matches('.m2-ed-pdef, .m2-ed-pall, .m2-ed-pstd, .m2-ed-ppic button')) && !e.closest('button.m2-ed-pinfo') && !e.matches('.m2-ed-ppicname')) { var t = [].map.call(e.childNodes, function (n) { return n.nodeType === 3 ? n.textContent.trim() : ''; }).join('').slice(0, 20); (names[cs.color] = names[cs.color] || []).push(t); }
       });
       return { names: names, values: values, ticks: ticks, props: props };
     });
