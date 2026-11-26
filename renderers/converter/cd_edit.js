@@ -24,6 +24,9 @@
   // a reaction's id: one with a metaid and no id (SBML requires one) is read by its metaid, as the converter reads it;
   // rxOpen finds its start tag in the text by either
   function rxid(rx) { return get(rx, 'id') || get(rx, 'metaid'); }
+  // a species alias's tag as the file has it: by its species' class, else the other tag (a map merged from several, as
+  // ACSN's global master, may keep a complex's alias as a plain speciesAlias)
+  function spKind(T, d, i) { var k = d.alias.get(i)[0] === 'COMPLEX' ? 'complexSpeciesAlias' : 'speciesAlias', o = k === 'speciesAlias' ? 'complexSpeciesAlias' : 'speciesAlias'; return T.at(k, i) == null && T.at(o, i) != null ? o : k; }
   function aliasOpen(kind, id) { return '<celldesigner:' + kind + '\\s[^>]*?\\bid="' + reEscape(id) + '"'; }   // an alias's opening tag, its id anywhere among the attributes
   function rxOpen(rid) { return '<reaction [^>]*\\b(?:meta)?id="' + reEscape(rid) + '"'; }
 
@@ -730,7 +733,7 @@
     old.forEach(function (b, i) {
       var n = nw.get(i);
       if ([0, 1, 2, 3].every(function (j) { return Math.abs(n[j] - b[j]) < 1e-3; })) return;
-      var kind = comps.has(i) ? 'compartmentAlias' : d.alias.get(i)[0] === 'COMPLEX' ? 'complexSpeciesAlias' : 'speciesAlias';
+      var kind = comps.has(i) ? 'compartmentAlias' : spKind(T, d, i);
       var s = T.span(aliasOpen(kind, i), T.at(kind, i));
       if (!s) throw new Error("TypeError: 'NoneType' object is not subscriptable");
       var bt = T.span('<celldesigner:bounds ', s[0], s[1]);
@@ -783,7 +786,7 @@
       }
       var A = d.alias.get(i)[2], sid = get(A, 'species');
       if (get(A, 'complexSpeciesAlias') !== null) return;
-      var ak = d.alias.get(i)[0] === 'COMPLEX' ? 'complexSpeciesAlias' : 'speciesAlias', s = T.span(aliasOpen(ak, i), T.at(ak, i));
+      var ak = spKind(T, d, i), s = T.span(aliasOpen(ak, i), T.at(ak, i));
       T.attrs(s[0], [['compartmentAlias', p]]);
       var ip2 = T.span('<celldesigner:innerPosition ', s[0], s[1]);   // its offset from the new compartment's corner, as CellDesigner writes it when it reassigns
       if (ip2 && p !== null) T.attrs(ip2[0], [['x', num(nw.get(i)[0] - nw.get(p)[0])], ['y', num(nw.get(i)[1] - nw.get(p)[1])]]);

@@ -2869,8 +2869,11 @@
     r.hps.forEach(function (h) { if (h.all) T.cut(h.el); else Array.prototype.forEach.call(h.el.getElementsByTagNameNS(RDF_NS, 'li'), function (li) { if ((li.getAttributeNS(RDF_NS, 'resource') || '').indexOf(SITE_URN) === 0) T.cut(li); }); });
     if (!items.length) return;
     var base = r.desc ? T.indent(r.desc) + '  ' : null;
+    // the prefixes declared where the links go (Newt's files declare them once, on rdf:RDF) are not declared again
+    var known = function (el, pfx, uri) { for (var e = el; e && e.nodeType === 1; e = e.parentNode) { var v = e.getAttribute('xmlns:' + pfx); if (v) return v === uri; } return false; };
+    var decl = r.desc && known(r.desc, 'bqbiol', BQB) && known(r.desc, 'rdf', RDF_NS) ? '' : ' xmlns:bqbiol="' + BQB + '" xmlns:rdf="' + RDF_NS + '"';
     var block = function (ind) {
-      return '\n' + ind + '<bqbiol:hasProperty xmlns:bqbiol="' + BQB + '" xmlns:rdf="' + RDF_NS + '">\n' + ind + '  <rdf:Bag>\n' +
+      return '\n' + ind + '<bqbiol:hasProperty' + decl + '>\n' + ind + '  <rdf:Bag>\n' +
         items.map(function (x) { return ind + '    <rdf:li rdf:resource="' + esc(siteUrn(x.sv, x.full)) + '"/>\n'; }).join('') + ind + '  </rdf:Bag>\n' + ind + '</bqbiol:hasProperty>';
     };
     if (r.desc) { var at = T.at.get(r.desc)[1]; T.ed.push([at, at, block(base)]); return; }
