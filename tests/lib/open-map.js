@@ -36,7 +36,17 @@ async function byFile(page, base, file) {
 }
 // maps the tests use that live in the test set, not on the site, so deleting a map from the site's list never touches a
 // test: a test asks for one by this name, and resolve() adds the file once per browser and gives the address it got
-var TESTSET = { 'testing-glycolysis-sbgn': 'test-maps/test-set/maps/testing-glycolysis-sbgn.sbgn' };
+var TESTSET = {
+  'testing-glycolysis-sbgn': 'test-maps/test-set/maps/testing-glycolysis-sbgn.sbgn',
+  'asthmamap-mast-cell-celldesigner': 'test-maps/test-set/maps/asthmamap-mast-cell-celldesigner.xml',
+  'asthmamap-mast-cell-graphml': 'test-maps/test-set/maps/asthmamap-mast-cell-graphml.graphml',
+  'colour-glycogen-muscle-sbgn': 'test-maps/kept-for-tests/colour-glycogen-muscle-sbgn.sbgn',
+  'colour-glycolysis-sbgn': 'test-maps/kept-for-tests/colour-glycolysis-sbgn.sbgn',
+  'sites-aspirin-2023-celldesigner': 'test-maps/kept-for-tests/sites-aspirin-2023-celldesigner.xml',
+  'sites-tag-2026-celldesigner': 'test-maps/kept-for-tests/sites-tag-2026-celldesigner.xml',
+  'external-newt-unstable-atm-mediated-phosphorylation-of-repair-proteins-nwt': 'test-maps/sbgn-ml/pd/newt-unstable/atm_mediated_phosphorylation_of_repair_proteins.nwt',
+  'external-sbgn-website-downloads-examples-insulin-like-growth-factor-signaling-withsubmap-mapk-cascade-sbgn': 'test-maps/sbgn-ml/pd/sbgn-website/downloads/examples/insulin-like_growth_factor_signaling_withSubmap_mapk_cascade.sbgn'
+};
 function dataDir() {   // --data=<clone of the site's data repository> on the test's command line
   var a = process.argv.filter(function (x) { return /^--data=/.test(x); })[0];
   if (!a) throw new Error('give --data=<clone of the site\'s data repository> (its test set)');

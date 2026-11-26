@@ -163,8 +163,9 @@ cjobs.forEach(function (j, n) {
   U.diff(j.t, out, mine, opt).slice(0, 2).forEach(function (u) { fail(tag, 'untouched: ' + u); });
 });
 
-(function () {   // a complex moved out of its compartment whose members carry a compartmentAlias (the mast cell map's do): theirs follows
-  var f = path.join(here, 'maps/asthmamap-mast-cell-celldesigner.xml'), t = fs.readFileSync(f, 'utf8'), g = ed.graphml(t, null, opt), I = ups(g);
+(function () {   // a complex moved out of its compartment whose members carry a compartmentAlias (the mast cell map's do): theirs follows;
+  // the test set's copy, as the site's may be deleted
+  var f = path.join(here, 'test-maps/test-set/maps/asthmamap-mast-cell-celldesigner.xml'), t = fs.readFileSync(f, 'utf8'), g = ed.graphml(t, null, opt), I = ups(g);
   var tags = t.match(/<celldesigner:(?:complexS|s)peciesAlias [^>]*>/g) || [];
   var cx = tags.filter(function (q) { return /^<celldesigner:complexSpeciesAlias/.test(q) && /compartmentAlias="/.test(q); }).map(function (q) { return /\sid="([^"]*)"/.exec(q)[1]; })
     .filter(function (id) { return tags.some(function (q) { return q.indexOf(' complexSpeciesAlias="' + id + '"') >= 0 && /compartmentAlias="/.test(q); }) && !ed.nestCheck(t, [[id, null]], opt); })[0];

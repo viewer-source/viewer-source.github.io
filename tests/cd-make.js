@@ -306,9 +306,12 @@ function kept(tag, t0, t1, allowed) {
   lost = lost.filter(function (l) { return !allowed || !allowed.test(l); });
   if (lost.length) fault(tag + ': ' + lost.length + ' original lines changed: ' + lost.slice(0, 2).join(' / '));
 }
-var maps = fs.readdirSync(path.join(here, 'maps')).filter(function (f) { return /-celldesigner\.xml$/.test(f); }).sort();
+// a map a check below is written for, taken from the test set, so deleting it from the site never drops the check
+var KEPT = { 'asthmamap-mast-cell-celldesigner.xml': 'test-maps/test-set/maps/asthmamap-mast-cell-celldesigner.xml' };
+var mapPath = function (f) { return path.join(here, KEPT[f] || path.join('maps', f)); };
+var maps = fs.readdirSync(path.join(here, 'maps')).filter(function (f) { return /-celldesigner\.xml$/.test(f) && !KEPT[f]; }).concat(Object.keys(KEPT)).sort();
 maps.forEach(function (f) {
-  var t0 = fs.readFileSync(path.join(here, 'maps', f), 'utf8'), tag = f.replace('-celldesigner.xml', ''), c = 'map ' + tag, x = t0;
+  var t0 = fs.readFileSync(mapPath(f), 'utf8'), tag = f.replace('-celldesigner.xml', ''), c = 'map ' + tag, x = t0;
   var al = (t0.match(/<celldesigner:speciesAlias [^>]*>/g) || []).map(function (s) { return { id: /\sid="([^"]*)"/.exec(s)[1], cx: /complexSpeciesAlias=/.test(s), ca: (/compartmentAlias="([^"]*)"/.exec(s) || [])[1] }; })
     .filter(function (q) { return !q.cx; });
   var nameOf = function (q) { var s = /\sspecies="([^"]*)"/.exec(t0.match(new RegExp('<celldesigner:speciesAlias(?=\\s)[^>]*\\sid="' + q.id + '"[^>]*>'))[0])[1]; return (/<species [^>]*\sname="([^"]*)"/.exec(t0.match(new RegExp('<species(?=\\s)[^>]*\\sid="' + s + '"[^>]*>'))[0]) || [0, ''])[1]; };   // a species with no name (older files): ''
@@ -394,7 +397,7 @@ function gates3(c, t0) {
   check(c + ' gates removed', x, { Operator: -2, line: -5, catalysis: -1, inhibition: -1 }, c);
   if (x !== t0) fault(c + ': gates added and removed again, not the original byte for byte');
 }
-['inos', 'mevalonate', 'asthmamap-mast-cell'].forEach(function (f) { try { gates3('gates ' + f, fs.readFileSync(path.join(here, 'maps', f + '-celldesigner.xml'), 'utf8')); } catch (e) { fault('gates ' + f + ': ' + e.stack); } });
+['inos', 'mevalonate', 'asthmamap-mast-cell'].forEach(function (f) { try { gates3('gates ' + f, fs.readFileSync(mapPath(f + '-celldesigner.xml'), 'utf8')); } catch (e) { fault('gates ' + f + ': ' + e.stack); } });
 var acly = fs.readFileSync(path.join(here, 'maps/acly-celldesigner.xml'), 'utf8');
 [['one line', acly.replace(/>\s*\n\s*</g, '><')], ['CRLF', acly.replace(/\n/g, '\r\n')]].forEach(function (v) {
   try {
@@ -456,7 +459,7 @@ reads.forEach(function (q, i) {
 // moving the colour of the editor's choice (cols) and CellDesigner's own (none)
 var colChecks = 0;
 maps.forEach(function (f) {
-  var t = fs.readFileSync(path.join(here, 'maps', f), 'utf8'), n = {}, re = /<celldesigner:(?:speciesAlias|complexSpeciesAlias)(?=\s)[^>]*\sid="([^"]+)"/g, m;
+  var t = fs.readFileSync(mapPath(f), 'utf8'), n = {}, re = /<celldesigner:(?:speciesAlias|complexSpeciesAlias)(?=\s)[^>]*\sid="([^"]+)"/g, m;
   while ((m = re.exec(t))) {
     var A = mk.aliasInfo(t, m[1]), from = t.indexOf('>', m.index), el = t.slice(m.index, t.indexOf('</celldesigner:' + (A.kind === 'complexSpeciesAlias' ? 'complexSpeciesAlias' : 'speciesAlias') + '>', from));
     var u = /<celldesigner:usualView>[\s\S]*?<celldesigner:paint color="([0-9a-fA-F]{8})"/.exec(el);
