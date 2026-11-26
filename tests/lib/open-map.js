@@ -34,4 +34,28 @@ async function byFile(page, base, file) {
   }, path.basename(file).replace(/\.[^.]+$/, ''), { timeout: 60000 });
   return shown(page);
 }
-module.exports = { shown: shown, byAddress: byAddress, byFile: byFile, FORMAT: FORMAT };
+// maps the tests use that live in the test set, not on the site, so deleting a map from the site's list never touches a
+// test: a test asks for one by this name, and resolve() adds the file once per browser and gives the address it got
+var TESTSET = { 'testing-glycolysis-sbgn': 'test-maps/test-set/maps/testing-glycolysis-sbgn.sbgn' };
+function dataDir() {   // --data=<clone of the site's data repository> on the test's command line
+  var a = process.argv.filter(function (x) { return /^--data=/.test(x); })[0];
+  if (!a) throw new Error('give --data=<clone of the site\'s data repository> (its test set)');
+  return a.slice(7);
+}
+var added = new WeakMap();   // browser context -> { name: address }
+// the address to use for a map: a site map's own, or for a test-set name the address of its copy in this browser
+async function resolve(page, base, ref) {
+  if (!TESTSET[ref]) return ref;
+  var ctx = page.context(), got = added.get(ctx) || {};
+  if (got[ref]) {
+    var gone = await page.evaluate(function (id) {   // a list in sight without it (the browser's storage cleared): added again
+      return !!document.querySelector('#m2-list .m2-map') && !document.querySelector('#m2-list .m2-map[data-id="' + id + '"]'); }, got[ref]).catch(function () { return false; });
+    if (!gone) return got[ref];
+  }
+  var s = await byFile(page, base, path.join(dataDir(), TESTSET[ref]));
+  got[ref] = s.id; added.set(ctx, got);
+  return s.id;
+}
+// open a map by a site address or a test-set name; throws when the list shows another map
+async function open(page, base, ref) { return byAddress(page, base, await resolve(page, base, ref)); }
+module.exports = { shown: shown, byAddress: byAddress, byFile: byFile, resolve: resolve, open: open, TESTSET: TESTSET, FORMAT: FORMAT };
