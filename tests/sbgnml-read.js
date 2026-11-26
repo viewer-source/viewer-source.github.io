@@ -19,22 +19,26 @@ var driver = [
   'from mapconv import graphml as w, sbgnml as r, report',
   'for f in sys.stdin.read().split("\\n"):',
   '    if not f: continue',
-  '    try:',
-  '        with report.collect(), contextlib.redirect_stdout(io.StringIO()):',
-  '            t = w.write(r.read(f))',
-  '        print(json.dumps({"f": f, "t": t}))',
-  '    except (Exception, SystemExit) as e:',
-  '        print(json.dumps({"f": f, "err": type(e).__name__ + ": " + str(e).split("\\n")[0]}))',
+  '    try: n = max(1, len(r.maps(f)))',
+  '    except Exception: n = 1',
+  '    for k in range(n):',
+  '        g = f + ("#%d" % (k + 1) if k else "")',
+  '        try:',
+  '            with report.collect(), contextlib.redirect_stdout(io.StringIO()):',
+  '                t = w.write(r.read(f, k))',
+  '            print(json.dumps({"f": g, "t": t}))',
+  '        except (Exception, SystemExit) as e:',
+  '            print(json.dumps({"f": g, "err": type(e).__name__ + ": " + str(e).split("\\n")[0]}))',
 ].join('\n');
 var res = cp.spawnSync(py, ['-c', driver, pkg], { input: files.join('\n'), maxBuffer: 1 << 30, encoding: 'utf8' });
 if (res.status) { console.log(res.stderr); process.exit(2); }
-var want = {};
-res.stdout.split('\n').filter(Boolean).forEach(function (l) { var o = JSON.parse(l); want[o.f] = o; });
+var want = {}, entries = [];  // a file's later maps as <file>#2, #3 ...
+res.stdout.split('\n').filter(Boolean).forEach(function (l) { var o = JSON.parse(l); want[o.f] = o; entries.push(o.f); });
 var bad = 0, same = 0, refused = 0, t0 = Date.now();
-files.forEach(function (f) {
-  var w = want[f], got, err = null;
-  try { got = sr.graphml(fs.readFileSync(f, 'utf8'), { DOMParser: DP }).text; } catch (e) { err = e.message; }
-  var name = path.relative(process.cwd(), f);
+entries.forEach(function (e) {
+  var w = want[e], got, err = null, f = e.replace(/#\d+$/, ''), k = e === f ? 0 : +e.slice(f.length + 1) - 1;
+  try { got = sr.graphml(fs.readFileSync(f, 'utf8'), { DOMParser: DP, map: k }).text; } catch (x) { err = x.message; }
+  var name = path.relative(process.cwd(), f) + (k ? ' map ' + (k + 1) : '');
   if (w.err) {
     if (err) { refused++; return; }
     bad++; console.log('WRONG ' + name + ': the converter refuses it (' + w.err + '), the copy reads it'); return;
@@ -47,5 +51,5 @@ files.forEach(function (f) {
   console.log('WRONG ' + name + ': differs from line ' + (k + 1) + ' of ' + a.length);
   if (show) { var x = a[k] || '', y = b[k] || '', j = 0; while (j < x.length && x[j] === y[j]) j++; console.log('  converter: ...' + x.slice(Math.max(0, j - 60), j + 120) + '\n  copy:      ...' + y.slice(Math.max(0, j - 60), j + 120)); }
 });
-console.log(files.length + ' files: ' + same + ' the same, ' + refused + ' refused by both, ' + bad + ' wrong (' + (Date.now() - t0) + ' ms in the copy)');
+console.log(files.length + ' files, ' + entries.length + ' maps: ' + same + ' the same, ' + refused + ' refused by both, ' + bad + ' wrong (' + (Date.now() - t0) + ' ms in the copy)');
 process.exit(bad ? 1 : 0);
