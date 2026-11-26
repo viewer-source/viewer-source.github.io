@@ -88,6 +88,10 @@ var SVG = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="300" heigh
   ok('1. drawn in place of the species', im.length === 1, JSON.stringify(im));
   var rowNow = await page.$eval('.m2-ed-pnode tr[data-k="pic"]', function (r) { return [r.textContent, r.querySelector('img').hidden, (r.querySelector('img').getAttribute('src') || '').slice(0, 20), r.hidden, !!r.closest('[hidden]')]; });
   ok('1. the row shows its name and a preview', /red-cell\.png/.test(rowNow[0]) && !rowNow[1] && /^data:image\/png/.test(rowNow[2]), JSON.stringify(rowNow));
+  var btns = function () { return page.$eval('.m2-ed-pnode tr[data-k="pic"]', function (r) { var c = r; while (c.parentElement && getComputedStyle(c).overflowX === 'visible') c = c.parentElement;   // the panel's visible edge
+      var edge = c.getBoundingClientRect().right, fit = Array.prototype.every.call(r.querySelectorAll('button'), function (b) { return b.hidden || b.getBoundingClientRect().right <= edge + 0.5; });
+      return [r.querySelector('#m2-ed-pic').hidden, r.querySelector('.m2-ed-ppicoff').hidden, fit]; }); };
+  ok('1. with a picture: Remove shown, Choose hidden (one button, the row fits 240 px)', JSON.stringify(await btns()) === '[true,false,true]', JSON.stringify(await btns()));
   await undo();
   ok('1. undone: no note, no picture', glyph(await now(), 's', 's_n3') === null && (await imgs()).length === 0);
   await redo();
@@ -112,14 +116,16 @@ var SVG = Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" width="300" heigh
   await drop(null, BLUE, 'blue.png', 'image/png', [1300, 860]); await page.waitForTimeout(1500);
   ok('3. dropped on empty space: nothing written, where backgrounds go said', (await now()) === t4 && /right click on empty map space/.test(await status()), await status());
   ok('3. a dropped picture never added as a map', !(await page.$('#m2-list .m2-map[data-title="blue"]')));
-  // 4. not a picture
-  await select(SP);
-  await choose(function () { return page.click('#m2-ed-pic'); }, { name: 'fake.png', mimeType: 'image/png', buffer: Buffer.from('not a picture') });
-  ok('4. a text named .png: refused with the reason, nothing written', (await now()) === t4 && /PNG or SVG only/.test(await status()), await status());
   // 1 (end). Remove picture by the right-click
   r1 = await box(SP); it = await menu(r1[0] + 6, r1[1] + 6, 'Remove picture');
   if (Array.isArray(it)) ok('1. right-click: Remove picture', false, it.join(' | ')); else { await it.click(); await page.waitForTimeout(2000); }
   ok('1. Remove picture: the note gone, the species drawn again', glyph(await now(), 's', 's_n3') === null && !(await imgs()).some(function (x) { return /png/.test(x.href) && x.g === SP; }));
+  await select(SP);
+  ok('1. without a picture: Choose shown, Remove hidden', JSON.stringify(await btns()) === '[false,true,true]', JSON.stringify(await btns()));
+  // 4. not a picture (on the species, its picture removed)
+  t4 = await now();
+  await choose(function () { return page.click('#m2-ed-pic'); }, { name: 'fake.png', mimeType: 'image/png', buffer: Buffer.from('not a picture') });
+  ok('4. a text named .png: refused with the reason, nothing written', (await now()) === t4 && /PNG or SVG only/.test(await status()), await status());
   // 5. a background
   var t5 = await now();
   it = await menu(1300, 860, 'Add background picture…');

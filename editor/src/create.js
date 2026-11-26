@@ -2625,13 +2625,15 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       rows.forEach(function (r, j) { ROWS.splice(k + 1 + j, 0, r); EXTRA.push(r[0]); propListen(r); });
     }
     // a picture's row (a format's part adds one: CellDesigner's Picture): v { name, src } or null; its preview, its file's
-    // name, Choose, and Remove while there is one. The buttons are the part's
+    // name, and Choose while there is none, Remove while there is one: one button at a time, so the row fits the panel at
+    // its default width (240 px); a picture is replaced by Remove then Choose, or by a drop or the right-click. The
+    // buttons are the part's
     function picShow(f, v) {
       var box = f.parentNode, img = box.querySelector('img'), nm = box.querySelector('.m2-ed-ppicname'), src = v && v.src || '';
       nm.textContent = v ? v.name.replace(/^glyphs\//, '') : 'none';
       nm.title = v ? v.name : '';
       if (img.getAttribute('src') !== src) { if (src) img.setAttribute('src', src); else img.removeAttribute('src'); }
-      img.hidden = !src; box.querySelector('.m2-ed-ppicoff').hidden = !v;
+      img.hidden = !src; box.querySelector('.m2-ed-ppicoff').hidden = !v; f.hidden = !!v;
     }
     var DEF_KEY;
     function __run56() {   // run at start, in order (__start)

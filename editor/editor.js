@@ -14101,6 +14101,7 @@
     }
     img.hidden = !src2;
     box2.querySelector(".m2-ed-ppicoff").hidden = !v;
+    f.hidden = !!v;
   }
   var DEF_KEY;
   function __run562() {

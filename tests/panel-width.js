@@ -1,5 +1,5 @@
-// Panel widths: with the panel dragged wider, nothing in the Edit and Settings windows may
-// stretch or move, and Settings' blocks span the same width as the Edit window's (the icon row's). Opens each window at the panel's usual width and at a wide one, with a macromolecule selected so
+// Panel widths: at the panel's usual 240 px every visible control lies inside the panel's visible area; with the panel
+// dragged wider, nothing in the Edit and Settings windows may stretch or move, and Settings' blocks span the same width as the Edit window's (the icon row's). Opens each window at the panel's usual width and at a wide one, with a macromolecule selected so
 // Properties shows, and compares every visible control's place and size. Runs on a page with the editor, by default
 // the styles page on an SBGN-ML map; [css] adds a style sheet first (to try a change before it is pushed).
 //   node tests/panel-width.js [address] [css]
@@ -27,6 +27,12 @@ async function shot(browser, wide, win) {
       n[k] = (n[k] || 0) + 1; k += '#' + n[k];
       out[k] = [r.left - o.left, r.top - o.top, r.width, r.height].map(Math.round).join(',');
     });
+    var clip = w; while (clip && clip.parentElement && getComputedStyle(clip).overflowX === 'visible') clip = clip.parentElement;   // what cuts the window off: the panel
+    var edge = Math.min(clip.getBoundingClientRect().right, innerWidth);
+    out._out = [];   // controls reaching past the panel's visible edge at the usual width
+    w.querySelectorAll('input, select, button, textarea').forEach(function (e) {
+      if (e.offsetParent && e.getBoundingClientRect().right > edge + 0.5) out._out.push((e.id || e.getAttribute('aria-label') || e.textContent.trim() || e.tagName) + ' ends ' + Math.round(e.getBoundingClientRect().right - edge) + ' px past it');
+    });
     var l = 1e9, rt = -1e9;   // the span of the window's visible blocks, from its left edge
     Array.prototype.forEach.call(w.children, function (e) {
       if (!e.offsetParent) return; var r = e.getBoundingClientRect(); l = Math.min(l, r.left - o.left); rt = Math.max(rt, r.right - o.left);
@@ -42,6 +48,7 @@ async function shot(browser, wide, win) {
   for (var win of ['edit', 'set']) {
     var a = await shot(browser, false, win), b = await shot(browser, true, win);
     span[win] = a._span;
+    a._out.forEach(function (m) { bad++; console.log(win + ' at 240 px: ' + m); }); delete a._out; delete b._out;
     for (var k in a) { seen++; if (a[k] !== b[k]) { bad++; console.log(win + ' ' + k + ': ' + a[k] + ' at 240 px, ' + (b[k] || 'gone') + ' at ' + WIDE + ' px'); } }
   }
   if (span.set !== span.edit) { bad++; console.log('Settings spans ' + span.set + ', the Edit window ' + span.edit + ' (screen px from the window\'s edge)'); }
