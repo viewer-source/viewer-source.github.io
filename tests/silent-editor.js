@@ -13,9 +13,10 @@
 //   SBGN-ML, Testing Glycolysis (testing-glycolysis-sbgn):
 //   6. Catalysis dragged from one macromolecule to another (a catalysis ends only at a process): nothing made.
 //   7. a glyph with lines dragged onto a complex: the move taken back.
-//   node tests/silent-editor.js [base address]
+//   node tests/silent-editor.js [base address] --data=<clone of the data repository>   (Testing Glycolysis from its test set, added as a person adds a file)
 var { chromium } = require('playwright');
-var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
+var base = process.argv.slice(2).filter(function (a) { return a.slice(0, 2) !== '--'; })[0] || 'https://viewer-source.github.io/styles/';
+var OM = require('./lib/open-map.js');   // a map by its address, checked; a test-set map added from its file
 (async function () {
   var b = await chromium.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], dialogs = [], bad = 0;
   page.on('pageerror', function (e) { errs.push(e.message); });
@@ -23,10 +24,11 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
   await page.addInitScript(function () { try { localStorage.setItem('atlas-edit-level', 'full'); } catch (e) {} });
   var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more && !v ? '  ' + more : '')); };
   var now = function () { return page.evaluate(function () { return window.m2EditNow().text; }); };
-  var said = function () { return page.evaluate(function () { var s = document.getElementById('m2-ed-status'), w = document.getElementById('m2-editwin'); return { text: w ? Array.from(w.children).filter(function (c) { return c.id !== 'm2-ed-local' && c.id !== 'm2-ed-gh'; }).map(function (c) { return c.innerText; }).join('\n') : '', status: s ? s.textContent : '', red: !!s && s.classList.contains('m2-ed-warn') }; }); };
+  var said = function () { return page.evaluate(function () { var s = document.getElementById('m2-ed-status'), w = document.getElementById('m2-editwin'); return { text: w ? Array.from(w.children).filter(function (c) { return c.id !== 'm2-ed-local' && c.id !== 'm2-ed-gh'; }).map(function (c) { var t = c.innerText; c.querySelectorAll('.m2-ed-props').forEach(function (q) { if (q.innerText) t = t.replace(q.innerText, ''); }); return c.matches('.m2-ed-props') ? '' : t; }).join('\n') : '', status: s ? s.textContent : '', red: !!s && s.classList.contains('m2-ed-warn') }; }); };
   var at = function (id) { return page.$eval('#m2-img [data-n="' + id + '"]', function (g) { var r = g.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2, r.width, r.height, r.left, r.top]; }); };
   var open = async function (hash, mark) {
-    await page.goto('about:blank'); await page.goto(base + '#' + hash, { waitUntil: 'load' });
+    var id = await OM.resolve(page, base, hash);
+    await page.goto('about:blank'); await OM.byAddress(page, base, id);
     await page.waitForSelector('.m2-ri[data-win="edit"]', { timeout: 60000 });
     if (!(await page.$('#m2-editwin button[data-make="' + mark + '"]:visible'))) await page.click('.m2-ri[data-win="edit"]');
     await page.waitForSelector('#m2-editwin button[data-make="' + mark + '"]', { state: 'visible', timeout: 30000 }); await page.waitForTimeout(2500);
@@ -37,7 +39,8 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
     await page.waitForTimeout(200); var mid = id ? await at(id) : null; await page.mouse.up(); await page.waitForTimeout(2500);
     return mid && Math.hypot(mid[0] - B[0], mid[1] - B[1]) < Math.hypot(A[0] - B[0], A[1] - B[1]) / 3;
   };
-  // a gesture: the file and the Edit window's words compared before and after (the file: same, or same but for `allow`)
+  // a gesture: the file and the Edit window's words compared before and after (the file: same, or same but for `allow`);
+  // Properties left out, as it shows whatever is selected
   var silent = async function (name, fn, same) {
     await calm();
     var t0 = await now(), s0 = await said();
