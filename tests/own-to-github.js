@@ -62,6 +62,7 @@ var gitSha = function (t) { var b = Buffer.from(t, 'utf8'); return crypto.create
   // the site's list: the demo's, with the map the build would add once listed is set (its src: the file's sha drawn)
   await page.route('**/index.json*', async function (route) {
     var res = await route.fetch(), list = JSON.parse(await res.text());
+    if (listed) list = list.filter(function (m) { return m.id !== listed.id; });   // the live site may hold a map of that name already (a reader's New map): this build's entry takes its place
     if (listed) list.unshift({ id: listed.id, title: 'Unnamed map', topic: 'Unnamed map', group: '', kind: 'map', draft: false, tag: '', tab: '', page: '',
       image: '/downloads/colour-test.svg', width: 1065, height: 738, scale: 1, annotation: '/atlas-data/colour-test.json', v: 'test' + listed.src.slice(0, 6), src: listed.src,
       legend: 'sbgn', colours: true, sbgn: null, editPath: 'maps/' + listed.id + '.sbgn', editBase: null, downloads: [] });
