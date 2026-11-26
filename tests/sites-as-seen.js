@@ -29,7 +29,7 @@ var ptm = function (t) { return (t.match(/urn:sbgn:site:[^"]*/g) || []).length; 
   var add = async function (name, text) {
     var f = path.join(dir, name); fs.writeFileSync(f, text);
     var was = await page.evaluate(function () { return location.hash; });
-    await page.setInputFiles('input[type=file]', f);
+    await page.setInputFiles('input[type=file][accept*=".sbgn"]', f);
     await page.waitForFunction(function (was) { return location.hash.indexOf('#mine') === 0 && location.hash !== was; }, was, { polling: 200 });
     await page.waitForTimeout(1500);
     await page.keyboard.press('e');
@@ -43,7 +43,7 @@ var ptm = function (t) { return (t.match(/urn:sbgn:site:[^"]*/g) || []).length; 
   };
   await page.goto(base, { waitUntil: 'load' });
   await page.evaluate(function () { localStorage.clear(); }); await page.reload({ waitUntil: 'load' });
-  await page.waitForSelector('input[type=file]', { state: 'attached' }); await page.waitForTimeout(2500);
+  await page.waitForSelector('input[type=file][accept*=".sbgn"]', { state: 'attached' }); await page.waitForTimeout(2500);
   ok('the file has sites on its state variables', n > 0, n + ' sites');
   await add('sites-a.sbgn', orig);
   var t1 = await now();

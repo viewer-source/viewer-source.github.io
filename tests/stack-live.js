@@ -34,7 +34,7 @@ function order(t) { var o = [], re = /<glyph id="([^"]*)" class="compartment"/g,
       });
     }
     await page.goto(base, { waitUntil: 'networkidle' });
-    await page.setInputFiles('input[type=file]', f);
+    await page.setInputFiles('input[type=file][accept*=".sbgn"]', f);
     await page.waitForFunction(function () { return location.hash.indexOf('#mine') === 0; });
     await page.waitForTimeout(1500);
     await page.keyboard.press('e');

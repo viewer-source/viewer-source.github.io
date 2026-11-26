@@ -57,9 +57,9 @@ function words(t) { return t.replace(/^\uFEFF/, '').replace(/-?\d+(\.\d+)?(e[+-]
     }
     try {
       await page.goto(base, { waitUntil: 'networkidle' });
-      await page.waitForSelector('input[type=file]', { state: 'attached' });
+      await page.waitForSelector('input[type=file][accept*=".sbgn"]', { state: 'attached' });
       var t0 = Date.now();
-      await page.setInputFiles('input[type=file]', copy);
+      await page.setInputFiles('input[type=file][accept*=".sbgn"]', copy);
       var got = await page.waitForFunction(function () {
         if (location.hash.indexOf('#mine') === 0) return 'added';
         var red = Array.prototype.map.call(document.querySelectorAll('#m2-list *'), function (e) { return e.children.length ? '' : e.textContent; }).filter(function (s) { return /cannot|not |nothing|refused|fail|Error\b/i.test(s); });   // Error: a reader's own words, said as they are

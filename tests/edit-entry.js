@@ -49,8 +49,8 @@ var files = args.length ? args : [path.join(here, 'maps', 'srebp-celldesigner.xm
       });
     }, sig);
     await page.goto(base, { waitUntil: 'networkidle' });
-    await page.waitForSelector('input[type=file]', { state: 'attached' });
-    await page.setInputFiles('input[type=file]', copy);
+    await page.waitForSelector('input[type=file][accept*=".sbgn"]', { state: 'attached' });
+    await page.setInputFiles('input[type=file][accept*=".sbgn"]', copy);
     await page.waitForFunction(function () { return location.hash.indexOf('#mine') === 0; }, null, { polling: 200 });
     await page.waitForTimeout(3000);
     var t0 = Date.now();
