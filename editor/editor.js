@@ -5892,8 +5892,8 @@
     ys.forEach(function(y, k) {
       if (Math.abs(P[1] - y) <= tol) hy = k;
     });
-    var onHandle = hx >= 0 && hy >= 0 && !(hx === 1 && hy === 1), inside = P[0] >= b[0] && P[0] <= b[0] + b[2] && P[1] >= b[1] && P[1] <= b[1] + b[3];
-    if (!onHandle && !inside) {
+    var onHandle = hx >= 0 && hy >= 0 && !(hx === 1 && hy === 1), inside2 = P[0] >= b[0] && P[0] <= b[0] + b[2] && P[1] >= b[1] && P[1] <= b[1] + b[3];
+    if (!onHandle && !inside2) {
       cdBg = null;
       paint();
       return;
@@ -6240,6 +6240,329 @@
       });
       return renames;
     });
+  }
+  var CRC;
+  function crc32(d) {
+    if (!CRC) {
+      CRC = new Uint32Array(256);
+      for (var n = 0; n < 256; n++) {
+        var c = n;
+        for (var k = 0; k < 8; k++) c = c & 1 ? 3988292384 ^ c >>> 1 : c >>> 1;
+        CRC[n] = c >>> 0;
+      }
+    }
+    var x = 4294967295;
+    for (var i = 0; i < d.length; i++) x = CRC[(x ^ d[i]) & 255] ^ x >>> 8;
+    return (x ^ 4294967295) >>> 0;
+  }
+  function deflate(data) {
+    var s = new Blob([data]).stream().pipeThrough(new CompressionStream("deflate-raw"));
+    return new Response(s).arrayBuffer().then(function(a) {
+      return new Uint8Array(a);
+    });
+  }
+  function dosDate() {
+    return 2026 - 1980 << 9 | 1 << 5 | 1;
+  }
+  function asBytes(d) {
+    return typeof d === "string" ? new TextEncoder().encode(d) : d;
+  }
+  function zip(entries) {
+    return entries.reduce(function(q, e) {
+      return q.then(function(out) {
+        var d = asBytes(e.data);
+        return deflate(d).then(function(c) {
+          out.push({ name: new TextEncoder().encode(e.name), utf: /[^\x20-\x7e]/.test(e.name), d, c, crc: crc32(d) });
+          return out;
+        });
+      });
+    }, Promise.resolve([])).then(function(list2) {
+      var parts = [], cd = [], off = 0, size = 0;
+      var head = function(n2, sig) {
+        var b = new Uint8Array(n2), v = new DataView(b.buffer);
+        v.setUint32(0, sig, true);
+        return { b, v };
+      };
+      list2.forEach(function(x) {
+        var flag = x.utf ? 2048 : 0, h = head(30, 67324752), c = head(46, 33639248);
+        h.v.setUint16(4, 20, true);
+        c.v.setUint16(4, 20, true);
+        c.v.setUint16(6, 20, true);
+        var at2 = function(v, i) {
+          v.setUint16(i, flag, true);
+          v.setUint16(i + 2, 8, true);
+          v.setUint16(i + 4, 0, true);
+          v.setUint16(i + 6, dosDate(), true);
+          v.setUint32(i + 8, x.crc, true);
+          v.setUint32(i + 12, x.c.length, true);
+          v.setUint32(i + 16, x.d.length, true);
+          v.setUint16(i + 20, x.name.length, true);
+        };
+        at2(h.v, 6);
+        at2(c.v, 8);
+        c.v.setUint32(42, off, true);
+        parts.push(h.b, x.name, x.c);
+        cd.push(c.b, x.name);
+        off += 30 + x.name.length + x.c.length;
+      });
+      cd.forEach(function(b) {
+        size += b.length;
+      });
+      var end = head(22, 101010256);
+      end.v.setUint16(8, list2.length, true);
+      end.v.setUint16(10, list2.length, true);
+      end.v.setUint32(12, size, true);
+      end.v.setUint32(16, off, true);
+      var all = parts.concat(cd, [end.b]), n = 0;
+      all.forEach(function(b) {
+        n += b.length;
+      });
+      var out = new Uint8Array(n), k = 0;
+      all.forEach(function(b) {
+        out.set(b, k);
+        k += b.length;
+      });
+      return out;
+    });
+  }
+  function unesc(s) {
+    return s.replace(/&(lt|gt|quot|apos|amp);/g, function(m, e) {
+      return { lt: "<", gt: ">", quot: '"', apos: "'", amp: "&" }[e];
+    });
+  }
+  function attrOf(tag, a) {
+    var m = new RegExp("\\s" + a + '="([^"]*)"').exec(tag);
+    return m ? m[1] : null;
+  }
+  function boundsIn(seg) {
+    var b = /<celldesigner:bounds\s[^>]*>/.exec(seg);
+    return b ? ["x", "y", "w", "h"].map(function(k) {
+      return +attrOf(b[0], k);
+    }) : null;
+  }
+  function glyphOf(s) {
+    var m = /Glyph:[ \t]*([^\r\n<]+?\.(?:png|svg))[ \t\r]*(?:\n|<|$)/i.exec(unesc(s || ""));
+    return m ? m[1] : null;
+  }
+  function picturesOn(text) {
+    var out = [], comps = {}, spBox = {}, cBox = {}, m;
+    var aRe = /<celldesigner:(speciesAlias|complexSpeciesAlias|compartmentAlias)\b([^>]*)>([\s\S]*?)<\/celldesigner:\1>/g;
+    while (m = aRe.exec(text)) {
+      var b = boundsIn(m[3]);
+      if (!b) continue;
+      if (m[1] === "compartmentAlias") {
+        var c = attrOf(m[2], "compartment");
+        if (c && !cBox[c]) cBox[c] = b;
+      } else {
+        var s = attrOf(m[2], "species");
+        (spBox[s] = spBox[s] || []).push(b);
+      }
+    }
+    var eRe = /<(compartment|species)\b([^>]*?)(\/>|>([\s\S]*?)<\/\1>)/g;
+    while (m = eRe.exec(text)) {
+      var id = attrOf(m[2], "id"), n = m[4] && /<notes\b[\s\S]*?<\/notes>/.exec(m[4]), g = n && glyphOf(n[0]);
+      if (m[1] === "compartment") comps[id] = { at: m.index, end: m.index + m[0].length };
+      if (!g) continue;
+      out.push({ kind: m[1], id, glyph: g, boxes: m[1] === "compartment" ? cBox[id] ? [cBox[id]] : [] : spBox[id] || [], at: m.index, end: m.index + m[0].length });
+    }
+    var lRe = /<celldesigner:layerSpeciesAlias\b[^>]*>([\s\S]*?)<\/celldesigner:layerSpeciesAlias>/g;
+    while (m = lRe.exec(text)) {
+      var ln = /<celldesigner:layerNotes>([\s\S]*?)<\/celldesigner:layerNotes>/.exec(m[1]), lg = ln && glyphOf(ln[1]), lb = boundsIn(m[1]);
+      if (lg) out.push({ kind: "layer", glyph: lg, boxes: lb ? [lb] : [], at: m.index, end: m.index + m[0].length });
+    }
+    return { pics: out, cBox };
+  }
+  function lineAt() {
+    return "(^|\\n|>|&gt;)[ \\t]*";
+  }
+  function lineEnd() {
+    return "[ \\t]*(\\r?\\n|(?=<)|(?=&lt;)|$)";
+  }
+  function zOf(seg) {
+    var m = new RegExp(lineAt() + "Z-Index:[ \\t]*(-?\\d+)" + lineEnd()).exec(seg);
+    return m ? +m[2] : null;
+  }
+  function inside(a, b) {
+    return a !== b && a[0] >= b[0] - 0.5 && a[1] >= b[1] - 0.5 && a[0] + a[2] <= b[0] + b[2] + 0.5 && a[1] + a[3] <= b[1] + b[3] + 0.5 && (a[2] < b[2] || a[3] < b[3]);
+  }
+  function zSet(seg, z) {
+    var noZ = seg.replace(new RegExp(lineAt() + "Z-Index:[^\\r\\n<&]*" + lineEnd(), "g"), function(m, a) {
+      return a;
+    });
+    var g = new RegExp("Glyph:[ \\t]*[^\\r\\n<]+?\\.(?:png|svg)" + lineEnd(), "i").exec(noZ);
+    if (!g) return seg;
+    var at2 = g.index + g[0].length;
+    return noZ.slice(0, at2) + (g[1] ? "Z-Index: " + z + g[1] : "\nZ-Index: " + z) + noZ.slice(at2);
+  }
+  function reckonZ(text) {
+    var on2 = picturesOn(text), cs = on2.pics.filter(function(p) {
+      return p.kind === "compartment" && p.boxes.length;
+    });
+    if (!cs.length) return { text, changed: 0 };
+    var all = Object.keys(on2.cBox).map(function(k) {
+      return on2.cBox[k];
+    });
+    cs.forEach(function(p) {
+      p.depth = all.filter(function(b) {
+        return inside(p.boxes[0], b);
+      }).length;
+      p.z = zOf(text.slice(p.at, p.end));
+    });
+    var holds2 = cs.every(function(a) {
+      return a.z != null && cs.every(function(b) {
+        return !inside(b.boxes[0], a.boxes[0]) || b.z != null && a.z < b.z;
+      });
+    });
+    var edits2 = [], deep = Math.max.apply(null, cs.map(function(p) {
+      return p.depth;
+    }));
+    if (!holds2) cs.forEach(function(p) {
+      var z = -2 - (deep - p.depth);
+      if (p.z !== z) edits2.push({ at: p.at, end: p.end, z });
+    });
+    var low = Math.min.apply(null, cs.map(function(p) {
+      var e = edits2.filter(function(x) {
+        return x.at === p.at;
+      })[0];
+      return e ? e.z : p.z != null ? p.z : 0;
+    }));
+    on2.pics.forEach(function(p) {
+      if (p.kind !== "layer") return;
+      var z = zOf(text.slice(p.at, p.end));
+      if (z != null && z >= low) edits2.push({ at: p.at, end: p.end, z: low - 1, layer: true });
+    });
+    var changed2 = 0;
+    edits2.sort(function(a, b) {
+      return b.at - a.at;
+    }).forEach(function(e) {
+      var seg = text.slice(e.at, e.end), now = zSet(seg, e.z);
+      if (now !== seg) {
+        changed2++;
+        text = text.slice(0, e.at) + now + text.slice(e.end);
+      }
+    });
+    return { text, changed: changed2 };
+  }
+  function bareName(p) {
+    return p.split("/").pop().replace(/\.xml$/i, "");
+  }
+  function mapStem(s) {
+    return s.replace(/_underscore_/g, "_");
+  }
+  function pruneLinks(path, data, missing) {
+    if (!missing.length) return { data, gone: [] };
+    var miss = missing.map(function(m2) {
+      return bareName(m2);
+    }), gone = [];
+    if (/^config\.json$/i.test(path)) {
+      try {
+        var cfg = JSON.parse(new TextDecoder().decode(data)), touched = false;
+        (cfg.maps || []).forEach(function(mp) {
+          var keep = (mp.custom_elements || []).filter(function(e) {
+            var out = miss.indexOf(e.submap) >= 0;
+            if (out && gone.indexOf(e.submap) < 0) gone.push(e.submap);
+            return !out;
+          });
+          if (mp.custom_elements && keep.length !== mp.custom_elements.length) {
+            mp.custom_elements = keep;
+            touched = true;
+          }
+        });
+        var maps0 = (cfg.maps || []).length;
+        cfg.maps = (cfg.maps || []).filter(function(mp) {
+          var out = miss.indexOf(mp.name) >= 0;
+          if (out && gone.indexOf(mp.name) < 0) gone.push(mp.name);
+          return !out;
+        });
+        if (cfg.maps.length !== maps0) touched = true;
+        return { data: touched ? new TextEncoder().encode(JSON.stringify(cfg, null, 1)) : data, gone };
+      } catch (e) {
+        return { data, gone: [] };
+      }
+    }
+    if (/^submaps\/mapping\.xml$/i.test(path)) {
+      var t = new TextDecoder().decode(data), cx = {}, m, sRe = /<species\b([^>]*)>/g;
+      while (m = sRe.exec(t)) {
+        var nm = mapStem(unesc(attrOf(m[1], "name") || ""));
+        if (miss.indexOf(nm) >= 0) cx[attrOf(m[1], "id")] = nm;
+      }
+      var inRe = /<celldesigner:species\b([^>]*)>([\s\S]*?)<\/celldesigner:species>/g, k;
+      while (m = inRe.exec(t)) if ((k = /<celldesigner:complexSpecies>([^<]+)</.exec(m[2])) && cx[k[1].trim()]) cx[attrOf(m[1], "id")] = cx[k[1].trim()];
+      var t2 = t.replace(/[ \t]*<reaction\b[\s\S]*?<\/reaction>[ \t]*\r?\n?/g, function(r) {
+        var hit2 = null, a = /<celldesigner:base(?:Reactant|Product)\s[^>]*species="([^"]+)"/g, x;
+        while (x = a.exec(r)) if (cx[x[1]]) hit2 = cx[x[1]];
+        if (hit2 && gone.indexOf(hit2) < 0) gone.push(hit2);
+        return hit2 ? "" : r;
+      });
+      return { data: t2 === t ? data : new TextEncoder().encode(t2), gone };
+    }
+    return { data, gone: [] };
+  }
+  function packPlan(maps) {
+    var paths = {}, need = {}, order = [];
+    maps.forEach(function(m) {
+      var f = formatName(m.text);
+      if (f !== "CellDesigner") throw new Error("the map " + m.title + " is " + (f || /<graphml[\s>]/.test(m.text.slice(0, 3e3)) && "GraphML" || "not CellDesigner") + ": only CellDesigner maps go into a MINERVA zip");
+      var key = m.path.toLowerCase();
+      if (paths[key]) throw new Error("two maps would be " + m.path + " in the zip (" + paths[key] + ", " + m.title + "): rename one file first");
+      paths[key] = m.title;
+      picturesOn(m.text).pics.forEach(function(p) {
+        var g = p.glyph;
+        if (!/^glyphs\/[^/]+\.png$/i.test(g)) throw new Error(g + " is named in " + m.title + ": MINERVA reads pictures as glyphs/<name>.png");
+        var n = need[g];
+        if (!n) {
+          n = need[g] = { name: g, box: null, mixed: false, maps: [] };
+          order.push(n);
+        }
+        if (n.maps.indexOf(m.title) < 0) n.maps.push(m.title);
+        p.boxes.forEach(function(b) {
+          if (!(b[2] > 0 && b[3] > 0)) return;
+          if (!n.box) n.box = [b[2], b[3]];
+          else if (Math.abs(b[2] / b[3] / (n.box[0] / n.box[1]) - 1) > 0.05) n.mixed = true;
+        });
+      });
+    });
+    return order;
+  }
+  function pngSize(d) {
+    return d.length > 24 && d[0] === 137 && d[1] === 80 ? [(d[16] << 24 | d[17] << 16 | d[18] << 8 | d[19]) >>> 0, (d[20] << 24 | d[21] << 16 | d[22] << 8 | d[23]) >>> 0] : null;
+  }
+  function keptGlyphs(kept) {
+    var k = Object.keys(kept || {}).filter(function(n) {
+      return /^submaps\/mapping\.xml$/i.test(n);
+    })[0];
+    return k ? glyphsNamed(new TextDecoder().decode(kept[k])).filter(function(g) {
+      return /^glyphs\/[^/]+\.png$/i.test(g);
+    }) : [];
+  }
+  function svgPixels(box2) {
+    var w = Math.max(1, box2[0] * 2), h = Math.max(1, box2[1] * 2), k = Math.min(1, 8e3 / Math.max(w, h));
+    return [Math.max(1, Math.round(w * k)), Math.max(1, Math.round(h * k))];
+  }
+  function fitPixels(size, box2) {
+    var r = box2[0] / box2[1];
+    if (Math.abs(size[0] / size[1] / r - 1) <= 0.05) return null;
+    var w = Math.max(size[0], size[1] * r), h = w / r, k = Math.min(1, 8e3 / Math.max(w, h));
+    return [Math.max(1, Math.round(w * k)), Math.max(1, Math.round(h * k))];
+  }
+  function packEntries(maps, pics, kept, missing) {
+    var z = [], gone = [], entries = [];
+    maps.forEach(function(m) {
+      var r = reckonZ(m.text);
+      if (r.changed) z.push(bareName(m.path));
+      entries.push({ name: m.path, data: r.text });
+    });
+    Object.keys(pics).sort().forEach(function(g) {
+      entries.push({ name: g, data: pics[g] });
+    });
+    Object.keys(kept || {}).sort().forEach(function(k) {
+      var p = pruneLinks(k, kept[k], missing || []);
+      p.gone.forEach(function(g) {
+        if (gone.indexOf(g) < 0) gone.push(g);
+      });
+      entries.push({ name: k, data: p.data });
+    });
+    return { entries, z, gone };
   }
 
   // editor/src/own.js
@@ -6764,6 +7087,15 @@
       if (mv2.length && V.listGroups().length) mapItems.push(["Move " + mv2.length + " maps to...", function() {
         moveMenuMany(mv2, x, y);
       }]);
+      var cds = ms.filter(function(q) {
+        return !q.binned;
+      });
+      if (cds.some(cdOf)) {
+        if (mapItems.length) mapItems.push(null);
+        mapItems.push(["Download " + cds.length + " maps as MINERVA zip", function() {
+          packZip(cds, false, cds[0].group || mapName(cds[0]));
+        }]);
+      }
       items = mapItems.length ? mapItems.concat([null], items) : items;
       if (del.length) items.last = [["Delete " + del.length + " maps", function() {
         binU(del, true);
@@ -6781,9 +7113,19 @@
     if (m && movable(m) && V.listGroups().length) mapItems.push(["Move to...", function() {
       moveMenu(m, x, y);
     }]);
+    if (m && canTop(m)) mapItems.push(["Set as top level", function() {
+      moveU([m.id], m.group, true);
+    }]);
     if (mapItems.length) items = mapItems.concat([null], items);
     items.mapItems = mapItems.length;
+    if (m && cdOf(m)) items.dl = [["Download as MINERVA zip", function() {
+      packZip([m], false, mapName(m));
+    }]];
     var siteG = t && !m && tg && !ownGroup(tg) && !t.dataset.bin && canRenameGroup(tg) ? tg : null;
+    var packG = t && !m && tg && !t.dataset.bin && inGroup(tg).some(cdOf) ? tg : null;
+    if (packG) items = [["Download as MINERVA zip", function() {
+      packZip(inGroup(packG), true, packG);
+    }], null].concat(items);
     if (onGroup || siteG) items = [["Rename group", function() {
       renameGroup(siteG || g);
     }], null].concat(items);
@@ -7885,6 +8227,10 @@
         }
       });
       if (last) V.go(top || last);
+      if (proj) {
+        recsNow = null;
+        projRecs();
+      }
     }
   }
   function openZip(f) {
@@ -7969,6 +8315,14 @@
     held = {};
     ghPics = null;
     storedAll = null;
+    recsNow = null;
+    recIds = null;
+    try {
+      packedGroups = JSON.parse(localStorage.getItem("atlas-minerva-groups") || "[]");
+    } catch (e) {
+      packedGroups = [];
+    }
+    if (!Array.isArray(packedGroups)) packedGroups = [];
     cdPicSource(picRead, function(t) {
       return glyphsNamed(t.replace(/&(lt|gt|quot|apos|amp);/g, function(m, e) {
         return { lt: "<", gt: ">", quot: '"', apos: "'", amp: "&" }[e];
@@ -8254,6 +8608,317 @@
         return r && /^mz-/.test(r.id || "") && r.zip === file.name && r.size === file.size;
       })) return;
       return addFiles([file], "");
+    });
+  }
+  var recsNow;
+  var recIds;
+  var packedGroups;
+  function projRecs() {
+    if (recsNow) return recsNow;
+    var gh2 = repo() && token();
+    var bytesOfBlob = function(b) {
+      return function() {
+        return b.arrayBuffer().then(function(a) {
+          return new Uint8Array(a);
+        });
+      };
+    };
+    var fromGh = function() {
+      var dir = function(p) {
+        return api("/contents/" + p.split("/").map(encodeURIComponent).join("/") + "?ref=main").then(function(r) {
+          return r.status === 404 ? [] : ghJson(r);
+        });
+      };
+      var blobOf = function(sha) {
+        return function() {
+          return api("/git/blobs/" + sha).then(ghJson).then(function(d) {
+            return Uint8Array.from(atob((d.content || "").replace(/\s/g, "")), function(c) {
+              return c.charCodeAt(0);
+            });
+          });
+        };
+      };
+      var walk2 = function(p, base, out) {
+        return dir(p).then(function(l) {
+          return (Array.isArray(l) ? l : []).reduce(function(q, x) {
+            return q.then(function() {
+              return x.type === "dir" ? walk2(p + "/" + x.name, base + x.name + "/", out) : out[base + x.name] = x.sha;
+            });
+          }, Promise.resolve()).then(function() {
+            return out;
+          });
+        });
+      };
+      return dir("maps/minerva").then(function(l) {
+        return Promise.all((Array.isArray(l) ? l : []).filter(function(x) {
+          return x.type === "dir";
+        }).map(function(x) {
+          return walk2("maps/minerva/" + x.name, "", {}).then(function(files) {
+            if (!files["record.json"]) return null;
+            return blobOf(files["record.json"])().then(function(d) {
+              var r = JSON.parse(new TextDecoder().decode(d)), kept = {};
+              (r.kept || []).forEach(function(k) {
+                if (files[k]) kept[k] = blobOf(files[k]);
+              });
+              return { id: x.name, maps: r.maps || [], kept };
+            }).catch(function() {
+              return null;
+            });
+          });
+        }));
+      });
+    };
+    var fromBrowser = function() {
+      return V.draftDo("readonly", function(st) {
+        return st.getAll();
+      }, "folder").then(function(all) {
+        return (all || []).filter(function(r) {
+          return r && /^mz-/.test(r.id || "") && Array.isArray(r.maps);
+        }).map(function(r) {
+          var kept = {};
+          Object.keys(r.kept || {}).forEach(function(k) {
+            kept[k] = bytesOfBlob(r.kept[k]);
+          });
+          return { id: r.id, maps: r.maps.map(function(m) {
+            var c = mine[m.id];
+            return { id: c && c.site ? c.site : m.id, also: m.id, path: m.path };
+          }), kept };
+        });
+      });
+    };
+    recsNow = (gh2 ? fromGh() : fromBrowser()).then(function(l) {
+      l = (l || []).filter(Boolean);
+      recIds = {};
+      l.forEach(function(r) {
+        r.maps.forEach(function(m) {
+          recIds[m.id] = r;
+          if (m.also) recIds[m.also] = r;
+        });
+      });
+      V.refreshMine();
+      return l;
+    }).catch(function() {
+      return [];
+    });
+    setTimeout(function() {
+      recsNow = null;
+    }, 6e4);
+    return recsNow;
+  }
+  function recOf(m) {
+    return recIds && (recIds[m.id] || mine[m.id] && mine[m.id].site && recIds[mine[m.id].site]) || null;
+  }
+  function packedSaved() {
+    try {
+      localStorage.setItem("atlas-minerva-groups", JSON.stringify(packedGroups));
+    } catch (e) {
+    }
+  }
+  function minervaGroup(g) {
+    if (!g) return false;
+    var ms = inGroup(g);
+    return packedGroups.indexOf(g) >= 0 || ms.some(function(m) {
+      return recOf(m) || m.mine && mine[m.id] && /Glyph:/.test(mine[m.id].text || "");
+    });
+  }
+  function cdOf(m) {
+    return m.mine ? !!mine[m.id] && isCd(mine[m.id].text) : fmtOf(m) === "CellDesigner";
+  }
+  function isTop(m) {
+    if (!m || m.binned || !m.group || !recIds) return false;
+    var ms = inGroup(m.group);
+    return ms[0] === m && minervaGroup(m.group);
+  }
+  function canTop(m) {
+    return !!m && !m.binned && !!m.group && !!recIds && inGroup(m.group)[0] !== m && minervaGroup(m.group) && movable(m);
+  }
+  function zipPath(m, rec, top) {
+    var at2 = rec && rec.maps.filter(function(x) {
+      return x.id === m.id || x.also === m.id || mine[m.id] && mine[m.id].site === x.id;
+    })[0];
+    var base = at2 ? at2.path.split("/").pop() : m.mine && mine[m.id] && mine[m.id].file ? mine[m.id].file.replace(/\.[^.]*$/, "") + ".xml" : bare(mapName(m)).replace(/[\/\\:*?"<>|]+/g, "-") + ".xml";
+    return top ? base : "submaps/" + base;
+  }
+  function toPng(src2, px) {
+    return new Promise(function(ok, no2) {
+      var c = document.createElement("canvas");
+      c.width = px[0];
+      c.height = px[1];
+      var g = c.getContext("2d");
+      if (!g) return no2(new Error("too large for this browser to draw"));
+      g.drawImage(src2, 0, 0, px[0], px[1]);
+      c.toBlob(function(b) {
+        if (!b) return no2(new Error("too large for this browser to draw"));
+        b.arrayBuffer().then(function(a) {
+          ok(new Uint8Array(a));
+        });
+      }, "image/png");
+    });
+  }
+  function svgPng(blob, px) {
+    return blob.text().then(function(t) {
+      var doc2 = new DOMParser().parseFromString(t, "image/svg+xml"), s = doc2.documentElement;
+      if (!s || s.localName !== "svg" || doc2.getElementsByTagName("parsererror").length) throw new Error("not an SVG that can be read");
+      if (!s.getAttribute("viewBox")) s.setAttribute("viewBox", "0 0 " + (parseFloat(s.getAttribute("width")) || 300) + " " + (parseFloat(s.getAttribute("height")) || 150));
+      s.setAttribute("width", px[0]);
+      s.setAttribute("height", px[1]);
+      s.setAttribute("preserveAspectRatio", "none");
+      var u = URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(doc2)], { type: "image/svg+xml" }));
+      return new Promise(function(ok, no2) {
+        var im = new Image();
+        im.onload = function() {
+          toPng(im, px).then(ok, no2);
+        };
+        im.onerror = function() {
+          no2(new Error("not an SVG this browser can draw"));
+        };
+        im.src = u;
+      }).then(function(d) {
+        URL.revokeObjectURL(u);
+        return d;
+      }, function(e) {
+        URL.revokeObjectURL(u);
+        throw e;
+      });
+    });
+  }
+  function pngFitted(d, px) {
+    return createImageBitmap(new Blob([d], { type: "image/png" })).then(function(bm) {
+      return toPng(bm, px).then(function(x) {
+        bm.close();
+        return x;
+      });
+    }, function() {
+      throw new Error("not a PNG this browser can read");
+    });
+  }
+  function packZip(ms, whole, name2) {
+    var said = [], fitted = [];
+    ms = ms.filter(function(m) {
+      return m && !m.binned;
+    });
+    var g = ms[0] && ms[0].group, first = g ? inGroup(g)[0] : null;
+    if (first && ms.indexOf(first) > 0) ms = [first].concat(ms.filter(function(m) {
+      return m !== first;
+    }));
+    return projRecs().then(function() {
+      return Promise.all(ms.map(function(m) {
+        return textNow(m);
+      }));
+    }).then(function(texts) {
+      var maps = ms.map(function(m, i) {
+        return { m, text: texts[i], title: mapName(m), path: zipPath(m, recOf(m), i === 0) };
+      });
+      var plan = packPlan(maps), kept = {}, missing = [], top = recOf(ms[0]);
+      var others = ms.map(recOf).filter(function(r, i, a) {
+        return r && r !== top && a.indexOf(r) === i;
+      });
+      if (whole && top) {
+        kept = top.kept;
+        missing = top.maps.filter(function(x) {
+          return !ms.some(function(m) {
+            return x.id === m.id || x.also === m.id;
+          });
+        }).map(function(x) {
+          return x.path;
+        });
+        if (others.length && others.some(function(r) {
+          return Object.keys(r.kept).length;
+        })) said.push("The other files of the maps from another zip were left out (only the top level's project keeps its links).");
+      } else if (ms.some(function(m) {
+        var r = recOf(m);
+        return r && Object.keys(r.kept).length;
+      })) said.push("The project's other files (its links between maps) were left out: they go back only when the whole group is packed.");
+      var keptNames = Object.keys(kept);
+      return keptNames.reduce(function(q, k) {
+        return q.then(function(o) {
+          return kept[k]().then(function(d) {
+            o[k] = d;
+            return o;
+          });
+        });
+      }, Promise.resolve({})).then(function(keptBytes) {
+        var linked = keptGlyphs(keptBytes), pics = {};
+        var named = plan.map(function(n) {
+          return n.name;
+        });
+        return named.concat(linked.filter(function(x) {
+          return named.indexOf(x) < 0;
+        })).reduce(function(q, gname) {
+          return q.then(function() {
+            return picRead(gname);
+          }).then(function(b) {
+            var n = plan.filter(function(x) {
+              return x.name === gname;
+            })[0];
+            if (!b) {
+              if (n) throw new Error(gname + " is named in " + n.maps.join(", ") + " but is not kept here");
+              return;
+            }
+            if (/svg/.test(b.type)) {
+              var box2 = n && n.box || null;
+              return (box2 ? Promise.resolve(svgPixels(box2)) : b.text().then(function(t) {
+                var w = /\swidth="([\d.]+)/.exec(t), h = /\sheight="([\d.]+)/.exec(t);
+                return svgPixels([w ? +w[1] : 300, h ? +h[1] : 150]);
+              })).then(function(px) {
+                return svgPng(b, px);
+              }).then(
+                function(d) {
+                  pics[gname] = d;
+                  if (n && n.mixed) said.push(gname + " is on boxes of different proportions: its PNG was made for the first.");
+                },
+                function(e) {
+                  throw new Error(gname + " could not be made into a PNG: " + e.message);
+                }
+              );
+            }
+            return b.arrayBuffer().then(function(a) {
+              var d = new Uint8Array(a), sz = pngSize(d), px = sz && n && n.box ? fitPixels(sz, n.box) : null;
+              if (!sz) throw new Error(gname + " is not a PNG");
+              if (n && n.mixed) said.push(gname + " is on boxes of different proportions: its PNG was made for the first.");
+              if (!px) {
+                pics[gname] = d;
+                return;
+              }
+              return pngFitted(d, px).then(function(x) {
+                pics[gname] = x;
+                fitted.push(gname.replace(/^glyphs\//, ""));
+              }, function(e) {
+                throw new Error(gname + " could not be fitted to its box: " + e.message);
+              });
+            });
+          });
+        }, Promise.resolve()).then(function() {
+          Object.keys(pics).forEach(function(x) {
+            if (pics[x].length > 5 * 1048576) said.push(x + " is " + (pics[x].length / 1048576).toFixed(1) + " MB: MINERVA takes it in a zip, but its own editor refuses a picture over 5 MB.");
+          });
+          var e = packEntries(maps.map(function(x) {
+            return { path: x.path, text: x.text };
+          }), pics, keptBytes, missing);
+          if (fitted.length) said.push(fitted.length + " picture" + (fitted.length > 1 ? "s" : "") + " made in the proportions of " + (fitted.length > 1 ? "their boxes" : "its box") + ", as here (MINERVA keeps a picture's own): " + fitted.join(", ") + ".");
+          if (e.z.length) said.push("Z-Index of the compartments with pictures set from what holds what in: " + e.z.join(", ") + ".");
+          if (e.gone.length) said.push("Links to maps no longer in the group left out: " + e.gone.join(", ") + ".");
+          return zip(e.entries);
+        });
+      });
+    }).then(function(bytes) {
+      var u = URL.createObjectURL(new Blob([bytes], { type: "application/zip" })), a = document.createElement("a");
+      a.href = u;
+      a.download = (bare(name2) || "MINERVA project").replace(/[\/\\:*?"<>|]+/g, "-") + ".zip";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(function() {
+        URL.revokeObjectURL(u);
+      }, 1e4);
+      if (g && packedGroups.indexOf(g) < 0 && whole) {
+        packedGroups.push(g);
+        packedSaved();
+        V.refreshMine();
+      }
+      if (said.length) alert("Downloaded as a MINERVA zip.\n\n" + said.join("\n"));
+    }, function(e) {
+      alert("Not downloaded as a MINERVA zip: " + (e && e.message ? e.message : e));
     });
   }
   var picker;
@@ -9584,6 +10249,7 @@
       naming: function() {
         return !!naming;
       },
+      isTop,
       tool: { kind: function(id) {
         return fmtOf(V.byId[id] || {});
       }, name: function(id) {
@@ -9596,6 +10262,9 @@
       // what a tool's run is handed (tools.js)
     };
     mineIn.then(upAll).then(binMigrate);
+    mineIn.then(function() {
+      projRecs();
+    });
   }
   function __start7() {
     __run110();
@@ -11998,7 +12667,7 @@
       var L = r.left + sx(q[1][0] - q[2][0] / 2) * k, T = r.top + sy(q[1][1] - q[2][1] / 2) * k;
       return [L - 1.5, T - 1.5, L + q[2][0] * V.z * k + 1.5, T + q[2][1] * V.z * k + 1.5];
     };
-    var inside = function(b, R) {
+    var inside2 = function(b, R) {
       var cx = b.left + b.width / 2, cy = b.top + b.height / 2;
       return cx >= R[0] && cx <= R[2] && cy >= R[1] && cy <= R[3];
     };
@@ -12007,8 +12676,8 @@
       if (!t.getClientRects().length) return false;
       var b = t.getBoundingClientRect();
       return j == null ? !svs.some(function(q) {
-        return inside(b, rect(q));
-      }) : inside(b, rect(svs[j]));
+        return inside2(b, rect(q));
+      }) : inside2(b, rect(svs[j]));
     });
   }
   function shapesOf(i, j) {
@@ -17538,7 +18207,7 @@
       if (!P.length || !same(P[P.length - 1], q)) P.push(q);
       cur = q;
     };
-    var inside = function(ts2) {
+    var inside2 = function(ts2) {
       return ts2.filter(function(t) {
         return t > 0 && t <= 1;
       }).sort(function(x, y) {
@@ -17560,7 +18229,7 @@
           if (Math.abs(den) > 1e-12) ts.push(-(a[0] - sg * a[1]) / den);
         });
         for (var k = 1; k <= 24; k++) ts.push(k / 24);
-        inside(ts).forEach(function(t) {
+        inside2(ts).forEach(function(t) {
           var u = 1 - t;
           add([u * u * q0[0] + 2 * u * t * q1[0] + t * t * q2[0], u * u * q0[1] + 2 * u * t * q1[1] + t * t * q2[1]]);
         });
@@ -17583,7 +18252,7 @@
         for (var j = -4; j <= 4; j++) [t0, -t0].forEach(function(x) {
           th.push((x + j * Math.PI - t1) / dt);
         });
-        inside(th).forEach(function(f) {
+        inside2(th).forEach(function(f) {
           var t = t1 + f * dt;
           add([cx + rx * Math.cos(t), cy + ry * Math.sin(t)]);
         });

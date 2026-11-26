@@ -682,6 +682,7 @@ page, so its styles keep the base they were made on).
   .m2-map .m2-name { flex: 0 1 auto; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
   .m2-map .m2-fx { flex: none; white-space: nowrap; }   /* the extension after the name, kept whole when the name is cut */
   .m2-map .m2-draft { flex: none; }
+  .m2-map .m2-top { flex: none; white-space: nowrap; margin-left: 6px; color: var(--m2-faint); font-size: 12px; }   /* a MINERVA project's top level: its first map */
   /* molecules found on the maps, after the maps found: each with the maps it
      is on; the name it was found by, when not the label, in grey */
   .m2-mol { font-size: 14px; padding: 2px 4px 0; margin-top: 6px; overflow-wrap: anywhere; }
@@ -1699,6 +1700,12 @@ page, so its styles keep the base they were made on).
     [/^Switch to (viewer|edit)$/, 'Switch to viewer or edit'],
     [/^(Full screen with tools|Exit full screen)$/, 'Full screen with tools'],
     [/^Download (PNG|SVG)$/, ''],
+    [/^Download (\d+ maps )?as MINERVA zip$/, 'Download as MINERVA zip'],
+    [/^(Set|Replace) picture…$/, 'Set or replace picture'],
+    [/^Replace background picture( \(.+\))?…$/, 'Replace background picture'],   // the file's name after it when a map has several
+    [/^Move and resize background( \(.+\))?$/, 'Move and resize background'],
+    [/^Fit background to picture( \(.+\))?$/, 'Fit background to picture'],
+    [/^Remove background picture( \(.+\))?$/, 'Remove background picture'],
     [/^Download /, 'Download <its format>'],
     [/^Turn (process|logic gate)$/, 'Turn process or logic gate'],
     [/^Make main (reactant|product)$/, 'Make main reactant or product'],
@@ -1715,7 +1722,7 @@ page, so its styles keep the base they were made on).
     [/^Unit of information ct:/, 'Unit of information ct:mRNA or ct:gene']
   ];
   var MENU_PAGE = ['Switch to viewer or edit', '|', 'New SBGN-ML map', 'New CellDesigner map', '|', 'Full screen with tools', '|', 'Download <its format>', 'Download PNG', 'Download SVG', 'Copy image as PNG', 'Copy image as SVG', '|', 'Open in Newt', 'Open in MINERVA'];
-  var MENU_MAPTOOLS = ['Snap map to grid', 'Repack all complexes', 'Show grid', 'Snap to grid', 'Remove all bend points'];
+  var MENU_MAPTOOLS = ['Snap map to grid', 'Repack all complexes', 'Show grid', 'Snap to grid', 'Add background picture…', 'Replace background picture', 'Move and resize background', 'Fit background to picture', 'Remove background picture', 'Remove all bend points'];
   var MENU_LISTNEW = ['New SBGN-ML map', 'New CellDesigner map', 'Add map from file', 'Add group', 'Restore example maps'];
   var MENU_LISTVIEW = ['Open all groups', 'Close all groups', 'Show or hide file extensions'];
   var MENUS = [
@@ -1733,14 +1740,14 @@ page, so its styles keep the base they were made on).
     { id: 'edit-af', cd: false, head: 'Map, edit mode', name: 'Activity (Activity Flow)', items: ['Make <another kind>', 'Remove unit of information', 'Add or edit unit of information text', 'Unit of information ct:mRNA or ct:gene', 'Remove unit of information text', 'Name by members', 'Repack complex', '|', 'Select all of this kind', '|', 'Delete'] },
     { id: 'edit-glyph', head: 'Map, edit mode', name: 'Other node, complex', items: ['Change identity', 'Name by members', 'Repack complex', '|', 'Select all of this kind', '|', 'Delete'] },
     { id: 'edit-sv', cd: false, head: 'Map, edit mode', name: 'State variable or unit of information (SBGN-ML)', items: ['Delete'] },
-    { id: 'edit-cd-species', cd: true, head: 'Map, edit mode', name: 'Species (CellDesigner)', items: ['Add state variable', 'Add structural state', 'Add unit of information', 'Change identity', 'Make multimer or monomer', 'Name by members', 'Repack complex', '|', 'Select all of this kind', '|', 'Delete'] },
+    { id: 'edit-cd-species', cd: true, head: 'Map, edit mode', name: 'Species (CellDesigner)', items: ['Add state variable', 'Add structural state', 'Add unit of information', 'Change identity', 'Make multimer or monomer', 'Set or replace picture', 'Fit box to picture', 'Remove picture', 'Name by members', 'Repack complex', '|', 'Select all of this kind', '|', 'Delete'] },
     { id: 'edit-cd-residue', cd: true, head: 'Map, edit mode', name: 'Residue (CellDesigner)', items: ['Edit', 'Change state', '|', 'Delete'] },
     { id: 'edit-cd-unit', cd: true, head: 'Map, edit mode', name: 'Unit of information or structural state (CellDesigner)', items: ['Edit', 'Change unit', '|', 'Delete'] },
-    { id: 'edit-compartment', head: 'Map, edit mode', name: 'Inside a compartment', items: ['Name at <place>', 'Bring forward', 'Send backward', '|', 'Select all of this kind', '|', 'Delete', '|'].concat(MENU_MAPTOOLS, '|', MENU_PAGE) },
+    { id: 'edit-compartment', head: 'Map, edit mode', name: 'Inside a compartment', items: ['Name at <place>', 'Bring forward', 'Send backward', 'Set or replace picture', 'Fit box to picture', 'Remove picture', '|', 'Select all of this kind', '|', 'Delete', '|'].concat(MENU_MAPTOOLS, '|', MENU_PAGE) },
     { id: 'edit-empty', head: 'Map, edit mode', name: 'Empty map space', items: MENU_MAPTOOLS.concat('|', MENU_PAGE) },
-    { id: 'list-map', head: 'Map list', name: 'One map', items: ['Rename map', 'Make a copy', 'Move to...', '|', 'Download <its format>', 'Download PNG', 'Download SVG', '|'].concat(MENU_LISTNEW, '|', MENU_LISTVIEW, '|', 'Delete map') },
-    { id: 'list-several', head: 'Map list', name: 'Several maps selected', items: ['Move to...', '|'].concat(MENU_LISTNEW, '|', MENU_LISTVIEW, '|', 'Delete map') },
-    { id: 'list-group', head: 'Map list', name: 'A group\'s heading', items: ['Rename group', '|'].concat(MENU_LISTNEW, '|', MENU_LISTVIEW, '|', 'Remove group', 'Delete group') },
+    { id: 'list-map', head: 'Map list', name: 'One map', items: ['Rename map', 'Make a copy', 'Move to...', 'Set as top level', '|', 'Download <its format>', 'Download PNG', 'Download SVG', 'Download as MINERVA zip', '|'].concat(MENU_LISTNEW, '|', MENU_LISTVIEW, '|', 'Delete map') },
+    { id: 'list-several', head: 'Map list', name: 'Several maps selected', items: ['Move to...', '|', 'Download as MINERVA zip', '|'].concat(MENU_LISTNEW, '|', MENU_LISTVIEW, '|', 'Delete map') },
+    { id: 'list-group', head: 'Map list', name: 'A group\'s heading', items: ['Rename group', '|', 'Download as MINERVA zip', '|'].concat(MENU_LISTNEW, '|', MENU_LISTVIEW, '|', 'Remove group', 'Delete group') },
     { id: 'list-empty', head: 'Map list', name: 'Empty list space', items: MENU_LISTNEW.concat('|', MENU_LISTVIEW) },
     { id: 'list-deleted-map', head: 'Map list', name: 'A map in Deleted', items: ['Restore', '|', 'Delete forever'] },
     { id: 'list-deleted-head', head: 'Map list', name: 'Deleted\'s heading', items: ['Delete all forever'] }
@@ -2094,7 +2101,7 @@ page, so its styles keep the base they were made on).
     // own under the map's own items (Rename map, Make a copy, Move to...), as Finder keeps Copy and Share apart
     var row = e.target.closest('.m2-map'), dm = row && !inBin && byId[row.dataset.id];
     if (dm && mapDownloads && !(picked.length > 1 && picked.indexOf(dm.id) >= 0)) {
-      var rect = { left: e.clientX, top: e.clientY }, dls = mapDownloads(dm).map(function (d) { return [d[0], function () { d[1](rect); }]; });
+      var rect = { left: e.clientX, top: e.clientY }, dls = mapDownloads(dm).map(function (d) { return [d[0], function () { d[1](rect); }]; }).concat(items.dl || []);   // the editor's downloads of it after (Download as MINERVA zip)
       var at = items.mapItems || 0;   // where the editor's map items end
       if (dls.length) items.splice.apply(items, [at, 0].concat(at ? [null] : [], dls, at || !items.length ? [] : [null]));
     }
@@ -3800,6 +3807,7 @@ page, so its styles keep the base they were made on).
       b.appendChild(el('span', 'm2-name', label(m)));
       var fmt = !FORMATS_OFF && formatOf(m);
       if (fmt) b.appendChild(el('span', 'm2-fx', fmt));
+      if (own && own.isTop && own.isTop(m)) b.appendChild(el('span', 'm2-top', 'top level'));
       b.type = 'button';
       b.setAttribute('data-id', m.id);
       b.setAttribute('data-group', m.group || '');
