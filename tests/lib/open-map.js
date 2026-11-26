@@ -15,7 +15,7 @@ async function shown(page) {
 // a site map by its address; throws when the list shows another map
 async function byAddress(page, base, id) {
   await page.goto(base + '#' + id, { waitUntil: 'load' });
-  await page.waitForSelector('#m2-list .m2-item.m2-on', { timeout: 30000 });
+  await page.waitForSelector('#m2-list .m2-item.m2-on', { state: 'attached', timeout: 30000 });   // the list may be behind the Edit window
   var s = await shown(page);
   if (!s || s.id !== id) throw new Error('asked for the map ' + id + ', the list shows ' + (s ? s.id + ' (' + s.name + s.ext + ')' : 'none') + ': not listed any more?');
   return s;

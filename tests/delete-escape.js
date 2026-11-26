@@ -6,11 +6,12 @@
 //    selection, the second clears the selection.
 // 3. CellDesigner (Glycolysis): a species and a line selected, Delete from the right-click menu over the line: both gone.
 // 4. Activity Flow (CaMKII): an influence's arrow end dragged onto another activity lands there.
-//   node tests/delete-escape.js [base address] --data=<clone of the data repository>   (the Activity Flow map is its test set's CaMKII, added as a person adds a file)
+//   node tests/delete-escape.js [base address] --data=<clone of the data repository>   (Testing Glycolysis and the Activity Flow CaMKII from its test set, added as a person adds a file)
 var { chromium } = require('playwright'), path = require('path'), OM = require('./lib/open-map.js');
 var base = process.argv[2] && process.argv[2][0] !== '-' ? process.argv[2] : 'https://viewer-source.github.io/styles/';
 var data = (process.argv.filter(function (a) { return /^--data=/.test(a); })[0] || '').slice(7) ;
 if (!data) { console.log('give --data=<clone of the site\'s data repository> (its test set)'); process.exit(2); }
+var TESTING_GLY = path.join(data, 'test-maps/test-set/maps/testing-glycolysis-sbgn.sbgn');
 var CAMKII_AF = path.join(data, 'test-maps/test-set/test-maps/sbgn-ml/af/sbgn-website/downloads/figure_to_sbgn/camkii_Nov2014_AF.sbgn');
 (async function () {
   var b = await chromium.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], bad = 0;
@@ -34,7 +35,7 @@ var CAMKII_AF = path.join(data, 'test-maps/test-set/test-maps/sbgn-ml/af/sbgn-we
   var inView = function (P) { return P && P[0] > 260 && P[0] < 1380 && P[1] > 80 && P[1] < 880; };
 
   // 1 and 2, SBGN-ML
-  await start('testing-glycolysis-sbgn', 'macromolecule');
+  await start({ file: TESTING_GLY }, 'macromolecule');
   var n0 = await ids('data-n');
   await page.click('#m2-editwin button[data-make="macromolecule"]'); await page.mouse.click(700, 650); await page.waitForTimeout(900);
   await page.keyboard.press('Escape'); await page.keyboard.press('Escape');
@@ -80,7 +81,7 @@ var CAMKII_AF = path.join(data, 'test-maps/test-set/test-maps/sbgn-ml/af/sbgn-we
   ok('and the line’s reaction', r1 < r0, r0 + ' -> ' + r1);
 
   // 4, Activity Flow
-  await start({ file: CAMKII_AF }, 'activity');
+  await start({ file: CAMKII_AF }, 'stimulation');   // a sign every Activity Flow palette has: the palette is ready
   var arcs = await page.evaluate(function () { var d = new DOMParser().parseFromString(window.m2EditNow().text, 'application/xml'), g = {};
     Array.from(d.getElementsByTagName('glyph')).forEach(function (x) { g[x.getAttribute('id')] = x.getAttribute('class'); });
     return Array.from(d.getElementsByTagName('arc')).filter(function (a) { return a.getAttribute('class') === 'positive influence' && g[a.getAttribute('target')] === 'biological activity'; })
