@@ -3,10 +3,12 @@
 // the design: each format unticked and ticked (the text drawn, the circle's width), the tick kept over a reload, undo and
 // redo of the setting, the editor's drawing following it at once while editing goes on, the field showing the whole
 // text, a move keeping every variable and residue name byte for byte, the SVG download as on screen.
-//   node tests/show-sites.js [base address]   (default: the styles page, where the Edit tab is)
-var { chromium } = require('playwright');
-var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
-var SB = 'external-newt-unstable-atm-mediated-phosphorylation-of-repair-proteins-nwt', CD = 'sites-aspirin-2023-celldesigner';
+// Both maps are files of the test set, added by Add map from file; the SVG download alone is checked on the site's copy
+// of the Newt map, as a map added in the browser offers only its own file and a PNG (the site's SVG is made by its build).
+//   node tests/show-sites.js [base address] --data=<clone of the data repository>   (default: the styles page, where the Edit tab is)
+var { chromium } = require('playwright'), OM = require('./lib/open-map.js');
+var base = process.argv.slice(2).filter(function (a) { return a.slice(0, 2) !== '--'; })[0] || 'https://viewer-source.github.io/styles/';
+var SBSITE = 'external-newt-unstable-atm-mediated-phosphorylation-of-repair-proteins-nwt', SB = SBSITE, CD = 'sites-aspirin-2023-celldesigner';
 (async function () {
   var b = await chromium.launch(), ctx = await b.newContext({ viewport: { width: 1400, height: 900 }, acceptDownloads: true }), page = await ctx.newPage();
   var errs = [], bad = 0;
@@ -48,9 +50,10 @@ var SB = 'external-newt-unstable-atm-mediated-phosphorylation-of-repair-proteins
 
   await page.goto(base, { waitUntil: 'load' });
   await page.evaluate(function () { localStorage.clear(); });
+  SB = await OM.resolve(page, base, SB); CD = await OM.resolve(page, base, CD);   // after the storage is cleared: their addresses in this browser
 
   console.log('-- SBGN-ML map (Newt), view mode');
-  await page.goto(base + '#' + SB, { waitUntil: 'load' }); await settle();
+  await OM.byAddress(page, base, SB); await settle();
   await openSet();
   ok('Show sites unticked by default, not in Settings', !(await ticked()) && !(await page.$('#m2-set-sites')));
   var t0 = await picText(), s0 = await seen(t0);
@@ -67,6 +70,7 @@ var SB = 'external-newt-unstable-atm-mediated-phosphorylation-of-repair-proteins
   ok('the value alone in a narrower circle than value@site', widths[1] < widths[0], widths.map(Math.round).reverse().join(' < '));
   await page.reload({ waitUntil: 'load' }); await settle(); await openSet();
   ok('a reload keeps it ticked', await ticked());
+  await OM.byAddress(page, base, SBSITE); await settle();   // the site's copy: the only one with an SVG download
   var dl = page.waitForEvent('download', { timeout: 15000 }).catch(function () { return null; });
   await page.click('.m2-ri[data-win="dl"]'); await page.waitForTimeout(700);   // the Downloads window, its SVG link
   await page.evaluate(function () { var a = [].slice.call(document.querySelectorAll('#m2-dlwin a[download], #m2-downloads a[download]')).filter(function (x) { return /\.svg(\?|$)/.test(x.getAttribute('href')) && x.offsetParent; })[0]; if (a) a.click(); });
@@ -76,7 +80,7 @@ var SB = 'external-newt-unstable-atm-mediated-phosphorylation-of-repair-proteins
   await flip();   // unticked again for the CellDesigner map
 
   console.log('-- CellDesigner map, view mode');
-  await page.goto(base + '#' + CD, { waitUntil: 'load' }); await settle(); await openSet();
+  await OM.byAddress(page, base, CD); await settle(); await openSet();
   ok('the CellDesigner map on screen', (await page.$eval('#m2-title', function (x) { return x.textContent; })) !== '' && (await page.evaluate(function () { return location.hash; })) === '#' + CD && /aspirin/i.test(await page.$eval('#m2-title', function (x) { return x.textContent; })));
   var c0 = await seen(await picText());
   ok('unticked: no residue name drawn', c0.sites === 0);
@@ -86,7 +90,7 @@ var SB = 'external-newt-unstable-atm-mediated-phosphorylation-of-repair-proteins
 
   console.log('-- while editing (CellDesigner)');
   await page.evaluate(function () { localStorage.setItem('atlas-edit-side', 'right'); localStorage.setItem('atlas-edit-level', 'full'); });
-  await page.goto(base + '#' + CD, { waitUntil: 'load' }); await settle();
+  await OM.byAddress(page, base, CD); await settle();
   await page.click('.m2-ri[data-win="edit"]');
   await page.waitForFunction(function () { return !!(window.m2EditNow && window.m2EditNow()); }, null, { timeout: 30000 }); await page.waitForTimeout(2500);
   var shownNames = function () { return page.$$eval('#m2-img .sv-site', function (l) { return l.filter(function (e) { return getComputedStyle(e).display !== 'none'; }).length; }); };
@@ -108,7 +112,7 @@ var SB = 'external-newt-unstable-atm-mediated-phosphorylation-of-repair-proteins
   ok('a move: the file changed, every residue and its name kept byte for byte', c && f1 !== f0 && names(f1) === names(f0) && names(f0).length > 0);
 
   console.log('-- while editing (SBGN-ML)');
-  await page.goto(base + '#' + SB, { waitUntil: 'load' }); await settle();
+  await OM.byAddress(page, base, SB); await settle();
   if (await page.evaluate(function () { return !document.querySelector('.m2').classList.contains('m2-editing'); })) await page.click('.m2-ri[data-win="edit"]');
   var started = await page.waitForFunction(function () { return !!(window.m2EditNow && window.m2EditNow()); }, null, { timeout: 30000 }).then(function () { return true; }, function () { return false; });
   if (!started) console.log('-     this map is not edited on this page');

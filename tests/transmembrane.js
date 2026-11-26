@@ -5,9 +5,10 @@
 // compartment is drawn outside it there (the centre one unit inside), its edge where nothing is (kept crossing, the centre
 // out). On SBGN-ML the member is first put onto the border with Shift (no demo map draws one crossing). Nothing is saved (no token). The editor is the live one, or with --local the
 // working tree's editor.js routed into the page.
-//   node tests/transmembrane.js [--local]   (needs Playwright; run from viewer/)
-var { chromium } = require('playwright'), fs = require('fs'), path = require('path');
-var here = path.join(__dirname, '..'), local = process.argv.indexOf('--local') >= 0, URL = 'https://viewer-source.github.io/styles/#';
+// The maps are files of the test set, added by Add map from file in each page's own browser context.
+//   node tests/transmembrane.js [--local] --data=<clone of the data repository>   (needs Playwright; run from viewer/)
+var { chromium } = require('playwright'), fs = require('fs'), path = require('path'), OM = require('./lib/open-map.js');
+var here = path.join(__dirname, '..'), local = process.argv.indexOf('--local') >= 0, BASE = 'https://viewer-source.github.io/styles/';
 function editor() {   // editor.js joined as Jekyll joins it
   return require('./editor-now.js')(here);
 }
@@ -15,7 +16,7 @@ async function open(b, map, id, zoom) {
   var p = await b.newPage({ viewport: { width: 1400, height: 900 } });
   if (local) await p.route(/\/styles\/editor\/editor\.js/, function (r) { r.fulfill({ contentType: 'application/javascript', body: editor() }); });
   await p.addInitScript(function () { try { localStorage.setItem('atlas-edit-level', 'full'); } catch (e) {} });
-  await p.goto(URL + map, { waitUntil: 'load' });
+  await OM.open(p, BASE, map);   // the test-set file added in this page's context, then opened by its own address
   await p.waitForSelector('.m2-ri[data-win="edit"]', { timeout: 30000 }); await p.click('.m2-ri[data-win="edit"]');
   await p.waitForSelector('[data-n="' + id + '"]', { timeout: 60000 }); await p.waitForTimeout(3000);
   var r = await box(p, id); await p.mouse.move((r[0] + r[2]) / 2, (r[1] + r[3]) / 2);

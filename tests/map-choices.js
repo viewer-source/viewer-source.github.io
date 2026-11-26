@@ -2,9 +2,11 @@
 // its own. A map with no choice shows what its colours are (the colour tests every species a confetti pastel: Confetti;
 // a map recoloured to Default: Default); a choice made on one map is not shown on another and comes back with its map;
 // a recolour undone shows the map as it is again. CellDesigner and SBGN-ML. Nothing is saved (no token).
-//   node tests/map-choices.js [base address] [viewer folder: its editor served in place of the page's]
-var chromium = require('playwright').chromium, fs = require('fs'), path = require('path');
-var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local = process.argv[3], bad = 0;
+// The SBGN-ML colour test is a file of the test set, added by Add map from file before the test starts.
+//   node tests/map-choices.js [base address] [viewer folder: its editor served in place of the page's] --data=<clone of the data repository>
+var chromium = require('playwright').chromium, fs = require('fs'), path = require('path'), OM = require('./lib/open-map.js');
+var pos = process.argv.slice(2).filter(function (a) { return a.slice(0, 2) !== '--'; });
+var base = pos[0] || 'https://viewer-source.github.io/styles/', local = pos[1], bad = 0;
 var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more ? '  ' + more : '')); };
 (async function () {
   var b = await chromium.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [];
@@ -14,7 +16,9 @@ var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : '
     await page.route(/\/renderers\/converter\/(sbgn_edit|cd_make)\.js/, function (r) { var f = /(sbgn_edit|cd_make)\.js/.exec(r.request().url())[0]; r.fulfill({ status: 200, contentType: 'application/javascript', body: fs.readFileSync(path.join(local, 'renderers/converter', f), 'utf8') }); });
   }
   page.on('pageerror', function (e) { errs.push(e.message); });
-  await page.goto(base + '#tag-celldesigner', { waitUntil: 'load' });
+  await page.goto(base, { waitUntil: 'load' });
+  var SBCOL = await OM.resolve(page, base, 'colour-glycolysis-sbgn');   // its address in this browser
+  await OM.byAddress(page, base, 'tag-celldesigner'); await page.reload({ waitUntil: 'load' });
   await page.evaluate(function () { ['atlas-edit-map-choices', 'atlas-edit-originals', 'atlas-edit-defaults', 'atlas-edit-cd-defaults'].forEach(function (k) { localStorage.removeItem(k); }); });
   await page.waitForSelector('.m2-ri[data-win="edit"]', { timeout: 30000 });
   await page.click('.m2-ri[data-win="edit"]');
@@ -33,7 +37,7 @@ var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : '
   await open('colour-test');
   ok('Glycolysis colour test (CellDesigner): Confetti, read from its colours', (await val(F)) === 'Confetti', await val(F));
   ok('Glycolysis colour test: Style From map, not triacylglycerol’s', (await val(S)) === 'From map', await val(S));
-  await open('colour-glycolysis-sbgn');
+  await open(SBCOL);
   ok('Glycolysis colour test (SBGN-ML): Confetti', (await val(F)) === 'Confetti', await val(F));
   await open('srebp-sbgn');
   ok('SREBP (SBGN-ML), not chosen: Original', (await val(F)) === 'Original', await val(F));

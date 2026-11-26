@@ -2,13 +2,15 @@
 // picture decoded), to enter edit (the Edit tab to the editor's grouped drawing in the page), of one change (a node
 // moved by Shift+Arrow to the drawing made again), and the page's JavaScript heap after each (Chromium only). A map of
 // the site by its id; a file from the computer by --add <file> (added with Add map from file, no token: its time to
-// open is the adding and drawing in this browser). Each map in a fresh page; numbers printed, not checked.
-//   node tests/baseline.js [base address] [map ids ...] [--add <file> ...] [--runs N]
-var engine = require('playwright')[process.env.BROWSER || 'chromium'], fs = require('fs'), path = require('path'), zlib = require('zlib');
+// open is the adding and drawing in this browser). A test-set name (tests/lib/open-map.js TESTSET) is added by Add map
+// from file first, untimed, and then opened by the address it got, as a site map. Each map in a fresh page; numbers
+// printed, not checked.
+//   node tests/baseline.js [base address] [map ids ...] [--add <file> ...] [--runs N] --data=<clone of the data repository>
+var engine = require('playwright')[process.env.BROWSER || 'chromium'], fs = require('fs'), path = require('path'), zlib = require('zlib'), OM = require('./lib/open-map.js');
 var args = process.argv.slice(2), base = 'https://viewer-source.github.io/styles/', ids = [], adds = [], runs = 1;
 for (var i = 0; i < args.length; i++) {
   if (args[i] === '--add') adds.push(args[++i]); else if (args[i] === '--runs') runs = +args[++i];
-  else if (/^https?:/.test(args[i])) base = args[i]; else ids.push(args[i]);
+  else if (/^https?:/.test(args[i])) base = args[i]; else if (args[i].slice(0, 2) !== '--') ids.push(args[i]);
 }
 if (!ids.length && !adds.length) ids = ['glycolysis-graphml', 'asthmamap-mast-cell-graphml', 'asthmamap-mast-cell-celldesigner', 'recon2-v01'];
 var LONG = 600000;
@@ -36,7 +38,7 @@ async function one(b, what) {
   await page.evaluate(function () { localStorage.clear(); });
   var t = Date.now();
   if (what.id) {
-    await page.goto(base + '#' + what.id, { waitUntil: 'load' });
+    await OM.byAddress(page, base, await OM.resolve(page, base, what.id));   // after the storage is cleared; a test-set file added first
     t = Date.now();
     await page.reload({ waitUntil: 'load' });   // the address opened afresh, the files in the browser's cache as a returning reader has them
     await shown();

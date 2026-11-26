@@ -4,9 +4,11 @@
 // everywhere, another the state variables; moved by the arrow keys on every copy; a glyph renamed PKA-C takes the variable; Delete removes it from every copy.
 // CellDesigner: on a map with one protein entry per species, a state variable added on one HSL shows on every HSL.
 // No script error.
-//   node tests/sv-shared.js [base address] [viewer folder: its editor and renderers served in place of the page's]
-var { chromium } = require('playwright'), fs = require('fs'), path = require('path');
-var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local = process.argv[3];
+// The CellDesigner map is a file of the test set, added by Add map from file before the test starts.
+//   node tests/sv-shared.js [base address] [viewer folder: its editor and renderers served in place of the page's] --data=<clone of the data repository>
+var { chromium } = require('playwright'), fs = require('fs'), path = require('path'), OM = require('./lib/open-map.js');
+var pos = process.argv.slice(2).filter(function (a) { return a.slice(0, 2) !== '--'; });
+var base = pos[0] || 'https://viewer-source.github.io/styles/', local = pos[1];
 (async function () {
   var b = await chromium.launch(), page = await b.newPage({ viewport: { width: 1400, height: 900 } }), errs = [], bad = 0;
   if (local) {
@@ -40,6 +42,8 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local =
     var r = await rect(id), B = M[id].box, s = M[id].sv[j][2], sx = r[2] / B[2];   // the drawn group may be wider than the box by the icons: the box's middle kept
     return [r[0] + r[2] / 2 + s[0] * B[2] * sx, r[1] + r[3] / 2 + s[1] * B[3] * sx];
   };
+  await page.goto(base, { waitUntil: 'load' });
+  var TAG = await OM.resolve(page, base, 'sites-tag-2026-celldesigner');   // its address in this browser
   await page.goto(base + '#glycolysis-sbgn', { waitUntil: 'load' }); await page.waitForSelector('.m2-ri[data-win="edit"]', { timeout: 30000 }); await page.waitForTimeout(2500);
   if (!(await page.$('#m2-editwin button[data-make]:visible'))) await page.click('.m2-ri[data-win="edit"]');
   await page.waitForSelector('#m2-editwin button[data-make]', { state: 'visible', timeout: 30000 }); await page.waitForTimeout(1500);
@@ -102,7 +106,7 @@ var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local =
   ok('the other glyphs untouched', Object.keys(M0).filter(function (k) { return pc.indexOf(k) < 0; }).every(function (k) { return JSON.stringify(M8[k].sv.map(function (q) { return q.slice(0, 2); })) === JSON.stringify(M0[k].sv.map(function (q) { return q.slice(0, 2); })); }));
   // CellDesigner: a map with one protein entry per species (the TAG map: HSL four times, each its own entry); a state
   // variable added on one HSL shows on every HSL, the states the map had kept, one undo takes it all back
-  await page.goto(base + '#sites-tag-2026-celldesigner', { waitUntil: 'load' }); await page.waitForTimeout(2500);
+  await OM.byAddress(page, base, TAG); await page.waitForTimeout(2500);
   await page.waitForSelector('#m2-editwin button[data-make]', { state: 'visible', timeout: 60000 }); await page.waitForTimeout(3000);
   var cdHsl = function () {
     return page.evaluate(function () {

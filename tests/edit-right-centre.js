@@ -1,10 +1,13 @@
 // The Edit panel on the right: opened and closed, the map on screen does not move; a map chosen while it is open opens
 // centred in the map window between the two panels. GitHub played by the script.
-//   node tests/edit-right-centre.js <base address> <clone of the site's data repository> [--local]
-var { chromium } = require('playwright'), fs = require('fs'), path = require('path'), cp = require('child_process');
-var base = process.argv[2] || 'https://viewer-source.github.io/styles/';
-var data = process.argv[3], local = process.argv.indexOf('--local') > 0, here = path.join(__dirname, '..');
-if (!data) { console.log('usage: node tests/edit-reload.js <base address> <clone of the data repository> [--local]'); process.exit(2); }
+// The SBGN-ML colour test is a file of the test set, added by Add map from file before the token is set (with a token
+// the file would go to GitHub and get no address of this browser).
+//   node tests/edit-right-centre.js [base address] --data=<clone of the site's data repository> [--local]
+var { chromium } = require('playwright'), fs = require('fs'), path = require('path'), cp = require('child_process'), OM = require('./lib/open-map.js');
+var pos = process.argv.slice(2).filter(function (a) { return a.slice(0, 2) !== '--'; });
+var base = pos[0] || 'https://viewer-source.github.io/styles/';
+var data = (process.argv.filter(function (a) { return /^--data=/.test(a); })[0] || '').slice(7) || pos[1], local = process.argv.indexOf('--local') > 0, here = path.join(__dirname, '..');
+if (!data) { console.log('usage: node tests/edit-right-centre.js [base address] --data=<clone of the data repository> [--local]'); process.exit(2); }
 function editorNow() {   // editor.js joined as Jekyll joins it
   return require('./editor-now.js')(here);
 }
@@ -67,6 +70,8 @@ function viewerHunks() {   // [old, new] pieces of the viewer's file changed sin
     return { d: (b.left + b.width / 2) - (a.left + a.width / 2), vw: a.width, w: b.width };
   }); };
   await page.goto(base, { waitUntil: 'load' });
+  var others = (process.env.NEXT || 'glycogen-liver-graphml,glycolysis-celldesigner,colour-glycolysis-sbgn,enos-graphml').split(',');
+  for (var i = 0; i < others.length; i++) others[i] = await OM.resolve(page, base, others[i]);   // test-set names to their addresses here
   await page.evaluate(function () { localStorage.setItem('atlas-edit-token', 'test-token'); localStorage.setItem('atlas-edit-side', 'right'); });
   var id = process.env.MAP || 'glycolysis-graphml';
   await page.goto(base + '#' + id, { waitUntil: 'load' }); await page.reload({ waitUntil: 'load' });
@@ -76,7 +81,6 @@ function viewerHunks() {   // [old, new] pieces of the viewer's file changed sin
   var b = await off();
   ok('panel open: the map window narrower', b.vw < a.vw - 100, a.vw + ' to ' + b.vw);
   ok('panel open: the map on screen not moved', Math.abs((b.d - (a.vw - b.vw) / 2) - a.d) < 2 && Math.abs(b.w - a.w) < 1, 'offset ' + a.d.toFixed(1) + ' then ' + b.d.toFixed(1));
-  var others = (process.env.NEXT || 'glycogen-liver-graphml,glycolysis-celldesigner,colour-glycolysis-sbgn,enos-graphml').split(',');
   for (var i = 0; i < others.length; i++) {
     await page.click('.m2-map[data-id="' + others[i] + '"]'); await page.waitForTimeout(4000);
     var n = await off();

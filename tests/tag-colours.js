@@ -3,10 +3,12 @@
 // terminal selected shows Fill colour, Border colour and Border width in Properties; a fill and a border typed there are
 // written into the file's render extension; Colours Mist and sage (the Default colours) then gives it a tag's white, Confetti a pastel of its own,
 // and one undo takes the recolouring back. Nothing is saved (no token). No script error.
-//   node tests/tag-colours.js [base address] [viewer folder: its editor served in place of the page's]
+// A test-set name in MAP is added by Add map from file and opened by the address it gets in this browser.
+//   node tests/tag-colours.js [base address] [viewer folder: its editor served in place of the page's] --data=<clone of the data repository>
+var OM = require('./lib/open-map.js'), pos = process.argv.slice(2).filter(function (a) { return a.slice(0, 2) !== '--'; });
 var engine = require('playwright')[process.env.BROWSER || 'chromium'], fs = require('fs'), path = require('path');   // BROWSER=webkit or firefox: the same test in another engine
 var NOISE = require('./lib/noise.js');   // what a browser reports that is no fault of the page
-var base = process.argv[2] || 'https://viewer-source.github.io/styles/', local = process.argv[3], bad = 0, ID = process.env.ID || 'glyph41';
+var base = pos[0] || 'https://viewer-source.github.io/styles/', local = pos[1], bad = 0, ID = process.env.ID || 'glyph41';
 var MAP = process.env.MAP || 'external-sbgn-website-downloads-examples-insulin-like-growth-factor-signaling-withsubmap-mapk-cascade-sbgn';
 var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : 'WRONG ') + what + (more ? '  ' + more : '')); };
 (async function () {
@@ -42,7 +44,7 @@ var ok = function (what, v, more) { if (!v) bad++; console.log((v ? 'ok    ' : '
   };
   var shown = function (k) { return page.$eval('#m2-editwin .m2-ed-pnode tr[data-k="' + k + '"]', function (r) { return !r.hidden && r.offsetParent !== null; }).catch(function () { return false; }); };
   await page.goto(base, { waitUntil: 'load' }); await page.evaluate(function () { localStorage.clear(); });
-  await page.goto(base + '#' + MAP, { waitUntil: 'load' });
+  await OM.open(page, base, MAP);   // after the storage is cleared
   await page.waitForSelector('.m2-ri[data-win="edit"]', { timeout: 30000 }); await page.waitForTimeout(1500);
   await page.click('.m2-ri[data-win="edit"]');
   await page.waitForFunction(function () { return !!(window.m2EditNow && window.m2EditNow()) && !!document.querySelector('[data-n]'); }, null, { timeout: 30000 }); await page.waitForTimeout(1500);
