@@ -1499,33 +1499,55 @@
     }
     return t;
   }
-  // ---- a reaction's references (PubMed, DOI), in its own RDF as CellDesigner writes it ----
+  // ---- an item's own links, in its RDF as CellDesigner writes it: a reaction's references (PubMed, DOI), the
+  // identifiers of a species, a complex's member or a compartment (UniProt, HGNC, ChEBI, GO, MeSH) ----
   // refs(t, rid) -> [{ q, link, key }]: every link of the reaction's own RDF description in the file's order, q its
   // qualifier as written (bqbiol:isDescribedBy, bqmodel:isDescribedBy, bqbiol:is, ...), link the rdf:resource, key the
-  // link as db:id decoded (pubmed:19461003, doi:10.1038/nature08124; an identifiers.org link too), null for any other.
+  // link as db:id decoded (pubmed:19461003, doi:10.1038/nature08124, chebi:CHEBI:15346; an identifiers.org link too),
+  // null for any other.
   // setRefs(t, rid, add, del) -> t with the links whose key is in del taken out of the reaction's bqbiol:isDescribedBy
   // bags (whatever their encoding; a qualifier left empty goes, the RDF with it when nothing else is left in it) and the
   // keys of add written at the end of its first bqbiol:isDescribedBy bag (urn:miriam:pubmed:N, urn:miriam:doi: with the
   // DOI encoded as CellDesigner does, its slash %2F), made where missing as CellDesigner 4.4.2 saves one (one bag per
   // qualifier, flush left, its RDF header after celldesigner:extension). A DOI's key compares without case. A link
   // under another qualifier is never touched; the rest byte for byte.
+  // idsOf(t, alias) -> { cls, links }: the same for the item an alias stands for (its species, a complex's member's own,
+  // or its compartment; cls its class, COMPARTMENT for one); setIds(t, alias, add, del) as setRefs under bqbiol:is,
+  // written with CellDesigner's namespaces (urn:miriam:uniprot:Q15831, urn:miriam:hgnc:11389,
+  // urn:miriam:obo.chebi:CHEBI%3A15346, urn:miriam:obo.go:GO%3A0016573, urn:miriam:mesh:D012345). A complex's member
+  // keeps its RDF in its celldesigner:notes, as CellDesigner does, the notes made where missing and taken out again when
+  // nothing else is left in them.
   var RDF_HEAD = '<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:vCard="http://www.w3.org/2001/vcard-rdf/3.0#" xmlns:bqbiol="http://biomodels.net/biology-qualifiers/" xmlns:bqmodel="http://biomodels.net/model-qualifiers/">';
-  function rxRdf(t, rid) {   // the reaction's span, its own annotation's (before its lists) and its RDF description's, each null where missing
-    var rs = rspan(t, rid), lists = t.slice(rs[0], rs[1]).search(/<listOf/), an = span(t, '<annotation[\\s>]', rs[0], lists < 0 ? rs[1] : rs[0] + lists);
-    if (an && lists >= 0 && an[1] > rs[0] + lists) an = null;
+  var NOTES_A = '<celldesigner:notes><html xmlns="http://www.w3.org/1999/xhtml"><head><title/></head><body>', NOTES_B = '</body></html></celldesigner:notes>';
+  function ownRdf(t, sp, inc) {   // an item's span, its annotation's (a reaction's before its lists; a complex's member's: its notes) and its RDF description's, each null where missing
+    var lists = inc ? -1 : t.slice(sp[0], sp[1]).search(/<listOf/), an = span(t, inc ? '<celldesigner:notes[\\s>]' : '<annotation[\\s>]', sp[0], lists < 0 ? sp[1] : sp[0] + lists);
+    if (an && lists >= 0 && an[1] > sp[0] + lists) an = null;
     var rdf = an && span(t, '<rdf:RDF[\\s>]', an[0], an[1]);
-    return { rs: rs, an: an, rdf: rdf, d: rdf && span(t, '<rdf:Description[\\s>]', rdf[0], rdf[1]) };
+    return { rs: sp, inc: inc, an: an, rdf: rdf, d: rdf && span(t, '<rdf:Description[\\s>]', rdf[0], rdf[1]) };
   }
-  function refKey(link) {
+  function rxRdf(t, rid) { return ownRdf(t, rspan(t, rid), false); }
+  function itemRdf(t, id) {   // the item an alias stands for: its species (a complex's member: its own), or its compartment
+    var A = alias(t, id);
+    if (A.species) return ownRdf(t, A.s.sp, A.s.inc);
+    var C = A.compartment && span(t, '<compartment(?=\\s)[^>]*\\sid="' + q(A.compartment) + '"');
+    if (!C) fail('No compartment of ' + id + ' on the map.');
+    return ownRdf(t, C, false);
+  }
+  var ID_NS = { uniprot: 'uniprot', hgnc: 'hgnc', chebi: 'obo.chebi', go: 'obo.go', mesh: 'mesh' };
+  function refKey(link) {   // db:id, CellDesigner's obo. namespaces as identifiers.org names them, ChEBI's and GO's prefix kept in the id, HGNC's not
     var m = /^urn:miriam:([\w.]+):(.+)$/.exec(link) || /^https?:\/\/identifiers\.org\/(?:([\w.]+)\/|([\w.]+):)(.+)$/i.exec(link);
     if (!m) return null;
     var db = (m.length > 3 ? m[1] || m[2] : m[1]).toLowerCase(), v = m.length > 3 ? m[3] : m[2];
     try { v = decodeURIComponent(v); } catch (e) {}
+    db = db.replace(/^obo\.(chebi|go)$/, '$1');
+    if (db === 'chebi' || db === 'go') v = db.toUpperCase() + ':' + v.replace(/^(chebi|go):/i, '');
+    else if (db === 'hgnc') v = v.replace(/^hgnc:/i, '');
+    else if (db === 'uniprot' || db === 'mesh') v = v.toUpperCase();
     return db + ':' + v;
   }
   function sameKey(a, b) { return a === b || (/^doi:/.test(a) && a.toLowerCase() === String(b).toLowerCase()); }
-  function refs(t, rid) {
-    var R = rxRdf(t, rid), out = [];
+  function linksOf(t, R) {
+    var out = [];
     if (!R.d) return out;
     var body = t.slice(R.d[0], R.d[1]), re = /<((bqbiol|bqmodel):\w+)[\s>][\s\S]*?<\/\1>/g, m;
     while ((m = re.exec(body))) {
@@ -1534,14 +1556,20 @@
     }
     return out;
   }
-  function setRefs(t, rid, add, del) {
-    var own = refs(t, rid).filter(function (r) { return r.q === 'bqbiol:isDescribedBy' && r.key; });
+  function refs(t, rid) { return linksOf(t, rxRdf(t, rid)); }
+  function idsOf(t, id) { var A = alias(t, id); return { cls: A.species ? A.cls : 'COMPARTMENT', links: linksOf(t, itemRdf(t, id)) }; }
+  function refUrn(k) { var c = k.indexOf(':'), db = k.slice(0, c), v = k.slice(c + 1); return 'urn:miriam:' + db + ':' + (db === 'doi' ? encodeURIComponent(v) : v); }
+  function idUrn(k) { var c = k.indexOf(':'), db = k.slice(0, c); if (!ID_NS[db]) fail('No identifier ' + k + '.'); return 'urn:miriam:' + ID_NS[db] + ':' + k.slice(c + 1).replace(/:/g, '%3A'); }
+  function setRefs(t, rid, add, del) { return setLinks(t, function (t) { return rxRdf(t, rid); }, 'bqbiol:isDescribedBy', add, del, refUrn); }
+  function setIds(t, id, add, del) { return setLinks(t, function (t) { return itemRdf(t, id); }, 'bqbiol:is', add, del, idUrn); }
+  function setLinks(t, loc, qual, add, del, urnOf) {   // loc(t): where the item's RDF is (ownRdf), found again after each change
+    var own = linksOf(t, loc(t)).filter(function (r) { return r.q === qual && r.key; }), open = '<' + qual + '[\\s>]';
     var gone = own.filter(function (r) { return (del || []).some(function (k) { return sameKey(k, r.key); }); });
     add = (add || []).filter(function (k, j, a) { return a.findIndex(function (x) { return sameKey(x, k); }) === j && !own.some(function (r) { return sameKey(r.key, k) && gone.indexOf(r) < 0; }); });
     if (!add.length && !gone.length) return t;
     var esc = function (u) { return u.replace(/&/g, '&amp;').replace(/"/g, '&quot;'); };
     gone.forEach(function (r) {   // each removed link's rdf:li cut; a qualifier holding only it out, the RDF with it when nothing else is in it
-      var R = rxRdf(t, rid), quals = all(t, '<bqbiol:isDescribedBy[\\s>]', R.d);
+      var R = loc(t), quals = all(t, open, R.d);
       for (var k = 0; k < quals.length; k++) {
         var lis = all(t, '<rdf:li\\s[^>]*rdf:resource="' + q(esc(r.link)) + '"', quals[k].sp);
         if (!lis.length) continue;
@@ -1549,27 +1577,38 @@
         var inner = t.slice(R.d[0] + head(t, R.d).length, quals[k].sp[0]) + t.slice(quals[k].sp[1], t.lastIndexOf('</rdf:Description>', R.d[1]));
         var top = !/</.test(inner) && all(t, '<rdf:Description[\\s>]', R.rdf).length === 1 ? R.rdf : quals[k].sp;
         t = cut(t, top);
+        var R2 = loc(t);   // a complex's member's notes made here for it, nothing else left in them: out again
+        if (top === R.rdf && R2.inc && R2.an && t.slice(R2.an[0], R2.an[1]) === NOTES_A + NOTES_B) t = put(t, R2.an[0], R2.an[1], '');
+        else if (top === R.rdf && R2.inc && R2.an) { var eb = t.indexOf('<body></body>', R2.an[0]); if (eb >= 0 && eb < R2.an[1]) t = put(t, eb, eb + 13, '<body/>'); }   // an empty body written short again
         return;
       }
     });
     if (!add.length) return t;
-    var lines = add.map(function (k) { var c = k.indexOf(':'), db = k.slice(0, c), v = k.slice(c + 1); return '<rdf:li rdf:resource="' + esc('urn:miriam:' + db + ':' + (db === 'doi' ? encodeURIComponent(v) : v)) + '"/>\n'; }).join('');
-    var R = rxRdf(t, rid), bag = R.d && all(t, '<bqbiol:isDescribedBy[\\s>]', R.d).map(function (x) { return span(t, '<rdf:Bag[\\s>]', x.sp[0], x.sp[1]); }).filter(Boolean)[0];
+    var lines = add.map(function (k) { return '<rdf:li rdf:resource="' + esc(urnOf(k)) + '"/>\n'; }).join('');
+    var R = loc(t), bag = R.d && all(t, open, R.d).map(function (x) { return span(t, '<rdf:Bag[\\s>]', x.sp[0], x.sp[1]); }).filter(Boolean)[0];
     if (bag) {
       var e = t.lastIndexOf('</rdf:Bag>', bag[1]), alone = /(^|\n)[ \t]*$/.test(t.slice(Math.max(0, e - 200), e));
       return put(t, e, e, alone ? lines : '\n' + lines);
     }
-    var block = '<bqbiol:isDescribedBy>\n<rdf:Bag>\n' + lines + '</rdf:Bag>\n</bqbiol:isDescribedBy>\n';
-    if (R.d) {   // a description of the reaction: the qualifier after its last one (bqbiol declared on the RDF, else on the element)
+    var block = '<' + qual + '>\n<rdf:Bag>\n' + lines + '</rdf:Bag>\n</' + qual + '>\n';
+    if (R.d) {   // a description of the item: the qualifier after its last one (bqbiol declared on the RDF, else on the element)
       var decl = /xmlns:bqbiol=/.test(head(t, R.rdf)) || /xmlns:bqbiol=/.test(head(t, R.d)) ? '' : ' xmlns:bqbiol="http://biomodels.net/biology-qualifiers/"';
       var end = t.lastIndexOf('</rdf:Description>', R.d[1]);
-      return put(t, end, end, block.replace('<bqbiol:isDescribedBy>', '<bqbiol:isDescribedBy' + decl + '>'));
+      return put(t, end, end, block.replace('<' + qual + '>', '<' + qual + decl + '>'));
     }
-    var meta = at(head(t, R.rs), 'metaid') || rid, desc = '<rdf:Description rdf:about="#' + meta + '">\n' + block + '</rdf:Description>\n';
+    var h = head(t, R.rs), meta = at(h, 'metaid') || at(h, 'id'), desc = '<rdf:Description rdf:about="#' + meta + '">\n' + block + '</rdf:Description>\n';
     if (R.rdf) { var re0 = t.lastIndexOf('</rdf:RDF>', R.rdf[1]); return put(t, re0, re0, desc); }
     var rdf = RDF_HEAD + '\n' + desc + '</rdf:RDF>\n';
+    if (/\/>$/.test(h)) refuse('This item cannot hold identifiers in the file.');
+    var hi = R.rs[0] + h.length;
+    if (R.inc) {   // a complex's member: in its notes' body, the notes made where missing (as CellDesigner writes them, right after the member's tag)
+      if (!R.an) return put(t, hi, hi, NOTES_A + rdf + NOTES_B);
+      var be = t.lastIndexOf('</body>', R.an[1]), bs = t.indexOf('<body/>', R.an[0]);
+      if (be < R.an[0] && bs >= 0 && bs < R.an[1]) return put(t, bs, bs + 7, '<body>' + rdf + '</body>');   // an empty body written short
+      if (be < R.an[0]) be = t.lastIndexOf('</celldesigner:notes>', R.an[1]);
+      return put(t, be, be, rdf);
+    }
     if (R.an) { var ae = t.lastIndexOf('</annotation>', R.an[1]); return put(t, ae, ae, rdf); }
-    var hi = R.rs[0] + head(t, R.rs).length;
     return put(t, hi, eol(t, hi), '\n<annotation>\n' + rdf + '</annotation>\n');
   }
   function aliasInfo(t, id) {
@@ -1577,7 +1616,7 @@
     var hd = A.s && /<celldesigner:homodimer>(\d+)</.exec(t.slice(A.s.sp[0], A.s.sp[1]));
     return { kind: A.kind, cls: A.cls || null, id: A.species || A.compartment, name: A.s ? A.s.name : C ? at(head(t, C), 'name') : null, complex: A.complex, box: A.box, homodimer: hd ? +hd[1] : 1 };
   }
-  var api = { refs: refs, setRefs: setRefs, picture: picture, pictureOf: pictureOf, backgrounds: backgrounds, background: background, backgroundSet: backgroundSet, backgroundRemove: backgroundRemove, LOOK: LOOK, COMP: COMP, lineColour: lineColour, recolourLine: recolourLine, lineWidth: lineWidth, rewidthLine: rewidthLine, stoichiometry: stoichiometry, restoich: restoich, participants: participants, PROCESS: PROCESS, REDUCED: REDUCED, sbgn: sbgn, MODS: MODS, NEED: NEED, about: about, aliasInfo: aliasInfo, classColour: classColour, compartmentColour: compartmentColour, classColours: classColours, classSize: classSize, empty: empty, species: newSpecies, compartment: compartment, rename: rename, namePlace: namePlace, nameAt: nameAt, nameInfo: nameInfo, retype: retype, remove: remove, reaction: reaction, reduced: reduced,
+  var api = { refs: refs, setRefs: setRefs, idsOf: idsOf, setIds: setIds, picture: picture, pictureOf: pictureOf, backgrounds: backgrounds, background: background, backgroundSet: backgroundSet, backgroundRemove: backgroundRemove, LOOK: LOOK, COMP: COMP, lineColour: lineColour, recolourLine: recolourLine, lineWidth: lineWidth, rewidthLine: rewidthLine, stoichiometry: stoichiometry, restoich: restoich, participants: participants, PROCESS: PROCESS, REDUCED: REDUCED, sbgn: sbgn, MODS: MODS, NEED: NEED, about: about, aliasInfo: aliasInfo, classColour: classColour, compartmentColour: compartmentColour, classColours: classColours, classSize: classSize, empty: empty, species: newSpecies, compartment: compartment, rename: rename, namePlace: namePlace, nameAt: nameAt, nameInfo: nameInfo, retype: retype, remove: remove, reaction: reaction, reduced: reduced,
     reactant: reactant, product: product, modifier: modifier, reactionType: reactionType, reversible: reversible, modifierType: modifierType, removeLine: removeLine,
     gate: gate, gateInput: gateInput, gateInputRemove: gateInputRemove, gateType: gateType, residue: residue, residueState: residueState,
     residueRemove: residueRemove, residueName: residueName, residueMove: residueMove, structuralMove: structuralMove, features: features, STATES: STATES, placesFor: placesFor, ratioAngle: ratioAngle, bounds: bounds, proteinAliases: proteinAliases, joinKin: joinKin, structural: structural, info: info, infoUnit: infoUnit, INFO: INFO, homodimer: homodimer, look: look, restyle: restyle, recolourAll: recolourAll, colours: colours, cdName: cdName, joinable: joinable, join: join, leave: leave };

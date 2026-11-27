@@ -2,7 +2,7 @@ import { shared, V } from './state.js';
 import { boxOf, commit, edges2, fmt, grown, map, nodes2, on, paint, parse, realizerOf, refit, render, setBoxes, setText, src, warn } from './core.js';
 import { sbJs } from './engines.js';
 import { sbClasses, sbKind } from './sbgn.js';
-import { colsPick, confettiLine, confettiOne, confettiPick, confettiSquares, DEF_KEY, defOf, defsKept, EXTRA, field, freeId, hasMulti, hex, HUB_KINDS, isMade, keepLook, keepMapChoice, keepSel, lookKey, mapCols, nameOf, origAll, palDrop, palId, propNode, propNodes, props, stdLetters, stdScale, styleRow, SV, svAddTo, svClash, svHold, svIconsOn, svIdx, svList, svOnly, svPt, svR, svSettle, svTwin, svVar, tagTurnT, termScaled, termsFix, UI } from './create.js';
+import { annItem, colsPick, confettiLine, confettiOne, confettiPick, confettiSquares, DEF_KEY, defOf, defsKept, EXTRA, field, freeId, hasMulti, hex, HUB_KINDS, idOwn, isMade, keepLook, keepMapChoice, keepSel, lookKey, mapCols, nameOf, origAll, palDrop, palId, propNode, propNodes, props, stdLetters, stdScale, styleRow, SV, svAddTo, svClash, svHold, svIconsOn, svIdx, svList, svOnly, svPt, svR, svSettle, svTwin, svVar, tagTurnT, termScaled, termsFix, UI } from './create.js';
 import { liveOff, sizeOff } from './live.js';
 
     // ---------- the SBGN-ML palette's own part (editor/src/sbcreate.js) ----------
@@ -22,6 +22,7 @@ import { liveOff, sizeOff } from './live.js';
     PF_SB = { sizable: sbSizable, size: sbSetSize, node: sbNode, set: sbSet, def: sbDef, ends: sbEnds, hub: function (i) { return !!hubGroup(i); },
       rx: { of: sbRxOf, set: function (pid, on) { return sbReversible(pid, on, true); }, withNode: true },
       refs: { of: sbRefsOf, set: sbRefsSet },   // a process's references (Properties, References)
+      ids: { of: sbIdsOf, set: sbIdsSet },   // an entity's or a compartment's identifiers (Properties, Identifiers)
       line: { colour: sbLineColour, set: sbLineSet, width: function (k) { return sbJs.widthOf(sbEdgeEl(k)); }, setWidth: sbLineWidth, ports: true,   // a line's colour, width and its ports' rows (edgeShow, edgeSet)
         count: sbCount, setCount: function (k, v) { return sbLineTo(k, sbJs.recount(shared.text, edges2[k].id, v)); } },   // a consumption's or production's cardinality
       off: sbOff,
@@ -176,6 +177,28 @@ import { liveOff, sizeOff } from './live.js';
       var now = sbJs.refsOf(shared.text, pid).split(' ').filter(function (k) { return k && del.indexOf(k) < 0; });
       var t2 = sbJs.setRefs(shared.text, pid, now.concat(add.filter(function (k) { return now.indexOf(k) < 0; })).join(' '));
       return commit(t2, { name: 'references changed', ids: [pid], sel: shared.selN.map(function (i) { return nodes2[i].id; }), selE: shared.selE.map(function (k) { return edges2[k].id; }) });
+    }
+    // an entity's or a compartment's identifiers (Properties, Identifiers): the glyph selected alone on an SBGN-ML map, its
+    // kind by its class (create.js ID_DBS); sbgn_edit.idsOf reads them from the file, or from the GraphML's Identity once
+    // changed here
+    var sbIdsMemo, SB_ID_KIND;
+    function __run7() {   // run at start, in order (__start)
+    sbIdsMemo = [null, null, null, null];
+    SB_ID_KIND = { 'macromolecule': 'protein', 'macromolecule multimer': 'protein', 'nucleic acid feature': 'gene', 'nucleic acid feature multimer': 'gene', 'simple chemical': 'molecule', 'simple chemical multimer': 'molecule', 'phenotype': 'phenotype', 'compartment': 'compartment' };
+    }
+    function sbIdsOf() {
+      var base = shared.sb && shared.sb.base;
+      if (!sbJs || !sbJs.idsOf || !base || !/<([\w.-]+:)?sbgn[\s>]/.test(base.slice(0, 3000)) || shared.selP.length || shared.svSel || shared.selE.length || shared.selN.length !== 1 || !nodes2[shared.selN[0]]) return null;
+      var id = nodes2[shared.selN[0]].id, kind = SB_ID_KIND[sbClasses()[id] || ''];
+      if (!kind) return null;
+      if (sbIdsMemo[0] !== id || sbIdsMemo[1] !== shared.text || sbIdsMemo[2] !== base) { var L; try { L = sbJs.idsOf(shared.text, base, id); } catch (e) { L = null; } sbIdsMemo = [id, shared.text, base, L]; }
+      if (!sbIdsMemo[3]) return null;
+      return { id: id, kind: kind, title: 'Identifiers', items: sbIdsMemo[3].map(annItem) };
+    }
+    function sbIdsSet(id, add, del) {   // the glyph's own (bqbiol:is, the five databases) less del, with add
+      var own = sbJs.idsOf(shared.text, shared.sb.base, id).filter(function (x) { return idOwn(x.q, x.key) && del.indexOf(x.key) < 0; }).map(function (x) { return x.key; });
+      var t2 = sbJs.setIds(shared.text, id, own.concat(add.filter(function (k) { return own.indexOf(k) < 0; })));
+      return commit(t2, { name: 'identifiers changed', ids: [id], sel: [id], selE: [] });
     }
     function sbCount(k) {
       var id = edges2[k].id;
@@ -372,5 +395,5 @@ import { liveOff, sizeOff } from './live.js';
       } });
       return true;
     }
-    export function __start() { __run1(); __run2(); __run3(); __run4(); __run5(); __run6(); }   // the part's statements, in their order
+    export function __start() { __run1(); __run2(); __run3(); __run4(); __run5(); __run6(); __run7(); }   // the part's statements, in their order
     export { afKind, cardAll, cardAt, hubGroup, hybridActs, palKind, palOn, PF_SB, sbAnts, sbCols, sbColsRow, sbFileAf, sbReversible, svBase, svCopies, svDeleteSb, svShareMove, svShareText };

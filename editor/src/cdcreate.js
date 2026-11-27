@@ -4,7 +4,7 @@ import { bx, liveOff, sizeOff } from './live.js';
 import { cdJs, cdMk, cdNow, cdPicKeep, cdPicUrl, cdRebuild, nodePlaces } from './celldesigner.js';
 import { nodeCentre } from './geometry.js';
 import NT from '../../renderers/converter/notation.js';   // the notation's kinds and rules table, as on the SBGN maps (create.js ruleSays)
-import { field, pmap, ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues, confettiLine, confettiOne, confettiPick, confettiSquares, hex, iconKeep, iconSpread, innermost, joinPack, keepLook, keepMapChoice, link, linkEnd, looksKept, mapCols, nameAt, origAll, pNow, pal, palBlocks, palDid, palDrop, palId, palShow, palSigns, palSignsEl, palStore, palStyle, palTake, placedAt, propRows, styleRow, svAt, svDelete, svIcons, textsOf, tool, typeIn } from './create.js';
+import { annItem, field, pmap, ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confettiHues, confettiLine, confettiOne, confettiPick, confettiSquares, hex, iconKeep, iconSpread, innermost, joinPack, keepLook, keepMapChoice, link, linkEnd, looksKept, mapCols, nameAt, origAll, pNow, pal, palBlocks, palDid, palDrop, palId, palShow, palSigns, palSignsEl, palStore, palStyle, palTake, placedAt, propRows, styleRow, svAt, svDelete, svIcons, textsOf, tool, typeIn } from './create.js';
 
     // ---------- the CellDesigner palette (editor/src/cdcreate.js) ----------
     // The CellDesigner palette, writing the CellDesigner file directly: on a CellDesigner map with Settings, Editing on Full, the Edit
@@ -1506,9 +1506,26 @@ import { field, pmap, ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confett
       var keep = shared.selE.length === 1 && !shared.selN.length && /\|[mrp]\d+$/.test(edges2[shared.selE[0]].id) ? edges2[shared.selE[0]].id : rid;
       return cdApply(function (t) { return cdMk.setRefs(t, rid, add, del); }, [], [keep]);
     }
+    // a species', a complex's member's or a compartment's identifiers (Properties, Identifiers): the item an alias selected
+    // alone stands for (cd_make idsOf: its species, shared by all its aliases, or its compartment), its RDF's links read once
+    // per file, its kind by its class (create.js ID_DBS); a complex, an unknown or a degraded one has none here
+    var cdIdsMemo, CD_ID_KIND;
+    function __run64() {   // run at start, in order (__start)
+    cdIdsMemo = [null, null, null];
+    CD_ID_KIND = { PROTEIN: 'protein', GENE: 'gene', RNA: 'gene', ANTISENSE_RNA: 'gene', SIMPLE_MOLECULE: 'molecule', ION: 'molecule', DRUG: 'molecule', PHENOTYPE: 'phenotype', COMPARTMENT: 'compartment' };
+    }
+    function cdIdsOf() {
+      if (!shared.cd || shared.selP.length || shared.svSel || shared.selE.length || shared.selN.length !== 1 || !nodes2[shared.selN[0]]) return null;
+      var id = nodes2[shared.selN[0]].id;
+      if (cdIdsMemo[0] !== id || cdIdsMemo[1] !== shared.cd.now) { var I; try { I = cdMk.idsOf(shared.cd.now, id); } catch (e) { I = null; } cdIdsMemo = [id, shared.cd.now, I]; }
+      var I2 = cdIdsMemo[2], kind = I2 && CD_ID_KIND[I2.cls];
+      if (!kind) return null;
+      return { id: id, kind: kind, title: 'Identifiers', items: I2.links.map(annItem) };
+    }
+    function cdIdsSet(id, add, del) { return cdApply(function (t) { return cdMk.setIds(t, id, add, del); }, [id], []); }   // the box selected again
     var PF_CD;
     function __run33() {   // run at start, in order (__start)
-    PF_CD = { sizable: cdProp, size: cdSetSize, def: cdDef, refs: { of: cdRefsOf, set: cdRefsSet },
+    PF_CD = { sizable: cdProp, size: cdSetSize, def: cdDef, refs: { of: cdRefsOf, set: cdRefsSet }, ids: { of: cdIdsOf, set: cdIdsSet },
       rx: { of: cdRxOf, set: cdReversible,   // a reaction's Reversible (propRx, create.js)
         counts: cdParts,   // its reactants' and products' numbers by name (rxCounts)
         setCount: function (rid, line, v) { return cdApply(function (t) { return cdMk.restoich(t, line, v); }, [], [rid]); } },
@@ -1852,5 +1869,5 @@ import { field, pmap, ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill, confett
       return { w: s[0], h: s[1], svg: '<svg width="100%" height="100%" viewBox="0 0 ' + s[0] + ' ' + s[1] + '" overflow="visible">' + (back || '') + shape + '</svg>' };
     }
 
-    export function __start() { __run1(); __run2(); __run3(); __run5(); __run6(); __run7(); __run8(); __run9(); __run10(); __run12(); __run13(); __run14(); __run15(); __run16(); __run17(); __run18(); __run19(); __run20(); __run21(); __run22(); __run23(); __run24(); __run25(); __run27(); __run28(); __run29(); __run30(); __run31(); __run32(); __run63(); __run33(); }   // the part's statements, in their order
+    export function __start() { __run1(); __run2(); __run3(); __run5(); __run6(); __run7(); __run8(); __run9(); __run10(); __run12(); __run13(); __run14(); __run15(); __run16(); __run17(); __run18(); __run19(); __run20(); __run21(); __run22(); __run23(); __run24(); __run25(); __run27(); __run28(); __run29(); __run30(); __run31(); __run32(); __run63(); __run64(); __run33(); }   // the part's statements, in their order
     export { CD_DEF_KEY, CD_GATE, PF_CD, cdBgItems, cdCardDown, cdCheck, cdClick, cdClsOf, cdDeleteItem, cdFeat, cdFill, cdFront, cdGateMarks, cdGhost, cdHow, cdInfo, cdItems, cdKind, cdLineAt, cdLink, cdLinkMarks, cdLiveEnds, cdMake, cdMoveSays, cdNameDown, cdNameOf, cdOnLine, cdOverMarks, cdPal, cdRename, cdRole, cdSsTyped, cdStartOk, cdSvDelete, cdSvFar, cdSvList, cdSvMove, cdSvOpen };

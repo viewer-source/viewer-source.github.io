@@ -1946,6 +1946,8 @@
       }, withNode: true },
       refs: { of: sbRefsOf, set: sbRefsSet },
       // a process's references (Properties, References)
+      ids: { of: sbIdsOf, set: sbIdsSet },
+      // an entity's or a compartment's identifiers (Properties, Identifiers)
       line: {
         colour: sbLineColour,
         set: sbLineSet,
@@ -2196,6 +2198,40 @@
     }), selE: shared.selE.map(function(k) {
       return edges2[k].id;
     }) });
+  }
+  var sbIdsMemo;
+  var SB_ID_KIND;
+  function __run72() {
+    sbIdsMemo = [null, null, null, null];
+    SB_ID_KIND = { "macromolecule": "protein", "macromolecule multimer": "protein", "nucleic acid feature": "gene", "nucleic acid feature multimer": "gene", "simple chemical": "molecule", "simple chemical multimer": "molecule", "phenotype": "phenotype", "compartment": "compartment" };
+  }
+  function sbIdsOf() {
+    var base = shared.sb && shared.sb.base;
+    if (!sbJs || !sbJs.idsOf || !base || !/<([\w.-]+:)?sbgn[\s>]/.test(base.slice(0, 3e3)) || shared.selP.length || shared.svSel || shared.selE.length || shared.selN.length !== 1 || !nodes2[shared.selN[0]]) return null;
+    var id = nodes2[shared.selN[0]].id, kind = SB_ID_KIND[sbClasses()[id] || ""];
+    if (!kind) return null;
+    if (sbIdsMemo[0] !== id || sbIdsMemo[1] !== shared.text || sbIdsMemo[2] !== base) {
+      var L;
+      try {
+        L = sbJs.idsOf(shared.text, base, id);
+      } catch (e) {
+        L = null;
+      }
+      sbIdsMemo = [id, shared.text, base, L];
+    }
+    if (!sbIdsMemo[3]) return null;
+    return { id, kind, title: "Identifiers", items: sbIdsMemo[3].map(annItem) };
+  }
+  function sbIdsSet(id, add, del) {
+    var own2 = sbJs.idsOf(shared.text, shared.sb.base, id).filter(function(x) {
+      return idOwn(x.q, x.key) && del.indexOf(x.key) < 0;
+    }).map(function(x) {
+      return x.key;
+    });
+    var t2 = sbJs.setIds(shared.text, id, own2.concat(add.filter(function(k) {
+      return own2.indexOf(k) < 0;
+    })));
+    return commit(t2, { name: "identifiers changed", ids: [id], sel: [id], selE: [] });
   }
   function sbCount(k) {
     var id = edges2[k].id;
@@ -2524,6 +2560,7 @@
     __run4();
     __run52();
     __run62();
+    __run72();
   }
 
   // editor/src/geometry.js
@@ -3080,7 +3117,7 @@
       });
     }, 2500);
   }
-  function __run72() {
+  function __run73() {
     warmUp();
   }
   function cdJoin() {
@@ -3113,7 +3150,7 @@
     __run42();
     __run53();
     __run63();
-    __run72();
+    __run73();
     __run8();
   }
   function cdLine() {
@@ -3604,7 +3641,7 @@
   }
   var CD_COLS;
   var CD_COMP_DEFAULT;
-  function __run73() {
+  function __run74() {
     CD_COLS = [["file", "Original", "The map\u2019s own colours, as they were before another choice; new species and compartments in the colour most of their class have on it, Default for a class it has none of"], ["cd", "CellDesigner", "The whole map and new species and compartments in CellDesigner\u2019s own colours"], ["default", "Mist and sage", "The whole map and new species and compartments in the viewer\u2019s starting colours: a pale blue for proteins, a pale green for small molecules"], ["none", "No colours", "The whole map and new species and compartments white"], ["custom", "Custom default", "The whole map and new species in the colours kept by Set as default; a class with none as it is"], ["confetti", "Confetti", "Every species of the map, and every new one, a pastel of its own; compartments as they are"]];
     CD_COMP_DEFAULT = "ffdfdbce";
   }
@@ -5580,6 +5617,33 @@
       return cdMk.setRefs(t, rid, add, del);
     }, [], [keep]);
   }
+  var cdIdsMemo;
+  var CD_ID_KIND;
+  function __run642() {
+    cdIdsMemo = [null, null, null];
+    CD_ID_KIND = { PROTEIN: "protein", GENE: "gene", RNA: "gene", ANTISENSE_RNA: "gene", SIMPLE_MOLECULE: "molecule", ION: "molecule", DRUG: "molecule", PHENOTYPE: "phenotype", COMPARTMENT: "compartment" };
+  }
+  function cdIdsOf() {
+    if (!shared.cd || shared.selP.length || shared.svSel || shared.selE.length || shared.selN.length !== 1 || !nodes2[shared.selN[0]]) return null;
+    var id = nodes2[shared.selN[0]].id;
+    if (cdIdsMemo[0] !== id || cdIdsMemo[1] !== shared.cd.now) {
+      var I;
+      try {
+        I = cdMk.idsOf(shared.cd.now, id);
+      } catch (e) {
+        I = null;
+      }
+      cdIdsMemo = [id, shared.cd.now, I];
+    }
+    var I2 = cdIdsMemo[2], kind = I2 && CD_ID_KIND[I2.cls];
+    if (!kind) return null;
+    return { id, kind, title: "Identifiers", items: I2.links.map(annItem) };
+  }
+  function cdIdsSet(id, add, del) {
+    return cdApply(function(t) {
+      return cdMk.setIds(t, id, add, del);
+    }, [id], []);
+  }
   var PF_CD;
   function __run332() {
     PF_CD = {
@@ -5587,6 +5651,7 @@
       size: cdSetSize,
       def: cdDef,
       refs: { of: cdRefsOf, set: cdRefsSet },
+      ids: { of: cdIdsOf, set: cdIdsSet },
       rx: {
         of: cdRxOf,
         set: cdReversible,
@@ -6212,7 +6277,7 @@
     __run35();
     __run54();
     __run64();
-    __run73();
+    __run74();
     __run82();
     __run9();
     __run10();
@@ -6237,6 +6302,7 @@
     __run31();
     __run322();
     __run632();
+    __run642();
     __run332();
   }
 
@@ -7212,7 +7278,7 @@
     V.refreshMine();
   }
   var pressed;
-  function __run74() {
+  function __run75() {
     pressed = false;
     document.addEventListener("pointerdown", function() {
       pressed = true;
@@ -10624,7 +10690,7 @@
     __run43();
     __run55();
     __run65();
-    __run74();
+    __run75();
     __run83();
     __run92();
     __run102();
@@ -10940,7 +11006,7 @@
     }, 0) > Math.ceil(all / c);
     row.classList.toggle("m2-ed-pflat", flat);
   }
-  function __run75() {
+  function __run76() {
     if (window.ResizeObserver) new ResizeObserver(palBlocks).observe(palSignsEl);
   }
   function palKey() {
@@ -14327,13 +14393,25 @@
   var prefsRid;
   var prefsFor;
   var REF_DB;
+  var ID_DBS;
+  var ANN_DB;
   function __run622() {
     prefs = props.querySelector(".m2-ed-prefs");
     prefsKey = null;
     prefsSay = null;
     prefsRid = null;
     prefsFor = null;
-    REF_DB = { pubmed: "PubMed", doi: "DOI" };
+    REF_DB = { pubmed: "PubMed", doi: "DOI", uniprot: "UniProt", hgnc: "HGNC", "hgnc.symbol": "HGNC symbol", chebi: "ChEBI", go: "GO", mesh: "MeSH", ncbigene: "NCBI Gene", "entrez.gene": "NCBI Gene", ensembl: "Ensembl", refseq: "RefSeq", "pubchem.compound": "PubChem", hmdb: "HMDB", kegg: "KEGG", "kegg.compound": "KEGG", reactome: "Reactome", ec: "EC", "ec-code": "EC", taxonomy: "Taxonomy" };
+    ID_DBS = { protein: ["uniprot", "hgnc"], gene: ["hgnc"], molecule: ["chebi"], phenotype: ["go", "mesh"], compartment: ["go", "mesh"] };
+    ANN_DB = {
+      pubmed: { ok: /^\d{1,9}$/, say: "a PubMed ID is digits, as 19461003" },
+      doi: { ok: /^\d{2}\.\d{4}\S*\/\S+$/, say: "a DOI starts 10., as 10.1038/nature08124" },
+      uniprot: { ok: /^(?:[OPQ][0-9][A-Z0-9]{3}[0-9]|[A-NR-Z][0-9](?:[A-Z][A-Z0-9]{2}[0-9]){1,2})(?:-\d+)?$/, plain: /^[A-Z][0-9][A-Z0-9]{3}[0-9](?:[A-Z0-9]{4})?(?:-\d+)?$/i, say: "UniProt is six or ten letters and digits, as Q15831" },
+      hgnc: { ok: /^\d{1,6}$/, plain: /^\d+$/, say: "HGNC is digits, as 11389 or HGNC:11389" },
+      chebi: { ok: /^CHEBI:\d+$/, plain: /^\d+$/, say: "ChEBI is digits, as 15346 or CHEBI:15346" },
+      go: { ok: /^GO:\d{7}$/, plain: /^\d{7}$/, say: "GO is seven digits, as GO:0016573" },
+      mesh: { ok: /^[CD]\d{6,9}$/, plain: /^[CD]\d{6,9}$/i, say: "MeSH is D or C and digits, as D012345" }
+    };
     var pin = prefs.querySelector(".m2-ed-pin");
     pin.addEventListener("keydown", function(e) {
       if (e.key === "Escape") pin.value = "";
@@ -14347,79 +14425,151 @@
       pin.selectionStart = pin.selectionEnd = a + v.length;
     });
     pin.addEventListener("focus", function() {
-      var pf = propFmt(), R = pf && pf.refs ? pf.refs.of() : null;
-      prefsFor = R ? R.id : null;
+      var R = annNow();
+      prefsFor = R ? R.at : null;
     });
     pin.addEventListener("change", function() {
-      var pf = propFmt(), R = pf && pf.refs ? pf.refs.of() : null;
-      if (R && R.id === prefsFor) refsAdd();
+      var R = annNow();
+      if (R && R.at === prefsFor) refsAdd();
     });
     prefs.querySelector(".m2-ed-pgo").addEventListener("click", refsAdd);
     prefs.addEventListener("click", function(e) {
-      var x = e.target.closest && e.target.closest(".m2-ed-px"), pf = propFmt(), R = pf && pf.refs ? pf.refs.of() : null;
+      var x = e.target.closest && e.target.closest(".m2-ed-px"), R = annNow();
       if (!x || !R) return;
       prefsSay = null;
-      if (!pf.refs.set(R.id, [], [x.dataset.key])) {
+      if (!R.api.set(R.id, [], [x.dataset.key])) {
         prefsKey = null;
         refsShow();
       }
     });
   }
-  function refsParse(text) {
-    var out = { keys: [], bad: [] }, t = String(text).replace(/\b(PMID|pubmed|doi)\s*:?\s+(?=\d)/gi, "$1:");
+  function annNow() {
+    var pf = propFmt(), R = pf && pf.refs ? pf.refs.of() : null, api2 = R && pf.refs, dbs = ["pubmed", "doi"];
+    if (!R && pf && pf.ids) {
+      R = pf.ids.of();
+      api2 = pf.ids;
+      dbs = R && ID_DBS[R.kind];
+    }
+    if (!R || !dbs) return null;
+    R.api = api2;
+    R.dbs = dbs;
+    R.at = (R.kind || "refs") + "\0" + R.id;
+    if (R.kind) R.items.forEach(function(x) {
+      x.own = idOwn(x.q, x.key);
+    });
+    return R;
+  }
+  function idOwn(q, key) {
+    return q === "bqbiol:is" && /^(uniprot|hgnc|chebi|go|mesh):/.test(key || "");
+  }
+  function annItem(r) {
+    var c = r.key ? r.key.indexOf(":") : -1;
+    return { key: r.key || r.link, db: c > 0 ? r.key.slice(0, c) : "", val: c > 0 ? r.key.slice(c + 1) : r.link, q: r.q, about: /^bqmodel:/.test(r.q) };
+  }
+  function refsParse(text, dbs) {
+    dbs = dbs || ["pubmed", "doi"];
+    var out = { keys: [], bad: [] }, t = String(text).replace(/\b(PMID|pubmed|doi|uniprot|HGNC|CHEBI|GO|mesh)\s*:?\s+(?=\d|[A-Z]\d)/gi, "$1:");
     t.split(/\s+|,(?=\s|\d|$)|;(?=\s|$)/).forEach(function(x) {
       x = x.replace(/^[(\[<"']+|[)\]>"'.,]+$/g, "");
       if (!x) return;
-      var m, key = null, dec = function(v) {
+      var m, db = null, v = null, dec = function(s) {
         try {
-          return decodeURIComponent(v);
+          return decodeURIComponent(s);
         } catch (e) {
-          return v;
+          return s;
         }
       };
-      if (m = /^(?:https?:\/\/)?(?:www\.)?(?:pubmed\.ncbi\.nlm\.nih\.gov|ncbi\.nlm\.nih\.gov\/pubmed)\/(\d+)\/?(?:[?#].*)?$/i.exec(x)) key = "pubmed:" + m[1];
-      else if (m = /^(?:https?:\/\/)?(?:dx\.)?doi\.org\/(.+)$/i.exec(x)) key = "doi:" + dec(m[1]);
-      else if ((m = /^(?:https?:\/\/)?identifiers\.org\/(pubmed|doi)[:\/](.+)$/i.exec(x)) || (m = /^urn:miriam:(pubmed|doi):(.+)$/i.exec(x))) key = m[1].toLowerCase() + ":" + dec(m[2]);
-      else if (m = /^(?:pmid|pubmed):(.+)$/i.exec(x)) key = "pubmed:" + m[1];
-      else if (m = /^doi:(.+)$/i.exec(x)) key = "doi:" + m[1];
-      else if (/^\d+$/.test(x)) key = "pubmed:" + x;
-      else if (/^10\./.test(x)) key = "doi:" + x;
-      var ok = key && (/^pubmed:\d{1,9}$/.test(key) || /^doi:\d{2}\.\d{4}\S*\/\S+$/.test(key));
-      if (!ok) out.bad.push(x);
+      if (m = /^(?:https?:\/\/)?(?:www\.)?(?:pubmed\.ncbi\.nlm\.nih\.gov|ncbi\.nlm\.nih\.gov\/pubmed)\/(\d+)\/?(?:[?#].*)?$/i.exec(x)) {
+        db = "pubmed";
+        v = m[1];
+      } else if (m = /^(?:https?:\/\/)?(?:dx\.)?doi\.org\/(.+)$/i.exec(x)) {
+        db = "doi";
+        v = dec(m[1]);
+      } else if (m = /^(?:https?:\/\/)?(?:www\.|rest\.)?uniprot\.org\/(?:uniprot|uniprotkb)\/([A-Za-z0-9-]+)(?:[\/.?#].*)?$/i.exec(x)) {
+        db = "uniprot";
+        v = m[1];
+      } else if (m = /^(?:https?:\/\/)?(?:www\.)?genenames\.org\/.*?(?:HGNC(?::|%3A)|hgnc_id\/)(\d+)/i.exec(x)) {
+        db = "hgnc";
+        v = m[1];
+      } else if (m = /^(?:https?:\/\/)?(?:www\.)?ebi\.ac\.uk\/chebi\/.*?CHEBI(?::|%3A)(\d+)/i.exec(x)) {
+        db = "chebi";
+        v = m[1];
+      } else if (m = /^(?:https?:\/\/)?(?:amigo\.geneontology\.org|(?:www\.)?ebi\.ac\.uk\/QuickGO)\/.*?GO(?::|%3A)(\d{7})/i.exec(x)) {
+        db = "go";
+        v = m[1];
+      } else if (m = /^(?:https?:\/\/)?(?:meshb\.nlm\.nih\.gov|(?:www\.)?ncbi\.nlm\.nih\.gov\/mesh)\/.*?\b([CD]\d{6,9})\b/i.exec(x)) {
+        db = "mesh";
+        v = m[1];
+      } else if ((m = /^(?:https?:\/\/)?identifiers\.org\/(?:([\w.]+)[:\/])?(.+)$/i.exec(x)) || (m = /^urn:miriam:([\w.]+):(.+)$/i.exec(x))) {
+        db = (m[1] || "").toLowerCase().replace(/^obo\./, "");
+        v = dec(m[2]);
+        var p = /^(CHEBI|GO|HGNC):(.+)$/i.exec(v);
+        if (p && (!db || db === p[1].toLowerCase())) {
+          db = p[1].toLowerCase();
+          v = p[2];
+        }
+      } else if (m = /^(pmid|pubmed|doi|uniprot|hgnc|chebi|go|mesh):(.+)$/i.exec(x)) {
+        db = m[1].toLowerCase().replace("pmid", "pubmed");
+        v = m[2];
+      } else if (/^10\./.test(x)) {
+        db = "doi";
+        v = x;
+      } else dbs.some(function(d) {
+        var D2 = ANN_DB[d];
+        if (d === "pubmed" ? /^\d+$/.test(x) : D2.plain && D2.plain.test(x)) {
+          db = d;
+          v = x;
+          return true;
+        }
+        return false;
+      });
+      if (db === "chebi" || db === "go") v = db.toUpperCase() + ":" + String(v).replace(/^(chebi|go):/i, "");
+      else if (db === "uniprot" || db === "mesh") v = String(v).toUpperCase();
+      else if (db === "hgnc") v = String(v).replace(/^hgnc:/i, "");
+      var D = db && dbs.indexOf(db) >= 0 && ANN_DB[db], key = D && D.ok.test(v) ? db + ":" + v : null;
+      if (!key) out.bad.push(x);
       else if (out.keys.indexOf(key) < 0) out.keys.push(key);
     });
     return out;
   }
   function refsAdd() {
-    var pin = prefs.querySelector(".m2-ed-pin"), v = pin.value.trim(), pf = propFmt(), R = pf && pf.refs ? pf.refs.of() : null;
+    var pin = prefs.querySelector(".m2-ed-pin"), v = pin.value.trim(), R = annNow();
     if (!v || !R) return;
-    var P = refsParse(v), had = R.items.map(function(x) {
+    var P = refsParse(v, R.dbs), had = R.items.map(function(x) {
       return x.key;
     }), add = P.keys.filter(function(k) {
       return had.indexOf(k) < 0;
     }), said = [];
     if (add.length) said.push(add.length + " added");
     if (P.keys.length > add.length) said.push(P.keys.length - add.length + " already there");
-    if (P.bad.length) said.push("not read: " + P.bad.join(" ") + " (a PubMed ID is digits, as 19461003; a DOI starts 10., as 10.1038/nature08124)");
+    if (P.bad.length) said.push("not read: " + P.bad.join(" ") + " (" + R.dbs.map(function(d) {
+      return ANN_DB[d].say;
+    }).join("; ") + ")");
     pin.value = P.bad.join(" ");
-    prefsSay = [R.id, said.join("; ") + "."];
-    if (add.length && !pf.refs.set(R.id, add, [])) prefsSay = [R.id, "Not written: the file did not take them."];
+    prefsSay = [R.at, said.join("; ") + "."];
+    if (add.length && !R.api.set(R.id, add, [])) prefsSay = [R.at, "Not written: the file did not take them."];
     prefsKey = null;
     refsShow();
   }
   function refsShow() {
-    var pf = propFmt(), R = !props.hidden && pf && pf.refs && propNodes().length <= 1 ? pf.refs.of() : null;
+    var R = !props.hidden && propNodes().length <= 1 ? annNow() : null;
     prefs.hidden = !R;
     if (!R) {
       prefsKey = null;
       return;
     }
-    if (R.id !== prefsRid) {
-      prefs.querySelector(".m2-ed-pin").value = "";
-      prefsRid = R.id;
+    var pin = prefs.querySelector(".m2-ed-pin");
+    if (R.at !== prefsRid) {
+      pin.value = "";
+      prefsRid = R.at;
+      var names = R.dbs.map(function(d) {
+        return REF_DB[d];
+      }), what = R.kind ? names.join(" or ") + " IDs or links" : "PubMed IDs, DOIs or links";
+      pin.placeholder = what;
+      pin.setAttribute("aria-label", what + " to add");
     }
-    if (prefsSay && prefsSay[0] !== R.id) prefsSay = null;
-    var key = R.id + "\0" + R.title + "\0" + R.items.map(function(x) {
+    if (prefsSay && prefsSay[0] !== R.at) prefsSay = null;
+    var key = R.at + "\0" + R.title + "\0" + R.items.map(function(x) {
       return x.key + "" + x.q + (x.own ? "" : "!");
     }).join("\0") + "\0" + (prefsSay ? prefsSay[1] : "");
     if (key === prefsKey) return;
@@ -14719,7 +14869,7 @@
     __run44();
     __run56();
     __run66();
-    __run75();
+    __run76();
     __run84();
     __run93();
     __run103();
@@ -15776,7 +15926,7 @@
   var localTimer;
   var localFor;
   var lq;
-  function __run76() {
+  function __run77() {
     localTimer = null, localFor = null, lq = Promise.resolve();
   }
   function local(force) {
@@ -20275,7 +20425,7 @@
     __run45();
     __run59();
     __run67();
-    __run76();
+    __run77();
     __run85();
     __run94();
     __run104();
