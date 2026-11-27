@@ -1540,7 +1540,7 @@
     if (!C) fail('No compartment of ' + id + ' on the map.');
     return ownRdf(t, C, false);
   }
-  var ID_NS = { uniprot: 'uniprot', hgnc: 'hgnc', chebi: 'obo.chebi', go: 'obo.go', mesh: 'mesh' };
+  var ID_NS = { uniprot: 'uniprot', hgnc: 'hgnc', 'hgnc.symbol': 'hgnc.symbol', chebi: 'obo.chebi', go: 'obo.go', mesh: 'mesh' };
   function refKey(link) {   // db:id, CellDesigner's obo. namespaces as identifiers.org names them, ChEBI's and GO's prefix kept in the id, HGNC's not
     var m = /^urn:miriam:([\w.]+):(.+)$/.exec(link) || /^https?:\/\/identifiers\.org\/(?:([\w.]+)\/|([\w.]+):)(.+)$/i.exec(link);
     if (!m) return null;

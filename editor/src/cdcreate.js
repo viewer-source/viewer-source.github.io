@@ -1522,7 +1522,7 @@ import { annItem, field, pmap, ARCS, PAL_KEY, SS, SV, UI, colsPick, confettiFill
       if (!kind) return null;
       return { id: id, kind: kind, title: 'Identifiers', items: I2.links.map(annItem) };
     }
-    function cdIdsSet(id, add, del) { return cdApply(function (t) { return cdMk.setIds(t, id, add, del); }, [id], []); }   // the box selected again
+    function cdIdsSet(id, add, del, name) { return cdApply(function (t) { t = cdMk.setIds(t, id, add, del); return name ? cdMk.rename(t, id, name) : t; }, [id], []); }   // the box selected again; name: written in the same step
     var PF_CD;
     function __run33() {   // run at start, in order (__start)
     PF_CD = { sizable: cdProp, size: cdSetSize, def: cdDef, refs: { of: cdRefsOf, set: cdRefsSet }, ids: { of: cdIdsOf, set: cdIdsSet },

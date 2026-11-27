@@ -195,9 +195,10 @@ import { liveOff, sizeOff } from './live.js';
       if (!sbIdsMemo[3]) return null;
       return { id: id, kind: kind, title: 'Identifiers', items: sbIdsMemo[3].map(annItem) };
     }
-    function sbIdsSet(id, add, del) {   // the glyph's own (bqbiol:is, the five databases) less del, with add
+    function sbIdsSet(id, add, del, name) {   // the glyph's own (any db:id under bqbiol:is) less del, with add; name: its label set in the same step
       var own = sbJs.idsOf(shared.text, shared.sb.base, id).filter(function (x) { return idOwn(x.q, x.key) && del.indexOf(x.key) < 0; }).map(function (x) { return x.key; });
       var t2 = sbJs.setIds(shared.text, id, own.concat(add.filter(function (k) { return own.indexOf(k) < 0; })));
+      if (name) t2 = sbJs.label(t2, id, name);
       return commit(t2, { name: 'identifiers changed', ids: [id], sel: [id], selE: [] });
     }
     function sbCount(k) {

@@ -2566,7 +2566,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
     function __run62() {   // run at start, in order (__start)
     prefs = props.querySelector('.m2-ed-prefs'); prefsKey = null; prefsSay = null; prefsRid = null; prefsFor = null;   // prefsSay: [the item, what the last Add said]
     REF_DB = { pubmed: 'PubMed', doi: 'DOI', uniprot: 'UniProt', hgnc: 'HGNC', 'hgnc.symbol': 'HGNC symbol', chebi: 'ChEBI', go: 'GO', mesh: 'MeSH', ncbigene: 'NCBI Gene', 'entrez.gene': 'NCBI Gene', ensembl: 'Ensembl', refseq: 'RefSeq', 'pubchem.compound': 'PubChem', hmdb: 'HMDB', kegg: 'KEGG', 'kegg.compound': 'KEGG', reactome: 'Reactome', ec: 'EC', 'ec-code': 'EC', taxonomy: 'Taxonomy' };
-    ID_DBS = { protein: ['uniprot', 'hgnc'], gene: ['hgnc'], molecule: ['chebi'], phenotype: ['go', 'mesh'], compartment: ['go', 'mesh'] };
+    ID_DBS = { protein: ['hgnc.symbol', 'uniprot'], gene: ['hgnc.symbol'], molecule: ['chebi'], phenotype: ['go', 'mesh'], compartment: ['go', 'mesh'] };
     // each database: its key's id as checked (identifiers.org's patterns), what a plain value of it looks like, the form
     // said when one is not read
     ANN_DB = {
@@ -2574,15 +2574,17 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       doi: { ok: /^\d{2}\.\d{4}\S*\/\S+$/, say: 'a DOI starts 10., as 10.1038/nature08124' },
       uniprot: { ok: /^(?:[OPQ][0-9][A-Z0-9]{3}[0-9]|[A-NR-Z][0-9](?:[A-Z][A-Z0-9]{2}[0-9]){1,2})(?:-\d+)?$/, plain: /^[A-Z][0-9][A-Z0-9]{3}[0-9](?:[A-Z0-9]{4})?(?:-\d+)?$/i, say: 'UniProt is six or ten letters and digits, as Q15831' },
       hgnc: { ok: /^\d{1,6}$/, plain: /^\d+$/, say: 'HGNC is digits, as 11389 or HGNC:11389' },
+      'hgnc.symbol': { ok: /^[A-Za-z0-9][A-Za-z0-9_-]*@?$/, plain: /^[A-Za-z][A-Za-z0-9_-]*$/, say: 'an HGNC symbol is letters and digits, as PDPK1 (the symbol, not the HGNC number)' },
       chebi: { ok: /^CHEBI:\d+$/, plain: /^\d+$/, say: 'ChEBI is digits, as 15346 or CHEBI:15346' },
       go: { ok: /^GO:\d{7}$/, plain: /^\d{7}$/, say: 'GO is seven digits, as GO:0016573' },
       mesh: { ok: /^[CD]\d{6,9}$/, plain: /^[CD]\d{6,9}$/i, say: 'MeSH is D or C and digits, as D012345' }
     };
     var pin = prefs.querySelector('.m2-ed-pin');
-    var enterAt = 0;
+    var enterAt = 0, pressAt = 0;
+    prefs.querySelector('.m2-ed-prefl').addEventListener('pointerdown', function () { pressAt = Date.now(); }, true);
     pin.addEventListener('keydown', function (e) {
       if (e.key === 'Escape') { pin.value = ''; refsClose(); }   // the row closed, nothing added (the panel's keys then blur it)
-      else if (e.key === 'Enter' && !e.isComposing) { enterAt = Date.now(); var R = annNow(); if (R && R.at === prefsFor) refsAdd(); }   // also when the box is as it was (a database chosen after a refusal)
+      else if (e.key === 'Enter' && !e.isComposing) { enterAt = Date.now(); e.preventDefault(); e.stopPropagation(); var R = annNow(); if (R && R.at === prefsFor) refsAdd(); }   // the panel's own Enter (leave the field) not run: the box keeps the cursor while something is left in it   // also when the box is as it was (a database chosen after a refusal)
     });
     pin.addEventListener('paste', function (e) {   // lines pasted kept apart (a text field would join them)
       var t = e.clipboardData && e.clipboardData.getData('text');
@@ -2596,7 +2598,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
     pin.addEventListener('change', function () {   // Enter, or the box left with a new value; not when left for the database's list (chosen first, then added)
       var R = annNow(), at = R && R.at;
       if (Date.now() - enterAt < 200) return;   // Enter has added it
-      setTimeout(function () { var R2 = annNow(); if (document.activeElement !== pdb && R2 && R2.at === at && at === prefsFor) refsAdd(); }, 0);
+      setTimeout(function () { var R2 = annNow(); if (document.activeElement !== pdb && Date.now() - pressAt > 500 && R2 && R2.at === at && at === prefsFor) refsAdd(); }, 0);   // not when a press on a row's cross or the + left the box: the press is done, the box kept
     });
     prefs.querySelector('.m2-ed-padd').addEventListener('focusout', function () {   // clicked away from an empty row: closed
       setTimeout(function () { var row = prefs.querySelector('.m2-ed-padd'); if (!row.contains(document.activeElement) && !pin.value.trim()) refsClose(); }, 0);
@@ -2621,29 +2623,33 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       pdb.value = (R.kind && R.dbs.filter(function (d) { return has.indexOf(d) < 0; })[0]) || R.dbs[0];
       row.hidden = false; prefsFor = R.at; pin.focus();
     }
-    function refsClose() { prefs.querySelector('.m2-ed-padd').hidden = true; }
+    function refsClose() { var row = prefs.querySelector('.m2-ed-padd'); if (row.contains(document.activeElement)) V.view.focus({ preventScroll: true }); row.hidden = true; }   // the map's keys back, none left in a hidden field
     // the selection's references or identifiers, with what the box takes for it (dbs, in the order a plain value is read)
     function annNow() {
       var pf = propFmt(), R = pf && pf.refs ? pf.refs.of() : null, api = R && pf.refs, dbs = ['pubmed', 'doi'];
       if (!R && pf && pf.ids) { R = pf.ids.of(); api = pf.ids; dbs = R && ID_DBS[R.kind]; }
       if (!R || !dbs) return null;
       R.api = api; R.dbs = dbs; R.at = (R.kind || 'refs') + '\u0000' + R.id;
-      if (R.kind) R.items.forEach(function (x) { x.own = idOwn(x.q, x.key); });
+      if (R.kind) R.items.forEach(function (x) { x.own = idOwn(x.q, x.db ? x.key : ''); });   // a link with no db:id key is shown, not taken out
       return R;
     }
-    // an identifier the Identifiers section takes out and adds: one of the five databases under bqbiol:is
-    function idOwn(q, key) { return q === 'bqbiol:is' && /^(uniprot|hgnc|chebi|go|mesh):/.test(key || ''); }
+    // an identifier the Identifiers section takes out: any db:id under bqbiol:is (an HGNC symbol, NCBI Gene, Ensembl as
+    // much as the five it adds); one under another qualifier (hasVersion, bqmodel) is shown as written
+    function idOwn(q, key) { return q === 'bqbiol:is' && /^[\w.]+:\S+$/.test(key || '') && !/^https?:/i.test(key); }
+    // the signs of + and the cross, drawn so they sit in the middle of their square
+    function signPlus() { return '<svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true"><path d="M6 1.5v9M1.5 6h9" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>'; }
+    function signX() { return '<svg viewBox="0 0 12 12" width="10" height="10" aria-hidden="true"><path d="M2.5 2.5l7 7M9.5 2.5l-7 7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>'; }
     // a link the format's part read ({ q, link, key }) as a row: key (db:id, or the link where it has none), db, val, about
     function annItem(r) { var c = r.key ? r.key.indexOf(':') : -1; return { key: r.key || r.link, db: c > 0 ? r.key.slice(0, c) : '', val: c > 0 ? r.key.slice(c + 1) : r.link, q: r.q, about: /^bqmodel:/.test(r.q) }; }
     // what was pasted as db:id keys of the databases in dbs: a link (PubMed, doi.org, UniProt, HGNC's, ChEBI's, GO's
     // AmiGO and QuickGO, MeSH's, identifiers.org), a prefix (PMID:, pubmed:, doi:, uniprot:, HGNC:, CHEBI:, GO:, mesh:,
-    // urn:miriam:), a plain value read as the first of dbs it fits (a number on a reaction PubMed, 10. a DOI); checked by
+    // urn:miriam:), a plain value read as the database chosen (pick), a DOI's 10. as a DOI; checked by
     // each database's pattern (ANN_DB). bad: what was not read, a value of another database among them
     // pick: the database chosen in the list before the box; a plain value is read as it alone (a link, a prefix or a
     // DOI's 10. still says its own), one that fits another of dbs is said in out.fits
     function refsParse(text, dbs, pick) {
       dbs = dbs || ['pubmed', 'doi'];
-      var out = { keys: [], bad: [], fits: [] }, t = String(text).replace(/\b(PMID|pubmed|doi|uniprot|HGNC|CHEBI|GO|mesh)\s*:?\s+(?=\d|[A-Z]\d)/gi, '$1:');
+      var out = { keys: [], bad: [], fits: [] }, t = String(text).replace(/\b(PMID|pubmed|doi|uniprot|HGNC|CHEBI|GO|mesh)(?!\.)\s*:?\s+(?=\d|[A-Z]\d)/gi, '$1:');
       t.split(/\s+|,(?=\s|\d|$)|;(?=\s|$)/).forEach(function (x) {   // a DOI may hold a semicolon or a comma
         x = x.replace(/^[(\[<"']+|[)\]>"'.,]+$/g, '');
         if (!x) return;
@@ -2652,6 +2658,7 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
         else if ((m = /^(?:https?:\/\/)?(?:dx\.)?doi\.org\/(.+)$/i.exec(x))) { db = 'doi'; v = dec(m[1]); }
         else if ((m = /^(?:https?:\/\/)?(?:www\.|rest\.)?uniprot\.org\/(?:uniprot|uniprotkb)\/([A-Za-z0-9-]+)(?:[\/.?#].*)?$/i.exec(x))) { db = 'uniprot'; v = m[1]; }
         else if ((m = /^(?:https?:\/\/)?(?:www\.)?genenames\.org\/.*?(?:HGNC(?::|%3A)|hgnc_id\/)(\d+)/i.exec(x))) { db = 'hgnc'; v = m[1]; }
+        else if ((m = /^(?:https?:\/\/)?(?:www\.)?genenames\.org\/.*?\/symbol\/([A-Za-z0-9_-]+)/i.exec(x))) { db = 'hgnc.symbol'; v = m[1]; }
         else if ((m = /^(?:https?:\/\/)?(?:www\.)?ebi\.ac\.uk\/chebi\/.*?CHEBI(?::|%3A)(\d+)/i.exec(x))) { db = 'chebi'; v = m[1]; }
         else if ((m = /^(?:https?:\/\/)?(?:amigo\.geneontology\.org|(?:www\.)?ebi\.ac\.uk\/QuickGO)\/.*?GO(?::|%3A)(\d{7})/i.exec(x))) { db = 'go'; v = m[1]; }
         else if ((m = /^(?:https?:\/\/)?(?:meshb\.nlm\.nih\.gov|(?:www\.)?ncbi\.nlm\.nih\.gov\/mesh)\/.*?\b([CD]\d{6,9})\b/i.exec(x))) { db = 'mesh'; v = m[1]; }
@@ -2660,12 +2667,13 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
           var p = /^(CHEBI|GO|HGNC):(.+)$/i.exec(v);
           if (p && (!db || db === p[1].toLowerCase())) { db = p[1].toLowerCase(); v = p[2]; }
         }
-        else if ((m = /^(pmid|pubmed|doi|uniprot|hgnc|chebi|go|mesh):(.+)$/i.exec(x))) { db = m[1].toLowerCase().replace('pmid', 'pubmed'); v = m[2]; }
+        else if ((m = /^(pmid|pubmed|doi|uniprot|hgnc\.symbol|hgnc|chebi|go|mesh):(.+)$/i.exec(x))) { db = m[1].toLowerCase().replace('pmid', 'pubmed'); v = m[2]; }
         else if (/^10\./.test(x)) { db = 'doi'; v = x; }
         else {
           var fit = function (d) { var D = ANN_DB[d]; return d === 'pubmed' ? /^\d+$/.test(x) : !!(D.plain && D.plain.test(x)); };
           if (pick && dbs.indexOf(pick) >= 0) {
-            if (fit(pick)) { db = pick; v = x; }
+            if (pick === 'hgnc.symbol' && dbs.indexOf('uniprot') >= 0 && ANN_DB.uniprot.ok.test(x.toUpperCase())) out.fits.push([x, 'uniprot']);   // a UniProt accession's shape: never taken as a symbol unless written hgnc.symbol:
+            else if (fit(pick)) { db = pick; v = x; }
             else dbs.some(function (d) { if (d !== pick && fit(d)) { out.fits.push([x, d]); return true; } return false; });
           } else dbs.some(function (d) { if (fit(d)) { db = d; v = x; return true; } return false; });
         }
@@ -2684,11 +2692,13 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       if (add.length) said.push(add.length + ' added');
       if (P.keys.length > add.length) said.push((P.keys.length - add.length) + ' already there');
       if (P.bad.length) said.push('not read: ' + P.bad.join(' ') + ' (' + (ANN_DB[pick] ? ANN_DB[pick].say : R.dbs.map(function (d) { return ANN_DB[d].say; }).join('; ')) + ')' +
-        P.fits.map(function (f) { return '; ' + f[0] + ' reads as ' + REF_DB[f[1]] + ': choose ' + REF_DB[f[1]] + ' in the list'; }).join(''));
+        P.fits.map(function (f) { return '; ' + f[0] + ' reads as ' + REF_DB[f[1]] + ': choose ' + REF_DB[f[1]] + ' in the list' + (f[1] === 'uniprot' && pick === 'hgnc.symbol' ? ' (a symbol of that shape: hgnc.symbol:' + f[0] + ')' : ''); }).join(''));
       pin.value = P.bad.join(' ');   // what was not read stays to be put right, the row open
       if (!P.bad.length) refsClose();
       prefsSay = [R.at, said.join('; ') + '.'];
-      if (add.length && !R.api.set(R.id, add, [])) prefsSay = [R.at, 'Not written: the file did not take them.'];
+      var sym = add.filter(function (k) { return k.indexOf('hgnc.symbol:') === 0; }), ni = nodes2.findIndex(function (n) { return n.id === R.id; });
+      var nm = R.kind === 'protein' && sym.length === 1 && ni >= 0 && !nameNow(ni) ? sym[0].slice(12) : null;   // one HGNC symbol added to a protein with no name names it too, in the same step
+      if (add.length && !R.api.set(R.id, add, [], nm)) prefsSay = [R.at, 'Not written: the file did not take them.'];
       prefsKey = null; refsShow();
     }
     function refsShow() {
@@ -2707,10 +2717,11 @@ import NT from '../../renderers/converter/notation.js';   // the notation's kind
       var key = R.at + '\u0000' + R.title + '\u0000' + R.items.map(function (x) { return x.key + '\u0001' + x.q + (x.own ? '' : '!'); }).join('\u0000') + '\u0000' + (prefsSay ? prefsSay[1] : '');
       if (key === prefsKey) return;
       prefsKey = key;
-      prefs.querySelector('.m2-ed-prefl').innerHTML = '<tr><th colspan="2">' + escHtml(R.title) + '<button type="button" class="m2-ed-pplus" title="Add ' + (R.kind ? 'identifiers' : 'references') + '" aria-label="Add ' + (R.kind ? 'identifiers' : 'references') + '">+</button></th></tr>' + R.items.map(function (x) {
+      var order = R.dbs.concat(R.items.map(function (x) { return x.db; })), rows = R.items.map(function (x, j) { return [x, j]; }).sort(function (a, b) { return (order.indexOf(a[0].db) - order.indexOf(b[0].db)) || a[1] - b[1]; }).map(function (r) { return r[0]; });   // grouped by database, the item's own first in the list's order, each group as the file has it
+      prefs.querySelector('.m2-ed-prefl').innerHTML = '<tr><th colspan="2">' + escHtml(R.title) + '<button type="button" class="m2-ed-pplus" title="Add ' + (R.kind ? 'identifiers' : 'references') + '" aria-label="Add ' + (R.kind ? 'identifiers' : 'references') + '">' + signPlus() + '</button></th></tr>' + rows.map(function (x) {
         var name = REF_DB[x.db] || x.db || 'Link', tip = name + ' ' + x.val + (x.own ? '' : ', ' + x.q + (x.about ? ': about the map as a model, kept as written' : ', kept as written'));
         return '<tr title="' + escAttr(tip) + '"><th>' + escHtml(name) + '</th><td><span class="m2-ed-ppic"><span class="m2-ed-ppicname">' + escHtml(x.val) + (x.about ? ' <span class="m2-ed-pabout">about the map</span>' : '') + '</span>' +
-          (x.own ? '<button type="button" class="m2-ed-px" data-key="' + escAttr(x.key) + '" title="Remove ' + escAttr(name + ' ' + x.val) + '" aria-label="Remove">\u00d7</button>' : '') + '</span></td></tr>';
+          (x.own ? '<button type="button" class="m2-ed-px" data-key="' + escAttr(x.key) + '" title="Remove ' + escAttr(name + ' ' + x.val) + '" aria-label="Remove">' + signX() + '</button>' : '') + '</span></td></tr>';
       }).join('');
       var say = prefs.querySelector('.m2-ed-psay');
       say.hidden = !prefsSay; say.firstChild.textContent = prefsSay ? prefsSay[1] : '';

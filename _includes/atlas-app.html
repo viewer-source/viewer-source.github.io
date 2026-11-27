@@ -479,11 +479,19 @@ page, so its styles keep the base they were made on).
   #m2-editwin tr.m2-ed-pbg.m2-ed-pbgsel > th, #m2-editwin tr.m2-ed-pbg.m2-ed-pbgsel > td { background: var(--m2-soft); }
   #m2-editwin .m2-ed-prefs th[colspan] { padding-top: 8px; }   /* References: a heading as Cardinality's, one row per reference, the paste box under them */
   #m2-editwin .m2-ed-prefs .m2-ed-ppic input[type="text"] { flex: 1 1 auto; width: 0; }   /* the box shares its row with Add, inside the panel */
-  #m2-editwin .m2-ed-prefs .m2-ed-px { padding: 1px 5px; }
-  #m2-editwin .m2-ed-prefs button.m2-ed-pplus { float: right; width: 18px; height: 18px; margin: -2px 0 0; padding: 0; border: 0; border-radius: 4px; background: none; color: #70757a; font-size: 15px; line-height: 18px; cursor: pointer; }   /* + by References or Identifiers: opens the row to add */
-  #m2-editwin .m2-ed-prefs button.m2-ed-pplus:hover { background: var(--m2-soft); }
+  #m2-editwin .m2-ed-prefs th[colspan] { padding-right: 0; }   /* the heading's + reaches the column's right edge, over the crosses */
+  /* + by References or Identifiers, a square button opening the row to add; the cross on each row a quiet sign. Both 22 px
+     square at the column's right edge, so the + stands over the crosses; the sign drawn in the middle of its square */
+  #m2-editwin .m2-ed-prefs button.m2-ed-pplus, #m2-editwin .m2-ed-prefs button.m2-ed-px { display: flex; align-items: center; justify-content: center; flex: none; box-sizing: border-box;
+    width: 22px; height: 22px; margin: 0; padding: 0; border-radius: 4px; color: #70757a; cursor: pointer; }
+  #m2-editwin .m2-ed-prefs button.m2-ed-pplus { float: right; margin-top: -3px; border: 1px solid var(--m2-frame); background: var(--m2-bg); }
+  #m2-editwin .m2-ed-prefs button.m2-ed-px { border: 0; background: none; }
+  #m2-editwin .m2-ed-prefs button.m2-ed-pplus:hover, #m2-editwin .m2-ed-prefs button.m2-ed-px:hover { background: var(--m2-soft); color: #3c4043; }
+  #m2-editwin .m2-ed-prefs button.m2-ed-pplus:hover { border-color: #c4c7c9; }
+  #m2-editwin .m2-ed-prefs button svg { display: block; }
   #m2-editwin .m2-ed-prefs tr.m2-ed-padd[hidden] { display: none; }
-  #m2-editwin .m2-ed-prefs select.m2-ed-pdb { flex: none; max-width: 84px; }   /* the database a plain ID is read as, before the box; one database alone shown as a plain word */
+  #m2-editwin .m2-ed-prefs select.m2-ed-pdb { flex: none; max-width: 84px; }
+  #m2-editwin .m2-ed-prefs select.m2-ed-pdb:disabled { appearance: none; padding: 0 4px 0 0; }   /* one database alone: its name as a plain word, no arrow */   /* the database a plain ID is read as, before the box; one database alone shown as a plain word */
   #m2-editwin .m2-ed-pabout { color: var(--m2-ed-name); }   /* a bqmodel reference, about the map as a model */
   #m2-editwin .m2-ed-prefs .m2-ed-psay td { height: auto; padding: 2px 0 4px; color: var(--m2-ed-name); white-space: normal; overflow-wrap: anywhere; }   /* what the last Add took in */
   /* several nodes selected whose values differ (create.js propsMany): the field empty and grey, a colour's swatch crossed by a thin line */

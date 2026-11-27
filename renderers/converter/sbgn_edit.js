@@ -3123,9 +3123,9 @@
   // hgnc:11389, CHEBI:15346, GO:0016573, mesh:D012345); a link of another database or under another qualifier is never
   // touched.
   //   idsOf(g, st, id) -> [{ q, key, link }]: every link of the glyph's own description in st (q its qualifier as
-  //     written), those of the five databases under bqbiol:is replaced by the Identity property where it is set
+  //     written), every db:id under bqbiol:is replaced by the Identity property where it is set
   //   setIds(g, id, keys) -> g with the property set to keys (an array)
-  var BQM = 'http://biomodels.net/model-qualifiers/', IDS = 'Identity', IDS_DB = ['uniprot', 'hgnc', 'chebi', 'go', 'mesh'], IDS_LINK = { uniprot: 'uniprot:', hgnc: 'hgnc:', chebi: '', go: '', mesh: 'mesh:' };
+  var BQM = 'http://biomodels.net/model-qualifiers/', IDS = 'Identity', IDS_DB = ['uniprot', 'hgnc', 'hgnc.symbol', 'chebi', 'go', 'mesh'], IDS_LINK = { uniprot: 'uniprot:', hgnc: 'hgnc:', 'hgnc.symbol': 'hgnc.symbol:', chebi: '', go: '', mesh: 'mesh:' };
   function idKeyOf(link) {   // refKeyOf's db:id with CellDesigner's obo. names as identifiers.org's, ChEBI's and GO's prefix in the id, HGNC's not
     var m = /^https?:\/\/identifiers\.org\/(CHEBI|GO):(.+)$/i.exec(link), k = m ? m[1].toLowerCase() + ':' + m[2] : refKeyOf(link);
     if (!k) return null;
@@ -3135,8 +3135,8 @@
     else if (db === 'uniprot' || db === 'mesh') v = v.toUpperCase();
     return db + ':' + v;
   }
-  function idMine(x) { return x.mine && !!x.key && IDS_DB.indexOf(x.key.slice(0, x.key.indexOf(':'))) >= 0; }
-  function idLink(key) { var c = key.indexOf(':'); return 'http://identifiers.org/' + IDS_LINK[key.slice(0, c)] + key.slice(c + 1); }
+  function idMine(x) { return x.mine && !!x.key && /^[\w.]+:\S+$/.test(x.key); }   // any db:id under bqbiol:is (an HGNC symbol too): the property holds it, so it can be taken out
+  function idLink(key) { var c = key.indexOf(':'), db = key.slice(0, c); return IDS_DB.indexOf(db) >= 0 ? 'http://identifiers.org/' + IDS_LINK[db] + key.slice(c + 1) : refLink(key); }
   function idsOf(t, st, id, opt) {
     var G = gml(t, opt), d = refData(G, id, refKey(G, IDS)), S = sbgn(st, opt), g = S.glyph[id], desc = g ? refDesc(g.el) : null, out = [];
     if (desc) kids(desc).forEach(function (q) {
